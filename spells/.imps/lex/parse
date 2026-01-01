@@ -32,7 +32,8 @@ parse() {
     if [ $# -ge 2 ]; then
       _parse_two_word="$1-$2"
       if [ -x "$_parse_lex_dir/$_parse_two_word" ] && [ "$_parse_two_word" != "parse" ]; then
-        [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Found linking words: %s\n' "$_parse_two_word" >&2
+        [ "$_parse_debug" = "1" ] && \
+          printf '[parse] DEBUG: Found linking words: %s\n' "$_parse_two_word" >&2
         # FUTURE: Enable parsing by uncommenting the line below
         # shift 2; WIZARDRY_PARSE_DEPTH=$((_parse_depth + 1)) "$_parse_lex_dir/$_parse_two_word" "" "" "$@"; return $?
       fi
@@ -42,7 +43,8 @@ parse() {
     if [ $# -ge 1 ]; then
       _parse_first=$1
       if [ -x "$_parse_lex_dir/$_parse_first" ] && [ "$_parse_first" != "parse" ]; then
-        [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Found linking word: %s\n' "$_parse_first" >&2
+        [ "$_parse_debug" = "1" ] && \
+          printf '[parse] DEBUG: Found linking word: %s\n' "$_parse_first" >&2
         # FUTURE: Enable parsing by uncommenting the line below
         # shift; WIZARDRY_PARSE_DEPTH=$((_parse_depth + 1)) "$_parse_lex_dir/$_parse_first" "" "" "$@"; return $?
       fi
@@ -102,14 +104,16 @@ PARSE_HELP
     # Try 4-word combinations first (longest match wins)
     if [ $# -ge 3 ]; then
       _try_4word=$(printf '%s_%s_%s_%s' "$_parse_cmd" "$1" "$2" "$3" | tr '-' '_')
-      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Trying 4-word function: %s\n' "$_try_4word" >&2
+      [ "$_parse_debug" = "1" ] && \
+        printf '[parse] DEBUG: Trying 4-word function: %s\n' "$_try_4word" >&2
       if command -v "$_try_4word" >/dev/null 2>&1; then
         _type_out=$(type "$_try_4word" 2>/dev/null || printf '')
         case "$_type_out" in
           *function*)
             _matched_func="$_try_4word"
             _matched_words=4
-            [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Found 4-word function: %s\n' "$_matched_func" >&2
+            [ "$_parse_debug" = "1" ] && \
+              printf '[parse] DEBUG: Found 4-word function: %s\n' "$_matched_func" >&2
             ;;
         esac
       fi
@@ -118,14 +122,16 @@ PARSE_HELP
     # Try 3-word combinations
     if [ -z "$_matched_func" ] && [ $# -ge 2 ]; then
       _try_3word=$(printf '%s_%s_%s' "$_parse_cmd" "$1" "$2" | tr '-' '_')
-      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Trying 3-word function: %s\n' "$_try_3word" >&2
+      [ "$_parse_debug" = "1" ] && \
+        printf '[parse] DEBUG: Trying 3-word function: %s\n' "$_try_3word" >&2
       if command -v "$_try_3word" >/dev/null 2>&1; then
         _type_out=$(type "$_try_3word" 2>/dev/null || printf '')
         case "$_type_out" in
           *function*)
             _matched_func="$_try_3word"
             _matched_words=3
-            [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Found 3-word function: %s\n' "$_matched_func" >&2
+            [ "$_parse_debug" = "1" ] && \
+              printf '[parse] DEBUG: Found 3-word function: %s\n' "$_matched_func" >&2
             ;;
         esac
       fi
@@ -134,14 +140,16 @@ PARSE_HELP
     # Try 2-word combinations
     if [ -z "$_matched_func" ] && [ $# -ge 1 ]; then
       _try_2word=$(printf '%s_%s' "$_parse_cmd" "$1" | tr '-' '_')
-      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Trying 2-word function: %s\n' "$_try_2word" >&2
+      [ "$_parse_debug" = "1" ] && \
+        printf '[parse] DEBUG: Trying 2-word function: %s\n' "$_try_2word" >&2
       if command -v "$_try_2word" >/dev/null 2>&1; then
         _type_out=$(type "$_try_2word" 2>/dev/null || printf '')
         case "$_type_out" in
           *function*)
             _matched_func="$_try_2word"
             _matched_words=2
-            [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Found 2-word function: %s\n' "$_matched_func" >&2
+            [ "$_parse_debug" = "1" ] && \
+              printf '[parse] DEBUG: Found 2-word function: %s\n' "$_matched_func" >&2
             ;;
         esac
       fi
@@ -161,7 +169,9 @@ PARSE_HELP
         _i=$((_i + 1))
       done
     
-      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Calling %d-word function %s with %d args\n' "$_matched_words" "$_matched_func" "$#" >&2
+      [ "$_parse_debug" = "1" ] && \
+        printf '[parse] DEBUG: Calling %d-word function %s with %d args\n' \
+               "$_matched_words" "$_matched_func" "$#" >&2
       if [ $# -eq 0 ]; then
         "$_matched_func"
       else
@@ -184,7 +194,8 @@ PARSE_HELP
         *function*)
           # Function exists - call it directly (no PATH manipulation needed)
           printf 'Casting %s\n' "$_parse_cmd" >&2
-          [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Calling preloaded function: %s\n' "$_func_name" >&2
+          [ "$_parse_debug" = "1" ] && \
+            printf '[parse] DEBUG: Calling preloaded function: %s\n' "$_func_name" >&2
           if [ $# -eq 0 ]; then
             "$_func_name"
           else
@@ -202,65 +213,101 @@ PARSE_HELP
     # This prevents system commands from shadowing multi-word wizardry commands
     # Example: "env or" should find env-or spell before falling through to /usr/bin/env
   
-    [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Checking for multi-word wizardry spells...\n' >&2
+    [ "$_parse_debug" = "1" ] && \
+      printf '[parse] DEBUG: Checking for multi-word wizardry spells...\n' >&2
     _wizardry_dir="${WIZARDRY_DIR:-${HOME}/.wizardry}"
     _spell_file=""
     _spell_matched_words=0
   
-    # Helper function to search for a spell file by name
-    _find_spell_file() {
-      _search_name=$1
-      for _spell_dir in cantrips menu arcane divination system spellcraft enchantment .imps .imps/*; do
-        if [ -f "$_wizardry_dir/spells/$_spell_dir/$_search_name" ] && [ -x "$_wizardry_dir/spells/$_spell_dir/$_search_name" ]; then
-          printf '%s' "$_wizardry_dir/spells/$_spell_dir/$_search_name"
-          return 0
-        fi
-      done
-      # Slow path: search all directories
-      if [ -d "$_wizardry_dir/spells" ]; then
-        find "$_wizardry_dir/spells" -type f -name "$_search_name" -print -quit 2>/dev/null
-      fi
-    }
-  
     # Try 4-word spell file combinations
     if [ $# -ge 3 ]; then
       _try_4word_spell=$(printf '%s-%s-%s-%s' "$_parse_cmd" "$1" "$2" "$3")
-      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Trying 4-word spell file: %s\n' "$_try_4word_spell" >&2
-      _found=$(_find_spell_file "$_try_4word_spell")
+      [ "$_parse_debug" = "1" ] && \
+        printf '[parse] DEBUG: Trying 4-word spell file: %s\n' "$_try_4word_spell" >&2
+      # Search for spell file (inline search logic)
+      _found=""
+      for _spell_dir in cantrips menu arcane divination system spellcraft \
+                        enchantment .imps .imps/*; do
+        _spell_path="$_wizardry_dir/spells/$_spell_dir/$_try_4word_spell"
+        if [ -f "$_spell_path" ] && [ -x "$_spell_path" ]; then
+          _found="$_spell_path"
+          break
+        fi
+      done
+      # Slow path: search all directories
+      if [ -z "$_found" ] && [ -d "$_wizardry_dir/spells" ]; then
+        _found=$(find "$_wizardry_dir/spells" -type f -name "$_try_4word_spell" \
+                      -print -quit 2>/dev/null)
+      fi
       if [ -n "$_found" ]; then
         _spell_file="$_found"
         _spell_matched_words=4
-        [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Found 4-word spell: %s\n' "$_spell_file" >&2
+        [ "$_parse_debug" = "1" ] && \
+          printf '[parse] DEBUG: Found 4-word spell: %s\n' "$_spell_file" >&2
       fi
     fi
   
     # Try 3-word spell file combinations
     if [ -z "$_spell_file" ] && [ $# -ge 2 ]; then
       _try_3word_spell=$(printf '%s-%s-%s' "$_parse_cmd" "$1" "$2")
-      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Trying 3-word spell file: %s\n' "$_try_3word_spell" >&2
-      _found=$(_find_spell_file "$_try_3word_spell")
+      [ "$_parse_debug" = "1" ] && \
+        printf '[parse] DEBUG: Trying 3-word spell file: %s\n' "$_try_3word_spell" >&2
+      # Search for spell file (inline search logic)
+      _found=""
+      for _spell_dir in cantrips menu arcane divination system spellcraft \
+                        enchantment .imps .imps/*; do
+        _spell_path="$_wizardry_dir/spells/$_spell_dir/$_try_3word_spell"
+        if [ -f "$_spell_path" ] && [ -x "$_spell_path" ]; then
+          _found="$_spell_path"
+          break
+        fi
+      done
+      # Slow path: search all directories
+      if [ -z "$_found" ] && [ -d "$_wizardry_dir/spells" ]; then
+        _found=$(find "$_wizardry_dir/spells" -type f -name "$_try_3word_spell" \
+                      -print -quit 2>/dev/null)
+      fi
       if [ -n "$_found" ]; then
         _spell_file="$_found"
         _spell_matched_words=3
-        [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Found 3-word spell: %s\n' "$_spell_file" >&2
+        [ "$_parse_debug" = "1" ] && \
+          printf '[parse] DEBUG: Found 3-word spell: %s\n' "$_spell_file" >&2
       fi
     fi
   
     # Try 2-word spell file combinations
     if [ -z "$_spell_file" ] && [ $# -ge 1 ]; then
       _try_2word_spell=$(printf '%s-%s' "$_parse_cmd" "$1")
-      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Trying 2-word spell file: %s\n' "$_try_2word_spell" >&2
-      _found=$(_find_spell_file "$_try_2word_spell")
+      [ "$_parse_debug" = "1" ] && \
+        printf '[parse] DEBUG: Trying 2-word spell file: %s\n' "$_try_2word_spell" >&2
+      # Search for spell file (inline search logic)
+      _found=""
+      for _spell_dir in cantrips menu arcane divination system spellcraft \
+                        enchantment .imps .imps/*; do
+        _spell_path="$_wizardry_dir/spells/$_spell_dir/$_try_2word_spell"
+        if [ -f "$_spell_path" ] && [ -x "$_spell_path" ]; then
+          _found="$_spell_path"
+          break
+        fi
+      done
+      # Slow path: search all directories
+      if [ -z "$_found" ] && [ -d "$_wizardry_dir/spells" ]; then
+        _found=$(find "$_wizardry_dir/spells" -type f -name "$_try_2word_spell" \
+                      -print -quit 2>/dev/null)
+      fi
       if [ -n "$_found" ]; then
         _spell_file="$_found"
         _spell_matched_words=2
-        [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Found 2-word spell: %s\n' "$_spell_file" >&2
+        [ "$_parse_debug" = "1" ] && \
+          printf '[parse] DEBUG: Found 2-word spell: %s\n' "$_spell_file" >&2
       fi
     fi
   
     # If we found a multi-word spell, execute it
     if [ -n "$_spell_file" ] && [ "$_spell_matched_words" -gt 1 ]; then
-      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Found multi-word spell file: %s (matched %d words)\n' "$_spell_file" "$_spell_matched_words" >&2
+      [ "$_parse_debug" = "1" ] && \
+        printf '[parse] DEBUG: Found multi-word spell file: %s (matched %d words)\n' \
+               "$_spell_file" "$_spell_matched_words" >&2
     
       # Get the base name of the spell file for display
       _spell_name=$(basename "$_spell_file")
@@ -273,7 +320,8 @@ PARSE_HELP
         shift
         _i=$((_i + 1))
       done
-      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Shifted %d words, %d args remaining\n' "$_shift_count" "$#" >&2
+      [ "$_parse_debug" = "1" ] && \
+        printf '[parse] DEBUG: Shifted %d words, %d args remaining\n' "$_shift_count" "$#" >&2
     
       _spell_func=$(printf '%s' "$_spell_name" | tr '-' '_')
     
@@ -288,16 +336,19 @@ PARSE_HELP
     
       # Use word-of-binding to properly load the spell as a function
       if command -v word_of_binding >/dev/null 2>&1; then
-        [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Loading spell via word_of_binding: %s\n' "$_spell_name" >&2
+        [ "$_parse_debug" = "1" ] && \
+          printf '[parse] DEBUG: Loading spell via word_of_binding: %s\n' "$_spell_name" >&2
         word_of_binding "$_spell_name" || {
-          [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: word_of_binding failed for %s\n' "$_spell_name" >&2
+          [ "$_parse_debug" = "1" ] && \
+            printf '[parse] DEBUG: word_of_binding failed for %s\n' "$_spell_name" >&2
           export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
           return 1
         }
       
         # Now the function should be loaded - call it
         if command -v "$_spell_func" >/dev/null 2>&1; then
-          [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Calling spell function: %s\n' "$_spell_func" >&2
+          [ "$_parse_debug" = "1" ] && \
+            printf '[parse] DEBUG: Calling spell function: %s\n' "$_spell_func" >&2
           if [ $# -eq 0 ]; then
             "$_spell_func"
           else
@@ -307,13 +358,16 @@ PARSE_HELP
           export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
           return $_ret
         else
-          [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Function %s not found after word_of_binding\n' "$_spell_func" >&2
+          [ "$_parse_debug" = "1" ] && \
+            printf '[parse] DEBUG: Function %s not found after word_of_binding\n' "$_spell_func" >&2
           export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
           return 127
         fi
       else
         # Fallback: word_of_binding not available, execute spell file directly
-        [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: word_of_binding not available, executing spell directly: %s\n' "$_spell_file" >&2
+        [ "$_parse_debug" = "1" ] && \
+          printf '[parse] DEBUG: word_of_binding not available, executing spell directly: %s\n' \
+          $2
         if [ $# -eq 0 ]; then
           "$_spell_file"
         else
@@ -327,28 +381,37 @@ PARSE_HELP
 
     # Before falling through to PATH, check for single-word wizardry spell
     # This prevents system commands from shadowing single-word wizardry spells
-    [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Checking for single-word wizardry spell: %s\n' "$_parse_cmd" >&2
+    [ "$_parse_debug" = "1" ] && \
+      printf '[parse] DEBUG: Checking for single-word wizardry spell: %s\n' "$_parse_cmd" >&2
   
     # Try to find single-word spell
     _spell_file=""
-    for _spell_dir in cantrips menu arcane divination system spellcraft enchantment .imps .imps/*; do
-      if [ -f "$_wizardry_dir/spells/$_spell_dir/$_parse_cmd" ] && [ -x "$_wizardry_dir/spells/$_spell_dir/$_parse_cmd" ]; then
+    for _spell_dir in cantrips menu arcane divination system spellcraft \
+                      enchantment .imps .imps/*; do
+      _spell_path="$_wizardry_dir/spells/$_spell_dir/$_parse_cmd"
+      if [ -f "$_spell_path" ] && [ -x "$_spell_path" ]; then
         _spell_file="$_wizardry_dir/spells/$_spell_dir/$_parse_cmd"
-        [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Found single-word spell: %s\n' "$_spell_file" >&2
+        [ "$_parse_debug" = "1" ] && \
+          printf '[parse] DEBUG: Found single-word spell: %s\n' "$_spell_file" >&2
         break
       fi
     done
   
     # Slow path: search all directories
     if [ -z "$_spell_file" ] && [ -d "$_wizardry_dir/spells" ]; then
-      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Searching all spell directories for %s...\n' "$_parse_cmd" >&2
-      _spell_file=$(find "$_wizardry_dir/spells" -type f -name "$_parse_cmd" -print -quit 2>/dev/null)
-      [ "$_parse_debug" = "1" ] && [ -n "$_spell_file" ] && printf '[parse] DEBUG: Found spell via find: %s\n' "$_spell_file" >&2
+      [ "$_parse_debug" = "1" ] && \
+        printf '[parse] DEBUG: Searching all spell directories for %s...\n' \
+               "$_parse_cmd" >&2
+      _spell_file=$(find "$_wizardry_dir/spells" -type f -name "$_parse_cmd" \
+                         -print -quit 2>/dev/null)
+      [ "$_parse_debug" = "1" ] && [ -n "$_spell_file" ] && \
+        printf '[parse] DEBUG: Found spell via find: %s\n' "$_spell_file" >&2
     fi
   
     # If single-word spell found, execute it
     if [ -n "$_spell_file" ] && [ -f "$_spell_file" ] && [ -x "$_spell_file" ]; then
-      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Found single-word spell file: %s\n' "$_spell_file" >&2
+      [ "$_parse_debug" = "1" ] && \
+        printf '[parse] DEBUG: Found single-word spell file: %s\n' "$_spell_file" >&2
     
       # Get the base name of the spell file for display and word-of-binding
       _spell_name=$(basename "$_spell_file")
@@ -367,16 +430,19 @@ PARSE_HELP
     
       # Use word-of-binding to properly load the spell as a function
       if command -v word_of_binding >/dev/null 2>&1; then
-        [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Loading spell via word_of_binding: %s\n' "$_spell_name" >&2
+        [ "$_parse_debug" = "1" ] && \
+          printf '[parse] DEBUG: Loading spell via word_of_binding: %s\n' "$_spell_name" >&2
         word_of_binding "$_spell_name" || {
-          [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: word_of_binding failed for %s\n' "$_spell_name" >&2
+          [ "$_parse_debug" = "1" ] && \
+            printf '[parse] DEBUG: word_of_binding failed for %s\n' "$_spell_name" >&2
           export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
           return 1
         }
       
         # Now the function should be loaded - call it
         if command -v "$_spell_func" >/dev/null 2>&1; then
-          [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Calling spell function: %s\n' "$_spell_func" >&2
+          [ "$_parse_debug" = "1" ] && \
+            printf '[parse] DEBUG: Calling spell function: %s\n' "$_spell_func" >&2
           if [ $# -eq 0 ]; then
             "$_spell_func"
           else
@@ -386,13 +452,16 @@ PARSE_HELP
           export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
           return $_ret
         else
-          [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Function %s not found after word_of_binding\n' "$_spell_func" >&2
+          [ "$_parse_debug" = "1" ] && \
+            printf '[parse] DEBUG: Function %s not found after word_of_binding\n' "$_spell_func" >&2
           export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
           return 127
         fi
       else
         # Fallback: word_of_binding not available, execute spell file directly
-        [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: word_of_binding not available, executing spell directly: %s\n' "$_spell_file" >&2
+        [ "$_parse_debug" = "1" ] && \
+          printf '[parse] DEBUG: word_of_binding not available, executing spell directly: %s\n' \
+          $2
         if [ $# -eq 0 ]; then
           "$_spell_file"
         else
@@ -407,7 +476,9 @@ PARSE_HELP
     # No wizardry spell found - check for command in PATH (excluding glossary)
     _gloss_dir="${SPELLBOOK_DIR:-${HOME}/.spellbook}/.glossary"
     _old_path="$PATH"
-    PATH=$(printf '%s' "$PATH" | sed "s|$_gloss_dir:||g" | sed "s|:$_gloss_dir||g" | sed "s|^$_gloss_dir\$||")
+    _old_path_clean=$(printf '%s' "$PATH" | sed "s|$_gloss_dir:||g" | \
+                      sed "s|:$_gloss_dir||g" | sed "s|^$_gloss_dir\$||")
+    PATH="$_old_path_clean"
   
     # Check if command exists in PATH (outside glossary)
     if command -v "$_parse_cmd" >/dev/null 2>&1; then
@@ -421,7 +492,8 @@ PARSE_HELP
         # Show only first arg to keep message concise
       fi
       printf 'Casting %s\n' "$_display_full" >&2
-      [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Executing command from PATH: %s\n' "$_parse_cmd" >&2
+      [ "$_parse_debug" = "1" ] && \
+        printf '[parse] DEBUG: Executing command from PATH: %s\n' "$_parse_cmd" >&2
       if [ $# -eq 0 ]; then
         "$_parse_cmd"
       else

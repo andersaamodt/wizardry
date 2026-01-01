@@ -1,6 +1,7 @@
 #!/bin/sh
-# die [CODE] MESSAGE - print to stderr and exit (default code 1)
+# die [CODE] MESSAGE - print to stderr and return error code (default 1)
 # Examples: die "fatal error" | die 2 "file not found"
+# Note: Uses return instead of exit for word-of-binding compatibility
 set -eu
 
 die() {
@@ -9,7 +10,7 @@ die() {
     *) _die_code=1 ;;
   esac
   printf '%s\n' "$*" >&2
-  exit "$_die_code"
+  return "$_die_code"
 }
 
 # Self-execute when run directly (not sourced)
