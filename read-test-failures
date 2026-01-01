@@ -1,0 +1,40 @@
+#!/bin/sh
+# read-test-failures - Fetch and display latest test failures
+# 
+# This script fetches the latest TEST_FAILURES.md from the remote branch
+# and displays it, allowing AI agents to see test failures immediately
+# after the collect-failures workflow runs (without waiting for next session).
+#
+# Usage: ./read-test-failures [branch-name]
+# If branch-name is omitted, uses current branch.
+
+set -eu
+
+# Get current branch if not specified
+branch="${1:-$(git rev-parse --abbrev-ref HEAD)}"
+
+echo "Fetching latest test failures from branch: $branch"
+echo ""
+
+# Fetch the latest changes from remote
+git fetch origin "$branch" 2>/dev/null || {
+  echo "Error: Could not fetch from origin/$branch"
+  exit 1
+}
+
+# Check if TEST_FAILURES.md exists on remote
+if git cat-file -e "origin/$branch:TEST_FAILURES.md" 2>/dev/null; then
+  echo "========================================"
+  echo " Latest Test Failures (from remote)"
+  echo "========================================"
+  echo ""
+  git show "origin/$branch:TEST_FAILURES.md"
+else
+  echo "TEST_FAILURES.md not found on origin/$branch"
+  echo ""
+  echo "This may mean:"
+  echo "- The collect-failures workflow hasn't run yet"
+  echo "- The workflow is still running"
+  echo "- The file hasn't been created yet"
+  exit 1
+fi

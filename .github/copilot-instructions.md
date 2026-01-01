@@ -1,5 +1,26 @@
 # Wizardry Repository - GitHub Copilot Instructions  🧙🔮
 
+## Reading Test Failures 🔍⚡
+
+**When asked to fix test failures or CI issues:**
+
+1. **Run:** `./read-test-failures` (from repository root)
+2. This fetches and displays the latest `TEST_FAILURES.md` from the remote branch
+3. The file is updated automatically after each test run by the `collect-failures` workflow
+4. **Works immediately** - no need to wait for next session
+
+**Example:**
+```sh
+cd /home/runner/work/wizardry/wizardry
+./read-test-failures
+# Read the output, identify failures, fix them
+```
+
+The `collect-failures` workflow extracts only the relevant error text:
+- **Unit tests**: Test summary sections only
+- **Other workflows**: Error markers and FAIL/ERROR patterns
+- **All workflows**: "Process exited/completed" lines removed for clarity
+
 ## Essential Reading  📚✨
 
 1. **`README.md`** — Project principles, values, and standards (READ FIRST)  🗝️
