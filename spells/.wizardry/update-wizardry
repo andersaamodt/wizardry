@@ -24,7 +24,7 @@ esac
 require-wizardry || return 1
 
 set -eu
-env-clear
+. env-clear
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 
@@ -44,7 +44,10 @@ if [ -n "${WIZARDRY_DIR-}" ]; then
     die "update-wizardry: WIZARDRY_DIR does not exist or is not a directory: $wizardry_dir" || return 1
   fi
   if ! git -C "$wizardry_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    die "update-wizardry: WIZARDRY_DIR is not a git repository: $wizardry_dir" || return 1
+    warn "update-wizardry: WIZARDRY_DIR is not a git repository: $wizardry_dir"
+    warn "update-wizardry: To enable git-based updates, reinstall wizardry with git available"
+    warn "update-wizardry: or manually convert to git: cd $wizardry_dir && git init && git remote add origin https://github.com/andersaamodt/wizardry.git && git fetch && git reset --hard origin/main"
+    return 1
   fi
 else
   # Attempt to locate the wizardry repository based on this spell's location.
@@ -56,7 +59,13 @@ else
     if git -C "$candidate" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
       wizardry_dir=$(git -C "$candidate" rev-parse --show-toplevel)
     else
-      die "update-wizardry: Unable to determine the wizardry repository. Set WIZARDRY_DIR to the checkout location." || return 1
+      # Not a git repository - provide helpful error message
+      wizardry_dir=$(dirname "$candidate")
+      warn "update-wizardry: Installation at $wizardry_dir is not a git repository"
+      warn "update-wizardry: This may be because it was installed via tarball (git was not available)"
+      warn "update-wizardry: To enable git-based updates, reinstall wizardry with git available"
+      warn "update-wizardry: or manually convert to git: cd $wizardry_dir && git init && git remote add origin https://github.com/andersaamodt/wizardry.git && git fetch && git reset --hard origin/main"
+      return 1
     fi
   fi
 fi

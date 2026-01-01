@@ -151,6 +151,22 @@ download_file() {
         return 1
 }
 
+download_via_git() {
+        # Download wizardry using git clone with a shallow clone to minimize download size.
+        # This sets up a proper git repository with remote configured, enabling update-wizardry
+        # to work via git pull.
+        # Args: dest_dir repo_url
+        dest=$1
+        repo_url=$2
+        
+        # Use shallow clone to minimize download size (~1MB vs ~550KB tarball)
+        # This is acceptable tradeoff for getting a proper git repo
+        if git clone --depth=1 "$repo_url" "$dest" >/dev/null 2>&1; then
+                return 0
+        fi
+        return 1
+}
+
 INSTALL_INPUT=""
 if [ -n "${WIZARDRY_INSTALL_DIR-}" ]; then
         INSTALL_INPUT=$WIZARDRY_INSTALL_DIR
@@ -247,40 +263,60 @@ else
                         exit 1
                 fi
         else
-                # We need to bootstrap wizardry by downloading a tarball.  Each supported
-                # platform provides tar, but some only ship curl or wget, so the
-                # download_file helper above checks both before failing.
+                # Bootstrap wizardry by downloading from remote.
+                # Prefer git clone (creates proper git repo for update-wizardry),
+                # fall back to tarball download if git is not available.
+                repo_url=${WIZARDRY_REMOTE_REPO-https://github.com/andersaamodt/wizardry.git}
                 archive_url=${WIZARDRY_REMOTE_ARCHIVE-https://github.com/andersaamodt/wizardry/archive/refs/heads/main.tar.gz}
-                if ! command -v tar >/dev/null 2>&1; then
-                        printf '%s\n' "Error: tar is required to unpack wizardry when installing remotely." >&2
-                        exit 1
-                fi
-                BOOTSTRAP_TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/wizardry-install.XXXXXX") || exit 1
-                archive="$BOOTSTRAP_TMP_DIR/wizardry.tar.gz"
-                printf '%s\n' "Downloading wizardry to '$INSTALL_DIR'..."
-                if ! download_file "$archive" "$archive_url"; then
-                        exit 1
-                fi
-                if ! tar -xzf "$archive" -C "$BOOTSTRAP_TMP_DIR"; then
-                        printf '%s\n' "Error: Failed to unpack wizardry archive." >&2
-                        exit 1
-                fi
-                extracted=""
-                for candidate in "$BOOTSTRAP_TMP_DIR"/*; do
-                        if [ -d "$candidate/spells" ]; then
-                                extracted=$candidate
-                                break
+                
+                # Try git clone first if git is available
+                if command -v git >/dev/null 2>&1; then
+                        printf '%s\n' "Downloading wizardry via git to '$INSTALL_DIR'..."
+                        if download_via_git "$INSTALL_DIR" "$repo_url"; then
+                                printf '%s\n' "Wizardry downloaded to '$INSTALL_DIR' (git repository)."
+                        else
+                                # Git clone failed, fall back to tarball
+                                printf '%s\n' "Git clone failed, trying tarball download..." >&2
+                                use_tarball=1
                         fi
-                done
-                if [ -z "$extracted" ]; then
-                        printf '%s\n' "Error: Downloaded archive did not contain wizardry spells." >&2
-                        exit 1
+                else
+                        # Git not available, use tarball
+                        use_tarball=1
                 fi
-                if ! mv "$extracted" "$INSTALL_DIR"; then
-                        printf '%s\n' "Error: Unable to move wizardry into '$INSTALL_DIR'." >&2
-                        exit 1
+                
+                # Tarball fallback
+                if [ "${use_tarball-}" = "1" ]; then
+                        if ! command -v tar >/dev/null 2>&1; then
+                                printf '%s\n' "Error: tar is required to unpack wizardry when git is not available." >&2
+                                exit 1
+                        fi
+                        BOOTSTRAP_TMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/wizardry-install.XXXXXX") || exit 1
+                        archive="$BOOTSTRAP_TMP_DIR/wizardry.tar.gz"
+                        printf '%s\n' "Downloading wizardry to '$INSTALL_DIR'..."
+                        if ! download_file "$archive" "$archive_url"; then
+                                exit 1
+                        fi
+                        if ! tar -xzf "$archive" -C "$BOOTSTRAP_TMP_DIR"; then
+                                printf '%s\n' "Error: Failed to unpack wizardry archive." >&2
+                                exit 1
+                        fi
+                        extracted=""
+                        for candidate in "$BOOTSTRAP_TMP_DIR"/*; do
+                                if [ -d "$candidate/spells" ]; then
+                                        extracted=$candidate
+                                        break
+                                fi
+                        done
+                        if [ -z "$extracted" ]; then
+                                printf '%s\n' "Error: Downloaded archive did not contain wizardry spells." >&2
+                                exit 1
+                        fi
+                        if ! mv "$extracted" "$INSTALL_DIR"; then
+                                printf '%s\n' "Error: Unable to move wizardry into '$INSTALL_DIR'." >&2
+                                exit 1
+                        fi
+                        printf '%s\n' "Wizardry downloaded to '$INSTALL_DIR'."
                 fi
-                printf '%s\n' "Wizardry downloaded to '$INSTALL_DIR'."
         fi
         ABS_DIR=$(cd "$INSTALL_DIR" && pwd -P)
 fi
