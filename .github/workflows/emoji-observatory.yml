@@ -1,0 +1,44 @@
+name: Emoji Observatory
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/**/*.md'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/**/*.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  emoji-catalog:
+    name: Print Emoji Observatory Report
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Print Emoji Observatory and Catalog
+        run: |
+          echo "=== EMOJI OBSERVATORY ==="
+          echo ""
+          
+          # Extract the Emoji Observatory section from EMOJI_ANNOTATIONS.md
+          awk '
+            /^## Emoji Observatory \(Instructions\)/ { found=1; next }
+            /^## Status/ { if (found) exit }
+            found { print }
+          ' .github/EMOJI_ANNOTATIONS.md
+          
+          echo ""
+          echo "=== CURRENT EMOJI CATALOG ==="
+          echo ""
+          
+          # Run catalog-emojis spell
+          ./spells/spellcraft/catalog-emojis
