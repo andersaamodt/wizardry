@@ -1,40 +1,84 @@
 #!/bin/sh
-# read-test-failures - Fetch and display latest test failures
+# read-test-failures - Fetch and display latest test failures from PR description
 # 
-# This script fetches the latest TEST_FAILURES.md from the remote branch
-# and displays it, allowing AI agents to see test failures immediately
-# after the collect-failures workflow runs (without waiting for next session).
+# This script fetches the PR description which is updated by the collect-failures
+# workflow with extracted test failures. This allows AI agents to see test failures
+# immediately without any files being committed to the repo.
 #
-# Usage: ./read-test-failures [branch-name]
-# If branch-name is omitted, uses current branch.
+# Usage: ./read-test-failures [pr-number]
+# If pr-number is omitted, tries to detect from current branch.
 
 set -eu
 
-# Get current branch if not specified
-branch="${1:-$(git rev-parse --abbrev-ref HEAD)}"
+# Try to get PR number from argument or detect it
+pr_number="${1:-}"
 
-echo "Fetching latest test failures from branch: $branch"
+if [ -z "$pr_number" ]; then
+  # Try to detect PR number from current branch
+  branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+  
+  if [ -n "$branch" ] && [ "$branch" != "HEAD" ]; then
+    echo "Current branch: $branch"
+    echo "Searching for PR..."
+    
+    # Search for open PRs with this head branch
+    pr_data=$(curl -s "https://api.github.com/repos/andersaamodt/wizardry/pulls?state=all&per_page=50&head=andersaamodt:$branch" 2>&1)
+    
+    # Extract PR number from first match
+    pr_number=$(echo "$pr_data" | grep -o '"number":[0-9]*' | head -1 | cut -d: -f2)
+  fi
+fi
+
+if [ -z "$pr_number" ]; then
+  echo "Error: Could not determine PR number"
+  echo ""
+  echo "Usage: ./read-test-failures <pr-number>"
+  echo ""
+  echo "Please provide the PR number as an argument."
+  echo "Example: ./read-test-failures 123"
+  exit 1
+fi
+
+echo "Fetching test failures for PR #$pr_number..."
 echo ""
 
-# Fetch the latest changes from remote
-git fetch origin "$branch" 2>/dev/null || {
-  echo "Error: Could not fetch from origin/$branch"
-  exit 1
-}
+# Fetch the PR description
+pr_data=$(curl -s "https://api.github.com/repos/andersaamodt/wizardry/pulls/$pr_number" 2>&1)
 
-# Check if TEST_FAILURES.md exists on remote
-if git cat-file -e "origin/$branch:TEST_FAILURES.md" 2>/dev/null; then
+# Check if PR exists
+if echo "$pr_data" | grep -q '"message":"Not Found"'; then
+  echo "Error: PR #$pr_number not found"
+  exit 1
+fi
+
+# Extract the body (description)
+# This is a simple extraction - gets content between "body":" and the next ",
+# Note: This is fragile but works for basic cases without jq
+body=$(echo "$pr_data" | sed -n 's/.*"body":"\(.*\)","reactions.*/\1/p' | head -1)
+
+# Look for the test failures section
+if echo "$body" | grep -q "Latest Test Failures"; then
   echo "========================================"
-  echo " Latest Test Failures (from remote)"
+  echo " Latest Test Failures"
   echo "========================================"
   echo ""
-  git show "origin/$branch:TEST_FAILURES.md"
+  
+  # Extract just the failures section
+  # This extracts from "Latest Test Failures" to the end or next major section
+  echo "$body" | sed -n '/Latest Test Failures/,/^## [^🔍]/p' | sed 's/\\n/\n/g' | head -200
+  
+  echo ""
+  echo "---"
+  echo "Full PR: https://github.com/andersaamodt/wizardry/pull/$pr_number"
 else
-  echo "TEST_FAILURES.md not found on origin/$branch"
+  echo "No test failures section found in PR description."
   echo ""
   echo "This may mean:"
   echo "- The collect-failures workflow hasn't run yet"
   echo "- The workflow is still running"
-  echo "- The file hasn't been created yet"
+  echo "- All tests are passing"
+  echo ""
+  echo "Check the PR manually: https://github.com/andersaamodt/wizardry/pull/$pr_number"
   exit 1
 fi
+

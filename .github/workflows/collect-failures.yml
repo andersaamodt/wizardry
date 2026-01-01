@@ -1,27 +1,27 @@
 name: Collect test failures
 
 # Collects failure outputs and makes them visible to Copilot via:
-# 1. TEST_FAILURES.md file (committed to PR branch - Copilot can read immediately)
-# 2. PR description (updated automatically with failure summary)
-# 3. Job summaries (visible in workflow run UI)
-# 4. Workflow logs (sequential output for easy review)
+# 1. PR description (updated automatically with "## 🔍 Latest Test Failures" section)
+# 2. Job summaries (visible in workflow run UI)
+# 3. Workflow logs (sequential output for easy review)
 #
 # For AI agents: When a user asks you to fix test failures:
-# 1. Run: ./read-test-failures
-#    This fetches the latest TEST_FAILURES.md from the remote branch
+# 1. Run: ./read-test-failures 783  (replace 783 with actual PR number)
+#    This fetches the PR description and extracts the failures section
 # 2. Read the output to see what's failing
 # 3. Fix the issues and commit your changes
-# 4. The file will update automatically on the next test run
+# 4. The workflow will update the PR description automatically on next run
 #
-# The read-test-failures script allows you to see failures IMMEDIATELY in the current
-# session, without waiting for the next session or repository snapshot.
+# The read-test-failures script fetches the PR description via GitHub API,
+# allowing you to see failures IMMEDIATELY in the current session without any
+# files being committed to the repository.
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
 permissions:
-  contents: write  # Needed to commit test failures file
+  contents: read
   actions: read
   pull-requests: write
   checks: write
@@ -35,9 +35,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Monitor workflows and collect failures
         id: collect
@@ -277,58 +274,6 @@ jobs:
             echo "failure_summary=" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Commit test failures to file
-        if: always()
-        run: |
-          failure_file="TEST_FAILURES.md"
-          
-          # Write header
-          {
-            echo "# 🔍 Latest Test Failures"
-            echo ""
-            echo "**Updated:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-            echo "**PR:** #${{ github.event.pull_request.number }}"
-            echo "**Commit:** ${{ github.event.pull_request.head.sha }}"
-            echo ""
-            echo "---"
-            echo ""
-          } > "$failure_file"
-          
-          # Add failures if any
-          if [ -s /tmp/failure_summary.txt ]; then
-            cat /tmp/failure_summary.txt >> "$failure_file"
-          else
-            echo "✅ **All tests passing!**" >> "$failure_file"
-            echo "" >> "$failure_file"
-            echo "No test failures detected in the latest workflow run." >> "$failure_file"
-          fi
-          
-          # Add footer
-          {
-            echo ""
-            echo "---"
-            echo ""
-            echo "**For AI Agents:**"
-            echo ""
-            echo "This file is automatically updated by the collect-failures workflow."
-            echo "When asked to fix test failures, read this file to see what's failing."
-            echo "Fix the issues, commit your changes, and this file will update automatically."
-          } >> "$failure_file"
-          
-          # Configure git
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Commit and push
-          git add "$failure_file"
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Update test failures [skip ci]"
-            git push origin HEAD
-            echo "✅ Test failures committed to $failure_file"
-          fi
-
       - name: Create summary
         if: always()
         run: |
@@ -340,7 +285,8 @@ jobs:
             echo ""
             echo "This workflow monitors all test workflows for this PR and reports failures."
             echo ""
-            echo "Test failures are saved to \`TEST_FAILURES.md\` for AI agents to read."
+            echo "Failures are added to the PR description in the '## 🔍 Latest Test Failures' section."
+            echo "AI agents can read them by running: \`./read-test-failures ${{ github.event.pull_request.number }}\`"
             echo ""
             echo "See the workflow logs above for detailed failure information."
           } >> "$GITHUB_STEP_SUMMARY"
