@@ -12,12 +12,15 @@ This directory contains GitHub Actions workflows for testing and building wizard
 - Runs after any monitored workflow completes (using `workflow_run` trigger)
 - Monitors: Unit tests, POSIX/linting, standalone spells, doppelganger, dual-pattern validation, demonstrate-wizardry, compile
 
+**Note**: This workflow may require approval on each run for AI-created changes. See `pr-test-monitor.yml` for an alternative that avoids this issue.
+
 **How It Works**:
 
 1. **Workflow Logs** 📜 *Sequential output for easy review*
    - Failure details output directly to workflow run logs
-   - Filtered failure lines (grep for FAIL/ERROR)
-   - Log context (last 50 lines) for each failed job
+   - Extracts only relevant error text:
+     - **Unit tests**: Test summary section (from "=== Test Summary ===" marker)
+     - **Other workflows**: Error lines with context (##\[error\] or FAIL/ERROR patterns)
    - Easily searchable and copyable
 
 2. **Job Summary** 📊 *Copilot can read this immediately*
@@ -32,6 +35,7 @@ This directory contains GitHub Actions workflows for testing and building wizard
 - ✅ Sequential log output easy to search
 - ✅ PR comments for failed workflows (optional)
 - ✅ No repository commits
+- ✅ Extracts only actual error text, not full logs
 
 **For Copilot Users**:
 When a workflow fails:
@@ -48,14 +52,103 @@ When a workflow fails:
 ```
 === FAILED JOB: macOS unit tests ===
 
---- Failure Lines ---
-FAIL test-menu: menu handles invalid selection
-FAIL test-copy: copy handles missing source
-ERROR: Test suite failed with 2/45 tests failing
+--- Test Summary ---
+=== Test Summary ===
+Total: 43/50 tests passed (7 failed)
+Subtests: 120 passed, 127 total
 
---- Log Context (last 50 lines) ---
-[... full context ...]
+Failed tests: test-foo.sh, test-bar.sh
+Failed levels: 3, 5
 ```
+
+### pr-test-monitor.yml
+
+**Purpose**: Monitors all test workflows for a PR and reports failures in a single long-running job. This avoids the approval requirement issue with `workflow_run` triggered workflows.
+
+**Triggers**:
+- Pull request opened, synchronized, or reopened
+
+**How It Works**:
+
+1. **Long-Running Monitor** 🔍 *Stays alive and polls for completions*
+   - Runs once per PR (appears in PR checks immediately)
+   - Polls GitHub API every 5 seconds for workflow completions
+   - Monitors up to 1 hour (timeout-minutes: 60)
+   - Tracks which workflows have been reported
+
+2. **Smart Error Extraction** 📝 *Only relevant error text*
+   - **Unit tests**: Extracts "=== Test Summary ===" section only
+   - **Other workflows**: Extracts ##\[error\] markers or FAIL/ERROR patterns
+   - Shows minimal context (no full logs)
+
+3. **Real-Time Reporting** 📊 *Progress updates every minute*
+   - Logs workflow completions as they happen
+   - Shows pass/fail status for each workflow
+   - Reports completion progress every minute
+
+**Advantages over collect-failures.yml**:
+- ✅ No approval required (uses `pull_request` trigger, not `workflow_run`)
+- ✅ Appears in PR checks immediately
+- ✅ Single job shows all failures in one place
+- ✅ Polls for completions instead of being triggered by each workflow
+
+**Features**:
+- ✅ Monitors 7 workflows: Unit tests, POSIX/linting, standalone spells, doppelganger, dual-pattern validation, demonstrate-wizardry, compile
+- ✅ Extracts only actual error text (test summaries or error messages)
+- ✅ File-based tracking of reported runs (avoids duplicates)
+- ✅ Automatic timeout after 1 hour
+- ✅ Progress logging every minute
+
+**For Copilot Users**:
+When tests fail:
+1. Check the "Monitor PR workflows" job logs
+2. Find the failed workflow section
+3. Review the extracted error text
+4. Ask Copilot: *"Fix the test failures shown in the PR test monitor"*
+
+**Example Log Output**:
+```
+========================================================================
+ PR TEST MONITOR - Starting
+========================================================================
+PR Number: 123
+Commit SHA: abc123...
+
+----------------------------------------
+Workflow: Unit tests
+Run ID: 456789
+Status: failure
+❌ FAILED - extracting error details...
+
+Failed jobs: 1
+
+--- Failed Job: macOS unit tests ---
+=== Test Summary ===
+Total: 43/50 tests passed (7 failed)
+Subtests: 120 passed, 127 total
+
+Failed tests: test-foo.sh, test-bar.sh
+
+[13:45:30] Monitoring... (1/7 workflows completed)
+[13:46:30] Monitoring... (3/7 workflows completed)
+All workflows completed. Monitoring finished.
+```
+
+**Monitoring Details**:
+- Poll interval: 5 seconds
+- Maximum polls: 720 (1 hour total)
+- Progress updates: Every 12 polls (1 minute)
+
+### collect-failures.yml vs pr-test-monitor.yml
+
+Use **pr-test-monitor.yml** (recommended):
+- When you want failures to appear in PR checks immediately
+- To avoid workflow approval requirements
+- For a single consolidated view of all test failures
+
+Use **collect-failures.yml** (legacy):
+- As a backup if pr-test-monitor has issues
+- When you specifically want workflow_run triggers
 
 ### compile.yml
 
