@@ -1,87 +1,87 @@
-# Wizardry Repository - GitHub Copilot Instructions
+# Wizardry Repository - GitHub Copilot Instructions  🧙🔮
 
-## Essential Reading
+## Essential Reading  📚✨
 
-1. **`README.md`** — Project principles, values, and standards (READ FIRST)
-2. **`.AGENTS.md`** — Comprehensive agent instructions and style guide
-3. **Topic-specific instructions** (consult as needed):
-   - `.github/instructions/castable-uncastable-pattern.instructions.md` — **CRITICAL**: Self-execute pattern rules (return vs exit, set -eu placement, function structure)
-   - `.github/instructions/spells.instructions.md` — Spell writing guide
-   - `.github/instructions/imps.instructions.md` — Imp (micro-helper) guide  
-   - `.github/instructions/tests.instructions.md` — Testing framework and patterns
-   - `.github/instructions/logging.instructions.md` — Output and error handling
-   - `.github/instructions/cross-platform.instructions.md` — Platform compatibility
-   - `.github/instructions/best-practices.instructions.md` — Proven patterns
+1. **`README.md`** — Project principles, values, and standards (READ FIRST)  🗝️
+2. **`.AGENTS.md`** — Comprehensive agent instructions and style guide  🤖📜
+3. **Topic-specific instructions** (consult as needed):  🌳
+   - `.github/instructions/castable-uncastable-pattern.instructions.md` — **CRITICAL**: Self-execute pattern rules (return vs exit, set -eu placement, function structure)  ⚠️🔥
+   - `.github/instructions/spells.instructions.md` — Spell writing guide  ✨📖
+   - `.github/instructions/imps.instructions.md` — Imp (micro-helper) guide  👹🔧
+   - `.github/instructions/tests.instructions.md` — Testing framework and patterns  🧪
+   - `.github/instructions/logging.instructions.md` — Output and error handling  📝⚡
+   - `.github/instructions/cross-platform.instructions.md` — Platform compatibility  🌍🔗
+   - `.github/instructions/best-practices.instructions.md` — Proven patterns  💎🏆
 
-## What is Wizardry?
+## What is Wizardry?  🪄
 
-A collection of POSIX shell scripts themed as magical spells for the terminal. Turns folders into rooms and files into items, like a fantasy MUD (Multi-User Dungeon).
+A collection of POSIX shell scripts themed as magical spells for the terminal. Turns folders into rooms and files into items, like a fantasy MUD (Multi-User Dungeon).  🏰🗺️
 
-**Tech Stack:**
-- **Language**: POSIX sh only (`#!/bin/sh`) — no bash-isms
-- **Linting**: `lint-magic` and `checkbashisms`
-- **Testing**: `.tests/` directory with test-bootstrap framework
-- **CI**: GitHub Actions (`.github/workflows/`)
+**Tech Stack:**  ⚙️
+- **Language**: POSIX sh only (`#!/bin/sh`) — no bash-isms  🐚⚖️
+- **Linting**: `lint-magic` and `checkbashisms`  🔍✨
+- **Testing**: `.tests/` directory with test-bootstrap framework  🧪🌱
+- **CI**: GitHub Actions (`.github/workflows/`)  🤖⚡
 
-**Architecture:**
-- **Spells** = User-facing scripts in `spells/` (can assume wizardry installed and in PATH)
-- **Imps** = Micro-helpers in `spells/.imps/` (abstract common patterns)
-- **Tests** = Mirror structure in `.tests/` (ALWAYS required for new spells/imps)
-- **Bootstrap scripts** = Can't assume wizardry in PATH (`install`, `spells/install/core/`)
+**Architecture:**  🏗️
+- **Spells** = User-facing scripts in `spells/` (can assume wizardry installed and in PATH)  📜✨
+- **Imps** = Micro-helpers in `spells/.imps/` (abstract common patterns)  👹🔨
+- **Tests** = Mirror structure in `.tests/` (ALWAYS required for new spells/imps)  🧪🔒
+- **Bootstrap scripts** = Can't assume wizardry in PATH (`install`, `spells/install/core/`)  🥾🌅
 
-## CRITICAL: Common AI Compliance Issues
+## CRITICAL: Common AI Compliance Issues  ⚠️🚨
 
-**You MUST follow these at all times:**
+**You MUST follow these at all times:**  🔒⚡
 
-1. **Tests are NON-NEGOTIABLE**
-   - ALWAYS create test files in `.tests/` when creating spells or imps
-   - Test naming: `spells/category/spell-name` → `.tests/category/test-spell-name.sh` (hyphens, not underscores!)
-   - Use test-driven development (TDD) when possible
-   - **ONLY report actual test results** — NEVER assume or guess tests will pass
-   - Run tests and report exact pass/fail counts
+1. **Tests are NON-NEGOTIABLE**  🧪🔒🔥
+   - ALWAYS create test files in `.tests/` when creating spells or imps  ⚠️
+   - Test naming: `spells/category/spell-name` → `.tests/category/test-spell-name.sh` (hyphens, not underscores!)  📛
+   - Use test-driven development (TDD) when possible  🎯
+   - **ONLY report actual test results** — NEVER assume or guess tests will pass  🚫🔮
+   - Run tests and report exact pass/fail counts  📊✅
 
-2. **Abstract into imps (but only when reused)**
-   - Create new imps ONLY if code is used in at least 2 spells
-   - Always prefer using imps over inline code (except in bootstrap scripts)
-   - Imps make spells clean, readable, and minimal
+2. **Abstract into imps (but only when reused)**  🔄👹
+   - Create new imps ONLY if code is used in at least 2 spells  2️⃣✨
+   - Always prefer using imps over inline code (except in bootstrap scripts)  🔧💡
+   - Imps make spells clean, readable, and minimal  ✨📏
 
-3. **Spells assume wizardry is installed**
-   - All spells can assume wizardry is in PATH
-   - All spells and imps are available
-   - Testing setup goes in tests, NOT in spell code
+3. **Spells assume wizardry is installed**  🪄🏠
+   - All spells can assume wizardry is in PATH  🛤️
+   - All spells and imps are available  📦✅
+   - Testing setup goes in tests, NOT in spell code  🧪🚫
 
-4. **No new exemptions without permission**
-   - All exceptions are documented in `EXEMPTIONS.md`
-   - Don't add new exemptions without asking first
-   - Always try to reduce/eliminate existing exemptions
+4. **No new exemptions without permission**  🚫📋
+   - All exceptions are documented in `EXEMPTIONS.md`  📖
+   - Don't add new exemptions without asking first  🙋⚠️
+   - Always try to reduce/eliminate existing exemptions  ♻️🎯
 
-5. **All CI must pass before merge**
-   - Fix preexisting and unrelated test failures if blocking merge
-   - Don't back down from or mutate requirements
-   - Don't give up until all requirements are fully completed
+5. **All CI must pass before merge**  ✅🚦
+   - Fix preexisting and unrelated test failures if blocking merge  🔧🚧
+   - Don't back down from or mutate requirements  💪🔒
+   - Don't give up until all requirements are fully completed  🏁
 
-6. **Follow ALL project rules**
-   - Don't excuse yourself from any project policies
-   - Keep clean, readable, minimal spell files
-   - Make surgical, minimal changes
+6. **Follow ALL project rules**  📏⚖️
+   - Don't excuse yourself from any project policies  🚫🙅
+   - Keep clean, readable, minimal spell files  ✨🧹
+   - Make surgical, minimal changes  🔬✂️
 
-7. **Document lessons learned in `.github/LESSONS.md`**
-   - After EVERY bug fix or debugging session, add a one-sentence lesson to LESSONS.md
-   - Check LESSONS.md when creating new code or debugging
-   - If the lesson already exists, increment its counter (e.g., "(3)") instead of duplicating
-   - Don't duplicate lessons already documented in other AI-facing documentation
-   - Keep lessons extremely succinct (one sentence)
-   - When approaching 1000 lines, remove least-important or most-conquered lessons
+7. **Document lessons learned in `.github/LESSONS.md`**  📝🧠
+   - After EVERY bug fix or debugging session, add a one-sentence lesson to LESSONS.md  🐛💡
+   - Check LESSONS.md when creating new code or debugging  🔍📚
+   - If the lesson already exists, increment its counter (e.g., "(3)") instead of duplicating  🔢
+   - Don't duplicate lessons already documented in other AI-facing documentation  🚫📋
+   - Keep lessons extremely succinct (one sentence)  ⚡📝
+   - When approaching 1000 lines, remove least-important or most-conquered lessons  🗑️🏆
 
-## Core Principles (Must Follow)
+## Core Principles (Must Follow)  🎯📜
 
-1. **Preserve the spec** — Don't edit `--help` usage text or spec comments without explicit instruction
-2. **Preserve the lore** — Don't modify flavor text unless specifically asked
-3. **Self-healing** — Fix missing prerequisites automatically; never quit with imperative error messages
-4. **Tests required** — ALWAYS create test files in `.tests/` when creating spells/imps (NON-NEGOTIABLE)
-5. **Report actual results** — ONLY report test results you've verified by running tests (NEVER guess)
+1. **Preserve the spec** — Don't edit `--help` usage text or spec comments without explicit instruction  🔒📖
+2. **Preserve the lore** — Don't modify flavor text unless specifically asked  🏺✨
+3. **Self-healing** — Fix missing prerequisites automatically; never quit with imperative error messages  ❤️‍🩹🔧
+4. **Tests required** — ALWAYS create test files in `.tests/` when creating spells/imps (NON-NEGOTIABLE)  🧪⚠️
+5. **Report actual results** — ONLY report test results you've verified by running tests (NEVER guess)  📊🚫🔮
 
-## Critical Quality Rules
+## Critical Quality Rules  ⚖️🔍
 
 | Rule | Required | Wrong |
 |------|----------|-------|
@@ -95,9 +95,9 @@ A collection of POSIX shell scripts themed as magical spells for the terminal. T
 | Paths | `pwd -P` | `realpath` |
 | Test naming | `test-name.sh` | `test_name.sh` |
 
-## Quick Templates
+## Quick Templates  📋✨
 
-### Spell Template
+### Spell Template  📜
 ```sh
 #!/bin/sh
 # Brief description
@@ -118,7 +118,7 @@ set -eu
 # Main logic
 ```
 
-### Imp Template (Action)
+### Imp Template (Action)  👹⚡
 ```sh
 #!/bin/sh
 # imp-name ARG - brief description
@@ -132,7 +132,7 @@ case "$0" in
   */imp-name) _imp_name "$@" ;; esac
 ```
 
-### Imp Template (Conditional - NO set -eu!)
+### Imp Template (Conditional - NO set -eu!)  👹❓
 ```sh
 #!/bin/sh
 # imp-name ARG - test if condition
@@ -145,7 +145,7 @@ case "$0" in
   */imp-name) _imp_name "$@" ;; esac
 ```
 
-### Test Template
+### Test Template  🧪
 ```sh
 #!/bin/sh
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)

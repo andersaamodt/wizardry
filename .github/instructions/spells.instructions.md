@@ -1,27 +1,27 @@
-# Spell Style Instructions
+# Spell Style Instructions  ✨📜
 
 applyTo: "spells/**"
 
-## Creating New Spells
+## Creating New Spells  🆕🪄
 
-**CRITICAL**: When creating a new spell, you MUST also create a corresponding test file:
-- Spell location: `spells/category/spell-name`
-- Test location: `.tests/category/test_spell-name.sh`
+**CRITICAL**: When creating a new spell, you MUST also create a corresponding test file:  ⚠️🧪
+- Spell location: `spells/category/spell-name`  📂
+- Test location: `.tests/category/test_spell-name.sh`  🧪📂
 
-Test files are NOT optional. Every spell requires tests covering:
-1. `--help` output
-2. Success cases
-3. Error cases
+Test files are NOT optional. Every spell requires tests covering:  🔒
+1. `--help` output  ❓
+2. Success cases  ✅
+3. Error cases  ❌
 
-**After creating tests, you MUST run them and report actual results:**
+**After creating tests, you MUST run them and report actual results:**  📊🔍
 ```sh
 .tests/category/test_spell-name.sh
 ```
-Never claim tests pass without actually executing them. Report the actual pass/fail counts.
+Never claim tests pass without actually executing them. Report the actual pass/fail counts.  🚫🔮
 
-See `.github/instructions/tests.instructions.md` for test patterns.
+See `.github/instructions/tests.instructions.md` for test patterns.  📖
 
-## Spell Template
+## Spell Template  📋
 
 ```sh
 #!/bin/sh
@@ -49,22 +49,22 @@ set -eu
 # Main spell logic here
 ```
 
-## Required Elements
+## Required Elements  ⚡🔒
 
-1. **Shebang**: `#!/bin/sh` (POSIX only)
-2. **Opening comment**: 1-2 lines describing what it does
-3. **Strict mode**: `set -eu`
+1. **Shebang**: `#!/bin/sh` (POSIX only)  🐚
+2. **Opening comment**: 1-2 lines describing what it does  💭
+3. **Strict mode**: `set -eu`  🔐
 
-## Recommended Elements
+## Recommended Elements  💡~
 
-1. **`show_usage()` function** with single-quoted heredoc `'USAGE'`
-2. **Help handler** before `set -eu` for `--help`, `--usage`, `-h`
+1. **`show_usage()` function** with single-quoted heredoc `'USAGE'`  📖
+2. **Help handler** before `set -eu` for `--help`, `--usage`, `-h`  ❓🛡️
 
-## Code Style
+## Code Style  🎨
 
-### Function Naming
+### Function Naming  🏷️🐍
 
-All functions in spells must use **snake_case** naming:
+All functions in spells must use **snake_case** naming:  🐍✨
 
 ```sh
 # CORRECT
@@ -82,16 +82,16 @@ _helper_function() { ... }
 my-function() { ... }
 ```
 
-**Convention**:
-- **Spells**: Use `snake_case` for all internal functions
-- **Imps**: Use underscore-prefixed `_snake_case` for "true name" functions (e.g., `_nix_shell_add`)
+**Convention**:  📐
+- **Spells**: Use `snake_case` for all internal functions  🐍
+- **Imps**: Use underscore-prefixed `_snake_case` for "true name" functions (e.g., `_nix_shell_add`)  👹_
 
-**Rationale**:
-- `snake_case` is the dominant convention in POSIX shell
-- Underscore prefix is reserved for imp "true names" to distinguish from public hyphenated aliases
-- Consistent naming makes code easier to read and maintain
+**Rationale**:  💭
+- `snake_case` is the dominant convention in POSIX shell  🐍⚖️
+- Underscore prefix is reserved for imp "true names" to distinguish from public hyphenated aliases  🔑
+- Consistent naming makes code easier to read and maintain  📖✨
 
-### Variables
+### Variables  📦
 ```sh
 # CORRECT
 var=''
@@ -103,16 +103,16 @@ var=
 value=$1                 # Fails with set -u
 ```
 
-### Quoting
-Always quote variables unless word splitting is intended:
+### Quoting  ""✨
+Always quote variables unless word splitting is intended:  🔒
 ```sh
 printf '%s\n' "$message"
 path="$HOME/wizardry"
 ```
 
-### Output and Logging
+### Output and Logging  📝⚡
 
-Use the output imps from `out/` for consistent messaging. See `logging.instructions.md` for complete documentation.
+Use the output imps from `out/` for consistent messaging. See `logging.instructions.md` for complete documentation.  📖
 
 ```sh
 # Always shown - basic output
@@ -134,9 +134,9 @@ usage-error "$spell_name" "unknown option: $opt"
 has git || fail "git required"
 ```
 
-### Signal Handling and Cleanup
+### Signal Handling and Cleanup  🧹🛡️
 
-Use `on-exit` and `clear-traps` for consistent cleanup:
+Use `on-exit` and `clear-traps` for consistent cleanup:  ♻️
 
 ```sh
 tmpfile=$(temp-file)
@@ -146,8 +146,8 @@ on-exit cleanup-file "$tmpfile"
 # Cleanup happens automatically on exit/interrupt
 ```
 
-### Error Messages
-Print to stderr with spell name prefix—descriptive, not imperative:
+### Error Messages  ⚠️💬
+Print to stderr with spell name prefix—descriptive, not imperative:  📛🚫
 ```sh
 # CORRECT
 die "spell-name: sshfs not found"
