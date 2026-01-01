@@ -15,3 +15,6 @@
 
 ## Lessons
 
+- When inlining helper functions, use global search-replace to ensure ALL calls are replaced, including those outside the main function body.
+- Editing files with text processing tools (sed, awk, perl) can change file permissions - always restore execute bits afterwards.
+
