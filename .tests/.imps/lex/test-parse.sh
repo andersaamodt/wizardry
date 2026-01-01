@@ -1,6 +1,5 @@
 #!/bin/sh
-# SKIP_TEST: parse is currently disabled (passthrough mode) - tests will be enabled when parsing is implemented
-# Tests for parse recursive grammar parser
+# Tests for parse command execution engine
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -8,11 +7,6 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
-
-# Skip all tests - parse is currently in passthrough mode
-printf 'SKIP: parse tests disabled (parse is in passthrough mode)\n'
-printf '0/0 tests passed\n'
-exit 0
 
 test_parse_imperative_is_executable() {
   [ -x "$ROOT_DIR/spells/.imps/lex/parse" ]
@@ -137,6 +131,237 @@ test_parse_and_then_stops_on_failure() {
   esac
 }
 
+# Test command reconstruction from space-separated arguments
+test_parse_reconstructs_two_word_command() {
+  tmpdir=$(make_tempdir)
+  test_spell_dir="$tmpdir/wizardry/spells/.imps/sys"
+  mkdir -p "$test_spell_dir"
+  
+  cat > "$test_spell_dir/env-or" <<'EOF'
+#!/bin/sh
+_env_or() {
+  printf 'env_or_called_with:[%s][%s]\n' "$1" "$2"
+}
+case "$0" in
+  */env-or) _env_or "$@" ;; esac
+EOF
+  chmod +x "$test_spell_dir/env-or"
+  
+  export WIZARDRY_DIR="$tmpdir/wizardry"
+  
+  run_spell "spells/.imps/lex/parse" "env" "or" "MYVAR" "default_value"
+  
+  assert_success || return 1
+  assert_output_contains "env_or_called_with:[MYVAR][default_value]" || return 1
+}
+
+test_parse_reconstructs_three_word_command() {
+  tmpdir=$(make_tempdir)
+  test_spell_dir="$tmpdir/wizardry/spells/.imps/test"
+  mkdir -p "$test_spell_dir"
+  
+  cat > "$test_spell_dir/make-temp-file" <<'EOF'
+#!/bin/sh
+_make_temp_file() {
+  printf 'make_temp_file_called_with:[%s]\n' "$*"
+}
+case "$0" in
+  */make-temp-file) _make_temp_file "$@" ;; esac
+EOF
+  chmod +x "$test_spell_dir/make-temp-file"
+  
+  export WIZARDRY_DIR="$tmpdir/wizardry"
+  
+  run_spell "spells/.imps/lex/parse" "make" "temp" "file" "myfile.txt"
+  
+  assert_success || return 1
+  assert_output_contains "make_temp_file_called_with:[myfile.txt]" || return 1
+}
+
+test_parse_reconstructs_four_word_command() {
+  tmpdir=$(make_tempdir)
+  test_spell_dir="$tmpdir/wizardry/spells/.imps/test"
+  mkdir -p "$test_spell_dir"
+  
+  cat > "$test_spell_dir/get-remote-file-path" <<'EOF'
+#!/bin/sh
+_get_remote_file_path() {
+  printf 'get_remote_file_path_called_with:[%s]\n' "$*"
+}
+case "$0" in
+  */get-remote-file-path) _get_remote_file_path "$@" ;; esac
+EOF
+  chmod +x "$test_spell_dir/get-remote-file-path"
+  
+  export WIZARDRY_DIR="$tmpdir/wizardry"
+  
+  run_spell "spells/.imps/lex/parse" "get" "remote" "file" "path" "/some/path"
+  
+  assert_success || return 1
+  assert_output_contains "get_remote_file_path_called_with:[/some/path]" || return 1
+}
+
+test_parse_prefers_longer_matches() {
+  tmpdir=$(make_tempdir)
+  test_spell_dir="$tmpdir/wizardry/spells/.imps/test"
+  mkdir -p "$test_spell_dir"
+  
+  cat > "$test_spell_dir/env" <<'EOF'
+#!/bin/sh
+_env() { printf 'WRONG:env_called\n'; }
+case "$0" in */env) _env "$@" ;; esac
+EOF
+  chmod +x "$test_spell_dir/env"
+  
+  cat > "$test_spell_dir/env-or" <<'EOF'
+#!/bin/sh
+_env_or() { printf 'CORRECT:env_or_called\n'; }
+case "$0" in */env-or) _env_or "$@" ;; esac
+EOF
+  chmod +x "$test_spell_dir/env-or"
+  
+  export WIZARDRY_DIR="$tmpdir/wizardry"
+  
+  run_spell "spells/.imps/lex/parse" "env" "or" "VAR" "DEFAULT"
+  
+  assert_success || return 1
+  assert_output_contains "CORRECT:env_or_called" || return 1
+  if printf '%s' "$OUTPUT" | grep -q "WRONG:env_called"; then
+    TEST_FAILURE_REASON="Parse called shorter 'env' instead of longer 'env-or'"
+    return 1
+  fi
+}
+
+test_parse_tries_progressively_shorter() {
+  tmpdir=$(make_tempdir)
+  test_spell_dir="$tmpdir/wizardry/spells/.imps/test"
+  mkdir -p "$test_spell_dir"
+  
+  cat > "$test_spell_dir/temp-file" <<'EOF'
+#!/bin/sh
+_temp_file() { printf 'temp_file_called_with:[%s]\n' "$*"; }
+case "$0" in */temp-file) _temp_file "$@" ;; esac
+EOF
+  chmod +x "$test_spell_dir/temp-file"
+  
+  export WIZARDRY_DIR="$tmpdir/wizardry"
+  
+  run_spell "spells/.imps/lex/parse" "temp" "file" "with" "extra" "args"
+  
+  assert_success || return 1
+  assert_output_contains "temp_file_called_with:[with extra args]" || return 1
+}
+
+# Test gloss recursion and collision detection
+test_parse_finds_spell_file() {
+  run_spell "spells/.imps/lex/parse" "verify-posix" --help
+  assert_success || return 1
+  assert_error_contains "Usage:" || return 1
+}
+
+test_parse_self_reference_handling() {
+  run_spell "spells/.imps/lex/parse" "parse" --help
+  assert_success || return 1
+  assert_error_contains "parse - Command execution engine" || return 1
+}
+
+test_parse_recursion_depth_limit() {
+  tmpdir=$(make_tempdir)
+  glossary_dir="$tmpdir/spellbook/.glossary"
+  spell_dir="$tmpdir/wizardry/spells/test"
+  mkdir -p "$glossary_dir"
+  mkdir -p "$spell_dir"
+  
+  cat > "$spell_dir/recursive-test" <<'EOF'
+#!/bin/sh
+printf 'This should not run\n'
+EOF
+  chmod +x "$spell_dir/recursive-test"
+  
+  cat > "$glossary_dir/recursive-test" <<EOF
+#!/bin/sh
+exec "$ROOT_DIR/spells/.imps/lex/parse" "recursive-test" "\$@"
+EOF
+  chmod +x "$glossary_dir/recursive-test"
+  
+  export SPELLBOOK_DIR="$tmpdir/spellbook"
+  export WIZARDRY_DIR="$tmpdir/wizardry"
+  
+  old_path="$PATH"
+  PATH="$glossary_dir:$PATH"
+  
+  output=$("$glossary_dir/recursive-test" 2>&1) || true
+  PATH="$old_path"
+  
+  case "$output" in
+    *"Maximum recursion depth"*|*"This should not run"*)
+      return 0
+      ;;
+    *)
+      TEST_FAILURE_REASON="Expected recursion depth limit or successful execution, got: $output"
+      return 1
+      ;;
+  esac
+}
+
+test_parse_collision_single_word_fallthrough() {
+  tmpdir=$(make_tempdir)
+  mkdir -p "$tmpdir/wizardry/spells/.imps/sys"
+  
+  cat > "$tmpdir/wizardry/spells/.imps/sys/env-or" <<'EOF'
+#!/bin/sh
+printf 'env-or called\n'
+EOF
+  chmod +x "$tmpdir/wizardry/spells/.imps/sys/env-or"
+  
+  export WIZARDRY_DIR="$tmpdir/wizardry"
+  
+  run_spell "spells/.imps/lex/parse" "env"
+  
+  assert_success || return 1
+  assert_output_contains "PATH=" || return 1
+}
+
+test_parse_collision_wizardry_spell_priority() {
+  tmpdir=$(make_tempdir)
+  mkdir -p "$tmpdir/wizardry/spells/.imps/sys"
+  
+  cat > "$tmpdir/wizardry/spells/.imps/sys/env" <<'EOF'
+#!/bin/sh
+printf 'WIZARDRY_ENV_CALLED\n'
+EOF
+  chmod +x "$tmpdir/wizardry/spells/.imps/sys/env"
+  
+  export WIZARDRY_DIR="$tmpdir/wizardry"
+  
+  run_spell "spells/.imps/lex/parse" "env"
+  
+  assert_success || return 1
+  assert_output_contains "WIZARDRY_ENV_CALLED" || return 1
+}
+
+test_parse_collision_no_incorrect_match() {
+  tmpdir=$(make_tempdir)
+  mkdir -p "$tmpdir/wizardry/spells/.imps/sys"
+  
+  cat > "$tmpdir/wizardry/spells/.imps/sys/env-or" <<'EOF'
+#!/bin/sh
+printf 'env-or called\n'
+EOF
+  chmod +x "$tmpdir/wizardry/spells/.imps/sys/env-or"
+  
+  export WIZARDRY_DIR="$tmpdir/wizardry"
+  
+  run_spell "spells/.imps/lex/parse" "env" "file"
+  
+  # Should NOT call env-or
+  if printf '%s' "$OUTPUT" | grep -q "env-or"; then
+    TEST_FAILURE_REASON="Should not match env-or when user typed 'env file'"
+    return 1
+  fi
+  return 0
+}
+
 # Run all tests
 run_test_case "parse is executable" test_parse_imperative_is_executable
 run_test_case "parse no args succeeds" test_parse_imperative_no_args
@@ -151,4 +376,15 @@ run_test_case "parse unknown command returns 127" test_parse_imperative_unknown_
 run_test_case "parse then stops on failure" test_parse_imperative_then_stops_on_failure
 run_test_case "parse and-then chains" test_parse_and_then_chains
 run_test_case "parse and-then stops on failure" test_parse_and_then_stops_on_failure
+run_test_case "parse reconstructs 2-word commands" test_parse_reconstructs_two_word_command
+run_test_case "parse reconstructs 3-word commands" test_parse_reconstructs_three_word_command
+run_test_case "parse reconstructs 4-word commands" test_parse_reconstructs_four_word_command
+run_test_case "parse prefers longer matches" test_parse_prefers_longer_matches
+run_test_case "parse tries progressively shorter combinations" test_parse_tries_progressively_shorter
+run_test_case "parse finds spell file in WIZARDRY_DIR" test_parse_finds_spell_file
+run_test_case "parse handles self-reference" test_parse_self_reference_handling
+run_test_case "parse recursion handling" test_parse_recursion_depth_limit
+run_test_case "parse collision: single word falls through" test_parse_collision_single_word_fallthrough
+run_test_case "parse collision: wizardry spell priority" test_parse_collision_wizardry_spell_priority
+run_test_case "parse collision: no incorrect match" test_parse_collision_no_incorrect_match
 finish_tests

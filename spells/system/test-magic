@@ -776,9 +776,6 @@ while IFS= read -r test_file; do
   case $test_file in
     */test-suite.sh) continue ;;
     */test-spell-level-coverage.sh) continue ;;
-    */test-parse-collision-detection.sh) continue ;;
-    */test-parse-gloss-recursion.sh) continue ;;
-    */test-parse-reconstruction.sh) continue ;;
   esac
 
   rel=${test_file#"$test_dir/"}
