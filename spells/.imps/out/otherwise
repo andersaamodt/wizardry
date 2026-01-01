@@ -1,0 +1,14 @@
+#!/bin/sh
+# otherwise DEFAULT - output stdin if non-empty, else output default value
+# Example: echo "" | else "fallback"
+set -eu
+
+otherwise() {
+
+  _otherwise_input=$(cat)
+  if [ -n "$_otherwise_input" ]; then printf '%s\n' "$_otherwise_input"; else printf '%s\n' "$1"; fi
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */otherwise) else "$@" ;; esac

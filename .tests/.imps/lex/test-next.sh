@@ -14,18 +14,18 @@ printf 'SKIP: then tests disabled (parse is in passthrough mode)\n'
 printf '0/0 tests passed\n'
 exit 0
 
-test_then_is_executable() {
-  [ -x "$ROOT_DIR/spells/.imps/lex/then" ]
+test_next_is_executable() {
+  [ -x "$ROOT_DIR/spells/.imps/lex/next" ]
 }
 
-test_then_continues_on_success() {
-  run_spell spells/.imps/lex/then "true" "" echo hello
+test_next_continues_on_success() {
+  run_spell spells/.imps/lex/next "true" "" echo hello
   assert_success || return 1
   assert_output_contains "hello" || return 1
 }
 
-test_then_stops_on_failure() {
-  run_spell spells/.imps/lex/then "false" "" echo shouldnt_run
+test_next_stops_on_failure() {
+  run_spell spells/.imps/lex/next "false" "" echo shouldnt_run
   assert_failure || return 1
   case "$OUTPUT" in
     *shouldnt_run*)
@@ -35,15 +35,15 @@ test_then_stops_on_failure() {
   esac
 }
 
-test_then_no_prior_command() {
-  run_spell spells/.imps/lex/then "" "" echo hello
+test_next_no_prior_command() {
+  run_spell spells/.imps/lex/next "" "" echo hello
   assert_success || return 1
   assert_output_contains "hello" || return 1
 }
 
-run_test_case "then is executable" test_then_is_executable
-run_test_case "then continues on success" test_then_continues_on_success
-run_test_case "then stops on failure" test_then_stops_on_failure
-run_test_case "then with no prior command" test_then_no_prior_command
+run_test_case "then is executable" test_next_is_executable
+run_test_case "then continues on success" test_next_continues_on_success
+run_test_case "then stops on failure" test_next_stops_on_failure
+run_test_case "then with no prior command" test_next_no_prior_command
 
 finish_tests

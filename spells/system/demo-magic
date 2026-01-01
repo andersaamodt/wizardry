@@ -299,7 +299,7 @@ demo_level() {
       
       printf 'Advanced MUD features:\n'
       printf '  • decorate - Add descriptions and names to locations\n'
-      printf '  • select-player - Choose active player identity\n'
+      printf '  • choose-player - Choose active player identity\n'
       printf '\n'
       printf 'These spells extend the MUD metaphor, allowing rich\n'
       printf 'environmental storytelling and multi-user scenarios.\n'

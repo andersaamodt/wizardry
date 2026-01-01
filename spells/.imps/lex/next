@@ -1,17 +1,17 @@
 #!/bin/sh
-# then CMD CMD_ARGS MORE... - execute prior command, then continue if it succeeded
+# next CMD CMD_ARGS MORE... - execute prior command, then continue if it succeeded
 # Receives: $1=command, $2=command_args, $3+=remaining args
 # Example: parse echo hello then echo world
 
 
-then() {
-  _then_cmd=${1:-}
-  _then_cmd_args=${2:-}
+next() {
+  _next_cmd=${1:-}
+  _next_cmd_args=${2:-}
   shift 2 2>/dev/null || shift $#
 
-  if [ -n "$_then_cmd" ]; then
+  if [ -n "$_next_cmd" ]; then
     # shellcheck disable=SC2086
-    if "$_then_cmd" $_then_cmd_args; then
+    if "$_next_cmd" $_next_cmd_args; then
       : # success
     else
       return $?
@@ -22,10 +22,10 @@ then() {
     return 0
   fi
 
-  _then_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  "$_then_lex_dir/parse" "$@"
+  _next_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  "$_next_lex_dir/parse" "$@"
 }
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */then) then "$@" ;; esac
+  */next) then "$@" ;; esac

@@ -18,7 +18,7 @@ spell_levels() {
     1)
       printf "level_name='Banish & Validation Infrastructure'\n"
       printf "level_spells='banish:system validate-spells:system'\n"
-      printf "level_imps='sys/spell-levels cond/has cond/there cond/is cond/empty cond/nonempty cond/no cond/in-range cond/lacks cond/newer cond/full cond/gone cond/is-path cond/in-ancestry cond/is-posint cond/yes cond/given cond/older out/say out/warn out/die out/fail out/info out/step out/success out/debug out/ok out/heading-section out/heading-separator out/heading-simple out/usage-error out/first-of out/else out/print-pass out/print-fail out/disable-palette out/quiet text/pluralize text/count-words'\n"
+      printf "level_imps='sys/spell-levels cond/has cond/there cond/is cond/empty cond/nonempty cond/no cond/in-range cond/lacks cond/newer cond/full cond/gone cond/is-path cond/in-ancestry cond/is-posint cond/yes cond/given cond/older out/say out/warn out/die out/fail out/info out/step out/success out/debug out/ok out/heading-section out/heading-separator out/heading-simple out/usage-error out/first-of out/otherwise out/print-pass out/print-fail out/disable-palette out/quiet text/pluralize text/count-words'\n"
       ;;
     2)
       printf "level_name='Installation Infrastructure'\n"
@@ -58,7 +58,7 @@ spell_levels() {
     9)
       printf "level_name='Basic Cantrips'\n"
       printf "level_spells='ask ask-yn ask-text list-files max-length move up'\n"
-      printf "level_imps='input/select-input lex/from lex/to lex/and-then lex/into lex/then lex/disambiguate'\n"
+      printf "level_imps='input/select-input lex/from lex/to lex/and-then lex/into lex/next lex/disambiguate'\n"
       ;;
     10)
       printf "level_name='Validation Helpers'\n"
@@ -97,7 +97,7 @@ spell_levels() {
       ;;
     17)
       printf "level_name='Advanced MUD Features'\n"
-      printf "level_spells='decorate:mud select-player:mud'\n"
+      printf "level_spells='decorate:mud choose-player:mud'\n"
       printf "level_imps=''\n"
       ;;
     18)

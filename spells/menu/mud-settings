@@ -59,7 +59,7 @@ mud_settings_display_menu() {
     player_key_item="Create player key%new-player"
   fi
   
-  change="Change Player%select-player"
+  change="Change Player%choose-player"
   new="New Player%new-player"
   exit_label=$(exit-label)
   exit_item="${exit_label}%kill -TERM \$PPID"
