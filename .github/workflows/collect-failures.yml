@@ -56,7 +56,7 @@ jobs:
           # Track which workflows we've already reported (using file-based storage)
           mkdir -p /tmp/reported_runs
           
-          # Initialize failure summary file for PR comment
+          # Initialize failure summary file for PR description
           failure_summary_file="/tmp/failure_summary.txt"
           : > "$failure_summary_file"
 
@@ -197,7 +197,7 @@ jobs:
             echo "Failed jobs: $failed_count"
             echo ""
             
-            # Add to failure summary for PR comment
+            # Add to failure summary for PR description
             {
               echo ""
               echo "### ❌ $workflow_name"
@@ -220,7 +220,7 @@ jobs:
                 echo "$failure_text"
                 echo ""
                 
-                # Add to PR comment summary
+                # Add to PR description summary
                 {
                   echo "**Job: $job_name**"
                   echo '```'
@@ -301,7 +301,7 @@ jobs:
           echo " WORKFLOW FAILURE COLLECTION - Complete"
           echo "========================================================================"
           
-          # Set output for PR comment step
+          # Set output for final PR description update
           if [ -s "$failure_summary_file" ]; then
             echo "has_failures=true" >> "$GITHUB_OUTPUT"
             # Encode failure summary for output (escape newlines and quotes)
