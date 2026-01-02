@@ -1,6 +1,10 @@
 #!/bin/sh
 # Level-based test runner - tests spells by wizardry level (0-27)
 #
+# PREREQUISITE: Source invoke-wizardry before running test-magic
+# Like all wizardry spells, test-magic assumes invoke-wizardry is already loaded.
+# In workflows: source invoke-wizardry before calling test-magic
+#
 # Responsibilities:
 # - Run tests organized by spell level (following banish structure)
 # - Auto-derive which tests to run from spell lists
@@ -211,10 +215,10 @@ if [ "${GITHUB_ACTIONS-}" != "true" ]; then
   fi
 fi
 
-# Pre-flight checks
+# Pre-flight checks (use command -v instead of has since invoke-wizardry not loaded yet)
 missing_commands=""
 for required_cmd in sh find grep awk sed sort cat printf; do
-  if ! has "$required_cmd"; then
+  if ! command -v "$required_cmd" >/dev/null 2>&1; then
     missing_commands="${missing_commands:+$missing_commands, }$required_cmd"
   fi
 done
@@ -236,22 +240,8 @@ fi
 
 . "$root_dir/spells/.imps/sys/spell-levels"
 
-# Preload invoke-wizardry ONCE for all tests (major performance optimization)
-# This creates a standard environment with all spell functions available
-# Tests inherit this environment instead of sourcing invoke-wizardry individually
-if [ "${WIZARDRY_TEST_SKIP_INVOKE-0}" != "1" ]; then
-  if [ -f "$root_dir/spells/.imps/sys/invoke-wizardry" ]; then
-    # Source invoke-wizardry in permissive mode (it sets +eu internally)
-    WIZARDRY_LOAD_ALL=1
-    export WIZARDRY_LOAD_ALL
-    . "$root_dir/spells/.imps/sys/invoke-wizardry" >/dev/null 2>&1 || {
-      printf 'test-magic: warning - failed to load invoke-wizardry\n' >&2
-    }
-    # Mark that invoke-wizardry is already loaded for child processes
-    WIZARDRY_INVOKE_LOADED=1
-    export WIZARDRY_INVOKE_LOADED
-  fi
-fi
+# Note: invoke-wizardry is loaded by test-bootstrap (sourced by each test file)
+# This provides a standard environment with all functions available per test
 
 # Color codes (inline to avoid dependency)
 _esc=$(printf '\033')
@@ -330,12 +320,12 @@ test_timeout=${WIZARDRY_TEST_TIMEOUT:-180}
 compiled_mode=${WIZARDRY_TEST_COMPILED-0}
 
 timeout_cmd=""
-if has timeout; then
+if command -v timeout >/dev/null 2>&1; then
   timeout_cmd="timeout"
 fi
 
 stdbuf_cmd=""
-if has stdbuf; then
+if command -v stdbuf >/dev/null 2>&1; then
   stdbuf_cmd="stdbuf -oL"
 fi
 
