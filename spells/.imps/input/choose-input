@@ -1,12 +1,12 @@
 #!/bin/sh
-# select-input - detect best input source (stdin/tty/none)
-# Example: src=$(select-input) && case $src in stdin) read line ;; tty) read </dev/tty ;; esac
-# Set SELECT_INPUT_MODE=stdin|tty|none to override auto-detection
+# choose-input - detect best input source (stdin/tty/none)
+# Example: src=$(choose-input) && case $src in stdin) read line ;; tty) read </dev/tty ;; esac
+# Set CHOOSE_INPUT_MODE=stdin|tty|none to override auto-detection
 set -eu
 
-select_input() {
+choose_input() {
 
-  case ${SELECT_INPUT_MODE:-auto} in
+  case ${CHOOSE_INPUT_MODE:-auto} in
     stdin) printf '%s\n' stdin; return 0 ;;
     tty)   printf '%s\n' tty;   return 0 ;;
     none)  return 1 ;;
@@ -29,4 +29,4 @@ select_input() {
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */select-input) select_input "$@" ;; esac
+  */choose-input) choose_input "$@" ;; esac

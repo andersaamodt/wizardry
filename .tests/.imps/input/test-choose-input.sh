@@ -1,5 +1,5 @@
 #!/bin/sh
-# Tests for the 'select-input' imp
+# Tests for the 'choose-input' imp
 
 # Locate the repository root so we can source test-bootstrap
 # Start from this test's directory and walk upward until spells/.imps/test/test-bootstrap is found
@@ -11,36 +11,36 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-test_select_input_stdin_mode() {
+test_choose_input_stdin_mode() {
   skip-if-compiled || return $?
-  run_cmd sh -c 'SELECT_INPUT_MODE=stdin select-input'
+  run_cmd sh -c 'CHOOSE_INPUT_MODE=stdin choose-input'
   assert_success
   assert_output_contains "stdin"
 }
 
-test_select_input_tty_mode() {
+test_choose_input_tty_mode() {
   skip-if-compiled || return $?
-  run_cmd sh -c 'SELECT_INPUT_MODE=tty select-input'
+  run_cmd sh -c 'CHOOSE_INPUT_MODE=tty choose-input'
   assert_success
   assert_output_contains "tty"
 }
 
-test_select_input_none_mode() {
+test_choose_input_none_mode() {
   skip-if-compiled || return $?
-  run_cmd sh -c 'SELECT_INPUT_MODE=none select-input'
+  run_cmd sh -c 'CHOOSE_INPUT_MODE=none choose-input'
   assert_failure
 }
 
-test_select_input_with_stdin() {
+test_choose_input_with_stdin() {
   skip-if-compiled || return $?
-  run_cmd sh -c 'echo "input" | select-input'
+  run_cmd sh -c 'echo "input" | choose-input'
   assert_success
   assert_output_contains "stdin"
 }
 
-run_test_case "select-input stdin mode" test_select_input_stdin_mode
-run_test_case "select-input tty mode" test_select_input_tty_mode
-run_test_case "select-input none mode fails" test_select_input_none_mode
-run_test_case "select-input detects piped stdin" test_select_input_with_stdin
+run_test_case "choose-input stdin mode" test_choose_input_stdin_mode
+run_test_case "choose-input tty mode" test_choose_input_tty_mode
+run_test_case "choose-input none mode fails" test_choose_input_none_mode
+run_test_case "choose-input detects piped stdin" test_choose_input_with_stdin
 
 finish_tests
