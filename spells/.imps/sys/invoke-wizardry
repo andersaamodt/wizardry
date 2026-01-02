@@ -255,11 +255,21 @@ invoke_wizardry() {
           esac
           
           # Find and load the spell
-          for _spell_dir in "$WIZARDRY_DIR"/spells/*; do
-            [ -d "$_spell_dir" ] || continue
-            case "$_spell_dir" in */.imps|*/.arcana) continue ;; esac
-            _spell_file="$_spell_dir/$_spell_name"
-            if [ -f "$_spell_file" ]; then
+          # First check .wizardry directory (dotfile not matched by *)
+          if [ -f "$WIZARDRY_DIR/spells/.wizardry/$_spell_name" ]; then
+            _spell_file="$WIZARDRY_DIR/spells/.wizardry/$_spell_name"
+          else
+            # Search other spell directories
+            for _spell_dir in "$WIZARDRY_DIR"/spells/*; do
+              [ -d "$_spell_dir" ] || continue
+              case "$_spell_dir" in */.imps|*/.arcana) continue ;; esac
+              _spell_file="$_spell_dir/$_spell_name"
+              [ -f "$_spell_file" ] && break
+              _spell_file=""
+            done
+          fi
+          
+          if [ -n "$_spell_file" ] && [ -f "$_spell_file" ]; then
               # Skip if already loaded as a function (optimization)
               # CRITICAL: Check specifically for functions, not commands
               _spell_func_name=$(printf '%s' "$_spell_name" | tr '-' '_')
@@ -279,43 +289,41 @@ invoke_wizardry() {
               if [ "$_is_function" -eq 1 ]; then
                 [ "${WIZARDRY_DEBUG-}" = "1" ] && \
                   printf '[invoke-wizardry] %s\n' "  ↻ Cached: $_spell_name" >&2
-                break  # Exit spell directory search loop
-              fi
-              
-              [ "${WIZARDRY_DEBUG-}" = "1" ] && \
-                printf '[invoke-wizardry] %s\n' "Loading spell: $_spell_name" >&2
-              if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-                printf '[invoke-wizardry] DEBUG: BEFORE word_of_binding call for %s\n' "$_spell_name" >&2
-                printf '[invoke-wizardry] DEBUG:   Spell file: %s\n' "$_spell_file" >&2
-                printf '[invoke-wizardry] DEBUG:   Calling: word_of_binding "%s"\n' "$_spell_name" >&2
-              fi
-              if command -v word_of_binding >/dev/null 2>&1 \
-                && word_of_binding "$_spell_name" 2>/dev/null; then
-                _iw_status="✓ Loaded"
+                # Already loaded, skip to next spell
+              else
+                [ "${WIZARDRY_DEBUG-}" = "1" ] && \
+                  printf '[invoke-wizardry] %s\n' "Loading spell: $_spell_name" >&2
                 if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-                  printf '[invoke-wizardry] DEBUG: AFTER word_of_binding call for %s (SUCCESS)\n' "$_spell_name" >&2
-                  # Immediately check if function is available
-                  if command -v "$_spell_func_name" >/dev/null 2>&1; then
-                    printf '[invoke-wizardry] DEBUG: Function %s IS available immediately after word_of_binding\n' "$_spell_func_name" >&2
-                  else
-                    printf '[invoke-wizardry] DEBUG: WARNING - Function %s NOT available immediately after word_of_binding!\n' "$_spell_func_name" >&2
+                  printf '[invoke-wizardry] DEBUG: BEFORE word_of_binding call for %s\n' "$_spell_name" >&2
+                  printf '[invoke-wizardry] DEBUG:   Spell file: %s\n' "$_spell_file" >&2
+                  printf '[invoke-wizardry] DEBUG:   Calling: word_of_binding "%s"\n' "$_spell_name" >&2
+                fi
+                if command -v word_of_binding >/dev/null 2>&1 \
+                  && word_of_binding "$_spell_name" 2>/dev/null; then
+                  _iw_status="✓ Loaded"
+                  if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+                    printf '[invoke-wizardry] DEBUG: AFTER word_of_binding call for %s (SUCCESS)\n' "$_spell_name" >&2
+                    # Immediately check if function is available
+                    if command -v "$_spell_func_name" >/dev/null 2>&1; then
+                      printf '[invoke-wizardry] DEBUG: Function %s IS available immediately after word_of_binding\n' "$_spell_func_name" >&2
+                    else
+                      printf '[invoke-wizardry] DEBUG: WARNING - Function %s NOT available immediately after word_of_binding!\n' "$_spell_func_name" >&2
+                    fi
+                  fi
+                else
+                  _iw_status="✗ Failed"
+                  if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+                    printf '[invoke-wizardry] DEBUG: AFTER word_of_binding call for %s (FAILED)\n' "$_spell_name" >&2
+                    printf '[invoke-wizardry] DEBUG: word_of_binding FAILED for %s\n' "$_spell_name" >&2
                   fi
                 fi
-              else
-                _iw_status="✗ Failed"
+                [ "${WIZARDRY_DEBUG-}" = "1" ] && \
+                  printf '[invoke-wizardry] %s\n' "  $_iw_status: $_spell_name" >&2
                 if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-                  printf '[invoke-wizardry] DEBUG: AFTER word_of_binding call for %s (FAILED)\n' "$_spell_name" >&2
-                  printf '[invoke-wizardry] DEBUG: word_of_binding FAILED for %s\n' "$_spell_name" >&2
+                  printf '[invoke-wizardry] DEBUG: Completed processing spell: %s\n' "$_spell_name" >&2
                 fi
               fi
-              [ "${WIZARDRY_DEBUG-}" = "1" ] && \
-                printf '[invoke-wizardry] %s\n' "  $_iw_status: $_spell_name" >&2
-              if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-                printf '[invoke-wizardry] DEBUG: Completed processing spell: %s\n' "$_spell_name" >&2
-              fi
-              break
             fi
-          done
         done
       fi
       if [ "${WIZARDRY_DEBUG-}" = "1" ]; then

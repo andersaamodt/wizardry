@@ -75,6 +75,11 @@ word_of_binding() {
         fi
       done
     fi
+    
+    # Also check .wizardry directory (dotfiles not matched by *)
+    if [ -z "$_wob_module" ] && [ -f "$WIZARDRY_DIR/spells/.wizardry/$_wob_name" ]; then
+      _wob_module="$WIZARDRY_DIR/spells/.wizardry/$_wob_name"
+    fi
   fi
   
   if [ -z "$_wob_module" ]; then

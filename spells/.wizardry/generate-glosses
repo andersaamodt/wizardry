@@ -46,14 +46,6 @@ esac
 
 require_wizardry || return 1
 
-# Preload env_clear function using word-of-binding
-if [ -f "${WIZARDRY_DIR}/spells/.imps/sys/word-of-binding" ]; then
-  WIZARDRY_SOURCE_WORD_OF_BINDING=1
-  . "${WIZARDRY_DIR}/spells/.imps/sys/word-of-binding"
-  unset WIZARDRY_SOURCE_WORD_OF_BINDING
-  word_of_binding env-clear 2>/dev/null || :
-fi
-
 set -eu
 env_clear
 
