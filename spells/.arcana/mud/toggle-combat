@@ -19,11 +19,11 @@ case "${1-}" in
         ;;
 esac
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 
 set -eu
-env-clear
+env_clear
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 MUD_CONFIG="$SCRIPT_DIR/mud-config"

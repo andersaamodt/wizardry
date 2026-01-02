@@ -29,11 +29,11 @@ case "${1-}" in
   ;;
 esac
 
-# Handle require-wizardry availability (for script execution without invoke-wizardry)
+# Handle require_wizardry availability (for script execution without invoke-wizardry)
 if command -v require_wizardry >/dev/null 2>&1; then
   require_wizardry || exit 1
-elif command -v require-wizardry >/dev/null 2>&1; then
-  require-wizardry || return 1
+elif command -v require_wizardry >/dev/null 2>&1; then
+  require_wizardry || return 1
 else
   # Neither available - source it now
   if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/require-wizardry" ]; then
@@ -47,7 +47,7 @@ else
       . "$_cs_imp_path"
       require_wizardry || exit 1
     else
-      printf 'Error: require-wizardry not found\n' >&2
+      printf 'Error: require_wizardry not found\n' >&2
       exit 1
     fi
   fi
@@ -55,7 +55,7 @@ fi
 
 set -eu
 
-# Source env-clear (use WIZARDRY_DIR if available, otherwise compute relative path)
+# Source env_clear (use WIZARDRY_DIR if available, otherwise compute relative path)
 if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/env-clear" ]; then
   . "${WIZARDRY_DIR}/spells/.imps/sys/env-clear"
 else
@@ -139,7 +139,7 @@ for dep in $dependencies; do
   # Skip self-reference - spell cannot be its own dependency
   [ "$dep" = "$spell_basename" ] && continue
   
-  # Skip require-wizardry and invoke-wizardry - they don't make sense in standalone
+  # Skip require_wizardry and invoke-wizardry - they don't make sense in standalone
   # invoke-wizardry is the runtime environment, not a library function
   [ "$dep" = "require-wizardry" ] && continue
   [ "$dep" = "invoke-wizardry" ] && continue
@@ -198,7 +198,7 @@ $func_def
     inlined_names="$inlined_names $dep"
   else
     # It's a spell without _funcname() pattern - inline entire spell as function
-    # Remove shebang, *_usage, --help handler, require-wizardry, set -eu, and loading patterns
+    # Remove shebang, *_usage, --help handler, require_wizardry, set -eu, and loading patterns
     spell_body=$(printf '%s\n' "$dep_content" | awk '
       BEGIN { skip=0; in_usage=0; skip_loading=0 }
       /^#!/ { next }
@@ -247,7 +247,7 @@ $spell_body
 done
 
 # Transform spell content:
-# 1. Remove shebang, require-wizardry, and wizardry infrastructure sourcing
+# 1. Remove shebang, require_wizardry, and wizardry infrastructure sourcing
 # 2. Replace imp calls with underscore versions (e.g., say -> say, clip-copy -> clip_copy)
 # 3. Replace castable/autocast/uncastable loading patterns with direct function calls
 # Remove lines that source wizardry infrastructure (env-clear, invoke-wizardry)
@@ -255,8 +255,8 @@ done
 transformed=$(printf '%s\n' "$spell_content" | \
   tail -n +2 | \
   grep -v "^require-wizardry" | \
-  grep -vE '^[[:space:]]*\. env-clear([[:space:]]|$)' | \
-  grep -vE '^[[:space:]]*source env-clear([[:space:]]|$)' | \
+  grep -vE '^[[:space:]]*\. env_clear([[:space:]]|$)' | \
+  grep -vE '^[[:space:]]*source env_clear([[:space:]]|$)' | \
   grep -vE '^[[:space:]]*\. .*invoke-wizardry' | \
   grep -vE '^[[:space:]]*source .*invoke-wizardry' | \
   awk -v spell="$spell_basename" '

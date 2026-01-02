@@ -672,7 +672,7 @@ esac
 
 set -eu
 
-# Source env-clear after WIZARDRY_DIR is established
+# Source env_clear after WIZARDRY_DIR is established
 if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/env-clear" ]; then
   . "${WIZARDRY_DIR}/spells/.imps/sys/env-clear"
 fi

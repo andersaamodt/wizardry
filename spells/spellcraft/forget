@@ -5,7 +5,7 @@
 #
 # Usage: forget SPELL_NAME
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 spell_name="forget"
 tab_char=$(printf '\t')
@@ -29,7 +29,7 @@ case "${1-}" in
 esac
 
 set -eu
-env-clear
+env_clear
 
 # Helper for reading non-empty lines
 

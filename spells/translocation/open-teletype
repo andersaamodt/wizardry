@@ -3,7 +3,7 @@
 # This spell opens an SSH connection through Tor for anonymous remote access.
 # Use it to connect to remote servers while preserving anonymity.
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 open_teletype_usage() {
 cat <<'USAGE'
@@ -24,7 +24,7 @@ case "${1-}" in
 esac
 
 set -eu
-env-clear
+env_clear
 
 # Check for required commands
 if ! has torify; then

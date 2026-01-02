@@ -3,7 +3,7 @@
 # Manage MUD feature configuration stored in $MUD_DIR/config
 # This is a helper for reading and writing MUD feature toggle states.
 
-require-wizardry || exit 1
+require_wizardry || exit 1
 
 mud_config_usage() {
 cat <<'USAGE'
@@ -21,11 +21,11 @@ case "${1-}" in
         ;;
 esac
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 
 set -eu
-env-clear
+env_clear
 
 # Resolve config directory
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")

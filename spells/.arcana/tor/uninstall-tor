@@ -18,11 +18,11 @@ case "${1-}" in
         ;;
 esac
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 
 set -eu
-env-clear
+env_clear
 
 uninstall_tor_is_nixos() {
   if command -v detect-distro >/dev/null 2>&1 && [ "$(detect-distro 2>/dev/null)" = "nixos" ]; then

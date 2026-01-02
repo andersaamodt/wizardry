@@ -23,10 +23,10 @@ case "${1-}" in
   ;;
 esac
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 set -eu
-env-clear
+env_clear
 
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
   ask_text_usage

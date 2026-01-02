@@ -3,7 +3,7 @@
 # This spell binds every file in a directory into a single tome.
 # Pass -d to recycle the loose pages after the binding completes.
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 bind_tome_usage() {
 cat <<'USAGE'
@@ -23,7 +23,7 @@ case "${1-}" in
 esac
 
 set -eu
-env-clear
+env_clear
 
 # Parse options early so -h works even with missing args.
 delete_sources=0

@@ -18,11 +18,11 @@ case "${1-}" in
         ;;
 esac
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 
 set -eu
-env-clear
+env_clear
 
 if command -v colors >/dev/null 2>&1; then
   # shellcheck source=/dev/null

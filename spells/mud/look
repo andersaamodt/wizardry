@@ -2,7 +2,7 @@
 
 # Read MUD-style room descriptions from extended attributes.
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 look_usage() {
 cat <<'USAGE'
@@ -23,7 +23,7 @@ case "${1-}" in
 esac
 
 set -eu
-env-clear
+env_clear
 
 script_source=$0
 case $script_source in

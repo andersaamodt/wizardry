@@ -3,7 +3,7 @@
 # This spell presents a menu of options for managing users on the system.
 # Use it to manage passwords, groups, and user accounts.
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 users_menu_usage() {
 cat <<'USAGE'
@@ -24,7 +24,7 @@ case "${1-}" in
 esac
 
 set -eu
-env-clear
+env_clear
 
 # Load color palette (colors handles terminal capability detection internally)
 # shellcheck source=/dev/null

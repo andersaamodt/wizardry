@@ -1,5 +1,5 @@
 #!/bin/sh
-# require-wizardry - check if wizardry is set up and available
+# require_wizardry - check if wizardry is set up and available
 # Returns 0 if wizardry is available (WIZARDRY_DIR set and valid)
 # Returns 1 if wizardry is not available
 # In test mode (WIZARDRY_TEST_HELPERS_ONLY=1), always returns 0

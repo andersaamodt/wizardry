@@ -3,7 +3,7 @@
 # This spell activates a portkey enchantment to teleport to the stored destination.
 # The destination is read from the file's 'context' extended attribute.
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 follow_portkey_usage() {
 cat <<'USAGE'
@@ -24,7 +24,7 @@ case "${1-}" in
 esac
 
 set -eu
-env-clear
+env_clear
 
 # Ensure file argument is provided
 if [ -z "${1-}" ]; then

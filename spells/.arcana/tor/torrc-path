@@ -19,12 +19,12 @@ case "${1-}" in
         ;;
 esac
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 
 
 set -eu
-env-clear
+env_clear
 platform=$(detect-distro 2>/dev/null || printf 'unknown')
 TORRC_PATHS=""
 

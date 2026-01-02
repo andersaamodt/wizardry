@@ -18,10 +18,10 @@ case "${1-}" in
   ;;
 esac
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 set -eu
-env-clear
+env_clear
 
 reset_default_synonyms() {
   spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")

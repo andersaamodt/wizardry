@@ -34,7 +34,7 @@ if ! command -v require_wizardry >/dev/null 2>&1; then
   if [ -f "$_menu_wob" ]; then
     WIZARDRY_SOURCE_WORD_OF_BINDING=1 . "$_menu_wob" 2>/dev/null || :
     # Now load essential imps
-    for _imp in require-wizardry env-clear temp-file cleanup-file require has; do
+    for _imp in require_wizardry env_clear temp-file cleanup-file require has; do
       word_of_binding "$_imp" 2>/dev/null || :
     done
   fi

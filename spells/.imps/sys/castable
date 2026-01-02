@@ -68,10 +68,10 @@ castable() {
     return 2
   fi
 
-  # Preload essential functions for spell execution
-  # This allows spells to call require_wizardry and env_clear without bootstrap sections
+  # Source essential imps to make their functions available
+  # Spells should still call require_wizardry and env_clear explicitly
+  # This just makes the functions available when executed directly
   if ! command -v require_wizardry >/dev/null 2>&1; then
-    # Detect wizardry directory
     _cast_wiz_dir="${WIZARDRY_DIR-}"
     if [ -z "$_cast_wiz_dir" ]; then
       # Try to detect from script location

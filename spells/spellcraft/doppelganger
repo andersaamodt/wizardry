@@ -36,12 +36,12 @@ case "${1-}" in
   ;;
 esac
 
-# Handle require-wizardry availability (for script execution without invoke-wizardry in current shell)
+# Handle require_wizardry availability (for script execution without invoke-wizardry in current shell)
 # Check if require_wizardry function exists (may have been sourced already)
 if command -v require_wizardry >/dev/null 2>&1; then
   require_wizardry || exit 1
-elif command -v require-wizardry >/dev/null 2>&1; then
-  require-wizardry || return 1
+elif command -v require_wizardry >/dev/null 2>&1; then
+  require_wizardry || return 1
 else
   # Neither available - source it now
   # Try WIZARDRY_DIR first (set by invoke-wizardry)
@@ -56,7 +56,7 @@ else
       . "$_rw_imp_path"
       require_wizardry || exit 1
     else
-      printf 'Error: require-wizardry not found\n' >&2
+      printf 'Error: require_wizardry not found\n' >&2
       exit 1
     fi
   fi
@@ -64,7 +64,7 @@ fi
 
 set -eu
 
-# Source env-clear (use WIZARDRY_DIR if available, otherwise compute relative path)
+# Source env_clear (use WIZARDRY_DIR if available, otherwise compute relative path)
 if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/env-clear" ]; then
   . "${WIZARDRY_DIR}/spells/.imps/sys/env-clear"
 else
@@ -142,7 +142,7 @@ while IFS= read -r spell_path; do
   
   # Compile spell: save current directory, cd to repo, compile, return
   # Don't use subshell () because functions don't pass to child processes
-  # compile-spell needs require-wizardry which was sourced earlier in this script
+  # compile-spell needs require_wizardry which was sourced earlier in this script
   _dg_pwd=$(pwd -P)
   cd "$repo_dir" || {
     warn "doppelganger: failed to cd to $repo_dir"
