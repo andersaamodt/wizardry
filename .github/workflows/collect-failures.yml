@@ -82,9 +82,9 @@ jobs:
           # Function to extract test summary from logs
           extract_test_summary() {
             local logfile=$1
-            # First remove everything from "Process exited" or "Process completed" onward
+            # Keep the "Process completed/exited" line but remove everything after it
             local cleaned_log="/tmp/cleaned_$$.txt"
-            sed '/Process \(exited\|completed\)/,$d' "$logfile" > "$cleaned_log"
+            sed '/Process \(exited\|completed\)/q' "$logfile" > "$cleaned_log"
             
             # Extract from "Summary" heading line to the end of file
             if grep -q "^Summary$" "$cleaned_log"; then
@@ -111,9 +111,9 @@ jobs:
             local job_name=$2
             local workflow_name=$3
 
-            # First remove everything from "Process exited" or "Process completed" onward from the entire log
+            # Keep the "Process completed/exited" line but remove everything after it from the entire log
             local cleaned_log="/tmp/cleaned_$$.txt"
-            sed '/Process \(exited\|completed\)/,$d' "$logfile" > "$cleaned_log"
+            sed '/Process \(exited\|completed\)/q' "$logfile" > "$cleaned_log"
 
             # Check for early failure (workflow failed before tests ran)
             # Look for: command not found, No such file or directory, permission denied, etc.
