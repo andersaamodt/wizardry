@@ -15,6 +15,11 @@ on:
   # Allow manual trigger for on-demand validation
   workflow_dispatch:
 
+# Cancel previous runs when new commits are pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -29,7 +34,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
-        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value spells/system/test-magic
       - name: Run dual-pattern validation tests
         run: ./spells/system/test-magic --verbose
 
@@ -43,6 +48,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
-        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value spells/system/test-magic
       - name: Run dual-pattern validation tests
         run: ./spells/system/test-magic --verbose

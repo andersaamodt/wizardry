@@ -8,6 +8,11 @@ on:
     branches:
       - main
 
+# Cancel previous runs when new commits are pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -41,5 +46,7 @@ jobs:
             echo "bubblewrap unusable" >&2
             exit 1
           fi
+      - name: Make test-spell executable
+        run: chmod +x spells/system/test-spell
       - name: Run demonstrate-wizardry test
         run: ./spells/system/test-spell system/test-demonstrate-wizardry.sh

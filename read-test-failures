@@ -1,0 +1,82 @@
+#!/bin/sh
+# read-test-failures - Fetch and display latest test failures from PR description
+# 
+# This script fetches the PR description which is updated by the collect-failures
+# workflow with extracted test failures. This allows AI agents to see test failures
+# immediately without any files being committed to the repo.
+#
+# Usage: ./read-test-failures [pr-number]
+# If pr-number is omitted, tries to detect from current branch.
+
+set -eu
+
+# Try to get PR number from argument or detect it
+pr_number="${1:-}"
+
+if [ -z "$pr_number" ]; then
+  # Try to detect PR number from current branch
+  branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+  
+  if [ -n "$branch" ] && [ "$branch" != "HEAD" ]; then
+    echo "Current branch: $branch"
+    echo "Searching for PR..."
+    
+    # Search for open PRs with this head branch
+    pr_data=$(curl -s "https://api.github.com/repos/andersaamodt/wizardry/pulls?state=all&per_page=50&head=andersaamodt:$branch" 2>&1)
+    
+    # Extract PR number from first match
+    pr_number=$(echo "$pr_data" | grep -o '"number":[0-9]*' | head -1 | cut -d: -f2)
+  fi
+fi
+
+if [ -z "$pr_number" ]; then
+  echo "Error: Could not determine PR number"
+  echo ""
+  echo "Usage: ./read-test-failures <pr-number>"
+  echo ""
+  echo "Please provide the PR number as an argument."
+  echo "Example: ./read-test-failures 123"
+  exit 1
+fi
+
+echo "Fetching test failures for PR #$pr_number..."
+echo ""
+
+# Fetch the PR description using GitHub API
+# Use python to properly parse JSON and extract body
+pr_body=$(curl -s "https://api.github.com/repos/andersaamodt/wizardry/pulls/$pr_number" | \
+  python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('body', '') if data.get('body') else '')" 2>/dev/null)
+
+# Check if we got a body
+if [ -z "$pr_body" ]; then
+  echo "Error: Could not fetch PR #$pr_number or it has no description"
+  exit 1
+fi
+
+# Look for the test failures section
+if echo "$pr_body" | grep -q "🔍 Latest Test Failures"; then
+  echo "========================================"
+  echo " Latest Test Failures (from PR description)"
+  echo "========================================"
+  echo ""
+  
+  # Extract the failures section (from marker to end marker)
+  echo "$pr_body" | sed -n '/## 🔍 Latest Test Failures/,/<!-- test-failures-end -->/p' | \
+    sed '$ d'  # Remove the end marker line
+  
+  echo ""
+  echo "========================================"
+  echo ""
+  echo "Full PR: https://github.com/andersaamodt/wizardry/pull/$pr_number"
+else
+  echo "No test failures section found in PR description."
+  echo ""
+  echo "This may mean:"
+  echo "- The collect-failures workflow hasn't run yet"
+  echo "- The workflow is still running"
+  echo "- All tests are passing"
+  echo ""
+  echo "Check the PR manually: https://github.com/andersaamodt/wizardry/pull/$pr_number"
+  exit 1
+fi
+

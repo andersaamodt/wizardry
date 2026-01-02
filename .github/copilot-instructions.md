@@ -1,5 +1,45 @@
 # Wizardry Repository - GitHub Copilot Instructions  🧙🔮
 
+## 🔍 CRITICAL: Autonomous Debug Cycle with PR Test Failures
+
+**READ THIS FIRST when debugging or asked to fix test failures.**
+
+### Quick Start
+
+```sh
+cd /home/runner/work/wizardry/wizardry
+./read-test-failures <pr-number>
+```
+
+This fetches test failures from PR description via GitHub API. Works immediately, no waiting.
+
+### The Debug Loop
+
+1. Tests run → failures extracted → PR description updated
+2. AI reads with `./read-test-failures <pr-number>`
+3. AI fixes issues (surgical changes)
+4. AI commits → loop repeats
+
+### What You'll See
+
+**Unit tests:** "Summary" section or FAILED/ERROR lines
+**Other workflows:** ##[error] markers or FAIL/ERROR patterns  
+**Early failures:** "not found", "Permission denied", etc. with context
+**All workflows:** Cleanup text removed, only actionable errors
+
+### Usage Rules
+
+- **Always** run `./read-test-failures` FIRST when debugging
+- **Never** ask user for error details (fetch them yourself)
+- **After fixes:** Commit and optionally re-run script to verify
+
+### Benefits
+
+✅ Immediate access (current session)
+✅ Real-time updates (as workflows complete)
+✅ No repo pollution (PR description only)
+✅ Autonomous loop (no human intervention)
+
 ## Essential Reading  📚✨
 
 1. **`README.md`** — Project principles, values, and standards (READ FIRST)  🗝️
