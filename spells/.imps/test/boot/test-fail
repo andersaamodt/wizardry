@@ -30,30 +30,36 @@ test_fail() {
   fi
   # If three args provided, we already have num, desc, reason correctly assigned
   
-  # Format the test number [x/y] if total is known
-  num_str=""
-  if [ -n "$num" ]; then
-    if [ -n "${WIZARDRY_GLOBAL_SUBTEST_TOTAL-}" ] && [ "$WIZARDRY_GLOBAL_SUBTEST_TOTAL" -gt 0 ]; then
-      num_str="[${num}/${WIZARDRY_GLOBAL_SUBTEST_TOTAL}] "
-    else
-      num_str="#${num} "
-    fi
-  fi
-  
   # Use colors if supported
   if [ -t 1 ] && command -v tput >/dev/null 2>&1 && tput setaf 1 >/dev/null 2>&1; then
     red=$(tput setaf 1 2>/dev/null || true)
     reset=$(tput sgr0 2>/dev/null || true)
-    if [ -n "$reason" ]; then
-      printf '%sFAIL%s %s%s: %s\n' "$red" "$reset" "$num_str" "$desc" "$reason"
+    if [ -n "$num" ]; then
+      if [ -n "$reason" ]; then
+        printf '%sFAIL%s #%s %s: %s\n' "$red" "$reset" "$num" "$desc" "$reason"
+      else
+        printf '%sFAIL%s #%s %s\n' "$red" "$reset" "$num" "$desc"
+      fi
     else
-      printf '%sFAIL%s %s%s\n' "$red" "$reset" "$num_str" "$desc"
+      if [ -n "$reason" ]; then
+        printf '%sFAIL%s %s: %s\n' "$red" "$reset" "$desc" "$reason"
+      else
+        printf '%sFAIL%s %s\n' "$red" "$reset" "$desc"
+      fi
     fi
   else
-    if [ -n "$reason" ]; then
-      printf 'FAIL %s%s: %s\n' "$num_str" "$desc" "$reason"
+    if [ -n "$num" ]; then
+      if [ -n "$reason" ]; then
+        printf 'FAIL #%s %s: %s\n' "$num" "$desc" "$reason"
+      else
+        printf 'FAIL #%s %s\n' "$num" "$desc"
+      fi
     else
-      printf 'FAIL %s%s\n' "$num_str" "$desc"
+      if [ -n "$reason" ]; then
+        printf 'FAIL %s: %s\n' "$desc" "$reason"
+      else
+        printf 'FAIL %s\n' "$desc"
+      fi
     fi
   fi
 }
