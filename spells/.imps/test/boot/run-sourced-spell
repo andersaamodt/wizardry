@@ -1,6 +1,6 @@
 #!/bin/sh
 # run-sourced-spell SPELL_NAME [ARGS...] - test a spell via source-then-invoke pattern
-# Sources the spell and calls its function. Most spells don't need full invoke-wizardry.
+# With invoke-wizardry preloaded, functions are already available.
 # Captures stdout, stderr, and exit status into STATUS, OUTPUT, and ERROR.
 
 run_sourced_spell() {
@@ -27,72 +27,18 @@ run_sourced_spell() {
   # Restore caller's PATH for the test
   PATH=$_saved_path
   
-  # Escape arguments for safe inclusion in command string
-  escaped_args=""
-  for arg in "$@"; do
-    # Escape single quotes in arguments
-    escaped_arg=$(printf '%s' "$arg" | sed "s/'/'\\\\''/g")
-    escaped_args="$escaped_args '$escaped_arg'"
-  done
+  # Save current directory
+  _saved_pwd=$(pwd)
+  cd "$workdir" 2>/dev/null || :
   
-  # Optimization: Skip invoke-wizardry for most tests
-  # test-bootstrap already preloaded essential functions via word_of_binding
-  # Only use full invoke-wizardry if explicitly requested
-  if [ "${WIZARDRY_TEST_FULL_INVOKE-0}" = "1" ]; then
-    # Full invoke-wizardry (slower, for integration tests)
-    bash_cmd="
-set +eu
-export WIZARDRY_DIR='${WIZARDRY_DIR:-$ROOT_DIR}'
-export WIZARDRY_LOAD_ALL=1
-export PATH='$PATH'
-export HOME='${HOME:-/tmp}'
-export TMPDIR='${TMPDIR:-/tmp}'
-export WIZARDRY_TMPDIR='${WIZARDRY_TMPDIR}'
-
-# Source invoke-wizardry (suppress its diagnostic output)
-. \"\$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry\" >/dev/null 2>&1
-
-# Call the spell function
-$func_name $escaped_args
-"
-  else
-    # Lightweight: Just source the spell file and call the function
-    # This is much faster (~10x) and sufficient for most unit tests
-    bash_cmd="
-set +eu
-export WIZARDRY_DIR='${WIZARDRY_DIR:-$ROOT_DIR}'
-export PATH='$PATH'
-export HOME='${HOME:-/tmp}'
-export TMPDIR='${TMPDIR:-/tmp}'
-export WIZARDRY_TMPDIR='${WIZARDRY_TMPDIR}'
-export ROOT_DIR='${ROOT_DIR}'
-
-# Source word_of_binding to get preload capability
-if [ -f \"\$WIZARDRY_DIR/spells/.imps/sys/word-of-binding\" ]; then
-  WIZARDRY_SOURCE_WORD_OF_BINDING=1
-  . \"\$WIZARDRY_DIR/spells/.imps/sys/word-of-binding\" 2>/dev/null
-  unset WIZARDRY_SOURCE_WORD_OF_BINDING
-fi
-
-# Preload essential imps that spells commonly use (avoid repeated sourcing)
-for _imp in require-wizardry env-clear env-or die warn fail say info success debug step temp-file cleanup-file; do
-  word_of_binding \"\$_imp\" 2>/dev/null || :
-done
-unset _imp
-
-# Source the spell file
-. \"\$WIZARDRY_DIR/$spell_path\"
-
-# Call the spell function
-$func_name $escaped_args
-"
-  fi
-  
-  # Run via bash -c and capture output/error/status
-  PATH=${WIZARDRY_SYSTEM_PATH:-$PATH}
-  if (cd "$workdir" && bash -c "$bash_cmd" >"$_stdout" 2>"$_stderr"); then
-    STATUS=0
-  else
+  # Call the function directly - it's already loaded in the environment
+  # Redirect output to temp files for capture
+  STATUS=0
+  if ! (
+    # Execute in subshell to capture output and isolate side effects
+    set +e
+    "$func_name" "$@"
+  ) >"$_stdout" 2>"$_stderr"; then
     STATUS=$?
   fi
   
@@ -102,8 +48,9 @@ $func_name $escaped_args
   # Cleanup
   rm -f "$_stdout" "$_stderr"
   
-  # Restore caller's PATH
+  # Restore caller's PATH and directory
   PATH=$_saved_path
+  cd "$_saved_pwd" 2>/dev/null || :
 }
 
 # Self-execution when run directly (not sourced)

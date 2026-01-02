@@ -286,23 +286,25 @@ if [ -n "$subtest_filter" ]; then
     return 1
   fi
 else
-  # Normal mode: run full test
+  # Normal mode: run full test in subshell (for isolation)
+  # Functions from invoke-wizardry are already loaded in parent shell
   test_exit_code=0
-  if [ -n "$timeout_cmd" ]; then
-    if [ "$run_common_tests" -eq 1 ] && [ -n "$spell_path" ]; then
-      # Don't use exec - we need to run common tests after
-      "$timeout_cmd" "$test_timeout" sh < /dev/null "$abs_test" || test_exit_code=$?
+  
+  if [ "$run_common_tests" -eq 1 ] && [ -n "$spell_path" ]; then
+    # Run in subshell - needs to inherit invoke-wizardry environment
+    if [ -n "$timeout_cmd" ]; then
+      # With timeout
+      "$timeout_cmd" "$test_timeout" sh "$abs_test" < /dev/null || test_exit_code=$?
     else
-      # Can use exec - no common tests to run after
-      exec "$timeout_cmd" "$test_timeout" sh < /dev/null "$abs_test"
+      # No timeout
+      sh "$abs_test" < /dev/null || test_exit_code=$?
     fi
   else
-    if [ "$run_common_tests" -eq 1 ] && [ -n "$spell_path" ]; then
-      # Don't use exec - we need to run common tests after
-      sh < /dev/null "$abs_test" || test_exit_code=$?
+    # Can use exec - no common tests to run after
+    if [ -n "$timeout_cmd" ]; then
+      exec "$timeout_cmd" "$test_timeout" sh "$abs_test" < /dev/null
     else
-      # Can use exec - no common tests to run after
-      exec sh < /dev/null "$abs_test"
+      exec sh "$abs_test" < /dev/null
     fi
   fi
   

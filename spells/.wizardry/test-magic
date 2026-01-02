@@ -236,6 +236,23 @@ fi
 
 . "$root_dir/spells/.imps/sys/spell-levels"
 
+# Preload invoke-wizardry ONCE for all tests (major performance optimization)
+# This creates a standard environment with all spell functions available
+# Tests inherit this environment instead of sourcing invoke-wizardry individually
+if [ "${WIZARDRY_TEST_SKIP_INVOKE-0}" != "1" ]; then
+  if [ -f "$root_dir/spells/.imps/sys/invoke-wizardry" ]; then
+    # Source invoke-wizardry in permissive mode (it sets +eu internally)
+    WIZARDRY_LOAD_ALL=1
+    export WIZARDRY_LOAD_ALL
+    . "$root_dir/spells/.imps/sys/invoke-wizardry" >/dev/null 2>&1 || {
+      printf 'test-magic: warning - failed to load invoke-wizardry\n' >&2
+    }
+    # Mark that invoke-wizardry is already loaded for child processes
+    WIZARDRY_INVOKE_LOADED=1
+    export WIZARDRY_INVOKE_LOADED
+  fi
+fi
+
 # Color codes (inline to avoid dependency)
 _esc=$(printf '\033')
 _green="${_esc}[32m"
