@@ -48,5 +48,5 @@ jobs:
           fi
       - name: Make test-spell executable
         run: chmod +x spells/.wizardry/test-spell
-      - name: Run demonstrate-wizardry test
-        run: ./spells/.wizardry/test-spell system/test-demonstrate-wizardry.sh
+      - name: Run demo-magic test
+        run: ./spells/.wizardry/test-spell spellcraft/test-demo-magic.sh

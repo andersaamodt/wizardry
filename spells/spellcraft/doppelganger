@@ -115,18 +115,19 @@ for spell_path in \
   "$repo_dir/spells"/*/*/*/* \
   "$repo_dir/spells"/.imps/*/* \
   "$repo_dir/spells"/.imps/*/*/* \
-  "$repo_dir/spells"/.arcana/*/*
+  "$repo_dir/spells"/.arcana/*/* \
+  "$repo_dir/spells"/.wizardry/*
 do
   # Skip if not a file or not executable
   [ -f "$spell_path" ] || continue
   [ -x "$spell_path" ] || continue
   
-  # Skip hidden files (except .imps and .arcana which are already in path)
+  # Skip hidden files (except .imps, .arcana, and .wizardry which are already in path)
   case "$spell_path" in
     */.git/*|*/.github/*|*/.*)
-      # Allow .imps and .arcana
+      # Allow .imps, .arcana, and .wizardry
       case "$spell_path" in
-        */.imps/*|*/.arcana/*) ;;
+        */.imps/*|*/.arcana/*|*/.wizardry/*) ;;
         *) continue ;;
       esac
       ;;
