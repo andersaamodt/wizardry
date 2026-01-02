@@ -5,10 +5,18 @@
 # workflow with extracted test failures. This allows AI agents to see test failures
 # immediately without any files being committed to the repo.
 #
-# Usage: ./read-test-failures [pr-number]
+# Usage: ./read-test-failures [pr-number|--previous]
 # If pr-number is omitted, tries to detect from current branch.
+# Use --previous to fetch errors from the previous PR (current PR - 1).
 
 set -eu
+
+# Check for --previous flag
+get_previous=0
+if [ "${1:-}" = "--previous" ] || [ "${1:-}" = "-p" ]; then
+  get_previous=1
+  shift || true
+fi
 
 # Try to get PR number from argument or detect it
 pr_number="${1:-}"
@@ -24,19 +32,31 @@ if [ -z "$pr_number" ]; then
     # Search for open PRs with this head branch
     pr_data=$(curl -s "https://api.github.com/repos/andersaamodt/wizardry/pulls?state=all&per_page=50&head=andersaamodt:$branch" 2>&1)
     
-    # Extract PR number from first match
-    pr_number=$(echo "$pr_data" | grep -o '"number":[0-9]*' | head -1 | cut -d: -f2)
+    # Extract PR number from first match (allowing for spaces in JSON)
+    pr_number=$(echo "$pr_data" | grep -o '"number":[[:space:]]*[0-9]*' | head -1 | grep -o '[0-9]*$')
   fi
 fi
 
 if [ -z "$pr_number" ]; then
   echo "Error: Could not determine PR number"
   echo ""
-  echo "Usage: ./read-test-failures <pr-number>"
+  echo "Usage: ./read-test-failures [--previous] [pr-number]"
   echo ""
-  echo "Please provide the PR number as an argument."
+  echo "Options:"
+  echo "  --previous, -p  Fetch errors from the previous PR (current PR - 1)"
+  echo ""
+  echo "Please provide the PR number as an argument or use --previous."
   echo "Example: ./read-test-failures 123"
+  echo "Example: ./read-test-failures --previous"
   exit 1
+fi
+
+# If --previous flag was used, get the previous PR number
+if [ "$get_previous" = "1" ]; then
+  echo "Fetching previous PR (PR #$pr_number - 1)..."
+  pr_number=$((pr_number - 1))
+  echo "Using PR #$pr_number"
+  echo ""
 fi
 
 echo "Fetching test failures for PR #$pr_number..."
