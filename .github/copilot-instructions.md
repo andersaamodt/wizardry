@@ -44,7 +44,10 @@ This fetches test failures from PR description via GitHub API. Works immediately
 
 1. **`README.md`** — Project principles, values, and standards (READ FIRST)  🗝️
 2. **`.AGENTS.md`** — Comprehensive agent instructions and style guide
-3. **Topic-specific instructions** (consult as needed):
+3. **Core knowledge bases** (centralized patterns):
+   - `.github/SHELL_CODE_PATTERNS.md` — **CRITICAL**: POSIX shell patterns, quirks, and idioms (DOCUMENT NEW PATTERNS HERE)
+   - `.github/CROSS_PLATFORM_PATTERNS.md` — **CRITICAL**: Cross-platform compatibility (DOCUMENT NEW PATTERNS HERE)
+4. **Topic-specific instructions** (consult as needed):
    - `.github/instructions/castable-uncastable-pattern.instructions.md` — **CRITICAL**: Self-execute pattern rules (return vs exit, set -eu placement, function structure)
    - `.github/instructions/spells.instructions.md` — Spell writing guide
    - `.github/instructions/imps.instructions.md` — Imp (micro-helper) guide
@@ -105,7 +108,14 @@ A collection of POSIX shell scripts themed as magical spells for the terminal. T
    - Keep clean, readable, minimal spell files
    - Make surgical, minimal changes
 
-7. **Document lessons learned in `.github/LESSONS.md`**
+7. **Document new shell patterns** 📝🐚
+   - **ALWAYS** add POSIX shell patterns/quirks to `.github/SHELL_CODE_PATTERNS.md`
+   - **ALWAYS** add cross-platform discoveries to `.github/CROSS_PLATFORM_PATTERNS.md`
+   - This project is about **codifying obscure POSIX knowledge** in usable form
+   - When you discover a new pattern, idiom, or shell quirk, document it immediately
+   - Make entries succinct and optimized for AI, but not illegible
+
+8. **Document lessons learned in `.github/LESSONS.md`**
    - After EVERY bug fix or debugging session, add a one-sentence lesson to LESSONS.md
    - Check LESSONS.md when creating new code or debugging  🔍📚
    - If the lesson already exists, increment its counter (e.g., "(3)") instead of duplicating
@@ -307,11 +317,13 @@ See `.github/instructions/glossary-and-function-architecture.instructions.md` fo
 
 ## Documentation Map
 
+**POSIX shell patterns?** → `.github/SHELL_CODE_PATTERNS.md` ⭐ **DOCUMENT NEW PATTERNS HERE**
+**Cross-platform issues?** → `.github/CROSS_PLATFORM_PATTERNS.md` ⭐ **DOCUMENT NEW PATTERNS HERE**
 **Working on spells?** → `.github/instructions/spells.instructions.md`
 **Working on imps?** → `.github/instructions/imps.instructions.md`
 **Writing tests?** → `.github/instructions/tests.instructions.md`
 **Need logging/output?** → `.github/instructions/logging.instructions.md`
-**Cross-platform issues?** → `.github/instructions/cross-platform.instructions.md`
+**Platform compatibility (quick ref)?** → `.github/instructions/cross-platform.instructions.md`
 **Proven patterns?** → `.github/instructions/best-practices.instructions.md`
 **Lessons from debugging?** → `.github/LESSONS.md`
 **Full style guide?** → `.AGENTS.md`
