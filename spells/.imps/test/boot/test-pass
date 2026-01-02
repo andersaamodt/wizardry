@@ -27,21 +27,23 @@ test_pass() {
     esac
   fi
   
+  # Format the test number [x/y] if total is known
+  num_str=""
+  if [ -n "$num" ]; then
+    if [ -n "${WIZARDRY_GLOBAL_SUBTEST_TOTAL-}" ] && [ "$WIZARDRY_GLOBAL_SUBTEST_TOTAL" -gt 0 ]; then
+      num_str="[${num}/${WIZARDRY_GLOBAL_SUBTEST_TOTAL}] "
+    else
+      num_str="#${num} "
+    fi
+  fi
+  
   # Use colors if supported
   if [ -t 1 ] && command -v tput >/dev/null 2>&1 && tput setaf 1 >/dev/null 2>&1; then
     green=$(tput setaf 2 2>/dev/null || true)
     reset=$(tput sgr0 2>/dev/null || true)
-    if [ -n "$num" ]; then
-      printf '%sPASS%s #%s %s\n' "$green" "$reset" "$num" "$desc"
-    else
-      printf '%sPASS%s %s\n' "$green" "$reset" "$desc"
-    fi
+    printf '%sPASS%s %s%s\n' "$green" "$reset" "$num_str" "$desc"
   else
-    if [ -n "$num" ]; then
-      printf 'PASS #%s %s\n' "$num" "$desc"
-    else
-      printf 'PASS %s\n' "$desc"
-    fi
+    printf 'PASS %s%s\n' "$num_str" "$desc"
   fi
 }
 

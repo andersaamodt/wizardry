@@ -532,7 +532,7 @@ test_level() {
   level_total=0
 
   if [ -z "$spell_list" ] && [ -z "$imp_list" ]; then
-    printf '  %s✓%s No spells or imps to test.\n' "$_green" "$_reset"
+    printf '  %s%s No spells or imps to test.\n' "$_green" "$_reset"
     return 0
   fi
 
@@ -586,11 +586,11 @@ test_level() {
 
     if run_test_file "$test_path" "$spell"; then
       level_pass=$((level_pass + 1))
-      printf '  %s✓%s %s\n' "$_green" "$_reset" "$test_name"
+      printf '  %s%s %s\n' "$_green" "$_reset" "$test_name"
     else
       level_fail=$((level_fail + 1))
       failed_tests="${failed_tests:+$failed_tests }$test_name"
-      printf '  %s✗%s %s\n' "$_red" "$_reset" "$test_name"
+      printf '  %s%s %s\n' "$_red" "$_reset" "$test_name"
     fi
   done
 
@@ -627,20 +627,20 @@ test_level() {
     test_timeout="${WIZARDRY_TEST_TIMEOUT:-180}"
     if run_test_file "$test_path" "$imp"; then
       level_pass=$((level_pass + 1))
-      printf '  %s✓%s %s\n' "$_green" "$_reset" "$test_name"
+      printf '  %s%s %s\n' "$_green" "$_reset" "$test_name"
     else
       level_fail=$((level_fail + 1))
       failed_tests="${failed_tests:+$failed_tests }$test_name"
-      printf '  %s✗%s %s\n' "$_red" "$_reset" "$test_name"
+      printf '  %s%s %s\n' "$_red" "$_reset" "$test_name"
     fi
   done
 
   if [ "$level_total" -gt 0 ]; then
     if [ "$level_fail" -eq 0 ]; then
-      printf '  %s✓%s Level %d: %d/%d tests passed' "$_green" "$_reset" \
+      printf '  %s%s Level %d: %d/%d tests passed' "$_green" "$_reset" \
         "$level" "$level_pass" "$level_total"
     else
-      printf '  %s✗%s Level %d: %d/%d tests passed (%d failed)' "$_red" "$_reset" \
+      printf '  %s%s Level %d: %d/%d tests passed (%d failed)' "$_red" "$_reset" \
         "$level" "$level_pass" "$level_total" "$level_fail"
       failed_levels="${failed_levels:+$failed_levels }$level"
     fi
@@ -651,9 +651,9 @@ test_level() {
     fi
   else
     if [ "$level_skip" -gt 0 ]; then
-      printf '  %s✓%s No tests found (%d skipped)\n' "$_green" "$_reset" "$level_skip"
+      printf '  %s%s No tests found (%d skipped)\n' "$_green" "$_reset" "$level_skip"
     else
-      printf '  %s✓%s No tests found\n' "$_green" "$_reset"
+      printf '  %s%s No tests found\n' "$_green" "$_reset"
     fi
   fi
 
@@ -681,9 +681,9 @@ while [ "$current_level" -le "$target_level" ]; do
   test_level "$current_level" || {
     exit_code=$?
     if [ "$last_success_level" -ge 0 ]; then
-      printf '\n%s✓%s Tested to Level %d\n' "$_green" "$_reset" "$last_success_level"
+      printf '\n%s%s Tested to Level %d\n' "$_green" "$_reset" "$last_success_level"
     fi
-    printf '%s✗%s Testing failed at Level %d\n' "$_red" "$_reset" "$current_level"
+    printf '%s%s Testing failed at Level %d\n' "$_red" "$_reset" "$current_level"
     return "$exit_code"
   }
   last_success_level=$current_level
@@ -844,12 +844,12 @@ fi
 
 if [ "$status" -eq 0 ]; then
   if [ "$run_all" -eq 1 ]; then
-    printf '\n%s✓%s Tested all (Level %d)\n' "$_green" "$_reset" "$last_success_level"
+    printf '\n%s%s Tested all (Level %d)\n' "$_green" "$_reset" "$last_success_level"
   else
-    printf '\n%s✓%s All tests passed\n' "$_green" "$_reset"
+    printf '\n%s%s All tests passed\n' "$_green" "$_reset"
   fi
 else
-  printf '\n%s✗%s Some tests failed\n' "$_red" "$_reset"
+  printf '\n%s%s Some tests failed\n' "$_red" "$_reset"
 fi
 
 if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then

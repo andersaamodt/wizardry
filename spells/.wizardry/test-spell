@@ -183,6 +183,14 @@ fi
 WIZARDRY_GLOBAL_SUBTEST_NUM=0
 export WIZARDRY_GLOBAL_SUBTEST_NUM
 
+# Count total number of run_test_case calls in the test file to show [x/y] format
+# This gives better context during test execution
+# Count only the current test file, not common-tests (they run separately)
+if [ -f "$abs_test" ]; then
+  WIZARDRY_GLOBAL_SUBTEST_TOTAL=$(grep -c "^run_test_case\|^_run_both_patterns" "$abs_test" 2>/dev/null || echo "0")
+  export WIZARDRY_GLOBAL_SUBTEST_TOTAL
+fi
+
 # Run the test
 test_timeout="${WIZARDRY_TEST_TIMEOUT:-180}"
 
@@ -289,6 +297,15 @@ else
   if [ "$run_common_tests" -eq 1 ] && [ -n "$spell_path" ]; then
     info ""
     info "Running common tests on spells/$spell_path..."
+    
+    # Reset counter and set total for common-tests
+    # Common tests run in a separate shell, so we export these for them
+    WIZARDRY_GLOBAL_SUBTEST_NUM=0
+    if [ -f "$test_dir/common-tests.sh" ]; then
+      WIZARDRY_GLOBAL_SUBTEST_TOTAL=$(grep -c "^run_test_case\|^_run_both_patterns" "$test_dir/common-tests.sh" 2>/dev/null || echo "0")
+    fi
+    export WIZARDRY_GLOBAL_SUBTEST_NUM
+    export WIZARDRY_GLOBAL_SUBTEST_TOTAL
     
     # Run common-tests.sh with the spell path
     if [ -n "$timeout_cmd" ]; then
