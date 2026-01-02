@@ -613,7 +613,7 @@ test_level() {
     global_test_count=$((global_test_count + 1))
 
     if [ "$verbose" -eq 1 ]; then
-      printf '  Running %s...\n' "$test_name"
+      printf '  [%d/%d] Running %s...\n' "$global_test_count" "$global_test_total" "$test_name"
     fi
 
     if [ "$compiled_mode" = "1" ]; then
@@ -637,11 +637,11 @@ test_level() {
 
     if run_test_file "$test_path" "$spell"; then
       level_pass=$((level_pass + 1))
-      printf '  %s✓%s [%d/%d] %s\n' "$_green" "$_reset" "$global_test_count" "$global_test_total" "$test_name"
+      printf '  %s✓%s %s\n' "$_green" "$_reset" "$test_name"
     else
       level_fail=$((level_fail + 1))
       failed_tests="${failed_tests:+$failed_tests }$test_name"
-      printf '  %s✗%s [%d/%d] %s\n' "$_red" "$_reset" "$global_test_count" "$global_test_total" "$test_name"
+      printf '  %s✗%s %s\n' "$_red" "$_reset" "$test_name"
     fi
   done
 
@@ -665,7 +665,7 @@ test_level() {
     global_test_count=$((global_test_count + 1))
 
     if [ "$verbose" -eq 1 ]; then
-      printf '  Running %s...\n' "$test_name"
+      printf '  [%d/%d] Running %s...\n' "$global_test_count" "$global_test_total" "$test_name"
     fi
 
     if [ "$compiled_mode" = "1" ]; then
@@ -681,11 +681,11 @@ test_level() {
     test_timeout="${WIZARDRY_TEST_TIMEOUT:-180}"
     if run_test_file "$test_path" "$imp"; then
       level_pass=$((level_pass + 1))
-      printf '  %s✓%s [%d/%d] %s\n' "$_green" "$_reset" "$global_test_count" "$global_test_total" "$test_name"
+      printf '  %s✓%s %s\n' "$_green" "$_reset" "$test_name"
     else
       level_fail=$((level_fail + 1))
       failed_tests="${failed_tests:+$failed_tests }$test_name"
-      printf '  %s✗%s [%d/%d] %s\n' "$_red" "$_reset" "$global_test_count" "$global_test_total" "$test_name"
+      printf '  %s✗%s %s\n' "$_red" "$_reset" "$test_name"
     fi
   done
 
