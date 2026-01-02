@@ -2,6 +2,30 @@
 # spell-menu - Display action menu for a spell or custom command
 # Shows options: Cast now, Memorize/Forget, Help, Test spell, Delete (for custom)
 
+# Load required imps for direct execution
+if ! command -v require_wizardry >/dev/null 2>&1; then
+  if [ -n "${WIZARDRY_DIR-}" ]; then
+    _i="$WIZARDRY_DIR/spells/.imps/sys"
+  elif [ -n "${ROOT_DIR-}" ]; then
+    _i="$ROOT_DIR/spells/.imps/sys"
+  else
+    _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
+  fi
+  [ -f "$_i/require-wizardry" ] && . "$_i/require-wizardry"
+fi
+
+if ! command -v env_clear >/dev/null 2>&1; then
+  if [ -n "${WIZARDRY_DIR-}" ]; then
+    _i="$WIZARDRY_DIR/spells/.imps/sys"
+  elif [ -n "${ROOT_DIR-}" ]; then
+    _i="$ROOT_DIR/spells/.imps/sys"
+  else
+    _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
+  fi
+  [ -f "$_i/env-clear" ] && . "$_i/env-clear"
+fi
+
+
 # Handle --help before sourcing env_clear (for standalone/compiled execution)
 case "${1-}" in
 --help|--usage|-h)

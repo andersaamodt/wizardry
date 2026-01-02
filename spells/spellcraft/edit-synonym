@@ -2,6 +2,30 @@
 # This spell edits an existing synonym.
 # Can change either the synonym word or the target spell.
 
+# Load required imps for direct execution
+if ! command -v require_wizardry >/dev/null 2>&1; then
+  if [ -n "${WIZARDRY_DIR-}" ]; then
+    _i="$WIZARDRY_DIR/spells/.imps/sys"
+  elif [ -n "${ROOT_DIR-}" ]; then
+    _i="$ROOT_DIR/spells/.imps/sys"
+  else
+    _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
+  fi
+  [ -f "$_i/require-wizardry" ] && . "$_i/require-wizardry"
+fi
+
+if ! command -v env_clear >/dev/null 2>&1; then
+  if [ -n "${WIZARDRY_DIR-}" ]; then
+    _i="$WIZARDRY_DIR/spells/.imps/sys"
+  elif [ -n "${ROOT_DIR-}" ]; then
+    _i="$ROOT_DIR/spells/.imps/sys"
+  else
+    _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
+  fi
+  [ -f "$_i/env-clear" ] && . "$_i/env-clear"
+fi
+
+
 edit_synonym_usage() {
   cat <<'USAGE'
 Usage: edit-synonym WORD [--word NEW_WORD | --spell NEW_SPELL]

@@ -3,6 +3,18 @@
 # Bootstrap spell: prints a short identifier for the current OS.
 # Use -v to narrate detection while exporting DISTRO for callers.
 
+# Load required imps for direct execution
+if ! command -v env_clear >/dev/null 2>&1; then
+  if [ -n "${WIZARDRY_DIR-}" ]; then
+    _i="$WIZARDRY_DIR/spells/.imps/sys"
+  elif [ -n "${ROOT_DIR-}" ]; then
+    _i="$ROOT_DIR/spells/.imps/sys"
+  else
+    _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
+  fi
+  [ -f "$_i/env-clear" ] && . "$_i/env-clear"
+fi
+
 detect_distro_usage() {
 cat <<'USAGE'
 Usage: detect-distro [-v]

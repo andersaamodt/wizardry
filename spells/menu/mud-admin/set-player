@@ -1,5 +1,17 @@
 #!/bin/sh
 
+if ! command -v env_clear >/dev/null 2>&1; then
+  if [ -n "${WIZARDRY_DIR-}" ]; then
+    _i="$WIZARDRY_DIR/spells/.imps/sys"
+  elif [ -n "${ROOT_DIR-}" ]; then
+    _i="$ROOT_DIR/spells/.imps/sys"
+  else
+    _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
+  fi
+  [ -f "$_i/env-clear" ] && . "$_i/env-clear"
+fi
+
+
 # This spell sets the current player identity for MUD connections.
 # The player name is stored in the MUD config directory.
 
