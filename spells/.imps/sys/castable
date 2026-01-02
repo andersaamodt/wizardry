@@ -68,6 +68,36 @@ castable() {
     return 2
   fi
 
+  # Preload essential functions for spell execution
+  # This allows spells to call require_wizardry and env_clear without bootstrap sections
+  if ! command -v require_wizardry >/dev/null 2>&1; then
+    # Detect wizardry directory
+    _cast_wiz_dir="${WIZARDRY_DIR-}"
+    if [ -z "$_cast_wiz_dir" ]; then
+      # Try to detect from script location
+      _cast_script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || _cast_script_dir=""
+      if [ -n "$_cast_script_dir" ]; then
+        # Navigate up to find wizardry root
+        _cast_check_dir="$_cast_script_dir"
+        while [ "$_cast_check_dir" != "/" ]; do
+          if [ -d "$_cast_check_dir/spells/.imps" ]; then
+            _cast_wiz_dir="$_cast_check_dir"
+            break
+          fi
+          _cast_check_dir=$(dirname "$_cast_check_dir")
+        done
+      fi
+    fi
+    
+    # Source essential imps if wizardry directory found
+    if [ -n "$_cast_wiz_dir" ] && [ -d "$_cast_wiz_dir/spells/.imps/sys" ]; then
+      for _cast_imp in require-wizardry env-clear; do
+        _cast_imp_path="$_cast_wiz_dir/spells/.imps/sys/$_cast_imp"
+        [ -f "$_cast_imp_path" ] && . "$_cast_imp_path"
+      done
+    fi
+  fi
+
   # Call the spell function
   "$_cast_func" "$@"
 }

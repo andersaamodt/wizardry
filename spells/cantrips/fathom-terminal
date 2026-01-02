@@ -23,21 +23,6 @@ case "${1-}" in
   ;;
 esac
 
-# Bootstrap: Load essential functions if not already available
-# This allows fathom-terminal to work when executed directly (tests) or when invoked (normal use)
-if ! command -v require_wizardry >/dev/null 2>&1; then
-  # Functions not preloaded - we're being executed directly
-  # Source word-of-binding to get the loading mechanism
-  _ft_wob="${WIZARDRY_DIR:-$HOME/.wizardry}/spells/.imps/sys/word-of-binding"
-  if [ -f "$_ft_wob" ]; then
-    WIZARDRY_SOURCE_WORD_OF_BINDING=1 . "$_ft_wob" 2>/dev/null || :
-    # Now load essential imps
-    for _imp in require-wizardry env-clear; do
-      word_of_binding "$_imp" 2>/dev/null || :
-    done
-  fi
-fi
-
 require_wizardry || return 1
 
 # Use conditional strictness based on execution context

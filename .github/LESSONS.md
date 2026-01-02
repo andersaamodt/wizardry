@@ -15,6 +15,7 @@
 
 ## Lessons
 
+- Spells should call `require_wizardry()` and `env_clear()` (underscored functions) not `require-wizardry` or `env-clear` (hyphenated commands); castable preloads these functions automatically.
 - When inlining helper functions, use global search-replace to ensure ALL calls are replaced, including those outside the main function body.
 - Editing files with text processing tools (sed, awk, perl) can change file permissions - always restore execute bits afterwards.
 - The `find -executable` flag is not portable to BSD/macOS; use `find -perm /111` instead to match files with any execute bit.
