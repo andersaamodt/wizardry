@@ -258,6 +258,54 @@ incomplete_count=0
 min_subtests_imp=2
 min_subtests_spell=3
 
+# Count total number of test files for [x/y] numbering
+# This is done before running tests to show progress
+global_test_count=0
+global_test_total=0
+
+# Count test files across all levels
+if [ "$only_this_level" -eq 1 ]; then
+  count_start=$target_level
+  count_end=$target_level
+else
+  count_start=0
+  count_end=$target_level
+fi
+
+count_level=$count_start
+while [ "$count_level" -le "$count_end" ]; do
+  count_spell_list=$(get_level_spells "$count_level" 2>/dev/null || printf '')
+  count_imp_list=$(get_level_imps "$count_level" 2>/dev/null || printf '')
+  
+  for count_spell_info in $count_spell_list; do
+    case "$count_spell_info" in
+      *:*)
+        count_spell=$(printf '%s' "$count_spell_info" | cut -d: -f1)
+        count_dir=$(printf '%s' "$count_spell_info" | cut -d: -f2)
+        ;;
+      *)
+        count_spell=$count_spell_info
+        count_dir="cantrips"
+        ;;
+    esac
+    
+    count_test_file="$test_dir/$count_dir/test-$count_spell.sh"
+    if [ -f "$count_test_file" ]; then
+      global_test_total=$((global_test_total + 1))
+    fi
+  done
+  
+  for count_imp in $count_imp_list; do
+    count_test_file="$test_dir/.imps/$count_imp"
+    count_test_file="${count_test_file%/*}/test-$(basename "$count_imp").sh"
+    if [ -f "$count_test_file" ]; then
+      global_test_total=$((global_test_total + 1))
+    fi
+  done
+  
+  count_level=$((count_level + 1))
+done
+
 failure_output_file=$(temp-file test-magic) || return 1
 trap 'cleanup-file "$failure_output_file"' EXIT HUP INT TERM
 
@@ -532,7 +580,7 @@ test_level() {
   level_total=0
 
   if [ -z "$spell_list" ] && [ -z "$imp_list" ]; then
-    printf '  %s✓%s No spells or imps to test.\n' "$_green" "$_reset"
+    printf '  No spells or imps to test.\n'
     return 0
   fi
 
@@ -560,9 +608,12 @@ test_level() {
     test_name=$(basename "$test_file")
     test_path="${test_file#$root_dir/.tests/}"
     level_total=$((level_total + 1))
+    
+    # Increment counter before running test so [x/y] displays correctly
+    global_test_count=$((global_test_count + 1))
 
     if [ "$verbose" -eq 1 ]; then
-      printf '  Running %s...\n' "$test_name"
+      printf '  [%d/%d] Running %s...\n' "$global_test_count" "$global_test_total" "$test_name"
     fi
 
     if [ "$compiled_mode" = "1" ]; then
@@ -609,9 +660,12 @@ test_level() {
     test_name=$(basename "$test_file")
     test_path="${test_file#$root_dir/.tests/}"
     level_total=$((level_total + 1))
+    
+    # Increment counter before running test so [x/y] displays correctly
+    global_test_count=$((global_test_count + 1))
 
     if [ "$verbose" -eq 1 ]; then
-      printf '  Running %s...\n' "$test_name"
+      printf '  [%d/%d] Running %s...\n' "$global_test_count" "$global_test_total" "$test_name"
     fi
 
     if [ "$compiled_mode" = "1" ]; then
@@ -651,9 +705,9 @@ test_level() {
     fi
   else
     if [ "$level_skip" -gt 0 ]; then
-      printf '  %s✓%s No tests found (%d skipped)\n' "$_green" "$_reset" "$level_skip"
+      printf '  No tests found (%d skipped)\n' "$level_skip"
     else
-      printf '  %s✓%s No tests found\n' "$_green" "$_reset"
+      printf '  No tests found\n'
     fi
   fi
 
@@ -681,7 +735,7 @@ while [ "$current_level" -le "$target_level" ]; do
   test_level "$current_level" || {
     exit_code=$?
     if [ "$last_success_level" -ge 0 ]; then
-      printf '\n%s✓%s Tested to Level %d\n' "$_green" "$_reset" "$last_success_level"
+      printf '\nTested to Level %d\n' "$last_success_level"
     fi
     printf '%s✗%s Testing failed at Level %d\n' "$_red" "$_reset" "$current_level"
     return "$exit_code"
@@ -844,9 +898,9 @@ fi
 
 if [ "$status" -eq 0 ]; then
   if [ "$run_all" -eq 1 ]; then
-    printf '\n%s✓%s Tested all (Level %d)\n' "$_green" "$_reset" "$last_success_level"
+    printf '\nTested all (Level %d)\n' "$last_success_level"
   else
-    printf '\n%s✓%s All tests passed\n' "$_green" "$_reset"
+    printf '\nAll tests passed\n'
   fi
 else
   printf '\n%s✗%s Some tests failed\n' "$_red" "$_reset"

@@ -6,13 +6,14 @@
 
 demo_magic_usage() {
   cat <<'USAGE'
-Usage: demo-magic [LEVEL]
+Usage: demo-magic [LEVEL|all]
 
 Demonstrate wizardry features by running checks on spells and narrating results.
 Each level demonstrates spells validated by the corresponding banish level.
 
 Arguments:
-  LEVEL         Demonstration level (0-29, default: 1)
+  LEVEL         Demonstration level (0-29)
+  all           Demonstrate all levels (default)
                 Level 0: POSIX & platform foundation
                 Level 1: Wizardry installation
                 Level 2: Glossary system
@@ -724,9 +725,13 @@ if ! command -v validate_spells >/dev/null 2>&1; then
 fi
 
 # Parse level argument
-demo_level=1
+demo_level=29  # Default to all levels
 if [ "$#" -gt 0 ]; then
   case "$1" in
+    all)
+      demo_level=29
+      shift
+      ;;
     [0-9]|[0-9][0-9])
       demo_level=$1
       shift

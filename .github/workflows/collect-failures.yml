@@ -6,7 +6,7 @@ name: Collect test failures
 # 3. Workflow logs (sequential output for easy review)
 #
 # For AI agents: When a user asks you to fix test failures:
-# 1. Run: ./read-test-failures 783  (replace 783 with actual PR number)
+# 1. Run: ./.github/read-test-failures 783  (replace 783 with actual PR number)
 #    This fetches the PR description and extracts the failures section
 # 2. Read the output to see what's failing
 # 3. Fix the issues and commit your changes
@@ -75,13 +75,16 @@ jobs:
             "Demonstrate wizardry"
             "Compile wizardry"
           )
+          
+          # Total number of workflows we're monitoring
+          total_workflows=${#workflows[@]}
 
           # Function to extract test summary from logs
           extract_test_summary() {
             local logfile=$1
-            # First remove everything from "Process exited" or "Process completed" onward
+            # Keep the "Process completed/exited" line but remove everything after it
             local cleaned_log="/tmp/cleaned_$$.txt"
-            sed '/Process \(exited\|completed\)/,$d' "$logfile" > "$cleaned_log"
+            sed '/Process \(exited\|completed\)/q' "$logfile" > "$cleaned_log"
             
             # Extract from "Summary" heading line to the end of file
             if grep -q "^Summary$" "$cleaned_log"; then
@@ -108,9 +111,9 @@ jobs:
             local job_name=$2
             local workflow_name=$3
 
-            # First remove everything from "Process exited" or "Process completed" onward from the entire log
+            # Keep the "Process completed/exited" line but remove everything after it from the entire log
             local cleaned_log="/tmp/cleaned_$$.txt"
-            sed '/Process \(exited\|completed\)/,$d' "$logfile" > "$cleaned_log"
+            sed '/Process \(exited\|completed\)/q' "$logfile" > "$cleaned_log"
 
             # Check for early failure (workflow failed before tests ran)
             # Look for: command not found, No such file or directory, permission denied, etc.
@@ -124,6 +127,35 @@ jobs:
             # For unit tests, extract test summary
             if echo "$workflow_name" | grep -qi "unit test"; then
               extract_test_summary "$logfile"
+              rm -f "$cleaned_log"
+              return
+            fi
+
+            # For demonstrate wizardry, extract demo-magic output tail (where failures appear)
+            if echo "$workflow_name" | grep -qi "demonstrate"; then
+              # Demo-magic shows failures at the end, so extract the last part of output
+              # Look for error indicators or just show the tail
+              if grep -qE "error|failed|FAIL" "$cleaned_log"; then
+                # Show errors and context
+                grep -iE -B 5 -A 2 "error|failed|FAIL" "$cleaned_log" | tail -50
+              else
+                # Show last part of demo-magic output
+                tail -30 "$cleaned_log"
+              fi
+              rm -f "$cleaned_log"
+              return
+            fi
+
+            # For POSIX/linting workflows, extract only FAIL lines (not PASS)
+            if echo "$workflow_name" | grep -qi "POSIX\|linting\|style"; then
+              # Extract only FAIL lines, not PASS lines
+              if grep -q "^FAIL " "$cleaned_log"; then
+                # Show all FAIL lines
+                grep "^FAIL " "$cleaned_log"
+              else
+                # Fallback to generic error extraction
+                grep -i "ERROR" "$cleaned_log" | head -50
+              fi
               rm -f "$cleaned_log"
               return
             fi
@@ -147,11 +179,33 @@ jobs:
           update_pr_description() {
             local pr_number="$PR_NUMBER"
             local failure_summary_content
+            local completed_count
+            
+            # Count how many workflows are completed
+            completed_count=$(ls -1 /tmp/reported_runs 2>/dev/null | wc -l)
             
             if [ -s "$failure_summary_file" ]; then
               failure_summary_content=$(cat "$failure_summary_file")
             else
               failure_summary_content=""
+            fi
+            
+            # Determine status message
+            local status_message
+            if [ "$completed_count" -ge "$total_workflows" ]; then
+              # All workflows completed
+              if [ -n "$failure_summary_content" ]; then
+                status_message=""  # Failures are shown, no need for extra message
+              else
+                status_message="✅ All tests passing!"
+              fi
+            else
+              # Still running
+              if [ -n "$failure_summary_content" ]; then
+                status_message="⚠️ Tests are still running. More errors may appear."
+              else
+                status_message="⏳ Tests are running. Errors will be copied here by the collect-failures workflow."
+              fi
             fi
             
             # Call GitHub API to update PR description
@@ -162,7 +216,8 @@ jobs:
                 echo "" && echo "---" && echo "" && \
                 echo "## 🔍 Latest Test Failures" && echo "" && \
                 echo "**Updated:** $(date -u '+%Y-%m-%d %H:%M:%S') UTC" && echo "" && \
-                if [ -n "$failure_summary_content" ]; then cat "$failure_summary_file"; else echo "✅ All tests passing!"; fi && \
+                if [ -n "$failure_summary_content" ]; then cat "$failure_summary_file"; echo ""; fi && \
+                echo "$status_message" && \
                 echo "" && echo "<!-- test-failures-end -->")" \
               > /dev/null 2>&1 || echo "⚠️ Could not update PR description"
           }
@@ -243,6 +298,9 @@ jobs:
                   echo '```'
                   echo ""
                 } >> "$failure_summary_file"
+                
+                # Update PR description after each job (not after all jobs)
+                update_pr_description
               else
                 echo "⚠️ Could not download logs"
                 echo ""
@@ -253,15 +311,16 @@ jobs:
 
             rm -f /tmp/jobs_${run_id}.json
             echo ""
-            
-            # Update PR description after each failure
-            update_pr_description
           }
 
           # Poll for workflow completions
           poll_count=0
           max_polls=720  # 720 * 5s = 1 hour max
           completed_count=0
+          
+          # Initial PR description update to show tests are starting
+          echo "Setting initial PR description status..."
+          update_pr_description
 
           while [ $poll_count -lt $max_polls ]; do
             poll_count=$((poll_count + 1))
@@ -342,7 +401,7 @@ jobs:
             echo "This workflow monitors all test workflows for this PR and reports failures."
             echo ""
             echo "Failures are added to the PR description in the '## 🔍 Latest Test Failures' section."
-            echo "AI agents can read them by running: \`./read-test-failures ${{ github.event.pull_request.number }}\`"
+            echo "AI agents can read them by running: \`./.github/read-test-failures ${{ github.event.pull_request.number }}\`"
             echo ""
             echo "See the workflow logs above for detailed failure information."
           } >> "$GITHUB_STEP_SUMMARY"
@@ -375,6 +434,12 @@ jobs:
             
             let currentBody = pullRequest.body || '';
             
+            // Check if the intermediate updates already set a status message
+            // If the body contains "Tests are running" or "Tests are still running", 
+            // the bash script already updated it, so we should NOT overwrite
+            const hasRunningMessage = currentBody.includes('⏳ Tests are running') || 
+                                       currentBody.includes('⚠️ Tests are still running');
+            
             // Create failure section
             let failureSection;
             if (hasFailures && failureSummary) {
@@ -392,6 +457,10 @@ jobs:
                 '',
                 '<!-- test-failures-end -->'
               ].join('\n');
+            } else if (hasRunningMessage) {
+              // Don't overwrite if tests are still running
+              console.log('Tests still running, keeping existing status message');
+              return;
             } else {
               failureSection = [
                 '',

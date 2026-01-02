@@ -17,4 +17,8 @@
 
 - When inlining helper functions, use global search-replace to ensure ALL calls are replaced, including those outside the main function body.
 - Editing files with text processing tools (sed, awk, perl) can change file permissions - always restore execute bits afterwards.
+- The `find -executable` flag is not portable to BSD/macOS; use `find -perm /111` instead to match files with any execute bit.
+- When gloss generation fails silently, check that find commands are BSD-compatible and validate WIZARDRY_DIR exists.
+- Parse must search WIZARDRY_DIR for spell files as fallback when preloaded functions aren't available (gloss execution in new process).
+- Cross-platform shell compatibility requires testing flag availability (e.g., find flags) on both GNU and BSD implementations.
 
