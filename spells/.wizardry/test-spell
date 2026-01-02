@@ -94,7 +94,25 @@ fi
 
 export PATH
 
-# Source env_clear after PATH is set up
+# Set WIZARDRY_DIR so word_of_binding can find imps
+WIZARDRY_DIR=$root_dir
+export WIZARDRY_DIR
+
+# Preload essential imps that wizardry spells use
+# Source word-of-binding first to get its function
+if [ -f "$root_dir/spells/.imps/sys/word-of-binding" ]; then
+  WIZARDRY_SOURCE_WORD_OF_BINDING=1
+  . "$root_dir/spells/.imps/sys/word-of-binding"
+  unset WIZARDRY_SOURCE_WORD_OF_BINDING
+  
+  # Preload common imps that spells call as functions
+  for _imp in require-wizardry env-clear env-or die warn fail say info success debug step temp-file cleanup-file; do
+    word_of_binding "$_imp" 2>/dev/null || :
+  done
+  unset _imp
+fi
+
+# Now env_clear function is available
 env_clear
 
 # Source test boot imps for standardized output functions
