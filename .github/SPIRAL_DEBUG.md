@@ -1,141 +1,143 @@
-# Parse Loop Debug History
+# SPIRAL_DEBUG.md - Paradigm Conversion Progress
 
-## ✅ COMPLETE SUCCESS (2025-12-31 14:30 UTC)
+## Current Task: Converting Back to Flat-File Execution
 
-**All Issues Resolved:** The wizardry glossary system is now fully functional on macOS with zsh.
+**Date Started:** 2025-12-31  
+**Status:** In Progress
 
-### Issues Fixed
+### Problem Statement
 
-1. **Gloss Execution Hang** - Glosses used `exec parse "cmd"` but exec cannot execute shell functions
-   - **Fix**: Use full path `exec "$WIZARDRY_DIR/spells/.imps/lex/parse" "cmd"`
-   
-2. **Background Job Hang** - `find_executable` not exported to zsh background jobs
-   - **Fix**: Added `find_executable` to function export list
+**Word-of-binding paradigm issues:**
+- Function preloading for performance
+- Glosses/shims for hyphenated commands  
+- invoke-wizardry for shell initialization
+- **Critical issue:** Executed commands run in subshells without preloaded functions (negated performance benefits)
+- **Menu spell stopped working** and never worked again after this paradigm shift
 
-3. **Perceived Slowness** - Debug output and main-menu debug statements
-   - **Fix**: Removed 30 debug statements from main-menu, added completion message
+**Decision:** Return to the old, simple PATH-based paradigm (pre-word-of-binding) while preserving good changes made since then.
 
-### Final Status
+### What to Keep vs Remove
 
-- ✅ **generate-glosses successfully generates ~390 glosses**
-- ✅ **All spells, imps, and synonyms have glosses**
-- ✅ **main-menu works without hanging**
-- ✅ **Background job completes and reports completion**
-- ✅ **All 6 generate-glosses tests pass**
-- ✅ **All 12 require tests pass**
-- ✅ **System reaches prompt promptly**
-- ✅ **Clear user feedback with "[wizardry] Glossary generation complete"**
+✅ **KEEP:**
+- Banish paradigm and levels-based organization
+- New testing infrastructure improvements
+- Demo-magic improvements
+- Synonyms system (convert to aliases)
+- Parser (leave in passthrough mode)
 
-## Root Causes (All Fixed)
+❌ **REMOVE:**
+- Self-execute pattern (castable/uncastable)
+- Function wrapping in spells and imps
+- word-of-binding infrastructure
+- invoke-wizardry preloading
+- generate-glosses system
+- Glossary directory system
 
-### Issue 1: Gloss Execution Hang
+📝 **SIMPLIFY:**
+- Spells: unwrap functions, inline usage text at standard location
+- Imps: remove function wrappers, keep as simple scripts
+- PATH: use original `path-wizard` (renamed to `learn-spellbook`)
+- Synonyms: generate aliases not glosses
+- Function count: most spells go from 2 functions → 0 functions
 
-**Root Cause:** Glosses used `exec parse "command"` but `exec` cannot execute shell functions - only actual executable files. When a gloss tried to run, it failed with "parse: not found" because `parse` was only loaded as a function, not available in PATH.
+### 💡 CRITICAL INSIGHT: Standard Element Order = Robust Help
 
-**Problem Flow:**
-1. User runs `main-menu` (preloaded function)
-2. `main-menu` calls `require menu "..."`
-3. `require` checks `command -v require-command`
-4. Finds gloss `/path/.glossary/require-command`
-5. Gloss tries `exec parse "require-command" "$@"`
-6. **`exec` fails** - cannot execute functions, only files
-7. Shell hangs with "parse: not found"
+**Standard order matters for robustness:**
 
-**Solution:**
-- Modified `generate-glosses` to use **full path** to parse executable
-- Changed from: `exec parse "cmd" "$@"`
-- Changed to: `exec "$WIZARDRY_DIR/spells/.imps/lex/parse" "cmd" "$@"`
-- This ensures glosses can always find parse regardless of PATH state
+1. Shebang (`#!/bin/sh`)
+2. Opening comment (brief)
+3. **Usage block (inline heredoc - user-facing docs)**
+4. **`--help` handler (BEFORE `set -eu`!)**
+5. `set -eu` strict mode
+6. Main logic
 
-### Issue 2: Background Job Hang
+**Why `--help` before `set -eu`?**
+- ✅ Help works even if wizardry is NOT installed
+- ✅ Help works even if dependencies are MISSING
+- ✅ Help works even if something goes WRONG
+- ✅ Users can ALWAYS get help without errors
 
-**Root Cause:** The background `generate-glosses` job needed `find_executable` to scan for spell files, but this function was not exported to zsh background jobs.
+### Restored Infrastructure: `learn-spellbook`
 
-**Solution:**
-- Added `find_executable` to `_iw_export_funcs` in invoke-wizardry
-- Background job now has access to all required functions
+The original path-wizard utility (now learn-spellbook) that worked well before word-of-binding:
+- Simple add/remove interface: `learn-spellbook add <directory>`
+- Modifies shell init files (`.bashrc`, `.bash_profile`, `.profile` fallback for NixOS)
+- Works across all tested platforms (Linux, macOS, NixOS, BSD)
+- No complex generation or multi-mode operation
 
-### Issue 3: Perceived Slowness
+---
 
-**Root Cause:** Debug mode created excessive output, and main-menu had 30 debug printf statements.
+## Conversion Progress Tracker
 
-**Solution:**
-- Removed 30 debug statements from main-menu
-- Added "[wizardry] Glossary generation complete" message
-- Users now know when background generation finishes
+### Phase 1: Understanding ✅ COMPLETE
+- [x] Explored repository structure
+- [x] Understood current paradigm (word-of-binding, glosses, castable)
+- [x] Identified what to keep vs remove
 
-## Previous Root Causes (Already Fixed)
+### Phase 2: Documentation ✅ COMPLETE
+- [x] Counted files needing conversion: 189 spells, 201 imps
 
-**Primary bug:** Zsh doesn't perform word splitting by default in for-loops. Fixed by enabling `SH_WORD_SPLIT`.
+### Phase 3-12: Remaining Work
+- [ ] Remove self-execute pattern (~217 files)
+- [ ] Unwrap spell functions (~189 files)
+- [ ] Unwrap imp functions (~201 files)
+- [ ] Remove word-of-binding infrastructure
+- [ ] PATH-based architecture with learn-spellbook
+- [ ] Convert synonyms to aliases
+- [ ] Update tests and EXEMPTIONS.md
+- [ ] Final verification
 
-**Secondary bug:** `castable` checked `_WIZARDRY_SOURCING_SPELL` but `word-of-binding` sets `_WIZARDRY_LOADING_SPELLS=1`. When loading level 3 spells (fathom-cursor, etc.), castable didn't skip execution, causing spell functions to run with hyphenated command calls → parse loop.
+---
 
-**Solutions:** 
-- Enable SH_WORD_SPLIT in invoke-wizardry for zsh
-- Fix castable to check `_WIZARDRY_LOADING_SPELLS`
-- Add comprehensive logging to track execution
+## Implementation Notes
 
-## Debug Timeline
+### Conversion Pattern
 
-### Dec 28-29: Initial Investigation
-- Discovered menu not working after fresh install
-- Tried hotloading, PATH-only approaches
-- Settled on hybrid preload + gloss system
+**Example: `spells/arcane/forall`** (73 → 30 lines, 58% reduction)
 
-### Dec 30: Glossary System Implementation
-- Created generate-glosses spell
-- Implemented parse imp with recursion prevention
-- Added async background gloss generation
-- Found BSD/GNU find compatibility issues (fixed with find-executable imp)
+**Key conversion steps:**
+1. Rename usage function to `show_usage()`
+2. Move help handler before `set -eu`, change `return 0` → `exit 0`
+3. Remove wrapper function, extract main logic to top level
+4. Delete `require_wizardry || return 1` and `env_clear`
+5. Remove castable loading block (~30 lines)
+6. Change all `return` → `exit` in main flow
+7. Replace imp calls with POSIX where practical
 
-### Dec 31: Parse Loop Hunt - RESOLVED
-- **08:00** - Loop occurring during level 3 spell loading
-- **09:00** - Added comprehensive logging to invoke-wizardry
-- **09:30** - Identified hang at "Loading spell: fathom-cursor" 
-- **10:00** - Discovered castable variable mismatch bug
-- **10:30** - Fixed castable to check _WIZARDRY_LOADING_SPELLS
-- **11:00** - Still hanging - foreground AND background processes
-- **13:00** - **FOUND ROOT CAUSE**: Glosses use `exec parse` but exec can't execute functions!
-- **13:15** - **FIXED**: Changed glosses to use full path to parse executable
-- **13:30** - **VERIFIED**: All tests pass, no more hangs
+### Files Converted So Far
 
-## Key Lessons
+**10 of 390 files (2.6%)** - Average 45% code reduction, projected ~5,800 line savings
 
-1. **Variable names matter**: Mismatch between castable check and word-of-binding caused hours of debugging
-2. **Logging is essential**: Without detailed logging, would never have found the exact hang point
-3. **Test incrementally**: Each fix revealed another layer of the problem
-4. **Zsh differences**: Word splitting and shell-specific behaviors cause subtle bugs
-5. **Background processes**: Async operations complicate debugging (can't see stderr easily)
-6. **exec vs functions**: `exec` cannot execute shell functions - only actual executable files!
-7. **PATH assumptions**: Don't assume functions will be in PATH - use full paths for exec
+### Priority Order
 
-## Architecture Notes
+1. Infrastructure (remove castable, update PATH, remove word-of-binding)
+2. Core spells (menu system, system management)
+3. Imps by category (out/, cond/, sys/)
+4. Remaining spells (batches of 10-20)
 
-### Function Loading
-- word-of-binding sources spell files with _WIZARDRY_LOADING_SPELLS=1
-- Spells end with `castable "$@"` 
-- Castable MUST check _WIZARDRY_LOADING_SPELLS to skip execution during load
-- If castable doesn't skip, spell function runs during sourcing → calls hyphenated commands → parse loop
+---
 
-### Gloss System (UPDATED)
-- Glossary prepended to PATH
-- Each gloss: `exec "$WIZARDRY_DIR/spells/.imps/lex/parse" "spell-name" "$@"`
-- **CRITICAL**: Must use full path to parse because exec cannot execute functions
-- parse removes glossary from PATH, finds real command
-- Background generation creates ~390 glosses for all spells, imps, and synonyms
+## Special Note: Menu Restoration
 
-### Parse Loop Indicators
-- macOS terminal title shows "parse parse parse..."
-- Process hangs indefinitely
-- No error messages (just loops)
-- Only visible through process monitoring or terminal title
-- **Or**: "parse: not found" error when exec fails to find parse
+**Menu spell worked before word-of-binding and hasn't worked since.**
 
-## For Future AI Agents
+**Strategy:**
+1. Find commit where word-of-binding was introduced
+2. Get menu spell from just before that commit
+3. Convert to flat-file execution pattern
+4. Ensure all dependencies work
+5. Test thoroughly
 
-**When investigating parse loops:**
-1. Add logging at every step (function entry, command calls, returns)
-2. Check what variables word-of-binding/castable use
-3. Verify underscore vs hyphenated names in ALL function calls
-4. Look for background processes that might trigger loops
-5. Test with minimal configuration first
+---
+
+## Completion Checklist
+
+- [ ] All spells are flat files with inline code
+- [ ] All imps are simple executable scripts
+- [ ] PATH includes all spell and imp directories
+- [ ] Synonyms work as shell aliases
+- [ ] No word-of-binding infrastructure remains
+- [ ] **Menu spell works correctly**
+- [ ] Tests pass completely
+- [ ] EXEMPTIONS.md updated
+- [ ] Documentation accurate
