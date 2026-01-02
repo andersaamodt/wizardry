@@ -20,6 +20,11 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+# Cancel previous runs when a new commit is pushed
+concurrency:
+  group: collect-failures-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   actions: read
@@ -103,15 +108,25 @@ jobs:
             local job_name=$2
             local workflow_name=$3
 
-            # For unit tests, extract test summary
-            if echo "$workflow_name" | grep -qi "unit test"; then
-              extract_test_summary "$logfile"
-              return
-            fi
-
             # First remove everything from "Process exited" or "Process completed" onward from the entire log
             local cleaned_log="/tmp/cleaned_$$.txt"
             sed '/Process \(exited\|completed\)/,$d' "$logfile" > "$cleaned_log"
+
+            # Check for early failure (workflow failed before tests ran)
+            # Look for: command not found, No such file or directory, permission denied, etc.
+            if grep -qE "not found|No such file|Permission denied|cannot access" "$cleaned_log"; then
+              # Extract the error and surrounding context (this is an early failure)
+              grep -E -B 10 -A 2 "not found|No such file|Permission denied|cannot access" "$cleaned_log" | head -50
+              rm -f "$cleaned_log"
+              return
+            fi
+
+            # For unit tests, extract test summary
+            if echo "$workflow_name" | grep -qi "unit test"; then
+              extract_test_summary "$logfile"
+              rm -f "$cleaned_log"
+              return
+            fi
 
             # For other workflows, find the failing step in cleaned log
             if grep -q "##\[error\]" "$cleaned_log"; then
