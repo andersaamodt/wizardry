@@ -55,7 +55,7 @@ spell_levels() {
     8)
       _name='Basic Cantrips'
       _spells='ask ask-yn ask-text list-files max-length move up'
-      _imps='input/select-input lex/from lex/to lex/and-then lex/into lex/disambiguate'
+      _imps='input/choose-input lex/from lex/to lex/and-then lex/into lex/disambiguate'
       ;;
     9)
       _name='Validation Helpers'
