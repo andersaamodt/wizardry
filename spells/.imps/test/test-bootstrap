@@ -86,10 +86,16 @@ export WIZARDRY_IMPS_PATH
 WIZARDRY_DIR=$ROOT_DIR
 export WIZARDRY_DIR
 
-# Source invoke-wizardry ONCE per test file to provide standard environment
-# This makes all spell functions and underscore-named imp functions available
-# Tests can then call functions directly (e.g., validate_spells, generate_glosses)
-if [ "${WIZARDRY_TEST_SKIP_INVOKE-0}" != "1" ] && [ -f "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" ]; then
+# Check if invoke-wizardry is already loaded (from workflow or test-magic)
+# If so, skip re-loading it for major performance improvement
+if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
+  # invoke-wizardry already loaded - reuse it (no-op, very fast)
+  : # All functions already available
+elif [ "${WIZARDRY_TEST_SKIP_INVOKE-0}" != "1" ] && [ -f "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" ]; then
+  # invoke-wizardry not loaded yet - load it once per test file
+  # This makes all spell functions and underscore-named imp functions available
+  # Tests can then call functions directly (e.g., validate_spells, generate_glosses)
+  
   # Set flag to load all spells/imps
   WIZARDRY_LOAD_ALL=1
   export WIZARDRY_LOAD_ALL
@@ -99,10 +105,6 @@ if [ "${WIZARDRY_TEST_SKIP_INVOKE-0}" != "1" ] && [ -f "$ROOT_DIR/spells/.imps/s
   . "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" 2>&1 | grep -v "^\[parse\] ERROR" >&2 || {
     printf 'WARNING: invoke-wizardry failed to load in test-bootstrap\n' >&2
   }
-  
-  # Mark that invoke-wizardry is loaded
-  WIZARDRY_INVOKE_LOADED=1
-  export WIZARDRY_INVOKE_LOADED
 else
   # Fallback: Preload essential imps as functions (like invoke-wizardry does)
   # This makes underscore-named functions available for spells that use them
