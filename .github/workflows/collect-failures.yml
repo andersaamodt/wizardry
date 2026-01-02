@@ -436,6 +436,12 @@ jobs:
             
             let currentBody = pullRequest.body || '';
             
+            // Check if the intermediate updates already set a status message
+            // If the body contains "Tests are running" or "Tests are still running", 
+            // the bash script already updated it, so we should NOT overwrite
+            const hasRunningMessage = currentBody.includes('⏳ Tests are running') || 
+                                       currentBody.includes('⚠️ Tests are still running');
+            
             // Create failure section
             let failureSection;
             if (hasFailures && failureSummary) {
@@ -453,6 +459,10 @@ jobs:
                 '',
                 '<!-- test-failures-end -->'
               ].join('\n');
+            } else if (hasRunningMessage) {
+              // Don't overwrite if tests are still running
+              console.log('Tests still running, keeping existing status message');
+              return;
             } else {
               failureSection = [
                 '',
