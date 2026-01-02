@@ -21,4 +21,5 @@
 - When gloss generation fails silently, check that find commands are BSD-compatible and validate WIZARDRY_DIR exists.
 - Parse must search WIZARDRY_DIR for spell files as fallback when preloaded functions aren't available (gloss execution in new process).
 - Cross-platform shell compatibility requires testing flag availability (e.g., find flags) on both GNU and BSD implementations.
+- All AI-facing documentation files (except README.md) must be in `.github/` directory per documentation policy, never in project root.
 
