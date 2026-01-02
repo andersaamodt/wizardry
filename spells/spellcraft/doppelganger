@@ -108,30 +108,12 @@ say "Compiling all spells..."
 compiled_count=0
 failed_count=0
 
-# Process spells from known locations
-for spell_path in \
-  "$repo_dir/spells"/*/* \
-  "$repo_dir/spells"/*/*/* \
-  "$repo_dir/spells"/*/*/*/* \
-  "$repo_dir/spells"/.imps/*/* \
-  "$repo_dir/spells"/.imps/*/*/* \
-  "$repo_dir/spells"/.arcana/*/*
-do
-  # Skip if not a file or not executable
-  [ -f "$spell_path" ] || continue
-  [ -x "$spell_path" ] || continue
-  
-  # Skip hidden files (except .imps and .arcana which are already in path)
-  case "$spell_path" in
-    */.git/*|*/.github/*|*/.*)
-      # Allow .imps and .arcana
-      case "$spell_path" in
-        */.imps/*|*/.arcana/*) ;;
-        *) continue ;;
-      esac
-      ;;
-  esac
-  
+# Find all executable files in spells/ directory (including hidden directories)
+# Only skip .git and .github directories
+find "$repo_dir/spells" -type f -executable \
+  ! -path "*/.git/*" \
+  ! -path "*/.github/*" | \
+while IFS= read -r spell_path; do
   # Get relative path from spells/
   rel_path=${spell_path#"$repo_dir/spells/"}
   
