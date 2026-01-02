@@ -4,6 +4,36 @@
 # Set WIZARDRY_TEST_BOTH_PATTERNS=1 to test both execution patterns.
 set -eu
 
+# Internal function for direct test execution (used by both run_test_case and run_both_patterns)
+_run_test_case_direct() {
+  desc=$1
+  func=$2
+  
+  _test_index=$((_test_index + 1))
+  
+  if [ -n "${WIZARDRY_GLOBAL_SUBTEST_NUM-}" ]; then
+    WIZARDRY_GLOBAL_SUBTEST_NUM=$((WIZARDRY_GLOBAL_SUBTEST_NUM + 1))
+    export WIZARDRY_GLOBAL_SUBTEST_NUM
+  fi
+  
+  if "$func"; then
+    report_result "$desc" 0
+  else
+    ec=$?
+    if [ "$ec" = "222" ]; then
+      _skip_count=$((_skip_count + 1))
+      skip_reason=${TEST_SKIP_REASON-(mode mismatch)}
+      test_skip "$desc" "$skip_reason"
+      unset TEST_SKIP_REASON 2>/dev/null || true
+    else
+      reason=${TEST_FAILURE_REASON-}
+      report_result "$desc" 1 "$reason"
+      record_failure_detail "$_test_index"
+      unset TEST_FAILURE_REASON 2>/dev/null || true
+    fi
+  fi
+}
+
 run_test_case() {
   desc=$1
   func=$2
@@ -15,29 +45,7 @@ run_test_case() {
     run_both_patterns "$desc" "$func" "$spell_path"
   else
     # Default: Direct execution (fast, sufficient for most testing)
-    _test_index=$((_test_index + 1))
-    
-    if [ -n "${WIZARDRY_GLOBAL_SUBTEST_NUM-}" ]; then
-      WIZARDRY_GLOBAL_SUBTEST_NUM=$((WIZARDRY_GLOBAL_SUBTEST_NUM + 1))
-      export WIZARDRY_GLOBAL_SUBTEST_NUM
-    fi
-    
-    if "$func"; then
-      report_result "$desc" 0
-    else
-      ec=$?
-      if [ "$ec" = "222" ]; then
-        _skip_count=$((_skip_count + 1))
-        skip_reason=${TEST_SKIP_REASON-(mode mismatch)}
-        test_skip "$desc" "$skip_reason"
-        unset TEST_SKIP_REASON 2>/dev/null || true
-      else
-        reason=${TEST_FAILURE_REASON-}
-        report_result "$desc" 1 "$reason"
-        record_failure_detail "$_test_index"
-        unset TEST_FAILURE_REASON 2>/dev/null || true
-      fi
-    fi
+    _run_test_case_direct "$desc" "$func"
   fi
 }
 

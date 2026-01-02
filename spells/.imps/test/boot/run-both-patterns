@@ -5,7 +5,7 @@
 # The castable/uncastable imps guarantee parity between patterns.
 
 
-_run_both_patterns() {
+run_both_patterns() {
   set -eu
 
   _desc=${1-}
@@ -33,7 +33,7 @@ _run_both_patterns() {
   # Opt-in: Test both patterns if explicitly requested
   if [ "${WIZARDRY_TEST_BOTH_PATTERNS-}" = "1" ] && [ "$_is_castable" -eq 1 ]; then
     # Test direct execution first
-    _run_test_case "$_desc (direct execution)" "$_func"
+    _run_test_case_direct "$_desc (direct execution)" "$_func"
   
     # Test source-then-invoke second
     # This is done by temporarily setting a flag that run_spell checks
@@ -41,17 +41,17 @@ _run_both_patterns() {
     WIZARDRY_USE_SOURCED_SPELL=1
     export WIZARDRY_USE_SOURCED_SPELL
   
-    _run_test_case "$_desc (sourced)" "$_func"
+    _run_test_case_direct "$_desc (sourced)" "$_func"
   
     # Restore flag
     WIZARDRY_USE_SOURCED_SPELL=$_prev_use_sourced
     export WIZARDRY_USE_SOURCED_SPELL
   else
     # Default: just run the test once (direct execution for castable, sourced for uncastable)
-    _run_test_case "$_desc" "$_func"
+    _run_test_case_direct "$_desc" "$_func"
   fi
 }
 
 # Self-execute when run directly (not sourced)
 case "$0" in
-  */run-both-patterns) _run_both_patterns "$@" ;; esac
+  */run-both-patterns) run_both_patterns "$@" ;; esac
