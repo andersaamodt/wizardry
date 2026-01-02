@@ -90,9 +90,10 @@ jobs:
           extract_failed_step() {
             local logfile=$1
             local job_name=$2
+            local workflow_name=$3
 
             # For unit tests, extract test summary
-            if echo "$job_name" | grep -qi "unit test"; then
+            if echo "$workflow_name" | grep -qi "unit test"; then
               extract_test_summary "$logfile"
               return
             fi
@@ -204,7 +205,7 @@ jobs:
               if gh api "/repos/${{ github.repository }}/actions/jobs/${job_id}/logs" \
                 > /tmp/log_${job_id}.txt 2>&1; then
                 # Extract relevant failure text
-                failure_text=$(extract_failed_step "/tmp/log_${job_id}.txt" "$job_name")
+                failure_text=$(extract_failed_step "/tmp/log_${job_id}.txt" "$job_name" "$workflow_name")
                 echo "$failure_text"
                 echo ""
                 
