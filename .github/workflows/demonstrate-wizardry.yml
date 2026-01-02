@@ -47,4 +47,4 @@ jobs:
             exit 1
           fi
       - name: Run demo-magic
-        run: ./spells/spellcraft/demo-magic all
+        run: . spells/.imps/sys/invoke-wizardry && ./spells/spellcraft/demo-magic all

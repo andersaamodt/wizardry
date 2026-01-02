@@ -27,9 +27,10 @@ jobs:
           # Set wizardry directory
           export WIZARDRY_DIR="${{ github.workspace }}"
           
-          # Call doppelganger directly (as standalone script)
-          # Don't source invoke-wizardry here - it would try to pre-load all spells
-          # including doppelganger itself, creating a circular dependency
+          # Source invoke-wizardry to provide standard environment
+          . "${{ github.workspace }}/spells/.imps/sys/invoke-wizardry"
+          
+          # Call doppelganger to compile all spells
           "${{ github.workspace }}/spells/spellcraft/doppelganger" /tmp/wizardry-doppelganger
           
           echo "=== Doppelganger created ==="
