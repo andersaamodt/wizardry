@@ -22,7 +22,7 @@ These files were moved to archive as part of the AI documentation consolidation 
 
 For current AI-facing documentation, see:
 
-1. **`.AGENTS.md`** - Quick reference for AI agents (205 lines)
+1. **`.github/.AGENTS.md`** - Quick reference for AI agents (205 lines)
 2. **`.github/copilot-instructions.md`** - Main Copilot guide (303 lines)
 3. **`.github/instructions/*.md`** - Topic-specific detailed guides (referenced, not duplicated)
 

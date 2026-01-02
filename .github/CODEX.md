@@ -103,6 +103,6 @@ tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/prefix.XXXXXX")
 
 ## References
 
-- See `.AGENTS.md` for detailed style guide
+- See `.github/.AGENTS.md` for detailed style guide
 - See `README.md` for project principles
 - See `.github/instructions/` for topic-specific guidance

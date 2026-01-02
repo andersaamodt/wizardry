@@ -43,7 +43,7 @@ This fetches test failures from PR description via GitHub API. Works immediately
 ## Essential Reading  📚✨
 
 1. **`README.md`** — Project principles, values, and standards (READ FIRST)  🗝️
-2. **`.AGENTS.md`** — Comprehensive agent instructions and style guide
+2. **`.github/.AGENTS.md`** — Comprehensive agent instructions and style guide
 3. **Topic-specific instructions** (consult as needed):
    - `.github/instructions/castable-uncastable-pattern.instructions.md` — **CRITICAL**: Self-execute pattern rules (return vs exit, set -eu placement, function structure)
    - `.github/instructions/spells.instructions.md` — Spell writing guide
@@ -314,7 +314,7 @@ See `.github/instructions/glossary-and-function-architecture.instructions.md` fo
 **Cross-platform issues?** → `.github/instructions/cross-platform.instructions.md`
 **Proven patterns?** → `.github/instructions/best-practices.instructions.md`
 **Lessons from debugging?** → `.github/LESSONS.md`
-**Full style guide?** → `.AGENTS.md`
+**Full style guide?** → `.github/.AGENTS.md`
 **Project philosophy?** → `README.md`
 
 ## Model Code to Study
