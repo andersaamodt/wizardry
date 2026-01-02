@@ -6,7 +6,7 @@ name: Collect test failures
 # 3. Workflow logs (sequential output for easy review)
 #
 # For AI agents: When a user asks you to fix test failures:
-# 1. Run: ./read-test-failures 783  (replace 783 with actual PR number)
+# 1. Run: ./.github/read-test-failures 783  (replace 783 with actual PR number)
 #    This fetches the PR description and extracts the failures section
 # 2. Read the output to see what's failing
 # 3. Fix the issues and commit your changes
@@ -403,7 +403,7 @@ jobs:
             echo "This workflow monitors all test workflows for this PR and reports failures."
             echo ""
             echo "Failures are added to the PR description in the '## 🔍 Latest Test Failures' section."
-            echo "AI agents can read them by running: \`./read-test-failures ${{ github.event.pull_request.number }}\`"
+            echo "AI agents can read them by running: \`./.github/read-test-failures ${{ github.event.pull_request.number }}\`"
             echo ""
             echo "See the workflow logs above for detailed failure information."
           } >> "$GITHUB_STEP_SUMMARY"

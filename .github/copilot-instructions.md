@@ -8,7 +8,7 @@
 
 ```sh
 cd /home/runner/work/wizardry/wizardry
-./read-test-failures <pr-number>
+./.github/read-test-failures <pr-number>
 ```
 
 This fetches test failures from PR description via GitHub API. Works immediately, no waiting.
@@ -29,7 +29,7 @@ This fetches test failures from PR description via GitHub API. Works immediately
 
 ### Usage Rules
 
-- **Always** run `./read-test-failures` FIRST when debugging
+- **Always** run `./.github/read-test-failures` FIRST when debugging
 - **Never** ask user for error details (fetch them yourself)
 - **After fixes:** Commit and optionally re-run script to verify
 
@@ -346,6 +346,19 @@ See `.github/instructions/glossary-and-function-architecture.instructions.md` fo
 - [ ] Error messages are descriptive, not imperative
 - [ ] Abstract reusable code into imps (if used in 2+ spells)
 - [ ] No new exemptions added without permission
+- [ ] **No new text files created in project root** (unless explicitly requested by user)
+
+## Documentation Policy
+
+**CRITICAL:** Do NOT create new documentation files in the project root directory.
+
+- ✅ **Correct:** Create AI-facing docs in `.github/` or `.github/instructions/`
+- ✅ **Correct:** Add lessons to `.github/LESSONS.md`
+- ✅ **Correct:** Update existing docs when needed
+- ❌ **Wrong:** Create `DEBUGGING_NOTES.md`, `FIXES.md`, `CONVERSION_*.md` etc. in project root
+- ❌ **Wrong:** Create documentation files anywhere except `.github/` (unless user explicitly requests a specific file)
+
+**Why:** The project root should contain only essential user-facing files (README.md). All AI-facing documentation belongs in `.github/` to keep the repository clean and organized.
 
 ---
 
