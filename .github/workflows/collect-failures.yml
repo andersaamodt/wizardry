@@ -116,6 +116,30 @@ jobs:
             rm -f "$cleaned_log"
           }
 
+          # Function to update PR description with current failures
+          update_pr_description() {
+            local pr_number="$PR_NUMBER"
+            local failure_summary_content
+            
+            if [ -s "$failure_summary_file" ]; then
+              failure_summary_content=$(cat "$failure_summary_file")
+            else
+              failure_summary_content=""
+            fi
+            
+            # Call GitHub API to update PR description
+            gh api --method PATCH "/repos/${{ github.repository }}/pulls/${pr_number}" \
+              -f body="$(gh api "/repos/${{ github.repository }}/pulls/${pr_number}" --jq '.body' | \
+                sed '/## 🔍 Latest Test Failures/,/<!-- test-failures-end -->/d' | \
+                sed 's/---$//' | sed '/^$/N;/^\n$/D' && \
+                echo "" && echo "---" && echo "" && \
+                echo "## 🔍 Latest Test Failures" && echo "" && \
+                echo "**Updated:** $(date -u '+%Y-%m-%d %H:%M:%S') UTC" && echo "" && \
+                if [ -n "$failure_summary_content" ]; then cat "$failure_summary_file"; else echo "✅ All tests passing!"; fi && \
+                echo "" && echo "<!-- test-failures-end -->")" \
+              > /dev/null 2>&1 || echo "⚠️ Could not update PR description"
+          }
+
           # Function to process a completed workflow run
           process_workflow_run() {
             local run_id=$1
@@ -138,6 +162,8 @@ jobs:
             if [ "$conclusion" = "success" ]; then
               echo "✅ Passed"
               echo ""
+              # Update PR description after each completion
+              update_pr_description
               return
             fi
 
@@ -200,6 +226,9 @@ jobs:
 
             rm -f /tmp/jobs_${run_id}.json
             echo ""
+            
+            # Update PR description after each failure
+            update_pr_description
           }
 
           # Poll for workflow completions

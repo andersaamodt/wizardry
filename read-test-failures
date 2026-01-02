@@ -42,33 +42,31 @@ fi
 echo "Fetching test failures for PR #$pr_number..."
 echo ""
 
-# Fetch the PR description
-pr_data=$(curl -s "https://api.github.com/repos/andersaamodt/wizardry/pulls/$pr_number" 2>&1)
+# Fetch the PR description using GitHub API
+# Use python to properly parse JSON and extract body
+pr_body=$(curl -s "https://api.github.com/repos/andersaamodt/wizardry/pulls/$pr_number" | \
+  python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('body', '') if data.get('body') else '')" 2>/dev/null)
 
-# Check if PR exists
-if echo "$pr_data" | grep -q '"message":"Not Found"'; then
-  echo "Error: PR #$pr_number not found"
+# Check if we got a body
+if [ -z "$pr_body" ]; then
+  echo "Error: Could not fetch PR #$pr_number or it has no description"
   exit 1
 fi
 
-# Extract the body (description)
-# This is a simple extraction - gets content between "body":" and the next ",
-# Note: This is fragile but works for basic cases without jq
-body=$(echo "$pr_data" | sed -n 's/.*"body":"\(.*\)","reactions.*/\1/p' | head -1)
-
 # Look for the test failures section
-if echo "$body" | grep -q "Latest Test Failures"; then
+if echo "$pr_body" | grep -q "🔍 Latest Test Failures"; then
   echo "========================================"
-  echo " Latest Test Failures"
+  echo " Latest Test Failures (from PR description)"
   echo "========================================"
   echo ""
   
-  # Extract just the failures section
-  # This extracts from "Latest Test Failures" to the end or next major section
-  echo "$body" | sed -n '/Latest Test Failures/,/^## [^🔍]/p' | sed 's/\\n/\n/g' | head -200
+  # Extract the failures section (from marker to end marker)
+  echo "$pr_body" | sed -n '/## 🔍 Latest Test Failures/,/<!-- test-failures-end -->/p' | \
+    sed '$ d'  # Remove the end marker line
   
   echo ""
-  echo "---"
+  echo "========================================"
+  echo ""
   echo "Full PR: https://github.com/andersaamodt/wizardry/pull/$pr_number"
 else
   echo "No test failures section found in PR description."
