@@ -131,18 +131,16 @@ jobs:
               return
             fi
 
-            # For demonstrate wizardry, extract FAIL_DETAIL and failure lines
+            # For demonstrate wizardry, extract demo-magic output tail (where failures appear)
             if echo "$workflow_name" | grep -qi "demonstrate"; then
-              # Look for FAIL_DETAIL line which has the test numbers
-              if grep -q "FAIL_DETAIL:" "$cleaned_log"; then
-                # Extract the failure summary (FAIL lines with details)
-                grep -E "^(PASS|FAIL) #[0-9]+" "$cleaned_log"
-                echo ""
-                # Also show the FAIL_DETAIL line
-                grep "FAIL_DETAIL:" "$cleaned_log"
+              # Demo-magic shows failures at the end, so extract the last part of output
+              # Look for error indicators or just show the tail
+              if grep -qE "error|failed|FAIL" "$cleaned_log"; then
+                # Show errors and context
+                grep -iE -B 5 -A 2 "error|failed|FAIL" "$cleaned_log" | tail -50
               else
-                # Fallback to showing FAIL lines
-                grep -i "FAIL" "$cleaned_log" | head -20
+                # Show last part of demo-magic output
+                tail -30 "$cleaned_log"
               fi
               rm -f "$cleaned_log"
               return
