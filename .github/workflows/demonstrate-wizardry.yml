@@ -47,4 +47,4 @@ jobs:
             exit 1
           fi
       - name: Run demo-magic
-        run: ./spells/spellcraft/demo-magic
+        run: ./spells/spellcraft/demo-magic all
