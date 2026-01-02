@@ -75,6 +75,9 @@ jobs:
             "Demonstrate wizardry"
             "Compile wizardry"
           )
+          
+          # Total number of workflows we're monitoring
+          total_workflows=${#workflows[@]}
 
           # Function to extract test summary from logs
           extract_test_summary() {
@@ -178,11 +181,33 @@ jobs:
           update_pr_description() {
             local pr_number="$PR_NUMBER"
             local failure_summary_content
+            local completed_count
+            
+            # Count how many workflows are completed
+            completed_count=$(ls -1 /tmp/reported_runs 2>/dev/null | wc -l)
             
             if [ -s "$failure_summary_file" ]; then
               failure_summary_content=$(cat "$failure_summary_file")
             else
               failure_summary_content=""
+            fi
+            
+            # Determine status message
+            local status_message
+            if [ "$completed_count" -ge "$total_workflows" ]; then
+              # All workflows completed
+              if [ -n "$failure_summary_content" ]; then
+                status_message=""  # Failures are shown, no need for extra message
+              else
+                status_message="✅ All tests passing!"
+              fi
+            else
+              # Still running
+              if [ -n "$failure_summary_content" ]; then
+                status_message="⚠️ Tests are still running. More errors may appear."
+              else
+                status_message="⏳ Tests are running. Errors will be copied here by the collect-failures workflow."
+              fi
             fi
             
             # Call GitHub API to update PR description
@@ -193,7 +218,8 @@ jobs:
                 echo "" && echo "---" && echo "" && \
                 echo "## 🔍 Latest Test Failures" && echo "" && \
                 echo "**Updated:** $(date -u '+%Y-%m-%d %H:%M:%S') UTC" && echo "" && \
-                if [ -n "$failure_summary_content" ]; then cat "$failure_summary_file"; else echo "✅ All tests passing!"; fi && \
+                if [ -n "$failure_summary_content" ]; then cat "$failure_summary_file"; echo ""; fi && \
+                echo "$status_message" && \
                 echo "" && echo "<!-- test-failures-end -->")" \
               > /dev/null 2>&1 || echo "⚠️ Could not update PR description"
           }
@@ -293,6 +319,10 @@ jobs:
           poll_count=0
           max_polls=720  # 720 * 5s = 1 hour max
           completed_count=0
+          
+          # Initial PR description update to show tests are starting
+          echo "Setting initial PR description status..."
+          update_pr_description
 
           while [ $poll_count -lt $max_polls ]; do
             poll_count=$((poll_count + 1))
