@@ -128,6 +128,37 @@ jobs:
               return
             fi
 
+            # For demonstrate wizardry, extract FAIL_DETAIL and failure lines
+            if echo "$workflow_name" | grep -qi "demonstrate"; then
+              # Look for FAIL_DETAIL line which has the test numbers
+              if grep -q "FAIL_DETAIL:" "$cleaned_log"; then
+                # Extract the failure summary (FAIL lines with details)
+                grep -E "^(PASS|FAIL) #[0-9]+" "$cleaned_log"
+                echo ""
+                # Also show the FAIL_DETAIL line
+                grep "FAIL_DETAIL:" "$cleaned_log"
+              else
+                # Fallback to showing FAIL lines
+                grep -i "FAIL" "$cleaned_log" | head -20
+              fi
+              rm -f "$cleaned_log"
+              return
+            fi
+
+            # For POSIX/linting workflows, extract only FAIL lines (not PASS)
+            if echo "$workflow_name" | grep -qi "POSIX\|linting\|style"; then
+              # Extract only FAIL lines, not PASS lines
+              if grep -q "^FAIL " "$cleaned_log"; then
+                # Show all FAIL lines
+                grep "^FAIL " "$cleaned_log"
+              else
+                # Fallback to generic error extraction
+                grep -i "ERROR" "$cleaned_log" | head -50
+              fi
+              rm -f "$cleaned_log"
+              return
+            fi
+
             # For other workflows, find the failing step in cleaned log
             if grep -q "##\[error\]" "$cleaned_log"; then
               # Extract error lines and surrounding context
