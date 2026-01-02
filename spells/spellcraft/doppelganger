@@ -1,5 +1,31 @@
 #!/bin/sh
 
+# Load required imps for direct execution
+if ! command -v require_wizardry >/dev/null 2>&1; then
+  if [ -n "${WIZARDRY_DIR-}" ]; then
+    _i="$WIZARDRY_DIR/spells/.imps/sys"
+  elif [ -n "${ROOT_DIR-}" ]; then
+    _i="$ROOT_DIR/spells/.imps/sys"
+  else
+    _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
+  fi
+  [ -f "$_i/require-wizardry" ] && . "$_i/require-wizardry"
+fi
+
+
+# Load required imps for direct execution
+if ! command -v require_wizardry >/dev/null 2>&1; then
+  if [ -n "${WIZARDRY_DIR-}" ]; then
+    _i="$WIZARDRY_DIR/spells/.imps/sys"
+  elif [ -n "${ROOT_DIR-}" ]; then
+    _i="$ROOT_DIR/spells/.imps/sys"
+  else
+    _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
+  fi
+  [ -f "$_i/require-wizardry" ] && . "$_i/require-wizardry"
+fi
+
+
 # Create a fully compiled clone of wizardry that works standalone.
 # The doppelganger contains individual compiled spells in the same directory
 # structure, minus GitHub-specific files, ready for distribution.
