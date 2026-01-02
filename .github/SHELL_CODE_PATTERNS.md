@@ -51,42 +51,24 @@ require-wizardry() { ... }  # Syntax error
 
 **set -u (nounset):** Error on unset variable expansion
 
-**CRITICAL Gotcha:** `set -e` in a function propagates to calling shell:
-
-```sh
-#!/bin/sh
-# No set -e here
-
-my_func() {
-  set -e
-  return 2
-}
-
-my_func
-echo "Never prints"  # Script exits!
-```
-
-**Why:** When function with `set -e` returns non-zero, it triggers errexit in parent shell.
+**CRITICAL:** `set -e` in function propagates to calling shell (exits parent even without `set -e`).
 
 **Solutions:**
 ```sh
-# 1. Conditional set -e (interactive-safe)
+# Conditional set -e (interactive-safe)
 spell_name() {
   case "$0" in
-    */spell-name) set -eu ;;  # Script mode
-    *) set -u ;;              # Function mode
+    */spell-name) set -eu ;;  # Script: strict mode
+    *) set -u ;;              # Sourced: only nounset
   esac
 }
 
-# 2. Protect call site
+# Protect call site
 my_func || true
 if my_func; then ...; fi
-
-# 3. set -u only (safe for all contexts)
-my_func() {
-  set -u  # No errexit propagation
-}
 ```
+
+**Note:** `set -u` alone is safe (doesn't propagate exit).
 
 ### Return vs Exit
 
@@ -145,27 +127,16 @@ case "$0" in
 # Preferred (nestable)
 result=$(command arg)
 
-# Captures exit code
-output=$(command 2>&1)
-exit_code=$?
-
 # Variable function calls (zsh compatibility)
 _cmd="my_function"
-result=$(eval "$_cmd arg1 arg2")  # Use eval for variable calls
+result=$(eval "$_cmd arg1 arg2")  # Use eval in subshells
+
+# Direct calls work without eval
+result=$(my_function arg)  # OK
+$_cmd arg                  # OK (not in subshell)
 ```
 
-**Gotcha:** Functions in variables need `eval` in some shells (zsh):
-
-```sh
-# May fail in zsh
-_func="my_func"
-$_func arg              # Direct call: works
-
-result=$($_func arg)    # In subshell: may fail
-
-# Solution: Use eval
-result=$(eval "$_func arg")
-```
+**Gotcha:** Functions stored in variables need `eval` in command substitution (zsh).
 
 ### Test Operators
 
@@ -203,153 +174,109 @@ result=$(eval "$_func arg")
 
 **CRITICAL:** Always use `[ ]`, never `[[ ]]` (bash-ism). Use `=` not `==` for string comparison.
 
-### Pipes and Subshells
+### Pipes and Exit Codes
 
-**Variable assignments in pipes are lost:**
-
+**Exit code lost in pipes:**
 ```sh
-# WRONG: grep runs in subshell
-echo "test" | grep "test" && found=1
-echo "$found"  # Empty! Variable not set in parent
+my_func 2>&1 | head -1
+echo $?  # Shows 0 (from head), not my_func's code
 
-# CORRECT: Avoid pipe for state changes
-if echo "test" | grep -q "test"; then
-  found=1
-fi
+# Fix: Capture before pipe
+output=$(my_func 2>&1)
+exit_code=$?
 ```
 
-**Function definitions in pipes are lost:**
-
+**Variables/functions lost in pipes (run in subshells):**
 ```sh
-# WRONG: word_of_binding runs in subshell
-word_of_binding spell 2>&1 | grep "Loaded"
-command -v spell  # Not found! Definition lost
+# WRONG: Variable not set in parent
+echo "test" | grep "test" && found=1
 
-# CORRECT: Load first, then check
+# WRONG: Function not loaded in parent
+word_of_binding spell 2>&1 | grep "Loaded"
+
+# CORRECT: Don't pipe state changes
 word_of_binding spell >/dev/null 2>&1
-if command -v spell >/dev/null 2>&1; then
-  echo "Loaded"
-fi
+command -v spell >/dev/null 2>&1 && echo "Loaded"
 ```
 
 ### Here Documents
 
 ```sh
-# Unquoted: Variable expansion
+# Variable expansion
 cat <<EOF
 Value: $var
 EOF
 
-# Quoted: Literal (no expansion)
+# Literal (quote delimiter)
 cat <<'EOF'
 Literal: $var
 EOF
 
-# Indented (tabs only, use <<-)
+# Indented (tabs only)
 cat <<-EOF
-	Indented
 	Text
 EOF
-
-# To variable
-var=$(cat <<'EOF'
-Multi
-Line
-EOF
-)
 ```
 
 ### For Loops
 
 ```sh
 # Iterate words
-for item in one two three; do
-  echo "$item"
-done
+for item in one two three; do echo "$item"; done
 
-# Iterate files (glob)
+# Iterate files (check for no-match)
 for file in *.sh; do
-  [ -f "$file" ] || continue  # Skip if no match
+  [ -f "$file" ] || continue
   process "$file"
 done
 
-# Iterate command output (careful with spaces)
-for line in $(cat file); do  # SPLITS ON SPACES
-  echo "$line"
-done
-
-# Better: Use while read
-while IFS= read -r line; do
-  echo "$line"
-done < file
+# Avoid: for line in $(cat file)  # Splits on ALL whitespace
+# Use: while read instead
 ```
 
 ### While Loops and IFS
 
 ```sh
 # Read lines preserving whitespace
-while IFS= read -r line; do
-  echo "$line"
-done < file
+while IFS= read -r line; do echo "$line"; done < file
 
-# Read fields
-while IFS=: read -r user pass uid gid gecos home shell; do
+# Read fields (colon-separated)
+while IFS=: read -r user pass uid gid; do
   echo "User: $user"
 done < /etc/passwd
-
-# Process command output
-find . -name "*.sh" | while IFS= read -r file; do
-  process "$file"
-done
 ```
 
 ### Arithmetic
 
 ```sh
-# POSIX arithmetic expansion
+# POSIX arithmetic
 i=$((i + 1))
 result=$((5 * 3 + 2))
-is_even=$(((num % 2) == 0))
+is_even=$(((num % 2) == 0))  # Returns 1 (true) or 0 (false)
 
-# Comparison returns 1/0
-result=$((5 > 3))  # 1 (true)
-result=$((5 < 3))  # 0 (false)
-
-# No floating point in POSIX sh
-# Use awk or bc for decimals
+# No floating point - use awk/bc
 result=$(awk 'BEGIN{print 5.5 * 2}')
-result=$(echo "5.5 * 2" | bc)
 ```
 
 ### Command Checks
 
 ```sh
-# Check if command exists (POSIX)
-if command -v git >/dev/null 2>&1; then
-  # git is available
-fi
-
-# Shorter pattern (imp style)
+# POSIX-compliant
 command -v git >/dev/null 2>&1 || die "git required"
 
 # WRONG: Not portable
-which git           # Not POSIX, varies by platform
-hash git            # Sets exit code, but may print errors
-type git            # Not POSIX compliant
-[ -x /usr/bin/git ] # Hard-coded path
+which git              # Not POSIX
+hash git               # May print errors
+[ -x /usr/bin/git ]    # Hard-coded path
 ```
 
 ### Output and Quoting
 
 ```sh
-# Preferred: printf (portable, predictable)
+# Use printf (portable)
 printf '%s\n' "$msg"
-printf '%d\n' "$num"
-printf '%s %s\n' "$arg1" "$arg2"
 
-# Avoid: echo (varies by shell)
-echo "$msg"         # May interpret backslashes
-echo -n "$msg"      # -n not portable
+# Avoid echo (varies by shell, -n not portable)
 
 # Always quote variables
 printf '%s\n' "$var"     # CORRECT
@@ -359,20 +286,16 @@ printf '%s\n' $var       # WRONG: word splitting
 ### Globbing
 
 ```sh
-# Disable globbing temporarily
-set -f
-pattern="*.sh"
-set +f
+# Disable temporarily
+set -f; pattern="*.sh"; set +f
 
-# Check if glob matches anything
+# Check for matches
 for file in *.sh; do
-  [ -e "$file" ] || break  # No match
+  [ -e "$file" ] || break
   process "$file"
 done
 
-# Recursive glob (not POSIX, use find)
-# ** doesn't work in POSIX sh
-find . -name "*.sh" -type f
+# Recursive: use find (** not POSIX)
 ```
 
 ### Signal Handling
@@ -411,22 +334,23 @@ real_path=$(cd "$(dirname "$path")" && pwd -P)/$(basename "$path")
 
 ### $0 Behavior
 
-| Context | $0 Value | Example |
-|---------|----------|---------|
-| Script execution | Script path | `/path/to/script` |
-| Interactive shell | Shell name | `bash`, `-zsh`, `sh` |
-| Sourced in function | Parent script | `/path/to/parent.sh` |
-| sh -c 'cmd' | `sh` | Always `sh` |
+| Context | $0 Value |
+|---------|----------|
+| Script execution | `/path/to/script` |
+| Interactive shell | `bash`, `-zsh`, `sh` |
+| Sourced function | Parent script or shell name |
 
-**Use for context detection:**
+**Context detection:**
 ```sh
 case "$0" in
-  */script-name) # Executed as script
+  */script-name) # Executed
     ;;
-  *) # Sourced or function
+  *) # Sourced
     ;;
 esac
 ```
+
+**Gotcha:** Login shells prefix with `-` (e.g., `-bash`, `-zsh`).
 
 ### POSIX vs Bash-isms
 
@@ -445,15 +369,17 @@ esac
 
 ### Exit Codes
 
-| Code | Meaning | Use |
-|------|---------|-----|
-| 0 | Success | Command completed successfully |
-| 1 | General error | Generic failure |
-| 2 | Usage error | Invalid arguments |
-| 126 | Not executable | Command cannot execute |
-| 127 | Not found | Command not found |
-| 130 | Ctrl-C | Interrupted (SIGINT) |
-| 141 | SIGPIPE | Pipe closed early |
+| Code | Meaning |
+|------|---------|
+| 0 | Success |
+| 1 | General error |
+| 2 | Usage error |
+| 126 | Not executable |
+| 127 | Not found |
+| 130 | Ctrl-C (SIGINT) |
+| 141 | SIGPIPE |
+
+**Note:** SIGPIPE handling varies (bash may exit, dash ignores in scripts).
 
 ### Subshell vs Command Substitution vs Background
 
@@ -473,145 +399,56 @@ wait $pid  # Wait for completion
 
 ## Advanced Patterns
 
-### Inline Script Error Context
-
 ```sh
-# Show script name and line in errors
+# Error with context
 die() {
   printf '%s:%d: %s\n' "${0##*/}" "${LINENO-}" "$*" >&2
   exit 1
 }
-```
 
-### Heredoc Functions
-
-```sh
-show_usage() {
-  cat <<'USAGE'
-Usage: command [options]
-Description here.
+# Heredoc function (quote delimiter for literal)
+show_usage() { cat <<'USAGE'
+Usage text
 USAGE
 }
-```
 
-**Quote delimiter (`'USAGE'`) to prevent variable expansion.**
+# IFS control
+old_ifs=$IFS; IFS=:; read -r f1 f2; IFS=$old_ifs
 
-### Field Splitting Control
-
-```sh
-# Save and restore IFS
-old_ifs=$IFS
-IFS=:
-read -r field1 field2
-IFS=$old_ifs
-
-# One-liner
-IFS=: read -r field1 field2
-```
-
-### Safe File Removal
-
-```sh
-# Check before removing
+# Safe removal
 [ -n "$tmpfile" ] && [ -f "$tmpfile" ] && rm -f "$tmpfile"
-
-# Remove directory safely
-[ -n "$tmpdir" ] && [ -d "$tmpdir" ] && rm -rf "$tmpdir"
 ```
 
-### Process Substitution Alternative
+## Wizardry Patterns
 
 ```sh
-# Bash: diff <(cmd1) <(cmd2)
-# POSIX: Use named pipes or temp files
-tmp1=$(mktemp) tmp2=$(mktemp)
-cmd1 > "$tmp1"
-cmd2 > "$tmp2"
-diff "$tmp1" "$tmp2"
-rm -f "$tmp1" "$tmp2"
-```
-
-## Wizardry-Specific Patterns
-
-### Require Wizardry
-
-```sh
-# Before set -eu, at spell start
+# Require wizardry (before set -eu)
 case "${1-}" in
---help|--usage|-h) show_usage; exit 0 ;; esac
-
-require_wizardry || return 1  # Use return, not exit
+--help|-h) show_usage; exit 0 ;; esac
+require_wizardry || return 1
 set -eu
-```
 
-### Imp Self-Execute
+# Imp self-execute
+_imp_name() { ...; }
+case "$0" in */imp-name) _imp_name "$@" ;; esac
 
-```sh
-#!/bin/sh
-# imp-name ARG - description
-
-set -eu  # For action imps (omit for conditional imps)
-
-_imp_name() {
-  # Implementation
-}
-
-# Self-execute pattern
-case "$0" in
-  */imp-name) _imp_name "$@" ;; esac
-```
-
-### Castable Spell Pattern
-
-```sh
-#!/bin/sh
-
-spell_name() {
-  case "${1-}" in
-  --help|-h) spell_name_usage; return 0 ;; esac
-  
-  require_wizardry || return 1
-  set -eu
-  . env_clear
-  
-  # Main logic
-}
-
-# Load castable
-if true; then
-  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
-  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
-  [ -f "$_i/castable" ] && . "$_i/castable"
-fi
-castable "$@"
+# Castable spell (sourced + executed)
+spell_name() { ...; }
+# Load castable, then: castable "$@"
 ```
 
 ## Quick Reference
 
-### Common Mistakes
-
 | Wrong | Right | Why |
 |-------|-------|-----|
-| `$var` | `"$var"` | Always quote to prevent word splitting |
+| `$var` | `"$var"` | Quote to prevent word splitting |
 | `value=$1` | `value=${1-}` | Fails with `set -u` if no arg |
 | `[ $a == $b ]` | `[ "$a" = "$b" ]` | Quote vars, use `=` not `==` |
-| `if [[ -f $file ]]` | `if [ -f "$file" ]` | Use `[ ]`, quote variable |
-| `exit 1` in function | `return 1` | exit kills shell when sourced |
-| `function foo()` | `foo()` | `function` keyword is bash-ism |
-| `local var=val` | `var=val` | `local` not in POSIX |
-| `echo -e "\n"` | `printf '\n'` | echo flags not portable |
+| `exit 1` in func | `return 1` | exit kills shell when sourced |
+| `echo -e` | `printf` | echo flags not portable |
 | `which cmd` | `command -v cmd` | which not in POSIX |
 
-### Testing Checklist
-
-- [ ] No bash-isms (`checkbashisms` clean)
-- [ ] All variables quoted
-- [ ] Variables have defaults (`${1-}`)
-- [ ] Use `return` in functions, not `exit`
-- [ ] `set -eu` in correct location
-- [ ] Works both sourced and executed (if applicable)
-- [ ] Test in `/bin/sh`, dash, bash
+**Testing:** Check with `checkbashisms`, test in `/bin/sh`, dash, bash.
 
 ## References
 
