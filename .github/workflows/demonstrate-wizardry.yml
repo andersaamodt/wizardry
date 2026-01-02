@@ -41,5 +41,7 @@ jobs:
             echo "bubblewrap unusable" >&2
             exit 1
           fi
+      - name: Make test-spell executable
+        run: chmod +x spells/system/test-spell
       - name: Run demonstrate-wizardry test
         run: ./spells/system/test-spell system/test-demonstrate-wizardry.sh

@@ -81,6 +81,14 @@ jobs:
             # Extract from "=== Test Summary ===" to the end or next section
             if grep -q "=== Test Summary ===" "$cleaned_log"; then
               sed -n '/=== Test Summary ===/,/^===/p' "$cleaned_log" | head -n -1
+            else
+              # If no test summary, try to find test failures or show last part
+              if grep -qi "FAILED\|FAIL:\|ERROR:" "$cleaned_log"; then
+                grep -i -B 2 -A 5 "FAILED\|FAIL:\|ERROR:" "$cleaned_log" | head -100
+              else
+                # Show last 50 lines of cleaned log
+                tail -50 "$cleaned_log"
+              fi
             fi
             
             rm -f "$cleaned_log"
