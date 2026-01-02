@@ -274,6 +274,9 @@ jobs:
                   echo '```'
                   echo ""
                 } >> "$failure_summary_file"
+                
+                # Update PR description after each job (not after all jobs)
+                update_pr_description
               else
                 echo "⚠️ Could not download logs"
                 echo ""
@@ -284,9 +287,6 @@ jobs:
 
             rm -f /tmp/jobs_${run_id}.json
             echo ""
-            
-            # Update PR description after each failure
-            update_pr_description
           }
 
           # Poll for workflow completions
