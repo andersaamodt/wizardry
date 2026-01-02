@@ -78,8 +78,11 @@ jobs:
             local cleaned_log="/tmp/cleaned_$$.txt"
             sed '/Process \(exited\|completed\)/,$d' "$logfile" > "$cleaned_log"
             
-            # Extract from "=== Test Summary ===" to the end or next section
-            if grep -q "=== Test Summary ===" "$cleaned_log"; then
+            # Extract from "Summary" heading line to the end of file
+            if grep -q "^Summary$" "$cleaned_log"; then
+              sed -n '/^Summary$/,$p' "$cleaned_log"
+            elif grep -q "=== Test Summary ===" "$cleaned_log"; then
+              # Fallback to old format
               sed -n '/=== Test Summary ===/,/^===/p' "$cleaned_log" | head -n -1
             else
               # If no test summary, try to find test failures or show last part
