@@ -28,10 +28,10 @@ case "${1-}" in
   ;;
 esac
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 set -eu
-env-clear
+env_clear
 
 # Initialize spell_home
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")

@@ -55,7 +55,7 @@ case "$0" in
 esac
 
 # Validate WIZARDRY_DIR is set and valid
-# Don't use require-wizardry here because it may not be loaded yet
+# Don't use require_wizardry here because it may not be loaded yet
 # (banish calls this before all imps are available)
 if [ -z "${WIZARDRY_DIR-}" ]; then
   printf 'validate-spells: WIZARDRY_DIR not set\n' >&2

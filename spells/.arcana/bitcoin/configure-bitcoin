@@ -18,7 +18,7 @@ case "${1-}" in
         ;;
 esac
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 
 
@@ -28,7 +28,7 @@ require-wizardry || return 1
 
 configure_bitcoin() {
 set -eu
-env-clear
+env_clear
 retry_with_sudo() {
     echo "Permission denied. Invoking the power of the super user..."
     sudo "$@"

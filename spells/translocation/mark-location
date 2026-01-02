@@ -2,7 +2,7 @@
 
 # Inscribe bookmarks for jump-to-marker to teleport you back.
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 mark_location_usage() {
   cat <<'USAGE'
@@ -23,7 +23,7 @@ case "${1-}" in
 esac
 
 set -eu
-env-clear
+env_clear
 
 if [ "$#" -gt 2 ]; then
   mark_location_usage

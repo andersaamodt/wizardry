@@ -21,10 +21,10 @@ case "${1-}" in
   ;;
 esac
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 set -eu
-env-clear
+env_clear
 
 # Check if wizard mode is enabled (default to showing for teaching)
 wizard_mode=${WIZARD:-1}

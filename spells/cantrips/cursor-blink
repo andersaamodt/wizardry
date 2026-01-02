@@ -22,7 +22,7 @@ case "${1-}" in
   ;;
 esac
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 # Use conditional strictness based on execution context
 # See .github/CODE_POLICY_SET_EU.md for details
@@ -37,7 +37,7 @@ case "$0" in
     set -u
     ;;
 esac
-env-clear
+env_clear
 
 # The helper expects exactly one argument that declares the desired state.
 if [ "$#" -ne 1 ]; then

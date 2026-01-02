@@ -23,8 +23,8 @@ esac
 
 # Optional: try to use wizardry if available (for when used in normal mode)
 # But don't fail if wizardry isn't set up yet (for bootstrap use)
-if command -v require-wizardry >/dev/null 2>&1; then
-  require-wizardry || return 1
+if command -v require_wizardry >/dev/null 2>&1; then
+  require_wizardry || return 1
 fi
 
 set -eu

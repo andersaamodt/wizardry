@@ -15,6 +15,7 @@
 
 ## Lessons
 
+- Spells must call `require_wizardry()` and `env_clear()` (underscored functions) inside their main function; invoke-wizardry preloads these via word-of-binding (castable does NOT re-source).
 - When inlining helper functions, use global search-replace to ensure ALL calls are replaced, including those outside the main function body.
 - Editing files with text processing tools (sed, awk, perl) can change file permissions - always restore execute bits afterwards.
 - The `find -executable` flag is not portable to BSD/macOS; use `find -perm /111` instead to match files with any execute bit.

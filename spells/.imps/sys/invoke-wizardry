@@ -205,7 +205,7 @@ invoke_wizardry() {
   else
     # Fallback if spell-levels not found - use minimal hardcoded list
     [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Warning: spell-levels imp not found, using minimal preload" >&2
-    for _imp_name in require-wizardry castable env-clear has die warn fail info say temp-file cleanup-file; do
+    for _imp_name in require_wizardry castable env_clear has die warn fail info say temp-file cleanup-file; do
       for _family_dir in "$WIZARDRY_DIR"/spells/.imps/*; do
         [ -d "$_family_dir" ] || continue
         _imp_file="$_family_dir/$_imp_name"

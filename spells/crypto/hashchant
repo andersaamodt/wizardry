@@ -20,10 +20,10 @@ case "${1-}" in
   ;;
 esac
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 set -eu
-env-clear
+env_clear
 
 if [ -z "${1-}" ]; then
   usage-error "hashchant" "file path required"

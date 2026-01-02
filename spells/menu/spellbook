@@ -1,7 +1,7 @@
 #!/bin/sh
 # This spell provides a menu interface for managing the spellbook.
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 spellbook_usage() {
         cat <<'USAGE'
@@ -24,7 +24,7 @@ case "${1-}" in
 esac
 
 set -eu
-env-clear
+env_clear
 
 # Catch Ctrl-C and TERM signal to return 1 cleanly
 trap 'exit 0' INT TERM

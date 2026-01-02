@@ -2,7 +2,7 @@
 
 # This spell displays the menu for adminning hosting a MUD server.
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 mud_admin_menu_usage() {
         cat <<'USAGE' >&2
@@ -23,7 +23,7 @@ case "${1-}" in
 esac
 
 set -eu
-env-clear
+env_clear
 
 # Catch Ctrl-C and TERM signal to return 1 cleanly
 trap 'exit 0' INT TERM

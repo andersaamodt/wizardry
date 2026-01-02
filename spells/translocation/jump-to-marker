@@ -33,7 +33,7 @@ fi
 
 uncastable jump-to-marker
 
-require-wizardry || exit 1
+require_wizardry || exit 1
 
 jump_to_marker() {
 case "${1-}" in
@@ -48,7 +48,7 @@ case "${1-}" in
 esac
 
 set -eu
-env-clear
+env_clear
 
 # Resolve markers directory
 _jm_spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")

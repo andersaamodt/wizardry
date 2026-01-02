@@ -6,7 +6,7 @@
 # The flow stays linear: discover the helper, choose colour, scan the room, then
 # summarize the ambience so new spellwrights can follow along.
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 detect_magic_usage() {
 cat <<'USAGE'
@@ -27,7 +27,7 @@ case "${1-}" in
 esac
 
 set -eu
-env-clear
+env_clear
 
 script_dir=$(cd "$(dirname "$0")" && pwd -P)
 

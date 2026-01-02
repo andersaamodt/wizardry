@@ -18,7 +18,7 @@ case "${1-}" in
         ;;
 esac
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 
 
@@ -27,7 +27,7 @@ require-wizardry || return 1
 # Set the default Bitcoin configuration directory
 
 set -eu
-env-clear
+env_clear
 default_dir="$HOME/.bitcoin"
 
 # Check if the default directory exists

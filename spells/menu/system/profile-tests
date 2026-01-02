@@ -32,7 +32,7 @@ case "${1-}" in
 esac
 
 set -eu
-env-clear
+env_clear
 
 profile_tests() {
 # Find the script directory and root

@@ -3,7 +3,7 @@
 # This spell enchants a file with a portkey that transports to a destination.
 # Activate the portkey with follow-portkey to teleport to the stored location.
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 enchant_portkey_usage() {
 cat <<'USAGE'
@@ -24,7 +24,7 @@ case "${1-}" in
 esac
 
 set -eu
-env-clear
+env_clear
 
 # Ensure file argument is provided
 if [ -z "${1-}" ]; then

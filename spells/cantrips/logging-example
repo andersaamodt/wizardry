@@ -36,10 +36,10 @@ case "${1-}" in
   ;;
 esac
 
-require-wizardry || return 1
+require_wizardry || return 1
 
 set -eu
-env-clear
+env_clear
 
 # Source the logging imps (in real usage, these would be bound at startup)
 # For this example, we'll source them directly
