@@ -75,7 +75,8 @@ castable() {
     _cast_wiz_dir="${WIZARDRY_DIR-}"
     if [ -z "$_cast_wiz_dir" ]; then
       # Try to detect from script location
-      _cast_script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || _cast_script_dir=""
+      _cast_script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P)
+      _cast_script_dir=${_cast_script_dir:-}
       if [ -n "$_cast_script_dir" ]; then
         # Navigate up to find wizardry root
         _cast_check_dir="$_cast_script_dir"
