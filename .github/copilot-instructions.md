@@ -1,27 +1,107 @@
 # Wizardry Repository - GitHub Copilot Instructions  🧙🔮
 
-## Reading Test Failures 🔍⚡
+## 🔍 CRITICAL: Autonomous Debug Cycle with PR Test Failures
 
-**When asked to fix test failures or CI issues:**
+**THIS IS THE CORE DEBUGGING WORKFLOW - READ THIS FIRST**
 
-1. **Run:** `./read-test-failures <pr-number>`
-2. This fetches the PR description from GitHub and extracts the "## 🔍 Latest Test Failures" section
-3. The PR description is updated automatically after each test run by the `collect-failures` workflow
-4. **Works immediately** - fetches live data from GitHub, no repository edits needed
+### The Wizardry Debug Model
 
-**Example:**
+Wizardry has an **autonomous feedback loop** where test failures are automatically collected and made immediately accessible to AI agents:
+
+1. **Tests run** (triggered by commits to PRs)
+2. **Failures are extracted** (by `collect-failures` workflow in real-time)
+3. **PR description is updated** (with "## 🔍 Latest Test Failures" section)
+4. **AI agent reads failures** (using `./read-test-failures <pr-number>`)
+5. **AI agent fixes issues** (makes surgical code changes)
+6. **AI agent commits** (triggers new test run → loop repeats)
+
+### Using read-test-failures: Your Primary Debugging Tool
+
+**ALWAYS START HERE when debugging or fixing test failures:**
+
 ```sh
 cd /home/runner/work/wizardry/wizardry
-./read-test-failures 783  # Replace 783 with actual PR number
-# Read the output, identify failures, fix them
+./read-test-failures <pr-number>
 ```
 
-The `collect-failures` workflow extracts only the relevant error text:
-- **Unit tests**: Test summary sections only
-- **Other workflows**: Error markers and FAIL/ERROR patterns
-- **All workflows**: "Process exited/completed" lines removed for clarity
+**What this does:**
+- Fetches the PR description from GitHub API (public, no auth needed)
+- Extracts the "## 🔍 Latest Test Failures" section
+- Displays formatted failure output with all relevant error details
+- **Works immediately** - no waiting for next session, no repository edits needed
 
-**No files committed:** The workflow updates the PR description only. Nothing is committed to the repository.
+**Example workflow:**
+```sh
+# 1. Read the current failures
+./read-test-failures 783
+
+# 2. Analyze the output - you'll see:
+#    - Which workflows failed
+#    - Exact error messages  
+#    - Stack traces or test summaries
+#    - Setup errors (missing files, permission issues)
+
+# 3. Fix the identified issues (make minimal, surgical changes)
+
+# 4. Commit your fixes
+# (This triggers new test run → PR description updates automatically)
+
+# 5. Read failures again to verify or see what's left
+./read-test-failures 783
+```
+
+### What Gets Extracted
+
+The `collect-failures` workflow intelligently extracts only the relevant error text:
+
+**Unit tests:**
+- Primary: "Summary" section from test output (actual format used)
+- Fallback: FAILED/FAIL/ERROR lines
+- Last resort: Last 50 lines of output
+
+**Other workflows (POSIX checks, compilation, etc.):**
+- Primary: `##[error]` markers with context
+- Secondary: FAIL/ERROR patterns
+- Last resort: Last 50 lines of output
+
+**Early failures (setup/permission errors):**
+- Detected patterns: "not found", "No such file", "Permission denied", "cannot access"
+- Extracts actual error with 10 lines before and 2 lines after for context
+
+**All workflows:**
+- "Process exited/completed" lines and cleanup text removed
+- Only actionable error information retained
+
+### Key Benefits
+
+✅ **Immediate access** - No waiting for next session or manual copy-pasting
+✅ **Real-time updates** - PR description updates as each workflow completes
+✅ **No repository pollution** - Nothing committed, only PR description updated
+✅ **Autonomous loop** - Complete feedback cycle without human intervention
+✅ **Concurrency control** - Previous test runs cancelled when new commits pushed
+
+### Integration with Your Workflow
+
+**At the start of EVERY debugging session:**
+1. Run `./read-test-failures <pr-number>` FIRST
+2. Analyze the failures before exploring code
+3. This gives you immediate context on what's broken
+
+**When asked to "fix CI" or "fix test failures":**
+- Don't ask the user for error details
+- Don't wait for them to copy-paste logs
+- Just run `./read-test-failures <pr-number>` yourself
+
+**After making fixes:**
+- Commit your changes
+- Optionally run `./read-test-failures <pr-number>` again after a few minutes to see updated results
+
+### Technical Details
+
+- **No authentication required** - Uses GitHub public API
+- **PR number detection** - Script can auto-detect from branch name with fallback to manual input
+- **Robust parsing** - Uses Python JSON parser for reliable extraction
+- **Handles special characters** - Properly decodes GitHub API responses
 
 ## Essential Reading  📚✨
 

@@ -15,6 +15,11 @@ on:
   # Allow manual trigger for on-demand validation
   workflow_dispatch:
 
+# Cancel previous runs when new commits are pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
