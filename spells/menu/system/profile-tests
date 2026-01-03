@@ -2,36 +2,12 @@
 # Performance profiling for the wizardry test suite.
 # Times each test individually and reports slowest tests.
 
-# Ensure invoke-wizardry is loaded for optimal test performance
-# This prevents each test from reloading invoke-wizardry individually (1s overhead per test)
-if [ "${_WIZARDRY_INVOKED-}" != "1" ]; then
-  # Find repository root
+# Ensure WIZARDRY_DIR is set for tests
+if [ -z "${WIZARDRY_DIR-}" ]; then
   _script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
   _wiz_root=$(cd "$_script_dir" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
-  
-  # Set WIZARDRY_DIR for invoke-wizardry
   WIZARDRY_DIR=$_wiz_root
   export WIZARDRY_DIR
-  
-  # Load invoke-wizardry to preload all functions
-  if [ -f "$_wiz_root/spells/.imps/sys/invoke-wizardry" ]; then
-    # Source invoke-wizardry (it will set _WIZARDRY_INVOKED=1)
-    # Redirect stderr to suppress parse warnings
-    . "$_wiz_root/spells/.imps/sys/invoke-wizardry" 2>/dev/null || :
-  else
-    # Fallback: Load word-of-binding to preload essential functions
-    if [ -f "$_wiz_root/spells/.imps/sys/word-of-binding" ]; then
-      WIZARDRY_SOURCE_WORD_OF_BINDING=1
-      . "$_wiz_root/spells/.imps/sys/word-of-binding"
-      unset WIZARDRY_SOURCE_WORD_OF_BINDING
-      
-      # Preload essential imps that profile-tests uses
-      for _imp in require-wizardry env-clear temp-file cleanup-file on-exit die warn fail info say step; do
-        word_of_binding "$_imp" 2>/dev/null || :
-      done
-      unset _imp
-    fi
-  fi
 fi
 
 case "${1-}" in

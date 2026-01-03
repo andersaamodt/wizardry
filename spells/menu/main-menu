@@ -15,11 +15,6 @@ esac
 
 set -eu
 
-# Load menu imps as functions to avoid parse loops
-word_of_binding "exit-label"
-
-word_of_binding "mud-config" 2>/dev/null || true
-
 # Load color palette (colors handles terminal capability detection internally).
 # When colors is preloaded as a function, call it directly; otherwise source the file.
 if has colors; then
