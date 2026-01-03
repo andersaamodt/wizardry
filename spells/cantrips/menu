@@ -1,15 +1,12 @@
 #!/bin/sh
 
-
-
-
 # Present an interactive menu using only POSIX shell features. This variant
 # relies on existing cantrips (await_keypress, move-cursor, etc.) to handle the
 # terminal work so it can remain portable across macOS, Debian, and NixOS.
 
-
-menu_usage() {
-        cat <<'USAGE' >&2
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE' >&2
 Usage: menu [--show-command] [--start-selection N] "Title" "Label%command"...
 
 Draw a keyboard-driven terminal menu using wizardry's cursor and input helpers.
@@ -17,21 +14,12 @@ Provide a title followed by one or more "Label%command" entries; --show-command
 displays the command text as the label, and --start-selection picks the initial
 highlighted item. Use "---" to add a horizontal divider line.
 USAGE
-}
-
-
-menu() {
-case "${1-}" in
---help|--usage|-h)
-  menu_usage
-  return 0
+  exit 0
   ;;
 esac
 
 # Bootstrap: Load essential functions if not already available
 # This allows menu to work when executed directly (tests) or when invoked (normal use)
-
-require_wizardry || return 1
 
 # Use conditional strictness based on execution context
 # See .github/CODE_POLICY_SET_EU.md for details
@@ -46,7 +34,6 @@ case "$0" in
     set -u
     ;;
 esac
-env_clear
 
 # Wrapper functions for helper commands
 # Only define if the underlying command is available
@@ -96,29 +83,29 @@ stty() {
 
 # Verify that all helper spells are ready before drawing the menu.
 # Uses the shared 'require' imp for dependency checking.
-require fathom_cursor "The menu spell needs 'fathom-cursor' to place the menu." || return 1
-require fathom_terminal "The menu spell needs 'fathom-terminal' to measure the screen." || return 1
-require move_cursor "The menu spell needs 'move-cursor' to reposition the cursor." || return 1
-require await_keypress "The menu spell needs 'await_keypress' to read input." || return 1
-require cursor_blink "The menu spell needs 'cursor-blink' to restore the cursor." || return 1
-require stty "The menu spell needs 'stty' to manage terminal modes." || return 1
+require fathom_cursor "The menu spell needs 'fathom-cursor' to place the menu." || exit 1
+require fathom_terminal "The menu spell needs 'fathom-terminal' to measure the screen." || exit 1
+require move_cursor "The menu spell needs 'move-cursor' to reposition the cursor." || exit 1
+require await_keypress "The menu spell needs 'await_keypress' to read input." || exit 1
+require cursor_blink "The menu spell needs 'cursor-blink' to restore the cursor." || exit 1
+require stty "The menu spell needs 'stty' to manage terminal modes." || exit 1
 
 menu_tty=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
 if [ ! -r "$menu_tty" ] || [ ! -w "$menu_tty" ]; then
-        die "menu: unable to access controlling terminal '$menu_tty'" || return 1
+        die "menu: unable to access controlling terminal '$menu_tty'" || exit 1
 fi
 
 if menu_saved_tty_state=$(stty -g <"$menu_tty" 2>/dev/null); then
         :
 else
-        die "menu: unable to read terminal settings" || return 1
+        die "menu: unable to read terminal settings" || exit 1
 fi
 
 terminal_restored=0
 
 AWAIT_KEYPRESS_KEEP_RAW=1
 export AWAIT_KEYPRESS_KEEP_RAW
-await_keypress_buffer_file=$(menu_temp_file await_keypress-buffer) || return 1
+await_keypress_buffer_file=$(menu_temp_file await_keypress-buffer) || exit 1
 AWAIT_KEYPRESS_BUFFER_FILE=$await_keypress_buffer_file
 export AWAIT_KEYPRESS_BUFFER_FILE
 
@@ -171,33 +158,19 @@ if [ "${1-}" = "--start-selection" ]; then
 fi
 
 if [ "$#" -lt 2 ]; then
-        if has main-menu; then
-                main-menu
-                return 0
-        fi
-        if command -v word_of_binding >/dev/null 2>&1; then
-                if word_of_binding --run main-menu; then
-                        return 0
-                fi
-        elif [ -n "${WIZARDRY_DIR-}" ] \
-                && [ -f "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding" ]; then
-                WIZARDRY_SOURCE_WORD_OF_BINDING=1 \
-                        . "$WIZARDRY_DIR/spells/.imps/sys/word-of-binding"
-                unset WIZARDRY_SOURCE_WORD_OF_BINDING
-                if command -v word_of_binding >/dev/null 2>&1; then
-                        if word_of_binding --run main-menu; then
-                                return 0
-                        fi
-                fi
-        fi
-        die "menu: no menu entries provided" || return 1
+	if command -v main-menu >/dev/null 2>&1; then
+		main-menu
+		exit 0
+	fi
+	printf '%s\n' "menu: no menu entries provided and main-menu not found" >&2
+	exit 1
 fi
 
 description=$1
 shift
 
-items_file=$(menu_temp_file menu-items) || return 1
-commands_file=$(menu_temp_file menu-commands) || return 1
+items_file=$(menu_temp_file menu-items) || exit 1
+commands_file=$(menu_temp_file menu-commands) || exit 1
 cleanup_called=0
 cleanup() {
         if [ "$cleanup_called" -eq 1 ]; then
@@ -252,7 +225,7 @@ do
 done
 
 if [ "$menu_length" -eq 0 ]; then
-        die "menu: no menu entries provided" || return 1
+        die "menu: no menu entries provided" || exit 1
 fi
 
 # Use start_selection if valid, otherwise default to 1
@@ -550,7 +523,7 @@ do
                         # shellcheck disable=SC2039,SC3045 # POSIX sh allows eval
                         eval "$to_run"
                 fi
-                return 0
+                exit 0
                 ;;
 escape|ESC|esc)
         cleanup
@@ -574,38 +547,3 @@ esac
                 sleep 0.05
         fi
 done
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

@@ -11,30 +11,21 @@ if ! command -v env_clear >/dev/null 2>&1; then
   [ -f "$_i/env-clear" ] && . "$_i/env-clear"
 fi
 
-
 # This spell creates a new player identity with SSH keys for the MUD.
 # Use it to generate a new player key pair for connecting to MUD hosts.
 
-new_player_usage() {
-cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: new-player
 
 Interactively create a new player identity by generating an SSH key pair at ~/.ssh/<player_name> after prompting for a name.
 USAGE
-}
-
-
-
-new_player() {
-case "${1-}" in
---help|--usage|-h)
-  new_player_usage
-  return 0
+  exit 0
   ;;
 esac
 
 set -eu
-env_clear
 
 # Prompt user for player name
 printf '%s' "Enter a player name: "
@@ -50,16 +41,3 @@ fi
 ssh-keygen -t rsa -b 4096 -C "${player_name}@MUD" -f "$HOME/.ssh/${player_name}" -q -N ""
 
 printf '%s\n' "New player ${player_name} created with ssh key files at ~/.ssh/${player_name} and ~/.ssh/${player_name}.pub"
-}
-
-
-# Load castable imp (for direct execution)
-# Always source castable, never use from PATH
-  if true; then
-  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
-  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
-  [ -f "$_i/castable" ] && . "$_i/castable"
-fi
-
-castable "$@"

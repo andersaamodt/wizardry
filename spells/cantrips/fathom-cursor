@@ -1,33 +1,20 @@
 #!/bin/sh
 
-
-
-
 # Report the cursor position returned by the terminal in response to a DSR
 # (Device Status Report) query.
 
-
-fathom_cursor_usage() {
-    cat <<'USAGE' >&2
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE' >&2
 Usage: fathom-cursor [-v|--verbose] [-x] [-y]
 
 Query the terminal with a Device Status Report and print the cursor's current
 column and row. Use -x or -y to request a single axis; -v adds labels so menu
 scripts can present the measurements clearly.
 USAGE
-}
-
-
-
-fathom_cursor() {
-case "${1-}" in
---help|--usage|-h)
-  fathom_cursor_usage
-  return 0
+  exit 0
   ;;
 esac
-
-require_wizardry || return 1
 
 # Use conditional strictness based on execution context
 # See .github/CODE_POLICY_SET_EU.md for details
@@ -42,7 +29,6 @@ case "$0" in
     set -u
     ;;
 esac
-env_clear
 
 # Resolve require-command location
 # Use command -v to find require-command when preloaded as a function
@@ -80,7 +66,7 @@ while [ "$#" -gt 0 ]; do
             ;;
         --help|--usage|-h)
             fathom_cursor_usage
-            return 0
+            exit 0
             ;;
         --)
             shift
@@ -105,7 +91,7 @@ fi
 
 # Check for required commands
 if ! "$require_cmd" dd "The fathom-cursor spell needs 'dd' to read the terminal response."; then
-    return 1
+    exit 1
 fi
 
 tty_device=${FATHOM_CURSOR_DEVICE:-/dev/tty}
@@ -114,7 +100,7 @@ skip_stty=${FATHOM_CURSOR_SKIP_STTY:-0}
 # Only reach for stty when we are manipulating a real tty
 if [ "$skip_stty" -eq 0 ]; then
     if ! "$require_cmd" stty "The fathom-cursor spell needs 'stty' to manage terminal modes."; then
-        return 1
+        exit 1
     fi
 fi
 
@@ -122,10 +108,10 @@ if [ "$skip_stty" -eq 1 ]; then
     # Test harnesses can feed canned responses via a read-only file
     if [ ! -r "$tty_device" ]; then
         warn "fathom-cursor: unable to read from '$tty_device'"
-        return 1
+        exit 1
     fi
 
-    exec 3<"$tty_device" || return 1
+    exec 3<"$tty_device" || exit 1
     restore_test() {
         exec 3>&- 2>/dev/null || :
     }
@@ -134,16 +120,16 @@ else
     # When running interactively, open the tty for both reading and writing
     if [ ! -r "$tty_device" ] || [ ! -w "$tty_device" ]; then
         warn "fathom-cursor: unable to open controlling terminal '$tty_device'"
-        return 1
+        exit 1
     fi
 
-    exec 3<>"$tty_device" || return 1
+    exec 3<>"$tty_device" || exit 1
 
     # Preserve the terminal state and restore it on exit
     saved_state=$(stty -g <&3 2>/dev/null)
     if [ -z "$saved_state" ]; then
         warn 'fathom-cursor: unable to read terminal settings'
-        return 1
+        exit 1
     fi
 
     restore_tty() {
@@ -157,7 +143,7 @@ else
     # Configure raw mode with a short timeout
     if ! stty -icanon -echo min 0 time 5 <&3 2>/dev/null; then
         warn 'fathom-cursor: unable to configure terminal'
-        return 1
+        exit 1
     fi
 fi
 
@@ -189,14 +175,14 @@ esc=$(printf '\033')
 case "$response" in
     '')
         warn 'fathom-cursor: terminal did not respond'
-        return 1
+        exit 1
         ;;
     "$esc"'['*'R')
         :
         ;;
     *)
         printf '%s\n' "fathom-cursor: unexpected response '$response'" >&2
-        return 1
+        exit 1
         ;;
 esac
 
@@ -210,7 +196,7 @@ column=${coords#*;}
 case "$row" in
     *[!0-9]*)
         warn "fathom-cursor: invalid row '$row'"
-        return 1
+        exit 1
         ;;
     *) : ;;
 esac
@@ -218,7 +204,7 @@ esac
 case "$column" in
     *[!0-9]*)
         warn "fathom-cursor: invalid column '$column'"
-        return 1
+        exit 1
         ;;
     *) : ;;
 esac
@@ -245,38 +231,3 @@ else
         printf '%s\n' "$row"
     fi
 fi
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

@@ -1,19 +1,6 @@
 #!/bin/sh
 # This spell displays a management menu for a specific synonym.
 
-
-
-
-synonym_menu_usage() {
-  cat <<'USAGE'
-Usage: synonym-menu WORD
-
-Display a management menu for a specific synonym with options to
-edit the word, edit the target spell, or delete the synonym.
-Auto-detects whether the synonym is custom or default.
-USAGE
-}
-
 case "${1-}" in
 --help|--usage|-h)
   synonym_menu_usage
@@ -21,25 +8,21 @@ case "${1-}" in
   ;;
 esac
 
-require_wizardry || return 1
-
 set -eu
-env_clear
 
-synonym_menu() {
   
   # Catch Ctrl-C and TERM signal to return cleanly
   trap 'exit 0' INT TERM
   
   if [ "$#" -lt 1 ]; then
     printf '%s\n' "synonym-menu: requires WORD argument" >&2
-    return 2
+    exit 2
   fi
   
   synonym_word=$1
   
   if ! require menu "The synonym menu needs the 'menu' command."; then
-    return 1
+    exit 1
   fi
   
   spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
@@ -64,7 +47,7 @@ synonym_menu() {
   
   if [ -z "$target_spell" ]; then
     printf '%s\n' "synonym-menu: synonym '$synonym_word' not found" >&2
-    return 1
+    exit 1
   fi
   
   # Escape single quotes for safe passing
@@ -105,38 +88,3 @@ synonym_menu() {
       menu "Synonym: $synonym_word → $target_spell" "$@" || true
     fi
   done
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

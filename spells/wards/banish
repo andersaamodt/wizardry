@@ -4,7 +4,8 @@
 # This spell assumption-checks, self-heals, and tests the environment,
 # ensuring all prerequisites are met for each spell level.
 
-banish_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE'
 Usage: banish [LEVEL] [OPTIONS]
 
@@ -24,13 +25,7 @@ Examples:
   banish 5 --only # Validate only level 5
   banish all      # Validate through the highest available level
 USAGE
-}
-
-banish() {
-case "${1-}" in
---help|--usage|-h)
-  banish_usage
-  return 0
+  exit 0
   ;;
 esac
 
@@ -39,57 +34,30 @@ if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
   printf '[banish] Function called\n' >&2
 fi
 
-# Use conditional strictness based on execution context
-# See .github/CODE_POLICY_SET_EU.md for details
-case "$0" in
-  */banish)
-    # Executed as script - use full strict mode
-    set -eu
-    ;;
-  *)
-    # Called as function (sourced) - only undefined variable protection
-    # This prevents interactive shell exit while maintaining safety
-    set -u
-    ;;
-esac
+set -eu
 
 # Detect WIZARDRY_DIR if not already set
-# When sourced by invoke-wizardry, WIZARDRY_DIR will already be set
-# When run directly, we need to detect it from script location
 if [ -z "${WIZARDRY_DIR-}" ]; then
-  # Check if we're being run as a function (sourced context)
-  # In this case, $0 is the shell name (bash, zsh, etc.), not the script path
-  case "$0" in
-    sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-      # We're sourced but WIZARDRY_DIR not set - this shouldn't happen if
-      # invoke-wizardry loaded us, but try common locations as fallback
-      if [ -n "${HOME-}" ] && [ -d "${HOME}/.wizardry/spells" ]; then
-        WIZARDRY_DIR="${HOME}/.wizardry"
-      fi
-      ;;
-    *)
-      # We're being executed directly - detect from script location
-      _script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || _script_dir=""
-      if [ -n "$_script_dir" ]; then
-        _wiz_root=$(CDPATH= cd -- "$_script_dir/../.." 2>/dev/null && pwd -P) || _wiz_root=""
-        if [ -n "$_wiz_root" ] && [ -d "$_wiz_root/spells" ]; then
-          WIZARDRY_DIR=$_wiz_root
-        fi
-      fi
-      ;;
-  esac
+  # We're being executed directly - detect from script location
+  _script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || _script_dir=""
+  if [ -n "$_script_dir" ]; then
+    _wiz_root=$(CDPATH= cd -- "$_script_dir/../.." 2>/dev/null && pwd -P) || _wiz_root=""
+    if [ -n "$_wiz_root" ] && [ -d "$_wiz_root/spells" ]; then
+      WIZARDRY_DIR=$_wiz_root
+    fi
+  fi
 fi
 
 # Validate WIZARDRY_DIR is set and valid
 if [ -z "${WIZARDRY_DIR-}" ]; then
   printf 'banish: WIZARDRY_DIR not set and could not be detected\n' >&2
   printf 'Run from wizardry installation or set WIZARDRY_DIR environment variable\n' >&2
-  return 1
+  exit 1
 fi
 
 if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
   printf 'banish: invalid WIZARDRY_DIR: %s\n' "$WIZARDRY_DIR" >&2
-  return 1
+  exit 1
 fi
 
 export WIZARDRY_DIR
@@ -138,7 +106,7 @@ while [ "$#" -gt 0 ]; do
     -*)
       printf 'Error: unknown option: %s\n' "$1" >&2
       banish_usage >&2
-      return 2
+      exit 2
       ;;
     *)
       # Check if it's a valid level number
@@ -155,7 +123,7 @@ while [ "$#" -gt 0 ]; do
         *)
           printf 'Error: unexpected argument: %s\n' "$1" >&2
           banish_usage >&2
-          return 2
+          exit 2
           ;;
       esac
       ;;
@@ -166,7 +134,7 @@ done
 if [ "$target_level" -lt 0 ] || [ "$target_level" -gt "$max_level" ]; then
   printf 'Error: level must be 0-%d, got: %s\n' "$max_level" "$target_level" >&2
   banish_usage >&2
-  return 2
+  exit 2
 fi
 
 # Source shared spell level definitions from sys imp
@@ -248,7 +216,7 @@ banish_process_level() {
       
       if [ "$wizardry_not_installed" -eq 1 ]; then
         printf 'Error: Wizardry not installed - run ./install first\n'
-        return 1
+        exit 1
       fi
       
       export WIZARDRY_DIR
@@ -287,7 +255,7 @@ banish_process_level() {
           fi
         fi
         if [ -n "$path_missing" ]; then
-          return 1
+          exit 1
         fi
       fi
 
@@ -323,7 +291,7 @@ banish_process_level() {
             printf '    %s✗%s %s not found\n' "$_red" "$_reset" "$cmd"
           fi
         done
-        return 1
+        exit 1
       fi
 
       # Check download tools (curl or wget)
@@ -344,7 +312,7 @@ banish_process_level() {
           printf '    %s✓%s Download tool ready\n' "$_green" "$_reset"
         else
           printf '    %s✗%s Download tools still missing\n' "$_red" "$_reset"
-          return 1
+          exit 1
         fi
       fi
 
@@ -361,7 +329,7 @@ banish_process_level() {
           printf '    %s✓%s tar installed\n' "$_green" "$_reset"
         else
           printf '    %s✗%s tar still missing\n' "$_red" "$_reset"
-          return 1
+          exit 1
         fi
       fi
 
@@ -376,7 +344,7 @@ banish_process_level() {
         printf '  %s✓%s Package manager: %s\n' "$_green" "$_reset" "$package_managers"
       else
         printf '  %s✗%s Package manager: none detected\n' "$_red" "$_reset"
-        return 1
+        exit 1
       fi
       ;;
       
@@ -386,14 +354,14 @@ banish_process_level() {
       # Check wizardry structure (single item - combine on one line)
       if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
         printf '  %s✗%s Wizardry structure: Spells directory not found\n' "$_red" "$_reset"
-        return 1
+        exit 1
       fi
       printf '  %s✓%s Wizardry structure: Spells directory exists\n' "$_green" "$_reset"
 
       # Check installer presence (single item - combine on one line)
       if [ ! -f "${WIZARDRY_DIR}/install" ]; then
         printf '  %s✗%s Installer: install script not found\n' "$_red" "$_reset"
-        return 1
+        exit 1
       fi
       printf '  %s✓%s Installer: install script present\n' "$_green" "$_reset"
       
@@ -405,7 +373,7 @@ banish_process_level() {
           missing_count=$("$_banish_count_words" "$missing")
           label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
-          return 1
+          exit 1
         fi
         spell_output=$(eval "validate_spells --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
@@ -434,7 +402,7 @@ banish_process_level() {
         if ! eval "validate_spells --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval "validate_spells --imps --missing-only $imp_list" 2>/dev/null || true)
           printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
-          return 1
+          exit 1
         fi
         imp_output=$(eval "validate_spells --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
@@ -462,7 +430,7 @@ banish_process_level() {
           fi
         fi
         if [ ! -d "$spell_home" ] || [ ! -w "$spell_home" ]; then
-          return 1
+          exit 1
         fi
       fi
       
@@ -474,7 +442,7 @@ banish_process_level() {
           missing_count=$("$_banish_count_words" "$missing")
           label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
-          return 1
+          exit 1
         fi
         spell_output=$(eval "validate_spells --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
@@ -505,7 +473,7 @@ banish_process_level() {
         if ! eval "validate_spells --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval "validate_spells --imps --missing-only $imp_list" 2>/dev/null || true)
           printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
-          return 1
+          exit 1
         fi
         imp_output=$(eval "validate_spells --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
@@ -607,7 +575,7 @@ banish_process_level() {
           fi
         fi
         if [ ! -r "$menu_tty" ] || [ ! -w "$menu_tty" ]; then
-          return 1
+          exit 1
         fi
       else
         printf '  %s✓%s Terminal access: %s\n' "$_green" "$_reset" "$menu_tty"
@@ -639,7 +607,7 @@ banish_process_level() {
         fi
       fi
       if [ "$term_status" -ne 1 ]; then
-        return 1
+        exit 1
       fi
 
       # Check terminfo access (fathom-terminal expectation)
@@ -650,7 +618,7 @@ banish_process_level() {
           printf '  %s✓%s Terminfo dimensions: %sx%s\n' "$_green" "$_reset" "$cols" "$lines"
         else
           printf '  %s✗%s Terminfo dimensions unavailable\n' "$_red" "$_reset"
-          return 1
+          exit 1
         fi
       fi
 
@@ -662,7 +630,7 @@ banish_process_level() {
           missing_count=$("$_banish_count_words" "$missing")
           label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
-          return 1
+          exit 1
         fi
         spell_output=$(eval "validate_spells --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
@@ -693,7 +661,7 @@ banish_process_level() {
         if ! eval "validate_spells --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval "validate_spells --imps --missing-only $imp_list" 2>/dev/null || true)
           printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
-          return 1
+          exit 1
         fi
         imp_output=$(eval "validate_spells --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
@@ -740,7 +708,7 @@ banish_process_level() {
           printf '    %s✓%s Extended attributes helper ready\n' "$_green" "$_reset"
         else
           printf '    %s✗%s Extended attributes still unavailable\n' "$_red" "$_reset"
-          return 1
+          exit 1
         fi
       fi
       ;;
@@ -763,7 +731,7 @@ banish_process_level() {
           fi
         fi
         if [ ! -d "$markers_dir" ] || [ ! -w "$markers_dir" ]; then
-          return 1
+          exit 1
         fi
       fi
 
@@ -780,7 +748,7 @@ banish_process_level() {
           fi
         fi
         if [ ! -d "$spell_home" ] || [ ! -w "$spell_home" ]; then
-          return 1
+          exit 1
         fi
       fi
       ;;
@@ -800,7 +768,7 @@ banish_process_level() {
         printf '  %s✓%s File utilities: cp mv rm find\n' "$_green" "$_reset"
       else
         printf '  %s✗%s File utilities: missing command\n' "$_red" "$_reset"
-        return 1
+        exit 1
       fi
 
       # Check filesystem read/write
@@ -813,11 +781,11 @@ banish_process_level() {
         else
           rm -f "$tmp_check" 2>/dev/null || :
           printf '  %s✗%s Filesystem read/write: %s unavailable\n' "$_red" "$_reset" "$tmp_root"
-          return 1
+          exit 1
         fi
       else
         printf '  %s✗%s Filesystem read/write: temp file unavailable\n' "$_red" "$_reset"
-        return 1
+        exit 1
       fi
       ;;
 
@@ -841,7 +809,7 @@ banish_process_level() {
           fi
         fi
         if [ ! -r "$input_tty" ] || [ ! -w "$input_tty" ]; then
-          return 1
+          exit 1
         fi
       fi
       ;;
@@ -863,7 +831,7 @@ banish_process_level() {
           fi
         fi
         if [ ! -d "$config_home" ] || [ ! -w "$config_home" ]; then
-          return 1
+          exit 1
         fi
       fi
       ;;
@@ -877,7 +845,7 @@ banish_process_level() {
         printf '  %s✓%s Test suite: %s\n' "$_green" "$_reset" "$tests_root"
       else
         printf '  %s✗%s Test suite: %s missing\n' "$_red" "$_reset" "$tests_root"
-        return 1
+        exit 1
       fi
 
       # Skip pocket-dimension and bwrap checks in GitHub Actions
@@ -899,11 +867,11 @@ banish_process_level() {
             printf '  %s✓%s Sandbox tool: pocket-dimension available\n' "$_green" "$_reset"
           else
             printf '  %s✗%s Sandbox tool: pocket-dimension unavailable\n' "$_red" "$_reset"
-            return 1
+            exit 1
           fi
         else
           printf '  %s✗%s Sandbox tool: pocket-dimension not found\n' "$_red" "$_reset"
-          return 1
+          exit 1
         fi
 
         if [ "$platform" = "Darwin" ]; then
@@ -911,7 +879,7 @@ banish_process_level() {
             printf '  %s✓%s Sandbox tool: sandbox-exec available (macOS)\n' "$_green" "$_reset"
           else
             printf '  %s✗%s Sandbox tool: sandbox-exec not found (macOS)\n' "$_red" "$_reset"
-            return 1
+            exit 1
           fi
         else
           if command -v bwrap >/dev/null 2>&1; then
@@ -935,7 +903,7 @@ banish_process_level() {
               fi
             fi
             if ! command -v bwrap >/dev/null 2>&1; then
-              return 1
+              exit 1
             fi
           fi
         fi
@@ -963,7 +931,7 @@ banish_process_level() {
           fi
         fi
         if ! command -v ssh >/dev/null 2>&1; then
-          return 1
+          exit 1
         fi
       fi
       ;;
@@ -1000,7 +968,7 @@ banish_process_level() {
           printf '    %s✓%s Extended attributes helper ready\n' "$_green" "$_reset"
         else
           printf '    %s✗%s Extended attributes still unavailable\n' "$_red" "$_reset"
-          return 1
+          exit 1
         fi
       fi
       ;;
@@ -1030,7 +998,7 @@ banish_process_level() {
           fi
         fi
         if ! command -v checkbashisms >/dev/null 2>&1; then
-          return 1
+          exit 1
         fi
       fi
       ;;
@@ -1052,7 +1020,7 @@ banish_process_level() {
           fi
         fi
         if [ ! -d "$spell_home" ] || [ ! -w "$spell_home" ]; then
-          return 1
+          exit 1
         fi
       fi
       ;;
@@ -1078,7 +1046,7 @@ banish_process_level() {
           missing_count=$("$_banish_count_words" "$missing")
           label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
-          return 1
+          exit 1
         fi
         spell_output=$(eval "validate_spells --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
@@ -1109,7 +1077,7 @@ banish_process_level() {
         if ! eval "validate_spells --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval "validate_spells --imps --missing-only $imp_list" 2>/dev/null || true)
           printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
-          return 1
+          exit 1
         fi
         imp_output=$(eval "validate_spells --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
@@ -1125,7 +1093,7 @@ banish_process_level() {
       ;;
   esac
   
-  return 0
+  exit 0
 }
 
 
@@ -1147,13 +1115,13 @@ if ! command -v validate_spells >/dev/null 2>&1; then
     unset _WIZARDRY_SOURCING_SPELL
   else
     printf '%s\n' "banish: validate-spells not found" >&2
-    return 1
+    exit 1
   fi
   
   # Verify it loaded successfully
   if ! command -v validate_spells >/dev/null 2>&1; then
     printf '%s\n' "banish: failed to load validate-spells" >&2
-    return 1
+    exit 1
   fi
 fi
 
@@ -1188,18 +1156,4 @@ else
   printf '\n%s✓%s All validation checks passed\n' "$_green" "$_reset"
 fi
 
-return 0
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# CRITICAL: Always source, never use from PATH
-# The imp must be sourced to define the castable function
-if true; then  # Always source castable, ensures consistency
-  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
-  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
-  [ -f "$_i/castable" ] && . "$_i/castable"
-fi
-
-castable "$@"
+exit 0

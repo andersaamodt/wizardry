@@ -1,12 +1,10 @@
 #!/bin/sh
 
-
-
-
 # This spell refreshes the wizardry repository alongside other managed sources.
 # Pass --verbose to narrate each update step.
 
-update_all_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'EOF'
 Usage: update-all [-v|--verbose]
 
@@ -14,22 +12,11 @@ Options:
   -v, --verbose   Print all command output while updating
   -h, --help      Show this help message and exit
 EOF
-}
-
-
-
-update_all() {
-case "${1-}" in
---help|--usage|-h)
-  update_all_usage
-  return 0
+  exit 0
   ;;
 esac
 
-require_wizardry || return 1
-
 set -eu
-env_clear
 
 verbose=0
 
@@ -45,7 +32,7 @@ while [ "$#" -gt 0 ]; do
       ;;
     -*)
       update_all_usage >&2
-      return 2
+      exit 2
       ;;
     *)
       break
@@ -54,12 +41,18 @@ while [ "$#" -gt 0 ]; do
 done
 
 if [ "$#" -ne 0 ]; then
-  update_all_usage >&2
-  return 2
+  cat >&2 <<'EOF'
+Usage: update-all [-v|--verbose]
+
+Options:
+  -v, --verbose   Print all command output while updating
+  -h, --help      Show this help message and exit
+EOF
+  exit 2
 fi
 
 # Load color palette if available
-if has colors; then
+if command -v colors >/dev/null 2>&1; then
   # shellcheck source=/dev/null
   . "$(command -v colors)"
 else
@@ -68,15 +61,16 @@ else
 fi
 
 # Detect distro (inline resolve_distro)
-if is set "${WIZARDRY_UPDATE_ALL_DISTRO:-}"; then
+if [ -n "${WIZARDRY_UPDATE_ALL_DISTRO:-}" ]; then
   distro=$WIZARDRY_UPDATE_ALL_DISTRO
-elif has detect-distro && distro=$(detect-distro 2>/dev/null); then
+elif command -v detect-distro >/dev/null 2>&1 && distro=$(detect-distro 2>/dev/null); then
   :
 else
-  die 'update-all: unable to detect operating system.'
+  printf '%s\n' 'update-all: unable to detect operating system.' >&2
+  exit 1
 fi
 
-say "Detected platform: $distro"
+printf '%s\n' "Detected platform: $distro"
 
 # Confirm updates (inline confirm_updates and assume_yes)
 case ${WIZARDRY_UPDATE_ALL_ASSUME_YES:-} in
@@ -85,12 +79,16 @@ case ${WIZARDRY_UPDATE_ALL_ASSUME_YES:-} in
     ;;
   *)
     # Ask for confirmation
-    has ask_yn || fail 'ask_yn spell is missing; cannot confirm updates.'
-    say 'Proceed with system updates?'
+    if ! command -v ask_yn >/dev/null 2>&1; then
+      printf '%s\n' 'update-all: ask_yn spell is missing; cannot confirm updates.' >&2
+      exit 1
+    fi
+    printf '%s\n' 'Proceed with system updates?'
     ASK_CANTRIP_INPUT=stdin
     export ASK_CANTRIP_INPUT
     if ! printf '\n' | ask_yn 'Proceed with system updates?' yes >/dev/null; then
-      die 1 'update-all: cancelled by user'
+      printf '%s\n' 'update-all: cancelled by user' >&2
+      exit 1
     fi
     ;;
 esac
@@ -100,7 +98,7 @@ esac
 # Inlines: progress_filter, print_command, format_command
 run_with_progress() {
   if [ "$#" -eq 0 ]; then
-    return 0
+    exit 0
   fi
 
   # Print command being run (inline format_command and print_command)
@@ -117,7 +115,7 @@ run_with_progress() {
   fi
 
   # Run with progress filtering (inline progress_filter)
-  _progress_tmp=$(temp-file update-all) || return 1
+  _progress_tmp=$(temp-file update-all) || exit 1
   on-exit cleanup-file "$_progress_tmp"
   
   (
@@ -126,7 +124,7 @@ run_with_progress() {
     _cmd_status=$?
     set -e
     printf '%s\n' "$_cmd_status" >"$_progress_tmp"
-    return 0
+    exit 0
   ) | tr '\r' '\n' | {
     _last_progress=''
     while IFS= read -r _line || nonempty "$_line"; do
@@ -166,11 +164,11 @@ run_with_progress() {
 case $distro in
   debian)
     # Inline require_command - use must has pattern
-    must has sudo 'Required command not found: sudo' || return 1
-    must has apt-get 'Required command not found: apt-get' || return 1
+    if ! command -v sudo >/dev/null 2>&1; then printf '%s\n' 'Required command not found: sudo' >&2; exit 1; fi
+    if ! command -v apt-get >/dev/null 2>&1; then printf '%s\n' 'Required command not found: apt-get' >&2; exit 1; fi
     
     # Use step imp instead of print_step
-    step '• Refreshing apt package lists'
+    printf '%s\n' '• Refreshing apt package lists'
     # Inline run_quiet - direct execution with output control
     if [ "$verbose" -eq 1 ]; then
       sudo apt-get update
@@ -178,33 +176,33 @@ case $distro in
       sudo apt-get update >/dev/null 2>&1
     fi
     
-    step '• Installing upgrades'
+    printf '%s\n' '• Installing upgrades'
     run_with_progress sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y full-upgrade
     
-    step '• Removing unused packages'
+    printf '%s\n' '• Removing unused packages'
     run_with_progress sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y autoremove
     ;;
     
   arch)
-    must has sudo 'Required command not found: sudo' || return 1
-    must has pacman 'Required command not found: pacman' || return 1
-    must has pamac 'Required command not found: pamac' || return 1
+    if ! command -v sudo >/dev/null 2>&1; then printf '%s\n' 'Required command not found: sudo' >&2; exit 1; fi
+    if ! command -v pacman >/dev/null 2>&1; then printf '%s\n' 'Required command not found: pacman' >&2; exit 1; fi
+    if ! command -v pamac >/dev/null 2>&1; then printf '%s\n' 'Required command not found: pamac' >&2; exit 1; fi
     
-    step '• Synchronising pacman packages'
+    printf '%s\n' '• Synchronising pacman packages'
     if [ "$verbose" -eq 1 ]; then
       sudo pacman -Syu --noconfirm
     else
       sudo pacman -Syu --noconfirm >/dev/null 2>&1
     fi
     
-    step '• Refreshing Pamac-managed packages'
+    printf '%s\n' '• Refreshing Pamac-managed packages'
     if [ "$verbose" -eq 1 ]; then
       pamac update --no-confirm
     else
       pamac update --no-confirm >/dev/null 2>&1
     fi
     
-    step '• Rebuilding Pamac AUR packages'
+    printf '%s\n' '• Rebuilding Pamac AUR packages'
     if [ "$verbose" -eq 1 ]; then
       pamac build --no-confirm
     else
@@ -213,33 +211,33 @@ case $distro in
     ;;
     
   nixos)
-    must has sudo 'Required command not found: sudo' || return 1
-    must has nix-channel 'Required command not found: nix-channel' || return 1
-    must has nixos-rebuild 'Required command not found: nixos-rebuild' || return 1
-    must has nix-env 'Required command not found: nix-env' || return 1
+    if ! command -v sudo >/dev/null 2>&1; then printf '%s\n' 'Required command not found: sudo' >&2; exit 1; fi
+    if ! command -v nix-channel >/dev/null 2>&1; then printf '%s\n' 'Required command not found: nix-channel' >&2; exit 1; fi
+    if ! command -v nixos-rebuild >/dev/null 2>&1; then printf '%s\n' 'Required command not found: nixos-rebuild' >&2; exit 1; fi
+    if ! command -v nix-env >/dev/null 2>&1; then printf '%s\n' 'Required command not found: nix-env' >&2; exit 1; fi
     
-    step '• Refreshing system channels'
+    printf '%s\n' '• Refreshing system channels'
     if [ "$verbose" -eq 1 ]; then
       sudo nix-channel --update
     else
       sudo nix-channel --update >/dev/null 2>&1
     fi
     
-    step '• Rebuilding system configuration'
+    printf '%s\n' '• Rebuilding system configuration'
     if [ "$verbose" -eq 1 ]; then
       sudo nixos-rebuild switch --upgrade
     else
       sudo nixos-rebuild switch --upgrade >/dev/null 2>&1
     fi
     
-    step '• Refreshing user channels'
+    printf '%s\n' '• Refreshing user channels'
     if [ "$verbose" -eq 1 ]; then
       nix-channel --update
     else
       nix-channel --update >/dev/null 2>&1
     fi
     
-    step '• Upgrading user packages'
+    printf '%s\n' '• Upgrading user packages'
     if [ "$verbose" -eq 1 ]; then
       nix-env -u --always
     else
@@ -252,39 +250,4 @@ case $distro in
     ;;
 esac
 
-step 'All updates complete.'
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"
+printf '%s\n' 'All updates complete.'

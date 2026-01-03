@@ -1,31 +1,19 @@
 #!/bin/sh
 
-
-
-
 # This spell awakens or stills the cyclic illumination of the cursor.
 
 # Emit the escape sequence that re-enables blinking.
 
-cursor_blink_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE' >&2
 Usage: cursor-blink on|off
 
 Toggles cursor blinking with ANSI escape codes, quietly succeeding on terminals that cannot honour the request.
 USAGE
-}
-
-
-
-cursor_blink() {
-case "${1-}" in
---help|--usage|-h)
-  cursor_blink_usage
-  return 0
+  exit 0
   ;;
 esac
-
-require_wizardry || return 1
 
 # Use conditional strictness based on execution context
 # See .github/CODE_POLICY_SET_EU.md for details
@@ -40,7 +28,6 @@ case "$0" in
     set -u
     ;;
 esac
-env_clear
 
 # The helper expects exactly one argument that declares the desired state.
 if [ "$#" -ne 1 ]; then
@@ -52,7 +39,7 @@ case ${TERM-} in
   ''|dumb|unknown)
     # Quietly succeed so scripts keep running even when the terminal lacks ANSI
     # support (for example, on "dumb" terminals).
-    return 0
+    exit 0
     ;;
 esac
 
@@ -70,38 +57,3 @@ case "$1" in
     usage-error "cursor-blink" "expected on or off" || return $?
     ;;
 esac
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

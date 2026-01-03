@@ -2,18 +2,6 @@
 # This spell edits an existing synonym.
 # Can change either the synonym word or the target spell.
 
-
-
-
-edit_synonym_usage() {
-  cat <<'USAGE'
-Usage: edit-synonym WORD [--word NEW_WORD | --spell NEW_SPELL]
-
-Edit an existing synonym. Can change the synonym word (--word)
-or the target spell (--spell).
-USAGE
-}
-
 case "${1-}" in
 --help|--usage|-h)
   edit_synonym_usage
@@ -21,12 +9,8 @@ case "${1-}" in
   ;;
 esac
 
-require_wizardry || return 1
-
 set -eu
-env_clear
 
-edit_synonym() {
   
   spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
   custom_file="$spell_home/.synonyms"
@@ -35,7 +19,7 @@ edit_synonym() {
   # Parse arguments
   if [ "$#" -lt 1 ]; then
     printf '%s\n' "edit-synonym: requires WORD argument" >&2
-    return 2
+    exit 2
   fi
   
   synonym_word=$1
@@ -49,7 +33,7 @@ edit_synonym() {
       --word)
         if [ "$#" -lt 2 ]; then
           printf '%s\n' "edit-synonym: --word requires a value" >&2
-          return 2
+          exit 2
         fi
         edit_mode="word"
         new_value=$2
@@ -58,7 +42,7 @@ edit_synonym() {
       --spell)
         if [ "$#" -lt 2 ]; then
           printf '%s\n' "edit-synonym: --spell requires a value" >&2
-          return 2
+          exit 2
         fi
         edit_mode="spell"
         new_value=$2
@@ -66,14 +50,14 @@ edit_synonym() {
         ;;
       *)
         printf '%s\n' "edit-synonym: unknown option: $1" >&2
-        return 2
+        exit 2
         ;;
     esac
   done
   
   if [ -z "$edit_mode" ]; then
     printf '%s\n' "edit-synonym: must specify either --word or --spell" >&2
-    return 2
+    exit 2
   fi
   
   # Check which file contains the synonym (custom only - can't edit defaults)
@@ -84,10 +68,10 @@ edit_synonym() {
     # Found in default - can't edit
     printf '%s\n' "edit-synonym: cannot edit default synonym '$synonym_word'" >&2
     printf '%s\n' "Use 'Override' option in synonym-menu to create a custom version" >&2
-    return 1
+    exit 1
   else
     printf '%s\n' "edit-synonym: synonym '$synonym_word' not found" >&2
-    return 1
+    exit 1
   fi
   
   # Read current target spell from the synonym
@@ -95,7 +79,7 @@ edit_synonym() {
   
   if [ -z "$current_spell" ]; then
     printf '%s\n' "edit-synonym: could not parse target spell from synonym" >&2
-    return 1
+    exit 1
   fi
   
   case $edit_mode in
@@ -103,21 +87,21 @@ edit_synonym() {
       # Validate new synonym word
       if [ -z "$new_value" ]; then
         printf '%s\n' "edit-synonym: new synonym word cannot be empty" >&2
-        return 2
+        exit 2
       fi
       
       case $new_value in
         *[/\ ]*)
           printf '%s\n' "edit-synonym: synonym word cannot contain spaces or slashes" >&2
-          return 2
+          exit 2
           ;;
         -*)
           printf '%s\n' "edit-synonym: synonym word cannot start with a dash" >&2
-          return 2
+          exit 2
           ;;
         .*)
           printf '%s\n' "edit-synonym: synonym word cannot start with a dot" >&2
-          return 2
+          exit 2
           ;;
       esac
       
@@ -125,18 +109,18 @@ edit_synonym() {
       if grep -q "^alias $new_value=" "$synonyms_file" 2>/dev/null; then
         if [ "$new_value" != "$synonym_word" ]; then
           printf '%s\n' "edit-synonym: synonym '$new_value' already exists" >&2
-          return 1
+          exit 1
         fi
       fi
       
       # Rename the synonym
       if ! add-synonym "$new_value" "$current_spell"; then
         printf '%s\n' "edit-synonym: failed to create new synonym" >&2
-        return 1
+        exit 1
       fi
       if ! delete-synonym "$synonym_word"; then
         printf '%s\n' "edit-synonym: failed to delete old synonym" >&2
-        return 1
+        exit 1
       fi
       success "Synonym renamed: $synonym_word -> $new_value"
       ;;
@@ -145,7 +129,7 @@ edit_synonym() {
       # Validate target spell
       if [ -z "$new_value" ]; then
         printf '%s\n' "edit-synonym: target spell cannot be empty" >&2
-        return 2
+        exit 2
       fi
       
       # Check if target spell exists
@@ -157,7 +141,7 @@ edit_synonym() {
           y|Y|yes|YES) ;;
           *) 
             printf '%s\n' "edit-synonym: cancelled" >&2
-            return 1
+            exit 1
             ;;
         esac
       fi
@@ -165,47 +149,12 @@ edit_synonym() {
       # Update the synonym
       if ! delete-synonym "$synonym_word"; then
         printf '%s\n' "edit-synonym: failed to delete old synonym" >&2
-        return 1
+        exit 1
       fi
       if ! add-synonym "$synonym_word" "$new_value"; then
         printf '%s\n' "edit-synonym: failed to create new synonym" >&2
-        return 1
+        exit 1
       fi
       success "Synonym updated: $synonym_word -> $new_value"
       ;;
   esac
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

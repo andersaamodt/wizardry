@@ -1,35 +1,22 @@
 #!/bin/sh
 # This spell provides a menu interface for managing the spellbook.
 
-
-
-
-require_wizardry || return 1
-
-spellbook_usage() {
-        cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: spellbook [PATH|--list]
 
 Open the interactive spellbook to browse categories, scribe commands,
 and manage the cast menu. Optionally pass a PATH to jump to a category.
 Use --list to display all memorized commands.
 USAGE
-}
-
-
-
-spellbook() {
-case "${1-}" in
---help|--usage|-h)
-  spellbook_usage
-  return 0
+  exit 0
   ;;
 esac
 
 set -eu
-env_clear
 
-# Catch Ctrl-C and TERM signal to return 1 cleanly
+# Catch Ctrl-C and TERM signal to exit 1 cleanly
 trap 'exit 0' INT TERM
 
 ROOT_DIR=$(CDPATH= cd -- "$(dirname "$0")/../.." && pwd -P)
@@ -43,7 +30,7 @@ if cast_store_path=$(command -v "$cast_store" 2>/dev/null); then
         cast_store=$cast_store_path
 else
         die "spellbook: memorize helper is missing."
-        return 1
+        exit 1
 fi
 
 cast_dir=$($cast_store dir)
@@ -100,7 +87,7 @@ spellbook_menu() {
                                 esac
                         else
                                 die "spellbook: category '$current_path' not found"
-        return 1
+        exit 1
                         fi
                 fi
                 
@@ -323,11 +310,11 @@ spellbook_path=""
 case ${1-} in
         --list)
                 "$cast_store" list
-                return 0
+                exit 0
                 ;;
         --help|--usage|-h)
                 spellbook_usage
-                return 0
+                exit 0
                 ;;
         --)
                 shift
@@ -338,7 +325,7 @@ case ${1-} in
                 ;;
         -*)
                 spellbook_usage >&2
-                return 1
+                exit 1
                 ;;
         *)
                 # Treat as a path to a category
@@ -347,42 +334,7 @@ case ${1-} in
         esac
 
 if ! require menu "The spellbook menu needs the 'menu' command."; then
-        return 1
+        exit 1
 fi
 
 spellbook_menu "$spellbook_path"
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

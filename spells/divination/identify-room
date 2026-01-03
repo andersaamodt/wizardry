@@ -1,35 +1,48 @@
 #!/bin/sh
 
-
-
-
 # This spell names common system rooms and describes their usual roles.
 # Use it to learn what important directories are for or to list recognized rooms.
 
-require_wizardry || return 1
-
-identify_room_usage() {
-cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: identify-room [--list] [path]
 
 Identify whether a path is a special system room. Prints a title and description
 when recognized, or notes when a room has no special meaning. Use --list to show
 recognized locations for this platform.
 USAGE
-}
-
-
-
-identify_room() {
-case "${1-}" in
---help|--usage|-h)
-  identify_room_usage
-  return 0
+  exit 0
   ;;
 esac
 
 set -eu
-env_clear
+
+# Helper functions for path manipulation
+strip_trailing_slashes() {
+  result=$1
+  while true; do
+    case $result in
+      */) result=${result%/} ;;
+      *) break ;;
+    esac
+  done
+  printf '%s' "$result"
+}
+
+abs_path() {
+  path=$1
+  if [ -d "$path" ]; then
+    (cd "$path" && pwd -P)
+  elif [ -e "$path" ]; then
+    dir=$(dirname "$path")
+    base=$(basename "$path")
+    abs_dir=$(cd "$dir" && pwd -P)
+    printf '%s/%s' "$abs_dir" "$base"
+  else
+    printf '%s' "$path"
+  fi
+}
 
 list_only=0
 case "${1-}" in
@@ -45,28 +58,46 @@ do
     list_only=1
     ;;
   h)
-    identify_room_usage
-    return 0
+    cat <<'USAGE'
+Usage: identify-room [--list] [path]
+
+Identify whether a path is a special system room. Prints a title and description
+when recognized, or notes when a room has no special meaning. Use --list to show
+recognized locations for this platform.
+USAGE
+    exit 0
     ;;
   *)
-    identify_room_usage >&2
-    return 1
+    cat >&2 <<'USAGE'
+Usage: identify-room [--list] [path]
+
+Identify whether a path is a special system room. Prints a title and description
+when recognized, or notes when a room has no special meaning. Use --list to show
+recognized locations for this platform.
+USAGE
+    exit 1
     ;;
   esac
 done
 shift $((OPTIND - 1))
 
 if [ "$list_only" -eq 1 ] && [ "$#" -gt 0 ]; then
-  identify_room_usage >&2
-  return 1
+  cat >&2 <<'USAGE'
+Usage: identify-room [--list] [path]
+
+Identify whether a path is a special system room. Prints a title and description
+when recognized, or notes when a room has no special meaning. Use --list to show
+recognized locations for this platform.
+USAGE
+  exit 1
 fi
 
 root_path=/
-tmp_path=$(strip-trailing-slashes "$(abs-path "${TMPDIR:-/tmp}")")
-default_tmp_path=$(strip-trailing-slashes "$(abs-path /tmp)")
+tmp_path=$(strip_trailing_slashes "$(abs_path "${TMPDIR:-/tmp}")")
+default_tmp_path=$(strip_trailing_slashes "$(abs_path /tmp)")
 var_tmp_path=''
 if [ -d /var/tmp ]; then
-  var_tmp_path=$(strip-trailing-slashes "$(abs-path /var/tmp)")
+  var_tmp_path=$(strip_trailing_slashes "$(abs_path /var/tmp)")
 fi
 have_home=0
 normalized_home=''
@@ -86,13 +117,13 @@ elif [ -n "${HOME-}" ]; then
 fi
 
 if [ "$have_home" -eq 1 ]; then
-  normalized_home=$(strip-trailing-slashes "$(abs-path "$resolved_home")")
+  normalized_home=$(strip_trailing_slashes "$(abs_path "$resolved_home")")
   home_parent=$(dirname -- "$normalized_home")
   home_name=$(basename -- "$normalized_home")
 fi
 
-# Use detect-distro spell (exists and is available)
-if has detect-distro; then
+# Use detect-distro spell if available
+if command -v detect-distro >/dev/null 2>&1; then
   distro=$(detect-distro 2>/dev/null || true)
 else
   kernel=$(uname -s 2>/dev/null || printf '')
@@ -144,7 +175,7 @@ recognize_room() {
         "$home_name") ;;
         *)
           # Inline possessive_name logic - only used once in this spell
-          if has possessive; then
+          if command -v possessive >/dev/null 2>&1; then
             owner=$(possessive "$other_user")
           else
             case $other_user in
@@ -289,50 +320,15 @@ if [ "$list_only" -eq 1 ]; then
       printf '%s - %s\n' "$dir" "$room_title"
     fi
   done
-  return 0
+  exit 0
 fi
 
 target_path=${1:-$PWD}
-normalized_target=$(strip-trailing-slashes "$(abs-path "$target_path")")
+normalized_target=$(strip_trailing_slashes "$(abs_path "$target_path")")
 
 if recognize_room "$normalized_target"; then
-  return 0
+  exit 0
 fi
 
 printf '%s\n' 'This room has no special meaning within the UNIX system.'
-return 1
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"
+exit 1
