@@ -1,103 +1,56 @@
 #!/bin/sh
 
-
-
-
 # This spell enchants a file with a portkey that transports to a destination.
 # Activate the portkey with follow-portkey to teleport to the stored location.
 
-require_wizardry || return 1
-
-enchant_portkey_usage() {
-cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: enchant-portkey <file> [destination]
 
 Enchant a file with a portkey that stores a destination path, defaulting to marker 1 ($SPELLBOOK_DIR/.markers/1) when none is provided. Activate the portkey later with follow-portkey to teleport to the stored location.
 USAGE
-}
-
-
-
-enchant_portkey() {
-case "${1-}" in
---help|--usage|-h)
-  enchant_portkey_usage
-  return 0
+  exit 0
   ;;
 esac
 
 set -eu
-env_clear
 
 # Ensure file argument is provided
 if [ -z "${1-}" ]; then
-        usage-error "enchant-portkey" "file path required"
+        printf '%s\n' "enchant-portkey: file path required" >&2
+        exit 2
 fi
 
 file=$1
 destination=${2-}
-spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
 markers_dir="$spell_home/.markers"
 marker_file="$markers_dir/1"
 
 # Verify file exists
-if ! is file "$file"; then
-        die "enchant-portkey: file not found: $file"
-        return 1
+if [ ! -f "$file" ]; then
+        printf '%s\n' "enchant-portkey: file not found: $file" >&2
+        exit 1
 fi
 
 # If no destination provided, try to read from marker file
-if is unset "$destination"; then
-        if is file "$marker_file"; then
-                destination=$(read-file "$marker_file")
+if [ -z "$destination" ]; then
+        if [ -f "$marker_file" ]; then
+                destination=$(cat "$marker_file")
         else
-                die "enchant-portkey: no destination provided and no marker 1 found."
-        return 1
+                printf '%s\n' "enchant-portkey: no destination provided and no marker 1 found." >&2
+                exit 1
         fi
 fi
 
 # Verify destination is valid
-if is unset "$destination"; then
-        die "enchant-portkey: destination cannot be empty."
-        return 1
+if [ -z "$destination" ]; then
+        printf '%s\n' "enchant-portkey: destination cannot be empty." >&2
+        exit 1
 fi
 
 # Enchant the file with the destination context
 enchant "$file" context "$destination" >/dev/null
 
-say "Portkey enchanted on '$(file-name "$file")'. Use follow-portkey to activate."
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"
+printf '%s\n' "Portkey enchanted on '$(basename "$file")'. Use follow-portkey to activate."

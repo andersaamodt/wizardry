@@ -1,43 +1,36 @@
 #!/bin/sh
 
-
-
-
 # Inscribe bookmarks for jump-to-marker to teleport you back.
 
-require_wizardry || return 1
-
-mark_location_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE'
 Usage: mark-location [marker] [path]
 
 Record the current directory (or path) for jump-to-marker to return to later.
 Markers are stored in $SPELLBOOK_DIR/.markers/.
 USAGE
-}
-
-
-mark_location() {
-case "${1-}" in
---help|--usage|-h)
-  mark_location_usage
-  return 0
+  exit 0
   ;;
 esac
 
 set -eu
-env_clear
 
 if [ "$#" -gt 2 ]; then
-  mark_location_usage
-  return 1
+  cat >&2 <<'USAGE'
+Usage: mark-location [marker] [path]
+
+Record the current directory (or path) for jump-to-marker to return to later.
+Markers are stored in $SPELLBOOK_DIR/.markers/.
+USAGE
+  exit 1
 fi
 
-spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
 markers_dir="$spell_home/.markers"
 
 # Store the markers in $SPELLBOOK_DIR/.markers/ (persists across wizardry resets).
-make dir "$markers_dir" || return 1
+mkdir -p "$markers_dir" || exit 1
 
 # Determine marker name: if first arg looks like a path, it's the path, not name
 marker_name=""
@@ -82,82 +75,50 @@ fi
 # Validate marker name (alphanumeric, dashes, underscores only)
 case "$marker_name" in
   *[!A-Za-z0-9_-]*)
-    warn "mark-location: marker name may only contain letters, numbers, dashes, and underscores."
-    return 1
+    printf '%s\n' "mark-location: marker name may only contain letters, numbers, dashes, and underscores." >&2
+    exit 1
     ;;
 esac
 
 # Determine destination path
 if [ -z "$target_path" ]; then
-  destination=$(here)
+  destination=$(pwd -P)
 else
   case "$target_path" in
     /*)
       if [ -d "$target_path" ]; then
-        destination=$(cd "$target_path" && here)
+        destination=$(cd "$target_path" && pwd -P)
       else
-        destination="$(cd "$(dirname "$target_path")" && here)/$(basename "$target_path")"
+        destination="$(cd "$(dirname "$target_path")" && pwd -P)/$(basename "$target_path")"
       fi
       ;;
     "~/"*)
-      if is set "${HOME-}"; then
+      if [ -n "${HOME-}" ]; then
         destination="$HOME/${target_path#"~/"}"
       else
         destination="$target_path"
       fi
       ;;
     "~")
-      if is set "${HOME-}"; then
+      if [ -n "${HOME-}" ]; then
         destination="$HOME"
       else
         destination="$target_path"
       fi
       ;;
     *)
-      destination="$(here)/$target_path"
+      destination="$(pwd -P)/$target_path"
       ;;
   esac
-  gone "$destination" && { warn "mark-location: $target_path does not exist."; return 1; }
+  if [ ! -e "$destination" ]; then
+    printf '%s\n' "mark-location: $target_path does not exist." >&2
+    exit 1
+  fi
 fi
 
 # Normalize any double slashes in the path (can occur on macOS where TMPDIR ends with /)
-destination=$(norm-path "$destination")
+destination=$(printf '%s' "$destination" | sed 's|//|/|g')
 
 marker_file="$markers_dir/$marker_name"
-say "$destination" >"$marker_file"
-say "Marked location $marker_name at $destination."
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"
+printf '%s\n' "$destination" >"$marker_file"
+printf '%s\n' "Marked location $marker_name at $destination."
