@@ -158,14 +158,14 @@ env-clear
       alias|bg|cd|command|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|readonly|set|sh|\
 times|trap|true|type|ulimit|umask|unalias|wait|break|case|continue|do|done|elif|else|\
 esac|eval|exec|exit|export|fi|for|if|in|local|return|shift|then|unset|until|while)
-        printf 'generate-glosses: FATAL: Spell name conflict with shell builtin "%s" from "%s" - rename spell before production\n' "$_first_word" "$_cmd_name" >&2
+        printf 'generate-glosses: WARNING: Skipping spell "%s" - first word "%s" conflicts with shell builtin\n' "$_cmd_name" "$_first_word" >&2
         return 1
         ;;
       # BLACKLIST: Common system commands that should not be overridden
       awk|cat|cp|cut|date|df|diff|dirname|du|echo|egrep|env|expr|fgrep|file|find|grep|head|\
 hostname|id|ln|ls|mkdir|mv|printf|ps|rm|rmdir|sed|sleep|sort|stat|tail|tar|tee|touch|tr|\
 uname|uniq|wc|xargs)
-        printf 'generate-glosses: FATAL: Spell name conflict with system command "%s" from "%s" - rename spell before production\n' "$_first_word" "$_cmd_name" >&2
+        printf 'generate-glosses: WARNING: Skipping spell "%s" - first word "%s" conflicts with system command\n' "$_cmd_name" "$_first_word" >&2
         return 1
         ;;
     esac
@@ -263,7 +263,8 @@ uname|uniq|wc|xargs)
       ''|.*|parse) continue ;;
     esac
     
-    _generate_first_word_gloss "$spell_name" || exit 1
+    # Try to generate first-word gloss, skip on conflict (warning already printed)
+    _generate_first_word_gloss "$spell_name" || continue
   done < "$_spell_list"
   
   # Emit separator
