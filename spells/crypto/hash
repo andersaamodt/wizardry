@@ -5,11 +5,11 @@
 
 case "${1-}" in
 --help|--usage|-h)
-  cat <<'USAGE'
+  cat << 'EOF'
 Usage: hash <file>
 
 Compute the CRC-32 hash of a file and print it in hexadecimal, resolving the path relative to this spell when needed.
-USAGE
+EOF
   exit 0
   ;;
 esac
@@ -17,11 +17,11 @@ esac
 set -eu
 
 if [ "$#" != 1 ]; then
-    cat >&2 <<'USAGE'
+    cat >&2 << 'EOF'
 Usage: hash <file>
 
 Compute the CRC-32 hash of a file and print it in hexadecimal, resolving the path relative to this spell when needed.
-USAGE
+EOF
     exit 2
 fi
 

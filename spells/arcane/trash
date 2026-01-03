@@ -4,11 +4,11 @@
 
 case "${1-}" in
 --help|--usage|-h)
-  cat <<'USAGE'
+  cat << 'EOF'
 Usage: trash [-r] [-f] <file|folder>...
 
 Move files or folders to the system trash so they remain recoverable. Use -r for directories and -f to ignore missing files.
-USAGE
+EOF
   exit 0
   ;;
 esac

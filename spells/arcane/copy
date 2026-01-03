@@ -4,11 +4,11 @@
 
 case "${1-}" in
 --help|--usage|-h)
-  cat <<'USAGE'
+  cat << 'EOF'
 Usage: copy <file>
 
 Copy the contents of a text file to the system clipboard using pbcopy, xsel, or xclip. Prompts for a path when none is given and prints a confirmation when successful.
-USAGE
+EOF
   exit 0
   ;;
 esac
