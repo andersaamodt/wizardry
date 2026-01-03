@@ -137,7 +137,8 @@ case "$spell_name" in
     else
       # Find spell recursively (include imps and .arcana)
       # Use 'command' to bypass any glossary overrides of find
-      spell_path=$(command find "$repo_dir/spells" -type f -name "$spell_name" 2>/dev/null | head -1)
+      spell_path=$(command find "$repo_dir/spells" -type f -name "$spell_name" \
+        2>/dev/null | head -1)
     fi
     ;;
 esac
