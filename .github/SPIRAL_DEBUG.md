@@ -168,8 +168,8 @@ The original path-wizard utility (now learn-spellbook) that worked well before w
 
 ## Conversion Session Log (2026-01-03)
 
-### Session Summary
-Continuing systematic conversion of all spells to flat-file format.
+### Session 1: Initial Conversion Wave
+Systematic conversion of all spells to flat-file format (PR #800).
 
 ### Conversion Pattern Applied
 ```sh
@@ -187,14 +187,14 @@ castable "$@"
 # AFTER (flat):
 case "${1-}" in
 --help|--usage|-h)
-  cat << 'USAGE'
+  cat <<'USAGE'
   ...
   USAGE
   exit 0
   ;;
 esac
 set -eu
-# logic with hyphenated imps
+# logic with hyphenated imps or POSIX
 ```
 
 ### Key Changes Per Spell
@@ -204,15 +204,44 @@ set -eu
 4. Remove `env_clear` call
 5. Remove castable loading block (~30 lines)
 6. Change all `return` → `exit` in main flow
-7. Convert imp calls: `ask_text` → `ask-text`, `has` → `command -v`, `say` → `printf`
+7. Convert imp calls: `has` → `command -v`, `say` → `printf`, `die`/`warn` → `printf ... >&2; exit`
 
-### Categories Converted This Session
-- ✅ priorities (4/4): Completed entire category
-- 🔄 enchant (1/4): Started category
+### Session 2: Continuation (2026-01-03 19:00-19:45 UTC)
+
+**Progress:** 35 spells converted (from 23 to 35)
+**Categories completed:**
+- ✅ enchant (4/4): disenchant, enchant, yaml-to-enchantment, enchantment-to-yaml
+- ✅ mud (4/4): check-cd-hook, choose-player, decorate, look
+- ✅ translocation (6/6): jump-to-marker, follow-portkey, enchant-portkey, mark-location, open-portal, open-teletype
+- 🔄 system (4/6): logs, config, kill-process, package-managers
+- 🔄 divination (4/5): detect-distro, detect-magic, detect-posix, detect-rc-file
+
+**Commits this session:**
+1. `1c8a92e` - enchant category (3 spells)
+2. `1c04b3b` - mud category (4 spells)
+3. `96a611f` - detect-distro
+4. `46ab8dc` - jump-to-marker (source-only spell)
+5. `25fd20a` - translocation category (5 spells)
+6. `0ef68d7` - system category (4 spells)
+7. `5e70154` - detect-magic
+8. `8457c53` - detect-posix (bootstrap spell)
+9. `[current]` - detect-rc-file
+
+**Line reductions:**
+- enchant: ~107 lines removed
+- mud: ~193 lines removed
+- translocation: ~227 lines removed
+- system: ~161 lines removed
+- divination: ~152 lines removed (so far)
+- **Total this session: ~840 lines removed**
+
+**Special cases handled:**
+- Source-only spells (jump-to-marker): Removed uncastable infrastructure, kept `return 0 2>/dev/null || exit 0` pattern
+- Bootstrap spells (detect-posix): Preserved inline helpers, removed castable wrapper
+- Spells with internal helpers (detect-rc-file): Kept helper functions, removed outer wrapper
 
 ### Next Steps
-- Complete enchant category (3 remaining)
-- Convert psi category (2 spells)
-- Convert mud category (4 spells)
-- Convert divination category (5 spells)
-- Continue systematically through remaining categories
+- Complete divination category (1 remaining: identify-room - 338 lines)
+- Complete system category (2 remaining: pocket-dimension, update-all - both ~290 lines)
+- Convert wards category (1 spell: banish - very large, 43KB)
+- Start on large categories: cantrips (35 spells), spellcraft (16 spells), menu (18 spells)

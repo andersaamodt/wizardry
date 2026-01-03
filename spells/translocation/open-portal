@@ -1,55 +1,42 @@
 #!/bin/sh
 
-
-
-
 # This spell mounts a remote directory using sshfs through Tor.
 # Use it to access remote servers anonymously via SSH filesystem.
 
-require_wizardry || return 1
-
-open_portal_usage() {
-cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: open-portal <remote_address> <remote_directory> [local_mount_point]
 
 Mount a remote directory using sshfs over Tor for anonymous access. The local mount point defaults to ~/portals/<remote_address> if not specified and uses the MUD_PLAYER key for authentication.
 USAGE
-}
-
-
-
-open_portal() {
-case "${1-}" in
---help|--usage|-h)
-  open_portal_usage
-  return 0
+  exit 0
   ;;
 esac
 
 set -eu
-env_clear
 
 # Check for required commands
-if ! has sshfs; then
-        die "open-portal: sshfs not found."
-        return 1
+if ! command -v sshfs >/dev/null 2>&1; then
+        printf '%s\n' "open-portal: sshfs not found." >&2
+        exit 1
 fi
 
-if ! has torify; then
-        die "open-portal: torify (tor) not found."
-        return 1
+if ! command -v torify >/dev/null 2>&1; then
+        printf '%s\n' "open-portal: torify (tor) not found." >&2
+        exit 1
 fi
 
 # Get player key from environment
-if is unset "${MUD_PLAYER-}"; then
-        die "open-portal: MUD_PLAYER environment variable not set."
-        return 1
+if [ -z "${MUD_PLAYER-}" ]; then
+        printf '%s\n' "open-portal: MUD_PLAYER environment variable not set." >&2
+        exit 1
 fi
 player_key="$HOME/.ssh/$MUD_PLAYER"
 
-if ! is file "$player_key"; then
-        die "open-portal: SSH key not found: $player_key"
-        return 1
+if [ ! -f "$player_key" ]; then
+        printf '%s\n' "open-portal: SSH key not found: $player_key" >&2
+        exit 1
 fi
 
 # Get address and directory from arguments or prompt
@@ -57,12 +44,12 @@ tor_address=${1-}
 remote_dir=${2-}
 local_mount=${3-}
 
-if is unset "$tor_address"; then
+if [ -z "$tor_address" ]; then
         printf '%s' "Enter the Tor address of the remote server: "
         read -r tor_address
 fi
 
-if is unset "$remote_dir"; then
+if [ -z "$remote_dir" ]; then
         printf '%s' "Enter the remote directory to mount: "
         read -r remote_dir
 fi
@@ -71,52 +58,19 @@ fi
 remote_dir="${remote_dir%/}"
 
 # Set local mount point if not provided
-if is unset "$local_mount"; then
+if [ -z "$local_mount" ]; then
         # Create a safe directory name from the address
         safe_name=$(printf '%s' "$tor_address" | tr -c 'A-Za-z0-9.-' '_')
         local_mount="$HOME/portals/$safe_name"
 fi
 
 # Ensure local mount point exists
-make dir "$local_mount" || die "open-portal: cannot create mount point: $local_mount"
-        return 1
+if ! mkdir -p "$local_mount"; then
+  printf '%s\n' "open-portal: cannot create mount point: $local_mount" >&2
+  exit 1
+fi
 
 # Mount the remote directory using sshfs over tor
 torify sshfs -o "IdentityFile=$player_key" "$tor_address:$remote_dir" "$local_mount"
 
-say "Portal opened: $tor_address:$remote_dir mounted at $local_mount"
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"
+printf '%s\n' "Portal opened: $tor_address:$remote_dir mounted at $local_mount"

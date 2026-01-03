@@ -1,32 +1,19 @@
 #!/bin/sh
 
-
-
-
 # Read MUD-style room descriptions from extended attributes.
 
-require_wizardry || return 1
-
-look_usage() {
-cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: look [path]
 
 Display a location's title and description attributes with read-magic. Defaults to the current directory when no path is supplied.
 USAGE
-}
-
-
-
-look() {
-case "${1-}" in
---help|--usage|-h)
-  look_usage
-  return 0
+  exit 0
   ;;
 esac
 
 set -eu
-env_clear
 
 script_source=$0
 case $script_source in
@@ -45,15 +32,11 @@ fi
 script_dir=$(cd "$script_dir" && pwd -P)
 look_script_path="$script_dir/$(basename "$script_source")"
 
-look_warn() {
-        warn "look: $1"
-}
-
 # Load colors if available
 if [ -n "${LOOK_COLORS_PATH-}" ] && [ -f "$LOOK_COLORS_PATH" ]; then
         # shellcheck disable=SC1090
         . "$LOOK_COLORS_PATH"
-elif has colors; then
+elif command -v colors >/dev/null 2>&1; then
         # shellcheck disable=SC1090
         . "$(command -v colors)"
 elif [ -x "$script_dir/cantrips/colors" ]; then
@@ -77,11 +60,11 @@ read_magic=${LOOK_READ_MAGIC-}
 if [ -z "$read_magic" ]; then
         if [ -x "$script_dir/read-magic" ]; then
                 read_magic="$script_dir/read-magic"
-        elif has read-magic; then
+        elif command -v read-magic >/dev/null 2>&1; then
                 read_magic=$(command -v read-magic)
         else
-                die "look: read_magic spell is missing."
-        return 1
+                printf '%s\n' "look: read-magic spell is missing." >&2
+                exit 1
         fi
 fi
 
@@ -100,13 +83,13 @@ missing_attr_msg='read-magic: attribute does not exist.'
 # Get identify-room data if available
 identify_title=''
 identify_description=''
-if has identify-room; then
+if command -v identify-room >/dev/null 2>&1; then
         if identify_room_output=$(identify-room "$path" 2>/dev/null); then
                 identify_title=$(printf '%s' "$identify_room_output" | sed -n '1p')
                 identify_description=$(printf '%s' "$identify_room_output" | sed -n '2p')
         fi
 else
-        look_warn "identify-room spell is unavailable; continuing without system lore."
+        printf '%s\n' "look: identify-room spell is unavailable; continuing without system lore." >&2
 fi
 
 # Get title from attribute or fall back to folder name or identify data
@@ -140,38 +123,3 @@ fi
 # Display MUD-formatted room description
 printf '%s%s%s\n' "$mud_title" "$room_title" "$RESET"
 printf '%s%s%s\n' "$mud_description" "$room_description" "$RESET"
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

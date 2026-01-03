@@ -1,46 +1,41 @@
 #!/bin/sh
 
-
-
-
 # This spell reads a YAML front matter block and restores its keys as attributes.
 # After the transfer, it trims the prologue so the file holds only its content.
 
-require_wizardry || return 1
-
-yaml_to_enchantment_usage() {
-cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: yaml-to-enchantment <path-to-file>
 
 Parse a YAML front matter header, write each key/value into the file's extended attributes, and rewrite the file without the header.
 USAGE
-}
-
-
-yaml_to_enchantment() {
-case "${1-}" in
---help|--usage|-h)
-  yaml_to_enchantment_usage
-  return 0
+  exit 0
   ;;
 esac
 
 set -eu
-env_clear
 
 if [ "$#" -ne 1 ]; then
-    warn "Error: incorrect number of arguments"
-    yaml_to_enchantment_usage >&2
-    return 1
+    printf '%s\n' "Error: incorrect number of arguments" >&2
+    cat >&2 <<'USAGE'
+Usage: yaml-to-enchantment <path-to-file>
+
+Parse a YAML front matter header, write each key/value into the file's extended attributes, and rewrite the file without the header.
+USAGE
+    exit 1
 fi
 
 scroll=$1
-is file "$scroll" || { warn "Error: file does not exist"; return 1; }
+if [ ! -f "$scroll" ]; then
+  printf '%s\n' "Error: file does not exist" >&2
+  exit 1
+fi
 
 header_count=$(awk '/^---$/{c++} END{print c}' "$scroll")
 if [ "$header_count" -lt 2 ]; then
-    warn "Error: file does not have a YAML header"
-    return 1
+    printf '%s\n' "Error: file does not have a YAML header" >&2
+    exit 1
 fi
 
 yaml_header=$(awk '
@@ -48,13 +43,18 @@ yaml_header=$(awk '
     delim==1 {print}
 ' "$scroll")
 
-empty "$yaml_header" && { warn "Error: file does not have a YAML header"; return 1; }
+if [ -z "$yaml_header" ]; then
+  printf '%s\n' "Error: file does not have a YAML header" >&2
+  exit 1
+fi
 
 resolve_helper() {
     helper=$1
-    has "$helper" || return 1
+    if ! command -v "$helper" >/dev/null 2>&1; then
+      return 1
+    fi
 
-    helper_path=$(where "$helper")
+    helper_path=$(command -v "$helper")
     if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
         case "$helper_path" in
             /usr/*|/bin/*|/sbin/*|/usr/local/*)
@@ -62,7 +62,7 @@ resolve_helper() {
         esac
     fi
 
-    say "$helper_path"
+    printf '%s\n' "$helper_path"
 }
 
 has_attr=$(resolve_helper attr >/dev/null 2>&1 && echo "yes" || echo "no")
@@ -70,16 +70,16 @@ has_setfattr=$(resolve_helper setfattr >/dev/null 2>&1 && echo "yes" || echo "no
 has_xattr=$(resolve_helper xattr >/dev/null 2>&1 && echo "yes" || echo "no")
 
 if [ "$has_attr" = "no" ] && [ "$has_setfattr" = "no" ] && [ "$has_xattr" = "no" ]; then
-    warn "Error: requires attr, setfattr, or xattr to restore enchantments"
-    return 1
+    printf '%s\n' "Error: requires attr, setfattr, or xattr to restore enchantments" >&2
+    exit 1
 fi
 
 printf '%s' "$yaml_header" |
-    while IFS= read -r line || nonempty "$line"; do
+    while IFS= read -r line || [ -n "$line" ]; do
         key=${line%%:*}
         value=${line#*:}
         value=${value# }
-        empty "$key" && continue
+        [ -z "$key" ] && continue
         
         # Inline set_attr logic - only used once
         success=0
@@ -100,50 +100,15 @@ printf '%s' "$yaml_header" |
         fi
         
         if [ "$success" -eq 0 ]; then
-            warn "Error: failed to set attribute $key"
-            return 1
+            printf '%s\n' "Error: failed to set attribute $key" >&2
+            exit 1
         fi
-    done || return 1
+    done || exit 1
 
-body_tmp=$(temp-file wizardry-body) || return 1
+body_tmp=$(temp-file wizardry-body) || exit 1
 awk '
     /^---$/ {delim++; next}
     delim<2 {next}
     {print}
 ' "$scroll" >"$body_tmp"
 mv "$body_tmp" "$scroll"
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

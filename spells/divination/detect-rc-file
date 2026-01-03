@@ -3,28 +3,19 @@
 # This spell selects the best shell rc file for PATH exports or memorization.
 # It prints platform, rc_file, and format hints so callers can update startup files safely.
 
-
-detect_rc_file_usage() {
-        cat <<'USAGE' >&2
-Usage: detect-rc-file [--platform PLATFORM]
-
-Detects the best startup file to modify for PATH exports or spell memorization.
-Prints key=value pairs for the detected platform, rc_file, and format.
-USAGE
-}
-
-
-
-detect_rc_file() {
-
 platform="${DETECT_RC_FILE_PLATFORM-}"
 
 while [ "$#" -gt 0 ]; do
         case $1 in
         --platform)
                 if [ "$#" -lt 2 ]; then
-                        detect_rc_file_usage >&2
-                        return 2
+                        cat >&2 <<'USAGE'
+Usage: detect-rc-file [--platform PLATFORM]
+
+Detects the best startup file to modify for PATH exports or spell memorization.
+Prints key=value pairs for the detected platform, rc_file, and format.
+USAGE
+                        exit 2
                 fi
                 platform=$2
                 shift 2
@@ -34,16 +25,26 @@ while [ "$#" -gt 0 ]; do
                         shift
                         ;;
         --help|--usage|-h)
-                detect_rc_file_usage
-                return 0
+                cat <<'USAGE'
+Usage: detect-rc-file [--platform PLATFORM]
+
+Detects the best startup file to modify for PATH exports or spell memorization.
+Prints key=value pairs for the detected platform, rc_file, and format.
+USAGE
+                exit 0
                 ;;
         --)
                 shift
                 break
                 ;;
         -*)
-                detect_rc_file_usage >&2
-                return 2
+                cat >&2 <<'USAGE'
+Usage: detect-rc-file [--platform PLATFORM]
+
+Detects the best startup file to modify for PATH exports or spell memorization.
+Prints key=value pairs for the detected platform, rc_file, and format.
+USAGE
+                exit 2
                 ;;
         *)
                 break
@@ -54,8 +55,13 @@ done
 set -eu
 
 if [ "$#" -gt 0 ]; then
-        detect_rc_file_usage >&2
-        return 2
+        cat >&2 <<'USAGE'
+Usage: detect-rc-file [--platform PLATFORM]
+
+Detects the best startup file to modify for PATH exports or spell memorization.
+Prints key=value pairs for the detected platform, rc_file, and format.
+USAGE
+        exit 2
 fi
 
 add_candidate() {
@@ -77,7 +83,7 @@ add_candidate() {
 
 # Decide platform once so the downstream selection stays predictable.
 if [ -z "$platform" ]; then
-        if has detect-distro; then
+        if command -v detect-distro >/dev/null 2>&1; then
                 platform=$(detect-distro 2>/dev/null || printf 'unknown')
         else
                 platform=unknown
@@ -109,7 +115,7 @@ nixos)
         # Check if home-manager is installed - if so, prioritize home-manager paths
         # over system-level configuration to avoid requiring sudo.
         home_manager_installed=0
-        if has home-manager; then
+        if command -v home-manager >/dev/null 2>&1; then
                 home_manager_installed=1
         fi
         # Check for home-manager configurations in both old and new paths.
@@ -187,7 +193,8 @@ if [ -z "$rc_file" ]; then
 fi
 
 if [ -z "$rc_file" ]; then
-        die "detect-rc-file: unable to determine a startup file."
+        printf '%s\n' "detect-rc-file: unable to determine a startup file." >&2
+        exit 1
 fi
 
 case $rc_file in
@@ -202,38 +209,3 @@ case $rc_file in
 printf 'platform=%s\n' "$platform"
 printf 'rc_file=%s\n' "$rc_file"
 printf 'format=%s\n' "$format"
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"
