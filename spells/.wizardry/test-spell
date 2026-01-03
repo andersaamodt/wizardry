@@ -15,8 +15,16 @@ case ":${PATH-}:" in
     ;;
 esac
 
-test_spell_usage() {
-  cat <<'USAGE'
+# Parse options before help check
+run_common_tests=1  # Default: run common tests
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --skip-common)
+      run_common_tests=0
+      shift
+      ;;
+    --help|--usage|-h)
+      cat <<'USAGE'
 Usage: test-spell [--skip-common] TEST_PATH [SUBTEST_NUM...]
 
 Run a specific test file from the .tests/ directory with common structural tests.
@@ -47,28 +55,26 @@ the additional common test output.
 Environment variables:
   WIZARDRY_TEST_TIMEOUT    Timeout in seconds for the test (default: 180)
 USAGE
-}
-
-test_spell() {
-# Parse options before help check
-run_common_tests=1  # Default: run common tests
-while [ "$#" -gt 0 ]; do
-  case "$1" in
-    --skip-common)
-      run_common_tests=0
-      shift
-      ;;
-    --help|--usage|-h)
-      test_spell_usage
-      return 0
+      exit 0
       ;;
     --)
       shift
       break
       ;;
     -*)
-      test_spell_usage >&2
-      return 2
+      cat <<'USAGE'
+Usage: test-spell [--skip-common] TEST_PATH [SUBTEST_NUM...]
+
+Run a specific test file from the .tests/ directory with common structural tests.
+
+Options:
+  --skip-common  Skip common structural tests (only run the spell's test file)
+
+Arguments:
+  TEST_PATH      Path to test file (relative to .tests/)
+  SUBTEST_NUM    Optional subtest number(s) to run (can specify multiple)
+USAGE
+      exit 2
       ;;
     *)
       break
@@ -99,10 +105,7 @@ WIZARDRY_DIR=$root_dir
 export WIZARDRY_DIR
 
 # With PATH-based approach, imps are available directly
-# No need to preload with word_of_binding
-
-# Now env_clear and other imps are available via PATH
-env_clear
+# No need to preload with word_of_binding or clear environment
 
 # Source test boot imps for standardized output functions
 for boot_imp in "$root_dir"/spells/.imps/test/boot/*; do
@@ -324,38 +327,3 @@ else
     fi
   fi
 fi
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"
