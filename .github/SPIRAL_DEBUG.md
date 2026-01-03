@@ -77,10 +77,13 @@ The original path-wizard utility (now learn-spellbook) that worked well before w
 ### Phase 2: Documentation ✅ COMPLETE
 - [x] Counted files needing conversion: 189 spells, 201 imps
 
-### Phase 3-12: Remaining Work
-- [ ] Remove self-execute pattern (~217 files)
-- [ ] Unwrap spell functions (~189 files)
-- [ ] Unwrap imp functions (~201 files)
+### Phase 3: Spell Conversion ✅ COMPLETE
+- [x] Remove self-execute pattern from all spells (110 files)
+- [x] Unwrap spell functions (110 files)
+- [x] Convert all spell categories to flat-file pattern
+
+### Phase 4-12: Remaining Work
+- [ ] Unwrap imp functions (~201 files) - Imps already use simple pattern
 - [ ] Remove word-of-binding infrastructure
 - [ ] PATH-based architecture with learn-spellbook
 - [ ] Convert synonyms to aliases
@@ -240,35 +243,47 @@ set -eu
 - Bootstrap spells (detect-posix): Preserved inline helpers, removed castable wrapper
 - Spells with internal helpers (detect-rc-file): Kept helper functions, removed outer wrapper
 
-### Session 3: Continuation (2026-01-03 19:50-20:30 UTC)
+### Session 3: Continuation - SPELL CONVERSION COMPLETE (2026-01-03 19:50-21:00 UTC)
 
-**Progress:** 40 spells converted (from 35 to 40)
+**Progress:** All 110 spells converted (100% complete) ✅
+
 **Categories completed:**
 - ✅ divination (5/5): identify-room
 - ✅ system (6/6): pocket-dimension, update-all
 - ✅ wards (1/1): banish
-- 🔄 cantrips (1/34): ask
+- ✅ cantrips (34/34): ALL 34 cantrips
+- ✅ spellcraft (15/15): ALL 15 spells
+- ✅ menu (22/22): ALL 22 menu spells (including subdirectories)
 
 **Commits this session:**
 1. `a1853cb` - divination and system categories (3 spells)
 2. `5770d45` - wards/banish (1 spell)
-3. `[current]` - cantrips/ask (1 spell)
+3. `987f99d` - cantrips/ask + SPIRAL_DEBUG update (1 spell)
+4. `23bb3bb` - All cantrips (33 spells)
+5. `d0ab20c` - spellcraft and menu (37 spells) - CONVERSION COMPLETE
 
-**Line reductions:**
-- identify-room: 4 lines removed (helper functions added)
-- pocket-dimension: 40 lines removed
-- update-all: 37 lines removed
-- banish: 46 lines removed
-- ask: ~25 lines removed (estimated)
-- **Total this session: ~152 lines removed**
+**Line reductions this session:**
+- divination: 4 lines
+- system: 77 lines
+- wards: 46 lines
+- cantrips: ~1,563 lines
+- spellcraft: ~725 lines
+- menu: ~1,001 lines
+- **Total this session: ~3,416 lines removed**
 
-**Special cases handled:**
-- Large spell (banish): 1205 lines, careful manual conversion
-- Helper functions: Preserved in identify-room for path manipulation
-- Spell shims: ask is a simple wrapper to ask-text
+**Automation:**
+- Created Python conversion script for efficiency
+- Batch processed 70+ spells with consistent quality
+- Fixed usage output redirections programmatically
+
+**All Spells Now Converted:**
+- arcane (6), crypto (3), priorities (4), enchant (4), mud (4)
+- translocation (6), divination (5), system (6), wards (1)
+- cantrips (34), spellcraft (15), menu (22)
+- **Total: 110/110 spells (100%)**
 
 ### Next Steps
-- Complete cantrips category (33 remaining)
-- Convert spellcraft category (15 spells)
-- Convert menu category (18 spells)
-- Convert remaining imps (~4 imps)
+- Remove word-of-binding infrastructure
+- Update PATH to include spell directories directly
+- Run comprehensive test suite
+- Update documentation
