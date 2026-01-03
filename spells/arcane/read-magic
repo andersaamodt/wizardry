@@ -8,20 +8,19 @@
 
 require_wizardry || return 1
 
-detect_enchant_usage() {
+read_magic_usage() {
 cat <<'USAGE'
-Usage: detect-enchant <file> [attribute]
-Alias: read-magic (for thematic appeal)
+Usage: read-magic <file> [attribute]
 
-List all extended attributes on a file or print the value of one attribute when named, using attr, xattr, or getfattr as available.
+List all extended attributes (enchantments) on a file or print the value of one attribute when named, using attr, xattr, or getfattr as available.
 USAGE
 }
 
 
-detect_enchant() {
+read_magic() {
 case "${1-}" in
 --help|--usage|-h)
-  detect_enchant_usage
+  read_magic_usage
   return 0
   ;;
 esac
@@ -31,7 +30,7 @@ env_clear
 
 # Validate arguments
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
-  die "detect-enchant: one or two parameters expected (file path and optional attribute name)."
+  die "read-magic: one or two parameters expected (file path and optional attribute name)."
   return 1
 fi
 

@@ -98,8 +98,7 @@ HEADER
     _it_defaults="detect-os detect-distro
 home jump
 ls-magic identify-room
-read-file detect-enchant
-read-magic detect-enchant
+read-file read-magic
 copy-file copy
 move-file move
 delete-file trash

@@ -146,9 +146,13 @@ env_clear
     # This prevents errors like "Bad function name" when trying to define set(), test(), etc.
     # Also prevents overriding critical system utilities like find, grep, sed, etc.
     # FAIL if we would create a blacklisted command - this indicates spell naming conflict
+    #
+    # EXCEPTION: 'read' is allowed because all read-* spells are two words,
+    # so the read() gloss can safely delegate to parse, which will find read_contact, read_file, etc.
+    # and fall back to system 'read' if no match is found.
     case "$_first_word" in
-      # Shell builtins
-      alias|bg|cd|command|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|read|readonly|sh|\
+      # Shell builtins (read excluded - see exception above)
+      alias|bg|cd|command|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|readonly|sh|\
 test|times|trap|true|type|ulimit|umask|unalias|wait|break|case|continue|do|done|elif|else|\
 esac|eval|exec|exit|export|fi|for|if|in|local|return|set|shift|then|unset|until|while)
         printf 'generate-glosses: FATAL: Spell name conflict with shell builtin "%s" from "%s" - rename spell before production\n' "$_first_word" "$_cmd_name" >&2

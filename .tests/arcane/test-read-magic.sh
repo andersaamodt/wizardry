@@ -1,6 +1,6 @@
 #!/bin/sh
 # Behavioral cases (derived from --help):
-# - detect-enchant prints usage
+# - read-magic prints usage
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -23,32 +23,32 @@ create_stub_dir() {
 }
 
 create_temp_file() {
-  file=$($MKTEMP_BIN "$WIZARDRY_TMPDIR/detect-enchant.XXXXXX") || exit 1
+  file=$($MKTEMP_BIN "$WIZARDRY_TMPDIR/read-magic.XXXXXX") || exit 1
   : >"$file"
   printf '%s\n' "$file"
 }
 
 test_help() {
   reset_path
-  run_spell "spells/arcane/detect-enchant" --help
-  assert_success && assert_output_contains "Usage: detect-enchant"
+  run_spell "spells/arcane/read-magic" --help
+  assert_success && assert_output_contains "Usage: read-magic"
 }
 
 test_requires_argument() {
   reset_path
-  run_spell "spells/arcane/detect-enchant"
+  run_spell "spells/arcane/read-magic"
   assert_failure && assert_error_contains "one or two parameters expected"
 }
 
 test_rejects_extra_argument() {
   reset_path
-  run_spell "spells/arcane/detect-enchant" one two three
+  run_spell "spells/arcane/read-magic" one two three
   assert_failure && assert_error_contains "one or two parameters expected"
 }
 
 test_missing_file() {
   reset_path
-  run_spell "spells/arcane/detect-enchant" "$WIZARDRY_TMPDIR/does-not-exist"
+  run_spell "spells/arcane/read-magic" "$WIZARDRY_TMPDIR/does-not-exist"
   assert_failure && assert_error_contains "file does not exist"
 }
 
@@ -81,7 +81,7 @@ case "$1" in
 esac
 STUB
   chmod +x "$stub_dir/attr"
-  PATH="$stub_dir:$PATH" run_spell "spells/arcane/detect-enchant" "$target"
+  PATH="$stub_dir:$PATH" run_spell "spells/arcane/read-magic" "$target"
   assert_success
   assert_output_contains "user.alpha: alpha-value"
   assert_output_contains "user.beta: beta-value"
@@ -100,7 +100,7 @@ fi
 exit 1
 STUB
   chmod +x "$stub_dir/attr"
-  PATH="$stub_dir:$PATH" run_spell "spells/arcane/detect-enchant" "$target" user.charm
+  PATH="$stub_dir:$PATH" run_spell "spells/arcane/read-magic" "$target" user.charm
   assert_success && assert_output_contains "sparkle"
 }
 
@@ -128,7 +128,7 @@ esac
 STUB
   chmod +x "$stub_dir/xattr"
 
-  PATH="$stub_dir:$PATH" run_spell "spells/arcane/detect-enchant" "$target"
+  PATH="$stub_dir:$PATH" run_spell "spells/arcane/read-magic" "$target"
   assert_success
   assert_output_contains "user.sky: azure"
   assert_output_contains "user.horizon:"
@@ -147,7 +147,7 @@ fi
 exit 1
 STUB
   chmod +x "$stub_dir/xattr"
-  PATH="$stub_dir:$PATH" run_spell "spells/arcane/detect-enchant" "$target" user.charm
+  PATH="$stub_dir:$PATH" run_spell "spells/arcane/read-magic" "$target" user.charm
   assert_success && assert_output_contains "xattr-magic"
 }
 
@@ -180,7 +180,7 @@ esac
 STUB
   chmod +x "$stub_dir/getfattr"
 
-  PATH="$stub_dir:$PATH" run_spell "spells/arcane/detect-enchant" "$target"
+  PATH="$stub_dir:$PATH" run_spell "spells/arcane/read-magic" "$target"
   assert_success
   assert_output_contains "user.first: one"
   assert_output_contains "user.second: two"
@@ -210,7 +210,7 @@ fi
 exit 1
 STUB
   chmod +x "$stub_dir/getfattr"
-  PATH="$stub_dir:$PATH" run_spell "spells/arcane/detect-enchant" "$target" user.charisma
+  PATH="$stub_dir:$PATH" run_spell "spells/arcane/read-magic" "$target" user.charisma
   assert_success && assert_output_contains "shiny"
 }
 
@@ -223,7 +223,7 @@ test_reports_missing_attribute() {
 exit 1
 STUB
   chmod +x "$stub_dir/attr"
-  PATH="$stub_dir:$PATH" run_spell "spells/arcane/detect-enchant" "$target" user.none
+  PATH="$stub_dir:$PATH" run_spell "spells/arcane/read-magic" "$target" user.none
   assert_failure && assert_error_contains "attribute does not exist"
 }
 
@@ -233,22 +233,22 @@ test_handles_missing_helpers() {
   stub_dir=$(create_stub_dir)
   PATH="$stub_dir:$PATH"
   export PATH
-  run_spell "spells/arcane/detect-enchant" "$target"
+  run_spell "spells/arcane/read-magic" "$target"
   assert_success && assert_output_contains "No enchanted attributes found"
 }
 
-run_test_case "detect-enchant prints usage" test_help
-run_test_case "detect-enchant requires an argument" test_requires_argument
-run_test_case "detect-enchant rejects extra arguments" test_rejects_extra_argument
-run_test_case "detect-enchant fails on missing file" test_missing_file
-run_test_case "detect-enchant lists attributes via attr" test_lists_attributes_via_attr
-run_test_case "detect-enchant reads specific attribute via attr" test_reads_specific_attribute_via_attr
-run_test_case "detect-enchant lists attributes via xattr when attr is missing" test_lists_attributes_via_xattr_listing
-run_test_case "detect-enchant uses xattr when attr is missing" test_reads_attribute_via_xattr_when_attr_missing
-run_test_case "detect-enchant lists attributes via getfattr when other helpers are missing" test_lists_attributes_via_getfattr_when_others_missing
-run_test_case "detect-enchant uses getfattr as a final fallback" test_reads_attribute_via_getfattr_when_others_missing
-run_test_case "detect-enchant reports missing attribute" test_reports_missing_attribute
-run_test_case "detect-enchant reports no attributes without helpers" test_handles_missing_helpers
+run_test_case "read-magic prints usage" test_help
+run_test_case "read-magic requires an argument" test_requires_argument
+run_test_case "read-magic rejects extra arguments" test_rejects_extra_argument
+run_test_case "read-magic fails on missing file" test_missing_file
+run_test_case "read-magic lists attributes via attr" test_lists_attributes_via_attr
+run_test_case "read-magic reads specific attribute via attr" test_reads_specific_attribute_via_attr
+run_test_case "read-magic lists attributes via xattr when attr is missing" test_lists_attributes_via_xattr_listing
+run_test_case "read-magic uses xattr when attr is missing" test_reads_attribute_via_xattr_when_attr_missing
+run_test_case "read-magic lists attributes via getfattr when other helpers are missing" test_lists_attributes_via_getfattr_when_others_missing
+run_test_case "read-magic uses getfattr as a final fallback" test_reads_attribute_via_getfattr_when_others_missing
+run_test_case "read-magic reports missing attribute" test_reports_missing_attribute
+run_test_case "read-magic reports no attributes without helpers" test_handles_missing_helpers
 
 
 # Test via source-then-invoke pattern  
