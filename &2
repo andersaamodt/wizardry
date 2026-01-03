@@ -1,0 +1,6 @@
+Usage: menu [--show-command] [--start-selection N] "Title" "Label%command"...
+
+Draw a keyboard-driven terminal menu using wizardry's cursor and input helpers.
+Provide a title followed by one or more "Label%command" entries; --show-command
+displays the command text as the label, and --start-selection picks the initial
+highlighted item. Use "---" to add a horizontal divider line.

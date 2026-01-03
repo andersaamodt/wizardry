@@ -1,55 +1,34 @@
 #!/bin/sh
 
-
-
-
 # install-service-template copies a template into /etc/systemd/system after
 # substituting placeholders. It prefers interactive prompts so the services menu
 # can call it without arguments.
 
-require_wizardry || return 1
-
 script_name=$(basename "$0")
 service_dir=${SERVICE_DIR:-/etc/systemd/system}
 
-install_service_template_usage() {
-        cat <<USAGE >&2
-Usage: $script_name /path/to/template [KEY=value ...]
-
-Copies a systemd service template into the system directory, substituting
-KEY=value pairs into the file. Prompts for missing values to keep
-menu-driven installs friendly.
-USAGE
-}
-
-
-
-install_service_template() {
 case "${1-}" in
 --help|--usage|-h)
   install_service_template_usage
-  return 0
+  exit 0
   ;;
 esac
 
-require_wizardry || return 1
-
 set -eu
-env_clear
 
 # Helper to run commands with privilege escalation if needed
 install_service_template_require_privilege() {
   if [ "$(id -u)" -eq 0 ]; then
     "$@"
-    return 0
+    exit 0
   fi
   if [ -w "$service_dir" ]; then
     "$@"
-    return 0
+    exit 0
   fi
   if has sudo; then
     sudo "$@"
-    return 0
+    exit 0
   fi
   fail "$script_name: run as root or install sudo to write $service_dir"
 }
@@ -109,7 +88,7 @@ else
 fi
 if [ -z "$template_path" ]; then
         install_service_template_usage
-        return 1
+        exit 1
 fi
 if [ ! -f "$template_path" ]; then
         fail "$script_name: template '$template_path' not found"
@@ -122,7 +101,7 @@ service_path="$service_dir/$service_file"
 if [ -f "$service_path" ]; then
         if ! "$ask_yn" "Service $service_file exists. Overwrite?" no >/dev/null; then
                 printf '%s\n' "Installation cancelled."
-                return 1
+                exit 1
         fi
 fi
 
@@ -140,7 +119,7 @@ for arg in "$@"; do
                 value=${arg#*=}
                 # Escape value for sed replacement
                 escaped=$(printf '%s' "$value" | sed 's/[\\&|$"]/\\&/g')
-                tmp_swap=$(temp-file wizardry-service) || return 1
+                tmp_swap=$(temp-file wizardry-service) || exit 1
                 pattern=$(printf '\\$%s' "$key")
                 sed "s|$pattern|$escaped|g" "$tmp_file" >"$tmp_swap"
                 mv "$tmp_swap" "$tmp_file"
@@ -152,7 +131,7 @@ for arg in "$@"; do
 done
 
 # Collect remaining placeholders and prompt for values
-placeholders_file=$(temp-file wizardry-placeholders) || return 1
+placeholders_file=$(temp-file wizardry-placeholders) || exit 1
 awk '{
   line=$0
   while (match(line, /\$[A-Z_][A-Z0-9_]*/)) {
@@ -170,7 +149,7 @@ if [ -s "$placeholders_file" ]; then
     value=$("$ask_text" "Enter a value for $var:")
     # Escape and substitute
     escaped=$(printf '%s' "$value" | sed 's/[\\&|$"]/\\&/g')
-    tmp_swap=$(temp-file wizardry-service) || return 1
+    tmp_swap=$(temp-file wizardry-service) || exit 1
     pattern=$(printf '\\$%s' "$var")
     sed "s|$pattern|$escaped|g" "$tmp_file" >"$tmp_swap"
     mv "$tmp_swap" "$tmp_file"
@@ -184,38 +163,3 @@ install_service_template_require_privilege chmod 644 "$service_path"
 install_service_template_require_privilege "$systemctl_cmd" daemon-reload
 
 printf '%s\n' "Service installed at $service_path"
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

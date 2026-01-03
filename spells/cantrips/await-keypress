@@ -1,31 +1,18 @@
 #!/bin/sh
 
-
-
-
 # Read a single key press from the controlling terminal and report it in a
 # descriptive form ("enter", "up", literal text, etc.).
 
-await_keypress_usage() {
-        cat <<'USAGE' >&2
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE' >&2
 Usage: await-keypress
 
 Listens for one key press on the controlling terminal, translating escape sequences into readable names and restoring the terminal to its prior state afterward.
 USAGE
-}
-
-
-
-
-await_keypress() {
-case "${1-}" in
---help|--usage|-h)
-  await_keypress_usage
-  return 0
+  exit 0
   ;;
 esac
-
-require_wizardry || return 1
 
 # Use conditional strictness based on execution context
 # See .github/CODE_POLICY_SET_EU.md for details
@@ -40,7 +27,6 @@ case "$0" in
     set -u
     ;;
 esac
-env_clear
 
 # Prefer preloaded imp functions (underscore form) when available.
 await_keypress_temp_file() {
@@ -80,7 +66,7 @@ fi
 # Capture raw bytes with dd; bail out immediately when it is missing.
 if ! "$require_cmd" dd "The await-keypress spell needs 'dd' to capture raw key presses."; then
     [ "${WIZARDRY_DEBUG_AWAIT:-0}" = "1" ] && printf '[await-keypress] require-command dd check failed\n' >&2
-    return 1
+    exit 1
 fi
 [ "${WIZARDRY_DEBUG_AWAIT:-0}" = "1" ] && printf '[await-keypress] dd check passed\n' >&2
 
@@ -92,7 +78,7 @@ if [ "${AWAIT_KEYPRESS_BUFFER_FILE+set}" = "set" ]; then
     buffer_file=$AWAIT_KEYPRESS_BUFFER_FILE
 else
     buffer_key=$(printf '%s' "$tty_device" | tr -c '[:alnum:]' '_')
-    buffer_file=$(await_keypress_temp_file await-keypress-buffer-"$buffer_key") || return 1
+    buffer_file=$(await_keypress_temp_file await-keypress-buffer-"$buffer_key") || exit 1
 fi
 
 # Helper to restore terminal and close file descriptor
@@ -108,29 +94,29 @@ if [ "$skip_stty" -eq 1 ]; then
     # toggling terminal attributes.
     if [ ! -r "$tty_device" ]; then
         warn "await-keypress: unable to read from '$tty_device'"
-        return 1
+        exit 1
     fi
 
-    exec 3<"$tty_device" || return 1
+    exec 3<"$tty_device" || exit 1
 else
     # When interacting with the real terminal, require stty for raw-mode
     # management and open the device read/write.
     if ! "$require_cmd" stty "The await-keypress spell needs 'stty' to manage terminal modes."; then
-        return 1
+        exit 1
     fi
 
     if [ ! -r "$tty_device" ] || [ ! -w "$tty_device" ]; then
         warn "await-keypress: unable to open controlling terminal '$tty_device'"
-        return 1
+        exit 1
     fi
 
-    exec 3<>"$tty_device" || return 1
+    exec 3<>"$tty_device" || exit 1
 
     # Persist the existing terminal configuration so we can restore it later.
     saved_state=$(stty -g <&3 2>/dev/null)
     if [ -z "$saved_state" ]; then
         warn 'await-keypress: unable to read terminal settings'
-        return 1
+        exit 1
     fi
 
     trap 'restore_terminal; exit 130' INT HUP TERM
@@ -143,7 +129,7 @@ fi
 if [ "$skip_stty" -eq 0 ]; then
     if ! stty -icanon -echo min 1 time 0 <&3 2>/dev/null; then
         warn 'await-keypress: unable to configure terminal'
-        return 1
+        exit 1
     fi
 fi
 
@@ -166,7 +152,7 @@ else
     first_codes=${first_codes# }
     first_codes=${first_codes% }
     if [ -z "$first_codes" ]; then
-        return 1
+        exit 1
     fi
     codes=$first_codes
 fi
@@ -201,7 +187,7 @@ fi
 if [ "$read_extra" -eq 1 ] && [ "$skip_stty" -eq 0 ]; then
     if ! stty -icanon -echo min 0 time 1 <&3 2>/dev/null; then
         warn 'await-keypress: unable to update terminal timing'
-        return 1
+        exit 1
     fi
 fi
 
@@ -233,14 +219,14 @@ codes=${codes% }
 if [ -z "$codes" ]; then
     [ "${WIZARDRY_DEBUG_AWAIT:-0}" = "1" ] && printf '[await-keypress] No codes read, returning empty\n' >&2
     printf '\n'
-    return 0
+    exit 0
 fi
 
 set -- $codes
 if [ "$#" -eq 0 ]; then
     [ "${WIZARDRY_DEBUG_AWAIT:-0}" = "1" ] && printf '[await-keypress] Empty codes list, returning empty\n' >&2
     printf '\n'
-    return 0
+    exit 0
 fi
 
 [ "${WIZARDRY_DEBUG_AWAIT:-0}" = "1" ] && printf '[await-keypress] Read codes: %s\n' "$codes" >&2
@@ -399,39 +385,4 @@ fi
 
 printf '%s\n' "$output"
 [ "${WIZARDRY_DEBUG_AWAIT:-0}" = "1" ] && printf '[await-keypress] Returning: %s\n' "$output" >&2
-return 0
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"
+exit 0
