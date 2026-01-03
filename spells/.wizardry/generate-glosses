@@ -140,11 +140,22 @@ env_clear
       return 0
     fi
     
-    # CRITICAL: Skip shell builtins to avoid overriding them
+    # CRITICAL: Skip shell builtins and common system commands to avoid overriding them
     # This prevents errors like "Bad function name" when trying to define set(), test(), etc.
+    # Also prevents overriding critical system utilities like find, grep, sed, etc.
     case "$_first_word" in
-      alias|bg|cd|command|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|read|readonly|sh|test|times|trap|true|type|ulimit|umask|unalias|wait|break|case|continue|do|done|elif|else|esac|eval|exec|exit|export|fi|for|if|in|local|return|set|shift|then|unset|until|while)
+      # Shell builtins
+      alias|bg|cd|command|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|read|readonly|sh|\
+test|times|trap|true|type|ulimit|umask|unalias|wait|break|case|continue|do|done|elif|else|\
+esac|eval|exec|exit|export|fi|for|if|in|local|return|set|shift|then|unset|until|while)
         [ "$quiet" -eq 0 ] && info "Skipping shell builtin: $_first_word" >&2
+        return 0
+        ;;
+      # Common system commands that should not be overridden
+      awk|cat|cp|cut|date|df|diff|dirname|du|echo|egrep|env|expr|fgrep|file|find|grep|head|\
+hostname|id|ln|ls|mkdir|mv|printf|ps|rm|rmdir|sed|sleep|sort|stat|tail|tar|tee|touch|tr|\
+uname|uniq|wc|xargs)
+        [ "$quiet" -eq 0 ] && info "Skipping system command: $_first_word" >&2
         return 0
         ;;
     esac
