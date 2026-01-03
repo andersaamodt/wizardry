@@ -89,14 +89,14 @@ The original path-wizard utility (now learn-spellbook) that worked well before w
   - [x] cantrips/menu
   - [x] profile-tests
   - [x] test-spell
-- [ ] Remove word-of-binding infrastructure files
-  - [ ] spells/.imps/sys/invoke-wizardry (4.6K)
-  - [ ] spells/.imps/sys/invoke-wizardry-minimal-wob (2.7K)
-  - [ ] spells/.imps/sys/word-of-binding (8.5K)
-  - [ ] spells/.imps/sys/castable (2.3K)
-  - [ ] spells/.imps/sys/uncastable (1.2K)
+- [ ] Remove obsolete infrastructure files
+  - [ ] spells/.imps/sys/word-of-binding (8.5K) - no longer needed
+  - [ ] spells/.imps/sys/castable (2.3K) - no longer needed
+  - [x] spells/.imps/sys/invoke-wizardry (4.6K) - KEEP for startup (calls learn-spellbook, sets env vars)
+  - [x] spells/.imps/sys/invoke-wizardry-minimal-wob (2.7K) - KEEP (variant)
+  - [x] spells/.imps/sys/uncastable (1.2K) - KEEP (still useful)
 - [x] PATH-based architecture with learn-spellbook (already exists)
-- [ ] Convert synonyms to aliases
+- [x] Synonyms system - KEEP (needed for parsing)
 - [ ] Update tests and EXEMPTIONS.md
 - [ ] Final verification
 
@@ -342,8 +342,34 @@ find spells -type f -exec grep -l "^castable \"\$@\"$\|^uncastable$" {} \; | wc 
 - ✅ menu --help works
 - ✅ All modified spells functional
 
+### Session 5: Final Infrastructure Cleanup (2026-01-03 22:05 UTC)
+
+**Progress:** Removed obsolete infrastructure files based on user feedback
+
+**User Clarification:**
+- KEEP synonyms system (needed for parsing)
+- KEEP uncastable (still useful)
+- KEEP invoke-wizardry (for startup - calls learn-spellbook, sets env vars)
+- REMOVE only: word-of-binding and castable (obsolete)
+
+**Files removed:**
+1. spells/.imps/sys/word-of-binding (8.5K) - function preloading no longer needed
+2. spells/.imps/sys/castable (2.3K) - self-execute wrapper no longer needed
+
+**Files preserved:**
+- ✅ spells/.imps/sys/invoke-wizardry (4.6K) - startup initialization
+- ✅ spells/.imps/sys/invoke-wizardry-minimal-wob (2.7K) - variant
+- ✅ spells/.imps/sys/uncastable (1.2K) - source-only enforcement
+- ✅ spells/system/generate-glosses - synonyms/parsing system
+- ✅ Synonym management spells in spellcraft
+
+**Infrastructure Status:**
+- PATH-based execution fully operational
+- invoke-wizardry sets up environment at startup
+- Synonyms system provides parsing support
+- Spells use flat-file pattern throughout
+
 ### Next Steps
-- Remove word-of-binding infrastructure files (5 files, ~19K total)
-- Update documentation and instruction files
+- Update documentation files
 - Run comprehensive test suite
-- Consider removing/deprecating synonyms system
+- Update EXEMPTIONS.md if needed
