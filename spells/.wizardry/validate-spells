@@ -3,7 +3,8 @@
 # Validate that specified spells and imps exist in wizardry installation.
 # Used by banish, test-magic, and demo-magic to verify spell availability.
 
-show_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE'
 Usage: validate-spells [OPTIONS] SPELL...
 
@@ -30,42 +31,22 @@ Exit Codes:
   1  One or more spells/imps missing
   2  Invalid usage
 USAGE
-}
-
-validate_spells() {
-case "${1-}" in
---help|--usage|-h)
-  show_usage
-  return 0
+  exit 0
   ;;
 esac
 
-# Use conditional strictness based on execution context
-# See .github/CODE_POLICY_SET_EU.md for details
-case "$0" in
-  */validate-spells)
-    # Executed as script - use full strict mode
-    set -eu
-    ;;
-  *)
-    # Called as function (sourced) - only undefined variable protection
-    # This prevents interactive shell exit while maintaining safety
-    set -u
-    ;;
-esac
+set -eu
 
 # Validate WIZARDRY_DIR is set and valid
-# Don't use require_wizardry here because it may not be loaded yet
-# (banish calls this before all imps are available)
 if [ -z "${WIZARDRY_DIR-}" ]; then
   printf 'validate-spells: WIZARDRY_DIR not set\n' >&2
   printf 'Run this from banish or set WIZARDRY_DIR explicitly\n' >&2
-  return 1
+  exit 1
 fi
 
 if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
   printf 'validate-spells: invalid WIZARDRY_DIR: %s\n' "$WIZARDRY_DIR" >&2
-  return 1
+  exit 1
 fi
 
 _vs_pluralize="${WIZARDRY_DIR}/spells/.imps/text/pluralize"
@@ -322,8 +303,8 @@ fi
 # Output results
 if [ "$missing_only" -eq 1 ]; then
   printf '%s' "$missing"
-  [ -n "$missing" ] && return 1
-  return 0
+  [ -n "$missing" ] && exit 1
+  exit 0
 fi
 
 if [ -n "$missing" ]; then
@@ -335,18 +316,7 @@ if [ -n "$missing" ]; then
     label=$("$_vs_pluralize" "spell" "$missing_count" "spells")
     printf 'Missing %s: %s\n' "$label" "$missing" >&2
   fi
-  return 1
+  exit 1
 fi
 
-return 0
-}
-
-# Load castable imp for direct execution
-if true; then
-  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
-  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
-  [ -f "$_i/castable" ] && . "$_i/castable"
-fi
-
-castable "$@"
+exit 0

@@ -19,13 +19,13 @@ spell_levels() {
       ;;
     1)
       _name='Banish & Validation Infrastructure'
-      _spells='banish:system validate-spells:.wizardry'
+      _spells='banish:wards validate-spells:.wizardry'
       _imps='sys/spell-levels cond/has cond/there cond/is cond/empty cond/nonempty cond/no cond/within-range cond/lacks cond/newer cond/full cond/gone cond/is-path cond/has-ancestor cond/is-posint cond/yes cond/given cond/older out/say out/warn out/die out/fail out/info out/step out/success out/debug out/ok out/heading-section out/heading-separator out/heading-simple out/usage-error out/first-of out/or-else out/print-pass out/print-fail out/disable-palette out/quiet text/pluralize text/count-words'
       ;;
     2)
       _name='Installation Infrastructure'
       _spells=''
-      _imps='declare-globals sys/invoke-wizardry sys/invoke-wizardry-minimal-wob sys/invoke-thesaurus sys/require-wizardry sys/require sys/castable sys/word-of-binding sys/env-clear sys/env-or sys/on-exit sys/clear-traps sys/on sys/now sys/any sys/need sys/must sys/uncastable sys/where sys/autocast sys/ask-install-wizardry sys/clipboard-available sys/nix-shell-add sys/nix-shell-remove sys/nix-shell-status sys/nix-rebuild fs/temp-file fs/temp-dir fs/cleanup-file fs/cleanup-dir input/tty-save input/tty-restore input/tty-raw input/read-line str/contains str/trim str/equals str/starts str/ends str/lower str/upper str/seeks str/differs str/matches paths/here paths/parent paths/file-name paths/abs-path paths/make paths/path paths/tilde-path paths/strip-trailing-slashes paths/norm-path paths/script-dir paths/temp'
+      _imps='declare-globals sys/invoke-wizardry sys/invoke-wizardry-minimal-wob sys/invoke-thesaurus sys/require-wizardry sys/require sys/env-clear sys/env-or sys/on-exit sys/clear-traps sys/on sys/now sys/any sys/need sys/must sys/uncastable sys/where sys/autocast sys/ask-install-wizardry sys/clipboard-available sys/nix-shell-add sys/nix-shell-remove sys/nix-shell-status sys/nix-rebuild fs/temp-file fs/temp-dir fs/cleanup-file fs/cleanup-dir input/tty-save input/tty-restore input/tty-raw input/read-line str/contains str/trim str/equals str/starts str/ends str/lower str/upper str/seeks str/differs str/matches paths/here paths/parent paths/file-name paths/abs-path paths/make paths/path paths/tilde-path paths/strip-trailing-slashes paths/norm-path paths/script-dir paths/temp'
       ;;
     3)
       _name='Glossary System'

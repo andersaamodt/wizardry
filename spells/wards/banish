@@ -368,14 +368,14 @@ banish_process_level() {
       # Check spells
       spell_list=$(get_level_spells 1)
       if [ -n "$spell_list" ]; then
-        if ! eval "validate_spells --quiet $spell_list" 2>/dev/null; then
-          missing=$(eval "validate_spells --missing-only $spell_list" 2>/dev/null || true)
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
           missing_count=$("$_banish_count_words" "$missing")
           label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           exit 1
         fi
-        spell_output=$(eval "validate_spells --show-status $spell_list" 2>&1) || true
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
           printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
@@ -399,12 +399,12 @@ banish_process_level() {
         imp_list=$new_imp_list
       fi
       if [ -n "$imp_list" ]; then
-        if ! eval "validate_spells --quiet --imps $imp_list" 2>/dev/null; then
-          missing=$(eval "validate_spells --imps --missing-only $imp_list" 2>/dev/null || true)
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
           printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
           exit 1
         fi
-        imp_output=$(eval "validate_spells --imps --show-status $imp_list" 2>&1) || true
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
           printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
@@ -437,14 +437,14 @@ banish_process_level() {
       # Check spells
       spell_list=$(get_level_spells 2)
       if [ -n "$spell_list" ]; then
-        if ! eval "validate_spells --quiet $spell_list" 2>/dev/null; then
-          missing=$(eval "validate_spells --missing-only $spell_list" 2>/dev/null || true)
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
           missing_count=$("$_banish_count_words" "$missing")
           label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           exit 1
         fi
-        spell_output=$(eval "validate_spells --show-status $spell_list" 2>&1) || true
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
           printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
@@ -470,12 +470,12 @@ banish_process_level() {
         imp_list=$new_imp_list
       fi
       if [ -n "$imp_list" ]; then
-        if ! eval "validate_spells --quiet --imps $imp_list" 2>/dev/null; then
-          missing=$(eval "validate_spells --imps --missing-only $imp_list" 2>/dev/null || true)
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
           printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
           exit 1
         fi
-        imp_output=$(eval "validate_spells --imps --show-status $imp_list" 2>&1) || true
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
           printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
@@ -625,14 +625,14 @@ banish_process_level() {
       # Check spells
       spell_list=$(get_level_spells 3)
       if [ -n "$spell_list" ]; then
-        if ! eval "validate_spells --quiet $spell_list" 2>/dev/null; then
-          missing=$(eval "validate_spells --missing-only $spell_list" 2>/dev/null || true)
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
           missing_count=$("$_banish_count_words" "$missing")
           label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           exit 1
         fi
-        spell_output=$(eval "validate_spells --show-status $spell_list" 2>&1) || true
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
           printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
@@ -658,12 +658,12 @@ banish_process_level() {
         imp_list=$new_imp_list
       fi
       if [ -n "$imp_list" ]; then
-        if ! eval "validate_spells --quiet --imps $imp_list" 2>/dev/null; then
-          missing=$(eval "validate_spells --imps --missing-only $imp_list" 2>/dev/null || true)
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
           printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
           exit 1
         fi
-        imp_output=$(eval "validate_spells --imps --show-status $imp_list" 2>&1) || true
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
           printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
@@ -1041,14 +1041,14 @@ banish_process_level() {
       # Check spells
       spell_list=$(get_level_spells "$level")
       if [ -n "$spell_list" ]; then
-        if ! eval "validate_spells --quiet $spell_list" 2>/dev/null; then
-          missing=$(eval "validate_spells --missing-only $spell_list" 2>/dev/null || true)
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
           missing_count=$("$_banish_count_words" "$missing")
           label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           exit 1
         fi
-        spell_output=$(eval "validate_spells --show-status $spell_list" 2>&1) || true
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
           printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
@@ -1074,12 +1074,12 @@ banish_process_level() {
         imp_list=$new_imp_list
       fi
       if [ -n "$imp_list" ]; then
-        if ! eval "validate_spells --quiet --imps $imp_list" 2>/dev/null; then
-          missing=$(eval "validate_spells --imps --missing-only $imp_list" 2>/dev/null || true)
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
           printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
           exit 1
         fi
-        imp_output=$(eval "validate_spells --imps --show-status $imp_list" 2>&1) || true
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
           printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
@@ -1104,25 +1104,11 @@ else
   printf '\nValidating through Level %d: %s\n' "$target_level" "$(banish_level_name "$target_level")"
 fi
 
-# Load validate_spells function if not already available
-if ! command -v validate_spells >/dev/null 2>&1; then
-  # Try to source validate-spells from known location
-  if [ -f "${WIZARDRY_DIR}/spells/.wizardry/validate-spells" ]; then
-    # Prevent castable from executing when sourced
-    _WIZARDRY_SOURCING_SPELL=1
-    # shellcheck source=/dev/null
-    . "${WIZARDRY_DIR}/spells/.wizardry/validate-spells"
-    unset _WIZARDRY_SOURCING_SPELL
-  else
-    printf '%s\n' "banish: validate-spells not found" >&2
-    exit 1
-  fi
-  
-  # Verify it loaded successfully
-  if ! command -v validate_spells >/dev/null 2>&1; then
-    printf '%s\n' "banish: failed to load validate-spells" >&2
-    exit 1
-  fi
+# Set up validate-spells command path
+validate_spells="${WIZARDRY_DIR}/spells/.wizardry/validate-spells"
+if [ ! -x "$validate_spells" ]; then
+  printf '%s\n' "banish: validate-spells not found or not executable" >&2
+  exit 1
 fi
 
 # Run each level from 0 to target_level (or just target_level if --only)
