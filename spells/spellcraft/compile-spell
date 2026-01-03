@@ -202,7 +202,7 @@ $func_def
     inlined_names="$inlined_names $dep"
   else
     # It's a spell without _funcname() pattern - inline entire spell as function
-    # Remove shebang, *_usage, --help handler, require_wizardry, set -eu, and loading patterns
+    # Remove shebang, *_usage, --help handler, require_wizardry, set -eu, env_clear, and loading patterns
     spell_body=$(printf '%s\n' "$dep_content" | awk '
       BEGIN { skip=0; in_usage=0; skip_loading=0 }
       /^#!/ { next }
@@ -213,7 +213,12 @@ $func_def
       skip && /^esac/ { skip=0; next }
       skip { next }
       /^set -eu$/ { next }
+      /^set -u$/ { next }
       /^require-wizardry/ { next }
+      /^[[:space:]]*require_wizardry([[:space:]]|\|\||$)/ { next }
+      /^[[:space:]]*\. env_clear([[:space:]]|$)/ { next }
+      /^[[:space:]]*source env_clear([[:space:]]|$)/ { next }
+      /^[[:space:]]*env_clear([[:space:]]|$)/ { next }
       /^# Load (castable|autocast|uncastable) imp/ { skip_loading=1; next }
       skip_loading && /^(castable|autocast|uncastable) / { skip_loading=0; next }
       skip_loading { next }
@@ -259,8 +264,10 @@ done
 transformed=$(printf '%s\n' "$spell_content" | \
   tail -n +2 | \
   grep -v "^require-wizardry" | \
+  grep -vE '^[[:space:]]*require_wizardry([[:space:]]|\|\||$)' | \
   grep -vE '^[[:space:]]*\. env_clear([[:space:]]|$)' | \
   grep -vE '^[[:space:]]*source env_clear([[:space:]]|$)' | \
+  grep -vE '^[[:space:]]*env_clear([[:space:]]|$)' | \
   grep -vE '^[[:space:]]*\. .*invoke-wizardry' | \
   grep -vE '^[[:space:]]*source .*invoke-wizardry' | \
   awk -v spell="$spell_basename" '
