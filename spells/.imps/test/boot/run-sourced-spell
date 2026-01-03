@@ -1,8 +1,7 @@
 #!/bin/sh
 # run-sourced-spell SPELL_NAME [ARGS...] - test a spell via source-then-invoke pattern
-# Sources invoke-wizardry in permissive mode, then calls the spell function.
+# With invoke-wizardry preloaded, functions are already available.
 # Captures stdout, stderr, and exit status into STATUS, OUTPUT, and ERROR.
-# This tests the REAL user workflow: source invoke-wizardry → call spell functions
 
 run_sourced_spell() {
   set -eu
@@ -28,42 +27,18 @@ run_sourced_spell() {
   # Restore caller's PATH for the test
   PATH=$_saved_path
   
-  # Build shell command string with all necessary escaping
-  # Use bash -c instead of a script file because functions persist in bash -c context
-  # but NOT in script files (bash limitation with eval/sourcing interaction)
+  # Save current directory
+  _saved_pwd=$(pwd)
+  cd "$workdir" 2>/dev/null || :
   
-  # Escape arguments for safe inclusion in command string
-  escaped_args=""
-  for arg in "$@"; do
-    # Escape single quotes in arguments
-    escaped_arg=$(printf '%s' "$arg" | sed "s/'/'\\\\''/g")
-    escaped_args="$escaped_args '$escaped_arg'"
-  done
-  
-  # Build the bash -c command
-  # Note: func_name must be expanded here, not inside bash -c
-  bash_cmd="
-set +eu  # Permissive mode for sourcing invoke-wizardry
-export WIZARDRY_DIR='${WIZARDRY_DIR:-$ROOT_DIR}'
-export WIZARDRY_LOAD_ALL=1
-export PATH='$PATH'
-export HOME='${HOME:-/tmp}'
-export TMPDIR='${TMPDIR:-/tmp}'
-export WIZARDRY_TMPDIR='${WIZARDRY_TMPDIR}'
-export WIZARDRY_TEST_HELPERS_ONLY='${WIZARDRY_TEST_HELPERS_ONLY:-0}'
-
-# Source invoke-wizardry (suppress its diagnostic output)
-. \"\$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry\" >/dev/null 2>&1
-
-# Call the spell function with provided arguments (already in permissive mode)
-$func_name $escaped_args
-"
-  
-  # Run via bash -c and capture output/error/status
-  PATH=${WIZARDRY_SYSTEM_PATH:-$PATH}
-  if (cd "$workdir" && bash -c "$bash_cmd" >"$_stdout" 2>"$_stderr"); then
-    STATUS=0
-  else
+  # Call the function directly - it's already loaded in the environment
+  # Redirect output to temp files for capture
+  STATUS=0
+  if ! (
+    # Execute in subshell to capture output and isolate side effects
+    set +e
+    "$func_name" "$@"
+  ) >"$_stdout" 2>"$_stderr"; then
     STATUS=$?
   fi
   
@@ -73,8 +48,9 @@ $func_name $escaped_args
   # Cleanup
   rm -f "$_stdout" "$_stderr"
   
-  # Restore caller's PATH
+  # Restore caller's PATH and directory
   PATH=$_saved_path
+  cd "$_saved_pwd" 2>/dev/null || :
 }
 
 # Self-execution when run directly (not sourced)

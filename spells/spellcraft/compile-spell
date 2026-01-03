@@ -184,7 +184,7 @@ for dep in $dependencies; do
   # These contain terminal I/O code that can't be stubbed when inlined
   # Also skip test stubs themselves - they're test infrastructure, not dependencies
   case "$dep" in
-    ask-number|ask-yn|ask-text|await-keypress|select-input|read-line|tty-*|stub-*) continue ;;
+    ask-number|ask-yn|ask-text|await-keypress|choose-input|read-line|tty-*|stub-*) continue ;;
   esac
   
   # Skip if already inlined

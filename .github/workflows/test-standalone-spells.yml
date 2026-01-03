@@ -39,8 +39,11 @@ jobs:
           
           echo "=== Compiling all spells and imps using doppelganger ==="
           
-          # Use doppelganger to compile everything
+          # Set up environment and source invoke-wizardry
           export WIZARDRY_DIR="${GITHUB_WORKSPACE}"
+          . "${GITHUB_WORKSPACE}/spells/.imps/sys/invoke-wizardry"
+          
+          # Use doppelganger to compile everything
           "${GITHUB_WORKSPACE}/spells/spellcraft/doppelganger" /tmp/compiled
           
           # Count results

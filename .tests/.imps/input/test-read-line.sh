@@ -13,7 +13,7 @@ done
 
 test_read_line_from_stdin() {
   skip-if-compiled || return $?
-  run_cmd sh -c 'echo "hello world" | SELECT_INPUT_MODE=stdin read-line'
+  run_cmd sh -c 'echo "hello world" | CHOOSE_INPUT_MODE=stdin read-line'
   assert_success
   assert_output_contains "hello world"
 }
@@ -21,20 +21,20 @@ test_read_line_from_stdin() {
 test_read_line_with_prompt() {
   skip-if-compiled || return $?
   # Prompt goes to stderr, input from stdin
-  run_cmd sh -c 'echo "response" | SELECT_INPUT_MODE=stdin read-line "Enter: "'
+  run_cmd sh -c 'echo "response" | CHOOSE_INPUT_MODE=stdin read-line "Enter: "'
   assert_success
   assert_output_contains "response"
   assert_error_contains "Enter:"
 }
 
 test_read_line_empty_input() {
-  run_cmd sh -c 'echo "" | SELECT_INPUT_MODE=stdin read-line'
+  run_cmd sh -c 'echo "" | CHOOSE_INPUT_MODE=stdin read-line'
   assert_success
 }
 
 test_read_line_no_input_fails() {
   skip-if-compiled || return $?
-  run_cmd sh -c 'SELECT_INPUT_MODE=none read-line'
+  run_cmd sh -c 'CHOOSE_INPUT_MODE=none read-line'
   assert_failure
 }
 

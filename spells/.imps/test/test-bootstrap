@@ -86,32 +86,53 @@ export WIZARDRY_IMPS_PATH
 WIZARDRY_DIR=$ROOT_DIR
 export WIZARDRY_DIR
 
-# Preload essential imps as functions (like invoke-wizardry does)
-# This makes underscore-named functions available for spells that use them
-# Source word-of-binding first
-if [ -f "$ROOT_DIR/spells/.imps/sys/word-of-binding" ]; then
-  # Set flag to source word-of-binding without running its self-execute block
-  WIZARDRY_SOURCE_WORD_OF_BINDING=1
-  # shellcheck source=/dev/null
-  . "$ROOT_DIR/spells/.imps/sys/word-of-binding"
-  unset WIZARDRY_SOURCE_WORD_OF_BINDING
+# Check if invoke-wizardry is already loaded (from workflow or test-magic)
+# If so, skip re-loading it for major performance improvement
+if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
+  # invoke-wizardry already loaded - reuse it (no-op, very fast)
+  : # All functions already available
+elif [ "${WIZARDRY_TEST_SKIP_INVOKE-0}" != "1" ] && [ -f "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" ]; then
+  # invoke-wizardry not loaded yet - load it once per test file
+  # This makes all spell functions and underscore-named imp functions available
+  # Tests can then call functions directly (e.g., validate_spells, generate_glosses)
   
-  # Preload essential imps that spells commonly use
-  for _test_imp in require-wizardry env-clear env-or die warn fail info success debug temp-file cleanup-file say step; do
-    word_of_binding "$_test_imp" 2>/dev/null || :
-  done
-  unset _test_imp
+  # Set flag to load all spells/imps
+  WIZARDRY_LOAD_ALL=1
+  export WIZARDRY_LOAD_ALL
   
-  # Use sourced spell execution by default since functions are now preloaded
-  # This ensures spells can access require_wizardry, env_clear, etc.
-  WIZARDRY_USE_SOURCED_SPELL=1
-  export WIZARDRY_USE_SOURCED_SPELL
+  # Source invoke-wizardry (it sets +eu internally for permissive mode)
+  # Suppress parse warnings that occur during glossary generation
+  . "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" 2>&1 | grep -v "^\[parse\] ERROR" >&2 || {
+    printf 'WARNING: invoke-wizardry failed to load in test-bootstrap\n' >&2
+  }
+else
+  # Fallback: Preload essential imps as functions (like invoke-wizardry does)
+  # This makes underscore-named functions available for spells that use them
+  # Source word-of-binding first
+  if [ -f "$ROOT_DIR/spells/.imps/sys/word-of-binding" ]; then
+    # Set flag to source word-of-binding without running its self-execute block
+    WIZARDRY_SOURCE_WORD_OF_BINDING=1
+    # shellcheck source=/dev/null
+    . "$ROOT_DIR/spells/.imps/sys/word-of-binding"
+    unset WIZARDRY_SOURCE_WORD_OF_BINDING
+    
+    # Preload essential imps that spells commonly use
+    for _test_imp in require-wizardry env-clear env-or die warn fail info success debug temp-file cleanup-file say step; do
+      word_of_binding "$_test_imp" 2>/dev/null || :
+    done
+    unset _test_imp
+  fi
 fi
 
-# Run banish to verify environment assumptions (if available)
-# This helps catch environment issues early in test runs
-# Skip if already running within banish (prevents recursion)
-if [ -f "$ROOT_DIR/spells/system/banish" ]; then
+# Use sourced spell execution by default since functions are now preloaded
+# This ensures spells can access require_wizardry, env_clear, etc.
+WIZARDRY_USE_SOURCED_SPELL=1
+export WIZARDRY_USE_SOURCED_SPELL
+
+# Skip banish check in test-bootstrap for performance (runs on every test file)
+# Banish is run once at test-magic level, not needed per-test
+# Can enable with WIZARDRY_TEST_RUN_BANISH=1 if needed for debugging
+if [ "${WIZARDRY_TEST_RUN_BANISH-0}" = "1" ] && [ -f "$ROOT_DIR/spells/system/banish" ]; then
   # Use in-ancestry imp to detect if we're already inside banish
   if ! "$ROOT_DIR/spells/.imps/cond/in-ancestry" banish 2>/dev/null; then
     # Run banish silently (log level 0) - it will only output warnings/errors

@@ -1,7 +1,7 @@
 #!/bin/sh
 # read-line [PROMPT] - read a line from stdin or tty, optional prompt to stderr
 # Example: name=$(read-line "Enter name: ") | line=$(read-line)
-# Set SELECT_INPUT_MODE=stdin|tty|none to override source detection
+# Set CHOOSE_INPUT_MODE=stdin|tty|none to override source detection
 set -eu
 
 read_line() {
@@ -9,10 +9,10 @@ read_line() {
   _rl_prompt=${1:-}
   [ -n "$_rl_prompt" ] && printf '%s' "$_rl_prompt" >&2
 
-  if command -v select-input >/dev/null 2>&1; then
-    _rl_src=$(select-input) || return 1
+  if command -v choose-input >/dev/null 2>&1; then
+    _rl_src=$(choose-input) || return 1
   else
-    case ${SELECT_INPUT_MODE:-auto} in
+    case ${CHOOSE_INPUT_MODE:-auto} in
       stdin) _rl_src=stdin ;;
       tty)   _rl_src=tty ;;
       none)  return 1 ;;
