@@ -365,6 +365,36 @@ AWKSCRIPT
         issues=${issues:+$issues; }"$call_msg"
         issue_count=$((issue_count + 1))
       fi
+      
+      # Check for subprocess execution anti-pattern (executing spells instead of calling functions)
+      # Pattern: "${WIZARDRY_DIR}/spells/..." directly executed (not as argument to a function)
+      # Match only when path is at start of command (after |, &, ;, newline, or in $())
+      # Exclude: file checks, sourcing, find commands, comments, usage docs, function arguments
+      subprocess_calls=$(awk '
+        # Skip comments and usage blocks
+        /^[[:space:]]*#/ { next }
+        /Usage:/ { next }
+        /cat <</ { in_heredoc=1; next }
+        in_heredoc && /^[A-Z]+$/ { in_heredoc=0; next }
+        in_heredoc { next }
+        # Skip file existence checks
+        /if \[ -[fdx].*WIZARDRY_DIR/ { next }
+        # Skip sourcing
+        /^\. .*WIZARDRY_DIR/ { next }
+        # Skip find commands
+        /find.*WIZARDRY_DIR/ { next }
+        # Match subprocess execution: path at start of command without function name before it
+        /(^|[|&;]|[[:space:]])\$\("\$\{WIZARDRY_DIR\}\/spells\/[^"]+"\)/ { print NR; next }
+        /(^|[[:space:]]|[|&;])"?\$\{WIZARDRY_DIR\}\/spells\/[^"]+"\s/ && !/[a-z_]+.*WIZARDRY_DIR/ { print NR }
+      ' "$path" 2>/dev/null || true)
+      
+      if [ -n "$subprocess_calls" ]; then
+        first_line=$(printf '%s' "$subprocess_calls" | head -1)
+        subprocess_msg="spell executed as subprocess at line $first_line"
+        subprocess_msg="$subprocess_msg (use function call: spell_name instead of \"\${WIZARDRY_DIR}/spells/category/spell-name\")"
+        issues=${issues:+$issues; }"$subprocess_msg"
+        issue_count=$((issue_count + 1))
+      fi
     fi
     
     rm -f "$awk_script"
