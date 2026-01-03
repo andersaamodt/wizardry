@@ -5,11 +5,11 @@
 
 case "${1-}" in
 --help|--usage|-h)
-  cat << 'EOF'
+  cat << 'USAGE'
 Usage: forall <spell> [args...]
 
 Run a spell or command against every file in the current directory, printing each filename before piping its output with indentation.
-EOF
+USAGE
   exit 0
   ;;
 esac
@@ -21,7 +21,7 @@ if [ "$#" -lt 1 ]; then
 Usage: forall <spell> [args...]
 
 Run a spell or command against every file in the current directory, printing each filename before piping its output with indentation.
-EOF
+USAGE
   exit 1
 fi
 

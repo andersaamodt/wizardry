@@ -4,11 +4,11 @@
 
 case "${1-}" in
 --help|--usage|-h)
-  cat << 'EOF'
+  cat << 'USAGE'
 Usage: hashchant <file>
 
 Compute a CRC-32 hash from the filename and contents, write it to the file's user.hash extended attribute when supported, and print the applied value.
-EOF
+USAGE
   exit 0
   ;;
 esac

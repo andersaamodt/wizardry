@@ -5,7 +5,7 @@
 
 case "${1-}" in
 --help|--usage|-h)
-  cat << 'EOF'
+  cat << 'USAGE'
 Usage: learn-spellbook [WIZARDRY_DIR]
 
 Add all wizardry spell and imp directories to your shell's PATH.
@@ -17,7 +17,7 @@ Automatically detects your platform and edits the appropriate configuration file
 If WIZARDRY_DIR is not provided, uses $WIZARDRY_DIR or ~/.wizardry.
 
 This spell is run automatically during installation.
-EOF
+USAGE
   exit 0
   ;;
 esac

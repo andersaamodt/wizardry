@@ -5,11 +5,11 @@
 
 case "${1-}" in
 --help|--usage|-h)
-  cat << 'EOF'
+  cat << 'USAGE'
 Usage: file-list <folder>
 
 Create a text file named after the folder that lists all files inside it.
-EOF
+USAGE
   exit 0
   ;;
 esac

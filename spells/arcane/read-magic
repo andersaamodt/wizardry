@@ -5,11 +5,11 @@
 
 case "${1-}" in
 --help|--usage|-h)
-  cat << 'EOF'
+  cat << 'USAGE'
 Usage: read-magic <file> [attribute]
 
 List all extended attributes (enchantments) on a file or print the value of one attribute when named, using attr, xattr, or getfattr as available.
-EOF
+USAGE
   exit 0
   ;;
 esac

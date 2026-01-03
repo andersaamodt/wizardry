@@ -5,11 +5,11 @@
 
 case "${1-}" in
 --help|--usage|-h)
-  cat << 'EOF'
+  cat << 'USAGE'
 Usage: ssh-barrier
 
 Harden the SSH server configuration with security best practices. Backs up the original config, disables root login, and turns off password authentication.
-EOF
+USAGE
   exit 0
   ;;
 esac

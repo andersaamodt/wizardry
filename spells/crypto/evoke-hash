@@ -5,11 +5,11 @@
 
 case "${1-}" in
 --help|--usage|-h)
-  cat << 'EOF'
+  cat << 'USAGE'
 Usage: evoke-hash <hash> [directory]
 
 Find files whose hash attribute matches a given value, searching the current directory by default. The hash should be set beforehand with the hashchant spell.
-EOF
+USAGE
   exit 0
   ;;
 esac
@@ -21,7 +21,7 @@ if [ "$#" -lt 1 ]; then
 Usage: evoke-hash <hash> [directory]
 
 Find files whose hash attribute matches a given value, searching the current directory by default. The hash should be set beforehand with the hashchant spell.
-EOF
+USAGE
   exit 1
 fi
 

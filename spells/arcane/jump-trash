@@ -5,12 +5,12 @@
 
 case "${1-}" in
 --help|--usage|-h)
-  cat << 'EOF'
+  cat << 'USAGE'
 Usage: . jump-trash
 
 Teleport to your system trash directory.
 This spell must be sourced (note the dot) to change your current directory.
-EOF
+USAGE
   exit 0
   ;;
 esac
