@@ -64,18 +64,60 @@ test_set_gloss_routes_to_set_player() {
   fi
 }
 
-test_greylist_fallback_to_builtin() {
+test_read_fallback_to_system_builtin() {
   tmpdir=$(make_tempdir)
-  export WIZARDRY_DIR="$ROOT_DIR"
   
-  # Test that parse falls back gracefully when no spell matches
-  # parse "read" "nonexistent" should not find a spell and return non-zero
-  output=$(cd "$ROOT_DIR" && ./spells/.imps/lex/parse "read" "nonexistent_spell_xyz" 2>&1)
+  # Source invoke-wizardry to get the read gloss function
+  export WIZARDRY_DIR="$ROOT_DIR"
+  . "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" >/dev/null 2>&1 || return 1
+  
+  # Test that read gloss falls back to system read builtin for non-spell args
+  # Use read with a variable name (not a spell) - should invoke system builtin
+  # Create a file with test data
+  testfile="$tmpdir/testinput"
+  printf 'test_value\n' > "$testfile"
+  
+  # Use read with input redirection (not pipe to avoid subshell)
+  testvar=""
+  read testvar < "$testfile"
   exit_code=$?
   
-  # parse should fail gracefully (non-zero exit) when spell not found
-  if [ "$exit_code" -eq 0 ]; then
-    TEST_FAILURE_REASON="parse succeeded when it should have failed for nonexistent spell"
+  # System read should succeed with exit code 0
+  if [ "$exit_code" -ne 0 ]; then
+    TEST_FAILURE_REASON="read gloss did not fall back to system builtin (exit code: $exit_code)"
+    return 1
+  fi
+  
+  # Verify the variable was set by system read builtin
+  if [ "$testvar" != "test_value" ]; then
+    TEST_FAILURE_REASON="read gloss did not execute system builtin correctly (got: '$testvar', expected: 'test_value')"
+    return 1
+  fi
+}
+
+test_test_fallback_to_system_builtin() {
+  tmpdir=$(make_tempdir)
+  
+  # Source invoke-wizardry to get the test gloss function
+  export WIZARDRY_DIR="$ROOT_DIR"
+  . "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" >/dev/null 2>&1 || return 1
+  
+  # Create a test file
+  testfile="$tmpdir/testfile"
+  touch "$testfile"
+  
+  # Test that test gloss falls back to system test builtin for non-spell args
+  # Use test -f with a file path (not a spell) - should invoke system builtin
+  if test -f "$testfile"; then
+    : # System test succeeded - this is correct
+  else
+    TEST_FAILURE_REASON="test gloss did not fall back to system builtin (test -f failed)"
+    return 1
+  fi
+  
+  # Also test with a file that doesn't exist
+  if test -f "$tmpdir/nonexistent_file"; then
+    TEST_FAILURE_REASON="test gloss returned wrong result (should be false for nonexistent file)"
     return 1
   fi
 }
@@ -84,5 +126,7 @@ run_test_case "greylist words only have multi-word spells" test_greylist_words_h
 run_test_case "read gloss routes to read-magic" test_read_gloss_routes_to_read_magic
 run_test_case "test gloss routes to test-spell" test_test_gloss_routes_to_test_spell
 run_test_case "set gloss routes to set-player" test_set_gloss_routes_to_set_player
+run_test_case "read falls back to system builtin for non-spell args" test_read_fallback_to_system_builtin
+run_test_case "test falls back to system builtin for non-spell args" test_test_fallback_to_system_builtin
 
 finish_tests
