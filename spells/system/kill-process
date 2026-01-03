@@ -1,101 +1,62 @@
 #!/bin/sh
 
-
-
-
 # This spell lists running processes and interactively chooses one to terminate.
 # It prompts with ask cantrips and sends a kill signal, customizable via KILL_CMD.
 
-
-kill_process_usage() {
-cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: kill-process
 
 List running processes, prompt you to pick one by number, and then send a kill signal to that PID. Uses ask-number and ask-yn for a gentle, confirmed termination, and you can override the signal command with KILL_CMD.
 USAGE
-}
-
-
-kill_process() {
-case "${1-}" in
---help|--usage|-h)
-  kill_process_usage
-  return 0
+  exit 0
   ;;
 esac
 
-require_wizardry || return 1
-
 set -eu
-env_clear
 
 # Present the process list so the user can choose what to terminate.
-say "List of running processes:"
+printf '%s\n' "List of running processes:"
 ps -ax | awk '{print $5}' | tail -n +2 | nl -w 2 -s ') '
 
 ps_names=$(ps -ax | awk '{print $5}' | tail -n +2)
 
-lacks ask_number && { warn "ask_number spell is required to choose a process."; return 1; }
-lacks ask_yn && { warn "ask_yn spell is required to confirm termination."; return 1; }
+if ! command -v ask-number >/dev/null 2>&1; then
+  printf '%s\n' "ask-number spell is required to choose a process." >&2
+  exit 1
+fi
+if ! command -v ask-yn >/dev/null 2>&1; then
+  printf '%s\n' "ask-yn spell is required to confirm termination." >&2
+  exit 1
+fi
 
 total_processes=$(printf '%s\n' "$ps_names" | sed '/^$/d' | wc -l | tr -d ' ')
 
 if [ "$total_processes" -eq 0 ]; then
-    warn "No processes available to kill."
-    return 1
+    printf '%s\n' "No processes available to kill." >&2
+    exit 1
 fi
 
-choice=$(ask_number "Enter the number of the process you want to kill:" 1 "$total_processes")
+choice=$(ask-number "Enter the number of the process you want to kill:" 1 "$total_processes")
 selected_name=$(printf '%s\n' "$ps_names" | sed -n "${choice}p")
 
 pid=$(ps -ax | awk '{print $1 " " $5}' | grep "$selected_name" | awk '{print $1}')
-if is set "$pid"; then
-    if ask_yn "Are you sure you want to kill process $selected_name with pid $pid"; then
+if [ -n "$pid" ]; then
+    if ask-yn "Are you sure you want to kill process $selected_name with pid $pid"; then
         kill_cmd=${KILL_CMD:-kill}
 
-        lacks "$kill_cmd" && { warn "kill command '$kill_cmd' is required to terminate processes."; return 1; }
+        if ! command -v "$kill_cmd" >/dev/null 2>&1; then
+          printf '%s\n' "kill command '$kill_cmd' is required to terminate processes." >&2
+          exit 1
+        fi
 
         if "$kill_cmd" "$pid"; then
-            say "Process $pid ($selected_name) has been killed."
+            printf '%s\n' "Process $pid ($selected_name) has been killed."
         else
             status=$?
-            warn "Failed to kill process $pid ($selected_name)."
-            return "$status"
+            printf '%s\n' "Failed to kill process $pid ($selected_name)." >&2
+            exit "$status"
         fi
     fi
 fi
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"
