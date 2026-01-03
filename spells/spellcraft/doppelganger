@@ -68,12 +68,14 @@ fi
 
 set -eu
 
-# Source env_clear (use WIZARDRY_DIR if available, otherwise compute relative path)
-if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/env-clear" ]; then
-  . "${WIZARDRY_DIR}/spells/.imps/sys/env-clear"
-else
-  _dg_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  . "$_dg_script_dir/../../.imps/sys/env-clear"
+# Source env_clear if not already available
+if ! command -v env_clear >/dev/null 2>&1; then
+  if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/env-clear" ]; then
+    . "${WIZARDRY_DIR}/spells/.imps/sys/env-clear"
+  else
+    _dg_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+    . "$_dg_script_dir/../../.imps/sys/env-clear"
+  fi
 fi
 
 # Source output imps (say, warn, etc.)

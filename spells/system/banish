@@ -171,19 +171,22 @@ fi
 
 # Source shared spell level definitions from sys imp
 # This file is shared by banish, test-magic, and demo-magic
-if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/spell-levels" ]; then
-  . "${WIZARDRY_DIR}/spells/.imps/sys/spell-levels"
-else
-  # Fallback: try to find from script location
-  _banish_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  _wiz_root=$(CDPATH= cd -- "$_banish_dir/../.." && pwd -P)
-  if [ -f "$_wiz_root/spells/.imps/sys/spell-levels" ]; then
-    . "$_wiz_root/spells/.imps/sys/spell-levels"
+# Check if spell_levels function is available, otherwise try to source it
+if ! command -v spell_levels >/dev/null 2>&1; then
+  if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/spell-levels" ]; then
+    . "${WIZARDRY_DIR}/spells/.imps/sys/spell-levels"
   else
-    # Final fallback: define inline if spell-levels not found
-    get_level_spells() { printf '' ; }
-    get_level_imps() { printf '' ; }
-    banish_level_name() { printf 'Unknown' ; }
+    # Fallback: try to find from script location
+    _banish_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+    _wiz_root=$(CDPATH= cd -- "$_banish_dir/../.." && pwd -P)
+    if [ -f "$_wiz_root/spells/.imps/sys/spell-levels" ]; then
+      . "$_wiz_root/spells/.imps/sys/spell-levels"
+    else
+      # Final fallback: define inline if spell-levels not found
+      get_level_spells() { printf '' ; }
+      get_level_imps() { printf '' ; }
+      banish_level_name() { printf 'Unknown' ; }
+    fi
   fi
 fi
 
@@ -524,9 +527,9 @@ banish_process_level() {
       if ! command -v stty >/dev/null 2>&1; then
         printf '  %s✗%s Terminal control: stty not found\n' "$_red" "$_reset"
         if [ "$skip_heal" -eq 0 ]; then
-          if [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-stty" ]; then
+          if command -v install-stty >/dev/null 2>&1; then
             printf '    Installing stty...\n'
-            if "${WIZARDRY_DIR}/spells/.arcana/core/install-stty" 2>/dev/null; then
+            if install-stty 2>/dev/null; then
               if command -v stty >/dev/null 2>&1; then
                 printf '    %s✓%s stty installed\n' "$_green" "$_reset"
               else
@@ -547,9 +550,9 @@ banish_process_level() {
       if ! command -v tput >/dev/null 2>&1; then
         printf '  %s✗%s Terminal capabilities: tput not found\n' "$_red" "$_reset"
         if [ "$skip_heal" -eq 0 ]; then
-          if [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-tput" ]; then
+          if command -v install-tput >/dev/null 2>&1; then
             printf '    Installing tput...\n'
-            if "${WIZARDRY_DIR}/spells/.arcana/core/install-tput" 2>/dev/null; then
+            if install-tput 2>/dev/null; then
               if command -v tput >/dev/null 2>&1; then
                 printf '    %s✓%s tput installed\n' "$_green" "$_reset"
               else
@@ -570,9 +573,9 @@ banish_process_level() {
       if ! command -v dd >/dev/null 2>&1; then
         printf '  %s✗%s Input capture: dd not found\n' "$_red" "$_reset"
         if [ "$skip_heal" -eq 0 ]; then
-          if [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-dd" ]; then
+          if command -v install-dd >/dev/null 2>&1; then
             printf '    Installing dd...\n'
-            if "${WIZARDRY_DIR}/spells/.arcana/core/install-dd" 2>/dev/null; then
+            if install-dd 2>/dev/null; then
               if command -v dd >/dev/null 2>&1; then
                 printf '    %s✓%s dd installed\n' "$_green" "$_reset"
               else
@@ -916,9 +919,9 @@ banish_process_level() {
           else
             printf '  %s✗%s Sandbox tool: bwrap not found\n' "$_red" "$_reset"
             if [ "$skip_heal" -eq 0 ]; then
-              if [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-bwrap" ]; then
+              if command -v install-bwrap >/dev/null 2>&1; then
                 printf '    Installing bwrap...\n'
-                if "${WIZARDRY_DIR}/spells/.arcana/core/install-bwrap" 2>/dev/null; then
+                if install-bwrap 2>/dev/null; then
                   if command -v bwrap >/dev/null 2>&1; then
                     printf '    %s✓%s bwrap installed\n' "$_green" "$_reset"
                   else
@@ -1011,9 +1014,9 @@ banish_process_level() {
       else
         printf '  %s✗%s Shell lint: checkbashisms not found\n' "$_red" "$_reset"
         if [ "$skip_heal" -eq 0 ]; then
-          if [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-checkbashisms" ]; then
+          if command -v install-checkbashisms >/dev/null 2>&1; then
             printf '    Installing checkbashisms...\n'
-            if "${WIZARDRY_DIR}/spells/.arcana/core/install-checkbashisms" 2>/dev/null; then
+            if install-checkbashisms 2>/dev/null; then
               if command -v checkbashisms >/dev/null 2>&1; then
                 printf '    %s✓%s checkbashisms installed\n' "$_green" "$_reset"
               else
@@ -1135,7 +1138,7 @@ fi
 
 # Load validate_spells function if not already available
 if ! command -v validate_spells >/dev/null 2>&1; then
-  # Try to source validate-spells from known locations
+  # Try to source validate-spells from known location
   if [ -f "${WIZARDRY_DIR}/spells/.wizardry/validate-spells" ]; then
     # Prevent castable from executing when sourced
     _WIZARDRY_SOURCING_SPELL=1

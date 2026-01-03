@@ -37,6 +37,7 @@ case "$0" in
     set -u
     ;;
 esac
+
 env_clear
 
 # Resolve require-command location

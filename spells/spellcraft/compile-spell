@@ -59,12 +59,14 @@ fi
 
 set -eu
 
-# Source env_clear (use WIZARDRY_DIR if available, otherwise compute relative path)
-if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/env-clear" ]; then
-  . "${WIZARDRY_DIR}/spells/.imps/sys/env-clear"
-else
-  _cs_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  . "$_cs_script_dir/../../.imps/sys/env-clear"
+# Source env_clear if not already available
+if ! command -v env_clear >/dev/null 2>&1; then
+  if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/env-clear" ]; then
+    . "${WIZARDRY_DIR}/spells/.imps/sys/env-clear"
+  else
+    _cs_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+    . "$_cs_script_dir/../../.imps/sys/env-clear"
+  fi
 fi
 
 # Source output imps (say, warn, die, etc.)
@@ -201,10 +203,11 @@ $func_def
 "
     inlined_names="$inlined_names $dep"
   else
-    # It's a spell without _funcname() pattern - inline entire spell as function
-    # Remove shebang, *_usage, --help handler, require_wizardry, set -eu, and loading patterns
+     # It's a spell without _funcname() pattern - inline entire spell as function
+    # Remove shebang, *_usage, --help handler, set -eu, env_clear, and loading patterns  
+    # BUT preserve bootstrap code (if command -v require_wizardry blocks)
     spell_body=$(printf '%s\n' "$dep_content" | awk '
-      BEGIN { skip=0; in_usage=0; skip_loading=0 }
+      BEGIN { skip=0; in_usage=0; skip_loading=0; in_bootstrap=0 }
       /^#!/ { next }
       /^[a-zA-Z_][a-zA-Z0-9_]*_usage\(\)/ { in_usage=1; next }
       in_usage && /^}$/ { in_usage=0; next }
@@ -213,7 +216,17 @@ $func_def
       skip && /^esac/ { skip=0; next }
       skip { next }
       /^set -eu$/ { next }
+      /^set -u$/ { next }
+      /^if command -v require_wizardry/ { in_bootstrap=1; print; next }
+      /^elif command -v require_wizardry/ { in_bootstrap=1; print; next }
+      in_bootstrap && /^fi$/ { in_bootstrap=0; print; next }
+      in_bootstrap && /^else/ { print; next }
+      in_bootstrap { print; next }
       /^require-wizardry/ { next }
+      /^[[:space:]]*require_wizardry([[:space:]]|\|\||$)/ { next }
+      /^[[:space:]]*\. env_clear([[:space:]]|$)/ { next }
+      /^[[:space:]]*source env_clear([[:space:]]|$)/ { next }
+      /^[[:space:]]*env_clear([[:space:]]|$)/ { next }
       /^# Load (castable|autocast|uncastable) imp/ { skip_loading=1; next }
       skip_loading && /^(castable|autocast|uncastable) / { skip_loading=0; next }
       skip_loading { next }
@@ -256,14 +269,25 @@ done
 # 3. Replace castable/autocast/uncastable loading patterns with direct function calls
 # Remove lines that source wizardry infrastructure (env-clear, invoke-wizardry)
 # These don't make sense in standalone compiled spells
+# BUT preserve bootstrap blocks (if command -v require_wizardry)
 transformed=$(printf '%s\n' "$spell_content" | \
   tail -n +2 | \
-  grep -v "^require-wizardry" | \
-  grep -vE '^[[:space:]]*\. env_clear([[:space:]]|$)' | \
-  grep -vE '^[[:space:]]*source env_clear([[:space:]]|$)' | \
-  grep -vE '^[[:space:]]*\. .*invoke-wizardry' | \
-  grep -vE '^[[:space:]]*source .*invoke-wizardry' | \
   awk -v spell="$spell_basename" '
+    BEGIN { skip=0; in_bootstrap=0 }
+    # Preserve bootstrap blocks
+    /^if command -v require_wizardry/ { in_bootstrap=1; print; next }
+    /^elif command -v require_wizardry/ { in_bootstrap=1; print; next }
+    in_bootstrap && /^fi$/ { in_bootstrap=0; print; next }
+    in_bootstrap && /^else/ { print; next }
+    in_bootstrap { print; next }
+    # Remove infrastructure calls (but not if in bootstrap)
+    /^require-wizardry/ { next }
+    /^[[:space:]]*require_wizardry([[:space:]]|\|\||$)/ { next }
+    /^[[:space:]]*\. env_clear([[:space:]]|$)/ { next }
+    /^[[:space:]]*source env_clear([[:space:]]|$)/ { next }
+    /^[[:space:]]*env_clear([[:space:]]|$)/ { next }
+    /^[[:space:]]*\. .*invoke-wizardry/ { next }
+    /^[[:space:]]*source .*invoke-wizardry/ { next }
     # Skip loading pattern sections but remember what to call
     /^# Load (castable|autocast|uncastable) imp/ { 
       skip=1

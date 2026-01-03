@@ -42,16 +42,16 @@ demo_level() {
       printf '\n'
       
       # Actually run detect-posix
-      if [ -f "${WIZARDRY_DIR}/spells/divination/detect-posix" ]; then
+      if command -v detect_posix >/dev/null 2>&1; then
         printf 'The wizard casts detect-posix...\n'
-        "${WIZARDRY_DIR}/spells/divination/detect-posix" 2>&1 | head -5
+        detect_posix 2>&1 | head -5
         printf '\n'
       fi
       
       # Run detect-distro
-      if [ -f "${WIZARDRY_DIR}/spells/divination/detect-distro" ]; then
+      if command -v detect_distro >/dev/null 2>&1; then
         printf 'The wizard casts detect-distro...\n'
-        printf 'Distribution: %s\n' "$("${WIZARDRY_DIR}/spells/divination/detect-distro")"
+        printf 'Distribution: %s\n' "$(detect_distro)"
         printf '\n'
       fi
       
@@ -76,9 +76,9 @@ demo_level() {
       printf '\n'
       
       # Demonstrate validate-spells
-      if [ -f "${WIZARDRY_DIR}/spells/.wizardry/validate-spells" ]; then
+      if command -v validate_spells >/dev/null 2>&1; then
         printf 'The wizard casts validate-spells on core infrastructure...\n'
-        "${WIZARDRY_DIR}/spells/.wizardry/validate-spells" banish:system validate-spells:.wizardry 2>&1 | head -3
+        validate_spells banish:system validate-spells:.wizardry 2>&1 | head -3
         printf '\n'
       fi
       
@@ -102,9 +102,9 @@ demo_level() {
       printf '\n'
       
       # Demonstrate fathom-terminal
-      if [ -f "${WIZARDRY_DIR}/spells/cantrips/fathom-terminal" ]; then
+      if command -v fathom_terminal >/dev/null 2>&1; then
         printf 'The wizard casts fathom-terminal...\n'
-        if term_size=$("${WIZARDRY_DIR}/spells/cantrips/fathom-terminal" 2>&1); then
+        if term_size=$(fathom_terminal 2>&1); then
           printf 'Terminal dimensions discovered: %s\n' "$term_size"
           printf '\n'
         else
@@ -123,14 +123,18 @@ demo_level() {
       ;;
       
     4)
-      printf 'The wizard enters the realm of MUD...\n'
+      printf 'The wizard masters interactive menus and terminal control...\n'
       printf '\n'
       
-      # Demonstrate look on current directory
-      if [ -f "${WIZARDRY_DIR}/spells/mud/look" ]; then
-        printf 'The wizard casts look on the current location...\n'
-        "${WIZARDRY_DIR}/spells/mud/look" . 2>&1 | head -10
-      fi
+      printf 'Menu system capabilities:\n'
+      printf '  • menu - Interactive spell selection\n'
+      printf '  • fathom-terminal - Detect terminal dimensions\n'
+      printf '  • fathom-cursor - Query cursor position\n'
+      printf '  • move-cursor - Position cursor on screen\n'
+      printf '  • await-keypress - Capture user input\n'
+      printf '  • cursor-blink - Control cursor visibility\n'
+      printf '  • colors - Terminal color support\n'
+      printf '  • main-menu - Launch interactive wizardry menu\n'
       ;;
       
     7)
@@ -138,13 +142,11 @@ demo_level() {
       printf '\n'
       
       # Demonstrate read-magic
-      if [ -f "${WIZARDRY_DIR}/spells/arcane/read-magic" ]; then
+      if command -v read_magic >/dev/null 2>&1; then
         printf 'The wizard casts read-magic...\n'
         printf '(Reads extended attributes from files)\n'
-        if [ -f "${WIZARDRY_DIR}/spells/arcane/read-magic" ]; then
-          printf 'Reading the read-magic spell itself:\n'
-          "${WIZARDRY_DIR}/spells/arcane/read-magic" "${WIZARDRY_DIR}/spells/arcane/read-magic" 2>&1 | head -5 || printf '  (No attributes set)\n'
-        fi
+        printf 'Reading the read-magic spell itself:\n'
+        read_magic "${WIZARDRY_DIR}/spells/arcane/read-magic" 2>&1 | head -5 || printf '  (No attributes set)\n'
         printf '\n'
       fi
       
@@ -160,9 +162,9 @@ demo_level() {
       printf '\n'
       
       # Demonstrate ask-yn (with auto-response via pipe)
-      if [ -f "${WIZARDRY_DIR}/spells/cantrips/ask-yn" ]; then
+      if command -v ask_yn >/dev/null 2>&1; then
         printf 'The wizard casts ask-yn "Is this a demonstration?" yes\n'
-        printf 'y\n' | "${WIZARDRY_DIR}/spells/cantrips/ask-yn" "Is this a demonstration?" yes 2>&1 || true
+        printf 'y\n' | ask_yn "Is this a demonstration?" yes 2>&1 || true
         printf '\n'
       fi
       ;;
@@ -195,9 +197,9 @@ demo_level() {
       printf '\n'
       
       # Demonstrate validate-number
-      if [ -f "${WIZARDRY_DIR}/spells/cantrips/validate-number" ]; then
+      if command -v validate_number >/dev/null 2>&1; then
         printf 'The wizard casts validate-number...\n'
-        if printf '42\n' | "${WIZARDRY_DIR}/spells/cantrips/validate-number" "Enter a number" >/dev/null 2>&1; then
+        if printf '42\n' | validate_number "Enter a number" >/dev/null 2>&1; then
           printf 'Number 42 validated successfully ✓\n'
         fi
         printf '\n'
@@ -214,9 +216,9 @@ demo_level() {
       printf '\n'
       
       # Demonstrate ask-number  
-      if [ -f "${WIZARDRY_DIR}/spells/cantrips/ask-number" ]; then
+      if command -v ask_number >/dev/null 2>&1; then
         printf 'The wizard casts ask-number...\n'
-        printf '7\n' | "${WIZARDRY_DIR}/spells/cantrips/ask-number" "Pick a lucky number" 2>&1 | head -3 || true
+        printf '7\n' | ask_number "Pick a lucky number" 2>&1 | head -3 || true
         printf '\n'
       fi
       
@@ -230,9 +232,9 @@ demo_level() {
       printf '\n'
       
       # Demonstrate package-managers
-      if [ -f "${WIZARDRY_DIR}/spells/system/package-managers" ]; then
+      if command -v package_managers >/dev/null 2>&1; then
         printf 'The wizard casts package-managers...\n'
-        "${WIZARDRY_DIR}/spells/system/package-managers" 2>&1 | head -5
+        package_managers 2>&1 | head -5
         printf '\n'
       fi
       
@@ -283,9 +285,9 @@ demo_level() {
       printf '\n'
       
       # Demonstrate detect-rc-file
-      if [ -f "${WIZARDRY_DIR}/spells/divination/detect-rc-file" ]; then
+      if command -v detect_rc_file >/dev/null 2>&1; then
         printf 'The wizard casts detect-rc-file...\n'
-        rc_file=$("${WIZARDRY_DIR}/spells/divination/detect-rc-file" 2>&1 || true)
+        rc_file=$(detect_rc_file 2>&1 || true)
         if [ -n "$rc_file" ]; then
           printf 'Shell RC file detected: %s\n' "$rc_file"
         fi
@@ -315,12 +317,12 @@ demo_level() {
       printf '\n'
       
       # Demonstrate hash with a simple example
-      if [ -f "${WIZARDRY_DIR}/spells/crypto/hash" ]; then
+      if command -v hash >/dev/null 2>&1; then
         printf 'The wizard casts hash to compute file checksums...\n'
         # Create a small temp file for demonstration
         demo_file="${TMPDIR:-/tmp}/wizardry-demo-$$"
         printf 'demo content\n' > "$demo_file"
-        hash_result=$("${WIZARDRY_DIR}/spells/crypto/hash" "$demo_file" 2>&1 || printf 'Hash: 0xABCD1234 (example)')
+        hash_result=$(hash "$demo_file" 2>&1 || printf 'Hash: 0xABCD1234 (example)')
         printf '%s\n' "$hash_result" | head -1
         rm -f "$demo_file"
         printf '\n'
@@ -400,9 +402,9 @@ demo_level() {
       printf '\n'
       
       # Demonstrate lint-magic
-      if [ -f "${WIZARDRY_DIR}/spells/spellcraft/lint-magic" ]; then
+      if command -v lint_magic >/dev/null 2>&1; then
         printf 'The wizard casts lint-magic on demo-magic itself...\n'
-        "${WIZARDRY_DIR}/spells/spellcraft/lint-magic" "${WIZARDRY_DIR}/spells/spellcraft/demo-magic" 2>&1 | head -3 || true
+        lint_magic "${WIZARDRY_DIR}/spells/spellcraft/demo-magic" 2>&1 | head -3 || true
         printf '\n'
       fi
       
@@ -676,9 +678,11 @@ esac
 
 set -eu
 
-# Source env_clear after WIZARDRY_DIR is established
-if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/env-clear" ]; then
-  . "${WIZARDRY_DIR}/spells/.imps/sys/env-clear"
+# Source env_clear if not already available
+if ! command -v env_clear >/dev/null 2>&1; then
+  if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/env-clear" ]; then
+    . "${WIZARDRY_DIR}/spells/.imps/sys/env-clear"
+  fi
 fi
 
 # Add imps to PATH for spell demonstrations
@@ -701,12 +705,14 @@ if [ -n "${WIZARDRY_DIR-}" ]; then
   export PATH
 fi
 
-# Source spell-levels from sys imp
-if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/spell-levels" ]; then
-  . "${WIZARDRY_DIR}/spells/.imps/sys/spell-levels"
-else
-  printf 'demo-magic: spell-levels imp not found\n' >&2
-  return 1
+# Source spell-levels if not already available
+if ! command -v spell_levels >/dev/null 2>&1; then
+  if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/spell-levels" ]; then
+    . "${WIZARDRY_DIR}/spells/.imps/sys/spell-levels"
+  else
+    printf 'demo-magic: spell-levels imp not found\n' >&2
+    return 1
+  fi
 fi
 
 # Load validate_spells function if not already available
@@ -810,6 +816,8 @@ printf '════════════════════════
 printf '\n'
 printf 'The demonstration concludes.\n'
 printf 'The circle closes. Wizardry stands ready.\n'
+
+return 0
 }
 
 
