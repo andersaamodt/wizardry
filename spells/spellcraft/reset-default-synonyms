@@ -2,28 +2,7 @@
 # This spell resets default synonyms to their original values.
 # Does not affect custom synonyms.
 
-# Load required imps for direct execution
-if ! command -v require_wizardry >/dev/null 2>&1; then
-  if [ -n "${WIZARDRY_DIR-}" ]; then
-    _i="$WIZARDRY_DIR/spells/.imps/sys"
-  elif [ -n "${ROOT_DIR-}" ]; then
-    _i="$ROOT_DIR/spells/.imps/sys"
-  else
-    _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-  fi
-  [ -f "$_i/require-wizardry" ] && . "$_i/require-wizardry"
-fi
 
-if ! command -v env_clear >/dev/null 2>&1; then
-  if [ -n "${WIZARDRY_DIR-}" ]; then
-    _i="$WIZARDRY_DIR/spells/.imps/sys"
-  elif [ -n "${ROOT_DIR-}" ]; then
-    _i="$ROOT_DIR/spells/.imps/sys"
-  else
-    _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-  fi
-  [ -f "$_i/env-clear" ] && . "$_i/env-clear"
-fi
 
 
 reset_default_synonyms_usage() {

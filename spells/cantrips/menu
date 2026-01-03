@@ -1,27 +1,6 @@
 #!/bin/sh
 
-# Load required imps for direct execution
-if ! command -v require_wizardry >/dev/null 2>&1; then
-  if [ -n "${WIZARDRY_DIR-}" ]; then
-    _i="$WIZARDRY_DIR/spells/.imps/sys"
-  elif [ -n "${ROOT_DIR-}" ]; then
-    _i="$ROOT_DIR/spells/.imps/sys"
-  else
-    _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-  fi
-  [ -f "$_i/require-wizardry" ] && . "$_i/require-wizardry"
-fi
 
-if ! command -v env_clear >/dev/null 2>&1; then
-  if [ -n "${WIZARDRY_DIR-}" ]; then
-    _i="$WIZARDRY_DIR/spells/.imps/sys"
-  elif [ -n "${ROOT_DIR-}" ]; then
-    _i="$ROOT_DIR/spells/.imps/sys"
-  else
-    _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-  fi
-  [ -f "$_i/env-clear" ] && . "$_i/env-clear"
-fi
 
 
 # Present an interactive menu using only POSIX shell features. This variant
@@ -51,18 +30,6 @@ esac
 
 # Bootstrap: Load essential functions if not already available
 # This allows menu to work when executed directly (tests) or when invoked (normal use)
-if ! command -v require_wizardry >/dev/null 2>&1; then
-  # Functions not preloaded - we're being executed directly
-  # Source word-of-binding to get the loading mechanism
-  _menu_wob="${WIZARDRY_DIR:-$HOME/.wizardry}/spells/.imps/sys/word-of-binding"
-  if [ -f "$_menu_wob" ]; then
-    WIZARDRY_SOURCE_WORD_OF_BINDING=1 . "$_menu_wob" 2>/dev/null || :
-    # Now load essential imps
-    for _imp in require_wizardry env_clear temp-file cleanup-file require has; do
-      word_of_binding "$_imp" 2>/dev/null || :
-    done
-  fi
-fi
 
 require_wizardry || return 1
 
