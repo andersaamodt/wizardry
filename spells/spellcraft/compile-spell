@@ -267,16 +267,25 @@ done
 # 3. Replace castable/autocast/uncastable loading patterns with direct function calls
 # Remove lines that source wizardry infrastructure (env-clear, invoke-wizardry)
 # These don't make sense in standalone compiled spells
+# BUT preserve bootstrap blocks (if command -v require_wizardry)
 transformed=$(printf '%s\n' "$spell_content" | \
   tail -n +2 | \
-  grep -v "^require-wizardry" | \
-  grep -vE '^[[:space:]]*require_wizardry([[:space:]]|\|\||$)' | \
-  grep -vE '^[[:space:]]*\. env_clear([[:space:]]|$)' | \
-  grep -vE '^[[:space:]]*source env_clear([[:space:]]|$)' | \
-  grep -vE '^[[:space:]]*env_clear([[:space:]]|$)' | \
-  grep -vE '^[[:space:]]*\. .*invoke-wizardry' | \
-  grep -vE '^[[:space:]]*source .*invoke-wizardry' | \
   awk -v spell="$spell_basename" '
+    BEGIN { skip=0; in_bootstrap=0 }
+    # Preserve bootstrap blocks
+    /^if command -v require_wizardry/ { in_bootstrap=1; print; next }
+    /^elif command -v require_wizardry/ { in_bootstrap=1; print; next }
+    in_bootstrap && /^fi$/ { in_bootstrap=0; print; next }
+    in_bootstrap && /^else/ { print; next }
+    in_bootstrap { print; next }
+    # Remove infrastructure calls (but not if in bootstrap)
+    /^require-wizardry/ { next }
+    /^[[:space:]]*require_wizardry([[:space:]]|\|\||$)/ { next }
+    /^[[:space:]]*\. env_clear([[:space:]]|$)/ { next }
+    /^[[:space:]]*source env_clear([[:space:]]|$)/ { next }
+    /^[[:space:]]*env_clear([[:space:]]|$)/ { next }
+    /^[[:space:]]*\. .*invoke-wizardry/ { next }
+    /^[[:space:]]*source .*invoke-wizardry/ { next }
     # Skip loading pattern sections but remember what to call
     /^# Load (castable|autocast|uncastable) imp/ { 
       skip=1
