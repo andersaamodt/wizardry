@@ -2306,6 +2306,56 @@ test_test_bootstrap_checks_environment() {
   return 0
 }
 
+# ==============================================================================
+# PARADIGM ENFORCEMENT: Spells must NOT preload their own prerequisites
+# ==============================================================================
+
+# Test: Spells must not preload their own prerequisites
+# Spells should call require_wizardry and fail if wizardry isn't available.
+# They should NOT include blocks like:
+#   if ! command -v require_wizardry >/dev/null 2>&1; then
+#     [ -f "$_i/require-wizardry" ] && . "$_i/require-wizardry"
+#   fi
+test_spells_do_not_preload_prerequisites() {
+  failed_spells=""
+  
+  while IFS= read -r spell_file; do
+    [ -n "$spell_file" ] || continue
+    [ -f "$spell_file" ] || continue
+    
+    # Skip test infrastructure and bootstrap scripts (install, .arcana, test imps)
+    case "$spell_file" in
+      */test/*|*/install/*|*/.arcana/*) continue ;;
+    esac
+    
+    # Skip non-POSIX scripts
+    is_posix_shell_script "$spell_file" || continue
+    
+    spell_name=$(basename "$spell_file")
+    
+    # Check for prerequisite preloading patterns
+    # Pattern: if ! command -v <prerequisite> check followed by sourcing
+    if grep -q "if ! command -v require_wizardry" "$spell_file" || \
+       grep -q "if ! command -v env_clear" "$spell_file" || \
+       grep -q "if ! command -v die" "$spell_file" || \
+       grep -q "if ! command -v warn" "$spell_file" || \
+       grep -q "if ! command -v fail" "$spell_file"; then
+      
+      # Check if it's actually sourcing the imp (preloading)
+      if grep -A 10 "if ! command -v" "$spell_file" | grep -q '\. .*require-wizardry\|. .*env-clear\|. .*die\|. .*warn\|. .*fail'; then
+        failed_spells="${failed_spells}${spell_name} "
+      fi
+    fi
+  done < "$SPELL_LIST_CACHE"
+  
+  if [ -n "$failed_spells" ]; then
+    TEST_FAILURE_REASON="Spells must not preload prerequisites (use require_wizardry and fail if unavailable): $failed_spells"
+    return 1
+  fi
+  
+  return 0
+}
+
 # Run meta-tests
 run_test_case "META: baseline PATH before set -eu" test_bootstrap_sets_baseline_path
 run_test_case "META: pocket dimension is available" test_pocket_dimension_available
@@ -2316,5 +2366,6 @@ run_test_case "META: fail imp returns error code" test_fail_imp_returns_error_co
 run_test_case "META: platform detection available" test_platform_detection_available
 run_test_case "META: banish spell exists and is executable" test_banish_spell_exists_and_is_executable
 run_test_case "META: test-bootstrap checks environment" test_test_bootstrap_checks_environment
+run_test_case "PARADIGM: spells do not preload prerequisites" test_spells_do_not_preload_prerequisites
 
 finish_tests
