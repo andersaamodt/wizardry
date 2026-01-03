@@ -1,46 +1,33 @@
 #!/bin/sh
 
-
-
-
 # This spell removes extended attributes from a target file.
 # Provide a key to delete it directly or choose interactively when several exist.
 
-
-disenchant_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE'
 Usage: disenchant <file> [key]
 
 Remove an extended attribute from a file. Provide a key to delete that one directly; otherwise the spell inspects the file and either removes the single attribute it finds or lets you pick from a menu when several exist.
 USAGE
-}
-
-
-disenchant() {
-case "${1-}" in
---help|--usage|-h)
-  disenchant_usage
-  return 0
+  exit 0
   ;;
 esac
 
-require_wizardry || return 1
-
 set -eu
-env_clear
 
 # Validate arguments
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
-  disenchant_usage >&2
-  return 2
+  printf '%s\n' "Usage: disenchant <file> [key]" >&2
+  exit 2
 fi
 
 file=$1
 requested_key=${2-}
 
-if gone "$file"; then
-  die "disenchant: The file does not exist."
-  return 1
+if [ ! -e "$file" ]; then
+  printf '%s\n' "disenchant: The file does not exist." >&2
+  exit 1
 fi
 
 # Function to remove a single attribute
@@ -54,19 +41,19 @@ disenchant_attr() {
       case "$helper" in
         attr)
           if attr -r "$key" "$target" 2>/dev/null; then
-            success "Disenchanted $key attribute from $target."
+            printf '%s\n' "Disenchanted $key attribute from $target."
             return 0
           fi
           ;;
         xattr)
           if xattr -d "$key" "$target" 2>/dev/null; then
-            success "Disenchanted $key attribute from $target."
+            printf '%s\n' "Disenchanted $key attribute from $target."
             return 0
           fi
           ;;
         setfattr)
           if setfattr -x "$key" "$target" 2>/dev/null; then
-            success "Disenchanted $key attribute from $target."
+            printf '%s\n' "Disenchanted $key attribute from $target."
             return 0
           fi
           ;;
@@ -74,19 +61,21 @@ disenchant_attr() {
     fi
   done
 
-  die "disenchant: requires the 'attr', 'xattr', or 'setfattr' helper to remove attributes." || return 1
+  printf '%s\n' "disenchant: requires the 'attr', 'xattr', or 'setfattr' helper to remove attributes." >&2
+  exit 1
 }
 
 # If specific key requested, remove it directly
-if nonempty "$requested_key"; then
+if [ -n "$requested_key" ]; then
   disenchant_attr "$requested_key" "$file"
-  return $?
+  exit $?
 fi
 
 # Otherwise, list keys and let user choose
 keys=$(xattr-list-keys "$file" || printf '')
-if empty "$keys"; then
-  fail "disenchant: no enchanted attributes found on $file" || return 1
+if [ -z "$keys" ]; then
+  printf '%s\n' "disenchant: no enchanted attributes found on $file" >&2
+  exit 1
 fi
 
 # Count keys
@@ -100,8 +89,9 @@ else
   set -- $keys disenchant-all
   count=$#
 
-  if ! has ask-number; then
-    fail "disenchant: multiple attributes found; install ask_number or specify a key" || return 1
+  if ! command -v ask-number >/dev/null 2>&1; then
+    printf '%s\n' "disenchant: multiple attributes found; install ask-number or specify a key" >&2
+    exit 1
   fi
 
   printf '%s\n' "Available attributes:" >&2
@@ -111,7 +101,7 @@ else
     idx=$((idx + 1))
   done
 
-  choice=$(ask_number "Choose which attribute to disenchant" 1 "$count") || return 1
+  choice=$(ask-number "Choose which attribute to disenchant" 1 "$count") || exit 1
   eval "chosen_key=\"\${$choice}\""
 fi
 
@@ -123,44 +113,10 @@ if [ "$chosen_key" = "disenchant-all" ]; then
       failure=1
     fi
   done
-  [ "$failure" -eq 0 ] || return 1
-  printf '%s\n' "Disenchanted all attributes from $file."
-  return 0
+  if [ "$failure" -eq 0 ]; then
+    printf '%s\n' "Disenchanted all attributes from $file."
+  fi
+  exit $failure
 fi
 
 disenchant_attr "$chosen_key" "$file"
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"
