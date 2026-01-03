@@ -104,9 +104,13 @@ demo_level() {
       # Demonstrate fathom-terminal
       if [ -f "${WIZARDRY_DIR}/spells/cantrips/fathom-terminal" ]; then
         printf 'The wizard casts fathom-terminal...\n'
-        term_size=$("${WIZARDRY_DIR}/spells/cantrips/fathom-terminal")
-        printf 'Terminal dimensions discovered: %s\n' "$term_size"
-        printf '\n'
+        if term_size=$("${WIZARDRY_DIR}/spells/cantrips/fathom-terminal" 2>&1); then
+          printf 'Terminal dimensions discovered: %s\n' "$term_size"
+          printf '\n'
+        else
+          printf 'Error: fathom-terminal failed\n' >&2
+          exit 1
+        fi
       fi
       
       # List menu capabilities

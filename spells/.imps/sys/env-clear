@@ -54,7 +54,7 @@ env_clear() {
   _saved_test_helpers="${WIZARDRY_TEST_HELPERS_ONLY:-}"
   _saved_system_path="${WIZARDRY_SYSTEM_PATH:-}"
   _saved_ask_input="${ASK_CANTRIP_INPUT:-}"
-  _saved_select_input="${CHOOSE_INPUT_MODE:-}"
+  _saved_choose_input="${CHOOSE_INPUT_MODE:-}"
   _saved_menu_loop_limit="${MENU_LOOP_LIMIT:-}"
   _saved_require_command="${REQUIRE_COMMAND:-}"
   _saved_menu_log="${MENU_LOG:-}"
@@ -141,7 +141,7 @@ env_clear() {
   [ -n "$_saved_test_helpers" ] && export WIZARDRY_TEST_HELPERS_ONLY="$_saved_test_helpers"
   [ -n "$_saved_system_path" ] && export WIZARDRY_SYSTEM_PATH="$_saved_system_path"
   [ -n "$_saved_ask_input" ] && export ASK_CANTRIP_INPUT="$_saved_ask_input"
-  [ -n "$_saved_select_input" ] && export CHOOSE_INPUT_MODE="$_saved_select_input"
+  [ -n "$_saved_choose_input" ] && export CHOOSE_INPUT_MODE="$_saved_choose_input"
   [ -n "$_saved_menu_loop_limit" ] && export MENU_LOOP_LIMIT="$_saved_menu_loop_limit"
   [ -n "$_saved_require_command" ] && export REQUIRE_COMMAND="$_saved_require_command"
   [ -n "$_saved_menu_log" ] && export MENU_LOG="$_saved_menu_log"
@@ -193,7 +193,7 @@ env_clear() {
   unset _saved_yum_pkg _saved_zypper_pkg _saved_pacman_pkg _saved_apk_pkg _saved_pkgin_pkg
   unset _saved_brew_pkg _saved_test_failure _saved_test_skip _saved_wiz_tmpdir
   unset _saved_global_subtest _saved_test_compiled _saved_test_helpers _saved_system_path
-  unset _saved_ask_input _saved_select_input _saved_menu_loop_limit _saved_require_command
+  unset _saved_ask_input _saved_choose_input _saved_menu_loop_limit _saved_require_command
   unset _saved_menu_log _saved_await_buffer_file _saved_assume_yes _saved_force_install _saved_root_dir
   unset _saved_platform _saved_rc_file _saved_rc_format _saved_await_keep_raw
   unset _saved_disable_sandbox _saved_bwrap_warning _saved_colors_available
