@@ -9,6 +9,10 @@ if [ "${_WIZARDRY_INVOKED-}" != "1" ]; then
   _script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
   _wiz_root=$(cd "$_script_dir" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
   
+  # Set WIZARDRY_DIR for invoke-wizardry
+  WIZARDRY_DIR=$_wiz_root
+  export WIZARDRY_DIR
+  
   # Load invoke-wizardry to preload all functions
   if [ -f "$_wiz_root/spells/.imps/sys/invoke-wizardry" ]; then
     # Source invoke-wizardry (it will set _WIZARDRY_INVOKED=1)
@@ -27,10 +31,6 @@ if [ "${_WIZARDRY_INVOKED-}" != "1" ]; then
       done
       unset _imp
     fi
-    
-    # Set WIZARDRY_DIR for require_wizardry check
-    WIZARDRY_DIR=$_wiz_root
-    export WIZARDRY_DIR
   fi
 fi
 
