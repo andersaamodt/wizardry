@@ -1,37 +1,24 @@
 #!/bin/sh
 
-
-
-
 # This spell decorates a location with a description, making it visible to 'look'.
 # It's a convenient wrapper around 'enchant' for setting room descriptions.
 
-require_wizardry || return 1
-
-decorate_usage() {
-cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: decorate [path] [description]
 
 Decorate a location (folder or file) with a description shown when using the look spell. Defaults to the current directory and accepts either order when both a path and description are provided.
 USAGE
-}
-
-
-
-decorate() {
-case "${1-}" in
---help|--usage|-h)
-  decorate_usage
-  return 0
+  exit 0
   ;;
 esac
 
 set -eu
-env_clear
 
-if lacks enchant; then
-        warn "decorate: enchant spell is missing."
-        return 1
+if ! command -v enchant >/dev/null 2>&1; then
+        printf '%s\n' "decorate: enchant spell is missing." >&2
+        exit 1
 fi
 
 # Parse arguments - detect which is path and which is description
@@ -64,20 +51,20 @@ elif [ $# -eq 2 ]; then
                 description=$1
         elif [ -e "$1" ] && [ -e "$2" ]; then
                 # Both exist as paths - this is ambiguous
-                warn "decorate: both arguments appear to be valid paths."
-                return 1
+                printf '%s\n' "decorate: both arguments appear to be valid paths." >&2
+                exit 1
         elif [ -z "$1" ] || [ -z "$2" ]; then
                 # One of the arguments is empty
-                warn "decorate: description cannot be empty."
-                return 1
+                printf '%s\n' "decorate: description cannot be empty." >&2
+                exit 1
         else
                 # Neither exists as a path
-                warn "decorate: no valid path found among arguments."
-                return 1
+                printf '%s\n' "decorate: no valid path found among arguments." >&2
+                exit 1
         fi
 else
-        warn "decorate: too many arguments provided."
-        return 1
+        printf '%s\n' "decorate: too many arguments provided." >&2
+        exit 1
 fi
 
 # Resolve path to absolute
@@ -89,8 +76,8 @@ fi
 
 # Get description if not already set
 if [ -z "$description" ]; then
-        if has ask-text; then
-                description=$(ask_text "Enter description for this location:")
+        if command -v ask-text >/dev/null 2>&1; then
+                description=$(ask-text "Enter description for this location:")
         else
                 printf '%s' "Enter description: "
                 read -r description
@@ -98,49 +85,14 @@ if [ -z "$description" ]; then
 fi
 
 if [ -z "$description" ]; then
-        warn "decorate: description cannot be empty."
-        return 1
+        printf '%s\n' "decorate: description cannot be empty." >&2
+        exit 1
 fi
 
 # Apply the description using enchant
 if enchant "$path" description "$description"; then
         printf '%s\n' "The location has been decorated with the description."
 else
-        warn "decorate: failed to apply description."
-        return 1
+        printf '%s\n' "decorate: failed to apply description." >&2
+        exit 1
 fi
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"
