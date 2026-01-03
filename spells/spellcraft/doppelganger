@@ -1,29 +1,7 @@
 #!/bin/sh
 
-# Load required imps for direct execution
-if ! command -v require_wizardry >/dev/null 2>&1; then
-  if [ -n "${WIZARDRY_DIR-}" ]; then
-    _i="$WIZARDRY_DIR/spells/.imps/sys"
-  elif [ -n "${ROOT_DIR-}" ]; then
-    _i="$ROOT_DIR/spells/.imps/sys"
-  else
-    _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-  fi
-  [ -f "$_i/require-wizardry" ] && . "$_i/require-wizardry"
-fi
 
 
-# Load required imps for direct execution
-if ! command -v require_wizardry >/dev/null 2>&1; then
-  if [ -n "${WIZARDRY_DIR-}" ]; then
-    _i="$WIZARDRY_DIR/spells/.imps/sys"
-  elif [ -n "${ROOT_DIR-}" ]; then
-    _i="$ROOT_DIR/spells/.imps/sys"
-  else
-    _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-  fi
-  [ -f "$_i/require-wizardry" ] && . "$_i/require-wizardry"
-fi
 
 
 # Create a fully compiled clone of wizardry that works standalone.
@@ -136,10 +114,15 @@ failed_count=0
 
 # Find all executable files in spells/ directory (including hidden directories)
 # Only skip .git and .github directories
-find "$repo_dir/spells" -type f -executable \
+# Store list in variable to avoid subshell and preserve counter variables
+_spell_list=$(find "$repo_dir/spells" -type f -executable \
   ! -path "*/.git/*" \
-  ! -path "*/.github/*" | \
+  ! -path "*/.github/*")
+
+# Use here-document to avoid creating temp file
 while IFS= read -r spell_path; do
+  [ -n "$spell_path" ] || continue
+  
   # Get relative path from spells/
   rel_path=${spell_path#"$repo_dir/spells/"}
   
@@ -193,10 +176,9 @@ while IFS= read -r spell_path; do
     failed_count=$((failed_count + 1))
     rm -f "$target_file"
   fi
-done
-
-compiled_count=$((compiled_count))
-failed_count=$((failed_count))
+done <<EOF
+$_spell_list
+EOF
 
 # Copy test files (including hidden directories like .arcana and .imps)
 say "Copying test files..."

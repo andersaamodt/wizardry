@@ -33,6 +33,17 @@ This fetches test failures from PR description via GitHub API. Works immediately
 - **Never** ask user for error details (fetch them yourself)
 - **After fixes:** Commit and optionally re-run script to verify
 
+### CRITICAL: Fix ALL Blocking Issues
+
+**When using read-test-failures debug cycle:**
+
+1. **Fix your primary changes first** - Address issues directly caused by your work
+2. **Fix ALL preexisting bugs that block merge** - If tests fail that are unrelated to your changes, fix them too
+3. **Do NOT leave the codebase broken** - The goal is to get ALL CI passing, not just your new code
+4. **Investigate systematically** - Use read-test-failures every 45 seconds to catch new issues as they appear
+
+**Why:** PR merges require all CI to pass. If your work revealed preexisting bugs or if unrelated tests are failing, you must fix them as part of your task. Don't back down from requirements or give up until ALL tests pass.
+
 ### Benefits
 
 ✅ Immediate access (current session)

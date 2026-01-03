@@ -78,11 +78,13 @@ env_clear
   
   # Verify wizardry directory exists and is valid
   if [ ! -d "$wizardry_dir" ]; then
-    die "generate-glosses: WIZARDRY_DIR not found: $wizardry_dir"
+    printf 'generate-glosses: WIZARDRY_DIR not found: %s\n' "$wizardry_dir" >&2
+    return 1
   fi
   
   if [ ! -d "$wizardry_dir/spells" ]; then
-    die "generate-glosses: WIZARDRY_DIR does not contain spells directory: $wizardry_dir"
+    printf 'generate-glosses: WIZARDRY_DIR does not contain spells directory: %s\n' "$wizardry_dir" >&2
+    return 1
   fi
   
   # Track statistics
@@ -140,12 +142,36 @@ env_clear
       return 0
     fi
     
-    # CRITICAL: Skip shell builtins to avoid overriding them
-    # This prevents errors like "Bad function name" when trying to define set(), test(), etc.
+    # CRITICAL: Skip shell builtins and common system commands to avoid overriding them
+    # This prevents errors like "Bad function name" when trying to define certain builtins
+    # Also prevents overriding critical system utilities like find, grep, sed, etc.
+    # FAIL if we would create a blacklisted command - this indicates spell naming conflict
+    #
+    # GREYLIST: Some shell builtins CAN be safely overridden if ALL spells using that first word
+    # are multi-word commands (e.g., read-magic, test-spell). The gloss delegates to
+    # parse, which tries to find matching spells and falls back to the system builtin if no match.
+    #
+    # Current greylist (safe to override):
+    #   - read: All read-* spells are 2+ words (read-magic, read-contact, read-file, read-line)
+    #   - test: All test-* spells are 2+ words (test-spell, test-magic, test-bootstrap, etc.)
     case "$_first_word" in
-      alias|bg|cd|command|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|read|readonly|sh|test|times|trap|true|type|ulimit|umask|unalias|wait|break|case|continue|do|done|elif|else|esac|eval|exec|exit|export|fi|for|if|in|local|return|set|shift|then|unset|until|while)
-        [ "$quiet" -eq 0 ] && info "Skipping shell builtin: $_first_word" >&2
-        return 0
+      # GREYLIST: Shell builtins that CAN be safely overridden (see above)
+      read|test)
+        # Allow these - they route through parse and fall back to system builtin
+        ;;
+      # BLACKLIST: Shell builtins that CANNOT be overridden
+      alias|bg|cd|command|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|readonly|set|sh|\
+times|trap|true|type|ulimit|umask|unalias|wait|break|case|continue|do|done|elif|else|\
+esac|eval|exec|exit|export|fi|for|if|in|local|return|shift|then|unset|until|while)
+        printf 'generate-glosses: FATAL: Spell name conflict with shell builtin "%s" from "%s" - rename spell before production\n' "$_first_word" "$_cmd_name" >&2
+        return 1
+        ;;
+      # BLACKLIST: Common system commands that should not be overridden
+      awk|cat|cp|cut|date|df|diff|dirname|du|echo|egrep|env|expr|fgrep|file|find|grep|head|\
+hostname|id|ln|ls|mkdir|mv|printf|ps|rm|rmdir|sed|sleep|sort|stat|tail|tar|tee|touch|tr|\
+uname|uniq|wc|xargs)
+        printf 'generate-glosses: FATAL: Spell name conflict with system command "%s" from "%s" - rename spell before production\n' "$_first_word" "$_cmd_name" >&2
+        return 1
         ;;
     esac
     
@@ -242,7 +268,7 @@ env_clear
       ''|.*|parse) continue ;;
     esac
     
-    _generate_first_word_gloss "$spell_name"
+    _generate_first_word_gloss "$spell_name" || return 1
   done < "$_spell_list"
   
   # Emit separator
