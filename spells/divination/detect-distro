@@ -23,7 +23,6 @@ case "${1-}" in
 esac
 
 set -eu
-env_clear
 
 # Parse flags for verbose output or help text.
 verbose=0
