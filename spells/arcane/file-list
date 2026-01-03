@@ -3,44 +3,37 @@
 # This spell creates a text file listing all filenames in a folder.
 # Use it to generate an index of files in a directory.
 
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: file-list <folder>
 
-file_list() {
-  case "${1-}" in
-  --help|--usage|-h)
-    cat <<'USAGE'
-  Usage: file-list <folder>
-
-  Create a text file named after the folder that lists all files inside it.
+Create a text file named after the folder that lists all files inside it.
 USAGE
-    return 0
-    ;;
-  esac
+  exit 0
+  ;;
+esac
 
-  set -eu
+set -eu
 
-  # Check that a folder path was provided as an argument
-  if [ "$#" -ne 1 ]; then
-    cat >&2 <<'USAGE'
-  Usage: file-list <folder>
+# Check that a folder path was provided as an argument
+if [ "$#" -ne 1 ]; then
+  cat >&2 <<'USAGE'
+Usage: file-list <folder>
 
-  Create a text file named after the folder that lists all files inside it.
+Create a text file named after the folder that lists all files inside it.
 USAGE
-    return 2
-  fi
+  exit 2
+fi
 
-  # Create a text file with the same name as the folder
-  folder_name=$(basename "$1")
-  text_file="$folder_name.txt"
+# Create a text file with the same name as the folder
+folder_name=$(basename "$1")
+text_file="$folder_name.txt"
 
-  # Read all the filenames in the folder and put them in the text file
-  for filename in "$1"/*; do
-    filename="${filename#./}"
-    printf '%s\n' "$(basename "$filename")" >> "$text_file"
-  done
+# Read all the filenames in the folder and put them in the text file
+for filename in "$1"/*; do
+  filename="${filename#./}"
+  printf '%s\n' "$(basename "$filename")" >> "$text_file"
+done
 
-  printf 'Text file created: %s\n' "$text_file"
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */file-list) file_list "$@" ;; esac
+printf 'Text file created: %s\n' "$text_file"
