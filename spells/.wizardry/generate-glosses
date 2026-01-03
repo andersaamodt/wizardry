@@ -256,7 +256,7 @@ uname|uniq|wc|xargs)
       ''|.*|parse) continue ;;
     esac
     
-    _generate_first_word_gloss "$spell_name"
+    _generate_first_word_gloss "$spell_name" || return 1
   done < "$_spell_list"
   
   # Emit separator
