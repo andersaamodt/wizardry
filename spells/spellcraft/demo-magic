@@ -123,14 +123,18 @@ demo_level() {
       ;;
       
     4)
-      printf 'The wizard enters the realm of MUD...\n'
+      printf 'The wizard masters interactive menus and terminal control...\n'
       printf '\n'
       
-      # Demonstrate look on current directory
-      if command -v look >/dev/null 2>&1; then
-        printf 'The wizard casts look on the current location...\n'
-        look . 2>&1 | head -10
-      fi
+      printf 'Menu system capabilities:\n'
+      printf '  • menu - Interactive spell selection\n'
+      printf '  • fathom-terminal - Detect terminal dimensions\n'
+      printf '  • fathom-cursor - Query cursor position\n'
+      printf '  • move-cursor - Position cursor on screen\n'
+      printf '  • await-keypress - Capture user input\n'
+      printf '  • cursor-blink - Control cursor visibility\n'
+      printf '  • colors - Terminal color support\n'
+      printf '  • main-menu - Launch interactive wizardry menu\n'
       ;;
       
     7)
