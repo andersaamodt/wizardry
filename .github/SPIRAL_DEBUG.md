@@ -240,8 +240,35 @@ set -eu
 - Bootstrap spells (detect-posix): Preserved inline helpers, removed castable wrapper
 - Spells with internal helpers (detect-rc-file): Kept helper functions, removed outer wrapper
 
+### Session 3: Continuation (2026-01-03 19:50-20:30 UTC)
+
+**Progress:** 40 spells converted (from 35 to 40)
+**Categories completed:**
+- ✅ divination (5/5): identify-room
+- ✅ system (6/6): pocket-dimension, update-all
+- ✅ wards (1/1): banish
+- 🔄 cantrips (1/34): ask
+
+**Commits this session:**
+1. `a1853cb` - divination and system categories (3 spells)
+2. `5770d45` - wards/banish (1 spell)
+3. `[current]` - cantrips/ask (1 spell)
+
+**Line reductions:**
+- identify-room: 4 lines removed (helper functions added)
+- pocket-dimension: 40 lines removed
+- update-all: 37 lines removed
+- banish: 46 lines removed
+- ask: ~25 lines removed (estimated)
+- **Total this session: ~152 lines removed**
+
+**Special cases handled:**
+- Large spell (banish): 1205 lines, careful manual conversion
+- Helper functions: Preserved in identify-room for path manipulation
+- Spell shims: ask is a simple wrapper to ask-text
+
 ### Next Steps
-- Complete divination category (1 remaining: identify-room - 338 lines)
-- Complete system category (2 remaining: pocket-dimension, update-all - both ~290 lines)
-- Convert wards category (1 spell: banish - very large, 43KB)
-- Start on large categories: cantrips (35 spells), spellcraft (16 spells), menu (18 spells)
+- Complete cantrips category (33 remaining)
+- Convert spellcraft category (15 spells)
+- Convert menu category (18 spells)
+- Convert remaining imps (~4 imps)
