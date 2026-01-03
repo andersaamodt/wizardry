@@ -2,17 +2,30 @@
 # Performance profiling for the wizardry test suite.
 # Times each test individually and reports slowest tests.
 
-if ! command -v env_clear >/dev/null 2>&1; then
-  if [ -n "${WIZARDRY_DIR-}" ]; then
-    _i="$WIZARDRY_DIR/spells/.imps/sys"
-  elif [ -n "${ROOT_DIR-}" ]; then
-    _i="$ROOT_DIR/spells/.imps/sys"
-  else
-    _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
+# Bootstrap fallback for standalone execution (when invoke-wizardry not loaded)
+# This preloads essential functions so profile-tests can run outside full wizardry environment
+if ! command -v require_wizardry >/dev/null 2>&1; then
+  # Find repository root
+  _script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  _wiz_root=$(cd "$_script_dir" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+  
+  # Load word-of-binding to enable function preloading
+  if [ -f "$_wiz_root/spells/.imps/sys/word-of-binding" ]; then
+    WIZARDRY_SOURCE_WORD_OF_BINDING=1
+    . "$_wiz_root/spells/.imps/sys/word-of-binding"
+    unset WIZARDRY_SOURCE_WORD_OF_BINDING
+    
+    # Preload essential imps that profile-tests uses
+    for _imp in require-wizardry env-clear temp-file cleanup-file on-exit die warn fail info say step; do
+      word_of_binding "$_imp" 2>/dev/null || :
+    done
+    unset _imp
   fi
-  [ -f "$_i/env-clear" ] && . "$_i/env-clear"
+  
+  # Set WIZARDRY_DIR for require_wizardry check
+  WIZARDRY_DIR=$_wiz_root
+  export WIZARDRY_DIR
 fi
-
 
 profile_tests_usage() {
   cat <<'USAGE'
@@ -43,10 +56,19 @@ case "${1-}" in
   ;;
 esac
 
+profile_tests() {
+case "${1-}" in
+--help|--usage|-h)
+  profile_tests_usage
+  return 0
+  ;;
+esac
+
+require_wizardry || return 1
+
 set -eu
 env_clear
 
-profile_tests() {
 # Find the script directory and root
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 root_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
@@ -113,8 +135,8 @@ if [ -z "$test_list" ]; then
 fi
 
 # Create temporary file for timing data
-tmpfile=$(temp-file profile-tests)
-on-exit cleanup-file "$tmpfile"
+tmpfile=$(temp_file profile-tests)
+on_exit cleanup_file "$tmpfile"
 
 info "Profiling tests..."
 
