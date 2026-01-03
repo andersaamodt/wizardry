@@ -1,56 +1,42 @@
 #!/bin/sh
 
-
-
-
 # This spell increments the upvote count on a file using extended attributes.
 # Use it to track popularity or priority through file metadata.
 
-
-upvote_usage() {
-cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat << 'USAGE'
 Usage: upvote <file>
 
 Increment the upvote count stored in a file's 'upvotes' attribute, creating it with a value of 1 if it doesn't exist yet.
 USAGE
-}
-
-
-
-upvote() {
-
-case "${1-}" in
---help|--usage|-h)
-        upvote_usage
-        return 0
-        ;;
+  exit 0
+  ;;
 esac
 
-require_wizardry || return 1
-
 set -eu
-env_clear
 
 # Ensure file argument is provided
 if [ -z "${1-}" ]; then
-        usage-error "upvote" "file path required"
+  printf '%s\n' "upvote: file path required" >&2
+  exit 2
 fi
 
 file=$1
 
 # Verify file exists
-if ! is file "$file"; then
-        die "upvote: file not found: $file"
-        return 1
+if [ ! -f "$file" ]; then
+  printf '%s\n' "upvote: file not found: $file" >&2
+  exit 1
 fi
 
 # Get current upvotes count, default to 0 if not set
-current=$(read_magic "$file" upvotes 2>/dev/null || printf '0')
+current=$(read-magic "$file" upvotes 2>/dev/null || printf '0')
 
 # Handle case where read-magic returns an error message
 case "$current" in
-        *Error*|'') current=0 ;;
-        *[!0-9]*) current=0 ;;
+  *Error*|'') current=0 ;;
+  *[!0-9]*) current=0 ;;
 esac
 
 # Increment the count
@@ -59,39 +45,4 @@ new_count=$((current + 1))
 # Store the new value
 enchant "$file" upvotes "$new_count" >/dev/null
 
-say "Upvotes: $new_count"
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"
+printf '%s\n' "Upvotes: $new_count"
