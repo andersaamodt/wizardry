@@ -143,22 +143,30 @@ env_clear
     fi
     
     # CRITICAL: Skip shell builtins and common system commands to avoid overriding them
-    # This prevents errors like "Bad function name" when trying to define set(), test(), etc.
+    # This prevents errors like "Bad function name" when trying to define certain builtins
     # Also prevents overriding critical system utilities like find, grep, sed, etc.
     # FAIL if we would create a blacklisted command - this indicates spell naming conflict
     #
-    # EXCEPTION: 'read' is allowed because all read-* spells are two words,
-    # so the read() gloss can safely delegate to parse, which will find read_contact, read_file, etc.
-    # and fall back to system 'read' if no match is found.
+    # GREYLIST: Some shell builtins CAN be safely overridden if ALL spells using that first word
+    # are multi-word commands (e.g., read-magic, test-spell). The gloss delegates to
+    # parse, which tries to find matching spells and falls back to the system builtin if no match.
+    #
+    # Current greylist (safe to override):
+    #   - read: All read-* spells are 2+ words (read-magic, read-contact, read-file, read-line)
+    #   - test: All test-* spells are 2+ words (test-spell, test-magic, test-bootstrap, etc.)
     case "$_first_word" in
-      # Shell builtins (read excluded - see exception above)
-      alias|bg|cd|command|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|readonly|sh|\
-test|times|trap|true|type|ulimit|umask|unalias|wait|break|case|continue|do|done|elif|else|\
-esac|eval|exec|exit|export|fi|for|if|in|local|return|set|shift|then|unset|until|while)
+      # GREYLIST: Shell builtins that CAN be safely overridden (see above)
+      read|test)
+        # Allow these - they route through parse and fall back to system builtin
+        ;;
+      # BLACKLIST: Shell builtins that CANNOT be overridden
+      alias|bg|cd|command|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|readonly|set|sh|\
+times|trap|true|type|ulimit|umask|unalias|wait|break|case|continue|do|done|elif|else|\
+esac|eval|exec|exit|export|fi|for|if|in|local|return|shift|then|unset|until|while)
         printf 'generate-glosses: FATAL: Spell name conflict with shell builtin "%s" from "%s" - rename spell before production\n' "$_first_word" "$_cmd_name" >&2
         return 1
         ;;
-      # Common system commands that should not be overridden
+      # BLACKLIST: Common system commands that should not be overridden
       awk|cat|cp|cut|date|df|diff|dirname|du|echo|egrep|env|expr|fgrep|file|find|grep|head|\
 hostname|id|ln|ls|mkdir|mv|printf|ps|rm|rmdir|sed|sleep|sort|stat|tail|tar|tee|touch|tr|\
 uname|uniq|wc|xargs)
