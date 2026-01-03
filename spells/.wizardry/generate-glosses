@@ -78,11 +78,13 @@ env_clear
   
   # Verify wizardry directory exists and is valid
   if [ ! -d "$wizardry_dir" ]; then
-    die "generate-glosses: WIZARDRY_DIR not found: $wizardry_dir"
+    printf 'generate-glosses: WIZARDRY_DIR not found: %s\n' "$wizardry_dir" >&2
+    return 1
   fi
   
   if [ ! -d "$wizardry_dir/spells" ]; then
-    die "generate-glosses: WIZARDRY_DIR does not contain spells directory: $wizardry_dir"
+    printf 'generate-glosses: WIZARDRY_DIR does not contain spells directory: %s\n' "$wizardry_dir" >&2
+    return 1
   fi
   
   # Track statistics
@@ -149,13 +151,15 @@ env_clear
       alias|bg|cd|command|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|read|readonly|sh|\
 test|times|trap|true|type|ulimit|umask|unalias|wait|break|case|continue|do|done|elif|else|\
 esac|eval|exec|exit|export|fi|for|if|in|local|return|set|shift|then|unset|until|while)
-        die "generate-glosses: FATAL: Spell name conflict with shell builtin '$_first_word' from '$_cmd_name' - rename spell before production"
+        printf 'generate-glosses: FATAL: Spell name conflict with shell builtin "%s" from "%s" - rename spell before production\n' "$_first_word" "$_cmd_name" >&2
+        return 1
         ;;
       # Common system commands that should not be overridden
       awk|cat|cp|cut|date|df|diff|dirname|du|echo|egrep|env|expr|fgrep|file|find|grep|head|\
 hostname|id|ln|ls|mkdir|mv|printf|ps|rm|rmdir|sed|sleep|sort|stat|tail|tar|tee|touch|tr|\
 uname|uniq|wc|xargs)
-        die "generate-glosses: FATAL: Spell name conflict with system command '$_first_word' from '$_cmd_name' - rename spell before production"
+        printf 'generate-glosses: FATAL: Spell name conflict with system command "%s" from "%s" - rename spell before production\n' "$_first_word" "$_cmd_name" >&2
+        return 1
         ;;
     esac
     
