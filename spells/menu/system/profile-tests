@@ -2,29 +2,36 @@
 # Performance profiling for the wizardry test suite.
 # Times each test individually and reports slowest tests.
 
-# Bootstrap fallback for standalone execution (when invoke-wizardry not loaded)
-# This preloads essential functions so profile-tests can run outside full wizardry environment
-if ! command -v require_wizardry >/dev/null 2>&1; then
+# Ensure invoke-wizardry is loaded for optimal test performance
+# This prevents each test from reloading invoke-wizardry individually (1s overhead per test)
+if [ "${_WIZARDRY_INVOKED-}" != "1" ]; then
   # Find repository root
   _script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
   _wiz_root=$(cd "$_script_dir" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
   
-  # Load word-of-binding to enable function preloading
-  if [ -f "$_wiz_root/spells/.imps/sys/word-of-binding" ]; then
-    WIZARDRY_SOURCE_WORD_OF_BINDING=1
-    . "$_wiz_root/spells/.imps/sys/word-of-binding"
-    unset WIZARDRY_SOURCE_WORD_OF_BINDING
+  # Load invoke-wizardry to preload all functions
+  if [ -f "$_wiz_root/spells/.imps/sys/invoke-wizardry" ]; then
+    # Source invoke-wizardry (it will set _WIZARDRY_INVOKED=1)
+    # Redirect stderr to suppress parse warnings
+    . "$_wiz_root/spells/.imps/sys/invoke-wizardry" 2>/dev/null || :
+  else
+    # Fallback: Load word-of-binding to preload essential functions
+    if [ -f "$_wiz_root/spells/.imps/sys/word-of-binding" ]; then
+      WIZARDRY_SOURCE_WORD_OF_BINDING=1
+      . "$_wiz_root/spells/.imps/sys/word-of-binding"
+      unset WIZARDRY_SOURCE_WORD_OF_BINDING
+      
+      # Preload essential imps that profile-tests uses
+      for _imp in require-wizardry env-clear temp-file cleanup-file on-exit die warn fail info say step; do
+        word_of_binding "$_imp" 2>/dev/null || :
+      done
+      unset _imp
+    fi
     
-    # Preload essential imps that profile-tests uses
-    for _imp in require-wizardry env-clear temp-file cleanup-file on-exit die warn fail info say step; do
-      word_of_binding "$_imp" 2>/dev/null || :
-    done
-    unset _imp
+    # Set WIZARDRY_DIR for require_wizardry check
+    WIZARDRY_DIR=$_wiz_root
+    export WIZARDRY_DIR
   fi
-  
-  # Set WIZARDRY_DIR for require_wizardry check
-  WIZARDRY_DIR=$_wiz_root
-  export WIZARDRY_DIR
 fi
 
 profile_tests_usage() {
