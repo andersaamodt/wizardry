@@ -1,93 +1,79 @@
 #!/bin/sh
 
-
-
-
 # This spell sets or updates the priority of a file within a directory.
 # Use it to organize files by importance using extended attributes.
 
-
-prioritize_usage() {
-cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat << 'USAGE'
 Usage: prioritize <file> [directory]
 
 Set or update the priority of a file, storing it in the file's extended attributes and the directory's priorities list. If no directory is specified, the file's parent directory is used.
 USAGE
-}
-
-
-
-prioritize() {
-
-case "${1-}" in
---help|--usage|-h)
-        prioritize_usage
-        return 0
-        ;;
+  exit 0
+  ;;
 esac
 
-require_wizardry || return 1
-
 set -eu
-env_clear
 
 # Ensure file argument is provided
 if [ -z "${1-}" ]; then
-        usage-error "prioritize" "file path required"
+  printf '%s\n' "prioritize: file path required" >&2
+  exit 2
 fi
 
 file=$1
 directory=${2-}
 
 # Check if the target file exists
-if ! is file "$file"; then
-        die "prioritize: file not found: $file"
-        return 1
+if [ ! -f "$file" ]; then
+  printf '%s\n' "prioritize: file not found: $file" >&2
+  exit 1
 fi
 
 # Hash the target file for identification
 hashchant "$file" >/dev/null
-target_hash=$(read_magic "$file" hash 2>/dev/null || true)
+target_hash=$(read-magic "$file" hash 2>/dev/null || true)
 
-if is unset "$target_hash" || starts "$target_hash" "Error"; then
-        die "prioritize: failed to hash file: $file"
-        return 1
+if [ -z "$target_hash" ] || [ "${target_hash#Error}" != "$target_hash" ]; then
+  printf '%s\n' "prioritize: failed to hash file: $file" >&2
+  exit 1
 fi
 
 # Get the directory the file is in, if a target directory was not provided
-if is unset "$directory"; then
-        directory=$(parent "$file")
-        if [ "$directory" = "." ]; then
-                directory=$(here)
-        fi
+if [ -z "$directory" ]; then
+  directory=$(dirname "$file")
+  if [ "$directory" = "." ]; then
+    directory=$(pwd -P)
+  fi
 fi
 
 # Get the file's priority, or default to 0
-target_priority=$(read_magic "$file" priority 2>/dev/null || printf '0')
+target_priority=$(read-magic "$file" priority 2>/dev/null || printf '0')
 case "$target_priority" in
-        *Error*|''|*[!0-9]*) target_priority=0 ;;
+  *Error*|''|*[!0-9]*) target_priority=0 ;;
 esac
 
 # Retrieve the priority list from the directory's extended attributes
-priorities=$(read_magic "$directory" priorities 2>/dev/null || true)
+priorities=$(read-magic "$directory" priorities 2>/dev/null || true)
 
 # If there are no priorities, add the target file as the only priority
 case "$priorities" in
-        ''|*Error*)
-                enchant "$directory" priorities "$target_hash" >/dev/null
-                enchant "$file" priority 1 >/dev/null
-                say "Prioritized '$(file-name "$file")' as the first priority."
-                return 0
-                ;;
+  ''|*Error*)
+    enchant "$directory" priorities "$target_hash" >/dev/null
+    enchant "$file" priority 1 >/dev/null
+    printf '%s\n' "Prioritized '$(basename "$file")' as the first priority."
+    exit 0
+    ;;
 esac
 
 # Get the priority of the first item in the current list of priorities
 first_hash=$(printf '%s' "$priorities" | cut -d',' -f1)
 
 # If the target file is already the first priority, exit
-if equals "$target_hash" "$first_hash"; then
-        say "'$(file-name "$file")' is already the highest priority."
-        return 0
+if [ "$target_hash" = "$first_hash" ]; then
+  printf '%s\n' "'$(basename "$file")' is already the highest priority."
+  exit 0
 fi
 
 # Filter the target hash from the current priorities list to avoid duplicates
@@ -98,8 +84,8 @@ filtered=${filtered%,}
 
 # Prepend the target hash to make it highest priority
 new_priorities="$target_hash"
-if nonempty "$filtered"; then
-        new_priorities="$target_hash,$filtered"
+if [ -n "$filtered" ]; then
+  new_priorities="$target_hash,$filtered"
 fi
 
 # Calculate the new priority value (one higher than current highest)
@@ -109,39 +95,4 @@ new_priority=$((target_priority + 1))
 enchant "$file" priority "$new_priority" >/dev/null
 enchant "$directory" priorities "$new_priorities" >/dev/null
 
-say "Prioritized '$(file-name "$file")'."
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"
+printf '%s\n' "Prioritized '$(basename "$file")'."
