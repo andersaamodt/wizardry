@@ -816,6 +816,8 @@ printf '════════════════════════
 printf '\n'
 printf 'The demonstration concludes.\n'
 printf 'The circle closes. Wizardry stands ready.\n'
+
+return 0
 }
 
 
