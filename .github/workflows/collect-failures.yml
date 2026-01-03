@@ -313,10 +313,13 @@ jobs:
             echo ""
           }
 
-          # Poll for workflow completions
+          # Poll for workflow completions and individual job completions
           poll_count=0
           max_polls=720  # 720 * 5s = 1 hour max
           completed_count=0
+          
+          # Track reported jobs (separate from reported workflow runs)
+          mkdir -p /tmp/reported_jobs
           
           # Initial PR description update to show tests are starting
           echo "Setting initial PR description status..."
@@ -342,9 +345,103 @@ jobs:
 
               IFS='|' read -r run_id conclusion status <<< "$run_info"
 
-              # Only process completed runs
-              if [ "$status" = "completed" ]; then
-                process_workflow_run "$run_id" "$workflow_name" "$conclusion"
+              # For "Unit tests" workflow, process individual jobs as they complete
+              # This gives us one-by-one job reporting instead of all-at-once
+              if [ "$workflow_name" = "Unit tests" ]; then
+                # Get jobs for this run
+                if gh api "/repos/${{ github.repository }}/actions/runs/${run_id}/jobs" \
+                  > /tmp/unit_jobs_${run_id}.json 2>&1; then
+                  
+                  # Process each job individually
+                  jq -r '.jobs[] | select(.conclusion != null) | "\(.id)|\(.name)|\(.conclusion)"' \
+                    /tmp/unit_jobs_${run_id}.json | \
+                  while IFS='|' read -r job_id job_name job_conclusion; do
+                    # Skip if already reported
+                    if [ -f "/tmp/reported_jobs/$job_id" ]; then
+                      continue
+                    fi
+                    
+                    touch "/tmp/reported_jobs/$job_id"
+                    
+                    echo "----------------------------------------"
+                    echo "Unit Test Job: $job_name"
+                    echo "Job ID: $job_id"
+                    echo "Status: $job_conclusion"
+                    echo ""
+                    
+                    if [ "$job_conclusion" = "success" ]; then
+                      echo "✅ Passed"
+                      echo ""
+                      continue
+                    fi
+                    
+                    if [ "$job_conclusion" != "failure" ]; then
+                      echo "Status: $job_conclusion (skipped)"
+                      echo ""
+                      continue
+                    fi
+                    
+                    echo "❌ FAILED - extracting error details..."
+                    echo ""
+                    
+                    # Add to failure summary (create section if not exists)
+                    if ! grep -q "^### ❌ Unit tests$" "$failure_summary_file"; then
+                      {
+                        echo ""
+                        echo "### ❌ Unit tests"
+                        echo ""
+                        echo "**Failed jobs:** (updating...)"
+                        echo ""
+                      } >> "$failure_summary_file"
+                    fi
+                    
+                    # Get job logs and extract failure
+                    if gh api "/repos/${{ github.repository }}/actions/jobs/${job_id}/logs" \
+                      > /tmp/log_${job_id}.txt 2>&1; then
+                      failure_text=$(extract_failed_step "/tmp/log_${job_id}.txt" "$job_name" "$workflow_name")
+                      echo "$failure_text"
+                      echo ""
+                      
+                      # Add to PR description summary
+                      {
+                        echo "**Job: $job_name**"
+                        echo '```'
+                        echo "$failure_text"
+                        echo '```'
+                        echo ""
+                      } >> "$failure_summary_file"
+                      
+                      # Update PR description immediately after each job
+                      update_pr_description
+                    else
+                      echo "⚠️ Could not download logs"
+                      echo ""
+                    fi
+                    
+                    rm -f /tmp/log_${job_id}.txt
+                  done
+                  
+                  rm -f /tmp/unit_jobs_${run_id}.json
+                fi
+                
+                # Only mark workflow as complete when all jobs are done
+                if [ "$status" = "completed" ]; then
+                  if [ ! -f "/tmp/reported_runs/$run_id" ]; then
+                    touch "/tmp/reported_runs/$run_id"
+                    echo "✅ Unit tests workflow completed"
+                    # Update failed jobs count in summary
+                    if [ "$conclusion" = "failure" ]; then
+                      failed_job_count=$(ls -1 /tmp/reported_jobs 2>/dev/null | wc -l)
+                      sed -i "s/**Failed jobs:** (updating...)/**Failed jobs:** $failed_job_count/" "$failure_summary_file" 2>/dev/null || true
+                      update_pr_description
+                    fi
+                  fi
+                fi
+              else
+                # For other workflows, process normally (all jobs at once when workflow completes)
+                if [ "$status" = "completed" ]; then
+                  process_workflow_run "$run_id" "$workflow_name" "$conclusion"
+                fi
               fi
             done
 
