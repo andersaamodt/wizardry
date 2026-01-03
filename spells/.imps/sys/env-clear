@@ -30,6 +30,7 @@ env_clear() {
 
   # Preserve wizardry declared globals (from declare-globals)
   _saved_wizardry_dir="${WIZARDRY_DIR:-}"
+  _saved_wizardry_invoked="${_WIZARDRY_INVOKED:-}"
   _saved_spellbook_dir="${SPELLBOOK_DIR:-}"
   _saved_mud_dir="${MUD_DIR:-}"
   _saved_log_level="${WIZARDRY_LOG_LEVEL:-}"
@@ -117,6 +118,7 @@ env_clear() {
 
   # Restore wizardry globals
   [ -n "$_saved_wizardry_dir" ] && export WIZARDRY_DIR="$_saved_wizardry_dir"
+  [ -n "$_saved_wizardry_invoked" ] && export _WIZARDRY_INVOKED="$_saved_wizardry_invoked"
   [ -n "$_saved_spellbook_dir" ] && export SPELLBOOK_DIR="$_saved_spellbook_dir"
   [ -n "$_saved_mud_dir" ] && export MUD_DIR="$_saved_mud_dir"
   [ -n "$_saved_log_level" ] && export WIZARDRY_LOG_LEVEL="$_saved_log_level"
@@ -188,8 +190,8 @@ env_clear() {
 
   # Clean up temporary variables
   unset _saved_path _saved_home _saved_user _saved_shell _saved_term _saved_lang
-  unset _saved_tmpdir _saved_pwd _saved_oldpwd _saved_wizardry_dir _saved_spellbook_dir
-  unset _saved_mud_dir _saved_log_level _saved_nix_pkg _saved_apt_pkg _saved_dnf_pkg
+  unset _saved_tmpdir _saved_pwd _saved_oldpwd _saved_wizardry_dir _saved_wizardry_invoked
+  unset _saved_spellbook_dir _saved_mud_dir _saved_log_level _saved_nix_pkg _saved_apt_pkg
   unset _saved_yum_pkg _saved_zypper_pkg _saved_pacman_pkg _saved_apk_pkg _saved_pkgin_pkg
   unset _saved_brew_pkg _saved_test_failure _saved_test_skip _saved_wiz_tmpdir
   unset _saved_global_subtest _saved_test_compiled _saved_test_helpers _saved_system_path
