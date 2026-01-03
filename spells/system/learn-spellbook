@@ -1,88 +1,164 @@
 #!/bin/sh
 
-# This spell allows you to add or remove directories from your PATH environment variable permanently.
-# It uses the 'grep' and 'sed' commands to search and edit the '.bashrc' file in your home directory.
+# Add wizardry spell directories to PATH recursively.
+# This allows all spells and imps to be executed directly from the command line.
 
-# Check if the correct number of arguments was provided
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: learn-spellbook [WIZARDRY_DIR]
 
-learn_spellbook() {
-  if [ "$#" -ne 1 ] && [ "$#" -ne 2 ]; then
-    echo "Error: This spell requires one or two arguments: 'add' or 'remove' and an optional directory path."
-    return 1
-  fi
+Add all wizardry spell and imp directories to your shell's PATH.
+Automatically detects your platform and edits the appropriate configuration file:
+- NixOS: Adds to configuration.nix (environment.systemPackages path)
+- Linux: Adds to ~/.bashrc or ~/.profile
+- macOS: Adds to ~/.bash_profile, ~/.zshrc, or ~/.profile
 
-  # Set the action and directory variables
-  action=$1
-  directory=$2
+If WIZARDRY_DIR is not provided, uses $WIZARDRY_DIR or ~/.wizardry.
 
-  # Check if the action is 'add' or 'remove'
-  if [ "$action" != "add" ] && [ "$action" != "remove" ]; then
-    echo "Error: The first argument must be 'add' or 'remove'."
-    return 1
-  fi
+This spell is run automatically during installation.
+USAGE
+  exit 0
+  ;;
+esac
 
-  # Check if the directory path was provided
-  if [ -z "$directory" ]; then
-    # If no directory path was provided, use the current directory
-    directory=$(pwd -P)
-  else
-    # If a directory path was provided, expand the '~' character if necessary
-    directory="$(echo "$directory" | sed "s|^~|$HOME|")"
-  
-    # If the directory path is '.', convert it to the absolute path of the current directory
-    if [ "$directory" = "." ]; then
-      directory=$(pwd -P)
+set -eu
+
+# Determine wizardry directory
+if [ $# -ge 1 ]; then
+  wizardry_dir=$1
+elif [ -n "${WIZARDRY_DIR-}" ]; then
+  wizardry_dir=$WIZARDRY_DIR
+elif [ -n "${HOME-}" ]; then
+  wizardry_dir=$HOME/.wizardry
+else
+  printf '%s\n' "learn-spellbook: cannot determine wizardry directory" >&2
+  exit 1
+fi
+
+# Validate directory exists
+if [ ! -d "$wizardry_dir" ]; then
+  printf '%s\n' "learn-spellbook: wizardry directory does not exist: $wizardry_dir" >&2
+  exit 1
+fi
+
+if [ ! -d "$wizardry_dir/spells" ]; then
+  printf '%s\n' "learn-spellbook: not a wizardry directory (missing spells/): $wizardry_dir" >&2
+  exit 1
+fi
+
+# Convert to absolute path
+wizardry_dir=$(cd "$wizardry_dir" && pwd -P)
+
+# Detect platform
+platform=$(uname -s 2>/dev/null || printf 'unknown')
+
+# Collect all directories to add to PATH
+# Format: category directories + all imp family directories
+path_dirs=""
+
+# Add all spell category directories
+for category_dir in "$wizardry_dir/spells"/*; do
+  [ -d "$category_dir" ] || continue
+  # Skip hidden directories (like .imps, .arcana, .wizardry)
+  case "$category_dir" in
+    */.*) continue ;;
+  esac
+  path_dirs="${path_dirs}${path_dirs:+:}${category_dir}"
+done
+
+# Add all imp family directories
+if [ -d "$wizardry_dir/spells/.imps" ]; then
+  for imp_dir in "$wizardry_dir/spells/.imps"/*; do
+    [ -d "$imp_dir" ] || continue
+    path_dirs="${path_dirs}${path_dirs:+:}${imp_dir}"
+  done
+fi
+
+# Generate PATH export line
+path_export_line="export PATH=\"$path_dirs:\$PATH\""
+
+# Detect the appropriate RC file based on platform
+rc_file=""
+rc_format="sh"  # sh, nix
+
+case "$platform" in
+  Linux)
+    # Check if NixOS
+    if [ -f /etc/NIXOS ]; then
+      # NixOS - use configuration.nix
+      if [ -f /etc/nixos/configuration.nix ]; then
+        rc_file="/etc/nixos/configuration.nix"
+        rc_format="nix"
+      else
+        printf '%s\n' "learn-spellbook: NixOS detected but configuration.nix not found" >&2
+        exit 1
+      fi
     else
-      # If the directory is a relative path, convert it to an absolute path
-      if [ "${directory:0:1}" != "/" ]; then
-        directory=$(cd "$directory" && pwd -P)
+      # Regular Linux - prefer bashrc, fallback to profile
+      if [ -f "$HOME/.bashrc" ]; then
+        rc_file="$HOME/.bashrc"
+      elif [ -f "$HOME/.profile" ]; then
+        rc_file="$HOME/.profile"
+      else
+        # Create .profile if neither exists
+        rc_file="$HOME/.profile"
+        touch "$rc_file"
       fi
     fi
-  fi
-
-  # Check if the directory exists
-  if [ ! -d "$directory" ]; then
-    echo "Error: The directory does not exist."
-    return 1
-  fi
-
-  # Check if the '.bashrc' file exists in the home directory
-  if [ ! -f "$HOME/.bashrc" ]; then
-    echo "Error: The '.bashrc' file does not exist in your home directory."
-    return 1
-  fi
-
-  # Check if the directory is already in the PATH variable
-  if grep -q "export PATH=$directory:\$PATH$" "$HOME/.bashrc"; then
-    # If the directory is already in the PATH variable, check if the action is 'add'
-    if [ "$action" = "add" ]; then
-      echo "The directory is already in your PATH."
-      return 0
-    fi
-
-    # If the action is 'remove' and the directory is already in the PATH variable, remove the directory from the PATH variable using the 'sed' command
-    sed -i "\|^export PATH=$directory:\$PATH$|d" "$HOME/.bashrc"
-    echo "The directory has been removed from your PATH."
-  else
-    # If the directory is not in the PATH variable, check if the action is 'add'
-    if [ "$action" = "add" ]; then
-      # If the action is 'add', prepend the directory to the PATH variable in the '.bashrc' file
-      echo "export PATH=$directory:\$PATH" >> "$HOME/.bashrc"
-      echo "The directory has been added to your PATH."
+    ;;
+  Darwin)
+    # macOS - check for zsh first (default since Catalina), then bash
+    if [ -n "${ZSH_VERSION-}" ] || [ "$SHELL" = "/bin/zsh" ]; then
+      rc_file="${HOME}/.zshrc"
+      [ -f "$rc_file" ] || touch "$rc_file"
+    elif [ -f "$HOME/.bash_profile" ]; then
+      rc_file="$HOME/.bash_profile"
+    elif [ -f "$HOME/.profile" ]; then
+      rc_file="$HOME/.profile"
     else
-      # If the action is 'remove' and the directory is not in the PATH variable, display an error message
-      echo "Error: The directory is not in your PATH."
-      return 1
+      rc_file="$HOME/.bash_profile"
+      touch "$rc_file"
     fi
-  fi
+    ;;
+  *)
+    # Unknown platform - try .profile as universal fallback
+    rc_file="${HOME}/.profile"
+    [ -f "$rc_file" ] || touch "$rc_file"
+    ;;
+esac
 
-  if [ "$action" = "add" ]; then
-  	echo "The changes to your PATH will not take effect until you open a new terminal or run the 'source ~/.bashrc' command in your current terminal."
-  else
-  	echo "The changes to your PATH will not take effect until you open a new terminal."
-  fi
-}
+# Check if already configured
+marker="# Wizardry PATH - managed by learn-spellbook"
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */learn-spellbook) learn_spellbook "$@" ;; esac
+if [ "$rc_format" = "nix" ]; then
+  # NixOS configuration.nix handling
+  printf '%s\n' "learn-spellbook: NixOS detected"
+  printf '%s\n' "learn-spellbook: You need to manually add wizardry to your PATH in /etc/nixos/configuration.nix"
+  printf '%s\n' ""
+  printf '%s\n' "Add this to your configuration.nix in the environment.systemPackages section:"
+  printf '%s\n' ""
+  printf '%s\n' "  environment.variables = {"
+  printf '%s\n' "    PATH = \"$path_dirs:\${PATH}\";"
+  printf '%s\n' "  };"
+  printf '%s\n' ""
+  printf '%s\n' "Then run: sudo nixos-rebuild switch"
+  exit 0
+else
+  # Shell RC file handling
+  if grep -q "$marker" "$rc_file" 2>/dev/null; then
+    printf '%s\n' "learn-spellbook: PATH already configured in $rc_file"
+    printf '%s\n' "To update, remove the existing wizardry PATH lines and run this spell again."
+    exit 0
+  fi
+  
+  # Add to RC file
+  printf '\n%s\n' "$marker" >> "$rc_file"
+  printf '%s\n' "$path_export_line" >> "$rc_file"
+  
+  printf '%s\n' "learn-spellbook: Added wizardry to PATH in $rc_file"
+  printf '%s\n' "To use wizardry in this terminal, run:"
+  printf '%s\n' "  source $rc_file"
+  printf '%s\n' ""
+  printf '%s\n' "Or open a new terminal window."
+fi

@@ -1,107 +1,65 @@
 #!/bin/sh
 
-
-
-
 # Transcribe text files to the clipboard. Prompts when invoked without a path.
 
-copy_usage() {
-cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: copy <file>
 
 Copy the contents of a text file to the system clipboard using pbcopy, xsel, or xclip. Prompts for a path when none is given and prints a confirmation when successful.
 USAGE
-}
-
-
-copy() {
-case "${1-}" in
---help|--usage|-h)
-  copy_usage
-  return 0
+  exit 0
   ;;
 esac
 
-require_wizardry || return 1
-
 set -eu
-env_clear
 
 if [ "$#" -eq 0 ]; then
-    if has ask-text; then
-        file_path=$(ask_text "Enter file path to copy to clipboard:")
+    if command -v ask-text >/dev/null 2>&1; then
+        file_path=$(ask-text "Enter file path to copy to clipboard:")
         if [ -z "$file_path" ]; then
-            say 'No file path provided.'
-            return 1
+            printf '%s\n' 'No file path provided.'
+            exit 1
         fi
         set -- "$file_path"
     else
-        copy_usage >&2
-        return 1
+        printf '%s\n' 'Usage: copy <file>' >&2
+        exit 1
     fi
 fi
 
-is file "$1" || {
-  if there "$1"; then
-    say 'That path is not a file.'
+# Check if file exists and is a regular file
+if [ ! -f "$1" ]; then
+  if [ -e "$1" ]; then
+    printf '%s\n' 'That path is not a file.'
   else
-    say 'That file does not exist.'
+    printf '%s\n' 'That file does not exist.'
   fi
-  return 1
-}
+  exit 1
+fi
 
 # Copy file contents to clipboard using the clip-copy imp
 # Suppress clip-copy's error to avoid duplicate messages
 if ! clip-copy < "$1" 2>/dev/null; then
     # Attempt to install a clipboard utility using the unified installer
-    if has install-clipboard-helper; then
+    if command -v install-clipboard-helper >/dev/null 2>&1; then
         if install-clipboard-helper >/dev/null 2>&1 && clip-copy < "$1" 2>/dev/null; then
             : # Installation succeeded and copy worked
         else
-            warn 'Your spell fizzles. No clipboard utility available (xsel, xclip, wl-copy, or pbcopy).'
-            return 1
+            printf '%s\n' 'Your spell fizzles. No clipboard utility available (xsel, xclip, wl-copy, or pbcopy).' >&2
+            exit 1
         fi
     else
-        warn 'Your spell fizzles. No clipboard utility available (xsel, xclip, wl-copy, or pbcopy).'
-        return 1
+        printf '%s\n' 'Your spell fizzles. No clipboard utility available (xsel, xclip, wl-copy, or pbcopy).' >&2
+        exit 1
     fi
 fi
 
 # Normalize path for display
-display_path=$(norm-path "$1")
-say "Copied $display_path to your clipboard."
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"
+if command -v norm-path >/dev/null 2>&1; then
+  display_path=$(norm-path "$1")
+else
+  display_path=$1
+fi
+printf '%s\n' "Copied $display_path to your clipboard."
