@@ -1,7 +1,7 @@
 #!/bin/sh
 # invoke-wizardry - set up wizardry environment at shell startup
-# MINIMAL word-of-binding implementation for spiral debug Phase 1
-# Source this script to enable on-demand spell loading.
+# Simple PATH-based invocation (no word-of-binding preloading)
+# Source this script to enable wizardry spells and imps from PATH.
 
 # Ensure baseline PATH before anything else (macOS may have empty PATH)
 baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
@@ -16,7 +16,6 @@ esac
 # Permissive mode - this file is sourced into user's shell
 set +eu
 
-
 # Prevent recursive sourcing
 if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
   [ "${WIZARDRY_DEBUG-}" = "1" ] && \
@@ -29,426 +28,106 @@ export _WIZARDRY_INVOKED
 [ "${WIZARDRY_DEBUG-}" = "1" ] && \
   printf '[invoke-wizardry] %s\n' "Starting wizardry initialization" >&2
 
-invoke_wizardry() {
-  # CRITICAL: Enable word splitting in zsh for all for-loops in this function
-  # Zsh doesn't split on spaces by default (unlike sh/bash), which breaks iteration over
-  # space-separated lists like $_level_imps and $_level_spells
-  # Save the current state and restore it before any return
-  _iw_saved_sh_word_split=""
-  if [ -n "${ZSH_VERSION-}" ]; then
-    # Check if SH_WORD_SPLIT is currently set (returns 0 if set, 1 if not)
-    if setopt | grep -q "^shwordsplit$"; then
-      _iw_saved_sh_word_split="yes"
-    else
-      _iw_saved_sh_word_split="no"
-    fi
-    setopt SH_WORD_SPLIT
-  fi
-  
-  # Helper to restore zsh word splitting and shell mode before returning
-  
-  # Detect WIZARDRY_DIR
-  if [ -z "${WIZARDRY_DIR-}" ]; then
-    # Capture script path - in bash use BASH_SOURCE, in zsh use ${(%):-%x}
-    _iw_script_path=""
-    if eval '[ -n "${BASH_VERSION-}" ]' 2>/dev/null; then
-      _iw_script_path=$(eval 'printf "%s" "${BASH_SOURCE[0]-}"')
-    elif [ -n "${ZSH_VERSION-}" ]; then
-      # In zsh, use %x expansion to get sourced file path
-      # Note: $0 contains the shell name when sourced, not the file path
-      _iw_script_path=$(eval 'printf "%s" "${(%):-%x}"' 2>/dev/null) || :
-      # Fallback to %N if %x didn't work
-      if [ -z "$_iw_script_path" ]; then
-        _iw_script_path=$(eval 'printf "%s" "${(%):-%N}"' 2>/dev/null) || :
-      fi
-    fi
-    
-    # Fallback to command -v
+# Detect WIZARDRY_DIR
+if [ -z "${WIZARDRY_DIR-}" ]; then
+  # Capture script path - in bash use BASH_SOURCE, in zsh use ${(%):-%x}
+  _iw_script_path=""
+  if eval '[ -n "${BASH_VERSION-}" ]' 2>/dev/null; then
+    _iw_script_path=$(eval 'printf "%s" "${BASH_SOURCE[0]-}"')
+  elif [ -n "${ZSH_VERSION-}" ]; then
+    # In zsh, use %x expansion to get sourced file path
+    _iw_script_path=$(eval 'printf "%s" "${(%):-%x}"' 2>/dev/null) || :
+    # Fallback to %N if %x didn't work
     if [ -z "$_iw_script_path" ]; then
-      _iw_script_path=$(command -v invoke-wizardry 2>/dev/null | head -1) || :
+      _iw_script_path=$(eval 'printf "%s" "${(%):-%N}"' 2>/dev/null) || :
     fi
+  fi
+  
+  # Fallback to command -v
+  if [ -z "$_iw_script_path" ]; then
+    _iw_script_path=$(command -v invoke-wizardry 2>/dev/null | head -1) || :
+  fi
+  
+  # Fallback to default location
+  if [ -z "$_iw_script_path" ] && [ -n "${HOME-}" ]; then
+    _iw_script_path="$HOME/.wizardry/spells/.imps/sys/invoke-wizardry"
+  fi
+  
+  # Derive WIZARDRY_DIR from script path
+  if [ -n "$_iw_script_path" ] && [ -f "$_iw_script_path" ]; then
+    _iw_script_dir=$(CDPATH= cd -- "$(dirname "$_iw_script_path")" 2>/dev/null && pwd -P) || :
+    if [ -n "$_iw_script_dir" ]; then
+      WIZARDRY_DIR=$(CDPATH= cd -- "$_iw_script_dir/../../.." 2>/dev/null && pwd -P) || :
+    fi
+  fi
+fi
+
+# Validate WIZARDRY_DIR
+if [ -z "${WIZARDRY_DIR-}" ] || [ ! -d "${WIZARDRY_DIR-}/spells" ]; then
+  printf '%s\n' "invoke-wizardry: ERROR - WIZARDRY_DIR not found" >&2
+  return 1
+fi
+
+[ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "WIZARDRY_DIR=$WIZARDRY_DIR" >&2
+export WIZARDRY_DIR
+
+# Set up SPELLBOOK_DIR
+: "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
+export SPELLBOOK_DIR
+
+# ============================================================================
+# PATH-BASED EXECUTION (Simple Paradigm)
+# ============================================================================
+# All spells and imps are added to PATH via learn-spellbook.
+# No preloading, no glosses, no word-of-binding - just simple PATH execution.
+# ============================================================================
+
+[ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Adding wizardry directories to PATH..." >&2
+
+# Add all spell category directories to PATH
+for category_dir in "$WIZARDRY_DIR/spells"/*; do
+  [ -d "$category_dir" ] || continue
+  # Skip hidden directories (like .imps, .arcana, .wizardry)
+  case "$category_dir" in
+    */.*) continue ;;
+  esac
+  PATH="$category_dir:$PATH"
+done
+
+# Add all imp family directories to PATH
+if [ -d "$WIZARDRY_DIR/spells/.imps" ]; then
+  for imp_dir in "$WIZARDRY_DIR/spells/.imps"/*; do
+    [ -d "$imp_dir" ] || continue
+    PATH="$imp_dir:$PATH"
+  done
+fi
+
+export PATH
+
+# Optional: Generate first-word glosses for space-separated invocation
+# This still allows "env or VAR DEFAULT" instead of just "env-or VAR DEFAULT"
+# Skip in test mode (tests don't need glosses)
+if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
+  if command -v generate-glosses >/dev/null 2>&1; then
+    [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Generating first-word glosses..." >&2
     
-    # Fallback to default location
-    if [ -z "$_iw_script_path" ] && [ -n "${HOME-}" ]; then
-      _iw_script_path="$HOME/.wizardry/spells/.imps/sys/invoke-wizardry"
-    fi
-    
-    # Derive WIZARDRY_DIR from script path
-    if [ -n "$_iw_script_path" ] && [ -f "$_iw_script_path" ]; then
-      _iw_script_dir=$(CDPATH= cd -- "$(dirname "$_iw_script_path")" 2>/dev/null && pwd -P) || :
-      if [ -n "$_iw_script_dir" ]; then
-        WIZARDRY_DIR=$(CDPATH= cd -- "$_iw_script_dir/../../.." 2>/dev/null && pwd -P) || :
+    # Generate glosses and eval them into current shell
+    if _iw_gloss_output=$(generate-glosses --quiet 2>&1); then
+      if [ -n "$_iw_gloss_output" ]; then
+        eval "$_iw_gloss_output"
+        [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Gloss functions loaded" >&2
       fi
     fi
   fi
-  
-  # Validate WIZARDRY_DIR
-  if [ -z "${WIZARDRY_DIR-}" ] || [ ! -d "${WIZARDRY_DIR-}/spells" ]; then
-    printf '%s\n' "invoke-wizardry: ERROR - WIZARDRY_DIR not found" >&2
-    if [ -n "${ZSH_VERSION-}" ] && [ "$_iw_saved_sh_word_split" = "no" ]; then
-      unsetopt SH_WORD_SPLIT
-    fi
-    set +eu
-    return 1
-  fi
-  
-  [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "WIZARDRY_DIR=$WIZARDRY_DIR" >&2
-  export WIZARDRY_DIR
-  
-  # Set up SPELLBOOK_DIR
-  : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
-  export SPELLBOOK_DIR
+fi
 
-  # ============================================================================
-  # FUNCTION-BASED GLOSS SYSTEM (New Paradigm)
-  # ============================================================================
-  # Glosses are now shell functions and aliases, not script files.
-  # This provides:
-  # - First-word glosses: env() { parse "$@"; } for space-separated invocation
-  # - Hyphenated aliases: alias env-or='env_or' for hyphenated invocation
-  # - Direct access to preloaded true-name functions: env_or()
-  #
-  # Glosses are generated synchronously (must run in current shell to define functions)
-  # and cover:
-  # - All wizardry spells and imps
-  # - User-defined synonyms (.synonyms file)
-  # - Default synonyms (.default-synonyms file)
-  # ============================================================================
-  
-  [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Loading function-based glosses..." >&2
-  
-  # SPIRAL DEBUG PHASE 1: Minimal pre-loading (menu + dependencies only)
-  # Future: ALL wizardry spells will be pre-loaded, hotloading only for ~/.spellbook
-  # Current: Pre-load menu essentials, hotload other wizardry spells temporarily
-  
-  _iw_wob="$WIZARDRY_DIR/spells/.imps/sys/word-of-binding"
-  if [ -r "$_iw_wob" ]; then
-    WIZARDRY_SOURCE_WORD_OF_BINDING=1 . "$_iw_wob" 2>/dev/null || :
-    unset WIZARDRY_SOURCE_WORD_OF_BINDING
-  fi
-  if ! command -v word_of_binding >/dev/null 2>&1; then
-    printf '%s\n' "invoke-wizardry: ERROR - failed to load word-of-binding" >&2
-    if [ -n "${ZSH_VERSION-}" ] && [ "$_iw_saved_sh_word_split" = "no" ]; then
-      unsetopt SH_WORD_SPLIT
-    fi
-    set +eu
-    return 1
-  fi
-  
-  # Pre-load imps by level (Levels 0-4: POSIX + Banish + Install + Glossary + Menu)
-  # This provides all foundational imps needed for core wizardry functionality
-  # Uses spell-levels imp to stay in sync with level definitions
-  [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Pre-loading imps (levels 0-4)" >&2
-  
-  # Source spell-levels to get level definitions
-  _spell_levels_imp="$WIZARDRY_DIR/spells/.imps/sys/spell-levels"
-  if [ -f "$_spell_levels_imp" ]; then
-    # shellcheck source=/dev/null
-    . "$_spell_levels_imp"
-    
-    # Load imps for levels 1, 2, 3, and 4 (Level 0 has no imps)
-    for _level in 1 2 3 4; do
-      # Use field-based spell_levels API (no globals)
-      level_name=$(spell_levels "$_level" name)
-      level_imps=$(spell_levels "$_level" imps)
-      
-      if [ -n "$level_imps" ]; then
-        [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Loading Level $_level imps: $level_name" >&2
-        for _imp_spec in $level_imps; do
-          # Extract imp name (may include family/ prefix)
-          case "$_imp_spec" in
-            */*)
-              _imp_family=${_imp_spec%/*}
-              _imp_name=${_imp_spec##*/}
-              _imp_file="$WIZARDRY_DIR/spells/.imps/$_imp_spec"
-              ;;
-            *)
-              _imp_name=$_imp_spec
-              # Search for imp in all families
-              _imp_file=""
-              for _family_dir in "$WIZARDRY_DIR"/spells/.imps/*; do
-                [ -d "$_family_dir" ] || continue
-                if [ -f "$_family_dir/$_imp_name" ]; then
-                  _imp_file="$_family_dir/$_imp_name"
-                  break
-                fi
-              done
-              ;;
-          esac
-          
-          if [ -n "$_imp_file" ] && [ -f "$_imp_file" ]; then
-            # Skip if already loaded as a function (optimization to avoid redundant awk/sed calls)
-            # CRITICAL: Check specifically for functions, not commands (to avoid collision with system commands like 'info')
-            _imp_func=$(printf '%s' "$_imp_name" | tr '-' '_')
-            _is_function=0
-            if [ -n "${ZSH_VERSION-}" ]; then
-              # ZSH: Use whence -v and check for "shell function"
-              if whence -v "$_imp_func" 2>/dev/null | grep -q "shell function"; then
-                _is_function=1
-              fi
-            else
-              # Bash/sh: Use type and check for "function"
-              if type "$_imp_func" 2>/dev/null | grep -q "function"; then
-                _is_function=1
-              fi
-            fi
-            
-            if [ "$_is_function" -eq 0 ]; then
-              if command -v word_of_binding >/dev/null 2>&1; then
-                word_of_binding "$_imp_name" 2>/dev/null || :
-              fi
-            fi
-          fi
-        done
-      fi
-    done
-  else
-    # Fallback if spell-levels not found - use minimal hardcoded list
-    [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Warning: spell-levels imp not found, using minimal preload" >&2
-    for _imp_name in require-wizardry castable env-clear has die warn fail info say temp-file cleanup-file; do
-      for _family_dir in "$WIZARDRY_DIR"/spells/.imps/*; do
-        [ -d "$_family_dir" ] || continue
-        _imp_file="$_family_dir/$_imp_name"
-        if [ -f "$_imp_file" ]; then
-          if command -v word_of_binding >/dev/null 2>&1; then
-            word_of_binding "$_imp_name" 2>/dev/null || :
-          fi
-          break
-        fi
-      done
-    done
-  fi
-  
-  # Pre-load spells by level (Levels 0-4: POSIX + Banish + Install + Glossary + Menu)
-  # This provides all foundational spells needed for core wizardry functionality
-  # Uses spell-levels imp to stay in sync with level definitions
-  [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Pre-loading spells (levels 0-4)" >&2
-  
-  if [ -f "$_spell_levels_imp" ]; then
-    # Load spells for levels 0, 1, 2, 3, and 4
-    for _level in 0 1 2 3 4; do
-      if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-        printf '[invoke-wizardry] DEBUG: ========== STARTING LEVEL %d ==========\n' "$_level" >&2
-      fi
-      
-      # Use field-based spell_levels API (no globals)
-      level_name=$(spell_levels "$_level" name)
-      level_spells=$(spell_levels "$_level" spells)
-      
-      if [ -n "$level_spells" ]; then
-        [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Loading Level $_level spells: $level_name" >&2
-        if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-          printf '[invoke-wizardry] DEBUG: Level %d spell list: %s\n' "$_level" "$level_spells" >&2
-        fi
-        _spell_count=0
-        for _spell_spec in $level_spells; do
-          _spell_count=$((_spell_count + 1))
-          if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-            printf '[invoke-wizardry] DEBUG: Processing spell #%d in level %d: %s\n' "$_spell_count" "$_level" "$_spell_spec" >&2
-          fi
-          # Extract spell name (may include :category suffix)
-          _spell_name=${_spell_spec%%:*}
-          
-          # Skip special bootstrap spells
-          case "$_spell_name" in
-            install) continue ;;  # Bootstrap only, not preloaded
-          esac
-          
-          # Find and load the spell
-          # First check .wizardry directory (dotfile not matched by *)
-          if [ -f "$WIZARDRY_DIR/spells/.wizardry/$_spell_name" ]; then
-            _spell_file="$WIZARDRY_DIR/spells/.wizardry/$_spell_name"
-          else
-            # Search other spell directories
-            for _spell_dir in "$WIZARDRY_DIR"/spells/*; do
-              [ -d "$_spell_dir" ] || continue
-              case "$_spell_dir" in */.imps|*/.arcana) continue ;; esac
-              _spell_file="$_spell_dir/$_spell_name"
-              [ -f "$_spell_file" ] && break
-              _spell_file=""
-            done
-          fi
-          
-          if [ -n "$_spell_file" ] && [ -f "$_spell_file" ]; then
-              # Skip if already loaded as a function (optimization)
-              # CRITICAL: Check specifically for functions, not commands
-              _spell_func_name=$(printf '%s' "$_spell_name" | tr '-' '_')
-              _is_function=0
-              if [ -n "${ZSH_VERSION-}" ]; then
-                # ZSH: Use whence -v and check for "shell function"
-                if whence -v "$_spell_func_name" 2>/dev/null | grep -q "shell function"; then
-                  _is_function=1
-                fi
-              else
-                # Bash/sh: Use type and check for "function"
-                if type "$_spell_func_name" 2>/dev/null | grep -q "function"; then
-                  _is_function=1
-                fi
-              fi
-              
-              if [ "$_is_function" -eq 1 ]; then
-                [ "${WIZARDRY_DEBUG-}" = "1" ] && \
-                  printf '[invoke-wizardry] %s\n' "  ↻ Cached: $_spell_name" >&2
-                # Already loaded, skip to next spell
-              else
-                [ "${WIZARDRY_DEBUG-}" = "1" ] && \
-                  printf '[invoke-wizardry] %s\n' "Loading spell: $_spell_name" >&2
-                if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-                  printf '[invoke-wizardry] DEBUG: BEFORE word_of_binding call for %s\n' "$_spell_name" >&2
-                  printf '[invoke-wizardry] DEBUG:   Spell file: %s\n' "$_spell_file" >&2
-                  printf '[invoke-wizardry] DEBUG:   Calling: word_of_binding "%s"\n' "$_spell_name" >&2
-                fi
-                if command -v word_of_binding >/dev/null 2>&1 \
-                  && word_of_binding "$_spell_name" 2>/dev/null; then
-                  _iw_status="✓ Loaded"
-                  if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-                    printf '[invoke-wizardry] DEBUG: AFTER word_of_binding call for %s (SUCCESS)\n' "$_spell_name" >&2
-                    # Immediately check if function is available
-                    if command -v "$_spell_func_name" >/dev/null 2>&1; then
-                      printf '[invoke-wizardry] DEBUG: Function %s IS available immediately after word_of_binding\n' "$_spell_func_name" >&2
-                    else
-                      printf '[invoke-wizardry] DEBUG: WARNING - Function %s NOT available immediately after word_of_binding!\n' "$_spell_func_name" >&2
-                    fi
-                  fi
-                else
-                  _iw_status="✗ Failed"
-                  if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-                    printf '[invoke-wizardry] DEBUG: AFTER word_of_binding call for %s (FAILED)\n' "$_spell_name" >&2
-                    printf '[invoke-wizardry] DEBUG: word_of_binding FAILED for %s\n' "$_spell_name" >&2
-                  fi
-                fi
-                [ "${WIZARDRY_DEBUG-}" = "1" ] && \
-                  printf '[invoke-wizardry] %s\n' "  $_iw_status: $_spell_name" >&2
-                if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-                  printf '[invoke-wizardry] DEBUG: Completed processing spell: %s\n' "$_spell_name" >&2
-                fi
-              fi
-            fi
-        done
-      fi
-      if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-        printf '[invoke-wizardry] DEBUG: ========== COMPLETED LEVEL %d ==========\n' "$_level" >&2
-      fi
-    done
-  else
-    [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Warning: Cannot load spells from spell-levels imp, using minimal preload" >&2
-    # Fallback to minimal essential spells
-    for _spell_name in banish menu; do
-      for _spell_dir in "$WIZARDRY_DIR"/spells/*; do
-        [ -d "$_spell_dir" ] || continue
-        case "$_spell_dir" in */.imps|*/.arcana) continue ;; esac
-        _spell_file="$_spell_dir/$_spell_name"
-        if [ -f "$_spell_file" ]; then
-          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Loading spell: $_spell_name" >&2
-          if command -v word_of_binding >/dev/null 2>&1 \
-            && word_of_binding "$_spell_name" 2>/dev/null; then
-            _iw_status="✓ Loaded"
-          else
-            _iw_status="✗ Failed"
-          fi
-          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "  $_iw_status: $_spell_name" >&2
-          break
-        fi
-      done
-    done
-  fi
+# Verify that menu command is available
+if ! command -v menu >/dev/null 2>&1; then
+  printf '%s\n' "invoke-wizardry: ERROR - menu spell not found in PATH" >&2
+  return 1
+fi
 
-  # Centralized gloss generation: Automatically regenerate glosses for:
-  # 1. All wizardry spells (in $WIZARDRY_DIR/spells/)
-  # 2. Synonyms from $SPELLBOOK_DIR/.synonyms
-  # 3. Default synonyms from $SPELLBOOK_DIR/.default-synonyms
-  #
-  # This runs asynchronously in the background to avoid delaying shell startup.
-  # With 387+ glosses, async is essential for fast shell startup.
-  # The generate-glosses spell handles unified generation from all sources.
-  # Must run AFTER essential imps and generate-glosses spell are loaded.
-  # Load gloss functions synchronously (must run in current shell)
-  # Functions and aliases must be defined in the current shell, not a subshell
-  # Skip in test mode (tests don't need glosses)
-  if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
-    if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-      printf '[invoke-wizardry] DEBUG: About to check for generate_glosses function\n' >&2
-    fi
-    
-    # Check if generate_glosses is available
-    if command -v generate_glosses >/dev/null 2>&1; then
-      if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-        printf '[invoke-wizardry] DEBUG: generate_glosses function IS available, generating glosses\n' >&2
-      fi
-      
-      [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Generating gloss functions and aliases..." >&2
-      
-      # Generate glosses and eval them into current shell
-      # This creates first-word gloss functions and hyphenated aliases
-      if _iw_gloss_output=$(generate_glosses --quiet 2>&1); then
-        if [ -n "$_iw_gloss_output" ]; then
-          # Eval the generated functions and aliases into current shell
-          eval "$_iw_gloss_output"
-          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Gloss functions and aliases loaded successfully" >&2
-        else
-          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Warning: generate_glosses produced no output" >&2
-        fi
-      else
-        [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Warning: generate_glosses failed" >&2
-      fi
-      
-      # CRITICAL: Restore permissive mode after generate_glosses
-      # generate_glosses has set -eu which persists in the shell
-      # We must restore to permissive mode for compatibility with user shells
-      set +eu
-    else
-      if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-        printf '[invoke-wizardry] DEBUG: generate_glosses function NOT available!\n' >&2
-        printf '[invoke-wizardry] DEBUG: Checking what IS available:\n' >&2
-        printf '[invoke-wizardry] DEBUG: type generate_glosses: %s\n' "$(type generate_glosses 2>&1)" >&2
-        printf '[invoke-wizardry] DEBUG: command -v generate_glosses: %s\n' "$(command -v generate_glosses 2>&1)" >&2
-      fi
-      [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Warning: generate_glosses function not available" >&2
-    fi
-  fi
-
-  _iw_menu_ok=0
-  if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
-    if whence -v menu 2>/dev/null | grep -q 'shell function'; then
-      _iw_menu_ok=1
-    fi
-  elif command -v type >/dev/null 2>&1; then
-    if type menu 2>/dev/null | grep -q 'function'; then
-      _iw_menu_ok=1
-    fi
-  elif command -v menu >/dev/null 2>&1; then
-    _iw_menu_ok=1
-  fi
-
-  if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-    if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
-      [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "menu whence: $(whence -v menu 2>/dev/null)" >&2
-    elif command -v type >/dev/null 2>&1; then
-      [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "menu type: $(type menu 2>/dev/null)" >&2
-    else
-      [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "menu path: $(command -v menu 2>/dev/null)" >&2
-    fi
-  fi
-
-  if [ "$_iw_menu_ok" -ne 1 ]; then
-    printf '%s\n' "invoke-wizardry: ERROR - failed to load menu spell" >&2
-    if [ -n "${ZSH_VERSION-}" ] && [ "$_iw_saved_sh_word_split" = "no" ]; then
-      unsetopt SH_WORD_SPLIT
-    fi
-    set +eu
-    return 1
-  fi
-
-  # Wizardry initialization complete
-  [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Wizardry initialization complete" >&2
-  if [ -n "${ZSH_VERSION-}" ] && [ "$_iw_saved_sh_word_split" = "no" ]; then
-    unsetopt SH_WORD_SPLIT
-  fi
-  set +eu
-  return 0
-}
-
-# Run the setup
-invoke_wizardry
-_iw_status=$?
-return $_iw_status
+# Wizardry initialization complete
+[ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Wizardry initialization complete" >&2
+set +eu
+return 0

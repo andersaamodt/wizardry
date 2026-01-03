@@ -3,37 +3,30 @@
 # This spell runs a provided command against every file in the current directory.
 # Use it as a batch helper to apply one incantation across many files.
 
-
-forall() {
-  case "${1-}" in
-  --help|--usage|-h)
-    cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat << 'USAGE'
 Usage: forall <spell> [args...]
 
 Run a spell or command against every file in the current directory, printing each filename before piping its output with indentation.
 USAGE
-    return 0
-    ;;
-  esac
+  exit 0
+  ;;
+esac
 
-  set -eu
+set -eu
 
-  if [ "$#" -lt 1 ]; then
-    cat >&2 <<'USAGE'
+if [ "$#" -lt 1 ]; then
+  cat >&2 << 'EOF'
 Usage: forall <spell> [args...]
 
 Run a spell or command against every file in the current directory, printing each filename before piping its output with indentation.
 USAGE
-    return 1
-  fi
+  exit 1
+fi
 
-  for file in ./*; do
-    # Use printf instead of 'say' to avoid dependency
-    printf '%s\n' "${file#./}"
-    "$@" "$file" | awk '{print "   " $0}'
-  done
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */forall) forall "$@" ;; esac
+for file in ./*; do
+  # Use printf instead of 'say' to avoid dependency
+  printf '%s\n' "${file#./}"
+  "$@" "$file" | awk '{print "   " $0}'
+done

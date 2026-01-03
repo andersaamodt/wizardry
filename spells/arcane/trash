@@ -1,30 +1,19 @@
 #!/bin/sh
 
-
-
-
 # Banish files to the trash for later recall. Safer than `rm`.
 
-trash_usage() {
-  cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat << 'USAGE'
 Usage: trash [-r] [-f] <file|folder>...
 
 Move files or folders to the system trash so they remain recoverable. Use -r for directories and -f to ignore missing files.
 USAGE
-}
-
-trash() {
-case "${1-}" in
---help|--usage|-h)
-  trash_usage
-  return 0
+  exit 0
   ;;
 esac
 
-require_wizardry || return 1
-
 set -eu
-env_clear
 
 recursive=0
 force=0
@@ -59,11 +48,12 @@ while [ "$#" -gt 0 ]; do
 done
 
 if [ "$#" -eq 0 ]; then
-  usage-error "trash" "missing file operand" || return 1
+  printf '%s\n' "trash: missing file operand" >&2
+  exit 2
 fi
 
 # Detect the OS
-if has detect-distro; then
+if command -v detect-distro >/dev/null 2>&1; then
   platform=$(detect-distro 2>/dev/null || printf 'unknown')
   case "$platform" in
   mac)
@@ -91,18 +81,18 @@ fi
 # Detect the best trash command available
 case "$os" in
 mac)
-  if has osascript; then
+  if command -v osascript >/dev/null 2>&1; then
     trash_cmd=osascript
   else
     trash_cmd=none
   fi
   ;;
 linux)
-  if has gio; then
+  if command -v gio >/dev/null 2>&1; then
     trash_cmd=gio
-  elif has trash-put; then
+  elif command -v trash-put >/dev/null 2>&1; then
     trash_cmd=trash-put
-  elif has kioclient5; then
+  elif command -v kioclient5 >/dev/null 2>&1; then
     trash_cmd=kioclient5
   else
     trash_cmd=none
@@ -114,19 +104,19 @@ linux)
 esac
 
 if [ "$trash_cmd" = "none" ]; then
-  warn "trash: no supported trash utility found for your system."
+  printf '%s\n' "trash: no supported trash utility found for your system." >&2
   case "$os" in
   mac)
-    info "On macOS, osascript should be available by default."
+    printf '%s\n' "On macOS, osascript should be available by default." >&2
     ;;
   linux)
-    info "Install one of: gio, trash-cli (for trash-put), or kde-cli-tools (for kioclient5)."
+    printf '%s\n' "Install one of: gio, trash-cli (for trash-put), or kde-cli-tools (for kioclient5)." >&2
     ;;
   *)
-    info "Your operating system is not supported."
+    printf '%s\n' "Your operating system is not supported." >&2
     ;;
   esac
-  return 1
+  exit 1
 fi
 
 exit_status=0
@@ -137,14 +127,14 @@ for file in "$@"; do
     if [ "$force" -eq 1 ]; then
       continue
     fi
-    warn "trash: cannot trash '$file': No such file or directory"
+    printf '%s\n' "trash: cannot trash '$file': No such file or directory" >&2
     exit_status=1
     continue
   fi
 
   # Check if it's a directory and -r is not specified
   if [ -d "$file" ] && [ "$recursive" -eq 0 ]; then
-    warn "trash: cannot trash '$file': Is a directory (use -r to trash directories)"
+    printf '%s\n' "trash: cannot trash '$file': Is a directory (use -r to trash directories)" >&2
     exit_status=1
     continue
   fi
@@ -167,7 +157,7 @@ for file in "$@"; do
     
     # Use Finder to move to Trash
     if ! osascript -e "tell application \"Finder\" to delete POSIX file \"$escaped_path\"" >/dev/null 2>&1; then
-      warn "trash: failed to trash '$file'"
+      printf '%s\n' "trash: failed to trash '$file'" >&2
       exit_status=1
     fi
     ;;
@@ -178,7 +168,7 @@ for file in "$@"; do
       fi
     else
       if ! gio trash -- "$file"; then
-        warn "trash: failed to trash '$file'"
+        printf '%s\n' "trash: failed to trash '$file'" >&2
         exit_status=1
       fi
     fi
@@ -190,7 +180,7 @@ for file in "$@"; do
       fi
     else
       if ! trash-put -- "$file"; then
-        warn "trash: failed to trash '$file'"
+        printf '%s\n' "trash: failed to trash '$file'" >&2
         exit_status=1
       fi
     fi
@@ -212,7 +202,7 @@ for file in "$@"; do
       fi
     else
       if ! kioclient5 move "$abs_path" trash:/; then
-        warn "trash: failed to trash '$file'"
+        printf '%s\n' "trash: failed to trash '$file'" >&2
         exit_status=1
       fi
     fi
@@ -220,39 +210,4 @@ for file in "$@"; do
   esac
 done
 
-return $exit_status
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"
+exit $exit_status

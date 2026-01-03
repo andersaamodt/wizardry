@@ -1,42 +1,30 @@
 #!/bin/sh
 
-
-
-
 # Weave CRC-32 checksums into extended attributes.
 
-
-hashchant_usage() {
-cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat << 'USAGE'
 Usage: hashchant <file>
 
 Compute a CRC-32 hash from the filename and contents, write it to the file's user.hash extended attribute when supported, and print the applied value.
 USAGE
-}
-
-
-hashchant() {
-case "${1-}" in
---help|--usage|-h)
-  hashchant_usage
-  return 0
+  exit 0
   ;;
 esac
 
-require_wizardry || return 1
-
 set -eu
-env_clear
 
 if [ -z "${1-}" ]; then
-  usage-error "hashchant" "file path required"
+  printf '%s\n' "hashchant: file path required" >&2
+  exit 2
 fi
 
 file=$1
 
 if [ ! -e "$file" ]; then
-  die "hashchant: file not found"
-  return 1
+  printf '%s\n' "hashchant: file not found" >&2
+  exit 1
 fi
 
 filename=$(basename "$file")
@@ -47,7 +35,7 @@ last_helper=""
 last_status=0
 
 for helper in attr xattr setfattr; do
-  if ! has "$helper"; then
+  if ! command -v "$helper" >/dev/null 2>&1; then
     continue
   fi
 
@@ -81,8 +69,8 @@ for helper in attr xattr setfattr; do
   esac
 
   if [ "$applied" -eq 1 ]; then
-    success "File enchanted with hash: $hash"
-    return 0
+    printf '%s\n' "File enchanted with hash: $hash"
+    exit 0
   fi
 
   last_helper=$helper
@@ -90,44 +78,9 @@ for helper in attr xattr setfattr; do
 done
 
 if [ -n "$last_helper" ]; then
-  die "hashchant: failed to write hash using $last_helper (return 1 $last_status)"
-  return 1
+  printf '%s\n' "hashchant: failed to write hash using $last_helper (exit $last_status)" >&2
+  exit 1
 else
-  die "hashchant: xattr and attr commands not found, cannot enchant file"
-  return 1
+  printf '%s\n' "hashchant: xattr and attr commands not found, cannot enchant file" >&2
+  exit 1
 fi
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

@@ -106,7 +106,29 @@ The original path-wizard utility (now learn-spellbook) that worked well before w
 
 ### Files Converted So Far
 
-**10 of 390 files (2.6%)** - Average 45% code reduction, projected ~5,800 line savings
+**15 of 107 spells (14%)** - Average 40% code reduction
+
+**Categories Complete:**
+- ✅ arcane (6/6): copy, file-list, forall, jump-trash, read-magic, trash
+- ✅ crypto (3/3): evoke-hash, hash, hashchant  
+- ✅ priorities (4/4): get-priority, upvote, get-new-priority, prioritize
+- 🔄 enchant (1/4): enchantment-to-yaml
+- 🔄 wards (1/2): ssh-barrier
+
+**Infrastructure Updated:**
+- ✅ invoke-wizardry: Simplified to PATH-based (~300 lines removed)
+- ✅ learn-spellbook: Recursive PATH management for all spell/imp directories
+- ✅ banish: Moved from system/ to wards/ category
+
+**Line Reductions:**
+- invoke-wizardry: ~300 lines
+- arcane: 178 lines
+- crypto: 150 lines
+- priorities: 224 lines
+- enchant: 37 lines
+- **Total: ~889 lines removed**
+
+**Remaining:** 92 spells + imps + tests + documentation
 
 ### Priority Order
 
@@ -141,3 +163,56 @@ The original path-wizard utility (now learn-spellbook) that worked well before w
 - [ ] Tests pass completely
 - [ ] EXEMPTIONS.md updated
 - [ ] Documentation accurate
+
+---
+
+## Conversion Session Log (2026-01-03)
+
+### Session Summary
+Continuing systematic conversion of all spells to flat-file format.
+
+### Conversion Pattern Applied
+```sh
+# BEFORE (word-of-binding):
+spell_usage() { cat <<'USAGE' ... USAGE }
+spell() {
+  case "${1-}" in --help) spell_usage; return 0 ;; esac
+  require_wizardry || return 1
+  set -eu
+  env_clear
+  # logic with underscore imps
+}
+castable "$@"
+
+# AFTER (flat):
+case "${1-}" in
+--help|--usage|-h)
+  cat << 'USAGE'
+  ...
+  USAGE
+  exit 0
+  ;;
+esac
+set -eu
+# logic with hyphenated imps
+```
+
+### Key Changes Per Spell
+1. Remove wrapper function (e.g., `copy()` → inline code)
+2. Move `--help` before `set -eu`, change `return 0` → `exit 0`
+3. Remove `require_wizardry || return 1` line
+4. Remove `env_clear` call
+5. Remove castable loading block (~30 lines)
+6. Change all `return` → `exit` in main flow
+7. Convert imp calls: `ask_text` → `ask-text`, `has` → `command -v`, `say` → `printf`
+
+### Categories Converted This Session
+- ✅ priorities (4/4): Completed entire category
+- 🔄 enchant (1/4): Started category
+
+### Next Steps
+- Complete enchant category (3 remaining)
+- Convert psi category (2 spells)
+- Convert mud category (4 spells)
+- Convert divination category (5 spells)
+- Continue systematically through remaining categories

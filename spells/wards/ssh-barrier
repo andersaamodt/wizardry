@@ -1,33 +1,20 @@
 #!/bin/sh
 
-
-
-
 # This spell hardens SSH configuration with security best practices.
 # It backs up the original config and applies secure settings.
 
-
-ssh_barrier_usage() {
-cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat << 'USAGE'
 Usage: ssh-barrier
 
 Harden the SSH server configuration with security best practices. Backs up the original config, disables root login, and turns off password authentication.
 USAGE
-}
-
-
-ssh_barrier() {
-case "${1-}" in
---help|--usage|-h)
-  ssh_barrier_usage
-  return 0
+  exit 0
   ;;
 esac
 
-require_wizardry || return 1
-
 set -eu
-env_clear
 
 # Source colors for colored output
 . colors
@@ -35,13 +22,13 @@ env_clear
 sshd_config="${SSHD_CONFIG:-/etc/ssh/sshd_config}"
 
 # Confirm before proceeding
-if ! ask_yn "Do you wish to cast the SSH Standard Barrier spell?" no; then
-  say "Spell cancelled."
-  return 0
+if ! ask-yn "Do you wish to cast the SSH Standard Barrier spell?" no; then
+  printf '%s\n' "Spell cancelled."
+  exit 0
 fi
 
 # Make a backup of the original SSH configuration file
-backup "$sshd_config" ".original" || die "Cannot backup $sshd_config" || return 1
+backup "$sshd_config" ".original" || { printf '%s\n' "Cannot backup $sshd_config" >&2; exit 1; }
 
 # Disable root login
 sed-inplace 's/#PermitRootLogin prohibit-password/PermitRootLogin no/g' "$sshd_config"
@@ -68,39 +55,4 @@ printf '%s\n' "TCPKeepAlive yes" >> "$sshd_config"
 printf '%s\n' "ClientAliveInterval 300" >> "$sshd_config"
 printf '%s\n' "ClientAliveCountMax 0" >> "$sshd_config"
 
-say "SSH barrier spell cast successfully. Restart sshd to apply changes."
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"
+printf '%s\n' "SSH barrier spell cast successfully. Restart sshd to apply changes."

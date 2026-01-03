@@ -1,97 +1,57 @@
 #!/bin/sh
 
-
-
-
 # This spell returns files in a directory matching a given hash.
 # Searches current directory by default.
 
-
-evoke_hash_usage() {
-  cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat << 'USAGE'
 Usage: evoke-hash <hash> [directory]
 
 Find files whose hash attribute matches a given value, searching the current directory by default. The hash should be set beforehand with the hashchant spell.
 USAGE
-}
-
-
-evoke_hash() {
-case "${1-}" in
---help|--usage|-h)
-  evoke_hash_usage
-  return 0
+  exit 0
   ;;
 esac
 
-require_wizardry || return 1
-
 set -eu
-env_clear
 
 if [ "$#" -lt 1 ]; then
-  evoke_hash_usage >&2
-  return 1
+  cat >&2 << 'EOF'
+Usage: evoke-hash <hash> [directory]
+
+Find files whose hash attribute matches a given value, searching the current directory by default. The hash should be set beforehand with the hashchant spell.
+USAGE
+  exit 1
 fi
 
 hash=$1
 directory=${2:-.}
 
 if [ ! -d "$directory" ]; then
-  die "evoke-hash: directory not found"
-  return 1
+  printf '%s\n' "evoke-hash: directory not found" >&2
+  exit 1
 fi
 
 found=0
 for file in "$directory"/*; do
   [ -f "$file" ] || continue
   
-  file_hash=$(read_magic "$file" hash 2>/dev/null) || continue
+  file_hash=$(read-magic "$file" hash 2>/dev/null) || continue
   
   if [ "$file_hash" = "$hash" ]; then
-    abs-path "$file"
+    if command -v abs-path >/dev/null 2>&1; then
+      abs-path "$file"
+    else
+      printf '%s\n' "$file"
+    fi
     found=1
-    return 0
+    exit 0
   fi
 done
 
 if [ "$found" -eq 0 ]; then
-  warn "No file found for hash $hash."
-  info "Tip: use \"forall hashchant\" to hash files in this directory."
-  return 1
+  printf '%s\n' "No file found for hash $hash." >&2
+  printf '%s\n' "Tip: use \"forall hashchant\" to hash files in this directory." >&2
+  exit 1
 fi
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

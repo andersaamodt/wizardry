@@ -1,36 +1,28 @@
 #!/bin/sh
 
-
-
-
 # Hash spell: compute a CRC-32 checksum for a given file path.
 # Prints the checksum in hexadecimal alongside the resolved path.
 
-
-hash_usage() {
-cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat << 'USAGE'
 Usage: hash <file>
 
 Compute the CRC-32 hash of a file and print it in hexadecimal, resolving the path relative to this spell when needed.
 USAGE
-}
-
-hash() {
-case "${1-}" in
---help|--usage|-h)
-  hash_usage
-  return 0
+  exit 0
   ;;
 esac
 
-require_wizardry || return 1
-
 set -eu
-env_clear
 
 if [ "$#" != 1 ]; then
-    hash_usage >&2
-    return 2
+    cat >&2 << 'EOF'
+Usage: hash <file>
+
+Compute the CRC-32 hash of a file and print it in hexadecimal, resolving the path relative to this spell when needed.
+USAGE
+    exit 2
 fi
 
 # Get the directory where the script is being called from
@@ -43,50 +35,20 @@ file_name="$1"
 file="$script_dir/$file_name"
 
 if [ ! -f "$file" ]; then
-    die "hash: Your spell fizzles. There is no file."
-    return 1
+    printf '%s\n' "hash: Your spell fizzles. There is no file." >&2
+    exit 1
 fi
 
 # Normalize double slashes for macOS compatibility
-normalized_file=$(norm-path "$file")
-say "$normalized_file"
+if command -v norm-path >/dev/null 2>&1; then
+  normalized_file=$(norm-path "$file")
+else
+  normalized_file=$file
+fi
+printf '%s\n' "$normalized_file"
+
 # Compute the CRC-32 hash
 crc=$(cksum "$file" | awk '{print $1}')
 
 # Convert the hash to hexadecimal and display it
-say "$(printf "0x%x" "$crc")"
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"
+printf "0x%x\n" "$crc"
