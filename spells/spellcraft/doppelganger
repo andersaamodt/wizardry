@@ -136,9 +136,13 @@ failed_count=0
 
 # Find all executable files in spells/ directory (including hidden directories)
 # Only skip .git and .github directories
-find "$repo_dir/spells" -type f -executable \
+# Use temporary file to avoid subshell and preserve counter variables
+# Use 'command' to bypass any glossary overrides of find
+_spell_list_file="${TMPDIR:-/tmp}/doppelganger-spells-$$"
+command find "$repo_dir/spells" -type f -executable \
   ! -path "*/.git/*" \
-  ! -path "*/.github/*" | \
+  ! -path "*/.github/*" > "$_spell_list_file"
+
 while IFS= read -r spell_path; do
   # Get relative path from spells/
   rel_path=${spell_path#"$repo_dir/spells/"}
@@ -193,17 +197,17 @@ while IFS= read -r spell_path; do
     failed_count=$((failed_count + 1))
     rm -f "$target_file"
   fi
-done
+done < "$_spell_list_file"
 
-compiled_count=$((compiled_count))
-failed_count=$((failed_count))
+rm -f "$_spell_list_file"
 
 # Copy test files (including hidden directories like .arcana and .imps)
 say "Copying test files..."
 if [ -d "$repo_dir/.tests" ]; then
   # Copy all files including hidden ones
+  # Use 'command' to bypass any glossary overrides of find
   (cd "$repo_dir/.tests" && \
-    find . -mindepth 1 -maxdepth 1 -exec cp -r {} "$output_dir/.tests/" \; \
+    command find . -mindepth 1 -maxdepth 1 -exec cp -r {} "$output_dir/.tests/" \; \
     2>/dev/null) || true
 fi
 

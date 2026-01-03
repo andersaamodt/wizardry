@@ -136,7 +136,8 @@ case "$spell_name" in
       spell_path="$spell_name"
     else
       # Find spell recursively (include imps and .arcana)
-      spell_path=$(find "$repo_dir/spells" -type f -name "$spell_name" 2>/dev/null | head -1)
+      # Use 'command' to bypass any glossary overrides of find
+      spell_path=$(command find "$repo_dir/spells" -type f -name "$spell_name" 2>/dev/null | head -1)
     fi
     ;;
 esac
@@ -193,11 +194,12 @@ for dep in $dependencies; do
   esac
   
   # Find the imp/spell file
-  dep_file=$(find "$imps_dir" -type f -name "$dep" 2>/dev/null | head -1)
+  # Use 'command' to bypass any glossary overrides of find
+  dep_file=$(command find "$imps_dir" -type f -name "$dep" 2>/dev/null | head -1)
   
   # If not found in imps, check spells
   if [ -z "$dep_file" ]; then
-    dep_file=$(find "$repo_dir/spells" -type f -name "$dep" \
+    dep_file=$(command find "$repo_dir/spells" -type f -name "$dep" \
       ! -path "*/\.*" ! -path "$spell_path" 2>/dev/null | head -1)
   fi
   
