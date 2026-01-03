@@ -1,44 +1,31 @@
 #!/bin/sh
 
-
-
-
 # This spell lists all contacts in the contacts directory.
 # Each vCard file is parsed to extract the name, organization, or telephone.
 
-list_contacts_usage() {
-  cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat << 'USAGE'
 Usage: list-contacts [directory]
 
 List contacts from vCard files in a directory, defaulting to ~/.contacts when none is provided.
 USAGE
-}
-
-
-
-list_contacts() {
-case "${1-}" in
---help|--usage|-h)
-  list_contacts_usage
-  return 0
+  exit 0
   ;;
 esac
 
-require_wizardry || return 1
-
 set -eu
-env_clear
 
 # Default contacts directory
 contacts_dir="${1:-$HOME/.contacts}"
 
 # Ensure the contacts directory exists
-make dir "$contacts_dir"
+mkdir -p "$contacts_dir"
 
 # Find all vCard files in the contacts directory (POSIX-compliant)
 find "$contacts_dir" -name '*.vcf' | while IFS= read -r file; do
   # Skip if file doesn't exist (empty directory case)
-  is file "$file" || continue
+  [ -f "$file" ] || continue
   
   # Attempt to extract the FN, ORG, or TEL field from the vCard
   name=$(perl -pe 's/\r\n[[:space:]]/ /g' "$file" |
@@ -56,45 +43,10 @@ find "$contacts_dir" -name '*.vcf' | while IFS= read -r file; do
       END     {print name != "" ? name : (org != "" ? org : tel)}
     ')
 
-  if is unset "$name"; then
+  if [ -z "$name" ]; then
     # No name, organization, or telephone found, print the filename
     name="<$(basename "$file")>"
   fi
 
-  say "$name"
+  printf '%s\n' "$name"
 done | sort
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"
