@@ -2,13 +2,10 @@
 # erase-spell - Delete a custom spell from $SPELLBOOK_DIR
 # Asks for confirmation before deleting.
 
-
-
-
-
-
-erase_spell_usage() {
-        cat <<'USAGE'
+# Handle help before set -eu
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: erase-spell NAME [--force]
 
 Delete a custom spell from $SPELLBOOK_DIR. This action cannot be undone.
@@ -17,24 +14,11 @@ Options:
   --force, -f   Skip confirmation prompt
   --help, -h    Show this help message
 USAGE
-}
-
-
-
-erase_spell() {
-
-# Handle help before set -eu
-case "${1-}" in
---help|--usage|-h)
-  erase_spell_usage
-  return 0
+  exit 0
   ;;
 esac
 
-require_wizardry || return 1
-
 set -eu
-env_clear
 
 # Initialize spell_home
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
@@ -45,7 +29,7 @@ find_custom_spell() {
         script_path="$spell_home/$name"
         if [ -f "$script_path" ] && [ -x "$script_path" ]; then
                 printf '%s' "$script_path"
-                return 0
+                exit 0
         fi
         # Check in spell_home subfolders
         for subdir in "$spell_home"/*; do
@@ -53,10 +37,10 @@ find_custom_spell() {
                 script_path="$subdir/$name"
                 if [ -f "$script_path" ] && [ -x "$script_path" ]; then
                         printf '%s' "$script_path"
-                        return 0
+                        exit 0
                 fi
         done
-        return 1
+        exit 1
 }
 
 force=0
@@ -66,20 +50,20 @@ while [ "$#" -gt 0 ]; do
         case $1 in
                 --help|--usage|-h)
                         erase_spell_usage
-                        return 0
+                        exit 0
                         ;;
                 --force|-f)
                         force=1
                         shift
                         ;;
                 -*)
-                        usage-error "erase-spell" "unknown option: $1" || return 1
+                        usage-error "erase-spell" "unknown option: $1" || exit 1
                         ;;
                 *)
                         if [ -z "$name" ]; then
                                 name=$1
                         else
-                                usage-error "erase-spell" "unexpected argument: $1" || return 1
+                                usage-error "erase-spell" "unexpected argument: $1" || exit 1
                         fi
                         shift
                         ;;
@@ -88,13 +72,13 @@ done
 
 if [ -z "$name" ]; then
         erase_spell_usage >&2
-        return 1
+        exit 1
 fi
 
 # Find the spell
 script_path=$(find_custom_spell "$name") || {
         display_path=$(tilde-path "$spell_home")
-        die "erase-spell: spell \"$name\" not found in $display_path" || return 1
+        die "erase-spell: spell \"$name\" not found in $display_path" || exit 1
 }
 
 # Check if it's actually in spell_home (not a built-in spell)
@@ -103,7 +87,7 @@ case "$script_path" in
                 : # OK, it's a custom spell
                 ;;
         *)
-                die "erase-spell: \"$name\" is not a custom spell and cannot be erased" || return 1
+                die "erase-spell: \"$name\" is not a custom spell and cannot be erased" || exit 1
                 ;;
 esac
 
@@ -117,7 +101,7 @@ if [ "$force" -eq 0 ]; then
                         ;;
                 *)
                         printf 'Aborted.\n'
-        return 0
+        exit 0
                         ;;
         esac
 fi
@@ -125,38 +109,3 @@ fi
 # Delete the spell
 rm -f "$script_path"
 printf 'Erased spell "%s".\n' "$name"
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

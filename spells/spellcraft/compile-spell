@@ -1,13 +1,10 @@
 #!/bin/sh
 
-
-
-
-
 # Compile a spell into a standalone script by inlining its dependencies.
 # Creates a self-contained executable that works without wizardry installed.
 
-compile_spell_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE'
 Usage: compile-spell <spell-name-or-path>
 
@@ -22,14 +19,7 @@ Examples:
   compile-spell spells/cantrips/hash      # Use path
   compile-spell ./my-custom-spell         # Current directory
 USAGE
-}
-
-
-compile_spell() {
-case "${1-}" in
---help|--usage|-h)
-  compile_spell_usage
-  return 0
+  exit 0
   ;;
 esac
 
@@ -37,7 +27,7 @@ esac
 if command -v require_wizardry >/dev/null 2>&1; then
   require_wizardry || exit 1
 elif command -v require_wizardry >/dev/null 2>&1; then
-  require_wizardry || return 1
+  require_wizardry || exit 1
 else
   # Neither available - source it now
   if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/require-wizardry" ]; then
@@ -83,7 +73,7 @@ fi
 
 if [ "$#" -lt 1 ]; then
   compile_spell_usage >&2
-  return 2
+  exit 2
 fi
 
 spell_name=$1
@@ -123,7 +113,7 @@ esac
 
 if [ -z "$spell_path" ] || [ ! -f "$spell_path" ]; then
   die "compile-spell: spell '$spell_name' not found"
-        return 1
+        exit 1
 fi
 
 # Read spell content
@@ -360,7 +350,6 @@ fi
 printf '#!/bin/sh\n'
 printf '#\n'
 
-
 # Create centered separator with spell name (76 chars total width)
 name_len=${#spell_name}
 dash_space=$((76 - 2 - name_len - 2))  # 76 - "# " - name - spaces around
@@ -439,38 +428,3 @@ fi
 
 # Output transformed spell content
 printf '%s\n' "$transformed"
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

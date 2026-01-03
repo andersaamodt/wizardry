@@ -11,30 +11,21 @@ if ! command -v env_clear >/dev/null 2>&1; then
   [ -f "$_i/env-clear" ] && . "$_i/env-clear"
 fi
 
-
 # This spell authorizes a new player to connect via SSH key on a MUD host.
 # Run it on the MUD host computer to add players with limited permissions.
 
-add_ssh_player_usage() {
-cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: add-ssh-player
 
 Interactively create a new player account on the MUD host by prompting for a player name and SSH key, then creating a limited system user with that key.
 USAGE
-}
-
-
-
-add_ssh_player() {
-case "${1-}" in
---help|--usage|-h)
-  add_ssh_player_usage
-  return 0
+  exit 0
   ;;
 esac
 
 set -eu
-env_clear
 
 printf '%s\n' "This spell authorizes a new player to connect to this computer via their player key (SSH key). Run this on the MUD host computer."
 printf '%s\n' "A new user account will be created on your system with limited permissions for the new player."
@@ -46,7 +37,7 @@ read -r playername
 # Check if user already exists. Check now so they don't have to enter the SSH key over and over.
 if id "$playername" >/dev/null 2>&1; then
     printf '%s\n' "add-ssh-player: user $playername already exists."
-    return 1
+    exit 1
 fi
 
 printf '%s' "Enter SSH key: "
@@ -55,7 +46,7 @@ read -r sshkey
 # Check if key already exists in authorized_keys file
 if grep -q "$sshkey" ~/.ssh/authorized_keys 2>/dev/null; then
     printf '%s\n' "add-ssh-player: key already exists in authorized_keys file."
-    return 1
+    exit 1
 fi
 
 # Create new system user
@@ -66,16 +57,3 @@ mkdir -p "/home/$playername/.ssh"
 
 # Add key to authorized_keys file in their home directory, so they can log in as themselves
 printf '%s %s@mud\n' "$sshkey" "$playername" >> "/home/$playername/.ssh/authorized_keys"
-}
-
-
-# Load castable imp (for direct execution)
-# Always source castable, never use from PATH
-  if true; then
-  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
-  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
-  [ -f "$_i/castable" ] && . "$_i/castable"
-fi
-
-castable "$@"

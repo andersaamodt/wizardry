@@ -1,33 +1,20 @@
 #!/bin/sh
 
-
-
-
 # services-menu collects all service-management spells in one place so users
 # never need to remember flags. Each menu item launches a single-purpose spell.
 
-require_wizardry || return 1
-
-services_menu_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE'
 Usage: services-menu
 
 Displays the system services management menu.
 USAGE
-}
-
-
-
-services_menu() {
-case "${1-}" in
---help|--usage|-h)
-  services_menu_usage
-  return 0
+  exit 0
   ;;
 esac
 
 set -eu
-env_clear
 set -u
 
 # Load color palette (colors handles terminal capability detection internally)
@@ -35,17 +22,17 @@ set -u
 . "$(command -v colors)"
 
 if ! require menu "The services menu needs the 'menu' command to present options."; then
-  return 1
+  exit 1
 fi
 
 for spell in start-service stop-service restart-service enable-service disable-service \
   service-status is-service-installed remove-service install-service-template; do
   if ! require "$spell" "The services menu expects the '$spell' spell."; then
-    return 1
+    exit 1
   fi
 done
 
-# Catch Ctrl-C and TERM signal to return 1 cleanly
+# Catch Ctrl-C and TERM signal to exit 1 cleanly
 trap 'exit 0' INT TERM
 
 services_menu_display_menu() {
@@ -79,38 +66,3 @@ while true; do
 
   services_menu_display_menu || true
 done
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

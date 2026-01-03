@@ -34,7 +34,15 @@ if [ "${_WIZARDRY_INVOKED-}" != "1" ]; then
   fi
 fi
 
-profile_tests_usage() {
+case "${1-}" in
+--help|--usage|-h)
+  profile_tests_usage
+  exit 0
+  ;;
+esac
+
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE'
 Usage: profile-tests [--only PATTERN] [--output FILE]
 
@@ -54,27 +62,11 @@ Examples:
   profile-tests --only "arcane/*"
   profile-tests --output /tmp/test-profile.txt
 USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-  profile_tests_usage
   exit 0
   ;;
 esac
 
-profile_tests() {
-case "${1-}" in
---help|--usage|-h)
-  profile_tests_usage
-  return 0
-  ;;
-esac
-
-require_wizardry || return 1
-
 set -eu
-env_clear
 
 # Find the script directory and root
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
@@ -83,12 +75,12 @@ test_dir="$root_dir/.tests"
 
 # Helper function for pattern matching
 matches_pattern() {
-  [ "$#" -ge 2 ] || return 1
+  [ "$#" -ge 2 ] || exit 1
   _mp_path=$1
   _mp_pattern=$2
   case "$_mp_path" in
-    $_mp_pattern) return 0 ;;
-    *) return 1 ;;
+    $_mp_pattern) exit 0 ;;
+    *) exit 1 ;;
   esac
 }
 
@@ -138,7 +130,7 @@ $(find "$test_dir" -mindepth 2 -type f -name 'test-*.sh' 2>/dev/null | sort)"
 fi
 
 if [ -z "$test_list" ]; then
-  die "profile-tests: no tests found" || return 1
+  die "profile-tests: no tests found" || exit 1
 fi
 
 # Create temporary file for timing data
@@ -257,16 +249,3 @@ fi
 # Cleanup
 trap - EXIT HUP INT TERM
 rm -f "$tmpfile"
-}
-
-
-# Load castable imp (for direct execution)
-# Always source castable, never use from PATH
-  if true; then
-  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
-  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
-  [ -f "$_i/castable" ] && . "$_i/castable"
-fi
-
-castable "$@"

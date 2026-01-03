@@ -1,38 +1,21 @@
 #!/bin/sh
 
-
-
-
 # This spell forgets (removes) a spell from the Cast menu.
 # Use this to remove memorized spells from the Cast menu.
 #
 # Usage: forget SPELL_NAME
 
-require_wizardry || return 1
-
 spell_name="forget"
 tab_char=$(printf '\t')
 
-forget_usage() {
-        cat <<USAGE
-Usage: $spell_name <spell-name>
-
-Remove a spell from the Cast menu.
-USAGE
-}
-
-
-
-forget() {
 case "${1-}" in
 --help|--usage|-h)
   forget_usage
-  return 0
+  exit 0
   ;;
 esac
 
 set -eu
-env_clear
 
 # Helper for reading non-empty lines
 
@@ -68,7 +51,7 @@ fi
 case ${1-} in
 --help|--usage|-h)
   forget_usage
-  return 0
+  exit 0
   ;;
 "")
   usage-error "$spell_name" "spell name required"
@@ -84,22 +67,22 @@ name=$1
 case $name in
 ''|*[!A-Za-z0-9._-]*)
   die "$spell_name: names may contain only letters, digits, dots, underscores, and dashes."
-        return 1
+        exit 1
   ;;
 -*)
   die "$spell_name: names may not begin with a dash."
-        return 1
+        exit 1
   ;;
 esac
 
 # Check if command file exists
 if [ ! -f "$command_file" ]; then
   die "$spell_name: spell '$name' is not memorized."
-        return 1
+        exit 1
 fi
 
 # Remove spell from command file
-tmp=$(temp-file forget) || return 1
+tmp=$(temp-file forget) || exit 1
 trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
 removed=0
 while IFS= read -r line || nonempty "$line"; do
@@ -123,43 +106,8 @@ if [ "$removed" -eq 0 ]; then
   trap - EXIT HUP INT TERM
   rm -f "$tmp"
   die "$spell_name: spell '$name' is not memorized."
-        return 1
+        exit 1
 fi
 
 trap - EXIT HUP INT TERM
 mv "$tmp" "$command_file"
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

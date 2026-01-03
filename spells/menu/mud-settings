@@ -1,34 +1,21 @@
 #!/bin/sh
 
-
-
-
 # This spell displays the MUD settings menu.
 
-require_wizardry || return 1
-
-mud_settings_usage() {
-        cat <<'USAGE' >&2
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE' >&2
 Usage: mud-settings
 
 Opens the MUD Settings menu so you can create or select a player and manage the public key used for adventures.
 USAGE
-}
-
-
-
-mud_settings() {
-case "${1-}" in
---help|--usage|-h)
-  mud_settings_usage
-  return 0
+  exit 0
   ;;
 esac
 
 set -eu
-env_clear
 
-# Catch Ctrl-C and TERM signal to return 1 cleanly
+# Catch Ctrl-C and TERM signal to exit 1 cleanly
 trap 'exit 0' INT TERM
 
 # Load color palette (colors handles terminal capability detection internally)
@@ -36,22 +23,22 @@ trap 'exit 0' INT TERM
 . "$(command -v colors)"
 
 if ! require menu "The MUD Settings menu needs the 'menu' command to present options."; then
-  return 1
+  exit 1
 fi
 
 # Check if player key exists
 has_player_key() {
   if [ -n "${MUD_PLAYER-}" ] && [ -f "$HOME/.ssh/${MUD_PLAYER}.pub" ]; then
-    return 0
+    exit 0
   fi
   # Check for any player key in ~/.ssh with common naming patterns
   # Use nullglob-safe pattern matching
   for key in "$HOME"/.ssh/*.pub; do
     # Skip if glob didn't match (returns literal *.pub)
     [ -e "$key" ] || continue
-    [ -f "$key" ] && return 0
+    [ -f "$key" ] && exit 0
   done
-  return 1
+  exit 1
 }
 
 mud_settings_display_menu() {
@@ -91,38 +78,3 @@ while true; do
     fi
   fi
 done
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

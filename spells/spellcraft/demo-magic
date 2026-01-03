@@ -23,7 +23,6 @@ USAGE
 }
 
 # Demo a single level using spell-levels data
-demo_level() {
   level=$1
   
   # Get level name and spell list
@@ -672,7 +671,7 @@ demo_magic() {
 case "${1-}" in
 --help|--usage|-h)
   demo_magic_usage
-  return 0
+  exit 0
   ;;
 esac
 
@@ -711,7 +710,7 @@ if ! command -v spell_levels >/dev/null 2>&1; then
     . "${WIZARDRY_DIR}/spells/.imps/sys/spell-levels"
   else
     printf 'demo-magic: spell-levels imp not found\n' >&2
-    return 1
+    exit 1
   fi
 fi
 
@@ -725,12 +724,12 @@ if ! command -v validate_spells >/dev/null 2>&1; then
     unset _WIZARDRY_SOURCING_SPELL
   else
     printf 'demo-magic: validate-spells not found\n' >&2
-    return 1
+    exit 1
   fi
   
   if ! command -v validate_spells >/dev/null 2>&1; then
     printf 'demo-magic: failed to load validate-spells\n' >&2
-    return 1
+    exit 1
   fi
 fi
 
@@ -749,7 +748,7 @@ if [ "$#" -gt 0 ]; then
     *)
       printf 'demo-magic: invalid level: %s\n' "$1" >&2
       demo_magic_usage >&2
-      return 2
+      exit 2
       ;;
   esac
 fi
@@ -787,7 +786,7 @@ if [ "${WIZARDRY_DEMO_IN_BWRAP-0}" -ne 1 ] && [ "${WIZARDRY_DEMO_NO_BWRAP-0}" -n
       if command -v ask_yn >/dev/null 2>&1; then
         if ! ask_yn "Continue without sandbox?" no; then
           printf 'demo-magic: aborting\n' >&2
-          return 1
+          exit 1
         fi
       else
         printf 'demo-magic: continuing without sandbox (set WIZARDRY_DEMO_NO_BWRAP=1 to skip this check)\n' >&2
@@ -817,39 +816,4 @@ printf '\n'
 printf 'The demonstration concludes.\n'
 printf 'The circle closes. Wizardry stands ready.\n'
 
-return 0
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"
+exit 0
