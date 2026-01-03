@@ -201,10 +201,11 @@ $func_def
 "
     inlined_names="$inlined_names $dep"
   else
-    # It's a spell without _funcname() pattern - inline entire spell as function
-    # Remove shebang, *_usage, --help handler, require_wizardry, set -eu, env_clear, and loading patterns
+     # It's a spell without _funcname() pattern - inline entire spell as function
+    # Remove shebang, *_usage, --help handler, set -eu, env_clear, and loading patterns  
+    # BUT preserve bootstrap code (if command -v require_wizardry blocks)
     spell_body=$(printf '%s\n' "$dep_content" | awk '
-      BEGIN { skip=0; in_usage=0; skip_loading=0 }
+      BEGIN { skip=0; in_usage=0; skip_loading=0; in_bootstrap=0 }
       /^#!/ { next }
       /^[a-zA-Z_][a-zA-Z0-9_]*_usage\(\)/ { in_usage=1; next }
       in_usage && /^}$/ { in_usage=0; next }
@@ -214,6 +215,11 @@ $func_def
       skip { next }
       /^set -eu$/ { next }
       /^set -u$/ { next }
+      /^if command -v require_wizardry/ { in_bootstrap=1; print; next }
+      /^elif command -v require_wizardry/ { in_bootstrap=1; print; next }
+      in_bootstrap && /^fi$/ { in_bootstrap=0; print; next }
+      in_bootstrap && /^else/ { print; next }
+      in_bootstrap { print; next }
       /^require-wizardry/ { next }
       /^[[:space:]]*require_wizardry([[:space:]]|\|\||$)/ { next }
       /^[[:space:]]*\. env_clear([[:space:]]|$)/ { next }
