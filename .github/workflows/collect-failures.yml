@@ -402,14 +402,48 @@ jobs:
                       echo "$failure_text"
                       echo ""
                       
-                      # Add to PR description summary
+                      # Add to PR description summary - insert under Unit tests section
+                      # Create temp file with job details
+                      job_details_file="/tmp/job_details_$$.txt"
                       {
                         echo "**Job: $job_name**"
                         echo '```'
                         echo "$failure_text"
                         echo '```'
                         echo ""
-                      } >> "$failure_summary_file"
+                      } > "$job_details_file"
+                      
+                      # Insert job details after the last job in the "Unit tests" section
+                      # Find the line number of the "### ❌ Unit tests" header
+                      unit_tests_line=$(grep -n "^### ❌ Unit tests$" "$failure_summary_file" | cut -d: -f1)
+                      
+                      if [ -n "$unit_tests_line" ]; then
+                        # Find the next section header (### ❌) or end of file
+                        next_section_line=$(tail -n +$((unit_tests_line + 1)) "$failure_summary_file" | \
+                          grep -n "^### ❌" | head -1 | cut -d: -f1)
+                        
+                        if [ -n "$next_section_line" ]; then
+                          # Insert before the next section
+                          insert_line=$((unit_tests_line + next_section_line - 1))
+                        else
+                          # No next section, append to end
+                          insert_line=$(wc -l < "$failure_summary_file")
+                          insert_line=$((insert_line + 1))
+                        fi
+                        
+                        # Insert the job details at the calculated position
+                        {
+                          head -n $((insert_line - 1)) "$failure_summary_file"
+                          cat "$job_details_file"
+                          tail -n +$insert_line "$failure_summary_file"
+                        } > "${failure_summary_file}.tmp"
+                        mv "${failure_summary_file}.tmp" "$failure_summary_file"
+                      else
+                        # Fallback: append to end (shouldn't happen as we create section above)
+                        cat "$job_details_file" >> "$failure_summary_file"
+                      fi
+                      
+                      rm -f "$job_details_file"
                       
                       # Update PR description immediately after each job
                       update_pr_description
