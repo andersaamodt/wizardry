@@ -3,8 +3,7 @@
 # Validate that specified spells and imps exist in wizardry installation.
 # Used by banish, test-magic, and demo-magic to verify spell availability.
 
-case "${1-}" in
---help|--usage|-h)
+validate_spells_usage() {
   cat <<'USAGE'
 Usage: validate-spells [OPTIONS] SPELL...
 
@@ -31,6 +30,11 @@ Exit Codes:
   1  One or more spells/imps missing
   2  Invalid usage
 USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  validate_spells_usage
   exit 0
   ;;
 esac
@@ -81,7 +85,7 @@ while [ "$#" -gt 0 ]; do
       ;;
     -*)
       printf 'validate-spells: unknown option: %s\n' "$1" >&2
-      return 2
+      exit 2
       ;;
     *)
       break
@@ -91,7 +95,7 @@ done
 
 if [ "$#" -eq 0 ]; then
   printf 'validate-spells: no spells specified\n' >&2
-  return 2
+  exit 2
 fi
 
 # Validate each spell

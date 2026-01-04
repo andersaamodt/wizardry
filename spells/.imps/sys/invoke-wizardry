@@ -60,6 +60,11 @@ if [ -z "${WIZARDRY_DIR-}" ]; then
       WIZARDRY_DIR=$(CDPATH= cd -- "$_iw_script_dir/../../.." 2>/dev/null && pwd -P) || :
     fi
   fi
+  
+  # Final fallback: if in a directory with spells subdirectory, use PWD
+  if [ -z "${WIZARDRY_DIR-}" ] && [ -d "spells" ] && [ -d "spells/.imps" ]; then
+    WIZARDRY_DIR=$(pwd -P)
+  fi
 fi
 
 # Validate WIZARDRY_DIR

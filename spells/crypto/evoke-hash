@@ -17,7 +17,7 @@ esac
 set -eu
 
 if [ "$#" -lt 1 ]; then
-  cat >&2 << 'EOF'
+  cat >&2 << 'USAGE'
 Usage: evoke-hash <hash> [directory]
 
 Find files whose hash attribute matches a given value, searching the current directory by default. The hash should be set beforehand with the hashchant spell.

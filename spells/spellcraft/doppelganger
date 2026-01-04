@@ -180,6 +180,13 @@ if [ -d "$repo_dir/.tests" ]; then
     2>/dev/null) || true
 fi
 
+# Copy spell-levels imp (required by test-magic)
+say "Copying spell-levels imp..."
+if [ -f "$repo_dir/spells/.imps/sys/spell-levels" ]; then
+  mkdir -p "$output_dir/spells/.imps/sys"
+  cp "$repo_dir/spells/.imps/sys/spell-levels" "$output_dir/spells/.imps/sys/" 2>/dev/null || true
+fi
+
 # Copy essential files (README, LICENSE, etc.) but skip .git and .github
 say "Copying essential files..."
 for file in "$repo_dir"/*; do
