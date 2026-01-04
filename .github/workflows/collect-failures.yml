@@ -113,8 +113,8 @@ jobs:
 
             # Check for early failure (workflow failed before tests ran)
             # Look for actual error indicators, not test messages that mention errors
-            # Skip this check if we see test output (PASS/FAIL lines)
-            if ! grep -qE "^[[:space:]]*(PASS|FAIL)" "$cleaned_log" && \
+            # Skip this check if we see test output (PASS/FAIL lines with timestamps)
+            if ! grep -qE "[[:space:]](PASS|FAIL)[[:space:]]" "$cleaned_log" && \
                grep -qE "not found|No such file|Permission denied|cannot access" "$cleaned_log"; then
               # Extract the error and surrounding context (this is an early failure)
               grep -E -B 10 -A 2 "not found|No such file|Permission denied|cannot access" "$cleaned_log" | head -50
