@@ -105,15 +105,13 @@ lines_status=$?
 
 if [ "$want_width" -eq 1 ]; then
     if [ $cols_status -ne 0 ] || [ -z "$cols" ]; then
-        printf '%s\n' 'fathom-terminal: unable to determine terminal width' >&2
-        exit 1
+        die 'fathom-terminal: unable to determine terminal width'
     fi
 fi
 
 if [ "$want_height" -eq 1 ]; then
     if [ $lines_status -ne 0 ] || [ -z "$lines" ]; then
-        printf '%s\n' 'fathom-terminal: unable to determine terminal height' >&2
-        exit 1
+        die 'fathom-terminal: unable to determine terminal height'
     fi
 fi
 
