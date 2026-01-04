@@ -23,6 +23,7 @@ USAGE
 }
 
 # Demo a single level using spell-levels data
+demo_level() {
   level=$1
   
   # Get level name and spell list
@@ -41,16 +42,16 @@ USAGE
       printf '\n'
       
       # Actually run detect-posix
-      if command -v detect_posix >/dev/null 2>&1; then
+      if command -v detect-posix >/dev/null 2>&1; then
         printf 'The wizard casts detect-posix...\n'
-        detect_posix 2>&1 | head -5
+        detect-posix 2>&1 | head -5
         printf '\n'
       fi
       
       # Run detect-distro
-      if command -v detect_distro >/dev/null 2>&1; then
+      if command -v detect-distro >/dev/null 2>&1; then
         printf 'The wizard casts detect-distro...\n'
-        printf 'Distribution: %s\n' "$(detect_distro)"
+        printf 'Distribution: %s\n' "$(detect-distro)"
         printf '\n'
       fi
       
@@ -75,9 +76,9 @@ USAGE
       printf '\n'
       
       # Demonstrate validate-spells
-      if command -v validate_spells >/dev/null 2>&1; then
+      if command -v validate-spells >/dev/null 2>&1; then
         printf 'The wizard casts validate-spells on core infrastructure...\n'
-        validate_spells banish:system validate-spells:.wizardry 2>&1 | head -3
+        validate-spells banish:wards validate-spells:.wizardry 2>&1 | head -3
         printf '\n'
       fi
       
@@ -101,9 +102,9 @@ USAGE
       printf '\n'
       
       # Demonstrate fathom-terminal
-      if command -v fathom_terminal >/dev/null 2>&1; then
+      if command -v fathom-terminal >/dev/null 2>&1; then
         printf 'The wizard casts fathom-terminal...\n'
-        if term_size=$(fathom_terminal 2>&1); then
+        if term_size=$(fathom-terminal 2>&1); then
           printf 'Terminal dimensions discovered: %s\n' "$term_size"
           printf '\n'
         else
@@ -141,11 +142,11 @@ USAGE
       printf '\n'
       
       # Demonstrate read-magic
-      if command -v read_magic >/dev/null 2>&1; then
+      if command -v read-magic >/dev/null 2>&1; then
         printf 'The wizard casts read-magic...\n'
         printf '(Reads extended attributes from files)\n'
         printf 'Reading the read-magic spell itself:\n'
-        read_magic "${WIZARDRY_DIR}/spells/arcane/read-magic" 2>&1 | head -5 || printf '  (No attributes set)\n'
+        read-magic "${WIZARDRY_DIR}/spells/arcane/read-magic" 2>&1 | head -5 || printf '  (No attributes set)\n'
         printf '\n'
       fi
       
@@ -161,9 +162,9 @@ USAGE
       printf '\n'
       
       # Demonstrate ask-yn (with auto-response via pipe)
-      if command -v ask_yn >/dev/null 2>&1; then
+      if command -v ask-yn >/dev/null 2>&1; then
         printf 'The wizard casts ask-yn "Is this a demonstration?" yes\n'
-        printf 'y\n' | ask_yn "Is this a demonstration?" yes 2>&1 || true
+        printf 'y\n' | ask-yn "Is this a demonstration?" yes 2>&1 || true
         printf '\n'
       fi
       ;;
@@ -196,9 +197,9 @@ USAGE
       printf '\n'
       
       # Demonstrate validate-number
-      if command -v validate_number >/dev/null 2>&1; then
+      if command -v validate-number >/dev/null 2>&1; then
         printf 'The wizard casts validate-number...\n'
-        if printf '42\n' | validate_number "Enter a number" >/dev/null 2>&1; then
+        if printf '42\n' | validate-number "Enter a number" >/dev/null 2>&1; then
           printf 'Number 42 validated successfully ✓\n'
         fi
         printf '\n'
@@ -215,9 +216,9 @@ USAGE
       printf '\n'
       
       # Demonstrate ask-number  
-      if command -v ask_number >/dev/null 2>&1; then
+      if command -v ask-number >/dev/null 2>&1; then
         printf 'The wizard casts ask-number...\n'
-        printf '7\n' | ask_number "Pick a lucky number" 2>&1 | head -3 || true
+        printf '7\n' | ask-number "Pick a lucky number" 2>&1 | head -3 || true
         printf '\n'
       fi
       
@@ -231,9 +232,9 @@ USAGE
       printf '\n'
       
       # Demonstrate package-managers
-      if command -v package_managers >/dev/null 2>&1; then
+      if command -v package-managers >/dev/null 2>&1; then
         printf 'The wizard casts package-managers...\n'
-        package_managers 2>&1 | head -5
+        package-managers 2>&1 | head -5
         printf '\n'
       fi
       
@@ -284,9 +285,9 @@ USAGE
       printf '\n'
       
       # Demonstrate detect-rc-file
-      if command -v detect_rc_file >/dev/null 2>&1; then
+      if command -v detect-rc-file >/dev/null 2>&1; then
         printf 'The wizard casts detect-rc-file...\n'
-        rc_file=$(detect_rc_file 2>&1 || true)
+        rc_file=$(detect-rc-file 2>&1 || true)
         if [ -n "$rc_file" ]; then
           printf 'Shell RC file detected: %s\n' "$rc_file"
         fi
@@ -401,9 +402,9 @@ USAGE
       printf '\n'
       
       # Demonstrate lint-magic
-      if command -v lint_magic >/dev/null 2>&1; then
+      if command -v lint-magic >/dev/null 2>&1; then
         printf 'The wizard casts lint-magic on demo-magic itself...\n'
-        lint_magic "${WIZARDRY_DIR}/spells/spellcraft/demo-magic" 2>&1 | head -3 || true
+        lint-magic "${WIZARDRY_DIR}/spells/spellcraft/demo-magic" 2>&1 | head -3 || true
         printf '\n'
       fi
       
@@ -677,7 +678,7 @@ esac
 
 set -eu
 
-# Source env_clear if not already available
+# Source env-clear if not already available
 if ! command -v env_clear >/dev/null 2>&1; then
   if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/env-clear" ]; then
     . "${WIZARDRY_DIR}/spells/.imps/sys/env-clear"
@@ -714,24 +715,17 @@ if ! command -v spell_levels >/dev/null 2>&1; then
   fi
 fi
 
-# Load validate_spells function if not already available
-if ! command -v validate_spells >/dev/null 2>&1; then
-  if [ -f "${WIZARDRY_DIR}/spells/.wizardry/validate-spells" ]; then
-    # Prevent castable from executing when sourced
-    _WIZARDRY_SOURCING_SPELL=1
-    # shellcheck source=/dev/null
-    . "${WIZARDRY_DIR}/spells/.wizardry/validate-spells"
-    unset _WIZARDRY_SOURCING_SPELL
-  else
-    printf 'demo-magic: validate-spells not found\n' >&2
-    exit 1
-  fi
-  
-  if ! command -v validate_spells >/dev/null 2>&1; then
-    printf 'demo-magic: failed to load validate-spells\n' >&2
-    exit 1
-  fi
+# Add spell directories to PATH for demonstrations
+if [ -n "${WIZARDRY_DIR-}" ]; then
+  PATH="$WIZARDRY_DIR/spells/.wizardry:$PATH"
+  for dir in "$WIZARDRY_DIR"/spells/*; do
+    [ -d "$dir" ] || continue
+    PATH="$dir:$PATH"
+  done
+  export PATH
 fi
+
+# Note: validate-spells is now a flat-file spell in PATH, not a function
 
 # Parse level argument
 demo_level=29  # Default to all levels
@@ -769,8 +763,8 @@ if [ "${WIZARDRY_DEMO_IN_BWRAP-0}" -ne 1 ] && [ "${WIZARDRY_DEMO_NO_BWRAP-0}" -n
       
       # Check if we can install it
       if command -v pkg-install >/dev/null 2>&1; then
-        if command -v ask_yn >/dev/null 2>&1; then
-          if ask_yn "Install bubblewrap now?" yes; then
+        if command -v ask-yn >/dev/null 2>&1; then
+          if ask-yn "Install bubblewrap now?" yes; then
             printf 'Installing bubblewrap...\n' >&2
             if pkg-install bubblewrap 2>/dev/null || pkg-install bwrap 2>/dev/null; then
               printf 'Bubblewrap installed successfully. Re-running demo-magic...\n' >&2
@@ -783,8 +777,8 @@ if [ "${WIZARDRY_DEMO_IN_BWRAP-0}" -ne 1 ] && [ "${WIZARDRY_DEMO_NO_BWRAP-0}" -n
       fi
       
       # Either install failed or user declined - ask to continue
-      if command -v ask_yn >/dev/null 2>&1; then
-        if ! ask_yn "Continue without sandbox?" no; then
+      if command -v ask-yn >/dev/null 2>&1; then
+        if ! ask-yn "Continue without sandbox?" no; then
           printf 'demo-magic: aborting\n' >&2
           exit 1
         fi
@@ -815,5 +809,8 @@ printf '════════════════════════
 printf '\n'
 printf 'The demonstration concludes.\n'
 printf 'The circle closes. Wizardry stands ready.\n'
+}
 
+# Call the main function (flat-file pattern)
+demo_magic "$@"
 exit 0
