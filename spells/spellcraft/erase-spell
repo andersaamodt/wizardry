@@ -52,10 +52,6 @@ name=""
 
 while [ "$#" -gt 0 ]; do
         case $1 in
-                --help|--usage|-h)
-                        erase_spell_usage
-                        exit 0
-                        ;;
                 --force|-f)
                         force=1
                         shift
