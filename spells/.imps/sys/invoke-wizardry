@@ -48,6 +48,14 @@ if [ -z "${WIZARDRY_DIR-}" ]; then
     _iw_script_path=$(command -v invoke-wizardry 2>/dev/null | head -1) || :
   fi
   
+  # Fallback: check if we're being sourced from the repo (CI/dev case)
+  if [ -z "$_iw_script_path" ]; then
+    # Try to detect from current directory structure
+    if [ -f "spells/.imps/sys/invoke-wizardry" ]; then
+      _iw_script_path="spells/.imps/sys/invoke-wizardry"
+    fi
+  fi
+  
   # Fallback to default location
   if [ -z "$_iw_script_path" ] && [ -n "${HOME-}" ]; then
     _iw_script_path="$HOME/.wizardry/spells/.imps/sys/invoke-wizardry"
