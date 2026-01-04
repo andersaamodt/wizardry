@@ -643,6 +643,9 @@ demo_level() {
       fi
     fi
   fi
+  
+  # Explicit success return to avoid propagating non-zero exit codes from internal commands
+  return 0
 }
 
 # Detect WIZARDRY_DIR if not set (for direct execution)
@@ -668,7 +671,7 @@ if [ -z "${WIZARDRY_DIR-}" ]; then
   fi
 fi
 
-demo_magic() {
+# Main script logic (unwrapped from demo_magic function)
 case "${1-}" in
 --help|--usage|-h)
   demo_magic_usage
@@ -809,8 +812,7 @@ printf '════════════════════════
 printf '\n'
 printf 'The demonstration concludes.\n'
 printf 'The circle closes. Wizardry stands ready.\n'
-}
+printf 'DEMO_MAGIC_COMPLETE\n'
 
-# Call the main function (flat-file pattern)
-demo_magic "$@"
+# End of script - explicit exit 0 to ensure success
 exit 0
