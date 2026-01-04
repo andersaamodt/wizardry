@@ -800,16 +800,24 @@ if [ "$failures" -eq 0 ] && [ "$posix_failures" -eq 0 ]; then
   exit 0
 fi
 
+# Show unified failure message
+total_failures=$((posix_failures + failures))
+if [ "$posix_failures" -ne 0 ] && [ "$failures" -ne 0 ]; then
+  printf '✗ Failed POSIX or style checks (%d files)\n' "$total_failures"
+elif [ "$posix_failures" -ne 0 ]; then
+  printf '✗ Failed POSIX or style checks (%d files)\n' "$posix_failures"
+else
+  printf '✗ Failed POSIX or style checks (%d files)\n' "$failures"
+fi
+
 # Show only failures in summary
 if [ "$posix_failures" -ne 0 ]; then
-  printf '✗ POSIX compliance checks failed (%d files)\n' "$posix_failures"
   if [ -n "$posix_failed_list" ]; then
     printf '\nFailed POSIX checks:\n%s' "$posix_failed_list"
   fi
 fi
 
 if [ "$failures" -ne 0 ]; then
-  printf '✗ Style checks failed (%d files)\n' "$failures"
   if [ -n "$failed_messages" ]; then
     printf '\nFailed style checks:\n%s' "$failed_messages"
   fi
