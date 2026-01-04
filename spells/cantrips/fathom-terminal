@@ -2,8 +2,7 @@
 
 # Report terminal dimensions using terminfo via tput.
 
-case "${1-}" in
---help|--usage|-h)
+fathom_terminal_usage() {
   cat <<'USAGE' >&2
 Usage: fathom-terminal [-v|--verbose] [--width|--height]
 
@@ -11,6 +10,11 @@ Read terminal dimensions from terminfo and print the width, height, or both.
 Pass --width or --height to request a single measurement; -v annotates the
 numbers with friendly labels for menu output.
 USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  fathom_terminal_usage
   exit 0
   ;;
 esac
@@ -101,13 +105,15 @@ lines_status=$?
 
 if [ "$want_width" -eq 1 ]; then
     if [ $cols_status -ne 0 ] || [ -z "$cols" ]; then
-        die 'fathom-terminal: unable to determine terminal width'
+        printf '%s\n' 'fathom-terminal: unable to determine terminal width' >&2
+        exit 1
     fi
 fi
 
 if [ "$want_height" -eq 1 ]; then
     if [ $lines_status -ne 0 ] || [ -z "$lines" ]; then
-        die 'fathom-terminal: unable to determine terminal height'
+        printf '%s\n' 'fathom-terminal: unable to determine terminal height' >&2
+        exit 1
     fi
 fi
 
