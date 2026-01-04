@@ -2,6 +2,24 @@
 # This spell adds a synonym (alias) for an existing spell.
 # Synonyms are stored in SPELLBOOK_DIR/.synonyms as shell aliases.
 
+add_synonym_usage() {
+  cat <<'USAGE'
+Usage: add-synonym WORD SPELL [ARGS...]
+       add-synonym  (interactive mode)
+
+Add a synonym (alias) for an existing spell.
+
+Arguments:
+  WORD     The synonym word (simple name only)
+  SPELL    The target spell or command
+  ARGS     Optional arguments to pass to the spell
+
+Examples:
+  add-synonym ll "ls -l"
+  add-synonym clone "git clone"
+USAGE
+}
+
 case "${1-}" in
 --help|--usage|-h)
   add_synonym_usage

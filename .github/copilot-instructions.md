@@ -59,9 +59,9 @@ This fetches test failures from PR description via GitHub API. Works immediately
    - `.github/SHELL_CODE_PATTERNS.md` — **CRITICAL**: POSIX shell patterns, quirks, and idioms (DOCUMENT NEW PATTERNS HERE)
    - `.github/CROSS_PLATFORM_PATTERNS.md` — **CRITICAL**: Cross-platform compatibility (DOCUMENT NEW PATTERNS HERE)
 4. **Topic-specific instructions** (consult as needed):
-   - `.github/instructions/castable-uncastable-pattern.instructions.md` — **CRITICAL**: Self-execute pattern rules (return vs exit, set -eu placement, function structure)
-   - `.github/instructions/spells.instructions.md` — Spell writing guide
-   - `.github/instructions/imps.instructions.md` — Imp (micro-helper) guide
+   - `.github/instructions/castable-uncastable-pattern.instructions.md` — **DEPRECATED**: Old self-execute pattern (no longer used)
+   - `.github/instructions/spells.instructions.md` — Spell writing guide (CURRENT PATTERNS)
+   - `.github/instructions/imps.instructions.md` — Imp (micro-helper) guide (CURRENT PATTERNS)
    - `.github/instructions/tests.instructions.md` — Testing framework and patterns
    - `.github/instructions/logging.instructions.md` — Output and error handling
    - `.github/instructions/cross-platform.instructions.md` — Platform compatibility

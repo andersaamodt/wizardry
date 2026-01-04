@@ -220,25 +220,19 @@ PATH="$stub_dir:$ROOT_DIR/spells/cantrips:$WIZARDRY_IMPS_PATH:...:$PATH" run_spe
 
 **Key principle**: Stub the bare minimum (terminal I/O), test real wizardry for everything else.
 
-## Dual-Pattern Testing
+## Dual-Pattern Testing (DEPRECATED)
 
-**All castable spells should be tested both ways:**
-1. **Direct execution**: `./spells/category/spell --help`
-2. **Source-then-invoke**: Via `_run_sourced_spell spell --help`
+**NOTE:** The dual-pattern testing system (testing spells both via direct execution and source-then-invoke) was designed for the old castable/uncastable pattern with function wrappers. Since spells are now flat, linear scripts, dual-pattern testing is no longer applicable.
 
-**Use `_run_both_patterns` wrapper:**
+**Current approach:** Test spells via direct execution only.
+
 ```sh
-# Automatically tests both patterns
-_run_both_patterns "spell shows usage" test_spell_usage "spells/category/spell"
+# Test spell directly
+run_spell "spells/category/spell" --help
+assert_success
 ```
 
-**Or use environment variable:**
-```sh
-export WIZARDRY_TEST_BOTH_PATTERNS=1  # Makes all tests dual-pattern
-./spells/system/test-magic
-```
-
-**Uncastable spells** (colors, move, jump-to-marker): Only test sourced pattern.
+**Historical note:** The `_run_both_patterns` wrapper and `WIZARDRY_TEST_BOTH_PATTERNS` environment variable were used when spells could be both executed as scripts and sourced as functions.
 
 ## Cross-Platform Testing
 

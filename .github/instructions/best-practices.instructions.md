@@ -4,17 +4,25 @@ applyTo: "spells/**,.tests/**"
 
 Proven patterns from the wizardry repository. Use these when creating/modifying code.
 
-## Self-Execute Pattern
+## Flat Linear Script Pattern (CURRENT)
 
-**For invocable spells (sourced + executed):**
+**All spells are flat, linear scripts:**
 ```sh
-spell_name() {
-  # Function body
-}
-case "$0" in
-  */spell-name) spell_name "$@" ;; esac
+#!/bin/sh
+# Brief description
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
+
+set -eu
+
+# Main logic here (flat, linear code - no function wrappers)
 ```
-**Why:** Works both sourced (invoke-wizardry) and executed (tests/users)
+**Why:** Simple, straightforward, easy to understand and maintain
 
 ## PATH Baseline (Bootstrap Only)
 
