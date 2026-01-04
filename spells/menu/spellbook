@@ -313,7 +313,13 @@ case ${1-} in
                 exit 0
                 ;;
         --help|--usage|-h)
-                spellbook_usage
+                cat <<'USAGE'
+Usage: spellbook [PATH|--list]
+
+Open the interactive spellbook to browse categories, scribe commands,
+and manage the cast menu. Optionally pass a PATH to jump to a category.
+Use --list to display all memorized commands.
+USAGE
                 exit 0
                 ;;
         --)
@@ -324,7 +330,13 @@ case ${1-} in
                 :
                 ;;
         -*)
-                spellbook_usage >&2
+                cat <<'USAGE' >&2
+Usage: spellbook [PATH|--list]
+
+Open the interactive spellbook to browse categories, scribe commands,
+and manage the cast menu. Optionally pass a PATH to jump to a category.
+Use --list to display all memorized commands.
+USAGE
                 exit 1
                 ;;
         *)

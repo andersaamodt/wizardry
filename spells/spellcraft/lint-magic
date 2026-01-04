@@ -45,7 +45,11 @@ while [ "$#" -gt 0 ]; do
       ;;
     --only)
       if [ "$#" -lt 2 ]; then
-        lint_magic_usage >&2
+        cat <<'USAGE' >&2
+Usage: lint-magic [--only PATTERN] [--list] [--verbose] [file...]
+
+Lint and format-check spells for style-guide compliance. With no files provided it scans the whole spellbook; use --only to filter by pattern, --list to show targets, and --verbose for detailed output.
+USAGE
         exit 2
       fi
       pattern=$2
@@ -56,7 +60,11 @@ while [ "$#" -gt 0 ]; do
       break
       ;;
     -*)
-      lint_magic_usage >&2
+      cat <<'USAGE' >&2
+Usage: lint-magic [--only PATTERN] [--list] [--verbose] [file...]
+
+Lint and format-check spells for style-guide compliance. With no files provided it scans the whole spellbook; use --only to filter by pattern, --list to show targets, and --verbose for detailed output.
+USAGE
       exit 2
       ;;
     *)
@@ -189,9 +197,10 @@ while IFS= read -r target; do
   fi
   
   # Inline check_usage_function (not required for imps)
+  # FLAT PARADIGM: Spells should NOT have usage functions, only inline usage
   if [ "$is_imp_file" -eq 0 ]; then
-    if ! grep -qE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*_usage\(\)' "$path" 2>/dev/null; then
-      issues=${issues:+$issues; }'missing usage function (*_usage)'
+    if grep -qE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*_usage\(\)' "$path" 2>/dev/null; then
+      issues=${issues:+$issues; }'has usage function (should be inline)'
       issue_count=$((issue_count + 1))
     fi
   fi
@@ -735,19 +744,9 @@ if [ -n "$spell_param_warnings" ]; then
   printf '%s\n' "$spell_param_warnings"
 fi
 
-if [ "$failures" -eq 0 ]; then
-  printf 'All %d spells passed style checks.\n' "$total"
-else
-  printf '%d of %d spells failed style checks.\n' "$failures" "$total"
-  if [ -n "$failed_targets" ]; then
-    printf 'Failing spells: %s\n' "$failed_targets"
-  fi
-  if [ -n "$failed_messages" ]; then
-    printf '\nFailed style checks:\n'
-    printf '%s' "$failed_messages"
-  fi
-fi
-
+# Run POSIX checks if available
+posix_output=""
+posix_failures=0
 if [ -x "$repo_dir/spells/.wizardry/verify-posix" ] && has checkbashisms; then
   set -- $posix_targets
   if posix_output=$("$repo_dir/spells/.wizardry/verify-posix" "$@" 2>&1); then
@@ -755,12 +754,41 @@ if [ -x "$repo_dir/spells/.wizardry/verify-posix" ] && has checkbashisms; then
   else
     posix_failures=1
   fi
-  if [ -n "$posix_output" ]; then
-    printf '\n%s\n' "$posix_output"
+fi
+
+# Print all results together at the end
+printf '\n=== Lint Results ===\n'
+
+# Print style check results
+if [ "$failures" -eq 0 ]; then
+  printf '✓ Style checks: All %d spells passed\n' "$total"
+else
+  printf '✗ Style checks: %d of %d spells failed\n' "$failures" "$total"
+  if [ -n "$failed_targets" ]; then
+    printf '  Failing spells: %s\n' "$failed_targets"
+  fi
+  if [ -n "$failed_messages" ]; then
+    printf '\n  Failed style checks:\n'
+    printf '%s' "$failed_messages" | sed 's/^/  /'
   fi
 fi
 
+# Print POSIX check results
+if [ -n "$posix_output" ]; then
+  printf '\n%s\n' "$posix_output"
+fi
+
+# Print final summary
+printf '\n=== Summary ===\n'
 if [ "$failures" -eq 0 ] && [ "$posix_failures" -eq 0 ]; then
+  printf '✓ All checks passed\n'
   exit 0
+fi
+
+if [ "$failures" -gt 0 ]; then
+  printf '✗ Style checks failed (%d files)\n' "$failures"
+fi
+if [ "$posix_failures" -gt 0 ]; then
+  printf '✗ POSIX compliance checks failed\n'
 fi
 exit 1

@@ -1,7 +1,8 @@
 #!/bin/sh
 # This spell deletes a custom synonym.
 
-delete_synonym_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE'
 Usage: delete-synonym WORD
 
@@ -12,11 +13,6 @@ Arguments:
 
 Note: Cannot delete default synonyms. Use 'reset-default-synonyms' to reset all defaults.
 USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-  delete_synonym_usage
   exit 0
   ;;
 esac

@@ -28,7 +28,11 @@ case "$0" in
 esac
 
 if [ "$#" -ne 2 ]; then
-    move_cursor_usage
+    cat <<'USAGE' >&2
+Usage: move-cursor <x> <y>
+
+Moves the terminal cursor to the requested column and row using ANSI escapes, clamping any zero or negative values to the first position.
+USAGE
     exit 2
 fi
 
@@ -38,10 +42,10 @@ y=$2
 supports_cursor_positioning() {
     case ${TERM-} in
         ''|dumb|unknown)
-            exit 1
+            return 1
             ;;
     esac
-    exit 0
+    return 0
 }
 
 # Validate that both coordinates are purely numeric.

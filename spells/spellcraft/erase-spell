@@ -2,7 +2,9 @@
 # erase-spell - Delete a custom spell from $SPELLBOOK_DIR
 # Asks for confirmation before deleting.
 
-erase_spell_usage() {
+# Handle help before set -eu
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE'
 Usage: erase-spell NAME [--force]
 
@@ -12,12 +14,6 @@ Options:
   --force, -f   Skip confirmation prompt
   --help, -h    Show this help message
 USAGE
-}
-
-# Handle help before set -eu
-case "${1-}" in
---help|--usage|-h)
-  erase_spell_usage
   exit 0
   ;;
 esac
@@ -71,7 +67,15 @@ while [ "$#" -gt 0 ]; do
 done
 
 if [ -z "$name" ]; then
-        erase_spell_usage >&2
+        cat <<'USAGE' >&2
+Usage: erase-spell NAME [--force]
+
+Delete a custom spell from $SPELLBOOK_DIR. This action cannot be undone.
+
+Options:
+  --force, -f   Skip confirmation prompt
+  --help, -h    Show this help message
+USAGE
         exit 1
 fi
 

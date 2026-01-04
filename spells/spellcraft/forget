@@ -5,20 +5,16 @@
 #
 # Usage: forget SPELL_NAME
 
-forget_usage() {
-  cat <<'USAGE'
-Usage: forget SPELL_NAME
-
-Remove a spell from the Cast menu (unmemize it).
-USAGE
-}
-
 spell_name="forget"
 tab_char=$(printf '\t')
 
 case "${1-}" in
 --help|--usage|-h)
-  forget_usage
+  cat <<'USAGE'
+Usage: forget SPELL_NAME
+
+Remove a spell from the Cast menu (unmemize it).
+USAGE
   exit 0
   ;;
 esac

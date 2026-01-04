@@ -7,7 +7,8 @@
 # This script contains all color codes in the POSIX standard.
 # You must source this script with '. ./colors' (or an absolute path) to use it.
 
-colors_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE'
 Usage: . colors
 
@@ -18,11 +19,6 @@ Example:
   . colors
   printf '%sError:%s An error message.\n' "${RED}" "${RESET}"
 USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-  colors_usage
   exit 0
   ;;
 esac
@@ -224,9 +220,15 @@ if ! command -v autocast >/dev/null 2>&1; then
   [ -f "$_i/autocast" ] && . "$_i/autocast"
 fi
 
-if type autocast >/dev/null 2>&1; then
-  case "$(type autocast 2>/dev/null)" in
-    *function*) autocast colors ;;
+if command -v autocast >/dev/null 2>&1; then
+  # Check if autocast is a function using POSIX-compliant method
+  _cmd_result=$(command -v autocast 2>/dev/null || printf '')
+  case "$_cmd_result" in
+    alias\ *) colors "$@" ;;  # Is an alias, just run colors
+    /*) colors "$@" ;;        # Is a path (external command), just run colors
+    autocast)   # Is a function
+      autocast colors
+      ;;
     *) colors "$@" ;;
   esac
 else

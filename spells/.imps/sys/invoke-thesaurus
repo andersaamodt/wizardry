@@ -4,9 +4,13 @@
 # Also initializes default synonyms if not already set up.
 
 # This script must be sourced, not executed
-if type uncastable >/dev/null 2>&1; then
-  case "$(type uncastable 2>/dev/null)" in
-    *function*)
+if command -v uncastable >/dev/null 2>&1; then
+  # Check if uncastable is a function using POSIX-compliant method
+  _it_cmd_result=$(command -v uncastable 2>/dev/null || printf '')
+  case "$_it_cmd_result" in
+    alias\ *) ;;  # Is an alias, fall through to manual check
+    /*) ;;        # Is a path (external command), fall through
+    uncastable)   # Is a function
       if ! uncastable invoke-thesaurus "Usage: . invoke-thesaurus"; then
         exit 1
       fi
