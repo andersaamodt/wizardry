@@ -216,8 +216,8 @@ jobs:
                 echo "" && echo "---" && echo "" && \
                 echo "## 🔍 Latest Test Failures" && echo "" && \
                 echo "**Updated:** $(date -u '+%Y-%m-%d %H:%M:%S') UTC" && echo "" && \
-                if [ -n "$failure_summary_content" ]; then cat "$failure_summary_file"; echo ""; fi && \
-                echo "$status_message" && \
+                if [ -n "$failure_summary_content" ]; then cat "$failure_summary_file"; fi && \
+                if [ -n "$status_message" ]; then echo ""; echo "$status_message"; fi && \
                 echo "" && echo "<!-- test-failures-end -->")" \
               > /dev/null 2>&1 || echo "⚠️ Could not update PR description"
           }
@@ -271,8 +271,6 @@ jobs:
             {
               echo ""
               echo "### ❌ $workflow_name"
-              echo ""
-              echo "**Failed jobs:** $failed_count"
               echo ""
             } >> "$failure_summary_file"
 
