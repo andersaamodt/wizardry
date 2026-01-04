@@ -2,7 +2,8 @@
 # This spell edits an existing synonym.
 # Can change either the synonym word or the target spell.
 
-edit_synonym_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE'
 Usage: edit-synonym WORD --word NEW_WORD
        edit-synonym WORD --spell NEW_SPELL
@@ -17,11 +18,6 @@ Examples:
   edit-synonym ll --spell "ls -la"
   edit-synonym ll --word list
 USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-  edit_synonym_usage
   exit 0
   ;;
 esac

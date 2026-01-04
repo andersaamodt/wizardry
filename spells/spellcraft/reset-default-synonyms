@@ -4,7 +4,11 @@
 
 case "${1-}" in
 --help|--usage|-h)
-  reset_default_synonyms_usage
+  cat <<'USAGE'
+Usage: reset-default-synonyms
+
+Reset default synonyms to their original values. Does not affect custom synonyms.
+USAGE
   exit 0
   ;;
 esac
