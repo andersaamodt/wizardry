@@ -27,4 +27,5 @@
 - Common system commands (find, grep, sed, etc.) must be blacklisted in generate-glosses to prevent glossary from overriding them.
 - Pipe-based while loops create subshells; use variable with here-document instead to preserve loop counter updates in parent shell.
 - Spells should call preloaded functions (fathom_terminal, detect_posix, etc.) instead of executing scripts as subprocesses ("${WIZARDRY_DIR}/spells/..."); subprocesses lack preloaded functions and violate architecture.
+- Spells are now flat, linear scripts without function wrappers; the castable/uncastable pattern and dual-pattern testing (source-then-invoke) have been deprecated.
 

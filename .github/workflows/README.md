@@ -10,7 +10,7 @@ This directory contains GitHub Actions workflows for testing and building wizard
 
 **Triggers**:
 - Runs after any monitored workflow completes (using `workflow_run` trigger)
-- Monitors: Unit tests, POSIX/linting, standalone spells, doppelganger, dual-pattern validation, demonstrate-wizardry, compile
+- Monitors: Unit tests, POSIX/linting, standalone spells, doppelganger, demonstrate-wizardry, compile
 
 **How It Works**:
 
