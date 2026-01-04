@@ -785,10 +785,17 @@ if [ "$failures" -eq 0 ] && [ "$posix_failures" -eq 0 ]; then
   exit 0
 fi
 
-if [ "$failures" -gt 0 ]; then
-  printf '✗ Style checks failed (%d files)\n' "$failures"
-fi
-if [ "$posix_failures" -gt 0 ]; then
+# Show both check results in summary for clarity
+if [ "$posix_failures" -eq 0 ]; then
+  printf '✓ POSIX compliance: All %d scripts passed\n' "$total"
+else
   printf '✗ POSIX compliance checks failed\n'
 fi
+
+if [ "$failures" -eq 0 ]; then
+  printf '✓ Style checks: All %d scripts passed\n' "$total"
+else
+  printf '✗ Style checks failed (%d files)\n' "$failures"
+fi
+
 exit 1
