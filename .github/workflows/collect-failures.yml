@@ -459,9 +459,14 @@ jobs:
               cat "$failure_summary_file"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
+            
+            # Exit with failure status so this workflow fails when tests fail
+            echo "❌ Some workflows failed"
+            exit 1
           else
             echo "has_failures=false" >> "$GITHUB_OUTPUT"
             echo "failure_summary=" >> "$GITHUB_OUTPUT"
+            echo "✅ All workflows succeeded"
           fi
 
       - name: Create summary
