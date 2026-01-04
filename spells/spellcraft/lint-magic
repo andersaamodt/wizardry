@@ -773,19 +773,23 @@ else
   fi
 fi
 
-# Print combined summary - only show failures
+# Print combined summary - show both POSIX and style status
 printf '\n=== Summary ===\n'
 if [ "$failures" -eq 0 ] && [ "$posix_failures" -eq 0 ]; then
   printf '✓ All checks passed\n'
   exit 0
 fi
 
-# Only report failures in summary
-if [ "$posix_failures" -ne 0 ]; then
+# Show both check results in summary (not just failures)
+if [ "$posix_failures" -eq 0 ]; then
+  printf '✓ POSIX compliance: All %d scripts passed\n' "$total"
+else
   printf '✗ POSIX compliance checks failed\n'
 fi
 
-if [ "$failures" -ne 0 ]; then
+if [ "$failures" -eq 0 ]; then
+  printf '✓ Style checks: All %d scripts passed\n' "$total"
+else
   printf '✗ Style checks failed (%d files)\n' "$failures"
 fi
 
