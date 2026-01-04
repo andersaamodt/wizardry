@@ -1,53 +1,32 @@
-name: Dual-pattern validation
+name: Dual-pattern validation (DEPRECATED)
 
-# This workflow provides comprehensive validation that both execution patterns
-# (direct execution and source-then-invoke) work correctly for all castable spells.
-# It runs on every push/PR to ensure the castable/uncastable imps maintain parity between patterns.
-# This workflow is non-required and can be made optional in branch protection rules.
+# DEPRECATED: This workflow is no longer needed.
+# Spells are now flat, linear scripts without function wrappers.
+# The castable/uncastable pattern with dual-pattern testing is deprecated.
+# See .github/instructions/castable-uncastable-pattern.instructions.md for details.
+#
+# This workflow is kept for historical reference but does not run.
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-  # Allow manual trigger for on-demand validation
+  # Disabled - no triggers
   workflow_dispatch:
-
-# Cancel previous runs when new commits are pushed
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+    inputs:
+      deprecated:
+        description: 'This workflow is deprecated and should not be run'
+        required: false
+        default: 'true'
 
 permissions:
   contents: read
 
 jobs:
-  debian-dual-pattern:
-    name: Debian dual-pattern validation
+  deprecated-notice:
+    name: Deprecated workflow
     runs-on: ubuntu-latest
-    env:
-      WIZARDRY_OS_LABEL: debian
-      WIZARDRY_TEST_BOTH_PATTERNS: 1
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Ensure installer spells are executable
-        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value spells/.wizardry/test-magic
-      - name: Run dual-pattern validation tests
-        run: ./spells/.wizardry/test-magic --verbose
-
-  macos-dual-pattern:
-    name: macOS dual-pattern validation
-    runs-on: macos-latest
-    env:
-      WIZARDRY_OS_LABEL: mac
-      WIZARDRY_TEST_BOTH_PATTERNS: 1
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Ensure installer spells are executable
-        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value spells/.wizardry/test-magic
-      - name: Run dual-pattern validation tests
-        run: ./spells/.wizardry/test-magic --verbose
+      - name: Notice
+        run: |
+          echo "⚠️ This workflow is deprecated."
+          echo "Spells are now flat, linear scripts."
+          echo "Dual-pattern testing is no longer applicable."
+          exit 1
