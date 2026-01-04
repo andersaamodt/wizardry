@@ -24,11 +24,19 @@ while getopts ":dh" opt; do
             delete_sources=1
             ;;
         h)
-            bind_tome_usage
+            cat <<'USAGE'
+Usage: bind-tome [-d] <page-directory>
+
+Bind every file in a directory into a single <dirname>.txt tome. Use -d to delete the original pages after binding if you want to keep only the finished book.
+USAGE
             exit 0
             ;;
         *)
-            bind_tome_usage >&2
+            cat <<'USAGE' >&2
+Usage: bind-tome [-d] <page-directory>
+
+Bind every file in a directory into a single <dirname>.txt tome. Use -d to delete the original pages after binding if you want to keep only the finished book.
+USAGE
             exit 1
             ;;
     esac
@@ -38,7 +46,11 @@ shift $((OPTIND - 1))
 # Require a directory of pages to stitch together.
 if [ "$#" -lt 1 ]; then
     warn "bind-tome: folder path required."
-    bind_tome_usage >&2
+    cat <<'USAGE' >&2
+Usage: bind-tome [-d] <page-directory>
+
+Bind every file in a directory into a single <dirname>.txt tome. Use -d to delete the original pages after binding if you want to keep only the finished book.
+USAGE
     exit 1
 fi
 

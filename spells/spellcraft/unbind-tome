@@ -18,7 +18,11 @@ set -eu
 
 if [ "$#" -lt 1 ]; then
     warn "unbind-tome: file path required."
-    unbind_tome_usage >&2
+    cat <<'USAGE' >&2
+Usage: unbind-tome <tome-path>
+
+Split a bound tome back into individual files, naming each page from its contents and placing them in a directory derived from the tome name.
+USAGE
     exit 1
 fi
 
