@@ -21,7 +21,7 @@ if [ "$#" -lt 1 ]; then
 Usage: forall <spell> [args...]
 
 Run a spell or command against every file in the current directory, printing each filename before piping its output with indentation.
-USAGE
+EOF
   exit 1
 fi
 
