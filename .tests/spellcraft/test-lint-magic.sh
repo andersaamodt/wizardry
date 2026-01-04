@@ -49,17 +49,13 @@ test_passes_well_formed_spell() {
 # This is a good spell that does something useful.
 # It has proper documentation.
 
-show_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE'
 Usage: good-spell
 
 Does something useful.
 USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-  show_usage
   exit 0
   ;;
 esac
@@ -157,21 +153,37 @@ EOF
   assert_success && assert_output_contains "passed"
 }
 
-test_requires_usage_function() {
+test_rejects_usage_function() {
+  # FLAT PARADIGM: Spells should NOT have usage functions - usage should be inline
   spell_dir=$(make_spell_dir)
-  cat >"$spell_dir/no-usage-spell" <<'EOF'
+  cat >"$spell_dir/old-style-spell" <<'EOF'
 #!/bin/sh
 
-# This spell has no usage function.
+# This spell uses old-style usage function.
+
+show_usage() {
+  cat <<'USAGE'
+Usage: old-style-spell
+
+Uses old-style usage function (should fail).
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  show_usage
+  exit 0
+  ;;
+esac
 
 set -eu
 
 echo "hello"
 EOF
-  chmod +x "$spell_dir/no-usage-spell"
+  chmod +x "$spell_dir/old-style-spell"
   
-  # Should fail without a usage function
-  run_spell "spells/spellcraft/lint-magic" "$spell_dir/no-usage-spell"
+  # Should fail with a usage function
+  run_spell "spells/spellcraft/lint-magic" "$spell_dir/old-style-spell"
   assert_failure && assert_output_contains "usage function"
 }
 
@@ -181,10 +193,6 @@ test_requires_help_handler() {
 #!/bin/sh
 
 # This spell has no help handler.
-
-show_usage() {
-  echo "Usage: no-help-spell"
-}
 
 set -eu
 
@@ -344,91 +352,17 @@ EOF
 }
 
 test_spell_fails_with_hyphenated_function_call() {
-  # Spells should call other spells with underscores, not hyphens
-  spell_dir=$(make_spell_dir)
-  cat >"$spell_dir/bad-hyphen-call" <<'EOF'
-#!/bin/sh
-
-# bad-hyphen-call - spell with hyphenated function call
-
-bad_hyphen_call_usage() {
-  cat <<'USAGE'
-Usage: bad-hyphen-call
-USAGE
-}
-
-bad_hyphen_call() {
-case "${1-}" in
---help|--usage|-h)
-  bad_hyphen_call_usage
+  # FLAT PARADIGM: Spells should call commands with hyphens (not underscores)
+  # This test is now obsolete - in flat paradigm, spells use hyphenated commands
+  # Skipping this test as it's testing old castable/uncastable pattern
   return 0
-  ;;
-esac
-
-set -eu
-
-# This should fail - hyphenated spell call
-if ask-yn "Continue?" yes; then
-  echo "Continuing"
-fi
-}
-
-if true; then
-  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
-  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
-  [ -f "$_i/castable" ] && . "$_i/castable"
-fi
-
-castable "$@"
-EOF
-  chmod +x "$spell_dir/bad-hyphen-call"
-  run_spell "spells/spellcraft/lint-magic" "$spell_dir/bad-hyphen-call"
-  assert_failure && assert_output_contains "hyphenated spell call"
 }
 
 test_spell_passes_with_underscore_function_call() {
-  # Spells using underscore function calls should pass
-  spell_dir=$(make_spell_dir)
-  cat >"$spell_dir/good-underscore-call" <<'EOF'
-#!/bin/sh
-
-# good-underscore-call - spell with proper underscore function call
-
-good_underscore_call_usage() {
-  cat <<'USAGE'
-Usage: good-underscore-call
-USAGE
-}
-
-good_underscore_call() {
-case "${1-}" in
---help|--usage|-h)
-  good_underscore_call_usage
+  # FLAT PARADIGM: This test is obsolete - it tested the old castable/uncastable pattern
+  # In flat paradigm, spells use hyphenated commands, not underscore functions
+  # Skipping this test
   return 0
-  ;;
-esac
-
-set -eu
-
-# This should pass - underscore spell call
-if ask_yn "Continue?" yes; then
-  echo "Continuing"
-fi
-}
-
-if true; then
-  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
-  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
-  [ -f "$_i/castable" ] && . "$_i/castable"
-fi
-
-castable "$@"
-EOF
-  chmod +x "$spell_dir/good-underscore-call"
-  run_spell "spells/spellcraft/lint-magic" "$spell_dir/good-underscore-call"
-  assert_success && assert_output_contains "passed"
 }
 
 test_imp_fails_with_duplicate_set_eu() {
@@ -487,7 +421,7 @@ run_test_case "lint-magic fails missing description" test_fails_missing_descript
 run_test_case "lint-magic fails missing strict mode" test_fails_missing_strict_mode
 run_test_case "lint-magic fails trailing space assignment" test_fails_trailing_space_assignment
 run_test_case "lint-magic passes imp without usage" test_passes_imp_without_usage
-run_test_case "lint-magic requires usage function" test_requires_usage_function
+run_test_case "lint-magic rejects usage function" test_rejects_usage_function
 run_test_case "lint-magic requires help handler" test_requires_help_handler
 run_test_case "lint-magic --list shows matching files" test_list_option
 run_test_case "lint-magic fails imp with --help handler" test_imp_fails_with_help_handler
@@ -495,8 +429,9 @@ run_test_case "lint-magic fails imp using flags" test_imp_fails_with_flags
 run_test_case "lint-magic passes imp with heredoc flags" test_imp_passes_with_heredoc_flags
 run_test_case "lint-magic fails imp with too many params" test_imp_fails_with_too_many_params
 run_test_case "lint-magic passes imp with variadic params" test_imp_passes_with_variadic_params
-run_test_case "lint-magic fails spell with hyphenated call" test_spell_fails_with_hyphenated_function_call
-run_test_case "lint-magic passes spell with underscore call" test_spell_passes_with_underscore_function_call
+# Obsolete tests for old castable/uncastable pattern - skipped
+# run_test_case "lint-magic fails spell with hyphenated call" test_spell_fails_with_hyphenated_function_call
+# run_test_case "lint-magic passes spell with underscore call" test_spell_passes_with_underscore_function_call
 run_test_case "lint-magic fails imp with duplicate set -eu" test_imp_fails_with_duplicate_set_eu
 run_test_case "lint-magic passes imp with single set -eu" test_imp_passes_with_single_set_eu
 

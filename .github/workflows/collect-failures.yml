@@ -88,6 +88,9 @@ jobs:
             # Extract from "Summary" heading line to the end of file
             if grep -q "^Summary$" "$cleaned_log"; then
               sed -n '/^Summary$/,$p' "$cleaned_log"
+            elif grep -q "=== Lint Results ===" "$cleaned_log"; then
+              # Lint-magic format: extract from "=== Lint Results ===" to end
+              sed -n '/=== Lint Results ===/,$p' "$cleaned_log"
             elif grep -q "=== Test Summary ===" "$cleaned_log"; then
               # Fallback to old format
               sed -n '/=== Test Summary ===/,/^===/p' "$cleaned_log" | head -n -1
