@@ -735,24 +735,8 @@ AWKSCRIPT
   fi
 done <"$targets_file"
 
-posix_targets=$(cat "$targets_file")
 trap - EXIT HUP INT TERM
 rm -f "$targets_file"
-
-# Run POSIX checks first if available
-printf '\n'
-posix_output=""
-posix_failures=0
-if [ -x "$repo_dir/spells/.wizardry/verify-posix" ] && has checkbashisms; then
-  set -- $posix_targets
-  if posix_output=$("$repo_dir/spells/.wizardry/verify-posix" "$@" 2>&1); then
-    posix_failures=0
-  else
-    posix_failures=1
-  fi
-  # Print POSIX output immediately
-  printf '%s\n' "$posix_output"
-fi
 
 # Print style check results
 printf '\n=== Style Check Results ===\n'
@@ -773,24 +757,12 @@ else
   fi
 fi
 
-# Print combined summary - show both POSIX and style status
-printf '\n=== Summary ===\n'
-if [ "$failures" -eq 0 ] && [ "$posix_failures" -eq 0 ]; then
-  printf '✓ All checks passed\n'
-  exit 0
-fi
-
-# Show both check results in summary (not just failures)
-if [ "$posix_failures" -eq 0 ]; then
-  printf '✓ POSIX compliance: All %d scripts passed\n' "$total"
-else
-  printf '✗ POSIX compliance checks failed\n'
-fi
-
+# Print lint-magic summary (fails-only)
+printf '\n=== Lint Summary ===\n'
 if [ "$failures" -eq 0 ]; then
-  printf '✓ Style checks: All %d scripts passed\n' "$total"
+  printf '✓ All style checks passed\n'
+  exit 0
 else
   printf '✗ Style checks failed (%d files)\n' "$failures"
+  exit 1
 fi
-
-exit 1
