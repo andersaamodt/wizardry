@@ -2,14 +2,19 @@
 
 # Guard against missing commands, offering to install them.
 
-case "${1-}" in
---help|--usage|-h)
+require_command_usage() {
   cat <<'USAGE' >&2
 Usage: require-command <command> [message...]
 
 Checks for a required binary, optionally offers to install it through wizardry installers, and exits non-zero with a helpful message when the dependency is missing.
 USAGE
-  exit 0
+}
+
+require_command() {
+case "${1-}" in
+--help|--usage|-h)
+  require_command_usage
+  return 0
   ;;
 esac
 
@@ -28,12 +33,8 @@ case "$0" in
 esac
 
 if [ "$#" -lt 1 ]; then
-    cat <<'USAGE' >&2
-Usage: require-command <command> [message...]
-
-Checks for a required binary, optionally offers to install it through wizardry installers, and exits non-zero with a helpful message when the dependency is missing.
-USAGE
-    exit 2
+    require_command_usage
+    return 2
 fi
 
 command_name=$1
@@ -43,19 +44,19 @@ auto_install=${REQUIRE_COMMAND_ASSUME_YES:-0}
 
 # Use POSIX command -v instead of has imp (may not be loaded yet)
 if command -v "$command_name" >/dev/null 2>&1; then
-    exit 0
+    return 0
 fi
 case "$command_name" in
     *-*)
         command_alt=$(printf '%s' "$command_name" | tr '-' '_')
         if command -v "$command_alt" >/dev/null 2>&1; then
-            exit 0
+            return 0
         fi
         ;;
     *_*)
         command_alt=$(printf '%s' "$command_name" | tr '_' '-')
         if command -v "$command_alt" >/dev/null 2>&1; then
-            exit 0
+            return 0
         fi
         ;;
 esac
@@ -82,7 +83,7 @@ if [ -n "$install_spell" ]; then
     if [ "$auto_install" = "1" ] || ! [ -t 0 ]; then
         # Use POSIX command -v instead of has imp (may not be loaded yet)
         if ASSUME_YES=1 "$install_spell" && command -v "$command_name" >/dev/null 2>&1; then
-            exit 0
+            return 0
         fi
     else
         printf "%s" "Install '$command_name'? [y/N] " >&2
@@ -91,7 +92,7 @@ if [ -n "$install_spell" ]; then
             y|Y|yes|YES)
                 # Use POSIX command -v instead of has imp (may not be loaded yet)
                 if ASSUME_YES=1 "$install_spell" && command -v "$command_name" >/dev/null 2>&1; then
-                    exit 0
+                    return 0
                 fi
                 ;;
         esac
@@ -106,4 +107,9 @@ fi
 
 # Use POSIX printf instead of warn imp (may not be loaded yet)
 printf '%s\n' "require-command: $message" >&2
-exit 1
+return 1
+}
+
+# Self-execute when run directly (not sourced)
+case "$0" in
+  */require-command) require_command "$@" ;; esac

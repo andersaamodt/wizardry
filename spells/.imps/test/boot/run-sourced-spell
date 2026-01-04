@@ -8,11 +8,28 @@ run_sourced_spell() {
   spell_path=$1
   shift || true
   
+  # Save arguments for later
+  _rss_args="$*"
+  
   # Extract spell name from path and convert to function name
   # spell_path is like "spells/translocation/jump-to-marker"
   # We need just "jump-to-marker" -> "jump_to_marker"
   spell_name=$(basename "$spell_path")
   func_name=$(printf '%s' "$spell_name" | tr '-' '_')
+  
+  # Check if function exists, if not source the spell file
+  # This allows testing spells that follow the castable pattern but aren't preloaded
+  if ! command -v "$func_name" >/dev/null 2>&1; then
+    full_path="$ROOT_DIR/$spell_path"
+    if [ -f "$full_path" ]; then
+      # Source with cleared positional parameters to avoid triggering top-level handlers
+      # Note: This only works for spells that properly follow the castable pattern
+      # (all logic in functions, not top-level code)
+      set --
+      . "$full_path"
+      eval "set -- $_rss_args"
+    fi
+  fi
   
   # Save the caller's PATH for cleanup operations
   _saved_path=$PATH
@@ -31,16 +48,13 @@ run_sourced_spell() {
   _saved_pwd=$(pwd)
   cd "$workdir" 2>/dev/null || :
   
-  # Call the function directly - it's already loaded in the environment
-  # Redirect output to temp files for capture
-  STATUS=0
-  if ! (
+  # Call the function and capture exit status properly
+  (
     # Execute in subshell to capture output and isolate side effects
     set +e
     "$func_name" "$@"
-  ) >"$_stdout" 2>"$_stderr"; then
-    STATUS=$?
-  fi
+  ) >"$_stdout" 2>"$_stderr"
+  STATUS=$?
   
   OUTPUT=$(cat "$_stdout")
   ERROR=$(cat "$_stderr")
