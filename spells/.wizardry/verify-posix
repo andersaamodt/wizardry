@@ -165,13 +165,13 @@ while IFS= read -r target; do
   esac
 
   if [ ! -e "$path" ]; then
-    print-fail "$target" "missing file"
+    printf 'FAIL %s: missing file\n' "$target"
     record_failure "$target" "missing file"
     continue
   fi
 
   if [ ! -f "$path" ]; then
-    print-fail "$target" "not a regular file"
+    printf 'FAIL %s: not a regular file\n' "$target"
     record_failure "$target" "not a regular file"
     continue
   fi
@@ -180,12 +180,12 @@ while IFS= read -r target; do
 
   case $shebang in
     '')
-      print-fail "$target" "lacks a shebang; expected #!/bin/sh"
+      printf 'FAIL %s: lacks a shebang; expected #!/bin/sh\n' "$target"
       record_failure "$target" "no shebang"
       continue
       ;;
     '#!')
-      print-fail "$target" "has an empty shebang; expected #!/bin/sh"
+      printf 'FAIL %s: has an empty shebang; expected #!/bin/sh\n' "$target"
       record_failure "$target" "empty shebang"
       continue
       ;;
@@ -196,7 +196,7 @@ while IFS= read -r target; do
       done
       ;;
     *)
-      print-fail "$target" "lacks a shebang; expected #!/bin/sh"
+      printf 'FAIL %s: lacks a shebang; expected #!/bin/sh\n' "$target"
       record_failure "$target" "no shebang"
       continue
       ;;
@@ -207,12 +207,12 @@ while IFS= read -r target; do
       :
       ;;
     '/usr/bin/env bash'*|'/bin/bash'*)
-      print-fail "$target" "uses $shebang (should use /bin/sh)"
+      printf 'FAIL %s: uses %s (should use /bin/sh)\n' "$target" "$shebang"
       record_failure "$target" "bash shebang"
       continue
       ;;
     *)
-      print-fail "$target" "uses $shebang (should use /bin/sh)"
+      printf 'FAIL %s: uses %s (should use /bin/sh)\n' "$target" "$shebang"
       record_failure "$target" "wrong shebang"
       continue
       ;;
@@ -234,9 +234,9 @@ while IFS= read -r target; do
   fi
 
   if [ "$file_failed" -eq 0 ]; then
-    print-pass "$target"
+    printf 'PASS %s\n' "$target"
   else
-    print-fail "$target"
+    printf 'FAIL %s\n' "$target"
     if [ -s "$tmp_log" ]; then
       {
         printf '%s\n' "$target"
