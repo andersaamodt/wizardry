@@ -128,7 +128,7 @@ env-clear
   # Generate first-word gloss function
   # For "env-or", generates: env() { parse "env" "$@"; }
   # This ensures parse receives the full command as user typed it
-  _generate_first_word_gloss() {
+  generate_first_word_gloss() {
     _cmd_name=$1
     _first_word=$(printf '%s' "$_cmd_name" | sed 's/-.*$//')
     
@@ -188,7 +188,7 @@ uname|uniq|wc|xargs)
   
   # Generate full hyphenated gloss alias
   # For "env-or", generates: alias env-or='env_or'
-  _generate_full_name_alias() {
+  generate_full_name_alias() {
     _cmd_name=$1
     _true_name=$(printf '%s' "$_cmd_name" | tr '-' '_')
     
@@ -264,7 +264,7 @@ uname|uniq|wc|xargs)
     esac
     
     # Try to generate first-word gloss, skip on conflict (warning already printed)
-    _generate_first_word_gloss "$spell_name" || continue
+    generate_first_word_gloss "$spell_name" || continue
   done < "$_spell_list"
   
   # Emit separator
@@ -289,7 +289,7 @@ uname|uniq|wc|xargs)
       ''|.*|parse) continue ;;
     esac
     
-    _generate_full_name_alias "$spell_name"
+    generate_full_name_alias "$spell_name"
   done < "$_spell_list"
   
   # ============================================================================

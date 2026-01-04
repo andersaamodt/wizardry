@@ -195,7 +195,13 @@ case ${TERM-} in
                 try_disable_palette
                 ;;
         *)
-                if [ "${WIZARDRY_TEST_HELPERS_ONLY-}" != "1" ] && command -v tput >/dev/null 2>&1; then
+                has_tput=0
+                if [ "${WIZARDRY_TEST_HELPERS_ONLY-}" != "1" ]; then
+                  if command -v tput >/dev/null 2>&1; then
+                    has_tput=1
+                  fi
+                fi
+                if [ "$has_tput" -eq 1 ]; then
                         colors=$(tput colors 2>/dev/null || printf '')
                         case ${colors:-} in
                                 ''|0|-*)
