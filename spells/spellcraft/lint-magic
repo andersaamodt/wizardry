@@ -794,7 +794,7 @@ else
 fi
 
 # Print combined summary (fails-only)
-printf '\n=== Lint Results ===\n'
+printf '\n=== Summary ===\n'
 if [ "$failures" -eq 0 ] && [ "$posix_failures" -eq 0 ]; then
   printf '✓ All checks passed\n'
   exit 0
