@@ -20,7 +20,8 @@ case ":${PATH-}:" in
     ;;
 esac
 
-test_magic_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE'
 Usage: test-magic [LEVEL] [OPTIONS]
 
@@ -43,25 +44,11 @@ Environment variables:
   WIZARDRY_TEST_TIMEOUT    Timeout in seconds for each test (default: 180)
   WIZARDRY_FIND_TIMEOUT    Timeout in seconds for find operations (default: 60)
 USAGE
-}
-
-test_magic() {
-case "${1-}" in
---help|--usage|-h)
-  test_magic_usage
-  return 0
+  exit 0
   ;;
 esac
 
-# Use conditional strictness based on execution context
-case "$0" in
-  */test-magic)
-    set -eu
-    ;;
-  *)
-    set -u
-    ;;
-esac
+set -eu
 
 # Detect WIZARDRY_DIR if not already set
 if [ -z "${WIZARDRY_DIR-}" ]; then
@@ -86,12 +73,12 @@ fi
 if [ -z "${WIZARDRY_DIR-}" ]; then
   printf 'test-magic: WIZARDRY_DIR not set and could not be detected\n' >&2
   printf 'Run from wizardry installation or set WIZARDRY_DIR environment variable\n' >&2
-  return 1
+  exit 1
 fi
 
 if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
   printf 'test-magic: invalid WIZARDRY_DIR: %s\n' "$WIZARDRY_DIR" >&2
-  return 1
+  exit 1
 fi
 
 export WIZARDRY_DIR
@@ -146,8 +133,20 @@ while [ "$#" -gt 0 ]; do
       ;;
     -* )
       printf 'test-magic: unknown option: %s\n' "$1" >&2
-      test_magic_usage >&2
-      return 2
+      cat <<'USAGE'
+Usage: test-magic [LEVEL] [OPTIONS]
+
+Execute behavior-driven shell tests organized by spell level.
+
+Arguments:
+  LEVEL                 Test through level N (0-29, default: 29)
+  all                   Test all available levels
+
+Options:
+  --only                Only test this specific level (don't run lower levels)
+  --verbose             Show per-test output
+USAGE
+      exit 2
       ;;
     * )
       case "$1" in
@@ -162,8 +161,20 @@ while [ "$#" -gt 0 ]; do
           ;;
         * )
           printf 'test-magic: unexpected argument: %s\n' "$1" >&2
-          test_magic_usage >&2
-          return 2
+          cat <<'USAGE'
+Usage: test-magic [LEVEL] [OPTIONS]
+
+Execute behavior-driven shell tests organized by spell level.
+
+Arguments:
+  LEVEL                 Test through level N (0-29, default: 29)
+  all                   Test all available levels
+
+Options:
+  --only                Only test this specific level (don't run lower levels)
+  --verbose             Show per-test output
+USAGE
+          exit 2
           ;;
       esac
       ;;
@@ -173,7 +184,7 @@ done
 # Validate level range
 if [ "$target_level" -lt 0 ] || [ "$target_level" -gt "$max_level" ]; then
   printf 'test-magic: level must be 0-%d\n' "$max_level" >&2
-  return 2
+  exit 2
 fi
 
 export PATH
@@ -206,11 +217,11 @@ if [ "${GITHUB_ACTIONS-}" != "true" ]; then
         exec pocket-dimension --network closed -- "$test_magic_path" "$@"
       else
         printf 'test-magic: pocket-dimension unavailable\n' >&2
-        return 1
+        exit 1
       fi
     else
       printf 'test-magic: pocket-dimension not found\n' >&2
-      return 1
+      exit 1
     fi
   fi
 fi
@@ -225,17 +236,17 @@ done
 
 if [ -n "$missing_commands" ]; then
   printf 'test-magic: required commands not found: %s\n' "$missing_commands" >&2
-  return 1
+  exit 1
 fi
 
 if [ ! -x "$root_dir/spells/.wizardry/test-spell" ]; then
   printf 'test-magic: test-spell not found\n' >&2
-  return 1
+  exit 1
 fi
 
 if [ ! -f "$root_dir/spells/.imps/sys/spell-levels" ]; then
   printf 'test-magic: spell-levels imp not found\n' >&2
-  return 1
+  exit 1
 fi
 
 . "$root_dir/spells/.imps/sys/spell-levels"
@@ -745,7 +756,7 @@ while [ "$current_level" -le "$target_level" ]; do
       printf '\nTested to Level %d\n' "$last_success_level"
     fi
     printf '%s✗%s Testing failed at Level %d\n' "$_red" "$_reset" "$current_level"
-    return "$exit_code"
+    exit "$exit_code"
   }
   last_success_level=$current_level
   if [ "$only_this_level" -eq 1 ]; then
@@ -776,7 +787,7 @@ if [ "$total" -gt 0 ]; then
   fi
 else
   printf 'No tests were run\n'
-  return 0
+  exit 0
 fi
 
 coverage_total=0
@@ -965,16 +976,4 @@ fi
 
 trap - EXIT HUP INT TERM
 cleanup-file "$failure_output_file"
-return $status
-
-}
-
-# Load castable imp for direct execution
-if true; then
-  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
-  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
-  [ -f "$_i/castable" ] && . "$_i/castable"
-fi
-
-castable "$@"
+exit $status

@@ -22,7 +22,7 @@ case "$spells" in
   *) printf 'missing detect-posix\n'; exit 1 ;;
 esac
 case "$spells" in
-  *verify-posix:system*) printf 'found verify-posix\n' ;;
+  *verify-posix:.wizardry*) printf 'found verify-posix\n' ;;
   *) printf 'missing verify-posix\n'; exit 1 ;;
 esac
 SCRIPT_EOF

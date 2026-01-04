@@ -14,7 +14,7 @@ test_help() {
 }
 
 test_validate_existing_spells() {
-  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" "banish:system"
+  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" "banish:wards"
   assert_success || return 1
   assert_output_contains "Found spell: banish" || return 1
 }
@@ -52,25 +52,19 @@ test_show_status_unloaded() {
 }
 
 test_show_status_loaded() {
-  # Test that when imps are sourced, validate-spells detects them as loaded
-  # We'll use a bash subshell to test this properly
-  result=$(cd "$ROOT_DIR" && bash -c '
-    . spells/.imps/cond/has
-    . spells/.imps/out/say
-    . spells/.wizardry/validate-spells
-    WIZARDRY_DIR="'$ROOT_DIR'" validate_spells --imps --show-status cond/has out/say sys/env-clear 2>/dev/null
-  ')
-  
-  # Check that loaded imps show as "Loaded" and others are "Available"
-  printf '%s\n' "$result" | grep -q "Loaded imps: has say" || return 1
-  # env-clear not sourced, should be available but not loaded
-  printf '%s\n' "$result" | grep -q "Available imp: env-clear" || return 1
+  # In flat-file paradigm, spells/imps are always "available" as scripts
+  # This test is no longer applicable since we don't preload functions
+  # Just test that --show-status works correctly
+  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" --imps --show-status "cond/has" "out/say"
+  assert_success || return 1
+  # In flat-file paradigm, all imps show as "Available" (not "Loaded")
+  assert_output_contains "Available imp" || return 1
   
   return 0
 }
 
 test_quiet_flag() {
-  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" --quiet "banish:system"
+  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" --quiet "banish:wards"
   assert_success || return 1
   # Quiet should suppress "Found spell" messages
   [ -z "$OUTPUT" ] || return 1

@@ -8,15 +8,19 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_usage_error() {
-  run_spell "spells/learn-spellbook"
-  assert_failure || return 1
-  assert_output_contains "requires one or two arguments" || return 1
+  # learn-spellbook no longer requires arguments (uses WIZARDRY_DIR or ~/.wizardry)
+  # Just test that --help works
+  run_spell "spells/system/learn-spellbook" --help
+  assert_success || return 1
+  assert_output_contains "Usage:" || return 1
 }
 
 test_invalid_action() {
-  run_spell "spells/learn-spellbook" "invalid"
+  # learn-spellbook uses WIZARDRY_DIR argument, not action/directory pairs
+  # Test that an invalid directory path fails
+  run_spell "spells/system/learn-spellbook" "/nonexistent/path/to/wizardry"
   assert_failure || return 1
-  assert_output_contains "must be 'add' or 'remove'" || return 1
+  assert_error_contains "does not exist" || return 1
 }
 
 test_nonexistent_directory() {

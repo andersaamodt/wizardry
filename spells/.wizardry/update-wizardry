@@ -3,28 +3,21 @@
 # This spell fast-forwards the wizardry repository in place.
 # It locates the checkout directory or accepts WIZARDRY_DIR to target another path.
 
-update_wizardry_usage() {
-cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: update-wizardry
 
 Fast-forward the wizardry repository by running git pull in the checkout directory. Finds the repo next to this spell or follows WIZARDRY_DIR if you point it elsewhere.
 USAGE
-}
-
-
-
-update_wizardry() {
-case "${1-}" in
---help|--usage|-h)
-  update_wizardry_usage
-  return 0
+  exit 0
   ;;
 esac
 
-require_wizardry || return 1
+require-wizardry || exit 1
 
 set -eu
-env_clear
+env-clear
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 
@@ -35,29 +28,29 @@ update_wizardry_require() {
 }
 
 if ! update_wizardry_require git "Update wizardry needs 'git' to pull the latest changes."; then
-  return 1
+  exit 1
 fi
 
 if [ -n "${WIZARDRY_DIR-}" ]; then
   wizardry_dir=$WIZARDRY_DIR
   if [ ! -d "$wizardry_dir" ]; then
-    die "update-wizardry: WIZARDRY_DIR does not exist or is not a directory: $wizardry_dir" || return 1
+    die "update-wizardry: WIZARDRY_DIR does not exist or is not a directory: $wizardry_dir" || exit 1
   fi
   if ! git -C "$wizardry_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     warn "update-wizardry: WIZARDRY_DIR is not a git repository: $wizardry_dir"
     warn "update-wizardry: To enable git-based updates, reinstall wizardry with git available"
     warn "update-wizardry: or manually convert to git: cd $wizardry_dir && git init && git remote add origin https://github.com/andersaamodt/wizardry.git && git fetch && git reset --hard origin/main"
-    return 1
+    exit 1
   fi
 else
   # Attempt to locate the wizardry repository based on this spell's location.
   candidate=$(dirname "$script_dir")
   if git -C "$candidate" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    wizardry_dir=$(git -C "$candidate" rev-parse --show-toplevel)
+    wizardry_dir=$(git -C "$candidate" rev-parse --show-toplevel")
   else
     candidate=$(dirname "$candidate")
     if git -C "$candidate" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-      wizardry_dir=$(git -C "$candidate" rev-parse --show-toplevel)
+      wizardry_dir=$(git -C "$candidate" rev-parse --show-toplevel")
     else
       # Not a git repository - provide helpful error message
       wizardry_dir=$(dirname "$candidate")
@@ -67,44 +60,8 @@ else
       warn "update-wizardry: or manually convert to git: cd $wizardry_dir && git init && git remote add origin https://github.com/andersaamodt/wizardry.git && git fetch && git reset --hard origin/main"
       return 1
     fi
-  fi
 fi
 
 info "Updating wizardry repository at $wizardry_dir"
 git -C "$wizardry_dir" pull --ff-only
-return $?
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"
+exit $?

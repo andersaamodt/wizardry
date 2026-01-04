@@ -14,7 +14,8 @@
 #   - User synonyms (.synonyms file)
 #   - Default synonyms (.default-synonyms file)
 
-generate_glosses_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE'
 Usage: generate-glosses [OPTIONS]
 
@@ -34,20 +35,14 @@ Examples:
   eval "$(generate-glosses)"          # Load functions into current shell
   generate-glosses --output file.sh   # Save to file for later sourcing
 USAGE
-}
-
-generate_glosses() {
-case "${1-}" in
---help|--usage|-h)
-  generate_glosses_usage
-  return 0
+  exit 0
   ;;
 esac
 
-require_wizardry || return 1
+require-wizardry || exit 1
 
 set -eu
-env_clear
+env-clear
 
   # Parse arguments
   quiet=0
@@ -60,31 +55,31 @@ env_clear
         shift
         if [ $# -eq 0 ]; then
           printf '%s\n' "generate-glosses: --output requires an argument" >&2
-          return 2
+          exit 2
         fi
         output_file=$1
         ;;
       *)
         printf '%s\n' "generate-glosses: unknown option: $1" >&2
-        return 2
+        exit 2
         ;;
     esac
     shift
   done
   
   # Determine directories
-  wizardry_dir=$(env_or WIZARDRY_DIR "${HOME:-.}/.wizardry")
-  spell_home=$(env_or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+  wizardry_dir=$(env-or WIZARDRY_DIR "${HOME:-.}/.wizardry")
+  spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
   
   # Verify wizardry directory exists and is valid
   if [ ! -d "$wizardry_dir" ]; then
     printf 'generate-glosses: WIZARDRY_DIR not found: %s\n' "$wizardry_dir" >&2
-    return 1
+    exit 1
   fi
   
   if [ ! -d "$wizardry_dir/spells" ]; then
     printf 'generate-glosses: WIZARDRY_DIR does not contain spells directory: %s\n' "$wizardry_dir" >&2
-    return 1
+    exit 1
   fi
   
   # Track statistics
@@ -123,8 +118,8 @@ env_clear
   
   [ "$quiet" -eq 0 ] && info "Collecting first words from all spells and imps..." >&2
   
-  _first_words_file=$(temp_file)
-  on_exit cleanup_file "$_first_words_file"
+  _first_words_file=$(temp-file)
+  on-exit cleanup-file "$_first_words_file"
   
   # ============================================================================
   # FUNCTION GENERATION HELPERS
@@ -163,14 +158,14 @@ env_clear
       alias|bg|cd|command|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|readonly|set|sh|\
 times|trap|true|type|ulimit|umask|unalias|wait|break|case|continue|do|done|elif|else|\
 esac|eval|exec|exit|export|fi|for|if|in|local|return|shift|then|unset|until|while)
-        printf 'generate-glosses: FATAL: Spell name conflict with shell builtin "%s" from "%s" - rename spell before production\n' "$_first_word" "$_cmd_name" >&2
+        printf 'generate-glosses: WARNING: Skipping spell "%s" - first word "%s" conflicts with shell builtin\n' "$_cmd_name" "$_first_word" >&2
         return 1
         ;;
       # BLACKLIST: Common system commands that should not be overridden
       awk|cat|cp|cut|date|df|diff|dirname|du|echo|egrep|env|expr|fgrep|file|find|grep|head|\
 hostname|id|ln|ls|mkdir|mv|printf|ps|rm|rmdir|sed|sleep|sort|stat|tail|tar|tee|touch|tr|\
 uname|uniq|wc|xargs)
-        printf 'generate-glosses: FATAL: Spell name conflict with system command "%s" from "%s" - rename spell before production\n' "$_first_word" "$_cmd_name" >&2
+        printf 'generate-glosses: WARNING: Skipping spell "%s" - first word "%s" conflicts with system command\n' "$_cmd_name" "$_first_word" >&2
         return 1
         ;;
     esac
@@ -217,12 +212,12 @@ uname|uniq|wc|xargs)
   [ "$quiet" -eq 0 ] && info "Scanning for spells and imps..." >&2
   
   # Use temp file for spell list
-  _spell_list=$(temp_file)
-  on_exit cleanup_file "$_spell_list"
+  _spell_list=$(temp-file)
+  on-exit cleanup-file "$_spell_list"
   
   # Find all executable files in wizardry
-  if command -v find_executable >/dev/null 2>&1; then
-    find_executable "$wizardry_dir/spells" > "$_spell_list"
+  if command -v find-executable >/dev/null 2>&1; then
+    find-executable "$wizardry_dir/spells" > "$_spell_list"
   else
     # Fallback: execute find-executable imp directly
     _find_exec_imp="$wizardry_dir/spells/.imps/fs/find-executable"
@@ -268,7 +263,8 @@ uname|uniq|wc|xargs)
       ''|.*|parse) continue ;;
     esac
     
-    _generate_first_word_gloss "$spell_name" || return 1
+    # Try to generate first-word gloss, skip on conflict (warning already printed)
+    _generate_first_word_gloss "$spell_name" || continue
   done < "$_spell_list"
   
   # Emit separator
@@ -358,17 +354,4 @@ uname|uniq|wc|xargs)
     info "  Total spells/imps: $_spell_count" >&2
   fi
   
-  return 0
-}
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# CRITICAL: Always source, never use from PATH
-# The imp must be sourced to define the castable function
-if true; then  # Always source castable, ensures consistency
-  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
-  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
-  [ -f "$_i/castable" ] && . "$_i/castable"
-fi
-
-castable "$@"
+  exit 0

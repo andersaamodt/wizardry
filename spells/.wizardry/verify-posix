@@ -2,21 +2,14 @@
 
 # Verify that wizardry spells use POSIX-compliant shell practices.
 
-verify_posix_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE' >&2
 Usage: verify-posix [script ...]
 
 Checks the provided spells—or every executable spell by default—for POSIX sh shebangs and common bashism pitfalls using checkbashisms. GNU-isms are treated as failures with no exceptions.
 USAGE
-}
-
-
-
-verify_posix() {
-case "${1-}" in
---help|--usage|-h)
-  verify_posix_usage
-  return 0
+  exit 0
   ;;
 esac
 
@@ -48,7 +41,7 @@ failures=0
 total=0
 failed_targets=""
 failed_details=""
-detail_log=$(temp-file verify-posix-details) || return 1
+detail_log=$(temp-file verify-posix-details) || exit 1
 
 record_failure() {
   target=$1
@@ -299,40 +292,5 @@ else
     cat "$detail_log"
   fi
   cleanup-file "$detail_log"
-  return 1
+  exit 1
 fi
-}
-
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

@@ -101,32 +101,19 @@ elif [ "${WIZARDRY_TEST_SKIP_INVOKE-0}" != "1" ] && [ -f "$ROOT_DIR/spells/.imps
   export WIZARDRY_LOAD_ALL
   
   # Source invoke-wizardry (it sets +eu internally for permissive mode)
-  # Suppress parse warnings that occur during glossary generation
-  . "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" 2>&1 | grep -v "^\[parse\] ERROR" >&2 || {
+  # We source it directly without piping (to preserve environment variables)
+  # Errors are suppressed since we check _WIZARDRY_INVOKED afterward
+  . "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" >/dev/null 2>&1 || true
+  
+  # Check if it loaded successfully by checking the flag it sets
+  if [ "${_WIZARDRY_INVOKED-}" != "1" ]; then
     printf 'WARNING: invoke-wizardry failed to load in test-bootstrap\n' >&2
-  }
-else
-  # Fallback: Preload essential imps as functions (like invoke-wizardry does)
-  # This makes underscore-named functions available for spells that use them
-  # Source word-of-binding first
-  if [ -f "$ROOT_DIR/spells/.imps/sys/word-of-binding" ]; then
-    # Set flag to source word-of-binding without running its self-execute block
-    WIZARDRY_SOURCE_WORD_OF_BINDING=1
-    # shellcheck source=/dev/null
-    . "$ROOT_DIR/spells/.imps/sys/word-of-binding"
-    unset WIZARDRY_SOURCE_WORD_OF_BINDING
-    
-    # Preload essential imps that spells commonly use
-    for _test_imp in require-wizardry env-clear env-or die warn fail info success debug temp-file cleanup-file say step; do
-      word_of_binding "$_test_imp" 2>/dev/null || :
-    done
-    unset _test_imp
   fi
 fi
 
-# Use sourced spell execution by default since functions are now preloaded
-# This ensures spells can access require_wizardry, env_clear, etc.
-WIZARDRY_USE_SOURCED_SPELL=1
+# Use direct script execution (flat-file paradigm)
+# Tests call spells/imps as scripts, not as sourced functions
+WIZARDRY_USE_SOURCED_SPELL=0
 export WIZARDRY_USE_SOURCED_SPELL
 
 # Skip banish check in test-bootstrap for performance (runs on every test file)

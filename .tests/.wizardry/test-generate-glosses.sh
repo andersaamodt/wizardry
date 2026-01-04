@@ -8,7 +8,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_sourced_spell generate-glosses --help
+  run_spell spells/.wizardry/generate-glosses --help
   assert_success || return 1
   assert_output_contains "Usage:" || return 1
   assert_output_contains "generate-glosses" || return 1
@@ -16,7 +16,7 @@ test_help() {
 
 test_basic_execution() {
   # Run generate-glosses and capture output
-  WIZARDRY_DIR="$ROOT_DIR" run_sourced_spell generate-glosses --quiet
+  WIZARDRY_DIR="$ROOT_DIR" run_spell spells/.wizardry/generate-glosses --quiet
   assert_success || return 1
   
   # Check that output contains function definitions (new paradigm)
@@ -26,7 +26,7 @@ test_basic_execution() {
 
 test_gloss_content() {
   # Run generate-glosses
-  WIZARDRY_DIR="$ROOT_DIR" run_sourced_spell generate-glosses --quiet
+  WIZARDRY_DIR="$ROOT_DIR" run_spell spells/.wizardry/generate-glosses --quiet
   assert_success || return 1
   
   # Check that output contains first-word gloss functions
@@ -40,7 +40,7 @@ test_gloss_content() {
 
 test_quiet_option() {
   # Run with --quiet to suppress info messages
-  WIZARDRY_DIR="$ROOT_DIR" run_sourced_spell generate-glosses --quiet
+  WIZARDRY_DIR="$ROOT_DIR" run_spell spells/.wizardry/generate-glosses --quiet
   assert_success || return 1
   
   # Output should contain gloss definitions
@@ -55,7 +55,7 @@ test_output_option() {
   output_file="$tmpdir/glosses.sh"
   
   # Run with --output to save to file
-  WIZARDRY_DIR="$ROOT_DIR" run_sourced_spell generate-glosses --quiet --output "$output_file"
+  WIZARDRY_DIR="$ROOT_DIR" run_spell spells/.wizardry/generate-glosses --quiet --output "$output_file"
   assert_success || return 1
   
   # Check that file was created
@@ -67,7 +67,7 @@ test_output_option() {
 
 test_all_spell_categories() {
   # Run generate-glosses
-  WIZARDRY_DIR="$ROOT_DIR" run_sourced_spell generate-glosses --quiet
+  WIZARDRY_DIR="$ROOT_DIR" run_spell spells/.wizardry/generate-glosses --quiet
   assert_success || return 1
   
   # Verify critical spell glosses exist in output
