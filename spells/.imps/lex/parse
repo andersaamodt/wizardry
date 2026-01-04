@@ -3,6 +3,13 @@
 # Scans for linking words (imps in lex/) and delegates to them.
 # Longer linking words take precedence (and-then before and or then).
 #
+# The parse imp is automatically used by glosses and should not normally be
+# called directly by users. It handles command resolution and recursion
+# prevention for the glossary system.
+#
+# Usage (via glosses): Any wizardry command
+# Usage (direct): parse <command> [args...]
+#
 # Current mode: PASSTHROUGH (parsing disabled for glossary-based interception paradigm)
 # Linking word detection is logged when WIZARDRY_DEBUG=1 but not acted upon yet.
 #
@@ -56,26 +63,8 @@ parse() {
 
     # CRITICAL SELF-REFERENCE HANDLING: If called via gloss for parse itself
     # This happens when: exec parse "parse" "$@"
-    # In this case, just show help or return success (parse is already loaded)
+    # In this case, just return success (parse is already loaded)
     if [ "$_parse_cmd" = "parse" ]; then
-      # If called with --help, show help
-      case "${1-}" in
-        --help|--usage|-h)
-          cat <<'PARSE_HELP' >&2
-  parse - Command execution engine for wizardry glosses
-
-  The parse imp is automatically used by glosses and should not
-  normally be called directly by users. It handles command resolution
-  and recursion prevention for the glossary system.
-
-  Usage (via glosses): Any wizardry command
-  Usage (direct): parse <command> [args...]
-
-  Note: parse is preloaded by invoke-wizardry and available as a function.
-PARSE_HELP
-          return 0
-          ;;
-      esac
       # Self-reference when called via gloss - just return success
       # The real parse function is already available
       return 0
