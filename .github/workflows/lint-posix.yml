@@ -27,7 +27,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Install checkbashisms dependency
         run: ./spells/.arcana/core/install-checkbashisms
-      - name: Run lint-magic (includes verify-posix)
+      - name: Run lint-magic (includes POSIX and style checks)
         run: |
-          echo "Running spell style, linting, and POSIX checks..."
+          echo "Running POSIX compliance, style, and linting checks..."
           ./spells/spellcraft/lint-magic --verbose
