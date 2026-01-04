@@ -175,9 +175,12 @@ for spell_info in "$@"; do
   else
     for name_variant in "$func_name" "$(printf '%s' "$func_name" | tr '-' '_')"; do
       if command -v "$name_variant" >/dev/null 2>&1; then
-        func_type=$(type "$name_variant" 2>/dev/null || true)
-        case "$func_type" in
-          *"function"*|*"shell function"*)
+        # Check if it's a function using POSIX-compliant method
+        _cmd_result=$(command -v "$name_variant" 2>/dev/null || printf '')
+        case "$_cmd_result" in
+          alias\ *) ;;  # Is an alias, skip
+          /*) ;;        # Is a path (external command), skip
+          "$name_variant")  # Is a function or builtin
             is_loaded=1
             break
             ;;
