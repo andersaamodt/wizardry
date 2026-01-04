@@ -1,6 +1,6 @@
 #!/bin/sh
 
-
+# Uninstall core wizardry dependencies using the system package manager.
 
 case "${1-}" in
 --help|--usage|-h)

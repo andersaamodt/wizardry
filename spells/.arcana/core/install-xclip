@@ -1,6 +1,6 @@
 #!/bin/sh
 
-
+# Install xclip (X11 clipboard utility) using the system package manager.
 
 case "${1-}" in
 --help|--usage|-h)

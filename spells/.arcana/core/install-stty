@@ -1,6 +1,6 @@
 #!/bin/sh
 
-
+# Install the stty command using the system package manager.
 
 case "${1-}" in
 --help|--usage|-h)

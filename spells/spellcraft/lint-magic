@@ -153,6 +153,14 @@ while IFS= read -r target; do
     continue
   fi
   
+  # Skip .service files (systemd unit files, not shell scripts)
+  case $target in
+    *.service)
+      passed=$((passed + 1))
+      continue
+      ;;
+  esac
+  
   is_imp_file=0
   case $target in
     */.imps/*|*/.imps) is_imp_file=1 ;;

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-
+# Check if Tor bridge mode is enabled in the local torrc.
 
 case "${1-}" in
 --help|--usage|-h)

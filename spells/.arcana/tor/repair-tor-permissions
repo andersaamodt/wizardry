@@ -1,6 +1,6 @@
 #!/bin/sh
 
-
+# Reset ownership and permissions on Tor directories for safe service startup.
 
 case "${1-}" in
 --help|--usage|-h)
