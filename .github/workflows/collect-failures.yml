@@ -144,16 +144,11 @@ jobs:
               return
             fi
 
-            # For POSIX/linting workflows, extract only FAIL lines (not PASS)
+            # For POSIX/linting workflows, show tail without excessive PASS lines
             if echo "$workflow_name" | grep -qi "POSIX\|linting\|style"; then
-              # Extract only FAIL lines, not PASS lines
-              if grep -q "^FAIL " "$cleaned_log"; then
-                # Show all FAIL lines
-                grep "^FAIL " "$cleaned_log"
-              else
-                # Fallback to generic error extraction
-                grep -i "ERROR" "$cleaned_log" | head -50
-              fi
+              # Filter out PASS lines but keep everything else (FAIL, errors, context)
+              # Show last 100 lines, then remove lines that are just PASS statements
+              tail -100 "$cleaned_log" | grep -v "^[0-9T:.-]*Z PASS " || tail -50 "$cleaned_log"
               rm -f "$cleaned_log"
               return
             fi
