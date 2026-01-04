@@ -121,7 +121,7 @@ if [ "$list_only" -eq 1 ]; then
 fi
 
 # Count total targets first
-total=$(grep -c . "$targets_file" 2>/dev/null || echo 0)
+total=$(grep -c . "$targets_file" 2>/dev/null) || total=0
 
 current=0
 while IFS= read -r target; do
