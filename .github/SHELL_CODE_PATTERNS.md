@@ -55,20 +55,24 @@ require-wizardry() { ... }  # Syntax error
 
 **Solutions:**
 ```sh
-# Conditional set -e (interactive-safe)
-spell_name() {
-  case "$0" in
-    */spell-name) set -eu ;;  # Script: strict mode
-    *) set -u ;;              # Sourced: only nounset
-  esac
-}
+# Use exit handler that respects context
+case "$0" in
+  */spell-name)
+    # Script execution - safe to exit
+    trap 'exit 1' ERR
+    ;;
+  *)
+    # Sourced - avoid exit
+    trap 'return 1' ERR
+    ;;
+esac
 
-# Protect call site
+# Or protect call site
 my_func || true
 if my_func; then ...; fi
 ```
 
-**Note:** `set -u` alone is safe (doesn't propagate exit).
+**Note:** Modern wizardry uses flat, linear scripts (no function wrappers), so this is mainly relevant for imps.
 
 ### Return vs Exit
 
@@ -105,21 +109,25 @@ esac
 
 ### Self-Execute Pattern
 
-**Makes script work both sourced and executed:**
+### Self-Execute Pattern (For Imps Only)
+
+**Makes imp work both sourced and executed:**
 
 ```sh
 #!/bin/sh
 
-spell_name() {
+_imp_name() {
   # Function body
 }
 
 # Self-execute when run directly
 case "$0" in
-  */spell-name) spell_name "$@" ;; esac
+  */imp-name) _imp_name "$@" ;; esac
 ```
 
-**Why:** `$0` is script path when executed, shell name when sourced. Pattern `*/spell-name` matches only execution.
+**Why:** `$0` is script path when executed, shell name when sourced. Pattern `*/imp-name` matches only execution.
+
+**Note:** Spells are now flat, linear scripts (no function wrappers). This pattern is only used for imps.
 
 ### Command Substitution
 
@@ -428,13 +436,12 @@ case "${1-}" in
 require_wizardry || return 1
 set -eu
 
-# Imp self-execute
+# Imp self-execute (current pattern)
 _imp_name() { ...; }
 case "$0" in */imp-name) _imp_name "$@" ;; esac
 
-# Castable spell (sourced + executed)
-spell_name() { ...; }
-# Load castable, then: castable "$@"
+# Spells are flat, linear scripts (no function wrappers)
+# See .github/instructions/spells.instructions.md
 ```
 
 ## Quick Reference

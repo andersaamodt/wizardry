@@ -2,9 +2,17 @@
 
 applyTo: "spells/**"
 
-## CRITICAL: Self-Execute Pattern Architecture
+## DEPRECATED: This file contains outdated information
 
-### Castable Spells (Executed AND Sourced)
+**The self-execute pattern with function wrappers is NO LONGER USED.**
+
+All spells and imps should be flat, linear scripts without function wrappers.
+
+See `.github/instructions/spells.instructions.md` and `.github/instructions/imps.instructions.md` for current patterns.
+
+## Current Pattern (Flat Linear Scripts)
+
+### Standard Spell Pattern
 
 ```sh
 #!/bin/sh
@@ -17,119 +25,55 @@ Description.
 USAGE
 }
 
-spell_name() {
 case "${1-}" in
---help|--usage|-h) spell_name_usage; return 0 ;; esac
-
-require-wizardry || return 1  # RETURN not exit - allows sourcing
+--help|--usage|-h)
+  spell_name_usage
+  exit 0
+  ;;
+esac
 
 set -eu
-. env-clear
-# Main logic
-}
 
-# Load castable (AFTER all functions)
-if true; then
-  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
-  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
-  [ -f "$_i/castable" ] && . "$_i/castable"
-fi
-castable "$@"
+# Main logic here (flat, linear code)
 ```
 
-**CRITICAL RULES:**
-1. `--help` handler uses `return 0` (not `exit`) - enables sourcing
-2. `require-wizardry || return 1` (not `exit`) - prevents shell kill
-3. `set -eu` INSIDE function - protects function, not castable loading
-4. `castable "$@"` AFTER all definitions
-5. Always `return`, never `exit` in function body
+**Key Points:**
+1. Usage function defined at top (if the spell calls it)
+2. Help handler before `set -eu`
+3. `set -eu` after help handler
+4. Main logic is flat and linear (no function wrappers)
+5. Use `exit` (not `return`) - these are scripts, not functions
 
-**Conditional set -e for Interactive Use:**
-When spell is frequently called from interactive shells and may return non-zero in normal operation:
-
-```sh
-spell_name() {
-  case "$0" in
-    */spell-name) set -eu ;;  # Script: full strict mode
-    *) set -u ;;              # Function: only -u (prevents shell exit)
-  esac
-  # Rest of function
-}
-```
-
-Use conditional pattern for: `banish`, `validate-spells`, `test-spell` (interactive tools)
-
-### Uncastable Spells (Source-Only)
+### Imp Pattern (Action)
 
 ```sh
 #!/bin/sh
-# Brief description
+# imp-name ARG - brief description
 
-spell_name_usage() {
-cat <<'USAGE'
-Usage: . spell-name [args]
-Description.
-USAGE
-}
-
-case "${1-}" in
---help|--usage|-h) spell_name_usage; exit 0 ;; esac
-
-# Load uncastable (BEFORE main logic)
-if true; then
-  _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
-  _i="${WIZARDRY_DIR:-${_r}}/spells/.imps/sys"
-  [ -f "$_i/uncastable" ] && . "$_i/uncastable"
-fi
-uncastable
-
-require-wizardry || exit 1
-spell_name() {
-case "${1-}" in
---help|--usage|-h) spell_name_usage; return 0 ;; esac
 set -eu
-. env-clear
-# Main logic
+
+_imp_name() {
+  # Implementation
 }
+
+case "$0" in
+  */imp-name) _imp_name "$@" ;; esac
 ```
 
-**Rules:** `--help` twice (top=exit, function=return), `uncastable` before `require-wizardry`, no `castable` call
-
-## Quick Reference
-
-| Context | Use | Why |
-|---------|-----|-----|
-| Function body | `return 0` | Exits function, not shell |
-| Top-level | `exit 0` | Stops execution |
-| Castable | `set -eu` inside function | Protects loading |
-| Uncastable | `set -eu` inside function | Top help handler first |
-| Imp (action) | `set -eu` at top | Simple, entire file |
-| Imp (conditional) | NO `set -eu` | Returns exit codes |
-| Interactive spell | Conditional `set -e` | Prevents shell kill |
-
-## Common Mistakes
-
-| Wrong | Right | Why |
-|-------|-------|-----|
-| `exit 0` in function | `return 0` | Exit kills shell when sourced |
-| `require-wizardry \|\| exit 1` | `require-wizardry \|\| return 1` | Exit kills shell |
-| `set -eu` before castable | `set -eu` in function | Vars may be unset during load |
-| Duplicate `set -eu` in imp | ONE `set -eu` at top | Breaks invoke-wizardry |
-
-## Function Calls in Command Substitution
-
-When calling functions via variables in `$(...)`, use `eval`:
+### Imp Pattern (Conditional - NO set -eu)
 
 ```sh
-# CORRECT: Use eval for variable function calls
-_cmd="validate_spells"
-result=$(eval "$_cmd --flag $arg" 2>&1)
+#!/bin/sh
+# imp-name ARG - test if condition
 
-# WRONG: Direct expansion fails in some shells
-result=$($_cmd --flag $arg)  # May fail in zsh
+_imp_name() {
+  # Return 0 for true, 1 for false
+}
+
+case "$0" in
+  */imp-name) _imp_name "$@" ;; esac
 ```
 
-**Why:** POSIX-compliant, works across sh/bash/zsh/dash. Only use for controlled variables (not user input).
+## Historical Note
 
+The castable/uncastable pattern with function wrappers and `castable "$@"` / `uncastable` calls was previously used but has been deprecated in favor of simpler flat, linear scripts.
