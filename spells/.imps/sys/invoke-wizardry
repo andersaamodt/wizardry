@@ -23,7 +23,7 @@ if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
   return 0
 fi
 _WIZARDRY_INVOKED=1
-export _WIZARDRY_INVOKED
+# Note: NOT exported - each subprocess should invoke wizardry independently
 
 [ "${WIZARDRY_DEBUG-}" = "1" ] && \
   printf '[invoke-wizardry] %s\n' "Starting wizardry initialization" >&2

@@ -226,7 +226,7 @@ PARSE_HELP
         printf '[parse] DEBUG: Trying 4-word spell file: %s\n' "$_try_4word_spell" >&2
       # Search for spell file (inline search logic)
       _found=""
-      for _spell_dir in cantrips menu arcane divination system spellcraft \
+      for _spell_dir in .wizardry cantrips menu arcane divination system spellcraft \
                         enchantment .imps .imps/*; do
         _spell_path="$_wizardry_dir/spells/$_spell_dir/$_try_4word_spell"
         if [ -f "$_spell_path" ] && [ -x "$_spell_path" ]; then
@@ -254,7 +254,7 @@ PARSE_HELP
         printf '[parse] DEBUG: Trying 3-word spell file: %s\n' "$_try_3word_spell" >&2
       # Search for spell file (inline search logic)
       _found=""
-      for _spell_dir in cantrips menu arcane divination system spellcraft \
+      for _spell_dir in .wizardry cantrips menu arcane divination system spellcraft \
                         enchantment .imps .imps/*; do
         _spell_path="$_wizardry_dir/spells/$_spell_dir/$_try_3word_spell"
         if [ -f "$_spell_path" ] && [ -x "$_spell_path" ]; then
@@ -282,7 +282,7 @@ PARSE_HELP
         printf '[parse] DEBUG: Trying 2-word spell file: %s\n' "$_try_2word_spell" >&2
       # Search for spell file (inline search logic)
       _found=""
-      for _spell_dir in cantrips menu arcane divination system spellcraft \
+      for _spell_dir in .wizardry cantrips menu arcane divination system spellcraft \
                         enchantment .imps .imps/*; do
         _spell_path="$_wizardry_dir/spells/$_spell_dir/$_try_2word_spell"
         if [ -f "$_spell_path" ] && [ -x "$_spell_path" ]; then
@@ -367,7 +367,7 @@ PARSE_HELP
         # Fallback: word_of_binding not available, execute spell file directly
         [ "$_parse_debug" = "1" ] && \
           printf '[parse] DEBUG: word_of_binding not available, executing spell directly: %s\n' \
-          $2
+          "$_spell_file" >&2
         if [ $# -eq 0 ]; then
           "$_spell_file"
         else
@@ -386,7 +386,7 @@ PARSE_HELP
   
     # Try to find single-word spell
     _spell_file=""
-    for _spell_dir in cantrips menu arcane divination system spellcraft \
+    for _spell_dir in .wizardry cantrips menu arcane divination system spellcraft \
                       enchantment .imps .imps/*; do
       _spell_path="$_wizardry_dir/spells/$_spell_dir/$_parse_cmd"
       if [ -f "$_spell_path" ] && [ -x "$_spell_path" ]; then
@@ -461,7 +461,7 @@ PARSE_HELP
         # Fallback: word_of_binding not available, execute spell file directly
         [ "$_parse_debug" = "1" ] && \
           printf '[parse] DEBUG: word_of_binding not available, executing spell directly: %s\n' \
-          $2
+          "$_spell_file" >&2
         if [ $# -eq 0 ]; then
           "$_spell_file"
         else

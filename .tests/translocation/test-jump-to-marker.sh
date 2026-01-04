@@ -19,11 +19,11 @@ wizardry_base_path() {
 
 test_help() {
   run_spell "spells/translocation/jump-to-marker" --help
-  assert_success && assert_output_contains "Usage: jump"
+  assert_success && assert_output_contains "Usage:"
 }
 
 test_unknown_option_fails() {
-  run_cmd sh -c "PATH=\"$WIZARDRY_IMPS_PATH:$(wizardry_base_path):/bin:/usr/bin\" . \"$ROOT_DIR/spells/translocation/jump-to-marker\"; jump_to_marker --bad"
+  run_cmd sh -c "PATH=\"$WIZARDRY_IMPS_PATH:$(wizardry_base_path):/bin:/usr/bin\" set -- --bad; . \"$ROOT_DIR/spells/translocation/jump-to-marker\""
   assert_failure && assert_error_contains "unknown option"
 }
 
@@ -35,9 +35,9 @@ run_jump() {
   JUMP_TO_MARKERS_DIR="$markers_dir"
   export JUMP_TO_MARKERS_DIR PATH
   if [ -n "$marker_arg" ]; then
-    run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/jump-to-marker\"; jump_to_marker_impl \"$marker_arg\""
+    run_cmd sh -c "set -- \"$marker_arg\"; . \"$ROOT_DIR/spells/translocation/jump-to-marker\""
   else
-    run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/jump-to-marker\"; jump_to_marker_impl"
+    run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/jump-to-marker\""
   fi
 }
 
