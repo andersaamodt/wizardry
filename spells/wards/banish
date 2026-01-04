@@ -105,7 +105,25 @@ while [ "$#" -gt 0 ]; do
       ;;
     -*)
       printf 'Error: unknown option: %s\n' "$1" >&2
-      banish_usage >&2
+      cat <<'USAGE' >&2
+Usage: banish [LEVEL] [OPTIONS]
+
+Validate wizardry readiness by level, including assumptions, self-healing, and tests.
+
+Arguments:
+  LEVEL                 Validate through level N (0-30, default: 4)
+  all                   Validate all available levels
+
+Options:
+  --no-heal             Skip self-healing (only report issues)
+  --no-tests            Skip running tests (only check assumptions)
+  --only                Only validate this specific level (don't run lower levels)
+
+Examples:
+  banish          # Validate through level 4 (default - menu system)
+  banish 5 --only # Validate only level 5
+  banish all      # Validate through the highest available level
+USAGE
       exit 2
       ;;
     *)

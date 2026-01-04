@@ -26,7 +26,7 @@ copy_wizardry() {
 }
 
 test_help() {
-  run_spell "spells/system/banish" --help
+  run_spell "spells/wards/banish" --help
   assert_success || return 1
   assert_output_contains "Usage:" || return 1
   assert_output_contains "banish" || return 1
@@ -40,7 +40,7 @@ test_basic_execution() {
   copy_wizardry "$install_dir" || return 1
   
   # Run banish - should validate the installation
-  WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish"
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish"
   assert_success || return 1
   assert_output_contains "validation checks passed" || return 1
 }
@@ -53,7 +53,7 @@ test_auto_detect_from_home() {
   copy_wizardry "$install_dir" || return 1
   
   # Run without WIZARDRY_DIR set, should auto-detect from HOME
-  HOME="$tmpdir" run_spell "spells/system/banish"
+  HOME="$tmpdir" run_spell "spells/wards/banish"
   assert_success || return 1
 }
 
@@ -64,7 +64,7 @@ test_verbose_mode() {
   # Copy wizardry for realistic testing
   copy_wizardry "$install_dir" || return 1
   
-  WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish" --verbose
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" --verbose
   assert_success || return 1
   # Verbose mode shows "Level 0"
   assert_output_contains "Level 0" || return 1
@@ -78,7 +78,7 @@ test_non_verbose_has_output() {
   copy_wizardry "$install_dir" || return 1
   
   # Non-verbose mode should have output
-  WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish"
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish"
   assert_success || return 1
   assert_output_contains "validation checks passed" || return 1
 }
@@ -90,7 +90,7 @@ test_custom_wizardry_dir() {
   # Copy wizardry to custom location for realistic testing
   copy_wizardry "$install_dir" || return 1
   
-  WIZARDRY_LOG_LEVEL=1 run_spell "spells/system/banish" --wizardry-dir "$install_dir"
+  WIZARDRY_LOG_LEVEL=1 run_spell "spells/wards/banish" --wizardry-dir "$install_dir"
   assert_success || return 1
   assert_output_contains "Validation complete" || return 1
 }
@@ -102,7 +102,7 @@ test_missing_invoke_wizardry() {
   mkdir -p "$tmpdir/.wizardry/spells/.imps/sys"
   
   # Level 0 now requires invoke-wizardry and will fail without it
-  WIZARDRY_DIR="$tmpdir/.wizardry" run_spell "spells/system/banish"
+  WIZARDRY_DIR="$tmpdir/.wizardry" run_spell "spells/wards/banish"
   assert_failure || return 1
   # Should report that wizardry needs to be repaired
 }
@@ -114,7 +114,7 @@ test_invalid_wizardry_dir() {
   mkdir -p "$tmpdir/.wizardry"
   
   # Level 0 now requires valid wizardry structure
-  WIZARDRY_DIR="$tmpdir/.wizardry" run_spell "spells/system/banish"
+  WIZARDRY_DIR="$tmpdir/.wizardry" run_spell "spells/wards/banish"
   assert_failure || return 1
   # Should report that wizardry is not installed
 }
@@ -137,7 +137,7 @@ test_level_0_default() {
   copy_wizardry "$install_dir" || return 1
   
   # Level 0 should be the default
-  WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish"
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish"
   assert_success || return 1
   assert_output_contains "Level 0" || return 1
 }
@@ -149,7 +149,7 @@ test_explicit_level_0() {
   # Copy wizardry for realistic testing
   copy_wizardry "$install_dir" || return 1
   
-  WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish" 0
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 0
   assert_success || return 1
   assert_output_contains "Level 0" || return 1
 }
@@ -162,7 +162,7 @@ test_level_1_requires_menu() {
   copy_wizardry "$install_dir" || return 1
   
   # Test level 1 with realistic installation
-  WIZARDRY_DIR="$install_dir" WIZARDRY_LOG_LEVEL=1 run_spell "spells/system/banish" 1 --no-tests
+  WIZARDRY_DIR="$install_dir" WIZARDRY_LOG_LEVEL=1 run_spell "spells/wards/banish" 1 --no-tests
   assert_success || return 1
   assert_output_contains "Level 1" || return 1
 }
@@ -174,7 +174,7 @@ test_no_tests_flag() {
   # Copy wizardry for realistic testing
   copy_wizardry "$install_dir" || return 1
   
-  WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish" --no-tests
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" --no-tests
   assert_success || return 1
   # Success is enough - no tests were run
 }
@@ -186,14 +186,14 @@ test_verbose_shows_level_info() {
   # Copy wizardry for realistic testing
   copy_wizardry "$install_dir" || return 1
   
-  WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish" 1 --verbose --no-tests
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 1 --verbose --no-tests
   assert_success || return 1
   assert_output_contains "System Foundation" || return 1
   assert_output_contains "Menu Core" || return 1
 }
 
 test_invalid_level() {
-  run_spell "spells/system/banish" 99
+  run_spell "spells/wards/banish" 99
   assert_failure || return 1
   # Should reject 99 as an invalid argument
 }
@@ -239,7 +239,7 @@ test_banish_shows_detailed_status() {
   copy_wizardry "$install_dir" || return 1
   
   # Run banish level 1 and check for detailed status
-  WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish" 1
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 1
   assert_success || return 1
   
   # Should show "Required imps:" header
@@ -274,7 +274,7 @@ test_function_call_in_subshell() {
   
   # Test that banish can call validate_spells via eval pattern
   # This tests the CODE_POLICY_FUNCTION_CALLS.md pattern
-  WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish" 1
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 1
   assert_success || return 1
   
   # Should detect all imps (not report them as missing)
@@ -297,7 +297,7 @@ test_conditional_set_e_script_mode() {
   copy_wizardry "$install_dir" || return 1
   
   # When executed as script with invalid argument, should return error code
-  WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish" 999
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 999
   assert_failure || return 1
   
   # Should show error message (999 is caught as unexpected argument)
@@ -323,7 +323,7 @@ test_imps_detected_not_missing() {
   copy_wizardry "$install_dir" || return 1
   
   # Run banish and capture output
-  WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish" 1
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 1
   assert_success || return 1
   
   # Should NOT have a line saying "Required imps: Missing: ..."
@@ -350,7 +350,7 @@ test_eval_pattern_with_file_fallback() {
   # Even if validate_spells function is not available, 
   # banish should fall back to file path and use eval
   # This tests both branches of the _validate_cmd logic
-  WIZARDRY_DIR="$install_dir" run_spell "spells/system/banish" 1
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 1
   assert_success || return 1
   
   return 0
