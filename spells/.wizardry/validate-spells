@@ -81,7 +81,7 @@ while [ "$#" -gt 0 ]; do
       ;;
     -*)
       printf 'validate-spells: unknown option: %s\n' "$1" >&2
-      return 2
+      exit 2
       ;;
     *)
       break
@@ -91,7 +91,7 @@ done
 
 if [ "$#" -eq 0 ]; then
   printf 'validate-spells: no spells specified\n' >&2
-  return 2
+  exit 2
 fi
 
 # Validate each spell
