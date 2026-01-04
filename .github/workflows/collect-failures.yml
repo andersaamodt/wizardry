@@ -144,11 +144,15 @@ jobs:
               return
             fi
 
-            # For POSIX/linting workflows, show tail without excessive PASS lines
+            # For POSIX/linting workflows, show summary section
             if echo "$workflow_name" | grep -qi "POSIX\|linting\|style"; then
-              # Filter out PASS lines but keep everything else (FAIL, errors, context)
-              # Show last 100 lines, then remove lines that are just PASS statements
-              tail -100 "$cleaned_log" | grep -v "^[0-9T:.-]*Z PASS " || tail -50 "$cleaned_log"
+              # Extract from "POSIX Compliance Summary" to end (includes Process completed line)
+              if grep -q "POSIX Compliance Summary" "$cleaned_log"; then
+                sed -n '/POSIX Compliance Summary/,$p' "$cleaned_log"
+              else
+                # Fallback: show tail without excessive PASS lines
+                tail -100 "$cleaned_log" | grep -v "^[0-9T:.-]*Z PASS " || tail -50 "$cleaned_log"
+              fi
               rm -f "$cleaned_log"
               return
             fi
