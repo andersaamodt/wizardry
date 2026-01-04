@@ -50,15 +50,6 @@ ENTRIES
         exit 1
 }
 
-spell_menu_usage() {
-        cat <<'USAGE'
-Usage: spell-menu <spell-name>
-
-Display an action menu for a spell with options to cast, memorize,
-get help, or erase.
-USAGE
-}
-
 # Handle action flags (called by menu via subprocess)
 case ${1-} in
         --cast)
@@ -77,7 +68,12 @@ esac
 spell_menu() {
 case "${1-}" in
 --help|--usage|-h)
-  spell_menu_usage
+  cat <<'USAGE'
+Usage: spell-menu <spell-name>
+
+Display an action menu for a spell with options to cast, memorize,
+get help, or erase.
+USAGE
   exit 0
   ;;
 esac
@@ -88,7 +84,12 @@ set -eu
 trap 'exit 0' INT TERM
 
 if [ "$#" -lt 1 ]; then
-        spell_menu_usage >&2
+        cat <<'USAGE' >&2
+Usage: spell-menu <spell-name>
+
+Display an action menu for a spell with options to cast, memorize,
+get help, or erase.
+USAGE
         exit 1
 fi
 

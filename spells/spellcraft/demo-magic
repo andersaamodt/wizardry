@@ -4,24 +4,6 @@
 # Each demo level corresponds to a banish level and demonstrates the spells
 # that are validated and tested by that banish level.
 
-demo_magic_usage() {
-  cat <<'USAGE'
-Usage: demo-magic [LEVEL|all]
-
-Demonstrate wizardry features by running checks on spells and narrating results.
-Each level demonstrates spells validated by the corresponding banish level.
-
-Arguments:
-  LEVEL         Demonstration level (0-29)
-  all           Demonstrate all levels (default)
-                Level 0: POSIX & platform foundation
-                Level 1: Wizardry installation
-                Level 2: Glossary system
-                Level 3: Menu system
-                Level 4+: Higher-level spells (see SPELL_LEVELS.md)
-USAGE
-}
-
 # Demo a single level using spell-levels data
 demo_level() {
   level=$1
@@ -679,7 +661,21 @@ fi
 # Main script logic (unwrapped from demo_magic function)
 case "${1-}" in
 --help|--usage|-h)
-  demo_magic_usage
+  cat <<'USAGE'
+Usage: demo-magic [LEVEL|all]
+
+Demonstrate wizardry features by running checks on spells and narrating results.
+Each level demonstrates spells validated by the corresponding banish level.
+
+Arguments:
+  LEVEL         Demonstration level (0-29)
+  all           Demonstrate all levels (default)
+                Level 0: POSIX & platform foundation
+                Level 1: Wizardry installation
+                Level 2: Glossary system
+                Level 3: Menu system
+                Level 4+: Higher-level spells (see SPELL_LEVELS.md)
+USAGE
   exit 0
   ;;
 esac
@@ -749,7 +745,21 @@ if [ "$#" -gt 0 ]; then
       ;;
     *)
       printf 'demo-magic: invalid level: %s\n' "$1" >&2
-      demo_magic_usage >&2
+      cat <<'USAGE' >&2
+Usage: demo-magic [LEVEL|all]
+
+Demonstrate wizardry features by running checks on spells and narrating results.
+Each level demonstrates spells validated by the corresponding banish level.
+
+Arguments:
+  LEVEL         Demonstration level (0-29)
+  all           Demonstrate all levels (default)
+                Level 0: POSIX & platform foundation
+                Level 1: Wizardry installation
+                Level 2: Glossary system
+                Level 3: Menu system
+                Level 4+: Higher-level spells (see SPELL_LEVELS.md)
+USAGE
       exit 2
       ;;
   esac

@@ -7,7 +7,8 @@
 # This script contains all color codes in the POSIX standard.
 # You must source this script with '. ./colors' (or an absolute path) to use it.
 
-colors_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE'
 Usage: . colors
 
@@ -18,11 +19,6 @@ Example:
   . colors
   printf '%sError:%s An error message.\n' "${RED}" "${RESET}"
 USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-  colors_usage
   exit 0
   ;;
 esac

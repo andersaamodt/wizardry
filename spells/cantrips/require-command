@@ -2,17 +2,13 @@
 
 # Guard against missing commands, offering to install them.
 
-require_command_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE' >&2
 Usage: require-command <command> [message...]
 
 Checks for a required binary, optionally offers to install it through wizardry installers, and exits non-zero with a helpful message when the dependency is missing.
 USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-  require_command_usage
   exit 0
   ;;
 esac
@@ -32,7 +28,11 @@ case "$0" in
 esac
 
 if [ "$#" -lt 1 ]; then
-    require_command_usage
+    cat <<'USAGE' >&2
+Usage: require-command <command> [message...]
+
+Checks for a required binary, optionally offers to install it through wizardry installers, and exits non-zero with a helpful message when the dependency is missing.
+USAGE
     exit 2
 fi
 
