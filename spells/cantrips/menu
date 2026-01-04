@@ -158,12 +158,12 @@ if [ "${1-}" = "--start-selection" ]; then
 fi
 
 if [ "$#" -lt 2 ]; then
-	if command -v main-menu >/dev/null 2>&1; then
-		main-menu
-		exit 0
-	fi
-	printf '%s\n' "menu: no menu entries provided and main-menu not found" >&2
-	exit 1
+  if command -v main-menu >/dev/null 2>&1; then
+    main-menu
+    exit 0
+  fi
+  printf '%s\n' "menu: no menu entries provided and main-menu not found" >&2
+  exit 1
 fi
 
 description=$1

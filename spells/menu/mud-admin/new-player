@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# This spell creates a new player identity with SSH keys for the MUD.
+# Use it to generate a new player key pair for connecting to MUD hosts.
+
 if ! command -v env_clear >/dev/null 2>&1; then
   if [ -n "${WIZARDRY_DIR-}" ]; then
     _i="$WIZARDRY_DIR/spells/.imps/sys"
@@ -10,9 +13,6 @@ if ! command -v env_clear >/dev/null 2>&1; then
   fi
   [ -f "$_i/env-clear" ] && . "$_i/env-clear"
 fi
-
-# This spell creates a new player identity with SSH keys for the MUD.
-# Use it to generate a new player key pair for connecting to MUD hosts.
 
 case "${1-}" in
 --help|--usage|-h)

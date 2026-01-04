@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# This spell sets the current player identity for MUD connections.
+# The player name is stored in the MUD config directory.
+
 if ! command -v env_clear >/dev/null 2>&1; then
   if [ -n "${WIZARDRY_DIR-}" ]; then
     _i="$WIZARDRY_DIR/spells/.imps/sys"
@@ -10,9 +13,6 @@ if ! command -v env_clear >/dev/null 2>&1; then
   fi
   [ -f "$_i/env-clear" ] && . "$_i/env-clear"
 fi
-
-# This spell sets the current player identity for MUD connections.
-# The player name is stored in the MUD config directory.
 
 case "${1-}" in
 --help|--usage|-h)

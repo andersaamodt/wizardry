@@ -3,7 +3,8 @@
 # Validate that specified spells and imps exist in wizardry installation.
 # Used by banish, test-magic, and demo-magic to verify spell availability.
 
-validate_spells_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE'
 Usage: validate-spells [OPTIONS] SPELL...
 
@@ -30,11 +31,6 @@ Exit Codes:
   1  One or more spells/imps missing
   2  Invalid usage
 USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-  validate_spells_usage
   exit 0
   ;;
 esac
