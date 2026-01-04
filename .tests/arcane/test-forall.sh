@@ -130,6 +130,7 @@ run_test_case "forall prints usage" test_help
 run_test_case "forall accepts --usage flag" test_usage_alias
 run_test_case "forall requires command" forall_requires_command
 run_test_case "forall runs command over entries" forall_runs_command_over_entries
+run_test_case "forall indents multiline output" forall_indents_multiline_output
 run_test_case "forall runs commands on entries with spaces" forall_handles_spaces
 run_test_case "forall continues on failures" forall_continues_on_failures
 run_test_case "forall lists silent entries" forall_lists_silent_entries

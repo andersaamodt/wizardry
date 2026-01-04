@@ -180,3 +180,5 @@ run_test_case "look output ends with newline" test_output_ends_with_newline
 run_test_case "look prints discovered attributes" test_displays_attributes
 
 # Test via source-then-invoke pattern  
+
+finish_tests

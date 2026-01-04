@@ -97,3 +97,5 @@ run_test_case "erase-spell --force deletes spell in subfolder" test_force_delete
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

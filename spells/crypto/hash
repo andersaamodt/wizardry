@@ -21,7 +21,7 @@ if [ "$#" != 1 ]; then
 Usage: hash <file>
 
 Compute the CRC-32 hash of a file and print it in hexadecimal, resolving the path relative to this spell when needed.
-USAGE
+EOF
     exit 2
 fi
 

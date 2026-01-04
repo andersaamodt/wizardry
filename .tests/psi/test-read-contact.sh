@@ -174,3 +174,5 @@ run_test_case "read-contact handles CRLF vCards" read_contact_handles_crlf_cards
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

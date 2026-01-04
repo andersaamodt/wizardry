@@ -66,3 +66,5 @@ run_test_case "rejects empty word" test_rejects_empty_word
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

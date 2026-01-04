@@ -127,3 +127,5 @@ run_test_case "reset-default-synonyms preserves custom synonyms" test_preserves_
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

@@ -252,3 +252,5 @@ run_test_case "read-magic reports no attributes without helpers" test_handles_mi
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

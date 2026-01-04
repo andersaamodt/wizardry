@@ -374,3 +374,5 @@ run_test_case "install-menu shows exactly one blank line on selection" test_sing
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

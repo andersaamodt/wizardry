@@ -166,3 +166,5 @@ run_test_case "mark-location errors when marker directory is blocked" test_marke
 run_test_case "mark-location auto-increments marker number" test_auto_increments_marker
 
 # Test via source-then-invoke pattern  
+
+finish_tests

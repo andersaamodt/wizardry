@@ -39,3 +39,5 @@ run_test_case "restart-ssh uses os imp for detection" test_uses_os_imp
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

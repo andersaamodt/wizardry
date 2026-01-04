@@ -50,3 +50,5 @@ run_test_case "network-menu fails without menu dependency" test_fails_without_me
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

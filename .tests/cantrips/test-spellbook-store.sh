@@ -110,3 +110,5 @@ run_test_case "spellbook-store shows help" shows_help
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

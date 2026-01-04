@@ -229,3 +229,5 @@ run_test_case "update-wizardry fails when detection fails" test_detection_failur
 run_test_case "update-wizardry propagates git failures" test_propagates_git_failure
 
 # Test via source-then-invoke pattern  
+
+finish_tests

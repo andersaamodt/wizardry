@@ -101,3 +101,5 @@ shows_help() {
 run_test_case "fathom-terminal shows help" shows_help
 
 # Test via source-then-invoke pattern  
+
+finish_tests

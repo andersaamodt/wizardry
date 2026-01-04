@@ -54,3 +54,5 @@ run_test_case "validate-number rejects empty input" test_rejects_empty
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

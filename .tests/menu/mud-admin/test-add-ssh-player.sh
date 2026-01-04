@@ -38,3 +38,5 @@ run_test_case "add-ssh-player uses strict mode" test_has_strict_mode
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

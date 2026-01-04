@@ -177,3 +177,5 @@ run_test_case "system-menu shows exactly one blank line on selection" test_singl
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

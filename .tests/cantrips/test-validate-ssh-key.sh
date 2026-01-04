@@ -51,3 +51,5 @@ run_test_case "validate-ssh-key requires argument" test_requires_argument
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

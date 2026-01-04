@@ -332,3 +332,5 @@ run_test_case "main-menu shows exactly one blank line on selection" test_single_
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

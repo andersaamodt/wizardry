@@ -78,3 +78,5 @@ run_test_case "ssh-barrier hardens provided config" applies_hardening_to_temp_fi
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

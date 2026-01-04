@@ -221,3 +221,5 @@ run_test_case "enchant reports missing helpers" test_reports_missing_helpers
 run_test_case "enchant reports helper failures" test_reports_helper_failure
 
 # Test via source-then-invoke pattern  
+
+finish_tests

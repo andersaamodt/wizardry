@@ -232,3 +232,5 @@ run_test_case "detect-rc-file prefers zsh files over bashrc on Mac" test_mac_pre
 run_test_case "detect-rc-file uses existing zshrc over bashrc on Mac" test_mac_uses_existing_zshrc_over_bashrc
 
 # Test via source-then-invoke pattern  
+
+finish_tests

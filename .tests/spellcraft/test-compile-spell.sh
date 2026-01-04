@@ -48,3 +48,5 @@ run_test_case "compile-spell fails for unknown spell" test_compile_spell_unknown
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

@@ -79,3 +79,5 @@ run_test_case "doppelganger creates compiled wizardry" test_creates_compiled_wiz
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

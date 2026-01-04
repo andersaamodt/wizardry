@@ -153,3 +153,5 @@ run_test_case "decorate works with description only" test_decorates_current_dire
 run_test_case "decorate reports enchant failure" test_reports_enchant_failure
 
 # Test via source-then-invoke pattern  
+
+finish_tests

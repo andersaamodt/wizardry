@@ -113,3 +113,5 @@ run_test_case "detect-distro fails when no markers are present" fails_when_no_ma
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

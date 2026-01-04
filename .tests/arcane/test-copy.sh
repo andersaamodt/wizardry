@@ -226,5 +226,4 @@ run_test_case "copy prefers xsel over xclip" copy_prefers_xsel_over_xclip
 run_test_case "copy fails when no clipboard utility is present" copy_fails_without_clipboard_tools
 run_test_case "copy reports success message with original path" copy_reports_success_with_path
 
-
-# Test via source-then-invoke pattern  
+finish_tests

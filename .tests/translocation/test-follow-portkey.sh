@@ -37,3 +37,5 @@ run_test_case "follow-portkey fails on missing file" test_fails_on_missing_file
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

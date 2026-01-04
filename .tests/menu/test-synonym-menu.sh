@@ -74,3 +74,5 @@ run_test_case "synonym-menu auto-detects synonym type" test_detects_custom_synon
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

@@ -37,3 +37,5 @@ run_test_case "get-new-priority fails on missing file" test_fails_on_missing_fil
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

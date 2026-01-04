@@ -38,3 +38,5 @@ run_test_case "merge-yaml-text uses strict mode" test_has_strict_mode
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

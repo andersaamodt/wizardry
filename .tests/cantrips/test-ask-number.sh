@@ -151,3 +151,5 @@ run_test_case "ask_number accepts zero" test_ask_number_accepts_zero
 run_test_case "ask_number equal bounds" test_ask_number_equal_bounds
 
 # Test via source-then-invoke pattern  
+
+finish_tests

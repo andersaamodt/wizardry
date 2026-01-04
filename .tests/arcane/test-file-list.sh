@@ -42,3 +42,5 @@ run_test_case "file-list creates output file" test_creates_file
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests
