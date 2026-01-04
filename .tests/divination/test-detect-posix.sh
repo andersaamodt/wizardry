@@ -46,3 +46,5 @@ run_test_case "detect-posix awk probe works without unbound variable error" dete
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

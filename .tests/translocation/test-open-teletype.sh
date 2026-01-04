@@ -59,3 +59,5 @@ run_test_case "open-teletype requires MUD_PLAYER" test_requires_mud_player
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

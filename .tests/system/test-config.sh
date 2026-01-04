@@ -250,3 +250,5 @@ run_test_case "config handles many keys (20)" test_config_many_keys
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

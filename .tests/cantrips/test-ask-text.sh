@@ -121,3 +121,5 @@ run_test_case "ask_text handles special characters" test_ask_text_handles_specia
 run_test_case "ask_text default with spaces" test_ask_text_default_with_spaces
 
 # Test via source-then-invoke pattern  
+
+finish_tests

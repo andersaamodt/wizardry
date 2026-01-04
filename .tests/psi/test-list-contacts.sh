@@ -50,3 +50,5 @@ run_test_case "list-contacts handles empty directory" test_handles_empty_directo
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

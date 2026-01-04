@@ -112,3 +112,5 @@ run_test_case "bind-tome rejects unknown options" bind_rejects_unknown_option
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

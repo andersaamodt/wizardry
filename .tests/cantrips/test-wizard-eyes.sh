@@ -44,3 +44,5 @@ run_test_case "wizard-eyes suppresses output when disabled" test_suppresses_when
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

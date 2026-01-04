@@ -78,3 +78,5 @@ run_test_case "hash reports the resolved path and checksum" hash_reports_path_an
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

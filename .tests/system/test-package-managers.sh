@@ -33,3 +33,5 @@ run_test_case "package-managers spell is executable" test_is_executable
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

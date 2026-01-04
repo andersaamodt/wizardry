@@ -541,3 +541,5 @@ run_test_case "mud-menu non-toggle resets cursor" test_non_toggle_resets_cursor
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

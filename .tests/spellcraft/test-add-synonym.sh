@@ -176,3 +176,5 @@ run_test_case "handles complex target with args" test_handles_complex_target_wit
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

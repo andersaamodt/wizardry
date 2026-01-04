@@ -360,3 +360,5 @@ run_test_case "banish eval pattern works with file fallback" test_eval_pattern_w
 
 
 # Test via source-then-invoke pattern
+
+finish_tests

@@ -168,3 +168,5 @@ run_test_case "scribe-spell rejects duplicate spell in subfolder" test_rejects_d
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

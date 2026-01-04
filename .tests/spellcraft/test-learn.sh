@@ -133,3 +133,5 @@ run_test_case "learn prevents duplicate names" test_prevents_duplicates
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

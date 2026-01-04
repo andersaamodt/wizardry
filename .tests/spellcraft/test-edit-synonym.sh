@@ -139,3 +139,5 @@ run_test_case "prevents duplicate word" test_prevents_duplicate_word
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

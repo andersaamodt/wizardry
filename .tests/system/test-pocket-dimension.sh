@@ -42,3 +42,5 @@ run_test_case "pocket-dimension shows help" shows_help
 run_test_case "pocket-dimension check reports availability" check_reports_availability
 run_test_case "pocket-dimension clears environment" clears_environment
 run_test_case "pocket-dimension sets pocket flag" sets_pocket_flag
+
+finish_tests

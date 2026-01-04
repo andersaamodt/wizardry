@@ -38,3 +38,5 @@ run_test_case "wizard-cast executes the command" test_executes_command
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

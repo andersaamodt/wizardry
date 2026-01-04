@@ -201,3 +201,5 @@ run_test_case "shell startup doesn't hang" test_shell_startup_no_hang
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

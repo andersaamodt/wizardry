@@ -126,3 +126,5 @@ shows_help() {
 run_test_case "remove-service accepts --help" shows_help
 
 # Test via source-then-invoke pattern  
+
+finish_tests

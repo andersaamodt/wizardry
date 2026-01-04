@@ -75,3 +75,5 @@ run_test_case "ask user input overrides default" test_ask_user_overrides_default
 run_test_case "ask --help behavior (delegates to ask_text)" test_ask_help_behavior
 
 # Test via source-then-invoke pattern  
+
+finish_tests

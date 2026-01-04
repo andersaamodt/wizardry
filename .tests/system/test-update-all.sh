@@ -208,3 +208,5 @@ run_test_case "update-all performs arch updates" test_arch_update_flow
 run_test_case "update-all performs nixos updates" test_nixos_update_flow
 
 # Test via source-then-invoke pattern  
+
+finish_tests

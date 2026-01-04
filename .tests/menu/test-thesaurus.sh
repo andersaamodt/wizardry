@@ -59,3 +59,5 @@ run_test_case "thesaurus accepts --list flag" test_accepts_list_flag
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

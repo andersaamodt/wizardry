@@ -43,3 +43,5 @@ run_test_case "validate-path rejects long path components" test_rejects_long_com
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

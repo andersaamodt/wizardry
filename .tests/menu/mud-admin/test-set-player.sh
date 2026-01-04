@@ -37,3 +37,5 @@ run_test_case "set-player shows usage with -h" test_help_h_flag
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

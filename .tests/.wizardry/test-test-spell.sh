@@ -87,3 +87,5 @@ run_test_case "test-spell help mentions default behavior" test_help_mentions_def
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

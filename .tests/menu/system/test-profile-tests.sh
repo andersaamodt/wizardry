@@ -65,3 +65,5 @@ run_test_case "profile-tests handles no pattern match" test_handles_no_pattern_m
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

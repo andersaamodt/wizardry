@@ -502,3 +502,5 @@ run_test_case "lint-magic passes imp with single set -eu" test_imp_passes_with_s
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

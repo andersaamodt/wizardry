@@ -45,3 +45,5 @@ run_test_case "up rejects invalid input" test_rejects_invalid
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

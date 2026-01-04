@@ -117,3 +117,5 @@ run_test_case "yaml-to-enchantment reports missing helpers" test_reports_missing
 run_test_case "yaml-to-enchantment fails when helper errors" test_fails_on_attribute_error
 
 # Test via source-then-invoke pattern  
+
+finish_tests

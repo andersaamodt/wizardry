@@ -389,3 +389,5 @@ run_test_case "allows mixed alphanumeric names" allows_mixed_alphanumeric
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

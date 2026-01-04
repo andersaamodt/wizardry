@@ -217,3 +217,5 @@ run_test_case "kill-process reports kill failures" kill_process_reports_failed_k
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

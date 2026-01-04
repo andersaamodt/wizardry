@@ -110,3 +110,5 @@ run_test_case "enchantment-to-yaml writes YAML and clears attributes" test_write
 run_test_case "enchantment-to-yaml reports missing helpers" test_reports_missing_helpers
 
 # Test via source-then-invoke pattern  
+
+finish_tests

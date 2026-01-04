@@ -233,3 +233,5 @@ run_test_case "detect-magic skips malformed helper output" detect_magic_skips_ma
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

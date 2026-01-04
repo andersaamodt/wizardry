@@ -70,3 +70,5 @@ run_test_case "cursor-blink shows help" shows_help
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

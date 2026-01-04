@@ -145,3 +145,5 @@ run_test_case "hashchant falls back to xattr" test_fallback_to_xattr
 run_test_case "hashchant falls back to setfattr" test_fallback_to_setfattr
 
 # Test via source-then-invoke pattern  
+
+finish_tests

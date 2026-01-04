@@ -99,3 +99,5 @@ run_test_case "unbind-tome invents names for blank pages" unbind_names_blank_pag
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

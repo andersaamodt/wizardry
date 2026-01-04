@@ -286,3 +286,5 @@ run_test_case "disenchant selects a specific entry with ask_number" test_selects
 run_test_case "disenchant can remove all attributes" test_selects_all_with_menu_choice
 
 # Test via source-then-invoke pattern  
+
+finish_tests

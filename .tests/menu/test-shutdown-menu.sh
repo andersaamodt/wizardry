@@ -199,3 +199,5 @@ run_test_case "shutdown-menu --help shows usage" test_shows_help
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

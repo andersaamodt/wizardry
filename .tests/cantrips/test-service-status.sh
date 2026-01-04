@@ -74,3 +74,5 @@ shows_help() {
 run_test_case "service-status shows help" shows_help
 
 # Test via source-then-invoke pattern  
+
+finish_tests

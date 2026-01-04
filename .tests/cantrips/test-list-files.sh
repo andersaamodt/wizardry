@@ -67,3 +67,5 @@ run_test_case "list-files -t f lists regular files only" test_lists_regular_file
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

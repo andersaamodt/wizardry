@@ -174,3 +174,5 @@ run_test_case "requires list flag to be standalone" test_list_argument_error
 run_test_case "lists tmp once" test_list_deduplicates_tmp
 
 # Test via source-then-invoke pattern  
+
+finish_tests

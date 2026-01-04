@@ -82,3 +82,5 @@ run_test_case "forget fails when spell not memorized" test_forget_fails_when_not
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests

@@ -53,3 +53,5 @@ run_test_case "evoke-hash fails for nonexistent directory" test_fails_for_nonexi
 run_test_case "evoke-hash fails for non-directory path" test_fails_for_non_directory
 
 # Test via source-then-invoke pattern  
+
+finish_tests

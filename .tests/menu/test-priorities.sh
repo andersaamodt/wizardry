@@ -82,3 +82,5 @@ run_test_case "priorities produces error for invalid options" test_invalid_optio
 
 
 # Test via source-then-invoke pattern  
+
+finish_tests
