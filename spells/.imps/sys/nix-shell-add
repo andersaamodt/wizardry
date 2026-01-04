@@ -95,8 +95,18 @@ nix_shell_add() {
           printf '%s\n' "$_nsa_line"
           continue
         fi
-        if [ "$_nsa_in_block" -eq 1 ] && printf '%s\n' "$_nsa_line" | grep -q "^[[:space:]]*'';"; then
-          printf '%s\n' "$_nsa_marked_code"; printf '%s\n' "$_nsa_line"; _nsa_in_block=0; continue
+        # Check if we're at the end of a packages list block
+        _nsa_is_end_block=0
+        if [ "$_nsa_in_block" -eq 1 ]; then
+          if printf '%s\n' "$_nsa_line" | grep -q "^[[:space:]]*'';"; then
+            _nsa_is_end_block=1
+          fi
+        fi
+        if [ "$_nsa_is_end_block" -eq 1 ]; then
+          printf '%s\n' "$_nsa_marked_code"
+          printf '%s\n' "$_nsa_line"
+          _nsa_in_block=0
+          continue
         fi
         printf '%s\n' "$_nsa_line"
       done < "$_nsa_input_file" > "$_nsa_tmp_file"

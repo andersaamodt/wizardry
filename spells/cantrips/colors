@@ -43,7 +43,8 @@ if [ -n "${NO_COLOR-}" ]; then
         BG_BRIGHT_PURPLE='' BG_BRIGHT_CYAN='' BG_BRIGHT_WHITE=''
         THEME_HIGHLIGHT='' THEME_MUTED='' THEME_CUSTOM='' THEME_SUCCESS=''
         THEME_WARNING='' THEME_ERROR='' THEME_HEADING='' THEME_DIVIDER=''
-        MUD_LOCATION='' MUD_TITLE='' MUD_DESCRIPTION='' MUD_ITEM='' MUD_HANDLE='' MUD_SPELL='' MUD_MONSTER=''
+        MUD_LOCATION='' MUD_TITLE='' MUD_DESCRIPTION=''
+        MUD_ITEM='' MUD_HANDLE='' MUD_SPELL='' MUD_MONSTER=''
         return 0
 fi
 
@@ -52,7 +53,8 @@ case ${TERM-} in
         ''|dumb|unknown)
                 WIZARDRY_COLORS_AVAILABLE=0
                 # Export empty color variables for compatibility
-                RESET='' BLACK='' RED='' GREEN='' YELLOW='' BLUE='' PURPLE='' CYAN='' WHITE='' GREY=''
+                RESET='' BLACK='' RED='' GREEN='' YELLOW='' BLUE='' PURPLE=''
+                CYAN='' WHITE='' GREY=''
                 BOLD='' ITALICS='' UNDERLINED='' BLINK='' INVERT='' STRIKE=''
                 BRIGHT_BLACK='' BRIGHT_RED='' BRIGHT_GREEN='' BRIGHT_YELLOW=''
                 BRIGHT_BLUE='' BRIGHT_PURPLE='' BRIGHT_CYAN='' BRIGHT_WHITE=''
@@ -63,7 +65,8 @@ case ${TERM-} in
                 BG_BRIGHT_PURPLE='' BG_BRIGHT_CYAN='' BG_BRIGHT_WHITE=''
                 THEME_HIGHLIGHT='' THEME_MUTED='' THEME_CUSTOM='' THEME_SUCCESS=''
                 THEME_WARNING='' THEME_ERROR='' THEME_HEADING='' THEME_DIVIDER=''
-                MUD_LOCATION='' MUD_TITLE='' MUD_DESCRIPTION='' MUD_ITEM='' MUD_HANDLE='' MUD_SPELL='' MUD_MONSTER=''
+                MUD_LOCATION='' MUD_TITLE='' MUD_DESCRIPTION=''
+                MUD_ITEM='' MUD_HANDLE='' MUD_SPELL='' MUD_MONSTER=''
                 return 0
                 ;;
 esac

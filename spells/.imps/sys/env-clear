@@ -151,7 +151,9 @@ env_clear() {
   [ -n "$_saved_require_log" ] && export REQUIRE_LOG="$_saved_require_log"
   [ -n "$_saved_mock_toplevel" ] && export MOCK_TOPLEVEL="$_saved_mock_toplevel"
   [ -n "$_saved_pull_status" ] && export PULL_STATUS="$_saved_pull_status"
-  [ -n "$_saved_await_buffer_file" ] && export AWAIT_KEYPRESS_BUFFER_FILE="$_saved_await_buffer_file"
+  if [ -n "$_saved_await_buffer_file" ]; then
+    export AWAIT_KEYPRESS_BUFFER_FILE="$_saved_await_buffer_file"
+  fi
 
   # Restore bootstrap variables
   [ -n "$_saved_assume_yes" ] && export ASSUME_YES="$_saved_assume_yes"
@@ -196,7 +198,8 @@ env_clear() {
   unset _saved_brew_pkg _saved_test_failure _saved_test_skip _saved_wiz_tmpdir
   unset _saved_global_subtest _saved_test_compiled _saved_test_helpers _saved_system_path
   unset _saved_ask_input _saved_choose_input _saved_menu_loop_limit _saved_require_command
-  unset _saved_menu_log _saved_await_buffer_file _saved_assume_yes _saved_force_install _saved_root_dir
+  unset _saved_menu_log _saved_await_buffer_file _saved_assume_yes
+  unset _saved_force_install _saved_root_dir
   unset _saved_platform _saved_rc_file _saved_rc_format _saved_await_keep_raw
   unset _saved_disable_sandbox _saved_bwrap_warning _saved_colors_available
   unset _saved_github_env _saved_github_path _saved_github_output _saved_github_step_summary
