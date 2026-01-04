@@ -21,7 +21,7 @@ if [ "$#" -lt 1 ]; then
 Usage: evoke-hash <hash> [directory]
 
 Find files whose hash attribute matches a given value, searching the current directory by default. The hash should be set beforehand with the hashchant spell.
-USAGE
+EOF
   exit 1
 fi
 
