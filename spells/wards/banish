@@ -288,7 +288,9 @@ banish_process_level() {
 
       # Check POSIX commands (multiple items - check topic when all pass)
       posix_failed=0
-      for cmd in sh test printf command dirname basename pwd cat grep find sort cut head tail tr wc awk sed xargs mktemp uname; do
+      posix_cmds="sh test printf command dirname basename pwd cat"
+      posix_cmds="$posix_cmds grep find sort cut head tail tr wc awk sed xargs mktemp uname"
+      for cmd in $posix_cmds; do
         if ! command -v "$cmd" >/dev/null 2>&1; then
           posix_failed=1
           break
@@ -297,12 +299,12 @@ banish_process_level() {
       
       if [ "$posix_failed" -eq 0 ]; then
         printf '  %s✓%s POSIX foundation:\n' "$_green" "$_reset"
-        for cmd in sh test printf command dirname basename pwd cat grep find sort cut head tail tr wc awk sed xargs mktemp uname; do
+        for cmd in $posix_cmds; do
           printf '    %s✓%s %s\n' "$_green" "$_reset" "$cmd"
         done
       else
         printf '  %s✗%s POSIX foundation:\n' "$_red" "$_reset"
-        for cmd in sh test printf command dirname basename pwd cat grep find sort cut head tail tr wc awk sed xargs mktemp uname; do
+        for cmd in $posix_cmds; do
           if command -v "$cmd" >/dev/null 2>&1; then
             printf '    %s✓%s %s\n' "$_green" "$_reset" "$cmd"
           else
@@ -722,7 +724,13 @@ banish_process_level() {
             "$manage_system_command" setfattr attr >/dev/null 2>&1 || :
           fi
         fi
-        if command -v xattr >/dev/null 2>&1 || { command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; }; then
+        has_xattr=0
+        if command -v xattr >/dev/null 2>&1; then
+          has_xattr=1
+        elif command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; then
+          has_xattr=1
+        fi
+        if [ "$has_xattr" -eq 1 ]; then
           printf '    %s✓%s Extended attributes helper ready\n' "$_green" "$_reset"
         else
           printf '    %s✗%s Extended attributes still unavailable\n' "$_red" "$_reset"
@@ -982,7 +990,13 @@ banish_process_level() {
             "$manage_system_command" setfattr attr >/dev/null 2>&1 || :
           fi
         fi
-        if command -v xattr >/dev/null 2>&1 || { command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; }; then
+        has_xattr=0
+        if command -v xattr >/dev/null 2>&1; then
+          has_xattr=1
+        elif command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; then
+          has_xattr=1
+        fi
+        if [ "$has_xattr" -eq 1 ]; then
           printf '    %s✓%s Extended attributes helper ready\n' "$_green" "$_reset"
         else
           printf '    %s✗%s Extended attributes still unavailable\n' "$_red" "$_reset"

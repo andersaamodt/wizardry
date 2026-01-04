@@ -2,15 +2,17 @@
 
 # Bootstrap spell: install the bubblewrap sandboxing utility across common platforms.
 
-
-install_bwrap_usage() {
-  cat <<'EOF'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: install-bwrap [--force-install]
 
 Install the bubblewrap sandboxing utility. Options:
   --force-install   Install even if bwrap is already present
-EOF
-}
+USAGE
+  exit 0
+  ;;
+esac
 
 force_install=${INSTALL_BWRAP_FORCE_INSTALL:-0}
 
@@ -19,13 +21,8 @@ while [ "$#" -gt 0 ]; do
     --force-install)
       force_install=1
       ;;
-    --help|--usage|-h)
-      install_bwrap_usage
-      exit 0
-      ;;
     *)
       printf '%s\n' "install-bwrap: unknown option: $1" >&2
-      install_bwrap_usage >&2
       exit 1
       ;;
   esac
@@ -40,7 +37,10 @@ if [ "$force_install" != "1" ] && command -v bwrap >/dev/null 2>&1; then
   exit 0
 fi
 
-if ASSUME_YES=1 FORCE_INSTALL=$force_install "$SCRIPT_DIR/manage-system-command" bwrap bubblewrap; then
+ASSUME_YES=1
+FORCE_INSTALL=$force_install
+export ASSUME_YES FORCE_INSTALL
+if "$SCRIPT_DIR/manage-system-command" bwrap bubblewrap; then
   exit 0
 fi
 

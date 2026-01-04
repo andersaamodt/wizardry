@@ -306,9 +306,11 @@ demo_level() {
         demo_file="${TMPDIR:-/tmp}/wizardry-demo-$$"
         printf 'demo content\n' > "$demo_file"
         if command -v sha256sum >/dev/null 2>&1; then
-          hash_result=$(sha256sum "$demo_file" 2>&1 | head -1 || printf 'Hash: 0xABCD1234 (example)')
+          hash_result=$(sha256sum "$demo_file" 2>&1 | head -1)
+          hash_result=${hash_result:-'Hash: 0xABCD1234 (example)'}
         else
-          hash_result=$(shasum -a 256 "$demo_file" 2>&1 | head -1 || printf 'Hash: 0xABCD1234 (example)')
+          hash_result=$(shasum -a 256 "$demo_file" 2>&1 | head -1)
+          hash_result=${hash_result:-'Hash: 0xABCD1234 (example)'}
         fi
         printf '%s\n' "$hash_result" | head -1
         rm -f "$demo_file"

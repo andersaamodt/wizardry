@@ -1,20 +1,16 @@
 #!/bin/sh
-# Bootstrap spell: uninstalls the core wizardry dependencies.
 
 
-uninstall_core_usage() {
-        cat <<'USAGE' >&2
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: uninstall-core
 
 This spell uninstalls the core wizardry dependencies.
 USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        uninstall_core_usage
-        exit 0
-        ;;
+  exit 0
+  ;;
 esac
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)

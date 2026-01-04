@@ -164,8 +164,13 @@ run_with_progress() {
 case $distro in
   debian)
     # Inline require_command - use must has pattern
-    if ! command -v sudo >/dev/null 2>&1; then printf '%s\n' 'Required command not found: sudo' >&2; exit 1; fi
-    if ! command -v apt-get >/dev/null 2>&1; then printf '%s\n' 'Required command not found: apt-get' >&2; exit 1; fi
+    cmd_err='Required command not found'
+    if ! command -v sudo >/dev/null 2>&1; then 
+      printf '%s: sudo\n' "$cmd_err" >&2; exit 1
+    fi
+    if ! command -v apt-get >/dev/null 2>&1; then 
+      printf '%s: apt-get\n' "$cmd_err" >&2; exit 1
+    fi
     
     # Use step imp instead of print_step
     printf '%s\n' '• Refreshing apt package lists'
@@ -184,9 +189,16 @@ case $distro in
     ;;
     
   arch)
-    if ! command -v sudo >/dev/null 2>&1; then printf '%s\n' 'Required command not found: sudo' >&2; exit 1; fi
-    if ! command -v pacman >/dev/null 2>&1; then printf '%s\n' 'Required command not found: pacman' >&2; exit 1; fi
-    if ! command -v pamac >/dev/null 2>&1; then printf '%s\n' 'Required command not found: pamac' >&2; exit 1; fi
+    cmd_err='Required command not found'
+    if ! command -v sudo >/dev/null 2>&1; then 
+      printf '%s: sudo\n' "$cmd_err" >&2; exit 1
+    fi
+    if ! command -v pacman >/dev/null 2>&1; then 
+      printf '%s: pacman\n' "$cmd_err" >&2; exit 1
+    fi
+    if ! command -v pamac >/dev/null 2>&1; then 
+      printf '%s: pamac\n' "$cmd_err" >&2; exit 1
+    fi
     
     printf '%s\n' '• Synchronising pacman packages'
     if [ "$verbose" -eq 1 ]; then
@@ -211,10 +223,19 @@ case $distro in
     ;;
     
   nixos)
-    if ! command -v sudo >/dev/null 2>&1; then printf '%s\n' 'Required command not found: sudo' >&2; exit 1; fi
-    if ! command -v nix-channel >/dev/null 2>&1; then printf '%s\n' 'Required command not found: nix-channel' >&2; exit 1; fi
-    if ! command -v nixos-rebuild >/dev/null 2>&1; then printf '%s\n' 'Required command not found: nixos-rebuild' >&2; exit 1; fi
-    if ! command -v nix-env >/dev/null 2>&1; then printf '%s\n' 'Required command not found: nix-env' >&2; exit 1; fi
+    cmd_err='Required command not found'
+    if ! command -v sudo >/dev/null 2>&1; then 
+      printf '%s: sudo\n' "$cmd_err" >&2; exit 1
+    fi
+    if ! command -v nix-channel >/dev/null 2>&1; then 
+      printf '%s: nix-channel\n' "$cmd_err" >&2; exit 1
+    fi
+    if ! command -v nixos-rebuild >/dev/null 2>&1; then 
+      printf '%s: nixos-rebuild\n' "$cmd_err" >&2; exit 1
+    fi
+    if ! command -v nix-env >/dev/null 2>&1; then 
+      printf '%s: nix-env\n' "$cmd_err" >&2; exit 1
+    fi
     
     printf '%s\n' '• Refreshing system channels'
     if [ "$verbose" -eq 1 ]; then

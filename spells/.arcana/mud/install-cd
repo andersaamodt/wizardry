@@ -1,27 +1,20 @@
 #!/bin/sh
 
 # Install the cd hook that runs 'look' after directory changes.
-# This adds the cd function to your shell RC file and enables it.
 
-install_cd_usage() {
-cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: install-cd
 
 Install the cd hook that runs 'look' after each directory change.
 This adds the necessary source line to your shell RC file.
 USAGE
-}
-
-install_cd() {
-case "${1-}" in
---help|--usage|-h)
-        install_cd_usage
-        return 0
-        ;;
+  exit 0
+  ;;
 esac
 
-require_wizardry || return 1
-
+require_wizardry || exit 1
 
 set -eu
 env_clear
@@ -44,111 +37,3 @@ fi
 detect_output=$("$DETECT_RC_FILE" 2>/dev/null) || {
         printf '%s\n' "install-cd: could not detect shell RC file" >&2
         return 1
-}
-
-rc_file=""
-rc_format=""
-while IFS='=' read -r key value; do
-        case $key in
-        rc_file) rc_file=$value ;;
-        format) rc_format=$value ;;
-        esac
-done <<EOF
-$detect_output
-EOF
-
-if [ -z "$rc_file" ]; then
-        printf '%s\n' "install-cd: no RC file detected" >&2
-        return 1
-fi
-
-# Add source line to RC file
-if [ "$rc_format" = "nix" ]; then
-        # For NixOS, use nix-shell-add to add cd hook to configuration file
-        NIX_SHELL_ADD="$ROOT_DIR/spells/.imps/sys/nix-shell-add"
-        NIX_SHELL_STATUS="$ROOT_DIR/spells/.imps/sys/nix-shell-status"
-        
-        if [ ! -x "$NIX_SHELL_ADD" ]; then
-                printf '%s\n' "install-cd: nix-shell-add not found" >&2
-                return 1
-        fi
-        
-        # Check if already installed using nix-shell-status
-        if [ -x "$NIX_SHELL_STATUS" ] && "$NIX_SHELL_STATUS" cd-hook "$rc_file" 2>/dev/null; then
-                printf '%s\n' "✓ cd hook is already installed in $rc_file"
-                return 0
-        fi
-        
-        # Add cd hook source line to NixOS configuration
-        if ! printf '. "%s"' "$CD_HOOK" | "$NIX_SHELL_ADD" cd-hook "$rc_file" bash 2>/dev/null; then
-                printf '%s\n' "install-cd: failed to add cd hook to $rc_file" >&2
-                return 1
-        fi
-        
-        printf '%s\n' "✓ cd hook installed to $rc_file"
-        printf '%s\n' ""
-        printf '%s\n' "The cd function will be available after rebuilding your NixOS configuration."
-        printf '%s\n' "Run 'sudo nixos-rebuild switch' or 'home-manager switch' to apply changes."
-        printf '%s\n' "Use 'toggle-cd' to enable or disable the look-on-cd behavior."
-        return 0
-fi
-
-# Use rc-add-line to add source line with inline marker
-RC_ADD_LINE="$ROOT_DIR/spells/.imps/sys/rc-add-line"
-if [ ! -x "$RC_ADD_LINE" ]; then
-        printf '%s\n' "install-cd: rc-add-line not found" >&2
-        return 1
-fi
-
-# Check if already installed
-RC_HAS_LINE="$ROOT_DIR/spells/.imps/sys/rc-has-line"
-if [ -x "$RC_HAS_LINE" ] && "$RC_HAS_LINE" cd-hook "$rc_file" 2>/dev/null; then
-        printf '%s\n' "✓ cd hook is already installed in $rc_file"
-        return 0
-fi
-
-# Add source line with inline marker using rc-add-line
-if ! "$RC_ADD_LINE" cd-hook "$rc_file" ". \"$CD_HOOK\"" 2>/dev/null; then
-        printf '%s\n' "install-cd: failed to add cd hook to $rc_file" >&2
-        return 1
-fi
-
-printf '%s\n' "✓ cd hook installed to $rc_file"
-printf '%s\n' ""
-printf '%s\n' "The cd function will be available in new terminal windows."
-printf '%s\n' "Use 'toggle-cd' to enable or disable the look-on-cd behavior."
-
-}
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

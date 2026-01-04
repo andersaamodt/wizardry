@@ -2,107 +2,22 @@
 
 # This spell installs and starts the MUD. It is the MUD's main loop and installer script.
 
-install_mud_usage() {
-        cat <<'USAGE' >&2
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: install-mud
 
 Installs the wizardry MUD experience, fetching supporting assets and enabling the themed menus and commands.
 USAGE
-}
-
-install_mud() {
-case "${1-}" in
---help|--usage|-h)
-        install_mud_usage
-        return 0
-        ;;
+  exit 0
+  ;;
 esac
 
-require_wizardry || return 1
+require_wizardry || exit 1
 
-
-
-# This spell installs and starts the MUD. It is the MUD's main loop and installer script.
-
-script_path=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)/${0##*/}
-
-mud_main_loop() {
-  prev_dir=$(pwd -P)
-  while :; do
-    current_dir=$(pwd -P)
-    if [ "$current_dir" != "$prev_dir" ]; then
-      printf '%s\n' "dir changed"
-      prev_dir=$current_dir
-    fi
-    sleep 1
-  done
-}
-
-install_mud() {
-  shell_rc=$HOME/.bashrc
-
-  # Build the source line using WIZARDRY_DIR if available
-  if [ -n "${WIZARDRY_DIR-}" ]; then
-    source_line=". \"\${WIZARDRY_DIR}/spells/.arcana/mud/install-mud\""
-  else
-    # Fallback to absolute path if WIZARDRY_DIR not set
-    source_line="source $script_path"
-  fi
-
-  if [ -f "$shell_rc" ] && grep -Fq "$source_line" "$shell_rc"; then
-    printf '%s\n' "You have already memorized this spell"
-    return 0
-  fi
-
-  printf '%s' "Do you wish to memorize this spell? (yes/no) "
-  read -r answer
-  if [ "$answer" = "yes" ]; then
-    printf '%s\n' "$source_line" >> "$shell_rc"
-    printf '%s\n' "Spell memorized in .bashrc, so the mud will always be active in the terminal."
-  else
-    printf '%s\n' "The mud will only run in this shell window."
-  fi
-}
-
-if [ "${0##*/}" = "install-mud" ]; then
-  set -eu
-  install_mud
+set -eu
+install_mud
   trap '' INT
   mud_main_loop &
   printf '%s\n' "MUD started"
 fi
-
-}
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

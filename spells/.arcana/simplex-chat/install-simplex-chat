@@ -2,26 +2,19 @@
 
 # Install simplex-chat using the available package manager, with optional NixOS rebuild support.
 
-install_simplex_chat_usage() {
-        cat <<'USAGE' >&2
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: install-simplex-chat
 
 Runs a short wizard to install simplex-chat using the system package manager and prepares default data directories.
 USAGE
-}
-
-install_simplex_chat() {
-case "${1-}" in
---help|--usage|-h)
-        install_simplex_chat_usage
-        return 0
-        ;;
+  exit 0
+  ;;
 esac
 
-require_wizardry || return 1
+require_wizardry || exit 1
 
-
-install_simplex_chat() {
 set -eu
 env_clear
 
@@ -46,105 +39,3 @@ detect_nixos() {
     return 0
   fi
   return 1
-}
-
-prompt() {
-  message=$1
-  default_value=$2
-  printf '%s [%s]: ' "$message" "$default_value" >&2
-  read -r response || response=""
-  if [ -z "$response" ]; then
-    response=$default_value
-  fi
-  printf '%s' "$response"
-}
-
-package_default=${SIMPLEX_CHAT_PACKAGE_DEFAULT:-simplex-chat}
-chat_package=$(prompt "Which simplex-chat package should be installed?" "$package_default")
-
-data_dir_default=${SIMPLEX_CHAT_DATA_DIR:-$HOME/.local/share/simplex-chat}
-config_dir_default=${SIMPLEX_CHAT_CONFIG_DIR:-$HOME/.config/simplex-chat}
-
-chat_data_dir=$(prompt "Where should simplex-chat store its data?" "$data_dir_default")
-chat_config_dir=$(prompt "Where should simplex-chat keep its configuration?" "$config_dir_default")
-
-# Allow users to override per-manager packages to handle distro differences.
-export NIX_PACKAGE=${NIX_PACKAGE:-$chat_package}
-export APT_PACKAGE=${APT_PACKAGE:-$chat_package}
-export DNF_PACKAGE=${DNF_PACKAGE:-$chat_package}
-export YUM_PACKAGE=${YUM_PACKAGE:-$chat_package}
-export ZYPPER_PACKAGE=${ZYPPER_PACKAGE:-$chat_package}
-export PACMAN_PACKAGE=${PACMAN_PACKAGE:-$chat_package}
-export APK_PACKAGE=${APK_PACKAGE:-$chat_package}
-export PKGIN_PACKAGE=${PKGIN_PACKAGE:-$chat_package}
-
-printf '\nInstalling simplex-chat using %s...\n' "$manage_cmd"
-"$manage_cmd" simplex-chat "$chat_package"
-
-printf '\nPreparing simplex-chat directories...\n'
-mkdir -p "$chat_data_dir" "$chat_config_dir"
-
-if detect_nixos && command -v nixos-rebuild >/dev/null 2>&1; then
-  rebuild_cmd=${NIXOS_REBUILD_COMMAND:-"nixos-rebuild switch"}
-  if command -v sudo >/dev/null 2>&1; then
-    rebuild_cmd="sudo $rebuild_cmd"
-  fi
-  printf '\nA NixOS system was detected. Run a system rebuild now to pick up configuration changes? [y/N]: '
-  read -r rebuild || rebuild=""
-  case "$rebuild" in
-    [Yy]*)
-      sh -c "$rebuild_cmd"
-      ;;
-    *)
-      printf '%s\n' "Skipping nixos-rebuild. Run '$rebuild_cmd' later if you added simplex-chat to configuration.nix."
-      ;;
-  esac
-fi
-
-if command -v simplex-chat >/dev/null 2>&1; then
-  printf '\nChecking simplex-chat version...\n'
-  simplex-chat --version || true
-fi
-
-printf '\nSimplex-chat installation complete.\n'
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */install-simplex-chat|install-simplex-chat) install_simplex_chat "$@" ;;
-esac
-
-}
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

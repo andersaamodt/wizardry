@@ -1,24 +1,21 @@
 #!/bin/sh
+
 # Bootstrap spell: uninstalls the currently installed clipboard helper.
 
-
-uninstall_clipboard_helper_usage() {
-        cat <<'USAGE' >&2
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: uninstall-clipboard-helper
 
 This spell uninstalls the currently installed clipboard helper.
 USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        uninstall_clipboard_helper_usage
-        exit 0
-        ;;
+  exit 0
+  ;;
 esac
 
-set -eu
+require_wizardry || exit 1
 
+set -eu
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
 # Detect which clipboard helper is installed (other than pbcopy which is built-in)
@@ -32,31 +29,3 @@ uninstall_clipboard_helper_detect_installed_helper() {
   else
     printf ''
   fi
-}
-
-uninstall_clipboard_helper() {
-  installed=$(uninstall_clipboard_helper_detect_installed_helper)
-  
-  if [ -z "$installed" ]; then
-    printf '%s\n' "No removable clipboard helper installed."
-    return 0
-  fi
-  
-  case "$installed" in
-    xsel)
-      "$SCRIPT_DIR/uninstall-xsel"
-      ;;
-    xclip)
-      "$SCRIPT_DIR/uninstall-xclip"
-      ;;
-    wl-copy)
-      "$SCRIPT_DIR/uninstall-wl-clipboard"
-      ;;
-    *)
-      printf '%s\n' "Unknown clipboard helper: $installed" >&2
-      return 1
-      ;;
-  esac
-}
-
-uninstall_clipboard_helper

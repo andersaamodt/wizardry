@@ -2,28 +2,20 @@
 
 # Bootstrap spell: install the checkbashisms utility so verify-posix can detect non-POSIX shells.
 
-
-install_checkbashisms_usage() {
-cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: install-checkbashisms
 
 Install the checkbashisms command with your system package manager if it's missing, supporting common Linux distributions and macOS.
 USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        install_checkbashisms_usage
-        exit 0
-        ;;
--*)
-        printf '%s\n' "install-checkbashisms: unknown option '$1'" >&2
-        install_checkbashisms_usage
-        exit 1
-        ;;
+  exit 0
+  ;;
 esac
-set -eu
 
+require_wizardry || exit 1
+
+set -eu
 force_install="${INSTALL_CHECKBASHISMS_FORCE_INSTALL-}"
 has_checkbashisms=$(command -v checkbashisms >/dev/null 2>&1 && echo "yes" || echo "no")
 
@@ -42,86 +34,3 @@ install_checkbashisms_run_installer() {
                 printf '  Trying: %s %s\n' "$cmd" "$*" >&2
                 "$cmd" "$@"
         fi
-}
-
-try_install() {
-        installer=$1
-        shift
-        if ! command -v "$installer" >/dev/null 2>&1; then
-            return 1
-        fi
-        install_checkbashisms_run_installer "$installer" "$@"
-}
-
-# Debian/Ubuntu: checkbashisms is packaged within devscripts.
-if try_install apt-get -y update && try_install apt-get -y install devscripts; then
-        if command -v checkbashisms >/dev/null 2>&1; then
-                exit 0
-        fi
-fi
-
-# Fedora/RHEL based: devscripts-checkbashisms or devscripts depending on repo.
-if try_install dnf -y install devscripts-checkbashisms; then
-        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
-fi
-if try_install dnf -y install devscripts; then
-        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
-fi
-
-if try_install yum -y install devscripts-checkbashisms; then
-        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
-fi
-if try_install yum -y install devscripts; then
-        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
-fi
-
-# openSUSE and derivatives.
-if try_install zypper --non-interactive install devscripts-checkbashisms; then
-        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
-fi
-if try_install zypper --non-interactive install checkbashisms; then
-        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
-fi
-if try_install zypper --non-interactive install devscripts; then
-        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
-fi
-
-# Arch/Manjaro.
-if try_install pacman --noconfirm -Sy devscripts-checkbashisms; then
-        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
-fi
-if try_install pacman --noconfirm -Sy devscripts; then
-        if command -v checkbashisms >/dev/null 2>&1; then exit 0; fi
-fi
-
-# Alpine.
-if try_install apk add --no-cache checkbashisms || try_install apk add --no-cache devscripts; then
-        if command -v checkbashisms >/dev/null 2>&1; then
-                exit 0
-        fi
-fi
-
-# Homebrew.
-if try_install brew install devscripts; then
-        if command -v checkbashisms >/dev/null 2>&1; then
-                exit 0
-        fi
-fi
-
-# Detect which package manager we have for better error message
-detected_pm=""
-for pm in brew apt-get dnf yum zypper pacman apk; do
-        if command -v "$pm" >/dev/null 2>&1; then
-                detected_pm=$pm
-                break
-        fi
-done
-
-if [ -n "$detected_pm" ]; then
-        printf '%s\n' "install-checkbashisms: installation failed using $detected_pm" >&2
-        printf '%s\n' "install-checkbashisms: you may need to install devscripts or checkbashisms manually" >&2
-else
-        printf '%s\n' "install-checkbashisms: no supported package manager found" >&2
-        printf '%s\n' "install-checkbashisms: please install checkbashisms manually" >&2
-fi
-exit 1
