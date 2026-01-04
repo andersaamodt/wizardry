@@ -93,13 +93,9 @@ jobs:
               # Fallback to old format
               sed -n '/=== Test Summary ===/,/^===/p' "$cleaned_log" | head -n -1
             else
-              # If no test summary, try to find test failures or show last part
-              if grep -qi "FAILED\|FAIL:\|ERROR:" "$cleaned_log"; then
-                grep -i -B 2 -A 5 "FAILED\|FAIL:\|ERROR:" "$cleaned_log" | head -100
-              else
-                # Show last 50 lines of cleaned log
-                tail -50 "$cleaned_log"
-              fi
+              # If no test summary, show more of the tail (tests are likely incomplete/running)
+              # Show last 200 lines to capture the complete test tail
+              tail -200 "$cleaned_log"
             fi
             
             rm -f "$cleaned_log"
