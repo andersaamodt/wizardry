@@ -8,6 +8,14 @@
 spell_name="forget"
 tab_char=$(printf '\t')
 
+forget_usage() {
+  cat <<'USAGE'
+Usage: forget SPELL_NAME
+
+Remove a spell from the Cast menu (unmemize it).
+USAGE
+}
+
 case "${1-}" in
 --help|--usage|-h)
   forget_usage
@@ -49,10 +57,6 @@ fi
 
 # Validate arguments
 case ${1-} in
---help|--usage|-h)
-  forget_usage
-  exit 0
-  ;;
 "")
   usage-error "$spell_name" "spell name required"
   ;;

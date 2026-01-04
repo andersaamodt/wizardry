@@ -1,6 +1,19 @@
 #!/bin/sh
 # This spell deletes a custom synonym.
 
+delete_synonym_usage() {
+  cat <<'USAGE'
+Usage: delete-synonym WORD
+
+Delete a custom synonym.
+
+Arguments:
+  WORD    The synonym word to delete
+
+Note: Cannot delete default synonyms. Use 'reset-default-synonyms' to reset all defaults.
+USAGE
+}
+
 case "${1-}" in
 --help|--usage|-h)
   delete_synonym_usage
