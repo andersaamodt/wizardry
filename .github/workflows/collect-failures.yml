@@ -290,7 +290,6 @@ jobs:
                 
                 # Add to PR description summary
                 {
-                  echo "**Job: $job_name**"
                   echo '```'
                   echo "$failure_text"
                   echo '```'
