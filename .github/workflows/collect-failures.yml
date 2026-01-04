@@ -384,17 +384,6 @@ jobs:
                     echo "❌ FAILED - extracting error details..."
                     echo ""
                     
-                    # Add to failure summary (create section if not exists)
-                    if ! grep -q "^### ❌ Unit tests$" "$failure_summary_file"; then
-                      {
-                        echo ""
-                        echo "### ❌ Unit tests"
-                        echo ""
-                        echo "**Failed jobs:** (updating...)"
-                        echo ""
-                      } >> "$failure_summary_file"
-                    fi
-                    
                     # Get job logs and extract failure
                     if gh api "/repos/${{ github.repository }}/actions/jobs/${job_id}/logs" \
                       > /tmp/log_${job_id}.txt 2>&1; then
@@ -402,48 +391,15 @@ jobs:
                       echo "$failure_text"
                       echo ""
                       
-                      # Add to PR description summary - insert under Unit tests section
-                      # Create temp file with job details
-                      job_details_file="/tmp/job_details_$$.txt"
+                      # Add to PR description summary - use single-level heading
                       {
-                        echo "**Job: $job_name**"
+                        echo ""
+                        echo "### ❌ Unit tests - $job_name"
                         echo '```'
                         echo "$failure_text"
                         echo '```'
                         echo ""
-                      } > "$job_details_file"
-                      
-                      # Insert job details after the last job in the "Unit tests" section
-                      # Find the line number of the "### ❌ Unit tests" header
-                      unit_tests_line=$(grep -n "^### ❌ Unit tests$" "$failure_summary_file" | cut -d: -f1)
-                      
-                      if [ -n "$unit_tests_line" ]; then
-                        # Find the next section header (### ❌) or end of file
-                        next_section_line=$(tail -n +$((unit_tests_line + 1)) "$failure_summary_file" | \
-                          grep -n "^### ❌" | head -1 | cut -d: -f1)
-                        
-                        if [ -n "$next_section_line" ]; then
-                          # Insert before the next section
-                          insert_line=$((unit_tests_line + next_section_line - 1))
-                        else
-                          # No next section, append to end
-                          insert_line=$(wc -l < "$failure_summary_file")
-                          insert_line=$((insert_line + 1))
-                        fi
-                        
-                        # Insert the job details at the calculated position
-                        {
-                          head -n $((insert_line - 1)) "$failure_summary_file"
-                          cat "$job_details_file"
-                          tail -n +$insert_line "$failure_summary_file"
-                        } > "${failure_summary_file}.tmp"
-                        mv "${failure_summary_file}.tmp" "$failure_summary_file"
-                      else
-                        # Fallback: append to end (shouldn't happen as we create section above)
-                        cat "$job_details_file" >> "$failure_summary_file"
-                      fi
-                      
-                      rm -f "$job_details_file"
+                      } >> "$failure_summary_file"
                       
                       # Update PR description immediately after each job
                       update_pr_description
@@ -463,12 +419,6 @@ jobs:
                   if [ ! -f "/tmp/reported_runs/$run_id" ]; then
                     touch "/tmp/reported_runs/$run_id"
                     echo "✅ Unit tests workflow completed"
-                    # Update failed jobs count in summary
-                    if [ "$conclusion" = "failure" ]; then
-                      failed_job_count=$(ls -1 /tmp/reported_jobs 2>/dev/null | wc -l)
-                      sed -i "s/**Failed jobs:** (updating...)/**Failed jobs:** $failed_job_count/" "$failure_summary_file" 2>/dev/null || true
-                      update_pr_description
-                    fi
                   fi
                 fi
               else
