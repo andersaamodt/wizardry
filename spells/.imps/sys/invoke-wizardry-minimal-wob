@@ -23,7 +23,7 @@ invoke_wizardry_minimal_wob() {
     return 0
   fi
   _WIZARDRY_INVOKED=1
-  export _WIZARDRY_INVOKED
+  # Note: NOT exported - each subprocess should invoke wizardry independently
 
   # Detect WIZARDRY_DIR
   if [ -z "${WIZARDRY_DIR-}" ]; then
