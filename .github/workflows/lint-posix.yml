@@ -27,41 +27,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Install checkbashisms dependency
         run: ./spells/.arcana/core/install-checkbashisms
-      - name: Run verify-posix
-        id: verify-posix
-        continue-on-error: true
+      - name: Run lint-magic (includes POSIX and style checks)
         run: |
-          echo "Running POSIX compliance checks..."
-          ./spells/.wizardry/verify-posix
-      - name: Run lint-magic (style checks only)
-        id: lint-magic
-        continue-on-error: true
-        run: |
-          echo "Running spell style and linting checks..."
+          echo "Running POSIX compliance, style, and linting checks..."
           ./spells/spellcraft/lint-magic --verbose
-      - name: Combined summary
-        if: always()
-        run: |
-          echo ""
-          echo "=== Combined Summary ==="
-          
-          posix_failed=0
-          style_failed=0
-          
-          # Check results from previous steps
-          if [ "${{ steps.verify-posix.outcome }}" != "success" ]; then
-            echo "✗ POSIX compliance checks failed"
-            posix_failed=1
-          fi
-          
-          if [ "${{ steps.lint-magic.outcome }}" != "success" ]; then
-            echo "✗ Style checks failed"
-            style_failed=1
-          fi
-          
-          # Exit with failure if either failed
-          if [ "$posix_failed" -ne 0 ] || [ "$style_failed" -ne 0 ]; then
-            exit 1
-          fi
-          
-          echo "✓ All checks passed"

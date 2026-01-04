@@ -735,8 +735,59 @@ AWKSCRIPT
   fi
 done <"$targets_file"
 
+# Collect all targets for POSIX checking
+all_targets=""
+while IFS= read -r target; do
+  [ -n "$target" ] || continue
+  case $target in
+    /*)
+      all_targets="${all_targets}${target} "
+      ;;
+    *)
+      all_targets="${all_targets}${repo_dir}/${target} "
+      ;;
+  esac
+done <"$targets_file"
+
 trap - EXIT HUP INT TERM
 rm -f "$targets_file"
+
+# First, run POSIX compliance checks
+printf '\n=== POSIX Compliance Checks ===\n'
+posix_failures=0
+posix_failed_list=""
+
+if has checkbashisms; then
+  for target_path in $all_targets; do
+    # Get relative path for display
+    rel_path="${target_path#"$repo_dir/"}"
+    
+    # Check shebang
+    first_line=$(head -n 1 "$target_path" 2>/dev/null || printf '')
+    if [ "$first_line" != "#!/bin/sh" ] && [ "$first_line" != "#! /bin/sh" ]; then
+      printf 'FAIL %s: uses %s (should use #!/bin/sh)\n' "$rel_path" "$first_line"
+      posix_failures=$((posix_failures + 1))
+      posix_failed_list="${posix_failed_list}FAIL ${rel_path}: uses ${first_line} (should use #!/bin/sh)
+"
+    else
+      # Run checkbashisms
+      if ! checkbashisms -f "$target_path" >/dev/null 2>&1; then
+        printf 'FAIL %s: POSIX compliance violation (run checkbashisms for details)\n' "$rel_path"
+        posix_failures=$((posix_failures + 1))
+        posix_failed_list="${posix_failed_list}FAIL ${rel_path}: POSIX compliance violation
+"
+      fi
+    fi
+  done
+  
+  if [ "$posix_failures" -eq 0 ]; then
+    printf '\nAll %d scripts are POSIX-compliant.\n' "$total"
+  else
+    printf '\n%d of %d scripts failed POSIX compliance.\n' "$posix_failures" "$total"
+  fi
+else
+  printf 'Warning: checkbashisms not found, skipping POSIX checks\n'
+fi
 
 # Print style check results
 printf '\n=== Style Check Results ===\n'
@@ -757,12 +808,26 @@ else
   fi
 fi
 
-# Print lint-magic summary (fails-only)
-printf '\n=== Lint Summary ===\n'
-if [ "$failures" -eq 0 ]; then
-  printf '✓ All style checks passed\n'
+# Print combined summary (fails-only)
+printf '\n=== Summary ===\n'
+if [ "$failures" -eq 0 ] && [ "$posix_failures" -eq 0 ]; then
+  printf '✓ All checks passed\n'
   exit 0
-else
-  printf '✗ Style checks failed (%d files)\n' "$failures"
-  exit 1
 fi
+
+# Show only failures in summary
+if [ "$posix_failures" -ne 0 ]; then
+  printf '✗ POSIX compliance checks failed (%d files)\n' "$posix_failures"
+  if [ -n "$posix_failed_list" ]; then
+    printf '\nFailed POSIX checks:\n%s' "$posix_failed_list"
+  fi
+fi
+
+if [ "$failures" -ne 0 ]; then
+  printf '✗ Style checks failed (%d files)\n' "$failures"
+  if [ -n "$failed_messages" ]; then
+    printf '\nFailed style checks:\n%s' "$failed_messages"
+  fi
+fi
+
+exit 1
