@@ -107,9 +107,12 @@ PARSE_HELP
       [ "$_parse_debug" = "1" ] && \
         printf '[parse] DEBUG: Trying 4-word function: %s\n' "$_try_4word" >&2
       if command -v "$_try_4word" >/dev/null 2>&1; then
-        _type_out=$(type "$_try_4word" 2>/dev/null || printf '')
-        case "$_type_out" in
-          *function*)
+        # Check if it's a function by examining command -v output
+        _cmd_result=$(command -v "$_try_4word" 2>/dev/null || printf '')
+        case "$_cmd_result" in
+          alias\ *) ;;  # Is an alias, skip
+          /*) ;;        # Is a path (external command), skip
+          "$_try_4word")  # Is a function or builtin
             _matched_func="$_try_4word"
             _matched_words=4
             [ "$_parse_debug" = "1" ] && \
@@ -125,9 +128,12 @@ PARSE_HELP
       [ "$_parse_debug" = "1" ] && \
         printf '[parse] DEBUG: Trying 3-word function: %s\n' "$_try_3word" >&2
       if command -v "$_try_3word" >/dev/null 2>&1; then
-        _type_out=$(type "$_try_3word" 2>/dev/null || printf '')
-        case "$_type_out" in
-          *function*)
+        # Check if it's a function by examining command -v output
+        _cmd_result=$(command -v "$_try_3word" 2>/dev/null || printf '')
+        case "$_cmd_result" in
+          alias\ *) ;;  # Is an alias, skip
+          /*) ;;        # Is a path (external command), skip
+          "$_try_3word")  # Is a function or builtin
             _matched_func="$_try_3word"
             _matched_words=3
             [ "$_parse_debug" = "1" ] && \
