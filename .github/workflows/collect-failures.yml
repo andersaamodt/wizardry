@@ -71,7 +71,6 @@ jobs:
             "POSIX, linting, and style checks"
             "Test standalone compiled spells"
             "Test doppelganger compiled wizardry"
-            "Dual-pattern validation"
             "Demonstrate wizardry"
             "Compile wizardry"
           )
