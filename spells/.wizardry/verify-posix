@@ -234,8 +234,7 @@ while IFS= read -r target; do
   fi
 
   if [ "$file_failed" -eq 0 ]; then
-    # Don't print PASS lines - they clutter the summary output
-    :
+    printf 'PASS %s\n' "$target"
   else
     # Only print failures during processing for progress indication
     printf 'FAIL %s\n' "$target"
