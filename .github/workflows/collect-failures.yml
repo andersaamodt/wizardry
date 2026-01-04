@@ -71,7 +71,6 @@ jobs:
             "POSIX, linting, and style checks"
             "Test standalone compiled spells"
             "Test doppelganger compiled wizardry"
-            "Dual-pattern validation"
             "Demonstrate wizardry"
             "Compile wizardry"
           )
@@ -93,13 +92,9 @@ jobs:
               # Fallback to old format
               sed -n '/=== Test Summary ===/,/^===/p' "$cleaned_log" | head -n -1
             else
-              # If no test summary, try to find test failures or show last part
-              if grep -qi "FAILED\|FAIL:\|ERROR:" "$cleaned_log"; then
-                grep -i -B 2 -A 5 "FAILED\|FAIL:\|ERROR:" "$cleaned_log" | head -100
-              else
-                # Show last 50 lines of cleaned log
-                tail -50 "$cleaned_log"
-              fi
+              # If no test summary, show more of the tail (tests are likely incomplete/running)
+              # Show last 200 lines to capture the complete test tail
+              tail -200 "$cleaned_log"
             fi
             
             rm -f "$cleaned_log"
@@ -116,8 +111,10 @@ jobs:
             sed '/Process \(exited\|completed\)/q' "$logfile" > "$cleaned_log"
 
             # Check for early failure (workflow failed before tests ran)
-            # Look for: command not found, No such file or directory, permission denied, etc.
-            if grep -qE "not found|No such file|Permission denied|cannot access" "$cleaned_log"; then
+            # Look for actual error indicators, not test messages that mention errors
+            # Skip this check if we see test output (PASS/FAIL lines with timestamps)
+            if ! grep -qE "[[:space:]](PASS|FAIL)[[:space:]]" "$cleaned_log" && \
+               grep -qE "not found|No such file|Permission denied|cannot access" "$cleaned_log"; then
               # Extract the error and surrounding context (this is an early failure)
               grep -E -B 10 -A 2 "not found|No such file|Permission denied|cannot access" "$cleaned_log" | head -50
               rm -f "$cleaned_log"
@@ -146,15 +143,14 @@ jobs:
               return
             fi
 
-            # For POSIX/linting workflows, extract only FAIL lines (not PASS)
+            # For POSIX/linting workflows, show summary section
             if echo "$workflow_name" | grep -qi "POSIX\|linting\|style"; then
-              # Extract only FAIL lines, not PASS lines
-              if grep -q "^FAIL " "$cleaned_log"; then
-                # Show all FAIL lines
-                grep "^FAIL " "$cleaned_log"
+              # Extract from "POSIX Compliance Summary" to end (includes Process completed line)
+              if grep -q "POSIX Compliance Summary" "$cleaned_log"; then
+                sed -n '/POSIX Compliance Summary/,$p' "$cleaned_log"
               else
-                # Fallback to generic error extraction
-                grep -i "ERROR" "$cleaned_log" | head -50
+                # Fallback: show tail without excessive PASS lines
+                tail -100 "$cleaned_log" | grep -v "^[0-9T:.-]*Z PASS " || tail -50 "$cleaned_log"
               fi
               rm -f "$cleaned_log"
               return
@@ -216,8 +212,8 @@ jobs:
                 echo "" && echo "---" && echo "" && \
                 echo "## 🔍 Latest Test Failures" && echo "" && \
                 echo "**Updated:** $(date -u '+%Y-%m-%d %H:%M:%S') UTC" && echo "" && \
-                if [ -n "$failure_summary_content" ]; then cat "$failure_summary_file"; echo ""; fi && \
-                echo "$status_message" && \
+                if [ -n "$failure_summary_content" ]; then cat "$failure_summary_file"; fi && \
+                if [ -n "$status_message" ]; then echo ""; echo "$status_message"; fi && \
                 echo "" && echo "<!-- test-failures-end -->")" \
               > /dev/null 2>&1 || echo "⚠️ Could not update PR description"
           }
@@ -272,8 +268,6 @@ jobs:
               echo ""
               echo "### ❌ $workflow_name"
               echo ""
-              echo "**Failed jobs:** $failed_count"
-              echo ""
             } >> "$failure_summary_file"
 
             # Process each failed job
@@ -292,7 +286,6 @@ jobs:
                 
                 # Add to PR description summary
                 {
-                  echo "**Job: $job_name**"
                   echo '```'
                   echo "$failure_text"
                   echo '```'
@@ -384,17 +377,6 @@ jobs:
                     echo "❌ FAILED - extracting error details..."
                     echo ""
                     
-                    # Add to failure summary (create section if not exists)
-                    if ! grep -q "^### ❌ Unit tests$" "$failure_summary_file"; then
-                      {
-                        echo ""
-                        echo "### ❌ Unit tests"
-                        echo ""
-                        echo "**Failed jobs:** (updating...)"
-                        echo ""
-                      } >> "$failure_summary_file"
-                    fi
-                    
                     # Get job logs and extract failure
                     if gh api "/repos/${{ github.repository }}/actions/jobs/${job_id}/logs" \
                       > /tmp/log_${job_id}.txt 2>&1; then
@@ -402,9 +384,10 @@ jobs:
                       echo "$failure_text"
                       echo ""
                       
-                      # Add to PR description summary
+                      # Add to PR description summary - use single-level heading
                       {
-                        echo "**Job: $job_name**"
+                        echo ""
+                        echo "### ❌ Unit tests - $job_name"
                         echo '```'
                         echo "$failure_text"
                         echo '```'
@@ -429,12 +412,6 @@ jobs:
                   if [ ! -f "/tmp/reported_runs/$run_id" ]; then
                     touch "/tmp/reported_runs/$run_id"
                     echo "✅ Unit tests workflow completed"
-                    # Update failed jobs count in summary
-                    if [ "$conclusion" = "failure" ]; then
-                      failed_job_count=$(ls -1 /tmp/reported_jobs 2>/dev/null | wc -l)
-                      sed -i "s/**Failed jobs:** (updating...)/**Failed jobs:** $failed_job_count/" "$failure_summary_file" 2>/dev/null || true
-                      update_pr_description
-                    fi
                   fi
                 fi
               else
@@ -481,9 +458,14 @@ jobs:
               cat "$failure_summary_file"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
+            
+            # Exit with failure status so this workflow fails when tests fail
+            echo "❌ Some workflows failed"
+            exit 1
           else
             echo "has_failures=false" >> "$GITHUB_OUTPUT"
             echo "failure_summary=" >> "$GITHUB_OUTPUT"
+            echo "✅ All workflows succeeded"
           fi
 
       - name: Create summary
