@@ -6,7 +6,22 @@ script_name=$(basename "$0")
 
 case "${1-}" in
 --help|--usage|-h)
-  scribe_spell_usage
+  cat <<'USAGE'
+Usage: scribe-spell [OPTIONS]
+
+Create a custom spell in your spellbook.
+
+Options:
+  --category NAME       Create spell in specified category
+  --new-category        Create a new category only (no spell)
+  --dir PATH           Override directory for spell creation
+  --help               Show this help message
+
+Examples:
+  scribe-spell                    # Interactive spell creation
+  scribe-spell --new-category     # Create new category
+  scribe-spell --category tools   # Create spell in 'tools' category
+USAGE
   exit 0
   ;;
 esac
@@ -34,7 +49,22 @@ new_category_mode=0
 while [ "$#" -gt 0 ]; do
         case ${1-} in
                 --help|--usage|-h)
-                        scribe_spell_usage
+                        cat <<'USAGE'
+Usage: scribe-spell [OPTIONS]
+
+Create a custom spell in your spellbook.
+
+Options:
+  --category NAME       Create spell in specified category
+  --new-category        Create a new category only (no spell)
+  --dir PATH           Override directory for spell creation
+  --help               Show this help message
+
+Examples:
+  scribe-spell                    # Interactive spell creation
+  scribe-spell --new-category     # Create new category
+  scribe-spell --category tools   # Create spell in 'tools' category
+USAGE
                         exit 0
                         ;;
                 --new-category)
@@ -214,7 +244,22 @@ fi
 
 # Check for partial arguments
 if [ "$#" -eq 1 ]; then
-        scribe_spell_usage >&2
+        cat <<'USAGE' >&2
+Usage: scribe-spell [OPTIONS]
+
+Create a custom spell in your spellbook.
+
+Options:
+  --category NAME       Create spell in specified category
+  --new-category        Create a new category only (no spell)
+  --dir PATH           Override directory for spell creation
+  --help               Show this help message
+
+Examples:
+  scribe-spell                    # Interactive spell creation
+  scribe-spell --new-category     # Create new category
+  scribe-spell --category tools   # Create spell in 'tools' category
+USAGE
         exit 1
 fi
 

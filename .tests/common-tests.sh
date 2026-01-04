@@ -234,17 +234,18 @@ test_menu_spells_require_menu() {
 }
 
 # --- Check: Spells expose standardized help handlers ---
-# Ensure each spell provides *_usage() and a --help|--usage|-h) case
+# Ensure each spell provides inline help (no functions) and a --help|--usage|-h) case
 test_spells_have_help_usage_handlers() {
-  missing_usage=""
+  has_usage_function=""
   missing_handler=""
 
   check_help_handler() {
     spell=$1
     rel_path=${spell#"$ROOT_DIR/spells/"}
 
-    if ! grep -qE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*_usage\(\)' "$spell" 2>/dev/null; then
-      missing_usage="${missing_usage:+$missing_usage, }$rel_path"
+    # Check for usage FUNCTION - should NOT exist (inline only)
+    if grep -qE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*_usage\(\)' "$spell" 2>/dev/null; then
+      has_usage_function="${has_usage_function:+$has_usage_function, }$rel_path"
       return
     fi
 
@@ -255,8 +256,8 @@ test_spells_have_help_usage_handlers() {
   
   for_each_posix_spell_no_imps check_help_handler
 
-  if [ -n "$missing_usage" ]; then
-    TEST_FAILURE_REASON="missing *_usage() function: $missing_usage"
+  if [ -n "$has_usage_function" ]; then
+    TEST_FAILURE_REASON="spells should use inline usage, not functions: $has_usage_function"
     return 1
   fi
 
@@ -864,21 +865,18 @@ system/banish
     func_count=$(grep -cE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)([[:space:]]*\{|[[:space:]]*$)' "$spell" 2>/dev/null || true)
     func_count=${func_count:-0}
     
-    # FLAT-FILE PARADIGM (post-SPIRAL conversion):
-    # Spells should have: 1 usage function + 0-1 helper function = max 2 total
-    # Subtract 1 for the *_usage function (required)
-    # Additional functions beyond usage are helper functions
-    additional_funcs=$((func_count - 1))
+    # FLAT-FILE PARADIGM: Spells should have minimal functions
+    # Ideally 0 functions (inline everything), max 1-2 helper functions if absolutely necessary
+    # No usage functions - usage should be inline
     
-    # Allow negative (missing usage function is caught by other tests)
-    [ "$additional_funcs" -lt 0 ] && additional_funcs=0
-    
-    # Write to appropriate temp file based on additional function count
-    if [ "$additional_funcs" -ge 3 ]; then
-      printf '%s(%s)\n' "$rel_path" "$additional_funcs" >> "$tmpfile_4plus"
-    elif [ "$additional_funcs" -eq 2 ]; then
-      printf '%s(%s)\n' "$rel_path" "$additional_funcs" >> "$tmpfile_3"
-    elif [ "$additional_funcs" -eq 1 ]; then
+    # Write to appropriate temp file based on function count
+    if [ "$func_count" -ge 4 ]; then
+      printf '%s(%s)\n' "$rel_path" "$func_count" >> "$tmpfile_4plus"
+    elif [ "$func_count" -eq 3 ]; then
+      printf '%s(%s)\n' "$rel_path" "$func_count" >> "$tmpfile_3"
+    elif [ "$func_count" -eq 2 ]; then
+      printf '%s(%s)\n' "$rel_path" "$func_count" >> "$tmpfile_2"
+    elif [ "$func_count" -eq 1 ]; then
       # 1 helper function is acceptable
       :
     fi
@@ -887,19 +885,23 @@ system/banish
   for_each_posix_spell_no_imps check_function_discipline
   
   # Read and format results
+  warnings_2=$(head -20 "$tmpfile_2" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
   warnings_3=$(head -20 "$tmpfile_3" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
   violations_4plus=$(head -20 "$tmpfile_4plus" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
   
   rm -f "$tmpfile_2" "$tmpfile_3" "$tmpfile_4plus"
   
   # Print warnings (non-fatal)
+  if [ -n "$warnings_2" ]; then
+    printf 'WARNING: spells with 2 functions (consider inlining or refactoring): %s\n' "$warnings_2" >&2
+  fi
   if [ -n "$warnings_3" ]; then
-    printf 'WARNING: spells with 2 additional functions (consider refactoring): %s\n' "$warnings_3" >&2
+    printf 'WARNING: spells with 3 functions (should refactor): %s\n' "$warnings_3" >&2
   fi
   
-  # Fail on 3+ additional functions (4+ total)
+  # Fail on 4+ functions (proto-libraries, must decompose)
   if [ -n "$violations_4plus" ]; then
-    TEST_FAILURE_REASON="spells with 3+ additional functions (proto-libraries, must decompose): $violations_4plus"
+    TEST_FAILURE_REASON="spells with 4+ functions (proto-libraries, must decompose): $violations_4plus"
     return 1
   fi
   

@@ -45,7 +45,11 @@ while [ "$#" -gt 0 ]; do
       ;;
     --only)
       if [ "$#" -lt 2 ]; then
-        lint_magic_usage >&2
+        cat <<'USAGE' >&2
+Usage: lint-magic [--only PATTERN] [--list] [--verbose] [file...]
+
+Lint and format-check spells for style-guide compliance. With no files provided it scans the whole spellbook; use --only to filter by pattern, --list to show targets, and --verbose for detailed output.
+USAGE
         exit 2
       fi
       pattern=$2
@@ -56,7 +60,11 @@ while [ "$#" -gt 0 ]; do
       break
       ;;
     -*)
-      lint_magic_usage >&2
+      cat <<'USAGE' >&2
+Usage: lint-magic [--only PATTERN] [--list] [--verbose] [file...]
+
+Lint and format-check spells for style-guide compliance. With no files provided it scans the whole spellbook; use --only to filter by pattern, --list to show targets, and --verbose for detailed output.
+USAGE
       exit 2
       ;;
     *)
