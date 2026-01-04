@@ -120,9 +120,13 @@ if [ "$list_only" -eq 1 ]; then
   exit 0
 fi
 
+# Count total targets first
+total=$(grep -c . "$targets_file" 2>/dev/null || echo 0)
+
+current=0
 while IFS= read -r target; do
   [ -n "$target" ] || continue
-  total=$((total + 1))
+  current=$((current + 1))
   
   case $target in
     /*)
@@ -134,7 +138,7 @@ while IFS= read -r target; do
   esac
   
   if [ ! -e "$path" ]; then
-    fail_msg="FAIL $target: file not found"
+    fail_msg="[${current}/${total}] FAIL $target: file not found"
     printf '%s\n' "$fail_msg"
     failures=$((failures + 1))
     failed_targets=${failed_targets:+$failed_targets,}$target
@@ -144,7 +148,7 @@ while IFS= read -r target; do
   fi
   
   if [ ! -f "$path" ]; then
-    fail_msg="FAIL $target: not a regular file"
+    fail_msg="[${current}/${total}] FAIL $target: not a regular file"
     printf '%s\n' "$fail_msg"
     failures=$((failures + 1))
     failed_targets=${failed_targets:+$failed_targets,}$target
@@ -746,11 +750,11 @@ AWKSCRIPT
   
   if [ "$issue_count" -eq 0 ]; then
     if [ "$verbose" -eq 1 ]; then
-      printf 'PASS %s\n' "$target"
+      printf '[%d/%d] PASS %s\n' "$current" "$total" "$target"
     fi
     passed=$((passed + 1))
   else
-    fail_msg="FAIL $target: $issues"
+    fail_msg="[${current}/${total}] FAIL $target: $issues"
     printf '%s\n' "$fail_msg"
     failures=$((failures + 1))
     failed_targets=${failed_targets:+$failed_targets,}$target

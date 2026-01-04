@@ -410,6 +410,81 @@ EOF
   assert_success && assert_output_contains "passed"
 }
 
+test_shows_progress_numbering() {
+  # Test that [x/y] numbering appears in output
+  spell_dir=$(make_spell_dir)
+  
+  # Create two test spells
+  cat >"$spell_dir/spell1" <<'EOF'
+#!/bin/sh
+
+# First test spell.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: spell1
+
+First spell.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+printf 'spell1\n'
+EOF
+  chmod +x "$spell_dir/spell1"
+  
+  cat >"$spell_dir/spell2" <<'EOF'
+#!/bin/sh
+
+# Second test spell.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: spell2
+
+Second spell.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+printf 'spell2\n'
+EOF
+  chmod +x "$spell_dir/spell2"
+  
+  # Run lint-magic in verbose mode to see PASS messages
+  run_spell "spells/spellcraft/lint-magic" --verbose "$spell_dir/spell1" "$spell_dir/spell2"
+  
+  # Check for [1/2] and [2/2] numbering
+  assert_success && assert_output_contains "[1/2]" && assert_output_contains "[2/2]"
+}
+
+test_shows_numbering_in_failures() {
+  # Test that [x/y] numbering appears in FAIL messages
+  spell_dir=$(make_spell_dir)
+  
+  cat >"$spell_dir/bad-spell" <<'EOF'
+#!/bin/sh
+
+# Bad spell missing strict mode.
+
+printf 'bad\n'
+EOF
+  chmod +x "$spell_dir/bad-spell"
+  
+  run_spell "spells/spellcraft/lint-magic" "$spell_dir/bad-spell"
+  
+  # Check for [1/1] numbering in failure message
+  assert_failure && assert_output_contains "[1/1] FAIL"
+}
+
 run_test_case "lint-magic prints usage" test_help
 run_test_case "lint-magic accepts --usage" test_usage_alias
 run_test_case "lint-magic rejects unknown option" test_unknown_option
@@ -434,6 +509,8 @@ run_test_case "lint-magic passes imp with variadic params" test_imp_passes_with_
 # run_test_case "lint-magic passes spell with underscore call" test_spell_passes_with_underscore_function_call
 run_test_case "lint-magic fails imp with duplicate set -eu" test_imp_fails_with_duplicate_set_eu
 run_test_case "lint-magic passes imp with single set -eu" test_imp_passes_with_single_set_eu
+run_test_case "lint-magic shows progress numbering" test_shows_progress_numbering
+run_test_case "lint-magic shows numbering in failures" test_shows_numbering_in_failures
 
 
 # Test via source-then-invoke pattern  
