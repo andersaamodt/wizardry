@@ -864,44 +864,42 @@ system/banish
     func_count=$(grep -cE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)([[:space:]]*\{|[[:space:]]*$)' "$spell" 2>/dev/null || true)
     func_count=${func_count:-0}
     
-    # Subtract 2 for standard functions: *_usage and the wrapper function (incantation)
-    # Every spell now has both a *_usage function and a wrapper function matching its name
-    # Additional functions beyond these two are considered helper functions
-    additional_funcs=$((func_count - 2))
+    # FLAT-FILE PARADIGM (post-SPIRAL conversion):
+    # Spells should have: 1 usage function + 0-1 helper function = max 2 total
+    # Subtract 1 for the *_usage function (required)
+    # Additional functions beyond usage are helper functions
+    additional_funcs=$((func_count - 1))
     
-    # Allow negative (missing functions are caught by other tests)
+    # Allow negative (missing usage function is caught by other tests)
     [ "$additional_funcs" -lt 0 ] && additional_funcs=0
     
     # Write to appropriate temp file based on additional function count
-    if [ "$additional_funcs" -ge 4 ]; then
+    if [ "$additional_funcs" -ge 3 ]; then
       printf '%s(%s)\n' "$rel_path" "$additional_funcs" >> "$tmpfile_4plus"
-    elif [ "$additional_funcs" -eq 3 ]; then
-      printf '%s(%s)\n' "$rel_path" "$additional_funcs" >> "$tmpfile_3"
     elif [ "$additional_funcs" -eq 2 ]; then
-      printf '%s(%s)\n' "$rel_path" "$additional_funcs" >> "$tmpfile_2"
+      printf '%s(%s)\n' "$rel_path" "$additional_funcs" >> "$tmpfile_3"
+    elif [ "$additional_funcs" -eq 1 ]; then
+      # 1 helper function is acceptable
+      :
     fi
   }
   
   for_each_posix_spell_no_imps check_function_discipline
   
   # Read and format results
-  warnings_2=$(head -20 "$tmpfile_2" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
   warnings_3=$(head -20 "$tmpfile_3" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
   violations_4plus=$(head -20 "$tmpfile_4plus" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
   
   rm -f "$tmpfile_2" "$tmpfile_3" "$tmpfile_4plus"
   
   # Print warnings (non-fatal)
-  if [ -n "$warnings_2" ]; then
-    printf 'WARNING: spells with 2 additional functions (consider refactoring): %s\n' "$warnings_2" >&2
-  fi
   if [ -n "$warnings_3" ]; then
-    printf 'WARNING: spells with 3 additional functions (strongly consider refactoring): %s\n' "$warnings_3" >&2
+    printf 'WARNING: spells with 2 additional functions (consider refactoring): %s\n' "$warnings_3" >&2
   fi
   
-  # Fail on 4+ additional functions
+  # Fail on 3+ additional functions (4+ total)
   if [ -n "$violations_4plus" ]; then
-    TEST_FAILURE_REASON="spells with 4+ additional functions (proto-libraries, must decompose): $violations_4plus"
+    TEST_FAILURE_REASON="spells with 3+ additional functions (proto-libraries, must decompose): $violations_4plus"
     return 1
   fi
   

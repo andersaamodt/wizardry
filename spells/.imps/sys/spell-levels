@@ -157,6 +157,11 @@ spell_levels() {
       _spells='install-service-template is-service-installed enable-service disable-service start-service stop-service restart-service service-status remove-service'
       _imps=''
       ;;
+    29)
+      _name='Arcana & Extensions'
+      _spells=''
+      _imps=''
+      ;;
     *)
       return 1
       ;;
