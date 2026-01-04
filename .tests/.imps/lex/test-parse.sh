@@ -142,6 +142,9 @@ test_parse_and_then_stops_on_failure() {
 
 # Test command reconstruction from space-separated arguments
 test_parse_reconstructs_two_word_command() {
+  # Save original WIZARDRY_DIR
+  _saved_wizdir="${WIZARDRY_DIR-}"
+  
   tmpdir=$(make_tempdir)
   test_spell_dir="$tmpdir/wizardry/spells/.imps/sys"
   mkdir -p "$test_spell_dir"
@@ -160,11 +163,21 @@ EOF
   
   run_spell "spells/.imps/lex/parse" "env" "or" "MYVAR" "default_value"
   
+  # Restore original WIZARDRY_DIR
+  if [ -n "$_saved_wizdir" ]; then
+    export WIZARDRY_DIR="$_saved_wizdir"
+  else
+    unset WIZARDRY_DIR
+  fi
+  
   assert_success || return 1
   assert_output_contains "env_or_called_with:[MYVAR][default_value]" || return 1
 }
 
 test_parse_reconstructs_three_word_command() {
+  # Save original WIZARDRY_DIR
+  _saved_wizdir="${WIZARDRY_DIR-}"
+  
   tmpdir=$(make_tempdir)
   test_spell_dir="$tmpdir/wizardry/spells/.imps/test"
   mkdir -p "$test_spell_dir"
@@ -183,11 +196,21 @@ EOF
   
   run_spell "spells/.imps/lex/parse" "make" "temp" "file" "myfile.txt"
   
+  # Restore original WIZARDRY_DIR
+  if [ -n "$_saved_wizdir" ]; then
+    export WIZARDRY_DIR="$_saved_wizdir"
+  else
+    unset WIZARDRY_DIR
+  fi
+  
   assert_success || return 1
   assert_output_contains "make_temp_file_called_with:[myfile.txt]" || return 1
 }
 
 test_parse_reconstructs_four_word_command() {
+  # Save original WIZARDRY_DIR
+  _saved_wizdir="${WIZARDRY_DIR-}"
+  
   tmpdir=$(make_tempdir)
   test_spell_dir="$tmpdir/wizardry/spells/.imps/test"
   mkdir -p "$test_spell_dir"
@@ -206,11 +229,21 @@ EOF
   
   run_spell "spells/.imps/lex/parse" "get" "remote" "file" "path" "/some/path"
   
+  # Restore original WIZARDRY_DIR
+  if [ -n "$_saved_wizdir" ]; then
+    export WIZARDRY_DIR="$_saved_wizdir"
+  else
+    unset WIZARDRY_DIR
+  fi
+  
   assert_success || return 1
   assert_output_contains "get_remote_file_path_called_with:[/some/path]" || return 1
 }
 
 test_parse_prefers_longer_matches() {
+  # Save original WIZARDRY_DIR
+  _saved_wizdir="${WIZARDRY_DIR-}"
+  
   tmpdir=$(make_tempdir)
   test_spell_dir="$tmpdir/wizardry/spells/.imps/test"
   mkdir -p "$test_spell_dir"
@@ -233,6 +266,13 @@ EOF
   
   run_spell "spells/.imps/lex/parse" "env" "or" "VAR" "DEFAULT"
   
+  # Restore original WIZARDRY_DIR
+  if [ -n "$_saved_wizdir" ]; then
+    export WIZARDRY_DIR="$_saved_wizdir"
+  else
+    unset WIZARDRY_DIR
+  fi
+  
   assert_success || return 1
   assert_output_contains "CORRECT:env_or_called" || return 1
   if printf '%s' "$OUTPUT" | grep -q "WRONG:env_called"; then
@@ -242,6 +282,9 @@ EOF
 }
 
 test_parse_tries_progressively_shorter() {
+  # Save original WIZARDRY_DIR
+  _saved_wizdir="${WIZARDRY_DIR-}"
+  
   tmpdir=$(make_tempdir)
   test_spell_dir="$tmpdir/wizardry/spells/.imps/test"
   mkdir -p "$test_spell_dir"
@@ -256,6 +299,13 @@ EOF
   export WIZARDRY_DIR="$tmpdir/wizardry"
   
   run_spell "spells/.imps/lex/parse" "temp" "file" "with" "extra" "args"
+  
+  # Restore original WIZARDRY_DIR
+  if [ -n "$_saved_wizdir" ]; then
+    export WIZARDRY_DIR="$_saved_wizdir"
+  else
+    unset WIZARDRY_DIR
+  fi
   
   assert_success || return 1
   assert_output_contains "temp_file_called_with:[with extra args]" || return 1
@@ -275,6 +325,10 @@ test_parse_self_reference_handling() {
 }
 
 test_parse_recursion_depth_limit() {
+  # Save original environment
+  _saved_wizdir="${WIZARDRY_DIR-}"
+  _saved_spellbook_dir="${SPELLBOOK_DIR-}"
+  
   tmpdir=$(make_tempdir)
   glossary_dir="$tmpdir/spellbook/.glossary"
   spell_dir="$tmpdir/wizardry/spells/test"
@@ -302,6 +356,18 @@ EOF
   output=$("$glossary_dir/recursive-test" 2>&1) || true
   PATH="$old_path"
   
+  # Restore original environment
+  if [ -n "$_saved_wizdir" ]; then
+    export WIZARDRY_DIR="$_saved_wizdir"
+  else
+    unset WIZARDRY_DIR
+  fi
+  if [ -n "$_saved_spellbook_dir" ]; then
+    export SPELLBOOK_DIR="$_saved_spellbook_dir"
+  else
+    unset SPELLBOOK_DIR
+  fi
+  
   case "$output" in
     *"Maximum recursion depth"*|*"This should not run"*)
       return 0
@@ -314,6 +380,9 @@ EOF
 }
 
 test_parse_collision_single_word_fallthrough() {
+  # Save original WIZARDRY_DIR
+  _saved_wizdir="${WIZARDRY_DIR-}"
+  
   tmpdir=$(make_tempdir)
   mkdir -p "$tmpdir/wizardry/spells/.imps/sys"
   
@@ -327,11 +396,21 @@ EOF
   
   run_spell "spells/.imps/lex/parse" "env"
   
+  # Restore original WIZARDRY_DIR
+  if [ -n "$_saved_wizdir" ]; then
+    export WIZARDRY_DIR="$_saved_wizdir"
+  else
+    unset WIZARDRY_DIR
+  fi
+  
   assert_success || return 1
   assert_output_contains "PATH=" || return 1
 }
 
 test_parse_collision_wizardry_spell_priority() {
+  # Save original WIZARDRY_DIR
+  _saved_wizdir="${WIZARDRY_DIR-}"
+  
   tmpdir=$(make_tempdir)
   mkdir -p "$tmpdir/wizardry/spells/.imps/sys"
   
@@ -345,11 +424,21 @@ EOF
   
   run_spell "spells/.imps/lex/parse" "env"
   
+  # Restore original WIZARDRY_DIR
+  if [ -n "$_saved_wizdir" ]; then
+    export WIZARDRY_DIR="$_saved_wizdir"
+  else
+    unset WIZARDRY_DIR
+  fi
+  
   assert_success || return 1
   assert_output_contains "WIZARDRY_ENV_CALLED" || return 1
 }
 
 test_parse_collision_no_incorrect_match() {
+  # Save original WIZARDRY_DIR
+  _saved_wizdir="${WIZARDRY_DIR-}"
+  
   tmpdir=$(make_tempdir)
   mkdir -p "$tmpdir/wizardry/spells/.imps/sys"
   
@@ -362,6 +451,13 @@ EOF
   export WIZARDRY_DIR="$tmpdir/wizardry"
   
   run_spell "spells/.imps/lex/parse" "env" "file"
+  
+  # Restore original WIZARDRY_DIR
+  if [ -n "$_saved_wizdir" ]; then
+    export WIZARDRY_DIR="$_saved_wizdir"
+  else
+    unset WIZARDRY_DIR
+  fi
   
   # Should NOT call env-or
   if printf '%s' "$OUTPUT" | grep -q "env-or"; then

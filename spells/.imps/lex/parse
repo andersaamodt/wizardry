@@ -323,60 +323,17 @@ PARSE_HELP
       [ "$_parse_debug" = "1" ] && \
         printf '[parse] DEBUG: Shifted %d words, %d args remaining\n' "$_shift_count" "$#" >&2
     
-      _spell_func=$(printf '%s' "$_spell_name" | tr '-' '_')
-    
-      # Load word-of-binding if not already available
-      if ! command -v word_of_binding >/dev/null 2>&1; then
-        if [ -f "$_wizardry_dir/spells/.imps/sys/word-of-binding" ]; then
-          [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Loading word-of-binding\n' >&2
-          # shellcheck disable=SC1090,SC1091
-          . "$_wizardry_dir/spells/.imps/sys/word-of-binding"
-        fi
-      fi
-    
-      # Use word-of-binding to properly load the spell as a function
-      if command -v word_of_binding >/dev/null 2>&1; then
-        [ "$_parse_debug" = "1" ] && \
-          printf '[parse] DEBUG: Loading spell via word_of_binding: %s\n' "$_spell_name" >&2
-        word_of_binding "$_spell_name" || {
-          [ "$_parse_debug" = "1" ] && \
-            printf '[parse] DEBUG: word_of_binding failed for %s\n' "$_spell_name" >&2
-          export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
-          return 1
-        }
-      
-        # Now the function should be loaded - call it
-        if command -v "$_spell_func" >/dev/null 2>&1; then
-          [ "$_parse_debug" = "1" ] && \
-            printf '[parse] DEBUG: Calling spell function: %s\n' "$_spell_func" >&2
-          if [ $# -eq 0 ]; then
-            "$_spell_func"
-          else
-            "$_spell_func" "$@"
-          fi
-          _ret=$?
-          export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
-          return $_ret
-        else
-          [ "$_parse_debug" = "1" ] && \
-            printf '[parse] DEBUG: Function %s not found after word_of_binding\n' "$_spell_func" >&2
-          export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
-          return 127
-        fi
+      # Execute spell file directly (flat-file paradigm, no word-of-binding)
+      [ "$_parse_debug" = "1" ] && \
+        printf '[parse] DEBUG: Executing spell directly: %s\n' "$_spell_file" >&2
+      if [ $# -eq 0 ]; then
+        "$_spell_file"
       else
-        # Fallback: word_of_binding not available, execute spell file directly
-        [ "$_parse_debug" = "1" ] && \
-          printf '[parse] DEBUG: word_of_binding not available, executing spell directly: %s\n' \
-          "$_spell_file" >&2
-        if [ $# -eq 0 ]; then
-          "$_spell_file"
-        else
-          "$_spell_file" "$@"
-        fi
-        _ret=$?
-        export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
-        return $_ret
+        "$_spell_file" "$@"
       fi
+      _ret=$?
+      export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
+      return $_ret
     fi
 
     # Before falling through to PATH, check for single-word wizardry spell
@@ -389,6 +346,8 @@ PARSE_HELP
     for _spell_dir in .wizardry cantrips menu arcane divination system spellcraft \
                       enchantment .imps .imps/*; do
       _spell_path="$_wizardry_dir/spells/$_spell_dir/$_parse_cmd"
+      [ "$_parse_debug" = "1" ] && \
+        printf '[parse] DEBUG: Checking path: %s\n' "$_spell_path" >&2
       if [ -f "$_spell_path" ] && [ -x "$_spell_path" ]; then
         _spell_file="$_wizardry_dir/spells/$_spell_dir/$_parse_cmd"
         [ "$_parse_debug" = "1" ] && \
@@ -413,64 +372,21 @@ PARSE_HELP
       [ "$_parse_debug" = "1" ] && \
         printf '[parse] DEBUG: Found single-word spell file: %s\n' "$_spell_file" >&2
     
-      # Get the base name of the spell file for display and word-of-binding
+      # Get the base name of the spell file for display
       _spell_name=$(basename "$_spell_file")
       printf 'Casting %s\n' "$_spell_name" >&2
     
-      _spell_func=$(printf '%s' "$_spell_name" | tr '-' '_')
-    
-      # Load word-of-binding if not already available
-      if ! command -v word_of_binding >/dev/null 2>&1; then
-        if [ -f "$_wizardry_dir/spells/.imps/sys/word-of-binding" ]; then
-          [ "$_parse_debug" = "1" ] && printf '[parse] DEBUG: Loading word-of-binding\n' >&2
-          # shellcheck disable=SC1090,SC1091
-          . "$_wizardry_dir/spells/.imps/sys/word-of-binding"
-        fi
-      fi
-    
-      # Use word-of-binding to properly load the spell as a function
-      if command -v word_of_binding >/dev/null 2>&1; then
-        [ "$_parse_debug" = "1" ] && \
-          printf '[parse] DEBUG: Loading spell via word_of_binding: %s\n' "$_spell_name" >&2
-        word_of_binding "$_spell_name" || {
-          [ "$_parse_debug" = "1" ] && \
-            printf '[parse] DEBUG: word_of_binding failed for %s\n' "$_spell_name" >&2
-          export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
-          return 1
-        }
-      
-        # Now the function should be loaded - call it
-        if command -v "$_spell_func" >/dev/null 2>&1; then
-          [ "$_parse_debug" = "1" ] && \
-            printf '[parse] DEBUG: Calling spell function: %s\n' "$_spell_func" >&2
-          if [ $# -eq 0 ]; then
-            "$_spell_func"
-          else
-            "$_spell_func" "$@"
-          fi
-          _ret=$?
-          export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
-          return $_ret
-        else
-          [ "$_parse_debug" = "1" ] && \
-            printf '[parse] DEBUG: Function %s not found after word_of_binding\n' "$_spell_func" >&2
-          export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
-          return 127
-        fi
+      # Execute spell file directly (flat-file paradigm, no word-of-binding)
+      [ "$_parse_debug" = "1" ] && \
+        printf '[parse] DEBUG: Executing spell directly: %s\n' "$_spell_file" >&2
+      if [ $# -eq 0 ]; then
+        "$_spell_file"
       else
-        # Fallback: word_of_binding not available, execute spell file directly
-        [ "$_parse_debug" = "1" ] && \
-          printf '[parse] DEBUG: word_of_binding not available, executing spell directly: %s\n' \
-          "$_spell_file" >&2
-        if [ $# -eq 0 ]; then
-          "$_spell_file"
-        else
-          "$_spell_file" "$@"
-        fi
-        _ret=$?
-        export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
-        return $_ret
+        "$_spell_file" "$@"
       fi
+      _ret=$?
+      export WIZARDRY_PARSE_DEPTH=$((_parse_depth))
+      return $_ret
     fi
 
     # No wizardry spell found - check for command in PATH (excluding glossary)
