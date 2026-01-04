@@ -234,20 +234,14 @@ test_menu_spells_require_menu() {
 }
 
 # --- Check: Spells expose standardized help handlers ---
-# Ensure each spell provides inline help (no functions) and a --help|--usage|-h) case
+# Ensure each spell provides a --help|--usage|-h) case handler
+# Note: Usage function check is handled by lint-magic, not here
 test_spells_have_help_usage_handlers() {
-  has_usage_function=""
   missing_handler=""
 
   check_help_handler() {
     spell=$1
     rel_path=${spell#"$ROOT_DIR/spells/"}
-
-    # Check for usage FUNCTION - should NOT exist (inline only)
-    if grep -qE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*_usage\(\)' "$spell" 2>/dev/null; then
-      has_usage_function="${has_usage_function:+$has_usage_function, }$rel_path"
-      return
-    fi
 
     if ! grep -qF -- '--help|--usage|-h)' "$spell" 2>/dev/null; then
       missing_handler="${missing_handler:+$missing_handler, }$rel_path"
@@ -255,11 +249,6 @@ test_spells_have_help_usage_handlers() {
   }
   
   for_each_posix_spell_no_imps check_help_handler
-
-  if [ -n "$has_usage_function" ]; then
-    TEST_FAILURE_REASON="spells should use inline usage, not functions: $has_usage_function"
-    return 1
-  fi
 
   if [ -n "$missing_handler" ]; then
     TEST_FAILURE_REASON="missing --help|--usage|-h handler: $missing_handler"
