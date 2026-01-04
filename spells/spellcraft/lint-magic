@@ -111,7 +111,7 @@ failed_messages=''
 spell_param_warnings=''
 spell_param_warning_count=0
 posix_failures=0
-posix_output=''
+posix_failed_list=''
 
 if [ "$list_only" -eq 1 ]; then
   cat "$targets_file"
@@ -164,8 +164,32 @@ while IFS= read -r target; do
   issues=''
   issue_count=0
   
-  # Inline check_shebang
+  # Read shebang once
   first_line=$(head -1 "$path")
+  
+  # POSIX compliance check (first)
+  posix_issue=""
+  if has checkbashisms; then
+    # Check shebang
+    if [ "$first_line" != "#!/bin/sh" ] && [ "$first_line" != "#! /bin/sh" ]; then
+      posix_issue="uses $first_line (should use #!/bin/sh)"
+      posix_failures=$((posix_failures + 1))
+    else
+      # Run checkbashisms
+      if ! checkbashisms -f "$path" >/dev/null 2>&1; then
+        posix_issue="POSIX compliance violation (run checkbashisms for details)"
+        posix_failures=$((posix_failures + 1))
+      fi
+    fi
+    
+    if [ -n "$posix_issue" ]; then
+      posix_fail_msg="FAIL $target: $posix_issue"
+      posix_failed_list="${posix_failed_list}${posix_fail_msg}
+"
+    fi
+  fi
+  
+  # Inline check_shebang for style checks
   case $first_line in
     '#!/bin/sh'|'#! /bin/sh')
       : # valid
@@ -735,58 +759,19 @@ AWKSCRIPT
   fi
 done <"$targets_file"
 
-# Collect all targets for POSIX checking
-all_targets=""
-while IFS= read -r target; do
-  [ -n "$target" ] || continue
-  case $target in
-    /*)
-      all_targets="${all_targets}${target} "
-      ;;
-    *)
-      all_targets="${all_targets}${repo_dir}/${target} "
-      ;;
-  esac
-done <"$targets_file"
-
 trap - EXIT HUP INT TERM
 rm -f "$targets_file"
 
-# First, run POSIX compliance checks
+# Print POSIX compliance summary
 printf '\n=== POSIX Compliance Checks ===\n'
-posix_failures=0
-posix_failed_list=""
-
 if has checkbashisms; then
-  for target_path in $all_targets; do
-    # Get relative path for display
-    rel_path="${target_path#"$repo_dir/"}"
-    
-    # Check shebang
-    first_line=$(head -n 1 "$target_path" 2>/dev/null || printf '')
-    if [ "$first_line" != "#!/bin/sh" ] && [ "$first_line" != "#! /bin/sh" ]; then
-      printf 'FAIL %s: uses %s (should use #!/bin/sh)\n' "$rel_path" "$first_line"
-      posix_failures=$((posix_failures + 1))
-      posix_failed_list="${posix_failed_list}FAIL ${rel_path}: uses ${first_line} (should use #!/bin/sh)
-"
-    else
-      # Run checkbashisms
-      if ! checkbashisms -f "$target_path" >/dev/null 2>&1; then
-        printf 'FAIL %s: POSIX compliance violation (run checkbashisms for details)\n' "$rel_path"
-        posix_failures=$((posix_failures + 1))
-        posix_failed_list="${posix_failed_list}FAIL ${rel_path}: POSIX compliance violation
-"
-      fi
-    fi
-  done
-  
   if [ "$posix_failures" -eq 0 ]; then
-    printf '\nAll %d scripts are POSIX-compliant.\n' "$total"
+    printf 'All %d scripts are POSIX-compliant.\n' "$total"
   else
-    printf '\n%d of %d scripts failed POSIX compliance.\n' "$posix_failures" "$total"
+    printf '%d of %d scripts failed POSIX compliance.\n' "$posix_failures" "$total"
   fi
 else
-  printf 'Warning: checkbashisms not found, skipping POSIX checks\n'
+  printf 'Warning: checkbashisms not found, skipped POSIX checks\n'
 fi
 
 # Print style check results
