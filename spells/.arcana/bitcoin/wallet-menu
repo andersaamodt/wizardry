@@ -16,7 +16,7 @@ esac
 require-wizardry || exit 1
 
 set -eu
-env_clear
+. env-clear
 
 load_colors() {
   if command -v colors >/dev/null 2>&1; then

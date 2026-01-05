@@ -16,7 +16,7 @@ esac
 require-wizardry || exit 1
 
 set -eu
-env_clear
+. env-clear
 default_dir="$HOME/.bitcoin"
 
 # Check if the default directory exists

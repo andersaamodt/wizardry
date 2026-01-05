@@ -16,7 +16,7 @@ esac
 require-wizardry || exit 1
 
 set -eu
-env_clear
+. env-clear
 if [ "$(id -u)" -ne 0 ]; then
     echo "configure-tor-bridge: root privileges required."
     return 1

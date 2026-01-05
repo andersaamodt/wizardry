@@ -13,7 +13,7 @@ done
 
 test_env_clear_succeeds() {
   # env-clear must exit with 0 when sourced
-  OUTPUT=$(sh -c "cd '$test_root' && unset WIZARDRY_TEST_HELPERS_ONLY && set -eu; . spells/.imps/sys/env-clear; env_clear && echo 'success'" 2>&1)
+  OUTPUT=$(sh -c "cd '$test_root' && unset WIZARDRY_TEST_HELPERS_ONLY && set -eu; . spells/.imps/sys/env-clear && echo 'success'" 2>&1)
   STATUS=$?
   [ "$STATUS" -eq 0 ] || { TEST_FAILURE_REASON="env-clear failed with status $STATUS"; return 1; }
   case "$OUTPUT" in
@@ -24,7 +24,7 @@ test_env_clear_succeeds() {
 
 test_env_clear_preserves_path() {
   # env-clear must preserve PATH
-  OUTPUT=$(sh -c "cd '$test_root' && unset WIZARDRY_TEST_HELPERS_ONLY && set -eu; saved_path=\"\$PATH\"; . spells/.imps/sys/env-clear; env_clear; [ -n \"\$PATH\" ] && [ \"\$PATH\" = \"\$saved_path\" ] && echo 'preserved'" 2>&1)
+  OUTPUT=$(sh -c "cd '$test_root' && unset WIZARDRY_TEST_HELPERS_ONLY && set -eu; saved_path=\"\$PATH\"; . spells/.imps/sys/env-clear; [ -n \"\$PATH\" ] && [ \"\$PATH\" = \"\$saved_path\" ] && echo 'preserved'" 2>&1)
   STATUS=$?
   [ "$STATUS" -eq 0 ] || { TEST_FAILURE_REASON="PATH not preserved"; return 1; }
   case "$OUTPUT" in
@@ -35,7 +35,7 @@ test_env_clear_preserves_path() {
 
 test_env_clear_preserves_home() {
   # env-clear must preserve HOME
-  OUTPUT=$(sh -c "cd '$test_root' && unset WIZARDRY_TEST_HELPERS_ONLY && set -eu; saved_home=\"\$HOME\"; . spells/.imps/sys/env-clear; env_clear; [ -n \"\$HOME\" ] && [ \"\$HOME\" = \"\$saved_home\" ] && echo 'preserved'" 2>&1)
+  OUTPUT=$(sh -c "cd '$test_root' && unset WIZARDRY_TEST_HELPERS_ONLY && set -eu; saved_home=\"\$HOME\"; . spells/.imps/sys/env-clear; [ -n \"\$HOME\" ] && [ \"\$HOME\" = \"\$saved_home\" ] && echo 'preserved'" 2>&1)
   STATUS=$?
   [ "$STATUS" -eq 0 ] || { TEST_FAILURE_REASON="HOME not preserved"; return 1; }
   case "$OUTPUT" in
@@ -46,7 +46,7 @@ test_env_clear_preserves_home() {
 
 test_env_clear_clears_custom_vars() {
   # env-clear should clear non-essential exported variables
-  OUTPUT=$(sh -c "cd '$test_root' && unset WIZARDRY_TEST_HELPERS_ONLY && set -eu; export CUSTOM_TEST_VAR='test'; . spells/.imps/sys/env-clear; env_clear; [ -z \"\${CUSTOM_TEST_VAR:-}\" ] && echo 'cleared'" 2>&1)
+  OUTPUT=$(sh -c "cd '$test_root' && unset WIZARDRY_TEST_HELPERS_ONLY && set -eu; export CUSTOM_TEST_VAR='test'; . spells/.imps/sys/env-clear; [ -z \"\${CUSTOM_TEST_VAR:-}\" ] && echo 'cleared'" 2>&1)
   STATUS=$?
   [ "$STATUS" -eq 0 ] || { TEST_FAILURE_REASON="custom var not cleared"; return 1; }
   case "$OUTPUT" in
@@ -57,7 +57,7 @@ test_env_clear_clears_custom_vars() {
 
 test_env_clear_preserves_wizardry_globals() {
   # env-clear must preserve WIZARDRY_DIR if set
-  OUTPUT=$(sh -c "cd '$test_root' && unset WIZARDRY_TEST_HELPERS_ONLY && set -eu; export WIZARDRY_DIR='/test/dir'; . spells/.imps/sys/env-clear; env_clear; [ \"\$WIZARDRY_DIR\" = '/test/dir' ] && echo 'preserved'" 2>&1)
+  OUTPUT=$(sh -c "cd '$test_root' && unset WIZARDRY_TEST_HELPERS_ONLY && set -eu; export WIZARDRY_DIR='/test/dir'; . spells/.imps/sys/env-clear; [ \"\$WIZARDRY_DIR\" = '/test/dir' ] && echo 'preserved'" 2>&1)
   STATUS=$?
   [ "$STATUS" -eq 0 ] || { TEST_FAILURE_REASON="WIZARDRY_DIR not preserved"; return 1; }
   case "$OUTPUT" in

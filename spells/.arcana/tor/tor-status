@@ -16,7 +16,7 @@ esac
 require-wizardry || exit 1
 
 set -eu
-env_clear
+. env-clear
 . colors
 
 # Returns colored text based on status

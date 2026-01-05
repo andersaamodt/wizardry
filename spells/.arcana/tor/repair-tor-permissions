@@ -16,7 +16,7 @@ esac
 require-wizardry || exit 1
 
 set -eu
-env_clear
+. env-clear
 if [ "$(id -u)" != "0" ]; then
    printf '%s\n' "repair-tor-permissions: root privileges required."
    exit 1
