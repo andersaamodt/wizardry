@@ -4,5 +4,5 @@
 set -eu
 
 
-_temp_prefix=${1:-wizardry}
-mktemp "${TMPDIR:-/tmp}/${_temp_prefix}.XXXXXX"
+temp_prefix=${1:-wizardry}
+mktemp "${TMPDIR:-/tmp}/${temp_prefix}.XXXXXX"

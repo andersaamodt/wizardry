@@ -11,27 +11,27 @@ if [ "$#" -ne 1 ]; then
   exit 1
 fi
 
-_tp_path=$1
+tp_path=$1
 
 # If HOME is not set, return the path unchanged
 if [ -z "${HOME-}" ]; then
-  printf '%s' "$_tp_path"
+  printf '%s' "$tp_path"
   exit 0
 fi
 
 # Check if path is under HOME
-case "$_tp_path" in
+case "$tp_path" in
   "$HOME")
     # Exact match to HOME
     printf '~'
     ;;
   "$HOME"/*)
     # Path under HOME - replace HOME with ~
-    _tp_rel=${_tp_path#"$HOME"/}
-    printf '~/%s' "$_tp_rel"
+    tp_rel=${tp_path#"$HOME"/}
+    printf '~/%s' "$tp_rel"
     ;;
   *)
     # Not under HOME - return unchanged
-    printf '%s' "$_tp_path"
+    printf '%s' "$tp_path"
     ;;
 esac

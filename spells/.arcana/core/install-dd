@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Install the dd command using the system package manager.
+# Bootstrap spell: Install the dd command using the system package manager.
 
 case "${1-}" in
 --help|--usage|-h)

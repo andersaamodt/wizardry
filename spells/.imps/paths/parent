@@ -4,8 +4,8 @@
 set -eu
 
 
-_par_path=$1
-case "$_par_path" in
-  */*) printf '%s\n' "${_par_path%/*}" ;;
+par_path=$1
+case "$par_path" in
+  */*) printf '%s\n' "${par_path%/*}" ;;
   *)   printf '%s\n' "." ;;
 esac

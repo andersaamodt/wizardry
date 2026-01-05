@@ -4,8 +4,8 @@
 # Example: parse cp file.txt into /tmp
 
 
-_into_cmd=${1:-}
-_into_cmd_args=${2:-}
+into_cmd=${1:-}
+into_cmd_args=${2:-}
 shift 2 2>/dev/null || shift $#
 
 if [ $# -lt 1 ]; then
@@ -13,27 +13,27 @@ if [ $# -lt 1 ]; then
   return 1
 fi
 
-_into_target=$1
+into_target=$1
 shift
 
-if [ -z "$_into_cmd" ]; then
+if [ -z "$into_cmd" ]; then
   printf '%s: into requires a command before it\n' "into" >&2
   return 1
 fi
 
-if [ -n "$_into_cmd_args" ]; then
-  _into_new_args="$_into_cmd_args $_into_target"
+if [ -n "$into_cmd_args" ]; then
+  into_new_args="$into_cmd_args $into_target"
 else
-  _into_new_args=$_into_target
+  into_new_args=$into_target
 fi
 
 if [ $# -eq 0 ]; then
   # shellcheck disable=SC2086
-  "$_into_cmd" $_into_new_args
+  "$into_cmd" $into_new_args
   return $?
 fi
 
-_into_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+into_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 # shellcheck disable=SC2086
-"$_into_lex_dir/parse" "$_into_cmd" $_into_new_args "$@"
+"$into_lex_dir/parse" "$into_cmd" $into_new_args "$@"
 

@@ -4,9 +4,9 @@
 set -eu
 
 
-_p_path=$1
-case "$_p_path" in
+p_path=$1
+case "$p_path" in
   /*) : ;;
-  *) _p_path="$(pwd -P)/$_p_path" ;;
+  *) p_path="$(pwd -P)/$p_path" ;;
 esac
-printf '%s' "$_p_path" | sed 's|///*|/|g'
+printf '%s' "$p_path" | sed 's|///*|/|g'

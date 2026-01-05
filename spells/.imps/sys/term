@@ -3,6 +3,6 @@
 # Examples: term && echo "interactive" | term 1 && echo "stdout is tty"
 
 
-_term_fd=${1:-0}
-[ -t "$_term_fd" ]
+term_fd=${1:-0}
+[ -t "$term_fd" ]
 

@@ -4,8 +4,8 @@
 # Example: parse cp to /tmp from /etc/hosts
 
 
-_from_cmd=${1:-}
-_from_cmd_args=${2:-}
+from_cmd=${1:-}
+from_cmd_args=${2:-}
 shift 2 2>/dev/null || shift $#
 
 if [ $# -lt 1 ]; then
@@ -13,27 +13,27 @@ if [ $# -lt 1 ]; then
   return 1
 fi
 
-_from_source=$1
+from_source=$1
 shift
 
-if [ -z "$_from_cmd" ]; then
+if [ -z "$from_cmd" ]; then
   printf '%s: from requires a command before it\n' "from" >&2
   return 1
 fi
 
-if [ -n "$_from_cmd_args" ]; then
-  _from_new_args="$_from_source $_from_cmd_args"
+if [ -n "$from_cmd_args" ]; then
+  from_new_args="$from_source $from_cmd_args"
 else
-  _from_new_args=$_from_source
+  from_new_args=$from_source
 fi
 
 if [ $# -eq 0 ]; then
   # shellcheck disable=SC2086
-  "$_from_cmd" $_from_new_args
+  "$from_cmd" $from_new_args
   return $?
 fi
 
-_from_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+from_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 # shellcheck disable=SC2086
-"$_from_lex_dir/parse" "$_from_cmd" $_from_new_args "$@"
+"$from_lex_dir/parse" "$from_cmd" $from_new_args "$@"
 

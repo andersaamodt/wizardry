@@ -653,24 +653,21 @@ test_imps_follow_function_rule() {
     should_skip_file "$name" && continue
     is_posix_shell_script "$imp" || continue
     
+    # Skip test infrastructure - test-bootstrap is complex test framework
+    rel_path=${imp#"$ROOT_DIR/spells/.imps/"}
+    case "$rel_path" in
+      test/test-bootstrap) continue ;;
+    esac
+    
     # Count function definitions
     # Pattern matches: name() { or name () {
     func_count=$(grep -cE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)[[:space:]]*\{' "$imp" 2>/dev/null) || func_count=0
     
-    # If zero functions, that's valid
-    if [ "$func_count" -eq 0 ]; then
+    # NEW REQUIREMENT: Imps must have 0 functions (flat scripts only)
+    if [ "$func_count" -gt 0 ]; then
+      printf '%s (has %s functions, should be 0)\n' "$rel_path" "$func_count"
       continue
     fi
-    
-    # If more than one function, that's a violation
-    if [ "$func_count" -gt 1 ]; then
-      rel_path=${imp#"$ROOT_DIR/spells/.imps/"}
-      printf '%s (has %s functions)\n' "$rel_path" "$func_count"
-      continue
-    fi
-    
-    # If exactly one function, that's valid for binding
-    # (We could add stricter checking for executable code outside the function later)
     
   done > "${WIZARDRY_TMPDIR}/imp-structure-violations.txt"
   
@@ -678,7 +675,7 @@ test_imps_follow_function_rule() {
   rm -f "${WIZARDRY_TMPDIR}/imp-structure-violations.txt"
   
   if [ -n "$violations" ]; then
-    TEST_FAILURE_REASON="imps violating function rule: $violations"
+    TEST_FAILURE_REASON="imps violating function rule (must have 0 functions): $violations"
     return 1
   fi
   return 0
@@ -809,21 +806,26 @@ spells/.arcana/core/
 # - 4+ additional functions: error (proto-library, needs decomposition)
 test_spells_follow_function_discipline() {
   skip-if-compiled || return $?
-  tmpfile_2=$(mktemp "${WIZARDRY_TMPDIR}/func-warn-2.XXXXXX")
-  tmpfile_3=$(mktemp "${WIZARDRY_TMPDIR}/func-warn-3.XXXXXX")
-  tmpfile_4plus=$(mktemp "${WIZARDRY_TMPDIR}/func-viol-4plus.XXXXXX")
+  tmpfile_violations=$(mktemp "${WIZARDRY_TMPDIR}/func-violations.XXXXXX")
   
-  # Hardcoded exceptions for complex interactive systems requiring architectural decisions
-  # These spells are large (500-1200 lines) with genuinely multi-use helper functions
-  # and complex state management that justifies preserving helper functions.
-  # Documented in EXEMPTIONS.md as requiring careful decomposition analysis.
-  # Bootstrap scripts (system/banish) require inline helpers since wizardry isn't installed yet.
+  # NEW REQUIREMENT: Spells must have at most 1 function total
+  # Hardcoded exceptions for spells documented in EXEMPTIONS.md
   exempted_spells="
 spellcraft/lint-magic
 menu/spellbook
 cantrips/menu
+cantrips/colors
+cantrips/fathom-cursor
+cantrips/await-keypress
+psi/read-contact
+menu/mud
+menu/mud-settings
+menu/main-menu
+menu/system/profile-tests
 .arcana/mud/cd
 .arcana/core/install-core
+.arcana/core/install-bwrap
+.arcana/bitcoin/configure-bitcoin
 .arcana/lightning/install-lightning
 .arcana/lightning/lightning-menu
 .arcana/node/node-menu
@@ -849,48 +851,26 @@ system/banish
     [ "$is_exempted" -eq 1 ] && return
     
     # Count all function definitions
-    # OPTIMIZED: Single grep pass instead of two separate greps
     # Pattern matches both inline "func() {" and multiline "func()" followed by "{"
     func_count=$(grep -cE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)([[:space:]]*\{|[[:space:]]*$)' "$spell" 2>/dev/null || true)
     func_count=${func_count:-0}
     
-    # FLAT-FILE PARADIGM: Spells should have minimal functions
-    # Ideally 0 functions (inline everything), max 1-2 helper functions if absolutely necessary
-    # No usage functions - usage should be inline
-    
-    # Write to appropriate temp file based on function count
-    if [ "$func_count" -ge 4 ]; then
-      printf '%s(%s)\n' "$rel_path" "$func_count" >> "$tmpfile_4plus"
-    elif [ "$func_count" -eq 3 ]; then
-      printf '%s(%s)\n' "$rel_path" "$func_count" >> "$tmpfile_3"
-    elif [ "$func_count" -eq 2 ]; then
-      printf '%s(%s)\n' "$rel_path" "$func_count" >> "$tmpfile_2"
-    elif [ "$func_count" -eq 1 ]; then
-      # 1 helper function is acceptable
-      :
+    # NEW REQUIREMENT: Fail on more than 1 function (flat file paradigm)
+    if [ "$func_count" -gt 1 ]; then
+      printf '%s(%s)\n' "$rel_path" "$func_count" >> "$tmpfile_violations"
     fi
   }
   
   for_each_posix_spell_no_imps check_function_discipline
   
   # Read and format results
-  warnings_2=$(head -20 "$tmpfile_2" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
-  warnings_3=$(head -20 "$tmpfile_3" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
-  violations_4plus=$(head -20 "$tmpfile_4plus" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
+  violations=$(head -50 "$tmpfile_violations" 2>/dev/null | tr '\n' ', ' | sed 's/, $//')
   
-  rm -f "$tmpfile_2" "$tmpfile_3" "$tmpfile_4plus"
+  rm -f "$tmpfile_violations"
   
-  # Print warnings (non-fatal)
-  if [ -n "$warnings_2" ]; then
-    printf 'WARNING: spells with 2 functions (consider inlining or refactoring): %s\n' "$warnings_2" >&2
-  fi
-  if [ -n "$warnings_3" ]; then
-    printf 'WARNING: spells with 3 functions (should refactor): %s\n' "$warnings_3" >&2
-  fi
-  
-  # Fail on 4+ functions (proto-libraries, must decompose)
-  if [ -n "$violations_4plus" ]; then
-    TEST_FAILURE_REASON="spells with 4+ functions (proto-libraries, must decompose): $violations_4plus"
+  # Fail on more than 1 function
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="spells with more than 1 function (must have at most 1): $violations"
     return 1
   fi
   
@@ -1850,7 +1830,7 @@ run_test_case "test output streams line-by-line" test_output_streams_line_by_lin
 # Stub imps must match both */stub-name and */name for symlink usage
 # This ensures tests can create symlinks without the stub- prefix
 test_stub_imps_have_correct_patterns() {
-  # Skip in doppelganger mode - grep patterns behave differently
+  # Skip in doppelganger mode
   if [ "${WIZARDRY_OS_LABEL:-}" = "doppelganger" ]; then
     test_skip "stub imps have correct self-execute patterns" "skipped in doppelganger mode"
     return 0
@@ -1858,6 +1838,8 @@ test_stub_imps_have_correct_patterns() {
   
   failures=""
   
+  # Flat-file paradigm: Stub imps are flat scripts, no self-execute patterns needed
+  # Just verify they exist and are executable
   for stub in fathom-cursor fathom-terminal move-cursor cursor-blink stty await-keypress; do
     stub_path="$ROOT_DIR/spells/.imps/test/stub-$stub"
     
@@ -1867,53 +1849,38 @@ test_stub_imps_have_correct_patterns() {
       continue
     fi
     
-    # Check for case statement
-    if ! grep -qE "case.*\\\$0.*in" "$stub_path"; then
-      failures="${failures}${failures:+, }stub-$stub (no case statement)"
+    # Check file is executable
+    if [ ! -x "$stub_path" ]; then
+      failures="${failures}${failures:+, }stub-$stub (not executable)"
       continue
     fi
     
-    # Check that the case pattern includes both the stub name and unprefixed name
-    # The pattern should be like: */stub-name|*/name) or */name|*/stub-name)
-    unprefixed=$(printf '%s' "$stub" | sed 's/^stub-//')
-    
-    # Check if both patterns exist in the file (order doesn't matter)
-    # Note: Allow optional whitespace before the pattern
-    has_stub_pattern=0
-    has_unprefixed_pattern=0
-    
-    if grep -qE "[[:space:]]*\*/stub-$stub[|)]" "$stub_path"; then
-      has_stub_pattern=1
-    fi
-    
-    if grep -qE "[[:space:]]*\*/$unprefixed[|)]" "$stub_path"; then
-      has_unprefixed_pattern=1
-    fi
-    
-    if [ "$has_stub_pattern" -eq 0 ]; then
-      failures="${failures}${failures:+, }stub-$stub (missing */stub-$stub pattern)"
-    elif [ "$has_unprefixed_pattern" -eq 0 ]; then
-      failures="${failures}${failures:+, }stub-$stub (missing */$unprefixed pattern)"
+    # Check it has proper shebang
+    if ! head -1 "$stub_path" | grep -q "^#!/bin/sh"; then
+      failures="${failures}${failures:+, }stub-$stub (missing shebang)"
+      continue
     fi
   done
   
   if [ -n "$failures" ]; then
-    TEST_FAILURE_REASON="stub imps with incorrect self-execute patterns: $failures"
+    TEST_FAILURE_REASON="stub imps with issues: $failures"
     return 1
   fi
   
   return 0
 }
 
-run_test_case "stub imps have correct self-execute patterns" test_stub_imps_have_correct_patterns
+run_test_case "stub imps are valid flat scripts" test_stub_imps_have_correct_patterns
 
 # ==============================================================================
-# SPELL INVOCATION REQUIREMENTS - Castable/Uncastable Declaration
-# All spells must declare whether they are castable or uncastable
+# SPELL INVOCATION REQUIREMENTS - Optional Invocation Declarations
+# Spells may optionally declare "uncastable" if they need to be sourced.
+# Spells may optionally declare "autocast" for auto-execution patterns.
+# The "castable" declaration is deprecated and should be removed.
 # ==============================================================================
 
-# All spells must declare castable or uncastable
-test_spells_declare_invocation_type() {
+# Check that spells don't have deprecated castable or multiple declarations
+test_spells_no_deprecated_invocation_declarations() {
   failures=""
   
   # Check all spell files (not imps, not tests)
@@ -1927,13 +1894,13 @@ test_spells_declare_invocation_type() {
     spell_name=${spell_file#"$ROOT_DIR/spells/"}
     
     # Skip imps - they are flat, linear scripts (no wrapper functions)
-    # Skip bootstrap spells in .arcana/core - they use traditional if [ "${0##*/}" = "name" ] pattern
+    # Skip bootstrap spells in .arcana/core
     case "$spell_name" in
       .imps/*) continue ;;
       .arcana/core/*) continue ;;
     esac
     
-    # Check if spell has castable, uncastable, or autocast declaration
+    # Check if spell has invocation declarations
     has_castable=0
     has_uncastable=0
     has_autocast=0
@@ -1953,23 +1920,26 @@ test_spells_declare_invocation_type() {
     # Count declarations
     declaration_count=$((has_castable + has_uncastable + has_autocast))
     
-    # Spell must have exactly one declaration
-    if [ "$declaration_count" -eq 0 ]; then
-      failures="${failures}${failures:+, }$spell_name (missing declaration)"
-    elif [ "$declaration_count" -gt 1 ]; then
-      failures="${failures}${failures:+, }$spell_name (multiple declarations)"
+    # Warn if spell has deprecated castable (should be removed)
+    if [ "$has_castable" -eq 1 ]; then
+      failures="${failures}${failures:+, }$spell_name (has deprecated 'castable' declaration)"
+    fi
+    
+    # Error if spell has multiple declarations (shouldn't have both uncastable and autocast)
+    if [ "$declaration_count" -gt 1 ]; then
+      failures="${failures}${failures:+, }$spell_name (multiple invocation declarations)"
     fi
   done < "$SPELL_LIST_CACHE"
   
   if [ -n "$failures" ]; then
-    TEST_FAILURE_REASON="spells without proper castable/uncastable/autocast declaration: $failures"
+    TEST_FAILURE_REASON="spells with deprecated or multiple invocation declarations: $failures"
     return 1
   fi
   
   return 0
 }
 
-run_test_case "spells declare castable/uncastable/autocast" test_spells_declare_invocation_type
+run_test_case "spells have no deprecated invocation declarations" test_spells_no_deprecated_invocation_declarations
 
 # --- Check: All spells respond to --help flag ---
 # Every spell must support --help, --usage, or -h flags

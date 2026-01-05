@@ -5,6 +5,6 @@ set -eu
 
 
 if command -v "$1" >/dev/null 2>&1; then exit 0; fi
-_need_msg=${2:-"required command not found: $1"}
-printf '%s\n' "$_need_msg" >&2
+need_msg=${2:-"required command not found: $1"}
+printf '%s\n' "$need_msg" >&2
 exit 1

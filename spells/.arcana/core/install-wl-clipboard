@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Install wl-clipboard (Wayland clipboard utilities) using the system package manager.
+# Bootstrap spell: Install wl-clipboard (Wayland clipboard utilities) using the system package manager.
 
 case "${1-}" in
 --help|--usage|-h)

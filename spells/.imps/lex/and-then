@@ -4,13 +4,13 @@
 # Receives: $1=command, $2=command_args, $3+=remaining args
 
 
-_at_cmd=${1:-}
-_at_cmd_args=${2:-}
+at_cmd=${1:-}
+at_cmd_args=${2:-}
 shift 2 2>/dev/null || shift $#
 
-if [ -n "$_at_cmd" ]; then
+if [ -n "$at_cmd" ]; then
   # shellcheck disable=SC2086
-  if "$_at_cmd" $_at_cmd_args; then
+  if "$at_cmd" $at_cmd_args; then
     : # success
   else
     return $?
@@ -21,6 +21,6 @@ if [ $# -eq 0 ]; then
   return 0
 fi
 
-_at_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-"$_at_lex_dir/parse" "$@"
+at_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+"$at_lex_dir/parse" "$@"
 
