@@ -68,3 +68,118 @@ manage_system_command_run_installer() {
   else
     "$cmd" "$@"
   fi
+}
+
+# Check if command exists (skip for uninstall)
+if [ "$action" = "install" ]; then
+  if command -v "$command_name" >/dev/null 2>&1 && [ "$force_install" != "1" ]; then
+    exit 0
+  fi
+fi
+
+# Try package managers in order based on OS detection
+if [ "$is_nixos" = "1" ]; then
+  if [ "$action" = "install" ]; then
+    nix-env -iA "nixpkgs.${nix_package}" || {
+      printf '%s\n' "manage-system-command: unable to install ${nix_package} automatically via nix-env" >&2
+      exit 1
+    }
+  else
+    nix-env -e "$nix_package" || {
+      printf '%s\n' "manage-system-command: unable to uninstall $command_name via nix-env" >&2
+      exit 1
+    }
+  fi
+elif [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  if command -v pkgin >/dev/null 2>&1; then
+    if [ "$action" = "install" ]; then
+      manage_system_command_run_installer pkgin -y install "$pkgin_package" || {
+        printf '%s\n' "manage-system-command: unable to install ${pkgin_package} automatically via pkgin" >&2
+        exit 1
+      }
+    else
+      manage_system_command_run_installer pkgin -y remove "$pkgin_package" || {
+        printf '%s\n' "manage-system-command: unable to uninstall $command_name via pkgin" >&2
+        exit 1
+      }
+    fi
+  else
+    printf '%s\n' "manage-system-command: no supported package manager found on macOS" >&2
+    exit 1
+  fi
+elif command -v pacman >/dev/null 2>&1; then
+  if [ "$action" = "install" ]; then
+    manage_system_command_run_installer pacman --noconfirm -Sy "$pacman_package" || {
+      printf '%s\n' "manage-system-command: unable to install ${pacman_package} automatically via pacman" >&2
+      exit 1
+    }
+  else
+    manage_system_command_run_installer pacman --noconfirm -R "$pacman_package" || {
+      printf '%s\n' "manage-system-command: unable to uninstall $command_name via pacman" >&2
+      exit 1
+    }
+  fi
+elif command -v apt-get >/dev/null 2>&1; then
+  if [ "$action" = "install" ]; then
+    manage_system_command_run_installer apt-get -y install "$apt_package" || {
+      printf '%s\n' "manage-system-command: unable to install ${apt_package} automatically via apt-get" >&2
+      exit 1
+    }
+  else
+    manage_system_command_run_installer apt-get -y remove "$apt_package" || {
+      printf '%s\n' "manage-system-command: unable to uninstall $command_name via apt-get" >&2
+      exit 1
+    }
+  fi
+elif command -v dnf >/dev/null 2>&1; then
+  if [ "$action" = "install" ]; then
+    manage_system_command_run_installer dnf install -y "$dnf_package" || {
+      printf '%s\n' "manage-system-command: unable to install ${dnf_package} automatically via dnf" >&2
+      exit 1
+    }
+  else
+    manage_system_command_run_installer dnf remove -y "$dnf_package" || {
+      printf '%s\n' "manage-system-command: unable to uninstall $command_name via dnf" >&2
+      exit 1
+    }
+  fi
+elif command -v yum >/dev/null 2>&1; then
+  if [ "$action" = "install" ]; then
+    manage_system_command_run_installer yum install -y "$yum_package" || {
+      printf '%s\n' "manage-system-command: unable to install ${yum_package} automatically via yum" >&2
+      exit 1
+    }
+  else
+    manage_system_command_run_installer yum remove -y "$yum_package" || {
+      printf '%s\n' "manage-system-command: unable to uninstall $command_name via yum" >&2
+      exit 1
+    }
+  fi
+elif command -v zypper >/dev/null 2>&1; then
+  if [ "$action" = "install" ]; then
+    manage_system_command_run_installer zypper install -y "$zypper_package" || {
+      printf '%s\n' "manage-system-command: unable to install ${zypper_package} automatically via zypper" >&2
+      exit 1
+    }
+  else
+    manage_system_command_run_installer zypper remove -y "$zypper_package" || {
+      printf '%s\n' "manage-system-command: unable to uninstall $command_name via zypper" >&2
+      exit 1
+    }
+  fi
+elif command -v apk >/dev/null 2>&1; then
+  if [ "$action" = "install" ]; then
+    manage_system_command_run_installer apk add "$apk_package" || {
+      printf '%s\n' "manage-system-command: unable to install ${apk_package} automatically via apk" >&2
+      exit 1
+    }
+  else
+    manage_system_command_run_installer apk del "$apk_package" || {
+      printf '%s\n' "manage-system-command: unable to uninstall $command_name via apk" >&2
+      exit 1
+    }
+  fi
+else
+  printf '%s\n' "manage-system-command: no supported package manager found" >&2
+  exit 1
+fi
