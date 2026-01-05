@@ -2,10 +2,17 @@
 # finish-tests - print test summary and exit with appropriate exit status
 # Exits 0 if all tests passed, 1 otherwise. Prints failure indices if any.
 # Provides organized failure lists by execution pattern when dual-pattern testing enabled.
+# Uses counter files in WIZARDRY_TMPDIR for cross-imp state sharing.
 set -eu
 
-total=$((_pass_count + _fail_count + ${_skip_count-0}))
-test_summary "$_pass_count" "$total" "${_skip_count-0}"
+# Read counter values from files
+_pass_count=$(cat "${WIZARDRY_TMPDIR}/_pass_count")
+_fail_count=$(cat "${WIZARDRY_TMPDIR}/_fail_count")
+_skip_count=$(cat "${WIZARDRY_TMPDIR}/_skip_count" 2>/dev/null || printf '0')
+_fail_detail_indices=$(cat "${WIZARDRY_TMPDIR}/_fail_detail_indices" 2>/dev/null || printf '')
+
+total=$((_pass_count + _fail_count + _skip_count))
+test-summary "$_pass_count" "$total" "$_skip_count"
 
 if [ "$_fail_count" -gt 0 ]; then
   # Print organized failure summary (improved output to show all failures)

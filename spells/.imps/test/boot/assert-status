@@ -4,11 +4,12 @@
 set -eu
 
 expected_status=$1
-if [ "$STATUS" -ne "$expected_status" ]; then
+actual_status=${STATUS-999}
+if [ "$actual_status" -ne "$expected_status" ]; then
   if [ -n "${ERROR-}" ]; then
-    TEST_FAILURE_REASON="expected status $expected_status but got $STATUS; stderr: $ERROR"
+    TEST_FAILURE_REASON="expected status $expected_status but got $actual_status; stderr: $ERROR"
   else
-    TEST_FAILURE_REASON="expected status $expected_status but got $STATUS"
+    TEST_FAILURE_REASON="expected status $expected_status but got $actual_status"
   fi
   exit 1
 fi
