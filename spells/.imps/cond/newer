@@ -3,8 +3,5 @@
 # Example: newer src.c src.o && compile src.c
 
 
-newer() {
-  [ "$1" -nt "$2" ]
-}
+[ "$1" -nt "$2" ]
 
-newer "$@"

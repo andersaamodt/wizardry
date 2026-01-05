@@ -4,24 +4,21 @@
 
 # Note: No set -eu because this is a conditional imp (returns exit codes for flow control)
 
-has() {
-  _has_name=${1-}
-  if [ -z "$_has_name" ]; then
-    return 1
-  fi
-  
-  if command -v "$_has_name" >/dev/null 2>&1; then
-    return 0
-  fi
-  
-  case $_has_name in
-    *-*)
-      _has_alt=$(printf '%s' "$_has_name" | tr '-' '_')
-      command -v "$_has_alt" >/dev/null 2>&1
-      return $?
-      ;;
-  esac
+_has_name=${1-}
+if [ -z "$_has_name" ]; then
   return 1
-}
+fi
 
-has "$@"
+if command -v "$_has_name" >/dev/null 2>&1; then
+  return 0
+fi
+
+case $_has_name in
+  *-*)
+    _has_alt=$(printf '%s' "$_has_name" | tr '-' '_')
+    command -v "$_has_alt" >/dev/null 2>&1
+    return $?
+    ;;
+esac
+return 1
+

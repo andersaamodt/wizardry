@@ -3,9 +3,5 @@
 # Example: echo "new line" | append log.txt
 set -eu
 
-append() {
 
-  cat >> "$1"
-}
-
-append "$@"
+cat >> "$1"

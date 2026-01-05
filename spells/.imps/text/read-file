@@ -3,9 +3,5 @@
 # Example: content=$(read-file config.txt)
 set -eu
 
-read_file() {
 
-  cat "$1"
-}
-
-read_file "$@"
+cat "$1"

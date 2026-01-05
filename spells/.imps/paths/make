@@ -3,12 +3,8 @@
 # Example: make dir ~/.config/myapp
 set -eu
 
-make() {
 
-  case "$1" in
-    dir) mkdir -p "$2" ;;
-    *) return 1 ;;
-  esac
-}
-
-make "$@"
+case "$1" in
+  dir) mkdir -p "$2" ;;
+  *) return 1 ;;
+esac

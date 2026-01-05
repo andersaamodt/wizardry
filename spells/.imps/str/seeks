@@ -3,9 +3,5 @@
 # Example: seeks "error" log.txt && echo "found errors"
 set -eu
 
-seeks() {
 
-  grep -Fq -- "$1" "$2" 2>/dev/null
-}
-
-seeks "$@"
+grep -Fq -- "$1" "$2" 2>/dev/null

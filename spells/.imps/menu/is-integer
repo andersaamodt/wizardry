@@ -3,20 +3,17 @@
 # Example: is-integer "42" && echo "valid"
 
 
-is_integer() {
-  case "$1" in
-    '') return 1 ;;
-    -) return 1 ;;
-    -[0-9]) : ;;
-    -[0-9]*) : ;;
-    [0-9]*) : ;;
-    *) return 1 ;;
-  esac
-  case "$1" in
-    -*) _ii_rest=${1#-}; case "$_ii_rest" in *[!0-9]*) return 1 ;; esac ;;
-    *[!0-9]*) return 1 ;;
-  esac
-  return 0
-}
+case "$1" in
+  '') return 1 ;;
+  -) return 1 ;;
+  -[0-9]) : ;;
+  -[0-9]*) : ;;
+  [0-9]*) : ;;
+  *) return 1 ;;
+esac
+case "$1" in
+  -*) _ii_rest=${1#-}; case "$_ii_rest" in *[!0-9]*) return 1 ;; esac ;;
+  *[!0-9]*) return 1 ;;
+esac
+return 0
 
-is_integer "$@"

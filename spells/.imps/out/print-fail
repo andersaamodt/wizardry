@@ -4,27 +4,23 @@
 
 set -eu
 
-print_fail() {
 
-  text=${1-}
-  reason=${2-}
+text=${1-}
+reason=${2-}
 
-  # Use colors if supported
-  if [ -t 1 ] && command -v tput >/dev/null 2>&1 && tput setaf 1 >/dev/null 2>&1; then
-    red=$(tput setaf 1 2>/dev/null || true)
-    reset=$(tput sgr0 2>/dev/null || true)
-    if [ -n "$reason" ]; then
-      printf '%sFAIL%s %s: %s\n' "$red" "$reset" "$text" "$reason"
-    else
-      printf '%sFAIL%s %s\n' "$red" "$reset" "$text"
-    fi
+# Use colors if supported
+if [ -t 1 ] && command -v tput >/dev/null 2>&1 && tput setaf 1 >/dev/null 2>&1; then
+  red=$(tput setaf 1 2>/dev/null || true)
+  reset=$(tput sgr0 2>/dev/null || true)
+  if [ -n "$reason" ]; then
+    printf '%sFAIL%s %s: %s\n' "$red" "$reset" "$text" "$reason"
   else
-    if [ -n "$reason" ]; then
-      printf 'FAIL %s: %s\n' "$text" "$reason"
-    else
-      printf 'FAIL %s\n' "$text"
-    fi
+    printf '%sFAIL%s %s\n' "$red" "$reset" "$text"
   fi
-}
-
-print_fail "$@"
+else
+  if [ -n "$reason" ]; then
+    printf 'FAIL %s: %s\n' "$text" "$reason"
+  else
+    printf 'FAIL %s\n' "$text"
+  fi
+fi

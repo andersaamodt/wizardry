@@ -2,68 +2,7 @@
 
 # This spell displays system maintenance tasks.
 
-case "${1-}" in
---help|--usage|-h)
-  cat <<'USAGE'
-Usage: system-menu
 
-Displays the system maintenance menu.
-USAGE
-  exit 0
-  ;;
-esac
 
 set -eu
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
-spells_dir=$(dirname "$script_dir")
-repo_dir=$(dirname "$spells_dir")
 
-# Load color palette (colors handles terminal capability detection internally)
-# shellcheck source=/dev/null
-. "$(command -v colors)"
-
-if ! require menu "The system menu needs the 'menu' command to present options."; then
-  exit 1
-fi
-
-# Detect whether we are running on NixOS to offer system-specific actions.
-nixos_rebuild=""
-if has detect-distro && [ "$(detect-distro 2>/dev/null)" = "nixos" ]; then
-  nixos_rebuild="Rebuild NixOS%sudo nixos-rebuild switch"
-fi
-
-system_menu_display_menu() {
-  restart_menu="Restart...%shutdown-menu"
-  services="Manage services%services-menu"
-  verify_posix="Verify POSIX spells%verify-posix"
-  update_wizardry="Update wizardry%update-wizardry"
-  test_suite="Test all wizardry spells%test-magic"
-  profile_tests="Profile test performance%profile-tests"
-  update_all="Update all software%update-all -v"
-  uninstall_wizardry="Uninstall wizardry%$repo_dir/.uninstall; exit 0"
-  exit_label=$(exit-label)
-  exit_item="${exit_label}%kill -TERM \$PPID"
-
-  set -- "$restart_menu" "$update_all" "$update_wizardry" "$services"
-  if [ -n "$nixos_rebuild" ]; then
-    set -- "$@" "$nixos_rebuild"
-  fi
-  set -- "$@" "$verify_posix" "$test_suite" "$profile_tests" "$uninstall_wizardry" "$exit_item"
-
-  menu "System Menu:" "$@"
-}
-
-# Catch Ctrl-C and TERM signal to exit 1 cleanly
-trap 'exit 0' INT TERM
-
-first_run=1
-
-while true; do
-  if [ "$first_run" -eq 0 ]; then
-    :
-  else
-    first_run=0
-  fi
-
-  system_menu_display_menu || true
-done

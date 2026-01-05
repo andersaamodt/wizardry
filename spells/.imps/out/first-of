@@ -3,12 +3,8 @@
 # Example: name=$(first-of "$NICK" "$USER")
 set -eu
 
-first_of() {
 
-  if [ -n "$1" ]; then printf '%s' "$1"
-  elif [ -n "$2" ]; then printf '%s' "$2"
-  else return 1
-  fi
-}
-
-first_of "$@"
+if [ -n "$1" ]; then printf '%s' "$1"
+elif [ -n "$2" ]; then printf '%s' "$2"
+else return 1
+fi

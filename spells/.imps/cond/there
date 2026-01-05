@@ -5,8 +5,5 @@
 # Note: No set -eu because this is a conditional imp (returns exit codes for flow control)
 
 
-there() {
-  [ -e "$1" ]
-}
+[ -e "$1" ]
 
-there "$@"

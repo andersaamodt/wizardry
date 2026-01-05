@@ -2,8 +2,5 @@
 # exit-label - return the label for menu exit items
 # Example: exit_item="$(exit-label)%kill -TERM \$PPID"
 
-exit_label() {
-  printf '%s' "Exit"
-}
+printf '%s' "Exit"
 
-exit_label "$@"

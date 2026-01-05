@@ -5,18 +5,14 @@
 
 set -eu
 
-heading_section() {
 
-  text=${1-}
+text=${1-}
 
-  # Use colors if supported
-  if [ -t 1 ] && command -v tput >/dev/null 2>&1 && tput setaf 1 >/dev/null 2>&1; then
-    bold=$(tput bold 2>/dev/null || true)
-    reset=$(tput sgr0 2>/dev/null || true)
-    printf '%s--- %s ---%s\n' "$bold" "$text" "$reset"
-  else
-    printf -- '--- %s ---\n' "$text"
-  fi
-}
-
-heading_section "$@"
+# Use colors if supported
+if [ -t 1 ] && command -v tput >/dev/null 2>&1 && tput setaf 1 >/dev/null 2>&1; then
+  bold=$(tput bold 2>/dev/null || true)
+  reset=$(tput sgr0 2>/dev/null || true)
+  printf '%s--- %s ---%s\n' "$bold" "$text" "$reset"
+else
+  printf -- '--- %s ---\n' "$text"
+fi

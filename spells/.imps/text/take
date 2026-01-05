@@ -3,9 +3,5 @@
 # Example: take 5 file.txt   # first 5 lines
 set -eu
 
-take() {
 
-  if [ "$#" -ge 2 ]; then head -n "$1" "$2"; else head -n "$1"; fi
-}
-
-take "$@"
+if [ "$#" -ge 2 ]; then head -n "$1" "$2"; else head -n "$1"; fi

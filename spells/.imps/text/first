@@ -3,9 +3,5 @@
 # Examples: ls | first   # or: first /etc/passwd
 set -eu
 
-first() {
 
-  if [ "$#" -ge 1 ]; then head -n 1 "$1"; else head -n 1; fi
-}
-
-first "$@"
+if [ "$#" -ge 1 ]; then head -n 1 "$1"; else head -n 1; fi

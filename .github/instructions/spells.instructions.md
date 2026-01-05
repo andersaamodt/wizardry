@@ -29,17 +29,13 @@ See `.github/instructions/tests.instructions.md` for test patterns.
 # Brief description of what this spell does.
 # Additional context (optional second line).
 
-show_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE'
 Usage: spell-name [options] [arguments]
 
 Description of what the spell does and how to use it.
 USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-  show_usage
   exit 0
   ;;
 esac
@@ -57,7 +53,7 @@ set -eu
 
 ## Recommended Elements
 
-1. **`show_usage()` function** with single-quoted heredoc `'USAGE'`
+1. **Inline help handler** with heredoc (no function)
 2. **Help handler** before `set -eu` for `--help`, `--usage`, `-h`
 
 ## Code Style
@@ -83,13 +79,14 @@ my-function() { ... }
 ```
 
 **Convention**:  📐
-- **Spells**: Use `snake_case` for all internal functions
-- **Imps**: Use underscore-prefixed `_snake_case` for "true name" functions (e.g., `_nix_shell_add`)
+- **Spells**: Use `snake_case` for helper functions (when needed)
+- **Imps**: Are flat scripts with NO functions - they execute directly
 
 **Rationale**:
-- `snake_case` is the dominant convention in POSIX shell
-- Underscore prefix is reserved for imp "true names" to distinguish from public hyphenated aliases
+- `snake_case` is the dominant convention in POSIX shell for helper functions
+- Imps are now flat, linear scripts without function wrappers
 - Consistent naming makes code easier to read and maintain
+- Helper functions should be minimal - more than 1 helper function requires documentation in EXEMPTIONS.md
 
 ### Variables
 ```sh

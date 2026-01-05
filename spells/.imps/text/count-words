@@ -4,26 +4,22 @@
 
 set -eu
 
-count_words() {
-  # If argument provided, use it; otherwise read from stdin
-  if [ $# -gt 0 ]; then
-    text=${1-}
-  else
-    # Read from stdin
-    text=$(cat)
-  fi
-  
-  # Handle empty input
-  if [ -z "$text" ]; then
-    printf '0\n'
-    return 0
-  fi
-  
-  # Trim leading/trailing whitespace and count words
-  # Use set -- to split text into positional parameters
-  # shellcheck disable=SC2086
-  set -- $text
-  printf '%d\n' "$#"
-}
+# If argument provided, use it; otherwise read from stdin
+if [ $# -gt 0 ]; then
+  text=${1-}
+else
+  # Read from stdin
+  text=$(cat)
+fi
 
-count_words "$@"
+# Handle empty input
+if [ -z "$text" ]; then
+  printf '0\n'
+  return 0
+fi
+
+# Trim leading/trailing whitespace and count words
+# Use set -- to split text into positional parameters
+# shellcheck disable=SC2086
+set -- $text
+printf '%d\n' "$#"

@@ -8,81 +8,78 @@
 
 set -eu
 
-autocast() {
 
-    _autocast_name=${1:-}
-    [ "$#" -gt 0 ] && shift  # Remove first arg if present
-  
-    # Try to detect spell name if not provided
-    if [ -z "$_autocast_name" ]; then
-      _autocast_name=${0##*/}  # Equivalent to basename, avoids external command
-    fi
-  
-    # Detect if being executed vs sourced
-    _autocast_executed=0
-    _autocast_base=${0##*/}
-    case "$_autocast_base" in
-      sh|dash|bash|zsh|ksh|mksh)
-        _autocast_executed=0  # sourced
-        # When sourced, basename might be shell name, try to find actual function
-        if [ -z "$_autocast_name" ] || [ "$_autocast_name" = "$_autocast_base" ]; then
-          # Try common function name patterns based on caller's file name
-          # Check if any snake_case function exists that isn't internal
-          _autocast_name=""
-          _autocast_func=""
-        fi
-        ;;
-      *)
-        # Check if executed directly
-        if [ "$_autocast_base" = "$_autocast_name" ]; then
-          _autocast_executed=1
-        else
-          _autocast_executed=0  # sourced from another script
-        fi
-        ;;
-    esac
-  
-    # Determine function name to call
-    _autocast_func=""
-    if [ -n "$_autocast_name" ]; then
-      # Convert hyphenated spell name to underscored function name (pure shell)
-      _autocast_func="$_autocast_name"
-      _autocast_i=0
-      while [ "$_autocast_i" -lt 20 ]; do
-        case "$_autocast_func" in
-          *-*)
-            _autocast_func="${_autocast_func%%-*}_${_autocast_func#*-}"
-            _autocast_i=$((_autocast_i + 1))
-            ;;
-          *)
-            break
-            ;;
-        esac
-      done
-    fi
-  
-    # If we don't have a function name yet, we're being sourced without explicit name
-    # The spell should have defined its true-name function already
-    # Just return silently - this is fine for spells that don't follow autocast pattern
-    if [ -z "$_autocast_func" ]; then
-      return 0
-    fi
-  
-    # If executed directly, call the function with remaining arguments
-    if [ "$_autocast_executed" -eq 1 ]; then
-      if command -v "$_autocast_func" >/dev/null 2>&1; then
-        "$_autocast_func" "$@"
+  _autocast_name=${1:-}
+  [ "$#" -gt 0 ] && shift  # Remove first arg if present
+
+  # Try to detect spell name if not provided
+  if [ -z "$_autocast_name" ]; then
+    _autocast_name=${0##*/}  # Equivalent to basename, avoids external command
+  fi
+
+  # Detect if being executed vs sourced
+  _autocast_executed=0
+  _autocast_base=${0##*/}
+  case "$_autocast_base" in
+    sh|dash|bash|zsh|ksh|mksh)
+      _autocast_executed=0  # sourced
+      # When sourced, basename might be shell name, try to find actual function
+      if [ -z "$_autocast_name" ] || [ "$_autocast_name" = "$_autocast_base" ]; then
+        # Try common function name patterns based on caller's file name
+        # Check if any snake_case function exists that isn't internal
+        _autocast_name=""
+        _autocast_func=""
+      fi
+      ;;
+    *)
+      # Check if executed directly
+      if [ "$_autocast_base" = "$_autocast_name" ]; then
+        _autocast_executed=1
       else
-        # Function not found - this is an error when executed
-        printf '%s\n' "autocast: function $_autocast_func not found" >&2
-        return 2
+        _autocast_executed=0  # sourced from another script
       fi
+      ;;
+  esac
+
+  # Determine function name to call
+  _autocast_func=""
+  if [ -n "$_autocast_name" ]; then
+    # Convert hyphenated spell name to underscored function name (pure shell)
+    _autocast_func="$_autocast_name"
+    _autocast_i=0
+    while [ "$_autocast_i" -lt 20 ]; do
+      case "$_autocast_func" in
+        *-*)
+          _autocast_func="${_autocast_func%%-*}_${_autocast_func#*-}"
+          _autocast_i=$((_autocast_i + 1))
+          ;;
+        *)
+          break
+          ;;
+      esac
+    done
+  fi
+
+  # If we don't have a function name yet, we're being sourced without explicit name
+  # The spell should have defined its true-name function already
+  # Just return silently - this is fine for spells that don't follow autocast pattern
+  if [ -z "$_autocast_func" ]; then
+    return 0
+  fi
+
+  # If executed directly, call the function with remaining arguments
+  if [ "$_autocast_executed" -eq 1 ]; then
+    if command -v "$_autocast_func" >/dev/null 2>&1; then
+      "$_autocast_func" "$@"
     else
-      # If sourced, automatically call the function (this is what makes it "autocast")
-      # Only call if function exists - silently skip if not
-      if command -v "$_autocast_func" >/dev/null 2>&1; then
-        "$_autocast_func" "$@"
-      fi
+      # Function not found - this is an error when executed
+      printf '%s\n' "autocast: function $_autocast_func not found" >&2
+      return 2
     fi
-}
-autocast "$@"
+  else
+    # If sourced, automatically call the function (this is what makes it "autocast")
+    # Only call if function exists - silently skip if not
+    if command -v "$_autocast_func" >/dev/null 2>&1; then
+      "$_autocast_func" "$@"
+    fi
+  fi

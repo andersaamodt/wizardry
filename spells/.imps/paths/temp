@@ -3,10 +3,6 @@
 # Example: f=$(temp myapp) && echo "content" > "$f"
 set -eu
 
-temp() {
 
-  _temp_prefix=${1:-wizardry}
-  mktemp "${TMPDIR:-/tmp}/${_temp_prefix}.XXXXXX"
-}
-
-temp "$@"
+_temp_prefix=${1:-wizardry}
+mktemp "${TMPDIR:-/tmp}/${_temp_prefix}.XXXXXX"

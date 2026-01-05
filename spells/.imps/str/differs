@@ -3,9 +3,5 @@
 # Example: differs "$old" "$new" && update
 set -eu
 
-differs() {
 
-  [ "$1" != "$2" ]
-}
-
-differs "$@"
+[ "$1" != "$2" ]

@@ -3,11 +3,8 @@
 # Returns 0 if pbcopy, xsel, xclip, or wl-copy is available
 
 
-clipboard_available() {
-  command -v pbcopy >/dev/null 2>&1 || \
-  command -v xsel >/dev/null 2>&1 || \
-  command -v xclip >/dev/null 2>&1 || \
-  command -v wl-copy >/dev/null 2>&1
-}
+command -v pbcopy >/dev/null 2>&1 || \
+command -v xsel >/dev/null 2>&1 || \
+command -v xclip >/dev/null 2>&1 || \
+command -v wl-copy >/dev/null 2>&1
 
-clipboard_available "$@"

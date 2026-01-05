@@ -4,11 +4,7 @@
 
 set -eu
 
-step() {
-  _step_level=${WIZARDRY_LOG_LEVEL:-0}
-  if [ "$_step_level" -ge 1 ]; then
-    printf '%s\n' "$*"
-  fi
-}
-
-step "$@"
+_step_level=${WIZARDRY_LOG_LEVEL:-0}
+if [ "$_step_level" -ge 1 ]; then
+  printf '%s\n' "$*"
+fi

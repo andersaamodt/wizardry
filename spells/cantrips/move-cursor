@@ -2,84 +2,23 @@
 
 # This spell moves the cursor to the provided column (x) and row (y).
 
-case "${1-}" in
---help|--usage|-h)
-  cat <<'USAGE' >&2
-Usage: move-cursor <x> <y>
 
-Moves the terminal cursor to the requested column and row using ANSI escapes, clamping any zero or negative values to the first position.
-USAGE
-  exit 0
-  ;;
-esac
 
 # Use conditional strictness based on execution context
 # See .github/CODE_POLICY_SET_EU.md for details
-case "$0" in
-  */move-cursor)
-    # Executed as script - use full strict mode
-    set -eu
-    ;;
-  *)
-    # Called as function (sourced) - only undefined variable protection
-    # This prevents interactive shell exit while maintaining safety
-    set -u
-    ;;
-esac
 
-if [ "$#" -ne 2 ]; then
-    cat <<'USAGE' >&2
-Usage: move-cursor <x> <y>
 
-Moves the terminal cursor to the requested column and row using ANSI escapes, clamping any zero or negative values to the first position.
-USAGE
-    exit 2
-fi
 
-x=$1
-y=$2
 
-supports_cursor_positioning() {
-    case ${TERM-} in
-        ''|dumb|unknown)
-            return 1
-            ;;
-    esac
-    return 0
-}
 
 # Validate that both coordinates are purely numeric.
-case "$x" in
-    *[!0-9]*)
-        fail "move-cursor: invalid column '$x'" || exit 1
-        ;;
-    *) : ;;
-esac
 
-case "$y" in
-    *[!0-9]*)
-        fail "move-cursor: invalid row '$y'" || exit 1
-        ;;
-    *) : ;;
-esac
 
 # ANSI escape sequences count from 1, so reject zero values early.
 # The original menu spell passed 0 for the column. Treat that as a request to
 # return to the first column so older spells continue to work. Clamp the row as
 # well so callers that miscalculate never request an invalid position.
-if [ "$x" -le 0 ]; then
-    x=1
-fi
 
-if [ "$y" -le 0 ]; then
-    y=1
-fi
 
-if ! supports_cursor_positioning; then
-    # Skip emitting escape sequences when the terminal refuses them so menu
-    # helpers degrade gracefully.
-    exit 0
-fi
 
 # Emit the escape sequence that repositions the cursor.
-printf '\033[%s;%sH' "$y" "$x"

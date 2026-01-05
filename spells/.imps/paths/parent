@@ -3,13 +3,9 @@
 # Example: dir=$(parent /path/to/file.txt)  # outputs: /path/to
 set -eu
 
-parent() {
 
-  _par_path=$1
-  case "$_par_path" in
-    */*) printf '%s\n' "${_par_path%/*}" ;;
-    *)   printf '%s\n' "." ;;
-  esac
-}
-
-parent "$@"
+_par_path=$1
+case "$_par_path" in
+  */*) printf '%s\n' "${_par_path%/*}" ;;
+  *)   printf '%s\n' "." ;;
+esac

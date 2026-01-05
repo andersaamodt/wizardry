@@ -4,24 +4,21 @@
 # Example: parse false or echo fallback
 
 
-or() {
-  _or_cmd=${1:-}
-  _or_cmd_args=${2:-}
-  shift 2 2>/dev/null || shift $#
+_or_cmd=${1:-}
+_or_cmd_args=${2:-}
+shift 2 2>/dev/null || shift $#
 
-  if [ -n "$_or_cmd" ]; then
-    # shellcheck disable=SC2086
-    if "$_or_cmd" $_or_cmd_args; then
-      return 0
-    fi
+if [ -n "$_or_cmd" ]; then
+  # shellcheck disable=SC2086
+  if "$_or_cmd" $_or_cmd_args; then
+    return 0
   fi
+fi
 
-  if [ $# -eq 0 ]; then
-    return 1
-  fi
+if [ $# -eq 0 ]; then
+  return 1
+fi
 
-  _or_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  "$_or_lex_dir/parse" "$@"
-}
+_or_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+"$_or_lex_dir/parse" "$@"
 
-or "$@"

@@ -3,9 +3,5 @@
 # Example: has git || fail "git required"
 set -eu
 
-fail() {
-  printf '%s\n' "$*" >&2
-  return 1
-}
-
-fail "$@"
+printf '%s\n' "$*" >&2
+return 1

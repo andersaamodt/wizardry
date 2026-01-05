@@ -4,38 +4,34 @@
 
 set -eu
 
-tilde_path() {
 
-  # Require exactly one argument
-  if [ "$#" -ne 1 ]; then
-    printf 'tilde-path: exactly one argument required\n' >&2
-    return 1
-  fi
+# Require exactly one argument
+if [ "$#" -ne 1 ]; then
+  printf 'tilde-path: exactly one argument required\n' >&2
+  return 1
+fi
 
-  _tp_path=$1
+_tp_path=$1
 
-  # If HOME is not set, return the path unchanged
-  if [ -z "${HOME-}" ]; then
+# If HOME is not set, return the path unchanged
+if [ -z "${HOME-}" ]; then
+  printf '%s' "$_tp_path"
+  return 0
+fi
+
+# Check if path is under HOME
+case "$_tp_path" in
+  "$HOME")
+    # Exact match to HOME
+    printf '~'
+    ;;
+  "$HOME"/*)
+    # Path under HOME - replace HOME with ~
+    _tp_rel=${_tp_path#"$HOME"/}
+    printf '~/%s' "$_tp_rel"
+    ;;
+  *)
+    # Not under HOME - return unchanged
     printf '%s' "$_tp_path"
-    return 0
-  fi
-
-  # Check if path is under HOME
-  case "$_tp_path" in
-    "$HOME")
-      # Exact match to HOME
-      printf '~'
-      ;;
-    "$HOME"/*)
-      # Path under HOME - replace HOME with ~
-      _tp_rel=${_tp_path#"$HOME"/}
-      printf '~/%s' "$_tp_rel"
-      ;;
-    *)
-      # Not under HOME - return unchanged
-      printf '%s' "$_tp_path"
-      ;;
-  esac
-}
-
-tilde_path "$@"
+    ;;
+esac

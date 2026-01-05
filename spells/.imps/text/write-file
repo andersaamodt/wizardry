@@ -3,9 +3,5 @@
 # Example: echo "hello" | write-file output.txt
 set -eu
 
-write_file() {
 
-  cat > "$1"
-}
-
-write_file "$@"
+cat > "$1"

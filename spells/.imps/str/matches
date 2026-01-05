@@ -3,9 +3,5 @@
 # Example: matches "^ID=nixos" /etc/os-release && echo "NixOS detected"
 set -eu
 
-matches() {
 
-  grep -q -- "$1" "$2" 2>/dev/null
-}
-
-matches "$@"
+grep -q -- "$1" "$2" 2>/dev/null

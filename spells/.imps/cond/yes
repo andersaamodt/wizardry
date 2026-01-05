@@ -5,11 +5,8 @@
 # Note: No set -eu because this is a conditional imp (returns exit codes for flow control)
 
 
-yes() {
-  case "$1" in
-    y|Y|yes|YES|Yes|true|TRUE|True|1) return 0 ;;
-    *) return 1 ;;
-  esac
-}
+case "$1" in
+  y|Y|yes|YES|Yes|true|TRUE|True|1) return 0 ;;
+  *) return 1 ;;
+esac
 
-yes "$@"

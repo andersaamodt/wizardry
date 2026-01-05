@@ -4,14 +4,10 @@
 
 set -eu
 
-ensure_parent_dir() {
 
-  _epd_file=${1-}
-  _epd_dir=${_epd_file%/*}
+_epd_file=${1-}
+_epd_dir=${_epd_file%/*}
 
-  if [ "$_epd_dir" != "$_epd_file" ] && [ ! -d "$_epd_dir" ]; then
-    mkdir -p "$_epd_dir"
-  fi
-}
-
-ensure_parent_dir "$@"
+if [ "$_epd_dir" != "$_epd_file" ] && [ ! -d "$_epd_dir" ]; then
+  mkdir -p "$_epd_dir"
+fi

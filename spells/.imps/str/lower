@@ -3,9 +3,5 @@
 # Example: echo "HELLO" | lower
 set -eu
 
-lower() {
 
-  tr '[:upper:]' '[:lower:]'
-}
-
-lower "$@"
+tr '[:upper:]' '[:lower:]'

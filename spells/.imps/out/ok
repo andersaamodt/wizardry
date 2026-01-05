@@ -3,9 +3,5 @@
 # Example: ok mkdir -p /tmp/test && echo "created"
 set -eu
 
-ok() {
 
-  "$@" >/dev/null 2>&1
-}
-
-ok "$@"
+"$@" >/dev/null 2>&1

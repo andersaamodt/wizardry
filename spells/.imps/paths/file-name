@@ -3,9 +3,5 @@
 # Example: name=$(file-name /path/to/file.txt)  # outputs: file.txt
 set -eu
 
-file_name() {
 
-  printf '%s\n' "${1##*/}"
-}
-
-file_name "$@"
+printf '%s\n' "${1##*/}"

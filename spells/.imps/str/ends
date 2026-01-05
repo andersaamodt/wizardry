@@ -3,12 +3,8 @@
 # Example: ends "$file" ".sh" && echo "shell script"
 set -eu
 
-ends() {
 
-  case "$1" in
-    *"$2") return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
-ends "$@"
+case "$1" in
+  *"$2") return 0 ;;
+  *) return 1 ;;
+esac

@@ -3,9 +3,5 @@
 # Examples: now | now %Y-%m-%d | now %H:%M:%S
 set -eu
 
-now() {
 
-  date "+${1:-%s}" 2>/dev/null || printf '%s' "$$"
-}
-
-now "$@"
+date "+${1:-%s}" 2>/dev/null || printf '%s' "$$"
