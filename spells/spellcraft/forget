@@ -20,6 +20,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 # Helper for reading non-empty lines
 

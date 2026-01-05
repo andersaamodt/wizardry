@@ -678,6 +678,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 # Add imps to PATH for spell demonstrations
 if [ -n "${WIZARDRY_DIR-}" ]; then

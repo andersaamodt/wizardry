@@ -833,6 +833,7 @@ divination/identify-room
 system/update-all
 system/test-magic
 system/banish
+spellcraft/demo-magic
 "
   
   check_function_discipline() {
@@ -1114,6 +1115,7 @@ test_spells_have_limited_flags() {
   # Must be documented in EXEMPTIONS.md with justification
   exempted_spells="
     system/test-magic
+    system/pocket-dimension
   "
   
   tmpfile_2=$(mktemp "${WIZARDRY_TMPDIR}/flag-warn-2.XXXXXX")
@@ -1348,7 +1350,7 @@ test_no_allcaps_variable_assignments() {
       grep -v -E '(export|PATH=|HOME=|IFS=|CDPATH=|TMPDIR=|USER=|SHELL=|TERM=|LANG=)' | \
       grep -v -E '(NIX_PACKAGE|APT_PACKAGE|DNF_PACKAGE|YUM_PACKAGE|ZYPPER_PACKAGE|PACMAN_PACKAGE|APK_PACKAGE|PKGIN_PACKAGE|BREW_PACKAGE)' | \
       grep -v -E '(WIZARDRY_|SPELLBOOK_DIR|MUD_DIR|TEST_|REAL_SUDO_BIN|ASSUME_YES|FORCE_INSTALL|ROOT_DIR|DISTRO)' | \
-      grep -v -E '(AWAIT_KEYPRESS_KEEP_RAW|BWRAP_|SANDBOX_|MACOS_)' | \
+      grep -v -E '(AWAIT_KEYPRESS_|BWRAP_|SANDBOX_|MACOS_)' | \
       grep -v -E '(ASK_CANTRIP_INPUT|CHOOSE_INPUT_MODE|MENU_LOOP_LIMIT|REQUIRE_COMMAND|MENU_LOG)' | \
       grep -v -E '(RESET|BOLD|ITALICS|UNDERLINED|BLINK|INVERT|STRIKE|ESC)' | \
       grep -v -E '(RED|GREEN|BLUE|YELLOW|CYAN|WHITE|BLACK|PURPLE|GRE[YA]|LIGHT_)' | \
@@ -1403,7 +1405,7 @@ test_scripts_have_set_eu_early() {
       # Conditional imps exempt (return exit codes, not errors)
       .imps/cond/*|.imps/lex/*|.imps/menu/*) return ;;
       # Bootstrap spells that have long argument parsing before set
-      divination/detect-rc-file|system/test-magic) return ;;
+      divination/detect-rc-file|system/test-magic|spellcraft/demo-magic) return ;;
     esac
     
     # In compiled mode, wrapper functions are unwrapped so set may appear later
@@ -1511,14 +1513,6 @@ test_spells_source_env_clear_after_set_eu() {
       system/banish|spellcraft/compile-spell|spellcraft/doppelganger) return ;;
       # Scripts that need PATH setup before env-clear to find it
       system/test-magic|system/test-spell|system/verify-posix|spellcraft/lint-magic|enchant/enchant) return ;;
-      # Spells using wrapper function pattern (set -eu inside function for sourceable spells)
-      priorities/get-priority|priorities/prioritize|priorities/upvote|priorities/get-new-priority) return ;;
-      arcane/copy|arcane/file-list|arcane/forall|arcane/jump-trash|arcane/read-magic|arcane/trash) return ;;
-      psi/list-contacts|psi/read-contact) return ;;
-      crypto/evoke-hash|crypto/hash|crypto/hashchant) return ;;
-      translocation/enchant-portkey|translocation/follow-portkey|translocation/jump-to-marker) return ;;
-      translocation/mark-location|translocation/open-portal|translocation/open-teletype) return ;;
-      menu/system-menu) return ;;
     esac
     
     # Find line number of set -eu

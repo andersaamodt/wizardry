@@ -305,7 +305,7 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 
 **Rule**: Spells should have no more than 3 flags (0-1 freely, 2-3 with warnings, 4+ requires exemption).
 
-**Status**: 1 exemption documented
+**Status**: 2 exemptions documented
 
 **Exempted Spells**:
 - **`system/test-magic`** (4 flags: `--only`, `--list`, `--verbose`, `--profile`) - Test runner with multiple operational modes
@@ -317,6 +317,17 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
     - `--profile`: Show timing information for test optimization (performance analysis)
   - **Justification**: Each flag serves a distinct operational mode for the test infrastructure. Combining or removing any would reduce testing flexibility and make debugging/optimization harder.
   - **Added**: 2025-12-22 - When profiling feature was added to help optimize test suite performance
+
+- **`system/pocket-dimension`** (5 flags: `--check`, `--keep`, `--network`, `--allow-read`, `--allow-write`) - Sandboxing/isolation infrastructure
+  - **Reason**: Security and isolation infrastructure spell that needs multiple configuration options
+  - **Flags**:
+    - `--check`: Verify sandboxing capabilities (pre-flight check)
+    - `--keep`: Preserve sandbox directory for debugging (troubleshooting aid)
+    - `--network MODE`: Network isolation mode - open/observe/closed (security control)
+    - `--allow-read PATH`: Whitelist read access (repeatable, security control)
+    - `--allow-write PATH`: Whitelist write access (repeatable, security control)
+  - **Justification**: Sandboxing requires fine-grained security controls. Each flag serves a distinct security or debugging purpose. Removing any would compromise either security granularity or debuggability.
+  - **Added**: 2026-01-05 - When reviewing flag discipline compliance
 
 **Progress**: 57/57 spells refactored (100%) - 3 spells removed as obsolete
 
@@ -352,32 +363,7 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 
 ---
 
-## 7. Word-of-Binding / Wrapper Function Exemptions
-
-### Spells Without Wrapper Functions
-
-**Rule**: All spells must have a wrapper function matching their filename (the "incantation") for word-of-binding compatibility. This enables sourcing spells into the shell for efficient invocation.
-
-**Exempted Categories**:
-
-1. **Arcana spells** (`spells/.arcana/*`)
-   - **Reason**: Arcana are installation and configuration scripts that are meant to be executed, not sourced. They manage system-level software installation and are not typically called from other spells.
-   - **Status**: Wrapper functions not required for arcana
-
-2. **Source-only spells** (`cantrips/colors`)
-   - **Reason**: These spells are designed to be sourced (not executed) to set environment variables in the current shell. Wrapping them in a function would make the variables local to that function and inaccessible to the calling shell.
-   - **Status**: Wrapper functions incompatible with sourcing behavior
-   - **Example**: `colors` sets `RED`, `GREEN`, `RESET`, etc. as shell variables
-
-**Test**: `test_spells_require_wrapper_functions` in `.tests/common-tests.sh`
-
-**Implementation**: The test excludes paths matching `*/.arcana/*` and `cantrips/colors` from the wrapper function requirement.
-
-**Future**: If specific arcana need to be sourceable (e.g., for testing or composition), they can be updated individually.
-
----
-
-## 8. All-Caps Variable Assignments (Environment Variable Overrides)
+## 7. All-Caps Variable Assignments (Environment Variable Overrides)
 
 ### Policy
 
@@ -554,8 +540,10 @@ fi
 **Allowed**: Configuration variables for interactive cantrips.
 
 - `AWAIT_KEYPRESS_KEEP_RAW` — Don't restore terminal after keypress (for chaining)
+- `AWAIT_KEYPRESS_BUFFER_FILE` — File path for buffering keypress output
+- `AWAIT_KEYPRESS_DEVICE` — Terminal device to use for input (override /dev/tty)
 
-**Context**: Used by `await-keypress` for terminal state management.
+**Context**: Used by `await-keypress` and interactive menu spells for terminal state management and I/O configuration.
 
 #### 11. Internal Spell Loading Variables
 
@@ -724,7 +712,7 @@ This section documents all exemptions that have been successfully resolved. Item
 
 ---
 
-## 9. Flat-File Paradigm Exemptions (2026-01-05)
+## 8. Flat-File Paradigm Exemptions (2026-01-05)
 
 ### New Requirement: Maximum 1 Function in Spells, 0 in Imps
 
@@ -764,6 +752,7 @@ The following spells are temporarily exempted while being refactored:
 20. **system/update-all** - System update orchestration
 21. **system/test-magic** - Test runner infrastructure (4 flags exemption)
 22. **system/banish** - Uninstallation script
+23. **spellcraft/demo-magic** - Demonstration spell with extensive functions
 
 ### Exempted Test Imps
 

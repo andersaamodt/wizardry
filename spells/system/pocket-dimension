@@ -22,6 +22,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
   check_only=0
   keep_pocket=0

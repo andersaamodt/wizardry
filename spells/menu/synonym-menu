@@ -9,6 +9,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
   
   # Catch Ctrl-C and TERM signal to return cleanly

@@ -34,6 +34,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 command="${1-}"
 

@@ -15,6 +15,7 @@ case "${1-}" in
 esac
 
 set -eu
+. env-clear
 
 # Helper to run commands with privilege escalation if needed
 install_service_template_require_privilege() {

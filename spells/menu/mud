@@ -13,6 +13,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 # Catch Ctrl-C and TERM signal to exit 1 cleanly
 trap 'exit 0' INT TERM

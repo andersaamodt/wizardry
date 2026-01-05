@@ -14,6 +14,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 # Load color palette (colors handles terminal capability detection internally).
 # When colors is preloaded as a function, call it directly; otherwise source the file.

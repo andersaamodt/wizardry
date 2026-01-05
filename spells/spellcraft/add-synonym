@@ -24,6 +24,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
   # Parse arguments
   synonym_word=""

@@ -16,6 +16,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 # Try to resolve rc file using same logic as cd spell
 rc_file=''

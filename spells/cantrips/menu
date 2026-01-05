@@ -24,6 +24,7 @@ esac
 # Use conditional strictness based on execution context
 # See .github/CODE_POLICY_SET_EU.md for details
 set -eu
+. env-clear
 
 # Wrapper functions for helper commands
 # Only define if the underlying command is available

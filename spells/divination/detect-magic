@@ -18,6 +18,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 script_dir=$(cd "$(dirname "$0")" && pwd -P)
 

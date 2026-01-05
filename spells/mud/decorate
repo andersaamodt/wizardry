@@ -15,6 +15,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 if ! command -v enchant >/dev/null 2>&1; then
         printf '%s\n' "decorate: enchant spell is missing." >&2
