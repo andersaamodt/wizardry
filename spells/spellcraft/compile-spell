@@ -49,30 +49,29 @@ fi
 
 set -eu
 
-# Source env_clear if not already available
-if ! command -v env_clear >/dev/null 2>&1; then
-  if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/env-clear" ]; then
-    . "${WIZARDRY_DIR}/spells/.imps/sys/env-clear"
-  else
-    _cs_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-    . "$_cs_script_dir/../../.imps/sys/env-clear"
-  fi
-fi
-
-# Source output imps (say, warn, die, etc.)
-if [ -n "${WIZARDRY_DIR-}" ] && [ -d "${WIZARDRY_DIR}/spells/.imps/out" ]; then
-  for _cs_out_imp in "${WIZARDRY_DIR}"/spells/.imps/out/*; do
-    [ -f "$_cs_out_imp" ] && . "$_cs_out_imp"
-  done
-else
-  _cs_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  for _cs_out_imp in "$_cs_script_dir"/../../.imps/out/*; do
-    [ -f "$_cs_out_imp" ] && . "$_cs_out_imp"
-  done
+# Add imp directories to PATH so we can call imps as commands
+if [ -n "${WIZARDRY_DIR-}" ]; then
+  PATH="${WIZARDRY_DIR}/spells/.imps/out:${PATH}"
+  PATH="${WIZARDRY_DIR}/spells/.imps/sys:${PATH}"
+  PATH="${WIZARDRY_DIR}/spells/.imps/fs:${PATH}"
+  export PATH
 fi
 
 if [ "$#" -lt 1 ]; then
-  compile_spell_usage >&2
+  cat <<'USAGE' >&2
+Usage: compile-spell <spell-name-or-path>
+
+Compile a spell into a standalone script by inlining all dependencies.
+The compiled spell can run without wizardry being installed.
+
+Arguments:
+  spell-name-or-path   Name of spell (e.g., "hash") or path (e.g., "spells/cantrips/hash")
+
+Examples:
+  compile-spell hash                      # Find by name
+  compile-spell spells/cantrips/hash      # Use path
+  compile-spell ./my-custom-spell         # Current directory
+USAGE
   exit 2
 fi
 

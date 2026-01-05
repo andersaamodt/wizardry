@@ -27,8 +27,10 @@ jobs:
           # Set wizardry directory
           export WIZARDRY_DIR="${{ github.workspace }}"
           
-          # Source invoke-wizardry to provide standard environment
-          . "${{ github.workspace }}/spells/.imps/sys/invoke-wizardry"
+          # Add necessary paths for doppelganger to work
+          export PATH="${{ github.workspace }}/spells/.imps/out:${PATH}"
+          export PATH="${{ github.workspace }}/spells/.imps/sys:${PATH}"
+          export PATH="${{ github.workspace }}/spells/spellcraft:${PATH}"
           
           # Call doppelganger to compile all spells
           "${{ github.workspace }}/spells/spellcraft/doppelganger" /tmp/wizardry-doppelganger
@@ -38,6 +40,9 @@ jobs:
           echo ""
           echo "=== Spells directory ==="
           ls -la /tmp/wizardry-doppelganger/spells/ | head -20
+          echo ""
+          echo "=== .wizardry directory ==="
+          ls -la /tmp/wizardry-doppelganger/spells/.wizardry/ 2>/dev/null || echo "No .wizardry directory"
       
       - name: Test doppelganger spells
         run: |

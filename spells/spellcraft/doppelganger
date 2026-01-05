@@ -48,10 +48,12 @@ fi
 
 # Add wizardry dirs to PATH so we can call say, warn, etc.
 if [ -n "${WIZARDRY_DIR-}" ]; then
+  PATH="${WIZARDRY_DIR}/spells/.imps/sys:${PATH}"
   PATH="${WIZARDRY_DIR}/spells/.imps/out:${PATH}"
   PATH="${WIZARDRY_DIR}/spells/spellcraft:${PATH}"
 else
   _dg_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  PATH="$_dg_script_dir/../../.imps/sys:${PATH}"
   PATH="$_dg_script_dir/../../.imps/out:${PATH}"
   PATH="$_dg_script_dir:${PATH}"
 fi
