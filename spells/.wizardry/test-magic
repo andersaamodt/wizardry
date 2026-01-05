@@ -635,16 +635,6 @@ test_common_tests() {
     fi
   fi
 
-  if [ "$level_total" -gt 0 ]; then
-    if [ "$level_fail" -eq 0 ]; then
-      printf '  %s✓%s Common Tests: %d/%d tests passed\n' "$_green" "$_reset" \
-        "$level_pass" "$level_total"
-    else
-      printf '  %s✗%s Common Tests: %d/%d tests passed (%d failed)\n' "$_red" "$_reset" \
-        "$level_pass" "$level_total" "$level_fail"
-    fi
-  fi
-
   total_pass=$((total_pass + level_pass))
   total_fail=$((total_fail + level_fail))
   total_skip=$((total_skip + level_skip))
@@ -652,6 +642,17 @@ test_common_tests() {
   # Close GitHub Actions log group if in CI
   if [ "${GITHUB_ACTIONS-}" = "true" ]; then
     printf '::endgroup::\n'
+  fi
+
+  # Print summary line outside the group (unindented) so it shows when collapsed
+  if [ "$level_total" -gt 0 ]; then
+    if [ "$level_fail" -eq 0 ]; then
+      printf '%s✓%s Common Tests: %d/%d tests passed\n' "$_green" "$_reset" \
+        "$level_pass" "$level_total"
+    else
+      printf '%s✗%s Common Tests: %d/%d tests passed (%d failed)\n' "$_red" "$_reset" \
+        "$level_pass" "$level_total" "$level_fail"
+    fi
   fi
 
   if [ "$level_fail" -gt 0 ]; then
@@ -806,12 +807,22 @@ test_level() {
     fi
   done
 
+  total_pass=$((total_pass + level_pass))
+  total_fail=$((total_fail + level_fail))
+  total_skip=$((total_skip + level_skip))
+
+  # Close GitHub Actions log group if in CI
+  if [ "${GITHUB_ACTIONS-}" = "true" ]; then
+    printf '::endgroup::\n'
+  fi
+
+  # Print summary line outside the group (unindented) so it shows when collapsed
   if [ "$level_total" -gt 0 ]; then
     if [ "$level_fail" -eq 0 ]; then
-      printf '  %s✓%s Level %d: %d/%d tests passed' "$_green" "$_reset" \
+      printf '%s✓%s Level %d: %d/%d tests passed' "$_green" "$_reset" \
         "$level" "$level_pass" "$level_total"
     else
-      printf '  %s✗%s Level %d: %d/%d tests passed (%d failed)' "$_red" "$_reset" \
+      printf '%s✗%s Level %d: %d/%d tests passed (%d failed)' "$_red" "$_reset" \
         "$level" "$level_pass" "$level_total" "$level_fail"
       failed_levels="${failed_levels:+$failed_levels }$level"
     fi
@@ -822,19 +833,10 @@ test_level() {
     fi
   else
     if [ "$level_skip" -gt 0 ]; then
-      printf '  No tests found (%d skipped)\n' "$level_skip"
+      printf 'No tests found (%d skipped)\n' "$level_skip"
     else
-      printf '  No tests found\n'
+      printf 'No tests found\n'
     fi
-  fi
-
-  total_pass=$((total_pass + level_pass))
-  total_fail=$((total_fail + level_fail))
-  total_skip=$((total_skip + level_skip))
-
-  # Close GitHub Actions log group if in CI
-  if [ "${GITHUB_ACTIONS-}" = "true" ]; then
-    printf '::endgroup::\n'
   fi
 
   return 0
