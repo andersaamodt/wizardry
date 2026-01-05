@@ -468,14 +468,14 @@ WRAPPER_EOF
     }
   ' | sed 's/[[:space:]]*$//')
 
-  # Extract test summary line for display
+  # Extract test summary line for display (now includes ✓/✗ icon from test-summary)
   test_summary_line=$(printf '%s\n' "$cleaned_output" | awk '
-    /^[0-9]+\/[0-9]+ tests passed/ { print; exit }
+    /^[✓✗] [0-9]+\/[0-9]+ tests passed/ { print; exit }
   ')
 
   counts=$(printf '%s\n' "$cleaned_output" | awk '
-    /^[0-9]+\/[0-9]+ tests passed/ {
-      split($1, parts, "/")
+    /^[✓✗] [0-9]+\/[0-9]+ tests passed/ {
+      split($2, parts, "/")
       passed += parts[1]
       total += parts[2]
       next
@@ -653,7 +653,7 @@ test_level() {
     if run_test_file "$test_path" "$spell"; then
       level_pass=$((level_pass + 1))
       if [ -n "$test_summary_line" ]; then
-        printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_summary_line"
+        printf '    %s%s%s\n' "$_green" "$test_summary_line" "$_reset"
       else
         printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_name"
       fi
@@ -661,7 +661,7 @@ test_level() {
       level_fail=$((level_fail + 1))
       failed_tests="${failed_tests:+$failed_tests }$test_name"
       if [ -n "$test_summary_line" ]; then
-        printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_summary_line"
+        printf '    %s%s%s\n' "$_red" "$test_summary_line" "$_reset"
       else
         printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_name"
       fi
@@ -705,7 +705,7 @@ test_level() {
     if run_test_file "$test_path" "$imp"; then
       level_pass=$((level_pass + 1))
       if [ -n "$test_summary_line" ]; then
-        printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_summary_line"
+        printf '    %s%s%s\n' "$_green" "$test_summary_line" "$_reset"
       else
         printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_name"
       fi
@@ -713,7 +713,7 @@ test_level() {
       level_fail=$((level_fail + 1))
       failed_tests="${failed_tests:+$failed_tests }$test_name"
       if [ -n "$test_summary_line" ]; then
-        printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_summary_line"
+        printf '    %s%s%s\n' "$_red" "$test_summary_line" "$_reset"
       else
         printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_name"
       fi
