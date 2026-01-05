@@ -16,17 +16,7 @@ esac
 
 # Use conditional strictness based on execution context
 # See .github/CODE_POLICY_SET_EU.md for details
-case "$0" in
-  */await-keypress)
-    # Executed as script - use full strict mode
-    set -eu
-    ;;
-  *)
-    # Called as function (sourced) - only undefined variable protection
-    # This prevents interactive shell exit while maintaining safety
-    set -u
-    ;;
-esac
+set -eu
 
 # Prefer preloaded imp functions (underscore form) when available.
 await_keypress_temp_file() {

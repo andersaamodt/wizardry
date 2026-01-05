@@ -18,17 +18,7 @@ esac
 
 # Use conditional strictness based on execution context
 # See .github/CODE_POLICY_SET_EU.md for details
-case "$0" in
-  */fathom-cursor)
-    # Executed as script - use full strict mode
-    set -eu
-    ;;
-  *)
-    # Called as function (sourced) - only undefined variable protection
-    # This prevents interactive shell exit while maintaining safety
-    set -u
-    ;;
-esac
+set -eu
 
 # Resolve require-command location
 # Use command -v to find require-command when preloaded as a function
