@@ -378,7 +378,7 @@ WRAPPER_EOF
     }
     /^SKIP / { print "    " $0; fflush(); next }
     /^LACK / { print "    " $0; fflush(); next }
-    /^[0-9]+\/[0-9]+ tests passed/ { print "    " $0; fflush(); next }
+    /^[0-9]+\/[0-9]+ tests passed/ { next }
   '
 
   run_exit_file=$(temp-file test-run-exit) || return 1
