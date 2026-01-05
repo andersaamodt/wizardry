@@ -160,22 +160,13 @@ if [ -d "$repo_dir/.tests" ]; then
     2>/dev/null) || true
 fi
 
-# Copy spell-levels imp (required by test-magic) - compile it for standalone use
-say "Compiling spell-levels imp..."
+# Copy spell-levels imp (required by test-magic)
+# spell-levels is a simple data file, just copy it (compilation hangs due to self-reference)
+say "Copying spell-levels imp..."
 if [ -f "$repo_dir/spells/.imps/sys/spell-levels" ]; then
   mkdir -p "$output_dir/spells/.imps/sys"
-  # Compile spell-levels so it works standalone in the doppelganger
-  _dg_pwd=$(pwd -P)
-  cd "$repo_dir" || {
-    warn "doppelganger: failed to cd to $repo_dir for spell-levels"
-  }
-  if "$repo_dir/spells/spellcraft/compile-spell" "spells/.imps/sys/spell-levels" < /dev/null > "$output_dir/spells/.imps/sys/spell-levels" 2>&1; then
-    chmod +x "$output_dir/spells/.imps/sys/spell-levels"
-    cd "$_dg_pwd" || true
-  else
-    cd "$_dg_pwd" || true
-    warn "doppelganger: failed to compile spell-levels"
-  fi
+  cp "$repo_dir/spells/.imps/sys/spell-levels" "$output_dir/spells/.imps/sys/" 2>/dev/null || true
+  chmod +x "$output_dir/spells/.imps/sys/spell-levels" 2>/dev/null || true
 fi
 
 # Copy essential files (README, LICENSE, etc.) but skip .git and .github
