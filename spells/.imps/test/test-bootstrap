@@ -250,8 +250,7 @@ run_test_case() {
       report-result "$_test_index" "$_desc" 0
     else
       _status=$?
-      TEST_FAILURE_REASON="${TEST_FAILURE_REASON-test function failed}" \
-        report-result "$_test_index" "$_desc" "$_status"
+      report-result "$_test_index" "$_desc" "$_status" "${TEST_FAILURE_REASON-test function failed}"
     fi
   fi
 }
