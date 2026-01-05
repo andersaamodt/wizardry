@@ -19,13 +19,6 @@ fi
 
 case "${1-}" in
 --help|--usage|-h)
-  profile_tests_usage
-  exit 0
-  ;;
-esac
-
-case "${1-}" in
---help|--usage|-h)
   cat <<'USAGE'
 Usage: profile-tests [--only PATTERN] [--output FILE]
 
@@ -55,17 +48,6 @@ set -eu
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 root_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
 test_dir="$root_dir/.tests"
-
-# Helper function for pattern matching
-matches_pattern() {
-  [ "$#" -ge 2 ] || exit 1
-  _mp_path=$1
-  _mp_pattern=$2
-  case "$_mp_path" in
-    $_mp_pattern) exit 0 ;;
-    *) exit 1 ;;
-  esac
-}
 
 # Parse arguments
 only_pattern=""
@@ -100,9 +82,10 @@ if [ -n "$only_pattern" ]; then
     find "$test_dir" -type f \( -name 'test-*.sh' -o -name 'common-*.sh' \) | \
       while IFS= read -r test_path; do
         rel=${test_path#"$test_dir/"}
-        if matches_pattern "$rel" "$only_pattern"; then
-          printf '%s\n' "$test_path"
-        fi
+        # Inline pattern matching
+        case "$rel" in
+          $only_pattern) printf '%s\n' "$test_path" ;;
+        esac
       done | sort
   )
 else
@@ -165,68 +148,67 @@ avg_time=$(awk -v total="$total_time" -v count="$test_total" \
 passed=$(awk -F'|' '$2 == 0 { count++ } END { print count+0 }' "$tmpfile")
 failed=$(awk -F'|' '$2 != 0 { count++ } END { print count+0 }' "$tmpfile")
 
-# Generate report
-report() {
-  printf '=================================================\n'
-  printf 'Test Suite Performance Profile\n'
-  printf '=================================================\n'
-  printf '\n'
-  printf 'Summary:\n'
-  printf '  Total tests:     %d\n' "$test_total"
-  printf '  Passed:          %d\n' "$passed"
-  printf '  Failed:          %d\n' "$failed"
-  printf '  Total time:      %ss\n' "$total_time"
-  printf '  Average time:    %ss\n' "$avg_time"
-  printf '\n'
-  
-  # Show top 20 slowest tests
-  printf 'Top 20 Slowest Tests:\n'
-  printf '%-8s %-8s %s\n' 'TIME(s)' 'STATUS' 'TEST'
-  printf '%s\n' '-----------------------------------------------'
-  
-  printf '%s\n' "$sorted_results" | head -20 | while IFS='|' read -r duration status path; do
-    status_str="PASS"
-    [ "$status" -ne 0 ] && status_str="FAIL"
-    printf '%-8s %-8s %s\n' "$duration" "$status_str" "$path"
-  done
-  
-  printf '\n'
-  
-  # Show distribution by time ranges
-  printf 'Time Distribution:\n'
-  
-  under_01=$(awk -F'|' '$1 < 0.1 { count++ } END { print count+0 }' "$tmpfile")
-  range_01_05=$(awk -F'|' '$1 >= 0.1 && $1 < 0.5 { count++ } END { print count+0 }' "$tmpfile")
-  range_05_1=$(awk -F'|' '$1 >= 0.5 && $1 < 1.0 { count++ } END { print count+0 }' "$tmpfile")
-  range_1_5=$(awk -F'|' '$1 >= 1.0 && $1 < 5.0 { count++ } END { print count+0 }' "$tmpfile")
-  range_5_10=$(awk -F'|' '$1 >= 5.0 && $1 < 10.0 { count++ } END { print count+0 }' "$tmpfile")
-  over_10=$(awk -F'|' '$1 >= 10.0 { count++ } END { print count+0 }' "$tmpfile")
-  
-  printf '  < 0.1s:     %d tests\n' "$under_01"
-  printf '  0.1-0.5s:   %d tests\n' "$range_01_05"
-  printf '  0.5-1.0s:   %d tests\n' "$range_05_1"
-  printf '  1.0-5.0s:   %d tests\n' "$range_1_5"
-  printf '  5.0-10.0s:  %d tests\n' "$range_5_10"
-  printf '  > 10.0s:    %d tests\n' "$over_10"
-  
-  printf '\n'
-  printf 'Complete Results (sorted by duration):\n'
-  printf '%-8s %-8s %s\n' 'TIME(s)' 'STATUS' 'TEST'
-  printf '%s\n' '-----------------------------------------------'
-  
-  printf '%s\n' "$sorted_results" | while IFS='|' read -r duration status path; do
-    status_str="PASS"
-    [ "$status" -ne 0 ] && status_str="FAIL"
-    printf '%-8s %-8s %s\n' "$duration" "$status_str" "$path"
-  done
-}
-
-# Output report
+# Generate and output report
 if [ -n "$output_file" ]; then
-  report > "$output_file"
+  exec > "$output_file"
+fi
+
+printf '=================================================\n'
+printf 'Test Suite Performance Profile\n'
+printf '=================================================\n'
+printf '\n'
+printf 'Summary:\n'
+printf '  Total tests:     %d\n' "$test_total"
+printf '  Passed:          %d\n' "$passed"
+printf '  Failed:          %d\n' "$failed"
+printf '  Total time:      %ss\n' "$total_time"
+printf '  Average time:    %ss\n' "$avg_time"
+printf '\n'
+
+# Show top 20 slowest tests
+printf 'Top 20 Slowest Tests:\n'
+printf '%-8s %-8s %s\n' 'TIME(s)' 'STATUS' 'TEST'
+printf '%s\n' '-----------------------------------------------'
+
+printf '%s\n' "$sorted_results" | head -20 | while IFS='|' read -r duration status path; do
+  status_str="PASS"
+  [ "$status" -ne 0 ] && status_str="FAIL"
+  printf '%-8s %-8s %s\n' "$duration" "$status_str" "$path"
+done
+
+printf '\n'
+
+# Show distribution by time ranges
+printf 'Time Distribution:\n'
+
+under_01=$(awk -F'|' '$1 < 0.1 { count++ } END { print count+0 }' "$tmpfile")
+range_01_05=$(awk -F'|' '$1 >= 0.1 && $1 < 0.5 { count++ } END { print count+0 }' "$tmpfile")
+range_05_1=$(awk -F'|' '$1 >= 0.5 && $1 < 1.0 { count++ } END { print count+0 }' "$tmpfile")
+range_1_5=$(awk -F'|' '$1 >= 1.0 && $1 < 5.0 { count++ } END { print count+0 }' "$tmpfile")
+range_5_10=$(awk -F'|' '$1 >= 5.0 && $1 < 10.0 { count++ } END { print count+0 }' "$tmpfile")
+over_10=$(awk -F'|' '$1 >= 10.0 { count++ } END { print count+0 }' "$tmpfile")
+
+printf '  < 0.1s:     %d tests\n' "$under_01"
+printf '  0.1-0.5s:   %d tests\n' "$range_01_05"
+printf '  0.5-1.0s:   %d tests\n' "$range_05_1"
+printf '  1.0-5.0s:   %d tests\n' "$range_1_5"
+printf '  5.0-10.0s:  %d tests\n' "$range_5_10"
+printf '  > 10.0s:    %d tests\n' "$over_10"
+
+printf '\n'
+printf 'Complete Results (sorted by duration):\n'
+printf '%-8s %-8s %s\n' 'TIME(s)' 'STATUS' 'TEST'
+printf '%s\n' '-----------------------------------------------'
+
+printf '%s\n' "$sorted_results" | while IFS='|' read -r duration status path; do
+  status_str="PASS"
+  [ "$status" -ne 0 ] && status_str="FAIL"
+  printf '%-8s %-8s %s\n' "$duration" "$status_str" "$path"
+done
+
+if [ -n "$output_file" ]; then
+  exec >&2
   printf 'Performance profile written to: %s\n' "$output_file"
-else
-  report
 fi
 
 # Cleanup
