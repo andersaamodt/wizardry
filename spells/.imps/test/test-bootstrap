@@ -259,7 +259,8 @@ run_test_case() {
 # run-cmd writes these to files, run_spell reads them back
 run_spell() {
   # Call run-spell command which writes results to files
-  run-spell "$@"
+  # Use absolute path to ensure it's found even when tests set custom PATH
+  "$ROOT_DIR/spells/.imps/test/boot/run-spell" "$@"
   
   # Read STATUS, OUTPUT, ERROR from files set by run-cmd
   if [ -f "${WIZARDRY_TMPDIR}/_test_status" ]; then
@@ -274,7 +275,8 @@ run_spell() {
 # run-cmd writes these to files, run_cmd reads them back
 run_cmd() {
   # Call run-cmd command which writes results to files
-  run-cmd "$@"
+  # Use absolute path to ensure it's found even when tests set custom PATH
+  "$ROOT_DIR/spells/.imps/test/boot/run-cmd" "$@"
   
   # Read STATUS, OUTPUT, ERROR from files set by run-cmd
   if [ -f "${WIZARDRY_TMPDIR}/_test_status" ]; then
@@ -289,7 +291,8 @@ run_cmd() {
 # run-spell-in-dir calls run-spell which writes these to files
 run_spell_in_dir() {
   # Call run-spell-in-dir command which internally calls run-spell
-  run-spell-in-dir "$@"
+  # Use absolute path to ensure it's found even when tests set custom PATH
+  "$ROOT_DIR/spells/.imps/test/boot/run-spell-in-dir" "$@"
   
   # Read STATUS, OUTPUT, ERROR from files set by run-spell
   if [ -f "${WIZARDRY_TMPDIR}/_test_status" ]; then
