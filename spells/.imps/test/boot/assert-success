@@ -1,8 +1,10 @@
 #!/bin/sh
-# assert-success - verify STATUS is 0
+# assert-success [STATUS] - verify status is 0
+# If STATUS not provided, reads from $STATUS variable for backward compatibility.
 # Shorthand for assert-status 0.
 set -eu
 
-assert-status 0
+status_arg=${1:-${STATUS-}}
+assert-status 0 "$status_arg"
 
 

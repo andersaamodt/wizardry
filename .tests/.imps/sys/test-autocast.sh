@@ -13,19 +13,16 @@ test_autocast_when_executed() {
   cat >"$script" <<'SCRIPT'
 #!/bin/sh
 set -eu
-PATH="$TEST_WORKDIR:$PATH"
-export PATH
-. "$WIZARDRY_DIR/spells/.imps/sys/autocast"
 
 demo_autocast() {
   printf 'executed:%s\n' "${1:-no-args}"
 }
 
-autocast demo-autocast "$@"
+. "$WIZARDRY_DIR/spells/.imps/sys/autocast"
 SCRIPT
   chmod +x "$script"
 
-  run_cmd env TEST_WORKDIR="$workdir" "$script" "test-arg"
+  run_cmd env WIZARDRY_DIR="$ROOT_DIR" "$script" "test-arg"
   assert_success || return 1
   assert_output_contains "executed:test-arg" || return 1
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
@@ -43,7 +40,6 @@ demo_source() {
 }
 
 . "$WIZARDRY_DIR/spells/.imps/sys/autocast"
-autocast demo-source
 SCRIPT
   chmod +x "$script"
 
@@ -59,14 +55,12 @@ test_autocast_auto_detects_name() {
   cat >"$script" <<'SCRIPT'
 #!/bin/sh
 set -eu
-. "$WIZARDRY_DIR/spells/.imps/sys/autocast"
 
 auto_detect() {
   printf 'detected:success\n'
 }
 
-# autocast will auto-detect from $0 (script name)
-autocast
+. "$WIZARDRY_DIR/spells/.imps/sys/autocast"
 SCRIPT
   chmod +x "$script"
 

@@ -15,7 +15,7 @@ esac
 
 require-wizardry || exit 1
 set -eu
-env_clear
+. env-clear
 
 retry_with_sudo() {
     printf '%s\n' "Permission denied. Invoking the power of the super user..."

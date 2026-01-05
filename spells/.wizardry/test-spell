@@ -104,20 +104,32 @@ export PATH
 WIZARDRY_DIR=$root_dir
 export WIZARDRY_DIR
 
+# Add boot imps to PATH so they're available as commands
+# (Don't source them - they're meant to be executed as scripts)
+for boot_dir in "$root_dir"/spells/.imps/test/boot; do
+  [ -d "$boot_dir" ] || continue
+  PATH="$boot_dir:$PATH"
+done
+export PATH
+
 # With PATH-based approach, imps are available directly
 # No need to preload with word_of_binding or clear environment
 
-# Source test boot imps for standardized output functions
-for boot_imp in "$root_dir"/spells/.imps/test/boot/*; do
-  [ -f "$boot_imp" ] || continue
-  # shellcheck source=/dev/null
-  . "$boot_imp"
-done
-
 # Check required arguments
 if [ "$#" -lt 1 ]; then
-  test_spell_usage >&2
-  return 2
+  cat >&2 <<'USAGE'
+Usage: test-spell [--skip-common] TEST_PATH [SUBTEST_NUM...]
+
+Run a specific test file from the .tests/ directory with common structural tests.
+
+Options:
+  --skip-common  Skip common structural tests (only run the spell's test file)
+
+Arguments:
+  TEST_PATH      Path to test file (relative to .tests/)
+  SUBTEST_NUM    Optional subtest number(s) to run (can specify multiple)
+USAGE
+  exit 2
 fi
 
 test_path=$1

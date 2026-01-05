@@ -16,6 +16,6 @@ esac
 require-wizardry || exit 1
 
 set -eu
-env_clear
+. env-clear
 
 command -v bitcoin-cli >/dev/null 2>&1

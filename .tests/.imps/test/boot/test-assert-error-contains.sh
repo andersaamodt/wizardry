@@ -8,13 +8,11 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_matches_substring() {
-  ERROR="some error message here"
-  assert_error_contains "error message"
+  assert_error_contains "error message" "some error message here"
 }
 
 test_no_match() {
-  ERROR="some error message here"
-  if assert_error_contains "not found"; then
+  if assert_error_contains "not found" "some error message here"; then
     return 1
   fi
   return 0

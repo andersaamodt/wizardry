@@ -45,7 +45,8 @@ script="$ROOT_DIR/spells/.imps/sys/require-wizardry"
 
 # Run with restricted PATH (no menu, no wizardry, not in test mode)
 # Unset WIZARDRY_DIR to simulate environment without wizardry
-WIZARDRY_DIR="" WIZARDRY_TEST_HELPERS_ONLY="" PATH="$tmp:$tmp/imps" run_cmd sh "$script" </dev/null
+# Keep test boot tools in PATH so run_cmd works
+WIZARDRY_DIR="" WIZARDRY_TEST_HELPERS_ONLY="" PATH="$tmp:$tmp/imps:$ROOT_DIR/spells/.imps/test/boot" run_cmd sh "$script" </dev/null
 assert_failure || return 1
 assert_error_contains "not available" || return 1
 }

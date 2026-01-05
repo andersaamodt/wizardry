@@ -17,7 +17,7 @@ esac
 require-wizardry || exit 1
 
 set -eu
-env_clear
+. env-clear
 
 torrc_path=$(torrc-path)
 

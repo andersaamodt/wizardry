@@ -20,7 +20,7 @@ require-wizardry || exit 1
 
 
 set -eu
-env_clear
+. env-clear
 
 BITCOIN_VERSION_DEFAULT="25.0"
 

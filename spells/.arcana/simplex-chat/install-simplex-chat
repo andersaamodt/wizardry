@@ -16,7 +16,7 @@ esac
 require-wizardry || exit 1
 
 set -eu
-env_clear
+. env-clear
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 manage_cmd=${MANAGE_SYSTEM_COMMAND:-manage-system-command}

@@ -17,7 +17,7 @@ esac
 require-wizardry || exit 1
 
 set -eu
-env_clear
+. env-clear
 
 # Find script directory for sibling resources
 SCRIPT_SOURCE=$0

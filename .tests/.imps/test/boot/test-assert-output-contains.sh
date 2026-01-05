@@ -8,13 +8,11 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_matches_substring() {
-  OUTPUT="some output text here"
-  assert_output_contains "output text"
+  assert_output_contains "output text" "some output text here"
 }
 
 test_no_match() {
-  OUTPUT="some output text here"
-  if assert_output_contains "not found"; then
+  if assert_output_contains "not found" "some output text here"; then
     return 1
   fi
   return 0

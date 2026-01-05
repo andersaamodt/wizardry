@@ -64,7 +64,7 @@ set -eu
   # The spell should have defined its true-name function already
   # Just return silently - this is fine for spells that don't follow autocast pattern
   if [ -z "$_autocast_func" ]; then
-  exit 0
+  return 0
   fi
 
   # If executed directly, call the function with remaining arguments
@@ -74,7 +74,7 @@ set -eu
     else
       # Function not found - this is an error when executed
       printf '%s\n' "autocast: function $_autocast_func not found" >&2
-      return 2
+      exit 2
     fi
   else
     # If sourced, automatically call the function (this is what makes it "autocast")
@@ -83,3 +83,4 @@ set -eu
       "$_autocast_func" "$@"
     fi
   fi
+  return 0

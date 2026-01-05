@@ -16,7 +16,7 @@ esac
 require-wizardry || exit 1
 
 set -eu
-env_clear
+. env-clear
 if ps -e | grep -q '[b]itcoind'; then
     if [ -t 1 ]; then  # Check if output is a terminal
         echo "Bitcoin is running."

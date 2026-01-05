@@ -1,29 +1,18 @@
 #!/bin/sh
-# test-skip DESC REASON - output a test skip message
-# Example: test-skip "spell handles error" "mode mismatch"
+# test-skip NUM DESC REASON - output a test skip message
+# NUM is the subtest number (passed as argument, no globals)
+# Example: test-skip 3 "spell handles error" "mode mismatch"
 
 set -eu
 
-desc=$1
-reason=${2-}
+num=$1
+desc=$2
+reason=${3-}
 
-# Get global subtest number if available
-num=${WIZARDRY_GLOBAL_SUBTEST_NUM-}
-
-if [ -n "$num" ]; then
-  # When run through test-magic with global numbering
-  if [ -n "$reason" ]; then
-    printf 'SKIP #%s %s: %s\n' "$num" "$desc" "$reason"
-  else
-    printf 'SKIP #%s %s\n' "$num" "$desc"
-  fi
+if [ -n "$reason" ]; then
+  printf 'SKIP #%s %s: %s\n' "$num" "$desc" "$reason"
 else
-  # When run standalone, use old format for backward compatibility
-  if [ -n "$reason" ]; then
-    printf '  SKIP %s %s\n' "$desc" "$reason"
-  else
-    printf '  SKIP %s\n' "$desc"
-  fi
+  printf 'SKIP #%s %s\n' "$num" "$desc"
 fi
 
 
