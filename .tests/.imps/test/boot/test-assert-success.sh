@@ -9,11 +9,13 @@ done
 
 test_zero_status() {
   STATUS=0
+  export STATUS
   assert_success
 }
 
 test_nonzero_status_fails() {
   STATUS=1
+  export STATUS
   if assert_success; then
     return 1
   fi

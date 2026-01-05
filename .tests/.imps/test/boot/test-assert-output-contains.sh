@@ -9,11 +9,13 @@ done
 
 test_matches_substring() {
   OUTPUT="some output text here"
+  export OUTPUT
   assert_output_contains "output text"
 }
 
 test_no_match() {
   OUTPUT="some output text here"
+  export OUTPUT
   if assert_output_contains "not found"; then
     return 1
   fi

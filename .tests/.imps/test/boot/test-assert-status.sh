@@ -9,11 +9,13 @@ done
 
 test_status_matches() {
   STATUS=0
+  export STATUS
   assert_status 0
 }
 
 test_status_mismatch() {
   STATUS=1
+  export STATUS
   if assert_status 0; then
     return 1
   fi
@@ -22,6 +24,7 @@ test_status_mismatch() {
 
 test_status_nonzero_match() {
   STATUS=127
+  export STATUS
   assert_status 127
 }
 

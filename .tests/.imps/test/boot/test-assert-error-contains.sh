@@ -9,11 +9,13 @@ done
 
 test_matches_substring() {
   ERROR="some error message here"
+  export ERROR
   assert_error_contains "error message"
 }
 
 test_no_match() {
   ERROR="some error message here"
+  export ERROR
   if assert_error_contains "not found"; then
     return 1
   fi
