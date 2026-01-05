@@ -290,13 +290,15 @@ else
   count_end=$target_level
 fi
 
-count_level=$count_start
-while [ "$count_level" -le "$count_end" ]; do
-  # Count common-tests.sh in Level 0
-  if [ "$count_level" -eq 0 ] && [ -f "$test_dir/common-tests.sh" ]; then
+# Count common-tests.sh (special level before Level 0)
+if [ "$only_this_level" -eq 0 ] || [ "$count_start" -eq 0 ]; then
+  if [ -f "$test_dir/common-tests.sh" ]; then
     global_test_total=$((global_test_total + 1))
   fi
-  
+fi
+
+count_level=$count_start
+while [ "$count_level" -le "$count_end" ]; do
   count_spell_list=$(spell-levels "$count_level" spells 2>/dev/null || printf '')
   count_imp_list=$(spell-levels "$count_level" imps 2>/dev/null || printf '')
   
@@ -585,42 +587,72 @@ WRAPPER_EOF
   return 1
 }
 
+test_common_tests() {
+  printf '\nCommon Tests\n'
+  
+  level_pass=0
+  level_fail=0
+  level_skip=0
+  level_total=0
+
+  if [ ! -f "$test_dir/common-tests.sh" ]; then
+    printf '  No common tests found.\n'
+    return 0
+  fi
+
+  test_path="common-tests.sh"
+  test_name="common-tests.sh"
+  level_total=$((level_total + 1))
+  global_test_count=$((global_test_count + 1))
+
+  if [ "$verbose" -eq 1 ]; then
+    printf '  [%d/%d] Running %s...\n' "$global_test_count" "$global_test_total" "$test_name"
+  fi
+
+  test_timeout="${WIZARDRY_TEST_TIMEOUT:-180}"
+  if run_test_file "$test_path" "common-tests"; then
+    level_pass=$((level_pass + 1))
+    if [ -n "$test_summary_line" ]; then
+      printf '    %s%s%s\n' "$_green" "$test_summary_line" "$_reset"
+    else
+      printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_name"
+    fi
+  else
+    level_fail=$((level_fail + 1))
+    failed_tests="${failed_tests:+$failed_tests }$test_name"
+    if [ -n "$test_summary_line" ]; then
+      printf '    %s%s%s\n' "$_red" "$test_summary_line" "$_reset"
+    else
+      printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_name"
+    fi
+  fi
+
+  if [ "$level_total" -gt 0 ]; then
+    if [ "$level_fail" -eq 0 ]; then
+      printf '  %s✓%s Common Tests: %d/%d tests passed\n' "$_green" "$_reset" \
+        "$level_pass" "$level_total"
+    else
+      printf '  %s✗%s Common Tests: %d/%d tests passed (%d failed)\n' "$_red" "$_reset" \
+        "$level_pass" "$level_total" "$level_fail"
+    fi
+  fi
+
+  total_pass=$((total_pass + level_pass))
+  total_fail=$((total_fail + level_fail))
+  total_skip=$((total_skip + level_skip))
+
+  if [ "$level_fail" -gt 0 ]; then
+    return 1
+  fi
+
+  return 0
+}
+
 test_level() {
   level=$1
   level_name=$(spell-levels "$level" name 2>/dev/null || printf 'Unknown Level')
 
   printf '\nLevel %d: %s\n' "$level" "$level_name"
-
-  # Level 0 exception: Run common-tests.sh first (cross-cutting checks)
-  # This doesn't mirror spells/ structure, so hardcode it here
-  if [ "$level" -eq 0 ] && [ -f "$test_dir/common-tests.sh" ]; then
-    test_path="common-tests.sh"
-    test_name="common-tests.sh"
-    level_total=$((level_total + 1))
-    global_test_count=$((global_test_count + 1))
-
-    if [ "$verbose" -eq 1 ]; then
-      printf '  [%d/%d] Running %s...\n' "$global_test_count" "$global_test_total" "$test_name"
-    fi
-
-    test_timeout="${WIZARDRY_TEST_TIMEOUT:-180}"
-    if run_test_file "$test_path" "common-tests"; then
-      level_pass=$((level_pass + 1))
-      if [ -n "$test_summary_line" ]; then
-        printf '    %s%s%s\n' "$_green" "$test_summary_line" "$_reset"
-      else
-        printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_name"
-      fi
-    else
-      level_fail=$((level_fail + 1))
-      failed_tests="${failed_tests:+$failed_tests }$test_name"
-      if [ -n "$test_summary_line" ]; then
-        printf '    %s%s%s\n' "$_red" "$test_summary_line" "$_reset"
-      else
-        printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_name"
-      fi
-    fi
-  fi
 
   spell_list=$(spell-levels "$level" spells 2>/dev/null || printf '')
   imp_list=$(spell-levels "$level" imps 2>/dev/null || printf '')
@@ -798,6 +830,16 @@ else
 fi
 
 last_success_level=-1
+
+# Run common tests first (special level before Level 0)
+# Only run if not in --only mode or if --only 0 was specified
+if [ "$only_this_level" -eq 0 ] || [ "$target_level" -eq 0 ]; then
+  test_common_tests || {
+    printf '\n%s✗%s Common tests failed\n' "$_red" "$_reset"
+    exit 1
+  }
+fi
+
 while [ "$current_level" -le "$target_level" ]; do
   test_level "$current_level" || {
     exit_code=$?
