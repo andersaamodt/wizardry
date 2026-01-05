@@ -40,6 +40,7 @@ while [ "$__bootstrap_dir" != "/" ]; do
 done
 : "${ROOT_DIR:=$(pwd -P)}"
 unset __bootstrap_dir
+export ROOT_DIR
 
 # The baseline PATH was already set at the top of this file.
 # Now add wizardry spells directories to PATH.
@@ -221,12 +222,71 @@ elif [ "$MACOS_SANDBOX_AVAILABLE" -eq 1 ] && [ ! -f "$warn_once_file" ]; then
   : >"$warn_once_file" 2>/dev/null || true
 fi
 
-# Source all boot imps to define their true-name functions
+# Boot imps are already in PATH (added above in the PATH construction)
+# They are flat scripts called as commands with hyphens (assert-success, run-spell, etc.)
+# Create underscore wrapper functions for convenience (assert-success calls assert-success)
+# This allows tests to use natural shell function naming
+
+# Special handling for run_test_case - it needs to access test functions in the calling context
+# so it must be a real function, not just a wrapper to a command
+run_test_case() {
+  _desc=$1
+  _func=$2
+  _spell_path=${3-}
+  
+  # Check if dual-pattern testing is explicitly requested
+  if [ "${WIZARDRY_TEST_BOTH_PATTERNS-}" = "1" ]; then
+    # Use run-both-patterns for comprehensive validation
+    run-both-patterns "$_desc" "$_func" "$_spell_path"
+  else
+    # Default: Direct execution (fast, sufficient for most testing)
+    # Run the test function and capture its exit status
+    if "$_func"; then
+      report-result "$_desc" 0
+    else
+      _status=$?
+      report-result "$_desc" "$_status" "${TEST_FAILURE_REASON-test function failed}"
+    fi
+  fi
+}
+
+# Special handling for run_spell - it needs to set STATUS/OUTPUT/ERROR in parent shell
+# run-cmd writes these to files, run_spell reads them back
+run_spell() {
+  # Call run-spell command which writes results to files
+  run-spell "$@"
+  
+  # Read STATUS, OUTPUT, ERROR from files set by run-cmd
+  if [ -f "${WIZARDRY_TMPDIR}/_test_status" ]; then
+    STATUS=$(cat "${WIZARDRY_TMPDIR}/_test_status")
+    OUTPUT=$(cat "${WIZARDRY_TMPDIR}/_test_output")
+    ERROR=$(cat "${WIZARDRY_TMPDIR}/_test_error")
+    export STATUS OUTPUT ERROR
+  fi
+}
+
+# List of boot imps that need underscore wrappers (excluding run-test-case and run-spell which are special)
+# We generate these dynamically from the boot directory to avoid maintenance burden
 for boot_imp in "$ROOT_DIR"/spells/.imps/test/boot/*; do
   [ -f "$boot_imp" ] || continue
-  # shellcheck source=/dev/null
-  . "$boot_imp"
+  boot_name=$(basename "$boot_imp")
+  
+  # Skip run-test-case and run-spell (handled specially above)
+  [ "$boot_name" = "run-test-case" ] && continue
+  [ "$boot_name" = "run-spell" ] && continue
+  
+  # Skip if name has no hyphens (already matches underscore version)
+  case "$boot_name" in
+    *-*)
+      # Create underscore version: assert-success -> assert-success  
+      underscore_name=$(printf '%s' "$boot_name" | tr '-' '_')
+      
+      # Define a shell function that calls the hyphenated command
+      # We use eval to create the function dynamically
+      eval "${underscore_name}() { ${boot_name} \"\$@\"; }"
+      ;;
+  esac
 done
 
-# Initialize test counters after sourcing boot imps
-init_test_counters
+# Initialize test counters (creates counter files in WIZARDRY_TMPDIR)
+init-test-counters

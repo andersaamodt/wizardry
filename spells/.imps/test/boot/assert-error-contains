@@ -4,7 +4,7 @@
 set -eu
 
 substring=$1
-case "$ERROR" in
+case "${ERROR-}" in
   *"$substring"*)
   exit 0
     ;;

@@ -4,8 +4,6 @@
 # Set WIZARDRY_TEST_BOTH_PATTERNS=1 to test both execution patterns.
 set -eu
 
-# Internal function for direct test execution (used by both run_test_case and run_both_patterns)
-
 desc=$1
 func=$2
 spell_path=${3-}
@@ -13,10 +11,16 @@ spell_path=${3-}
 # Check if dual-pattern testing is explicitly requested
 if [ "${WIZARDRY_TEST_BOTH_PATTERNS-}" = "1" ]; then
   # Use run-both-patterns for comprehensive validation
-  run_both_patterns "$desc" "$func" "$spell_path"
+  run-both-patterns "$desc" "$func" "$spell_path"
 else
   # Default: Direct execution (fast, sufficient for most testing)
-  _run_test_case_direct "$desc" "$func"
+  # Run the test function and capture its exit status
+  if "$func"; then
+    report_result "$desc" 0
+  else
+    status=$?
+    report_result "$desc" "$status" "${TEST_FAILURE_REASON-test function failed}"
+  fi
 fi
 
 

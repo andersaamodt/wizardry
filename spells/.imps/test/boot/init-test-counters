@@ -1,16 +1,11 @@
 #!/bin/sh
 # init-test-counters - initialize global test result counters
-# Must be sourced to set the global counter variables.
-# Auto-executes when sourced to initialize counters immediately.
+# Creates counter files in WIZARDRY_TMPDIR for cross-imp state sharing.
 set -eu
 
-
-# Initialize test counters (no function, just sets globals when sourced)
-_pass_count=0
-_fail_count=0
-_skip_count=0
-_test_index=0
-_fail_detail_indices=""
-
-# Auto-execute when sourced OR when run directly
-# This ensures counters are initialized immediately upon sourcing
+# Create counter files
+printf '0' > "${WIZARDRY_TMPDIR}/_pass_count"
+printf '0' > "${WIZARDRY_TMPDIR}/_fail_count"
+printf '0' > "${WIZARDRY_TMPDIR}/_skip_count"
+printf '0' > "${WIZARDRY_TMPDIR}/_test_index"
+printf '' > "${WIZARDRY_TMPDIR}/_fail_detail_indices"

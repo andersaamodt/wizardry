@@ -3,6 +3,6 @@
 # Shorthand for assert-status 0.
 set -eu
 
-assert_status 0
+assert-status 0
 
 

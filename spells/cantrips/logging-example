@@ -51,8 +51,8 @@ case "${1-}" in
   debug "Current working directory: $(pwd)"
   
   step "Step 1: Creating temporary file"
-  tmpfile=$(temp_file)
-  on_exit cleanup_file "$tmpfile"
+  tmpfile=$(temp-file)
+  on-exit cleanup-file "$tmpfile"
   debug "Created temp file: $tmpfile"
   
   step "Step 2: Writing data"

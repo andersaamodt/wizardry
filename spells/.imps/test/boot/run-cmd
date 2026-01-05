@@ -67,7 +67,7 @@ if [ "${BWRAP_AVAILABLE:-0}" -eq 1 ]; then
     set -- --unshare-user-try "$@"
   fi
 
-  if run_bwrap "$@" >"$_stdout" 2>"$_stderr"; then
+  if run-bwrap "$@" >"$_stdout" 2>"$_stderr"; then
     STATUS=0
   else
     STATUS=$?
@@ -90,7 +90,7 @@ elif [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
   [ -n "${PULL_STATUS:-}" ] && export PULL_STATUS
   [ -n "${REQUIRE_COMMAND:-}" ] && export REQUIRE_COMMAND
   
-  if (cd "$workdir" && run_macos_sandbox "$@" >"$_stdout" 2>"$_stderr"); then
+  if (cd "$workdir" && run-macos-sandbox "$@" >"$_stdout" 2>"$_stderr"); then
     STATUS=0
   else
     STATUS=$?
@@ -125,6 +125,11 @@ OUTPUT=$(cat "$_stdout")
 ERROR=$(cat "$_stderr")
 rm -f "$_stdout" "$_stderr"
 rm -rf "$sandbox"
+
+# Write STATUS, OUTPUT, ERROR to files so parent shell can access them
+printf '%s' "$STATUS" > "${WIZARDRY_TMPDIR}/_test_status"
+printf '%s' "$OUTPUT" > "${WIZARDRY_TMPDIR}/_test_output"
+printf '%s' "$ERROR" > "${WIZARDRY_TMPDIR}/_test_error"
 
 # Restore caller's PATH before returning
 PATH=$_saved_path

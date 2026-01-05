@@ -1,6 +1,12 @@
-# word-of-binding: Spell Loading Architecture
+# word-of-binding: Spell Loading Architecture (DEPRECATED)
 
-## Overview
+**⚠️ DEPRECATED**: This document describes the old word-of-binding pattern with function wrappers and preloading. This architecture is NO LONGER USED.
+
+**Current Pattern**: All spells and imps are now flat, linear scripts executed directly via PATH. No function preloading, no word-of-binding, no "true-name" functions. See `.github/instructions/spells.instructions.md` and `.github/instructions/imps.instructions.md` for current patterns.
+
+---
+
+## Historical Overview (DEPRECATED)
 
 `word-of-binding` is the core dispatcher that loads and invokes wizardry spells on-demand. It implements two distinct loading strategies based on spell structure:
 

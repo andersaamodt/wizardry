@@ -5,8 +5,8 @@
 # Instead of creating script files, this now generates shell function definitions
 # that are sourced into the current shell. This provides:
 #   - First-word glosses: env() { parse "env" "$@"; } for space-separated invocation
-#   - Hyphenated aliases: alias env-or='env_or' for hyphenated invocation
-#   - Direct access to preloaded true-name functions: env_or()
+#   - Hyphenated aliases: alias env-or='env-or' for hyphenated invocation
+#   - Direct access to preloaded true-name functions: env-or()
 #
 # Glosses are generated for:
 #   - All wizardry spells (in spells/*/)
@@ -187,7 +187,7 @@ uname|uniq|wc|xargs)
   }
   
   # Generate full hyphenated gloss alias
-  # For "env-or", generates: alias env-or='env_or'
+  # For "env-or", generates: alias env-or='env-or'
   generate_full_name_alias() {
     _cmd_name=$1
     _true_name=$(printf '%s' "$_cmd_name" | tr '-' '_')
@@ -272,8 +272,8 @@ uname|uniq|wc|xargs)
   emit_line "# FULL-NAME HYPHENATED ALIASES"
   emit_line "# ============================================================================"
   emit_line "# These provide hyphenated command aliases:"
-  emit_line "#   env-or -> env_or"
-  emit_line "#   temp-file -> temp_file"
+  emit_line "#   env-or -> env-or"
+  emit_line "#   temp-file -> temp-file"
   emit_line "# Aliases work in all shells (bash, zsh, dash, sh)"
   emit_line "# ============================================================================"
   emit_line ""

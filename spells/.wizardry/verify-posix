@@ -43,20 +43,6 @@ failed_targets=""
 failed_details=""
 detail_log=$(temp-file verify-posix-details) || exit 1
 
-record_failure() {
-  target=$1
-  reason=${2-}
-  failures=$((failures + 1))
-  failed_targets=${failed_targets:+$failed_targets,}$target
-  if [ -n "$reason" ]; then
-    if [ -n "$failed_details" ]; then
-      failed_details="$failed_details, $target ($reason)"
-    else
-      failed_details="$target ($reason)"
-    fi
-  fi
-}
-
 check_gnuisms() {
   path=$1
   patterns_file=$(temp-file verify-posix-gnuisms) || return 1
@@ -166,13 +152,25 @@ while IFS= read -r target; do
 
   if [ ! -e "$path" ]; then
     printf 'FAIL %s: missing file\n' "$target"
-    record_failure "$target" "missing file"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    if [ -n "$failed_details" ]; then
+      failed_details="$failed_details, $target (missing file)"
+    else
+      failed_details="$target (missing file)"
+    fi
     continue
   fi
 
   if [ ! -f "$path" ]; then
     printf 'FAIL %s: not a regular file\n' "$target"
-    record_failure "$target" "not a regular file"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    if [ -n "$failed_details" ]; then
+      failed_details="$failed_details, $target (not a regular file)"
+    else
+      failed_details="$target (not a regular file)"
+    fi
     continue
   fi
 
@@ -181,12 +179,24 @@ while IFS= read -r target; do
   case $shebang in
     '')
       printf 'FAIL %s: lacks a shebang; expected #!/bin/sh\n' "$target"
-      record_failure "$target" "no shebang"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    if [ -n "$failed_details" ]; then
+      failed_details="$failed_details, $target (no shebang)"
+    else
+      failed_details="$target (no shebang)"
+    fi
       continue
       ;;
     '#!')
       printf 'FAIL %s: has an empty shebang; expected #!/bin/sh\n' "$target"
-      record_failure "$target" "empty shebang"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    if [ -n "$failed_details" ]; then
+      failed_details="$failed_details, $target (empty shebang)"
+    else
+      failed_details="$target (empty shebang)"
+    fi
       continue
       ;;
     '#!'*)
@@ -197,7 +207,13 @@ while IFS= read -r target; do
       ;;
     *)
       printf 'FAIL %s: lacks a shebang; expected #!/bin/sh\n' "$target"
-      record_failure "$target" "no shebang"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    if [ -n "$failed_details" ]; then
+      failed_details="$failed_details, $target (no shebang)"
+    else
+      failed_details="$target (no shebang)"
+    fi
       continue
       ;;
   esac
@@ -208,12 +224,24 @@ while IFS= read -r target; do
       ;;
     '/usr/bin/env bash'*|'/bin/bash'*)
       printf 'FAIL %s: uses %s (should use /bin/sh)\n' "$target" "$shebang"
-      record_failure "$target" "bash shebang"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    if [ -n "$failed_details" ]; then
+      failed_details="$failed_details, $target (bash shebang)"
+    else
+      failed_details="$target (bash shebang)"
+    fi
       continue
       ;;
     *)
       printf 'FAIL %s: uses %s (should use /bin/sh)\n' "$target" "$shebang"
-      record_failure "$target" "wrong shebang"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    if [ -n "$failed_details" ]; then
+      failed_details="$failed_details, $target (wrong shebang)"
+    else
+      failed_details="$target (wrong shebang)"
+    fi
       continue
       ;;
   esac
@@ -245,7 +273,13 @@ while IFS= read -r target; do
           printf '  %s\n' "$line"
         done <"$tmp_log"
       } >>"$detail_log"
-      record_failure "$target" "bashisms detected"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    if [ -n "$failed_details" ]; then
+      failed_details="$failed_details, $target (bashisms detected)"
+    else
+      failed_details="$target (bashisms detected)"
+    fi
     fi
     if [ -s "$gnuisms_log" ]; then
       {
@@ -254,7 +288,13 @@ while IFS= read -r target; do
         fi
         cat "$gnuisms_log"
       } >>"$detail_log"
-      record_failure "$target" "non-POSIX usage"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    if [ -n "$failed_details" ]; then
+      failed_details="$failed_details, $target (non-POSIX usage)"
+    else
+      failed_details="$target (non-POSIX usage)"
+    fi
     fi
   fi
   cleanup-file "$tmp_log"

@@ -1,6 +1,7 @@
 #!/bin/sh
 # report-result DESC STATUS [REASON] - record the result of a test case
 # Prints PASS or FAIL with description, incrementing global counters.
+# Uses counter files in WIZARDRY_TMPDIR for cross-imp state sharing.
 set -eu
 
 desc=$1
@@ -10,19 +11,27 @@ reason=${3-}
 # Get global subtest number if available
 num=${WIZARDRY_GLOBAL_SUBTEST_NUM-}
 
+# Read current counter values from files
+_pass_count=$(cat "${WIZARDRY_TMPDIR}/_pass_count")
+_fail_count=$(cat "${WIZARDRY_TMPDIR}/_fail_count")
+
 if [ "$status" -eq 0 ]; then
   _pass_count=$((_pass_count + 1))
+  printf '%s' "$_pass_count" > "${WIZARDRY_TMPDIR}/_pass_count"
+  
   if [ -n "$num" ]; then
-    test_pass "$num" "$desc"
+    test-pass "$num" "$desc"
   else
-    test_pass "$desc"
+    test-pass "$desc"
   fi
 else
   _fail_count=$((_fail_count + 1))
+  printf '%s' "$_fail_count" > "${WIZARDRY_TMPDIR}/_fail_count"
+  
   if [ -n "$num" ]; then
-    test_fail "$num" "$desc" "$reason"
+    test-fail "$num" "$desc" "$reason"
   else
-    test_fail "$desc" "$reason"
+    test-fail "$desc" "$reason"
   fi
 fi
 

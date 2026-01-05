@@ -524,16 +524,7 @@ WRAPPER_EOF
         fi
         ;;
       *)
-        help_pattern="(PASS|FAIL).*(--help|-h|help|usage)"
-        if ! printf '%s\n' "$cleaned_output" 2>/dev/null | grep -qiE "$help_pattern"; then
-          entry="$spell_name (missing --help test)"
-          if [ -n "$incomplete_tests" ]; then
-            incomplete_tests="$incomplete_tests, $entry"
-          else
-            incomplete_tests="$entry"
-          fi
-          test_incomplete_reasons="missing --help test"
-        fi
+        # Note: --help handler validation is done by common-tests.sh, not individual test files
         if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$min_subtests_spell" ]; then
           entry="$spell_name ($test_subtest_count subtests, need $min_subtests_spell)"
           if [ -n "$incomplete_tests" ]; then
