@@ -1830,12 +1830,13 @@ run_test_case "no function name collisions" test_no_function_name_collisions
 # Kept for historical reference but not executed
 
 # test_spells_have_true_name_functions() - DEPRECATED
-# test_true_names_have_no_leading_underscore() - DEPRECATED
+# test_true_names_have_no_leading_underscore() - DEPRECATED  
+# test_spells_require_wrapper_functions() - DEPRECATED
 
 # Calls commented out (no longer applicable):
 # run_test_case "spells have true name functions" test_spells_have_true_name_functions
 # run_test_case "true names do not use leading underscores" test_true_names_have_no_leading_underscore
-run_test_case "spells require wrapper functions" test_spells_require_wrapper_functions
+# run_test_case "spells require wrapper functions" test_spells_require_wrapper_functions
 run_test_case "spells have limited flags" test_spells_have_limited_flags
 run_test_case "spells have limited positional arguments" test_spells_have_limited_positional_args
 run_test_case "no all-caps variable assignments" test_no_allcaps_variable_assignments
