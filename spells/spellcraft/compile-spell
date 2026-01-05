@@ -23,28 +23,10 @@ USAGE
   ;;
 esac
 
-# Handle require-wizardry availability (for script execution without invoke-wizardry)
-if command -v require-wizardry >/dev/null 2>&1; then
-  require-wizardry || exit 1
-elif command -v require-wizardry >/dev/null 2>&1; then
-  require-wizardry || exit 1
-else
-  # Neither available - source it now
-  if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/require-wizardry" ]; then
-    . "${WIZARDRY_DIR}/spells/.imps/sys/require-wizardry"
-    require-wizardry || exit 1
-  else
-    # Fall back to relative path from script location
-    _cs_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-    _cs_imp_path="$_cs_script_dir/../../.imps/sys/require-wizardry"
-    if [ -f "$_cs_imp_path" ]; then
-      . "$_cs_imp_path"
-      require-wizardry || exit 1
-    else
-      printf 'Error: require-wizardry not found\n' >&2
-      exit 1
-    fi
-  fi
+# Check if WIZARDRY_DIR is set (inline check, not sourcing require-wizardry)
+if [ -z "${WIZARDRY_DIR-}" ] || [ ! -d "${WIZARDRY_DIR}/spells" ]; then
+  printf 'Error: wizardry not available (WIZARDRY_DIR not set or invalid)\n' >&2
+  exit 1
 fi
 
 set -eu
@@ -111,8 +93,8 @@ case "$spell_name" in
 esac
 
 if [ -z "$spell_path" ] || [ ! -f "$spell_path" ]; then
-  die "compile-spell: spell '$spell_name' not found"
-        exit 1
+  printf 'compile-spell: spell '\''%s'\'' not found\n' "$spell_name" >&2
+  exit 1
 fi
 
 # Read spell content
