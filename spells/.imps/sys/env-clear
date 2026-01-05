@@ -6,14 +6,14 @@
 env_clear_sourced=0
 if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
   case "${ZSH_EVAL_CONTEXT-}" in
-    *:file) _env_clear_sourced=1 ;;
+    *:file) env_clear_sourced=1 ;;
   esac
 else
-  _env_clear_base=${0##*/}
+  env_clear_base=${0##*/}
   case "$env_clear_base" in
-    sh|dash|bash|zsh|ksh|mksh) _env_clear_sourced=1 ;;
-    env-clear) _env_clear_sourced=0 ;;
-    *) _env_clear_sourced=1 ;;
+    sh|dash|bash|zsh|ksh|mksh) env_clear_sourced=1 ;;
+    env-clear) env_clear_sourced=0 ;;
+    *) env_clear_sourced=1 ;;
   esac
 fi
 
@@ -22,7 +22,7 @@ if [ "$env_clear_sourced" -eq 0 ]; then
   printf '%s\n' "Usage: . env-clear" >&2
   exit 1
 fi
-unset _env_clear_sourced _env_clear_base
+unset env_clear_sourced env_clear_base
 
 # Explicitly use permissive mode - this imp mutates the caller's environment.
 set +eu
@@ -122,7 +122,7 @@ saved_runner_temp="${RUNNER_TEMP:-}"
 saved_runner_tool_cache="${RUNNER_TOOL_CACHE:-}"
 
 # Clear all environment variables
-for _var in $(env | cut -d= -f1); do
+for var in $(env | cut -d= -f1); do
   unset "$var" 2>/dev/null || true
 done
 
@@ -212,22 +212,23 @@ fi
 [ -n "$saved_runner_tool_cache" ] && export RUNNER_TOOL_CACHE="$saved_runner_tool_cache"
 
 # Clean up temporary variables
-unset _saved_path _saved_home _saved_user _saved_shell _saved_term _saved_lang
-unset _saved_tmpdir _saved_pwd _saved_oldpwd _saved_wizardry_dir _saved_wizardry_invoked
-unset _saved_spellbook_dir _saved_mud_dir _saved_log_level _saved_nix_pkg _saved_apt_pkg
-unset _saved_yum_pkg _saved_zypper_pkg _saved_pacman_pkg _saved_apk_pkg _saved_pkgin_pkg
-unset _saved_brew_pkg _saved_test_failure _saved_test_skip _saved_wiz_tmpdir
-unset _saved_global_subtest _saved_test_compiled _saved_test_helpers _saved_system_path
-unset _saved_ask_input _saved_choose_input _saved_menu_loop_limit _saved_require_command
-unset _saved_menu_log _saved_await_buffer_file _saved_assume_yes
-unset _saved_force_install _saved_root_dir
-unset _saved_platform _saved_rc_file _saved_rc_format _saved_await_keep_raw
-unset _saved_disable_sandbox _saved_bwrap_warning _saved_colors_available
-unset _saved_github_env _saved_github_path _saved_github_output _saved_github_step_summary
-unset _saved_github_workspace _saved_github_action _saved_github_actions _saved_github_actor
-unset _saved_github_repository _saved_github_sha _saved_github_ref _saved_github_ref_name
-unset _saved_github_head_ref _saved_github_base_ref _saved_runner_os _saved_runner_temp
-unset _saved_runner_tool_cache _var
+unset saved_path saved_home saved_user saved_shell saved_term saved_lang
+unset saved_tmpdir saved_pwd saved_oldpwd saved_wizardry_dir saved_wizardry_invoked
+unset saved_spellbook_dir saved_mud_dir saved_log_level saved_nix_pkg saved_apt_pkg
+unset saved_dnf_pkg saved_yum_pkg saved_zypper_pkg saved_pacman_pkg saved_apk_pkg saved_pkgin_pkg
+unset saved_brew_pkg saved_test_failure saved_test_skip saved_wiz_tmpdir
+unset saved_global_subtest saved_test_compiled saved_test_helpers saved_system_path
+unset saved_ask_input saved_choose_input saved_menu_loop_limit saved_require_command
+unset saved_menu_log saved_git_log saved_require_log saved_mock_toplevel saved_pull_status
+unset saved_await_buffer_file saved_assume_yes
+unset saved_force_install saved_root_dir
+unset saved_platform saved_rc_file saved_rc_format saved_await_keep_raw
+unset saved_disable_sandbox saved_bwrap_warning saved_colors_available
+unset saved_github_env saved_github_path saved_github_output saved_github_step_summary
+unset saved_github_workspace saved_github_action saved_github_actions saved_github_actor
+unset saved_github_repository saved_github_sha saved_github_ref saved_github_ref_name
+unset saved_github_head_ref saved_github_base_ref saved_runner_os saved_runner_temp
+unset saved_runner_tool_cache _var
 
 # Re-enable strict mode for the calling spell
 # The spell set `-eu` before sourcing this file, so we restore that state
