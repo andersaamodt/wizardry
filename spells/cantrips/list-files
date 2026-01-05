@@ -24,6 +24,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 if [ "$#" -lt 1 ]; then
   usage-error "list-files" "directory required"

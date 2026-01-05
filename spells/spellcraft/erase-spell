@@ -19,6 +19,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 # Initialize spell_home
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")

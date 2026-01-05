@@ -15,6 +15,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 if [ "$#" -ne 1 ]; then
     printf '%s\n' "Error: incorrect number of arguments" >&2

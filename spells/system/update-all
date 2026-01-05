@@ -17,6 +17,7 @@ EOF
 esac
 
 set -eu
+. env-clear
 
 verbose=0
 

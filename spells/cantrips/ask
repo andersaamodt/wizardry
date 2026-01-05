@@ -16,6 +16,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 script=$0
 case $script in

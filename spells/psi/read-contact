@@ -14,6 +14,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 handle_escapes() {
   escape_value=$1

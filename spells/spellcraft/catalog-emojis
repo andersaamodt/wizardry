@@ -23,6 +23,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 # Find repository root
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)

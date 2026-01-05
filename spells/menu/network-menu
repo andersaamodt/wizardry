@@ -13,6 +13,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 require-command menu || exit 1
 

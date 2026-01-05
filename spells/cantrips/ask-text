@@ -17,6 +17,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
   cat >&2 <<'USAGE'

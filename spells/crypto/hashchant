@@ -14,6 +14,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 if [ -z "${1-}" ]; then
   printf '%s\n' "hashchant: file path required" >&2

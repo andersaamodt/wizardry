@@ -17,6 +17,7 @@ esac
 # Use conditional strictness based on execution context
 # See .github/CODE_POLICY_SET_EU.md for details
 set -eu
+. env-clear
 
 # Prefer preloaded imp functions (underscore form) when available.
 await_keypress_temp_file() {

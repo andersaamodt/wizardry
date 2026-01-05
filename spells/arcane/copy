@@ -14,6 +14,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 if [ "$#" -eq 0 ]; then
     if command -v ask-text >/dev/null 2>&1; then

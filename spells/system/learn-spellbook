@@ -23,6 +23,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 # Determine wizardry directory
 if [ $# -ge 1 ]; then

@@ -352,32 +352,7 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 
 ---
 
-## 7. Word-of-Binding / Wrapper Function Exemptions
-
-### Spells Without Wrapper Functions
-
-**Rule**: All spells must have a wrapper function matching their filename (the "incantation") for word-of-binding compatibility. This enables sourcing spells into the shell for efficient invocation.
-
-**Exempted Categories**:
-
-1. **Arcana spells** (`spells/.arcana/*`)
-   - **Reason**: Arcana are installation and configuration scripts that are meant to be executed, not sourced. They manage system-level software installation and are not typically called from other spells.
-   - **Status**: Wrapper functions not required for arcana
-
-2. **Source-only spells** (`cantrips/colors`)
-   - **Reason**: These spells are designed to be sourced (not executed) to set environment variables in the current shell. Wrapping them in a function would make the variables local to that function and inaccessible to the calling shell.
-   - **Status**: Wrapper functions incompatible with sourcing behavior
-   - **Example**: `colors` sets `RED`, `GREEN`, `RESET`, etc. as shell variables
-
-**Test**: `test_spells_require_wrapper_functions` in `.tests/common-tests.sh`
-
-**Implementation**: The test excludes paths matching `*/.arcana/*` and `cantrips/colors` from the wrapper function requirement.
-
-**Future**: If specific arcana need to be sourceable (e.g., for testing or composition), they can be updated individually.
-
----
-
-## 8. All-Caps Variable Assignments (Environment Variable Overrides)
+## 7. All-Caps Variable Assignments (Environment Variable Overrides)
 
 ### Policy
 
@@ -726,7 +701,7 @@ This section documents all exemptions that have been successfully resolved. Item
 
 ---
 
-## 9. Flat-File Paradigm Exemptions (2026-01-05)
+## 8. Flat-File Paradigm Exemptions (2026-01-05)
 
 ### New Requirement: Maximum 1 Function in Spells, 0 in Imps
 
