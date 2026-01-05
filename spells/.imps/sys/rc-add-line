@@ -5,33 +5,33 @@
 set -eu
 
 
-_ral_marker=${1:-}
-_ral_rc_file=${2:-}
-_ral_line=${3:-}
+ral_marker=${1:-}
+ral_rc_file=${2:-}
+ral_line=${3:-}
 
-if [ -z "$_ral_marker" ] || [ -z "$_ral_rc_file" ] || [ -z "$_ral_line" ]; then
+if [ -z "$ral_marker" ] || [ -z "$ral_rc_file" ] || [ -z "$ral_line" ]; then
   printf '%s\n' "rc-add-line: MARKER, RC_FILE, and LINE are required" >&2
   exit 1
 fi
 
-_ral_full_marker="# wizardry: $_ral_marker"
+ral_full_marker="# wizardry: $ral_marker"
 
 # Check if marker already exists
-if [ -f "$_ral_rc_file" ] && grep -qF "$_ral_full_marker" "$_ral_rc_file" 2>/dev/null; then
+if [ -f "$ral_rc_file" ] && grep -qF "$ral_full_marker" "$ral_rc_file" 2>/dev/null; then
   # Marker exists, nothing to do
   exit 0
 fi
 
 # Create rc file if it doesn't exist
-if [ ! -f "$_ral_rc_file" ]; then
+if [ ! -f "$ral_rc_file" ]; then
   _ral_dir=${_ral_rc_file%/*}
-  [ "$_ral_dir" != "$_ral_rc_file" ] && [ ! -d "$_ral_dir" ] && mkdir -p "$_ral_dir"
-  touch "$_ral_rc_file" || {
-    printf '%s\n' "rc-add-line: could not create $_ral_rc_file" >&2
+  [ "$ral_dir" != "$ral_rc_file" ] && [ ! -d "$ral_dir" ] && mkdir -p "$ral_dir"
+  touch "$ral_rc_file" || {
+    printf '%s\n' "rc-add-line: could not create $ral_rc_file" >&2
   exit 1
   }
 fi
 
 # Add line with inline marker
-printf '%s %s\n' "$_ral_line" "$_ral_full_marker" >> "$_ral_rc_file"
+printf '%s %s\n' "$ral_line" "$ral_full_marker" >> "$ral_rc_file"
 exit 0

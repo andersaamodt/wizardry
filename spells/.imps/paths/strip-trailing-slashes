@@ -4,9 +4,9 @@
 set -eu
 
 
-_sts_normalized=$(printf '%s' "$1" | sed 's|/*$||')
-if [ -z "$_sts_normalized" ]; then
+sts_normalized=$(printf '%s' "$1" | sed 's|/*$||')
+if [ -z "$sts_normalized" ]; then
   printf '/\n'
   exit
 fi
-printf '%s\n' "$_sts_normalized"
+printf '%s\n' "$sts_normalized"

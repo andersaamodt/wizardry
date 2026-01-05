@@ -5,18 +5,18 @@
 set -eu
 
 
-_ap_loc=$1
-if [ -d "$_ap_loc" ]; then
-  CDPATH= cd -- "$_ap_loc" 2>/dev/null && pwd -P | sed 's|///*|/|g'
+ap_loc=$1
+if [ -d "$ap_loc" ]; then
+  CDPATH= cd -- "$ap_loc" 2>/dev/null && pwd -P | sed 's|///*|/|g'
   exit
 fi
-_ap_dir=${_ap_loc%/*}
-_ap_base=${_ap_loc##*/}
-if [ "$_ap_dir" = "$_ap_loc" ]; then
+ap_dir=${_ap_loc%/*}
+ap_base=${_ap_loc##*/}
+if [ "$ap_dir" = "$ap_loc" ]; then
   _ap_dir=.
 fi
-if CDPATH= cd -- "$_ap_dir" 2>/dev/null; then
-  printf '%s/%s\n' "$(pwd -P)" "$_ap_base" | sed 's|///*|/|g'
+if CDPATH= cd -- "$ap_dir" 2>/dev/null; then
+  printf '%s/%s\n' "$(pwd -P)" "$ap_base" | sed 's|///*|/|g'
   exit
 fi
-printf '%s\n' "$_ap_loc"
+printf '%s\n' "$ap_loc"
