@@ -14,21 +14,13 @@ USAGE
 esac
 
 set -eu
-force_install="${INSTALL_CHECKBASHISMS_FORCE_INSTALL-}"
-has_checkbashisms=$(command -v checkbashisms >/dev/null 2>&1 && echo "yes" || echo "no")
 
-if [ "$force_install" != "1" ] && [ "$has_checkbashisms" = "yes" ]; then
-        printf '%s\n' "checkbashisms is already installed."
-        exit 0
-fi
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
-install_checkbashisms_run_installer() {
-        cmd=$1
-        shift
-        if command -v sudo >/dev/null 2>&1; then
-                printf '  Trying: sudo %s %s\n' "$cmd" "$*" >&2
-                sudo "$cmd" "$@"
-        else
-                printf '  Trying: %s %s\n' "$cmd" "$*" >&2
-                "$cmd" "$@"
-        fi
+ASSUME_YES=1
+FORCE_INSTALL=${INSTALL_CHECKBASHISMS_FORCE_INSTALL:-0}
+# On Debian/Ubuntu, checkbashisms is in the devscripts package
+APT_PACKAGE=devscripts
+export ASSUME_YES FORCE_INSTALL APT_PACKAGE
+
+"$SCRIPT_DIR/manage-system-command" checkbashisms devscripts

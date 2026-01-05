@@ -2,8 +2,27 @@
 # env-clear - clear environment variables while preserving wizardry and system essentials
 # This file must be sourced, not executed
 
-# Guard against direct execution
-uncastable
+# Guard against direct execution (inline check instead of calling uncastable)
+_env_clear_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) _env_clear_sourced=1 ;;
+  esac
+else
+  _env_clear_base=${0##*/}
+  case "$_env_clear_base" in
+    sh|dash|bash|zsh|ksh|mksh) _env_clear_sourced=1 ;;
+    env-clear) _env_clear_sourced=0 ;;
+    *) _env_clear_sourced=1 ;;
+  esac
+fi
+
+if [ "$_env_clear_sourced" -eq 0 ]; then
+  printf '%s\n' "env-clear: must be sourced, not executed" >&2
+  printf '%s\n' "Usage: . env-clear" >&2
+  exit 1
+fi
+unset _env_clear_sourced _env_clear_base
 
 # Explicitly use permissive mode - this imp mutates the caller's environment.
 set +eu
