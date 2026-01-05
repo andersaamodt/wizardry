@@ -9,5 +9,5 @@ make_fixture() {
   printf '%s\n' "$fixture"
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in make-fixture) make_fixture "$@" ;; esac
+
+make_fixture "$@"

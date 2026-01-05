@@ -41,6 +41,4 @@ config_get() {
   ' "$_cg_file"
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */config-get) config_get "$@" ;; esac
+config_get "$@"

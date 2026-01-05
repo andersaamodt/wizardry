@@ -10,5 +10,5 @@ test_lack() {
   printf 'LACK %s (%s)\n' "$name" "$reason"
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in test-lack) test_lack "$@" ;; esac
+
+test_lack "$@"

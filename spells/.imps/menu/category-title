@@ -27,6 +27,4 @@ category_title() {
   esac
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */category-title) category_title "$@" ;; esac
+category_title "$@"

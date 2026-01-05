@@ -51,6 +51,4 @@ xattr_list_keys() {
   return 1
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */xattr-list-keys) xattr_list_keys "$@" ;; esac
+xattr_list_keys "$@"

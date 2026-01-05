@@ -22,5 +22,5 @@ test_heading() {
   fi
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in test-heading) test_heading "$@" ;; esac
+
+test_heading "$@"

@@ -11,6 +11,4 @@ is_posint() {
   esac
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */is-posint) is_posint "$@" ;; esac
+is_posint "$@"

@@ -27,6 +27,4 @@ print_fail() {
   fi
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */print-fail) print_fail "$@" ;; esac
+print_fail "$@"

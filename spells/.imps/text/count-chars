@@ -17,6 +17,4 @@ count_chars() {
   printf '%d\n' "${#text}"
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */count-chars) count_chars "$@" ;; esac
+count_chars "$@"

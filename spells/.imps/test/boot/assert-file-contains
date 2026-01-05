@@ -19,5 +19,5 @@ assert_file_contains() {
   return 1
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in assert-file-contains) assert_file_contains "$@" ;; esac
+
+assert_file_contains "$@"

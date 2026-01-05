@@ -27,6 +27,4 @@ on() {
   esac
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */on) on "$@" ;; esac
+on "$@"

@@ -29,6 +29,4 @@ heading_simple() {
   fi
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */heading-simple) heading_simple "$@" ;; esac
+heading_simple "$@"

@@ -21,6 +21,4 @@ pkg_update() {
   esac
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */pkg-update) pkg_update "$@" ;; esac
+pkg_update "$@"

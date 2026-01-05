@@ -17,5 +17,5 @@ link_tools() {
   done
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in link-tools) link_tools "$@" ;; esac
+
+link_tools "$@"

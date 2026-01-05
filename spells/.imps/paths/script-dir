@@ -43,6 +43,4 @@ script_dir() {
   (CDPATH= cd -- "$_sd_dir" && pwd -P) | sed 's|///*|/|g'
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */script-dir) script_dir "$@" ;; esac
+script_dir "$@"

@@ -11,5 +11,5 @@ record_failure_detail() {
          END { for (i=1; i<=count; i++) { if (i>1) printf(","); printf order[i] } }')
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in record-failure-detail) record_failure_detail "$@" ;; esac
+
+record_failure_detail "$@"

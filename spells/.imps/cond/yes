@@ -12,6 +12,4 @@ yes() {
   esac
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */yes) yes "$@" ;; esac
+yes "$@"

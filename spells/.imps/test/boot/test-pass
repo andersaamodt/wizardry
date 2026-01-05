@@ -45,5 +45,5 @@ test_pass() {
   fi
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in test-pass) test_pass "$@" ;; esac
+
+test_pass "$@"

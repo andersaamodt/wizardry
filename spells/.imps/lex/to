@@ -39,6 +39,4 @@ to() {
   "$_to_lex_dir/parse" "$_to_cmd" $_to_new_args "$@"
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */to) to "$@" ;; esac
+to "$@"

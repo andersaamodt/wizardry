@@ -11,6 +11,4 @@ contains() {
   esac
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */contains) contains "$@" ;; esac
+contains "$@"

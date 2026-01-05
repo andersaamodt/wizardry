@@ -50,6 +50,4 @@ heading_separator() {
   printf '%s\n' "$separator"
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */heading-separator) heading_separator "$@" ;; esac
+heading_separator "$@"

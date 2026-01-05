@@ -12,6 +12,4 @@ parent() {
   esac
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */parent) parent "$@" ;; esac
+parent "$@"

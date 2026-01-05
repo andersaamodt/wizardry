@@ -15,5 +15,5 @@ find_repo_root() {
   printf '%s\n' "$(pwd -P)"
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in find-repo-root) find_repo_root "$@" ;; esac
+
+find_repo_root "$@"

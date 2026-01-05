@@ -16,5 +16,5 @@ assert_error_contains() {
   esac
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in assert-error-contains) assert_error_contains "$@" ;; esac
+
+assert_error_contains "$@"

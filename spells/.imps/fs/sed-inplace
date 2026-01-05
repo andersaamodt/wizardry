@@ -27,6 +27,4 @@ sed_inplace() {
   fi
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */sed-inplace) sed_inplace "$@" ;; esac
+sed_inplace "$@"

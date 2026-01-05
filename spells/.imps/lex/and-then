@@ -26,6 +26,4 @@ and_then() {
   "$_at_lex_dir/parse" "$@"
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */and-then) and_then "$@" ;; esac
+and_then "$@"

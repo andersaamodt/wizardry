@@ -14,7 +14,4 @@ stub_fathom_terminal() {
     esac
 }
 
-# Self-execute when run directly (not sourced)
-# Match both stub name and unprefixed name (for symlinks)
-case "$0" in
-  */fathom-terminal|*/stub-fathom-terminal) stub_fathom_terminal "$@" ;; esac
+stub_fathom_terminal "$@"

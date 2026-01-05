@@ -16,6 +16,4 @@ temp_file() {
   fi
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */temp-file) temp_file "$@" ;; esac
+temp_file "$@"

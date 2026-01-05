@@ -218,3 +218,5 @@ find-command which"
 
 # Run the function
 invoke_thesaurus
+
+invoke_thesaurus "$@"

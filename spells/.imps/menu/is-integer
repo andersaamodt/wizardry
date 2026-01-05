@@ -19,6 +19,4 @@ is_integer() {
   return 0
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */is-integer) is_integer "$@" ;; esac
+is_integer "$@"

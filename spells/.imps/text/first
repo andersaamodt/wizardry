@@ -8,6 +8,4 @@ first() {
   if [ "$#" -ge 1 ]; then head -n 1 "$1"; else head -n 1; fi
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */first) first "$@" ;; esac
+first "$@"

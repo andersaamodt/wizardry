@@ -47,6 +47,4 @@ backup_nix_config() {
   printf '%s\n' "Backed up '$_bnc_file' to '$_bnc_backup'" >&2
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */backup-nix-config) backup_nix_config "$@" ;; esac
+backup_nix_config "$@"

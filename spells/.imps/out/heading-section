@@ -19,6 +19,4 @@ heading_section() {
   fi
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */heading-section) heading_section "$@" ;; esac
+heading_section "$@"

@@ -8,6 +8,4 @@ seeks() {
   grep -Fq -- "$1" "$2" 2>/dev/null
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */seeks) seeks "$@" ;; esac
+seeks "$@"

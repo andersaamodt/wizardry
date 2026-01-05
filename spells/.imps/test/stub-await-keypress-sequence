@@ -46,6 +46,4 @@ stub_await_keypress_sequence() {
     printf '%s\n' "$key"
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */stub-await-keypress-sequence) stub_await_keypress_sequence "$@" ;; esac
+stub_await_keypress_sequence "$@"

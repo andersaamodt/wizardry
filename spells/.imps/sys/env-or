@@ -20,6 +20,4 @@ env_or() {
   fi
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */env-or) env_or "$@" ;; esac
+env_or "$@"

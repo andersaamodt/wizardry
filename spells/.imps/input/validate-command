@@ -27,6 +27,4 @@ validate_command() {
   return 0
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */validate-command) validate_command "$@" ;; esac
+validate_command "$@"

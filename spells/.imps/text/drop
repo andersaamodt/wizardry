@@ -8,6 +8,4 @@ drop() {
   if [ "$#" -ge 2 ]; then head -n "-$1" "$2"; else head -n "-$1"; fi
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */drop) drop "$@" ;; esac
+drop "$@"

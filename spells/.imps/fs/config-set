@@ -79,6 +79,4 @@ config_set() {
   return 0
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */config-set) config_set "$@" ;; esac
+config_set "$@"

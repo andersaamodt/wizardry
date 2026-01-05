@@ -17,5 +17,5 @@ run_spell() {
   run_cmd "$ROOT_DIR/$script" "$@"
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in run-spell) run_spell "$@" ;; esac
+
+run_spell "$@"

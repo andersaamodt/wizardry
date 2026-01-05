@@ -25,6 +25,4 @@ disable_palette() {
   WIZARDRY_COLORS_AVAILABLE=0
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */disable-palette) disable_palette "$@" ;; esac
+disable_palette "$@"

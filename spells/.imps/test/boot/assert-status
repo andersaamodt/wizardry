@@ -16,5 +16,5 @@ assert_status() {
   return 0
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in assert-status) assert_status "$@" ;; esac
+
+assert_status "$@"

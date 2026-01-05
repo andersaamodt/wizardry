@@ -9,5 +9,5 @@ run_spell_in_dir() {
   RUN_CMD_WORKDIR=$dir run_spell "$@"
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in run-spell-in-dir) run_spell_in_dir "$@" ;; esac
+
+run_spell_in_dir "$@"

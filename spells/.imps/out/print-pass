@@ -18,6 +18,4 @@ print_pass() {
   fi
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */print-pass) print_pass "$@" ;; esac
+print_pass "$@"

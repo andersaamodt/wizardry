@@ -33,6 +33,4 @@ find_executable() {
   fi
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */find-executable) find_executable "$@" ;; esac
+find_executable "$@"

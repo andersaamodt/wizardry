@@ -11,6 +11,4 @@ make() {
   esac
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */make) make "$@" ;; esac
+make "$@"

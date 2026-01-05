@@ -13,6 +13,4 @@ strip_trailing_slashes() {
   printf '%s\n' "$_sts_normalized"
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */strip-trailing-slashes) strip_trailing_slashes "$@" ;; esac
+strip_trailing_slashes "$@"

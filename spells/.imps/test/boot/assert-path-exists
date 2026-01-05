@@ -11,5 +11,5 @@ assert_path_exists() {
   return 0
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in assert-path-exists) assert_path_exists "$@" ;; esac
+
+assert_path_exists "$@"

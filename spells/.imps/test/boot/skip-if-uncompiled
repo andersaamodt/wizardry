@@ -11,10 +11,5 @@ skip_if_uncompiled() {
 }
 
 # Self-execute when run directly (not sourced)
-case "${0##*/}" in
-  skip-if-uncompiled)
-    set -eu
-    skip_if_uncompiled "$@"
-    exit $?
-    ;;
-esac
+
+skip_if_uncompiled "$@"

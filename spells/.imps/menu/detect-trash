@@ -22,6 +22,4 @@ detect_trash() {
   esac
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */detect-trash) detect_trash "$@" ;; esac
+detect_trash "$@"

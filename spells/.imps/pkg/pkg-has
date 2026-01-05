@@ -21,6 +21,4 @@ pkg_has() {
   esac
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */pkg-has) pkg_has "$@" ;; esac
+pkg_has "$@"

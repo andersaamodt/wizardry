@@ -24,6 +24,4 @@ pkg_install() {
   esac
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */pkg-install) pkg_install "$@" ;; esac
+pkg_install "$@"

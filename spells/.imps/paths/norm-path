@@ -12,6 +12,4 @@ norm_path() {
   fi
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */norm-path) norm_path "$@" ;; esac
+norm_path "$@"

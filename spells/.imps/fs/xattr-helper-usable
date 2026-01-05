@@ -24,6 +24,4 @@ xattr_helper_usable() {
   return 0
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */xattr-helper-usable) xattr_helper_usable "$@" ;; esac
+xattr_helper_usable "$@"

@@ -11,6 +11,4 @@ debug() {
   fi
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */debug) debug "$@" ;; esac
+debug "$@"
