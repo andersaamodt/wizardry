@@ -634,7 +634,6 @@ demo_level() {
 }
 
 # Detect WIZARDRY_DIR if not set (for direct execution)
-# This must be done BEFORE demo_magic function so castable loading can find it
 if [ -z "${WIZARDRY_DIR-}" ]; then
   # Try to detect from script location
   if command -v dirname >/dev/null 2>&1 && command -v cd >/dev/null 2>&1 \
@@ -679,13 +678,6 @@ USAGE
 esac
 
 set -eu
-
-# Source env-clear if not already available
-if ! command -v env_clear >/dev/null 2>&1; then
-  if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/env-clear" ]; then
-    . "${WIZARDRY_DIR}/spells/.imps/sys/env-clear"
-  fi
-fi
 
 # Add imps to PATH for spell demonstrations
 if [ -n "${WIZARDRY_DIR-}" ]; then
