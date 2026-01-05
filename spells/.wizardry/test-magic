@@ -249,19 +249,7 @@ if [ ! -x "$root_dir/spells/.imps/sys/spell-levels" ]; then
   exit 1
 fi
 
-# spell-levels is a command, not sourced - it's in PATH via invoke-wizardry
-# Define helper functions that call spell-levels command
-banish_level_name() {
-  spell-levels "$1" name 2>/dev/null || printf 'Unknown Level'
-}
-
-get_level_spells() {
-  spell-levels "$1" spells 2>/dev/null || printf ''
-}
-
-get_level_imps() {
-  spell-levels "$1" imps 2>/dev/null || printf ''
-}
+# spell-levels is a command in PATH - call it directly where needed
 
 # Note: invoke-wizardry is loaded by test-bootstrap (sourced by each test file)
 # This provides a standard environment with all functions available per test
@@ -304,8 +292,8 @@ fi
 
 count_level=$count_start
 while [ "$count_level" -le "$count_end" ]; do
-  count_spell_list=$(get_level_spells "$count_level" 2>/dev/null || printf '')
-  count_imp_list=$(get_level_imps "$count_level" 2>/dev/null || printf '')
+  count_spell_list=$(spell-levels "$count_level" spells 2>/dev/null || printf '')
+  count_imp_list=$(spell-levels "$count_level" imps 2>/dev/null || printf '')
   
   for count_spell_info in $count_spell_list; do
     case "$count_spell_info" in
@@ -597,12 +585,12 @@ WRAPPER_EOF
 
 test_level() {
   level=$1
-  level_name=$(banish_level_name "$level")
+  level_name=$(spell-levels "$level" name 2>/dev/null || printf 'Unknown Level')
 
   printf '\nLevel %d: %s\n' "$level" "$level_name"
 
-  spell_list=$(get_level_spells "$level")
-  imp_list=$(get_level_imps "$level" 2>/dev/null || printf '')
+  spell_list=$(spell-levels "$level" spells 2>/dev/null || printf '')
+  imp_list=$(spell-levels "$level" imps 2>/dev/null || printf '')
 
   level_pass=0
   level_fail=0
@@ -749,9 +737,9 @@ test_level() {
 }
 
 if [ "$only_this_level" -eq 1 ]; then
-  printf '\nTesting Level %d only: %s\n' "$target_level" "$(banish_level_name "$target_level")"
+  printf '\nTesting Level %d only: %s\n' "$target_level" "$(spell-levels "$target_level" name 2>/dev/null || printf 'Unknown Level')"
 else
-  printf '\nTesting through Level %d: %s\n' "$target_level" "$(banish_level_name "$target_level")"
+  printf '\nTesting through Level %d: %s\n' "$target_level" "$(spell-levels "$target_level" name 2>/dev/null || printf 'Unknown Level')"
 fi
 
 if [ "$only_this_level" -eq 1 ]; then
