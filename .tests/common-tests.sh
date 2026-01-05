@@ -833,6 +833,7 @@ divination/identify-room
 system/update-all
 system/test-magic
 system/banish
+spellcraft/demo-magic
 "
   
   check_function_discipline() {
