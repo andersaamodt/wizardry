@@ -1,6 +1,6 @@
 #!/bin/sh
-# finish-tests - print test summary and return appropriate exit status
-# Returns 0 if all tests passed, 1 otherwise. Prints failure indices if any.
+# finish-tests - print test summary and exit with appropriate exit status
+# Exits 0 if all tests passed, 1 otherwise. Prints failure indices if any.
 # Provides organized failure lists by execution pattern when dual-pattern testing enabled.
 set -eu
 
@@ -40,8 +40,8 @@ if [ "$_fail_count" -gt 0 ]; then
     printf '\nFAIL_DETAIL:%s\n' "$_fail_detail_indices"
   fi
   
-  return 1
+  exit 1
 fi
-return 0
+exit 0
 
 
