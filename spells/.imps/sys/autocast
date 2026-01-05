@@ -8,38 +8,47 @@
 
 set -eu
 
+# Detect if being executed vs sourced FIRST, before consuming arguments
+_autocast_executed=0
+_autocast_base=${0##*/}
+case "$_autocast_base" in
+  sh|dash|bash|zsh|ksh|mksh)
+    _autocast_executed=0  # sourced
+    ;;
+  autocast)
+    _autocast_executed=1  # executed directly as a command
+    ;;
+  *)
+    # Could be sourced from another script - check ZSH_EVAL_CONTEXT if available
+    if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+      case "${ZSH_EVAL_CONTEXT-}" in
+        *:file) _autocast_executed=0 ;; # sourced
+        *) _autocast_executed=1 ;; # executed
+      esac
+    else
+      # In POSIX shells, if $0 basename isn't a shell name, assume executed
+      # This isn't perfect but works for most cases
+      _autocast_executed=1
+    fi
+    ;;
+esac
 
+# Determine spell name based on context
+_autocast_name=""
+if [ "$_autocast_executed" -eq 1 ]; then
+  # When executed as a command, accept spell name as argument
   _autocast_name=${1:-}
-  [ "$#" -gt 0 ] && shift  # Remove first arg if present
-
-  # Try to detect spell name if not provided
+  [ "$#" -gt 0 ] && shift
+  
+  # If no argument provided, try to detect from $0
   if [ -z "$_autocast_name" ]; then
-    _autocast_name=${0##*/}  # Equivalent to basename, avoids external command
+    _autocast_name=${0##*/}
   fi
-
-  # Detect if being executed vs sourced
-  _autocast_executed=0
-  _autocast_base=${0##*/}
-  case "$_autocast_base" in
-    sh|dash|bash|zsh|ksh|mksh)
-      _autocast_executed=0  # sourced
-      # When sourced, basename might be shell name, try to find actual function
-      if [ -z "$_autocast_name" ] || [ "$_autocast_name" = "$_autocast_base" ]; then
-        # Try common function name patterns based on caller's file name
-        # Check if any snake_case function exists that isn't internal
-        _autocast_name=""
-        _autocast_func=""
-      fi
-      ;;
-    *)
-      # Check if executed directly
-      if [ "$_autocast_base" = "$_autocast_name" ]; then
-        _autocast_executed=1
-      else
-        _autocast_executed=0  # sourced from another script
-      fi
-      ;;
-  esac
+else
+  # When sourced, ALWAYS use $0 (the calling script's name)
+  # Never consume arguments - they belong to the calling script
+  _autocast_name=${0##*/}
+fi
 
   # Determine function name to call
   _autocast_func=""
@@ -64,7 +73,7 @@ set -eu
   # The spell should have defined its true-name function already
   # Just return silently - this is fine for spells that don't follow autocast pattern
   if [ -z "$_autocast_func" ]; then
-  exit 0
+  return 0
   fi
 
   # If executed directly, call the function with remaining arguments
@@ -74,7 +83,7 @@ set -eu
     else
       # Function not found - this is an error when executed
       printf '%s\n' "autocast: function $_autocast_func not found" >&2
-      return 2
+      exit 2
     fi
   else
     # If sourced, automatically call the function (this is what makes it "autocast")

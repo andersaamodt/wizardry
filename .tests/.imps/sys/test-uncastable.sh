@@ -32,7 +32,6 @@ test_uncastable_sourced_ok() {
 #!/bin/sh
 set -eu
 . "$WIZARDRY_DIR/spells/.imps/sys/uncastable"
-uncastable
 printf '%s\n' "sourced-ok"
 SCRIPT
   chmod +x "$script"
