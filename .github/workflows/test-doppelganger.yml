@@ -27,10 +27,8 @@ jobs:
           # Set wizardry directory
           export WIZARDRY_DIR="${{ github.workspace }}"
           
-          # Add necessary paths for doppelganger to work
-          export PATH="${{ github.workspace }}/spells/.imps/out:${PATH}"
-          export PATH="${{ github.workspace }}/spells/.imps/sys:${PATH}"
-          export PATH="${{ github.workspace }}/spells/spellcraft:${PATH}"
+          # Source invoke-wizardry to set up environment
+          . "${{ github.workspace }}/spells/.imps/sys/invoke-wizardry"
           
           # Call doppelganger to compile all spells
           "${{ github.workspace }}/spells/spellcraft/doppelganger" /tmp/wizardry-doppelganger

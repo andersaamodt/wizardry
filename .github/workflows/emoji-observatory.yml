@@ -41,5 +41,8 @@ jobs:
           echo "=== CURRENT EMOJI CATALOG ==="
           echo ""
           
+          # Source invoke-wizardry to set up environment
+          . spells/.imps/sys/invoke-wizardry
+          
           # Run catalog-emojis spell
           ./spells/spellcraft/catalog-emojis
