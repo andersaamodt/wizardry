@@ -1908,12 +1908,13 @@ test_stub_imps_have_correct_patterns() {
 run_test_case "stub imps have correct self-execute patterns" test_stub_imps_have_correct_patterns
 
 # ==============================================================================
-# SPELL INVOCATION REQUIREMENTS - Castable/Uncastable Declaration
-# All spells must declare whether they are castable or uncastable
+# SPELL INVOCATION REQUIREMENTS - Optional Uncastable Declaration
+# Spells may optionally declare "uncastable" if they need to be sourced.
+# The castable/uncastable/autocast requirement has been deprecated.
 # ==============================================================================
 
-# All spells must declare castable or uncastable
-test_spells_declare_invocation_type() {
+# Check that spells don't have multiple invocation declarations (deprecated pattern)
+test_spells_no_multiple_invocation_declarations() {
   failures=""
   
   # Check all spell files (not imps, not tests)
@@ -1927,13 +1928,13 @@ test_spells_declare_invocation_type() {
     spell_name=${spell_file#"$ROOT_DIR/spells/"}
     
     # Skip imps - they are flat, linear scripts (no wrapper functions)
-    # Skip bootstrap spells in .arcana/core - they use traditional if [ "${0##*/}" = "name" ] pattern
+    # Skip bootstrap spells in .arcana/core
     case "$spell_name" in
       .imps/*) continue ;;
       .arcana/core/*) continue ;;
     esac
     
-    # Check if spell has castable, uncastable, or autocast declaration
+    # Check if spell has multiple invocation declarations (which would be an error)
     has_castable=0
     has_uncastable=0
     has_autocast=0
@@ -1953,23 +1954,29 @@ test_spells_declare_invocation_type() {
     # Count declarations
     declaration_count=$((has_castable + has_uncastable + has_autocast))
     
-    # Spell must have exactly one declaration
-    if [ "$declaration_count" -eq 0 ]; then
-      failures="${failures}${failures:+, }$spell_name (missing declaration)"
-    elif [ "$declaration_count" -gt 1 ]; then
-      failures="${failures}${failures:+, }$spell_name (multiple declarations)"
+    # Warn if spell has deprecated castable/autocast (should be removed)
+    if [ "$has_castable" -eq 1 ]; then
+      failures="${failures}${failures:+, }$spell_name (has deprecated 'castable' declaration)"
+    fi
+    if [ "$has_autocast" -eq 1 ]; then
+      failures="${failures}${failures:+, }$spell_name (has deprecated 'autocast' declaration)"
+    fi
+    
+    # Error if spell has multiple declarations
+    if [ "$declaration_count" -gt 1 ]; then
+      failures="${failures}${failures:+, }$spell_name (multiple invocation declarations)"
     fi
   done < "$SPELL_LIST_CACHE"
   
   if [ -n "$failures" ]; then
-    TEST_FAILURE_REASON="spells without proper castable/uncastable/autocast declaration: $failures"
+    TEST_FAILURE_REASON="spells with deprecated or multiple invocation declarations: $failures"
     return 1
   fi
   
   return 0
 }
 
-run_test_case "spells declare castable/uncastable/autocast" test_spells_declare_invocation_type
+run_test_case "spells have no deprecated invocation declarations" test_spells_no_multiple_invocation_declarations
 
 # --- Check: All spells respond to --help flag ---
 # Every spell must support --help, --usage, or -h flags
