@@ -364,21 +364,21 @@ WRAPPER_EOF
 
   awk_filter='
     /^FAIL_DETAIL:/ { next }
-    /^PASS / { print "  " $0; fflush(); next }
+    /^PASS / { print "    " $0; fflush(); next }
     /^FAIL/ {
       if (index($0, ":") > 0) {
         line = $0
         sub(/:.*$/, "", line)
-        print "  " line
+        print "    " line
       } else {
-        print "  " $0
+        print "    " $0
       }
       fflush()
       next
     }
-    /^SKIP / { print "  " $0; fflush(); next }
-    /^LACK / { print "  " $0; fflush(); next }
-    /^[0-9]+\/[0-9]+ tests passed/ { print "  " $0; fflush(); next }
+    /^SKIP / { print "    " $0; fflush(); next }
+    /^LACK / { print "    " $0; fflush(); next }
+    /^[0-9]+\/[0-9]+ tests passed/ { print "    " $0; fflush(); next }
   '
 
   run_exit_file=$(temp-file test-run-exit) || return 1
@@ -653,17 +653,17 @@ test_level() {
     if run_test_file "$test_path" "$spell"; then
       level_pass=$((level_pass + 1))
       if [ -n "$test_summary_line" ]; then
-        printf '  %s✓%s %s\n' "$_green" "$_reset" "$test_summary_line"
+        printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_summary_line"
       else
-        printf '  %s✓%s %s\n' "$_green" "$_reset" "$test_name"
+        printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_name"
       fi
     else
       level_fail=$((level_fail + 1))
       failed_tests="${failed_tests:+$failed_tests }$test_name"
       if [ -n "$test_summary_line" ]; then
-        printf '  %s✗%s %s\n' "$_red" "$_reset" "$test_summary_line"
+        printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_summary_line"
       else
-        printf '  %s✗%s %s\n' "$_red" "$_reset" "$test_name"
+        printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_name"
       fi
     fi
   done
@@ -705,17 +705,17 @@ test_level() {
     if run_test_file "$test_path" "$imp"; then
       level_pass=$((level_pass + 1))
       if [ -n "$test_summary_line" ]; then
-        printf '  %s✓%s %s\n' "$_green" "$_reset" "$test_summary_line"
+        printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_summary_line"
       else
-        printf '  %s✓%s %s\n' "$_green" "$_reset" "$test_name"
+        printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_name"
       fi
     else
       level_fail=$((level_fail + 1))
       failed_tests="${failed_tests:+$failed_tests }$test_name"
       if [ -n "$test_summary_line" ]; then
-        printf '  %s✗%s %s\n' "$_red" "$_reset" "$test_summary_line"
+        printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_summary_line"
       else
-        printf '  %s✗%s %s\n' "$_red" "$_reset" "$test_name"
+        printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_name"
       fi
     fi
   done
