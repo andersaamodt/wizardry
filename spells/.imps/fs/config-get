@@ -13,17 +13,17 @@ _cg_key=${2:?config-get: key required}
 case "$_cg_key" in
   *[!a-zA-Z0-9_-]*)
     printf 'config-get: invalid key format (use alphanumeric, dash, underscore only)\n' >&2
-    return 1
+  exit 1
     ;;
   "")
     printf 'config-get: key cannot be empty\n' >&2
-    return 1
+  exit 1
     ;;
 esac
 
 # File doesn't exist - return empty
 if [ ! -f "$_cg_file" ]; then
-  return 0
+  exit 0
 fi
 
 # Find and extract value

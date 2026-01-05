@@ -64,7 +64,7 @@ set -eu
   # The spell should have defined its true-name function already
   # Just return silently - this is fine for spells that don't follow autocast pattern
   if [ -z "$_autocast_func" ]; then
-    return 0
+  exit 0
   fi
 
   # If executed directly, call the function with remaining arguments

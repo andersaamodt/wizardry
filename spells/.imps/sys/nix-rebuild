@@ -6,7 +6,7 @@ set -eu
 
 
   if [ "${WIZARDRY_SKIP_NIX_REBUILD-}" = "1" ]; then
-    return 0
+  exit 0
   fi
 
   _nr_rebuild_success=0
@@ -47,7 +47,7 @@ set -eu
 
   if [ "$_nr_rebuild_success" -eq 0 ]; then
     printf '%s\n' "nix-rebuild: NixOS configuration could not be automatically rebuilt." >&2
-    return 1
+  exit 1
   fi
 
-  return 0
+  exit 0

@@ -30,5 +30,5 @@ elif command -v wl-copy >/dev/null 2>&1; then
   fi
 else
   printf '%s\n' "clip-copy: no clipboard utility found (need pbcopy, xsel, xclip, or wl-copy)" >&2
-  return 1
+  exit 1
 fi

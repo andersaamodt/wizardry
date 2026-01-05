@@ -8,7 +8,7 @@ set -eu
 helper=$1
 
 if ! command -v "$helper" >/dev/null 2>&1; then
-  return 1
+  exit 1
 fi
 
 helper_path=$(command -v "$helper")
@@ -20,4 +20,4 @@ if [ "${WIZARDRY_TEST_HELPERS_ONLY-0}" -eq 1 ]; then
   esac
 fi
 
-return 0
+exit 0

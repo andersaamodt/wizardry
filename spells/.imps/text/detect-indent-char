@@ -8,7 +8,7 @@ _dic_file=${1-}
 
 if [ -z "$_dic_file" ] || [ ! -f "$_dic_file" ]; then
   printf 'space\n'
-  return 0
+  exit 0
 fi
 
 _dic_tabs=0

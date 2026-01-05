@@ -9,7 +9,7 @@ _fe_dir=${1:-.}
 # Validate directory exists
 if [ ! -d "$_fe_dir" ]; then
   printf 'find-executable: directory not found: %s\n' "$_fe_dir" >&2
-  return 1
+  exit 1
 fi
 
 # Try different find syntaxes in order of preference

@@ -12,11 +12,11 @@ _cd_key=${2:?config-del: key required}
 case "$_cd_key" in
   *[!a-zA-Z0-9_-]*)
     printf 'config-del: invalid key format (use alphanumeric, dash, underscore only)\n' >&2
-    return 1
+  exit 1
     ;;
   "")
     printf 'config-del: key cannot be empty\n' >&2
-    return 1
+  exit 1
     ;;
 esac
 
@@ -41,8 +41,8 @@ if ! mv "$_cd_tmp" "$_cd_file"; then
   rm -f "$_cd_tmp"
   trap - EXIT HUP INT TERM
   printf 'config-del: failed to update %s\n' "$_cd_file" >&2
-  return 1
+  exit 1
 fi
 
 trap - EXIT HUP INT TERM
-return 0
+exit 0

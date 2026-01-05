@@ -14,7 +14,7 @@ set -eu
     printf '%s\n' "Or clone and install with git:" >&2
     printf '%s\n' "  git clone https://github.com/andersaamodt/wizardry ~/.wizardry" >&2
     printf '%s\n' "  cd ~/.wizardry && ./install" >&2
-    return 1
+  exit 1
   fi
 
   # Interactive mode - ask user
@@ -35,13 +35,13 @@ set -eu
         return $?
       else
         printf '%s\n' "Error: neither curl nor wget is available to download wizardry." >&2
-        return 1
+  exit 1
       fi
       ;;
     *)
       printf '%s\n' "" >&2
       printf '%s\n' "To install wizardry later, run:" >&2
       printf '%s\n' "  curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh" >&2
-      return 1
+  exit 1
       ;;
   esac

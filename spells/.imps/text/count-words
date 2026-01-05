@@ -15,7 +15,7 @@ fi
 # Handle empty input
 if [ -z "$text" ]; then
   printf '0\n'
-  return 0
+  exit 0
 fi
 
 # Trim leading/trailing whitespace and count words
