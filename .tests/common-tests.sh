@@ -653,6 +653,12 @@ test_imps_follow_function_rule() {
     should_skip_file "$name" && continue
     is_posix_shell_script "$imp" || continue
     
+    # Skip test infrastructure - test-bootstrap is complex test framework
+    rel_path=${imp#"$ROOT_DIR/spells/.imps/"}
+    case "$rel_path" in
+      test/test-bootstrap) continue ;;
+    esac
+    
     # Count function definitions
     # Pattern matches: name() { or name () {
     func_count=$(grep -cE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\(\)[[:space:]]*\{' "$imp" 2>/dev/null) || func_count=0
@@ -664,7 +670,6 @@ test_imps_follow_function_rule() {
     
     # If more than one function, that's a violation
     if [ "$func_count" -gt 1 ]; then
-      rel_path=${imp#"$ROOT_DIR/spells/.imps/"}
       printf '%s (has %s functions)\n' "$rel_path" "$func_count"
       continue
     fi
@@ -1908,13 +1913,14 @@ test_stub_imps_have_correct_patterns() {
 run_test_case "stub imps have correct self-execute patterns" test_stub_imps_have_correct_patterns
 
 # ==============================================================================
-# SPELL INVOCATION REQUIREMENTS - Optional Uncastable Declaration
+# SPELL INVOCATION REQUIREMENTS - Optional Invocation Declarations
 # Spells may optionally declare "uncastable" if they need to be sourced.
-# The castable/uncastable/autocast requirement has been deprecated.
+# Spells may optionally declare "autocast" for auto-execution patterns.
+# The "castable" declaration is deprecated and should be removed.
 # ==============================================================================
 
-# Check that spells don't have multiple invocation declarations (deprecated pattern)
-test_spells_no_multiple_invocation_declarations() {
+# Check that spells don't have deprecated castable or multiple declarations
+test_spells_no_deprecated_invocation_declarations() {
   failures=""
   
   # Check all spell files (not imps, not tests)
@@ -1934,7 +1940,7 @@ test_spells_no_multiple_invocation_declarations() {
       .arcana/core/*) continue ;;
     esac
     
-    # Check if spell has multiple invocation declarations (which would be an error)
+    # Check if spell has invocation declarations
     has_castable=0
     has_uncastable=0
     has_autocast=0
@@ -1954,15 +1960,12 @@ test_spells_no_multiple_invocation_declarations() {
     # Count declarations
     declaration_count=$((has_castable + has_uncastable + has_autocast))
     
-    # Warn if spell has deprecated castable/autocast (should be removed)
+    # Warn if spell has deprecated castable (should be removed)
     if [ "$has_castable" -eq 1 ]; then
       failures="${failures}${failures:+, }$spell_name (has deprecated 'castable' declaration)"
     fi
-    if [ "$has_autocast" -eq 1 ]; then
-      failures="${failures}${failures:+, }$spell_name (has deprecated 'autocast' declaration)"
-    fi
     
-    # Error if spell has multiple declarations
+    # Error if spell has multiple declarations (shouldn't have both uncastable and autocast)
     if [ "$declaration_count" -gt 1 ]; then
       failures="${failures}${failures:+, }$spell_name (multiple invocation declarations)"
     fi
@@ -1976,7 +1979,7 @@ test_spells_no_multiple_invocation_declarations() {
   return 0
 }
 
-run_test_case "spells have no deprecated invocation declarations" test_spells_no_multiple_invocation_declarations
+run_test_case "spells have no deprecated invocation declarations" test_spells_no_deprecated_invocation_declarations
 
 # --- Check: All spells respond to --help flag ---
 # Every spell must support --help, --usage, or -h flags

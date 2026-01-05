@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Uninstall the tput command using the system package manager.
+# Bootstrap spell: Uninstall the tput command using the system package manager.
 
 case "${1-}" in
 --help|--usage|-h)
