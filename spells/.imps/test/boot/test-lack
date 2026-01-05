@@ -4,11 +4,8 @@
 
 set -eu
 
-test_lack() {
-  name=$1
-  reason=$2
-  printf 'LACK %s (%s)\n' "$name" "$reason"
-}
+name=$1
+reason=$2
+printf 'LACK %s (%s)\n' "$name" "$reason"
 
 
-test_lack "$@"

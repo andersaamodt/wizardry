@@ -4,47 +4,44 @@
 # Provides organized failure lists by execution pattern when dual-pattern testing enabled.
 set -eu
 
-finish_tests() {
-  total=$((_pass_count + _fail_count + ${_skip_count-0}))
-  test_summary "$_pass_count" "$total" "${_skip_count-0}"
-  
-  if [ "$_fail_count" -gt 0 ]; then
-    # Print organized failure summary (improved output to show all failures)
-    if [ "${WIZARDRY_TEST_BOTH_PATTERNS-}" = "1" ]; then
-      # Dual-pattern mode: show failures by pattern
-      if [ -n "${WIZARDRY_DIRECT_EXEC_FAILURES-}" ] || [ -n "${WIZARDRY_SOURCED_FAILURES-}" ]; then
-        printf '\n=== FAILURE SUMMARY BY EXECUTION PATTERN ===\n'
-        
-        if [ -n "${WIZARDRY_DIRECT_EXEC_FAILURES-}" ]; then
-          printf '\n--- Direct Execution Failures [exec] ---\n'
-          printf '%s\n' "$WIZARDRY_DIRECT_EXEC_FAILURES" | tr ',' '\n' | sed 's/^/  /'
-        fi
-        
-        if [ -n "${WIZARDRY_SOURCED_FAILURES-}" ]; then
-          printf '\n--- Source-Then-Invoke Failures [src] ---\n'
-          printf '%s\n' "$WIZARDRY_SOURCED_FAILURES" | tr ',' '\n' | sed 's/^/  /'
-        fi
-        
-        printf '\n=== END FAILURE SUMMARY ===\n'
+total=$((_pass_count + _fail_count + ${_skip_count-0}))
+test_summary "$_pass_count" "$total" "${_skip_count-0}"
+
+if [ "$_fail_count" -gt 0 ]; then
+  # Print organized failure summary (improved output to show all failures)
+  if [ "${WIZARDRY_TEST_BOTH_PATTERNS-}" = "1" ]; then
+    # Dual-pattern mode: show failures by pattern
+    if [ -n "${WIZARDRY_DIRECT_EXEC_FAILURES-}" ] || [ -n "${WIZARDRY_SOURCED_FAILURES-}" ]; then
+      printf '\n=== FAILURE SUMMARY BY EXECUTION PATTERN ===\n'
+      
+      if [ -n "${WIZARDRY_DIRECT_EXEC_FAILURES-}" ]; then
+        printf '\n--- Direct Execution Failures [exec] ---\n'
+        printf '%s\n' "$WIZARDRY_DIRECT_EXEC_FAILURES" | tr ',' '\n' | sed 's/^/  /'
       fi
-    else
-      # Single-pattern mode: show all failures in simple list
+      
       if [ -n "${WIZARDRY_SOURCED_FAILURES-}" ]; then
-        printf '\n=== FAILED TESTS ===\n'
+        printf '\n--- Source-Then-Invoke Failures [src] ---\n'
         printf '%s\n' "$WIZARDRY_SOURCED_FAILURES" | tr ',' '\n' | sed 's/^/  /'
-        printf '\n=== END FAILURES ===\n'
       fi
+      
+      printf '\n=== END FAILURE SUMMARY ===\n'
     fi
-    
-    # Print traditional failure detail indices (always show, fixes truncation)
-    if [ -n "${_fail_detail_indices-}" ]; then
-      printf '\nFAIL_DETAIL:%s\n' "$_fail_detail_indices"
+  else
+    # Single-pattern mode: show all failures in simple list
+    if [ -n "${WIZARDRY_SOURCED_FAILURES-}" ]; then
+      printf '\n=== FAILED TESTS ===\n'
+      printf '%s\n' "$WIZARDRY_SOURCED_FAILURES" | tr ',' '\n' | sed 's/^/  /'
+      printf '\n=== END FAILURES ===\n'
     fi
-    
-    return 1
   fi
-  return 0
-}
+  
+  # Print traditional failure detail indices (always show, fixes truncation)
+  if [ -n "${_fail_detail_indices-}" ]; then
+    printf '\nFAIL_DETAIL:%s\n' "$_fail_detail_indices"
+  fi
+  
+  return 1
+fi
+return 0
 
 
-finish_tests "$@"

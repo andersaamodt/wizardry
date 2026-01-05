@@ -3,14 +3,11 @@
 # Wraps bwrap invocation, using sudo when BWRAP_VIA_SUDO is set.
 set -eu
 
-run_bwrap() {
-  if [ "${BWRAP_VIA_SUDO:-0}" -eq 1 ]; then
-    # Use REAL_SUDO_BIN to avoid picking up a test stub sudo from PATH
-    "${REAL_SUDO_BIN:?}" -n "${BWRAP_BIN:?}" "$@"
-  else
-    "${BWRAP_BIN:?}" "$@"
-  fi
-}
+if [ "${BWRAP_VIA_SUDO:-0}" -eq 1 ]; then
+  # Use REAL_SUDO_BIN to avoid picking up a test stub sudo from PATH
+  "${REAL_SUDO_BIN:?}" -n "${BWRAP_BIN:?}" "$@"
+else
+  "${BWRAP_BIN:?}" "$@"
+fi
 
 
-run_bwrap "$@"

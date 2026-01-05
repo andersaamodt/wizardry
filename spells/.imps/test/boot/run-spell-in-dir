@@ -3,11 +3,8 @@
 # Sets RUN_CMD_WORKDIR before calling run-spell.
 set -eu
 
-run_spell_in_dir() {
-  dir=$1
-  shift
-  RUN_CMD_WORKDIR=$dir run_spell "$@"
-}
+dir=$1
+shift
+RUN_CMD_WORKDIR=$dir run_spell "$@"
 
 
-run_spell_in_dir "$@"

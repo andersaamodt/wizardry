@@ -3,9 +3,6 @@
 # Shorthand for assert-status 0.
 set -eu
 
-assert_success() {
-  assert_status 0
-}
+assert_status 0
 
 
-assert_success "$@"

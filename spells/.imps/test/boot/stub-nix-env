@@ -3,15 +3,12 @@
 # Stub logs invocations to NIX_ENV_LOG and exits with NIX_ENV_EXIT code.
 set -eu
 
-stub_nix_env() {
-  fixture=$1
-  cat <<'STUB' >"$fixture/bin/nix-env"
+fixture=$1
+cat <<'STUB' >"$fixture/bin/nix-env"
 #!/bin/sh
 echo "$0 $*" >>"${NIX_ENV_LOG:?}" || exit 1
 exit ${NIX_ENV_EXIT:-0}
 STUB
-  chmod +x "$fixture/bin/nix-env"
-}
+chmod +x "$fixture/bin/nix-env"
 
 
-stub_nix_env "$@"

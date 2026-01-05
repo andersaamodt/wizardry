@@ -3,15 +3,12 @@
 # Creates an executable script at DIR/NAME that always succeeds.
 set -eu
 
-write_command_stub() {
-  dir=$1
-  name=$2
-  cat <<'STUB' >"$dir/$name"
+dir=$1
+name=$2
+cat <<'STUB' >"$dir/$name"
 #!/bin/sh
 exit 0
 STUB
-  chmod +x "$dir/$name"
-}
+chmod +x "$dir/$name"
 
 
-write_command_stub "$@"

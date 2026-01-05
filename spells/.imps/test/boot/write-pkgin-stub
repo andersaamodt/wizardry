@@ -3,27 +3,24 @@
 # Stub logs install/remove invocations to PKGIN_LOG.
 set -eu
 
-write_pkgin_stub() {
-  fixture=$1
-  mkdir -p "$fixture/opt/pkg/bin"
-  cat <<'STUB' >"$fixture/opt/pkg/bin/pkgin"
+fixture=$1
+mkdir -p "$fixture/opt/pkg/bin"
+cat <<'STUB' >"$fixture/opt/pkg/bin/pkgin"
 #!/bin/sh
 if [ "$1" = "-y" ] && [ "$2" = "install" ]; then
-  shift 2
-  printf 'pkgin install %s\n' "$*" >>"${PKGIN_LOG:?}" || exit 1
-  exit ${PKGIN_EXIT:-0}
+shift 2
+printf 'pkgin install %s\n' "$*" >>"${PKGIN_LOG:?}" || exit 1
+exit ${PKGIN_EXIT:-0}
 fi
 
 if [ "$1" = "-y" ] && [ "$2" = "remove" ]; then
-  shift 2
-  printf 'pkgin remove %s\n' "$*" >>"${PKGIN_LOG:?}" || exit 1
-  exit ${PKGIN_EXIT:-0}
+shift 2
+printf 'pkgin remove %s\n' "$*" >>"${PKGIN_LOG:?}" || exit 1
+exit ${PKGIN_EXIT:-0}
 fi
 
 exit 1
 STUB
-  chmod +x "$fixture/opt/pkg/bin/pkgin"
-}
+chmod +x "$fixture/opt/pkg/bin/pkgin"
 
 
-write_pkgin_stub "$@"

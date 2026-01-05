@@ -3,17 +3,14 @@
 # Prints the repository root path containing spells/ and .tests/ directories.
 set -eu
 
-find_repo_root() {
-  dir=$(CDPATH= cd -- "$(dirname "${0:-$PWD}")" && pwd -P)
-  while [ "$dir" != "/" ]; do
-    if [ -d "$dir/spells" ] && [ -d "$dir/.tests" ]; then
-      printf '%s\n' "$dir"
-      return 0
-    fi
-    dir=$(dirname "$dir")
-  done
-  printf '%s\n' "$(pwd -P)"
-}
+dir=$(CDPATH= cd -- "$(dirname "${0:-$PWD}")" && pwd -P)
+while [ "$dir" != "/" ]; do
+  if [ -d "$dir/spells" ] && [ -d "$dir/.tests" ]; then
+    printf '%s\n' "$dir"
+    return 0
+  fi
+  dir=$(dirname "$dir")
+done
+printf '%s\n' "$(pwd -P)"
 
 
-find_repo_root "$@"
