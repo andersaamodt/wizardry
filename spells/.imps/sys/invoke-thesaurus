@@ -4,16 +4,60 @@
 # Also initializes default synonyms if not already set up.
 
 # This script must be sourced, not executed
-# Detect if sourced using the return command test (POSIX-compliant)
-_it_sourced=0
-(return 0 2>/dev/null) && _it_sourced=1 || _it_sourced=0
+if command -v uncastable >/dev/null 2>&1; then
+  # Check if uncastable is a function using POSIX-compliant method
+  _it_cmd_result=$(command -v uncastable 2>/dev/null || printf '')
+  case "$_it_cmd_result" in
+    alias\ *) ;;  # Is an alias, fall through to manual check
+    /*) ;;        # Is a path (external command), fall through
+    uncastable)   # Is a function
+      if ! uncastable invoke-thesaurus "Usage: . invoke-thesaurus"; then
+        exit 1
+      fi
+      ;;
+    *)
+      _it_sourced=0
+      if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+        case "${ZSH_EVAL_CONTEXT-}" in
+          *:file) _it_sourced=1 ;;
+        esac
+      else
+        case "${0##*/}" in
+          invoke-thesaurus) _it_sourced=0 ;;
+          sh|dash|bash|zsh|ksh|mksh) _it_sourced=1 ;;
+          *) _it_sourced=1 ;;
+        esac
+      fi
 
-if [ "$_it_sourced" -ne 1 ]; then
-  printf '%s\n' "invoke-thesaurus: must be sourced, not executed" >&2
-  printf '%s\n' "Usage: . invoke-thesaurus" >&2
-  exit 1
+      if [ "$_it_sourced" -ne 1 ]; then
+        printf '%s\n' "invoke-thesaurus: must be sourced, not executed" >&2
+        printf '%s\n' "Usage: . invoke-thesaurus" >&2
+        exit 1
+      fi
+      unset _it_sourced
+      ;;
+  esac
+else
+  _it_sourced=0
+  if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+    case "${ZSH_EVAL_CONTEXT-}" in
+      *:file) _it_sourced=1 ;;
+    esac
+  else
+    case "${0##*/}" in
+      invoke-thesaurus) _it_sourced=0 ;;
+      sh|dash|bash|zsh|ksh|mksh) _it_sourced=1 ;;
+      *) _it_sourced=1 ;;
+    esac
+  fi
+
+  if [ "$_it_sourced" -ne 1 ]; then
+    printf '%s\n' "invoke-thesaurus: must be sourced, not executed" >&2
+    printf '%s\n' "Usage: . invoke-thesaurus" >&2
+    exit 1
+  fi
+  unset _it_sourced
 fi
-unset _it_sourced
 
 # Explicitly use permissive mode - this file is sourced into user's shell
 set +eu
