@@ -29,55 +29,33 @@ USAGE
   ;;
 esac
 
-# Handle require-wizardry availability (for script execution without invoke-wizardry in current shell)
-# Check if require-wizardry function exists (may have been sourced already)
-if command -v require-wizardry >/dev/null 2>&1; then
-  require-wizardry || exit 1
-elif command -v require-wizardry >/dev/null 2>&1; then
-  require-wizardry || exit 1
-else
-  # Neither available - source it now
-  # Try WIZARDRY_DIR first (set by invoke-wizardry)
-  if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/require-wizardry" ]; then
-    . "${WIZARDRY_DIR}/spells/.imps/sys/require-wizardry"
-    require-wizardry || exit 1
-  else
-    # Fall back to relative path from script location
-    _rw_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-    _rw_imp_path="$_rw_script_dir/../../.imps/sys/require-wizardry"
-    if [ -f "$_rw_imp_path" ]; then
-      . "$_rw_imp_path"
-      require-wizardry || exit 1
-    else
-      printf 'Error: require-wizardry not found\n' >&2
-      exit 1
-    fi
-  fi
+# Set up WIZARDRY_DIR if not already set
+if [ -z "${WIZARDRY_DIR-}" ]; then
+  _dg_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  WIZARDRY_DIR=$(cd "$_dg_script_dir/../.." && pwd -P)
+  export WIZARDRY_DIR
 fi
 
 set -eu
 
-# Source env_clear if not already available
-if ! command -v env_clear >/dev/null 2>&1; then
-  if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/env-clear" ]; then
-    . "${WIZARDRY_DIR}/spells/.imps/sys/env-clear"
-  else
-    _dg_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-    . "$_dg_script_dir/../../.imps/sys/env-clear"
-  fi
-fi
-
-# Source output imps (say, warn, etc.)
-if [ -n "${WIZARDRY_DIR-}" ] && [ -d "${WIZARDRY_DIR}/spells/.imps/out" ]; then
-  for _dg_out_imp in "${WIZARDRY_DIR}"/spells/.imps/out/*; do
-    [ -f "$_dg_out_imp" ] && . "$_dg_out_imp"
-  done
+# Source env-clear (no need to check if available - just source it)
+if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/env-clear" ]; then
+  . "${WIZARDRY_DIR}/spells/.imps/sys/env-clear"
 else
   _dg_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  for _dg_out_imp in "$_dg_script_dir"/../../.imps/out/*; do
-    [ -f "$_dg_out_imp" ] && . "$_dg_out_imp"
-  done
+  . "$_dg_script_dir/../../.imps/sys/env-clear"
 fi
+
+# Add wizardry dirs to PATH so we can call say, warn, etc.
+if [ -n "${WIZARDRY_DIR-}" ]; then
+  PATH="${WIZARDRY_DIR}/spells/.imps/out:${PATH}"
+  PATH="${WIZARDRY_DIR}/spells/spellcraft:${PATH}"
+else
+  _dg_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  PATH="$_dg_script_dir/../../.imps/out:${PATH}"
+  PATH="$_dg_script_dir:${PATH}"
+fi
+export PATH
 
 # Get output directory
 output_dir=${1:-./wizardry-compiled}
