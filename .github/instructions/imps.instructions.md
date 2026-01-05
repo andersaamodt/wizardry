@@ -58,13 +58,9 @@ This exception exists because conditional imps are designed to be used in `if` s
 # imp-name ARG - test if something is true
 # Example: imp-name "value" && echo "yes"
 
-_imp_name() {
-  [ "$1" = "expected" ]
-}
+# Note: No set -eu because this is a conditional imp (returns exit codes for flow control)
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */imp-name) _imp_name "$@" ;; esac
+[ "$1" = "expected" ]
 ```
 
 ### Action Imp (performs action, uses strict mode)
@@ -75,13 +71,7 @@ case "$0" in
 
 set -eu
 
-_imp_name() {
-  printf '%s %s\n' "$1" "$2"
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */imp-name) _imp_name "$@" ;; esac
+printf '%s %s\n' "$1" "$2"
 ```
 
 ## Imp Qualities
@@ -203,15 +193,12 @@ die "You must provide a file path."
 # contains HAYSTACK NEEDLE - test if string contains substring
 # Example: contains "$PATH" "/usr/local/bin" && echo "found"
 
-_contains() {
-  case "$1" in
-    *"$2"*) return 0 ;;
-    *) return 1 ;;
-  esac
-}
+# Note: No set -eu because this is a conditional imp (returns exit codes for flow control)
 
-case "$0" in
-  */contains) _contains "$@" ;; esac
+case "$1" in
+  *"$2"*) exit 0 ;;
+  *) exit 1 ;;
+esac
 ```
 
 ### Conditional: Path existence check
@@ -220,12 +207,9 @@ case "$0" in
 # there PATH - test if path exists (any type)
 # Example: there /etc/passwd && echo "found"
 
-_there() {
-  [ -e "$1" ]
-}
+# Note: No set -eu because this is a conditional imp (returns exit codes for flow control)
 
-case "$0" in
-  */there) _there "$@" ;; esac
+[ -e "$1" ]
 ```
 
 ### Action: Print message
@@ -236,12 +220,7 @@ case "$0" in
 
 set -eu
 
-_say() {
-  printf '%s\n' "$*"
-}
-
-case "$0" in
-  */say) _say "$@" ;; esac
+printf '%s\n' "$*"
 ```
 
 ## Stub Imps

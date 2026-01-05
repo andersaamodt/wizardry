@@ -185,12 +185,8 @@ set -eu
 # imp-name ARG - brief description
 set -eu
 
-_imp_name() {
-  # Implementation
-}
-
-case "$0" in
-  */imp-name) _imp_name "$@" ;; esac
+# Flat linear implementation
+printf '%s\n' "$1"
 ```
 
 ### Imp Template (Conditional - NO set -eu!)
@@ -198,12 +194,10 @@ case "$0" in
 #!/bin/sh
 # imp-name ARG - test if condition
 
-_imp_name() {
-  # Return 0 for true, 1 for false
-}
+# Note: No set -eu because this is a conditional imp (returns exit codes for flow control)
 
-case "$0" in
-  */imp-name) _imp_name "$@" ;; esac
+# Return 0 for true, 1 for false
+[ -n "$1" ]
 ```
 
 ### Test Template
