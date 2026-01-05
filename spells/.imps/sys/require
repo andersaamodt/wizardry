@@ -24,19 +24,19 @@ if [ -n "$_req_cmd" ]; then
 fi
 
 if command -v "$_req_tool" >/dev/null 2>&1; then
-  return 0
+  exit 0
 fi
 case $_req_tool in
   *-*)
     _req_alt=$(printf '%s' "$_req_tool" | tr '-' '_')
     if command -v "$_req_alt" >/dev/null 2>&1; then
-      return 0
+  exit 0
     fi
     ;;
   *_*)
     _req_alt=$(printf '%s' "$_req_tool" | tr '_' '-')
     if command -v "$_req_alt" >/dev/null 2>&1; then
-      return 0
+  exit 0
     fi
     ;;
 esac
@@ -47,4 +47,4 @@ else
   printf '%s\n' "require: missing required command '$_req_tool'" >&2
 fi
 printf '%s\n' "Visit 'install-menu' to review installation options." >&2
-return 1
+exit 1

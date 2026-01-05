@@ -19,7 +19,7 @@ set +eu
 
 # Prevent recursive sourcing
 if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
-  return 0
+  exit 0
 fi
 _WIZARDRY_INVOKED=1
 # Note: NOT exported - each subprocess should invoke wizardry independently
@@ -56,7 +56,7 @@ fi
 # Validate WIZARDRY_DIR
 if [ -z "${WIZARDRY_DIR-}" ] || [ ! -d "${WIZARDRY_DIR-}/spells" ]; then
   printf '%s\n' "invoke-wizardry: ERROR - WIZARDRY_DIR not found" >&2
-  return 1
+  exit 1
 fi
 
 export WIZARDRY_DIR
@@ -66,7 +66,7 @@ export WIZARDRY_DIR
 export SPELLBOOK_DIR
 
 # Wizardry initialization complete (minimal mode)
-return 0
+exit 0
 
 # Execute when sourced to ensure validation happens
 # Capture return status and propagate it

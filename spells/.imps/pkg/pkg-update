@@ -6,7 +6,7 @@ set -eu
 
 _pu_pm=$(pkg-manager) || {
   printf '%s\n' "pkg-update: no supported package manager" >&2
-  return 1
+  exit 1
 }
 
 case $_pu_pm in

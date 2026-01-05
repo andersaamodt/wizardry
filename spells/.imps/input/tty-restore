@@ -8,7 +8,7 @@ _tr_state=${1:-}
 
 if [ -z "$_tr_state" ]; then
   printf '%s\n' "tty-restore: state required" >&2
-  return 1
+  exit 1
 fi
 
 stty "$_tr_state" >/dev/null 2>&1 || :

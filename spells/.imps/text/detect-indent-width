@@ -8,7 +8,7 @@ _diw_file=${1-}
 
 if [ -z "$_diw_file" ] || [ ! -f "$_diw_file" ]; then
   printf '2\n'
-  return 0
+  exit 0
 fi
 
 awk '

@@ -6,11 +6,11 @@ set -eu
 substring=$1
 case "$ERROR" in
   *"$substring"*)
-    return 0
+  exit 0
     ;;
   *)
     TEST_FAILURE_REASON="stderr missing substring: $substring"
-    return 1
+  exit 1
     ;;
 esac
 

@@ -9,7 +9,7 @@ set -eu
 
   if [ -z "$_nsr_block_name" ] || [ -z "$_nsr_nix_file" ]; then
     printf '%s\n' "nix-shell-remove: NAME and FILE are required" >&2
-    return 1
+  exit 1
   fi
 
   _nsr_marker="# wizardry: $_nsr_block_name"
@@ -21,10 +21,10 @@ set -eu
 
   if [ ! -f "$_nsr_nix_file" ]; then
     printf '%s\n' "nix-shell-remove: file not found: $_nsr_nix_file" >&2
-    return 1
+  exit 1
   fi
-  if ! grep -Fq "$_nsr_marker" "$_nsr_nix_file" 2>/dev/null; then return 0; fi
-  _nsr_tmp_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-remove.XXXXXX") || return 1
+  if ! grep -Fq "$_nsr_marker" "$_nsr_nix_file" 2>/dev/null; then exit 0; fi
+  _nsr_tmp_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-remove.XXXXXX") || exit 1
   if [ "$_nsr_needs_sudo" -eq 1 ]; then
     if command -v sudo >/dev/null 2>&1; then sudo cat "$_nsr_nix_file"
     elif command -v doas >/dev/null 2>&1; then doas cat "$_nsr_nix_file"
@@ -40,4 +40,4 @@ set -eu
     mv "$_nsr_tmp_file" "$_nsr_nix_file"
   fi
   rm -f "$_nsr_tmp_file"
-  return 0
+  exit 0

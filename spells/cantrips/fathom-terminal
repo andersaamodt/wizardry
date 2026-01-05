@@ -2,26 +2,133 @@
 
 # Report terminal dimensions using terminfo via tput.
 
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: fathom-terminal [-v|--verbose] [--width|--height]
 
+Read terminal dimensions from terminfo and print the width, height, or both.
+Pass --width or --height to request a single measurement; -v annotates the
+numbers with friendly labels for menu output.
+USAGE
+  exit 0
+  ;;
+esac
 
 # Use conditional strictness based on execution context
 # See .github/CODE_POLICY_SET_EU.md for details
+set -eu
 
 # Resolve require-command location
 # Use command -v to find require-command when preloaded as a function
+if [ -n "${REQUIRE_COMMAND-}" ]; then
+    require_cmd=$REQUIRE_COMMAND
+elif command -v require-command >/dev/null 2>&1; then
+    require_cmd=require-command
+elif command -v require_command >/dev/null 2>&1; then
+    require_cmd=require_command
+else
+    # Fallback to path-based resolution for direct execution
+    script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+    if [ -x "$script_dir/require-command" ]; then
+        require_cmd="$script_dir/require-command"
+    else
+        require_cmd=require-command
+    fi
+fi
 
+verbose=0
+want_width=0
+want_height=0
 
 # Parse the small option set understood by the menu helper.
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        -v|--verbose)
+            verbose=1
+            ;;
+        -w|--width)
+        want_width=1
+        ;;
+        --help|--usage|-h)
+            cat <<'USAGE'
+Usage: fathom-terminal [-v|--verbose] [--width|--height]
 
+Read terminal dimensions from terminfo and print the width, height, or both.
+Pass --width or --height to request a single measurement; -v annotates the
+numbers with friendly labels for menu output.
+USAGE
+            exit 0
+            ;;
+        --height)
+            want_height=1
+            ;;
+        --)
+            shift
+            break
+            ;;
+        -*)
+            cat <<'USAGE' >&2
+Usage: fathom-terminal [-v|--verbose] [--width|--height]
 
+Read terminal dimensions from terminfo and print the width, height, or both.
+Pass --width or --height to request a single measurement; -v annotates the
+numbers with friendly labels for menu output.
+USAGE
+            exit 1
+            ;;
+        *)
+            break
+            ;;
+        esac
 
+        shift
+done
 
 # Unless told otherwise, report both width and height.
+if [ "$want_width" -eq 0 ] && [ "$want_height" -eq 0 ]; then
+    want_width=1
+    want_height=1
+fi
 
 # tput is our interface to terminfo; fail loudly when it is absent.
+if ! "$require_cmd" tput "The fathom-terminal spell needs 'tput' to query terminfo."; then
+    exit 1
+fi
 
+cols=$(tput cols 2>/dev/null)
+cols_status=$?
+lines=$(tput lines 2>/dev/null)
+lines_status=$?
 
+if [ "$want_width" -eq 1 ]; then
+    if [ $cols_status -ne 0 ] || [ -z "$cols" ]; then
+        die 'fathom-terminal: unable to determine terminal width'
+    fi
+fi
 
+if [ "$want_height" -eq 1 ]; then
+    if [ $lines_status -ne 0 ] || [ -z "$lines" ]; then
+        die 'fathom-terminal: unable to determine terminal height'
+    fi
+fi
 
+print_dimension() {
+    label=$1
+    value=$2
+    if [ "$verbose" -eq 1 ]; then
+        printf '%s: %s\n' "$label" "$value"
+    else
+        printf '%s\n' "$value"
+    fi
+}
 
 # Honour the caller's selection of width, height, or both.
+if [ "$want_width" -eq 1 ] && [ "$want_height" -eq 1 ]; then
+    print_dimension 'Width' "$cols"
+    print_dimension 'Height' "$lines"
+elif [ "$want_width" -eq 1 ]; then
+    print_dimension 'Width' "$cols"
+else
+    print_dimension 'Height' "$lines"
+fi

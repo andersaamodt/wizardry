@@ -3,7 +3,272 @@
 # This spell refreshes the wizardry repository alongside other managed sources.
 # Pass --verbose to narrate each update step.
 
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'EOF'
+Usage: update-all [-v|--verbose]
 
+Options:
+  -v, --verbose   Print all command output while updating
+  -h, --help      Show this help message and exit
+EOF
+  exit 0
+  ;;
+esac
 
 set -eu
 
+verbose=0
+
+while [ "$#" -gt 0 ]; do
+  case $1 in
+    -v|--verbose)
+      verbose=1
+      shift
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      update_all_usage >&2
+      exit 2
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+if [ "$#" -ne 0 ]; then
+  cat >&2 <<'EOF'
+Usage: update-all [-v|--verbose]
+
+Options:
+  -v, --verbose   Print all command output while updating
+  -h, --help      Show this help message and exit
+EOF
+  exit 2
+fi
+
+# Load color palette if available
+if command -v colors >/dev/null 2>&1; then
+  # shellcheck source=/dev/null
+  . "$(command -v colors)"
+else
+  GREY=''
+  RESET=''
+fi
+
+# Detect distro (inline resolve_distro)
+if [ -n "${WIZARDRY_UPDATE_ALL_DISTRO:-}" ]; then
+  distro=$WIZARDRY_UPDATE_ALL_DISTRO
+elif command -v detect-distro >/dev/null 2>&1 && distro=$(detect-distro 2>/dev/null); then
+  :
+else
+  printf '%s\n' 'update-all: unable to detect operating system.' >&2
+  exit 1
+fi
+
+printf '%s\n' "Detected platform: $distro"
+
+# Confirm updates (inline confirm_updates and assume_yes)
+case ${WIZARDRY_UPDATE_ALL_ASSUME_YES:-} in
+  1|[Yy]|[Yy][Ee][Ss]|[Tt][Rr][Uu][Ee])
+    # Assume yes, proceed
+    ;;
+  *)
+    # Ask for confirmation
+    if ! command -v ask_yn >/dev/null 2>&1; then
+      printf '%s\n' 'update-all: ask_yn spell is missing; cannot confirm updates.' >&2
+      exit 1
+    fi
+    printf '%s\n' 'Proceed with system updates?'
+    ASK_CANTRIP_INPUT=stdin
+    export ASK_CANTRIP_INPUT
+    if ! printf '\n' | ask_yn 'Proceed with system updates?' yes >/dev/null; then
+      printf '%s\n' 'update-all: cancelled by user' >&2
+      exit 1
+    fi
+    ;;
+esac
+
+# Helper for running commands with progress display
+# This is the only additional function beyond update_all_usage()
+# Inlines: progress_filter, print_command, format_command
+run_with_progress() {
+  if [ "$#" -eq 0 ]; then
+    exit 0
+  fi
+
+  # Print command being run (inline format_command and print_command)
+  _cmd_display="$1"
+  shift
+  for _arg in "$@"; do
+    _cmd_display="$_cmd_display $_arg"
+  done
+  printf '%b  $ %s%b\n' "${GREY:-}" "$_cmd_display" "${RESET:-}"
+
+  if [ "$verbose" -eq 1 ]; then
+    "$@"
+    return $?
+  fi
+
+  # Run with progress filtering (inline progress_filter)
+  _progress_tmp=$(temp-file update-all) || exit 1
+  on-exit cleanup-file "$_progress_tmp"
+  
+  (
+    set +e
+    "$@" 2>&1
+    _cmd_status=$?
+    set -e
+    printf '%s\n' "$_cmd_status" >"$_progress_tmp"
+    exit 0
+  ) | tr '\r' '\n' | {
+    _last_progress=''
+    while IFS= read -r _line || nonempty "$_line"; do
+      case $_line in
+        Progress:*)
+          _last_progress=$_line
+          printf '\r%s' "$_line"
+          ;;
+        *)
+          if [ -n "$_last_progress" ]; then
+            printf '\r%s\n' "$_last_progress"
+            _last_progress=''
+          fi
+          if [ -n "$_line" ]; then
+            printf '%s\n' "$_line"
+          fi
+          ;;
+      esac
+    done
+    if [ -n "$_last_progress" ]; then
+      printf '\r%s\n' "$_last_progress"
+    fi
+  }
+
+  _status=$(cat "$_progress_tmp" 2>/dev/null || printf '1\n')
+  clear-traps
+  rm -f "$_progress_tmp"
+
+  case ${_status:-} in
+    '' ) _status=1 ;;
+  esac
+
+  return "$_status"
+}
+
+# Main update logic - inline all simple helpers
+case $distro in
+  debian)
+    # Inline require_command - use must has pattern
+    cmd_err='Required command not found'
+    if ! command -v sudo >/dev/null 2>&1; then 
+      printf '%s: sudo\n' "$cmd_err" >&2; exit 1
+    fi
+    if ! command -v apt-get >/dev/null 2>&1; then 
+      printf '%s: apt-get\n' "$cmd_err" >&2; exit 1
+    fi
+    
+    # Use step imp instead of print_step
+    printf '%s\n' '• Refreshing apt package lists'
+    # Inline run_quiet - direct execution with output control
+    if [ "$verbose" -eq 1 ]; then
+      sudo apt-get update
+    else
+      sudo apt-get update >/dev/null 2>&1
+    fi
+    
+    printf '%s\n' '• Installing upgrades'
+    run_with_progress sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y full-upgrade
+    
+    printf '%s\n' '• Removing unused packages'
+    run_with_progress sudo apt-get -o Dpkg::Progress-Fancy=1 -o Dpkg::Use-Pty=0 -y autoremove
+    ;;
+    
+  arch)
+    cmd_err='Required command not found'
+    if ! command -v sudo >/dev/null 2>&1; then 
+      printf '%s: sudo\n' "$cmd_err" >&2; exit 1
+    fi
+    if ! command -v pacman >/dev/null 2>&1; then 
+      printf '%s: pacman\n' "$cmd_err" >&2; exit 1
+    fi
+    if ! command -v pamac >/dev/null 2>&1; then 
+      printf '%s: pamac\n' "$cmd_err" >&2; exit 1
+    fi
+    
+    printf '%s\n' '• Synchronising pacman packages'
+    if [ "$verbose" -eq 1 ]; then
+      sudo pacman -Syu --noconfirm
+    else
+      sudo pacman -Syu --noconfirm >/dev/null 2>&1
+    fi
+    
+    printf '%s\n' '• Refreshing Pamac-managed packages'
+    if [ "$verbose" -eq 1 ]; then
+      pamac update --no-confirm
+    else
+      pamac update --no-confirm >/dev/null 2>&1
+    fi
+    
+    printf '%s\n' '• Rebuilding Pamac AUR packages'
+    if [ "$verbose" -eq 1 ]; then
+      pamac build --no-confirm
+    else
+      pamac build --no-confirm >/dev/null 2>&1
+    fi
+    ;;
+    
+  nixos)
+    cmd_err='Required command not found'
+    if ! command -v sudo >/dev/null 2>&1; then 
+      printf '%s: sudo\n' "$cmd_err" >&2; exit 1
+    fi
+    if ! command -v nix-channel >/dev/null 2>&1; then 
+      printf '%s: nix-channel\n' "$cmd_err" >&2; exit 1
+    fi
+    if ! command -v nixos-rebuild >/dev/null 2>&1; then 
+      printf '%s: nixos-rebuild\n' "$cmd_err" >&2; exit 1
+    fi
+    if ! command -v nix-env >/dev/null 2>&1; then 
+      printf '%s: nix-env\n' "$cmd_err" >&2; exit 1
+    fi
+    
+    printf '%s\n' '• Refreshing system channels'
+    if [ "$verbose" -eq 1 ]; then
+      sudo nix-channel --update
+    else
+      sudo nix-channel --update >/dev/null 2>&1
+    fi
+    
+    printf '%s\n' '• Rebuilding system configuration'
+    if [ "$verbose" -eq 1 ]; then
+      sudo nixos-rebuild switch --upgrade
+    else
+      sudo nixos-rebuild switch --upgrade >/dev/null 2>&1
+    fi
+    
+    printf '%s\n' '• Refreshing user channels'
+    if [ "$verbose" -eq 1 ]; then
+      nix-channel --update
+    else
+      nix-channel --update >/dev/null 2>&1
+    fi
+    
+    printf '%s\n' '• Upgrading user packages'
+    if [ "$verbose" -eq 1 ]; then
+      nix-env -u --always
+    else
+      nix-env -u --always >/dev/null 2>&1
+    fi
+    ;;
+    
+  *)
+    die "update-all: Unsupported platform: $distro"
+    ;;
+esac
+
+printf '%s\n' 'All updates complete.'

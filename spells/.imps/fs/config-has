@@ -12,16 +12,16 @@ _ch_key=${2:?config-has: key required}
 case "$_ch_key" in
   *[!a-zA-Z0-9_-]*)
     printf 'config-has: invalid key format (use alphanumeric, dash, underscore only)\n' >&2
-    return 1
+  exit 1
     ;;
   "")
     printf 'config-has: key cannot be empty\n' >&2
-    return 1
+  exit 1
     ;;
 esac
 
 # File doesn't exist - key doesn't exist
-[ -f "$_ch_file" ] || return 1
+[ -f "$_ch_file" ] || exit 1
 
 # Check if key exists using awk
 awk -F= -v key="$_ch_key" '$1 == key { found=1; exit } END { exit !found }' "$_ch_file"

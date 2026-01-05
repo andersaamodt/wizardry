@@ -4,7 +4,162 @@
 # substituting placeholders. It prefers interactive prompts so the services menu
 # can call it without arguments.
 
+script_name=$(basename "$0")
+service_dir=${SERVICE_DIR:-/etc/systemd/system}
 
+case "${1-}" in
+--help|--usage|-h)
+  install_service_template_usage
+  exit 0
+  ;;
+esac
 
 set -eu
 
+# Helper to run commands with privilege escalation if needed
+install_service_template_require_privilege() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    exit 0
+  fi
+  if [ -w "$service_dir" ]; then
+    "$@"
+    exit 0
+  fi
+  if has sudo; then
+    sudo "$@"
+    exit 0
+  fi
+  fail "$script_name: run as root or install sudo to write $service_dir"
+}
+
+# Find script directory for relative helper lookup
+script_source=$0
+case $script_source in
+*/*)
+        script_dir=${script_source%/*}
+        ;;
+*)
+        resolved=$(command -v "$script_source" 2>/dev/null || printf '%s' "$script_source")
+        script_dir=${resolved%/*}
+        script_source=$resolved
+        ;;
+esac
+if [ -z "$script_dir" ] || [ "$script_dir" = "$script_source" ]; then
+        script_dir=.
+fi
+script_dir=$(cd "$script_dir" && pwd -P)
+
+# Find ask-yn helper
+if [ -n "${INSTALL_SERVICE_TEMPLATE_ASK_YN-}" ]; then
+  ask_yn=$INSTALL_SERVICE_TEMPLATE_ASK_YN
+elif has ask-yn; then
+  ask_yn=$(command -v ask-yn)
+elif [ -x "$script_dir/ask-yn" ]; then
+  ask_yn=$script_dir/ask-yn
+else
+  fail "$script_name: unable to locate helper 'ask-yn'"
+fi
+
+# Find ask-text helper
+if [ -n "${INSTALL_SERVICE_TEMPLATE_ASK_TEXT-}" ]; then
+  ask_text=$INSTALL_SERVICE_TEMPLATE_ASK_TEXT
+elif has ask-text; then
+  ask_text=$(command -v ask-text)
+elif [ -x "$script_dir/ask-text" ]; then
+  ask_text=$script_dir/ask-text
+else
+  fail "$script_name: unable to locate helper 'ask-text'"
+fi
+
+# Check for systemctl
+if has systemctl; then
+        systemctl_cmd=$(command -v systemctl)
+else
+        fail "$script_name: systemctl is required for this spell"
+fi
+
+# Get template path
+template_path=${1-}
+if [ -n "$template_path" ]; then
+        shift
+else
+        template_path=$("$ask_text" "Path to the service template:")
+fi
+if [ -z "$template_path" ]; then
+        install_service_template_usage
+        exit 1
+fi
+if [ ! -f "$template_path" ]; then
+        fail "$script_name: template '$template_path' not found"
+fi
+
+service_file=$(basename "$template_path")
+service_path="$service_dir/$service_file"
+
+# Check if service already exists
+if [ -f "$service_path" ]; then
+        if ! "$ask_yn" "Service $service_file exists. Overwrite?" no >/dev/null; then
+                printf '%s\n' "Installation cancelled."
+                exit 1
+        fi
+fi
+
+# Create temporary working copy
+tmp_file=$(temp-file wizardry-service)
+trap 'rm -f "$tmp_file"' EXIT HUP INT TERM
+
+cp "$template_path" "$tmp_file"
+
+# Process command-line substitutions
+for arg in "$@"; do
+        case $arg in
+        *=*)
+                key=${arg%%=*}
+                value=${arg#*=}
+                # Escape value for sed replacement
+                escaped=$(printf '%s' "$value" | sed 's/[\\&|$"]/\\&/g')
+                tmp_swap=$(temp-file wizardry-service) || exit 1
+                pattern=$(printf '\\$%s' "$key")
+                sed "s|$pattern|$escaped|g" "$tmp_file" >"$tmp_swap"
+                mv "$tmp_swap" "$tmp_file"
+                ;;
+        *)
+                warn "$script_name: ignoring malformed substitution '$arg'"
+                ;;
+        esac
+done
+
+# Collect remaining placeholders and prompt for values
+placeholders_file=$(temp-file wizardry-placeholders) || exit 1
+awk '{
+  line=$0
+  while (match(line, /\$[A-Z_][A-Z0-9_]*/)) {
+    var=substr(line, RSTART+1, RLENGTH-1)
+    print var
+    line=substr(line, RSTART+RLENGTH)
+  }
+}' "$tmp_file" | sort -u >"$placeholders_file"
+
+if [ -s "$placeholders_file" ]; then
+  while IFS= read -r var; do
+    if [ -z "$var" ]; then
+      continue
+    fi
+    value=$("$ask_text" "Enter a value for $var:")
+    # Escape and substitute
+    escaped=$(printf '%s' "$value" | sed 's/[\\&|$"]/\\&/g')
+    tmp_swap=$(temp-file wizardry-service) || exit 1
+    pattern=$(printf '\\$%s' "$var")
+    sed "s|$pattern|$escaped|g" "$tmp_file" >"$tmp_swap"
+    mv "$tmp_swap" "$tmp_file"
+  done <"$placeholders_file"
+fi
+rm -f "$placeholders_file"
+
+# Install the service file
+install_service_template_require_privilege cp "$tmp_file" "$service_path"
+install_service_template_require_privilege chmod 644 "$service_path"
+install_service_template_require_privilege "$systemctl_cmd" daemon-reload
+
+printf '%s\n' "Service installed at $service_path"

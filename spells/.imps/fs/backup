@@ -9,13 +9,13 @@ _bk_suffix=${2:-.bak}
 
 if [ -z "$_bk_file" ]; then
   printf '%s\n' "backup: file path required" >&2
-  return 1
+  exit 1
 fi
 
 if [ ! -f "$_bk_file" ]; then
   printf '%s\n' "backup: not a file: $_bk_file" >&2
-  return 1
+  exit 1
 fi
 
-cp "$_bk_file" "${_bk_file}${_bk_suffix}" || return 1
+cp "$_bk_file" "${_bk_file}${_bk_suffix}" || exit 1
 printf '%s\n' "${_bk_file}${_bk_suffix}"

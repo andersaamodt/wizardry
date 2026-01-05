@@ -6,7 +6,7 @@ set -eu
 
 _pug_pm=$(pkg-manager) || {
   printf '%s\n' "pkg-upgrade: no supported package manager" >&2
-  return 1
+  exit 1
 }
 
 case $_pug_pm in

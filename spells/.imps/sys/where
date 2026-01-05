@@ -4,4 +4,4 @@
 set -eu
 
 
-command -v "$1" 2>/dev/null || return 1
+command -v "$1" 2>/dev/null || exit 1

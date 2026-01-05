@@ -4,83 +4,536 @@
 # relies on existing cantrips (await_keypress, move-cursor, etc.) to handle the
 # terminal work so it can remain portable across macOS, Debian, and NixOS.
 
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE' >&2
+Usage: menu [--show-command] [--start-selection N] "Title" "Label%command"...
 
+Draw a keyboard-driven terminal menu using wizardry's cursor and input helpers.
+Provide a title followed by one or more "Label%command" entries; --show-command
+displays the command text as the label, and --start-selection picks the initial
+highlighted item. Use "---" to add a horizontal divider line.
+USAGE
+  exit 0
+  ;;
+esac
 
 # Bootstrap: Load essential functions if not already available
 # This allows menu to work when executed directly (tests) or when invoked (normal use)
 
 # Use conditional strictness based on execution context
 # See .github/CODE_POLICY_SET_EU.md for details
+set -eu
 
 # Wrapper functions for helper commands
 # Only define if the underlying command is available
 # This allows 'require' to properly detect missing dependencies
+menu_temp_file() {
+        temp-file "$@"
+}
 
+menu_cleanup_file() {
+        cleanup-file "$@"
+}
 
+if command -v fathom-cursor >/dev/null 2>&1; then
+        fathom_cursor() {
+                fathom-cursor "$@"
+        }
+fi
 
+if command -v fathom-terminal >/dev/null 2>&1; then
+        fathom_terminal() {
+                fathom-terminal "$@"
+        }
+fi
 
+if command -v move-cursor >/dev/null 2>&1; then
+        move_cursor() {
+                move-cursor "$@"
+        }
+fi
 
+if command -v await-keypress >/dev/null 2>&1; then
+        await_keypress() {
+                await-keypress "$@"
+        }
+fi
 
+if command -v cursor-blink >/dev/null 2>&1; then
+        cursor_blink() {
+                cursor-blink "$@"
+        }
+fi
 
+stty() {
+        # stty is a system command, always use it directly
+        command stty "$@"
+}
 
 # Verify that all helper spells are ready before drawing the menu.
 # Uses the shared 'require' imp for dependency checking.
+require fathom_cursor "The menu spell needs 'fathom-cursor' to place the menu." || exit 1
+require fathom_terminal "The menu spell needs 'fathom-terminal' to measure the screen." || exit 1
+require move_cursor "The menu spell needs 'move-cursor' to reposition the cursor." || exit 1
+require await_keypress "The menu spell needs 'await_keypress' to read input." || exit 1
+require cursor_blink "The menu spell needs 'cursor-blink' to restore the cursor." || exit 1
+require stty "The menu spell needs 'stty' to manage terminal modes." || exit 1
 
+menu_tty=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
+if [ ! -r "$menu_tty" ] || [ ! -w "$menu_tty" ]; then
+        die "menu: unable to access controlling terminal '$menu_tty'" || exit 1
+fi
 
+if menu_saved_tty_state=$(stty -g <"$menu_tty" 2>/dev/null); then
+        :
+else
+        die "menu: unable to read terminal settings" || exit 1
+fi
 
+terminal_restored=0
 
+AWAIT_KEYPRESS_KEEP_RAW=1
+export AWAIT_KEYPRESS_KEEP_RAW
+await_keypress_buffer_file=$(menu_temp_file await_keypress-buffer) || exit 1
+AWAIT_KEYPRESS_BUFFER_FILE=$await_keypress_buffer_file
+export AWAIT_KEYPRESS_BUFFER_FILE
 
 # Load colour helpers when present; otherwise fall back to plain text.
 # Try to find colors in the same directory when executed directly
+if [ "${_WIZARDRY_LOADING_SPELLS-}" != "1" ]; then
+        script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+        if [ -r "$script_dir/colors" ]; then
+                # shellcheck disable=SC1090
+                . "$script_dir/colors"
+        fi
+fi
 
 # If not loaded from script_dir, try function or PATH
+if [ -z "${RESET-}" ]; then
+        if has colors; then
+                colors_path=$(command -v colors 2>/dev/null || printf '')
+                if [ -n "$colors_path" ] && [ -f "$colors_path" ]; then
+                        # shellcheck disable=SC1090
+                        . "$colors_path"
+                else
+                        colors
+                fi
+        else
+                RESET=''
+                CYAN=''
+                GREY=''
+                WHITE=''
+                BOLD=''
+                THEME_HIGHLIGHT=''
+                THEME_MUTED=''
+                THEME_DIVIDER=''
+                THEME_HEADING=''
+        fi
+fi
 
 # Check for --show-command flag (displays command as label instead of description)
+show_command=0
+if [ "${1-}" = "--show-command" ]; then
+        show_command=1
+        shift
+fi
 
 # Check for --start-selection flag (start cursor on specific item)
+start_selection=${MENU_START_SELECTION-1}
+if [ "${1-}" = "--start-selection" ]; then
+        shift
+        start_selection=${1-1}
+        shift
+fi
 
+if [ "$#" -lt 2 ]; then
+  if command -v main-menu >/dev/null 2>&1; then
+    main-menu
+    exit 0
+  fi
+  printf '%s\n' "menu: no menu entries provided and main-menu not found" >&2
+  exit 1
+fi
 
+description=$1
+shift
 
+items_file=$(menu_temp_file menu-items) || exit 1
+commands_file=$(menu_temp_file menu-commands) || exit 1
+cleanup_called=0
+cleanup() {
+        if [ "$cleanup_called" -eq 1 ]; then
+                return
+        fi
+        cleanup_called=1
+        if [ "$terminal_restored" -eq 0 ]; then
+                terminal_restored=1
+                stty "$menu_saved_tty_state" <"$menu_tty" >/dev/null 2>&1 || :
+        fi
+        cursor_blink on 2>/dev/null || :
+        if [ -n "${await_keypress_buffer_file-}" ]; then
+                menu_cleanup_file "$await_keypress_buffer_file"
+        fi
+        menu_cleanup_file "$items_file"
+        menu_cleanup_file "$commands_file"
+}
+trap 'cleanup; exit 1' INT TERM
+trap 'cleanup' EXIT
 
+max_name_length=0
+menu_length=0
+strip_ansi_pattern='s/\x1b\[[0-9;]*m//g'
 
+for option in "$@"
+do
+        # Special case: "---" is a divider
+        if [ "$option" = "---" ]; then
+                label="---"
+                command="---"
+        else
+                label=${option%%\%*}
+                case $option in
+                *%*)
+                        command=${option#*%}
+                        ;;
+                *)
+                        command=''
+                        ;;
+                esac
+        fi
+        printf '%s\n' "$label" >>"$items_file"
+        printf '%s\n' "$command" >>"$commands_file"
+        # Strip ANSI codes before calculating visible length
+        clean_label=$(printf '%s' "$label" | sed "$strip_ansi_pattern")
+        length=$(printf '%s' "$clean_label" | wc -c | tr -d ' ')
+        if [ "$length" -gt "$max_name_length" ]; then
+                max_name_length=$length
+        fi
+        menu_length=$((menu_length + 1))
 
+done
 
+if [ "$menu_length" -eq 0 ]; then
+        die "menu: no menu entries provided" || exit 1
+fi
 
 # Use start_selection if valid, otherwise default to 1
+selected=1
+case $start_selection in
+        ''|*[!0-9]*)
+                selected=1
+                ;;
+        *)
+                if [ "$start_selection" -ge 1 ] && [ "$start_selection" -le "$menu_length" ]; then
+                        selected=$start_selection
+                fi
+                ;;
+esac
+menu_column=1
+menu_row=1
+previous_selected=0
+window_width=0
+max_command_length=0
+last_window_width=0
+last_max_command_length=0
+render_row() {
+        row_index=$1
+        highlight=$2
 
+        if [ "$row_index" -lt 1 ] || [ "$row_index" -gt "$menu_length" ]; then
+                return
+        fi
 
+        label=$(sed -n "${row_index}p" "$items_file")
+        command=$(sed -n "${row_index}p" "$commands_file")
 
+        if [ "$command" = "---" ]; then
+                menu_width=$((max_name_length + 2))
+                if [ "$window_width" -gt 0 ] && [ "$menu_width" -gt "$window_width" ]; then
+                        menu_width=$window_width
+                fi
+                divider_width=16
+                if [ "$divider_width" -gt "$menu_width" ]; then
+                        divider_width=$menu_width
+                fi
+                padding=$(( (menu_width - divider_width) / 2 ))
+                pad=''
+                p=0
+                while [ "$p" -lt "$padding" ]; do
+                        pad="$pad "
+                        p=$((p + 1))
+                done
+                line=''
+                i=0
+                while [ "$i" -lt "$divider_width" ]; do
+                        line="${line}─"
+                        i=$((i + 1))
+                done
 
+                target_row=$((menu_row + row_index - 1))
+        if move_cursor "$menu_column" "$target_row"; then
+                        printf '\033[K'
+                        printf '%b  %s%s%b' "$THEME_DIVIDER" "$pad" "$line" "$RESET"
+                        printf '\r'
+                else
+                        printf '%b  %s%s%b\n' "$THEME_DIVIDER" "$pad" "$line" "$RESET"
+                fi
+                return
+        fi
 
+        if [ "$max_command_length" -gt 0 ]; then
+                truncated_command=$(printf '%s' "$command" | cut -c -"$max_command_length")
+        else
+                truncated_command=''
+        fi
 
+        clean_label=$(printf '%s' "$label" | sed "$strip_ansi_pattern")
+        visible_length=$(printf '%s' "$clean_label" | wc -c | tr -d ' ')
+        raw_length=$(printf '%s' "$label" | wc -c | tr -d ' ')
+        ansi_extra=$((raw_length - visible_length))
+        adjusted_width=$((max_name_length + ansi_extra))
 
+        target_row=$((menu_row + row_index - 1))
+        if move_cursor "$menu_column" "$target_row"; then
+                printf '\033[K'
+                if [ "$highlight" -eq 1 ]; then
+                        if [ "$max_command_length" -gt 0 ]; then
+                                printf '%b> %-*s%b %b%-*s%b' "$THEME_HIGHLIGHT" "$max_name_length" "$clean_label" "$RESET" "$THEME_MUTED" "$max_command_length" "$truncated_command" "$RESET"
+                        else
+                                printf '%b> %-*s%b' "$THEME_HIGHLIGHT" "$max_name_length" "$clean_label" "$RESET"
+                        fi
+                else
+                        if [ "$max_command_length" -gt 0 ]; then
+                                printf '  %-*s %b%-*s%b' "$adjusted_width" "$label" "$THEME_MUTED" "$max_command_length" "$truncated_command" "$RESET"
+                        else
+                                printf '  %-*s' "$adjusted_width" "$label"
+                        fi
+                fi
+                printf '\r'
+        else
+                if [ "$highlight" -eq 1 ]; then
+                        if [ "$max_command_length" -gt 0 ]; then
+                                printf '%b> %-*s%b %b%-*s%b\n' "$THEME_HIGHLIGHT" "$max_name_length" "$clean_label" "$RESET" "$THEME_MUTED" "$max_command_length" "$truncated_command" "$RESET"
+                        else
+                                printf '%b> %-*s%b\n' "$THEME_HIGHLIGHT" "$max_name_length" "$clean_label" "$RESET"
+                        fi
+                else
+                        if [ "$max_command_length" -gt 0 ]; then
+                                printf '  %-*s %b%-*s%b\n' "$adjusted_width" "$label" "$THEME_MUTED" "$max_command_length" "$truncated_command" "$RESET"
+                        else
+                                printf '  %-*s\n' "$adjusted_width" "$label"
+                        fi
+                fi
+        fi
+}
 
+position_cursor_below_menu() {
+        below_row=$((menu_row + menu_length))
+        if [ "$terminal_height" -gt 0 ] && [ "$below_row" -gt "$terminal_height" ]; then
+                below_row=$terminal_height
+        fi
 
+        if ! move_cursor "$menu_column" "$below_row"; then
+                printf '\n'
+        fi
+}
 
+cursor_blink off
 
+if [ -n "$description" ]; then
+        # Show the caller-provided heading so the menu has context for the user.
+        printf '%b%s%b\n' "$THEME_HEADING" "$description" "$RESET"
+fi
 
+menu_row=$(fathom_cursor -y)
+case "$menu_row" in
+        ''|*[!0-9]*)
+                menu_row=1
+                ;;
+        0)
+                menu_row=1
+                ;;
+esac
 
 # At this stage the cursor sits on the row immediately following the menu
 # heading (or at the top of the screen when no heading was provided). That row
 # becomes the anchor for the first menu option so the items render directly
 # beneath the title.
 
+terminal_height=$(fathom_terminal --height)
+case "$terminal_height" in
+        ''|*[!0-9]*)
+                terminal_height=0
+                ;;
+        0)
+                terminal_height=0
+                ;;
+esac
 
 # Reserve vertical space before drawing anything so that the menu can repaint
 # in place without pushing the terminal history around as selections change.
+padding=$menu_length
+while [ "$padding" -gt 0 ]; do
+        printf '\n'
+        padding=$((padding - 1))
+done
 
+if [ "$terminal_height" -gt 0 ]; then
+        max_row=$((terminal_height - menu_length))
+        if [ "$max_row" -lt 1 ]; then
+                max_row=1
+        fi
+        if [ "$menu_row" -gt "$max_row" ]; then
+                menu_row=$max_row
+        fi
+fi
 
+if [ "$menu_row" -lt 1 ]; then
+        menu_row=1
+fi
 
+pending_step=0
 
+needs_redraw=1
+selection_pending=0
 
+while :
+do
+        if [ "$pending_step" -eq 0 ]; then
+                command=$(sed -n "${selected}p" "$commands_file")
+                case $command in
+                        ---) pending_step=1 ;;
+                esac
+        fi
+        # If the current position is a divider, queue a forward step to reach the next selectable row.
+        # Apply queued navigation steps, wrapping around and skipping dividers.
+        if [ "$pending_step" -ne 0 ]; then
+                start=$selected
+                pos=$selected
+                while :
+                do
+                        pos=$((pos + pending_step))
+                        if [ "$pos" -gt "$menu_length" ]; then
+                                pos=1
+                        elif [ "$pos" -le 0 ]; then
+                                pos=$menu_length
+                        fi
+                        command=$(sed -n "${pos}p" "$commands_file")
+                        if [ "$command" != "---" ]; then
+                                selected=$pos
+                                break
+                        fi
+                        if [ "$pos" -eq "$start" ]; then
+                                break
+                        fi
+                done
+                selection_pending=1
+                pending_step=0
+        fi
 
+        current_window_width=$(fathom_terminal --width)
+        case "$current_window_width" in
+                ''|*[!0-9]*)
+                        current_window_width=0
+                        ;;
+        esac
+        current_max_command_length=$((current_window_width - max_name_length - 3))
+        if [ "$current_max_command_length" -lt 0 ]; then
+                current_max_command_length=0
+        fi
+        if [ "$current_window_width" -ne "$last_window_width" ] || [ "$current_max_command_length" -ne "$last_max_command_length" ]; then
+                needs_redraw=1
+                selection_pending=0
+        fi
+        window_width=$current_window_width
+        max_command_length=$current_max_command_length
 
+        if [ "$needs_redraw" -eq 1 ]; then
+                last_window_width=$current_window_width
+                last_max_command_length=$current_max_command_length
 
+                if move_cursor "$menu_column" "$menu_row"; then
+                        printf '\033[J'
+                fi
 
+                row=1
+                while [ "$row" -le "$menu_length" ]
+                do
+                        highlight=0
+                        if [ "$row" -eq "$selected" ]; then
+                                highlight=1
+                        fi
+                        render_row "$row" "$highlight"
+                        row=$((row + 1))
+                done
 
+                position_cursor_below_menu
 
+                previous_selected=$selected
+                selection_pending=0
+                needs_redraw=0
+        elif [ "$selection_pending" -eq 1 ]; then
+                if [ "$previous_selected" -gt 0 ]; then
+                        render_row "$previous_selected" 0
+                fi
+                render_row "$selected" 1
 
+                position_cursor_below_menu
 
+                previous_selected=$selected
+                selection_pending=0
+        fi
 
+        step=0
+        key=$(await_keypress)
+        [ "${WIZARDRY_DEBUG_MENU:-0}" = "1" ] && printf '[menu] await_keypress returned: "%s"\n' "$key" >&2
+        case $key in
+        ctrl-c)
+                cleanup
+                trap - EXIT INT TERM
+                return 130
+                ;;
+        up)
+                step=-1
+                ;;
+        down)
+                step=1
+                ;;
+        enter)
+                if [ "$show_command" -eq 1 ]; then
+                        to_run=$(sed -n "${selected}p" "$items_file")
+                else
+                        to_run=$(sed -n "${selected}p" "$commands_file")
+                fi
+                cleanup
+                trap - EXIT INT TERM
+                if [ -n "$to_run" ]; then
+                        printf '\n'
+                        # shellcheck disable=SC2039,SC3045 # POSIX sh allows eval
+                        eval "$to_run"
+                fi
+                exit 0
+                ;;
+escape|ESC|esc)
+        cleanup
+        trap - EXIT INT TERM
+        # Signal parent menu to exit only when explicitly nested.
+        if [ "${MENU_NESTED:-0}" = "1" ] && [ -n "${MENU_PARENT_PID-}" ]; then
+                if [ "${PPID:-0}" -eq "$MENU_PARENT_PID" ]; then
+                        kill -TERM "$MENU_PARENT_PID" 2>/dev/null || :
+                fi
+        fi
+        return 130
+        ;;
+esac
 
+        if [ "$step" -ne 0 ]; then
+                pending_step=$step
+        fi
 
+        # Avoid a tight loop if await_keypress returned empty.
+        if [ -z "$key" ]; then
+                sleep 0.05
+        fi
+done

@@ -4,7 +4,7 @@
 set -eu
 
 
-if command -v "$1" >/dev/null 2>&1; then return 0; fi
+if command -v "$1" >/dev/null 2>&1; then exit 0; fi
 _need_msg=${2:-"required command not found: $1"}
 printf '%s\n' "$_need_msg" >&2
-return 1
+exit 1

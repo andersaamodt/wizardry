@@ -10,8 +10,8 @@ if [ "$STATUS" -ne "$expected_status" ]; then
   else
     TEST_FAILURE_REASON="expected status $expected_status but got $STATUS"
   fi
-  return 1
+  exit 1
 fi
-return 0
+exit 0
 
 

@@ -6,5 +6,5 @@ set -eu
 
 if ! stty -g 2>/dev/null; then
   printf '%s\n' "tty-save: unable to read terminal settings" >&2
-  return 1
+  exit 1
 fi

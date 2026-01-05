@@ -13,19 +13,7 @@ USAGE
   ;;
 esac
 
-# Use conditional strictness based on execution context
-# See .github/CODE_POLICY_SET_EU.md for details
-case "$0" in
-  */require-command)
-    # Executed as script - use full strict mode
-    set -eu
-    ;;
-  *)
-    # Called as function (sourced) - only undefined variable protection
-    # This prevents interactive shell exit while maintaining safety
-    set -u
-    ;;
-esac
+set -eu
 
 if [ "$#" -lt 1 ]; then
     cat <<'USAGE' >&2

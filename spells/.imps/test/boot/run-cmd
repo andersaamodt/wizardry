@@ -9,13 +9,13 @@ set -eu
 _saved_path=$PATH
 PATH=${WIZARDRY_SYSTEM_PATH:-$PATH}
 
-_stdout=$(mktemp "${WIZARDRY_TMPDIR}/stdout.XXXXXX") || return 1
-_stderr=$(mktemp "${WIZARDRY_TMPDIR}/stderr.XXXXXX") || return 1
+_stdout=$(mktemp "${WIZARDRY_TMPDIR}/stdout.XXXXXX") || exit 1
+_stderr=$(mktemp "${WIZARDRY_TMPDIR}/stderr.XXXXXX") || exit 1
 
 workdir=${RUN_CMD_WORKDIR:-$(pwd)}
 mkdir -p "$workdir"
 
-sandbox=$(mktemp -d "${WIZARDRY_TMPDIR}/sandbox.XXXXXX") || return 1
+sandbox=$(mktemp -d "${WIZARDRY_TMPDIR}/sandbox.XXXXXX") || exit 1
 tmpdir="$sandbox/tmp"
 homedir="$sandbox/home"
 mkdir -p "$tmpdir" "$homedir"

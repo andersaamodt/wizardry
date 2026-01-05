@@ -6,7 +6,7 @@
     TEST_SKIP_REASON="(uncompiled only)"
     return 222
   fi
-  return 0
+  exit 0
 
 # Self-execute when run directly (not sourced)
 

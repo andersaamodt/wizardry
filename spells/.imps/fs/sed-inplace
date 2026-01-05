@@ -9,12 +9,12 @@ _si_file=${2:-}
 
 if [ -z "$_si_pattern" ] || [ -z "$_si_file" ]; then
   printf '%s\n' "sed-inplace: requires PATTERN and FILE arguments" >&2
-  return 1
+  exit 1
 fi
 
 if [ ! -f "$_si_file" ]; then
   printf '%s\n' "sed-inplace: not a file: $_si_file" >&2
-  return 1
+  exit 1
 fi
 
 _si_tmpfile="${_si_file}.sed.$$"
@@ -22,5 +22,5 @@ if sed "$_si_pattern" "$_si_file" > "$_si_tmpfile" 2>/dev/null; then
   mv "$_si_tmpfile" "$_si_file"
 else
   rm -f "$_si_tmpfile"
-  return 1
+  exit 1
 fi

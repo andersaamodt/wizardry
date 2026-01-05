@@ -4,12 +4,1174 @@
 # This spell assumption-checks, self-heals, and tests the environment,
 # ensuring all prerequisites are met for each spell level.
 
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: banish [LEVEL] [OPTIONS]
 
+Validate wizardry readiness by level, including assumptions, self-healing, and tests.
 
+Arguments:
+  LEVEL                 Validate through level N (0-30, default: 4)
+  all                   Validate all available levels
 
+Options:
+  --no-heal             Skip self-healing (only report issues)
+  --no-tests            Skip running tests (only check assumptions)
+  --only                Only validate this specific level (don't run lower levels)
 
+Examples:
+  banish          # Validate through level 4 (default - menu system)
+  banish 5 --only # Validate only level 5
+  banish all      # Validate through the highest available level
+USAGE
+  exit 0
+  ;;
+esac
 
 # Debug: Log when banish is called
+if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+  printf '[banish] Function called\n' >&2
+fi
 
 set -eu
 
+# Detect WIZARDRY_DIR if not already set
+if [ -z "${WIZARDRY_DIR-}" ]; then
+  # We're being executed directly - detect from script location
+  _script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || _script_dir=""
+  if [ -n "$_script_dir" ]; then
+    _wiz_root=$(CDPATH= cd -- "$_script_dir/../.." 2>/dev/null && pwd -P) || _wiz_root=""
+    if [ -n "$_wiz_root" ] && [ -d "$_wiz_root/spells" ]; then
+      WIZARDRY_DIR=$_wiz_root
+    fi
+  fi
+fi
+
+# Validate WIZARDRY_DIR is set and valid
+if [ -z "${WIZARDRY_DIR-}" ]; then
+  printf 'banish: WIZARDRY_DIR not set and could not be detected\n' >&2
+  printf 'Run from wizardry installation or set WIZARDRY_DIR environment variable\n' >&2
+  exit 1
+fi
+
+if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
+  printf 'banish: invalid WIZARDRY_DIR: %s\n' "$WIZARDRY_DIR" >&2
+  exit 1
+fi
+
+export WIZARDRY_DIR
+
+# Parse arguments
+target_level=4
+max_level=30
+skip_tests=0
+skip_heal=0
+only_this_level=0
+run_all=0
+
+# First, check if first arg is a number (the level)
+if [ "$#" -gt 0 ]; then
+  case "$1" in
+    all)
+      run_all=1
+      target_level=$max_level
+      shift
+      ;;
+    [0-9]|[0-9][0-9])
+      target_level=$1
+      shift
+      ;;
+  esac
+fi
+
+while [ "$#" -gt 0 ]; do
+  case $1 in
+    --no-heal)
+      skip_heal=1
+      shift
+      ;;
+    --no-tests)
+      skip_tests=1
+      shift
+      ;;
+    --only)
+      only_this_level=1
+      shift
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      printf 'Error: unknown option: %s\n' "$1" >&2
+      cat <<'USAGE' >&2
+Usage: banish [LEVEL] [OPTIONS]
+
+Validate wizardry readiness by level, including assumptions, self-healing, and tests.
+
+Arguments:
+  LEVEL                 Validate through level N (0-30, default: 4)
+  all                   Validate all available levels
+
+Options:
+  --no-heal             Skip self-healing (only report issues)
+  --no-tests            Skip running tests (only check assumptions)
+  --only                Only validate this specific level (don't run lower levels)
+
+Examples:
+  banish          # Validate through level 4 (default - menu system)
+  banish 5 --only # Validate only level 5
+  banish all      # Validate through the highest available level
+USAGE
+      exit 2
+      ;;
+    *)
+      # Check if it's a valid level number
+      case "$1" in
+        all)
+          run_all=1
+          target_level=$max_level
+          shift
+          ;;
+        [0-9]|[0-9][0-9])
+          target_level=$1
+          shift
+          ;;
+        *)
+          printf 'Error: unexpected argument: %s\n' "$1" >&2
+          banish_usage >&2
+          exit 2
+          ;;
+      esac
+      ;;
+  esac
+done
+
+# Validate level
+if [ "$target_level" -lt 0 ] || [ "$target_level" -gt "$max_level" ]; then
+  printf 'Error: level must be 0-%d, got: %s\n' "$max_level" "$target_level" >&2
+  banish_usage >&2
+  exit 2
+fi
+
+# Source shared spell level definitions from sys imp
+# This file is shared by banish, test-magic, and demo-magic
+# Check if spell_levels function is available, otherwise try to source it
+if ! command -v spell_levels >/dev/null 2>&1; then
+  if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/spell-levels" ]; then
+    . "${WIZARDRY_DIR}/spells/.imps/sys/spell-levels"
+  else
+    # Fallback: try to find from script location
+    _banish_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+    _wiz_root=$(CDPATH= cd -- "$_banish_dir/../.." && pwd -P)
+    if [ -f "$_wiz_root/spells/.imps/sys/spell-levels" ]; then
+      . "$_wiz_root/spells/.imps/sys/spell-levels"
+    else
+      # Final fallback: define inline if spell-levels not found
+      get_level_spells() { printf '' ; }
+      get_level_imps() { printf '' ; }
+      banish_level_name() { printf 'Unknown' ; }
+    fi
+  fi
+fi
+
+# Color codes (inline to avoid dependency)
+_esc=$(printf '\033')
+_green="${_esc}[32m"
+_red="${_esc}[31m"
+_reset="${_esc}[0m"
+
+_banish_seen_imps=""
+_banish_pluralize="${WIZARDRY_DIR}/spells/.imps/text/pluralize"
+_banish_count_words="${WIZARDRY_DIR}/spells/.imps/text/count-words"
+
+# Run level-specific checks and actions using case statement
+banish_process_level() {
+  level=$1
+  level_name=$(banish_level_name "$level")
+  
+  printf '\nLevel %d: %s\n' "$level" "$level_name"
+  
+  # Special handling per level
+  case "$level" in
+    0)
+      # Level 0: System Foundation
+      
+      # Check WIZARDRY_DIR (single item - combine on one line)
+      wizardry_not_installed=0
+      
+      if [ -n "${WIZARDRY_DIR-}" ]; then
+        printf '  %s✓%s Wizardry directory: WIZARDRY_DIR is set\n' "$_green" "$_reset"
+      else
+        printf '  Wizardry directory:\n'
+        printf '    Checking for wizardry installation...\n'
+        
+        has_dirname=$(command -v dirname >/dev/null 2>&1 && echo 1 || echo 0)
+        has_cd=$(command -v cd >/dev/null 2>&1 && echo 1 || echo 0)
+        has_pwd=$(command -v pwd >/dev/null 2>&1 && echo 1 || echo 0)
+        if [ "$has_dirname" = "1" ] && [ "$has_cd" = "1" ] && [ "$has_pwd" = "1" ]; then
+          script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || true
+          if [ -n "$script_dir" ]; then
+            _potential_dir=$(CDPATH= cd -- "$script_dir/../.." 2>/dev/null && pwd -P) || true
+            if [ -n "$_potential_dir" ] && [ -d "$_potential_dir/spells" ]; then
+              WIZARDRY_DIR=$_potential_dir
+              printf '    %s✓%s Detected from script location\n' "$_green" "$_reset"
+            fi
+          fi
+        fi
+        
+        if [ -z "${WIZARDRY_DIR-}" ]; then
+          if [ -n "${HOME-}" ] && [ -d "${HOME}/.wizardry/spells" ]; then
+            WIZARDRY_DIR="${HOME}/.wizardry"
+            printf '    %s✓%s Found at standard location\n' "$_green" "$_reset"
+          else
+            wizardry_not_installed=1
+            printf '    %s✗%s Not found\n' "$_red" "$_reset"
+          fi
+        fi
+      fi
+      
+      if [ "$wizardry_not_installed" -eq 1 ]; then
+        printf 'Error: Wizardry not installed - run ./install first\n'
+        return 1
+      fi
+      
+      export WIZARDRY_DIR
+      
+      # Check PATH baseline
+      path_missing=""
+      case ":${PATH-}:" in
+        *":/bin:"*) : ;;
+        *) path_missing="${path_missing}${path_missing:+ }/bin" ;;
+      esac
+      case ":${PATH-}:" in
+        *":/usr/bin:"*) : ;;
+        *) path_missing="${path_missing}${path_missing:+ }/usr/bin" ;;
+      esac
+      if [ -z "$path_missing" ]; then
+        printf '  %s✓%s PATH baseline: /bin and /usr/bin\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s PATH baseline: Missing %s\n' "$_red" "$_reset" "$path_missing"
+        if [ "$skip_heal" -eq 0 ]; then
+          baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+          PATH="${baseline_path}${PATH:+:}${PATH-}"
+          export PATH
+          path_missing=""
+          case ":${PATH-}:" in
+            *":/bin:"*) : ;;
+            *) path_missing="${path_missing}${path_missing:+ }/bin" ;;
+          esac
+          case ":${PATH-}:" in
+            *":/usr/bin:"*) : ;;
+            *) path_missing="${path_missing}${path_missing:+ }/usr/bin" ;;
+          esac
+          if [ -z "$path_missing" ]; then
+            printf '    %s✓%s PATH baseline restored\n' "$_green" "$_reset"
+          else
+            printf '    %s✗%s PATH baseline still missing: %s\n' "$_red" "$_reset" "$path_missing"
+          fi
+        fi
+        if [ -n "$path_missing" ]; then
+          return 1
+        fi
+      fi
+
+      manage_system_command=""
+      if [ "$skip_heal" -eq 0 ]; then
+        if command -v manage-system-command >/dev/null 2>&1; then
+          manage_system_command="manage-system-command"
+        elif [ -x "${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command" ]; then
+          manage_system_command="${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command"
+        fi
+      fi
+
+      # Check POSIX commands (multiple items - check topic when all pass)
+      posix_failed=0
+      posix_cmds="sh test printf command dirname basename pwd cat"
+      posix_cmds="$posix_cmds grep find sort cut head tail tr wc awk sed xargs mktemp uname"
+      for cmd in $posix_cmds; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+          posix_failed=1
+          break
+        fi
+      done
+      
+      if [ "$posix_failed" -eq 0 ]; then
+        printf '  %s✓%s POSIX foundation:\n' "$_green" "$_reset"
+        for cmd in $posix_cmds; do
+          printf '    %s✓%s %s\n' "$_green" "$_reset" "$cmd"
+        done
+      else
+        printf '  %s✗%s POSIX foundation:\n' "$_red" "$_reset"
+        for cmd in $posix_cmds; do
+          if command -v "$cmd" >/dev/null 2>&1; then
+            printf '    %s✓%s %s\n' "$_green" "$_reset" "$cmd"
+          else
+            printf '    %s✗%s %s not found\n' "$_red" "$_reset" "$cmd"
+          fi
+        done
+        return 1
+      fi
+
+      # Check download tools (curl or wget)
+      if command -v curl >/dev/null 2>&1 || command -v wget >/dev/null 2>&1; then
+        printf '  %s✓%s Download tools: curl or wget available\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Download tools: curl and wget not found\n' "$_red" "$_reset"
+        if [ -n "$manage_system_command" ]; then
+          printf '    Attempting to install curl...\n'
+          if "$manage_system_command" curl curl >/dev/null 2>&1; then
+            :
+          else
+            printf '    Attempting to install wget...\n'
+            "$manage_system_command" wget wget >/dev/null 2>&1 || :
+          fi
+        fi
+        if command -v curl >/dev/null 2>&1 || command -v wget >/dev/null 2>&1; then
+          printf '    %s✓%s Download tool ready\n' "$_green" "$_reset"
+        else
+          printf '    %s✗%s Download tools still missing\n' "$_red" "$_reset"
+          return 1
+        fi
+      fi
+
+      # Check tar
+      if command -v tar >/dev/null 2>&1; then
+        printf '  %s✓%s Archive tool: tar available\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Archive tool: tar not found\n' "$_red" "$_reset"
+        if [ -n "$manage_system_command" ]; then
+          printf '    Attempting to install tar...\n'
+          "$manage_system_command" tar tar >/dev/null 2>&1 || :
+        fi
+        if command -v tar >/dev/null 2>&1; then
+          printf '    %s✓%s tar installed\n' "$_green" "$_reset"
+        else
+          printf '    %s✗%s tar still missing\n' "$_red" "$_reset"
+          return 1
+        fi
+      fi
+
+      # Check package manager availability
+      package_managers=""
+      for pkg in apt-get dnf yum zypper pacman apk brew port nix-env pkgin; do
+        if command -v "$pkg" >/dev/null 2>&1; then
+          package_managers="${package_managers}${package_managers:+ }$pkg"
+        fi
+      done
+      if [ -n "$package_managers" ]; then
+        printf '  %s✓%s Package manager: %s\n' "$_green" "$_reset" "$package_managers"
+      else
+        printf '  %s✗%s Package manager: none detected\n' "$_red" "$_reset"
+        return 1
+      fi
+      ;;
+      
+    1)
+      # Level 1: Wizardry Installation
+      
+      # Check wizardry structure (single item - combine on one line)
+      if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
+        printf '  %s✗%s Wizardry structure: Spells directory not found\n' "$_red" "$_reset"
+        return 1
+      fi
+      printf '  %s✓%s Wizardry structure: Spells directory exists\n' "$_green" "$_reset"
+
+      # Check installer presence (single item - combine on one line)
+      if [ ! -f "${WIZARDRY_DIR}/install" ]; then
+        printf '  %s✗%s Installer: install script not found\n' "$_red" "$_reset"
+        return 1
+      fi
+      printf '  %s✓%s Installer: install script present\n' "$_green" "$_reset"
+      
+      # Check spells
+      spell_list=$(get_level_spells 1)
+      if [ -n "$spell_list" ]; then
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          return 1
+        fi
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
+        else
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
+      fi
+
+      # Check imps
+      imp_list=$(get_level_imps 1)
+      if [ -n "$imp_list" ]; then
+        new_imp_list=""
+        for imp in $imp_list; do
+          case " ${_banish_seen_imps} " in
+            *" ${imp} "*) ;;
+            *)
+              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
+              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              ;;
+          esac
+        done
+        imp_list=$new_imp_list
+      fi
+      if [ -n "$imp_list" ]; then
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
+        else
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
+      fi
+      ;;
+      
+    2)
+      # Level 2: Glossary System
+      
+      # Check spellbook directory for glossary
+      spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+      if [ -d "$spell_home" ] && [ -w "$spell_home" ]; then
+        printf '  %s✓%s Spellbook directory: %s\n' "$_green" "$_reset" "$spell_home"
+      else
+        printf '  %s✗%s Spellbook directory: %s unavailable\n' "$_red" "$_reset" "$spell_home"
+        if [ "$skip_heal" -eq 0 ]; then
+          if mkdir -p "$spell_home" 2>/dev/null; then
+            printf '    %s✓%s Spellbook directory created\n' "$_green" "$_reset"
+          else
+            printf '    %s✗%s Spellbook directory creation failed\n' "$_red" "$_reset"
+          fi
+        fi
+        if [ ! -d "$spell_home" ] || [ ! -w "$spell_home" ]; then
+          return 1
+        fi
+      fi
+      
+      # Check spells
+      spell_list=$(get_level_spells 2)
+      if [ -n "$spell_list" ]; then
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          return 1
+        fi
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
+        else
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
+      fi
+
+      # Check imps
+      imp_list=$(get_level_imps 2)
+      had_imps=0
+      if [ -n "$imp_list" ]; then
+        had_imps=1
+        new_imp_list=""
+        for imp in $imp_list; do
+          case " ${_banish_seen_imps} " in
+            *" ${imp} "*) ;;
+            *)
+              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
+              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              ;;
+          esac
+        done
+        imp_list=$new_imp_list
+      fi
+      if [ -n "$imp_list" ]; then
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
+        else
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
+      elif [ "$had_imps" -eq 1 ]; then
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      else
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      fi
+      ;;
+
+    3)
+      # Level 3: Menu System
+      
+      # Check stty (single item - combine on one line)
+      if ! command -v stty >/dev/null 2>&1; then
+        printf '  %s✗%s Terminal control: stty not found\n' "$_red" "$_reset"
+        if [ "$skip_heal" -eq 0 ]; then
+          if command -v install-stty >/dev/null 2>&1; then
+            printf '    Installing stty...\n'
+            if install-stty 2>/dev/null; then
+              if command -v stty >/dev/null 2>&1; then
+                printf '    %s✓%s stty installed\n' "$_green" "$_reset"
+              else
+                printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+              fi
+            else
+              printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+            fi
+          else
+            printf '    Cannot auto-install stty\n'
+          fi
+        fi
+      else
+        printf '  %s✓%s Terminal control: stty available\n' "$_green" "$_reset"
+      fi
+
+      # Check tput (fathom-terminal dependency)
+      if ! command -v tput >/dev/null 2>&1; then
+        printf '  %s✗%s Terminal capabilities: tput not found\n' "$_red" "$_reset"
+        if [ "$skip_heal" -eq 0 ]; then
+          if command -v install-tput >/dev/null 2>&1; then
+            printf '    Installing tput...\n'
+            if install-tput 2>/dev/null; then
+              if command -v tput >/dev/null 2>&1; then
+                printf '    %s✓%s tput installed\n' "$_green" "$_reset"
+              else
+                printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+              fi
+            else
+              printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+            fi
+          else
+            printf '    Auto-install not available\n'
+          fi
+        fi
+      else
+        printf '  %s✓%s Terminal capabilities: tput available\n' "$_green" "$_reset"
+      fi
+
+      # Check dd (await-keypress dependency)
+      if ! command -v dd >/dev/null 2>&1; then
+        printf '  %s✗%s Input capture: dd not found\n' "$_red" "$_reset"
+        if [ "$skip_heal" -eq 0 ]; then
+          if command -v install-dd >/dev/null 2>&1; then
+            printf '    Installing dd...\n'
+            if install-dd 2>/dev/null; then
+              if command -v dd >/dev/null 2>&1; then
+                printf '    %s✓%s dd installed\n' "$_green" "$_reset"
+              else
+                printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+              fi
+            else
+              printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+            fi
+          else
+            printf '    Auto-install not available\n'
+          fi
+        fi
+      else
+        printf '  %s✓%s Input capture: dd available\n' "$_green" "$_reset"
+      fi
+
+      # Check terminal device access for menu
+      menu_tty=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
+      if [ ! -r "$menu_tty" ] || [ ! -w "$menu_tty" ]; then
+        printf '  %s✗%s Terminal access: %s not readable/writable\n' "$_red" "$_reset" "$menu_tty"
+        if [ "$skip_heal" -eq 0 ] && [ -n "${AWAIT_KEYPRESS_DEVICE-}" ]; then
+          menu_tty=/dev/tty
+          AWAIT_KEYPRESS_DEVICE=$menu_tty
+          export AWAIT_KEYPRESS_DEVICE
+          if [ -r "$menu_tty" ] && [ -w "$menu_tty" ]; then
+            printf '    %s✓%s Terminal access restored to /dev/tty\n' "$_green" "$_reset"
+          else
+            printf '    %s✗%s Terminal access still unavailable\n' "$_red" "$_reset"
+          fi
+        fi
+        if [ ! -r "$menu_tty" ] || [ ! -w "$menu_tty" ]; then
+          return 1
+        fi
+      else
+        printf '  %s✓%s Terminal access: %s\n' "$_green" "$_reset" "$menu_tty"
+      fi
+
+      # Check terminal type for ANSI cursor control
+      term_status=1
+      case "${TERM-}" in
+        ''|dumb|unknown) term_status=0 ;;
+        *) : ;;
+      esac
+      if [ "$term_status" -eq 1 ]; then
+        printf '  %s✓%s Terminal type: %s\n' "$_green" "$_reset" "${TERM-unknown}"
+      else
+        printf '  %s✗%s Terminal type: %s\n' "$_red" "$_reset" "${TERM-unknown}"
+        if [ "$skip_heal" -eq 0 ]; then
+          TERM="xterm-256color"
+          export TERM
+          term_status=1
+          case "${TERM-}" in
+            ''|dumb|unknown) term_status=0 ;;
+            *) : ;;
+          esac
+          if [ "$term_status" -eq 1 ]; then
+            printf '    %s✓%s Terminal type set to %s\n' "$_green" "$_reset" "$TERM"
+          else
+            printf '    %s✗%s Terminal type still minimal\n' "$_red" "$_reset"
+          fi
+        fi
+      fi
+      if [ "$term_status" -ne 1 ]; then
+        return 1
+      fi
+
+      # Check terminfo access (fathom-terminal expectation)
+      if command -v tput >/dev/null 2>&1; then
+        cols=$(tput cols 2>/dev/null || printf '')
+        lines=$(tput lines 2>/dev/null || printf '')
+        if [ -n "$cols" ] && [ -n "$lines" ]; then
+          printf '  %s✓%s Terminfo dimensions: %sx%s\n' "$_green" "$_reset" "$cols" "$lines"
+        else
+          printf '  %s✗%s Terminfo dimensions unavailable\n' "$_red" "$_reset"
+          return 1
+        fi
+      fi
+
+      # Check spells
+      spell_list=$(get_level_spells 3)
+      if [ -n "$spell_list" ]; then
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          return 1
+        fi
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
+        else
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
+      fi
+
+      # Check imps
+      imp_list=$(get_level_imps 3)
+      had_imps=0
+      if [ -n "$imp_list" ]; then
+        had_imps=1
+        new_imp_list=""
+        for imp in $imp_list; do
+          case " ${_banish_seen_imps} " in
+            *" ${imp} "*) ;;
+            *)
+              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
+              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              ;;
+          esac
+        done
+        imp_list=$new_imp_list
+      fi
+      if [ -n "$imp_list" ]; then
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
+        else
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
+      elif [ "$had_imps" -eq 1 ]; then
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      else
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      fi
+      ;;
+
+    5)
+      # Level 5: MUD Basics
+
+      # Check extended attributes helpers
+      xattr_helper=""
+      if command -v xattr >/dev/null 2>&1; then
+        xattr_helper="xattr"
+      elif command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; then
+        xattr_helper="getfattr/setfattr"
+      fi
+
+      if [ -n "$xattr_helper" ]; then
+        printf '  %s✓%s Extended attributes: %s available\n' "$_green" "$_reset" "$xattr_helper"
+      else
+        printf '  %s✗%s Extended attributes: no helper found\n' "$_red" "$_reset"
+        if [ "$skip_heal" -eq 0 ]; then
+          manage_system_command=""
+          if command -v manage-system-command >/dev/null 2>&1; then
+            manage_system_command="manage-system-command"
+          elif [ -x "${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command" ]; then
+            manage_system_command="${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command"
+          fi
+          if [ -n "$manage_system_command" ]; then
+            printf '    Attempting to install xattr tooling...\n'
+            "$manage_system_command" getfattr attr >/dev/null 2>&1 || :
+            "$manage_system_command" setfattr attr >/dev/null 2>&1 || :
+          fi
+        fi
+        has_xattr=0
+        if command -v xattr >/dev/null 2>&1; then
+          has_xattr=1
+        elif command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; then
+          has_xattr=1
+        fi
+        if [ "$has_xattr" -eq 1 ]; then
+          printf '    %s✓%s Extended attributes helper ready\n' "$_green" "$_reset"
+        else
+          printf '    %s✗%s Extended attributes still unavailable\n' "$_red" "$_reset"
+          return 1
+        fi
+      fi
+      ;;
+
+    6)
+      # Level 6: Navigation
+
+      # Check marker directory creation
+      spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+      markers_dir="$spell_home/.markers"
+      if [ -d "$markers_dir" ] && [ -w "$markers_dir" ]; then
+        printf '  %s✓%s Marker directory: %s\n' "$_green" "$_reset" "$markers_dir"
+      else
+        printf '  %s✗%s Marker directory: %s unavailable\n' "$_red" "$_reset" "$markers_dir"
+        if [ "$skip_heal" -eq 0 ]; then
+          if mkdir -p "$markers_dir" 2>/dev/null; then
+            printf '    %s✓%s Marker directory created\n' "$_green" "$_reset"
+          else
+            printf '    %s✗%s Marker directory creation failed\n' "$_red" "$_reset"
+          fi
+        fi
+        if [ ! -d "$markers_dir" ] || [ ! -w "$markers_dir" ]; then
+          return 1
+        fi
+      fi
+
+      # Check spellbook directory access
+      if [ -d "$spell_home" ] && [ -w "$spell_home" ]; then
+        printf '  %s✓%s Spellbook directory: %s\n' "$_green" "$_reset" "$spell_home"
+      else
+        printf '  %s✗%s Spellbook directory: %s unavailable\n' "$_red" "$_reset" "$spell_home"
+        if [ "$skip_heal" -eq 0 ]; then
+          if mkdir -p "$spell_home" 2>/dev/null; then
+            printf '    %s✓%s Spellbook directory created\n' "$_green" "$_reset"
+          else
+            printf '    %s✗%s Spellbook directory creation failed\n' "$_red" "$_reset"
+          fi
+        fi
+        if [ ! -d "$spell_home" ] || [ ! -w "$spell_home" ]; then
+          return 1
+        fi
+      fi
+      ;;
+
+    8)
+      # Level 8: Arcane File Operations
+
+      # Check file utilities
+      file_utils_ok=1
+      for cmd in cp mv rm find; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+          file_utils_ok=0
+        fi
+      done
+
+      if [ "$file_utils_ok" -eq 1 ]; then
+        printf '  %s✓%s File utilities: cp mv rm find\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s File utilities: missing command\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check filesystem read/write
+      tmp_root=${TMPDIR:-/tmp}
+      tmp_check=$(mktemp "${tmp_root%/}/banish-rw.XXXXXX" 2>/dev/null || printf '')
+      if [ -n "$tmp_check" ]; then
+        if printf '%s\n' "banish" >"$tmp_check" 2>/dev/null && [ -s "$tmp_check" ]; then
+          rm -f "$tmp_check" 2>/dev/null || :
+          printf '  %s✓%s Filesystem read/write: %s\n' "$_green" "$_reset" "$tmp_root"
+        else
+          rm -f "$tmp_check" 2>/dev/null || :
+          printf '  %s✗%s Filesystem read/write: %s unavailable\n' "$_red" "$_reset" "$tmp_root"
+          return 1
+        fi
+      else
+        printf '  %s✗%s Filesystem read/write: temp file unavailable\n' "$_red" "$_reset"
+        return 1
+      fi
+      ;;
+
+    9)
+      # Level 9: Basic Cantrips
+
+      # Check interactive input device
+      input_tty=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
+      if [ -r "$input_tty" ] && [ -w "$input_tty" ]; then
+        printf '  %s✓%s Interactive input: %s\n' "$_green" "$_reset" "$input_tty"
+      else
+        printf '  %s✗%s Interactive input: %s unavailable\n' "$_red" "$_reset" "$input_tty"
+        if [ "$skip_heal" -eq 0 ] && [ -n "${AWAIT_KEYPRESS_DEVICE-}" ]; then
+          input_tty=/dev/tty
+          AWAIT_KEYPRESS_DEVICE=$input_tty
+          export AWAIT_KEYPRESS_DEVICE
+          if [ -r "$input_tty" ] && [ -w "$input_tty" ]; then
+            printf '    %s✓%s Interactive input restored to /dev/tty\n' "$_green" "$_reset"
+          else
+            printf '    %s✗%s Interactive input still unavailable\n' "$_red" "$_reset"
+          fi
+        fi
+        if [ ! -r "$input_tty" ] || [ ! -w "$input_tty" ]; then
+          return 1
+        fi
+      fi
+      ;;
+
+    12)
+      # Level 12: System Configuration
+
+      # Check configuration directory access
+      config_home=${WIZARDRY_CONFIG_DIR:-${HOME:-.}/.wizardry}
+      if [ -d "$config_home" ] && [ -w "$config_home" ]; then
+        printf '  %s✓%s Config directory: %s\n' "$_green" "$_reset" "$config_home"
+      else
+        printf '  %s✗%s Config directory: %s unavailable\n' "$_red" "$_reset" "$config_home"
+        if [ "$skip_heal" -eq 0 ]; then
+          if mkdir -p "$config_home" 2>/dev/null; then
+            printf '    %s✓%s Config directory created\n' "$_green" "$_reset"
+          else
+            printf '    %s✗%s Config directory creation failed\n' "$_red" "$_reset"
+          fi
+        fi
+        if [ ! -d "$config_home" ] || [ ! -w "$config_home" ]; then
+          return 1
+        fi
+      fi
+      ;;
+
+    13)
+      # Level 13: Testing Infrastructure
+
+      # Check tests directory
+      tests_root="${WIZARDRY_DIR}/.tests"
+      if [ -d "$tests_root" ]; then
+        printf '  %s✓%s Test suite: %s\n' "$_green" "$_reset" "$tests_root"
+      else
+        printf '  %s✗%s Test suite: %s missing\n' "$_red" "$_reset" "$tests_root"
+        return 1
+      fi
+
+      # Skip pocket-dimension and bwrap checks in GitHub Actions
+      # (bwrap should only be used in local environments, not CI workflows)
+      if [ "${GITHUB_ACTIONS-}" = "true" ]; then
+        printf '  %s✓%s Sandbox tools: Skipped (GitHub Actions environment)\n' "$_green" "$_reset"
+      else
+        # Check pocket-dimension sandboxing
+        platform=$(uname -s 2>/dev/null || printf 'unknown')
+        pocket_cmd=""
+        if command -v pocket-dimension >/dev/null 2>&1; then
+          pocket_cmd=$(command -v pocket-dimension)
+        elif [ -x "${WIZARDRY_DIR}/spells/system/pocket-dimension" ]; then
+          pocket_cmd="${WIZARDRY_DIR}/spells/system/pocket-dimension"
+        fi
+
+        if [ -n "$pocket_cmd" ]; then
+          if "$pocket_cmd" --check >/dev/null 2>&1; then
+            printf '  %s✓%s Sandbox tool: pocket-dimension available\n' "$_green" "$_reset"
+          else
+            printf '  %s✗%s Sandbox tool: pocket-dimension unavailable\n' "$_red" "$_reset"
+            return 1
+          fi
+        else
+          printf '  %s✗%s Sandbox tool: pocket-dimension not found\n' "$_red" "$_reset"
+          return 1
+        fi
+
+        if [ "$platform" = "Darwin" ]; then
+          if command -v sandbox-exec >/dev/null 2>&1; then
+            printf '  %s✓%s Sandbox tool: sandbox-exec available (macOS)\n' "$_green" "$_reset"
+          else
+            printf '  %s✗%s Sandbox tool: sandbox-exec not found (macOS)\n' "$_red" "$_reset"
+            return 1
+          fi
+        else
+          if command -v bwrap >/dev/null 2>&1; then
+            printf '  %s✓%s Sandbox tool: bwrap available\n' "$_green" "$_reset"
+          else
+            printf '  %s✗%s Sandbox tool: bwrap not found\n' "$_red" "$_reset"
+            if [ "$skip_heal" -eq 0 ]; then
+              if command -v install-bwrap >/dev/null 2>&1; then
+                printf '    Installing bwrap...\n'
+                if install-bwrap 2>/dev/null; then
+                  if command -v bwrap >/dev/null 2>&1; then
+                    printf '    %s✓%s bwrap installed\n' "$_green" "$_reset"
+                  else
+                    printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+                  fi
+                else
+                  printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+                fi
+              else
+                printf '    Auto-install not available\n'
+              fi
+            fi
+            if ! command -v bwrap >/dev/null 2>&1; then
+              return 1
+            fi
+          fi
+        fi
+      fi
+      ;;
+
+    19)
+      # Level 19: SSH & Remote Access
+
+      # Check SSH availability
+      if command -v ssh >/dev/null 2>&1; then
+        printf '  %s✓%s SSH client: ssh available\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s SSH client: ssh not found\n' "$_red" "$_reset"
+        if [ "$skip_heal" -eq 0 ]; then
+          manage_system_command=""
+          if command -v manage-system-command >/dev/null 2>&1; then
+            manage_system_command="manage-system-command"
+          elif [ -x "${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command" ]; then
+            manage_system_command="${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command"
+          fi
+          if [ -n "$manage_system_command" ]; then
+            printf '    Attempting to install SSH...\n'
+            "$manage_system_command" ssh openssh >/dev/null 2>&1 || :
+          fi
+        fi
+        if ! command -v ssh >/dev/null 2>&1; then
+          return 1
+        fi
+      fi
+      ;;
+
+    22)
+      # Level 22: Extended Attributes
+
+      # Check extended attributes helpers
+      xattr_helper=""
+      if command -v xattr >/dev/null 2>&1; then
+        xattr_helper="xattr"
+      elif command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; then
+        xattr_helper="getfattr/setfattr"
+      fi
+
+      if [ -n "$xattr_helper" ]; then
+        printf '  %s✓%s Extended attributes: %s available\n' "$_green" "$_reset" "$xattr_helper"
+      else
+        printf '  %s✗%s Extended attributes: no helper found\n' "$_red" "$_reset"
+        if [ "$skip_heal" -eq 0 ]; then
+          manage_system_command=""
+          if command -v manage-system-command >/dev/null 2>&1; then
+            manage_system_command="manage-system-command"
+          elif [ -x "${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command" ]; then
+            manage_system_command="${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command"
+          fi
+          if [ -n "$manage_system_command" ]; then
+            printf '    Attempting to install xattr tooling...\n'
+            "$manage_system_command" getfattr attr >/dev/null 2>&1 || :
+            "$manage_system_command" setfattr attr >/dev/null 2>&1 || :
+          fi
+        fi
+        has_xattr=0
+        if command -v xattr >/dev/null 2>&1; then
+          has_xattr=1
+        elif command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; then
+          has_xattr=1
+        fi
+        if [ "$has_xattr" -eq 1 ]; then
+          printf '    %s✓%s Extended attributes helper ready\n' "$_green" "$_reset"
+        else
+          printf '    %s✗%s Extended attributes still unavailable\n' "$_red" "$_reset"
+          return 1
+        fi
+      fi
+      ;;
+
+    24)
+      # Level 24: Spellcraft Development Tools
+
+      # Check checkbashisms for lint-magic
+      if command -v checkbashisms >/dev/null 2>&1; then
+        printf '  %s✓%s Shell lint: checkbashisms available\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Shell lint: checkbashisms not found\n' "$_red" "$_reset"
+        if [ "$skip_heal" -eq 0 ]; then
+          if command -v install-checkbashisms >/dev/null 2>&1; then
+            printf '    Installing checkbashisms...\n'
+            if install-checkbashisms 2>/dev/null; then
+              if command -v checkbashisms >/dev/null 2>&1; then
+                printf '    %s✓%s checkbashisms installed\n' "$_green" "$_reset"
+              else
+                printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+              fi
+            else
+              printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+            fi
+          else
+            printf '    Auto-install not available\n'
+          fi
+        fi
+        if ! command -v checkbashisms >/dev/null 2>&1; then
+          return 1
+        fi
+      fi
+      ;;
+
+    25)
+      # Level 25: Core Menu Infrastructure
+
+      # Check spellbook directory access
+      spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+      if [ -d "$spell_home" ] && [ -w "$spell_home" ]; then
+        printf '  %s✓%s Spellbook directory: %s\n' "$_green" "$_reset" "$spell_home"
+      else
+        printf '  %s✗%s Spellbook directory: %s unavailable\n' "$_red" "$_reset" "$spell_home"
+        if [ "$skip_heal" -eq 0 ]; then
+          if mkdir -p "$spell_home" 2>/dev/null; then
+            printf '    %s✓%s Spellbook directory created\n' "$_green" "$_reset"
+          else
+            printf '    %s✗%s Spellbook directory creation failed\n' "$_red" "$_reset"
+          fi
+        fi
+        if [ ! -d "$spell_home" ] || [ ! -w "$spell_home" ]; then
+          return 1
+        fi
+      fi
+      ;;
+      
+    30)
+      # Level 30: Optional Arcana (single item - combine on one line)
+      if [ -d "${WIZARDRY_DIR}/spells/.arcana" ]; then
+        arcana_count=$(find "${WIZARDRY_DIR}/spells/.arcana" -type f 2>/dev/null | wc -l)
+        printf '  %s✓%s Arcana (optional): Found %d scripts\n' "$_green" "$_reset" "$arcana_count"
+      else
+        printf '  Arcana (optional): Not installed\n'
+      fi
+      ;;
+      
+    *)
+      # Levels 4, 6-7, 9-10, 13-17, 19-20, 22, 25-28: Standard validation pattern
+      
+      # Check spells
+      spell_list=$(get_level_spells "$level")
+      if [ -n "$spell_list" ]; then
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          return 1
+        fi
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
+        else
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
+      fi
+
+      # Check imps
+      imp_list=$(get_level_imps "$level")
+      had_imps=0
+      if [ -n "$imp_list" ]; then
+        had_imps=1
+        new_imp_list=""
+        for imp in $imp_list; do
+          case " ${_banish_seen_imps} " in
+            *" ${imp} "*) ;;
+            *)
+              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
+              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              ;;
+          esac
+        done
+        imp_list=$new_imp_list
+      fi
+      if [ -n "$imp_list" ]; then
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
+        else
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
+      elif [ "$had_imps" -eq 1 ]; then
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      else
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      fi
+      ;;
+  esac
+  
+  return 0
+}
+
+
+# Main execution: Run levels 0 through target_level (or only target_level if --only)
+if [ "$only_this_level" -eq 1 ]; then
+  printf '\nValidating Level %d only: %s\n' "$target_level" "$(banish_level_name "$target_level")"
+else
+  printf '\nValidating through Level %d: %s\n' "$target_level" "$(banish_level_name "$target_level")"
+fi
+
+# Set up validate-spells command path
+validate_spells="${WIZARDRY_DIR}/spells/.wizardry/validate-spells"
+if [ ! -x "$validate_spells" ]; then
+  printf '%s\n' "banish: validate-spells not found or not executable" >&2
+  exit 1
+fi
+
+# Run each level from 0 to target_level (or just target_level if --only)
+if [ "$only_this_level" -eq 1 ]; then
+  current_level=$target_level
+else
+  current_level=0
+fi
+
+last_success_level=-1
+while [ "$current_level" -le "$target_level" ]; do
+  banish_process_level "$current_level" || {
+    exit_code=$?
+    if [ "$last_success_level" -ge 0 ]; then
+      printf '\n%s✓%s Banished to Level %d\n' "$_green" "$_reset" "$last_success_level"
+    fi
+    printf '%s✗%s Banish failed at Level %d\n' "$_red" "$_reset" "$current_level"
+    exit "$exit_code"
+  }
+  last_success_level=$current_level
+  if [ "$only_this_level" -eq 1 ]; then
+    break
+  fi
+  current_level=$((current_level + 1))
+done
+
+# Final success message
+if [ "$run_all" -eq 1 ]; then
+  printf '\n%s✓%s Banished all (Level %d)\n' "$_green" "$_reset" "$last_success_level"
+else
+  printf '\n%s✓%s All validation checks passed\n' "$_green" "$_reset"
+fi
+
+exit 0
