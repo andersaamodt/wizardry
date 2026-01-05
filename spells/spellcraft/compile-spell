@@ -23,56 +23,37 @@ USAGE
   ;;
 esac
 
-# Handle require-wizardry availability (for script execution without invoke-wizardry)
-if command -v require-wizardry >/dev/null 2>&1; then
-  require-wizardry || exit 1
-elif command -v require-wizardry >/dev/null 2>&1; then
-  require-wizardry || exit 1
-else
-  # Neither available - source it now
-  if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/require-wizardry" ]; then
-    . "${WIZARDRY_DIR}/spells/.imps/sys/require-wizardry"
-    require-wizardry || exit 1
-  else
-    # Fall back to relative path from script location
-    _cs_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-    _cs_imp_path="$_cs_script_dir/../../.imps/sys/require-wizardry"
-    if [ -f "$_cs_imp_path" ]; then
-      . "$_cs_imp_path"
-      require-wizardry || exit 1
-    else
-      printf 'Error: require-wizardry not found\n' >&2
-      exit 1
-    fi
-  fi
+# Check if WIZARDRY_DIR is set (inline check, not sourcing require-wizardry)
+if [ -z "${WIZARDRY_DIR-}" ] || [ ! -d "${WIZARDRY_DIR}/spells" ]; then
+  printf 'Error: wizardry not available (WIZARDRY_DIR not set or invalid)\n' >&2
+  exit 1
 fi
 
 set -eu
 
-# Source env_clear if not already available
-if ! command -v env_clear >/dev/null 2>&1; then
-  if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/env-clear" ]; then
-    . "${WIZARDRY_DIR}/spells/.imps/sys/env-clear"
-  else
-    _cs_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-    . "$_cs_script_dir/../../.imps/sys/env-clear"
-  fi
-fi
-
-# Source output imps (say, warn, die, etc.)
-if [ -n "${WIZARDRY_DIR-}" ] && [ -d "${WIZARDRY_DIR}/spells/.imps/out" ]; then
-  for _cs_out_imp in "${WIZARDRY_DIR}"/spells/.imps/out/*; do
-    [ -f "$_cs_out_imp" ] && . "$_cs_out_imp"
-  done
-else
-  _cs_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  for _cs_out_imp in "$_cs_script_dir"/../../.imps/out/*; do
-    [ -f "$_cs_out_imp" ] && . "$_cs_out_imp"
-  done
+# Add imp directories to PATH so we can call imps as commands
+if [ -n "${WIZARDRY_DIR-}" ]; then
+  PATH="${WIZARDRY_DIR}/spells/.imps/out:${PATH}"
+  PATH="${WIZARDRY_DIR}/spells/.imps/sys:${PATH}"
+  PATH="${WIZARDRY_DIR}/spells/.imps/fs:${PATH}"
+  export PATH
 fi
 
 if [ "$#" -lt 1 ]; then
-  compile_spell_usage >&2
+  cat <<'USAGE' >&2
+Usage: compile-spell <spell-name-or-path>
+
+Compile a spell into a standalone script by inlining all dependencies.
+The compiled spell can run without wizardry being installed.
+
+Arguments:
+  spell-name-or-path   Name of spell (e.g., "hash") or path (e.g., "spells/cantrips/hash")
+
+Examples:
+  compile-spell hash                      # Find by name
+  compile-spell spells/cantrips/hash      # Use path
+  compile-spell ./my-custom-spell         # Current directory
+USAGE
   exit 2
 fi
 
@@ -112,8 +93,8 @@ case "$spell_name" in
 esac
 
 if [ -z "$spell_path" ] || [ ! -f "$spell_path" ]; then
-  die "compile-spell: spell '$spell_name' not found"
-        exit 1
+  printf 'compile-spell: spell '\''%s'\'' not found\n' "$spell_name" >&2
+  exit 1
 fi
 
 # Read spell content

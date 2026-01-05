@@ -48,10 +48,12 @@ fi
 
 # Add wizardry dirs to PATH so we can call say, warn, etc.
 if [ -n "${WIZARDRY_DIR-}" ]; then
+  PATH="${WIZARDRY_DIR}/spells/.imps/sys:${PATH}"
   PATH="${WIZARDRY_DIR}/spells/.imps/out:${PATH}"
   PATH="${WIZARDRY_DIR}/spells/spellcraft:${PATH}"
 else
   _dg_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  PATH="$_dg_script_dir/../../.imps/sys:${PATH}"
   PATH="$_dg_script_dir/../../.imps/out:${PATH}"
   PATH="$_dg_script_dir:${PATH}"
 fi
@@ -159,10 +161,12 @@ if [ -d "$repo_dir/.tests" ]; then
 fi
 
 # Copy spell-levels imp (required by test-magic)
+# spell-levels is a simple data file, just copy it (compilation hangs due to self-reference)
 say "Copying spell-levels imp..."
 if [ -f "$repo_dir/spells/.imps/sys/spell-levels" ]; then
   mkdir -p "$output_dir/spells/.imps/sys"
   cp "$repo_dir/spells/.imps/sys/spell-levels" "$output_dir/spells/.imps/sys/" 2>/dev/null || true
+  chmod +x "$output_dir/spells/.imps/sys/spell-levels" 2>/dev/null || true
 fi
 
 # Copy essential files (README, LICENSE, etc.) but skip .git and .github
