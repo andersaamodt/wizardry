@@ -1114,6 +1114,7 @@ test_spells_have_limited_flags() {
   # Must be documented in EXEMPTIONS.md with justification
   exempted_spells="
     system/test-magic
+    system/pocket-dimension
   "
   
   tmpfile_2=$(mktemp "${WIZARDRY_TMPDIR}/flag-warn-2.XXXXXX")
@@ -1403,7 +1404,7 @@ test_scripts_have_set_eu_early() {
       # Conditional imps exempt (return exit codes, not errors)
       .imps/cond/*|.imps/lex/*|.imps/menu/*) return ;;
       # Bootstrap spells that have long argument parsing before set
-      divination/detect-rc-file|system/test-magic) return ;;
+      divination/detect-rc-file|system/test-magic|spellcraft/demo-magic) return ;;
     esac
     
     # In compiled mode, wrapper functions are unwrapped so set may appear later

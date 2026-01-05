@@ -305,7 +305,7 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 
 **Rule**: Spells should have no more than 3 flags (0-1 freely, 2-3 with warnings, 4+ requires exemption).
 
-**Status**: 1 exemption documented
+**Status**: 2 exemptions documented
 
 **Exempted Spells**:
 - **`system/test-magic`** (4 flags: `--only`, `--list`, `--verbose`, `--profile`) - Test runner with multiple operational modes
@@ -317,6 +317,17 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
     - `--profile`: Show timing information for test optimization (performance analysis)
   - **Justification**: Each flag serves a distinct operational mode for the test infrastructure. Combining or removing any would reduce testing flexibility and make debugging/optimization harder.
   - **Added**: 2025-12-22 - When profiling feature was added to help optimize test suite performance
+
+- **`system/pocket-dimension`** (5 flags: `--check`, `--keep`, `--network`, `--allow-read`, `--allow-write`) - Sandboxing/isolation infrastructure
+  - **Reason**: Security and isolation infrastructure spell that needs multiple configuration options
+  - **Flags**:
+    - `--check`: Verify sandboxing capabilities (pre-flight check)
+    - `--keep`: Preserve sandbox directory for debugging (troubleshooting aid)
+    - `--network MODE`: Network isolation mode - open/observe/closed (security control)
+    - `--allow-read PATH`: Whitelist read access (repeatable, security control)
+    - `--allow-write PATH`: Whitelist write access (repeatable, security control)
+  - **Justification**: Sandboxing requires fine-grained security controls. Each flag serves a distinct security or debugging purpose. Removing any would compromise either security granularity or debuggability.
+  - **Added**: 2026-01-05 - When reviewing flag discipline compliance
 
 **Progress**: 57/57 spells refactored (100%) - 3 spells removed as obsolete
 
@@ -741,6 +752,7 @@ The following spells are temporarily exempted while being refactored:
 20. **system/update-all** - System update orchestration
 21. **system/test-magic** - Test runner infrastructure (4 flags exemption)
 22. **system/banish** - Uninstallation script
+23. **spellcraft/demo-magic** - Demonstration spell with extensive functions
 
 ### Exempted Test Imps
 
