@@ -64,10 +64,11 @@ test_verbose_mode() {
   # Copy wizardry for realistic testing
   copy_wizardry "$install_dir" || return 1
   
-  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" --verbose
+  # Use WIZARDRY_LOG_LEVEL=2 for verbose output
+  WIZARDRY_DIR="$install_dir" WIZARDRY_LOG_LEVEL=2 run_spell "spells/wards/banish"
   assert_success || return 1
-  # Verbose mode shows "Level 0"
-  assert_output_contains "Level 0" || return 1
+  # Should show validation progress
+  assert_output_contains "validation" || return 1
 }
 
 test_non_verbose_has_output() {
@@ -90,9 +91,10 @@ test_custom_wizardry_dir() {
   # Copy wizardry to custom location for realistic testing
   copy_wizardry "$install_dir" || return 1
   
-  WIZARDRY_LOG_LEVEL=1 run_spell "spells/wards/banish" --wizardry-dir "$install_dir"
+  # Set WIZARDRY_DIR via environment variable instead of --wizardry-dir option
+  WIZARDRY_DIR="$install_dir" WIZARDRY_LOG_LEVEL=1 run_spell "spells/wards/banish"
   assert_success || return 1
-  assert_output_contains "Validation complete" || return 1
+  assert_output_contains "validation" || return 1
 }
 
 test_missing_invoke_wizardry() {
@@ -186,7 +188,8 @@ test_verbose_shows_level_info() {
   # Copy wizardry for realistic testing
   copy_wizardry "$install_dir" || return 1
   
-  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 1 --verbose --no-tests
+  # Use WIZARDRY_LOG_LEVEL for verbosity instead of --verbose
+  WIZARDRY_DIR="$install_dir" WIZARDRY_LOG_LEVEL=2 run_spell "spells/wards/banish" 1 --no-tests
   assert_success || return 1
   assert_output_contains "System Foundation" || return 1
   assert_output_contains "Menu Core" || return 1

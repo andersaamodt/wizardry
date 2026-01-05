@@ -46,5 +46,5 @@ finish_tests() {
   return 0
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in finish-tests) finish_tests "$@" ;; esac
+
+finish_tests "$@"

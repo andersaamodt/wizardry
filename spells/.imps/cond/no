@@ -12,6 +12,4 @@ no() {
   esac
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */no) no "$@" ;; esac
+no "$@"

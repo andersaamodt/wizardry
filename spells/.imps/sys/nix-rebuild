@@ -54,6 +54,4 @@ nix_rebuild() {
     return 0
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */nix-rebuild) nix_rebuild "$@" ;; esac
+nix_rebuild "$@"

@@ -2,25 +2,19 @@
 
 # Install Node.js using the available package manager, with NixOS rebuild support.
 
-install_node_usage() {
-        cat <<'USAGE' >&2
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: install-node
 
 Runs a short wizard to install Node.js using the system package manager (or nix-env on NixOS),
 prompting for package choices and optionally running nixos-rebuild when appropriate.
 USAGE
-}
-
-install_node() {
-case "${1-}" in
---help|--usage|-h)
-        install_node_usage
-        return 0
-        ;;
+  exit 0
+  ;;
 esac
 
-require_wizardry || return 1
-
+require_wizardry || exit 1
 
 set -eu
 env_clear
@@ -43,85 +37,3 @@ install_node_detect_nixos() {
     return 0
   fi
   return 1
-}
-
-install_node_prompt() {
-  message=$1
-  default_value=$2
-  printf '%s [%s]: ' "$message" "$default_value" >&2
-  read -r response || response=""
-  if [ -z "$response" ]; then
-    response=$default_value
-  fi
-  printf '%s' "$response"
-}
-
-package_default=${NODE_PACKAGE_DEFAULT:-nodejs}
-node_package=$(install_node_prompt "Which Node.js package should be installed?" "$package_default")
-
-# Allow users to override per-manager packages to handle distro differences.
-export NIX_PACKAGE=${NIX_PACKAGE:-$node_package}
-export APT_PACKAGE=${APT_PACKAGE:-$node_package}
-export DNF_PACKAGE=${DNF_PACKAGE:-$node_package}
-export YUM_PACKAGE=${YUM_PACKAGE:-$node_package}
-export ZYPPER_PACKAGE=${ZYPPER_PACKAGE:-$node_package}
-export PACMAN_PACKAGE=${PACMAN_PACKAGE:-$node_package}
-export APK_PACKAGE=${APK_PACKAGE:-$node_package}
-export PKGIN_PACKAGE=${PKGIN_PACKAGE:-$node_package}
-
-printf '\nInstalling Node.js using %s...\n' "$manage_cmd"
-"$manage_cmd" node "$node_package"
-
-if install_node_detect_nixos && command -v nixos-rebuild >/dev/null 2>&1; then
-  printf '\nA NixOS system was detected. Run a system rebuild now to pick up configuration changes? [y/N]: '
-  read -r rebuild || rebuild=""
-  case "$rebuild" in
-    [Yy]*)
-      if command -v sudo >/dev/null 2>&1; then
-        sudo nixos-rebuild switch
-      else
-        nixos-rebuild switch
-      fi
-      ;;
-    *)
-      printf '%s\n' "Skipping nixos-rebuild. Run 'sudo nixos-rebuild switch' later if you added Node.js to configuration.nix."
-      ;;
-  esac
-fi
-
-printf '\nNode.js installation complete.\n'
-
-}
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

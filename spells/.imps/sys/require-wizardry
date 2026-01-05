@@ -24,6 +24,4 @@ require_wizardry() {
   return 1
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */require-wizardry) require_wizardry "$@" ;; esac
+require_wizardry "$@"

@@ -33,6 +33,4 @@ read_line() {
   printf '%s' "$_rl_line"
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */read-line) read_line "$@" ;; esac
+read_line "$@"

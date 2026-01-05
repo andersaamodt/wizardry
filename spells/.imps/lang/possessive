@@ -16,6 +16,4 @@ possessive() {
   esac
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */possessive) possessive "$@" ;; esac
+possessive "$@"

@@ -32,6 +32,4 @@ detect_indent_width() {
   ' "$_diw_file"
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */detect-indent-width) detect_indent_width "$@" ;; esac
+detect_indent_width "$@"

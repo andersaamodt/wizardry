@@ -8,6 +8,4 @@ success() {
   printf '%s\n' "$*"
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */success) success "$@" ;; esac
+success "$@"

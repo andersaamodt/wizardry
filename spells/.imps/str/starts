@@ -11,6 +11,4 @@ starts() {
   esac
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */starts) starts "$@" ;; esac
+starts "$@"

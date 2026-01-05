@@ -38,6 +38,4 @@ has_ancestor() {
   return 1
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */has-ancestor) has_ancestor "$@" ;; esac
+has_ancestor "$@"

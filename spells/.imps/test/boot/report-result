@@ -28,5 +28,5 @@ report_result() {
   fi
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in report-result) report_result "$@" ;; esac
+
+report_result "$@"

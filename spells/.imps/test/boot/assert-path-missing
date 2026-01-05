@@ -11,5 +11,5 @@ assert_path_missing() {
   return 0
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in assert-path-missing) assert_path_missing "$@" ;; esac
+
+assert_path_missing "$@"

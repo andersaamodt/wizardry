@@ -14,6 +14,4 @@ any() {
   return 1
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */any) any "$@" ;; esac
+any "$@"

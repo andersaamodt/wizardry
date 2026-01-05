@@ -2,21 +2,16 @@
 
 # Bootstrap spell: report readiness of core prerequisites for wizardry.
 
-core_status_usage() {
-        cat <<'USAGE' >&2
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: core-status
 
 Reports whether wizardry's core prerequisites are installed, printing "installed", "not installed", or "partial install".
 USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-        core_status_usage
-        exit 0
-        ;;
+  exit 0
+  ;;
 esac
-
 
 # Report readiness of core prerequisites for wizardry.
 

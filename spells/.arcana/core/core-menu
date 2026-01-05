@@ -2,20 +2,18 @@
 
 # Bootstrap spell: install and manage the core prerequisites for wizardry.
 
-core_menu_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE'
 Usage: core-menu
 
 Displays the core prerequisites management menu.
 USAGE
-}
-
-case "${1-}" in
-  --help|--usage|-h)
-    core_menu_usage
-    exit 0
-    ;;
+  exit 0
+  ;;
 esac
+
+require_wizardry || exit 1
 
 set -eu
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
@@ -94,79 +92,3 @@ core_menu_resolve_spell() {
 
   printf '%s\n' "core-menu: missing helper '$spell_name'" >&2
   return 1
-}
-
-first_run=1
-
-while true; do
-  if [ "$first_run" -eq 0 ]; then
-    printf '\n'
-  else
-    first_run=0
-  fi
-
-  set --
-
-  while IFS=: read -r label command_name install_spell uninstall_spell essential; do
-    installed=0
-    
-    # Special handling for clipboard helper marker
-    if [ "$command_name" = "__clipboard_helper__" ]; then
-      if clipboard_helper_installed; then
-        installed=1
-      fi
-    elif command -v "$command_name" >/dev/null 2>&1; then
-      installed=1
-    fi
-
-    # Handle essential commands differently
-    if [ "$essential" = "1" ]; then
-      if [ "$installed" -eq 1 ]; then
-        display_label="$label - installed"
-      else
-        display_label="$label - not installed"
-      fi
-      # For essential commands, use the install spell if not installed
-      # or show the essential message if installed
-      if [ "$installed" -eq 1 ]; then
-        # When selected, show message that this is essential
-        # The label comes from the controlled core_dependencies function
-        # and contains only alphanumeric characters, making it safe to use
-        set -- "$@" "${display_label}%printf '\\n%s is essential for the shell to function and should not be uninstalled.\\n' '$label'; printf 'Press Enter to continue...'; read dummy"
-      else
-        spell=$(core_menu_resolve_spell "$install_spell") || exit 1
-        set -- "$@" "${display_label}%$spell"
-      fi
-    else
-      # Non-essential command handling (original logic)
-      if [ "$installed" -eq 1 ]; then
-        entry_label="Uninstall $label"
-        spell=$(core_menu_resolve_spell "$uninstall_spell") || exit 1
-      else
-        entry_label="Install $label"
-        spell=$(core_menu_resolve_spell "$install_spell") || exit 1
-      fi
-
-      display_label=$entry_label
-      if [ "$installed" -eq 1 ]; then
-        display_label="$entry_label (installed; select to uninstall — Install $label to reinstall)"
-      fi
-
-      set -- "$@" "${display_label}%$spell"
-    fi
-  done <<EOF
-$(core_dependencies)
-EOF
-
-  set -- "$@" "Install all%ASSUME_YES=1 $script_dir/install-core" "$exit_entry"
-
-  "$menu_bin" "$title" "$@" || true
-
-  if [ -n "$loop_limit" ]; then
-    if [ "$loop_limit" -le 1 ] 2>/dev/null; then
-      break
-    fi
-    loop_limit=$((loop_limit - 1))
-  fi
-
-done

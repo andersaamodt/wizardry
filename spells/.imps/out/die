@@ -12,6 +12,4 @@ die() {
   exit "$_die_code"
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */die) die "$@" ;; esac
+die "$@"

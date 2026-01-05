@@ -12,5 +12,5 @@ run_bwrap() {
   fi
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in run-bwrap) run_bwrap "$@" ;; esac
+
+run_bwrap "$@"

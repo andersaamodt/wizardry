@@ -24,6 +24,4 @@ validate_name() {
   return 0
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */validate-name) validate_name "$@" ;; esac
+validate_name "$@"

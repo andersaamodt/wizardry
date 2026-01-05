@@ -27,5 +27,5 @@ test_summary() {
   fi
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in test-summary) test_summary "$@" ;; esac
+
+test_summary "$@"

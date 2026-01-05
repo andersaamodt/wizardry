@@ -13,5 +13,5 @@ STUB
   chmod +x "$fixture/bin/pacman"
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in stub-pacman) stub_pacman "$@" ;; esac
+
+stub_pacman "$@"

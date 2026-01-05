@@ -24,6 +24,4 @@ or() {
   "$_or_lex_dir/parse" "$@"
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */or) or "$@" ;; esac
+or "$@"

@@ -28,6 +28,4 @@ is() {
   esac
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */is) is "$@" ;; esac
+is "$@"

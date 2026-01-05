@@ -196,6 +196,4 @@ get_level_imps() {
   spell_levels "$1" imps
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */spell-levels) spell_levels "$@" ;; esac
+spell_levels "$@"

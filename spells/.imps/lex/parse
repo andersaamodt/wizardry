@@ -430,6 +430,4 @@ parse() {
     return 127
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */parse) parse "$@" ;; esac
+parse "$@"

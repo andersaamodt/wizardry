@@ -13,5 +13,5 @@ STUB
   chmod +x "$dir/$name"
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in write-command-stub) write_command_stub "$@" ;; esac
+
+write_command_stub "$@"

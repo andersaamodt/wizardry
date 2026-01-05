@@ -6,6 +6,4 @@ exit_label() {
   printf '%s' "Exit"
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */exit-label) exit_label "$@" ;; esac
+exit_label "$@"

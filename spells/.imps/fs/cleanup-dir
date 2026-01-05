@@ -9,6 +9,4 @@ cleanup_dir() {
   return 0
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */cleanup-dir) cleanup_dir "$@" ;; esac
+cleanup_dir "$@"

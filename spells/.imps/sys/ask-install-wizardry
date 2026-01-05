@@ -48,6 +48,4 @@ ask_install_wizardry() {
     esac
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */ask-install-wizardry) ask_install_wizardry "$@" ;; esac
+ask_install_wizardry "$@"

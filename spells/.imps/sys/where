@@ -8,6 +8,4 @@ where() {
   command -v "$1" 2>/dev/null || return 1
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */where) where "$@" ;; esac
+where "$@"

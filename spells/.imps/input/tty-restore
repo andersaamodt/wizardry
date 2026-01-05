@@ -15,6 +15,4 @@ tty_restore() {
   stty "$_tr_state" >/dev/null 2>&1 || :
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */tty-restore) tty_restore "$@" ;; esac
+tty_restore "$@"

@@ -81,6 +81,4 @@ else
   return $? 2>/dev/null || exit $?
 fi
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */invoke-wizardry-minimal-wob) invoke_wizardry_minimal_wob "$@" ;; esac
+invoke_wizardry_minimal_wob "$@"

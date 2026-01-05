@@ -2,23 +2,18 @@
 
 # Present the Node.js management menu.
 
-node_menu_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE'
 Usage: node-menu
 
 Displays the Node.js management menu.
 USAGE
-}
-
-node_menu() {
-case "${1-}" in
---help|--usage|-h)
-  node_menu_usage
-  return 0
+  exit 0
   ;;
 esac
 
-require_wizardry || return 1
+require_wizardry || exit 1
 
 set -eu
 env_clear
@@ -28,147 +23,3 @@ trap 'exit 0' INT TERM
 
 command_available() {
   command -v "$1" >/dev/null 2>&1
-}
-
-is_node_installed() {
-  command_available node
-}
-
-node_service_name() {
-  for candidate in ${NODE_SERVICE-} node nodejs node-app; do
-    [ -n "$candidate" ] || continue
-    
-    has_service_cmd=$(command_available is-service-installed && echo "yes" || echo "no")
-    is_installed="no"
-    if [ "$has_service_cmd" = "yes" ] && is-service-installed "$candidate" >/dev/null 2>&1; then
-      is_installed="yes"
-    fi
-    
-    if [ "$is_installed" = "yes" ]; then
-      printf '%s' "$candidate"
-      return 0
-    fi
-    
-    has_systemctl=$(command_available systemctl && echo "yes" || echo "no")
-    if [ "$has_systemctl" = "yes" ]; then
-      unit_files=$(systemctl list-unit-files --type=service --no-pager 2>/dev/null)
-      if echo "$unit_files" | grep -q "^${candidate}\\.service"; then
-        printf '%s' "$candidate"
-        return 0
-      fi
-    fi
-  done
-  return 1
-}
-
-service_entries() {
-  if service_name=$(node_service_name); then
-    status="Service Status%sudo systemctl status $service_name"
-    
-    has_running_cmd=$(command_available is-service-running && echo "yes" || echo "no")
-    is_running="no"
-    if [ "$has_running_cmd" = "yes" ] && is-service-running "$service_name" >/dev/null 2>&1; then
-      is_running="yes"
-    fi
-    
-    if [ "$is_running" = "yes" ]; then
-      toggle="Restart Node service%sudo systemctl restart $service_name"
-      stop="Stop Node service%sudo systemctl stop $service_name"
-    elif command_available systemctl && systemctl is-active "$service_name" >/dev/null 2>&1; then
-      toggle="Restart Node service%sudo systemctl restart $service_name"
-      stop="Stop Node service%sudo systemctl stop $service_name"
-    else
-      toggle="Start Node service%sudo systemctl start $service_name"
-      stop=""
-    fi
-    printf '%s\n%s\n' "$status" "$toggle"
-    [ -n "$stop" ] && printf '%s\n' "$stop"
-  fi
-}
-
-version_entries() {
-  if command_available node; then
-    printf 'Show Node version%%node --version\n'
-    printf 'Show Node binary path%%command -v node\n'
-    printf 'Runtime platform%%node -e "console.log(`${process.platform}-${process.arch}`)"\n'
-    printf 'Quick health check%%node -e "console.log(`Node OK: ${process.version}`)"\n'
-  fi
-  if command_available npm; then
-    printf 'Show npm version%%npm --version\n'
-    printf 'List global npm packages%%npm list -g --depth=0\n'
-  fi
-}
-
-node_menu_display_menu() {
-  title="${BOLD}${CYAN}Node.js: $(node-status)"
-  exit_label=$(exit-label)
-  exit_option="${exit_label}%kill -TERM \$PPID"
-  install_option="Install Node.js%install-node"
-  uninstall_option="Uninstall Node.js%uninstall-node"
-
-  service_opts=$(service_entries)
-  version_opts=$(version_entries)
-
-  set --
-  if is_node_installed; then
-    old_ifs=$IFS
-    IFS=$(printf '\n')
-    for line in $version_opts; do
-      [ -n "$line" ] && set -- "$@" "$line"
-    done
-    for line in $service_opts; do
-      [ -n "$line" ] && set -- "$@" "$line"
-    done
-    IFS=$old_ifs
-    set -- "$@" "$uninstall_option" "$exit_option"
-    menu "$title" "$@" || true
-  else
-    menu "$title" "$install_option" "$exit_option" || true
-  fi
-}
-
-first_run=1
-while :; do
-  if [ "$first_run" -eq 0 ]; then
-    printf '\n'
-  else
-    first_run=0
-  fi
-  node_menu_display_menu || true
-  # Loop to refresh status
-  :
-done
-}
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

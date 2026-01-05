@@ -11,6 +11,4 @@ first_of() {
   fi
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */first-of) first_of "$@" ;; esac
+first_of "$@"

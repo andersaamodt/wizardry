@@ -25,5 +25,5 @@ STUB
   chmod +x "$fixture/opt/pkg/bin/pkgin"
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in write-pkgin-stub) write_pkgin_stub "$@" ;; esac
+
+write_pkgin_stub "$@"

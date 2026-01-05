@@ -8,6 +8,4 @@ term() {
   [ -t "$_term_fd" ]
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */term) term "$@" ;; esac
+term "$@"

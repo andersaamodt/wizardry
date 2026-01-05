@@ -23,5 +23,5 @@ run_macos_sandbox() {
   "${SANDBOX_EXEC_BIN:?}" -p "$sandbox_profile" "$@"
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in run-macos-sandbox) run_macos_sandbox "$@" ;; esac
+
+run_macos_sandbox "$@"

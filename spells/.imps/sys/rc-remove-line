@@ -39,6 +39,4 @@ rc_remove_line() {
   return 0
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */rc-remove-line) rc_remove_line "$@" ;; esac
+rc_remove_line "$@"

@@ -17,6 +17,4 @@ pick() {
   sed -n "${line_num}p" "$file"
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */pick) pick "$@" ;; esac
+pick "$@"

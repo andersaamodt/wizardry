@@ -2,29 +2,18 @@
 
 # This script sets the correct permissions on the Bitcoin configuration directory.
 
-repair_bitcoin_permissions_usage() {
-        cat <<'USAGE' >&2
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: repair-bitcoin-permissions
 
 Fixes ownership and permissions on bitcoin directories and files so the node can start cleanly after migrations or backups.
 USAGE
-}
-
-repair_bitcoin_permissions() {
-case "${1-}" in
---help|--usage|-h)
-        repair_bitcoin_permissions_usage
-        return 0
-        ;;
+  exit 0
+  ;;
 esac
 
-require_wizardry || return 1
-
-
-
-# This script sets the correct permissions on the Bitcoin configuration directory.
-
-# Set the default Bitcoin configuration directory
+require_wizardry || exit 1
 
 set -eu
 env_clear
@@ -58,38 +47,3 @@ if [ -d "$bitcoin_dir" ]; then
 else
   echo "The provided directory does not exist."
 fi
-
-}
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

@@ -26,6 +26,4 @@ count_words() {
   printf '%d\n' "$#"
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */count-words) count_words "$@" ;; esac
+count_words "$@"

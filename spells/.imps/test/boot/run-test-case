@@ -49,5 +49,5 @@ run_test_case() {
   fi
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in run-test-case) run_test_case "$@" ;; esac
+
+run_test_case "$@"

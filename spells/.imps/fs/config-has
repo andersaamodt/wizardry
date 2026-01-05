@@ -28,6 +28,4 @@ config_has() {
   awk -F= -v key="$_ch_key" '$1 == key { found=1; exit } END { exit !found }' "$_ch_file"
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */config-has) config_has "$@" ;; esac
+config_has "$@"

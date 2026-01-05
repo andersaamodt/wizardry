@@ -13,5 +13,5 @@ provide_basic_tools() {
   done
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in provide-basic-tools) provide_basic_tools "$@" ;; esac
+
+provide_basic_tools "$@"

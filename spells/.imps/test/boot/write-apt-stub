@@ -13,5 +13,5 @@ STUB
   chmod +x "$fixture/bin/apt-get"
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in write-apt-stub) write_apt_stub "$@" ;; esac
+
+write_apt_stub "$@"

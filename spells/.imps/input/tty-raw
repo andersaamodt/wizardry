@@ -8,6 +8,4 @@ tty_raw() {
   stty -icanon -echo min 1 time 0 2>/dev/null
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */tty-raw) tty_raw "$@" ;; esac
+tty_raw "$@"

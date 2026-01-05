@@ -23,6 +23,4 @@ abs_path() {
   printf '%s\n' "$_ap_loc"
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */abs-path) abs_path "$@" ;; esac
+abs_path "$@"

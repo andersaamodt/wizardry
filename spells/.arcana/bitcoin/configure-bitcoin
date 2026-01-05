@@ -2,23 +2,20 @@
 
 # This spell facilitates the setting of the configurations for thy Bitcoin system.
 
-configure_bitcoin_usage() {
-        cat <<'USAGE' >&2
+
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: configure-bitcoin
 
 Creates or updates bitcoin.conf with sensible defaults for paths, RPC, and pruning so a fresh Bitcoin Core install can start.
 USAGE
-}
-
-configure_bitcoin() {
-case "${1-}" in
---help|--usage|-h)
-        configure_bitcoin_usage
-        return 0
+  exit 0
         ;;
 esac
 
-require_wizardry || return 1
+require_wizardry || exit 1
 
 
 
@@ -39,7 +36,8 @@ retry_with_sudo() {
 }
 
 # Handle Ctrl-C
-#trap "printf '\n'; exit 2" 2
+#trap "printf '
+'; exit 2" 2
 
 # Create bitcoin directory and configuration file if they do not exist
 mkdir -p "$HOME/.bitcoin"
@@ -70,8 +68,9 @@ fi
 modify_bitcoin_conf() {
     local key=$1
     local value=$2
-    printf "%s\n" >> "$bitcoin_conf" # Ensure a newline exists at the end of the file
-    awk -v key="$key" -v value="$value" 'BEGIN {OFS=FS="="; found=0} {gsub(/^[ \t]+|[ \t]+$/, "", $1)} !/^#/ && $1==key {found=1; print key"="value; next} {if(NF>1) print $1"="$2; else if(NF==1) print $1} END {if (!found) print key"="value}' "$bitcoin_conf" > "$bitcoin_conf.tmp" && mv "$bitcoin_conf.tmp" "$bitcoin_conf" || retry_with_sudo mv "$bitcoin_conf.tmp" "$bitcoin_conf"
+    printf "%s
+" >> "$bitcoin_conf" # Ensure a newline exists at the end of the file
+    awk -v key="$key" -v value="$value" 'BEGIN {OFS=FS="="; found=0} {gsub(/^[ 	]+|[ 	]+$/, "", $1)} !/^#/ && $1==key {found=1; print key"="value; next} {if(NF>1) print $1"="$2; else if(NF==1) print $1} END {if (!found) print key"="value}' "$bitcoin_conf" > "$bitcoin_conf.tmp" && mv "$bitcoin_conf.tmp" "$bitcoin_conf" || retry_with_sudo mv "$bitcoin_conf.tmp" "$bitcoin_conf"
     awk '/./' "$bitcoin_conf" > "$bitcoin_conf.tmp" && mv "$bitcoin_conf.tmp" "$bitcoin_conf" || retry_with_sudo mv "$bitcoin_conf.tmp" "$bitcoin_conf" # Remove trailing newlines
 }
 
@@ -91,7 +90,8 @@ if [ "$prune" = 0 ]; then
         elif validate_number "$max_disk"; then
             valid_number=true
         else
-            printf "Invalid input. Enter a valid number.\n"
+            printf "Invalid input. Enter a valid number.
+"
         fi
     done
 
@@ -130,45 +130,11 @@ if [ "$alt_storage" = 1 ]; then
     modify_bitcoin_conf "datadir" "$alt_path"
 fi
 
-printf "Bitcoin configuration has been updated.\n"
+printf "Bitcoin configuration has been updated.
+"
 }
 
 # Self-execute when run directly (not sourced)
 case "$0" in
   */configure-bitcoin|configure-bitcoin) configure_bitcoin "$@" ;;
 esac
-
-}
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

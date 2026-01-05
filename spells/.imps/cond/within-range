@@ -8,6 +8,4 @@ within_range() {
   [ "$1" -ge "$2" ] && [ "$1" -le "$3" ] 2>/dev/null
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */within-range) within_range "$@" ;; esac
+within_range "$@"

@@ -11,10 +11,5 @@ skip_if_compiled() {
 }
 
 # Self-execute when run directly (not sourced)
-case "${0##*/}" in
-  skip-if-compiled) 
-    set -eu
-    skip_if_compiled "$@"
-    exit $?
-    ;;
-esac
+
+skip_if_compiled "$@"

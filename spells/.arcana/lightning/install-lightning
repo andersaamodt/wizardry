@@ -2,25 +2,19 @@
 
 # Install and configure Bitcoin Lightning (Core Lightning) across supported platforms.
 
-install_lightning_usage() {
-        cat <<'USAGE' >&2
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: install-lightning
 
 Guides you through installing Bitcoin Lightning (Core Lightning). On NixOS, this will add
 clightning to environment.systemPackages when possible and run sudo nixos-rebuild all.
 USAGE
-}
-
-install_lightning() {
-case "${1-}" in
---help|--usage|-h)
-        install_lightning_usage
-        return 0
-        ;;
+  exit 0
+  ;;
 esac
 
-require_wizardry || return 1
-
+require_wizardry || exit 1
 
 set -eu
 env_clear
@@ -38,149 +32,3 @@ ask() {
     reply=$default
   fi
   printf '%s' "$reply"
-}
-
-install_lightning_is_nixos() {
-  if command -v detect-distro >/dev/null 2>&1 && [ "$(detect-distro 2>/dev/null)" = "nixos" ]; then
-    return 0
-  fi
-  return 1
-}
-
-install_on_debian() {
-  printf '%s\n' 'Installing lightningd via apt...'
-  if command -v sudo >/dev/null 2>&1; then
-    sudo apt-get update
-    sudo apt-get install -y lightningd
-  else
-    apt-get update
-    apt-get install -y lightningd
-  fi
-}
-
-install_on_arch() {
-  printf '%s\n' 'Installing lightningd via pacman...'
-  if command -v sudo >/dev/null 2>&1; then
-    sudo pacman -Sy --noconfirm lightningd
-  else
-    pacman -Sy --noconfirm lightningd
-  fi
-}
-
-install_on_mac() {
-  printf '%s\n' 'Installing lightning using Homebrew (package name: lightningd or core-lightning)...'
-  if ! command -v brew >/dev/null 2>&1; then
-    printf '%s\n' 'Homebrew is required to install Lightning on macOS.'
-    return 1
-  fi
-  if brew info lightningd >/dev/null 2>&1; then
-    brew install lightningd
-    return 0
-  fi
-  if brew info core-lightning >/dev/null 2>&1; then
-    brew install core-lightning
-    return 0
-  fi
-  printf '%s\n' 'Lightning package not found in Homebrew.'
-  return 1
-}
-
-add_lightning_to_nixos() {
-  config=${1:-/etc/nixos/configuration.nix}
-  if [ ! -f "$config" ]; then
-    printf '%s\n' "NixOS configuration file $config was not found."
-    return 1
-  fi
-
-  if command -v backup-nix-config >/dev/null 2>&1; then
-    backup-nix-config "$config" >&2 || true
-  fi
-
-  if grep -q 'clightning' "$config"; then
-    printf '%s\n' 'clightning already present in configuration.nix.'
-  else
-    printf '%s\n' 'Adding clightning to environment.systemPackages (with pkgs; [ clightning ])...'
-    if grep -q 'environment.systemPackages' "$config"; then
-      sudo perl -0pi -e 's/(environment\.systemPackages\s*=\s*with\s+pkgs;\s*\[[^]]*)\]/$1\n  clightning\n]/' "$config" \
-        || sudo perl -0pi -e 's/(environment\.systemPackages\s*=\s*\[[^]]*)\]/$1\n  clightning\n]/' "$config"
-    else
-      sudo tee -a "$config" <<'NIX' >/dev/null
-
-# Added by wizardry install-lightning
-{ environment.systemPackages = with pkgs; [ clightning ]; }
-NIX
-    fi
-  fi
-
-  printf '%s\n' 'Rebuilding NixOS to apply Lightning installation...'
-  sudo nixos-rebuild all
-}
-
-install_lightning() {
-  printf '%s\n' 'Welcome to the Lightning installation wizard.'
-  distro="$(detect-distro 2>/dev/null || os)"
-  printf 'Detected platform: %s\n' "$distro"
-
-  case $distro in
-    debian|ubuntu|linux)
-      install_on_debian
-      ;;
-    arch)
-      install_on_arch
-      ;;
-    mac|macos)
-      install_on_mac
-      ;;
-    nixos)
-      config_path=$(ask "Path to NixOS configuration" "/etc/nixos/configuration.nix")
-      add_lightning_to_nixos "$config_path"
-      ;;
-    *)
-      printf '%s\n' "Unsupported distribution for automatic install."
-      return 1
-      ;;
-  esac
-
-  if command -v lightning-cli >/dev/null 2>&1; then
-    printf '%s\n' 'Lightning installation complete.'
-  else
-    printf '%s\n' 'Lightning installation attempted, but lightning-cli is not yet available. Check logs.'
-  fi
-}
-
-install_lightning
-
-}
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

@@ -8,6 +8,4 @@ upper() {
   tr '[:lower:]' '[:upper:]'
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */upper) upper "$@" ;; esac
+upper "$@"

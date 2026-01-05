@@ -7,5 +7,5 @@ make_tempdir() {
   mktemp -d "${WIZARDRY_TMPDIR}/case.XXXXXX" | sed 's|//|/|g'
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in make-tempdir) make_tempdir "$@" ;; esac
+
+make_tempdir "$@"

@@ -15,6 +15,4 @@ pkg_manager() {
   else return 1; fi
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */pkg-manager) pkg_manager "$@" ;; esac
+pkg_manager "$@"

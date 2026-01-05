@@ -1,10 +1,10 @@
 #!/bin/sh
 
 # The cd cantrip: source this file to enable the cd hook that runs 'look'.
-# Toggle with: toggle-cd (manages ~/.spellbook/.mud/config file)
 
-cd_usage() {
-cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: Source this file in your shell rc file to enable the cd hook.
 
     . $HOME/.wizardry/spells/.arcana/mud/cd
@@ -13,7 +13,9 @@ Then use 'toggle-cd' to enable/disable the hook.
 
 The hook runs 'look' after every successful directory change.
 USAGE
-}
+  exit 0
+  ;;
+esac
 
 # Handle --help when run directly (before defining cd function)
 case "${1-}" in

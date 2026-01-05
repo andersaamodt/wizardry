@@ -21,5 +21,5 @@ STUB
   chmod +x "$fixture/bin/sudo"
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in write-sudo-stub) write_sudo_stub "$@" ;; esac
+
+write_sudo_stub "$@"

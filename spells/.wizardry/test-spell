@@ -197,7 +197,8 @@ export WIZARDRY_GLOBAL_SUBTEST_NUM
 # This gives better context during test execution
 # Count only the current test file, not common-tests (they run separately)
 if [ -f "$abs_test" ]; then
-  WIZARDRY_GLOBAL_SUBTEST_TOTAL=$(grep -c "^run_test_case\|^_run_both_patterns" "$abs_test" 2>/dev/null || echo "0")
+  pattern="^run_test_case\|^_run_both_patterns"
+  WIZARDRY_GLOBAL_SUBTEST_TOTAL=$(grep -c "$pattern" "$abs_test" 2>/dev/null || echo "0")
   export WIZARDRY_GLOBAL_SUBTEST_TOTAL
 fi
 
@@ -314,7 +315,9 @@ else
     # Common tests run in a separate shell, so we export these for them
     WIZARDRY_GLOBAL_SUBTEST_NUM=0
     if [ -f "$test_dir/common-tests.sh" ]; then
-      WIZARDRY_GLOBAL_SUBTEST_TOTAL=$(grep -c "^run_test_case\|^_run_both_patterns" "$test_dir/common-tests.sh" 2>/dev/null || echo "0")
+      pattern="^run_test_case\|^_run_both_patterns"
+      count=$(grep -c "$pattern" "$test_dir/common-tests.sh" 2>/dev/null || echo "0")
+      WIZARDRY_GLOBAL_SUBTEST_TOTAL=$count
     fi
     export WIZARDRY_GLOBAL_SUBTEST_NUM
     export WIZARDRY_GLOBAL_SUBTEST_TOTAL

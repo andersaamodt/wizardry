@@ -38,6 +38,4 @@ tilde_path() {
   esac
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */tilde-path) tilde_path "$@" ;; esac
+tilde_path "$@"

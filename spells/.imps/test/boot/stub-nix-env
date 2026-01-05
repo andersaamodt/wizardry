@@ -13,5 +13,5 @@ STUB
   chmod +x "$fixture/bin/nix-env"
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in stub-nix-env) stub_nix_env "$@" ;; esac
+
+stub_nix_env "$@"

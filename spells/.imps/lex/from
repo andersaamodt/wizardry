@@ -39,6 +39,4 @@ from() {
   "$_from_lex_dir/parse" "$_from_cmd" $_from_new_args "$@"
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */from) from "$@" ;; esac
+from "$@"

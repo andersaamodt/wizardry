@@ -2,24 +2,18 @@
 
 # Present the simplex-chat management menu.
 
-simplex_chat_menu_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE'
 Usage: simplex-chat-menu
 
 Displays the simplex-chat management menu.
 USAGE
-}
-
-simplex_chat_menu() {
-case "${1-}" in
-  --help|--usage|-h)
-    simplex_chat_menu_usage
-    return 0
-    ;;
+  exit 0
+  ;;
 esac
 
-require_wizardry || return 1
-
+require_wizardry || exit 1
 
 set -eu
 env_clear
@@ -29,93 +23,3 @@ trap 'exit 0' INT TERM
 
 simplex_chat_menu_command_available() {
   command -v "$1" >/dev/null 2>&1
-}
-
-simplex_bin=${SIMPLEX_CHAT_BIN:-simplex-chat}
-
-is_simplex_installed() {
-  simplex_chat_menu_command_available "$simplex_bin"
-}
-
-default_launch_cmd=${SIMPLEX_CHAT_LAUNCH_CMD:-"$simplex_bin"}
-status_cmd=${SIMPLEX_CHAT_STATUS_CMD:-"$simplex_bin status"}
-version_cmd=${SIMPLEX_CHAT_VERSION_CMD:-"$simplex_bin --version"}
-help_cmd=${SIMPLEX_CHAT_HELP_CMD:-"$simplex_bin --help"}
-keygen_cmd=${SIMPLEX_CHAT_KEYGEN_CMD:-"$simplex_bin keygen"}
-restore_cmd=${SIMPLEX_CHAT_RESTORE_CMD:-"$simplex_bin restore-key"}
-
-build_menu_entries() {
-  title="${BOLD}${CYAN}simplex-chat: $(simplex-chat-status)"
-  exit_label=$(exit-label)
-  exit_option="${exit_label}%kill -TERM \$PPID"
-  install_option="Install simplex-chat%install-simplex-chat"
-  uninstall_option="Uninstall simplex-chat%uninstall-simplex-chat"
-
-  launch_option="Launch simplex-chat%$default_launch_cmd"
-  status_option="Check simplex-chat status%$status_cmd"
-  version_option="Show simplex-chat version%$version_cmd"
-  help_option="Show simplex-chat help%$help_cmd"
-  keygen_option="Create or rotate user key%$keygen_cmd"
-  restore_option="Restore user key from backup%$restore_cmd"
-
-  if is_simplex_installed; then
-    menu "$title" \
-      "$launch_option" \
-      "$status_option" \
-      "$version_option" \
-      "$help_option" \
-      "$keygen_option" \
-      "$restore_option" \
-      "$uninstall_option" \
-      "$exit_option" || true
-  else
-    menu "$title" "$install_option" "$exit_option" || true
-  fi
-}
-
-first_run=1
-while :; do
-  if [ "$first_run" -eq 0 ]; then
-    printf '\n'
-  else
-    first_run=0
-  fi
-
-  build_menu_entries || true
-
-done
-
-}
-
-# Load castable imp for direct execution (AFTER all functions defined)
-# When executed directly: always source to ensure castable sees correct $0
-# When sourced (testing): use from PATH if available to avoid forks
-case "$0" in
-  sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
-    # Being sourced - use from PATH if available
-    if ! command -v castable >/dev/null 2>&1; then
-      # Use WIZARDRY_DIR or ROOT_DIR if available (avoids dirname/basename)
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        _i="$WIZARDRY_DIR/spells/.imps/sys"
-      elif [ -n "${ROOT_DIR-}" ]; then
-        _i="$ROOT_DIR/spells/.imps/sys"
-      else
-        _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*/*}}}/spells/.imps/sys"
-      fi
-      [ -f "$_i/castable" ] && . "$_i/castable"
-    fi
-    ;;
-  *)
-    # Being executed - always source to ensure correct $0 detection
-    if [ -n "${WIZARDRY_DIR-}" ]; then
-      _i="$WIZARDRY_DIR/spells/.imps/sys"
-    elif [ -n "${ROOT_DIR-}" ]; then
-      _i="$ROOT_DIR/spells/.imps/sys"
-    else
-      _i="${WIZARDRY_DIR:-${ROOT_DIR:-${0%/*/*/*/*}}}/spells/.imps/sys"
-    fi
-    [ -f "$_i/castable" ] && . "$_i/castable"
-    ;;
-esac
-
-castable "$@"

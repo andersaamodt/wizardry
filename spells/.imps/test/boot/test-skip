@@ -28,5 +28,5 @@ test_skip() {
   fi
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in test-skip) test_skip "$@" ;; esac
+
+test_skip "$@"

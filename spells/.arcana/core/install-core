@@ -2,13 +2,16 @@
 
 # Bootstrap spell: installs the core wizardry dependencies required for spell execution.
 
-install_core_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE'
 Usage: install-core
 
 Install the core wizardry dependencies required for running spells.
 USAGE
-}
+  exit 0
+  ;;
+esac
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
@@ -121,13 +124,6 @@ install_core() {
 }
 
 if [ "${0##*/}" = "install-core" ]; then
-  case "${1-}" in
-    --help|--usage|-h)
-      install_core_usage
-      exit 0
-      ;;
-  esac
-
   set -eu
   install_core "$@"
 fi

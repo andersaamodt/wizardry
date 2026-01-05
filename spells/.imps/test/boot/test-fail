@@ -64,5 +64,5 @@ test_fail() {
   fi
 }
 
-# Self-execution when run directly (not sourced)
-case "${0##*/}" in test-fail) test_fail "$@" ;; esac
+
+test_fail "$@"

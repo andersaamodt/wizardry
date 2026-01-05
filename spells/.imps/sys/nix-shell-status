@@ -19,6 +19,4 @@ nix_shell_status() {
     return $?
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */nix-shell-status) nix_shell_status "$@" ;; esac
+nix_shell_status "$@"

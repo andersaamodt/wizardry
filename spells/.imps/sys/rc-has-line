@@ -22,6 +22,4 @@ rc_has_line() {
   grep -qF "$_rhl_full_marker" "$_rhl_rc_file" 2>/dev/null
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */rc-has-line) rc_has_line "$@" ;; esac
+rc_has_line "$@"

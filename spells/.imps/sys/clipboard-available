@@ -10,6 +10,4 @@ clipboard_available() {
   command -v wl-copy >/dev/null 2>&1
 }
 
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */clipboard-available) clipboard_available "$@" ;; esac
+clipboard_available "$@"

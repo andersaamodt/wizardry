@@ -71,7 +71,8 @@ while IFS= read -r line; do
   emoji=$(printf '%s' "$line" | awk '{print $2}')
   
   # Find files containing this emoji
-  files=$(find "$github_dir" -type f -name "*.md" -exec grep -l "$emoji" {} + 2>/dev/null | sed "s|^$repo_dir/||")
+  md_files=$(find "$github_dir" -type f -name "*.md" 2>/dev/null)
+  files=$(printf '%s\n' "$md_files" | xargs grep -l "$emoji" 2>/dev/null | sed "s|^$repo_dir/||")
   
   if [ "$verbose" -eq 1 ]; then
     # Verbose mode: show count per file
