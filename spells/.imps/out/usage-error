@@ -1,5 +1,5 @@
 #!/bin/sh
-# usage-error NAME MESSAGE - print usage error and return exit code 2
+# usage-error NAME MESSAGE - print usage error and exit with code 2
 # Example: usage-error "my-spell" "unknown option: -x"
 set -eu
 
@@ -11,4 +11,4 @@ if [ -n "$_ue_name" ]; then
 elif [ -n "$_ue_message" ]; then
   printf '%s\n' "$_ue_message" >&2
 fi
-return 2
+exit 2
