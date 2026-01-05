@@ -43,6 +43,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 # Find the script directory and root
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
