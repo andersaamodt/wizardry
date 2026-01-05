@@ -2,11 +2,6 @@
 # spell-menu - Display action menu for a spell or custom command
 # Shows options: Cast now, Memorize/Forget, Help, Test spell, Delete (for custom)
 
-# Handle --help before sourcing env_clear (for standalone/compiled execution)
-
-
-set -eu
-
 case "${1-}" in
 --help|--usage|-h)
 cat <<'USAGE'
