@@ -74,7 +74,7 @@ probe_fail=0
 tmpdir=''
 case " $probe_set " in
   *" find "*)
-    tmpdir=$(detect_posix_temp_dir) || exit 1
+    tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/detect-posix.XXXXXX") || exit 1
     touch "$tmpdir/probe"
     trap '[ -n "${tmpdir-}" ] && [ -d "$tmpdir" ] && rm -rf "$tmpdir"' EXIT HUP INT TERM
     ;;

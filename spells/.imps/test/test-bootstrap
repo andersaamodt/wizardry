@@ -265,15 +265,31 @@ run_spell() {
   fi
 }
 
+# Special handling for run_cmd - also needs to set STATUS/OUTPUT/ERROR in parent shell
+# run-cmd writes these to files, run_cmd reads them back
+run_cmd() {
+  # Call run-cmd command which writes results to files
+  run-cmd "$@"
+  
+  # Read STATUS, OUTPUT, ERROR from files set by run-cmd
+  if [ -f "${WIZARDRY_TMPDIR}/_test_status" ]; then
+    STATUS=$(cat "${WIZARDRY_TMPDIR}/_test_status")
+    OUTPUT=$(cat "${WIZARDRY_TMPDIR}/_test_output")
+    ERROR=$(cat "${WIZARDRY_TMPDIR}/_test_error")
+    export STATUS OUTPUT ERROR
+  fi
+}
+
 # List of boot imps that need underscore wrappers (excluding run-test-case and run-spell which are special)
 # We generate these dynamically from the boot directory to avoid maintenance burden
 for boot_imp in "$ROOT_DIR"/spells/.imps/test/boot/*; do
   [ -f "$boot_imp" ] || continue
   boot_name=$(basename "$boot_imp")
   
-  # Skip run-test-case and run-spell (handled specially above)
+  # Skip run-test-case, run-spell, and run-cmd (handled specially above)
   [ "$boot_name" = "run-test-case" ] && continue
   [ "$boot_name" = "run-spell" ] && continue
+  [ "$boot_name" = "run-cmd" ] && continue
   
   # Skip if name has no hyphens (already matches underscore version)
   case "$boot_name" in
