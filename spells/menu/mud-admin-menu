@@ -2,7 +2,58 @@
 
 # This spell displays the menu for adminning hosting a MUD server.
 
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE' >&2
+Usage: mud-admin
 
+Opens the MUD admin menu so you can manage authorized players, review shared rooms, and oversee your hosted server.
+USAGE
+  exit 0
+  ;;
+esac
 
 set -eu
 
+# Catch Ctrl-C and TERM signal to exit 1 cleanly
+trap 'exit 0' INT TERM
+
+# Load color palette (colors handles terminal capability detection internally)
+# shellcheck source=/dev/null
+. "$(command -v colors)"
+
+if ! require menu "The MUD Admin menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+mud_admin_menu_display_menu() {
+  add="Add authorized player%add-player"
+  list_players="List authorized players%new-player"
+  list_rooms="List shared rooms%list-rooms"
+  exit_label=$(exit-label)
+  exit_item="${exit_label}%kill -TERM \$PPID"
+
+  set -- "$add" "$list_players" "$list_rooms" "$exit_item"
+  menu "MUD Admin:" "$@"
+}
+
+loop_limit=${MENU_LOOP_LIMIT:-}
+first_run=1
+
+while true; do
+  if [ "$first_run" -eq 0 ]; then
+    :
+  else
+    first_run=0
+  fi
+
+  mud_admin_menu_display_menu || true
+
+  # Support MENU_LOOP_LIMIT for testing
+  if [ -n "$loop_limit" ]; then
+    loop_limit=$((loop_limit - 1))
+    if [ "$loop_limit" -le 0 ]; then
+      break
+    fi
+  fi
+done

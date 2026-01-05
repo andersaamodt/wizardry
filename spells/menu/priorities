@@ -3,7 +3,110 @@
 # This spell displays and manages prioritized items in the current directory.
 # Use it to view and reorder files by priority.
 
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: priorities [-v]
 
+Display prioritized items in the current directory as an interactive menu, with -v to show priority numbers.
+USAGE
+  exit 0
+  ;;
+esac
 
 set -eu
 
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 0' INT TERM
+
+# Initialize verbose flag to 0
+verbose=0
+
+# Parse options
+while getopts "v" opt; do
+  case $opt in
+    v) verbose=1 ;; # If -v is passed, set verbose to 1
+    \?) usage-error "priorities" "Invalid option: -$OPTARG" ;; # Invalid option
+  esac
+done
+shift $((OPTIND-1)) # Shift off the options and optional --.
+
+# Function to display priorities
+display_priorities() {
+  # Get directory
+  dir="${PWD}"
+
+  # Get the current priorities of the directory
+  dir_priorities=$(read_magic "${dir}" priorities)
+
+  # If there are no priorities, print an error message and exit
+  if [ -z "${dir_priorities}" ] || [ "$dir_priorities" = "read-magic: attribute does not exist." ]; then
+    echo "No priorities set in the current folder. Try 'prioritize <filename>'."
+    exit 1
+  fi
+
+  # Initialize variables
+  highest_priority=""
+  line_added=false
+  menu_command="menu Priorities:"
+
+  # Loop through the priorities
+  dir_priorities=$(echo "${dir_priorities}" | tr ',' '\n')
+
+  for priority_hash in $dir_priorities; do
+    # Get the priority file
+    priority_file=$(get-card "${priority_hash}")
+
+    # Check if the file exists
+    if [ -n "${priority_file}" ]; then
+      # Get priority of the file
+      file_priority=$(read_magic "${priority_file}" priority 2>/dev/null)
+      
+      # If the file does not have a priority, set it to 0
+      if [ -z "${file_priority}" ] || [ "$file_priority" = "read-magic: attribute does not exist." ]; then
+        file_priority=0
+      fi
+
+      # If the priority of the file is a number
+      if [ "${file_priority}" -eq "${file_priority}" ] 2>/dev/null; then
+        # If the file's priority is not the highest priority, add a line
+        if [ -n "${highest_priority}" ] && [ "${file_priority}" -ne "${highest_priority}" ] && [ "${line_added}" = false ]; then
+          menu_command="${menu_command} \"─── %\""
+          line_added=true
+        fi
+
+        # Add the file to the menu command
+        menu_command="${menu_command} \""
+        if [ $verbose -eq 1 ]; then
+          menu_command="${menu_command}${file_priority} "
+        fi
+        item_name=$(basename "$priority_file")
+        menu_command="${menu_command}$item_name%priority-menu \\\"${priority_file}\\\"\""
+
+        # Update the highest priority
+        highest_priority="${file_priority}"
+      fi
+    fi
+  done
+
+  # Add exit command
+  exit_label=$(exit-label)
+  menu_command="${menu_command} \"${exit_label}%kill -TERM \$PPID\""
+
+  # Execute the constructed menu command
+  eval "${menu_command}"
+}
+
+first_run=1
+
+while true; do
+  if [ "$first_run" -eq 0 ]; then
+    display_priorities || true
+  else
+    first_run=0
+    # On first run, exit if display_priorities fails (no priorities set)
+    if ! display_priorities; then
+      exit 1
+    fi
+  fi
+done
