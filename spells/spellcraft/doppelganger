@@ -104,11 +104,12 @@ while IFS= read -r spell_path; do
   target_dir="$output_dir/spells/$(dirname "$rel_path")"
   mkdir -p "$target_dir"
   
-  # Skip test infrastructure files - copy them as-is instead of compiling
+  # Skip test infrastructure files and spell-levels - copy them as-is instead of compiling
   # test-bootstrap and boot imps need to remain uncompiled to work correctly
+  # spell-levels is a simple data file that hangs when compiled due to self-reference
   case "$spell_path" in
-    */test/test-bootstrap|*/test/boot/*)
-      # Copy test infrastructure files directly
+    */test/test-bootstrap|*/test/boot/*|*/sys/spell-levels)
+      # Copy these files directly
       cp "$spell_path" "$target_dir/$spell_name"
       chmod +x "$target_dir/$spell_name"
       compiled_count=$((compiled_count + 1))
@@ -158,15 +159,6 @@ if [ -d "$repo_dir/.tests" ]; then
   (cd "$repo_dir/.tests" && \
     find . -mindepth 1 -maxdepth 1 -exec cp -r {} "$output_dir/.tests/" \; \
     2>/dev/null) || true
-fi
-
-# Copy spell-levels imp (required by test-magic)
-# spell-levels is a simple data file, just copy it (compilation hangs due to self-reference)
-say "Copying spell-levels imp..."
-if [ -f "$repo_dir/spells/.imps/sys/spell-levels" ]; then
-  mkdir -p "$output_dir/spells/.imps/sys"
-  cp "$repo_dir/spells/.imps/sys/spell-levels" "$output_dir/spells/.imps/sys/" 2>/dev/null || true
-  chmod +x "$output_dir/spells/.imps/sys/spell-levels" 2>/dev/null || true
 fi
 
 # Copy essential files (README, LICENSE, etc.) but skip .git and .github
