@@ -8,15 +8,12 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-# Extract spell lists from banish for all levels 0-27
+# Extract spell lists from spell-levels for all levels 0-29
 get_all_spells_from_levels() {
   level=0
-  while [ "$level" -le 27 ]; do
-    # Source banish and call get_level_spells
-    cd "$ROOT_DIR" && ./spells/system/banish --help >/dev/null 2>&1
-    # Extract spell definitions by parsing the get_level_spells function
-    spells=$(sed -n "/^get_level_spells/,/^}/p" "$ROOT_DIR/spells/system/banish" | \
-             sed -n "/$level) printf '/s/.*printf '//;s/' ;;//p")
+  while [ "$level" -le 29 ]; do
+    # Use spell-levels imp to get spells for this level
+    spells=$(spell-levels "$level" spells 2>/dev/null || true)
     
     if [ -n "$spells" ]; then
       # Parse spell:dir format and plain names
