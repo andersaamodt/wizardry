@@ -2,8 +2,6 @@
 
 # This spell facilitates the setting of the configurations for thy Bitcoin system.
 
-
-
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
@@ -12,30 +10,21 @@ Usage: configure-bitcoin
 Creates or updates bitcoin.conf with sensible defaults for paths, RPC, and pruning so a fresh Bitcoin Core install can start.
 USAGE
   exit 0
-        ;;
+  ;;
 esac
 
 require-wizardry || exit 1
-
-
-
-# This spell facilitates the setting of the configurations for thy Bitcoin system.
-
-# Function to check if a command needs to be run with sudo
-
 set -eu
 env_clear
+
 retry_with_sudo() {
-    echo "Permission denied. Invoking the power of the super user..."
+    printf '%s\n' "Permission denied. Invoking the power of the super user..."
     sudo "$@"
     if [ $? -ne 0 ]; then
-        echo "Failed to execute with elevated privileges. Make certain thou hast the necessary permissions and try again."
+        printf '%s\n' "Failed to execute with elevated privileges. Make certain thou hast the necessary permissions and try again."
         exit 1
     fi
-
-# Handle Ctrl-C
-#trap "printf '
-'; exit 2" 2
+}
 
 # Create bitcoin directory and configuration file if they do not exist
 mkdir -p "$HOME/.bitcoin"
@@ -53,22 +42,21 @@ bitcoin_conf="$HOME/.bitcoin/bitcoin.conf"
 
 # If the file was just created (is empty), write defaults
 if [ ! -s "$bitcoin_conf" ]; then
-    echo "$defaults" > "$bitcoin_conf"
+    printf '%s\n' "$defaults" > "$bitcoin_conf"
 else
     ask-yn "Would you like to reset the bitcoin.conf file to defaults?" "n"
     reset_conf=$?
     if [ "$reset_conf" = 0 ]; then
-        echo "$defaults" > "$bitcoin_conf"
+        printf '%s\n' "$defaults" > "$bitcoin_conf"
     fi
 fi
 
 # Function to modify bitcoin.conf using awk
 modify_bitcoin_conf() {
-    local key=$1
-    local value=$2
-    printf "%s
-" >> "$bitcoin_conf" # Ensure a newline exists at the end of the file
-    awk -v key="$key" -v value="$value" 'BEGIN {OFS=FS="="; found=0} {gsub(/^[ 	]+|[ 	]+$/, "", $1)} !/^#/ && $1==key {found=1; print key"="value; next} {if(NF>1) print $1"="$2; else if(NF==1) print $1} END {if (!found) print key"="value}' "$bitcoin_conf" > "$bitcoin_conf.tmp" && mv "$bitcoin_conf.tmp" "$bitcoin_conf" || retry_with_sudo mv "$bitcoin_conf.tmp" "$bitcoin_conf"
+    _key=$1
+    _value=$2
+    printf '\n' >> "$bitcoin_conf" # Ensure a newline exists at the end of the file
+    awk -v key="$_key" -v value="$_value" 'BEGIN {OFS=FS="="; found=0} {gsub(/^[ 	]+|[ 	]+$/, "", $1)} !/^#/ && $1==key {found=1; print key"="value; next} {if(NF>1) print $1"="$2; else if(NF==1) print $1} END {if (!found) print key"="value}' "$bitcoin_conf" > "$bitcoin_conf.tmp" && mv "$bitcoin_conf.tmp" "$bitcoin_conf" || retry_with_sudo mv "$bitcoin_conf.tmp" "$bitcoin_conf"
     awk '/./' "$bitcoin_conf" > "$bitcoin_conf.tmp" && mv "$bitcoin_conf.tmp" "$bitcoin_conf" || retry_with_sudo mv "$bitcoin_conf.tmp" "$bitcoin_conf" # Remove trailing newlines
 }
 
@@ -88,8 +76,7 @@ if [ "$prune" = 0 ]; then
         elif validate_number "$max_disk"; then
             valid_number=true
         else
-            printf "Invalid input. Enter a valid number.
-"
+            printf 'Invalid input. Enter a valid number.\n'
         fi
     done
 
@@ -128,11 +115,4 @@ if [ "$alt_storage" = 1 ]; then
     modify_bitcoin_conf "datadir" "$alt_path"
 fi
 
-printf "Bitcoin configuration has been updated.
-"
-}
-
-# Self-execute when run directly (not sourced)
-case "$0" in
-  */configure-bitcoin|configure-bitcoin) configure_bitcoin "$@" ;;
-esac
+printf 'Bitcoin configuration has been updated.\n'

@@ -2,8 +2,6 @@
 
 # This spell awakens or stills the cyclic illumination of the cursor.
 
-# Emit the escape sequence that re-enables blinking.
-
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE' >&2
@@ -15,23 +13,11 @@ USAGE
   ;;
 esac
 
-# Use conditional strictness based on execution context
-# See .github/CODE_POLICY_SET_EU.md for details
-case "$0" in
-  */cursor-blink)
-    # Executed as script - use full strict mode
-    set -eu
-    ;;
-  *)
-    # Called as function (sourced) - only undefined variable protection
-    # This prevents interactive shell exit while maintaining safety
-    set -u
-    ;;
-esac
+set -eu
 
 # The helper expects exactly one argument that declares the desired state.
 if [ "$#" -ne 1 ]; then
-  usage-error "cursor-blink" "expected on or off" || return $?
+  usage-error "cursor-blink" "expected on or off"
 fi
 
 # Inline supports_cursor_control - only used once
@@ -54,6 +40,6 @@ case "$1" in
     ;;
   *)
     # Treat anything else as misuse so callers notice mistakes quickly.
-    usage-error "cursor-blink" "expected on or off" || return $?
+    usage-error "cursor-blink" "expected on or off"
     ;;
 esac
