@@ -10,10 +10,10 @@ if [ -d "$ap_loc" ]; then
   CDPATH= cd -- "$ap_loc" 2>/dev/null && pwd -P | sed 's|///*|/|g'
   exit
 fi
-ap_dir=${_ap_loc%/*}
-ap_base=${_ap_loc##*/}
+ap_dir=${ap_loc%/*}
+ap_base=${ap_loc##*/}
 if [ "$ap_dir" = "$ap_loc" ]; then
-  _ap_dir=.
+  ap_dir=.
 fi
 if CDPATH= cd -- "$ap_dir" 2>/dev/null; then
   printf '%s/%s\n' "$(pwd -P)" "$ap_base" | sed 's|///*|/|g'

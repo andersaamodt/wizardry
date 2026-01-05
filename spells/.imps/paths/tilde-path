@@ -27,7 +27,7 @@ case "$tp_path" in
     ;;
   "$HOME"/*)
     # Path under HOME - replace HOME with ~
-    _tp_rel=${_tp_path#"$HOME"/}
+    tp_rel=${tp_path#"$HOME"/}
     printf '~/%s' "$tp_rel"
     ;;
   *)
