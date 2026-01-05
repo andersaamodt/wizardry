@@ -721,3 +721,55 @@ This section documents all exemptions that have been successfully resolved. Item
 - **6 spells with acceptable 2-3 extra functions** (within guidelines)
 
 
+
+---
+
+## 9. Flat-File Paradigm Exemptions (2026-01-05)
+
+### New Requirement: Maximum 1 Function in Spells, 0 in Imps
+
+**Effective**: 2026-01-05
+
+**Rule**: 
+- Spells must have at most 1 function total (not 1 helper + usage)
+- Imps must have 0 functions (flat, linear scripts only)
+- Usage/help text should be inline, not in a function
+- All logic should be flat and linear
+
+**Rationale**: Word-of-binding paradigm has been deprecated. Spells and imps are now executed as flat scripts, not sourced for their functions.
+
+### Exempted Spells (Temporarily)
+
+The following spells are temporarily exempted while being refactored:
+
+1. **spellcraft/lint-magic** - Complex linting infrastructure
+2. **menu/spellbook** - Large menu system
+3. **cantrips/menu** - Interactive menu framework
+4. **cantrips/colors** - Color variable definitions (meant to be sourced)
+5. **cantrips/fathom-cursor** - Terminal cursor detection
+6. **cantrips/await-keypress** - Complex terminal state handling
+7. **psi/read-contact** - vCard parsing logic
+8. **menu/mud** - MUD menu system
+9. **menu/mud-settings** - MUD settings menu
+10. **menu/main-menu** - Main menu system
+11. **menu/system/profile-tests** - Test profiling menu
+12. **.arcana/mud/cd** - Shell hook (meant to be sourced)
+13. **.arcana/core/install-core** - Bootstrap installation
+14. **.arcana/core/install-bwrap** - Bootstrap bubblewrap installer
+15. **.arcana/bitcoin/configure-bitcoin** - Bitcoin configuration
+16. **.arcana/lightning/install-lightning** - Lightning installation
+17. **.arcana/lightning/lightning-menu** - Lightning menu
+18. **.arcana/node/node-menu** - Node menu
+19. **divination/identify-room** - Complex room identification
+20. **system/update-all** - System update orchestration
+21. **system/test-magic** - Test runner infrastructure (4 flags exemption)
+22. **system/banish** - Uninstallation script
+
+### Exempted Test Imps
+
+Test infrastructure is exempted from the 0-function rule:
+
+1. **test/test-bootstrap** - Test framework with multiple helper functions
+
+**Status**: ⚠️ Temporary exemptions. Goal is to refactor these to flat scripts or document permanent architectural reasons for exemption.
+
