@@ -160,7 +160,6 @@ The arcana menu (`install-menu`) loads arcana automatically from files, so you c
 | **aura** | The proto-meaning a spell name bears when evoked (future feature). |
 | **banish** | To reset to a known configuration in the execution environment via systematic assumption-checking. |
 | **bootstrap spell** | A spell that can run before wizardry is fully installed. These self-contained scripts (namely `install`, `detect-distro`, and spells in `spells/install/core/`) don't rely on other wizardry spells. |
-| **bound imp** | DEPRECATED TERM - imps are now simple executables in PATH, not bound/unbound. |
 | **cantrip** | A small utility spell for common tasks. |
 | `cast` | To execute a spell. Memorized spells appear in the `cast` menu for quick access. |
 | **crypto** | Cryptographic spells for hashing and security. |
