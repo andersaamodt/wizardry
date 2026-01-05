@@ -554,8 +554,10 @@ fi
 **Allowed**: Configuration variables for interactive cantrips.
 
 - `AWAIT_KEYPRESS_KEEP_RAW` — Don't restore terminal after keypress (for chaining)
+- `AWAIT_KEYPRESS_BUFFER_FILE` — File path for buffering keypress output
+- `AWAIT_KEYPRESS_DEVICE` — Terminal device to use for input (override /dev/tty)
 
-**Context**: Used by `await-keypress` for terminal state management.
+**Context**: Used by `await-keypress` and interactive menu spells for terminal state management and I/O configuration.
 
 #### 11. Internal Spell Loading Variables
 
