@@ -13,7 +13,7 @@ done
 
 menu_requires_all_helpers() {
   helper_path="$ROOT_DIR/spells/.imps/sys:/bin:/usr/bin"
-  PATH="$helper_path" run_cmd env PATH="$helper_path" "$ROOT_DIR/spells/cantrips/menu" "Menu" "Item%echo hi"
+  run_cmd env PATH="$helper_path" "$ROOT_DIR/spells/cantrips/menu" "Menu" "Item%echo hi"
   assert_failure || return 1
   assert_error_contains "The menu spell needs 'fathom-cursor' to place the menu." || return 1
 }
@@ -33,7 +33,8 @@ menu_reports_missing_tty() {
   done
 
   # Set AWAIT_KEYPRESS_DEVICE to a non-existent file to trigger the TTY check failure
-  PATH="$stub_dir:$ROOT_DIR/spells/cantrips:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" run_cmd env \
+  run_cmd env \
+    PATH="$stub_dir:$ROOT_DIR/spells/cantrips:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" \
     AWAIT_KEYPRESS_DEVICE="$tmpdir/nonexistent-tty" \
     "$ROOT_DIR/spells/cantrips/menu" "Menu" "Item%echo hi"
   assert_failure || return 1
