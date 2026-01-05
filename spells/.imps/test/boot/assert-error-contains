@@ -1,10 +1,12 @@
 #!/bin/sh
-# assert-error-contains SUBSTRING - verify ERROR contains the substring
+# assert-error-contains SUBSTRING [ERROR] - verify error contains the substring
+# If ERROR not provided, reads from $ERROR variable for backward compatibility.
 # Sets TEST_FAILURE_REASON on mismatch.
 set -eu
 
 substring=$1
-case "${ERROR-}" in
+error_text=${2:-${ERROR-}}
+case "$error_text" in
   *"$substring"*)
   exit 0
     ;;

@@ -1,9 +1,11 @@
 #!/bin/sh
-# assert-failure - verify STATUS is non-zero
+# assert-failure [STATUS] - verify status is non-zero
+# If STATUS not provided, reads from $STATUS variable for backward compatibility.
 # Sets TEST_FAILURE_REASON if status was 0.
 set -eu
 
-if [ "${STATUS-0}" -eq 0 ]; then
+status_arg=${1:-${STATUS-0}}
+if [ "$status_arg" -eq 0 ]; then
   TEST_FAILURE_REASON="expected failure status but got success"
   exit 1
 fi

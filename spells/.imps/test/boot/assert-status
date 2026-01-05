@@ -1,10 +1,11 @@
 #!/bin/sh
-# assert-status EXPECTED - verify STATUS matches expected exit code
+# assert-status EXPECTED [ACTUAL] - verify status matches expected exit code
+# If ACTUAL not provided, reads from $STATUS variable for backward compatibility.
 # Sets TEST_FAILURE_REASON on mismatch.
 set -eu
 
 expected_status=$1
-actual_status=${STATUS-999}
+actual_status=${2:-${STATUS-999}}
 if [ "$actual_status" -ne "$expected_status" ]; then
   if [ -n "${ERROR-}" ]; then
     TEST_FAILURE_REASON="expected status $expected_status but got $actual_status; stderr: $ERROR"

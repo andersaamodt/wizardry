@@ -8,15 +8,11 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_nonzero_status() {
-  STATUS=1
-  export STATUS
-  assert_failure
+  assert_failure 1
 }
 
 test_zero_status_fails() {
-  STATUS=0
-  export STATUS
-  if assert_failure; then
+  if assert_failure 0; then
     return 1
   fi
   return 0

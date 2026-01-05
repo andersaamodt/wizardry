@@ -1,10 +1,12 @@
 #!/bin/sh
-# assert-output-contains SUBSTRING - verify OUTPUT contains the substring
+# assert-output-contains SUBSTRING [OUTPUT] - verify output contains the substring
+# If OUTPUT not provided, reads from $OUTPUT variable for backward compatibility.
 # Sets TEST_FAILURE_REASON on mismatch.
 set -eu
 
 substring=$1
-case "${OUTPUT-}" in
+output_text=${2:-${OUTPUT-}}
+case "$output_text" in
   *"$substring"*)
   exit 0
     ;;
