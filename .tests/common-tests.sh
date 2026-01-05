@@ -994,12 +994,10 @@ test_no_function_name_collisions() {
   return 0
 }
 
-# --- Check: Spells and imps have true name functions ---
-# All spells and imps should have a true name function that matches the filename
-# For imps: underscore_name (e.g., clip-copy -> clip_copy)
-# For spells: snake_case name (e.g., lint-magic -> lint_magic)
-# This enables word-of-binding to source and call them efficiently
-# This is a NON-FAILING check - warnings only for visibility
+# --- DEPRECATED: Spells and imps have true name functions ---
+# DEPRECATED: This test checked for function wrappers with "true names"
+# No longer applicable - spells and imps are now flat, linear scripts without function wrappers
+# Kept for historical reference but not executed
 
 test_spells_have_true_name_functions() {
   warnings=""
@@ -1041,10 +1039,10 @@ test_spells_have_true_name_functions() {
   return 0
 }
 
-# --- Check: True name functions do not use leading underscores (FAILING TEST) ---
-# True names should match filename with hyphens converted to underscores, without
-# any leading underscore prefix. This enforces the standardized naming scheme
-# for both spells and imps.
+# --- DEPRECATED: True name functions do not use leading underscores ---
+# DEPRECATED: This test checked that function names matched filenames
+# No longer applicable - spells and imps are now flat, linear scripts without function wrappers
+# Kept for historical reference but not executed
 
 test_true_names_have_no_leading_underscore() {
   violations=""
@@ -1438,23 +1436,21 @@ test_scripts_have_set_eu_early() {
     fi
     
     # Auto-detect castable/uncastable pattern or traditional word-of-binding pattern:
-    # Castable/uncastable pattern:
-    #   1. Has wrapper function matching filename (with underscores for hyphens)
-    #      OR has true name function for imps (underscore prefix)
-    #   2. Has castable or uncastable call
-    # Traditional word-of-binding pattern:
-    #   1. Has wrapper function matching filename
-    #   2. Has self-execute pattern: case "$0" in */name) wrapper "$@" ;; esac
-    # If either pattern is present, spell uses word-of-binding and set can be inside wrapper
+    # Modern flat pattern (preferred):
+    #   - No function wrappers
+    #   - set -eu at top level (after help handler)
+    #   - Code executes directly
+    # Legacy patterns (deprecated but still exist in some files):
+    #   - Wrapper function with castable/uncastable
+    #   - Self-execute case statement
+    # If legacy pattern present, set can be inside wrapper
     
     # Convert filename to function name (hyphens to underscores)
     func_name=$(printf '%s' "$name" | tr '-' '_')
-    true_name="_${func_name}"  # For imps
     
-    # Check for wrapper function definition (spell pattern) or true name function (imp pattern)
+    # Check for wrapper function definition (legacy pattern)
     has_wrapper=0
-    if grep -qE "^[[:space:]]*${func_name}[[:space:]]*\(\)" "$spell" 2>/dev/null || \
-       grep -qE "^[[:space:]]*${true_name}[[:space:]]*\(\)" "$spell" 2>/dev/null; then
+    if grep -qE "^[[:space:]]*${func_name}[[:space:]]*\(\)" "$spell" 2>/dev/null; then
       has_wrapper=1
     fi
     
@@ -1828,8 +1824,17 @@ run_test_case "imps have opening comments" test_imps_have_opening_comments
 run_test_case "bootstrap spells have identifying comment" test_bootstrap_spells_identified
 run_test_case "spells follow function discipline" test_spells_follow_function_discipline
 run_test_case "no function name collisions" test_no_function_name_collisions
-run_test_case "spells have true name functions" test_spells_have_true_name_functions
-run_test_case "true names do not use leading underscores" test_true_names_have_no_leading_underscore
+# --- DEPRECATED: True name function tests ---
+# These tests checked for function wrappers with "true names"
+# No longer applicable - spells and imps are now flat, linear scripts
+# Kept for historical reference but not executed
+
+# test_spells_have_true_name_functions() - DEPRECATED
+# test_true_names_have_no_leading_underscore() - DEPRECATED
+
+# Calls commented out (no longer applicable):
+# run_test_case "spells have true name functions" test_spells_have_true_name_functions
+# run_test_case "true names do not use leading underscores" test_true_names_have_no_leading_underscore
 run_test_case "spells require wrapper functions" test_spells_require_wrapper_functions
 run_test_case "spells have limited flags" test_spells_have_limited_flags
 run_test_case "spells have limited positional arguments" test_spells_have_limited_positional_args
@@ -1920,7 +1925,7 @@ test_spells_declare_invocation_type() {
     # Get spell name for reporting
     spell_name=${spell_file#"$ROOT_DIR/spells/"}
     
-    # Skip imps - they use a different self-execute pattern (true name function + case statement)
+    # Skip imps - they are flat, linear scripts (no wrapper functions)
     # Skip bootstrap spells in .arcana/core - they use traditional if [ "${0##*/}" = "name" ] pattern
     case "$spell_name" in
       .imps/*) continue ;;

@@ -126,7 +126,7 @@ Imps are a type of spell—the smallest semantic building blocks in wizardry. Th
 An **imp** is a microscript that:
 
 * Does exactly one thing
-* Has exactly one function (the "true name") with no executable code outside it, OR has zero functions
+* Executes directly as a flat, linear script (no function wrappers)
 * Has a unique and self-documenting name that novices can understand without looking it up (hyphens for multi-word names)
 * Uses space-separated arguments instead of `--flags`
 * Has no `--help` flag (just a comment header—imps are for coding, not running standalone)
@@ -160,7 +160,7 @@ The arcana menu (`install-menu`) loads arcana automatically from files, so you c
 | **aura** | The proto-meaning a spell name bears when evoked (future feature). |
 | **banish** | To reset to a known configuration in the execution environment via systematic assumption-checking. |
 | **bootstrap spell** | A spell that can run before wizardry is fully installed. These self-contained scripts (namely `install`, `detect-distro`, and spells in `spells/install/core/`) don't rely on other wizardry spells. |
-| **bound imp** | An *invoked* imp; sourced so its true-name function exists in the current shell and can be called without subprocess overhead. |
+| **bound imp** | DEPRECATED TERM - imps are now simple executables in PATH, not bound/unbound. |
 | **cantrip** | A small utility spell for common tasks. |
 | `cast` | To execute a spell. Memorized spells appear in the `cast` menu for quick access. |
 | **crypto** | Cryptographic spells for hashing and security. |
@@ -172,7 +172,7 @@ The arcana menu (`install-menu`) loads arcana automatically from files, so you c
 | **evoke** | To *mention* a spell name, presencing its aura without execution. |
 | `forget` | Remove a spell from your memorized (`cast`) list. |
 | **imp** | The smallest building block of magic—a microscript that does exactly one thing. Imps dwell in `spells/.imps/`. |
-| **incantation** | The name of a spell, particularly its internal function name, for invocable spells (identical to its filename). Same as true name but for spells (and no underscore). |
+| **incantation** | The name of a spell, used to invoke it. |
 | `invoke` | Source a script into the current shell. |
 | `learn` | Copy or link a spell into your spellbook, making it permanently available. Learned spells are immediately available to cast. |
 | `memorize` | Add a spell to your `cast` menu for quick access. |
@@ -184,8 +184,6 @@ The arcana menu (`install-menu`) loads arcana automatically from files, so you c
 | `spellbook` | Your personal grimoire for organizing and casting spells. Access it with `spellbook` or from the main `menu`. Also refers to custom spell folders. |
 | **spellcraft** | The writing of shell scripts. |
 | **tome** | A text file containing the contents of several other text files concatenated together, so a whole folder of spells can be sent or carried easily. |
-| **true name** | The internal underscore function-name defined by a bound imp (e.g., `_contains` for the `contains` imp). Same as incantation but for imps. |
-| **unbound imp** | A *cast* imp; executed in a subshell rather than sourced into the current shell. Must contain zero functions. |
 | **ward** | A protective spell for security or access control. |
 
 # **Ethos and Standards**
@@ -267,7 +265,7 @@ These standards describe the technical requirements that all spells, menus, and 
 | Standard exit codes             | Common helpers define exit codes and error shaping.                                                       |
 | Directory-resolution idiom      | One canonical pattern for locating sibling resources.                                                     |
 | Validation helpers              | A reusable suite provides common input checks.                                                            |
-| Naming scheme                   | A consistent naming scheme governs internal functions and verbs. Spells use `snake_case` for functions; imps use underscore-prefixed `_snake_case` for "true names". |
+| Naming scheme                   | A consistent naming scheme governs helper functions. Spells use `snake_case` for helper functions when needed (discouraged - prefer flat code). |
 
 ## Testing
 
