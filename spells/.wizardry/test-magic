@@ -588,7 +588,12 @@ WRAPPER_EOF
 }
 
 test_common_tests() {
-  printf '\nCommon Tests\n'
+  # Use GitHub Actions log grouping if in CI
+  if [ "${GITHUB_ACTIONS-}" = "true" ]; then
+    printf '::group::Common Tests\n'
+  else
+    printf '\nCommon Tests\n'
+  fi
   
   level_pass=0
   level_fail=0
@@ -597,6 +602,9 @@ test_common_tests() {
 
   if [ ! -f "$test_dir/common-tests.sh" ]; then
     printf '  No common tests found.\n'
+    if [ "${GITHUB_ACTIONS-}" = "true" ]; then
+      printf '::endgroup::\n'
+    fi
     return 0
   fi
 
@@ -613,7 +621,7 @@ test_common_tests() {
   if run_test_file "$test_path" "common-tests"; then
     level_pass=$((level_pass + 1))
     if [ -n "$test_summary_line" ]; then
-      printf '    %s%s%s\n' "$_green" "$test_summary_line" "$_reset"
+      printf '    %s%s %s%s\n' "$_green" "$test_summary_line" "$test_name" "$_reset"
     else
       printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_name"
     fi
@@ -621,7 +629,7 @@ test_common_tests() {
     level_fail=$((level_fail + 1))
     failed_tests="${failed_tests:+$failed_tests }$test_name"
     if [ -n "$test_summary_line" ]; then
-      printf '    %s%s%s\n' "$_red" "$test_summary_line" "$_reset"
+      printf '    %s%s %s%s\n' "$_red" "$test_summary_line" "$test_name" "$_reset"
     else
       printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_name"
     fi
@@ -641,6 +649,11 @@ test_common_tests() {
   total_fail=$((total_fail + level_fail))
   total_skip=$((total_skip + level_skip))
 
+  # Close GitHub Actions log group if in CI
+  if [ "${GITHUB_ACTIONS-}" = "true" ]; then
+    printf '::endgroup::\n'
+  fi
+
   if [ "$level_fail" -gt 0 ]; then
     return 1
   fi
@@ -652,7 +665,12 @@ test_level() {
   level=$1
   level_name=$(spell-levels "$level" name 2>/dev/null || printf 'Unknown Level')
 
-  printf '\nLevel %d: %s\n' "$level" "$level_name"
+  # Use GitHub Actions log grouping if in CI
+  if [ "${GITHUB_ACTIONS-}" = "true" ]; then
+    printf '::group::Level %d: %s\n' "$level" "$level_name"
+  else
+    printf '\nLevel %d: %s\n' "$level" "$level_name"
+  fi
 
   spell_list=$(spell-levels "$level" spells 2>/dev/null || printf '')
   imp_list=$(spell-levels "$level" imps 2>/dev/null || printf '')
@@ -721,7 +739,7 @@ test_level() {
     if run_test_file "$test_path" "$spell"; then
       level_pass=$((level_pass + 1))
       if [ -n "$test_summary_line" ]; then
-        printf '    %s%s%s\n' "$_green" "$test_summary_line" "$_reset"
+        printf '    %s%s %s%s\n' "$_green" "$test_summary_line" "$test_name" "$_reset"
       else
         printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_name"
       fi
@@ -729,7 +747,7 @@ test_level() {
       level_fail=$((level_fail + 1))
       failed_tests="${failed_tests:+$failed_tests }$test_name"
       if [ -n "$test_summary_line" ]; then
-        printf '    %s%s%s\n' "$_red" "$test_summary_line" "$_reset"
+        printf '    %s%s %s%s\n' "$_red" "$test_summary_line" "$test_name" "$_reset"
       else
         printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_name"
       fi
@@ -773,7 +791,7 @@ test_level() {
     if run_test_file "$test_path" "$imp"; then
       level_pass=$((level_pass + 1))
       if [ -n "$test_summary_line" ]; then
-        printf '    %s%s%s\n' "$_green" "$test_summary_line" "$_reset"
+        printf '    %s%s %s%s\n' "$_green" "$test_summary_line" "$test_name" "$_reset"
       else
         printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_name"
       fi
@@ -781,7 +799,7 @@ test_level() {
       level_fail=$((level_fail + 1))
       failed_tests="${failed_tests:+$failed_tests }$test_name"
       if [ -n "$test_summary_line" ]; then
-        printf '    %s%s%s\n' "$_red" "$test_summary_line" "$_reset"
+        printf '    %s%s %s%s\n' "$_red" "$test_summary_line" "$test_name" "$_reset"
       else
         printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_name"
       fi
@@ -813,6 +831,11 @@ test_level() {
   total_pass=$((total_pass + level_pass))
   total_fail=$((total_fail + level_fail))
   total_skip=$((total_skip + level_skip))
+
+  # Close GitHub Actions log group if in CI
+  if [ "${GITHUB_ACTIONS-}" = "true" ]; then
+    printf '::endgroup::\n'
+  fi
 
   return 0
 }
