@@ -832,12 +832,11 @@ fi
 last_success_level=-1
 
 # Run common tests first (special level before Level 0)
-# Only run if not in --only mode or if --only 0 was specified
-if [ "$only_this_level" -eq 0 ] || [ "$target_level" -eq 0 ]; then
-  test_common_tests || {
-    printf '\n%s✗%s Common tests failed\n' "$_red" "$_reset"
-    exit 1
-  }
+# Only run if testing Level 0 (either --only 0 or normal run starting from 0)
+if [ "$only_this_level" -eq 0 ] && [ "$current_level" -eq 0 ]; then
+  test_common_tests
+elif [ "$only_this_level" -eq 1 ] && [ "$target_level" -eq 0 ]; then
+  test_common_tests
 fi
 
 while [ "$current_level" -le "$target_level" ]; do
