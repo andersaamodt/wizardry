@@ -117,8 +117,8 @@ if [ -z "$test_list" ]; then
 fi
 
 # Create temporary file for timing data
-tmpfile=$(temp_file profile-tests)
-on_exit cleanup_file "$tmpfile"
+tmpfile=$(temp-file profile-tests)
+on-exit cleanup-file "$tmpfile"
 
 info "Profiling tests..."
 

@@ -189,9 +189,9 @@ set -eu
     # If overwriting a custom, we update in custom
     # Remove old custom definition if it exists
     if [ -f "$custom_file" ] && grep -q "^alias $synonym_word=" "$custom_file" 2>/dev/null; then
-      temp_file=$(temp-file synonyms) || exit 1
-      grep -v "^alias $synonym_word=" "$custom_file" > "$temp_file" || true
-      mv "$temp_file" "$custom_file"
+      temp-file=$(temp-file synonyms) || exit 1
+      grep -v "^alias $synonym_word=" "$custom_file" > "$temp-file" || true
+      mv "$temp-file" "$custom_file"
     fi
   fi
 

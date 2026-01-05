@@ -20,8 +20,8 @@ set -eu
 
 # Prefer preloaded imp functions (underscore form) when available.
 await_keypress_temp_file() {
-    if command -v temp_file >/dev/null 2>&1; then
-        temp_file "$@"
+    if command -v temp-file >/dev/null 2>&1; then
+        temp-file "$@"
     else
         temp-file "$@"
     fi

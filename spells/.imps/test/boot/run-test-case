@@ -11,7 +11,7 @@ spell_path=${3-}
 # Check if dual-pattern testing is explicitly requested
 if [ "${WIZARDRY_TEST_BOTH_PATTERNS-}" = "1" ]; then
   # Use run-both-patterns for comprehensive validation
-  run_both_patterns "$desc" "$func" "$spell_path"
+  run-both-patterns "$desc" "$func" "$spell_path"
 else
   # Default: Direct execution (fast, sufficient for most testing)
   # Run the test function and capture its exit status
