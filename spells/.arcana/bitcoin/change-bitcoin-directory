@@ -16,7 +16,7 @@ USAGE
         ;;
 esac
 
-require_wizardry || exit 1
+require-wizardry || exit 1
 
 
 
@@ -24,7 +24,6 @@ require_wizardry || exit 1
 
 # Check if a command needs to be re-invoked with sudo
 
-change_bitcoin_directory() {
 set -eu
 env_clear
 retry_with_sudo() {
@@ -34,7 +33,6 @@ retry_with_sudo() {
         echo "Failed to execute with elevated privileges. Make certain thou hast the necessary permissions and try again."
         return 1
     fi
-}
 
 # Check for the bitcoin.conf file
 if [ ! -f "$HOME/.bitcoin/bitcoin.conf" ]; then

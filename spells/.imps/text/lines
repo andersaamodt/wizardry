@@ -3,9 +3,5 @@
 # Example: n=$(ls | lines) | lines /etc/passwd
 set -eu
 
-lines() {
 
-  if [ "$#" -ge 1 ]; then wc -l < "$1" | tr -d ' '; else wc -l | tr -d ' '; fi
-}
-
-lines "$@"
+if [ "$#" -ge 1 ]; then wc -l < "$1" | tr -d ' '; else wc -l | tr -d ' '; fi

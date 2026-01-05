@@ -5,25 +5,21 @@
 
 set -eu
 
-field() {
-  field_num=${1-}
-  delimiter=${2-}
-  
-  if [ -z "$field_num" ]; then
-    printf 'field: FIELD_NUMBER required\n' >&2
-    return 2
-  fi
-  
-  # Read from stdin
-  input=$(cat)
-  
-  if [ -n "$delimiter" ]; then
-    # Use cut with specified delimiter
-    printf '%s' "$input" | cut -d"$delimiter" -f"$field_num"
-  else
-    # Use awk for whitespace-delimited fields
-    printf '%s' "$input" | awk "{print \$$field_num}"
-  fi
-}
+field_num=${1-}
+delimiter=${2-}
 
-field "$@"
+if [ -z "$field_num" ]; then
+  printf 'field: FIELD_NUMBER required\n' >&2
+  return 2
+fi
+
+# Read from stdin
+input=$(cat)
+
+if [ -n "$delimiter" ]; then
+  # Use cut with specified delimiter
+  printf '%s' "$input" | cut -d"$delimiter" -f"$field_num"
+else
+  # Use awk for whitespace-delimited fields
+  printf '%s' "$input" | awk "{print \$$field_num}"
+fi

@@ -3,9 +3,6 @@
 # Example: within-range 5 1 10 && echo "valid"
 
 
-within_range() {
-  [ "$#" -eq 3 ] || return 1
-  [ "$1" -ge "$2" ] && [ "$1" -le "$3" ] 2>/dev/null
-}
+[ "$#" -eq 3 ] || return 1
+[ "$1" -ge "$2" ] && [ "$1" -le "$3" ] 2>/dev/null
 
-within_range "$@"

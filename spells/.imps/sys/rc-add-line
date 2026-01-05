@@ -4,38 +4,34 @@
 # Adds: . "/path/to/cd" # wizardry: cd-hook
 set -eu
 
-rc_add_line() {
 
-  _ral_marker=${1:-}
-  _ral_rc_file=${2:-}
-  _ral_line=${3:-}
+_ral_marker=${1:-}
+_ral_rc_file=${2:-}
+_ral_line=${3:-}
 
-  if [ -z "$_ral_marker" ] || [ -z "$_ral_rc_file" ] || [ -z "$_ral_line" ]; then
-    printf '%s\n' "rc-add-line: MARKER, RC_FILE, and LINE are required" >&2
-    return 1
-  fi
+if [ -z "$_ral_marker" ] || [ -z "$_ral_rc_file" ] || [ -z "$_ral_line" ]; then
+  printf '%s\n' "rc-add-line: MARKER, RC_FILE, and LINE are required" >&2
+  return 1
+fi
 
-  _ral_full_marker="# wizardry: $_ral_marker"
+_ral_full_marker="# wizardry: $_ral_marker"
 
-  # Check if marker already exists
-  if [ -f "$_ral_rc_file" ] && grep -qF "$_ral_full_marker" "$_ral_rc_file" 2>/dev/null; then
-    # Marker exists, nothing to do
-    return 0
-  fi
-
-  # Create rc file if it doesn't exist
-  if [ ! -f "$_ral_rc_file" ]; then
-    _ral_dir=${_ral_rc_file%/*}
-    [ "$_ral_dir" != "$_ral_rc_file" ] && [ ! -d "$_ral_dir" ] && mkdir -p "$_ral_dir"
-    touch "$_ral_rc_file" || {
-      printf '%s\n' "rc-add-line: could not create $_ral_rc_file" >&2
-      return 1
-    }
-  fi
-
-  # Add line with inline marker
-  printf '%s %s\n' "$_ral_line" "$_ral_full_marker" >> "$_ral_rc_file"
+# Check if marker already exists
+if [ -f "$_ral_rc_file" ] && grep -qF "$_ral_full_marker" "$_ral_rc_file" 2>/dev/null; then
+  # Marker exists, nothing to do
   return 0
-}
+fi
 
-rc_add_line "$@"
+# Create rc file if it doesn't exist
+if [ ! -f "$_ral_rc_file" ]; then
+  _ral_dir=${_ral_rc_file%/*}
+  [ "$_ral_dir" != "$_ral_rc_file" ] && [ ! -d "$_ral_dir" ] && mkdir -p "$_ral_dir"
+  touch "$_ral_rc_file" || {
+    printf '%s\n' "rc-add-line: could not create $_ral_rc_file" >&2
+    return 1
+  }
+fi
+
+# Add line with inline marker
+printf '%s %s\n' "$_ral_line" "$_ral_full_marker" >> "$_ral_rc_file"
+return 0

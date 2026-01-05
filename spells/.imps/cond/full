@@ -3,12 +3,9 @@
 # Example: full file log.txt | full dir /home
 
 
-full() {
-  case "$1" in
-    file) [ -s "$2" ] ;;
-    dir)  [ -d "$2" ] && [ -n "$(ls -A "$2" 2>/dev/null)" ] ;;
-    *)    return 1 ;;
-  esac
-}
+case "$1" in
+  file) [ -s "$2" ] ;;
+  dir)  [ -d "$2" ] && [ -n "$(ls -A "$2" 2>/dev/null)" ] ;;
+  *)    return 1 ;;
+esac
 
-full "$@"

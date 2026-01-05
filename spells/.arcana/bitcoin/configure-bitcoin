@@ -15,7 +15,7 @@ USAGE
         ;;
 esac
 
-require_wizardry || exit 1
+require-wizardry || exit 1
 
 
 
@@ -23,7 +23,6 @@ require_wizardry || exit 1
 
 # Function to check if a command needs to be run with sudo
 
-configure_bitcoin() {
 set -eu
 env_clear
 retry_with_sudo() {
@@ -33,7 +32,6 @@ retry_with_sudo() {
         echo "Failed to execute with elevated privileges. Make certain thou hast the necessary permissions and try again."
         exit 1
     fi
-}
 
 # Handle Ctrl-C
 #trap "printf '

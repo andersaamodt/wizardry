@@ -5,8 +5,5 @@
 # Note: No set -eu because this is a conditional imp (returns exit codes for flow control)
 
 
-nonempty() {
-  [ -n "$1" ]
-}
+[ -n "$1" ]
 
-nonempty "$@"

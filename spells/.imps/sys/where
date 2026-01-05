@@ -3,9 +3,5 @@
 # Example: git_path=$(where git)
 set -eu
 
-where() {
 
-  command -v "$1" 2>/dev/null || return 1
-}
-
-where "$@"
+command -v "$1" 2>/dev/null || return 1

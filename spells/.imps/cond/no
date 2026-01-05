@@ -5,11 +5,8 @@
 # Note: No set -eu because this is a conditional imp (returns exit codes for flow control)
 
 
-no() {
-  case "$1" in
-    n|N|no|NO|No|false|FALSE|False|0) return 0 ;;
-    *) return 1 ;;
-  esac
-}
+case "$1" in
+  n|N|no|NO|No|false|FALSE|False|0) return 0 ;;
+  *) return 1 ;;
+esac
 
-no "$@"

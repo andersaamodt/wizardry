@@ -4,27 +4,23 @@
 # Set CHOOSE_INPUT_MODE=stdin|tty|none to override auto-detection
 set -eu
 
-choose_input() {
 
-  case ${CHOOSE_INPUT_MODE:-auto} in
-    stdin) printf '%s\n' stdin; return 0 ;;
-    tty)   printf '%s\n' tty;   return 0 ;;
-    none)  return 1 ;;
-  esac
+case ${CHOOSE_INPUT_MODE:-auto} in
+  stdin) printf '%s\n' stdin; return 0 ;;
+  tty)   printf '%s\n' tty;   return 0 ;;
+  none)  return 1 ;;
+esac
 
-  # Use /dev/fd/0 instead of /dev/stdin for cross-platform compatibility.
-  # On macOS, /dev/stdin is a symlink and tests may fail on the symlink itself.
-  if [ -t 0 ] || [ -p /dev/fd/0 ] || [ -s /dev/fd/0 ]; then
-    printf '%s\n' stdin
-    return 0
-  fi
+# Use /dev/fd/0 instead of /dev/stdin for cross-platform compatibility.
+# On macOS, /dev/stdin is a symlink and tests may fail on the symlink itself.
+if [ -t 0 ] || [ -p /dev/fd/0 ] || [ -s /dev/fd/0 ]; then
+  printf '%s\n' stdin
+  return 0
+fi
 
-  if [ -r /dev/tty ]; then
-    printf '%s\n' tty
-    return 0
-  fi
+if [ -r /dev/tty ]; then
+  printf '%s\n' tty
+  return 0
+fi
 
-  return 1
-}
-
-choose_input "$@"
+return 1

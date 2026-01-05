@@ -4,27 +4,23 @@
 
 set -eu
 
-validate_command() {
 
-  _vc_cmd=${1-}
-  _vc_context=${2:-command}
+_vc_cmd=${1-}
+_vc_context=${2:-command}
 
-  if [ -z "$_vc_cmd" ]; then
-    printf '%s\n' "${_vc_context} must not be empty." >&2
-    return 1
-  fi
+if [ -z "$_vc_cmd" ]; then
+  printf '%s\n' "${_vc_context} must not be empty." >&2
+  return 1
+fi
 
-  if [ "$(printf '%s' "$_vc_cmd" | tr -d '\t')" != "$_vc_cmd" ]; then
-    printf '%s\n' "${_vc_context} may not contain tabs." >&2
-    return 1
-  fi
+if [ "$(printf '%s' "$_vc_cmd" | tr -d '\t')" != "$_vc_cmd" ]; then
+  printf '%s\n' "${_vc_context} may not contain tabs." >&2
+  return 1
+fi
 
-  if [ "$(printf '%s' "$_vc_cmd" | tr -d '\n')" != "$_vc_cmd" ]; then
-    printf '%s\n' "${_vc_context} must be a single line." >&2
-    return 1
-  fi
+if [ "$(printf '%s' "$_vc_cmd" | tr -d '\n')" != "$_vc_cmd" ]; then
+  printf '%s\n' "${_vc_context} must be a single line." >&2
+  return 1
+fi
 
-  return 0
-}
-
-validate_command "$@"
+return 0

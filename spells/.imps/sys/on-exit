@@ -4,8 +4,4 @@
 
 set -eu
 
-on_exit() {
-  trap "$*" EXIT HUP INT TERM
-}
-
-on_exit "$@"
+trap "$*" EXIT HUP INT TERM

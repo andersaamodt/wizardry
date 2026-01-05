@@ -4,27 +4,24 @@
 # Example: category-title enchant -> Enchantment
 
 
-category_title() {
-  case $1 in
-    arcane)       printf 'Arcane' ;;
-    cantrips)     printf 'Cantrips' ;;
-    psi)          printf 'Psi' ;;
-    divination)   printf 'Divination' ;;
-    enchant)      printf 'Enchantment' ;;
-    install)      printf 'Install' ;;
-    crypto)       printf 'Crypto' ;;
-    mud)          printf 'MUD' ;;
-    priorities)   printf 'Priorities' ;;
-    spellcraft)   printf 'Spellcraft' ;;
-    system)       printf 'System' ;;
-    translocation) printf 'Translocation' ;;
-    wards)        printf 'Wards' ;;
-    *)
-      _ct_first=$(printf '%s' "$1" | cut -c1 | tr '[:lower:]' '[:upper:]')
-      _ct_rest=$(printf '%s' "$1" | cut -c2-)
-      printf '%s%s' "$_ct_first" "$_ct_rest"
-      ;;
-  esac
-}
+case $1 in
+  arcane)       printf 'Arcane' ;;
+  cantrips)     printf 'Cantrips' ;;
+  psi)          printf 'Psi' ;;
+  divination)   printf 'Divination' ;;
+  enchant)      printf 'Enchantment' ;;
+  install)      printf 'Install' ;;
+  crypto)       printf 'Crypto' ;;
+  mud)          printf 'MUD' ;;
+  priorities)   printf 'Priorities' ;;
+  spellcraft)   printf 'Spellcraft' ;;
+  system)       printf 'System' ;;
+  translocation) printf 'Translocation' ;;
+  wards)        printf 'Wards' ;;
+  *)
+    _ct_first=$(printf '%s' "$1" | cut -c1 | tr '[:lower:]' '[:upper:]')
+    _ct_rest=$(printf '%s' "$1" | cut -c2-)
+    printf '%s%s' "$_ct_first" "$_ct_rest"
+    ;;
+esac
 
-category_title "$@"

@@ -3,9 +3,5 @@
 # Example: drop 5 log.txt   # all except last 5 lines
 set -eu
 
-drop() {
 
-  if [ "$#" -ge 2 ]; then head -n "-$1" "$2"; else head -n "-$1"; fi
-}
-
-drop "$@"
+if [ "$#" -ge 2 ]; then head -n "-$1" "$2"; else head -n "-$1"; fi

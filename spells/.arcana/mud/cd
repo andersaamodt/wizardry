@@ -48,7 +48,6 @@ set +e
 set -u
 
 # The cd override - checks setting in .mud/config file before running look
-cd() {
     command cd "$@" || return $?
     
     # Check if cd-look is enabled via config file (cd-look=1)
@@ -56,4 +55,3 @@ cd() {
     if [ -f "$config_file" ] && grep -q "^cd-look=1$" "$config_file" 2>/dev/null; then
         command -v look >/dev/null 2>&1 && look 2>/dev/null || true
     fi
-}

@@ -3,9 +3,5 @@
 # Example: dir=$(here)
 set -eu
 
-here() {
 
-  pwd -P | sed 's|///*|/|g'
-}
-
-here "$@"
+pwd -P | sed 's|///*|/|g'

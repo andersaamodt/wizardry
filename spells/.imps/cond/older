@@ -3,8 +3,5 @@
 # Example: older src.c src.o || compile src.c
 
 
-older() {
-  [ "$1" -ot "$2" ]
-}
+[ "$1" -ot "$2" ]
 
-older "$@"

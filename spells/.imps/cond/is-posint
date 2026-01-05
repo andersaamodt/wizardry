@@ -3,12 +3,9 @@
 # Example: is-posint "$count" && echo "valid count"
 
 
-is_posint() {
-  case "$1" in
-    ''|*[!0-9]*) return 1 ;;
-    0) return 1 ;;
-    *) return 0 ;;
-  esac
-}
+case "$1" in
+  ''|*[!0-9]*) return 1 ;;
+  0) return 1 ;;
+  *) return 0 ;;
+esac
 
-is_posint "$@"

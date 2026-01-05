@@ -3,9 +3,5 @@
 # Line appended as last arg. Example: ls | each echo "File:"
 set -eu
 
-each() {
 
-  while IFS= read -r _each_line; do "$@" "$_each_line"; done
-}
-
-each "$@"
+while IFS= read -r _each_line; do "$@" "$_each_line"; done

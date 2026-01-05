@@ -4,102 +4,48 @@
 # Also initializes default synonyms if not already set up.
 
 # This script must be sourced, not executed
-if command -v uncastable >/dev/null 2>&1; then
-  # Check if uncastable is a function using POSIX-compliant method
-  _it_cmd_result=$(command -v uncastable 2>/dev/null || printf '')
-  case "$_it_cmd_result" in
-    alias\ *) ;;  # Is an alias, fall through to manual check
-    /*) ;;        # Is a path (external command), fall through
-    uncastable)   # Is a function
-      if ! uncastable invoke-thesaurus "Usage: . invoke-thesaurus"; then
-        exit 1
-      fi
-      ;;
-    *)
-      _it_sourced=0
-      if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
-        case "${ZSH_EVAL_CONTEXT-}" in
-          *:file) _it_sourced=1 ;;
-        esac
-      else
-        case "${0##*/}" in
-          invoke-thesaurus) _it_sourced=0 ;;
-          sh|dash|bash|zsh|ksh|mksh) _it_sourced=1 ;;
-          *) _it_sourced=1 ;;
-        esac
-      fi
 
-      if [ "$_it_sourced" -ne 1 ]; then
-        printf '%s\n' "invoke-thesaurus: must be sourced, not executed" >&2
-        printf '%s\n' "Usage: . invoke-thesaurus" >&2
-        exit 1
-      fi
-      unset _it_sourced
-      ;;
-  esac
-else
-  _it_sourced=0
-  if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
-    case "${ZSH_EVAL_CONTEXT-}" in
-      *:file) _it_sourced=1 ;;
-    esac
-  else
-    case "${0##*/}" in
-      invoke-thesaurus) _it_sourced=0 ;;
-      sh|dash|bash|zsh|ksh|mksh) _it_sourced=1 ;;
-      *) _it_sourced=1 ;;
-    esac
-  fi
 
-  if [ "$_it_sourced" -ne 1 ]; then
-    printf '%s\n' "invoke-thesaurus: must be sourced, not executed" >&2
-    printf '%s\n' "Usage: . invoke-thesaurus" >&2
-    exit 1
-  fi
-  unset _it_sourced
-fi
 
 # Explicitly use permissive mode - this file is sourced into user's shell
-set +eu
 
-invoke_thesaurus() {
-  # Use global SPELLBOOK_DIR if set, otherwise use default
-  # Use a local variable to avoid modifying the global
-  if [ -n "${SPELLBOOK_DIR-}" ]; then
-    _it_spellbook_dir="${SPELLBOOK_DIR-}"
-  else
-    _it_spellbook_dir="${HOME-}/.spellbook"
-  fi
-  
-  _it_custom_file="${_it_spellbook_dir}/.synonyms"
-  _it_default_file="${_it_spellbook_dir}/.default-synonyms"
-  
-  # Initialize custom synonyms file if it doesn't exist
-  if [ ! -f "$_it_custom_file" ]; then
-    mkdir -p "$_it_spellbook_dir" 2>/dev/null || true
-    cat > "$_it_custom_file" << 'HEADER'
+# Use global SPELLBOOK_DIR if set, otherwise use default
+# Use a local variable to avoid modifying the global
+if [ -n "${SPELLBOOK_DIR-}" ]; then
+  _it_spellbook_dir="${SPELLBOOK_DIR-}"
+else
+  _it_spellbook_dir="${HOME-}/.spellbook"
+fi
+
+_it_custom_file="${_it_spellbook_dir}/.synonyms"
+_it_default_file="${_it_spellbook_dir}/.default-synonyms"
+
+# Initialize custom synonyms file if it doesn't exist
+if [ ! -f "$_it_custom_file" ]; then
+  mkdir -p "$_it_spellbook_dir" 2>/dev/null || true
+  cat > "$_it_custom_file" << 'HEADER'
 # Wizardry Custom Synonyms
 # This file contains your custom shell aliases.
 # Loaded automatically by invoke-wizardry at shell startup.
 # Reload with: . invoke-thesaurus
 
 HEADER
-  fi
-  
-  # Initialize default synonyms file if it doesn't exist
-  _it_default_initialized="${_it_spellbook_dir}/.default-synonyms-initialized"
-  if [ ! -f "$_it_default_initialized" ]; then
-    mkdir -p "$_it_spellbook_dir" 2>/dev/null || true
-    cat > "$_it_default_file" << 'HEADER'
+fi
+
+# Initialize default synonyms file if it doesn't exist
+_it_default_initialized="${_it_spellbook_dir}/.default-synonyms-initialized"
+if [ ! -f "$_it_default_initialized" ]; then
+  mkdir -p "$_it_spellbook_dir" 2>/dev/null || true
+  cat > "$_it_default_file" << 'HEADER'
 # Wizardry Default Synonyms
 # These are built-in synonyms that can be reset with reset-default-synonyms.
 # To override a default, add your custom version to .synonyms instead.
 
 HEADER
-    
-    # Define default synonyms (word -> spell)
-    # Spell synonyms
-    _it_defaults="detect-os detect-distro
+  
+  # Define default synonyms (word -> spell)
+  # Spell synonyms
+  _it_defaults="detect-os detect-distro
 home jump
 ls-magic identify-room
 read-file read-magic
@@ -118,9 +64,9 @@ goto jump
 cd-to jump
 teleport jump
 portal jump"
-    
-    # Also add common system command aliases
-    _it_defaults="$_it_defaults
+  
+  # Also add common system command aliases
+  _it_defaults="$_it_defaults
 delete rm
 remove rm
 erase rm
@@ -135,88 +81,85 @@ make-link ln
 directory pwd
 where-is which
 find-command which"
-    
-    printf '%s\n' "$_it_defaults" | while IFS=' ' read -r _word _spell; do
-      [ -n "$_word" ] && [ -n "$_spell" ] || continue
-      printf "alias %s='%s'\n" "$_word" "$_spell" >> "$_it_default_file"
-    done
-    
-    touch "$_it_default_initialized" 2>/dev/null || true
-  fi
   
-  # Check if synonyms are enabled
-  _it_enabled_file="${_it_spellbook_dir}/.synonyms-enabled"
-  _it_enabled=1
-  if [ -f "$_it_enabled_file" ]; then
-    _it_enabled=$(cat "$_it_enabled_file" 2>/dev/null || printf '1')
-    case $_it_enabled in
-      0) _it_enabled=0 ;;
-      *) _it_enabled=1 ;;
-    esac
-  fi
+  printf '%s\n' "$_it_defaults" | while IFS=' ' read -r _word _spell; do
+    [ -n "$_word" ] && [ -n "$_spell" ] || continue
+    printf "alias %s='%s'\n" "$_word" "$_spell" >> "$_it_default_file"
+  done
   
-  if [ "$_it_enabled" -eq 0 ]; then
-    # Synonyms disabled - print message to stderr for visibility
-    printf '%s\n' "invoke-thesaurus: synonyms are disabled" >&2
-    return 0
-  fi
-  
-  # Check if default synonyms are enabled
-  _it_default_enabled_file="${_it_spellbook_dir}/.default-synonyms-enabled"
-  _it_default_enabled=1
-  if [ -f "$_it_default_enabled_file" ]; then
-    _it_default_enabled=$(cat "$_it_default_enabled_file" 2>/dev/null || printf '1')
-    case $_it_default_enabled in
-      0) _it_default_enabled=0 ;;
-      *) _it_default_enabled=1 ;;
-    esac
-  fi
-  
-  # Check if custom synonyms are enabled
-  _it_custom_enabled_file="${_it_spellbook_dir}/.custom-synonyms-enabled"
-  _it_custom_enabled=1
-  if [ -f "$_it_custom_enabled_file" ]; then
-    _it_custom_enabled=$(cat "$_it_custom_enabled_file" 2>/dev/null || printf '1')
-    case $_it_custom_enabled in
-      0) _it_custom_enabled=0 ;;
-      *) _it_custom_enabled=1 ;;
-    esac
-  fi
-  
-  # Source both files to load all aliases
-  # Default synonyms first, then custom (so custom can override)
-  _it_count=0
-  
-  if [ "$_it_default_enabled" -eq 1 ] && [ -f "$_it_default_file" ]; then
-    # shellcheck disable=SC1090
-    . "$_it_default_file" 2>/dev/null || true
-    _it_default_count=$(grep -c "^alias " "$_it_default_file" 2>/dev/null || printf '0')
-    # Ensure it's a valid number
-    case "$_it_default_count" in
-      ''|*[!0-9]*) _it_default_count=0 ;;
-    esac
-    _it_count=$((_it_count + _it_default_count))
-  fi
-  
-  if [ "$_it_custom_enabled" -eq 1 ] && [ -f "$_it_custom_file" ]; then
-    # shellcheck disable=SC1090
-    . "$_it_custom_file" 2>/dev/null || true
-    _it_custom_count=$(grep -c "^alias " "$_it_custom_file" 2>/dev/null || printf '0')
-    # Ensure it's a valid number
-    case "$_it_custom_count" in
-      ''|*[!0-9]*) _it_custom_count=0 ;;
-    esac
-    _it_count=$((_it_count + _it_custom_count))
-  fi
-  
-  # Only print loading message if WIZARDRY_DEBUG is enabled
-  if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-    printf '%s\n' "invoke-thesaurus: loaded $_it_count synonym(s)"
-  fi
+  touch "$_it_default_initialized" 2>/dev/null || true
+fi
+
+# Check if synonyms are enabled
+_it_enabled_file="${_it_spellbook_dir}/.synonyms-enabled"
+_it_enabled=1
+if [ -f "$_it_enabled_file" ]; then
+  _it_enabled=$(cat "$_it_enabled_file" 2>/dev/null || printf '1')
+  case $_it_enabled in
+    0) _it_enabled=0 ;;
+    *) _it_enabled=1 ;;
+  esac
+fi
+
+if [ "$_it_enabled" -eq 0 ]; then
+  # Synonyms disabled - print message to stderr for visibility
+  printf '%s\n' "invoke-thesaurus: synonyms are disabled" >&2
   return 0
-}
+fi
+
+# Check if default synonyms are enabled
+_it_default_enabled_file="${_it_spellbook_dir}/.default-synonyms-enabled"
+_it_default_enabled=1
+if [ -f "$_it_default_enabled_file" ]; then
+  _it_default_enabled=$(cat "$_it_default_enabled_file" 2>/dev/null || printf '1')
+  case $_it_default_enabled in
+    0) _it_default_enabled=0 ;;
+    *) _it_default_enabled=1 ;;
+  esac
+fi
+
+# Check if custom synonyms are enabled
+_it_custom_enabled_file="${_it_spellbook_dir}/.custom-synonyms-enabled"
+_it_custom_enabled=1
+if [ -f "$_it_custom_enabled_file" ]; then
+  _it_custom_enabled=$(cat "$_it_custom_enabled_file" 2>/dev/null || printf '1')
+  case $_it_custom_enabled in
+    0) _it_custom_enabled=0 ;;
+    *) _it_custom_enabled=1 ;;
+  esac
+fi
+
+# Source both files to load all aliases
+# Default synonyms first, then custom (so custom can override)
+_it_count=0
+
+if [ "$_it_default_enabled" -eq 1 ] && [ -f "$_it_default_file" ]; then
+  # shellcheck disable=SC1090
+  . "$_it_default_file" 2>/dev/null || true
+  _it_default_count=$(grep -c "^alias " "$_it_default_file" 2>/dev/null || printf '0')
+  # Ensure it's a valid number
+  case "$_it_default_count" in
+    ''|*[!0-9]*) _it_default_count=0 ;;
+  esac
+  _it_count=$((_it_count + _it_default_count))
+fi
+
+if [ "$_it_custom_enabled" -eq 1 ] && [ -f "$_it_custom_file" ]; then
+  # shellcheck disable=SC1090
+  . "$_it_custom_file" 2>/dev/null || true
+  _it_custom_count=$(grep -c "^alias " "$_it_custom_file" 2>/dev/null || printf '0')
+  # Ensure it's a valid number
+  case "$_it_custom_count" in
+    ''|*[!0-9]*) _it_custom_count=0 ;;
+  esac
+  _it_count=$((_it_count + _it_custom_count))
+fi
+
+# Only print loading message if WIZARDRY_DEBUG is enabled
+if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
+  printf '%s\n' "invoke-thesaurus: loaded $_it_count synonym(s)"
+fi
+return 0
 
 # Run the function
-invoke_thesaurus
 
-invoke_thesaurus "$@"

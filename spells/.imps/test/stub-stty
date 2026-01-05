@@ -5,12 +5,8 @@
 
 set -eu
 
-stub_stty() {
 
-    case ${1-} in
-      -g) printf 'saved-state\n' ;;
-      *) return 0 ;;
-    esac
-}
-
-stub_stty "$@"
+  case ${1-} in
+    -g) printf 'saved-state\n' ;;
+    *) return 0 ;;
+  esac

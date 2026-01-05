@@ -4,17 +4,13 @@
 
 set -eu
 
-count_chars() {
-  # If argument provided, use it; otherwise read from stdin
-  if [ $# -gt 0 ]; then
-    text=${1-}
-  else
-    # Read from stdin
-    text=$(cat)
-  fi
-  
-  # Count characters
-  printf '%d\n' "${#text}"
-}
+# If argument provided, use it; otherwise read from stdin
+if [ $# -gt 0 ]; then
+  text=${1-}
+else
+  # Read from stdin
+  text=$(cat)
+fi
 
-count_chars "$@"
+# Count characters
+printf '%d\n' "${#text}"

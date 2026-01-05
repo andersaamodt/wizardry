@@ -3,9 +3,5 @@
 # Example: equals "$choice" "yes" && proceed
 set -eu
 
-equals() {
 
-  [ "$1" = "$2" ]
-}
-
-equals "$@"
+[ "$1" = "$2" ]

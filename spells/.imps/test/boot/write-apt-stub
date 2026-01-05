@@ -3,15 +3,12 @@
 # Stub logs invocations to APT_LOG and exits with APT_EXIT code.
 set -eu
 
-write_apt_stub() {
-  fixture=$1
-  cat <<'STUB' >"$fixture/bin/apt-get"
+fixture=$1
+cat <<'STUB' >"$fixture/bin/apt-get"
 #!/bin/sh
 echo "$0 $*" >>"${APT_LOG:?}" || exit 1
 exit ${APT_EXIT:-0}
 STUB
-  chmod +x "$fixture/bin/apt-get"
-}
+chmod +x "$fixture/bin/apt-get"
 
 
-write_apt_stub "$@"

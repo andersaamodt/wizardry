@@ -13,7 +13,7 @@ USAGE
   ;;
 esac
 
-require_wizardry || exit 1
+require-wizardry || exit 1
 
 set -eu
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)

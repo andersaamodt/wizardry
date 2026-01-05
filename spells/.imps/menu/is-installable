@@ -4,19 +4,16 @@
 # Example: is-installable my-spell && echo "has install"
 
 
-is_installable() {
-  if [ -z "${1-}" ]; then
-    return 1
-  fi
+if [ -z "${1-}" ]; then
+  return 1
+fi
 
-  _ii_spell_cmd=$1
-  _ii_spell_path=$(command -v "$_ii_spell_cmd" 2>/dev/null) || _ii_spell_path=$_ii_spell_cmd
+_ii_spell_cmd=$1
+_ii_spell_path=$(command -v "$_ii_spell_cmd" 2>/dev/null) || _ii_spell_path=$_ii_spell_cmd
 
-  if [ ! -r "$_ii_spell_path" ]; then
-    return 1
-  fi
+if [ ! -r "$_ii_spell_path" ]; then
+  return 1
+fi
 
-  grep -Eq '^[[:space:]]*install[[:space:]]*\(\)' "$_ii_spell_path" 2>/dev/null
-}
+grep -Eq '^[[:space:]]*install[[:space:]]*\(\)' "$_ii_spell_path" 2>/dev/null
 
-is_installable "$@"

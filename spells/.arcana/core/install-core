@@ -106,7 +106,6 @@ install_core_resolve_spell() {
   return 1
 }
 
-install_core() {
   # Try to install each core dependency, but don't fail if optional packages
   # can't be installed (e.g., on NixOS where packages must be installed declaratively).
   # We silently skip failures to avoid confusing novice users during first-time install.
@@ -121,7 +120,6 @@ install_core() {
   done
   # Always return success - optional package installation failures are non-fatal
   return 0
-}
 
 if [ "${0##*/}" = "install-core" ]; then
   set -eu

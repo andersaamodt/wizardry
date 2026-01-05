@@ -3,18 +3,15 @@
 # Sets TEST_FAILURE_REASON on mismatch.
 set -eu
 
-assert_status() {
-  expected_status=$1
-  if [ "$STATUS" -ne "$expected_status" ]; then
-    if [ -n "${ERROR-}" ]; then
-      TEST_FAILURE_REASON="expected status $expected_status but got $STATUS; stderr: $ERROR"
-    else
-      TEST_FAILURE_REASON="expected status $expected_status but got $STATUS"
-    fi
-    return 1
+expected_status=$1
+if [ "$STATUS" -ne "$expected_status" ]; then
+  if [ -n "${ERROR-}" ]; then
+    TEST_FAILURE_REASON="expected status $expected_status but got $STATUS; stderr: $ERROR"
+  else
+    TEST_FAILURE_REASON="expected status $expected_status but got $STATUS"
   fi
-  return 0
-}
+  return 1
+fi
+return 0
 
 
-assert_status "$@"

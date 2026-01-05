@@ -3,11 +3,10 @@
 # Provides minimal isolation for test consistency on macOS.
 set -eu
 
-run_macos_sandbox() {
-  # Create a permissive sandbox profile that provides minimal isolation
-  # NOTE: macOS sandboxing is DISABLED BY DEFAULT due to compatibility issues
-  # Enable with WIZARDRY_ENABLE_MACOS_SANDBOX=1 if needed for testing
-  sandbox_profile='(version 1)
+# Create a permissive sandbox profile that provides minimal isolation
+# NOTE: macOS sandboxing is DISABLED BY DEFAULT due to compatibility issues
+# Enable with WIZARDRY_ENABLE_MACOS_SANDBOX=1 if needed for testing
+sandbox_profile='(version 1)
 (allow default)
 (allow file-read*)
 (allow file-write*)
@@ -20,8 +19,6 @@ run_macos_sandbox() {
 (allow system*)
 '
 
-  "${SANDBOX_EXEC_BIN:?}" -p "$sandbox_profile" "$@"
-}
+"${SANDBOX_EXEC_BIN:?}" -p "$sandbox_profile" "$@"
 
 
-run_macos_sandbox "$@"

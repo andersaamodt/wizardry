@@ -3,12 +3,8 @@
 # Example: need git | need curl "curl is required for downloads"
 set -eu
 
-need() {
 
-  if command -v "$1" >/dev/null 2>&1; then return 0; fi
-  _need_msg=${2:-"required command not found: $1"}
-  printf '%s\n' "$_need_msg" >&2
-  return 1
-}
-
-need "$@"
+if command -v "$1" >/dev/null 2>&1; then return 0; fi
+_need_msg=${2:-"required command not found: $1"}
+printf '%s\n' "$_need_msg" >&2
+return 1

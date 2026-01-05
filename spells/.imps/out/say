@@ -3,8 +3,4 @@
 # Example: say "Hello world"
 set -eu
 
-say() {
-  printf '%s\n' "$*"
-}
-
-say "$@"
+printf '%s\n' "$*"

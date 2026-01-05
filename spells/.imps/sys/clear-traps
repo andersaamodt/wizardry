@@ -4,9 +4,5 @@
 
 set -eu
 
-clear_traps() {
 
-  trap - EXIT HUP INT TERM
-}
-
-clear_traps "$@"
+trap - EXIT HUP INT TERM

@@ -4,37 +4,33 @@
 # Returns 0 and outputs value if found, 1 if not found or all helpers failed
 set -eu
 
-xattr_read_value() {
 
-  key=$1
-  file=$2
+key=$1
+file=$2
 
-  # Try xattr first (macOS)
-  if xattr-helper-usable xattr; then
-    if output=$(xattr -p "$key" "$file" 2>/dev/null); then
-      printf '%s' "$output"
-      return 0
-    fi
+# Try xattr first (macOS)
+if xattr-helper-usable xattr; then
+  if output=$(xattr -p "$key" "$file" 2>/dev/null); then
+    printf '%s' "$output"
+    return 0
   fi
+fi
 
-  # Try attr (Linux)
-  if xattr-helper-usable attr; then
-    if output=$(attr -g "$key" "$file" 2>/dev/null); then
-      # Strip the header line from attr output
-      printf '%s' "$output" | sed '1d'
-      return 0
-    fi
+# Try attr (Linux)
+if xattr-helper-usable attr; then
+  if output=$(attr -g "$key" "$file" 2>/dev/null); then
+    # Strip the header line from attr output
+    printf '%s' "$output" | sed '1d'
+    return 0
   fi
+fi
 
-  # Try getfattr (Linux)
-  if xattr-helper-usable getfattr; then
-    if output=$(getfattr -n "$key" --only-values "$file" 2>/dev/null); then
-      printf '%s' "$output"
-      return 0
-    fi
+# Try getfattr (Linux)
+if xattr-helper-usable getfattr; then
+  if output=$(getfattr -n "$key" --only-values "$file" 2>/dev/null); then
+    printf '%s' "$output"
+    return 0
   fi
+fi
 
-  return 1
-}
-
-xattr_read_value "$@"
+return 1

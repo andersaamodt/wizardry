@@ -4,8 +4,4 @@
 
 set -eu
 
-success() {
-  printf '%s\n' "$*"
-}
-
-success "$@"
+printf '%s\n' "$*"

@@ -3,28 +3,25 @@
 # Example: on mac && brew install git
 
 
-on() {
-  _on_platform=$1
-  _on_kernel=$(uname -s 2>/dev/null || echo unknown)
+_on_platform=$1
+_on_kernel=$(uname -s 2>/dev/null || echo unknown)
 
-  case "$_on_platform" in
-    mac|macos|darwin)
-      [ "$_on_kernel" = "Darwin" ] ;;
-    linux)
-      [ "$_on_kernel" = "Linux" ] ;;
-    bsd|freebsd)
-      case "$_on_kernel" in *BSD) true ;; *) false ;; esac ;;
-    debian|ubuntu)
-      [ -f /etc/debian_version ] ;;
-    nixos)
-      [ -f /etc/NIXOS ] ;;
-    arch)
-      [ -f /etc/arch-release ] ;;
-    fedora)
-      [ -f /etc/fedora-release ] ;;
-    *)
-      return 1 ;;
-  esac
-}
+case "$_on_platform" in
+  mac|macos|darwin)
+    [ "$_on_kernel" = "Darwin" ] ;;
+  linux)
+    [ "$_on_kernel" = "Linux" ] ;;
+  bsd|freebsd)
+    case "$_on_kernel" in *BSD) true ;; *) false ;; esac ;;
+  debian|ubuntu)
+    [ -f /etc/debian_version ] ;;
+  nixos)
+    [ -f /etc/NIXOS ] ;;
+  arch)
+    [ -f /etc/arch-release ] ;;
+  fedora)
+    [ -f /etc/fedora-release ] ;;
+  *)
+    return 1 ;;
+esac
 
-on "$@"

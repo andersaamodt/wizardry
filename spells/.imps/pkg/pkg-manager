@@ -3,16 +3,12 @@
 # Example: pm=$(pkg-manager) && case $pm in apt) apt-get install ;; esac
 set -eu
 
-pkg_manager() {
 
-  if command -v apt-get >/dev/null 2>&1; then echo apt
-  elif command -v dnf >/dev/null 2>&1; then echo dnf
-  elif command -v pacman >/dev/null 2>&1; then echo pacman
-  elif command -v brew >/dev/null 2>&1; then echo brew
-  elif command -v nix-env >/dev/null 2>&1; then echo nix
-  elif command -v pkgin >/dev/null 2>&1; then echo pkgin
-  elif command -v apk >/dev/null 2>&1; then echo apk
-  else return 1; fi
-}
-
-pkg_manager "$@"
+if command -v apt-get >/dev/null 2>&1; then echo apt
+elif command -v dnf >/dev/null 2>&1; then echo dnf
+elif command -v pacman >/dev/null 2>&1; then echo pacman
+elif command -v brew >/dev/null 2>&1; then echo brew
+elif command -v nix-env >/dev/null 2>&1; then echo nix
+elif command -v pkgin >/dev/null 2>&1; then echo pkgin
+elif command -v apk >/dev/null 2>&1; then echo apk
+else return 1; fi

@@ -3,25 +3,21 @@
 # Example: pkg-install git
 set -eu
 
-pkg_install() {
 
-  _pi_package=${1:-}
-  [ -z "$_pi_package" ] && { printf '%s\n' "pkg-install: package name required" >&2; return 1; }
+_pi_package=${1:-}
+[ -z "$_pi_package" ] && { printf '%s\n' "pkg-install: package name required" >&2; return 1; }
 
-  _pi_pm=$(pkg-manager) || {
-    printf '%s\n' "pkg-install: no supported package manager" >&2
-    return 1
-  }
-
-  case $_pi_pm in
-    apt)    sudo apt-get -y install "$_pi_package" ;;
-    dnf)    sudo dnf -y install "$_pi_package" ;;
-    pacman) sudo pacman --noconfirm -S "$_pi_package" ;;
-    brew)   brew install "$_pi_package" ;;
-    nix)    nix-env -iA "nixpkgs.$_pi_package" ;;
-    pkgin)  sudo pkgin -y install "$_pi_package" ;;
-    apk)    sudo apk add "$_pi_package" ;;
-  esac
+_pi_pm=$(pkg-manager) || {
+  printf '%s\n' "pkg-install: no supported package manager" >&2
+  return 1
 }
 
-pkg_install "$@"
+case $_pi_pm in
+  apt)    sudo apt-get -y install "$_pi_package" ;;
+  dnf)    sudo dnf -y install "$_pi_package" ;;
+  pacman) sudo pacman --noconfirm -S "$_pi_package" ;;
+  brew)   brew install "$_pi_package" ;;
+  nix)    nix-env -iA "nixpkgs.$_pi_package" ;;
+  pkgin)  sudo pkgin -y install "$_pi_package" ;;
+  apk)    sudo apk add "$_pi_package" ;;
+esac

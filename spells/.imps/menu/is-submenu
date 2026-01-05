@@ -4,8 +4,5 @@
 # Example: if is-submenu; then exit_label="Back"; else exit_label="Exit"; fi
 
 
-is_submenu() {
-  return 1
-}
+return 1
 
-is_submenu "$@"

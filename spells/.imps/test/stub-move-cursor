@@ -4,9 +4,5 @@
 
 set -eu
 
-stub_move_cursor() {
 
-    return 0
-}
-
-stub_move_cursor "$@"
+  return 0

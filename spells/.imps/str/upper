@@ -3,9 +3,5 @@
 # Example: echo "hello" | upper
 set -eu
 
-upper() {
 
-  tr '[:lower:]' '[:upper:]'
-}
-
-upper "$@"
+tr '[:lower:]' '[:upper:]'

@@ -3,9 +3,5 @@
 # Example: skip 1 file.txt | process   # skip header
 set -eu
 
-skip() {
 
-  if [ "$#" -ge 2 ]; then tail -n +"$(($1 + 1))" "$2"; else tail -n +"$(($1 + 1))"; fi
-}
-
-skip "$@"
+if [ "$#" -ge 2 ]; then tail -n +"$(($1 + 1))" "$2"; else tail -n +"$(($1 + 1))"; fi

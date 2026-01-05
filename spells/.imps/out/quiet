@@ -3,9 +3,5 @@
 # Example: quiet rm -f /tmp/file
 set -eu
 
-quiet() {
 
-  "$@" >/dev/null 2>&1
-}
-
-quiet "$@"
+"$@" >/dev/null 2>&1

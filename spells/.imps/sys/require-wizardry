@@ -1,27 +1,23 @@
 #!/bin/sh
-# require_wizardry - check if wizardry is set up and available
+# require-wizardry - check if wizardry is set up and available
 # Returns 0 if wizardry is available (WIZARDRY_DIR set and valid)
 # Returns 1 if wizardry is not available
 # In test mode (WIZARDRY_TEST_HELPERS_ONLY=1), always returns 0
 # This is a simple early check - spells needing specific commands should use require-command
 set -eu
 
-require_wizardry() {
-  # In test mode, assume wizardry is available (tests set up their own PATH)
-  if [ "${WIZARDRY_TEST_HELPERS_ONLY:-}" = "1" ]; then
-    return 0
-  fi
-  
-  # Check if WIZARDRY_DIR is set and points to a valid wizardry installation
-  # This is set by invoke-wizardry when sourced in shell startup
-  if [ -n "${WIZARDRY_DIR-}" ] && [ -d "${WIZARDRY_DIR}/spells" ]; then
-    return 0
-  fi
-  
-  # Wizardry not available - fail elegantly
-  printf 'Error: wizardry not available (WIZARDRY_DIR not set)\n' >&2
-  printf 'Source invoke-wizardry in your shell startup or run ./install\n' >&2
-  return 1
-}
+# In test mode, assume wizardry is available (tests set up their own PATH)
+if [ "${WIZARDRY_TEST_HELPERS_ONLY:-}" = "1" ]; then
+  exit 0
+fi
 
-require_wizardry "$@"
+# Check if WIZARDRY_DIR is set and points to a valid wizardry installation
+# This is set by invoke-wizardry when sourced in shell startup
+if [ -n "${WIZARDRY_DIR-}" ] && [ -d "${WIZARDRY_DIR}/spells" ]; then
+  exit 0
+fi
+
+# Wizardry not available - fail elegantly
+printf 'Error: wizardry not available (WIZARDRY_DIR not set)\n' >&2
+printf 'Source invoke-wizardry in your shell startup or run ./install\n' >&2
+exit 1

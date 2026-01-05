@@ -4,8 +4,5 @@
 # Example: nonempty "$NAME" && echo "Hello, $NAME"
 
 
-given() {
-  [ -n "$1" ]
-}
+[ -n "$1" ]
 
-given "$@"

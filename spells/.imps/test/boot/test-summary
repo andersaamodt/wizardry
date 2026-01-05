@@ -6,26 +6,23 @@
 
 set -eu
 
-test_summary() {
-  passed=$1
-  total=$2
-  skipped=${3-0}
-  failed=$((total - passed))
-  
-  printf '%s/%s tests passed' "$passed" "$total"
-  
-  if [ "$failed" -gt 0 ]; then
-    printf ' (%s failed' "$failed"
-    if [ "$skipped" -gt 0 ]; then
-      printf ', %s skipped' "$skipped"
-    fi
-    printf ')\n'
-  elif [ "$skipped" -gt 0 ]; then
-    printf ' (%s skipped)\n' "$skipped"
-  else
-    printf '\n'
+passed=$1
+total=$2
+skipped=${3-0}
+failed=$((total - passed))
+
+printf '%s/%s tests passed' "$passed" "$total"
+
+if [ "$failed" -gt 0 ]; then
+  printf ' (%s failed' "$failed"
+  if [ "$skipped" -gt 0 ]; then
+    printf ', %s skipped' "$skipped"
   fi
-}
+  printf ')\n'
+elif [ "$skipped" -gt 0 ]; then
+  printf ' (%s skipped)\n' "$skipped"
+else
+  printf '\n'
+fi
 
 
-test_summary "$@"

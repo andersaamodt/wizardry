@@ -3,10 +3,6 @@
 # Example: echo "" | else "fallback"
 set -eu
 
-or_else() {
 
-  _or_else_input=$(cat)
-  if [ -n "$_or_else_input" ]; then printf '%s\n' "$_or_else_input"; else printf '%s\n' "$1"; fi
-}
-
-or_else "$@"
+_or_else_input=$(cat)
+if [ -n "$_or_else_input" ]; then printf '%s\n' "$_or_else_input"; else printf '%s\n' "$1"; fi

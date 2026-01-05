@@ -6,184 +6,180 @@
 # Example: pluralize "spell" 2  # -> spells
 set -eu
 
-pluralize() {
-    if [ "$#" -lt 2 ]; then
-      printf '%s\n' "pluralize: WORD COUNT [PLURAL]" >&2
-      return 2
-    fi
+  if [ "$#" -lt 2 ]; then
+    printf '%s\n' "pluralize: WORD COUNT [PLURAL]" >&2
+    return 2
+  fi
 
-    _pluralize_word=$1
-    _pluralize_count=$2
-    _pluralize_plural=${3-}
+  _pluralize_word=$1
+  _pluralize_count=$2
+  _pluralize_plural=${3-}
 
-    if [ "$_pluralize_count" -eq 1 ]; then
-      printf '%s' "$_pluralize_word"
-      return 0
-    fi
+  if [ "$_pluralize_count" -eq 1 ]; then
+    printf '%s' "$_pluralize_word"
+    return 0
+  fi
 
-    if [ -n "$_pluralize_plural" ]; then
-      printf '%s' "$_pluralize_plural"
-      return 0
-    fi
+  if [ -n "$_pluralize_plural" ]; then
+    printf '%s' "$_pluralize_plural"
+    return 0
+  fi
 
-    _pluralize_lower=$(printf '%s' "$_pluralize_word" | tr 'A-Z' 'a-z')
-    _pluralize_result=""
+  _pluralize_lower=$(printf '%s' "$_pluralize_word" | tr 'A-Z' 'a-z')
+  _pluralize_result=""
 
-    case "$_pluralize_lower" in
-      child) _pluralize_result=children ;;
-      person) _pluralize_result=people ;;
-      man) _pluralize_result=men ;;
-      woman) _pluralize_result=women ;;
-      mouse) _pluralize_result=mice ;;
-      goose) _pluralize_result=geese ;;
-      tooth) _pluralize_result=teeth ;;
-      foot) _pluralize_result=feet ;;
-      louse) _pluralize_result=lice ;;
-      ox) _pluralize_result=oxen ;;
-      die) _pluralize_result=dice ;;
-      cactus) _pluralize_result=cacti ;;
-      focus) _pluralize_result=foci ;;
-      fungus) _pluralize_result=fungi ;;
-      nucleus) _pluralize_result=nuclei ;;
-      syllabus) _pluralize_result=syllabi ;;
-      analysis) _pluralize_result=analyses ;;
-      diagnosis) _pluralize_result=diagnoses ;;
-      synopsis) _pluralize_result=synopses ;;
-      thesis) _pluralize_result=theses ;;
-      crisis) _pluralize_result=crises ;;
-      phenomenon) _pluralize_result=phenomena ;;
-      criterion) _pluralize_result=criteria ;;
-      datum) _pluralize_result=data ;;
-      medium) _pluralize_result=media ;;
-      bacterium) _pluralize_result=bacteria ;;
-      curriculum) _pluralize_result=curricula ;;
-      memorandum) _pluralize_result=memoranda ;;
-      stadium) _pluralize_result=stadia ;;
-      addendum) _pluralize_result=addenda ;;
-      stratum) _pluralize_result=strata ;;
-      bureau) _pluralize_result=bureaux ;;
-      index) _pluralize_result=indices ;;
-      appendix) _pluralize_result=appendices ;;
-      matrix) _pluralize_result=matrices ;;
-      vertex) _pluralize_result=vertices ;;
-      vortex) _pluralize_result=vortices ;;
-      axis) _pluralize_result=axes ;;
-      basis) _pluralize_result=bases ;;
-      oasis) _pluralize_result=oases ;;
-      radius) _pluralize_result=radii ;;
-      stimulus) _pluralize_result=stimuli ;;
-      alumnus) _pluralize_result=alumni ;;
-      alumna) _pluralize_result=alumnae ;;
-      vertebra) _pluralize_result=vertebrae ;;
-      formula) _pluralize_result=formulae ;;
-      antenna) _pluralize_result=antennae ;;
-      nebula) _pluralize_result=nebulae ;;
-      millennium) _pluralize_result=millennia ;;
-      genus) _pluralize_result=genera ;;
-      corpus) _pluralize_result=corpora ;;
-      opus) _pluralize_result=opera ;;
-      status) _pluralize_result=statuses ;;
-      bus) _pluralize_result=buses ;;
-      alias) _pluralize_result=aliases ;;
-      embargo) _pluralize_result=embargoes ;;
-      hero) _pluralize_result=heroes ;;
-      potato) _pluralize_result=potatoes ;;
-      tomato) _pluralize_result=tomatoes ;;
-      echo) _pluralize_result=echoes ;;
-      torpedo) _pluralize_result=torpedoes ;;
-      veto) _pluralize_result=vetoes ;;
-      calf) _pluralize_result=calves ;;
-      leaf) _pluralize_result=leaves ;;
-      life) _pluralize_result=lives ;;
-      loaf) _pluralize_result=loaves ;;
-      self) _pluralize_result=selves ;;
-      elf) _pluralize_result=elves ;;
-      shelf) _pluralize_result=shelves ;;
-      wolf) _pluralize_result=wolves ;;
-      knife) _pluralize_result=knives ;;
-      wife) _pluralize_result=wives ;;
-      thief) _pluralize_result=thieves ;;
-      scarf) _pluralize_result=scarves ;;
-      hoof) _pluralize_result=hooves ;;
-      dwarf) _pluralize_result=dwarves ;;
-      wharf) _pluralize_result=wharves ;;
-      fish) _pluralize_result=fish ;;
-      sheep) _pluralize_result=sheep ;;
-      deer) _pluralize_result=deer ;;
-      series) _pluralize_result=series ;;
-      species) _pluralize_result=species ;;
-      aircraft) _pluralize_result=aircraft ;;
-      moose) _pluralize_result=moose ;;
-      salmon) _pluralize_result=salmon ;;
-      trout) _pluralize_result=trout ;;
-      bison) _pluralize_result=bison ;;
-      means) _pluralize_result=means ;;
-      news) _pluralize_result=news ;;
-      police) _pluralize_result=police ;;
-      cattle) _pluralize_result=cattle ;;
-      *man)
-        _pluralize_result=${_pluralize_lower%man}men
-        ;;
-      *mouse)
-        _pluralize_result=${_pluralize_lower%mouse}mice
-        ;;
-      *goose)
-        _pluralize_result=${_pluralize_lower%goose}geese
-        ;;
-      *tooth)
-        _pluralize_result=${_pluralize_lower%tooth}teeth
-        ;;
-      *foot)
-        _pluralize_result=${_pluralize_lower%foot}feet
-        ;;
-      *louse)
-        _pluralize_result=${_pluralize_lower%louse}lice
-        ;;
-      *[sxz]|*ch|*sh)
-        _pluralize_result=${_pluralize_lower}es
-        ;;
-      *[!aeiou]y)
-        _pluralize_result=${_pluralize_lower%y}ies
-        ;;
-      *fe)
-        _pluralize_result=${_pluralize_lower%fe}ves
-        ;;
-      *f)
-        _pluralize_result=${_pluralize_lower%f}ves
-        ;;
-      *[!aeiou]o)
-        _pluralize_result=${_pluralize_lower}es
-        ;;
-      *us)
-        _pluralize_result=${_pluralize_lower}es
-        ;;
-      *is)
-        _pluralize_result=${_pluralize_lower%is}es
-        ;;
-      *)
-        _pluralize_result=${_pluralize_lower}s
-        ;;
-    esac
+  case "$_pluralize_lower" in
+    child) _pluralize_result=children ;;
+    person) _pluralize_result=people ;;
+    man) _pluralize_result=men ;;
+    woman) _pluralize_result=women ;;
+    mouse) _pluralize_result=mice ;;
+    goose) _pluralize_result=geese ;;
+    tooth) _pluralize_result=teeth ;;
+    foot) _pluralize_result=feet ;;
+    louse) _pluralize_result=lice ;;
+    ox) _pluralize_result=oxen ;;
+    die) _pluralize_result=dice ;;
+    cactus) _pluralize_result=cacti ;;
+    focus) _pluralize_result=foci ;;
+    fungus) _pluralize_result=fungi ;;
+    nucleus) _pluralize_result=nuclei ;;
+    syllabus) _pluralize_result=syllabi ;;
+    analysis) _pluralize_result=analyses ;;
+    diagnosis) _pluralize_result=diagnoses ;;
+    synopsis) _pluralize_result=synopses ;;
+    thesis) _pluralize_result=theses ;;
+    crisis) _pluralize_result=crises ;;
+    phenomenon) _pluralize_result=phenomena ;;
+    criterion) _pluralize_result=criteria ;;
+    datum) _pluralize_result=data ;;
+    medium) _pluralize_result=media ;;
+    bacterium) _pluralize_result=bacteria ;;
+    curriculum) _pluralize_result=curricula ;;
+    memorandum) _pluralize_result=memoranda ;;
+    stadium) _pluralize_result=stadia ;;
+    addendum) _pluralize_result=addenda ;;
+    stratum) _pluralize_result=strata ;;
+    bureau) _pluralize_result=bureaux ;;
+    index) _pluralize_result=indices ;;
+    appendix) _pluralize_result=appendices ;;
+    matrix) _pluralize_result=matrices ;;
+    vertex) _pluralize_result=vertices ;;
+    vortex) _pluralize_result=vortices ;;
+    axis) _pluralize_result=axes ;;
+    basis) _pluralize_result=bases ;;
+    oasis) _pluralize_result=oases ;;
+    radius) _pluralize_result=radii ;;
+    stimulus) _pluralize_result=stimuli ;;
+    alumnus) _pluralize_result=alumni ;;
+    alumna) _pluralize_result=alumnae ;;
+    vertebra) _pluralize_result=vertebrae ;;
+    formula) _pluralize_result=formulae ;;
+    antenna) _pluralize_result=antennae ;;
+    nebula) _pluralize_result=nebulae ;;
+    millennium) _pluralize_result=millennia ;;
+    genus) _pluralize_result=genera ;;
+    corpus) _pluralize_result=corpora ;;
+    opus) _pluralize_result=opera ;;
+    status) _pluralize_result=statuses ;;
+    bus) _pluralize_result=buses ;;
+    alias) _pluralize_result=aliases ;;
+    embargo) _pluralize_result=embargoes ;;
+    hero) _pluralize_result=heroes ;;
+    potato) _pluralize_result=potatoes ;;
+    tomato) _pluralize_result=tomatoes ;;
+    echo) _pluralize_result=echoes ;;
+    torpedo) _pluralize_result=torpedoes ;;
+    veto) _pluralize_result=vetoes ;;
+    calf) _pluralize_result=calves ;;
+    leaf) _pluralize_result=leaves ;;
+    life) _pluralize_result=lives ;;
+    loaf) _pluralize_result=loaves ;;
+    self) _pluralize_result=selves ;;
+    elf) _pluralize_result=elves ;;
+    shelf) _pluralize_result=shelves ;;
+    wolf) _pluralize_result=wolves ;;
+    knife) _pluralize_result=knives ;;
+    wife) _pluralize_result=wives ;;
+    thief) _pluralize_result=thieves ;;
+    scarf) _pluralize_result=scarves ;;
+    hoof) _pluralize_result=hooves ;;
+    dwarf) _pluralize_result=dwarves ;;
+    wharf) _pluralize_result=wharves ;;
+    fish) _pluralize_result=fish ;;
+    sheep) _pluralize_result=sheep ;;
+    deer) _pluralize_result=deer ;;
+    series) _pluralize_result=series ;;
+    species) _pluralize_result=species ;;
+    aircraft) _pluralize_result=aircraft ;;
+    moose) _pluralize_result=moose ;;
+    salmon) _pluralize_result=salmon ;;
+    trout) _pluralize_result=trout ;;
+    bison) _pluralize_result=bison ;;
+    means) _pluralize_result=means ;;
+    news) _pluralize_result=news ;;
+    police) _pluralize_result=police ;;
+    cattle) _pluralize_result=cattle ;;
+    *man)
+      _pluralize_result=${_pluralize_lower%man}men
+      ;;
+    *mouse)
+      _pluralize_result=${_pluralize_lower%mouse}mice
+      ;;
+    *goose)
+      _pluralize_result=${_pluralize_lower%goose}geese
+      ;;
+    *tooth)
+      _pluralize_result=${_pluralize_lower%tooth}teeth
+      ;;
+    *foot)
+      _pluralize_result=${_pluralize_lower%foot}feet
+      ;;
+    *louse)
+      _pluralize_result=${_pluralize_lower%louse}lice
+      ;;
+    *[sxz]|*ch|*sh)
+      _pluralize_result=${_pluralize_lower}es
+      ;;
+    *[!aeiou]y)
+      _pluralize_result=${_pluralize_lower%y}ies
+      ;;
+    *fe)
+      _pluralize_result=${_pluralize_lower%fe}ves
+      ;;
+    *f)
+      _pluralize_result=${_pluralize_lower%f}ves
+      ;;
+    *[!aeiou]o)
+      _pluralize_result=${_pluralize_lower}es
+      ;;
+    *us)
+      _pluralize_result=${_pluralize_lower}es
+      ;;
+    *is)
+      _pluralize_result=${_pluralize_lower%is}es
+      ;;
+    *)
+      _pluralize_result=${_pluralize_lower}s
+      ;;
+  esac
 
-    case "$_pluralize_word" in
-      *[A-Z]*[a-z]*)
-        _pluralize_rest=${_pluralize_word#?}
-        case "$_pluralize_rest" in
-          *[A-Z]*) printf '%s' "$_pluralize_result" ;;
-          *)
-            _pluralize_first=$(printf '%s' "$_pluralize_result" | cut -c1)
-            _pluralize_tail=$(printf '%s' "$_pluralize_result" | cut -c2-)
-            printf '%s%s' "$(printf '%s' "$_pluralize_first" | tr 'a-z' 'A-Z')" "$_pluralize_tail"
-            ;;
-        esac
-        ;;
-      *[A-Z]*)
-        printf '%s' "$(printf '%s' "$_pluralize_result" | tr 'a-z' 'A-Z')"
-        ;;
-      *)
-        printf '%s' "$_pluralize_result"
-        ;;
-    esac
-}
-
-pluralize "$@"
+  case "$_pluralize_word" in
+    *[A-Z]*[a-z]*)
+      _pluralize_rest=${_pluralize_word#?}
+      case "$_pluralize_rest" in
+        *[A-Z]*) printf '%s' "$_pluralize_result" ;;
+        *)
+          _pluralize_first=$(printf '%s' "$_pluralize_result" | cut -c1)
+          _pluralize_tail=$(printf '%s' "$_pluralize_result" | cut -c2-)
+          printf '%s%s' "$(printf '%s' "$_pluralize_first" | tr 'a-z' 'A-Z')" "$_pluralize_tail"
+          ;;
+      esac
+      ;;
+    *[A-Z]*)
+      printf '%s' "$(printf '%s' "$_pluralize_result" | tr 'a-z' 'A-Z')"
+      ;;
+    *)
+      printf '%s' "$_pluralize_result"
+      ;;
+  esac

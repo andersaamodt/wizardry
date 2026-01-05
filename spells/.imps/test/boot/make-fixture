@@ -3,11 +3,8 @@
 # Creates bin/, log/, and home/.local/bin/ subdirectories.
 set -eu
 
-make_fixture() {
-  fixture=$(make_tempdir)
-  mkdir -p "$fixture/bin" "$fixture/log" "$fixture/home/.local/bin"
-  printf '%s\n' "$fixture"
-}
+fixture=$(make_tempdir)
+mkdir -p "$fixture/bin" "$fixture/log" "$fixture/home/.local/bin"
+printf '%s\n' "$fixture"
 
 
-make_fixture "$@"

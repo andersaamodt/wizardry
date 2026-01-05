@@ -3,9 +3,5 @@
 # Example: echo "  hello  " | trim
 set -eu
 
-trim() {
 
-  sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
-}
-
-trim "$@"
+sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
