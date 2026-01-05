@@ -13,8 +13,6 @@ USAGE
   ;;
 esac
 
-require_wizardry || exit 1
-
 set -eu
 force_install="${INSTALL_CHECKBASHISMS_FORCE_INSTALL-}"
 has_checkbashisms=$(command -v checkbashisms >/dev/null 2>&1 && echo "yes" || echo "no")

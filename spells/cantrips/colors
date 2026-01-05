@@ -24,7 +24,7 @@ USAGE
 esac
 
 colors() {
-# Note: No require_wizardry check here - colors must work standalone
+# Note: No require-wizardry check here - colors must work standalone
 set -eu
 
 # Check NO_COLOR first before setting up colors

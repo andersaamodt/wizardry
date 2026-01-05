@@ -23,25 +23,25 @@ USAGE
   ;;
 esac
 
-# Handle require_wizardry availability (for script execution without invoke-wizardry)
-if command -v require_wizardry >/dev/null 2>&1; then
-  require_wizardry || exit 1
-elif command -v require_wizardry >/dev/null 2>&1; then
-  require_wizardry || exit 1
+# Handle require-wizardry availability (for script execution without invoke-wizardry)
+if command -v require-wizardry >/dev/null 2>&1; then
+  require-wizardry || exit 1
+elif command -v require-wizardry >/dev/null 2>&1; then
+  require-wizardry || exit 1
 else
   # Neither available - source it now
   if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/require-wizardry" ]; then
     . "${WIZARDRY_DIR}/spells/.imps/sys/require-wizardry"
-    require_wizardry || exit 1
+    require-wizardry || exit 1
   else
     # Fall back to relative path from script location
     _cs_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
     _cs_imp_path="$_cs_script_dir/../../.imps/sys/require-wizardry"
     if [ -f "$_cs_imp_path" ]; then
       . "$_cs_imp_path"
-      require_wizardry || exit 1
+      require-wizardry || exit 1
     else
-      printf 'Error: require_wizardry not found\n' >&2
+      printf 'Error: require-wizardry not found\n' >&2
       exit 1
     fi
   fi
@@ -135,7 +135,7 @@ for dep in $dependencies; do
   # Skip self-reference - spell cannot be its own dependency
   [ "$dep" = "$spell_basename" ] && continue
   
-  # Skip require_wizardry and invoke-wizardry - they don't make sense in standalone
+  # Skip require-wizardry and invoke-wizardry - they don't make sense in standalone
   # invoke-wizardry is the runtime environment, not a library function
   [ "$dep" = "require-wizardry" ] && continue
   [ "$dep" = "invoke-wizardry" ] && continue
@@ -195,7 +195,7 @@ $func_def
   else
      # It's a spell without _funcname() pattern - inline entire spell as function
     # Remove shebang, *_usage, --help handler, set -eu, env_clear, and loading patterns  
-    # BUT preserve bootstrap code (if command -v require_wizardry blocks)
+    # BUT preserve bootstrap code (if command -v require-wizardry blocks)
     spell_body=$(printf '%s\n' "$dep_content" | awk '
       BEGIN { skip=0; in_usage=0; skip_loading=0; in_bootstrap=0 }
       /^#!/ { next }
@@ -207,13 +207,13 @@ $func_def
       skip { next }
       /^set -eu$/ { next }
       /^set -u$/ { next }
-      /^if command -v require_wizardry/ { in_bootstrap=1; print; next }
-      /^elif command -v require_wizardry/ { in_bootstrap=1; print; next }
+      /^if command -v require-wizardry/ { in_bootstrap=1; print; next }
+      /^elif command -v require-wizardry/ { in_bootstrap=1; print; next }
       in_bootstrap && /^fi$/ { in_bootstrap=0; print; next }
       in_bootstrap && /^else/ { print; next }
       in_bootstrap { print; next }
       /^require-wizardry/ { next }
-      /^[[:space:]]*require_wizardry([[:space:]]|\|\||$)/ { next }
+      /^[[:space:]]*require-wizardry([[:space:]]|\|\||$)/ { next }
       /^[[:space:]]*\. env_clear([[:space:]]|$)/ { next }
       /^[[:space:]]*source env_clear([[:space:]]|$)/ { next }
       /^[[:space:]]*env_clear([[:space:]]|$)/ { next }
@@ -254,25 +254,25 @@ $spell_body
 done
 
 # Transform spell content:
-# 1. Remove shebang, require_wizardry, and wizardry infrastructure sourcing
+# 1. Remove shebang, require-wizardry, and wizardry infrastructure sourcing
 # 2. Replace imp calls with underscore versions (e.g., say -> say, clip-copy -> clip_copy)
 # 3. Replace castable/autocast/uncastable loading patterns with direct function calls
 # Remove lines that source wizardry infrastructure (env-clear, invoke-wizardry)
 # These don't make sense in standalone compiled spells
-# BUT preserve bootstrap blocks (if command -v require_wizardry)
+# BUT preserve bootstrap blocks (if command -v require-wizardry)
 transformed=$(printf '%s\n' "$spell_content" | \
   tail -n +2 | \
   awk -v spell="$spell_basename" '
     BEGIN { skip=0; in_bootstrap=0 }
     # Preserve bootstrap blocks
-    /^if command -v require_wizardry/ { in_bootstrap=1; print; next }
-    /^elif command -v require_wizardry/ { in_bootstrap=1; print; next }
+    /^if command -v require-wizardry/ { in_bootstrap=1; print; next }
+    /^elif command -v require-wizardry/ { in_bootstrap=1; print; next }
     in_bootstrap && /^fi$/ { in_bootstrap=0; print; next }
     in_bootstrap && /^else/ { print; next }
     in_bootstrap { print; next }
     # Remove infrastructure calls (but not if in bootstrap)
     /^require-wizardry/ { next }
-    /^[[:space:]]*require_wizardry([[:space:]]|\|\||$)/ { next }
+    /^[[:space:]]*require-wizardry([[:space:]]|\|\||$)/ { next }
     /^[[:space:]]*\. env_clear([[:space:]]|$)/ { next }
     /^[[:space:]]*source env_clear([[:space:]]|$)/ { next }
     /^[[:space:]]*env_clear([[:space:]]|$)/ { next }

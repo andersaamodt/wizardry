@@ -13,8 +13,6 @@ USAGE
   ;;
 esac
 
-require_wizardry || exit 1
-
 set -eu
 action=install
 if [ "${1-}" = "--uninstall" ]; then
