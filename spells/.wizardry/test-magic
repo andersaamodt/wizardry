@@ -292,6 +292,11 @@ fi
 
 count_level=$count_start
 while [ "$count_level" -le "$count_end" ]; do
+  # Count common-tests.sh in Level 0
+  if [ "$count_level" -eq 0 ] && [ -f "$test_dir/common-tests.sh" ]; then
+    global_test_total=$((global_test_total + 1))
+  fi
+  
   count_spell_list=$(spell-levels "$count_level" spells 2>/dev/null || printf '')
   count_imp_list=$(spell-levels "$count_level" imps 2>/dev/null || printf '')
   
@@ -585,6 +590,37 @@ test_level() {
   level_name=$(spell-levels "$level" name 2>/dev/null || printf 'Unknown Level')
 
   printf '\nLevel %d: %s\n' "$level" "$level_name"
+
+  # Level 0 exception: Run common-tests.sh first (cross-cutting checks)
+  # This doesn't mirror spells/ structure, so hardcode it here
+  if [ "$level" -eq 0 ] && [ -f "$test_dir/common-tests.sh" ]; then
+    test_path="common-tests.sh"
+    test_name="common-tests.sh"
+    level_total=$((level_total + 1))
+    global_test_count=$((global_test_count + 1))
+
+    if [ "$verbose" -eq 1 ]; then
+      printf '  [%d/%d] Running %s...\n' "$global_test_count" "$global_test_total" "$test_name"
+    fi
+
+    test_timeout="${WIZARDRY_TEST_TIMEOUT:-180}"
+    if run_test_file "$test_path" "common-tests"; then
+      level_pass=$((level_pass + 1))
+      if [ -n "$test_summary_line" ]; then
+        printf '    %s%s%s\n' "$_green" "$test_summary_line" "$_reset"
+      else
+        printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_name"
+      fi
+    else
+      level_fail=$((level_fail + 1))
+      failed_tests="${failed_tests:+$failed_tests }$test_name"
+      if [ -n "$test_summary_line" ]; then
+        printf '    %s%s%s\n' "$_red" "$test_summary_line" "$_reset"
+      else
+        printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_name"
+      fi
+    fi
+  fi
 
   spell_list=$(spell-levels "$level" spells 2>/dev/null || printf '')
   imp_list=$(spell-levels "$level" imps 2>/dev/null || printf '')

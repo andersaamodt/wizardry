@@ -24,7 +24,8 @@ else
     report-result "$_test_index" "$desc" 0
   else
     status=$?
-    report-result "$_test_index" "$desc" "$status" "${TEST_FAILURE_REASON-test function failed}"
+    TEST_FAILURE_REASON="${TEST_FAILURE_REASON-test function failed}" \
+      report-result "$_test_index" "$desc" "$status"
   fi
 fi
 
