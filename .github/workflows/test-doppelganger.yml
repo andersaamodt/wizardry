@@ -48,8 +48,8 @@ jobs:
         run: |
           echo "=== Testing doppelganger spells ==="
           
-          # Exclusions (wizardry infrastructure)
-          excluded="invoke-wizardry require-wizardry declare-globals learn-spellbook learn mud decorate select-player"
+          # Exclusions (wizardry infrastructure and interactive commands)
+          excluded="invoke-wizardry require-wizardry declare-globals learn-spellbook learn mud decorate select-player pkg-upgrade pkg-update"
           
           # Track failures
           fail_file=/tmp/doppelganger-failures.txt
