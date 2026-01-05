@@ -21,7 +21,7 @@ case "$_cd_key" in
 esac
 
 # File doesn't exist - nothing to delete
-[ -f "$_cd_file" ] || return 0
+[ -f "$_cd_file" ] || exit 0
 
 # Create temp file for atomic operation
 # Ensure temp dir exists
@@ -30,7 +30,7 @@ if [ ! -d "$_cd_tmpdir" ]; then
   _cd_dir=$(dirname "$_cd_file")
   mkdir -p "$_cd_tmpdir" 2>/dev/null || _cd_tmpdir="${_cd_dir}"
 fi
-_cd_tmp=$(mktemp "$_cd_tmpdir/config-del.XXXXXX") || return 1
+_cd_tmp=$(mktemp "$_cd_tmpdir/config-del.XXXXXX") || exit 1
 trap 'rm -f "$_cd_tmp"' EXIT HUP INT TERM
 
 # Copy all lines except the key we're deleting

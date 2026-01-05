@@ -8,5 +8,5 @@ set -eu
   case "${1-}" in
     on) printf '\033[?25h' ;;
     off) printf '\033[?25l' ;;
-    *) return 0 ;;
+    *) exit 0 ;;
   esac

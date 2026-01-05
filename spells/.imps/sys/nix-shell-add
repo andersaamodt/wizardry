@@ -66,7 +66,7 @@ $_nsa_line"; fi
     [ "$_nsa_dir" != "$_nsa_nix_file" ] && [ ! -d "$_nsa_dir" ] && mkdir -p "$_nsa_dir"
     printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$_nsa_nix_file"
   fi
-  _nsa_tmp_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-add.XXXXXX") || return 1
+  _nsa_tmp_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-add.XXXXXX") || exit 1
   # Read file content inline
   if [ "$_nsa_needs_sudo" -eq 1 ]; then
     if command -v sudo >/dev/null 2>&1; then _nsa_content=$(sudo cat "$_nsa_nix_file")
@@ -75,7 +75,7 @@ $_nsa_line"; fi
   else _nsa_content=$(cat "$_nsa_nix_file"); fi
 
   if printf '%s\n' "$_nsa_content" | grep -q "$_nsa_nix_option[[:space:]]*="; then
-    _nsa_input_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-add-input.XXXXXX") || return 1
+    _nsa_input_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-add-input.XXXXXX") || exit 1
     printf '%s\n' "$_nsa_content" > "$_nsa_input_file"
     _nsa_in_block=0
     while IFS= read -r _nsa_line; do
@@ -112,7 +112,7 @@ $_nsa_line"; fi
     rm -f "$_nsa_input_file"
   else
     # Write the block to a temp file and use it with awk (macOS awk compatible)
-    _nsa_block_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-add-block.XXXXXX") || return 1
+    _nsa_block_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-add-block.XXXXXX") || exit 1
     printf '%s\n' "  $_nsa_nix_option = ''" > "$_nsa_block_file"
     printf '%s\n' "$_nsa_marked_code" >> "$_nsa_block_file"
     printf '%s\n' "  '';" >> "$_nsa_block_file"

@@ -7,8 +7,8 @@ set -eu
 
 case ${CHOOSE_INPUT_MODE:-auto} in
   stdin) printf '%s\n' stdin; exit 0 ;;
-  tty)   printf '%s\n' tty;   return 0 ;;
-  none)  return 1 ;;
+  tty)   printf '%s\n' tty;   exit 0 ;;
+  none)  exit 1 ;;
 esac
 
 # Use /dev/fd/0 instead of /dev/stdin for cross-platform compatibility.

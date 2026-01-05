@@ -17,5 +17,5 @@ if [ ! -f "$_bk_file" ]; then
   exit 1
 fi
 
-cp "$_bk_file" "${_bk_file}${_bk_suffix}" || return 1
+cp "$_bk_file" "${_bk_file}${_bk_suffix}" || exit 1
 printf '%s\n' "${_bk_file}${_bk_suffix}"

@@ -54,7 +54,7 @@ _cs_tmpdir="${TMPDIR:-/tmp}"
 if [ ! -d "$_cs_tmpdir" ]; then
   mkdir -p "$_cs_tmpdir" 2>/dev/null || _cs_tmpdir="${_cs_dir}"
 fi
-_cs_tmp=$(mktemp "$_cs_tmpdir/config-set.XXXXXX") || return 1
+_cs_tmp=$(mktemp "$_cs_tmpdir/config-set.XXXXXX") || exit 1
 trap 'rm -f "$_cs_tmp"' EXIT HUP INT TERM
 
 # If file exists, copy all lines except the key we're updating

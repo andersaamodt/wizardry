@@ -24,7 +24,7 @@ set -eu
   exit 1
   fi
   if ! grep -Fq "$_nsr_marker" "$_nsr_nix_file" 2>/dev/null; then exit 0; fi
-  _nsr_tmp_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-remove.XXXXXX") || return 1
+  _nsr_tmp_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-remove.XXXXXX") || exit 1
   if [ "$_nsr_needs_sudo" -eq 1 ]; then
     if command -v sudo >/dev/null 2>&1; then sudo cat "$_nsr_nix_file"
     elif command -v doas >/dev/null 2>&1; then doas cat "$_nsr_nix_file"

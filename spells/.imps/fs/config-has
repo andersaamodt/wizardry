@@ -21,7 +21,7 @@ case "$_ch_key" in
 esac
 
 # File doesn't exist - key doesn't exist
-[ -f "$_ch_file" ] || return 1
+[ -f "$_ch_file" ] || exit 1
 
 # Check if key exists using awk
 awk -F= -v key="$_ch_key" '$1 == key { found=1; exit } END { exit !found }' "$_ch_file"
