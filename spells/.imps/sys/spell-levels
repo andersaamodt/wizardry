@@ -2,9 +2,9 @@
 # spell-levels LEVEL FIELD - output specific field for a level
 # Fields: name, spells, imps
 # Usage: 
-#   name=$(spell_levels 4 name)
-#   spells=$(spell_levels 4 spells)
-#   imps=$(spell_levels 4 imps)
+#   name=$(spell-levels 4 name)
+#   spells=$(spell-levels 4 spells)
+#   imps=$(spell-levels 4 imps)
 set -eu
 
 _level="${1:-}"
@@ -162,7 +162,7 @@ case "$_level" in
     _imps=''
     ;;
   *)
-    return 1
+    exit 1
     ;;
 esac
 
@@ -177,6 +177,6 @@ case "$_field" in
     ;;
   *)
     printf 'spell-levels: unknown field: %s\n' "$_field" >&2
-    return 1
+    exit 1
     ;;
 esac

@@ -244,12 +244,24 @@ if [ ! -x "$root_dir/spells/.wizardry/test-spell" ]; then
   exit 1
 fi
 
-if [ ! -f "$root_dir/spells/.imps/sys/spell-levels" ]; then
-  printf 'test-magic: spell-levels imp not found\n' >&2
+if [ ! -x "$root_dir/spells/.imps/sys/spell-levels" ]; then
+  printf 'test-magic: spell-levels imp not found or not executable\n' >&2
   exit 1
 fi
 
-. "$root_dir/spells/.imps/sys/spell-levels"
+# spell-levels is a command, not sourced - it's in PATH via invoke-wizardry
+# Define helper functions that call spell-levels command
+banish_level_name() {
+  spell-levels "$1" name 2>/dev/null || printf 'Unknown Level'
+}
+
+get_level_spells() {
+  spell-levels "$1" spells 2>/dev/null || printf ''
+}
+
+get_level_imps() {
+  spell-levels "$1" imps 2>/dev/null || printf ''
+}
 
 # Note: invoke-wizardry is loaded by test-bootstrap (sourced by each test file)
 # This provides a standard environment with all functions available per test
