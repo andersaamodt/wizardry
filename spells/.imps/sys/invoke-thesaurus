@@ -4,8 +4,27 @@
 # Also initializes default synonyms if not already set up.
 
 # This script must be sourced, not executed
+# Guard against direct execution (inline check instead of calling uncastable)
+_it_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) _it_sourced=1 ;;
+  esac
+else
+  _it_base=${0##*/}
+  case "$_it_base" in
+    sh|dash|bash|zsh|ksh|mksh) _it_sourced=1 ;;
+    invoke-thesaurus) _it_sourced=0 ;;
+    *) _it_sourced=1 ;;
+  esac
+fi
 
-
+if [ "$_it_sourced" -eq 0 ]; then
+  printf '%s\n' "invoke-thesaurus: must be sourced, not executed" >&2
+  printf '%s\n' "Usage: . invoke-thesaurus" >&2
+  exit 1
+fi
+unset _it_sourced _it_base
 
 # Explicitly use permissive mode - this file is sourced into user's shell
 
@@ -104,7 +123,7 @@ fi
 if [ "$_it_enabled" -eq 0 ]; then
   # Synonyms disabled - print message to stderr for visibility
   printf '%s\n' "invoke-thesaurus: synonyms are disabled" >&2
-  exit 0
+  return 0
 fi
 
 # Check if default synonyms are enabled
@@ -159,7 +178,7 @@ fi
 if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
   printf '%s\n' "invoke-thesaurus: loaded $_it_count synonym(s)"
 fi
-exit 0
+return 0
 
 # Run the function
 
