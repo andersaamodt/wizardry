@@ -770,7 +770,6 @@ if [ "$total" -gt 0 ]; then
   printf 'Subtests: %d passed, %d total\n' "$subtests_passed" "$subtests_total"
 
   if [ "$total_fail" -gt 0 ]; then
-    printf '\nFailed tests: %s\n' "$failed_tests"
     if [ -n "$failed_levels" ]; then
       printf 'Failed levels: %s\n' "$failed_levels"
     fi
@@ -883,7 +882,6 @@ if [ "$coverage_uncovered" -gt 0 ]; then
   status=1
 fi
 if [ "$incomplete_count" -gt 0 ] && [ "$compiled_mode" != "1" ]; then
-  printf 'Incomplete: %d tests\n' "$incomplete_count"
   status=1
 fi
 
@@ -911,8 +909,6 @@ if [ "$status" -eq 0 ]; then
   else
     printf '\nAll tests passed\n'
   fi
-else
-  printf '\n%s✗%s Some tests failed\n' "$_red" "$_reset"
 fi
 
 if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then
