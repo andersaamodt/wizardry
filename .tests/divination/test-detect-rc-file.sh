@@ -13,7 +13,7 @@ done
 
 test_help() {
   run_spell "spells/divination/detect-rc-file" --help
-  assert_success && assert_error_contains "Usage: detect-rc-file"
+  assert_success && assert_output_contains "Usage: detect-rc-file"
 }
 
 test_rejects_bad_arguments() {

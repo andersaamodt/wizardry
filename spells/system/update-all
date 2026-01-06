@@ -80,14 +80,14 @@ case ${WIZARDRY_UPDATE_ALL_ASSUME_YES:-} in
     ;;
   *)
     # Ask for confirmation
-    if ! command -v ask_yn >/dev/null 2>&1; then
-      printf '%s\n' 'update-all: ask_yn spell is missing; cannot confirm updates.' >&2
+    if ! command -v ask-yn >/dev/null 2>&1; then
+      printf '%s\n' 'update-all: ask-yn spell is missing; cannot confirm updates.' >&2
       exit 1
     fi
     printf '%s\n' 'Proceed with system updates?'
     ASK_CANTRIP_INPUT=stdin
     export ASK_CANTRIP_INPUT
-    if ! printf '\n' | ask_yn 'Proceed with system updates?' yes >/dev/null; then
+    if ! printf '\n' | ask-yn 'Proceed with system updates?' yes >/dev/null; then
       printf '%s\n' 'update-all: cancelled by user' >&2
       exit 1
     fi

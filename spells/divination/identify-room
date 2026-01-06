@@ -24,6 +24,7 @@ strip_trailing_slashes() {
   result=$1
   while true; do
     case $result in
+      /) break ;;  # Don't strip the root /
       */) result=${result%/} ;;
       *) break ;;
     esac
