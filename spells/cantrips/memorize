@@ -12,6 +12,17 @@
 spell_name="memorize"
 tab_char=$(printf '\t')
 
+memorize_usage() {
+  cat >&2 <<'USAGE'
+Usage: memorize SPELL_NAME
+       memorize list         - list all memorized spells
+       memorize path         - print the command list file path
+       memorize dir          - print the cast directory
+
+Memorize spells for the Cast menu.
+USAGE
+}
+
 case "${1-}" in
 --help|--usage|-h)
   memorize_usage

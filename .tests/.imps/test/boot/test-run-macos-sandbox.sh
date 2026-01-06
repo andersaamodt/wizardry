@@ -13,8 +13,8 @@ test_uses_sandbox_exec_bin() {
   printf '#!/bin/sh\necho "sandbox-exec called"\n' > "$tmpdir/sandbox-exec"
   chmod +x "$tmpdir/sandbox-exec"
   
-  SANDBOX_EXEC_BIN="$tmpdir/sandbox-exec"
-  output=$(run_macos_sandbox echo hello 2>&1)
+  export SANDBOX_EXEC_BIN="$tmpdir/sandbox-exec"
+  output=$(run-macos-sandbox echo hello 2>&1)
   
   echo "$output" | grep -q "sandbox-exec called"
 }
@@ -24,8 +24,8 @@ test_passes_command() {
   printf '#!/bin/sh\nshift; shift; "$@"\n' > "$tmpdir/sandbox-exec"
   chmod +x "$tmpdir/sandbox-exec"
   
-  SANDBOX_EXEC_BIN="$tmpdir/sandbox-exec"
-  output=$(run_macos_sandbox echo hello 2>&1)
+  export SANDBOX_EXEC_BIN="$tmpdir/sandbox-exec"
+  output=$(run-macos-sandbox echo hello 2>&1)
   
   echo "$output" | grep -q "hello"
 }

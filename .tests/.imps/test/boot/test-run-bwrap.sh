@@ -13,9 +13,9 @@ test_uses_bwrap_bin() {
   printf '#!/bin/sh\necho "bwrap called"\n' > "$tmpdir/bwrap"
   chmod +x "$tmpdir/bwrap"
   
-  BWRAP_BIN="$tmpdir/bwrap"
-  BWRAP_VIA_SUDO=0
-  output=$(run_bwrap --help 2>&1)
+  export BWRAP_BIN="$tmpdir/bwrap"
+  export BWRAP_VIA_SUDO=0
+  output=$(run-bwrap --help 2>&1)
   
   echo "$output" | grep -q "bwrap called"
 }
@@ -25,9 +25,9 @@ test_passes_args() {
   printf '#!/bin/sh\necho "$@"\n' > "$tmpdir/bwrap"
   chmod +x "$tmpdir/bwrap"
   
-  BWRAP_BIN="$tmpdir/bwrap"
-  BWRAP_VIA_SUDO=0
-  output=$(run_bwrap --help --version 2>&1)
+  export BWRAP_BIN="$tmpdir/bwrap"
+  export BWRAP_VIA_SUDO=0
+  output=$(run-bwrap --help --version 2>&1)
   
   echo "$output" | grep -q "\-\-help"
 }
