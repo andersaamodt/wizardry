@@ -576,6 +576,22 @@ test_no_undeclared_global_exports() {
             return ;;  # Used by learn-spell for rc file detection
           ASK_CANTRIP_INPUT)
             return ;;  # Used to pass stdin flag to ask-yn within same spell
+          WIZARDRY_PARSE_DEPTH)
+            return ;;  # Used by parse imp for recursion depth tracking
+          HOME|USER|SHELL|TERM|LANG|TMPDIR|PWD|OLDPWD)
+            return ;;  # Standard POSIX environment variables (restored by env-clear)
+          AWAIT_KEYPRESS_BUFFER_FILE|TEST_FAILURE_REASON|TEST_SKIP_REASON|WIZARDRY_TMPDIR)
+            return ;;  # Test/utility infrastructure (restored by env-clear)
+          WIZARDRY_GLOBAL_SUBTEST_NUM|WIZARDRY_TEST_COMPILED|WIZARDRY_TEST_HELPERS_ONLY)
+            return ;;  # Test infrastructure (restored by env-clear)
+          WIZARDRY_SYSTEM_PATH|CHOOSE_INPUT_MODE|MENU_LOOP_LIMIT|REQUIRE_COMMAND)
+            return ;;  # Utility variables (restored by env-clear)
+          MENU_LOG|GIT_LOG|REQUIRE_LOG|MOCK_TOPLEVEL|PULL_STATUS|ASSUME_YES)
+            return ;;  # Testing/logging variables (restored by env-clear)
+          _WIZARDRY_INVOKED)
+            return ;;  # Internal wizardry state flag (restored by env-clear)
+          RUN_CMD_WORKDIR)
+            return ;;  # Test infrastructure for run-spell-in-dir
         esac
         
         rel_path=${spell#"$ROOT_DIR/spells/"}
@@ -833,6 +849,7 @@ system/update-all
 system/test-magic
 system/banish
 spellcraft/demo-magic
+.wizardry/generate-glosses
 "
   
   check_function_discipline() {

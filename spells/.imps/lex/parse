@@ -77,116 +77,109 @@ if [ ! -d "$_wizardry_dir/spells" ]; then
   fi
 fi
 
-# Try to find and execute spell by reconstructing command name
-# Preserve argument boundaries while trying progressively longer command names
-_find_and_execute_spell() {
-  # Extract command words (non-flag args from the beginning)
-  _cmd_word_count=0
-  _first_word=""
-  _all_args="$#"
-  
-  # Count how many leading args are command words (not flags)
-  for _arg in "$@"; do
-    case "$_arg" in
-      -*) break ;;
-    esac
-    if [ -z "$_first_word" ]; then
-      _first_word=$_arg
-    fi
-    _cmd_word_count=$((_cmd_word_count + 1))
-  done
-  
-  # If no command words, nothing to do
-  if [ $_cmd_word_count -eq 0 ]; then
-    printf 'parse: no command specified\n' >&2
-    exit 1
-  fi
-  
-  # Try progressively longer combinations (from max down to 1)
-  _attempt_len=$_cmd_word_count
-  while [ $_attempt_len -gt 0 ]; do
-    # Build command name from first N words joined with hyphens
-    _cmd_name=""
-    _i=0
-    for _arg in "$@"; do
-      if [ $_i -ge $_attempt_len ]; then
-        break
-      fi
-      if [ -z "$_cmd_name" ]; then
-        _cmd_name=$_arg
-      else
-        _cmd_name="${_cmd_name}-${_arg}"
-      fi
-      _i=$((_i + 1))
-    done
-    
-    # Try all possible spell locations
-    _spell_path=""
-    
-    # Try imp directories
-    for _imp_dir in sys cond out fs str paths text input menu pkg test lang; do
-      if [ -x "$_wizardry_dir/spells/.imps/$_imp_dir/$_cmd_name" ]; then
-        # Skip parse in lex to avoid recursion
-        if [ "$_imp_dir" = "lex" ] && [ "$_cmd_name" = "parse" ]; then
-          continue
-        fi
-        _spell_path="$_wizardry_dir/spells/.imps/$_imp_dir/$_cmd_name"
-        break
-      fi
-    done
-    
-    # Try lex separately (for non-parse commands)
-    if [ -z "$_spell_path" ] && [ "$_cmd_name" != "parse" ]; then
-      if [ -x "$_wizardry_dir/spells/.imps/lex/$_cmd_name" ]; then
-        _spell_path="$_wizardry_dir/spells/.imps/lex/$_cmd_name"
-      fi
-    fi
-    
-    # Try .wizardry directory
-    if [ -z "$_spell_path" ] && [ -x "$_wizardry_dir/spells/.wizardry/$_cmd_name" ]; then
-      _spell_path="$_wizardry_dir/spells/.wizardry/$_cmd_name"
-    fi
-    
-    # Try spell category directories
-    if [ -z "$_spell_path" ]; then
-      for _category_dir in "$_wizardry_dir/spells"/*; do
-        [ -d "$_category_dir" ] || continue
-        case "$_category_dir" in
-          */.|*/..|*/.imps|*/.wizardry|*/.arcana) continue ;;
-        esac
-        if [ -x "$_category_dir/$_cmd_name" ]; then
-          _spell_path="$_category_dir/$_cmd_name"
-          break
-        fi
-      done
-    fi
-    
-    # If found, execute with remaining args
-    if [ -n "$_spell_path" ]; then
-      # Skip first $_attempt_len args and exec with the rest
-      _n=0
-      while [ $_n -lt $_attempt_len ]; do
-        shift
-        _n=$((_n + 1))
-      done
-      exec "$_spell_path" "$@"
-    fi
-    
-    # Try next shorter combination
-    _attempt_len=$((_attempt_len - 1))
-  done
-  
-  # Last resort: try first word as system command
-  if command -v "$_first_word" >/dev/null 2>&1; then
-    exec "$_first_word" "$@"
-  fi
-  
-  printf 'parse: %s: command not found\n' "$_first_word" >&2
-  exit 127
-}
+# Extract command words (non-flag args from the beginning)
+_cmd_word_count=0
+_first_word=""
+_all_args="$#"
 
-# Execute the spell finding logic
-_find_and_execute_spell "$@"
+# Count how many leading args are command words (not flags)
+for _arg in "$@"; do
+  case "$_arg" in
+    -*) break ;;
+  esac
+  if [ -z "$_first_word" ]; then
+    _first_word=$_arg
+  fi
+  _cmd_word_count=$((_cmd_word_count + 1))
+done
+
+# If no command words, nothing to do
+if [ $_cmd_word_count -eq 0 ]; then
+  printf 'parse: no command specified\n' >&2
+  exit 1
+fi
+
+# Try progressively longer combinations (from max down to 1)
+_attempt_len=$_cmd_word_count
+while [ $_attempt_len -gt 0 ]; do
+  # Build command name from first N words joined with hyphens
+  _cmd_name=""
+  _i=0
+  for _arg in "$@"; do
+    if [ $_i -ge $_attempt_len ]; then
+      break
+    fi
+    if [ -z "$_cmd_name" ]; then
+      _cmd_name=$_arg
+    else
+      _cmd_name="${_cmd_name}-${_arg}"
+    fi
+    _i=$((_i + 1))
+  done
+  
+  # Try all possible spell locations
+  _spell_path=""
+  
+  # Try imp directories
+  for _imp_dir in sys cond out fs str paths text input menu pkg test lang; do
+    if [ -x "$_wizardry_dir/spells/.imps/$_imp_dir/$_cmd_name" ]; then
+      # Skip parse in lex to avoid recursion
+      if [ "$_imp_dir" = "lex" ] && [ "$_cmd_name" = "parse" ]; then
+        continue
+      fi
+      _spell_path="$_wizardry_dir/spells/.imps/$_imp_dir/$_cmd_name"
+      break
+    fi
+  done
+  
+  # Try lex separately (for non-parse commands)
+  if [ -z "$_spell_path" ] && [ "$_cmd_name" != "parse" ]; then
+    if [ -x "$_wizardry_dir/spells/.imps/lex/$_cmd_name" ]; then
+      _spell_path="$_wizardry_dir/spells/.imps/lex/$_cmd_name"
+    fi
+  fi
+  
+  # Try .wizardry directory
+  if [ -z "$_spell_path" ] && [ -x "$_wizardry_dir/spells/.wizardry/$_cmd_name" ]; then
+    _spell_path="$_wizardry_dir/spells/.wizardry/$_cmd_name"
+  fi
+  
+  # Try spell category directories
+  if [ -z "$_spell_path" ]; then
+    for _category_dir in "$_wizardry_dir/spells"/*; do
+      [ -d "$_category_dir" ] || continue
+      case "$_category_dir" in
+        */.|*/..|*/.imps|*/.wizardry|*/.arcana) continue ;;
+      esac
+      if [ -x "$_category_dir/$_cmd_name" ]; then
+        _spell_path="$_category_dir/$_cmd_name"
+        break
+      fi
+    done
+  fi
+  
+  # If found, execute with remaining args
+  if [ -n "$_spell_path" ]; then
+    # Skip first $_attempt_len args and exec with the rest
+    _n=0
+    while [ $_n -lt $_attempt_len ]; do
+      shift
+      _n=$((_n + 1))
+    done
+    exec "$_spell_path" "$@"
+  fi
+  
+  # Try next shorter combination
+  _attempt_len=$((_attempt_len - 1))
+done
+
+# Last resort: try first word as system command
+if command -v "$_first_word" >/dev/null 2>&1; then
+  exec "$_first_word" "$@"
+fi
+
+printf 'parse: %s: command not found\n' "$_first_word" >&2
+exit 127
 
 
 
