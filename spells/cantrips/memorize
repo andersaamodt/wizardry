@@ -32,36 +32,57 @@ esac
 
 set -eu
 
-# Expand tilde in paths
-expand_path() {
-  path=$1
-  case $path in
-  \~)
-    if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
-      path=$HOME
-    fi
-    ;;
-  \~/*)
-    if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
-      path=$HOME/${path#\~/}
-    fi
-    ;;
-  esac
-  printf '%s' "$path"
-}
-
 # Resolve cast directory
 if [ -n "${WIZARDRY_CAST_DIR-}" ]; then
-  cast_dir=$(expand_path "$WIZARDRY_CAST_DIR")
+  # Expand tilde in WIZARDRY_CAST_DIR
+  cast_dir="$WIZARDRY_CAST_DIR"
+  case $cast_dir in
+    \~)
+      if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+        cast_dir=$HOME
+      fi
+      ;;
+    \~/*)
+      if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+        cast_dir=$HOME/${cast_dir#\~/}
+      fi
+      ;;
+  esac
 else
   cast_dir=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 fi
 
 # Resolve command file
 if [ -n "${WIZARDRY_CAST_FILE-}" ]; then
-  command_file=$(expand_path "$WIZARDRY_CAST_FILE")
+  # Expand tilde in WIZARDRY_CAST_FILE
+  command_file="$WIZARDRY_CAST_FILE"
+  case $command_file in
+    \~)
+      if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+        command_file=$HOME
+      fi
+      ;;
+    \~/*)
+      if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+        command_file=$HOME/${command_file#\~/}
+      fi
+      ;;
+  esac
 elif [ -n "${MEMORIZE_COMMAND_FILE-}" ]; then
-  command_file=$(expand_path "$MEMORIZE_COMMAND_FILE")
+  # Expand tilde in MEMORIZE_COMMAND_FILE
+  command_file="$MEMORIZE_COMMAND_FILE"
+  case $command_file in
+    \~)
+      if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+        command_file=$HOME
+      fi
+      ;;
+    \~/*)
+      if [ -n "${HOME-}" ] && [ -n "$HOME" ]; then
+        command_file=$HOME/${command_file#\~/}
+      fi
+      ;;
+  esac
 else
   command_file=$cast_dir/.memorized
 fi
