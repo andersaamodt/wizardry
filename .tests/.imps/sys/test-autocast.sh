@@ -1,16 +1,11 @@
 #!/bin/sh
 # Tests for the 'autocast' imp.
-# NOTE: autocast is deprecated (word-of-binding paradigm has been replaced with PATH-based execution)
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
   test_root=$(dirname "$test_root")
 done
 . "$test_root/spells/.imps/test/test-bootstrap"
-
-# Skip all tests - autocast is deprecated
-printf 'SKIP: autocast is deprecated (word-of-binding paradigm removed)\n'
-exit 0
 
 test_autocast_when_executed() {
   workdir=$(make_tempdir)

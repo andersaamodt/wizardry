@@ -1,7 +1,5 @@
 #!/bin/sh
 # Tests for parse command execution engine
-# NOTE: parse is deprecated (word-of-binding paradigm has been replaced with PATH-based execution)
-# Parse is in PASSTHROUGH mode.
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -9,10 +7,6 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
-
-# Skip all tests - parse is deprecated and in passthrough mode
-printf 'SKIP: parse is deprecated (word-of-binding paradigm removed, now in passthrough mode)\n'
-exit 0
 
 test_parse_imperative_is_executable() {
   [ -x "$ROOT_DIR/spells/.imps/lex/parse" ]
