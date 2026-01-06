@@ -42,7 +42,8 @@ loop_limit=${MENU_LOOP_LIMIT:-}
 first_run=1
 start_selection=1
 
-# Track toggle states: 1=CD hook, 2=command-not-found, 3=touch, 4=fantasy, 5=inventory, 6=combat, 7=all
+# Track toggle states: 1=parse, 2=CD hook, 3=command-not-found, 4=touch, 5=fantasy, 6=inventory, 7=combat, 8=mud-menu, 9=all
+was_parse=0
 was_cd=0
 was_cnf=0
 was_touch=0
@@ -54,6 +55,7 @@ was_all=0
 while true; do
   if [ "$first_run" -eq 0 ]; then
     # Check which toggle changed and keep cursor there
+    if is_feature_enabled "parse-enabled"; then now_parse=1; else now_parse=0; fi
     if check-cd-hook 2>/dev/null; then now_cd=1; else now_cd=0; fi
     if check-command-not-found-hook 2>/dev/null; then now_cnf=1; else now_cnf=0; fi
     if is_feature_enabled "touch-hook"; then now_touch=1; else now_touch=0; fi
@@ -70,20 +72,22 @@ while true; do
       fi
     done
 
-    if [ "$was_cd" != "$now_cd" ]; then
+    if [ "$was_parse" != "$now_parse" ]; then
       start_selection=1
-    elif [ "$was_cnf" != "$now_cnf" ]; then
-      start_selection=2
-    elif [ "$was_touch" != "$now_touch" ]; then
+    elif [ "$was_cd" != "$now_cd" ]; then
       start_selection=3
-    elif [ "$was_fantasy" != "$now_fantasy" ]; then
+    elif [ "$was_cnf" != "$now_cnf" ]; then
       start_selection=4
-    elif [ "$was_inventory" != "$now_inventory" ]; then
+    elif [ "$was_touch" != "$now_touch" ]; then
       start_selection=5
-    elif [ "$was_combat" != "$now_combat" ]; then
+    elif [ "$was_fantasy" != "$now_fantasy" ]; then
       start_selection=6
-    elif [ "$was_all" != "$now_all" ]; then
+    elif [ "$was_inventory" != "$now_inventory" ]; then
       start_selection=7
+    elif [ "$was_combat" != "$now_combat" ]; then
+      start_selection=8
+    elif [ "$was_all" != "$now_all" ]; then
+      start_selection=9
     else
       start_selection=1
     fi
@@ -92,6 +96,7 @@ while true; do
   fi
 
   # Save toggle states before displaying menu (for comparison on next iteration)
+  if is_feature_enabled "parse-enabled"; then was_parse=1; else was_parse=0; fi
   if check-cd-hook 2>/dev/null; then was_cd=1; else was_cd=0; fi
   if check-command-not-found-hook 2>/dev/null; then was_cnf=1; else was_cnf=0; fi
   if is_feature_enabled "touch-hook"; then was_touch=1; else was_touch=0; fi
@@ -109,6 +114,13 @@ while true; do
   done
 
   # Build menu entries based on current state
+  # Build parse toggle
+  if is_feature_enabled "parse-enabled"; then
+    parse_toggle="[X] Parse (natural language commands)%toggle-parse"
+  else
+    parse_toggle="[ ] Parse (natural language commands)%toggle-parse"
+  fi
+  
   # Build cd hook toggle label based on current state
   if check-cd-hook 2>/dev/null; then
     cd_hook="[X] cd hook (look on directory change)%toggle-cd"
@@ -177,7 +189,7 @@ while true; do
   exit_label=$(exit-label)
   exit_item="${exit_label}%kill -TERM \$PPID"
 
-  set -- "$mud_menu" "$cd_hook" "$cnf_hook" "$touch_hook" "$fantasy" "$inventory" "$combat" "$toggle_all" "$tor" "$exit_item"
+  set -- "$parse_toggle" "$mud_menu" "$cd_hook" "$cnf_hook" "$touch_hook" "$fantasy" "$inventory" "$combat" "$toggle_all" "$tor" "$exit_item"
   menu --start-selection "$start_selection" "MUD Install:" "$@" || true
 
   # Support MENU_LOOP_LIMIT for testing

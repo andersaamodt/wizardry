@@ -87,6 +87,18 @@ env-clear
   total_full_name_glosses=0
   total_true_name_glosses=0
   
+  # Check if parse is enabled (for first-word gloss generation)
+  # Default to enabled (1) if not set
+  parse_enabled=1
+  mud_config_file="$spell_home/.mud"
+  if [ -f "$mud_config_file" ]; then
+    # Read parse-enabled setting from config file
+    _parse_setting=$(grep '^parse-enabled=' "$mud_config_file" 2>/dev/null | cut -d= -f2)
+    if [ -n "$_parse_setting" ]; then
+      parse_enabled=$_parse_setting
+    fi
+  fi
+  
   # Setup output
   if [ -n "$output_file" ]; then
     # Clear output file
@@ -247,25 +259,32 @@ uname|uniq|wc|xargs)
   emit_line "# ============================================================================"
   emit_line "# FIRST-WORD GLOSSES"
   emit_line "# ============================================================================"
-  emit_line "# These enable space-separated command invocation:"
-  emit_line "#   env or VAR DEFAULT  -> calls parse with all args"
-  emit_line "#   temp file           -> calls parse with all args"
+  if [ "$parse_enabled" -eq 1 ]; then
+    emit_line "# These enable space-separated command invocation:"
+    emit_line "#   env or VAR DEFAULT  -> calls parse with all args"
+    emit_line "#   temp file           -> calls parse with all args"
+  else
+    emit_line "# DISABLED: parse-enabled=0 in $mud_config_file"
+    emit_line "# First-word glosses are not generated when parse is disabled"
+  fi
   emit_line "# ============================================================================"
   emit_line ""
   
-  # Generate first-word glosses
-  while IFS= read -r spell_path; do
-    [ -n "$spell_path" ] && [ -f "$spell_path" ] || continue
-    spell_name=$(basename "$spell_path")
-    
-    # Skip invalid names and parse
-    case "$spell_name" in
-      ''|.*|parse) continue ;;
-    esac
-    
-    # Try to generate first-word gloss, skip on conflict (warning already printed)
-    generate_first_word_gloss "$spell_name" || continue
-  done < "$_spell_list"
+  # Generate first-word glosses (only if parse is enabled)
+  if [ "$parse_enabled" -eq 1 ]; then
+    while IFS= read -r spell_path; do
+      [ -n "$spell_path" ] && [ -f "$spell_path" ] || continue
+      spell_name=$(basename "$spell_path")
+      
+      # Skip invalid names and parse
+      case "$spell_name" in
+        ''|.*|parse) continue ;;
+      esac
+      
+      # Try to generate first-word gloss, skip on conflict (warning already printed)
+      generate_first_word_gloss "$spell_name" || continue
+    done < "$_spell_list"
+  fi
   
   # Emit separator
   emit_line "# ============================================================================"

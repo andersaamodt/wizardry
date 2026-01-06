@@ -1,13 +1,13 @@
 #!/bin/sh
 
-# Manage MUD feature configuration stored in $MUD_DIR/config
+# Manage MUD feature configuration stored in $SPELLBOOK_DIR/.mud
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
 Usage: mud-config {get|set|toggle|list} [FEATURE] [VALUE]
 
-Manage MUD feature toggles stored in $MUD_DIR/config. Supports get, set, toggle, and list for features like command-not-found, touch-hook, fantasy-theme, inventory, and combat.
+Manage MUD feature toggles stored in $SPELLBOOK_DIR/.mud. Supports get, set, toggle, and list for features like parse-enabled, command-not-found, touch-hook, fantasy-theme, inventory, and combat.
 USAGE
   exit 0
   ;;
@@ -18,16 +18,15 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
-# Resolve config directory
+# Resolve config file
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
-config_dir=$(env-or MUD_DIR "$spell_home/.mud")
-config_file="$config_dir/config"
+config_file="$spell_home/.mud"
 
-# Ensure config directory exists
+# Ensure spellbook directory exists
 ensure_config_dir() {
-        if [ ! -d "$config_dir" ]; then
-                mkdir -p "$config_dir" || {
-                        printf '%s\n' "mud-config: cannot create config directory '$config_dir'" >&2
+        if [ ! -d "$spell_home" ]; then
+                mkdir -p "$spell_home" || {
+                        printf '%s\n' "mud-config: cannot create spellbook directory '$spell_home'" >&2
                         return 1
                 }
         fi
