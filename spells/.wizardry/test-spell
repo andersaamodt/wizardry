@@ -1,7 +1,175 @@
 #!/bin/sh
-printf 'test-spell called with %d args:\n' "$#" >&2
-i=1
-for arg in "$@"; do
-  printf 'arg%d: [%s]\n' "$i" "$arg" >&2
-  i=$((i + 1))
+# Run a single test file with optional common tests and subtest filtering
+
+# CRITICAL: Seed a baseline PATH BEFORE set -eu
+baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+case ":${PATH-}:" in
+  *":/usr/bin:"*|*":/bin:"*) ;;
+  *)
+    PATH="${baseline_path}${PATH:+:}${PATH-}"
+    ;;
+esac
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: test-spell [OPTIONS] TEST_PATH [SUBTEST_NUMBERS...]
+
+Run a single test file, optionally with common structural tests.
+
+Arguments:
+  TEST_PATH            Path to test file (e.g., cantrips/test-ask-yn.sh)
+  SUBTEST_NUMBERS      Optional: specific subtest indices to run (e.g., 1 2 3)
+
+Options:
+  --skip-common        Skip common structural tests (run only the test file)
+
+Behavior:
+  By default, test-spell runs both:
+    1. Common structural tests for the spell being tested
+    2. The test file itself
+
+  When subtest numbers are provided, only those specific subtests run
+  (and common tests are automatically skipped).
+
+Examples:
+  test-spell cantrips/test-ask-yn.sh          # Full test + common tests
+  test-spell --skip-common cantrips/test-ask-yn.sh  # Only the test file
+  test-spell cantrips/test-ask-yn.sh 1 2      # Only subtests #1 and #2
+
+For AI agents:
+  This is the recommended way to test individual spells during development.
+  Use --skip-common when debugging specific test failures to reduce output.
+  Use subtest filtering to debug a specific failing test case.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+# Detect WIZARDRY_DIR if not already set
+if [ -z "${WIZARDRY_DIR-}" ]; then
+  case "$0" in
+    sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
+      if [ -n "${HOME-}" ] && [ -d "${HOME}/.wizardry/spells" ]; then
+        WIZARDRY_DIR="${HOME}/.wizardry"
+      fi
+      ;;
+    *)
+      _script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || _script_dir=""
+      if [ -n "$_script_dir" ]; then
+        _wiz_root=$(CDPATH= cd -- "$_script_dir/../.." 2>/dev/null && pwd -P) || _wiz_root=""
+        if [ -n "$_wiz_root" ] && [ -d "$_wiz_root/spells" ]; then
+          WIZARDRY_DIR="$_wiz_root"
+        fi
+      fi
+      ;;
+  esac
+fi
+
+if [ -z "${WIZARDRY_DIR-}" ]; then
+  printf 'test-spell: WIZARDRY_DIR not set and could not be detected\n' >&2
+  printf 'Run from wizardry installation or set WIZARDRY_DIR environment variable\n' >&2
+  exit 1
+fi
+
+if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
+  printf 'test-spell: invalid WIZARDRY_DIR: %s\n' "$WIZARDRY_DIR" >&2
+  exit 1
+fi
+
+export WIZARDRY_DIR
+
+ROOT_DIR=$WIZARDRY_DIR
+test_dir="$ROOT_DIR/.tests"
+
+# Parse arguments
+skip_common=0
+test_path=""
+subtest_numbers=""
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --skip-common)
+      skip_common=1
+      shift
+      ;;
+    --help|--usage|-h)
+      # Already handled above, but included for completeness
+      shift
+      ;;
+    -*)
+      printf 'test-spell: unknown option: %s\n' "$1" >&2
+      printf 'Usage: test-spell [--skip-common] TEST_PATH [SUBTEST_NUMBERS...]\n' >&2
+      exit 2
+      ;;
+    *)
+      if [ -z "$test_path" ]; then
+        test_path=$1
+        shift
+      else
+        # Remaining arguments are subtest numbers
+        subtest_numbers="${subtest_numbers:+$subtest_numbers }$1"
+        shift
+      fi
+      ;;
+  esac
 done
+
+if [ -z "$test_path" ]; then
+  printf 'test-spell: no test path provided\n' >&2
+  printf 'Usage: test-spell [--skip-common] TEST_PATH [SUBTEST_NUMBERS...]\n' >&2
+  exit 2
+fi
+
+# Normalize test path - accept with or without .tests/ prefix
+case "$test_path" in
+  .tests/*)
+    # Already has .tests/ prefix
+    full_test_path="$ROOT_DIR/$test_path"
+    ;;
+  *)
+    # Add .tests/ prefix
+    full_test_path="$test_dir/$test_path"
+    ;;
+esac
+
+if [ ! -f "$full_test_path" ]; then
+  printf 'test-spell: test file not found: %s\n' "$full_test_path" >&2
+  exit 1
+fi
+
+# If subtest numbers provided, automatically skip common tests
+if [ -n "$subtest_numbers" ]; then
+  skip_common=1
+fi
+
+# Run common tests first (unless skipped or filtering subtests)
+if [ "$skip_common" -eq 0 ]; then
+  # Extract spell path from test path for common tests
+  # test path is like: cantrips/test-ask-yn.sh
+  # spell path should be: spells/cantrips/ask-yn
+  rel_test_path=${test_path#.tests/}
+  test_dir_part=$(dirname "$rel_test_path")
+  test_file_part=$(basename "$rel_test_path")
+  spell_name=${test_file_part#test-}
+  spell_name=${spell_name%.sh}
+  spell_path="$ROOT_DIR/spells/$test_dir_part/$spell_name"
+  
+  if [ -f "$spell_path" ]; then
+    # Run common tests for this spell
+    if [ -f "$test_dir/common-tests.sh" ]; then
+      "$test_dir/common-tests.sh" "$spell_path" || true
+    fi
+  fi
+fi
+
+# Run the test file itself
+# Export subtest filter if provided
+if [ -n "$subtest_numbers" ]; then
+  export WIZARDRY_TEST_FILTER="$subtest_numbers"
+fi
+
+# Execute the test file
+exec "$full_test_path"
