@@ -6,9 +6,13 @@ case "${1-}" in
 --help|--usage|-h)
 cat <<'USAGE'
 Usage: spell-menu <spell-name>
+       spell-menu --cast <command>
 
 Display an action menu for a spell with options to cast, memorize,
 get help, or erase.
+
+Options:
+  --cast <command>   Execute command directly without showing menu
 USAGE
 exit 0
 ;;
@@ -20,12 +24,28 @@ set -eu
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM
 
+# Handle --cast option
+if [ "${1-}" = "--cast" ]; then
+      shift
+      if [ "$#" -eq 0 ]; then
+            printf 'spell-menu: --cast requires a command\n' >&2
+            exit 1
+      fi
+      # Execute the command directly
+      eval "$*"
+      exit $?
+fi
+
 if [ "$#" -lt 1 ]; then
       cat <<'USAGE' >&2
 Usage: spell-menu <spell-name>
+       spell-menu --cast <command>
 
 Display an action menu for a spell with options to cast, memorize,
 get help, or erase.
+
+Options:
+  --cast <command>   Execute command directly without showing menu
 USAGE
       exit 1
 fi
