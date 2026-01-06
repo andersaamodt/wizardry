@@ -90,10 +90,11 @@ elif [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
   [ -n "${PULL_STATUS:-}" ] && export PULL_STATUS
   [ -n "${REQUIRE_COMMAND:-}" ] && export REQUIRE_COMMAND
   
-  # Unset SPELLBOOK_DIR to ensure tests use sandbox-local .spellbook
-  # (spells will default to $HOME/.spellbook which is $homedir/.spellbook)
-  # unless the test explicitly set it
-  [ -z "${SPELLBOOK_DIR:-}" ] && unset SPELLBOOK_DIR || export SPELLBOOK_DIR
+  # Only export SPELLBOOK_DIR if it was explicitly set by the test
+  # Otherwise, let it remain unset so spells use $HOME/.spellbook
+  if [ -n "${SPELLBOOK_DIR:-}" ]; then
+    export SPELLBOOK_DIR
+  fi
   
   if (cd "$workdir" && run-macos-sandbox "$@" >"$_stdout" 2>"$_stderr"); then
     STATUS=0
@@ -117,10 +118,11 @@ else
   [ -n "${PULL_STATUS:-}" ] && export PULL_STATUS
   [ -n "${REQUIRE_COMMAND:-}" ] && export REQUIRE_COMMAND
   
-  # Unset SPELLBOOK_DIR to ensure tests use sandbox-local .spellbook
-  # (spells will default to $HOME/.spellbook which is $homedir/.spellbook)
-  # unless the test explicitly set it
-  [ -z "${SPELLBOOK_DIR:-}" ] && unset SPELLBOOK_DIR || export SPELLBOOK_DIR
+  # Only export SPELLBOOK_DIR if it was explicitly set by the test
+  # Otherwise, let it remain unset so spells use $HOME/.spellbook
+  if [ -n "${SPELLBOOK_DIR:-}" ]; then
+    export SPELLBOOK_DIR
+  fi
   
   if (cd "$workdir" && "$@" >"$_stdout" 2>"$_stderr"); then
     STATUS=0
