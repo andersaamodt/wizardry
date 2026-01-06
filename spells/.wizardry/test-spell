@@ -13,34 +13,23 @@ esac
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: test-spell [OPTIONS] TEST_PATH [SUBTEST_NUMBERS...]
+Usage: test-spell [OPTIONS] TEST_PATH
 
-Run a single test file, optionally with common structural tests.
+Run a single test file.
 
 Arguments:
   TEST_PATH            Path to test file (e.g., cantrips/test-ask-yn.sh)
-  SUBTEST_NUMBERS      Optional: specific subtest indices to run (e.g., 1 2 3)
 
 Options:
-  --skip-common        Skip common structural tests (run only the test file)
-
-Behavior:
-  By default, test-spell runs both:
-    1. Common structural tests for the spell being tested
-    2. The test file itself
-
-  When subtest numbers are provided, only those specific subtests run
-  (and common tests are automatically skipped).
+  --skip-common        (Deprecated) Has no effect - common tests are run by test-magic
 
 Examples:
-  test-spell cantrips/test-ask-yn.sh          # Full test + common tests
-  test-spell --skip-common cantrips/test-ask-yn.sh  # Only the test file
-  test-spell cantrips/test-ask-yn.sh 1 2      # Only subtests #1 and #2
+  test-spell cantrips/test-ask-yn.sh          # Run all tests in file
+  test-spell --skip-common cantrips/test-ask-yn.sh  # Same (flag ignored)
 
 For AI agents:
   This is the recommended way to test individual spells during development.
-  Use --skip-common when debugging specific test failures to reduce output.
-  Use subtest filtering to debug a specific failing test case.
+  Common structural tests are run separately by test-magic, not test-spell.
 USAGE
   exit 0
   ;;
@@ -87,7 +76,6 @@ test_dir="$ROOT_DIR/.tests"
 # Parse arguments
 skip_common=0
 test_path=""
-subtest_numbers=""
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -101,7 +89,7 @@ while [ "$#" -gt 0 ]; do
       ;;
     -*)
       printf 'test-spell: unknown option: %s\n' "$1" >&2
-      printf 'Usage: test-spell [--skip-common] TEST_PATH [SUBTEST_NUMBERS...]\n' >&2
+      printf 'Usage: test-spell [--skip-common] TEST_PATH\n' >&2
       exit 2
       ;;
     *)
@@ -109,9 +97,9 @@ while [ "$#" -gt 0 ]; do
         test_path=$1
         shift
       else
-        # Remaining arguments are subtest numbers
-        subtest_numbers="${subtest_numbers:+$subtest_numbers }$1"
-        shift
+        printf 'test-spell: unexpected argument: %s\n' "$1" >&2
+        printf 'Usage: test-spell [--skip-common] TEST_PATH\n' >&2
+        exit 2
       fi
       ;;
   esac
@@ -119,7 +107,7 @@ done
 
 if [ -z "$test_path" ]; then
   printf 'test-spell: no test path provided\n' >&2
-  printf 'Usage: test-spell [--skip-common] TEST_PATH [SUBTEST_NUMBERS...]\n' >&2
+  printf 'Usage: test-spell [--skip-common] TEST_PATH\n' >&2
   exit 2
 fi
 
@@ -140,36 +128,12 @@ if [ ! -f "$full_test_path" ]; then
   exit 1
 fi
 
-# If subtest numbers provided, automatically skip common tests
-if [ -n "$subtest_numbers" ]; then
-  skip_common=1
-fi
-
-# Run common tests first (unless skipped or filtering subtests)
-if [ "$skip_common" -eq 0 ]; then
-  # Extract spell path from test path for common tests
-  # test path is like: cantrips/test-ask-yn.sh
-  # spell path should be: spells/cantrips/ask-yn
-  rel_test_path=${test_path#.tests/}
-  test_dir_part=$(dirname "$rel_test_path")
-  test_file_part=$(basename "$rel_test_path")
-  spell_name=${test_file_part#test-}
-  spell_name=${spell_name%.sh}
-  spell_path="$ROOT_DIR/spells/$test_dir_part/$spell_name"
-  
-  if [ -f "$spell_path" ]; then
-    # Run common tests for this spell
-    if [ -f "$test_dir/common-tests.sh" ]; then
-      "$test_dir/common-tests.sh" "$spell_path" || true
-    fi
-  fi
-fi
-
-# Run the test file itself
-# Export subtest filter if provided
-if [ -n "$subtest_numbers" ]; then
-  export WIZARDRY_TEST_FILTER="$subtest_numbers"
-fi
+# NOTE: Common tests are run separately by test-magic, not by test-spell
+# The --skip-common flag exists for test-magic's internal use only
+# Individual test-spell invocations should not run common tests as they:
+# 1. Are very slow (scan entire codebase even for single spell)
+# 2. Are already run once by test-magic before any spell tests
+# 3. Would cause massive duplication if run per-spell
 
 # Execute the test file
 exec "$full_test_path"
