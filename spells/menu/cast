@@ -70,7 +70,15 @@ case ${1-} in
                 :
                 ;;
         *)
-                cast_usage >&2
+                cat >&2 <<'USAGE'
+Usage: cast [--list|--dir]
+
+  --list   Show the stored spells in NAME<TAB>COMMAND format.
+  --dir    Print the directory containing cast menu spells.
+  --help   Show this help text.
+
+Run without arguments to open the interactive casting menu.
+USAGE
                 exit 1
                 ;;
 esac
