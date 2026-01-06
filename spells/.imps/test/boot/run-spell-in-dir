@@ -5,6 +5,7 @@ set -eu
 
 dir=$1
 shift
-RUN_CMD_WORKDIR=$dir run-spell "$@"
+export RUN_CMD_WORKDIR=$dir
+run-spell "$@"
 
 

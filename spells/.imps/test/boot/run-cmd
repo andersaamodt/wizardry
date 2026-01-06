@@ -76,7 +76,7 @@ elif [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
   # Use macOS sandbox-exec for isolation
   # Export variables to subprocess environment
   export PATH="$PATH"
-  export HOME="$HOME"
+  export HOME="$homedir"
   export TMPDIR="$tmpdir"
   export WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR"
   if [ -n "${WIZARDRY_TEST_HELPERS_ONLY:-}" ]; then
@@ -98,7 +98,7 @@ elif [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
 else
   # Export variables to subprocess environment
   export PATH="$PATH"
-  export HOME="$HOME"
+  export HOME="$homedir"
   export TMPDIR="$tmpdir"
   export WIZARDRY_TMPDIR="$WIZARDRY_TMPDIR"
   if [ -n "${WIZARDRY_TEST_HELPERS_ONLY:-}" ]; then
