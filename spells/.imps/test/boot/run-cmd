@@ -49,7 +49,7 @@ if [ "${BWRAP_AVAILABLE:-0}" -eq 1 ]; then
     APT_LOG APT_EXIT PKGIN_LOG PKGIN_EXIT PKGIN_CANDIDATES \
     PACMAN_LOG PACMAN_EXIT NIX_ENV_LOG NIX_ENV_EXIT MANAGE_SYSTEM_COMMAND_NIXOS \
     DETECT_RC_FILE LOOK_RC_FILE ASK_LOG LOOK_COLORS_PATH SSHD_CONFIG \
-    WIZARDRY_DIR MUD_DIR \
+    WIZARDRY_DIR MUD_DIR SPELLBOOK_DIR \
     WIZARDRY_SKIP_NIX_REBUILD WIZARDRY_SKIP_CONFIRM \
     WIZARDRY_INSTALL_ASSUME_YES WIZARDRY_INSTALL_DIR WIZARDRY_CORE_INSTALLER \
     DETECT_RC_FILE_PLATFORM CORE_LOG \
@@ -92,7 +92,8 @@ elif [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
   
   # Unset SPELLBOOK_DIR to ensure tests use sandbox-local .spellbook
   # (spells will default to $HOME/.spellbook which is $homedir/.spellbook)
-  unset SPELLBOOK_DIR
+  # unless the test explicitly set it
+  [ -z "${SPELLBOOK_DIR:-}" ] && unset SPELLBOOK_DIR || export SPELLBOOK_DIR
   
   if (cd "$workdir" && run-macos-sandbox "$@" >"$_stdout" 2>"$_stderr"); then
     STATUS=0
@@ -118,7 +119,8 @@ else
   
   # Unset SPELLBOOK_DIR to ensure tests use sandbox-local .spellbook
   # (spells will default to $HOME/.spellbook which is $homedir/.spellbook)
-  unset SPELLBOOK_DIR
+  # unless the test explicitly set it
+  [ -z "${SPELLBOOK_DIR:-}" ] && unset SPELLBOOK_DIR || export SPELLBOOK_DIR
   
   if (cd "$workdir" && "$@" >"$_stdout" 2>"$_stderr"); then
     STATUS=0

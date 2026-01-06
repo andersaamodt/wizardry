@@ -34,9 +34,9 @@ set -eu
   # Check which file contains the synonym
   if [ -f "$custom_file" ] && grep -q "^alias $synonym_word=" "$custom_file" 2>/dev/null; then
     # Found in custom - OK to delete
-    temp-file=$(temp-file synonyms) || exit 1
-    grep -v "^alias $synonym_word=" "$custom_file" > "$temp-file" || true
-    mv "$temp-file" "$custom_file"
+    temp_file=$(temp-file synonyms) || exit 1
+    grep -v "^alias $synonym_word=" "$custom_file" > "$temp_file" || true
+    mv "$temp_file" "$custom_file"
     success "Synonym deleted: $synonym_word"
   elif [ -f "$default_file" ] && grep -q "^alias $synonym_word=" "$default_file" 2>/dev/null; then
     # Found in default - can't delete
