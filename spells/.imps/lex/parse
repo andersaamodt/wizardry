@@ -16,26 +16,6 @@
 #
 # RECURSION PREVENTION: Uses WIZARDRY_PARSE_DEPTH to prevent infinite loops
 
-# Handle --help for self-reference before set -eu
-case "${1-}" in
-  --help|--usage|-h)
-    cat >&2 <<'HELP'
-parse - Command execution engine
-
-Reconstructs multi-word commands from space-separated arguments.
-Tries longest matches first, then progressively shorter.
-
-Examples:
-  parse env or VAR DEFAULT    # Calls env-or with VAR DEFAULT
-  parse read magic file.txt   # Calls read-magic with file.txt
-  parse temp file             # Calls temp-file
-
-Used automatically by glossary system to enable natural language commands.
-HELP
-    exit 0
-    ;;
-esac
-
 set -eu
 
 # Increment recursion depth
@@ -53,13 +33,6 @@ export WIZARDRY_PARSE_DEPTH=$_parse_depth
 # If no arguments, just succeed
 if [ $# -eq 0 ]; then
   exit 0
-fi
-
-# Handle self-reference: parse parse --help
-if [ "$1" = "parse" ]; then
-  shift
-  # Re-invoke parse with remaining args (this will hit the --help handler above)
-  exec "$0" "$@"
 fi
 
 # Get WIZARDRY_DIR
