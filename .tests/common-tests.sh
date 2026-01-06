@@ -846,8 +846,8 @@ menu/main-menu
 .arcana/node/node-menu
 divination/identify-room
 system/update-all
-system/test-magic
-system/banish
+.wizardry/test-magic
+wards/banish
 spellcraft/demo-magic
 .wizardry/generate-glosses
 "
@@ -1132,6 +1132,7 @@ test_spells_have_limited_flags() {
   exempted_spells="
     system/test-magic
     system/pocket-dimension
+    .wizardry/validate-spells
   "
   
   tmpfile_2=$(mktemp "${WIZARDRY_TMPDIR}/flag-warn-2.XXXXXX")
@@ -1420,8 +1421,12 @@ test_scripts_have_set_eu_early() {
       .imps/test/test-bootstrap) return ;;
       # Conditional imps exempt (return exit codes, not errors)
       .imps/cond/*|.imps/lex/*|.imps/menu/*) return ;;
+      # Additional conditional/utility imps without set -eu
+      .imps/sys/term|.imps/sys/on|.imps/sys/clipboard-available|.imps/sys/rc-has-line) return ;;
+      # Sourceable configuration scripts
+      .imps/declare-globals|.imps/test/boot/skip-if-*|.imps/sys/invoke-thesaurus) return ;;
       # Bootstrap spells that have long argument parsing before set
-      divination/detect-rc-file|system/test-magic|spellcraft/demo-magic) return ;;
+      divination/detect-rc-file|system/test-magic|.wizardry/test-magic|spellcraft/demo-magic) return ;;
     esac
     
     # In compiled mode, wrapper functions are unwrapped so set may appear later
@@ -1526,9 +1531,13 @@ test_spells_source_env_clear_after_set_eu() {
       # Bootstrap spells used by install (must be standalone)
       divination/detect-rc-file|cantrips/ask-yn|cantrips/memorize|cantrips/require-wizardry|spellcraft/learn) return ;;
       # Bootstrap scripts with conditional env-clear sourcing (run before wizardry fully installed)
-      system/banish|spellcraft/compile-spell|spellcraft/doppelganger) return ;;
+      wards/banish|spellcraft/compile-spell|spellcraft/doppelganger) return ;;
       # Scripts that need PATH setup before env-clear to find it
-      system/test-magic|system/test-spell|system/verify-posix|spellcraft/lint-magic|enchant/enchant) return ;;
+      system/test-magic|.wizardry/test-magic|system/test-spell|.wizardry/test-spell|system/verify-posix|.wizardry/verify-posix|spellcraft/lint-magic|enchant/enchant) return ;;
+      # System maintenance spells (standalone, no env-clear needed)
+      spellcraft/catalog-emojis|.wizardry/validate-spells) return ;;
+      # MUD admin spells (internal utilities, no env-clear needed)
+      menu/mud-admin/*) return ;;
     esac
     
     # Find line number of set -eu
@@ -2243,18 +2252,18 @@ test_platform_detection_available() {
 
 # META: banish spell exists and is the environment preparer
 test_banish_spell_exists_and_is_executable() {
-  if [ ! -f "$ROOT_DIR/spells/system/banish" ]; then
+  if [ ! -f "$ROOT_DIR/spells/wards/banish" ]; then
     TEST_FAILURE_REASON="banish spell not found"
     return 1
   fi
   
-  if [ ! -x "$ROOT_DIR/spells/system/banish" ]; then
+  if [ ! -x "$ROOT_DIR/spells/wards/banish" ]; then
     TEST_FAILURE_REASON="banish spell is not executable"
     return 1
   fi
   
   # Verify banish has usage that mentions environment preparation
-  if ! grep -qi "environment" "$ROOT_DIR/spells/system/banish"; then
+  if ! grep -qi "environment" "$ROOT_DIR/spells/wards/banish"; then
     TEST_FAILURE_REASON="banish doesn't mention environment preparation"
     return 1
   fi
