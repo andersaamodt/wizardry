@@ -19,7 +19,7 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
 require_cmd=${REQUIRE_COMMAND-require-command}
 
@@ -46,11 +46,11 @@ else
   # Attempt to locate the wizardry repository based on this spell's location.
   candidate=$(dirname "$script_dir")
   if git -C "$candidate" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    wizardry_dir=$(git -C "$candidate" rev-parse --show-toplevel")
+    wizardry_dir=$(git -C "$candidate" rev-parse --show-toplevel)
   else
     candidate=$(dirname "$candidate")
     if git -C "$candidate" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-      wizardry_dir=$(git -C "$candidate" rev-parse --show-toplevel")
+      wizardry_dir=$(git -C "$candidate" rev-parse --show-toplevel)
     else
       # Not a git repository - provide helpful error message
       wizardry_dir=$(dirname "$candidate")
@@ -58,8 +58,9 @@ else
       warn "update-wizardry: This may be because it was installed via tarball (git was not available)"
       warn "update-wizardry: To enable git-based updates, reinstall wizardry with git available"
       warn "update-wizardry: or manually convert to git: cd $wizardry_dir && git init && git remote add origin https://github.com/andersaamodt/wizardry.git && git fetch && git reset --hard origin/main"
-      return 1
+      exit 1
     fi
+  fi
 fi
 
 info "Updating wizardry repository at $wizardry_dir"
