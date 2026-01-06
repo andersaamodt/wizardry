@@ -17,7 +17,7 @@ esac
 require-wizardry || exit 1
 
 set -eu
-env-clear
+. env-clear
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 

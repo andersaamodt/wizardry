@@ -42,7 +42,7 @@ esac
 require-wizardry || exit 1
 
 set -eu
-env-clear
+. env-clear
 
   # Parse arguments
   quiet=0
