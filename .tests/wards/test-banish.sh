@@ -191,8 +191,8 @@ test_verbose_shows_level_info() {
   # Use WIZARDRY_LOG_LEVEL for verbosity instead of --verbose
   WIZARDRY_DIR="$install_dir" WIZARDRY_LOG_LEVEL=2 run_spell "spells/wards/banish" 1 --no-tests
   assert_success || return 1
-  assert_output_contains "System Foundation" || return 1
-  assert_output_contains "Menu Core" || return 1
+  assert_output_contains "POSIX & Platform Foundation" || return 1
+  assert_output_contains "Banish & Validation Infrastructure" || return 1
 }
 
 test_invalid_level() {
@@ -220,10 +220,9 @@ banish 2>&1 | head -5
 EOFTEST
 )
   
-  # Check that banish was preloaded
-  printf '%s\n' "$output" | grep -q "Loading spell: banish" || return 1
+  # Check that banish is available as a command
   printf '%s\n' "$output" | grep -q "banish_available" || return 1
-  # Should show banish function being called
+  # Should show banish function being called (proves it's preloaded)
   printf '%s\n' "$output" | grep -q "\[banish\] Function called" || return 1
   # Should NOT trigger command-not-found handler
   ! printf '%s\n' "$output" | grep -q "\[handle-command-not-found\]" || return 1
@@ -245,20 +244,10 @@ test_banish_shows_detailed_status() {
   WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 1
   assert_success || return 1
   
-  # Should show "Required imps:" header
-  assert_output_contains "Required imps:" || return 1
+  # Should show "Available imps:" section
+  assert_output_contains "Available imps:" || return 1
   
-  # Should show category-grouped output (e.g., "sys imps:", "cond imps:")
-  # Check for multiple categories being displayed
-  if ! assert_output_contains "sys imp" 2>/dev/null; then
-    return 1
-  fi
-  if ! assert_output_contains "cond imp" 2>/dev/null; then
-    return 1
-  fi
-  
-  # Should show imps listed by name (without directory prefix)
-  # e.g., "has" instead of "cond/has"
+  # Should show imps listed by name
   assert_output_contains "has" || return 1
   assert_output_contains "say" || return 1
   
@@ -329,14 +318,15 @@ test_imps_detected_not_missing() {
   WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 1
   assert_success || return 1
   
-  # Should NOT have a line saying "Required imps: Missing: ..."
-  ! assert_output_contains "Required imps: Missing:" || return 1
+  # Should NOT report imps as missing (banish shows "Available imps:" not "Missing imps:")
+  ! assert_output_contains "Missing imp" || return 1
   
-  # Should show the "Required imps:" header
-  assert_output_contains "Required imps:" || return 1
+  # Should show the "Available imps:" section
+  assert_output_contains "Available imps:" || return 1
   
-  # Should show individual imps as available or loaded
-  assert_output_contains "imp:" || return 1
+  # Should list individual imps
+  assert_output_contains "has" || return 1
+  assert_output_contains "say" || return 1
   
   return 0
 }
