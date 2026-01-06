@@ -23,11 +23,17 @@ USAGE
 esac
 
 set -eu
-. env-clear
 
 # Find repository root
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 repo_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
+
+# Source env-clear with conditional fallback for standalone execution
+if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/env-clear" ]; then
+  . "${WIZARDRY_DIR}/spells/.imps/sys/env-clear"
+elif [ -f "$repo_dir/spells/.imps/sys/env-clear" ]; then
+  . "$repo_dir/spells/.imps/sys/env-clear"
+fi
 github_dir="$repo_dir/.github"
 
 # Check if .github directory exists

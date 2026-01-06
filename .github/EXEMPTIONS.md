@@ -740,19 +740,18 @@ The following spells are temporarily exempted while being refactored:
 8. **menu/mud** - MUD menu system
 9. **menu/mud-settings** - MUD settings menu
 10. **menu/main-menu** - Main menu system
-11. **menu/system/profile-tests** - Test profiling menu
-12. **.arcana/mud/cd** - Shell hook (meant to be sourced)
-13. **.arcana/core/install-core** - Bootstrap installation
-14. **.arcana/core/install-bwrap** - Bootstrap bubblewrap installer
-15. **.arcana/bitcoin/configure-bitcoin** - Bitcoin configuration
-16. **.arcana/lightning/install-lightning** - Lightning installation
-17. **.arcana/lightning/lightning-menu** - Lightning menu
-18. **.arcana/node/node-menu** - Node menu
-19. **divination/identify-room** - Complex room identification
-20. **system/update-all** - System update orchestration
-21. **system/test-magic** - Test runner infrastructure (4 flags exemption)
-22. **system/banish** - Uninstallation script
-23. **spellcraft/demo-magic** - Demonstration spell with extensive functions
+11. **.arcana/mud/cd** - Shell hook (meant to be sourced)
+12. **.arcana/core/install-core** - Bootstrap installation
+13. **.arcana/core/install-bwrap** - Bootstrap bubblewrap installer
+14. **.arcana/bitcoin/configure-bitcoin** - Bitcoin configuration
+15. **.arcana/lightning/install-lightning** - Lightning installation
+16. **.arcana/lightning/lightning-menu** - Lightning menu
+17. **.arcana/node/node-menu** - Node menu
+18. **divination/identify-room** - Complex room identification
+19. **system/update-all** - System update orchestration
+20. **system/test-magic** - Test runner infrastructure (4 flags exemption)
+21. **system/banish** - Uninstallation script
+22. **spellcraft/demo-magic** - Demonstration spell with extensive functions
 
 ### Exempted Test Imps
 

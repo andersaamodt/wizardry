@@ -821,7 +821,6 @@ psi/read-contact
 menu/mud
 menu/mud-settings
 menu/main-menu
-menu/system/profile-tests
 .arcana/mud/cd
 .arcana/core/install-core
 .arcana/core/install-bwrap

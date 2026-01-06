@@ -4,15 +4,19 @@
 # Automatically switches to run-sourced-spell when WIZARDRY_USE_SOURCED_SPELL=1
 set -eu
 
+# Find repository root for absolute paths
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+repo_root=$(cd "$script_dir" && while [ ! -d "spells" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+
 # Check if we should use sourced spell instead
 if [ "${WIZARDRY_USE_SOURCED_SPELL-0}" = "1" ]; then
-  run-sourced-spell "$@"
+  "$repo_root/spells/.imps/test/boot/run-sourced-spell" "$@"
   return $?
 fi
 
 # Normal direct execution
 script=$1
 shift || true
-run-cmd "$ROOT_DIR/$script" "$@"
+"$repo_root/spells/.imps/test/boot/run-cmd" "$ROOT_DIR/$script" "$@"
 
 
