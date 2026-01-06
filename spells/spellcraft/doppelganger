@@ -104,11 +104,12 @@ while IFS= read -r spell_path; do
   target_dir="$output_dir/spells/$(dirname "$rel_path")"
   mkdir -p "$target_dir"
   
-  # Skip test infrastructure files and spell-levels - copy them as-is instead of compiling
+  # Skip test infrastructure files, spell-levels, and system spells - copy them as-is instead of compiling
   # test-bootstrap and boot imps need to remain uncompiled to work correctly
   # spell-levels is a simple data file that hangs when compiled due to self-reference
+  # test-magic and validate-spells are system spells that should not be compiled
   case "$spell_path" in
-    */test/test-bootstrap|*/test/boot/*|*/sys/spell-levels)
+    */test/test-bootstrap|*/test/boot/*|*/sys/spell-levels|*/.wizardry/test-magic|*/.wizardry/validate-spells|*/.wizardry/test-spell)
       # Copy these files directly
       cp "$spell_path" "$target_dir/$spell_name"
       chmod +x "$target_dir/$spell_name"

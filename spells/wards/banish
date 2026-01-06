@@ -140,7 +140,25 @@ USAGE
           ;;
         *)
           printf 'Error: unexpected argument: %s\n' "$1" >&2
-          banish_usage >&2
+          cat <<'USAGE' >&2
+Usage: banish [LEVEL] [OPTIONS]
+
+Validate wizardry readiness by level, including assumptions, self-healing, and tests.
+
+Arguments:
+  LEVEL                 Validate through level N (0-30, default: 4)
+  all                   Validate all available levels
+
+Options:
+  --no-heal             Skip self-healing (only report issues)
+  --no-tests            Skip running tests (only check assumptions)
+  --only                Only validate this specific level (don't run lower levels)
+
+Examples:
+  banish          # Validate through level 4 (default - menu system)
+  banish 5 --only # Validate only level 5
+  banish all      # Validate through the highest available level
+USAGE
           exit 2
           ;;
       esac
@@ -151,29 +169,33 @@ done
 # Validate level
 if [ "$target_level" -lt 0 ] || [ "$target_level" -gt "$max_level" ]; then
   printf 'Error: level must be 0-%d, got: %s\n' "$max_level" "$target_level" >&2
-  banish_usage >&2
+  cat <<'USAGE' >&2
+Usage: banish [LEVEL] [OPTIONS]
+
+Validate wizardry readiness by level, including assumptions, self-healing, and tests.
+
+Arguments:
+  LEVEL                 Validate through level N (0-30, default: 4)
+  all                   Validate all available levels
+
+Options:
+  --no-heal             Skip self-healing (only report issues)
+  --no-tests            Skip running tests (only check assumptions)
+  --only                Only validate this specific level (don't run lower levels)
+
+Examples:
+  banish          # Validate through level 4 (default - menu system)
+  banish 5 --only # Validate only level 5
+  banish all      # Validate through the highest available level
+USAGE
   exit 2
 fi
 
-# Source shared spell level definitions from sys imp
-# This file is shared by banish, test-magic, and demo-magic
-# Check if spell_levels function is available, otherwise try to source it
-if ! command -v spell_levels >/dev/null 2>&1; then
-  if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/spell-levels" ]; then
-    . "${WIZARDRY_DIR}/spells/.imps/sys/spell-levels"
-  else
-    # Fallback: try to find from script location
-    _banish_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-    _wiz_root=$(CDPATH= cd -- "$_banish_dir/../.." && pwd -P)
-    if [ -f "$_wiz_root/spells/.imps/sys/spell-levels" ]; then
-      . "$_wiz_root/spells/.imps/sys/spell-levels"
-    else
-      # Final fallback: define inline if spell-levels not found
-      get_level_spells() { printf '' ; }
-      get_level_imps() { printf '' ; }
-      banish_level_name() { printf 'Unknown' ; }
-    fi
-  fi
+# Set up spell-levels script path
+spell_levels_script="${WIZARDRY_DIR}/spells/.imps/sys/spell-levels"
+if [ ! -x "$spell_levels_script" ]; then
+  printf 'banish: spell-levels not found or not executable\n' >&2
+  exit 1
 fi
 
 # Color codes (inline to avoid dependency)
@@ -189,7 +211,7 @@ _banish_count_words="${WIZARDRY_DIR}/spells/.imps/text/count-words"
 # Run level-specific checks and actions using case statement
 banish_process_level() {
   level=$1
-  level_name=$(banish_level_name "$level")
+  level_name=$("$spell_levels_script" "$level" name)
   
   printf '\nLevel %d: %s\n' "$level" "$level_name"
   
@@ -386,7 +408,7 @@ banish_process_level() {
       printf '  %s✓%s Installer: install script present\n' "$_green" "$_reset"
       
       # Check spells
-      spell_list=$(get_level_spells 1)
+      spell_list=$("$spell_levels_script" 1 spells)
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
@@ -404,7 +426,7 @@ banish_process_level() {
       fi
 
       # Check imps
-      imp_list=$(get_level_imps 1)
+      imp_list=$("$spell_levels_script" 1 imps)
       if [ -n "$imp_list" ]; then
         new_imp_list=""
         for imp in $imp_list; do
@@ -455,7 +477,7 @@ banish_process_level() {
       fi
       
       # Check spells
-      spell_list=$(get_level_spells 2)
+      spell_list=$("$spell_levels_script" 2 spells)
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
@@ -473,7 +495,7 @@ banish_process_level() {
       fi
 
       # Check imps
-      imp_list=$(get_level_imps 2)
+      imp_list=$("$spell_levels_script" 2 imps)
       had_imps=0
       if [ -n "$imp_list" ]; then
         had_imps=1
@@ -643,7 +665,7 @@ banish_process_level() {
       fi
 
       # Check spells
-      spell_list=$(get_level_spells 3)
+      spell_list=$("$spell_levels_script" 3 spells)
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
@@ -661,7 +683,7 @@ banish_process_level() {
       fi
 
       # Check imps
-      imp_list=$(get_level_imps 3)
+      imp_list=$("$spell_levels_script" 3 imps)
       had_imps=0
       if [ -n "$imp_list" ]; then
         had_imps=1
@@ -1071,7 +1093,7 @@ banish_process_level() {
       # Levels 4, 6-7, 9-10, 13-17, 19-20, 22, 25-28: Standard validation pattern
       
       # Check spells
-      spell_list=$(get_level_spells "$level")
+      spell_list=$("$spell_levels_script" "$ spellslevel")
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
@@ -1089,7 +1111,7 @@ banish_process_level() {
       fi
 
       # Check imps
-      imp_list=$(get_level_imps "$level")
+      imp_list=$("$spell_levels_script" "$ impslevel")
       had_imps=0
       if [ -n "$imp_list" ]; then
         had_imps=1
@@ -1131,9 +1153,9 @@ banish_process_level() {
 
 # Main execution: Run levels 0 through target_level (or only target_level if --only)
 if [ "$only_this_level" -eq 1 ]; then
-  printf '\nValidating Level %d only: %s\n' "$target_level" "$(banish_level_name "$target_level")"
+  printf '\nValidating Level %d only: %s\n' "$target_level" "$("$spell_levels_script" "$target_level" name)"
 else
-  printf '\nValidating through Level %d: %s\n' "$target_level" "$(banish_level_name "$target_level")"
+  printf '\nValidating through Level %d: %s\n' "$target_level" "$("$spell_levels_script" "$target_level" name)"
 fi
 
 # Set up validate-spells command path

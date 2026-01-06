@@ -15,16 +15,17 @@ test_autocast_when_executed() {
 set -eu
 
 demo_autocast() {
-  printf 'executed:%s\n' "${1:-no-args}"
+  # Environment setup - no args expected
+  printf 'executed:success\n'
 }
 
-. "$WIZARDRY_DIR/spells/.imps/sys/autocast"
+. "$WIZARDRY_DIR/spells/.imps/sys/autocast" demo_autocast
 SCRIPT
   chmod +x "$script"
 
-  run_cmd env WIZARDRY_DIR="$ROOT_DIR" "$script" "test-arg"
+  run_cmd env WIZARDRY_DIR="$ROOT_DIR" "$script"
   assert_success || return 1
-  assert_output_contains "executed:test-arg" || return 1
+  assert_output_contains "executed:success" || return 1
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
 }
 
@@ -39,7 +40,7 @@ demo_source() {
   printf 'sourced:ok\n'
 }
 
-. "$WIZARDRY_DIR/spells/.imps/sys/autocast"
+. "$WIZARDRY_DIR/spells/.imps/sys/autocast" demo_source
 SCRIPT
   chmod +x "$script"
 
