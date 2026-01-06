@@ -30,11 +30,11 @@ fi
 # Check if a MUD config feature is enabled
 is_feature_enabled() {
   feature=$1
-  mud_config_path=$(command -v mud-config 2>/dev/null) || exit 1
+  mud_config_path=$(command -v mud-config 2>/dev/null) || return 1
   if [ -z "$mud_config_path" ] || [ ! -x "$mud_config_path" ]; then
-    exit 1
+    return 1
   fi
-  value=$(mud-config get "$feature" 2>/dev/null) || exit 1
+  value=$(mud-config get "$feature" 2>/dev/null) || return 1
   [ "$value" = "1" ]
 }
 
@@ -42,7 +42,7 @@ loop_limit=${MENU_LOOP_LIMIT:-}
 first_run=1
 start_selection=1
 
-# Track toggle states: 1=parse, 2=CD hook, 3=command-not-found, 4=touch, 5=fantasy, 6=inventory, 7=combat, 8=mud-menu, 9=all
+# Track toggle states: 1=parse, 2=mud-menu, 3=CD hook, 4=command-not-found, 5=touch, 6=fantasy, 7=inventory, 8=combat, 9=all
 was_parse=0
 was_cd=0
 was_cnf=0
