@@ -57,11 +57,11 @@ fi
 remove_service_require_privilege() {
         if [ "$(id -u)" -eq 0 ]; then
                 "$@"
-                exit 0
+                return 0
         fi
         if has sudo; then
                 sudo "$@"
-                exit 0
+                return 0
         fi
         die "$script_name: run as root or install sudo to modify $service_dir."
 }
