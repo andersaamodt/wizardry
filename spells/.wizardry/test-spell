@@ -1,7 +1,139 @@
 #!/bin/sh
-printf 'test-spell called with %d args:\n' "$#" >&2
-i=1
-for arg in "$@"; do
-  printf 'arg%d: [%s]\n' "$i" "$arg" >&2
-  i=$((i + 1))
+# Run a single test file with optional common tests and subtest filtering
+
+# CRITICAL: Seed a baseline PATH BEFORE set -eu
+baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+case ":${PATH-}:" in
+  *":/usr/bin:"*|*":/bin:"*) ;;
+  *)
+    PATH="${baseline_path}${PATH:+:}${PATH-}"
+    ;;
+esac
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: test-spell [OPTIONS] TEST_PATH
+
+Run a single test file.
+
+Arguments:
+  TEST_PATH            Path to test file (e.g., cantrips/test-ask-yn.sh)
+
+Options:
+  --skip-common        (Deprecated) Has no effect - common tests are run by test-magic
+
+Examples:
+  test-spell cantrips/test-ask-yn.sh          # Run all tests in file
+  test-spell --skip-common cantrips/test-ask-yn.sh  # Same (flag ignored)
+
+For AI agents:
+  This is the recommended way to test individual spells during development.
+  Common structural tests are run separately by test-magic, not test-spell.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+# Detect WIZARDRY_DIR if not already set
+if [ -z "${WIZARDRY_DIR-}" ]; then
+  case "$0" in
+    sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
+      if [ -n "${HOME-}" ] && [ -d "${HOME}/.wizardry/spells" ]; then
+        WIZARDRY_DIR="${HOME}/.wizardry"
+      fi
+      ;;
+    *)
+      _script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || _script_dir=""
+      if [ -n "$_script_dir" ]; then
+        _wiz_root=$(CDPATH= cd -- "$_script_dir/../.." 2>/dev/null && pwd -P) || _wiz_root=""
+        if [ -n "$_wiz_root" ] && [ -d "$_wiz_root/spells" ]; then
+          WIZARDRY_DIR="$_wiz_root"
+        fi
+      fi
+      ;;
+  esac
+fi
+
+if [ -z "${WIZARDRY_DIR-}" ]; then
+  printf 'test-spell: WIZARDRY_DIR not set and could not be detected\n' >&2
+  printf 'Run from wizardry installation or set WIZARDRY_DIR environment variable\n' >&2
+  exit 1
+fi
+
+if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
+  printf 'test-spell: invalid WIZARDRY_DIR: %s\n' "$WIZARDRY_DIR" >&2
+  exit 1
+fi
+
+export WIZARDRY_DIR
+
+ROOT_DIR=$WIZARDRY_DIR
+test_dir="$ROOT_DIR/.tests"
+
+# Parse arguments
+skip_common=0
+test_path=""
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --skip-common)
+      skip_common=1
+      shift
+      ;;
+    --help|--usage|-h)
+      # Already handled above, but included for completeness
+      shift
+      ;;
+    -*)
+      printf 'test-spell: unknown option: %s\n' "$1" >&2
+      printf 'Usage: test-spell [--skip-common] TEST_PATH\n' >&2
+      exit 2
+      ;;
+    *)
+      if [ -z "$test_path" ]; then
+        test_path=$1
+        shift
+      else
+        printf 'test-spell: unexpected argument: %s\n' "$1" >&2
+        printf 'Usage: test-spell [--skip-common] TEST_PATH\n' >&2
+        exit 2
+      fi
+      ;;
+  esac
 done
+
+if [ -z "$test_path" ]; then
+  printf 'test-spell: no test path provided\n' >&2
+  printf 'Usage: test-spell [--skip-common] TEST_PATH\n' >&2
+  exit 2
+fi
+
+# Normalize test path - accept with or without .tests/ prefix
+case "$test_path" in
+  .tests/*)
+    # Already has .tests/ prefix
+    full_test_path="$ROOT_DIR/$test_path"
+    ;;
+  *)
+    # Add .tests/ prefix
+    full_test_path="$test_dir/$test_path"
+    ;;
+esac
+
+if [ ! -f "$full_test_path" ]; then
+  printf 'test-spell: test file not found: %s\n' "$full_test_path" >&2
+  exit 1
+fi
+
+# NOTE: Common tests are run separately by test-magic, not by test-spell
+# The --skip-common flag exists for test-magic's internal use only
+# Individual test-spell invocations should not run common tests as they:
+# 1. Are very slow (scan entire codebase even for single spell)
+# 2. Are already run once by test-magic before any spell tests
+# 3. Would cause massive duplication if run per-spell
+
+# Execute the test file
+exec "$full_test_path"

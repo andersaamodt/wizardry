@@ -8,28 +8,22 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_outputs_skip_with_reason() {
-  # Unset global number to test standalone behavior
-  unset WIZARDRY_GLOBAL_SUBTEST_NUM
-  output=$(test_skip "test description" "mode mismatch")
-  echo "$output" | grep -q "^  SKIP test description mode mismatch$"
+  output=$(test-skip 1 "test description" "mode mismatch")
+  echo "$output" | grep -q "^SKIP #1 test description: mode mismatch$"
 }
 
 test_outputs_skip_without_reason() {
-  # Unset global number to test standalone behavior
-  unset WIZARDRY_GLOBAL_SUBTEST_NUM
-  output=$(test_skip "test description" "")
-  echo "$output" | grep -q "^  SKIP test description$"
+  output=$(test-skip 2 "test description" "")
+  echo "$output" | grep -q "^SKIP #2 test description$"
 }
 
-test_includes_leading_spaces() {
-  # Unset global number to test standalone behavior
-  unset WIZARDRY_GLOBAL_SUBTEST_NUM
-  output=$(test_skip "test desc" "reason")
-  echo "$output" | grep -q "^  SKIP"
+test_includes_test_number() {
+  output=$(test-skip 3 "test desc" "reason")
+  echo "$output" | grep -q "^SKIP #3"
 }
 
 run_test_case "test-skip outputs SKIP with reason" test_outputs_skip_with_reason
 run_test_case "test-skip outputs SKIP without reason" test_outputs_skip_without_reason
-run_test_case "test-skip includes leading spaces" test_includes_leading_spaces
+run_test_case "test-skip includes test number" test_includes_test_number
 
 finish_tests
