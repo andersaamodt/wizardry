@@ -68,7 +68,7 @@ SH
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"MUD Settings:"*"player key"*"Change Player%select-player"*"New Player%new-player"*'Exit%kill -TERM $PPID' ) : ;;
+    *"MUD Settings:"*"player key"*"Change Player%choose-player"*"New Player%new-player"*'Exit%kill -TERM $PPID' ) : ;;
     *) TEST_FAILURE_REASON="mud settings actions missing: $args"; return 1 ;;
   esac
 }

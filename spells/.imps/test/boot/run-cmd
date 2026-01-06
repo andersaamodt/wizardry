@@ -55,6 +55,8 @@ if [ "${BWRAP_AVAILABLE:-0}" -eq 1 ]; then
     WIZARDRY_INSTALL_ASSUME_YES WIZARDRY_INSTALL_DIR WIZARDRY_CORE_INSTALLER \
     DETECT_RC_FILE_PLATFORM CORE_LOG \
     GIT_LOG MOCK_TOPLEVEL PULL_STATUS REQUIRE_COMMAND \
+    MENU_LOG MENU_LOOP_LIMIT \
+    SYSTEMCTL_STATE_DIR INSTALL_SERVICE_TEMPLATE_ASK_YN INSTALL_SERVICE_TEMPLATE_ASK_TEXT ASK_TEXT_STUB_FILE SERVICE_DIR \
     WIZARDRY_TEST_HELPERS_ONLY WIZARDRY_DEMO_NO_BWRAP
   do
     eval "val=\${$envvar-}"
@@ -102,6 +104,13 @@ elif [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
   [ -n "${MOCK_TOPLEVEL:-}" ] && export MOCK_TOPLEVEL
   [ -n "${PULL_STATUS:-}" ] && export PULL_STATUS
   [ -n "${REQUIRE_COMMAND:-}" ] && export REQUIRE_COMMAND
+  [ -n "${MENU_LOG:-}" ] && export MENU_LOG
+  [ -n "${MENU_LOOP_LIMIT:-}" ] && export MENU_LOOP_LIMIT
+  [ -n "${SYSTEMCTL_STATE_DIR:-}" ] && export SYSTEMCTL_STATE_DIR
+  [ -n "${INSTALL_SERVICE_TEMPLATE_ASK_YN:-}" ] && export INSTALL_SERVICE_TEMPLATE_ASK_YN
+  [ -n "${INSTALL_SERVICE_TEMPLATE_ASK_TEXT:-}" ] && export INSTALL_SERVICE_TEMPLATE_ASK_TEXT
+  [ -n "${ASK_TEXT_STUB_FILE:-}" ] && export ASK_TEXT_STUB_FILE
+  [ -n "${SERVICE_DIR:-}" ] && export SERVICE_DIR
   
   # Special handling for SPELLBOOK_DIR: only export if it doesn't match
   # the default pattern $HOME/.spellbook (to avoid passing the outer home path)
@@ -139,6 +148,13 @@ else
   [ -n "${MOCK_TOPLEVEL:-}" ] && export MOCK_TOPLEVEL
   [ -n "${PULL_STATUS:-}" ] && export PULL_STATUS
   [ -n "${REQUIRE_COMMAND:-}" ] && export REQUIRE_COMMAND
+  [ -n "${MENU_LOG:-}" ] && export MENU_LOG
+  [ -n "${MENU_LOOP_LIMIT:-}" ] && export MENU_LOOP_LIMIT
+  [ -n "${SYSTEMCTL_STATE_DIR:-}" ] && export SYSTEMCTL_STATE_DIR
+  [ -n "${INSTALL_SERVICE_TEMPLATE_ASK_YN:-}" ] && export INSTALL_SERVICE_TEMPLATE_ASK_YN
+  [ -n "${INSTALL_SERVICE_TEMPLATE_ASK_TEXT:-}" ] && export INSTALL_SERVICE_TEMPLATE_ASK_TEXT
+  [ -n "${ASK_TEXT_STUB_FILE:-}" ] && export ASK_TEXT_STUB_FILE
+  [ -n "${SERVICE_DIR:-}" ] && export SERVICE_DIR
   
   # Special handling for SPELLBOOK_DIR: only export if it doesn't match
   # the default pattern $HOME/.spellbook (to avoid passing the outer home path)

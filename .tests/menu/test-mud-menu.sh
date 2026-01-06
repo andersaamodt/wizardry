@@ -447,7 +447,7 @@ SH
   
   log_content=$(cat "$tmp/log")
   # First call should have start_selection=1
-  # Second call (after toggle) should have start_selection=1 (stayed on CD hook item)
+  # Second call (after toggle) should have start_selection=3 (stayed on CD hook item which is position 3)
   first_selection=$(printf '%s\n' "$log_content" | head -1 | sed 's/.*START_SELECTION=//')
   second_selection=$(printf '%s\n' "$log_content" | sed -n '2p' | sed 's/.*START_SELECTION=//')
   
@@ -456,8 +456,8 @@ SH
     return 1
   fi
   
-  if [ "$second_selection" != "1" ]; then
-    TEST_FAILURE_REASON="after CD hook toggle, menu should have start_selection=1, got $second_selection (log: $log_content)"
+  if [ "$second_selection" != "3" ]; then
+    TEST_FAILURE_REASON="after CD hook toggle, menu should have start_selection=3 (CD hook position), got $second_selection (log: $log_content)"
     return 1
   fi
 }

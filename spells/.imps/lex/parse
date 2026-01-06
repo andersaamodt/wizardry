@@ -16,6 +16,31 @@
 #
 # RECURSION PREVENTION: Uses WIZARDRY_PARSE_DEPTH to prevent infinite loops
 
+# Handle help requests before set -eu
+case "${1-}" in
+  --help|--usage|-h)
+    cat >&2 <<'HELP'
+parse - Command execution engine
+
+Reconstructs multi-word commands from space-separated arguments.
+For "env or VAR DEFAULT", tries env-or first, then falls back to env.
+
+The parse imp is automatically used by glosses to enable natural language
+command invocation like "read magic" instead of "read-magic".
+
+Usage: parse <word1> <word2> ... <args>
+
+Examples:
+  parse env or VAR DEFAULT    # Tries env-or-VAR-DEFAULT, env-or-VAR, env-or, then env
+  parse read magic file.txt   # Tries read-magic-file.txt, read-magic, then read
+  parse temp file             # Tries temp-file, then temp
+
+RECURSION PREVENTION: Uses WIZARDRY_PARSE_DEPTH to prevent infinite loops.
+HELP
+    exit 0
+    ;;
+esac
+
 set -eu
 
 # Increment recursion depth
@@ -93,11 +118,33 @@ while [ $_attempt_len -gt 0 ]; do
   # Try all possible spell locations
   _spell_path=""
   
+  # Check if this is a help request for parse itself
+  # We need to look at remaining args after this command name
+  _is_parse_help=0
+  if [ "$_cmd_name" = "parse" ]; then
+    _check_idx=0
+    for _arg in "$@"; do
+      # Skip the args that are part of the command name
+      if [ $_check_idx -lt $_attempt_len ]; then
+        _check_idx=$((_check_idx + 1))
+        continue
+      fi
+      # Check remaining args for help flags
+      case "$_arg" in
+        --help|--usage|-h)
+          _is_parse_help=1
+          break
+          ;;
+      esac
+      _check_idx=$((_check_idx + 1))
+    done
+  fi
+  
   # Try imp directories
   for _imp_dir in sys cond out fs str paths text input menu pkg test lang; do
     if [ -x "$_wizardry_dir/spells/.imps/$_imp_dir/$_cmd_name" ]; then
-      # Skip parse in lex to avoid recursion
-      if [ "$_imp_dir" = "lex" ] && [ "$_cmd_name" = "parse" ]; then
+      # Skip parse in lex to avoid recursion (except for help requests)
+      if [ "$_imp_dir" = "lex" ] && [ "$_cmd_name" = "parse" ] && [ $_is_parse_help -eq 0 ]; then
         continue
       fi
       _spell_path="$_wizardry_dir/spells/.imps/$_imp_dir/$_cmd_name"
@@ -105,8 +152,8 @@ while [ $_attempt_len -gt 0 ]; do
     fi
   done
   
-  # Try lex separately (for non-parse commands)
-  if [ -z "$_spell_path" ] && [ "$_cmd_name" != "parse" ]; then
+  # Try lex separately (allow parse for help requests)
+  if [ -z "$_spell_path" ] && { [ "$_cmd_name" != "parse" ] || [ $_is_parse_help -eq 1 ]; }; then
     if [ -x "$_wizardry_dir/spells/.imps/lex/$_cmd_name" ]; then
       _spell_path="$_wizardry_dir/spells/.imps/lex/$_cmd_name"
     fi

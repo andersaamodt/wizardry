@@ -21,15 +21,15 @@ set -eu
 install_service_template_require_privilege() {
   if [ "$(id -u)" -eq 0 ]; then
     "$@"
-    exit 0
+    return 0
   fi
   if [ -w "$service_dir" ]; then
     "$@"
-    exit 0
+    return 0
   fi
   if has sudo; then
     sudo "$@"
-    exit 0
+    return 0
   fi
   fail "$script_name: run as root or install sudo to write $service_dir"
 }
