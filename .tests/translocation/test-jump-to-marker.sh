@@ -33,7 +33,7 @@ run_jump() {
   RUN_CMD_WORKDIR=${3:-$WIZARDRY_TMPDIR}
   PATH="$WIZARDRY_IMPS_PATH:$(wizardry_base_path):/bin:/usr/bin"
   JUMP_TO_MARKERS_DIR="$markers_dir"
-  export JUMP_TO_MARKERS_DIR PATH
+  export JUMP_TO_MARKERS_DIR PATH RUN_CMD_WORKDIR
   if [ -n "$marker_arg" ]; then
     run_cmd sh -c "set -- \"$marker_arg\"; . \"$ROOT_DIR/spells/translocation/jump-to-marker\""
   else

@@ -36,10 +36,10 @@ fi
 is_mud_enabled() {
   # Check if mud-config exists and mud-enabled is set to 1
   if command -v mud-config >/dev/null 2>&1; then
-    value=$(mud-config get mud-enabled 2>/dev/null) || exit 1
+    value=$(mud-config get mud-enabled 2>/dev/null) || return 1
     [ "$value" = "1" ]
   else
-    exit 1
+    return 1
   fi
 }
 
@@ -84,6 +84,6 @@ while true; do
   if [ "$menu_status" -eq 130 ]; then
     continue
   else
-    return "$menu_status"
+    exit "$menu_status"
   fi
 done

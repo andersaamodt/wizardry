@@ -29,11 +29,23 @@ check_reports_availability() {
 }
 
 clears_environment() {
+  platform=$(uname -s 2>/dev/null || printf 'unknown')
+  if [ "$platform" = "Linux" ] && ! command -v bwrap >/dev/null 2>&1; then
+    test_skip "bwrap not available"
+    return 0
+  fi
+  
   FOO_IN_POCKET=present run_spell spells/system/pocket-dimension -- sh -c 'test -z "${FOO_IN_POCKET-}"'
   assert_success
 }
 
 sets_pocket_flag() {
+  platform=$(uname -s 2>/dev/null || printf 'unknown')
+  if [ "$platform" = "Linux" ] && ! command -v bwrap >/dev/null 2>&1; then
+    test_skip "bwrap not available"
+    return 0
+  fi
+  
   run_spell spells/system/pocket-dimension -- sh -c 'test "${WIZARDRY_TEST_IN_POCKET-}" = "1"'
   assert_success
 }

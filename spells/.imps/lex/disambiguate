@@ -3,98 +3,97 @@
 # When a command has multiple meanings, presents a menu to choose.
 # Saves choice in $SPELLBOOK_DIR/.disambiguations for future use.
 
+if [ $# -eq 0 ]; then
+  exit 0
+fi
 
-  if [ $# -eq 0 ]; then
-    return 0
+_dis_cmd=$1
+shift
+
+_dis_spellbook_dir="${SPELLBOOK_DIR:-$HOME/.spellbook}"
+_dis_disambig_dir="$_dis_spellbook_dir/.disambiguations"
+
+if [ -f "$_dis_disambig_dir/$_dis_cmd" ]; then
+  _dis_saved_choice=$(cat "$_dis_disambig_dir/$_dis_cmd")
+  if command -v "$_dis_saved_choice" >/dev/null 2>&1; then
+    "$_dis_saved_choice" "$@"
+    exit $?
   fi
+  rm -f "$_dis_disambig_dir/$_dis_cmd"
+fi
 
-  _dis_cmd=$1
-  shift
+_dis_candidates=""
+_dis_count=0
 
-  _dis_spellbook_dir="${SPELLBOOK_DIR:-$HOME/.spellbook}"
-  _dis_disambig_dir="$dis_spellbook_dir/.disambiguations"
-
-  if [ -f "$dis_disambig_dir/$dis_cmd" ]; then
-    _dis_saved_choice=$(cat "$dis_disambig_dir/$dis_cmd")
-    if command -v "$dis_saved_choice" >/dev/null 2>&1; then
-      "$dis_saved_choice" "$@"
-      return $?
-    fi
-    rm -f "$dis_disambig_dir/$dis_cmd"
-  fi
-
-  _dis_candidates=""
-  _dis_count=0
-
-  _dis_wizardry_dir="${WIZARDRY_DIR:-$HOME/.wizardry}"
-  if [ -d "$dis_wizardry_dir/spells" ]; then
-    _dis_spell_path=$(
-      find "$dis_wizardry_dir/spells" -name "$dis_cmd" \
-        -type f -executable 2>/dev/null | head -1
-    )
-    if [ -n "$dis_spell_path" ]; then
-      _dis_count=$((_dis_count + 1))
-      _dis_candidates="${dis_candidates}${dis_count}:$dis_spell_path:wizardry spell
-"
-    fi
-  fi
-
-  # Get system command, excluding wizardry from PATH
-  _dis_path_lines=$(printf '%s\n' "$PATH" | tr ':' '\n' | grep -v wizardry)
-  _dis_clean_path=$(echo "$dis_path_lines" | tr '\n' ':' | sed 's/:$//')
-  _dis_sys_cmd=$(PATH="$dis_clean_path" command -v "$dis_cmd" 2>/dev/null || true)
-
-  if [ -n "$dis_sys_cmd" ]; then
+_dis_wizardry_dir="${WIZARDRY_DIR:-$HOME/.wizardry}"
+if [ -d "$_dis_wizardry_dir/spells" ]; then
+  _dis_spell_path=$(
+    find "$_dis_wizardry_dir/spells" -name "$_dis_cmd" \
+      -type f -executable 2>/dev/null | head -1
+  )
+  if [ -n "$_dis_spell_path" ]; then
     _dis_count=$((_dis_count + 1))
-    _dis_candidates="${dis_candidates}${dis_count}:$dis_sys_cmd:system command
+    _dis_candidates="${_dis_candidates}${_dis_count}:$_dis_spell_path:wizardry spell
 "
   fi
+fi
 
-  if [ "$dis_count" -eq 0 ]; then
-    "$dis_cmd" "$@"
-    return $?
-  fi
+# Get system command, excluding wizardry from PATH
+_dis_path_lines=$(printf '%s\n' "$PATH" | tr ':' '\n' | grep -v wizardry)
+_dis_clean_path=$(echo "$_dis_path_lines" | tr '\n' ':' | sed 's/:$//')
+_dis_sys_cmd=$(PATH="$_dis_clean_path" command -v "$_dis_cmd" 2>/dev/null || true)
 
-  if [ "$dis_count" -eq 1 ]; then
-    _dis_choice_path=$(printf '%s' "$dis_candidates" | head -1 | cut -d: -f2)
-    "$dis_choice_path" "$@"
-    return $?
-  fi
+if [ -n "$_dis_sys_cmd" ]; then
+  _dis_count=$((_dis_count + 1))
+  _dis_candidates="${_dis_candidates}${_dis_count}:$_dis_sys_cmd:system command
+"
+fi
 
-  printf '%s\n' "Multiple commands match '$dis_cmd':" >&2
-  printf '%s' "$dis_candidates" | while IFS=: read -r _dis_num _dis_path _dis_desc; do
-    [ -z "$dis_num" ] && continue
-    printf '  [%s] %s (%s)\n' "$dis_num" "$dis_path" "$dis_desc" >&2
-  done
+if [ "$_dis_count" -eq 0 ]; then
+  "$_dis_cmd" "$@"
+  exit $?
+fi
 
-  printf '%s' "Choose [1-$dis_count, or 'r' to remember]: " >&2
-  read -r _dis_choice
+if [ "$_dis_count" -eq 1 ]; then
+  _dis_choice_path=$(printf '%s' "$_dis_candidates" | head -1 | cut -d: -f2)
+  "$_dis_choice_path" "$@"
+  exit $?
+fi
 
-  _dis_remember=0
-  case $dis_choice in
-    *r|*R)
-      _dis_remember=1
-      _dis_choice=$(printf '%s' "$dis_choice" | tr -d 'rR ')
-      ;;
-  esac
+printf '%s\n' "Multiple commands match '$_dis_cmd':" >&2
+printf '%s' "$_dis_candidates" | while IFS=: read -r _dis_num _dis_path _dis_desc; do
+  [ -z "$_dis_num" ] && continue
+  printf '  [%s] %s (%s)\n' "$_dis_num" "$_dis_path" "$_dis_desc" >&2
+done
 
-  if ! printf '%s' "$dis_choice" | grep -qE '^[0-9]+$'; then
-    printf '%s\n' "Invalid choice." >&2
-    return 1
-  fi
+printf '%s' "Choose [1-$_dis_count, or 'r' to remember]: " >&2
+read -r _dis_choice
 
-  if [ "$dis_choice" -lt 1 ] || [ "$dis_choice" -gt "$dis_count" ]; then
-    printf '%s\n' "Choice out of range." >&2
-    return 1
-  fi
+_dis_remember=0
+case $_dis_choice in
+  *r|*R)
+    _dis_remember=1
+    _dis_choice=$(printf '%s' "$_dis_choice" | tr -d 'rR ')
+    ;;
+esac
 
-  _dis_chosen_path=$(printf '%s' "$dis_candidates" | sed -n "${dis_choice}p" | cut -d: -f2)
+if ! printf '%s' "$_dis_choice" | grep -qE '^[0-9]+$'; then
+  printf '%s\n' "Invalid choice." >&2
+  exit 1
+fi
 
-  if [ "$dis_remember" -eq 1 ]; then
-    mkdir -p "$dis_disambig_dir"
-    printf '%s\n' "$dis_chosen_path" > "$dis_disambig_dir/$dis_cmd"
-    printf '%s\n' "Remembered: '$dis_cmd' → '$dis_chosen_path'" >&2
-  fi
+if [ "$_dis_choice" -lt 1 ] || [ "$_dis_choice" -gt "$_dis_count" ]; then
+  printf '%s\n' "Choice out of range." >&2
+  exit 1
+fi
 
-  "$dis_chosen_path" "$@"
+_dis_chosen_path=$(printf '%s' "$_dis_candidates" | sed -n "${_dis_choice}p" | cut -d: -f2)
+
+if [ "$_dis_remember" -eq 1 ]; then
+  mkdir -p "$_dis_disambig_dir"
+  printf '%s\n' "$_dis_chosen_path" > "$_dis_disambig_dir/$_dis_cmd"
+  printf '%s\n' "Remembered: '$_dis_cmd' → '$_dis_chosen_path'" >&2
+fi
+
+"$_dis_chosen_path" "$@"
 
