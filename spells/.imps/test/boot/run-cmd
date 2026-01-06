@@ -7,6 +7,7 @@ set -eu
 # internal operations (mktemp, mkdir, cat, rm, pwd). This ensures run_cmd
 # works even when tests intentionally set a restricted PATH.
 _saved_path=$PATH
+_saved_home=${HOME-}
 PATH=${WIZARDRY_SYSTEM_PATH:-$PATH}
 
 _stdout=$(mktemp "${WIZARDRY_TMPDIR}/stdout.XXXXXX") || exit 1
@@ -49,7 +50,7 @@ if [ "${BWRAP_AVAILABLE:-0}" -eq 1 ]; then
     APT_LOG APT_EXIT PKGIN_LOG PKGIN_EXIT PKGIN_CANDIDATES \
     PACMAN_LOG PACMAN_EXIT NIX_ENV_LOG NIX_ENV_EXIT MANAGE_SYSTEM_COMMAND_NIXOS \
     DETECT_RC_FILE LOOK_RC_FILE ASK_LOG LOOK_COLORS_PATH SSHD_CONFIG \
-    WIZARDRY_DIR MUD_DIR SPELLBOOK_DIR \
+    WIZARDRY_DIR MUD_DIR \
     WIZARDRY_SKIP_NIX_REBUILD WIZARDRY_SKIP_CONFIRM \
     WIZARDRY_INSTALL_ASSUME_YES WIZARDRY_INSTALL_DIR WIZARDRY_CORE_INSTALLER \
     DETECT_RC_FILE_PLATFORM CORE_LOG \
@@ -62,6 +63,18 @@ if [ "${BWRAP_AVAILABLE:-0}" -eq 1 ]; then
       set -- "--setenv" "$envvar" "$val" "$@"
     fi
   done
+
+  # Special handling for SPELLBOOK_DIR: only pass through if it doesn't match
+  # the default pattern $HOME/.spellbook (to avoid passing the outer home path)
+  if [ -n "${SPELLBOOK_DIR-}" ]; then
+    case "$SPELLBOOK_DIR" in
+      "${HOME-}"/.spellbook|"${HOME-}"/.spellbook/) ;;
+      *)
+        # Custom SPELLBOOK_DIR set by test - pass it through
+        set -- "--setenv" "SPELLBOOK_DIR" "$SPELLBOOK_DIR" "$@"
+        ;;
+    esac
+  fi
 
   if [ "${BWRAP_USE_UNSHARE:-1}" -eq 1 ]; then
     set -- --unshare-user-try "$@"
@@ -90,10 +103,19 @@ elif [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
   [ -n "${PULL_STATUS:-}" ] && export PULL_STATUS
   [ -n "${REQUIRE_COMMAND:-}" ] && export REQUIRE_COMMAND
   
-  # Only export SPELLBOOK_DIR if it was explicitly set by the test
-  # Otherwise, let it remain unset so spells use $HOME/.spellbook
-  if [ -n "${SPELLBOOK_DIR:-}" ]; then
-    export SPELLBOOK_DIR
+  # Special handling for SPELLBOOK_DIR: only export if it doesn't match
+  # the default pattern $HOME/.spellbook (to avoid passing the outer home path)
+  if [ -n "${SPELLBOOK_DIR-}" ]; then
+    case "$SPELLBOOK_DIR" in
+      "$_saved_home"/.spellbook|"$_saved_home"/.spellbook/)
+        # Default value - unset it so spell uses new $HOME/.spellbook
+        unset SPELLBOOK_DIR
+        ;;
+      *)
+        # Custom SPELLBOOK_DIR set by test - export it
+        export SPELLBOOK_DIR
+        ;;
+    esac
   fi
   
   if (cd "$workdir" && run-macos-sandbox "$@" >"$_stdout" 2>"$_stderr"); then
@@ -118,10 +140,19 @@ else
   [ -n "${PULL_STATUS:-}" ] && export PULL_STATUS
   [ -n "${REQUIRE_COMMAND:-}" ] && export REQUIRE_COMMAND
   
-  # Only export SPELLBOOK_DIR if it was explicitly set by the test
-  # Otherwise, let it remain unset so spells use $HOME/.spellbook
-  if [ -n "${SPELLBOOK_DIR:-}" ]; then
-    export SPELLBOOK_DIR
+  # Special handling for SPELLBOOK_DIR: only export if it doesn't match
+  # the default pattern $HOME/.spellbook (to avoid passing the outer home path)
+  if [ -n "${SPELLBOOK_DIR-}" ]; then
+    case "$SPELLBOOK_DIR" in
+      "$_saved_home"/.spellbook|"$_saved_home"/.spellbook/)
+        # Default value - unset it so spell uses new $HOME/.spellbook
+        unset SPELLBOOK_DIR
+        ;;
+      *)
+        # Custom SPELLBOOK_DIR set by test - export it
+        export SPELLBOOK_DIR
+        ;;
+    esac
   fi
   
   if (cd "$workdir" && "$@" >"$_stdout" 2>"$_stderr"); then

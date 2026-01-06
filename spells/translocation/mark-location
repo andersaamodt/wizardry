@@ -95,14 +95,19 @@ else
       ;;
     "~/"*)
       if [ -n "${HOME-}" ]; then
-        destination="$HOME/${target_path#"~/"}"
+        expanded_path="$HOME/${target_path#"~/"}"
+        if [ -d "$expanded_path" ]; then
+          destination=$(cd "$expanded_path" && pwd -P)
+        else
+          destination="$(cd "$(dirname "$expanded_path")" && pwd -P)/$(basename "$expanded_path")"
+        fi
       else
         destination="$target_path"
       fi
       ;;
     "~")
       if [ -n "${HOME-}" ]; then
-        destination="$HOME"
+        destination=$(cd "$HOME" && pwd -P)
       else
         destination="$target_path"
       fi
