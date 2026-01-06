@@ -7,23 +7,22 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-# Save original state
-_orig_detail=$_fail_detail_indices
-
 test_records_index() {
-  _fail_detail_indices=""
-  record_failure_detail 1
-  result=$_fail_detail_indices
-  _fail_detail_indices=$_orig_detail
+  # Initialize the file
+  printf '' > "$WIZARDRY_TMPDIR/_fail_detail_indices"
+  
+  record-failure-detail 1
+  result=$(cat "$WIZARDRY_TMPDIR/_fail_detail_indices")
   [ "$result" = "1" ]
 }
 
 test_multiple_indices() {
-  _fail_detail_indices=""
-  record_failure_detail 1
-  record_failure_detail 3
-  result=$_fail_detail_indices
-  _fail_detail_indices=$_orig_detail
+  # Initialize the file
+  printf '' > "$WIZARDRY_TMPDIR/_fail_detail_indices"
+  
+  record-failure-detail 1
+  record-failure-detail 3
+  result=$(cat "$WIZARDRY_TMPDIR/_fail_detail_indices")
   [ "$result" = "1,3" ]
 }
 

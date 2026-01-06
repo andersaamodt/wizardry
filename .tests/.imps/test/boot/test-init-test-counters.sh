@@ -8,30 +8,31 @@ done
 
 test_initializes_counters() {
   # Run the imp in a subshell to test initialization without affecting our counters
-  output=$(
-    . "$test_root/spells/.imps/test/boot/init-test-counters"
-    # Check that counters are initialized
-    [ "${_pass_count:-unset}" != "unset" ] || exit 1
-    [ "${_fail_count:-unset}" != "unset" ] || exit 1
-    [ "${_skip_count:-unset}" != "unset" ] || exit 1
-    [ "${_test_index:-unset}" != "unset" ] || exit 1
-    echo "ok"
-  )
-  [ "$output" = "ok" ] || return 1
+  tmpdir=$(make_tempdir)
+  export WIZARDRY_TMPDIR="$tmpdir"
+  
+  init-test-counters
+  
+  # Check that counter files exist and are initialized
+  [ -f "$WIZARDRY_TMPDIR/_pass_count" ] || return 1
+  [ -f "$WIZARDRY_TMPDIR/_fail_count" ] || return 1
+  [ -f "$WIZARDRY_TMPDIR/_skip_count" ] || return 1
+  [ -f "$WIZARDRY_TMPDIR/_test_index" ] || return 1
+  [ -f "$WIZARDRY_TMPDIR/_fail_detail_indices" ] || return 1
 }
 
 test_counters_start_at_zero() {
   # Run the imp in a subshell to test values without affecting our counters
-  output=$(
-    . "$test_root/spells/.imps/test/boot/init-test-counters"
-    # Verify counters start at zero
-    [ "$_pass_count" = "0" ] || exit 1
-    [ "$_fail_count" = "0" ] || exit 1
-    [ "$_skip_count" = "0" ] || exit 1
-    [ "$_test_index" = "0" ] || exit 1
-    echo "ok"
-  )
-  [ "$output" = "ok" ] || return 1
+  tmpdir=$(make_tempdir)
+  export WIZARDRY_TMPDIR="$tmpdir"
+  
+  init-test-counters
+  
+  # Verify counters start at zero
+  [ "$(cat "$WIZARDRY_TMPDIR/_pass_count")" = "0" ] || return 1
+  [ "$(cat "$WIZARDRY_TMPDIR/_fail_count")" = "0" ] || return 1
+  [ "$(cat "$WIZARDRY_TMPDIR/_skip_count")" = "0" ] || return 1
+  [ "$(cat "$WIZARDRY_TMPDIR/_test_index")" = "0" ] || return 1
 }
 
 run_test_case "initializes test counters" test_initializes_counters

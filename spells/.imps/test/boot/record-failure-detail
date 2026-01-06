@@ -1,12 +1,19 @@
 #!/bin/sh
 # record-failure-detail IDX - add a test index to the list of failures
-# Appends the index to _fail_detail_indices for summary output.
+# Appends the index to _fail_detail_indices file for summary output.
 set -eu
 
 idx=$1
 
-_fail_detail_indices=$(printf '%s\n%s\n' "$_fail_detail_indices" "$idx" |
+# Read current value from file
+_current=$(cat "${WIZARDRY_TMPDIR}/_fail_detail_indices" 2>/dev/null || printf '')
+
+# Append new index and deduplicate
+_fail_detail_indices=$(printf '%s\n%s\n' "$_current" "$idx" |
   awk 'NF { if (!seen[$0]++) { order[++count]=$0 } }
        END { for (i=1; i<=count; i++) { if (i>1) printf(","); printf order[i] } }')
+
+# Write back to file
+printf '%s' "$_fail_detail_indices" > "${WIZARDRY_TMPDIR}/_fail_detail_indices"
 
 
