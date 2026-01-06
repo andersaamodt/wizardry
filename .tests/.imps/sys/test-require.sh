@@ -156,6 +156,11 @@ test_require_fallback_failure_with_message() {
 }
 
 test_require_fallback_failure_default_message() {
+  # Skip when invoke-wizardry is loaded (require-command always available)
+  if [ "${_WIZARDRY_INVOKED-0}" = "1" ]; then
+    TEST_SKIP_REASON="(requires unloaded wizardry)"
+    return 222
+  fi
   tmp=$(make_tempdir)
   # Run with empty PATH (no require-command, no target command, no custom message)
   run_cmd env PATH="$WIZARDRY_SYSTEM_PATH" "$ROOT_DIR/spells/.imps/sys/require" nonexistent-cmd
@@ -164,6 +169,11 @@ test_require_fallback_failure_default_message() {
 }
 
 test_require_fallback_shows_install_hint() {
+  # Skip when invoke-wizardry is loaded (require-command always available)
+  if [ "${_WIZARDRY_INVOKED-0}" = "1" ]; then
+    TEST_SKIP_REASON="(requires unloaded wizardry)"
+    return 222
+  fi
   tmp=$(make_tempdir)
   run_cmd env PATH="$WIZARDRY_SYSTEM_PATH" "$ROOT_DIR/spells/.imps/sys/require" missing-tool
   assert_failure
