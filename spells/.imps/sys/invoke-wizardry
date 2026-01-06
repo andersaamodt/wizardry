@@ -109,22 +109,10 @@ fi
 
 export PATH
 
-# Optional: Generate first-word glosses for space-separated invocation
-# This still allows "env or VAR DEFAULT" instead of just "env-or VAR DEFAULT"
-# Skip in test mode (tests don't need glosses)
-if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
-  if command -v generate-glosses >/dev/null 2>&1; then
-    [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Generating first-word glosses..." >&2
-    
-    # Generate glosses and eval them into current shell
-    if _iw_gloss_output=$(generate-glosses --quiet 2>&1); then
-      if [ -n "$_iw_gloss_output" ]; then
-        eval "$_iw_gloss_output"
-        [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Gloss functions loaded" >&2
-      fi
-    fi
-  fi
-fi
+# NOTE: Gloss generation (generate-glosses) has been removed.
+# Wizardry now uses simple PATH-based invocation with hyphenated names.
+# Space-separated invocation (e.g., "env or VAR") is no longer supported.
+# Use hyphenated names instead (e.g., "env-or VAR").
 
 # Verify that menu command is available (skip in test mode)
 if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
