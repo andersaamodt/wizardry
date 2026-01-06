@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# Toggle parse-enabled setting in MUD config
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: toggle-parse
+
+Toggle the parse-enabled setting. When parse is enabled, generate-glosses
+creates first-word glosses that enable natural language commands like
+"read magic" instead of "read-magic".
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+# Use mud-config to toggle
+if command -v mud-config >/dev/null 2>&1; then
+  mud-config toggle parse-enabled
+else
+  printf 'toggle-parse: mud-config not found\n' >&2
+  exit 1
+fi
