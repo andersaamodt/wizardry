@@ -12,7 +12,8 @@
 spell_name="memorize"
 tab_char=$(printf '\t')
 
-memorize_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat >&2 <<'USAGE'
 Usage: memorize SPELL_NAME
        memorize list         - list all memorized spells
@@ -21,11 +22,6 @@ Usage: memorize SPELL_NAME
 
 Memorize spells for the Cast menu.
 USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-  memorize_usage
   exit 0
   ;;
 esac
@@ -88,7 +84,14 @@ else
 fi
 
 if [ "$#" -eq 0 ]; then
-  memorize_usage
+  cat >&2 <<'USAGE'
+Usage: memorize SPELL_NAME
+       memorize list         - list all memorized spells
+       memorize path         - print the command list file path
+       memorize dir          - print the cast directory
+
+Memorize spells for the Cast menu.
+USAGE
   exit 1
 fi
 
@@ -97,7 +100,14 @@ action=$1
 case $action in
 list)
   if [ "$#" -ne 1 ]; then
-    memorize_usage
+    cat >&2 <<'USAGE'
+Usage: memorize SPELL_NAME
+       memorize list         - list all memorized spells
+       memorize path         - print the command list file path
+       memorize dir          - print the cast directory
+
+Memorize spells for the Cast menu.
+USAGE
     exit 1
   fi
   if [ -f "$command_file" ]; then
@@ -106,20 +116,42 @@ list)
   ;;
 path)
   if [ "$#" -ne 1 ]; then
-    memorize_usage
+    cat >&2 <<'USAGE'
+Usage: memorize SPELL_NAME
+       memorize list         - list all memorized spells
+       memorize path         - print the command list file path
+       memorize dir          - print the cast directory
+
+Memorize spells for the Cast menu.
+USAGE
     exit 1
   fi
   printf '%s\n' "$command_file"
   ;;
 dir)
   if [ "$#" -ne 1 ]; then
-    memorize_usage
+    cat >&2 <<'USAGE'
+Usage: memorize SPELL_NAME
+       memorize list         - list all memorized spells
+       memorize path         - print the command list file path
+       memorize dir          - print the cast directory
+
+Memorize spells for the Cast menu.
+USAGE
     exit 1
   fi
   printf '%s\n' "$cast_dir"
   ;;
 --help|--usage|-h)
-  memorize_usage
+  cat >&2 <<'USAGE'
+Usage: memorize SPELL_NAME
+       memorize list         - list all memorized spells
+       memorize path         - print the command list file path
+       memorize dir          - print the cast directory
+
+Memorize spells for the Cast menu.
+USAGE
+  exit 0
   ;;
 -*)
   usage-error "$spell_name" "unknown option '$action'"

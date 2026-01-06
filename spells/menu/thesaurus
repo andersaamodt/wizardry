@@ -4,7 +4,15 @@
 
 case "${1-}" in
 --help|--usage|-h)
-  thesaurus_usage
+  cat <<'USAGE'
+Usage: thesaurus [--list]
+
+Display management menu for synonyms (aliases).
+
+Options:
+  --list    View-only mode (no add/edit options)
+  --help    Show this help message
+USAGE
   exit 0
   ;;
 esac
