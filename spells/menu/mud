@@ -26,23 +26,27 @@ if ! require menu "The MUD menu needs the 'menu' command to present options."; t
   exit 1
 fi
 
-# Get platform-specific portal chamber location
-get_portal_location() {
+first_run=1
+
+while true; do
+  if [ "$first_run" -eq 0 ]; then
+    :
+  else
+    first_run=0
+  fi
+
+  # Get platform-specific portal chamber location
   platform=$(detect-distro 2>/dev/null || printf 'unknown')
   case "$platform" in
     mac)
       # macOS uses /Volumes for mounted drives
-      printf '%s' "/Volumes"
+      portal_location="/Volumes"
       ;;
     *)
       # Linux and others use /mnt
-      printf '%s' "/mnt"
+      portal_location="/mnt"
       ;;
   esac
-}
-
-mud_display_menu() {
-  portal_location=$(get_portal_location)
   
   look="Look Around%look"
   home="Teleport Home%cd"
@@ -61,17 +65,5 @@ mud_display_menu() {
     "$admin" \
     "$settings" \
     "$exit_item"
-  menu "MUD Menu:" "$@"
-}
-
-first_run=1
-
-while true; do
-  if [ "$first_run" -eq 0 ]; then
-    :
-  else
-    first_run=0
-  fi
-
-  mud_display_menu || true
+  menu "MUD Menu:" "$@" || true
 done

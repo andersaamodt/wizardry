@@ -27,24 +27,33 @@ if ! require menu "The MUD Settings menu needs the 'menu' command to present opt
   exit 1
 fi
 
-# Check if player key exists
-has_player_key() {
-  if [ -n "${MUD_PLAYER-}" ] && [ -f "$HOME/.ssh/${MUD_PLAYER}.pub" ]; then
-    return 0
-  fi
-  # Check for any player key in ~/.ssh with common naming patterns
-  # Use nullglob-safe pattern matching
-  for key in "$HOME"/.ssh/*.pub; do
-    # Skip if glob didn't match (returns literal *.pub)
-    [ -e "$key" ] || continue
-    [ -f "$key" ] && return 0
-  done
-  return 1
-}
+loop_limit=${MENU_LOOP_LIMIT:-}
+first_run=1
 
-mud_settings_display_menu() {
-  # Show appropriate player key option based on whether key exists
-  if has_player_key; then
+while true; do
+  if [ "$first_run" -eq 0 ]; then
+    :
+  else
+    first_run=0
+  fi
+
+  # Check if player key exists and show appropriate option
+  has_key=0
+  if [ -n "${MUD_PLAYER-}" ] && [ -f "$HOME/.ssh/${MUD_PLAYER}.pub" ]; then
+    has_key=1
+  else
+    # Check for any player key in ~/.ssh with common naming patterns
+    for key in "$HOME"/.ssh/*.pub; do
+      # Skip if glob didn't match (returns literal *.pub)
+      [ -e "$key" ] || continue
+      if [ -f "$key" ]; then
+        has_key=1
+        break
+      fi
+    done
+  fi
+  
+  if [ "$has_key" -eq 1 ]; then
     player_key_item="Copy player key to clipboard%copy ~/.ssh/\$MUD_PLAYER.pub"
   else
     player_key_item="Create player key%new-player"
@@ -56,20 +65,7 @@ mud_settings_display_menu() {
   exit_item="${exit_label}%kill -TERM \$PPID"
 
   set -- "$player_key_item" "$change" "$new" "$exit_item"
-  menu "MUD Settings:" "$@"
-}
-
-loop_limit=${MENU_LOOP_LIMIT:-}
-first_run=1
-
-while true; do
-  if [ "$first_run" -eq 0 ]; then
-    :
-  else
-    first_run=0
-  fi
-
-  mud_settings_display_menu || true
+  menu "MUD Settings:" "$@" || true
 
   # Support MENU_LOOP_LIMIT for testing
   if [ -n "$loop_limit" ]; then
