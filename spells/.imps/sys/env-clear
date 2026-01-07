@@ -29,13 +29,13 @@ set +eu
 
 # Skip env clearing when running in test mode (all test vars are preserved)
 if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" = "1" ]; then
-  exit 0
+  return 0
 fi
 
 # Skip env clearing when being sourced by invoke-wizardry during spell loading
 # This prevents clearing parent's loop variables
 if [ "${_WIZARDRY_LOADING_SPELLS:-0}" = "1" ]; then
-  exit 0
+  return 0
 fi
 
 # Preserve standard system environment variables
@@ -224,4 +224,4 @@ unset _saved_runner_tool_cache _var
 set -eu
 
 # Return 0 explicitly (some shells exit with the exit code of the last unset)
-exit 0
+return 0
