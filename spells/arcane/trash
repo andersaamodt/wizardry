@@ -54,21 +54,7 @@ if [ "$#" -eq 0 ]; then
 fi
 
 # Detect the OS
-# In test mode, use fast uname detection to avoid potential slowdowns
-if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" = "1" ]; then
-  kernel=$(uname -s 2>/dev/null || printf 'unknown')
-  case "$kernel" in
-  Darwin)
-    os=mac
-    ;;
-  Linux)
-    os=linux
-    ;;
-  *)
-    os=unknown
-    ;;
-  esac
-elif command -v detect-distro >/dev/null 2>&1; then
+if command -v detect-distro >/dev/null 2>&1; then
   platform=$(detect-distro 2>/dev/null || printf 'unknown')
   case "$platform" in
   mac)
