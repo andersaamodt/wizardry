@@ -24,9 +24,9 @@ esac
 
 set -eu
 
-# Find repository root
+# Find repository root (script is now in .github/, so go up one level)
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-repo_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
+repo_dir=$(CDPATH= cd -- "$script_dir/.." && pwd -P)
 
 # Source env-clear with conditional fallback for standalone execution
 if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/env-clear" ]; then
