@@ -29,6 +29,7 @@
 - Imps executed as scripts (via PATH) must use `exit` not `return`; bash (Arch's /bin/sh) errors on top-level `return`, while dash (Ubuntu's /bin/sh) silently allows it.
 
 
-- When a file is sourced (`. filename`), using `exit` exits the parent shell; use `return` instead (discovered via doppelganger failing to create directories) (2)
-- Bootstrap imps (env-clear, invoke-thesaurus) must use inline sourced-only checks, not call the uncastable imp, because they're sourced before PATH is properly set up (discovered via doppelganger compile failure)
-- invoke-wizardry is ALWAYS sourced (never executed), so it must use `return` not `exit`—PR #852 changed it to `exit` for Arch compatibility, causing all tests to skip silently since #852
+- When a file is sourced (`. filename`), using `exit` exits the parent shell; use `return` instead (discovered via doppelganger failing to create directories) (3)
+- Bootstrap imps (env-clear, invoke-thesaurus, invoke-wizardry) must use inline sourced-only checks, not call the uncastable imp, because they're sourced before PATH is properly set up (discovered via doppelganger compile failure)
+- Sourced-only scripts (invoke-wizardry, env-clear, invoke-thesaurus) must use `return 0` not `exit 0` for normal completion to avoid exiting parent shell (2)
+- Test helper imps that are sourced (skip-if-compiled) must define functions and use self-execute pattern, not use bare `exit` statements which exit the calling test

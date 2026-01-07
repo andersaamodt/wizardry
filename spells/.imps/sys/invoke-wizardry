@@ -3,6 +3,29 @@
 # Simple PATH-based invocation (no word-of-binding preloading)
 # Source this script to enable wizardry spells and imps from PATH.
 
+# This script must be sourced, not executed
+# Guard against direct execution (inline check - PATH not set up yet for uncastable imp)
+_iw_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) _iw_sourced=1 ;;
+  esac
+else
+  _iw_base=${0##*/}
+  case "$_iw_base" in
+    sh|dash|bash|zsh|ksh|mksh) _iw_sourced=1 ;;
+    invoke-wizardry) _iw_sourced=0 ;;
+    *) _iw_sourced=1 ;;
+  esac
+fi
+
+if [ "$_iw_sourced" -eq 0 ]; then
+  printf '%s\n' "invoke-wizardry: must be sourced, not executed" >&2
+  printf '%s\n' "Usage: . invoke-wizardry" >&2
+  exit 1
+fi
+unset _iw_sourced _iw_base
+
 # Ensure baseline PATH before anything else (macOS may have empty PATH)
 baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 case ":${PATH-}:" in
