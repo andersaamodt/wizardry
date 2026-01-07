@@ -30,3 +30,4 @@
 
 
 - When a file is sourced (`. filename`), using `exit` exits the parent shell; use `return` instead (discovered via doppelganger failing to create directories)
+- Bootstrap imps (env-clear, invoke-thesaurus) must use inline sourced-only checks, not call the uncastable imp, because they're sourced before PATH is properly set up (discovered via doppelganger compile failure)
