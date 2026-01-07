@@ -728,7 +728,7 @@ This section documents all exemptions that have been successfully resolved. Item
 
 ### Exempted Spells (Reducing)
 
-**✅ PROGRESS: 13 spells removed from exemption list (9 already compliant + 4 refactored to 0 functions)**
+**✅ PROGRESS: 14 spells removed from exemption list (9 already compliant + 5 refactored to 0 functions)**
 
 The following spells are temporarily exempted while being refactored to flat-file paradigm:
 
@@ -744,9 +744,8 @@ The following spells are temporarily exempted while being refactored to flat-fil
 7. **divination/identify-room** (3 functions) - Complex room identification
 
 **Low Priority (2 functions):**
-8. **cantrips/colors** (2 functions) - Color variable definitions (meant to be sourced) - **architectural exception candidate**
-9. **.arcana/core/install-bwrap** (2 functions) - Bootstrap bubblewrap installer
-10. **.arcana/bitcoin/configure-bitcoin** (2 functions) - Bitcoin configuration
+8. **cantrips/colors** (2 functions) - **Permanent architectural exemption** (sourced-only, defines color variables, uses uncastable imp)
+9. **.arcana/bitcoin/configure-bitcoin** (2 functions) - Bitcoin configuration
 
 **✅ REMOVED FROM EXEMPTIONS (Now Compliant - Already Had 0-1 Functions):**
 - ~~spellcraft/lint-magic~~ (0 functions) ✓
@@ -764,6 +763,7 @@ The following spells are temporarily exempted while being refactored to flat-fil
 - ~~menu/mud-settings~~ (2→0 functions) ✓ Inlined has_player_key and mud_settings_display_menu
 - ~~menu/main-menu~~ (2→0 functions) ✓ Inlined is_mud_enabled and main_menu_display_menu
 - ~~cantrips/fathom-cursor~~ (2→0 functions) ✓ Inlined restore_test and restore_tty trap handlers
+- ~~.arcana/core/install-bwrap~~ (2→0 functions) ✓ Inlined install_bwrap_from_source and cleanup trap handler
 
 ### Exempted Test Imps
 
@@ -773,5 +773,5 @@ Test infrastructure is exempted from the 0-function rule:
 
 **Status**: ⚠️ Temporary exemptions. Goal is to refactor these to flat scripts or document permanent architectural reasons for exemption.
 
-**Progress**: Reduced from 22 exemptions to 10 exemptions (13 spells resolved: 9 already compliant + 4 refactored).
+**Progress**: Reduced from 22 exemptions to 9 exemptions (14 spells resolved: 9 already compliant + 5 refactored).
 

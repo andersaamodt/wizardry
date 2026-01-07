@@ -833,7 +833,6 @@ cantrips/colors
 cantrips/await-keypress
 psi/read-contact
 .arcana/core/install-core
-.arcana/core/install-bwrap
 .arcana/bitcoin/configure-bitcoin
 divination/identify-room
 .wizardry/test-magic
