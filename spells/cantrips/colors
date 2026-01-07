@@ -7,6 +7,36 @@
 # This script contains all color codes in the POSIX standard.
 # You must source this script with '. ./colors' (or an absolute path) to use it.
 
+# uncastable - enforce sourced-only behavior
+_colors_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) _colors_sourced=1 ;;
+  esac
+else
+  _colors_base=${0##*/}
+  case "$_colors_base" in
+    sh|dash|bash|zsh|ksh|mksh) _colors_sourced=1 ;;
+    colors) _colors_sourced=0 ;;
+    *) _colors_sourced=1 ;;
+  esac
+fi
+
+if [ "$_colors_sourced" -eq 0 ]; then
+  cat <<'USAGE' >&2
+Usage: . colors
+
+Source this file to load color variables for terminal output.
+This spell must be sourced, not executed.
+
+Example:
+  . colors
+  printf '%sError:%s An error message.\n' "${RED}" "${RESET}"
+USAGE
+  exit 1
+fi
+unset _colors_sourced _colors_base
+
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
@@ -19,7 +49,7 @@ Example:
   . colors
   printf '%sError:%s An error message.\n' "${RED}" "${RESET}"
 USAGE
-  exit 0
+  return 0
   ;;
 esac
 
@@ -215,31 +245,5 @@ case ${TERM-} in
 esac
 }
 
-# Load autocast imp for direct execution
-if ! command -v autocast >/dev/null 2>&1; then
-  if [ -n "${WIZARDRY_DIR-}" ]; then
-    _i="$WIZARDRY_DIR/spells/.imps/sys"
-  elif [ -n "${ROOT_DIR-}" ]; then
-    _i="$ROOT_DIR/spells/.imps/sys"
-  else
-    _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-    _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
-    _i="${_r}/spells/.imps/sys"
-  fi
-  [ -f "$_i/autocast" ] && . "$_i/autocast"
-fi
-
-if command -v autocast >/dev/null 2>&1; then
-  # Check if autocast is a function using POSIX-compliant method
-  _cmd_result=$(command -v autocast 2>/dev/null || printf '')
-  case "$_cmd_result" in
-    alias\ *) colors "$@" ;;  # Is an alias, just run colors
-    /*) colors "$@" ;;        # Is a path (external command), just run colors
-    autocast)   # Is a function
-      autocast colors
-      ;;
-    *) colors "$@" ;;
-  esac
-else
-  colors "$@"
-fi
+# Call colors function when sourced to initialize color variables
+colors "$@"
