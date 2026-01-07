@@ -83,7 +83,7 @@ if [ "${BWRAP_AVAILABLE:-0}" -eq 1 ]; then
     set -- --unshare-user-try "$@"
   fi
 
-  if run-bwrap "$@" >"$_stdout" 2>"$_stderr"; then
+  if run-bwrap "$@" >"$_stdout" 2>"$_stderr" </dev/null; then
     STATUS=0
   else
     STATUS=$?
@@ -128,7 +128,7 @@ elif [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
     esac
   fi
   
-  if (cd "$workdir" && run-macos-sandbox "$@" >"$_stdout" 2>"$_stderr"); then
+  if (cd "$workdir" && run-macos-sandbox "$@" >"$_stdout" 2>"$_stderr" </dev/null); then
     STATUS=0
   else
     STATUS=$?
@@ -172,7 +172,7 @@ else
     esac
   fi
   
-  if (cd "$workdir" && "$@" >"$_stdout" 2>"$_stderr"); then
+  if (cd "$workdir" && "$@" >"$_stdout" 2>"$_stderr" </dev/null); then
     STATUS=0
   else
     STATUS=$?
