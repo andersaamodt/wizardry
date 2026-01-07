@@ -2,27 +2,21 @@
 # env-clear - clear environment variables while preserving wizardry and system essentials
 # This file must be sourced, not executed
 
-# Guard against direct execution (inline check instead of calling uncastable)
-_env_clear_sourced=0
-if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
-  case "${ZSH_EVAL_CONTEXT-}" in
-    *:file) _env_clear_sourced=1 ;;
-  esac
-else
-  _env_clear_base=${0##*/}
-  case "$_env_clear_base" in
-    sh|dash|bash|zsh|ksh|mksh) _env_clear_sourced=1 ;;
-    env-clear) _env_clear_sourced=0 ;;
-    *) _env_clear_sourced=1 ;;
-  esac
+# Load uncastable imp for sourced-only enforcement
+if ! command -v uncastable >/dev/null 2>&1; then
+  if [ -n "${WIZARDRY_DIR-}" ]; then
+    _i="$WIZARDRY_DIR/spells/.imps/sys"
+  elif [ -n "${ROOT_DIR-}" ]; then
+    _i="$ROOT_DIR/spells/.imps/sys"
+  else
+    _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+    _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+    _i="${_r}/spells/.imps/sys"
+  fi
+  [ -f "$_i/uncastable" ] && . "$_i/uncastable"
 fi
 
-if [ "$_env_clear_sourced" -eq 0 ]; then
-  printf '%s\n' "env-clear: must be sourced, not executed" >&2
-  printf '%s\n' "Usage: . env-clear" >&2
-  exit 1
-fi
-unset _env_clear_sourced _env_clear_base
+uncastable env-clear "Usage: . env-clear"
 
 # Explicitly use permissive mode - this imp mutates the caller's environment.
 set +eu
