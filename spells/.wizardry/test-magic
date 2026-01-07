@@ -478,12 +478,15 @@ WRAPPER_EOF
 
   # Extract test summary line for display (now includes ✓/✗ icon from test-summary)
   test_summary_line=$(printf '%s\n' "$cleaned_output" | awk '
-    /^[✓✗] [0-9]+\/[0-9]+ tests passed/ { print; exit }
+    /^[✓✗]? *[0-9]+\/[0-9]+ tests passed/ { print; exit }
   ')
 
   counts=$(printf '%s\n' "$cleaned_output" | awk '
-    /^[✓✗] [0-9]+\/[0-9]+ tests passed/ {
-      split($2, parts, "/")
+    /^[✓✗]? *[0-9]+\/[0-9]+ tests passed/ {
+      # Find the N/N pattern and extract it
+      match($0, /[0-9]+\/[0-9]+/)
+      counts_str = substr($0, RSTART, RLENGTH)
+      split(counts_str, parts, "/")
       passed += parts[1]
       total += parts[2]
       next
