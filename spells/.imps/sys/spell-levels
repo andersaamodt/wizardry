@@ -129,7 +129,7 @@ spell_levels() {
     ;;
   23)
     name='Spellcraft Development Tools'
-    spells='scribe-spell:spellcraft lint-magic:spellcraft compile-spell:spellcraft learn:spellcraft forget:spellcraft erase-spell:spellcraft doppelganger:spellcraft add-synonym:spellcraft edit-synonym:spellcraft delete-synonym:spellcraft reset-default-synonyms:spellcraft bind-tome:spellcraft unbind-tome:spellcraft merge-yaml-text:spellcraft catalog-emojis:spellcraft'
+    spells='scribe-spell:spellcraft lint-magic:spellcraft compile-spell:spellcraft learn:spellcraft forget:spellcraft erase-spell:spellcraft doppelganger:spellcraft add-synonym:spellcraft edit-synonym:spellcraft delete-synonym:spellcraft reset-default-synonyms:spellcraft bind-tome:spellcraft unbind-tome:spellcraft merge-yaml-text:spellcraft'
     imps=''
     ;;
   24)

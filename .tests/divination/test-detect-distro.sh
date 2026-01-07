@@ -59,10 +59,10 @@ prints_detected_identifier() {
 
 verbose_mode_narrates() {
   root=$(make_fake_root)
-  write_os_release "$root/etc/os-release" "ID=fedora"
+  write_os_release "$root/etc/os-release" "ID=debian"
   run_with_root "$root" "-v"
   assert_success || return 1
-  assert_output_contains "Fedora detected" || return 1
+  assert_output_contains "Debian" || return 1
   rm -rf "$root"
 }
 

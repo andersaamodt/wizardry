@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Uninstall the find command.
+# Bootstrap spell: Uninstall the find command.
 
 case "${1-}" in
 --help|--usage|-h)
