@@ -11,12 +11,12 @@ shift 2 2>/dev/null || shift $#
 if [ -n "$or_cmd" ]; then
   # shellcheck disable=SC2086
   if "$or_cmd" $or_cmd_args; then
-    return 0
+    exit 0
   fi
 fi
 
 if [ $# -eq 0 ]; then
-  return 1
+  exit 1
 fi
 
 or_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)

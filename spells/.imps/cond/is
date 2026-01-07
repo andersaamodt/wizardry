@@ -18,11 +18,11 @@ case "$1" in
     elif [ -d "$2" ]; then
       [ -z "$(ls -A "$2" 2>/dev/null)" ]
     else
-      return 1
+      exit 1
     fi
     ;;
   set)      [ -n "$2" ] ;;
   unset)    [ -z "$2" ] ;;
-  *)        return 1 ;;
+  *)        exit 1 ;;
 esac
 

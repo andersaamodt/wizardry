@@ -6,19 +6,19 @@
 
 has_name=${1-}
 if [ -z "$has_name" ]; then
-  return 1
+  exit 1
 fi
 
 if command -v "$has_name" >/dev/null 2>&1; then
-  return 0
+  exit 0
 fi
 
 case $has_name in
   *-*)
     has_alt=$(printf '%s' "$has_name" | tr '-' '_')
     command -v "$has_alt" >/dev/null 2>&1
-    return $?
+    exit $?
     ;;
 esac
-return 1
+exit 1
 

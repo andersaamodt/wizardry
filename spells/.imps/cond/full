@@ -6,6 +6,6 @@
 case "$1" in
   file) [ -s "$2" ] ;;
   dir)  [ -d "$2" ] && [ -n "$(ls -A "$2" 2>/dev/null)" ] ;;
-  *)    return 1 ;;
+  *) exit 1 ;;
 esac
 

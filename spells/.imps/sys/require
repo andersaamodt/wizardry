@@ -20,7 +20,7 @@ fi
 
 if [ -n "$_req_cmd" ]; then
   "$_req_cmd" "$_req_tool" "$@"
-  return $?
+  exit $?
 fi
 
 if command -v "$_req_tool" >/dev/null 2>&1; then

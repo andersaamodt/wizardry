@@ -29,10 +29,10 @@ set -eu
       # Try curl first, then wget
       if command -v curl >/dev/null 2>&1; then
         curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
-        return $?
+        exit $?
       elif command -v wget >/dev/null 2>&1; then
         wget -qO- https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
-        return $?
+        exit $?
       else
         printf '%s\n' "Error: neither curl nor wget is available to download wizardry." >&2
   exit 1

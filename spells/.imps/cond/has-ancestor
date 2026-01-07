@@ -8,13 +8,13 @@ search_cmd=${1-}
 
 # Require command argument
 if [ -z "$search_cmd" ]; then
-  return 1
+  exit 1
 fi
 
 # Check if ps command is available
 if ! command -v ps >/dev/null 2>&1; then
   # Without ps, we can't detect, so assume not in ancestry
-  return 1
+  exit 1
 fi
 
 # Walk up the process tree checking each ancestor
@@ -28,11 +28,11 @@ while [ "$pid" -gt 1 ]; do
 
   # Check if parent process matches the search command
   if ps -o comm= -p "$ppid" 2>/dev/null | grep -q "$search_cmd"; then
-    return 0
+    exit 0
   fi
 
   pid=$ppid
 done
 
-return 1
+exit 1
 

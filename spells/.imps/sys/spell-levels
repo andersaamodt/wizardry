@@ -163,7 +163,7 @@ spell_levels() {
     imps=''
     ;;
   *)
-    return 1
+    exit 1
     ;;
   esac
 
@@ -178,7 +178,7 @@ spell_levels() {
       ;;
     *)
       printf 'spell-levels: unknown field: %s\n' "$field" >&2
-      return 1
+      exit 1
       ;;
   esac
 }
