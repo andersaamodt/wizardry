@@ -83,8 +83,10 @@ if [ "${BWRAP_AVAILABLE:-0}" -eq 1 ]; then
     set -- --unshare-user-try "$@"
   fi
 
-  # DEBUG: Show what command will be executed
-  printf 'DEBUG: run-cmd executing (bwrap): %s\n' "$*" >&2
+  # DEBUG: Show what command will be executed (ensure it shows immediately)
+  {
+    printf 'DEBUG: run-cmd executing (bwrap): %s\n' "$*"
+  } >&2
 
   if run-bwrap "$@" >"$_stdout" 2>"$_stderr"; then
     STATUS=0
@@ -131,8 +133,10 @@ elif [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
     esac
   fi
   
-  # DEBUG: Show what command will be executed (macOS path)
-  printf 'DEBUG: run-cmd executing (macos-sandbox): %s\n' "$*" >&2
+  # DEBUG: Show what command will be executed (macOS path - ensure immediate output)
+  {
+    printf 'DEBUG: run-cmd executing (macos-sandbox): %s\n' "$*"
+  } >&2
   
   if (cd "$workdir" && run-macos-sandbox "$@" >"$_stdout" 2>"$_stderr"); then
     STATUS=0
@@ -178,8 +182,10 @@ else
     esac
   fi
   
-  # DEBUG: Show what command will be executed (no sandbox)
-  printf 'DEBUG: run-cmd executing (direct): %s\n' "$*" >&2
+  # DEBUG: Show what command will be executed (no sandbox - ensure immediate output)
+  {
+    printf 'DEBUG: run-cmd executing (direct): %s\n' "$*"
+  } >&2
   
   if (cd "$workdir" && "$@" >"$_stdout" 2>"$_stderr"); then
     STATUS=0
@@ -188,8 +194,10 @@ else
   fi
 fi
 
-# DEBUG: Show command completed
-printf 'DEBUG: run-cmd completed with status: %s\n' "$STATUS" >&2
+# DEBUG: Show command completed (ensure immediate output)
+{
+  printf 'DEBUG: run-cmd completed with status: %s\n' "$STATUS"
+} >&2
 
 # Use system PATH again for cleanup operations
 PATH=${WIZARDRY_SYSTEM_PATH:-$PATH}

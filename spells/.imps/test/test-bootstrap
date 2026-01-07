@@ -234,6 +234,9 @@ run_test_case() {
   _func=$2
   _spell_path=${3-}
   
+  # DEBUG: Show which test is starting
+  printf 'DEBUG: run_test_case starting: #%s %s\n' "$(($(cat "${WIZARDRY_TMPDIR}/_test_index") + 1))" "$_desc" >&2
+  
   # Increment subtest number for this test case (no globals - read from file, pass as arg)
   _test_index=$(cat "${WIZARDRY_TMPDIR}/_test_index")
   _test_index=$((_test_index + 1))
