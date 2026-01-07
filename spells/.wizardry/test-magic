@@ -271,6 +271,7 @@ subtests_passed=0
 subtests_total=0
 incomplete_tests=""
 incomplete_count=0
+test_summary_line=""
 
 # Incomplete test thresholds
 min_subtests_imp=2
@@ -354,7 +355,6 @@ run_test_file() {
   cleaned_output=""
   fail_numbers=""
   test_exit_code=0
-  test_summary_line=""
 
   test_output_file=$(temp-file test-output) || return 1
   test_wrapper=$(temp-file test-wrapper) || return 1
