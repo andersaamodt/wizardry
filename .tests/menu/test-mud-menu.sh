@@ -59,6 +59,32 @@ SH
   chmod +x "$tmp/check-cd-hook"
 }
 
+make_stub_mud_config() {
+  tmp=$1
+  cat >"$tmp/mud-config" <<'SH'
+#!/bin/sh
+# Stub for mud-config - returns 0 for all features (disabled state)
+set -eu
+if [ "$1" = "get" ]; then
+  # Return 0 for disabled (so menu shows [ ] checkboxes)
+  printf '0\n'
+  exit 0
+fi
+exit 1
+SH
+  chmod +x "$tmp/mud-config"
+}
+
+make_stub_check_command_not_found_hook() {
+  tmp=$1
+  cat >"$tmp/check-command-not-found-hook" <<'SH'
+#!/bin/sh
+# Stub for check-command-not-found-hook - always returns 1 (not installed)
+exit 1
+SH
+  chmod +x "$tmp/check-command-not-found-hook"
+}
+
 make_failing_menu() {
   tmp=$1
   cat >"$tmp/menu" <<'SH'
@@ -307,6 +333,8 @@ SH
   chmod +x "$tmp/exit-label"
   
   make_stub_check_cd_hook "$tmp"
+  make_stub_mud_config "$tmp"
+  make_stub_check_command_not_found_hook "$tmp"
   
   rc_file="$tmp/rc"
   : >"$rc_file"
@@ -348,6 +376,8 @@ SH
   chmod +x "$tmp/exit-label"
   
   make_stub_check_cd_hook "$tmp"
+  make_stub_mud_config "$tmp"
+  make_stub_check_command_not_found_hook "$tmp"
   
   rc_file="$tmp/rc"
   : >"$rc_file"
@@ -398,6 +428,8 @@ SH
   chmod +x "$tmp/exit-label"
   
   make_stub_check_cd_hook "$tmp"
+  make_stub_mud_config "$tmp"
+  make_stub_check_command_not_found_hook "$tmp"
   
   # Create a menu stub that logs --start-selection argument and simulates toggle action
   call_count_file="$tmp/call_count"
@@ -481,6 +513,8 @@ SH
   chmod +x "$tmp/exit-label"
   
   make_stub_check_cd_hook "$tmp"
+  make_stub_mud_config "$tmp"
+  make_stub_check_command_not_found_hook "$tmp"
   
   call_count_file="$tmp/call_count"
   printf '0\n' >"$call_count_file"

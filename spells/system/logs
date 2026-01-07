@@ -23,7 +23,7 @@ distro=$(detect-distro)
 logs="/var/log/messages,/var/log/secure,/var/log/auth.log,"
 
 case "$distro" in
-    "arch"|"fedora")
+    "arch")
         logs="$logs/var/log/pacman.log,/var/log/httpd/access_log,/var/log/httpd/error_log,/var/log/lighttpd/access.log,/var/log/lighttpd/error.log,/var/log/xorg.0.log"
         ;;
     "debian"|"ubuntu")

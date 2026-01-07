@@ -14,10 +14,7 @@ _pi_pm=$(pkg-manager) || {
 
 case $_pi_pm in
   apt)    sudo apt-get -y install "$_pi_package" ;;
-  dnf)    sudo dnf -y install "$_pi_package" ;;
   pacman) sudo pacman --noconfirm -S "$_pi_package" ;;
-  brew)   brew install "$_pi_package" ;;
   nix)    nix-env -iA "nixpkgs.$_pi_package" ;;
   pkgin)  sudo pkgin -y install "$_pi_package" ;;
-  apk)    sudo apk add "$_pi_package" ;;
 esac

@@ -71,9 +71,14 @@ core_dependencies() {
       # macOS has pbcopy built-in, so no clipboard utilities needed in menu
       cat <<'EOF'
 Git:git:install-git:uninstall-git:0
+sed:sed:install-sed:uninstall-sed:1
+awk:awk:install-awk:uninstall-awk:1
+grep:grep:install-grep:uninstall-grep:1
+find:find:install-find:uninstall-find:1
 dd:dd:install-dd:uninstall-dd:1
 stty:stty:install-stty:uninstall-stty:1
 tput:tput:install-tput:uninstall-tput:1
+ps:ps:install-ps:uninstall-ps:1
 EOF
       ;;
     *)
@@ -82,9 +87,14 @@ EOF
 Git:git:install-git:uninstall-git:0
 ${clipboard_label}:${CLIPBOARD_MARKER}:install-clipboard-helper:uninstall-clipboard-helper:0
 Bubblewrap:bwrap:install-bwrap:uninstall-bwrap:0
+sed:sed:install-sed:uninstall-sed:1
+awk:awk:install-awk:uninstall-awk:1
+grep:grep:install-grep:uninstall-grep:1
+find:find:install-find:uninstall-find:1
 dd:dd:install-dd:uninstall-dd:1
 stty:stty:install-stty:uninstall-stty:1
 tput:tput:install-tput:uninstall-tput:1
+ps:ps:install-ps:uninstall-ps:1
 EOF
       ;;
   esac

@@ -57,15 +57,11 @@ _saved_mud_dir="${MUD_DIR:-}"
 _saved_log_level="${WIZARDRY_LOG_LEVEL:-}"
 
 # Preserve package manager override variables (used by pkg-install in arcana)
+# Officially supported platforms only: debian, arch, nixos, mac
 _saved_nix_pkg="${NIX_PACKAGE:-}"
 _saved_apt_pkg="${APT_PACKAGE:-}"
-_saved_dnf_pkg="${DNF_PACKAGE:-}"
-_saved_yum_pkg="${YUM_PACKAGE:-}"
-_saved_zypper_pkg="${ZYPPER_PACKAGE:-}"
 _saved_pacman_pkg="${PACMAN_PACKAGE:-}"
-_saved_apk_pkg="${APK_PACKAGE:-}"
 _saved_pkgin_pkg="${PKGIN_PACKAGE:-}"
-_saved_brew_pkg="${BREW_PACKAGE:-}"
 
 # Preserve test infrastructure variables (when running tests)
 _saved_test_failure="${TEST_FAILURE_REASON:-}"
@@ -144,16 +140,11 @@ export OLDPWD="$_saved_oldpwd"
 [ -n "$_saved_mud_dir" ] && export MUD_DIR="$_saved_mud_dir"
 [ -n "$_saved_log_level" ] && export WIZARDRY_LOG_LEVEL="$_saved_log_level"
 
-# Restore package manager overrides
+# Restore package manager overrides (officially supported platforms only)
 [ -n "$_saved_nix_pkg" ] && export NIX_PACKAGE="$_saved_nix_pkg"
 [ -n "$_saved_apt_pkg" ] && export APT_PACKAGE="$_saved_apt_pkg"
-[ -n "$_saved_dnf_pkg" ] && export DNF_PACKAGE="$_saved_dnf_pkg"
-[ -n "$_saved_yum_pkg" ] && export YUM_PACKAGE="$_saved_yum_pkg"
-[ -n "$_saved_zypper_pkg" ] && export ZYPPER_PACKAGE="$_saved_zypper_pkg"
 [ -n "$_saved_pacman_pkg" ] && export PACMAN_PACKAGE="$_saved_pacman_pkg"
-[ -n "$_saved_apk_pkg" ] && export APK_PACKAGE="$_saved_apk_pkg"
 [ -n "$_saved_pkgin_pkg" ] && export PKGIN_PACKAGE="$_saved_pkgin_pkg"
-[ -n "$_saved_brew_pkg" ] && export BREW_PACKAGE="$_saved_brew_pkg"
 
 # Restore test infrastructure
 [ -n "$_saved_test_failure" ] && export TEST_FAILURE_REASON="$_saved_test_failure"
@@ -215,8 +206,7 @@ fi
 unset _saved_path _saved_home _saved_user _saved_shell _saved_term _saved_lang
 unset _saved_tmpdir _saved_pwd _saved_oldpwd _saved_wizardry_dir _saved_wizardry_invoked
 unset _saved_spellbook_dir _saved_mud_dir _saved_log_level _saved_nix_pkg _saved_apt_pkg
-unset _saved_yum_pkg _saved_zypper_pkg _saved_pacman_pkg _saved_apk_pkg _saved_pkgin_pkg
-unset _saved_brew_pkg _saved_test_failure _saved_test_skip _saved_wiz_tmpdir
+unset _saved_pacman_pkg _saved_pkgin_pkg _saved_test_failure _saved_test_skip _saved_wiz_tmpdir
 unset _saved_global_subtest _saved_test_compiled _saved_test_helpers _saved_system_path
 unset _saved_ask_input _saved_choose_input _saved_menu_loop_limit _saved_require_command
 unset _saved_menu_log _saved_await_buffer_file _saved_assume_yes

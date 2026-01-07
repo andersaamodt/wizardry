@@ -14,10 +14,7 @@ _pr_pm=$(pkg-manager) || {
 
 case $_pr_pm in
   apt)    sudo apt-get -y remove "$_pr_package" ;;
-  dnf)    sudo dnf -y remove "$_pr_package" ;;
   pacman) sudo pacman --noconfirm -R "$_pr_package" ;;
-  brew)   brew uninstall "$_pr_package" ;;
   nix)    nix-env -e "$_pr_package" ;;
   pkgin)  sudo pkgin -y remove "$_pr_package" ;;
-  apk)    sudo apk del "$_pr_package" ;;
 esac

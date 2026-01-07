@@ -1,6 +1,6 @@
 #!/bin/sh
-# os - print current OS identifier (mac/linux/debian/nixos/arch/fedora/unknown)
-# Example: case $(os) in debian) apt-get ;; mac) brew ;; esac
+# os - print current OS identifier (mac/linux/debian/nixos/arch/unknown)
+# Example: case $(os) in debian) apt-get ;; mac) pkgin ;; esac
 set -eu
 
 
@@ -9,7 +9,6 @@ _os_kernel=$(uname -s 2>/dev/null || echo unknown)
 if [ -f /etc/NIXOS ]; then echo nixos
 elif [ -f /etc/debian_version ]; then echo debian
 elif [ -f /etc/arch-release ]; then echo arch
-elif [ -f /etc/fedora-release ]; then echo fedora
 elif [ "$_os_kernel" = "Darwin" ]; then echo mac
 elif [ "$_os_kernel" = "Linux" ]; then echo linux
 else echo unknown

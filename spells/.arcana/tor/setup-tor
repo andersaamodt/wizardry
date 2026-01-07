@@ -31,7 +31,7 @@ y|Y)
         fi
 
         case $distro in
-        arch|debian|fedora)
+        arch|debian)
                 tor_config_path="/etc/tor/torrc"
                 ;;
         macos)

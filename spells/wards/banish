@@ -377,7 +377,7 @@ banish_process_level() {
 
       # Check package manager availability
       package_managers=""
-      for pkg in apt-get dnf yum zypper pacman apk brew port nix-env pkgin; do
+      for pkg in apt-get  pacman apk brew port nix-env pkgin; do
         if command -v "$pkg" >/dev/null 2>&1; then
           package_managers="${package_managers}${package_managers:+ }$pkg"
         fi
