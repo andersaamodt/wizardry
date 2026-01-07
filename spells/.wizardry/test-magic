@@ -730,7 +730,7 @@ test_level() {
     if run_test_file "$test_path" "$spell"; then
       level_pass=$((level_pass + 1))
       if [ -n "$test_summary_line" ]; then
-        printf '    %s%s %s%s\n' "$_green" "$test_summary_line" "$test_name" "$_reset"
+        printf '    %s%s%s\n' "$_green" "$test_summary_line" "$_reset"
       else
         printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_name"
       fi
@@ -738,7 +738,7 @@ test_level() {
       level_fail=$((level_fail + 1))
       failed_tests="${failed_tests:+$failed_tests }$test_name"
       if [ -n "$test_summary_line" ]; then
-        printf '    %s%s %s%s\n' "$_red" "$test_summary_line" "$test_name" "$_reset"
+        printf '    %s%s%s\n' "$_red" "$test_summary_line" "$_reset"
       else
         printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_name"
       fi
@@ -782,7 +782,7 @@ test_level() {
     if run_test_file "$test_path" "$imp"; then
       level_pass=$((level_pass + 1))
       if [ -n "$test_summary_line" ]; then
-        printf '    %s%s %s%s\n' "$_green" "$test_summary_line" "$test_name" "$_reset"
+        printf '    %s%s%s\n' "$_green" "$test_summary_line" "$_reset"
       else
         printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_name"
       fi
@@ -790,7 +790,7 @@ test_level() {
       level_fail=$((level_fail + 1))
       failed_tests="${failed_tests:+$failed_tests }$test_name"
       if [ -n "$test_summary_line" ]; then
-        printf '    %s%s %s%s\n' "$_red" "$test_summary_line" "$test_name" "$_reset"
+        printf '    %s%s%s\n' "$_red" "$test_summary_line" "$_reset"
       else
         printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_name"
       fi
