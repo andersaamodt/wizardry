@@ -142,9 +142,15 @@ result=$(eval "$_cmd arg1 arg2")  # Use eval in subshells
 # Direct calls work without eval
 result=$(my_function arg)  # OK
 $_cmd arg                  # OK (not in subshell)
+
+# CRITICAL: Always redirect stdin for commands that might read it
+# macOS `env` command may block waiting for stdin in subshells
+vars=$(env </dev/null | cut -d= -f1)  # CORRECT
+vars=$(env | cut -d= -f1)             # WRONG on macOS (hangs)
 ```
 
 **Gotcha:** Functions stored in variables need `eval` in command substitution (zsh).
+**Gotcha (macOS):** Some commands (`env`, possibly others) block waiting for stdin in command substitutions; always redirect stdin with `</dev/null`.
 
 ### Test Operators
 

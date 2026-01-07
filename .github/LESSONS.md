@@ -28,4 +28,5 @@
 - Pipe-based while loops create subshells; use variable with here-document instead to preserve loop counter updates in parent shell.
 - Spells should call preloaded functions (fathom_terminal, detect_posix, etc.) instead of executing scripts as subprocesses ("${WIZARDRY_DIR}/spells/..."); subprocesses lack preloaded functions and violate architecture.
 - Spells are now flat, linear scripts without function wrappers; the castable/uncastable pattern and dual-pattern testing (source-then-invoke) have been deprecated.
+- On macOS, the `env` command may wait for stdin when invoked in subshells; always redirect stdin with `</dev/null` when using `env` in command substitutions.
 
