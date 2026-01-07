@@ -67,8 +67,8 @@ jobs:
     env:
       WIZARDRY_OS_LABEL: arch
     steps:
-      - name: Install git for checkout
-        run: pacman -Sy --noconfirm git
+      - name: Install git, procps, and python for checkout and testing
+        run: pacman -Sy --noconfirm git procps-ng python
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
@@ -84,8 +84,8 @@ jobs:
       WIZARDRY_OS_LABEL: debian
       DEBIAN_FRONTEND: noninteractive
     steps:
-      - name: Install git for checkout
-        run: apt-get update && apt-get install -y git
+      - name: Install git and procps for checkout and testing
+        run: apt-get update && apt-get install -y git procps python3
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
