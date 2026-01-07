@@ -79,11 +79,15 @@ if my_func; then ...; fi
 | Context | Use | Effect |
 |---------|-----|--------|
 | Function body | `return N` | Exits function only |
-| Top level | `exit N` | Exits script/shell |
+| Top level script | `exit N` | Exits script/shell |
 | Sourced function | `return N` | Safe |
 | Sourced function | `exit N` | KILLS SHELL |
+| Executed script (no function) | `exit N` | Required (Arch bash rejects `return`) |
 
-**Rule:** Always use `return` in functions that might be sourced.
+**Rules:**
+- Always use `return` in functions that might be sourced
+- Always use `exit` in top-level scripts executed via PATH (imps, spells)
+- **CRITICAL:** Bash (Arch's `/bin/sh`) errors on top-level `return` outside functions; dash (Ubuntu's `/bin/sh`) silently allows it but shouldn't be relied upon
 
 ### Case Statements
 

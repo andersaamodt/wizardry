@@ -15,9 +15,7 @@
 
 ## Lessons
 
-- Spells must call `require_wizardry()` and `env_clear()` (underscored functions) inside their main function; invoke-wizardry preloads these via word-of-binding (castable does NOT re-source).
 - Spells MUST NOT preload their own prerequisites (die, warn, etc.); they should fail early with require_wizardry if wizardry isn't available.
-- word-of-binding loads hyphenated imp files (require-wizardry, env-clear) but extracts underscored functions (require_wizardry, env_clear); preload lists must use hyphenated names.
 - When inlining helper functions, use global search-replace to ensure ALL calls are replaced, including those outside the main function body.
 - Editing files with text processing tools (sed, awk, perl) can change file permissions - always restore execute bits afterwards.
 - The `find -executable` flag is not portable to BSD/macOS; use `find -perm /111` instead to match files with any execute bit.
@@ -26,6 +24,8 @@
 - Cross-platform shell compatibility requires testing flag availability (e.g., find flags) on both GNU and BSD implementations.
 - Common system commands (find, grep, sed, etc.) must be blacklisted in generate-glosses to prevent glossary from overriding them.
 - Pipe-based while loops create subshells; use variable with here-document instead to preserve loop counter updates in parent shell.
-- Spells should call preloaded functions (fathom_terminal, detect_posix, etc.) instead of executing scripts as subprocesses ("${WIZARDRY_DIR}/spells/..."); subprocesses lack preloaded functions and violate architecture.
+- Spells should call imps via PATH (has, say, die, etc.) instead of executing scripts as subprocesses with full paths ("${WIZARDRY_DIR}/spells/...").
 - Spells are now flat, linear scripts without function wrappers; the castable/uncastable pattern and dual-pattern testing (source-then-invoke) have been deprecated.
+- Imps executed as scripts (via PATH) must use `exit` not `return`; bash (Arch's /bin/sh) errors on top-level `return`, while dash (Ubuntu's /bin/sh) silently allows it.
+
 
