@@ -18,7 +18,8 @@ set -eu
 
 # The helper expects exactly one argument that declares the desired state.
 if [ "$#" -ne 1 ]; then
-  usage-error "cursor-blink" "expected on or off"
+  usage-error "cursor-blink" "expected on or off" || exit 2
+  exit 2  # Explicit exit in case usage-error doesn't exit
 fi
 
 # Inline supports_cursor_control - only used once
@@ -41,6 +42,7 @@ case "$1" in
     ;;
   *)
     # Treat anything else as misuse so callers notice mistakes quickly.
-    usage-error "cursor-blink" "expected on or off"
+    usage-error "cursor-blink" "expected on or off" || exit 2
+    exit 2  # Explicit exit in case usage-error doesn't exit
     ;;
 esac
