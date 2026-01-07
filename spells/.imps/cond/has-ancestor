@@ -20,20 +20,15 @@ fi
 # Walk up the process tree checking each ancestor
 pid=$$
 while [ "$pid" -gt 1 ]; do
-  # Get parent PID - try different ps formats for portability
-  ppid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ' || ps -p "$pid" -o ppid= 2>/dev/null | tr -d ' ')
+  # Get parent PID
+  ppid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
   [ -z "$ppid" ] && break
   [ "$ppid" = "$pid" ] && break
   [ "$ppid" -le 1 ] && break
 
   # Check if parent process matches the search command
-  # Try different ps command formats for portability
-  cmd_name=$(ps -o comm= -p "$ppid" 2>/dev/null || ps -p "$ppid" -o comm= 2>/dev/null)
-  if [ -n "$cmd_name" ]; then
-    # Check if command name contains the search string
-    case "$cmd_name" in
-      *"$search_cmd"*) return 0 ;;
-    esac
+  if ps -o comm= -p "$ppid" 2>/dev/null | grep -q "$search_cmd"; then
+    return 0
   fi
 
   pid=$ppid
