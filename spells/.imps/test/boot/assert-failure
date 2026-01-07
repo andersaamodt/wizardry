@@ -7,6 +7,8 @@ set -eu
 status_arg=${1:-${STATUS-0}}
 if [ "$status_arg" -eq 0 ]; then
   TEST_FAILURE_REASON="expected failure status but got success"
+  export TEST_FAILURE_REASON
+  printf '%s' "$TEST_FAILURE_REASON" > "${WIZARDRY_TMPDIR}/_test_failure_reason" 2>/dev/null || true
   exit 1
 fi
 exit 0

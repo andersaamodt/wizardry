@@ -271,6 +271,7 @@ subtests_passed=0
 subtests_total=0
 incomplete_tests=""
 incomplete_count=0
+test_summary_line=""
 
 # Incomplete test thresholds
 min_subtests_imp=2
@@ -385,7 +386,7 @@ WRAPPER_EOF
     }
     /^SKIP / { print "    " $0; fflush(); next }
     /^LACK / { print "    " $0; fflush(); next }
-    /^[0-9]+\/[0-9]+ tests passed/ { next }
+    /[0-9]+\/[0-9]+ tests passed/ { next }
   '
 
   run_exit_file=$(temp-file test-run-exit) || return 1
@@ -477,12 +478,15 @@ WRAPPER_EOF
 
   # Extract test summary line for display (now includes ✓/✗ icon from test-summary)
   test_summary_line=$(printf '%s\n' "$cleaned_output" | awk '
-    /^[✓✗] [0-9]+\/[0-9]+ tests passed/ { print; exit }
+    /[0-9]+\/[0-9]+ tests passed/ { print; exit }
   ')
 
   counts=$(printf '%s\n' "$cleaned_output" | awk '
-    /^[✓✗] [0-9]+\/[0-9]+ tests passed/ {
-      split($2, parts, "/")
+    /[0-9]+\/[0-9]+ tests passed/ {
+      # Find the N/N pattern and extract it
+      match($0, /[0-9]+\/[0-9]+/)
+      counts_str = substr($0, RSTART, RLENGTH)
+      split(counts_str, parts, "/")
       passed += parts[1]
       total += parts[2]
       next
@@ -564,10 +568,15 @@ WRAPPER_EOF
   fi
 
   if [ "$test_exit_code" -ne 0 ]; then
-    {
-      printf '=== %s ===\n' "$test_path"
-      printf '%s\n\n' "$cleaned_output"
-    } >>"$failure_output_file"
+    # Only collect detailed output for the first 12 failures
+    # total_fail hasn't been incremented yet for this failure,
+    # so check < 12 to collect failures 1-12
+    if [ "$total_fail" -lt 12 ]; then
+      {
+        printf '=== %s ===\n' "$test_path"
+        printf '%s\n\n' "$cleaned_output"
+      } >>"$failure_output_file"
+    fi
 
     if [ -n "$fail_numbers" ]; then
       entry="$spell_name ($fail_numbers)"
@@ -730,7 +739,7 @@ test_level() {
     if run_test_file "$test_path" "$spell"; then
       level_pass=$((level_pass + 1))
       if [ -n "$test_summary_line" ]; then
-        printf '    %s%s %s%s\n' "$_green" "$test_summary_line" "$test_name" "$_reset"
+        printf '    %s%s%s\n' "$_green" "$test_summary_line" "$_reset"
       else
         printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_name"
       fi
@@ -738,7 +747,7 @@ test_level() {
       level_fail=$((level_fail + 1))
       failed_tests="${failed_tests:+$failed_tests }$test_name"
       if [ -n "$test_summary_line" ]; then
-        printf '    %s%s %s%s\n' "$_red" "$test_summary_line" "$test_name" "$_reset"
+        printf '    %s%s%s\n' "$_red" "$test_summary_line" "$_reset"
       else
         printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_name"
       fi
@@ -782,7 +791,7 @@ test_level() {
     if run_test_file "$test_path" "$imp"; then
       level_pass=$((level_pass + 1))
       if [ -n "$test_summary_line" ]; then
-        printf '    %s%s %s%s\n' "$_green" "$test_summary_line" "$test_name" "$_reset"
+        printf '    %s%s%s\n' "$_green" "$test_summary_line" "$_reset"
       else
         printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_name"
       fi
@@ -790,7 +799,7 @@ test_level() {
       level_fail=$((level_fail + 1))
       failed_tests="${failed_tests:+$failed_tests }$test_name"
       if [ -n "$test_summary_line" ]; then
-        printf '    %s%s %s%s\n' "$_red" "$test_summary_line" "$test_name" "$_reset"
+        printf '    %s%s%s\n' "$_red" "$test_summary_line" "$_reset"
       else
         printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_name"
       fi
