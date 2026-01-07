@@ -13,6 +13,13 @@ status=$3
 reason=${TEST_FAILURE_REASON-}
 skip_reason=${TEST_SKIP_REASON-}
 
+# If reason not in environment, try reading from file (for assert functions)
+if [ -z "$reason" ] && [ -f "${WIZARDRY_TMPDIR}/_test_failure_reason" ]; then
+  reason=$(cat "${WIZARDRY_TMPDIR}/_test_failure_reason" 2>/dev/null || true)
+  # Clear the file after reading
+  rm -f "${WIZARDRY_TMPDIR}/_test_failure_reason" 2>/dev/null || true
+fi
+
 # Read current counter values from files
 _pass_count=$(cat "${WIZARDRY_TMPDIR}/_pass_count")
 _fail_count=$(cat "${WIZARDRY_TMPDIR}/_fail_count")

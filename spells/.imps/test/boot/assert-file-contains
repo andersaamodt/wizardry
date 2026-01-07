@@ -7,6 +7,8 @@ file=$1
 substring=$2
 if [ ! -f "$file" ]; then
   TEST_FAILURE_REASON="expected file missing: $file"
+  export TEST_FAILURE_REASON
+  printf '%s' "$TEST_FAILURE_REASON" > "${WIZARDRY_TMPDIR}/_test_failure_reason" 2>/dev/null || true
   exit 1
 fi
 
@@ -15,6 +17,8 @@ if grep -F -- "$substring" "$file" >/dev/null 2>&1; then
 fi
 
 TEST_FAILURE_REASON="file $file missing substring: $substring"
+export TEST_FAILURE_REASON
+printf '%s' "$TEST_FAILURE_REASON" > "${WIZARDRY_TMPDIR}/_test_failure_reason" 2>/dev/null || true
 exit 1
 
 

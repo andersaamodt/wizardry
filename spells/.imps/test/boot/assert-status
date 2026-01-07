@@ -12,6 +12,9 @@ if [ "$actual_status" -ne "$expected_status" ]; then
   else
     TEST_FAILURE_REASON="expected status $expected_status but got $actual_status"
   fi
+  export TEST_FAILURE_REASON
+  # Write to file so parent process can read it
+  printf '%s' "$TEST_FAILURE_REASON" > "${WIZARDRY_TMPDIR}/_test_failure_reason" 2>/dev/null || true
   exit 1
 fi
 exit 0
