@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# Uninstall the awk command.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-awk
+
+This spell uninstalls the awk command using the system package manager.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+# Package names for officially supported platforms (from detect-distro)
+APT_PACKAGE=gawk          # Debian, Ubuntu, Raspbian
+PACMAN_PACKAGE=gawk       # Arch, Manjaro
+DNF_PACKAGE=gawk          # Fedora
+NIX_PACKAGE=gawk          # NixOS
+PKGIN_PACKAGE=gawk        # macOS (pkgin package manager)
+
+export APT_PACKAGE PACMAN_PACKAGE DNF_PACKAGE NIX_PACKAGE PKGIN_PACKAGE
+
+"$SCRIPT_DIR/manage-system-command" --uninstall awk gawk

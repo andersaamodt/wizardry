@@ -57,16 +57,10 @@ emoji_files="$tmpdir/catalog-emojis-files.$$"
 trap 'rm -f "$emoji_list" "$emoji_freq" "$emoji_files"' EXIT HUP INT TERM
 
 # Extract all emojis from .github/ markdown files
-# Use perl for portable emoji extraction (standard on Unix systems)
-# Covers common emoji Unicode blocks but avoids ASCII and markdown symbols
-find "$github_dir" -type f -name "*.md" -exec perl -C -nle '
-  use utf8;
-  binmode STDOUT, ":utf8";
-  # Emoji Unicode ranges (common blocks)
-  while (/[\x{1F300}-\x{1F9FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}\x{2300}-\x{23FF}\x{2B00}-\x{2BFF}\x{1F000}-\x{1F02F}\x{1F0A0}-\x{1F0FF}\x{1F100}-\x{1F64F}\x{1F680}-\x{1F6FF}\x{1F900}-\x{1F9FF}\x{1FA00}-\x{1FA6F}\x{1FA70}-\x{1FAFF}\x{FE00}-\x{FE0F}]+/g) {
-    print $&;
-  }
-' {} + > "$emoji_list" 2>/dev/null || touch "$emoji_list"
+# Use grep -P with specific emoji Unicode ranges
+# Covers most common emoji blocks but avoids ASCII and markdown symbols
+# Use -h to suppress filenames in output
+find "$github_dir" -type f -name "*.md" -exec grep -ohP '[\x{1F300}-\x{1F9FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}\x{2300}-\x{23FF}\x{2B00}-\x{2BFF}\x{1F000}-\x{1F02F}\x{1F0A0}-\x{1F0FF}\x{1F100}-\x{1F64F}\x{1F680}-\x{1F6FF}\x{1F900}-\x{1F9FF}\x{1FA00}-\x{1FA6F}\x{1FA70}-\x{1FAFF}\x{FE00}-\x{FE0F}]+' {} + > "$emoji_list" 2>/dev/null || touch "$emoji_list"
 
 # If no emojis found, report and exit
 if [ ! -s "$emoji_list" ]; then

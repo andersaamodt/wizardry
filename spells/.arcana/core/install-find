@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# Bootstrap spell: Install the find command using the system package manager.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-find
+
+This spell installs the find (search for files) command using the system package manager.
+The find command is provided by the findutils package.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+# Package names for officially supported platforms (from detect-distro)
+APT_PACKAGE=findutils     # Debian, Ubuntu, Raspbian
+PACMAN_PACKAGE=findutils  # Arch, Manjaro
+DNF_PACKAGE=findutils     # Fedora
+NIX_PACKAGE=findutils     # NixOS
+PKGIN_PACKAGE=findutils   # macOS (pkgin package manager)
+ASSUME_YES=1
+
+export APT_PACKAGE PACMAN_PACKAGE DNF_PACKAGE NIX_PACKAGE PKGIN_PACKAGE ASSUME_YES
+
+"$SCRIPT_DIR/manage-system-command" find findutils

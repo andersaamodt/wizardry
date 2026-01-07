@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# Bootstrap spell: Install the grep command using the system package manager.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-grep
+
+This spell installs the grep (pattern matching) command using the system package manager.
+On Debian-based systems, this ensures grep with PCRE support (-P flag) is available.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+# Package names for officially supported platforms (from detect-distro)
+APT_PACKAGE=grep          # Debian, Ubuntu, Raspbian
+PACMAN_PACKAGE=grep       # Arch, Manjaro
+DNF_PACKAGE=grep          # Fedora
+NIX_PACKAGE=gnugrep       # NixOS
+PKGIN_PACKAGE=grep        # macOS (pkgin package manager)
+ASSUME_YES=1
+
+export APT_PACKAGE PACMAN_PACKAGE DNF_PACKAGE NIX_PACKAGE PKGIN_PACKAGE ASSUME_YES
+
+"$SCRIPT_DIR/manage-system-command" grep grep
