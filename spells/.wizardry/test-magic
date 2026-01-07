@@ -564,10 +564,15 @@ WRAPPER_EOF
   fi
 
   if [ "$test_exit_code" -ne 0 ]; then
-    {
-      printf '=== %s ===\n' "$test_path"
-      printf '%s\n\n' "$cleaned_output"
-    } >>"$failure_output_file"
+    # Only collect detailed output for the first 12 failures
+    # total_fail hasn't been incremented yet for this failure,
+    # so check < 12 to collect failures 1-12
+    if [ "$total_fail" -lt 12 ]; then
+      {
+        printf '=== %s ===\n' "$test_path"
+        printf '%s\n\n' "$cleaned_output"
+      } >>"$failure_output_file"
+    fi
 
     if [ -n "$fail_numbers" ]; then
       entry="$spell_name ($fail_numbers)"
