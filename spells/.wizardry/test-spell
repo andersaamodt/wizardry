@@ -135,6 +135,5 @@ fi
 # 2. Are already run once by test-magic before any spell tests
 # 3. Would cause massive duplication if run per-spell
 
-# Execute the test file with stdin redirected from /dev/null
-# This prevents tests from hanging if they accidentally read from stdin
-exec "$full_test_path" </dev/null
+# Execute the test file
+exec "$full_test_path"
