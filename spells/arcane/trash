@@ -40,7 +40,7 @@ while [ "$#" -gt 0 ]; do
     break
     ;;
   -*)
-    usage-error "trash" "unknown option: $1" || return 1
+    usage-error "trash" "unknown option: $1"
     ;;
   *)
     break
