@@ -629,9 +629,19 @@ test_common_tests() {
   test_timeout="${WIZARDRY_TEST_TIMEOUT:-180}"
   if run_test_file "$test_path" "common-tests"; then
     level_pass=$((level_pass + 1))
+    if [ -n "$test_summary_line" ]; then
+      printf '    %s%s%s\n' "$_green" "$test_summary_line" "$_reset"
+    else
+      printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_name"
+    fi
   else
     level_fail=$((level_fail + 1))
     failed_tests="${failed_tests:+$failed_tests }$test_name"
+    if [ -n "$test_summary_line" ]; then
+      printf '    %s%s%s\n' "$_red" "$test_summary_line" "$_reset"
+    else
+      printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_name"
+    fi
   fi
 
   total_pass=$((total_pass + level_pass))
