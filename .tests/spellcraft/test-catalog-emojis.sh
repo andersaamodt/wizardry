@@ -32,27 +32,15 @@ test_help_short() {
 }
 
 test_basic_execution() {
-  # Skip if grep doesn't support -P (Perl regex) - needed for emoji detection
-  if ! grep --help 2>&1 | grep -q -- '-P'; then
-    TEST_SKIP_REASON="(requires grep -P for emoji detection)"
-    return 222
-  fi
-  
   # Test that the spell runs without errors
-  # It should find emojis in the policy file we just created
+  # It should find emojis in the .github/ files
   run_spell "spells/spellcraft/catalog-emojis"
   assert_success || return 1
   assert_output_contains "Emoji Frequency" || return 1
 }
 
 test_detects_emojis_in_policy() {
-  # Skip if grep doesn't support -P (Perl regex) - needed for emoji detection
-  if ! grep --help 2>&1 | grep -q -- '-P'; then
-    TEST_SKIP_REASON="(requires grep -P for emoji detection)"
-    return 222
-  fi
-  
-  # The CODE_POLICY_EMOJI_ANNOTATIONS.md file contains example emojis
+  # The .github/ files contain emojis used for annotations
   # This test verifies they are detected
   run_spell "spells/spellcraft/catalog-emojis"
   assert_success || return 1
