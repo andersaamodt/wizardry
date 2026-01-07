@@ -726,32 +726,44 @@ This section documents all exemptions that have been successfully resolved. Item
 
 **Rationale**: Word-of-binding paradigm has been deprecated. Spells and imps are now executed as flat scripts, not sourced for their functions.
 
-### Exempted Spells (Temporarily)
+### Exempted Spells (Reducing)
 
-The following spells are temporarily exempted while being refactored:
+**✅ PROGRESS: 14 spells removed from exemption list (9 already compliant + 5 refactored to 0 functions)**
 
-1. **spellcraft/lint-magic** - Complex linting infrastructure
-2. **menu/spellbook** - Large menu system
-3. **cantrips/menu** - Interactive menu framework
-4. **cantrips/colors** - Color variable definitions (meant to be sourced)
-5. **cantrips/fathom-cursor** - Terminal cursor detection
-6. **cantrips/await-keypress** - Complex terminal state handling
-7. **psi/read-contact** - vCard parsing logic
-8. **menu/mud** - MUD menu system
-9. **menu/mud-settings** - MUD settings menu
-10. **menu/main-menu** - Main menu system
-11. **.arcana/mud/cd** - Shell hook (meant to be sourced)
-12. **.arcana/core/install-core** - Bootstrap installation
-13. **.arcana/core/install-bwrap** - Bootstrap bubblewrap installer
-14. **.arcana/bitcoin/configure-bitcoin** - Bitcoin configuration
-15. **.arcana/lightning/install-lightning** - Lightning installation
-16. **.arcana/lightning/lightning-menu** - Lightning menu
-17. **.arcana/node/node-menu** - Node menu
-18. **divination/identify-room** - Complex room identification
-19. **system/update-all** - System update orchestration
-20. **system/test-magic** - Test runner infrastructure (4 flags exemption)
-21. **system/banish** - Uninstallation script
-22. **spellcraft/demo-magic** - Demonstration spell with extensive functions
+The following spells are temporarily exempted while being refactored to flat-file paradigm:
+
+**High Priority (4+ functions):**
+1. **cantrips/menu** (11 functions) - Interactive menu framework
+2. **.wizardry/test-magic** (4 functions) - Test runner infrastructure
+3. **.arcana/core/install-core** (4 functions) - Bootstrap installation
+4. **.wizardry/generate-glosses** (4 functions) - Gloss generation
+
+**Medium Priority (3 functions):**
+5. **cantrips/await-keypress** (3 functions) - Complex terminal state handling
+6. **psi/read-contact** (3 functions) - vCard parsing logic
+7. **divination/identify-room** (3 functions) - Complex room identification
+
+**Low Priority (2 functions):**
+8. **cantrips/colors** (2 functions) - **Permanent architectural exemption** (sourced-only, defines color variables, uses uncastable imp)
+9. **.arcana/bitcoin/configure-bitcoin** (2 functions) - Bitcoin configuration
+
+**✅ REMOVED FROM EXEMPTIONS (Now Compliant - Already Had 0-1 Functions):**
+- ~~spellcraft/lint-magic~~ (0 functions) ✓
+- ~~menu/spellbook~~ (1 function) ✓
+- ~~.arcana/mud/cd~~ (0 functions) ✓
+- ~~.arcana/lightning/install-lightning~~ (1 function) ✓
+- ~~.arcana/lightning/lightning-menu~~ (1 function) ✓
+- ~~.arcana/node/node-menu~~ (1 function) ✓
+- ~~system/update-all~~ (1 function) ✓
+- ~~wards/banish~~ (1 function) ✓
+- ~~spellcraft/demo-magic~~ (1 function) ✓
+
+**✅ REFACTORED TO FLAT-FILE (2→0 functions):**
+- ~~menu/mud~~ (2→0 functions) ✓ Inlined get_portal_location and mud_display_menu
+- ~~menu/mud-settings~~ (2→0 functions) ✓ Inlined has_player_key and mud_settings_display_menu
+- ~~menu/main-menu~~ (2→0 functions) ✓ Inlined is_mud_enabled and main_menu_display_menu
+- ~~cantrips/fathom-cursor~~ (2→0 functions) ✓ Inlined restore_test and restore_tty trap handlers
+- ~~.arcana/core/install-bwrap~~ (2→0 functions) ✓ Inlined install_bwrap_from_source and cleanup trap handler
 
 ### Exempted Test Imps
 
@@ -760,4 +772,6 @@ Test infrastructure is exempted from the 0-function rule:
 1. **test/test-bootstrap** - Test framework with multiple helper functions
 
 **Status**: ⚠️ Temporary exemptions. Goal is to refactor these to flat scripts or document permanent architectural reasons for exemption.
+
+**Progress**: Reduced from 22 exemptions to 9 exemptions (14 spells resolved: 9 already compliant + 5 refactored).
 

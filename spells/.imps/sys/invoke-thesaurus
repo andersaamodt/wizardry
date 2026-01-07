@@ -123,7 +123,7 @@ fi
 if [ "$_it_enabled" -eq 0 ]; then
   # Synonyms disabled - print message to stderr for visibility
   printf '%s\n' "invoke-thesaurus: synonyms are disabled" >&2
-  exit 0
+  return 0
 fi
 
 # Check if default synonyms are enabled
@@ -178,7 +178,7 @@ fi
 if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
   printf '%s\n' "invoke-thesaurus: loaded $_it_count synonym(s)"
 fi
-exit 0
+return 0
 
 # Run the function
 

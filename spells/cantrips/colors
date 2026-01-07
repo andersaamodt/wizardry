@@ -19,9 +19,25 @@ Example:
   . colors
   printf '%sError:%s An error message.\n' "${RED}" "${RESET}"
 USAGE
-  exit 0
+  return 0
   ;;
 esac
+
+# Load uncastable imp for sourced-only enforcement
+if ! command -v uncastable >/dev/null 2>&1; then
+  if [ -n "${WIZARDRY_DIR-}" ]; then
+    _i="$WIZARDRY_DIR/spells/.imps/sys"
+  elif [ -n "${ROOT_DIR-}" ]; then
+    _i="$ROOT_DIR/spells/.imps/sys"
+  else
+    _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+    _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
+    _i="${_r}/spells/.imps/sys"
+  fi
+  [ -f "$_i/uncastable" ] && . "$_i/uncastable"
+fi
+
+uncastable colors "Usage: . colors"
 
 colors() {
 # Note: No require-wizardry check here - colors must work standalone
@@ -215,31 +231,5 @@ case ${TERM-} in
 esac
 }
 
-# Load autocast imp for direct execution
-if ! command -v autocast >/dev/null 2>&1; then
-  if [ -n "${WIZARDRY_DIR-}" ]; then
-    _i="$WIZARDRY_DIR/spells/.imps/sys"
-  elif [ -n "${ROOT_DIR-}" ]; then
-    _i="$ROOT_DIR/spells/.imps/sys"
-  else
-    _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-    _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
-    _i="${_r}/spells/.imps/sys"
-  fi
-  [ -f "$_i/autocast" ] && . "$_i/autocast"
-fi
-
-if command -v autocast >/dev/null 2>&1; then
-  # Check if autocast is a function using POSIX-compliant method
-  _cmd_result=$(command -v autocast 2>/dev/null || printf '')
-  case "$_cmd_result" in
-    alias\ *) colors "$@" ;;  # Is an alias, just run colors
-    /*) colors "$@" ;;        # Is a path (external command), just run colors
-    autocast)   # Is a function
-      autocast colors
-      ;;
-    *) colors "$@" ;;
-  esac
-else
-  colors "$@"
-fi
+# Call colors function when sourced to initialize color variables
+colors "$@"

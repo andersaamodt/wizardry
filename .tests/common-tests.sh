@@ -826,30 +826,16 @@ test_spells_follow_function_discipline() {
   tmpfile_violations=$(mktemp "${WIZARDRY_TMPDIR}/func-violations.XXXXXX")
   
   # NEW REQUIREMENT: Spells must have at most 1 function total
-  # Hardcoded exceptions for spells documented in EXEMPTIONS.md
+  # Hardcoded exceptions for spells documented in EXEMPTIONS.md (temporary, reducing over time)
   exempted_spells="
-spellcraft/lint-magic
-menu/spellbook
 cantrips/menu
 cantrips/colors
-cantrips/fathom-cursor
 cantrips/await-keypress
 psi/read-contact
-menu/mud
-menu/mud-settings
-menu/main-menu
-.arcana/mud/cd
 .arcana/core/install-core
-.arcana/core/install-bwrap
 .arcana/bitcoin/configure-bitcoin
-.arcana/lightning/install-lightning
-.arcana/lightning/lightning-menu
-.arcana/node/node-menu
 divination/identify-room
-system/update-all
 .wizardry/test-magic
-wards/banish
-spellcraft/demo-magic
 .wizardry/generate-glosses
 "
   

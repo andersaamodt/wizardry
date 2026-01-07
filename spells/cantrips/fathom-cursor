@@ -103,10 +103,7 @@ if [ "$skip_stty" -eq 1 ]; then
     fi
 
     exec 3<"$tty_device" || exit 1
-    restore_test() {
-        exec 3>&- 2>/dev/null || :
-    }
-    trap 'restore_test' EXIT
+    trap 'exec 3>&- 2>/dev/null || :' EXIT
 else
     # When running interactively, open the tty for both reading and writing
     if [ ! -r "$tty_device" ] || [ ! -w "$tty_device" ]; then
@@ -123,13 +120,8 @@ else
         exit 1
     fi
 
-    restore_tty() {
-        stty "$saved_state" <&3 >/dev/null 2>&1 || :
-        exec 3>&- 2>/dev/null || :
-    }
-
-    trap 'restore_tty; exit 130' INT HUP TERM
-    trap 'restore_tty' EXIT
+    trap 'stty "$saved_state" <&3 >/dev/null 2>&1 || :; exec 3>&- 2>/dev/null || :; exit 130' INT HUP TERM
+    trap 'stty "$saved_state" <&3 >/dev/null 2>&1 || :; exec 3>&- 2>/dev/null || :' EXIT
 
     # Configure raw mode with a short timeout
     if ! stty -icanon -echo min 0 time 5 <&3 2>/dev/null; then
@@ -155,9 +147,10 @@ done
 # Cleanup
 trap - EXIT
 if [ "$skip_stty" -eq 1 ]; then
-    restore_test
+    exec 3>&- 2>/dev/null || :
 else
-    restore_tty
+    stty "$saved_state" <&3 >/dev/null 2>&1 || :
+    exec 3>&- 2>/dev/null || :
 fi
 
 # Validate response

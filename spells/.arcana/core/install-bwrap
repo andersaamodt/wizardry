@@ -44,90 +44,102 @@ if "$SCRIPT_DIR/manage-system-command" bwrap bubblewrap; then
   exit 0
 fi
 
-install_bwrap_from_source() {
-  if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
-    printf '%s\n' "install-bwrap: bubblewrap is Linux-only and has no official macOS binaries." >&2
-    printf '%s\n' "install-bwrap: use a Linux environment (VM/container) to install bwrap." >&2
-    return 1
+# Install from source if package manager failed
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  printf '%s\n' "install-bwrap: bubblewrap is Linux-only and has no official macOS binaries." >&2
+  printf '%s\n' "install-bwrap: use a Linux environment (VM/container) to install bwrap." >&2
+  exit 1
+fi
+
+bwrap_version=${BWRAP_VERSION:-0.9.0}
+tarball="bubblewrap-${bwrap_version}.tar.xz"
+src_url="https://github.com/containers/bubblewrap/releases/download/v${bwrap_version}/${tarball}"
+
+if command -v curl >/dev/null 2>&1; then
+  fetch_cmd="curl -fsSL"
+elif command -v wget >/dev/null 2>&1; then
+  fetch_cmd="wget -qO-"
+else
+  printf '%s\n' "install-bwrap: curl or wget required to download source." >&2
+  exit 1
+fi
+
+if ! command -v tar >/dev/null 2>&1; then
+  printf '%s\n' "install-bwrap: tar required to unpack source." >&2
+  exit 1
+fi
+
+if ! command -v python3 >/dev/null 2>&1; then
+  printf '%s\n' "install-bwrap: python3 required to bootstrap meson/ninja." >&2
+  exit 1
+fi
+
+if ! command -v meson >/dev/null 2>&1 || ! command -v ninja >/dev/null 2>&1; then
+  if ! python3 -m pip --version >/dev/null 2>&1; then
+    python3 -m ensurepip --upgrade >/dev/null 2>&1 || true
   fi
+  python3 -m pip install --user --upgrade meson ninja >/dev/null 2>&1 || true
+  user_base=$(python3 -c 'import site; print(site.USER_BASE)')
+  PATH="${user_base}/bin:$PATH"
+  export PATH
+fi
 
-  bwrap_version=${BWRAP_VERSION:-0.9.0}
-  tarball="bubblewrap-${bwrap_version}.tar.xz"
-  src_url="https://github.com/containers/bubblewrap/releases/download/v${bwrap_version}/${tarball}"
+if ! command -v meson >/dev/null 2>&1 || ! command -v ninja >/dev/null 2>&1; then
+  printf '%s\n' "install-bwrap: meson and ninja are required to build bubblewrap." >&2
+  exit 1
+fi
 
-  if command -v curl >/dev/null 2>&1; then
-    fetch_cmd="curl -fsSL"
-  elif command -v wget >/dev/null 2>&1; then
-    fetch_cmd="wget -qO-"
-  else
-    printf '%s\n' "install-bwrap: curl or wget required to download source." >&2
-    return 1
+if ! command -v pkg-config >/dev/null 2>&1; then
+  printf '%s\n' "install-bwrap: pkg-config required to build bubblewrap." >&2
+  exit 1
+fi
+
+tmp_dir=$(mktemp -d 2>/dev/null || mktemp -d -t bwrap)
+trap 'rm -rf "$tmp_dir"' EXIT
+
+printf '%s\n' "install-bwrap: downloading bubblewrap ${bwrap_version}..."
+if ! (cd "$tmp_dir" && $fetch_cmd "$src_url" | tar -xJf -); then
+  printf '%s\n' "install-bwrap: download or extraction failed." >&2
+  exit 1
+fi
+
+src_dir="${tmp_dir}/bubblewrap-${bwrap_version}"
+if [ ! -d "$src_dir" ]; then
+  printf '%s\n' "install-bwrap: source extraction failed." >&2
+  exit 1
+fi
+
+install_prefix=${BWRAP_PREFIX:-/usr/local}
+
+build_dir="${tmp_dir}/build"
+if ! meson setup "$build_dir" "$src_dir" --prefix="$install_prefix" --buildtype=release; then
+  printf '%s\n' "install-bwrap: meson setup failed." >&2
+  exit 1
+fi
+
+if ! ninja -C "$build_dir"; then
+  printf '%s\n' "install-bwrap: ninja build failed." >&2
+  exit 1
+fi
+
+if [ -w "$install_prefix" ] || [ -w "${install_prefix%/}/bin" ]; then
+  if ! ninja -C "$build_dir" install; then
+    printf '%s\n' "install-bwrap: ninja install failed." >&2
+    exit 1
   fi
-
-  if ! command -v tar >/dev/null 2>&1; then
-    printf '%s\n' "install-bwrap: tar required to unpack source." >&2
-    return 1
+elif command -v sudo >/dev/null 2>&1; then
+  if ! sudo ninja -C "$build_dir" install; then
+    printf '%s\n' "install-bwrap: sudo ninja install failed." >&2
+    exit 1
   fi
+else
+  printf '%s\n' "install-bwrap: need write access to ${install_prefix} (or sudo)." >&2
+  exit 1
+fi
 
-  if ! command -v python3 >/dev/null 2>&1; then
-    printf '%s\n' "install-bwrap: python3 required to bootstrap meson/ninja." >&2
-    return 1
-  fi
-
-  if ! command -v meson >/dev/null 2>&1 || ! command -v ninja >/dev/null 2>&1; then
-    if ! python3 -m pip --version >/dev/null 2>&1; then
-      python3 -m ensurepip --upgrade >/dev/null 2>&1 || true
-    fi
-    python3 -m pip install --user --upgrade meson ninja >/dev/null 2>&1 || true
-    user_base=$(python3 -c 'import site; print(site.USER_BASE)')
-    PATH="${user_base}/bin:$PATH"
-    export PATH
-  fi
-
-  if ! command -v meson >/dev/null 2>&1 || ! command -v ninja >/dev/null 2>&1; then
-    printf '%s\n' "install-bwrap: meson and ninja are required to build bubblewrap." >&2
-    return 1
-  fi
-
-  if ! command -v pkg-config >/dev/null 2>&1; then
-    printf '%s\n' "install-bwrap: pkg-config required to build bubblewrap." >&2
-    return 1
-  fi
-
-  tmp_dir=$(mktemp -d 2>/dev/null || mktemp -d -t bwrap)
-  cleanup() { rm -rf "$tmp_dir"; }
-  trap cleanup EXIT
-
-  printf '%s\n' "install-bwrap: downloading bubblewrap ${bwrap_version}..."
-  (cd "$tmp_dir" && $fetch_cmd "$src_url" | tar -xJf -) || return 1
-
-  src_dir="${tmp_dir}/bubblewrap-${bwrap_version}"
-  if [ ! -d "$src_dir" ]; then
-    printf '%s\n' "install-bwrap: source extraction failed." >&2
-    return 1
-  fi
-
-  install_prefix=${BWRAP_PREFIX:-/usr/local}
-
-  build_dir="${tmp_dir}/build"
-  meson setup "$build_dir" "$src_dir" --prefix="$install_prefix" --buildtype=release || return 1
-  ninja -C "$build_dir" || return 1
-
-  if [ -w "$install_prefix" ] || [ -w "${install_prefix%/}/bin" ]; then
-    ninja -C "$build_dir" install || return 1
-  elif command -v sudo >/dev/null 2>&1; then
-    sudo ninja -C "$build_dir" install || return 1
-  else
-    printf '%s\n' "install-bwrap: need write access to ${install_prefix} (or sudo)." >&2
-    return 1
-  fi
-}
-
-if install_bwrap_from_source; then
-  if command -v bwrap >/dev/null 2>&1; then
-    printf '%s\n' "bwrap installed from source."
-    exit 0
-  fi
+if command -v bwrap >/dev/null 2>&1; then
+  printf '%s\n' "bwrap installed from source."
+  exit 0
 fi
 
 printf '%s\n' "install-bwrap: unable to install bubblewrap automatically." >&2
