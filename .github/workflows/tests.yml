@@ -67,8 +67,8 @@ jobs:
     env:
       WIZARDRY_OS_LABEL: arch
     steps:
-      - name: Install git, procps, and python for checkout and testing
-        run: pacman -Sy --noconfirm git procps-ng python
+      - name: Install git, procps, python and core utilities for checkout and testing
+        run: pacman -Sy --noconfirm git procps-ng python coreutils sed gawk grep findutils
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
