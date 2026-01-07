@@ -41,12 +41,9 @@ fi
 nix_package=${NIX_PACKAGE:-$package_default}
 
 # Allow per-manager package overrides when names diverge across distros.
+# Officially supported platforms: debian, arch, nixos, mac
 apt_package=${APT_PACKAGE:-$package_default}
-dnf_package=${DNF_PACKAGE:-$package_default}
-yum_package=${YUM_PACKAGE:-$package_default}
-zypper_package=${ZYPPER_PACKAGE:-$package_default}
 pacman_package=${PACMAN_PACKAGE:-$package_default}
-apk_package=${APK_PACKAGE:-$package_default}
 pkgin_package=${PKGIN_PACKAGE:-$package_default}
 pkgin_candidates=${PKGIN_CANDIDATES:-/usr/pkg/bin/pkgin /opt/pkg/bin/pkgin /usr/local/pkg/bin/pkgin}
 
@@ -128,54 +125,6 @@ elif command -v apt-get >/dev/null 2>&1; then
   else
     manage_system_command_run_installer apt-get -y remove "$apt_package" || {
       printf '%s\n' "manage-system-command: unable to uninstall $command_name via apt-get" >&2
-      exit 1
-    }
-  fi
-elif command -v dnf >/dev/null 2>&1; then
-  if [ "$action" = "install" ]; then
-    manage_system_command_run_installer dnf install -y "$dnf_package" || {
-      printf '%s\n' "manage-system-command: unable to install ${dnf_package} automatically via dnf" >&2
-      exit 1
-    }
-  else
-    manage_system_command_run_installer dnf remove -y "$dnf_package" || {
-      printf '%s\n' "manage-system-command: unable to uninstall $command_name via dnf" >&2
-      exit 1
-    }
-  fi
-elif command -v yum >/dev/null 2>&1; then
-  if [ "$action" = "install" ]; then
-    manage_system_command_run_installer yum install -y "$yum_package" || {
-      printf '%s\n' "manage-system-command: unable to install ${yum_package} automatically via yum" >&2
-      exit 1
-    }
-  else
-    manage_system_command_run_installer yum remove -y "$yum_package" || {
-      printf '%s\n' "manage-system-command: unable to uninstall $command_name via yum" >&2
-      exit 1
-    }
-  fi
-elif command -v zypper >/dev/null 2>&1; then
-  if [ "$action" = "install" ]; then
-    manage_system_command_run_installer zypper install -y "$zypper_package" || {
-      printf '%s\n' "manage-system-command: unable to install ${zypper_package} automatically via zypper" >&2
-      exit 1
-    }
-  else
-    manage_system_command_run_installer zypper remove -y "$zypper_package" || {
-      printf '%s\n' "manage-system-command: unable to uninstall $command_name via zypper" >&2
-      exit 1
-    }
-  fi
-elif command -v apk >/dev/null 2>&1; then
-  if [ "$action" = "install" ]; then
-    manage_system_command_run_installer apk add "$apk_package" || {
-      printf '%s\n' "manage-system-command: unable to install ${apk_package} automatically via apk" >&2
-      exit 1
-    }
-  else
-    manage_system_command_run_installer apk del "$apk_package" || {
-      printf '%s\n' "manage-system-command: unable to uninstall $command_name via apk" >&2
       exit 1
     }
   fi

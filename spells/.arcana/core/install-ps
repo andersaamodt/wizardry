@@ -22,15 +22,11 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 ASSUME_YES=1
 FORCE_INSTALL=${INSTALL_PS_FORCE_INSTALL:-0}
 
-# Package names vary by distribution
+# Package names vary by distribution (officially supported platforms only)
 # Debian/Ubuntu: procps
-# Arch/Fedora/RHEL: procps-ng
-# Alpine: procps
+# Arch: procps-ng
 APT_PACKAGE=procps
 PACMAN_PACKAGE=procps-ng
-DNF_PACKAGE=procps-ng
-YUM_PACKAGE=procps-ng
-APK_PACKAGE=procps
-export ASSUME_YES FORCE_INSTALL APT_PACKAGE PACMAN_PACKAGE DNF_PACKAGE YUM_PACKAGE APK_PACKAGE
+export ASSUME_YES FORCE_INSTALL APT_PACKAGE PACMAN_PACKAGE
 
 "$SCRIPT_DIR/manage-system-command" ps procps

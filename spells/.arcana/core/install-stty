@@ -17,16 +17,13 @@ set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
+# Package names for officially supported platforms
 APT_PACKAGE=coreutils
-DNF_PACKAGE=coreutils
-YUM_PACKAGE=coreutils
-ZYPPER_PACKAGE=coreutils
 PACMAN_PACKAGE=coreutils
-APK_PACKAGE=coreutils
-BREW_PACKAGE=coreutils
+NIX_PACKAGE=coreutils
+PKGIN_PACKAGE=coreutils
 ASSUME_YES=1
 
-export APT_PACKAGE DNF_PACKAGE YUM_PACKAGE ZYPPER_PACKAGE
-export PACMAN_PACKAGE APK_PACKAGE BREW_PACKAGE ASSUME_YES
+export APT_PACKAGE PACMAN_PACKAGE NIX_PACKAGE PKGIN_PACKAGE ASSUME_YES
 
 "$SCRIPT_DIR/manage-system-command" stty coreutils
