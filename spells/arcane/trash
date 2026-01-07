@@ -53,31 +53,19 @@ if [ "$#" -eq 0 ]; then
   exit 2
 fi
 
-# Detect the OS
-if command -v detect-distro >/dev/null 2>&1; then
-  platform=$(detect-distro 2>/dev/null || printf 'unknown')
-  case "$platform" in
-  mac)
-    os=mac
-    ;;
-  *)
-    os=linux
-    ;;
-  esac
-else
-  kernel=$(uname -s 2>/dev/null || printf 'unknown')
-  case "$kernel" in
-  Darwin)
-    os=mac
-    ;;
-  Linux)
-    os=linux
-    ;;
-  *)
-    os=unknown
-    ;;
-  esac
-fi
+# Detect the OS using uname directly (faster and more reliable in tests)
+kernel=$(uname -s 2>/dev/null || printf 'unknown')
+case "$kernel" in
+Darwin)
+  os=mac
+  ;;
+Linux)
+  os=linux
+  ;;
+*)
+  os=unknown
+  ;;
+esac
 
 # Detect the best trash command available
 case "$os" in
