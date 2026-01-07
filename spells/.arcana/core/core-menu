@@ -90,3 +90,58 @@ core_menu_resolve_spell() {
 
   printf '%s\n' "core-menu: missing helper '$spell_name'" >&2
   return 1
+}
+
+# Loop until user exits
+iterations=0
+while true; do
+  iterations=$((iterations + 1))
+  if [ -n "$loop_limit" ] && [ "$iterations" -gt "$loop_limit" ]; then
+    break
+  fi
+  
+  # Build menu entries from core dependencies
+  set -- "$title"
+  
+  core_dependencies | while IFS=: read -r label command_name install_spell uninstall_spell essential; do
+    # Check if command is installed
+    status=""
+    if [ "$command_name" = "$CLIPBOARD_MARKER" ]; then
+      # Special handling for clipboard - check any clipboard helper
+      if command -v pbcopy >/dev/null 2>&1 || \
+         command -v xsel >/dev/null 2>&1 || \
+         command -v xclip >/dev/null 2>&1 || \
+         command -v wl-copy >/dev/null 2>&1; then
+        status="[X]"
+        cmd=$(core_menu_resolve_spell "$uninstall_spell") || continue
+      else
+        status="[ ]"
+        cmd=$(core_menu_resolve_spell "$install_spell") || continue
+      fi
+    elif command -v "$command_name" >/dev/null 2>&1; then
+      status="[X]"
+      if [ "$essential" = "1" ]; then
+        # Essential commands can't be uninstalled
+        cmd="printf 'Cannot uninstall essential command: %s\n' '$command_name' >&2"
+      else
+        cmd=$(core_menu_resolve_spell "$uninstall_spell") || continue
+      fi
+    else
+      status="[ ]"
+      cmd=$(core_menu_resolve_spell "$install_spell") || continue
+    fi
+    
+    printf '%s %s%%$WIZARDRY_LOG_LEVEL=0 %s && exec %s\n' "$status" "$label" "$cmd" "$0"
+  done | {
+    # Read menu entries from core_dependencies output
+    while IFS= read -r entry; do
+      set -- "$@" "$entry"
+    done
+    
+    # Add exit option
+    set -- "$@" "$exit_entry"
+    
+    # Call menu
+    "$menu_bin" "$@" || true
+  }
+done

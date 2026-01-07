@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# Bootstrap spell: Uninstall the ps command using the system package manager.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-ps
+
+This spell uninstalls the ps command using the system package manager.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+# Package names vary by distribution
+APT_PACKAGE=procps
+PACMAN_PACKAGE=procps-ng
+DNF_PACKAGE=procps-ng
+YUM_PACKAGE=procps-ng
+APK_PACKAGE=procps
+export APT_PACKAGE PACMAN_PACKAGE DNF_PACKAGE YUM_PACKAGE APK_PACKAGE
+
+ASSUME_YES=1 "$SCRIPT_DIR/manage-system-command" --uninstall ps procps
