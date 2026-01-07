@@ -103,7 +103,9 @@ while true; do
   # Build menu entries from core dependencies
   set -- "$title"
   
-  core_dependencies | while IFS=: read -r label command_name install_spell uninstall_spell essential; do
+  # Read core dependency entries (label:command:install:uninstall:essential)
+  core_dependencies | while IFS=: read -r label command_name \
+    install_spell uninstall_spell essential; do
     # Check if command is installed
     status=""
     if [ "$command_name" = "$CLIPBOARD_MARKER" ]; then

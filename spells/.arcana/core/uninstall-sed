@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Uninstall the sed command.
+# Bootstrap spell: Uninstall the sed command.
 
 case "${1-}" in
 --help|--usage|-h)

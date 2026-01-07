@@ -1536,7 +1536,7 @@ test_spells_source_env_clear_after_set_eu() {
       # Scripts that need PATH setup before env-clear to find it
       system/test-magic|.wizardry/test-magic|system/test-spell|.wizardry/test-spell|system/verify-posix|.wizardry/verify-posix|spellcraft/lint-magic|enchant/enchant) return ;;
       # System maintenance spells (standalone, no env-clear needed)
-      spellcraft/catalog-emojis|.wizardry/validate-spells) return ;;
+      .wizardry/validate-spells) return ;;
       # MUD admin spells (internal utilities, no env-clear needed)
       menu/mud-admin/*) return ;;
     esac
@@ -2359,7 +2359,7 @@ test_spells_do_not_source_by_path() {
     # Skip bootstrap/system spells that need path-based sourcing
     spell_name=$(basename "$spell_file")
     case "$spell_name" in
-      catalog-emojis|colors|compile-spell|demo-magic|doppelganger|generate-glosses|invoke-wizardry|lint-magic|parse|test-magic|validate-spells|verify-posix) continue ;;
+      colors|compile-spell|demo-magic|doppelganger|generate-glosses|invoke-wizardry|lint-magic|parse|test-magic|validate-spells|verify-posix) continue ;;
     esac
     
     # Skip non-POSIX scripts

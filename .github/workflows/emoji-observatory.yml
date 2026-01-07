@@ -41,5 +41,5 @@ jobs:
           echo "=== CURRENT EMOJI CATALOG ==="
           echo ""
           
-          # Run catalog-emojis spell
-          ./spells/spellcraft/catalog-emojis
+          # Run catalog-emojis script (workflow-only, not a cross-platform spell)
+          ./.github/catalog-emojis
