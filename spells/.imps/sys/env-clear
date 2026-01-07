@@ -122,7 +122,7 @@ _saved_runner_temp="${RUNNER_TEMP:-}"
 _saved_runner_tool_cache="${RUNNER_TOOL_CACHE:-}"
 
 # Clear all environment variables
-for _var in $(env | cut -d= -f1); do
+for _var in $(env </dev/null | cut -d= -f1); do
   unset "$_var" 2>/dev/null || true
 done
 
