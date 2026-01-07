@@ -20,7 +20,7 @@ set -eu
 current_os=$(os)
 
 case "$current_os" in
-        debian|arch|fedora|nixos|linux)
+        debian|arch|nixos|linux)
                 if has systemctl; then
                         sudo systemctl restart sshd 2>/dev/null || sudo systemctl restart ssh
                 elif has service; then

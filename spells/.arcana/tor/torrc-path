@@ -25,7 +25,7 @@ case $platform in
   arch)
     TORRC_PATHS="/etc/tor/torrc"
     ;;
-  debian|fedora|nixos|linux)
+  debian|nixos|linux)
     TORRC_PATHS="/etc/tor/torrc /usr/local/etc/tor/torrc"
     ;;
   mac)

@@ -41,13 +41,6 @@ case $distro in
         printf '%b✘ apt%b (default package manager on Debian and Ubuntu)\n' "$THEME_ERROR" "$RESET"
     fi
     ;;
-  "fedora")
-    if dnf --version >/dev/null 2>&1; then
-        printf '%b✔ dnf%b (default package manager on Fedora)\n' "$THEME_SUCCESS" "$RESET"
-    else
-        printf '%b✘ dnf%b (default package manager on Fedora)\n' "$THEME_ERROR" "$RESET"
-    fi
-    ;;
   "macos"|"mac")
     if brew --version >/dev/null 2>&1; then
         printf '%b✔ brew%b (default package manager on macOS)\n' "$THEME_SUCCESS" "$RESET"

@@ -44,9 +44,6 @@ if command -v apt >/dev/null 2>&1; then
   if dpkg-query -W -f='${Status}' bitcoin 2>/dev/null | grep -q "ok installed"; then
     sudo apt remove -y bitcoin && uninstalled=1
   fi
-elif command -v dnf >/dev/null 2>&1; then
-  if rpm -q bitcoin >/dev/null 2>&1; then
-    sudo dnf remove -y bitcoin && uninstalled=1
   fi
 elif command -v pacman >/dev/null 2>&1; then
   if pacman -Q bitcoin >/dev/null 2>&1; then

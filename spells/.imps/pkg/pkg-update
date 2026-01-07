@@ -11,10 +11,7 @@ _pu_pm=$(pkg-manager) || {
 
 case $_pu_pm in
   apt)    sudo apt-get update ;;
-  dnf)    sudo dnf check-update || [ $? -eq 100 ] ;;
   pacman) sudo pacman -Sy ;;
-  brew)   brew update ;;
   nix)    nix-channel --update ;;
   pkgin)  sudo pkgin update ;;
-  apk)    sudo apk update ;;
 esac

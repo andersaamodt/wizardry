@@ -11,10 +11,7 @@ _ph_pm=$(pkg-manager) || { printf '%s\n' "pkg-has: no supported package manager"
 
 case $_ph_pm in
   apt)    dpkg -l "$_ph_package" 2>/dev/null | grep -q "^ii" ;;
-  dnf)    rpm -q "$_ph_package" >/dev/null 2>&1 ;;
   pacman) pacman -Q "$_ph_package" >/dev/null 2>&1 ;;
-  brew)   brew list "$_ph_package" >/dev/null 2>&1 ;;
   nix)    nix-env -q "$_ph_package" >/dev/null 2>&1 ;;
   pkgin)  pkgin list 2>/dev/null | grep -q "^${_ph_package}-" ;;
-  apk)    apk info -e "$_ph_package" >/dev/null 2>&1 ;;
 esac

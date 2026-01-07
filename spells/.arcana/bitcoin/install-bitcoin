@@ -139,7 +139,6 @@ echo "Detected platform: $distro"
 pkg_install_success=0
 pkg_mgr_available=0
 command -v apt >/dev/null 2>&1 && pkg_mgr_available=1
-command -v dnf >/dev/null 2>&1 && pkg_mgr_available=1
 command -v pacman >/dev/null 2>&1 && pkg_mgr_available=1
 command -v brew >/dev/null 2>&1 && pkg_mgr_available=1
 
@@ -159,8 +158,6 @@ fi
 if [ "$use_pkg_mgr" -eq 1 ]; then
   if command -v apt >/dev/null 2>&1; then
     sudo apt update && sudo apt install -y bitcoind bitcoin-qt && pkg_install_success=1
-  elif command -v dnf >/dev/null 2>&1; then
-    (sudo dnf install -y bitcoin || sudo dnf install -y bitcoind) && pkg_install_success=1
   elif command -v pacman >/dev/null 2>&1; then
     sudo pacman -Sy --noconfirm bitcoind && pkg_install_success=1
   elif command -v brew >/dev/null 2>&1; then
