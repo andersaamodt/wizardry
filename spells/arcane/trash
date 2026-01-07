@@ -14,7 +14,11 @@ USAGE
 esac
 
 set -eu
+# DEBUG: trash - about to source env-clear
+echo "DEBUG: trash sourcing env-clear" >> /tmp/wizardry-debug.log 2>&1 || true
 . env-clear
+# DEBUG: trash - finished sourcing env-clear
+echo "DEBUG: trash finished env-clear" >> /tmp/wizardry-debug.log 2>&1 || true
 
 recursive=0
 force=0
@@ -40,6 +44,8 @@ while [ "$#" -gt 0 ]; do
     break
     ;;
   -*)
+    # DEBUG: trash - about to call usage-error
+    echo "DEBUG: trash calling usage-error for option: $1" >> /tmp/wizardry-debug.log 2>&1 || true
     usage-error "trash" "unknown option: $1" || return 1
     ;;
   *)

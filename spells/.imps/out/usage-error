@@ -1,6 +1,10 @@
 #!/bin/sh
 # usage-error NAME MESSAGE - print usage error and exit with code 2
 # Example: usage-error "my-spell" "unknown option: -x"
+
+# DEBUG: Log that usage-error was invoked
+echo "DEBUG: usage-error invoked with args: ${1:-} ${2:-}" >> /tmp/wizardry-debug.log 2>&1 || true
+
 set -eu
 
 

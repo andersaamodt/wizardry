@@ -121,10 +121,12 @@ _saved_runner_os="${RUNNER_OS:-}"
 _saved_runner_temp="${RUNNER_TEMP:-}"
 _saved_runner_tool_cache="${RUNNER_TOOL_CACHE:-}"
 
-# Clear all environment variables
+# Clear all environment variables  
+printf 'ENVCLEAR_DEBUG_START\n' >&2
 for _var in $(env </dev/null | cut -d= -f1); do
   unset "$_var" 2>/dev/null || true
 done
+printf 'ENVCLEAR_DEBUG_END\n' >&2
 
 # Restore essential variables
 export PATH="$_saved_path"
