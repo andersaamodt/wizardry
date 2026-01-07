@@ -20,7 +20,7 @@ set +eu
 if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
   [ "${WIZARDRY_DEBUG-}" = "1" ] && \
     printf '[invoke-wizardry] %s\n' "Already invoked, skipping" >&2
-  exit 0
+  return 0
 fi
 _WIZARDRY_INVOKED=1
 # Note: NOT exported - each subprocess should invoke wizardry independently
@@ -70,7 +70,7 @@ fi
 # Validate WIZARDRY_DIR
 if [ -z "${WIZARDRY_DIR-}" ] || [ ! -d "${WIZARDRY_DIR-}/spells" ]; then
   printf '%s\n' "invoke-wizardry: ERROR - WIZARDRY_DIR not found" >&2
-  exit 1
+  return 1
 fi
 
 [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "WIZARDRY_DIR=$WIZARDRY_DIR" >&2
@@ -130,11 +130,11 @@ fi
 if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
   if ! command -v menu >/dev/null 2>&1; then
     printf '%s\n' "invoke-wizardry: ERROR - menu spell not found in PATH" >&2
-    exit 1
+    return 1
   fi
 fi
 
 # Wizardry initialization complete
 [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Wizardry initialization complete" >&2
 set +eu
-exit 0
+return 0
