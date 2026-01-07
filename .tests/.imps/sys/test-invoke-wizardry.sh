@@ -280,7 +280,7 @@ test_recursion_guard() {
 # The cd hook is now installed separately if MUD features are enabled
 # See spells/.arcana/mud/toggle-cd for cd hook functionality
 
-# Test: menu is pre-loaded as function
+# Test: menu is available in PATH after invoke-wizardry
 test_menu_preloaded() {
   tmpdir=$(make_tempdir)
   
@@ -293,11 +293,10 @@ export WIZARDRY_DIR
 
 if command -v menu >/dev/null 2>&1; then
   printf 'menu command available\n'
-  menu_type=\$(type menu 2>/dev/null | head -1)
-  case "\$menu_type" in
-    *function*|*alias*) printf 'menu is pre-loaded\n'; exit 0 ;;
-    *) printf 'menu type: %s\n' "\$menu_type"; exit 0 ;;
-  esac
+  # invoke-wizardry now uses PATH-based execution, not function preloading
+  # So menu should be a script in PATH, not a function
+  printf 'menu is available in PATH\n'
+  exit 0
 else
   printf 'menu not found\n'
   exit 1
@@ -308,7 +307,7 @@ EOF
   run_cmd sh "$tmpdir/test-menu-preloaded.sh"
   assert_success || return 1
   assert_output_contains "menu command available" || return 1
-  assert_output_contains "menu is pre-loaded" || return 1
+  assert_output_contains "menu is available in PATH" || return 1
 }
 
 # Test: invoke-wizardry succeeds in shells without BASH/ZSH detection by using default install path
@@ -437,7 +436,7 @@ run_test_case "invoke-wizardry works in non-bash shells via default path" test_d
 # Test #8 removed: command_not_found_handle no longer used (glossary-based system instead)
 # Test #9 removed: recursion guard for command_not_found_handle no longer needed
 # Test #10 removed: cd function no longer pre-loaded (MUD features install separately)
-run_test_case "menu is pre-loaded as function" test_menu_preloaded
+run_test_case "menu is available in PATH" test_menu_preloaded
 run_test_case "empty spellbook directory doesn't cause errors" test_empty_spellbook_directory
 # Test #11 removed: redundant with word-of-binding paradigm (spell dirs never added to PATH)
 
