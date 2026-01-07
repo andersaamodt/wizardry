@@ -2,11 +2,10 @@
 # skip-if-uncompiled - skip test if running in uncompiled mode
 # Returns 222 if test should be skipped, 0 otherwise.
 
-  if [ "${WIZARDRY_TEST_COMPILED-0}" != "1" ]; then
-    TEST_SKIP_REASON="(compiled only)"
-    return 222
-  fi
-  exit 0
+if [ "${WIZARDRY_TEST_COMPILED-0}" != "1" ]; then
+  TEST_SKIP_REASON="(compiled only)"
+  exit 222
+fi
+exit 0
 
-# Self-execute when run directly (not sourced)
 

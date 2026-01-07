@@ -16,7 +16,7 @@ case "$_dt_kernel" in
     ;;
   *)
     printf '%s\n' "detect-trash: unsupported operating system: $_dt_kernel" >&2
-    return 1
+    exit 1
     ;;
 esac
 

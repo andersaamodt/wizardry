@@ -15,4 +15,4 @@ fi
 nss_marker="# wizardry: $nss_block_name"
 
 [ -f "$nss_nix_file" ] && grep -Fq "$nss_marker" "$nss_nix_file" 2>/dev/null
-return $?
+exit $?

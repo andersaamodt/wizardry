@@ -3,6 +3,6 @@
 # Example: within-range 5 1 10 && echo "valid"
 
 
-[ "$#" -eq 3 ] || return 1
+[ "$#" -eq 3 ] || exit 1
 [ "$1" -ge "$2" ] && [ "$1" -le "$3" ] 2>/dev/null
 

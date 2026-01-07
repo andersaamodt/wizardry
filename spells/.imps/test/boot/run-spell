@@ -11,7 +11,7 @@ repo_root=$(cd "$script_dir" && while [ ! -d "spells" ] && [ "$(pwd)" != "/" ]; 
 # Check if we should use sourced spell instead
 if [ "${WIZARDRY_USE_SOURCED_SPELL-0}" = "1" ]; then
   "$repo_root/spells/.imps/test/boot/run-sourced-spell" "$@"
-  return $?
+  exit $?
 fi
 
 # Normal direct execution

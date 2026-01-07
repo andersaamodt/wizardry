@@ -6,7 +6,7 @@
 
 
 case "$1" in
-  y|Y|yes|YES|Yes|true|TRUE|True|1) return 0 ;;
-  *) return 1 ;;
+  y|Y|yes|YES|Yes|true|TRUE|True|1) exit 0 ;;
+  *) exit 1 ;;
 esac
 

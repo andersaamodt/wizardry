@@ -10,7 +10,7 @@ delimiter=${2-}
 
 if [ -z "$field_num" ]; then
   printf 'field: FIELD_NUMBER required\n' >&2
-  return 2
+  exit 2
 fi
 
 # Read from stdin

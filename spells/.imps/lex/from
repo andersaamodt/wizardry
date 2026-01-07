@@ -10,7 +10,7 @@ shift 2 2>/dev/null || shift $#
 
 if [ $# -lt 1 ]; then
   printf '%s: from requires a source\n' "from" >&2
-  return 1
+  exit 1
 fi
 
 from_source=$1
@@ -18,7 +18,7 @@ shift
 
 if [ -z "$from_cmd" ]; then
   printf '%s: from requires a command before it\n' "from" >&2
-  return 1
+  exit 1
 fi
 
 if [ -n "$from_cmd_args" ]; then
@@ -30,7 +30,7 @@ fi
 if [ $# -eq 0 ]; then
   # shellcheck disable=SC2086
   "$from_cmd" $from_new_args
-  return $?
+  exit $?
 fi
 
 from_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)

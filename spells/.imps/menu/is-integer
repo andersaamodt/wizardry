@@ -4,16 +4,16 @@
 
 
 case "$1" in
-  '') return 1 ;;
-  -) return 1 ;;
+  '') exit 1 ;;
+  -) exit 1 ;;
   -[0-9]) : ;;
   -[0-9]*) : ;;
   [0-9]*) : ;;
-  *) return 1 ;;
+  *) exit 1 ;;
 esac
 case "$1" in
-  -*) _ii_rest=${1#-}; case "$_ii_rest" in *[!0-9]*) return 1 ;; esac ;;
-  *[!0-9]*) return 1 ;;
+  -*) _ii_rest=${1#-}; case "$_ii_rest" in *[!0-9]*) exit 1 ;; esac ;;
+  *[!0-9]*) exit 1 ;;
 esac
-return 0
+exit 0
 

@@ -4,5 +4,5 @@
 # Example: if is-submenu; then exit_label="Back"; else exit_label="Exit"; fi
 
 
-return 1
+exit 1
 

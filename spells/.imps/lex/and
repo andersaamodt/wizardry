@@ -13,12 +13,12 @@ if [ -n "$and_cmd" ]; then
   if "$and_cmd" $and_cmd_args; then
     : # success
   else
-    return $?
+    exit $?
   fi
 fi
 
 if [ $# -eq 0 ]; then
-  return 0
+  exit 0
 fi
 
 and_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
