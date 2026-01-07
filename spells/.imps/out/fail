@@ -3,5 +3,8 @@
 # Example: has git || fail "git required"
 set -eu
 
+# Redirect stdin from /dev/null to prevent hanging on macOS
+exec </dev/null
+
 printf '%s\n' "$*" >&2
 exit 1
