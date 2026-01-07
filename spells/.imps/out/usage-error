@@ -2,8 +2,8 @@
 # usage-error NAME MESSAGE - print usage error and exit with code 2
 # Example: usage-error "my-spell" "unknown option: -x"
 
-# DEBUG: Log that usage-error was invoked
-echo "DEBUG: usage-error invoked with args: ${1:-} ${2:-}" >> /tmp/wizardry-debug.log 2>&1 || true
+# DEBUG: Log that usage-error was invoked (to terminal, not captured by test)
+printf 'DEBUG: usage-error invoked with args: %s %s\n' "${1:-}" "${2:-}" >&2
 
 set -eu
 
