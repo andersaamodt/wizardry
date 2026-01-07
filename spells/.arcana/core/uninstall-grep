@@ -20,10 +20,9 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 # Package names for officially supported platforms (from detect-distro)
 APT_PACKAGE=grep          # Debian, Ubuntu, Raspbian
 PACMAN_PACKAGE=grep       # Arch, Manjaro
-DNF_PACKAGE=grep          # Fedora
 NIX_PACKAGE=gnugrep       # NixOS
 PKGIN_PACKAGE=grep        # macOS (pkgin package manager)
 
-export APT_PACKAGE PACMAN_PACKAGE DNF_PACKAGE NIX_PACKAGE PKGIN_PACKAGE
+export APT_PACKAGE PACMAN_PACKAGE NIX_PACKAGE PKGIN_PACKAGE
 
 "$SCRIPT_DIR/manage-system-command" --uninstall grep grep

@@ -77,14 +77,10 @@ elif [ -f "${root_prefix}/etc/debian_version" ]; then
   distro='debian'
 elif [ -f "${root_prefix}/etc/arch-release" ]; then
   distro='arch'
-elif [ -f "${root_prefix}/etc/fedora-release" ]; then
-  distro='fedora'
 elif [ "${os_id-}" = "debian" ] || [ "${os_id-}" = "ubuntu" ] || [ "${os_id-}" = "raspbian" ]; then
   distro='debian'
 elif [ "${os_id-}" = "arch" ]; then
   distro='arch'
-elif [ "${os_id-}" = "fedora" ]; then
-  distro='fedora'
 else
   # Inline detect_uname - only used once
   if [ -n "${DETECT_DISTRO_UNAME-}" ]; then
@@ -116,9 +112,6 @@ if [ "$verbose" -eq 1 ]; then
     ;;
   arch)
     printf '%s\n' 'Arch or Manjaro-based OS detected.'
-    ;;
-  fedora)
-    printf '%s\n' 'Fedora detected as the operating system.'
     ;;
   mac)
     printf '%s\n' 'MacOS detected.'
