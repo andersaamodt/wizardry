@@ -830,12 +830,8 @@ test_spells_follow_function_discipline() {
   exempted_spells="
 cantrips/menu
 cantrips/colors
-cantrips/fathom-cursor
 cantrips/await-keypress
 psi/read-contact
-menu/mud
-menu/mud-settings
-menu/main-menu
 .arcana/core/install-core
 .arcana/core/install-bwrap
 .arcana/bitcoin/configure-bitcoin

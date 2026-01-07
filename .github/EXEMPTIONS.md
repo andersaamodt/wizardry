@@ -728,7 +728,7 @@ This section documents all exemptions that have been successfully resolved. Item
 
 ### Exempted Spells (Reducing)
 
-**✅ PROGRESS: 9 spells removed from exemption list (now compliant with 0-1 functions)**
+**✅ PROGRESS: 13 spells removed from exemption list (9 already compliant + 4 refactored to 0 functions)**
 
 The following spells are temporarily exempted while being refactored to flat-file paradigm:
 
@@ -744,15 +744,11 @@ The following spells are temporarily exempted while being refactored to flat-fil
 7. **divination/identify-room** (3 functions) - Complex room identification
 
 **Low Priority (2 functions):**
-8. **cantrips/colors** (2 functions) - Color variable definitions (meant to be sourced)
-9. **cantrips/fathom-cursor** (2 functions) - Terminal cursor detection
-10. **menu/mud** (2 functions) - MUD menu system
-11. **menu/mud-settings** (2 functions) - MUD settings menu
-12. **menu/main-menu** (2 functions) - Main menu system
-13. **.arcana/core/install-bwrap** (2 functions) - Bootstrap bubblewrap installer
-14. **.arcana/bitcoin/configure-bitcoin** (2 functions) - Bitcoin configuration
+8. **cantrips/colors** (2 functions) - Color variable definitions (meant to be sourced) - **architectural exception candidate**
+9. **.arcana/core/install-bwrap** (2 functions) - Bootstrap bubblewrap installer
+10. **.arcana/bitcoin/configure-bitcoin** (2 functions) - Bitcoin configuration
 
-**✅ REMOVED FROM EXEMPTIONS (Now Compliant):**
+**✅ REMOVED FROM EXEMPTIONS (Now Compliant - Already Had 0-1 Functions):**
 - ~~spellcraft/lint-magic~~ (0 functions) ✓
 - ~~menu/spellbook~~ (1 function) ✓
 - ~~.arcana/mud/cd~~ (0 functions) ✓
@@ -763,6 +759,12 @@ The following spells are temporarily exempted while being refactored to flat-fil
 - ~~wards/banish~~ (1 function) ✓
 - ~~spellcraft/demo-magic~~ (1 function) ✓
 
+**✅ REFACTORED TO FLAT-FILE (2→0 functions):**
+- ~~menu/mud~~ (2→0 functions) ✓ Inlined get_portal_location and mud_display_menu
+- ~~menu/mud-settings~~ (2→0 functions) ✓ Inlined has_player_key and mud_settings_display_menu
+- ~~menu/main-menu~~ (2→0 functions) ✓ Inlined is_mud_enabled and main_menu_display_menu
+- ~~cantrips/fathom-cursor~~ (2→0 functions) ✓ Inlined restore_test and restore_tty trap handlers
+
 ### Exempted Test Imps
 
 Test infrastructure is exempted from the 0-function rule:
@@ -771,5 +773,5 @@ Test infrastructure is exempted from the 0-function rule:
 
 **Status**: ⚠️ Temporary exemptions. Goal is to refactor these to flat scripts or document permanent architectural reasons for exemption.
 
-**Progress**: Reduced from 22 exemptions to 14 exemptions (9 spells now compliant, 8 spells removed from list).
+**Progress**: Reduced from 22 exemptions to 10 exemptions (13 spells resolved: 9 already compliant + 4 refactored).
 
