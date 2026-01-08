@@ -163,13 +163,17 @@ fi
 ## String Manipulation
 
 ```sh
-# First/last character extraction (POSIX, no cut needed)
+# Character extraction - use awk (most portable)
+first_char=$(printf '%s' "$string" | awk '{print substr($0,1,1)}')
+rest=$(printf '%s' "$string" | awk '{print substr($0,2)}')
+
+# Alternative: POSIX parameter expansion (works on most shells)
 first_char=${string%"${string#?}"}     # Extract first character
 rest=${string#?}                        # Everything after first char
 
-# WRONG (not portable across all platforms):
+# WRONG (not portable - cut behavior varies on macOS):
 first=$(printf '%s' "$string" | cut -c1)     # cut -c behavior varies
-tail=$(printf '%s' "$string" | cut -c2-)     # may not work on some systems
+tail=$(printf '%s' "$string" | cut -c2-)     # may not work on macOS
 
 # Newline detection (portable)
 case "$value" in
@@ -197,7 +201,7 @@ fi
 | Empty PATH | macOS CI | Set baseline first |
 | SIGPIPE varies | bash/dash | bash may exit, dash ignores |
 | `wc -l` output | BSD/macOS | Includes leading spaces, use `tr -d ' '` or case |
-| `cut -c2-` behavior | Some systems | Use POSIX parameter expansion |
+| `cut -c` behavior | macOS | Use `awk '{print substr($0,pos,len)}'` instead |
 
 **Testing:** Test on Linux + macOS, with bash + dash, check `checkbashisms`.
 
