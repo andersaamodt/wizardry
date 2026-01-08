@@ -7,26 +7,16 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_skip_when_compiled() {
-  # Set compiled flag
-  WIZARDRY_TEST_COMPILED=1
-  export WIZARDRY_TEST_COMPILED
-  
-  # Source and call the function
-  . "$test_root/spells/.imps/test/boot/skip-if-compiled"
-  skip_if_compiled
+  # Set compiled flag and execute the imp
+  WIZARDRY_TEST_COMPILED=1 "$test_root/spells/.imps/test/boot/skip-if-compiled"
   result=$?
   
   [ "$result" = "222" ] || return 1
 }
 
 test_run_when_uncompiled() {
-  # Unset compiled flag
-  WIZARDRY_TEST_COMPILED=0
-  export WIZARDRY_TEST_COMPILED
-  
-  # Source and call the function
-  . "$test_root/spells/.imps/test/boot/skip-if-compiled"
-  skip_if_compiled
+  # Unset compiled flag and execute the imp
+  WIZARDRY_TEST_COMPILED=0 "$test_root/spells/.imps/test/boot/skip-if-compiled"
   result=$?
   
   [ "$result" = "0" ] || return 1
