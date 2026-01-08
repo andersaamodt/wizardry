@@ -156,7 +156,8 @@ where-is which"
           ;;
         *)
           # Word has no hyphens, can create a sourcing function
-          printf "%s() { . %s \"\$@\"; }\n" "$_word" "$_spell" >> "$_it_default_file"
+          # Use parse to enable multi-word command resolution (e.g., "jump trash" -> "jump-trash")
+          printf "%s() { parse \"%s\" \"\$@\"; }\n" "$_word" "$_word" >> "$_it_default_file"
           ;;
       esac
     else

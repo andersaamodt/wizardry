@@ -316,18 +316,19 @@ uname|uniq|wc|xargs)
           fi
         fi
         
-        # Only create alias if spell doesn't require sourcing
+        # Create alias - either regular or sourcing
         if [ "$_requires_sourcing" -eq 0 ]; then
-          # Emit alias definition
+          # Regular alias for spells that don't require sourcing
           emit_line "# Full-name alias for '$spell_name'"
           emit_line "alias ${spell_name}='${spell_name}'"
           emit_line ""
           total_full_name_glosses=$((total_full_name_glosses + 1))
         else
-          # Spell requires sourcing - document that it must be called with dot
-          emit_line "# SOURCING REQUIRED: $spell_name must be called with: . $spell_name"
-          emit_line "# (Cannot create alias/function due to hyphen in name and sourcing requirement)"
+          # Sourcing alias for spells that require sourcing
+          emit_line "# Full-name sourcing alias for '$spell_name'"
+          emit_line "alias ${spell_name}='. ${spell_name}'"
           emit_line ""
+          total_full_name_glosses=$((total_full_name_glosses + 1))
         fi
         ;;
     esac
