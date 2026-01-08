@@ -33,6 +33,6 @@ fi
 
 # Uninstall Node.js
 printf '%s\n' "Uninstalling Node.js..."
-. "$manage_cmd" uninstall nodejs node
+"$manage_cmd" uninstall nodejs node
 
 printf '%s\n' "Node.js uninstallation complete."

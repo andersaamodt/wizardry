@@ -43,10 +43,10 @@ if [ "$(uname -s)" = "Darwin" ]; then
   exit 0
 elif [ -n "${WAYLAND_DISPLAY-}" ] || [ -n "${WAYLAND_SOCKET-}" ]; then
   printf '%s\n' "Wayland detected - installing wl-clipboard"
-  . "$script_dir/manage-system-command" install wl-clipboard
+  "$script_dir/manage-system-command" install wl-clipboard
 elif [ -n "${DISPLAY-}" ]; then
   printf '%s\n' "X11 detected - installing xsel"
-  . "$script_dir/manage-system-command" install xsel
+  "$script_dir/manage-system-command" install xsel
 else
   printf '%s\n' "install-clipboard-helper: could not detect display server" >&2
   exit 1

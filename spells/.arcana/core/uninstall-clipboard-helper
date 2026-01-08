@@ -39,9 +39,9 @@ fi
 printf '%s\n' "Uninstalling clipboard helper: $installed_helper"
 case "$installed_helper" in
   xsel|xclip)
-    . "$script_dir/manage-system-command" uninstall "$installed_helper"
+    "$script_dir/manage-system-command" uninstall "$installed_helper"
     ;;
   wl-copy)
-    . "$script_dir/manage-system-command" uninstall wl-clipboard
+    "$script_dir/manage-system-command" uninstall wl-clipboard
     ;;
 esac

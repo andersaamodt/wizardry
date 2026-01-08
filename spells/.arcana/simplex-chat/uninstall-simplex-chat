@@ -33,6 +33,6 @@ fi
 
 # Uninstall SimpleX Chat
 printf '%s\n' "Uninstalling SimpleX Chat..."
-. "$manage_cmd" uninstall simplex-chat
+"$manage_cmd" uninstall simplex-chat
 
 printf '%s\n' "SimpleX Chat uninstallation complete."
