@@ -68,7 +68,8 @@ test_loads_default_synonyms() {
   cat > "$tmpdir/test-defaults.sh" << EOF
 #!/bin/sh
 SPELLBOOK_DIR="$spellbook"
-export SPELLBOOK_DIR
+WIZARDRY_DIR="$ROOT_DIR"
+export SPELLBOOK_DIR WIZARDRY_DIR
 . "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus" >/dev/null 2>&1 || true
 # Check that default synonyms file has content
 grep -q "^alias detect-os=" "$spellbook/.default-synonyms" || exit 1
@@ -106,7 +107,7 @@ EOF
   fi
 }
 
-# Test: invoke-thesaurus creates jump function that sources jump-to-marker
+# Test: invoke-thesaurus creates jump function that uses parse for multi-word resolution
 test_creates_jump_synonym() {
   tmpdir=$(make_tempdir)
   spellbook="$tmpdir/.spellbook"
@@ -115,11 +116,12 @@ test_creates_jump_synonym() {
   cat > "$tmpdir/test-jump.sh" << EOF
 #!/bin/sh
 SPELLBOOK_DIR="$spellbook"
-export SPELLBOOK_DIR
+WIZARDRY_DIR="$ROOT_DIR"
+export SPELLBOOK_DIR WIZARDRY_DIR
 . "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus" >/dev/null 2>&1 || true
-# Check that jump function exists and sources jump-to-marker
+# Check that jump function exists and uses parse for multi-word resolution
 grep -q "^jump()" "$spellbook/.default-synonyms" || exit 1
-grep -q "\. jump-to-marker" "$spellbook/.default-synonyms" || exit 1
+grep -q "parse" "$spellbook/.default-synonyms" || exit 1
 printf 'jump function exists\n'
 EOF
   chmod +x "$tmpdir/test-jump.sh"

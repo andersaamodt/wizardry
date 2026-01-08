@@ -103,7 +103,10 @@ if [ -z "$marker_name" ] || [ "$marker_name" = "0" ]; then
                 if [ "$found" -eq 1 ] && [ -z "$marker_name" ]; then
                         marker_name=$first
                 fi
-        else
+        fi
+        
+        # If cycling didn't find a marker, default to "1"
+        if [ -z "$marker_name" ]; then
                 marker_name="1"
         fi
 fi
@@ -169,10 +172,16 @@ if [ ! -d "$destination" ]; then
         return 1 2>/dev/null || exit 1
 fi
 
-# Normalize paths to handle macOS double slashes
+# Normalize paths to handle macOS double slashes and resolve via cd + pwd -P  
 current=$(pwd -P | sed 's|//|/|g')
-normalized_destination=$(printf '%s' "$destination" | sed 's|//|/|g')
-if [ "$current" = "$normalized_destination" ]; then
+# Resolve destination the same way to ensure consistent comparison
+normalized_destination=$(cd "$destination" && pwd -P | sed 's|//|/|g')
+
+# Also try comparing the actual physical paths to handle any edge cases
+current_inode=$(ls -id . 2>/dev/null | awk '{print $1}' || printf '')
+dest_inode=$(ls -id "$destination" 2>/dev/null | awk '{print $1}' || printf '')
+
+if [ "$current" = "$normalized_destination" ] || [ -n "$current_inode" ] && [ -n "$dest_inode" ] && [ "$current_inode" = "$dest_inode" ]; then
         printf '%s\n' "You are already standing at marker '$marker_name'."
         # Touch marker to update mtime for cycling
         touch "$marker_file"
