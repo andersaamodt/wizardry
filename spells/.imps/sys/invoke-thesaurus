@@ -76,6 +76,7 @@ home jump
 jump jump-to-marker
 list-files file-list
 ls-magic identify-room
+mark mark-location
 move-file move
 portal jump
 read-file read-magic
