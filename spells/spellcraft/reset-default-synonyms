@@ -25,6 +25,14 @@ set -eu
 
   spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
   default_synonyms_file="$spell_home/.default-synonyms"
+  
+  # Safety check: ensure the file path ends with .default-synonyms
+  case "$default_synonyms_file" in
+    *.default-synonyms) ;;
+    *)
+      die "reset-default-synonyms: invalid file path: $default_synonyms_file"
+      ;;
+  esac
 
   # Confirm before resetting
   printf 'Reset default synonyms? Your custom synonyms will NOT be affected. (y/N): ' >&2
@@ -49,8 +57,18 @@ set -eu
   _invoke_thes="${WIZARDRY_DIR}/spells/.imps/sys/invoke-thesaurus"
   if [ -f "$_invoke_thes" ]; then
     # shellcheck disable=SC1090,SC1091
-    . "$_invoke_thes" 2>/dev/null || :
-    success "Default synonyms reset. Custom synonyms preserved."
+    if . "$_invoke_thes" 2>/dev/null; then
+      # Verify initialization succeeded by checking if the file was created
+      if [ -f "$default_synonyms_file" ] && [ -f "$spell_home/.default-synonyms-initialized" ]; then
+        success "Default synonyms reset. Custom synonyms preserved."
+      else
+        warn "reset-default-synonyms: initialization may have failed"
+        printf '%s\n' "Reload with: . invoke-thesaurus" >&2
+      fi
+    else
+      warn "reset-default-synonyms: failed to source invoke-thesaurus"
+      printf '%s\n' "Reload with: . invoke-thesaurus" >&2
+    fi
   else
     success "Default synonyms reset. Reload with: . invoke-thesaurus"
   fi
