@@ -104,7 +104,16 @@ where-is which"
   
   printf '%s\n' "$_it_defaults" | while IFS=' ' read -r _word _spell; do
     [ -n "$_word" ] && [ -n "$_spell" ] || continue
-    printf "alias %s='%s'\n" "$_word" "$_spell" >> "$_it_default_file"
+    # Special handling for spells that must be sourced
+    case "$_spell" in
+      jump-to-marker)
+        # jump-to-marker changes directory, so it must be sourced
+        printf "%s() { . %s \"\$@\"; }\n" "$_word" "$_spell" >> "$_it_default_file"
+        ;;
+      *)
+        printf "alias %s='%s'\n" "$_word" "$_spell" >> "$_it_default_file"
+        ;;
+    esac
   done
   
   touch "$_it_default_initialized" 2>/dev/null || true
