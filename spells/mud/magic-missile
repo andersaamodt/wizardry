@@ -92,10 +92,10 @@ if [ ! -f "$target" ]; then
   exit 1
 fi
 
-# Generate random damage (1-10)
+# Generate random damage (1d4+1, range 2-5)
 random_seed=$(date +%s%N 2>/dev/null || date +%s)
 damage_value=$(printf '%s' "$random_seed" | cksum | cut -d' ' -f1)
-damage=$((damage_value % 10 + 1))
+damage=$((damage_value % 4 + 2))
 
 # Pick random descriptive text
 desc_hash=$(printf '%s%s' "$target" "$random_seed" | cksum | cut -d' ' -f1)
