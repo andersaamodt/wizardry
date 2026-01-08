@@ -42,16 +42,7 @@ SCRIPT
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
 }
 
-test_uncastable_self_executed_errors() {
-  # Test that uncastable itself cannot be executed directly
-  run_cmd "$WIZARDRY_DIR/spells/.imps/sys/uncastable"
-  assert_failure || return 1
-  assert_error_contains "uncastable: must be sourced, not executed" || return 1
-  assert_error_contains "Usage: . uncastable" || return 1
-}
-
 run_test_case "uncastable errors when executed" test_uncastable_executed_errors
 run_test_case "uncastable allows sourced execution" test_uncastable_sourced_ok
-run_test_case "uncastable itself errors when executed directly" test_uncastable_self_executed_errors
 
 finish_tests

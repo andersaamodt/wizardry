@@ -4,72 +4,39 @@
 # If SPELL_NAME is omitted, it is derived from $0.
 # If USAGE is omitted, it defaults to "Usage: . <spell-name>".
 # Example: uncastable invoke-thesaurus "Usage: . invoke-thesaurus"
-#
-# CRITICAL: This imp must be SOURCED, not executed.
-# It provides a function that other scripts source and call to enforce their own sourced-only behavior.
-# Pattern: . uncastable; uncastable spell-name
+set -eu
 
-# Guard: Prevent direct execution of uncastable itself
-# Check if we're being sourced by examining $0
-_uc_self_sourced=0
+_uncast_name=${1-}
+if [ -n "$_uncast_name" ]; then
+  shift
+fi
+
+if [ -z "$_uncast_name" ]; then
+  _uncast_name=${0##*/}  # Equivalent to basename, avoids external command
+fi
+
+_uncast_sourced=0
 if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
   case "${ZSH_EVAL_CONTEXT-}" in
-    *:file) _uc_self_sourced=1 ;;
+    *:file) _uncast_sourced=1 ;;
   esac
 else
-  _uc_self_base=${0##*/}
-  case "$_uc_self_base" in
-    sh|dash|bash|zsh|ksh|mksh) _uc_self_sourced=1 ;;
-    uncastable) _uc_self_sourced=0 ;;
-    *) _uc_self_sourced=1 ;;
+  _uncast_base=${0##*/}
+  case "$_uncast_base" in
+    sh|dash|bash|zsh|ksh|mksh) _uncast_sourced=1 ;;
+    "$_uncast_name") _uncast_sourced=0 ;;
+    *) _uncast_sourced=1 ;;
   esac
 fi
 
-if [ "$_uc_self_sourced" -eq 0 ]; then
-  printf '%s\n' "uncastable: must be sourced, not executed" >&2
-  printf '%s\n' "Usage: . uncastable" >&2
-  printf '%s\n' "Then call: uncastable <spell-name>" >&2
+if [ "$_uncast_sourced" -eq 1 ]; then
+  return 0
+else
+  printf '%s\n' "${_uncast_name}: must be sourced, not executed" >&2
+  if [ "$#" -gt 0 ]; then
+    printf '%s\n' "$*" >&2
+  elif [ -n "$_uncast_name" ]; then
+    printf '%s\n' "Usage: . $_uncast_name" >&2
+  fi
   exit 1
 fi
-unset _uc_self_sourced _uc_self_base
-
-# Define the uncastable function for use by calling scripts
-# This function checks if the CALLING script was sourced or executed
-uncastable() {
-  set -eu
-  
-  _uncast_name=${1-}
-  if [ -n "$_uncast_name" ]; then
-    shift
-  fi
-  
-  if [ -z "$_uncast_name" ]; then
-    _uncast_name=${0##*/}  # Equivalent to basename, avoids external command
-  fi
-  
-  _uncast_sourced=0
-  if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
-    case "${ZSH_EVAL_CONTEXT-}" in
-      *:file) _uncast_sourced=1 ;;
-    esac
-  else
-    _uncast_base=${0##*/}
-    case "$_uncast_base" in
-      sh|dash|bash|zsh|ksh|mksh) _uncast_sourced=1 ;;
-      "$_uncast_name") _uncast_sourced=0 ;;
-      *) _uncast_sourced=1 ;;
-    esac
-  fi
-  
-  if [ "$_uncast_sourced" -eq 1 ]; then
-    return 0
-  else
-    printf '%s\n' "${_uncast_name}: must be sourced, not executed" >&2
-    if [ "$#" -gt 0 ]; then
-      printf '%s\n' "$*" >&2
-    elif [ -n "$_uncast_name" ]; then
-      printf '%s\n' "Usage: . $_uncast_name" >&2
-    fi
-    exit 1
-  fi
-}
