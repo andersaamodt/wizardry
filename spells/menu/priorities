@@ -106,6 +106,7 @@ while true; do
     display_priorities || menu_status=$?
     menu_status=${menu_status:-0}
     if [ "$menu_status" -eq 130 ]; then
+      printf 'ESC\n' >&2
       kill -TERM "$PPID" 2>/dev/null || true
       exit 0
     fi
@@ -117,6 +118,7 @@ while true; do
     fi
     menu_status=$?
     if [ "$menu_status" -eq 130 ]; then
+      printf 'ESC\n' >&2
       kill -TERM "$PPID" 2>/dev/null || true
       exit 0
     fi
