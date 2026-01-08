@@ -287,7 +287,7 @@ set -eu
     # ESC kills this menu script via TERM signal (same as Exit button)
     # Direct kill: kill -TERM $$ → kills this script
     if [ "$menu_status" -eq 130 ]; then
-      printf '\nESC\n' >&2
+      printf 'ESC\n' >&2
       kill -TERM $$ 2>/dev/null || true
       exit 0
     fi
