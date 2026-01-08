@@ -18,7 +18,7 @@
 - Spells MUST NOT preload their own prerequisites (die, warn, etc.); they should fail early with require_wizardry if wizardry isn't available.
 - When inlining helper functions, use global search-replace to ensure ALL calls are replaced, including those outside the main function body.
 - Editing files with text processing tools (sed, awk, perl) can change file permissions - always restore execute bits afterwards.
-- The `find -executable` flag is not portable to BSD/macOS; use `find -perm /111` instead to match files with any execute bit.
+- The `find -executable` flag is not portable to BSD/macOS; use `find -perm /111` (GNU) with fallbacks to `-perm +111` (BSD) and manual `[ -x ]` check.
 - When gloss generation fails silently, check that find commands are BSD-compatible and validate WIZARDRY_DIR exists.
 - Parse must search WIZARDRY_DIR for spell files as fallback when preloaded functions aren't available (gloss execution in new process).
 - Cross-platform shell compatibility requires testing flag availability (e.g., find flags) on both GNU and BSD implementations.
@@ -29,6 +29,7 @@
 - Imps executed as scripts (via PATH) must use `exit` not `return`; bash (Arch's /bin/sh) errors on top-level `return`, while dash (Ubuntu's /bin/sh) silently allows it.
 - Shell builtins like `disable` (bash builtin for disabling commands/functions) must be blacklisted in generate-glosses to prevent creating first-word glosses that conflict.
 - Spells executed directly (not sourced) must use `exit` not `return` for flow control; `return` outside a function causes "not within a function" errors.
+- Use shell parameter expansion ${file##*/} instead of basename for 100x speedup when processing many files (e.g., generate-glosses with 396 files).
 - Variable `$_i` (imps directory shorthand) is not preserved by env-clear; use `${WIZARDRY_DIR}/spells/.imps` instead when referencing imp paths after sourcing env-clear.
 
 
