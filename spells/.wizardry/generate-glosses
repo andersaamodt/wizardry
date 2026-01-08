@@ -137,7 +137,7 @@ set -eu
   # ============================================================================
   
   # Check if a first word is blacklisted
-  # Returns 0 if allowed, 1 if blacklisted
+  # Returns 0 (true) if blacklisted, 1 (false) if allowed
   is_first_word_blacklisted() {
     _check_word=$1
     
@@ -147,23 +147,23 @@ set -eu
     case "$_check_word" in
       # GREYLIST: Shell builtins that CAN be safely overridden (see above)
       read|test)
-        return 0  # Allow these
+        return 1  # Allow these (not blacklisted)
         ;;
       # BLACKLIST: Shell builtins that CANNOT be overridden
       alias|bg|cd|command|disable|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|readonly|set|sh|\
 times|trap|true|type|ulimit|umask|unalias|wait|break|case|continue|do|done|elif|else|\
 esac|eval|exec|exit|export|fi|for|if|in|local|return|shift|then|unset|until|while)
-        return 1  # Blacklisted
+        return 0  # Blacklisted
         ;;
       # BLACKLIST: Common system commands that should not be overridden
       awk|cat|cp|cut|date|df|diff|dirname|du|echo|egrep|env|expr|fgrep|file|find|grep|head|\
 hostname|id|ln|ls|mkdir|mv|printf|ps|rm|rmdir|sed|sleep|sort|stat|tail|tar|tee|touch|tr|\
 uname|uniq|wc|xargs)
-        return 1  # Blacklisted
+        return 0  # Blacklisted
         ;;
     esac
     
-    return 0  # Not blacklisted
+    return 1  # Not blacklisted (allowed)
   }
   
   # ============================================================================
@@ -250,7 +250,8 @@ uname|uniq|wc|xargs)
       esac
       
       # Check if first word is blacklisted
-      if ! is_first_word_blacklisted "$_first_word"; then
+      if is_first_word_blacklisted "$_first_word"; then
+        # First word is blacklisted, skip it
         [ "$quiet" -eq 0 ] && printf 'generate-glosses: WARNING: Skipping spell "%s" - first word "%s" conflicts with system command\n' "$spell_name" "$_first_word" >&2
         continue
       fi
