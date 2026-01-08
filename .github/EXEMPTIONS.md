@@ -797,3 +797,77 @@ Test infrastructure is exempted from the 0-function rule:
 
 **Progress**: Reduced from 22 exemptions to 9 exemptions (14 spells resolved: 9 already compliant + 5 refactored).
 
+---
+
+## 9. Arcana Scripts Function Usage (2026-01-08)
+
+### Policy for `.arcana/` Directory
+
+**Status**: `.arcana/` directory scripts are **allowed to use functions** as a documented exception to the flat-file paradigm.
+
+**Rationale**: 
+- Arcana scripts are installation and configuration wizards for optional third-party software
+- They often need complex multi-step workflows with shared logic
+- Many were created before the flat-file paradigm was established
+- They're not core wizardry infrastructure
+
+**Goal**: Minimize function usage in arcana scripts, aiming for as close to 0 as possible while maintaining functionality.
+
+### Current Function Usage in Arcana Scripts
+
+**Total**: 24 arcana scripts with functions (out of ~60 total arcana scripts)
+
+**By Function Count:**
+
+**4 functions:**
+- `.arcana/core/install-core` (4 functions) - Bootstrap core prerequisites installation
+
+**2 functions:**
+- `.arcana/bitcoin/configure-bitcoin` (2 functions) - Bitcoin configuration wizard
+
+**1 function (21 scripts):**
+- `.arcana/bitcoin/bitcoin-menu` (1 function) - Bitcoin management menu
+- `.arcana/bitcoin/change-bitcoin-directory` (1 function) - Bitcoin directory migration
+- `.arcana/bitcoin/wallet-menu` (1 function) - Bitcoin wallet operations menu
+- `.arcana/core/core-menu` (1 function) - Core tools management menu
+- `.arcana/core/install-clipboard-helper` (1 function) - Clipboard helper installation
+- `.arcana/core/manage-system-command` (1 function) - System command wrapper
+- `.arcana/core/uninstall-clipboard-helper` (1 function) - Clipboard helper removal
+- `.arcana/core/uninstall-core` (1 function) - Core tools removal
+- `.arcana/lightning/install-lightning` (1 function) - Lightning Network installation
+- `.arcana/lightning/lightning-menu` (1 function) - Lightning management menu
+- `.arcana/lightning/lightning-wallet-menu` (1 function) - Lightning wallet menu
+- `.arcana/lightning/uninstall-lightning` (1 function) - Lightning removal
+- `.arcana/mud/mud-config` (1 function) - MUD configuration management
+- `.arcana/node/install-node` (1 function) - Node.js installation
+- `.arcana/node/node-menu` (1 function) - Node.js management menu
+- `.arcana/node/uninstall-node` (1 function) - Node.js removal
+- `.arcana/simplex-chat/install-simplex-chat` (1 function) - SimpleX Chat installation
+- `.arcana/simplex-chat/simplex-chat-menu` (1 function) - SimpleX Chat menu
+- `.arcana/simplex-chat/uninstall-simplex-chat` (1 function) - SimpleX Chat removal
+- `.arcana/tor/repair-tor-permissions` (1 function) - Tor permissions repair
+- `.arcana/tor/tor-menu` (1 function) - Tor management menu
+- `.arcana/tor/uninstall-tor` (1 function) - Tor removal
+
+**0 functions (examples of good arcana scripts without functions):**
+- `.arcana/bitcoin/bitcoin-status` - Flat linear status check ✅
+- `.arcana/simplex-chat/simplex-chat-status` - Flat linear status check ✅
+- `.arcana/tor/tor-status` - Flat linear status check ✅
+- `.arcana/node/node-status` - Flat linear status check ✅
+- `.arcana/lightning/lightning-status` - Flat linear status check ✅
+- Many install/uninstall scripts - Flat linear workflows ✅
+
+### Refactoring Progress
+
+**Recent Improvements** (2026-01-08):
+- ✅ `.arcana/bitcoin/bitcoin-status` - Removed incomplete function, made fully flat (commit 3b7375a)
+- ✅ `.arcana/simplex-chat/simplex-chat-status` - Removed incomplete function, made fully flat (commit 3b7375a)
+- ✅ `.arcana/tor/tor-status` - Removed incomplete function, made fully flat (commit 3b7375a)
+
+**Next Targets for Refactoring** (Prioritized by function count):
+1. `.arcana/core/install-core` (4→0 functions) - Inline all helpers into linear flow
+2. `.arcana/bitcoin/configure-bitcoin` (2→0 functions) - Inline configuration logic
+3. All 1-function scripts - Inline single helper function into main flow
+
+**Policy**: When working on arcana scripts, always try to reduce or eliminate functions. Only add functions if absolutely necessary for code reuse within the same script.
+
