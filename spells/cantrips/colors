@@ -19,7 +19,7 @@ Example:
   . colors
   printf '%sError:%s An error message.\n' "${RED}" "${RESET}"
 USAGE
-  return 0
+  exit 0
   ;;
 esac
 
