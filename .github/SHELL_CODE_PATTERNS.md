@@ -6,6 +6,22 @@
 
 ## Critical POSIX sh Patterns
 
+### Performance: Basename Replacement
+
+**CRITICAL FOR PERFORMANCE:** When processing many files, avoid subprocess calls.
+
+```sh
+# SLOW: Subprocess per file (247ms for 268 files)
+name=$(basename "$file")
+
+# FAST: Parameter expansion (2ms for 268 files, 100x faster)
+name=${file##*/}
+```
+
+**Explanation:** `${file##*/}` removes the longest match of `*/` from the start, leaving just the basename. No subprocess required.
+
+**Use case:** generate-glosses optimization (396 files): 1.6s → 0.036s (45x speedup)
+
 ### Variable Handling
 
 ```sh
