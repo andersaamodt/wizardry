@@ -16,7 +16,7 @@
 #
 # PERFORMANCE OPTIMIZATION:
 # This script is called at shell startup, so performance is critical.
-# Key optimizations implemented (45x speedup: 1.6s → 0.036s):
+# Key optimizations implemented (48x speedup: 1.6s → 0.034s):
 #   - Use ${file##*/} instead of basename (100x faster per file)
 #   - In-memory duplicate tracking (space-separated string) vs temp file + grep
 #   - Batch processing spell names vs one-by-one function calls
@@ -233,6 +233,7 @@ uname|uniq|wc|xargs)
   
   # OPTIMIZATION: Generate first-word glosses in batched mode
   # Use in-memory tracking instead of temp file + grep
+  # Pattern: " word1 word2 word3 " (leading and trailing spaces ensure exact match)
   _first_words_seen=" "  # Track with space-separated list (space prefix for matching)
   
   if [ "$parse_enabled" -eq 1 ]; then
