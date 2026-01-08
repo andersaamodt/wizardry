@@ -304,16 +304,16 @@ uname|uniq|wc|xargs)
       [ -n "$_syn_spell" ] || continue
       
       # Generate appropriate function or alias
-      # Per function-based glosses paradigm, use functions everywhere possible
+      # Synonyms call parse with the target spell for proper resolution
       case "$_syn_word" in
         *-*)
           # POSIX sh doesn't allow hyphens in function names, must use alias
           emit_line "alias ${_syn_word}='${_syn_spell}'"
           ;;
         *)
-          # Use function with parse for multi-word command resolution
-          # This works for all spells (both sourcing and non-sourcing)
-          emit_line "${_syn_word}() { parse \"${_syn_word}\" \"\$@\"; }"
+          # Use function that calls parse with the target spell
+          # This enables proper sourcing detection and execution
+          emit_line "${_syn_word}() { parse \"${_syn_spell}\" \"\$@\"; }"
           ;;
       esac
     done < "$synonym_file"
@@ -332,16 +332,16 @@ uname|uniq|wc|xargs)
       [ -n "$_syn_spell" ] || continue
       
       # Generate appropriate function or alias
-      # Per function-based glosses paradigm, use functions everywhere possible
+      # Synonyms call parse with the target spell for proper resolution
       case "$_syn_word" in
         *-*)
           # POSIX sh doesn't allow hyphens in function names, must use alias
           emit_line "alias ${_syn_word}='${_syn_spell}'"
           ;;
         *)
-          # Use function with parse for multi-word command resolution
-          # This works for all spells (both sourcing and non-sourcing)
-          emit_line "${_syn_word}() { parse \"${_syn_word}\" \"\$@\"; }"
+          # Use function that calls parse with the target spell
+          # This enables proper sourcing detection and execution
+          emit_line "${_syn_word}() { parse \"${_syn_spell}\" \"\$@\"; }"
           ;;
       esac
     done < "$default_synonym_file"
