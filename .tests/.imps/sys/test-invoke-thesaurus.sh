@@ -72,7 +72,8 @@ export SPELLBOOK_DIR
 . "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus" >/dev/null 2>&1 || true
 # Check that default synonyms file has content
 grep -q "^alias detect-os=" "$spellbook/.default-synonyms" || exit 1
-grep -q "^alias home=" "$spellbook/.default-synonyms" || exit 1
+# home is now a function (not alias) because it sources jump-to-marker
+grep -q "^home()" "$spellbook/.default-synonyms" || exit 1
 printf 'defaults loaded\n'
 EOF
   chmod +x "$tmpdir/test-defaults.sh"

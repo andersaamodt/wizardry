@@ -36,6 +36,13 @@ else
   _it_spellbook_dir="${HOME-}/.spellbook"
 fi
 
+# Determine wizardry directory for spell detection
+if [ -n "${WIZARDRY_DIR-}" ]; then
+  _it_wizardry_dir="${WIZARDRY_DIR-}"
+else
+  _it_wizardry_dir="${HOME-}/.wizardry"
+fi
+
 _it_custom_file="${_it_spellbook_dir}/.synonyms"
 _it_default_file="${_it_spellbook_dir}/.default-synonyms"
 
@@ -64,24 +71,24 @@ HEADER
   
   # Define default synonyms (word -> spell)
   # Spell synonyms (sorted alphabetically)
-  _it_defaults="cd-to jump
+  _it_defaults="cd-to jump-to-marker
 copy-file copy
 delete-file trash
 detect-os detect-distro
 edit-file edit-magic
 erase-file trash
 find-file file-list
-goto jump
-home jump
+goto jump-to-marker
+home jump-to-marker
 jump jump-to-marker
 list-files file-list
 ls-magic identify-room
 move-file move
-portal jump
+portal jump-to-marker
 read-file read-magic
 remove-file trash
 search-file file-list
-teleport jump
+teleport jump-to-marker
 where identify-room
 where-am-i identify-room"
   
@@ -102,18 +109,59 @@ rename mv
 show cat
 where-is which"
   
+  # Helper function to check if a spell must be sourced
+  # Checks the spell file for "must be sourced" marker in comments
+  _it_spell_must_be_sourced() {
+    _spell_name="$1"
+    _spell_path=""
+    
+    # Try to find the spell in wizardry directories
+    if [ -f "${_it_wizardry_dir}/spells/$_spell_name" ]; then
+      _spell_path="${_it_wizardry_dir}/spells/$_spell_name"
+    else
+      # Try to find in common spell directories
+      _spell_dirs="translocation cantrips arcane divination enchant psi"
+      _spell_dirs="$_spell_dirs crypto wards mud spellcraft menu system"
+      for _dir in $_spell_dirs; do
+        if [ -f "${_it_wizardry_dir}/spells/${_dir}/${_spell_name}" ]; then
+          _spell_path="${_it_wizardry_dir}/spells/${_dir}/${_spell_name}"
+          break
+        fi
+      done
+    fi
+    
+    # If spell file found, check for "must be sourced" marker
+    if [ -n "$_spell_path" ] && [ -f "$_spell_path" ]; then
+      # Read first 20 lines and check for marker
+      if head -20 "$_spell_path" 2>/dev/null | grep -q "must be sourced"; then
+        return 0
+      fi
+    fi
+    return 1
+  }
+  
   printf '%s\n' "$_it_defaults" | while IFS=' ' read -r _word _spell; do
     [ -n "$_word" ] && [ -n "$_spell" ] || continue
-    # Special handling for spells that must be sourced
-    case "$_spell" in
-      jump-to-marker)
-        # jump-to-marker changes directory, so it must be sourced
-        printf "%s() { . %s \"\$@\"; }\n" "$_word" "$_spell" >> "$_it_default_file"
-        ;;
-      *)
-        printf "alias %s='%s'\n" "$_word" "$_spell" >> "$_it_default_file"
-        ;;
-    esac
+    
+    # Check if this spell must be sourced
+    if _it_spell_must_be_sourced "$_spell"; then
+      # Create a sourcing function instead of an alias
+      # Only create function if word doesn't contain hyphens (POSIX sh restriction)
+      case "$_word" in
+        *-*)
+          # Word has hyphens, must use alias even though it won't work for sourcing
+          # This is a POSIX sh limitation - function names can't have hyphens
+          printf "alias %s='%s'\n" "$_word" "$_spell" >> "$_it_default_file"
+          ;;
+        *)
+          # Word has no hyphens, can create a sourcing function
+          printf "%s() { . %s \"\$@\"; }\n" "$_word" "$_spell" >> "$_it_default_file"
+          ;;
+      esac
+    else
+      # Regular spell, create an alias
+      printf "alias %s='%s'\n" "$_word" "$_spell" >> "$_it_default_file"
+    fi
   done
   
   touch "$_it_default_initialized" 2>/dev/null || true
