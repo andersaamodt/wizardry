@@ -277,12 +277,15 @@ set -eu
     fi
     
     exit_label=$(exit-label)
+    # Exit button kills this menu script via TERM signal
+    # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
     set -- "$@" "${exit_label}%kill -TERM \$PPID"
     
     menu "Thesaurus:" "$@"
     menu_status=$?
     
-    # Exit code 130 means ESC was pressed - go up one level (same as Exit button)
+    # ESC kills this menu script via TERM signal (same as Exit button)
+    # Direct kill: kill -TERM $$ → kills this script
     if [ "$menu_status" -eq 130 ]; then
       printf '\nESC\n' >&2
       kill -TERM $$ 2>/dev/null || true
