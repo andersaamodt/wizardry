@@ -17,7 +17,7 @@ test_pkg_upgrade_syntax() {
   skip-if-compiled || return $?
   
   # Test that calling with no package manager fails gracefully
-  stub_dir="$tmpdir/stubs"
+  stub_dir="${WIZARDRY_TMPDIR}/stubs"
   mkdir -p "$stub_dir"
   
   # Stub pkg-manager to return unsupported
