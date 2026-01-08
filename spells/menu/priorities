@@ -90,24 +90,42 @@ display_priorities() {
     fi
   done
 
-  # Add exit command
+  # Exit button kills this menu script via TERM signal
+  # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
   exit_label=$(exit-label)
   menu_command="${menu_command} \"${exit_label}%kill -TERM \$PPID\""
 
   # Execute the constructed menu command
-  eval "${menu_command}"
+  eval "${menu_command}" || _priorities_menu_status=$?
+  return "${_priorities_menu_status:-0}"
 }
 
 first_run=1
 
 while true; do
   if [ "$first_run" -eq 0 ]; then
-    display_priorities || true
+    display_priorities || menu_status=$?
+    menu_status=${menu_status:-0}
+    # ESC kills this menu script via TERM signal (same as Exit button)
+    # Direct kill: kill -TERM $$ → kills this script
+    if [ "$menu_status" -eq 130 ]; then
+      printf 'ESC\n' >&2
+      kill -TERM $$ 2>/dev/null || true
+      exit 0
+    fi
   else
     first_run=0
     # On first run, exit if display_priorities fails (no priorities set)
     if ! display_priorities; then
       exit 1
+    fi
+    menu_status=$?
+    # ESC kills this menu script via TERM signal (same as Exit button)
+    # Direct kill: kill -TERM $$ → kills this script
+    if [ "$menu_status" -eq 130 ]; then
+      printf 'ESC\n' >&2
+      kill -TERM $$ 2>/dev/null || true
+      exit 0
     fi
   fi
 done

@@ -50,6 +50,8 @@ while true; do
   install="Arcana%install-menu"
   system="Computer%system-menu"
   
+  # Exit button kills this menu script via TERM signal
+  # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
   exit_label_text=$(exit-label)
   exit_item="${exit_label_text}%kill -TERM \$PPID"
 
@@ -67,14 +69,16 @@ while true; do
     set -- "$cast" "$spellbook" "$install" "$system" "$exit_item"
   fi
   
-  menu "Main Menu:" "$@"
-  menu_status=$?
+  menu "Main Menu:" "$@" || menu_status=$?
+  menu_status=${menu_status:-0}
   
-  # Exit code 130 means ESC was pressed - continue loop to redisplay menu
-  # Any other exit code (including 0 for successful command execution) should exit
+  # ESC kills this menu script via TERM signal (same as Exit button)
+  # Direct kill: kill -TERM $$ → kills this script
   if [ "$menu_status" -eq 130 ]; then
-    continue
-  else
-    exit "$menu_status"
+    printf 'ESC\n' >&2
+    kill -TERM $$ 2>/dev/null || true
+    exit 0
   fi
+  
+  # Any other exit code (0 for successful command execution) continues the loop
 done

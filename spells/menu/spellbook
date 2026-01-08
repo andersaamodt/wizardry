@@ -294,6 +294,8 @@ spellbook_menu() {
                 else
                         exit_label="Back"
                 fi
+                # Exit button kills this menu script via TERM signal
+                # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
                 set -- "$@" "${exit_label}%kill -TERM \$PPID"
                 
                 # Build menu title - use original folder name for category
@@ -302,7 +304,16 @@ spellbook_menu() {
                 else
                         menu_title="${category_name}:"
                 fi
-                menu "$menu_title" "$@" || true
+                menu "$menu_title" "$@" || menu_status=$?
+                menu_status=${menu_status:-0}
+                
+                # ESC kills this menu script via TERM signal (same as Exit button)
+                # Direct kill: kill -TERM $$ → kills this script
+                if [ "$menu_status" -eq 130 ]; then
+                        printf 'ESC\n' >&2
+                        kill -TERM $$ 2>/dev/null || true
+                        exit 0
+                fi
         done
 }
 

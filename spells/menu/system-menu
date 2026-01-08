@@ -43,6 +43,8 @@ system_menu_display_menu() {
   update_all="Update all software%update-all -v"
   uninstall_wizardry="Uninstall wizardry%$repo_dir/.uninstall; exit 0"
   exit_label=$(exit-label)
+  # Exit button kills this menu script via TERM signal
+  # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
   exit_item="${exit_label}%kill -TERM \$PPID"
 
   set -- "$restart_menu" "$update_all" "$update_wizardry" "$services"
@@ -51,7 +53,8 @@ system_menu_display_menu() {
   fi
   set -- "$@" "$verify_posix" "$test_suite" "$profile_tests" "$uninstall_wizardry" "$exit_item"
 
-  menu "System Menu:" "$@"
+  menu "System Menu:" "$@" || _system_menu_status=$?
+  return "${_system_menu_status:-0}"
 }
 
 # Catch Ctrl-C and TERM signal to exit 1 cleanly
@@ -66,5 +69,14 @@ while true; do
     first_run=0
   fi
 
-  system_menu_display_menu || true
+  system_menu_display_menu || menu_status=$?
+  menu_status=${menu_status:-0}
+  
+  # ESC kills this menu script via TERM signal (same as Exit button)
+  # Direct kill: kill -TERM $$ → kills this script
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    kill -TERM $$ 2>/dev/null || true
+    exit 0
+  fi
 done
