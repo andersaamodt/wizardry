@@ -55,6 +55,8 @@ list_entries() {
         entry_name=$(basename "$entry")
         # Skip 'mud' since we already listed it first
         [ "$entry_name" = "mud" ] && continue
+        # Skip 'import-arcanum' since it's a special menu item added separately
+        [ "$entry_name" = "import-arcanum" ] && continue
         printf '%s\n' "$entry_name"
     done
 }
@@ -89,7 +91,7 @@ while :; do
         if [ -n "$status_cmd" ]; then
             status=$($status_cmd)
         else
-            status='coming soon'
+            status="${GREY}coming soon${RESET}"
         fi
 
         if has "${name}-menu"; then
