@@ -188,13 +188,13 @@ fi
 ## String Manipulation
 
 ```sh
-# Character extraction - use sed (most portable POSIX solution)
-first_char=$(printf '%s' "$string" | sed 's/^\(.\).*/\1/')
-rest=$(printf '%s' "$string" | sed 's/^.//')
-
-# Alternative: POSIX parameter expansion (works on most shells)
+# Character extraction - POSIX parameter expansion (most portable)
 first_char=${string%"${string#?}"}     # Extract first character
 rest=${string#?}                        # Everything after first char
+
+# Alternative: sed (works but parameter expansion is preferred)
+first_char=$(printf '%s' "$string" | sed 's/^\(.\).*/\1/')
+rest=$(printf '%s' "$string" | sed 's/^.//')
 
 # AVOID: dd (may have buffering issues on some systems)
 first=$(printf '%s' "$string" | dd bs=1 count=1 2>/dev/null)  # Can fail on BSD

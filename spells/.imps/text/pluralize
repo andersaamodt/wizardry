@@ -170,9 +170,9 @@ set -eu
       case "$_pluralize_rest" in
         *[A-Z]*) printf '%s' "$_pluralize_result" ;;
         *)
-          # Use sed for character extraction (portable across BSD and GNU)
-          _pluralize_first=$(printf '%s' "$_pluralize_result" | sed 's/^\(.\).*/\1/')
-          _pluralize_tail=$(printf '%s' "$_pluralize_result" | sed 's/^.//')
+          # Use POSIX parameter expansion (more portable than sed)
+          _pluralize_first=${_pluralize_result%"${_pluralize_result#?}"}
+          _pluralize_tail=${_pluralize_result#?}
           printf '%s%s' "$(printf '%s' "$_pluralize_first" | tr 'a-z' 'A-Z')" "$_pluralize_tail"
           ;;
       esac
