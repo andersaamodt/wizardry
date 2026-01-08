@@ -84,8 +84,8 @@ jobs:
       WIZARDRY_OS_LABEL: debian
       DEBIAN_FRONTEND: noninteractive
     steps:
-      - name: Install git and procps for checkout and testing
-        run: apt-get update && apt-get install -y git procps
+      - name: Install git, procps, and gawk for checkout and testing
+        run: apt-get update && apt-get install -y git procps gawk
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
