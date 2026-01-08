@@ -104,3 +104,43 @@ If none of these steps help, please file an issue with:
 - The debug output from step 2
 - The contents of your RC file (with sensitive info removed)
 - The output of: `ls -la ~/.wizardry/spells/.imps/sys/invoke-wizardry`
+
+---
+
+## macOS Privacy Popup When Running test-magic
+
+### Issue: macOS requests permission to access Apple Music/Media Library
+
+When running `test-magic` on macOS, you may see a system popup asking:
+```
+"Terminal" would like to access Apple Music, your music and video activity, and your media library.
+```
+
+### Cause
+
+This is **not a wizardry bug** but rather macOS's privacy protection system being overly cautious. 
+
+When `test-magic` runs, it uses the `find` command to scan all files in the wizardry repository (the `spells/` directory and `.tests/` directory). macOS's privacy protection monitors file system access and may interpret this scanning activity as potentially accessing media files, even though wizardry is only scanning its own repository files (shell scripts, not media).
+
+### Why "Apple Music" specifically?
+
+macOS uses heuristics to determine what permission to request. When it sees widespread file scanning, it may assume the application wants to access media files and requests the broadest relevant permission (Music/Media Library) as a precaution.
+
+### Solutions
+
+1. **Allow the access (Recommended)**: Click "OK" to grant Terminal access. This won't actually give wizardry access to your music—it just allows Terminal to scan files without triggering this popup again.
+
+2. **Deny the access**: Click "Don't Allow". `test-magic` will still work, but you may see the popup again in the future.
+
+3. **Manually grant permission**: Go to System Preferences → Security & Privacy → Privacy → Files and Folders (or Media & Apple Music) and grant Terminal full disk access.
+
+### Why This Happens
+
+- `test-magic` scans the repository using `find spells -type f` to discover all spell files
+- It also scans `.tests/` directory to find test files
+- macOS monitors these file operations and triggers privacy prompts
+- This is a macOS security feature, not a wizardry issue
+
+### Does wizardry access my music?
+
+**No.** Wizardry only scans its own installation directory (`~/.wizardry/spells` and `~/.wizardry/.tests`). It never accesses your Music library, iTunes, or any media files. The permission request is a false positive from macOS's heuristic-based privacy system.
