@@ -328,8 +328,10 @@ uname|uniq|wc|xargs)
         ''|\#*) continue ;;
       esac
       
-      # Pass through alias lines as-is
+      # Pass through alias and function lines as-is
       if printf '%s' "$line" | grep -q "^alias "; then
+        emit_line "$line"
+      elif printf '%s' "$line" | grep -q "^[a-zA-Z_][a-zA-Z0-9_]*()"; then
         emit_line "$line"
       fi
     done < "$synonym_file"
@@ -346,8 +348,10 @@ uname|uniq|wc|xargs)
         ''|\#*) continue ;;
       esac
       
-      # Pass through alias lines as-is
+      # Pass through alias and function lines as-is
       if printf '%s' "$line" | grep -q "^alias "; then
+        emit_line "$line"
+      elif printf '%s' "$line" | grep -q "^[a-zA-Z_][a-zA-Z0-9_]*()"; then
         emit_line "$line"
       fi
     done < "$default_synonym_file"
