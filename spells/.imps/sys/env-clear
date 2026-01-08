@@ -57,6 +57,7 @@ _saved_wizardry_invoked="${_WIZARDRY_INVOKED:-}"
 _saved_spellbook_dir="${SPELLBOOK_DIR:-}"
 _saved_mud_dir="${MUD_DIR:-}"
 _saved_log_level="${WIZARDRY_LOG_LEVEL:-}"
+_saved_jump_markers_dir="${JUMP_TO_MARKERS_DIR:-}"
 
 # Preserve package manager override variables (used by pkg-install in arcana)
 # Officially supported platforms only: debian, arch, nixos, mac
@@ -141,6 +142,7 @@ export OLDPWD="$_saved_oldpwd"
 [ -n "$_saved_spellbook_dir" ] && export SPELLBOOK_DIR="$_saved_spellbook_dir"
 [ -n "$_saved_mud_dir" ] && export MUD_DIR="$_saved_mud_dir"
 [ -n "$_saved_log_level" ] && export WIZARDRY_LOG_LEVEL="$_saved_log_level"
+[ -n "$_saved_jump_markers_dir" ] && export JUMP_TO_MARKERS_DIR="$_saved_jump_markers_dir"
 
 # Restore package manager overrides (officially supported platforms only)
 [ -n "$_saved_nix_pkg" ] && export NIX_PACKAGE="$_saved_nix_pkg"
@@ -207,7 +209,7 @@ fi
 # Clean up temporary variables
 unset _saved_path _saved_home _saved_user _saved_shell _saved_term _saved_lang
 unset _saved_tmpdir _saved_pwd _saved_oldpwd _saved_wizardry_dir _saved_wizardry_invoked
-unset _saved_spellbook_dir _saved_mud_dir _saved_log_level _saved_nix_pkg _saved_apt_pkg
+unset _saved_spellbook_dir _saved_mud_dir _saved_log_level _saved_jump_markers_dir _saved_nix_pkg _saved_apt_pkg
 unset _saved_pacman_pkg _saved_pkgin_pkg _saved_test_failure _saved_test_skip _saved_wiz_tmpdir
 unset _saved_global_subtest _saved_test_compiled _saved_test_helpers _saved_system_path
 unset _saved_ask_input _saved_choose_input _saved_menu_loop_limit _saved_require_command

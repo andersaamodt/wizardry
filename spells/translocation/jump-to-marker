@@ -117,18 +117,20 @@ if [ "$marker_name" = "next" ]; then
                                 
                                 if [ "$current_loc" = "$normalized_candidate" ]; then
                                         # Already at this marker, find the next one
+                                        current_marker=$marker_name
+                                        marker_name=""
                                         found=0
                                         for m in $all_markers; do
                                                 if [ "$found" -eq 1 ]; then
                                                         marker_name=$m
                                                         break
                                                 fi
-                                                if [ "$m" = "$marker_name" ]; then
+                                                if [ "$m" = "$current_marker" ]; then
                                                         found=1
                                                 fi
                                         done
                                         # Wrap around to first marker if at end
-                                        if [ "$found" -eq 1 ] && [ "$m" = "$marker_name" ]; then
+                                        if [ "$found" -eq 1 ] && [ -z "$marker_name" ]; then
                                                 marker_name=$first
                                         fi
                                 fi
