@@ -17,6 +17,13 @@ USAGE
   ;;
 esac
 
+# Set up WIZARDRY_DIR if not already set
+if [ -z "${WIZARDRY_DIR-}" ]; then
+  _thes_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  WIZARDRY_DIR=$(cd "$_thes_script_dir/../.." && pwd -P)
+  export WIZARDRY_DIR
+fi
+
 set -eu
 . env-clear
 
@@ -51,7 +58,7 @@ set -eu
   if [ ! -f "$spell_home/.default-synonyms-initialized" ]; then
     # Source invoke-thesaurus to initialize defaults
     # This is safe in a non-interactive context
-    _invoke_thes="$_i/invoke-thesaurus"
+    _invoke_thes="${WIZARDRY_DIR}/spells/.imps/sys/invoke-thesaurus"
     if [ -f "$_invoke_thes" ]; then
       # shellcheck disable=SC1090,SC1091
       . "$_invoke_thes" 2>/dev/null || :
