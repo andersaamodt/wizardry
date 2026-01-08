@@ -51,12 +51,12 @@ root_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
 test_dir="$root_dir/.tests"
 
 # Helper function for pattern matching (defined outside command substitution to avoid macOS bash issues)
-_matches_pattern() {
-  _mp_path=$1
-  _mp_pattern=$2
-  _mp_rel=${_mp_path#"$test_dir/"}
-  case "$_mp_rel" in
-    $_mp_pattern) return 0 ;;
+matches_pattern() {
+  mp_path=$1
+  mp_pattern=$2
+  mp_rel=${mp_path#"$test_dir/"}
+  case "$mp_rel" in
+    $mp_pattern) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -92,7 +92,7 @@ test_list=""
 if [ -n "$only_pattern" ]; then
   # Use function for pattern matching instead of inline case statement
   for test_path in $(find "$test_dir" -type f \( -name 'test-*.sh' -o -name 'common-*.sh' \)); do
-    if _matches_pattern "$test_path" "$only_pattern"; then
+    if matches_pattern "$test_path" "$only_pattern"; then
       test_list="$test_list
 $test_path"
     fi
