@@ -103,7 +103,10 @@ if [ -z "$marker_name" ] || [ "$marker_name" = "0" ]; then
                 if [ "$found" -eq 1 ] && [ -z "$marker_name" ]; then
                         marker_name=$first
                 fi
-        else
+        fi
+        
+        # If cycling didn't find a marker, default to "1"
+        if [ -z "$marker_name" ]; then
                 marker_name="1"
         fi
 fi

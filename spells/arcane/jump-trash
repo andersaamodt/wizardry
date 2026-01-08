@@ -15,6 +15,11 @@ USAGE
   ;;
 esac
 
+# Enforce sourced-only behavior
+if ! command -v uncastable >/dev/null 2>&1; then
+  . uncastable
+fi
+
 set -eu
 . env-clear
 
