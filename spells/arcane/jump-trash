@@ -15,6 +15,10 @@ USAGE
   ;;
 esac
 
+# Enforce sourced-only behavior
+# uncastable must be sourced (invoked), never executed (cast)
+. uncastable
+
 set -eu
 . env-clear
 
