@@ -30,11 +30,32 @@ fi
 # Check if a MUD config feature is enabled
 is_feature_enabled() {
   feature=$1
-  mud_config_path=$(command -v mud-config 2>/dev/null) || return 1
+  default_value=0
+  
+  # parse-enabled defaults to 1 (enabled), all others default to 0 (disabled)
+  case "$feature" in
+    parse-enabled) default_value=1 ;;
+  esac
+  
+  mud_config_path=$(command -v mud-config 2>/dev/null) || return "$default_value"
   if [ -z "$mud_config_path" ] || [ ! -x "$mud_config_path" ]; then
+    return "$default_value"
+  fi
+  value=$(mud-config get "$feature" 2>/dev/null || printf '%s' "$default_value")
+  [ "$value" = "1" ]
+}
+
+# Check if cd hook is enabled (uses separate config file for historical reasons)
+is_cd_hook_enabled() {
+  spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+  cd_config="$spell_home/.mud/config"
+  
+  if [ ! -f "$cd_config" ]; then
     return 1
   fi
-  value=$(mud-config get "$feature" 2>/dev/null) || return 1
+  
+  # Check if cd-look=1 is set
+  value=$(config-get "$cd_config" "cd-look" 2>/dev/null || printf '0')
   [ "$value" = "1" ]
 }
 
@@ -56,8 +77,8 @@ while true; do
   if [ "$first_run" -eq 0 ]; then
     # Check which toggle changed and keep cursor there
     if is_feature_enabled "parse-enabled"; then now_parse=1; else now_parse=0; fi
-    if check-cd-hook 2>/dev/null; then now_cd=1; else now_cd=0; fi
-    if check-command-not-found-hook 2>/dev/null; then now_cnf=1; else now_cnf=0; fi
+    if is_cd_hook_enabled; then now_cd=1; else now_cd=0; fi
+    if is_feature_enabled "command-not-found"; then now_cnf=1; else now_cnf=0; fi
     if is_feature_enabled "touch-hook"; then now_touch=1; else now_touch=0; fi
     if is_feature_enabled "fantasy-theme"; then now_fantasy=1; else now_fantasy=0; fi
     if is_feature_enabled "inventory"; then now_inventory=1; else now_inventory=0; fi
@@ -65,7 +86,7 @@ while true; do
     
     # Check if all features are enabled
     now_all=1
-    for feature in touch-hook fantasy-theme inventory combat; do
+    for feature in touch-hook fantasy-theme inventory combat command-not-found; do
       if ! is_feature_enabled "$feature"; then
         now_all=0
         break
@@ -97,8 +118,8 @@ while true; do
 
   # Save toggle states before displaying menu (for comparison on next iteration)
   if is_feature_enabled "parse-enabled"; then was_parse=1; else was_parse=0; fi
-  if check-cd-hook 2>/dev/null; then was_cd=1; else was_cd=0; fi
-  if check-command-not-found-hook 2>/dev/null; then was_cnf=1; else was_cnf=0; fi
+  if is_cd_hook_enabled; then was_cd=1; else was_cd=0; fi
+  if is_feature_enabled "command-not-found"; then was_cnf=1; else was_cnf=0; fi
   if is_feature_enabled "touch-hook"; then was_touch=1; else was_touch=0; fi
   if is_feature_enabled "fantasy-theme"; then was_fantasy=1; else was_fantasy=0; fi
   if is_feature_enabled "inventory"; then was_inventory=1; else was_inventory=0; fi
@@ -106,7 +127,7 @@ while true; do
   
   # Check if all features are enabled
   was_all=1
-  for feature in touch-hook fantasy-theme inventory combat; do
+  for feature in touch-hook fantasy-theme inventory combat command-not-found; do
     if ! is_feature_enabled "$feature"; then
       was_all=0
       break
@@ -122,14 +143,14 @@ while true; do
   fi
   
   # Build cd hook toggle label based on current state
-  if check-cd-hook 2>/dev/null; then
+  if is_cd_hook_enabled; then
     cd_hook="[X] cd hook (look on directory change)%toggle-cd"
   else
     cd_hook="[ ] cd hook (look on directory change)%toggle-cd"
   fi
   
   # Build command-not-found hook toggle
-  if check-command-not-found-hook 2>/dev/null; then
+  if is_feature_enabled "command-not-found"; then
     cnf_hook="[X] handle-command-not-found hook%toggle-command-not-found"
   else
     cnf_hook="[ ] handle-command-not-found hook%toggle-command-not-found"
@@ -172,7 +193,7 @@ while true; do
   
   # Build enable/disable all toggle
   all_enabled=1
-  for feature in touch-hook fantasy-theme inventory combat; do
+  for feature in touch-hook fantasy-theme inventory combat command-not-found; do
     if ! is_feature_enabled "$feature"; then
       all_enabled=0
       break
