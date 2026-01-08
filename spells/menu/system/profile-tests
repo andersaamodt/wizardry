@@ -86,7 +86,6 @@ if [ -n "$only_pattern" ]; then
         # Inline pattern matching
         case "$rel" in
           $only_pattern) printf '%s\n' "$test_path" ;;
-          *) ;;
         esac
       done | sort
   )
