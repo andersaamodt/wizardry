@@ -29,6 +29,7 @@
 - Imps executed as scripts (via PATH) must use `exit` not `return`; bash (Arch's /bin/sh) errors on top-level `return`, while dash (Ubuntu's /bin/sh) silently allows it.
 - Shell builtins like `disable` (bash builtin for disabling commands/functions) must be blacklisted in generate-glosses to prevent creating first-word glosses that conflict.
 - Spells executed directly (not sourced) must use `exit` not `return` for flow control; `return` outside a function causes "not within a function" errors.
+- Variable `$_i` (imps directory shorthand) is not preserved by env-clear; use `${WIZARDRY_DIR}/spells/.imps` instead when referencing imp paths after sourcing env-clear.
 
 
 - When a file is sourced (`. filename`), using `exit` exits the parent shell; use `return` instead (discovered via doppelganger failing to create directories) (3)
