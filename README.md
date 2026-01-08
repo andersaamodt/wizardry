@@ -132,9 +132,9 @@ Using the free software suite makes it easy to establish a standardized software
 
 The arcana menu (`install-menu`) loads arcana automatically from files, so you can also author your own modules, to make installing the software you use more convenient and repeatable.
 
-### Parsing & Synonyms
+### MUD-like Parsing
 
-Wizardry supports space-separated commands for all wizardry commands (planned: all other commands), so you can also type `main menu` or `main-menu` to reach the same `menu`. Wizardry includes a `thesaurus`, which allows you to add synonyms for commands. Wizardry also includes a recursive parser, which will handle `main menu` as `main` and route it to `main-menu` correctly. (How it works: `generate-glosses` uses UNIX functions and aliases seamlessly to gloss both first-words and hyphenated commands for the parser).
+Wizardry supports space-separated commands for all wizardry commands (planned: all other commands), so you can also type `main menu` or `main-menu` to reach the same `menu`. Wizardry includes a `thesaurus`, which allows you to add synonyms for commands. Wizardry also includes a recursive parser, which will handle `main menu` as `main` and route it to `main-menu` correctly.
 
 You can also access other menus directly using the space format. Try these:
 
@@ -144,6 +144,8 @@ You can also access other menus directly using the space format. Try these:
 `system menu`
 `users menu`
 `spell menu <spellname>`
+`read magic <filename>`
+`magic missile`
 
 Parsing is deterministic and always resolves to the most specific command, and is therefore reasonably safe. A `disambiguate` menu (future feature—not yet tested) will automatically ask when the same space-separated command could be interpreted in two or more ways (for example, `install menu` might also mean "please install the 'menu' application").
 
