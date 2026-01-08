@@ -2005,6 +2005,7 @@ test_all_spells_respond_to_help() {
   
   if [ -n "$failures" ]; then
     TEST_FAILURE_REASON="spells not responding to --help flags: $failures"
+    export TEST_FAILURE_REASON
     return 1
   fi
   
