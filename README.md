@@ -16,7 +16,7 @@ The language of magic—a human heirloom—is rich in evocative words for hidden
 | ------------------------- | --------- | ----------------------------------- |
 | **Debian (and Ubuntu)**   | `debian`  | 🟡 **`install` + `menu` untested**    |
 | **NixOS**                 | `nixos`   | 🟡 **`install` + `menu` untested**    |
-| **MacOS**                 | `macos`   | 🟡 **`install` + `menu` untested**    |
+| **MacOS**                 | `macos`   | 🟢 **`install` + `menu` work!**    |
 | **Arch**                  | `arch`    | 🟠 **untested**    |
 | **Android (Linux-based)** | —         | 🟠 **currently unsupported**    |
 | **Windows**               | —         | ✘ **no support planned (except WSL)**    |
@@ -31,9 +31,7 @@ Run the following line in a terminal to download and run the wizardry installer 
 curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
 ```
 
-After installation completes, follow the instructions shown to start using wizardry immediately, or simply open a new terminal window.
-
-**Installation method**: The installer will use `git` to create a proper git repository if available (enabling easy updates via `update-wizardry`). If `git` is not available, it falls back to downloading a tarball. The install script requires either `git` or `tar` plus either `curl` or `wget`.
+The install script requires either `git` or `tar` plus either `curl` or `wget`.
 
 ### Install with git
 
@@ -45,25 +43,7 @@ cd ~/.wizardry
 ./install
 ```
 
-This downloads wizardry to the default install location, `~/.wizardry`. Follow the instructions shown after installation to start using wizardry.
-
-### Updating wizardry
-
-If wizardry was installed via git (either through the curl installer with git available, or via manual git clone), you can update it easily:
-
-```bash
-update-wizardry
-```
-
-This command runs `git pull` to fetch and apply the latest changes from the repository.
-
-**Note**: If wizardry was installed via tarball (when git wasn't available), `update-wizardry` will provide instructions on how to convert your installation to a git repository for easy updates.
-
-### Portable build
-
-The portable build is automatically generated, and includes all spells that work as standalone scripts. These are currently **untested and not recommended.**
-
-**[Download latest nightly build](https://github.com/andersaamodt/wizardry/actions/workflows/compile.yml)** → Click the most recent successful run → Download artifact
+This downloads wizardry to the default install location, `~/.wizardry`.
 
 ## Usage
 
@@ -151,6 +131,21 @@ Criteria for inclusion:
 Using the free software suite makes it easy to establish a standardized software environment across OSes, without having to use a heavier package manager or containerized solution. Wizardry helps you install the right software in the correct way, using built-in package managers on each OS when possible.
 
 The arcana menu (`install-menu`) loads arcana automatically from files, so you can also author your own modules, to make installing the software you use more convenient and repeatable.
+
+### Parsing & Synonyms
+
+Wizardry supports space-separated commands for all wizardry commands (planned: all other commands), so you can also type `main menu` or `main-menu` to reach the same `menu`. Wizardry includes a `thesaurus`, which allows you to add synonyms for commands. Wizardry also includes a recursive parser, which will handle `main menu` as `main` and route it to `main-menu` correctly. (How it works: `generate-glosses` uses UNIX functions and aliases seamlessly to gloss both first-words and hyphenated commands for the parser).
+
+You can also access other menus directly using the space format. Try these:
+
+`install menu`
+`mud admin menu`
+`shutdown menu`
+`system menu`
+`users menu`
+`spell menu <spellname>`
+
+Parsing is deterministic and always resolves to the most specific command, and is therefore reasonably safe. A `disambiguate` menu (future feature—not yet tested) will automatically ask when the same space-separated command could be interpreted in two or more ways (for example, `install menu` might also mean "please install the 'menu' application").
 
 ## Magical Glossary
 
@@ -266,7 +261,10 @@ These standards describe the technical requirements that all spells, menus, and 
 | Validation helpers              | A reusable suite provides common input checks.                                                            |
 | Naming scheme                   | A consistent naming scheme governs helper functions. Spells use `snake_case` for helper functions when needed (discouraged - prefer flat code). |
 
-## Testing
+
+## Development
+
+### Testing
 
 Run the complete shell test suite with:
 
@@ -306,3 +304,9 @@ Wizardry assumes a small, portable POSIX toolchain. These are the interfaces we 
 | `sort`, `cut`, `head`, `tail`, `tr`, `wc` | POSIX text utilities | Core text shaping |
 | `mktemp` | POSIX temp file/dir creation | `temp-file` and `temp-dir` imps |
 | `uname` | POSIX `uname -s` | Platform detection |
+
+### Portable build
+
+The portable build is automatically generated, and includes all spells that work as standalone scripts. These are currently **untested and not recommended.**
+
+**[Download latest nightly build](https://github.com/andersaamodt/wizardry/actions/workflows/compile.yml)** → Click the most recent successful run → Download artifact
