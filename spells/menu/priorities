@@ -92,9 +92,9 @@ display_priorities() {
 
   # Add exit command
   exit_label=$(exit-label)
-  menu_command="${menu_command} \"${exit_label}%exit 130\""
+  menu_command="${menu_command} \"${exit_label}%kill -TERM \$PPID\""
 
-  # Execute the constructed menu command - don't let menu's exit code trigger set -e early exit
+  # Execute the constructed menu command
   eval "${menu_command}" || _priorities_menu_status=$?
   return "${_priorities_menu_status:-0}"
 }
@@ -103,8 +103,8 @@ first_run=1
 
 while true; do
   if [ "$first_run" -eq 0 ]; then
-    display_priorities
-    menu_status=$?
+    display_priorities || menu_status=$?
+    menu_status=${menu_status:-0}
     if [ "$menu_status" -eq 130 ]; then
       exit 0
     fi

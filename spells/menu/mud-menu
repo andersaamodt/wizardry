@@ -187,7 +187,7 @@ while true; do
   
   tor="Set up tor hidden service%setup-tor"
   exit_label=$(exit-label)
-  exit_item="${exit_label}%exit 130"
+  exit_item="${exit_label}%kill -TERM \$PPID"
 
   set -- "$parse_toggle" "$mud_menu" "$cd_hook" "$cnf_hook" "$touch_hook" "$fantasy" "$inventory" "$combat" "$toggle_all" "$tor" "$exit_item"
   menu --start-selection "$start_selection" "MUD Install:" "$@" || true

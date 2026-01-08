@@ -162,8 +162,8 @@ SH
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *'Exit%exit 130'*) : ;;
-    *) TEST_FAILURE_REASON="Exit menu item should use 'exit 130' not 'kill -TERM \$PPID': $args"; return 1 ;;
+    *'Exit%kill -TERM $PPID'*) : ;;
+    *) TEST_FAILURE_REASON="Exit menu item should use 'kill -TERM \$PPID': $args"; return 1 ;;
   esac
 }
 

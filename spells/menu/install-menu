@@ -132,13 +132,12 @@ while :; do
     fi
 
     exit_label=$(exit-label)
-    set -- "$@" "${exit_label}%exit 130"
+    set -- "$@" "${exit_label}%kill -TERM \$PPID"
 
-    # Don't let menu's exit code trigger set -e early exit
     menu "Install Menu:" "$@" || menu_status=$?
     menu_status=${menu_status:-0}
     
-    # Exit code 130 means ESC or Exit was pressed - exit cleanly
+    # Exit code 130 means ESC was pressed - exit cleanly
     if [ "$menu_status" -eq 130 ]; then
         exit 0
     fi

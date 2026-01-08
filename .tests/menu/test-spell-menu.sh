@@ -98,7 +98,7 @@ write_menu_stub() {
   cat >"$dir/menu" <<'STUB'
 #!/bin/sh
 # Return escape status to exit the menu loop
-exit 130
+kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 STUB
   chmod +x "$dir/menu"
 }
@@ -163,7 +163,7 @@ test_esc_exit_behavior() {
   cat >"$stub_dir/menu" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
-exit 130
+kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$stub_dir/menu"
   
@@ -180,7 +180,7 @@ SH
   
   args=$(cat "$stub_dir/log")
   case "$args" in
-    *'Exit%exit 130') : ;;
+    *'Exit%kill -TERM $PPID') : ;;
     *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
   esac
   
@@ -240,7 +240,7 @@ if [ "$call_count" -eq 1 ]; then
   exit 0
 fi
 # Second call: exit
-exit 130
+kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$stub_dir/menu"
   
@@ -316,7 +316,7 @@ if [ "$call_count" -eq 1 ]; then
   exit 0
 fi
 # Second call: exit
-exit 130
+kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$stub_dir/menu"
   

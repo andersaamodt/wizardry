@@ -115,7 +115,7 @@ while :; do
       fi
       
       exit_label=$(exit-label)
-      exit_item="${exit_label}%exit 130"
+      exit_item="${exit_label}%kill -TERM \$PPID"
       
       # Check if spell has --help option (inline from has_help_option)
       help_item=""
@@ -171,9 +171,9 @@ while :; do
       # Build menu items based on spell type
       if [ "$is_custom" -eq 1 ]; then
               if [ -n "$help_item" ]; then
-                      set -- "Cast now%$escaped_command" "$cast_toggle" "$help_item" "Erase spell%erase-spell '$name' && exit 130" "$exit_item"
+                      set -- "Cast now%$escaped_command" "$cast_toggle" "$help_item" "Erase spell%erase-spell '$name' && kill -TERM \$PPID" "$exit_item"
               else
-                      set -- "Cast now%$escaped_command" "$cast_toggle" "Erase spell%erase-spell '$name' && exit 130" "$exit_item"
+                      set -- "Cast now%$escaped_command" "$cast_toggle" "Erase spell%erase-spell '$name' && kill -TERM \$PPID" "$exit_item"
               fi
       elif [ "$is_install" -eq 1 ]; then
               if [ -n "$help_item" ]; then
@@ -189,11 +189,10 @@ while :; do
               fi
       fi
       
-      # Don't let menu's exit code trigger set -e early exit
       menu --start-selection "$start_selection" "Spell: $name" "$@" || menu_status=$?
       menu_status=${menu_status:-0}
       
-      # Exit code 130 means ESC or Exit was pressed - exit cleanly
+      # Exit code 130 means ESC was pressed - exit cleanly
       if [ "$menu_status" -eq 130 ]; then
               exit 0
       fi

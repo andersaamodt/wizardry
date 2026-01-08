@@ -61,8 +61,8 @@ SH
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"System Menu:"*"Restart...%shutdown-menu"*"Update all software%update-all -v"*"Update wizardry%update-wizardry"*"Manage services%"*"services-menu"*"Test all wizardry spells%test-magic"*'Exit%exit 130' ) : ;;
-    *) TEST_FAILURE_REASON="expected system actions missing or Exit item should use 'exit 130': $args"; return 1 ;;
+    *"System Menu:"*"Restart...%shutdown-menu"*"Update all software%update-all -v"*"Update wizardry%update-wizardry"*"Manage services%"*"services-menu"*"Test all wizardry spells%test-magic"*'Exit%kill -TERM $PPID' ) : ;;
+    *) TEST_FAILURE_REASON="expected system actions missing or Exit item incorrect: $args"; return 1 ;;
   esac
 }
 
@@ -95,8 +95,8 @@ SH
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *'Exit%exit 130'*) : ;;
-    *) TEST_FAILURE_REASON="Exit menu item should use 'exit 130' not 'kill -TERM \$PPID': $args"; return 1 ;;
+    *'Exit%kill -TERM $PPID'*) : ;;
+    *) TEST_FAILURE_REASON="Exit menu item should use 'kill -TERM \$PPID': $args"; return 1 ;;
   esac
 }
 

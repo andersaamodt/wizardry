@@ -18,7 +18,7 @@ make_stub_menu() {
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
 # Send TERM signal to parent to simulate ESC behavior
-exit 130
+kill -TERM "$PPID" 2>/dev/null || exit 0
 exit 0
 SH
   chmod +x "$tmp/menu"
@@ -69,7 +69,7 @@ SH
   # MUD is not shown by default (requires enabling via mud-config)
   # The Exit command shows kill -TERM $PPID literally for didactic purposes
   case "$args" in
-    *"Main Menu:"*"Cast%"*"cast"*"Spellbook%"*"spellbook"*"Arcana%"*"install-menu"*"Computer%"*"system-menu"*'Exit%exit 130'* ) : ;;
+    *"Main Menu:"*"Cast%"*"cast"*"Spellbook%"*"spellbook"*"Arcana%"*"install-menu"*"Computer%"*"system-menu"*'Exit%kill -TERM $PPID'* ) : ;;
     *) TEST_FAILURE_REASON="menu entries missing: $args"; return 1 ;;
   esac
 }
@@ -126,7 +126,7 @@ test_esc_exit_behavior() {
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
 # Send TERM signal to parent to simulate ESC behavior
-exit 130
+kill -TERM "$PPID" 2>/dev/null || exit 0
 exit 0
 SH
   chmod +x "$tmp/menu"
@@ -143,7 +143,7 @@ SH
   args=$(cat "$tmp/log")
   # The Exit command shows kill -TERM $PPID literally for didactic purposes
   case "$args" in
-    *'Exit%exit 130'*) : ;;
+    *'Exit%kill -TERM $PPID'*) : ;;
     *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
   esac
 }
@@ -242,7 +242,7 @@ count=$(cat "$INVOCATION_FILE" 2>/dev/null || echo 0)
 count=$((count + 1))
 printf '%s\n' "$count" >"$INVOCATION_FILE"
 # Always send TERM to exit on first display (simulating ESC)
-exit 130
+kill -TERM "$PPID" 2>/dev/null || exit 0
 exit 0
 SH
   chmod +x "$tmp/menu"
@@ -296,7 +296,7 @@ cmd="system-menu"
 $cmd >>"$MENU_OUTPUT" 2>&1
 
 # After command completes, send TERM to exit the loop
-exit 130
+kill -TERM "$PPID" 2>/dev/null || exit 0
 exit 0
 SH
   chmod +x "$tmp/menu"
