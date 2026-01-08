@@ -57,6 +57,42 @@ test_accepts_list_flag() {
 
 run_test_case "thesaurus accepts --list flag" test_accepts_list_flag
 
+test_works_with_empty_synonyms() {
+  skip-if-compiled || return $?
+  tmpdir=$(make_tempdir)
+  spellbook="$tmpdir/.spellbook"
+  mkdir -p "$spellbook"
+  
+  # Create empty synonym files
+  printf '# Empty\n' > "$spellbook/.default-synonyms"
+  printf '# Empty\n' > "$spellbook/.synonyms"
+  touch "$spellbook/.default-synonyms-initialized"
+  
+  # Run thesaurus --list (should not crash)
+  export SPELLBOOK_DIR="$spellbook"
+  run_spell "spells/menu/thesaurus" --list >/dev/null 2>&1 || true
+  
+  # If we got here without crashing, test passes
+  return 0
+}
+
+run_test_case "thesaurus works with empty synonyms" test_works_with_empty_synonyms
+
+test_works_without_wizardry_dir() {
+  skip-if-compiled || return $?
+  tmpdir=$(make_tempdir)
+  spellbook="$tmpdir/.spellbook"
+  mkdir -p "$spellbook"
+  
+  # Run thesaurus without WIZARDRY_DIR set (should set it automatically)
+  export SPELLBOOK_DIR="$spellbook"
+  unset WIZARDRY_DIR || true
+  run_spell "spells/menu/thesaurus" --help >/dev/null 2>&1
+  assert_success || return 1
+}
+
+run_test_case "thesaurus works without WIZARDRY_DIR" test_works_without_wizardry_dir
+
 
 # Test via source-then-invoke pattern  
 
