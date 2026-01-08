@@ -1667,7 +1667,7 @@ test_warn_parent_dir_references() {
     case $spell in
       */install/core/*|*/system/test-magic|*/spellcraft/lint-magic) return ;;
       */spellcraft/compile-spell|*/spellcraft/doppelganger) return ;;
-      */menu/spellbook|*/system/verify-posix|*/menu/system/profile-tests) return ;;
+      */menu/spellbook|*/system/verify-posix|*/.wizardry/profile-tests) return ;;
       */cantrips/require-command) return ;;  # Bootstrap-related, finding install scripts
     esac
     

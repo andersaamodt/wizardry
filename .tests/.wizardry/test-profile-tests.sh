@@ -9,7 +9,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/menu/system/profile-tests" --help
+  run_spell "spells/.wizardry/profile-tests" --help
   assert_success || return 1
   assert_output_contains "Usage:" || return 1
   assert_output_contains "profile-tests" || return 1
@@ -17,7 +17,7 @@ test_help() {
 
 test_profiles_single_test() {
   # Profile a single fast test
-  run_spell "spells/menu/system/profile-tests" --only ".imps/cond/test-has.sh"
+  run_spell "spells/.wizardry/profile-tests" --only ".imps/cond/test-has.sh"
   assert_success || return 1
   assert_output_contains "Test Suite Performance Profile" || return 1
   assert_output_contains "Total tests:" || return 1
@@ -29,21 +29,21 @@ test_output_to_file() {
   output_file="$tmpdir/profile.txt"
   
   # Profile to file
-  run_spell "spells/menu/system/profile-tests" --only ".imps/cond/test-has.sh" --output "$output_file"
+  run_spell "spells/.wizardry/profile-tests" --only ".imps/cond/test-has.sh" --output "$output_file"
   assert_success || return 1
   assert_path_exists "$output_file" || return 1
   assert_file_contains "$output_file" "Test Suite Performance Profile"
 }
 
 test_shows_time_distribution() {
-  run_spell "spells/menu/system/profile-tests" --only ".imps/cond/test-*.sh"
+  run_spell "spells/.wizardry/profile-tests" --only ".imps/cond/test-*.sh"
   assert_success || return 1
   assert_output_contains "Time Distribution:" || return 1
   assert_output_contains "< 0.1s:" || return 1
 }
 
 test_shows_slowest_tests() {
-  run_spell "spells/menu/system/profile-tests" --only ".imps/cond/test-*.sh"
+  run_spell "spells/.wizardry/profile-tests" --only ".imps/cond/test-*.sh"
   assert_success || return 1
   assert_output_contains "Slowest Tests:" || return 1
   assert_output_contains "TIME(s)" || return 1
@@ -51,7 +51,7 @@ test_shows_slowest_tests() {
 }
 
 test_handles_no_pattern_match() {
-  run_spell "spells/menu/system/profile-tests" --only "nonexistent/*.sh"
+  run_spell "spells/.wizardry/profile-tests" --only "nonexistent/*.sh"
   assert_failure || return 1
   assert_error_contains "no tests found" || return 1
 }

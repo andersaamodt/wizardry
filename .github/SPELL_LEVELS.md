@@ -262,6 +262,7 @@ None
 * test-magic (test-spell)
 * logging-example
 * wizard-eyes
+* profile-tests (test-magic)
 
 ### Imps Introduced
 `test/*`, `sys/rc-add-line`, `sys/rc-has-line`, `sys/rc-remove-line`
@@ -545,7 +546,6 @@ None
 * priority-menu (menu from Level 3, prioritize/get-priority from Level 17)
 * priorities (menu from Level 3, priority-menu)
 * users-menu (menu from Level 3)
-* profile-tests (menu from Level 3, test-magic from Level 10)
 
 ### Imps Introduced
 None
