@@ -33,11 +33,14 @@ case "$_cs_key" in
 esac
 
 # Validate value doesn't contain newlines (would corrupt file)
-# Use printf and wc to detect newlines (case statement can't match literal newline reliably)
-if [ "$(printf '%s' "$_cs_value" | wc -l)" != "0" ]; then
+# Use case statement to detect newlines (works across all platforms)
+case "$_cs_value" in
+  *"
+"*)
     printf 'config-set: value cannot contain newlines\n' >&2
-  exit 1
-fi
+    exit 1
+    ;;
+esac
 
 # Ensure parent directory exists
 _cs_dir=$(dirname "$_cs_file")

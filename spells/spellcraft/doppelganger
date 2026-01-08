@@ -86,7 +86,8 @@ failed_count=0
 # Find all executable files in spells/ directory (including hidden directories)
 # Only skip .git and .github directories
 # Store list in variable to avoid subshell and preserve counter variables
-_spell_list=$(find "$repo_dir/spells" -type f -executable \
+# Use -perm for portability (works on both GNU and BSD find)
+_spell_list=$(find "$repo_dir/spells" -type f -perm -100 \
   ! -path "*/.git/*" \
   ! -path "*/.github/*")
 

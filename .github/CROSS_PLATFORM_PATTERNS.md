@@ -73,8 +73,9 @@ tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/prefix.XXXXXX")
 
 ```sh
 # Find executable (portable)
-find . -type f -perm /111  # Works: Linux, macOS, BSD
-# WRONG: find . -executable  # GNU-specific
+find . -type f -perm -100  # Owner executable: Linux, macOS, BSD
+find . -type f -perm /111  # Any executable: Linux, macOS, BSD
+# WRONG: find . -executable  # GNU-specific (not available on BSD/macOS)
 
 # Stat (platform-dependent)
 if stat -c '%Y' "$file" >/dev/null 2>&1; then
@@ -138,6 +139,31 @@ fi
 
 **zsh gotcha:** Functions in variables need `eval` in command substitution: `result=$(eval "$_cmd arg")`.
 
+**macOS bash gotcha:** macOS ships with bash 3.2 (2007) due to GPLv3 licensing. This version has parsing issues with case statements inside command substitution when patterns contain variables. Solution: Define case logic in a function outside the command substitution.
+
+```sh
+# BREAKS on macOS bash 3.2:
+result=$(
+  while read -r line; do
+    case "$line" in
+      $pattern) printf '%s\n' "$line" ;;
+    esac
+  done
+)
+
+# WORKS everywhere:
+_matches() {
+  case "$1" in
+    $2) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+for line in $input; do
+  _matches "$line" "$pattern" && printf '%s\n' "$line"
+done
+```
+
 ## PATH and Terminal
 
 ```sh
@@ -159,6 +185,42 @@ if [ -t 1 ] && [ "$TERM" != "dumb" ]; then
 fi
 ```
 
+## String Manipulation
+
+```sh
+# Character extraction - use sed (most portable POSIX solution)
+first_char=$(printf '%s' "$string" | sed 's/^\(.\).*/\1/')
+rest=$(printf '%s' "$string" | sed 's/^.//')
+
+# Alternative: POSIX parameter expansion (works on most shells)
+first_char=${string%"${string#?}"}     # Extract first character
+rest=${string#?}                        # Everything after first char
+
+# AVOID: dd (may have buffering issues on some systems)
+first=$(printf '%s' "$string" | dd bs=1 count=1 2>/dev/null)  # Can fail on BSD
+
+# AVOID: awk (BSD vs GNU differences)
+first=$(printf '%s' "$string" | awk '{print substr($0,1,1)}')  # BSD awk may differ
+
+# WRONG (not portable - cut behavior varies on macOS):
+first=$(printf '%s' "$string" | cut -c1)     # cut -c behavior varies
+tail=$(printf '%s' "$string" | cut -c2-)     # may not work on macOS
+
+# Newline detection (portable)
+case "$value" in
+  *"
+"*)
+    printf 'Value contains newlines\n' >&2
+    exit 1
+    ;;
+esac
+
+# WRONG (BSD wc includes leading spaces):
+if [ "$(printf '%s' "$value" | wc -l)" != "0" ]; then  # Breaks on BSD/macOS
+  ...
+fi
+```
+
 ## Common Pitfalls
 
 | Issue | Platform | Solution |
@@ -166,9 +228,14 @@ fi
 | `realpath` missing | macOS | Use `pwd -P` |
 | `sed -i` needs arg | macOS | Use temp file |
 | Double slashes | macOS | Normalize: `sed 's\|//\|/\|g'` |
-| `find -executable` | macOS/BSD | Use `-perm /111` |
+| `find -executable` | macOS/BSD | Use `-perm -100` or `-perm /111` |
 | Empty PATH | macOS CI | Set baseline first |
 | SIGPIPE varies | bash/dash | bash may exit, dash ignores |
+| `wc -l` output | BSD/macOS | Includes leading spaces, use `tr -d ' '` or case |
+| `cut -c` behavior | macOS | Use `sed 's/^\(.\).*/\1/'` for char extraction |
+| `awk substr()` | macOS | BSD awk differs; use `sed` instead |
+| `dd` buffering | macOS | Use `sed` for character extraction (more reliable) |
+| Case in `$()` | macOS bash 3.2 | Move case statement to function outside `$()` |
 
 **Testing:** Test on Linux + macOS, with bash + dash, check `checkbashisms`.
 
@@ -184,4 +251,4 @@ fi
 
 **ALWAYS add new cross-platform patterns here when discovered during development.**
 
-Last updated: 2026-01-02
+Last updated: 2026-01-08
