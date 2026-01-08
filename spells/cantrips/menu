@@ -493,7 +493,7 @@ do
         ctrl-c)
                 cleanup
                 trap - EXIT INT TERM
-                return 130
+                exit 130
                 ;;
         up)
                 step=-1
@@ -525,7 +525,7 @@ escape|ESC|esc)
                         kill -TERM "$MENU_PARENT_PID" 2>/dev/null || :
                 fi
         fi
-        return 130
+        exit 130
         ;;
 esac
 
