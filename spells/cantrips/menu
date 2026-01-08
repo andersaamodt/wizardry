@@ -277,6 +277,93 @@ get_cached_item() {
         done
 }
 
+# Optimized function to get all cached items for a row at once (reduces function calls)
+get_row_data() {
+        row_idx=$1
+        if [ "$row_idx" -lt 1 ] || [ "$row_idx" -gt "$menu_length" ]; then
+                return 1
+        fi
+        
+        # Extract all data for the row in a single pass
+        remaining_labels="$cached_labels"
+        remaining_commands="$cached_commands"
+        remaining_clean="$cached_clean_labels"
+        remaining_vlen="$cached_visible_lengths"
+        remaining_rlen="$cached_raw_lengths"
+        count=1
+        
+        while [ "$count" -le "$row_idx" ]; do
+                # Extract current item from each cache
+                case "$remaining_labels" in
+                        *"$label_delimiter"*)
+                                current_label="${remaining_labels%%"$label_delimiter"*}"
+                                remaining_labels="${remaining_labels#*"$label_delimiter"}"
+                                ;;
+                        *)
+                                current_label="$remaining_labels"
+                                remaining_labels=""
+                                ;;
+                esac
+                
+                case "$remaining_commands" in
+                        *"$label_delimiter"*)
+                                current_command="${remaining_commands%%"$label_delimiter"*}"
+                                remaining_commands="${remaining_commands#*"$label_delimiter"}"
+                                ;;
+                        *)
+                                current_command="$remaining_commands"
+                                remaining_commands=""
+                                ;;
+                esac
+                
+                case "$remaining_clean" in
+                        *"$label_delimiter"*)
+                                current_clean="${remaining_clean%%"$label_delimiter"*}"
+                                remaining_clean="${remaining_clean#*"$label_delimiter"}"
+                                ;;
+                        *)
+                                current_clean="$remaining_clean"
+                                remaining_clean=""
+                                ;;
+                esac
+                
+                case "$remaining_vlen" in
+                        *"$label_delimiter"*)
+                                current_vlen="${remaining_vlen%%"$label_delimiter"*}"
+                                remaining_vlen="${remaining_vlen#*"$label_delimiter"}"
+                                ;;
+                        *)
+                                current_vlen="$remaining_vlen"
+                                remaining_vlen=""
+                                ;;
+                esac
+                
+                case "$remaining_rlen" in
+                        *"$label_delimiter"*)
+                                current_rlen="${remaining_rlen%%"$label_delimiter"*}"
+                                remaining_rlen="${remaining_rlen#*"$label_delimiter"}"
+                                ;;
+                        *)
+                                current_rlen="$remaining_rlen"
+                                remaining_rlen=""
+                                ;;
+                esac
+                
+                if [ "$count" -eq "$row_idx" ]; then
+                        # Export values for use by caller
+                        ROW_LABEL="$current_label"
+                        ROW_COMMAND="$current_command"
+                        ROW_CLEAN="$current_clean"
+                        ROW_VLEN="$current_vlen"
+                        ROW_RLEN="$current_rlen"
+                        return 0
+                fi
+                
+                count=$((count + 1))
+        done
+        return 1
+}
+
 # Use start_selection if valid, otherwise default to 1
 selected=1
 case $start_selection in
@@ -304,9 +391,13 @@ render_row() {
                 return
         fi
 
-        # Use cached data instead of sed calls
-        label=$(get_cached_item "$row_index" "$cached_labels")
-        command=$(get_cached_item "$row_index" "$cached_commands")
+        # Use cached data - get all row data in one optimized call
+        get_row_data "$row_index" || return 1
+        label="$ROW_LABEL"
+        command="$ROW_COMMAND"
+        clean_label="$ROW_CLEAN"
+        visible_length="$ROW_VLEN"
+        raw_length="$ROW_RLEN"
 
         if [ "$command" = "---" ]; then
                 menu_width=$((max_name_length + 2))
@@ -342,16 +433,18 @@ render_row() {
                 return
         fi
 
-        if [ "$max_command_length" -gt 0 ]; then
-                truncated_command=$(printf '%s' "$command" | cut -c -"$max_command_length")
-        else
-                truncated_command=''
+        # Truncate command - keep using cut as it's actually efficient for this
+        truncated_command=""
+        if [ "$max_command_length" -gt 0 ] && [ -n "$command" ]; then
+                cmd_len=${#command}
+                if [ "$cmd_len" -le "$max_command_length" ]; then
+                        truncated_command="$command"
+                else
+                        truncated_command=$(printf '%s' "$command" | cut -c -"$max_command_length")
+                fi
         fi
 
-        # Use cached clean label, visible length, and raw length instead of recalculating
-        clean_label=$(get_cached_item "$row_index" "$cached_clean_labels")
-        visible_length=$(get_cached_item "$row_index" "$cached_visible_lengths")
-        raw_length=$(get_cached_item "$row_index" "$cached_raw_lengths")
+        # Use cached values - already retrieved above
         ansi_extra=$((raw_length - visible_length))
         adjusted_width=$((max_name_length + ansi_extra))
 
