@@ -51,7 +51,9 @@ system_menu_display_menu() {
   fi
   set -- "$@" "$verify_posix" "$test_suite" "$profile_tests" "$uninstall_wizardry" "$exit_item"
 
-  menu "System Menu:" "$@"
+  # Don't let menu's exit code trigger set -e early exit
+  menu "System Menu:" "$@" || _system_menu_status=$?
+  return "${_system_menu_status:-0}"
 }
 
 # Catch Ctrl-C and TERM signal to exit 1 cleanly
@@ -66,8 +68,8 @@ while true; do
     first_run=0
   fi
 
-  system_menu_display_menu
-  menu_status=$?
+  system_menu_display_menu || menu_status=$?
+  menu_status=${menu_status:-0}
   
   # Exit code 130 means ESC or Exit was pressed - exit cleanly
   if [ "$menu_status" -eq 130 ]; then

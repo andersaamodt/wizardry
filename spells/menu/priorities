@@ -94,8 +94,9 @@ display_priorities() {
   exit_label=$(exit-label)
   menu_command="${menu_command} \"${exit_label}%exit 130\""
 
-  # Execute the constructed menu command
-  eval "${menu_command}"
+  # Execute the constructed menu command - don't let menu's exit code trigger set -e early exit
+  eval "${menu_command}" || _priorities_menu_status=$?
+  return "${_priorities_menu_status:-0}"
 }
 
 first_run=1

@@ -189,8 +189,9 @@ while :; do
               fi
       fi
       
-      menu --start-selection "$start_selection" "Spell: $name" "$@"
-      menu_status=$?
+      # Don't let menu's exit code trigger set -e early exit
+      menu --start-selection "$start_selection" "Spell: $name" "$@" || menu_status=$?
+      menu_status=${menu_status:-0}
       
       # Exit code 130 means ESC or Exit was pressed - exit cleanly
       if [ "$menu_status" -eq 130 ]; then

@@ -92,11 +92,13 @@ set -eu
     set -- "$@" "${exit_label}%exit 130"
     
     if [ "$synonym_type" = "default" ]; then
-      menu "Default: $synonym_word → $target_spell" "$@"
+      # Don't let menu's exit code trigger set -e early exit
+      menu "Default: $synonym_word → $target_spell" "$@" || menu_status=$?
     else
-      menu "Synonym: $synonym_word → $target_spell" "$@"
+      # Don't let menu's exit code trigger set -e early exit
+      menu "Synonym: $synonym_word → $target_spell" "$@" || menu_status=$?
     fi
-    menu_status=$?
+    menu_status=${menu_status:-0}
     
     # Exit code 130 means ESC or Exit was pressed - exit cleanly
     if [ "$menu_status" -eq 130 ]; then

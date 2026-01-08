@@ -154,14 +154,13 @@ test_esc_exit_behavior() {
   write_memorize_command_stub "$stub_dir"
   write_require_command_stub "$stub_dir"
   
-  # Create menu stub that returns escape status
+  # Create menu stub that returns exit code 130 (ESC/Exit)
   cat >"$stub_dir/menu" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
-kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
+exit 130
 SH
   chmod +x "$stub_dir/menu"
-  
   
   cat >"$stub_dir/exit-label" <<'SH'
 #!/bin/sh
@@ -169,16 +168,16 @@ printf '%s' "Exit"
 SH
   chmod +x "$stub_dir/exit-label"
   
-  
+  # Run spellbook - it should detect exit code 130 and exit cleanly
   run_cmd env PATH="$stub_dir:$PATH" MENU_LOG="$stub_dir/log" "$ROOT_DIR/spells/menu/spellbook"
-  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
+  assert_success || { TEST_FAILURE_REASON="spellbook should exit successfully when menu returns 130"; return 1; }
   
+  # Verify that Exit menu item uses "exit 130" not "kill -TERM $PPID"
   args=$(cat "$stub_dir/log")
   case "$args" in
-    *'Exit%kill -TERM $PPID') : ;;
-    *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
+    *'Exit%exit 130'*) : ;;
+    *) TEST_FAILURE_REASON="Exit menu item should use 'exit 130' not 'kill -TERM \$PPID': $args"; return 1 ;;
   esac
-  
 }
 
 run_test_case "spellbook ESC/Exit behavior" test_esc_exit_behavior

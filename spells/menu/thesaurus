@@ -279,8 +279,9 @@ set -eu
     exit_label=$(exit-label)
     set -- "$@" "${exit_label}%exit 130"
     
-    menu "Thesaurus:" "$@"
-    menu_status=$?
+    # Don't let menu's exit code trigger set -e early exit
+    menu "Thesaurus:" "$@" || menu_status=$?
+    menu_status=${menu_status:-0}
     
     # Exit code 130 means ESC or Exit was pressed - exit cleanly
     if [ "$menu_status" -eq 130 ]; then

@@ -131,9 +131,16 @@ run_test_case "install-menu prefers spells in the install root" test_install_men
 test_esc_exit_behavior() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu_env "$tmp"
-  make_stub_require "$tmp"
   
+  # Create menu stub that returns exit code 130
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >>"$MENU_LOG"
+exit 130
+SH
+  chmod +x "$tmp/menu"
+  
+  make_stub_require "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -150,16 +157,14 @@ echo ready
 SH
   chmod +x "$install_root/test/test-status"
   
-  
   run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/install-menu"
-  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
+  assert_success || { TEST_FAILURE_REASON="install-menu should exit successfully when menu returns 130"; return 1; }
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *'Exit%kill -TERM $PPID') : ;;
-    *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
+    *'Exit%exit 130'*) : ;;
+    *) TEST_FAILURE_REASON="Exit menu item should use 'exit 130' not 'kill -TERM \$PPID': $args"; return 1 ;;
   esac
-  
 }
 
 run_test_case "install-menu ESC/Exit behavior" test_esc_exit_behavior

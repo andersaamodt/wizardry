@@ -15,7 +15,7 @@ make_stub_menu() {
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
-kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
+exit 130
 SH
   chmod +x "$tmp/menu"
 }
@@ -42,7 +42,15 @@ test_system_menu_checks_requirements() {
 test_system_menu_includes_test_utilities() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
+  
+  # Create menu stub that returns exit code 130
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >>"$MENU_LOG"
+exit 130
+SH
+  chmod +x "$tmp/menu"
+  
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -53,8 +61,8 @@ SH
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"System Menu:"*"Restart...%shutdown-menu"*"Update all software%update-all -v"*"Update wizardry%update-wizardry"*"Manage services%"*"services-menu"*"Test all wizardry spells%test-magic"*'Exit%kill -TERM $PPID' ) : ;;
-    *) TEST_FAILURE_REASON="expected system actions missing: $args"; return 1 ;;
+    *"System Menu:"*"Restart...%shutdown-menu"*"Update all software%update-all -v"*"Update wizardry%update-wizardry"*"Manage services%"*"services-menu"*"Test all wizardry spells%test-magic"*'Exit%exit 130' ) : ;;
+    *) TEST_FAILURE_REASON="expected system actions missing or Exit item should use 'exit 130': $args"; return 1 ;;
   esac
 }
 
@@ -65,7 +73,15 @@ run_test_case "system-menu passes system actions to menu" test_system_menu_inclu
 test_esc_exit_behavior() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
+  
+  # Create menu stub that returns exit code 130
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >>"$MENU_LOG"
+exit 130
+SH
+  chmod +x "$tmp/menu"
+  
   make_stub_require "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
@@ -75,12 +91,12 @@ SH
   chmod +x "$tmp/exit-label"
   
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/system-menu"
-  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
+  assert_success || { TEST_FAILURE_REASON="system-menu should exit successfully when menu returns 130"; return 1; }
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *'Exit%kill -TERM $PPID') : ;;
-    *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
+    *'Exit%exit 130'*) : ;;
+    *) TEST_FAILURE_REASON="Exit menu item should use 'exit 130' not 'kill -TERM \$PPID': $args"; return 1 ;;
   esac
 }
 
@@ -98,7 +114,15 @@ run_test_case "system-menu --help shows usage" test_shows_help
 test_no_exit_message_on_esc() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
+  
+  # Create menu stub that returns exit code 130
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >>"$MENU_LOG"
+exit 130
+SH
+  chmod +x "$tmp/menu"
+  
   make_stub_require "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
@@ -145,8 +169,7 @@ printf '%s\n' "$1" >>"$MENU_OUTPUT"
 printf '\n' >>"$MENU_OUTPUT"
 # Execute the services-menu command
 services-menu >>"$MENU_OUTPUT" 2>&1
-kill -TERM "$PPID" 2>/dev/null || exit 0
-exit 0
+exit 130
 SH
   chmod +x "$tmp/menu"
   
