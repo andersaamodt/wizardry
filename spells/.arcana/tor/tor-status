@@ -23,10 +23,9 @@ if command -v colors >/dev/null 2>&1; then
   . colors
 else
   RESET=""
-  GREEN=""
-  YELLOW=""
-  RED=""
-  GRAY=""
+  THEME_SUCCESS=""
+  THEME_WARNING=""
+  THEME_ERROR=""
   GREY=""
 fi
 # Older scripts expect GRAY, so mirror GREY when missing.
@@ -38,10 +37,10 @@ if ! command -v tor >/dev/null 2>&1; then
   color="$GRAY"
 elif command -v is-service-running >/dev/null 2>&1 && is-service-running tor >/dev/null 2>&1; then
   status="installed, running, bootstrapped"
-  color="$GREEN"
+  color="$THEME_SUCCESS"
 else
   status="installed, not running"
-  color="$YELLOW"
+  color="$THEME_WARNING"
 fi
 
 # Print colored status

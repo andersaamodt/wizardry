@@ -21,6 +21,20 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 # shellcheck source=/dev/null
 . "$script_dir/install-core"
 
+# Load colors if available
+if command -v colors >/dev/null 2>&1; then
+  # shellcheck source=/dev/null
+  . colors
+else
+  RESET=""
+  THEME_SUCCESS=""
+  THEME_WARNING=""
+  THEME_ERROR=""
+  GREY=""
+fi
+# Older scripts expect GRAY, so mirror GREY when missing.
+GRAY=${GREY-}
+
 total=0
 installed=0
 
@@ -39,9 +53,14 @@ $(core_dependencies)
 EOF
 
 if [ "$installed" -eq "$total" ]; then
-  printf '%s\n' "installed"
+  status="installed"
+  color="$THEME_SUCCESS"
 elif [ "$installed" -eq 0 ]; then
-  printf '%s\n' "not installed"
+  status="not installed"
+  color="$GRAY"
 else
-  printf '%s\n' "partial install"
+  status="partial install"
+  color="$THEME_WARNING"
 fi
+
+printf "%s%s%s\n" "$color" "$status" "$RESET"
