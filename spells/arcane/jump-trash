@@ -17,9 +17,7 @@ esac
 
 # Enforce sourced-only behavior
 # uncastable must be sourced (invoked), never executed (cast)
-if ! command -v uncastable >/dev/null 2>&1; then
-  . uncastable
-fi
+. uncastable
 
 set -eu
 . env-clear
