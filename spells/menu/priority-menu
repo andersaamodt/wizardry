@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# This spell displays a menu of commands for a prioritized file or folder.
+# This spell displays a menu of commands for a prioritized file or folder with echelon support.
 # Use 'priorities' to easily select a priority with this menu.
 
 case "${1-}" in
@@ -24,35 +24,43 @@ trap 'exit 0' INT TERM
 # shellcheck source=/dev/null
 . "$(command -v colors)"
 
-if ! require menu "The Priority menu needs the 'menu' command to present options."; then
+# Check for menu command
+if ! command -v menu >/dev/null 2>&1; then
+  printf '%s\n' "priority-menu: menu command required" >&2
   exit 1
 fi
 
 file="${1-}"
 
 if [ -z "$file" ]; then
-        usage-error "priority-menu" "file path required"
+  printf '%s\n' "priority-menu: file path required" >&2
+  exit 2
 fi
 
 priority_menu_display_menu() {
-        checked_state=$(read-magic "${file}" checked)
-        if [ "${checked_state}" = "read-magic: attribute does not exist." ]; then
-          check_item="Check%echo 'Placeholder: Check command'"
-        else
-          check_item="Uncheck%echo 'Placeholder: Uncheck command'"
-        fi
+  checked_state=$(read-magic "${file}" checked 2>/dev/null || true)
+  case "$checked_state" in
+    ''|*Error*|*"does not exist"*)
+      # Not checked - show Check option
+      check_item="Check%printf 'Feature: Check command not yet implemented\n'"
+      ;;
+    *)
+      # Checked - show Uncheck option
+      check_item="Uncheck%printf 'Feature: Uncheck command not yet implemented\n'"
+      ;;
+  esac
 
-        filename=$(basename "$file")
-        exit_label=$(exit-label)
-        exit_item="${exit_label}%kill -TERM \$PPID"
+  filename=$(basename "$file")
+  exit_label=$(exit-label)
+  exit_item="${exit_label}%kill -TERM \$PPID"
 
-        set -- "Prioritize (upboat)%prioritize \"$file\"; kill -TERM \$PPID" \
-               "${check_item}" \
-               "Discard from priorities (downboat)%echo 'Placeholder: Discard command'" \
-               "Edit Card%echo 'Placeholder: Edit command'" \
-               "Browse Within%echo 'Placeholder: Browse files within this file/folder'" \
-               "$exit_item"
-        menu "${THEME_HEADING}${filename}${RESET}:" "$@"
+  set -- "Prioritize (upboat)%prioritize \"$file\"; kill -TERM \$PPID" \
+         "${check_item}" \
+         "Discard from priorities (downboat)%printf 'Feature: Discard command not yet implemented\n'" \
+         "Edit Card%printf 'Feature: Edit command not yet implemented\n'" \
+         "Browse Within%printf 'Feature: Browse files within this file/folder not yet implemented\n'" \
+         "$exit_item"
+  menu "${THEME_HEADING}${filename}${RESET}:" "$@"
 }
 
 first_run=1

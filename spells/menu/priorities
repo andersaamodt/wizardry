@@ -1,14 +1,14 @@
 #!/bin/sh
 
-# This spell displays and manages prioritized items in the current directory.
-# Use it to view and reorder files by priority.
+# This spell displays and manages prioritized items in the current directory with echelon support.
+# Use it to view and reorder files by priority tiers (echelons).
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
 Usage: priorities [-v]
 
-Display prioritized items in the current directory as an interactive menu, with -v to show priority numbers.
+Display prioritized items in the current directory as an interactive menu, with -v to show priority numbers (echelons).
 USAGE
   exit 0
   ;;
@@ -27,7 +27,7 @@ verbose=0
 while getopts "v" opt; do
   case $opt in
     v) verbose=1 ;; # If -v is passed, set verbose to 1
-    \?) usage-error "priorities" "Invalid option: -$OPTARG" ;; # Invalid option
+    \?) printf '%s\n' "priorities: invalid option: -$OPTARG" >&2; exit 2 ;;
   esac
 done
 shift $((OPTIND-1)) # Shift off the options and optional --.
@@ -38,13 +38,15 @@ display_priorities() {
   dir="${PWD}"
 
   # Get the current priorities of the directory
-  dir_priorities=$(read_magic "${dir}" priorities)
+  dir_priorities=$(read-magic "${dir}" priorities 2>/dev/null || true)
 
   # If there are no priorities, print an error message and exit
-  if [ -z "${dir_priorities}" ] || [ "$dir_priorities" = "read-magic: attribute does not exist." ]; then
-    echo "No priorities set in the current folder. Try 'prioritize <filename>'."
-    exit 1
-  fi
+  case "$dir_priorities" in
+    ''|*Error*|*"does not exist"*)
+      printf '%s\n' "No priorities set in the current folder. Try 'prioritize <filename>'."
+      return 1
+      ;;
+  esac
 
   # Initialize variables
   highest_priority=""
@@ -52,41 +54,39 @@ display_priorities() {
   menu_command="menu Priorities:"
 
   # Loop through the priorities
-  dir_priorities=$(echo "${dir_priorities}" | tr ',' '\n')
+  dir_priorities=$(printf '%s' "${dir_priorities}" | tr ',' '\n')
 
   for priority_hash in $dir_priorities; do
-    # Get the priority file
-    priority_file=$(get-card "${priority_hash}")
+    # Get the priority file using get-card
+    priority_file=$(get-card "${priority_hash}" "${dir}" 2>/dev/null || true)
 
-    # Check if the file exists
-    if [ -n "${priority_file}" ]; then
+    # Check if the file exists and was found
+    if [ -n "${priority_file}" ] && [ -f "${priority_file}" ]; then
       # Get priority of the file
-      file_priority=$(read_magic "${priority_file}" priority 2>/dev/null)
+      file_priority=$(read-magic "${priority_file}" priority 2>/dev/null || true)
       
-      # If the file does not have a priority, set it to 0
-      if [ -z "${file_priority}" ] || [ "$file_priority" = "read-magic: attribute does not exist." ]; then
-        file_priority=0
+      # Handle errors or empty priority
+      case "$file_priority" in
+        ''|*Error*) file_priority=0 ;;
+        *[!0-9]*) file_priority=0 ;;
+      esac
+
+      # If the file's priority is not the highest priority, add an echelon separator line
+      if [ -n "${highest_priority}" ] && [ "${file_priority}" -ne "${highest_priority}" ] && [ "${line_added}" = false ]; then
+        menu_command="${menu_command} \"─── %\""
+        line_added=true
       fi
 
-      # If the priority of the file is a number
-      if [ "${file_priority}" -eq "${file_priority}" ] 2>/dev/null; then
-        # If the file's priority is not the highest priority, add a line
-        if [ -n "${highest_priority}" ] && [ "${file_priority}" -ne "${highest_priority}" ] && [ "${line_added}" = false ]; then
-          menu_command="${menu_command} \"─── %\""
-          line_added=true
-        fi
-
-        # Add the file to the menu command
-        menu_command="${menu_command} \""
-        if [ $verbose -eq 1 ]; then
-          menu_command="${menu_command}${file_priority} "
-        fi
-        item_name=$(basename "$priority_file")
-        menu_command="${menu_command}$item_name%priority-menu \\\"${priority_file}\\\"\""
-
-        # Update the highest priority
-        highest_priority="${file_priority}"
+      # Add the file to the menu command
+      menu_command="${menu_command} \""
+      if [ $verbose -eq 1 ]; then
+        menu_command="${menu_command}${file_priority} "
       fi
+      item_name=$(basename "$priority_file")
+      menu_command="${menu_command}$item_name%priority-menu \\\"${priority_file}\\\"\""
+
+      # Update the highest priority (for detecting echelon boundaries)
+      highest_priority="${file_priority}"
     fi
   done
 
