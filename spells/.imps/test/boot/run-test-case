@@ -32,22 +32,16 @@ printf '%s' "$_test_index" > "${WIZARDRY_TMPDIR}/_test_index"
 #   fi
 # fi
 
-# Check if dual-pattern testing is explicitly requested
-if [ "${WIZARDRY_TEST_BOTH_PATTERNS-}" = "1" ]; then
-  # Use run-both-patterns for comprehensive validation
-  run-both-patterns "$desc" "$func" "$spell_path"
+# Direct execution (fast, sufficient for most testing)
+# Run the test function and capture its exit status
+if "$func"; then
+  report-result "$_test_index" "$desc" 0
 else
-  # Default: Direct execution (fast, sufficient for most testing)
-  # Run the test function and capture its exit status
-  if "$func"; then
-    report-result "$_test_index" "$desc" 0
-  else
-    status=$?
-    # Set default failure reason if not already set by assertions
-    TEST_FAILURE_REASON=${TEST_FAILURE_REASON-test function failed}
-    export TEST_FAILURE_REASON
-    report-result "$_test_index" "$desc" "$status"
-  fi
+  status=$?
+  # Set default failure reason if not already set by assertions
+  TEST_FAILURE_REASON=${TEST_FAILURE_REASON-test function failed}
+  export TEST_FAILURE_REASON
+  report-result "$_test_index" "$desc" "$status"
 fi
 
 
