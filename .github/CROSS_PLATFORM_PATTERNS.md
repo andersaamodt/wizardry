@@ -188,11 +188,15 @@ fi
 ## String Manipulation
 
 ```sh
-# Character extraction - POSIX parameter expansion (most portable)
+# Character extraction - awk (most portable across all systems)
+first_char=$(printf '%s' "$string" | awk '{print substr($0,1,1)}')
+rest=$(printf '%s' "$string" | awk '{print substr($0,2)}')
+
+# Alternative: POSIX parameter expansion (works on most shells but may fail on some BSD variants)
 first_char=${string%"${string#?}"}     # Extract first character
 rest=${string#?}                        # Everything after first char
 
-# Alternative: sed (works but parameter expansion is preferred)
+# Alternative: sed (works but awk is preferred for BSD compatibility)
 first_char=$(printf '%s' "$string" | sed 's/^\(.\).*/\1/')
 rest=$(printf '%s' "$string" | sed 's/^.//')
 
