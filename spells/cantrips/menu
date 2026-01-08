@@ -197,6 +197,7 @@ do
                 label="---"
                 command="---"
                 clean_label="---"
+                is_divider=1
         else
                 label=${option%%\%*}
                 case $option in
@@ -209,6 +210,7 @@ do
                 esac
                 # Strip ANSI codes before calculating visible length
                 clean_label=$(printf '%s' "$label" | sed "$strip_ansi_pattern")
+                is_divider=0
         fi
         
         # Cache in memory
@@ -216,10 +218,12 @@ do
                 cached_labels=$label
                 cached_commands=$command
                 cached_clean_labels=$clean_label
+                cached_is_divider=$is_divider
         else
                 cached_labels="${cached_labels}${label_delimiter}${label}"
                 cached_commands="${cached_commands}${label_delimiter}${command}"
                 cached_clean_labels="${cached_clean_labels}${label_delimiter}${clean_label}"
+                cached_is_divider="${cached_is_divider}${label_delimiter}${is_divider}"
         fi
         
         length=$(printf '%s' "$clean_label" | wc -c | tr -d ' ')
@@ -290,6 +294,7 @@ get_row_data() {
         remaining_clean="$cached_clean_labels"
         remaining_vlen="$cached_visible_lengths"
         remaining_rlen="$cached_raw_lengths"
+        remaining_divider="$cached_is_divider"
         count=1
         
         while [ "$count" -le "$row_idx" ]; do
@@ -349,6 +354,17 @@ get_row_data() {
                                 ;;
                 esac
                 
+                case "$remaining_divider" in
+                        *"$label_delimiter"*)
+                                current_divider="${remaining_divider%%"$label_delimiter"*}"
+                                remaining_divider="${remaining_divider#*"$label_delimiter"}"
+                                ;;
+                        *)
+                                current_divider="$remaining_divider"
+                                remaining_divider=""
+                                ;;
+                esac
+                
                 if [ "$count" -eq "$row_idx" ]; then
                         # Export values for use by caller
                         ROW_LABEL="$current_label"
@@ -356,6 +372,7 @@ get_row_data() {
                         ROW_CLEAN="$current_clean"
                         ROW_VLEN="$current_vlen"
                         ROW_RLEN="$current_rlen"
+                        ROW_IS_DIVIDER="$current_divider"
                         return 0
                 fi
                 
@@ -554,13 +571,20 @@ selection_pending=0
 check_width_counter=0
 width_check_interval=10  # Only check terminal width every N iterations
 
+# Pre-calculate cursor position below menu for inlining
+cursor_below_row=$((menu_row + menu_length))
+if [ "$terminal_height" -gt 0 ] && [ "$cursor_below_row" -gt "$terminal_height" ]; then
+        cursor_below_row=$terminal_height
+fi
+
 while :
 do
         if [ "$pending_step" -eq 0 ]; then
-                command=$(get_cached_item "$selected" "$cached_commands")
-                case $command in
-                        ---) pending_step=1 ;;
-                esac
+                # Use cached divider flag instead of get_cached_item
+                is_div=$(get_cached_item "$selected" "$cached_is_divider")
+                if [ "$is_div" = "1" ]; then
+                        pending_step=1
+                fi
         fi
         # If the current position is a divider, queue a forward step to reach the next selectable row.
         # Apply queued navigation steps, wrapping around and skipping dividers.
@@ -575,8 +599,9 @@ do
                         elif [ "$pos" -le 0 ]; then
                                 pos=$menu_length
                         fi
-                        command=$(get_cached_item "$pos" "$cached_commands")
-                        if [ "$command" != "---" ]; then
+                        # Use cached divider flag instead of get_cached_item
+                        pos_is_div=$(get_cached_item "$pos" "$cached_is_divider")
+                        if [ "$pos_is_div" != "1" ]; then
                                 selected=$pos
                                 break
                         fi
@@ -631,7 +656,10 @@ do
                         row=$((row + 1))
                 done
 
-                position_cursor_below_menu
+                # Inline position_cursor_below_menu for performance
+                if ! move_cursor "$menu_column" "$cursor_below_row"; then
+                        printf '\n'
+                fi
 
                 previous_selected=$selected
                 selection_pending=0
@@ -642,7 +670,10 @@ do
                 fi
                 render_row "$selected" 1
 
-                position_cursor_below_menu
+                # Inline position_cursor_below_menu for performance
+                if ! move_cursor "$menu_column" "$cursor_below_row"; then
+                        printf '\n'
+                fi
 
                 previous_selected=$selected
                 selection_pending=0
@@ -664,10 +695,12 @@ do
                 step=1
                 ;;
         enter)
+                # Use get_row_data for faster retrieval
+                get_row_data "$selected"
                 if [ "$show_command" -eq 1 ]; then
-                        to_run=$(get_cached_item "$selected" "$cached_labels")
+                        to_run="$ROW_LABEL"
                 else
-                        to_run=$(get_cached_item "$selected" "$cached_commands")
+                        to_run="$ROW_COMMAND"
                 fi
                 cleanup
                 trap - EXIT INT TERM
