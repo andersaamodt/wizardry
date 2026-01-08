@@ -130,125 +130,76 @@ set -eu
   
   [ "$quiet" -eq 0 ] && info "Collecting first words from all spells and imps..." >&2
   
-  _first_words_file=$(temp-file)
-  on-exit cleanup-file "$_first_words_file"
-  
   # ============================================================================
   # FUNCTION GENERATION HELPERS
   # ============================================================================
   
-  # Generate first-word gloss function
-  # For "env-or", generates: env() { parse "env" "$@"; }
-  # This ensures parse receives the full command as user typed it
-  generate_first_word_gloss() {
-    _cmd_name=$1
-    _first_word=$(printf '%s' "$_cmd_name" | sed 's/-.*$//')
-    
-    # Skip single-word commands (no hyphen)
-    if [ "$_first_word" = "$_cmd_name" ]; then
-      return 0
-    fi
+  # Check if a first word is blacklisted
+  # Returns 0 if allowed, 1 if blacklisted
+  is_first_word_blacklisted() {
+    _check_word=$1
     
     # CRITICAL: Skip shell builtins and common system commands to avoid overriding them
-    # This prevents errors like "Bad function name" when trying to define certain builtins
-    # Also prevents overriding critical system utilities like find, grep, sed, etc.
-    # FAIL if we would create a blacklisted command - this indicates spell naming conflict
-    #
     # GREYLIST: Some shell builtins CAN be safely overridden if ALL spells using that first word
-    # are multi-word commands (e.g., read-magic, test-spell). The gloss delegates to
-    # parse, which tries to find matching spells and falls back to the system builtin if no match.
-    #
-    # Current greylist (safe to override):
-    #   - read: All read-* spells are 2+ words (read-magic, read-contact, read-file, read-line)
-    #   - test: All test-* spells are 2+ words (test-spell, test-magic, test-bootstrap, etc.)
-    case "$_first_word" in
+    # are multi-word commands (e.g., read-magic, test-spell).
+    case "$_check_word" in
       # GREYLIST: Shell builtins that CAN be safely overridden (see above)
       read|test)
-        # Allow these - they route through parse and fall back to system builtin
+        return 0  # Allow these
         ;;
       # BLACKLIST: Shell builtins that CANNOT be overridden
       alias|bg|cd|command|disable|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|readonly|set|sh|\
 times|trap|true|type|ulimit|umask|unalias|wait|break|case|continue|do|done|elif|else|\
 esac|eval|exec|exit|export|fi|for|if|in|local|return|shift|then|unset|until|while)
-        [ "$quiet" -eq 0 ] && printf 'generate-glosses: WARNING: Skipping spell "%s" - first word "%s" conflicts with shell builtin\n' "$_cmd_name" "$_first_word" >&2
-        return 1
+        return 1  # Blacklisted
         ;;
       # BLACKLIST: Common system commands that should not be overridden
       awk|cat|cp|cut|date|df|diff|dirname|du|echo|egrep|env|expr|fgrep|file|find|grep|head|\
 hostname|id|ln|ls|mkdir|mv|printf|ps|rm|rmdir|sed|sleep|sort|stat|tail|tar|tee|touch|tr|\
 uname|uniq|wc|xargs)
-        [ "$quiet" -eq 0 ] && printf 'generate-glosses: WARNING: Skipping spell "%s" - first word "%s" conflicts with system command\n' "$_cmd_name" "$_first_word" >&2
-        return 1
+        return 1  # Blacklisted
         ;;
     esac
     
-    # Check if already generated
-    if grep -q "^$_first_word()" "$_first_words_file" 2>/dev/null; then
-      return 0
-    fi
-    
-    # Mark as generated
-    printf '%s\n' "$_first_word()" >> "$_first_words_file"
-    
-    # Emit function definition - CRITICAL: pass first word to parse
-    emit_line "# First-word gloss for commands starting with '$_first_word'"
-    emit_line "${_first_word}() { parse \"${_first_word}\" \"\$@\"; }"
-    emit_line ""
-    
-    total_first_word_glosses=$((total_first_word_glosses + 1))
-  }
-  
-  # Generate full hyphenated gloss alias
-  # For "env-or", generates: alias env-or='env-or'
-  generate_full_name_alias() {
-    _cmd_name=$1
-    
-    # Skip if command has no hyphens (already accessible without alias)
-    case "$_cmd_name" in
-      *-*) ;;
-      *) return 0 ;;
-    esac
-    
-    # Emit alias definition - alias points to itself for shell completion
-    # The actual execution will be handled by PATH lookup finding the spell
-    emit_line "# Full-name alias for '$_cmd_name'"
-    emit_line "alias ${_cmd_name}='${_cmd_name}'"
-    emit_line ""
-    
-    total_full_name_glosses=$((total_full_name_glosses + 1))
+    return 0  # Not blacklisted
   }
   
   # ============================================================================
-  # SCAN AND GENERATE GLOSSES FOR ALL SPELLS AND IMPS
+  # SCAN AND GENERATE GLOSSES FOR ALL SPELLS AND IMPS (OPTIMIZED)
   # ============================================================================
   
   [ "$quiet" -eq 0 ] && info "Scanning for spells and imps..." >&2
   
-  # Use temp file for spell list
-  _spell_list=$(temp-file)
-  on-exit cleanup-file "$_spell_list"
+  # OPTIMIZATION STRATEGY:
+  # 1. Use find (necessary for nested directories like .arcana)
+  # 2. Extract basenames with shell parameter expansion (no subprocess)
+  # 3. Process in two passes to avoid repeated work
+  # 4. Use in-memory data structures (space-separated strings) instead of temp files
   
-  # Find all executable files in wizardry
-  if command -v find-executable >/dev/null 2>&1; then
-    find-executable "$wizardry_dir/spells" > "$_spell_list"
-  else
-    # Fallback: execute find-executable imp directly
-    _find_exec_imp="$wizardry_dir/spells/.imps/fs/find-executable"
-    if [ -x "$_find_exec_imp" ]; then
-      "$_find_exec_imp" "$wizardry_dir/spells" > "$_spell_list"
-    else
-      # Last resort: use find directly
-      warn "generate-glosses: find-executable not available, using basic find" >&2
-      find "$wizardry_dir/spells" -type f -perm /111 2>/dev/null > "$_spell_list" || \
-      find "$wizardry_dir/spells" -type f -perm +111 2>/dev/null > "$_spell_list" || \
-      find "$wizardry_dir/spells" -type f 2>/dev/null | while IFS= read -r f; do
-        [ -x "$f" ] && printf '%s\n' "$f"
-      done > "$_spell_list"
-    fi
-  fi
+  # First pass: Build spell name list with find + parameter expansion
+  _tmpfile=$(temp-file)
+  on-exit cleanup-file "$_tmpfile"
   
-  # Count files found
-  _spell_count=$(wc -l < "$_spell_list")
+  find "$wizardry_dir/spells" -type f -perm /111 2>/dev/null > "$_tmpfile"
+  
+  _spell_names=""
+  _spell_count=0
+  
+  # Read file paths and extract basenames efficiently
+  while IFS= read -r spell_path; do
+    # Use parameter expansion instead of basename (100x faster)
+    _name=${spell_path##*/}
+    
+    # Skip invalid names and parse
+    case "$_name" in
+      ''|.*|parse) continue ;;
+    esac
+    
+    # Add to space-separated list
+    _spell_names="$_spell_names $_name"
+    _spell_count=$((_spell_count + 1))
+  done < "$_tmpfile"
+  
   [ "$quiet" -eq 0 ] && info "Found $_spell_count executable files" >&2
   
   # Warn if no files found
@@ -271,20 +222,45 @@ uname|uniq|wc|xargs)
   emit_line "# ============================================================================"
   emit_line ""
   
-  # Generate first-word glosses (only if parse is enabled)
+  # OPTIMIZATION: Generate first-word glosses in batched mode
+  # Use in-memory tracking instead of temp file + grep
+  _first_words_seen=" "  # Track with space-separated list (space prefix for matching)
+  
   if [ "$parse_enabled" -eq 1 ]; then
-    while IFS= read -r spell_path; do
-      [ -n "$spell_path" ] && [ -f "$spell_path" ] || continue
-      spell_name=$(basename "$spell_path")
-      
-      # Skip invalid names and parse
+    for spell_name in $_spell_names; do
+      # Extract first word using parameter expansion (faster than sed)
       case "$spell_name" in
-        ''|.*|parse) continue ;;
+        *-*)
+          # Multi-word spell - extract first word
+          _first_word=${spell_name%%-*}
+          ;;
+        *)
+          # Single-word spell - skip
+          continue
+          ;;
       esac
       
-      # Try to generate first-word gloss, skip on conflict (warning already printed)
-      generate_first_word_gloss "$spell_name" || continue
-    done < "$_spell_list"
+      # Check if first word is blacklisted
+      if ! is_first_word_blacklisted "$_first_word"; then
+        [ "$quiet" -eq 0 ] && printf 'generate-glosses: WARNING: Skipping spell "%s" - first word "%s" conflicts with system command\n' "$spell_name" "$_first_word" >&2
+        continue
+      fi
+      
+      # Check if already generated (in-memory check, no subprocess)
+      case "$_first_words_seen" in
+        *" $_first_word "*) continue ;;
+      esac
+      
+      # Mark as seen
+      _first_words_seen="$_first_words_seen$_first_word "
+      
+      # Emit function definition
+      emit_line "# First-word gloss for commands starting with '$_first_word'"
+      emit_line "${_first_word}() { parse \"${_first_word}\" \"\$@\"; }"
+      emit_line ""
+      
+      total_first_word_glosses=$((total_first_word_glosses + 1))
+    done
   fi
   
   # Emit separator
@@ -298,19 +274,19 @@ uname|uniq|wc|xargs)
   emit_line "# ============================================================================"
   emit_line ""
   
-  # Generate full-name aliases
-  # Reset file pointer
-  while IFS= read -r spell_path; do
-    [ -n "$spell_path" ] && [ -f "$spell_path" ] || continue
-    spell_name=$(basename "$spell_path")
-    
-    # Skip invalid names and parse
+  # OPTIMIZATION: Generate full-name aliases in batched mode
+  for spell_name in $_spell_names; do
+    # Skip if command has no hyphens
     case "$spell_name" in
-      ''|.*|parse) continue ;;
+      *-*)
+        # Emit alias definition
+        emit_line "# Full-name alias for '$spell_name'"
+        emit_line "alias ${spell_name}='${spell_name}'"
+        emit_line ""
+        total_full_name_glosses=$((total_full_name_glosses + 1))
+        ;;
     esac
-    
-    generate_full_name_alias "$spell_name"
-  done < "$_spell_list"
+  done
   
   # ============================================================================
   # SYNONYM ALIASES
