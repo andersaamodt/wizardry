@@ -188,13 +188,16 @@ fi
 ## String Manipulation
 
 ```sh
-# Character extraction - use dd (most portable, works on all POSIX systems)
-first_char=$(printf '%s' "$string" | dd bs=1 count=1 2>/dev/null)
-rest=$(printf '%s' "$string" | dd bs=1 skip=1 2>/dev/null)
+# Character extraction - use sed (most portable POSIX solution)
+first_char=$(printf '%s' "$string" | sed 's/^\(.\).*/\1/')
+rest=$(printf '%s' "$string" | sed 's/^.//')
 
 # Alternative: POSIX parameter expansion (works on most shells)
 first_char=${string%"${string#?}"}     # Extract first character
 rest=${string#?}                        # Everything after first char
+
+# AVOID: dd (may have buffering issues on some systems)
+first=$(printf '%s' "$string" | dd bs=1 count=1 2>/dev/null)  # Can fail on BSD
 
 # AVOID: awk (BSD vs GNU differences)
 first=$(printf '%s' "$string" | awk '{print substr($0,1,1)}')  # BSD awk may differ
@@ -229,8 +232,9 @@ fi
 | Empty PATH | macOS CI | Set baseline first |
 | SIGPIPE varies | bash/dash | bash may exit, dash ignores |
 | `wc -l` output | BSD/macOS | Includes leading spaces, use `tr -d ' '` or case |
-| `cut -c` behavior | macOS | Use `dd bs=1 count=N` instead |
-| `awk substr()` | macOS | BSD awk differs; use `dd` for char extraction |
+| `cut -c` behavior | macOS | Use `sed 's/^\(.\).*/\1/'` for char extraction |
+| `awk substr()` | macOS | BSD awk differs; use `sed` instead |
+| `dd` buffering | macOS | Use `sed` for character extraction (more reliable) |
 | Case in `$()` | macOS bash 3.2 | Move case statement to function outside `$()` |
 
 **Testing:** Test on Linux + macOS, with bash + dash, check `checkbashisms`.
