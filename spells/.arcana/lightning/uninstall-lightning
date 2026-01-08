@@ -18,16 +18,18 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
-remove_nixos_entry() {
-  config=${1:-/etc/nixos/configuration.nix}
-  if [ ! -f "$config" ]; then
-    return 0
-  fi
-  if command -v backup-nix-config >/dev/null 2>&1; then
-    backup-nix-config "$config" >&2 || true
-  fi
-  if grep -q 'clightning' "$config"; then
-    sudo sed -i '/clightning/d' "$config"
+# Uninstall Lightning Network
+printf '%s\n' "Uninstalling Lightning Network..."
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+if [ -f "$script_dir/../core/manage-system-command" ]; then
+  . "$script_dir/../core/manage-system-command" uninstall lightning c-lightning clightning lightningd
+else
+  printf '%s\n' "uninstall-lightning: could not find manage-system-command" >&2
+  exit 1
+fi
+
+printf '%s\n' "Lightning Network uninstallation complete."
     printf '%s\n' "Removed clightning from $config"
     printf '%s\n' 'Rebuilding NixOS after removal...'
     sudo nixos-rebuild all

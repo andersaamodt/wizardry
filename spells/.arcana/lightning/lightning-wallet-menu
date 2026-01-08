@@ -21,8 +21,23 @@ set -eu
 
 trap 'exit 0' INT TERM
 
-read_prompt() {
-  prompt=$1
-  printf "%s: " "$prompt"
-  read -r value
-  printf '%s' "$value"
+first_run=1
+
+while true; do
+  if [ "$first_run" -eq 0 ]; then
+    printf '\n'
+  else
+    first_run=0
+  fi
+
+  # Build wallet menu
+  title="${BOLD}${CYAN}Lightning Wallet"
+  exit_label=$(exit-label)
+  exit_option="${exit_label}%kill -TERM \$PPID"
+  
+  new_addr="New Address%lightning-cli newaddr"
+  list_funds="List Funds%lightning-cli listfunds"
+  withdraw="Withdraw%printf 'Destination: '; read -r dest; printf 'Amount (sats): '; read -r amt; lightning-cli withdraw \"\$dest\" \"\$amt\""
+  
+  menu "$title" "$new_addr" "$list_funds" "$withdraw" "$exit_option" || true
+done

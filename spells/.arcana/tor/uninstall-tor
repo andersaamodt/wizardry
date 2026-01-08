@@ -18,8 +18,15 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
-uninstall_tor_is_nixos() {
-  if command -v detect-distro >/dev/null 2>&1 && [ "$(detect-distro 2>/dev/null)" = "nixos" ]; then
-    return 0
-  fi
-  return 1
+# Uninstall Tor
+printf '%s\n' "Uninstalling Tor..."
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+if [ -f "$script_dir/../core/manage-system-command" ]; then
+  . "$script_dir/../core/manage-system-command" uninstall tor
+else
+  printf '%s\n' "uninstall-tor: could not find manage-system-command" >&2
+  exit 1
+fi
+
+printf '%s\n' "Tor uninstallation complete."

@@ -19,16 +19,23 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
-ask() {
-  prompt=${1-}
-  default=${2-}
-  if [ -n "$default" ]; then
-    printf "%s [%s]: " "$prompt" "$default"
-  else
-    printf "%s: " "$prompt"
-  fi
-  read -r reply
-  if [ -z "$reply" ] && [ -n "$default" ]; then
-    reply=$default
-  fi
-  printf '%s' "$reply"
+# Install Lightning Network daemon
+printf '%s\n' "Installing Lightning Network (c-lightning)..."
+
+# Check if already installed
+if command -v lightningd >/dev/null 2>&1; then
+  printf '%s\n' "Lightning is already installed."
+  lightningd --version
+  exit 0
+fi
+
+# Try to install via package manager
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+if [ -f "$script_dir/../core/manage-system-command" ]; then
+  . "$script_dir/../core/manage-system-command" install lightning
+else
+  printf '%s\n' "install-lightning: could not find manage-system-command" >&2
+  exit 1
+fi
+
+printf '%s\n' "Lightning Network installation complete."

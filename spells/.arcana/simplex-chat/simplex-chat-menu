@@ -21,5 +21,26 @@ set -eu
 
 trap 'exit 0' INT TERM
 
-simplex_chat_menu_command_available() {
-  command -v "$1" >/dev/null 2>&1
+first_run=1
+
+while true; do
+  if [ "$first_run" -eq 0 ]; then
+    printf '\n'
+  else
+    first_run=0
+  fi
+
+  # Build menu based on simplex-chat installation status
+  title="${BOLD}${CYAN}SimpleX Chat: $(simplex-chat-status)"
+  exit_label=$(exit-label)
+  exit_option="${exit_label}%kill -TERM \$PPID"
+  
+  if command -v simplex-chat >/dev/null 2>&1; then
+    run_option="Run SimpleX Chat%simplex-chat"
+    uninstall_option="Uninstall SimpleX Chat%uninstall-simplex-chat"
+    menu "$title" "$run_option" "$uninstall_option" "$exit_option" || true
+  else
+    install_option="Install SimpleX Chat%install-simplex-chat"
+    menu "$title" "$install_option" "$exit_option" || true
+  fi
+done
