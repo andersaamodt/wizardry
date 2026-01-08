@@ -312,15 +312,23 @@ uname|uniq|wc|xargs)
           emit_line "alias ${_syn_word}='${_syn_spell}'"
           ;;
         *)
-          # Check if a first-word gloss already exists for this word
-          # If so, skip creating a synonym function to avoid overriding it
+          # For non-hyphenated synonyms, balance two concerns:
+          # 1. Synonym should work alone (e.g., "jump" calls "jump-to-marker")
+          # 2. Multi-word resolution should still work (e.g., "jump trash" calls "jump-trash")
           case "$_first_words_seen" in
             *" $_syn_word "*)
-              # First-word gloss exists, skip synonym function
-              [ "$quiet" -eq 0 ] && info "Skipping synonym function for '$_syn_word' (first-word gloss exists)" >&2
+              # First-word gloss exists - create hybrid function
+              # No args: call target spell; With args: use first-word for multi-word resolution
+              emit_line "${_syn_word}() {"
+              emit_line "  if [ \$# -eq 0 ]; then"
+              emit_line "    parse \"${_syn_spell}\" \"\$@\""
+              emit_line "  else"
+              emit_line "    parse \"${_syn_word}\" \"\$@\""
+              emit_line "  fi"
+              emit_line "}"
               ;;
             *)
-              # No first-word gloss, create synonym function
+              # No first-word gloss - simple synonym function
               emit_line "${_syn_word}() { parse \"${_syn_spell}\" \"\$@\"; }"
               ;;
           esac
@@ -349,15 +357,23 @@ uname|uniq|wc|xargs)
           emit_line "alias ${_syn_word}='${_syn_spell}'"
           ;;
         *)
-          # Check if a first-word gloss already exists for this word
-          # If so, skip creating a synonym function to avoid overriding it
+          # For non-hyphenated synonyms, balance two concerns:
+          # 1. Synonym should work alone (e.g., "jump" calls "jump-to-marker")
+          # 2. Multi-word resolution should still work (e.g., "jump trash" calls "jump-trash")
           case "$_first_words_seen" in
             *" $_syn_word "*)
-              # First-word gloss exists, skip synonym function
-              [ "$quiet" -eq 0 ] && info "Skipping synonym function for '$_syn_word' (first-word gloss exists)" >&2
+              # First-word gloss exists - create hybrid function
+              # No args: call target spell; With args: use first-word for multi-word resolution
+              emit_line "${_syn_word}() {"
+              emit_line "  if [ \$# -eq 0 ]; then"
+              emit_line "    parse \"${_syn_spell}\" \"\$@\""
+              emit_line "  else"
+              emit_line "    parse \"${_syn_word}\" \"\$@\""
+              emit_line "  fi"
+              emit_line "}"
               ;;
             *)
-              # No first-word gloss, create synonym function
+              # No first-word gloss - simple synonym function
               emit_line "${_syn_word}() { parse \"${_syn_spell}\" \"\$@\"; }"
               ;;
           esac
