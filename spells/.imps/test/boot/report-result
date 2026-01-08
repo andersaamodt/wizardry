@@ -1,16 +1,16 @@
 #!/bin/sh
-# report-result NUM DESC STATUS [REASON] - record the result of a test case
+# report-result NUM DESC STATUS - record the result of a test case
 # Prints PASS, FAIL, or SKIP with description, incrementing global counters.
 # Uses counter files in WIZARDRY_TMPDIR for cross-imp state sharing.
 # NUM is the subtest number (passed as argument, no globals)
-# REASON (optional 4th arg) overrides TEST_FAILURE_REASON from environment
+# Reads TEST_FAILURE_REASON from environment or file for failure details
 # Exit status 222 indicates a skipped test
 set -eu
 
 num=$1
 desc=$2
 status=$3
-reason=${4:-${TEST_FAILURE_REASON-}}
+reason=${TEST_FAILURE_REASON-}
 skip_reason=${TEST_SKIP_REASON-}
 
 # If reason not in environment, try reading from file (for assert functions)
