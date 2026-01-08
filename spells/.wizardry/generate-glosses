@@ -295,11 +295,40 @@ uname|uniq|wc|xargs)
     # Skip if command has no hyphens
     case "$spell_name" in
       *-*)
-        # Emit alias definition
-        emit_line "# Full-name alias for '$spell_name'"
-        emit_line "alias ${spell_name}='${spell_name}'"
-        emit_line ""
-        total_full_name_glosses=$((total_full_name_glosses + 1))
+        # Check if spell requires sourcing (has uncastable)
+        _spell_file=""
+        for _category_dir in "$wizardry_dir/spells"/*; do
+          [ -d "$_category_dir" ] || continue
+          case "$_category_dir" in
+            */.|*/..|*/.imps|*/.wizardry|*/.arcana) continue ;;
+          esac
+          if [ -f "$_category_dir/$spell_name" ]; then
+            _spell_file="$_category_dir/$spell_name"
+            break
+          fi
+        done
+        
+        # Check for uncastable in first 30 lines
+        _requires_sourcing=0
+        if [ -n "$_spell_file" ] && [ -f "$_spell_file" ]; then
+          if head -30 "$_spell_file" 2>/dev/null | grep -q "uncastable"; then
+            _requires_sourcing=1
+          fi
+        fi
+        
+        # Only create alias if spell doesn't require sourcing
+        if [ "$_requires_sourcing" -eq 0 ]; then
+          # Emit alias definition
+          emit_line "# Full-name alias for '$spell_name'"
+          emit_line "alias ${spell_name}='${spell_name}'"
+          emit_line ""
+          total_full_name_glosses=$((total_full_name_glosses + 1))
+        else
+          # Spell requires sourcing - document that it must be called with dot
+          emit_line "# SOURCING REQUIRED: $spell_name must be called with: . $spell_name"
+          emit_line "# (Cannot create alias/function due to hyphen in name and sourcing requirement)"
+          emit_line ""
+        fi
         ;;
     esac
   done
