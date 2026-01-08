@@ -5,8 +5,9 @@
 # Instead of creating script files, this now generates shell function definitions
 # that are sourced into the current shell. This provides:
 #   - First-word glosses: env() { parse "env" "$@"; } for space-separated invocation
-#   - Hyphenated aliases: alias env-or='env-or' for hyphenated invocation
-#   - Direct access to preloaded true-name functions: env-or()
+# 
+# NOTE: Hyphenated commands (like env-or, temp-file) are now natively available
+# via PATH, since invoke-wizardry adds all spell directories to PATH.
 #
 # Glosses are generated for:
 #   - All wizardry spells (in spells/*/)
@@ -87,8 +88,6 @@ set -eu
   
   # Track statistics
   total_first_word_glosses=0
-  total_full_name_glosses=0
-  total_true_name_glosses=0
   
   # Check if parse is enabled (for first-word gloss generation)
   # Default to enabled (1) if not set
@@ -273,30 +272,9 @@ uname|uniq|wc|xargs)
     done
   fi
   
-  # Emit separator
-  emit_line "# ============================================================================"
-  emit_line "# FULL-NAME HYPHENATED ALIASES"
-  emit_line "# ============================================================================"
-  emit_line "# These provide hyphenated command aliases:"
-  emit_line "#   env-or -> env-or"
-  emit_line "#   temp-file -> temp-file"
-  emit_line "# Aliases work in all shells (bash, zsh, dash, sh)"
-  emit_line "# ============================================================================"
-  emit_line ""
-  
-  # OPTIMIZATION: Generate full-name aliases in batched mode
-  for spell_name in $_spell_names; do
-    # Skip if command has no hyphens
-    case "$spell_name" in
-      *-*)
-        # Emit alias definition
-        emit_line "# Full-name alias for '$spell_name'"
-        emit_line "alias ${spell_name}='${spell_name}'"
-        emit_line ""
-        total_full_name_glosses=$((total_full_name_glosses + 1))
-        ;;
-    esac
-  done
+  # NOTE: Hyphenated aliases section removed
+  # Hyphenated commands (env-or, temp-file, etc.) are now natively available
+  # via PATH since invoke-wizardry adds all spell directories to PATH.
   
   # ============================================================================
   # SYNONYM ALIASES
@@ -356,7 +334,6 @@ uname|uniq|wc|xargs)
   if [ "$quiet" -eq 0 ]; then
     success "Gloss generation complete" >&2
     info "  First-word glosses: $total_first_word_glosses" >&2
-    info "  Full-name aliases: $total_full_name_glosses" >&2
     info "  Total spells/imps: $_spell_count" >&2
   fi
   
