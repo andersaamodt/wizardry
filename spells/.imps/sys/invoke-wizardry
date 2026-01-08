@@ -130,6 +130,14 @@ if [ -d "$WIZARDRY_DIR/spells/.imps" ]; then
   done
 fi
 
+# Add all arcana subdirectories to PATH
+if [ -d "$WIZARDRY_DIR/spells/.arcana" ]; then
+  for arcana_dir in "$WIZARDRY_DIR/spells/.arcana"/*; do
+    [ -d "$arcana_dir" ] || continue
+    PATH="$arcana_dir:$PATH"
+  done
+fi
+
 export PATH
 
 # Optional: Generate first-word glosses for space-separated invocation

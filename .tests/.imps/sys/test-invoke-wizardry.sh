@@ -424,6 +424,45 @@ EOF
   assert_output_contains "menu available" || return 1
 }
 
+# Test: .arcana subdirectories are added to PATH
+test_arcana_subdirs_in_path() {
+  tmpdir=$(make_tempdir)
+  
+  cat > "$tmpdir/test-arcana-path.sh" << EOF
+#!/bin/sh
+WIZARDRY_DIR="$ROOT_DIR"
+export WIZARDRY_DIR
+
+. "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" 2>/dev/null
+
+# Check that .arcana/mud directory is in PATH
+case ":\${PATH}:" in
+  *":$ROOT_DIR/spells/.arcana/mud:"*)
+    printf '.arcana/mud in PATH\n'
+    ;;
+  *)
+    printf 'ERROR: .arcana/mud not in PATH\n'
+    printf 'PATH=%s\n' "\${PATH}"
+    exit 1
+    ;;
+esac
+
+# Verify toggle-mud-menu is accessible
+if command -v toggle-mud-menu >/dev/null 2>&1; then
+  printf 'toggle-mud-menu available\n'
+else
+  printf 'ERROR: toggle-mud-menu not found\n'
+  exit 1
+fi
+EOF
+  chmod +x "$tmpdir/test-arcana-path.sh"
+  
+  run_cmd sh "$tmpdir/test-arcana-path.sh"
+  assert_success || return 1
+  assert_output_contains ".arcana/mud in PATH" || return 1
+  assert_output_contains "toggle-mud-menu available" || return 1
+}
+
 run_test_case "invoke-wizardry is sourceable" test_sourceable
 run_test_case "invoke-wizardry sets WIZARDRY_DIR" test_sets_wizardry_dir
 # Test #3 removed: outdated (word-of-binding means spell dirs NOT in PATH)
@@ -438,6 +477,7 @@ run_test_case "invoke-wizardry works in non-bash shells via default path" test_d
 # Test #10 removed: cd function no longer pre-loaded (MUD features install separately)
 run_test_case "menu is available in PATH" test_menu_preloaded
 run_test_case "empty spellbook directory doesn't cause errors" test_empty_spellbook_directory
+run_test_case ".arcana subdirectories are added to PATH" test_arcana_subdirs_in_path
 # Test #11 removed: redundant with word-of-binding paradigm (spell dirs never added to PATH)
 
 finish_tests
