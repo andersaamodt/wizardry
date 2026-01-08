@@ -43,7 +43,7 @@ system_menu_display_menu() {
   update_all="Update all software%update-all -v"
   uninstall_wizardry="Uninstall wizardry%$repo_dir/.uninstall; exit 0"
   exit_label=$(exit-label)
-  exit_item="${exit_label}%kill -TERM \$PPID"
+  exit_item="${exit_label}%exit 130"
 
   set -- "$restart_menu" "$update_all" "$update_wizardry" "$services"
   if [ -n "$nixos_rebuild" ]; then
@@ -66,5 +66,11 @@ while true; do
     first_run=0
   fi
 
-  system_menu_display_menu || true
+  system_menu_display_menu
+  menu_status=$?
+  
+  # Exit code 130 means ESC or Exit was pressed - exit cleanly
+  if [ "$menu_status" -eq 130 ]; then
+    exit 0
+  fi
 done

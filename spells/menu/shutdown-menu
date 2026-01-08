@@ -86,7 +86,7 @@ shutdown_menu_display_menu() {
   force_shutdown_item="Force shutdown%sudo poweroff -f"
   force_logout_item="Force logout%pkill -KILL -u \"\$USER\""
   exit_label=$(exit-label)
-  exit_item="${exit_label}%kill -TERM \$PPID"
+  exit_item="${exit_label}%exit 130"
 
   set -- "$restart_item" "$shutdown_item" "$logout_item"
   if [ -n "$sleep_available" ]; then

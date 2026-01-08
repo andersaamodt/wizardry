@@ -132,7 +132,13 @@ while :; do
     fi
 
     exit_label=$(exit-label)
-    set -- "$@" "${exit_label}%kill -TERM \$PPID"
+    set -- "$@" "${exit_label}%exit 130"
 
-    menu "Install Menu:" "$@" || true
+    menu "Install Menu:" "$@"
+    menu_status=$?
+    
+    # Exit code 130 means ESC or Exit was pressed - exit cleanly
+    if [ "$menu_status" -eq 130 ]; then
+        exit 0
+    fi
 done

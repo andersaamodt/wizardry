@@ -75,7 +75,7 @@ set -eu
       set -- "$@" "Override spell%$edit_spell_cmd"
       
       # Cannot delete default synonyms, only reset them
-      set -- "$@" "Reset default synonyms%reset-default-synonyms && kill -TERM \$PPID"
+      set -- "$@" "Reset default synonyms%reset-default-synonyms && exit 130"
     else
       # Custom synonyms can be edited directly
       edit_word_cmd="printf 'New synonym word: ' >&2 && read new_word && edit-synonym '$escaped_word' --word \"\$new_word\""
@@ -85,11 +85,11 @@ set -eu
       set -- "$@" "Edit spell%$edit_spell_cmd"
       
       # Delete synonym
-      set -- "$@" "Delete synonym%delete-synonym '$escaped_word' && kill -TERM \$PPID"
+      set -- "$@" "Delete synonym%delete-synonym '$escaped_word' && exit 130"
     fi
     
     exit_label=$(exit-label)
-    set -- "$@" "${exit_label}%kill -TERM \$PPID"
+    set -- "$@" "${exit_label}%exit 130"
     
     if [ "$synonym_type" = "default" ]; then
       menu "Default: $synonym_word → $target_spell" "$@"
@@ -98,7 +98,7 @@ set -eu
     fi
     menu_status=$?
     
-    # Exit code 130 means ESC was pressed - exit cleanly
+    # Exit code 130 means ESC or Exit was pressed - exit cleanly
     if [ "$menu_status" -eq 130 ]; then
       exit 0
     fi

@@ -265,7 +265,7 @@ spellbook_menu() {
                 if [ "$is_empty" = "yes" ]; then
                         # Use escaped path in the command
                         escaped_path=$(printf '%s' "$resolved_path" | sed "s/'/'\\\\''/g")
-                        set -- "$@" "Delete category%rm -rf '$escaped_path' && kill -TERM \$PPID"
+                        set -- "$@" "Delete category%rm -rf '$escaped_path' && exit 130"
                 fi
                 
                 # Add horizontal divider and synonym-related menu items (only at root level)
@@ -294,7 +294,7 @@ spellbook_menu() {
                 else
                         exit_label="Back"
                 fi
-                set -- "$@" "${exit_label}%kill -TERM \$PPID"
+                set -- "$@" "${exit_label}%exit 130"
                 
                 # Build menu title - use original folder name for category
                 if [ -z "$current_path" ]; then
@@ -302,7 +302,13 @@ spellbook_menu() {
                 else
                         menu_title="${category_name}:"
                 fi
-                menu "$menu_title" "$@" || true
+                menu "$menu_title" "$@"
+                menu_status=$?
+                
+                # Exit code 130 means ESC or Exit was pressed - exit cleanly
+                if [ "$menu_status" -eq 130 ]; then
+                        exit 0
+                fi
         done
 }
 

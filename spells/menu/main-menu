@@ -51,7 +51,7 @@ while true; do
   system="Computer%system-menu"
   
   exit_label_text=$(exit-label)
-  exit_item="${exit_label_text}%kill -TERM \$PPID"
+  exit_item="${exit_label_text}%exit 130"
 
   # Check if MUD is enabled in config and include if so
   mud_enabled=0
