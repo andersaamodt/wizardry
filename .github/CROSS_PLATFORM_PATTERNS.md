@@ -139,6 +139,31 @@ fi
 
 **zsh gotcha:** Functions in variables need `eval` in command substitution: `result=$(eval "$_cmd arg")`.
 
+**macOS bash gotcha:** macOS ships with bash 3.2 (2007) due to GPLv3 licensing. This version has parsing issues with case statements inside command substitution when patterns contain variables. Solution: Define case logic in a function outside the command substitution.
+
+```sh
+# BREAKS on macOS bash 3.2:
+result=$(
+  while read -r line; do
+    case "$line" in
+      $pattern) printf '%s\n' "$line" ;;
+    esac
+  done
+)
+
+# WORKS everywhere:
+_matches() {
+  case "$1" in
+    $2) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+for line in $input; do
+  _matches "$line" "$pattern" && printf '%s\n' "$line"
+done
+```
+
 ## PATH and Terminal
 
 ```sh
@@ -163,13 +188,16 @@ fi
 ## String Manipulation
 
 ```sh
-# Character extraction - use awk (most portable)
-first_char=$(printf '%s' "$string" | awk '{print substr($0,1,1)}')
-rest=$(printf '%s' "$string" | awk '{print substr($0,2)}')
+# Character extraction - use dd (most portable, works on all POSIX systems)
+first_char=$(printf '%s' "$string" | dd bs=1 count=1 2>/dev/null)
+rest=$(printf '%s' "$string" | dd bs=1 skip=1 2>/dev/null)
 
 # Alternative: POSIX parameter expansion (works on most shells)
 first_char=${string%"${string#?}"}     # Extract first character
 rest=${string#?}                        # Everything after first char
+
+# AVOID: awk (BSD vs GNU differences)
+first=$(printf '%s' "$string" | awk '{print substr($0,1,1)}')  # BSD awk may differ
 
 # WRONG (not portable - cut behavior varies on macOS):
 first=$(printf '%s' "$string" | cut -c1)     # cut -c behavior varies
@@ -201,7 +229,9 @@ fi
 | Empty PATH | macOS CI | Set baseline first |
 | SIGPIPE varies | bash/dash | bash may exit, dash ignores |
 | `wc -l` output | BSD/macOS | Includes leading spaces, use `tr -d ' '` or case |
-| `cut -c` behavior | macOS | Use `awk '{print substr($0,pos,len)}'` instead |
+| `cut -c` behavior | macOS | Use `dd bs=1 count=N` instead |
+| `awk substr()` | macOS | BSD awk differs; use `dd` for char extraction |
+| Case in `$()` | macOS bash 3.2 | Move case statement to function outside `$()` |
 
 **Testing:** Test on Linux + macOS, with bash + dash, check `checkbashisms`.
 
