@@ -277,11 +277,12 @@ uname|uniq|wc|xargs)
   # via PATH since invoke-wizardry adds all spell directories to PATH.
   
   # ============================================================================
-  # SYNONYM ALIASES
+  # SYNONYM GLOSSES
   # ============================================================================
   # Process user and default synonyms from .synonyms files
   # Synonym files contain simple key-value pairs (word spell-name)
-  # We generate appropriate aliases or functions based on spell requirements
+  # We generate function-based glosses using parse for multi-word resolution
+  # Aliases are only used for hyphenated names (POSIX sh limitation)
   # ============================================================================
   
   emit_line "# ============================================================================"
@@ -290,32 +291,6 @@ uname|uniq|wc|xargs)
   emit_line "# Generated from .synonyms and .default-synonyms files"
   emit_line "# ============================================================================"
   emit_line ""
-  
-  # Helper to check if spell requires sourcing
-  spell_requires_sourcing() {
-    _spell_name="$1"
-    _spell_path=""
-    
-    # Try to find spell file
-    for _category_dir in "$wizardry_dir/spells"/*; do
-      [ -d "$_category_dir" ] || continue
-      case "$_category_dir" in
-        */.|*/..|*/.imps|*/.wizardry|*/.arcana) continue ;;
-      esac
-      if [ -f "$_category_dir/$_spell_name" ]; then
-        _spell_path="$_category_dir/$_spell_name"
-        break
-      fi
-    done
-    
-    # Check for uncastable in first 30 lines
-    if [ -n "$_spell_path" ] && [ -f "$_spell_path" ]; then
-      if head -30 "$_spell_path" 2>/dev/null | grep -q "uncastable"; then
-        return 0
-      fi
-    fi
-    return 1
-  }
   
   # User synonyms
   synonym_file="$spell_home/.synonyms"
@@ -328,23 +303,19 @@ uname|uniq|wc|xargs)
       esac
       [ -n "$_syn_spell" ] || continue
       
-      # Generate appropriate alias or function
-      if spell_requires_sourcing "$_syn_spell"; then
-        # Spell requires sourcing - check if word can be a function
-        case "$_syn_word" in
-          *-*)
-            # Can't use function with hyphens, use alias (won't work for sourcing, but best we can do)
-            emit_line "alias ${_syn_word}='${_syn_spell}'"
-            ;;
-          *)
-            # Use parse for multi-word command resolution
-            emit_line "${_syn_word}() { parse \"${_syn_word}\" \"\$@\"; }"
-            ;;
-        esac
-      else
-        # Regular spell, use alias
-        emit_line "alias ${_syn_word}='${_syn_spell}'"
-      fi
+      # Generate appropriate function or alias
+      # Per function-based glosses paradigm, use functions everywhere possible
+      case "$_syn_word" in
+        *-*)
+          # POSIX sh doesn't allow hyphens in function names, must use alias
+          emit_line "alias ${_syn_word}='${_syn_spell}'"
+          ;;
+        *)
+          # Use function with parse for multi-word command resolution
+          # This works for all spells (both sourcing and non-sourcing)
+          emit_line "${_syn_word}() { parse \"${_syn_word}\" \"\$@\"; }"
+          ;;
+      esac
     done < "$synonym_file"
     emit_line ""
   fi
@@ -360,23 +331,19 @@ uname|uniq|wc|xargs)
       esac
       [ -n "$_syn_spell" ] || continue
       
-      # Generate appropriate alias or function
-      if spell_requires_sourcing "$_syn_spell"; then
-        # Spell requires sourcing - check if word can be a function
-        case "$_syn_word" in
-          *-*)
-            # Can't use function with hyphens, use alias (won't work for sourcing, but best we can do)
-            emit_line "alias ${_syn_word}='${_syn_spell}'"
-            ;;
-          *)
-            # Use parse for multi-word command resolution
-            emit_line "${_syn_word}() { parse \"${_syn_word}\" \"\$@\"; }"
-            ;;
-        esac
-      else
-        # Regular spell, use alias
-        emit_line "alias ${_syn_word}='${_syn_spell}'"
-      fi
+      # Generate appropriate function or alias
+      # Per function-based glosses paradigm, use functions everywhere possible
+      case "$_syn_word" in
+        *-*)
+          # POSIX sh doesn't allow hyphens in function names, must use alias
+          emit_line "alias ${_syn_word}='${_syn_spell}'"
+          ;;
+        *)
+          # Use function with parse for multi-word command resolution
+          # This works for all spells (both sourcing and non-sourcing)
+          emit_line "${_syn_word}() { parse \"${_syn_word}\" \"\$@\"; }"
+          ;;
+      esac
     done < "$default_synonym_file"
     emit_line ""
   fi
