@@ -63,43 +63,44 @@ if [ ! -f "$_it_default_initialized" ]; then
 HEADER
   
   # Define default synonyms (word -> spell)
-  # Spell synonyms
-  _it_defaults="detect-os detect-distro
-home jump
-ls-magic identify-room
-read-file read-magic
+  # Spell synonyms (sorted alphabetically)
+  _it_defaults="cd-to jump
 copy-file copy
-move-file move
 delete-file trash
-remove-file trash
-erase-file trash
+detect-os detect-distro
 edit-file edit-magic
+erase-file trash
 find-file file-list
-search-file file-list
-list-files file-list
-where-am-i identify-room
-where identify-room
 goto jump
-cd-to jump
+home jump
+jump jump-to-marker
+list-files file-list
+ls-magic identify-room
+move-file move
+portal jump
+read-file read-magic
+remove-file trash
+search-file file-list
 teleport jump
-portal jump"
+where identify-room
+where-am-i identify-room"
   
-  # Also add common system command aliases
+  # Also add common system command aliases (sorted alphabetically)
   _it_defaults="$_it_defaults
-delete rm
-remove rm
-erase rm
-list ls
-show cat
-display cat
 copy cp
-move mv
-rename mv
-link ln
-make-link ln
+delete rm
 directory pwd
-where-is which
-find-command which"
+display cat
+erase rm
+find-command which
+link ln
+list ls
+make-link ln
+move mv
+remove rm
+rename mv
+show cat
+where-is which"
   
   printf '%s\n' "$_it_defaults" | while IFS=' ' read -r _word _spell; do
     [ -n "$_word" ] && [ -n "$_spell" ] || continue

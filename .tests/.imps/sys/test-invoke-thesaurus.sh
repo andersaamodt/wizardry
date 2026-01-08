@@ -105,10 +105,33 @@ EOF
   fi
 }
 
+# Test: invoke-thesaurus creates jump synonym for jump-to-marker
+test_creates_jump_synonym() {
+  tmpdir=$(make_tempdir)
+  spellbook="$tmpdir/.spellbook"
+  mkdir -p "$spellbook"
+  
+  cat > "$tmpdir/test-jump.sh" << EOF
+#!/bin/sh
+SPELLBOOK_DIR="$spellbook"
+export SPELLBOOK_DIR
+. "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus" >/dev/null 2>&1 || true
+# Check that jump synonym exists and points to jump-to-marker
+grep -q "^alias jump='jump-to-marker'" "$spellbook/.default-synonyms" || exit 1
+printf 'jump synonym exists\n'
+EOF
+  chmod +x "$tmpdir/test-jump.sh"
+  
+  run_cmd sh "$tmpdir/test-jump.sh"
+  assert_success || return 1
+  assert_output_contains "jump synonym exists" || return 1
+}
+
 run_test_case "invoke-thesaurus fails when executed" test_fails_when_executed
 run_test_case "invoke-thesaurus is sourceable" test_sourceable
 run_test_case "invoke-thesaurus creates synonym files" test_creates_synonym_files
 run_test_case "invoke-thesaurus loads default synonyms" test_loads_default_synonyms
 run_test_case "invoke-thesaurus respects disabled state" test_respects_disabled_state
+run_test_case "invoke-thesaurus creates jump synonym" test_creates_jump_synonym
 
 finish_tests
