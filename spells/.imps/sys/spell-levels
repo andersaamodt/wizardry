@@ -94,7 +94,7 @@ case "$level" in
     ;;
   16)
     name='Advanced MUD Features'
-    spells='decorate:mud choose-player:mud'
+    spells='decorate:mud choose-player:mud damage-file:mud magic-missile:mud'
     imps=''
     ;;
   17)
@@ -109,7 +109,7 @@ case "$level" in
     ;;
   19)
     name='Task Priorities'
-    spells='get-priority:priorities get-new-priority:priorities prioritize:priorities upvote:priorities'
+    spells='get-priority:priorities get-new-priority:priorities prioritize:priorities upvote:priorities get-card:priorities'
     imps=''
     ;;
   20)
