@@ -19,10 +19,21 @@ require-command menu || exit 1
 
 trap 'exit 0' INT TERM
 exit_label=$(exit-label)
+# Exit button kills this menu script via TERM signal
+# Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
 exit_item="${exit_label}%kill -TERM \$PPID"
 
 menu "Network Menu:" \
   "Configure static IP%configure-static-ip" \
   "Configure DHCP%configure-dhcp" \
-  "$exit_item" || true
+  "$exit_item" || menu_status=$?
+menu_status=${menu_status:-0}
+
+# ESC kills this menu script via TERM signal (same as Exit button)
+# Direct kill: kill -TERM $$ → kills this script
+if [ "$menu_status" -eq 130 ]; then
+  printf 'ESC\n' >&2
+  kill -TERM $$ 2>/dev/null || true
+  exit 0
+fi
 

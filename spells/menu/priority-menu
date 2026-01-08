@@ -50,9 +50,11 @@ priority_menu_display_menu() {
       ;;
   esac
 
-  filename=$(basename "$file")
-  exit_label=$(exit-label)
-  exit_item="${exit_label}%kill -TERM \$PPID"
+        filename=$(basename "$file")
+        # Exit button kills this menu script via TERM signal
+        # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
+        exit_label=$(exit-label)
+        exit_item="${exit_label}%kill -TERM \$PPID"
 
   set -- "Prioritize (upboat)%prioritize \"$file\"; kill -TERM \$PPID" \
          "${check_item}" \
@@ -72,5 +74,14 @@ while true; do
     first_run=0
   fi
 
-  priority_menu_display_menu || true
+  priority_menu_display_menu || menu_status=$?
+  menu_status=${menu_status:-0}
+  
+  # ESC kills this menu script via TERM signal (same as Exit button)
+  # Direct kill: kill -TERM $$ → kills this script
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    kill -TERM $$ 2>/dev/null || true
+    exit 0
+  fi
 done

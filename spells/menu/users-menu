@@ -44,6 +44,8 @@ users_menu_display_menu() {
   remove_user_from_group="Remove other user from group%read -p \"Enter username: \" username; read -p \"Enter group to remove them from: \" group; sudo gpasswd -d \$username \$group"
   create_user="Create new user%read -p \"Enter new username: \" username; sudo useradd \$username; printf \"The new user needs a password (use 'Change other user's password').\""
   delete_user="Delete user%read -p \"Enter username of user to delete: \" username; sudo userdel \$username"
+  # Exit button kills this menu script via TERM signal
+  # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
   exit_label=$(exit-label)
   exit_item="${exit_label}%kill -TERM \$PPID"
 
@@ -60,5 +62,14 @@ while true; do
     first_run=0
   fi
 
-  users_menu_display_menu || true
+  users_menu_display_menu || menu_status=$?
+  menu_status=${menu_status:-0}
+  
+  # ESC kills this menu script via TERM signal (same as Exit button)
+  # Direct kill: kill -TERM $$ → kills this script
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    kill -TERM $$ 2>/dev/null || true
+    exit 0
+  fi
 done

@@ -55,6 +55,8 @@ list_entries() {
         entry_name=$(basename "$entry")
         # Skip 'mud' since we already listed it first
         [ "$entry_name" = "mud" ] && continue
+        # Skip 'import-arcanum' since it's a special menu item added separately
+        [ "$entry_name" = "import-arcanum" ] && continue
         printf '%s\n' "$entry_name"
     done
 }
@@ -89,7 +91,7 @@ while :; do
         if [ -n "$status_cmd" ]; then
             status=$($status_cmd)
         else
-            status='coming soon'
+            status="${GREY}coming soon${RESET}"
         fi
 
         if has "${name}-menu"; then
@@ -131,8 +133,19 @@ while :; do
         set -- "$@" "Import arcanum%$import_arcanum_cmd"
     fi
 
+    # Exit button kills this menu script via TERM signal
+    # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
     exit_label=$(exit-label)
     set -- "$@" "${exit_label}%kill -TERM \$PPID"
 
-    menu "Install Menu:" "$@" || true
+    menu "Install Menu:" "$@" || menu_status=$?
+    menu_status=${menu_status:-0}
+    
+    # ESC kills this menu script via TERM signal (same as Exit button)
+    # Direct kill: kill -TERM $$ → kills this script
+    if [ "$menu_status" -eq 130 ]; then
+        printf 'ESC\n' >&2
+        kill -TERM $$ 2>/dev/null || true
+        exit 0
+    fi
 done
