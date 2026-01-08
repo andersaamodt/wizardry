@@ -568,10 +568,10 @@ WRAPPER_EOF
   fi
 
   if [ "$test_exit_code" -ne 0 ]; then
-    # Only collect detailed output for the first 12 failures
+    # Only collect detailed output for the first 20 failures
     # total_fail hasn't been incremented yet for this failure,
-    # so check < 12 to collect failures 1-12
-    if [ "$total_fail" -lt 12 ]; then
+    # so check < 20 to collect failures 1-20
+    if [ "$total_fail" -lt 20 ]; then
       {
         printf '=== %s ===\n' "$test_path"
         printf '%s\n\n' "$cleaned_output"
@@ -1049,7 +1049,7 @@ if [ "$status" -eq 0 ]; then
 fi
 
 if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then
-  if [ "$total_fail" -le 12 ] && [ -s "$failure_output_file" ]; then
+  if [ "$total_fail" -le 20 ] && [ -s "$failure_output_file" ]; then
     printf '\nFailure Details\n'
     while IFS= read -r line; do
       case $line in

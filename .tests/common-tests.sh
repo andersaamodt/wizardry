@@ -1952,26 +1952,43 @@ run_test_case "spells have no deprecated invocation declarations" test_spells_no
 # This eliminates duplication in individual test files
 test_all_spells_respond_to_help() {
   failures=""
+  failure_count=0
   
   check_help_flag() {
     spell=$1
     rel_path=${spell#"$ROOT_DIR/spells/"}
     
+    # Skip if we already have enough failures
+    [ "$failure_count" -ge 10 ] && return
+    
     # Try each help flag variant
     for flag in --help --usage -h; do
-      # Run spell with help flag and capture output
-      output=$("$spell" "$flag" 2>&1)
-      exit_code=$?
+      # Run spell with help flag and capture output (with 5 second timeout)
+      if command -v timeout >/dev/null 2>&1; then
+        output=$(timeout 5 "$spell" "$flag" 2>&1)
+        exit_code=$?
+        # timeout returns 124 for timeout, 137 for SIGKILL
+        if [ "$exit_code" -eq 124 ] || [ "$exit_code" -eq 137 ]; then
+          failures="${failures}${failures:+, }$rel_path ($flag: timeout)"
+          failure_count=$((failure_count + 1))
+          return
+        fi
+      else
+        output=$("$spell" "$flag" 2>&1)
+        exit_code=$?
+      fi
       
       # Spell must exit with code 0 for help
       if [ "$exit_code" -ne 0 ]; then
         failures="${failures}${failures:+, }$rel_path ($flag: exit code $exit_code)"
+        failure_count=$((failure_count + 1))
         return
       fi
       
       # Output must contain "Usage:" keyword
       if ! printf '%s' "$output" | grep -qi "usage:"; then
         failures="${failures}${failures:+, }$rel_path ($flag: missing Usage:)"
+        failure_count=$((failure_count + 1))
         return
       fi
       
@@ -1981,12 +1998,14 @@ test_all_spells_respond_to_help() {
     
     # If we get here, none of the help flags worked
     failures="${failures}${failures:+, }$rel_path (no help flags work)"
+    failure_count=$((failure_count + 1))
   }
   
   for_each_posix_spell_no_imps check_help_flag
   
   if [ -n "$failures" ]; then
     TEST_FAILURE_REASON="spells not responding to --help flags: $failures"
+    export TEST_FAILURE_REASON
     return 1
   fi
   
@@ -2004,14 +2023,14 @@ run_test_case "all spells respond to --help flag" test_all_spells_respond_to_hel
 # Every level must have either spells or imps (or both)
 # This prevents gaps in the level system
 test_spell_levels_no_empty_levels() {
-  # Source spell-levels to get the function
-  . "$ROOT_DIR/spells/.imps/sys/spell-levels"
+  # Execute spell-levels as a command (it's a flat script now)
+  spell_levels_cmd="$ROOT_DIR/spells/.imps/sys/spell-levels"
   
   empty_levels=""
   for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28; do
-    spells=$(spell_levels "$level" spells 2>/dev/null || echo "ERROR")
-    imps=$(spell_levels "$level" imps 2>/dev/null || echo "ERROR")
-    name=$(spell_levels "$level" name 2>/dev/null || echo "ERROR")
+    spells=$("$spell_levels_cmd" "$level" spells 2>/dev/null || echo "ERROR")
+    imps=$("$spell_levels_cmd" "$level" imps 2>/dev/null || echo "ERROR")
+    name=$("$spell_levels_cmd" "$level" name 2>/dev/null || echo "ERROR")
     
     if [ "$spells" = "ERROR" ]; then
       empty_levels="${empty_levels}Level $level: ERROR getting data\n"
@@ -2031,13 +2050,13 @@ test_spell_levels_no_empty_levels() {
 # Every spell file must appear in at least one level
 # This prevents spells from being orphaned/forgotten
 test_all_spells_categorized_in_spell_levels() {
-  # Source spell-levels
-  . "$ROOT_DIR/spells/.imps/sys/spell-levels"
+  # Execute spell-levels as a command (it's a flat script now)
+  spell_levels_cmd="$ROOT_DIR/spells/.imps/sys/spell-levels"
   
   # Get all spells from spell-levels (strip category suffix)
   spells_in_levels=""
   for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28; do
-    level_spells=$(spell_levels "$level" spells 2>/dev/null)
+    level_spells=$("$spell_levels_cmd" "$level" spells 2>/dev/null)
     if [ -n "$level_spells" ]; then
       spells_in_levels="$spells_in_levels $level_spells"
     fi
@@ -2068,13 +2087,13 @@ test_all_spells_categorized_in_spell_levels() {
 # Every imp file must appear in at least one level
 # This prevents imps from being orphaned/forgotten
 test_all_imps_categorized_in_spell_levels() {
-  # Source spell-levels
-  . "$ROOT_DIR/spells/.imps/sys/spell-levels"
+  # Execute spell-levels as a command (it's a flat script now)
+  spell_levels_cmd="$ROOT_DIR/spells/.imps/sys/spell-levels"
   
   # Get all imps from spell-levels (strip path prefix)
   imps_in_levels=""
   for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28; do
-    level_imps=$(spell_levels "$level" imps 2>/dev/null)
+    level_imps=$("$spell_levels_cmd" "$level" imps 2>/dev/null)
     if [ -n "$level_imps" ]; then
       imps_in_levels="$imps_in_levels $level_imps"
     fi

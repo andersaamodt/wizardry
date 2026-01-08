@@ -3,7 +3,7 @@
 # Prints PASS, FAIL, or SKIP with description, incrementing global counters.
 # Uses counter files in WIZARDRY_TMPDIR for cross-imp state sharing.
 # NUM is the subtest number (passed as argument, no globals)
-# Reads TEST_FAILURE_REASON or TEST_SKIP_REASON from environment
+# Reads TEST_FAILURE_REASON from environment or file for failure details
 # Exit status 222 indicates a skipped test
 set -eu
 
