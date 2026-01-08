@@ -759,6 +759,59 @@ banish_process_level() {
           return 1
         fi
       fi
+
+      # Check spells
+      spell_list=$("$spell_levels_script" 5 spells)
+      if [ -n "$spell_list" ]; then
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          return 1
+        fi
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
+        else
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
+      fi
+
+      # Check imps
+      imp_list=$("$spell_levels_script" 5 imps)
+      had_imps=0
+      if [ -n "$imp_list" ]; then
+        had_imps=1
+        new_imp_list=""
+        for imp in $imp_list; do
+          case " ${_banish_seen_imps} " in
+            *" ${imp} "*) ;;
+            *)
+              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
+              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              ;;
+          esac
+        done
+        imp_list=$new_imp_list
+      fi
+      if [ -n "$imp_list" ]; then
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
+        else
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
+      elif [ "$had_imps" -eq 1 ]; then
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      else
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      fi
       ;;
 
     6)
@@ -799,6 +852,59 @@ banish_process_level() {
           return 1
         fi
       fi
+
+      # Check spells
+      spell_list=$("$spell_levels_script" 6 spells)
+      if [ -n "$spell_list" ]; then
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          return 1
+        fi
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
+        else
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
+      fi
+
+      # Check imps
+      imp_list=$("$spell_levels_script" 6 imps)
+      had_imps=0
+      if [ -n "$imp_list" ]; then
+        had_imps=1
+        new_imp_list=""
+        for imp in $imp_list; do
+          case " ${_banish_seen_imps} " in
+            *" ${imp} "*) ;;
+            *)
+              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
+              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              ;;
+          esac
+        done
+        imp_list=$new_imp_list
+      fi
+      if [ -n "$imp_list" ]; then
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
+        else
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
+      elif [ "$had_imps" -eq 1 ]; then
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      else
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      fi
       ;;
 
     8)
@@ -835,6 +941,59 @@ banish_process_level() {
         printf '  %s✗%s Filesystem read/write: temp file unavailable\n' "$_red" "$_reset"
         return 1
       fi
+
+      # Check spells
+      spell_list=$("$spell_levels_script" 8 spells)
+      if [ -n "$spell_list" ]; then
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          return 1
+        fi
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
+        else
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
+      fi
+
+      # Check imps
+      imp_list=$("$spell_levels_script" 8 imps)
+      had_imps=0
+      if [ -n "$imp_list" ]; then
+        had_imps=1
+        new_imp_list=""
+        for imp in $imp_list; do
+          case " ${_banish_seen_imps} " in
+            *" ${imp} "*) ;;
+            *)
+              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
+              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              ;;
+          esac
+        done
+        imp_list=$new_imp_list
+      fi
+      if [ -n "$imp_list" ]; then
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
+        else
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
+      elif [ "$had_imps" -eq 1 ]; then
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      else
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      fi
       ;;
 
     9)
@@ -860,6 +1019,59 @@ banish_process_level() {
           return 1
         fi
       fi
+
+      # Check spells
+      spell_list=$("$spell_levels_script" 9 spells)
+      if [ -n "$spell_list" ]; then
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          return 1
+        fi
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
+        else
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
+      fi
+
+      # Check imps
+      imp_list=$("$spell_levels_script" 9 imps)
+      had_imps=0
+      if [ -n "$imp_list" ]; then
+        had_imps=1
+        new_imp_list=""
+        for imp in $imp_list; do
+          case " ${_banish_seen_imps} " in
+            *" ${imp} "*) ;;
+            *)
+              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
+              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              ;;
+          esac
+        done
+        imp_list=$new_imp_list
+      fi
+      if [ -n "$imp_list" ]; then
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
+        else
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
+      elif [ "$had_imps" -eq 1 ]; then
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      else
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      fi
       ;;
 
     12)
@@ -881,6 +1093,59 @@ banish_process_level() {
         if [ ! -d "$config_home" ] || [ ! -w "$config_home" ]; then
           return 1
         fi
+      fi
+
+      # Check spells
+      spell_list=$("$spell_levels_script" 12 spells)
+      if [ -n "$spell_list" ]; then
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          return 1
+        fi
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
+        else
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
+      fi
+
+      # Check imps
+      imp_list=$("$spell_levels_script" 12 imps)
+      had_imps=0
+      if [ -n "$imp_list" ]; then
+        had_imps=1
+        new_imp_list=""
+        for imp in $imp_list; do
+          case " ${_banish_seen_imps} " in
+            *" ${imp} "*) ;;
+            *)
+              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
+              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              ;;
+          esac
+        done
+        imp_list=$new_imp_list
+      fi
+      if [ -n "$imp_list" ]; then
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
+        else
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
+      elif [ "$had_imps" -eq 1 ]; then
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      else
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
       fi
       ;;
 
@@ -956,6 +1221,59 @@ banish_process_level() {
           fi
         fi
       fi
+
+      # Check spells
+      spell_list=$("$spell_levels_script" 13 spells)
+      if [ -n "$spell_list" ]; then
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          return 1
+        fi
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
+        else
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
+      fi
+
+      # Check imps
+      imp_list=$("$spell_levels_script" 13 imps)
+      had_imps=0
+      if [ -n "$imp_list" ]; then
+        had_imps=1
+        new_imp_list=""
+        for imp in $imp_list; do
+          case " ${_banish_seen_imps} " in
+            *" ${imp} "*) ;;
+            *)
+              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
+              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              ;;
+          esac
+        done
+        imp_list=$new_imp_list
+      fi
+      if [ -n "$imp_list" ]; then
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
+        else
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
+      elif [ "$had_imps" -eq 1 ]; then
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      else
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      fi
       ;;
 
     19)
@@ -981,6 +1299,59 @@ banish_process_level() {
         if ! command -v ssh >/dev/null 2>&1; then
           return 1
         fi
+      fi
+
+      # Check spells
+      spell_list=$("$spell_levels_script" 19 spells)
+      if [ -n "$spell_list" ]; then
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          return 1
+        fi
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
+        else
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
+      fi
+
+      # Check imps
+      imp_list=$("$spell_levels_script" 19 imps)
+      had_imps=0
+      if [ -n "$imp_list" ]; then
+        had_imps=1
+        new_imp_list=""
+        for imp in $imp_list; do
+          case " ${_banish_seen_imps} " in
+            *" ${imp} "*) ;;
+            *)
+              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
+              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              ;;
+          esac
+        done
+        imp_list=$new_imp_list
+      fi
+      if [ -n "$imp_list" ]; then
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
+        else
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
+      elif [ "$had_imps" -eq 1 ]; then
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      else
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
       fi
       ;;
 
@@ -1025,6 +1396,59 @@ banish_process_level() {
           return 1
         fi
       fi
+
+      # Check spells
+      spell_list=$("$spell_levels_script" 22 spells)
+      if [ -n "$spell_list" ]; then
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          return 1
+        fi
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
+        else
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
+      fi
+
+      # Check imps
+      imp_list=$("$spell_levels_script" 22 imps)
+      had_imps=0
+      if [ -n "$imp_list" ]; then
+        had_imps=1
+        new_imp_list=""
+        for imp in $imp_list; do
+          case " ${_banish_seen_imps} " in
+            *" ${imp} "*) ;;
+            *)
+              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
+              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              ;;
+          esac
+        done
+        imp_list=$new_imp_list
+      fi
+      if [ -n "$imp_list" ]; then
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
+        else
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
+      elif [ "$had_imps" -eq 1 ]; then
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      else
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      fi
       ;;
 
     24)
@@ -1055,6 +1479,59 @@ banish_process_level() {
           return 1
         fi
       fi
+
+      # Check spells
+      spell_list=$("$spell_levels_script" 24 spells)
+      if [ -n "$spell_list" ]; then
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          return 1
+        fi
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
+        else
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
+      fi
+
+      # Check imps
+      imp_list=$("$spell_levels_script" 24 imps)
+      had_imps=0
+      if [ -n "$imp_list" ]; then
+        had_imps=1
+        new_imp_list=""
+        for imp in $imp_list; do
+          case " ${_banish_seen_imps} " in
+            *" ${imp} "*) ;;
+            *)
+              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
+              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              ;;
+          esac
+        done
+        imp_list=$new_imp_list
+      fi
+      if [ -n "$imp_list" ]; then
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
+        else
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
+      elif [ "$had_imps" -eq 1 ]; then
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      else
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      fi
       ;;
 
     25)
@@ -1076,6 +1553,59 @@ banish_process_level() {
         if [ ! -d "$spell_home" ] || [ ! -w "$spell_home" ]; then
           return 1
         fi
+      fi
+
+      # Check spells
+      spell_list=$("$spell_levels_script" 25 spells)
+      if [ -n "$spell_list" ]; then
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          return 1
+        fi
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
+        else
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
+      fi
+
+      # Check imps
+      imp_list=$("$spell_levels_script" 25 imps)
+      had_imps=0
+      if [ -n "$imp_list" ]; then
+        had_imps=1
+        new_imp_list=""
+        for imp in $imp_list; do
+          case " ${_banish_seen_imps} " in
+            *" ${imp} "*) ;;
+            *)
+              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
+              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              ;;
+          esac
+        done
+        imp_list=$new_imp_list
+      fi
+      if [ -n "$imp_list" ]; then
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
+        else
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
+      elif [ "$had_imps" -eq 1 ]; then
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      else
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
       fi
       ;;
       
