@@ -73,8 +73,9 @@ tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/prefix.XXXXXX")
 
 ```sh
 # Find executable (portable)
-find . -type f -perm /111  # Works: Linux, macOS, BSD
-# WRONG: find . -executable  # GNU-specific
+find . -type f -perm -100  # Owner executable: Linux, macOS, BSD
+find . -type f -perm /111  # Any executable: Linux, macOS, BSD
+# WRONG: find . -executable  # GNU-specific (not available on BSD/macOS)
 
 # Stat (platform-dependent)
 if stat -c '%Y' "$file" >/dev/null 2>&1; then
@@ -159,6 +160,32 @@ if [ -t 1 ] && [ "$TERM" != "dumb" ]; then
 fi
 ```
 
+## String Manipulation
+
+```sh
+# First/last character extraction (POSIX, no cut needed)
+first_char=${string%"${string#?}"}     # Extract first character
+rest=${string#?}                        # Everything after first char
+
+# WRONG (not portable across all platforms):
+first=$(printf '%s' "$string" | cut -c1)     # cut -c behavior varies
+tail=$(printf '%s' "$string" | cut -c2-)     # may not work on some systems
+
+# Newline detection (portable)
+case "$value" in
+  *"
+"*)
+    printf 'Value contains newlines\n' >&2
+    exit 1
+    ;;
+esac
+
+# WRONG (BSD wc includes leading spaces):
+if [ "$(printf '%s' "$value" | wc -l)" != "0" ]; then  # Breaks on BSD/macOS
+  ...
+fi
+```
+
 ## Common Pitfalls
 
 | Issue | Platform | Solution |
@@ -166,9 +193,11 @@ fi
 | `realpath` missing | macOS | Use `pwd -P` |
 | `sed -i` needs arg | macOS | Use temp file |
 | Double slashes | macOS | Normalize: `sed 's\|//\|/\|g'` |
-| `find -executable` | macOS/BSD | Use `-perm /111` |
+| `find -executable` | macOS/BSD | Use `-perm -100` or `-perm /111` |
 | Empty PATH | macOS CI | Set baseline first |
 | SIGPIPE varies | bash/dash | bash may exit, dash ignores |
+| `wc -l` output | BSD/macOS | Includes leading spaces, use `tr -d ' '` or case |
+| `cut -c2-` behavior | Some systems | Use POSIX parameter expansion |
 
 **Testing:** Test on Linux + macOS, with bash + dash, check `checkbashisms`.
 
@@ -184,4 +213,4 @@ fi
 
 **ALWAYS add new cross-platform patterns here when discovered during development.**
 
-Last updated: 2026-01-02
+Last updated: 2026-01-08
