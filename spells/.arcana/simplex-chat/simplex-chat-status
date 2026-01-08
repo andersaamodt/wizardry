@@ -4,7 +4,7 @@
 
 case "${1-}" in
 --help|--usage|-h)
-  cat <<'USAGE'
+  cat <<'USAGE' >&2
 Usage: simplex-chat-status
 
 Reports whether simplex-chat is installed and ready to use, highlighting missing configuration or errors.
@@ -31,18 +31,29 @@ fi
 # Older scripts expect GRAY, so mirror GREY when missing.
 GRAY=${GREY-}
 
-simplex_chat_status_color_for_status() {
-  case "$1" in
-    "installed")
-      printf "%s" "$THEME_SUCCESS"
-      ;;
-    "installed, needs setup")
-      printf "%s" "$THEME_WARNING"
-      ;;
-    "not installed")
-      printf "%s" "$GRAY"
-      ;;
-    *)
-      printf "%s" "$THEME_ERROR"
-      ;;
-  esac
+# Main execution - check simplex-chat installation status
+if ! command -v simplex-chat >/dev/null 2>&1; then
+  status="not installed"
+  color="$GRAY"
+else
+  # Check if simplex-chat can run
+  if simplex-chat --version >/dev/null 2>&1; then
+    # Check for data directories
+    data_dir="${SIMPLEX_CHAT_DATA_DIR:-$HOME/.local/share/simplex}"
+    config_dir="${SIMPLEX_CHAT_CONFIG_DIR:-$HOME/.config/simplex}"
+    
+    if [ -d "$data_dir" ] && [ -d "$config_dir" ]; then
+      status="installed"
+      color="$THEME_SUCCESS"
+    else
+      status="installed, needs setup"
+      color="$THEME_WARNING"
+    fi
+  else
+    status="installed, error"
+    color="$THEME_ERROR"
+  fi
+fi
+
+# Print colored status
+printf "%s%s%s\n" "$color" "$status" "$RESET"

@@ -18,6 +18,10 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
+# Add this script's directory to PATH so we can find helper scripts like is-bitcoin-installed
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+PATH="$script_dir:$PATH"
+
 # Load colors if available
 if command -v colors >/dev/null 2>&1; then
   # shellcheck source=/dev/null

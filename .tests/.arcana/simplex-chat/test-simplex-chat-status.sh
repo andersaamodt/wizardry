@@ -34,6 +34,9 @@ YELLOW=""
 RED=""
 GRAY=""
 GREY=""
+THEME_SUCCESS=""
+THEME_WARNING=""
+THEME_ERROR=""
 SHI
   chmod +x "$tmp/colors"
 }
