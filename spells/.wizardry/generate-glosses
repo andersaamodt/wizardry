@@ -311,9 +311,18 @@ uname|uniq|wc|xargs)
           emit_line "alias ${_syn_word}='${_syn_spell}'"
           ;;
         *)
-          # Use function that calls parse with the target spell
-          # This enables proper sourcing detection and execution
-          emit_line "${_syn_word}() { parse \"${_syn_spell}\" \"\$@\"; }"
+          # Check if a first-word gloss already exists for this word
+          # If so, skip creating a synonym function to avoid overriding it
+          case "$_first_words_seen" in
+            *" $_syn_word "*)
+              # First-word gloss exists, skip synonym function
+              [ "$quiet" -eq 0 ] && info "Skipping synonym function for '$_syn_word' (first-word gloss exists)" >&2
+              ;;
+            *)
+              # No first-word gloss, create synonym function
+              emit_line "${_syn_word}() { parse \"${_syn_spell}\" \"\$@\"; }"
+              ;;
+          esac
           ;;
       esac
     done < "$synonym_file"
@@ -339,9 +348,18 @@ uname|uniq|wc|xargs)
           emit_line "alias ${_syn_word}='${_syn_spell}'"
           ;;
         *)
-          # Use function that calls parse with the target spell
-          # This enables proper sourcing detection and execution
-          emit_line "${_syn_word}() { parse \"${_syn_spell}\" \"\$@\"; }"
+          # Check if a first-word gloss already exists for this word
+          # If so, skip creating a synonym function to avoid overriding it
+          case "$_first_words_seen" in
+            *" $_syn_word "*)
+              # First-word gloss exists, skip synonym function
+              [ "$quiet" -eq 0 ] && info "Skipping synonym function for '$_syn_word' (first-word gloss exists)" >&2
+              ;;
+            *)
+              # No first-word gloss, create synonym function
+              emit_line "${_syn_word}() { parse \"${_syn_spell}\" \"\$@\"; }"
+              ;;
+          esac
           ;;
       esac
     done < "$default_synonym_file"

@@ -144,7 +144,7 @@ while [ $_attempt_len -gt 0 ]; do
     if head -30 "$_spell_path" 2>/dev/null | grep -q "uncastable"; then
       # Source the spell instead of execing it
       . "$_spell_path" "$@"
-      return $?
+      exit $?
     else
       # Execute normally
       exec "$_spell_path" "$@"
