@@ -14,27 +14,18 @@ applyTo: "spells/**,.tests/**,spells/.imps/**"
 
 ## Function Naming
 
+**NOTE:** Imps are now flat scripts without functions. This section describes historical architecture for reference only.
+
+**In spell code (when calling imps/glosses):**
 ```sh
-# IMP FILE: spells/.imps/sys/require-wizardry
-require_wizardry() {   # Underscore (ALWAYS works in POSIX)
-  # Implementation
-}
-case "$0" in
-  */require-wizardry) require_wizardry "$@" ;; esac
+# Modern pattern - all imps are executable scripts
+require-wizardry || return 1       # ✓ Calls the imp script
+value=$(env-or VAR "default")      # ✓ Calls the imp script
 ```
 
-**In spell code, use underscores:**
+**Users execute imps directly:**
 ```sh
-require_wizardry || return 1       # ✓ CORRECT
-value=$(env_or VAR "default")      # ✓ CORRECT
-
-require-wizardry || return 1       # ✗ WRONG (causes parse loop)
-value=$(env-or VAR "default")      # ✗ WRONG
-```
-
-**Users get hyphens via glosses:**
-```sh
-$ require-wizardry                 # ✓ Works (gloss in PATH)
+$ require-wizardry                 # ✓ Works (imp is executable)
 $ env-or SPELLBOOK "$HOME/.spellbook"  # ✓ Works
 ```
 

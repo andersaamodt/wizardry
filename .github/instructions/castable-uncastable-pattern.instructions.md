@@ -2,13 +2,21 @@
 
 applyTo: "spells/**"
 
-## DEPRECATED: This file contains outdated information
+## ❌ COMPLETELY DEPRECATED - DO NOT USE ❌
 
-**The self-execute pattern with function wrappers is NO LONGER USED.**
+**THIS FILE IS OBSOLETE AND SHOULD NOT BE REFERENCED.**
 
-All spells and imps should be flat, linear scripts without function wrappers.
+**The self-execute pattern, castable/uncastable imps, and function wrappers are NO LONGER USED in this project.**
+
+**All spells and imps must be flat, linear scripts with NO functions (except rare documented exceptions).**
 
 See `.github/instructions/spells.instructions.md` and `.github/instructions/imps.instructions.md` for current patterns.
+
+---
+
+## Historical Information (For Reference Only)
+
+The following content describes DEPRECATED patterns that should NOT be used in new code.
 
 ## Current Pattern (Flat Linear Scripts)
 
