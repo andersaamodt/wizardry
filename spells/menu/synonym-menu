@@ -92,8 +92,14 @@ set -eu
     set -- "$@" "${exit_label}%kill -TERM \$PPID"
     
     if [ "$synonym_type" = "default" ]; then
-      menu "Default: $synonym_word → $target_spell" "$@" || true
+      menu "Default: $synonym_word → $target_spell" "$@"
     else
-      menu "Synonym: $synonym_word → $target_spell" "$@" || true
+      menu "Synonym: $synonym_word → $target_spell" "$@"
+    fi
+    menu_status=$?
+    
+    # Exit code 130 means ESC was pressed - exit cleanly
+    if [ "$menu_status" -eq 130 ]; then
+      exit 0
     fi
   done
