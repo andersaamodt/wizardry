@@ -54,10 +54,9 @@ set -eu
   rm -f "$spell_home/.default-synonyms-initialized"
 
   # Reinitialize defaults by sourcing invoke-thesaurus
-  _invoke_thes="${WIZARDRY_DIR}/spells/.imps/sys/invoke-thesaurus"
-  if [ -f "$_invoke_thes" ]; then
+  if command -v invoke-thesaurus >/dev/null 2>&1; then
     # shellcheck disable=SC1090,SC1091
-    if . "$_invoke_thes" 2>/dev/null; then
+    if . invoke-thesaurus 2>/dev/null; then
       # Verify initialization succeeded by checking if the file was created
       if [ -f "$default_synonyms_file" ] && [ -f "$spell_home/.default-synonyms-initialized" ]; then
         success "Default synonyms reset. Custom synonyms preserved."

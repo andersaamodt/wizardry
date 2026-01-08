@@ -28,21 +28,15 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: generate-glosses [OPTIONS]
 
-Generate gloss function definitions for all wizardry spells and imps.
-Outputs function definitions to stdout that should be sourced into the shell.
-
-This creates first-word gloss functions that enable space-separated invocation:
-  env or VAR DEFAULT    # calls parse "env" "or" "VAR" "DEFAULT"
-  temp file             # calls parse "temp" "file"
+Generate gloss function definitions for wizardry spells and imps.
 
 Options:
-  --quiet    Suppress diagnostic messages to stderr
-  --output FILE  Write function definitions to FILE (default: stdout)
+  --quiet         Suppress diagnostic messages
+  --output FILE   Write to FILE (default: stdout)
 
 Examples:
-  generate-glosses                    # Output functions to stdout
-  eval "$(generate-glosses)"          # Load functions into current shell
-  generate-glosses --output file.sh   # Save to file for later sourcing
+  eval "$(generate-glosses)"          # Load into current shell
+  generate-glosses --output file.sh   # Save to file
 USAGE
   exit 0
   ;;

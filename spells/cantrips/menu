@@ -160,8 +160,6 @@ fi
 description=$1
 shift
 
-items_file=$(menu_temp_file menu-items) || exit 1
-commands_file=$(menu_temp_file menu-commands) || exit 1
 cleanup_called=0
 cleanup() {
         if [ "$cleanup_called" -eq 1 ]; then
@@ -176,8 +174,6 @@ cleanup() {
         if [ -n "${await_keypress_buffer_file-}" ]; then
                 menu_cleanup_file "$await_keypress_buffer_file"
         fi
-        menu_cleanup_file "$items_file"
-        menu_cleanup_file "$commands_file"
 }
 trap 'cleanup; exit 1' INT TERM
 trap 'cleanup' EXIT
@@ -186,12 +182,22 @@ max_name_length=0
 menu_length=0
 strip_ansi_pattern='s/\x1b\[[0-9;]*m//g'
 
+# Cache labels, commands, and visible lengths in memory (avoid repeated sed calls)
+cached_labels=''
+cached_commands=''
+cached_clean_labels=''
+cached_visible_lengths=''
+cached_raw_lengths=''
+label_delimiter=$(printf '\036')  # ASCII RS (Record Separator)
+
 for option in "$@"
 do
         # Special case: "---" is a divider
         if [ "$option" = "---" ]; then
                 label="---"
                 command="---"
+                clean_label="---"
+                is_divider=1
         else
                 label=${option%%\%*}
                 case $option in
@@ -202,12 +208,36 @@ do
                         command=''
                         ;;
                 esac
+                # Strip ANSI codes before calculating visible length
+                clean_label=$(printf '%s' "$label" | sed "$strip_ansi_pattern")
+                is_divider=0
         fi
-        printf '%s\n' "$label" >>"$items_file"
-        printf '%s\n' "$command" >>"$commands_file"
-        # Strip ANSI codes before calculating visible length
-        clean_label=$(printf '%s' "$label" | sed "$strip_ansi_pattern")
+        
+        # Cache in memory
+        if [ -z "$cached_labels" ]; then
+                cached_labels=$label
+                cached_commands=$command
+                cached_clean_labels=$clean_label
+                cached_is_divider=$is_divider
+        else
+                cached_labels="${cached_labels}${label_delimiter}${label}"
+                cached_commands="${cached_commands}${label_delimiter}${command}"
+                cached_clean_labels="${cached_clean_labels}${label_delimiter}${clean_label}"
+                cached_is_divider="${cached_is_divider}${label_delimiter}${is_divider}"
+        fi
+        
         length=$(printf '%s' "$clean_label" | wc -c | tr -d ' ')
+        raw_length=$(printf '%s' "$label" | wc -c | tr -d ' ')
+        
+        # Cache visible length and raw length
+        if [ -z "$cached_visible_lengths" ]; then
+                cached_visible_lengths=$length
+                cached_raw_lengths=$raw_length
+        else
+                cached_visible_lengths="${cached_visible_lengths}${label_delimiter}${length}"
+                cached_raw_lengths="${cached_raw_lengths}${label_delimiter}${raw_length}"
+        fi
+        
         if [ "$length" -gt "$max_name_length" ]; then
                 max_name_length=$length
         fi
@@ -218,6 +248,138 @@ done
 if [ "$menu_length" -eq 0 ]; then
         die "menu: no menu entries provided" || exit 1
 fi
+
+# Helper function to access cached data by index (1-based) using pure shell
+get_cached_item() {
+        item_index=$1
+        cached_data=$2
+        if [ "$item_index" -lt 1 ] || [ "$item_index" -gt "$menu_length" ]; then
+                return 1
+        fi
+        
+        # Pure shell string splitting - much faster than awk for small datasets
+        remaining="$cached_data"
+        count=1
+        while [ -n "$remaining" ]; do
+                case "$remaining" in
+                        *"$label_delimiter"*)
+                                item="${remaining%%"$label_delimiter"*}"
+                                if [ "$count" -eq "$item_index" ]; then
+                                        printf '%s\n' "$item"
+                                        return 0
+                                fi
+                                remaining="${remaining#*"$label_delimiter"}"
+                                count=$((count + 1))
+                                ;;
+                        *)
+                                if [ "$count" -eq "$item_index" ]; then
+                                        printf '%s\n' "$remaining"
+                                fi
+                                return 0
+                                ;;
+                esac
+        done
+}
+
+# Optimized function to get all cached items for a row at once (reduces function calls)
+get_row_data() {
+        row_idx=$1
+        if [ "$row_idx" -lt 1 ] || [ "$row_idx" -gt "$menu_length" ]; then
+                return 1
+        fi
+        
+        # Extract all data for the row in a single pass
+        remaining_labels="$cached_labels"
+        remaining_commands="$cached_commands"
+        remaining_clean="$cached_clean_labels"
+        remaining_vlen="$cached_visible_lengths"
+        remaining_rlen="$cached_raw_lengths"
+        remaining_divider="$cached_is_divider"
+        count=1
+        
+        while [ "$count" -le "$row_idx" ]; do
+                # Extract current item from each cache
+                case "$remaining_labels" in
+                        *"$label_delimiter"*)
+                                current_label="${remaining_labels%%"$label_delimiter"*}"
+                                remaining_labels="${remaining_labels#*"$label_delimiter"}"
+                                ;;
+                        *)
+                                current_label="$remaining_labels"
+                                remaining_labels=""
+                                ;;
+                esac
+                
+                case "$remaining_commands" in
+                        *"$label_delimiter"*)
+                                current_command="${remaining_commands%%"$label_delimiter"*}"
+                                remaining_commands="${remaining_commands#*"$label_delimiter"}"
+                                ;;
+                        *)
+                                current_command="$remaining_commands"
+                                remaining_commands=""
+                                ;;
+                esac
+                
+                case "$remaining_clean" in
+                        *"$label_delimiter"*)
+                                current_clean="${remaining_clean%%"$label_delimiter"*}"
+                                remaining_clean="${remaining_clean#*"$label_delimiter"}"
+                                ;;
+                        *)
+                                current_clean="$remaining_clean"
+                                remaining_clean=""
+                                ;;
+                esac
+                
+                case "$remaining_vlen" in
+                        *"$label_delimiter"*)
+                                current_vlen="${remaining_vlen%%"$label_delimiter"*}"
+                                remaining_vlen="${remaining_vlen#*"$label_delimiter"}"
+                                ;;
+                        *)
+                                current_vlen="$remaining_vlen"
+                                remaining_vlen=""
+                                ;;
+                esac
+                
+                case "$remaining_rlen" in
+                        *"$label_delimiter"*)
+                                current_rlen="${remaining_rlen%%"$label_delimiter"*}"
+                                remaining_rlen="${remaining_rlen#*"$label_delimiter"}"
+                                ;;
+                        *)
+                                current_rlen="$remaining_rlen"
+                                remaining_rlen=""
+                                ;;
+                esac
+                
+                case "$remaining_divider" in
+                        *"$label_delimiter"*)
+                                current_divider="${remaining_divider%%"$label_delimiter"*}"
+                                remaining_divider="${remaining_divider#*"$label_delimiter"}"
+                                ;;
+                        *)
+                                current_divider="$remaining_divider"
+                                remaining_divider=""
+                                ;;
+                esac
+                
+                if [ "$count" -eq "$row_idx" ]; then
+                        # Export values for use by caller
+                        ROW_LABEL="$current_label"
+                        ROW_COMMAND="$current_command"
+                        ROW_CLEAN="$current_clean"
+                        ROW_VLEN="$current_vlen"
+                        ROW_RLEN="$current_rlen"
+                        ROW_IS_DIVIDER="$current_divider"
+                        return 0
+                fi
+                
+                count=$((count + 1))
+        done
+        return 1
+}
 
 # Use start_selection if valid, otherwise default to 1
 selected=1
@@ -246,8 +408,13 @@ render_row() {
                 return
         fi
 
-        label=$(sed -n "${row_index}p" "$items_file")
-        command=$(sed -n "${row_index}p" "$commands_file")
+        # Use cached data - get all row data in one optimized call
+        get_row_data "$row_index" || return 1
+        label="$ROW_LABEL"
+        command="$ROW_COMMAND"
+        clean_label="$ROW_CLEAN"
+        visible_length="$ROW_VLEN"
+        raw_length="$ROW_RLEN"
 
         if [ "$command" = "---" ]; then
                 menu_width=$((max_name_length + 2))
@@ -283,15 +450,18 @@ render_row() {
                 return
         fi
 
-        if [ "$max_command_length" -gt 0 ]; then
-                truncated_command=$(printf '%s' "$command" | cut -c -"$max_command_length")
-        else
-                truncated_command=''
+        # Truncate command - keep using cut as it's actually efficient for this
+        truncated_command=""
+        if [ "$max_command_length" -gt 0 ] && [ -n "$command" ]; then
+                cmd_len=${#command}
+                if [ "$cmd_len" -le "$max_command_length" ]; then
+                        truncated_command="$command"
+                else
+                        truncated_command=$(printf '%s' "$command" | cut -c -"$max_command_length")
+                fi
         fi
 
-        clean_label=$(printf '%s' "$label" | sed "$strip_ansi_pattern")
-        visible_length=$(printf '%s' "$clean_label" | wc -c | tr -d ' ')
-        raw_length=$(printf '%s' "$label" | wc -c | tr -d ' ')
+        # Use cached values - already retrieved above
         ansi_extra=$((raw_length - visible_length))
         adjusted_width=$((max_name_length + ansi_extra))
 
@@ -398,14 +568,23 @@ pending_step=0
 
 needs_redraw=1
 selection_pending=0
+check_width_counter=0
+width_check_interval=10  # Only check terminal width every N iterations
+
+# Pre-calculate cursor position below menu for inlining
+cursor_below_row=$((menu_row + menu_length))
+if [ "$terminal_height" -gt 0 ] && [ "$cursor_below_row" -gt "$terminal_height" ]; then
+        cursor_below_row=$terminal_height
+fi
 
 while :
 do
         if [ "$pending_step" -eq 0 ]; then
-                command=$(sed -n "${selected}p" "$commands_file")
-                case $command in
-                        ---) pending_step=1 ;;
-                esac
+                # Use cached divider flag instead of get_cached_item
+                is_div=$(get_cached_item "$selected" "$cached_is_divider")
+                if [ "$is_div" = "1" ]; then
+                        pending_step=1
+                fi
         fi
         # If the current position is a divider, queue a forward step to reach the next selectable row.
         # Apply queued navigation steps, wrapping around and skipping dividers.
@@ -420,8 +599,9 @@ do
                         elif [ "$pos" -le 0 ]; then
                                 pos=$menu_length
                         fi
-                        command=$(sed -n "${pos}p" "$commands_file")
-                        if [ "$command" != "---" ]; then
+                        # Use cached divider flag instead of get_cached_item
+                        pos_is_div=$(get_cached_item "$pos" "$cached_is_divider")
+                        if [ "$pos_is_div" != "1" ]; then
                                 selected=$pos
                                 break
                         fi
@@ -433,7 +613,14 @@ do
                 pending_step=0
         fi
 
-        current_window_width=$(fathom_terminal --width)
+        # Only check terminal width periodically to reduce overhead
+        check_width_counter=$((check_width_counter + 1))
+        if [ "$check_width_counter" -ge "$width_check_interval" ] || [ "$needs_redraw" -eq 1 ]; then
+                check_width_counter=0
+                current_window_width=$(fathom_terminal --width)
+        else
+                current_window_width=$window_width
+        fi
         case "$current_window_width" in
                 ''|*[!0-9]*)
                         current_window_width=0
@@ -469,7 +656,10 @@ do
                         row=$((row + 1))
                 done
 
-                position_cursor_below_menu
+                # Inline position_cursor_below_menu for performance
+                if ! move_cursor "$menu_column" "$cursor_below_row"; then
+                        printf '\n'
+                fi
 
                 previous_selected=$selected
                 selection_pending=0
@@ -480,7 +670,10 @@ do
                 fi
                 render_row "$selected" 1
 
-                position_cursor_below_menu
+                # Inline position_cursor_below_menu for performance
+                if ! move_cursor "$menu_column" "$cursor_below_row"; then
+                        printf '\n'
+                fi
 
                 previous_selected=$selected
                 selection_pending=0
@@ -502,10 +695,12 @@ do
                 step=1
                 ;;
         enter)
+                # Use get_row_data for faster retrieval
+                get_row_data "$selected"
                 if [ "$show_command" -eq 1 ]; then
-                        to_run=$(sed -n "${selected}p" "$items_file")
+                        to_run="$ROW_LABEL"
                 else
-                        to_run=$(sed -n "${selected}p" "$commands_file")
+                        to_run="$ROW_COMMAND"
                 fi
                 cleanup
                 trap - EXIT INT TERM
