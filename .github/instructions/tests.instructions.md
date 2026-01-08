@@ -88,22 +88,20 @@ When adding a new stub, create it as a test imp:
 
 set -eu
 
-_stub_example() {
-  # Stub implementation
-  printf 'mocked-output\n'
-}
+```sh
+#!/bin/sh
+# stub-example - test stub for example command
+# Example: stub-example arg1
 
-# Self-execute when run directly (not sourced)
-# CRITICAL: Match both stub name AND unprefixed name (for symlinks)
-case "$0" in
-  */example|*/stub-example) _stub_example "$@" ;; esac
+set -eu
+
+# Stub implementation
+printf 'mocked-output\n'
 ```
 
 Make it executable: `chmod +x spells/.imps/test/stub-example`
 
 Then use it in tests via symlink, not by copying or inlining the stub code.
-
-**CRITICAL**: The case pattern MUST match both `*/stub-example` (direct execution) and `*/example` (symlink execution). This allows tests to create symlinks without the `stub-` prefix.
 
 ## CRITICAL: Test Result Accuracy
 

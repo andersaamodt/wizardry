@@ -6,12 +6,12 @@
 #   spells=$(spell-levels 4 spells)
 #   imps=$(spell-levels 4 imps)
 
-# Define function for sourcing
-spell_levels() {
-  level="${1:-}"
-  field="${2:-all}"
+set -eu
 
-  case "$level" in
+level="${1:-}"
+field="${2:-all}"
+
+case "$level" in
   0)
     name='POSIX & Platform Foundation'
     spells='detect-posix:divination detect-distro:divination verify-posix:.wizardry'
@@ -165,28 +165,19 @@ spell_levels() {
   *)
     exit 1
     ;;
-  esac
+esac
 
-  case "$field" in
-    name) printf '%s\n' "$name" ;;
-    spells) printf '%s\n' "$spells" ;;
-    imps) printf '%s\n' "$imps" ;;
-    all)
-      printf 'name=%s\n' "$name"
-      printf 'spells=%s\n' "$spells"
-      printf 'imps=%s\n' "$imps"
-      ;;
-    *)
-      printf 'spell-levels: unknown field: %s\n' "$field" >&2
-      exit 1
-      ;;
-  esac
-}
-
-# Self-execute when run as script (not sourced)
-case "$0" in
-  */spell-levels)
-    set -eu
-    spell_levels "$@"
+case "$field" in
+  name) printf '%s\n' "$name" ;;
+  spells) printf '%s\n' "$spells" ;;
+  imps) printf '%s\n' "$imps" ;;
+  all)
+    printf 'name=%s\n' "$name"
+    printf 'spells=%s\n' "$spells"
+    printf 'imps=%s\n' "$imps"
+    ;;
+  *)
+    printf 'spell-levels: unknown field: %s\n' "$field" >&2
+    exit 1
     ;;
 esac

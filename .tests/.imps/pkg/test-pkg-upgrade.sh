@@ -11,20 +11,27 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-test_pkg_upgrade_runs() {
-  # pkg-upgrade doesn't take args, so just verify it doesn't fail on invocation syntax
-  # The actual upgrade may fail in sandbox but that's expected
-  run_spell spells/.imps/pkg/pkg-upgrade
-  # We don't assert success because it may fail in sandbox without sudo
+test_pkg_upgrade_syntax() {
+  # Just verify the imp syntax is valid by checking help/error output
+  # Don't actually run upgrade which could hang on NixOS
+  skip-if-compiled || return $?
+  
+  # Test that calling with no package manager fails gracefully
+  stub_dir="${WIZARDRY_TMPDIR}/stubs"
+  mkdir -p "$stub_dir"
+  
+  # Stub pkg-manager to return unsupported
+  cat > "$stub_dir/pkg-manager" <<'STUB'
+#!/bin/sh
+exit 1
+STUB
+  chmod +x "$stub_dir/pkg-manager"
+  
+  PATH="$stub_dir:$PATH" run_spell spells/.imps/pkg/pkg-upgrade
+  assert_failure || return 1
+  assert_error_contains "no supported package manager" || return 1
 }
 
-test_pkg_upgrade_detects_manager() {
-  # Verify it at least tries to detect a package manager
-  run_spell spells/.imps/pkg/pkg-upgrade
-  # Either succeeds or fails gracefully
-}
-
-run_test_case "pkg-upgrade runs" test_pkg_upgrade_runs
-run_test_case "pkg-upgrade detects manager" test_pkg_upgrade_detects_manager
+run_test_case "pkg-upgrade has valid syntax" test_pkg_upgrade_syntax
 
 finish_tests

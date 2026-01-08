@@ -66,11 +66,10 @@ set -eu
 ```sh
 #!/bin/sh
 # stub-example - test stub for example command
-_stub_example() {
-  printf 'mocked-output\n'
-}
-case "$0" in
-  */stub-example) _stub_example "$@" ;; esac
+set -eu
+
+# Stub implementation
+printf 'mocked-output\n'
 ```
 
 **Use via symlinks in tests:**
@@ -152,11 +151,9 @@ value=${1:-default}      # "default" if unset OR empty
 ```sh
 #!/bin/sh
 # has COMMAND - test if exists
-_has() {
-  command -v "$1" >/dev/null 2>&1
-}
-case "$0" in
-  */has) _has "$@" ;; esac
+
+# Note: No set -eu because this returns exit codes for flow control
+command -v "$1" >/dev/null 2>&1
 ```
 **No `set -eu`** - designed for `if`, `&&`, `||` where non-zero = false
 

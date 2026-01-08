@@ -17,14 +17,6 @@ USAGE
   ;;
 esac
 
-# Handle --help when run directly (before defining cd function)
-case "${1-}" in
---help|--usage|-h)
-    cd_usage
-    exit 0
-    ;;
-esac
-
 # Load uncastable imp for direct execution
 if ! command -v uncastable >/dev/null 2>&1; then
   if [ -n "${WIZARDRY_DIR-}" ]; then

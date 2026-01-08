@@ -138,13 +138,35 @@ function_to_override() { ... }
 - `test-` for test infrastructure and utilities
 - `stub-` for test stubs that mimic system commands
 
-### Stub Imps: May Use Flags
+### Stub Imps: Testing Exceptions
 
-**Affected**: `spells/.imps/test/stub-*`
+**Affected**: All `spells/.imps/test/stub-*` files
 
-**Reason**: Stub imps mimic the interface of system commands they replace (e.g., `stty -g`, `fathom-cursor -y`). They must accept the same flags as the original commands to work as drop-in replacements in tests.
+**Current Stubs** (7 total):
+- `stub-await-keypress` - Mock keypress detection
+- `stub-await-keypress-sequence` - Mock keypress sequences
+- `stub-cursor-blink` - Mock cursor visibility control
+- `stub-fathom-cursor` - Mock cursor position detection
+- `stub-fathom-terminal` - Mock terminal size detection
+- `stub-move-cursor` - Mock cursor movement
+- `stub-stty` - Mock terminal settings
 
-**Policy**: Only stub imps may use flags. Regular imps must use space-separated arguments.
+**Exception Categories**:
+
+1. **May use flags**: Stub imps mimic system command interfaces (e.g., `stty -g`, `fathom-cursor -y`) and must accept the same flags as the originals to work as drop-in replacements in PATH-based testing
+
+2. **May have functions**: Some stubs need internal helper functions to maintain state or handle complex flag parsing (exception to "imps have zero functions" rule)
+
+3. **Purpose is temporary**: Stubs exist as workarounds for testing terminal I/O and system commands. The long-term goal is to reduce reliance on stubs by:
+   - Making wizardry scripts better at assumption-checking and self-healing
+   - Creating more realistic testing environments
+   - Improving modularity so components can be tested independently
+
+**Policy**: 
+- Stubs should be the minimum necessary for testing
+- New stubs require justification
+- Each stub should be documented with what it mocks and why
+- Prefer improving code testability over adding more stubs
 
 ### Test-Doppelganger: Skipped in Regular test-magic Runs
 
