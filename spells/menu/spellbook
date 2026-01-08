@@ -305,8 +305,9 @@ spellbook_menu() {
                 menu "$menu_title" "$@" || menu_status=$?
                 menu_status=${menu_status:-0}
                 
-                # Exit code 130 means ESC was pressed - exit cleanly
+                # Exit code 130 means ESC was pressed - go up one level (same as Exit button)
                 if [ "$menu_status" -eq 130 ]; then
+                        kill -TERM "$PPID" 2>/dev/null || true
                         exit 0
                 fi
         done

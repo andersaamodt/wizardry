@@ -70,11 +70,11 @@ while true; do
   menu "Main Menu:" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
   
-  # Exit code 130 means ESC was pressed - continue loop to redisplay menu
-  # Any other exit code (including 0 for successful command execution) should exit
+  # Exit code 130 means ESC was pressed - go up one level (same as Exit button)
   if [ "$menu_status" -eq 130 ]; then
-    continue
-  else
-    exit "$menu_status"
+    kill -TERM "$PPID" 2>/dev/null || true
+    exit 0
   fi
+  
+  # Any other exit code (0 for successful command execution) continues the loop
 done

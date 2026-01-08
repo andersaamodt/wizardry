@@ -282,8 +282,9 @@ set -eu
     menu "Thesaurus:" "$@"
     menu_status=$?
     
-    # Exit code 130 means ESC was pressed - exit cleanly
+    # Exit code 130 means ESC was pressed - go up one level (same as Exit button)
     if [ "$menu_status" -eq 130 ]; then
+      kill -TERM "$PPID" 2>/dev/null || true
       exit 0
     fi
     
