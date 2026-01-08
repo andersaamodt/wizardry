@@ -42,8 +42,8 @@ case "${1-}" in
                 # Auto-detect: if any is disabled, enable all; otherwise disable all
                 all_enabled=1
                 for feature in $FEATURES; do
-                        state=$("$MUD_CONFIG" get "$feature")
-                        if [ "$state" = "0" ]; then
+                        state=$("$MUD_CONFIG" get "$feature" 2>/dev/null || printf '0')
+                        if [ "$state" = "0" ] || [ -z "$state" ]; then
                                 all_enabled=0
                                 break
                         fi
