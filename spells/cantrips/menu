@@ -186,12 +186,21 @@ max_name_length=0
 menu_length=0
 strip_ansi_pattern='s/\x1b\[[0-9;]*m//g'
 
+# Cache labels, commands, and visible lengths in memory (avoid repeated sed calls)
+cached_labels=''
+cached_commands=''
+cached_clean_labels=''
+cached_visible_lengths=''
+cached_raw_lengths=''
+label_delimiter=$(printf '\036')  # ASCII RS (Record Separator)
+
 for option in "$@"
 do
         # Special case: "---" is a divider
         if [ "$option" = "---" ]; then
                 label="---"
                 command="---"
+                clean_label="---"
         else
                 label=${option%%\%*}
                 case $option in
@@ -202,12 +211,35 @@ do
                         command=''
                         ;;
                 esac
+                # Strip ANSI codes before calculating visible length
+                clean_label=$(printf '%s' "$label" | sed "$strip_ansi_pattern")
         fi
         printf '%s\n' "$label" >>"$items_file"
         printf '%s\n' "$command" >>"$commands_file"
-        # Strip ANSI codes before calculating visible length
-        clean_label=$(printf '%s' "$label" | sed "$strip_ansi_pattern")
+        
+        # Cache in memory
+        if [ -z "$cached_labels" ]; then
+                cached_labels=$label
+                cached_commands=$command
+                cached_clean_labels=$clean_label
+        else
+                cached_labels="${cached_labels}${label_delimiter}${label}"
+                cached_commands="${cached_commands}${label_delimiter}${command}"
+                cached_clean_labels="${cached_clean_labels}${label_delimiter}${clean_label}"
+        fi
+        
         length=$(printf '%s' "$clean_label" | wc -c | tr -d ' ')
+        raw_length=$(printf '%s' "$label" | wc -c | tr -d ' ')
+        
+        # Cache visible length and raw length
+        if [ -z "$cached_visible_lengths" ]; then
+                cached_visible_lengths=$length
+                cached_raw_lengths=$raw_length
+        else
+                cached_visible_lengths="${cached_visible_lengths}${label_delimiter}${length}"
+                cached_raw_lengths="${cached_raw_lengths}${label_delimiter}${raw_length}"
+        fi
+        
         if [ "$length" -gt "$max_name_length" ]; then
                 max_name_length=$length
         fi
@@ -218,6 +250,17 @@ done
 if [ "$menu_length" -eq 0 ]; then
         die "menu: no menu entries provided" || exit 1
 fi
+
+# Helper functions to access cached data by index (1-based)
+get_cached_item() {
+        item_index=$1
+        cached_data=$2
+        if [ "$item_index" -lt 1 ] || [ "$item_index" -gt "$menu_length" ]; then
+                return 1
+        fi
+        # Use awk to split by delimiter and get the nth field
+        printf '%s' "$cached_data" | awk -v RS="$label_delimiter" -v n="$item_index" 'NR==n {print; exit}'
+}
 
 # Use start_selection if valid, otherwise default to 1
 selected=1
@@ -246,8 +289,9 @@ render_row() {
                 return
         fi
 
-        label=$(sed -n "${row_index}p" "$items_file")
-        command=$(sed -n "${row_index}p" "$commands_file")
+        # Use cached data instead of sed calls
+        label=$(get_cached_item "$row_index" "$cached_labels")
+        command=$(get_cached_item "$row_index" "$cached_commands")
 
         if [ "$command" = "---" ]; then
                 menu_width=$((max_name_length + 2))
@@ -289,9 +333,10 @@ render_row() {
                 truncated_command=''
         fi
 
-        clean_label=$(printf '%s' "$label" | sed "$strip_ansi_pattern")
-        visible_length=$(printf '%s' "$clean_label" | wc -c | tr -d ' ')
-        raw_length=$(printf '%s' "$label" | wc -c | tr -d ' ')
+        # Use cached clean label, visible length, and raw length instead of recalculating
+        clean_label=$(get_cached_item "$row_index" "$cached_clean_labels")
+        visible_length=$(get_cached_item "$row_index" "$cached_visible_lengths")
+        raw_length=$(get_cached_item "$row_index" "$cached_raw_lengths")
         ansi_extra=$((raw_length - visible_length))
         adjusted_width=$((max_name_length + ansi_extra))
 
@@ -398,11 +443,13 @@ pending_step=0
 
 needs_redraw=1
 selection_pending=0
+check_width_counter=0
+width_check_interval=10  # Only check terminal width every N iterations
 
 while :
 do
         if [ "$pending_step" -eq 0 ]; then
-                command=$(sed -n "${selected}p" "$commands_file")
+                command=$(get_cached_item "$selected" "$cached_commands")
                 case $command in
                         ---) pending_step=1 ;;
                 esac
@@ -420,7 +467,7 @@ do
                         elif [ "$pos" -le 0 ]; then
                                 pos=$menu_length
                         fi
-                        command=$(sed -n "${pos}p" "$commands_file")
+                        command=$(get_cached_item "$pos" "$cached_commands")
                         if [ "$command" != "---" ]; then
                                 selected=$pos
                                 break
@@ -433,7 +480,14 @@ do
                 pending_step=0
         fi
 
-        current_window_width=$(fathom_terminal --width)
+        # Only check terminal width periodically to reduce overhead
+        check_width_counter=$((check_width_counter + 1))
+        if [ "$check_width_counter" -ge "$width_check_interval" ] || [ "$needs_redraw" -eq 1 ]; then
+                check_width_counter=0
+                current_window_width=$(fathom_terminal --width)
+        else
+                current_window_width=$window_width
+        fi
         case "$current_window_width" in
                 ''|*[!0-9]*)
                         current_window_width=0
@@ -503,9 +557,9 @@ do
                 ;;
         enter)
                 if [ "$show_command" -eq 1 ]; then
-                        to_run=$(sed -n "${selected}p" "$items_file")
+                        to_run=$(get_cached_item "$selected" "$cached_labels")
                 else
-                        to_run=$(sed -n "${selected}p" "$commands_file")
+                        to_run=$(get_cached_item "$selected" "$cached_commands")
                 fi
                 cleanup
                 trap - EXIT INT TERM
