@@ -130,11 +130,24 @@ for hash in $(printf '%s' "$filtered" | tr ',' ' '); do
     *Error*|''|*[!0-9]*) current_priority=0 ;;
   esac
   
-  # Insert target file if:
-  # 1. Not yet added AND target priority > current priority, OR
-  # 2. Current priority differs from first priority (new echelon boundary)
+  # Insert target file before this position if:
+  # 1. Not yet added AND (target priority > current priority OR we've reached a new echelon)
+  # Note: A new echelon is when current_priority differs from first_priority
   if [ "$added" -eq 0 ]; then
-    if [ "$target_priority" -gt "$current_priority" ] || [ "$current_priority" != "$first_priority" ]; then
+    # Check if we should insert before this position
+    should_insert=0
+    
+    # Case 1: Target has higher priority than current file
+    if [ "$target_priority" -gt "$current_priority" ]; then
+      should_insert=1
+    fi
+    
+    # Case 2: We've reached a new echelon (current priority differs from first/top echelon)
+    if [ "$current_priority" != "$first_priority" ]; then
+      should_insert=1
+    fi
+    
+    if [ "$should_insert" -eq 1 ]; then
       rebuilt_priorities="${rebuilt_priorities}${target_hash},"
       added=1
     fi

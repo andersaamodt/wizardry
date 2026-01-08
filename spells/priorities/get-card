@@ -26,20 +26,29 @@ fi
 hash=$1
 directory=${2:-.}
 
+# Ensure directory exists
+if [ ! -d "$directory" ]; then
+  printf '%s\n' "get-card: directory not found: $directory" >&2
+  exit 1
+fi
+
 # Search for the file with the matching hash
-for file in "$directory"/*; do
-  # Skip if not a file
-  [ -f "$file" ] || continue
-  
-  # Get the hash of this file
-  file_hash=$(read-magic "$file" hash 2>/dev/null || true)
-  
-  # Check if it matches
-  if [ "$file_hash" = "$hash" ]; then
-    printf '%s\n' "$file"
-    exit 0
-  fi
-done
+# Check if directory is empty first to avoid glob expansion issues
+if [ -n "$(ls -A "$directory" 2>/dev/null)" ]; then
+  for file in "$directory"/*; do
+    # Skip if not a file
+    [ -f "$file" ] || continue
+    
+    # Get the hash of this file
+    file_hash=$(read-magic "$file" hash 2>/dev/null || true)
+    
+    # Check if it matches
+    if [ "$file_hash" = "$hash" ]; then
+      printf '%s\n' "$file"
+      exit 0
+    fi
+  done
+fi
 
 # Hash not found
 printf '%s\n' "get-card: no file found with hash $hash" >&2
