@@ -692,6 +692,9 @@ test_level() {
 
   if [ -z "$spell_list" ] && [ -z "$imp_list" ]; then
     printf '  No spells or imps to test.\n'
+    if [ "${GITHUB_ACTIONS-}" = "true" ]; then
+      printf '::endgroup::\n'
+    fi
     return 0
   fi
 
