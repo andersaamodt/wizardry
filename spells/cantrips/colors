@@ -23,19 +23,10 @@ USAGE
   ;;
 esac
 
-# Enforce sourced-only behavior
+# Enforce sourced-only behavior  
 # uncastable must be sourced (invoked), never executed (cast)
 if ! command -v uncastable >/dev/null 2>&1; then
-  if [ -n "${WIZARDRY_DIR-}" ]; then
-    _i="$WIZARDRY_DIR/spells/.imps/sys"
-  elif [ -n "${ROOT_DIR-}" ]; then
-    _i="$ROOT_DIR/spells/.imps/sys"
-  else
-    _d=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-    _r=$(cd "$_d" && while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
-    _i="${_r}/spells/.imps/sys"
-  fi
-  [ -f "$_i/uncastable" ] && . "$_i/uncastable"
+  . uncastable
 fi
 
 colors() {
