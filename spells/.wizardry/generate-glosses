@@ -265,7 +265,6 @@ uname|uniq|wc|xargs)
       _first_words_seen="$_first_words_seen$_first_word "
       
       # Emit function definition
-      # CRITICAL: Source parse (not execute) so uncastable spells can change directory
       emit_line "# First-word gloss for commands starting with '$_first_word'"
       emit_line "${_first_word}() { . parse \"${_first_word}\" \"\$@\"; }"
       emit_line ""
@@ -365,7 +364,6 @@ uname|uniq|wc|xargs)
           case "$_first_words_seen" in
             *" $_syn_word "*)
               # First-word gloss exists - create hybrid function
-              # CRITICAL: Source parse (not execute) so uncastable spells can change directory
               emit_line "${_syn_word}() {"
               emit_line "  if [ \$# -eq 0 ]; then"
               emit_line "    . parse \"${_syn_spell}\" \"\$@\""
@@ -376,7 +374,6 @@ uname|uniq|wc|xargs)
               ;;
             *)
               # No first-word gloss - simple synonym function
-              # CRITICAL: Source parse (not execute) so uncastable spells can change directory
               emit_line "${_syn_word}() { . parse \"${_syn_spell}\" \"\$@\"; }"
               ;;
           esac

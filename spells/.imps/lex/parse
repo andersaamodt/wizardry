@@ -16,6 +16,20 @@
 #
 # RECURSION PREVENTION: Uses WIZARDRY_PARSE_DEPTH to prevent infinite loops
 
+# Detect if we're being sourced or executed
+# This is needed because parse must be sourced by glosses to enable directory-changing spells
+_parse_sourced=0
+if [ -n "${BASH_VERSION-}" ]; then
+  # Bash: check BASH_SOURCE
+  [ "${BASH_SOURCE[0]}" != "${0}" ] && _parse_sourced=1
+elif [ -n "${ZSH_VERSION-}" ]; then
+  # Zsh: check ZSH_EVAL_CONTEXT
+  case "${ZSH_EVAL_CONTEXT-}" in *:file*) _parse_sourced=1 ;; esac
+else
+  # POSIX: check if $0 looks like a shell name
+  case "${0##*/}" in sh|dash|ash|ksh|*sh) _parse_sourced=1 ;; esac
+fi
+
 set -eu
 
 # Increment recursion depth
@@ -25,14 +39,22 @@ _parse_depth=$((_parse_depth + 1))
 # Prevent infinite recursion
 if [ "$_parse_depth" -gt 10 ]; then
   printf 'parse: Maximum recursion depth exceeded\n' >&2
-  exit 1
+  if [ "$_parse_sourced" -eq 1 ]; then
+    return 1
+  else
+    exit 1
+  fi
 fi
 
 export WIZARDRY_PARSE_DEPTH=$_parse_depth
 
 # If no arguments, just succeed
 if [ $# -eq 0 ]; then
-  exit 0
+  if [ "$_parse_sourced" -eq 1 ]; then
+    return 0
+  else
+    exit 0
+  fi
 fi
 
 # Get WIZARDRY_DIR
@@ -69,7 +91,11 @@ done
 # If no command words, nothing to do
 if [ $_cmd_word_count -eq 0 ]; then
   printf 'parse: no command specified\n' >&2
-  exit 1
+  if [ "$_parse_sourced" -eq 1 ]; then
+    return 1
+  else
+    exit 1
+  fi
 fi
 
 # Try progressively longer combinations (from max down to 1)
@@ -144,7 +170,12 @@ while [ $_attempt_len -gt 0 ]; do
     if head -30 "$_spell_path" 2>/dev/null | grep -q "uncastable"; then
       # Source the spell instead of execing it
       . "$_spell_path" "$@"
-      exit $?
+      _result=$?
+      if [ "$_parse_sourced" -eq 1 ]; then
+        return $_result
+      else
+        exit $_result
+      fi
     else
       # Execute normally
       exec "$_spell_path" "$@"
@@ -161,7 +192,11 @@ if command -v "$_first_word" >/dev/null 2>&1; then
 fi
 
 printf 'parse: %s: command not found\n' "$_first_word" >&2
-exit 127
+if [ "$_parse_sourced" -eq 1 ]; then
+  return 127
+else
+  exit 127
+fi
 
 
 
