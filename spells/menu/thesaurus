@@ -281,8 +281,8 @@ set -eu
     # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
     set -- "$@" "${exit_label}%kill -TERM \$PPID"
     
-    menu "Thesaurus:" "$@"
-    menu_status=$?
+    menu "Thesaurus:" "$@" || menu_status=$?
+    menu_status=${menu_status:-0}
     
     # ESC kills this menu script via TERM signal (same as Exit button)
     # Direct kill: kill -TERM $$ → kills this script
