@@ -169,11 +169,16 @@ if [ ! -d "$destination" ]; then
         return 1 2>/dev/null || exit 1
 fi
 
-# Normalize paths to handle macOS double slashes and resolve via cd + pwd -P
+# Normalize paths to handle macOS double slashes and resolve via cd + pwd -P  
 current=$(pwd -P | sed 's|//|/|g')
 # Resolve destination the same way to ensure consistent comparison
 normalized_destination=$(cd "$destination" && pwd -P | sed 's|//|/|g')
-if [ "$current" = "$normalized_destination" ]; then
+
+# Also try comparing the actual physical paths to handle any edge cases
+current_inode=$(ls -id . 2>/dev/null | awk '{print $1}' || printf '')
+dest_inode=$(ls -id "$destination" 2>/dev/null | awk '{print $1}' || printf '')
+
+if [ "$current" = "$normalized_destination" ] || [ -n "$current_inode" ] && [ -n "$dest_inode" ] && [ "$current_inode" = "$dest_inode" ]; then
         printf '%s\n' "You are already standing at marker '$marker_name'."
         # Touch marker to update mtime for cycling
         touch "$marker_file"
