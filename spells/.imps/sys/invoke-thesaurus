@@ -110,7 +110,7 @@ show cat
 where-is which"
   
   # Helper function to check if a spell must be sourced
-  # Checks the spell file for "must be sourced" marker in comments
+  # Checks the spell file for uncastable usage (the standard way to enforce sourcing)
   _it_spell_must_be_sourced() {
     _spell_name="$1"
     _spell_path=""
@@ -130,10 +130,10 @@ where-is which"
       done
     fi
     
-    # If spell file found, check for "must be sourced" marker
+    # If spell file found, check for uncastable usage
     if [ -n "$_spell_path" ] && [ -f "$_spell_path" ]; then
-      # Read first 20 lines and check for marker
-      if head -20 "$_spell_path" 2>/dev/null | grep -q "must be sourced"; then
+      # Read first 30 lines and check if spell sources or checks for uncastable
+      if head -30 "$_spell_path" 2>/dev/null | grep -q "uncastable"; then
         return 0
       fi
     fi
