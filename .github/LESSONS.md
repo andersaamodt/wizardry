@@ -37,3 +37,4 @@
 - Bootstrap imps (env-clear, invoke-thesaurus, invoke-wizardry) must use inline sourced-only checks, not call the uncastable imp, because they're sourced before PATH is properly set up (discovered via doppelganger compile failure)
 - Sourced-only scripts (invoke-wizardry, env-clear, invoke-thesaurus) must use `return 0` not `exit 0` for normal completion to avoid exiting parent shell (2)
 - Test helper imps that are sourced (skip-if-compiled) must define functions and use self-execute pattern, not use bare `exit` statements which exit the calling test
+- When implementing a feature across "all items" (e.g., adding colors to all install-menu entries), systematically verify each item is covered rather than assuming completion - PR #874 added colors to core-status and tor-status, but mud-status was never created, leaving one menu item without colors.

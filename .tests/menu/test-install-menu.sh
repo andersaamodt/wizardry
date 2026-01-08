@@ -83,7 +83,7 @@ SH
   esac
 
   case "$menu_args" in
-    *"gamma - coming soon%printf \"This entry is not ready yet.\\n\""* ) : ;;
+    *"gamma - "*"coming soon"*"%printf \"This entry is not ready yet.\\n\""* ) : ;;
     *) TEST_FAILURE_REASON="gamma entry missing fallback message"; return 1 ;;
   esac
 }
