@@ -42,7 +42,7 @@ test_basic_execution() {
   # Run banish - should validate the installation
   WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish"
   assert_success || return 1
-  assert_output_contains "validation checks passed" || return 1
+  assert_output_contains "Banished to Level" || return 1
 }
 
 test_auto_detect_from_home() {
@@ -68,7 +68,7 @@ test_verbose_mode() {
   WIZARDRY_DIR="$install_dir" WIZARDRY_LOG_LEVEL=2 run_spell "spells/wards/banish"
   assert_success || return 1
   # Should show validation progress
-  assert_output_contains "validation" || return 1
+  assert_output_contains "Validating" || return 1
 }
 
 test_non_verbose_has_output() {
@@ -81,7 +81,7 @@ test_non_verbose_has_output() {
   # Non-verbose mode should have output
   WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish"
   assert_success || return 1
-  assert_output_contains "validation checks passed" || return 1
+  assert_output_contains "Banished to Level" || return 1
 }
 
 test_custom_wizardry_dir() {
@@ -94,7 +94,7 @@ test_custom_wizardry_dir() {
   # Set WIZARDRY_DIR via environment variable instead of --wizardry-dir option
   WIZARDRY_DIR="$install_dir" WIZARDRY_LOG_LEVEL=1 run_spell "spells/wards/banish"
   assert_success || return 1
-  assert_output_contains "validation" || return 1
+  assert_output_contains "Validating" || return 1
 }
 
 test_missing_invoke_wizardry() {
