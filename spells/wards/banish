@@ -1179,7 +1179,7 @@ while [ "$current_level" -le "$target_level" ]; do
     if [ "$last_success_level" -ge 0 ]; then
       printf '\n%s✓%s Banished to Level %d\n' "$_green" "$_reset" "$last_success_level"
     fi
-    printf '%s✗%s Banish failed at Level %d\n' "$_red" "$_reset" "$current_level"
+    printf '%s✗%s Failed to banish Level %d\n' "$_red" "$_reset" "$current_level"
     exit "$exit_code"
   }
   last_success_level=$current_level
@@ -1191,9 +1191,9 @@ done
 
 # Final success message
 if [ "$run_all" -eq 1 ]; then
-  printf '\n%s✓%s Banished all (Level %d)\n' "$_green" "$_reset" "$last_success_level"
+  printf '\n%s✓%s Banished all\n' "$_green" "$_reset"
 else
-  printf '\n%s✓%s All validation checks passed\n' "$_green" "$_reset"
+  printf '\n%s✓%s Banished to Level %d\n' "$_green" "$_reset" "$last_success_level"
 fi
 
 exit 0
