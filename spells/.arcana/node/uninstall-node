@@ -31,8 +31,8 @@ if ! command -v "$manage_cmd" >/dev/null 2>&1; then
   fi
 fi
 
-uninstall_node_detect_nixos() {
-  if command -v detect-distro >/dev/null 2>&1 && [ "$(detect-distro 2>/dev/null)" = "nixos" ]; then
-    return 0
-  fi
-  return 1
+# Uninstall Node.js
+printf '%s\n' "Uninstalling Node.js..."
+. "$manage_cmd" uninstall nodejs node
+
+printf '%s\n' "Node.js uninstallation complete."

@@ -21,5 +21,26 @@ set -eu
 
 trap 'exit 0' INT TERM
 
-command_available() {
-  command -v "$1" >/dev/null 2>&1
+first_run=1
+
+while true; do
+  if [ "$first_run" -eq 0 ]; then
+    printf '\n'
+  else
+    first_run=0
+  fi
+
+  # Build menu based on Node.js installation status
+  title="${BOLD}${CYAN}Node.js: $(node-status)"
+  exit_label=$(exit-label)
+  exit_option="${exit_label}%kill -TERM \$PPID"
+  
+  if command -v node >/dev/null 2>&1; then
+    uninstall_option="Uninstall Node.js%uninstall-node"
+    version_option="Show Version%node --version"
+    menu "$title" "$version_option" "$uninstall_option" "$exit_option" || true
+  else
+    install_option="Install Node.js%install-node"
+    menu "$title" "$install_option" "$exit_option" || true
+  fi
+done

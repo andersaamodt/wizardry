@@ -16,8 +16,13 @@ esac
 require-wizardry || exit 1
 
 set -eu
-install_mud
-  trap '' INT
-  mud_main_loop &
-  printf '%s\n' "MUD started"
+
+# Install MUD
+printf '%s\n' "Installing MUD assets and configuration..."
+
+# Enable MUD features
+if command -v toggle-all-mud >/dev/null 2>&1; then
+  toggle-all-mud enable
 fi
+
+printf '%s\n' "MUD installation complete."

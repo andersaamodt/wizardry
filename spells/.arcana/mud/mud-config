@@ -23,10 +23,61 @@ spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 config_file="$spell_home/.mud"
 
 # Ensure spellbook directory exists
-ensure_config_dir() {
-        if [ ! -d "$spell_home" ]; then
-                mkdir -p "$spell_home" || {
-                        printf '%s\n' "mud-config: cannot create spellbook directory '$spell_home'" >&2
-                        return 1
-                }
-        fi
+if [ ! -d "$spell_home" ]; then
+  mkdir -p "$spell_home" || {
+    printf '%s\n' "mud-config: cannot create spellbook directory '$spell_home'" >&2
+    exit 1
+  }
+fi
+
+# Ensure config file exists
+if [ ! -f "$config_file" ]; then
+  touch "$config_file" || {
+    printf '%s\n' "mud-config: cannot create config file '$config_file'" >&2
+    exit 1
+  }
+fi
+
+# Parse command
+command=${1-list}
+feature=${2-}
+value=${3-}
+
+case "$command" in
+  get)
+    if [ -z "$feature" ]; then
+      printf '%s\n' "mud-config: feature name required for get" >&2
+      exit 1
+    fi
+    config-get "$config_file" "$feature"
+    ;;
+  set)
+    if [ -z "$feature" ] || [ -z "$value" ]; then
+      printf '%s\n' "mud-config: feature name and value required for set" >&2
+      exit 1
+    fi
+    config-set "$config_file" "$feature" "$value"
+    ;;
+  toggle)
+    if [ -z "$feature" ]; then
+      printf '%s\n' "mud-config: feature name required for toggle" >&2
+      exit 1
+    fi
+    current=$(config-get "$config_file" "$feature" 2>/dev/null || printf '0')
+    if [ "$current" = "1" ]; then
+      config-set "$config_file" "$feature" "0"
+    else
+      config-set "$config_file" "$feature" "1"
+    fi
+    ;;
+  list)
+    if [ -f "$config_file" ]; then
+      cat "$config_file"
+    fi
+    ;;
+  *)
+    printf '%s\n' "mud-config: unknown command '$command'" >&2
+    printf '%s\n' "Usage: mud-config {get|set|toggle|list} [FEATURE] [VALUE]" >&2
+    exit 1
+    ;;
+esac

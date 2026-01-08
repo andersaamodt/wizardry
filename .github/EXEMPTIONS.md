@@ -797,3 +797,94 @@ Test infrastructure is exempted from the 0-function rule:
 
 **Progress**: Reduced from 22 exemptions to 9 exemptions (14 spells resolved: 9 already compliant + 5 refactored).
 
+---
+
+## 9. Arcana Scripts Function Usage (2026-01-08)
+
+### Policy for `.arcana/` Directory
+
+**Status**: `.arcana/` directory scripts are **allowed to use functions** as a documented exception to the flat-file paradigm.
+
+**Rationale**: 
+- Arcana scripts are installation and configuration wizards for optional third-party software
+- They often need complex multi-step workflows with shared logic
+- Many were created before the flat-file paradigm was established
+- They're not core wizardry infrastructure
+
+**Goal**: Minimize function usage in arcana scripts, aiming for as close to 0 as possible while maintaining functionality.
+
+### Current Function Usage in Arcana Scripts
+
+**Total**: 7 arcana scripts with functions (out of ~60 total arcana scripts)  
+**Recent reduction**: Reduced from 24 to 7 (17 scripts made flat - 71% reduction)
+
+**By Function Count:**
+
+**4 functions:**
+- `.arcana/core/install-core` (4 functions) - Bootstrap core prerequisites installation
+
+**2 functions:**
+- `.arcana/bitcoin/configure-bitcoin` (2 functions) - Bitcoin configuration wizard
+
+**1 function (5 scripts):**
+- `.arcana/bitcoin/bitcoin-menu` (1 function) - Bitcoin management menu
+- `.arcana/bitcoin/change-bitcoin-directory` (1 function) - Bitcoin directory migration
+- `.arcana/core/core-menu` (1 function) - Core tools management menu
+- `.arcana/core/manage-system-command` (1 function) - System command wrapper
+- `.arcana/core/uninstall-core` (1 function) - Core tools removal
+
+**0 functions (examples of good flat arcana scripts - 50+ scripts):**
+- `.arcana/bitcoin/bitcoin-status` - Flat linear status check ✅
+- `.arcana/bitcoin/wallet-menu` - Flat menu implementation ✅  
+- `.arcana/bitcoin/uninstall-bitcoin` - Flat uninstall script ✅
+- `.arcana/simplex-chat/simplex-chat-status` - Flat linear status check ✅
+- `.arcana/simplex-chat/simplex-chat-menu` - Flat menu implementation ✅
+- `.arcana/simplex-chat/install-simplex-chat` - Flat install script ✅
+- `.arcana/simplex-chat/uninstall-simplex-chat` - Flat uninstall script ✅
+- `.arcana/tor/tor-status` - Flat linear status check ✅
+- `.arcana/tor/tor-menu` - Flat menu implementation ✅
+- `.arcana/tor/repair-tor-permissions` - Flat permission repair ✅
+- `.arcana/tor/uninstall-tor` - Flat uninstall script ✅
+- `.arcana/node/node-status` - Flat linear status check ✅
+- `.arcana/node/node-menu` - Flat menu implementation ✅
+- `.arcana/node/install-node` - Flat install script ✅
+- `.arcana/node/uninstall-node` - Flat uninstall script ✅
+- `.arcana/lightning/lightning-status` - Flat linear status check ✅
+- `.arcana/lightning/lightning-menu` - Flat menu implementation ✅
+- `.arcana/lightning/lightning-wallet-menu` - Flat wallet menu ✅
+- `.arcana/lightning/install-lightning` - Flat install script ✅
+- `.arcana/lightning/uninstall-lightning` - Flat uninstall script ✅
+- `.arcana/core/install-clipboard-helper` - Flat install script ✅
+- `.arcana/core/uninstall-clipboard-helper` - Flat uninstall script ✅
+- `.arcana/mud/install-mud` - Flat install script ✅
+- `.arcana/mud/install-cd` - Flat install script ✅
+- `.arcana/mud/mud-config` - Flat config script ✅
+- Many more install/uninstall/configuration scripts ✅
+
+### Refactoring Progress
+
+**Major Refactoring Complete** (2026-01-08):
+- ✅ Reduced from 24 scripts with functions to 7 (71% reduction)
+- ✅ Fixed 20+ syntax errors (unclosed functions)
+- ✅ Made 17 arcana scripts completely flat (0 functions):
+  - All status scripts (bitcoin, node, lightning, tor, simplex-chat)
+  - All menu scripts except bitcoin-menu and core-menu
+  - Most install/uninstall scripts
+  - All utility scripts (repair-tor-permissions, clipboard helpers, mud tools)
+
+**Details by Category:**
+- **Status scripts**: 5/5 now flat (100%) ✅
+- **Menu scripts**: 5/7 now flat (71%)
+- **Install scripts**: 5/5 now flat (100%) ✅  
+- **Uninstall scripts**: 6/6 now flat (100%) ✅
+- **Utility scripts**: 4/4 now flat (100%) ✅
+
+**Commits**: 92c746e, 4c12806, 462fecb, 1449ced (2026-01-08)
+
+**Next Targets for Refactoring** (Prioritized by function count):
+1. `.arcana/core/install-core` (4→0 functions) - Inline all helpers into linear flow
+2. `.arcana/bitcoin/configure-bitcoin` (2→0 functions) - Inline configuration logic
+3. All 1-function scripts - Inline single helper function into main flow
+
+**Policy**: When working on arcana scripts, always try to reduce or eliminate functions. Only add functions if absolutely necessary for code reuse within the same script.
+

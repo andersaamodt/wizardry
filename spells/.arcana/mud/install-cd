@@ -19,21 +19,23 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
-# Get script directory
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-ROOT_DIR=$(cd "$SCRIPT_DIR/../../.." && pwd -P)
+# Enable cd hook in MUD configuration
+# This sets cd-hook=1 in $SPELLBOOK_DIR/.mud
+# invoke-wizardry will load the hook when this setting is enabled
 
-# Path to the cd hook file
-CD_HOOK="$SCRIPT_DIR/cd"
+spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+config_file="$spell_home/.mud"
 
-# Detect RC file using detect-rc-file
-DETECT_RC_FILE="$ROOT_DIR/spells/divination/detect-rc-file"
-if [ ! -x "$DETECT_RC_FILE" ]; then
-        printf '%s\n' "install-cd: detect-rc-file not found" >&2
-        return 1
+# Ensure spellbook directory exists
+if [ ! -d "$spell_home" ]; then
+  mkdir -p "$spell_home" || {
+    printf '%s\n' "install-cd: cannot create spellbook directory '$spell_home'" >&2
+    exit 1
+  }
 fi
 
-# Get RC file path
-detect_output=$("$DETECT_RC_FILE" 2>/dev/null) || {
-        printf '%s\n' "install-cd: could not detect shell RC file" >&2
-        return 1
+# Use config-set to enable cd hook
+config-set "$config_file" "cd-hook" "1"
+
+printf '%s\n' "CD hook enabled in MUD configuration."
+printf '%s\n' "Restart your shell or run 'invoke-wizardry' to activate."

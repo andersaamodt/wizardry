@@ -17,21 +17,32 @@ require-wizardry || exit 1
 
 set -eu
 . env-clear
-. colors
 
-# Returns colored text based on status
-tor_status_color_for_status() {
-  case "$1" in
-    "installed, running, bootstrapped")
-      printf "${GREEN}"
-      ;;
-    "not installed")
-      printf "${GRAY}"
-      ;;
-    "installed, not running"|"installed, running, bootstrapping")
-      printf "${YELLOW}"
-      ;;
-    "installed, running, disconnected"|"installed, running, error"|"*")
-      printf "${RED}"
-      ;;
-  esac
+if command -v colors >/dev/null 2>&1; then
+  # shellcheck source=/dev/null
+  . colors
+else
+  RESET=""
+  GREEN=""
+  YELLOW=""
+  RED=""
+  GRAY=""
+  GREY=""
+fi
+# Older scripts expect GRAY, so mirror GREY when missing.
+GRAY=${GREY-}
+
+# Main execution - check Tor installation and running status
+if ! command -v tor >/dev/null 2>&1; then
+  status="not installed"
+  color="$GRAY"
+elif command -v is-service-running >/dev/null 2>&1 && is-service-running tor >/dev/null 2>&1; then
+  status="installed, running, bootstrapped"
+  color="$GREEN"
+else
+  status="installed, not running"
+  color="$YELLOW"
+fi
+
+# Print colored status
+printf "%s%s%s\n" "$color" "$status" "$RESET"

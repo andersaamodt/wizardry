@@ -46,20 +46,26 @@ case "$platform" in
     ;;
 esac
 
-# Define a function to set permissions and ownership
-set_permissions() {
-    perm_path="$1"
-    perm_user="$2"
-    perm_group="$3"
-    perm_mode="$4"
+# Repair Tor directory permissions
+for tor_dir in /var/lib/tor /var/log/tor /etc/tor; do
+  if [ -d "$tor_dir" ]; then
+    chown -R "$user_owner":"$group_owner" "$tor_dir" 2>/dev/null || true
+    printf '%s\n' "Changed owner and group of $tor_dir to $user_owner:$group_owner"
+    
+    # Set appropriate permissions based on directory type
+    case "$tor_dir" in
+      /etc/tor)
+        chmod 755 "$tor_dir" 2>/dev/null || true
+        printf '%s\n' "Set permissions on $tor_dir to 755"
+        ;;
+      *)
+        chmod 700 "$tor_dir" 2>/dev/null || true
+        printf '%s\n' "Set permissions on $tor_dir to 700"
+        ;;
+    esac
+  else
+    printf '%s\n' "Directory $tor_dir does not exist. Skipping."
+  fi
+done
 
-    if [ ! -d "$perm_path" ]; then
-        printf '%s\n' "Directory $perm_path does not exist. Skipping."
-        return
-    fi
-
-    chown -R "$perm_user":"$perm_group" "$perm_path"
-    printf '%s\n' "Changed owner and group of $perm_path to $perm_user and $perm_group."
-
-    chmod "$perm_mode" "$perm_path"
-    printf '%s\n' "Changed permissions of $perm_path to $perm_mode."
+printf '%s\n' "Tor permissions repair complete."

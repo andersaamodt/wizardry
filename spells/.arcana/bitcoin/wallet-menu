@@ -18,12 +18,35 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
-load_colors() {
-  if command -v colors >/dev/null 2>&1; then
-    # shellcheck source=/dev/null
-    . colors
+# Load colors
+if command -v colors >/dev/null 2>&1; then
+  # shellcheck source=/dev/null
+  . colors
+else
+  BOLD=""
+  CYAN=""
+  RESET=""
+fi
+
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 0' INT TERM
+
+first_run=1
+
+# Main execution loop
+while true; do
+  if [ "$first_run" -eq 0 ]; then
+    printf '\n'
   else
-    BOLD=""
-    CYAN=""
-    RESET=""
+    first_run=0
   fi
+
+  # Display wallet menu
+  title="${BOLD}${CYAN}Bitcoin Wallet"
+  list_wallets="List Wallets%bitcoin-cli listwallets"
+  create_wallet="Create Wallet%bitcoin-cli createwallet"
+  exit_label=$(exit-label)
+  exit_option="${exit_label}%kill -TERM \$PPID"
+  
+  menu "$title" "$list_wallets" "$create_wallet" "$exit_option" || true
+done
