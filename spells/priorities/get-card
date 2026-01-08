@@ -1,0 +1,55 @@
+#!/bin/sh
+
+# This spell retrieves the file path for a given hash in the current directory.
+# Use it to map a CRC-32 hash back to its corresponding file.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat << 'USAGE'
+Usage: get-card <hash> [directory]
+
+Find and print the file path that matches the given CRC-32 hash. Searches in the specified directory or current directory if not provided.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Ensure hash argument is provided
+if [ -z "${1-}" ]; then
+  printf '%s\n' "get-card: hash required" >&2
+  exit 2
+fi
+
+hash=$1
+directory=${2:-.}
+
+# Ensure directory exists
+if [ ! -d "$directory" ]; then
+  printf '%s\n' "get-card: directory not found: $directory" >&2
+  exit 1
+fi
+
+# Search for the file with the matching hash
+# Check if directory is empty first to avoid glob expansion issues
+if [ -n "$(ls -A "$directory" 2>/dev/null)" ]; then
+  for file in "$directory"/*; do
+    # Skip if not a file
+    [ -f "$file" ] || continue
+    
+    # Get the hash of this file
+    file_hash=$(read-magic "$file" hash 2>/dev/null || true)
+    
+    # Check if it matches
+    if [ "$file_hash" = "$hash" ]; then
+      printf '%s\n' "$file"
+      exit 0
+    fi
+  done
+fi
+
+# Hash not found
+printf '%s\n' "get-card: no file found with hash $hash" >&2
+exit 1
