@@ -39,11 +39,11 @@ uncastable cd
 set +e
 set -u
 
-# The cd override - checks setting in .mud/config file before running look
+# The cd override - checks setting in .mud config file before running look
     command cd "$@" || return $?
     
-    # Check if cd-look is enabled via config file (cd-look=1)
-    config_file="${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud/config"
-    if [ -f "$config_file" ] && grep -q "^cd-look=1$" "$config_file" 2>/dev/null; then
+    # Check if cd-hook is enabled via config file (cd-hook=1)
+    config_file="${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud"
+    if [ -f "$config_file" ] && grep -q "^cd-hook=1$" "$config_file" 2>/dev/null; then
         command -v look >/dev/null 2>&1 && look 2>/dev/null || true
     fi

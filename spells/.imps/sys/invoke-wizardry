@@ -149,6 +149,19 @@ if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
   fi
 fi
 
+# Load MUD cd hook if enabled in config
+if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
+  _iw_mud_config="${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}/.mud"
+  if [ -f "$_iw_mud_config" ] && grep -q "^cd-hook=1$" "$_iw_mud_config" 2>/dev/null; then
+    _iw_cd_hook="$WIZARDRY_DIR/spells/.arcana/mud/cd"
+    if [ -f "$_iw_cd_hook" ]; then
+      [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Loading cd hook" >&2
+      . "$_iw_cd_hook"
+    fi
+  fi
+  unset _iw_mud_config _iw_cd_hook
+fi
+
 # Verify that menu command is available (skip in test mode)
 if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
   if ! command -v menu >/dev/null 2>&1; then
