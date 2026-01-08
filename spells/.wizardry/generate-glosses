@@ -202,16 +202,17 @@ uname|uniq|wc|xargs)
   # For "env-or", generates: alias env-or='env-or'
   generate_full_name_alias() {
     _cmd_name=$1
-    _true_name=$(printf '%s' "$_cmd_name" | tr '-' '_')
     
-    # Skip if command has no hyphens (same as true name)
-    if [ "$_cmd_name" = "$_true_name" ]; then
-      return 0
-    fi
+    # Skip if command has no hyphens (already accessible without alias)
+    case "$_cmd_name" in
+      *-*) ;;
+      *) return 0 ;;
+    esac
     
-    # Emit alias definition
-    emit_line "# Full-name alias for '$_cmd_name' -> '$_true_name'"
-    emit_line "alias ${_cmd_name}='${_true_name}'"
+    # Emit alias definition - alias points to itself for shell completion
+    # The actual execution will be handled by PATH lookup finding the spell
+    emit_line "# Full-name alias for '$_cmd_name'"
+    emit_line "alias ${_cmd_name}='${_cmd_name}'"
     emit_line ""
     
     total_full_name_glosses=$((total_full_name_glosses + 1))
