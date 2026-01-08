@@ -119,12 +119,27 @@ test_jump_lists_available_markers() {
   assert_output_contains "alpha"
 }
 
-test_jump_zero_cycles() {
-  skip-if-compiled || return $?
-  start_dir="$WIZARDRY_TMPDIR/start-zero"
+test_jump_no_arg_defaults_to_one() {
+  start_dir="$WIZARDRY_TMPDIR/start-default"
   dest1="$WIZARDRY_TMPDIR/dest1"
   dest2="$WIZARDRY_TMPDIR/dest2"
-  markers_dir="$WIZARDRY_TMPDIR/markers-zero"
+  markers_dir="$WIZARDRY_TMPDIR/markers-default"
+  mkdir -p "$start_dir" "$dest1" "$dest2" "$markers_dir"
+  dest1_resolved=$(cd "$dest1" && pwd -P | sed 's|//|/|g')
+  dest2_resolved=$(cd "$dest2" && pwd -P | sed 's|//|/|g')
+  printf '%s\n' "$dest1_resolved" >"$markers_dir/1"
+  printf '%s\n' "$dest2_resolved" >"$markers_dir/2"
+  # jump with no args should jump to marker 1
+  run_jump "" "$markers_dir" "$start_dir"
+  assert_success
+}
+
+test_jump_next_cycles() {
+  skip-if-compiled || return $?
+  start_dir="$WIZARDRY_TMPDIR/start-next"
+  dest1="$WIZARDRY_TMPDIR/dest1-next"
+  dest2="$WIZARDRY_TMPDIR/dest2-next"
+  markers_dir="$WIZARDRY_TMPDIR/markers-next"
   mkdir -p "$start_dir" "$dest1" "$dest2" "$markers_dir"
   dest1_resolved=$(cd "$dest1" && pwd -P | sed 's|//|/|g')
   dest2_resolved=$(cd "$dest2" && pwd -P | sed 's|//|/|g')
@@ -132,8 +147,8 @@ test_jump_zero_cycles() {
   printf '%s\n' "$dest1_resolved" >"$markers_dir/1"
   sleep 1
   printf '%s\n' "$dest2_resolved" >"$markers_dir/2"
-  # jump 0 should behave like jump with no args (start at 1)
-  run_jump "0" "$markers_dir" "$start_dir"
+  # jump next should cycle through markers
+  run_jump "next" "$markers_dir" "$start_dir"
   assert_success
 }
 
@@ -147,5 +162,6 @@ run_test_case "jump-to-marker reports when already at destination" test_jump_det
 run_test_case "jump-to-marker jumps to marked directory" test_jump_changes_directory
 run_test_case "jump-to-marker jumps to named marker" test_jump_to_named_marker
 run_test_case "jump-to-marker lists available markers on error" test_jump_lists_available_markers
-run_test_case "jump 0 cycles like jump with no args" test_jump_zero_cycles
+run_test_case "jump with no args defaults to marker 1" test_jump_no_arg_defaults_to_one
+run_test_case "jump next cycles through markers" test_jump_next_cycles
 finish_tests

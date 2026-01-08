@@ -42,51 +42,52 @@ INNEREOF
   run_cmd sh "$test_script"
 }
 
-# Test the reported bug scenario:
-# 1. At .wizardry (marker 2)
-# 2. Jump to marker 1 (.tower)
-# 3. Call jump (no args) - should cycle to next marker (2), not say "already at 2"
+# Test the reported bug scenario with 'next' keyword:
+# 1. At .wizardry (marker 3)
+# 2. Jump next should skip marker 3 (already there) and go to next marker
+# 3. Repeated jump next should cycle through all markers without getting stuck
 test_jump_cycle_after_explicit_jump() {
   skip-if-compiled || return $?
   
   tower="$WIZARDRY_TMPDIR/tower"
   wizardry_dir="$WIZARDRY_TMPDIR/wizardry"
+  other_dir="$WIZARDRY_TMPDIR/other"
   markers_dir="$WIZARDRY_TMPDIR/markers-cycle"
   
-  mkdir -p "$tower" "$wizardry_dir" "$markers_dir"
+  mkdir -p "$tower" "$wizardry_dir" "$other_dir" "$markers_dir"
   
   # Normalize paths
   tower_normalized=$(cd "$tower" && pwd -P | sed 's|//|/|g')
   wizardry_normalized=$(cd "$wizardry_dir" && pwd -P | sed 's|//|/|g')
+  other_normalized=$(cd "$other_dir" && pwd -P | sed 's|//|/|g')
   
-  # Create markers
+  # Create markers 1, 2, 3
   printf '%s\n' "$tower_normalized" > "$markers_dir/1"
   sleep 1  # Ensure different mtime
   printf '%s\n' "$wizardry_normalized" > "$markers_dir/2"
   sleep 1  # Ensure different mtime
+  printf '%s\n' "$other_normalized" > "$markers_dir/3"
+  sleep 1  # Ensure different mtime
   
-  # Jump to marker 2 from tower (already at marker 2's location)
-  run_jump_sourced "2" "$markers_dir" "$wizardry_dir"
+  # Jump to marker 3 explicitly to set it as "most recent"
+  run_jump_sourced "3" "$markers_dir" "$tower"
   assert_success || return 1
-  # Should say "already standing at marker '2'"
-  assert_output_contains "already standing" || return 1
+  assert_output_contains "$other_normalized" || return 1
   
-  # Jump to marker 1 from wizardry_dir
-  run_jump_sourced "1" "$markers_dir" "$wizardry_dir"
+  # Now at marker 3. Call "jump next" - should skip marker 3 and go to marker 1
+  run_jump_sourced "next" "$markers_dir" "$other_dir"
   assert_success || return 1
   # Should NOT say "already standing"
   if printf '%s' "$OUTPUT" | grep -q "already standing"; then
-    TEST_FAILURE_REASON="should not say 'already standing' when jumping to different marker"
+    TEST_FAILURE_REASON="cycling should skip current location and jump to next marker"
     return 1
   fi
-  # Should now be at tower
+  # Should now be at marker 1 (tower)
   assert_output_contains "$tower_normalized" || return 1
   
-  # Now jump with no args - should cycle to marker 2
-  # Last jump was to marker 1, so next in sequence is marker 2
-  run_jump_sourced "" "$markers_dir" "$tower"
+  # Jump next again from tower - should go to marker 2
+  run_jump_sourced "next" "$markers_dir" "$tower"
   assert_success || return 1
-  # Should jump to marker 2 (wizardry_dir), not say "already standing"
   if printf '%s' "$OUTPUT" | grep -q "already standing"; then
     TEST_FAILURE_REASON="cycling should jump to next marker, not stay at current location"
     return 1
@@ -164,7 +165,7 @@ test_already_at_marker_updates_mtime() {
   fi
 }
 
-run_test_case "jump cycles to next marker after explicit jump" test_jump_cycle_after_explicit_jump
+run_test_case "jump next cycles and skips current marker" test_jump_cycle_after_explicit_jump
 run_test_case "marker mtime is updated on successful jump" test_marker_mtime_updated_on_jump
 run_test_case "already-at-marker still updates mtime for cycling" test_already_at_marker_updates_mtime
 

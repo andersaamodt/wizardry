@@ -8,7 +8,8 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: . jump-to-marker [marker]
 
-Teleport to a marker set with mark-location. Defaults to marker "1", marker "0" cycles through all saved locations.
+Teleport to a marker set with mark-location. Defaults to marker "1".
+Use 'jump next' to cycle through all saved locations.
 Note: This spell must be sourced (use '. jump-to-marker') to affect your current shell.
 USAGE
   exit 0
@@ -32,10 +33,10 @@ set -eu
 _jm_spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
 markers_dir=${JUMP_TO_MARKERS_DIR:-$_jm_spell_home/.markers}
 
-marker_name="${1:-}"
+marker_name="${1:-1}"
 
-# If no marker specified OR marker is "0", cycle through markers
-if [ -z "$marker_name" ] || [ "$marker_name" = "0" ]; then
+# If marker is "next", cycle through markers
+if [ "$marker_name" = "next" ]; then
         # Clear marker_name so cycling logic can set it fresh
         marker_name=""
         # Find the most recently used marker (by mtime) and get the next one
@@ -102,6 +103,36 @@ if [ -z "$marker_name" ] || [ "$marker_name" = "0" ]; then
                 # Wrap around to first marker if at end
                 if [ "$found" -eq 1 ] && [ -z "$marker_name" ]; then
                         marker_name=$first
+                fi
+                
+                # FIX: Check if we're already at the selected marker's location
+                # If so, skip to the next marker in the cycle
+                if [ -n "$marker_name" ]; then
+                        candidate_file="$markers_dir/$marker_name"
+                        if [ -f "$candidate_file" ]; then
+                                candidate_dest=$(cat "$candidate_file")
+                                current_loc=$(pwd -P | sed 's|//|/|g')
+                                normalized_candidate=$(printf '%s' "$candidate_dest" \
+                                    | sed 's|//|/|g')
+                                
+                                if [ "$current_loc" = "$normalized_candidate" ]; then
+                                        # Already at this marker, find the next one
+                                        found=0
+                                        for m in $all_markers; do
+                                                if [ "$found" -eq 1 ]; then
+                                                        marker_name=$m
+                                                        break
+                                                fi
+                                                if [ "$m" = "$marker_name" ]; then
+                                                        found=1
+                                                fi
+                                        done
+                                        # Wrap around to first marker if at end
+                                        if [ "$found" -eq 1 ] && [ "$m" = "$marker_name" ]; then
+                                                marker_name=$first
+                                        fi
+                                fi
+                        fi
                 fi
         else
                 marker_name="1"
