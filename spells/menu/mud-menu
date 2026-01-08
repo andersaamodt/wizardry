@@ -30,18 +30,27 @@ fi
 # Check if a MUD config feature is enabled
 is_feature_enabled() {
   feature=$1
-  default_value=0
+  default_enabled=0
   
-  # parse-enabled defaults to 1 (enabled), all others default to 0 (disabled)
+  # parse-enabled defaults to enabled (1), all others default to disabled (0)
   case "$feature" in
-    parse-enabled) default_value=1 ;;
+    parse-enabled) default_enabled=1 ;;
   esac
   
-  mud_config_path=$(command -v mud-config 2>/dev/null) || return "$default_value"
+  mud_config_path=$(command -v mud-config 2>/dev/null)
   if [ -z "$mud_config_path" ] || [ ! -x "$mud_config_path" ]; then
-    return "$default_value"
+    # mud-config not available, use default
+    [ "$default_enabled" -eq 1 ]
+    return $?
   fi
-  value=$(mud-config get "$feature" 2>/dev/null || printf '%s' "$default_value")
+  
+  # Get the value, using default if key doesn't exist
+  value=$(mud-config get "$feature" 2>/dev/null) || value=""
+  if [ -z "$value" ]; then
+    [ "$default_enabled" -eq 1 ]
+    return $?
+  fi
+  
   [ "$value" = "1" ]
 }
 
