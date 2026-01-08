@@ -32,6 +32,11 @@ if [ "$_uc_check_sourced" -eq 0 ]; then
 fi
 unset _uc_check_sourced _uc_check_base
 
+# Idempotency check: if already run for this script, skip
+if [ "${UNCASTABLE_CHECKED-}" = "$0" ]; then
+  return 0
+fi
+
 set -eu
 
 _uncast_name=${1-}
@@ -58,6 +63,9 @@ else
 fi
 
 if [ "$_uncast_sourced" -eq 1 ]; then
+  # Mark that we've checked this script
+  UNCASTABLE_CHECKED=$0
+  export UNCASTABLE_CHECKED
   return 0
 else
   printf '%s\n' "${_uncast_name}: must be sourced, not executed" >&2
