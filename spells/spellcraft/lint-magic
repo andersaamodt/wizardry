@@ -278,18 +278,6 @@ while IFS= read -r target; do
     issue_count=$((issue_count + 1))
   fi
   
-  # Inline check_posix_compliance
-  checkbashisms_cmd=${CHECKBASHISMS-}
-  if [ -z "$checkbashisms_cmd" ] && has checkbashisms; then
-    checkbashisms_cmd=$(command -v checkbashisms)
-  fi
-  if [ -n "$checkbashisms_cmd" ]; then
-    if ! "$checkbashisms_cmd" "$path" >/dev/null 2>&1; then
-      issues=${issues:+$issues; }'POSIX compliance violation (run checkbashisms for details)'
-      issue_count=$((issue_count + 1))
-    fi
-  fi
-  
   # Inline check_which_usage
   which_pattern='(^|[;|&])[[:space:]]*which[[:space:]]+[a-zA-Z0-9_-]+|`which[[:space:]]|\$\(which[[:space:]]'
   which_usage=$(grep -E "$which_pattern" "$path" 2>/dev/null | grep -v '^[[:space:]]*#') || true

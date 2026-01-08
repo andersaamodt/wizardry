@@ -33,6 +33,6 @@ fi
 
 # Install SimpleX Chat
 printf '%s\n' "Installing SimpleX Chat..."
-. "$manage_cmd" install simplex-chat
+"$manage_cmd" install simplex-chat
 
 printf '%s\n' "SimpleX Chat installation complete."

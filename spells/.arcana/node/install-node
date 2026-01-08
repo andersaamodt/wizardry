@@ -34,6 +34,6 @@ fi
 
 # Install Node.js
 printf '%s\n' "Installing Node.js..."
-. "$manage_cmd" install nodejs node
+"$manage_cmd" install nodejs node
 
 printf '%s\n' "Node.js installation complete."

@@ -33,7 +33,7 @@ fi
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 core_dir=$(CDPATH= cd -- "$script_dir/../core" && pwd -P)
 if [ -f "$core_dir/manage-system-command" ]; then
-  . "$core_dir/manage-system-command" install lightning
+  "$core_dir/manage-system-command" install lightning
 else
   printf '%s\n' "install-lightning: could not find manage-system-command" >&2
   exit 1
