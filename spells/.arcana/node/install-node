@@ -32,8 +32,8 @@ if ! command -v "$manage_cmd" >/dev/null 2>&1; then
   fi
 fi
 
-install_node_detect_nixos() {
-  if command -v detect-distro >/dev/null 2>&1 && [ "$(detect-distro 2>/dev/null)" = "nixos" ]; then
-    return 0
-  fi
-  return 1
+# Install Node.js
+printf '%s\n' "Installing Node.js..."
+. "$manage_cmd" install nodejs node
+
+printf '%s\n' "Node.js installation complete."

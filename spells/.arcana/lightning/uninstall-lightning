@@ -30,7 +30,3 @@ else
 fi
 
 printf '%s\n' "Lightning Network uninstallation complete."
-    printf '%s\n' "Removed clightning from $config"
-    printf '%s\n' 'Rebuilding NixOS after removal...'
-    sudo nixos-rebuild all
-  fi

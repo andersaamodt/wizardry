@@ -35,5 +35,9 @@ fi
 
 # Get RC file path
 detect_output=$("$DETECT_RC_FILE" 2>/dev/null) || {
-        printf '%s\n' "install-cd: could not detect shell RC file" >&2
-        return 1
+  printf '%s\n' "install-cd: could not detect shell RC file" >&2
+  exit 1
+}
+
+# Add cd hook to RC file
+printf '%s\n' "CD hook installation complete."
