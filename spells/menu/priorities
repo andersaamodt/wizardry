@@ -50,7 +50,6 @@ display_priorities() {
 
   # Initialize variables
   highest_priority=""
-  line_added=false
   menu_command="menu Priorities:"
 
   # Loop through the priorities
@@ -71,10 +70,9 @@ display_priorities() {
         *[!0-9]*) file_priority=0 ;;
       esac
 
-      # If the file's priority is not the highest priority, add an echelon separator line
-      if [ -n "${highest_priority}" ] && [ "${file_priority}" -ne "${highest_priority}" ] && [ "${line_added}" = false ]; then
+      # If the file's priority differs from the previous highest, add an echelon separator line
+      if [ -n "${highest_priority}" ] && [ "${file_priority}" -ne "${highest_priority}" ]; then
         menu_command="${menu_command} \"─── %\""
-        line_added=true
       fi
 
       # Add the file to the menu command
