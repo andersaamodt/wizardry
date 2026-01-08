@@ -189,7 +189,13 @@ uname|uniq|wc|xargs)
   _tmpfile=$(temp-file)
   on-exit cleanup-file "$_tmpfile"
   
-  find "$wizardry_dir/spells" -type f -perm /111 2>/dev/null > "$_tmpfile"
+  # Cross-platform find command with fallbacks for different find implementations
+  # Try GNU find first (-perm /111), then BSD find (-perm +111), then manual check
+  find "$wizardry_dir/spells" -type f -perm /111 2>/dev/null > "$_tmpfile" || \
+    find "$wizardry_dir/spells" -type f -perm +111 2>/dev/null > "$_tmpfile" || \
+    find "$wizardry_dir/spells" -type f 2>/dev/null | while IFS= read -r f; do
+      [ -x "$f" ] && printf '%s\n' "$f"
+    done > "$_tmpfile"
   
   _spell_names=""
   _spell_count=0
