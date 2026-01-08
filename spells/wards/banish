@@ -1093,7 +1093,7 @@ banish_process_level() {
       # Levels 4, 6-7, 9-10, 13-17, 19-20, 22, 25-28: Standard validation pattern
       
       # Check spells
-      spell_list=$("$spell_levels_script" "$ spellslevel")
+      spell_list=$("$spell_levels_script" "$level" spells)
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
@@ -1111,7 +1111,7 @@ banish_process_level() {
       fi
 
       # Check imps
-      imp_list=$("$spell_levels_script" "$ impslevel")
+      imp_list=$("$spell_levels_script" "$level" imps)
       had_imps=0
       if [ -n "$imp_list" ]; then
         had_imps=1
