@@ -144,26 +144,9 @@ where-is which"
   printf '%s\n' "$_it_defaults" | while IFS=' ' read -r _word _spell; do
     [ -n "$_word" ] && [ -n "$_spell" ] || continue
     
-    # Check if this spell must be sourced
-    if _it_spell_must_be_sourced "$_spell"; then
-      # Create a sourcing function instead of an alias
-      # Only create function if word doesn't contain hyphens (POSIX sh restriction)
-      case "$_word" in
-        *-*)
-          # Word has hyphens, must use alias even though it won't work for sourcing
-          # This is a POSIX sh limitation - function names can't have hyphens
-          printf "alias %s='%s'\n" "$_word" "$_spell" >> "$_it_default_file"
-          ;;
-        *)
-          # Word has no hyphens, can create a sourcing function
-          # Use parse to enable multi-word command resolution (e.g., "jump trash" -> "jump-trash")
-          printf "%s() { parse \"%s\" \"\$@\"; }\n" "$_word" "$_word" >> "$_it_default_file"
-          ;;
-      esac
-    else
-      # Regular spell, create an alias
-      printf "alias %s='%s'\n" "$_word" "$_spell" >> "$_it_default_file"
-    fi
+    # Write as simple key-value pair (synonym files should be inert)
+    # generate-glosses will convert these to appropriate aliases/functions
+    printf "%s %s\n" "$_word" "$_spell" >> "$_it_default_file"
   done
   
   touch "$_it_default_initialized" 2>/dev/null || true
