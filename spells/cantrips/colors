@@ -23,7 +23,8 @@ USAGE
   ;;
 esac
 
-# Load uncastable imp for sourced-only enforcement
+# Enforce sourced-only behavior
+# uncastable must be sourced (invoked), never executed (cast)
 if ! command -v uncastable >/dev/null 2>&1; then
   if [ -n "${WIZARDRY_DIR-}" ]; then
     _i="$WIZARDRY_DIR/spells/.imps/sys"
@@ -36,8 +37,6 @@ if ! command -v uncastable >/dev/null 2>&1; then
   fi
   [ -f "$_i/uncastable" ] && . "$_i/uncastable"
 fi
-
-uncastable colors "Usage: . colors"
 
 colors() {
 # Note: No require-wizardry check here - colors must work standalone

@@ -17,7 +17,8 @@ USAGE
   ;;
 esac
 
-# Load uncastable imp for direct execution
+# Enforce sourced-only behavior
+# uncastable must be sourced (invoked), never executed (cast)
 if ! command -v uncastable >/dev/null 2>&1; then
   if [ -n "${WIZARDRY_DIR-}" ]; then
     _i="$WIZARDRY_DIR/spells/.imps/sys"
@@ -30,8 +31,6 @@ if ! command -v uncastable >/dev/null 2>&1; then
   fi
   [ -f "$_i/uncastable" ] && . "$_i/uncastable"
 fi
-
-uncastable cd
 
 # Explicitly use permissive error handling - this file is meant to be sourced into user's shell
 # and we don't want their shell to exit on command failures
