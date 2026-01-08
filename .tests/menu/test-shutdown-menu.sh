@@ -16,7 +16,7 @@ make_stub_menu() {
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
-kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
+exit 130
 SH
   chmod +x "$tmp/menu"
 }

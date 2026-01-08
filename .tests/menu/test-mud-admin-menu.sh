@@ -66,7 +66,7 @@ SH
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"MUD Admin:"*"Add authorized player%add-player"*"List authorized players%new-player"*"List shared rooms%list-rooms"*'Exit%kill -TERM $PPID' ) : ;;
+    *"MUD Admin:"*"Add authorized player%add-player"*"List authorized players%new-player"*"List shared rooms%list-rooms"*'Exit%exit 130' ) : ;;
     *) TEST_FAILURE_REASON="menu not invoked with expected actions: $args"; return 1 ;;
   esac
 }
@@ -136,7 +136,7 @@ test_esc_exit_behavior() {
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
-kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
+exit 130
 SH
   chmod +x "$tmp/menu"
   
@@ -159,7 +159,7 @@ SH
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *'Exit%kill -TERM $PPID') : ;;
+    *'Exit%exit 130') : ;;
     *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
   esac
   

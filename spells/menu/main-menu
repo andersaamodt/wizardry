@@ -67,8 +67,8 @@ while true; do
     set -- "$cast" "$spellbook" "$install" "$system" "$exit_item"
   fi
   
-  menu "Main Menu:" "$@"
-  menu_status=$?
+  menu "Main Menu:" "$@" || menu_status=$?
+  menu_status=${menu_status:-0}
   
   # Exit code 130 means ESC was pressed - continue loop to redisplay menu
   # Any other exit code (including 0 for successful command execution) should exit

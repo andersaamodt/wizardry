@@ -16,7 +16,7 @@ make_stub_menu_env() {
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
 # Send TERM signal to parent to simulate ESC behavior
-kill -TERM "$PPID" 2>/dev/null || exit 0
+exit 130
 exit 0
 SH
   chmod +x "$tmp/menu"
@@ -241,7 +241,7 @@ count=$(cat "$INVOCATION_FILE" 2>/dev/null || echo 0)
 count=$((count + 1))
 printf '%s\n' "$count" >"$INVOCATION_FILE"
 # Always send TERM to exit on first display (simulating ESC)
-kill -TERM "$PPID" 2>/dev/null || exit 0
+exit 130
 exit 0
 SH
   chmod +x "$tmp/menu"
@@ -347,7 +347,7 @@ printf '\n' >>"$MENU_OUTPUT"
 # Execute first menu command
 cmd=${1#*%}
 eval "$cmd" >>"$MENU_OUTPUT" 2>&1
-kill -TERM "$PPID" 2>/dev/null || exit 0
+exit 130
 exit 0
 SH
   chmod +x "$tmp/menu"

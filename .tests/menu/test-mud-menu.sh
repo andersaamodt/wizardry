@@ -117,7 +117,7 @@ SH
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"MUD Install:"*"setup-tor"*'Exit%kill -TERM $PPID' ) : ;;
+    *"MUD Install:"*"setup-tor"*'Exit%exit 130' ) : ;;
     *) TEST_FAILURE_REASON="tor setup entry missing: $args"; return 1 ;;
   esac
 }
@@ -180,7 +180,7 @@ test_esc_exit_behavior() {
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
-kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
+exit 130
 SH
   chmod +x "$tmp/menu"
   
@@ -203,7 +203,7 @@ SH
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *'Exit%kill -TERM $PPID') : ;;
+    *'Exit%exit 130') : ;;
     *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
   esac
   
@@ -220,7 +220,7 @@ test_cd_hook_toggle_unchecked() {
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
-kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
+exit 130
 SH
   chmod +x "$tmp/menu"
   
@@ -261,7 +261,7 @@ test_cd_hook_toggle_checked() {
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
-kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
+exit 130
 SH
   chmod +x "$tmp/menu"
   
@@ -316,7 +316,7 @@ test_all_features_toggle_shown() {
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
-kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
+exit 130
 SH
   chmod +x "$tmp/menu"
   
@@ -359,7 +359,7 @@ test_all_planned_features_shown() {
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
-kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
+exit 130
 SH
   chmod +x "$tmp/menu"
   
@@ -470,7 +470,7 @@ if [ "$call_count" -eq 1 ]; then
   exit 0
 fi
 # Second call: exit
-kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
+exit 130
 SH
   chmod +x "$tmp/menu"
   
@@ -548,7 +548,7 @@ if [ "$call_count" -eq 1 ]; then
   # First call: return success without changing any state
   exit 0
 fi
-kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
+exit 130
 SH
   chmod +x "$tmp/menu"
   
