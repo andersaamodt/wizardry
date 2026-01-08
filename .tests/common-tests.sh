@@ -1952,26 +1952,43 @@ run_test_case "spells have no deprecated invocation declarations" test_spells_no
 # This eliminates duplication in individual test files
 test_all_spells_respond_to_help() {
   failures=""
+  failure_count=0
   
   check_help_flag() {
     spell=$1
     rel_path=${spell#"$ROOT_DIR/spells/"}
     
+    # Skip if we already have enough failures
+    [ "$failure_count" -ge 10 ] && return
+    
     # Try each help flag variant
     for flag in --help --usage -h; do
-      # Run spell with help flag and capture output
-      output=$("$spell" "$flag" 2>&1)
-      exit_code=$?
+      # Run spell with help flag and capture output (with 5 second timeout)
+      if command -v timeout >/dev/null 2>&1; then
+        output=$(timeout 5 "$spell" "$flag" 2>&1)
+        exit_code=$?
+        # timeout returns 124 for timeout, 137 for SIGKILL
+        if [ "$exit_code" -eq 124 ] || [ "$exit_code" -eq 137 ]; then
+          failures="${failures}${failures:+, }$rel_path ($flag: timeout)"
+          failure_count=$((failure_count + 1))
+          return
+        fi
+      else
+        output=$("$spell" "$flag" 2>&1)
+        exit_code=$?
+      fi
       
       # Spell must exit with code 0 for help
       if [ "$exit_code" -ne 0 ]; then
         failures="${failures}${failures:+, }$rel_path ($flag: exit code $exit_code)"
+        failure_count=$((failure_count + 1))
         return
       fi
       
       # Output must contain "Usage:" keyword
       if ! printf '%s' "$output" | grep -qi "usage:"; then
         failures="${failures}${failures:+, }$rel_path ($flag: missing Usage:)"
+        failure_count=$((failure_count + 1))
         return
       fi
       
@@ -1981,6 +1998,7 @@ test_all_spells_respond_to_help() {
     
     # If we get here, none of the help flags worked
     failures="${failures}${failures:+, }$rel_path (no help flags work)"
+    failure_count=$((failure_count + 1))
   }
   
   for_each_posix_spell_no_imps check_help_flag
