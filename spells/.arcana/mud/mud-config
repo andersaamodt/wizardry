@@ -66,8 +66,10 @@ case "$command" in
     current=$(config-get "$config_file" "$feature" 2>/dev/null || printf '0')
     if [ "$current" = "1" ]; then
       config-set "$config_file" "$feature" "0"
+      printf '0\n'
     else
       config-set "$config_file" "$feature" "1"
+      printf '1\n'
     fi
     ;;
   list)

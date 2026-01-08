@@ -18,12 +18,12 @@ test_help_shows_usage() {
 
 test_enable_flag_enables_all() {
   tmp=$(make_tempdir)
-  run_cmd env MUD_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/toggle-all-mud" --enable
+  run_cmd env SPELLBOOK_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/toggle-all-mud" --enable
   assert_success || return 1
   assert_output_contains "All MUD features enabled" || return 1
   
   # Verify all features are enabled (command-not-found removed - always enabled via invoke-wizardry)
-  run_cmd env MUD_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/mud-config" list
+  run_cmd env SPELLBOOK_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/mud-config" list
   assert_success || return 1
   assert_output_contains "touch-hook=1" || return 1
   assert_output_contains "fantasy-theme=1" || return 1
@@ -34,16 +34,16 @@ test_enable_flag_enables_all() {
 test_disable_flag_disables_all() {
   tmp=$(make_tempdir)
   # First enable all features
-  run_cmd env MUD_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/toggle-all-mud" --enable
+  run_cmd env SPELLBOOK_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/toggle-all-mud" --enable
   assert_success || return 1
   
   # Then disable all
-  run_cmd env MUD_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/toggle-all-mud" --disable
+  run_cmd env SPELLBOOK_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/toggle-all-mud" --disable
   assert_success || return 1
   assert_output_contains "All MUD features disabled" || return 1
   
   # Verify all features are disabled (command-not-found removed - always enabled via invoke-wizardry)
-  run_cmd env MUD_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/mud-config" list
+  run_cmd env SPELLBOOK_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/mud-config" list
   assert_success || return 1
   assert_output_contains "touch-hook=0" || return 1
   assert_output_contains "fantasy-theme=0" || return 1
@@ -54,7 +54,7 @@ test_disable_flag_disables_all() {
 test_auto_toggle_enables_when_any_disabled() {
   tmp=$(make_tempdir)
   # Start with all disabled (default state)
-  run_cmd env MUD_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/toggle-all-mud"
+  run_cmd env SPELLBOOK_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/toggle-all-mud"
   assert_success || return 1
   assert_output_contains "All MUD features enabled" || return 1
 }
@@ -62,11 +62,11 @@ test_auto_toggle_enables_when_any_disabled() {
 test_auto_toggle_disables_when_all_enabled() {
   tmp=$(make_tempdir)
   # First enable all
-  run_cmd env MUD_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/toggle-all-mud" --enable
+  run_cmd env SPELLBOOK_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/toggle-all-mud" --enable
   assert_success || return 1
   
   # Auto-toggle should disable
-  run_cmd env MUD_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/toggle-all-mud"
+  run_cmd env SPELLBOOK_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/toggle-all-mud"
   assert_success || return 1
   assert_output_contains "All MUD features disabled" || return 1
 }
