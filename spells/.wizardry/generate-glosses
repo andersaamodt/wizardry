@@ -308,6 +308,8 @@ uname|uniq|wc|xargs)
               _first_word=${_synonym_name%%-*}
               
               # Check if first word is blacklisted
+              # Note: is_first_word_blacklisted returns 0 for allowed, 1 for blacklisted
+              # So `if !` runs when word IS blacklisted (function returns 1)
               if ! is_first_word_blacklisted "$_first_word"; then
                 [ "$quiet" -eq 0 ] && printf 'generate-glosses: WARNING: Skipping synonym "%s" - first word "%s" conflicts with system command\n' "$_synonym_name" "$_first_word" >&2
                 continue
