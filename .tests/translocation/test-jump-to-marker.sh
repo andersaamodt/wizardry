@@ -180,4 +180,67 @@ run_test_case "jump-to-marker lists available markers on error" test_jump_lists_
 run_test_case "jump 0 cycles through markers" test_jump_zero_cycles
 run_test_case "jump next cycles through markers" test_jump_next_cycles
 run_test_case "jump defaults to marker 1" test_jump_defaults_to_one
+
+# Tests for gloss invocations (via first-word gloss and synonyms)
+test_gloss_jump_to_marker_direct() {
+  skip-if-compiled || return $?
+  start_dir="$WIZARDRY_TMPDIR/gloss-start"
+  dest1="$WIZARDRY_TMPDIR/gloss-dest-1"
+  markers_dir="$WIZARDRY_TMPDIR/gloss-markers"
+  mkdir -p "$start_dir" "$dest1" "$markers_dir"
+  dest1_resolved=$(cd "$dest1" && pwd -P | sed 's|//|/|g')
+  printf '%s\n' "$dest1_resolved" >"$markers_dir/1"
+  
+  # Test 'jump to marker' via first-word gloss
+  # This tests that the gloss function sources the spell correctly
+  run_cmd sh -c "
+    export WIZARDRY_DIR='$ROOT_DIR'
+    export JUMP_TO_MARKERS_DIR='$markers_dir'
+    export PATH='$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:/bin:/usr/bin'
+    cd '$start_dir' || exit 1
+    # Generate glosses and source them
+    eval \"\$(PATH='$WIZARDRY_IMPS_PATH:/bin:/usr/bin' '$ROOT_DIR/spells/.wizardry/generate-glosses' --quiet)\"
+    # Now call the gloss function
+    jump to marker
+    result=\$?
+    new_dir=\$(pwd -P | sed 's|//|/|g')
+    [ \"\$result\" -eq 0 ] && [ \"\$new_dir\" = '$dest1_resolved' ]
+  "
+  assert_success
+}
+
+test_gloss_jump_shorthand() {
+  skip-if-compiled || return $?
+  start_dir="$WIZARDRY_TMPDIR/gloss-jump-start"
+  dest1="$WIZARDRY_TMPDIR/gloss-jump-dest-1"
+  markers_dir="$WIZARDRY_TMPDIR/gloss-jump-markers"
+  spell_home="$WIZARDRY_TMPDIR/spell-home"
+  mkdir -p "$start_dir" "$dest1" "$markers_dir" "$spell_home"
+  dest1_resolved=$(cd "$dest1" && pwd -P | sed 's|//|/|g')
+  printf '%s\n' "$dest1_resolved" >"$markers_dir/1"
+  
+  # Create default synonyms file with CORRECT format (word=target)
+  printf 'jump=jump-to-marker\n' > "$spell_home/.default-synonyms"
+  
+  # Test 'jump' via synonym -> jump-to-marker
+  run_cmd sh -c "
+    export WIZARDRY_DIR='$ROOT_DIR'
+    export JUMP_TO_MARKERS_DIR='$markers_dir'
+    export SPELLBOOK_DIR='$spell_home'
+    export PATH='$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:/bin:/usr/bin'
+    cd '$start_dir' || exit 1
+    # Generate glosses and source them
+    eval \"\$(PATH='$WIZARDRY_IMPS_PATH:/bin:/usr/bin' SPELLBOOK='$spell_home' '$ROOT_DIR/spells/.wizardry/generate-glosses' --quiet)\"
+    # Now call the gloss function (which uses synonym)
+    jump
+    result=\$?
+    new_dir=\$(pwd -P | sed 's|//|/|g')
+    [ \"\$result\" -eq 0 ] && [ \"\$new_dir\" = '$dest1_resolved' ]
+  "
+  assert_success
+}
+
+run_test_case "jump to marker via gloss" test_gloss_jump_to_marker_direct
+run_test_case "jump via synonym" test_gloss_jump_shorthand
+
 finish_tests
