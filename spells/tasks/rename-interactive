@@ -1,0 +1,63 @@
+#!/bin/sh
+
+# Interactive rename spell - prompts user to rename a file with the existing name as default.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: rename-interactive <file>
+
+Interactively rename a file. The current filename is presented as the default, allowing you to edit it rather than retyping from scratch.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+if [ -z "${1-}" ]; then
+  printf '%s\n' "rename-interactive: file path required" >&2
+  exit 2
+fi
+
+file=$1
+
+if [ ! -e "$file" ]; then
+  printf '%s\n' "rename-interactive: file not found: $file" >&2
+  exit 1
+fi
+
+# Get the directory and current filename
+directory=$(dirname "$file")
+if [ "$directory" = "." ]; then
+  directory=$(pwd -P)
+fi
+current_name=$(basename "$file")
+
+# Ask for new name with current name as default
+new_name=$(ask-text "New name:" "$current_name")
+
+# If the name didn't change, exit without error
+if [ "$new_name" = "$current_name" ]; then
+  printf '%s\n' "No change to filename."
+  exit 0
+fi
+
+# Construct new path
+new_path="$directory/$new_name"
+
+# Check if target already exists
+if [ -e "$new_path" ]; then
+  printf '%s\n' "rename-interactive: target already exists: $new_name" >&2
+  exit 1
+fi
+
+# Perform the rename
+if mv "$file" "$new_path" 2>/dev/null; then
+  printf '%s\n' "Renamed '${current_name}' to '${new_name}'"
+  exit 0
+else
+  printf '%s\n' "rename-interactive: failed to rename file" >&2
+  exit 1
+fi
