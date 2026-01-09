@@ -133,6 +133,12 @@ if [ ! -d "$markers_dir" ]; then
         return 1 2>/dev/null || exit 1
 fi
 
+# Check if marker_name is empty (cycling failed to find markers)
+if [ -z "$marker_name" ]; then
+        printf '%s\n' "No markers available to cycle through. Use 'mark-location' to mark a location first."
+        return 1 2>/dev/null || exit 1
+fi
+
 # Check for specific marker file
 if [ ! -f "$marker_file" ]; then
         printf '%s\n' "No marker '$marker_name' found. Use 'mark-location $marker_name' to set it."
