@@ -34,15 +34,15 @@ unset _uc_check_sourced _uc_check_base
 
 set -eu
 
+# Get spell name from argument, environment variable, or $0
 _uncast_name=${1-}
 if [ -n "$_uncast_name" ]; then
   shift
+elif [ -n "${UNCASTABLE_SPELL_NAME-}" ]; then
+  _uncast_name=$UNCASTABLE_SPELL_NAME
 fi
 
-if [ -z "$_uncast_name" ]; then
-  _uncast_name=${0##*/}  # Equivalent to basename, avoids external command
-fi
-
+# Determine if the calling script is being sourced or executed
 _uncast_sourced=0
 if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
   case "${ZSH_EVAL_CONTEXT-}" in
@@ -51,10 +51,31 @@ if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
 else
   _uncast_base=${0##*/}
   case "$_uncast_base" in
-    sh|dash|bash|zsh|ksh|mksh) _uncast_sourced=1 ;;
-    "$_uncast_name") _uncast_sourced=0 ;;
-    *) _uncast_sourced=1 ;;
+    sh|dash|bash|zsh|ksh|mksh) 
+      # $0 is a shell name - definitely being sourced
+      _uncast_sourced=1 
+      ;;
+    "$_uncast_name") 
+      # $0 matches the spell name - being executed directly
+      _uncast_sourced=0 
+      ;;
+    *) 
+      # $0 is something else (script name, parse, etc.)
+      if [ -n "$_uncast_name" ]; then
+        # Spell name provided but doesn't match $0 - being sourced
+        _uncast_sourced=1
+      else
+        # No spell name provided and $0 is not a shell name
+        # Cannot reliably determine - assume sourced to be safe
+        _uncast_sourced=1
+      fi
+      ;;
   esac
+fi
+
+# Set _uncast_name for error messages if not already set
+if [ -z "$_uncast_name" ]; then
+  _uncast_name=${0##*/}
 fi
 
 if [ "$_uncast_sourced" -eq 1 ]; then
