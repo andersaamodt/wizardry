@@ -4,7 +4,7 @@
 # Source this script to enable wizardry spells and imps from PATH.
 
 # This script must be sourced, not executed
-# Guard against direct execution (inline check - PATH not set up yet for uncastable imp)
+# Uncastable pattern - ensures spell is sourced, not executed
 _iw_sourced=0
 if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
   case "${ZSH_EVAL_CONTEXT-}" in

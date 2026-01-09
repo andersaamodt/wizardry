@@ -4,7 +4,8 @@
 # Also initializes default synonyms if not already set up.
 
 # This script must be sourced, not executed
-# Guard against direct execution (inline check instead of calling uncastable)
+
+# Uncastable pattern - ensures spell is sourced, not executed
 _it_sourced=0
 if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
   case "${ZSH_EVAL_CONTEXT-}" in
