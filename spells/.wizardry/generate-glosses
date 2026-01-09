@@ -43,10 +43,12 @@ USAGE
   ;;
 esac
 
-require-wizardry || exit 1
+# Skip require-wizardry check - this is a bootstrap script called from invoke-wizardry
+# require-wizardry || exit 1
 
 set -eu
-. env-clear
+# Skip env-clear - this is a bootstrap script, we want to preserve caller's environment
+# . env-clear
 
   # Parse arguments
   quiet=0
@@ -72,8 +74,8 @@ set -eu
   done
   
   # Determine directories
-  wizardry_dir=$(env-or WIZARDRY_DIR "${HOME:-.}/.wizardry")
-  spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+  wizardry_dir=${WIZARDRY_DIR:-${HOME:-.}/.wizardry}
+  spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
   
   # Verify wizardry directory exists and is valid
   if [ ! -d "$wizardry_dir" ]; then
@@ -171,7 +173,7 @@ uname|uniq|wc|xargs)
   # SCAN AND GENERATE GLOSSES FOR ALL SPELLS AND IMPS (OPTIMIZED)
   # ============================================================================
   
-  [ "$quiet" -eq 0 ] && info "Scanning for spells and imps..." >&2
+  [ "$quiet" -eq 0 ] && printf 'generate-glosses: Scanning for spells and imps...\n' >&2
   
   # OPTIMIZATION STRATEGY:
   # 1. Use find (necessary for nested directories like .arcana)
@@ -180,8 +182,9 @@ uname|uniq|wc|xargs)
   # 4. Use in-memory data structures (space-separated strings) instead of temp files
   
   # First pass: Build spell name list with find + parameter expansion
-  _tmpfile=$(temp-file)
-  on-exit cleanup-file "$_tmpfile"
+  # Use mktemp for bootstrap compatibility
+  _tmpfile=$(mktemp "${TMPDIR:-/tmp}/generate-glosses.XXXXXX")
+  trap 'rm -f "$_tmpfile"' EXIT HUP INT TERM
   
   # Cross-platform find command with fallbacks for different find implementations
   # Try GNU find first (-perm /111), then BSD find (-perm +111), then manual check
@@ -209,11 +212,11 @@ uname|uniq|wc|xargs)
     _spell_count=$((_spell_count + 1))
   done < "$_tmpfile"
   
-  [ "$quiet" -eq 0 ] && info "Found $_spell_count executable files" >&2
+  [ "$quiet" -eq 0 ] && printf 'generate-glosses: Found %d executable files\n' "$_spell_count" >&2
   
   # Warn if no files found
   if [ "$_spell_count" -eq 0 ]; then
-    warn "generate-glosses: no executable files found in $wizardry_dir/spells" >&2
+    printf 'generate-glosses: WARNING: no executable files found in %s\n' "$wizardry_dir/spells" >&2
   fi
   
   # Emit comment
@@ -268,9 +271,44 @@ uname|uniq|wc|xargs)
       # Mark as seen
       _first_words_seen="$_first_words_seen$_first_word "
       
-      # Emit function definition
+      # Emit function definition - smart gloss that detects sourced-only spells
       emit_line "# First-word gloss for commands starting with '$_first_word'"
-      emit_line "${_first_word}() { parse \"${_first_word}\" \"\$@\"; }"
+      emit_line "${_first_word}() {"
+      emit_line "  # Reconstruct potential spell name from first word + arguments"
+      emit_line "  _fw_spell=\"${_first_word}\""
+      emit_line "  if [ -n \"\${1-}\" ]; then"
+      emit_line "    case \"\$1\" in"
+      emit_line "      -*) ;;"  # Stop at flags
+      emit_line "      *) _fw_spell=\"\${_fw_spell}-\$1\" ;;"
+      emit_line "    esac"
+      emit_line "  fi"
+      emit_line "  if [ -n \"\${2-}\" ]; then"
+      emit_line "    case \"\$2\" in"
+      emit_line "      -*) ;;"  # Stop at flags
+      emit_line "      *) _fw_spell=\"\${_fw_spell}-\$2\" ;;"
+      emit_line "    esac"
+      emit_line "  fi"
+      emit_line "  "
+      emit_line "  # Try to find the spell file"
+      emit_line "  _fw_spell_path=\"\""
+      emit_line "  for _fw_dir in \"\${WIZARDRY_DIR:-\$HOME/.wizardry}\"/spells/*/ \"\${WIZARDRY_DIR:-\$HOME/.wizardry}\"/spells/.imps/*/; do"
+      emit_line "    if [ -f \"\${_fw_dir}\${_fw_spell}\" ]; then"
+      emit_line "      _fw_spell_path=\"\${_fw_dir}\${_fw_spell}\""
+      emit_line "      break"
+      emit_line "    fi"
+      emit_line "  done"
+      emit_line "  "
+      emit_line "  # If found and has uncastable pattern, source it"
+      emit_line "  if [ -n \"\$_fw_spell_path\" ] && [ -f \"\$_fw_spell_path\" ]; then"
+      emit_line "    if grep -q \"^# Uncastable pattern\" \"\$_fw_spell_path\" 2>/dev/null; then"
+      emit_line "      . \"\$_fw_spell_path\""
+      emit_line "      return \$?"
+      emit_line "    fi"
+      emit_line "  fi"
+      emit_line "  "
+      emit_line "  # Otherwise use parse"
+      emit_line "  parse \"${_first_word}\" \"\$@\""
+      emit_line "}"
       emit_line ""
       
       total_first_word_glosses=$((total_first_word_glosses + 1))
@@ -432,9 +470,9 @@ uname|uniq|wc|xargs)
   
   # Report statistics to stderr
   if [ "$quiet" -eq 0 ]; then
-    success "Gloss generation complete" >&2
-    info "  First-word glosses: $total_first_word_glosses" >&2
-    info "  Total spells/imps: $_spell_count" >&2
+    printf 'generate-glosses: Gloss generation complete\n' >&2
+    printf 'generate-glosses:   First-word glosses: %d\n' "$total_first_word_glosses" >&2
+    printf 'generate-glosses:   Total spells/imps: %d\n' "$_spell_count" >&2
   fi
   
   exit 0
