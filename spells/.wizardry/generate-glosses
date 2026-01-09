@@ -372,6 +372,15 @@ uname|uniq|wc|xargs)
           ;;
       esac
       
+      # Check if this word has multi-word spells (first-word gloss exists)
+      # If so, skip creating the synonym - the gloss will handle it
+      case "$_first_words_seen" in
+        *" $_word "*)
+          [ "$quiet" -eq 0 ] && info "Skipping synonym '$_word' - first-word gloss takes precedence" >&2
+          continue
+          ;;
+      esac
+      
       # Mark as seen
       _synonyms_seen="$_synonyms_seen$_word "
       
@@ -427,6 +436,15 @@ uname|uniq|wc|xargs)
       case "$_synonyms_seen" in
         *" $_word "*) 
           [ "$quiet" -eq 0 ] && info "User synonym overrides default: $_word" >&2
+          continue
+          ;;
+      esac
+      
+      # Check if this word has multi-word spells (first-word gloss exists)
+      # If so, skip creating the synonym - the gloss will handle it
+      case "$_first_words_seen" in
+        *" $_word "*)
+          [ "$quiet" -eq 0 ] && info "Skipping default synonym '$_word' - first-word gloss takes precedence" >&2
           continue
           ;;
       esac

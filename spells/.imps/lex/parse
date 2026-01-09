@@ -161,6 +161,25 @@ if [ -n "$_cmd_type" ]; then
   esac
 fi
 
+# Check synonyms as final fallback
+_spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+_synonym_target=""
+
+# Check user synonyms first
+if [ -f "$_spell_home/.synonyms" ]; then
+  _synonym_target=$(grep "^$_first_word=" "$_spell_home/.synonyms" 2>/dev/null | sed 's/^[^=]*=//' || true)
+fi
+
+# Check default synonyms if not found in user synonyms
+if [ -z "$_synonym_target" ] && [ -f "$_spell_home/.default-synonyms" ]; then
+  _synonym_target=$(grep "^$_first_word=" "$_spell_home/.default-synonyms" 2>/dev/null | sed 's/^[^=]*=//' || true)
+fi
+
+# If synonym found, execute the target with all original arguments
+if [ -n "$_synonym_target" ]; then
+  exec "$_synonym_target" "$@"
+fi
+
 printf 'parse: %s: command not found\n' "$_first_word" >&2
 exit 127
 
