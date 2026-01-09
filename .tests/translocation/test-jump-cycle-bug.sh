@@ -82,13 +82,19 @@ test_jump_cycle_after_explicit_jump() {
   # Should now be at tower
   assert_output_contains "$tower_normalized" || return 1
   
-  # Now jump with no args - should cycle to marker 2
-  # Last jump was to marker 1, so next in sequence is marker 2
+  # Now jump with no args - should go to marker 1 (default behavior)
+  # Since we're at tower (marker 1), it should say "already standing"
   run_jump_sourced "" "$markers_dir" "$tower"
   assert_success || return 1
-  # Should jump to marker 2 (wizardry_dir), not say "already standing"
+  # Should say already at marker 1
+  assert_output_contains "already standing" || return 1
+  
+  # Now use "next" to cycle - should go to marker 2
+  run_jump_sourced "next" "$markers_dir" "$tower"
+  assert_success || return 1
+  # Should jump to marker 2 (wizardry_dir)
   if printf '%s' "$OUTPUT" | grep -q "already standing"; then
-    TEST_FAILURE_REASON="cycling should jump to next marker, not stay at current location"
+    TEST_FAILURE_REASON="'next' should cycle to next marker, not stay at current location"
     return 1
   fi
   assert_output_contains "$wizardry_normalized" || return 1
