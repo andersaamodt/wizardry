@@ -44,7 +44,7 @@ case "$level" in
     ;;
   6)
     name='Task Priorities'
-    spells='get-priority:priorities get-new-priority:priorities prioritize:priorities upvote:priorities get-card:priorities'
+    spells='get-priority:priorities get-new-priority:priorities prioritize:priorities deprioritize:priorities upvote:priorities get-card:priorities priorities:menu'
     imps=''
     ;;
   7)
@@ -139,7 +139,7 @@ case "$level" in
     ;;
   25)
     name='Domain-Specific Menus'
-    spells='network-menu:menu services-menu:menu shutdown-menu:menu priority-menu:menu priorities:menu users-menu:menu profile-tests:menu/system'
+    spells='network-menu:menu services-menu:menu shutdown-menu:menu priority-menu:menu users-menu:menu profile-tests:menu/system'
     imps=''
     ;;
   26)
