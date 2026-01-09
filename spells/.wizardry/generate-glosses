@@ -344,14 +344,14 @@ uname|uniq|wc|xargs)
         ''|\#*) continue ;;
       esac
       
-      # Parse word → target format
+      # Parse word=target format
       _word=""
       _target=""
       
-      # Check for arrow format
-      if printf '%s' "$line" | grep -q " → "; then
-        _word=$(printf '%s' "$line" | sed 's/ → .*//')
-        _target=$(printf '%s' "$line" | sed 's/^[^ ]* → //')
+      # Check for equals format
+      if printf '%s' "$line" | grep -q "="; then
+        _word=$(printf '%s' "$line" | sed 's/=.*//')
+        _target=$(printf '%s' "$line" | sed 's/^[^=]*=//')
       else
         # Invalid format - skip with warning
         [ "$quiet" -eq 0 ] && warn "Skipping malformed synonym line: $line" >&2
@@ -401,14 +401,14 @@ uname|uniq|wc|xargs)
         ''|\#*) continue ;;
       esac
       
-      # Parse word → target format
+      # Parse word=target format
       _word=""
       _target=""
       
-      # Check for arrow format
-      if printf '%s' "$line" | grep -q " → "; then
-        _word=$(printf '%s' "$line" | sed 's/ → .*//')
-        _target=$(printf '%s' "$line" | sed 's/^[^ ]* → //')
+      # Check for equals format
+      if printf '%s' "$line" | grep -q "="; then
+        _word=$(printf '%s' "$line" | sed 's/=.*//')
+        _target=$(printf '%s' "$line" | sed 's/^[^=]*=//')
       else
         # Invalid format - skip with warning
         [ "$quiet" -eq 0 ] && warn "Skipping malformed default synonym: $line" >&2

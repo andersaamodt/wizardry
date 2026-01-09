@@ -91,9 +91,9 @@ test_invalid_default_synonyms_hard_fail() {
   # Create a default-synonyms file with an invalid synonym
   cat > "$tmpdir/.default-synonyms" << 'EOF'
 # Invalid synonym - starts with dash
--invalid → echo
+-invalid=echo
 # Valid synonym
-valid → echo
+valid=echo
 EOF
   
   # Run generate-glosses - should report error for invalid synonym
