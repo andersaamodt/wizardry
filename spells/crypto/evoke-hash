@@ -38,7 +38,7 @@ found=0
 for file in "$directory"/*; do
   [ -f "$file" ] || continue
   
-  file_hash=$(read-magic "$file" user.hash 2>/dev/null) || continue
+  file_hash=$(read-magic "$file" hash 2>/dev/null) || continue
   
   if [ "$file_hash" = "$hash" ]; then
     if command -v abs-path >/dev/null 2>&1; then
