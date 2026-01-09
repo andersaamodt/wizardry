@@ -59,8 +59,8 @@ display_priorities() {
     # Get the priority file using get-card
     priority_file=$(get-card "${priority_hash}" "${dir}" 2>/dev/null || true)
 
-    # Check if the file exists and was found
-    if [ -n "${priority_file}" ] && [ -f "${priority_file}" ]; then
+    # Check if the file exists and was found (support both files and directories)
+    if [ -n "${priority_file}" ] && [ -e "${priority_file}" ]; then
       # Get priority of the file
       file_priority=$(read-magic "${priority_file}" priority 2>/dev/null || true)
       
@@ -75,13 +75,29 @@ display_priorities() {
         menu_command="${menu_command} \"---\""
       fi
 
+      # Read checked attribute
+      checked_value=$(read-magic "${priority_file}" checked 2>/dev/null || printf '0')
+      
+      # Handle errors or empty values
+      case "$checked_value" in
+        ''|*Error*) checked_value=0 ;;
+        *[!0-9]*) checked_value=0 ;;
+      esac
+      
+      # Set checkbox display
+      if [ "$checked_value" = "1" ]; then
+        checkbox="[X] "
+      else
+        checkbox="[ ] "
+      fi
+
       # Add the file to the menu command
       menu_command="${menu_command} \""
       if [ $verbose -eq 1 ]; then
         menu_command="${menu_command}${file_priority} "
       fi
       item_name=$(basename "$priority_file")
-      menu_command="${menu_command}$item_name%priority-menu \\\"${priority_file}\\\"\""
+      menu_command="${menu_command}${checkbox}$item_name%priority-menu \\\"${priority_file}\\\"\""
 
       # Update the highest priority (for detecting echelon boundaries)
       highest_priority="${file_priority}"

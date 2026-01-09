@@ -73,12 +73,92 @@ test_invalid_option_produces_error() {
   esac
 }
 
+test_priorities_shows_checkboxes() {
+  skip-if-compiled || return $?
+  tmp=$(make_tempdir)
+  
+  # Create stub for menu that just captures arguments
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >>"$MENU_LOG"
+kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
+SH
+  chmod +x "$tmp/menu"
+  
+  # Create read-magic stub that returns priorities and checked status
+  cat >"$tmp/read-magic" <<'SH'
+#!/bin/sh
+file=$1
+attr=${2-}
+case "$file" in
+  */test-dir)
+    if [ "$attr" = "priorities" ]; then
+      echo "abc123,def456"
+    fi
+    ;;
+  */testfile1)
+    if [ "$attr" = "priority" ]; then
+      echo "5"
+    elif [ "$attr" = "checked" ]; then
+      echo "1"
+    fi
+    ;;
+  */testfile2)
+    if [ "$attr" = "priority" ]; then
+      echo "3"
+    elif [ "$attr" = "checked" ]; then
+      echo "0"
+    fi
+    ;;
+esac
+SH
+  chmod +x "$tmp/read-magic"
+  
+  # Create get-card stub
+  cat >"$tmp/get-card" <<'SH'
+#!/bin/sh
+hash=$1
+case "$hash" in
+  abc123) echo "$TEST_DIR/testfile1" ;;
+  def456) echo "$TEST_DIR/testfile2" ;;
+esac
+SH
+  chmod +x "$tmp/get-card"
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  # Create test directory and files
+  mkdir -p "$tmp/test-dir"
+  touch "$tmp/test-dir/testfile1"
+  touch "$tmp/test-dir/testfile2"
+  
+  cd "$tmp/test-dir"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" TEST_DIR="$tmp/test-dir" PWD="$tmp/test-dir" "$ROOT_DIR/spells/menu/priorities"
+  
+  # Verify checkbox [X] for checked item
+  grep -q "\[X\] testfile1" "$tmp/log" || {
+    TEST_FAILURE_REASON="Expected [X] checkbox for checked item: $(cat "$tmp/log")"
+    return 1
+  }
+  
+  # Verify checkbox [ ] for unchecked item
+  grep -q "\[ \] testfile2" "$tmp/log" || {
+    TEST_FAILURE_REASON="Expected [ ] checkbox for unchecked item: $(cat "$tmp/log")"
+    return 1
+  }
+}
+
 run_test_case "priorities shows usage text" test_help
 run_test_case "priorities shows usage with -h" test_help_h_flag
 run_test_case "priorities shows usage with --usage" test_help_usage_flag
 run_test_case "priorities accepts -v flag" test_verbose_flag_accepted
 run_test_case "priorities exits when no priorities set" test_no_priorities_exits_gracefully
 run_test_case "priorities produces error for invalid options" test_invalid_option_produces_error
+run_test_case "priorities shows checkboxes for items" test_priorities_shows_checkboxes
 
 
 # Test via source-then-invoke pattern  
