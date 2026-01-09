@@ -390,6 +390,8 @@ banish_process_level() {
       fi
 
       # Check shell type (POSIX-compatible shell required)
+      # Wizardry scripts assume POSIX sh semantics. Non-POSIX shells like
+      # csh, tcsh, and fish have incompatible syntax and semantics.
       shell_type=${SHELL##*/}
       shell_type=${shell_type:-sh}
       case "$shell_type" in
@@ -407,6 +409,8 @@ banish_process_level() {
       esac
 
       # Check IFS (should be default: space, tab, newline)
+      # IFS controls word splitting. Non-default IFS breaks for-loops and
+      # word iteration. Self-heal by resetting to default.
       default_ifs=" 	
 "
       if [ "${IFS-unset}" = "unset" ] || [ "$IFS" = "$default_ifs" ]; then
@@ -423,6 +427,8 @@ banish_process_level() {
       fi
 
       # Check basic environment variables
+      # HOME and USER are used throughout wizardry for default paths and
+      # configuration. Self-heal by querying system or using fallbacks.
       env_vars_ok=1
       if [ -z "${HOME-}" ]; then
         printf '  %s✗%s Environment: HOME not set\n' "$_red" "$_reset"
@@ -452,6 +458,9 @@ banish_process_level() {
       fi
 
       # Check umask (should be reasonable, not 0000 or 0777)
+      # umask 0000 makes all files world-writable (security risk).
+      # umask 0777 makes all files unreadable (breaks everything).
+      # Self-heal to standard 0022 (owner write, group/others read).
       current_umask=$(umask)
       case "$current_umask" in
         0000|0777)
@@ -469,6 +478,8 @@ banish_process_level() {
       esac
 
       # Check file system write capability
+      # Many spells need to create temp files for processing.
+      # This validates we can write to the temp directory.
       tmp_root=${TMPDIR:-/tmp}
       tmp_check=$(mktemp "${tmp_root%/}/banish-write.XXXXXX" 2>/dev/null || printf '')
       if [ -n "$tmp_check" ]; then
@@ -486,6 +497,8 @@ banish_process_level() {
       fi
 
       # Check symbolic link support
+      # Wizardry uses symlinks for glossary, test stubs, and spell links.
+      # Some filesystems (FAT32, some network mounts) don't support symlinks.
       tmp_link_test=$(mktemp "${tmp_root%/}/banish-link.XXXXXX" 2>/dev/null || printf '')
       if [ -n "$tmp_link_test" ]; then
         tmp_link="${tmp_link_test}.link"
@@ -506,6 +519,8 @@ banish_process_level() {
       fi
 
       # Check execute permissions
+      # Spells and imps must be executable. Some filesystems (noexec mounts)
+      # prevent execution even with +x permission.
       tmp_exec_test=$(mktemp "${tmp_root%/}/banish-exec.XXXXXX" 2>/dev/null || printf '')
       if [ -n "$tmp_exec_test" ]; then
         printf '#!/bin/sh\nprintf "ok"\n' >"$tmp_exec_test"
@@ -528,6 +543,8 @@ banish_process_level() {
       fi
 
       # Check subshells work
+      # Subshells (parentheses) create isolated environments for command
+      # substitution and temporary state changes. Critical for POSIX scripts.
       subshell_test=$(test_var=outer; (test_var=inner; printf '%s' "$test_var") 2>/dev/null || printf '')
       if [ "$subshell_test" = "inner" ]; then
         printf '  %s✓%s Subshells: Working correctly\n' "$_green" "$_reset"
@@ -537,6 +554,8 @@ banish_process_level() {
       fi
 
       # Check pipes work
+      # Pipes connect command output to input. Fundamental to shell scripting.
+      # Verifies kernel supports anonymous pipes (should always work on POSIX systems).
       pipe_test=$(printf 'hello' | cat 2>/dev/null || printf '')
       if [ "$pipe_test" = "hello" ]; then
         printf '  %s✓%s Pipes: Working\n' "$_green" "$_reset"
@@ -546,6 +565,8 @@ banish_process_level() {
       fi
 
       # Check redirections work
+      # File redirection (>, <, >>) is essential for saving and loading data.
+      # Tests both output (>) and input (<) redirections.
       tmp_redir_test=$(mktemp "${tmp_root%/}/banish-redir.XXXXXX" 2>/dev/null || printf '')
       if [ -n "$tmp_redir_test" ]; then
         if printf 'test' >"$tmp_redir_test" 2>/dev/null; then
@@ -566,6 +587,8 @@ banish_process_level() {
       fi
 
       # Check trap/signal handling
+      # trap is used for cleanup on exit (EXIT), interrupt (INT), and other signals.
+      # Critical for temp file cleanup and proper resource management.
       if command -v trap >/dev/null 2>&1; then
         trap_test=0
         trap 'trap_test=1' USR1 2>/dev/null || trap_test=-1
@@ -582,6 +605,8 @@ banish_process_level() {
       fi
 
       # Check command substitution works
+      # Command substitution $(...) captures command output as a value.
+      # Used extensively in wizardry for dynamic values and command results.
       cmd_sub_test=$(printf 'substitution')
       if [ "$cmd_sub_test" = "substitution" ]; then
         printf '  %s✓%s Command substitution: Working\n' "$_green" "$_reset"
@@ -591,6 +616,8 @@ banish_process_level() {
       fi
 
       # Check parameter expansion
+      # POSIX parameter expansion ${var#pattern} removes patterns from strings.
+      # Critical for basename/dirname operations without subprocess overhead.
       param_test="value"
       param_result=${param_test#val}
       if [ "$param_result" = "ue" ]; then
