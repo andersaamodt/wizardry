@@ -38,3 +38,35 @@
 - Sourced-only scripts (invoke-wizardry, env-clear, invoke-thesaurus) must use `return 0` not `exit 0` for normal completion to avoid exiting parent shell (2)
 - Test helper imps that are sourced (skip-if-compiled) must define functions and use self-execute pattern, not use bare `exit` statements which exit the calling test
 - When implementing a feature across "all items" (e.g., adding colors to all install-menu entries), systematically verify each item is covered rather than assuming completion - PR #874 added colors to core-status and tor-status, but mud-status was never created, leaving one menu item without colors.
+- The word-of-binding function-preloading paradigm was deprecated in favor of simpler PATH-based imp execution.
+- .imps/sys directory must be in PATH so system imps like require-wizardry are directly callable as commands (PR #594).
+- Circular dependency during sourcing: imps must be available before spells call them; add all imp families to PATH before sourcing (PR #595).
+- Scripts must verify prerequisites exist before calling them to avoid "command not found" errors during bootstrap (PR #596).
+- Consolidated AI documentation improves consistency by guaranteeing all critical information is read from a single entry point (PR #598).
+- Sourcing a file with `set -eu` permanently affects the parent shell's mode; restore permissive mode with `set +eu` after sourcing (PR #599).
+- macOS Terminal.app opens login shells by default, requiring .bash_profile to source .bashrc for shell configuration availability (PR #600).
+- invoke-wizardry must auto-detect its location using shell-specific variables (BASH_SOURCE[0], ${(%):-%x}) instead of hardcoding $HOME/.wizardry (PR #601).
+- RC file manipulation should use inline markers (. "/path" # wizardry: marker-name) instead of separate comment lines for consistent editing (PR #602).
+- Menu exit handlers must validate parent PID exists before sending kill signals to prevent terminating unintended processes (PR #606).
+- Default prompts for optional features should match expected common usage patterns (e.g., MUD defaults to "yes" for installation) (PR #607).
+- Failed subtests must cause their parent test to fail; testing system integrity requires meta-tests that validate the testing infrastructure itself (PR #609).
+- Compiled spells in doppelganger mode are standalone without invoke-wizardry/env-clear; tests must skip infrastructure-dependent checks in compiled mode (PR #610).
+- Self-execute pattern case matching on $0 depends on path format; verify patterns match both relative and resolved absolute paths on all platforms (PR #611).
+- Stub system requires strict PATH ordering with stub directory first to successfully override real commands with mocked versions (PR #612).
+- Bubblewrap (bwrap) sandboxing compatibility varies by platform; graceful fallback ensures tests run successfully without sandboxing where unavailable (PR #613).
+- Boolean logic with && || chains can cause unexpected early returns due to short-circuit evaluation; use explicit if-then-fi for clarity (PR #614).
+- Testing system regressions are prevented by making test infrastructure itself testable with dedicated validation test files (PR #615).
+- Pipe output buffering in pipelines requires explicit stdbuf -oL on all stages, not just the first command, to ensure line-by-line output (PR #616).
+- Common structural tests should run by default for individual spell testing to ensure complete validation coverage (PR #617).
+- Subprocess invocations must redirect stdin from /dev/null (< /dev/null) to prevent blocking if any subprocess attempts to read stdin (PR #619).
+- Performance profiling infrastructure with --profile flag enables systematic identification of bottlenecks (e.g., common-tests.sh: 67s → 64s via grep reduction) (PR #622).
+- Infinite recursion in command_not_found_handle requires a guard flag (_IN_CNF_HANDLER) to detect re-entry and prevent terminal hangs (PR #623).
+- macOS login shell modifications (.zprofile sourcing .zshrc) must be tracked during install and completely removed during uninstall to prevent stale code (PR #624).
+- Toggleable features in configuration files allow users to selectively disable functionality for isolating and debugging complex issues (PR #626).
+- Installation cancellation or interruption should trigger cleanup of downloaded wizardry directory to avoid leaving partial installations (PR #627).
+- Debug logging with timestamps, file paths, and success/failure counts helps diagnose complex shell initialization and sourcing issues (PR #629).
+- Glob patterns stored in variables don't expand in POSIX sh; use `set -- "$dir"/*` to populate positional parameters for reliable shell glob expansion (PR #668).
+- Negated assignment patterns `if ! var=$(cmd)` can trigger zsh parse errors when sourced; separate into assignment then condition for cross-shell compatibility (PR #669).
+- AWK regex patterns in shell strings require double backslashes (\\) not quadruple (\\\\) for proper pattern escaping in extraction operations (PR #670).
+- Bootstrap spells in `.arcana/core` run before wizardry installation and must not depend on wizardry imps (castable, require-wizardry, env-clear) (PR #672).
+- Multi-cd shell patterns for path calculation (`cd dir1 && cd dir2`) create 2-3 extra process forks per execution; use parameter expansion ${var%/*} for significant performance improvement (PR #674).
