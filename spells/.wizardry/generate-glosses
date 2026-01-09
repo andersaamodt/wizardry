@@ -146,14 +146,14 @@ set -eu
     
     # CRITICAL: Skip shell builtins and common system commands to avoid overriding them
     # GREYLIST: Some shell builtins CAN be safely overridden if ALL spells using that first word
-    # are multi-word commands (e.g., read-magic, test-spell).
+    # are multi-word commands (e.g., test-spell).
     case "$_check_word" in
       # GREYLIST: Shell builtins that CAN be safely overridden (see above)
-      read|test)
-        return 0  # Allow these
+      test)
+        return 0  # Allow test (used in test-spell, etc.)
         ;;
       # BLACKLIST: Shell builtins that CANNOT be overridden
-      alias|bg|cd|command|disable|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|readonly|set|sh|\
+      alias|bg|cd|command|disable|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|read|readonly|set|sh|\
 times|trap|true|type|ulimit|umask|unalias|wait|break|case|continue|do|done|elif|else|\
 esac|eval|exec|exit|export|fi|for|if|in|local|return|shift|then|unset|until|while)
         return 1  # Blacklisted
@@ -277,12 +277,14 @@ uname|uniq|wc|xargs)
       emit_line "  # Try progressively longer spell names to find uncastable spells"
       emit_line "  _fw_spell=\"$_first_word\""
       emit_line "  _fw_words_used=0"
+      emit_line "  _fw_spell_home=\${SPELLBOOK_DIR:-\${HOME:-.}/.spellbook}"
       emit_line "  "
       emit_line "  for _fw_arg in \"\$@\"; do"
       emit_line "    _fw_candidate=\"\${_fw_spell}-\${_fw_arg}\""
       emit_line "    _fw_words_used=\$((_fw_words_used + 1))"
       emit_line "    "
       emit_line "    # Look for spell file in wizardry directories"
+      emit_line "    _fw_found=0"
       emit_line "    for _fw_dir in \"\$WIZARDRY_DIR\"/spells/*/; do"
       emit_line "      _fw_path=\"\${_fw_dir}\${_fw_candidate}\""
       emit_line "      if [ -f \"\$_fw_path\" ] && grep -q \"^# Uncastable pattern\" \"\$_fw_path\" 2>/dev/null; then"
@@ -292,6 +294,27 @@ uname|uniq|wc|xargs)
       emit_line "        return \$?"
       emit_line "      fi"
       emit_line "    done"
+      emit_line "    "
+      emit_line "    # Check if candidate is a synonym pointing to uncastable spell"
+      emit_line "    _fw_syn_target=\"\""
+      emit_line "    if [ -f \"\$_fw_spell_home/.synonyms\" ]; then"
+      emit_line "      _fw_syn_target=\$(grep \"^\${_fw_candidate}=\" \"\$_fw_spell_home/.synonyms\" 2>/dev/null | sed 's/^[^=]*=//' || true)"
+      emit_line "    fi"
+      emit_line "    if [ -z \"\$_fw_syn_target\" ] && [ -f \"\$_fw_spell_home/.default-synonyms\" ]; then"
+      emit_line "      _fw_syn_target=\$(grep \"^\${_fw_candidate}=\" \"\$_fw_spell_home/.default-synonyms\" 2>/dev/null | sed 's/^[^=]*=//' || true)"
+      emit_line "    fi"
+      emit_line "    if [ -n \"\$_fw_syn_target\" ]; then"
+      emit_line "      # Found synonym - check if target is uncastable"
+      emit_line "      for _fw_dir in \"\$WIZARDRY_DIR\"/spells/*/; do"
+      emit_line "        _fw_path=\"\${_fw_dir}\${_fw_syn_target}\""
+      emit_line "        if [ -f \"\$_fw_path\" ] && grep -q \"^# Uncastable pattern\" \"\$_fw_path\" 2>/dev/null; then"
+      emit_line "          # Synonym target is uncastable - source it with remaining args"
+      emit_line "          shift \"\$_fw_words_used\""
+      emit_line "          . \"\$_fw_path\""
+      emit_line "          return \$?"
+      emit_line "        fi"
+      emit_line "      done"
+      emit_line "    fi"
       emit_line "    "
       emit_line "    _fw_spell=\"\$_fw_candidate\""
       emit_line "  done"
@@ -424,7 +447,19 @@ uname|uniq|wc|xargs)
       # Non-hyphenated synonyms handled by parse via file lookup
       case "$_word" in
         *-*)
-          emit_line "alias $_word='$_target'"
+          # For hyphenated synonyms, convert target hyphens to spaces if target is also hyphenated
+          # This ensures aliases go through first-word glosses which can source uncastable spells
+          case "$_target" in
+            *-*)
+              # Convert hyphens to spaces in target (e.g., jump-to-marker → jump to marker)
+              _alias_target=$(printf '%s' "$_target" | sed 's/-/ /g')
+              emit_line "alias $_word='$_alias_target'"
+              ;;
+            *)
+              # Single-word target, use as-is
+              emit_line "alias $_word='$_target'"
+              ;;
+          esac
           ;;
       esac
     done < "$synonym_file"
@@ -470,7 +505,19 @@ uname|uniq|wc|xargs)
       # Non-hyphenated synonyms handled by parse via file lookup
       case "$_word" in
         *-*)
-          emit_line "alias $_word='$_target'"
+          # For hyphenated synonyms, convert target hyphens to spaces if target is also hyphenated
+          # This ensures aliases go through first-word glosses which can source uncastable spells
+          case "$_target" in
+            *-*)
+              # Convert hyphens to spaces in target (e.g., jump-to-marker → jump to marker)
+              _alias_target=$(printf '%s' "$_target" | sed 's/-/ /g')
+              emit_line "alias $_word='$_alias_target'"
+              ;;
+            *)
+              # Single-word target, use as-is
+              emit_line "alias $_word='$_target'"
+              ;;
+          esac
           ;;
       esac
     done < "$default_synonym_file"

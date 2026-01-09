@@ -43,6 +43,29 @@ ${var%%pattern}        # Remove longest match from end
 ${#var}                # String length
 ```
 
+### Aliases and Sourced Scripts
+
+**CRITICAL PATTERN:** Aliases that invoke sourced-only scripts must use space-separated form to route through first-word glosses.
+
+```sh
+# WRONG: Alias directly invokes hyphenated spell (gets executed, not sourced)
+alias jump-to-location='jump-to-marker'  # Executes jump-to-marker → uncastable error
+
+# RIGHT: Alias uses space-separated form to route through first-word gloss
+alias jump-to-location='jump to marker'  # → jump() gloss → sources jump-to-marker ✓
+```
+
+**Why:** When an alias expands to a hyphenated name (`jump-to-marker`), the shell executes that spell file directly. If the spell has `# Uncastable pattern`, it will error. But if the alias uses spaces (`jump to marker`), it invokes the `jump()` first-word gloss, which detects the uncastable pattern and sources the spell correctly.
+
+**Implementation:** In generate-glosses, convert hyphens to spaces for hyphenated synonym targets:
+```sh
+case "$_target" in
+  *-*) _alias_target=$(printf '%s' "$_target" | sed 's/-/ /g') ;;
+  *)   _alias_target="$_target" ;;
+esac
+emit_line "alias $_word='$_alias_target'"
+```
+
 ### Function Naming and Hyphens
 
 **CRITICAL:** POSIX sh doesn't support hyphens in function names.

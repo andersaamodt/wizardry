@@ -28,6 +28,11 @@
 - Spells are now flat, linear scripts without function wrappers; the castable/uncastable pattern and dual-pattern testing (source-then-invoke) have been deprecated.
 - Imps executed as scripts (via PATH) must use `exit` not `return`; bash (Arch's /bin/sh) errors on top-level `return`, while dash (Ubuntu's /bin/sh) silently allows it.
 - Shell builtins like `disable` (bash builtin for disabling commands/functions) must be blacklisted in generate-glosses to prevent creating first-word glosses that conflict.
+- Always establish realistic unit tests for every feature BEFORE writing or fixing code; tests are the fastest path to working code and catch edge cases immediately (TDD).
+- Aliases for hyphenated sourced-only spells must expand to space-separated form (jump to marker) not hyphenated (jump-to-marker) to route through first-word glosses.
+- Parse must skip both functions AND aliases when trying system commands as fallback; aliases cause wrong behavior (expansion before exec).
+- First-word glosses must check BOTH real spell files AND synonym files when looking for uncastable spells to source.
+- Shell builtin `read` CANNOT be overridden as it breaks while loops; must be blacklisted in generate-glosses even though read-magic exists.
 - Spells executed directly (not sourced) must use `exit` not `return` for flow control; `return` outside a function causes "not within a function" errors.
 - Use shell parameter expansion ${file##*/} instead of basename for 100x speedup when processing many files (e.g., generate-glosses with 396 files).
 - Variable `$_i` (imps directory shorthand) is not preserved by env-clear; use `${WIZARDRY_DIR}/spells/.imps` instead when referencing imp paths after sourcing env-clear.
