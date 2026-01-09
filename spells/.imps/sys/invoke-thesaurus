@@ -21,9 +21,8 @@ else
 fi
 
 if [ "$_it_sourced" -eq 0 ]; then
-  printf '%s\n' "invoke-thesaurus: must be sourced, not executed" >&2
-  printf '%s\n' "Usage: . invoke-thesaurus" >&2
-  exit 1
+  printf '%s\n' "This spell cannot be cast directly. Invoke it with: . invoke-thesaurus" >&2
+  return 1 2>/dev/null || exit 1
 fi
 unset _it_sourced _it_base
 

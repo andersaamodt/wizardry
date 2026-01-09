@@ -20,9 +20,8 @@ else
 fi
 
 if [ "$_iw_sourced" -eq 0 ]; then
-  printf '%s\n' "invoke-wizardry: must be sourced, not executed" >&2
-  printf '%s\n' "Usage: . invoke-wizardry" >&2
-  exit 1
+  printf '%s\n' "This spell cannot be cast directly. Invoke it with: . invoke-wizardry" >&2
+  return 1 2>/dev/null || exit 1
 fi
 unset _iw_sourced _iw_base
 
