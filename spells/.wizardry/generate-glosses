@@ -292,9 +292,8 @@ uname|uniq|wc|xargs)
   emit_line "# ============================================================================"
   emit_line "# SYNONYMS"
   emit_line "# ============================================================================"
-  emit_line "# Synonyms are handled by parse via file lookup"
-  emit_line "# Files: ~/.spellbook/.synonyms and ~/.spellbook/.default-synonyms"
-  emit_line "# No functions/aliases generated - parse checks files for efficiency"
+  emit_line "# Hyphenated synonyms: generated as aliases (POSIX requirement)"
+  emit_line "# Non-hyphenated synonyms: handled by parse via file lookup"
   emit_line "# ============================================================================"
   emit_line ""
   
@@ -333,14 +332,13 @@ uname|uniq|wc|xargs)
     return 0
   }
   
-  # Validate synonym files but don't generate functions
-  # Parse will check these files as needed for efficiency
-  _synonym_errors=0
+  # Track seen synonyms to avoid duplicates
+  _synonyms_seen=" "
   
-  # Validate user synonyms
+  # Process user synonyms
   synonym_file="$spell_home/.synonyms"
   if [ -f "$synonym_file" ]; then
-    [ "$quiet" -eq 0 ] && info "Validating user synonyms..." >&2
+    [ "$quiet" -eq 0 ] && info "Processing user synonyms..." >&2
     while IFS= read -r line || [ -n "$line" ]; do
       # Skip empty lines and comments
       case "$line" in
@@ -350,24 +348,43 @@ uname|uniq|wc|xargs)
       # Parse word=target format
       if ! printf '%s' "$line" | grep -q "="; then
         [ "$quiet" -eq 0 ] && warn "Malformed synonym line: $line" >&2
-        _synonym_errors=$((_synonym_errors + 1))
         continue
       fi
       
       _word=$(printf '%s' "$line" | sed 's/=.*//')
+      _target=$(printf '%s' "$line" | sed 's/^[^=]*=//')
       
       # Validate synonym word
       if ! is_synonym_valid "$_word"; then
         [ "$quiet" -eq 0 ] && warn "Invalid synonym: $_word" >&2
-        _synonym_errors=$((_synonym_errors + 1))
+        continue
       fi
+      
+      # Check for duplicates
+      case "$_synonyms_seen" in
+        *" $_word "*) 
+          [ "$quiet" -eq 0 ] && warn "Skipping duplicate synonym: $_word" >&2
+          continue
+          ;;
+      esac
+      
+      # Mark as seen
+      _synonyms_seen="$_synonyms_seen$_word "
+      
+      # Only generate aliases for hyphenated synonyms (POSIX requirement)
+      # Non-hyphenated synonyms handled by parse via file lookup
+      case "$_word" in
+        *-*)
+          emit_line "alias $_word='$_target'"
+          ;;
+      esac
     done < "$synonym_file"
   fi
   
-  # Validate default synonyms
+  # Process default synonyms
   default_synonym_file="$spell_home/.default-synonyms"
   if [ -f "$default_synonym_file" ]; then
-    [ "$quiet" -eq 0 ] && info "Validating default synonyms..." >&2
+    [ "$quiet" -eq 0 ] && info "Processing default synonyms..." >&2
     while IFS= read -r line || [ -n "$line" ]; do
       # Skip empty lines and comments
       case "$line" in
@@ -377,25 +394,39 @@ uname|uniq|wc|xargs)
       # Parse word=target format
       if ! printf '%s' "$line" | grep -q "="; then
         [ "$quiet" -eq 0 ] && warn "Malformed default synonym line: $line" >&2
-        _synonym_errors=$((_synonym_errors + 1))
         continue
       fi
       
       _word=$(printf '%s' "$line" | sed 's/=.*//')
+      _target=$(printf '%s' "$line" | sed 's/^[^=]*=//')
       
       # Validate synonym word
       if ! is_synonym_valid "$_word"; then
         [ "$quiet" -eq 0 ] && warn "Invalid default synonym: $_word" >&2
-        _synonym_errors=$((_synonym_errors + 1))
+        continue
       fi
+      
+      # Check for duplicates (user synonyms take precedence)
+      case "$_synonyms_seen" in
+        *" $_word "*) 
+          [ "$quiet" -eq 0 ] && info "User synonym overrides default: $_word" >&2
+          continue
+          ;;
+      esac
+      
+      # Mark as seen
+      _synonyms_seen="$_synonyms_seen$_word "
+      
+      # Only generate aliases for hyphenated synonyms (POSIX requirement)
+      # Non-hyphenated synonyms handled by parse via file lookup
+      case "$_word" in
+        *-*)
+          emit_line "alias $_word='$_target'"
+          ;;
+      esac
     done < "$default_synonym_file"
+    emit_line ""
   fi
-  
-  if [ "$_synonym_errors" -gt 0 ]; then
-    printf 'generate-glosses: WARNING: %d invalid synonym(s) found\n' "$_synonym_errors" >&2
-  fi
-  
-  # ============================================================================
   # COMPLETION
   # ============================================================================
   

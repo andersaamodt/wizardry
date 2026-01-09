@@ -175,8 +175,9 @@ if [ -z "$_synonym_target" ] && [ -f "$_spell_home/.default-synonyms" ]; then
   _synonym_target=$(grep "^$_first_word=" "$_spell_home/.default-synonyms" 2>/dev/null | sed 's/^[^=]*=//' || true)
 fi
 
-# If synonym found, execute the target with all original arguments
+# If synonym found, execute the target with remaining arguments (skip first word)
 if [ -n "$_synonym_target" ]; then
+  shift  # Remove the synonym word itself
   exec "$_synonym_target" "$@"
 fi
 
