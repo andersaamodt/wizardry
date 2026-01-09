@@ -34,8 +34,8 @@ case "$level" in
     ;;
   4)
     name='Menu System'
-    spells='menu fathom-terminal fathom-cursor move-cursor await-keypress cursor-blink colors main-menu:menu'
-    imps='menu/is-submenu menu/is-integer menu/category-title menu/exit-label menu/is-installable'
+    spells='menu await-keypress colors main-menu:menu'
+    imps='menu/fathom-terminal menu/fathom-cursor menu/move-cursor menu/cursor-blink menu/is-submenu menu/is-integer menu/category-title menu/exit-label menu/is-installable'
     ;;
   5)
     name='Navigation'
@@ -69,7 +69,7 @@ case "$level" in
     ;;
   11)
     name='Testing Infrastructure'
-    spells='test-spell:.wizardry test-magic:.wizardry pocket-dimension:system logging-example wizard-eyes'
+    spells='test-spell:.wizardry test-magic:.wizardry pocket-dimension:system wizard-eyes spellbook-store:.wizardry'
     imps='test/boot/assert-error-contains test/boot/assert-failure test/boot/assert-file-contains test/boot/assert-output-contains test/boot/assert-path-exists test/boot/assert-path-missing test/boot/assert-status test/boot/assert-success test/boot/find-repo-root test/boot/finish-tests test/boot/init-test-counters test/boot/link-tools test/boot/make-fixture test/boot/make-tempdir test/boot/provide-basic-tools test/boot/record-failure-detail test/boot/report-result test/boot/run-bwrap test/boot/run-cmd test/boot/run-macos-sandbox test/boot/run-spell test/boot/run-spell-in-dir test/boot/run-test-case test/boot/skip-if-compiled test/boot/skip-if-uncompiled test/boot/stub-nix-env test/boot/stub-pacman test/boot/test-fail test/boot/test-heading test/boot/test-lack test/boot/test-pass test/boot/test-skip test/boot/test-summary test/boot/write-apt-stub test/boot/write-command-stub test/boot/write-pkgin-stub test/boot/write-sudo-stub test/stub-cursor-blink test/stub-fathom-terminal test/stub-stty test/stub-await-keypress test/stub-fathom-cursor test/stub-move-cursor test/test-bootstrap sys/rc-add-line sys/rc-has-line sys/rc-remove-line'
     ;;
   12)
@@ -99,7 +99,7 @@ case "$level" in
     ;;
   17)
     name='SSH & Remote Access'
-    spells='validate-ssh-key enchant-portkey:translocation follow-portkey:translocation open-portal:translocation open-teletype:translocation reload-ssh restart-ssh'
+    spells='validate-ssh-key enchant-portkey:translocation follow-portkey:translocation open-portal:translocation open-teletype:translocation'
     imps=''
     ;;
   18)
@@ -124,7 +124,7 @@ case "$level" in
     ;;
   22)
     name='Core Menu Infrastructure'
-    spells='spellbook-store spellbook:menu cast:menu spell-menu:menu'
+    spells='spellbook:menu cast:menu spell-menu:menu'
     imps=''
     ;;
   23)
@@ -144,7 +144,7 @@ case "$level" in
     ;;
   26)
     name='System Service Management'
-    spells='install-service-template:system is-service-installed:system enable-service:system disable-service:system start-service:system stop-service:system restart-service:system service-status:system remove-service:system'
+    spells='install-service-template:system is-service-installed:system enable-service:system disable-service:system start-service:system stop-service:system restart-service:system service-status:system remove-service:system reload-ssh:system restart-ssh:system'
     imps=''
     ;;
   27)

@@ -22,7 +22,7 @@ make_response() {
 run_fathom() {
   resp_file=$1
   shift
-  run_cmd env PATH="$WIZARDRY_IMPS_PATH:/bin:/usr/bin" FATHOM_CURSOR_DEVICE="$resp_file" FATHOM_CURSOR_SKIP_STTY=1 "$ROOT_DIR/spells/cantrips/fathom-cursor" "$@"
+  run_cmd env PATH="$WIZARDRY_IMPS_PATH:/bin:/usr/bin" FATHOM_CURSOR_DEVICE="$resp_file" FATHOM_CURSOR_SKIP_STTY=1 "$ROOT_DIR/spells/.imps/menu/fathom-cursor" "$@"
 }
 
 normalize_output() {
@@ -87,7 +87,7 @@ run_test_case "adds labels in verbose mode" prints_verbose_labels
 run_test_case "fails on invalid response" fails_on_invalid_response
 
 shows_help() {
-  run_spell spells/cantrips/fathom-cursor --help
+  run_spell spells/.imps/menu/fathom-cursor --help
   # Note: spell may not have --help implemented yet
   true
 }
