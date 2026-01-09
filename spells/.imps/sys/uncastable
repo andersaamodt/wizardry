@@ -73,5 +73,5 @@ else
       printf '%s\n' "Usage: . $_uncast_name" >&2
     fi
   fi
-  exit 1
+  return 1
 fi
