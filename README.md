@@ -231,6 +231,19 @@ These tenets define how Wizardry should feel to use and how spells present thems
 | Output-first UX     | Humans and spells consume the same text. Output is designed to be readable at the prompt and pipeable into other tools.      |
 | Self-healing tone   | When something goes wrong, spells offer to fix it instead of barking orders at the user. Errors are factual, not imperative. |
 
+## **Glossary**
+
+| Term | Definition |
+| ---- | ---------- |
+| **Spell** | A user-facing shell script that performs a specific task. Spells are executable files in the `spells/` directory. |
+| **Imp** | A micro-helper script that abstracts common shell patterns. Imps live in `spells/.imps/` and are the smallest semantic building blocks. |
+| **Uncastable** | A spell that MUST be sourced (not executed) to work correctly. Uncastable spells modify the calling shell's state (e.g., change directory, set variables). All uncastable spells use a standardized inline guard pattern documented in `.github/instructions/uncastable-pattern.instructions.md`. |
+| **Cast** | To execute a spell (as opposed to sourcing it). Most spells can be cast directly. |
+| **Invoke** | To source a spell or imp using `. spell-name`. Required for uncastable spells. |
+| **Gloss** | A command-line alias or function that provides multi-word spell names (e.g., `jump trash` instead of `jump-trash`). |
+| **Parse** | The imp that interprets multi-word commands and maps them to spell names. |
+| **Spellbook** | The user's configuration directory (`~/.spellbook` by default) where wizardry stores user data and settings. |
+
 ## **Engineering Standards**
 
 These standards describe the technical requirements that all spells, menus, and supporting scripts must fulfill.

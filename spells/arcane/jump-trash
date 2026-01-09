@@ -15,14 +15,26 @@ USAGE
   ;;
 esac
 
-# Enforce sourced-only behavior (but don't exit the shell if already sourced)
-# uncastable must be sourced (invoked), never executed (cast)
-UNCASTABLE_MESSAGE='Use "jump trash" to invoke this spell, as it is uncastable directly.'
-export UNCASTABLE_MESSAGE
-set -- jump-trash  # Pass spell name via positional parameter (POSIX-compliant)
-if ! . uncastable; then
+# Uncastable: Must be sourced, not executed
+_jt_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) _jt_sourced=1 ;;
+  esac
+else
+  _jt_base=${0##*/}
+  case "$_jt_base" in
+    sh|dash|bash|zsh|ksh|mksh) _jt_sourced=1 ;;
+    jump-trash) _jt_sourced=0 ;;
+    *) _jt_sourced=1 ;;
+  esac
+fi
+
+if [ "$_jt_sourced" -eq 0 ]; then
+  printf '%s\n' 'Use "jump trash" to invoke this spell, as it is uncastable directly.' >&2
   exit 1
 fi
+unset _jt_sourced _jt_base
 
 set -eu
 . env-clear

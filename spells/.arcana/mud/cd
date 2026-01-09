@@ -17,11 +17,27 @@ USAGE
   ;;
 esac
 
-# Enforce sourced-only behavior
-# uncastable must be sourced (invoked), never executed (cast)
-if ! command -v uncastable >/dev/null 2>&1; then
-  . uncastable
+# Uncastable: Must be sourced, not executed
+_cd_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) _cd_sourced=1 ;;
+  esac
+else
+  _cd_base=${0##*/}
+  case "$_cd_base" in
+    sh|dash|bash|zsh|ksh|mksh) _cd_sourced=1 ;;
+    cd) _cd_sourced=0 ;;
+    *) _cd_sourced=1 ;;
+  esac
 fi
+
+if [ "$_cd_sourced" -eq 0 ]; then
+  printf '%s\n' "cd: must be sourced, not executed" >&2
+  printf '%s\n' "Usage: . cd" >&2
+  exit 1
+fi
+unset _cd_sourced _cd_base
 
 # Explicitly use permissive error handling - this file is meant to be sourced into user's shell
 # and we don't want their shell to exit on command failures

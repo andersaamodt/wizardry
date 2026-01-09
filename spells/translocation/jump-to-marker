@@ -19,11 +19,27 @@ USAGE
   ;;
 esac
 
-# Enforce sourced-only behavior
-# uncastable must be sourced (invoked), never executed (cast)
-if ! command -v uncastable >/dev/null 2>&1; then
-  . uncastable
+# Uncastable: Must be sourced, not executed
+_jtm_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) _jtm_sourced=1 ;;
+  esac
+else
+  _jtm_base=${0##*/}
+  case "$_jtm_base" in
+    sh|dash|bash|zsh|ksh|mksh) _jtm_sourced=1 ;;
+    jump-to-marker) _jtm_sourced=0 ;;
+    *) _jtm_sourced=1 ;;
+  esac
 fi
+
+if [ "$_jtm_sourced" -eq 0 ]; then
+  printf '%s\n' "jump-to-marker: must be sourced, not executed" >&2
+  printf '%s\n' "Usage: . jump-to-marker [marker]" >&2
+  exit 1
+fi
+unset _jtm_sourced _jtm_base
 
 set -eu
 . env-clear
