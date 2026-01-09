@@ -351,6 +351,186 @@ test_eval_pattern_with_file_fallback() {
 
 run_test_case "banish eval pattern works with file fallback" test_eval_pattern_with_file_fallback
 
+# Test new assumption checks
+test_shell_type_check() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  
+  copy_wizardry "$install_dir" || return 1
+  
+  # Should detect shell type
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 0
+  assert_success || return 1
+  assert_output_contains "Shell type:" || return 1
+  assert_output_contains "POSIX-compatible" || return 1
+}
+
+test_ifs_check() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  
+  copy_wizardry "$install_dir" || return 1
+  
+  # Should check IFS
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 0
+  assert_success || return 1
+  assert_output_contains "IFS:" || return 1
+}
+
+test_environment_vars_check() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  
+  copy_wizardry "$install_dir" || return 1
+  
+  # Should check environment variables
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 0
+  assert_success || return 1
+  assert_output_contains "Environment: HOME and USER set" || return 1
+}
+
+test_umask_check() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  
+  copy_wizardry "$install_dir" || return 1
+  
+  # Should check umask
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 0
+  assert_success || return 1
+  assert_output_contains "umask:" || return 1
+}
+
+test_filesystem_write_check() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  
+  copy_wizardry "$install_dir" || return 1
+  
+  # Should check filesystem write capability
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 0
+  assert_success || return 1
+  assert_output_contains "Filesystem write:" || return 1
+  assert_output_contains "writable" || return 1
+}
+
+test_symbolic_links_check() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  
+  copy_wizardry "$install_dir" || return 1
+  
+  # Should check symbolic link support
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 0
+  assert_success || return 1
+  assert_output_contains "Symbolic links:" || return 1
+  assert_output_contains "Supported" || return 1
+}
+
+test_execute_permissions_check() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  
+  copy_wizardry "$install_dir" || return 1
+  
+  # Should check execute permissions
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 0
+  assert_success || return 1
+  assert_output_contains "Execute permissions:" || return 1
+  assert_output_contains "Working" || return 1
+}
+
+test_subshells_check() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  
+  copy_wizardry "$install_dir" || return 1
+  
+  # Should check subshells
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 0
+  assert_success || return 1
+  assert_output_contains "Subshells:" || return 1
+  assert_output_contains "Working correctly" || return 1
+}
+
+test_pipes_check() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  
+  copy_wizardry "$install_dir" || return 1
+  
+  # Should check pipes
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 0
+  assert_success || return 1
+  assert_output_contains "Pipes:" || return 1
+  assert_output_contains "Working" || return 1
+}
+
+test_redirections_check() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  
+  copy_wizardry "$install_dir" || return 1
+  
+  # Should check redirections
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 0
+  assert_success || return 1
+  assert_output_contains "Redirections:" || return 1
+  assert_output_contains "Working" || return 1
+}
+
+test_signal_handling_check() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  
+  copy_wizardry "$install_dir" || return 1
+  
+  # Should check signal handling
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 0
+  assert_success || return 1
+  assert_output_contains "Signal handling:" || return 1
+  assert_output_contains "trap command works" || return 1
+}
+
+test_command_substitution_check() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  
+  copy_wizardry "$install_dir" || return 1
+  
+  # Should check command substitution
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 0
+  assert_success || return 1
+  assert_output_contains "Command substitution:" || return 1
+  assert_output_contains "Working" || return 1
+}
+
+test_parameter_expansion_check() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  
+  copy_wizardry "$install_dir" || return 1
+  
+  # Should check parameter expansion
+  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 0
+  assert_success || return 1
+  assert_output_contains "Parameter expansion:" || return 1
+  assert_output_contains "Working" || return 1
+}
+
+run_test_case "banish checks shell type" test_shell_type_check
+run_test_case "banish checks IFS" test_ifs_check
+run_test_case "banish checks environment variables" test_environment_vars_check
+run_test_case "banish checks umask" test_umask_check
+run_test_case "banish checks filesystem write" test_filesystem_write_check
+run_test_case "banish checks symbolic links" test_symbolic_links_check
+run_test_case "banish checks execute permissions" test_execute_permissions_check
+run_test_case "banish checks subshells" test_subshells_check
+run_test_case "banish checks pipes" test_pipes_check
+run_test_case "banish checks redirections" test_redirections_check
+run_test_case "banish checks signal handling" test_signal_handling_check
+run_test_case "banish checks command substitution" test_command_substitution_check
+run_test_case "banish checks parameter expansion" test_parameter_expansion_check
 
 # Test via source-then-invoke pattern
 

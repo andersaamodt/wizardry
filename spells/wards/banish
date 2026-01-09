@@ -388,6 +388,217 @@ banish_process_level() {
         printf '  %s✗%s Package manager: none detected\n' "$_red" "$_reset"
         return 1
       fi
+
+      # Check shell type (POSIX-compatible shell required)
+      shell_type=${SHELL##*/}
+      shell_type=${shell_type:-sh}
+      case "$shell_type" in
+        sh|bash|dash|zsh|ksh|ash)
+          printf '  %s✓%s Shell type: %s (POSIX-compatible)\n' "$_green" "$_reset" "$shell_type"
+          ;;
+        csh|tcsh|fish)
+          printf '  %s✗%s Shell type: %s (not POSIX-compatible)\n' "$_red" "$_reset" "$shell_type"
+          printf '    Wizardry requires a POSIX-compatible shell (sh, bash, dash, zsh, ksh)\n'
+          return 1
+          ;;
+        *)
+          printf '  %s✓%s Shell type: %s (assuming POSIX-compatible)\n' "$_green" "$_reset" "$shell_type"
+          ;;
+      esac
+
+      # Check IFS (should be default: space, tab, newline)
+      default_ifs=" 	
+"
+      if [ "${IFS-unset}" = "unset" ] || [ "$IFS" = "$default_ifs" ]; then
+        printf '  %s✓%s IFS: Default (space, tab, newline)\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s IFS: Non-default value detected\n' "$_red" "$_reset"
+        if [ "$skip_heal" -eq 0 ]; then
+          IFS="$default_ifs"
+          export IFS
+          printf '    %s✓%s IFS reset to default\n' "$_green" "$_reset"
+        else
+          return 1
+        fi
+      fi
+
+      # Check basic environment variables
+      env_vars_ok=1
+      if [ -z "${HOME-}" ]; then
+        printf '  %s✗%s Environment: HOME not set\n' "$_red" "$_reset"
+        env_vars_ok=0
+      fi
+      if [ -z "${USER-}" ] && [ -z "${LOGNAME-}" ]; then
+        printf '  %s✗%s Environment: USER/LOGNAME not set\n' "$_red" "$_reset"
+        env_vars_ok=0
+      fi
+      if [ "$env_vars_ok" -eq 1 ]; then
+        printf '  %s✓%s Environment: HOME and USER set\n' "$_green" "$_reset"
+      else
+        if [ "$skip_heal" -eq 0 ]; then
+          if [ -z "${HOME-}" ]; then
+            HOME=$(getent passwd "$USER" 2>/dev/null | cut -d: -f6) || HOME="/tmp"
+            export HOME
+            printf '    %s✓%s HOME set to %s\n' "$_green" "$_reset" "$HOME"
+          fi
+          if [ -z "${USER-}" ]; then
+            USER=$(id -un 2>/dev/null) || USER="unknown"
+            export USER
+            printf '    %s✓%s USER set to %s\n' "$_green" "$_reset" "$USER"
+          fi
+        else
+          return 1
+        fi
+      fi
+
+      # Check umask (should be reasonable, not 0000 or 0777)
+      current_umask=$(umask)
+      case "$current_umask" in
+        0000|0777)
+          printf '  %s✗%s umask: Unsafe value %s\n' "$_red" "$_reset" "$current_umask"
+          if [ "$skip_heal" -eq 0 ]; then
+            umask 0022
+            printf '    %s✓%s umask set to 0022\n' "$_green" "$_reset"
+          else
+            return 1
+          fi
+          ;;
+        *)
+          printf '  %s✓%s umask: %s\n' "$_green" "$_reset" "$current_umask"
+          ;;
+      esac
+
+      # Check file system write capability
+      tmp_root=${TMPDIR:-/tmp}
+      tmp_check=$(mktemp "${tmp_root%/}/banish-write.XXXXXX" 2>/dev/null || printf '')
+      if [ -n "$tmp_check" ]; then
+        if printf '%s\n' "test" >"$tmp_check" 2>/dev/null && [ -s "$tmp_check" ]; then
+          rm -f "$tmp_check" 2>/dev/null || :
+          printf '  %s✓%s Filesystem write: %s writable\n' "$_green" "$_reset" "$tmp_root"
+        else
+          rm -f "$tmp_check" 2>/dev/null || :
+          printf '  %s✗%s Filesystem write: Cannot write to %s\n' "$_red" "$_reset" "$tmp_root"
+          return 1
+        fi
+      else
+        printf '  %s✗%s Filesystem write: Cannot create temp file in %s\n' "$_red" "$_reset" "$tmp_root"
+        return 1
+      fi
+
+      # Check symbolic link support
+      tmp_link_test=$(mktemp "${tmp_root%/}/banish-link.XXXXXX" 2>/dev/null || printf '')
+      if [ -n "$tmp_link_test" ]; then
+        tmp_link="${tmp_link_test}.link"
+        if ln -s "$tmp_link_test" "$tmp_link" 2>/dev/null; then
+          if [ -L "$tmp_link" ]; then
+            printf '  %s✓%s Symbolic links: Supported\n' "$_green" "$_reset"
+            rm -f "$tmp_link" "$tmp_link_test" 2>/dev/null || :
+          else
+            printf '  %s✗%s Symbolic links: Not working\n' "$_red" "$_reset"
+            rm -f "$tmp_link" "$tmp_link_test" 2>/dev/null || :
+            return 1
+          fi
+        else
+          printf '  %s✗%s Symbolic links: Creation failed\n' "$_red" "$_reset"
+          rm -f "$tmp_link_test" 2>/dev/null || :
+          return 1
+        fi
+      fi
+
+      # Check execute permissions
+      tmp_exec_test=$(mktemp "${tmp_root%/}/banish-exec.XXXXXX" 2>/dev/null || printf '')
+      if [ -n "$tmp_exec_test" ]; then
+        printf '#!/bin/sh\nprintf "ok"\n' >"$tmp_exec_test"
+        chmod +x "$tmp_exec_test" 2>/dev/null || :
+        if [ -x "$tmp_exec_test" ]; then
+          exec_output=$("$tmp_exec_test" 2>/dev/null || printf '')
+          if [ "$exec_output" = "ok" ]; then
+            printf '  %s✓%s Execute permissions: Working\n' "$_green" "$_reset"
+          else
+            printf '  %s✗%s Execute permissions: Script execution failed\n' "$_red" "$_reset"
+            rm -f "$tmp_exec_test" 2>/dev/null || :
+            return 1
+          fi
+        else
+          printf '  %s✗%s Execute permissions: chmod +x failed\n' "$_red" "$_reset"
+          rm -f "$tmp_exec_test" 2>/dev/null || :
+          return 1
+        fi
+        rm -f "$tmp_exec_test" 2>/dev/null || :
+      fi
+
+      # Check subshells work
+      subshell_test=$(test_var=outer; (test_var=inner; printf '%s' "$test_var") 2>/dev/null || printf '')
+      if [ "$subshell_test" = "inner" ]; then
+        printf '  %s✓%s Subshells: Working correctly\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Subshells: Not working correctly\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check pipes work
+      pipe_test=$(printf 'hello' | cat 2>/dev/null || printf '')
+      if [ "$pipe_test" = "hello" ]; then
+        printf '  %s✓%s Pipes: Working\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Pipes: Not working\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check redirections work
+      tmp_redir_test=$(mktemp "${tmp_root%/}/banish-redir.XXXXXX" 2>/dev/null || printf '')
+      if [ -n "$tmp_redir_test" ]; then
+        if printf 'test' >"$tmp_redir_test" 2>/dev/null; then
+          redir_content=$(cat "$tmp_redir_test" 2>/dev/null || printf '')
+          if [ "$redir_content" = "test" ]; then
+            printf '  %s✓%s Redirections: Working\n' "$_green" "$_reset"
+          else
+            printf '  %s✗%s Redirections: Read failed\n' "$_red" "$_reset"
+            rm -f "$tmp_redir_test" 2>/dev/null || :
+            return 1
+          fi
+        else
+          printf '  %s✗%s Redirections: Write failed\n' "$_red" "$_reset"
+          rm -f "$tmp_redir_test" 2>/dev/null || :
+          return 1
+        fi
+        rm -f "$tmp_redir_test" 2>/dev/null || :
+      fi
+
+      # Check trap/signal handling
+      if command -v trap >/dev/null 2>&1; then
+        trap_test=0
+        trap 'trap_test=1' USR1 2>/dev/null || trap_test=-1
+        if [ "$trap_test" -ne -1 ]; then
+          trap - USR1 2>/dev/null || :
+          printf '  %s✓%s Signal handling: trap command works\n' "$_green" "$_reset"
+        else
+          printf '  %s✗%s Signal handling: trap command failed\n' "$_red" "$_reset"
+          return 1
+        fi
+      else
+        printf '  %s✗%s Signal handling: trap command not found\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check command substitution works
+      cmd_sub_test=$(printf 'substitution')
+      if [ "$cmd_sub_test" = "substitution" ]; then
+        printf '  %s✓%s Command substitution: Working\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Command substitution: Not working\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check parameter expansion
+      param_test="value"
+      param_result=${param_test#val}
+      if [ "$param_result" = "ue" ]; then
+        printf '  %s✓%s Parameter expansion: Working\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Parameter expansion: Pattern removal failed\n' "$_red" "$_reset"
+        return 1
+      fi
       ;;
       
     1)
