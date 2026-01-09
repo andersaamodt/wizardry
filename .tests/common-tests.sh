@@ -8,31 +8,66 @@
 
 common_tests_usage() {
   cat <<'USAGE'
-Usage: common-tests.sh [SPELL_PATH...]
+Usage: common-tests.sh [OPTIONS] [SPELL_PATH...]
 
 Run common structural and behavioral checks that apply across all spells.
 
+Options:
+  --test TEST_NAME   Run only the specified test (e.g., "uncastable_pattern")
+  --list             List all available tests
+  -h, --help         Show this help message
+
 Arguments:
-  SPELL_PATH     Optional spell path(s) to test (e.g., spells/cantrips/ask-yn)
-                 If provided, only tests the specified spells.
-                 If omitted, tests all spells in the repository.
+  SPELL_PATH         Optional spell path(s) to test (e.g., spells/cantrips/ask-yn)
+                     If provided, only tests the specified spells.
+                     If omitted, tests all spells in the repository.
 
 Examples:
-  common-tests.sh                              # Test all spells
-  common-tests.sh spells/cantrips/ask-yn       # Test one spell
-  common-tests.sh spells/cantrips/ask-yn spells/cantrips/ask-text  # Test multiple
+  common-tests.sh                                    # Test all spells
+  common-tests.sh spells/cantrips/ask-yn             # Test one spell
+  common-tests.sh --test uncastable_pattern          # Run only uncastable pattern test
+  common-tests.sh --list                             # List all available tests
 
 Note: This is an exception to the .tests/ naming schema. It does not mirror
 a spell in spells/ - it's a special test suite for cross-cutting checks.
 USAGE
 }
 
-case "${1-}" in
---help|--usage|-h)
-  common_tests_usage
-  exit 0
-  ;;
-esac
+# Parse options
+FILTER_MODE=0
+FILTERED_SPELL_PATHS=""
+TEST_FILTER=""
+while [ "$#" -gt 0 ]; do
+  case "${1-}" in
+    --help|--usage|-h)
+      common_tests_usage
+      exit 0
+      ;;
+    --list)
+      # List will be shown after test definitions
+      TEST_FILTER="--list"
+      shift
+      ;;
+    --test)
+      if [ -z "${2-}" ]; then
+        printf 'Error: --test requires a test name\n' >&2
+        exit 1
+      fi
+      TEST_FILTER="$2"
+      shift 2
+      ;;
+    -*)
+      printf 'Error: unknown option: %s\n' "$1" >&2
+      common_tests_usage
+      exit 1
+      ;;
+    *)
+      FILTER_MODE=1
+      FILTERED_SPELL_PATHS="$FILTERED_SPELL_PATHS $1"
+      shift
+      ;;
+  esac
+done
 
 set -eu
 
@@ -43,12 +78,33 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-# Store filter mode and spell paths if provided
-FILTER_MODE=0
-FILTERED_SPELL_PATHS=""
-if [ "$#" -gt 0 ]; then
-  FILTER_MODE=1
-  FILTERED_SPELL_PATHS="$*"
+# Helper function to run a test conditionally based on filter
+run_filtered_test() {
+  _test_name=$1
+  _test_desc=$2
+  _test_func=$3
+  
+  # If listing tests, just print the name
+  if [ "$TEST_FILTER" = "--list" ]; then
+    printf '%s\n' "$_test_name"
+    return 0
+  fi
+  
+  # If filtering by test name, only run matching test
+  if [ -n "$TEST_FILTER" ]; then
+    case "$_test_name" in
+      *"$TEST_FILTER"*) run_test_case "$_test_desc" "$_test_func" ;;
+      *) return 0 ;;
+    esac
+  else
+    # No filter, run all tests
+    run_test_case "$_test_desc" "$_test_func"
+  fi
+}
+
+# List tests if requested
+if [ "$TEST_FILTER" = "--list" ]; then
+  printf 'Available tests:\n'
 fi
 
 # Helper: Check if a file is a POSIX shell script
@@ -2480,21 +2536,9 @@ test_uncastable_and_autocast_deleted() {
   return 0
 }
 
-# Run meta-tests
-run_test_case "META: baseline PATH before set -eu" test_bootstrap_sets_baseline_path
-run_test_case "META: pocket dimension is available" test_pocket_dimension_available
-run_test_case "META: test-magic uses stdbuf" test_test_magic_uses_stdbuf
-run_test_case "META: test framework supports failure reporting" test_test_bootstrap_provides_failure_reporting
-# DEPRECATED: die/fail imp tests - these check for old word-of-binding pattern
-# With flat imps, die and fail correctly use 'exit' to terminate execution
-# run_test_case "META: die imp uses return for word-of-binding" test_die_imp_uses_return_not_exit
-# run_test_case "META: fail imp returns error code" test_fail_imp_returns_error_code
-run_test_case "META: platform detection available" test_platform_detection_available
-run_test_case "META: banish spell exists and is executable" test_banish_spell_exists_and_is_executable
-run_test_case "META: test-bootstrap checks environment" test_test_bootstrap_checks_environment
-run_test_case "PARADIGM: spells do not preload prerequisites" test_spells_do_not_preload_prerequisites
-run_test_case "PARADIGM: spells do not source by path" test_spells_do_not_source_by_path
-run_test_case "PARADIGM: sourced-only spells use standardized uncastable pattern" test_uncastable_pattern_is_standardized
-run_test_case "PARADIGM: uncastable and autocast imps are deleted" test_uncastable_and_autocast_deleted
+# Exit early if just listing
+if [ "$TEST_FILTER" = "--list" ]; then
+  exit 0
+fi
 
 finish_tests
