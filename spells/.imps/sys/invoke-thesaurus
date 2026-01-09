@@ -64,7 +64,7 @@ if [ ! -f "$_it_default_initialized" ]; then
   mkdir -p "$_it_spellbook_dir" 2>/dev/null || true
   cat > "$_it_default_file" << 'HEADER'
 # Wizardry Default Synonyms
-# Format: word target (whitespace-delimited)
+# Format: word → target
 # These are built-in synonyms that can be reset with reset-default-synonyms.
 # To override a default, add your custom version to .synonyms instead.
 
@@ -145,9 +145,8 @@ where-is which"
   printf '%s\n' "$_it_defaults" | while IFS=' ' read -r _word _spell; do
     [ -n "$_word" ] && [ -n "$_spell" ] || continue
     
-    # Write in simple whitespace-delimited format
-    # generate-glosses will create functions/aliases based on hyphenation
-    printf "%s %s\n" "$_word" "$_spell" >> "$_it_default_file"
+    # Write in arrow format: word → target
+    printf "%s → %s\n" "$_word" "$_spell" >> "$_it_default_file"
   done
   
   touch "$_it_default_initialized" 2>/dev/null || true

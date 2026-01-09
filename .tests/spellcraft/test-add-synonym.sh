@@ -41,14 +41,14 @@ test_alias_definition_content() {
   
   assert_success || return 1
   
-  # Check file contains the synonym definition in word=target format
-  if ! grep -q "^myalias=" "$synonyms_file"; then
+  # Check file contains the synonym definition in word → target format
+  if ! grep -q "^myalias → " "$synonyms_file"; then
     TEST_FAILURE_REASON="synonym definition not found in file"
     return 1
   fi
   
   # Check synonym points to echo
-  if ! grep -q "^myalias=echo" "$synonyms_file"; then
+  if ! grep -q "^myalias → echo" "$synonyms_file"; then
     TEST_FAILURE_REASON="synonym does not point to echo"
     return 1
   fi
@@ -132,13 +132,13 @@ test_allows_overwriting_existing_synonym() {
   assert_success || return 1
   
   # Check it was updated to new format
-  if ! grep -q "^myalias=printf" "$synonyms_file"; then
+  if ! grep -q "^myalias → printf" "$synonyms_file"; then
     TEST_FAILURE_REASON="synonym not updated"
     return 1
   fi
   
   # Check old definition is gone - there should only be one myalias line
-  synonym_count=$(grep -c "^myalias=" "$synonyms_file")
+  synonym_count=$(grep -c "^myalias → " "$synonyms_file")
   if [ "$synonym_count" -ne 1 ]; then
     TEST_FAILURE_REASON="multiple myalias definitions found ($synonym_count)"
     return 1
@@ -155,7 +155,7 @@ test_handles_complex_target_with_args() {
   assert_success || return 1
   
   # Check synonym has both command and args
-  if ! grep -q "^ll=ls -la" "$synonyms_file"; then
+  if ! grep -q "^ll → ls -la" "$synonyms_file"; then
     TEST_FAILURE_REASON="synonym does not contain command with arguments"
     return 1
   fi

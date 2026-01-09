@@ -156,20 +156,20 @@ set -eu
   existing_location=""
   existing_target=""
 
-  if [ -f "$custom_file" ] && grep -q "^$synonym_word=" "$custom_file" 2>/dev/null; then
+  if [ -f "$custom_file" ] && grep -q "^$synonym_word → " "$custom_file" 2>/dev/null; then
     already_exists=1
     existing_location="custom"
-    existing_target=$(grep "^$synonym_word=" "$custom_file" | \
-      sed "s/^$synonym_word=\\(.*\\)$/\\1/")
+    existing_target=$(grep "^$synonym_word → " "$custom_file" | \
+      sed "s/^$synonym_word → //")
   fi
 
   # Only check default if not already found in custom
-  default_match=$(grep "^$synonym_word=" "$default_file" 2>/dev/null || true)
+  default_match=$(grep "^$synonym_word → " "$default_file" 2>/dev/null || true)
   if [ "$already_exists" -eq 0 ] && [ -f "$default_file" ] && [ -n "$default_match" ]; then
     already_exists=1
     existing_location="default"
     existing_target=$(printf '%s' "$default_match" | \
-      sed "s/^$synonym_word=\\(.*\\)$/\\1/")
+      sed "s/^$synonym_word → //")
   fi
 
   if [ "$already_exists" -eq 1 ]; then
@@ -189,9 +189,9 @@ set -eu
     # If overwriting a default, we create/update in custom
     # If overwriting a custom, we update in custom
     # Remove old custom definition if it exists
-    if [ -f "$custom_file" ] && grep -q "^$synonym_word=" "$custom_file" 2>/dev/null; then
+    if [ -f "$custom_file" ] && grep -q "^$synonym_word → " "$custom_file" 2>/dev/null; then
       temp_file=$(temp-file synonyms) || exit 1
-      grep -v "^$synonym_word=" "$custom_file" > "$temp_file" || true
+      grep -v "^$synonym_word → " "$custom_file" > "$temp_file" || true
       mv "$temp_file" "$custom_file"
     fi
   fi
@@ -201,15 +201,15 @@ set -eu
     mkdir -p "$spell_home" 2>/dev/null || true
     cat > "$custom_file" << 'HEADER'
 # Wizardry Custom Synonyms
-# Format: word=target
+# Format: word → target
 # Loaded automatically by invoke-wizardry at shell startup.
 # Reload with: . invoke-thesaurus
 
 HEADER
   fi
 
-  # Add the synonym to the custom file in word=target format
-  printf "%s=%s\n" "$synonym_word" "$target_spell" >> "$custom_file"
+  # Add the synonym to the custom file in word → target format
+  printf "%s → %s\n" "$synonym_word" "$target_spell" >> "$custom_file"
 
   success "Synonym created: $synonym_word -> $target_spell"
   info "Reload with: . invoke-thesaurus"
