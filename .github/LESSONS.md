@@ -48,6 +48,7 @@
 - invoke-wizardry must auto-detect its location using shell-specific variables (BASH_SOURCE[0], ${(%):-%x}) instead of hardcoding $HOME/.wizardry (PR #601).
 - RC file manipulation should use inline markers (. "/path" # wizardry: marker-name) instead of separate comment lines for consistent editing (PR #602).
 - Menu exit handlers must validate parent PID exists before sending kill signals to prevent terminating unintended processes (PR #606).
+- Always establish realistic unit tests for every feature BEFORE writing or fixing code; tests are the fastest path to working code and catch edge cases immediately.
 - Default prompts for optional features should match expected common usage patterns (e.g., MUD defaults to "yes" for installation) (PR #607).
 - Failed subtests must cause their parent test to fail; testing system integrity requires meta-tests that validate the testing infrastructure itself (PR #609).
 - Compiled spells in doppelganger mode are standalone without invoke-wizardry/env-clear; tests must skip infrastructure-dependent checks in compiled mode (PR #610).

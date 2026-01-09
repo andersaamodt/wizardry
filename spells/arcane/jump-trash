@@ -78,5 +78,16 @@ if [ ! -d "$trash_path" ]; then
   return 1 2>/dev/null || exit 1
 fi
 
+# Check if already in trash (handle symlinks by resolving paths)
+current_dir=$(pwd -P 2>/dev/null || pwd)
+trash_resolved=$(cd "$trash_path" && pwd -P 2>/dev/null || printf '%s' "$trash_path")
+current_resolved=$(printf '%s' "$current_dir" | sed 's|//|/|g')
+trash_resolved=$(printf '%s' "$trash_resolved" | sed 's|//|/|g')
+
+if [ "$current_resolved" = "$trash_resolved" ]; then
+  printf '%s\n' "You are already in the trash directory."
+  return 0 2>/dev/null || exit 0
+fi
+
 cd "$trash_path" || { return 1 2>/dev/null || exit 1; }
 printf '%s\n' "You teleport to the trash at $trash_path"

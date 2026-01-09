@@ -6,6 +6,26 @@ applyTo: ".tests/**"
 
 **Every spell and imp MUST have a corresponding test file.** Tests are not optional.
 
+## CRITICAL: Test-Driven Development
+
+**Create realistic unit tests for every feature BEFORE writing or fixing code.**
+
+Tests are the fastest path to working code for several reasons:
+- Tests catch edge cases immediately that you might miss in manual testing
+- Tests provide immediate feedback on whether your fix actually works
+- Tests prevent regressions when making future changes
+- Tests document expected behavior precisely
+- Tests force you to think through all scenarios before implementation
+
+**When debugging or adding features:**
+1. Write tests that reproduce the bug or test the new feature FIRST
+2. Run tests to verify they fail (proving the bug exists or feature is missing)
+3. Fix the code
+4. Run tests again to verify they pass
+5. Only then report the fix as complete
+
+**Never claim code works without running actual tests.** Manual testing misses edge cases.
+
 ## CRITICAL: Test File Location Must Mirror Spell Structure
 
 **Test files MUST mirror the `spells/` directory structure exactly.** You CANNOT create test files without corresponding spells or imps.
