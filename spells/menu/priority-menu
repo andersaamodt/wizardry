@@ -64,21 +64,19 @@ priority_menu_display_menu() {
   if [ -d "$file" ]; then
     # Check if directory has items with priority >= 1
     has_subpriorities=0
-    if [ -d "$file" ]; then
-      for item in "$file"/*; do
-        [ -e "$item" ] || continue
-        item_priority=$(read-magic "$item" priority 2>/dev/null || printf '0')
-        # Handle errors or empty values
-        case "$item_priority" in
-          ''|*Error*) item_priority=0 ;;
-          *[!0-9]*) item_priority=0 ;;
-        esac
-        if [ "$item_priority" -ge 1 ]; then
-          has_subpriorities=1
-          break
-        fi
-      done
-    fi
+    for item in "$file"/*; do
+      [ -e "$item" ] || continue
+      item_priority=$(read-magic "$item" priority 2>/dev/null || printf '0')
+      # Handle errors or empty values
+      case "$item_priority" in
+        ''|*Error*) item_priority=0 ;;
+        *[!0-9]*) item_priority=0 ;;
+      esac
+      if [ "$item_priority" -ge 1 ]; then
+        has_subpriorities=1
+        break
+      fi
+    done
     
     if [ "$has_subpriorities" = "1" ]; then
       browse_item="Browse subpriorities%(cd \"$file\" && priorities); kill -TERM \$PPID"
