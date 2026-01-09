@@ -52,19 +52,20 @@ else
       # $0 is a shell name - definitely being sourced
       _uncast_sourced=1 
       ;;
+    "$_uncast_name") 
+      # $0 basename matches the spell name - being executed directly
+      _uncast_sourced=0 
+      ;;
     *) 
-      # $0 is not a shell name
-      # Check if it looks like a wizardry spell (contains spell directory paths)
-      case "$0" in
-        */spells/*)
-          # $0 contains a wizardry spell path - likely being executed
-          _uncast_sourced=0
-          ;;
-        *)
-          # $0 is some other script/path - assume being sourced through it
-          _uncast_sourced=1
-          ;;
-      esac
+      # $0 is something else (not shell, not spell name)
+      # If spell name was provided and doesn't match $0, we're being sourced
+      if [ -n "$_uncast_name" ]; then
+        _uncast_sourced=1
+      else
+        # No spell name provided - cannot reliably determine
+        # Default to sourced (safer to allow than to block)
+        _uncast_sourced=1
+      fi
       ;;
   esac
 fi
