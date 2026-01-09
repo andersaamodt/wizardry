@@ -2387,6 +2387,99 @@ test_spells_do_not_source_by_path() {
   return 0
 }
 
+# Test that all sourced-only spells use the standardized uncastable pattern
+test_uncastable_pattern_is_standardized() {
+  # List of spells that must be sourced (not executed)
+  _sourced_spells="
+    spells/arcane/jump-trash
+    spells/translocation/jump-to-marker
+    spells/cantrips/colors
+    spells/.arcana/mud/cd
+    spells/.imps/sys/env-clear
+    spells/.imps/sys/invoke-thesaurus
+    spells/.imps/sys/invoke-wizardry
+  "
+  
+  for _spell in $_sourced_spells; do
+    _spell_path="$ROOT_DIR/$_spell"
+    
+    # Check that the spell exists
+    if [ ! -f "$_spell_path" ]; then
+      TEST_FAILURE_REASON="Sourced-only spell not found: $_spell"
+      return 1
+    fi
+    
+    # Check that the spell has the "# Uncastable pattern" comment
+    if ! grep -q "^# Uncastable pattern" "$_spell_path"; then
+      TEST_FAILURE_REASON="Spell missing '# Uncastable pattern' comment: $_spell"
+      return 1
+    fi
+    
+    # Extract the uncastable pattern block (from comment to unset line)
+    _pattern=$(sed -n '/^# Uncastable pattern/,/^unset.*_sourced.*_base/p' "$_spell_path")
+    
+    if [ -z "$_pattern" ]; then
+      TEST_FAILURE_REASON="Could not extract uncastable pattern from: $_spell"
+      return 1
+    fi
+    
+    # Verify the pattern contains the expected components
+    if ! printf '%s\n' "$_pattern" | grep -q "_sourced=0"; then
+      TEST_FAILURE_REASON="Pattern missing '_sourced=0' initialization in: $_spell"
+      return 1
+    fi
+    
+    if ! printf '%s\n' "$_pattern" | grep -q 'ZSH_VERSION'; then
+      TEST_FAILURE_REASON="Pattern missing ZSH_VERSION check in: $_spell"
+      return 1
+    fi
+    
+    if ! printf '%s\n' "$_pattern" | grep -q 'ZSH_EVAL_CONTEXT'; then
+      TEST_FAILURE_REASON="Pattern missing ZSH_EVAL_CONTEXT check in: $_spell"
+      return 1
+    fi
+    
+    if ! printf '%s\n' "$_pattern" | grep -q 'sh|dash|bash|zsh|ksh|mksh'; then
+      TEST_FAILURE_REASON="Pattern missing shell detection in: $_spell"
+      return 1
+    fi
+    
+    if ! printf '%s\n' "$_pattern" | grep -q 'This spell cannot be cast directly'; then
+      TEST_FAILURE_REASON="Pattern missing error message in: $_spell"
+      return 1
+    fi
+    
+    if ! printf '%s\n' "$_pattern" | grep -q 'return 1 2>/dev/null || exit 1'; then
+      TEST_FAILURE_REASON="Pattern missing safe return/exit in: $_spell"
+      return 1
+    fi
+    
+    if ! printf '%s\n' "$_pattern" | grep -q 'unset.*_sourced.*_base'; then
+      TEST_FAILURE_REASON="Pattern missing cleanup (unset) in: $_spell"
+      return 1
+    fi
+  done
+  
+  # Test passed - all spells have correct pattern
+  return 0
+}
+
+test_uncastable_and_autocast_deleted() {
+  # Verify that uncastable and autocast imps were deleted
+  if [ -f "$ROOT_DIR/spells/.imps/sys/uncastable" ]; then
+    TEST_FAILURE_REASON="uncastable imp still exists - should be deleted"
+    return 1
+  fi
+  
+  if [ -f "$ROOT_DIR/spells/.imps/sys/autocast" ]; then
+    TEST_FAILURE_REASON="autocast imp still exists - should be deleted"
+    return 1
+  fi
+  
+  # Success - files don't exist
+  return 0
+}
+
 # Run meta-tests
 run_test_case "META: baseline PATH before set -eu" test_bootstrap_sets_baseline_path
 run_test_case "META: pocket dimension is available" test_pocket_dimension_available
@@ -2401,5 +2494,7 @@ run_test_case "META: banish spell exists and is executable" test_banish_spell_ex
 run_test_case "META: test-bootstrap checks environment" test_test_bootstrap_checks_environment
 run_test_case "PARADIGM: spells do not preload prerequisites" test_spells_do_not_preload_prerequisites
 run_test_case "PARADIGM: spells do not source by path" test_spells_do_not_source_by_path
+run_test_case "PARADIGM: sourced-only spells use standardized uncastable pattern" test_uncastable_pattern_is_standardized
+run_test_case "PARADIGM: uncastable and autocast imps are deleted" test_uncastable_and_autocast_deleted
 
 finish_tests
