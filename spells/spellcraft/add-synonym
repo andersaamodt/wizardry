@@ -196,8 +196,9 @@ set -eu
       already_exists=1
       existing_location="custom"
       # Extract target from function definition: word() { . target "$@"; }
+      # Use [[:space:]] for POSIX compatibility instead of \s
       existing_target=$(grep "^$synonym_word()" "$custom_file" | \
-        sed 's/.*{\s*\.\s*\([^ ]*\).*/\1/')
+        sed 's/.*{[[:space:]]*\.[[:space:]]*\([^ ]*\).*/\1/')
     fi
   fi
 
@@ -212,7 +213,7 @@ set -eu
       already_exists=1
       existing_location="default"
       existing_target=$(grep "^$synonym_word()" "$default_file" | \
-        sed 's/.*{\s*\.\s*\([^ ]*\).*/\1/')
+        sed 's/.*{[[:space:]]*\.[[:space:]]*\([^ ]*\).*/\1/')
     fi
   fi
 
@@ -268,9 +269,10 @@ HEADER
         # Function names can't have hyphens in POSIX sh
         printf "alias %s='%s'\n" "$synonym_word" "$escaped_spell" >> "$custom_file"
         success "Synonym created: $synonym_word -> $target_spell"
-        warn_msg="target '$target_first_word' requires sourcing"
-        warn "add-synonym: $warn_msg, but alias won't work correctly"
+        warn_msg="target requires sourcing, but aliases cannot source"
+        warn "add-synonym: $warn_msg - function needed but hyphenated names not supported"
         info "Note: Hyphenated names cannot be functions in POSIX sh"
+        info "To use this synonym, manually type: . leap-to-marker"
         info "Reload with: . invoke-thesaurus"
         ;;
       *)
