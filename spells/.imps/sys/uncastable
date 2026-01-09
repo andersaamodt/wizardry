@@ -34,12 +34,9 @@ unset _uc_check_sourced _uc_check_base
 
 set -eu
 
-# Get spell name from argument, environment variable, or $0
 _uncast_name=${1-}
 if [ -n "$_uncast_name" ]; then
   shift
-elif [ -n "${UNCASTABLE_SPELL_NAME-}" ]; then
-  _uncast_name=$UNCASTABLE_SPELL_NAME
 fi
 
 # Determine if the calling script is being sourced or executed
@@ -55,20 +52,19 @@ else
       # $0 is a shell name - definitely being sourced
       _uncast_sourced=1 
       ;;
-    "$_uncast_name") 
-      # $0 matches the spell name - being executed directly
-      _uncast_sourced=0 
-      ;;
     *) 
-      # $0 is something else (script name, parse, etc.)
-      if [ -n "$_uncast_name" ]; then
-        # Spell name provided but doesn't match $0 - being sourced
-        _uncast_sourced=1
-      else
-        # No spell name provided and $0 is not a shell name
-        # Cannot reliably determine - assume sourced to be safe
-        _uncast_sourced=1
-      fi
+      # $0 is not a shell name
+      # Check if it looks like a wizardry spell (contains spell directory paths)
+      case "$0" in
+        */spells/*)
+          # $0 contains a wizardry spell path - likely being executed
+          _uncast_sourced=0
+          ;;
+        *)
+          # $0 is some other script/path - assume being sourced through it
+          _uncast_sourced=1
+          ;;
+      esac
       ;;
   esac
 fi

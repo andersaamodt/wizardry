@@ -18,12 +18,10 @@ esac
 # Enforce sourced-only behavior (but don't exit the shell if already sourced)
 # uncastable must be sourced (invoked), never executed (cast)
 UNCASTABLE_MESSAGE='Use "jump trash" to invoke this spell, as it is uncastable directly.'
-UNCASTABLE_SPELL_NAME='jump-trash'
-export UNCASTABLE_MESSAGE UNCASTABLE_SPELL_NAME
+export UNCASTABLE_MESSAGE
 if ! . uncastable; then
   exit 1
 fi
-unset UNCASTABLE_SPELL_NAME
 
 set -eu
 . env-clear
