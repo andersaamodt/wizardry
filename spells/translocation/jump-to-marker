@@ -21,11 +21,26 @@ USAGE
   ;;
 esac
 
-# Enforce sourced-only behavior
-# uncastable must be sourced (invoked), never executed (cast)
-if ! command -v uncastable >/dev/null 2>&1; then
-  . uncastable
+# Guard against direct execution (inline sourced-only check)
+_jump_to_marker_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) _jump_to_marker_sourced=1 ;;
+  esac
+else
+  _jump_to_marker_base=${0##*/}
+  case "$_jump_to_marker_base" in
+    sh|dash|bash|zsh|ksh|mksh) _jump_to_marker_sourced=1 ;;
+    jump-to-marker) _jump_to_marker_sourced=0 ;;
+    *) _jump_to_marker_sourced=1 ;;
+  esac
 fi
+
+if [ "$_jump_to_marker_sourced" -eq 0 ]; then
+  printf '%s\n' "This spell cannot be cast directly. Invoke it with: jump to marker" >&2
+  return 1 2>/dev/null || exit 1
+fi
+unset _jump_to_marker_sourced _jump_to_marker_base
 
 set -eu
 . env-clear
@@ -171,9 +186,10 @@ if [ ! -d "$destination" ]; then
         return 1 2>/dev/null || exit 1
 fi
 
-# Normalize paths to handle macOS double slashes
+# Normalize paths to handle macOS double slashes and symlinks
 current=$(pwd -P | sed 's|//|/|g')
-normalized_destination=$(printf '%s' "$destination" | sed 's|//|/|g')
+# Resolve destination path to real path (handles symlinks)
+normalized_destination=$(cd "$destination" && pwd -P | sed 's|//|/|g')
 if [ "$current" = "$normalized_destination" ]; then
         printf '%s\n' "You are already standing at marker '$marker_name'."
         # Touch marker to update mtime for cycling

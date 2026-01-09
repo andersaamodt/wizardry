@@ -34,13 +34,16 @@ unset _uc_check_sourced _uc_check_base
 
 set -eu
 
+# Get the actual script name for sourcing check
+_uncast_actual_script=${0##*/}
+
 _uncast_name=${1-}
 if [ -n "$_uncast_name" ]; then
   shift
 fi
 
 if [ -z "$_uncast_name" ]; then
-  _uncast_name=${0##*/}  # Equivalent to basename, avoids external command
+  _uncast_name=$_uncast_actual_script
 fi
 
 _uncast_sourced=0
@@ -52,7 +55,7 @@ else
   _uncast_base=${0##*/}
   case "$_uncast_base" in
     sh|dash|bash|zsh|ksh|mksh) _uncast_sourced=1 ;;
-    "$_uncast_name") _uncast_sourced=0 ;;
+    "$_uncast_actual_script") _uncast_sourced=0 ;;
     *) _uncast_sourced=1 ;;
   esac
 fi
