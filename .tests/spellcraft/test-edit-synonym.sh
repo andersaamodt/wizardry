@@ -36,13 +36,13 @@ test_edits_synonym_word() {
   assert_success || return 1
   
   # Verify old alias is gone
-  if grep -q "^alias oldalias=" "$synonyms_file"; then
+  if grep -q "^oldalias=" "$synonyms_file"; then
     TEST_FAILURE_REASON="old synonym still exists"
     return 1
   fi
   
   # Verify new alias exists
-  if ! grep -q "^alias newalias=" "$synonyms_file"; then
+  if ! grep -q "^newalias=" "$synonyms_file"; then
     TEST_FAILURE_REASON="new synonym not created"
     return 1
   fi
@@ -65,7 +65,7 @@ test_edits_target_spell() {
   assert_success || return 1
   
   # Verify new target
-  if ! grep -q "^alias myalias='printf'" "$synonyms_file"; then
+  if ! grep -q "^myalias=printf" "$synonyms_file"; then
     TEST_FAILURE_REASON="target spell not updated"
     return 1
   fi

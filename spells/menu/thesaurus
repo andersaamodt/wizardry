@@ -74,11 +74,10 @@ set -eu
           \#*|'') continue ;;
         esac
         
-        # Parse alias definition: alias word='spell'
-        if printf '%s' "$line" | grep -q "^alias "; then
-          synonym_word=$(printf '%s' "$line" | sed "s/^alias \\([^=]*\\)=.*$/\\1/")
-          target_spell=$(printf '%s' "$line" | sed "s/^alias [^=]*='\\(.*\\)'$/\\1/")
-          target_spell=$(printf '%s' "$target_spell" | sed "s/'\\\\''/'/g")
+        # Parse synonym definition: word=target
+        if printf '%s' "$line" | grep -q "^[^=]*="; then
+          synonym_word=$(printf '%s' "$line" | sed "s/^\\([^=]*\\)=.*$/\\1/")
+          target_spell=$(printf '%s' "$line" | sed "s/^[^=]*=\\(.*\\)$/\\1/")
           
           if [ -n "$synonym_word" ] && [ -n "$target_spell" ]; then
             printf '%s → %s\n' "$synonym_word" "$target_spell"
@@ -95,17 +94,16 @@ set -eu
           \#*|'') continue ;;
         esac
         
-        # Parse alias definition: alias word='spell'
-        if printf '%s' "$line" | grep -q "^alias "; then
-          synonym_word=$(printf '%s' "$line" | sed "s/^alias \\([^=]*\\)=.*$/\\1/")
-          target_spell=$(printf '%s' "$line" | sed "s/^alias [^=]*='\\(.*\\)'$/\\1/")
-          target_spell=$(printf '%s' "$target_spell" | sed "s/'\\\\''/'/g")
+        # Parse synonym definition: word=target
+        if printf '%s' "$line" | grep -q "^[^=]*="; then
+          synonym_word=$(printf '%s' "$line" | sed "s/^\\([^=]*\\)=.*$/\\1/")
+          target_spell=$(printf '%s' "$line" | sed "s/^[^=]*=\\(.*\\)$/\\1/")
           
           if [ -n "$synonym_word" ] && [ -n "$target_spell" ]; then
             # Check if this default is overridden by a custom synonym
             is_overridden=0
             if [ -f "$custom_file" ]; then
-              custom_override=$(grep "^alias $synonym_word=" "$custom_file" 2>/dev/null || true)
+              custom_override=$(grep "^$synonym_word=" "$custom_file" 2>/dev/null || true)
               if [ -n "$custom_override" ]; then
                 is_overridden=1
               fi
@@ -153,11 +151,10 @@ set -eu
           \#*|'') continue ;;
         esac
         
-        # Parse alias definition: alias word='spell'
-        if printf '%s' "$line" | grep -q "^alias "; then
-          synonym_word=$(printf '%s' "$line" | sed "s/^alias \\([^=]*\\)=.*$/\\1/")
-          target_spell=$(printf '%s' "$line" | sed "s/^alias [^=]*='\\(.*\\)'$/\\1/")
-          target_spell=$(printf '%s' "$target_spell" | sed "s/'\\\\''/'/g")
+        # Parse synonym definition: word=target
+        if printf '%s' "$line" | grep -q "^[^=]*="; then
+          synonym_word=$(printf '%s' "$line" | sed "s/^\\([^=]*\\)=.*$/\\1/")
+          target_spell=$(printf '%s' "$line" | sed "s/^[^=]*=\\(.*\\)$/\\1/")
           
           if [ -n "$synonym_word" ] && [ -n "$target_spell" ]; then
             has_custom=1
@@ -172,7 +169,7 @@ set -eu
     # Add separator if we have both custom and default synonyms
     has_default=0
     if [ -f "$default_file" ]; then
-      has_default=$(grep "^alias " "$default_file" 2>/dev/null | wc -l || printf '0')
+      has_default=$(grep "^[^=]*=" "$default_file" 2>/dev/null | wc -l || printf '0')
     fi
     
     if [ "$has_custom" -eq 1 ] && [ "$has_default" -gt 0 ]; then
@@ -187,16 +184,15 @@ set -eu
           \#*|'') continue ;;
         esac
         
-        # Parse alias definition: alias word='spell'
-        if printf '%s' "$line" | grep -q "^alias "; then
-          synonym_word=$(printf '%s' "$line" | sed "s/^alias \\([^=]*\\)=.*$/\\1/")
-          target_spell=$(printf '%s' "$line" | sed "s/^alias [^=]*='\\(.*\\)'$/\\1/")
-          target_spell=$(printf '%s' "$target_spell" | sed "s/'\\\\''/'/g")
+        # Parse synonym definition: word=target
+        if printf '%s' "$line" | grep -q "^[^=]*="; then
+          synonym_word=$(printf '%s' "$line" | sed "s/^\\([^=]*\\)=.*$/\\1/")
+          target_spell=$(printf '%s' "$line" | sed "s/^[^=]*=\\(.*\\)$/\\1/")
           
           if [ -n "$synonym_word" ] && [ -n "$target_spell" ]; then
             # Check if this default is overridden by a custom synonym
             is_overridden=0
-            custom_override=$(grep "^alias $synonym_word=" "$custom_file" 2>/dev/null || true)
+            custom_override=$(grep "^$synonym_word=" "$custom_file" 2>/dev/null || true)
             if [ -f "$custom_file" ] && [ -n "$custom_override" ]; then
               is_overridden=1
             fi

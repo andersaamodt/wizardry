@@ -33,7 +33,7 @@ test_deletes_existing_synonym() {
   assert_output_contains "Synonym deleted" || return 1
   
   # Verify alias is removed from file
-  if grep -q "^alias myalias=" "$synonyms_file"; then
+  if grep -q "^myalias=" "$synonyms_file"; then
     TEST_FAILURE_REASON="synonym still exists in file"
     return 1
   fi
