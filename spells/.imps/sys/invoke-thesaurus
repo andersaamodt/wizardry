@@ -134,7 +134,7 @@ where-is which"
     # If spell file found, check for uncastable usage
     if [ -n "$_spell_path" ] && [ -f "$_spell_path" ]; then
       # Read first 30 lines and check if spell sources or checks for uncastable
-      if head -30 "$_spell_path" 2>/dev/null | grep -q "uncastable"; then
+      if head -30 "$_spell_path" 2>/dev/null | grep -qi "uncastable"; then
         return 0
       fi
     fi

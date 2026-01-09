@@ -31,7 +31,8 @@ else
 fi
 
 if [ "$_jt_sourced" -eq 0 ]; then
-  printf '%s\n' 'Use "jump trash" to invoke this spell, as it is uncastable directly.' >&2
+  printf '%s\n' "jump-trash: must be sourced, not executed" >&2
+  printf '%s\n' "Usage: . jump-trash" >&2
   exit 1
 fi
 unset _jt_sourced _jt_base
