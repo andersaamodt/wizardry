@@ -17,12 +17,12 @@ wizardry_base_path() {
 
 run_jump_sourced() {
   marker_arg=${1:-}
-  markers_dir=${2:-$WIZARDRY_TMPDIR/markers}
+  spellbook_dir=${2:-$WIZARDRY_TMPDIR}
   workdir=${3:-$WIZARDRY_TMPDIR}
   
   PATH="$WIZARDRY_IMPS_PATH:$(wizardry_base_path):/bin:/usr/bin"
-  JUMP_TO_MARKERS_DIR="$markers_dir"
-  export JUMP_TO_MARKERS_DIR PATH
+  SPELLBOOK_DIR="$spellbook_dir"
+  export SPELLBOOK_DIR PATH
   
   # Create a script that sources jump-to-marker in the same shell
   test_script="$WIZARDRY_TMPDIR/jump-test.sh"
@@ -49,9 +49,10 @@ INNEREOF
 test_jump_cycle_after_explicit_jump() {
   skip-if-compiled || return $?
   
+  spellbook_dir="$WIZARDRY_TMPDIR/spellbook-cycle"
+  markers_dir="$spellbook_dir/.markers"
   tower="$WIZARDRY_TMPDIR/tower"
   wizardry_dir="$WIZARDRY_TMPDIR/wizardry"
-  markers_dir="$WIZARDRY_TMPDIR/markers-cycle"
   
   mkdir -p "$tower" "$wizardry_dir" "$markers_dir"
   
@@ -66,13 +67,13 @@ test_jump_cycle_after_explicit_jump() {
   sleep 1  # Ensure different mtime
   
   # Jump to marker 2 from tower (already at marker 2's location)
-  run_jump_sourced "2" "$markers_dir" "$wizardry_dir"
+  run_jump_sourced "2" "$spellbook_dir" "$wizardry_dir"
   assert_success || return 1
   # Should say "already standing at marker '2'"
   assert_output_contains "already standing" || return 1
   
   # Jump to marker 1 from wizardry_dir
-  run_jump_sourced "1" "$markers_dir" "$wizardry_dir"
+  run_jump_sourced "1" "$spellbook_dir" "$wizardry_dir"
   assert_success || return 1
   # Should NOT say "already standing"
   if printf '%s' "$OUTPUT" | grep -q "already standing"; then
@@ -84,13 +85,13 @@ test_jump_cycle_after_explicit_jump() {
   
   # Now jump with no args - should go to marker 1 (default behavior)
   # Since we're at tower (marker 1), it should say "already standing"
-  run_jump_sourced "" "$markers_dir" "$tower"
+  run_jump_sourced "" "$spellbook_dir" "$tower"
   assert_success || return 1
   # Should say already at marker 1
   assert_output_contains "already standing" || return 1
   
   # Now use "next" to cycle - should go to marker 2
-  run_jump_sourced "next" "$markers_dir" "$tower"
+  run_jump_sourced "next" "$spellbook_dir" "$tower"
   assert_success || return 1
   # Should jump to marker 2 (wizardry_dir)
   if printf '%s' "$OUTPUT" | grep -q "already standing"; then
@@ -104,9 +105,10 @@ test_jump_cycle_after_explicit_jump() {
 test_marker_mtime_updated_on_jump() {
   skip-if-compiled || return $?
   
+  spellbook_dir="$WIZARDRY_TMPDIR/spellbook-mtime"
+  markers_dir="$spellbook_dir/.markers"
   dest1="$WIZARDRY_TMPDIR/dest1-mtime"
   dest2="$WIZARDRY_TMPDIR/dest2-mtime"
-  markers_dir="$WIZARDRY_TMPDIR/markers-mtime"
   
   mkdir -p "$dest1" "$dest2" "$markers_dir"
   
@@ -123,7 +125,7 @@ test_marker_mtime_updated_on_jump() {
   marker1_mtime_before=$(stat -c %Y "$markers_dir/1" 2>/dev/null || stat -f %m "$markers_dir/1" 2>/dev/null)
   
   # Jump to marker 1
-  run_jump_sourced "1" "$markers_dir" "$dest2"
+  run_jump_sourced "1" "$spellbook_dir" "$dest2"
   assert_success || return 1
   
   sleep 1
@@ -141,8 +143,9 @@ test_marker_mtime_updated_on_jump() {
 test_already_at_marker_updates_mtime() {
   skip-if-compiled || return $?
   
+  spellbook_dir="$WIZARDRY_TMPDIR/spellbook-already"
+  markers_dir="$spellbook_dir/.markers"
   dest="$WIZARDRY_TMPDIR/dest-already"
-  markers_dir="$WIZARDRY_TMPDIR/markers-already"
   
   mkdir -p "$dest" "$markers_dir"
   
@@ -155,7 +158,7 @@ test_already_at_marker_updates_mtime() {
   marker1_mtime_before=$(stat -c %Y "$markers_dir/1" 2>/dev/null || stat -f %m "$markers_dir/1" 2>/dev/null)
   
   # Jump to marker 1 when already at that location
-  run_jump_sourced "1" "$markers_dir" "$dest"
+  run_jump_sourced "1" "$spellbook_dir" "$dest"
   assert_success || return 1
   assert_output_contains "already standing" || return 1
   

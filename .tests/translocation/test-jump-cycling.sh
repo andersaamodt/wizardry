@@ -92,7 +92,8 @@ test_jump_next_cycles_through_markers() {
   cd "$tmpdir" || return 1
   
   # Test: jump next should cycle from marker 3 (most recent) to marker 1 (next in sequence)
-  . "$ROOT_DIR/spells/translocation/jump-to-marker" next >/dev/null 2>&1
+  set -- next
+  . "$ROOT_DIR/spells/translocation/jump-to-marker" >/dev/null 2>&1
   result=$?
   [ $result -eq 0 ] || return 1
   
@@ -103,7 +104,8 @@ test_jump_next_cycles_through_markers() {
   
   # Now marker 1 is most recent, so next should go to marker 2
   sleep 0.1
-  . "$ROOT_DIR/spells/translocation/jump-to-marker" next >/dev/null 2>&1
+  set -- next
+  . "$ROOT_DIR/spells/translocation/jump-to-marker" >/dev/null 2>&1
   result=$?
   [ $result -eq 0 ] || return 1
   
