@@ -14,37 +14,37 @@ field="${2:-all}"
 case "$level" in
   0)
     name='POSIX & Platform Foundation'
-    spells='detect-posix:divination detect-distro:divination verify-posix:.wizardry'
+    spells='detect-distro:divination detect-posix:divination verify-posix:.wizardry'
     imps=''
     ;;
   1)
     name='Banish & Validation Infrastructure'
     spells='banish:wards validate-spells:.wizardry'
-    imps='sys/spell-levels cond/has cond/there cond/is cond/empty cond/nonempty cond/no cond/within-range cond/lacks cond/newer cond/full cond/gone cond/is-path cond/has-ancestor cond/is-posint cond/yes cond/given cond/older out/say out/warn out/die out/fail out/info out/step out/success out/debug out/ok out/heading-section out/heading-separator out/heading-simple out/usage-error out/first-of out/or-else out/print-pass out/print-fail out/disable-palette out/quiet text/pluralize text/count-words'
+    imps='cond/empty cond/full cond/given cond/gone cond/has cond/has-ancestor cond/is cond/is-path cond/is-posint cond/lacks cond/newer cond/no cond/nonempty cond/older cond/there cond/within-range cond/yes out/debug out/die out/disable-palette out/fail out/first-of out/heading-section out/heading-separator out/heading-simple out/info out/ok out/or-else out/print-fail out/print-pass out/quiet out/say out/step out/success out/usage-error out/warn sys/spell-levels text/count-words text/pluralize'
     ;;
   2)
     name='Installation Infrastructure'
     spells=''
-    imps='declare-globals sys/invoke-wizardry sys/invoke-thesaurus sys/require-wizardry sys/require sys/env-clear sys/env-or sys/on-exit sys/clear-traps sys/on sys/now sys/any sys/need sys/must sys/uncastable sys/where sys/autocast sys/ask-install-wizardry sys/clipboard-available sys/nix-shell-add sys/nix-shell-remove sys/nix-shell-status sys/nix-rebuild fs/temp-file fs/temp-dir fs/cleanup-file fs/cleanup-dir input/tty-save input/tty-restore input/tty-raw input/read-line str/contains str/trim str/equals str/starts str/ends str/lower str/upper str/seeks str/differs str/matches paths/here paths/parent paths/file-name paths/abs-path paths/make paths/path paths/tilde-path paths/strip-trailing-slashes paths/norm-path paths/script-dir paths/temp'
+    imps='declare-globals fs/cleanup-dir fs/cleanup-file fs/temp-dir fs/temp-file input/read-line input/tty-raw input/tty-restore input/tty-save paths/abs-path paths/file-name paths/here paths/make paths/norm-path paths/parent paths/path paths/script-dir paths/strip-trailing-slashes paths/temp paths/tilde-path str/contains str/differs str/ends str/equals str/lower str/matches str/seeks str/starts str/trim str/upper sys/any sys/ask-install-wizardry sys/autocast sys/clear-traps sys/clipboard-available sys/env-clear sys/env-or sys/invoke-thesaurus sys/invoke-wizardry sys/must sys/need sys/nix-rebuild sys/nix-shell-add sys/nix-shell-remove sys/nix-shell-status sys/now sys/on sys/on-exit sys/require sys/require-wizardry sys/uncastable sys/where'
     ;;
   3)
     name='Glossary & Parsing'
     spells='generate-glosses:.wizardry'
-    imps='lex/parse fs/find-executable'
+    imps='fs/find-executable lex/parse'
     ;;
   4)
     name='Menu System'
-    spells='menu await-keypress colors main-menu:menu'
-    imps='menu/fathom-terminal menu/fathom-cursor menu/move-cursor menu/cursor-blink menu/is-submenu menu/is-integer menu/category-title menu/exit-label menu/is-installable'
+    spells='await-keypress colors main-menu:menu menu'
+    imps='menu/category-title menu/cursor-blink menu/exit-label menu/fathom-cursor menu/fathom-terminal menu/is-installable menu/is-integer menu/is-submenu menu/move-cursor'
     ;;
   5)
     name='Navigation'
-    spells='jump-to-marker:translocation mark-location:translocation go-up:translocation'
+    spells='go-up:translocation jump-to-location:translocation jump-to-marker:translocation mark-location:translocation'
     imps=''
     ;;
   6)
     name='Task Priorities'
-    spells='get-priority:priorities get-new-priority:priorities prioritize:priorities deprioritize:priorities upvote:priorities get-card:priorities priorities:menu'
+    spells='deprioritize:priorities get-card:priorities get-new-priority:priorities get-priority:priorities priorities:menu prioritize:priorities upvote:priorities'
     imps=''
     ;;
   7)
@@ -54,27 +54,27 @@ case "$level" in
     ;;
   8)
     name='Arcane File Operations'
-    spells='copy:arcane trash:arcane jump-trash:arcane forall:arcane read-magic:arcane file-list:arcane'
-    imps='fs/backup fs/clip-copy fs/clip-paste fs/ensure-parent-dir menu/detect-trash text/read-file text/write-file text/lines text/each text/append text/count-chars text/make-indent text/drop text/last text/take text/skip text/first text/pick text/field'
+    spells='copy:arcane file-list:arcane forall:arcane jump-trash:arcane read-magic:arcane trash:arcane'
+    imps='fs/backup fs/clip-copy fs/clip-paste fs/ensure-parent-dir menu/detect-trash text/append text/count-chars text/drop text/each text/field text/first text/last text/lines text/make-indent text/pick text/read-file text/skip text/take text/write-file'
     ;;
   9)
     name='Basic Cantrips'
-    spells='ask ask-yn ask-text list-files max-length move ask-number memorize'
-    imps='input/choose-input input/validate-number input/validate-path input/require-command lex/from lex/to lex/and-then lex/into lex/disambiguate lex/and lex/or'
+    spells='ask ask-number ask-text ask-yn list-files max-length memorize move'
+    imps='input/choose-input input/require-command input/validate-command input/validate-name input/validate-number input/validate-path lex/and lex/and-then lex/disambiguate lex/from lex/into lex/or lex/to'
     ;;
   10)
     name='System Configuration'
-    spells='config:system logs:system package-managers:system learn-spellbook:system'
-    imps='fs/config-get fs/config-set fs/config-has fs/config-del pkg/pkg-manager pkg/pkg-has pkg/pkg-install pkg/pkg-remove pkg/pkg-update pkg/pkg-upgrade'
+    spells='config:system learn-spellbook:system logs:system package-managers:system'
+    imps='fs/config-del fs/config-get fs/config-has fs/config-set pkg/pkg-has pkg/pkg-install pkg/pkg-manager pkg/pkg-remove pkg/pkg-update pkg/pkg-upgrade'
     ;;
   11)
     name='Testing Infrastructure'
-    spells='test-spell:.wizardry test-magic:.wizardry pocket-dimension:system wizard-eyes spellbook-store:.wizardry'
-    imps='test/boot/assert-error-contains test/boot/assert-failure test/boot/assert-file-contains test/boot/assert-output-contains test/boot/assert-path-exists test/boot/assert-path-missing test/boot/assert-status test/boot/assert-success test/boot/find-repo-root test/boot/finish-tests test/boot/init-test-counters test/boot/link-tools test/boot/make-fixture test/boot/make-tempdir test/boot/provide-basic-tools test/boot/record-failure-detail test/boot/report-result test/boot/run-bwrap test/boot/run-cmd test/boot/run-macos-sandbox test/boot/run-spell test/boot/run-spell-in-dir test/boot/run-test-case test/boot/skip-if-compiled test/boot/skip-if-uncompiled test/boot/stub-nix-env test/boot/stub-pacman test/boot/test-fail test/boot/test-heading test/boot/test-lack test/boot/test-pass test/boot/test-skip test/boot/test-summary test/boot/write-apt-stub test/boot/write-command-stub test/boot/write-pkgin-stub test/boot/write-sudo-stub test/stub-cursor-blink test/stub-fathom-terminal test/stub-stty test/stub-await-keypress test/stub-fathom-cursor test/stub-move-cursor test/test-bootstrap sys/rc-add-line sys/rc-has-line sys/rc-remove-line'
+    spells='pocket-dimension:system spellbook-store:.wizardry test-magic:.wizardry test-spell:.wizardry wizard-eyes'
+    imps='sys/rc-add-line sys/rc-has-line sys/rc-remove-line test/boot/assert-error-contains test/boot/assert-failure test/boot/assert-file-contains test/boot/assert-output-contains test/boot/assert-path-exists test/boot/assert-path-missing test/boot/assert-status test/boot/assert-success test/boot/find-repo-root test/boot/finish-tests test/boot/init-test-counters test/boot/link-tools test/boot/make-fixture test/boot/make-tempdir test/boot/provide-basic-tools test/boot/record-failure-detail test/boot/report-result test/boot/run-bwrap test/boot/run-cmd test/boot/run-macos-sandbox test/boot/run-spell test/boot/run-spell-in-dir test/boot/run-test-case test/boot/skip-if-compiled test/boot/skip-if-uncompiled test/boot/stub-nix-env test/boot/stub-pacman test/boot/test-fail test/boot/test-heading test/boot/test-lack test/boot/test-pass test/boot/test-skip test/boot/test-summary test/boot/write-apt-stub test/boot/write-command-stub test/boot/write-pkgin-stub test/boot/write-sudo-stub test/stub-await-keypress test/stub-cursor-blink test/stub-fathom-cursor test/stub-fathom-terminal test/stub-move-cursor test/stub-stty test/test-bootstrap'
     ;;
   12)
     name='System Maintenance'
-    spells='update-wizardry:.wizardry update-all:system kill-process:system'
+    spells='kill-process:system update-all:system update-wizardry:.wizardry'
     imps='fs/backup-nix-config'
     ;;
   13)
@@ -84,22 +84,22 @@ case "$level" in
     ;;
   14)
     name='Divination'
-    spells='detect-rc-file:divination detect-magic:divination identify-room:divination'
-    imps='sys/os sys/term text/detect-indent-char text/detect-indent-width lang/possessive'
+    spells='detect-magic:divination detect-rc-file:divination identify-room:divination'
+    imps='lang/possessive sys/os sys/term text/detect-indent-char text/detect-indent-width'
     ;;
   15)
     name='Advanced MUD Features'
-    spells='decorate:mud choose-player:mud damage-file:mud magic-missile:mud'
+    spells='choose-player:mud damage-file:mud decorate:mud magic-missile:mud'
     imps=''
     ;;
   16)
     name='Cryptography'
-    spells='hash:crypto evoke-hash:crypto hashchant:crypto'
+    spells='evoke-hash:crypto hash:crypto hashchant:crypto'
     imps=''
     ;;
   17)
     name='SSH & Remote Access'
-    spells='validate-ssh-key enchant-portkey:translocation follow-portkey:translocation open-portal:translocation open-teletype:translocation'
+    spells='enchant-portkey:translocation follow-portkey:translocation open-portal:translocation open-teletype:translocation validate-ssh-key'
     imps=''
     ;;
   18)
@@ -109,42 +109,42 @@ case "$level" in
     ;;
   19)
     name='Extended Attributes'
-    spells='enchant:enchant disenchant:enchant enchantment-to-yaml:enchant yaml-to-enchantment:enchant'
+    spells='disenchant:enchant enchant:enchant enchantment-to-yaml:enchant yaml-to-enchantment:enchant'
     imps=''
     ;;
   20)
     name='Process & System Info (PSI)'
-    spells='list-contacts:psi read-contact:psi'
+    spells='check:tasks get-checked:tasks list-contacts:psi read-contact:psi rename-interactive:tasks uncheck:tasks'
     imps=''
     ;;
   21)
     name='Spellcraft Development Tools'
-    spells='scribe-spell:spellcraft lint-magic:spellcraft compile-spell:spellcraft learn:spellcraft forget:spellcraft erase-spell:spellcraft doppelganger:spellcraft add-synonym:spellcraft edit-synonym:spellcraft delete-synonym:spellcraft reset-default-synonyms:spellcraft bind-tome:spellcraft unbind-tome:spellcraft merge-yaml-text:spellcraft'
+    spells='add-synonym:spellcraft bind-tome:spellcraft compile-spell:spellcraft delete-synonym:spellcraft doppelganger:spellcraft edit-synonym:spellcraft erase-spell:spellcraft forget:spellcraft learn:spellcraft lint-magic:spellcraft merge-yaml-text:spellcraft reset-default-synonyms:spellcraft scribe-spell:spellcraft unbind-tome:spellcraft'
     imps=''
     ;;
   22)
     name='Core Menu Infrastructure'
-    spells='spellbook:menu cast:menu spell-menu:menu'
+    spells='cast:menu spell-menu:menu spellbook:menu'
     imps=''
     ;;
   23)
     name='System & Configuration Menus'
-    spells='system-menu:menu install-menu:menu synonym-menu:menu thesaurus:menu'
+    spells='install-menu:menu synonym-menu:menu system-menu:menu thesaurus:menu'
     imps=''
     ;;
   24)
     name='MUD Administration Menus'
-    spells='mud:menu mud-menu:menu mud-settings:menu mud-admin-menu:menu add-ssh-player:menu/mud-admin new-player:menu/mud-admin set-player:menu/mud-admin'
+    spells='add-ssh-player:menu/mud-admin mud:menu mud-admin-menu:menu mud-menu:menu mud-settings:menu new-player:menu/mud-admin set-player:menu/mud-admin'
     imps=''
     ;;
   25)
     name='Domain-Specific Menus'
-    spells='network-menu:menu services-menu:menu shutdown-menu:menu priority-menu:menu users-menu:menu profile-tests:menu/system'
+    spells='network-menu:menu priority-menu:menu profile-tests:.wizardry services-menu:menu shutdown-menu:menu users-menu:menu'
     imps=''
     ;;
   26)
     name='System Service Management'
-    spells='install-service-template:system is-service-installed:system enable-service:system disable-service:system start-service:system stop-service:system restart-service:system service-status:system remove-service:system reload-ssh:system restart-ssh:system'
+    spells='disable-service:system enable-service:system install-service-template:system is-service-installed:system reload-ssh:system remove-service:system restart-service:system restart-ssh:system service-status:system start-service:system stop-service:system'
     imps=''
     ;;
   27)
