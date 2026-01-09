@@ -902,6 +902,17 @@ banish_process_level() {
         fi
       fi
 
+      # Check environment variable expansion (needed for glossary parsing)
+      # Glossary system relies on dynamic variable expansion
+      test_var="test_value"
+      test_expansion=$(eval "printf '%s' \"\$test_var\"" 2>/dev/null || printf '')
+      if [ "$test_expansion" = "test_value" ]; then
+        printf '  %s✓%s Variable expansion: eval works correctly\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Variable expansion: eval not working\n' "$_red" "$_reset"
+        return 1
+      fi
+
       # Check spells
       spell_list=$("$spell_levels_script" 3 spells)
       if [ -n "$spell_list" ]; then
@@ -1069,7 +1080,33 @@ banish_process_level() {
       ;;
 
     6)
-      # Level 6: Task Priorities (no special checks needed - just validate spells)
+      # Level 6: Task Priorities
+      
+      # Check file locking capability (priorities use file-based state)
+      # Task priorities rely on atomic file operations and locking
+      tmp_root=${TMPDIR:-/tmp}
+      lock_test="$tmp_root/.banish-lock-test.$$"
+      
+      # Test that file locking works (flock or similar)
+      if command -v flock >/dev/null 2>&1; then
+        # Test flock
+        if printf 'test' > "$lock_test" 2>/dev/null; then
+          if flock -n "$lock_test" printf 'locked' 2>/dev/null; then
+            rm -f "$lock_test" 2>/dev/null || :
+            printf '  %s✓%s File locking: flock available\n' "$_green" "$_reset"
+          else
+            rm -f "$lock_test" 2>/dev/null || :
+            printf '  %s✗%s File locking: flock not working\n' "$_red" "$_reset"
+            return 1
+          fi
+        else
+          printf '  %s✗%s File locking: Cannot create test file\n' "$_red" "$_reset"
+          return 1
+        fi
+      else
+        # No flock available - priorities may have race conditions
+        printf '  %s✓%s File locking: flock not available (priorities may have race conditions)\n' "$_green" "$_reset"
+      fi
       
       # Check spells
       spell_list=$("$spell_levels_script" 6 spells)
@@ -1292,6 +1329,34 @@ banish_process_level() {
         return 1
       fi
 
+      # Check recursive directory operations (needed for forall, copy with dirs)
+      # Arcane file operations often need to traverse directory trees
+      tmp_dir=$(mktemp -d "${tmp_root%/}/banish-dir.XXXXXX" 2>/dev/null || printf '')
+      if [ -n "$tmp_dir" ]; then
+        # Create nested structure
+        if mkdir -p "$tmp_dir/sub1/sub2" 2>/dev/null; then
+          # Test recursive find
+          if find "$tmp_dir" -type d >/dev/null 2>&1; then
+            # Test recursive removal
+            if rm -rf "$tmp_dir" 2>/dev/null; then
+              printf '  %s✓%s Recursive operations: mkdir -p, find, rm -rf work\n' "$_green" "$_reset"
+            else
+              rm -rf "$tmp_dir" 2>/dev/null || :
+              printf '  %s✗%s Recursive operations: rm -rf failed\n' "$_red" "$_reset"
+              return 1
+            fi
+          else
+            rm -rf "$tmp_dir" 2>/dev/null || :
+            printf '  %s✗%s Recursive operations: find failed\n' "$_red" "$_reset"
+            return 1
+          fi
+        else
+          rm -rf "$tmp_dir" 2>/dev/null || :
+          printf '  %s✗%s Recursive operations: mkdir -p failed\n' "$_red" "$_reset"
+          return 1
+        fi
+      fi
+
       # Check spells
       spell_list=$("$spell_levels_script" 8 spells)
       if [ -n "$spell_list" ]; then
@@ -1368,6 +1433,15 @@ banish_process_level() {
         if [ ! -r "$input_tty" ] || [ ! -w "$input_tty" ]; then
           return 1
         fi
+      fi
+
+      # Check read builtin (needed for ask-text, ask-yn)
+      # Basic cantrips rely on shell's read builtin for user input
+      if printf 'test\n' | ( read -r test_input; [ "$test_input" = "test" ] ) 2>/dev/null; then
+        printf '  %s✓%s Read builtin: Shell read command works\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Read builtin: Shell read command not working\n' "$_red" "$_reset"
+        return 1
       fi
 
       # Check spells
@@ -2033,9 +2107,103 @@ banish_process_level() {
         return 1
       fi
       ;;
+
+    12)
+      # Level 12: System Maintenance
+      
+      # Check git availability (update-wizardry uses git)
+      # System maintenance often requires version control operations
+      if command -v git >/dev/null 2>&1; then
+        # Verify git actually works (can run git --version)
+        if git --version >/dev/null 2>&1; then
+          printf '  %s✓%s Version control: git available\n' "$_green" "$_reset"
+        else
+          printf '  %s✗%s Version control: git found but not working\n' "$_red" "$_reset"
+          return 1
+        fi
+      else
+        printf '  %s✗%s Version control: git not found\n' "$_red" "$_reset"
+        printf '    update-wizardry requires git for repository updates\n'
+        if [ "$skip_heal" -eq 0 ]; then
+          manage_system_command=""
+          if command -v manage-system-command >/dev/null 2>&1; then
+            manage_system_command="manage-system-command"
+          elif [ -x "${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command" ]; then
+            manage_system_command="${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command"
+          fi
+          if [ -n "$manage_system_command" ]; then
+            printf '    Attempting to install git...\n'
+            "$manage_system_command" git git >/dev/null 2>&1 || :
+            if command -v git >/dev/null 2>&1; then
+              printf '    %s✓%s git installed\n' "$_green" "$_reset"
+            else
+              printf '    %s✗%s git installation failed\n' "$_red" "$_reset"
+            fi
+          fi
+        fi
+        if ! command -v git >/dev/null 2>&1; then
+          return 1
+        fi
+      fi
+
+      # Check spells
+      spell_list=$("$spell_levels_script" 12 spells)
+      has_missing_spells=0
+      if [ -n "$spell_list" ]; then
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || has_missing_spells=1
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
+        else
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
+        
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          has_missing_spells=1
+        fi
+      fi
+
+      # Check imps
+      imp_list=$("$spell_levels_script" 12 imps)
+      had_imps=0
+      if [ -n "$imp_list" ]; then
+        had_imps=1
+        new_imp_list=""
+        for imp in $imp_list; do
+          case " ${_banish_seen_imps} " in
+            *" ${imp} "*) ;;
+            *)
+              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
+              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              ;;
+          esac
+        done
+        imp_list=$new_imp_list
+      fi
+      if [ -n "$imp_list" ]; then
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
+        else
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
+      elif [ "$had_imps" -eq 1 ]; then
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      else
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      fi
+      
+      if [ "$has_missing_spells" -eq 1 ]; then
+        return 1
+      fi
+      ;;
       
     *)
-      # Levels 6-7, 9-10, 13-17, 19-20, 22, 25-28: Standard validation pattern
+      # Levels 13-17, 19-20, 22, 25-28: Standard validation pattern
       
       # Check spells
       spell_list=$("$spell_levels_script" "$level" spells)
