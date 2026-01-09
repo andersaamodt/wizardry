@@ -23,7 +23,7 @@ fi
 
 file=$1
 
-if [ ! -f "$file" ]; then
+if [ ! -e "$file" ]; then
   printf '%s\n' "deprioritize: file not found: $file" >&2
   exit 1
 fi
