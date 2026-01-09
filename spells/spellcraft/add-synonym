@@ -157,7 +157,9 @@ set -eu
     spell_path="$wizardry_dir/spells/$target_first_word"
   else
     # Try common spell directories
-    for spell_dir in translocation cantrips arcane divination enchant psi crypto wards mud spellcraft menu system; do
+    spell_dirs="translocation cantrips arcane divination enchant psi"
+    spell_dirs="$spell_dirs crypto wards mud spellcraft menu system"
+    for spell_dir in $spell_dirs; do
       if [ -f "$wizardry_dir/spells/$spell_dir/$target_first_word" ]; then
         spell_path="$wizardry_dir/spells/$spell_dir/$target_first_word"
         break
@@ -228,13 +230,14 @@ set -eu
         ;;
     esac
     
-    # If overwriting a default, we create/update in custom
-    # If overwriting a custom, we update in custom
-    # Remove old custom definition if it exists (both alias and function forms)
+    # If overwriting, remove old definition (alias and function forms)
     if [ -f "$custom_file" ]; then
-      if grep -q "^alias $synonym_word=" "$custom_file" 2>/dev/null || grep -q "^$synonym_word()" "$custom_file" 2>/dev/null; then
+      has_alias=$(grep -q "^alias $synonym_word=" "$custom_file" 2>/dev/null && echo 1 || echo 0)
+      has_func=$(grep -q "^$synonym_word()" "$custom_file" 2>/dev/null && echo 1 || echo 0)
+      if [ "$has_alias" -eq 1 ] || [ "$has_func" -eq 1 ]; then
         temp_file=$(temp-file synonyms) || exit 1
-        grep -v "^alias $synonym_word=" "$custom_file" | grep -v "^$synonym_word()" > "$temp_file" || true
+        grep -v "^alias $synonym_word=" "$custom_file" | \
+          grep -v "^$synonym_word()" > "$temp_file" || true
         mv "$temp_file" "$custom_file"
       fi
     fi
@@ -261,11 +264,12 @@ HEADER
   if [ "$spell_must_be_sourced" -eq 1 ]; then
     case "$synonym_word" in
       *-*)
-        # Hyphenated name - must use alias even though it won't work for sourcing
-        # This is a POSIX sh limitation - function names can't have hyphens
+        # Hyphenated - must use alias (POSIX sh limitation)
+        # Function names can't have hyphens in POSIX sh
         printf "alias %s='%s'\n" "$synonym_word" "$escaped_spell" >> "$custom_file"
         success "Synonym created: $synonym_word -> $target_spell"
-        warn "add-synonym: target '$target_first_word' requires sourcing, but alias won't work correctly"
+        warn_msg="target '$target_first_word' requires sourcing"
+        warn "add-synonym: $warn_msg, but alias won't work correctly"
         info "Note: Hyphenated names cannot be functions in POSIX sh"
         info "Reload with: . invoke-thesaurus"
         ;;

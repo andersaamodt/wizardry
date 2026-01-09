@@ -82,7 +82,8 @@ set -eu
   fi
   
   if [ ! -d "$wizardry_dir/spells" ]; then
-    printf 'generate-glosses: WIZARDRY_DIR does not contain spells directory: %s\n' "$wizardry_dir" >&2
+    err_msg="WIZARDRY_DIR does not contain spells directory:"
+    printf 'generate-glosses: %s %s\n' "$err_msg" "$wizardry_dir" >&2
     exit 1
   fi
   
@@ -251,7 +252,11 @@ uname|uniq|wc|xargs)
       
       # Check if first word is blacklisted
       if ! is_first_word_blacklisted "$_first_word"; then
-        [ "$quiet" -eq 0 ] && printf 'generate-glosses: WARNING: Skipping spell "%s" - first word "%s" conflicts with system command\n' "$spell_name" "$_first_word" >&2
+        if [ "$quiet" -eq 0 ]; then
+          warn_msg="Skipping spell \"$spell_name\" - first word"
+          warn_msg="$warn_msg \"$_first_word\" conflicts with system command"
+          printf 'generate-glosses: WARNING: %s\n' "$warn_msg" >&2
+        fi
         continue
       fi
       
