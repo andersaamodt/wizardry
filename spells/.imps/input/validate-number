@@ -1,21 +1,9 @@
 #!/bin/sh
-
-# This spell validates whether a string is a valid non-negative integer.
-# Use it to check numeric input before processing.
-
-case "${1-}" in
---help|--usage|-h)
-  cat <<'USAGE'
-Usage: validate-number <string>
-
-Check whether a string is a non-negative integer. Exits 0 when the value is digits only and 1 when it is not.
-USAGE
-  exit 0
-  ;;
-esac
+# validate-number STRING - check if STRING is a non-negative integer
+# Returns 0 when the value is digits only, 1 otherwise
+# Example: validate-number "123" && echo "valid"
 
 set -eu
-. env-clear
 
 # Check argument
 if [ -z "${1+x}" ]; then

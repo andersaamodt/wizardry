@@ -1,24 +1,11 @@
 #!/bin/sh
-
-# Report terminal dimensions using terminfo via tput.
-
-case "${1-}" in
---help|--usage|-h)
-  cat <<'USAGE'
-Usage: fathom-terminal [-v|--verbose] [--width|--height]
-
-Read terminal dimensions from terminfo and print the width, height, or both.
-Pass --width or --height to request a single measurement; -v annotates the
-numbers with friendly labels for menu output.
-USAGE
-  exit 0
-  ;;
-esac
+# fathom-terminal [-v|--verbose] [--width|--height] - read terminal dimensions via tput
+# Prints width, height, or both; -v annotates numbers with labels for menu output
+# Example: dims=$(fathom-terminal) && echo "Dimensions: $dims"
 
 # Use conditional strictness based on execution context
 # See .github/CODE_POLICY_SET_EU.md for details
 set -eu
-. env-clear
 
 # Resolve require-command location
 # Use command -v to find require-command when preloaded as a function
