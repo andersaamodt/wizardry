@@ -277,6 +277,68 @@ uname|uniq|wc|xargs)
   # via PATH since invoke-wizardry adds all spell directories to PATH.
   
   # ============================================================================
+  # FIRST-WORD GLOSSES FOR SYNONYMS
+  # ============================================================================
+  # Extract first words from multi-word synonyms and generate glosses
+  # This enables space-separated invocation: leap to marker -> leap-to-marker
+  # ============================================================================
+  
+  if [ "$parse_enabled" -eq 1 ]; then
+    [ "$quiet" -eq 0 ] && info "Collecting first words from synonyms..." >&2
+    
+    # Process both user and default synonym files
+    for _syn_file in "$spell_home/.synonyms" "$spell_home/.default-synonyms"; do
+      [ -f "$_syn_file" ] || continue
+      
+      while IFS= read -r line || [ -n "$line" ]; do
+        # Skip empty lines and comments
+        case "$line" in
+          ''|\#*) continue ;;
+        esac
+        
+        # Extract synonym name from alias lines: alias NAME='...'
+        if printf '%s' "$line" | grep -q "^alias "; then
+          # Extract the synonym name (between "alias " and "=")
+          _synonym_name=$(printf '%s' "$line" | sed 's/^alias \([^=]*\)=.*/\1/')
+          
+          # Check if it's a multi-word synonym (contains hyphen)
+          case "$_synonym_name" in
+            *-*)
+              # Multi-word synonym - extract first word
+              _first_word=${_synonym_name%%-*}
+              
+              # Check if first word is blacklisted
+              if ! is_first_word_blacklisted "$_first_word"; then
+                [ "$quiet" -eq 0 ] && printf 'generate-glosses: WARNING: Skipping synonym "%s" - first word "%s" conflicts with system command\n' "$_synonym_name" "$_first_word" >&2
+                continue
+              fi
+              
+              # Check if already generated (in-memory check, no subprocess)
+              case "$_first_words_seen" in
+                *" $_first_word "*) continue ;;
+              esac
+              
+              # Mark as seen
+              _first_words_seen="$_first_words_seen$_first_word "
+              
+              # Emit function definition
+              emit_line "# First-word gloss for synonym '$_synonym_name' (and similar)"
+              emit_line "${_first_word}() { parse \"${_first_word}\" \"\$@\"; }"
+              emit_line ""
+              
+              total_first_word_glosses=$((total_first_word_glosses + 1))
+              ;;
+            *)
+              # Single-word synonym - no gloss needed
+              continue
+              ;;
+          esac
+        fi
+      done < "$_syn_file"
+    done
+  fi
+  
+  # ============================================================================
   # SYNONYM ALIASES
   # ============================================================================
   # Process user and default synonyms from .synonyms files
