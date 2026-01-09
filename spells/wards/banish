@@ -798,6 +798,83 @@ HEREDOC_TEST
         printf '  %s✗%s Process creation: Cannot fork subprocesses\n' "$_red" "$_reset"
         return 1
       fi
+
+      # Check printf format specifiers
+      # Printf is used extensively with %s and %d format codes
+      test_str=$(printf '%s' "test" 2>/dev/null)
+      test_num=$(printf '%d\n' 42 2>/dev/null | head -1)
+      if [ "$test_str" = "test" ] && [ "$test_num" = "42" ]; then
+        printf '  %s✓%s printf: Format specifiers work (%%s, %%d)\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s printf: Format specifiers not working correctly\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check date command functionality
+      # Used for timestamps and time-based operations
+      if command -v date >/dev/null 2>&1; then
+        test_date=$(date +%s 2>/dev/null)
+        if [ -n "$test_date" ] && [ "$test_date" -gt 0 ] 2>/dev/null; then
+          printf '  %s✓%s Date command: Available and functional\n' "$_green" "$_reset"
+        else
+          printf '  %s✗%s Date command: Found but not working\n' "$_red" "$_reset"
+          return 1
+        fi
+      else
+        printf '  %s✗%s Date command: Not available\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check basename/dirname for path manipulation
+      # Used throughout wizardry for path handling
+      test_base=$(basename "/path/to/file" 2>/dev/null)
+      test_dir=$(dirname "/path/to/file" 2>/dev/null)
+      if [ "$test_base" = "file" ] && [ "$test_dir" = "/path/to" ]; then
+        printf '  %s✓%s Path manipulation: basename/dirname work\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Path manipulation: basename/dirname not working\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check text processing utilities (awk, sed, tr, cut, sort)
+      # These are fundamental for text manipulation in wizardry
+      text_tools_ok=1
+      
+      # Test awk
+      if ! printf 'test' | awk '{print $1}' 2>/dev/null | grep -q 'test'; then
+        text_tools_ok=0
+        printf '  %s✗%s Text processing: awk not working\n' "$_red" "$_reset"
+      fi
+      
+      # Test sed
+      if ! printf 'test' | sed 's/test/ok/' 2>/dev/null | grep -q 'ok'; then
+        text_tools_ok=0
+        printf '  %s✗%s Text processing: sed not working\n' "$_red" "$_reset"
+      fi
+      
+      # Test tr
+      if ! printf 'test' | tr 'e' 'a' 2>/dev/null | grep -q 'tast'; then
+        text_tools_ok=0
+        printf '  %s✗%s Text processing: tr not working\n' "$_red" "$_reset"
+      fi
+      
+      # Test cut
+      if ! printf 'a:b:c' | cut -d: -f2 2>/dev/null | grep -q 'b'; then
+        text_tools_ok=0
+        printf '  %s✗%s Text processing: cut not working\n' "$_red" "$_reset"
+      fi
+      
+      # Test sort
+      if ! printf 'b\na\nc' | sort 2>/dev/null | head -1 | grep -q 'a'; then
+        text_tools_ok=0
+        printf '  %s✗%s Text processing: sort not working\n' "$_red" "$_reset"
+      fi
+      
+      if [ "$text_tools_ok" -eq 1 ]; then
+        printf '  %s✓%s Text processing: awk, sed, tr, cut, sort functional\n' "$_green" "$_reset"
+      else
+        return 1
+      fi
       ;;
       
     1)
@@ -956,6 +1033,31 @@ HEREDOC_TEST
         else
           printf '  %s✓%s DNS resolution: Tools not available (may limit updates)\n' "$_green" "$_reset"
         fi
+      fi
+
+      # Check XDG directories support
+      # Wizardry uses XDG_DATA_HOME for spellbook storage
+      xdg_data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
+      if [ -n "$xdg_data_home" ]; then
+        # Try to create the directory if it doesn't exist
+        if [ ! -d "$xdg_data_home" ]; then
+          if mkdir -p "$xdg_data_home" 2>/dev/null; then
+            printf '  %s✓%s XDG directories: Created data directory at %s\n' "$_green" "$_reset" "$xdg_data_home"
+          else
+            printf '  %s✗%s XDG directories: Cannot create data directory\n' "$_red" "$_reset"
+            return 1
+          fi
+        else
+          if [ -w "$xdg_data_home" ]; then
+            printf '  %s✓%s XDG directories: Data directory writable\n' "$_green" "$_reset"
+          else
+            printf '  %s✗%s XDG directories: Data directory not writable\n' "$_red" "$_reset"
+            return 1
+          fi
+        fi
+      else
+        printf '  %s✗%s XDG directories: Cannot determine data directory\n' "$_red" "$_reset"
+        return 1
       fi
       
       # Check spells
