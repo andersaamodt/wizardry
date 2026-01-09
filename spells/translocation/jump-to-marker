@@ -130,13 +130,13 @@ marker_file="$markers_dir/$marker_name"
 # Check for markers directory
 if [ ! -d "$markers_dir" ]; then
         printf '%s\n' "No markers have been set. Use 'mark-location' to mark a location first."
-        return 1 2>/dev/null || exit 1
+        return 1
 fi
 
 # Check if marker_name is empty (cycling failed to find markers)
 if [ -z "$marker_name" ]; then
         printf '%s\n' "No markers available to cycle through. Use 'mark-location' to mark a location first." >&2
-        return 1 2>/dev/null || exit 1
+        return 1
 fi
 
 # Check for specific marker file
@@ -179,17 +179,17 @@ if [ ! -f "$marker_file" ]; then
                         printf '\n'
                 fi
         fi
-        return 1 2>/dev/null || exit 1
+        return 1
 fi
 
 destination=$(cat "$marker_file")
 if [ -z "$destination" ]; then
         printf '%s\n' "The rune '$marker_name' is blank; the marked location has faded away."
-        return 1 2>/dev/null || exit 1
+        return 1
 fi
 if [ ! -d "$destination" ]; then
         printf '%s\n' "The ley-line remembers '$destination' for marker '$marker_name', but it no longer exists."
-        return 1 2>/dev/null || exit 1
+        return 1
 fi
 
 # Normalize paths to handle macOS double slashes and symlinks
@@ -200,12 +200,12 @@ if [ "$current" = "$normalized_destination" ]; then
         printf '%s\n' "You are already standing at marker '$marker_name'."
         # Touch marker to update mtime for cycling
         touch "$marker_file"
-        return 0 2>/dev/null || exit 0
+        return 0
 fi
 
 if ! cd "$destination"; then
         printf '%s\n' "The portal refuses to stabilize; try marking again." >&2
-        return 1 2>/dev/null || exit 1
+        return 1
 fi
 
 # Pick a random arrival message

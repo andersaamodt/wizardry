@@ -34,6 +34,7 @@
 - First-word glosses must check BOTH real spell files AND synonym files when looking for uncastable spells to source.
 - Shell builtin `read` CANNOT be overridden as it breaks while loops; must be blacklisted in generate-glosses even though read-magic exists.
 - Spells executed directly (not sourced) must use `exit` not `return` for flow control; `return` outside a function causes "not within a function" errors.
+- In sourced-only spells (with uncastable pattern), use plain `return` for error exits AFTER the uncastable guard, not `return 1 2>/dev/null || exit 1`; the `exit` part closes the user's terminal when the spell is sourced.
 - Use shell parameter expansion ${file##*/} instead of basename for 100x speedup when processing many files (e.g., generate-glosses with 396 files).
 - Variable `$_i` (imps directory shorthand) is not preserved by env-clear; use `${WIZARDRY_DIR}/spells/.imps` instead when referencing imp paths after sourcing env-clear.
 
