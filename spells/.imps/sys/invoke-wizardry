@@ -112,7 +112,7 @@ export SPELLBOOK_DIR
 
 [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Adding wizardry directories to PATH..." >&2
 
-# Add all spell directories to PATH (including hidden directories and their subdirectories)
+# Add all spell directories to PATH (including subdirectories)
 for category_dir in "$WIZARDRY_DIR/spells"/* "$WIZARDRY_DIR/spells"/.*; do
   [ -d "$category_dir" ] || continue
   # Skip . and ..
@@ -121,15 +121,11 @@ for category_dir in "$WIZARDRY_DIR/spells"/* "$WIZARDRY_DIR/spells"/.*; do
   esac
   PATH="$category_dir:$PATH"
   
-  # For hidden directories (like .imps, .arcana), also add their subdirectories
-  case "$category_dir" in
-    */.*) 
-      for subdir in "$category_dir"/*; do
-        [ -d "$subdir" ] || continue
-        PATH="$subdir:$PATH"
-      done
-      ;;
-  esac
+  # Also add subdirectories to PATH
+  for subdir in "$category_dir"/*; do
+    [ -d "$subdir" ] || continue
+    PATH="$subdir:$PATH"
+  done
 done
 
 export PATH
