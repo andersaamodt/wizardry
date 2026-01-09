@@ -84,11 +84,44 @@ test_all_spell_categories() {
   # because spells are now natively available via PATH
 }
 
+test_invalid_default_synonyms_hard_fail() {
+  # Test that invalid default synonyms cause an error
+  tmpdir=$(make_tempdir)
+  
+  # Create a default-synonyms file with an invalid synonym
+  cat > "$tmpdir/.default-synonyms" << 'EOF'
+# Invalid synonym - starts with dash
+-invalid=echo
+# Valid synonym
+valid=echo
+EOF
+  
+  # Run generate-glosses - should report error for invalid synonym
+  WIZARDRY_DIR="$ROOT_DIR" SPELLBOOK_DIR="$tmpdir" \
+    run_spell spells/.wizardry/generate-glosses --quiet
+  
+  # Should succeed (doesn't exit with error, but reports to stderr)
+  assert_success || return 1
+  
+  # Error message should mention invalid default synonym
+  if ! printf '%s' "$ERROR" | grep -q "invalid default synonym"; then
+    TEST_FAILURE_REASON="Expected error message about invalid default synonym"
+    return 1
+  fi
+  
+  # Should also have error count message
+  if ! printf '%s' "$ERROR" | grep -q "ERROR.*invalid default synonym"; then
+    TEST_FAILURE_REASON="Expected ERROR message about invalid synonyms"
+    return 1
+  fi
+}
+
 run_test_case "generate-glosses shows usage" test_help
 run_test_case "generate-glosses generates glosses" test_basic_execution
 run_test_case "generate-glosses creates valid gloss content" test_gloss_content
 run_test_case "generate-glosses --quiet suppresses diagnostics" test_quiet_option
 run_test_case "generate-glosses --output writes to file" test_output_option
 run_test_case "generate-glosses creates glosses for all spell categories" test_all_spell_categories
+run_test_case "generate-glosses hard fails on invalid default synonyms" test_invalid_default_synonyms_hard_fail
 
 finish_tests

@@ -41,15 +41,15 @@ test_alias_definition_content() {
   
   assert_success || return 1
   
-  # Check file contains the alias definition
-  if ! grep -q "^alias myalias=" "$synonyms_file"; then
-    TEST_FAILURE_REASON="alias definition not found in file"
+  # Check file contains the synonym definition in word=target format
+  if ! grep -q "^myalias=" "$synonyms_file"; then
+    TEST_FAILURE_REASON="synonym definition not found in file"
     return 1
   fi
   
-  # Check alias points to echo
-  if ! grep -q "^alias myalias='echo'" "$synonyms_file"; then
-    TEST_FAILURE_REASON="alias does not point to echo"
+  # Check synonym points to echo
+  if ! grep -q "^myalias=echo" "$synonyms_file"; then
+    TEST_FAILURE_REASON="synonym does not point to echo"
     return 1
   fi
 }
@@ -131,16 +131,16 @@ test_allows_overwriting_existing_synonym() {
     run_spell "spells/spellcraft/add-synonym" myalias printf
   assert_success || return 1
   
-  # Check it was updated
-  if ! grep -q "^alias myalias='printf'" "$synonyms_file"; then
+  # Check it was updated to new format
+  if ! grep -q "^myalias=printf" "$synonyms_file"; then
     TEST_FAILURE_REASON="synonym not updated"
     return 1
   fi
   
-  # Check old definition is gone - there should only be one alias myalias line
-  alias_count=$(grep -c "^alias myalias=" "$synonyms_file")
-  if [ "$alias_count" -ne 1 ]; then
-    TEST_FAILURE_REASON="multiple myalias definitions found ($alias_count)"
+  # Check old definition is gone - there should only be one myalias line
+  synonym_count=$(grep -c "^myalias=" "$synonyms_file")
+  if [ "$synonym_count" -ne 1 ]; then
+    TEST_FAILURE_REASON="multiple myalias definitions found ($synonym_count)"
     return 1
   fi
 }
@@ -154,9 +154,9 @@ test_handles_complex_target_with_args() {
   
   assert_success || return 1
   
-  # Check alias has both command and args
-  if ! grep -q "^alias ll='ls -la'" "$synonyms_file"; then
-    TEST_FAILURE_REASON="alias does not contain command with arguments"
+  # Check synonym has both command and args
+  if ! grep -q "^ll=ls -la" "$synonyms_file"; then
+    TEST_FAILURE_REASON="synonym does not contain command with arguments"
     return 1
   fi
 }
