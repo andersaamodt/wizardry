@@ -20,9 +20,7 @@ esac
 UNCASTABLE_MESSAGE='Use "jump trash" to invoke this spell, as it is uncastable directly.'
 export UNCASTABLE_MESSAGE
 if ! . uncastable; then
-  # uncastable already cleaned up UNCASTABLE_MESSAGE and returned 1
-  # Exit gracefully without affecting parent shell
-  return 1 2>/dev/null || exit 1
+  exit 1
 fi
 
 set -eu
