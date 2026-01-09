@@ -54,7 +54,7 @@ if [ -e "$new_path" ]; then
 fi
 
 # Perform the rename
-if mv "$file" "$new_path" 2>/dev/null; then
+if mv "$file" "$new_path"; then
   printf '%s\n' "Renamed '${current_name}' to '${new_name}'"
   exit 0
 else
