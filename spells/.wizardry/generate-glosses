@@ -282,20 +282,59 @@ uname|uniq|wc|xargs)
   # via PATH since invoke-wizardry adds all spell directories to PATH.
   
   # ============================================================================
-  # SYNONYM ALIASES
+  # SYNONYM FUNCTIONS AND ALIASES
   # ============================================================================
   # Process user and default synonyms from .synonyms files
-  # These are just passed through as-is (already in alias format)
+  # Read simple word=target or word target format
+  # Generate functions for non-hyphenated words, aliases for hyphenated
   # ============================================================================
   
   emit_line "# ============================================================================"
   emit_line "# USER AND DEFAULT SYNONYMS"
   emit_line "# ============================================================================"
-  emit_line "# From .synonyms and .default-synonyms files"
+  emit_line "# Functions for non-hyphenated, aliases for hyphenated"
   emit_line "# ============================================================================"
   emit_line ""
   
-  # User synonyms
+  # Helper function to check if a synonym word is valid
+  is_synonym_valid() {
+    _syn_word=$1
+    
+    # Check for invalid characters
+    case "$_syn_word" in
+      ''|*[/\ \	\'\"\$\`\\\|\&\;\(\)\<\>\*\?\[\]]*|-*|.*|[0-9]*)
+        return 1
+        ;;
+    esac
+    
+    # Check if it's a shell keyword
+    case "$_syn_word" in
+      if|then|else|elif|fi|case|esac|for|while|until|do|done|in|function|time)
+        return 1
+        ;;
+    esac
+    
+    # Check if blacklisted (same as first-word blacklist)
+    case "$_syn_word" in
+      alias|bg|cd|command|disable|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|readonly|set|sh|\
+times|trap|true|type|ulimit|umask|unalias|wait|break|case|continue|do|done|elif|else|\
+esac|eval|exec|exit|export|fi|for|if|in|local|return|shift|then|unset|until|while)
+        return 1
+        ;;
+      awk|cat|cp|cut|date|df|diff|dirname|du|echo|egrep|env|expr|fgrep|file|find|grep|head|\
+hostname|id|ln|ls|mkdir|mv|printf|ps|rm|rmdir|sed|sleep|sort|stat|tail|tar|tee|touch|tr|\
+uname|uniq|wc|xargs)
+        return 1
+        ;;
+    esac
+    
+    return 0
+  }
+  
+  # Track seen synonyms to avoid duplicates
+  _synonyms_seen=" "
+  
+  # Process user synonyms first
   synonym_file="$spell_home/.synonyms"
   if [ -f "$synonym_file" ]; then
     [ "$quiet" -eq 0 ] && info "Processing user synonyms..." >&2
@@ -305,19 +344,55 @@ uname|uniq|wc|xargs)
         ''|\#*) continue ;;
       esac
       
-      # Pass through alias lines and function definitions
-      if printf '%s' "$line" | grep -q "^alias "; then
-        emit_line "$line"
-      elif printf '%s' "$line" | grep -q "^[a-zA-Z_][a-zA-Z0-9_]*()"; then
-        # Function definition - pass through
-        emit_line "$line"
+      # Parse word=target or word target format
+      _word=""
+      _target=""
+      
+      if printf '%s' "$line" | grep -q "="; then
+        # word=target format
+        _word=$(printf '%s' "$line" | sed 's/=.*//')
+        _target=$(printf '%s' "$line" | sed 's/^[^=]*=//')
+      else
+        # word target format (whitespace-delimited)
+        _word=$(printf '%s' "$line" | awk '{print $1}')
+        _target=$(printf '%s' "$line" | sed 's/^[^ ]* *//')
       fi
+      
+      # Validate synonym word
+      if ! is_synonym_valid "$_word"; then
+        [ "$quiet" -eq 0 ] && warn "Skipping invalid synonym: $_word" >&2
+        continue
+      fi
+      
+      # Check for duplicates
+      case "$_synonyms_seen" in
+        *" $_word "*) 
+          [ "$quiet" -eq 0 ] && warn "Skipping duplicate synonym: $_word" >&2
+          continue
+          ;;
+      esac
+      
+      # Mark as seen
+      _synonyms_seen="$_synonyms_seen$_word "
+      
+      # Generate function or alias based on hyphenation
+      case "$_word" in
+        *-*)
+          # Hyphenated - must use alias (POSIX limitation)
+          emit_line "alias $_word='$_target'"
+          ;;
+        *)
+          # Non-hyphenated - use function that calls target directly
+          emit_line "${_word}() { $_target \"\$@\"; }"
+          ;;
+      esac
     done < "$synonym_file"
     emit_line ""
   fi
   
-  # Default synonyms
+  # Process default synonyms
   default_synonym_file="$spell_home/.default-synonyms"
+  _default_skipped=0
   if [ -f "$default_synonym_file" ]; then
     [ "$quiet" -eq 0 ] && info "Processing default synonyms..." >&2
     while IFS= read -r line || [ -n "$line" ]; do
@@ -326,15 +401,57 @@ uname|uniq|wc|xargs)
         ''|\#*) continue ;;
       esac
       
-      # Pass through alias lines and function definitions
-      if printf '%s' "$line" | grep -q "^alias "; then
-        emit_line "$line"
-      elif printf '%s' "$line" | grep -q "^[a-zA-Z_][a-zA-Z0-9_]*()"; then
-        # Function definition - pass through
-        emit_line "$line"
+      # Parse word=target or word target format
+      _word=""
+      _target=""
+      
+      if printf '%s' "$line" | grep -q "="; then
+        # word=target format
+        _word=$(printf '%s' "$line" | sed 's/=.*//')
+        _target=$(printf '%s' "$line" | sed 's/^[^=]*=//')
+      else
+        # word target format (whitespace-delimited)
+        _word=$(printf '%s' "$line" | awk '{print $1}')
+        _target=$(printf '%s' "$line" | sed 's/^[^ ]* *//')
       fi
+      
+      # Validate synonym word
+      if ! is_synonym_valid "$_word"; then
+        [ "$quiet" -eq 0 ] && warn "Skipping invalid default synonym: $_word" >&2
+        _default_skipped=$((_default_skipped + 1))
+        continue
+      fi
+      
+      # Check for duplicates (user synonyms take precedence)
+      case "$_synonyms_seen" in
+        *" $_word "*) 
+          [ "$quiet" -eq 0 ] && info "User synonym overrides default: $_word" >&2
+          continue
+          ;;
+      esac
+      
+      # Mark as seen
+      _synonyms_seen="$_synonyms_seen$_word "
+      
+      # Generate function or alias based on hyphenation
+      case "$_word" in
+        *-*)
+          # Hyphenated - must use alias (POSIX limitation)
+          emit_line "alias $_word='$_target'"
+          ;;
+        *)
+          # Non-hyphenated - use function that calls target directly
+          emit_line "${_word}() { $_target \"\$@\"; }"
+          ;;
+      esac
     done < "$default_synonym_file"
     emit_line ""
+  fi
+  
+  # Error if any default synonyms were skipped
+  if [ "$_default_skipped" -gt 0 ]; then
+    printf 'generate-glosses: ERROR: %d invalid default synonym(s) - fix immediately\n' "$_default_skipped" >&2
+    # Don't exit here - let tests catch it
   fi
   
   # ============================================================================

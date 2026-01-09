@@ -64,6 +64,7 @@ if [ ! -f "$_it_default_initialized" ]; then
   mkdir -p "$_it_spellbook_dir" 2>/dev/null || true
   cat > "$_it_default_file" << 'HEADER'
 # Wizardry Default Synonyms
+# Format: word target (whitespace-delimited)
 # These are built-in synonyms that can be reset with reset-default-synonyms.
 # To override a default, add your custom version to .synonyms instead.
 
@@ -144,25 +145,9 @@ where-is which"
   printf '%s\n' "$_it_defaults" | while IFS=' ' read -r _word _spell; do
     [ -n "$_word" ] && [ -n "$_spell" ] || continue
     
-    # Check if this spell must be sourced
-    if _it_spell_must_be_sourced "$_spell"; then
-      # Create a sourcing function instead of an alias
-      # Only create function if word doesn't contain hyphens (POSIX sh restriction)
-      case "$_word" in
-        *-*)
-          # Word has hyphens, must use alias even though it won't work for sourcing
-          # This is a POSIX sh limitation - function names can't have hyphens
-          printf "alias %s='%s'\n" "$_word" "$_spell" >> "$_it_default_file"
-          ;;
-        *)
-          # Word has no hyphens, can create a sourcing function
-          printf "%s() { . %s \"\$@\"; }\n" "$_word" "$_spell" >> "$_it_default_file"
-          ;;
-      esac
-    else
-      # Regular spell, create an alias
-      printf "alias %s='%s'\n" "$_word" "$_spell" >> "$_it_default_file"
-    fi
+    # Write in simple whitespace-delimited format
+    # generate-glosses will create functions/aliases based on hyphenation
+    printf "%s %s\n" "$_word" "$_spell" >> "$_it_default_file"
   done
   
   touch "$_it_default_initialized" 2>/dev/null || true
@@ -207,35 +192,30 @@ if [ -f "$_it_custom_enabled_file" ]; then
   esac
 fi
 
-# Source both files to load all aliases
-# Default synonyms first, then custom (so custom can override)
+# Load synonyms via generate-glosses
+# Synonyms are now in simple word=target format in the files
+# generate-glosses creates functions/aliases and we eval them
 _it_count=0
 
-if [ "$_it_default_enabled" -eq 1 ] && [ -f "$_it_default_file" ]; then
-  # shellcheck disable=SC1090
-  . "$_it_default_file" 2>/dev/null || true
-  _it_default_count=$(grep "^alias " "$_it_default_file" 2>/dev/null | wc -l || printf '0')
-  # Ensure it's a valid number
-  case "$_it_default_count" in
-    ''|*[!0-9]*) _it_default_count=0 ;;
-  esac
-  _it_count=$((_it_count + _it_default_count))
-fi
-
-if [ "$_it_custom_enabled" -eq 1 ] && [ -f "$_it_custom_file" ]; then
-  # shellcheck disable=SC1090
-  . "$_it_custom_file" 2>/dev/null || true
-  _it_custom_count=$(grep "^alias " "$_it_custom_file" 2>/dev/null | wc -l || printf '0')
-  # Ensure it's a valid number
-  case "$_it_custom_count" in
-    ''|*[!0-9]*) _it_custom_count=0 ;;
-  esac
-  _it_count=$((_it_count + _it_custom_count))
+if command -v generate-glosses >/dev/null 2>&1; then
+  # Generate glosses and eval them into current shell
+  if _it_gloss_output=$(generate-glosses --quiet 2>&1); then
+    if [ -n "$_it_gloss_output" ]; then
+      eval "$_it_gloss_output"
+      
+      # Count synonyms (approximate - count functions and aliases in output)
+      _it_count=$(printf '%s' "$_it_gloss_output" | grep -c "^alias \|() {" || printf '0')
+    fi
+  else
+    printf '%s\n' "invoke-thesaurus: generate-glosses failed" >&2
+  fi
+else
+  printf '%s\n' "invoke-thesaurus: generate-glosses not found" >&2
 fi
 
 # Only print loading message if WIZARDRY_DEBUG is enabled
 if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-  printf '%s\n' "invoke-thesaurus: loaded $_it_count synonym(s)"
+  printf '%s\n' "invoke-thesaurus: loaded $_it_count function(s) and alias(es)"
 fi
 return 0
 
