@@ -6,10 +6,14 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: . blink [max-depth]
+Usage: . blink [--home] [max-depth]
 
-Teleport to a random directory accessible from your home directory.
-The optional max-depth parameter limits how deep to search (default: 4 levels).
+Teleport to a random directory anywhere on your computer.
+By default, searches from root (/) with depth 5.
+
+Options:
+  --home      Search from home directory instead of root
+  max-depth   Limit how deep to search (default: 5 for root, 4 for home)
 
 Note: This spell must be sourced (use '. blink') to affect your current shell.
 USAGE
@@ -26,8 +30,35 @@ fi
 set -eu
 . env-clear
 
-# Default search depth
-max_depth=${1:-4}
+# Parse arguments
+use_home=0
+max_depth=""
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --home)
+      use_home=1
+      shift
+      ;;
+    *)
+      # Assume it's the depth parameter
+      max_depth=$1
+      shift
+      ;;
+  esac
+done
+
+# Set base directory and default depth
+if [ "$use_home" -eq 1 ]; then
+  base_dir=$HOME
+  default_depth=4
+else
+  base_dir=/
+  default_depth=5
+fi
+
+# Use provided depth or default
+max_depth=${max_depth:-$default_depth}
 
 # Validate max_depth is a positive integer
 case "$max_depth" in
@@ -37,24 +68,18 @@ case "$max_depth" in
     ;;
 esac
 
-# Search for directories starting from home, limiting depth for performance
-# Exclude common problematic directories
+# Search for directories - let blink take you anywhere!
 info "Scanning for destinations..."
 
 # Use find to get all accessible directories
 temp_list=$(temp-file)
 on-exit cleanup-file "$temp_list"
 
-# Find directories, excluding common problematic paths
-find "$HOME" -maxdepth "$max_depth" -type d \
-  ! -path "*/.*" \
-  ! -path "*/node_modules/*" \
-  ! -path "*/Library/*" \
-  ! -path "*/.Trash/*" \
-  -readable 2>/dev/null > "$temp_list" || {
+# Find all readable directories, no exclusions (that's part of the fun!)
+find "$base_dir" -maxdepth "$max_depth" -type d -readable 2>/dev/null > "$temp_list" || {
     warn "blink: find command failed, trying simpler search"
     # Fallback: just get immediate subdirectories
-    find "$HOME" -maxdepth 1 -type d -readable 2>/dev/null > "$temp_list" || {
+    find "$base_dir" -maxdepth 1 -type d -readable 2>/dev/null > "$temp_list" || {
       die "blink: cannot find any directories"
       return 1 2>/dev/null || exit 1
     }
