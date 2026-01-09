@@ -75,10 +75,10 @@ set -eu
   fi
   
   # Check which file contains the synonym (custom only - can't edit defaults)
-  if [ -f "$custom_file" ] && grep -q "^alias $synonym_word=" "$custom_file" 2>/dev/null; then
+  if [ -f "$custom_file" ] && grep -q "^$synonym_word=" "$custom_file" 2>/dev/null; then
     # Found in custom - OK to edit
     synonyms_file="$custom_file"
-  elif [ -f "$default_file" ] && grep -q "^alias $synonym_word=" "$default_file" 2>/dev/null; then
+  elif [ -f "$default_file" ] && grep -q "^$synonym_word=" "$default_file" 2>/dev/null; then
     # Found in default - can't edit
     printf '%s\n' "edit-synonym: cannot edit default synonym '$synonym_word'" >&2
     printf '%s\n' "Use 'Override' option in synonym-menu to create a custom version" >&2
@@ -89,7 +89,7 @@ set -eu
   fi
   
   # Read current target spell from the synonym
-  current_spell=$(grep "^alias $synonym_word=" "$synonyms_file" | sed "s/^alias $synonym_word='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
+  current_spell=$(grep "^$synonym_word=" "$synonyms_file" | sed "s/^$synonym_word=\\(.*\\)$/\\1/")
   
   if [ -z "$current_spell" ]; then
     printf '%s\n' "edit-synonym: could not parse target spell from synonym" >&2
@@ -120,7 +120,7 @@ set -eu
       esac
       
       # Check for conflicts
-      if grep -q "^alias $new_value=" "$synonyms_file" 2>/dev/null; then
+      if grep -q "^$new_value=" "$synonyms_file" 2>/dev/null; then
         if [ "$new_value" != "$synonym_word" ]; then
           printf '%s\n' "edit-synonym: synonym '$new_value' already exists" >&2
           exit 1
