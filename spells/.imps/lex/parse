@@ -131,15 +131,24 @@ while [ $_attempt_len -gt 0 ]; do
     done
   fi
   
-  # If found, execute with remaining args
+  # If found, check if it needs sourcing or can be exec'd
   if [ -n "$_spell_path" ]; then
-    # Skip first $_attempt_len args and exec with the rest
+    # Skip first $_attempt_len args to get remaining args for the spell
     _n=0
     while [ $_n -lt $_attempt_len ]; do
       shift
       _n=$((_n + 1))
     done
-    exec "$_spell_path" "$@"
+    
+    # Check if spell has uncastable pattern (needs sourcing)
+    if grep -q "^# Uncastable pattern" "$_spell_path" 2>/dev/null; then
+      # Source the spell to allow it to change directory in current shell
+      . "$_spell_path"
+      return $?
+    else
+      # Regular spell - exec it
+      exec "$_spell_path" "$@"
+    fi
   fi
   
   # Try next shorter combination
