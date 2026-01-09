@@ -1035,31 +1035,7 @@ HEREDOC_TEST
         fi
       fi
 
-      # Check XDG directories support
-      # Wizardry uses XDG_DATA_HOME for spellbook storage
-      xdg_data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
-      if [ -n "$xdg_data_home" ]; then
-        # Try to create the directory if it doesn't exist
-        if [ ! -d "$xdg_data_home" ]; then
-          if mkdir -p "$xdg_data_home" 2>/dev/null; then
-            printf '  %s✓%s XDG directories: Created data directory at %s\n' "$_green" "$_reset" "$xdg_data_home"
-          else
-            printf '  %s✗%s XDG directories: Cannot create data directory\n' "$_red" "$_reset"
-            return 1
-          fi
-        else
-          if [ -w "$xdg_data_home" ]; then
-            printf '  %s✓%s XDG directories: Data directory writable\n' "$_green" "$_reset"
-          else
-            printf '  %s✗%s XDG directories: Data directory not writable\n' "$_red" "$_reset"
-            return 1
-          fi
-        fi
-      else
-        printf '  %s✗%s XDG directories: Cannot determine data directory\n' "$_red" "$_reset"
-        return 1
-      fi
-      
+
       # Check spells
       spell_list=$("$spell_levels_script" 2 spells)
       if [ -n "$spell_list" ]; then
