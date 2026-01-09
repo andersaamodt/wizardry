@@ -1,0 +1,51 @@
+#!/bin/sh
+
+# Get the checked status of a file or task.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: get-checked <file>
+
+Get the checked status of a file. Outputs "checked" or "unchecked" for human-readable display, or "1" or "0" when used in scripts (based on whether stdout is a tty).
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+if [ -z "${1-}" ]; then
+  printf '%s\n' "get-checked: file path required" >&2
+  exit 2
+fi
+
+file=$1
+
+if [ ! -e "$file" ]; then
+  printf '%s\n' "get-checked: file not found: $file" >&2
+  exit 1
+fi
+
+# Read the checked attribute (read-magic will add "user." prefix automatically)
+checked_value=$(read-magic "$file" checked 2>/dev/null || printf '0')
+
+# Handle errors or empty values
+case "$checked_value" in
+  ''|*Error*) checked_value=0 ;;
+  *[!0-9]*) checked_value=0 ;;
+esac
+
+# Output format depends on whether stdout is a terminal
+if [ -t 1 ]; then
+  # Human-readable output for terminal
+  if [ "$checked_value" = "1" ]; then
+    printf '%s\n' "checked"
+  else
+    printf '%s\n' "unchecked"
+  fi
+else
+  # Machine-readable output for scripts
+  printf '%s\n' "$checked_value"
+fi

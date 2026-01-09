@@ -34,11 +34,16 @@ if [ ! -f "$file" ]; then
 fi
 
 # Hash the target file for identification
-hashchant "$file" >/dev/null
+if ! hashchant "$file" >/dev/null 2>&1; then
+  printf '%s\n' "prioritize: failed to hash file: $file" >&2
+  printf '%s\n' "prioritize: extended attributes (xattr) may not be supported on this filesystem" >&2
+  exit 1
+fi
+
 target_hash=$(read-magic "$file" hash 2>/dev/null || true)
 
 if [ -z "$target_hash" ] || [ "${target_hash#Error}" != "$target_hash" ]; then
-  printf '%s\n' "prioritize: failed to hash file: $file" >&2
+  printf '%s\n' "prioritize: failed to read hash from file: $file" >&2
   exit 1
 fi
 

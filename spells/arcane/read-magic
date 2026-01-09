@@ -32,6 +32,14 @@ if [ ! -e "$file" ]; then
   exit 1
 fi
 
+# Automatically prepend "user." namespace if attribute doesn't contain a dot
+if [ -n "$attribute" ]; then
+  case "$attribute" in
+    *.*) ;;  # Attribute already has a namespace, use as-is
+    *) attribute="user.$attribute" ;;  # No namespace, prepend "user."
+  esac
+fi
+
 # If specific attribute requested, read and print it
 if [ -n "$attribute" ]; then
   if value=$(xattr-read-value "$attribute" "$file"); then

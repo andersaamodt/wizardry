@@ -109,6 +109,12 @@ if [ ! -e "$file" ]; then
   exit 1
 fi
 
+# Automatically prepend "user." namespace if key doesn't contain a dot
+case "$key" in
+  *.*) ;;  # Key already has a namespace, use as-is
+  *) key="user.$key" ;;  # No namespace, prepend "user."
+esac
+
 # Set attribute with fallback chain
 attempted_helper=""
 attempt_status=0

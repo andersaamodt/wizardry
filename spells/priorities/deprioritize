@@ -1,0 +1,66 @@
+#!/bin/sh
+
+# Remove a file from the priorities list by clearing its priority attribute.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: deprioritize <file>
+
+Remove a file from the priorities list by clearing its priority attribute. The file remains in the directory but is no longer tracked in the priority system.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+if [ -z "${1-}" ]; then
+  printf '%s\n' "deprioritize: file path required" >&2
+  exit 2
+fi
+
+file=$1
+
+if [ ! -e "$file" ]; then
+  printf '%s\n' "deprioritize: file not found: $file" >&2
+  exit 1
+fi
+
+# Get file hash to remove from directory's priorities list
+file_hash=$(read-magic "$file" hash 2>/dev/null || true)
+
+# Get the directory
+directory=$(dirname "$file")
+if [ "$directory" = "." ]; then
+  directory=$(pwd -P)
+fi
+
+# Remove hash from directory's priorities list if it exists
+if [ -n "$file_hash" ]; then
+  dir_priorities=$(read-magic "$directory" priorities 2>/dev/null || true)
+  
+  if [ -n "$dir_priorities" ]; then
+    # Filter out the file's hash from the priorities list
+    filtered=$(printf '%s' "$dir_priorities" | sed "s/^${file_hash},//;s/,${file_hash},/,/;s/,${file_hash}\$//;s/^${file_hash}\$//")
+    
+    # Update directory's priorities list
+    if [ -n "$filtered" ]; then
+      enchant "$directory" priorities "$filtered" >/dev/null 2>&1
+    else
+      # If list is now empty, remove the priorities attribute entirely
+      disenchant "$directory" user.priorities >/dev/null 2>&1 || true
+    fi
+  fi
+fi
+
+# Remove priority attribute from file (disenchant requires full attribute name with namespace)
+if disenchant "$file" user.priority >/dev/null 2>&1; then
+  printf '%s\n' "Removed '$(basename "$file")' from priorities."
+  exit 0
+else
+  # File might not have had a priority attribute, which is okay
+  printf '%s\n' "Removed '$(basename "$file")' from priorities."
+  exit 0
+fi

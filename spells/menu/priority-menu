@@ -38,29 +38,32 @@ if [ -z "$file" ]; then
 fi
 
 priority_menu_display_menu() {
-  checked_state=$(read-magic "${file}" checked 2>/dev/null || true)
-  case "$checked_state" in
-    ''|*Error*|*"does not exist"*)
-      # Not checked - show Check option
-      check_item="Check%printf 'Feature: Check command not yet implemented\n'"
-      ;;
-    *)
-      # Checked - show Uncheck option
-      check_item="Uncheck%printf 'Feature: Uncheck command not yet implemented\n'"
-      ;;
+  checked_value=$(read-magic "${file}" checked 2>/dev/null || printf '0')
+  
+  # Handle errors or empty values
+  case "$checked_value" in
+    ''|*Error*) checked_value=0 ;;
+    *[!0-9]*) checked_value=0 ;;
   esac
+  
+  if [ "$checked_value" = "1" ]; then
+    # Checked - show Uncheck option
+    check_item="Uncheck%uncheck \"$file\"; kill -TERM \$PPID"
+  else
+    # Not checked - show Check option
+    check_item="Check%check \"$file\"; kill -TERM \$PPID"
+  fi
 
         filename=$(basename "$file")
-        # Exit button kills this menu script via TERM signal
-        # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
+        # Exit button - use exit 0 instead of kill signal
         exit_label=$(exit-label)
-        exit_item="${exit_label}%kill -TERM \$PPID"
+        exit_item="${exit_label}%exit 0"
 
-  set -- "Prioritize (upboat)%prioritize \"$file\"; kill -TERM \$PPID" \
+  set -- "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
          "${check_item}" \
-         "Discard from priorities (downboat)%printf 'Feature: Discard command not yet implemented\n'" \
-         "Edit Card%printf 'Feature: Edit command not yet implemented\n'" \
-         "Browse Within%printf 'Feature: Browse files within this file/folder not yet implemented\n'" \
+         "Discard from priorities%deprioritize \"$file\"; kill -TERM \$PPID" \
+         "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
+         "---" \
          "$exit_item"
   menu "${THEME_HEADING}${filename}${RESET}:" "$@"
 }

@@ -72,7 +72,7 @@ display_priorities() {
 
       # If the file's priority differs from the previous highest, add an echelon separator line
       if [ -n "${highest_priority}" ] && [ "${file_priority}" -ne "${highest_priority}" ]; then
-        menu_command="${menu_command} \"─── %\""
+        menu_command="${menu_command} \"---\""
       fi
 
       # Add the file to the menu command
@@ -88,10 +88,13 @@ display_priorities() {
     fi
   done
 
+  # Add separator before Exit
+  menu_command="${menu_command} \"---\""
+  
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
   exit_label=$(exit-label)
-  menu_command="${menu_command} \"${exit_label}%kill -TERM \$PPID\""
+  menu_command="${menu_command} \"${exit_label}%exit 0\""
 
   # Execute the constructed menu command
   eval "${menu_command}" || _priorities_menu_status=$?

@@ -111,11 +111,29 @@ test_already_highest() {
   assert_output_contains "already the highest priority" || return 1
 }
 
+test_hash_failure_message() {
+  tmpdir=$(make_tempdir)
+  testfile="$tmpdir/test.txt"
+  printf 'test\n' > "$testfile"
+  
+  # Force hashchant to fail by disabling system helpers
+  export WIZARDRY_TEST_HELPERS_ONLY=1
+  
+  # Prioritize should fail with informative message
+  run_spell "spells/priorities/prioritize" "$testfile"
+  assert_failure || return 1
+  assert_error_contains "failed to hash file" || return 1
+  assert_error_contains "extended attributes" || return 1
+  
+  unset WIZARDRY_TEST_HELPERS_ONLY
+}
+
 run_test_case "prioritize shows usage text with echelon mention" test_help
 run_test_case "prioritize requires file argument" test_requires_argument
 run_test_case "prioritize fails on missing file" test_fails_on_missing_file
 run_test_case "prioritize creates first priority" test_first_priority
 run_test_case "prioritize promotes to new echelon" test_echelon_promotion
 run_test_case "prioritize detects already highest" test_already_highest
+run_test_case "prioritize fails with informative message when hashchant fails" test_hash_failure_message
 
 finish_tests
