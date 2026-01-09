@@ -1,22 +1,14 @@
 #!/bin/sh
 # run-spell SCRIPT [ARGS...] - run a spell script in a sandboxed environment
 # Wraps run-cmd with the ROOT_DIR prefix for the script path.
-# Automatically switches to run-sourced-spell when WIZARDRY_USE_SOURCED_SPELL=1
 set -eu
 
 # Find repository root for absolute paths
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 repo_root=$(cd "$script_dir" && while [ ! -d "spells" ] && [ "$(pwd)" != "/" ]; do cd ..; done; pwd)
 
-# Check if we should use sourced spell instead
-if [ "${WIZARDRY_USE_SOURCED_SPELL-0}" = "1" ]; then
-  "$repo_root/spells/.imps/test/boot/run-sourced-spell" "$@"
-  exit $?
-fi
-
-# Normal direct execution
+# Direct execution
 script=$1
 shift || true
 "$repo_root/spells/.imps/test/boot/run-cmd" "$ROOT_DIR/$script" "$@"
-
 
