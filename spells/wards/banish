@@ -12,7 +12,7 @@ Usage: banish [LEVEL] [OPTIONS]
 Validate wizardry readiness by level, including assumptions, self-healing, and tests.
 
 Arguments:
-  LEVEL                 Validate through level N (0-30, default: 4)
+  LEVEL                 Validate through level N (0-27, default: 4)
   all                   Validate all available levels
 
 Options:
@@ -64,7 +64,7 @@ export WIZARDRY_DIR
 
 # Parse arguments
 target_level=4
-max_level=30
+max_level=27
 skip_tests=0
 skip_heal=0
 only_this_level=0
@@ -111,7 +111,7 @@ Usage: banish [LEVEL] [OPTIONS]
 Validate wizardry readiness by level, including assumptions, self-healing, and tests.
 
 Arguments:
-  LEVEL                 Validate through level N (0-30, default: 4)
+  LEVEL                 Validate through level N (0-27, default: 4)
   all                   Validate all available levels
 
 Options:
@@ -146,7 +146,7 @@ Usage: banish [LEVEL] [OPTIONS]
 Validate wizardry readiness by level, including assumptions, self-healing, and tests.
 
 Arguments:
-  LEVEL                 Validate through level N (0-30, default: 4)
+  LEVEL                 Validate through level N (0-27, default: 4)
   all                   Validate all available levels
 
 Options:
@@ -175,7 +175,7 @@ Usage: banish [LEVEL] [OPTIONS]
 Validate wizardry readiness by level, including assumptions, self-healing, and tests.
 
 Arguments:
-  LEVEL                 Validate through level N (0-30, default: 4)
+  LEVEL                 Validate through level N (0-27, default: 4)
   all                   Validate all available levels
 
 Options:
@@ -531,7 +531,7 @@ banish_process_level() {
       ;;
 
     3)
-      # Level 3: Menu System
+      # Level 3: Glossary & Parsing
       
       # Check stty (single item - combine on one line)
       if ! command -v stty >/dev/null 2>&1; then
@@ -719,43 +719,40 @@ banish_process_level() {
       ;;
 
     5)
-      # Level 5: MUD Basics
+      # Level 5: Navigation
 
-      # Check extended attributes helpers
-      xattr_helper=""
-      if command -v xattr >/dev/null 2>&1; then
-        xattr_helper="xattr"
-      elif command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; then
-        xattr_helper="getfattr/setfattr"
+      # Check marker directory creation
+      spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+      markers_dir="$spell_home/.markers"
+      if [ -d "$markers_dir" ] && [ -w "$markers_dir" ]; then
+        printf '  %s✓%s Marker directory: %s\n' "$_green" "$_reset" "$markers_dir"
+      else
+        printf '  %s✗%s Marker directory: %s unavailable\n' "$_red" "$_reset" "$markers_dir"
+        if [ "$skip_heal" -eq 0 ]; then
+          if mkdir -p "$markers_dir" 2>/dev/null; then
+            printf '    %s✓%s Marker directory created\n' "$_green" "$_reset"
+          else
+            printf '    %s✗%s Marker directory creation failed\n' "$_red" "$_reset"
+          fi
+        fi
+        if [ ! -d "$markers_dir" ] || [ ! -w "$markers_dir" ]; then
+          return 1
+        fi
       fi
 
-      if [ -n "$xattr_helper" ]; then
-        printf '  %s✓%s Extended attributes: %s available\n' "$_green" "$_reset" "$xattr_helper"
+      # Check spellbook directory access
+      if [ -d "$spell_home" ] && [ -w "$spell_home" ]; then
+        printf '  %s✓%s Spellbook directory: %s\n' "$_green" "$_reset" "$spell_home"
       else
-        printf '  %s✗%s Extended attributes: no helper found\n' "$_red" "$_reset"
+        printf '  %s✗%s Spellbook directory: %s unavailable\n' "$_red" "$_reset" "$spell_home"
         if [ "$skip_heal" -eq 0 ]; then
-          manage_system_command=""
-          if command -v manage-system-command >/dev/null 2>&1; then
-            manage_system_command="manage-system-command"
-          elif [ -x "${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command" ]; then
-            manage_system_command="${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command"
-          fi
-          if [ -n "$manage_system_command" ]; then
-            printf '    Attempting to install xattr tooling...\n'
-            "$manage_system_command" getfattr attr >/dev/null 2>&1 || :
-            "$manage_system_command" setfattr attr >/dev/null 2>&1 || :
+          if mkdir -p "$spell_home" 2>/dev/null; then
+            printf '    %s✓%s Spellbook directory created\n' "$_green" "$_reset"
+          else
+            printf '    %s✗%s Spellbook directory creation failed\n' "$_red" "$_reset"
           fi
         fi
-        has_xattr=0
-        if command -v xattr >/dev/null 2>&1; then
-          has_xattr=1
-        elif command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; then
-          has_xattr=1
-        fi
-        if [ "$has_xattr" -eq 1 ]; then
-          printf '    %s✓%s Extended attributes helper ready\n' "$_green" "$_reset"
-        else
-          printf '    %s✗%s Extended attributes still unavailable\n' "$_red" "$_reset"
+        if [ ! -d "$spell_home" ] || [ ! -w "$spell_home" ]; then
           return 1
         fi
       fi
@@ -815,44 +812,8 @@ banish_process_level() {
       ;;
 
     6)
-      # Level 6: Navigation
-
-      # Check marker directory creation
-      spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
-      markers_dir="$spell_home/.markers"
-      if [ -d "$markers_dir" ] && [ -w "$markers_dir" ]; then
-        printf '  %s✓%s Marker directory: %s\n' "$_green" "$_reset" "$markers_dir"
-      else
-        printf '  %s✗%s Marker directory: %s unavailable\n' "$_red" "$_reset" "$markers_dir"
-        if [ "$skip_heal" -eq 0 ]; then
-          if mkdir -p "$markers_dir" 2>/dev/null; then
-            printf '    %s✓%s Marker directory created\n' "$_green" "$_reset"
-          else
-            printf '    %s✗%s Marker directory creation failed\n' "$_red" "$_reset"
-          fi
-        fi
-        if [ ! -d "$markers_dir" ] || [ ! -w "$markers_dir" ]; then
-          return 1
-        fi
-      fi
-
-      # Check spellbook directory access
-      if [ -d "$spell_home" ] && [ -w "$spell_home" ]; then
-        printf '  %s✓%s Spellbook directory: %s\n' "$_green" "$_reset" "$spell_home"
-      else
-        printf '  %s✗%s Spellbook directory: %s unavailable\n' "$_red" "$_reset" "$spell_home"
-        if [ "$skip_heal" -eq 0 ]; then
-          if mkdir -p "$spell_home" 2>/dev/null; then
-            printf '    %s✓%s Spellbook directory created\n' "$_green" "$_reset"
-          else
-            printf '    %s✗%s Spellbook directory creation failed\n' "$_red" "$_reset"
-          fi
-        fi
-        if [ ! -d "$spell_home" ] || [ ! -w "$spell_home" ]; then
-          return 1
-        fi
-      fi
-
+      # Level 6: Task Priorities (no special checks needed - just validate spells)
+      
       # Check spells
       spell_list=$("$spell_levels_script" 6 spells)
       if [ -n "$spell_list" ]; then
@@ -873,6 +834,102 @@ banish_process_level() {
 
       # Check imps
       imp_list=$("$spell_levels_script" 6 imps)
+      had_imps=0
+      if [ -n "$imp_list" ]; then
+        had_imps=1
+        new_imp_list=""
+        for imp in $imp_list; do
+          case " ${_banish_seen_imps} " in
+            *" ${imp} "*) ;;
+            *)
+              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
+              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              ;;
+          esac
+        done
+        imp_list=$new_imp_list
+      fi
+      if [ -n "$imp_list" ]; then
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
+        else
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
+      elif [ "$had_imps" -eq 1 ]; then
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      else
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      fi
+      ;;
+
+    7)
+      # Level 7: MUD Basics
+
+      # Check extended attributes helpers
+      xattr_helper=""
+      if command -v xattr >/dev/null 2>&1; then
+        xattr_helper="xattr"
+      elif command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; then
+        xattr_helper="getfattr/setfattr"
+      fi
+
+      if [ -n "$xattr_helper" ]; then
+        printf '  %s✓%s Extended attributes: %s available\n' "$_green" "$_reset" "$xattr_helper"
+      else
+        printf '  %s✗%s Extended attributes: no helper found\n' "$_red" "$_reset"
+        if [ "$skip_heal" -eq 0 ]; then
+          manage_system_command=""
+          if command -v manage-system-command >/dev/null 2>&1; then
+            manage_system_command="manage-system-command"
+          elif [ -x "${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command" ]; then
+            manage_system_command="${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command"
+          fi
+          if [ -n "$manage_system_command" ]; then
+            printf '    Attempting to install xattr tooling...\n'
+            "$manage_system_command" getfattr attr >/dev/null 2>&1 || :
+            "$manage_system_command" setfattr attr >/dev/null 2>&1 || :
+          fi
+        fi
+        has_xattr=0
+        if command -v xattr >/dev/null 2>&1; then
+          has_xattr=1
+        elif command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; then
+          has_xattr=1
+        fi
+        if [ "$has_xattr" -eq 1 ]; then
+          printf '    %s✓%s Extended attributes helper ready\n' "$_green" "$_reset"
+        else
+          printf '    %s✗%s Extended attributes still unavailable\n' "$_red" "$_reset"
+          return 1
+        fi
+      fi
+
+      # Check spells
+      spell_list=$("$spell_levels_script" 7 spells)
+      if [ -n "$spell_list" ]; then
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          return 1
+        fi
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
+        else
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
+      fi
+
+      # Check imps
+      imp_list=$("$spell_levels_script" 7 imps)
       had_imps=0
       if [ -n "$imp_list" ]; then
         had_imps=1
@@ -1074,8 +1131,8 @@ banish_process_level() {
       fi
       ;;
 
-    12)
-      # Level 12: System Configuration
+    10)
+      # Level 10: System Configuration
 
       # Check configuration directory access
       config_home=${WIZARDRY_CONFIG_DIR:-${HOME:-.}/.wizardry}
@@ -1096,7 +1153,7 @@ banish_process_level() {
       fi
 
       # Check spells
-      spell_list=$("$spell_levels_script" 12 spells)
+      spell_list=$("$spell_levels_script" 10 spells)
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
@@ -1114,7 +1171,7 @@ banish_process_level() {
       fi
 
       # Check imps
-      imp_list=$("$spell_levels_script" 12 imps)
+      imp_list=$("$spell_levels_script" 10 imps)
       had_imps=0
       if [ -n "$imp_list" ]; then
         had_imps=1
@@ -1149,8 +1206,8 @@ banish_process_level() {
       fi
       ;;
 
-    13)
-      # Level 13: Testing Infrastructure
+    11)
+      # Level 11: Testing Infrastructure
 
       # Check tests directory
       tests_root="${WIZARDRY_DIR}/.tests"
@@ -1223,7 +1280,7 @@ banish_process_level() {
       fi
 
       # Check spells
-      spell_list=$("$spell_levels_script" 13 spells)
+      spell_list=$("$spell_levels_script" 11 spells)
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
@@ -1241,7 +1298,7 @@ banish_process_level() {
       fi
 
       # Check imps
-      imp_list=$("$spell_levels_script" 13 imps)
+      imp_list=$("$spell_levels_script" 11 imps)
       had_imps=0
       if [ -n "$imp_list" ]; then
         had_imps=1
@@ -1276,14 +1333,22 @@ banish_process_level() {
       fi
       ;;
 
-    19)
-      # Level 19: SSH & Remote Access
 
-      # Check SSH availability
-      if command -v ssh >/dev/null 2>&1; then
-        printf '  %s✓%s SSH client: ssh available\n' "$_green" "$_reset"
+    19)
+      # Level 19: Extended Attributes
+
+      # Check extended attributes helpers
+      xattr_helper=""
+      if command -v xattr >/dev/null 2>&1; then
+        xattr_helper="xattr"
+      elif command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; then
+        xattr_helper="getfattr/setfattr"
+      fi
+
+      if [ -n "$xattr_helper" ]; then
+        printf '  %s✓%s Extended attributes: %s available\n' "$_green" "$_reset" "$xattr_helper"
       else
-        printf '  %s✗%s SSH client: ssh not found\n' "$_red" "$_reset"
+        printf '  %s✗%s Extended attributes: no helper found\n' "$_red" "$_reset"
         if [ "$skip_heal" -eq 0 ]; then
           manage_system_command=""
           if command -v manage-system-command >/dev/null 2>&1; then
@@ -1292,11 +1357,21 @@ banish_process_level() {
             manage_system_command="${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command"
           fi
           if [ -n "$manage_system_command" ]; then
-            printf '    Attempting to install SSH...\n'
-            "$manage_system_command" ssh openssh >/dev/null 2>&1 || :
+            printf '    Attempting to install xattr tooling...\n'
+            "$manage_system_command" getfattr attr >/dev/null 2>&1 || :
+            "$manage_system_command" setfattr attr >/dev/null 2>&1 || :
           fi
         fi
-        if ! command -v ssh >/dev/null 2>&1; then
+        has_xattr=0
+        if command -v xattr >/dev/null 2>&1; then
+          has_xattr=1
+        elif command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; then
+          has_xattr=1
+        fi
+        if [ "$has_xattr" -eq 1 ]; then
+          printf '    %s✓%s Extended attributes helper ready\n' "$_green" "$_reset"
+        else
+          printf '    %s✗%s Extended attributes still unavailable\n' "$_red" "$_reset"
           return 1
         fi
       fi
@@ -1355,44 +1430,106 @@ banish_process_level() {
       fi
       ;;
 
-    22)
-      # Level 22: Extended Attributes
+    21)
+      # Level 21: Spellcraft Development Tools
 
-      # Check extended attributes helpers
-      xattr_helper=""
-      if command -v xattr >/dev/null 2>&1; then
-        xattr_helper="xattr"
-      elif command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; then
-        xattr_helper="getfattr/setfattr"
+      # Check checkbashisms for lint-magic
+      if command -v checkbashisms >/dev/null 2>&1; then
+        printf '  %s✓%s Shell lint: checkbashisms available\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Shell lint: checkbashisms not found\n' "$_red" "$_reset"
+        if [ "$skip_heal" -eq 0 ]; then
+          if command -v install-checkbashisms >/dev/null 2>&1; then
+            printf '    Installing checkbashisms...\n'
+            if install-checkbashisms 2>/dev/null; then
+              if command -v checkbashisms >/dev/null 2>&1; then
+                printf '    %s✓%s checkbashisms installed\n' "$_green" "$_reset"
+              else
+                printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+              fi
+            else
+              printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+            fi
+          else
+            printf '    Auto-install not available\n'
+          fi
+        fi
+        if ! command -v checkbashisms >/dev/null 2>&1; then
+          return 1
+        fi
       fi
 
-      if [ -n "$xattr_helper" ]; then
-        printf '  %s✓%s Extended attributes: %s available\n' "$_green" "$_reset" "$xattr_helper"
-      else
-        printf '  %s✗%s Extended attributes: no helper found\n' "$_red" "$_reset"
-        if [ "$skip_heal" -eq 0 ]; then
-          manage_system_command=""
-          if command -v manage-system-command >/dev/null 2>&1; then
-            manage_system_command="manage-system-command"
-          elif [ -x "${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command" ]; then
-            manage_system_command="${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command"
-          fi
-          if [ -n "$manage_system_command" ]; then
-            printf '    Attempting to install xattr tooling...\n'
-            "$manage_system_command" getfattr attr >/dev/null 2>&1 || :
-            "$manage_system_command" setfattr attr >/dev/null 2>&1 || :
-          fi
+      # Check spells
+      spell_list=$("$spell_levels_script" 21 spells)
+      if [ -n "$spell_list" ]; then
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          return 1
         fi
-        has_xattr=0
-        if command -v xattr >/dev/null 2>&1; then
-          has_xattr=1
-        elif command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; then
-          has_xattr=1
-        fi
-        if [ "$has_xattr" -eq 1 ]; then
-          printf '    %s✓%s Extended attributes helper ready\n' "$_green" "$_reset"
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
-          printf '    %s✗%s Extended attributes still unavailable\n' "$_red" "$_reset"
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
+      fi
+
+      # Check imps
+      imp_list=$("$spell_levels_script" 21 imps)
+      had_imps=0
+      if [ -n "$imp_list" ]; then
+        had_imps=1
+        new_imp_list=""
+        for imp in $imp_list; do
+          case " ${_banish_seen_imps} " in
+            *" ${imp} "*) ;;
+            *)
+              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
+              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              ;;
+          esac
+        done
+        imp_list=$new_imp_list
+      fi
+      if [ -n "$imp_list" ]; then
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
+        else
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
+      elif [ "$had_imps" -eq 1 ]; then
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      else
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      fi
+      ;;
+
+    22)
+      # Level 22: Core Menu Infrastructure
+
+      # Check spellbook directory access
+      spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+      if [ -d "$spell_home" ] && [ -w "$spell_home" ]; then
+        printf '  %s✓%s Spellbook directory: %s\n' "$_green" "$_reset" "$spell_home"
+      else
+        printf '  %s✗%s Spellbook directory: %s unavailable\n' "$_red" "$_reset" "$spell_home"
+        if [ "$skip_heal" -eq 0 ]; then
+          if mkdir -p "$spell_home" 2>/dev/null; then
+            printf '    %s✓%s Spellbook directory created\n' "$_green" "$_reset"
+          else
+            printf '    %s✗%s Spellbook directory creation failed\n' "$_red" "$_reset"
+          fi
+        fi
+        if [ ! -d "$spell_home" ] || [ ! -w "$spell_home" ]; then
           return 1
         fi
       fi
@@ -1450,167 +1587,9 @@ banish_process_level() {
         printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
       fi
       ;;
-
-    24)
-      # Level 24: Spellcraft Development Tools
-
-      # Check checkbashisms for lint-magic
-      if command -v checkbashisms >/dev/null 2>&1; then
-        printf '  %s✓%s Shell lint: checkbashisms available\n' "$_green" "$_reset"
-      else
-        printf '  %s✗%s Shell lint: checkbashisms not found\n' "$_red" "$_reset"
-        if [ "$skip_heal" -eq 0 ]; then
-          if command -v install-checkbashisms >/dev/null 2>&1; then
-            printf '    Installing checkbashisms...\n'
-            if install-checkbashisms 2>/dev/null; then
-              if command -v checkbashisms >/dev/null 2>&1; then
-                printf '    %s✓%s checkbashisms installed\n' "$_green" "$_reset"
-              else
-                printf '    %s✗%s Install failed\n' "$_red" "$_reset"
-              fi
-            else
-              printf '    %s✗%s Install failed\n' "$_red" "$_reset"
-            fi
-          else
-            printf '    Auto-install not available\n'
-          fi
-        fi
-        if ! command -v checkbashisms >/dev/null 2>&1; then
-          return 1
-        fi
-      fi
-
-      # Check spells
-      spell_list=$("$spell_levels_script" 24 spells)
-      if [ -n "$spell_list" ]; then
-        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
-          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
-          missing_count=$("$_banish_count_words" "$missing")
-          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
-          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
-          return 1
-        fi
-        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
-        if [ -n "$spell_output" ]; then
-          printf '%s\n' "$spell_output" | sed 's/^/  /'
-        else
-          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
-        fi
-      fi
-
-      # Check imps
-      imp_list=$("$spell_levels_script" 24 imps)
-      had_imps=0
-      if [ -n "$imp_list" ]; then
-        had_imps=1
-        new_imp_list=""
-        for imp in $imp_list; do
-          case " ${_banish_seen_imps} " in
-            *" ${imp} "*) ;;
-            *)
-              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
-              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
-              ;;
-          esac
-        done
-        imp_list=$new_imp_list
-      fi
-      if [ -n "$imp_list" ]; then
-        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
-          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
-          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
-          return 1
-        fi
-        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
-        if [ -n "$imp_output" ]; then
-          printf '%s\n' "$imp_output" | sed 's/^/  /'
-        else
-          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
-        fi
-      elif [ "$had_imps" -eq 1 ]; then
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
-      else
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
-      fi
-      ;;
-
-    25)
-      # Level 25: Core Menu Infrastructure
-
-      # Check spellbook directory access
-      spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
-      if [ -d "$spell_home" ] && [ -w "$spell_home" ]; then
-        printf '  %s✓%s Spellbook directory: %s\n' "$_green" "$_reset" "$spell_home"
-      else
-        printf '  %s✗%s Spellbook directory: %s unavailable\n' "$_red" "$_reset" "$spell_home"
-        if [ "$skip_heal" -eq 0 ]; then
-          if mkdir -p "$spell_home" 2>/dev/null; then
-            printf '    %s✓%s Spellbook directory created\n' "$_green" "$_reset"
-          else
-            printf '    %s✗%s Spellbook directory creation failed\n' "$_red" "$_reset"
-          fi
-        fi
-        if [ ! -d "$spell_home" ] || [ ! -w "$spell_home" ]; then
-          return 1
-        fi
-      fi
-
-      # Check spells
-      spell_list=$("$spell_levels_script" 25 spells)
-      if [ -n "$spell_list" ]; then
-        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
-          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
-          missing_count=$("$_banish_count_words" "$missing")
-          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
-          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
-          return 1
-        fi
-        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
-        if [ -n "$spell_output" ]; then
-          printf '%s\n' "$spell_output" | sed 's/^/  /'
-        else
-          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
-        fi
-      fi
-
-      # Check imps
-      imp_list=$("$spell_levels_script" 25 imps)
-      had_imps=0
-      if [ -n "$imp_list" ]; then
-        had_imps=1
-        new_imp_list=""
-        for imp in $imp_list; do
-          case " ${_banish_seen_imps} " in
-            *" ${imp} "*) ;;
-            *)
-              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
-              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
-              ;;
-          esac
-        done
-        imp_list=$new_imp_list
-      fi
-      if [ -n "$imp_list" ]; then
-        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
-          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
-          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
-          return 1
-        fi
-        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
-        if [ -n "$imp_output" ]; then
-          printf '%s\n' "$imp_output" | sed 's/^/  /'
-        else
-          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
-        fi
-      elif [ "$had_imps" -eq 1 ]; then
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
-      else
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
-      fi
-      ;;
       
-    30)
-      # Level 30: Optional Arcana (single item - combine on one line)
+    27)
+      # Level 27: Optional Arcana (single item - combine on one line)
       if [ -d "${WIZARDRY_DIR}/spells/.arcana" ]; then
         arcana_count=$(find "${WIZARDRY_DIR}/spells/.arcana" -type f 2>/dev/null | wc -l)
         printf '  %s✓%s Arcana (optional): Found %d scripts\n' "$_green" "$_reset" "$arcana_count"

@@ -162,31 +162,43 @@ demo_level() {
       ;;
       
     6)
-      printf 'The wizard masters command parsing...\n'
+      printf 'The wizard manages task priorities...\n'
       printf '\n'
       
-      printf 'The lex/parse imp enables sophisticated command-line parsing.\n'
-      printf 'It breaks down complex command syntax into manageable components.\n'
-      printf 'Used internally by many wizardry spells for argument processing.\n'
+      printf 'Priority management system:\n'
+      printf '  • get-priority - View item priority\n'
+      printf '  • prioritize - Set item priority\n'
+      printf '  • upvote - Increase priority\n'
+      printf '\n'
+      printf 'Enables tracking and sorting tasks by importance.\n'
+      ;;
+      
+    7)
+      printf 'The wizard masters the MUD realm...\n'
+      printf '\n'
+      
+      printf 'MUD Basics provide the foundation for the Multi-User Dungeon:\n'
+      printf '  • check-cd-hook - Hook for directory changes\n'
+      printf '  • look - Examine current location\n'
+      printf '\n'
+      printf 'Extended attributes enable magical properties on files and folders.\n'
       ;;
       
     9)
-      printf 'The wizard learns validation magic...\n'
+      printf 'The wizard learns basic cantrips...\n'
       printf '\n'
       
-      # Demonstrate validate-number
-      if command -v validate-number >/dev/null 2>&1; then
-        printf 'The wizard casts validate-number...\n'
-        if printf '42\n' | validate-number "Enter a number" >/dev/null 2>&1; then
-          printf 'Number 42 validated successfully ✓\n'
-        fi
-        printf '\n'
-      fi
-      
-      printf 'Validation helpers ensure data integrity:\n'
-      printf '  • validate-number - Ensures input is numeric\n'
-      printf '  • validate-path - Verifies file paths\n'
-      printf '  • require-command - Checks if commands exist\n'
+      # Demo cantrips that are available
+      printf 'Basic cantrips for everyday magic:\n'
+      printf '  • ask, ask-yn, ask-text - Interactive prompts\n'
+      printf '  • ask-number - Numeric input with validation\n'
+      printf '  • max-length - Find longest string\n'
+      printf '  • list-files - List files in directory\n'
+      printf '  • move - Move files\n'
+      printf '  • memorize - Add spells to shell init\n'
+      printf '\n'
+      printf 'Validation helpers are now imps:\n'
+      printf '  • validate-number, validate-path, require-command\n'
       ;;
       
     10)
@@ -482,7 +494,7 @@ demo_level() {
         printf 'No third-party extensions are currently installed.\n'
       fi
       printf '\n'
-      printf 'Level 29 is reserved for optional extensions,\n'
+      printf 'Level 27 is reserved for optional extensions,\n'
       printf 'third-party integrations, and experimental spells.\n'
       ;;
       
@@ -665,7 +677,7 @@ Demonstrate wizardry features by running checks on spells and narrating results.
 Each level demonstrates spells validated by the corresponding banish level.
 
 Arguments:
-  LEVEL         Demonstration level (0-29)
+  LEVEL         Demonstration level (0-27)
   all           Demonstrate all levels (default)
                 Level 0: POSIX & platform foundation
                 Level 1: Wizardry installation
@@ -713,11 +725,11 @@ fi
 # Note: validate-spells is now a flat-file spell in PATH, not a function
 
 # Parse level argument
-demo_level=29  # Default to all levels
+demo_level=27  # Default to all levels
 if [ "$#" -gt 0 ]; then
   case "$1" in
     all)
-      demo_level=29
+      demo_level=27
       shift
       ;;
     [0-9]|[0-9][0-9])
@@ -733,7 +745,7 @@ Demonstrate wizardry features by running checks on spells and narrating results.
 Each level demonstrates spells validated by the corresponding banish level.
 
 Arguments:
-  LEVEL         Demonstration level (0-29)
+  LEVEL         Demonstration level (0-27)
   all           Demonstrate all levels (default)
                 Level 0: POSIX & platform foundation
                 Level 1: Wizardry installation
