@@ -62,7 +62,7 @@ test_requires_service_name() {
   ASK_TEXT_RESPONSE="" \
   REMOVE_SERVICE_ASK_TEXT="$stub_dir/ask-text" \
   SYSTEMCTL_STATE_DIR="$stub_dir/state" \
-  PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" run_spell "spells/cantrips/remove-service"
+  PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" run_spell "spells/system/remove-service"
 
   assert_failure || return 1
   case "$OUTPUT$ERROR" in
@@ -81,7 +81,7 @@ test_reports_missing_service() {
   SERVICE_DIR="$service_dir" \
   REMOVE_SERVICE_ASK_TEXT="$stub_dir/ask-text" \
   SYSTEMCTL_STATE_DIR="$stub_dir/state" \
-  PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" run_spell "spells/cantrips/remove-service" missing
+  PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" run_spell "spells/system/remove-service" missing
 
   assert_failure || return 1
   case "$OUTPUT$ERROR" in
@@ -104,7 +104,7 @@ test_stops_and_removes_service() {
   REMOVE_SERVICE_ASK_TEXT="$stub_dir/ask-text" \
   SYSTEMCTL_STATE_DIR="$stub_dir/state" \
   SYSTEMCTL_IS_ACTIVE_STATUS=0 \
-  PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" run_spell "spells/cantrips/remove-service" demo
+  PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" run_spell "spells/system/remove-service" demo
 
   assert_success
   assert_output_contains "Removing demo.service"
@@ -118,7 +118,7 @@ run_test_case "remove-service reports missing services" test_reports_missing_ser
 run_test_case "remove-service stops active services and cleans up" test_stops_and_removes_service
 
 shows_help() {
-  run_spell spells/cantrips/remove-service --help
+  run_spell spells/system/remove-service --help
   # Note: spell may not have --help implemented yet
   true
 }

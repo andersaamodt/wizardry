@@ -1,27 +1,12 @@
 #!/bin/sh
-
-# Guard against missing commands, offering to install them.
-
-case "${1-}" in
---help|--usage|-h)
-  cat <<'USAGE' >&2
-Usage: require-command <command> [message...]
-
-Checks for a required binary, optionally offers to install it through wizardry installers, and exits non-zero with a helpful message when the dependency is missing.
-USAGE
-  exit 0
-  ;;
-esac
+# require-command COMMAND [MESSAGE...] - check for required binary, offer to install
+# Exits 0 if command exists, non-zero with helpful message if missing
+# Example: require-command git "Git is required for version control"
 
 set -eu
-. env-clear
 
 if [ "$#" -lt 1 ]; then
-    cat <<'USAGE' >&2
-Usage: require-command <command> [message...]
-
-Checks for a required binary, optionally offers to install it through wizardry installers, and exits non-zero with a helpful message when the dependency is missing.
-USAGE
+    printf '%s\n' "require-command: command name required" >&2
     exit 2
 fi
 

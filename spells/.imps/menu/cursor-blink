@@ -1,25 +1,14 @@
 #!/bin/sh
-
-# This spell awakens or stills the cyclic illumination of the cursor.
-
-case "${1-}" in
---help|--usage|-h)
-  cat <<'USAGE' >&2
-Usage: cursor-blink on|off
-
-Toggles cursor blinking with ANSI escape codes, quietly succeeding on terminals that cannot honour the request.
-USAGE
-  exit 0
-  ;;
-esac
+# cursor-blink on|off - toggle cursor blinking with ANSI escape codes
+# Quietly succeeds on terminals that cannot honor the request
+# Example: cursor-blink off
 
 set -eu
-. env-clear
 
 # The helper expects exactly one argument that declares the desired state.
 if [ "$#" -ne 1 ]; then
-  usage-error "cursor-blink" "expected on or off" || exit 2
-  exit 2  # Explicit exit in case usage-error doesn't exit
+  printf '%s\n' "cursor-blink: expected 'on' or 'off'" >&2
+  exit 2
 fi
 
 # Inline supports_cursor_control - only used once

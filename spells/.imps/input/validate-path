@@ -1,21 +1,9 @@
 #!/bin/sh
-
-# This spell validates whether a string is a valid UNIX path.
-# Use it to check path input before file operations.
-
-case "${1-}" in
---help|--usage|-h)
-  cat <<'USAGE'
-Usage: validate-path <path>
-
-Check whether a string looks like a safe UNIX path, including reasonable lengths for the path and its components. Exits 0 when the path passes basic sanity checks and 1 when it does not.
-USAGE
-  exit 0
-  ;;
-esac
+# validate-path PATH - check if PATH looks like a safe UNIX path
+# Returns 0 when path passes basic sanity checks (length, component size), 1 otherwise
+# Example: validate-path "/home/user/file" && echo "valid"
 
 set -eu
-. env-clear
 
 # Check argument provided
 if [ -z "${1+x}" ]; then

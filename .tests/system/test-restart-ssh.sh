@@ -14,20 +14,20 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/cantrips/restart-ssh" --help
+  run_spell "spells/system/restart-ssh" --help
   assert_success || return 1
   assert_output_contains "Usage: restart-ssh" || return 1
 }
 
 test_help_h_flag() {
-  run_spell "spells/cantrips/restart-ssh" -h
+  run_spell "spells/system/restart-ssh" -h
   assert_success || return 1
   assert_output_contains "Usage: restart-ssh" || return 1
 }
 
 test_uses_os_imp() {
   # Verify the spell sources the os imp
-  grep -q "os" "$ROOT_DIR/spells/cantrips/restart-ssh" || {
+  grep -q "os" "$ROOT_DIR/spells/system/restart-ssh" || {
     TEST_FAILURE_REASON="spell does not use os imp"
     return 1
   }

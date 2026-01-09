@@ -28,7 +28,7 @@ Usage: test-magic [LEVEL] [OPTIONS]
 Execute behavior-driven shell tests organized by spell level.
 
 Arguments:
-  LEVEL                 Test through level N (0-29, default: 29)
+  LEVEL                 Test through level N (0-27, default: 27)
   all                   Test all available levels
 
 Options:
@@ -97,8 +97,8 @@ if [ -d "$root_dir/spells/.imps" ]; then
 fi
 
 # Parse arguments
-target_level=29
-max_level=29
+target_level=27
+max_level=27
 only_this_level=0
 verbose=0
 run_all=0
@@ -139,7 +139,7 @@ Usage: test-magic [LEVEL] [OPTIONS]
 Execute behavior-driven shell tests organized by spell level.
 
 Arguments:
-  LEVEL                 Test through level N (0-29, default: 29)
+  LEVEL                 Test through level N (0-27, default: 27)
   all                   Test all available levels
 
 Options:
@@ -167,7 +167,7 @@ Usage: test-magic [LEVEL] [OPTIONS]
 Execute behavior-driven shell tests organized by spell level.
 
 Arguments:
-  LEVEL                 Test through level N (0-29, default: 29)
+  LEVEL                 Test through level N (0-27, default: 27)
   all                   Test all available levels
 
 Options:

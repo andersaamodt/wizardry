@@ -1,25 +1,11 @@
 #!/bin/sh
-
-# Report the cursor position returned by the terminal in response to a DSR
-# (Device Status Report) query.
-
-case "${1-}" in
---help|--usage|-h)
-  cat <<'USAGE' >&2
-Usage: fathom-cursor [-v|--verbose] [-x] [-y]
-
-Query the terminal with a Device Status Report and print the cursor's current
-column and row. Use -x or -y to request a single axis; -v adds labels so menu
-scripts can present the measurements clearly.
-USAGE
-  exit 0
-  ;;
-esac
+# fathom-cursor [-v|--verbose] [-x] [-y] - query terminal cursor position via DSR
+# Prints cursor's column and row; use -x or -y for single axis; -v adds labels
+# Example: pos=$(fathom-cursor) && echo "Position: $pos"
 
 # Use conditional strictness based on execution context
 # See .github/CODE_POLICY_SET_EU.md for details
 set -eu
-. env-clear
 
 # Resolve require-command location
 # Use command -v to find require-command when preloaded as a function

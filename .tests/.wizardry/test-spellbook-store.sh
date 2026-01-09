@@ -26,7 +26,7 @@ spellbook_env() {
 run_store() {
   env_var=$1
   shift
-  run_cmd env "$env_var" "$ROOT_DIR/spells/cantrips/spellbook-store" "$@"
+  run_cmd env "$env_var" "$ROOT_DIR/spells/.wizardry/spellbook-store" "$@"
 }
 
 normalize_output() {
@@ -102,7 +102,7 @@ run_test_case "prints spellbook path" prints_spellbook_path
 run_test_case "rejects invalid arguments" rejects_invalid_args
 
 shows_help() {
-  run_spell spells/cantrips/spellbook-store --help
+  run_spell spells/.wizardry/spellbook-store --help
   true
 }
 

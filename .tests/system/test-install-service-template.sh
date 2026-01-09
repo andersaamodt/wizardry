@@ -72,7 +72,7 @@ test_declines_overwrite() {
   SYSTEMCTL_STATE_DIR="$service_dir/state" \
   INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask-yn" \
   INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask-text" \
-  PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" run_spell "spells/cantrips/install-service-template" "$template"
+  PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" run_spell "spells/system/install-service-template" "$template"
 
   assert_failure && assert_output_contains "Installation cancelled"
   [ "$(cat "$service_path")" = "keep me" ] || { TEST_FAILURE_REASON="service file was overwritten"; return 1; }
@@ -103,7 +103,7 @@ SERVICE
   INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask-yn" \
   INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask-text" \
   ASK_TEXT_STUB_FILE="$placeholders" \
-  PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" run_spell "spells/cantrips/install-service-template" "$template" EXECUTABLE=magic
+  PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" run_spell "spells/system/install-service-template" "$template" EXECUTABLE=magic
 
   assert_success
   assert_output_contains "Service installed"
@@ -136,7 +136,7 @@ test_skips_sudo_when_service_dir_writable() {
   SERVICE_DIR="$service_dir" \
   INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask-yn" \
   INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask-text" \
-  PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" run_spell "spells/cantrips/install-service-template" "$template" NAME=mere
+  PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" run_spell "spells/system/install-service-template" "$template" NAME=mere
 
   assert_success
   assert_output_contains "Service installed"
@@ -168,7 +168,7 @@ SERVICE
   INSTALL_SERVICE_TEMPLATE_ASK_YN="$stub_dir/ask-yn" \
   INSTALL_SERVICE_TEMPLATE_ASK_TEXT="$stub_dir/ask-text" \
   ASK_TEXT_STUB_FILE="$placeholders" \
-  PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" run_spell "spells/cantrips/install-service-template" "$template"
+  PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" run_spell "spells/system/install-service-template" "$template"
 
   assert_success
   contents=$(cat "$service_path")
@@ -186,7 +186,7 @@ run_test_case "install-service-template skips sudo when target writable" test_sk
 run_test_case "install-service-template handles special characters in placeholders" test_replaces_special_characters
 
 shows_help() {
-  run_spell spells/cantrips/install-service-template --help
+  run_spell spells/system/install-service-template --help
   # Note: spell may not have --help implemented yet
   true
 }

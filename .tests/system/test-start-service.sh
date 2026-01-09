@@ -1,7 +1,7 @@
 #!/bin/sh
 # Behavioral cases (derived from --help):
-# - stop-service prompts then stops unit
-# - stop-service fails when name missing
+# - start-service prompts then starts unit
+# - start-service fails when name missing
 
 set -eu
 
@@ -46,41 +46,41 @@ EOF_INNER
   chmod +x "$dir/sudo"
 }
 
-stop_service_prompts_and_invokes() {
+start_service_prompts_and_invokes() {
   stub_dir=$(make_stub_dir)
-  write_stub_ask_text "$stub_dir" "beta"
+  write_stub_ask_text "$stub_dir" "alpha"
   write_stub_systemctl "$stub_dir"
   write_stub_sudo "$stub_dir"
-  PATH="$stub_dir:$PATH" run_spell "spells/cantrips/stop-service"
+  PATH="$stub_dir:$PATH" run_spell "spells/system/start-service"
   assert_success || return 1
-  assert_output_contains "Stopping beta.service via systemctl..." || return 1
-  [ "$(cat "$stub_dir/systemctl.args")" = "stop beta.service" ] || {
+  assert_output_contains "Starting alpha.service via systemctl..." || return 1
+  [ "$(cat "$stub_dir/systemctl.args")" = "start alpha.service" ] || {
     TEST_FAILURE_REASON="systemctl called with unexpected args"; return 1; }
 }
 
-stop_service_requires_name() {
+start_service_fails_without_name() {
   stub_dir=$(make_stub_dir)
   write_stub_ask_text "$stub_dir" ""
-  PATH="$stub_dir:$PATH" run_spell "spells/cantrips/stop-service"
+  PATH="$stub_dir:$PATH" run_spell "spells/system/start-service"
   assert_failure || return 1
   assert_error_contains "No service name supplied." || return 1
 }
 
-run_test_case "stop-service prompts then stops unit" stop_service_prompts_and_invokes
-run_test_case "stop-service fails when name missing" stop_service_requires_name
+run_test_case "start-service prompts then starts unit" start_service_prompts_and_invokes
+run_test_case "start-service fails when name missing" start_service_fails_without_name
 
 spell_is_executable() {
-  [ -x "$ROOT_DIR/spells/cantrips/stop-service" ]
+  [ -x "$ROOT_DIR/spells/system/start-service" ]
 }
 
-run_test_case "cantrips/stop-service is executable" spell_is_executable
+run_test_case "cantrips/start-service is executable" spell_is_executable
 shows_help() {
-  run_spell spells/cantrips/stop-service --help
+  run_spell spells/system/start-service --help
   # Note: spell may not have --help implemented yet
   true
 }
 
-run_test_case "stop-service shows help" shows_help
+run_test_case "start-service shows help" shows_help
 
 # Test via source-then-invoke pattern  
 

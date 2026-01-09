@@ -1,29 +1,14 @@
 #!/bin/sh
-
-# This spell moves the cursor to the provided column (x) and row (y).
-
-case "${1-}" in
---help|--usage|-h)
-  cat <<'USAGE' >&2
-Usage: move-cursor <x> <y>
-
-Moves the terminal cursor to the requested column and row using ANSI escapes, clamping any zero or negative values to the first position.
-USAGE
-  exit 0
-  ;;
-esac
+# move-cursor X Y - move terminal cursor to column X, row Y using ANSI escapes
+# Clamps zero or negative values to first position
+# Example: move-cursor 10 5
 
 # Use conditional strictness based on execution context
 # See .github/CODE_POLICY_SET_EU.md for details
 set -eu
-. env-clear
 
 if [ "$#" -ne 2 ]; then
-    cat <<'USAGE' >&2
-Usage: move-cursor <x> <y>
-
-Moves the terminal cursor to the requested column and row using ANSI escapes, clamping any zero or negative values to the first position.
-USAGE
+    printf '%s\n' "move-cursor: expected X Y arguments" >&2
     exit 2
 fi
 

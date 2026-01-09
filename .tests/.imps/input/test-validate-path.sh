@@ -14,25 +14,25 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/cantrips/validate-path" --help
+  run_spell "spells/.imps/input/validate-path" --help
   assert_success || return 1
   assert_output_contains "Usage: validate-path" || return 1
 }
 
 test_accepts_simple_path() {
-  run_spell "spells/cantrips/validate-path" "/etc/passwd"
+  run_spell "spells/.imps/input/validate-path" "/etc/passwd"
   assert_success || return 1
 }
 
 test_accepts_relative_path() {
-  run_spell "spells/cantrips/validate-path" "some/relative/path"
+  run_spell "spells/.imps/input/validate-path" "some/relative/path"
   assert_success || return 1
 }
 
 test_rejects_long_component() {
   # Create a component longer than 255 characters
   long_name=$(printf '%0256d' 0 | tr '0' 'a')
-  run_spell "spells/cantrips/validate-path" "/tmp/$long_name"
+  run_spell "spells/.imps/input/validate-path" "/tmp/$long_name"
   assert_failure || return 1
 }
 
