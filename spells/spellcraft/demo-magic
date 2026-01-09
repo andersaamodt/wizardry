@@ -168,7 +168,11 @@ demo_level() {
       printf 'Priority management system:\n'
       printf '  • get-priority - View item priority\n'
       printf '  • prioritize - Set item priority\n'
+      printf '  • deprioritize - Reduce item priority\n'
       printf '  • upvote - Increase priority\n'
+      printf '  • get-card - Get priority card data\n'
+      printf '  • get-new-priority - Calculate new priority value\n'
+      printf '  • priorities - Interactive priority management menu\n'
       printf '\n'
       printf 'Enables tracking and sorting tasks by importance.\n'
       ;;
@@ -346,27 +350,6 @@ demo_level() {
       ;;
       
     19)
-      printf 'The wizard manages task priorities...\n'
-      printf '\n'
-      
-      printf 'Priority management system:\n'
-      printf '  • get-priority - View item priority\n'
-      printf '  • prioritize - Set item priority\n'
-      printf '  • upvote - Increase priority\n'
-      printf '\n'
-      printf 'Enables tracking and sorting tasks by importance.\n'
-      ;;
-      
-    20)
-      printf 'The wizard erects protective wards...\n'
-      printf '\n'
-      
-      printf 'Security ward: ssh-barrier\n'
-      printf 'Creates protective barriers for SSH access control.\n'
-      printf 'Implements security policies to defend against intrusion.\n'
-      ;;
-      
-    21)
       printf 'The wizard enchants files with metadata...\n'
       printf '\n'
       
@@ -383,7 +366,7 @@ demo_level() {
       fi
       ;;
       
-    22)
+    20)
       printf 'The wizard develops psychic abilities...\n'
       printf '\n'
       
@@ -394,7 +377,7 @@ demo_level() {
       printf 'Access system and process information telepathically.\n'
       ;;
       
-    23)
+    21)
       printf 'The wizard becomes a spellcrafter...\n'
       printf '\n'
       
@@ -415,7 +398,7 @@ demo_level() {
       printf 'Complete toolkit for spell development and maintenance.\n'
       ;;
       
-    24)
+    22)
       printf 'The wizard constructs menu infrastructure...\n'
       printf '\n'
       
@@ -427,7 +410,7 @@ demo_level() {
       printf 'Foundation for all wizardry menu interfaces.\n'
       ;;
       
-    25)
+    23)
       printf 'The wizard builds system menus...\n'
       printf '\n'
       
@@ -440,7 +423,7 @@ demo_level() {
       printf 'High-level interfaces for system configuration.\n'
       ;;
       
-    26)
+    24)
       printf 'The wizard administers the MUD realm...\n'
       printf '\n'
       
@@ -453,7 +436,7 @@ demo_level() {
       printf 'Complete suite for multi-user dungeon administration.\n'
       ;;
       
-    27)
+    25)
       printf 'The wizard creates specialized menus...\n'
       printf '\n'
       
@@ -467,7 +450,7 @@ demo_level() {
       printf 'Specialized menus for specific system domains.\n'
       ;;
       
-    28)
+    26)
       printf 'The wizard masters service management...\n'
       printf '\n'
       
@@ -481,7 +464,7 @@ demo_level() {
       printf 'Complete systemd/service management toolkit.\n'
       ;;
       
-    29)
+    27)
       printf 'The wizard peers into the arcana...\n'
       printf '\n'
       
