@@ -626,6 +626,54 @@ banish_process_level() {
         printf '  %s✗%s Parameter expansion: Pattern removal failed\n' "$_red" "$_reset"
         return 1
       fi
+
+      # Check case statement pattern matching
+      # Case statements with wildcards are fundamental to POSIX shell scripting
+      case_test="test_value"
+      case_works=0
+      case "$case_test" in
+        test_*) case_works=1 ;;
+        *) case_works=0 ;;
+      esac
+      if [ "$case_works" -eq 1 ]; then
+        printf '  %s✓%s Case pattern matching: Wildcard patterns work\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Case pattern matching: Wildcard patterns failed\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check arithmetic operations
+      # Shell arithmetic is used for counters, array indices, and calculations
+      arith_result=$(( 2 + 2 )) 2>/dev/null || arith_result=0
+      if [ "$arith_result" -eq 4 ]; then
+        printf '  %s✓%s Arithmetic: $(( )) expressions work\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Arithmetic: $(( )) expressions not working\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check test operators (file and string tests)
+      # Test operators are used extensively for conditional logic
+      tmp_root=${TMPDIR:-/tmp}
+      test_file=$(mktemp "${tmp_root%/}/banish-test.XXXXXX" 2>/dev/null || printf '')
+      if [ -n "$test_file" ]; then
+        test_ok=1
+        # Test file existence (-f)
+        if [ ! -f "$test_file" ]; then test_ok=0; fi
+        # Test string non-empty (-n) and empty (-z)
+        if [ ! -n "test" ] || [ ! -z "" ]; then test_ok=0; fi
+        # Test file readable (-r) and writable (-w)
+        if [ ! -r "$test_file" ] || [ ! -w "$test_file" ]; then test_ok=0; fi
+        
+        rm -f "$test_file" 2>/dev/null || :
+        
+        if [ "$test_ok" -eq 1 ]; then
+          printf '  %s✓%s Test operators: -f -r -w -n -z all work\n' "$_green" "$_reset"
+        else
+          printf '  %s✗%s Test operators: Some test operators failed\n' "$_red" "$_reset"
+          return 1
+        fi
+      fi
       ;;
       
     1)
@@ -694,7 +742,7 @@ banish_process_level() {
       ;;
       
     2)
-      # Level 2: Glossary System
+      # Level 2: Installation Infrastructure
       
       # Check spellbook directory for glossary
       spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
@@ -706,12 +754,55 @@ banish_process_level() {
           if mkdir -p "$spell_home" 2>/dev/null; then
             printf '    %s✓%s Spellbook directory created\n' "$_green" "$_reset"
           else
-            printf '    %s✗%s Spellbook directory creation failed\n' "$_red" "$_reset"
+            printf '    %s✗%s Spellbook directory creation failed\n' "$_green" "$_reset"
           fi
         fi
         if [ ! -d "$spell_home" ] || [ ! -w "$spell_home" ]; then
           return 1
         fi
+      fi
+
+      # Check environment variable export/persistence
+      # env-or and other imps rely on environment variable propagation
+      TEST_BANISH_VAR="test_value_$$"
+      export TEST_BANISH_VAR
+      exported_value=$(sh -c 'printf "%s" "$TEST_BANISH_VAR"' 2>/dev/null || printf '')
+      unset TEST_BANISH_VAR 2>/dev/null || :
+      
+      if [ "$exported_value" = "test_value_$$" ]; then
+        printf '  %s✓%s Environment export: Variables persist across subshells\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Environment export: Variables not persisting\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check variable name validation (alphanumeric + underscore)
+      # env-or validates variable names - ensure pattern matching works
+      valid_name="_Valid_Name123"
+      invalid_name="invalid-name"
+      name_check_works=0
+      
+      case "$valid_name" in
+        *[!A-Za-z0-9_]*|"") name_check_works=0 ;;
+        *) name_check_works=1 ;;
+      esac
+      
+      case "$invalid_name" in
+        *[!A-Za-z0-9_]*|"") 
+          if [ "$name_check_works" -eq 1 ]; then
+            name_check_works=1
+          else
+            name_check_works=0
+          fi
+          ;;
+        *) name_check_works=0 ;;
+      esac
+      
+      if [ "$name_check_works" -eq 1 ]; then
+        printf '  %s✓%s Variable name validation: Character class patterns work\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Variable name validation: Pattern matching failed\n' "$_red" "$_reset"
+        return 1
       fi
       
       # Check spells
@@ -1660,6 +1751,29 @@ banish_process_level() {
               return 1
             fi
           fi
+        fi
+      fi
+
+      # Check shell script sourcing capability (critical for test framework)
+      # Test framework relies on sourcing test files and helper scripts
+      tmp_root=${TMPDIR:-/tmp}
+      tmp_source_test=$(mktemp "${tmp_root%/}/banish-source.XXXXXX" 2>/dev/null || printf '')
+      if [ -n "$tmp_source_test" ]; then
+        # Create a simple script that sets a variable
+        printf '%s\n' 'BANISH_SOURCE_TEST="sourced_successfully"' > "$tmp_source_test"
+        
+        # Try to source it
+        BANISH_SOURCE_TEST=""
+        # shellcheck disable=SC1090
+        . "$tmp_source_test" 2>/dev/null || :
+        
+        rm -f "$tmp_source_test" 2>/dev/null || :
+        
+        if [ "$BANISH_SOURCE_TEST" = "sourced_successfully" ]; then
+          printf '  %s✓%s Script sourcing: Can source shell scripts with .\n' "$_green" "$_reset"
+        else
+          printf '  %s✗%s Script sourcing: Cannot source shell scripts\n' "$_red" "$_reset"
+          return 1
         fi
       fi
 
