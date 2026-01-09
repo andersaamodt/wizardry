@@ -76,3 +76,5 @@
 - AWK regex patterns in shell strings require double backslashes (\\) not quadruple (\\\\) for proper pattern escaping in extraction operations (PR #670).
 - Bootstrap spells in `.arcana/core` run before wizardry installation and must not depend on wizardry imps (castable, require-wizardry, env-clear) (PR #672).
 - Multi-cd shell patterns for path calculation (`cd dir1 && cd dir2`) create 2-3 extra process forks per execution; use parameter expansion ${var%/*} for significant performance improvement (PR #674).
+- Always create realistic unit tests for every feature BEFORE writing or fixing code; tests are the fastest path to working code and catch edge cases immediately (TDD principle).
+- Hyphenated spell names with uncastable pattern must have aliases generated (not just hyphenated synonyms) to prevent terminal crashes when typed directly by users.

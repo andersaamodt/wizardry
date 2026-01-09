@@ -500,6 +500,32 @@ case "$0" in */imp-name) _imp_name "$@" ;; esac
 
 **Testing:** Check with `checkbashisms`, test in `/bin/sh`, dash, bash.
 
+## Aliases for Sourced-Only Spells
+
+**Critical Rule**: ALL hyphenated spells with uncastable pattern MUST have aliases that expand to space-separated form.
+
+**Why**: When a user types `jump-to-marker` directly as a command, without an alias it would execute the spell file. Spells with uncastable pattern must be sourced (not executed) to change directories. Direct execution triggers the uncastable guard which does `exit 1`, closing the user's interactive terminal.
+
+**Solution**: Generate aliases for every hyphenated spell with uncastable pattern:
+
+```sh
+# In generate-glosses, check each spell for uncastable pattern
+if grep -q "^# Uncastable pattern" "$spell_path"; then
+  # Generate alias: hyphenated → space-separated
+  alias jump-to-marker='jump to marker'
+  alias jump-trash='jump trash'
+fi
+```
+
+**How it works**:
+1. User types: `jump-to-marker`
+2. Alias expands to: `jump to marker`
+3. First-word gloss `jump()` is invoked
+4. Gloss detects uncastable pattern and sources spell
+5. Directory changes correctly ✓
+
+Without alias: `jump-to-marker` executes → uncastable guard → `exit 1` → terminal closes ✗
+
 ## References
 
 - POSIX.1-2017 Shell Command Language: https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html

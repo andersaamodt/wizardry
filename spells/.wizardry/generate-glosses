@@ -349,9 +349,40 @@ uname|uniq|wc|xargs)
     done
   fi
   
-  # NOTE: Hyphenated aliases section removed
-  # Hyphenated commands (env-or, temp-file, etc.) are now natively available
-  # via PATH since invoke-wizardry adds all spell directories to PATH.
+  # ============================================================================
+  # HYPHENATED SPELL ALIASES
+  # ============================================================================
+  # Generate aliases for hyphenated spells with uncastable pattern
+  # These aliases convert hyphenated form to space-separated form
+  # (e.g., jump-to-marker → jump to marker) so they route through first-word gloss
+  # which can properly source the spell instead of executing it
+  
+  for spell_name in $_spell_names; do
+    # Only process hyphenated spell names
+    case "$spell_name" in
+      *-*) ;;
+      *) continue ;;
+    esac
+    
+    # Check if spell has uncastable pattern
+    _has_uncastable=0
+    for spell_dir in "$wizardry_dir"/spells/* "$wizardry_dir"/spells/.imps/* "$wizardry_dir"/spells/.arcana/*; do
+      [ -d "$spell_dir" ] || continue
+      spell_path="$spell_dir/$spell_name"
+      if [ -f "$spell_path" ] && grep -q "^# Uncastable pattern" "$spell_path" 2>/dev/null; then
+        _has_uncastable=1
+        break
+      fi
+    done
+    
+    # If spell has uncastable pattern, generate alias to space-separated form
+    if [ "$_has_uncastable" -eq 1 ]; then
+      # Convert hyphens to spaces (e.g., jump-to-marker → jump to marker)
+      _alias_target=$(printf '%s' "$spell_name" | sed 's/-/ /g')
+      emit_line "alias $spell_name='$_alias_target'"
+    fi
+  done
+  emit_line ""
   
   # ============================================================================
   # SYNONYM FUNCTIONS AND ALIASES
