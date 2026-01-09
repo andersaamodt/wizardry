@@ -33,7 +33,7 @@ fi
 
 # Hash the file
 hashchant "$file" >/dev/null 2>&1 || true
-file_hash=$(read-magic "$file" hash 2>/dev/null || true)
+file_hash=$(read-magic "$file" user.hash 2>/dev/null || true)
 
 # Get the directory containing the file
 dir=$(dirname "$file")

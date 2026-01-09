@@ -40,7 +40,7 @@ if ! hashchant "$file" >/dev/null 2>&1; then
   exit 1
 fi
 
-target_hash=$(read-magic "$file" hash 2>/dev/null || true)
+target_hash=$(read-magic "$file" user.hash 2>/dev/null || true)
 
 if [ -z "$target_hash" ] || [ "${target_hash#Error}" != "$target_hash" ]; then
   printf '%s\n' "prioritize: failed to read hash from file: $file" >&2

@@ -40,7 +40,7 @@ if [ -n "$(ls -A "$directory" 2>/dev/null)" ]; then
     [ -f "$file" ] || continue
     
     # Get the hash of this file
-    file_hash=$(read-magic "$file" hash 2>/dev/null || true)
+    file_hash=$(read-magic "$file" user.hash 2>/dev/null || true)
     
     # Check if it matches
     if [ "$file_hash" = "$hash" ]; then
