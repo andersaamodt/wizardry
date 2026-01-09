@@ -188,6 +188,7 @@ if [ "$current" = "$normalized_destination" ] || [ -n "$current_inode" ] && [ -n
         return 0 2>/dev/null || exit 0
 fi
 
+# Change to destination directory first (before showing arrival message)
 if ! cd "$destination"; then
         printf '%s\n' "The portal refuses to stabilize; try marking again." >&2
         return 1 2>/dev/null || exit 1
