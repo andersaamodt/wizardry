@@ -1,0 +1,134 @@
+#!/bin/sh
+
+# Teleport to a random accessible directory on your computer.
+# This spell must be sourced (not executed) because it changes the current directory.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: . blink [max-depth]
+
+Teleport to a random directory accessible from your home directory.
+The optional max-depth parameter limits how deep to search (default: 4 levels).
+
+Note: This spell must be sourced (use '. blink') to affect your current shell.
+USAGE
+  exit 0
+  ;;
+esac
+
+# Enforce sourced-only behavior
+# uncastable must be sourced (invoked), never executed (cast)
+if ! command -v uncastable >/dev/null 2>&1; then
+  . uncastable
+fi
+
+set -eu
+. env-clear
+
+# Default search depth
+max_depth=${1:-4}
+
+# Validate max_depth is a positive integer
+case "$max_depth" in
+  ''|*[!0-9]*|0)
+    die "blink: max-depth must be a positive integer"
+    exit 1
+    ;;
+esac
+
+# Search for directories starting from home, limiting depth for performance
+# Exclude common problematic directories
+info "Scanning for destinations..."
+
+# Use find to get all accessible directories
+temp_list=$(temp-file)
+on-exit cleanup-file "$temp_list"
+
+# Find directories, excluding common problematic paths
+find "$HOME" -maxdepth "$max_depth" -type d \
+  ! -path "*/.*" \
+  ! -path "*/node_modules/*" \
+  ! -path "*/Library/*" \
+  ! -path "*/.Trash/*" \
+  -readable 2>/dev/null > "$temp_list" || {
+    warn "blink: find command failed, trying simpler search"
+    # Fallback: just get immediate subdirectories
+    find "$HOME" -maxdepth 1 -type d -readable 2>/dev/null > "$temp_list" || {
+      die "blink: cannot find any directories"
+      return 1 2>/dev/null || exit 1
+    }
+  }
+
+# Count available directories
+dir_count=$(wc -l < "$temp_list" | tr -d ' ')
+
+if [ "$dir_count" -eq 0 ]; then
+  die "blink: no accessible directories found"
+  return 1 2>/dev/null || exit 1
+fi
+
+debug "Found $dir_count accessible directories"
+
+# Select a random directory using awk
+destination=$(awk 'BEGIN{srand();}{lines[NR]=$0}END{if(NR==0)exit 1;idx=int(rand()*NR)+1;print lines[idx];}' "$temp_list")
+
+if [ -z "$destination" ]; then
+  die "blink: failed to select random destination"
+  return 1 2>/dev/null || exit 1
+fi
+
+if [ ! -d "$destination" ]; then
+  die "blink: selected destination no longer exists"
+  return 1 2>/dev/null || exit 1
+fi
+
+# Try to cd to the destination
+if ! cd "$destination" 2>/dev/null; then
+  die "blink: cannot access destination: $destination"
+  return 1 2>/dev/null || exit 1
+fi
+
+# Pick a random blink message
+blink_message=$(cat <<'BLINK_MESSAGES'
+Reality stutters, and you blink into existence elsewhere.
+Space folds like origami—you arrive in a new location.
+A shimmer of displaced air marks your sudden arrival.
+The world blurs, then snaps back into focus somewhere new.
+You phase through the dimensions and materialize in unfamiliar territory.
+A pulse of arcane energy whisks you to another corner of the realm.
+Time hiccups; when it resumes, you stand in a different place.
+Your atoms scatter and reassemble in a random location.
+A flash of violet light, and your surroundings have changed.
+The ley-lines tug at your essence, depositing you elsewhere.
+You blink, and the world around you has shifted.
+A crack in space swallows you and spits you out anew.
+Starlight traces your path through the void to here.
+Your vision doubles, then halves—you're somewhere else now.
+The universe shuffles its cards; you draw a new location.
+A whisper of wind, and you've teleported across the filesystem.
+Quantum uncertainty resolves in your favor... or not. You're elsewhere.
+The fabric of reality wrinkles, and you slip through the crease.
+A momentary void, then solid ground beneath your feet again.
+Magic crackles as you hop between coordinates.
+Your shadow stretches and contracts, pulling you to new ground.
+A door that wasn't there opens and closes behind you instantly.
+Gravity hiccups, launching you sideways through space.
+The air shimmers with displaced probability as you arrive.
+You feel the tug of randomness and surrender to it.
+BLINK_MESSAGES
+)
+
+selected_message=$(printf '%s\n' "$blink_message" | awk 'BEGIN{srand();}{lines[NR]=$0}END{if(NR==0)exit 0;idx=int(rand()*NR)+1;print lines[idx];}')
+
+if [ -n "$selected_message" ]; then
+  printf '%s\n' "$selected_message"
+fi
+
+# Show current location
+printf 'You have blinked to: %s\n' "$(pwd -P)"
+
+# Describe current location if look command exists
+if command -v look >/dev/null 2>&1; then
+  look 2>/dev/null || true
+fi
