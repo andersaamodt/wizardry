@@ -30,8 +30,7 @@ else
 fi
 
 if [ "$_spell_sourced" -eq 0 ]; then
-  printf '%s\n' "spell-name: must be sourced, not executed" >&2
-  printf '%s\n' "Usage: . spell-name" >&2
+  printf '%s\n' "This spell cannot be cast directly. Invoke with: <command>" >&2
   exit 1
 fi
 unset _spell_sourced _spell_base

@@ -39,8 +39,7 @@ else
 fi
 
 if [ "$_colors_sourced" -eq 0 ]; then
-  printf '%s\n' "colors: must be sourced, not executed" >&2
-  printf '%s\n' "Usage: . colors" >&2
+  printf '%s\n' "This spell cannot be cast directly. Invoke with: colors" >&2
   exit 1
 fi
 unset _colors_sourced _colors_base

@@ -81,6 +81,7 @@ find-file file-list
 goto jump-to-marker
 home jump-to-marker
 jump jump-to-marker
+jump-to-location jump-to-marker
 list-files file-list
 ls-magic identify-room
 mark mark-location
