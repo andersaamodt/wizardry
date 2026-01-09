@@ -1,0 +1,197 @@
+#!/bin/sh
+
+# Teleport to a random accessible directory on your computer.
+# This spell must be sourced (not executed) because it changes the current directory.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: . blink [--home] [max-depth]
+
+Teleport to a random directory anywhere on your computer.
+By default, searches from root (/) with depth 5.
+
+Options:
+  --home      Search from home directory instead of root
+  max-depth   Limit how deep to search (default: 5 for root, 4 for home)
+
+Note: This spell must be sourced (use '. blink') to affect your current shell.
+USAGE
+  return 0 2>/dev/null || exit 0
+  ;;
+esac
+
+# Uncastable pattern - ensures spell is sourced, not executed
+_blink_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) _blink_sourced=1 ;;
+  esac
+else
+  _blink_base=${0##*/}
+  case "$_blink_base" in
+    sh|dash|bash|zsh|ksh|mksh) _blink_sourced=1 ;;
+    blink) _blink_sourced=0 ;;
+    *) _blink_sourced=1 ;;
+  esac
+fi
+
+if [ "$_blink_sourced" -eq 0 ]; then
+  printf '%s\n' "This spell cannot be cast directly. Invoke it with: blink" >&2
+  return 1 2>/dev/null || exit 1
+fi
+unset _blink_sourced _blink_base
+
+set -eu
+. env-clear
+
+# Parse arguments
+use_home=0
+max_depth=""
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --home)
+      use_home=1
+      shift
+      ;;
+    *)
+      # Assume it's the depth parameter
+      max_depth=$1
+      shift
+      ;;
+  esac
+done
+
+# Set base directory and default depth
+if [ "$use_home" -eq 1 ]; then
+  base_dir=$HOME
+  default_depth=4
+else
+  base_dir=/
+  default_depth=5
+fi
+
+# Use provided depth or default
+max_depth=${max_depth:-$default_depth}
+
+# Validate max_depth is a positive integer
+case "$max_depth" in
+  ''|*[!0-9]*|0)
+    printf '%s\n' "blink: max-depth must be a positive integer" >&2
+    set +eu; return 1 2>/dev/null || exit 1
+    ;;
+esac
+
+# Search for directories - let blink take you anywhere!
+if command -v info >/dev/null 2>&1; then
+  info "Scanning for destinations..."
+fi
+
+# Use find to get all accessible directories
+temp_list=$(mktemp "${TMPDIR:-/tmp}/blink.XXXXXX")
+cleanup_temp() {
+  rm -f "$temp_list"
+}
+trap cleanup_temp EXIT HUP INT TERM
+
+# Find all readable directories, no exclusions (that's part of the fun!)
+find "$base_dir" -maxdepth "$max_depth" -type d -readable 2>/dev/null > "$temp_list" || {
+    if command -v warn >/dev/null 2>&1; then
+      warn "blink: find command failed, trying simpler search"
+    fi
+    # Fallback: just get immediate subdirectories
+    find "$base_dir" -maxdepth 1 -type d -readable 2>/dev/null > "$temp_list" || {
+      printf '%s\n' "blink: cannot find any directories" >&2
+      set +eu; return 1 2>/dev/null || exit 1
+    }
+  }
+
+# Count available directories
+dir_count=$(wc -l < "$temp_list" | tr -d ' ')
+
+if [ "$dir_count" -eq 0 ]; then
+  printf '%s\n' "blink: no accessible directories found" >&2
+  set +eu; return 1 2>/dev/null || exit 1
+fi
+
+if command -v debug >/dev/null 2>&1; then
+  debug "Found $dir_count accessible directories"
+fi
+
+# Select a random directory using awk
+destination=$(awk 'BEGIN{srand();}{lines[NR]=$0}END{if(NR==0)exit 1;idx=int(rand()*NR)+1;print lines[idx];}' "$temp_list")
+
+if [ -z "$destination" ]; then
+  printf '%s\n' "blink: failed to select random destination" >&2
+  set +eu; return 1 2>/dev/null || exit 1
+fi
+
+if [ ! -d "$destination" ]; then
+  printf '%s\n' "blink: selected destination no longer exists" >&2
+  set +eu; return 1 2>/dev/null || exit 1
+fi
+
+# Check if already at destination (handle symlinks by resolving paths)
+current_dir=$(pwd -P 2>/dev/null || pwd)
+dest_resolved=$(cd "$destination" && pwd -P 2>/dev/null || printf '%s' "$destination")
+current_resolved=$(printf '%s' "$current_dir" | sed 's|//|/|g')
+dest_resolved=$(printf '%s' "$dest_resolved" | sed 's|//|/|g')
+
+if [ "$current_resolved" = "$dest_resolved" ]; then
+  printf '%s\n' "You have already blinked to this location."
+  set +eu; return 0 2>/dev/null || exit 0
+fi
+
+# Try to cd to the destination
+if ! cd "$destination" 2>/dev/null; then
+  printf '%s\n' "blink: cannot access destination: $destination" >&2
+  set +eu; return 1 2>/dev/null || exit 1
+fi
+
+# Pick a random blink message
+blink_message=$(cat <<'BLINK_MESSAGES'
+Reality stutters, and you blink into existence elsewhere.
+Space folds like origami—you arrive in a new location.
+A shimmer of displaced air marks your sudden arrival.
+The world blurs, then snaps back into focus somewhere new.
+You phase through the dimensions and materialize in unfamiliar territory.
+A pulse of arcane energy whisks you to another corner of the realm.
+Time hiccups; when it resumes, you stand in a different place.
+Your atoms scatter and reassemble in a random location.
+A flash of violet light, and your surroundings have changed.
+The ley-lines tug at your essence, depositing you elsewhere.
+You blink, and the world around you has shifted.
+A crack in space swallows you and spits you out anew.
+Starlight traces your path through the void to here.
+Your vision doubles, then halves—you're somewhere else now.
+The universe shuffles its cards; you draw a new location.
+A whisper of wind, and you've teleported across the filesystem.
+Quantum uncertainty resolves in your favor... or not. You're elsewhere.
+The fabric of reality wrinkles, and you slip through the crease.
+A momentary void, then solid ground beneath your feet again.
+Magic crackles as you hop between coordinates.
+Your shadow stretches and contracts, pulling you to new ground.
+A door that wasn't there opens and closes behind you instantly.
+Gravity hiccups, launching you sideways through space.
+The air shimmers with displaced probability as you arrive.
+You feel the tug of randomness and surrender to it.
+BLINK_MESSAGES
+)
+
+selected_message=$(printf '%s\n' "$blink_message" | awk 'BEGIN{srand();}{lines[NR]=$0}END{if(NR==0)exit 0;idx=int(rand()*NR)+1;print lines[idx];}')
+
+if [ -n "$selected_message" ]; then
+  printf '%s\n' "$selected_message"
+fi
+
+# Show current location
+printf 'You have blinked to: %s\n' "$(pwd -P)"
+
+# Describe current location if look command exists
+if command -v look >/dev/null 2>&1; then
+  look 2>/dev/null || true
+fi
+
+# Restore shell options before returning
+set +eu
