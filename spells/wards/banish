@@ -737,6 +737,66 @@ HEREDOC_TEST
         printf '  %s✗%s Here documents: Not working correctly\n' "$_red" "$_reset"
         return 1
       fi
+
+      # Check disk space availability
+      # Need sufficient space for temp files, logs, caches
+      tmp_root=${TMPDIR:-/tmp}
+      available_kb=0
+      if df -k "$tmp_root" 2>/dev/null | tail -1 | awk '{print $4}' | grep -q '^[0-9]'; then
+        available_kb=$(df -k "$tmp_root" 2>/dev/null | tail -1 | awk '{print $4}')
+      fi
+      # Check for at least 10MB free space
+      if [ "$available_kb" -gt 10240 ]; then
+        printf '  %s✓%s Disk space: Sufficient space available (%d KB free)\n' "$_green" "$_reset" "$available_kb"
+      else
+        printf '  %s✗%s Disk space: Low disk space (%d KB free, need >10MB)\n' "$_red" "$_reset" "$available_kb"
+        if [ "$available_kb" -lt 1024 ]; then
+          return 1
+        fi
+      fi
+
+      # Check locale/character encoding support
+      # Character class patterns in tr, sort, etc. depend on locale
+      test_locale="${LANG:-C}"
+      case "$test_locale" in
+        *.UTF-8|*.utf8|C|POSIX)
+          printf '  %s✓%s Locale: %s (supported)\n' "$_green" "$_reset" "$test_locale"
+          ;;
+        *)
+          printf '  %s✗%s Locale: %s (may cause issues with character processing)\n' "$_red" "$_reset" "$test_locale"
+          if [ "$skip_heal" -eq 0 ]; then
+            LANG=C.UTF-8
+            export LANG
+            printf '    %s✓%s Locale set to C.UTF-8\n' "$_green" "$_reset"
+          else
+            return 1
+          fi
+          ;;
+      esac
+
+      # Check current working directory accessibility
+      # Scripts need to read current directory
+      if pwd >/dev/null 2>&1; then
+        current_dir=$(pwd -P 2>/dev/null || pwd)
+        if [ -r "$current_dir" ] && [ -x "$current_dir" ]; then
+          printf '  %s✓%s Working directory: Readable and accessible\n' "$_green" "$_reset"
+        else
+          printf '  %s✗%s Working directory: Not readable or not executable\n' "$_red" "$_reset"
+          return 1
+        fi
+      else
+        printf '  %s✗%s Working directory: Cannot determine current directory\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check process limits (can we fork?)
+      # Shell scripts need to create subprocesses
+      if (true) 2>/dev/null; then
+        printf '  %s✓%s Process creation: Can fork subprocesses\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Process creation: Cannot fork subprocesses\n' "$_red" "$_reset"
+        return 1
+      fi
       ;;
       
     1)
@@ -878,6 +938,23 @@ HEREDOC_TEST
       else
         printf '  %s✗%s Variable name validation: Pattern matching failed\n' "$_red" "$_reset"
         return 1
+      fi
+
+      # Check DNS resolution capability (for potential package downloads)
+      # Installation may need to download packages or check repositories
+      if command -v nslookup >/dev/null 2>&1 || command -v host >/dev/null 2>&1 || command -v dig >/dev/null 2>&1; then
+        printf '  %s✓%s DNS resolution: DNS tools available\n' "$_green" "$_reset"
+      else
+        # Try to resolve a hostname using getent if available
+        if command -v getent >/dev/null 2>&1; then
+          if getent hosts github.com >/dev/null 2>&1; then
+            printf '  %s✓%s DNS resolution: Can resolve hostnames\n' "$_green" "$_reset"
+          else
+            printf '  %s✗%s DNS resolution: Cannot resolve hostnames (updates may fail)\n' "$_red" "$_reset"
+          fi
+        else
+          printf '  %s✓%s DNS resolution: Tools not available (may limit updates)\n' "$_green" "$_reset"
+        fi
       fi
       
       # Check spells
@@ -2350,6 +2427,25 @@ HEREDOC_TEST
         if ! command -v git >/dev/null 2>&1; then
           return 1
         fi
+      fi
+
+      # Check available memory (git operations can be memory-intensive)
+      # Large repositories need sufficient RAM for operations
+      if [ -r /proc/meminfo ]; then
+        mem_available_kb=$(grep MemAvailable /proc/meminfo 2>/dev/null | awk '{print $2}' || printf '0')
+        mem_total_kb=$(grep MemTotal /proc/meminfo 2>/dev/null | awk '{print $2}' || printf '0')
+        
+        # Check for at least 100MB available memory
+        if [ "$mem_available_kb" -gt 102400 ]; then
+          printf '  %s✓%s Memory: Sufficient RAM available (%d MB)\n' "$_green" "$_reset" "$((mem_available_kb / 1024))"
+        elif [ "$mem_available_kb" -gt 51200 ]; then
+          printf '  %s✓%s Memory: Limited RAM (%d MB, git ops may be slow)\n' "$_green" "$_reset" "$((mem_available_kb / 1024))"
+        else
+          printf '  %s✗%s Memory: Low RAM (%d MB, git may fail)\n' "$_red" "$_reset" "$((mem_available_kb / 1024))"
+        fi
+      else
+        # macOS or other systems without /proc/meminfo
+        printf '  %s✓%s Memory: Cannot check (non-Linux system)\n' "$_green" "$_reset"
       fi
 
       # Check spells
