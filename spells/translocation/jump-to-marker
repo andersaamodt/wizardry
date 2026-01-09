@@ -182,7 +182,15 @@ current_inode=$(ls -id . 2>/dev/null | awk '{print $1}' || printf '')
 dest_inode=$(ls -id "$destination" 2>/dev/null | awk '{print $1}' || printf '')
 
 if [ "$current" = "$normalized_destination" ] || [ -n "$current_inode" ] && [ -n "$dest_inode" ] && [ "$current_inode" = "$dest_inode" ]; then
-        printf '%s\n' "You are already standing at marker '$marker_name'."
+        # Format marker name: no quotes for numbers, quotes for text
+        case "$marker_name" in
+                *[!0-9]*)
+                        printf '%s\n' "You are already standing at marker '$marker_name'."
+                        ;;
+                *)
+                        printf '%s\n' "You are already standing at marker $marker_name."
+                        ;;
+        esac
         # Touch marker to update mtime for cycling
         touch "$marker_file"
         return 0 2>/dev/null || exit 0
