@@ -350,6 +350,58 @@ uname|uniq|wc|xargs)
   fi
   
   # ============================================================================
+  # SINGLE-WORD UNCASTABLE SPELL FUNCTIONS
+  # ============================================================================
+  # Generate function wrappers for single-word uncastable spells
+  # These functions source the spell instead of executing it
+  # (e.g., blink → blink() { . spell-path })
+  # ============================================================================
+  
+  emit_line "# ============================================================================"
+  emit_line "# SINGLE-WORD UNCASTABLE SPELL FUNCTIONS"
+  emit_line "# ============================================================================"
+  emit_line "# These enable single-word uncastable spells to be invoked directly:"
+  emit_line "#   blink         -> sources spells/translocation/blink"
+  emit_line "# ============================================================================"
+  emit_line ""
+  
+  total_single_word_glosses=0
+  for spell_name in $_spell_names; do
+    # Only process single-word spell names
+    case "$spell_name" in
+      *-*) continue ;;  # Skip multi-word spells
+      *) ;;  # Process single-word spells
+    esac
+    
+    # Check if spell has uncastable pattern
+    _has_uncastable=0
+    _spell_path=""
+    for spell_dir in "$wizardry_dir"/spells/* "$wizardry_dir"/spells/.imps/* "$wizardry_dir"/spells/.arcana/*; do
+      [ -d "$spell_dir" ] || continue
+      _candidate_path="$spell_dir/$spell_name"
+      if [ -f "$_candidate_path" ] && grep -q "^# Uncastable pattern" "$_candidate_path" 2>/dev/null; then
+        _has_uncastable=1
+        _spell_path="$_candidate_path"
+        break
+      fi
+    done
+    
+    # If spell has uncastable pattern, generate function to source it
+    if [ "$_has_uncastable" -eq 1 ]; then
+      # Get relative path from WIZARDRY_DIR
+      _rel_path=${_spell_path#"$wizardry_dir"/}
+      
+      emit_line "# Single-word uncastable spell: $spell_name"
+      emit_line "${spell_name}() {"
+      emit_line "  . \"\$WIZARDRY_DIR/$_rel_path\""
+      emit_line "}"
+      emit_line ""
+      
+      total_single_word_glosses=$((total_single_word_glosses + 1))
+    fi
+  done
+  
+  # ============================================================================
   # HYPHENATED SPELL ALIASES
   # ============================================================================
   # Generate aliases for hyphenated spells with uncastable pattern
@@ -561,6 +613,7 @@ uname|uniq|wc|xargs)
   if [ "$quiet" -eq 0 ]; then
     printf 'generate-glosses: Gloss generation complete\n' >&2
     printf 'generate-glosses:   First-word glosses: %d\n' "$total_first_word_glosses" >&2
+    printf 'generate-glosses:   Single-word uncastable glosses: %d\n' "$total_single_word_glosses" >&2
     printf 'generate-glosses:   Total spells/imps: %d\n' "$_spell_count" >&2
   fi
   

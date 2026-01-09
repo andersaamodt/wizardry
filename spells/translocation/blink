@@ -37,7 +37,8 @@ else
 fi
 
 if [ "$_blink_sourced" -eq 0 ]; then
-  printf '%s\n' "This spell cannot be cast directly. Invoke it with: blink" >&2
+  printf '%s\n' "This spell must be sourced. Use: . blink" >&2
+  printf '%s\n' "(Or ensure wizardry is loaded, then just: blink)" >&2
   return 1 2>/dev/null || exit 1
 fi
 unset _blink_sourced _blink_base
