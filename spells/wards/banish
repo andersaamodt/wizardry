@@ -774,18 +774,19 @@ HEREDOC_TEST
           ;;
       esac
 
-      # Check current working directory accessibility
-      # Scripts need to read current directory
-      if pwd >/dev/null 2>&1; then
-        current_dir=$(pwd -P 2>/dev/null || pwd)
-        if [ -r "$current_dir" ] && [ -x "$current_dir" ]; then
-          printf '  %s✓%s Working directory: Readable and accessible\n' "$_green" "$_reset"
-        else
-          printf '  %s✗%s Working directory: Not readable or not executable\n' "$_red" "$_reset"
-          return 1
-        fi
+      # Check home directory accessibility
+      # Wizardry stores configs, markers, and spellbooks in home directory
+      home_dir="${HOME:-}"
+      if [ -z "$home_dir" ]; then
+        printf '  %s✗%s Home directory: HOME not set\n' "$_red" "$_reset"
+        return 1
+      elif [ ! -d "$home_dir" ]; then
+        printf '  %s✗%s Home directory: %s does not exist\n' "$_red" "$_reset" "$home_dir"
+        return 1
+      elif [ -r "$home_dir" ] && [ -x "$home_dir" ]; then
+        printf '  %s✓%s Home directory: Readable and accessible\n' "$_green" "$_reset"
       else
-        printf '  %s✗%s Working directory: Cannot determine current directory\n' "$_red" "$_reset"
+        printf '  %s✗%s Home directory: Not readable or not executable\n' "$_red" "$_reset"
         return 1
       fi
 
