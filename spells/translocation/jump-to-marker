@@ -11,7 +11,7 @@ Usage: . jump-to-marker [marker]
 Teleport to a marker set with mark-location. Defaults to marker "1", marker "0" cycles through all saved locations.
 Note: This spell must be sourced (use '. jump-to-marker') to affect your current shell.
 USAGE
-  exit 0
+  return 0 2>/dev/null || exit 0
   ;;
 -*)
   printf '%s\n' "jump-to-marker: unknown option '$1'." >&2

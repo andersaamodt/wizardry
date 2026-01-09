@@ -66,5 +66,5 @@ else
   elif [ -n "$_uncast_name" ]; then
     printf '%s\n' "Usage: . $_uncast_name" >&2
   fi
-  exit 1
+  return 1 2>/dev/null || exit 1
 fi

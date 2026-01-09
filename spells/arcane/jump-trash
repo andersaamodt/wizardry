@@ -11,7 +11,7 @@ Usage: . jump-trash
 Teleport to your system trash directory.
 This spell must be sourced (note the dot) to change your current directory.
 USAGE
-  exit 0
+  return 0 2>/dev/null || exit 0
   ;;
 esac
 
@@ -52,14 +52,14 @@ fi
 
 if [ -z "$trash_path" ]; then
   printf '%s\n' "jump-trash: could not determine trash directory" >&2
-  exit 1
+  return 1 2>/dev/null || exit 1
 fi
 
 if [ ! -d "$trash_path" ]; then
   printf '%s\n' "jump-trash: trash directory does not exist: $trash_path" >&2
   printf '%s\n' "The trash may be empty or the directory has not been created yet." >&2
-  exit 1
+  return 1 2>/dev/null || exit 1
 fi
 
-cd "$trash_path" || exit 1
+cd "$trash_path" || { return 1 2>/dev/null || exit 1; }
 printf '%s\n' "You teleport to the trash at $trash_path"
