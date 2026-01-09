@@ -56,70 +56,76 @@ original_marker_arg="${1:-1}"
 if [ "$marker_name" = "0" ] || [ "$marker_name" = "next" ]; then
         # Clear marker_name so cycling logic can set it fresh
         marker_name=""
-        # Find the most recently used marker (by mtime) and get the next one
-        last_marker=""
+        
+        # Get all available marker names, sorted
+        all_markers=""
         if [ -d "$markers_dir" ]; then
-                sorted=$(ls -t "$markers_dir" 2>/dev/null || true)
-                recent=$(printf '%s\n' "$sorted" | head -1)
-                oldest=$(printf '%s\n' "$sorted" | tail -1)
-                
-                # Need at least two different files to have meaningful "most recent"
-                if [ -n "$recent" ] && [ -f "$markers_dir/$recent" ] \
-                    && [ "$recent" != "$oldest" ]; then
-                        last_marker=$recent
-                fi
+                numeric_markers=""
+                alpha_markers=""
+                for marker in "$markers_dir"/*; do
+                        [ -f "$marker" ] || continue
+                        name=$(basename "$marker")
+                        # Skip hidden files
+                        case "$name" in
+                                .*) continue ;;
+                        esac
+                        # Separate numeric and non-numeric markers
+                        case "$name" in
+                                *[!0-9]*)
+                                        alpha_markers="$alpha_markers $name"
+                                        ;;
+                                *)
+                                        numeric_markers="$numeric_markers $name"
+                                        ;;
+                        esac
+                done
+                # Sort and output: numbers first (numerically), then names (alphabetically)
+                for n in $(printf '%s\n' $numeric_markers | sort -n); do
+                        all_markers="$all_markers $n"
+                done
+                for n in $(printf '%s\n' $alpha_markers | sort); do
+                        all_markers="$all_markers $n"
+                done
         fi
         
-        # Get next marker in sequence for cycling
-        if [ -n "$last_marker" ]; then
-                # Get all available marker names, sorted
-                all_markers=""
+        # If we have markers, cycle through them
+        if [ -n "$all_markers" ]; then
+                # Find the most recently used marker (by mtime)
+                last_marker=""
                 if [ -d "$markers_dir" ]; then
-                        numeric_markers=""
-                        alpha_markers=""
-                        for marker in "$markers_dir"/*; do
-                                [ -f "$marker" ] || continue
-                                name=$(basename "$marker")
-                                # Skip hidden files
-                                case "$name" in
-                                        .*) continue ;;
-                                esac
-                                # Separate numeric and non-numeric markers
-                                case "$name" in
-                                        *[!0-9]*)
-                                                alpha_markers="$alpha_markers $name"
-                                                ;;
-                                        *)
-                                                numeric_markers="$numeric_markers $name"
-                                                ;;
-                                esac
-                        done
-                        # Sort and output: numbers first (numerically), then names (alphabetically)
-                        for n in $(printf '%s\n' $numeric_markers | sort -n); do
-                                all_markers="$all_markers $n"
-                        done
-                        for n in $(printf '%s\n' $alpha_markers | sort); do
-                                all_markers="$all_markers $n"
-                        done
+                        sorted=$(ls -t "$markers_dir" 2>/dev/null || true)
+                        recent=$(printf '%s\n' "$sorted" | head -1)
+                        if [ -n "$recent" ] && [ -f "$markers_dir/$recent" ]; then
+                                last_marker=$recent
+                        fi
                 fi
                 
-                found=0
-                first=""
-                for m in $all_markers; do
-                        if [ -z "$first" ]; then
-                                first=$m
+                # Get next marker in sequence
+                if [ -n "$last_marker" ]; then
+                        found=0
+                        first=""
+                        for m in $all_markers; do
+                                if [ -z "$first" ]; then
+                                        first=$m
+                                fi
+                                if [ "$found" -eq 1 ]; then
+                                        marker_name=$m
+                                        break
+                                fi
+                                if [ "$m" = "$last_marker" ]; then
+                                        found=1
+                                fi
+                        done
+                        # Wrap around to first marker if at end
+                        if [ "$found" -eq 1 ] && [ -z "$marker_name" ]; then
+                                marker_name=$first
                         fi
-                        if [ "$found" -eq 1 ]; then
+                else
+                        # No last marker (new session or first use), use first available
+                        for m in $all_markers; do
                                 marker_name=$m
                                 break
-                        fi
-                        if [ "$m" = "$last_marker" ]; then
-                                found=1
-                        fi
-                done
-                # Wrap around to first marker if at end
-                if [ "$found" -eq 1 ] && [ -z "$marker_name" ]; then
-                        marker_name=$first
+                        done
                 fi
         fi
         # If still empty after cycling, leave it empty to trigger proper error below
