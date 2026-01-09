@@ -41,10 +41,39 @@ fi
 
 # Determine if the calling script is being sourced or executed
 _uncast_sourced=0
+
+# ZSH detection
 if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
   case "${ZSH_EVAL_CONTEXT-}" in
     *:file) _uncast_sourced=1 ;;
   esac
+# BASH detection using BASH_SOURCE
+elif [ -n "${BASH_VERSION-}" ] && [ -n "${BASH_SOURCE-}" ]; then
+  # In bash, BASH_SOURCE[1] is the file that sourced uncastable (the calling spell)
+  # and $0 is the top-level script being executed
+  # If they have the same basename, the spell is being executed directly
+  if [ "${#BASH_SOURCE[@]}" -gt 1 ]; then
+    _caller_file="${BASH_SOURCE[1]}"
+    _caller_base="${_caller_file##*/}"
+    _zero_base="${0##*/}"
+    
+    if [ "$_caller_base" = "$_zero_base" ]; then
+      # Caller file matches $0 - spell is being executed
+      _uncast_sourced=0
+      # Use the caller's basename for error messages
+      [ -z "$_uncast_name" ] && _uncast_name=$_caller_base
+    else
+      # Caller file doesn't match $0 - spell is being sourced
+      _uncast_sourced=1
+    fi
+  else
+    # No caller info - fall back to shell name check
+    case "${0##*/}" in
+      sh|dash|bash|zsh|ksh|mksh) _uncast_sourced=1 ;;
+      *) _uncast_sourced=1 ;;  # Default to sourced
+    esac
+  fi
+# POSIX sh fallback
 else
   _uncast_base=${0##*/}
   case "$_uncast_base" in
@@ -53,19 +82,16 @@ else
       _uncast_sourced=1 
       ;;
     "$_uncast_name") 
-      # $0 basename matches the spell name - being executed directly
+      # $0 basename matches the provided spell name - being executed directly
       _uncast_sourced=0 
       ;;
     *) 
-      # $0 is something else (not shell, not spell name)
-      # If spell name was provided and doesn't match $0, we're being sourced
-      if [ -n "$_uncast_name" ]; then
-        _uncast_sourced=1
-      else
-        # No spell name provided - cannot reliably determine
-        # Default to sourced (safer to allow than to block)
-        _uncast_sourced=1
-      fi
+      # $0 is something else
+      # In POSIX sh, we cannot reliably determine without additional info
+      # Default to sourced (safer to allow than to incorrectly block)
+      # Note: This means direct execution via `dash /path/to/spell` won't be caught
+      # Users should use bash for better detection, or the spell can provide its name
+      _uncast_sourced=1
       ;;
   esac
 fi

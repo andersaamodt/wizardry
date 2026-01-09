@@ -38,4 +38,4 @@
 - Sourced-only scripts (invoke-wizardry, env-clear, invoke-thesaurus) must use `return 0` not `exit 0` for normal completion to avoid exiting parent shell (2)
 - Test helper imps that are sourced (skip-if-compiled) must define functions and use self-execute pattern, not use bare `exit` statements which exit the calling test
 - When implementing a feature across "all items" (e.g., adding colors to all install-menu entries), systematically verify each item is covered rather than assuming completion - PR #874 added colors to core-status and tor-status, but mud-status was never created, leaving one menu item without colors.
-- Pass spell name to `uncastable` using `set -- spell-name` before sourcing it; positional params are inherited by sourced scripts (jump-trash fix).
+- The `uncastable` imp uses BASH_SOURCE in bash and ZSH_EVAL_CONTEXT in zsh for reliable detection; POSIX sh fallback cannot detect all cases (jump-trash fix).
