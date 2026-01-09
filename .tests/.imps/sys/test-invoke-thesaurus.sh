@@ -68,12 +68,12 @@ test_loads_default_synonyms() {
   cat > "$tmpdir/test-defaults.sh" << EOF
 #!/bin/sh
 SPELLBOOK_DIR="$spellbook"
-export SPELLBOOK_DIR
+WIZARDRY_DIR="$ROOT_DIR"
+export SPELLBOOK_DIR WIZARDRY_DIR
 . "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus" >/dev/null 2>&1 || true
-# Check that default synonyms file has content
-grep -q "^alias detect-os=" "$spellbook/.default-synonyms" || exit 1
-# home is now a function (not alias) because it sources jump-to-marker
-grep -q "^home()" "$spellbook/.default-synonyms" || exit 1
+# Check that default synonyms file has key-value pairs (not alias code)
+grep -q "^detect-os detect-distro" "$spellbook/.default-synonyms" || exit 1
+grep -q "^home jump-to-marker" "$spellbook/.default-synonyms" || exit 1
 printf 'defaults loaded\n'
 EOF
   chmod +x "$tmpdir/test-defaults.sh"
@@ -106,7 +106,7 @@ EOF
   fi
 }
 
-# Test: invoke-thesaurus creates jump function that sources jump-to-marker
+# Test: invoke-thesaurus creates jump synonym as key-value pair
 test_creates_jump_synonym() {
   tmpdir=$(make_tempdir)
   spellbook="$tmpdir/.spellbook"
@@ -115,18 +115,18 @@ test_creates_jump_synonym() {
   cat > "$tmpdir/test-jump.sh" << EOF
 #!/bin/sh
 SPELLBOOK_DIR="$spellbook"
-export SPELLBOOK_DIR
+WIZARDRY_DIR="$ROOT_DIR"
+export SPELLBOOK_DIR WIZARDRY_DIR
 . "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus" >/dev/null 2>&1 || true
-# Check that jump function exists and sources jump-to-marker
-grep -q "^jump()" "$spellbook/.default-synonyms" || exit 1
-grep -q "\. jump-to-marker" "$spellbook/.default-synonyms" || exit 1
-printf 'jump function exists\n'
+# Check that jump synonym exists as key-value pair (not function code)
+grep -q "^jump jump-to-marker" "$spellbook/.default-synonyms" || exit 1
+printf 'jump synonym exists\n'
 EOF
   chmod +x "$tmpdir/test-jump.sh"
   
   run_cmd sh "$tmpdir/test-jump.sh"
   assert_success || return 1
-  assert_output_contains "jump function exists" || return 1
+  assert_output_contains "jump synonym exists" || return 1
 }
 
 # Test: invoke-thesaurus creates mark synonym for mark-location
@@ -138,10 +138,11 @@ test_creates_mark_synonym() {
   cat > "$tmpdir/test-mark.sh" << EOF
 #!/bin/sh
 SPELLBOOK_DIR="$spellbook"
-export SPELLBOOK_DIR
+WIZARDRY_DIR="$ROOT_DIR"
+export SPELLBOOK_DIR WIZARDRY_DIR
 . "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus" >/dev/null 2>&1 || true
-# Check that mark synonym exists and points to mark-location
-grep -q "^alias mark='mark-location'" "$spellbook/.default-synonyms" || exit 1
+# Check that mark synonym exists as key-value pair
+grep -q "^mark mark-location" "$spellbook/.default-synonyms" || exit 1
 printf 'mark synonym exists\n'
 EOF
   chmod +x "$tmpdir/test-mark.sh"

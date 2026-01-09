@@ -16,6 +16,20 @@
 #
 # RECURSION PREVENTION: Uses WIZARDRY_PARSE_DEPTH to prevent infinite loops
 
+# Detect if we're being sourced or executed
+# This is needed because parse must be sourced by glosses to enable directory-changing spells
+_parse_sourced=0
+if [ -n "${BASH_VERSION-}" ]; then
+  # Bash: check BASH_SOURCE
+  [ "${BASH_SOURCE[0]}" != "${0}" ] && _parse_sourced=1
+elif [ -n "${ZSH_VERSION-}" ]; then
+  # Zsh: check ZSH_EVAL_CONTEXT
+  case "${ZSH_EVAL_CONTEXT-}" in *:file*) _parse_sourced=1 ;; esac
+else
+  # POSIX: check if $0 looks like a shell name
+  case "${0##*/}" in sh|dash|ash|ksh|*sh) _parse_sourced=1 ;; esac
+fi
+
 set -eu
 
 # Increment recursion depth
@@ -25,14 +39,24 @@ _parse_depth=$((_parse_depth + 1))
 # Prevent infinite recursion
 if [ "$_parse_depth" -gt 10 ]; then
   printf 'parse: Maximum recursion depth exceeded\n' >&2
-  exit 1
+  if [ "$_parse_sourced" -eq 1 ]; then
+    unset WIZARDRY_PARSE_DEPTH
+    return 1
+  else
+    unset WIZARDRY_PARSE_DEPTH
+    exit 1
+  fi
 fi
 
 export WIZARDRY_PARSE_DEPTH=$_parse_depth
 
 # If no arguments, just succeed
 if [ $# -eq 0 ]; then
-  exit 0
+  if [ "$_parse_sourced" -eq 1 ]; then
+    return 0
+  else
+    exit 0
+  fi
 fi
 
 # Get WIZARDRY_DIR
@@ -69,7 +93,11 @@ done
 # If no command words, nothing to do
 if [ $_cmd_word_count -eq 0 ]; then
   printf 'parse: no command specified\n' >&2
-  exit 1
+  if [ "$_parse_sourced" -eq 1 ]; then
+    return 1
+  else
+    exit 1
+  fi
 fi
 
 # Try progressively longer combinations (from max down to 1)
@@ -131,15 +159,36 @@ while [ $_attempt_len -gt 0 ]; do
     done
   fi
   
-  # If found, execute with remaining args
+  # If found, check if it requires sourcing and handle appropriately
   if [ -n "$_spell_path" ]; then
-    # Skip first $_attempt_len args and exec with the rest
+    # Skip first $_attempt_len args and exec/source with the rest
     _n=0
     while [ $_n -lt $_attempt_len ]; do
       shift
       _n=$((_n + 1))
     done
-    exec "$_spell_path" "$@"
+    
+    # Check if spell requires sourcing (has uncastable)
+    if head -30 "$_spell_path" 2>/dev/null | grep -q "uncastable"; then
+      # Source the spell instead of execing it
+      . "$_spell_path" "$@"
+      _result=$?
+      # Clean up recursion depth before returning
+      _parse_depth=$((_parse_depth - 1))
+      if [ "$_parse_depth" -le 0 ]; then
+        unset WIZARDRY_PARSE_DEPTH
+      else
+        export WIZARDRY_PARSE_DEPTH=$_parse_depth
+      fi
+      if [ "$_parse_sourced" -eq 1 ]; then
+        return $_result
+      else
+        exit $_result
+      fi
+    else
+      # Execute normally - depth will be cleaned by subprocess exit
+      exec "$_spell_path" "$@"
+    fi
   fi
   
   # Try next shorter combination
@@ -148,11 +197,19 @@ done
 
 # Last resort: try first word as system command
 if command -v "$_first_word" >/dev/null 2>&1; then
+  # Clean up before exec
+  unset WIZARDRY_PARSE_DEPTH
   exec "$_first_word" "$@"
 fi
 
 printf 'parse: %s: command not found\n' "$_first_word" >&2
-exit 127
+# Clean up recursion depth before returning error
+unset WIZARDRY_PARSE_DEPTH
+if [ "$_parse_sourced" -eq 1 ]; then
+  return 127
+else
+  exit 127
+fi
 
 
 

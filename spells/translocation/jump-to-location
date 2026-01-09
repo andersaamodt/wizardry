@@ -1,0 +1,42 @@
+#!/bin/sh
+
+# Synonym for jump-to-marker. Teleport to bookmarks set by mark-location.
+# This spell must be sourced (not executed) because it changes the current directory.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: . jump-to-location [marker]
+
+Teleport to a marker set with mark-location. Defaults to marker "1". Use "next" to cycle through all saved locations.
+Note: This spell must be sourced (use '. jump-to-location') to affect your current shell.
+USAGE
+  exit 0
+  ;;
+esac
+
+# Enforce sourced-only behavior
+# uncastable must be sourced (invoked), never executed (cast)
+if ! command -v uncastable >/dev/null 2>&1; then
+  . uncastable
+fi
+
+set -eu
+
+# Find jump-to-marker spell
+_wizardry_dir="${WIZARDRY_DIR:-${HOME}/.wizardry}"
+_jump_to_marker_path=""
+
+if [ -f "$_wizardry_dir/spells/translocation/jump-to-marker" ]; then
+  _jump_to_marker_path="$_wizardry_dir/spells/translocation/jump-to-marker"
+elif command -v jump-to-marker >/dev/null 2>&1; then
+  _jump_to_marker_path=$(command -v jump-to-marker)
+fi
+
+if [ -z "$_jump_to_marker_path" ]; then
+  printf '%s\n' "jump-to-location: jump-to-marker not found" >&2
+  return 1 2>/dev/null || exit 1
+fi
+
+# Source jump-to-marker with all arguments
+. "$_jump_to_marker_path" "$@"

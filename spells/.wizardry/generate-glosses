@@ -137,7 +137,7 @@ set -eu
   # ============================================================================
   
   # Check if a first word is blacklisted
-  # Returns 0 if allowed, 1 if blacklisted
+  # Returns 0 (true) if blacklisted, 1 (false) if allowed
   is_first_word_blacklisted() {
     _check_word=$1
     
@@ -147,23 +147,23 @@ set -eu
     case "$_check_word" in
       # GREYLIST: Shell builtins that CAN be safely overridden (see above)
       read|test)
-        return 0  # Allow these
+        return 1  # Allow these (not blacklisted)
         ;;
       # BLACKLIST: Shell builtins that CANNOT be overridden
       alias|bg|cd|command|disable|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|readonly|set|sh|\
 times|trap|true|type|ulimit|umask|unalias|wait|break|case|continue|do|done|elif|else|\
 esac|eval|exec|exit|export|fi|for|if|in|local|return|shift|then|unset|until|while)
-        return 1  # Blacklisted
+        return 0  # Blacklisted
         ;;
       # BLACKLIST: Common system commands that should not be overridden
       awk|cat|cp|cut|date|df|diff|dirname|du|echo|egrep|env|expr|fgrep|file|find|grep|head|\
 hostname|id|ln|ls|mkdir|mv|printf|ps|rm|rmdir|sed|sleep|sort|stat|tail|tar|tee|touch|tr|\
 uname|uniq|wc|xargs)
-        return 1  # Blacklisted
+        return 0  # Blacklisted
         ;;
     esac
     
-    return 0  # Not blacklisted
+    return 1  # Not blacklisted (allowed)
   }
   
   # ============================================================================
@@ -250,7 +250,8 @@ uname|uniq|wc|xargs)
       esac
       
       # Check if first word is blacklisted
-      if ! is_first_word_blacklisted "$_first_word"; then
+      if is_first_word_blacklisted "$_first_word"; then
+        # First word is blacklisted, skip it
         [ "$quiet" -eq 0 ] && printf 'generate-glosses: WARNING: Skipping spell "%s" - first word "%s" conflicts with system command\n' "$spell_name" "$_first_word" >&2
         continue
       fi
@@ -265,7 +266,7 @@ uname|uniq|wc|xargs)
       
       # Emit function definition
       emit_line "# First-word gloss for commands starting with '$_first_word'"
-      emit_line "${_first_word}() { parse \"${_first_word}\" \"\$@\"; }"
+      emit_line "${_first_word}() { . parse \"${_first_word}\" \"\$@\"; }"
       emit_line ""
       
       total_first_word_glosses=$((total_first_word_glosses + 1))
@@ -277,16 +278,18 @@ uname|uniq|wc|xargs)
   # via PATH since invoke-wizardry adds all spell directories to PATH.
   
   # ============================================================================
-  # SYNONYM ALIASES
+  # SYNONYM GLOSSES
   # ============================================================================
   # Process user and default synonyms from .synonyms files
-  # These are just passed through as-is (already in alias format)
+  # Synonym files contain simple key-value pairs (word spell-name)
+  # We generate function-based glosses using parse for multi-word resolution
+  # Aliases are only used for hyphenated names (POSIX sh limitation)
   # ============================================================================
   
   emit_line "# ============================================================================"
   emit_line "# USER AND DEFAULT SYNONYMS"
   emit_line "# ============================================================================"
-  emit_line "# From .synonyms and .default-synonyms files"
+  emit_line "# Generated from .synonyms and .default-synonyms files"
   emit_line "# ============================================================================"
   emit_line ""
   
@@ -294,16 +297,40 @@ uname|uniq|wc|xargs)
   synonym_file="$spell_home/.synonyms"
   if [ -f "$synonym_file" ]; then
     [ "$quiet" -eq 0 ] && info "Processing user synonyms..." >&2
-    while IFS= read -r line || [ -n "$line" ]; do
-      # Skip empty lines and comments
-      case "$line" in
+    while IFS=' ' read -r _syn_word _syn_spell || [ -n "$_syn_word" ]; do
+      # Skip empty lines, comments, and lines without both word and spell
+      case "$_syn_word" in
         ''|\#*) continue ;;
       esac
+      [ -n "$_syn_spell" ] || continue
       
-      # Pass through alias lines as-is
-      if printf '%s' "$line" | grep -q "^alias "; then
-        emit_line "$line"
-      fi
+      # Generate appropriate function or alias
+      # Synonyms call parse with the target spell for proper resolution
+      case "$_syn_word" in
+        *-*)
+          # POSIX sh doesn't allow hyphens in function names, must use alias
+          emit_line "alias ${_syn_word}='${_syn_spell}'"
+          ;;
+        *)
+          # For non-hyphenated synonyms, balance two concerns:
+          # 1. Synonym should work alone (e.g., "jump" calls "jump-to-marker")
+          # 2. Synonym with args passes args to target (e.g., "jump 2" calls "jump-to-marker 2")
+          # NOTE: Multi-word resolution handled by first-word glosses
+          # (e.g., "jump trash" → parse "jump" "trash" → finds jump-trash)
+          case "$_first_words_seen" in
+            *" $_syn_word "*)
+              # First-word gloss exists - always call target spell with any args
+              # CRITICAL: Source parse (not execute) so uncastable spells can change directory
+              emit_line "${_syn_word}() { . parse \"${_syn_spell}\" \"\$@\"; }"
+              ;;
+            *)
+              # No first-word gloss - simple synonym function
+              # CRITICAL: Source parse (not execute) so uncastable spells can change directory
+              emit_line "${_syn_word}() { . parse \"${_syn_spell}\" \"\$@\"; }"
+              ;;
+          esac
+          ;;
+      esac
     done < "$synonym_file"
     emit_line ""
   fi
@@ -312,16 +339,42 @@ uname|uniq|wc|xargs)
   default_synonym_file="$spell_home/.default-synonyms"
   if [ -f "$default_synonym_file" ]; then
     [ "$quiet" -eq 0 ] && info "Processing default synonyms..." >&2
-    while IFS= read -r line || [ -n "$line" ]; do
-      # Skip empty lines and comments
-      case "$line" in
+    while IFS=' ' read -r _syn_word _syn_spell || [ -n "$_syn_word" ]; do
+      # Skip empty lines, comments, and lines without both word and spell
+      case "$_syn_word" in
         ''|\#*) continue ;;
       esac
+      [ -n "$_syn_spell" ] || continue
       
-      # Pass through alias lines as-is
-      if printf '%s' "$line" | grep -q "^alias "; then
-        emit_line "$line"
-      fi
+      # Generate appropriate function or alias
+      # Synonyms call parse with the target spell for proper resolution
+      case "$_syn_word" in
+        *-*)
+          # POSIX sh doesn't allow hyphens in function names, must use alias
+          emit_line "alias ${_syn_word}='${_syn_spell}'"
+          ;;
+        *)
+          # For non-hyphenated synonyms, balance two concerns:
+          # 1. Synonym should work alone (e.g., "jump" calls "jump-to-marker")
+          # 2. Multi-word resolution should still work (e.g., "jump trash" calls "jump-trash")
+          case "$_first_words_seen" in
+            *" $_syn_word "*)
+              # First-word gloss exists - create hybrid function
+              emit_line "${_syn_word}() {"
+              emit_line "  if [ \$# -eq 0 ]; then"
+              emit_line "    . parse \"${_syn_spell}\" \"\$@\""
+              emit_line "  else"
+              emit_line "    . parse \"${_syn_word}\" \"\$@\""
+              emit_line "  fi"
+              emit_line "}"
+              ;;
+            *)
+              # No first-word gloss - simple synonym function
+              emit_line "${_syn_word}() { . parse \"${_syn_spell}\" \"\$@\"; }"
+              ;;
+          esac
+          ;;
+      esac
     done < "$default_synonym_file"
     emit_line ""
   fi

@@ -15,9 +15,13 @@ USAGE
   ;;
 esac
 
-# Enforce sourced-only behavior
+# Enforce sourced-only behavior (but don't exit the shell if already sourced)
 # uncastable must be sourced (invoked), never executed (cast)
-. uncastable
+UNCASTABLE_MESSAGE='Use "jump trash" to invoke this spell, as it is uncastable directly.'
+export UNCASTABLE_MESSAGE
+if ! . uncastable; then
+  exit 1
+fi
 
 set -eu
 . env-clear
@@ -59,6 +63,15 @@ if [ ! -d "$trash_path" ]; then
   printf '%s\n' "jump-trash: trash directory does not exist: $trash_path" >&2
   printf '%s\n' "The trash may be empty or the directory has not been created yet." >&2
   exit 1
+fi
+
+# Check if already in trash directory
+current=$(pwd -P | sed 's|//|/|g')
+normalized_trash=$(cd "$trash_path" && pwd -P | sed 's|//|/|g')
+
+if [ "$current" = "$normalized_trash" ]; then
+  printf '%s\n' "You are already in the trash."
+  return 0
 fi
 
 cd "$trash_path" || exit 1
