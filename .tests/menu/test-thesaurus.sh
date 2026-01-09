@@ -93,6 +93,32 @@ test_works_without_wizardry_dir() {
 
 run_test_case "thesaurus works without WIZARDRY_DIR" test_works_without_wizardry_dir
 
+test_no_integer_expression_error_with_empty_files() {
+  skip-if-compiled || return $?
+  tmpdir=$(make_tempdir)
+  spellbook="$tmpdir/.spellbook"
+  mkdir -p "$spellbook"
+  
+  # Create empty synonym files (only comments, no aliases)
+  printf '# Default Synonyms\n# No aliases here\n' > "$spellbook/.default-synonyms"
+  printf '# Custom Synonyms\n' > "$spellbook/.synonyms"
+  touch "$spellbook/.default-synonyms-initialized"
+  
+  # Run thesaurus --list and check for integer expression error
+  export SPELLBOOK_DIR="$spellbook"
+  OUTPUT=$(run_spell "spells/menu/thesaurus" --list 2>&1) || true
+  
+  # Should not contain "integer expression expected" error
+  if printf '%s' "$OUTPUT" | grep -q "integer expression expected"; then
+    TEST_FAILURE_REASON="Got integer expression error: $OUTPUT"
+    return 1
+  fi
+  
+  return 0
+}
+
+run_test_case "no integer expression error with empty files" test_no_integer_expression_error_with_empty_files
+
 
 # Test via source-then-invoke pattern  
 

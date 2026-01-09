@@ -214,7 +214,7 @@ _it_count=0
 if [ "$_it_default_enabled" -eq 1 ] && [ -f "$_it_default_file" ]; then
   # shellcheck disable=SC1090
   . "$_it_default_file" 2>/dev/null || true
-  _it_default_count=$(grep -c "^alias " "$_it_default_file" 2>/dev/null || printf '0')
+  _it_default_count=$(grep "^alias " "$_it_default_file" 2>/dev/null | wc -l || printf '0')
   # Ensure it's a valid number
   case "$_it_default_count" in
     ''|*[!0-9]*) _it_default_count=0 ;;
@@ -225,7 +225,7 @@ fi
 if [ "$_it_custom_enabled" -eq 1 ] && [ -f "$_it_custom_file" ]; then
   # shellcheck disable=SC1090
   . "$_it_custom_file" 2>/dev/null || true
-  _it_custom_count=$(grep -c "^alias " "$_it_custom_file" 2>/dev/null || printf '0')
+  _it_custom_count=$(grep "^alias " "$_it_custom_file" 2>/dev/null | wc -l || printf '0')
   # Ensure it's a valid number
   case "$_it_custom_count" in
     ''|*[!0-9]*) _it_custom_count=0 ;;

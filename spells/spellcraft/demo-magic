@@ -522,7 +522,7 @@ demo_level() {
     
     # List spells at this level (remove directory suffix)
     spell_names=$(printf '%s' "$spell_list" | tr ' ' '\n' | sed 's/:.*$//')
-    spell_count=$(printf '%s' "$spell_names" | grep -c '.' || echo 0)
+    spell_count=$(printf '%s' "$spell_names" | grep '.' | wc -l || printf '0')
     
     # Track which spells were mentioned in demonstrations
     demonstrated=""
