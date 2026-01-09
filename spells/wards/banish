@@ -674,10 +674,73 @@ banish_process_level() {
           return 1
         fi
       fi
+
+      # Check while loops
+      # While loops are used for iteration and processing
+      loop_count=0
+      while [ "$loop_count" -lt 3 ]; do
+        loop_count=$(( loop_count + 1 ))
+      done
+      if [ "$loop_count" -eq 3 ]; then
+        printf '  %s✓%s While loops: Iteration works correctly\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s While loops: Loop iteration failed\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check for loops
+      # For loops iterate over word lists
+      for_result=""
+      for item in a b c; do
+        for_result="${for_result}${item}"
+      done
+      if [ "$for_result" = "abc" ]; then
+        printf '  %s✓%s For loops: Word list iteration works\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s For loops: Word list iteration failed\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check string length
+      # ${#var} is used to get string length without subprocesses
+      len_test="12345"
+      if [ "${#len_test}" -eq 5 ]; then
+        printf '  %s✓%s String length: ${#var} expansion works\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s String length: ${#var} expansion failed\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check exit code capture
+      # Exit codes ($?) are critical for error handling
+      true
+      exit_code_true=$?
+      false
+      exit_code_false=$?
+      if [ "$exit_code_true" -eq 0 ] && [ "$exit_code_false" -ne 0 ]; then
+        printf '  %s✓%s Exit codes: $? captures command status\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Exit codes: $? not working correctly\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check here documents
+      # Here documents are used for multi-line strings (like --help text)
+      heredoc_result=$(cat <<'HEREDOC_TEST'
+line1
+line2
+HEREDOC_TEST
+)
+      if printf '%s' "$heredoc_result" | grep -q "line1" && printf '%s' "$heredoc_result" | grep -q "line2"; then
+        printf '  %s✓%s Here documents: Multi-line strings work\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Here documents: Not working correctly\n' "$_red" "$_reset"
+        return 1
+      fi
       ;;
       
     1)
-      # Level 1: Wizardry Installation
+      # Level 1: Banish & Validation Infrastructure
       
       # Check wizardry structure (single item - combine on one line)
       if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
@@ -692,7 +755,19 @@ banish_process_level() {
         return 1
       fi
       printf '  %s✓%s Installer: install script present\n' "$_green" "$_reset"
-      
+
+      # Check function definitions and calls
+      # Functions are used in spells and banish itself for organization
+      test_func() {
+        printf 'function_works'
+      }
+      func_result=$(test_func)
+      if [ "$func_result" = "function_works" ]; then
+        printf '  %s✓%s Function definitions: Shell functions work correctly\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Function definitions: Functions not working\n' "$_red" "$_reset"
+        return 1
+      fi
       # Check spells
       spell_list=$("$spell_levels_script" 1 spells)
       if [ -n "$spell_list" ]; then
@@ -1446,6 +1521,23 @@ banish_process_level() {
           printf '  %s✗%s Recursive operations: mkdir -p failed\n' "$_red" "$_reset"
           return 1
         fi
+      fi
+
+      # Check grep pattern matching (literal and basic patterns)
+      # Text processing relies on grep for searching file contents
+      grep_test="test_pattern_123"
+      # Test literal match with -F
+      if printf '%s\n' "$grep_test" | grep -Fq "pattern" 2>/dev/null; then
+        # Test basic regex
+        if printf '%s\n' "$grep_test" | grep -q "test.*123" 2>/dev/null; then
+          printf '  %s✓%s Pattern matching: grep literal and regex work\n' "$_green" "$_reset"
+        else
+          printf '  %s✗%s Pattern matching: grep regex not working\n' "$_red" "$_reset"
+          return 1
+        fi
+      else
+        printf '  %s✗%s Pattern matching: grep literal search failed\n' "$_red" "$_reset"
+        return 1
       fi
 
       # Check spells
