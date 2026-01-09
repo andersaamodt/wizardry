@@ -62,7 +62,7 @@ priority_menu_display_menu() {
   set -- "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
          "${check_item}" \
          "Discard from priorities%deprioritize \"$file\"; kill -TERM \$PPID" \
-         "Edit Card%rename-interactive \"$file\"; kill -TERM \$PPID" \
+         "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
          "---" \
          "$exit_item"
   menu "${THEME_HEADING}${filename}${RESET}:" "$@"
