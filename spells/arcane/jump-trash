@@ -19,7 +19,11 @@ esac
 # uncastable must be sourced (invoked), never executed (cast)
 UNCASTABLE_MESSAGE='Use "jump trash" to invoke this spell, as it is uncastable directly.'
 export UNCASTABLE_MESSAGE
-. uncastable || { unset UNCASTABLE_MESSAGE; exit 1; }
+if ! . uncastable; then
+  # uncastable already cleaned up UNCASTABLE_MESSAGE and returned 1
+  # Exit gracefully without affecting parent shell
+  return 1 2>/dev/null || exit 1
+fi
 
 set -eu
 . env-clear
