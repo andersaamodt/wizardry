@@ -198,8 +198,13 @@ $func_def
       /^[[:space:]]*\. env_clear([[:space:]]|$)/ { next }
       /^[[:space:]]*source env_clear([[:space:]]|$)/ { next }
       /^[[:space:]]*env_clear([[:space:]]|$)/ { next }
+      # Skip old deprecated imp loading patterns (uncastable/autocast no longer exist)
       /^# Load (castable|autocast|uncastable) imp/ { skip_loading=1; next }
       skip_loading && /^(castable|autocast|uncastable) / { skip_loading=0; next }
+      # Skip new inline uncastable pattern (already inlined in spell)
+      /^# Uncastable: Must be sourced, not executed/ { skip_uncastable=1; next }
+      skip_uncastable && /^unset.*_sourced.*_base/ { skip_uncastable=0; next }
+      skip_uncastable { next }
       skip_loading { next }
       { print }
     ')
@@ -237,14 +242,15 @@ done
 # Transform spell content:
 # 1. Remove shebang, require-wizardry, and wizardry infrastructure sourcing
 # 2. Replace imp calls with underscore versions (e.g., say -> say, clip-copy -> clip_copy)
-# 3. Replace castable/autocast/uncastable loading patterns with direct function calls
+# 3. Skip deprecated castable/autocast/uncastable loading patterns (these imps no longer exist)
+# 4. Skip inline uncastable pattern (already processed in spell, not needed in compiled output)
 # Remove lines that source wizardry infrastructure (env-clear, invoke-wizardry)
 # These don't make sense in standalone compiled spells
 # BUT preserve bootstrap blocks (if command -v require-wizardry)
 transformed=$(printf '%s\n' "$spell_content" | \
   tail -n +2 | \
   awk -v spell="$spell_basename" '
-    BEGIN { skip=0; in_bootstrap=0 }
+    BEGIN { skip=0; in_bootstrap=0; skip_uncastable=0 }
     # Preserve bootstrap blocks
     /^if command -v require-wizardry/ { in_bootstrap=1; print; next }
     /^elif command -v require-wizardry/ { in_bootstrap=1; print; next }
@@ -259,35 +265,24 @@ transformed=$(printf '%s\n' "$spell_content" | \
     /^[[:space:]]*env_clear([[:space:]]|$)/ { next }
     /^[[:space:]]*\. .*invoke-wizardry/ { next }
     /^[[:space:]]*source .*invoke-wizardry/ { next }
-    # Skip loading pattern sections but remember what to call
+    # Skip inline uncastable pattern (marker comment)
+    /^# Uncastable: Must be sourced, not executed/ { skip_uncastable=1; next }
+    skip_uncastable && /^unset.*_sourced.*_base/ { skip_uncastable=0; next }
+    skip_uncastable { next }
+    # Skip deprecated loading pattern sections (castable/autocast/uncastable imps no longer exist)
     /^# Load (castable|autocast|uncastable) imp/ { 
       skip=1
-      # Extract which type (castable/autocast/uncastable)
-      if (/castable/) { pattern_type="castable" }
-      else if (/autocast/) { pattern_type="autocast" }
-      else if (/uncastable/) { pattern_type="uncastable" }
+      # These patterns are deprecated and no longer used
       next
     }
     skip && /^(castable|autocast|uncastable) / {
       skip=0
-      # For castable/uncastable: replace with direct function call
-      # For autocast: replace with direct function call (spell name with underscores)
-      if (pattern_type == "autocast") {
-        # autocast spells call the spell_name function directly
-        func_name = spell
-        gsub(/-/, "_", func_name)
-        print "# Compiled spell - autocast declaration (inlined)"
-        print "autocast() { :; }  # Stub - spell already executed via function call below"
-        print func_name
-      } else {
-        # castable/uncastable spells call spell_name "$@"
-        func_name = spell
-        gsub(/-/, "_", func_name)
-        print "# Compiled spell - " pattern_type " declaration (inlined)"
-        print pattern_type "() { :; }  # Stub - spell executed via direct function call below"
-        print func_name " \"$@\""
-      }
+      # Just skip the call entirely - these imps don't exist anymore
       next
+    }
+    skip { next }
+    { print }
+  ')
     }
     skip { next }
     { print }
