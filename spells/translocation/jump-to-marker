@@ -50,6 +50,7 @@ _jm_spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
 markers_dir=${JUMP_TO_MARKERS_DIR:-$_jm_spell_home/.markers}
 
 marker_name="${1:-1}"
+original_marker_arg="${1:-1}"
 
 # If marker is "0" or "next", cycle through markers
 if [ "$marker_name" = "0" ] || [ "$marker_name" = "next" ]; then
@@ -120,9 +121,8 @@ if [ "$marker_name" = "0" ] || [ "$marker_name" = "next" ]; then
                 if [ "$found" -eq 1 ] && [ -z "$marker_name" ]; then
                         marker_name=$first
                 fi
-        else
-                marker_name="1"
         fi
+        # If still empty after cycling, leave it empty to trigger proper error below
 fi
 
 marker_file="$markers_dir/$marker_name"
@@ -135,7 +135,7 @@ fi
 
 # Check if marker_name is empty (cycling failed to find markers)
 if [ -z "$marker_name" ]; then
-        printf '%s\n' "No markers available to cycle through. Use 'mark-location' to mark a location first."
+        printf '%s\n' "No markers available to cycle through. Use 'mark-location' to mark a location first." >&2
         return 1 2>/dev/null || exit 1
 fi
 
