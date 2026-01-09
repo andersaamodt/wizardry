@@ -57,11 +57,10 @@ if [ "$marker_name" = "0" ] || [ "$marker_name" = "next" ]; then
         # Clear marker_name so cycling logic can set it fresh
         marker_name=""
         
-        # Get all available marker names, sorted
+        # Get only numbered markers for cycling (not named markers)
         all_markers=""
         if [ -d "$markers_dir" ]; then
                 numeric_markers=""
-                alpha_markers=""
                 for marker in "$markers_dir"/*; do
                         [ -f "$marker" ] || continue
                         name=$(basename "$marker")
@@ -69,35 +68,36 @@ if [ "$marker_name" = "0" ] || [ "$marker_name" = "next" ]; then
                         case "$name" in
                                 .*) continue ;;
                         esac
-                        # Separate numeric and non-numeric markers
+                        # Only include numeric markers for cycling
                         case "$name" in
-                                *[!0-9]*)
-                                        alpha_markers="$alpha_markers $name"
-                                        ;;
+                                *[!0-9]*) ;;
                                 *)
                                         numeric_markers="$numeric_markers $name"
                                         ;;
                         esac
                 done
-                # Sort and output: numbers first (numerically), then names (alphabetically)
+                # Sort numeric markers numerically
                 for n in $(printf '%s\n' $numeric_markers | sort -n); do
-                        all_markers="$all_markers $n"
-                done
-                for n in $(printf '%s\n' $alpha_markers | sort); do
                         all_markers="$all_markers $n"
                 done
         fi
         
         # If we have markers, cycle through them
         if [ -n "$all_markers" ]; then
-                # Find the most recently used marker (by mtime)
+                # Find the most recently used NUMERIC marker (by mtime)
                 last_marker=""
                 if [ -d "$markers_dir" ]; then
                         sorted=$(ls -t "$markers_dir" 2>/dev/null || true)
-                        recent=$(printf '%s\n' "$sorted" | head -1)
-                        if [ -n "$recent" ] && [ -f "$markers_dir/$recent" ]; then
-                                last_marker=$recent
-                        fi
+                        for recent in $sorted; do
+                                # Skip non-numeric markers
+                                case "$recent" in
+                                        *[!0-9]*) continue ;;
+                                esac
+                                if [ -f "$markers_dir/$recent" ]; then
+                                        last_marker=$recent
+                                        break
+                                fi
+                        done
                 fi
                 
                 # Get next marker in sequence
