@@ -1,0 +1,38 @@
+#!/bin/sh
+
+# Mark a file or task as unchecked using extended attributes.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uncheck <file>
+
+Mark a file or task as unchecked by setting its checked attribute to 0.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+if [ -z "${1-}" ]; then
+  printf '%s\n' "uncheck: file path required" >&2
+  exit 2
+fi
+
+file=$1
+
+if [ ! -e "$file" ]; then
+  printf '%s\n' "uncheck: file not found: $file" >&2
+  exit 1
+fi
+
+# Use enchant to set checked=0 (enchant will add "user." prefix automatically)
+if enchant "$file" checked 0 >/dev/null 2>&1; then
+  printf '%s\n' "Unchecked: $(basename "$file")"
+  exit 0
+else
+  printf '%s\n' "uncheck: failed to mark file as unchecked" >&2
+  exit 1
+fi
