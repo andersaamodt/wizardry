@@ -79,3 +79,4 @@
 - Multi-cd shell patterns for path calculation (`cd dir1 && cd dir2`) create 2-3 extra process forks per execution; use parameter expansion ${var%/*} for significant performance improvement (PR #674).
 - Always create realistic unit tests for every feature BEFORE writing or fixing code; tests are the fastest path to working code and catch edge cases immediately (TDD principle).
 - Hyphenated spell names with uncastable pattern must have aliases generated (not just hyphenated synonyms) to prevent terminal crashes when typed directly by users.
+- In sourced-only spells with `set -eu`, always do `set +eu` before every `return` statement to prevent shell options from leaking into the parent shell, which can cause unexpected behavior or terminal exits.
