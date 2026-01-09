@@ -10,12 +10,13 @@ done
 
 test_jump_next_no_markers() {
   tmpdir=$(make_tempdir)
-  markers_dir="$tmpdir/markers"
+  spellbook_dir="$tmpdir/.spellbook"
+  markers_dir="$spellbook_dir/.markers"
   mkdir -p "$markers_dir"
   
   # Test jump next with empty markers directory
   run_cmd sh -c "
-    export JUMP_TO_MARKERS_DIR='$markers_dir'
+    export SPELLBOOK_DIR='$spellbook_dir'
     export PATH='$ROOT_DIR/spells/.imps:$ROOT_DIR/spells/.imps/sys:/bin:/usr/bin'
     cd '$tmpdir'
     set -- next
@@ -28,12 +29,13 @@ test_jump_next_no_markers() {
 
 test_jump_zero_no_markers() {
   tmpdir=$(make_tempdir)
-  markers_dir="$tmpdir/markers"
+  spellbook_dir="$tmpdir/.spellbook"
+  markers_dir="$spellbook_dir/.markers"
   mkdir -p "$markers_dir"
   
   # Test jump 0 with empty markers directory
   run_cmd sh -c "
-    export JUMP_TO_MARKERS_DIR='$markers_dir'
+    export SPELLBOOK_DIR='$spellbook_dir'
     export PATH='$ROOT_DIR/spells/.imps:$ROOT_DIR/spells/.imps/sys:/bin:/usr/bin'
     cd '$tmpdir'
     set -- 0
@@ -46,7 +48,8 @@ test_jump_zero_no_markers() {
 
 test_jump_next_with_markers() {
   tmpdir=$(make_tempdir)
-  markers_dir="$tmpdir/markers"
+  spellbook_dir="$tmpdir/.spellbook"
+  markers_dir="$spellbook_dir/.markers"
   mkdir -p "$markers_dir"
   
   # Create 3 marker directories
@@ -61,7 +64,7 @@ test_jump_next_with_markers() {
   
   # Test jump next should go to marker 2 (next after 1)
   run_cmd sh -c "
-    export JUMP_TO_MARKERS_DIR='$markers_dir'
+    export SPELLBOOK_DIR='$spellbook_dir'
     export PATH='$ROOT_DIR/spells/.imps:$ROOT_DIR/spells/.imps/sys:/bin:/usr/bin'
     cd '$tmpdir'
     set -- next
@@ -76,7 +79,8 @@ test_jump_next_with_markers() {
 
 test_jump_zero_with_markers() {
   tmpdir=$(make_tempdir)
-  markers_dir="$tmpdir/markers"
+  spellbook_dir="$tmpdir/.spellbook"
+  markers_dir="$spellbook_dir/.markers"
   mkdir -p "$markers_dir"
   
   # Create 3 marker directories
@@ -91,7 +95,7 @@ test_jump_zero_with_markers() {
   
   # Test jump 0 should go to marker 3 (next after 2)
   run_cmd sh -c "
-    export JUMP_TO_MARKERS_DIR='$markers_dir'
+    export SPELLBOOK_DIR='$spellbook_dir'
     export PATH='$ROOT_DIR/spells/.imps:$ROOT_DIR/spells/.imps/sys:/bin:/usr/bin'
     cd '$tmpdir'
     set -- 0

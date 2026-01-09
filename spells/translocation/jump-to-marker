@@ -42,12 +42,12 @@ if [ "$_jump_to_marker_sourced" -eq 0 ]; then
 fi
 unset _jump_to_marker_sourced _jump_to_marker_base
 
+# Calculate markers directory BEFORE env-clear (which may clear SPELLBOOK_DIR)
+_jm_spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+markers_dir=$_jm_spell_home/.markers
+
 set -eu
 . env-clear
-
-# Resolve markers directory
-_jm_spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
-markers_dir=${JUMP_TO_MARKERS_DIR:-$_jm_spell_home/.markers}
 
 marker_name="${1:-1}"
 original_marker_arg="${1:-1}"

@@ -29,16 +29,23 @@ test_unknown_option_fails() {
 
 run_jump() {
   marker_arg=${1:-}
-  markers_dir=${2:-$WIZARDRY_TMPDIR/markers}
+  markers_dir_arg=${2:-$WIZARDRY_TMPDIR/markers}
   RUN_CMD_WORKDIR=${3:-$WIZARDRY_TMPDIR}
+  # The old tests pass markers_dir directly, but the spell expects SPELLBOOK_DIR
+  # Create a spellbook directory with .markers symlinked to the test markers dir
+  spellbook_dir="$WIZARDRY_TMPDIR/test-spellbook-$$"
+  mkdir -p "$spellbook_dir"
+  rm -f "$spellbook_dir/.markers"
+  ln -s "$markers_dir_arg" "$spellbook_dir/.markers"
   PATH="$WIZARDRY_IMPS_PATH:$(wizardry_base_path):/bin:/usr/bin"
-  JUMP_TO_MARKERS_DIR="$markers_dir"
-  export JUMP_TO_MARKERS_DIR PATH RUN_CMD_WORKDIR
+  SPELLBOOK_DIR="$spellbook_dir"
+  export SPELLBOOK_DIR PATH RUN_CMD_WORKDIR
   if [ -n "$marker_arg" ]; then
     run_cmd sh -c "set -- \"$marker_arg\"; . \"$ROOT_DIR/spells/translocation/jump-to-marker\""
   else
     run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/jump-to-marker\""
   fi
+  rm -rf "$spellbook_dir"
 }
 
 test_jump_requires_markers_dir() {
@@ -186,7 +193,8 @@ test_gloss_jump_to_marker_direct() {
   skip-if-compiled || return $?
   start_dir="$WIZARDRY_TMPDIR/gloss-start"
   dest1="$WIZARDRY_TMPDIR/gloss-dest-1"
-  markers_dir="$WIZARDRY_TMPDIR/gloss-markers"
+  spell_home="$WIZARDRY_TMPDIR/gloss-spell-home"
+  markers_dir="$spell_home/.markers"
   mkdir -p "$start_dir" "$dest1" "$markers_dir"
   dest1_resolved=$(cd "$dest1" && pwd -P | sed 's|//|/|g')
   printf '%s\n' "$dest1_resolved" >"$markers_dir/1"
@@ -195,7 +203,7 @@ test_gloss_jump_to_marker_direct() {
   # This tests that the gloss function sources the spell correctly
   run_cmd sh -c "
     export WIZARDRY_DIR='$ROOT_DIR'
-    export JUMP_TO_MARKERS_DIR='$markers_dir'
+    export SPELLBOOK_DIR='$spell_home'
     export PATH='$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:/bin:/usr/bin'
     cd '$start_dir' || exit 1
     # Generate glosses and source them
@@ -213,8 +221,8 @@ test_gloss_jump_shorthand() {
   skip-if-compiled || return $?
   start_dir="$WIZARDRY_TMPDIR/gloss-jump-start"
   dest1="$WIZARDRY_TMPDIR/gloss-jump-dest-1"
-  markers_dir="$WIZARDRY_TMPDIR/gloss-jump-markers"
-  spell_home="$WIZARDRY_TMPDIR/spell-home"
+  spell_home="$WIZARDRY_TMPDIR/gloss-jump-spell-home"
+  markers_dir="$spell_home/.markers"
   mkdir -p "$start_dir" "$dest1" "$markers_dir" "$spell_home"
   dest1_resolved=$(cd "$dest1" && pwd -P | sed 's|//|/|g')
   printf '%s\n' "$dest1_resolved" >"$markers_dir/1"
@@ -225,7 +233,6 @@ test_gloss_jump_shorthand() {
   # Test 'jump' via synonym -> jump-to-marker
   run_cmd sh -c "
     export WIZARDRY_DIR='$ROOT_DIR'
-    export JUMP_TO_MARKERS_DIR='$markers_dir'
     export SPELLBOOK_DIR='$spell_home'
     export PATH='$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:/bin:/usr/bin'
     cd '$start_dir' || exit 1
