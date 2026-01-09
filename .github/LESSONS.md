@@ -38,6 +38,7 @@
 - Sourced-only scripts (invoke-wizardry, env-clear, invoke-thesaurus) must use `return 0` not `exit 0` for normal completion to avoid exiting parent shell (2)
 - Test helper imps that are sourced (skip-if-compiled) must define functions and use self-execute pattern, not use bare `exit` statements which exit the calling test
 - When implementing a feature across "all items" (e.g., adding colors to all install-menu entries), systematically verify each item is covered rather than assuming completion - PR #874 added colors to core-status and tor-status, but mud-status was never created, leaving one menu item without colors.
+- The word-of-binding function-preloading paradigm was deprecated in favor of simpler PATH-based imp execution.
 - .imps/sys directory must be in PATH so system imps like require-wizardry are directly callable as commands (PR #594).
 - Circular dependency during sourcing: imps must be available before spells call them; add all imp families to PATH before sourcing (PR #595).
 - Scripts must verify prerequisites exist before calling them to avoid "command not found" errors during bootstrap (PR #596).
@@ -46,7 +47,6 @@
 - macOS Terminal.app opens login shells by default, requiring .bash_profile to source .bashrc for shell configuration availability (PR #600).
 - invoke-wizardry must auto-detect its location using shell-specific variables (BASH_SOURCE[0], ${(%):-%x}) instead of hardcoding $HOME/.wizardry (PR #601).
 - RC file manipulation should use inline markers (. "/path" # wizardry: marker-name) instead of separate comment lines for consistent editing (PR #602).
-- Eager spell sourcing (230 grep + 115 spells) causes 5-10s startup hangs; pure word-of-binding lazy loading reduces startup to ~0.4s (PR #605).
 - Menu exit handlers must validate parent PID exists before sending kill signals to prevent terminating unintended processes (PR #606).
 - Default prompts for optional features should match expected common usage patterns (e.g., MUD defaults to "yes" for installation) (PR #607).
 - Failed subtests must cause their parent test to fail; testing system integrity requires meta-tests that validate the testing infrastructure itself (PR #609).
@@ -58,12 +58,10 @@
 - Testing system regressions are prevented by making test infrastructure itself testable with dedicated validation test files (PR #615).
 - Pipe output buffering in pipelines requires explicit stdbuf -oL on all stages, not just the first command, to ensure line-by-line output (PR #616).
 - Common structural tests should run by default for individual spell testing to ensure complete validation coverage (PR #617).
-- Word-of-binding paradigm: pre-loading all spells/imps by sourcing at startup eliminates PATH pollution and provides instant command availability (PR #618).
 - Subprocess invocations must redirect stdin from /dev/null (< /dev/null) to prevent blocking if any subprocess attempts to read stdin (PR #619).
 - Performance profiling infrastructure with --profile flag enables systematic identification of bottlenecks (e.g., common-tests.sh: 67s → 64s via grep reduction) (PR #622).
 - Infinite recursion in command_not_found_handle requires a guard flag (_IN_CNF_HANDLER) to detect re-entry and prevent terminal hangs (PR #623).
 - macOS login shell modifications (.zprofile sourcing .zshrc) must be tracked during install and completely removed during uninstall to prevent stale code (PR #624).
-- Word-of-binding must distinguish imp naming (_imp_name functions) from spell naming (spell_name functions) when creating command aliases (PR #625).
 - Toggleable features in configuration files allow users to selectively disable functionality for isolating and debugging complex issues (PR #626).
 - Installation cancellation or interruption should trigger cleanup of downloaded wizardry directory to avoid leaving partial installations (PR #627).
 - Debug logging with timestamps, file paths, and success/failure counts helps diagnose complex shell initialization and sourcing issues (PR #629).
