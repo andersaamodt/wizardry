@@ -67,3 +67,8 @@
 - Toggleable features in configuration files allow users to selectively disable functionality for isolating and debugging complex issues (PR #626).
 - Installation cancellation or interruption should trigger cleanup of downloaded wizardry directory to avoid leaving partial installations (PR #627).
 - Debug logging with timestamps, file paths, and success/failure counts helps diagnose complex shell initialization and sourcing issues (PR #629).
+- Glob patterns stored in variables don't expand in POSIX sh; use `set -- "$dir"/*` to populate positional parameters for reliable shell glob expansion (PR #668).
+- Negated assignment patterns `if ! var=$(cmd)` can trigger zsh parse errors when sourced; separate into assignment then condition for cross-shell compatibility (PR #669).
+- AWK regex patterns in shell strings require double backslashes (\\) not quadruple (\\\\) for proper pattern escaping in extraction operations (PR #670).
+- Bootstrap spells in `.arcana/core` run before wizardry installation and must not depend on wizardry imps (castable, require-wizardry, env-clear) (PR #672).
+- Multi-cd shell patterns for path calculation (`cd dir1 && cd dir2`) create 2-3 extra process forks per execution; use parameter expansion ${var%/*} for significant performance improvement (PR #674).
