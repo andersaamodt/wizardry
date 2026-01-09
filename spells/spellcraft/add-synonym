@@ -80,31 +80,51 @@ set -eu
       ;;
   esac
 
-  # Check if synonym word is a shell keyword or builtin
+  # Check for collisions with blacklisted commands
+  # These commands CANNOT be overridden (same blacklist as generate-glosses)
   case $synonym_word in
+    # Shell keywords (cannot override these at all)
     if|then|else|elif|fi|case|esac|for|while|until|do|done|in| \
     function|time|select|\{|\}|\[\[|\]\]|!)
       printf '%s\n' "add-synonym: cannot override shell keyword: $synonym_word" >&2
       exit 2
       ;;
-  esac
-
-  # Check for common builtins that should not be overridden
-  case $synonym_word in
-    cd|echo|printf|test|true|false|exit|return|break|continue|eval|exec| \
-    export|readonly|set|shift|source|trap|unset)
-      warn "add-synonym: '$synonym_word' is a shell builtin"
-      printf 'Aliases cannot override builtins. Continue anyway? (y/N): ' >&2
-      IFS= read -r confirm || confirm="n"
-      case $confirm in
-        y|Y|yes|YES) ;;
-        *) 
-          printf '%s\n' "add-synonym: cancelled" >&2
-          exit 1
-          ;;
-      esac
+    # Blacklisted shell builtins (critical for shell operation)
+    alias|bg|cd|command|disable|eval|exec|exit|export|false|fc|fg|getopts|hash|jobs| \
+    kill|local|newgrp|pwd|readonly|return|set|sh|shift|times|trap|true|type|ulimit| \
+    umask|unalias|unset|wait|break|continue|source)
+      printf '%s\n' "add-synonym: cannot override protected builtin: $synonym_word" >&2
+      printf '%s\n' "This is a critical shell builtin that must not be shadowed" >&2
+      exit 2
+      ;;
+    # Blacklisted common system commands (critical for system operation)
+    awk|cat|cp|cut|date|df|diff|dirname|du|echo|egrep|env|expr|fgrep|file|find|grep| \
+    head|hostname|id|ln|ls|mkdir|mv|printf|ps|rm|rmdir|sed|sleep|sort|stat|tail|tar| \
+    tee|touch|tr|uname|uniq|wc|xargs)
+      printf '%s\n' "add-synonym: cannot override protected command: $synonym_word" >&2
+      printf '%s\n' "This is a critical system command that must not be shadowed" >&2
+      exit 2
       ;;
   esac
+
+  # Check for collision with other commands in PATH
+  # These CAN be overridden but we should warn the user
+  if command -v "$synonym_word" >/dev/null 2>&1; then
+    # Get information about what command this is
+    cmd_info=$(command -v "$synonym_word" 2>/dev/null)
+    warn "add-synonym: '$synonym_word' already exists as a command"
+    info "  Current: $cmd_info"
+    info "  New synonym will override this command when shell functions are loaded"
+    printf 'Create synonym anyway? (y/N): ' >&2
+    IFS= read -r confirm || confirm="n"
+    case $confirm in
+      y|Y|yes|YES) ;;
+      *) 
+        printf '%s\n' "add-synonym: cancelled" >&2
+        exit 1
+        ;;
+    esac
+  fi
 
   # Validate target spell
   if [ -z "$target_spell" ]; then
