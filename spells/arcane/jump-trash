@@ -11,13 +11,30 @@ Usage: . jump-trash
 Teleport to your system trash directory.
 This spell must be sourced (note the dot) to change your current directory.
 USAGE
-  exit 0
+  return 0 2>/dev/null || exit 0
   ;;
 esac
 
-# Enforce sourced-only behavior
-# uncastable must be sourced (invoked), never executed (cast)
-. uncastable
+# Uncastable pattern - ensures spell is sourced, not executed
+_jump_trash_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) _jump_trash_sourced=1 ;;
+  esac
+else
+  _jump_trash_base=${0##*/}
+  case "$_jump_trash_base" in
+    sh|dash|bash|zsh|ksh|mksh) _jump_trash_sourced=1 ;;
+    jump-trash) _jump_trash_sourced=0 ;;
+    *) _jump_trash_sourced=1 ;;
+  esac
+fi
+
+if [ "$_jump_trash_sourced" -eq 0 ]; then
+  printf '%s\n' "This spell cannot be cast directly. Invoke it with: jump trash" >&2
+  return 1 2>/dev/null || exit 1
+fi
+unset _jump_trash_sourced _jump_trash_base
 
 set -eu
 . env-clear
@@ -52,14 +69,25 @@ fi
 
 if [ -z "$trash_path" ]; then
   printf '%s\n' "jump-trash: could not determine trash directory" >&2
-  exit 1
+  return 1 2>/dev/null || exit 1
 fi
 
 if [ ! -d "$trash_path" ]; then
   printf '%s\n' "jump-trash: trash directory does not exist: $trash_path" >&2
   printf '%s\n' "The trash may be empty or the directory has not been created yet." >&2
-  exit 1
+  return 1 2>/dev/null || exit 1
 fi
 
-cd "$trash_path" || exit 1
+# Check if already in trash (handle symlinks by resolving paths)
+current_dir=$(pwd -P 2>/dev/null || pwd)
+trash_resolved=$(cd "$trash_path" && pwd -P 2>/dev/null || printf '%s' "$trash_path")
+current_resolved=$(printf '%s' "$current_dir" | sed 's|//|/|g')
+trash_resolved=$(printf '%s' "$trash_resolved" | sed 's|//|/|g')
+
+if [ "$current_resolved" = "$trash_resolved" ]; then
+  printf '%s\n' "You are already in the trash directory."
+  return 0 2>/dev/null || exit 0
+fi
+
+cd "$trash_path" || { return 1 2>/dev/null || exit 1; }
 printf '%s\n' "You teleport to the trash at $trash_path"

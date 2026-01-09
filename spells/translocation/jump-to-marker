@@ -8,10 +8,12 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: . jump-to-marker [marker]
 
-Teleport to a marker set with mark-location. Defaults to marker "1", marker "0" cycles through all saved locations.
+Teleport to a marker set with mark-location. 
+- No argument defaults to marker "1"
+- Use "next" or "0" to cycle through all saved locations
 Note: This spell must be sourced (use '. jump-to-marker') to affect your current shell.
 USAGE
-  exit 0
+  return 0 2>/dev/null || exit 0
   ;;
 -*)
   printf '%s\n' "jump-to-marker: unknown option '$1'." >&2
@@ -19,93 +21,114 @@ USAGE
   ;;
 esac
 
-# Enforce sourced-only behavior
-# uncastable must be sourced (invoked), never executed (cast)
-if ! command -v uncastable >/dev/null 2>&1; then
-  . uncastable
+# Uncastable pattern - ensures spell is sourced, not executed
+_jump_to_marker_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) _jump_to_marker_sourced=1 ;;
+  esac
+else
+  _jump_to_marker_base=${0##*/}
+  case "$_jump_to_marker_base" in
+    sh|dash|bash|zsh|ksh|mksh) _jump_to_marker_sourced=1 ;;
+    jump-to-marker) _jump_to_marker_sourced=0 ;;
+    *) _jump_to_marker_sourced=1 ;;
+  esac
 fi
+
+if [ "$_jump_to_marker_sourced" -eq 0 ]; then
+  printf '%s\n' "This spell cannot be cast directly. Invoke it with: jump to marker" >&2
+  return 1 2>/dev/null || exit 1
+fi
+unset _jump_to_marker_sourced _jump_to_marker_base
+
+# Calculate markers directory BEFORE env-clear (which may clear SPELLBOOK_DIR)
+_jm_spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+markers_dir=$_jm_spell_home/.markers
 
 set -eu
 . env-clear
 
-# Resolve markers directory
-_jm_spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
-markers_dir=${JUMP_TO_MARKERS_DIR:-$_jm_spell_home/.markers}
+marker_name="${1:-1}"
+original_marker_arg="${1:-1}"
 
-marker_name="${1:-}"
-
-# If no marker specified OR marker is "0", cycle through markers
-if [ -z "$marker_name" ] || [ "$marker_name" = "0" ]; then
+# If marker is "0" or "next", cycle through markers
+if [ "$marker_name" = "0" ] || [ "$marker_name" = "next" ]; then
         # Clear marker_name so cycling logic can set it fresh
         marker_name=""
-        # Find the most recently used marker (by mtime) and get the next one
-        last_marker=""
+        
+        # Get all available marker names, sorted
+        all_markers=""
         if [ -d "$markers_dir" ]; then
-                sorted=$(ls -t "$markers_dir" 2>/dev/null || true)
-                recent=$(printf '%s\n' "$sorted" | head -1)
-                oldest=$(printf '%s\n' "$sorted" | tail -1)
-                
-                # Need at least two different files to have meaningful "most recent"
-                if [ -n "$recent" ] && [ -f "$markers_dir/$recent" ] \
-                    && [ "$recent" != "$oldest" ]; then
-                        last_marker=$recent
-                fi
+                numeric_markers=""
+                alpha_markers=""
+                for marker in "$markers_dir"/*; do
+                        [ -f "$marker" ] || continue
+                        name=$(basename "$marker")
+                        # Skip hidden files
+                        case "$name" in
+                                .*) continue ;;
+                        esac
+                        # Separate numeric and non-numeric markers
+                        case "$name" in
+                                *[!0-9]*)
+                                        alpha_markers="$alpha_markers $name"
+                                        ;;
+                                *)
+                                        numeric_markers="$numeric_markers $name"
+                                        ;;
+                        esac
+                done
+                # Sort and output: numbers first (numerically), then names (alphabetically)
+                for n in $(printf '%s\n' $numeric_markers | sort -n); do
+                        all_markers="$all_markers $n"
+                done
+                for n in $(printf '%s\n' $alpha_markers | sort); do
+                        all_markers="$all_markers $n"
+                done
         fi
         
-        # Get next marker in sequence for cycling
-        if [ -n "$last_marker" ]; then
-                # Get all available marker names, sorted
-                all_markers=""
+        # If we have markers, cycle through them
+        if [ -n "$all_markers" ]; then
+                # Find the most recently used marker (by mtime)
+                last_marker=""
                 if [ -d "$markers_dir" ]; then
-                        numeric_markers=""
-                        alpha_markers=""
-                        for marker in "$markers_dir"/*; do
-                                [ -f "$marker" ] || continue
-                                name=$(basename "$marker")
-                                # Skip hidden files
-                                case "$name" in
-                                        .*) continue ;;
-                                esac
-                                # Separate numeric and non-numeric markers
-                                case "$name" in
-                                        *[!0-9]*)
-                                                alpha_markers="$alpha_markers $name"
-                                                ;;
-                                        *)
-                                                numeric_markers="$numeric_markers $name"
-                                                ;;
-                                esac
-                        done
-                        # Sort and output: numbers first (numerically), then names (alphabetically)
-                        for n in $(printf '%s\n' $numeric_markers | sort -n); do
-                                all_markers="$all_markers $n"
-                        done
-                        for n in $(printf '%s\n' $alpha_markers | sort); do
-                                all_markers="$all_markers $n"
-                        done
+                        sorted=$(ls -t "$markers_dir" 2>/dev/null || true)
+                        recent=$(printf '%s\n' "$sorted" | head -1)
+                        if [ -n "$recent" ] && [ -f "$markers_dir/$recent" ]; then
+                                last_marker=$recent
+                        fi
                 fi
                 
-                found=0
-                first=""
-                for m in $all_markers; do
-                        if [ -z "$first" ]; then
-                                first=$m
+                # Get next marker in sequence
+                if [ -n "$last_marker" ]; then
+                        found=0
+                        first=""
+                        for m in $all_markers; do
+                                if [ -z "$first" ]; then
+                                        first=$m
+                                fi
+                                if [ "$found" -eq 1 ]; then
+                                        marker_name=$m
+                                        break
+                                fi
+                                if [ "$m" = "$last_marker" ]; then
+                                        found=1
+                                fi
+                        done
+                        # Wrap around to first marker if at end
+                        if [ "$found" -eq 1 ] && [ -z "$marker_name" ]; then
+                                marker_name=$first
                         fi
-                        if [ "$found" -eq 1 ]; then
+                else
+                        # No last marker (new session or first use), use first available
+                        for m in $all_markers; do
                                 marker_name=$m
                                 break
-                        fi
-                        if [ "$m" = "$last_marker" ]; then
-                                found=1
-                        fi
-                done
-                # Wrap around to first marker if at end
-                if [ "$found" -eq 1 ] && [ -z "$marker_name" ]; then
-                        marker_name=$first
+                        done
                 fi
-        else
-                marker_name="1"
         fi
+        # If still empty after cycling, leave it empty to trigger proper error below
 fi
 
 marker_file="$markers_dir/$marker_name"
@@ -113,7 +136,13 @@ marker_file="$markers_dir/$marker_name"
 # Check for markers directory
 if [ ! -d "$markers_dir" ]; then
         printf '%s\n' "No markers have been set. Use 'mark-location' to mark a location first."
-        return 1 2>/dev/null || exit 1
+        set +eu; return 1
+fi
+
+# Check if marker_name is empty (cycling failed to find markers)
+if [ -z "$marker_name" ]; then
+        printf '%s\n' "No markers available to cycle through. Use 'mark-location' to mark a location first." >&2
+        set +eu; return 1
 fi
 
 # Check for specific marker file
@@ -156,32 +185,33 @@ if [ ! -f "$marker_file" ]; then
                         printf '\n'
                 fi
         fi
-        return 1 2>/dev/null || exit 1
+        set +eu; return 1
 fi
 
 destination=$(cat "$marker_file")
 if [ -z "$destination" ]; then
         printf '%s\n' "The rune '$marker_name' is blank; the marked location has faded away."
-        return 1 2>/dev/null || exit 1
+        set +eu; return 1
 fi
 if [ ! -d "$destination" ]; then
         printf '%s\n' "The ley-line remembers '$destination' for marker '$marker_name', but it no longer exists."
-        return 1 2>/dev/null || exit 1
+        set +eu; return 1
 fi
 
-# Normalize paths to handle macOS double slashes
+# Normalize paths to handle macOS double slashes and symlinks
 current=$(pwd -P | sed 's|//|/|g')
-normalized_destination=$(printf '%s' "$destination" | sed 's|//|/|g')
+# Resolve destination path to real path (handles symlinks)
+normalized_destination=$(cd "$destination" && pwd -P | sed 's|//|/|g')
 if [ "$current" = "$normalized_destination" ]; then
         printf '%s\n' "You are already standing at marker '$marker_name'."
         # Touch marker to update mtime for cycling
         touch "$marker_file"
-        return 0 2>/dev/null || exit 0
+        set +eu; return 0
 fi
 
 if ! cd "$destination"; then
         printf '%s\n' "The portal refuses to stabilize; try marking again." >&2
-        return 1 2>/dev/null || exit 1
+        set +eu; return 1
 fi
 
 # Pick a random arrival message
@@ -241,3 +271,6 @@ touch "$marker_file"
 if command -v look >/dev/null 2>&1; then
         look 2>/dev/null || true
 fi
+
+# Restore shell options before returning
+set +eu

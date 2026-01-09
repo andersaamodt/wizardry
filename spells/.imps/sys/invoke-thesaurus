@@ -4,7 +4,8 @@
 # Also initializes default synonyms if not already set up.
 
 # This script must be sourced, not executed
-# Guard against direct execution (inline check instead of calling uncastable)
+
+# Uncastable pattern - ensures spell is sourced, not executed
 _it_sourced=0
 if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
   case "${ZSH_EVAL_CONTEXT-}" in
@@ -20,9 +21,8 @@ else
 fi
 
 if [ "$_it_sourced" -eq 0 ]; then
-  printf '%s\n' "invoke-thesaurus: must be sourced, not executed" >&2
-  printf '%s\n' "Usage: . invoke-thesaurus" >&2
-  exit 1
+  printf '%s\n' "This spell cannot be cast directly. Invoke it with: . invoke-thesaurus" >&2
+  return 1 2>/dev/null || exit 1
 fi
 unset _it_sourced _it_base
 
@@ -82,6 +82,7 @@ find-file file-list
 goto jump-to-marker
 home jump-to-marker
 jump jump-to-marker
+jump-to-location jump-to-marker
 list-files file-list
 ls-magic identify-room
 mark mark-location

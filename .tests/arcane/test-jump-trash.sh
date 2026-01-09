@@ -134,4 +134,36 @@ run_test_case "jump-trash uses inline fallback without detect-trash" test_uses_i
 run_test_case "jump-trash fails if trash dir missing" test_fails_if_trash_dir_missing
 run_test_case "jump_trash function shows help" test_jump_trash_function_help
 
+# Tests for gloss invocations
+test_gloss_jump_trash() {
+  skip-if-compiled || return $?
+  stub=$(make_tempdir)
+  trash_dir="$stub/Trash"
+  mkdir -p "$trash_dir"
+
+  # Create detect-trash stub that returns our test trash dir
+  cat >"$stub/detect-trash" <<STUB
+#!/bin/sh
+printf '%s\n' "$trash_dir"
+STUB
+  chmod +x "$stub/detect-trash"
+
+  # Test 'jump trash' via first-word gloss
+  trash_resolved=$(cd "$trash_dir" && pwd -P | sed 's|//|/|g')
+  run_cmd sh -c "
+    export WIZARDRY_DIR='$ROOT_DIR'
+    export PATH='$stub:$WIZARDRY_IMPS_PATH:/bin:/usr/bin'
+    # Generate glosses and source them
+    eval \"\$(PATH='$stub:$WIZARDRY_IMPS_PATH:/bin:/usr/bin' '$ROOT_DIR/spells/.wizardry/generate-glosses' --quiet)\"
+    # Now call the gloss function
+    jump trash
+    result=\$?
+    new_dir=\$(pwd -P | sed 's|//|/|g')
+    [ \"\$result\" -eq 0 ] && [ \"\$new_dir\" = '$trash_resolved' ]
+  "
+  assert_success
+}
+
+run_test_case "jump trash via gloss" test_gloss_jump_trash
+
 finish_tests

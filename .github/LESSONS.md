@@ -28,7 +28,13 @@
 - Spells are now flat, linear scripts without function wrappers; the castable/uncastable pattern and dual-pattern testing (source-then-invoke) have been deprecated.
 - Imps executed as scripts (via PATH) must use `exit` not `return`; bash (Arch's /bin/sh) errors on top-level `return`, while dash (Ubuntu's /bin/sh) silently allows it.
 - Shell builtins like `disable` (bash builtin for disabling commands/functions) must be blacklisted in generate-glosses to prevent creating first-word glosses that conflict.
+- Always establish realistic unit tests for every feature BEFORE writing or fixing code; tests are the fastest path to working code and catch edge cases immediately (TDD).
+- Aliases for hyphenated sourced-only spells must expand to space-separated form (jump to marker) not hyphenated (jump-to-marker) to route through first-word glosses.
+- Parse must skip both functions AND aliases when trying system commands as fallback; aliases cause wrong behavior (expansion before exec).
+- First-word glosses must check BOTH real spell files AND synonym files when looking for uncastable spells to source.
+- Shell builtin `read` CANNOT be overridden as it breaks while loops; must be blacklisted in generate-glosses even though read-magic exists.
 - Spells executed directly (not sourced) must use `exit` not `return` for flow control; `return` outside a function causes "not within a function" errors.
+- In sourced-only spells (with uncastable pattern), use plain `return` for error exits AFTER the uncastable guard, not `return 1 2>/dev/null || exit 1`; the `exit` part closes the user's terminal when the spell is sourced.
 - Use shell parameter expansion ${file##*/} instead of basename for 100x speedup when processing many files (e.g., generate-glosses with 396 files).
 - Variable `$_i` (imps directory shorthand) is not preserved by env-clear; use `${WIZARDRY_DIR}/spells/.imps` instead when referencing imp paths after sourcing env-clear.
 
@@ -48,6 +54,7 @@
 - invoke-wizardry must auto-detect its location using shell-specific variables (BASH_SOURCE[0], ${(%):-%x}) instead of hardcoding $HOME/.wizardry (PR #601).
 - RC file manipulation should use inline markers (. "/path" # wizardry: marker-name) instead of separate comment lines for consistent editing (PR #602).
 - Menu exit handlers must validate parent PID exists before sending kill signals to prevent terminating unintended processes (PR #606).
+- Always establish realistic unit tests for every feature BEFORE writing or fixing code; tests are the fastest path to working code and catch edge cases immediately.
 - Default prompts for optional features should match expected common usage patterns (e.g., MUD defaults to "yes" for installation) (PR #607).
 - Failed subtests must cause their parent test to fail; testing system integrity requires meta-tests that validate the testing infrastructure itself (PR #609).
 - Compiled spells in doppelganger mode are standalone without invoke-wizardry/env-clear; tests must skip infrastructure-dependent checks in compiled mode (PR #610).
@@ -70,3 +77,6 @@
 - AWK regex patterns in shell strings require double backslashes (\\) not quadruple (\\\\) for proper pattern escaping in extraction operations (PR #670).
 - Bootstrap spells in `.arcana/core` run before wizardry installation and must not depend on wizardry imps (castable, require-wizardry, env-clear) (PR #672).
 - Multi-cd shell patterns for path calculation (`cd dir1 && cd dir2`) create 2-3 extra process forks per execution; use parameter expansion ${var%/*} for significant performance improvement (PR #674).
+- Always create realistic unit tests for every feature BEFORE writing or fixing code; tests are the fastest path to working code and catch edge cases immediately (TDD principle).
+- Hyphenated spell names with uncastable pattern must have aliases generated (not just hyphenated synonyms) to prevent terminal crashes when typed directly by users.
+- In sourced-only spells with `set -eu`, always do `set +eu` before every `return` statement to prevent shell options from leaking into the parent shell, which can cause unexpected behavior or terminal exits.

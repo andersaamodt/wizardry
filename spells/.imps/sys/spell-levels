@@ -25,7 +25,7 @@ case "$level" in
   2)
     name='Installation Infrastructure'
     spells=''
-    imps='declare-globals fs/cleanup-dir fs/cleanup-file fs/temp-dir fs/temp-file input/read-line input/tty-raw input/tty-restore input/tty-save paths/abs-path paths/file-name paths/here paths/make paths/norm-path paths/parent paths/path paths/script-dir paths/strip-trailing-slashes paths/temp paths/tilde-path str/contains str/differs str/ends str/equals str/lower str/matches str/seeks str/starts str/trim str/upper sys/any sys/ask-install-wizardry sys/autocast sys/clear-traps sys/clipboard-available sys/env-clear sys/env-or sys/invoke-thesaurus sys/invoke-wizardry sys/must sys/need sys/nix-rebuild sys/nix-shell-add sys/nix-shell-remove sys/nix-shell-status sys/now sys/on sys/on-exit sys/require sys/require-wizardry sys/uncastable sys/where'
+    imps='declare-globals fs/cleanup-dir fs/cleanup-file fs/temp-dir fs/temp-file input/read-line input/tty-raw input/tty-restore input/tty-save paths/abs-path paths/file-name paths/here paths/make paths/norm-path paths/parent paths/path paths/script-dir paths/strip-trailing-slashes paths/temp paths/tilde-path str/contains str/differs str/ends str/equals str/lower str/matches str/seeks str/starts str/trim str/upper sys/any sys/ask-install-wizardry sys/clear-traps sys/clipboard-available sys/env-clear sys/env-or sys/invoke-thesaurus sys/invoke-wizardry sys/must sys/need sys/nix-rebuild sys/nix-shell-add sys/nix-shell-remove sys/nix-shell-status sys/now sys/on sys/on-exit sys/require sys/require-wizardry sys/where'
     ;;
   3)
     name='Glossary & Parsing'

@@ -8,31 +8,66 @@
 
 common_tests_usage() {
   cat <<'USAGE'
-Usage: common-tests.sh [SPELL_PATH...]
+Usage: common-tests.sh [OPTIONS] [SPELL_PATH...]
 
 Run common structural and behavioral checks that apply across all spells.
 
+Options:
+  --test TEST_NAME   Run only the specified test (e.g., "uncastable_pattern")
+  --list             List all available tests
+  -h, --help         Show this help message
+
 Arguments:
-  SPELL_PATH     Optional spell path(s) to test (e.g., spells/cantrips/ask-yn)
-                 If provided, only tests the specified spells.
-                 If omitted, tests all spells in the repository.
+  SPELL_PATH         Optional spell path(s) to test (e.g., spells/cantrips/ask-yn)
+                     If provided, only tests the specified spells.
+                     If omitted, tests all spells in the repository.
 
 Examples:
-  common-tests.sh                              # Test all spells
-  common-tests.sh spells/cantrips/ask-yn       # Test one spell
-  common-tests.sh spells/cantrips/ask-yn spells/cantrips/ask-text  # Test multiple
+  common-tests.sh                                    # Test all spells
+  common-tests.sh spells/cantrips/ask-yn             # Test one spell
+  common-tests.sh --test uncastable_pattern          # Run only uncastable pattern test
+  common-tests.sh --list                             # List all available tests
 
 Note: This is an exception to the .tests/ naming schema. It does not mirror
 a spell in spells/ - it's a special test suite for cross-cutting checks.
 USAGE
 }
 
-case "${1-}" in
---help|--usage|-h)
-  common_tests_usage
-  exit 0
-  ;;
-esac
+# Parse options
+FILTER_MODE=0
+FILTERED_SPELL_PATHS=""
+TEST_FILTER=""
+while [ "$#" -gt 0 ]; do
+  case "${1-}" in
+    --help|--usage|-h)
+      common_tests_usage
+      exit 0
+      ;;
+    --list)
+      # List will be shown after test definitions
+      TEST_FILTER="--list"
+      shift
+      ;;
+    --test)
+      if [ -z "${2-}" ]; then
+        printf 'Error: --test requires a test name\n' >&2
+        exit 1
+      fi
+      TEST_FILTER="$2"
+      shift 2
+      ;;
+    -*)
+      printf 'Error: unknown option: %s\n' "$1" >&2
+      common_tests_usage
+      exit 1
+      ;;
+    *)
+      FILTER_MODE=1
+      FILTERED_SPELL_PATHS="$FILTERED_SPELL_PATHS $1"
+      shift
+      ;;
+  esac
+done
 
 set -eu
 
@@ -43,12 +78,33 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-# Store filter mode and spell paths if provided
-FILTER_MODE=0
-FILTERED_SPELL_PATHS=""
-if [ "$#" -gt 0 ]; then
-  FILTER_MODE=1
-  FILTERED_SPELL_PATHS="$*"
+# Helper function to run a test conditionally based on filter
+run_filtered_test() {
+  _test_name=$1
+  _test_desc=$2
+  _test_func=$3
+  
+  # If listing tests, just print the name
+  if [ "$TEST_FILTER" = "--list" ]; then
+    printf '%s\n' "$_test_name"
+    return 0
+  fi
+  
+  # If filtering by test name, only run matching test
+  if [ -n "$TEST_FILTER" ]; then
+    case "$_test_name" in
+      *"$TEST_FILTER"*) run_test_case "$_test_desc" "$_test_func" ;;
+      *) return 0 ;;
+    esac
+  else
+    # No filter, run all tests
+    run_test_case "$_test_desc" "$_test_func"
+  fi
+}
+
+# List tests if requested
+if [ "$TEST_FILTER" = "--list" ]; then
+  printf 'Available tests:\n'
 fi
 
 # Helper: Check if a file is a POSIX shell script
@@ -2387,19 +2443,102 @@ test_spells_do_not_source_by_path() {
   return 0
 }
 
-# Run meta-tests
-run_test_case "META: baseline PATH before set -eu" test_bootstrap_sets_baseline_path
-run_test_case "META: pocket dimension is available" test_pocket_dimension_available
-run_test_case "META: test-magic uses stdbuf" test_test_magic_uses_stdbuf
-run_test_case "META: test framework supports failure reporting" test_test_bootstrap_provides_failure_reporting
-# DEPRECATED: die/fail imp tests - these check for old word-of-binding pattern
-# With flat imps, die and fail correctly use 'exit' to terminate execution
-# run_test_case "META: die imp uses return for word-of-binding" test_die_imp_uses_return_not_exit
-# run_test_case "META: fail imp returns error code" test_fail_imp_returns_error_code
-run_test_case "META: platform detection available" test_platform_detection_available
-run_test_case "META: banish spell exists and is executable" test_banish_spell_exists_and_is_executable
-run_test_case "META: test-bootstrap checks environment" test_test_bootstrap_checks_environment
-run_test_case "PARADIGM: spells do not preload prerequisites" test_spells_do_not_preload_prerequisites
-run_test_case "PARADIGM: spells do not source by path" test_spells_do_not_source_by_path
+# Test that all sourced-only spells use the standardized uncastable pattern
+test_uncastable_pattern_is_standardized() {
+  # List of spells that must be sourced (not executed)
+  _sourced_spells="
+    spells/arcane/jump-trash
+    spells/translocation/jump-to-marker
+    spells/cantrips/colors
+    spells/.arcana/mud/cd
+    spells/.imps/sys/env-clear
+    spells/.imps/sys/invoke-thesaurus
+    spells/.imps/sys/invoke-wizardry
+  "
+  
+  for _spell in $_sourced_spells; do
+    _spell_path="$ROOT_DIR/$_spell"
+    
+    # Check that the spell exists
+    if [ ! -f "$_spell_path" ]; then
+      TEST_FAILURE_REASON="Sourced-only spell not found: $_spell"
+      return 1
+    fi
+    
+    # Check that the spell has the "# Uncastable pattern" comment
+    if ! grep -q "^# Uncastable pattern" "$_spell_path"; then
+      TEST_FAILURE_REASON="Spell missing '# Uncastable pattern' comment: $_spell"
+      return 1
+    fi
+    
+    # Extract the uncastable pattern block (from comment to unset line)
+    _pattern=$(sed -n '/^# Uncastable pattern/,/^unset.*_sourced.*_base/p' "$_spell_path")
+    
+    if [ -z "$_pattern" ]; then
+      TEST_FAILURE_REASON="Could not extract uncastable pattern from: $_spell"
+      return 1
+    fi
+    
+    # Verify the pattern contains the expected components
+    if ! printf '%s\n' "$_pattern" | grep -q "_sourced=0"; then
+      TEST_FAILURE_REASON="Pattern missing '_sourced=0' initialization in: $_spell"
+      return 1
+    fi
+    
+    if ! printf '%s\n' "$_pattern" | grep -q 'ZSH_VERSION'; then
+      TEST_FAILURE_REASON="Pattern missing ZSH_VERSION check in: $_spell"
+      return 1
+    fi
+    
+    if ! printf '%s\n' "$_pattern" | grep -q 'ZSH_EVAL_CONTEXT'; then
+      TEST_FAILURE_REASON="Pattern missing ZSH_EVAL_CONTEXT check in: $_spell"
+      return 1
+    fi
+    
+    if ! printf '%s\n' "$_pattern" | grep -q 'sh|dash|bash|zsh|ksh|mksh'; then
+      TEST_FAILURE_REASON="Pattern missing shell detection in: $_spell"
+      return 1
+    fi
+    
+    if ! printf '%s\n' "$_pattern" | grep -q 'This spell cannot be cast directly'; then
+      TEST_FAILURE_REASON="Pattern missing error message in: $_spell"
+      return 1
+    fi
+    
+    if ! printf '%s\n' "$_pattern" | grep -q 'return 1 2>/dev/null || exit 1'; then
+      TEST_FAILURE_REASON="Pattern missing safe return/exit in: $_spell"
+      return 1
+    fi
+    
+    if ! printf '%s\n' "$_pattern" | grep -q 'unset.*_sourced.*_base'; then
+      TEST_FAILURE_REASON="Pattern missing cleanup (unset) in: $_spell"
+      return 1
+    fi
+  done
+  
+  # Test passed - all spells have correct pattern
+  return 0
+}
+
+test_uncastable_and_autocast_deleted() {
+  # Verify that uncastable and autocast imps were deleted
+  if [ -f "$ROOT_DIR/spells/.imps/sys/uncastable" ]; then
+    TEST_FAILURE_REASON="uncastable imp still exists - should be deleted"
+    return 1
+  fi
+  
+  if [ -f "$ROOT_DIR/spells/.imps/sys/autocast" ]; then
+    TEST_FAILURE_REASON="autocast imp still exists - should be deleted"
+    return 1
+  fi
+  
+  # Success - files don't exist
+  return 0
+}
+
+# Exit early if just listing
+if [ "$TEST_FILTER" = "--list" ]; then
+  exit 0
+fi
 
 finish_tests

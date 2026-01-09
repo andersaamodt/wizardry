@@ -43,6 +43,29 @@ ${var%%pattern}        # Remove longest match from end
 ${#var}                # String length
 ```
 
+### Aliases and Sourced Scripts
+
+**CRITICAL PATTERN:** Aliases that invoke sourced-only scripts must use space-separated form to route through first-word glosses.
+
+```sh
+# WRONG: Alias directly invokes hyphenated spell (gets executed, not sourced)
+alias jump-to-location='jump-to-marker'  # Executes jump-to-marker → uncastable error
+
+# RIGHT: Alias uses space-separated form to route through first-word gloss
+alias jump-to-location='jump to marker'  # → jump() gloss → sources jump-to-marker ✓
+```
+
+**Why:** When an alias expands to a hyphenated name (`jump-to-marker`), the shell executes that spell file directly. If the spell has `# Uncastable pattern`, it will error. But if the alias uses spaces (`jump to marker`), it invokes the `jump()` first-word gloss, which detects the uncastable pattern and sources the spell correctly.
+
+**Implementation:** In generate-glosses, convert hyphens to spaces for hyphenated synonym targets:
+```sh
+case "$_target" in
+  *-*) _alias_target=$(printf '%s' "$_target" | sed 's/-/ /g') ;;
+  *)   _alias_target="$_target" ;;
+esac
+emit_line "alias $_word='$_alias_target'"
+```
+
 ### Function Naming and Hyphens
 
 **CRITICAL:** POSIX sh doesn't support hyphens in function names.
@@ -476,6 +499,32 @@ case "$0" in */imp-name) _imp_name "$@" ;; esac
 | `which cmd` | `command -v cmd` | which not in POSIX |
 
 **Testing:** Check with `checkbashisms`, test in `/bin/sh`, dash, bash.
+
+## Aliases for Sourced-Only Spells
+
+**Critical Rule**: ALL hyphenated spells with uncastable pattern MUST have aliases that expand to space-separated form.
+
+**Why**: When a user types `jump-to-marker` directly as a command, without an alias it would execute the spell file. Spells with uncastable pattern must be sourced (not executed) to change directories. Direct execution triggers the uncastable guard which does `exit 1`, closing the user's interactive terminal.
+
+**Solution**: Generate aliases for every hyphenated spell with uncastable pattern:
+
+```sh
+# In generate-glosses, check each spell for uncastable pattern
+if grep -q "^# Uncastable pattern" "$spell_path"; then
+  # Generate alias: hyphenated → space-separated
+  alias jump-to-marker='jump to marker'
+  alias jump-trash='jump trash'
+fi
+```
+
+**How it works**:
+1. User types: `jump-to-marker`
+2. Alias expands to: `jump to marker`
+3. First-word gloss `jump()` is invoked
+4. Gloss detects uncastable pattern and sources spell
+5. Directory changes correctly ✓
+
+Without alias: `jump-to-marker` executes → uncastable guard → `exit 1` → terminal closes ✗
 
 ## References
 
