@@ -68,12 +68,11 @@ test_loads_default_synonyms() {
   cat > "$tmpdir/test-defaults.sh" << EOF
 #!/bin/sh
 SPELLBOOK_DIR="$spellbook"
-WIZARDRY_DIR="$ROOT_DIR"
-export SPELLBOOK_DIR WIZARDRY_DIR
+export SPELLBOOK_DIR
 . "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus" >/dev/null 2>&1 || true
-# Check that default synonyms file has key-value pairs (not alias code)
-grep -q "^detect-os detect-distro" "$spellbook/.default-synonyms" || exit 1
-grep -q "^home jump-to-marker" "$spellbook/.default-synonyms" || exit 1
+# Check that default synonyms file has content in word=target format
+grep -q "^detect-os=detect-distro" "$spellbook/.default-synonyms" || exit 1
+grep -q "^home=jump-to-marker" "$spellbook/.default-synonyms" || exit 1
 printf 'defaults loaded\n'
 EOF
   chmod +x "$tmpdir/test-defaults.sh"
@@ -106,7 +105,7 @@ EOF
   fi
 }
 
-# Test: invoke-thesaurus creates jump synonym as key-value pair
+# Test: invoke-thesaurus creates jump synonym in word=target format
 test_creates_jump_synonym() {
   tmpdir=$(make_tempdir)
   spellbook="$tmpdir/.spellbook"
@@ -115,11 +114,10 @@ test_creates_jump_synonym() {
   cat > "$tmpdir/test-jump.sh" << EOF
 #!/bin/sh
 SPELLBOOK_DIR="$spellbook"
-WIZARDRY_DIR="$ROOT_DIR"
-export SPELLBOOK_DIR WIZARDRY_DIR
+export SPELLBOOK_DIR
 . "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus" >/dev/null 2>&1 || true
-# Check that jump synonym exists as key-value pair (not function code)
-grep -q "^jump jump-to-marker" "$spellbook/.default-synonyms" || exit 1
+# Check that jump synonym exists in word=target format
+grep -q "^jump=jump-to-marker" "$spellbook/.default-synonyms" || exit 1
 printf 'jump synonym exists\n'
 EOF
   chmod +x "$tmpdir/test-jump.sh"
@@ -138,11 +136,10 @@ test_creates_mark_synonym() {
   cat > "$tmpdir/test-mark.sh" << EOF
 #!/bin/sh
 SPELLBOOK_DIR="$spellbook"
-WIZARDRY_DIR="$ROOT_DIR"
-export SPELLBOOK_DIR WIZARDRY_DIR
+export SPELLBOOK_DIR
 . "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus" >/dev/null 2>&1 || true
-# Check that mark synonym exists as key-value pair
-grep -q "^mark mark-location" "$spellbook/.default-synonyms" || exit 1
+# Check that mark synonym exists in word=target format
+grep -q "^mark=mark-location" "$spellbook/.default-synonyms" || exit 1
 printf 'mark synonym exists\n'
 EOF
   chmod +x "$tmpdir/test-mark.sh"

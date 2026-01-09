@@ -8,7 +8,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: . jump-to-marker [marker]
 
-Teleport to a marker set with mark-location. Defaults to marker "1". Use "next" to cycle through all saved locations.
+Teleport to a marker set with mark-location. Defaults to marker "1", marker "0" cycles through all saved locations.
 Note: This spell must be sourced (use '. jump-to-marker') to affect your current shell.
 USAGE
   exit 0
@@ -32,10 +32,10 @@ set -eu
 _jm_spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
 markers_dir=${JUMP_TO_MARKERS_DIR:-$_jm_spell_home/.markers}
 
-marker_name="${1:-1}"
+marker_name="${1:-}"
 
-# If marker is "next", cycle through markers
-if [ "$marker_name" = "next" ]; then
+# If no marker specified OR marker is "0", cycle through markers
+if [ -z "$marker_name" ] || [ "$marker_name" = "0" ]; then
         # Clear marker_name so cycling logic can set it fresh
         marker_name=""
         # Find the most recently used marker (by mtime) and get the next one
@@ -103,10 +103,7 @@ if [ "$marker_name" = "next" ]; then
                 if [ "$found" -eq 1 ] && [ -z "$marker_name" ]; then
                         marker_name=$first
                 fi
-        fi
-        
-        # If cycling didn't find a marker, default to "1"
-        if [ -z "$marker_name" ]; then
+        else
                 marker_name="1"
         fi
 fi
@@ -172,31 +169,16 @@ if [ ! -d "$destination" ]; then
         return 1 2>/dev/null || exit 1
 fi
 
-# Normalize paths to handle macOS double slashes and resolve via cd + pwd -P  
+# Normalize paths to handle macOS double slashes
 current=$(pwd -P | sed 's|//|/|g')
-# Resolve destination the same way to ensure consistent comparison
-normalized_destination=$(cd "$destination" && pwd -P | sed 's|//|/|g')
-
-# Also try comparing the actual physical paths to handle any edge cases
-current_inode=$(ls -id . 2>/dev/null | awk '{print $1}' || printf '')
-dest_inode=$(ls -id "$destination" 2>/dev/null | awk '{print $1}' || printf '')
-
-if [ "$current" = "$normalized_destination" ] || [ -n "$current_inode" ] && [ -n "$dest_inode" ] && [ "$current_inode" = "$dest_inode" ]; then
-        # Format marker name: no quotes for numbers, quotes for text
-        case "$marker_name" in
-                *[!0-9]*)
-                        printf '%s\n' "You are already standing at marker '$marker_name'."
-                        ;;
-                *)
-                        printf '%s\n' "You are already standing at marker $marker_name."
-                        ;;
-        esac
+normalized_destination=$(printf '%s' "$destination" | sed 's|//|/|g')
+if [ "$current" = "$normalized_destination" ]; then
+        printf '%s\n' "You are already standing at marker '$marker_name'."
         # Touch marker to update mtime for cycling
         touch "$marker_file"
         return 0 2>/dev/null || exit 0
 fi
 
-# Change to destination directory first (before showing arrival message)
 if ! cd "$destination"; then
         printf '%s\n' "The portal refuses to stabilize; try marking again." >&2
         return 1 2>/dev/null || exit 1

@@ -58,20 +58,13 @@ else
 fi
 
 if [ "$_uncast_sourced" -eq 1 ]; then
-  # Clear the message variable if it was set
-  unset UNCASTABLE_MESSAGE
   return 0
 else
-  if [ -n "${UNCASTABLE_MESSAGE-}" ]; then
-    printf '%s\n' "$UNCASTABLE_MESSAGE" >&2
-    unset UNCASTABLE_MESSAGE
-  else
-    printf '%s\n' "${_uncast_name}: must be sourced, not executed" >&2
-    if [ "$#" -gt 0 ]; then
-      printf '%s\n' "$*" >&2
-    elif [ -n "$_uncast_name" ]; then
-      printf '%s\n' "Usage: . $_uncast_name" >&2
-    fi
+  printf '%s\n' "${_uncast_name}: must be sourced, not executed" >&2
+  if [ "$#" -gt 0 ]; then
+    printf '%s\n' "$*" >&2
+  elif [ -n "$_uncast_name" ]; then
+    printf '%s\n' "Usage: . $_uncast_name" >&2
   fi
-  return 1
+  exit 1
 fi

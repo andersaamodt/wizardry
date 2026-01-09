@@ -64,6 +64,7 @@ if [ ! -f "$_it_default_initialized" ]; then
   mkdir -p "$_it_spellbook_dir" 2>/dev/null || true
   cat > "$_it_default_file" << 'HEADER'
 # Wizardry Default Synonyms
+# Format: word=target
 # These are built-in synonyms that can be reset with reset-default-synonyms.
 # To override a default, add your custom version to .synonyms instead.
 
@@ -144,9 +145,8 @@ where-is which"
   printf '%s\n' "$_it_defaults" | while IFS=' ' read -r _word _spell; do
     [ -n "$_word" ] && [ -n "$_spell" ] || continue
     
-    # Write as simple key-value pair (synonym files should be inert)
-    # generate-glosses will convert these to appropriate aliases/functions
-    printf "%s %s\n" "$_word" "$_spell" >> "$_it_default_file"
+    # Write in equals format: word=target
+    printf "%s=%s\n" "$_word" "$_spell" >> "$_it_default_file"
   done
   
   touch "$_it_default_initialized" 2>/dev/null || true
@@ -191,35 +191,30 @@ if [ -f "$_it_custom_enabled_file" ]; then
   esac
 fi
 
-# Source both files to load all aliases
-# Default synonyms first, then custom (so custom can override)
+# Load synonyms via generate-glosses
+# Synonyms are now in simple word=target format in the files
+# generate-glosses creates functions/aliases and we eval them
 _it_count=0
 
-if [ "$_it_default_enabled" -eq 1 ] && [ -f "$_it_default_file" ]; then
-  # shellcheck disable=SC1090
-  . "$_it_default_file" 2>/dev/null || true
-  _it_default_count=$(grep "^alias " "$_it_default_file" 2>/dev/null | wc -l || printf '0')
-  # Ensure it's a valid number
-  case "$_it_default_count" in
-    ''|*[!0-9]*) _it_default_count=0 ;;
-  esac
-  _it_count=$((_it_count + _it_default_count))
-fi
-
-if [ "$_it_custom_enabled" -eq 1 ] && [ -f "$_it_custom_file" ]; then
-  # shellcheck disable=SC1090
-  . "$_it_custom_file" 2>/dev/null || true
-  _it_custom_count=$(grep "^alias " "$_it_custom_file" 2>/dev/null | wc -l || printf '0')
-  # Ensure it's a valid number
-  case "$_it_custom_count" in
-    ''|*[!0-9]*) _it_custom_count=0 ;;
-  esac
-  _it_count=$((_it_count + _it_custom_count))
+if command -v generate-glosses >/dev/null 2>&1; then
+  # Generate glosses and eval them into current shell
+  if _it_gloss_output=$(generate-glosses --quiet 2>&1); then
+    if [ -n "$_it_gloss_output" ]; then
+      eval "$_it_gloss_output"
+      
+      # Count synonyms (approximate - count functions and aliases in output)
+      _it_count=$(printf '%s' "$_it_gloss_output" | grep -c "^alias \|() {" || printf '0')
+    fi
+  else
+    printf '%s\n' "invoke-thesaurus: generate-glosses failed" >&2
+  fi
+else
+  printf '%s\n' "invoke-thesaurus: generate-glosses not found" >&2
 fi
 
 # Only print loading message if WIZARDRY_DEBUG is enabled
 if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-  printf '%s\n' "invoke-thesaurus: loaded $_it_count synonym(s)"
+  printf '%s\n' "invoke-thesaurus: loaded $_it_count function(s) and alias(es)"
 fi
 return 0
 
