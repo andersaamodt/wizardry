@@ -388,10 +388,497 @@ banish_process_level() {
         printf '  %s✗%s Package manager: none detected\n' "$_red" "$_reset"
         return 1
       fi
+
+      # Check shell type (POSIX-compatible shell required)
+      # Wizardry scripts assume POSIX sh semantics. Non-POSIX shells like
+      # csh, tcsh, and fish have incompatible syntax and semantics.
+      shell_type=${SHELL##*/}
+      shell_type=${shell_type:-sh}
+      case "$shell_type" in
+        sh|bash|dash|zsh|ksh|ash)
+          printf '  %s✓%s Shell type: %s (POSIX-compatible)\n' "$_green" "$_reset" "$shell_type"
+          ;;
+        csh|tcsh|fish)
+          printf '  %s✗%s Shell type: %s (not POSIX-compatible)\n' "$_red" "$_reset" "$shell_type"
+          printf '    Wizardry requires a POSIX-compatible shell (sh, bash, dash, zsh, ksh)\n'
+          return 1
+          ;;
+        *)
+          printf '  %s✓%s Shell type: %s (assuming POSIX-compatible)\n' "$_green" "$_reset" "$shell_type"
+          ;;
+      esac
+
+      # Check IFS (should be default: space, tab, newline)
+      # IFS controls word splitting. Non-default IFS breaks for-loops and
+      # word iteration. Self-heal by resetting to default.
+      default_ifs=" 	
+"
+      if [ "${IFS-unset}" = "unset" ] || [ "$IFS" = "$default_ifs" ]; then
+        printf '  %s✓%s IFS: Default (space, tab, newline)\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s IFS: Non-default value detected\n' "$_red" "$_reset"
+        if [ "$skip_heal" -eq 0 ]; then
+          IFS="$default_ifs"
+          export IFS
+          printf '    %s✓%s IFS reset to default\n' "$_green" "$_reset"
+        else
+          return 1
+        fi
+      fi
+
+      # Check basic environment variables
+      # HOME and USER are used throughout wizardry for default paths and
+      # configuration. Self-heal by querying system or using fallbacks.
+      env_vars_ok=1
+      if [ -z "${HOME-}" ]; then
+        printf '  %s✗%s Environment: HOME not set\n' "$_red" "$_reset"
+        env_vars_ok=0
+      fi
+      if [ -z "${USER-}" ] && [ -z "${LOGNAME-}" ]; then
+        printf '  %s✗%s Environment: USER/LOGNAME not set\n' "$_red" "$_reset"
+        env_vars_ok=0
+      fi
+      if [ "$env_vars_ok" -eq 1 ]; then
+        printf '  %s✓%s Environment: HOME and USER set\n' "$_green" "$_reset"
+      else
+        if [ "$skip_heal" -eq 0 ]; then
+          if [ -z "${HOME-}" ]; then
+            HOME=$(getent passwd "$USER" 2>/dev/null | cut -d: -f6) || HOME="/tmp"
+            export HOME
+            printf '    %s✓%s HOME set to %s\n' "$_green" "$_reset" "$HOME"
+          fi
+          if [ -z "${USER-}" ]; then
+            USER=$(id -un 2>/dev/null) || USER="unknown"
+            export USER
+            printf '    %s✓%s USER set to %s\n' "$_green" "$_reset" "$USER"
+          fi
+        else
+          return 1
+        fi
+      fi
+
+      # Check umask (should be reasonable, not 0000 or 0777)
+      # umask 0000 makes all files world-writable (security risk).
+      # umask 0777 makes all files unreadable (breaks everything).
+      # Self-heal to standard 0022 (owner write, group/others read).
+      current_umask=$(umask)
+      case "$current_umask" in
+        0000|0777)
+          printf '  %s✗%s umask: Unsafe value %s\n' "$_red" "$_reset" "$current_umask"
+          if [ "$skip_heal" -eq 0 ]; then
+            umask 0022
+            printf '    %s✓%s umask set to 0022\n' "$_green" "$_reset"
+          else
+            return 1
+          fi
+          ;;
+        *)
+          printf '  %s✓%s umask: %s\n' "$_green" "$_reset" "$current_umask"
+          ;;
+      esac
+
+      # Check file system write capability
+      # Many spells need to create temp files for processing.
+      # This validates we can write to the temp directory.
+      tmp_root=${TMPDIR:-/tmp}
+      tmp_check=$(mktemp "${tmp_root%/}/banish-write.XXXXXX" 2>/dev/null || printf '')
+      if [ -n "$tmp_check" ]; then
+        if printf '%s\n' "test" >"$tmp_check" 2>/dev/null && [ -s "$tmp_check" ]; then
+          rm -f "$tmp_check" 2>/dev/null || :
+          printf '  %s✓%s Filesystem write: %s writable\n' "$_green" "$_reset" "$tmp_root"
+        else
+          rm -f "$tmp_check" 2>/dev/null || :
+          printf '  %s✗%s Filesystem write: Cannot write to %s\n' "$_red" "$_reset" "$tmp_root"
+          return 1
+        fi
+      else
+        printf '  %s✗%s Filesystem write: Cannot create temp file in %s\n' "$_red" "$_reset" "$tmp_root"
+        return 1
+      fi
+
+      # Check symbolic link support
+      # Wizardry uses symlinks for glossary, test stubs, and spell links.
+      # Some filesystems (FAT32, some network mounts) don't support symlinks.
+      tmp_link_test=$(mktemp "${tmp_root%/}/banish-link.XXXXXX" 2>/dev/null || printf '')
+      if [ -n "$tmp_link_test" ]; then
+        tmp_link="${tmp_link_test}.link"
+        if ln -s "$tmp_link_test" "$tmp_link" 2>/dev/null; then
+          if [ -L "$tmp_link" ]; then
+            printf '  %s✓%s Symbolic links: Supported\n' "$_green" "$_reset"
+            rm -f "$tmp_link" "$tmp_link_test" 2>/dev/null || :
+          else
+            printf '  %s✗%s Symbolic links: Not working\n' "$_red" "$_reset"
+            rm -f "$tmp_link" "$tmp_link_test" 2>/dev/null || :
+            return 1
+          fi
+        else
+          printf '  %s✗%s Symbolic links: Creation failed\n' "$_red" "$_reset"
+          rm -f "$tmp_link_test" 2>/dev/null || :
+          return 1
+        fi
+      fi
+
+      # Check execute permissions
+      # Spells and imps must be executable. Some filesystems (noexec mounts)
+      # prevent execution even with +x permission.
+      tmp_exec_test=$(mktemp "${tmp_root%/}/banish-exec.XXXXXX" 2>/dev/null || printf '')
+      if [ -n "$tmp_exec_test" ]; then
+        printf '#!/bin/sh\nprintf "ok"\n' >"$tmp_exec_test"
+        chmod +x "$tmp_exec_test" 2>/dev/null || :
+        if [ -x "$tmp_exec_test" ]; then
+          exec_output=$("$tmp_exec_test" 2>/dev/null || printf '')
+          if [ "$exec_output" = "ok" ]; then
+            printf '  %s✓%s Execute permissions: Working\n' "$_green" "$_reset"
+          else
+            printf '  %s✗%s Execute permissions: Script execution failed\n' "$_red" "$_reset"
+            rm -f "$tmp_exec_test" 2>/dev/null || :
+            return 1
+          fi
+        else
+          printf '  %s✗%s Execute permissions: chmod +x failed\n' "$_red" "$_reset"
+          rm -f "$tmp_exec_test" 2>/dev/null || :
+          return 1
+        fi
+        rm -f "$tmp_exec_test" 2>/dev/null || :
+      fi
+
+      # Check subshells work
+      # Subshells (parentheses) create isolated environments for command
+      # substitution and temporary state changes. Critical for POSIX scripts.
+      subshell_test=$(test_var=outer; (test_var=inner; printf '%s' "$test_var") 2>/dev/null || printf '')
+      if [ "$subshell_test" = "inner" ]; then
+        printf '  %s✓%s Subshells: Working correctly\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Subshells: Not working correctly\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check pipes work
+      # Pipes connect command output to input. Fundamental to shell scripting.
+      # Verifies kernel supports anonymous pipes (should always work on POSIX systems).
+      pipe_test=$(printf 'hello' | cat 2>/dev/null || printf '')
+      if [ "$pipe_test" = "hello" ]; then
+        printf '  %s✓%s Pipes: Working\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Pipes: Not working\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check redirections work
+      # File redirection (>, <, >>) is essential for saving and loading data.
+      # Tests both output (>) and input (<) redirections.
+      tmp_redir_test=$(mktemp "${tmp_root%/}/banish-redir.XXXXXX" 2>/dev/null || printf '')
+      if [ -n "$tmp_redir_test" ]; then
+        if printf 'test' >"$tmp_redir_test" 2>/dev/null; then
+          redir_content=$(cat "$tmp_redir_test" 2>/dev/null || printf '')
+          if [ "$redir_content" = "test" ]; then
+            printf '  %s✓%s Redirections: Working\n' "$_green" "$_reset"
+          else
+            printf '  %s✗%s Redirections: Read failed\n' "$_red" "$_reset"
+            rm -f "$tmp_redir_test" 2>/dev/null || :
+            return 1
+          fi
+        else
+          printf '  %s✗%s Redirections: Write failed\n' "$_red" "$_reset"
+          rm -f "$tmp_redir_test" 2>/dev/null || :
+          return 1
+        fi
+        rm -f "$tmp_redir_test" 2>/dev/null || :
+      fi
+
+      # Check trap/signal handling
+      # trap is used for cleanup on exit (EXIT), interrupt (INT), and other signals.
+      # Critical for temp file cleanup and proper resource management.
+      if command -v trap >/dev/null 2>&1; then
+        trap_test=0
+        trap 'trap_test=1' USR1 2>/dev/null || trap_test=-1
+        if [ "$trap_test" -ne -1 ]; then
+          trap - USR1 2>/dev/null || :
+          printf '  %s✓%s Signal handling: trap command works\n' "$_green" "$_reset"
+        else
+          printf '  %s✗%s Signal handling: trap command failed\n' "$_red" "$_reset"
+          return 1
+        fi
+      else
+        printf '  %s✗%s Signal handling: trap command not found\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check command substitution works
+      # Command substitution $(...) captures command output as a value.
+      # Used extensively in wizardry for dynamic values and command results.
+      cmd_sub_test=$(printf 'substitution')
+      if [ "$cmd_sub_test" = "substitution" ]; then
+        printf '  %s✓%s Command substitution: Working\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Command substitution: Not working\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check parameter expansion
+      # POSIX parameter expansion ${var#pattern} removes patterns from strings.
+      # Critical for basename/dirname operations without subprocess overhead.
+      param_test="value"
+      param_result=${param_test#val}
+      if [ "$param_result" = "ue" ]; then
+        printf '  %s✓%s Parameter expansion: Working\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Parameter expansion: Pattern removal failed\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check case statement pattern matching
+      # Case statements with wildcards are fundamental to POSIX shell scripting
+      case_test="test_value"
+      case_works=0
+      case "$case_test" in
+        test_*) case_works=1 ;;
+        *) case_works=0 ;;
+      esac
+      if [ "$case_works" -eq 1 ]; then
+        printf '  %s✓%s Case pattern matching: Wildcard patterns work\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Case pattern matching: Wildcard patterns failed\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check arithmetic operations
+      # Shell arithmetic is used for counters, array indices, and calculations
+      arith_result=$(( 2 + 2 )) 2>/dev/null || arith_result=0
+      if [ "$arith_result" -eq 4 ]; then
+        printf '  %s✓%s Arithmetic: $(( )) expressions work\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Arithmetic: $(( )) expressions not working\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check test operators (file and string tests)
+      # Test operators are used extensively for conditional logic
+      tmp_root=${TMPDIR:-/tmp}
+      test_file=$(mktemp "${tmp_root%/}/banish-test.XXXXXX" 2>/dev/null || printf '')
+      if [ -n "$test_file" ]; then
+        test_ok=1
+        # Test file existence (-f)
+        if [ ! -f "$test_file" ]; then test_ok=0; fi
+        # Test string non-empty (-n) and empty (-z)
+        if [ ! -n "test" ] || [ ! -z "" ]; then test_ok=0; fi
+        # Test file readable (-r) and writable (-w)
+        if [ ! -r "$test_file" ] || [ ! -w "$test_file" ]; then test_ok=0; fi
+        
+        rm -f "$test_file" 2>/dev/null || :
+        
+        if [ "$test_ok" -eq 1 ]; then
+          printf '  %s✓%s Test operators: -f -r -w -n -z all work\n' "$_green" "$_reset"
+        else
+          printf '  %s✗%s Test operators: Some test operators failed\n' "$_red" "$_reset"
+          return 1
+        fi
+      fi
+
+      # Check while loops
+      # While loops are used for iteration and processing
+      loop_count=0
+      while [ "$loop_count" -lt 3 ]; do
+        loop_count=$(( loop_count + 1 ))
+      done
+      if [ "$loop_count" -eq 3 ]; then
+        printf '  %s✓%s While loops: Iteration works correctly\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s While loops: Loop iteration failed\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check for loops
+      # For loops iterate over word lists
+      for_result=""
+      for item in a b c; do
+        for_result="${for_result}${item}"
+      done
+      if [ "$for_result" = "abc" ]; then
+        printf '  %s✓%s For loops: Word list iteration works\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s For loops: Word list iteration failed\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check string length
+      # ${#var} is used to get string length without subprocesses
+      len_test="12345"
+      if [ "${#len_test}" -eq 5 ]; then
+        printf '  %s✓%s String length: ${#var} expansion works\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s String length: ${#var} expansion failed\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check exit code capture
+      # Exit codes ($?) are critical for error handling
+      true
+      exit_code_true=$?
+      false
+      exit_code_false=$?
+      if [ "$exit_code_true" -eq 0 ] && [ "$exit_code_false" -ne 0 ]; then
+        printf '  %s✓%s Exit codes: $? captures command status\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Exit codes: $? not working correctly\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check here documents
+      # Here documents are used for multi-line strings (like --help text)
+      heredoc_result=$(cat <<'HEREDOC_TEST'
+line1
+line2
+HEREDOC_TEST
+)
+      if printf '%s' "$heredoc_result" | grep -q "line1" && printf '%s' "$heredoc_result" | grep -q "line2"; then
+        printf '  %s✓%s Here documents: Multi-line strings work\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Here documents: Not working correctly\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check disk space availability
+      # Need sufficient space for temp files, logs, caches
+      tmp_root=${TMPDIR:-/tmp}
+      available_kb=0
+      if df -k "$tmp_root" 2>/dev/null | tail -1 | awk '{print $4}' | grep -q '^[0-9]'; then
+        available_kb=$(df -k "$tmp_root" 2>/dev/null | tail -1 | awk '{print $4}')
+      fi
+      # Check for at least 10MB free space
+      if [ "$available_kb" -gt 10240 ]; then
+        printf '  %s✓%s Disk space: Sufficient space available (%d KB free)\n' "$_green" "$_reset" "$available_kb"
+      else
+        printf '  %s✗%s Disk space: Low disk space (%d KB free, need >10MB)\n' "$_red" "$_reset" "$available_kb"
+        if [ "$available_kb" -lt 1024 ]; then
+          return 1
+        fi
+      fi
+
+      # Check locale/character encoding support
+      # Character class patterns in tr, sort, etc. depend on locale
+      test_locale="${LANG:-C}"
+      case "$test_locale" in
+        *.UTF-8|*.utf8|C|POSIX)
+          printf '  %s✓%s Locale: %s (supported)\n' "$_green" "$_reset" "$test_locale"
+          ;;
+        *)
+          printf '  %s✗%s Locale: %s (may cause issues with character processing)\n' "$_red" "$_reset" "$test_locale"
+          if [ "$skip_heal" -eq 0 ]; then
+            LANG=C.UTF-8
+            export LANG
+            printf '    %s✓%s Locale set to C.UTF-8\n' "$_green" "$_reset"
+          else
+            return 1
+          fi
+          ;;
+      esac
+
+      # Check home directory accessibility
+      # Wizardry stores configs, markers, and spellbooks in home directory
+      home_dir="${HOME:-}"
+      if [ -z "$home_dir" ]; then
+        printf '  %s✗%s Home directory: HOME not set\n' "$_red" "$_reset"
+        return 1
+      elif [ ! -d "$home_dir" ]; then
+        printf '  %s✗%s Home directory: %s does not exist\n' "$_red" "$_reset" "$home_dir"
+        return 1
+      elif [ -r "$home_dir" ] && [ -x "$home_dir" ]; then
+        printf '  %s✓%s Home directory: Readable and accessible\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Home directory: Not readable or not executable\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check process limits (can we fork?)
+      # Shell scripts need to create subprocesses
+      if (true) 2>/dev/null; then
+        printf '  %s✓%s Process creation: Can fork subprocesses\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Process creation: Cannot fork subprocesses\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check printf format specifiers
+      # Printf is used extensively with %s and %d format codes
+      test_str=$(printf '%s' "test" 2>/dev/null)
+      test_num=$(printf '%d\n' 42 2>/dev/null | head -1)
+      if [ "$test_str" = "test" ] && [ "$test_num" = "42" ]; then
+        printf '  %s✓%s printf: Format specifiers work (%%s, %%d)\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s printf: Format specifiers not working correctly\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check date command functionality
+      # Used for timestamps and time-based operations
+      if command -v date >/dev/null 2>&1; then
+        test_date=$(date +%s 2>/dev/null)
+        if [ -n "$test_date" ] && [ "$test_date" -gt 0 ] 2>/dev/null; then
+          printf '  %s✓%s Date command: Available and functional\n' "$_green" "$_reset"
+        else
+          printf '  %s✗%s Date command: Found but not working\n' "$_red" "$_reset"
+          return 1
+        fi
+      else
+        printf '  %s✗%s Date command: Not available\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check basename/dirname for path manipulation
+      # Used throughout wizardry for path handling
+      test_base=$(basename "/path/to/file" 2>/dev/null)
+      test_dir=$(dirname "/path/to/file" 2>/dev/null)
+      if [ "$test_base" = "file" ] && [ "$test_dir" = "/path/to" ]; then
+        printf '  %s✓%s Path manipulation: basename/dirname work\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Path manipulation: basename/dirname not working\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check text processing utilities (awk, sed, tr, cut, sort)
+      # These are fundamental for text manipulation in wizardry
+      text_tools_ok=1
+      
+      # Test awk
+      if ! printf 'test' | awk '{print $1}' 2>/dev/null | grep -q 'test'; then
+        text_tools_ok=0
+        printf '  %s✗%s Text processing: awk not working\n' "$_red" "$_reset"
+      fi
+      
+      # Test sed
+      if ! printf 'test' | sed 's/test/ok/' 2>/dev/null | grep -q 'ok'; then
+        text_tools_ok=0
+        printf '  %s✗%s Text processing: sed not working\n' "$_red" "$_reset"
+      fi
+      
+      # Test tr
+      if ! printf 'test' | tr 'e' 'a' 2>/dev/null | grep -q 'tast'; then
+        text_tools_ok=0
+        printf '  %s✗%s Text processing: tr not working\n' "$_red" "$_reset"
+      fi
+      
+      # Test cut
+      if ! printf 'a:b:c' | cut -d: -f2 2>/dev/null | grep -q 'b'; then
+        text_tools_ok=0
+        printf '  %s✗%s Text processing: cut not working\n' "$_red" "$_reset"
+      fi
+      
+      # Test sort
+      if ! printf 'b\na\nc' | sort 2>/dev/null | head -1 | grep -q 'a'; then
+        text_tools_ok=0
+        printf '  %s✗%s Text processing: sort not working\n' "$_red" "$_reset"
+      fi
+      
+      if [ "$text_tools_ok" -eq 1 ]; then
+        printf '  %s✓%s Text processing: awk, sed, tr, cut, sort functional\n' "$_green" "$_reset"
+      else
+        return 1
+      fi
       ;;
       
     1)
-      # Level 1: Wizardry Installation
+      # Level 1: Banish & Validation Infrastructure
       
       # Check wizardry structure (single item - combine on one line)
       if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
@@ -406,7 +893,19 @@ banish_process_level() {
         return 1
       fi
       printf '  %s✓%s Installer: install script present\n' "$_green" "$_reset"
-      
+
+      # Check function definitions and calls
+      # Functions are used in spells and banish itself for organization
+      test_func() {
+        printf 'function_works'
+      }
+      func_result=$(test_func)
+      if [ "$func_result" = "function_works" ]; then
+        printf '  %s✓%s Function definitions: Shell functions work correctly\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Function definitions: Functions not working\n' "$_red" "$_reset"
+        return 1
+      fi
       # Check spells
       spell_list=$("$spell_levels_script" 1 spells)
       if [ -n "$spell_list" ]; then
@@ -456,7 +955,7 @@ banish_process_level() {
       ;;
       
     2)
-      # Level 2: Glossary System
+      # Level 2: Installation Infrastructure
       
       # Check spellbook directory for glossary
       spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
@@ -468,14 +967,75 @@ banish_process_level() {
           if mkdir -p "$spell_home" 2>/dev/null; then
             printf '    %s✓%s Spellbook directory created\n' "$_green" "$_reset"
           else
-            printf '    %s✗%s Spellbook directory creation failed\n' "$_red" "$_reset"
+            printf '    %s✗%s Spellbook directory creation failed\n' "$_green" "$_reset"
           fi
         fi
         if [ ! -d "$spell_home" ] || [ ! -w "$spell_home" ]; then
           return 1
         fi
       fi
+
+      # Check environment variable export/persistence
+      # env-or and other imps rely on environment variable propagation
+      TEST_BANISH_VAR="test_value_$$"
+      export TEST_BANISH_VAR
+      exported_value=$(sh -c 'printf "%s" "$TEST_BANISH_VAR"' 2>/dev/null || printf '')
+      unset TEST_BANISH_VAR 2>/dev/null || :
       
+      if [ "$exported_value" = "test_value_$$" ]; then
+        printf '  %s✓%s Environment export: Variables persist across subshells\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Environment export: Variables not persisting\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check variable name validation (alphanumeric + underscore)
+      # env-or validates variable names - ensure pattern matching works
+      valid_name="_Valid_Name123"
+      invalid_name="invalid-name"
+      name_check_works=0
+      
+      case "$valid_name" in
+        *[!A-Za-z0-9_]*|"") name_check_works=0 ;;
+        *) name_check_works=1 ;;
+      esac
+      
+      case "$invalid_name" in
+        *[!A-Za-z0-9_]*|"") 
+          if [ "$name_check_works" -eq 1 ]; then
+            name_check_works=1
+          else
+            name_check_works=0
+          fi
+          ;;
+        *) name_check_works=0 ;;
+      esac
+      
+      if [ "$name_check_works" -eq 1 ]; then
+        printf '  %s✓%s Variable name validation: Character class patterns work\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Variable name validation: Pattern matching failed\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check DNS resolution capability (for potential package downloads)
+      # Installation may need to download packages or check repositories
+      if command -v nslookup >/dev/null 2>&1 || command -v host >/dev/null 2>&1 || command -v dig >/dev/null 2>&1; then
+        printf '  %s✓%s DNS resolution: DNS tools available\n' "$_green" "$_reset"
+      else
+        # Try to resolve a hostname using getent if available
+        if command -v getent >/dev/null 2>&1; then
+          if getent hosts github.com >/dev/null 2>&1; then
+            printf '  %s✓%s DNS resolution: Can resolve hostnames\n' "$_green" "$_reset"
+          else
+            printf '  %s✗%s DNS resolution: Cannot resolve hostnames (updates may fail)\n' "$_red" "$_reset"
+          fi
+        else
+          printf '  %s✓%s DNS resolution: Tools not available (may limit updates)\n' "$_green" "$_reset"
+        fi
+      fi
+
+
       # Check spells
       spell_list=$("$spell_levels_script" 2 spells)
       if [ -n "$spell_list" ]; then
@@ -664,6 +1224,17 @@ banish_process_level() {
         fi
       fi
 
+      # Check environment variable expansion (needed for glossary parsing)
+      # Glossary system relies on dynamic variable expansion
+      test_var="test_value"
+      test_expansion=$(eval "printf '%s' \"\$test_var\"" 2>/dev/null || printf '')
+      if [ "$test_expansion" = "test_value" ]; then
+        printf '  %s✓%s Variable expansion: eval works correctly\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Variable expansion: eval not working\n' "$_red" "$_reset"
+        return 1
+      fi
+
       # Check spells
       spell_list=$("$spell_levels_script" 3 spells)
       if [ -n "$spell_list" ]; then
@@ -740,6 +1311,25 @@ banish_process_level() {
         fi
       fi
 
+      # Test that marker files can actually be created and read
+      # Navigation relies on persistent marker files
+      test_marker="$markers_dir/.banish-test-marker"
+      test_path="/tmp/test-location"
+      if printf '%s\n' "$test_path" > "$test_marker" 2>/dev/null; then
+        read_path=$(cat "$test_marker" 2>/dev/null || printf '')
+        rm -f "$test_marker" 2>/dev/null || :
+        
+        if [ "$read_path" = "$test_path" ]; then
+          printf '  %s✓%s Marker persistence: Can create and read marker files\n' "$_green" "$_reset"
+        else
+          printf '  %s✗%s Marker persistence: File read/write mismatch\n' "$_red" "$_reset"
+          return 1
+        fi
+      else
+        printf '  %s✗%s Marker persistence: Cannot create marker files\n' "$_red" "$_reset"
+        return 1
+      fi
+
       # Check spellbook directory access
       if [ -d "$spell_home" ] && [ -w "$spell_home" ]; then
         printf '  %s✓%s Spellbook directory: %s\n' "$_green" "$_reset" "$spell_home"
@@ -812,7 +1402,33 @@ banish_process_level() {
       ;;
 
     6)
-      # Level 6: Task Priorities (no special checks needed - just validate spells)
+      # Level 6: Task Priorities
+      
+      # Check file locking capability (priorities use file-based state)
+      # Task priorities rely on atomic file operations and locking
+      tmp_root=${TMPDIR:-/tmp}
+      lock_test="$tmp_root/.banish-lock-test.$$"
+      
+      # Test that file locking works (flock or similar)
+      if command -v flock >/dev/null 2>&1; then
+        # Test flock
+        if printf 'test' > "$lock_test" 2>/dev/null; then
+          if flock -n "$lock_test" printf 'locked' 2>/dev/null; then
+            rm -f "$lock_test" 2>/dev/null || :
+            printf '  %s✓%s File locking: flock available\n' "$_green" "$_reset"
+          else
+            rm -f "$lock_test" 2>/dev/null || :
+            printf '  %s✗%s File locking: flock not working\n' "$_red" "$_reset"
+            return 1
+          fi
+        else
+          printf '  %s✗%s File locking: Cannot create test file\n' "$_red" "$_reset"
+          return 1
+        fi
+      else
+        # No flock available - priorities may have race conditions
+        printf '  %s✓%s File locking: flock not available (priorities may have race conditions)\n' "$_green" "$_reset"
+      fi
       
       # Check spells
       spell_list=$("$spell_levels_script" 6 spells)
@@ -910,6 +1526,42 @@ banish_process_level() {
         fi
       fi
 
+      # Test that extended attributes actually work on the filesystem
+      # Some filesystems don't support xattrs (FAT32, some network mounts)
+      tmp_root=${TMPDIR:-/tmp}
+      tmp_xattr_test=$(mktemp "${tmp_root%/}/banish-xattr.XXXXXX" 2>/dev/null || printf '')
+      if [ -n "$tmp_xattr_test" ]; then
+        xattr_works=0
+        
+        # Try to set an extended attribute
+        if command -v xattr >/dev/null 2>&1; then
+          if xattr -w user.test "value" "$tmp_xattr_test" 2>/dev/null; then
+            # Verify we can read it back
+            if xattr -p user.test "$tmp_xattr_test" 2>/dev/null | grep -q "value"; then
+              xattr_works=1
+            fi
+            xattr -d user.test "$tmp_xattr_test" 2>/dev/null || :
+          fi
+        elif command -v setfattr >/dev/null 2>&1 && command -v getfattr >/dev/null 2>&1; then
+          if setfattr -n user.test -v "value" "$tmp_xattr_test" 2>/dev/null; then
+            if getfattr -n user.test "$tmp_xattr_test" 2>/dev/null | grep -q "value"; then
+              xattr_works=1
+            fi
+            setfattr -x user.test "$tmp_xattr_test" 2>/dev/null || :
+          fi
+        fi
+        
+        rm -f "$tmp_xattr_test" 2>/dev/null || :
+        
+        if [ "$xattr_works" -eq 1 ]; then
+          printf '  %s✓%s Extended attributes: Filesystem supports xattrs\n' "$_green" "$_reset"
+        else
+          printf '  %s✗%s Extended attributes: Filesystem does not support xattrs\n' "$_red" "$_reset"
+          printf '    MUD features (look, check-cd-hook) require xattr support\n'
+          return 1
+        fi
+      fi
+
       # Check spells
       spell_list=$("$spell_levels_script" 7 spells)
       if [ -n "$spell_list" ]; then
@@ -999,6 +1651,69 @@ banish_process_level() {
         return 1
       fi
 
+      # Check recursive directory operations (needed for forall, copy with dirs)
+      # Arcane file operations often need to traverse directory trees
+      tmp_dir=$(mktemp -d "${tmp_root%/}/banish-dir.XXXXXX" 2>/dev/null || printf '')
+      if [ -n "$tmp_dir" ]; then
+        # Create nested structure
+        if mkdir -p "$tmp_dir/sub1/sub2" 2>/dev/null; then
+          # Test recursive find
+          if find "$tmp_dir" -type d >/dev/null 2>&1; then
+            # Test recursive removal
+            if rm -rf "$tmp_dir" 2>/dev/null; then
+              printf '  %s✓%s Recursive operations: mkdir -p, find, rm -rf work\n' "$_green" "$_reset"
+            else
+              rm -rf "$tmp_dir" 2>/dev/null || :
+              printf '  %s✗%s Recursive operations: rm -rf failed\n' "$_red" "$_reset"
+              return 1
+            fi
+          else
+            rm -rf "$tmp_dir" 2>/dev/null || :
+            printf '  %s✗%s Recursive operations: find failed\n' "$_red" "$_reset"
+            return 1
+          fi
+        else
+          rm -rf "$tmp_dir" 2>/dev/null || :
+          printf '  %s✗%s Recursive operations: mkdir -p failed\n' "$_red" "$_reset"
+          return 1
+        fi
+      fi
+
+      # Check grep pattern matching (literal and basic patterns)
+      # Text processing relies on grep for searching file contents
+      grep_test="test_pattern_123"
+      # Test literal match with -F
+      if printf '%s\n' "$grep_test" | grep -Fq "pattern" 2>/dev/null; then
+        # Test basic regex
+        if printf '%s\n' "$grep_test" | grep -q "test.*123" 2>/dev/null; then
+          printf '  %s✓%s Pattern matching: grep literal and regex work\n' "$_green" "$_reset"
+        else
+          printf '  %s✗%s Pattern matching: grep regex not working\n' "$_red" "$_reset"
+          return 1
+        fi
+      else
+        printf '  %s✗%s Pattern matching: grep literal search failed\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check XDG directories support (needed for jump-trash on Linux)
+      # jump-trash uses XDG_DATA_HOME to locate system trash directory
+      xdg_data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
+      if [ -d "$HOME" ]; then
+        # XDG spec allows it to not exist yet - just verify we can create it if needed
+        if [ -d "$xdg_data_home" ] || mkdir -p "$xdg_data_home" 2>/dev/null; then
+          if [ -w "$xdg_data_home" ] || [ ! -e "$xdg_data_home" ]; then
+            printf '  %s✓%s XDG data directory: %s accessible\n' "$_green" "$_reset" "$xdg_data_home"
+          else
+            printf '  %s✗%s XDG data directory: %s not writable\n' "$_red" "$_reset" "$xdg_data_home"
+            return 1
+          fi
+        else
+          printf '  %s✗%s XDG data directory: cannot create %s\n' "$_red" "$_reset" "$xdg_data_home"
+          return 1
+        fi
+      fi
+
       # Check spells
       spell_list=$("$spell_levels_script" 8 spells)
       if [ -n "$spell_list" ]; then
@@ -1077,6 +1792,15 @@ banish_process_level() {
         fi
       fi
 
+      # Check read builtin (needed for ask-text, ask-yn)
+      # Basic cantrips rely on shell's read builtin for user input
+      if printf 'test\n' | ( read -r test_input; [ "$test_input" = "test" ] ) 2>/dev/null; then
+        printf '  %s✓%s Read builtin: Shell read command works\n' "$_green" "$_reset"
+      else
+        printf '  %s✗%s Read builtin: Shell read command not working\n' "$_red" "$_reset"
+        return 1
+      fi
+
       # Check spells
       spell_list=$("$spell_levels_script" 9 spells)
       if [ -n "$spell_list" ]; then
@@ -1150,6 +1874,23 @@ banish_process_level() {
         if [ ! -d "$config_home" ] || [ ! -w "$config_home" ]; then
           return 1
         fi
+      fi
+
+      # Test that log files can be written
+      # System configuration spells need to write logs
+      log_test="$config_home/.banish-log-test"
+      if printf '%s\n' "test log entry" >> "$log_test" 2>/dev/null; then
+        if [ -f "$log_test" ] && [ -r "$log_test" ]; then
+          rm -f "$log_test" 2>/dev/null || :
+          printf '  %s✓%s Log file creation: Can write config logs\n' "$_green" "$_reset"
+        else
+          rm -f "$log_test" 2>/dev/null || :
+          printf '  %s✗%s Log file creation: File not readable after write\n' "$_red" "$_reset"
+          return 1
+        fi
+      else
+        printf '  %s✗%s Log file creation: Cannot write log files\n' "$_red" "$_reset"
+        return 1
       fi
 
       # Check spells
@@ -1276,6 +2017,29 @@ banish_process_level() {
               return 1
             fi
           fi
+        fi
+      fi
+
+      # Check shell script sourcing capability (critical for test framework)
+      # Test framework relies on sourcing test files and helper scripts
+      tmp_root=${TMPDIR:-/tmp}
+      tmp_source_test=$(mktemp "${tmp_root%/}/banish-source.XXXXXX" 2>/dev/null || printf '')
+      if [ -n "$tmp_source_test" ]; then
+        # Create a simple script that sets a variable
+        printf '%s\n' 'BANISH_SOURCE_TEST="sourced_successfully"' > "$tmp_source_test"
+        
+        # Try to source it
+        BANISH_SOURCE_TEST=""
+        # shellcheck disable=SC1090
+        . "$tmp_source_test" 2>/dev/null || :
+        
+        rm -f "$tmp_source_test" 2>/dev/null || :
+        
+        if [ "$BANISH_SOURCE_TEST" = "sourced_successfully" ]; then
+          printf '  %s✓%s Script sourcing: Can source shell scripts with .\n' "$_green" "$_reset"
+        else
+          printf '  %s✗%s Script sourcing: Cannot source shell scripts\n' "$_red" "$_reset"
+          return 1
         fi
       fi
 
@@ -1597,9 +2361,248 @@ banish_process_level() {
         printf '  Arcana (optional): Not installed\n'
       fi
       ;;
+
+    4)
+      # Level 4: Menu System
+      
+      # Check terminal interactivity assumptions
+      # Menu system requires a fully interactive terminal with cursor control
+      
+      # Verify stdin is a terminal (not a pipe or file)
+      # Skip in CI/non-interactive environments
+      if [ "${CI-}" = "true" ] || [ "${GITHUB_ACTIONS-}" = "true" ] || [ ! -t 0 ]; then
+        if [ -t 0 ]; then
+          printf '  %s✓%s stdin: Connected to terminal\n' "$_green" "$_reset"
+        else
+          printf '  %s✓%s stdin: Non-interactive (CI/testing environment)\n' "$_green" "$_reset"
+        fi
+      else
+        if [ -t 0 ]; then
+          printf '  %s✓%s stdin: Connected to terminal\n' "$_green" "$_reset"
+        else
+          printf '  %s✗%s stdin: Not a terminal (pipe/file detected)\n' "$_red" "$_reset"
+          printf '    Menu system requires interactive terminal input\n'
+          return 1
+        fi
+      fi
+
+      # Verify stdout is a terminal (not redirected)
+      # More lenient - just report status without failing
+      if [ -t 1 ]; then
+        printf '  %s✓%s stdout: Connected to terminal\n' "$_green" "$_reset"
+      else
+        printf '  %s✓%s stdout: Redirected (testing mode)\n' "$_green" "$_reset"
+      fi
+
+      # Check terminal size is reasonable for menu display
+      if command -v tput >/dev/null 2>&1; then
+        term_cols=$(tput cols 2>/dev/null || printf '0')
+        term_lines=$(tput lines 2>/dev/null || printf '0')
+        
+        min_cols=40
+        min_lines=10
+        
+        if [ "$term_cols" -ge "$min_cols" ] && [ "$term_lines" -ge "$min_lines" ]; then
+          printf '  %s✓%s Terminal size: %sx%s (adequate for menus)\n' "$_green" "$_reset" "$term_cols" "$term_lines"
+        elif [ "$term_cols" -eq 0 ] || [ "$term_lines" -eq 0 ]; then
+          # Terminal size unavailable (common in CI)
+          printf '  %s✓%s Terminal size: Unknown (non-interactive environment)\n' "$_green" "$_reset"
+        else
+          printf '  %s✗%s Terminal size: %sx%s (too small, need at least %sx%s)\n' "$_red" "$_reset" "$term_cols" "$term_lines" "$min_cols" "$min_lines"
+          return 1
+        fi
+      fi
+
+      # Check stty raw mode support (required for await-keypress)
+      # Only test if we have a real terminal
+      if [ -t 0 ] && [ -t 1 ]; then
+        original_stty=$(stty -g 2>/dev/null || printf '')
+        
+        if [ -n "$original_stty" ]; then
+          # Test if we can use raw mode
+          if stty raw -echo 2>/dev/null; then
+            stty "$original_stty" 2>/dev/null || :
+            printf '  %s✓%s Terminal raw mode: Available (for keypress capture)\n' "$_green" "$_reset"
+          else
+            printf '  %s✗%s Terminal raw mode: Not available\n' "$_red" "$_reset"
+            return 1
+          fi
+        fi
+      else
+        printf '  %s✓%s Terminal raw mode: Skipped (non-interactive)\n' "$_green" "$_reset"
+      fi
+
+      # Check spells
+      spell_list=$("$spell_levels_script" 4 spells)
+      has_missing_spells=0
+      if [ -n "$spell_list" ]; then
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || has_missing_spells=1
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
+        else
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
+        
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          has_missing_spells=1
+        fi
+      fi
+
+      # Check imps
+      imp_list=$("$spell_levels_script" 4 imps)
+      had_imps=0
+      if [ -n "$imp_list" ]; then
+        had_imps=1
+        new_imp_list=""
+        for imp in $imp_list; do
+          case " ${_banish_seen_imps} " in
+            *" ${imp} "*) ;;
+            *)
+              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
+              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              ;;
+          esac
+        done
+        imp_list=$new_imp_list
+      fi
+      if [ -n "$imp_list" ]; then
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
+        else
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
+      elif [ "$had_imps" -eq 1 ]; then
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      else
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      fi
+      
+      if [ "$has_missing_spells" -eq 1 ]; then
+        return 1
+      fi
+      ;;
+
+    12)
+      # Level 12: System Maintenance
+      
+      # Check git availability (update-wizardry uses git)
+      # System maintenance often requires version control operations
+      if command -v git >/dev/null 2>&1; then
+        # Verify git actually works (can run git --version)
+        if git --version >/dev/null 2>&1; then
+          printf '  %s✓%s Version control: git available\n' "$_green" "$_reset"
+        else
+          printf '  %s✗%s Version control: git found but not working\n' "$_red" "$_reset"
+          return 1
+        fi
+      else
+        printf '  %s✗%s Version control: git not found\n' "$_red" "$_reset"
+        printf '    update-wizardry requires git for repository updates\n'
+        if [ "$skip_heal" -eq 0 ]; then
+          manage_system_command=""
+          if command -v manage-system-command >/dev/null 2>&1; then
+            manage_system_command="manage-system-command"
+          elif [ -x "${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command" ]; then
+            manage_system_command="${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command"
+          fi
+          if [ -n "$manage_system_command" ]; then
+            printf '    Attempting to install git...\n'
+            "$manage_system_command" git git >/dev/null 2>&1 || :
+            if command -v git >/dev/null 2>&1; then
+              printf '    %s✓%s git installed\n' "$_green" "$_reset"
+            else
+              printf '    %s✗%s git installation failed\n' "$_red" "$_reset"
+            fi
+          fi
+        fi
+        if ! command -v git >/dev/null 2>&1; then
+          return 1
+        fi
+      fi
+
+      # Check available memory (git operations can be memory-intensive)
+      # Large repositories need sufficient RAM for operations
+      if [ -r /proc/meminfo ]; then
+        mem_available_kb=$(grep MemAvailable /proc/meminfo 2>/dev/null | awk '{print $2}' || printf '0')
+        mem_total_kb=$(grep MemTotal /proc/meminfo 2>/dev/null | awk '{print $2}' || printf '0')
+        
+        # Check for at least 100MB available memory
+        if [ "$mem_available_kb" -gt 102400 ]; then
+          printf '  %s✓%s Memory: Sufficient RAM available (%d MB)\n' "$_green" "$_reset" "$((mem_available_kb / 1024))"
+        elif [ "$mem_available_kb" -gt 51200 ]; then
+          printf '  %s✓%s Memory: Limited RAM (%d MB, git ops may be slow)\n' "$_green" "$_reset" "$((mem_available_kb / 1024))"
+        else
+          printf '  %s✗%s Memory: Low RAM (%d MB, git may fail)\n' "$_red" "$_reset" "$((mem_available_kb / 1024))"
+        fi
+      else
+        # macOS or other systems without /proc/meminfo
+        printf '  %s✓%s Memory: Cannot check (non-Linux system)\n' "$_green" "$_reset"
+      fi
+
+      # Check spells
+      spell_list=$("$spell_levels_script" 12 spells)
+      has_missing_spells=0
+      if [ -n "$spell_list" ]; then
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || has_missing_spells=1
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
+        else
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
+        
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          has_missing_spells=1
+        fi
+      fi
+
+      # Check imps
+      imp_list=$("$spell_levels_script" 12 imps)
+      had_imps=0
+      if [ -n "$imp_list" ]; then
+        had_imps=1
+        new_imp_list=""
+        for imp in $imp_list; do
+          case " ${_banish_seen_imps} " in
+            *" ${imp} "*) ;;
+            *)
+              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
+              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              ;;
+          esac
+        done
+        imp_list=$new_imp_list
+      fi
+      if [ -n "$imp_list" ]; then
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
+        else
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
+      elif [ "$had_imps" -eq 1 ]; then
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      else
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      fi
+      
+      if [ "$has_missing_spells" -eq 1 ]; then
+        return 1
+      fi
+      ;;
       
     *)
-      # Levels 4, 6-7, 9-10, 13-17, 19-20, 22, 25-28: Standard validation pattern
+      # Levels 13-17, 19-20, 22, 25-28: Standard validation pattern
       
       # Check spells
       spell_list=$("$spell_levels_script" "$level" spells)
