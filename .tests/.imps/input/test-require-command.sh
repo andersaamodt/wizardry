@@ -13,21 +13,21 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 require_command_succeeds_when_available() {
-  run_spell "spells/cantrips/require-command" sh
+  run_spell "spells/.imps/input/require-command" sh
   assert_success || return 1
   [ -z "$OUTPUT" ] || { TEST_FAILURE_REASON="expected no stdout"; return 1; }
 }
 
 require_command_reports_missing_with_default_message() {
   skip-if-compiled || return $?
-  run_spell "spells/cantrips/require-command" definitely-not-a-real-command
+  run_spell "spells/.imps/input/require-command" definitely-not-a-real-command
   assert_failure || return 1
   assert_error_contains "require-command: The 'definitely-not-a-real-command' command is required." || return 1
   assert_error_contains "core-menu" || return 1
 }
 
 require_command_supports_custom_message() {
-  run_spell "spells/cantrips/require-command" missing-helper "custom install instructions"
+  run_spell "spells/.imps/input/require-command" missing-helper "custom install instructions"
   assert_failure || return 1
   assert_error_contains "custom install instructions" || return 1
 }
@@ -43,14 +43,14 @@ SH
   chmod +x "$tmp/install-missing"
 
   run_cmd env PATH="$tmp:$PATH" STUB_DIR="$tmp" REQUIRE_COMMAND_ASSUME_YES=1 \
-    "$ROOT_DIR/spells/cantrips/require-command" missing
+    "$ROOT_DIR/spells/.imps/input/require-command" missing
 
   assert_success && assert_path_exists "$tmp/missing"
 }
 
 require_command_requires_arguments() {
   skip-if-compiled || return $?
-  run_spell "spells/cantrips/require-command"
+  run_spell "spells/.imps/input/require-command"
   assert_failure || return 1
   assert_error_contains "Usage: require-command" || return 1
 }
@@ -72,7 +72,7 @@ PATH="$WIZARDRY_DIR/spells/.imps/sys:$WIZARDRY_DIR/spells/.imps/out:$WIZARDRY_DI
 export PATH
 
 # Call require-command (which should use command -v, not 'has' imp)
-"$WIZARDRY_DIR/spells/cantrips/require-command" sh 2>&1 | grep -q "has: command not found" && {
+"$WIZARDRY_DIR/spells/.imps/input/require-command" sh 2>&1 | grep -q "has: command not found" && {
   printf "FAIL: has: command not found error detected\n" >&2
   exit 1
 }
@@ -101,7 +101,7 @@ PATH="$WIZARDRY_DIR/spells/.imps/sys:$WIZARDRY_DIR/spells/.imps/out:$WIZARDRY_DI
 export PATH
 
 # Call require-command with a missing command to trigger the warn path
-"$WIZARDRY_DIR/spells/cantrips/require-command" definitely-not-a-real-command-xyz 2>&1 | grep -q "warn: command not found" && {
+"$WIZARDRY_DIR/spells/.imps/input/require-command" definitely-not-a-real-command-xyz 2>&1 | grep -q "warn: command not found" && {
   printf "FAIL: warn: command not found error detected\n" >&2
   exit 1
 }

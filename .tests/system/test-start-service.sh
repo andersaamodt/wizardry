@@ -51,7 +51,7 @@ start_service_prompts_and_invokes() {
   write_stub_ask_text "$stub_dir" "alpha"
   write_stub_systemctl "$stub_dir"
   write_stub_sudo "$stub_dir"
-  PATH="$stub_dir:$PATH" run_spell "spells/cantrips/start-service"
+  PATH="$stub_dir:$PATH" run_spell "spells/system/start-service"
   assert_success || return 1
   assert_output_contains "Starting alpha.service via systemctl..." || return 1
   [ "$(cat "$stub_dir/systemctl.args")" = "start alpha.service" ] || {
@@ -61,7 +61,7 @@ start_service_prompts_and_invokes() {
 start_service_fails_without_name() {
   stub_dir=$(make_stub_dir)
   write_stub_ask_text "$stub_dir" ""
-  PATH="$stub_dir:$PATH" run_spell "spells/cantrips/start-service"
+  PATH="$stub_dir:$PATH" run_spell "spells/system/start-service"
   assert_failure || return 1
   assert_error_contains "No service name supplied." || return 1
 }
@@ -70,12 +70,12 @@ run_test_case "start-service prompts then starts unit" start_service_prompts_and
 run_test_case "start-service fails when name missing" start_service_fails_without_name
 
 spell_is_executable() {
-  [ -x "$ROOT_DIR/spells/cantrips/start-service" ]
+  [ -x "$ROOT_DIR/spells/system/start-service" ]
 }
 
 run_test_case "cantrips/start-service is executable" spell_is_executable
 shows_help() {
-  run_spell spells/cantrips/start-service --help
+  run_spell spells/system/start-service --help
   # Note: spell may not have --help implemented yet
   true
 }

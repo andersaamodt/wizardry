@@ -15,25 +15,25 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/cantrips/up" --help
+  run_spell "spells/translocation/go-up" --help
   assert_success || return 1
   assert_output_contains "Usage: up" || return 1
 }
 
 test_default_one_level() {
-  run_spell "spells/cantrips/up"
+  run_spell "spells/translocation/go-up"
   assert_success || return 1
   assert_output_contains 'cd ".."' || return 1
 }
 
 test_multiple_levels() {
-  run_spell "spells/cantrips/up" 3
+  run_spell "spells/translocation/go-up" 3
   assert_success || return 1
   assert_output_contains 'cd "../../.."' || return 1
 }
 
 test_rejects_invalid() {
-  run_spell "spells/cantrips/up" abc
+  run_spell "spells/translocation/go-up" abc
   assert_failure || return 1
   assert_error_contains "positive integer" || return 1
 }

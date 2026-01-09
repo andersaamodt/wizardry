@@ -90,6 +90,7 @@ read-file read-magic
 remove-file trash
 search-file file-list
 teleport jump-to-marker
+up go-up
 where identify-room
 where-am-i identify-room"
   

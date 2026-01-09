@@ -15,33 +15,33 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/cantrips/validate-number" --help
+  run_spell "spells/.imps/input/validate-number" --help
   assert_success || return 1
   assert_output_contains "Usage: validate-number" || return 1
 }
 
 test_accepts_valid_number() {
-  run_spell "spells/cantrips/validate-number" 123
+  run_spell "spells/.imps/input/validate-number" 123
   assert_success || return 1
 }
 
 test_accepts_zero() {
-  run_spell "spells/cantrips/validate-number" 0
+  run_spell "spells/.imps/input/validate-number" 0
   assert_success || return 1
 }
 
 test_rejects_letters() {
-  run_spell "spells/cantrips/validate-number" abc
+  run_spell "spells/.imps/input/validate-number" abc
   assert_failure || return 1
 }
 
 test_rejects_mixed() {
-  run_spell "spells/cantrips/validate-number" 12abc
+  run_spell "spells/.imps/input/validate-number" 12abc
   assert_failure || return 1
 }
 
 test_rejects_empty() {
-  run_spell "spells/cantrips/validate-number" ""
+  run_spell "spells/.imps/input/validate-number" ""
   assert_failure || return 1
 }
 
