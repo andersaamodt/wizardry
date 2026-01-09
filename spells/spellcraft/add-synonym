@@ -146,75 +146,30 @@ set -eu
     fi
   fi
 
-  # Check if target spell must be sourced (affects synonym format)
-  # This follows the same logic as invoke-thesaurus
-  spell_must_be_sourced=0
-  wizardry_dir=$(env-or WIZARDRY_DIR "${HOME:-.}/.wizardry")
-  
-  # Try to find the spell file
-  spell_path=""
-  if [ -f "$wizardry_dir/spells/$target_first_word" ]; then
-    spell_path="$wizardry_dir/spells/$target_first_word"
-  else
-    # Try common spell directories
-    spell_dirs="translocation cantrips arcane divination enchant psi"
-    spell_dirs="$spell_dirs crypto wards mud spellcraft menu system"
-    for spell_dir in $spell_dirs; do
-      if [ -f "$wizardry_dir/spells/$spell_dir/$target_first_word" ]; then
-        spell_path="$wizardry_dir/spells/$spell_dir/$target_first_word"
-        break
-      fi
-    done
-  fi
-  
-  # Check if spell uses uncastable (requires sourcing)
-  if [ -n "$spell_path" ] && [ -f "$spell_path" ]; then
-    if head -30 "$spell_path" 2>/dev/null | grep -q "uncastable"; then
-      spell_must_be_sourced=1
-    fi
-  fi
-
   # Check if synonym already exists (in either file)
   spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
   custom_file="$spell_home/.synonyms"
   default_file="$spell_home/.default-synonyms"
 
   # Check for duplicates in both files
-  # Look for both alias and function definitions
   already_exists=0
   existing_location=""
   existing_target=""
 
-  # Check custom file for both alias and function definitions
-  if [ -f "$custom_file" ]; then
-    if grep -q "^alias $synonym_word=" "$custom_file" 2>/dev/null; then
-      already_exists=1
-      existing_location="custom"
-      existing_target=$(grep "^alias $synonym_word=" "$custom_file" | \
-        sed "s/^alias $synonym_word='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
-    elif grep -q "^$synonym_word()" "$custom_file" 2>/dev/null; then
-      already_exists=1
-      existing_location="custom"
-      # Extract target from function definition: word() { . target "$@"; }
-      # Use [[:space:]] for POSIX compatibility instead of \s
-      existing_target=$(grep "^$synonym_word()" "$custom_file" | \
-        sed 's/.*{[[:space:]]*\.[[:space:]]*\([^ ]*\).*/\1/')
-    fi
+  if [ -f "$custom_file" ] && grep -q "^alias $synonym_word=" "$custom_file" 2>/dev/null; then
+    already_exists=1
+    existing_location="custom"
+    existing_target=$(grep "^alias $synonym_word=" "$custom_file" | \
+      sed "s/^alias $synonym_word='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
   fi
 
   # Only check default if not already found in custom
-  if [ "$already_exists" -eq 0 ] && [ -f "$default_file" ]; then
-    if grep -q "^alias $synonym_word=" "$default_file" 2>/dev/null; then
-      already_exists=1
-      existing_location="default"
-      existing_target=$(grep "^alias $synonym_word=" "$default_file" | \
-        sed "s/^alias $synonym_word='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
-    elif grep -q "^$synonym_word()" "$default_file" 2>/dev/null; then
-      already_exists=1
-      existing_location="default"
-      existing_target=$(grep "^$synonym_word()" "$default_file" | \
-        sed 's/.*{[[:space:]]*\.[[:space:]]*\([^ ]*\).*/\1/')
-    fi
+  default_match=$(grep "^alias $synonym_word=" "$default_file" 2>/dev/null || true)
+  if [ "$already_exists" -eq 0 ] && [ -f "$default_file" ] && [ -n "$default_match" ]; then
+    already_exists=1
+    existing_location="default"
+    existing_target=$(printf '%s' "$default_match" | \
+      sed "s/^alias $synonym_word='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
   fi
 
   if [ "$already_exists" -eq 1 ]; then
@@ -231,16 +186,13 @@ set -eu
         ;;
     esac
     
-    # If overwriting, remove old definition (alias and function forms)
-    if [ -f "$custom_file" ]; then
-      has_alias=$(grep -q "^alias $synonym_word=" "$custom_file" 2>/dev/null && echo 1 || echo 0)
-      has_func=$(grep -q "^$synonym_word()" "$custom_file" 2>/dev/null && echo 1 || echo 0)
-      if [ "$has_alias" -eq 1 ] || [ "$has_func" -eq 1 ]; then
-        temp_file=$(temp-file synonyms) || exit 1
-        grep -v "^alias $synonym_word=" "$custom_file" | \
-          grep -v "^$synonym_word()" > "$temp_file" || true
-        mv "$temp_file" "$custom_file"
-      fi
+    # If overwriting a default, we create/update in custom
+    # If overwriting a custom, we update in custom
+    # Remove old custom definition if it exists
+    if [ -f "$custom_file" ] && grep -q "^alias $synonym_word=" "$custom_file" 2>/dev/null; then
+      temp_file=$(temp-file synonyms) || exit 1
+      grep -v "^alias $synonym_word=" "$custom_file" > "$temp_file" || true
+      mv "$temp_file" "$custom_file"
     fi
   fi
 
@@ -259,34 +211,9 @@ HEADER
   # Escape single quotes in target_spell for alias definition
   escaped_spell=$(printf '%s' "$target_spell" | sed "s/'/'\\\\''/g")
 
-  # Determine whether to create an alias or function
-  # Functions can only be created for non-hyphenated names (POSIX sh limitation)
-  # And only when the target spell must be sourced
-  if [ "$spell_must_be_sourced" -eq 1 ]; then
-    case "$synonym_word" in
-      *-*)
-        # Hyphenated - must use alias (POSIX sh limitation)
-        # Function names can't have hyphens in POSIX sh
-        printf "alias %s='%s'\n" "$synonym_word" "$escaped_spell" >> "$custom_file"
-        success "Synonym created: $synonym_word -> $target_spell"
-        warn_msg="target requires sourcing, but aliases cannot source"
-        warn "add-synonym: $warn_msg - function needed but hyphenated names not supported"
-        info "Note: Hyphenated names cannot be functions in POSIX sh"
-        info "To use this synonym, manually type: . leap-to-marker"
-        info "Reload with: . invoke-thesaurus"
-        ;;
-      *)
-        # Non-hyphenated name - create a sourcing function
-        printf "%s() { . %s \"\$@\"; }\n" "$synonym_word" "$target_spell" >> "$custom_file"
-        success "Synonym created: $synonym_word -> $target_spell (as function)"
-        info "Note: Function created because target requires sourcing"
-        info "Reload with: . invoke-thesaurus"
-        ;;
-    esac
-  else
-    # Regular spell - create an alias
-    printf "alias %s='%s'\n" "$synonym_word" "$escaped_spell" >> "$custom_file"
-    success "Synonym created: $synonym_word -> $target_spell"
-    info "Reload with: . invoke-thesaurus"
-    info "Note: Aliases only work in interactive shells, not in scripts"
-  fi
+  # Add the alias to the custom file
+  printf "alias %s='%s'\n" "$synonym_word" "$escaped_spell" >> "$custom_file"
+
+  success "Synonym created: $synonym_word -> $target_spell"
+  info "Reload with: . invoke-thesaurus"
+  info "Note: Aliases only work in interactive shells, not in scripts"
