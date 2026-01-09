@@ -120,6 +120,7 @@ test_rejects_empty_spell() {
 test_allows_overwriting_existing_synonym() {
   case_dir=$(make_tempdir)
   synonyms_file="$case_dir/.synonyms"
+  input_file=$(temp-file)
   
   # Create first synonym
   SPELLBOOK_DIR="$case_dir" \
@@ -127,8 +128,9 @@ test_allows_overwriting_existing_synonym() {
   assert_success || return 1
   
   # Overwrite with second synonym (answer yes to confirm)
-  printf 'y\n' | SPELLBOOK_DIR="$case_dir" \
-    run_spell "spells/spellcraft/add-synonym" myalias printf
+  printf 'y\n' > "$input_file"
+  SPELLBOOK_DIR="$case_dir" \
+    run_spell "spells/spellcraft/add-synonym" myalias printf < "$input_file"
   assert_success || return 1
   
   # Check it was updated to new format
@@ -161,6 +163,78 @@ test_handles_complex_target_with_args() {
   fi
 }
 
+test_rejects_blacklisted_builtin() {
+  case_dir=$(make_tempdir)
+  
+  # Try to create synonym for blacklisted builtin 'alias'
+  SPELLBOOK_DIR="$case_dir" \
+    run_spell "spells/spellcraft/add-synonym" alias echo
+  
+  assert_failure || return 1
+  assert_error_contains "protected" || return 1
+}
+
+test_rejects_blacklisted_system_command() {
+  case_dir=$(make_tempdir)
+  
+  # Try to create synonym for blacklisted command 'cat'
+  SPELLBOOK_DIR="$case_dir" \
+    run_spell "spells/spellcraft/add-synonym" cat echo
+  
+  assert_failure || return 1
+  assert_error_contains "protected" || return 1
+}
+
+test_warns_for_path_collision() {
+  case_dir=$(make_tempdir)
+  input_file=$(temp-file)
+  printf 'n\n' > "$input_file"
+  
+  # Try to create synonym for 'pr' which exists in PATH but isn't blacklisted
+  # Should warn and require confirmation (we'll answer 'n' to cancel)
+  SPELLBOOK_DIR="$case_dir" \
+    run_spell "spells/spellcraft/add-synonym" pr priorities < "$input_file"
+  
+  assert_failure || return 1
+  assert_error_contains "already exists" || return 1
+}
+
+test_allows_path_collision_with_confirmation() {
+  case_dir=$(make_tempdir)
+  synonyms_file="$case_dir/.synonyms"
+  input_file=$(temp-file)
+  printf 'y\n' > "$input_file"
+  
+  # Create synonym for 'pr' with confirmation (answer 'y')
+  SPELLBOOK_DIR="$case_dir" \
+    run_spell "spells/spellcraft/add-synonym" pr priorities < "$input_file"
+  
+  assert_success || return 1
+  
+  # Verify synonym was created
+  if ! grep -q "^pr=priorities" "$synonyms_file"; then
+    TEST_FAILURE_REASON="synonym not created after confirmation"
+    return 1
+  fi
+}
+
+test_no_warning_for_nonexistent_command() {
+  case_dir=$(make_tempdir)
+  synonyms_file="$case_dir/.synonyms"
+  
+  # Create synonym for non-existent command (should succeed without warning)
+  SPELLBOOK_DIR="$case_dir" \
+    run_spell "spells/spellcraft/add-synonym" mynewthing somecommand
+  
+  assert_success || return 1
+  
+  # Should NOT contain collision warning
+  if printf '%s' "$ERROR" | grep -q "already exists as a command"; then
+    TEST_FAILURE_REASON="unexpected collision warning for non-existent command"
+    return 1
+  fi
+}
+
 run_test_case "prints help" test_shows_help
 run_test_case "adds synonym non-interactively" test_adds_synonym_noninteractive
 run_test_case "creates correct alias definition" test_alias_definition_content
@@ -173,6 +247,11 @@ run_test_case "rejects word starting with number" test_rejects_word_starting_wit
 run_test_case "rejects empty spell" test_rejects_empty_spell
 run_test_case "allows overwriting synonym" test_allows_overwriting_existing_synonym
 run_test_case "handles complex target with args" test_handles_complex_target_with_args
+run_test_case "rejects blacklisted builtin" test_rejects_blacklisted_builtin
+run_test_case "rejects blacklisted system command" test_rejects_blacklisted_system_command
+run_test_case "warns for PATH collision" test_warns_for_path_collision
+run_test_case "allows PATH collision with confirmation" test_allows_path_collision_with_confirmation
+run_test_case "no warning for nonexistent command" test_no_warning_for_nonexistent_command
 
 
 # Test via source-then-invoke pattern  
