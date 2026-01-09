@@ -1696,6 +1696,24 @@ HEREDOC_TEST
         return 1
       fi
 
+      # Check XDG directories support (needed for jump-trash on Linux)
+      # jump-trash uses XDG_DATA_HOME to locate system trash directory
+      xdg_data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
+      if [ -d "$HOME" ]; then
+        # XDG spec allows it to not exist yet - just verify we can create it if needed
+        if [ -d "$xdg_data_home" ] || mkdir -p "$xdg_data_home" 2>/dev/null; then
+          if [ -w "$xdg_data_home" ] || [ ! -e "$xdg_data_home" ]; then
+            printf '  %s✓%s XDG data directory: %s accessible\n' "$_green" "$_reset" "$xdg_data_home"
+          else
+            printf '  %s✗%s XDG data directory: %s not writable\n' "$_red" "$_reset" "$xdg_data_home"
+            return 1
+          fi
+        else
+          printf '  %s✗%s XDG data directory: cannot create %s\n' "$_red" "$_reset" "$xdg_data_home"
+          return 1
+        fi
+      fi
+
       # Check spells
       spell_list=$("$spell_levels_script" 8 spells)
       if [ -n "$spell_list" ]; then
