@@ -450,7 +450,8 @@ uname|uniq|wc|xargs)
   
   # Error if any default synonyms were skipped
   if [ "$_default_skipped" -gt 0 ]; then
-    printf 'generate-glosses: ERROR: %d invalid default synonym(s) - fix immediately\n' "$_default_skipped" >&2
+    err_msg="ERROR: $_default_skipped invalid default synonym(s)"
+    printf 'generate-glosses: %s - fix immediately\n' "$err_msg" >&2
     # Don't exit here - let tests catch it
   fi
   
