@@ -72,14 +72,24 @@ if [ "$marker_name" = "0" ] || [ "$marker_name" = "next" ]; then
                         case "$name" in
                                 *[!0-9]*) ;;
                                 *)
-                                        numeric_markers="$numeric_markers $name"
+                                        if [ -z "$numeric_markers" ]; then
+                                                numeric_markers="$name"
+                                        else
+                                                numeric_markers="$numeric_markers $name"
+                                        fi
                                         ;;
                         esac
                 done
                 # Sort numeric markers numerically
-                for n in $(printf '%s\n' $numeric_markers | sort -n); do
-                        all_markers="$all_markers $n"
-                done
+                if [ -n "$numeric_markers" ]; then
+                        for n in $(printf '%s\n' $numeric_markers | sort -n); do
+                                if [ -z "$all_markers" ]; then
+                                        all_markers="$n"
+                                else
+                                        all_markers="$all_markers $n"
+                                fi
+                        done
+                fi
         fi
         
         # If we have markers, cycle through them
@@ -162,21 +172,41 @@ if [ ! -f "$marker_file" ]; then
                         # Separate numeric and non-numeric markers
                         case "$name" in
                                 *[!0-9]*)
-                                        alpha_markers="$alpha_markers $name"
+                                        if [ -z "$alpha_markers" ]; then
+                                                alpha_markers="$name"
+                                        else
+                                                alpha_markers="$alpha_markers $name"
+                                        fi
                                         ;;
                                 *)
-                                        numeric_markers="$numeric_markers $name"
+                                        if [ -z "$numeric_markers" ]; then
+                                                numeric_markers="$name"
+                                        else
+                                                numeric_markers="$numeric_markers $name"
+                                        fi
                                         ;;
                         esac
                 done
                 # Sort and output: numbers first (numerically), then names (alphabetically)
                 available=""
-                for n in $(printf '%s\n' $numeric_markers | sort -n); do
-                        available="$available $n"
-                done
-                for n in $(printf '%s\n' $alpha_markers | sort); do
-                        available="$available $n"
-                done
+                if [ -n "$numeric_markers" ]; then
+                        for n in $(printf '%s\n' $numeric_markers | sort -n); do
+                                if [ -z "$available" ]; then
+                                        available="$n"
+                                else
+                                        available="$available $n"
+                                fi
+                        done
+                fi
+                if [ -n "$alpha_markers" ]; then
+                        for n in $(printf '%s\n' $alpha_markers | sort); do
+                                if [ -z "$available" ]; then
+                                        available="$n"
+                                else
+                                        available="$available $n"
+                                fi
+                        done
+                fi
                 if [ -n "$available" ]; then
                         printf '%s' "Available markers:"
                         for m in $available; do
