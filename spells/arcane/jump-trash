@@ -17,6 +17,8 @@ esac
 
 # Enforce sourced-only behavior
 # uncastable must be sourced (invoked), never executed (cast)
+UNCASTABLE_MESSAGE='Use "jump trash" to invoke this spell, as it is uncastable directly.'
+export UNCASTABLE_MESSAGE
 . uncastable
 
 set -eu
