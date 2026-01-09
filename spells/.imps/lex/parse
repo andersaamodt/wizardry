@@ -40,8 +40,10 @@ _parse_depth=$((_parse_depth + 1))
 if [ "$_parse_depth" -gt 10 ]; then
   printf 'parse: Maximum recursion depth exceeded\n' >&2
   if [ "$_parse_sourced" -eq 1 ]; then
+    unset WIZARDRY_PARSE_DEPTH
     return 1
   else
+    unset WIZARDRY_PARSE_DEPTH
     exit 1
   fi
 fi
@@ -171,13 +173,20 @@ while [ $_attempt_len -gt 0 ]; do
       # Source the spell instead of execing it
       . "$_spell_path" "$@"
       _result=$?
+      # Clean up recursion depth before returning
+      _parse_depth=$((_parse_depth - 1))
+      if [ "$_parse_depth" -le 0 ]; then
+        unset WIZARDRY_PARSE_DEPTH
+      else
+        export WIZARDRY_PARSE_DEPTH=$_parse_depth
+      fi
       if [ "$_parse_sourced" -eq 1 ]; then
         return $_result
       else
         exit $_result
       fi
     else
-      # Execute normally
+      # Execute normally - depth will be cleaned by subprocess exit
       exec "$_spell_path" "$@"
     fi
   fi
@@ -188,10 +197,14 @@ done
 
 # Last resort: try first word as system command
 if command -v "$_first_word" >/dev/null 2>&1; then
+  # Clean up before exec
+  unset WIZARDRY_PARSE_DEPTH
   exec "$_first_word" "$@"
 fi
 
 printf 'parse: %s: command not found\n' "$_first_word" >&2
+# Clean up recursion depth before returning error
+unset WIZARDRY_PARSE_DEPTH
 if [ "$_parse_sourced" -eq 1 ]; then
   return 127
 else
