@@ -172,7 +172,7 @@ set -eu
     # Add separator if we have both custom and default synonyms
     has_default=0
     if [ -f "$default_file" ]; then
-      has_default=$(grep -c "^alias " "$default_file" 2>/dev/null || printf '0')
+      has_default=$(grep "^alias " "$default_file" 2>/dev/null | wc -l || printf '0')
     fi
     
     if [ "$has_custom" -eq 1 ] && [ "$has_default" -gt 0 ]; then
