@@ -978,6 +978,25 @@ banish_process_level() {
         fi
       fi
 
+      # Test that marker files can actually be created and read
+      # Navigation relies on persistent marker files
+      test_marker="$markers_dir/.banish-test-marker"
+      test_path="/tmp/test-location"
+      if printf '%s\n' "$test_path" > "$test_marker" 2>/dev/null; then
+        read_path=$(cat "$test_marker" 2>/dev/null || printf '')
+        rm -f "$test_marker" 2>/dev/null || :
+        
+        if [ "$read_path" = "$test_path" ]; then
+          printf '  %s✓%s Marker persistence: Can create and read marker files\n' "$_green" "$_reset"
+        else
+          printf '  %s✗%s Marker persistence: File read/write mismatch\n' "$_red" "$_reset"
+          return 1
+        fi
+      else
+        printf '  %s✗%s Marker persistence: Cannot create marker files\n' "$_red" "$_reset"
+        return 1
+      fi
+
       # Check spellbook directory access
       if [ -d "$spell_home" ] && [ -w "$spell_home" ]; then
         printf '  %s✓%s Spellbook directory: %s\n' "$_green" "$_reset" "$spell_home"
@@ -1424,6 +1443,23 @@ banish_process_level() {
         if [ ! -d "$config_home" ] || [ ! -w "$config_home" ]; then
           return 1
         fi
+      fi
+
+      # Test that log files can be written
+      # System configuration spells need to write logs
+      log_test="$config_home/.banish-log-test"
+      if printf '%s\n' "test log entry" >> "$log_test" 2>/dev/null; then
+        if [ -f "$log_test" ] && [ -r "$log_test" ]; then
+          rm -f "$log_test" 2>/dev/null || :
+          printf '  %s✓%s Log file creation: Can write config logs\n' "$_green" "$_reset"
+        else
+          rm -f "$log_test" 2>/dev/null || :
+          printf '  %s✗%s Log file creation: File not readable after write\n' "$_red" "$_reset"
+          return 1
+        fi
+      else
+        printf '  %s✗%s Log file creation: Cannot write log files\n' "$_red" "$_reset"
+        return 1
       fi
 
       # Check spells
