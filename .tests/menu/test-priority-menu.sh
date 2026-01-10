@@ -196,8 +196,8 @@ SH
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *'Exit%exit 0') : ;;
-    *) TEST_FAILURE_REASON="menu should show Exit label: $args"; return 1 ;;
+    *'Exit%kill -TERM $PPID') : ;;
+    *) TEST_FAILURE_REASON="menu should show Exit label with kill -TERM pattern: $args"; return 1 ;;
   esac
 }
 

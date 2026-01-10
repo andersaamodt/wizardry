@@ -114,7 +114,7 @@ display_priorities() {
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
   exit_label=$(exit-label)
-  menu_command="${menu_command} \"${exit_label}%exit 0\""
+  menu_command="${menu_command} \"${exit_label}%kill -TERM \\\$PPID\""
 
   # Execute the constructed menu command
   eval "${menu_command}" || _priorities_menu_status=$?

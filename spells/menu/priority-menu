@@ -55,9 +55,10 @@ priority_menu_display_menu() {
   fi
 
   filename=$(basename "$file")
-  # Exit button - use exit 0 instead of kill signal
+  # Exit button kills this menu script via TERM signal
+  # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
   exit_label=$(exit-label)
-  exit_item="${exit_label}%exit 0"
+  exit_item="${exit_label}%kill -TERM \$PPID"
 
   # Check if this file is the highest priority (first in the list)
   # Get parent directory
