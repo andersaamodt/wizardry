@@ -52,12 +52,6 @@ set -eu
 marker_name="${1:-1}"
 original_marker_arg="${1:-1}"
 
-# DEBUG: Show what arguments were received
-printf 'DEBUG: Received %d arguments\n' "$#" >&2
-printf 'DEBUG: $1="%s"\n' "${1:-<unset>}" >&2
-printf 'DEBUG: marker_name="%s"\n' "$marker_name" >&2
-printf 'DEBUG: $@="%s"\n' "$*" >&2
-
 # If marker is "0" or "next", cycle through markers
 if [ "$marker_name" = "0" ] || [ "$marker_name" = "next" ]; then
         # Clear marker_name so cycling logic can set it fresh
@@ -98,16 +92,6 @@ if [ "$marker_name" = "0" ] || [ "$marker_name" = "next" ]; then
                 fi
         fi
         
-        # DEBUG: Show what all_markers contains
-        printf 'DEBUG: all_markers="%s"\n' "$all_markers" >&2
-        printf 'DEBUG: Number of markers in all_markers: ' >&2
-        _debug_count=0
-        # Use command substitution to force word splitting in all shells (including zsh)
-        for _debug_m in $(printf '%s\n' $all_markers); do
-                _debug_count=$((_debug_count + 1))
-        done
-        printf '%d\n' "$_debug_count" >&2
-        unset _debug_count _debug_m
         
         # If we have markers, cycle through them
         if [ -n "$all_markers" ]; then
@@ -128,8 +112,6 @@ if [ "$marker_name" = "0" ] || [ "$marker_name" = "next" ]; then
                         done
                 fi
                 
-                # DEBUG: Show last_marker
-                printf 'DEBUG: last_marker="%s"\n' "${last_marker:-<empty>}" >&2
                 
                 # Get next marker in sequence
                 if [ -n "$last_marker" ]; then
@@ -143,7 +125,6 @@ if [ "$marker_name" = "0" ] || [ "$marker_name" = "next" ]; then
                                 fi
                                 if [ "$found" -eq 1 ]; then
                                         marker_name=$m
-                                        printf 'DEBUG: Set marker_name to "%s" (next after last_marker)\n' "$marker_name" >&2
                                         break
                                 fi
                                 if [ "$m" = "$last_marker" ]; then
@@ -153,27 +134,18 @@ if [ "$marker_name" = "0" ] || [ "$marker_name" = "next" ]; then
                         # Wrap around to first marker if at end
                         if [ "$found" -eq 1 ] && [ -z "$marker_name" ]; then
                                 marker_name=$first
-                                printf 'DEBUG: Set marker_name to "%s" (wrap around to first)\n' "$marker_name" >&2
                         fi
                 else
                         # No last marker (new session or first use), use first available
-                        printf 'DEBUG: No last_marker, using first available from all_markers\n' >&2
                         # Use command substitution to force word splitting in all shells
                         for m in $(printf '%s\n' $all_markers); do
-                                printf 'DEBUG: Setting marker_name to first marker: "%s"\n' "$m" >&2
                                 marker_name=$m
                                 break
                         done
                 fi
-                
-                # DEBUG: Show final marker_name after cycling
-                printf 'DEBUG: After cycling, marker_name="%s"\n' "$marker_name" >&2
         fi
         # If still empty after cycling, leave it empty to trigger proper error below
 fi
-
-# DEBUG: Show final marker_name before file check
-printf 'DEBUG: Final marker_name before file operations: "%s"\n' "$marker_name" >&2
 
 marker_file="$markers_dir/$marker_name"
 
