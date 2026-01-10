@@ -29,8 +29,8 @@ test_validate_existing_imps() {
 test_validate_missing_spells() {
   WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" "nonexistent-spell"
   assert_failure || return 1
-  if ! printf '%s' "$OUTPUT" | grep -q "Missing Spell: nonexistent-spell" && \
-    ! printf '%s' "$ERROR" | grep -q "Missing Spell: nonexistent-spell"; then
+  if ! printf '%s' "$OUTPUT" | grep -q "Missing spell: nonexistent-spell" && \
+    ! printf '%s' "$ERROR" | grep -q "Missing spell: nonexistent-spell"; then
     TEST_FAILURE_REASON="missing spell message not found in output"
     return 1
   fi
