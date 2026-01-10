@@ -80,3 +80,6 @@
 - Always create realistic unit tests for every feature BEFORE writing or fixing code; tests are the fastest path to working code and catch edge cases immediately (TDD principle).
 - Hyphenated spell names with uncastable pattern must have aliases generated (not just hyphenated synonyms) to prevent terminal crashes when typed directly by users.
 - In sourced-only spells with `set -eu`, always do `set +eu` before every `return` statement to prevent shell options from leaking into the parent shell, which can cause unexpected behavior or terminal exits.
+- In zsh (macOS default), `for m in $variable` doesn't word-split by default; use `for m in $(printf '%s\n' $variable)` to force word splitting in all shells (PR #909).
+- Debug output showing iteration counts can quickly reveal word-splitting issues: if `all_markers="1 2 3"` iterates once instead of three times, word splitting is disabled (PR #909).
+- When sourcing scripts into zsh shells, unquoted variables in for loops don't split; command substitution output always splits regardless of shell settings (PR #909).

@@ -57,11 +57,10 @@ if [ "$marker_name" = "0" ] || [ "$marker_name" = "next" ]; then
         # Clear marker_name so cycling logic can set it fresh
         marker_name=""
         
-        # Get all available marker names, sorted
+        # Get only numbered markers for cycling (not named markers)
         all_markers=""
         if [ -d "$markers_dir" ]; then
                 numeric_markers=""
-                alpha_markers=""
                 for marker in "$markers_dir"/*; do
                         [ -f "$marker" ] || continue
                         name=$(basename "$marker")
@@ -69,42 +68,58 @@ if [ "$marker_name" = "0" ] || [ "$marker_name" = "next" ]; then
                         case "$name" in
                                 .*) continue ;;
                         esac
-                        # Separate numeric and non-numeric markers
+                        # Only include numeric markers for cycling
                         case "$name" in
-                                *[!0-9]*)
-                                        alpha_markers="$alpha_markers $name"
-                                        ;;
+                                *[!0-9]*) ;;
                                 *)
-                                        numeric_markers="$numeric_markers $name"
+                                        if [ -z "$numeric_markers" ]; then
+                                                numeric_markers="$name"
+                                        else
+                                                numeric_markers="$numeric_markers $name"
+                                        fi
                                         ;;
                         esac
                 done
-                # Sort and output: numbers first (numerically), then names (alphabetically)
-                for n in $(printf '%s\n' $numeric_markers | sort -n); do
-                        all_markers="$all_markers $n"
-                done
-                for n in $(printf '%s\n' $alpha_markers | sort); do
-                        all_markers="$all_markers $n"
-                done
+                # Sort numeric markers numerically
+                if [ -n "$numeric_markers" ]; then
+                        for n in $(printf '%s\n' $numeric_markers | sort -n); do
+                                if [ -z "$all_markers" ]; then
+                                        all_markers="$n"
+                                else
+                                        all_markers="$all_markers $n"
+                                fi
+                        done
+                fi
         fi
+        
         
         # If we have markers, cycle through them
         if [ -n "$all_markers" ]; then
-                # Find the most recently used marker (by mtime)
+                # Find the most recently used NUMERIC marker (by mtime)
                 last_marker=""
                 if [ -d "$markers_dir" ]; then
+                        # Use command substitution to force word splitting in all shells (including zsh)
                         sorted=$(ls -t "$markers_dir" 2>/dev/null || true)
-                        recent=$(printf '%s\n' "$sorted" | head -1)
-                        if [ -n "$recent" ] && [ -f "$markers_dir/$recent" ]; then
-                                last_marker=$recent
-                        fi
+                        for recent in $(printf '%s\n' $sorted); do
+                                # Skip non-numeric markers
+                                case "$recent" in
+                                        *[!0-9]*) continue ;;
+                                esac
+                                if [ -f "$markers_dir/$recent" ]; then
+                                        last_marker=$recent
+                                        break
+                                fi
+                        done
                 fi
+                
                 
                 # Get next marker in sequence
                 if [ -n "$last_marker" ]; then
                         found=0
                         first=""
-                        for m in $all_markers; do
+                        # Force word splitting by using printf to output each marker on separate line
+                        # This works in all shells including zsh
+                        for m in $(printf '%s\n' $all_markers); do
                                 if [ -z "$first" ]; then
                                         first=$m
                                 fi
@@ -122,7 +137,8 @@ if [ "$marker_name" = "0" ] || [ "$marker_name" = "next" ]; then
                         fi
                 else
                         # No last marker (new session or first use), use first available
-                        for m in $all_markers; do
+                        # Use command substitution to force word splitting in all shells
+                        for m in $(printf '%s\n' $all_markers); do
                                 marker_name=$m
                                 break
                         done
@@ -162,21 +178,41 @@ if [ ! -f "$marker_file" ]; then
                         # Separate numeric and non-numeric markers
                         case "$name" in
                                 *[!0-9]*)
-                                        alpha_markers="$alpha_markers $name"
+                                        if [ -z "$alpha_markers" ]; then
+                                                alpha_markers="$name"
+                                        else
+                                                alpha_markers="$alpha_markers $name"
+                                        fi
                                         ;;
                                 *)
-                                        numeric_markers="$numeric_markers $name"
+                                        if [ -z "$numeric_markers" ]; then
+                                                numeric_markers="$name"
+                                        else
+                                                numeric_markers="$numeric_markers $name"
+                                        fi
                                         ;;
                         esac
                 done
                 # Sort and output: numbers first (numerically), then names (alphabetically)
                 available=""
-                for n in $(printf '%s\n' $numeric_markers | sort -n); do
-                        available="$available $n"
-                done
-                for n in $(printf '%s\n' $alpha_markers | sort); do
-                        available="$available $n"
-                done
+                if [ -n "$numeric_markers" ]; then
+                        for n in $(printf '%s\n' $numeric_markers | sort -n); do
+                                if [ -z "$available" ]; then
+                                        available="$n"
+                                else
+                                        available="$available $n"
+                                fi
+                        done
+                fi
+                if [ -n "$alpha_markers" ]; then
+                        for n in $(printf '%s\n' $alpha_markers | sort); do
+                                if [ -z "$available" ]; then
+                                        available="$n"
+                                else
+                                        available="$available $n"
+                                fi
+                        done
+                fi
                 if [ -n "$available" ]; then
                         printf '%s' "Available markers:"
                         for m in $available; do
