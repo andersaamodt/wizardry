@@ -171,17 +171,17 @@ EOF
     return 1
   fi
   
-  # 6. CRITICAL FIX: First-word glosses must invoke aliases via eval, not parse
-  #    because parse skips aliases to avoid recursion. When "leap to location" is typed,
-  #    the leap() gloss reconstructs it to "leap-to-location" and must check if it's an alias.
-  #    If it is, it must eval it directly instead of calling parse.
+  # 6. CRITICAL FIX: First-word glosses must invoke aliases directly (not via parse or eval with $@)
+  #    because parse skips aliases and eval with $@ passes remaining args incorrectly.
+  #    When "leap to location" is typed, the leap() gloss reconstructs it to "leap-to-location".
+  #    It must check if it's an alias and invoke it WITHOUT $@ (multi-word already consumed).
   if ! printf '%s' "$OUTPUT" | grep -q 'type.*\$_fw_spell'; then
     TEST_FAILURE_REASON="Expected leap() gloss to check type of reconstructed spell name"
     return 1
   fi
   
-  if ! printf '%s' "$OUTPUT" | grep -q 'eval.*\$_fw_spell'; then
-    TEST_FAILURE_REASON="Expected leap() gloss to eval aliases directly (parse skips aliases)"
+  if ! printf '%s' "$OUTPUT" | grep -q '"\$_fw_spell"$'; then
+    TEST_FAILURE_REASON="Expected leap() gloss to invoke alias directly without args (args already consumed)"
     return 1
   fi
 }
