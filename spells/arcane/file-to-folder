@@ -1,0 +1,78 @@
+#!/bin/sh
+
+# Convert a text file to a folder. If the file had any contents, they are moved to "project notes" inside the new folder.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: file-to-folder <file>
+
+Convert a text file to a folder of the same name. If the text file had any contents, these contents are moved to be in the new folder and renamed "project notes" (with the same extension the text file had before). Extended attributes (xattrs) are preserved.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Check if file argument is provided
+if [ "$#" -eq 0 ]; then
+  printf '%s\n' "file-to-folder: file path required" >&2
+  exit 2
+fi
+
+file="$1"
+
+# Check if file exists
+if ! there "$file"; then
+  printf '%s\n' "file-to-folder: file does not exist" >&2
+  exit 1
+fi
+
+# Check if it's actually a file (not a directory)
+if [ -d "$file" ]; then
+  printf '%s\n' "file-to-folder: path is already a folder" >&2
+  exit 1
+fi
+
+# Get the directory containing the file
+parent_dir=$(dirname "$file")
+if [ "$parent_dir" = "." ]; then
+  parent_dir=$(pwd -P)
+fi
+
+# Get the base name (filename without path)
+filename=$(basename "$file")
+
+# Extract extension if present
+case "$filename" in
+  *.*)
+    # Has extension
+    extension="${filename##*.}"
+    basename_no_ext="${filename%.*}"
+    ;;
+  *)
+    # No extension
+    extension=""
+    basename_no_ext="$filename"
+    ;;
+esac
+
+# Create temporary file in the same directory to preserve xattrs
+temp_file=$(temp-file file-to-folder)
+
+# Move the original file to temp location (preserves xattrs)
+mv "$file" "$temp_file"
+
+# Create folder with the original file's name
+mkdir -p "$file"
+
+# Move the temp file into the new folder and rename it
+if [ -n "$extension" ]; then
+  mv "$temp_file" "$file/project notes.$extension"
+else
+  mv "$temp_file" "$file/project notes"
+fi
+
+printf '%s\n' "Converted file to folder: $file"
