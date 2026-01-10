@@ -139,12 +139,14 @@ previous_item_count=0
 
 while true; do
   if [ "$first_run" -eq 0 ]; then
-    # Check if item count changed (new priority added)
-    # If so, keep "Add priority" selected (which is at position: item_count + separator + add_priority = current_item_count + 2)
+    # Always keep "Add priority" selected when item count increases (new priority was added)
     if [ "$current_item_count" -gt "$previous_item_count" ]; then
       # New item was added, keep "Add priority" selected
       # Position is: items + 1 separator + "Add priority"
       start_selection=$((current_item_count + 2))
+    else
+      # If count didn't change, reset to default (first item)
+      start_selection=1
     fi
     previous_item_count=$current_item_count
     
