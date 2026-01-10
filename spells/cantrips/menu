@@ -674,9 +674,9 @@ do
                         ;;
         esac
         
-        # Truncate labels to preserve command column (minimum 10 chars)
-        # Calculate effective max label width to ensure commands get at least 10 chars
-        min_command_width=10
+        # Truncate labels to preserve command column (minimum 20 chars)
+        # Calculate effective max label width to ensure commands get at least 20 chars
+        min_command_width=20
         current_effective_max_name_length=$max_name_length
         if [ "$current_window_width" -gt 0 ]; then
                 max_allowed_name_length=$((current_window_width - min_command_width - 3))
