@@ -193,8 +193,11 @@ while [ "$attempt" -lt "$max_attempts" ]; do
   attempt=$((attempt + 1))
   printf '[blink DEBUG] Attempt %s of %s\n' "$attempt" "$max_attempts"
   
-  # Use shell arithmetic for randomness (PID + attempt ensures different value each retry)
-  random_line=$(( (($$ * 7 + attempt) % dir_count) + 1 ))
+  # Use shell arithmetic for randomness
+  # Combine PID, attempt number, and microseconds from date for maximum entropy
+  # On systems without date +%N, fall back to seconds only
+  time_seed=$(date +%N 2>/dev/null || date +%s)
+  random_line=$(( (($$ * 7 + attempt * 13 + time_seed) % dir_count) + 1 ))
   destination=$(sed -n "${random_line}p" "$temp_list")
   printf '[blink DEBUG] Selected destination: %s\n' "$destination"
   
@@ -274,10 +277,11 @@ You feel the tug of randomness and surrender to it.
 BLINK_MESSAGES
 )
 
-# Count messages and select one using shell arithmetic
+# Count messages and select one using shell arithmetic with time-based entropy
 message_count=$(printf '%s\n' "$blink_message" | wc -l | tr -d ' ')
 if [ "$message_count" -gt 0 ]; then
-  random_msg_line=$(( ($$ % message_count) + 1 ))
+  msg_time_seed=$(date +%N 2>/dev/null || date +%s)
+  random_msg_line=$(( (($$ * 11 + msg_time_seed) % message_count) + 1 ))
   selected_message=$(printf '%s\n' "$blink_message" | sed -n "${random_msg_line}p")
   printf '[blink DEBUG] Selected message: %s\n' "$selected_message"
 else

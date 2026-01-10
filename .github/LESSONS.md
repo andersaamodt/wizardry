@@ -91,3 +91,4 @@
 - When selecting random items from a list (e.g., directories), implement retry logic with accessibility testing before use; macOS system directories may exist but be inaccessible due to permissions.
 - Use shell-native arithmetic with PID for randomness (`random=$(( (($$ * 7 + offset) % count) + 1 ))`), not awk srand(), when needing multiple different random values in same script invocation.
 - Single-word uncastable spell gloss functions must blacklist spells like `cd` that are manually sourced into shell rc files, not invoked via gloss wrappers (prevents breaking builtin command behavior).
+- Shell arithmetic randomness using only PID produces the same sequence on each invocation; add time-based entropy using `date +%N` (nanoseconds) or `date +%s` (seconds fallback) for true randomness across multiple runs.
