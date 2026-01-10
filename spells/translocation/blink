@@ -44,7 +44,11 @@ fi
 unset _blink_sourced _blink_base
 
 set -eu
-. env-clear
+
+# Source env-clear if available, otherwise skip
+if command -v env-clear >/dev/null 2>&1; then
+  . env-clear
+fi
 
 # Parse arguments
 use_home=0
@@ -85,8 +89,12 @@ case "$max_depth" in
 esac
 
 # Search for directories - let blink take you anywhere!
-if command -v info >/dev/null 2>&1; then
-  info "Scanning for destinations..."
+# Only use wizardry imps if available (check they're in WIZARDRY_DIR)
+_info_cmd=$(command -v info 2>/dev/null || true)
+if [ -n "$_info_cmd" ] && [ -n "${WIZARDRY_DIR-}" ]; then
+  case "$_info_cmd" in
+    "$WIZARDRY_DIR"*) info "Scanning for destinations..." ;;
+  esac
 fi
 
 # Use find to get all accessible directories
@@ -104,8 +112,11 @@ dir_count=$(wc -l < "$temp_list" | tr -d ' ')
 
 if [ "$dir_count" -eq 0 ]; then
   # No results from main search, try simpler search
-  if command -v warn >/dev/null 2>&1; then
-    warn "blink: no directories found at depth $max_depth, trying depth 1"
+  _warn_cmd=$(command -v warn 2>/dev/null || true)
+  if [ -n "$_warn_cmd" ] && [ -n "${WIZARDRY_DIR-}" ]; then
+    case "$_warn_cmd" in
+      "$WIZARDRY_DIR"*) warn "blink: no directories found at depth $max_depth, trying depth 1" ;;
+    esac
   fi
   find "$base_dir" -maxdepth 1 -type d -readable 2>/dev/null > "$temp_list"
   dir_count=$(wc -l < "$temp_list" | tr -d ' ')
@@ -116,8 +127,11 @@ if [ "$dir_count" -eq 0 ]; then
   fi
 fi
 
-if command -v debug >/dev/null 2>&1; then
-  debug "Found $dir_count accessible directories"
+_debug_cmd=$(command -v debug 2>/dev/null || true)
+if [ -n "$_debug_cmd" ] && [ -n "${WIZARDRY_DIR-}" ]; then
+  case "$_debug_cmd" in
+    "$WIZARDRY_DIR"*) debug "Found $dir_count accessible directories" ;;
+  esac
 fi
 
 # Select a random directory using awk

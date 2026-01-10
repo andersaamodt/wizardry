@@ -21,19 +21,32 @@ test_help() {
 
 test_blink_from_root() {
   # Test that blink works from root (default behavior)
-  # Set up PATH to include imps so env-clear is available
-  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:/bin:/usr/bin"
-  export PATH
+  # Source blink in a subshell and verify it changes directory
+  tmpscript=$(make_tempdir)/test.sh
   
-  # Just verify it produces output without error
-  OUTPUT=$(. "$ROOT_DIR/spells/translocation/blink" 1 2>&1) || true
+  # Export needed variables
+  export WIZARDRY_IMPS_PATH
+  export ROOT_DIR
+  export WIZARDRY_DIR="$ROOT_DIR"
   
-  # Check that we got some output (the blink happened)
-  if [ -n "$OUTPUT" ]; then
-    return 0
-  else
-    return 1
-  fi
+  # Create test script - use double quotes to expand variables
+  cat > "$tmpscript" <<TESTSCRIPT
+#!/bin/sh
+export PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:/bin:/usr/bin"
+export WIZARDRY_DIR="$ROOT_DIR"
+export ROOT_DIR="$ROOT_DIR"
+start_dir=\$(pwd)
+. "$ROOT_DIR/spells/translocation/blink" 1 >/dev/null 2>&1
+end_dir=\$(pwd)
+if [ "\$start_dir" != "\$end_dir" ]; then
+  exit 0
+else
+  exit 1
+fi
+TESTSCRIPT
+  
+  chmod +x "$tmpscript"
+  sh "$tmpscript"
 }
 
 test_blink_with_home_flag() {
@@ -43,35 +56,30 @@ test_blink_with_home_flag() {
   mkdir -p "$tmpdir/test/dir2"
   mkdir -p "$tmpdir/test/dir3"
   
-  # Save original directory
-  orig_dir=$(pwd)
+  # Export needed variables
+  export WIZARDRY_IMPS_PATH
+  export ROOT_DIR
+  export WIZARDRY_DIR="$ROOT_DIR"
   
-  # Set up PATH to include imps
-  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:/bin:/usr/bin"
-  export PATH
+  # Create test script - use double quotes to expand variables
+  tmpscript="$tmpdir/test.sh"
+  cat > "$tmpscript" <<TESTSCRIPT
+#!/bin/sh
+export PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:/bin:/usr/bin"
+export WIZARDRY_DIR="$ROOT_DIR"
+export ROOT_DIR="$ROOT_DIR"
+export HOME="$tmpdir"
+cd "\$HOME"
+. "$ROOT_DIR/spells/translocation/blink" --home 1 >/dev/null 2>&1
+end_dir=\$(pwd)
+case "\$end_dir" in
+  "$tmpdir"*) exit 0 ;;
+  *) exit 1 ;;
+esac
+TESTSCRIPT
   
-  # Change to temp dir and set HOME for test
-  cd "$tmpdir"
-  old_home=$HOME
-  HOME="$tmpdir"
-  export HOME
-  
-  # Source the blink spell with --home flag
-  OUTPUT=$(. "$ROOT_DIR/spells/translocation/blink" --home 1 2>&1) || true
-  
-  # Restore HOME
-  HOME=$old_home
-  export HOME
-  
-  # Go back to original directory
-  cd "$orig_dir"
-  
-  # Check that we got some output (the blink happened)
-  if [ -n "$OUTPUT" ]; then
-    return 0
-  else
-    return 1
-  fi
+  chmod +x "$tmpscript"
+  sh "$tmpscript"
 }
 
 test_rejects_invalid_depth() {
