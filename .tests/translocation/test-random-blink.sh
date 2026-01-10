@@ -13,7 +13,7 @@ wizardry_base_path() {
 }
 
 test_help() {
-  run_spell "spells/translocation/blink" --help
+  run_spell "spells/translocation/random-blink" --help
   assert_success && assert_output_contains "Usage:"
 }
 
@@ -31,11 +31,11 @@ test_blink_with_subdirs() {
   
   start_normalized=$(cd "$start_dir" && pwd -P | sed 's|//|/|g')
   
-  # Run blink from start_dir
+  # Run random-blink from start_dir
   PATH="$WIZARDRY_IMPS_PATH:$(wizardry_base_path):/bin:/usr/bin"
   RUN_CMD_WORKDIR="$start_dir"
   export PATH RUN_CMD_WORKDIR
-  run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/blink\"; pwd -P | sed 's|//|/|g'"
+  run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/random-blink\"; pwd -P | sed 's|//|/|g'"
   
   assert_success || return 1
   
@@ -67,7 +67,7 @@ test_blink_no_subdirs() {
   PATH="$WIZARDRY_IMPS_PATH:$(wizardry_base_path):/bin:/usr/bin"
   RUN_CMD_WORKDIR="$tmpdir"
   export PATH RUN_CMD_WORKDIR
-  run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/blink\""
+  run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/random-blink\""
   
   assert_failure || return 1
   assert_output_contains "No subdirectories found"
@@ -83,11 +83,11 @@ test_blink_depth_limit() {
   
   start_normalized=$(cd "$start_dir" && pwd -P | sed 's|//|/|g')
   
-  # Run blink with depth limit of 1
+  # Run random-blink with depth limit of 1
   PATH="$WIZARDRY_IMPS_PATH:$(wizardry_base_path):/bin:/usr/bin"
   RUN_CMD_WORKDIR="$start_dir"
   export PATH RUN_CMD_WORKDIR
-  run_cmd sh -c "set -- 1; . \"$ROOT_DIR/spells/translocation/blink\"; pwd -P | sed 's|//|/|g'"
+  run_cmd sh -c "set -- 1; . \"$ROOT_DIR/spells/translocation/random-blink\"; pwd -P | sed 's|//|/|g'"
   
   assert_success || return 1
   
@@ -117,17 +117,17 @@ test_blink_multiple_attempts() {
   mkdir -p "$start_dir/dir4"
   mkdir -p "$start_dir/dir5"
   
-  # Try blink 50 times to ensure it works consistently (as mentioned in problem statement)
+  # Try random-blink 50 times to ensure it works consistently (as mentioned in problem statement)
   success_count=0
   attempt=0
   while [ "$attempt" -lt 50 ]; do
     attempt=$((attempt + 1))
     
-    # Run blink from start_dir
+    # Run random-blink from start_dir
     PATH="$WIZARDRY_IMPS_PATH:$(wizardry_base_path):/bin:/usr/bin"
     RUN_CMD_WORKDIR="$start_dir"
     export PATH RUN_CMD_WORKDIR
-    run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/blink\" 2>/dev/null"
+    run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/random-blink\" 2>/dev/null"
     
     if [ "$STATUS" -eq 0 ]; then
       success_count=$((success_count + 1))
@@ -136,7 +136,7 @@ test_blink_multiple_attempts() {
   
   # All 50 attempts should succeed (as mentioned in problem statement)
   [ "$success_count" -eq 50 ] || {
-    printf 'Expected 50 successful blinks, got %s\n' "$success_count" >&2
+    printf 'Expected 50 successful random-blinks, got %s\n' "$success_count" >&2
     return 1
   }
 }
@@ -148,21 +148,21 @@ test_blink_invalid_depth() {
   RUN_CMD_WORKDIR="$tmpdir"
   export PATH RUN_CMD_WORKDIR
   
-  run_cmd sh -c "set -- 0; . \"$ROOT_DIR/spells/translocation/blink\""
+  run_cmd sh -c "set -- 0; . \"$ROOT_DIR/spells/translocation/random-blink\""
   assert_failure && assert_error_contains "must be between 1 and 10"
   
-  run_cmd sh -c "set -- 11; . \"$ROOT_DIR/spells/translocation/blink\""
+  run_cmd sh -c "set -- 11; . \"$ROOT_DIR/spells/translocation/random-blink\""
   assert_failure && assert_error_contains "must be between 1 and 10"
   
-  run_cmd sh -c "set -- abc; . \"$ROOT_DIR/spells/translocation/blink\""
+  run_cmd sh -c "set -- abc; . \"$ROOT_DIR/spells/translocation/random-blink\""
   assert_failure && assert_error_contains "must be a number"
 }
 
-run_test_case "blink prints usage" test_help
-run_test_case "blink moves to subdirectory" test_blink_with_subdirs
-run_test_case "blink fails when no subdirectories" test_blink_no_subdirs
-run_test_case "blink respects depth limit" test_blink_depth_limit
-run_test_case "blink works consistently (50 attempts)" test_blink_multiple_attempts
-run_test_case "blink validates depth parameter" test_blink_invalid_depth
+run_test_case "random-blink prints usage" test_help
+run_test_case "random-blink moves to subdirectory" test_blink_with_subdirs
+run_test_case "random-blink fails when no subdirectories" test_blink_no_subdirs
+run_test_case "random-blink respects depth limit" test_blink_depth_limit
+run_test_case "random-blink works consistently (50 attempts)" test_blink_multiple_attempts
+run_test_case "random-blink validates depth parameter" test_blink_invalid_depth
 
 finish_tests
