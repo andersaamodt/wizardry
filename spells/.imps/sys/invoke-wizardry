@@ -130,9 +130,16 @@ done
 export PATH
 
 # Optional: Generate first-word glosses for space-separated invocation
-# This still allows "env or VAR DEFAULT" instead of just "env-or VAR DEFAULT"
+# This allows "env or VAR DEFAULT" instead of "env-or VAR DEFAULT"
+# 
+# PERFORMANCE IMPACT: Glosses add ~0.14s to startup time (eval ~640KB of code)
+# For faster startup, disable with: export WIZARDRY_SKIP_GLOSSES=1
+# 
+# All spells work normally without glosses using hyphenated form (env-or, temp-file, etc.)
+# Glosses only add convenience of space-separated syntax (not required)
+#
 # Skip in test mode (tests don't need glosses)
-if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
+if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ] && [ "${WIZARDRY_SKIP_GLOSSES:-0}" != "1" ]; then
   if command -v generate-glosses >/dev/null 2>&1; then
     [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Generating first-word glosses..." >&2
     
