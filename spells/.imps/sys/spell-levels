@@ -55,11 +55,11 @@ case "$level" in
   8)
     name='MUD Basics'
     spells='check-cd-hook:mud look:mud'
-    imps='fs/xattr-helper-usable fs/xattr-list-keys fs/xattr-read-value'
+    imps='fs/xattr-helper-usable fs/xattr-list-keys fs/xattr-read-batch fs/xattr-read-value'
     ;;
   9)
     name='Arcane File Operations'
-    spells='copy:arcane file-list:arcane forall:arcane jump-trash:arcane read-magic:arcane trash:arcane'
+    spells='copy:arcane file-list:arcane file-to-folder:arcane forall:arcane jump-trash:arcane read-magic:arcane trash:arcane'
     imps='fs/backup fs/clip-copy fs/clip-paste fs/ensure-parent-dir menu/detect-trash text/append text/count-chars text/drop text/each text/field text/first text/last text/lines text/make-indent text/pick text/read-file text/skip text/take text/write-file'
     ;;
   10)
@@ -149,7 +149,7 @@ case "$level" in
     ;;
   27)
     name='Arcana & Extensions'
-    spells=''
+    spells='import-arcanum:.arcana'
     imps=''
     ;;
   *)
