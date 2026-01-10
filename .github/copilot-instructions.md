@@ -54,14 +54,14 @@ This fetches test failures from PR description via GitHub API. Works immediately
 ## Essential Reading  📚✨
 
 **Core Documentation:**
-1. **`FULL_SPEC.md`** — Canonical specification organized by spell levels ⭐⭐⭐
+0. **`README.md`** — **MOST CANONICAL** — Project philosophy, values, and standards (READ FIRST) 🗝️⭐⭐⭐
+1. **`FULL_SPEC.md`** — Technical specification organized by spell levels ⭐⭐⭐
 2. **`SHELL_CODE_PATTERNS.md`** — POSIX shell patterns, quirks, and idioms ⭐
 3. **`CROSS_PLATFORM_PATTERNS.md`** — Cross-platform compatibility patterns ⭐
 4. **`EXEMPTIONS.md`** — Documented exceptions to standards
 5. **`LESSONS.md`** — Debugging insights (add after every bug fix)
 
 **Also Important:**
-- **`README.md`** — Project principles, values, and standards (READ FIRST) 🗝️
 - **`.AGENTS.md`** — Quick reference guide for AI agents
 
 **Topic-Specific Guides** (all in `.github/`):
@@ -328,14 +328,14 @@ See `.github/glossary-and-function-architecture.md` for complete details.
 ## Documentation Map
 
 **Core Documentation** (keep content in the right document, avoid redundancy):
-1. **FULL_SPEC.md** ⭐⭐⭐ — Canonical specification (reference frequently, keep updated)
+0. **README.md** ⭐⭐⭐ — **MOST CANONICAL** — Project philosophy, values, and standards (reference frequently)
+1. **FULL_SPEC.md** ⭐⭐⭐ — Technical specification (implementation details, keep updated)
 2. **SHELL_CODE_PATTERNS.md** ⭐ — POSIX patterns/best practices (document new discoveries)
 3. **CROSS_PLATFORM_PATTERNS.md** ⭐ — Cross-platform compatibility (document new discoveries)
 4. **EXEMPTIONS.md** — Documented exceptions
 5. **LESSONS.md** — Debugging insights (check when debugging, update after fixes)
 
 **Quick Access:**
-- **README.md** — Project philosophy
 - **.AGENTS.md** — Quick reference for AI agents
 - **Topic guides** (all in `.github/`):
   - `spells.md` — Spell writing

@@ -1,6 +1,6 @@
 # Wizardry Full Specification
 
-**Version**: 1.0.0  
+**Version**: 1.0.1  
 **Last Updated**: 2026-01-10
 
 ## Purpose and Format
@@ -15,13 +15,16 @@ This is the canonical specification for the wizardry project. Every feature, sub
 
 Wizardry uses several focused documentation files. Keep content in the right document and avoid redundancy:
 
-1. **FULL_SPEC.md** ← **YOU ARE HERE** - Canonical specification (what/constraints)
+**Core documentation hierarchy:**
+
+0. **README.md** - **MOST CANONICAL** - Project overview, philosophy (Values, Policies, Design Tenets, Engineering Standards), installation, user-facing features
+1. **FULL_SPEC.md** ← **YOU ARE HERE** - Technical specification (implementation details, feature constraints, system architecture)
 2. **SHELL_CODE_PATTERNS.md** - POSIX shell patterns and best practices (how/idioms)
 3. **CROSS_PLATFORM_PATTERNS.md** - Cross-platform compatibility patterns
 4. **EXEMPTIONS.md** - Documented exceptions to standards
 5. **LESSONS.md** - Debugging insights and lessons learned
 
-**Purpose**: Each document covers distinct content. Cross-reference between documents as needed.
+**Purpose**: Each document covers distinct content. README.md is the most canonical source for project philosophy and standards. FULL_SPEC.md focuses on technical implementation details and does NOT duplicate README.md content. Cross-reference between documents as needed.
 
 **Maintenance**:
 - Add new spec lines when implementing new features
@@ -685,64 +688,15 @@ Wizardry uses several focused documentation files. Keep content in the right doc
 
 ## Project Values and Philosophy
 
-### Core Values
+**See README.md for the canonical source of project philosophy and standards.**
 
-- Useful: Use-case-driven, supports common everyday computer tasks
-- Menu-driven: Users manage entire system via `menu` without memorizing commands
-- Teaching community: Scripts are didactic exemplars encoding shared knowledge
-- Cross-platform: For UNIX-like systems in general, not single distro
-- File-first: All state in files (human-readable text), no opaque databases
-- POSIX sh-first: POSIX sh is lingua franca; other languages only with strong reason
-- FOSS missing link: Supply "glue" integrating standard tools into coherent workflows
-- Semantic synthesis: Scripts evolve toward higher-order grammars behind concise syntax
-- Fun: Magic and MUD flavor text first-class (playful without hiding functionality)
+README.md contains the complete "Ethos and Standards" section with:
+- **Values** - Why the project exists and what principles guide its development
+- **Policies** - Wizardry's stance toward software freedom, tooling, and the ecosystem  
+- **Design Tenets** - How Wizardry should feel to use and how spells present themselves
+- **Engineering Standards** - Technical requirements that all spells, menus, and supporting scripts must fulfill
 
-### Design Policies
-
-- Non-commercial: Wizardry itself is non-commercial; prefer free software over open-source
-- FOSS-first suite: Opinionated selection of free/non-commercial tools, no redundant apps
-- Built-in tools first: Use OS package managers rather than external packaging layers
-- Hand-finished AI code: AI may draft code but final scripts hand-reviewed, commented, tested
-- No AI integration: Spells themselves don't call AI tools or services
-- No fallback forks: Fix primary path instead of adding alternate implementations
-
-### Design Tenets
-
-- Minimalism: Do most with fewest moving parts
-- Atomicity: Spells and imps are small self-contained units combining into larger workings
-- One magical action: Spell narrates one coherent action expressed linearly
-- Document-in-place: Every spell's `--help` fully specifies behavior
-- Interface-neutral: GUIs are thin skins over shell scripts
-- Menu specialization: Complex workflows organized as dedicated menus
-- Menu transparency: Menu items show clear one-line commands (users learn real syntax)
-- Output-first UX: Humans and spells consume same text (readable and pipeable)
-- Self-healing tone: Spells offer to fix problems instead of barking orders
-
-### Engineering Standards
-
-- Single-shell stance: All code POSIX sh with `#!/bin/sh` and `set -eu`
-- POSIX-safe idioms: `$()` not backticks, `command -v` not `which`, `pwd -P` not `realpath`
-- Portable pathing: Use pwd -P, avoid realpath, normalize double slashes
-- Platform detection: Detect with `uname -s`, make PATH explicit
-- Early descriptiveness: Every file opens with 1-2 line comment
-- Help-on-tap: `--help` prints concrete usage, not hand-waving
-- Strict-yet-flat flows: `set -eu`, few functions, linear flow (readable and hackable)
-- Script-like scripts: Flat shell-friendly logic over elaborate function trees
-- Front-facing spells: Every spell user-facing executable (no private wrappers)
-- Spell-by-name invocation: Spells call other spells by name (assume wizardry on PATH)
-- Hyphenated extensionless names: Omit `.sh`, use hyphens for multi-word
-- Careful quoting: Quote variables unless word splitting intentional
-- `printf` over `echo`: Use `printf '%s\n'` for portability
-- Deliberate temp handling: `mktemp` with deterministic cleanup
-- Gentle error contract: Try to repair prerequisites; only exit non-zero when work failed
-- Error prefixing: Errors to stderr prefixed with spell name
-- Unified logging tone: Consistent style and interruption semantics
-- Standardized flag parsing: Single pattern for flags and arguments
-- Input normalization: Shared helpers normalize paths and inputs
-- Linting & formatting: `lint-magic` checks compliance
-- Standard exit codes: Common helpers define exit codes
-- Directory-resolution idiom: Canonical pattern for locating sibling resources
-- Validation helpers: Reusable suite for input checks
+This specification (FULL_SPEC.md) focuses on implementation details and does not duplicate README.md content.
 
 ---
 
@@ -835,4 +789,5 @@ Wizardry uses several focused documentation files. Keep content in the right doc
 
 ## Version History
 
+- 1.0.1 (2026-01-10): Removed redundant "Project Values and Philosophy" section (now references README.md as canonical source); clarified documentation hierarchy
 - 1.0.0 (2026-01-10): Initial comprehensive specification extracted from all project documentation
