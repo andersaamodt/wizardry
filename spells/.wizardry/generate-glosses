@@ -500,12 +500,11 @@ uname|uniq|wc|xargs)
       # Mark as seen
       _synonyms_seen="$_synonyms_seen$_word "
       
-      # Only generate aliases for hyphenated synonyms (POSIX requirement)
-      # Non-hyphenated synonyms handled by parse via file lookup
+      # Generate aliases for hyphenated synonyms, functions for non-hyphenated (if no conflict)
       case "$_word" in
         *-*)
-          # For hyphenated synonyms, convert target hyphens to spaces if target is also hyphenated
-          # This ensures aliases go through first-word glosses which can source uncastable spells
+          # Hyphenated synonym - must use alias (POSIX limitation)
+          # For hyphenated targets, convert hyphens to spaces for first-word gloss routing
           case "$_target" in
             *-*)
               # Convert hyphens to spaces in target (e.g., jump-to-marker → jump to marker)
@@ -515,6 +514,28 @@ uname|uniq|wc|xargs)
             *)
               # Single-word target, use as-is
               emit_line "alias $_word='$_target'"
+              ;;
+          esac
+          ;;
+        *)
+          # Non-hyphenated synonym - check if it conflicts with first-word gloss
+          case "$_first_words_seen" in
+            *" $_word "*)
+              # Conflicts with first-word gloss - skip (gloss will handle via parse)
+              [ "$quiet" -eq 0 ] && info "Synonym '$_word' handled by first-word gloss" >&2
+              ;;
+            *)
+              # No conflict - generate function for direct invocation
+              # Convert hyphenated target to space-separated for first-word gloss routing
+              case "$_target" in
+                *-*)
+                  _func_target=$(printf '%s' "$_target" | sed 's/-/ /g')
+                  emit_line "$_word() { parse $_func_target \"\$@\"; }"
+                  ;;
+                *)
+                  emit_line "$_word() { $_target \"\$@\"; }"
+                  ;;
+              esac
               ;;
           esac
           ;;
@@ -558,12 +579,11 @@ uname|uniq|wc|xargs)
       # Mark as seen
       _synonyms_seen="$_synonyms_seen$_word "
       
-      # Only generate aliases for hyphenated synonyms (POSIX requirement)
-      # Non-hyphenated synonyms handled by parse via file lookup
+      # Generate aliases for hyphenated synonyms, functions for non-hyphenated (if no conflict)
       case "$_word" in
         *-*)
-          # For hyphenated synonyms, convert target hyphens to spaces if target is also hyphenated
-          # This ensures aliases go through first-word glosses which can source uncastable spells
+          # Hyphenated synonym - must use alias (POSIX limitation)
+          # For hyphenated targets, convert hyphens to spaces for first-word gloss routing
           case "$_target" in
             *-*)
               # Convert hyphens to spaces in target (e.g., jump-to-marker → jump to marker)
@@ -573,6 +593,28 @@ uname|uniq|wc|xargs)
             *)
               # Single-word target, use as-is
               emit_line "alias $_word='$_target'"
+              ;;
+          esac
+          ;;
+        *)
+          # Non-hyphenated synonym - check if it conflicts with first-word gloss
+          case "$_first_words_seen" in
+            *" $_word "*)
+              # Conflicts with first-word gloss - skip (gloss will handle via parse)
+              [ "$quiet" -eq 0 ] && info "Synonym '$_word' handled by first-word gloss" >&2
+              ;;
+            *)
+              # No conflict - generate function for direct invocation
+              # Convert hyphenated target to space-separated for first-word gloss routing
+              case "$_target" in
+                *-*)
+                  _func_target=$(printf '%s' "$_target" | sed 's/-/ /g')
+                  emit_line "$_word() { parse $_func_target \"\$@\"; }"
+                  ;;
+                *)
+                  emit_line "$_word() { $_target \"\$@\"; }"
+                  ;;
+              esac
               ;;
           esac
           ;;
