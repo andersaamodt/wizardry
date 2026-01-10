@@ -471,13 +471,14 @@ render_row() {
         if [ "$visible_length" -gt "$effective_max_name_length" ]; then
                 # Need to truncate the label
                 # For clean_label (no ANSI), simple substring works
-                truncated_clean_label=$(printf '%s' "$clean_label" | cut -c -"$effective_max_name_length")
+                max_len=$effective_max_name_length
+                truncated_clean_label=$(printf '%s' "$clean_label" | cut -c -"$max_len")
                 truncated_visible_length=$effective_max_name_length
                 
-                # For label with ANSI codes, we need to preserve codes but truncate visible text
-                # We'll use a simplified approach: if truncation is needed, strip ANSI and retruncate
+                # For label with ANSI codes, preserve codes but truncate visible text
+                # Simplified approach: strip ANSI and retruncate
                 # This ensures consistent display even if we lose some color
-                truncated_label=$(printf '%s' "$clean_label" | cut -c -"$effective_max_name_length")
+                truncated_label=$(printf '%s' "$clean_label" | cut -c -"$max_len")
                 truncated_raw_length=$effective_max_name_length
         fi
 
@@ -490,14 +491,27 @@ render_row() {
                 printf '\033[K'
                 if [ "$highlight" -eq 1 ]; then
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '%b> %-*s%b %b%-*s%b' "$THEME_HIGHLIGHT" "$effective_max_name_length" "$truncated_clean_label" "$RESET" "$THEME_MUTED" "$max_command_length" "$truncated_command" "$RESET"
+                                # Highlighted row with command column
+                                printf '%b> %-*s%b %b%-*s%b' \
+                                        "$THEME_HIGHLIGHT" "$effective_max_name_length" \
+                                        "$truncated_clean_label" "$RESET" \
+                                        "$THEME_MUTED" "$max_command_length" \
+                                        "$truncated_command" "$RESET"
                         else
-                                printf '%b> %-*s%b' "$THEME_HIGHLIGHT" "$effective_max_name_length" "$truncated_clean_label" "$RESET"
+                                # Highlighted row without command column
+                                printf '%b> %-*s%b' \
+                                        "$THEME_HIGHLIGHT" "$effective_max_name_length" \
+                                        "$truncated_clean_label" "$RESET"
                         fi
                 else
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '  %-*s %b%-*s%b' "$adjusted_width" "$truncated_label" "$THEME_MUTED" "$max_command_length" "$truncated_command" "$RESET"
+                                # Normal row with command column
+                                printf '  %-*s %b%-*s%b' \
+                                        "$adjusted_width" "$truncated_label" \
+                                        "$THEME_MUTED" "$max_command_length" \
+                                        "$truncated_command" "$RESET"
                         else
+                                # Normal row without command column
                                 printf '  %-*s' "$adjusted_width" "$truncated_label"
                         fi
                 fi
@@ -505,14 +519,27 @@ render_row() {
         else
                 if [ "$highlight" -eq 1 ]; then
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '%b> %-*s%b %b%-*s%b\n' "$THEME_HIGHLIGHT" "$effective_max_name_length" "$truncated_clean_label" "$RESET" "$THEME_MUTED" "$max_command_length" "$truncated_command" "$RESET"
+                                # Highlighted row with command column (no cursor move)
+                                printf '%b> %-*s%b %b%-*s%b\n' \
+                                        "$THEME_HIGHLIGHT" "$effective_max_name_length" \
+                                        "$truncated_clean_label" "$RESET" \
+                                        "$THEME_MUTED" "$max_command_length" \
+                                        "$truncated_command" "$RESET"
                         else
-                                printf '%b> %-*s%b\n' "$THEME_HIGHLIGHT" "$effective_max_name_length" "$truncated_clean_label" "$RESET"
+                                # Highlighted row without command column (no cursor move)
+                                printf '%b> %-*s%b\n' \
+                                        "$THEME_HIGHLIGHT" "$effective_max_name_length" \
+                                        "$truncated_clean_label" "$RESET"
                         fi
                 else
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '  %-*s %b%-*s%b\n' "$adjusted_width" "$truncated_label" "$THEME_MUTED" "$max_command_length" "$truncated_command" "$RESET"
+                                # Normal row with command column (no cursor move)
+                                printf '  %-*s %b%-*s%b\n' \
+                                        "$adjusted_width" "$truncated_label" \
+                                        "$THEME_MUTED" "$max_command_length" \
+                                        "$truncated_command" "$RESET"
                         else
+                                # Normal row without command column (no cursor move)
                                 printf '  %-*s\n' "$adjusted_width" "$truncated_label"
                         fi
                 fi
@@ -665,7 +692,9 @@ do
         if [ "$current_max_command_length" -lt 0 ]; then
                 current_max_command_length=0
         fi
-        if [ "$current_window_width" -ne "$last_window_width" ] || [ "$current_max_command_length" -ne "$last_max_command_length" ]; then
+        width_changed=$((current_window_width != last_window_width))
+        cmd_len_changed=$((current_max_command_length != last_max_command_length))
+        if [ "$width_changed" -ne 0 ] || [ "$cmd_len_changed" -ne 0 ]; then
                 needs_redraw=1
                 selection_pending=0
         fi
