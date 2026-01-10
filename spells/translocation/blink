@@ -133,8 +133,12 @@ trap cleanup_temp EXIT HUP INT TERM
 # Find all readable directories, no exclusions (that's part of the fun!)
 # Note: find returns non-zero on permission errors, but still outputs accessible dirs
 printf '[blink DEBUG] Running find command...\n'
+# Temporarily disable set -e because find returns non-zero on permission errors
+set +e
 find "$base_dir" -maxdepth "$max_depth" -type d -readable 2>/dev/null > "$temp_list"
-printf '[blink DEBUG] find completed\n'
+find_exit_code=$?
+set -e
+printf '[blink DEBUG] find completed with exit code %s\n' "$find_exit_code"
 
 # Check if we got any results (don't rely on exit code)
 dir_count=$(wc -l < "$temp_list" | tr -d ' ')
@@ -145,11 +149,17 @@ if [ "$dir_count" -eq 0 ]; then
   if command -v warn >/dev/null 2>&1; then
     warn "blink: no directories found at depth $max_depth, trying depth 1"
   fi
+  printf '[blink DEBUG] No directories found, trying simpler search at depth 1\n'
+  set +e
   find "$base_dir" -maxdepth 1 -type d -readable 2>/dev/null > "$temp_list"
+  find_exit_code=$?
+  set -e
+  printf '[blink DEBUG] Fallback find completed with exit code %s\n' "$find_exit_code"
   dir_count=$(wc -l < "$temp_list" | tr -d ' ')
   
   if [ "$dir_count" -eq 0 ]; then
     printf '%s\n' "blink: no accessible directories found" >&2
+    printf '[blink DEBUG] ERROR: No directories found even at depth 1\n' >&2
     set +eu; return 1 2>/dev/null || exit 1
   fi
 fi
