@@ -2,6 +2,8 @@
 
 **Purpose:** Document a lesson learned from EVERY bug found. This is a living record of debugging insights.
 
+**Coordination with FULL_SPEC.md:** When lessons reveal gaps, contradictions, or clarifications in the project specification, update both LESSONS.md (the lesson) and .github/FULL_SPEC.md (the canonical spec). If a lesson indicates the spec was unclear or wrong, clarify the spec and note the lesson here.
+
 **Rules:**
 - One sentence per lesson, extremely succinct
 - Don't document the same lesson twice—if a lesson recurs, increment the counter at the end: `(3)`

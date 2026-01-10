@@ -54,11 +54,12 @@ This fetches test failures from PR description via GitHub API. Works immediately
 ## Essential Reading  📚✨
 
 1. **`README.md`** — Project principles, values, and standards (READ FIRST)  🗝️
-2. **`.AGENTS.md`** — Comprehensive agent instructions and style guide
-3. **Core knowledge bases** (centralized patterns):
+2. **`.github/FULL_SPEC.md`** — **CANONICAL SPECIFICATION** - Complete atomic spec organized by spell levels (REFERENCE FREQUENTLY) ⭐
+3. **`.AGENTS.md`** — Comprehensive agent instructions and style guide
+4. **Core knowledge bases** (centralized patterns):
    - `.github/SHELL_CODE_PATTERNS.md` — **CRITICAL**: POSIX shell patterns, quirks, and idioms (DOCUMENT NEW PATTERNS HERE)
    - `.github/CROSS_PLATFORM_PATTERNS.md` — **CRITICAL**: Cross-platform compatibility (DOCUMENT NEW PATTERNS HERE)
-4. **Topic-specific instructions** (consult as needed):
+5. **Topic-specific instructions** (consult as needed):
    - `.github/instructions/castable-uncastable-pattern.instructions.md` — **DEPRECATED**: Old self-execute pattern (no longer used)
    - `.github/instructions/spells.instructions.md` — Spell writing guide (CURRENT PATTERNS)
    - `.github/instructions/imps.instructions.md` — Imp (micro-helper) guide (CURRENT PATTERNS)
@@ -322,6 +323,7 @@ See `.github/instructions/glossary-and-function-architecture.instructions.md` fo
 
 ## Documentation Map
 
+**Full canonical spec?** → `.github/FULL_SPEC.md` ⭐⭐⭐ **REFERENCE FREQUENTLY, KEEP UPDATED**
 **POSIX shell patterns?** → `.github/SHELL_CODE_PATTERNS.md` ⭐ **DOCUMENT NEW PATTERNS HERE**
 **Cross-platform issues?** → `.github/CROSS_PLATFORM_PATTERNS.md` ⭐ **DOCUMENT NEW PATTERNS HERE**
 **Working on spells?** → `.github/instructions/spells.instructions.md`
