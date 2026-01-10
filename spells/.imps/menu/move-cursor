@@ -15,15 +15,6 @@ fi
 x=$1
 y=$2
 
-supports_cursor_positioning() {
-    case ${TERM-} in
-        ''|dumb|unknown)
-            return 1
-            ;;
-    esac
-    return 0
-}
-
 # Validate that both coordinates are purely numeric.
 case "$x" in
     *[!0-9]*)
@@ -51,7 +42,18 @@ if [ "$y" -le 0 ]; then
     y=1
 fi
 
-if ! supports_cursor_positioning; then
+# Check if terminal supports cursor positioning
+_supports_positioning=0
+case ${TERM-} in
+    ''|dumb|unknown)
+        _supports_positioning=0
+        ;;
+    *)
+        _supports_positioning=1
+        ;;
+esac
+
+if [ "$_supports_positioning" -eq 0 ]; then
     # Skip emitting escape sequences when the terminal refuses them so menu
     # helpers degrade gracefully.
     exit 0
