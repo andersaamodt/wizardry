@@ -120,19 +120,20 @@ priority_menu_display_menu() {
   fi
 
   # Build menu items - conditionally include Prioritize based on whether it's highest priority
+  # Order: Prioritize, Check, Subpriorities..., Edit priority, Discard priority
   if [ "$is_highest_priority" = "1" ]; then
     # Don't show Prioritize for highest priority items
     if [ -n "$browse_item" ]; then
       set -- "${check_item}" \
-             "Discard from priorities%deprioritize \"$file\"; kill -TERM \$PPID" \
-             "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
              "$browse_item" \
+             "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
+             "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
              "---" \
              "$exit_item"
     else
       set -- "${check_item}" \
-             "Discard from priorities%deprioritize \"$file\"; kill -TERM \$PPID" \
              "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
+             "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
              "---" \
              "$exit_item"
     fi
@@ -141,16 +142,16 @@ priority_menu_display_menu() {
     if [ -n "$browse_item" ]; then
       set -- "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
              "${check_item}" \
-             "Discard from priorities%deprioritize \"$file\"; kill -TERM \$PPID" \
-             "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
              "$browse_item" \
+             "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
+             "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
              "---" \
              "$exit_item"
     else
       set -- "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
              "${check_item}" \
-             "Discard from priorities%deprioritize \"$file\"; kill -TERM \$PPID" \
              "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
+             "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
              "---" \
              "$exit_item"
     fi
