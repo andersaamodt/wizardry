@@ -292,8 +292,8 @@ EOF
 
   if [ -n "$available_imps" ]; then
     available_count=$("$_vs_count_words" "$available_imps")
-    label=$("$_vs_pluralize" "Imp" "$available_count" "Imps")
-    printf '\033[32m✓\033[0m %s: %s\n' "$label" "$available_imps"
+    label=$("$_vs_pluralize" "imp" "$available_count" "imps")
+    printf '\033[32m✓\033[0m Available %s: %s\n' "$label" "$available_imps"
   fi
 
   if [ -n "$imp_unavailable" ]; then
@@ -313,10 +313,10 @@ fi
 if [ -n "$missing" ]; then
   missing_count=$("$_vs_count_words" "$missing")
   if [ "$validate_imps" -eq 1 ]; then
-    label=$("$_vs_pluralize" "Imp" "$missing_count" "Imps")
+    label=$("$_vs_pluralize" "imp" "$missing_count" "imps")
     printf 'Missing %s: %s\n' "$label" "$missing" >&2
   else
-    label=$("$_vs_pluralize" "Spell" "$missing_count" "Spells")
+    label=$("$_vs_pluralize" "spell" "$missing_count" "spells")
     printf 'Missing %s: %s\n' "$label" "$missing" >&2
   fi
   exit 1
