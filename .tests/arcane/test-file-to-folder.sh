@@ -155,4 +155,58 @@ run_test_case "file-to-folder requires argument" file_to_folder_requires_argumen
 run_test_case "file-to-folder rejects non-text files" file_to_folder_rejects_non_text_files
 run_test_case "file-to-folder accepts text files" file_to_folder_accepts_text_files
 
+file_to_folder_updates_parent_priorities_list() {
+  tmpdir=$(make_tempdir)
+  testfile="$tmpdir/test.txt"
+  printf 'test content\n' > "$testfile"
+  
+  # Try to hash and prioritize the file - if this fails, skip the test
+  run_spell "spells/crypto/hashchant" "$testfile"
+  if [ "$STATUS" -ne 0 ]; then
+    echo "SKIP: xattr support not available"
+    return 0
+  fi
+  
+  # Get the file's hash
+  run_spell "spells/arcane/read-magic" "$testfile" hash
+  assert_success || return 1
+  file_hash=$OUTPUT
+  
+  # Prioritize the file (this adds it to the parent's priorities list)
+  run_spell "spells/priorities/prioritize" "$testfile"
+  assert_success || return 1
+  
+  # Verify the file's hash is in the parent's priorities list
+  run_spell "spells/arcane/read-magic" "$tmpdir" priorities
+  assert_success || return 1
+  assert_output_contains "$file_hash" || return 1
+  
+  # Convert file to folder
+  run_spell "spells/arcane/file-to-folder" "$testfile"
+  assert_success || return 1
+  
+  # Check folder was created
+  [ -d "$testfile" ] || { TEST_FAILURE_REASON="folder not created"; return 1; }
+  
+  # Get the folder's hash
+  run_spell "spells/arcane/read-magic" "$testfile" hash
+  assert_success || return 1
+  folder_hash=$OUTPUT
+  
+  # Verify the folder's hash is now in the parent's priorities list
+  run_spell "spells/arcane/read-magic" "$tmpdir" priorities
+  assert_success || return 1
+  assert_output_contains "$folder_hash" || return 1
+  
+  # Verify the old file hash is NOT in the priorities list
+  case "$OUTPUT" in
+    *"$file_hash"*) 
+      TEST_FAILURE_REASON="old file hash still in priorities list: $OUTPUT"
+      return 1
+      ;;
+  esac
+}
+
+run_test_case "file-to-folder updates parent priorities list" file_to_folder_updates_parent_priorities_list
+
 finish_tests
