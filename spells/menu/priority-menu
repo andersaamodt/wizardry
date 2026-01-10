@@ -54,10 +54,46 @@ priority_menu_display_menu() {
     check_item="Check%check \"$file\"; kill -TERM \$PPID"
   fi
 
-        filename=$(basename "$file")
-        # Exit button - use exit 0 instead of kill signal
-        exit_label=$(exit-label)
-        exit_item="${exit_label}%exit 0"
+  filename=$(basename "$file")
+  # Exit button - use exit 0 instead of kill signal
+  exit_label=$(exit-label)
+  exit_item="${exit_label}%exit 0"
+
+  # Check if this file is the highest priority (first in the list)
+  # Get parent directory
+  parent_dir=$(dirname "$file")
+  if [ "$parent_dir" = "." ]; then
+    parent_dir=$(pwd -P)
+  fi
+  
+  # Get the priority list from the directory
+  dir_priorities=$(read-magic "$parent_dir" priorities 2>/dev/null || true)
+  
+  # Determine if this file is the highest priority
+  is_highest_priority=0
+  case "$dir_priorities" in
+    ''|*Error*|*"does not exist"*)
+      # No priorities set, so can't be highest
+      is_highest_priority=0
+      ;;
+    *)
+      # Get the first hash in the priority list
+      first_hash=$(printf '%s' "$dir_priorities" | cut -d',' -f1)
+      # Get this file's hash
+      file_hash=$(read-magic "$file" hash 2>/dev/null || true)
+      # Only check if we have a valid hash
+      case "$file_hash" in
+        ''|*Error*|*"does not exist"*)
+          is_highest_priority=0
+          ;;
+        *)
+          if [ "$file_hash" = "$first_hash" ]; then
+            is_highest_priority=1
+          fi
+          ;;
+      esac
+      ;;
+  esac
 
   # Check if file is a directory and has subpriorities
   browse_item=""
@@ -83,22 +119,41 @@ priority_menu_display_menu() {
     fi
   fi
 
-  # Build menu items
-  if [ -n "$browse_item" ]; then
-    set -- "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
-           "${check_item}" \
-           "Discard from priorities%deprioritize \"$file\"; kill -TERM \$PPID" \
-           "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
-           "$browse_item" \
-           "---" \
-           "$exit_item"
+  # Build menu items - conditionally include Prioritize based on whether it's highest priority
+  if [ "$is_highest_priority" = "1" ]; then
+    # Don't show Prioritize for highest priority items
+    if [ -n "$browse_item" ]; then
+      set -- "${check_item}" \
+             "Discard from priorities%deprioritize \"$file\"; kill -TERM \$PPID" \
+             "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
+             "$browse_item" \
+             "---" \
+             "$exit_item"
+    else
+      set -- "${check_item}" \
+             "Discard from priorities%deprioritize \"$file\"; kill -TERM \$PPID" \
+             "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
+             "---" \
+             "$exit_item"
+    fi
   else
-    set -- "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
-           "${check_item}" \
-           "Discard from priorities%deprioritize \"$file\"; kill -TERM \$PPID" \
-           "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
-           "---" \
-           "$exit_item"
+    # Show Prioritize for non-highest priority items
+    if [ -n "$browse_item" ]; then
+      set -- "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
+             "${check_item}" \
+             "Discard from priorities%deprioritize \"$file\"; kill -TERM \$PPID" \
+             "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
+             "$browse_item" \
+             "---" \
+             "$exit_item"
+    else
+      set -- "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
+             "${check_item}" \
+             "Discard from priorities%deprioritize \"$file\"; kill -TERM \$PPID" \
+             "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
+             "---" \
+             "$exit_item"
+    fi
   fi
   menu "${THEME_HEADING}${filename}${RESET}:" "$@"
 }

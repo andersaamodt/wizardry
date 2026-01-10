@@ -68,6 +68,16 @@ case "$target_priority" in
   *Error*|''|*[!0-9]*) target_priority=0 ;;
 esac
 
+# Check if file is checked, and uncheck it when prioritizing
+checked_value=$(read-magic "$file" checked 2>/dev/null || printf '0')
+case "$checked_value" in
+  *Error*|''|*[!0-9]*) checked_value=0 ;;
+esac
+
+if [ "$checked_value" = "1" ]; then
+  enchant "$file" checked 0 >/dev/null
+fi
+
 # Retrieve the priority list from the directory's extended attributes
 priorities=$(read-magic "$directory" priorities 2>/dev/null || true)
 

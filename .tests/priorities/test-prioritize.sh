@@ -156,6 +156,41 @@ test_already_highest() {
   assert_output_contains "already the highest priority" || return 1
 }
 
+test_unchecks_when_prioritizing() {
+  tmpdir=$(make_tempdir)
+  testfile="$tmpdir/test.txt"
+  printf 'test\n' > "$testfile"
+  
+  # Try to hash - if this fails, skip the test
+  run_spell "spells/crypto/hashchant" "$testfile"
+  if [ "$STATUS" -ne 0 ]; then
+    echo "SKIP: xattr support not available"
+    return 0
+  fi
+  
+  # Prioritize file
+  run_spell "spells/priorities/prioritize" "$testfile"
+  assert_success || return 1
+  
+  # Check the file
+  run_spell "spells/tasks/check" "$testfile"
+  assert_success || return 1
+  
+  # Verify it's checked
+  run_spell "spells/tasks/get-checked" "$testfile"
+  assert_success || return 1
+  assert_output_equals "1" || return 1
+  
+  # Prioritize again - should uncheck it
+  run_spell "spells/priorities/prioritize" "$testfile"
+  assert_success || return 1
+  
+  # Verify it's now unchecked
+  run_spell "spells/tasks/get-checked" "$testfile"
+  # get-checked returns exit 1 when not checked
+  assert_failure || return 1
+}
+
 test_hash_failure_message() {
   tmpdir=$(make_tempdir)
   testfile="$tmpdir/test.txt"
@@ -180,6 +215,7 @@ run_test_case "prioritize creates file when answering yes" test_creates_file_whe
 run_test_case "prioritize creates first priority" test_first_priority
 run_test_case "prioritize promotes to new echelon" test_echelon_promotion
 run_test_case "prioritize detects already highest" test_already_highest
+run_test_case "prioritize unchecks when prioritizing checked item" test_unchecks_when_prioritizing
 run_test_case "prioritize fails with informative message when hashchant fails" test_hash_failure_message
 
 finish_tests

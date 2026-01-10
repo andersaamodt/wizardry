@@ -36,8 +36,8 @@ fi
 # Check if directory is empty first to avoid glob expansion issues
 if [ -n "$(ls -A "$directory" 2>/dev/null)" ]; then
   for file in "$directory"/*; do
-    # Skip if not a file
-    [ -f "$file" ] || continue
+    # Skip if not a file or directory
+    [ -e "$file" ] || continue
     
     # Get the hash of this file
     file_hash=$(read-magic "$file" hash 2>/dev/null || true)
