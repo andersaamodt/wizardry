@@ -8,6 +8,7 @@
 # - file-to-folder rejects directories
 # - file-to-folder rejects missing files
 # - file-to-folder preserves extended attributes (xattrs)
+# - file-to-folder transfers priority attribute from file to folder
 
 set -eu
 
