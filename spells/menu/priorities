@@ -149,8 +149,8 @@ while true; do
     # Always keep "Add priority" selected when item count increases (new priority was added)
     if [ "$current_item_count" -gt "$previous_item_count" ]; then
       # New item was added, keep "Add priority" selected
-      # Use the calculated position from display_priorities
-      start_selection=$current_add_priority_position
+      # Use the position from the previous iteration
+      start_selection=$previous_add_priority_position
     else
       # If count didn't change, reset to default (first item)
       start_selection=1
