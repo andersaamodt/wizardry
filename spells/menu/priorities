@@ -38,33 +38,45 @@ display_priorities() {
   dir="${PWD}"
 
   # Build a list of all prioritized files in the directory
-  # Format: "echelon priority filename"
+  # Format: "echelon priority checked filename"
+  # Read all attributes in one pass to minimize xattr calls
   priority_list=""
+  item_count=0
   
   for f in "$dir"/*; do
     [ -e "$f" ] || continue
     
-    # Get echelon and priority
+    # Get echelon, priority, and checked in one batch (minimize read-magic calls)
     file_echelon=$(read-magic "$f" echelon 2>/dev/null || true)
-    file_priority=$(read-magic "$f" priority 2>/dev/null || true)
     
     # Skip if no echelon (not prioritized)
     case "$file_echelon" in
       ''|*Error*|*[!0-9]*) continue ;;
     esac
     
+    # Only read priority and checked if echelon is valid (file is prioritized)
+    file_priority=$(read-magic "$f" priority 2>/dev/null || true)
+    checked_value=$(read-magic "$f" checked 2>/dev/null || true)
+    
     # Default priority to 0 if not set
     case "$file_priority" in
       ''|*Error*|*[!0-9]*) file_priority=0 ;;
     esac
     
-    # Add to list
+    # Default checked to 0 if not set
+    case "$checked_value" in
+      ''|*Error*|*[!0-9]*) checked_value=0 ;;
+    esac
+    
+    # Add to list with all data needed
     if [ -z "$priority_list" ]; then
-      priority_list="$file_echelon $file_priority $f"
+      priority_list="$file_echelon $file_priority $checked_value $f"
     else
       priority_list="$priority_list
-$file_echelon $file_priority $f"
+$file_echelon $file_priority $checked_value $f"
     fi
+    
+    item_count=$((item_count + 1))
   done
   
   # If there are no priorities, print an error message and exit
@@ -75,18 +87,17 @@ $file_echelon $file_priority $f"
 
   # Sort by echelon (descending), then priority (ascending), then filename
   # Using sort: -k1,1rn (first field reverse numeric), -k2,2n (second field numeric)
-  sorted_list=$(printf '%s\n' "$priority_list" | sort -k1,1rn -k2,2n -k3)
+  sorted_list=$(printf '%s\n' "$priority_list" | sort -k1,1rn -k2,2n -k4)
 
   # Initialize variables
   prev_echelon=""
   menu_command="menu --start-selection $start_selection Priorities:"
   
   # Count items for tracking (includes all menu items for position calculation)
-  item_count=0
   total_menu_items=0
 
   # Process sorted list
-  while IFS=' ' read -r file_echelon file_priority priority_file; do
+  while IFS=' ' read -r file_echelon file_priority checked_value priority_file; do
     # Add separator when echelon changes
     if [ -n "$prev_echelon" ] && [ "$file_echelon" != "$prev_echelon" ]; then
       menu_command="${menu_command} \"---\""
@@ -94,16 +105,7 @@ $file_echelon $file_priority $f"
     fi
     prev_echelon=$file_echelon
 
-    # Read checked attribute
-    checked_value=$(read-magic "$priority_file" checked 2>/dev/null || printf '0')
-    
-    # Handle errors or empty values
-    case "$checked_value" in
-      ''|*Error*) checked_value=0 ;;
-      *[!0-9]*) checked_value=0 ;;
-    esac
-    
-    # Set checkbox display
+    # Set checkbox display (data already cached from first loop)
     if [ "$checked_value" = "1" ]; then
       checkbox="[X] "
     else
@@ -123,7 +125,6 @@ $file_echelon $file_priority $f"
     menu_command="${menu_command}${checkbox}$item_name%priority-menu \\\"${priority_file}\\\"\""
 
     # Increment counts
-    item_count=$((item_count + 1))
     total_menu_items=$((total_menu_items + 1))
   done <<EOF
 $sorted_list
@@ -157,15 +158,14 @@ previous_item_count=0
 
 while true; do
   if [ "$first_run" -eq 0 ]; then
-    # Before calling display_priorities, count current prioritized items
+    # Quick count of prioritized items (just count, don't read all attributes)
     current_count_check=0
     for f in "$PWD"/*; do
       [ -e "$f" ] || continue
-      file_echelon=$(read-magic "$f" echelon 2>/dev/null || true)
-      case "$file_echelon" in
-        ''|*Error*|*[!0-9]*) continue ;;
-      esac
-      current_count_check=$((current_count_check + 1))
+      # Quick check: just see if echelon attribute exists
+      if read-magic "$f" echelon >/dev/null 2>&1; then
+        current_count_check=$((current_count_check + 1))
+      fi
     done
     
     # If count increased since last iteration, keep "Add priority" selected
