@@ -223,19 +223,17 @@ while [ "$attempt" -lt "$max_attempts" ]; do
   dest_resolved=$(printf '%s' "$dest_resolved" | sed 's|//|/|g')
   printf '[blink DEBUG] dest_resolved=%s\n' "$dest_resolved"
   
-  # Return to original directory immediately (stateless testing)
-  command cd "$current_dir" 2>/dev/null || true
-  
   # Check if already at this location
   if [ "$current_resolved" = "$dest_resolved" ]; then
     printf '[blink DEBUG] Already at this location, trying another\n'
+    # Return to original directory before trying again
+    command cd "$current_dir" 2>/dev/null || true
     continue
   fi
   
   # Success! We found an accessible directory that's different from current
+  # We're already there from the cd on line 216, so just break
   printf '[blink DEBUG] Successfully changed to destination\n'
-  # Now actually cd to the destination for real
-  command cd "$destination" 2>/dev/null || continue
   break
 done
 
