@@ -7,15 +7,6 @@ set -eu
 file=$1
 shift
 
-# Auto-prepend user. namespace if needed
-attrs=""
-for attr in "$@"; do
-  case "$attr" in
-    *.*) attrs="$attrs $attr" ;;
-    *) attrs="$attrs user.$attr" ;;
-  esac
-done
-
 # Detect and cache which helper works (try direct execution for speed)
 if [ -z "${XATTR_HELPER-}" ]; then
   # Try xattr first (macOS and some Linux)
@@ -35,31 +26,33 @@ if [ "$XATTR_HELPER" = "none" ]; then
   exit 1
 fi
 
-# Read all attributes efficiently
+# Read all attributes efficiently in a single loop
 result=""
 found_any=0
 
-for attr in $attrs; do
+for attr in "$@"; do
+  # Auto-prepend user. namespace if needed
+  case "$attr" in
+    *.*) full_attr="$attr" ;;
+    *) full_attr="user.$attr" ;;
+  esac
+  
   value=""
   case "$XATTR_HELPER" in
     xattr)
-      value=$(xattr -p "$attr" "$file" 2>/dev/null || true)
+      value=$(xattr -p "$full_attr" "$file" 2>/dev/null || true)
       ;;
     attr)
-      value=$(attr -g "$attr" "$file" 2>/dev/null | sed '1d' || true)
+      value=$(attr -g "$full_attr" "$file" 2>/dev/null | sed '1d' || true)
       ;;
     getfattr)
-      value=$(getfattr -n "$attr" --only-values "$file" 2>/dev/null || true)
+      value=$(getfattr -n "$full_attr" --only-values "$file" 2>/dev/null || true)
       ;;
   esac
   
   if [ -n "$value" ]; then
-    # Strip user. prefix for output using shell parameter expansion
-    case "$attr" in
-      user.*) display_attr="${attr#user.}" ;;
-      *) display_attr="$attr" ;;
-    esac
-    result="$result $display_attr=$value"
+    # Use original attr name (without user. prefix) for output
+    result="$result $attr=$value"
     found_any=1
   fi
 done
