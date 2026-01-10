@@ -48,6 +48,9 @@
 - .imps/sys directory must be in PATH so system imps like require-wizardry are directly callable as commands (PR #594).
 - Circular dependency during sourcing: imps must be available before spells call them; add all imp families to PATH before sourcing (PR #595).
 - Scripts must verify prerequisites exist before calling them to avoid "command not found" errors during bootstrap (PR #596).
+- Function return convention confusion (0=success, non-zero=failure) inverted in conditionals (is_first_word_blacklisted returning 0 for allowed led to `if` succeeding when shouldn't) requires careful attention and clarifying comments.
+- When first-word glosses reconstruct multi-word synonyms (leap to location → leap-to-location), must pass the RECONSTRUCTED name to parse, not the original first word.
+- Always use test-driven development to verify fixes before claiming they work; manual testing misses edge cases and creates false confidence.
 - Consolidated AI documentation improves consistency by guaranteeing all critical information is read from a single entry point (PR #598).
 - Sourcing a file with `set -eu` permanently affects the parent shell's mode; restore permissive mode with `set +eu` after sourcing (PR #599).
 - macOS Terminal.app opens login shells by default, requiring .bash_profile to source .bashrc for shell configuration availability (PR #600).

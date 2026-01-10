@@ -116,6 +116,52 @@ EOF
   fi
 }
 
+test_synonym_multi_word_invocation() {
+  # Test that multi-word synonym invocations work correctly
+  # This tests the fix where first-word glosses must pass the reconstructed
+  # multi-word spell name to parse (e.g., "leap-to-location") instead of
+  # just the first word (e.g., "leap")
+  
+  tmpdir=$(make_tempdir)
+  
+  # Create custom synonym file with hyphenated synonym
+  cat > "$tmpdir/.synonyms" << 'EOF'
+leap-to-marker=translocation/jump-to-marker
+warp=translocation/jump-to-marker
+EOF
+  
+  # Generate glosses with custom synonyms
+  WIZARDRY_DIR="$ROOT_DIR" SPELLBOOK_DIR="$tmpdir" \
+    run_spell spells/.wizardry/generate-glosses --quiet
+  assert_success || return 1
+  
+  # Verify the glosses contain:
+  # 1. Alias for hyphenated synonym (leap-to-marker)
+  if ! printf '%s' "$OUTPUT" | grep -q "alias leap-to-marker="; then
+    TEST_FAILURE_REASON="Expected alias for leap-to-marker synonym"
+    return 1
+  fi
+  
+  # 2. Function for non-hyphenated synonym (warp)
+  if ! printf '%s' "$OUTPUT" | grep -q "warp()"; then
+    TEST_FAILURE_REASON="Expected function for warp synonym"
+    return 1
+  fi
+  
+  # 3. First-word gloss for 'leap' (extracted from leap-to-marker)
+  if ! printf '%s' "$OUTPUT" | grep -q "leap()"; then
+    TEST_FAILURE_REASON="Expected first-word gloss function for leap"
+    return 1
+  fi
+  
+  # 4. Critical: The leap() gloss must use \$_fw_spell not hardcoded "leap"
+  #    in the final parse call, so multi-word invocations work
+  if ! printf '%s' "$OUTPUT" | grep -q 'parse.*\$_fw_spell'; then
+    TEST_FAILURE_REASON="Expected leap() gloss to use \$_fw_spell for multi-word reconstruction"
+    return 1
+  fi
+}
+
 run_test_case "generate-glosses shows usage" test_help
 run_test_case "generate-glosses generates glosses" test_basic_execution
 run_test_case "generate-glosses creates valid gloss content" test_gloss_content
@@ -123,5 +169,6 @@ run_test_case "generate-glosses --quiet suppresses diagnostics" test_quiet_optio
 run_test_case "generate-glosses --output writes to file" test_output_option
 run_test_case "generate-glosses creates glosses for all spell categories" test_all_spell_categories
 run_test_case "generate-glosses hard fails on invalid default synonyms" test_invalid_default_synonyms_hard_fail
+run_test_case "synonym multi-word invocations work (leap to location)" test_synonym_multi_word_invocation
 
 finish_tests
