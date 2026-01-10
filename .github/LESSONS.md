@@ -89,3 +89,5 @@
 - Use `find -xdev` to stay on the current filesystem and exclude network volumes, mounted drives, and other filesystems (prevents security prompts and unexpected behavior on macOS).
 - When using `command cd` in subshells for path resolution, redirect stderr to /dev/null (`command cd "$path" 2>/dev/null`) to suppress cd gloss error messages that still appear despite using `command`.
 - When selecting random items from a list (e.g., directories), implement retry logic with accessibility testing before use; macOS system directories may exist but be inaccessible due to permissions.
+- Use shell-native arithmetic with PID for randomness (`random=$(( (($$ * 7 + offset) % count) + 1 ))`), not awk srand(), when needing multiple different random values in same script invocation.
+- Single-word uncastable spell gloss functions must blacklist spells like `cd` that are manually sourced into shell rc files, not invoked via gloss wrappers (prevents breaking builtin command behavior).

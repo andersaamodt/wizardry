@@ -373,6 +373,12 @@ uname|uniq|wc|xargs)
       *) ;;  # Process single-word spells
     esac
     
+    # Skip spells that should NOT get gloss functions
+    # cd: designed to be manually sourced into shell rc, not invoked via gloss
+    case "$spell_name" in
+      cd) continue ;;
+    esac
+    
     # Check if spell has uncastable pattern
     _has_uncastable=0
     _spell_path=""
