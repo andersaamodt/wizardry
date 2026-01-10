@@ -50,7 +50,10 @@ display_priorities() {
 
   # Initialize variables
   highest_priority=""
-  menu_command="menu Priorities:"
+  
+  # Use remembered selection or default to 1
+  start_sel="${MENU_LAST_SELECTION:-1}"
+  menu_command="menu --start-selection $start_sel Priorities:"
 
   # Loop through the priorities
   dir_priorities=$(printf '%s' "${dir_priorities}" | tr ',' '\n')
