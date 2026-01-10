@@ -59,6 +59,15 @@ case "$filename" in
     ;;
 esac
 
+# Check if file has any non-whitespace content
+has_content=0
+if [ -s "$file" ]; then
+  # File has size, check if it contains non-whitespace
+  if grep -q '[^[:space:]]' "$file" 2>/dev/null; then
+    has_content=1
+  fi
+fi
+
 # Create temporary file in the same directory to preserve xattrs
 temp_file=$(temp-file file-to-folder)
 
@@ -68,11 +77,17 @@ mv "$file" "$temp_file"
 # Create folder with the original file's name
 mkdir -p "$file"
 
-# Move the temp file into the new folder and rename it
-if [ -n "$extension" ]; then
-  mv "$temp_file" "$file/project notes.$extension"
+# Only move the temp file into the new folder if it has non-whitespace content
+if [ "$has_content" -eq 1 ]; then
+  # Move the temp file into the new folder and rename it
+  if [ -n "$extension" ]; then
+    mv "$temp_file" "$file/project notes.$extension"
+  else
+    mv "$temp_file" "$file/project notes"
+  fi
 else
-  mv "$temp_file" "$file/project notes"
+  # Remove the empty/whitespace-only temp file
+  rm -f "$temp_file"
 fi
 
 printf '%s\n' "Converted file to folder: $file"
