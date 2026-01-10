@@ -220,8 +220,11 @@ while [ "$attempt" -lt "$max_attempts" ]; do
   printf '[blink DEBUG] About to test cd to: %s\n' "$destination"
   printf '[blink DEBUG] Current directory before test: %s\n' "$(pwd)"
   # Test cd in subshell - if it fails, dest_resolved will be empty
-  # Pipe must be inside the && chain so sed only runs if cd succeeds
+  # CRITICAL: Must disable -e around command substitution because cd failure
+  # in subshell with -e enabled causes parent shell to exit
+  set +e
   dest_resolved=$(command cd "$destination" 2>/dev/null && pwd -P 2>/dev/null | sed 's|//|/|g')
+  set -e
   if [ -z "$dest_resolved" ]; then
     printf '[blink DEBUG] Cannot access destination (cd failed), trying another\n'
     continue
