@@ -6,17 +6,19 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: blink [path] [--depth N]
+Usage: blink [path] [--depth N] [--all]
 
 Teleport to a random subdirectory within a directory tree.
 - No argument defaults to $HOME with depth 5
 - path: Starting directory (default: $HOME)
 - --depth N: Limits how deep to search (1-10, default: 5)
+- --all: Include hidden folders and system folders (Library, etc.)
 
 Examples:
-  blink                    # Random subdirectory in $HOME (depth 5)
+  blink                    # Random subdirectory in $HOME (depth 5, skip boring folders)
   blink /tmp               # Random subdirectory in /tmp (depth 5)
   blink --depth 3          # Random subdirectory in $HOME (depth 3)
+  blink --all              # Include hidden and system folders
   blink /var/log --depth 2 # Random subdirectory in /var/log (depth 2)
 
 Note: This spell must be sourced. Use 'blink' to invoke it.
@@ -52,6 +54,7 @@ set -eu
 # Parse arguments
 start_path=""
 max_depth=5
+include_all=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -62,6 +65,10 @@ while [ $# -gt 0 ]; do
         set +eu; return 1
       fi
       max_depth=$1
+      shift
+      ;;
+    --all)
+      include_all=1
       shift
       ;;
     -*)
@@ -114,12 +121,34 @@ if ! cd "$start_path" 2>/dev/null; then
 fi
 
 # Find all subdirectories up to max_depth
-# Use find to locate directories, excluding hidden directories and common ignore patterns
-subdirs=$(find . -mindepth 1 -maxdepth "$max_depth" -type d \
-  ! -path '*/.*' \
-  ! -path '*/node_modules/*' \
-  ! -path '*/.git/*' \
-  2>/dev/null || true)
+# Use find to locate directories, excluding various patterns
+if [ "$include_all" -eq 0 ]; then
+  # Default: skip hidden folders and boring system folders (especially on macOS)
+  # Build the find command with exclusions
+  subdirs=$(find . -mindepth 1 -maxdepth "$max_depth" -type d \
+    ! -path '*/.*' \
+    ! -name 'Library' ! -path '*/Library/*' \
+    ! -name 'System' ! -path '*/System/*' \
+    ! -name 'Applications' ! -path '*/Applications/*' \
+    ! -name 'node_modules' ! -path '*/node_modules/*' \
+    ! -path '*/.git/*' \
+    ! -name 'Containers' ! -path '*/Containers/*' \
+    ! -name 'Group Containers' ! -path '*/Group Containers/*' \
+    ! -name 'Application Support' ! -path '*/Application Support/*' \
+    ! -name 'Caches' ! -path '*/Caches/*' \
+    ! -name 'Logs' ! -path '*/Logs/*' \
+    ! -name 'Saved Application State' ! -path '*/Saved Application State/*' \
+    ! -name 'WebKit' ! -path '*/WebKit/*' \
+    ! -name 'CloudStorage' ! -path '*/CloudStorage/*' \
+    ! -name 'Mobile Documents' ! -path '*/Mobile Documents/*' \
+    2>/dev/null || true)
+else
+  # Include all folders (only skip .git and node_modules for safety)
+  subdirs=$(find . -mindepth 1 -maxdepth "$max_depth" -type d \
+    ! -path '*/.git/*' \
+    ! -name 'node_modules' ! -path '*/node_modules/*' \
+    2>/dev/null || true)
+fi
 
 if [ -z "$subdirs" ]; then
   printf '%s\n' "No subdirectories found within depth $max_depth in $start_path."
@@ -212,8 +241,8 @@ if [ -n "$arrival" ]; then
   printf '%s\n' "$arrival"
 fi
 
-# Output the destination path
-printf '%s\n' "$normalized_destination"
+# Output the destination path with a newline after
+printf '%s\n\n' "$normalized_destination"
 
 # Describe current location if look command exists
 if command -v look >/dev/null 2>&1; then
