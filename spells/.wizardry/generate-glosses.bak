@@ -525,21 +525,8 @@ uname|uniq|wc|xargs)
           # For hyphenated targets, convert hyphens to spaces for first-word gloss routing
           case "$_target" in
             *-*)
-              # Convert hyphens to spaces ONLY in spell name, not in directory path
-              # E.g., "translocation/jump-to-marker" → "translocation/jump to marker"
-              #       "jump-to-marker" → "jump to marker"
-              case "$_target" in
-                */*)
-                  # Has directory prefix - preserve it
-                  _dir_prefix="${_target%/*}/"
-                  _spell_part="${_target##*/}"
-                  _alias_target="$_dir_prefix$(printf '%s' "$_spell_part" | sed 's/-/ /g')"
-                  ;;
-                *)
-                  # No directory - convert all hyphens
-                  _alias_target=$(printf '%s' "$_target" | sed 's/-/ /g')
-                  ;;
-              esac
+              # Convert hyphens to spaces in target (e.g., jump-to-marker → jump to marker)
+              _alias_target=$(printf '%s' "$_target" | sed 's/-/ /g')
               emit_line "alias $_word='$_alias_target'"
               ;;
             *)
@@ -612,21 +599,8 @@ uname|uniq|wc|xargs)
           # For hyphenated targets, convert hyphens to spaces for first-word gloss routing
           case "$_target" in
             *-*)
-              # Convert hyphens to spaces ONLY in spell name, not in directory path
-              # E.g., "translocation/jump-to-marker" → "translocation/jump to marker"
-              #       "jump-to-marker" → "jump to marker"
-              case "$_target" in
-                */*)
-                  # Has directory prefix - preserve it
-                  _dir_prefix="${_target%/*}/"
-                  _spell_part="${_target##*/}"
-                  _alias_target="$_dir_prefix$(printf '%s' "$_spell_part" | sed 's/-/ /g')"
-                  ;;
-                *)
-                  # No directory - convert all hyphens
-                  _alias_target=$(printf '%s' "$_target" | sed 's/-/ /g')
-                  ;;
-              esac
+              # Convert hyphens to spaces in target (e.g., jump-to-marker → jump to marker)
+              _alias_target=$(printf '%s' "$_target" | sed 's/-/ /g')
               emit_line "alias $_word='$_alias_target'"
               ;;
             *)

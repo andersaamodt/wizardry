@@ -128,6 +128,7 @@ test_synonym_multi_word_invocation() {
   cat > "$tmpdir/.synonyms" << 'EOF'
 leap-to-marker=translocation/jump-to-marker
 warp=translocation/jump-to-marker
+leap-to-location=translocation/jump-to-marker
 EOF
   
   # Generate glosses with custom synonyms
@@ -158,6 +159,15 @@ EOF
   #    in the final parse call, so multi-word invocations work
   if ! printf '%s' "$OUTPUT" | grep -q 'parse.*\$_fw_spell'; then
     TEST_FAILURE_REASON="Expected leap() gloss to use \$_fw_spell for multi-word reconstruction"
+    return 1
+  fi
+  
+  # 5. CRITICAL FIX: Aliases with directory paths must preserve the directory
+  #    E.g., "leap-to-location=translocation/jump-to-marker" should generate
+  #    alias leap-to-location='translocation/jump to marker'
+  #    NOT alias leap-to-location='translocation/jump to marker'  (with / → space)
+  if ! printf '%s' "$OUTPUT" | grep -q "alias leap-to-location='translocation/jump to marker'"; then
+    TEST_FAILURE_REASON="Expected alias to preserve directory path: translocation/jump to marker"
     return 1
   fi
 }

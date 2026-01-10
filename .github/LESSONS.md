@@ -37,6 +37,7 @@
 - In sourced-only spells (with uncastable pattern), use plain `return` for error exits AFTER the uncastable guard, not `return 1 2>/dev/null || exit 1`; the `exit` part closes the user's terminal when the spell is sourced.
 - Use shell parameter expansion ${file##*/} instead of basename for 100x speedup when processing many files (e.g., generate-glosses with 396 files).
 - Variable `$_i` (imps directory shorthand) is not preserved by env-clear; use `${WIZARDRY_DIR}/spells/.imps` instead when referencing imp paths after sourcing env-clear.
+- When converting synonym targets from hyphenated to space-separated form (e.g., jump-to-marker → jump to marker), preserve directory prefixes unchanged (translocation/jump-to-marker → translocation/jump to marker, not translocation/jump to marker with / converted to space).
 
 
 - When a file is sourced (`. filename`), using `exit` exits the parent shell; use `return` instead (discovered via doppelganger failing to create directories) (3)
