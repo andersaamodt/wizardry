@@ -181,11 +181,12 @@ if command -v debug >/dev/null 2>&1; then
   debug "Found $dir_count accessible directories"
 fi
 
-# Select a random accessible directory (retry up to 10 times if needed)
+# Select a random accessible directory (retry up to 50 times if needed)
+# Note: On macOS, most system directories exist but can't be accessed, so we need many retries
 printf '[blink DEBUG] Selecting random accessible directory\n'
 current_dir=$(pwd -P 2>/dev/null || pwd)
 current_resolved=$(printf '%s' "$current_dir" | sed 's|//|/|g')
-max_attempts=10
+max_attempts=50
 attempt=0
 
 while [ "$attempt" -lt "$max_attempts" ]; do
