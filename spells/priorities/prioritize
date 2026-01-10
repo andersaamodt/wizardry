@@ -7,9 +7,12 @@
 case "${1-}" in
 --help|--usage|-h)
   cat << 'USAGE'
-Usage: prioritize <file> [directory]
+Usage: prioritize [--interactive] <file> [directory]
+       prioritize --interactive
 
 Set or update the priority of a file within its echelon, storing it in the file's extended attributes and the directory's priorities list. Files with the same priority value belong to the same echelon (tier). If no directory is specified, the file's parent directory is used.
+
+With --interactive, prompts for the file to prioritize.
 USAGE
   exit 0
   ;;
@@ -18,14 +21,37 @@ esac
 set -eu
 . env-clear
 
-# Ensure file argument is provided
-if [ -z "${1-}" ]; then
-  printf '%s\n' "prioritize: file path required" >&2
-  exit 2
+# Check for --interactive flag
+interactive=0
+if [ "${1-}" = "--interactive" ]; then
+  interactive=1
+  shift
 fi
 
-file=$1
-directory=${2-}
+# If interactive mode and no file argument, prompt for it
+if [ "$interactive" -eq 1 ] && [ -z "${1-}" ]; then
+  if ! command -v ask-text >/dev/null 2>&1; then
+    printf '%s\n' "prioritize: ask-text command required for interactive mode" >&2
+    exit 1
+  fi
+  file=$(ask-text "What to prioritize?") || {
+    printf '%s\n' "prioritize: no input provided" >&2
+    exit 1
+  }
+  if [ -z "$file" ]; then
+    printf '%s\n' "prioritize: file path required" >&2
+    exit 2
+  fi
+  directory=${2-}
+else
+  # Ensure file argument is provided
+  if [ -z "${1-}" ]; then
+    printf '%s\n' "prioritize: file path required" >&2
+    exit 2
+  fi
+  file=$1
+  directory=${2-}
+fi
 
 # Check if the target file exists
 if [ ! -e "$file" ]; then
