@@ -248,8 +248,8 @@ uname|uniq|wc|xargs)
           _first_word=${spell_name%%-*}
           ;;
         *)
-          # Single-word spell - skip
-          continue
+          # Single-word spell - use the spell name itself as the first word
+          _first_word=$spell_name
           ;;
       esac
       
@@ -319,7 +319,17 @@ uname|uniq|wc|xargs)
       emit_line "    _fw_spell=\"\$_fw_candidate\""
       emit_line "  done"
       emit_line "  "
-      emit_line "  # No args or no uncastable spell found - check if synonym points to uncastable spell"
+      emit_line "  # No args or no uncastable spell found - check if the spell itself is uncastable"
+      emit_line "  for _fw_dir in \"\$WIZARDRY_DIR\"/spells/*/; do"
+      emit_line "    _fw_path=\"\${_fw_dir}$_first_word\""
+      emit_line "    if [ -f \"\$_fw_path\" ] && grep -q \"^# Uncastable pattern\" \"\$_fw_path\" 2>/dev/null; then"
+      emit_line "      # Found uncastable single-word spell - source it with all args"
+      emit_line "      . \"\$_fw_path\""
+      emit_line "      return \$?"
+      emit_line "    fi"
+      emit_line "  done"
+      emit_line "  "
+      emit_line "  # Check if synonym points to uncastable spell"
       emit_line "  _fw_spell_home=\${SPELLBOOK_DIR:-\${HOME:-.}/.spellbook}"
       emit_line "  _fw_syn_target=\"\""
       emit_line "  if [ -f \"\$_fw_spell_home/.synonyms\" ]; then"
