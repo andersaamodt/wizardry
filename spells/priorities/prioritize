@@ -28,9 +28,16 @@ file=$1
 directory=${2-}
 
 # Check if the target file exists
-if [ ! -f "$file" ]; then
-  printf '%s\n' "prioritize: file not found: $file" >&2
-  exit 1
+if [ ! -e "$file" ]; then
+  # Ask to create the file if it doesn't exist
+  if ask-yn "'$file' does not exist. Create it?" yes; then
+    touch "$file" || {
+      printf '%s\n' "prioritize: failed to create file: $file" >&2
+      exit 1
+    }
+  else
+    exit 1
+  fi
 fi
 
 # Hash the target file for identification
@@ -60,6 +67,16 @@ target_priority=$(read-magic "$file" priority 2>/dev/null || printf '0')
 case "$target_priority" in
   *Error*|''|*[!0-9]*) target_priority=0 ;;
 esac
+
+# Check if file is checked, and uncheck it when prioritizing
+checked_value=$(read-magic "$file" checked 2>/dev/null || printf '0')
+case "$checked_value" in
+  *Error*|''|*[!0-9]*) checked_value=0 ;;
+esac
+
+if [ "$checked_value" = "1" ]; then
+  enchant "$file" checked 0 >/dev/null
+fi
 
 # Retrieve the priority list from the directory's extended attributes
 priorities=$(read-magic "$directory" priorities 2>/dev/null || true)
