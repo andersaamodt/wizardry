@@ -68,12 +68,6 @@ case "$target_priority" in
   *Error*|''|*[!0-9]*) target_priority=0 ;;
 esac
 
-# Get the file's echelon (treat as 0 if not set)
-target_echelon=$(read-magic "$file" echelon 2>/dev/null || printf '0')
-case "$target_echelon" in
-  *Error*|''|*[!0-9]*) target_echelon=0 ;;
-esac
-
 # Check if file is checked, and uncheck it when prioritizing
 checked_value=$(read-magic "$file" checked 2>/dev/null || printf '0')
 case "$checked_value" in
@@ -92,7 +86,6 @@ case "$priorities" in
   ''|*Error*)
     enchant "$directory" priorities "$target_hash" >/dev/null
     enchant "$file" priority 1 >/dev/null
-    enchant "$file" echelon 1 >/dev/null
     printf '%s\n' "Prioritized '$(basename "$file")' as the first priority."
     exit 0
     ;;
@@ -106,7 +99,6 @@ first_file=$(get-card "$first_hash" "$directory" 2>/dev/null || true)
 if [ -z "$first_file" ]; then
   enchant "$directory" priorities "$target_hash" >/dev/null
   enchant "$file" priority 1 >/dev/null
-  enchant "$file" echelon 1 >/dev/null
   printf '%s\n' "Prioritized '$(basename "$file")' as the first priority."
   exit 0
 fi
@@ -114,12 +106,6 @@ fi
 first_priority=$(read-magic "$first_file" priority 2>/dev/null || printf '0')
 case "$first_priority" in
   *Error*|''|*[!0-9]*) first_priority=0 ;;
-esac
-
-# Get the echelon of the first item (treat as 0 if not set)
-first_echelon=$(read-magic "$first_file" echelon 2>/dev/null || printf '0')
-case "$first_echelon" in
-  *Error*|''|*[!0-9]*) first_echelon=0 ;;
 esac
 
 # If the target file is already the first priority, exit
@@ -140,11 +126,9 @@ if [ "$first_priority" -gt 0 ] && [ "$target_priority" = "$first_priority" ]; th
     new_priorities="$target_hash,$filtered"
   fi
   new_priority=$((first_priority + 1))
-  new_echelon=$((first_echelon + 1))
   enchant "$file" priority "$new_priority" >/dev/null
-  enchant "$file" echelon "$new_echelon" >/dev/null
   enchant "$directory" priorities "$new_priorities" >/dev/null
-  printf '%s\n' "Promoted '$(basename "$file")' to echelon $new_echelon."
+  printf '%s\n' "Promoted '$(basename "$file")' to echelon $new_priority."
   exit 0
 fi
 
@@ -204,10 +188,8 @@ rebuilt_priorities=$(printf '%s' "$rebuilt_priorities" | sed 's/,$//')
 
 # Set the priority value of the target file to the first item's priority (same echelon)
 enchant "$file" priority "$first_priority" >/dev/null
-# Set the echelon value of the target file to the first item's echelon (same echelon)
-enchant "$file" echelon "$first_echelon" >/dev/null
 
 # Update the directory's extended attributes with the new priorities list
 enchant "$directory" priorities "$rebuilt_priorities" >/dev/null
 
-printf '%s\n' "Prioritized '$(basename "$file")' in echelon $first_echelon."
+printf '%s\n' "Prioritized '$(basename "$file")' in echelon $first_priority."
