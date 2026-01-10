@@ -44,14 +44,14 @@ set -eu
   synonyms_file=""
   target_spell=""
   
-  if [ -f "$custom_file" ] && grep -q "^alias $synonym_word=" "$custom_file" 2>/dev/null; then
+  if [ -f "$custom_file" ] && grep -q "^$synonym_word=" "$custom_file" 2>/dev/null; then
     synonym_type="custom"
     synonyms_file="$custom_file"
-    target_spell=$(grep "^alias $synonym_word=" "$custom_file" | sed "s/^alias $synonym_word='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
-  elif [ -f "$default_file" ] && grep -q "^alias $synonym_word=" "$default_file" 2>/dev/null; then
+    target_spell=$(grep "^$synonym_word=" "$custom_file" | sed "s/^$synonym_word=//")
+  elif [ -f "$default_file" ] && grep -q "^$synonym_word=" "$default_file" 2>/dev/null; then
     synonym_type="default"
     synonyms_file="$default_file"
-    target_spell=$(grep "^alias $synonym_word=" "$default_file" | sed "s/^alias $synonym_word='\\(.*\\)'$/\\1/" | sed "s/'\\\\''/'/g")
+    target_spell=$(grep "^$synonym_word=" "$default_file" | sed "s/^$synonym_word=//")
   fi
   
   if [ -z "$target_spell" ]; then

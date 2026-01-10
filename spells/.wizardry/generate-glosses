@@ -421,8 +421,9 @@ uname|uniq|wc|xargs)
   emit_line "# ============================================================================"
   emit_line "# SYNONYMS"
   emit_line "# ============================================================================"
-  emit_line "# Hyphenated synonyms: generated as aliases (POSIX requirement)"
-  emit_line "# Non-hyphenated synonyms: handled by parse via file lookup"
+  emit_line "# All synonyms are generated as aliases for compatibility"
+  emit_line "# Hyphenated targets are converted to space-separated (e.g., jump-to-marker → 'jump to marker')"
+  emit_line "# This allows aliases to properly invoke uncastable spells via first-word glosses"
   emit_line "# ============================================================================"
   emit_line ""
   
@@ -500,23 +501,52 @@ uname|uniq|wc|xargs)
       # Mark as seen
       _synonyms_seen="$_synonyms_seen$_word "
       
-      # Only generate aliases for hyphenated synonyms (POSIX requirement)
-      # Non-hyphenated synonyms handled by parse via file lookup
-      case "$_word" in
+      # Generate aliases for all synonyms
+      # For hyphenated spell names (alphanumeric+hyphens only), convert hyphens to spaces
+      # so they go through first-word glosses (enables uncastable spell invocation)
+      # For command strings with arguments, use as-is
+      case "$_target" in
+        *\ *|*-*\ *)
+          # Contains spaces or space after hyphen - it's a command with args, use as-is
+          emit_line "alias $_word='$_target'"
+          ;;
         *-*)
-          # For hyphenated synonyms, convert target hyphens to spaces if target is also hyphenated
-          # This ensures aliases go through first-word glosses which can source uncastable spells
+          # Hyphenated without spaces - check if it's a spell name or has flags
           case "$_target" in
-            *-*)
-              # Convert hyphens to spaces in target (e.g., jump-to-marker → jump to marker)
+            -*)
+              # Starts with hyphen - it's a flag, use as-is
+              emit_line "alias $_word='$_target'"
+              ;;
+            *[!a-zA-Z0-9/_-]*)
+              # Contains special characters - use as-is
+              emit_line "alias $_word='$_target'"
+              ;;
+            */*)
+              # Contains slash - it's a path, check if it has hyphens in filename
+              _target_dir=${_target%/*}
+              _target_file=${_target##*/}
+              case "$_target_file" in
+                *-*)
+                  # Filename has hyphens - convert them to spaces
+                  _alias_target="$_target_dir/$(printf '%s' "$_target_file" | sed 's/-/ /g')"
+                  emit_line "alias $_word='$_alias_target'"
+                  ;;
+                *)
+                  # No hyphens in filename - use as-is
+                  emit_line "alias $_word='$_target'"
+                  ;;
+              esac
+              ;;
+            *)
+              # Simple hyphenated spell name - convert hyphens to spaces
               _alias_target=$(printf '%s' "$_target" | sed 's/-/ /g')
               emit_line "alias $_word='$_alias_target'"
               ;;
-            *)
-              # Single-word target, use as-is
-              emit_line "alias $_word='$_target'"
-              ;;
           esac
+          ;;
+        *)
+          # No hyphens - use as-is
+          emit_line "alias $_word='$_target'"
           ;;
       esac
     done < "$synonym_file"
@@ -558,23 +588,52 @@ uname|uniq|wc|xargs)
       # Mark as seen
       _synonyms_seen="$_synonyms_seen$_word "
       
-      # Only generate aliases for hyphenated synonyms (POSIX requirement)
-      # Non-hyphenated synonyms handled by parse via file lookup
-      case "$_word" in
+      # Generate aliases for all synonyms
+      # For hyphenated spell names (alphanumeric+hyphens only), convert hyphens to spaces
+      # so they go through first-word glosses (enables uncastable spell invocation)
+      # For command strings with arguments, use as-is
+      case "$_target" in
+        *\ *|*-*\ *)
+          # Contains spaces or space after hyphen - it's a command with args, use as-is
+          emit_line "alias $_word='$_target'"
+          ;;
         *-*)
-          # For hyphenated synonyms, convert target hyphens to spaces if target is also hyphenated
-          # This ensures aliases go through first-word glosses which can source uncastable spells
+          # Hyphenated without spaces - check if it's a spell name or has flags
           case "$_target" in
-            *-*)
-              # Convert hyphens to spaces in target (e.g., jump-to-marker → jump to marker)
+            -*)
+              # Starts with hyphen - it's a flag, use as-is
+              emit_line "alias $_word='$_target'"
+              ;;
+            *[!a-zA-Z0-9/_-]*)
+              # Contains special characters - use as-is
+              emit_line "alias $_word='$_target'"
+              ;;
+            */*)
+              # Contains slash - it's a path, check if it has hyphens in filename
+              _target_dir=${_target%/*}
+              _target_file=${_target##*/}
+              case "$_target_file" in
+                *-*)
+                  # Filename has hyphens - convert them to spaces
+                  _alias_target="$_target_dir/$(printf '%s' "$_target_file" | sed 's/-/ /g')"
+                  emit_line "alias $_word='$_alias_target'"
+                  ;;
+                *)
+                  # No hyphens in filename - use as-is
+                  emit_line "alias $_word='$_target'"
+                  ;;
+              esac
+              ;;
+            *)
+              # Simple hyphenated spell name - convert hyphens to spaces
               _alias_target=$(printf '%s' "$_target" | sed 's/-/ /g')
               emit_line "alias $_word='$_alias_target'"
               ;;
-            *)
-              # Single-word target, use as-is
-              emit_line "alias $_word='$_target'"
-              ;;
           esac
+          ;;
+        *)
+          # No hyphens - use as-is
+          emit_line "alias $_word='$_target'"
           ;;
       esac
     done < "$default_synonym_file"
