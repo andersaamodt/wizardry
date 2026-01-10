@@ -203,7 +203,7 @@ printf '[blink DEBUG] Checking if already at destination\n'
 current_dir=$(pwd -P 2>/dev/null || pwd)
 printf '[blink DEBUG] current_dir=%s\n' "$current_dir"
 # Use command cd to avoid cd gloss/spell interference (works in all POSIX shells)
-dest_resolved=$(command cd "$destination" && pwd -P 2>/dev/null || printf '%s' "$destination")
+dest_resolved=$(command cd "$destination" 2>/dev/null && pwd -P 2>/dev/null || printf '%s' "$destination")
 printf '[blink DEBUG] dest_resolved=%s\n' "$dest_resolved"
 current_resolved=$(printf '%s' "$current_dir" | sed 's|//|/|g')
 dest_resolved=$(printf '%s' "$dest_resolved" | sed 's|//|/|g')

@@ -87,3 +87,4 @@
 - The `find -readable` flag may not work on macOS; use it first, but fall back to plain `-type d` if it returns zero results (cross-platform compatibility).
 - Use `command cd` instead of plain `cd` in spells to avoid interference from cd glosses/hooks (e.g., MUD cd spell); `builtin cd` is bash/zsh-specific and not POSIX. (2)
 - Use `find -xdev` to stay on the current filesystem and exclude network volumes, mounted drives, and other filesystems (prevents security prompts and unexpected behavior on macOS).
+- When using `command cd` in subshells for path resolution, redirect stderr to /dev/null (`command cd "$path" 2>/dev/null`) to suppress cd gloss error messages that still appear despite using `command`.

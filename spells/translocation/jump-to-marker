@@ -201,7 +201,7 @@ fi
 # Normalize paths to handle macOS double slashes and symlinks
 current=$(pwd -P | sed 's|//|/|g')
 # Resolve destination path to real path (handles symlinks)
-normalized_destination=$(command cd "$destination" && pwd -P | sed 's|//|/|g')
+normalized_destination=$(command cd "$destination" 2>/dev/null && pwd -P | sed 's|//|/|g')
 if [ "$current" = "$normalized_destination" ]; then
         printf '%s\n' "You are already standing at marker '$marker_name'."
         # Touch marker to update mtime for cycling
