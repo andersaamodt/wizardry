@@ -53,11 +53,14 @@ case "$mime_type" in
     ;;
 esac
 
-# Try to read priority attribute from the file (if it exists)
+# Try to read priority attribute and hash from the file (if they exist)
 priority=""
+old_hash=""
 if has read-magic && has disenchant && has enchant; then
   # Try to read the priority attribute
   priority=$(read-magic "$file" priority 2>/dev/null || printf '')
+  # Try to read the hash attribute (if file was previously hashed)
+  old_hash=$(read-magic "$file" hash 2>/dev/null || printf '')
 fi
 
 # Get the directory containing the file
@@ -127,6 +130,30 @@ else
   # If priority was found, still apply it to the folder
   if [ -n "$priority" ]; then
     enchant "$file" "priority=$priority" 2>/dev/null || true
+  fi
+fi
+
+# If the original file had a hash and was in the parent's priorities list,
+# update the priorities list to use the new folder's hash instead
+if [ -n "$old_hash" ] && has hashchant; then
+  # Hash the new folder
+  if hashchant "$file" >/dev/null 2>&1; then
+    new_hash=$(read-magic "$file" hash 2>/dev/null || printf '')
+    
+    # If we successfully got both hashes and they're different
+    if [ -n "$new_hash" ] && [ "$old_hash" != "$new_hash" ]; then
+      # Read the parent directory's priorities list
+      parent_priorities=$(read-magic "$parent_dir" priorities 2>/dev/null || printf '')
+      
+      # If the priorities list exists and contains the old hash, replace it with the new hash
+      case "$parent_priorities" in
+        *"$old_hash"*)
+          # Replace old hash with new hash in the priorities list
+          updated_priorities=$(printf '%s' "$parent_priorities" | sed "s/^${old_hash},/${new_hash},/;s/,${old_hash},/,${new_hash},/;s/,${old_hash}\$$/,${new_hash}/;s/^${old_hash}\$/${new_hash}/")
+          enchant "$parent_dir" "priorities=$updated_priorities" 2>/dev/null || true
+          ;;
+      esac
+    fi
   fi
 fi
 
