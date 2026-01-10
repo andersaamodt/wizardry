@@ -254,9 +254,9 @@ SH
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testdir"
   assert_success || return 1
   
-  # Verify "Browse subpriorities" appears in menu
-  grep -q "Browse subpriorities%" "$tmp/log" || {
-    TEST_FAILURE_REASON="Browse subpriorities should appear for directory with prioritized items: $(cat "$tmp/log")"
+  # Verify "Subpriorities..." appears in menu
+  grep -q "Subpriorities...%" "$tmp/log" || {
+    TEST_FAILURE_REASON="Subpriorities... should appear for directory with prioritized items: $(cat "$tmp/log")"
     return 1
   }
 }
@@ -280,9 +280,9 @@ SH
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testfile"
   assert_success || return 1
   
-  # Verify "Browse subpriorities" does NOT appear for regular file
-  grep -q "Browse subpriorities%" "$tmp/log" && {
-    TEST_FAILURE_REASON="Browse subpriorities should not appear for regular file: $(cat "$tmp/log")"
+  # Verify "Subpriorities..." does NOT appear for regular file
+  grep -q "Subpriorities...%" "$tmp/log" && {
+    TEST_FAILURE_REASON="Subpriorities... should not appear for regular file: $(cat "$tmp/log")"
     return 1
   }
   return 0
@@ -329,17 +329,17 @@ SH
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testdir"
   assert_success || return 1
   
-  # Verify "Browse subpriorities" does NOT appear when no items have priority >= 1
-  grep -q "Browse subpriorities%" "$tmp/log" && {
-    TEST_FAILURE_REASON="Browse subpriorities should not appear when no prioritized subitems: $(cat "$tmp/log")"
+  # Verify "Subpriorities..." does NOT appear when no items have priority >= 1
+  grep -q "Subpriorities...%" "$tmp/log" && {
+    TEST_FAILURE_REASON="Subpriorities... should not appear when no prioritized subitems: $(cat "$tmp/log")"
     return 1
   }
   return 0
 }
 
-run_test_case "priority-menu shows browse subpriorities for dirs with priorities" test_priority_menu_shows_browse_subpriorities
-run_test_case "priority-menu hides browse for regular files" test_priority_menu_hides_browse_for_file
-run_test_case "priority-menu hides browse for dirs without priorities" test_priority_menu_hides_browse_for_empty_dir
+run_test_case "priority-menu shows subpriorities for dirs with priorities" test_priority_menu_shows_browse_subpriorities
+run_test_case "priority-menu hides subpriorities for regular files" test_priority_menu_hides_browse_for_file
+run_test_case "priority-menu hides subpriorities for dirs without priorities" test_priority_menu_hides_browse_for_empty_dir
 
 
 # Test via source-then-invoke pattern  
