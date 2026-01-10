@@ -123,15 +123,42 @@ if [ "$highest_echelon" -eq 0 ]; then
   exit 0
 fi
 
-# If file is already at the highest echelon, it's already the highest priority
+# If file is already at the highest echelon, promote to new echelon
 if [ "$current_echelon" -eq "$highest_echelon" ] && [ "$current_echelon" -gt 0 ]; then
-  printf '%s\n' "'$(basename "$file")' is already the highest priority."
+  new_echelon=$((highest_echelon + 1))
+  enchant "$file" echelon "$new_echelon" >/dev/null
+  enchant "$file" priority 1 >/dev/null
+  printf '%s\n' "Promoted '$(basename "$file")' to echelon $new_echelon."
   exit 0
 fi
 
-# Promote to new echelon (higher than current highest)
-new_echelon=$((highest_echelon + 1))
-enchant "$file" echelon "$new_echelon" >/dev/null
-enchant "$file" priority 1 >/dev/null
+# File is not in highest echelon - move it to the highest echelon
+# Find the highest priority number in the highest echelon
+highest_priority_in_echelon=0
+for f in "$directory"/*; do
+  [ -e "$f" ] || continue
+  
+  file_echelon=$(read-magic "$f" echelon 2>/dev/null || printf '0')
+  case "$file_echelon" in
+    *Error*|''|*[!0-9]*) continue ;;
+  esac
+  
+  # Only look at files in the highest echelon
+  if [ "$file_echelon" -eq "$highest_echelon" ]; then
+    file_priority=$(read-magic "$f" priority 2>/dev/null || printf '0')
+    case "$file_priority" in
+      *Error*|''|*[!0-9]*) continue ;;
+    esac
+    
+    if [ "$file_priority" -gt "$highest_priority_in_echelon" ]; then
+      highest_priority_in_echelon=$file_priority
+    fi
+  fi
+done
 
-printf '%s\n' "Promoted '$(basename "$file")' to echelon $new_echelon."
+# Set to highest echelon with priority at the end (highest + 1)
+new_priority=$((highest_priority_in_echelon + 1))
+enchant "$file" echelon "$highest_echelon" >/dev/null
+enchant "$file" priority "$new_priority" >/dev/null
+
+printf '%s\n' "Moved '$(basename "$file")' to echelon $highest_echelon (priority $new_priority)."

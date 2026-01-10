@@ -157,14 +157,71 @@ test_already_highest() {
     return 0
   fi
   
-  # Prioritize file
+  # Prioritize file (creates echelon 1)
   run_spell "spells/priorities/prioritize" "$testfile"
   assert_success || return 1
   
-  # Prioritize again - should say already highest
+  # Prioritize again - should promote to echelon 2
   run_spell "spells/priorities/prioritize" "$testfile"
   assert_success || return 1
-  assert_output_contains "already the highest priority" || return 1
+  assert_output_contains "echelon 2" || return 1
+  
+  # Check echelon is now 2
+  echelon=$(read-magic "$testfile" echelon 2>/dev/null || printf '0')
+  [ "$echelon" = "2" ] || {
+    TEST_FAILURE_REASON="Expected echelon=2 after re-prioritizing, got $echelon"
+    return 1
+  }
+}
+
+test_move_to_highest_echelon() {
+  tmpdir=$(make_tempdir)
+  file1="$tmpdir/file1.txt"
+  file2="$tmpdir/file2.txt"
+  file3="$tmpdir/file3.txt"
+  printf 'content1\n' > "$file1"
+  printf 'content2\n' > "$file2"
+  printf 'content3\n' > "$file3"
+  
+  # Try to hash - if this fails, skip the test
+  run_spell "spells/crypto/hashchant" "$file1"
+  if [ "$STATUS" -ne 0 ]; then
+    echo "SKIP: xattr support not available"
+    return 0
+  fi
+  
+  # Create echelon 1 with file1
+  run_spell "spells/priorities/prioritize" "$file1"
+  assert_success || return 1
+  
+  # Create echelon 2 with file2
+  run_spell "spells/crypto/hashchant" "$file2"
+  run_spell "spells/priorities/prioritize" "$file2"
+  assert_success || return 1
+  
+  # Manually set file3 to echelon 1 (lower echelon)
+  run_spell "spells/crypto/hashchant" "$file3"
+  enchant "$file3" echelon 1 >/dev/null
+  enchant "$file3" priority 2 >/dev/null
+  
+  # Now prioritize file3 - should move to echelon 2 with priority 2 (after file2)
+  run_spell "spells/priorities/prioritize" "$file3"
+  assert_success || return 1
+  assert_output_contains "echelon 2" || return 1
+  
+  # Check file3 is in echelon 2
+  echelon=$(read-magic "$file3" echelon 2>/dev/null || printf '0')
+  [ "$echelon" = "2" ] || {
+    TEST_FAILURE_REASON="Expected echelon=2, got $echelon"
+    return 1
+  }
+  
+  # Check file3 has priority 2 (after file2 which has priority 1)
+  priority=$(read-magic "$file3" priority 2>/dev/null || printf '0')
+  [ "$priority" = "2" ] || {
+    TEST_FAILURE_REASON="Expected priority=2 (added to end), got $priority"
+    return 1
+  }
 }
 
 test_unchecks_when_prioritizing() {
@@ -269,7 +326,8 @@ run_test_case "prioritize asks to create missing file" test_asks_to_create_missi
 run_test_case "prioritize creates file when answering yes" test_creates_file_when_answering_yes
 run_test_case "prioritize creates first priority" test_first_priority
 run_test_case "prioritize promotes to new echelon" test_echelon_promotion
-run_test_case "prioritize detects already highest" test_already_highest
+run_test_case "prioritize promotes when already in highest echelon" test_already_highest
+run_test_case "prioritize moves to highest echelon when in lower echelon" test_move_to_highest_echelon
 run_test_case "prioritize unchecks when prioritizing checked item" test_unchecks_when_prioritizing
 run_test_case "prioritize fails with informative message when hashchant fails" test_hash_failure_message
 run_test_case "prioritize --interactive prompts for file" test_interactive_mode_prompts

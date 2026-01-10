@@ -179,7 +179,7 @@ priority_menu_display_menu() {
     if [ -n "$browse_item" ]; then
       if [ -n "$make_project_item" ]; then
         set -- "$browse_item" \
-               "Prioritize%prioritize \"$file\"" \
+               "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
                "${check_item}" \
                "Edit priority%rename-interactive \"$file\"" \
                "$make_project_item" \
@@ -188,7 +188,7 @@ priority_menu_display_menu() {
                "$exit_item"
       else
         set -- "$browse_item" \
-               "Prioritize%prioritize \"$file\"" \
+               "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
                "${check_item}" \
                "Edit priority%rename-interactive \"$file\"" \
                "Discard priority%deprioritize \"$file\"" \
@@ -197,7 +197,7 @@ priority_menu_display_menu() {
       fi
     else
       if [ -n "$make_project_item" ]; then
-        set -- "Prioritize%prioritize \"$file\"" \
+        set -- "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
                "${check_item}" \
                "Edit priority%rename-interactive \"$file\"" \
                "$make_project_item" \
@@ -205,7 +205,7 @@ priority_menu_display_menu() {
                "---" \
                "$exit_item"
       else
-        set -- "Prioritize%prioritize \"$file\"" \
+        set -- "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
                "${check_item}" \
                "Edit priority%rename-interactive \"$file\"" \
                "Discard priority%deprioritize \"$file\"" \
