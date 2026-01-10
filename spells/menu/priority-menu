@@ -48,13 +48,21 @@ priority_menu_display_menu() {
   
   if [ "$checked_value" = "1" ]; then
     # Checked - show Uncheck option
-    check_item="Uncheck%uncheck \"$file\"; kill -TERM \$PPID"
+    check_item="Uncheck%uncheck \"$file\""
   else
     # Not checked - show Check option
-    check_item="Check%check \"$file\"; kill -TERM \$PPID"
+    check_item="Check%check \"$file\""
   fi
 
   filename=$(basename "$file")
+  
+  # Add checkbox state to header
+  if [ "$checked_value" = "1" ]; then
+    header_checkbox="[X] "
+  else
+    header_checkbox="[ ] "
+  fi
+  
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
   exit_label=$(exit-label)
@@ -116,14 +124,17 @@ priority_menu_display_menu() {
     done
     
     if [ "$has_subpriorities" = "1" ]; then
-      browse_item="Subpriorities...%(cd \"$file\" && priorities); kill -TERM \$PPID"
+      browse_item="Subpriorities...%(cd \"$file\" && priorities)"
+    else
+      # No subpriorities - offer to add one
+      browse_item="Add subpriority%(cd \"$file\" && prioritize --interactive)"
     fi
   fi
 
   # Check if file is a regular file (not a directory) for "Make project" option
   make_project_item=""
   if [ -f "$file" ]; then
-    make_project_item="Make project%file-to-folder \"$file\"; kill -TERM \$PPID"
+    make_project_item="Make project%file-to-folder \"$file\""
   fi
 
   # Build menu items - conditionally include Prioritize based on whether it's highest priority
@@ -134,31 +145,31 @@ priority_menu_display_menu() {
       if [ -n "$make_project_item" ]; then
         set -- "$browse_item" \
                "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
+               "Edit priority%rename-interactive \"$file\"" \
                "$make_project_item" \
-               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
+               "Discard priority%deprioritize \"$file\"" \
                "---" \
                "$exit_item"
       else
         set -- "$browse_item" \
                "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
-               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
+               "Edit priority%rename-interactive \"$file\"" \
+               "Discard priority%deprioritize \"$file\"" \
                "---" \
                "$exit_item"
       fi
     else
       if [ -n "$make_project_item" ]; then
         set -- "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
+               "Edit priority%rename-interactive \"$file\"" \
                "$make_project_item" \
-               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
+               "Discard priority%deprioritize \"$file\"" \
                "---" \
                "$exit_item"
       else
         set -- "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
-               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
+               "Edit priority%rename-interactive \"$file\"" \
+               "Discard priority%deprioritize \"$file\"" \
                "---" \
                "$exit_item"
       fi
@@ -168,51 +179,139 @@ priority_menu_display_menu() {
     if [ -n "$browse_item" ]; then
       if [ -n "$make_project_item" ]; then
         set -- "$browse_item" \
-               "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
+               "Prioritize%prioritize \"$file\"" \
                "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
+               "Edit priority%rename-interactive \"$file\"" \
                "$make_project_item" \
-               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
+               "Discard priority%deprioritize \"$file\"" \
                "---" \
                "$exit_item"
       else
         set -- "$browse_item" \
-               "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
+               "Prioritize%prioritize \"$file\"" \
                "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
-               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
+               "Edit priority%rename-interactive \"$file\"" \
+               "Discard priority%deprioritize \"$file\"" \
                "---" \
                "$exit_item"
       fi
     else
       if [ -n "$make_project_item" ]; then
-        set -- "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
+        set -- "Prioritize%prioritize \"$file\"" \
                "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
+               "Edit priority%rename-interactive \"$file\"" \
                "$make_project_item" \
-               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
+               "Discard priority%deprioritize \"$file\"" \
                "---" \
                "$exit_item"
       else
-        set -- "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
+        set -- "Prioritize%prioritize \"$file\"" \
                "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
-               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
+               "Edit priority%rename-interactive \"$file\"" \
+               "Discard priority%deprioritize \"$file\"" \
                "---" \
                "$exit_item"
       fi
     fi
   fi
-  menu "${THEME_HEADING}${filename}${RESET}:" "$@"
+  menu --start-selection "$start_selection" "${THEME_HEADING}${header_checkbox}${filename}${RESET}:" "$@"
 }
 
 first_run=1
+start_selection=1
+was_checked=0
 
 while true; do
   if [ "$first_run" -eq 0 ]; then
-    :
+    # Check if checked state changed (Check/Uncheck was used)
+    # Get current checked state
+    now_checked=$(read-magic "${file}" checked 2>/dev/null || printf '0')
+    case "$now_checked" in
+      ''|*Error*) now_checked=0 ;;
+      *[!0-9]*) now_checked=0 ;;
+      *) : ;;
+    esac
+    
+    # If checked state changed, keep Check/Uncheck item selected
+    if [ "$was_checked" != "$now_checked" ]; then
+      # Check/Uncheck position varies based on menu structure
+      # It's typically position 2 (after browse_item) or position 1 (no browse_item)
+      # For simplicity and since browse items don't toggle state, we check the check item position
+      # When there's a browse_item and Prioritize, Check is at position 3
+      # When there's a browse_item but no Prioritize (highest priority), Check is at position 2
+      # When there's no browse_item but Prioritize exists, Check is at position 2
+      # When there's no browse_item and no Prioritize, Check is at position 1
+      
+      # Since menu structure is dynamic, we need to determine position
+      # The safest approach: Check is always after browse_item (if exists) and Prioritize (if exists)
+      check_position=1
+      if [ -d "$file" ]; then
+        # Has browse item
+        check_position=2
+        # Check if this is highest priority (no Prioritize item)
+        parent_dir=$(dirname "$file")
+        if [ "$parent_dir" = "." ]; then
+          parent_dir=$(pwd -P)
+        fi
+        dir_priorities=$(read-magic "$parent_dir" priorities 2>/dev/null || true)
+        case "$dir_priorities" in
+          ''|*Error*|*"does not exist"*) : ;;
+          *)
+            first_hash=$(printf '%s' "$dir_priorities" | cut -d',' -f1)
+            file_hash=$(read-magic "$file" hash 2>/dev/null || true)
+            case "$file_hash" in
+              ''|*Error*|*"does not exist"*) : ;;
+              *)
+                if [ "$file_hash" != "$first_hash" ]; then
+                  # Not highest priority, so Prioritize exists
+                  check_position=3
+                fi
+                ;;
+            esac
+            ;;
+        esac
+      else
+        # No browse item, Check position depends on Prioritize
+        parent_dir=$(dirname "$file")
+        if [ "$parent_dir" = "." ]; then
+          parent_dir=$(pwd -P)
+        fi
+        dir_priorities=$(read-magic "$parent_dir" priorities 2>/dev/null || true)
+        case "$dir_priorities" in
+          ''|*Error*|*"does not exist"*) : ;;
+          *)
+            first_hash=$(printf '%s' "$dir_priorities" | cut -d',' -f1)
+            file_hash=$(read-magic "$file" hash 2>/dev/null || true)
+            case "$file_hash" in
+              ''|*Error*|*"does not exist"*) : ;;
+              *)
+                if [ "$file_hash" = "$first_hash" ]; then
+                  # Highest priority, no Prioritize
+                  check_position=1
+                else
+                  # Not highest, Prioritize exists
+                  check_position=2
+                fi
+                ;;
+            esac
+            ;;
+        esac
+      fi
+      
+      start_selection=$check_position
+    fi
+    
+    # Save current state for next iteration
+    was_checked=$now_checked
   else
     first_run=0
+    # Save initial state
+    was_checked=$(read-magic "${file}" checked 2>/dev/null || printf '0')
+    case "$was_checked" in
+      ''|*Error*) was_checked=0 ;;
+      *[!0-9]*) was_checked=0 ;;
+      *) : ;;
+    esac
   fi
 
   priority_menu_display_menu || menu_status=$?

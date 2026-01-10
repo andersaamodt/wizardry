@@ -160,6 +160,207 @@ run_test_case "priorities exits when no priorities set" test_no_priorities_exits
 run_test_case "priorities produces error for invalid options" test_invalid_option_produces_error
 run_test_case "priorities shows checkboxes for items" test_priorities_shows_checkboxes
 
+test_priorities_shows_add_priority_option() {
+  skip-if-compiled || return $?
+  tmp=$(make_tempdir)
+  
+  # Create stub for menu that just captures arguments
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >>"$MENU_LOG"
+kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
+SH
+  chmod +x "$tmp/menu"
+  
+  # Create read-magic stub that returns priorities
+  cat >"$tmp/read-magic" <<'SH'
+#!/bin/sh
+file=$1
+attr=${2-}
+case "$file" in
+  */test-dir)
+    if [ "$attr" = "priorities" ]; then
+      echo "abc123"
+    fi
+    ;;
+  */testfile1)
+    if [ "$attr" = "priority" ]; then
+      echo "5"
+    elif [ "$attr" = "checked" ]; then
+      echo "0"
+    fi
+    ;;
+esac
+SH
+  chmod +x "$tmp/read-magic"
+  
+  # Create get-card stub
+  cat >"$tmp/get-card" <<'SH'
+#!/bin/sh
+hash=$1
+case "$hash" in
+  abc123) echo "$TEST_DIR/testfile1" ;;
+esac
+SH
+  chmod +x "$tmp/get-card"
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  # Create test directory and files
+  mkdir -p "$tmp/test-dir"
+  touch "$tmp/test-dir/testfile1"
+  
+  cd "$tmp/test-dir"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" TEST_DIR="$tmp/test-dir" PWD="$tmp/test-dir" "$ROOT_DIR/spells/menu/priorities"
+  
+  # Verify "Add priority" option appears
+  grep -q "Add priority%" "$tmp/log" || {
+    TEST_FAILURE_REASON="Expected 'Add priority' option in menu: $(cat "$tmp/log")"
+    return 1
+  }
+  
+  # Verify it comes before Exit
+  menu_output=$(cat "$tmp/log")
+  case "$menu_output" in
+    *"Add priority%"*"Exit%"*)
+      # Correct order
+      ;;
+    *)
+      TEST_FAILURE_REASON="'Add priority' should appear before 'Exit': $menu_output"
+      return 1
+      ;;
+  esac
+}
+
+run_test_case "priorities shows add priority option" test_priorities_shows_add_priority_option
+
+test_priorities_remembers_add_priority_selection() {
+  skip-if-compiled || return $?
+  tmp=$(make_tempdir)
+  
+  # Create stub for menu that tracks --start-selection
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+# Extract start-selection value
+start_sel=1
+while [ $# -gt 0 ]; do
+  if [ "$1" = "--start-selection" ]; then
+    shift
+    start_sel=$1
+    break
+  fi
+  shift
+done
+
+# Log the selection
+echo "START_SELECTION=$start_sel" >>"$MENU_CALLS"
+
+# Count calls
+call_num=$(wc -l < "$MENU_CALLS")
+
+# On first call, simulate adding a priority by creating a new file
+if [ "$call_num" -eq 1 ]; then
+  touch "$TEST_DIR/newpriority.txt"
+fi
+
+# Exit after SECOND call (immediate refresh after adding priority)
+if [ "$call_num" -ge 2 ]; then
+  kill -TERM "$PPID" 2>/dev/null || exit 0
+fi
+exit 0
+SH
+  chmod +x "$tmp/menu"
+  
+  # Create read-magic stub that returns growing priorities list
+  cat >"$tmp/read-magic" <<'SH'
+#!/bin/sh
+file=$1
+attr=${2-}
+case "$file" in
+  */test-dir|.)
+    if [ "$attr" = "priorities" ]; then
+      # Return more hashes if new file exists
+      if [ -f "$TEST_DIR/newpriority.txt" ]; then
+        echo "hash1,hash2"
+      else
+        echo "hash1"
+      fi
+    fi
+    ;;
+  */priority1.txt)
+    if [ "$attr" = "priority" ]; then echo "5"
+    elif [ "$attr" = "checked" ]; then echo "0"
+    fi
+    ;;
+  */newpriority.txt)
+    if [ "$attr" = "priority" ]; then echo "5"
+    elif [ "$attr" = "checked" ]; then echo "0"
+    fi
+    ;;
+esac
+SH
+  chmod +x "$tmp/read-magic"
+  
+  # Create get-card stub
+  cat >"$tmp/get-card" <<'SH'
+#!/bin/sh
+case "$1" in
+  hash1) echo "$TEST_DIR/priority1.txt" ;;
+  hash2) echo "$TEST_DIR/newpriority.txt" ;;
+esac
+SH
+  chmod +x "$tmp/get-card"
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  # Create test directory and initial file
+  mkdir -p "$tmp/test-dir"
+  touch "$tmp/test-dir/priority1.txt"
+  
+  cd "$tmp/test-dir"
+  run_cmd env PATH="$tmp:$PATH" MENU_CALLS="$tmp/calls.log" TEST_DIR="$tmp/test-dir" PWD="$tmp/test-dir" "$ROOT_DIR/spells/menu/priorities" 2>/dev/null || true
+  
+  # Check that we had at least 2 calls
+  if [ ! -f "$tmp/calls.log" ]; then
+    TEST_FAILURE_REASON="No menu calls logged"
+    return 1
+  fi
+  
+  call_count=$(wc -l < "$tmp/calls.log")
+  if [ "$call_count" -lt 2 ]; then
+    TEST_FAILURE_REASON="Expected at least 2 menu calls, got $call_count. Log: $(cat "$tmp/calls.log")"
+    return 1
+  fi
+  
+  # Get the SECOND call's start_selection (immediate refresh after adding priority)
+  second_call=$(sed -n '2p' "$tmp/calls.log")
+  second_sel=$(echo "$second_call" | cut -d= -f2)
+  
+  # After adding a priority, start_selection should be > 2 (not 1) on the IMMEDIATE refresh
+  # Menu has: priority1, priority2, ---, Add priority, Exit
+  # So "Add priority" is at position 4
+  if [ "$second_sel" -le 2 ]; then
+    TEST_FAILURE_REASON="After adding priority, start_selection should be > 2 (Add priority position), got $second_sel. Calls: $(cat "$tmp/calls.log")"
+    return 1
+  fi
+  
+  # Should be around 4 (or 3+ to account for separators)
+  if [ "$second_sel" -lt 3 ]; then
+    TEST_FAILURE_REASON="Start selection should be at least 3 for Add priority, got $second_sel"
+    return 1
+  fi
+}
+
+run_test_case "priorities remembers Add priority selection" test_priorities_remembers_add_priority_selection
+
 
 # Test via source-then-invoke pattern  
 

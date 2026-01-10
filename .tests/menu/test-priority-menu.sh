@@ -334,6 +334,12 @@ SH
     TEST_FAILURE_REASON="Subpriorities... should not appear when no prioritized subitems: $(cat "$tmp/log")"
     return 1
   }
+  
+  # Verify "Add subpriority" DOES appear
+  grep -q "Add subpriority%" "$tmp/log" || {
+    TEST_FAILURE_REASON="Add subpriority should appear when no prioritized subitems: $(cat "$tmp/log")"
+    return 1
+  }
   return 0
 }
 
@@ -399,7 +405,7 @@ SH
 
 run_test_case "priority-menu shows subpriorities for dirs with priorities" test_priority_menu_shows_browse_subpriorities
 run_test_case "priority-menu hides subpriorities for regular files" test_priority_menu_hides_browse_for_file
-run_test_case "priority-menu hides subpriorities for dirs without priorities" test_priority_menu_hides_browse_for_empty_dir
+run_test_case "priority-menu shows add subpriority for dirs without priorities" test_priority_menu_hides_browse_for_empty_dir
 run_test_case "priority-menu hides prioritize for highest priority" test_priority_menu_hides_prioritize_for_highest
 
 test_priority_menu_shows_make_project_for_files() {
@@ -457,6 +463,70 @@ SH
 
 run_test_case "priority-menu shows make project for files" test_priority_menu_shows_make_project_for_files
 run_test_case "priority-menu hides make project for directories" test_priority_menu_hides_make_project_for_dirs
+
+test_priority_menu_shows_unchecked_in_header() {
+  skip-if-compiled || return $?
+  tmp=$(make_tempdir)
+  make_stub_menu "$tmp"
+  make_stub_require "$tmp"
+  make_read_magic_stub "$tmp"
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  # Create test file
+  touch "$tmp/testfile"
+  
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testfile"
+  assert_success || return 1
+  
+  # Verify "[ ]" appears in header (unchecked state)
+  grep -q "\[ \]" "$tmp/log" || {
+    TEST_FAILURE_REASON="Unchecked checkbox [ ] should appear in header: $(cat "$tmp/log")"
+    return 1
+  }
+}
+
+test_priority_menu_shows_checked_in_header() {
+  skip-if-compiled || return $?
+  tmp=$(make_tempdir)
+  make_stub_menu "$tmp"
+  make_stub_require "$tmp"
+  
+  # Create read-magic stub that says item is checked
+  cat >"$tmp/read-magic" <<'SH'
+#!/bin/sh
+if [ "$2" = "checked" ]; then
+  echo "1"
+else
+  echo "read-magic: attribute does not exist."
+fi
+SH
+  chmod +x "$tmp/read-magic"
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  touch "$tmp/testfile"
+  
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testfile"
+  assert_success || return 1
+  
+  # Verify "[X]" appears in header (checked state)
+  grep -q "\[X\]" "$tmp/log" || {
+    TEST_FAILURE_REASON="Checked checkbox [X] should appear in header: $(cat "$tmp/log")"
+    return 1
+  }
+}
+
+run_test_case "priority-menu shows unchecked in header" test_priority_menu_shows_unchecked_in_header
+run_test_case "priority-menu shows checked in header" test_priority_menu_shows_checked_in_header
 
 
 # Test via source-then-invoke pattern  
