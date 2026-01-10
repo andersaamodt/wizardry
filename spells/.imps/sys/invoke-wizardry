@@ -130,26 +130,63 @@ done
 export PATH
 
 # Optional: Generate first-word glosses for space-separated invocation
-# This allows "env or VAR DEFAULT" instead of "env-or VAR DEFAULT"
-# 
-# PERFORMANCE IMPACT: Glosses add ~0.14s to startup time (eval ~640KB of code)
-# For faster startup, disable with: export WIZARDRY_SKIP_GLOSSES=1
-# 
-# All spells work normally without glosses using hyphenated form (env-or, temp-file, etc.)
-# Glosses only add convenience of space-separated syntax (not required)
-#
+# This still allows "env or VAR DEFAULT" instead of just "env-or VAR DEFAULT"
 # Skip in test mode (tests don't need glosses)
-if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ] && [ "${WIZARDRY_SKIP_GLOSSES:-0}" != "1" ]; then
+if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
   if command -v generate-glosses >/dev/null 2>&1; then
-    [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Generating first-word glosses..." >&2
+    [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Loading first-word glosses..." >&2
     
-    # Generate glosses and eval them into current shell
-    if _iw_gloss_output=$(generate-glosses --quiet 2>&1); then
-      if [ -n "$_iw_gloss_output" ]; then
-        eval "$_iw_gloss_output"
-        [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Gloss functions loaded" >&2
+    # PERFORMANCE OPTIMIZATION: Cache glosses to avoid regenerating on every shell startup
+    # Glosses are ~640KB and take 0.07s to generate + 0.13s to eval
+    # Caching reduces this to ~0.03s (sourcing from file)
+    _iw_gloss_cache_dir="${TMPDIR:-/tmp}"
+    
+    # Use a persistent cache based on WIZARDRY_DIR to share across all shells
+    # Include user ID to avoid permission issues in multi-user systems
+    _iw_gloss_persistent="${_iw_gloss_cache_dir}/.wizardry-glosses-$(printf '%s' "$WIZARDRY_DIR" | cksum | cut -d' ' -f1)-$(id -u).sh"
+    
+    # Check if persistent cache exists and is newer than generate-glosses
+    _iw_needs_regen=1
+    if [ -f "$_iw_gloss_persistent" ]; then
+      # Check if cache is newer than generate-glosses script
+      if command -v generate-glosses >/dev/null 2>&1; then
+        _iw_gen_glosses_path=$(command -v generate-glosses)
+        if [ -f "$_iw_gen_glosses_path" ]; then
+          # Cache is valid if it's newer than the generate-glosses script
+          if [ "$_iw_gloss_persistent" -nt "$_iw_gen_glosses_path" ]; then
+            _iw_needs_regen=0
+          fi
+        fi
       fi
     fi
+    
+    # Regenerate cache if needed
+    if [ "$_iw_needs_regen" -eq 1 ]; then
+      [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Regenerating gloss cache..." >&2
+      if generate-glosses --quiet > "$_iw_gloss_persistent.tmp" 2>&1; then
+        mv "$_iw_gloss_persistent.tmp" "$_iw_gloss_persistent"
+      else
+        # If generation fails, clean up and fall back to direct eval
+        rm -f "$_iw_gloss_persistent.tmp"
+        _iw_gloss_persistent=""
+      fi
+    fi
+    
+    # Source cached glosses if available
+    if [ -f "$_iw_gloss_persistent" ]; then
+      . "$_iw_gloss_persistent"
+      [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Gloss functions loaded from cache" >&2
+    else
+      # Fallback to direct generation if cache unavailable
+      if _iw_gloss_output=$(generate-glosses --quiet 2>&1); then
+        if [ -n "$_iw_gloss_output" ]; then
+          eval "$_iw_gloss_output"
+          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Gloss functions loaded (uncached)" >&2
+        fi
+      fi
+    fi
+    
+    unset _iw_gloss_cache_dir _iw_gloss_persistent _iw_needs_regen _iw_gen_glosses_path _iw_gloss_output
   fi
 fi
 
