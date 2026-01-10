@@ -146,20 +146,23 @@ previous_add_priority_position=0
 
 while true; do
   if [ "$first_run" -eq 0 ]; then
-    # Always keep "Add priority" selected when item count increases (new priority was added)
+    # Call display_priorities which will update current_item_count and current_add_priority_position
+    display_priorities || menu_status=$?
+    menu_status=${menu_status:-0}
+    
+    # After display_priorities, check if item count increased (new priority was added)
     if [ "$current_item_count" -gt "$previous_item_count" ]; then
-      # New item was added, keep "Add priority" selected
-      # Use the position from the previous iteration
-      start_selection=$previous_add_priority_position
+      # New item was added, set start_selection for NEXT iteration
+      start_selection=$current_add_priority_position
     else
-      # If count didn't change, reset to default (first item)
+      # If count didn't change, reset to first item for NEXT iteration
       start_selection=1
     fi
+    
+    # Save current values for next iteration comparison
     previous_item_count=$current_item_count
     previous_add_priority_position=$current_add_priority_position
     
-    display_priorities || menu_status=$?
-    menu_status=${menu_status:-0}
     # ESC kills this menu script via TERM signal (same as Exit button)
     # Direct kill: kill -TERM $$ → kills this script
     if [ "$menu_status" -eq 130 ]; then
@@ -173,6 +176,7 @@ while true; do
     if ! display_priorities; then
       exit 1
     fi
+    # Save initial values
     previous_item_count=$current_item_count
     previous_add_priority_position=$current_add_priority_position
     menu_status=$?
