@@ -55,6 +55,14 @@ priority_menu_display_menu() {
   fi
 
   filename=$(basename "$file")
+  
+  # Add checkbox state to header
+  if [ "$checked_value" = "1" ]; then
+    header_checkbox="[X] "
+  else
+    header_checkbox="[ ] "
+  fi
+  
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
   exit_label=$(exit-label)
@@ -117,6 +125,9 @@ priority_menu_display_menu() {
     
     if [ "$has_subpriorities" = "1" ]; then
       browse_item="Subpriorities...%(cd \"$file\" && priorities); kill -TERM \$PPID"
+    else
+      # No subpriorities - offer to add one
+      browse_item="Add subpriority%(cd \"$file\" && prioritize --interactive); kill -TERM \$PPID"
     fi
   fi
 
@@ -203,7 +214,7 @@ priority_menu_display_menu() {
       fi
     fi
   fi
-  menu "${THEME_HEADING}${filename}${RESET}:" "$@"
+  menu "${THEME_HEADING}${header_checkbox}${filename}${RESET}:" "$@"
 }
 
 first_run=1
