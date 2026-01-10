@@ -102,7 +102,8 @@ if [ "$marker_name" = "0" ] || [ "$marker_name" = "next" ]; then
         printf 'DEBUG: all_markers="%s"\n' "$all_markers" >&2
         printf 'DEBUG: Number of markers in all_markers: ' >&2
         _debug_count=0
-        for _debug_m in $all_markers; do
+        # Use command substitution to force word splitting in all shells (including zsh)
+        for _debug_m in $(printf '%s\n' $all_markers); do
                 _debug_count=$((_debug_count + 1))
         done
         printf '%d\n' "$_debug_count" >&2
@@ -133,7 +134,9 @@ if [ "$marker_name" = "0" ] || [ "$marker_name" = "next" ]; then
                 if [ -n "$last_marker" ]; then
                         found=0
                         first=""
-                        for m in $all_markers; do
+                        # Force word splitting by using printf to output each marker on separate line
+                        # This works in all shells including zsh
+                        for m in $(printf '%s\n' $all_markers); do
                                 if [ -z "$first" ]; then
                                         first=$m
                                 fi
@@ -154,7 +157,8 @@ if [ "$marker_name" = "0" ] || [ "$marker_name" = "next" ]; then
                 else
                         # No last marker (new session or first use), use first available
                         printf 'DEBUG: No last_marker, using first available from all_markers\n' >&2
-                        for m in $all_markers; do
+                        # Use command substitution to force word splitting in all shells
+                        for m in $(printf '%s\n' $all_markers); do
                                 printf 'DEBUG: Setting marker_name to first marker: "%s"\n' "$m" >&2
                                 marker_name=$m
                                 break
