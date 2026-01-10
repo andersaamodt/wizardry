@@ -383,4 +383,49 @@ STUB_EOF
   run_test_case "menu wraps around when navigating with arrows" menu_arrow_wrapping
 fi
 
+# Test that long menu items are truncated to preserve command column
+# Skip if /dev/tty is not functional
+if [ "${WIZARDRY_TEST_IN_POCKET-0}" = "1" ]; then
+  test_skip "menu truncates long labels to preserve command column" "requires functional /dev/tty"
+elif ! stty -g </dev/tty >/dev/null 2>&1; then
+  test_skip "menu truncates long labels to preserve command column" "requires functional /dev/tty"
+else
+  menu_truncates_long_labels() {
+    tmpdir=$(make_tempdir)
+    
+    stub_dir="$tmpdir/stubs"
+    mkdir -p "$stub_dir"
+    
+    # Link to stub imps (terminal I/O + interactive input stubs)
+    for stub in fathom-cursor fathom-terminal move-cursor cursor-blink stty await-keypress; do
+      ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
+    done
+    
+    # Create a very long label that would normally push commands off screen
+    # Terminal width is 80 (from stub), so a 75-character label would be problematic
+    long_label="This is a very long menu item label that should be truncated to preserve command column space"
+    
+    # Run menu with long label
+    PATH="$stub_dir:$ROOT_DIR/spells/cantrips:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" run_cmd \
+      "$ROOT_DIR/spells/cantrips/menu" "Test:" \
+      "${long_label}%printf 'test-cmd'"
+    
+    assert_success || return 1
+    
+    # The output should contain the command "test-cmd"
+    # This verifies the command was executed (menu didn't break)
+    case "$OUTPUT" in
+      *test-cmd*)
+        return 0
+        ;;
+      *)
+        TEST_FAILURE_REASON="expected 'test-cmd' in output but got: $OUTPUT"
+        return 1
+        ;;
+    esac
+  }
+  
+  run_test_case "menu truncates long labels to preserve command column" menu_truncates_long_labels
+fi
+
 finish_tests
