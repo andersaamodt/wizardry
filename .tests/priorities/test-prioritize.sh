@@ -320,6 +320,35 @@ test_interactive_mode_with_file_arg() {
   assert_output_contains "priority" || return 1
 }
 
+test_yes_or_y_flag_auto_creates() {
+  tmpdir=$(make_tempdir)
+  testfile="$tmpdir/newfile.txt"
+  
+  # File doesn't exist yet
+  [ ! -e "$testfile" ] || return 1
+  
+  # Run prioritize with --yes flag (no ask-yn stub needed)
+  # Both --yes and -y work the same way
+  run_spell "spells/priorities/prioritize" --yes "$testfile"
+  
+  # Check if xattr is not supported
+  if [ "$STATUS" -ne 0 ]; then
+    if printf '%s' "$ERROR" | grep -q "extended attributes"; then
+      echo "SKIP: xattr support not available"
+      return 0
+    fi
+    return 1
+  fi
+  
+  assert_success || return 1
+  
+  # Verify file was created
+  [ -e "$testfile" ] || return 1
+  
+  # Verify it has priority
+  assert_output_contains "priority" || return 1
+}
+
 run_test_case "prioritize shows usage text with echelon mention" test_help
 run_test_case "prioritize requires file argument" test_requires_argument
 run_test_case "prioritize asks to create missing file" test_asks_to_create_missing_file
@@ -332,5 +361,6 @@ run_test_case "prioritize unchecks when prioritizing checked item" test_unchecks
 run_test_case "prioritize fails with informative message when hashchant fails" test_hash_failure_message
 run_test_case "prioritize --interactive prompts for file" test_interactive_mode_prompts
 run_test_case "prioritize --interactive with file arg works" test_interactive_mode_with_file_arg
+run_test_case "prioritize --yes/-y auto-creates missing file" test_yes_or_y_flag_auto_creates
 
 finish_tests

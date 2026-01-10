@@ -214,6 +214,7 @@ test_priority_menu_shows_browse_subpriorities() {
 # Stub for colors - just export empty theme variables
 THEME_SUCCESS=""
 THEME_HEADING=""
+BOLD=""
 RESET=""
 GREEN=""
 SH

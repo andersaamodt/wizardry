@@ -140,7 +140,7 @@ priority_menu_display_menu() {
     done
     
     if [ "$has_subpriorities" = "1" ]; then
-      browse_item="${THEME_SUCCESS}Subpriorities...${RESET}%(cd \"$file\" && priorities)"
+      browse_item="${BOLD}Subpriorities...${RESET}%(cd \"$file\" && priorities)"
     else
       # No subpriorities - offer to add one
       browse_item="Add subpriority%(cd \"$file\" && prioritize --interactive)"
@@ -211,10 +211,77 @@ priority_menu_display_menu() {
 first_run=1
 start_selection=1
 was_checked=0
+was_directory=0
 
 while true; do
   if [ "$first_run" -eq 0 ]; then
-    # Check if checked state changed (Check/Uncheck was used)
+    # Check if file type changed (file-to-folder was used)
+    now_directory=0
+    if [ -d "$file" ]; then
+      now_directory=1
+    fi
+    
+    # If file became directory (Make project was used), select Add subpriority/Subpriorities
+    if [ "$was_directory" != "$now_directory" ]; then
+      # Calculate position of browse_item (Add subpriority or Subpriorities)
+      # Position: 1 (base) + 1 (if Prioritize shown) + 1 (Check) + 1 (Edit) = varies
+      browse_position=1
+      
+      # Recalculate is_very_first_priority
+      file_echelon=$(read-magic "$file" echelon 2>/dev/null || printf '0')
+      case "$file_echelon" in
+        *Error*|''|*[!0-9]*) file_echelon=0 ;;
+      esac
+      
+      file_priority=$(read-magic "$file" priority 2>/dev/null || printf '0')
+      case "$file_priority" in
+        *Error*|''|*[!0-9]*) file_priority=0 ;;
+      esac
+      
+      parent_dir=$(dirname "$file")
+      if [ "$parent_dir" = "." ]; then
+        parent_dir=$(pwd -P)
+      fi
+      
+      highest_echelon=0
+      lowest_priority_in_highest=999999
+      for f in "$parent_dir"/*; do
+        [ -e "$f" ] || continue
+        item_echelon=$(read-magic "$f" echelon 2>/dev/null || printf '0')
+        case "$item_echelon" in
+          *Error*|''|*[!0-9]*) continue ;;
+        esac
+        if [ "$item_echelon" -gt "$highest_echelon" ]; then
+          highest_echelon=$item_echelon
+          lowest_priority_in_highest=999999
+        fi
+        if [ "$item_echelon" -eq "$highest_echelon" ]; then
+          item_priority=$(read-magic "$f" priority 2>/dev/null || printf '0')
+          case "$item_priority" in
+            *Error*|''|*[!0-9]*) item_priority=999999 ;;
+          esac
+          if [ "$item_priority" -lt "$lowest_priority_in_highest" ]; then
+            lowest_priority_in_highest=$item_priority
+          fi
+        fi
+      done
+      
+      is_very_first=0
+      if [ "$file_echelon" -gt 0 ] && [ "$file_echelon" -eq "$highest_echelon" ] && [ "$file_priority" -eq "$lowest_priority_in_highest" ]; then
+        is_very_first=1
+      fi
+      
+      # Calculate browse_position: base + Prioritize (if shown) + Check + Edit
+      if [ "$is_very_first" -eq 0 ]; then
+        browse_position=$((browse_position + 1))  # Add 1 for Prioritize
+      fi
+      browse_position=$((browse_position + 1))  # Add 1 for Check
+      browse_position=$((browse_position + 1))  # Add 1 for Edit priority
+      
+      start_selection=$browse_position
+      was_directory=$now_directory
+    fi
+    
     # Get current checked state
     now_checked=$(read-magic "${file}" checked 2>/dev/null || printf '0')
     case "$now_checked" in
@@ -298,6 +365,13 @@ while true; do
       *[!0-9]*) was_checked=0 ;;
       *) : ;;
     esac
+    
+    # Save initial file type
+    if [ -d "$file" ]; then
+      was_directory=1
+    else
+      was_directory=0
+    fi
   fi
 
   priority_menu_display_menu || menu_status=$?

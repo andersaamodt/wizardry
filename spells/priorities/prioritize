@@ -7,14 +7,15 @@
 case "${1-}" in
 --help|--usage|-h)
   cat << 'USAGE'
-Usage: prioritize [--interactive] <file>
-       prioritize --interactive
+Usage: prioritize [--interactive] [--yes|-y] <file>
+       prioritize --interactive [--yes|-y]
 
 Promote a file to the highest echelon or create a new higher echelon. Files are organized using echelon (tier) and priority (order within tier) attributes stored in the file's extended attributes.
 
 Higher echelon numbers appear first in the list. Within an echelon, items are ordered by priority number (lower priority numbers first).
 
 With --interactive, prompts for the file to prioritize.
+With --yes or -y, automatically creates the file if it doesn't exist without prompting.
 USAGE
   exit 0
   ;;
@@ -23,12 +24,24 @@ esac
 set -eu
 . env-clear
 
-# Check for --interactive flag
+# Check for flags
 interactive=0
-if [ "${1-}" = "--interactive" ]; then
-  interactive=1
-  shift
-fi
+auto_create=0
+while [ $# -gt 0 ]; do
+  case "${1-}" in
+    --interactive)
+      interactive=1
+      shift
+      ;;
+    --yes|-y)
+      auto_create=1
+      shift
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
 
 # If interactive mode and no file argument, prompt for it
 if [ "$interactive" -eq 1 ] && [ -z "${1-}" ]; then
@@ -55,8 +68,14 @@ fi
 
 # Check if the target file exists
 if [ ! -e "$file" ]; then
-  # Ask to create the file if it doesn't exist
-  if ask-yn "'$file' does not exist. Create it?" yes; then
+  # Ask to create the file if it doesn't exist (unless --yes/-y is used)
+  if [ "$auto_create" -eq 1 ]; then
+    # Auto-create without prompting
+    touch "$file" || {
+      printf '%s\n' "prioritize: failed to create file: $file" >&2
+      exit 1
+    }
+  elif ask-yn "'$file' does not exist. Create it?" yes; then
     touch "$file" || {
       printf '%s\n' "prioritize: failed to create file: $file" >&2
       exit 1
