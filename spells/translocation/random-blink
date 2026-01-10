@@ -6,18 +6,22 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: random blink [max_depth]
+Usage: random blink [path] [--depth N]
 
-Teleport to a random subdirectory within the current directory tree.
-- No argument defaults to depth 3
-- max_depth limits how deep to search (1-10)
+Teleport to a random subdirectory within a directory tree.
+- No argument defaults to $HOME with depth 5
+- path: Starting directory (default: $HOME)
+- --depth N: Limits how deep to search (1-10, default: 5)
+
+Examples:
+  random blink                    # Random subdirectory in $HOME (depth 5)
+  random blink /tmp               # Random subdirectory in /tmp (depth 5)
+  random blink --depth 3          # Random subdirectory in $HOME (depth 3)
+  random blink /var/log --depth 2 # Random subdirectory in /var/log (depth 2)
+
 Note: This spell must be sourced. Use 'random blink' to invoke it.
 USAGE
   return 0 2>/dev/null || exit 0
-  ;;
--*)
-  printf '%s\n' "random-blink: unknown option '$1'." >&2
-  return 1 2>/dev/null || exit 1
   ;;
 esac
 
@@ -45,23 +49,69 @@ unset _random_blink_sourced _random_blink_base
 set -eu
 . env-clear
 
-max_depth="${1:-3}"
+# Parse arguments
+start_path=""
+max_depth=5
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --depth)
+      shift
+      if [ $# -eq 0 ]; then
+        printf '%s\n' "random-blink: --depth requires an argument" >&2
+        set +eu; return 1
+      fi
+      max_depth=$1
+      shift
+      ;;
+    -*)
+      printf '%s\n' "random-blink: unknown option '$1'." >&2
+      set +eu; return 1
+      ;;
+    *)
+      if [ -z "$start_path" ]; then
+        start_path=$1
+      else
+        printf '%s\n' "random-blink: unexpected argument '$1'." >&2
+        set +eu; return 1
+      fi
+      shift
+      ;;
+  esac
+done
+
+# Default to $HOME if no path specified
+if [ -z "$start_path" ]; then
+  start_path=${HOME:-.}
+fi
 
 # Validate max_depth is a number between 1 and 10
 case "$max_depth" in
   ''|*[!0-9]*)
-    printf '%s\n' "blink: depth must be a number between 1 and 10." >&2
+    printf '%s\n' "random-blink: depth must be a number between 1 and 10." >&2
     set +eu; return 1
     ;;
 esac
 
 if [ "$max_depth" -lt 1 ] || [ "$max_depth" -gt 10 ]; then
-  printf '%s\n' "blink: depth must be between 1 and 10." >&2
+  printf '%s\n' "random-blink: depth must be between 1 and 10." >&2
+  set +eu; return 1
+fi
+
+# Validate and normalize start_path
+if [ ! -d "$start_path" ]; then
+  printf '%s\n' "random-blink: directory not found: $start_path" >&2
   set +eu; return 1
 fi
 
 # Get current directory
 current=$(pwd -P | sed 's|//|/|g')
+
+# Change to start_path to make find work from there
+if ! cd "$start_path" 2>/dev/null; then
+  printf '%s\n' "random-blink: cannot access directory: $start_path" >&2
+  set +eu; return 1
+fi
 
 # Find all subdirectories up to max_depth
 # Use find to locate directories, excluding hidden directories and common ignore patterns
@@ -72,7 +122,7 @@ subdirs=$(find . -mindepth 1 -maxdepth "$max_depth" -type d \
   2>/dev/null || true)
 
 if [ -z "$subdirs" ]; then
-  printf '%s\n' "No subdirectories found within depth $max_depth."
+  printf '%s\n' "No subdirectories found within depth $max_depth in $start_path."
   set +eu; return 1
 fi
 
@@ -80,7 +130,7 @@ fi
 subdir_count=$(printf '%s\n' "$subdirs" | grep -c '^')
 
 if [ "$subdir_count" -eq 0 ]; then
-  printf '%s\n' "No subdirectories found within depth $max_depth."
+  printf '%s\n' "No subdirectories found within depth $max_depth in $start_path."
   set +eu; return 1
 fi
 
@@ -99,7 +149,7 @@ fi
 
 # Resolve destination to absolute path
 if ! cd "$destination" 2>/dev/null; then
-  printf '%s\n' "blink: cannot access directory: $destination" >&2
+  printf '%s\n' "random-blink: cannot access directory: $destination" >&2
   set +eu; return 1
 fi
 
@@ -161,6 +211,9 @@ arrival=$(printf '%s\n' "$arrival" | awk 'BEGIN{srand();}{lines[NR]=$0}END{if (N
 if [ -n "$arrival" ]; then
   printf '%s\n' "$arrival"
 fi
+
+# Output the destination path
+printf '%s\n' "$normalized_destination"
 
 # Describe current location if look command exists
 if command -v look >/dev/null 2>&1; then
