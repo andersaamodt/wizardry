@@ -1,14 +1,14 @@
 #!/bin/sh
 
-# This spell determines the next appropriate priority for a file based on echelons.
-# Use it to find what priority value to assign when adding a file to a priority list.
+# This spell determines the next appropriate echelon and priority for a file.
+# Use it to find what echelon and priority values to assign when adding a file to a priority list.
 
 case "${1-}" in
 --help|--usage|-h)
   cat << 'USAGE'
 Usage: get-new-priority <file>
 
-Compute the next priority value for a file within its directory's echelon system. Returns the highest echelon priority if the file belongs to the highest echelon, or one higher if it should be promoted to a new echelon.
+Compute the next echelon and priority values for a file within its directory. Outputs "echelon priority" where echelon is the highest existing echelon, and priority is one higher than the highest priority in that echelon (for adding to the end of the highest echelon).
 USAGE
   exit 0
   ;;
@@ -31,81 +31,58 @@ if [ ! -f "$file" ]; then
   exit 1
 fi
 
-# Hash the file
-hashchant "$file" >/dev/null 2>&1 || true
-file_hash=$(read-magic "$file" hash 2>/dev/null || true)
-
 # Get the directory containing the file
 dir=$(dirname "$file")
 if [ "$dir" = "." ]; then
   dir=$(pwd -P)
 fi
 
-# Start with a highest priority of 0
-highest_priority=0
+# Find the highest echelon and the highest priority within that echelon
+highest_echelon=0
+highest_priority_in_echelon=0
 
-# Loop through all files in the directory to find the highest priority
+# Loop through all files in the directory
 for f in "$dir"/*; do
   # Skip if not a file
   [ -f "$f" ] || continue
 
-  # Get the file's priority
-  file_priority=$(read-magic "$f" priority 2>/dev/null || true)
+  # Get the file's echelon
+  file_echelon=$(read-magic "$f" echelon 2>/dev/null || true)
 
-  # Skip if no priority or error
-  case "$file_priority" in
+  # Skip if no echelon or error
+  case "$file_echelon" in
     ''|*Error*|*[!0-9]*) continue ;;
   esac
 
-  # Update highest if this priority is higher
-  if [ "$file_priority" -gt "$highest_priority" ]; then
-    highest_priority=$file_priority
+  # Update highest echelon if this one is higher
+  if [ "$file_echelon" -gt "$highest_echelon" ]; then
+    highest_echelon=$file_echelon
+    # Reset highest priority when we find a new highest echelon
+    highest_priority_in_echelon=0
+  fi
+
+  # If this file is in the highest echelon, check its priority
+  if [ "$file_echelon" -eq "$highest_echelon" ]; then
+    file_priority=$(read-magic "$f" priority 2>/dev/null || true)
+    
+    # Skip if no priority or error
+    case "$file_priority" in
+      ''|*Error*|*[!0-9]*) continue ;;
+    esac
+    
+    # Update highest priority in echelon
+    if [ "$file_priority" -gt "$highest_priority_in_echelon" ]; then
+      highest_priority_in_echelon=$file_priority
+    fi
   fi
 done
 
-# Get the current priorities list from the directory
-dir_priorities=$(read-magic "$dir" priorities 2>/dev/null || true)
-
-# If there's no priority list yet, the new priority is 1
-case "$dir_priorities" in
-  ''|*Error*)
-    printf '%s\n' "1"
-    exit 0
-    ;;
-esac
-
-# Check if the file should be in the highest echelon or promoted
-# Loop through the priority hashes to check echelons
-found_lower_echelon=0
-for priority_hash in $(printf '%s' "$dir_priorities" | tr ',' ' '); do
-  # Get the file for this hash
-  priority_file=$(get-card "$priority_hash" "$dir" 2>/dev/null || true)
-  
-  # Skip if file not found
-  if [ -z "$priority_file" ]; then
-    continue
-  fi
-  
-  # Get the priority of this file
-  file_priority=$(read-magic "$priority_file" priority 2>/dev/null || true)
-  
-  # Skip if no priority or error
-  case "$file_priority" in
-    ''|*Error*|*[!0-9]*) continue ;;
-  esac
-  
-  # If we find any file with priority less than the highest,
-  # it means not all files are in the top echelon
-  if [ "$file_priority" != "$highest_priority" ]; then
-    found_lower_echelon=1
-    break
-  fi
-done
-
-# If we found a lower echelon, new file joins the highest echelon
-# Otherwise, all files are in top echelon, so promote to new echelon
-if [ "$found_lower_echelon" -eq 1 ]; then
-  printf '%s\n' "$highest_priority"
-else
-  printf '%s\n' "$((highest_priority + 1))"
+# If no priorities exist yet, return echelon 1, priority 1
+if [ "$highest_echelon" -eq 0 ]; then
+  printf '%s %s\n' "1" "1"
+  exit 0
 fi
+
+# Return the highest echelon and next priority (one higher than the highest in that echelon)
+new_priority=$((highest_priority_in_echelon + 1))
+printf '%s %s\n' "$highest_echelon" "$new_priority"

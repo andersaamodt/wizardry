@@ -1,16 +1,18 @@
 #!/bin/sh
 
 # This spell sets or updates the priority of a file within a directory using echelons.
-# Files with the same priority value belong to the same echelon (tier).
+# Files are organized using both echelon (tier) and priority (order within tier) attributes.
 # Use it to organize files by importance using extended attributes.
 
 case "${1-}" in
 --help|--usage|-h)
   cat << 'USAGE'
-Usage: prioritize [--interactive] <file> [directory]
+Usage: prioritize [--interactive] <file>
        prioritize --interactive
 
-Set or update the priority of a file within its echelon, storing it in the file's extended attributes and the directory's priorities list. Files with the same priority value belong to the same echelon (tier). If no directory is specified, the file's parent directory is used.
+Promote a file to the highest echelon or create a new higher echelon. Files are organized using echelon (tier) and priority (order within tier) attributes stored in the file's extended attributes.
+
+Higher echelon numbers appear first in the list. Within an echelon, items are ordered by priority number (lower priority numbers first).
 
 With --interactive, prompts for the file to prioritize.
 USAGE
@@ -42,7 +44,6 @@ if [ "$interactive" -eq 1 ] && [ -z "${1-}" ]; then
     printf '%s\n' "prioritize: file path required" >&2
     exit 2
   fi
-  directory=${2-}
 else
   # Ensure file argument is provided
   if [ -z "${1-}" ]; then
@@ -50,7 +51,6 @@ else
     exit 2
   fi
   file=$1
-  directory=${2-}
 fi
 
 # Check if the target file exists
@@ -66,32 +66,28 @@ if [ ! -e "$file" ]; then
   fi
 fi
 
-# Hash the target file for identification
+# Hash the target file for identification (still needed for checked/unchecked tracking)
 if ! hashchant "$file" >/dev/null 2>&1; then
   printf '%s\n' "prioritize: failed to hash file: $file" >&2
   printf '%s\n' "prioritize: extended attributes (xattr) may not be supported on this filesystem" >&2
   exit 1
 fi
 
-target_hash=$(read-magic "$file" hash 2>/dev/null || true)
-
-if [ -z "$target_hash" ] || [ "${target_hash#Error}" != "$target_hash" ]; then
-  printf '%s\n' "prioritize: failed to read hash from file: $file" >&2
-  exit 1
+# Get the directory the file is in
+directory=$(dirname "$file")
+if [ "$directory" = "." ]; then
+  directory=$(pwd -P)
 fi
 
-# Get the directory the file is in, if a target directory was not provided
-if [ -z "$directory" ]; then
-  directory=$(dirname "$file")
-  if [ "$directory" = "." ]; then
-    directory=$(pwd -P)
-  fi
-fi
+# Get the file's current echelon and priority
+current_echelon=$(read-magic "$file" echelon 2>/dev/null || printf '0')
+case "$current_echelon" in
+  *Error*|''|*[!0-9]*) current_echelon=0 ;;
+esac
 
-# Get the file's priority, or default to 0
-target_priority=$(read-magic "$file" priority 2>/dev/null || printf '0')
-case "$target_priority" in
-  *Error*|''|*[!0-9]*) target_priority=0 ;;
+current_priority=$(read-magic "$file" priority 2>/dev/null || printf '0')
+case "$current_priority" in
+  *Error*|''|*[!0-9]*) current_priority=0 ;;
 esac
 
 # Check if file is checked, and uncheck it when prioritizing
@@ -104,118 +100,38 @@ if [ "$checked_value" = "1" ]; then
   enchant "$file" checked 0 >/dev/null
 fi
 
-# Retrieve the priority list from the directory's extended attributes
-priorities=$(read-magic "$directory" priorities 2>/dev/null || true)
+# Find the highest echelon in the directory
+highest_echelon=0
+for f in "$directory"/*; do
+  [ -e "$f" ] || continue
+  
+  file_echelon=$(read-magic "$f" echelon 2>/dev/null || printf '0')
+  case "$file_echelon" in
+    *Error*|''|*[!0-9]*) continue ;;
+  esac
+  
+  if [ "$file_echelon" -gt "$highest_echelon" ]; then
+    highest_echelon=$file_echelon
+  fi
+done
 
-# If there are no priorities, add the target file as the only priority
-case "$priorities" in
-  ''|*Error*)
-    enchant "$directory" priorities "$target_hash" >/dev/null
-    enchant "$file" priority 1 >/dev/null
-    printf '%s\n' "Prioritized '$(basename "$file")' as the first priority."
-    exit 0
-    ;;
-esac
-
-# Get the priority of the first item in the current list of priorities
-first_hash=$(printf '%s' "$priorities" | cut -d',' -f1)
-first_file=$(get-card "$first_hash" "$directory" 2>/dev/null || true)
-
-# If we can't find the first file, clean up and start fresh
-if [ -z "$first_file" ]; then
-  enchant "$directory" priorities "$target_hash" >/dev/null
+# If this is the first priority, set echelon=1, priority=1
+if [ "$highest_echelon" -eq 0 ]; then
+  enchant "$file" echelon 1 >/dev/null
   enchant "$file" priority 1 >/dev/null
   printf '%s\n' "Prioritized '$(basename "$file")' as the first priority."
   exit 0
 fi
 
-first_priority=$(read-magic "$first_file" priority 2>/dev/null || printf '0')
-case "$first_priority" in
-  *Error*|''|*[!0-9]*) first_priority=0 ;;
-esac
-
-# If the target file is already the first priority, exit
-if [ "$target_hash" = "$first_hash" ]; then
+# If file is already at the highest echelon, it's already the highest priority
+if [ "$current_echelon" -eq "$highest_echelon" ] && [ "$current_echelon" -gt 0 ]; then
   printf '%s\n' "'$(basename "$file")' is already the highest priority."
   exit 0
 fi
 
-# Filter the target hash from the current priorities list to avoid duplicates
-filtered=$(printf '%s' "$priorities" | sed "s/^${target_hash},//;s/,${target_hash},/,/;s/,${target_hash}\$//;s/^${target_hash}\$//")
-# Remove trailing comma if any
-filtered=${filtered%,}
+# Promote to new echelon (higher than current highest)
+new_echelon=$((highest_echelon + 1))
+enchant "$file" echelon "$new_echelon" >/dev/null
+enchant "$file" priority 1 >/dev/null
 
-# If the target file's priority equals the first item's priority, promote it to a new echelon
-if [ "$first_priority" -gt 0 ] && [ "$target_priority" = "$first_priority" ]; then
-  new_priorities="$target_hash"
-  if [ -n "$filtered" ]; then
-    new_priorities="$target_hash,$filtered"
-  fi
-  new_priority=$((first_priority + 1))
-  enchant "$file" priority "$new_priority" >/dev/null
-  enchant "$directory" priorities "$new_priorities" >/dev/null
-  printf '%s\n' "Promoted '$(basename "$file")' to echelon $new_priority."
-  exit 0
-fi
-
-# Loop through priorities to find the correct insertion point based on echelons
-rebuilt_priorities=""
-added=0
-
-# Convert filtered comma-separated list to space-separated for iteration
-for hash in $(printf '%s' "$filtered" | tr ',' ' '); do
-  # Get the file for this hash
-  current_file=$(get-card "$hash" "$directory" 2>/dev/null || true)
-  
-  # Skip if file not found
-  if [ -z "$current_file" ]; then
-    continue
-  fi
-  
-  # Get the priority of this file
-  current_priority=$(read-magic "$current_file" priority 2>/dev/null || printf '0')
-  case "$current_priority" in
-    *Error*|''|*[!0-9]*) current_priority=0 ;;
-  esac
-  
-  # Insert target file before this position if:
-  # 1. Not yet added AND (target priority > current priority OR we've reached a new echelon)
-  # Note: A new echelon is when current_priority differs from first_priority
-  if [ "$added" -eq 0 ]; then
-    # Check if we should insert before this position
-    should_insert=0
-    
-    # Case 1: Target has higher priority than current file
-    if [ "$target_priority" -gt "$current_priority" ]; then
-      should_insert=1
-    fi
-    
-    # Case 2: We've reached a new echelon (current priority differs from first/top echelon)
-    if [ "$current_priority" != "$first_priority" ]; then
-      should_insert=1
-    fi
-    
-    if [ "$should_insert" -eq 1 ]; then
-      rebuilt_priorities="${rebuilt_priorities}${target_hash},"
-      added=1
-    fi
-  fi
-  
-  rebuilt_priorities="${rebuilt_priorities}${hash},"
-done
-
-# If we reached the end without adding the target hash, add it now
-if [ "$added" -eq 0 ]; then
-  rebuilt_priorities="${rebuilt_priorities}${target_hash}"
-fi
-
-# Trim trailing comma
-rebuilt_priorities=$(printf '%s' "$rebuilt_priorities" | sed 's/,$//')
-
-# Set the priority value of the target file to the first item's priority (same echelon)
-enchant "$file" priority "$first_priority" >/dev/null
-
-# Update the directory's extended attributes with the new priorities list
-enchant "$directory" priorities "$rebuilt_priorities" >/dev/null
-
-printf '%s\n' "Prioritized '$(basename "$file")' in echelon $first_priority."
+printf '%s\n' "Promoted '$(basename "$file")' to echelon $new_echelon."

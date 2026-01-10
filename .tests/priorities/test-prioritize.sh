@@ -97,10 +97,19 @@ test_first_priority() {
   assert_success || return 1
   assert_output_contains "first priority" || return 1
   
-  # Check priority value is 1
-  run_spell "spells/priorities/get-priority" "$testfile"
-  assert_success || return 1
-  assert_output_equals "1" || return 1
+  # Check echelon and priority values are both 1
+  echelon=$(read-magic "$testfile" echelon 2>/dev/null || printf '0')
+  priority=$(read-magic "$testfile" priority 2>/dev/null || printf '0')
+  
+  [ "$echelon" = "1" ] || {
+    TEST_FAILURE_REASON="Expected echelon=1, got $echelon"
+    return 1
+  }
+  
+  [ "$priority" = "1" ] || {
+    TEST_FAILURE_REASON="Expected priority=1, got $priority"
+    return 1
+  }
 }
 
 test_echelon_promotion() {
@@ -128,10 +137,12 @@ test_echelon_promotion() {
   assert_success || return 1
   assert_output_contains "echelon 2" || return 1
   
-  # Check file2 has priority 2
-  run_spell "spells/priorities/get-priority" "$file2"
-  assert_success || return 1
-  assert_output_equals "2" || return 1
+  # Check file2 has echelon 2
+  echelon=$(read-magic "$file2" echelon 2>/dev/null || printf '0')
+  [ "$echelon" = "2" ] || {
+    TEST_FAILURE_REASON="Expected echelon=2, got $echelon"
+    return 1
+  }
 }
 
 test_already_highest() {

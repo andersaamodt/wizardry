@@ -8,7 +8,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: priorities [-v]
 
-Display prioritized items in the current directory as an interactive menu, with -v to show priority numbers (echelons).
+Display prioritized items in the current directory as an interactive menu, with -v to show echelon and priority numbers.
 USAGE
   exit 0
   ;;
@@ -37,85 +37,97 @@ display_priorities() {
   # Get directory
   dir="${PWD}"
 
-  # Get the current priorities of the directory
-  dir_priorities=$(read-magic "${dir}" priorities 2>/dev/null || true)
-
+  # Build a list of all prioritized files in the directory
+  # Format: "echelon priority filename"
+  priority_list=""
+  
+  for f in "$dir"/*; do
+    [ -e "$f" ] || continue
+    
+    # Get echelon and priority
+    file_echelon=$(read-magic "$f" echelon 2>/dev/null || true)
+    file_priority=$(read-magic "$f" priority 2>/dev/null || true)
+    
+    # Skip if no echelon (not prioritized)
+    case "$file_echelon" in
+      ''|*Error*|*[!0-9]*) continue ;;
+    esac
+    
+    # Default priority to 0 if not set
+    case "$file_priority" in
+      ''|*Error*|*[!0-9]*) file_priority=0 ;;
+    esac
+    
+    # Add to list
+    if [ -z "$priority_list" ]; then
+      priority_list="$file_echelon $file_priority $f"
+    else
+      priority_list="$priority_list
+$file_echelon $file_priority $f"
+    fi
+  done
+  
   # If there are no priorities, print an error message and exit
-  case "$dir_priorities" in
-    ''|*Error*|*"does not exist"*)
-      printf '%s\n' "No priorities set in the current folder. Try 'prioritize <filename>'."
-      return 1
-      ;;
-  esac
+  if [ -z "$priority_list" ]; then
+    printf '%s\n' "No priorities set in the current folder. Try 'prioritize <filename>'."
+    return 1
+  fi
+
+  # Sort by echelon (descending), then priority (ascending), then filename
+  # Using sort: -k1,1rn (first field reverse numeric), -k2,2n (second field numeric)
+  sorted_list=$(printf '%s\n' "$priority_list" | sort -k1,1rn -k2,2n -k3)
 
   # Initialize variables
-  highest_priority=""
+  prev_echelon=""
   menu_command="menu --start-selection $start_selection Priorities:"
   
   # Count items for tracking (includes all menu items for position calculation)
   item_count=0
   total_menu_items=0
 
-  # Loop through the priorities
-  dir_priorities=$(printf '%s' "${dir_priorities}" | tr ',' '\n')
-
-  for priority_hash in $dir_priorities; do
-    # Get the priority file using get-card
-    priority_file=$(get-card "${priority_hash}" "${dir}" 2>/dev/null || true)
-
-    # Check if the file exists and was found (support both files and directories)
-    if [ -n "${priority_file}" ] && [ -e "${priority_file}" ]; then
-      # Get priority of the file
-      file_priority=$(read-magic "${priority_file}" priority 2>/dev/null || true)
-      
-      # Handle errors or empty priority
-      case "$file_priority" in
-        ''|*Error*) file_priority=0 ;;
-        *[!0-9]*) file_priority=0 ;;
-      esac
-
-      # If the file's priority differs from the previous highest, add an echelon separator line
-      if [ -n "${highest_priority}" ] && [ "${file_priority}" -ne "${highest_priority}" ]; then
-        menu_command="${menu_command} \"---\""
-        total_menu_items=$((total_menu_items + 1))
-      fi
-
-      # Read checked attribute
-      checked_value=$(read-magic "${priority_file}" checked 2>/dev/null || printf '0')
-      
-      # Handle errors or empty values
-      case "$checked_value" in
-        ''|*Error*) checked_value=0 ;;
-        *[!0-9]*) checked_value=0 ;;
-      esac
-      
-      # Set checkbox display
-      if [ "$checked_value" = "1" ]; then
-        checkbox="[X] "
-      else
-        checkbox="[ ] "
-      fi
-
-      # Add the file to the menu command
-      menu_command="${menu_command} \""
-      if [ $verbose -eq 1 ]; then
-        menu_command="${menu_command}${file_priority} "
-      fi
-      item_name=$(basename "$priority_file")
-      # Add * after folder names
-      if [ -d "$priority_file" ]; then
-        item_name="${item_name}*"
-      fi
-      menu_command="${menu_command}${checkbox}$item_name%priority-menu \\\"${priority_file}\\\"\""
-
-      # Update the highest priority (for detecting echelon boundaries)
-      highest_priority="${file_priority}"
-      
-      # Increment counts
-      item_count=$((item_count + 1))
+  # Process sorted list
+  while IFS=' ' read -r file_echelon file_priority priority_file; do
+    # Add separator when echelon changes
+    if [ -n "$prev_echelon" ] && [ "$file_echelon" != "$prev_echelon" ]; then
+      menu_command="${menu_command} \"---\""
       total_menu_items=$((total_menu_items + 1))
     fi
-  done
+    prev_echelon=$file_echelon
+
+    # Read checked attribute
+    checked_value=$(read-magic "$priority_file" checked 2>/dev/null || printf '0')
+    
+    # Handle errors or empty values
+    case "$checked_value" in
+      ''|*Error*) checked_value=0 ;;
+      *[!0-9]*) checked_value=0 ;;
+    esac
+    
+    # Set checkbox display
+    if [ "$checked_value" = "1" ]; then
+      checkbox="[X] "
+    else
+      checkbox="[ ] "
+    fi
+
+    # Add the file to the menu command
+    menu_command="${menu_command} \""
+    if [ $verbose -eq 1 ]; then
+      menu_command="${menu_command}${file_echelon}.${file_priority} "
+    fi
+    item_name=$(basename "$priority_file")
+    # Add * after folder names
+    if [ -d "$priority_file" ]; then
+      item_name="${item_name}*"
+    fi
+    menu_command="${menu_command}${checkbox}$item_name%priority-menu \\\"${priority_file}\\\"\""
+
+    # Increment counts
+    item_count=$((item_count + 1))
+    total_menu_items=$((total_menu_items + 1))
+  done <<EOF
+$sorted_list
+EOF
   
   # Store counts for next iteration comparison
   current_item_count=$item_count
@@ -145,28 +157,19 @@ previous_item_count=0
 
 while true; do
   if [ "$first_run" -eq 0 ]; then
-    # Before calling display_priorities, check if item count changed by reading priorities directly
-    # This allows us to set start_selection BEFORE displaying the menu
-    dir_priorities=$(read-magic "." priorities 2>/dev/null || true)
-    case "$dir_priorities" in
-      ''|*Error*|*"does not exist"*) current_count_check=0 ;;
-      *)
-        # Count the number of priorities (comma-separated)
-        current_count_check=0
-        IFS=','
-        for p in $dir_priorities; do
-          current_count_check=$((current_count_check + 1))
-        done
-        unset IFS
-        ;;
-    esac
+    # Before calling display_priorities, count current prioritized items
+    current_count_check=0
+    for f in "$PWD"/*; do
+      [ -e "$f" ] || continue
+      file_echelon=$(read-magic "$f" echelon 2>/dev/null || true)
+      case "$file_echelon" in
+        ''|*Error*|*[!0-9]*) continue ;;
+      esac
+      current_count_check=$((current_count_check + 1))
+    done
     
     # If count increased since last iteration, keep "Add priority" selected
     if [ "$current_count_check" -gt "$previous_item_count" ]; then
-      # Use the previously calculated add_priority_position
-      # (We need to recalculate it based on new count)
-      # Estimate: priorities + separators + separator + Add priority
-      # For now, use previous position which should be close
       start_selection=$previous_add_priority_position
     else
       # If count didn't change, reset to first item
