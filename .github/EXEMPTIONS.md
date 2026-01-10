@@ -2,6 +2,12 @@
 
 Documents all deviations from project standards with justification.
 
+**Related Documentation:**
+- **FULL_SPEC.md** - Canonical specification
+- **SHELL_CODE_PATTERNS.md** - POSIX shell patterns and best practices
+- **CROSS_PLATFORM_PATTERNS.md** - Cross-platform compatibility patterns
+- **LESSONS.md** - Debugging insights
+
 ## Summary
 
 - **Style**: ✅ **353/353 files compliant** - All long-line and mixed tabs/spaces exemptions eliminated (2025-12-17)

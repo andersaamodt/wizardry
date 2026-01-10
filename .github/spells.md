@@ -19,7 +19,7 @@ Test files are NOT optional. Every spell requires tests covering:
 ```
 Never claim tests pass without actually executing them. Report the actual pass/fail counts.
 
-See `.github/instructions/tests.instructions.md` for test patterns.
+See `.github/tests.md` for test patterns.
 
 ## Spell Template
 
@@ -109,7 +109,7 @@ path="$HOME/wizardry"
 
 ### Output and Logging
 
-Use the output imps from `out/` for consistent messaging. See `logging.instructions.md` for complete documentation.
+Use the output imps from `out/` for consistent messaging. See `.github/logging.md` for complete documentation.
 
 ```sh
 # Always shown - basic output

@@ -105,4 +105,4 @@ tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/prefix.XXXXXX")
 
 - See `.AGENTS.md` for detailed style guide
 - See `README.md` for project principles
-- See `.github/instructions/` for topic-specific guidance
+- See `.github/` for topic-specific guidance

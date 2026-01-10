@@ -4,6 +4,12 @@
 
 **AI Directive:** ALWAYS document new cross-platform patterns, platform-specific quirks, or compatibility solutions here as you discover them.
 
+**Related Documentation:**
+- **FULL_SPEC.md** - Canonical specification
+- **SHELL_CODE_PATTERNS.md** - POSIX shell patterns and best practices
+- **EXEMPTIONS.md** - Documented exceptions
+- **LESSONS.md** - Debugging insights
+
 ## Supported Platforms
 
 **Linux:** Debian, Ubuntu, Arch, Fedora, NixOS, Alpine  

@@ -143,9 +143,9 @@ These spells have been fixed to prevent hanging:
 
 ## References
 
-- `.github/instructions/tests.instructions.md` - Stub imp usage guide
-- `.github/instructions/testing-environment.md` - Interactive testing patterns
-- `.github/instructions/imps.instructions.md` - Stub imp prefix policy
+- `.github/tests.md` - Stub imp usage guide
+- `.github/testing-environment.md` - Interactive testing patterns
+- `.github/imps.md` - Stub imp prefix policy
 - `EXEMPTIONS.md` - Documented exemptions including stub imp --flags usage
 
 ## Summary

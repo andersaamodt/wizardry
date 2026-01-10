@@ -20,7 +20,7 @@ Test files are NOT optional. Every imp requires tests covering its behavior.
 ```
 Never claim tests pass without actually executing them. Report the actual pass/fail counts.
 
-See `.github/instructions/tests.instructions.md` for test patterns.
+See `.github/tests.md` for test patterns.
 
 ## Imp Requirements
 
@@ -32,7 +32,7 @@ See `.github/instructions/tests.instructions.md` for test patterns.
 
 **⚠️ CRITICAL: Only ONE `set -eu` per imp file!**
 
-**NEVER duplicate `set -eu`** before the case statement. This breaks invoke-wizardry and causes terminal hangs. See `.github/instructions/imp-set-eu.instructions.md` for full details.
+**NEVER duplicate `set -eu`** before the case statement. This breaks invoke-wizardry and causes terminal hangs. See `.github/imps.md` for full details.
 
 **Action imps** that perform actions (produce output, modify state) should have ONE `set -eu` at the top:
 - `fs/`, `out/`, `paths/`, `pkg/`, `str/`, `sys/`, `text/`, `input/`, `lang/` families
@@ -96,7 +96,7 @@ Imps are organized in folders ("demon families") by function:
 
 ## Error Handling and Output Imps
 
-The `out/` family provides standardized error handling and output helpers. See `logging.instructions.md` for complete documentation.
+The `out/` family provides standardized error handling and output helpers. See `.github/logging.md` for complete documentation.
 
 ### Core Error Handling
 
