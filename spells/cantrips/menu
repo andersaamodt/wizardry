@@ -398,6 +398,7 @@ menu_row=1
 previous_selected=0
 window_width=0
 max_command_length=0
+effective_max_name_length=0
 last_window_width=0
 last_max_command_length=0
 render_row() {
@@ -417,7 +418,7 @@ render_row() {
         raw_length="$ROW_RLEN"
 
         if [ "$command" = "---" ]; then
-                menu_width=$((max_name_length + 2))
+                menu_width=$((effective_max_name_length + 2))
                 if [ "$window_width" -gt 0 ] && [ "$menu_width" -gt "$window_width" ]; then
                         menu_width=$window_width
                 fi
@@ -461,39 +462,58 @@ render_row() {
                 fi
         fi
 
-        # Use cached values - already retrieved above
-        ansi_extra=$((raw_length - visible_length))
-        adjusted_width=$((max_name_length + ansi_extra))
+        # Truncate label if it exceeds effective_max_name_length
+        truncated_label="$label"
+        truncated_clean_label="$clean_label"
+        truncated_visible_length="$visible_length"
+        truncated_raw_length="$raw_length"
+        
+        if [ "$visible_length" -gt "$effective_max_name_length" ]; then
+                # Need to truncate the label
+                # For clean_label (no ANSI), simple substring works
+                truncated_clean_label=$(printf '%s' "$clean_label" | cut -c -"$effective_max_name_length")
+                truncated_visible_length=$effective_max_name_length
+                
+                # For label with ANSI codes, we need to preserve codes but truncate visible text
+                # We'll use a simplified approach: if truncation is needed, strip ANSI and retruncate
+                # This ensures consistent display even if we lose some color
+                truncated_label=$(printf '%s' "$clean_label" | cut -c -"$effective_max_name_length")
+                truncated_raw_length=$effective_max_name_length
+        fi
+
+        # Calculate ANSI extra based on truncated values
+        ansi_extra=$((truncated_raw_length - truncated_visible_length))
+        adjusted_width=$((effective_max_name_length + ansi_extra))
 
         target_row=$((menu_row + row_index - 1))
         if move_cursor "$menu_column" "$target_row"; then
                 printf '\033[K'
                 if [ "$highlight" -eq 1 ]; then
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '%b> %-*s%b %b%-*s%b' "$THEME_HIGHLIGHT" "$max_name_length" "$clean_label" "$RESET" "$THEME_MUTED" "$max_command_length" "$truncated_command" "$RESET"
+                                printf '%b> %-*s%b %b%-*s%b' "$THEME_HIGHLIGHT" "$effective_max_name_length" "$truncated_clean_label" "$RESET" "$THEME_MUTED" "$max_command_length" "$truncated_command" "$RESET"
                         else
-                                printf '%b> %-*s%b' "$THEME_HIGHLIGHT" "$max_name_length" "$clean_label" "$RESET"
+                                printf '%b> %-*s%b' "$THEME_HIGHLIGHT" "$effective_max_name_length" "$truncated_clean_label" "$RESET"
                         fi
                 else
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '  %-*s %b%-*s%b' "$adjusted_width" "$label" "$THEME_MUTED" "$max_command_length" "$truncated_command" "$RESET"
+                                printf '  %-*s %b%-*s%b' "$adjusted_width" "$truncated_label" "$THEME_MUTED" "$max_command_length" "$truncated_command" "$RESET"
                         else
-                                printf '  %-*s' "$adjusted_width" "$label"
+                                printf '  %-*s' "$adjusted_width" "$truncated_label"
                         fi
                 fi
                 printf '\r'
         else
                 if [ "$highlight" -eq 1 ]; then
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '%b> %-*s%b %b%-*s%b\n' "$THEME_HIGHLIGHT" "$max_name_length" "$clean_label" "$RESET" "$THEME_MUTED" "$max_command_length" "$truncated_command" "$RESET"
+                                printf '%b> %-*s%b %b%-*s%b\n' "$THEME_HIGHLIGHT" "$effective_max_name_length" "$truncated_clean_label" "$RESET" "$THEME_MUTED" "$max_command_length" "$truncated_command" "$RESET"
                         else
-                                printf '%b> %-*s%b\n' "$THEME_HIGHLIGHT" "$max_name_length" "$clean_label" "$RESET"
+                                printf '%b> %-*s%b\n' "$THEME_HIGHLIGHT" "$effective_max_name_length" "$truncated_clean_label" "$RESET"
                         fi
                 else
                         if [ "$max_command_length" -gt 0 ]; then
-                                printf '  %-*s %b%-*s%b\n' "$adjusted_width" "$label" "$THEME_MUTED" "$max_command_length" "$truncated_command" "$RESET"
+                                printf '  %-*s %b%-*s%b\n' "$adjusted_width" "$truncated_label" "$THEME_MUTED" "$max_command_length" "$truncated_command" "$RESET"
                         else
-                                printf '  %-*s\n' "$adjusted_width" "$label"
+                                printf '  %-*s\n' "$adjusted_width" "$truncated_label"
                         fi
                 fi
         fi
@@ -626,7 +646,22 @@ do
                         current_window_width=0
                         ;;
         esac
-        current_max_command_length=$((current_window_width - max_name_length - 3))
+        
+        # Truncate labels to preserve command column (minimum 10 chars)
+        # Calculate effective max label width to ensure commands get at least 10 chars
+        min_command_width=10
+        current_effective_max_name_length=$max_name_length
+        if [ "$current_window_width" -gt 0 ]; then
+                max_allowed_name_length=$((current_window_width - min_command_width - 3))
+                if [ "$max_allowed_name_length" -lt 10 ]; then
+                        max_allowed_name_length=10
+                fi
+                if [ "$max_name_length" -gt "$max_allowed_name_length" ]; then
+                        current_effective_max_name_length=$max_allowed_name_length
+                fi
+        fi
+        
+        current_max_command_length=$((current_window_width - current_effective_max_name_length - 3))
         if [ "$current_max_command_length" -lt 0 ]; then
                 current_max_command_length=0
         fi
@@ -636,6 +671,7 @@ do
         fi
         window_width=$current_window_width
         max_command_length=$current_max_command_length
+        effective_max_name_length=$current_effective_max_name_length
 
         if [ "$needs_redraw" -eq 1 ]; then
                 last_window_width=$current_window_width
