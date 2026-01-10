@@ -140,7 +140,7 @@ priority_menu_display_menu() {
     done
     
     if [ "$has_subpriorities" = "1" ]; then
-      browse_item="Subpriorities...%(cd \"$file\" && priorities)"
+      browse_item="${THEME_SUCCESS}Subpriorities...${RESET}%(cd \"$file\" && priorities)"
     else
       # No subpriorities - offer to add one
       browse_item="Add subpriority%(cd \"$file\" && prioritize --interactive)"
@@ -154,80 +154,55 @@ priority_menu_display_menu() {
   fi
 
   # Build menu items - conditionally include Prioritize based on whether it's the very first priority
-  # Order: Subpriorities... (if available), Prioritize, Check, Edit priority, Make project (if file), Discard priority
+  # Order: Prioritize (if not first), Check, Edit priority, Make project/Subpriorities (mutually exclusive), Discard priority
   if [ "$is_very_first_priority" = "1" ]; then
     # Don't show Prioritize for the very first priority item only
     if [ -n "$browse_item" ]; then
-      if [ -n "$make_project_item" ]; then
-        set -- "$browse_item" \
-               "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
-               "$make_project_item" \
-               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
-               "---" \
-               "$exit_item"
-      else
-        set -- "$browse_item" \
-               "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
-               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
-               "---" \
-               "$exit_item"
-      fi
+      set -- "${check_item}" \
+             "Edit priority%newname=\$(ask-text 'New name:' \"\$(basename \"$file\")\") && mv \"$file\" \"\$(dirname \"$file\")/\$newname\" && priority-menu \"\$(dirname \"$file\")/\$newname\"" \
+             "$browse_item" \
+             "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
+             "---" \
+             "$exit_item"
+    elif [ -n "$make_project_item" ]; then
+      set -- "${check_item}" \
+             "Edit priority%newname=\$(ask-text 'New name:' \"\$(basename \"$file\")\") && mv \"$file\" \"\$(dirname \"$file\")/\$newname\" && priority-menu \"\$(dirname \"$file\")/\$newname\"" \
+             "$make_project_item" \
+             "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
+             "---" \
+             "$exit_item"
     else
-      if [ -n "$make_project_item" ]; then
-        set -- "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
-               "$make_project_item" \
-               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
-               "---" \
-               "$exit_item"
-      else
-        set -- "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
-               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
-               "---" \
-               "$exit_item"
-      fi
+      set -- "${check_item}" \
+             "Edit priority%newname=\$(ask-text 'New name:' \"\$(basename \"$file\")\") && mv \"$file\" \"\$(dirname \"$file\")/\$newname\" && priority-menu \"\$(dirname \"$file\")/\$newname\"" \
+             "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
+             "---" \
+             "$exit_item"
     fi
   else
     # Show Prioritize for all other items
     if [ -n "$browse_item" ]; then
-      if [ -n "$make_project_item" ]; then
-        set -- "$browse_item" \
-               "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
-               "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
-               "$make_project_item" \
-               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
-               "---" \
-               "$exit_item"
-      else
-        set -- "$browse_item" \
-               "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
-               "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
-               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
-               "---" \
-               "$exit_item"
-      fi
+      set -- "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
+             "${check_item}" \
+             "Edit priority%newname=\$(ask-text 'New name:' \"\$(basename \"$file\")\") && mv \"$file\" \"\$(dirname \"$file\")/\$newname\" && priority-menu \"\$(dirname \"$file\")/\$newname\"" \
+             "$browse_item" \
+             "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
+             "---" \
+             "$exit_item"
+    elif [ -n "$make_project_item" ]; then
+      set -- "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
+             "${check_item}" \
+             "Edit priority%newname=\$(ask-text 'New name:' \"\$(basename \"$file\")\") && mv \"$file\" \"\$(dirname \"$file\")/\$newname\" && priority-menu \"\$(dirname \"$file\")/\$newname\"" \
+             "$make_project_item" \
+             "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
+             "---" \
+             "$exit_item"
     else
-      if [ -n "$make_project_item" ]; then
-        set -- "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
-               "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
-               "$make_project_item" \
-               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
-               "---" \
-               "$exit_item"
-      else
-        set -- "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
-               "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
-               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
-               "---" \
-               "$exit_item"
-      fi
+      set -- "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
+             "${check_item}" \
+             "Edit priority%newname=\$(ask-text 'New name:' \"\$(basename \"$file\")\") && mv \"$file\" \"\$(dirname \"$file\")/\$newname\" && priority-menu \"\$(dirname \"$file\")/\$newname\"" \
+             "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
+             "---" \
+             "$exit_item"
     fi
   fi
   menu --start-selection "$start_selection" "${THEME_HEADING}${header_checkbox}${filename}:${RESET}" "$@"

@@ -209,6 +209,22 @@ test_priority_menu_shows_browse_subpriorities() {
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   
+  # Create colors stub that provides theme colors
+  cat >"$tmp/colors" <<'SH'
+# Stub for colors - just export empty theme variables
+THEME_SUCCESS=""
+THEME_HEADING=""
+RESET=""
+GREEN=""
+SH
+  chmod +x "$tmp/colors"
+  
+  # Create env-clear stub
+  cat >"$tmp/env-clear" <<'SH'
+# Stub for env-clear
+SH
+  chmod +x "$tmp/env-clear"
+  
   # Create read-magic stub that returns echelon for subdirectory items
   cat >"$tmp/read-magic" <<'SH'
 #!/bin/sh
@@ -220,6 +236,14 @@ if [ "$attr" = "checked" ]; then
   echo "0"
   exit 0
 fi
+
+# For the testdir itself - no echelon/priority (not prioritized)
+case "$file" in
+  */testdir)
+    echo "read-magic: attribute does not exist."
+    exit 0
+    ;;
+esac
 
 # Check if querying echelon of a subdirectory item
 case "$file" in
@@ -254,7 +278,7 @@ SH
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testdir"
   assert_success || return 1
   
-  # Verify "Subpriorities..." appears in menu
+  # Verify "Subpriorities..." appears in menu (may include color codes)
   grep -q "Subpriorities...%" "$tmp/log" || {
     TEST_FAILURE_REASON="Subpriorities... should appear for directory with prioritized items: $(cat "$tmp/log")"
     return 1
