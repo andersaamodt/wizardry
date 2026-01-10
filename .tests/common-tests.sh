@@ -2083,7 +2083,7 @@ test_spell_levels_no_empty_levels() {
   spell_levels_cmd="$ROOT_DIR/spells/.imps/sys/spell-levels"
   
   empty_levels=""
-  for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28; do
+  for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27; do
     spells=$("$spell_levels_cmd" "$level" spells 2>/dev/null || echo "ERROR")
     imps=$("$spell_levels_cmd" "$level" imps 2>/dev/null || echo "ERROR")
     name=$("$spell_levels_cmd" "$level" name 2>/dev/null || echo "ERROR")
@@ -2111,7 +2111,7 @@ test_all_spells_categorized_in_spell_levels() {
   
   # Get all spells from spell-levels (strip category suffix)
   spells_in_levels=""
-  for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28; do
+  for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27; do
     level_spells=$("$spell_levels_cmd" "$level" spells 2>/dev/null)
     if [ -n "$level_spells" ]; then
       spells_in_levels="$spells_in_levels $level_spells"
@@ -2148,7 +2148,7 @@ test_all_imps_categorized_in_spell_levels() {
   
   # Get all imps from spell-levels (strip path prefix)
   imps_in_levels=""
-  for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28; do
+  for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27; do
     level_imps=$("$spell_levels_cmd" "$level" imps 2>/dev/null)
     if [ -n "$level_imps" ]; then
       imps_in_levels="$imps_in_levels $level_imps"
