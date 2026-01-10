@@ -169,6 +169,17 @@ uname|uniq|wc|xargs)
     return 0  # Not blacklisted
   }
   
+  # Check if a spell name is in the uncastable list
+  # Returns 0 if uncastable, 1 if not
+  # Uses pre-computed _uncastable_spells list (must be set before calling)
+  is_spell_uncastable() {
+    _spell_check=$1
+    case "$_uncastable_spells" in
+      *" $_spell_check "*) return 0 ;;
+      *) return 1 ;;
+    esac
+  }
+  
   # ============================================================================
   # SCAN AND GENERATE GLOSSES FOR ALL SPELLS AND IMPS (OPTIMIZED)
   # ============================================================================
@@ -180,6 +191,7 @@ uname|uniq|wc|xargs)
   # 2. Extract basenames with shell parameter expansion (no subprocess)
   # 3. Process in two passes to avoid repeated work
   # 4. Use in-memory data structures (space-separated strings) instead of temp files
+  # 5. Pre-scan uncastable spells once (not per-spell grep)
   
   # First pass: Build spell name list with find + parameter expansion
   # Use mktemp for bootstrap compatibility
@@ -218,6 +230,20 @@ uname|uniq|wc|xargs)
   if [ "$_spell_count" -eq 0 ]; then
     printf 'generate-glosses: WARNING: no executable files found in %s\n' "$wizardry_dir/spells" >&2
   fi
+  
+  # OPTIMIZATION: Single grep pass to find all uncastable spells
+  # This is much faster than grepping each file individually (405 greps → 1 grep)
+  # Use xargs to avoid "Argument list too long" error
+  [ "$quiet" -eq 0 ] && printf 'generate-glosses: Scanning for uncastable spells...\n' >&2
+  _uncastable_spells=" "  # Space-separated list
+  if _uncastable_files=$(cat "$_tmpfile" | xargs grep -l "^# Uncastable pattern" 2>/dev/null); then
+    for _uc_path in $_uncastable_files; do
+      _uc_name=${_uc_path##*/}
+      _uncastable_spells="$_uncastable_spells$_uc_name "
+    done
+  fi
+  
+  [ "$quiet" -eq 0 ] && printf 'generate-glosses: Found %d uncastable spells\n' "$(printf '%s' "$_uncastable_spells" | tr ' ' '\n' | grep -c .)" >&2
   
   # Emit comment
   emit_line "# ============================================================================"
@@ -272,6 +298,7 @@ uname|uniq|wc|xargs)
       _first_words_seen="$_first_words_seen$_first_word "
       
       # Emit function definition - smart gloss that sources uncastable spells
+      # Note: Runtime grep preserved for flexibility (may add more parsing logic later)
       emit_line "# First-word gloss for commands starting with '$_first_word'"
       emit_line "${_first_word}() {"
       emit_line "  # Try progressively longer spell names to find uncastable spells"
@@ -374,19 +401,8 @@ uname|uniq|wc|xargs)
       *) continue ;;
     esac
     
-    # Check if spell has uncastable pattern
-    _has_uncastable=0
-    for spell_dir in "$wizardry_dir"/spells/* "$wizardry_dir"/spells/.imps/* "$wizardry_dir"/spells/.arcana/*; do
-      [ -d "$spell_dir" ] || continue
-      spell_path="$spell_dir/$spell_name"
-      if [ -f "$spell_path" ] && grep -q "^# Uncastable pattern" "$spell_path" 2>/dev/null; then
-        _has_uncastable=1
-        break
-      fi
-    done
-    
-    # If spell has uncastable pattern, generate alias to space-separated form
-    if [ "$_has_uncastable" -eq 1 ]; then
+    # Check if spell is in uncastable list (fast in-memory check)
+    if is_spell_uncastable "$spell_name"; then
       # Convert hyphens to spaces (e.g., jump-to-marker → jump to marker)
       _alias_target=$(printf '%s' "$spell_name" | sed 's/-/ /g')
       emit_line "alias $spell_name='$_alias_target'"
