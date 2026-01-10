@@ -181,48 +181,61 @@ if command -v debug >/dev/null 2>&1; then
   debug "Found $dir_count accessible directories"
 fi
 
-# Select a random directory using awk
-printf '[blink DEBUG] Selecting random directory\n'
-destination=$(awk 'BEGIN{srand();}{lines[NR]=$0}END{if(NR==0)exit 1;idx=int(rand()*NR)+1;print lines[idx];}' "$temp_list")
-printf '[blink DEBUG] Selected destination: %s\n' "$destination"
-
-if [ -z "$destination" ]; then
-  printf '%s\n' "blink: failed to select random destination" >&2
-  printf '[blink DEBUG] ERROR: Empty destination\n' >&2
-  set +eu; return 1 2>/dev/null || exit 1
-fi
-
-if [ ! -d "$destination" ]; then
-  printf '%s\n' "blink: selected destination no longer exists" >&2
-  printf '[blink DEBUG] ERROR: Destination not a directory\n' >&2
-  set +eu; return 1 2>/dev/null || exit 1
-fi
-
-# Check if already at destination (handle symlinks by resolving paths)
-printf '[blink DEBUG] Checking if already at destination\n'
+# Select a random accessible directory (retry up to 10 times if needed)
+printf '[blink DEBUG] Selecting random accessible directory\n'
 current_dir=$(pwd -P 2>/dev/null || pwd)
-printf '[blink DEBUG] current_dir=%s\n' "$current_dir"
-# Use command cd to avoid cd gloss/spell interference (works in all POSIX shells)
-dest_resolved=$(command cd "$destination" 2>/dev/null && pwd -P 2>/dev/null || printf '%s' "$destination")
-printf '[blink DEBUG] dest_resolved=%s\n' "$dest_resolved"
 current_resolved=$(printf '%s' "$current_dir" | sed 's|//|/|g')
-dest_resolved=$(printf '%s' "$dest_resolved" | sed 's|//|/|g')
+max_attempts=10
+attempt=0
 
-if [ "$current_resolved" = "$dest_resolved" ]; then
-  printf '%s\n' "You have already blinked to this location."
-  printf '[blink DEBUG] Already at destination, returning\n'
-  set +eu; return 0 2>/dev/null || exit 0
-fi
+while [ "$attempt" -lt "$max_attempts" ]; do
+  attempt=$((attempt + 1))
+  printf '[blink DEBUG] Attempt %s of %s\n' "$attempt" "$max_attempts"
+  
+  destination=$(awk 'BEGIN{srand();}{lines[NR]=$0}END{if(NR==0)exit 1;idx=int(rand()*NR)+1;print lines[idx];}' "$temp_list")
+  printf '[blink DEBUG] Selected destination: %s\n' "$destination"
+  
+  if [ -z "$destination" ]; then
+    printf '[blink DEBUG] Empty destination, trying again\n'
+    continue
+  fi
+  
+  if [ ! -d "$destination" ]; then
+    printf '[blink DEBUG] Destination not a directory, trying again\n'
+    continue
+  fi
+  
+  # Check if we can actually cd to this directory
+  # Use command cd to avoid cd gloss/spell interference (works in all POSIX shells)
+  if ! command cd "$destination" 2>/dev/null; then
+    printf '[blink DEBUG] Cannot access destination, trying another\n'
+    continue
+  fi
+  
+  # Get the resolved path
+  dest_resolved=$(pwd -P 2>/dev/null || pwd)
+  dest_resolved=$(printf '%s' "$dest_resolved" | sed 's|//|/|g')
+  printf '[blink DEBUG] dest_resolved=%s\n' "$dest_resolved"
+  
+  # Check if already at this location
+  if [ "$current_resolved" = "$dest_resolved" ]; then
+    printf '[blink DEBUG] Already at this location, trying another\n'
+    # Go back to original directory
+    command cd "$current_dir" 2>/dev/null || true
+    continue
+  fi
+  
+  # Success! We found an accessible directory that's different from current
+  printf '[blink DEBUG] Successfully changed to destination\n'
+  break
+done
 
-# Try to cd to the destination
-printf '[blink DEBUG] Attempting to cd to destination\n'
-# Use command cd to avoid cd gloss/spell interference (works in all POSIX shells)
-if ! command cd "$destination" 2>/dev/null; then
-  printf '%s\n' "blink: cannot access destination: $destination" >&2
-  printf '[blink DEBUG] ERROR: Cannot cd to destination\n' >&2
+# Check if we failed all attempts
+if [ "$attempt" -ge "$max_attempts" ]; then
+  printf '%s\n' "blink: could not find an accessible destination after $max_attempts attempts" >&2
+  printf '[blink DEBUG] ERROR: Failed all attempts\n' >&2
   set +eu; return 1 2>/dev/null || exit 1
 fi
-printf '[blink DEBUG] Successfully changed to destination\n'
 
 # Pick a random blink message
 printf '[blink DEBUG] Selecting random message\n'
