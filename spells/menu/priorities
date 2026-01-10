@@ -108,8 +108,11 @@ display_priorities() {
     fi
   done
 
-  # Add separator before Exit
+  # Add separator before Add priority and Exit
   menu_command="${menu_command} \"---\""
+  
+  # Add "Add priority" option
+  menu_command="${menu_command} \"Add priority%prioritize --interactive; kill -TERM \\\$PPID\""
   
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
