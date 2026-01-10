@@ -180,6 +180,96 @@ uname|uniq|wc|xargs)
     esac
   }
   
+  # Emit a first-word gloss function for a given first word
+  # This is the standard first-word gloss implementation used throughout
+  # Args: $1 = first word (e.g., "jump", "leap")
+  emit_first_word_gloss() {
+    _emit_first_word=$1
+    
+    emit_line "# First-word gloss for commands starting with '$_emit_first_word'"
+    emit_line "${_emit_first_word}() {"
+    emit_line "  # Try progressively longer spell names to find uncastable spells"
+    emit_line "  _fw_spell=\"$_emit_first_word\""
+    emit_line "  _fw_words_used=0"
+    emit_line "  _fw_spell_home=\${SPELLBOOK_DIR:-\${HOME:-.}/.spellbook}"
+    emit_line "  "
+    emit_line "  for _fw_arg in \"\$@\"; do"
+    emit_line "    _fw_candidate=\"\${_fw_spell}-\${_fw_arg}\""
+    emit_line "    _fw_words_used=\$((_fw_words_used + 1))"
+    emit_line "    "
+    emit_line "    # Look for spell file in wizardry directories"
+    emit_line "    _fw_found=0"
+    emit_line "    for _fw_dir in \"\$WIZARDRY_DIR\"/spells/*/; do"
+    emit_line "      _fw_path=\"\${_fw_dir}\${_fw_candidate}\""
+    emit_line "      if [ -f \"\$_fw_path\" ] && grep -q \"^# Uncastable pattern\" \"\$_fw_path\" 2>/dev/null; then"
+    emit_line "        # Found uncastable spell - source it with remaining args after consuming used words"
+    emit_line "        shift \"\$_fw_words_used\""
+    emit_line "        . \"\$_fw_path\""
+    emit_line "        return \$?"
+    emit_line "      fi"
+    emit_line "    done"
+    emit_line "    "
+    emit_line "    # Check if candidate is a synonym pointing to uncastable spell"
+    emit_line "    _fw_syn_target=\"\""
+    emit_line "    if [ -f \"\$_fw_spell_home/.synonyms\" ]; then"
+    emit_line "      _fw_syn_target=\$(grep \"^\${_fw_candidate}=\" \"\$_fw_spell_home/.synonyms\" 2>/dev/null | sed 's/^[^=]*=//' || true)"
+    emit_line "    fi"
+    emit_line "    if [ -z \"\$_fw_syn_target\" ] && [ -f \"\$_fw_spell_home/.default-synonyms\" ]; then"
+    emit_line "      _fw_syn_target=\$(grep \"^\${_fw_candidate}=\" \"\$_fw_spell_home/.default-synonyms\" 2>/dev/null | sed 's/^[^=]*=//' || true)"
+    emit_line "    fi"
+    emit_line "    if [ -n \"\$_fw_syn_target\" ]; then"
+    emit_line "      # Found synonym - check if target is uncastable"
+    emit_line "      for _fw_dir in \"\$WIZARDRY_DIR\"/spells/*/; do"
+    emit_line "        _fw_path=\"\${_fw_dir}\${_fw_syn_target}\""
+    emit_line "        if [ -f \"\$_fw_path\" ] && grep -q \"^# Uncastable pattern\" \"\$_fw_path\" 2>/dev/null; then"
+    emit_line "          # Synonym target is uncastable - source it with remaining args"
+    emit_line "          shift \"\$_fw_words_used\""
+    emit_line "          . \"\$_fw_path\""
+    emit_line "          return \$?"
+    emit_line "        fi"
+    emit_line "      done"
+    emit_line "    fi"
+    emit_line "    "
+    emit_line "    _fw_spell=\"\$_fw_candidate\""
+    emit_line "  done"
+    emit_line "  "
+    emit_line "  # No args or no uncastable spell found - check if the spell itself is uncastable"
+    emit_line "  for _fw_dir in \"\$WIZARDRY_DIR\"/spells/*/; do"
+    emit_line "    _fw_path=\"\${_fw_dir}$_emit_first_word\""
+    emit_line "    if [ -f \"\$_fw_path\" ] && grep -q \"^# Uncastable pattern\" \"\$_fw_path\" 2>/dev/null; then"
+    emit_line "      # Found uncastable single-word spell - source it with all args"
+    emit_line "      . \"\$_fw_path\""
+    emit_line "      return \$?"
+    emit_line "    fi"
+    emit_line "  done"
+    emit_line "  "
+    emit_line "  # Check if synonym points to uncastable spell"
+    emit_line "  _fw_spell_home=\${SPELLBOOK_DIR:-\${HOME:-.}/.spellbook}"
+    emit_line "  _fw_syn_target=\"\""
+    emit_line "  if [ -f \"\$_fw_spell_home/.synonyms\" ]; then"
+    emit_line "    _fw_syn_target=\$(grep \"^$_emit_first_word=\" \"\$_fw_spell_home/.synonyms\" 2>/dev/null | sed 's/^[^=]*=//' || true)"
+    emit_line "  fi"
+    emit_line "  if [ -z \"\$_fw_syn_target\" ] && [ -f \"\$_fw_spell_home/.default-synonyms\" ]; then"
+    emit_line "    _fw_syn_target=\$(grep \"^$_emit_first_word=\" \"\$_fw_spell_home/.default-synonyms\" 2>/dev/null | sed 's/^[^=]*=//' || true)"
+    emit_line "  fi"
+    emit_line "  if [ -n \"\$_fw_syn_target\" ]; then"
+    emit_line "    # Found synonym - check if target is uncastable"
+    emit_line "    for _fw_dir in \"\$WIZARDRY_DIR\"/spells/*/; do"
+    emit_line "      _fw_path=\"\${_fw_dir}\${_fw_syn_target}\""
+    emit_line "      if [ -f \"\$_fw_path\" ] && grep -q \"^# Uncastable pattern\" \"\$_fw_path\" 2>/dev/null; then"
+    emit_line "        # Synonym target is uncastable - source it"
+    emit_line "        . \"\$_fw_path\""
+    emit_line "        return \$?"
+    emit_line "      fi"
+    emit_line "    done"
+    emit_line "  fi"
+    emit_line "  "
+    emit_line "  # No uncastable spell found - use parse for normal spells and synonyms"
+    emit_line "  parse \"$_emit_first_word\" \"\$@\""
+    emit_line "}"
+    emit_line ""
+  }
+  
   # ============================================================================
   # SCAN AND GENERATE GLOSSES FOR ALL SPELLS AND IMPS (OPTIMIZED)
   # ============================================================================
@@ -297,90 +387,8 @@ uname|uniq|wc|xargs)
       # Mark as seen
       _first_words_seen="$_first_words_seen$_first_word "
       
-      # Emit function definition - smart gloss that sources uncastable spells
-      # Note: Runtime grep preserved for flexibility (may add more parsing logic later)
-      emit_line "# First-word gloss for commands starting with '$_first_word'"
-      emit_line "${_first_word}() {"
-      emit_line "  # Try progressively longer spell names to find uncastable spells"
-      emit_line "  _fw_spell=\"$_first_word\""
-      emit_line "  _fw_words_used=0"
-      emit_line "  _fw_spell_home=\${SPELLBOOK_DIR:-\${HOME:-.}/.spellbook}"
-      emit_line "  "
-      emit_line "  for _fw_arg in \"\$@\"; do"
-      emit_line "    _fw_candidate=\"\${_fw_spell}-\${_fw_arg}\""
-      emit_line "    _fw_words_used=\$((_fw_words_used + 1))"
-      emit_line "    "
-      emit_line "    # Look for spell file in wizardry directories"
-      emit_line "    _fw_found=0"
-      emit_line "    for _fw_dir in \"\$WIZARDRY_DIR\"/spells/*/; do"
-      emit_line "      _fw_path=\"\${_fw_dir}\${_fw_candidate}\""
-      emit_line "      if [ -f \"\$_fw_path\" ] && grep -q \"^# Uncastable pattern\" \"\$_fw_path\" 2>/dev/null; then"
-      emit_line "        # Found uncastable spell - source it with remaining args after consuming used words"
-      emit_line "        shift \"\$_fw_words_used\""
-      emit_line "        . \"\$_fw_path\""
-      emit_line "        return \$?"
-      emit_line "      fi"
-      emit_line "    done"
-      emit_line "    "
-      emit_line "    # Check if candidate is a synonym pointing to uncastable spell"
-      emit_line "    _fw_syn_target=\"\""
-      emit_line "    if [ -f \"\$_fw_spell_home/.synonyms\" ]; then"
-      emit_line "      _fw_syn_target=\$(grep \"^\${_fw_candidate}=\" \"\$_fw_spell_home/.synonyms\" 2>/dev/null | sed 's/^[^=]*=//' || true)"
-      emit_line "    fi"
-      emit_line "    if [ -z \"\$_fw_syn_target\" ] && [ -f \"\$_fw_spell_home/.default-synonyms\" ]; then"
-      emit_line "      _fw_syn_target=\$(grep \"^\${_fw_candidate}=\" \"\$_fw_spell_home/.default-synonyms\" 2>/dev/null | sed 's/^[^=]*=//' || true)"
-      emit_line "    fi"
-      emit_line "    if [ -n \"\$_fw_syn_target\" ]; then"
-      emit_line "      # Found synonym - check if target is uncastable"
-      emit_line "      for _fw_dir in \"\$WIZARDRY_DIR\"/spells/*/; do"
-      emit_line "        _fw_path=\"\${_fw_dir}\${_fw_syn_target}\""
-      emit_line "        if [ -f \"\$_fw_path\" ] && grep -q \"^# Uncastable pattern\" \"\$_fw_path\" 2>/dev/null; then"
-      emit_line "          # Synonym target is uncastable - source it with remaining args"
-      emit_line "          shift \"\$_fw_words_used\""
-      emit_line "          . \"\$_fw_path\""
-      emit_line "          return \$?"
-      emit_line "        fi"
-      emit_line "      done"
-      emit_line "    fi"
-      emit_line "    "
-      emit_line "    _fw_spell=\"\$_fw_candidate\""
-      emit_line "  done"
-      emit_line "  "
-      emit_line "  # No args or no uncastable spell found - check if the spell itself is uncastable"
-      emit_line "  for _fw_dir in \"\$WIZARDRY_DIR\"/spells/*/; do"
-      emit_line "    _fw_path=\"\${_fw_dir}$_first_word\""
-      emit_line "    if [ -f \"\$_fw_path\" ] && grep -q \"^# Uncastable pattern\" \"\$_fw_path\" 2>/dev/null; then"
-      emit_line "      # Found uncastable single-word spell - source it with all args"
-      emit_line "      . \"\$_fw_path\""
-      emit_line "      return \$?"
-      emit_line "    fi"
-      emit_line "  done"
-      emit_line "  "
-      emit_line "  # Check if synonym points to uncastable spell"
-      emit_line "  _fw_spell_home=\${SPELLBOOK_DIR:-\${HOME:-.}/.spellbook}"
-      emit_line "  _fw_syn_target=\"\""
-      emit_line "  if [ -f \"\$_fw_spell_home/.synonyms\" ]; then"
-      emit_line "    _fw_syn_target=\$(grep \"^$_first_word=\" \"\$_fw_spell_home/.synonyms\" 2>/dev/null | sed 's/^[^=]*=//' || true)"
-      emit_line "  fi"
-      emit_line "  if [ -z \"\$_fw_syn_target\" ] && [ -f \"\$_fw_spell_home/.default-synonyms\" ]; then"
-      emit_line "    _fw_syn_target=\$(grep \"^$_first_word=\" \"\$_fw_spell_home/.default-synonyms\" 2>/dev/null | sed 's/^[^=]*=//' || true)"
-      emit_line "  fi"
-      emit_line "  if [ -n \"\$_fw_syn_target\" ]; then"
-      emit_line "    # Found synonym - check if target is uncastable"
-      emit_line "    for _fw_dir in \"\$WIZARDRY_DIR\"/spells/*/; do"
-      emit_line "      _fw_path=\"\${_fw_dir}\${_fw_syn_target}\""
-      emit_line "      if [ -f \"\$_fw_path\" ] && grep -q \"^# Uncastable pattern\" \"\$_fw_path\" 2>/dev/null; then"
-      emit_line "        # Synonym target is uncastable - source it"
-      emit_line "        . \"\$_fw_path\""
-      emit_line "        return \$?"
-      emit_line "      fi"
-      emit_line "    done"
-      emit_line "  fi"
-      emit_line "  "
-      emit_line "  # No uncastable spell found - use parse for normal spells and synonyms"
-      emit_line "  parse \"$_first_word\" \"\$@\""
-      emit_line "}"
-      emit_line ""
+      # Emit first-word gloss function using helper
+      emit_first_word_gloss "$_first_word"
       
       total_first_word_glosses=$((total_first_word_glosses + 1))
     done
@@ -464,6 +472,9 @@ uname|uniq|wc|xargs)
   # Track seen synonyms to avoid duplicates
   _synonyms_seen=" "
   
+  # Track synonym words for first-word gloss generation
+  _synonym_words=""
+  
   # Process user synonyms
   synonym_file="$spell_home/.synonyms"
   if [ -f "$synonym_file" ]; then
@@ -499,6 +510,9 @@ uname|uniq|wc|xargs)
       
       # Mark as seen
       _synonyms_seen="$_synonyms_seen$_word "
+      
+      # Add to synonym words list for first-word gloss generation
+      _synonym_words="$_synonym_words $_word"
       
       # Generate aliases for hyphenated synonyms, functions for non-hyphenated (if no conflict)
       case "$_word" in
@@ -579,6 +593,9 @@ uname|uniq|wc|xargs)
       # Mark as seen
       _synonyms_seen="$_synonyms_seen$_word "
       
+      # Add to synonym words list for first-word gloss generation
+      _synonym_words="$_synonym_words $_word"
+      
       # Generate aliases for hyphenated synonyms, functions for non-hyphenated (if no conflict)
       case "$_word" in
         *-*)
@@ -622,6 +639,52 @@ uname|uniq|wc|xargs)
     done < "$default_synonym_file"
     emit_line ""
   fi
+  
+  # ============================================================================
+  # FIRST-WORD GLOSSES FOR HYPHENATED SYNONYMS
+  # ============================================================================
+  # Generate first-word glosses for hyphenated synonym names (e.g., leap-to-location → leap())
+  # This ensures that "leap to location" works just like "jump to marker" works
+  # ============================================================================
+  
+  if [ "$parse_enabled" -eq 1 ] && [ -n "$_synonym_words" ]; then
+    emit_line "# ============================================================================"
+    emit_line "# FIRST-WORD GLOSSES FROM SYNONYMS"
+    emit_line "# ============================================================================"
+    emit_line "# Generated for hyphenated synonym names (e.g., leap-to-location → leap())"
+    emit_line "# ============================================================================"
+    emit_line ""
+    
+    for syn_word in $_synonym_words; do
+      # Only process hyphenated synonym names
+      case "$syn_word" in
+        *-*) ;;
+        *) continue ;;
+      esac
+      
+      # Extract first word
+      _first_word=${syn_word%%-*}
+      
+      # Check if first word is blacklisted
+      if ! is_first_word_blacklisted "$_first_word"; then
+        continue
+      fi
+      
+      # Check if already generated (from real spells or earlier synonyms)
+      case "$_first_words_seen" in
+        *" $_first_word "*) continue ;;
+      esac
+      
+      # Mark as seen
+      _first_words_seen="$_first_words_seen$_first_word "
+      
+      # Emit first-word gloss function using helper
+      emit_first_word_gloss "$_first_word"
+      
+      total_first_word_glosses=$((total_first_word_glosses + 1))
+    done
+  fi
+  
   # COMPLETION
   # ============================================================================
   
