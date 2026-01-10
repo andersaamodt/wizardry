@@ -1290,59 +1290,43 @@ HEREDOC_TEST
       ;;
 
     5)
-      # Level 5: Navigation
+      # Level 5: Extended Attributes
 
-      # Check marker directory creation
-      spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
-      markers_dir="$spell_home/.markers"
-      if [ -d "$markers_dir" ] && [ -w "$markers_dir" ]; then
-        printf '  %s✓%s Marker directory: %s\n' "$_green" "$_reset" "$markers_dir"
-      else
-        printf '  %s✗%s Marker directory: %s unavailable\n' "$_red" "$_reset" "$markers_dir"
-        if [ "$skip_heal" -eq 0 ]; then
-          if mkdir -p "$markers_dir" 2>/dev/null; then
-            printf '    %s✓%s Marker directory created\n' "$_green" "$_reset"
-          else
-            printf '    %s✗%s Marker directory creation failed\n' "$_red" "$_reset"
-          fi
-        fi
-        if [ ! -d "$markers_dir" ] || [ ! -w "$markers_dir" ]; then
-          return 1
-        fi
+      # Check extended attributes helpers
+      xattr_helper=""
+      if command -v xattr >/dev/null 2>&1; then
+        xattr_helper="xattr"
+      elif command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; then
+        xattr_helper="getfattr/setfattr"
       fi
 
-      # Test that marker files can actually be created and read
-      # Navigation relies on persistent marker files
-      test_marker="$markers_dir/.banish-test-marker"
-      test_path="/tmp/test-location"
-      if printf '%s\n' "$test_path" > "$test_marker" 2>/dev/null; then
-        read_path=$(cat "$test_marker" 2>/dev/null || printf '')
-        rm -f "$test_marker" 2>/dev/null || :
-        
-        if [ "$read_path" = "$test_path" ]; then
-          printf '  %s✓%s Marker persistence: Can create and read marker files\n' "$_green" "$_reset"
+      if [ -n "$xattr_helper" ]; then
+        printf '  %s✓%s Extended attributes: %s available\n' "$_green" "$_reset" "$xattr_helper"
+      else
+        printf '  %s✗%s Extended attributes: no helper found\n' "$_red" "$_reset"
+        if [ "$skip_heal" -eq 0 ]; then
+          manage_system_command=""
+          if command -v manage-system-command >/dev/null 2>&1; then
+            manage_system_command="manage-system-command"
+          elif [ -x "${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command" ]; then
+            manage_system_command="${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command"
+          fi
+          if [ -n "$manage_system_command" ]; then
+            printf '    Attempting to install xattr tooling...\n'
+            "$manage_system_command" getfattr attr >/dev/null 2>&1 || :
+            "$manage_system_command" setfattr attr >/dev/null 2>&1 || :
+          fi
+        fi
+        has_xattr=0
+        if command -v xattr >/dev/null 2>&1; then
+          has_xattr=1
+        elif command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; then
+          has_xattr=1
+        fi
+        if [ "$has_xattr" -eq 1 ]; then
+          printf '    %s✓%s Extended attributes helper ready\n' "$_green" "$_reset"
         else
-          printf '  %s✗%s Marker persistence: File read/write mismatch\n' "$_red" "$_reset"
-          return 1
-        fi
-      else
-        printf '  %s✗%s Marker persistence: Cannot create marker files\n' "$_red" "$_reset"
-        return 1
-      fi
-
-      # Check spellbook directory access
-      if [ -d "$spell_home" ] && [ -w "$spell_home" ]; then
-        printf '  %s✓%s Spellbook directory: %s\n' "$_green" "$_reset" "$spell_home"
-      else
-        printf '  %s✗%s Spellbook directory: %s unavailable\n' "$_red" "$_reset" "$spell_home"
-        if [ "$skip_heal" -eq 0 ]; then
-          if mkdir -p "$spell_home" 2>/dev/null; then
-            printf '    %s✓%s Spellbook directory created\n' "$_green" "$_reset"
-          else
-            printf '    %s✗%s Spellbook directory creation failed\n' "$_red" "$_reset"
-          fi
-        fi
-        if [ ! -d "$spell_home" ] || [ ! -w "$spell_home" ]; then
+          printf '    %s✗%s Extended attributes still unavailable\n' "$_red" "$_reset"
           return 1
         fi
       fi
@@ -1485,7 +1469,119 @@ HEREDOC_TEST
       ;;
 
     7)
-      # Level 7: MUD Basics
+      # Level 7: Navigation
+
+      # Check marker directory creation
+      spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+      markers_dir="$spell_home/.markers"
+      if [ -d "$markers_dir" ] && [ -w "$markers_dir" ]; then
+        printf '  %s✓%s Marker directory: %s\n' "$_green" "$_reset" "$markers_dir"
+      else
+        printf '  %s✗%s Marker directory: %s unavailable\n' "$_red" "$_reset" "$markers_dir"
+        if [ "$skip_heal" -eq 0 ]; then
+          if mkdir -p "$markers_dir" 2>/dev/null; then
+            printf '    %s✓%s Marker directory created\n' "$_green" "$_reset"
+          else
+            printf '    %s✗%s Marker directory creation failed\n' "$_red" "$_reset"
+          fi
+        fi
+        if [ ! -d "$markers_dir" ] || [ ! -w "$markers_dir" ]; then
+          return 1
+        fi
+      fi
+
+      # Test that marker files can actually be created and read
+      # Navigation relies on persistent marker files
+      test_marker="$markers_dir/.banish-test-marker"
+      test_path="/tmp/test-location"
+      if printf '%s\n' "$test_path" > "$test_marker" 2>/dev/null; then
+        read_path=$(cat "$test_marker" 2>/dev/null || printf '')
+        rm -f "$test_marker" 2>/dev/null || :
+        
+        if [ "$read_path" = "$test_path" ]; then
+          printf '  %s✓%s Marker persistence: Can create and read marker files\n' "$_green" "$_reset"
+        else
+          printf '  %s✗%s Marker persistence: File read/write mismatch\n' "$_red" "$_reset"
+          return 1
+        fi
+      else
+        printf '  %s✗%s Marker persistence: Cannot create marker files\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check spellbook directory access
+      if [ -d "$spell_home" ] && [ -w "$spell_home" ]; then
+        printf '  %s✓%s Spellbook directory: %s\n' "$_green" "$_reset" "$spell_home"
+      else
+        printf '  %s✗%s Spellbook directory: %s unavailable\n' "$_red" "$_reset" "$spell_home"
+        if [ "$skip_heal" -eq 0 ]; then
+          if mkdir -p "$spell_home" 2>/dev/null; then
+            printf '    %s✓%s Spellbook directory created\n' "$_green" "$_reset"
+          else
+            printf '    %s✗%s Spellbook directory creation failed\n' "$_red" "$_reset"
+          fi
+        fi
+        if [ ! -d "$spell_home" ] || [ ! -w "$spell_home" ]; then
+          return 1
+        fi
+      fi
+
+      # Check spells
+      spell_list=$("$spell_levels_script" 7 spells)
+      if [ -n "$spell_list" ]; then
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          return 1
+        fi
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
+        else
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
+      fi
+
+      # Check imps
+      imp_list=$("$spell_levels_script" 7 imps)
+      had_imps=0
+      if [ -n "$imp_list" ]; then
+        had_imps=1
+        new_imp_list=""
+        for imp in $imp_list; do
+          case " ${_banish_seen_imps} " in
+            *" ${imp} "*) ;;
+            *)
+              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
+              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              ;;
+          esac
+        done
+        imp_list=$new_imp_list
+      fi
+      if [ -n "$imp_list" ]; then
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
+        else
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
+      elif [ "$had_imps" -eq 1 ]; then
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      else
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      fi
+      ;;
+
+    8)
+      # Level 8: MUD Basics
 
       # Check extended attributes helpers
       xattr_helper=""
@@ -1563,7 +1659,7 @@ HEREDOC_TEST
       fi
 
       # Check spells
-      spell_list=$("$spell_levels_script" 7 spells)
+      spell_list=$("$spell_levels_script" 8 spells)
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
@@ -1581,7 +1677,7 @@ HEREDOC_TEST
       fi
 
       # Check imps
-      imp_list=$("$spell_levels_script" 7 imps)
+      imp_list=$("$spell_levels_script" 8 imps)
       had_imps=0
       if [ -n "$imp_list" ]; then
         had_imps=1
@@ -1616,8 +1712,8 @@ HEREDOC_TEST
       fi
       ;;
 
-    8)
-      # Level 8: Arcane File Operations
+    9)
+      # Level 9: Arcane File Operations
 
       # Check file utilities
       file_utils_ok=1
@@ -1715,93 +1811,6 @@ HEREDOC_TEST
       fi
 
       # Check spells
-      spell_list=$("$spell_levels_script" 8 spells)
-      if [ -n "$spell_list" ]; then
-        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
-          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
-          missing_count=$("$_banish_count_words" "$missing")
-          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
-          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
-          return 1
-        fi
-        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
-        if [ -n "$spell_output" ]; then
-          printf '%s\n' "$spell_output" | sed 's/^/  /'
-        else
-          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
-        fi
-      fi
-
-      # Check imps
-      imp_list=$("$spell_levels_script" 8 imps)
-      had_imps=0
-      if [ -n "$imp_list" ]; then
-        had_imps=1
-        new_imp_list=""
-        for imp in $imp_list; do
-          case " ${_banish_seen_imps} " in
-            *" ${imp} "*) ;;
-            *)
-              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
-              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
-              ;;
-          esac
-        done
-        imp_list=$new_imp_list
-      fi
-      if [ -n "$imp_list" ]; then
-        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
-          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
-          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
-          return 1
-        fi
-        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
-        if [ -n "$imp_output" ]; then
-          printf '%s\n' "$imp_output" | sed 's/^/  /'
-        else
-          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
-        fi
-      elif [ "$had_imps" -eq 1 ]; then
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
-      else
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
-      fi
-      ;;
-
-    9)
-      # Level 9: Basic Cantrips
-
-      # Check interactive input device
-      input_tty=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
-      if [ -r "$input_tty" ] && [ -w "$input_tty" ]; then
-        printf '  %s✓%s Interactive input: %s\n' "$_green" "$_reset" "$input_tty"
-      else
-        printf '  %s✗%s Interactive input: %s unavailable\n' "$_red" "$_reset" "$input_tty"
-        if [ "$skip_heal" -eq 0 ] && [ -n "${AWAIT_KEYPRESS_DEVICE-}" ]; then
-          input_tty=/dev/tty
-          AWAIT_KEYPRESS_DEVICE=$input_tty
-          export AWAIT_KEYPRESS_DEVICE
-          if [ -r "$input_tty" ] && [ -w "$input_tty" ]; then
-            printf '    %s✓%s Interactive input restored to /dev/tty\n' "$_green" "$_reset"
-          else
-            printf '    %s✗%s Interactive input still unavailable\n' "$_red" "$_reset"
-          fi
-        fi
-        if [ ! -r "$input_tty" ] || [ ! -w "$input_tty" ]; then
-          return 1
-        fi
-      fi
-
-      # Check read builtin (needed for ask-text, ask-yn)
-      # Basic cantrips rely on shell's read builtin for user input
-      if printf 'test\n' | ( read -r test_input; [ "$test_input" = "test" ] ) 2>/dev/null; then
-        printf '  %s✓%s Read builtin: Shell read command works\n' "$_green" "$_reset"
-      else
-        printf '  %s✗%s Read builtin: Shell read command not working\n' "$_red" "$_reset"
-        return 1
-      fi
-
-      # Check spells
       spell_list=$("$spell_levels_script" 9 spells)
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
@@ -1856,40 +1865,35 @@ HEREDOC_TEST
       ;;
 
     10)
-      # Level 10: System Configuration
+      # Level 10: Basic Cantrips
 
-      # Check configuration directory access
-      config_home=${WIZARDRY_CONFIG_DIR:-${HOME:-.}/.wizardry}
-      if [ -d "$config_home" ] && [ -w "$config_home" ]; then
-        printf '  %s✓%s Config directory: %s\n' "$_green" "$_reset" "$config_home"
+      # Check interactive input device
+      input_tty=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
+      if [ -r "$input_tty" ] && [ -w "$input_tty" ]; then
+        printf '  %s✓%s Interactive input: %s\n' "$_green" "$_reset" "$input_tty"
       else
-        printf '  %s✗%s Config directory: %s unavailable\n' "$_red" "$_reset" "$config_home"
-        if [ "$skip_heal" -eq 0 ]; then
-          if mkdir -p "$config_home" 2>/dev/null; then
-            printf '    %s✓%s Config directory created\n' "$_green" "$_reset"
+        printf '  %s✗%s Interactive input: %s unavailable\n' "$_red" "$_reset" "$input_tty"
+        if [ "$skip_heal" -eq 0 ] && [ -n "${AWAIT_KEYPRESS_DEVICE-}" ]; then
+          input_tty=/dev/tty
+          AWAIT_KEYPRESS_DEVICE=$input_tty
+          export AWAIT_KEYPRESS_DEVICE
+          if [ -r "$input_tty" ] && [ -w "$input_tty" ]; then
+            printf '    %s✓%s Interactive input restored to /dev/tty\n' "$_green" "$_reset"
           else
-            printf '    %s✗%s Config directory creation failed\n' "$_red" "$_reset"
+            printf '    %s✗%s Interactive input still unavailable\n' "$_red" "$_reset"
           fi
         fi
-        if [ ! -d "$config_home" ] || [ ! -w "$config_home" ]; then
+        if [ ! -r "$input_tty" ] || [ ! -w "$input_tty" ]; then
           return 1
         fi
       fi
 
-      # Test that log files can be written
-      # System configuration spells need to write logs
-      log_test="$config_home/.banish-log-test"
-      if printf '%s\n' "test log entry" >> "$log_test" 2>/dev/null; then
-        if [ -f "$log_test" ] && [ -r "$log_test" ]; then
-          rm -f "$log_test" 2>/dev/null || :
-          printf '  %s✓%s Log file creation: Can write config logs\n' "$_green" "$_reset"
-        else
-          rm -f "$log_test" 2>/dev/null || :
-          printf '  %s✗%s Log file creation: File not readable after write\n' "$_red" "$_reset"
-          return 1
-        fi
+      # Check read builtin (needed for ask-text, ask-yn)
+      # Basic cantrips rely on shell's read builtin for user input
+      if printf 'test\n' | ( read -r test_input; [ "$test_input" = "test" ] ) 2>/dev/null; then
+        printf '  %s✓%s Read builtin: Shell read command works\n' "$_green" "$_reset"
       else
-        printf '  %s✗%s Log file creation: Cannot write log files\n' "$_red" "$_reset"
+        printf '  %s✗%s Read builtin: Shell read command not working\n' "$_red" "$_reset"
         return 1
       fi
 
@@ -1948,6 +1952,98 @@ HEREDOC_TEST
       ;;
 
     11)
+      # Level 10: System Configuration
+
+      # Check configuration directory access
+      config_home=${WIZARDRY_CONFIG_DIR:-${HOME:-.}/.wizardry}
+      if [ -d "$config_home" ] && [ -w "$config_home" ]; then
+        printf '  %s✓%s Config directory: %s\n' "$_green" "$_reset" "$config_home"
+      else
+        printf '  %s✗%s Config directory: %s unavailable\n' "$_red" "$_reset" "$config_home"
+        if [ "$skip_heal" -eq 0 ]; then
+          if mkdir -p "$config_home" 2>/dev/null; then
+            printf '    %s✓%s Config directory created\n' "$_green" "$_reset"
+          else
+            printf '    %s✗%s Config directory creation failed\n' "$_red" "$_reset"
+          fi
+        fi
+        if [ ! -d "$config_home" ] || [ ! -w "$config_home" ]; then
+          return 1
+        fi
+      fi
+
+      # Test that log files can be written
+      # System configuration spells need to write logs
+      log_test="$config_home/.banish-log-test"
+      if printf '%s\n' "test log entry" >> "$log_test" 2>/dev/null; then
+        if [ -f "$log_test" ] && [ -r "$log_test" ]; then
+          rm -f "$log_test" 2>/dev/null || :
+          printf '  %s✓%s Log file creation: Can write config logs\n' "$_green" "$_reset"
+        else
+          rm -f "$log_test" 2>/dev/null || :
+          printf '  %s✗%s Log file creation: File not readable after write\n' "$_red" "$_reset"
+          return 1
+        fi
+      else
+        printf '  %s✗%s Log file creation: Cannot write log files\n' "$_red" "$_reset"
+        return 1
+      fi
+
+      # Check spells
+      spell_list=$("$spell_levels_script" 11 spells)
+      if [ -n "$spell_list" ]; then
+        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
+          missing_count=$("$_banish_count_words" "$missing")
+          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          return 1
+        fi
+        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
+        if [ -n "$spell_output" ]; then
+          printf '%s\n' "$spell_output" | sed 's/^/  /'
+        else
+          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+        fi
+      fi
+
+      # Check imps
+      imp_list=$("$spell_levels_script" 11 imps)
+      had_imps=0
+      if [ -n "$imp_list" ]; then
+        had_imps=1
+        new_imp_list=""
+        for imp in $imp_list; do
+          case " ${_banish_seen_imps} " in
+            *" ${imp} "*) ;;
+            *)
+              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
+              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              ;;
+          esac
+        done
+        imp_list=$new_imp_list
+      fi
+      if [ -n "$imp_list" ]; then
+        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
+          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
+          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          return 1
+        fi
+        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
+        if [ -n "$imp_output" ]; then
+          printf '%s\n' "$imp_output" | sed 's/^/  /'
+        else
+          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+        fi
+      elif [ "$had_imps" -eq 1 ]; then
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      else
+        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+      fi
+      ;;
+
+    12)
       # Level 11: Testing Infrastructure
 
       # Check tests directory
@@ -2044,7 +2140,7 @@ HEREDOC_TEST
       fi
 
       # Check spells
-      spell_list=$("$spell_levels_script" 11 spells)
+      spell_list=$("$spell_levels_script" 12 spells)
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
@@ -2062,7 +2158,7 @@ HEREDOC_TEST
       fi
 
       # Check imps
-      imp_list=$("$spell_levels_script" 11 imps)
+      imp_list=$("$spell_levels_script" 12 imps)
       had_imps=0
       if [ -n "$imp_list" ]; then
         had_imps=1
@@ -2098,104 +2194,8 @@ HEREDOC_TEST
       ;;
 
 
-    19)
-      # Level 19: Extended Attributes
-
-      # Check extended attributes helpers
-      xattr_helper=""
-      if command -v xattr >/dev/null 2>&1; then
-        xattr_helper="xattr"
-      elif command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; then
-        xattr_helper="getfattr/setfattr"
-      fi
-
-      if [ -n "$xattr_helper" ]; then
-        printf '  %s✓%s Extended attributes: %s available\n' "$_green" "$_reset" "$xattr_helper"
-      else
-        printf '  %s✗%s Extended attributes: no helper found\n' "$_red" "$_reset"
-        if [ "$skip_heal" -eq 0 ]; then
-          manage_system_command=""
-          if command -v manage-system-command >/dev/null 2>&1; then
-            manage_system_command="manage-system-command"
-          elif [ -x "${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command" ]; then
-            manage_system_command="${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command"
-          fi
-          if [ -n "$manage_system_command" ]; then
-            printf '    Attempting to install xattr tooling...\n'
-            "$manage_system_command" getfattr attr >/dev/null 2>&1 || :
-            "$manage_system_command" setfattr attr >/dev/null 2>&1 || :
-          fi
-        fi
-        has_xattr=0
-        if command -v xattr >/dev/null 2>&1; then
-          has_xattr=1
-        elif command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; then
-          has_xattr=1
-        fi
-        if [ "$has_xattr" -eq 1 ]; then
-          printf '    %s✓%s Extended attributes helper ready\n' "$_green" "$_reset"
-        else
-          printf '    %s✗%s Extended attributes still unavailable\n' "$_red" "$_reset"
-          return 1
-        fi
-      fi
-
-      # Check spells
-      spell_list=$("$spell_levels_script" 19 spells)
-      if [ -n "$spell_list" ]; then
-        if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
-          missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
-          missing_count=$("$_banish_count_words" "$missing")
-          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
-          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
-          return 1
-        fi
-        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
-        if [ -n "$spell_output" ]; then
-          printf '%s\n' "$spell_output" | sed 's/^/  /'
-        else
-          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
-        fi
-      fi
-
-      # Check imps
-      imp_list=$("$spell_levels_script" 19 imps)
-      had_imps=0
-      if [ -n "$imp_list" ]; then
-        had_imps=1
-        new_imp_list=""
-        for imp in $imp_list; do
-          case " ${_banish_seen_imps} " in
-            *" ${imp} "*) ;;
-            *)
-              new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
-              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
-              ;;
-          esac
-        done
-        imp_list=$new_imp_list
-      fi
-      if [ -n "$imp_list" ]; then
-        if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
-          missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
-          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
-          return 1
-        fi
-        imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
-        if [ -n "$imp_output" ]; then
-          printf '%s\n' "$imp_output" | sed 's/^/  /'
-        else
-          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
-        fi
-      elif [ "$had_imps" -eq 1 ]; then
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
-      else
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
-      fi
-      ;;
-
-    21)
-      # Level 21: Spellcraft Development Tools
+    22)
+      # Level 22: Spellcraft Development Tools
 
       # Check checkbashisms for lint-magic
       if command -v checkbashisms >/dev/null 2>&1; then
@@ -2224,7 +2224,7 @@ HEREDOC_TEST
       fi
 
       # Check spells
-      spell_list=$("$spell_levels_script" 21 spells)
+      spell_list=$("$spell_levels_script" 22 spells)
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
@@ -2242,7 +2242,7 @@ HEREDOC_TEST
       fi
 
       # Check imps
-      imp_list=$("$spell_levels_script" 21 imps)
+      imp_list=$("$spell_levels_script" 22 imps)
       had_imps=0
       if [ -n "$imp_list" ]; then
         had_imps=1
@@ -2277,7 +2277,7 @@ HEREDOC_TEST
       fi
       ;;
 
-    22)
+    23)
       # Level 22: Core Menu Infrastructure
 
       # Check spellbook directory access
@@ -2299,7 +2299,7 @@ HEREDOC_TEST
       fi
 
       # Check spells
-      spell_list=$("$spell_levels_script" 22 spells)
+      spell_list=$("$spell_levels_script" 23 spells)
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
@@ -2317,7 +2317,7 @@ HEREDOC_TEST
       fi
 
       # Check imps
-      imp_list=$("$spell_levels_script" 22 imps)
+      imp_list=$("$spell_levels_script" 23 imps)
       had_imps=0
       if [ -n "$imp_list" ]; then
         had_imps=1
@@ -2488,7 +2488,7 @@ HEREDOC_TEST
       fi
       ;;
 
-    12)
+    13)
       # Level 12: System Maintenance
       
       # Check git availability (update-wizardry uses git)
@@ -2546,7 +2546,7 @@ HEREDOC_TEST
       fi
 
       # Check spells
-      spell_list=$("$spell_levels_script" 12 spells)
+      spell_list=$("$spell_levels_script" 13 spells)
       has_missing_spells=0
       if [ -n "$spell_list" ]; then
         spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || has_missing_spells=1
@@ -2562,7 +2562,7 @@ HEREDOC_TEST
       fi
 
       # Check imps
-      imp_list=$("$spell_levels_script" 12 imps)
+      imp_list=$("$spell_levels_script" 13 imps)
       had_imps=0
       if [ -n "$imp_list" ]; then
         had_imps=1
