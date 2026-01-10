@@ -6,19 +6,21 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: blink [path] [--depth N] [--all]
+Usage: blink [path] [--depth N] [--all] [--verbose]
 
 Teleport to a random subdirectory within a directory tree.
 - No argument defaults to $HOME with depth 5
 - path: Starting directory (default: $HOME)
 - --depth N: Limits how deep to search (1-10, default: 5)
 - --all: Include hidden folders and system folders (Library, etc.)
+- --verbose, -v: Display the destination path after teleporting
 
 Examples:
   blink                    # Random subdirectory in $HOME (depth 5, skip boring folders)
   blink /tmp               # Random subdirectory in /tmp (depth 5)
   blink --depth 3          # Random subdirectory in $HOME (depth 3)
   blink --all              # Include hidden and system folders
+  blink -v                 # Show destination path
   blink /var/log --depth 2 # Random subdirectory in /var/log (depth 2)
 
 Note: This spell must be sourced. Use 'blink' to invoke it.
@@ -55,6 +57,7 @@ set -eu
 start_path=""
 max_depth=5
 include_all=0
+verbose=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -69,6 +72,10 @@ while [ $# -gt 0 ]; do
       ;;
     --all)
       include_all=1
+      shift
+      ;;
+    --verbose|-v)
+      verbose=1
       shift
       ;;
     -*)
@@ -241,8 +248,12 @@ if [ -n "$arrival" ]; then
   printf '%s\n' "$arrival"
 fi
 
-# Output the destination path with a newline after
-printf '%s\n\n' "$normalized_destination"
+# Output the destination path only if verbose is enabled, with newline after
+if [ "$verbose" -eq 1 ]; then
+  printf '%s\n\n' "$normalized_destination"
+else
+  printf '\n'
+fi
 
 # Describe current location if look command exists
 if command -v look >/dev/null 2>&1; then
