@@ -145,6 +145,10 @@ current_resolved=$(printf '%s' "$current_dir" | sed 's|//|/|g')
 max_attempts=50
 attempt=0
 
+printf '[blink DEBUG] Starting retry loop: %d directories found\n' "$dir_count" >&2
+printf '[blink DEBUG] Current directory: %s\n' "$current_resolved" >&2
+printf '[blink DEBUG] Max attempts: %d\n' "$max_attempts" >&2
+
 while [ "$attempt" -lt "$max_attempts" ]; do
   attempt=$((attempt + 1))
   
@@ -160,69 +164,59 @@ while [ "$attempt" -lt "$max_attempts" ]; do
   time_seed=$(printf '%s' "$time_seed" | sed 's/^0*//')
   # Handle empty string after stripping (when time_seed was "0" or "000...")
   time_seed=${time_seed:-0}
+  
+  printf '[blink DEBUG] Attempt %d of %d: time_seed=%s, PID=%s\n' "$attempt" "$max_attempts" "$time_seed" "$$" >&2
+  
   random_line=$(( (($$ * 7 + attempt * 13 + time_seed) % dir_count) + 1 ))
   destination=$(sed -n "${random_line}p" "$temp_list")
   
-  if command -v debug >/dev/null 2>&1; then
-    debug "Attempt $attempt of $max_attempts: Testing $destination"
-  fi
+  printf '[blink DEBUG] Selected line %d: %s\n' "$random_line" "$destination" >&2
   
   if [ -z "$destination" ]; then
-    if command -v debug >/dev/null 2>&1; then
-      debug "Destination empty, skipping"
-    fi
+    printf '[blink DEBUG] Destination empty, skipping\n' >&2
     continue
   fi
   
   if [ ! -d "$destination" ]; then
-    if command -v debug >/dev/null 2>&1; then
-      debug "Destination not a directory, skipping"
-    fi
+    printf '[blink DEBUG] Destination not a directory, skipping\n' >&2
     continue
   fi
+  
+  printf '[blink DEBUG] Testing cd to: %s\n' "$destination" >&2
   
   # Resolve destination path (in subshell to avoid changing directory during test)
   # Use command cd to avoid cd gloss/spell interference (works in all POSIX shells)
   # Wrap with set +e/set -e because command substitution with set -e causes exit on failure
   set +e
   dest_resolved=$(command cd "$destination" 2>/dev/null && pwd -P | sed 's|//|/|g')
+  cd_exit_code=$?
   set -e
   
+  printf '[blink DEBUG] cd exit code: %d, dest_resolved: "%s"\n' "$cd_exit_code" "$dest_resolved" >&2
+  
   if [ -z "$dest_resolved" ]; then
-    if command -v debug >/dev/null 2>&1; then
-      debug "Could not resolve destination (cd failed), skipping"
-    fi
+    printf '[blink DEBUG] Could not resolve destination (cd failed), skipping\n' >&2
     continue
   fi
   
-  if command -v debug >/dev/null 2>&1; then
-    debug "Resolved to: $dest_resolved (current: $current_resolved)"
-  fi
+  printf '[blink DEBUG] Resolved to: %s (current: %s)\n' "$dest_resolved" "$current_resolved" >&2
   
   # Check if already at this location
   if [ "$current_resolved" = "$dest_resolved" ]; then
-    if command -v debug >/dev/null 2>&1; then
-      debug "Already at this location, skipping"
-    fi
+    printf '[blink DEBUG] Already at this location, skipping\n' >&2
     continue
   fi
   
   # Success! We found an accessible directory that's different from current
   # Now do the ACTUAL cd (not in a subshell)
-  if command -v debug >/dev/null 2>&1; then
-    debug "Found suitable destination, doing actual cd..."
-  fi
+  printf '[blink DEBUG] Found suitable destination, doing actual cd...\n' >&2
   
   if ! command cd "$destination"; then
-    if command -v debug >/dev/null 2>&1; then
-      debug "Actual cd failed, skipping"
-    fi
+    printf '[blink DEBUG] Actual cd failed, skipping\n' >&2
     continue
   fi
   
-  if command -v debug >/dev/null 2>&1; then
-    debug "Successfully changed to $destination"
-  fi
+  printf '[blink DEBUG] Successfully changed to: %s\n' "$destination" >&2
   break
 done
 
