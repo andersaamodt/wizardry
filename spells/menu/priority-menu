@@ -156,7 +156,8 @@ priority_menu_display_menu() {
   # Build menu items - conditionally include Prioritize based on whether it's the very first priority
   # Order: Prioritize (if not first), Check, Edit priority, Make project/Subpriorities (mutually exclusive), Discard priority
   # Edit priority uses rename-interactive (transparent command) which outputs the new path that we capture and pass to priority-menu
-  edit_cmd="new_path=\$(rename-interactive \"$file\") && priority-menu \"\$new_path\""
+  # Kill the old menu (this script) before opening the new one to avoid nested menus
+  edit_cmd="new_path=\$(rename-interactive \"$file\") && kill -TERM \$PPID && priority-menu \"\$new_path\""
   
   if [ "$is_very_first_priority" = "1" ]; then
     # Don't show Prioritize for the very first priority item only
