@@ -213,15 +213,21 @@ while [ "$attempt" -lt "$max_attempts" ]; do
   
   # Check if we can actually cd to this directory
   # Use command cd to avoid cd gloss/spell interference (works in all POSIX shells)
+  printf '[blink DEBUG] About to test cd to: %s\n' "$destination"
+  printf '[blink DEBUG] Current directory before cd: %s\n' "$(pwd)"
   if ! command cd "$destination" 2>/dev/null; then
+    printf '[blink DEBUG] cd command failed (exit code: %s)\n' "$?"
     printf '[blink DEBUG] Cannot access destination, trying another\n'
     continue
   fi
+  printf '[blink DEBUG] cd command succeeded\n'
+  printf '[blink DEBUG] Current directory after cd: %s\n' "$(pwd)"
   
   # Get the resolved path
   dest_resolved=$(pwd -P 2>/dev/null || pwd)
   dest_resolved=$(printf '%s' "$dest_resolved" | sed 's|//|/|g')
   printf '[blink DEBUG] dest_resolved=%s\n' "$dest_resolved"
+  printf '[blink DEBUG] current_resolved=%s\n' "$current_resolved"
   
   # Check if already at this location
   if [ "$current_resolved" = "$dest_resolved" ]; then
