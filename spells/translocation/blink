@@ -188,7 +188,7 @@ while [ "$attempt" -lt "$max_attempts" ]; do
   # Use command cd to avoid cd gloss/spell interference (works in all POSIX shells)
   # Wrap with set +e/set -e because command substitution with set -e causes exit on failure
   set +e
-  dest_resolved=$(command cd "$destination" 2>/dev/null && pwd -P | sed 's|//|/|g')
+  dest_resolved=$(command cd "$destination" 2>/dev/null && pwd -P 2>/dev/null | sed 's|//|/|g')
   cd_exit_code=$?
   set -e
   
