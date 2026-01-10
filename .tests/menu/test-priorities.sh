@@ -267,8 +267,8 @@ if [ "$call_num" -eq 1 ]; then
   touch "$TEST_DIR/newpriority.txt"
 fi
 
-# Exit after THIRD call (to see if selection is remembered)
-if [ "$call_num" -ge 3 ]; then
+# Exit after SECOND call (immediate refresh after adding priority)
+if [ "$call_num" -ge 2 ]; then
   kill -TERM "$PPID" 2>/dev/null || exit 0
 fi
 exit 0
@@ -281,7 +281,7 @@ SH
 file=$1
 attr=${2-}
 case "$file" in
-  */test-dir)
+  */test-dir|.)
     if [ "$attr" = "priorities" ]; then
       # Return more hashes if new file exists
       if [ -f "$TEST_DIR/newpriority.txt" ]; then
@@ -328,33 +328,33 @@ SH
   cd "$tmp/test-dir"
   run_cmd env PATH="$tmp:$PATH" MENU_CALLS="$tmp/calls.log" TEST_DIR="$tmp/test-dir" PWD="$tmp/test-dir" "$ROOT_DIR/spells/menu/priorities" 2>/dev/null || true
   
-  # Check that we had at least 3 calls
+  # Check that we had at least 2 calls
   if [ ! -f "$tmp/calls.log" ]; then
     TEST_FAILURE_REASON="No menu calls logged"
     return 1
   fi
   
   call_count=$(wc -l < "$tmp/calls.log")
-  if [ "$call_count" -lt 3 ]; then
-    TEST_FAILURE_REASON="Expected at least 3 menu calls, got $call_count. Log: $(cat "$tmp/calls.log")"
+  if [ "$call_count" -lt 2 ]; then
+    TEST_FAILURE_REASON="Expected at least 2 menu calls, got $call_count. Log: $(cat "$tmp/calls.log")"
     return 1
   fi
   
-  # Get the third call's start_selection (after adding a priority)
-  third_call=$(sed -n '3p' "$tmp/calls.log")
-  third_sel=$(echo "$third_call" | cut -d= -f2)
+  # Get the SECOND call's start_selection (immediate refresh after adding priority)
+  second_call=$(sed -n '2p' "$tmp/calls.log")
+  second_sel=$(echo "$second_call" | cut -d= -f2)
   
-  # After adding a priority, start_selection should be > 2 (not 1)
+  # After adding a priority, start_selection should be > 2 (not 1) on the IMMEDIATE refresh
   # Menu has: priority1, priority2, ---, Add priority, Exit
   # So "Add priority" is at position 4
-  if [ "$third_sel" -le 2 ]; then
-    TEST_FAILURE_REASON="After adding priority, start_selection should be > 2 (Add priority position), got $third_sel. Calls: $(cat "$tmp/calls.log")"
+  if [ "$second_sel" -le 2 ]; then
+    TEST_FAILURE_REASON="After adding priority, start_selection should be > 2 (Add priority position), got $second_sel. Calls: $(cat "$tmp/calls.log")"
     return 1
   fi
   
   # Should be around 4 (or 3+ to account for separators)
-  if [ "$third_sel" -lt 3 ]; then
-    TEST_FAILURE_REASON="Start selection should be at least 3 for Add priority, got $third_sel"
+  if [ "$second_sel" -lt 3 ]; then
+    TEST_FAILURE_REASON="Start selection should be at least 3 for Add priority, got $second_sel"
     return 1
   fi
 }

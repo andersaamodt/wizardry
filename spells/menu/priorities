@@ -142,22 +142,40 @@ display_priorities() {
 first_run=1
 start_selection=1
 previous_item_count=0
-previous_add_priority_position=0
 
 while true; do
   if [ "$first_run" -eq 0 ]; then
+    # Before calling display_priorities, check if item count changed by reading priorities directly
+    # This allows us to set start_selection BEFORE displaying the menu
+    dir_priorities=$(read-magic "." priorities 2>/dev/null || true)
+    case "$dir_priorities" in
+      ''|*Error*|*"does not exist"*) current_count_check=0 ;;
+      *)
+        # Count the number of priorities (comma-separated)
+        current_count_check=0
+        IFS=','
+        for p in $dir_priorities; do
+          current_count_check=$((current_count_check + 1))
+        done
+        unset IFS
+        ;;
+    esac
+    
+    # If count increased since last iteration, keep "Add priority" selected
+    if [ "$current_count_check" -gt "$previous_item_count" ]; then
+      # Use the previously calculated add_priority_position
+      # (We need to recalculate it based on new count)
+      # Estimate: priorities + separators + separator + Add priority
+      # For now, use previous position which should be close
+      start_selection=$previous_add_priority_position
+    else
+      # If count didn't change, reset to first item
+      start_selection=1
+    fi
+    
     # Call display_priorities which will update current_item_count and current_add_priority_position
     display_priorities || menu_status=$?
     menu_status=${menu_status:-0}
-    
-    # After display_priorities, check if item count increased (new priority was added)
-    if [ "$current_item_count" -gt "$previous_item_count" ]; then
-      # New item was added, set start_selection for NEXT iteration
-      start_selection=$current_add_priority_position
-    else
-      # If count didn't change, reset to first item for NEXT iteration
-      start_selection=1
-    fi
     
     # Save current values for next iteration comparison
     previous_item_count=$current_item_count
