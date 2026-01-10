@@ -219,7 +219,10 @@ while [ "$attempt" -lt "$max_attempts" ]; do
   # Use command cd to avoid cd gloss/spell interference (works in all POSIX shells)
   printf '[blink DEBUG] About to test cd to: %s\n' "$destination"
   printf '[blink DEBUG] Current directory before test: %s\n' "$(pwd)"
+  # Temporarily disable set -e for subshell cd test (cd may fail for inaccessible dirs)
+  set +e
   dest_resolved=$(command cd "$destination" 2>/dev/null && pwd -P | sed 's|//|/|g')
+  set -e
   if [ -z "$dest_resolved" ]; then
     printf '[blink DEBUG] Cannot access destination (cd failed), trying another\n'
     continue
