@@ -84,3 +84,4 @@
 - Uncastable spells require the marker comment "# Uncastable pattern" for generate-glosses to detect them and create wrapper functions for single-word spells.
 - Users must reload their shell or re-source invoke-wizardry after new spells are added to regenerate glosses and make new commands available.
 - Never make core wizardry features (like env-clear) optional; spells should require wizardry to be properly loaded, following patterns from jump-to-marker and jump-trash.
+- The `find -readable` flag may not work on macOS; use it first, but fall back to plain `-type d` if it returns zero results (cross-platform compatibility).

@@ -144,14 +144,26 @@ printf '[blink DEBUG] find completed with exit code %s\n' "$find_exit_code"
 dir_count=$(wc -l < "$temp_list" | tr -d ' ')
 printf '[blink DEBUG] Found %s directories\n' "$dir_count"
 
+# If -readable flag found nothing, try without it (macOS compatibility)
 if [ "$dir_count" -eq 0 ]; then
-  # No results from main search, try simpler search
+  printf '[blink DEBUG] No results with -readable flag, trying without it (macOS compatibility)\n'
+  set +e
+  find "$base_dir" -maxdepth "$max_depth" -type d 2>/dev/null > "$temp_list"
+  find_exit_code=$?
+  set -e
+  printf '[blink DEBUG] find without -readable completed with exit code %s\n' "$find_exit_code"
+  dir_count=$(wc -l < "$temp_list" | tr -d ' ')
+  printf '[blink DEBUG] Found %s directories without -readable flag\n' "$dir_count"
+fi
+
+if [ "$dir_count" -eq 0 ]; then
+  # No results from main search, try simpler search at depth 1
   if command -v warn >/dev/null 2>&1; then
     warn "blink: no directories found at depth $max_depth, trying depth 1"
   fi
   printf '[blink DEBUG] No directories found, trying simpler search at depth 1\n'
   set +e
-  find "$base_dir" -maxdepth 1 -type d -readable 2>/dev/null > "$temp_list"
+  find "$base_dir" -maxdepth 1 -type d 2>/dev/null > "$temp_list"
   find_exit_code=$?
   set -e
   printf '[blink DEBUG] Fallback find completed with exit code %s\n' "$find_exit_code"
