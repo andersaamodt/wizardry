@@ -3,6 +3,12 @@
 # Teleport to a random accessible directory on your computer.
 # This spell must be sourced (not executed) because it changes the current directory.
 
+# DEBUG: Start of blink spell
+printf '[blink DEBUG] Starting blink spell\n'
+printf '[blink DEBUG] Args: %s\n' "$*"
+printf '[blink DEBUG] $0 = %s\n' "$0"
+printf '[blink DEBUG] Shell: %s\n' "${SHELL:-unknown}"
+
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
@@ -22,13 +28,17 @@ USAGE
 esac
 
 # Uncastable pattern - ensures spell is sourced, not executed
+printf '[blink DEBUG] Checking if sourced...\n'
 _blink_sourced=0
 if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  printf '[blink DEBUG] ZSH detected, ZSH_VERSION=%s\n' "${ZSH_VERSION:-}"
+  printf '[blink DEBUG] ZSH_EVAL_CONTEXT=%s\n' "${ZSH_EVAL_CONTEXT:-}"
   case "${ZSH_EVAL_CONTEXT-}" in
     *:file) _blink_sourced=1 ;;
   esac
 else
   _blink_base=${0##*/}
+  printf '[blink DEBUG] Not ZSH, _blink_base=%s\n' "$_blink_base"
   case "$_blink_base" in
     sh|dash|bash|zsh|ksh|mksh) _blink_sourced=1 ;;
     blink) _blink_sourced=0 ;;
@@ -36,17 +46,34 @@ else
   esac
 fi
 
+printf '[blink DEBUG] _blink_sourced=%s\n' "$_blink_sourced"
+
 if [ "$_blink_sourced" -eq 0 ]; then
   printf '%s\n' "This spell must be sourced. Use: . blink" >&2
   printf '%s\n' "(Or ensure wizardry is loaded, then just: blink)" >&2
+  printf '[blink DEBUG] ERROR: Not sourced, exiting\n' >&2
   return 1 2>/dev/null || exit 1
 fi
 unset _blink_sourced _blink_base
 
+printf '[blink DEBUG] Sourced check passed\n'
+printf '[blink DEBUG] About to set -eu\n'
 set -eu
+printf '[blink DEBUG] set -eu completed\n'
+printf '[blink DEBUG] About to source env-clear\n'
+printf '[blink DEBUG] Checking if env-clear is available...\n'
+if command -v env-clear >/dev/null 2>&1; then
+  printf '[blink DEBUG] env-clear found in PATH\n'
+else
+  printf '[blink DEBUG] ERROR: env-clear NOT in PATH\n' >&2
+  printf '[blink DEBUG] PATH=%s\n' "$PATH" >&2
+  printf '[blink DEBUG] This will fail with set -eu\n' >&2
+fi
 . env-clear
+printf '[blink DEBUG] env-clear completed\n'
 
 # Parse arguments
+printf '[blink DEBUG] Parsing arguments\n'
 use_home=0
 max_depth=""
 
@@ -63,8 +90,10 @@ while [ "$#" -gt 0 ]; do
       ;;
   esac
 done
+printf '[blink DEBUG] Arguments parsed: use_home=%s, max_depth=%s\n' "$use_home" "${max_depth:-default}"
 
 # Set base directory and default depth
+printf '[blink DEBUG] Setting base directory\n'
 if [ "$use_home" -eq 1 ]; then
   base_dir=$HOME
   default_depth=4
@@ -75,22 +104,27 @@ fi
 
 # Use provided depth or default
 max_depth=${max_depth:-$default_depth}
+printf '[blink DEBUG] base_dir=%s, max_depth=%s\n' "$base_dir" "$max_depth"
 
 # Validate max_depth is a positive integer
 case "$max_depth" in
   ''|*[!0-9]*|0)
     printf '%s\n' "blink: max-depth must be a positive integer" >&2
+    printf '[blink DEBUG] ERROR: Invalid depth\n' >&2
     set +eu; return 1 2>/dev/null || exit 1
     ;;
 esac
 
 # Search for directories - let blink take you anywhere!
+printf '[blink DEBUG] Starting directory search\n'
 if command -v info >/dev/null 2>&1; then
   info "Scanning for destinations..."
 fi
 
 # Use find to get all accessible directories
+printf '[blink DEBUG] Creating temp file\n'
 temp_list=$(mktemp "${TMPDIR:-/tmp}/blink.XXXXXX")
+printf '[blink DEBUG] temp_list=%s\n' "$temp_list"
 cleanup_temp() {
   rm -f "$temp_list"
 }
@@ -98,10 +132,13 @@ trap cleanup_temp EXIT HUP INT TERM
 
 # Find all readable directories, no exclusions (that's part of the fun!)
 # Note: find returns non-zero on permission errors, but still outputs accessible dirs
+printf '[blink DEBUG] Running find command...\n'
 find "$base_dir" -maxdepth "$max_depth" -type d -readable 2>/dev/null > "$temp_list"
+printf '[blink DEBUG] find completed\n'
 
 # Check if we got any results (don't rely on exit code)
 dir_count=$(wc -l < "$temp_list" | tr -d ' ')
+printf '[blink DEBUG] Found %s directories\n' "$dir_count"
 
 if [ "$dir_count" -eq 0 ]; then
   # No results from main search, try simpler search
@@ -122,36 +159,48 @@ if command -v debug >/dev/null 2>&1; then
 fi
 
 # Select a random directory using awk
+printf '[blink DEBUG] Selecting random directory\n'
 destination=$(awk 'BEGIN{srand();}{lines[NR]=$0}END{if(NR==0)exit 1;idx=int(rand()*NR)+1;print lines[idx];}' "$temp_list")
+printf '[blink DEBUG] Selected destination: %s\n' "$destination"
 
 if [ -z "$destination" ]; then
   printf '%s\n' "blink: failed to select random destination" >&2
+  printf '[blink DEBUG] ERROR: Empty destination\n' >&2
   set +eu; return 1 2>/dev/null || exit 1
 fi
 
 if [ ! -d "$destination" ]; then
   printf '%s\n' "blink: selected destination no longer exists" >&2
+  printf '[blink DEBUG] ERROR: Destination not a directory\n' >&2
   set +eu; return 1 2>/dev/null || exit 1
 fi
 
 # Check if already at destination (handle symlinks by resolving paths)
+printf '[blink DEBUG] Checking if already at destination\n'
 current_dir=$(pwd -P 2>/dev/null || pwd)
+printf '[blink DEBUG] current_dir=%s\n' "$current_dir"
 dest_resolved=$(cd "$destination" && pwd -P 2>/dev/null || printf '%s' "$destination")
+printf '[blink DEBUG] dest_resolved=%s\n' "$dest_resolved"
 current_resolved=$(printf '%s' "$current_dir" | sed 's|//|/|g')
 dest_resolved=$(printf '%s' "$dest_resolved" | sed 's|//|/|g')
 
 if [ "$current_resolved" = "$dest_resolved" ]; then
   printf '%s\n' "You have already blinked to this location."
+  printf '[blink DEBUG] Already at destination, returning\n'
   set +eu; return 0 2>/dev/null || exit 0
 fi
 
 # Try to cd to the destination
+printf '[blink DEBUG] Attempting to cd to destination\n'
 if ! cd "$destination" 2>/dev/null; then
   printf '%s\n' "blink: cannot access destination: $destination" >&2
+  printf '[blink DEBUG] ERROR: Cannot cd to destination\n' >&2
   set +eu; return 1 2>/dev/null || exit 1
 fi
+printf '[blink DEBUG] Successfully changed to destination\n'
 
 # Pick a random blink message
+printf '[blink DEBUG] Selecting random message\n'
 blink_message=$(cat <<'BLINK_MESSAGES'
 Reality stutters, and you blink into existence elsewhere.
 Space folds like origami—you arrive in a new location.
@@ -182,18 +231,23 @@ BLINK_MESSAGES
 )
 
 selected_message=$(printf '%s\n' "$blink_message" | awk 'BEGIN{srand();}{lines[NR]=$0}END{if(NR==0)exit 0;idx=int(rand()*NR)+1;print lines[idx];}')
+printf '[blink DEBUG] Selected message: %s\n' "$selected_message"
 
 if [ -n "$selected_message" ]; then
   printf '%s\n' "$selected_message"
 fi
 
 # Show current location
+printf '[blink DEBUG] Showing current location\n'
 printf 'You have blinked to: %s\n' "$(pwd -P)"
 
 # Describe current location if look command exists
 if command -v look >/dev/null 2>&1; then
+  printf '[blink DEBUG] Running look command\n'
   look 2>/dev/null || true
 fi
 
 # Restore shell options before returning
+printf '[blink DEBUG] Restoring shell options and returning\n'
 set +eu
+printf '[blink DEBUG] Blink completed successfully\n'
