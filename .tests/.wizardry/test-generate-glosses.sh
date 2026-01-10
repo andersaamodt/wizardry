@@ -170,6 +170,20 @@ EOF
     TEST_FAILURE_REASON="Expected alias to preserve directory path: translocation/jump to marker"
     return 1
   fi
+  
+  # 6. CRITICAL FIX: First-word glosses must invoke aliases via eval, not parse
+  #    because parse skips aliases to avoid recursion. When "leap to location" is typed,
+  #    the leap() gloss reconstructs it to "leap-to-location" and must check if it's an alias.
+  #    If it is, it must eval it directly instead of calling parse.
+  if ! printf '%s' "$OUTPUT" | grep -q 'type.*\$_fw_spell'; then
+    TEST_FAILURE_REASON="Expected leap() gloss to check type of reconstructed spell name"
+    return 1
+  fi
+  
+  if ! printf '%s' "$OUTPUT" | grep -q 'eval.*\$_fw_spell'; then
+    TEST_FAILURE_REASON="Expected leap() gloss to eval aliases directly (parse skips aliases)"
+    return 1
+  fi
 }
 
 run_test_case "generate-glosses shows usage" test_help
