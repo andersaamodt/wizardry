@@ -3,12 +3,6 @@
 # Teleport to a random accessible directory on your computer.
 # This spell must be sourced (not executed) because it changes the current directory.
 
-# DEBUG: Start of blink spell
-printf '[blink DEBUG] Starting blink spell\n'
-printf '[blink DEBUG] Args: %s\n' "$*"
-printf '[blink DEBUG] $0 = %s\n' "$0"
-printf '[blink DEBUG] Shell: %s\n' "${SHELL:-unknown}"
-
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
@@ -28,17 +22,13 @@ USAGE
 esac
 
 # Uncastable pattern - ensures spell is sourced, not executed
-printf '[blink DEBUG] Checking if sourced...\n'
 _blink_sourced=0
 if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
-  printf '[blink DEBUG] ZSH detected, ZSH_VERSION=%s\n' "${ZSH_VERSION:-}"
-  printf '[blink DEBUG] ZSH_EVAL_CONTEXT=%s\n' "${ZSH_EVAL_CONTEXT:-}"
   case "${ZSH_EVAL_CONTEXT-}" in
     *:file) _blink_sourced=1 ;;
   esac
 else
   _blink_base=${0##*/}
-  printf '[blink DEBUG] Not ZSH, _blink_base=%s\n' "$_blink_base"
   case "$_blink_base" in
     sh|dash|bash|zsh|ksh|mksh) _blink_sourced=1 ;;
     blink) _blink_sourced=0 ;;
@@ -46,34 +36,17 @@ else
   esac
 fi
 
-printf '[blink DEBUG] _blink_sourced=%s\n' "$_blink_sourced"
-
 if [ "$_blink_sourced" -eq 0 ]; then
   printf '%s\n' "This spell must be sourced. Use: . blink" >&2
   printf '%s\n' "(Or ensure wizardry is loaded, then just: blink)" >&2
-  printf '[blink DEBUG] ERROR: Not sourced, exiting\n' >&2
   return 1 2>/dev/null || exit 1
 fi
 unset _blink_sourced _blink_base
 
-printf '[blink DEBUG] Sourced check passed\n'
-printf '[blink DEBUG] About to set -eu\n'
 set -eu
-printf '[blink DEBUG] set -eu completed\n'
-printf '[blink DEBUG] About to source env-clear\n'
-printf '[blink DEBUG] Checking if env-clear is available...\n'
-if command -v env-clear >/dev/null 2>&1; then
-  printf '[blink DEBUG] env-clear found in PATH\n'
-else
-  printf '[blink DEBUG] ERROR: env-clear NOT in PATH\n' >&2
-  printf '[blink DEBUG] PATH=%s\n' "$PATH" >&2
-  printf '[blink DEBUG] This will fail with set -eu\n' >&2
-fi
 . env-clear
-printf '[blink DEBUG] env-clear completed\n'
 
 # Parse arguments
-printf '[blink DEBUG] Parsing arguments\n'
 use_home=0
 max_depth=""
 
@@ -90,10 +63,8 @@ while [ "$#" -gt 0 ]; do
       ;;
   esac
 done
-printf '[blink DEBUG] Arguments parsed: use_home=%s, max_depth=%s\n' "$use_home" "${max_depth:-default}"
 
 # Set base directory and default depth
-printf '[blink DEBUG] Setting base directory\n'
 if [ "$use_home" -eq 1 ]; then
   base_dir=$HOME
   default_depth=4
@@ -104,27 +75,22 @@ fi
 
 # Use provided depth or default
 max_depth=${max_depth:-$default_depth}
-printf '[blink DEBUG] base_dir=%s, max_depth=%s\n' "$base_dir" "$max_depth"
 
 # Validate max_depth is a positive integer
 case "$max_depth" in
   ''|*[!0-9]*|0)
     printf '%s\n' "blink: max-depth must be a positive integer" >&2
-    printf '[blink DEBUG] ERROR: Invalid depth\n' >&2
     set +eu; return 1 2>/dev/null || exit 1
     ;;
 esac
 
 # Search for directories - let blink take you anywhere!
-printf '[blink DEBUG] Starting directory search\n'
 if command -v info >/dev/null 2>&1; then
   info "Scanning for destinations..."
 fi
 
 # Use find to get all accessible directories
-printf '[blink DEBUG] Creating temp file\n'
 temp_list=$(mktemp "${TMPDIR:-/tmp}/blink.XXXXXX")
-printf '[blink DEBUG] temp_list=%s\n' "$temp_list"
 cleanup_temp() {
   rm -f "$temp_list"
 }
@@ -133,28 +99,22 @@ trap cleanup_temp EXIT HUP INT TERM
 # Find all readable directories, no exclusions (that's part of the fun!)
 # Note: find returns non-zero on permission errors, but still outputs accessible dirs
 # Use -xdev to stay on the current filesystem (excludes network volumes and mounted drives)
-printf '[blink DEBUG] Running find command...\n'
 # Temporarily disable set -e because find returns non-zero on permission errors
 set +e
 find "$base_dir" -xdev -maxdepth "$max_depth" -type d -readable 2>/dev/null > "$temp_list"
 find_exit_code=$?
 set -e
-printf '[blink DEBUG] find completed with exit code %s\n' "$find_exit_code"
 
 # Check if we got any results (don't rely on exit code)
 dir_count=$(wc -l < "$temp_list" | tr -d ' ')
-printf '[blink DEBUG] Found %s directories\n' "$dir_count"
 
 # If -readable flag found nothing, try without it (macOS compatibility)
 if [ "$dir_count" -eq 0 ]; then
-  printf '[blink DEBUG] No results with -readable flag, trying without it (macOS compatibility)\n'
   set +e
   find "$base_dir" -xdev -maxdepth "$max_depth" -type d 2>/dev/null > "$temp_list"
   find_exit_code=$?
   set -e
-  printf '[blink DEBUG] find without -readable completed with exit code %s\n' "$find_exit_code"
   dir_count=$(wc -l < "$temp_list" | tr -d ' ')
-  printf '[blink DEBUG] Found %s directories without -readable flag\n' "$dir_count"
 fi
 
 if [ "$dir_count" -eq 0 ]; then
@@ -162,17 +122,14 @@ if [ "$dir_count" -eq 0 ]; then
   if command -v warn >/dev/null 2>&1; then
     warn "blink: no directories found at depth $max_depth, trying depth 1"
   fi
-  printf '[blink DEBUG] No directories found, trying simpler search at depth 1\n'
   set +e
   find "$base_dir" -xdev -maxdepth 1 -type d 2>/dev/null > "$temp_list"
   find_exit_code=$?
   set -e
-  printf '[blink DEBUG] Fallback find completed with exit code %s\n' "$find_exit_code"
   dir_count=$(wc -l < "$temp_list" | tr -d ' ')
   
   if [ "$dir_count" -eq 0 ]; then
     printf '%s\n' "blink: no accessible directories found" >&2
-    printf '[blink DEBUG] ERROR: No directories found even at depth 1\n' >&2
     set +eu; return 1 2>/dev/null || exit 1
   fi
 fi
@@ -183,7 +140,6 @@ fi
 
 # Select a random accessible directory (retry up to 50 times if needed)
 # Note: On macOS, most system directories exist but can't be accessed, so we need many retries
-printf '[blink DEBUG] Selecting random accessible directory\n'
 current_dir=$(pwd -P 2>/dev/null || pwd)
 current_resolved=$(printf '%s' "$current_dir" | sed 's|//|/|g')
 max_attempts=50
@@ -191,7 +147,6 @@ attempt=0
 
 while [ "$attempt" -lt "$max_attempts" ]; do
   attempt=$((attempt + 1))
-  printf '[blink DEBUG] Attempt %s of %s\n' "$attempt" "$max_attempts"
   
   # Use shell arithmetic for randomness
   # Combine PID, attempt number, and time-based seed for maximum entropy
@@ -201,65 +156,49 @@ while [ "$attempt" -lt "$max_attempts" ]; do
   case "$time_seed" in
     *[!0-9]*) time_seed=$(date +%s) ;;
   esac
+  # Strip leading zeros to avoid octal interpretation (08 and 09 are invalid)
+  time_seed=$(printf '%s' "$time_seed" | sed 's/^0*//')
+  # Handle empty string after stripping (when time_seed was "0" or "000...")
+  time_seed=${time_seed:-0}
   random_line=$(( (($$ * 7 + attempt * 13 + time_seed) % dir_count) + 1 ))
   destination=$(sed -n "${random_line}p" "$temp_list")
-  printf '[blink DEBUG] Selected destination: %s\n' "$destination"
   
   if [ -z "$destination" ]; then
-    printf '[blink DEBUG] Empty destination, trying again\n'
     continue
   fi
   
   if [ ! -d "$destination" ]; then
-    printf '[blink DEBUG] Destination not a directory, trying again\n'
     continue
   fi
   
   # Resolve destination path (in subshell to avoid changing directory during test)
   # Use command cd to avoid cd gloss/spell interference (works in all POSIX shells)
-  printf '[blink DEBUG] About to test cd to: %s\n' "$destination"
-  printf '[blink DEBUG] Current directory before test: %s\n' "$(pwd)"
-  # Test cd in subshell - if it fails, dest_resolved will be empty
-  # CRITICAL: Must disable -e around command substitution because cd failure
-  # in subshell with -e enabled causes parent shell to exit
-  set +e
-  dest_resolved=$(command cd "$destination" 2>/dev/null && pwd -P 2>/dev/null | sed 's|//|/|g')
-  set -e
+  # Use same pattern as jump-to-marker
+  dest_resolved=$(command cd "$destination" 2>/dev/null && pwd -P | sed 's|//|/|g')
   if [ -z "$dest_resolved" ]; then
-    printf '[blink DEBUG] Cannot access destination (cd failed), trying another\n'
     continue
   fi
   
-  printf '[blink DEBUG] dest_resolved=%s\n' "$dest_resolved"
-  printf '[blink DEBUG] current_resolved=%s\n' "$current_resolved"
-  
   # Check if already at this location
   if [ "$current_resolved" = "$dest_resolved" ]; then
-    printf '[blink DEBUG] Already at this location, trying another\n'
     continue
   fi
   
   # Success! We found an accessible directory that's different from current
   # Now do the ACTUAL cd (not in a subshell)
-  printf '[blink DEBUG] About to perform actual cd to destination\n'
   if ! command cd "$destination"; then
-    printf '[blink DEBUG] ERROR: cd failed on actual attempt (should not happen)\n'
     continue
   fi
-  
-  printf '[blink DEBUG] Successfully changed to destination\n'
   break
 done
 
 # Check if we failed all attempts
 if [ "$attempt" -ge "$max_attempts" ]; then
   printf '%s\n' "blink: could not find an accessible destination after $max_attempts attempts" >&2
-  printf '[blink DEBUG] ERROR: Failed all attempts\n' >&2
   set +eu; return 1 2>/dev/null || exit 1
 fi
 
 # Pick a random blink message
-printf '[blink DEBUG] Selecting random message\n'
 blink_message=$(cat <<'BLINK_MESSAGES'
 Reality stutters, and you blink into existence elsewhere.
 Space folds like origami—you arrive in a new location.
@@ -293,12 +232,13 @@ BLINK_MESSAGES
 message_count=$(printf '%s\n' "$blink_message" | wc -l | tr -d ' ')
 if [ "$message_count" -gt 0 ]; then
   msg_time_seed=$(date +%N 2>/dev/null || date +%s)
+  # Strip leading zeros from time seed to avoid octal interpretation
+  msg_time_seed=$(printf '%s' "$msg_time_seed" | sed 's/^0*//')
+  msg_time_seed=${msg_time_seed:-0}
   random_msg_line=$(( (($$ * 11 + msg_time_seed) % message_count) + 1 ))
   selected_message=$(printf '%s\n' "$blink_message" | sed -n "${random_msg_line}p")
-  printf '[blink DEBUG] Selected message: %s\n' "$selected_message"
 else
   selected_message=""
-  printf '[blink DEBUG] No messages available\n'
 fi
 
 if [ -n "$selected_message" ]; then
@@ -306,16 +246,12 @@ if [ -n "$selected_message" ]; then
 fi
 
 # Show current location
-printf '[blink DEBUG] Showing current location\n'
 printf 'You have blinked to: %s\n' "$(pwd -P)"
 
 # Describe current location if look command exists
 if command -v look >/dev/null 2>&1; then
-  printf '[blink DEBUG] Running look command\n'
   look 2>/dev/null || true
 fi
 
 # Restore shell options before returning
-printf '[blink DEBUG] Restoring shell options and returning\n'
 set +eu
-printf '[blink DEBUG] Blink completed successfully\n'
