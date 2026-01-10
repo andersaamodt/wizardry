@@ -85,27 +85,26 @@ kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$tmp/menu"
   
-  # Create read-magic stub that returns priorities and checked status
+  # Create read-magic stub that returns echelon, priority, and checked status
   cat >"$tmp/read-magic" <<'SH'
 #!/bin/sh
 file=$1
 attr=${2-}
 case "$file" in
-  */test-dir)
-    if [ "$attr" = "priorities" ]; then
-      echo "abc123,def456"
-    fi
-    ;;
   */testfile1)
-    if [ "$attr" = "priority" ]; then
+    if [ "$attr" = "echelon" ]; then
       echo "5"
+    elif [ "$attr" = "priority" ]; then
+      echo "1"
     elif [ "$attr" = "checked" ]; then
       echo "1"
     fi
     ;;
   */testfile2)
-    if [ "$attr" = "priority" ]; then
+    if [ "$attr" = "echelon" ]; then
       echo "3"
+    elif [ "$attr" = "priority" ]; then
+      echo "2"
     elif [ "$attr" = "checked" ]; then
       echo "0"
     fi
@@ -113,17 +112,6 @@ case "$file" in
 esac
 SH
   chmod +x "$tmp/read-magic"
-  
-  # Create get-card stub
-  cat >"$tmp/get-card" <<'SH'
-#!/bin/sh
-hash=$1
-case "$hash" in
-  abc123) echo "$TEST_DIR/testfile1" ;;
-  def456) echo "$TEST_DIR/testfile2" ;;
-esac
-SH
-  chmod +x "$tmp/get-card"
   
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -172,20 +160,17 @@ kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$tmp/menu"
   
-  # Create read-magic stub that returns priorities
+  # Create read-magic stub that returns echelon and priority
   cat >"$tmp/read-magic" <<'SH'
 #!/bin/sh
 file=$1
 attr=${2-}
 case "$file" in
-  */test-dir)
-    if [ "$attr" = "priorities" ]; then
-      echo "abc123"
-    fi
-    ;;
   */testfile1)
-    if [ "$attr" = "priority" ]; then
+    if [ "$attr" = "echelon" ]; then
       echo "5"
+    elif [ "$attr" = "priority" ]; then
+      echo "1"
     elif [ "$attr" = "checked" ]; then
       echo "0"
     fi
@@ -193,16 +178,6 @@ case "$file" in
 esac
 SH
   chmod +x "$tmp/read-magic"
-  
-  # Create get-card stub
-  cat >"$tmp/get-card" <<'SH'
-#!/bin/sh
-hash=$1
-case "$hash" in
-  abc123) echo "$TEST_DIR/testfile1" ;;
-esac
-SH
-  chmod +x "$tmp/get-card"
   
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -275,45 +250,27 @@ exit 0
 SH
   chmod +x "$tmp/menu"
   
-  # Create read-magic stub that returns growing priorities list
+  # Create read-magic stub that returns echelon/priority for files
   cat >"$tmp/read-magic" <<'SH'
 #!/bin/sh
 file=$1
 attr=${2-}
 case "$file" in
-  */test-dir|.)
-    if [ "$attr" = "priorities" ]; then
-      # Return more hashes if new file exists
-      if [ -f "$TEST_DIR/newpriority.txt" ]; then
-        echo "hash1,hash2"
-      else
-        echo "hash1"
-      fi
-    fi
-    ;;
   */priority1.txt)
-    if [ "$attr" = "priority" ]; then echo "5"
+    if [ "$attr" = "echelon" ]; then echo "5"
+    elif [ "$attr" = "priority" ]; then echo "1"
     elif [ "$attr" = "checked" ]; then echo "0"
     fi
     ;;
   */newpriority.txt)
-    if [ "$attr" = "priority" ]; then echo "5"
+    if [ "$attr" = "echelon" ]; then echo "5"
+    elif [ "$attr" = "priority" ]; then echo "2"
     elif [ "$attr" = "checked" ]; then echo "0"
     fi
     ;;
 esac
 SH
   chmod +x "$tmp/read-magic"
-  
-  # Create get-card stub
-  cat >"$tmp/get-card" <<'SH'
-#!/bin/sh
-case "$1" in
-  hash1) echo "$TEST_DIR/priority1.txt" ;;
-  hash2) echo "$TEST_DIR/newpriority.txt" ;;
-esac
-SH
-  chmod +x "$tmp/get-card"
   
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh

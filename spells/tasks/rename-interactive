@@ -55,7 +55,8 @@ fi
 
 # Perform the rename
 if mv "$file" "$new_path"; then
-  printf '%s\n' "Renamed '${current_name}' to '${new_name}'"
+  # Output the new path to stdout (for piping to other commands)
+  printf '%s\n' "$new_path"
   exit 0
 else
   printf '%s\n' "rename-interactive: failed to rename file" >&2
