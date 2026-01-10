@@ -7,7 +7,7 @@ set -eu
 
 # The helper expects exactly one argument that declares the desired state.
 if [ "$#" -ne 1 ]; then
-  printf '%s\n' "cursor-blink: expected 'on' or 'off'" >&2
+  printf '%s\n' "cursor-blink: expected on or off" >&2
   exit 2
 fi
 
@@ -31,7 +31,7 @@ case "$1" in
     ;;
   *)
     # Treat anything else as misuse so callers notice mistakes quickly.
-    usage-error "cursor-blink" "expected on or off" || exit 2
-    exit 2  # Explicit exit in case usage-error doesn't exit
+    printf '%s\n' "cursor-blink: expected on or off" >&2
+    exit 2
     ;;
 esac
