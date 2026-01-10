@@ -893,6 +893,8 @@ psi/read-contact
 divination/identify-room
 .wizardry/test-magic
 .wizardry/generate-glosses
+menu/mud-menu
+wards/banish
 "
   
   check_function_discipline() {
