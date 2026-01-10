@@ -111,6 +111,28 @@ export SPELLBOOK_DIR
 
 [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Adding wizardry directories to PATH..." >&2
 
+# Add SPELLBOOK_DIR to PATH first (highest priority for user commands)
+if [ -d "$SPELLBOOK_DIR" ]; then
+  PATH="$SPELLBOOK_DIR:$PATH"
+  
+  # Also add SPELLBOOK_DIR subdirectories (custom categories) recursively
+  for subdir in "$SPELLBOOK_DIR"/*; do
+    [ -d "$subdir" ] || continue
+    # Skip hidden directories (check basename, not full path)
+    _subdir_name=${subdir##*/}
+    case "$_subdir_name" in
+      .*) continue ;;
+    esac
+    PATH="$subdir:$PATH"
+    
+    # Also add subdirectories of subdirectories (match wizardry structure)
+    for subsubdir in "$subdir"/*; do
+      [ -d "$subsubdir" ] || continue
+      PATH="$subsubdir:$PATH"
+    done
+  done
+fi
+
 # Add all spell directories to PATH (including subdirectories)
 for category_dir in "$WIZARDRY_DIR/spells"/* "$WIZARDRY_DIR/spells"/.*; do
   [ -d "$category_dir" ] || continue

@@ -306,11 +306,23 @@ uname|uniq|wc|xargs)
   
   # Cross-platform find command with fallbacks for different find implementations
   # Try GNU find first (-perm /111), then BSD find (-perm +111), then manual check
-  find "$wizardry_dir/spells" -type f -perm /111 2>/dev/null > "$_tmpfile" || \
-    find "$wizardry_dir/spells" -type f -perm +111 2>/dev/null > "$_tmpfile" || \
-    find "$wizardry_dir/spells" -type f 2>/dev/null | while IFS= read -r f; do
-      [ -x "$f" ] && printf '%s\n' "$f"
-    done > "$_tmpfile"
+  # Scan both wizardry spells directory and user's spellbook directory
+  {
+    find "$wizardry_dir/spells" -type f -perm /111 2>/dev/null || \
+      find "$wizardry_dir/spells" -type f -perm +111 2>/dev/null || \
+      find "$wizardry_dir/spells" -type f 2>/dev/null | while IFS= read -r f; do
+        [ -x "$f" ] && printf '%s\n' "$f"
+      done
+    
+    # Also scan user's spellbook directory if it exists
+    if [ -d "$spell_home" ]; then
+      find "$spell_home" -type f -perm /111 2>/dev/null || \
+        find "$spell_home" -type f -perm +111 2>/dev/null || \
+        find "$spell_home" -type f 2>/dev/null | while IFS= read -r f; do
+          [ -x "$f" ] && printf '%s\n' "$f"
+        done
+    fi
+  } > "$_tmpfile"
   
   _spell_names=""
   _spell_count=0
