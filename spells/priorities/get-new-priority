@@ -37,7 +37,7 @@ if [ "$dir" = "." ]; then
   dir=$(pwd -P)
 fi
 
-# Find the highest echelon and the highest priority within that echelon
+# Find the highest echelon and the highest priority within that echelon in a single loop
 highest_echelon=0
 highest_priority_in_echelon=0
 
@@ -46,8 +46,18 @@ for f in "$dir"/*; do
   # Skip if not a file
   [ -f "$f" ] || continue
 
-  # Get the file's echelon
-  file_echelon=$(read-magic "$f" echelon 2>/dev/null || true)
+  # Read both echelon and priority in one batch call
+  attrs=$(xattr-read-batch "$f" echelon priority 2>/dev/null || true)
+  
+  file_echelon=""
+  file_priority=""
+  
+  for pair in $attrs; do
+    case "$pair" in
+      echelon=*) file_echelon="${pair#echelon=}" ;;
+      priority=*) file_priority="${pair#priority=}" ;;
+    esac
+  done
 
   # Skip if no echelon or error
   case "$file_echelon" in
@@ -63,8 +73,6 @@ for f in "$dir"/*; do
 
   # If this file is in the highest echelon, check its priority
   if [ "$file_echelon" -eq "$highest_echelon" ]; then
-    file_priority=$(read-magic "$f" priority 2>/dev/null || true)
-    
     # Skip if no priority or error
     case "$file_priority" in
       ''|*Error*|*[!0-9]*) continue ;;
