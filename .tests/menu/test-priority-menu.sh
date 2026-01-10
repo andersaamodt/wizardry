@@ -368,7 +368,7 @@ SH
   return 0
 }
 
-test_priority_menu_hides_prioritize_for_very_first() {
+test_priority_menu_shows_prioritize_for_very_first() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   make_stub_menu "$tmp"
@@ -431,13 +431,13 @@ SH
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testfile"
   assert_success || return 1
   
-  # Verify "Prioritize" does NOT appear for very first priority
-  grep -q "Prioritize%" "$tmp/log" && {
-    TEST_FAILURE_REASON="Prioritize should not appear for very first priority item: $(cat "$tmp/log")"
+  # Verify "Prioritize" DOES appear for very first priority (change from old behavior)
+  grep -q "Prioritize%" "$tmp/log" || {
+    TEST_FAILURE_REASON="Prioritize should now appear for very first priority item: $(cat "$tmp/log")"
     return 1
   }
   
-  # Verify "Check" is still present (should be the first item)
+  # Verify "Check" is still present
   grep -q "Check%" "$tmp/log" || {
     TEST_FAILURE_REASON="Check should still be present: $(cat "$tmp/log")"
     return 1
@@ -517,7 +517,7 @@ SH
 run_test_case "priority-menu shows subpriorities for dirs with priorities" test_priority_menu_shows_browse_subpriorities
 run_test_case "priority-menu hides subpriorities for regular files" test_priority_menu_hides_browse_for_file
 run_test_case "priority-menu shows add subpriority for dirs without priorities" test_priority_menu_hides_browse_for_empty_dir
-run_test_case "priority-menu hides prioritize for very first priority" test_priority_menu_hides_prioritize_for_very_first
+run_test_case "priority-menu shows prioritize for very first priority" test_priority_menu_shows_prioritize_for_very_first
 run_test_case "priority-menu shows prioritize for non-first in highest echelon" test_priority_menu_shows_prioritize_for_non_first_in_highest
 
 test_priority_menu_shows_make_project_for_files() {
