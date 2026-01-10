@@ -132,10 +132,11 @@ trap cleanup_temp EXIT HUP INT TERM
 
 # Find all readable directories, no exclusions (that's part of the fun!)
 # Note: find returns non-zero on permission errors, but still outputs accessible dirs
+# Use -xdev to stay on the current filesystem (excludes network volumes and mounted drives)
 printf '[blink DEBUG] Running find command...\n'
 # Temporarily disable set -e because find returns non-zero on permission errors
 set +e
-find "$base_dir" -maxdepth "$max_depth" -type d -readable 2>/dev/null > "$temp_list"
+find "$base_dir" -xdev -maxdepth "$max_depth" -type d -readable 2>/dev/null > "$temp_list"
 find_exit_code=$?
 set -e
 printf '[blink DEBUG] find completed with exit code %s\n' "$find_exit_code"
@@ -148,7 +149,7 @@ printf '[blink DEBUG] Found %s directories\n' "$dir_count"
 if [ "$dir_count" -eq 0 ]; then
   printf '[blink DEBUG] No results with -readable flag, trying without it (macOS compatibility)\n'
   set +e
-  find "$base_dir" -maxdepth "$max_depth" -type d 2>/dev/null > "$temp_list"
+  find "$base_dir" -xdev -maxdepth "$max_depth" -type d 2>/dev/null > "$temp_list"
   find_exit_code=$?
   set -e
   printf '[blink DEBUG] find without -readable completed with exit code %s\n' "$find_exit_code"
@@ -163,7 +164,7 @@ if [ "$dir_count" -eq 0 ]; then
   fi
   printf '[blink DEBUG] No directories found, trying simpler search at depth 1\n'
   set +e
-  find "$base_dir" -maxdepth 1 -type d 2>/dev/null > "$temp_list"
+  find "$base_dir" -xdev -maxdepth 1 -type d 2>/dev/null > "$temp_list"
   find_exit_code=$?
   set -e
   printf '[blink DEBUG] Fallback find completed with exit code %s\n' "$find_exit_code"
@@ -201,7 +202,8 @@ fi
 printf '[blink DEBUG] Checking if already at destination\n'
 current_dir=$(pwd -P 2>/dev/null || pwd)
 printf '[blink DEBUG] current_dir=%s\n' "$current_dir"
-dest_resolved=$(cd "$destination" && pwd -P 2>/dev/null || printf '%s' "$destination")
+# Use command cd to avoid cd gloss/spell interference (works in all POSIX shells)
+dest_resolved=$(command cd "$destination" && pwd -P 2>/dev/null || printf '%s' "$destination")
 printf '[blink DEBUG] dest_resolved=%s\n' "$dest_resolved"
 current_resolved=$(printf '%s' "$current_dir" | sed 's|//|/|g')
 dest_resolved=$(printf '%s' "$dest_resolved" | sed 's|//|/|g')
@@ -214,7 +216,8 @@ fi
 
 # Try to cd to the destination
 printf '[blink DEBUG] Attempting to cd to destination\n'
-if ! cd "$destination" 2>/dev/null; then
+# Use command cd to avoid cd gloss/spell interference (works in all POSIX shells)
+if ! command cd "$destination" 2>/dev/null; then
   printf '%s\n' "blink: cannot access destination: $destination" >&2
   printf '[blink DEBUG] ERROR: Cannot cd to destination\n' >&2
   set +eu; return 1 2>/dev/null || exit 1

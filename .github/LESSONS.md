@@ -85,3 +85,5 @@
 - Users must reload their shell or re-source invoke-wizardry after new spells are added to regenerate glosses and make new commands available.
 - Never make core wizardry features (like env-clear) optional; spells should require wizardry to be properly loaded, following patterns from jump-to-marker and jump-trash.
 - The `find -readable` flag may not work on macOS; use it first, but fall back to plain `-type d` if it returns zero results (cross-platform compatibility).
+- Use `command cd` instead of plain `cd` in spells to avoid interference from cd glosses/hooks (e.g., MUD cd spell); `builtin cd` is bash/zsh-specific and not POSIX.
+- Use `find -xdev` to stay on the current filesystem and exclude network volumes, mounted drives, and other filesystems (prevents security prompts and unexpected behavior on macOS).
