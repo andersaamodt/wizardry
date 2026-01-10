@@ -37,6 +37,8 @@
 - In sourced-only spells (with uncastable pattern), use plain `return` for error exits AFTER the uncastable guard, not `return 1 2>/dev/null || exit 1`; the `exit` part closes the user's terminal when the spell is sourced.
 - Use shell parameter expansion ${file##*/} instead of basename for 100x speedup when processing many files (e.g., generate-glosses with 396 files).
 - Variable `$_i` (imps directory shorthand) is not preserved by env-clear; use `${WIZARDRY_DIR}/spells/.imps` instead when referencing imp paths after sourcing env-clear.
+- When converting synonym targets from hyphenated to space-separated form (e.g., jump-to-marker → jump to marker), preserve directory prefixes unchanged (translocation/jump-to-marker → translocation/jump to marker, not translocation/jump to marker with / converted to space).
+- First-word glosses must invoke aliases via eval (not parse or direct command invocation) because: (1) parse skips aliases to avoid recursion, (2) direct invocation "$_fw_spell" tries to find executable not expand alias, (3) eval expands alias correctly without passing $@ since multi-word was already consumed during reconstruction.
 
 
 - When a file is sourced (`. filename`), using `exit` exits the parent shell; use `return` instead (discovered via doppelganger failing to create directories) (3)
@@ -48,6 +50,9 @@
 - .imps/sys directory must be in PATH so system imps like require-wizardry are directly callable as commands (PR #594).
 - Circular dependency during sourcing: imps must be available before spells call them; add all imp families to PATH before sourcing (PR #595).
 - Scripts must verify prerequisites exist before calling them to avoid "command not found" errors during bootstrap (PR #596).
+- Function return convention confusion (0=success, non-zero=failure) inverted in conditionals (is_first_word_blacklisted returning 0 for allowed led to `if` succeeding when shouldn't) requires careful attention and clarifying comments.
+- When first-word glosses reconstruct multi-word synonyms (leap to location → leap-to-location), must pass the RECONSTRUCTED name to parse, not the original first word.
+- Always use test-driven development to verify fixes before claiming they work; manual testing misses edge cases and creates false confidence.
 - Consolidated AI documentation improves consistency by guaranteeing all critical information is read from a single entry point (PR #598).
 - Sourcing a file with `set -eu` permanently affects the parent shell's mode; restore permissive mode with `set +eu` after sourcing (PR #599).
 - macOS Terminal.app opens login shells by default, requiring .bash_profile to source .bashrc for shell configuration availability (PR #600).
