@@ -80,3 +80,7 @@
 - Always create realistic unit tests for every feature BEFORE writing or fixing code; tests are the fastest path to working code and catch edge cases immediately (TDD principle).
 - Hyphenated spell names with uncastable pattern must have aliases generated (not just hyphenated synonyms) to prevent terminal crashes when typed directly by users.
 - In sourced-only spells with `set -eu`, always do `set +eu` before every `return` statement to prevent shell options from leaking into the parent shell, which can cause unexpected behavior or terminal exits.
+- The `find` command returns non-zero exit code when encountering permission denied errors, even when successfully outputting accessible directories; check output content, not exit code.
+- Uncastable spells require the marker comment "# Uncastable pattern" for generate-glosses to detect them and create wrapper functions for single-word spells.
+- Users must reload their shell or re-source invoke-wizardry after new spells are added to regenerate glosses and make new commands available.
+- Never make core wizardry features (like env-clear) optional; spells should require wizardry to be properly loaded, following patterns from jump-to-marker and jump-trash.
