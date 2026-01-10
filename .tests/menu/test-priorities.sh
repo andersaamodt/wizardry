@@ -363,6 +363,139 @@ SH
 
 run_test_case "priorities remembers Add priority selection" test_priorities_remembers_add_priority_selection
 
+test_priorities_shows_only_one_separator() {
+  skip-if-compiled || return $?
+  tmp=$(make_tempdir)
+  
+  # Create stub for menu that just captures arguments
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >>"$MENU_LOG"
+kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
+SH
+  chmod +x "$tmp/menu"
+  
+  # Create xattr-read-batch stub that returns multiple echelons
+  cat >"$tmp/xattr-read-batch" <<'SH'
+#!/bin/sh
+file=$1
+shift
+case "$file" in
+  */echelon5_item1)
+    printf '%s\n' "echelon=5 priority=1 checked=0"
+    ;;
+  */echelon5_item2)
+    printf '%s\n' "echelon=5 priority=2 checked=0"
+    ;;
+  */echelon3_item1)
+    printf '%s\n' "echelon=3 priority=1 checked=0"
+    ;;
+  */echelon3_item2)
+    printf '%s\n' "echelon=3 priority=2 checked=0"
+    ;;
+  */echelon1_item1)
+    printf '%s\n' "echelon=1 priority=1 checked=0"
+    ;;
+esac
+SH
+  chmod +x "$tmp/xattr-read-batch"
+  
+  # Create read-magic stub for backward compatibility
+  cat >"$tmp/read-magic" <<'SH'
+#!/bin/sh
+file=$1
+attr=${2-}
+case "$file" in
+  */echelon5_item1)
+    if [ "$attr" = "echelon" ]; then echo "5"
+    elif [ "$attr" = "priority" ]; then echo "1"
+    elif [ "$attr" = "checked" ]; then echo "0"
+    fi
+    ;;
+  */echelon5_item2)
+    if [ "$attr" = "echelon" ]; then echo "5"
+    elif [ "$attr" = "priority" ]; then echo "2"
+    elif [ "$attr" = "checked" ]; then echo "0"
+    fi
+    ;;
+  */echelon3_item1)
+    if [ "$attr" = "echelon" ]; then echo "3"
+    elif [ "$attr" = "priority" ]; then echo "1"
+    elif [ "$attr" = "checked" ]; then echo "0"
+    fi
+    ;;
+  */echelon3_item2)
+    if [ "$attr" = "echelon" ]; then echo "3"
+    elif [ "$attr" = "priority" ]; then echo "2"
+    elif [ "$attr" = "checked" ]; then echo "0"
+    fi
+    ;;
+  */echelon1_item1)
+    if [ "$attr" = "echelon" ]; then echo "1"
+    elif [ "$attr" = "priority" ]; then echo "1"
+    elif [ "$attr" = "checked" ]; then echo "0"
+    fi
+    ;;
+esac
+SH
+  chmod +x "$tmp/read-magic"
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  # Create test directory and files with multiple echelons
+  mkdir -p "$tmp/test-dir"
+  touch "$tmp/test-dir/echelon5_item1"
+  touch "$tmp/test-dir/echelon5_item2"
+  touch "$tmp/test-dir/echelon3_item1"
+  touch "$tmp/test-dir/echelon3_item2"
+  touch "$tmp/test-dir/echelon1_item1"
+  
+  cd "$tmp/test-dir"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" TEST_DIR="$tmp/test-dir" PWD="$tmp/test-dir" "$ROOT_DIR/spells/menu/priorities"
+  
+  # Count the number of "---" separators in the menu (excluding the one before Exit)
+  # The menu should have: echelon5_item1, echelon5_item2, ---, echelon3_item1, echelon3_item2, echelon1_item1, ---, Add priority, Exit
+  # So only ONE separator between echelons, and ONE before Add priority
+  separator_count=$(grep -c '^---$' "$tmp/log" || echo 0)
+  
+  # Should have exactly 2 separators: 1 after first echelon, 1 before "Add priority"
+  if [ "$separator_count" -ne 2 ]; then
+    TEST_FAILURE_REASON="Expected exactly 2 separators (1 after first echelon, 1 before Add priority), got $separator_count. Menu: $(cat "$tmp/log")"
+    return 1
+  fi
+  
+  # Verify the menu order is correct: items from echelon 5, then separator, then items from other echelons
+  menu_output=$(cat "$tmp/log")
+  
+  # Check that echelon 5 items come before the first separator
+  echo "$menu_output" | grep -q "echelon5_item1" || {
+    TEST_FAILURE_REASON="Expected echelon5_item1 in menu: $menu_output"
+    return 1
+  }
+  
+  echo "$menu_output" | grep -q "echelon5_item2" || {
+    TEST_FAILURE_REASON="Expected echelon5_item2 in menu: $menu_output"
+    return 1
+  }
+  
+  # Check that echelon 3 and 1 items appear without separators between them
+  echo "$menu_output" | grep -q "echelon3_item1" || {
+    TEST_FAILURE_REASON="Expected echelon3_item1 in menu: $menu_output"
+    return 1
+  }
+  
+  echo "$menu_output" | grep -q "echelon1_item1" || {
+    TEST_FAILURE_REASON="Expected echelon1_item1 in menu: $menu_output"
+    return 1
+  }
+}
+
+run_test_case "priorities shows only one separator between echelons" test_priorities_shows_only_one_separator
+
 
 # Test via source-then-invoke pattern  
 

@@ -101,6 +101,7 @@ $file_echelon $file_priority $checked_value $f"
 
   # Initialize variables
   prev_echelon=""
+  first_separator_shown=0
   menu_command="menu --start-selection $start_selection Priorities:"
   
   # Count items for tracking (includes all menu items for position calculation)
@@ -108,10 +109,11 @@ $file_echelon $file_priority $checked_value $f"
 
   # Process sorted list
   while IFS=' ' read -r file_echelon file_priority checked_value priority_file; do
-    # Add separator when echelon changes
-    if [ -n "$prev_echelon" ] && [ "$file_echelon" != "$prev_echelon" ]; then
+    # Add separator only after the first echelon (when echelon changes for the first time)
+    if [ -n "$prev_echelon" ] && [ "$file_echelon" != "$prev_echelon" ] && [ "$first_separator_shown" -eq 0 ]; then
       menu_command="${menu_command} \"---\""
       total_menu_items=$((total_menu_items + 1))
+      first_separator_shown=1
     fi
     prev_echelon=$file_echelon
 
