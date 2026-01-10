@@ -50,10 +50,10 @@ display_priorities() {
 
   # Initialize variables
   highest_priority=""
+  menu_command="menu --start-selection $start_selection Priorities:"
   
-  # Use remembered selection or default to 1
-  start_sel="${MENU_LAST_SELECTION:-1}"
-  menu_command="menu --start-selection $start_sel Priorities:"
+  # Count items for tracking
+  item_count=0
 
   # Loop through the priorities
   dir_priorities=$(printf '%s' "${dir_priorities}" | tr ',' '\n')
@@ -108,8 +108,14 @@ display_priorities() {
 
       # Update the highest priority (for detecting echelon boundaries)
       highest_priority="${file_priority}"
+      
+      # Increment item count
+      item_count=$((item_count + 1))
     fi
   done
+  
+  # Store item count for next iteration comparison
+  current_item_count=$item_count
 
   # Add separator before Add priority and Exit
   menu_command="${menu_command} \"---\""
@@ -128,9 +134,20 @@ display_priorities() {
 }
 
 first_run=1
+start_selection=1
+previous_item_count=0
 
 while true; do
   if [ "$first_run" -eq 0 ]; then
+    # Check if item count changed (new priority added)
+    # If so, keep "Add priority" selected (which is at position: item_count + separator + add_priority = current_item_count + 2)
+    if [ "$current_item_count" -gt "$previous_item_count" ]; then
+      # New item was added, keep "Add priority" selected
+      # Position is: items + 1 separator + "Add priority"
+      start_selection=$((current_item_count + 2))
+    fi
+    previous_item_count=$current_item_count
+    
     display_priorities || menu_status=$?
     menu_status=${menu_status:-0}
     # ESC kills this menu script via TERM signal (same as Exit button)
@@ -146,6 +163,7 @@ while true; do
     if ! display_priorities; then
       exit 1
     fi
+    previous_item_count=$current_item_count
     menu_status=$?
     # ESC kills this menu script via TERM signal (same as Exit button)
     # Direct kill: kill -TERM $$ → kills this script

@@ -67,9 +67,6 @@ priority_menu_display_menu() {
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
   exit_label=$(exit-label)
   exit_item="${exit_label}%kill -TERM \$PPID"
-  
-  # Use remembered selection or default to 1
-  start_sel="${MENU_LAST_SELECTION:-1}"
 
   # Check if this file is the highest priority (first in the list)
   # Get parent directory
@@ -109,6 +106,7 @@ priority_menu_display_menu() {
 
   # Check if file is a directory and has subpriorities
   browse_item=""
+  current_has_subpriorities=0
   if [ -d "$file" ]; then
     # Check if directory has items with priority >= 1
     has_subpriorities=0
@@ -132,6 +130,9 @@ priority_menu_display_menu() {
       # No subpriorities - offer to add one
       browse_item="Add subpriority%(cd \"$file\" && prioritize --interactive)"
     fi
+    
+    # Store state for comparison
+    current_has_subpriorities=$has_subpriorities
   fi
 
   # Check if file is a regular file (not a directory) for "Make project" option
@@ -217,13 +218,23 @@ priority_menu_display_menu() {
       fi
     fi
   fi
-  menu --start-selection "$start_sel" "${THEME_HEADING}${header_checkbox}${filename}${RESET}:" "$@"
+  menu --start-selection "$start_selection" "${THEME_HEADING}${header_checkbox}${filename}${RESET}:" "$@"
 }
 
 first_run=1
+start_selection=1
+previous_has_subpriorities=0
+current_has_subpriorities=0
 
 while true; do
   if [ "$first_run" -eq 0 ]; then
+    # Check if subpriorities state changed (new subpriority added)
+    # If changed from 0 to 1, keep "Add subpriority" position selected (which is now "Subpriorities...")
+    if [ "$previous_has_subpriorities" -eq 0 ] && [ "$current_has_subpriorities" -eq 1 ]; then
+      # New subpriority was added, keep first menu item selected (browse_item position)
+      start_selection=1
+    fi
+    previous_has_subpriorities=$current_has_subpriorities
     :
   else
     first_run=0
@@ -231,6 +242,8 @@ while true; do
 
   priority_menu_display_menu || menu_status=$?
   menu_status=${menu_status:-0}
+  
+  previous_has_subpriorities=$current_has_subpriorities
   
   # ESC kills this menu script via TERM signal (same as Exit button)
   # Direct kill: kill -TERM $$ → kills this script

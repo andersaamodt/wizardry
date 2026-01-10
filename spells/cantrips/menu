@@ -771,8 +771,6 @@ do
                 trap - EXIT INT TERM
                 if [ -n "$to_run" ]; then
                         printf '\n'
-                        # Export the selected index for parent menus to restore selection
-                        export MENU_LAST_SELECTION="$selected"
                         # shellcheck disable=SC2039,SC3045 # POSIX sh allows eval
                         eval "$to_run"
                 fi
