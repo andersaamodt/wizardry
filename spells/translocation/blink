@@ -194,9 +194,13 @@ while [ "$attempt" -lt "$max_attempts" ]; do
   printf '[blink DEBUG] Attempt %s of %s\n' "$attempt" "$max_attempts"
   
   # Use shell arithmetic for randomness
-  # Combine PID, attempt number, and microseconds from date for maximum entropy
-  # On systems without date +%N, fall back to seconds only
-  time_seed=$(date +%N 2>/dev/null || date +%s)
+  # Combine PID, attempt number, and time-based seed for maximum entropy
+  # Try nanoseconds first, fall back to seconds if not supported
+  time_seed=$(date +%N 2>/dev/null || echo "0")
+  # Validate time_seed is a number (on some systems, date +%N returns "N")
+  case "$time_seed" in
+    *[!0-9]*) time_seed=$(date +%s) ;;
+  esac
   random_line=$(( (($$ * 7 + attempt * 13 + time_seed) % dir_count) + 1 ))
   destination=$(sed -n "${random_line}p" "$temp_list")
   printf '[blink DEBUG] Selected destination: %s\n' "$destination"
@@ -211,37 +215,35 @@ while [ "$attempt" -lt "$max_attempts" ]; do
     continue
   fi
   
-  # Check if we can actually cd to this directory
+  # Resolve destination path (in subshell to avoid changing directory during test)
   # Use command cd to avoid cd gloss/spell interference (works in all POSIX shells)
   printf '[blink DEBUG] About to test cd to: %s\n' "$destination"
-  printf '[blink DEBUG] Current directory before cd: %s\n' "$(pwd)"
-  if command cd "$destination" 2>/dev/null; then
-    printf '[blink DEBUG] cd command succeeded\n'
-    printf '[blink DEBUG] Current directory after cd: %s\n' "$(pwd)"
-    
-    # Get the resolved path
-    dest_resolved=$(pwd -P 2>/dev/null || pwd)
-    dest_resolved=$(printf '%s' "$dest_resolved" | sed 's|//|/|g')
-    printf '[blink DEBUG] dest_resolved=%s\n' "$dest_resolved"
-    printf '[blink DEBUG] current_resolved=%s\n' "$current_resolved"
-    
-    # Check if already at this location
-    if [ "$current_resolved" = "$dest_resolved" ]; then
-      printf '[blink DEBUG] Already at this location, trying another\n'
-      # Return to original directory before trying again
-      command cd "$current_dir" 2>/dev/null || true
-      continue
-    fi
-    
-    # Success! We found an accessible directory that's different from current
-    # We're already there from the cd above, so just break
-    printf '[blink DEBUG] Successfully changed to destination\n'
-    break
-  else
-    printf '[blink DEBUG] cd command failed\n'
-    printf '[blink DEBUG] Cannot access destination, trying another\n'
+  printf '[blink DEBUG] Current directory before test: %s\n' "$(pwd)"
+  dest_resolved=$(command cd "$destination" 2>/dev/null && pwd -P | sed 's|//|/|g')
+  if [ -z "$dest_resolved" ]; then
+    printf '[blink DEBUG] Cannot access destination (cd failed), trying another\n'
     continue
   fi
+  
+  printf '[blink DEBUG] dest_resolved=%s\n' "$dest_resolved"
+  printf '[blink DEBUG] current_resolved=%s\n' "$current_resolved"
+  
+  # Check if already at this location
+  if [ "$current_resolved" = "$dest_resolved" ]; then
+    printf '[blink DEBUG] Already at this location, trying another\n'
+    continue
+  fi
+  
+  # Success! We found an accessible directory that's different from current
+  # Now do the ACTUAL cd (not in a subshell)
+  printf '[blink DEBUG] About to perform actual cd to destination\n'
+  if ! command cd "$destination"; then
+    printf '[blink DEBUG] ERROR: cd failed on actual attempt (should not happen)\n'
+    continue
+  fi
+  
+  printf '[blink DEBUG] Successfully changed to destination\n'
+  break
 done
 
 # Check if we failed all attempts
