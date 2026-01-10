@@ -4,7 +4,8 @@
 # - file-to-folder converts file with extension to folder
 # - file-to-folder converts file without extension to folder
 # - file-to-folder preserves file contents
-# - file-to-folder handles empty files
+# - file-to-folder handles empty files (no project notes created)
+# - file-to-folder handles whitespace-only files (no project notes created)
 # - file-to-folder rejects directories
 # - file-to-folder rejects missing files
 # - file-to-folder preserves extended attributes (xattrs)
@@ -74,11 +75,23 @@ file_to_folder_handles_empty_files() {
   # Check folder was created
   [ -d "$testfile" ] || { TEST_FAILURE_REASON="folder not created"; return 1; }
   
-  # Check project notes file exists
-  [ -f "$testfile/project notes.txt" ] || { TEST_FAILURE_REASON="project notes file not created"; return 1; }
+  # Check project notes file does NOT exist (file was empty)
+  [ ! -f "$testfile/project notes.txt" ] || { TEST_FAILURE_REASON="project notes file should not be created for empty file"; return 1; }
+}
+
+file_to_folder_handles_whitespace_only_files() {
+  tmpdir=$(make_tempdir)
+  testfile="$tmpdir/whitespace.txt"
+  printf '   \n\t\n  \n' > "$testfile"
   
-  # Check file is empty
-  [ ! -s "$testfile/project notes.txt" ] || { TEST_FAILURE_REASON="file should be empty"; return 1; }
+  run_spell "spells/arcane/file-to-folder" "$testfile"
+  assert_success || return 1
+  
+  # Check folder was created
+  [ -d "$testfile" ] || { TEST_FAILURE_REASON="folder not created"; return 1; }
+  
+  # Check project notes file does NOT exist (file had only whitespace)
+  [ ! -f "$testfile/project notes.txt" ] || { TEST_FAILURE_REASON="project notes file should not be created for whitespace-only file"; return 1; }
 }
 
 file_to_folder_rejects_directories() {
@@ -135,6 +148,7 @@ run_test_case "file-to-folder shows usage" file_to_folder_shows_usage
 run_test_case "file-to-folder converts file with extension" file_to_folder_converts_file_with_extension
 run_test_case "file-to-folder converts file without extension" file_to_folder_converts_file_without_extension
 run_test_case "file-to-folder handles empty files" file_to_folder_handles_empty_files
+run_test_case "file-to-folder handles whitespace-only files" file_to_folder_handles_whitespace_only_files
 run_test_case "file-to-folder rejects directories" file_to_folder_rejects_directories
 run_test_case "file-to-folder rejects missing files" file_to_folder_rejects_missing_files
 run_test_case "file-to-folder requires argument" file_to_folder_requires_argument
