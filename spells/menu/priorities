@@ -49,7 +49,7 @@ display_priorities() {
   esac
 
   # Initialize variables
-  highest_echelon=""
+  highest_priority=""
   menu_command="menu Priorities:"
 
   # Loop through the priorities
@@ -69,18 +69,9 @@ display_priorities() {
         ''|*Error*) file_priority=0 ;;
         *[!0-9]*) file_priority=0 ;;
       esac
-      
-      # Get echelon of the file (use empty string if not set)
-      file_echelon=$(read-magic "${priority_file}" echelon 2>/dev/null || printf '')
-      
-      # Handle errors - if error, set to empty (no echelon)
-      case "$file_echelon" in
-        *Error*) file_echelon='' ;;
-        *[!0-9]*) file_echelon='' ;;
-      esac
 
-      # If the file's echelon differs from the previous highest, add an echelon separator line
-      if [ -n "${highest_echelon}" ] && [ "${file_echelon}" != "${highest_echelon}" ]; then
+      # If the file's priority differs from the previous highest, add an echelon separator line
+      if [ -n "${highest_priority}" ] && [ "${file_priority}" -ne "${highest_priority}" ]; then
         menu_command="${menu_command} \"---\""
       fi
 
@@ -112,8 +103,8 @@ display_priorities() {
       fi
       menu_command="${menu_command}${checkbox}$item_name%priority-menu \\\"${priority_file}\\\"\""
 
-      # Update the highest echelon (for detecting echelon boundaries)
-      highest_echelon="${file_echelon}"
+      # Update the highest priority (for detecting echelon boundaries)
+      highest_priority="${file_priority}"
     fi
   done
 
