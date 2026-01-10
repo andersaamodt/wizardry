@@ -2,104 +2,64 @@
 
 applyTo: "spells/**,.tests/**"
 
+**PRIMARY REFERENCE:** `.github/CROSS_PLATFORM_PATTERNS.md`
+
+This file provides quick-reference cross-platform patterns. For comprehensive cross-platform compatibility knowledge, see **CROSS_PLATFORM_PATTERNS.md**.
+
+## Documentation Hierarchy
+
+1. **FULL_SPEC.md** - Canonical specification (what/constraints)
+2. **SHELL_CODE_PATTERNS.md** - POSIX shell patterns and best practices (how/idioms)
+3. **CROSS_PLATFORM_PATTERNS.md** - Cross-platform exceptions (compatibility) ← **PRIMARY SOURCE**
+4. **EXEMPTIONS.md** - Documented exceptions
+5. **LESSONS.md** - Debugging insights
+
 ## Supported Platforms
 
-- Linux: Debian, Ubuntu, Arch, Fedora, NixOS
-- macOS (Darwin)
-- BSD variants (limited)
+- Linux: Debian, Ubuntu, Arch, Fedora, NixOS, Alpine
+- macOS (Darwin) 10.15+
+- BSD: FreeBSD, OpenBSD (limited)
 
-## Platform Detection
-
-```sh
-kernel=$(uname -s 2>/dev/null || printf 'unknown')
-case $kernel in
-    Darwin) platform=mac ;;
-    Linux)  platform=linux ;;
-    *)      platform=unknown ;;
-esac
-```
-
-## Critical Patterns
+## Quick Patterns
 
 ### Command Availability
+
 ```sh
 # CORRECT
-if command -v tool >/dev/null 2>&1; then tool "$@"; fi
+command -v tool >/dev/null 2>&1 || die "tool required"
 
 # WRONG
-if which tool >/dev/null; then ...
-if [ -x /usr/bin/tool ]; then ...
+which tool              # Not POSIX
+[ -x /usr/bin/tool ]    # Hard-coded path
 ```
 
 ### Path Resolution
+
 ```sh
 # Use pwd -P, not realpath
 abs_path="$(cd "$(dirname "$file")" && pwd -P)/$(basename "$file")"
 
-# Disable CDPATH
+# Disable CDPATH for predictable cd
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-
-# Normalize double slashes (macOS TMPDIR issue)
-path=$(printf '%s' "$path" | sed 's|//|/|g')
 ```
 
-### Temporary Files
-```sh
-tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/prefix.XXXXXX")
-```
-
-### Download with Fallback
-```sh
-if command -v curl >/dev/null 2>&1; then
-    curl -fsSL "$url" -o "$dest" || exit 1
-elif command -v wget >/dev/null 2>&1; then
-    wget -qO "$dest" "$url" || exit 1
-fi
-```
-
-### Clipboard Operations
-```sh
-if command -v pbcopy >/dev/null 2>&1; then
-    pbcopy < "$file" || exit 1
-elif command -v xsel >/dev/null 2>&1; then
-    xsel --clipboard --input < "$file" || exit 1
-elif command -v xclip >/dev/null 2>&1; then
-    xclip -selection clipboard < "$file" || exit 1
-fi
-```
-
-## PATH Initialization
-
-For bootstrap scripts, set baseline PATH BEFORE `set -eu`:
-
-```sh
-#!/bin/sh
-baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-case ":${PATH-}:" in
-  *":/usr/bin:"*|*":/bin:"*) ;;
-  *) PATH="${baseline_path}${PATH:+:}${PATH-}" ;;
-esac
-export PATH
-
-set -eu
-```
-
-## Common Pitfalls
+### Common Pitfalls (Bash-isms)
 
 | Bash-ism | POSIX Alternative |
 |----------|-------------------|
 | `[[ ]]` | `[ ]` |
 | `==` | `=` |
 | `source` | `.` |
-| `$RANDOM` | `awk 'BEGIN{srand();print int(rand()*N)}'` |
 | Arrays | Space-separated strings |
 | `local` | Plain variable assignment |
 
-## Line Endings
+## For Complete Patterns
 
-Use `.gitattributes` to enforce LF line endings:
-```
-* text=auto eol=lf
-*.sh text eol=lf
-spells/** text eol=lf
-```
+See **`.github/CROSS_PLATFORM_PATTERNS.md`** for:
+- Platform detection patterns
+- Command availability fallbacks
+- File operations (find, stat, sed variations)
+- Download and clipboard operations
+- PATH handling (especially macOS)
+- Temporary file patterns
+- And much more...

@@ -4,6 +4,13 @@
 
 **Coordination with FULL_SPEC.md:** When lessons reveal gaps, contradictions, or clarifications in the project specification, update both LESSONS.md (the lesson) and .github/FULL_SPEC.md (the canonical spec). If a lesson indicates the spec was unclear or wrong, clarify the spec and note the lesson here.
 
+**Documentation Hierarchy:**
+1. **FULL_SPEC.md** - Canonical specification (what/constraints)
+2. **SHELL_CODE_PATTERNS.md** - POSIX shell patterns and best practices (how/idioms)
+3. **CROSS_PLATFORM_PATTERNS.md** - Cross-platform exceptions (compatibility)
+4. **EXEMPTIONS.md** - Documented exceptions
+5. **LESSONS.md** - Debugging insights ← **YOU ARE HERE**
+
 **Rules:**
 - One sentence per lesson, extremely succinct
 - Don't document the same lesson twice—if a lesson recurs, increment the counter at the end: `(3)`

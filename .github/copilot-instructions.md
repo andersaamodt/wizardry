@@ -53,20 +53,24 @@ This fetches test failures from PR description via GitHub API. Works immediately
 
 ## Essential Reading  📚✨
 
-1. **`README.md`** — Project principles, values, and standards (READ FIRST)  🗝️
-2. **`.github/FULL_SPEC.md`** — **CANONICAL SPECIFICATION** - Complete atomic spec organized by spell levels (REFERENCE FREQUENTLY) ⭐
-3. **`.AGENTS.md`** — Comprehensive agent instructions and style guide
-4. **Core knowledge bases** (centralized patterns):
-   - `.github/SHELL_CODE_PATTERNS.md` — **CRITICAL**: POSIX shell patterns, quirks, and idioms (DOCUMENT NEW PATTERNS HERE)
-   - `.github/CROSS_PLATFORM_PATTERNS.md` — **CRITICAL**: Cross-platform compatibility (DOCUMENT NEW PATTERNS HERE)
-5. **Topic-specific instructions** (consult as needed):
-   - `.github/instructions/castable-uncastable-pattern.instructions.md` — **DEPRECATED**: Old self-execute pattern (no longer used)
-   - `.github/instructions/spells.instructions.md` — Spell writing guide (CURRENT PATTERNS)
-   - `.github/instructions/imps.instructions.md` — Imp (micro-helper) guide (CURRENT PATTERNS)
-   - `.github/instructions/tests.instructions.md` — Testing framework and patterns
-   - `.github/instructions/logging.instructions.md` — Output and error handling
-   - `.github/instructions/cross-platform.instructions.md` — Platform compatibility
-   - `.github/instructions/best-practices.instructions.md` — Proven patterns
+**Documentation Hierarchy** (precedence order):
+1. **`FULL_SPEC.md`** — **CANONICAL SPECIFICATION** - Complete atomic spec organized by spell levels (REFERENCE FREQUENTLY) ⭐⭐⭐
+2. **`SHELL_CODE_PATTERNS.md`** — POSIX shell patterns, quirks, and idioms (DOCUMENT NEW PATTERNS HERE) ⭐
+3. **`CROSS_PLATFORM_PATTERNS.md`** — Cross-platform compatibility (DOCUMENT NEW PATTERNS HERE) ⭐
+4. **`EXEMPTIONS.md`** — Documented exceptions to standards
+5. **`LESSONS.md`** — Debugging insights (add after every bug fix)
+
+**Also Important:**
+- **`README.md`** — Project principles, values, and standards (READ FIRST for philosophy)  🗝️
+- **`.AGENTS.md`** — Quick reference guide for AI agents
+- **Topic-specific instructions** (consult as needed):
+  - `.github/instructions/spells.instructions.md` — Spell writing guide
+  - `.github/instructions/imps.instructions.md` — Imp (micro-helper) guide
+  - `.github/instructions/tests.instructions.md` — Testing framework and patterns
+  - `.github/instructions/logging.instructions.md` — Output and error handling
+  - `.github/instructions/cross-platform.instructions.md` — Quick cross-platform reference (→ CROSS_PLATFORM_PATTERNS.md)
+  - `.github/instructions/best-practices.instructions.md` — Quick proven patterns (→ SHELL_CODE_PATTERNS.md)
+  - `.github/instructions/glossary-and-function-architecture.instructions.md` — Glossary system details
 
 ## What is Wizardry?
 
@@ -323,18 +327,25 @@ See `.github/instructions/glossary-and-function-architecture.instructions.md` fo
 
 ## Documentation Map
 
-**Full canonical spec?** → `.github/FULL_SPEC.md` ⭐⭐⭐ **REFERENCE FREQUENTLY, KEEP UPDATED**
-**POSIX shell patterns?** → `.github/SHELL_CODE_PATTERNS.md` ⭐ **DOCUMENT NEW PATTERNS HERE**
-**Cross-platform issues?** → `.github/CROSS_PLATFORM_PATTERNS.md` ⭐ **DOCUMENT NEW PATTERNS HERE**
-**Working on spells?** → `.github/instructions/spells.instructions.md`
-**Working on imps?** → `.github/instructions/imps.instructions.md`
-**Writing tests?** → `.github/instructions/tests.instructions.md`
-**Need logging/output?** → `.github/instructions/logging.instructions.md`
-**Platform compatibility (quick ref)?** → `.github/instructions/cross-platform.instructions.md`
-**Proven patterns?** → `.github/instructions/best-practices.instructions.md`
-**Lessons from debugging?** → `.github/LESSONS.md`
-**Full style guide?** → `.AGENTS.md`
-**Project philosophy?** → `README.md`
+**Hierarchy (Precedence Order):**
+1. **FULL_SPEC.md** ⭐⭐⭐ — Canonical specification (reference frequently, keep updated)
+2. **SHELL_CODE_PATTERNS.md** ⭐ — POSIX shell patterns/best practices (document new patterns)
+3. **CROSS_PLATFORM_PATTERNS.md** ⭐ — Cross-platform compatibility (document new patterns)
+4. **EXEMPTIONS.md** — Documented exceptions
+5. **LESSONS.md** — Debugging insights (check when debugging, update after bug fixes)
+
+**Other Documentation:**
+- **README.md** — Project philosophy and overview
+- **.AGENTS.md** — Quick reference for AI agents
+- **Spell-specific:**
+  - `spells/.imps/sys/spell-levels` imp — Canonical spell level definitions (code)
+  - `.github/instructions/spells.instructions.md` — Spell writing guide
+  - `.github/instructions/imps.instructions.md` — Imp writing guide
+  - `.github/instructions/tests.instructions.md` — Testing patterns
+  - `.github/instructions/logging.instructions.md` — Output/logging
+  - `.github/instructions/best-practices.instructions.md` — Quick patterns (→ SHELL_CODE_PATTERNS)
+  - `.github/instructions/cross-platform.instructions.md` — Quick cross-platform (→ CROSS_PLATFORM_PATTERNS)
+  - `.github/instructions/glossary-and-function-architecture.instructions.md` — Glossary system
 
 ## Model Code to Study
 

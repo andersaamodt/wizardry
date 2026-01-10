@@ -4,6 +4,13 @@
 
 **AI Directive:** ALWAYS document new shell patterns, quirks, or POSIX discoveries here as you encounter them during development.
 
+**Documentation Hierarchy:**
+1. **FULL_SPEC.md** - Canonical specification (what/constraints)
+2. **SHELL_CODE_PATTERNS.md** - POSIX shell patterns and best practices (how/idioms) ← **YOU ARE HERE**
+3. **CROSS_PLATFORM_PATTERNS.md** - Cross-platform exceptions (compatibility)
+4. **EXEMPTIONS.md** - Documented exceptions
+5. **LESSONS.md** - Debugging insights
+
 ## Critical POSIX sh Patterns
 
 ### Performance: Basename Replacement

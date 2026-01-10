@@ -11,6 +11,21 @@ This is the canonical specification for the wizardry project. Every feature, sub
 
 **Organization**: Sections are organized under spell level headings (matching spell-levels imp, banish, test-magic, demo-magic), with multiple feature/subsystem sections under each level.
 
+## Documentation Hierarchy
+
+The wizardry project uses a hierarchical documentation structure with clear precedence order:
+
+1. **FULL_SPEC.md** ← **YOU ARE HERE** - Canonical specification (what/constraints)
+2. **SHELL_CODE_PATTERNS.md** - POSIX shell patterns and best practices (how/idioms)
+3. **CROSS_PLATFORM_PATTERNS.md** - Cross-platform exceptions to pure POSIX (compatibility)
+4. **EXEMPTIONS.md** - Cases where we deviate from spec/patterns/cross-platform (documented exceptions)
+5. **LESSONS.md** - Everything else that doesn't fit above (debugging insights)
+
+**Interpretation**: When documents conflict, higher-precedence documents take priority. For example:
+- If FULL_SPEC says "use X" but SHELL_CODE_PATTERNS shows "use Y", FULL_SPEC wins
+- If SHELL_CODE_PATTERNS says "use pattern A" but CROSS_PLATFORM_PATTERNS says "on macOS use pattern B", use B on macOS (platform-specific exception)
+- If all standards say "don't do Z" but EXEMPTIONS documents "spell X does Z because...", that's an approved exception
+
 **Maintenance**:
 - Add new spec lines when implementing new features
 - Update existing lines when features change or are clarified
@@ -798,7 +813,7 @@ This is the canonical specification for the wizardry project. Every feature, sub
 - `.github/SHELL_CODE_PATTERNS.md`: POSIX shell patterns and quirks
 - `.github/CROSS_PLATFORM_PATTERNS.md`: Cross-platform compatibility knowledge
 - `.github/EXEMPTIONS.md`: All deviations from standards with justifications
-- `.github/SPELL_LEVELS.md`: Spell level organization for banish system
+- `spells/.imps/sys/spell-levels` imp: Canonical spell level definitions (code)
 - `.github/instructions/*.md`: Topic-specific detailed instructions
 
 ### Documentation Maintenance

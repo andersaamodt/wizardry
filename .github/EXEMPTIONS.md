@@ -2,6 +2,13 @@
 
 Documents all deviations from project standards with justification.
 
+**Documentation Hierarchy:**
+1. **FULL_SPEC.md** - Canonical specification (what/constraints)
+2. **SHELL_CODE_PATTERNS.md** - POSIX shell patterns and best practices (how/idioms)
+3. **CROSS_PLATFORM_PATTERNS.md** - Cross-platform exceptions (compatibility)
+4. **EXEMPTIONS.md** - Documented exceptions ← **YOU ARE HERE**
+5. **LESSONS.md** - Debugging insights
+
 ## Summary
 
 - **Style**: ✅ **353/353 files compliant** - All long-line and mixed tabs/spaces exemptions eliminated (2025-12-17)
