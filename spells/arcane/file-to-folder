@@ -83,6 +83,15 @@ case "$filename" in
     ;;
 esac
 
+# Check if file has any non-whitespace content
+has_content=0
+if [ -s "$file" ]; then
+  # File has size, check if it contains non-whitespace
+  if grep -q '[^[:space:]]' "$file" 2>/dev/null; then
+    has_content=1
+  fi
+fi
+
 # Create temporary file in the same directory to preserve xattrs
 temp_file=$(temp-file file-to-folder)
 
@@ -92,22 +101,33 @@ mv "$file" "$temp_file"
 # Create folder with the original file's name
 mkdir -p "$file"
 
-# Move the temp file into the new folder and rename it
-if [ -n "$extension" ]; then
-  mv "$temp_file" "$file/project notes.$extension"
-  moved_file="$file/project notes.$extension"
-else
-  mv "$temp_file" "$file/project notes"
-  moved_file="$file/project notes"
-fi
-
-# If priority was found, transfer it from the file to the folder
-if [ -n "$priority" ]; then
-  # Remove priority from the moved file (the original file's xattrs were preserved via mv)
-  disenchant "$moved_file" priority 2>/dev/null || true
+# Only move the temp file into the new folder if it has non-whitespace content
+if [ "$has_content" -eq 1 ]; then
+  # Move the temp file into the new folder and rename it
+  if [ -n "$extension" ]; then
+    mv "$temp_file" "$file/project notes.$extension"
+    moved_file="$file/project notes.$extension"
+  else
+    mv "$temp_file" "$file/project notes"
+    moved_file="$file/project notes"
+  fi
   
-  # Apply the priority to the folder
-  enchant "$file" "priority=$priority" 2>/dev/null || true
+  # If priority was found, transfer it from the file to the folder
+  if [ -n "$priority" ]; then
+    # Remove priority from the moved file (the original file's xattrs were preserved via mv)
+    disenchant "$moved_file" priority 2>/dev/null || true
+    
+    # Apply the priority to the folder
+    enchant "$file" "priority=$priority" 2>/dev/null || true
+  fi
+else
+  # Remove the empty/whitespace-only temp file
+  rm -f "$temp_file"
+  
+  # If priority was found, still apply it to the folder
+  if [ -n "$priority" ]; then
+    enchant "$file" "priority=$priority" 2>/dev/null || true
+  fi
 fi
 
 printf '%s\n' "Converted file to folder: $file"
