@@ -155,8 +155,9 @@ priority_menu_display_menu() {
 
   # Build menu items - conditionally include Prioritize based on whether it's the very first priority
   # Order: Prioritize (if not first), Check, Edit priority, Make project/Subpriorities (mutually exclusive), Discard priority
-  # Edit priority uses ask-text directly to get new name reliably
-  edit_cmd="dir=\$(dirname \"$file\"); old=\$(basename \"$file\"); new=\$(ask-text \"New name:\" \"\$old\"); [ -z \"\$new\" ] && exit 0; [ \"\$new\" = \"\$old\" ] && exit 0; mv \"$file\" \"\$dir/\$new\" && priority-menu \"\$dir/\$new\""
+  # Edit priority uses rename-interactive (transparent command) followed by finding and opening the renamed file
+  # After rename, we find the file with the same echelon+priority but different name
+  edit_cmd="dir=\$(dirname \"$file\"); old=\$(basename \"$file\"); old_echelon=\$(read-magic \"$file\" echelon 2>/dev/null || printf '0'); old_priority=\$(read-magic \"$file\" priority 2>/dev/null || printf '0'); rename-interactive \"$file\" && for f in \"\$dir\"/*; do [ -e \"\$f\" ] || continue; [ \"\$(basename \"\$f\")\" = \"\$old\" ] && continue; new_echelon=\$(read-magic \"\$f\" echelon 2>/dev/null || printf '0'); new_priority=\$(read-magic \"\$f\" priority 2>/dev/null || printf '0'); if [ \"\$new_echelon\" = \"\$old_echelon\" ] && [ \"\$new_priority\" = \"\$old_priority\" ]; then priority-menu \"\$f\"; exit 0; fi; done"
   
   if [ "$is_very_first_priority" = "1" ]; then
     # Don't show Prioritize for the very first priority item only
