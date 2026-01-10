@@ -209,7 +209,7 @@ test_priority_menu_shows_browse_subpriorities() {
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   
-  # Create read-magic stub that returns priority for subdirectory items
+  # Create read-magic stub that returns echelon for subdirectory items
   cat >"$tmp/read-magic" <<'SH'
 #!/bin/sh
 file=$1
@@ -221,15 +221,15 @@ if [ "$attr" = "checked" ]; then
   exit 0
 fi
 
-# Check if querying priority of a subdirectory item
+# Check if querying echelon of a subdirectory item
 case "$file" in
   */testdir/subitem1)
-    if [ "$attr" = "priority" ]; then
+    if [ "$attr" = "echelon" ]; then
       echo "3"
     fi
     ;;
   */testdir/subitem2)
-    if [ "$attr" = "priority" ]; then
+    if [ "$attr" = "echelon" ]; then
       echo "0"
     fi
     ;;
@@ -349,29 +349,38 @@ test_priority_menu_hides_prioritize_for_highest() {
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   
-  # Create read-magic stub that says this file is the highest priority
+  # Create read-magic stub that says this file has the highest echelon
   cat >"$tmp/read-magic" <<'SH'
 #!/bin/sh
 file=$1
 attr=${2-}
+parent_dir=$(dirname "$file")
 
-# Return hash for the file
-if [ "$attr" = "hash" ]; then
-  echo "abc123"
-  exit 0
-fi
-
-# Return priorities list with this file's hash as first
-if [ "$attr" = "priorities" ]; then
-  echo "abc123,def456"
-  exit 0
-fi
+# Return echelon for test file
+case "$file" in
+  */testfile)
+    if [ "$attr" = "echelon" ]; then
+      echo "5"
+      exit 0
+    fi
+    ;;
+esac
 
 # Return checked=0
 if [ "$attr" = "checked" ]; then
   echo "0"
   exit 0
 fi
+
+# For parent directory items, return lower echelon (or no echelon)
+case "$file" in
+  */otherfile)
+    if [ "$attr" = "echelon" ]; then
+      echo "3"
+      exit 0
+    fi
+    ;;
+esac
 
 echo "read-magic: attribute does not exist."
 SH
@@ -383,8 +392,9 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
-  # Create test file
+  # Create test file and another file in same directory
   touch "$tmp/testfile"
+  touch "$tmp/otherfile"
   
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testfile"
   assert_success || return 1
