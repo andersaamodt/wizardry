@@ -114,8 +114,9 @@ if [ "$marker_name" = "0" ] || [ "$marker_name" = "next" ]; then
                 # Find the most recently used NUMERIC marker (by mtime)
                 last_marker=""
                 if [ -d "$markers_dir" ]; then
+                        # Use command substitution to force word splitting in all shells (including zsh)
                         sorted=$(ls -t "$markers_dir" 2>/dev/null || true)
-                        for recent in $sorted; do
+                        for recent in $(printf '%s\n' $sorted); do
                                 # Skip non-numeric markers
                                 case "$recent" in
                                         *[!0-9]*) continue ;;
