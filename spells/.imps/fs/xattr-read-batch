@@ -16,13 +16,14 @@ for attr in "$@"; do
   esac
 done
 
-# Detect which helper to use (cache in variable to avoid repeated checks)
+# Detect and cache which helper works (try direct execution for speed)
 if [ -z "${XATTR_HELPER-}" ]; then
-  if xattr-helper-usable xattr; then
+  # Try xattr first (macOS and some Linux)
+  if command -v xattr >/dev/null 2>&1; then
     XATTR_HELPER=xattr
-  elif xattr-helper-usable attr; then
+  elif command -v attr >/dev/null 2>&1; then
     XATTR_HELPER=attr
-  elif xattr-helper-usable getfattr; then
+  elif command -v getfattr >/dev/null 2>&1; then
     XATTR_HELPER=getfattr
   else
     XATTR_HELPER=none
@@ -34,7 +35,7 @@ if [ "$XATTR_HELPER" = "none" ]; then
   exit 1
 fi
 
-# Read all attributes using the detected helper
+# Read all attributes efficiently
 result=""
 found_any=0
 
@@ -52,17 +53,18 @@ for attr in $attrs; do
       ;;
   esac
   
-  # Only include attributes that were successfully read
   if [ -n "$value" ]; then
-    # Strip user. prefix for output
-    display_attr=$(printf '%s' "$attr" | sed 's/^user\.//')
+    # Strip user. prefix for output using shell parameter expansion
+    case "$attr" in
+      user.*) display_attr="${attr#user.}" ;;
+      *) display_attr="$attr" ;;
+    esac
     result="$result $display_attr=$value"
     found_any=1
   fi
 done
 
 if [ "$found_any" -eq 1 ]; then
-  # Trim leading space and output
   printf '%s\n' "${result# }"
   exit 0
 fi
