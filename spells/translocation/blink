@@ -163,31 +163,65 @@ while [ "$attempt" -lt "$max_attempts" ]; do
   random_line=$(( (($$ * 7 + attempt * 13 + time_seed) % dir_count) + 1 ))
   destination=$(sed -n "${random_line}p" "$temp_list")
   
+  if command -v debug >/dev/null 2>&1; then
+    debug "Attempt $attempt of $max_attempts: Testing $destination"
+  fi
+  
   if [ -z "$destination" ]; then
+    if command -v debug >/dev/null 2>&1; then
+      debug "Destination empty, skipping"
+    fi
     continue
   fi
   
   if [ ! -d "$destination" ]; then
+    if command -v debug >/dev/null 2>&1; then
+      debug "Destination not a directory, skipping"
+    fi
     continue
   fi
   
   # Resolve destination path (in subshell to avoid changing directory during test)
   # Use command cd to avoid cd gloss/spell interference (works in all POSIX shells)
-  # Use same pattern as jump-to-marker
+  # Wrap with set +e/set -e because command substitution with set -e causes exit on failure
+  set +e
   dest_resolved=$(command cd "$destination" 2>/dev/null && pwd -P | sed 's|//|/|g')
+  set -e
+  
   if [ -z "$dest_resolved" ]; then
+    if command -v debug >/dev/null 2>&1; then
+      debug "Could not resolve destination (cd failed), skipping"
+    fi
     continue
+  fi
+  
+  if command -v debug >/dev/null 2>&1; then
+    debug "Resolved to: $dest_resolved (current: $current_resolved)"
   fi
   
   # Check if already at this location
   if [ "$current_resolved" = "$dest_resolved" ]; then
+    if command -v debug >/dev/null 2>&1; then
+      debug "Already at this location, skipping"
+    fi
     continue
   fi
   
   # Success! We found an accessible directory that's different from current
   # Now do the ACTUAL cd (not in a subshell)
+  if command -v debug >/dev/null 2>&1; then
+    debug "Found suitable destination, doing actual cd..."
+  fi
+  
   if ! command cd "$destination"; then
+    if command -v debug >/dev/null 2>&1; then
+      debug "Actual cd failed, skipping"
+    fi
     continue
+  fi
+  
+  if command -v debug >/dev/null 2>&1; then
+    debug "Successfully changed to $destination"
   fi
   break
 done
