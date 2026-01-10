@@ -88,18 +88,18 @@ else
   case "$target_path" in
     /*)
       if [ -d "$target_path" ]; then
-        destination=$(cd "$target_path" && pwd -P)
+        destination=$(command cd "$target_path" && pwd -P)
       else
-        destination="$(cd "$(dirname "$target_path")" && pwd -P)/$(basename "$target_path")"
+        destination="$(command cd "$(dirname "$target_path")" && pwd -P)/$(basename "$target_path")"
       fi
       ;;
     "~/"*)
       if [ -n "${HOME-}" ]; then
         expanded_path="$HOME/${target_path#"~/"}"
         if [ -d "$expanded_path" ]; then
-          destination=$(cd "$expanded_path" && pwd -P)
+          destination=$(command cd "$expanded_path" && pwd -P)
         else
-          destination="$(cd "$(dirname "$expanded_path")" && pwd -P)/$(basename "$expanded_path")"
+          destination="$(command cd "$(dirname "$expanded_path")" && pwd -P)/$(basename "$expanded_path")"
         fi
       else
         destination="$target_path"
@@ -107,7 +107,7 @@ else
       ;;
     "~")
       if [ -n "${HOME-}" ]; then
-        destination=$(cd "$HOME" && pwd -P)
+        destination=$(command cd "$HOME" && pwd -P)
       else
         destination="$target_path"
       fi
