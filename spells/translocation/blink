@@ -6,7 +6,7 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: random blink [path] [--depth N]
+Usage: blink [path] [--depth N]
 
 Teleport to a random subdirectory within a directory tree.
 - No argument defaults to $HOME with depth 5
@@ -14,37 +14,37 @@ Teleport to a random subdirectory within a directory tree.
 - --depth N: Limits how deep to search (1-10, default: 5)
 
 Examples:
-  random blink                    # Random subdirectory in $HOME (depth 5)
-  random blink /tmp               # Random subdirectory in /tmp (depth 5)
-  random blink --depth 3          # Random subdirectory in $HOME (depth 3)
-  random blink /var/log --depth 2 # Random subdirectory in /var/log (depth 2)
+  blink                    # Random subdirectory in $HOME (depth 5)
+  blink /tmp               # Random subdirectory in /tmp (depth 5)
+  blink --depth 3          # Random subdirectory in $HOME (depth 3)
+  blink /var/log --depth 2 # Random subdirectory in /var/log (depth 2)
 
-Note: This spell must be sourced. Use 'random blink' to invoke it.
+Note: This spell must be sourced. Use 'blink' to invoke it.
 USAGE
   return 0 2>/dev/null || exit 0
   ;;
 esac
 
 # Uncastable pattern - ensures spell is sourced, not executed
-_random_blink_sourced=0
+_blink_sourced=0
 if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
   case "${ZSH_EVAL_CONTEXT-}" in
-    *:file) _random_blink_sourced=1 ;;
+    *:file) _blink_sourced=1 ;;
   esac
 else
-  _random_blink_base=${0##*/}
-  case "$_random_blink_base" in
-    sh|dash|bash|zsh|ksh|mksh) _random_blink_sourced=1 ;;
-    random-blink) _random_blink_sourced=0 ;;
-    *) _random_blink_sourced=1 ;;
+  _blink_base=${0##*/}
+  case "$_blink_base" in
+    sh|dash|bash|zsh|ksh|mksh) _blink_sourced=1 ;;
+    blink) _blink_sourced=0 ;;
+    *) _blink_sourced=1 ;;
   esac
 fi
 
-if [ "$_random_blink_sourced" -eq 0 ]; then
-  printf '%s\n' "This spell cannot be cast directly. Invoke it with: random blink" >&2
+if [ "$_blink_sourced" -eq 0 ]; then
+  printf '%s\n' "This spell cannot be cast directly. Invoke it with: blink" >&2
   return 1 2>/dev/null || exit 1
 fi
-unset _random_blink_sourced _random_blink_base
+unset _blink_sourced _blink_base
 
 set -eu
 . env-clear
@@ -58,21 +58,21 @@ while [ $# -gt 0 ]; do
     --depth)
       shift
       if [ $# -eq 0 ]; then
-        printf '%s\n' "random-blink: --depth requires an argument" >&2
+        printf '%s\n' "blink: --depth requires an argument" >&2
         set +eu; return 1
       fi
       max_depth=$1
       shift
       ;;
     -*)
-      printf '%s\n' "random-blink: unknown option '$1'." >&2
+      printf '%s\n' "blink: unknown option '$1'." >&2
       set +eu; return 1
       ;;
     *)
       if [ -z "$start_path" ]; then
         start_path=$1
       else
-        printf '%s\n' "random-blink: unexpected argument '$1'." >&2
+        printf '%s\n' "blink: unexpected argument '$1'." >&2
         set +eu; return 1
       fi
       shift
@@ -88,19 +88,19 @@ fi
 # Validate max_depth is a number between 1 and 10
 case "$max_depth" in
   ''|*[!0-9]*)
-    printf '%s\n' "random-blink: depth must be a number between 1 and 10." >&2
+    printf '%s\n' "blink: depth must be a number between 1 and 10." >&2
     set +eu; return 1
     ;;
 esac
 
 if [ "$max_depth" -lt 1 ] || [ "$max_depth" -gt 10 ]; then
-  printf '%s\n' "random-blink: depth must be between 1 and 10." >&2
+  printf '%s\n' "blink: depth must be between 1 and 10." >&2
   set +eu; return 1
 fi
 
 # Validate and normalize start_path
 if [ ! -d "$start_path" ]; then
-  printf '%s\n' "random-blink: directory not found: $start_path" >&2
+  printf '%s\n' "blink: directory not found: $start_path" >&2
   set +eu; return 1
 fi
 
@@ -109,7 +109,7 @@ current=$(pwd -P | sed 's|//|/|g')
 
 # Change to start_path to make find work from there
 if ! cd "$start_path" 2>/dev/null; then
-  printf '%s\n' "random-blink: cannot access directory: $start_path" >&2
+  printf '%s\n' "blink: cannot access directory: $start_path" >&2
   set +eu; return 1
 fi
 
@@ -149,7 +149,7 @@ fi
 
 # Resolve destination to absolute path
 if ! cd "$destination" 2>/dev/null; then
-  printf '%s\n' "random-blink: cannot access directory: $destination" >&2
+  printf '%s\n' "blink: cannot access directory: $destination" >&2
   set +eu; return 1
 fi
 

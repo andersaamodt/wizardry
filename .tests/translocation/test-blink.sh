@@ -8,7 +8,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/translocation/random-blink" --help
+  run_spell "spells/translocation/blink" --help
   assert_success
   assert_output_contains "Usage:"
   assert_output_contains "path"
@@ -16,6 +16,6 @@ test_help() {
   assert_output_contains "default: 5"
 }
 
-run_test_case "random-blink prints usage" test_help
+run_test_case "blink prints usage" test_help
 
 finish_tests

@@ -39,7 +39,7 @@ case "$level" in
     ;;
   5)
     name='Navigation'
-    spells='go-up:translocation jump-to-location:translocation jump-to-marker:translocation mark-location:translocation random-blink:translocation'
+    spells='blink:translocation go-up:translocation jump-to-location:translocation jump-to-marker:translocation mark-location:translocation'
     imps=''
     ;;
   6)
