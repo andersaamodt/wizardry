@@ -137,7 +137,7 @@ EOF
   total_menu_items=$((total_menu_items + 1))
   
   # Add "Add priority" option
-  menu_command="${menu_command} \"Add priority%prioritize --interactive\""
+  menu_command="${menu_command} \"Add priority%prioritize --interactive --yes\""
   add_priority_position=$((total_menu_items + 1))
   current_add_priority_position=$add_priority_position
   

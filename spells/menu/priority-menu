@@ -143,7 +143,7 @@ priority_menu_display_menu() {
       browse_item="${BOLD}Subpriorities...${RESET}%(cd \"$file\" && priorities)"
     else
       # No subpriorities - offer to add one
-      browse_item="Add subpriority%(cd \"$file\" && prioritize --interactive)"
+      browse_item="Add subpriority%(cd \"$file\" && prioritize --interactive --yes)"
     fi
   fi
 
@@ -159,21 +159,21 @@ priority_menu_display_menu() {
     # Don't show Prioritize for the very first priority item only
     if [ -n "$browse_item" ]; then
       set -- "${check_item}" \
-             "Edit priority%newname=\$(ask-text 'New name:' \"\$(basename \"$file\")\") && mv \"$file\" \"\$(dirname \"$file\")/\$newname\" && priority-menu \"\$(dirname \"$file\")/\$newname\"" \
+             "Edit priority%rename-interactive \"$file\" && priority-menu \"\$(dirname \"$file\")/\$(basename \"$file\")\"" \
              "$browse_item" \
              "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
              "---" \
              "$exit_item"
     elif [ -n "$make_project_item" ]; then
       set -- "${check_item}" \
-             "Edit priority%newname=\$(ask-text 'New name:' \"\$(basename \"$file\")\") && mv \"$file\" \"\$(dirname \"$file\")/\$newname\" && priority-menu \"\$(dirname \"$file\")/\$newname\"" \
+             "Edit priority%rename-interactive \"$file\" && priority-menu \"\$(dirname \"$file\")/\$(basename \"$file\")\"" \
              "$make_project_item" \
              "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
              "---" \
              "$exit_item"
     else
       set -- "${check_item}" \
-             "Edit priority%newname=\$(ask-text 'New name:' \"\$(basename \"$file\")\") && mv \"$file\" \"\$(dirname \"$file\")/\$newname\" && priority-menu \"\$(dirname \"$file\")/\$newname\"" \
+             "Edit priority%rename-interactive \"$file\" && priority-menu \"\$(dirname \"$file\")/\$(basename \"$file\")\"" \
              "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
              "---" \
              "$exit_item"
@@ -183,7 +183,7 @@ priority_menu_display_menu() {
     if [ -n "$browse_item" ]; then
       set -- "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
              "${check_item}" \
-             "Edit priority%newname=\$(ask-text 'New name:' \"\$(basename \"$file\")\") && mv \"$file\" \"\$(dirname \"$file\")/\$newname\" && priority-menu \"\$(dirname \"$file\")/\$newname\"" \
+             "Edit priority%rename-interactive \"$file\" && priority-menu \"\$(dirname \"$file\")/\$(basename \"$file\")\"" \
              "$browse_item" \
              "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
              "---" \
@@ -191,7 +191,7 @@ priority_menu_display_menu() {
     elif [ -n "$make_project_item" ]; then
       set -- "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
              "${check_item}" \
-             "Edit priority%newname=\$(ask-text 'New name:' \"\$(basename \"$file\")\") && mv \"$file\" \"\$(dirname \"$file\")/\$newname\" && priority-menu \"\$(dirname \"$file\")/\$newname\"" \
+             "Edit priority%rename-interactive \"$file\" && priority-menu \"\$(dirname \"$file\")/\$(basename \"$file\")\"" \
              "$make_project_item" \
              "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
              "---" \
@@ -199,7 +199,7 @@ priority_menu_display_menu() {
     else
       set -- "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
              "${check_item}" \
-             "Edit priority%newname=\$(ask-text 'New name:' \"\$(basename \"$file\")\") && mv \"$file\" \"\$(dirname \"$file\")/\$newname\" && priority-menu \"\$(dirname \"$file\")/\$newname\"" \
+             "Edit priority%rename-interactive \"$file\" && priority-menu \"\$(dirname \"$file\")/\$(basename \"$file\")\"" \
              "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
              "---" \
              "$exit_item"
@@ -212,6 +212,7 @@ first_run=1
 start_selection=1
 was_checked=0
 was_directory=0
+previous_has_subpriorities=0
 
 while true; do
   if [ "$first_run" -eq 0 ]; then
@@ -220,6 +221,85 @@ while true; do
     if [ -d "$file" ]; then
       now_directory=1
     fi
+    
+    # Check current subpriorities status
+    now_has_subpriorities=0
+    if [ -d "$file" ]; then
+      for item in "$file"/*; do
+        [ -e "$item" ] || continue
+        item_echelon=$(read-magic "$item" echelon 2>/dev/null || printf '0')
+        case "$item_echelon" in
+          ''|*Error*|*[!0-9]*) item_echelon=0 ;;
+        esac
+        if [ "$item_echelon" -ge 1 ]; then
+          now_has_subpriorities=1
+          break
+        fi
+      done
+    fi
+    
+    # If subpriorities status didn't change and file is still a directory, keep browse_item selected
+    # This handles the case where we browsed subpriorities and came back
+    if [ "$was_directory" -eq 1 ] && [ "$now_directory" -eq 1 ] && [ "$previous_has_subpriorities" = "$now_has_subpriorities" ]; then
+      # Calculate browse_position to keep it selected
+      browse_position=1
+      
+      # Recalculate is_very_first_priority
+      file_echelon=$(read-magic "$file" echelon 2>/dev/null || printf '0')
+      case "$file_echelon" in
+        *Error*|''|*[!0-9]*) file_echelon=0 ;;
+      esac
+      
+      file_priority=$(read-magic "$file" priority 2>/dev/null || printf '0')
+      case "$file_priority" in
+        *Error*|''|*[!0-9]*) file_priority=0 ;;
+      esac
+      
+      parent_dir=$(dirname "$file")
+      if [ "$parent_dir" = "." ]; then
+        parent_dir=$(pwd -P)
+      fi
+      
+      highest_echelon=0
+      lowest_priority_in_highest=999999
+      for f in "$parent_dir"/*; do
+        [ -e "$f" ] || continue
+        item_echelon=$(read-magic "$f" echelon 2>/dev/null || printf '0')
+        case "$item_echelon" in
+          *Error*|''|*[!0-9]*) continue ;;
+        esac
+        if [ "$item_echelon" -gt "$highest_echelon" ]; then
+          highest_echelon=$item_echelon
+          lowest_priority_in_highest=999999
+        fi
+        if [ "$item_echelon" -eq "$highest_echelon" ]; then
+          item_priority=$(read-magic "$f" priority 2>/dev/null || printf '0')
+          case "$item_priority" in
+            *Error*|''|*[!0-9]*) item_priority=999999 ;;
+          esac
+          if [ "$item_priority" -lt "$lowest_priority_in_highest" ]; then
+            lowest_priority_in_highest=$item_priority
+          fi
+        fi
+      done
+      
+      is_very_first=0
+      if [ "$file_echelon" -gt 0 ] && [ "$file_echelon" -eq "$highest_echelon" ] && [ "$file_priority" -eq "$lowest_priority_in_highest" ]; then
+        is_very_first=1
+      fi
+      
+      # Calculate browse_position: base + Prioritize (if shown) + Check + Edit
+      if [ "$is_very_first" -eq 0 ]; then
+        browse_position=$((browse_position + 1))  # Add 1 for Prioritize
+      fi
+      browse_position=$((browse_position + 1))  # Add 1 for Check
+      browse_position=$((browse_position + 1))  # Add 1 for Edit priority
+      
+      start_selection=$browse_position
+    fi
+    
+    # Save subpriorities status for next iteration
+    previous_has_subpriorities=$now_has_subpriorities
     
     # If file became directory (Make project was used), select Add subpriority/Subpriorities
     if [ "$was_directory" != "$now_directory" ]; then
@@ -369,6 +449,18 @@ while true; do
     # Save initial file type
     if [ -d "$file" ]; then
       was_directory=1
+      # Check initial subpriorities status
+      for item in "$file"/*; do
+        [ -e "$item" ] || continue
+        item_echelon=$(read-magic "$item" echelon 2>/dev/null || printf '0')
+        case "$item_echelon" in
+          ''|*Error*|*[!0-9]*) item_echelon=0 ;;
+        esac
+        if [ "$item_echelon" -ge 1 ]; then
+          previous_has_subpriorities=1
+          break
+        fi
+      done
     else
       was_directory=0
     fi

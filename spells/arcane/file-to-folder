@@ -53,11 +53,13 @@ case "$mime_type" in
     ;;
 esac
 
-# Try to read priority attribute and hash from the file (if they exist)
+# Try to read priority attributes and hash from the file (if they exist)
+echelon=""
 priority=""
 old_hash=""
 if has read-magic && has disenchant && has enchant; then
-  # Try to read the priority attribute
+  # Try to read the echelon and priority attributes
+  echelon=$(read-magic "$file" echelon 2>/dev/null || printf '')
   priority=$(read-magic "$file" priority 2>/dev/null || printf '')
   # Try to read the hash attribute (if file was previously hashed)
   old_hash=$(read-magic "$file" hash 2>/dev/null || printf '')
@@ -115,11 +117,16 @@ if [ "$has_content" -eq 1 ]; then
     moved_file="$file/project notes"
   fi
   
-  # If priority was found, transfer it from the file to the folder
+  # If echelon/priority were found, transfer them from the file to the folder
+  if [ -n "$echelon" ]; then
+    # Remove echelon from the moved file (the original file's xattrs were preserved via mv)
+    disenchant "$moved_file" echelon 2>/dev/null || true
+    # Apply the echelon to the folder
+    enchant "$file" "echelon=$echelon" 2>/dev/null || true
+  fi
   if [ -n "$priority" ]; then
     # Remove priority from the moved file (the original file's xattrs were preserved via mv)
     disenchant "$moved_file" priority 2>/dev/null || true
-    
     # Apply the priority to the folder
     enchant "$file" "priority=$priority" 2>/dev/null || true
   fi
@@ -127,7 +134,10 @@ else
   # Remove the empty/whitespace-only temp file
   rm -f "$temp_file"
   
-  # If priority was found, still apply it to the folder
+  # If echelon/priority were found, still apply them to the folder
+  if [ -n "$echelon" ]; then
+    enchant "$file" "echelon=$echelon" 2>/dev/null || true
+  fi
   if [ -n "$priority" ]; then
     enchant "$file" "priority=$priority" 2>/dev/null || true
   fi
