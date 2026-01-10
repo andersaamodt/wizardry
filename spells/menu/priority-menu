@@ -68,21 +68,27 @@ priority_menu_display_menu() {
   exit_label=$(exit-label)
   exit_item="${exit_label}%kill -TERM \$PPID"
 
-  # Check if this file is the highest priority (highest echelon)
+  # Check if this file is the very first priority (lowest priority number in highest echelon)
   # Get parent directory
   parent_dir=$(dirname "$file")
   if [ "$parent_dir" = "." ]; then
     parent_dir=$(pwd -P)
   fi
   
-  # Get this file's echelon
+  # Get this file's echelon and priority
   file_echelon=$(read-magic "$file" echelon 2>/dev/null || printf '0')
   case "$file_echelon" in
     *Error*|''|*[!0-9]*) file_echelon=0 ;;
   esac
   
-  # Find the highest echelon in the parent directory
+  file_priority=$(read-magic "$file" priority 2>/dev/null || printf '0')
+  case "$file_priority" in
+    *Error*|''|*[!0-9]*) file_priority=0 ;;
+  esac
+  
+  # Find the highest echelon and lowest priority in that echelon
   highest_echelon=0
+  lowest_priority_in_highest=999999
   for f in "$parent_dir"/*; do
     [ -e "$f" ] || continue
     
@@ -93,13 +99,25 @@ priority_menu_display_menu() {
     
     if [ "$item_echelon" -gt "$highest_echelon" ]; then
       highest_echelon=$item_echelon
+      lowest_priority_in_highest=999999  # Reset when we find a new highest
+    fi
+    
+    # Track lowest priority in the highest echelon
+    if [ "$item_echelon" -eq "$highest_echelon" ]; then
+      item_priority=$(read-magic "$f" priority 2>/dev/null || printf '0')
+      case "$item_priority" in
+        *Error*|''|*[!0-9]*) item_priority=999999 ;;
+      esac
+      if [ "$item_priority" -lt "$lowest_priority_in_highest" ]; then
+        lowest_priority_in_highest=$item_priority
+      fi
     fi
   done
   
-  # Determine if this file is the highest priority
-  is_highest_priority=0
-  if [ "$file_echelon" -gt 0 ] && [ "$file_echelon" -eq "$highest_echelon" ]; then
-    is_highest_priority=1
+  # Determine if this file is the very first priority (lowest priority # in highest echelon)
+  is_very_first_priority=0
+  if [ "$file_echelon" -gt 0 ] && [ "$file_echelon" -eq "$highest_echelon" ] && [ "$file_priority" -eq "$lowest_priority_in_highest" ]; then
+    is_very_first_priority=1
   fi
 
   # Check if file is a directory and has subpriorities
@@ -135,61 +153,61 @@ priority_menu_display_menu() {
     make_project_item="Make project%file-to-folder \"$file\""
   fi
 
-  # Build menu items - conditionally include Prioritize based on whether it's highest priority
+  # Build menu items - conditionally include Prioritize based on whether it's the very first priority
   # Order: Subpriorities... (if available), Prioritize, Check, Edit priority, Make project (if file), Discard priority
-  if [ "$is_highest_priority" = "1" ]; then
-    # Don't show Prioritize for highest priority items
+  if [ "$is_very_first_priority" = "1" ]; then
+    # Don't show Prioritize for the very first priority item only
     if [ -n "$browse_item" ]; then
       if [ -n "$make_project_item" ]; then
         set -- "$browse_item" \
                "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"" \
+               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
                "$make_project_item" \
-               "Discard priority%deprioritize \"$file\"" \
+               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
                "---" \
                "$exit_item"
       else
         set -- "$browse_item" \
                "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"" \
-               "Discard priority%deprioritize \"$file\"" \
+               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
+               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
                "---" \
                "$exit_item"
       fi
     else
       if [ -n "$make_project_item" ]; then
         set -- "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"" \
+               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
                "$make_project_item" \
-               "Discard priority%deprioritize \"$file\"" \
+               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
                "---" \
                "$exit_item"
       else
         set -- "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"" \
-               "Discard priority%deprioritize \"$file\"" \
+               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
+               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
                "---" \
                "$exit_item"
       fi
     fi
   else
-    # Show Prioritize for non-highest priority items
+    # Show Prioritize for all other items
     if [ -n "$browse_item" ]; then
       if [ -n "$make_project_item" ]; then
         set -- "$browse_item" \
                "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
                "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"" \
+               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
                "$make_project_item" \
-               "Discard priority%deprioritize \"$file\"" \
+               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
                "---" \
                "$exit_item"
       else
         set -- "$browse_item" \
                "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
                "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"" \
-               "Discard priority%deprioritize \"$file\"" \
+               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
+               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
                "---" \
                "$exit_item"
       fi
@@ -197,22 +215,22 @@ priority_menu_display_menu() {
       if [ -n "$make_project_item" ]; then
         set -- "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
                "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"" \
+               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
                "$make_project_item" \
-               "Discard priority%deprioritize \"$file\"" \
+               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
                "---" \
                "$exit_item"
       else
         set -- "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
                "${check_item}" \
-               "Edit priority%rename-interactive \"$file\"" \
-               "Discard priority%deprioritize \"$file\"" \
+               "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
+               "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
                "---" \
                "$exit_item"
       fi
     fi
   fi
-  menu --start-selection "$start_selection" "${THEME_HEADING}${header_checkbox}${filename}${RESET}:" "$@"
+  menu --start-selection "$start_selection" "${THEME_HEADING}${header_checkbox}${filename}:${RESET}" "$@"
 }
 
 first_run=1
@@ -232,83 +250,63 @@ while true; do
     
     # If checked state changed, keep Check/Uncheck item selected
     if [ "$was_checked" != "$now_checked" ]; then
-      # Check/Uncheck position varies based on menu structure
-      # It's typically position 2 (after browse_item) or position 1 (no browse_item)
-      # For simplicity and since browse items don't toggle state, we check the check item position
-      # When there's a browse_item and Prioritize, Check is at position 3
-      # When there's a browse_item but no Prioritize (highest priority), Check is at position 2
-      # When there's no browse_item but Prioritize exists, Check is at position 2
-      # When there's no browse_item and no Prioritize, Check is at position 1
-      
-      # Since menu structure is dynamic, we need to determine position
-      # The safest approach: Check is always after browse_item (if exists) and Prioritize (if exists)
+      # Determine Check/Uncheck position based on current menu structure
+      # Position depends on: browse_item (if dir), prioritize (if not very first), check_item
       check_position=1
+      
+      # Add 1 for browse_item if directory
       if [ -d "$file" ]; then
-        # Has browse item
-        check_position=2
-        # Check if this is highest priority (no Prioritize item)
-        parent_dir=$(dirname "$file")
-        if [ "$parent_dir" = "." ]; then
-          parent_dir=$(pwd -P)
-        fi
-        
-        # Get this file's echelon
-        file_echelon=$(read-magic "$file" echelon 2>/dev/null || printf '0')
-        case "$file_echelon" in
-          *Error*|''|*[!0-9]*) file_echelon=0 ;;
+        check_position=$((check_position + 1))
+      fi
+      
+      # Add 1 for Prioritize if not the very first priority
+      # Need to recalculate is_very_first_priority
+      file_echelon=$(read-magic "$file" echelon 2>/dev/null || printf '0')
+      case "$file_echelon" in
+        *Error*|''|*[!0-9]*) file_echelon=0 ;;
+      esac
+      
+      file_priority=$(read-magic "$file" priority 2>/dev/null || printf '0')
+      case "$file_priority" in
+        *Error*|''|*[!0-9]*) file_priority=0 ;;
+      esac
+      
+      parent_dir=$(dirname "$file")
+      if [ "$parent_dir" = "." ]; then
+        parent_dir=$(pwd -P)
+      fi
+      
+      highest_echelon=0
+      lowest_priority_in_highest=999999
+      for f in "$parent_dir"/*; do
+        [ -e "$f" ] || continue
+        item_echelon=$(read-magic "$f" echelon 2>/dev/null || printf '0')
+        case "$item_echelon" in
+          *Error*|''|*[!0-9]*) continue ;;
         esac
-        
-        # Find highest echelon in parent directory
-        highest_echelon=0
-        for f in "$parent_dir"/*; do
-          [ -e "$f" ] || continue
-          item_echelon=$(read-magic "$f" echelon 2>/dev/null || printf '0')
-          case "$item_echelon" in
-            *Error*|''|*[!0-9]*) continue ;;
+        if [ "$item_echelon" -gt "$highest_echelon" ]; then
+          highest_echelon=$item_echelon
+          lowest_priority_in_highest=999999
+        fi
+        if [ "$item_echelon" -eq "$highest_echelon" ]; then
+          item_priority=$(read-magic "$f" priority 2>/dev/null || printf '0')
+          case "$item_priority" in
+            *Error*|''|*[!0-9]*) item_priority=999999 ;;
           esac
-          if [ "$item_echelon" -gt "$highest_echelon" ]; then
-            highest_echelon=$item_echelon
+          if [ "$item_priority" -lt "$lowest_priority_in_highest" ]; then
+            lowest_priority_in_highest=$item_priority
           fi
-        done
-        
-        # If not highest echelon, Prioritize exists
-        if [ "$file_echelon" -gt 0 ] && [ "$file_echelon" -lt "$highest_echelon" ]; then
-          check_position=3
         fi
-      else
-        # No browse item, Check position depends on Prioritize
-        parent_dir=$(dirname "$file")
-        if [ "$parent_dir" = "." ]; then
-          parent_dir=$(pwd -P)
-        fi
-        
-        # Get this file's echelon
-        file_echelon=$(read-magic "$file" echelon 2>/dev/null || printf '0')
-        case "$file_echelon" in
-          *Error*|''|*[!0-9]*) file_echelon=0 ;;
-        esac
-        
-        # Find highest echelon in parent directory
-        highest_echelon=0
-        for f in "$parent_dir"/*; do
-          [ -e "$f" ] || continue
-          item_echelon=$(read-magic "$f" echelon 2>/dev/null || printf '0')
-          case "$item_echelon" in
-            *Error*|''|*[!0-9]*) continue ;;
-          esac
-          if [ "$item_echelon" -gt "$highest_echelon" ]; then
-            highest_echelon=$item_echelon
-          fi
-        done
-        
-        # Determine if Prioritize item exists
-        if [ "$file_echelon" -eq "$highest_echelon" ] && [ "$file_echelon" -gt 0 ]; then
-          # Highest priority, no Prioritize
-          check_position=1
-        else
-          # Not highest, Prioritize exists
-          check_position=2
-        fi
+      done
+      
+      is_very_first=0
+      if [ "$file_echelon" -gt 0 ] && [ "$file_echelon" -eq "$highest_echelon" ] && [ "$file_priority" -eq "$lowest_priority_in_highest" ]; then
+        is_very_first=1
+      fi
+      
+      # Add 1 for Prioritize if NOT very first priority
+      if [ "$is_very_first" -eq 0 ]; then
+        check_position=$((check_position + 1))
       fi
       
       start_selection=$check_position

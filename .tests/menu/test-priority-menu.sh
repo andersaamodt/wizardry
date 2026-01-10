@@ -343,24 +343,28 @@ SH
   return 0
 }
 
-test_priority_menu_hides_prioritize_for_highest() {
+test_priority_menu_hides_prioritize_for_very_first() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   make_stub_menu "$tmp"
   make_stub_require "$tmp"
   
-  # Create read-magic stub that says this file has the highest echelon
+  # Create read-magic stub that says this file is the very first priority
+  # (lowest priority number in highest echelon)
   cat >"$tmp/read-magic" <<'SH'
 #!/bin/sh
 file=$1
 attr=${2-}
 parent_dir=$(dirname "$file")
 
-# Return echelon for test file
+# Return echelon and priority for test file (very first: highest echelon, lowest priority)
 case "$file" in
   */testfile)
     if [ "$attr" = "echelon" ]; then
       echo "5"
+      exit 0
+    elif [ "$attr" = "priority" ]; then
+      echo "1"
       exit 0
     fi
     ;;
@@ -372,11 +376,14 @@ if [ "$attr" = "checked" ]; then
   exit 0
 fi
 
-# For parent directory items, return lower echelon (or no echelon)
+# For parent directory items, return same echelon but higher priority
 case "$file" in
   */otherfile)
     if [ "$attr" = "echelon" ]; then
-      echo "3"
+      echo "5"
+      exit 0
+    elif [ "$attr" = "priority" ]; then
+      echo "2"
       exit 0
     fi
     ;;
@@ -399,9 +406,9 @@ SH
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testfile"
   assert_success || return 1
   
-  # Verify "Prioritize" does NOT appear for highest priority
+  # Verify "Prioritize" does NOT appear for very first priority
   grep -q "Prioritize%" "$tmp/log" && {
-    TEST_FAILURE_REASON="Prioritize should not appear for highest priority item: $(cat "$tmp/log")"
+    TEST_FAILURE_REASON="Prioritize should not appear for very first priority item: $(cat "$tmp/log")"
     return 1
   }
   
@@ -413,10 +420,80 @@ SH
   return 0
 }
 
+test_priority_menu_shows_prioritize_for_non_first_in_highest() {
+  skip-if-compiled || return $?
+  tmp=$(make_tempdir)
+  make_stub_menu "$tmp"
+  make_stub_require "$tmp"
+  
+  # Create read-magic stub for a non-first item in highest echelon
+  cat >"$tmp/read-magic" <<'SH'
+#!/bin/sh
+file=$1
+attr=${2-}
+
+# Return echelon and priority for test file (not first: highest echelon, higher priority)
+case "$file" in
+  */testfile)
+    if [ "$attr" = "echelon" ]; then
+      echo "5"
+      exit 0
+    elif [ "$attr" = "priority" ]; then
+      echo "3"
+      exit 0
+    fi
+    ;;
+esac
+
+# Return checked=0
+if [ "$attr" = "checked" ]; then
+  echo "0"
+  exit 0
+fi
+
+# For parent directory items, return same echelon but lower priority (making testfile not first)
+case "$file" in
+  */otherfile)
+    if [ "$attr" = "echelon" ]; then
+      echo "5"
+      exit 0
+    elif [ "$attr" = "priority" ]; then
+      echo "1"
+      exit 0
+    fi
+    ;;
+esac
+
+echo "read-magic: attribute does not exist."
+SH
+  chmod +x "$tmp/read-magic"
+  
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+  
+  # Create test files
+  touch "$tmp/testfile"
+  touch "$tmp/otherfile"
+  
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testfile"
+  assert_success || return 1
+  
+  # Verify "Prioritize" DOES appear for non-first item in highest echelon
+  grep -q "Prioritize%" "$tmp/log" || {
+    TEST_FAILURE_REASON="Prioritize should appear for non-first item in highest echelon: $(cat "$tmp/log")"
+    return 1
+  }
+  return 0
+}
+
 run_test_case "priority-menu shows subpriorities for dirs with priorities" test_priority_menu_shows_browse_subpriorities
 run_test_case "priority-menu hides subpriorities for regular files" test_priority_menu_hides_browse_for_file
 run_test_case "priority-menu shows add subpriority for dirs without priorities" test_priority_menu_hides_browse_for_empty_dir
-run_test_case "priority-menu hides prioritize for highest priority" test_priority_menu_hides_prioritize_for_highest
+run_test_case "priority-menu hides prioritize for very first priority" test_priority_menu_hides_prioritize_for_very_first
+run_test_case "priority-menu shows prioritize for non-first in highest echelon" test_priority_menu_shows_prioritize_for_non_first_in_highest
 
 test_priority_menu_shows_make_project_for_files() {
   skip-if-compiled || return $?
