@@ -36,6 +36,30 @@ if [ -d "$file" ]; then
   exit 1
 fi
 
+# Check if file is a plain text file
+if ! has file; then
+  printf '%s\n' "file-to-folder: 'file' command required to detect file type" >&2
+  exit 1
+fi
+
+mime_type=$(file -b --mime-type "$file" 2>/dev/null || printf '')
+case "$mime_type" in
+  text/*|inode/x-empty)
+    # Plain text file or empty file - OK to proceed
+    ;;
+  *)
+    printf '%s\n' "file-to-folder: file is not a plain text file (type: $mime_type)" >&2
+    exit 1
+    ;;
+esac
+
+# Try to read priority attribute from the file (if it exists)
+priority=""
+if has read-magic && has disenchant && has enchant; then
+  # Try to read the priority attribute
+  priority=$(read-magic "$file" priority 2>/dev/null || printf '')
+fi
+
 # Get the directory containing the file
 parent_dir=$(dirname "$file")
 if [ "$parent_dir" = "." ]; then
@@ -71,8 +95,19 @@ mkdir -p "$file"
 # Move the temp file into the new folder and rename it
 if [ -n "$extension" ]; then
   mv "$temp_file" "$file/project notes.$extension"
+  moved_file="$file/project notes.$extension"
 else
   mv "$temp_file" "$file/project notes"
+  moved_file="$file/project notes"
+fi
+
+# If priority was found, transfer it from the file to the folder
+if [ -n "$priority" ]; then
+  # Remove priority from the moved file (it was transferred via temp_file)
+  disenchant "$moved_file" priority 2>/dev/null || true
+  
+  # Enchant the folder with the priority
+  enchant "$file" "priority=$priority" 2>/dev/null || true
 fi
 
 printf '%s\n' "Converted file to folder: $file"

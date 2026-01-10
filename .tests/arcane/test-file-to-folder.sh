@@ -106,6 +106,31 @@ file_to_folder_requires_argument() {
   assert_error_contains "file path required" || return 1
 }
 
+file_to_folder_rejects_non_text_files() {
+  tmpdir=$(make_tempdir)
+  # Create a binary file (use /dev/zero to ensure it's binary)
+  testfile="$tmpdir/binary.dat"
+  dd if=/dev/zero of="$testfile" bs=1 count=10 2>/dev/null
+  
+  run_spell "spells/arcane/file-to-folder" "$testfile"
+  assert_failure || return 1
+  assert_error_contains "not a plain text file" || return 1
+}
+
+file_to_folder_accepts_text_files() {
+  tmpdir=$(make_tempdir)
+  # Create various text file types
+  testfile="$tmpdir/test.txt"
+  printf 'plain text content\n' > "$testfile"
+  
+  run_spell "spells/arcane/file-to-folder" "$testfile"
+  assert_success || return 1
+  assert_output_contains "Converted file to folder" || return 1
+  
+  # Check folder was created
+  [ -d "$testfile" ] || { TEST_FAILURE_REASON="folder not created"; return 1; }
+}
+
 run_test_case "file-to-folder shows usage" file_to_folder_shows_usage
 run_test_case "file-to-folder converts file with extension" file_to_folder_converts_file_with_extension
 run_test_case "file-to-folder converts file without extension" file_to_folder_converts_file_without_extension
@@ -113,5 +138,7 @@ run_test_case "file-to-folder handles empty files" file_to_folder_handles_empty_
 run_test_case "file-to-folder rejects directories" file_to_folder_rejects_directories
 run_test_case "file-to-folder rejects missing files" file_to_folder_rejects_missing_files
 run_test_case "file-to-folder requires argument" file_to_folder_requires_argument
+run_test_case "file-to-folder rejects non-text files" file_to_folder_rejects_non_text_files
+run_test_case "file-to-folder accepts text files" file_to_folder_accepts_text_files
 
 finish_tests
