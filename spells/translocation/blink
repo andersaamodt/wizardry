@@ -97,23 +97,23 @@ cleanup_temp() {
 trap cleanup_temp EXIT HUP INT TERM
 
 # Find all readable directories, no exclusions (that's part of the fun!)
-find "$base_dir" -maxdepth "$max_depth" -type d -readable 2>/dev/null > "$temp_list" || {
-    if command -v warn >/dev/null 2>&1; then
-      warn "blink: find command failed, trying simpler search"
-    fi
-    # Fallback: just get immediate subdirectories
-    find "$base_dir" -maxdepth 1 -type d -readable 2>/dev/null > "$temp_list" || {
-      printf '%s\n' "blink: cannot find any directories" >&2
-      set +eu; return 1 2>/dev/null || exit 1
-    }
-  }
+find "$base_dir" -maxdepth "$max_depth" -type d -readable 2>/dev/null > "$temp_list"
 
-# Count available directories
+# Check if we got any results (don't rely on exit code - find returns non-zero on permission errors)
 dir_count=$(wc -l < "$temp_list" | tr -d ' ')
 
 if [ "$dir_count" -eq 0 ]; then
-  printf '%s\n' "blink: no accessible directories found" >&2
-  set +eu; return 1 2>/dev/null || exit 1
+  # No results from main search, try simpler search
+  if command -v warn >/dev/null 2>&1; then
+    warn "blink: no directories found at depth $max_depth, trying depth 1"
+  fi
+  find "$base_dir" -maxdepth 1 -type d -readable 2>/dev/null > "$temp_list"
+  dir_count=$(wc -l < "$temp_list" | tr -d ' ')
+  
+  if [ "$dir_count" -eq 0 ]; then
+    printf '%s\n' "blink: no accessible directories found" >&2
+    set +eu; return 1 2>/dev/null || exit 1
+  fi
 fi
 
 if command -v debug >/dev/null 2>&1; then

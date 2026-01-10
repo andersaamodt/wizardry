@@ -21,6 +21,10 @@ test_help() {
 
 test_blink_from_root() {
   # Test that blink works from root (default behavior)
+  # Set up PATH to include imps so env-clear is available
+  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:/bin:/usr/bin"
+  export PATH
+  
   # Just verify it produces output without error
   OUTPUT=$(. "$ROOT_DIR/spells/translocation/blink" 1 2>&1) || true
   
@@ -41,6 +45,10 @@ test_blink_with_home_flag() {
   
   # Save original directory
   orig_dir=$(pwd)
+  
+  # Set up PATH to include imps
+  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:/bin:/usr/bin"
+  export PATH
   
   # Change to temp dir and set HOME for test
   cd "$tmpdir"
@@ -67,12 +75,16 @@ test_blink_with_home_flag() {
 }
 
 test_rejects_invalid_depth() {
+  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:/bin:/usr/bin"
+  export PATH
   run_cmd sh -c "set -- abc; . \"$ROOT_DIR/spells/translocation/blink\""
   assert_failure || return 1
   assert_error_contains "positive integer" || return 1
 }
 
 test_rejects_zero_depth() {
+  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:/bin:/usr/bin"
+  export PATH
   run_cmd sh -c "set -- 0; . \"$ROOT_DIR/spells/translocation/blink\""
   assert_failure || return 1
   assert_error_contains "positive integer" || return 1
