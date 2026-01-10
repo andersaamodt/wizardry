@@ -90,8 +90,8 @@ Maintain this section as a running aggregation of emoji usage across the project
 
 **Distribution notes:**
 - copilot-instructions.md: 87 instances (highest density, core guidelines)
-- instructions/spells.instructions.md: 59 instances
-- instructions/imps.instructions.md: 57 instances  
+- instructions/spells.md: 59 instances
+- instructions/imps.md: 57 instances  
 - CODE_POLICY_FUNCTION_CALLS.md: 48 instances
 
 **Patterns to watch:**

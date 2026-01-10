@@ -10,7 +10,7 @@ applyTo: "spells/**"
 
 **All spells and imps must be flat, linear scripts with NO functions (except rare documented exceptions).**
 
-See `.github/instructions/spells.instructions.md` and `.github/instructions/imps.instructions.md` for current patterns.
+See `.github/spells.md` and `.github/imps.md` for current patterns.
 
 ---
 

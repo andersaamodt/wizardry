@@ -4,12 +4,11 @@
 
 **AI Directive:** ALWAYS document new shell patterns, quirks, or POSIX discoveries here as you encounter them during development.
 
-**Documentation Hierarchy:**
-1. **FULL_SPEC.md** - Canonical specification (what/constraints)
-2. **SHELL_CODE_PATTERNS.md** - POSIX shell patterns and best practices (how/idioms) ← **YOU ARE HERE**
-3. **CROSS_PLATFORM_PATTERNS.md** - Cross-platform exceptions (compatibility)
-4. **EXEMPTIONS.md** - Documented exceptions
-5. **LESSONS.md** - Debugging insights
+**Related Documentation:**
+- **FULL_SPEC.md** - Canonical specification (what/constraints)
+- **CROSS_PLATFORM_PATTERNS.md** - Cross-platform compatibility patterns
+- **EXEMPTIONS.md** - Documented exceptions
+- **LESSONS.md** - Debugging insights
 
 ## Critical POSIX sh Patterns
 
@@ -491,7 +490,7 @@ _imp_name() { ...; }
 case "$0" in */imp-name) _imp_name "$@" ;; esac
 
 # Spells are flat, linear scripts (no function wrappers)
-# See .github/instructions/spells.instructions.md
+# See .github/spells.md
 ```
 
 ## Quick Reference

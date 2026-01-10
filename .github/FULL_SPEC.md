@@ -11,20 +11,17 @@ This is the canonical specification for the wizardry project. Every feature, sub
 
 **Organization**: Sections are organized under spell level headings (matching spell-levels imp, banish, test-magic, demo-magic), with multiple feature/subsystem sections under each level.
 
-## Documentation Hierarchy
+## Documentation Organization
 
-The wizardry project uses a hierarchical documentation structure with clear precedence order:
+Wizardry uses several focused documentation files. Keep content in the right document and avoid redundancy:
 
 1. **FULL_SPEC.md** ← **YOU ARE HERE** - Canonical specification (what/constraints)
 2. **SHELL_CODE_PATTERNS.md** - POSIX shell patterns and best practices (how/idioms)
-3. **CROSS_PLATFORM_PATTERNS.md** - Cross-platform exceptions to pure POSIX (compatibility)
-4. **EXEMPTIONS.md** - Cases where we deviate from spec/patterns/cross-platform (documented exceptions)
-5. **LESSONS.md** - Everything else that doesn't fit above (debugging insights)
+3. **CROSS_PLATFORM_PATTERNS.md** - Cross-platform compatibility patterns
+4. **EXEMPTIONS.md** - Documented exceptions to standards
+5. **LESSONS.md** - Debugging insights and lessons learned
 
-**Interpretation**: When documents conflict, higher-precedence documents take priority. For example:
-- If FULL_SPEC says "use X" but SHELL_CODE_PATTERNS shows "use Y", FULL_SPEC wins
-- If SHELL_CODE_PATTERNS says "use pattern A" but CROSS_PLATFORM_PATTERNS says "on macOS use pattern B", use B on macOS (platform-specific exception)
-- If all standards say "don't do Z" but EXEMPTIONS documents "spell X does Z because...", that's an approved exception
+**Purpose**: Each document covers distinct content. Cross-reference between documents as needed.
 
 **Maintenance**:
 - Add new spec lines when implementing new features
