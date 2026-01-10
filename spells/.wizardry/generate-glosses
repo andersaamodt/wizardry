@@ -540,16 +540,8 @@ uname|uniq|wc|xargs)
               ;;
             *)
               # No conflict - generate function for direct invocation
-              # Convert hyphenated target to space-separated for first-word gloss routing
-              case "$_target" in
-                *-*)
-                  _func_target=$(printf '%s' "$_target" | sed 's/-/ /g')
-                  emit_line "$_word() { parse $_func_target \"\$@\"; }"
-                  ;;
-                *)
-                  emit_line "$_word() { $_target \"\$@\"; }"
-                  ;;
-              esac
+              # For hyphenated targets, use the hyphenated form directly (it will have an alias)
+              emit_line "$_word() { $_target \"\$@\"; }"
               ;;
           esac
           ;;
@@ -622,16 +614,8 @@ uname|uniq|wc|xargs)
               ;;
             *)
               # No conflict - generate function for direct invocation
-              # Convert hyphenated target to space-separated for first-word gloss routing
-              case "$_target" in
-                *-*)
-                  _func_target=$(printf '%s' "$_target" | sed 's/-/ /g')
-                  emit_line "$_word() { parse $_func_target \"\$@\"; }"
-                  ;;
-                *)
-                  emit_line "$_word() { $_target \"\$@\"; }"
-                  ;;
-              esac
+              # For hyphenated targets, use the hyphenated form directly (it will have an alias)
+              emit_line "$_word() { $_target \"\$@\"; }"
               ;;
           esac
           ;;
@@ -665,8 +649,8 @@ uname|uniq|wc|xargs)
       # Extract first word
       _first_word=${syn_word%%-*}
       
-      # Check if first word is blacklisted
-      if ! is_first_word_blacklisted "$_first_word"; then
+      # Check if first word is blacklisted - skip if it is
+      if is_first_word_blacklisted "$_first_word"; then
         continue
       fi
       
