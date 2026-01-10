@@ -120,12 +120,12 @@ priority_menu_display_menu() {
   fi
 
   # Build menu items - conditionally include Prioritize based on whether it's highest priority
-  # Order: Prioritize, Check, Subpriorities..., Edit priority, Discard priority
+  # Order: Subpriorities... (if available), Prioritize, Check, Edit priority, Discard priority
   if [ "$is_highest_priority" = "1" ]; then
     # Don't show Prioritize for highest priority items
     if [ -n "$browse_item" ]; then
-      set -- "${check_item}" \
-             "$browse_item" \
+      set -- "$browse_item" \
+             "${check_item}" \
              "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
              "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
              "---" \
@@ -140,9 +140,9 @@ priority_menu_display_menu() {
   else
     # Show Prioritize for non-highest priority items
     if [ -n "$browse_item" ]; then
-      set -- "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
+      set -- "$browse_item" \
+             "Prioritize%prioritize \"$file\"; kill -TERM \$PPID" \
              "${check_item}" \
-             "$browse_item" \
              "Edit priority%rename-interactive \"$file\"; kill -TERM \$PPID" \
              "Discard priority%deprioritize \"$file\"; kill -TERM \$PPID" \
              "---" \

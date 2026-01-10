@@ -97,6 +97,10 @@ display_priorities() {
         menu_command="${menu_command}${file_priority} "
       fi
       item_name=$(basename "$priority_file")
+      # Add * after folder names
+      if [ -d "$priority_file" ]; then
+        item_name="${item_name}*"
+      fi
       menu_command="${menu_command}${checkbox}$item_name%priority-menu \\\"${priority_file}\\\"\""
 
       # Update the highest priority (for detecting echelon boundaries)
