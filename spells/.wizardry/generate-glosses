@@ -650,7 +650,9 @@ uname|uniq|wc|xargs)
       _first_word=${syn_word%%-*}
       
       # Check if first word is blacklisted - skip if it is
-      if is_first_word_blacklisted "$_first_word"; then
+      # NOTE: is_first_word_blacklisted returns 0 if ALLOWED, 1 if BLACKLISTED
+      # So we negate to skip when blacklisted (returns 1, negated to 0/success)
+      if ! is_first_word_blacklisted "$_first_word"; then
         continue
       fi
       
