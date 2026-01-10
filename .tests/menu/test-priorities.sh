@@ -85,7 +85,23 @@ kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$tmp/menu"
   
-  # Create read-magic stub that returns echelon, priority, and checked status
+  # Create xattr-read-batch stub that returns attributes in batch format
+  cat >"$tmp/xattr-read-batch" <<'SH'
+#!/bin/sh
+file=$1
+shift
+case "$file" in
+  */testfile1)
+    printf '%s\n' "echelon=5 priority=1 checked=1"
+    ;;
+  */testfile2)
+    printf '%s\n' "echelon=3 priority=2 checked=0"
+    ;;
+esac
+SH
+  chmod +x "$tmp/xattr-read-batch"
+  
+  # Create read-magic stub for backward compatibility
   cat >"$tmp/read-magic" <<'SH'
 #!/bin/sh
 file=$1
@@ -159,6 +175,19 @@ printf '%s\n' "$@" >>"$MENU_LOG"
 kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$tmp/menu"
+  
+  # Create xattr-read-batch stub
+  cat >"$tmp/xattr-read-batch" <<'SH'
+#!/bin/sh
+file=$1
+shift
+case "$file" in
+  */testfile1)
+    printf '%s\n' "echelon=5 priority=1 checked=0"
+    ;;
+esac
+SH
+  chmod +x "$tmp/xattr-read-batch"
   
   # Create read-magic stub that returns echelon and priority
   cat >"$tmp/read-magic" <<'SH'
@@ -249,6 +278,22 @@ fi
 exit 0
 SH
   chmod +x "$tmp/menu"
+  
+  # Create xattr-read-batch stub
+  cat >"$tmp/xattr-read-batch" <<'SH'
+#!/bin/sh
+file=$1
+shift
+case "$file" in
+  */priority1.txt)
+    printf '%s\n' "echelon=5 priority=1 checked=0"
+    ;;
+  */newpriority.txt)
+    printf '%s\n' "echelon=5 priority=2 checked=0"
+    ;;
+esac
+SH
+  chmod +x "$tmp/xattr-read-batch"
   
   # Create read-magic stub that returns echelon/priority for files
   cat >"$tmp/read-magic" <<'SH'

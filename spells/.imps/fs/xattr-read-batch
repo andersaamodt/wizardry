@@ -1,0 +1,65 @@
+#!/bin/sh
+# xattr-read-batch FILE ATTR1 ATTR2 ... - read multiple extended attributes at once
+# Outputs "ATTR1=value1 ATTR2=value2 ..." format with proper quoting
+# Returns 0 if at least one attribute read, 1 if all failed
+set -eu
+
+file=$1
+shift
+
+# Detect and cache which helper works (try direct execution for speed)
+if [ -z "${XATTR_HELPER-}" ]; then
+  # Try xattr first (macOS and some Linux)
+  if command -v xattr >/dev/null 2>&1; then
+    XATTR_HELPER=xattr
+  elif command -v attr >/dev/null 2>&1; then
+    XATTR_HELPER=attr
+  elif command -v getfattr >/dev/null 2>&1; then
+    XATTR_HELPER=getfattr
+  else
+    XATTR_HELPER=none
+  fi
+  export XATTR_HELPER
+fi
+
+if [ "$XATTR_HELPER" = "none" ]; then
+  exit 1
+fi
+
+# Read all attributes efficiently in a single loop
+result=""
+found_any=0
+
+for attr in "$@"; do
+  # Auto-prepend user. namespace if needed
+  case "$attr" in
+    *.*) full_attr="$attr" ;;
+    *) full_attr="user.$attr" ;;
+  esac
+  
+  value=""
+  case "$XATTR_HELPER" in
+    xattr)
+      value=$(xattr -p "$full_attr" "$file" 2>/dev/null || true)
+      ;;
+    attr)
+      value=$(attr -g "$full_attr" "$file" 2>/dev/null | sed '1d' || true)
+      ;;
+    getfattr)
+      value=$(getfattr -n "$full_attr" --only-values "$file" 2>/dev/null || true)
+      ;;
+  esac
+  
+  if [ -n "$value" ]; then
+    # Use original attr name (without user. prefix) for output
+    result="$result $attr=$value"
+    found_any=1
+  fi
+done
+
+if [ "$found_any" -eq 1 ]; then
+  printf '%s\n' "${result# }"
+  exit 0
+fi
+
+exit 1

@@ -46,17 +46,27 @@ display_priorities() {
   for f in "$dir"/*; do
     [ -e "$f" ] || continue
     
-    # Get echelon, priority, and checked in one batch (minimize read-magic calls)
-    file_echelon=$(read-magic "$f" echelon 2>/dev/null || true)
+    # Read all three attributes at once (major optimization)
+    attrs=$(xattr-read-batch "$f" echelon priority checked 2>/dev/null || true)
+    
+    # Parse the batch result
+    file_echelon=""
+    file_priority=""
+    checked_value=""
+    
+    # Extract values from "echelon=X priority=Y checked=Z" format
+    for pair in $attrs; do
+      case "$pair" in
+        echelon=*) file_echelon="${pair#echelon=}" ;;
+        priority=*) file_priority="${pair#priority=}" ;;
+        checked=*) checked_value="${pair#checked=}" ;;
+      esac
+    done
     
     # Skip if no echelon (not prioritized)
     case "$file_echelon" in
       ''|*Error*|*[!0-9]*) continue ;;
     esac
-    
-    # Only read priority and checked if echelon is valid (file is prioritized)
-    file_priority=$(read-magic "$f" priority 2>/dev/null || true)
-    checked_value=$(read-magic "$f" checked 2>/dev/null || true)
     
     # Default priority to 0 if not set
     case "$file_priority" in

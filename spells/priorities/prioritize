@@ -98,19 +98,30 @@ if [ "$directory" = "." ]; then
   directory=$(pwd -P)
 fi
 
-# Get the file's current echelon and priority
-current_echelon=$(read-magic "$file" echelon 2>/dev/null || printf '0')
+# Get the file's current echelon, priority, and checked status in one batch
+attrs=$(xattr-read-batch "$file" echelon priority checked 2>/dev/null || printf '')
+
+current_echelon=""
+current_priority=""
+checked_value=""
+
+for pair in $attrs; do
+  case "$pair" in
+    echelon=*) current_echelon="${pair#echelon=}" ;;
+    priority=*) current_priority="${pair#priority=}" ;;
+    checked=*) checked_value="${pair#checked=}" ;;
+  esac
+done
+
+# Default to 0 if not set
 case "$current_echelon" in
   *Error*|''|*[!0-9]*) current_echelon=0 ;;
 esac
 
-current_priority=$(read-magic "$file" priority 2>/dev/null || printf '0')
 case "$current_priority" in
   *Error*|''|*[!0-9]*) current_priority=0 ;;
 esac
 
-# Check if file is checked, and uncheck it when prioritizing
-checked_value=$(read-magic "$file" checked 2>/dev/null || printf '0')
 case "$checked_value" in
   *Error*|''|*[!0-9]*) checked_value=0 ;;
 esac
@@ -119,18 +130,47 @@ if [ "$checked_value" = "1" ]; then
   enchant "$file" checked 0 >/dev/null
 fi
 
-# Find the highest echelon in the directory
+# Find the highest echelon in the directory and highest priority within that echelon
+# Combined into single loop for performance
 highest_echelon=0
+highest_priority_in_echelon=0
 for f in "$directory"/*; do
   [ -e "$f" ] || continue
   
-  file_echelon=$(read-magic "$f" echelon 2>/dev/null || printf '0')
+  # Read both echelon and priority in one batch call
+  attrs=$(xattr-read-batch "$f" echelon priority 2>/dev/null || true)
+  
+  file_echelon=""
+  file_priority=""
+  
+  for pair in $attrs; do
+    case "$pair" in
+      echelon=*) file_echelon="${pair#echelon=}" ;;
+      priority=*) file_priority="${pair#priority=}" ;;
+    esac
+  done
+  
+  # Skip if echelon not valid
   case "$file_echelon" in
     *Error*|''|*[!0-9]*) continue ;;
   esac
   
+  # Update highest echelon
   if [ "$file_echelon" -gt "$highest_echelon" ]; then
     highest_echelon=$file_echelon
+    # Reset highest priority when we find a new highest echelon
+    highest_priority_in_echelon=0
+  fi
+  
+  # Track highest priority in the highest echelon
+  if [ "$file_echelon" -eq "$highest_echelon" ]; then
+    case "$file_priority" in
+      *Error*|''|*[!0-9]*) file_priority=0 ;;
+    esac
+    
+    if [ "$file_priority" -gt "$highest_priority_in_echelon" ]; then
+      highest_priority_in_echelon=$file_priority
+    fi
   fi
 done
 
@@ -152,29 +192,6 @@ if [ "$current_echelon" -eq "$highest_echelon" ] && [ "$current_echelon" -gt 0 ]
 fi
 
 # File is not in highest echelon - move it to the highest echelon
-# Find the highest priority number in the highest echelon
-highest_priority_in_echelon=0
-for f in "$directory"/*; do
-  [ -e "$f" ] || continue
-  
-  file_echelon=$(read-magic "$f" echelon 2>/dev/null || printf '0')
-  case "$file_echelon" in
-    *Error*|''|*[!0-9]*) continue ;;
-  esac
-  
-  # Only look at files in the highest echelon
-  if [ "$file_echelon" -eq "$highest_echelon" ]; then
-    file_priority=$(read-magic "$f" priority 2>/dev/null || printf '0')
-    case "$file_priority" in
-      *Error*|''|*[!0-9]*) continue ;;
-    esac
-    
-    if [ "$file_priority" -gt "$highest_priority_in_echelon" ]; then
-      highest_priority_in_echelon=$file_priority
-    fi
-  fi
-done
-
 # Set to highest echelon with priority at the end (highest + 1)
 new_priority=$((highest_priority_in_echelon + 1))
 enchant "$file" echelon "$highest_echelon" >/dev/null
