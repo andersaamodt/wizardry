@@ -115,14 +115,21 @@ export SPELLBOOK_DIR
 if [ -d "$SPELLBOOK_DIR" ]; then
   PATH="$SPELLBOOK_DIR:$PATH"
   
-  # Also add SPELLBOOK_DIR subdirectories (custom categories)
+  # Also add SPELLBOOK_DIR subdirectories (custom categories) recursively
   for subdir in "$SPELLBOOK_DIR"/*; do
     [ -d "$subdir" ] || continue
-    # Skip hidden directories
-    case "$subdir" in
-      */.*) continue ;;
+    # Skip hidden directories (check basename, not full path)
+    _subdir_name=${subdir##*/}
+    case "$_subdir_name" in
+      .*) continue ;;
     esac
     PATH="$subdir:$PATH"
+    
+    # Also add subdirectories of subdirectories (match wizardry structure)
+    for subsubdir in "$subdir"/*; do
+      [ -d "$subsubdir" ] || continue
+      PATH="$subsubdir:$PATH"
+    done
   done
 fi
 
