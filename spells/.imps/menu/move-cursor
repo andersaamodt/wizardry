@@ -8,7 +8,7 @@
 set -eu
 
 if [ "$#" -ne 2 ]; then
-    printf '%s\n' "Usage: move-cursor X Y" >&2
+    printf '%s\n' "move-cursor: expected X Y arguments" >&2
     exit 2
 fi
 

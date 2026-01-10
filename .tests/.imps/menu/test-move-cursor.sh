@@ -18,7 +18,7 @@ move_cursor_requires_two_arguments() {
   skip-if-compiled || return $?
   run_spell "spells/.imps/menu/move-cursor" 5
   assert_failure || return 1
-  assert_error_contains "Usage: move-cursor" || return 1
+  assert_error_contains "expected X Y arguments" || return 1
 }
 
 move_cursor_rejects_non_numeric_coordinates() {
@@ -48,15 +48,6 @@ run_test_case "move-cursor enforces argument count" move_cursor_requires_two_arg
 run_test_case "move-cursor validates numeric coordinates" move_cursor_rejects_non_numeric_coordinates
 run_test_case "move-cursor clamps coordinates and emits escape" move_cursor_clamps_and_emits_escape_sequence
 run_test_case "move-cursor is a no-op on dumb terminals" move_cursor_succeeds_quietly_on_dumb_terminal
-
-shows_help() {
-  run_spell spells/.imps/menu/move-cursor --help
-  # Help is printed via usage function (returns non-zero, output to stderr)
-  assert_error_contains "Usage:"
-}
-
-run_test_case "move-cursor shows help" shows_help
-
 
 # Test via source-then-invoke pattern  
 

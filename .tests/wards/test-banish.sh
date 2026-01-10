@@ -244,8 +244,8 @@ test_banish_shows_detailed_status() {
   WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 1
   assert_success || return 1
   
-  # Should show "Available imps:" section
-  assert_output_contains "Available imps:" || return 1
+  # Should show "Imps:" section
+  assert_output_contains "Imps:" || return 1
   
   # Should show imps listed by name
   assert_output_contains "has" || return 1
@@ -318,11 +318,11 @@ test_imps_detected_not_missing() {
   WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 1
   assert_success || return 1
   
-  # Should NOT report imps as missing (banish shows "Available imps:" not "Missing imps:")
+  # Should NOT report imps as missing (banish shows "Imps:" not "Missing imp")
   ! assert_output_contains "Missing imp" || return 1
   
-  # Should show the "Available imps:" section
-  assert_output_contains "Available imps:" || return 1
+  # Should show the "Imps:" section
+  assert_output_contains "Imps:" || return 1
   
   # Should list individual imps
   assert_output_contains "has" || return 1

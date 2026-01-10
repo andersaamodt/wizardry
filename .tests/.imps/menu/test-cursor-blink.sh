@@ -19,7 +19,7 @@ cursor_blink_requires_one_argument() {
   run_spell "spells/.imps/menu/cursor-blink"
   assert_failure || return 1
   assert_error_contains "cursor-blink:" || return 1
-  assert_error_contains "expected on or off" || return 1
+  assert_error_contains "expected 'on' or 'off'" || return 1
 }
 
 cursor_blink_handles_unknown_value() {
@@ -27,7 +27,7 @@ cursor_blink_handles_unknown_value() {
   run_cmd env TERM=xterm "$ROOT_DIR/spells/.imps/menu/cursor-blink" maybe
   assert_failure || return 1
   assert_error_contains "cursor-blink:" || return 1
-  assert_error_contains "expected on or off" || return 1
+  assert_error_contains "expected 'on' or 'off'" || return 1
 }
 
 cursor_blink_succeeds_silently_on_dumb_terminal() {

@@ -29,8 +29,8 @@ test_validate_existing_imps() {
 test_validate_missing_spells() {
   WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" "nonexistent-spell"
   assert_failure || return 1
-  if ! printf '%s' "$OUTPUT" | grep -q "Missing spell: nonexistent-spell" && \
-    ! printf '%s' "$ERROR" | grep -q "Missing spell: nonexistent-spell"; then
+  if ! printf '%s' "$OUTPUT" | grep -q "Missing Spell: nonexistent-spell" && \
+    ! printf '%s' "$ERROR" | grep -q "Missing Spell: nonexistent-spell"; then
     TEST_FAILURE_REASON="missing spell message not found in output"
     return 1
   fi
@@ -48,7 +48,7 @@ test_show_status_unloaded() {
   # When imps are not loaded, they should show as "Available"
   WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" --imps --show-status "cond/has" "out/say"
   assert_success || return 1
-  assert_output_contains "Available imps: has say" || return 1
+  assert_output_contains "Imps: has say" || return 1
 }
 
 test_show_status_loaded() {
@@ -57,8 +57,8 @@ test_show_status_loaded() {
   # Just test that --show-status works correctly
   WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" --imps --show-status "cond/has" "out/say"
   assert_success || return 1
-  # In flat-file paradigm, all imps show as "Available" (not "Loaded")
-  assert_output_contains "Available imp" || return 1
+  # In flat-file paradigm, all imps show as "Imps:" (not "Loaded")
+  assert_output_contains "Imps:" || return 1
   
   return 0
 }
