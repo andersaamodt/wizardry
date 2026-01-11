@@ -260,7 +260,7 @@ run_spell() {
   if [ -f "${WIZARDRY_TMPDIR}/_test_status" ]; then
     STATUS=$(cat "${WIZARDRY_TMPDIR}/_test_status")
     # Limit output size to avoid ARG_MAX issues with large outputs
-    # Use head to read first 100KB of output/error
+    # For large outputs, tests should read the file directly
     OUTPUT=$(head -c 102400 "${WIZARDRY_TMPDIR}/_test_output" 2>/dev/null || cat "${WIZARDRY_TMPDIR}/_test_output")
     ERROR=$(head -c 102400 "${WIZARDRY_TMPDIR}/_test_error" 2>/dev/null || cat "${WIZARDRY_TMPDIR}/_test_error")
     export STATUS OUTPUT ERROR
@@ -278,6 +278,7 @@ run_cmd() {
   if [ -f "${WIZARDRY_TMPDIR}/_test_status" ]; then
     STATUS=$(cat "${WIZARDRY_TMPDIR}/_test_status")
     # Limit output size to avoid ARG_MAX issues with large outputs
+    # For large outputs, tests should read the file directly
     OUTPUT=$(head -c 102400 "${WIZARDRY_TMPDIR}/_test_output" 2>/dev/null || cat "${WIZARDRY_TMPDIR}/_test_output")
     ERROR=$(head -c 102400 "${WIZARDRY_TMPDIR}/_test_error" 2>/dev/null || cat "${WIZARDRY_TMPDIR}/_test_error")
     export STATUS OUTPUT ERROR
@@ -295,6 +296,7 @@ run_spell_in_dir() {
   if [ -f "${WIZARDRY_TMPDIR}/_test_status" ]; then
     STATUS=$(cat "${WIZARDRY_TMPDIR}/_test_status")
     # Limit output size to avoid ARG_MAX issues with large outputs
+    # For large outputs, tests should read the file directly
     OUTPUT=$(head -c 102400 "${WIZARDRY_TMPDIR}/_test_output" 2>/dev/null || cat "${WIZARDRY_TMPDIR}/_test_output")
     ERROR=$(head -c 102400 "${WIZARDRY_TMPDIR}/_test_error" 2>/dev/null || cat "${WIZARDRY_TMPDIR}/_test_error")
     export STATUS OUTPUT ERROR
