@@ -41,9 +41,9 @@ run_jump() {
   SPELLBOOK_DIR="$spellbook_dir"
   export SPELLBOOK_DIR PATH RUN_CMD_WORKDIR
   if [ -n "$marker_arg" ]; then
-    run_cmd sh -c "set -- \"$marker_arg\"; . \"$ROOT_DIR/spells/translocation/jump-to-marker\""
+    timeout 60 sh -c "set -- \"$marker_arg\"; . \"$ROOT_DIR/spells/translocation/jump-to-marker\"" || true
   else
-    run_cmd sh -c ". \"$ROOT_DIR/spells/translocation/jump-to-marker\""
+    timeout 60 sh -c ". \"$ROOT_DIR/spells/translocation/jump-to-marker\"" || true
   fi
   rm -rf "$spellbook_dir"
 }
