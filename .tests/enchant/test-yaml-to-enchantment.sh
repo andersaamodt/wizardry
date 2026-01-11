@@ -76,6 +76,12 @@ user.beta: moon"
 }
 
 test_reports_missing_helpers() {
+  # Skip if real xattr helpers are available (CI has them installed)
+  if command -v attr >/dev/null 2>&1 || command -v setfattr >/dev/null 2>&1 || command -v xattr >/dev/null 2>&1; then
+    skip "xattr helpers available - cannot test missing helpers"
+    return 0
+  fi
+  
   tmpfile="$WIZARDRY_TMPDIR/headered-missing"
   cat >"$tmpfile" <<'FILE'
 ---
@@ -89,6 +95,12 @@ FILE
 }
 
 test_fails_on_attribute_error() {
+  # Skip if real xattr helpers are available - stub won't override them
+  if command -v attr >/dev/null 2>&1 || command -v setfattr >/dev/null 2>&1 || command -v xattr >/dev/null 2>&1; then
+    skip "xattr helpers available - cannot test helper failure"
+    return 0
+  fi
+  
   stub_dir=$(make_stub_dir)
   cat >"$stub_dir/attr" <<'STUB'
 #!/bin/sh
