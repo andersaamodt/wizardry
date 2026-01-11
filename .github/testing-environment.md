@@ -42,6 +42,29 @@ applyTo: ".tests/**"
 | Different paths | Temp dir differences | Normalize: `pwd -P \| sed 's\|//\|/\|g'` |
 | Command not found | Empty PATH (macOS CI) | Set baseline PATH |
 
+## CI Test Workflow Pattern
+
+**All CI workflows run `banish` before `test-magic` to validate environment:**
+
+```sh
+. spells/.imps/sys/invoke-wizardry && banish 5 && ./spells/.wizardry/test-magic --verbose
+```
+
+**Why this pattern works:**
+- `invoke-wizardry`: Sets up PATH, loads glosses, prepares environment
+- `banish 5`: Validates levels 0-5 (POSIX, dependencies, self-healing) before tests
+- Catches environment issues early (missing tools, broken PATH, failed bootstrapping)
+- Fails fast if prerequisites missing instead of cryptic test failures
+- `test-magic`: Runs full test suite on validated environment
+
+**Benefits:**
+- Environment validated before spending time on tests
+- Clear separation: infrastructure validation (banish) vs behavior validation (tests)
+- Self-healing runs before tests (auto-fixes missing dependencies)
+- Faster debugging: banish failures indicate environment, not test logic
+
+**Level 5 choice:** Includes extended attributes check, covers most dependency requirements without being excessive.
+
 ## Test Best Practices
 
 1. **Never assume tools exist**: Always `command -v tool >/dev/null`

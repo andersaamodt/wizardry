@@ -2,6 +2,26 @@
 
 applyTo: ".tests/**"
 
+## CRITICAL: Run `banish` Before Tests
+
+**All CI workflows run `banish 5` before `test-magic`.** This validates the environment and catches issues early.
+
+```sh
+. spells/.imps/sys/invoke-wizardry && banish 5 && ./spells/.wizardry/test-magic --verbose
+```
+
+**Why this pattern works:**
+- **Early failure**: Environment issues fail fast before wasting time on tests
+- **Self-healing**: `banish` auto-installs missing dependencies when possible
+- **Visibility**: Platform/tool availability logged upfront in CI for debugging
+- **Consistency**: Same validation across all platforms (Linux, macOS, containers)
+- **Level 5**: Validates through extended attributes (MUD features) - sufficient for unit tests
+
+**When running tests locally**, always source invoke-wizardry and run banish first:
+```sh
+. spells/.imps/sys/invoke-wizardry && banish 5 && test-spell category/test-name
+```
+
 ## CRITICAL: Tests Are Required
 
 **Every spell and imp MUST have a corresponding test file.** Tests are not optional.
