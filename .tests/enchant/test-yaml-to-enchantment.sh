@@ -76,22 +76,6 @@ user.beta: moon"
 }
 
 test_reports_missing_helpers() {
-  stub_dir=$(make_stub_dir)
-  # Create failing stubs for all xattr helpers
-  cat >"$stub_dir/attr" <<'STUB'
-#!/bin/sh
-exit 127
-STUB
-  cat >"$stub_dir/xattr" <<'STUB'
-#!/bin/sh
-exit 127
-STUB
-  cat >"$stub_dir/setfattr" <<'STUB'
-#!/bin/sh
-exit 127
-STUB
-  chmod +x "$stub_dir/attr" "$stub_dir/xattr" "$stub_dir/setfattr"
-  
   tmpfile="$WIZARDRY_TMPDIR/headered-missing"
   cat >"$tmpfile" <<'FILE'
 ---
@@ -99,8 +83,9 @@ user.alpha: sky
 ---
 spell
 FILE
-  # With all xattr helpers stubbed to fail, spell should report missing helpers
-  PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/fs:$stub_dir:/usr/bin:/bin" run_spell "spells/enchant/yaml-to-enchantment" "$tmpfile"
+  # Remove /usr/bin and /bin from PATH so real xattr tools aren't found
+  # Only provide wizardry imps - no xattr helpers at all
+  PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/fs" run_spell "spells/enchant/yaml-to-enchantment" "$tmpfile"
   assert_failure && assert_error_contains "requires attr, setfattr, or xattr"
 }
 
