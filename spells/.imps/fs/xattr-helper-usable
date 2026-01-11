@@ -21,10 +21,10 @@ esac
 
 # For non-xattr commands, respect test mode
 if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" = "1" ]; then
-  # In test mode, reject system commands (those in /bin, /usr/bin, /sbin, /usr/sbin, etc.)
+  # In test mode, reject system commands (those in standard system paths)
   helper_path=$(command -v "$helper")
   case "$helper_path" in
-    /bin/*|/usr/bin/*|/sbin/*|/usr/sbin/*|/usr/local/bin/*|/usr/local/sbin/*)
+    /bin/*|/usr/bin/*|/sbin/*|/usr/sbin/*|/usr/local/bin/*|/usr/local/sbin/*|/nix/store/*)
       exit 1
       ;;
   esac

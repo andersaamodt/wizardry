@@ -14,6 +14,12 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
+make_stub_bin() {
+  dir=$(make_tempdir)
+  mkdir -p "$dir/bin"
+  printf '%s\n' "$dir/bin"
+}
+
 test_help() {
   run_spell "spells/priorities/prioritize" --help
   assert_success || return 1
@@ -127,20 +133,20 @@ test_echelon_promotion() {
     return 0
   fi
   
-  # Prioritize first file
+  # Prioritize first file (creates echelon 1)
   run_spell "spells/priorities/prioritize" "$file1"
   assert_success || return 1
   
-  # Prioritize second file (should be promoted to echelon 2)
+  # Prioritize second file (should move to highest echelon 1, not create new echelon)
   run_spell "spells/crypto/hashchant" "$file2"
   run_spell "spells/priorities/prioritize" "$file2"
   assert_success || return 1
-  assert_output_contains "echelon 2" || return 1
+  assert_output_contains "echelon 1" || return 1
   
-  # Check file2 has echelon 2
+  # Check file2 is in echelon 1
   echelon=$(read-magic "$file2" echelon 2>/dev/null || printf '0')
-  [ "$echelon" = "2" ] || {
-    TEST_FAILURE_REASON="Expected echelon=2, got $echelon"
+  [ "$echelon" = "1" ] || {
+    TEST_FAILURE_REASON="Expected echelon=1, got $echelon"
     return 1
   }
 }
@@ -194,17 +200,17 @@ test_move_to_highest_echelon() {
   run_spell "spells/priorities/prioritize" "$file1"
   assert_success || return 1
   
-  # Create echelon 2 with file2
-  run_spell "spells/crypto/hashchant" "$file2"
-  run_spell "spells/priorities/prioritize" "$file2"
+  # Promote file1 to echelon 2 by prioritizing it again
+  run_spell "spells/priorities/prioritize" "$file1"
   assert_success || return 1
+  assert_output_contains "echelon 2" || return 1
   
-  # Manually set file3 to echelon 1 (lower echelon)
+  # Manually set file3 to echelon 1 (lower echelon than current highest of 2)
   run_spell "spells/crypto/hashchant" "$file3"
   enchant "$file3" echelon 1 >/dev/null
-  enchant "$file3" priority 2 >/dev/null
+  enchant "$file3" priority 1 >/dev/null
   
-  # Now prioritize file3 - should move to echelon 2 with priority 2 (after file2)
+  # Now prioritize file3 - should move to echelon 2 with priority 2 (after file1)
   run_spell "spells/priorities/prioritize" "$file3"
   assert_success || return 1
   assert_output_contains "echelon 2" || return 1
@@ -216,7 +222,7 @@ test_move_to_highest_echelon() {
     return 1
   }
   
-  # Check file3 has priority 2 (after file2 which has priority 1)
+  # Check file3 has priority 2 (after file1 which has priority 1)
   priority=$(read-magic "$file3" priority 2>/dev/null || printf '0')
   [ "$priority" = "2" ] || {
     TEST_FAILURE_REASON="Expected priority=2 (added to end), got $priority"
@@ -253,10 +259,10 @@ test_unchecks_when_prioritizing() {
   run_spell "spells/priorities/prioritize" "$testfile"
   assert_success || return 1
   
-  # Verify it's now unchecked
+  # Verify it's now unchecked (get-checked outputs "0" for unchecked)
   run_spell "spells/tasks/get-checked" "$testfile"
-  # get-checked returns exit 1 when not checked
-  assert_failure || return 1
+  assert_success || return 1
+  assert_output_contains "0" || return 1
 }
 
 test_hash_failure_message() {

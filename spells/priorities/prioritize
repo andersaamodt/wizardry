@@ -87,7 +87,7 @@ fi
 
 # Hash the target file for identification (still needed for checked/unchecked tracking)
 if ! hashchant "$file" >/dev/null 2>&1; then
-  printf '%s\n' "prioritize: failed to hash file: $file" >&2
+  printf '%s\n' "prioritize: hashchant failed for file: $file" >&2
   printf '%s\n' "prioritize: extended attributes (xattr) may not be supported on this filesystem" >&2
   exit 1
 fi

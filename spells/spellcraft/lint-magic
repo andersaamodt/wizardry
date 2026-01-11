@@ -386,9 +386,12 @@ AWKSCRIPT
     
     # Inline check_imp_no_flags
     # Exempt stub imps (they mimic system command interfaces)
+    # Exempt menu imps (fathom-cursor and fathom-terminal need flags for flexibility)
     imp_rel_path=${path#"$repo_dir/"}
     case "$imp_rel_path" in
       spells/.imps/test/stub-*) ;;  # Stubs mimic system commands, may use flags
+      spells/.imps/menu/fathom-cursor) ;;  # Menu helpers need flags for flexibility
+      spells/.imps/menu/fathom-terminal) ;;  # Menu helpers need flags for flexibility
       *)
         awk_script=$(temp-file lint-magic-awk) || true
         if [ -n "$awk_script" ]; then

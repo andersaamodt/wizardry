@@ -87,6 +87,10 @@ export WIZARDRY_IMPS_PATH
 WIZARDRY_DIR=$ROOT_DIR
 export WIZARDRY_DIR
 
+# Note: detect-test-environment runs once at test-magic startup (not here)
+# This keeps test-bootstrap fast and avoids duplicate output
+# TEST_ENV_* variables are exported by test-magic and available to all tests
+
 # Check if invoke-wizardry is already loaded (from workflow or test-magic)
 # If so, skip re-loading it for major performance improvement
 if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
