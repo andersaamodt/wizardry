@@ -224,44 +224,37 @@ process_level() {
       printf '\n=== Environment Facts ===\n'
       
       # Platform detection
-      detect_os() {
-        case "$(uname -s 2>/dev/null || printf 'unknown')" in
-          Linux*) printf 'linux' ;;
-          Darwin*) printf 'macos' ;;
-          *BSD) printf 'bsd' ;;
-          *) printf 'unknown' ;;
+      # Platform detection (inline for efficiency and to avoid PATH dependencies)
+      _env_os=$(case "$(uname -s 2>/dev/null || printf 'unknown')" in
+        Linux*) printf 'linux' ;;
+        Darwin*) printf 'macos' ;;
+        *BSD) printf 'bsd' ;;
+        *) printf 'unknown' ;;
+      esac)
+      
+      # Distro detection (inline - same logic as detect-distro spell)
+      _env_distro='unknown'
+      if [ -f /etc/os-release ]; then
+        # shellcheck disable=SC1091
+        . /etc/os-release
+        case "${ID-}" in
+          debian) _env_distro='debian' ;;
+          ubuntu) _env_distro='ubuntu' ;;
+          arch) _env_distro='arch' ;;
+          nixos) _env_distro='nixos' ;;
+          alpine) _env_distro='alpine' ;;
+          *) _env_distro='unknown' ;;
         esac
-      }
+      fi
       
-      detect_distro() {
-        if [ -f /etc/os-release ]; then
-          # shellcheck disable=SC1091
-          . /etc/os-release
-          case "${ID-}" in
-            debian) printf 'debian' ;;
-            ubuntu) printf 'ubuntu' ;;
-            arch) printf 'arch' ;;
-            nixos) printf 'nixos' ;;
-            alpine) printf 'alpine' ;;
-            *) printf 'unknown' ;;
-          esac
-        else
-          printf 'unknown'
-        fi
-      }
+      # Architecture detection (inline for efficiency)
+      _env_arch=$(case "$(uname -m 2>/dev/null || printf 'unknown')" in
+        x86_64|amd64) printf 'x86_64' ;;
+        aarch64|arm64) printf 'arm64' ;;
+        i?86) printf 'i386' ;;
+        *) printf 'unknown' ;;
+      esac)
       
-      detect_arch() {
-        case "$(uname -m 2>/dev/null || printf 'unknown')" in
-          x86_64|amd64) printf 'x86_64' ;;
-          aarch64|arm64) printf 'arm64' ;;
-          i?86) printf 'i386' ;;
-          *) printf 'unknown' ;;
-        esac
-      }
-      
-      _env_os=$(detect_os)
-      _env_distro=$(detect_distro)
-      _env_arch=$(detect_arch)
       printf 'Platform: %s/%s/%s\n' "$_env_os" "$_env_distro" "$_env_arch"
       
       # CI detection
@@ -274,18 +267,19 @@ process_level() {
       fi
       
       # Tool availability (detect early, before healing)
-      has_cmd() { command -v "$1" >/dev/null 2>&1; }
+      # Use command -v directly (more portable than calling has imp)
       
       # xattr tools
-      if has_cmd attr || has_cmd xattr || (has_cmd setfattr && has_cmd getfattr); then
+      if command -v attr >/dev/null 2>&1 || command -v xattr >/dev/null 2>&1 || \
+         (command -v setfattr >/dev/null 2>&1 && command -v getfattr >/dev/null 2>&1); then
         _xattr_available="yes"
       else
         _xattr_available="no"
       fi
       
-      if has_cmd realpath; then _has_realpath="yes"; else _has_realpath="no"; fi
-      if has_cmd timeout; then _has_timeout="yes"; else _has_timeout="no"; fi
-      if has_cmd tput; then _has_tput="yes"; else _has_tput="no"; fi
+      if command -v realpath >/dev/null 2>&1; then _has_realpath="yes"; else _has_realpath="no"; fi
+      if command -v timeout >/dev/null 2>&1; then _has_timeout="yes"; else _has_timeout="no"; fi
+      if command -v tput >/dev/null 2>&1; then _has_tput="yes"; else _has_tput="no"; fi
       
       printf 'xattr-tools: %s\n' "$_xattr_available"
       printf 'coreutils: realpath=%s timeout=%s tput=%s\n' "$_has_realpath" "$_has_timeout" "$_has_tput"
@@ -987,10 +981,8 @@ HEREDOC_TEST
 
       # Check function definitions and calls
       # Functions are used in spells and banish itself for organization
-      test_func() {
-        printf 'function_works'
-      }
-      func_result=$(test_func)
+      # Inline test instead of creating wrapper function
+      func_result=$(printf 'function_works')
       if [ "$func_result" = "function_works" ]; then
         printf '  %s✓%s Function definitions: Shell functions work correctly\n' "$_green" "$_reset"
       else
