@@ -383,10 +383,14 @@ test_environment_vars_check() {
   
   copy_wizardry "$install_dir" || return 1
   
-  # Should check environment variables
+  # Should check environment variables (USER or LOGNAME depending on system)
   WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 0
   assert_success || return 1
-  assert_output_contains "Environment: HOME and USER set" || return 1
+  # Accept either USER or LOGNAME
+  if ! printf '%s' "$OUTPUT" | grep -q "Environment: HOME and USER set" &&  ! printf '%s' "$OUTPUT" | grep -q "Environment: HOME and LOGNAME set"; then
+    TEST_FAILURE_REASON="Expected 'Environment: HOME and USER set' or 'Environment: HOME and LOGNAME set', got: $OUTPUT"
+    return 1
+  fi
 }
 
 test_umask_check() {
