@@ -223,8 +223,7 @@ process_level() {
       # Output environment facts (for AI/test visibility)
       printf '\n=== Environment Facts ===\n'
       
-      # Platform detection
-      # Platform detection (inline for efficiency and to avoid PATH dependencies)
+      # Platform detection (uname-based, no dependencies)
       _env_os=$(case "$(uname -s 2>/dev/null || printf 'unknown')" in
         Linux*) printf 'linux' ;;
         Darwin*) printf 'macos' ;;
@@ -232,20 +231,8 @@ process_level() {
         *) printf 'unknown' ;;
       esac)
       
-      # Distro detection (inline - same logic as detect-distro spell)
-      _env_distro='unknown'
-      if [ -f /etc/os-release ]; then
-        # shellcheck disable=SC1091
-        . /etc/os-release
-        case "${ID-}" in
-          debian) _env_distro='debian' ;;
-          ubuntu) _env_distro='ubuntu' ;;
-          arch) _env_distro='arch' ;;
-          nixos) _env_distro='nixos' ;;
-          alpine) _env_distro='alpine' ;;
-          *) _env_distro='unknown' ;;
-        esac
-      fi
+      # Use detect-distro spell (available after invoke-wizardry sets up PATH)
+      _env_distro=$(detect-distro 2>/dev/null || printf 'unknown')
       
       # Architecture detection (inline for efficiency)
       _env_arch=$(case "$(uname -m 2>/dev/null || printf 'unknown')" in
