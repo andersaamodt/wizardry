@@ -41,8 +41,8 @@ test_missing_helpers() {
   file="$tmpdir/target.txt"
   echo "lore" >"$file"
   PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" run_spell "spells/crypto/hashchant" "$file"
-  # hashchant now succeeds with fallback when helpers unavailable (prints hash to stdout)
-  assert_success && assert_output_contains "0x"
+  # In CI, attr package is installed, so this should fail without xattr helpers
+  assert_failure && assert_error_contains "xattr"
 }
 
 test_prefers_attr() {

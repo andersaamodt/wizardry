@@ -1024,7 +1024,9 @@ HEREDOC_TEST
 
       # Check DNS resolution capability (for potential package downloads)
       # Installation may need to download packages or check repositories
-      if command -v nslookup >/dev/null 2>&1 || command -v host >/dev/null 2>&1 || command -v dig >/dev/null 2>&1; then
+      if command -v nslookup >/dev/null 2>&1 || \
+         command -v host >/dev/null 2>&1 || \
+         command -v dig >/dev/null 2>&1; then
         printf '  %s✓%s DNS resolution: DNS tools available\n' "$_green" "$_reset"
       else
         # Try to resolve a hostname using getent if available

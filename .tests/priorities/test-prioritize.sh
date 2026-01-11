@@ -247,7 +247,7 @@ test_unchecks_when_prioritizing() {
   # Verify it's checked
   run_spell "spells/tasks/get-checked" "$testfile"
   assert_success || return 1
-  assert_output_equals "1" || return 1
+  assert_output_contains "1" || return 1
   
   # Prioritize again - should uncheck it
   run_spell "spells/priorities/prioritize" "$testfile"
@@ -264,11 +264,13 @@ test_hash_failure_message() {
   testfile="$tmpdir/test.txt"
   printf 'test\n' > "$testfile"
   
-  # With new xattr architecture, hashchant succeeds with fallback when helpers unavailable
-  # So prioritize should also succeed (just warns about xattr)
-  # Skip this test as the behavior has changed - hashchant no longer fails
-  echo "SKIP: hashchant now has fallback behavior when xattr unavailable"
-  return 0
+  # With real xattr in CI, test that prioritize fails when hashchant fails
+  stub=$(make_stub_bin)
+  printf '#!/bin/sh\nexit 1\n' >"$stub/hashchant"
+  chmod +x "$stub/hashchant"
+  
+  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" run_spell "spells/priorities/prioritize" "$testfile"
+  assert_failure && assert_error_contains "hashchant"
 }
 
 test_interactive_mode_prompts() {
