@@ -87,13 +87,9 @@ export WIZARDRY_IMPS_PATH
 WIZARDRY_DIR=$ROOT_DIR
 export WIZARDRY_DIR
 
-# Detect and report test environment capabilities (skip if already done by test-magic)
-# This runs early so tests can use TEST_ENV_* variables for intelligent skip decisions
-# Output goes to stdout (visible in CI logs) and can be extracted by read-test-failures
-# Note: test-magic runs this once at startup; individual tests don't need to re-run it
-if [ "${WIZARDRY_TEST_ENV_DETECTED-}" != "1" ] && [ -x "$ROOT_DIR/spells/.imps/test/detect-test-environment" ]; then
-  . "$ROOT_DIR/spells/.imps/test/detect-test-environment"
-fi
+# Note: detect-test-environment runs once at test-magic startup (not here)
+# This keeps test-bootstrap fast and avoids duplicate output
+# TEST_ENV_* variables are exported by test-magic and available to all tests
 
 # Check if invoke-wizardry is already loaded (from workflow or test-magic)
 # If so, skip re-loading it for major performance improvement
