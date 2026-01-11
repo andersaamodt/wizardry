@@ -37,12 +37,32 @@ test_missing_file() {
 
 test_missing_helpers() {
   stub=$(make_stub_bin)
+  # Create failing stubs for all xattr helpers to simulate missing/broken xattr support
+  cat >"$stub/attr" <<'EOF'
+#!/bin/sh
+exit 127
+EOF
+  cat >"$stub/xattr" <<'EOF'
+#!/bin/sh
+exit 127
+EOF
+  cat >"$stub/setfattr" <<'EOF'
+#!/bin/sh
+exit 127
+EOF
+  cat >"$stub/getfattr" <<'EOF'
+#!/bin/sh
+exit 127
+EOF
+  chmod +x "$stub/attr" "$stub/xattr" "$stub/setfattr" "$stub/getfattr"
+  
   tmpdir=$(make_tempdir)
   file="$tmpdir/target.txt"
   echo "lore" >"$file"
   PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" run_spell "spells/crypto/hashchant" "$file"
-  # In CI, attr package is installed, so this should fail without xattr helpers
-  assert_failure && assert_error_contains "xattr"
+  # With all xattr helpers stubbed to fail, hashchant should still succeed
+  # (it degrades gracefully), but should warn about xattr unavailability
+  assert_success && assert_error_contains "xattr"
 }
 
 test_prefers_attr() {

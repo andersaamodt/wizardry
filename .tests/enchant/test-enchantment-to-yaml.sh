@@ -89,17 +89,32 @@ STUB
 
 test_reports_missing_helpers() {
   stub_dir=$(make_stub_dir)
+  # Provide a working getfattr to list attributes
   cat >"$stub_dir/getfattr" <<'STUB'
 #!/bin/sh
 printf '%s\n' 'user.alpha'
 STUB
   chmod +x "$stub_dir/getfattr"
+  
+  # Create failing stubs for writer tools to simulate missing xattr support
+  cat >"$stub_dir/attr" <<'STUB'
+#!/bin/sh
+exit 127
+STUB
+  cat >"$stub_dir/xattr" <<'STUB'
+#!/bin/sh
+exit 127
+STUB
+  cat >"$stub_dir/setfattr" <<'STUB'
+#!/bin/sh
+exit 127
+STUB
+  chmod +x "$stub_dir/attr" "$stub_dir/xattr" "$stub_dir/setfattr"
 
   target="$WIZARDRY_TMPDIR/yaml-missing"
   printf 'content\n' >"$target"
 
-  # Need xattr writer (attr/xattr/setfattr) to function
-  # With real xattr in CI, this should fail when writer is missing
+  # With xattr writers stubbed to fail, should report missing helpers
   PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/fs:$stub_dir:/usr/bin:/bin" run_spell "spells/enchant/enchantment-to-yaml" "$target"
   assert_failure && assert_error_contains "requires one of attr, xattr, or setfattr"
 }
