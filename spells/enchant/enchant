@@ -22,84 +22,84 @@ key=""
 value=""
 
 if [ $# -eq 0 ]; then
-	printf '%s\n' "enchant: at least one argument required (attribute=value)" >&2
-	exit 1
+  printf '%s\n' "enchant: at least one argument required (attribute=value)" >&2
+  exit 1
 elif [ $# -eq 1 ]; then
-	# One arg: must be attribute=value, use current directory
-	case "$1" in
-	*=*)
-		# Check both sides are non-empty
-		_attr="${1%%=*}"
-		_val="${1#*=}"
-		if [ -n "$_attr" ] && [ -n "$_val" ]; then
-			key=$_attr
-			value=$_val
-			file=$PWD
-		else
-			printf '%s\n' "enchant: argument must be attribute=value format" >&2
-			exit 1
-		fi
-		;;
-	*)
-		printf '%s\n' "enchant: argument must be attribute=value format" >&2
-		exit 1
-		;;
-	esac
+  # One arg: must be attribute=value, use current directory
+  case "$1" in
+  *=*)
+    # Check both sides are non-empty
+    _attr="${1%%=*}"
+    _val="${1#*=}"
+    if [ -n "$_attr" ] && [ -n "$_val" ]; then
+      key=$_attr
+      value=$_val
+      file=$PWD
+    else
+      printf '%s\n' "enchant: argument must be attribute=value format" >&2
+      exit 1
+    fi
+    ;;
+  *)
+    printf '%s\n' "enchant: argument must be attribute=value format" >&2
+    exit 1
+    ;;
+  esac
 elif [ $# -eq 2 ]; then
-	# Two args: detect which is file and which is attribute=value
-	arg1_is_attr=0
-	arg2_is_attr=0
-	
-	# Check if arg1 is attribute=value
-	case "$1" in
-	*=*)
-		_attr1="${1%%=*}"
-		_val1="${1#*=}"
-		[ -n "$_attr1" ] && [ -n "$_val1" ] && arg1_is_attr=1
-		;;
-	esac
-	
-	# Check if arg2 is attribute=value
-	case "$2" in
-	*=*)
-		_attr2="${2%%=*}"
-		_val2="${2#*=}"
-		[ -n "$_attr2" ] && [ -n "$_val2" ] && arg2_is_attr=1
-		;;
-	esac
-	
-	if [ "$arg1_is_attr" -eq 1 ] && [ "$arg2_is_attr" -eq 1 ]; then
-		printf '%s\n' "enchant: Both arguments look like attribute=value pairs." >&2
-		exit 1
-	elif [ "$arg1_is_attr" -eq 1 ]; then
-		# First is attr=val, second is file
-		key="${1%%=*}"
-		value="${1#*=}"
-		file=$2
-	elif [ "$arg2_is_attr" -eq 1 ]; then
-		# First is file, second is attr=val
-		file=$1
-		key="${2%%=*}"
-		value="${2#*=}"
-	else
-		# Neither has valid attr=value format
-		printf '%s\n' "enchant: Two-argument format requires one argument to be in 'attribute=value' format. Use 'enchant <file> attr=value' or 'enchant attr=value <file>'" >&2
-		exit 1
-	fi
+  # Two args: detect which is file and which is attribute=value
+  arg1_is_attr=0
+  arg2_is_attr=0
+  
+  # Check if arg1 is attribute=value
+  case "$1" in
+  *=*)
+    _attr1="${1%%=*}"
+    _val1="${1#*=}"
+    [ -n "$_attr1" ] && [ -n "$_val1" ] && arg1_is_attr=1
+    ;;
+  esac
+  
+  # Check if arg2 is attribute=value
+  case "$2" in
+  *=*)
+    _attr2="${2%%=*}"
+    _val2="${2#*=}"
+    [ -n "$_attr2" ] && [ -n "$_val2" ] && arg2_is_attr=1
+    ;;
+  esac
+  
+  if [ "$arg1_is_attr" -eq 1 ] && [ "$arg2_is_attr" -eq 1 ]; then
+    printf '%s\n' "enchant: Both arguments look like attribute=value pairs." >&2
+    exit 1
+  elif [ "$arg1_is_attr" -eq 1 ]; then
+    # First is attr=val, second is file
+    key="${1%%=*}"
+    value="${1#*=}"
+    file=$2
+  elif [ "$arg2_is_attr" -eq 1 ]; then
+    # First is file, second is attr=val
+    file=$1
+    key="${2%%=*}"
+    value="${2#*=}"
+  else
+    # Neither has valid attr=value format
+    printf '%s\n' "enchant: Two-argument format requires one argument to be in 'attribute=value' format. Use 'enchant <file> attr=value' or 'enchant attr=value <file>'" >&2
+    exit 1
+  fi
 elif [ $# -eq 3 ]; then
-	# Legacy 3-arg format: file, attribute, value
-	file=$1
-	key=$2
-	value=$3
+  # Legacy 3-arg format: file, attribute, value
+  file=$1
+  key=$2
+  value=$3
 else
-	printf '%s\n' "enchant: Too many arguments provided." >&2
-	exit 1
+  printf '%s\n' "enchant: Too many arguments provided." >&2
+  exit 1
 fi
 
 # Validate we have all required parts
 if [ -z "$file" ] || [ -z "$key" ] || [ -z "$value" ]; then
-	printf '%s\n' "enchant: File, attribute, and value are all required." >&2
-	exit 1
+  printf '%s\n' "enchant: File, attribute, and value are all required." >&2
+  exit 1
 fi
 
 # Check file exists

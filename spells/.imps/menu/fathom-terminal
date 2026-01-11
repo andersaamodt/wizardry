@@ -38,16 +38,6 @@ while [ "$#" -gt 0 ]; do
         -w|--width)
         want_width=1
         ;;
-        --help|--usage|-h)
-            cat <<'USAGE'
-Usage: fathom-terminal [-v|--verbose] [--width|--height]
-
-Read terminal dimensions from terminfo and print the width, height, or both.
-Pass --width or --height to request a single measurement; -v annotates the
-numbers with friendly labels for menu output.
-USAGE
-            exit 0
-            ;;
         --height)
             want_height=1
             ;;
@@ -56,13 +46,7 @@ USAGE
             break
             ;;
         -*)
-            cat <<'USAGE' >&2
-Usage: fathom-terminal [-v|--verbose] [--width|--height]
-
-Read terminal dimensions from terminfo and print the width, height, or both.
-Pass --width or --height to request a single measurement; -v annotates the
-numbers with friendly labels for menu output.
-USAGE
+            printf 'fathom-terminal: unknown option: %s\n' "$1" >&2
             exit 1
             ;;
         *)

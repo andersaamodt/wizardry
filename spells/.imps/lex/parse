@@ -173,12 +173,14 @@ _synonym_target=""
 
 # Check user synonyms first
 if [ -f "$_spell_home/.synonyms" ]; then
-  _synonym_target=$(grep "^$_first_word=" "$_spell_home/.synonyms" 2>/dev/null | sed 's/^[^=]*=//' || true)
+  _synonym_target=$(grep "^$_first_word=" "$_spell_home/.synonyms" 2>/dev/null | \
+    sed 's/^[^=]*=//' || true)
 fi
 
 # Check default synonyms if not found in user synonyms
 if [ -z "$_synonym_target" ] && [ -f "$_spell_home/.default-synonyms" ]; then
-  _synonym_target=$(grep "^$_first_word=" "$_spell_home/.default-synonyms" 2>/dev/null | sed 's/^[^=]*=//' || true)
+  _synonym_target=$(grep "^$_first_word=" "$_spell_home/.default-synonyms" 2>/dev/null | \
+    sed 's/^[^=]*=//' || true)
 fi
 
 # If synonym found, recursively call parse with the target

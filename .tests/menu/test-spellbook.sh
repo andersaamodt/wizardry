@@ -169,7 +169,8 @@ SH
   chmod +x "$stub_dir/exit-label"
   
   # Run spellbook - it should work normally with exit code 0
-  run_cmd env PATH="$stub_dir:$PATH" MENU_LOG="$stub_dir/log" "$ROOT_DIR/spells/menu/spellbook" &
+  # Run directly without run_cmd wrapper to avoid hang
+  env PATH="$stub_dir:$PATH" MENU_LOG="$stub_dir/log" "$ROOT_DIR/spells/menu/spellbook" &
   spellbook_pid=$!
   sleep 0.5
   kill -TERM "$spellbook_pid" 2>/dev/null || true

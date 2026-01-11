@@ -261,8 +261,10 @@ run_spell() {
     STATUS=$(cat "${WIZARDRY_TMPDIR}/_test_status")
     # Limit output size to avoid ARG_MAX issues with large outputs
     # For large outputs, tests should read the file directly
-    OUTPUT=$(head -c 102400 "${WIZARDRY_TMPDIR}/_test_output" 2>/dev/null || cat "${WIZARDRY_TMPDIR}/_test_output")
-    ERROR=$(head -c 102400 "${WIZARDRY_TMPDIR}/_test_error" 2>/dev/null || cat "${WIZARDRY_TMPDIR}/_test_error")
+    OUTPUT=$(head -c 102400 "${WIZARDRY_TMPDIR}/_test_output" 2>/dev/null || \
+      cat "${WIZARDRY_TMPDIR}/_test_output")
+    ERROR=$(head -c 102400 "${WIZARDRY_TMPDIR}/_test_error" 2>/dev/null || \
+      cat "${WIZARDRY_TMPDIR}/_test_error")
     export STATUS OUTPUT ERROR
   fi
 }
@@ -279,8 +281,10 @@ run_cmd() {
     STATUS=$(cat "${WIZARDRY_TMPDIR}/_test_status")
     # Limit output size to avoid ARG_MAX issues with large outputs
     # For large outputs, tests should read the file directly
-    OUTPUT=$(head -c 102400 "${WIZARDRY_TMPDIR}/_test_output" 2>/dev/null || cat "${WIZARDRY_TMPDIR}/_test_output")
-    ERROR=$(head -c 102400 "${WIZARDRY_TMPDIR}/_test_error" 2>/dev/null || cat "${WIZARDRY_TMPDIR}/_test_error")
+    OUTPUT=$(head -c 102400 "${WIZARDRY_TMPDIR}/_test_output" 2>/dev/null || \
+      cat "${WIZARDRY_TMPDIR}/_test_output")
+    ERROR=$(head -c 102400 "${WIZARDRY_TMPDIR}/_test_error" 2>/dev/null || \
+      cat "${WIZARDRY_TMPDIR}/_test_error")
     export STATUS OUTPUT ERROR
   fi
 }
@@ -297,8 +301,10 @@ run_spell_in_dir() {
     STATUS=$(cat "${WIZARDRY_TMPDIR}/_test_status")
     # Limit output size to avoid ARG_MAX issues with large outputs
     # For large outputs, tests should read the file directly
-    OUTPUT=$(head -c 102400 "${WIZARDRY_TMPDIR}/_test_output" 2>/dev/null || cat "${WIZARDRY_TMPDIR}/_test_output")
-    ERROR=$(head -c 102400 "${WIZARDRY_TMPDIR}/_test_error" 2>/dev/null || cat "${WIZARDRY_TMPDIR}/_test_error")
+    OUTPUT=$(head -c 102400 "${WIZARDRY_TMPDIR}/_test_output" 2>/dev/null || \
+      cat "${WIZARDRY_TMPDIR}/_test_output")
+    ERROR=$(head -c 102400 "${WIZARDRY_TMPDIR}/_test_error" 2>/dev/null || \
+      cat "${WIZARDRY_TMPDIR}/_test_error")
     export STATUS OUTPUT ERROR
   fi
 }

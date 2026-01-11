@@ -187,7 +187,8 @@ if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
       if [ "$_iw_needs_regen" -eq 0 ] && [ -d "$WIZARDRY_DIR/spells" ]; then
         # Use find to check if any file in spells/ is newer than cache
         # Don't filter by -executable since touching a file removes the bit temporarily
-        _iw_newest_spell=$(find "$WIZARDRY_DIR/spells" -type f -newer "$_iw_gloss_persistent" -print -quit 2>/dev/null || true)
+        _iw_newest_spell=$(find "$WIZARDRY_DIR/spells" -type f -newer \
+          "$_iw_gloss_persistent" -print -quit 2>/dev/null || true)
         if [ -n "$_iw_newest_spell" ]; then
           _iw_needs_regen=1
         fi

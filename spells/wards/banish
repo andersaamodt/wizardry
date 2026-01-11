@@ -545,7 +545,8 @@ banish_process_level() {
       # Check subshells work
       # Subshells (parentheses) create isolated environments for command
       # substitution and temporary state changes. Critical for POSIX scripts.
-      subshell_test=$(test_var=outer; (test_var=inner; printf '%s' "$test_var") 2>/dev/null || printf '')
+      subshell_test=$(test_var=outer; \
+        (test_var=inner; printf '%s' "$test_var") 2>/dev/null || printf '')
       if [ "$subshell_test" = "inner" ]; then
         printf '  %s✓%s Subshells: Working correctly\n' "$_green" "$_reset"
       else
