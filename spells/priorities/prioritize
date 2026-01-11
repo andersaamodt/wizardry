@@ -87,7 +87,7 @@ fi
 
 # Hash the target file for identification (still needed for checked/unchecked tracking)
 if ! hashchant "$file" >/dev/null 2>&1; then
-  printf '%s\n' "prioritize: hashchant failed for file: $file" >&2
+  printf '%s\n' "prioritize: failed to hash file: $file" >&2
   printf '%s\n' "prioritize: extended attributes (xattr) may not be supported on this filesystem" >&2
   exit 1
 fi
@@ -182,18 +182,19 @@ if [ "$highest_echelon" -eq 0 ]; then
   exit 0
 fi
 
-# If file is in a lower echelon, move it to the highest echelon (catching up)
-if [ "$current_echelon" -lt "$highest_echelon" ] && [ "$current_echelon" -gt 0 ]; then
-  new_priority=$((highest_priority_in_echelon + 1))
-  enchant "$file" echelon "$highest_echelon" >/dev/null
-  enchant "$file" priority "$new_priority" >/dev/null
-  printf '%s\n' "Moved '$(basename "$file")' to echelon $highest_echelon (priority $new_priority)."
+# If file is already at the highest echelon, promote to new echelon
+if [ "$current_echelon" -eq "$highest_echelon" ] && [ "$current_echelon" -gt 0 ]; then
+  new_echelon=$((highest_echelon + 1))
+  enchant "$file" echelon "$new_echelon" >/dev/null
+  enchant "$file" priority 1 >/dev/null
+  printf '%s\n' "Promoted '$(basename "$file")' to echelon $new_echelon."
   exit 0
 fi
 
-# Otherwise, create a new higher echelon
-# (For new files or files already at the highest echelon)
-new_echelon=$((highest_echelon + 1))
-enchant "$file" echelon "$new_echelon" >/dev/null
-enchant "$file" priority 1 >/dev/null
-printf '%s\n' "Promoted '$(basename "$file")' to echelon $new_echelon."
+# File is not in highest echelon - move it to the highest echelon
+# Set to highest echelon with priority at the end (highest + 1)
+new_priority=$((highest_priority_in_echelon + 1))
+enchant "$file" echelon "$highest_echelon" >/dev/null
+enchant "$file" priority "$new_priority" >/dev/null
+
+printf '%s\n' "Moved '$(basename "$file")' to echelon $highest_echelon (priority $new_priority)."

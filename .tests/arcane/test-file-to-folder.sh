@@ -146,12 +146,6 @@ file_to_folder_accepts_text_files() {
 }
 
 file_to_folder_transfers_priority_attribute() {
-  # Skip if real xattr helpers are available - stub won't override them
-  if command -v attr >/dev/null 2>&1 || command -v setfattr >/dev/null 2>&1 || command -v xattr >/dev/null 2>&1; then
-    skip "xattr helpers available - cannot test with stub"
-    return 0
-  fi
-  
   tmpdir=$(make_tempdir)
   stub_dir="$tmpdir/stubs"
   testfile="$tmpdir/myfile.txt"

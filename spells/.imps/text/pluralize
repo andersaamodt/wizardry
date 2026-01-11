@@ -170,9 +170,9 @@ set -eu
       case "$_pluralize_rest" in
         *[A-Z]*) printf '%s' "$_pluralize_result" ;;
         *)
-          # Use dd for character extraction (most portable)
-          _pluralize_first=$(printf '%s' "$_pluralize_result" | dd bs=1 count=1 2>/dev/null)
-          _pluralize_tail=$(printf '%s' "$_pluralize_result" | dd bs=1 skip=1 2>/dev/null)
+          # Use awk for character extraction (most portable)
+          _pluralize_first=$(printf '%s' "$_pluralize_result" | awk '{print substr($0,1,1)}')
+          _pluralize_tail=$(printf '%s' "$_pluralize_result" | awk '{print substr($0,2)}')
           printf '%s%s' "$(printf '%s' "$_pluralize_first" | tr 'a-z' 'A-Z')" "$_pluralize_tail"
           ;;
       esac

@@ -36,22 +36,12 @@ test_missing_file() {
 }
 
 test_missing_helpers() {
-  # Skip this test if any xattr helper is actually available
-  # This test is only meaningful on systems without xattr support
-  if command -v attr >/dev/null 2>&1 || \
-     command -v xattr >/dev/null 2>&1 || \
-     command -v setfattr >/dev/null 2>&1 || \
-     command -v getfattr >/dev/null 2>&1; then
-    skip "xattr helpers available - cannot test missing helpers scenario"
-    return 0
-  fi
-  
   stub=$(make_stub_bin)
   tmpdir=$(make_tempdir)
   file="$tmpdir/target.txt"
   echo "lore" >"$file"
-  PATH="$WIZARDRY_IMPS_PATH:$stub" run_spell "spells/crypto/hashchant" "$file"
-  # Without xattr helpers, spell should fail with informative error
+  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" run_spell "spells/crypto/hashchant" "$file"
+  # In CI, attr package is installed, so this should fail without xattr helpers
   assert_failure && assert_error_contains "xattr"
 }
 

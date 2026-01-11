@@ -8,7 +8,7 @@ case "${1-}" in
   cat << 'USAGE'
 Usage: get-priority <file>
 
-Read and print the echelon and priority extended attributes from a file. Outputs "echelon priority" (e.g., "1 2" or "0 0" if not set).
+Read and print the echelon and priority extended attributes from a file. Outputs "echelon priority" if both are set, just the echelon if only echelon is set, or nothing if neither is set.
 USAGE
   exit 0
   ;;
@@ -37,18 +37,16 @@ priority=$(read-magic "$file" priority 2>/dev/null || true)
 
 # Handle error messages or empty values
 case "$echelon" in
-  *Error*|'') echelon="0" ;;
+  *Error*|'') echelon="" ;;
 esac
 
 case "$priority" in
-  *Error*|'') priority="0" ;;
+  *Error*|'') priority="" ;;
 esac
 
-# Output format
-if [ "$echelon" = "0" ] && [ "$priority" = "0" ]; then
-  # No priority set - output just "0"
-  printf '0\n'
-else
-  # Priority is set - output echelon and priority
+# Output based on what's set
+if [ -n "$echelon" ] && [ -n "$priority" ]; then
   printf '%s %s\n' "$echelon" "$priority"
+elif [ -n "$echelon" ]; then
+  printf '%s\n' "$echelon"
 fi

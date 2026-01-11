@@ -88,15 +88,6 @@ STUB
 }
 
 test_reports_missing_helpers() {
-  # Skip this test if any xattr helper is actually available
-  # This test is only meaningful on systems without xattr support
-  if command -v attr >/dev/null 2>&1 || \
-     command -v xattr >/dev/null 2>&1 || \
-     command -v setfattr >/dev/null 2>&1; then
-    skip "xattr helpers available - cannot test missing helpers scenario"
-    return 0
-  fi
-  
   stub_dir=$(make_stub_dir)
   cat >"$stub_dir/getfattr" <<'STUB'
 #!/bin/sh
@@ -107,8 +98,9 @@ STUB
   target="$WIZARDRY_TMPDIR/yaml-missing"
   printf 'content\n' >"$target"
 
-  # Without xattr writers, spell should fail with informative error
-  PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/fs:$stub_dir" run_spell "spells/enchant/enchantment-to-yaml" "$target"
+  # Need xattr writer (attr/xattr/setfattr) to function
+  # With real xattr in CI, this should fail when writer is missing
+  PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/fs:$stub_dir:/usr/bin:/bin" run_spell "spells/enchant/enchantment-to-yaml" "$target"
   assert_failure && assert_error_contains "requires one of attr, xattr, or setfattr"
 }
 
