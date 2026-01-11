@@ -49,3 +49,6 @@ else
   # Machine-readable output for scripts
   printf '%s\n' "$checked_value"
 fi
+
+# Exit with failure if not checked (allows use in conditionals)
+[ "$checked_value" = "1" ]
