@@ -153,7 +153,8 @@ set -eu
         return 0  # Allow test (used in test-spell, etc.)
         ;;
       # BLACKLIST: Shell builtins that CANNOT be overridden
-      alias|bg|cd|command|disable|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|read|readonly|set|sh|\
+      alias|bg|cd|command|disable|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|\
+read|readonly|set|sh|\
 times|trap|true|type|ulimit|umask|unalias|wait|break|case|continue|do|done|elif|else|\
 esac|eval|exec|exit|export|fi|for|if|in|local|return|shift|then|unset|until|while)
         return 1  # Blacklisted
@@ -611,7 +612,7 @@ uname|uniq|wc|xargs)
       
       # Validate synonym word
       if ! is_synonym_valid "$_word"; then
-        [ "$quiet" -eq 0 ] && warn "Invalid default synonym: $_word" >&2
+        printf '%s\n' "ERROR: invalid default synonym: $_word" >&2
         continue
       fi
       

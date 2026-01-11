@@ -392,7 +392,8 @@ banish_process_level() {
       # Check shell type (POSIX-compatible shell required)
       # Wizardry scripts assume POSIX sh semantics. Non-POSIX shells like
       # csh, tcsh, and fish have incompatible syntax and semantics.
-      shell_type=${SHELL##*/}
+      shell_type=${SHELL-/bin/sh}
+      shell_type=${shell_type##*/}
       shell_type=${shell_type:-sh}
       case "$shell_type" in
         sh|bash|dash|zsh|ksh|ash)
@@ -545,7 +546,8 @@ banish_process_level() {
       # Check subshells work
       # Subshells (parentheses) create isolated environments for command
       # substitution and temporary state changes. Critical for POSIX scripts.
-      subshell_test=$(test_var=outer; (test_var=inner; printf '%s' "$test_var") 2>/dev/null || printf '')
+      subshell_test=$(test_var=outer; \
+        (test_var=inner; printf '%s' "$test_var") 2>/dev/null || printf '')
       if [ "$subshell_test" = "inner" ]; then
         printf '  %s✓%s Subshells: Working correctly\n' "$_green" "$_reset"
       else
@@ -731,7 +733,9 @@ line1
 line2
 HEREDOC_TEST
 )
-      if printf '%s' "$heredoc_result" | grep -q "line1" && printf '%s' "$heredoc_result" | grep -q "line2"; then
+      has_line1=$(printf '%s' "$heredoc_result" | grep -q "line1" && echo 1 || echo 0)
+      has_line2=$(printf '%s' "$heredoc_result" | grep -q "line2" && echo 1 || echo 0)
+      if [ "$has_line1" = "1" ] && [ "$has_line2" = "1" ]; then
         printf '  %s✓%s Here documents: Multi-line strings work\n' "$_green" "$_reset"
       else
         printf '  %s✗%s Here documents: Not working correctly\n' "$_red" "$_reset"
@@ -1020,7 +1024,9 @@ HEREDOC_TEST
 
       # Check DNS resolution capability (for potential package downloads)
       # Installation may need to download packages or check repositories
-      if command -v nslookup >/dev/null 2>&1 || command -v host >/dev/null 2>&1 || command -v dig >/dev/null 2>&1; then
+      if command -v nslookup >/dev/null 2>&1 || \
+         command -v host >/dev/null 2>&1 || \
+         command -v dig >/dev/null 2>&1; then
         printf '  %s✓%s DNS resolution: DNS tools available\n' "$_green" "$_reset"
       else
         # Try to resolve a hostname using getent if available
@@ -2122,16 +2128,16 @@ HEREDOC_TEST
       tmp_source_test=$(mktemp "${tmp_root%/}/banish-source.XXXXXX" 2>/dev/null || printf '')
       if [ -n "$tmp_source_test" ]; then
         # Create a simple script that sets a variable
-        printf '%s\n' 'BANISH_SOURCE_TEST="sourced_successfully"' > "$tmp_source_test"
+        printf '%s\n' 'banish_source_test="sourced_successfully"' > "$tmp_source_test"
         
         # Try to source it
-        BANISH_SOURCE_TEST=""
+        banish_source_test=""
         # shellcheck disable=SC1090
         . "$tmp_source_test" 2>/dev/null || :
         
         rm -f "$tmp_source_test" 2>/dev/null || :
         
-        if [ "$BANISH_SOURCE_TEST" = "sourced_successfully" ]; then
+        if [ "$banish_source_test" = "sourced_successfully" ]; then
           printf '  %s✓%s Script sourcing: Can source shell scripts with .\n' "$_green" "$_reset"
         else
           printf '  %s✗%s Script sourcing: Cannot source shell scripts\n' "$_red" "$_reset"

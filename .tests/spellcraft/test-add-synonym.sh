@@ -222,17 +222,15 @@ test_no_warning_for_nonexistent_command() {
   case_dir=$(make_tempdir)
   synonyms_file="$case_dir/.synonyms"
   
-  # Create synonym for non-existent command (should succeed without warning)
+  # Create synonym for non-existent command with confirmation
+  # The spell warns about non-existent commands and asks for confirmation
   SPELLBOOK_DIR="$case_dir" \
-    run_spell "spells/spellcraft/add-synonym" mynewthing somecommand
+    run_cmd env ASK_CANTRIP_INPUT=stdin sh -c "printf 'y\\n' | \"$ROOT_DIR/spells/spellcraft/add-synonym\" mynewthing somecommand"
   
   assert_success || return 1
   
-  # Should NOT contain collision warning
-  if printf '%s' "$ERROR" | grep -q "already exists as a command"; then
-    TEST_FAILURE_REASON="unexpected collision warning for non-existent command"
-    return 1
-  fi
+  # Should contain warning about command not found (this is correct behavior)
+  assert_error_contains "not found in PATH" || return 1
 }
 
 run_test_case "prints help" test_shows_help

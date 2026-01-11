@@ -181,15 +181,13 @@ fi
 
 # Use system PATH again for cleanup operations
 PATH=${WIZARDRY_SYSTEM_PATH:-$PATH}
-OUTPUT=$(cat "$_stdout")
-ERROR=$(cat "$_stderr")
-rm -f "$_stdout" "$_stderr"
-rm -rf "$sandbox"
 
 # Write STATUS, OUTPUT, ERROR to files so parent shell can access them
+# Use mv instead of cat to avoid ARG_MAX issues with large output
 printf '%s' "$STATUS" > "${WIZARDRY_TMPDIR}/_test_status"
-printf '%s' "$OUTPUT" > "${WIZARDRY_TMPDIR}/_test_output"
-printf '%s' "$ERROR" > "${WIZARDRY_TMPDIR}/_test_error"
+mv "$_stdout" "${WIZARDRY_TMPDIR}/_test_output" 2>/dev/null || printf '' > "${WIZARDRY_TMPDIR}/_test_output"
+mv "$_stderr" "${WIZARDRY_TMPDIR}/_test_error" 2>/dev/null || printf '' > "${WIZARDRY_TMPDIR}/_test_error"
+rm -rf "$sandbox"
 
 # Restore caller's PATH before returning
 PATH=$_saved_path

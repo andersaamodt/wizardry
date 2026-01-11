@@ -41,16 +41,13 @@ while [ "$#" -gt 0 ]; do
         -y)
             want_y=1
             ;;
-        --help|--usage|-h)
-            fathom_cursor_usage
-            exit 0
-            ;;
         --)
             shift
             break
             ;;
         -*)
-            fathom_cursor_usage
+            printf 'fathom-cursor: unknown option: %s\n' "$1" >&2
+            exit 1
             ;;
         *)
             break
