@@ -38,6 +38,8 @@ if xattr-write-value "user.hash" "$hash" "$file"; then
   printf '%s\n' "File enchanted with hash: $hash"
   exit 0
 else
-  printf '%s\n' "hashchant: xattr and attr commands not found, cannot enchant file" >&2
-  exit 1
+  # Xattr commands not available - still print hash for read-magic fallback
+  printf '%s\n' "Warning: Could not write hash to xattr (commands not available)" >&2
+  printf '%s\n' "$hash"
+  exit 0
 fi

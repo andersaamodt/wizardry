@@ -68,8 +68,10 @@ test_output_option() {
   # Check that file was created
   [ -f "$output_file" ] || return 1
   
-  # Check that file contains gloss definitions
-  grep -q '() { parse' "$output_file" || return 1
+  # Check that file contains gloss definitions (multi-line functions)
+  # Functions are defined as: funcname() {\n  content\n}
+  grep -q '() {$' "$output_file" || return 1
+  grep -q 'parse' "$output_file" || return 1
 }
 
 test_all_spell_categories() {
