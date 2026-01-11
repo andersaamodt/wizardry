@@ -224,8 +224,7 @@ process_level() {
       printf '\n=== Environment Facts ===\n'
       
       # Platform detection
-      # Platform detection
-      # Use existing detection logic - uname is simple enough to inline
+      # Platform detection (inline for efficiency and to avoid PATH dependencies)
       _env_os=$(case "$(uname -s 2>/dev/null || printf 'unknown')" in
         Linux*) printf 'linux' ;;
         Darwin*) printf 'macos' ;;
@@ -233,10 +232,22 @@ process_level() {
         *) printf 'unknown' ;;
       esac)
       
-      # Use detect-distro spell (assumes wizardry is in PATH)
-      _env_distro=$(detect-distro 2>/dev/null || printf 'unknown')
+      # Distro detection (inline - same logic as detect-distro spell)
+      _env_distro='unknown'
+      if [ -f /etc/os-release ]; then
+        # shellcheck disable=SC1091
+        . /etc/os-release
+        case "${ID-}" in
+          debian) _env_distro='debian' ;;
+          ubuntu) _env_distro='ubuntu' ;;
+          arch) _env_distro='arch' ;;
+          nixos) _env_distro='nixos' ;;
+          alpine) _env_distro='alpine' ;;
+          *) _env_distro='unknown' ;;
+        esac
+      fi
       
-      # Architecture detection - uname is simple enough to inline
+      # Architecture detection (inline for efficiency)
       _env_arch=$(case "$(uname -m 2>/dev/null || printf 'unknown')" in
         x86_64|amd64) printf 'x86_64' ;;
         aarch64|arm64) printf 'arm64' ;;
@@ -256,18 +267,19 @@ process_level() {
       fi
       
       # Tool availability (detect early, before healing)
-      # Use has imp (assumes wizardry is in PATH via invoke-wizardry)
+      # Use command -v directly (more portable than calling has imp)
       
       # xattr tools
-      if has attr || has xattr || (has setfattr && has getfattr); then
+      if command -v attr >/dev/null 2>&1 || command -v xattr >/dev/null 2>&1 || \
+         (command -v setfattr >/dev/null 2>&1 && command -v getfattr >/dev/null 2>&1); then
         _xattr_available="yes"
       else
         _xattr_available="no"
       fi
       
-      if has realpath; then _has_realpath="yes"; else _has_realpath="no"; fi
-      if has timeout; then _has_timeout="yes"; else _has_timeout="no"; fi
-      if has tput; then _has_tput="yes"; else _has_tput="no"; fi
+      if command -v realpath >/dev/null 2>&1; then _has_realpath="yes"; else _has_realpath="no"; fi
+      if command -v timeout >/dev/null 2>&1; then _has_timeout="yes"; else _has_timeout="no"; fi
+      if command -v tput >/dev/null 2>&1; then _has_tput="yes"; else _has_tput="no"; fi
       
       printf 'xattr-tools: %s\n' "$_xattr_available"
       printf 'coreutils: realpath=%s timeout=%s tput=%s\n' "$_has_realpath" "$_has_timeout" "$_has_tput"
