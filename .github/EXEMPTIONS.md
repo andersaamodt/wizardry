@@ -72,6 +72,16 @@ case "$0" in */has) _has "$@" ;; esac
 
 **Reason**: Micro-helpers; opening comment serves as spec; `--help` would bloat them
 
+### Menu Imps: Flag Arguments Allowed
+
+**Affected**: `spells/.imps/menu/fathom-cursor`, `spells/.imps/menu/fathom-terminal`
+
+**Reason**: Menu helpers need flag-based arguments (`-v`, `-x`, `-y`, `--width`, `--height`) for flexible terminal querying; these are specialized helpers called by the menu spell with varying argument combinations
+
+**Examples**:
+- `fathom-cursor` - Gets cursor position; supports `-v` (verbose), `-x` (X only), `-y` (Y only)
+- `fathom-terminal` - Gets terminal dimensions; supports `-v` (verbose), `--width`, `--height`
+
 ### Explicit Mode Requirement (set -e or set +e)
 
 **Required**: All spells must explicitly declare their error handling mode

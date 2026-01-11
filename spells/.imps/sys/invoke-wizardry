@@ -232,7 +232,9 @@ if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
       fi
     fi
     
-    unset _iw_gloss_cache_dir _iw_gloss_persistent _iw_needs_regen _iw_gen_glosses_path _iw_gloss_output _iw_newest_spell _iw_spellbook _iw_syn_file
+    unset _iw_gloss_cache_dir _iw_gloss_persistent _iw_needs_regen
+    unset _iw_gen_glosses_path _iw_gloss_output _iw_newest_spell
+    unset _iw_spellbook _iw_syn_file
   fi
 fi
 

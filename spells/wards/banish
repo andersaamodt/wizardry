@@ -392,7 +392,8 @@ banish_process_level() {
       # Check shell type (POSIX-compatible shell required)
       # Wizardry scripts assume POSIX sh semantics. Non-POSIX shells like
       # csh, tcsh, and fish have incompatible syntax and semantics.
-      shell_type=${SHELL##*/}
+      shell_type=${SHELL-/bin/sh}
+      shell_type=${shell_type##*/}
       shell_type=${shell_type:-sh}
       case "$shell_type" in
         sh|bash|dash|zsh|ksh|ash)
@@ -732,7 +733,9 @@ line1
 line2
 HEREDOC_TEST
 )
-      if printf '%s' "$heredoc_result" | grep -q "line1" && printf '%s' "$heredoc_result" | grep -q "line2"; then
+      has_line1=$(printf '%s' "$heredoc_result" | grep -q "line1" && echo 1 || echo 0)
+      has_line2=$(printf '%s' "$heredoc_result" | grep -q "line2" && echo 1 || echo 0)
+      if [ "$has_line1" = "1" ] && [ "$has_line2" = "1" ]; then
         printf '  %s✓%s Here documents: Multi-line strings work\n' "$_green" "$_reset"
       else
         printf '  %s✗%s Here documents: Not working correctly\n' "$_red" "$_reset"
