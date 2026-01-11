@@ -88,20 +88,13 @@ STUB
 }
 
 test_reports_missing_helpers() {
-  stub_dir=$(make_stub_dir)
-  # Provide a working getfattr to list attributes (needed to get past earlier check)
-  cat >"$stub_dir/getfattr" <<'STUB'
-#!/bin/sh
-printf '%s\n' 'user.alpha'
-STUB
-  chmod +x "$stub_dir/getfattr"
-  
   target="$WIZARDRY_TMPDIR/yaml-missing"
   printf 'content\n' >"$target"
 
-  # Remove system paths so real xattr tools aren't found
-  # Don't provide attr/xattr/setfattr - only getfattr for listing
-  PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/fs:$stub_dir" run_spell "spells/enchant/enchantment-to-yaml" "$target"
+  # WIZARDRY_TEST_HELPERS_ONLY=1 is already set by test-bootstrap
+  # This causes xattr-helper-usable to reject system xattr tools
+  # So we don't need to manipulate PATH - just run the spell normally
+  run_spell "spells/enchant/enchantment-to-yaml" "$target"
   assert_failure && assert_error_contains "requires one of attr, xattr, or setfattr"
 }
 

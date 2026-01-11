@@ -2562,7 +2562,9 @@ HEREDOC_TEST
       spell_list=$("$spell_levels_script" 13 spells)
       has_missing_spells=0
       if [ -n "$spell_list" ]; then
-        spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || has_missing_spells=1
+        cmd_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1)
+        spell_output=$cmd_output
+        [ $? -eq 0 ] || has_missing_spells=1
         if [ -n "$spell_output" ]; then
           printf '%s\n' "$spell_output" | sed 's/^/  /'
         else

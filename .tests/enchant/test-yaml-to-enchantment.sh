@@ -83,9 +83,10 @@ user.alpha: sky
 ---
 spell
 FILE
-  # Remove /usr/bin and /bin from PATH so real xattr tools aren't found
-  # Only provide wizardry imps - no xattr helpers at all
-  PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/fs" run_spell "spells/enchant/yaml-to-enchantment" "$tmpfile"
+  # WIZARDRY_TEST_HELPERS_ONLY=1 is already set by test-bootstrap
+  # This causes resolve_helper to reject system xattr tools
+  # So we don't need to manipulate PATH - just run the spell normally
+  run_spell "spells/enchant/yaml-to-enchantment" "$tmpfile"
   assert_failure && assert_error_contains "requires attr, setfattr, or xattr"
 }
 
@@ -105,8 +106,8 @@ user.alpha: fail
 body
 FILE
 
-  # Remove system paths so only our failing stub is found
-  PATH="$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/fs:$stub_dir" run_spell "spells/enchant/yaml-to-enchantment" "$tmpfile"
+  # Put stub first in PATH so it's used instead of real attr
+  PATH="$stub_dir:$PATH" run_spell "spells/enchant/yaml-to-enchantment" "$tmpfile"
   assert_failure && assert_error_contains "failed to set attribute"
 }
 
