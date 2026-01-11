@@ -46,14 +46,13 @@ test_removes_priority() {
   assert_success || return 1
   assert_output_contains "Removed" || return 1
   
-  # Verify priority is removed (should return 0 or fail)
+  # Verify priority is removed (get-priority should output nothing)
   run_spell "spells/priorities/get-priority" "$testfile"
-  # Should return 0 or fail with error
-  if [ "$STATUS" -eq 0 ]; then
-    if [ "$OUTPUT" != "0" ]; then
-      TEST_FAILURE_REASON="Expected priority to be 0 after deprioritize, got '$OUTPUT'"
-      return 1
-    fi
+  assert_success || return 1
+  # Output should be empty when no priority is set
+  if [ -n "$OUTPUT" ]; then
+    TEST_FAILURE_REASON="Expected empty output after deprioritize, got '$OUTPUT'"
+    return 1
   fi
 }
 
