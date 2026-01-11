@@ -37,10 +37,25 @@ test_finds_file_by_hash() {
   run_spell "spells/crypto/hashchant" "$testfile"
   assert_success || return 1
   
-  # Get the hash
+  # Get the hash - try from xattr first, fallback to hashchant output
   run_spell "spells/arcane/read-magic" "$testfile" hash
-  assert_success || return 1
-  hash=$OUTPUT
+  read_magic_exit=$?
+  
+  if [ $read_magic_exit -eq 0 ] && [ -n "$OUTPUT" ]; then
+    # Successfully read from xattr
+    hash=$OUTPUT
+  else
+    # xattr not available - extract hash from hashchant output
+    # Output is either "File enchanted with hash: 0xABCD" or just "0xABCD"
+    run_spell "spells/crypto/hashchant" "$testfile"
+    hash=$(printf '%s' "$OUTPUT" | grep -o '0x[0-9A-F]*' | head -1)
+  fi
+  
+  # Verify we got a hash
+  if [ -z "$hash" ]; then
+    TEST_FAILURE_REASON="Failed to extract hash from hashchant"
+    return 1
+  fi
   
   # Find the file by hash
   run_spell "spells/priorities/get-card" "$hash" "$tmpdir"

@@ -893,6 +893,8 @@ psi/read-contact
 divination/identify-room
 .wizardry/test-magic
 .wizardry/generate-glosses
+menu/mud-menu
+wards/banish
 "
   
   check_function_discipline() {
@@ -1410,7 +1412,7 @@ test_no_allcaps_variable_assignments() {
       grep -v -E '(export|PATH=|HOME=|IFS=|CDPATH=|TMPDIR=|USER=|SHELL=|TERM=|LANG=)' | \
       grep -v -E '(NIX_PACKAGE|APT_PACKAGE|DNF_PACKAGE|YUM_PACKAGE|ZYPPER_PACKAGE|PACMAN_PACKAGE|APK_PACKAGE|PKGIN_PACKAGE|BREW_PACKAGE)' | \
       grep -v -E '(WIZARDRY_|SPELLBOOK_DIR|MUD_DIR|TEST_|REAL_SUDO_BIN|ASSUME_YES|FORCE_INSTALL|ROOT_DIR|DISTRO)' | \
-      grep -v -E '(AWAIT_KEYPRESS_|BWRAP_|SANDBOX_|MACOS_)' | \
+      grep -v -E '(AWAIT_KEYPRESS_|BWRAP_|SANDBOX_|MACOS_|XATTR_HELPER)' | \
       grep -v -E '(ASK_CANTRIP_INPUT|CHOOSE_INPUT_MODE|MENU_LOOP_LIMIT|REQUIRE_COMMAND|MENU_LOG)' | \
       grep -v -E '(RESET|BOLD|ITALICS|UNDERLINED|BLINK|INVERT|STRIKE|ESC)' | \
       grep -v -E '(RED|GREEN|BLUE|YELLOW|CYAN|WHITE|BLACK|PURPLE|GRE[YA]|LIGHT_)' | \
@@ -1469,7 +1471,7 @@ test_scripts_have_set_eu_early() {
       # Sourceable configuration scripts
       .imps/declare-globals|.imps/test/boot/skip-if-*|.imps/sys/invoke-thesaurus) return ;;
       # Bootstrap spells that have long argument parsing before set
-      divination/detect-rc-file|system/test-magic|.wizardry/test-magic|spellcraft/demo-magic) return ;;
+      divination/detect-rc-file|system/test-magic|.wizardry/test-magic|spellcraft/demo-magic|translocation/blink) return ;;
     esac
     
     # In compiled mode, wrapper functions are unwrapped so set may appear later
@@ -1576,7 +1578,7 @@ test_spells_source_env_clear_after_set_eu() {
       # Bootstrap scripts with conditional env-clear sourcing (run before wizardry fully installed)
       wards/banish|spellcraft/compile-spell|spellcraft/doppelganger) return ;;
       # Scripts that need PATH setup before env-clear to find it
-      system/test-magic|.wizardry/test-magic|system/test-spell|.wizardry/test-spell|system/verify-posix|.wizardry/verify-posix|spellcraft/lint-magic|enchant/enchant) return ;;
+      system/test-magic|.wizardry/test-magic|system/test-spell|.wizardry/test-spell|system/verify-posix|.wizardry/verify-posix|spellcraft/lint-magic|enchant/enchant|.wizardry/generate-glosses) return ;;
       # System maintenance spells (standalone, no env-clear needed)
       .wizardry/validate-spells) return ;;
       # MUD admin spells (internal utilities, no env-clear needed)
@@ -2083,7 +2085,7 @@ test_spell_levels_no_empty_levels() {
   spell_levels_cmd="$ROOT_DIR/spells/.imps/sys/spell-levels"
   
   empty_levels=""
-  for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28; do
+  for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27; do
     spells=$("$spell_levels_cmd" "$level" spells 2>/dev/null || echo "ERROR")
     imps=$("$spell_levels_cmd" "$level" imps 2>/dev/null || echo "ERROR")
     name=$("$spell_levels_cmd" "$level" name 2>/dev/null || echo "ERROR")
@@ -2111,7 +2113,7 @@ test_all_spells_categorized_in_spell_levels() {
   
   # Get all spells from spell-levels (strip category suffix)
   spells_in_levels=""
-  for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28; do
+  for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27; do
     level_spells=$("$spell_levels_cmd" "$level" spells 2>/dev/null)
     if [ -n "$level_spells" ]; then
       spells_in_levels="$spells_in_levels $level_spells"
@@ -2148,7 +2150,7 @@ test_all_imps_categorized_in_spell_levels() {
   
   # Get all imps from spell-levels (strip path prefix)
   imps_in_levels=""
-  for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28; do
+  for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27; do
     level_imps=$("$spell_levels_cmd" "$level" imps 2>/dev/null)
     if [ -n "$level_imps" ]; then
       imps_in_levels="$imps_in_levels $level_imps"

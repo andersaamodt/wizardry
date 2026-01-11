@@ -20,6 +20,8 @@ set -eu
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 0' INT TERM
 
+require menu
+
 # Initialize verbose flag to 0
 verbose=0
 

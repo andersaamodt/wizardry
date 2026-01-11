@@ -367,12 +367,12 @@ get_row_data() {
                 
                 if [ "$count" -eq "$row_idx" ]; then
                         # Export values for use by caller
-                        ROW_LABEL="$current_label"
-                        ROW_COMMAND="$current_command"
-                        ROW_CLEAN="$current_clean"
-                        ROW_VLEN="$current_vlen"
-                        ROW_RLEN="$current_rlen"
-                        ROW_IS_DIVIDER="$current_divider"
+                        row_label="$current_label"
+                        row_command="$current_command"
+                        row_clean="$current_clean"
+                        row_vlen="$current_vlen"
+                        row_rlen="$current_rlen"
+                        row_is_divider="$current_divider"
                         return 0
                 fi
                 
@@ -411,11 +411,11 @@ render_row() {
 
         # Use cached data - get all row data in one optimized call
         get_row_data "$row_index" || return 1
-        label="$ROW_LABEL"
-        command="$ROW_COMMAND"
-        clean_label="$ROW_CLEAN"
-        visible_length="$ROW_VLEN"
-        raw_length="$ROW_RLEN"
+        label="$row_label"
+        command="$row_command"
+        clean_label="$row_clean"
+        visible_length="$row_vlen"
+        raw_length="$row_rlen"
 
         if [ "$command" = "---" ]; then
                 menu_width=$((effective_max_name_length + 2))
@@ -763,9 +763,9 @@ do
                 # Use get_row_data for faster retrieval
                 get_row_data "$selected"
                 if [ "$show_command" -eq 1 ]; then
-                        to_run="$ROW_LABEL"
+                        to_run="$row_label"
                 else
-                        to_run="$ROW_COMMAND"
+                        to_run="$row_command"
                 fi
                 cleanup
                 trap - EXIT INT TERM

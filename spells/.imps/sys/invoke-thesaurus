@@ -113,37 +113,6 @@ rename mv
 show cat
 where-is which"
   
-  # Helper function to check if a spell must be sourced
-  # Checks the spell file for uncastable usage (the standard way to enforce sourcing)
-  _it_spell_must_be_sourced() {
-    _spell_name="$1"
-    _spell_path=""
-    
-    # Try to find the spell in wizardry directories
-    if [ -f "${_it_wizardry_dir}/spells/$_spell_name" ]; then
-      _spell_path="${_it_wizardry_dir}/spells/$_spell_name"
-    else
-      # Try to find in common spell directories
-      _spell_dirs="translocation cantrips arcane divination enchant psi"
-      _spell_dirs="$_spell_dirs crypto wards mud spellcraft menu system"
-      for _dir in $_spell_dirs; do
-        if [ -f "${_it_wizardry_dir}/spells/${_dir}/${_spell_name}" ]; then
-          _spell_path="${_it_wizardry_dir}/spells/${_dir}/${_spell_name}"
-          break
-        fi
-      done
-    fi
-    
-    # If spell file found, check for uncastable usage
-    if [ -n "$_spell_path" ] && [ -f "$_spell_path" ]; then
-      # Read first 30 lines and check if spell sources or checks for uncastable
-      if head -30 "$_spell_path" 2>/dev/null | grep -q "uncastable"; then
-        return 0
-      fi
-    fi
-    return 1
-  }
-  
   printf '%s\n' "$_it_defaults" | while IFS=' ' read -r _word _spell; do
     [ -n "$_word" ] && [ -n "$_spell" ] || continue
     

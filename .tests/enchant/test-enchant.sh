@@ -60,17 +60,18 @@ test_two_args_file_first() {
   target="$tmpdir/target"
   mkdir -p "$stub_dir"
   : >"$target"
-  cat >"$stub_dir/xattr" <<'STUB'
+  cat >"$stub_dir/xattr-write-value" <<STUB
 #!/bin/sh
-printf '%s\n' "$*" >"${WIZARDRY_TMPDIR:?}/enchant.called"
+# Mock xattr-write-value imp
+printf '%s %s %s\n' "\$1" "\$2" "\$3" >"${WIZARDRY_TMPDIR:?}/enchant.called"
 exit 0
 STUB
-  chmod +x "$stub_dir/xattr"
+  chmod +x "$stub_dir/xattr-write-value"
   PATH="$stub_dir:$PATH" run_spell "spells/enchant/enchant" "$target" "user.name=test_value"
-  assert_success
+  assert_success || return 1
   called=$(cat "$WIZARDRY_TMPDIR/enchant.called")
-  assert_output_contains "enchanted with the attribute 'user.name'"
-  [ "$called" = "-w user.name test_value $target" ] || { TEST_FAILURE_REASON="unexpected xattr call: $called"; return 1; }
+  assert_output_contains "enchanted with the attribute 'user.name'" || return 1
+  [ "$called" = "user.name test_value $target" ] || { TEST_FAILURE_REASON="unexpected xattr-write-value call: $called"; return 1; }
 }
 
 test_two_args_attr_first() {
@@ -79,129 +80,54 @@ test_two_args_attr_first() {
   target="$tmpdir/target"
   mkdir -p "$stub_dir"
   : >"$target"
-  cat >"$stub_dir/xattr" <<'STUB'
+  cat >"$stub_dir/xattr-write-value" <<STUB
 #!/bin/sh
-printf '%s\n' "$*" >"${WIZARDRY_TMPDIR:?}/enchant.called"
+# Mock xattr-write-value imp
+printf '%s %s %s\n' "\$1" "\$2" "\$3" >"${WIZARDRY_TMPDIR:?}/enchant.called"
 exit 0
 STUB
-  chmod +x "$stub_dir/xattr"
+  chmod +x "$stub_dir/xattr-write-value"
   PATH="$stub_dir:$PATH" run_spell "spells/enchant/enchant" "user.other=another_val" "$target"
-  assert_success
+  assert_success || return 1
   called=$(cat "$WIZARDRY_TMPDIR/enchant.called")
-  assert_output_contains "enchanted with the attribute 'user.other'"
-  [ "$called" = "-w user.other another_val $target" ] || { TEST_FAILURE_REASON="unexpected xattr call: $called"; return 1; }
+  assert_output_contains "enchanted with the attribute 'user.other'" || return 1
+  [ "$called" = "user.other another_val $target" ] || { TEST_FAILURE_REASON="unexpected xattr-write-value call: $called"; return 1; }
 }
 
-test_prefers_requested_helper() {
+test_legacy_three_arg_format() {
   tmpdir=$(make_tempdir)
   stub_dir="$tmpdir/stubs"
   target="$tmpdir/target"
   mkdir -p "$stub_dir"
   : >"$target"
-  cat >"$stub_dir/xattr" <<'STUB'
+  cat >"$stub_dir/xattr-write-value" <<STUB
 #!/bin/sh
-printf '%s\n' "$*" >"${WIZARDRY_TMPDIR:?}/enchant.called"
+# Mock xattr-write-value imp
+printf '%s %s %s\n' "\$1" "\$2" "\$3" >"${WIZARDRY_TMPDIR:?}/enchant.called"
 exit 0
 STUB
-  chmod +x "$stub_dir/xattr"
-  PATH="$stub_dir:$PATH" run_spell "spells/enchant/enchant" "$target" user.charm sparkle xattr
-  assert_success
+  chmod +x "$stub_dir/xattr-write-value"
+  PATH="$stub_dir:$PATH" run_spell "spells/enchant/enchant" "$target" charm sparkle
+  assert_success || return 1
   called=$(cat "$WIZARDRY_TMPDIR/enchant.called")
-  assert_output_contains "enchanted with the attribute 'user.charm'"
-  [ "$called" = "-w user.charm sparkle $target" ] || { TEST_FAILURE_REASON="unexpected xattr call: $called"; return 1; }
-}
-
-test_falls_back_when_preference_missing() {
-  tmpdir=$(make_tempdir)
-  stub_dir="$tmpdir/stubs"
-  target="$tmpdir/target"
-  mkdir -p "$stub_dir"
-  : >"$target"
-  cat >"$stub_dir/attr" <<'STUB'
-#!/bin/sh
-exit 1
-STUB
-  cat >"$stub_dir/setfattr" <<'STUB'
-#!/bin/sh
-printf '%s\n' "$*" >"${WIZARDRY_TMPDIR:?}/enchant.called"
-exit 0
-STUB
-  chmod +x "$stub_dir/attr" "$stub_dir/setfattr"
-  PATH="$stub_dir:$PATH" run_spell "spells/enchant/enchant" "$target" user.aura glow attr
-  assert_success
-  called=$(cat "$WIZARDRY_TMPDIR/enchant.called")
-  [ "$called" = "-n user.aura -v glow $target" ] || { TEST_FAILURE_REASON="unexpected setfattr call: $called"; return 1; }
-}
-
-test_prefers_other_helpers_when_first_missing() {
-  tmpdir=$(make_tempdir)
-  stub_dir="$tmpdir/stubs"
-  target="$tmpdir/target"
-  mkdir -p "$stub_dir"
-  : >"$target"
-
-  cat >"$stub_dir/setfattr" <<'STUB'
-#!/bin/sh
-printf '%s\n' "$*" >"${WIZARDRY_TMPDIR:?}/enchant.called"
-exit 0
-STUB
-  chmod +x "$stub_dir/setfattr"
-
-  PATH="$stub_dir:$PATH" run_spell "spells/enchant/enchant" "$target" user.pref other xattr
-  assert_success
-  called=$(cat "$WIZARDRY_TMPDIR/enchant.called")
-  [ "$called" = "-n user.pref -v other $target" ] || { TEST_FAILURE_REASON="unexpected setfattr call: $called"; return 1; }
-}
-
-test_rejects_unknown_helper() {
-  tmpdir=$(make_tempdir)
-  target="$tmpdir/target"
-  : >"$target"
-  run_spell "spells/enchant/enchant" "$target" user.spell value wand
-  assert_failure && assert_error_contains "Unknown helper"
+  assert_output_contains "enchanted with the attribute 'user.charm'" || return 1
+  [ "$called" = "user.charm sparkle $target" ] || { TEST_FAILURE_REASON="unexpected xattr-write-value call: $called"; return 1; }
 }
 
 test_reports_missing_helpers() {
   tmpdir=$(make_tempdir)
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
-  cat >"$stub_dir/attr" <<'STUB'
+  cat >"$stub_dir/xattr-write-value" <<'STUB'
 #!/bin/sh
-exit 127
+# Mock xattr-write-value that always fails
+exit 1
 STUB
-  cat >"$stub_dir/xattr" <<'STUB'
-#!/bin/sh
-exit 127
-STUB
-  cat >"$stub_dir/setfattr" <<'STUB'
-#!/bin/sh
-exit 127
-STUB
-  chmod +x "$stub_dir/attr" "$stub_dir/xattr" "$stub_dir/setfattr"
+  chmod +x "$stub_dir/xattr-write-value"
   target="$tmpdir/target"
   : >"$target"
   PATH="$stub_dir:$PATH" run_spell "spells/enchant/enchant" "$target" user.key note
   assert_failure && assert_error_contains "requires the 'attr', 'xattr', or 'setfattr'"
-}
-
-test_reports_helper_failure() {
-  tmpdir=$(make_tempdir)
-  stub_dir="$tmpdir/stubs"
-  mkdir -p "$stub_dir"
-  cat >"$stub_dir/attr" <<'STUB'
-#!/bin/sh
-echo "no permission" >&2
-exit 2
-STUB
-  chmod +x "$stub_dir/attr"
-
-  target="$tmpdir/target"
-  : >"$target"
-
-  PATH="$stub_dir:$PATH" run_spell "spells/enchant/enchant" "$target" user.fail value attr
-  assert_failure
-  assert_error_contains "Failed to set attribute using 'attr'"
-  assert_error_contains "no permission"
 }
 
 run_test_case "enchant prints usage" test_help
@@ -213,13 +139,7 @@ run_test_case "enchant rejects attr without value" test_rejects_attr_without_val
 run_test_case "enchant fails for missing files" test_missing_file
 run_test_case "enchant works with 2 args (file first)" test_two_args_file_first
 run_test_case "enchant works with 2 args (attr=value first)" test_two_args_attr_first
-run_test_case "enchant honors preferred helper" test_prefers_requested_helper
-run_test_case "enchant falls back when preferred helper fails" test_falls_back_when_preference_missing
-run_test_case "enchant falls back when preferred helper is missing" test_prefers_other_helpers_when_first_missing
-run_test_case "enchant rejects unknown helper" test_rejects_unknown_helper
+run_test_case "enchant works with legacy 3-arg format" test_legacy_three_arg_format
 run_test_case "enchant reports missing helpers" test_reports_missing_helpers
-run_test_case "enchant reports helper failures" test_reports_helper_failure
-
-# Test via source-then-invoke pattern  
 
 finish_tests

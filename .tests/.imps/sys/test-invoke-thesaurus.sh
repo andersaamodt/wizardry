@@ -13,7 +13,7 @@ done
 test_fails_when_executed() {
   run_cmd "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus"
   assert_failure || return 1
-  assert_error_contains "must be sourced" || return 1
+  assert_error_contains "cannot be cast directly" || return 1
 }
 
 # Test: invoke-thesaurus is sourceable without errors

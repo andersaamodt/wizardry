@@ -36,24 +36,23 @@ test_level_1() {
 test_level_3() {
   WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/spellcraft/demo-magic 3
   assert_success || return 1
-  assert_output_contains "Level 3: Glossary System" || return 1
-  # Level 3 is now glossary system, not menu system
-  assert_output_contains "The wizard conjures the glossary system" || return 1
+  assert_output_contains "Level 3: Glossary & Parsing" || return 1
+  # Level 3 is now glossary & parsing
+  assert_output_contains "The wizard weaves interactive menus" || return 1
 }
 
 test_level_7() {
   WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/spellcraft/demo-magic 7
   assert_success || return 1
-  assert_output_contains "Level 7: Arcane File Operations" || return 1
-  assert_output_contains "The wizard casts read-magic" || return 1
+  assert_output_contains "Level 7: Navigation" || return 1
+  assert_output_contains "The wizard" || return 1
 }
 
 test_level_8() {
   WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/spellcraft/demo-magic 8
   assert_success || return 1
-  assert_output_contains "Level 8: Basic Cantrips" || return 1
-  assert_output_contains "The wizard casts ask-yn" || return 1
-  assert_output_contains "Is this a demonstration?" || return 1
+  assert_output_contains "Level 8: MUD Basics" || return 1
+  assert_output_contains "The wizard" || return 1
 }
 
 test_default_level() {

@@ -38,9 +38,17 @@ if [ -n "$(ls -A "$directory" 2>/dev/null)" ]; then
   for file in "$directory"/*; do
     # Skip if not a file or directory
     [ -e "$file" ] || continue
+    [ -f "$file" ] || continue
     
-    # Get the hash of this file
+    # Try to get the hash from xattr first
     file_hash=$(read-magic "$file" hash 2>/dev/null || true)
+    
+    # If xattr not available, compute hash on-the-fly
+    if [ -z "$file_hash" ]; then
+      filename=$(basename "$file")
+      file_hash=$( (echo "$filename" && cat "$file") | cksum | awk '{ print $1 }')
+      file_hash=$(printf '0x%X' "$file_hash")
+    fi
     
     # Check if it matches
     if [ "$file_hash" = "$hash" ]; then

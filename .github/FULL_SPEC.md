@@ -767,6 +767,14 @@ This specification (FULL_SPEC.md) focuses on implementation details and does not
 - `spells/.imps/sys/spell-levels` imp: Canonical spell level definitions (code)
 - `.github/instructions/*.md`: Topic-specific detailed instructions
 
+### Spell Level System Synchronization
+
+- **CRITICAL**: Four files must be kept in sync when spell levels change: `spells/.imps/sys/spell-levels`, `spells/wards/banish`, `spells/.wizardry/test-magic`, `spells/spellcraft/demo-magic`
+- When adding/moving spells between levels in spell-levels, update the corresponding level sections in banish, test-magic, and demo-magic
+- When changing level names or numbers in spell-levels, update all three companion files
+- All four files use the same level numbering (0-27) and must reference the same spells per level
+- spell-levels is the canonical source - the other three files derive their level organization from it
+
 ### Documentation Maintenance
 
 - Add new patterns to SHELL_CODE_PATTERNS.md as discovered

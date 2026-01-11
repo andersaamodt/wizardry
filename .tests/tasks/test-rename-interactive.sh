@@ -34,7 +34,8 @@ test_renames_file() {
   # Provide new name via stdin
   run_cmd env ASK_CANTRIP_INPUT=stdin sh -c "printf 'newname.txt\\n' | \"$ROOT_DIR/spells/tasks/rename-interactive\" \"$oldfile\""
   assert_success || return 1
-  assert_output_contains "Renamed" || return 1
+  # Spell outputs the new path, not "Renamed"
+  assert_output_contains "newname.txt" || return 1
   
   # Verify old file is gone and new file exists
   if [ -e "$oldfile" ]; then

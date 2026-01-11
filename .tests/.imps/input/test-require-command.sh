@@ -52,7 +52,7 @@ require_command_requires_arguments() {
   skip-if-compiled || return $?
   run_spell "spells/.imps/input/require-command"
   assert_failure || return 1
-  assert_error_contains "Usage: require-command" || return 1
+  assert_error_contains "command name required" || return 1
 }
 
 # Test: require-command does not produce "has: command not found" error

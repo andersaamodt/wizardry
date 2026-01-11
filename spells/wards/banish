@@ -2122,16 +2122,16 @@ HEREDOC_TEST
       tmp_source_test=$(mktemp "${tmp_root%/}/banish-source.XXXXXX" 2>/dev/null || printf '')
       if [ -n "$tmp_source_test" ]; then
         # Create a simple script that sets a variable
-        printf '%s\n' 'BANISH_SOURCE_TEST="sourced_successfully"' > "$tmp_source_test"
+        printf '%s\n' 'banish_source_test="sourced_successfully"' > "$tmp_source_test"
         
         # Try to source it
-        BANISH_SOURCE_TEST=""
+        banish_source_test=""
         # shellcheck disable=SC1090
         . "$tmp_source_test" 2>/dev/null || :
         
         rm -f "$tmp_source_test" 2>/dev/null || :
         
-        if [ "$BANISH_SOURCE_TEST" = "sourced_successfully" ]; then
+        if [ "$banish_source_test" = "sourced_successfully" ]; then
           printf '  %s✓%s Script sourcing: Can source shell scripts with .\n' "$_green" "$_reset"
         else
           printf '  %s✗%s Script sourcing: Cannot source shell scripts\n' "$_red" "$_reset"

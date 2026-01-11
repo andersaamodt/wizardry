@@ -611,7 +611,7 @@ uname|uniq|wc|xargs)
       
       # Validate synonym word
       if ! is_synonym_valid "$_word"; then
-        [ "$quiet" -eq 0 ] && warn "Invalid default synonym: $_word" >&2
+        printf '%s\n' "ERROR: invalid default synonym: $_word" >&2
         continue
       fi
       

@@ -25,10 +25,7 @@ trap 'exit 0' INT TERM
 . "$(command -v colors)"
 
 # Check for menu command
-if ! command -v menu >/dev/null 2>&1; then
-  printf '%s\n' "priority-menu: menu command required" >&2
-  exit 1
-fi
+require menu
 
 file="${1-}"
 

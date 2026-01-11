@@ -45,7 +45,7 @@ jobs:
           } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
           sudo sysctl --system || true
       - name: Run unit tests in Nix shell
-        run: nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow --run ". spells/.imps/sys/invoke-wizardry && ./spells/.wizardry/test-magic --verbose"
+        run: nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr --run ". spells/.imps/sys/invoke-wizardry && ./spells/.wizardry/test-magic --verbose"
 
   aab-macos:
     name: macOS unit tests
@@ -68,7 +68,7 @@ jobs:
       WIZARDRY_OS_LABEL: arch
     steps:
       - name: Install git, procps, and core utilities for checkout and testing
-        run: pacman -Sy --noconfirm git procps-ng coreutils sed gawk grep findutils
+        run: pacman -Sy --noconfirm git procps-ng coreutils sed gawk grep findutils attr
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
@@ -85,7 +85,7 @@ jobs:
       DEBIAN_FRONTEND: noninteractive
     steps:
       - name: Install git, procps, and gawk for checkout and testing
-        run: apt-get update && apt-get install -y git procps gawk
+        run: apt-get update && apt-get install -y git procps gawk attr
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
@@ -104,7 +104,7 @@ jobs:
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
       - name: Install bubblewrap dependency
-        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr
       - name: Configure bubblewrap user namespaces
         run: |
           sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"

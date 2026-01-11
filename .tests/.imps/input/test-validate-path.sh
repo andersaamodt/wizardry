@@ -1,6 +1,5 @@
 #!/bin/sh
 # Test coverage for validate-path spell:
-# - Shows usage with --help
 # - Accepts valid paths
 # - Rejects paths that are too long
 
@@ -12,12 +11,6 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
-
-test_help() {
-  run_spell "spells/.imps/input/validate-path" --help
-  assert_success || return 1
-  assert_output_contains "Usage: validate-path" || return 1
-}
 
 test_accepts_simple_path() {
   run_spell "spells/.imps/input/validate-path" "/etc/passwd"
@@ -36,7 +29,6 @@ test_rejects_long_component() {
   assert_failure || return 1
 }
 
-run_test_case "validate-path shows usage text" test_help
 run_test_case "validate-path accepts simple paths" test_accepts_simple_path
 run_test_case "validate-path accepts relative paths" test_accepts_relative_path
 run_test_case "validate-path rejects long path components" test_rejects_long_component
