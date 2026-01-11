@@ -179,9 +179,9 @@ printf 'filesystem: xattr-support=%s\n' "$fs_xattr"
 # ============================================================================
 
 if [ -n "${USER-}" ]; then
-  env_user="USER=$USER"
+  env_user="$USER"
 elif [ -n "${LOGNAME-}" ]; then
-  env_user="LOGNAME=$LOGNAME"
+  env_user="$LOGNAME"
 else
   env_user="none"
 fi
