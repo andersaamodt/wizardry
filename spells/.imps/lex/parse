@@ -152,21 +152,21 @@ done
 _cmd_type=$(command -v "$_first_word" 2>/dev/null || true)
 if [ -n "$_cmd_type" ]; then
   # Check if it's an actual executable file (not a function or alias)
-  # command -v returns path for executables, but may also return function/alias info
-  # We only want real executable files to avoid recursion
+  # command -v returns path for executables, name for builtins/functions/aliases
+  # We only want real executable files and builtins, not functions/aliases
   case "$_cmd_type" in
     */*)
-      # Contains a slash - likely a path to an executable
+      # Contains a slash - it's a path to an executable file
       if [ -f "$_cmd_type" ] && [ -x "$_cmd_type" ]; then
-        # DEBUG: Uncomment to see what's being executed
-        # printf 'DEBUG parse: Trying to exec first_word=%s with args: %s\n' "$_first_word" "$*" >&2
         # It's a real executable command, try to exec it
         exec "$_first_word" "$@"
       fi
       ;;
     *)
-      # No slash - might be a builtin, function, or alias
-      # Skip these to avoid recursion and wrong behavior
+      # No slash - could be a builtin, function, or alias
+      # Try to exec it - builtins will work, functions/aliases will fail
+      # If exec fails (function/alias), we fall through to error message
+      exec "$_first_word" "$@" 2>/dev/null || true
       ;;
   esac
 fi

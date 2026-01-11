@@ -2541,7 +2541,8 @@ HEREDOC_TEST
       # Check available memory (git operations can be memory-intensive)
       # Large repositories need sufficient RAM for operations
       if [ -r /proc/meminfo ]; then
-        mem_available_kb=$(grep MemAvailable /proc/meminfo 2>/dev/null | awk '{print $2}' || printf '0')
+        mem_info=$(grep MemAvailable /proc/meminfo 2>/dev/null || true)
+        mem_available_kb=$(printf '%s' "$mem_info" | awk '{print $2}' || printf '0')
         mem_total_kb=$(grep MemTotal /proc/meminfo 2>/dev/null | awk '{print $2}' || printf '0')
         
         # Check for at least 100MB available memory
