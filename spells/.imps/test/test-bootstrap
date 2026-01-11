@@ -87,10 +87,11 @@ export WIZARDRY_IMPS_PATH
 WIZARDRY_DIR=$ROOT_DIR
 export WIZARDRY_DIR
 
-# Detect and report test environment capabilities
+# Detect and report test environment capabilities (skip if already done by test-magic)
 # This runs early so tests can use TEST_ENV_* variables for intelligent skip decisions
 # Output goes to stdout (visible in CI logs) and can be extracted by read-test-failures
-if [ -x "$ROOT_DIR/spells/.imps/test/detect-test-environment" ]; then
+# Note: test-magic runs this once at startup; individual tests don't need to re-run it
+if [ "${WIZARDRY_TEST_ENV_DETECTED-}" != "1" ] && [ -x "$ROOT_DIR/spells/.imps/test/detect-test-environment" ]; then
   . "$ROOT_DIR/spells/.imps/test/detect-test-environment"
 fi
 
