@@ -249,13 +249,6 @@ if [ ! -x "$root_dir/spells/.imps/sys/spell-levels" ]; then
   exit 1
 fi
 
-# Detect and report test environment facts once at the beginning
-# This outputs to stdout (visible in CI logs) and exports TEST_ENV_* variables
-# test-bootstrap checks WIZARDRY_TEST_ENV_DETECTED to avoid re-running per test file
-if [ -x "$root_dir/spells/.imps/test/detect-test-environment" ]; then
-  . "$root_dir/spells/.imps/test/detect-test-environment"
-fi
-
 # spell-levels is a command in PATH - call it directly where needed
 
 # Note: invoke-wizardry is loaded by test-bootstrap (sourced by each test file)
