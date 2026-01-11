@@ -14,6 +14,12 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
+make_stub_bin() {
+  dir=$(make_tempdir)
+  mkdir -p "$dir/bin"
+  printf '%s\n' "$dir/bin"
+}
+
 test_help() {
   run_spell "spells/priorities/prioritize" --help
   assert_success || return 1
