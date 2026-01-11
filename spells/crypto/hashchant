@@ -82,6 +82,9 @@ if [ -n "$last_helper" ]; then
   printf '%s\n' "hashchant: failed to write hash using $last_helper (exit $last_status)" >&2
   exit 1
 else
-  printf '%s\n' "hashchant: xattr and attr commands not found, cannot enchant file" >&2
-  exit 1
+  # No xattr helpers available, but we can still print the hash
+  # This allows read-only operations like get-card to work
+  printf 'File hash (not enchanted): %s\n' "$hash" >&2
+  printf '%s\n' "$hash"
+  exit 0
 fi

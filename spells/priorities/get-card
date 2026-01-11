@@ -40,7 +40,15 @@ if [ -n "$(ls -A "$directory" 2>/dev/null)" ]; then
     [ -e "$file" ] || continue
     
     # Get the hash of this file
-    file_hash=$(read-magic "$file" hash 2>/dev/null || true)
+    # Try reading from xattr first, fall back to computing it
+    if file_hash=$(read-magic "$file" hash 2>/dev/null); then
+      : # Hash read from xattr successfully
+    else
+      # If xattr not available or attribute doesn't exist, compute hash directly
+      filename=$(basename "$file")
+      file_hash=$( (echo "$filename" && cat "$file") | cksum | awk '{ print $1 }')
+      file_hash=$(printf '0x%X' "$file_hash")
+    fi
     
     # Check if it matches
     if [ "$file_hash" = "$hash" ]; then
