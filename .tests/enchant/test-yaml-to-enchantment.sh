@@ -78,7 +78,8 @@ user.beta: moon"
 test_reports_missing_helpers() {
   # Skip this test if real xattr helpers are available (realistic CI scenario)
   if command -v attr >/dev/null 2>&1 || command -v xattr >/dev/null 2>&1 || command -v setfattr >/dev/null 2>&1; then
-    skip "Test only runs when xattr tools unavailable (unrealistic in modern systems)"
+    TEST_SKIP_REASON="Test only runs when xattr tools unavailable (unrealistic in modern systems)"
+    return 0
   fi
   
   tmpfile="$WIZARDRY_TMPDIR/headered-missing"

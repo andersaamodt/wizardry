@@ -92,7 +92,8 @@ test_reports_missing_helpers() {
   # The WIZARDRY_TEST_HELPERS_ONLY mechanism artificially blocks system tools,
   # but we want to test realistic environments where wizardry uses available tools
   if command -v attr >/dev/null 2>&1 || command -v xattr >/dev/null 2>&1 || command -v setfattr >/dev/null 2>&1; then
-    skip "Test only runs when xattr tools unavailable (unrealistic in modern systems)"
+    TEST_SKIP_REASON="Test only runs when xattr tools unavailable (unrealistic in modern systems)"
+    return 0
   fi
   
   target="$WIZARDRY_TMPDIR/yaml-missing"
