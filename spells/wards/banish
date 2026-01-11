@@ -440,7 +440,12 @@ banish_process_level() {
         env_vars_ok=0
       fi
       if [ "$env_vars_ok" -eq 1 ]; then
-        printf '  %s✓%s Environment: HOME and USER set\n' "$_green" "$_reset"
+        # Report which variables are actually set
+        if [ -n "${USER-}" ]; then
+          printf '  %s✓%s Environment: HOME and USER set\n' "$_green" "$_reset"
+        else
+          printf '  %s✓%s Environment: HOME and LOGNAME set\n' "$_green" "$_reset"
+        fi
       else
         if [ "$skip_heal" -eq 0 ]; then
           if [ -z "${HOME-}" ]; then
