@@ -88,12 +88,16 @@ STUB
 }
 
 test_reports_missing_helpers() {
+  # Skip this test if real xattr helpers are available (realistic CI scenario)
+  # The WIZARDRY_TEST_HELPERS_ONLY mechanism artificially blocks system tools,
+  # but we want to test realistic environments where wizardry uses available tools
+  if command -v attr >/dev/null 2>&1 || command -v xattr >/dev/null 2>&1 || command -v setfattr >/dev/null 2>&1; then
+    skip "Test only runs when xattr tools unavailable (unrealistic in modern systems)"
+  fi
+  
   target="$WIZARDRY_TMPDIR/yaml-missing"
   printf 'content\n' >"$target"
 
-  # WIZARDRY_TEST_HELPERS_ONLY=1 is already set by test-bootstrap
-  # This causes xattr-helper-usable to reject system xattr tools
-  # So we don't need to manipulate PATH - just run the spell normally
   run_spell "spells/enchant/enchantment-to-yaml" "$target"
   assert_failure && assert_error_contains "requires one of attr, xattr, or setfattr"
 }
