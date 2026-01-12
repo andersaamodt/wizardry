@@ -187,7 +187,7 @@ if [ -n "$_cmd_type" ]; then
 fi
 
 # Check synonyms as final fallback
-_spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+_spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 _synonym_target=""
 
 # Check user synonyms first
