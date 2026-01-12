@@ -493,7 +493,9 @@ WRAPPER_EOF
 
   # Append test duration to summary line if available
   if [ "$test_duration" -gt 0 ] && command -v format-duration >/dev/null 2>&1; then
-    formatted_duration=$(format-duration "$test_duration" 2>/dev/null || printf '%ss' "$test_duration")
+    formatted_duration=$(
+      format-duration "$test_duration" 2>/dev/null || printf '%ss' "$test_duration"
+    )
     if [ -n "$test_summary_line" ]; then
       test_summary_line="${test_summary_line} (${formatted_duration})"
     fi
