@@ -772,6 +772,7 @@ test_imps_follow_function_rule() {
   
   if [ -n "$violations" ]; then
     TEST_FAILURE_REASON="imps violating function rule (must have 0 functions): $violations"
+    export TEST_FAILURE_REASON
     return 1
   fi
   return 0
