@@ -994,7 +994,7 @@ test_no_function_name_collisions() {
   functions_file=$(mktemp "${WIZARDRY_TMPDIR}/func-list.XXXXXX")
   imp_functions_file=$(mktemp "${WIZARDRY_TMPDIR}/imp-funcs.XXXXXX")
   
-  # Check all executable spells (excluding .imps and .arcana)
+  # Check all executable spells (excluding .imps and .arcana) - use grep for speed
   for spell_dir in "$ROOT_DIR"/spells/*; do
     [ -d "$spell_dir" ] || continue
     case "$spell_dir" in
@@ -1004,33 +1004,29 @@ test_no_function_name_collisions() {
     for spell in "$spell_dir"/*; do
       [ -f "$spell" ] && [ -x "$spell" ] || continue
       
-      # Extract function names (looking for function_name() {)
-      while IFS= read -r line; do
-        if printf '%s' "$line" | grep -qE '^[a-zA-Z_][a-zA-Z0-9_]*\(\)[[:space:]]*\{'; then
-          func_name=$(printf '%s' "$line" | sed 's/()[[:space:]]*{.*//')
-          printf '%s:%s\n' "$func_name" "$spell" >> "$functions_file"
-        fi
-      done < "$spell"
+      # Extract function names using grep (much faster than line-by-line reading)
+      # Pattern: function_name() {
+      grep -E '^[a-zA-Z_][a-zA-Z0-9_]*\(\)[[:space:]]*\{' "$spell" 2>/dev/null | \
+        sed 's/()[[:space:]]*{.*//' | \
+        awk -v file="$spell" '{print $0 ":" file}' >> "$functions_file"
     done
   done
   
-  # Check imps for underscore-prefixed functions (track separately)
+  # Check imps for underscore-prefixed functions - use grep for speed
   for imp_family in "$ROOT_DIR"/spells/.imps/*; do
     [ -d "$imp_family" ] || continue
     for imp in "$imp_family"/*; do
       [ -f "$imp" ] && [ -x "$imp" ] || continue
       
-      while IFS= read -r line; do
-        if printf '%s' "$line" | grep -qE '^_[a-zA-Z_][a-zA-Z0-9_]*\(\)[[:space:]]*\{'; then
-          func_name=$(printf '%s' "$line" | sed 's/()[[:space:]]*{.*//')
-          printf '%s:%s\n' "$func_name" "$imp" >> "$imp_functions_file"
-        fi
-      done < "$imp"
+      # Extract underscore-prefixed function names using grep
+      grep -E '^_[a-zA-Z_][a-zA-Z0-9_]*\(\)[[:space:]]*\{' "$imp" 2>/dev/null | \
+        sed 's/()[[:space:]]*{.*//' | \
+        awk -v file="$imp" '{print $0 ":" file}' >> "$imp_functions_file"
     done
   done
   
   # Find collisions in spells (non-.imps files)
-  if [ -f "$functions_file" ]; then
+  if [ -f "$functions_file" ] && [ -s "$functions_file" ]; then
     sort "$functions_file" | awk -F: '
     {
       if (seen[$1]) {
@@ -1045,7 +1041,7 @@ test_no_function_name_collisions() {
   fi
   
   # Find collisions within imps themselves (underscore functions colliding with other imps)
-  if [ -f "$imp_functions_file" ]; then
+  if [ -f "$imp_functions_file" ] && [ -s "$imp_functions_file" ]; then
     sort "$imp_functions_file" | awk -F: '
     {
       if (seen[$1]) {
