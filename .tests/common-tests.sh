@@ -733,7 +733,16 @@ test_imps_follow_function_rule() {
   skip-if-compiled || return $?
   violations=""
   
-  find "$ROOT_DIR/spells/.imps" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r imp; do
+  # Use timeout-wrapped find without slow -perm checks
+  imp_list=$(mktemp "${WIZARDRY_TMPDIR}/imp-list.XXXXXX")
+  if [ -n "$timeout_cmd" ]; then
+    "$timeout_cmd" "$find_timeout" find "$ROOT_DIR/spells/.imps" -type f -print > "$imp_list"
+  else
+    find "$ROOT_DIR/spells/.imps" -type f -print > "$imp_list"
+  fi
+  
+  while IFS= read -r imp; do
+    [ -n "$imp" ] || continue
     name=$(basename "$imp")
     should_skip_file "$name" && continue
     is_posix_shell_script "$imp" || continue
@@ -755,7 +764,8 @@ test_imps_follow_function_rule() {
       continue
     fi
     
-  done > "${WIZARDRY_TMPDIR}/imp-structure-violations.txt"
+  done < "$imp_list" > "${WIZARDRY_TMPDIR}/imp-structure-violations.txt"
+  rm -f "$imp_list"
   
   violations=$(cat "${WIZARDRY_TMPDIR}/imp-structure-violations.txt" 2>/dev/null | head -10 | tr '\n' ', ' | sed 's/, $//')
   rm -f "${WIZARDRY_TMPDIR}/imp-structure-violations.txt"
@@ -773,7 +783,16 @@ test_imps_follow_function_rule() {
 test_imps_have_opening_comments() {
   violations=""
   
-  find "$ROOT_DIR/spells/.imps" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r imp; do
+  # Use timeout-wrapped find without slow -perm checks
+  imp_list=$(mktemp "${WIZARDRY_TMPDIR}/imp-list.XXXXXX")
+  if [ -n "$timeout_cmd" ]; then
+    "$timeout_cmd" "$find_timeout" find "$ROOT_DIR/spells/.imps" -type f -print > "$imp_list"
+  else
+    find "$ROOT_DIR/spells/.imps" -type f -print > "$imp_list"
+  fi
+  
+  while IFS= read -r imp; do
+    [ -n "$imp" ] || continue
     name=$(basename "$imp")
     should_skip_file "$name" && continue
     is_posix_shell_script "$imp" || continue
@@ -807,7 +826,8 @@ test_imps_have_opening_comments() {
       rel_path=${imp#"$ROOT_DIR/spells/.imps/"}
       printf '%s (has %s comment lines)\n' "$rel_path" "$comment_count"
     fi
-  done > "${WIZARDRY_TMPDIR}/imp-comment-violations.txt"
+  done < "$imp_list" > "${WIZARDRY_TMPDIR}/imp-comment-violations.txt"
+  rm -f "$imp_list"
   
   violations=$(cat "${WIZARDRY_TMPDIR}/imp-comment-violations.txt" 2>/dev/null | head -10 | tr '\n' ', ' | sed 's/, $//')
   rm -f "${WIZARDRY_TMPDIR}/imp-comment-violations.txt"
@@ -1140,8 +1160,16 @@ test_spells_require_wrapper_functions() {
   skip-if-compiled || return $?
   violations=""
   
-  # Check all executable spell files (not imps)
-  find "$ROOT_DIR/spells" -type f -not -path "*/.imps/*" -not -path "*/.arcana/*" \( -perm -u+x -o -perm -g+x -o -perm -o+x \) -print | while IFS= read -r spell; do
+  # Use timeout-wrapped find without slow -perm checks
+  spell_list=$(mktemp "${WIZARDRY_TMPDIR}/spell-wrapper-list.XXXXXX")
+  if [ -n "$timeout_cmd" ]; then
+    "$timeout_cmd" "$find_timeout" find "$ROOT_DIR/spells" -type f -not -path "*/.imps/*" -not -path "*/.arcana/*" -print > "$spell_list"
+  else
+    find "$ROOT_DIR/spells" -type f -not -path "*/.imps/*" -not -path "*/.arcana/*" -print > "$spell_list"
+  fi
+  
+  while IFS= read -r spell; do
+    [ -n "$spell" ] || continue
     name=$(basename "$spell")
     should_skip_file "$name" && continue
     is_posix_shell_script "$spell" || continue
@@ -1162,7 +1190,8 @@ test_spells_require_wrapper_functions() {
     if ! grep -qE "^[[:space:]]*${wrapper_name}[[:space:]]*\(\)" "$spell" 2>/dev/null; then
       printf '%s (missing %s)\n' "$rel_path" "$wrapper_name"
     fi
-  done > "${WIZARDRY_TMPDIR}/missing-wrappers.txt"
+  done < "$spell_list" > "${WIZARDRY_TMPDIR}/missing-wrappers.txt"
+  rm -f "$spell_list"
   
   violations=$(cat "${WIZARDRY_TMPDIR}/missing-wrappers.txt" 2>/dev/null | head -30 | tr '\n' ', ' | sed 's/, $//')
   rm -f "${WIZARDRY_TMPDIR}/missing-wrappers.txt"
