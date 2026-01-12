@@ -23,6 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: nixos
+      WIZARDRY_TEST_DEBUG: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -66,6 +67,7 @@ jobs:
     container: archlinux:latest
     env:
       WIZARDRY_OS_LABEL: arch
+      WIZARDRY_TEST_DEBUG: 1
     steps:
       - name: Install git, procps, and core utilities for checkout and testing
         run: pacman -Sy --noconfirm git procps-ng coreutils sed gawk grep findutils attr file
@@ -98,6 +100,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
+      WIZARDRY_TEST_DEBUG: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v4

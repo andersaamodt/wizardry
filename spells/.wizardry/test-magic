@@ -228,6 +228,11 @@ if [ "${GITHUB_ACTIONS-}" != "true" ]; then
 fi
 
 # Pre-flight checks (use command -v instead of has since invoke-wizardry not loaded yet)
+# DEBUG: Log pre-flight checks
+if [ "${WIZARDRY_TEST_DEBUG-}" = "1" ]; then
+  printf '[DEBUG] test-magic starting - checking prerequisites\n' >&2
+fi
+
 missing_commands=""
 for required_cmd in sh find grep awk sed sort cat printf; do
   if ! command -v "$required_cmd" >/dev/null 2>&1; then
@@ -296,11 +301,20 @@ fi
 if [ "$only_this_level" -eq 0 ] || [ "$count_start" -eq 0 ]; then
   if [ -f "$test_dir/common-tests.sh" ]; then
     global_test_total=$((global_test_total + 1))
+    # DEBUG: Log common-tests detection
+    if [ "${WIZARDRY_TEST_DEBUG-}" = "1" ]; then
+      printf '[DEBUG] Found common-tests.sh\n' >&2
+    fi
   fi
 fi
 
 count_level=$count_start
 while [ "$count_level" -le "$count_end" ]; do
+  # DEBUG: Log level counting
+  if [ "${WIZARDRY_TEST_DEBUG-}" = "1" ]; then
+    printf '[DEBUG] Counting tests for level %s\n' "$count_level" >&2
+  fi
+  
   count_spell_list=$(spell-levels "$count_level" spells 2>/dev/null || printf '')
   count_imp_list=$(spell-levels "$count_level" imps 2>/dev/null || printf '')
   
@@ -391,6 +405,11 @@ WRAPPER_EOF
   '
 
   run_exit_file=$(temp-file test-run-exit) || return 1
+
+  # DEBUG: Log test start
+  if [ "${WIZARDRY_TEST_DEBUG-}" = "1" ]; then
+    printf '[DEBUG] Starting test: %s\n' "$test_path" >&2
+  fi
 
   # Capture test start time for profiling
   test_start_time=$(date +%s 2>/dev/null || printf '0')
@@ -494,6 +513,12 @@ WRAPPER_EOF
       printf("\n")
     }
   ' | sed 's/[[:space:]]*$//')
+
+  # DEBUG: Log test completion
+  if [ "${WIZARDRY_TEST_DEBUG-}" = "1" ]; then
+    printf '[DEBUG] Test completed: %s (exit=%s, duration=%s)\n' \
+      "$test_path" "$test_exit_code" "$test_duration" >&2
+  fi
 
   # Extract test summary line for display (now includes ✓/✗ icon from test-summary)
   test_summary_line=$(printf '%s\n' "$cleaned_output" | awk '
