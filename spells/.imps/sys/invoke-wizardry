@@ -38,6 +38,10 @@ esac
 # Permissive mode - this file is sourced into user's shell
 set +eu
 
+# Debug logging for exit code 139 investigation
+[ "${WIZARDRY_TEST_DEBUG-}" = "1" ] && \
+  printf '[DEBUG] invoke-wizardry: starting\n' >&2
+
 # Prevent recursive sourcing
 if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
   [ "${WIZARDRY_DEBUG-}" = "1" ] && \
@@ -47,6 +51,9 @@ fi
 _WIZARDRY_INVOKED=1
 export _WIZARDRY_INVOKED
 # Note: Exported so subprocesses (like test files) know wizardry is available
+
+[ "${WIZARDRY_TEST_DEBUG-}" = "1" ] && \
+  printf '[DEBUG] invoke-wizardry: exported _WIZARDRY_INVOKED\n' >&2
 
 [ "${WIZARDRY_DEBUG-}" = "1" ] && \
   printf '[invoke-wizardry] %s\n' "Starting wizardry initialization" >&2
@@ -97,6 +104,8 @@ if [ -z "${WIZARDRY_DIR-}" ] || [ ! -d "${WIZARDRY_DIR-}/spells" ]; then
 fi
 
 [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "WIZARDRY_DIR=$WIZARDRY_DIR" >&2
+[ "${WIZARDRY_TEST_DEBUG-}" = "1" ] && \
+  printf '[DEBUG] invoke-wizardry: WIZARDRY_DIR=%s\n' "$WIZARDRY_DIR" >&2
 export WIZARDRY_DIR
 
 # Set up SPELLBOOK_DIR
@@ -210,10 +219,16 @@ if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
     # Regenerate cache if needed
     if [ "$_iw_needs_regen" -eq 1 ]; then
       [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Regenerating gloss cache..." >&2
+      [ "${WIZARDRY_TEST_DEBUG-}" = "1" ] && \
+        printf '[DEBUG] invoke-wizardry: calling generate-glosses\n' >&2
       if generate-glosses --quiet > "$_iw_gloss_persistent.tmp" 2>&1; then
+        [ "${WIZARDRY_TEST_DEBUG-}" = "1" ] && \
+          printf '[DEBUG] invoke-wizardry: generate-glosses completed\n' >&2
         mv "$_iw_gloss_persistent.tmp" "$_iw_gloss_persistent"
       else
         # If generation fails, clean up and fall back to direct eval
+        [ "${WIZARDRY_TEST_DEBUG-}" = "1" ] && \
+          printf '[DEBUG] invoke-wizardry: generate-glosses failed\n' >&2
         rm -f "$_iw_gloss_persistent.tmp"
         _iw_gloss_persistent=""
       fi
@@ -238,6 +253,9 @@ if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
     unset _iw_spellbook _iw_syn_file
   fi
 fi
+
+[ "${WIZARDRY_TEST_DEBUG-}" = "1" ] && \
+  printf '[DEBUG] invoke-wizardry: gloss generation complete\n' >&2
 
 # Load MUD cd hook if enabled in config
 if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
