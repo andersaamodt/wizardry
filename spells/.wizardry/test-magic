@@ -41,8 +41,9 @@ Examples:
   test-magic 10 --only  # Test only level 10
 
 Environment variables:
-  WIZARDRY_TEST_TIMEOUT    Timeout in seconds for each test (default: 180)
-  WIZARDRY_FIND_TIMEOUT    Timeout in seconds for find operations (default: 60)
+  WIZARDRY_TEST_TIMEOUT              Timeout in seconds for each test (default: 180)
+  WIZARDRY_TEST_PERFORMANCE_TIMEOUT  Performance limit in seconds (tests exceeding this fail, default: 60)
+  WIZARDRY_FIND_TIMEOUT              Timeout in seconds for find operations (default: 60)
 USAGE
   exit 0
   ;;
@@ -422,6 +423,14 @@ WRAPPER_EOF
   if [ "$test_start_time" != "0" ] && [ "$test_end_time" != "0" ]; then
     test_duration=$((test_end_time - test_start_time))
   fi
+  
+  # Check for performance timeout (configurable, default 60s)
+  # Tests that take longer than this are considered too slow and fail
+  performance_timeout=${WIZARDRY_TEST_PERFORMANCE_TIMEOUT:-60}
+  is_too_slow=0
+  if [ "$test_duration" -gt "$performance_timeout" ]; then
+    is_too_slow=1
+  fi
 
   if [ -f "$test_exit_file" ]; then
     test_exit_code=$(cat "$test_exit_file" 2>/dev/null || printf '0')
@@ -603,6 +612,38 @@ WRAPPER_EOF
     else
       entry="$spell_name"
     fi
+    if [ -n "$failed_scripts" ]; then
+      failed_scripts="$failed_scripts, $entry"
+    else
+      failed_scripts="$entry"
+    fi
+  fi
+
+  # Check for performance timeout - test was too slow
+  if [ "$is_too_slow" -eq 1 ] && [ "$test_exit_code" -eq 0 ]; then
+    test_exit_code=1
+    formatted_duration=""
+    if command -v format-duration >/dev/null 2>&1; then
+      formatted_duration=$(format-duration "$test_duration" 2>/dev/null || printf '%ss' "$test_duration")
+    else
+      formatted_duration="${test_duration}s"
+    fi
+    # Append performance failure to test output
+    test_output="${test_output}
+FAIL: Test exceeded performance timeout (${formatted_duration} > ${performance_timeout}s)"
+    cleaned_output="${cleaned_output}
+FAIL: Test exceeded performance timeout (${formatted_duration} > ${performance_timeout}s)"
+    
+    # Mark as failed test
+    if [ "$total_fail" -lt 20 ]; then
+      {
+        printf '=== %s ===\n' "$test_path"
+        printf '%s\n' "$cleaned_output"
+        printf '\nPerformance timeout: Test took %s but limit is %ss\n\n' "$formatted_duration" "$performance_timeout"
+      } >>"$failure_output_file"
+    fi
+    
+    entry="$spell_name (performance timeout: ${formatted_duration})"
     if [ -n "$failed_scripts" ]; then
       failed_scripts="$failed_scripts, $entry"
     else
