@@ -364,6 +364,49 @@ uname|uniq|wc|xargs)
   
   [ "$quiet" -eq 0 ] && printf 'generate-glosses: Found %d uncastable spells\n' "$(printf '%s' "$_uncastable_spells" | tr ' ' '\n' | grep -c .)" >&2
   
+  # Emit helper function for invoking spells with uncastable detection
+  emit_line "# ============================================================================"
+  emit_line "# HELPER FUNCTION: invoke_spell_helper"
+  emit_line "# ============================================================================"
+  emit_line "# Centralizes uncastable spell detection to avoid duplicating logic"
+  emit_line "# Usage: invoke_spell_helper SPELL_NAME [ARGS...]"
+  emit_line "# If spell is uncastable (must be sourced), sources it"
+  emit_line "# Otherwise, execs it"
+  emit_line "# ============================================================================"
+  emit_line ""
+  emit_line "invoke_spell_helper() {"
+  emit_line "  _ish_spell=\$1"
+  emit_line "  shift"
+  emit_line "  "
+  emit_line "  # Find the spell file"
+  emit_line "  _ish_wizardry_dir=\${WIZARDRY_DIR:-\${HOME:-.}/.wizardry}"
+  emit_line "  _ish_spell_path=\"\""
+  emit_line "  "
+  emit_line "  # Search in all spell directories"
+  emit_line "  for _ish_dir in \"\$_ish_wizardry_dir\"/spells/*; do"
+  emit_line "    [ -d \"\$_ish_dir\" ] || continue"
+  emit_line "    if [ -f \"\$_ish_dir/\$_ish_spell\" ]; then"
+  emit_line "      _ish_spell_path=\"\$_ish_dir/\$_ish_spell\""
+  emit_line "      break"
+  emit_line "    fi"
+  emit_line "  done"
+  emit_line "  "
+  emit_line "  # If not found, let exec fail with proper error"
+  emit_line "  if [ -z \"\$_ish_spell_path\" ]; then"
+  emit_line "    exec \"\$_ish_spell\" \"\$@\""
+  emit_line "  fi"
+  emit_line "  "
+  emit_line "  # Check if spell is uncastable"
+  emit_line "  if grep -q \"^# Uncastable pattern\" \"\$_ish_spell_path\" 2>/dev/null; then"
+  emit_line "    # Spell must be sourced"
+  emit_line "    . \"\$_ish_spell_path\" \"\$@\""
+  emit_line "  else"
+  emit_line "    # Spell can be exec'd"
+  emit_line "    exec \"\$_ish_spell_path\" \"\$@\""
+  emit_line "  fi"
+  emit_line "}"
+  emit_line ""
+  
   # Emit comment
   emit_line "# ============================================================================"
   emit_line "# FIRST-WORD GLOSSES"
@@ -582,8 +625,8 @@ uname|uniq|wc|xargs)
               ;;
             *)
               # No conflict - generate function for direct invocation
-              # For hyphenated targets, use the hyphenated form directly (it will have an alias)
-              emit_line "$_word() { $_target \"\$@\"; }"
+              # Use invoke_spell_helper to handle uncastable spells correctly
+              emit_line "$_word() { invoke_spell_helper \"$_target\" \"\$@\"; }"
               ;;
           esac
           ;;
@@ -669,8 +712,8 @@ uname|uniq|wc|xargs)
               ;;
             *)
               # No conflict - generate function for direct invocation
-              # For hyphenated targets, use the hyphenated form directly (it will have an alias)
-              emit_line "$_word() { $_target \"\$@\"; }"
+              # Use invoke_spell_helper to handle uncastable spells correctly
+              emit_line "$_word() { invoke_spell_helper \"$_target\" \"\$@\"; }"
               ;;
           esac
           ;;
