@@ -47,6 +47,8 @@
 - Variable `$_i` (imps directory shorthand) is not preserved by env-clear; use `${WIZARDRY_DIR}/spells/.imps` instead when referencing imp paths after sourcing env-clear.
 - When converting synonym targets from hyphenated to space-separated form (e.g., jump-to-marker → jump to marker), preserve directory prefixes unchanged (translocation/jump-to-marker → translocation/jump to marker, not translocation/jump to marker with / converted to space).
 - First-word glosses must invoke aliases via eval (not parse or direct command invocation) because: (1) parse skips aliases to avoid recursion, (2) direct invocation "$_fw_spell" tries to find executable not expand alias, (3) eval expands alias correctly without passing $@ since multi-word was already consumed during reconstruction.
+- Parse MUST skip functions before trying to exec system commands; exec-ing a gloss function creates infinite recursion (gloss → parse → exec gloss → parse ...) causing segfault/exit 139.
+- When generate-glosses creates first-word glosses, consumed words must be shifted BEFORE calling parse with synonym targets to prevent infinite loops (e.g., "jump-to" → "leap-to-location" with args still present causes parse to try "leap-to-location-to-marker-home").
 
 
 - When a file is sourced (`. filename`), using `exit` exits the parent shell; use `return` instead (discovered via doppelganger failing to create directories) (3)
