@@ -146,6 +146,14 @@ should_skip_file() {
 SPELL_LIST_CACHE=$(mktemp "${WIZARDRY_TMPDIR}/spell-list-cache.XXXXXX")
 trap 'rm -f "$SPELL_LIST_CACHE"' EXIT HUP INT TERM
 
+# Detect timeout command for protecting find operations
+timeout_cmd=""
+if command -v timeout >/dev/null 2>&1; then
+  timeout_cmd="timeout"
+fi
+
+find_timeout="${WIZARDRY_FIND_TIMEOUT:-60}"
+
 # Build cached spell file list (run find once instead of 11+ times)
 if [ "$FILTER_MODE" -eq 1 ]; then
   # Filter mode: only include specified spell paths
@@ -172,8 +180,13 @@ if [ "$FILTER_MODE" -eq 1 ]; then
   done
 else
   # Normal mode: test all spells
-  find "$ROOT_DIR/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) \
-    -print > "$SPELL_LIST_CACHE"
+  # Use simpler -type f check without -perm to avoid hangs on some systems (macOS, etc)
+  # The -perm checks can trigger filesystem issues or be extremely slow
+  if [ -n "$timeout_cmd" ]; then
+    "$timeout_cmd" "$find_timeout" find "$ROOT_DIR/spells" -type f -print > "$SPELL_LIST_CACHE"
+  else
+    find "$ROOT_DIR/spells" -type f -print > "$SPELL_LIST_CACHE"
+  fi
 fi
 
 # Helper: Iterate over cached spell list
