@@ -1729,7 +1729,7 @@ HEREDOC_TEST
       fi
 
       # Check spells
-      spell_list=$("$spell_levels_script" 8 spells)
+      spell_list=$("$spell_levels_script" 9 spells)
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
@@ -1747,7 +1747,7 @@ HEREDOC_TEST
       fi
 
       # Check imps
-      imp_list=$("$spell_levels_script" 8 imps)
+      imp_list=$("$spell_levels_script" 9 imps)
       had_imps=0
       if [ -n "$imp_list" ]; then
         had_imps=1
@@ -1881,7 +1881,7 @@ HEREDOC_TEST
       fi
 
       # Check spells
-      spell_list=$("$spell_levels_script" 9 spells)
+      spell_list=$("$spell_levels_script" 10 spells)
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
@@ -1899,7 +1899,7 @@ HEREDOC_TEST
       fi
 
       # Check imps
-      imp_list=$("$spell_levels_script" 9 imps)
+      imp_list=$("$spell_levels_script" 10 imps)
       had_imps=0
       if [ -n "$imp_list" ]; then
         had_imps=1
@@ -1968,7 +1968,7 @@ HEREDOC_TEST
       fi
 
       # Check spells
-      spell_list=$("$spell_levels_script" 10 spells)
+      spell_list=$("$spell_levels_script" 11 spells)
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
@@ -1986,7 +1986,7 @@ HEREDOC_TEST
       fi
 
       # Check imps
-      imp_list=$("$spell_levels_script" 10 imps)
+      imp_list=$("$spell_levels_script" 11 imps)
       had_imps=0
       if [ -n "$imp_list" ]; then
         had_imps=1
@@ -2060,7 +2060,7 @@ HEREDOC_TEST
       fi
 
       # Check spells
-      spell_list=$("$spell_levels_script" 11 spells)
+      spell_list=$("$spell_levels_script" 12 spells)
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
@@ -2078,7 +2078,7 @@ HEREDOC_TEST
       fi
 
       # Check imps
-      imp_list=$("$spell_levels_script" 11 imps)
+      imp_list=$("$spell_levels_script" 12 imps)
       had_imps=0
       if [ -n "$imp_list" ]; then
         had_imps=1
@@ -2210,7 +2210,7 @@ HEREDOC_TEST
       fi
 
       # Check spells
-      spell_list=$("$spell_levels_script" 12 spells)
+      spell_list=$("$spell_levels_script" 8 spells)
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
@@ -2228,7 +2228,7 @@ HEREDOC_TEST
       fi
 
       # Check imps
-      imp_list=$("$spell_levels_script" 12 imps)
+      imp_list=$("$spell_levels_script" 8 imps)
       had_imps=0
       if [ -n "$imp_list" ]; then
         had_imps=1
