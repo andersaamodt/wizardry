@@ -178,9 +178,10 @@ if [ -n "$_cmd_type" ]; then
       fi
       ;;
     *)
-      # No slash - it's a builtin, function, or alias
-      # Skip to avoid infinite recursion with gloss functions
-      :
+      # No slash - could be a builtin, function, or alias
+      # Try to exec it - builtins will work, functions/aliases will fail
+      # If exec fails (function/alias), we fall through to error message
+      exec "$_first_word" "$@" 2>/dev/null || true
       ;;
   esac
 fi
