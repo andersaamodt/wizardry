@@ -30,4 +30,5 @@ else
 fi
 
 # Execute the command
-"$@"
+# Use eval to preserve gloss functions and aliases
+eval "$*"
