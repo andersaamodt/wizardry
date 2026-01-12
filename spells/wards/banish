@@ -1650,8 +1650,8 @@ HEREDOC_TEST
       fi
       ;;
 
-    8)
-      # Level 8: MUD Basics
+    9)
+      # Level 9: MUD Basics
 
       # Check extended attributes helpers
       xattr_helper=""
@@ -1782,8 +1782,8 @@ HEREDOC_TEST
       fi
       ;;
 
-    9)
-      # Level 9: Arcane File Operations
+    10)
+      # Level 10: Arcane File Operations
 
       # Check file utilities
       file_utils_ok=1
@@ -1934,8 +1934,8 @@ HEREDOC_TEST
       fi
       ;;
 
-    10)
-      # Level 10: Basic Cantrips
+    11)
+      # Level 11: Basic Cantrips
 
       # Check interactive input device
       input_tty=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
@@ -2021,8 +2021,8 @@ HEREDOC_TEST
       fi
       ;;
 
-    11)
-      # Level 10: System Configuration
+    12)
+      # Level 12: System Configuration
 
       # Check configuration directory access
       config_home=${WIZARDRY_CONFIG_DIR:-${HOME:-.}/.wizardry}
@@ -2113,8 +2113,8 @@ HEREDOC_TEST
       fi
       ;;
 
-    12)
-      # Level 11: Testing Infrastructure
+    8)
+      # Level 8: Testing Infrastructure
 
       # Check tests directory
       tests_root="${WIZARDRY_DIR}/.tests"
