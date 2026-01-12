@@ -224,23 +224,25 @@ process_level() {
       printf '\n=== Environment Facts ===\n'
       
       # Platform detection (uname-based, no dependencies)
-      _env_os=$(case "$(uname -s 2>/dev/null || printf 'unknown')" in
-        Linux*) printf 'linux' ;;
-        Darwin*) printf 'macos' ;;
-        *BSD) printf 'bsd' ;;
-        *) printf 'unknown' ;;
-      esac)
+      _uname_s=$(uname -s 2>/dev/null || printf 'unknown')
+      case "$_uname_s" in
+        Linux*) _env_os='linux' ;;
+        Darwin*) _env_os='macos' ;;
+        *BSD) _env_os='bsd' ;;
+        *) _env_os='unknown' ;;
+      esac
       
       # Use detect-distro spell (available after invoke-wizardry sets up PATH)
       _env_distro=$(detect-distro 2>/dev/null || printf 'unknown')
       
       # Architecture detection (inline for efficiency)
-      _env_arch=$(case "$(uname -m 2>/dev/null || printf 'unknown')" in
-        x86_64|amd64) printf 'x86_64' ;;
-        aarch64|arm64) printf 'arm64' ;;
-        i?86) printf 'i386' ;;
-        *) printf 'unknown' ;;
-      esac)
+      _uname_m=$(uname -m 2>/dev/null || printf 'unknown')
+      case "$_uname_m" in
+        x86_64|amd64) _env_arch='x86_64' ;;
+        aarch64|arm64) _env_arch='arm64' ;;
+        i?86) _env_arch='i386' ;;
+        *) _env_arch='unknown' ;;
+      esac
       
       printf 'Platform: %s/%s/%s\n' "$_env_os" "$_env_distro" "$_env_arch"
       
