@@ -44,7 +44,6 @@ nix_package=${NIX_PACKAGE:-$package_default}
 # Officially supported platforms: debian, arch, nixos, mac
 apt_package=${APT_PACKAGE:-$package_default}
 pacman_package=${PACMAN_PACKAGE:-$package_default}
-brew_package=${BREW_PACKAGE:-$package_default}
 pkgin_package=${PKGIN_PACKAGE:-$package_default}
 pkgin_candidates=${PKGIN_CANDIDATES:-/usr/pkg/bin/pkgin /opt/pkg/bin/pkgin /usr/local/pkg/bin/pkgin}
 
@@ -89,21 +88,7 @@ if [ "$is_nixos" = "1" ]; then
     }
   fi
 elif [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
-  # Try Homebrew first (most common on macOS)
-  if command -v brew >/dev/null 2>&1; then
-    if [ "$action" = "install" ]; then
-      brew install "$brew_package" || {
-        printf '%s\n' "manage-system-command: unable to install ${brew_package} automatically via brew" >&2
-        exit 1
-      }
-    else
-      brew uninstall "$brew_package" || {
-        printf '%s\n' "manage-system-command: unable to uninstall $command_name via brew" >&2
-        exit 1
-      }
-    fi
-  # Fall back to pkgin if available
-  elif command -v pkgin >/dev/null 2>&1; then
+  if command -v pkgin >/dev/null 2>&1; then
     if [ "$action" = "install" ]; then
       manage_system_command_run_installer pkgin -y install "$pkgin_package" || {
         printf '%s\n' "manage-system-command: unable to install ${pkgin_package} automatically via pkgin" >&2
@@ -116,7 +101,7 @@ elif [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
       }
     fi
   else
-    printf '%s\n' "manage-system-command: no supported package manager found on macOS (tried: brew, pkgin)" >&2
+    printf '%s\n' "manage-system-command: no supported package manager found on macOS" >&2
     exit 1
   fi
 elif command -v pacman >/dev/null 2>&1; then
