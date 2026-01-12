@@ -649,7 +649,10 @@ WRAPPER_EOF
     test_exit_code=1
     formatted_duration=""
     if command -v format-duration >/dev/null 2>&1; then
-      formatted_duration=$(format-duration "$test_duration" 2>/dev/null || printf '%ss' "$test_duration")
+      formatted_duration=$(
+        format-duration "$test_duration" 2>/dev/null \
+          || printf '%ss' "$test_duration"
+      )
     else
       formatted_duration="${test_duration}s"
     fi
