@@ -1,0 +1,44 @@
+#!/bin/sh
+# format-duration SECONDS - format seconds as human-readable duration
+
+set -eu
+
+# Input validation
+seconds=${1-}
+if [ -z "$seconds" ]; then
+  printf 'format-duration: missing seconds argument\n' >&2
+  exit 1
+fi
+
+# Strip decimal if present (POSIX doesn't support floating point easily)
+seconds=$(printf '%s\n' "$seconds" | sed 's/\..*//')
+
+# Calculate components
+days=$((seconds / 86400))
+seconds=$((seconds % 86400))
+hours=$((seconds / 3600))
+seconds=$((seconds % 3600))
+minutes=$((seconds / 60))
+seconds=$((seconds % 60))
+
+# Build output string
+output=""
+
+if [ "$days" -gt 0 ]; then
+  output="${days}d"
+fi
+
+if [ "$hours" -gt 0 ]; then
+  output="${output:+$output }${hours}h"
+fi
+
+if [ "$minutes" -gt 0 ]; then
+  output="${output:+$output }${minutes}m"
+fi
+
+# Always show seconds if it's the only component or if there are seconds remaining
+if [ -z "$output" ] || [ "$seconds" -gt 0 ]; then
+  output="${output:+$output }${seconds}s"
+fi
+
+printf '%s\n' "$output"
