@@ -287,7 +287,7 @@ uname|uniq|wc|xargs)
     emit_line "  # Shift consumed words if not already shifted (synonym case)"
     emit_line "  if [ \"\$_fw_found_synonym\" -eq 0 ] && [ \$_fw_word_count -gt 1 ]; then"
     emit_line "    _fw_words_to_shift=\$((_fw_word_count - 1))"
-    emit_line "    shift \"\$_fw_words_to_shift\""
+    emit_line "    [ \$_fw_words_to_shift -le \$# ] && shift \"\$_fw_words_to_shift\""
     emit_line "  fi"
     emit_line "  "
     emit_line "  # No uncastable spell found - check if reconstructed name is an alias"
