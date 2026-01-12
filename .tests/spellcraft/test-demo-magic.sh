@@ -51,7 +51,7 @@ test_level_7() {
 test_level_8() {
   WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/spellcraft/demo-magic 8
   assert_success || return 1
-  assert_output_contains "Level 8: MUD Basics" || return 1
+  assert_output_contains "Level 8: Testing Infrastructure" || return 1
   assert_output_contains "The wizard" || return 1
 }
 
