@@ -53,29 +53,29 @@ case "$level" in
     imps=''
     ;;
   8)
+    name='Testing Infrastructure'
+    spells='install-checkbashisms:.arcana/core pocket-dimension:system spellbook-store:.wizardry test-magic:.wizardry test-spell:.wizardry wizard-eyes'
+    imps='sys/rc-add-line sys/rc-has-line sys/rc-remove-line test/boot/assert-error-contains test/boot/assert-failure test/boot/assert-file-contains test/boot/assert-output-contains test/boot/assert-path-exists test/boot/assert-path-missing test/boot/assert-status test/boot/assert-success test/boot/find-repo-root test/boot/finish-tests test/boot/init-test-counters test/boot/link-tools test/boot/make-fixture test/boot/make-tempdir test/boot/provide-basic-tools test/boot/record-failure-detail test/boot/report-result test/boot/run-bwrap test/boot/run-cmd test/boot/run-macos-sandbox test/boot/run-spell test/boot/run-spell-in-dir test/boot/run-test-case test/boot/skip-if-compiled test/boot/skip-if-uncompiled test/boot/stub-nix-env test/boot/stub-pacman test/boot/test-fail test/boot/test-heading test/boot/test-lack test/boot/test-pass test/boot/test-skip test/boot/test-summary test/boot/write-apt-stub test/boot/write-command-stub test/boot/write-pkgin-stub test/boot/write-sudo-stub test/stub-await-keypress test/stub-cursor-blink test/stub-fathom-cursor test/stub-fathom-terminal test/stub-move-cursor test/stub-stty test/test-bootstrap'
+    ;;
+  9)
     name='MUD Basics'
     spells='check-cd-hook:mud look:mud'
     imps='fs/xattr-helper-usable fs/xattr-list-keys fs/xattr-read-batch fs/xattr-read-value fs/xattr-write-value'
     ;;
-  9)
+  10)
     name='Arcane File Operations'
     spells='copy:arcane file-list:arcane file-to-folder:arcane forall:arcane jump-trash:arcane read-magic:arcane trash:arcane'
     imps='fs/backup fs/clip-copy fs/clip-paste fs/ensure-parent-dir menu/detect-trash text/append text/count-chars text/drop text/each text/field text/first text/last text/lines text/make-indent text/pick text/read-file text/skip text/take text/write-file'
     ;;
-  10)
+  11)
     name='Basic Cantrips'
     spells='ask ask-number ask-text ask-yn list-files max-length memorize move'
     imps='input/choose-input input/require-command input/validate-command input/validate-name input/validate-number input/validate-path lex/and lex/and-then lex/disambiguate lex/from lex/into lex/or lex/to'
     ;;
-  11)
+  12)
     name='System Configuration'
     spells='config:system learn-spellbook:system logs:system package-managers:system'
     imps='fs/config-del fs/config-get fs/config-has fs/config-set pkg/pkg-has pkg/pkg-install pkg/pkg-manager pkg/pkg-remove pkg/pkg-update pkg/pkg-upgrade'
-    ;;
-  12)
-    name='Testing Infrastructure'
-    spells='pocket-dimension:system spellbook-store:.wizardry test-magic:.wizardry test-spell:.wizardry wizard-eyes'
-    imps='sys/rc-add-line sys/rc-has-line sys/rc-remove-line test/boot/assert-error-contains test/boot/assert-failure test/boot/assert-file-contains test/boot/assert-output-contains test/boot/assert-path-exists test/boot/assert-path-missing test/boot/assert-status test/boot/assert-success test/boot/find-repo-root test/boot/finish-tests test/boot/init-test-counters test/boot/link-tools test/boot/make-fixture test/boot/make-tempdir test/boot/provide-basic-tools test/boot/record-failure-detail test/boot/report-result test/boot/run-bwrap test/boot/run-cmd test/boot/run-macos-sandbox test/boot/run-spell test/boot/run-spell-in-dir test/boot/run-test-case test/boot/skip-if-compiled test/boot/skip-if-uncompiled test/boot/stub-nix-env test/boot/stub-pacman test/boot/test-fail test/boot/test-heading test/boot/test-lack test/boot/test-pass test/boot/test-skip test/boot/test-summary test/boot/write-apt-stub test/boot/write-command-stub test/boot/write-pkgin-stub test/boot/write-sudo-stub test/stub-await-keypress test/stub-cursor-blink test/stub-fathom-cursor test/stub-fathom-terminal test/stub-move-cursor test/stub-stty test/test-bootstrap'
     ;;
   13)
     name='System Maintenance'

@@ -21,6 +21,8 @@ ASSUME_YES=1
 FORCE_INSTALL=${INSTALL_CHECKBASHISMS_FORCE_INSTALL:-0}
 # On Debian/Ubuntu, checkbashisms is in the devscripts package
 APT_PACKAGE=devscripts
-export ASSUME_YES FORCE_INSTALL APT_PACKAGE
+# On macOS with Homebrew, also use devscripts
+BREW_PACKAGE=devscripts
+export ASSUME_YES FORCE_INSTALL APT_PACKAGE BREW_PACKAGE
 
 "$SCRIPT_DIR/manage-system-command" checkbashisms devscripts
