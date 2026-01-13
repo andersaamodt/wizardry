@@ -195,6 +195,13 @@ uname|uniq|wc|xargs)
     emit_line "  _fw_spell_home=\${SPELLBOOK_DIR:-\${HOME:-.}/.spellbook}"
     emit_line "  "
     emit_line "  for _fw_arg in \"\$@\"; do"
+    emit_line "    # Skip flags and pure numeric arguments (they're not part of command names)"
+    emit_line "    case \"\$_fw_arg\" in"
+    emit_line "      -*) break ;;  # Flag - stop looking for command words"
+    emit_line "      *[!0-9]*) ;; # Contains non-numeric - it's a command word, continue"
+    emit_line "      *) break ;;  # Pure numeric - stop looking for command words"
+    emit_line "    esac"
+    emit_line "    "
     emit_line "    _fw_candidate=\"\${_fw_spell}-\${_fw_arg}\""
     emit_line "    _fw_words_used=\$((_fw_words_used + 1))"
     emit_line "    "
@@ -305,23 +312,19 @@ uname|uniq|wc|xargs)
   _tmpfile=$(mktemp "${TMPDIR:-/tmp}/generate-glosses.XXXXXX")
   trap 'rm -f "$_tmpfile"' EXIT HUP INT TERM
   
-  # Cross-platform find command with fallbacks for different find implementations
-  # Try GNU find first (-perm /111), then BSD find (-perm +111), then manual check
+  # Use find without -perm checks (which hang on macOS/CI)
+  # Just find all files and filter executable ones
   # Scan both wizardry spells directory and user's spellbook directory
   {
-    find "$wizardry_dir/spells" -type f -perm /111 2>/dev/null || \
-      find "$wizardry_dir/spells" -type f -perm +111 2>/dev/null || \
-      find "$wizardry_dir/spells" -type f 2>/dev/null | while IFS= read -r f; do
-        [ -x "$f" ] && printf '%s\n' "$f"
-      done
+    find "$wizardry_dir/spells" -type f 2>/dev/null | while IFS= read -r f; do
+      [ -x "$f" ] && printf '%s\n' "$f"
+    done
     
     # Also scan user's spellbook directory if it exists
     if [ -d "$spell_home" ]; then
-      find "$spell_home" -type f -perm /111 2>/dev/null || \
-        find "$spell_home" -type f -perm +111 2>/dev/null || \
-        find "$spell_home" -type f 2>/dev/null | while IFS= read -r f; do
-          [ -x "$f" ] && printf '%s\n' "$f"
-        done
+      find "$spell_home" -type f 2>/dev/null | while IFS= read -r f; do
+        [ -x "$f" ] && printf '%s\n' "$f"
+      done
     fi
   } > "$_tmpfile"
   

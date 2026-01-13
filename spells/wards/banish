@@ -29,11 +29,6 @@ USAGE
   ;;
 esac
 
-# Debug: Log when banish is called
-if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-  printf '[banish] Function called\n' >&2
-fi
-
 set -eu
 
 # Detect WIZARDRY_DIR if not already set
@@ -224,7 +219,7 @@ banish_process_level() {
       printf '\n=== Environment Facts ===\n'
       
       # Platform detection
-      _detect_os() {
+      detect_os() {
         case "$(uname -s 2>/dev/null || printf 'unknown')" in
           Linux*) printf 'linux' ;;
           Darwin*) printf 'macos' ;;
@@ -233,7 +228,7 @@ banish_process_level() {
         esac
       }
       
-      _detect_distro() {
+      detect_distro() {
         if [ -f /etc/os-release ]; then
           # shellcheck disable=SC1091
           . /etc/os-release
@@ -250,7 +245,7 @@ banish_process_level() {
         fi
       }
       
-      _detect_arch() {
+      detect_arch() {
         case "$(uname -m 2>/dev/null || printf 'unknown')" in
           x86_64|amd64) printf 'x86_64' ;;
           aarch64|arm64) printf 'arm64' ;;
@@ -259,9 +254,9 @@ banish_process_level() {
         esac
       }
       
-      _env_os=$(_detect_os)
-      _env_distro=$(_detect_distro)
-      _env_arch=$(_detect_arch)
+      _env_os=$(detect_os)
+      _env_distro=$(detect_distro)
+      _env_arch=$(detect_arch)
       printf 'Platform: %s/%s/%s\n' "$_env_os" "$_env_distro" "$_env_arch"
       
       # CI detection
@@ -274,18 +269,18 @@ banish_process_level() {
       fi
       
       # Tool availability (detect early, before healing)
-      _has_cmd() { command -v "$1" >/dev/null 2>&1; }
+      has_cmd() { command -v "$1" >/dev/null 2>&1; }
       
       # xattr tools
-      if _has_cmd attr || _has_cmd xattr || (_has_cmd setfattr && _has_cmd getfattr); then
+      if has_cmd attr || has_cmd xattr || (has_cmd setfattr && has_cmd getfattr); then
         _xattr_available="yes"
       else
         _xattr_available="no"
       fi
       
-      if _has_cmd realpath; then _has_realpath="yes"; else _has_realpath="no"; fi
-      if _has_cmd timeout; then _has_timeout="yes"; else _has_timeout="no"; fi
-      if _has_cmd tput; then _has_tput="yes"; else _has_tput="no"; fi
+      if has_cmd realpath; then _has_realpath="yes"; else _has_realpath="no"; fi
+      if has_cmd timeout; then _has_timeout="yes"; else _has_timeout="no"; fi
+      if has_cmd tput; then _has_tput="yes"; else _has_tput="no"; fi
       
       printf 'xattr-tools: %s\n' "$_xattr_available"
       printf 'coreutils: realpath=%s timeout=%s tput=%s\n' "$_has_realpath" "$_has_timeout" "$_has_tput"

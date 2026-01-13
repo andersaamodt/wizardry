@@ -545,4 +545,39 @@ run_test_case "parse collision: wizardry spell priority" test_parse_collision_wi
 run_test_case "parse collision: no incorrect match" test_parse_collision_no_incorrect_match
 run_test_case "read gloss can be generated without conflict" test_read_gloss_can_be_generated
 run_test_case "read gloss routes to read-magic spell" test_read_gloss_routes_to_read_magic_spell
+
+# Test for numeric argument handling (the "banish 5" bug)
+test_parse_numeric_arg_not_part_of_command_name() {
+  # Save original WIZARDRY_DIR
+  _saved_wizdir="${WIZARDRY_DIR-}"
+  
+  tmpdir=$(make_tempdir)
+  test_spell_dir="$tmpdir/wizardry/spells/test"
+  mkdir -p "$test_spell_dir"
+  
+  # Create a spell called "banish" that echoes its arguments
+  cat > "$test_spell_dir/banish" <<'EOF'
+#!/bin/sh
+printf 'banish called with: %s\n' "$*"
+EOF
+  chmod +x "$test_spell_dir/banish"
+  
+  export WIZARDRY_DIR="$tmpdir/wizardry"
+  
+  # Call parse with "banish 5" - should call banish with arg "5", not look for "banish-5"
+  run_spell "spells/.imps/lex/parse" "banish" "5"
+  
+  # Restore original WIZARDRY_DIR
+  if [ -n "$_saved_wizdir" ]; then
+    export WIZARDRY_DIR="$_saved_wizdir"
+  else
+    unset WIZARDRY_DIR
+  fi
+  
+  assert_success || return 1
+  assert_output_contains "banish called with: 5" || return 1
+}
+
+run_test_case "parse numeric arg not part of command name (banish 5)" test_parse_numeric_arg_not_part_of_command_name
+
 finish_tests

@@ -55,15 +55,22 @@ _cmd_word_count=0
 _first_word=""
 _all_args="$#"
 
-# Count how many leading args are command words (not flags)
+# Count how many leading args are command words (not flags or pure numbers)
 for _arg in "$@"; do
   case "$_arg" in
     -*) break ;;
+    *[!0-9]*) 
+      # Contains non-numeric characters - it's a command word
+      if [ -z "$_first_word" ]; then
+        _first_word=$_arg
+      fi
+      _cmd_word_count=$((_cmd_word_count + 1))
+      ;;
+    *)
+      # Pure numeric argument - stop counting command words
+      break
+      ;;
   esac
-  if [ -z "$_first_word" ]; then
-    _first_word=$_arg
-  fi
-  _cmd_word_count=$((_cmd_word_count + 1))
 done
 
 # If no command words, nothing to do
@@ -76,9 +83,17 @@ fi
 _attempt_len=$_cmd_word_count
 while [ $_attempt_len -gt 0 ]; do
   # Build command name from first N words joined with hyphens
+  # IMPORTANT: Only use command words (skip flags and pure numbers)
   _cmd_name=""
   _i=0
   for _arg in "$@"; do
+    # Skip flags and pure numeric arguments (same logic as counting loop)
+    case "$_arg" in
+      -*) break ;;
+      *[!0-9]*) ;;  # Contains non-numeric - it's a command word, use it
+      *) break ;;    # Pure numeric - stop
+    esac
+    
     if [ $_i -ge $_attempt_len ]; then
       break
     fi
