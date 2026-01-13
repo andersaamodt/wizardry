@@ -1,0 +1,220 @@
+#!/bin/sh
+
+# Jump to special locations or bookmarked markers.
+# This spell must be sourced (not executed) because it changes the current directory.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: jump <destination>
+
+Jump to special locations or saved markers.
+
+Built-in destinations:
+  spellbook    Jump to your spellbook directory ($SPELLBOOK_DIR)
+  wizardry     Jump to the wizardry installation directory ($WIZARDRY_DIR)
+  home         Jump to your home directory ($HOME)
+  trash        Jump to the system trash directory
+  
+Marker destinations:
+  <marker>     Jump to a marker set with mark-location (e.g., 1, 2, myplace)
+  to marker    Jump to a specific marker
+  next, 0      Cycle through numbered markers
+
+Examples:
+  jump spellbook       # Go to your spellbook
+  jump wizardry        # Go to wizardry installation
+  jump home            # Go to your home directory
+  jump trash           # Go to trash directory
+  jump 1               # Go to marker 1
+  jump myplace         # Go to marker named 'myplace'
+  jump to marker 2     # Go to marker 2
+  jump next            # Cycle to next marker
+
+Note: This spell must be sourced. Use 'jump <destination>' to invoke it.
+USAGE
+  return 0 2>/dev/null || exit 0
+  ;;
+esac
+
+# Uncastable pattern - ensures spell is sourced, not executed
+_jump_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) _jump_sourced=1 ;;
+  esac
+else
+  _jump_base=${0##*/}
+  case "$_jump_base" in
+    sh|dash|bash|zsh|ksh|mksh) _jump_sourced=1 ;;
+    jump) _jump_sourced=0 ;;
+    *) _jump_sourced=1 ;;
+  esac
+fi
+
+if [ "$_jump_sourced" -eq 0 ]; then
+  printf '%s\n' "This spell cannot be cast directly. Invoke it with: jump <destination>" >&2
+  return 1 2>/dev/null || exit 1
+fi
+unset _jump_sourced _jump_base
+
+set -eu
+. env-clear
+
+# Check if we have arguments
+if [ $# -eq 0 ]; then
+  printf '%s\n' "jump: destination required" >&2
+  printf '%s\n' "Run 'jump --help' for usage information." >&2
+  set +eu; return 1
+fi
+
+destination="${1-}"
+
+# Handle built-in keywords
+case "$destination" in
+  spellbook)
+    spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+    if [ ! -d "$spell_home" ]; then
+      printf '%s\n' "jump: spellbook directory does not exist: $spell_home" >&2
+      printf '%s\n' "The spellbook directory will be created when you install wizardry." >&2
+      set +eu; return 1
+    fi
+    
+    # Check if already at destination
+    current=$(pwd -P | sed 's|//|/|g')
+    target=$(cd "$spell_home" && pwd -P | sed 's|//|/|g')
+    if [ "$current" = "$target" ]; then
+      printf '%s\n' "You are already in the spellbook."
+      set +eu; return 0
+    fi
+    
+    if ! cd "$spell_home"; then
+      printf '%s\n' "jump: failed to jump to spellbook" >&2
+      set +eu; return 1
+    fi
+    printf '%s\n' "You teleport to the spellbook at $spell_home"
+    
+    # Describe location if look exists
+    if command -v look >/dev/null 2>&1; then
+      look 2>/dev/null || true
+    fi
+    set +eu
+    ;;
+    
+  wizardry)
+    wiz_home=$(env-or WIZARDRY_DIR "${HOME:-.}/.wizardry")
+    if [ ! -d "$wiz_home" ]; then
+      printf '%s\n' "jump: wizardry directory does not exist: $wiz_home" >&2
+      set +eu; return 1
+    fi
+    
+    # Check if already at destination
+    current=$(pwd -P | sed 's|//|/|g')
+    target=$(cd "$wiz_home" && pwd -P | sed 's|//|/|g')
+    if [ "$current" = "$target" ]; then
+      printf '%s\n' "You are already in the wizardry sanctum."
+      set +eu; return 0
+    fi
+    
+    if ! cd "$wiz_home"; then
+      printf '%s\n' "jump: failed to jump to wizardry" >&2
+      set +eu; return 1
+    fi
+    printf '%s\n' "You teleport to the wizardry sanctum at $wiz_home"
+    
+    # Describe location if look exists
+    if command -v look >/dev/null 2>&1; then
+      look 2>/dev/null || true
+    fi
+    set +eu
+    ;;
+    
+  home)
+    home_dir=${HOME:-.}
+    if [ ! -d "$home_dir" ]; then
+      printf '%s\n' "jump: home directory does not exist: $home_dir" >&2
+      set +eu; return 1
+    fi
+    
+    # Check if already at destination
+    current=$(pwd -P | sed 's|//|/|g')
+    target=$(cd "$home_dir" && pwd -P | sed 's|//|/|g')
+    if [ "$current" = "$target" ]; then
+      printf '%s\n' "You are already home."
+      set +eu; return 0
+    fi
+    
+    if ! cd "$home_dir"; then
+      printf '%s\n' "jump: failed to jump home" >&2
+      set +eu; return 1
+    fi
+    printf '%s\n' "You teleport home to $home_dir"
+    
+    # Describe location if look exists
+    if command -v look >/dev/null 2>&1; then
+      look 2>/dev/null || true
+    fi
+    set +eu
+    ;;
+    
+  trash)
+    # Delegate to jump-trash
+    wiz_dir=$(env-or WIZARDRY_DIR "${HOME:-.}/.wizardry")
+    if [ -f "$wiz_dir/spells/arcane/jump-trash" ]; then
+      set +eu
+      . "$wiz_dir/spells/arcane/jump-trash"
+    elif command -v jump-trash >/dev/null 2>&1; then
+      set +eu
+      . jump-trash
+    else
+      printf '%s\n' "jump: jump-trash spell not found" >&2
+      set +eu; return 1
+    fi
+    ;;
+    
+  to)
+    # Handle "jump to marker X" pattern
+    wiz_dir=$(env-or WIZARDRY_DIR "${HOME:-.}/.wizardry")
+    if [ "${2-}" = "marker" ]; then
+      shift 2
+      if [ -f "$wiz_dir/spells/translocation/jump-to-marker" ]; then
+        set +eu
+        . "$wiz_dir/spells/translocation/jump-to-marker" "$@"
+      elif command -v jump-to-marker >/dev/null 2>&1; then
+        set +eu
+        . jump-to-marker "$@"
+      else
+        printf '%s\n' "jump: jump-to-marker spell not found" >&2
+        set +eu; return 1
+      fi
+    else
+      # "jump to X" - just delegate to jump-to-marker
+      shift
+      if [ -f "$wiz_dir/spells/translocation/jump-to-marker" ]; then
+        set +eu
+        . "$wiz_dir/spells/translocation/jump-to-marker" "$@"
+      elif command -v jump-to-marker >/dev/null 2>&1; then
+        set +eu
+        . jump-to-marker "$@"
+      else
+        printf '%s\n' "jump: jump-to-marker spell not found" >&2
+        set +eu; return 1
+      fi
+    fi
+    ;;
+    
+  *)
+    # Any other argument - delegate to jump-to-marker
+    wiz_dir=$(env-or WIZARDRY_DIR "${HOME:-.}/.wizardry")
+    if [ -f "$wiz_dir/spells/translocation/jump-to-marker" ]; then
+      set +eu
+      . "$wiz_dir/spells/translocation/jump-to-marker" "$@"
+    elif command -v jump-to-marker >/dev/null 2>&1; then
+      set +eu
+      . jump-to-marker "$@"
+    else
+      printf '%s\n' "jump: jump-to-marker spell not found" >&2
+      set +eu; return 1
+    fi
+    ;;
+esac
