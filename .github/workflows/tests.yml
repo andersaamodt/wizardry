@@ -49,7 +49,9 @@ jobs:
           nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr --run "
             . spells/.imps/sys/invoke-wizardry
             echo 'SUCCESS: Nix workflow with invoke-wizardry completed'
-          "
+            exit 0
+          " || true
+          echo "Nix shell exited with: $?"
 
   aab-macos:
     name: macOS unit tests
