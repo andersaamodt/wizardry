@@ -2790,7 +2790,6 @@ while [ "$current_level" -le "$target_level" ]; do
     printf '%s✗%s Failed to banish Level %d\n' "$_red" "$_reset" "$current_level"
     exit "$exit_code"
   }
-  printf '[banish DEBUG] Completed level %s successfully\n' "$current_level" >&2
   last_success_level=$current_level
   if [ "$only_this_level" -eq 1 ]; then
     break

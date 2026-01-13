@@ -165,17 +165,21 @@ done
 
 # Last resort: try first word as system command (but NOT shell functions!)
 # CRITICAL: exec-ing a gloss function causes infinite recursion → segfault (exit 139)
-if command -v "$_first_word" >/dev/null 2>&1; then
-  # Command exists - but is it a function?
-  # We must NOT exec shell functions (especially gloss functions)
-  # Check if it's a function using POSIX-compliant method
-  if ! (set | grep "^$_first_word ()" >/dev/null 2>&1); then
-    # Not a function - safe to exec (works for builtins, external commands, aliases)
-    # Note: exec of a builtin is a no-op but that's fine
-    # Note: aliases expand before we get here, so this is also safe
-    exec "$_first_word" "$@"
-  fi
-  # If it IS a function, fall through to synonym check
+# SOLUTION: Only exec if it's an executable file path, not a function/builtin/alias
+_cmd_path=$(command -v "$_first_word" 2>/dev/null || true)
+if [ -n "$_cmd_path" ]; then
+  # If command -v returns a path with /, it's an executable file (safe to exec)
+  # If it returns just a name (no /), it's a builtin, function, or alias (skip)
+  case "$_cmd_path" in
+    */*)
+      # Has a slash - it's a real file path, safe to exec
+      exec "$_first_word" "$@"
+      ;;
+    *)
+      # No slash - it's a builtin, function, or alias
+      # Don't exec - fall through to synonym check
+      ;;
+  esac
 fi
 
 # Check synonyms as final fallback
