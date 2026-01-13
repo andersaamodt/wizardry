@@ -1,11 +1,14 @@
 #!/bin/sh
 
+printf '[DEBUG banish] Script started, args: %s\n' "$*" >&2
+
 # Banish environmental chaos and validate wizardry readiness at different levels.
 # This spell assumption-checks, self-heals, and tests the environment,
 # ensuring all prerequisites are met for each spell level.
 
 case "${1-}" in
 --help|--usage|-h)
+  printf '[DEBUG banish] Help requested\n' >&2
   cat <<'USAGE'
 Usage: banish [LEVEL] [OPTIONS]
 
