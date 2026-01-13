@@ -4,6 +4,8 @@
 # This spell assumption-checks, self-heals, and tests the environment,
 # ensuring all prerequisites are met for each spell level.
 
+printf '[banish DEBUG] Script execution started\n' >&2
+
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
@@ -29,9 +31,9 @@ USAGE
   ;;
 esac
 
+printf '[banish DEBUG] Before set -eu\n' >&2
 set -eu
-
-printf '[banish DEBUG] Script started, set -eu enabled\n' >&2
+printf '[banish DEBUG] After set -eu\n' >&2
 
 # Detect WIZARDRY_DIR if not already set
 if [ -z "${WIZARDRY_DIR-}" ]; then
