@@ -261,6 +261,9 @@ _green="${_esc}[32m"
 _red="${_esc}[31m"
 _reset="${_esc}[0m"
 
+# Debug logging to stderr  
+printf '[test-magic] Starting test execution\n' >&2
+
 # Initialize counters
 total_pass=0
 total_fail=0
@@ -273,6 +276,8 @@ subtests_total=0
 incomplete_tests=""
 incomplete_count=0
 test_summary_line=""
+
+printf '[test-magic] Counters initialized\n' >&2
 
 # Incomplete test thresholds
 min_subtests_imp=2
@@ -333,8 +338,11 @@ while [ "$count_level" -le "$count_end" ]; do
   count_level=$((count_level + 1))
 done
 
+printf '[test-magic] About to create temp file\n' >&2
 failure_output_file=$(temp-file test-magic) || exit 1
+printf '[test-magic] Temp file created: %s\n' "$failure_output_file" >&2
 trap 'cleanup-file "$failure_output_file"' EXIT HUP INT TERM
+printf '[test-magic] Trap set\n' >&2
 
 test_timeout=${WIZARDRY_TEST_TIMEOUT:-180}
 compiled_mode=${WIZARDRY_TEST_COMPILED-0}
@@ -350,6 +358,7 @@ if command -v stdbuf >/dev/null 2>&1; then
 fi
 
 run_test_file() {
+  printf '[test-magic] Running test: %s\n' "$2" >&2
   test_path=$1
   spell_name=$2
   test_output=""
@@ -932,16 +941,22 @@ fi
 
 last_success_level=-1
 
+printf '[test-magic] Starting test loop from level %d to %d\n' "$current_level" "$target_level" >&2
+
 # Run common tests first (special level before Level 0)
 # Only run if testing Level 0 (either --only 0 or normal run starting from 0)
 # Note: We don't exit on failure - just record the results and continue
 if [ "$only_this_level" -eq 0 ] && [ "$current_level" -eq 0 ]; then
+  printf '[test-magic] Running common tests\n' >&2
   test_common_tests || true
 elif [ "$only_this_level" -eq 1 ] && [ "$target_level" -eq 0 ]; then
+  printf '[test-magic] Running common tests (only level 0)\n' >&2
   test_common_tests || true
 fi
 
+printf '[test-magic] Entering main level loop\n' >&2
 while [ "$current_level" -le "$target_level" ]; do
+  printf '[test-magic] Testing level %d\n' "$current_level" >&2
   test_level "$current_level" || {
     exit_code=$?
     if [ "$last_success_level" -ge 0 ]; then
@@ -950,13 +965,16 @@ while [ "$current_level" -le "$target_level" ]; do
     printf '%s✗%s Testing failed at Level %d\n' "$_red" "$_reset" "$current_level"
     exit "$exit_code"
   }
+  printf '[test-magic] Level %d completed successfully\n' "$current_level" >&2
   last_success_level=$current_level
   if [ "$only_this_level" -eq 1 ]; then
     break
   fi
   current_level=$((current_level + 1))
+  printf '[test-magic] Moving to level %d\n' "$current_level" >&2
 done
 
+printf '[test-magic] Test loop completed\n' >&2
 printf '\n=== Test Summary ===\n'
 total=$((total_pass + total_fail))
 status=0
