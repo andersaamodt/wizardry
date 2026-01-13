@@ -45,12 +45,12 @@ test_format_large_duration() {
   _assert_equals "2d 3h 49m 3s" "$result"
 }
 
-_run_test_case "seconds only" test_format_seconds_only
-_run_test_case "minutes and seconds" test_format_minutes_and_seconds
-_run_test_case "hours minutes seconds" test_format_hours_minutes_seconds
-_run_test_case "days hours minutes seconds" test_format_days_hours_minutes_seconds
-_run_test_case "exact minute" test_format_exact_minute
-_run_test_case "exact hour" test_format_exact_hour
-_run_test_case "zero seconds" test_format_zero_seconds
-_run_test_case "large duration" test_format_large_duration
-_finish_tests
+run-test-case "seconds only" test_format_seconds_only
+run-test-case "minutes and seconds" test_format_minutes_and_seconds
+run-test-case "hours minutes seconds" test_format_hours_minutes_seconds
+run-test-case "days hours minutes seconds" test_format_days_hours_minutes_seconds
+run-test-case "exact minute" test_format_exact_minute
+run-test-case "exact hour" test_format_exact_hour
+run-test-case "zero seconds" test_format_zero_seconds
+run-test-case "large duration" test_format_large_duration
+finish-tests
