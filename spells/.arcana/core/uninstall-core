@@ -59,10 +59,10 @@ tput:tput:install-tput:uninstall-tput'
       continue
     fi
 
-    spell=$(uninstall_core_resolve_spell "$uninstall_spell") || return 1
+    spell=$(uninstall_core_resolve_spell "$uninstall_spell") || exit 1
     if ! ASSUME_YES=1 "$spell"; then
       printf '%s\n' "uninstall-core: failed to uninstall $label" >&2
-      return 1
+      exit 1
     fi
   done
 

@@ -117,7 +117,7 @@ PATTERNS
   return "$status"
 }
 
-targets_file=$(temp-file verify-posix-targets) || return 1
+targets_file=$(temp-file verify-posix-targets) || exit 1
 trap 'cleanup-file "$targets_file"; cleanup-file "$detail_log"' EXIT HUP INT TERM
 
 # Inline verify_posix_collect_targets and verify_posix_gather_default_targets
@@ -246,8 +246,8 @@ while IFS= read -r target; do
       ;;
   esac
 
-  tmp_log=$(temp-file verify-posix-log) || return 1
-  gnuisms_log=$(temp-file verify-posix-gnuisms) || return 1
+  tmp_log=$(temp-file verify-posix-log) || exit 1
+  gnuisms_log=$(temp-file verify-posix-gnuisms) || exit 1
   file_failed=0
   if "$checkbashisms_cmd" "$path" >"$tmp_log" 2>&1; then
     :
