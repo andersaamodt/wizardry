@@ -46,8 +46,10 @@ jobs:
           sudo sysctl --system || true
       - name: Run unit tests in Nix shell
         run: |
-          echo "Unit tests temporarily disabled for debugging exit 139"
-          echo "SUCCESS: Nix workflow completed"
+          nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr --run "
+            . spells/.imps/sys/invoke-wizardry
+            echo 'SUCCESS: Nix workflow with invoke-wizardry completed'
+          "
 
   aab-macos:
     name: macOS unit tests
@@ -61,8 +63,8 @@ jobs:
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
       - name: Run unit tests
         run: |
-          echo "Unit tests temporarily disabled for debugging exit 139"
-          echo "SUCCESS: macOS workflow completed"
+          . spells/.imps/sys/invoke-wizardry
+          echo "SUCCESS: macOS workflow with invoke-wizardry completed"
 
   arch:
     name: Arch Linux unit tests
@@ -79,8 +81,8 @@ jobs:
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
       - name: Run unit tests
         run: |
-          echo "Unit tests temporarily disabled for debugging exit 139"
-          echo "SUCCESS: Arch Linux workflow completed"
+          . spells/.imps/sys/invoke-wizardry
+          echo "SUCCESS: Arch Linux workflow with invoke-wizardry completed"
 
   debian:
     name: Debian unit tests
@@ -98,8 +100,8 @@ jobs:
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
       - name: Run unit tests
         run: |
-          echo "Unit tests temporarily disabled for debugging exit 139"
-          echo "SUCCESS: Debian workflow completed"
+          . spells/.imps/sys/invoke-wizardry
+          echo "SUCCESS: Debian workflow with invoke-wizardry completed"
 
   ubuntu:
     name: Ubuntu unit tests
@@ -135,5 +137,5 @@ jobs:
           fi
       - name: Run unit tests
         run: |
-          echo "Unit tests temporarily disabled for debugging exit 139"
-          echo "SUCCESS: Ubuntu workflow completed"
+          . spells/.imps/sys/invoke-wizardry
+          echo "SUCCESS: Ubuntu workflow with invoke-wizardry completed"
