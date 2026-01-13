@@ -29,11 +29,6 @@ USAGE
   ;;
 esac
 
-# Debug: Log when banish is called (kept for WIZARDRY_DEBUG)
-if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
-  printf '[banish] Function called\n' >&2
-fi
-
 set -eu
 
 # Detect WIZARDRY_DIR if not already set
