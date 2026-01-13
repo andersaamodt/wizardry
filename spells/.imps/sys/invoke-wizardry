@@ -186,8 +186,11 @@ printf '[DEBUG invoke-wizardry] PATH exported\n' >&2
 # Optional: Generate first-word glosses for space-separated invocation
 # This still allows "env or VAR DEFAULT" instead of just "env-or VAR DEFAULT"
 # Skip in test mode (tests don't need glosses)
+printf '[DEBUG invoke-wizardry] Checking if gloss generation needed\n' >&2
 if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
+  printf '[DEBUG invoke-wizardry] Not in test mode, checking for generate-glosses\n' >&2
   if command -v generate-glosses >/dev/null 2>&1; then
+    printf '[DEBUG invoke-wizardry] generate-glosses command found\n' >&2
     [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Loading first-word glosses..." >&2
     
     # PERFORMANCE OPTIMIZATION: Cache glosses to avoid regenerating on every shell startup
@@ -267,20 +270,33 @@ if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
     unset _iw_gloss_cache_dir _iw_gloss_persistent _iw_needs_regen
     unset _iw_gen_glosses_path _iw_gloss_output _iw_newest_spell
     unset _iw_spellbook _iw_syn_file
+    printf '[DEBUG invoke-wizardry] Gloss variables unset\n' >&2
+  else
+    printf '[DEBUG invoke-wizardry] generate-glosses command not found, skipping gloss generation\n' >&2
   fi
+else
+  printf '[DEBUG invoke-wizardry] In test mode, skipping gloss generation\n' >&2
 fi
 
 # Load MUD cd hook if enabled in config
+printf '[DEBUG invoke-wizardry] Checking for MUD cd hook\n' >&2
 if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
   _iw_mud_config="${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}/.mud"
   if [ -f "$_iw_mud_config" ] && grep -q "^cd-hook=1$" "$_iw_mud_config" 2>/dev/null; then
+    printf '[DEBUG invoke-wizardry] MUD cd hook enabled, loading\n' >&2
     _iw_cd_hook="$WIZARDRY_DIR/spells/.arcana/mud/cd"
     if [ -f "$_iw_cd_hook" ]; then
       [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Loading cd hook" >&2
       . "$_iw_cd_hook"
+      printf '[DEBUG invoke-wizardry] MUD cd hook loaded\n' >&2
     fi
+  else
+    printf '[DEBUG invoke-wizardry] MUD cd hook not enabled\n' >&2
   fi
   unset _iw_mud_config _iw_cd_hook
+  printf '[DEBUG invoke-wizardry] MUD config variables unset\n' >&2
+else
+  printf '[DEBUG invoke-wizardry] In test mode, skipping MUD cd hook\n' >&2
 fi
 
 # Verify that menu command is available (skip in test mode)
@@ -297,6 +313,20 @@ fi
 # Wizardry initialization complete
 printf '[DEBUG invoke-wizardry] Wizardry initialization complete\n' >&2
 [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Wizardry initialization complete" >&2
+
+# Debug: Check if banish command is available
+printf '[DEBUG invoke-wizardry] Checking if banish command is available\n' >&2
+if command -v banish >/dev/null 2>&1; then
+  _banish_path=$(command -v banish 2>&1)
+  printf '[DEBUG invoke-wizardry] banish command found at: %s\n' "$_banish_path" >&2
+else
+  printf '[DEBUG invoke-wizardry] WARNING: banish command not found in PATH\n' >&2
+fi
+
+# Debug: Print final PATH
+printf '[DEBUG invoke-wizardry] Final PATH (first 500 chars): %s\n' "${PATH:0:500}" >&2
+
 set +eu
-printf '[DEBUG invoke-wizardry] Returning successfully\n' >&2
+printf '[DEBUG invoke-wizardry] set +eu executed, about to return\n' >&2
+printf '[DEBUG invoke-wizardry] Returning successfully from invoke-wizardry\n' >&2
 return 0
