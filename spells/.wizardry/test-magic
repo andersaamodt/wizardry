@@ -50,54 +50,74 @@ USAGE
 esac
 
 set -eu
+printf '[DEBUG test-magic] set -eu enabled\n' >&2
 
 # Detect WIZARDRY_DIR if not already set
+printf '[DEBUG test-magic] Detecting WIZARDRY_DIR\n' >&2
 if [ -z "${WIZARDRY_DIR-}" ]; then
+  printf '[DEBUG test-magic] WIZARDRY_DIR not set, detecting...\n' >&2
+  printf '[DEBUG test-magic] Script name ($0): %s\n' "$0" >&2
   case "$0" in
     sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
+      printf '[DEBUG test-magic] Detected shell invocation\n' >&2
       if [ -n "${HOME-}" ] && [ -d "${HOME}/.wizardry/spells" ]; then
         WIZARDRY_DIR="${HOME}/.wizardry"
+        printf '[DEBUG test-magic] Using HOME/.wizardry: %s\n' "$WIZARDRY_DIR" >&2
       fi
       ;;
     *)
+      printf '[DEBUG test-magic] Detecting from script path\n' >&2
       _script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || _script_dir=""
+      printf '[DEBUG test-magic] Script dir: %s\n' "$_script_dir" >&2
       if [ -n "$_script_dir" ]; then
         _wiz_root=$(CDPATH= cd -- "$_script_dir/../.." 2>/dev/null && pwd -P) || _wiz_root=""
+        printf '[DEBUG test-magic] Wizardry root: %s\n' "$_wiz_root" >&2
         if [ -n "$_wiz_root" ] && [ -d "$_wiz_root/spells" ]; then
           WIZARDRY_DIR="$_wiz_root"
+          printf '[DEBUG test-magic] WIZARDRY_DIR set to: %s\n' "$WIZARDRY_DIR" >&2
         fi
       fi
       ;;
   esac
 fi
 
+printf '[DEBUG test-magic] Validating WIZARDRY_DIR\n' >&2
 if [ -z "${WIZARDRY_DIR-}" ]; then
   printf 'test-magic: WIZARDRY_DIR not set and could not be detected\n' >&2
   printf 'Run from wizardry installation or set WIZARDRY_DIR environment variable\n' >&2
+  printf '[DEBUG test-magic] WIZARDRY_DIR validation failed (empty)\n' >&2
   exit 1
 fi
 
 if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
   printf 'test-magic: invalid WIZARDRY_DIR: %s\n' "$WIZARDRY_DIR" >&2
+  printf '[DEBUG test-magic] WIZARDRY_DIR validation failed (spells dir not found)\n' >&2
   exit 1
 fi
+printf '[DEBUG test-magic] WIZARDRY_DIR validated: %s\n' "$WIZARDRY_DIR" >&2
 
 export WIZARDRY_DIR
+printf '[DEBUG test-magic] WIZARDRY_DIR exported\n' >&2
 
 cmd_name=$(basename "$0")
+printf '[DEBUG test-magic] Command name: %s\n' "$cmd_name" >&2
 root_dir=$WIZARDRY_DIR
 test_dir="$root_dir/.tests"
+printf '[DEBUG test-magic] Test dir: %s\n' "$test_dir" >&2
 
 # Add wizardry spells and imps to PATH
+printf '[DEBUG test-magic] Adding wizardry directories to PATH\n' >&2
 if [ -d "$root_dir/spells/.imps" ]; then
   PATH="$root_dir/spells/.imps:$PATH"
   for impdir in "$root_dir"/spells/.imps/*; do
     [ -d "$impdir" ] || continue
     PATH="$impdir:$PATH"
   done
+  printf '[DEBUG test-magic] Imp directories added to PATH\n' >&2
 fi
 
 # Parse arguments
+printf '[DEBUG test-magic] Parsing arguments\n' >&2
 target_level=27
 max_level=27
 only_this_level=0
@@ -935,27 +955,38 @@ last_success_level=-1
 # Run common tests first (special level before Level 0)
 # Only run if testing Level 0 (either --only 0 or normal run starting from 0)
 # Note: We don't exit on failure - just record the results and continue
+printf '[DEBUG test-magic] Starting test execution\n' >&2
+printf '[DEBUG test-magic] current_level=%d, target_level=%d, only_this_level=%d\n' "$current_level" "$target_level" "$only_this_level" >&2
 if [ "$only_this_level" -eq 0 ] && [ "$current_level" -eq 0 ]; then
+  printf '[DEBUG test-magic] Running common tests (normal mode, starting from 0)\n' >&2
   test_common_tests || true
 elif [ "$only_this_level" -eq 1 ] && [ "$target_level" -eq 0 ]; then
+  printf '[DEBUG test-magic] Running common tests (only mode, level 0)\n' >&2
   test_common_tests || true
 fi
 
+printf '[DEBUG test-magic] Starting main test loop\n' >&2
 while [ "$current_level" -le "$target_level" ]; do
+  printf '[DEBUG test-magic] Testing level %d\n' "$current_level" >&2
   test_level "$current_level" || {
     exit_code=$?
+    printf '[DEBUG test-magic] test_level failed with exit code %d\n' "$exit_code" >&2
     if [ "$last_success_level" -ge 0 ]; then
       printf '\nTested to Level %d\n' "$last_success_level"
     fi
     printf '%s✗%s Testing failed at Level %d\n' "$_red" "$_reset" "$current_level"
+    printf '[DEBUG test-magic] Exiting with code %d\n' "$exit_code" >&2
     exit "$exit_code"
   }
+  printf '[DEBUG test-magic] Level %d completed successfully\n' "$current_level" >&2
   last_success_level=$current_level
   if [ "$only_this_level" -eq 1 ]; then
+    printf '[DEBUG test-magic] Only testing one level, breaking loop\n' >&2
     break
   fi
   current_level=$((current_level + 1))
 done
+printf '[DEBUG test-magic] Main test loop completed\n' >&2
 
 printf '\n=== Test Summary ===\n'
 total=$((total_pass + total_fail))
