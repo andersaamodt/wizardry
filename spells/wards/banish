@@ -31,6 +31,8 @@ esac
 
 set -eu
 
+printf '[banish DEBUG] Script started, set -eu enabled\n' >&2
+
 # Detect WIZARDRY_DIR if not already set
 if [ -z "${WIZARDRY_DIR-}" ]; then
   # We're being executed directly - detect from script location
@@ -206,7 +208,9 @@ _banish_count_words="${WIZARDRY_DIR}/spells/.imps/text/count-words"
 # Run level-specific checks and actions using case statement
 banish_process_level() {
   level=$1
+  printf '[banish DEBUG] Entering banish_process_level with level=%s\n' "$level" >&2
   level_name=$("$spell_levels_script" "$level" name)
+  printf '[banish DEBUG] Level name retrieved: %s\n' "$level_name" >&2
   
   printf '\nLevel %d: %s\n' "$level" "$level_name"
   
@@ -2760,6 +2764,8 @@ HEREDOC_TEST
 
 
 # Main execution: Run levels 0 through target_level (or only target_level if --only)
+printf '[banish DEBUG] Starting main execution, target_level=%s only_this_level=%s\n' "$target_level" "$only_this_level" >&2
+
 if [ "$only_this_level" -eq 1 ]; then
   printf '\nValidating Level %d only: %s\n' "$target_level" "$("$spell_levels_script" "$target_level" name)"
 else
@@ -2782,6 +2788,7 @@ fi
 
 last_success_level=-1
 while [ "$current_level" -le "$target_level" ]; do
+  printf '[banish DEBUG] About to process level %s\n' "$current_level" >&2
   banish_process_level "$current_level" || {
     exit_code=$?
     if [ "$last_success_level" -ge 0 ]; then
@@ -2790,6 +2797,7 @@ while [ "$current_level" -le "$target_level" ]; do
     printf '%s✗%s Failed to banish Level %d\n' "$_red" "$_reset" "$current_level"
     exit "$exit_code"
   }
+  printf '[banish DEBUG] Completed level %s successfully\n' "$current_level" >&2
   last_success_level=$current_level
   if [ "$only_this_level" -eq 1 ]; then
     break
