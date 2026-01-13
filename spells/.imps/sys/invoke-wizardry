@@ -23,11 +23,9 @@ if [ "$_iw_sourced" -eq 0 ]; then
   printf '%s\n' "This spell cannot be cast directly. Invoke it with: . invoke-wizardry" >&2
   return 1 2>/dev/null || exit 1
 fi
-printf '[DEBUG invoke-wizardry] Sourcing check passed\n' >&2
 unset _iw_sourced _iw_base
 
 # Ensure baseline PATH before anything else (macOS may have empty PATH)
-printf '[DEBUG invoke-wizardry] Setting baseline PATH\n' >&2
 baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 case ":${PATH-}:" in
   *":/usr/bin:"*|*":/bin:"*) ;;
@@ -36,38 +34,29 @@ case ":${PATH-}:" in
     export PATH
     ;;
 esac
-printf '[DEBUG invoke-wizardry] PATH set\n' >&2
 
 # Permissive mode - this file is sourced into user's shell
-printf '[DEBUG invoke-wizardry] Setting permissive mode\n' >&2
 set +eu
-printf '[DEBUG invoke-wizardry] Permissive mode set\n' >&2
 
 # Prevent recursive sourcing
 if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
-  printf '[DEBUG invoke-wizardry] Already invoked, skipping\n' >&2
   [ "${WIZARDRY_DEBUG-}" = "1" ] && \
     printf '[invoke-wizardry] %s\n' "Already invoked, skipping" >&2
   return 0
 fi
-printf '[DEBUG invoke-wizardry] First invocation\n' >&2
 _WIZARDRY_INVOKED=1
 export _WIZARDRY_INVOKED
-printf '[DEBUG invoke-wizardry] _WIZARDRY_INVOKED exported\n' >&2
 # Note: Exported so subprocesses (like test files) know wizardry is available
 
 [ "${WIZARDRY_DEBUG-}" = "1" ] && \
   printf '[invoke-wizardry] %s\n' "Starting wizardry initialization" >&2
 
 # Detect WIZARDRY_DIR
-printf '[DEBUG invoke-wizardry] Detecting WIZARDRY_DIR\n' >&2
 if [ -z "${WIZARDRY_DIR-}" ]; then
-  printf '[DEBUG invoke-wizardry] WIZARDRY_DIR not set, detecting...\n' >&2
   # Capture script path - in bash use BASH_SOURCE, in zsh use ${(%):-%x}
   _iw_script_path=""
   if eval '[ -n "${BASH_VERSION-}" ]' 2>/dev/null; then
     _iw_script_path=$(eval 'printf "%s" "${BASH_SOURCE[0]-}"')
-    printf '[DEBUG invoke-wizardry] Using BASH_SOURCE: %s\n' "$_iw_script_path" >&2
   elif [ -n "${ZSH_VERSION-}" ]; then
     # In zsh, use %x expansion to get sourced file path
     _iw_script_path=$(eval 'printf "%s" "${(%):-%x}"' 2>/dev/null) || :
@@ -75,54 +64,40 @@ if [ -z "${WIZARDRY_DIR-}" ]; then
     if [ -z "$_iw_script_path" ]; then
       _iw_script_path=$(eval 'printf "%s" "${(%):-%N}"' 2>/dev/null) || :
     fi
-    printf '[DEBUG invoke-wizardry] Using ZSH expansion: %s\n' "$_iw_script_path" >&2
   fi
   
   # Fallback to command -v
   if [ -z "$_iw_script_path" ]; then
-    printf '[DEBUG invoke-wizardry] Trying command -v fallback\n' >&2
     _iw_script_path=$(command -v invoke-wizardry 2>/dev/null | head -1) || :
-    printf '[DEBUG invoke-wizardry] command -v result: %s\n' "$_iw_script_path" >&2
   fi
   
   # Fallback to default location
   if [ -z "$_iw_script_path" ] && [ -n "${HOME-}" ]; then
-    printf '[DEBUG invoke-wizardry] Trying HOME fallback\n' >&2
     _iw_script_path="$HOME/.wizardry/spells/.imps/sys/invoke-wizardry"
   fi
   
   # Derive WIZARDRY_DIR from script path
-  printf '[DEBUG invoke-wizardry] Deriving WIZARDRY_DIR from: %s\n' "$_iw_script_path" >&2
   if [ -n "$_iw_script_path" ] && [ -f "$_iw_script_path" ]; then
     _iw_script_dir=$(CDPATH= cd -- "$(dirname "$_iw_script_path")" 2>/dev/null && pwd -P) || :
-    printf '[DEBUG invoke-wizardry] Script dir: %s\n' "$_iw_script_dir" >&2
     if [ -n "$_iw_script_dir" ]; then
       WIZARDRY_DIR=$(CDPATH= cd -- "$_iw_script_dir/../../.." 2>/dev/null && pwd -P) || :
-      printf '[DEBUG invoke-wizardry] Derived WIZARDRY_DIR: %s\n' "$WIZARDRY_DIR" >&2
     fi
   fi
   
   # Final fallback: if in a directory with spells subdirectory, use PWD
   if [ -z "${WIZARDRY_DIR-}" ] && [ -d "spells" ] && [ -d "spells/.imps" ]; then
-    printf '[DEBUG invoke-wizardry] Using PWD fallback\n' >&2
     WIZARDRY_DIR=$(pwd -P)
-    printf '[DEBUG invoke-wizardry] PWD-based WIZARDRY_DIR: %s\n' "$WIZARDRY_DIR" >&2
   fi
 fi
-printf '[DEBUG invoke-wizardry] Final WIZARDRY_DIR: %s\n' "${WIZARDRY_DIR-EMPTY}" >&2
 
 # Validate WIZARDRY_DIR
-printf '[DEBUG invoke-wizardry] Validating WIZARDRY_DIR\n' >&2
 if [ -z "${WIZARDRY_DIR-}" ] || [ ! -d "${WIZARDRY_DIR-}/spells" ]; then
   printf '%s\n' "invoke-wizardry: ERROR - WIZARDRY_DIR not found" >&2
-  printf '[DEBUG invoke-wizardry] WIZARDRY_DIR validation failed\n' >&2
   return 1
 fi
-printf '[DEBUG invoke-wizardry] WIZARDRY_DIR validated successfully\n' >&2
 
 [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "WIZARDRY_DIR=$WIZARDRY_DIR" >&2
 export WIZARDRY_DIR
-printf '[DEBUG invoke-wizardry] WIZARDRY_DIR exported\n' >&2
 
 # Set up SPELLBOOK_DIR
 : "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
@@ -136,11 +111,9 @@ export SPELLBOOK_DIR
 # ============================================================================
 
 [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Adding wizardry directories to PATH..." >&2
-printf '[DEBUG invoke-wizardry] Starting PATH setup\n' >&2
 
 # Add SPELLBOOK_DIR to PATH first (highest priority for user commands)
 if [ -d "$SPELLBOOK_DIR" ]; then
-  printf '[DEBUG invoke-wizardry] Adding SPELLBOOK_DIR to PATH: %s\n' "$SPELLBOOK_DIR" >&2
   PATH="$SPELLBOOK_DIR:$PATH"
   
   # Also add SPELLBOOK_DIR subdirectories (custom categories) recursively
@@ -159,11 +132,9 @@ if [ -d "$SPELLBOOK_DIR" ]; then
       PATH="$subsubdir:$PATH"
     done
   done
-  printf '[DEBUG invoke-wizardry] SPELLBOOK_DIR added to PATH\n' >&2
 fi
 
 # Add all spell directories to PATH (including subdirectories)
-printf '[DEBUG invoke-wizardry] Adding wizardry spell directories to PATH\n' >&2
 for category_dir in "$WIZARDRY_DIR/spells"/* "$WIZARDRY_DIR/spells"/.*; do
   [ -d "$category_dir" ] || continue
   # Skip . and ..
@@ -178,19 +149,14 @@ for category_dir in "$WIZARDRY_DIR/spells"/* "$WIZARDRY_DIR/spells"/.*; do
     PATH="$subdir:$PATH"
   done
 done
-printf '[DEBUG invoke-wizardry] All spell directories added to PATH\n' >&2
 
 export PATH
-printf '[DEBUG invoke-wizardry] PATH exported\n' >&2
 
 # Optional: Generate first-word glosses for space-separated invocation
 # This still allows "env or VAR DEFAULT" instead of just "env-or VAR DEFAULT"
 # Skip in test mode (tests don't need glosses)
-printf '[DEBUG invoke-wizardry] Checking if gloss generation needed\n' >&2
 if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
-  printf '[DEBUG invoke-wizardry] Not in test mode, checking for generate-glosses\n' >&2
   if command -v generate-glosses >/dev/null 2>&1; then
-    printf '[DEBUG invoke-wizardry] generate-glosses command found\n' >&2
     [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Loading first-word glosses..." >&2
     
     # PERFORMANCE OPTIMIZATION: Cache glosses to avoid regenerating on every shell startup
@@ -270,60 +236,31 @@ if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
     unset _iw_gloss_cache_dir _iw_gloss_persistent _iw_needs_regen
     unset _iw_gen_glosses_path _iw_gloss_output _iw_newest_spell
     unset _iw_spellbook _iw_syn_file
-    printf '[DEBUG invoke-wizardry] Gloss variables unset\n' >&2
-  else
-    printf '[DEBUG invoke-wizardry] generate-glosses command not found, skipping gloss generation\n' >&2
   fi
-else
-  printf '[DEBUG invoke-wizardry] In test mode, skipping gloss generation\n' >&2
 fi
 
 # Load MUD cd hook if enabled in config
-printf '[DEBUG invoke-wizardry] Checking for MUD cd hook\n' >&2
 if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
   _iw_mud_config="${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}/.mud"
   if [ -f "$_iw_mud_config" ] && grep -q "^cd-hook=1$" "$_iw_mud_config" 2>/dev/null; then
-    printf '[DEBUG invoke-wizardry] MUD cd hook enabled, loading\n' >&2
     _iw_cd_hook="$WIZARDRY_DIR/spells/.arcana/mud/cd"
     if [ -f "$_iw_cd_hook" ]; then
       [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Loading cd hook" >&2
       . "$_iw_cd_hook"
-      printf '[DEBUG invoke-wizardry] MUD cd hook loaded\n' >&2
     fi
-  else
-    printf '[DEBUG invoke-wizardry] MUD cd hook not enabled\n' >&2
   fi
   unset _iw_mud_config _iw_cd_hook
-  printf '[DEBUG invoke-wizardry] MUD config variables unset\n' >&2
-else
-  printf '[DEBUG invoke-wizardry] In test mode, skipping MUD cd hook\n' >&2
 fi
 
 # Verify that menu command is available (skip in test mode)
-printf '[DEBUG invoke-wizardry] Verifying menu command\n' >&2
 if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
   if ! command -v menu >/dev/null 2>&1; then
     printf '%s\n' "invoke-wizardry: ERROR - menu spell not found in PATH" >&2
-    printf '[DEBUG invoke-wizardry] menu command not found in PATH\n' >&2
     return 1
   fi
-  printf '[DEBUG invoke-wizardry] menu command found\n' >&2
 fi
 
 # Wizardry initialization complete
-printf '[DEBUG invoke-wizardry] Wizardry initialization complete\n' >&2
 [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Wizardry initialization complete" >&2
-
-# Debug: Check if banish command is available
-printf '[DEBUG invoke-wizardry] Checking if banish command is available\n' >&2
-if command -v banish >/dev/null 2>&1; then
-  _banish_path=$(command -v banish 2>&1)
-  printf '[DEBUG invoke-wizardry] banish command found at: %s\n' "$_banish_path" >&2
-else
-  printf '[DEBUG invoke-wizardry] WARNING: banish command not found in PATH\n' >&2
-fi
-
 set +eu
-printf '[DEBUG invoke-wizardry] set +eu executed, about to return\n' >&2
-printf '[DEBUG invoke-wizardry] Returning successfully from invoke-wizardry\n' >&2
 return 0

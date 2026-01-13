@@ -1,13 +1,11 @@
 #!/bin/sh
+
 # Banish environmental chaos and validate wizardry readiness at different levels.
 # This spell assumption-checks, self-heals, and tests the environment,
 # ensuring all prerequisites are met for each spell level.
 
-printf '[DEBUG banish] Script started, args: %s\n' "$*" >&2
-
 case "${1-}" in
 --help|--usage|-h)
-  printf '[DEBUG banish] Help requested\n' >&2
   cat <<'USAGE'
 Usage: banish [LEVEL] [OPTIONS]
 
@@ -32,43 +30,32 @@ USAGE
 esac
 
 set -eu
-printf '[DEBUG banish] set -eu enabled\n' >&2
 
 # Detect WIZARDRY_DIR if not already set
-printf '[DEBUG banish] Detecting WIZARDRY_DIR\n' >&2
 if [ -z "${WIZARDRY_DIR-}" ]; then
-  printf '[DEBUG banish] WIZARDRY_DIR not set, detecting from script location\n' >&2
   # We're being executed directly - detect from script location
   _script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || _script_dir=""
-  printf '[DEBUG banish] Script dir: %s\n' "$_script_dir" >&2
   if [ -n "$_script_dir" ]; then
     _wiz_root=$(CDPATH= cd -- "$_script_dir/../.." 2>/dev/null && pwd -P) || _wiz_root=""
-    printf '[DEBUG banish] Wizardry root: %s\n' "$_wiz_root" >&2
     if [ -n "$_wiz_root" ] && [ -d "$_wiz_root/spells" ]; then
       WIZARDRY_DIR=$_wiz_root
-      printf '[DEBUG banish] WIZARDRY_DIR set to: %s\n' "$WIZARDRY_DIR" >&2
     fi
   fi
 fi
 
 # Validate WIZARDRY_DIR is set and valid
-printf '[DEBUG banish] Validating WIZARDRY_DIR\n' >&2
 if [ -z "${WIZARDRY_DIR-}" ]; then
   printf 'banish: WIZARDRY_DIR not set and could not be detected\n' >&2
   printf 'Run from wizardry installation or set WIZARDRY_DIR environment variable\n' >&2
-  printf '[DEBUG banish] WIZARDRY_DIR validation failed (empty)\n' >&2
   exit 1
 fi
 
 if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
   printf 'banish: invalid WIZARDRY_DIR: %s\n' "$WIZARDRY_DIR" >&2
-  printf '[DEBUG banish] WIZARDRY_DIR validation failed (spells dir not found)\n' >&2
   exit 1
 fi
-printf '[DEBUG banish] WIZARDRY_DIR validated: %s\n' "$WIZARDRY_DIR" >&2
 
 export WIZARDRY_DIR
-printf '[DEBUG banish] WIZARDRY_DIR exported\n' >&2
 
 # Parse arguments
 target_level=4
@@ -175,7 +162,6 @@ USAGE
 done
 
 # Validate level
-printf '[DEBUG banish] Validating target level: %d\n' "$target_level" >&2
 if [ "$target_level" -lt 0 ] || [ "$target_level" -gt "$max_level" ]; then
   printf 'Error: level must be 0-%d, got: %s\n' "$max_level" "$target_level" >&2
   cat <<'USAGE' >&2
@@ -199,10 +185,8 @@ Examples:
 USAGE
   exit 2
 fi
-printf '[DEBUG banish] Target level validated\n' >&2
 
 # Set up spell-levels script path
-printf '[DEBUG banish] Setting up spell-levels script path\n' >&2
 spell_levels_script="${WIZARDRY_DIR}/spells/.imps/sys/spell-levels"
 if [ ! -x "$spell_levels_script" ]; then
   printf 'banish: spell-levels not found or not executable\n' >&2
