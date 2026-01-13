@@ -323,9 +323,6 @@ else
   printf '[DEBUG invoke-wizardry] WARNING: banish command not found in PATH\n' >&2
 fi
 
-# Debug: Print final PATH
-printf '[DEBUG invoke-wizardry] Final PATH (first 500 chars): %s\n' "${PATH:0:500}" >&2
-
 set +eu
 printf '[DEBUG invoke-wizardry] set +eu executed, about to return\n' >&2
 printf '[DEBUG invoke-wizardry] Returning successfully from invoke-wizardry\n' >&2
