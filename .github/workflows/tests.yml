@@ -23,7 +23,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: nixos
-      WIZARDRY_TEST_DEBUG: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -48,19 +47,7 @@ jobs:
       - name: Run unit tests in Nix shell
         run: |
           nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr --run "
-            . spells/.imps/sys/invoke-wizardry
-            echo '[DEBUG workflow] About to call: timeout 30 banish 8' >&2
-            if timeout 30 banish 8; then
-              echo '[DEBUG workflow] banish 8 completed successfully' >&2
-            else
-              exit_code=\$?
-              echo '[DEBUG workflow] banish 8 failed with exit code: '\$exit_code >&2
-              if [ \"\$exit_code\" = '124' ]; then
-                echo '[DEBUG workflow] banish 8 TIMED OUT after 30 seconds - this is the hang!' >&2
-              fi
-              exit \$exit_code
-            fi
-            ./spells/.wizardry/test-magic --verbose
+            . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose
           "
 
   aab-macos:
@@ -82,7 +69,6 @@ jobs:
     container: archlinux:latest
     env:
       WIZARDRY_OS_LABEL: arch
-      WIZARDRY_TEST_DEBUG: 1
     steps:
       - name: Install git, procps, and core utilities for checkout and testing
         run: pacman -Sy --noconfirm git procps-ng coreutils sed gawk grep findutils attr file
@@ -91,20 +77,7 @@ jobs:
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
       - name: Run unit tests
-        run: |
-          . spells/.imps/sys/invoke-wizardry
-          echo "[DEBUG workflow] About to call: timeout 30 banish 8" >&2
-          if timeout 30 banish 8; then
-            echo "[DEBUG workflow] banish 8 completed successfully" >&2
-          else
-            exit_code=$?
-            echo "[DEBUG workflow] banish 8 failed with exit code: $exit_code" >&2
-            if [ "$exit_code" = "124" ]; then
-              echo "[DEBUG workflow] banish 8 TIMED OUT after 30 seconds - this is the hang!" >&2
-            fi
-            exit $exit_code
-          fi
-          ./spells/.wizardry/test-magic --verbose
+        run: . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose
 
   debian:
     name: Debian unit tests
@@ -128,7 +101,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
-      WIZARDRY_TEST_DEBUG: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -157,17 +129,4 @@ jobs:
             echo "bubblewrap unusable; proceeding without sandboxing" >&2
           fi
       - name: Run unit tests
-        run: |
-          . spells/.imps/sys/invoke-wizardry
-          echo "[DEBUG workflow] About to call: timeout 30 banish 8" >&2
-          if timeout 30 banish 8; then
-            echo "[DEBUG workflow] banish 8 completed successfully" >&2
-          else
-            exit_code=$?
-            echo "[DEBUG workflow] banish 8 failed with exit code: $exit_code" >&2
-            if [ "$exit_code" = "124" ]; then
-              echo "[DEBUG workflow] banish 8 TIMED OUT after 30 seconds - this is the hang!" >&2
-            fi
-            exit $exit_code
-          fi
-          ./spells/.wizardry/test-magic --verbose
+        run: . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose
