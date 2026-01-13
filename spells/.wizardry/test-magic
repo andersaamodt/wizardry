@@ -333,7 +333,7 @@ while [ "$count_level" -le "$count_end" ]; do
   count_level=$((count_level + 1))
 done
 
-failure_output_file=$(temp-file test-magic) || return 1
+failure_output_file=$(temp-file test-magic) || exit 1
 trap 'cleanup-file "$failure_output_file"' EXIT HUP INT TERM
 
 test_timeout=${WIZARDRY_TEST_TIMEOUT:-180}
