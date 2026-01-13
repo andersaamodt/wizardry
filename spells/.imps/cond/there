@@ -1,0 +1,9 @@
+#!/bin/sh
+# there PATH - test if path exists (any type: file, dir, link, etc.)
+# Example: there /etc/passwd && echo "found"
+
+# Note: No set -eu because this is a conditional imp (returns exit codes for flow control)
+
+
+[ -e "$1" ]
+

@@ -1,0 +1,19 @@
+#!/bin/sh
+# env-or VAR DEFAULT - output env var value if set and non-empty, else default
+# Example: dir=$(env-or SPELLBOOK_DIR "$HOME/.spellbook")
+set -eu
+
+eo_var=$1
+# Validate variable name contains only alphanumerics and underscores
+case "$eo_var" in
+  *[!A-Za-z0-9_]*|"")
+    printf '%s\n' "$2"
+  exit 0
+    ;;
+esac
+eval "eo_val=\${$eo_var-}"
+if [ -n "$eo_val" ]; then
+  printf '%s\n' "$eo_val"
+else
+  printf '%s\n' "$2"
+fi

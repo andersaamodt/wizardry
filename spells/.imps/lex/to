@@ -1,0 +1,39 @@
+#!/bin/sh
+# to CMD CMD_ARGS TARGET MORE... - append TARGET to command args (alias for into)
+# Receives: $1=command, $2=command_args, $3=target, $4+=remaining
+# Example: parse cp file.txt to /tmp/dest.txt
+
+
+to_cmd=${1:-}
+to_cmd_args=${2:-}
+shift 2 2>/dev/null || shift $#
+
+if [ $# -lt 1 ]; then
+  printf '%s: to requires a target\n' "to" >&2
+  exit 1
+fi
+
+to_target=$1
+shift
+
+if [ -z "$to_cmd" ]; then
+  printf '%s: to requires a command before it\n' "to" >&2
+  exit 1
+fi
+
+if [ -n "$to_cmd_args" ]; then
+  to_new_args="$to_cmd_args $to_target"
+else
+  to_new_args=$to_target
+fi
+
+if [ $# -eq 0 ]; then
+  # shellcheck disable=SC2086
+  "$to_cmd" $to_new_args
+  exit $?
+fi
+
+to_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+# shellcheck disable=SC2086
+"$to_lex_dir/parse" "$to_cmd" $to_new_args "$@"
+

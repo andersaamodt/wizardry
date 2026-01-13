@@ -1,0 +1,235 @@
+#!/bin/sh
+# This spell adds a synonym (alias) for an existing spell.
+# Synonyms are stored in SPELLBOOK_DIR/.synonyms as shell aliases.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: add-synonym WORD SPELL [ARGS...]
+       add-synonym  (interactive mode)
+
+Add a synonym (alias) for an existing spell.
+
+Arguments:
+  WORD     The synonym word (simple name only)
+  SPELL    The target spell or command
+  ARGS     Optional arguments to pass to the spell
+
+Examples:
+  add-synonym ll "ls -l"
+  add-synonym clone "git clone"
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+  # Parse arguments
+  synonym_word=""
+  target_spell=""
+
+  if [ "$#" -ge 2 ]; then
+    synonym_word=${1-}
+    shift
+    # Join remaining arguments as the target spell (allows quoting)
+    target_spell="$*"
+  elif [ "$#" -eq 1 ]; then
+    printf '%s\n' "add-synonym: requires both WORD and SPELL arguments" >&2
+    exit 2
+  else
+    # Interactive mode
+    printf 'Synonym word (simple name only): ' >&2
+    if ! IFS= read -r synonym_word; then
+      printf '%s\n' "add-synonym: failed to read synonym word" >&2
+      exit 1
+    fi
+    
+    printf 'Target spell or command: ' >&2
+    if ! IFS= read -r target_spell; then
+      printf '%s\n' "add-synonym: failed to read target spell" >&2
+      exit 1
+    fi
+  fi
+
+  # Validate synonym word (must be non-empty and valid)
+  if [ -z "$synonym_word" ]; then
+    printf '%s\n' "add-synonym: synonym word cannot be empty" >&2
+    exit 2
+  fi
+
+  # Check for invalid characters in synonym word
+  case $synonym_word in
+    *[/\ \	\'\"\$\`\\\|\&\;\(\)\<\>\*\?\[\]]*)
+      printf '%s\n' "add-synonym: synonym word cannot contain spaces or special characters" >&2
+      printf '%s\n' "Invalid characters: / \\ | & ; ( ) < > * ? [ ] \$ \` ' \" space tab" >&2
+      exit 2
+      ;;
+    -*)
+      printf '%s\n' "add-synonym: synonym word cannot start with a dash" >&2
+      exit 2
+      ;;
+    .*)
+      printf '%s\n' "add-synonym: synonym word cannot start with a dot" >&2
+      exit 2
+      ;;
+    [0-9]*)
+      printf '%s\n' "add-synonym: synonym word cannot start with a number" >&2
+      exit 2
+      ;;
+  esac
+
+  # Check for collisions with blacklisted commands
+  # These commands CANNOT be overridden (same blacklist as generate-glosses)
+  case $synonym_word in
+    # Shell keywords (cannot override these at all)
+    if|then|else|elif|fi|case|esac|for|while|until|do|done|in| \
+    function|time|select|\{|\}|\[\[|\]\]|!)
+      printf '%s\n' "add-synonym: cannot override shell keyword: $synonym_word" >&2
+      exit 2
+      ;;
+    # Blacklisted shell builtins (critical for shell operation)
+    alias|bg|cd|command|disable|eval|exec|exit|export|false|fc|fg|getopts|hash|jobs| \
+    kill|local|newgrp|pwd|readonly|return|set|sh|shift|times|trap|true|type|ulimit| \
+    umask|unalias|unset|wait|break|continue|source)
+      printf '%s\n' "add-synonym: cannot override protected builtin: $synonym_word" >&2
+      printf '%s\n' "This is a critical shell builtin that must not be shadowed" >&2
+      exit 2
+      ;;
+    # Blacklisted common system commands (critical for system operation)
+    awk|cat|cp|cut|date|df|diff|dirname|du|echo|egrep|env|expr|fgrep|file|find|grep| \
+    head|hostname|id|ln|ls|mkdir|mv|printf|ps|rm|rmdir|sed|sleep|sort|stat|tail|tar| \
+    tee|touch|tr|uname|uniq|wc|xargs)
+      printf '%s\n' "add-synonym: cannot override protected command: $synonym_word" >&2
+      printf '%s\n' "This is a critical system command that must not be shadowed" >&2
+      exit 2
+      ;;
+  esac
+
+  # Check for collision with other commands in PATH
+  # These CAN be overridden but we should warn the user
+  if command -v "$synonym_word" >/dev/null 2>&1; then
+    # Get information about what command this is
+    cmd_info=$(command -v "$synonym_word" 2>/dev/null)
+    warn "add-synonym: '$synonym_word' already exists as a command"
+    info "  Current: $cmd_info"
+    info "  New synonym will override this command when shell functions are loaded"
+    printf 'Create synonym anyway? (y/N): ' >&2
+    IFS= read -r confirm || confirm="n"
+    case $confirm in
+      y|Y|yes|YES) ;;
+      *) 
+        printf '%s\n' "add-synonym: cancelled" >&2
+        exit 1
+        ;;
+    esac
+  fi
+
+  # Validate target spell
+  if [ -z "$target_spell" ]; then
+    printf '%s\n' "add-synonym: target spell cannot be empty" >&2
+    exit 2
+  fi
+
+  # Check if target spell contains problematic characters that might not work in aliases
+  case $target_spell in
+    *\`*|\$\(*)
+      warn "add-synonym: target contains command substitution"
+      info "This may not work as expected in aliases"
+      printf 'Continue anyway? (y/N): ' >&2
+      IFS= read -r confirm || confirm="n"
+      case $confirm in
+        y|Y|yes|YES) ;;
+        *) 
+          printf '%s\n' "add-synonym: cancelled" >&2
+          exit 1
+          ;;
+      esac
+      ;;
+  esac
+
+  # Extract first word of target spell to check if it exists
+  target_first_word=$(printf '%s' "$target_spell" | awk '{print $1}')
+  if [ -n "$target_first_word" ]; then
+    if ! command -v "$target_first_word" >/dev/null 2>&1; then
+      warn "add-synonym: target command '$target_first_word' not found in PATH"
+      printf 'Continue anyway? (y/N): ' >&2
+      IFS= read -r confirm || confirm="n"
+      case $confirm in
+        y|Y|yes|YES) ;;
+        *) 
+          printf '%s\n' "add-synonym: cancelled" >&2
+          exit 1
+          ;;
+      esac
+    fi
+  fi
+
+  # Check if synonym already exists (in either file)
+  spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+  custom_file="$spell_home/.synonyms"
+  default_file="$spell_home/.default-synonyms"
+
+  # Check for duplicates in both files
+  already_exists=0
+  existing_location=""
+  existing_target=""
+
+  if [ -f "$custom_file" ] && grep -q "^$synonym_word=" "$custom_file" 2>/dev/null; then
+    already_exists=1
+    existing_location="custom"
+    existing_target=$(grep "^$synonym_word=" "$custom_file" | \
+      sed "s/^$synonym_word=//")
+  fi
+
+  # Only check default if not already found in custom
+  default_match=$(grep "^$synonym_word=" "$default_file" 2>/dev/null || true)
+  if [ "$already_exists" -eq 0 ] && [ -f "$default_file" ] && [ -n "$default_match" ]; then
+    already_exists=1
+    existing_location="default"
+    existing_target=$(printf '%s' "$default_match" | \
+      sed "s/^$synonym_word=//")
+  fi
+
+  if [ "$already_exists" -eq 1 ]; then
+    warn "add-synonym: synonym '$synonym_word' already exists"
+    info "  Location: $existing_location"
+    info "  Current: $synonym_word → $existing_target"
+    printf 'Overwrite with new target? (y/N): ' >&2
+    IFS= read -r confirm || confirm="n"
+    case $confirm in
+      y|Y|yes|YES) ;;
+      *) 
+        printf '%s\n' "add-synonym: cancelled" >&2
+        exit 1
+        ;;
+    esac
+    
+    # If overwriting a default, we create/update in custom
+    # If overwriting a custom, we update in custom
+    # Remove old custom definition if it exists
+    if [ -f "$custom_file" ] && grep -q "^$synonym_word=" "$custom_file" 2>/dev/null; then
+      temp_file=$(temp-file synonyms) || exit 1
+      grep -v "^$synonym_word=" "$custom_file" > "$temp_file" || true
+      mv "$temp_file" "$custom_file"
+    fi
+  fi
+
+  # Ensure custom synonyms file exists
+  if [ ! -f "$custom_file" ]; then
+    mkdir -p "$spell_home" 2>/dev/null || true
+    cat > "$custom_file" << 'HEADER'
+# Wizardry Custom Synonyms
+# Format: word=target
+# Loaded automatically by invoke-wizardry at shell startup.
+# Reload with: . invoke-thesaurus
+
+HEADER
+  fi
+
+  # Add the synonym to the custom file in word=target format
+  printf "%s=%s\n" "$synonym_word" "$target_spell" >> "$custom_file"
+
+  success "Synonym created: $synonym_word -> $target_spell"
+  info "Reload with: . invoke-thesaurus"

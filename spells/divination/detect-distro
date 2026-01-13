@@ -1,0 +1,125 @@
+#!/bin/sh
+
+# Bootstrap spell: prints a short identifier for the current OS.
+# Use -v to narrate detection while exporting DISTRO for callers.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: detect-distro [-v]
+
+Detect the host operating system and print a concise identifier such as "debian", "mac", or "nixos". Use -v for narrated detection while exporting DISTRO for callers.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Parse flags for verbose output or help text.
+verbose=0
+while getopts hv opt
+do
+  case $opt in
+  v)
+    verbose=1
+    ;;
+  h)
+    cat <<'USAGE'
+Usage: detect-distro [-v]
+
+Detect the host operating system and print a concise identifier such as "debian", "mac", or "nixos". Use -v for narrated detection while exporting DISTRO for callers.
+USAGE
+    exit 0
+    ;;
+  *)
+    cat >&2 <<'USAGE'
+Usage: detect-distro [-v]
+
+Detect the host operating system and print a concise identifier such as "debian", "mac", or "nixos". Use -v for narrated detection while exporting DISTRO for callers.
+USAGE
+    exit 1
+    ;;
+  esac
+done
+shift $((OPTIND - 1))
+
+if [ "$#" -ne 0 ]; then
+  cat >&2 <<'USAGE'
+Usage: detect-distro [-v]
+
+Detect the host operating system and print a concise identifier such as "debian", "mac", or "nixos". Use -v for narrated detection while exporting DISTRO for callers.
+USAGE
+  exit 1
+fi
+
+root_prefix=${DETECT_DISTRO_ROOT:-}
+os_release_path=${DETECT_DISTRO_OS_RELEASE:-"${root_prefix}/etc/os-release"}
+root_prefix=${root_prefix%/}
+case $root_prefix in
+  /*|'') : ;;
+  *) root_prefix=/$root_prefix ;;
+esac
+
+# Inline os_release_id - only used once
+if [ -f "$os_release_path" ]; then
+  os_id=$(awk -F= 'tolower($1) == "id" { gsub(/"/, "", $2); print tolower($2) }' "$os_release_path")
+else
+  os_id=''
+fi
+
+# Detect from specific markers toward the generic uname fallback.
+# Inline file_exists checks - simple one-liner test
+if [ -f "${root_prefix}/etc/NIXOS" ] || [ "${os_id-}" = "nixos" ]; then
+  distro='nixos'
+elif [ -f "${root_prefix}/etc/debian_version" ]; then
+  distro='debian'
+elif [ -f "${root_prefix}/etc/arch-release" ]; then
+  distro='arch'
+elif [ "${os_id-}" = "debian" ] || [ "${os_id-}" = "ubuntu" ] || [ "${os_id-}" = "raspbian" ]; then
+  distro='debian'
+elif [ "${os_id-}" = "arch" ]; then
+  distro='arch'
+else
+  # Inline detect_uname - only used once
+  if [ -n "${DETECT_DISTRO_UNAME-}" ]; then
+    kernel_name=$DETECT_DISTRO_UNAME
+  elif uname >/dev/null 2>&1; then
+    kernel_name=$(uname)
+  else
+    kernel_name=''
+  fi
+  
+  if [ "${kernel_name-}" = "Darwin" ]; then
+    distro='mac'
+  fi
+fi
+
+# Output the detection result
+if [ -n "${distro-}" ]; then
+  # distro is output to stdout for callers to capture via command substitution
+  :
+else
+  printf '%s\n' 'unknown'
+  exit 1
+fi
+
+if [ "$verbose" -eq 1 ]; then
+  case $distro in
+  debian)
+    printf '%s\n' 'Debian, Ubuntu, or Raspbian OS detected.'
+    ;;
+  arch)
+    printf '%s\n' 'Arch or Manjaro-based OS detected.'
+    ;;
+  mac)
+    printf '%s\n' 'MacOS detected.'
+    ;;
+  nixos)
+    printf '%s\n' 'NixOS detected.'
+    ;;
+  esac
+else
+  printf '%s\n' "$distro"
+fi

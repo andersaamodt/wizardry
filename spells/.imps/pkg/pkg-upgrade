@@ -1,0 +1,17 @@
+#!/bin/sh
+# pkg-upgrade - upgrade all installed packages
+# Example: pkg-update && pkg-upgrade
+set -eu
+
+
+_pug_pm=$(pkg-manager) || {
+  printf '%s\n' "pkg-upgrade: no supported package manager" >&2
+  exit 1
+}
+
+case $_pug_pm in
+  apt)    sudo apt-get -y upgrade ;;
+  pacman) sudo pacman --noconfirm -Su ;;
+  nix)    nix-env -u ;;
+  pkgin)  sudo pkgin -y upgrade ;;
+esac

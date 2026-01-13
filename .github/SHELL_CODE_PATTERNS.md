@@ -1,0 +1,545 @@
+# POSIX Shell Code Patterns
+
+**Purpose:** Centralize all obscure POSIX shell knowledge, quirks, and proven patterns. This is the authoritative reference for shell code patterns in wizardry.
+
+**AI Directive:** ALWAYS document new shell patterns, quirks, or POSIX discoveries here as you encounter them during development.
+
+**Related Documentation:**
+- **FULL_SPEC.md** - Canonical specification (what/constraints)
+- **CROSS_PLATFORM_PATTERNS.md** - Cross-platform compatibility patterns
+- **EXEMPTIONS.md** - Documented exceptions
+- **LESSONS.md** - Debugging insights
+
+## Critical POSIX sh Patterns
+
+### Performance: Basename Replacement
+
+**CRITICAL FOR PERFORMANCE:** When processing many files, avoid subprocess calls.
+
+```sh
+# SLOW: Subprocess per file (247ms for 268 files)
+name=$(basename "$file")
+
+# FAST: Parameter expansion (2ms for 268 files, 100x faster)
+name=${file##*/}
+```
+
+**Explanation:** `${file##*/}` removes the longest match of `*/` from the start, leaving just the basename. No subprocess required.
+
+**Use case:** generate-glosses optimization (396 files): 1.6s → 0.036s (45x speedup)
+
+### Variable Handling
+
+```sh
+# Default values
+var=${1-}              # Empty string if unset (most common)
+var=${1:-default}      # "default" if unset OR empty
+: "${VAR:=default}"    # Sets VAR to "default" if unset/empty (persists)
+
+# Required with set -u
+value=${required_var?Error: required_var not set}
+
+# String manipulation (POSIX only)
+${var#pattern}         # Remove shortest match from start
+${var##pattern}        # Remove longest match from start
+${var%pattern}         # Remove shortest match from end
+${var%%pattern}        # Remove longest match from end
+
+# Length
+${#var}                # String length
+```
+
+### Aliases and Sourced Scripts
+
+**CRITICAL PATTERN:** Aliases that invoke sourced-only scripts must use space-separated form to route through first-word glosses.
+
+```sh
+# WRONG: Alias directly invokes hyphenated spell (gets executed, not sourced)
+alias jump-to-location='jump-to-marker'  # Executes jump-to-marker → uncastable error
+
+# RIGHT: Alias uses space-separated form to route through first-word gloss
+alias jump-to-location='jump to marker'  # → jump() gloss → sources jump-to-marker ✓
+```
+
+**Why:** When an alias expands to a hyphenated name (`jump-to-marker`), the shell executes that spell file directly. If the spell has `# Uncastable pattern`, it will error. But if the alias uses spaces (`jump to marker`), it invokes the `jump()` first-word gloss, which detects the uncastable pattern and sources the spell correctly.
+
+**Implementation:** In generate-glosses, convert hyphens to spaces for hyphenated synonym targets:
+```sh
+case "$_target" in
+  *-*) _alias_target=$(printf '%s' "$_target" | sed 's/-/ /g') ;;
+  *)   _alias_target="$_target" ;;
+esac
+emit_line "alias $_word='$_alias_target'"
+```
+
+### Function Naming and Hyphens
+
+**CRITICAL:** POSIX sh doesn't support hyphens in function names.
+
+```sh
+# CORRECT: Underscore in function name
+require_wizardry() { ... }
+env_or() { ... }
+
+# WRONG: Hyphen causes parse errors
+require-wizardry() { ... }  # Syntax error
+```
+
+**Wizardry solution:** Imps define underscore functions, glosses provide hyphenated CLI commands.
+
+### set -eu Behavior
+
+**set -e (errexit):** Exit on command failure, UNLESS:
+1. Command is in conditional (`if`, `while`, `until`)
+2. Command is part of AND-OR list (`&&`, `||`)
+3. Command return is inverted with `!`
+
+**set -u (nounset):** Error on unset variable expansion
+
+**CRITICAL:** `set -e` in function propagates to calling shell (exits parent even without `set -e`).
+
+**Solutions:**
+```sh
+# Use exit handler that respects context
+case "$0" in
+  */spell-name)
+    # Script execution - safe to exit
+    trap 'exit 1' ERR
+    ;;
+  *)
+    # Sourced - avoid exit
+    trap 'return 1' ERR
+    ;;
+esac
+
+# Or protect call site
+my_func || true
+if my_func; then ...; fi
+```
+
+**Note:** Modern wizardry uses flat, linear scripts (no function wrappers), so this is mainly relevant for imps.
+
+### Return vs Exit
+
+| Context | Use | Effect |
+|---------|-----|--------|
+| Function body | `return N` | Exits function only |
+| Top level script | `exit N` | Exits script/shell |
+| Sourced function | `return N` | Safe |
+| Sourced function | `exit N` | KILLS SHELL |
+| Executed script (no function) | `exit N` | Required (Arch bash rejects `return`) |
+
+**Rules:**
+- Always use `return` in functions that might be sourced
+- Always use `exit` in top-level scripts executed via PATH (imps, spells)
+- **CRITICAL:** Bash (Arch's `/bin/sh`) errors on top-level `return` outside functions; dash (Ubuntu's `/bin/sh`) silently allows it but shouldn't be relied upon
+
+### Case Statements
+
+```sh
+# Multiple patterns
+case "$var" in
+  pattern1|pattern2) ... ;;
+  *) ... ;;  # Default
+esac
+
+# Glob patterns
+case "$file" in
+  *.sh|*.bash) ... ;;
+  */bin/*) ... ;;
+esac
+
+# Command-line argument handling
+case "${1-}" in
+  --help|-h) show_help; return 0 ;;
+  --*) die "unknown option: $1" ;;
+esac
+```
+
+### Self-Execute Pattern
+
+### Self-Execute Pattern (For Imps Only)
+
+**Makes imp work both sourced and executed:**
+
+```sh
+#!/bin/sh
+
+_imp_name() {
+  # Function body
+}
+
+# Self-execute when run directly
+case "$0" in
+  */imp-name) _imp_name "$@" ;; esac
+```
+
+**Why:** `$0` is script path when executed, shell name when sourced. Pattern `*/imp-name` matches only execution.
+
+**Note:** Spells are now flat, linear scripts (no function wrappers). This pattern is only used for imps.
+
+### Command Substitution
+
+```sh
+# Preferred (nestable)
+result=$(command arg)
+
+# Variable function calls (zsh compatibility)
+_cmd="my_function"
+result=$(eval "$_cmd arg1 arg2")  # Use eval in subshells
+
+# Direct calls work without eval
+result=$(my_function arg)  # OK
+$_cmd arg                  # OK (not in subshell)
+```
+
+**Gotcha:** Functions stored in variables need `eval` in command substitution (zsh).
+
+### Test Operators
+
+```sh
+# File tests
+[ -e path ]    # Exists (any type)
+[ -f path ]    # Regular file
+[ -d path ]    # Directory
+[ -x path ]    # Executable
+[ -r path ]    # Readable
+[ -w path ]    # Writable
+[ -s path ]    # Non-empty file
+
+# String tests
+[ -z "$s" ]    # Empty string
+[ -n "$s" ]    # Non-empty string
+[ "$a" = "$b" ]   # Equal (use =, not ==)
+[ "$a" != "$b" ]  # Not equal
+
+# Integer tests (limited in POSIX)
+[ "$a" -eq "$b" ]  # Equal
+[ "$a" -ne "$b" ]  # Not equal
+[ "$a" -lt "$b" ]  # Less than
+[ "$a" -gt "$b" ]  # Greater than
+[ "$a" -le "$b" ]  # Less or equal
+[ "$a" -ge "$b" ]  # Greater or equal
+
+# Logical operators
+[ cond1 ] && [ cond2 ]   # AND (preferred)
+[ cond1 ] || [ cond2 ]   # OR (preferred)
+[ cond1 -a cond2 ]       # AND (avoid, deprecated)
+[ cond1 -o cond2 ]       # OR (avoid, deprecated)
+[ ! cond ]               # NOT
+```
+
+**CRITICAL:** Always use `[ ]`, never `[[ ]]` (bash-ism). Use `=` not `==` for string comparison.
+
+### Pipes and Exit Codes
+
+**Exit code lost in pipes:**
+```sh
+my_func 2>&1 | head -1
+echo $?  # Shows 0 (from head), not my_func's code
+
+# Fix: Capture before pipe
+output=$(my_func 2>&1)
+exit_code=$?
+```
+
+**Variables/functions lost in pipes (run in subshells):**
+```sh
+# WRONG: Variable not set in parent
+echo "test" | grep "test" && found=1
+
+# WRONG: Function not loaded in parent
+word_of_binding spell 2>&1 | grep "Loaded"
+
+# CORRECT: Don't pipe state changes
+word_of_binding spell >/dev/null 2>&1
+command -v spell >/dev/null 2>&1 && echo "Loaded"
+```
+
+### Here Documents
+
+```sh
+# Variable expansion
+cat <<EOF
+Value: $var
+EOF
+
+# Literal (quote delimiter)
+cat <<'EOF'
+Literal: $var
+EOF
+
+# Indented (tabs only)
+cat <<-EOF
+	Text
+EOF
+```
+
+### For Loops
+
+```sh
+# Iterate words
+for item in one two three; do echo "$item"; done
+
+# Iterate files (check for no-match)
+for file in *.sh; do
+  [ -f "$file" ] || continue
+  process "$file"
+done
+
+# Avoid: for line in $(cat file)  # Splits on ALL whitespace
+# Use: while read instead
+```
+
+### While Loops and IFS
+
+```sh
+# Read lines preserving whitespace
+while IFS= read -r line; do echo "$line"; done < file
+
+# Read fields (colon-separated)
+while IFS=: read -r user pass uid gid; do
+  echo "User: $user"
+done < /etc/passwd
+```
+
+### Arithmetic
+
+```sh
+# POSIX arithmetic
+i=$((i + 1))
+result=$((5 * 3 + 2))
+is_even=$(((num % 2) == 0))  # Returns 1 (true) or 0 (false)
+
+# No floating point - use awk/bc
+result=$(awk 'BEGIN{print 5.5 * 2}')
+```
+
+### Command Checks
+
+```sh
+# POSIX-compliant
+command -v git >/dev/null 2>&1 || die "git required"
+
+# WRONG: Not portable
+which git              # Not POSIX
+hash git               # May print errors
+[ -x /usr/bin/git ]    # Hard-coded path
+```
+
+### Output and Quoting
+
+```sh
+# Use printf (portable)
+printf '%s\n' "$msg"
+
+# Avoid echo (varies by shell, -n not portable)
+
+# Always quote variables
+printf '%s\n' "$var"     # CORRECT
+printf '%s\n' $var       # WRONG: word splitting
+```
+
+### Globbing
+
+```sh
+# Disable temporarily
+set -f; pattern="*.sh"; set +f
+
+# Check for matches
+for file in *.sh; do
+  [ -e "$file" ] || break
+  process "$file"
+done
+
+# Recursive: use find (** not POSIX)
+```
+
+### Signal Handling
+
+```sh
+# Trap signals for cleanup
+cleanup() {
+  rm -f "$tmpfile"
+}
+trap cleanup EXIT HUP INT TERM
+
+# Clear all traps
+trap - EXIT HUP INT TERM
+
+# Ignore signal
+trap '' HUP
+```
+
+### Path Manipulation
+
+```sh
+# Basename and dirname (external commands)
+name=$(basename "$path")
+dir=$(dirname "$path")
+
+# POSIX parameter expansion (inline)
+name=${path##*/}    # Basename
+dir=${path%/*}      # Dirname
+
+# Disable CDPATH (avoids cd echoing path)
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+# Resolve symlinks
+real_path=$(cd "$(dirname "$path")" && pwd -P)/$(basename "$path")
+```
+
+### $0 Behavior
+
+| Context | $0 Value |
+|---------|----------|
+| Script execution | `/path/to/script` |
+| Interactive shell | `bash`, `-zsh`, `sh` |
+| Sourced function | Parent script or shell name |
+
+**Context detection:**
+```sh
+case "$0" in
+  */script-name) # Executed
+    ;;
+  *) # Sourced
+    ;;
+esac
+```
+
+**Gotcha:** Login shells prefix with `-` (e.g., `-bash`, `-zsh`).
+
+### POSIX vs Bash-isms
+
+| Bash-ism | POSIX Alternative | Notes |
+|----------|-------------------|-------|
+| `[[ ]]` | `[ ]` | Use single brackets |
+| `==` | `=` | In `[ ]` tests |
+| `source` | `.` | Dot command |
+| `$RANDOM` | `awk 'BEGIN{srand();print int(rand()*N)}'` | No random in POSIX |
+| `local var` | `var=...` | No local, use naming convention |
+| `${arr[@]}` | Space-separated string | No arrays |
+| `function foo()` | `foo()` | Just use `foo()` |
+| `echo -e` | `printf` | echo flags not portable |
+| `&>file` | `>file 2>&1` | Redirect both streams |
+| `<<<` | here-doc or pipe | Here-strings not POSIX |
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success |
+| 1 | General error |
+| 2 | Usage error |
+| 126 | Not executable |
+| 127 | Not found |
+| 130 | Ctrl-C (SIGINT) |
+| 141 | SIGPIPE |
+
+**Note:** SIGPIPE handling varies (bash may exit, dash ignores in scripts).
+
+### Subshell vs Command Substitution vs Background
+
+```sh
+# Subshell: Runs in new process, changes lost
+( cd /tmp && ls )
+pwd  # Still in original directory
+
+# Command substitution: Captures output
+result=$(cd /tmp && ls)
+
+# Background: Runs async
+long_task &
+pid=$!  # Capture PID
+wait $pid  # Wait for completion
+```
+
+## Advanced Patterns
+
+```sh
+# Error with context
+die() {
+  printf '%s:%d: %s\n' "${0##*/}" "${LINENO-}" "$*" >&2
+  exit 1
+}
+
+# Heredoc function (quote delimiter for literal)
+show_usage() { cat <<'USAGE'
+Usage text
+USAGE
+}
+
+# IFS control
+old_ifs=$IFS; IFS=:; read -r f1 f2; IFS=$old_ifs
+
+# Safe removal
+[ -n "$tmpfile" ] && [ -f "$tmpfile" ] && rm -f "$tmpfile"
+```
+
+## Wizardry Patterns
+
+```sh
+# Require wizardry (before set -eu)
+case "${1-}" in
+--help|-h) show_usage; exit 0 ;; esac
+require_wizardry || return 1
+set -eu
+
+# Imp self-execute (current pattern)
+_imp_name() { ...; }
+case "$0" in */imp-name) _imp_name "$@" ;; esac
+
+# Spells are flat, linear scripts (no function wrappers)
+# See .github/spells.md
+```
+
+## Quick Reference
+
+| Wrong | Right | Why |
+|-------|-------|-----|
+| `$var` | `"$var"` | Quote to prevent word splitting |
+| `value=$1` | `value=${1-}` | Fails with `set -u` if no arg |
+| `[ $a == $b ]` | `[ "$a" = "$b" ]` | Quote vars, use `=` not `==` |
+| `exit 1` in func | `return 1` | exit kills shell when sourced |
+| `echo -e` | `printf` | echo flags not portable |
+| `which cmd` | `command -v cmd` | which not in POSIX |
+
+**Testing:** Check with `checkbashisms`, test in `/bin/sh`, dash, bash.
+
+## Aliases for Sourced-Only Spells
+
+**Critical Rule**: ALL hyphenated spells with uncastable pattern MUST have aliases that expand to space-separated form.
+
+**Why**: When a user types `jump-to-marker` directly as a command, without an alias it would execute the spell file. Spells with uncastable pattern must be sourced (not executed) to change directories. Direct execution triggers the uncastable guard which does `exit 1`, closing the user's interactive terminal.
+
+**Solution**: Generate aliases for every hyphenated spell with uncastable pattern:
+
+```sh
+# In generate-glosses, check each spell for uncastable pattern
+if grep -q "^# Uncastable pattern" "$spell_path"; then
+  # Generate alias: hyphenated → space-separated
+  alias jump-to-marker='jump to marker'
+  alias jump-trash='jump trash'
+fi
+```
+
+**How it works**:
+1. User types: `jump-to-marker`
+2. Alias expands to: `jump to marker`
+3. First-word gloss `jump()` is invoked
+4. Gloss detects uncastable pattern and sources spell
+5. Directory changes correctly ✓
+
+Without alias: `jump-to-marker` executes → uncastable guard → `exit 1` → terminal closes ✗
+
+## References
+
+- POSIX.1-2017 Shell Command Language: https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html
+- Rich's sh tricks: https://www.etalabs.net/sh_tricks.html
+- Suckless sh POSIX: https://suckless.org/coding_style/
+
+## Document Maintenance
+
+**ALWAYS add new patterns here when discovered during development.**
+
+Last updated: 2026-01-02

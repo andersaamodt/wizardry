@@ -1,0 +1,84 @@
+#!/bin/sh
+
+# This spell displays the ao-mud main menu.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE' >&2
+Usage: main-menu
+
+Opens the Wizardry main menu so you can cast spells, browse your spellbook, install arcana, or jump into system tools.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Load color palette (colors handles terminal capability detection internally).
+# When colors is preloaded as a function, call it directly; otherwise source the file.
+if has colors; then
+  colors_path=$(command -v colors 2>/dev/null || printf '')
+  if [ -n "$colors_path" ] && [ -f "$colors_path" ]; then
+    # shellcheck disable=SC1090
+    . "$colors_path"
+  else
+    colors
+  fi
+fi
+
+if ! require menu "The main menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+# Catch Ctrl-C and TERM signal to exit cleanly  
+trap 'exit 0' INT TERM
+
+first_run=1
+
+while true; do
+  if [ "$first_run" -eq 0 ]; then
+    :
+  else
+    first_run=0
+  fi
+
+  # Build menu items
+  cast="Cast%cast"
+  spellbook="Spellbook%spellbook"
+  install="Arcana%install-menu"
+  system="Computer%system-menu"
+  
+  # Exit button kills this menu script via TERM signal
+  # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
+  exit_label_text=$(exit-label)
+  exit_item="${exit_label_text}%kill -TERM \$PPID"
+
+  # Check if MUD is enabled in config and include if so
+  mud_enabled=0
+  if command -v mud-config >/dev/null 2>&1; then
+    value=$(mud-config get mud-enabled 2>/dev/null) || value=""
+    [ "$value" = "1" ] && mud_enabled=1
+  fi
+  
+  if [ "$mud_enabled" -eq 1 ]; then
+    mud="MUD%mud"
+    set -- "$cast" "$mud" "$spellbook" "$install" "$system" "$exit_item"
+  else
+    set -- "$cast" "$spellbook" "$install" "$system" "$exit_item"
+  fi
+  
+  menu "Main Menu:" "$@" || menu_status=$?
+  menu_status=${menu_status:-0}
+  
+  # ESC kills this menu script via TERM signal (same as Exit button)
+  # Direct kill: kill -TERM $$ → kills this script
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    kill -TERM $$ 2>/dev/null || true
+    exit 0
+  fi
+  
+  # Any other exit code (0 for successful command execution) continues the loop
+done

@@ -1,0 +1,8 @@
+#!/bin/sh
+# stub-move-cursor - test stub for move-cursor (no-op)
+# Example: stub-move-cursor 10 20
+
+set -eu
+
+
+  exit 0

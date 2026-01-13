@@ -1,0 +1,130 @@
+#!/bin/sh
+
+# Inscribe bookmarks for jump-to-marker to teleport you back.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: mark-location [marker] [path]
+
+Record the current directory (or path) for jump-to-marker to return to later.
+Markers are stored in $SPELLBOOK_DIR/.markers/.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+if [ "$#" -gt 2 ]; then
+  cat <<'USAGE'
+Usage: mark-location [marker] [path]
+
+Record the current directory (or path) for jump-to-marker to return to later.
+Markers are stored in $SPELLBOOK_DIR/.markers/.
+USAGE
+  exit 2
+fi
+
+spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+markers_dir="$spell_home/.markers"
+
+# Store the markers in $SPELLBOOK_DIR/.markers/ (persists across wizardry resets).
+mkdir -p "$markers_dir" || exit 1
+
+# Determine marker name: if first arg looks like a path, it's the path, not name
+marker_name=""
+target_path=""
+
+if [ "$#" -eq 0 ]; then
+  # No args: auto-increment marker, mark current directory
+  target_path=""
+elif [ "$#" -eq 1 ]; then
+  # One arg: could be marker name OR path
+  # Treat as path if it contains / or starts with . or ~, otherwise marker name
+  case "$1" in
+    /*|./*|../*|~|~/*)
+      # Looks like a path
+      target_path="$1"
+      ;;
+    *)
+      # Treat as marker name if it exists as directory, otherwise as marker
+      if [ -d "$1" ]; then
+        target_path="$1"
+      else
+        marker_name="$1"
+      fi
+      ;;
+  esac
+else
+  # Two args: first is marker, second is path
+  marker_name="$1"
+  target_path="$2"
+fi
+
+# Get next marker number if no name given using O_EXCL loop
+# This finds the first available number without needing a .next file
+if [ -z "$marker_name" ]; then
+  n=1
+  while [ -e "$markers_dir/$n" ]; do
+    n=$((n + 1))
+  done
+  marker_name=$n
+fi
+
+# Validate marker name (alphanumeric, dashes, underscores only)
+case "$marker_name" in
+  *[!A-Za-z0-9_-]*)
+    printf '%s\n' "mark-location: marker name may only contain letters, numbers, dashes, and underscores." >&2
+    exit 1
+    ;;
+esac
+
+# Determine destination path
+if [ -z "$target_path" ]; then
+  destination=$(pwd -P)
+else
+  case "$target_path" in
+    /*)
+      if [ -d "$target_path" ]; then
+        destination=$(cd "$target_path" && pwd -P)
+      else
+        destination="$(cd "$(dirname "$target_path")" && pwd -P)/$(basename "$target_path")"
+      fi
+      ;;
+    "~/"*)
+      if [ -n "${HOME-}" ]; then
+        expanded_path="$HOME/${target_path#"~/"}"
+        if [ -d "$expanded_path" ]; then
+          destination=$(cd "$expanded_path" && pwd -P)
+        else
+          destination="$(cd "$(dirname "$expanded_path")" && pwd -P)/$(basename "$expanded_path")"
+        fi
+      else
+        destination="$target_path"
+      fi
+      ;;
+    "~")
+      if [ -n "${HOME-}" ]; then
+        destination=$(cd "$HOME" && pwd -P)
+      else
+        destination="$target_path"
+      fi
+      ;;
+    *)
+      destination="$(pwd -P)/$target_path"
+      ;;
+  esac
+  if [ ! -e "$destination" ]; then
+    printf '%s\n' "mark-location: $target_path does not exist." >&2
+    exit 1
+  fi
+fi
+
+# Normalize any double slashes in the path (can occur on macOS where TMPDIR ends with /)
+destination=$(printf '%s' "$destination" | sed 's|//|/|g')
+
+marker_file="$markers_dir/$marker_name"
+printf '%s\n' "$destination" >"$marker_file"
+printf '%s\n' "Marked location $marker_name at $destination."

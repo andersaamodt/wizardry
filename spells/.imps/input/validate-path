@@ -1,0 +1,49 @@
+#!/bin/sh
+# validate-path PATH - check if PATH looks like a safe UNIX path
+# Returns 0 when path passes basic sanity checks (length, component size), 1 otherwise
+# Example: validate-path "/home/user/file" && echo "valid"
+
+set -eu
+
+# Check argument provided
+if [ -z "${1+x}" ]; then
+  exit 1
+fi
+
+path=$1
+
+# Empty path is invalid
+if [ -z "$path" ]; then
+  exit 1
+fi
+
+# Check path length (4096 is typical max for full path)
+length=$(printf '%s' "$path" | wc -c | tr -d ' ')
+if [ "$length" -gt 4096 ]; then
+  exit 1
+fi
+
+# Check each component length (255 is typical max for filename)
+# Split on / and check each part
+remaining=$path
+while [ -n "$remaining" ]; do
+  case "$remaining" in
+    */*)
+      component=${remaining%%/*}
+      remaining=${remaining#*/}
+      ;;
+    *)
+      component=$remaining
+      remaining=''
+      ;;
+  esac
+  
+  if [ -n "$component" ]; then
+    comp_length=$(printf '%s' "$component" | wc -c | tr -d ' ')
+    if [ "$comp_length" -gt 255 ]; then
+      exit 1
+    fi
+  fi
+done
+
+exit 0

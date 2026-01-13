@@ -1,0 +1,37 @@
+#!/bin/sh
+# tilde-path PATH - convert absolute path to use ~/ notation if under HOME
+# Example: tilde-path "$HOME/Documents" -> ~/Documents
+
+set -eu
+
+
+# Require exactly one argument
+if [ "$#" -ne 1 ]; then
+  printf 'tilde-path: exactly one argument required\n' >&2
+  exit 1
+fi
+
+tp_path=$1
+
+# If HOME is not set, return the path unchanged
+if [ -z "${HOME-}" ]; then
+  printf '%s' "$tp_path"
+  exit 0
+fi
+
+# Check if path is under HOME
+case "$tp_path" in
+  "$HOME")
+    # Exact match to HOME
+    printf '~'
+    ;;
+  "$HOME"/*)
+    # Path under HOME - replace HOME with ~
+    tp_rel=${tp_path#"$HOME"/}
+    printf '~/%s' "$tp_rel"
+    ;;
+  *)
+    # Not under HOME - return unchanged
+    printf '%s' "$tp_path"
+    ;;
+esac

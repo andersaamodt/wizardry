@@ -1,0 +1,66 @@
+#!/bin/sh
+
+# Bootstrap spell: report readiness of core prerequisites for wizardry.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: core-status
+
+Reports whether wizardry's core prerequisites are installed, printing "installed", "not installed", or "partial install".
+USAGE
+  exit 0
+  ;;
+esac
+
+# Report readiness of core prerequisites for wizardry.
+
+
+set -eu
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+# shellcheck source=/dev/null
+. "$script_dir/install-core"
+
+# Load colors if available
+if command -v colors >/dev/null 2>&1; then
+  # shellcheck source=/dev/null
+  . colors
+else
+  RESET=""
+  THEME_SUCCESS=""
+  THEME_WARNING=""
+  THEME_ERROR=""
+  GREY=""
+fi
+# Older scripts expect GRAY, so mirror GREY when missing.
+GRAY=${GREY-}
+
+total=0
+installed=0
+
+while IFS=: read -r _ command_name _ _; do
+  total=$((total + 1))
+  # Handle the special clipboard helper marker using the clipboard-available imp
+  if [ "$command_name" = "$CLIPBOARD_MARKER" ]; then
+    if clipboard-available; then
+      installed=$((installed + 1))
+    fi
+  elif command -v "$command_name" >/dev/null 2>&1; then
+    installed=$((installed + 1))
+  fi
+done <<EOF
+$(core_dependencies)
+EOF
+
+if [ "$installed" -eq "$total" ]; then
+  status="installed"
+  color="$THEME_SUCCESS"
+elif [ "$installed" -eq 0 ]; then
+  status="not installed"
+  color="$GRAY"
+else
+  status="partial install"
+  color="$THEME_WARNING"
+fi
+
+printf "%s%s%s\n" "$color" "$status" "$RESET"

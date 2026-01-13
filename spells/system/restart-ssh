@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# This spell restarts the SSH service.
+# Use it to fully restart the SSH daemon after configuration changes.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: restart-ssh
+
+Fully restart the SSH daemon when you need a clean slate after configuration changes. Detects your OS and uses the right service manager to stop and start sshd.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+current_os=$(os)
+
+case "$current_os" in
+        debian|arch|nixos|linux)
+                if has systemctl; then
+                        sudo systemctl restart sshd 2>/dev/null || sudo systemctl restart ssh
+                elif has service; then
+                        sudo service ssh restart 2>/dev/null || sudo service sshd restart
+                elif is file "/etc/init.d/ssh"; then
+                        sudo /etc/init.d/ssh restart
+                elif is file "/etc/init.d/sshd"; then
+                        sudo /etc/init.d/sshd restart
+                else
+                        die "restart-ssh: no service manager found."
+                fi
+                ;;
+        mac)
+                sudo launchctl stop com.openssh.sshd
+                sudo launchctl start com.openssh.sshd
+                ;;
+        *)
+                die "restart-ssh: unsupported OS: $current_os"
+                ;;
+esac
+
+say "SSH service restarted."

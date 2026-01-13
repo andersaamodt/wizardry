@@ -1,0 +1,21 @@
+#!/bin/sh
+# assert-error-contains SUBSTRING [ERROR] - verify error contains the substring
+# If ERROR not provided, reads from $ERROR variable for backward compatibility.
+# Sets TEST_FAILURE_REASON on mismatch.
+set -eu
+
+substring=$1
+error_text=${2:-${ERROR-}}
+case "$error_text" in
+  *"$substring"*)
+  exit 0
+    ;;
+  *)
+    TEST_FAILURE_REASON="stderr missing substring: $substring"
+    export TEST_FAILURE_REASON
+    printf '%s' "$TEST_FAILURE_REASON" > "${WIZARDRY_TMPDIR}/_test_failure_reason" 2>/dev/null || true
+  exit 1
+    ;;
+esac
+
+

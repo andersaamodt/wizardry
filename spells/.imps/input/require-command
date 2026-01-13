@@ -1,0 +1,83 @@
+#!/bin/sh
+# require-command COMMAND [MESSAGE...] - check for required binary, offer to install
+# Exits 0 if command exists, non-zero with helpful message if missing
+# Example: require-command git "Git is required for version control"
+
+set -eu
+
+if [ "$#" -lt 1 ]; then
+    printf '%s\n' "require-command: command name required" >&2
+    exit 2
+fi
+
+command_name=$1
+shift
+
+auto_install=${REQUIRE_COMMAND_ASSUME_YES:-0}
+
+# Use POSIX command -v instead of has imp (may not be loaded yet)
+if command -v "$command_name" >/dev/null 2>&1; then
+    exit 0
+fi
+case "$command_name" in
+    *-*)
+        command_alt=$(printf '%s' "$command_name" | tr '-' '_')
+        if command -v "$command_alt" >/dev/null 2>&1; then
+            exit 0
+        fi
+        ;;
+    *_*)
+        command_alt=$(printf '%s' "$command_name" | tr '_' '-')
+        if command -v "$command_alt" >/dev/null 2>&1; then
+            exit 0
+        fi
+        ;;
+esac
+
+install_spell=""
+# Use POSIX command -v instead of has imp (may not be loaded yet)
+if command -v "install-$command_name" >/dev/null 2>&1; then
+    # where might not be available, use command -v with which fallback
+    install_spell=$(command -v "install-$command_name")
+else
+    # Only compute script_dir if needed for install spell lookup
+    script_dir=""
+    if [ "${_WIZARDRY_LOADING_SPELLS-}" != "1" ]; then
+        script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+    elif [ -n "${WIZARDRY_DIR-}" ]; then
+        script_dir="$WIZARDRY_DIR/spells/cantrips"
+    fi
+    if [ -n "$script_dir" ] && [ -x "$script_dir/../install/core/install-$command_name" ]; then
+        install_spell="$script_dir/../install/core/install-$command_name"
+    fi
+fi
+
+if [ -n "$install_spell" ]; then
+    if [ "$auto_install" = "1" ] || ! [ -t 0 ]; then
+        # Use POSIX command -v instead of has imp (may not be loaded yet)
+        if ASSUME_YES=1 "$install_spell" && command -v "$command_name" >/dev/null 2>&1; then
+            exit 0
+        fi
+    else
+        printf "%s" "Install '$command_name'? [y/N] " >&2
+        IFS= read -r reply || reply=""
+        case $reply in
+            y|Y|yes|YES)
+                # Use POSIX command -v instead of has imp (may not be loaded yet)
+                if ASSUME_YES=1 "$install_spell" && command -v "$command_name" >/dev/null 2>&1; then
+                    exit 0
+                fi
+                ;;
+        esac
+    fi
+fi
+
+if [ "$#" -gt 0 ]; then
+    message=$*
+else
+    message="The '${command_name}' command is required. See 'core-menu' for installation options."
+fi
+
+# Use POSIX printf instead of warn imp (may not be loaded yet)
+printf '%s\n' "require-command: $message" >&2
+exit 1

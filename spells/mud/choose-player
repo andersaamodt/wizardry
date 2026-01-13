@@ -1,0 +1,41 @@
+#!/bin/sh
+
+# This spell displays a menu to choose and set the current MUD player.
+# Use it to switch between player identities from available SSH keys.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: choose-player
+
+Display an interactive menu of player identities from ~/.ssh/*.pub and set MUD_PLAYER to the one you choose.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# check if the $MUD_PLAYER environment variable is set
+if [ -z "${MUD_PLAYER-}" ]; then
+    printf '%s\n' "MUD_PLAYER is not set."
+else
+    printf '%s\n' "MUD_PLAYER is currently set to $MUD_PLAYER"
+fi
+
+# Build menu options from player keys using set --
+set --
+for file in "$HOME"/.ssh/*.pub; do
+    [ -f "$file" ] || continue
+    player_name=$(basename "$file" ".pub")
+    # Validate player name contains only safe characters
+    case "$player_name" in
+        *[!a-zA-Z0-9._-]*) continue ;;
+    esac
+    set -- "$@" "$player_name%set-player $player_name"
+done
+set -- "$@" "Cancel%return"
+
+# Execute menu with options
+menu "Choose your player:" "$@"

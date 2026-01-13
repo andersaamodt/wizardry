@@ -1,0 +1,11 @@
+#!/bin/sh
+# init-test-counters - initialize global test result counters
+# Creates counter files in WIZARDRY_TMPDIR for cross-imp state sharing.
+set -eu
+
+# Create counter files
+printf '0' > "${WIZARDRY_TMPDIR}/_pass_count"
+printf '0' > "${WIZARDRY_TMPDIR}/_fail_count"
+printf '0' > "${WIZARDRY_TMPDIR}/_skip_count"
+printf '0' > "${WIZARDRY_TMPDIR}/_test_index"
+printf '' > "${WIZARDRY_TMPDIR}/_fail_detail_indices"

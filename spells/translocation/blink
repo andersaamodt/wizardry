@@ -1,0 +1,264 @@
+#!/bin/sh
+
+# Teleport to a random subdirectory.
+# This spell must be sourced (not executed) because it changes the current directory.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: blink [path] [--depth N] [--all] [--verbose]
+
+Teleport to a random subdirectory within a directory tree.
+- No argument defaults to $HOME with depth 5
+- path: Starting directory (default: $HOME)
+- --depth N: Limits how deep to search (1-10, default: 5)
+- --all: Include hidden folders and system folders (Library, etc.)
+- --verbose, -v: Display the destination path after teleporting
+
+Examples:
+  blink                    # Random subdirectory in $HOME (depth 5, skip boring folders)
+  blink /tmp               # Random subdirectory in /tmp (depth 5)
+  blink --depth 3          # Random subdirectory in $HOME (depth 3)
+  blink --all              # Include hidden and system folders
+  blink -v                 # Show destination path
+  blink /var/log --depth 2 # Random subdirectory in /var/log (depth 2)
+
+Note: This spell must be sourced. Use 'blink' to invoke it.
+USAGE
+  return 0 2>/dev/null || exit 0
+  ;;
+esac
+
+# Uncastable pattern - ensures spell is sourced, not executed
+_blink_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) _blink_sourced=1 ;;
+  esac
+else
+  _blink_base=${0##*/}
+  case "$_blink_base" in
+    sh|dash|bash|zsh|ksh|mksh) _blink_sourced=1 ;;
+    blink) _blink_sourced=0 ;;
+    *) _blink_sourced=1 ;;
+  esac
+fi
+
+if [ "$_blink_sourced" -eq 0 ]; then
+  printf '%s\n' "This spell cannot be cast directly. Invoke it with: blink" >&2
+  return 1 2>/dev/null || exit 1
+fi
+unset _blink_sourced _blink_base
+
+set -eu
+. env-clear
+
+# Parse arguments
+start_path=""
+max_depth=5
+include_all=0
+verbose=0
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --depth)
+      shift
+      if [ $# -eq 0 ]; then
+        printf '%s\n' "blink: --depth requires an argument" >&2
+        set +eu; return 1
+      fi
+      max_depth=$1
+      shift
+      ;;
+    --all)
+      include_all=1
+      shift
+      ;;
+    --verbose|-v)
+      verbose=1
+      shift
+      ;;
+    -*)
+      printf '%s\n' "blink: unknown option '$1'." >&2
+      set +eu; return 1
+      ;;
+    *)
+      if [ -z "$start_path" ]; then
+        start_path=$1
+      else
+        printf '%s\n' "blink: unexpected argument '$1'." >&2
+        set +eu; return 1
+      fi
+      shift
+      ;;
+  esac
+done
+
+# Default to $HOME if no path specified
+if [ -z "$start_path" ]; then
+  start_path=${HOME:-.}
+fi
+
+# Validate max_depth is a number between 1 and 10
+case "$max_depth" in
+  ''|*[!0-9]*)
+    printf '%s\n' "blink: depth must be a number between 1 and 10." >&2
+    set +eu; return 1
+    ;;
+esac
+
+if [ "$max_depth" -lt 1 ] || [ "$max_depth" -gt 10 ]; then
+  printf '%s\n' "blink: depth must be between 1 and 10." >&2
+  set +eu; return 1
+fi
+
+# Validate and normalize start_path
+if [ ! -d "$start_path" ]; then
+  printf '%s\n' "blink: directory not found: $start_path" >&2
+  set +eu; return 1
+fi
+
+# Get current directory
+current=$(pwd -P | sed 's|//|/|g')
+
+# Change to start_path to make find work from there
+if ! cd "$start_path" 2>/dev/null; then
+  printf '%s\n' "blink: cannot access directory: $start_path" >&2
+  set +eu; return 1
+fi
+
+# Find all subdirectories up to max_depth
+# Use find to locate directories, excluding various patterns
+if [ "$include_all" -eq 0 ]; then
+  # Default: skip hidden folders and boring system folders (especially on macOS)
+  # Build the find command with exclusions
+  subdirs=$(find . -mindepth 1 -maxdepth "$max_depth" -type d \
+    ! -path '*/.*' \
+    ! -name 'Library' ! -path '*/Library/*' \
+    ! -name 'System' ! -path '*/System/*' \
+    ! -name 'Applications' ! -path '*/Applications/*' \
+    ! -name 'node_modules' ! -path '*/node_modules/*' \
+    ! -path '*/.git/*' \
+    ! -name 'Containers' ! -path '*/Containers/*' \
+    ! -name 'Group Containers' ! -path '*/Group Containers/*' \
+    ! -name 'Application Support' ! -path '*/Application Support/*' \
+    ! -name 'Caches' ! -path '*/Caches/*' \
+    ! -name 'Logs' ! -path '*/Logs/*' \
+    ! -name 'Saved Application State' ! -path '*/Saved Application State/*' \
+    ! -name 'WebKit' ! -path '*/WebKit/*' \
+    ! -name 'CloudStorage' ! -path '*/CloudStorage/*' \
+    ! -name 'Mobile Documents' ! -path '*/Mobile Documents/*' \
+    2>/dev/null || true)
+else
+  # Include all folders (only skip .git and node_modules for safety)
+  subdirs=$(find . -mindepth 1 -maxdepth "$max_depth" -type d \
+    ! -path '*/.git/*' \
+    ! -name 'node_modules' ! -path '*/node_modules/*' \
+    2>/dev/null || true)
+fi
+
+if [ -z "$subdirs" ]; then
+  printf '%s\n' "No subdirectories found within depth $max_depth in $start_path."
+  set +eu; return 1
+fi
+
+# Count the subdirectories
+subdir_count=$(printf '%s\n' "$subdirs" | grep -c '^')
+
+if [ "$subdir_count" -eq 0 ]; then
+  printf '%s\n' "No subdirectories found within depth $max_depth in $start_path."
+  set +eu; return 1
+fi
+
+# Generate a pseudo-random index using cksum (POSIX-compatible)
+random_seed=$(date +%s%N 2>/dev/null || date +%s)
+random_index=$(printf '%s' "$random_seed" | cksum | cut -d' ' -f1)
+random_index=$((random_index % subdir_count + 1))
+
+# Select the random subdirectory
+destination=$(printf '%s\n' "$subdirs" | sed -n "${random_index}p")
+
+if [ -z "$destination" ]; then
+  printf '%s\n' "Failed to select a random subdirectory."
+  set +eu; return 1
+fi
+
+# Resolve destination to absolute path
+if ! cd "$destination" 2>/dev/null; then
+  printf '%s\n' "blink: cannot access directory: $destination" >&2
+  set +eu; return 1
+fi
+
+# Get the real path of the destination
+normalized_destination=$(pwd -P | sed 's|//|/|g')
+
+# Check if we're already in the same place
+if [ "$current" = "$normalized_destination" ]; then
+  printf '%s\n' "The teleportation fizzles—you were already standing here."
+  set +eu; return 0
+fi
+
+# Pick a random arrival message
+arrival=$(cat <<'PORTAL'
+You feel a sudden warmth as you are enveloped in a glowing aura. When it fades, you find yourself at your destination.
+A strange sensation comes over you as you close your eyes. When you open them again, you are standing at your destination.
+You focus your mind and feel yourself being pulled through the fabric of space. You open your eyes to find yourself in a new location.
+You feel a jolt as you are momentarily suspended in midair. When you land, you find yourself somewhere new.
+You close your eyes and take a deep breath. When you open them, you are standing in a different place.
+A swirling vortex appears before you. You take a step forward and find yourself elsewhere.
+You feel a tug on your stomach as you are suddenly pulled through a tunnel of light. When you emerge, you are in a new location.
+You hold out your hand and a bright portal appears. You step through and find yourself somewhere unexpected.
+You feel a rush of wind as you are teleported to a random location.
+You hear a faint ringing in your ears as you are transported somewhere new.
+You close your eyes and visualize a new place. When you open them, you are standing there.
+You step into a glowing portal and are immediately transported to a new location.
+You feel a tug on your ankle as you are pulled through a wormhole. When you emerge, you are somewhere else.
+You hear a faint hum as you are enveloped in a field of energy. When it dissipates, you are in a new place.
+You feel a sudden pressure on your chest as you are teleported somewhere random.
+You feel a surge of magical energy as you are transported through the veil of reality.
+A glowing portal opens before you, and you step through it to a new destination.
+A shimmering aura envelops you, and when it fades, you find yourself in a different location.
+You close your eyes and focus, and when you open them again, you are standing somewhere new.
+A burst of light and sound surrounds you, and when it subsides, you are in a different place.
+You feel a tug on your soul, and when it releases, you are standing in a new location.
+You focus your magical energy and teleport to a random destination.
+A warp in the fabric of reality opens up, and you step through it to somewhere new.
+You feel a sudden jolt, and when you regain your bearings, you are in a different place.
+You close your eyes and visualize a random location, and when you open them, you are there.
+You call upon the power of the elements to transport you somewhere unexpected.
+You channel the energy of the celestial bodies to jump to a new location.
+You recite an ancient incantation, and a magical portal appears, taking you somewhere random.
+A shimmering rune circle flares beneath your feet.
+You step through a swirling vortex of starlight.
+A gust of glittering dust whips past as space folds around you.
+Your stomach flips as ley-lines knit a tunnel through reality.
+A bell tolls softly as the air warps into a crystalline doorway.
+You whisper the coordinates and a ribbon of light drags you forward.
+A ripple of color cascades outward before snapping you elsewhere.
+The scent of ozone and old tomes surrounds you mid-teleport.
+A chalk sigil burns bright, then launches you into the void.
+You ride a comet of sparks toward a random destination.
+A murmured incantation bends distance like molten glass.
+Reality hiccups; when it steadies, you are already in motion.
+PORTAL
+)
+arrival=$(printf '%s\n' "$arrival" | awk 'BEGIN{srand();}{lines[NR]=$0}END{if (NR==0) exit 0; idx=int(rand()*NR)+1; print lines[idx];}')
+
+if [ -n "$arrival" ]; then
+  printf '%s\n' "$arrival"
+fi
+
+# Output the destination path only if verbose is enabled, with newline after
+if [ "$verbose" -eq 1 ]; then
+  printf '%s\n\n' "$normalized_destination"
+else
+  printf '\n'
+fi
+
+# Describe current location if look command exists
+if command -v look >/dev/null 2>&1; then
+  look 2>/dev/null || true
+fi
+
+# Restore shell options before returning
+set +eu

@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# Uninstall Tor and attempt to undo configuration changes.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-tor
+
+Removes Tor binaries where possible and undoes NixOS configuration entries added by install-tor.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+# Uninstall Tor
+printf '%s\n' "Uninstalling Tor..."
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+core_dir=$(CDPATH= cd -- "$script_dir/../core" && pwd -P)
+if [ -f "$core_dir/manage-system-command" ]; then
+  "$core_dir/manage-system-command" uninstall tor
+else
+  printf '%s\n' "uninstall-tor: could not find manage-system-command" >&2
+  exit 1
+fi
+
+printf '%s\n' "Tor uninstallation complete."

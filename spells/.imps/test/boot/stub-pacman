@@ -1,0 +1,14 @@
+#!/bin/sh
+# stub-pacman FIXTURE - create a pacman stub script in fixture/bin
+# Stub logs invocations to PACMAN_LOG and exits with PACMAN_EXIT code.
+set -eu
+
+fixture=$1
+cat <<'STUB' >"$fixture/bin/pacman"
+#!/bin/sh
+echo "$0 $*" >>"${PACMAN_LOG:?}" || exit 1
+exit ${PACMAN_EXIT:-0}
+STUB
+chmod +x "$fixture/bin/pacman"
+
+

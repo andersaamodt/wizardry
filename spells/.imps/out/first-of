@@ -1,0 +1,10 @@
+#!/bin/sh
+# first-of A B - output first non-empty value, fail if both empty
+# Example: name=$(first-of "$NICK" "$USER")
+set -eu
+
+
+if [ -n "$1" ]; then printf '%s' "$1"
+elif [ -n "$2" ]; then printf '%s' "$2"
+else exit 1
+fi

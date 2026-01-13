@@ -1,0 +1,10 @@
+#!/bin/sh
+# make-fixture - create a test fixture directory with standard structure
+# Creates bin/, log/, and home/.local/bin/ subdirectories.
+set -eu
+
+fixture=$(make-tempdir)
+mkdir -p "$fixture/bin" "$fixture/log" "$fixture/home/.local/bin"
+printf '%s\n' "$fixture"
+
+

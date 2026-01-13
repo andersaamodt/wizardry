@@ -1,0 +1,7 @@
+#!/bin/sh
+# seeks PATTERN FILE - silently test if file contains literal pattern
+# Example: seeks "error" log.txt && echo "found errors"
+set -eu
+
+
+grep -Fq -- "$1" "$2" 2>/dev/null

@@ -1,0 +1,829 @@
+#!/bin/sh
+
+# This spell lints spells for formatting and style guide violations.
+# Run it against spell files to check formatting, linting, and code style compliance.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: lint-magic [--only PATTERN] [--list] [--verbose] [file...]
+
+Lint and format-check spells for style-guide compliance. With no files provided it scans the whole spellbook; use --only to filter by pattern, --list to show targets, and --verbose for detailed output.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+repo_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
+
+# Add imps to PATH so we can use temp-file and cleanup-file directly
+if [ -d "$repo_dir/spells/.imps" ]; then
+  PATH="$repo_dir/spells/.imps:$PATH"
+  for impdir in "$repo_dir"/spells/.imps/*; do
+    [ -d "$impdir" ] || continue
+    PATH="$impdir:$PATH"
+  done
+  export PATH
+fi
+
+verbose=0
+list_only=0
+pattern=''
+
+while [ "$#" -gt 0 ]; do
+  case $1 in
+    --verbose)
+      verbose=1
+      shift
+      ;;
+    --list)
+      list_only=1
+      shift
+      ;;
+    --only)
+      if [ "$#" -lt 2 ]; then
+        cat <<'USAGE' >&2
+Usage: lint-magic [--only PATTERN] [--list] [--verbose] [file...]
+
+Lint and format-check spells for style-guide compliance. With no files provided it scans the whole spellbook; use --only to filter by pattern, --list to show targets, and --verbose for detailed output.
+USAGE
+        exit 2
+      fi
+      pattern=$2
+      shift 2
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      cat <<'USAGE' >&2
+Usage: lint-magic [--only PATTERN] [--list] [--verbose] [file...]
+
+Lint and format-check spells for style-guide compliance. With no files provided it scans the whole spellbook; use --only to filter by pattern, --list to show targets, and --verbose for detailed output.
+USAGE
+      exit 2
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+targets_file=$(temp-file lint-magic-targets) || exit 1
+trap 'cleanup-file "$targets_file"' EXIT HUP INT TERM
+
+# Collect targets (inline lint_magic_collect_targets and lint_magic_gather_default_targets)
+if [ "$#" -gt 0 ]; then
+  for arg in "$@"; do
+    printf '%s\n' "$arg"
+  done
+else
+  # Gather default targets (inline lint_magic_gather_default_targets)
+  find "$repo_dir/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) \
+    -print | sort | while IFS= read -r file; do
+      first_line=$(head -1 "$file")
+      case $first_line in
+        '#!/bin/sh'|'#! /bin/sh')
+          rel_path=${file#"$repo_dir/"}
+          if [ -n "$pattern" ]; then
+            case $rel_path in
+              *"$pattern"*)
+                printf '%s\n' "$rel_path"
+                ;;
+            esac
+          else
+            printf '%s\n' "$rel_path"
+          fi
+          ;;
+      esac
+    done
+fi >"$targets_file"
+
+failures=0
+total=0
+passed=0
+failed_targets=''
+failed_messages=''
+spell_param_warnings=''
+spell_param_warning_count=0
+posix_failures=0
+posix_failed_list=''
+
+if [ "$list_only" -eq 1 ]; then
+  cat "$targets_file"
+  trap - EXIT HUP INT TERM
+  rm -f "$targets_file"
+  exit 0
+fi
+
+# Count total targets first
+total=$(grep -c . "$targets_file" 2>/dev/null) || total=0
+
+current=0
+while IFS= read -r target; do
+  [ -n "$target" ] || continue
+  current=$((current + 1))
+  
+  case $target in
+    /*)
+      path="$target"
+      ;;
+    *)
+      path="$repo_dir/$target"
+      ;;
+  esac
+  
+  if [ ! -e "$path" ]; then
+    fail_msg="[${current}/${total}] FAIL $target: file not found"
+    printf '%s\n' "$fail_msg"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    failed_messages="${failed_messages}${fail_msg}
+"
+    continue
+  fi
+  
+  if [ ! -f "$path" ]; then
+    fail_msg="[${current}/${total}] FAIL $target: not a regular file"
+    printf '%s\n' "$fail_msg"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    failed_messages="${failed_messages}${fail_msg}
+"
+    continue
+  fi
+  
+  # Skip .service files (systemd unit files, not shell scripts)
+  case $target in
+    *.service)
+      passed=$((passed + 1))
+      continue
+      ;;
+  esac
+  
+  is_imp_file=0
+  case $target in
+    */.imps/*|*/.imps) is_imp_file=1 ;;
+  esac
+  case $path in
+    */.imps/*|*/.imps) is_imp_file=1 ;;
+  esac
+  
+  issues=''
+  issue_count=0
+  
+  # Read shebang once
+  first_line=$(head -1 "$path")
+  
+  # POSIX compliance check (first)
+  posix_issue=""
+  if has checkbashisms; then
+    # Check shebang
+    if [ "$first_line" != "#!/bin/sh" ] && [ "$first_line" != "#! /bin/sh" ]; then
+      posix_issue="uses $first_line (should use #!/bin/sh)"
+      posix_failures=$((posix_failures + 1))
+    else
+      # Run checkbashisms
+      if ! checkbashisms -f "$path" >/dev/null 2>&1; then
+        posix_issue="POSIX compliance violation (run checkbashisms for details)"
+        posix_failures=$((posix_failures + 1))
+      fi
+    fi
+    
+    if [ -n "$posix_issue" ]; then
+      posix_fail_msg="FAIL $target: $posix_issue"
+      posix_failed_list="${posix_failed_list}${posix_fail_msg}
+"
+    fi
+  fi
+  
+  # Inline check_shebang for style checks
+  case $first_line in
+    '#!/bin/sh'|'#! /bin/sh')
+      : # valid
+      ;;
+    *)
+      issues=${issues:+$issues; }'missing or incorrect shebang (expected #!/bin/sh)'
+      issue_count=$((issue_count + 1))
+      ;;
+  esac
+  
+  # Inline check_description_comment
+  lines_2_3_4=$(sed -n '2p;3p;4p' "$path")
+  second_line=$(printf '%s\n' "$lines_2_3_4" | sed -n '1p')
+  third_line=$(printf '%s\n' "$lines_2_3_4" | sed -n '2p')
+  desc_ok=0
+  if [ -z "$second_line" ] && [ -n "$third_line" ]; then
+    case $third_line in
+      '#'*) desc_ok=1 ;;
+    esac
+  fi
+  if [ "$desc_ok" -eq 0 ]; then
+    case $second_line in
+      '#'*) desc_ok=1 ;;
+    esac
+  fi
+  if [ "$desc_ok" -eq 0 ]; then
+    issues=${issues:+$issues; }'missing opening description comment after shebang'
+    issue_count=$((issue_count + 1))
+  fi
+  
+  # Inline check_usage_function (not required for imps)
+  # FLAT PARADIGM: Spells should NOT have usage functions, only inline usage
+  if [ "$is_imp_file" -eq 0 ]; then
+    if grep -qE '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*_usage\(\)' "$path" 2>/dev/null; then
+      issues=${issues:+$issues; }'has usage function (should be inline)'
+      issue_count=$((issue_count + 1))
+    fi
+  fi
+  
+  # Inline check_help_handler (not required for imps)
+  if [ "$is_imp_file" -eq 0 ]; then
+    if ! grep -qF -- '--help|--usage|-h)' "$path" 2>/dev/null; then
+      issues=${issues:+$issues; }'missing --help|--usage|-h handler'
+      issue_count=$((issue_count + 1))
+    fi
+  fi
+  
+  # Inline check_strict_mode (not required for imps)
+  # Scripts must be explicit: either set -e/set -eu (strict) or set +e/set +eu (permissive)
+  if [ "$is_imp_file" -eq 0 ]; then
+    # Check for set -e or set +e (but not in comments)
+    if ! grep -E '^[[:space:]]*set [+-]e' "$path" 2>/dev/null | grep -qv '^[[:space:]]*#'; then
+      issues=${issues:+$issues; }'missing explicit mode (use set -e/set -eu for strict, or set +e/set +eu for permissive)'
+      issue_count=$((issue_count + 1))
+    fi
+  fi
+  
+  # Inline check_duplicate_set_eu (imps only)
+  # Imps should have at most ONE "set -eu" statement to prevent breaking invoke-wizardry
+  if [ "$is_imp_file" -eq 1 ]; then
+    set_eu_count=$(grep -c '^set -eu$' "$path" 2>/dev/null || true)
+    set_eu_count=${set_eu_count:-0}
+    if [ "$set_eu_count" -gt 1 ]; then
+      issues=${issues:+$issues; }"duplicate 'set -eu' statements ($set_eu_count found, should be 0 or 1)"
+      issue_count=$((issue_count + 1))
+    fi
+  fi
+  
+  # Inline check_trailing_space_assignment
+  match=$(grep -En '^[a-zA-Z_][a-zA-Z0-9_]*= $' "$path" 2>/dev/null | head -1) || true
+  if [ -n "$match" ]; then
+    line_num=$(printf '%s' "$match" | cut -d: -f1)
+    issues=${issues:+$issues; }"trailing space in variable assignment at line $line_num"
+    issue_count=$((issue_count + 1))
+  fi
+  
+  # Inline check_which_usage
+  which_pattern='(^|[;|&])[[:space:]]*which[[:space:]]+[a-zA-Z0-9_-]+|`which[[:space:]]|\$\(which[[:space:]]'
+  which_usage=$(grep -E "$which_pattern" "$path" 2>/dev/null | grep -v '^[[:space:]]*#') || true
+  if printf '%s' "$which_usage" | grep -q .; then
+    issues=${issues:+$issues; }'uses "which" (prefer "command -v" for POSIX compliance)'
+    issue_count=$((issue_count + 1))
+  fi
+  
+  # Inline check_backtick_usage
+  if grep -E '\`[^\`]+\`' "$path" 2>/dev/null | grep -v '^[[:space:]]*#' | grep -q .; then
+    issues=${issues:+$issues; }'uses backticks (prefer $() for command substitution)'
+    issue_count=$((issue_count + 1))
+  fi
+  
+  # Inline check_spell_naming
+  name=$(basename "$path")
+  case $name in
+    *_*)
+      issues=${issues:+$issues; }'spell name uses underscore (prefer hyphens)'
+      issue_count=$((issue_count + 1))
+      ;;
+  esac
+  case $name in
+    *.sh)
+      issues=${issues:+$issues; }'spell has .sh extension (spells should have no extension)'
+      issue_count=$((issue_count + 1))
+      ;;
+  esac
+  
+  # Inline check_function_naming  
+  awk_script=$(temp-file lint-magic-naming-awk) || true
+  if [ -n "$awk_script" ]; then
+    cat >"$awk_script" <<'AWKSCRIPT'
+BEGIN { in_heredoc = 0; heredoc_end = "" }
+/<<-?[ \t]*'[A-Za-z_][A-Za-z0-9_]*'/ {
+  match($0, /<<-?[ \t]*'([A-Za-z_][A-Za-z0-9_]*)'/)
+  delim = $0
+  sub(/.*<<-?[ \t]*'/, "", delim)
+  sub(/'.*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*"[A-Za-z_][A-Za-z0-9_]*"/ {
+  match($0, /<<-?[ \t]*"([A-Za-z_][A-Za-z0-9_]*)"/)
+  delim = $0
+  sub(/.*<<-?[ \t]*"/, "", delim)
+  sub(/".*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*/, "", delim)
+  sub(/[ \t]*$/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+in_heredoc && $0 == heredoc_end { in_heredoc = 0; next }
+in_heredoc { next }
+/^[ \t]*#/ { next }
+{ print }
+AWKSCRIPT
+    
+    if [ "$is_imp_file" -eq 0 ]; then
+      func_pattern='^[[:space:]]*_[a-zA-Z][a-zA-Z0-9_]*\(\)[[:space:]]*\{'
+      func_violations=$(awk -f "$awk_script" "$path" 2>/dev/null | grep -nE "$func_pattern" || true)
+      if [ -n "$func_violations" ]; then
+        line_num=$(printf '%s' "$func_violations" | head -1 | cut -d: -f1)
+        func_msg="spell has underscore-prefixed function at line $line_num"
+        func_msg="$func_msg (spells should use snake_case without prefix)"
+        issues=${issues:+$issues; }"$func_msg"
+        issue_count=$((issue_count + 1))
+      fi
+    fi
+    
+    hyphen_pattern='^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*-[a-zA-Z0-9_-]*\(\)[[:space:]]*\{'
+    hyphen_check=$(awk -f "$awk_script" "$path" 2>/dev/null) || true
+    hyphen_violations=$(printf '%s' "$hyphen_check" | grep -nE "$hyphen_pattern") || true
+    if [ -n "$hyphen_violations" ]; then
+      line_num=$(printf '%s' "$hyphen_violations" | head -1 | cut -d: -f1)
+      hyphen_msg="function name contains hyphen at line $line_num (use snake_case)"
+      issues=${issues:+$issues; }"$hyphen_msg"
+      issue_count=$((issue_count + 1))
+    fi
+    
+    # NOTE: Hyphenated spell calls and subprocess execution checks removed after
+    # SPIRAL conversion (2026-01-03). In the flat-file paradigm, spells ARE called
+    # with hyphens as executables in PATH, not as functions with underscores.
+    # These were word-of-binding era checks that are no longer applicable.
+    
+    rm -f "$awk_script"
+  fi
+  
+  # Imp-specific checks
+  if [ "$is_imp_file" -eq 1 ]; then
+    # Inline check_imp_no_help_handler
+    if grep -qF -- '--help|--usage|-h)' "$path" 2>/dev/null; then
+      imp_help_msg='imp has --help handler'
+      imp_help_msg="$imp_help_msg (imps use opening comment as spec, not --help)"
+      issues=${issues:+$issues; }"$imp_help_msg"
+      issue_count=$((issue_count + 1))
+    fi
+    
+    # Inline check_imp_no_flags
+    # Exempt stub imps (they mimic system command interfaces)
+    # Exempt menu imps (fathom-cursor and fathom-terminal need flags for flexibility)
+    imp_rel_path=${path#"$repo_dir/"}
+    case "$imp_rel_path" in
+      spells/.imps/test/stub-*) ;;  # Stubs mimic system commands, may use flags
+      spells/.imps/menu/fathom-cursor) ;;  # Menu helpers need flags for flexibility
+      spells/.imps/menu/fathom-terminal) ;;  # Menu helpers need flags for flexibility
+      *)
+        awk_script=$(temp-file lint-magic-awk) || true
+        if [ -n "$awk_script" ]; then
+          cat >"$awk_script" <<'AWKSCRIPT'
+BEGIN { in_heredoc = 0; heredoc_end = "" }
+/<<-?[ \t]*'[A-Za-z_][A-Za-z0-9_]*'/ {
+  match($0, /<<-?[ \t]*'([A-Za-z_][A-Za-z0-9_]*)'/)
+  delim = $0
+  sub(/.*<<-?[ \t]*'/, "", delim)
+  sub(/'.*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*"[A-Za-z_][A-Za-z0-9_]*"/ {
+  match($0, /<<-?[ \t]*"([A-Za-z_][A-Za-z0-9_]*)"/)
+  delim = $0
+  sub(/.*<<-?[ \t]*"/, "", delim)
+  sub(/".*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*/, "", delim)
+  sub(/[ \t]*$/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+in_heredoc && $0 == heredoc_end { in_heredoc = 0; next }
+in_heredoc { next }
+/^[ \t]*#/ { next }
+{ print }
+AWKSCRIPT
+          
+          flag_pattern='^[[:space:]]*(--[a-zA-Z][-a-zA-Z0-9_=]*(\|--[a-zA-Z][-a-zA-Z0-9_=]*)*(\|-[a-zA-Z])*'
+          flag_pattern="$flag_pattern|-[a-zA-Z](\|--[a-zA-Z][-a-zA-Z0-9_=]*|\|-[a-zA-Z])*)[[:space:]]*\)"
+          has_flags=$(awk -f "$awk_script" "$path" 2>/dev/null | grep -E "$flag_pattern") || true
+          if [ -n "$has_flags" ]; then
+            flag_msg='imp uses --flags (imps should use space-separated arguments only)'
+            issues=${issues:+$issues; }"$flag_msg"
+            issue_count=$((issue_count + 1))
+          fi
+          rm -f "$awk_script"
+        fi
+        ;;
+    esac
+    
+    # Inline check_imp_param_count (inline count_parameters logic)
+    comment_line=""
+    for linenum in 2 3 4 5; do
+      line=$(sed -n "${linenum}p" "$path" 2>/dev/null)
+      case "$line" in
+        '#'*)
+          comment_line="$line"
+          break
+          ;;
+        '')
+          continue
+          ;;
+        *)
+          break
+          ;;
+      esac
+    done
+    
+    param_count="-1"
+    if [ -n "$comment_line" ]; then
+      comment_line=${comment_line#'#'}
+      comment_line=${comment_line#' '}
+      case "$comment_line" in
+        *' - '*)
+          param_part=${comment_line%% - *}
+          param_count=0
+          first_word=1
+          for word in $param_part; do
+            if [ "$first_word" -eq 1 ]; then
+              first_word=0
+              continue
+            fi
+            case "$word" in
+              *'...') continue ;;
+            esac
+            param_count=$((param_count + 1))
+          done
+          ;;
+      esac
+    fi
+    
+    if [ "$param_count" != "-1" ] && [ "$param_count" -gt 3 ]; then
+      issues=${issues:+$issues; }"imp has $param_count parameters (max 3 allowed)"
+      issue_count=$((issue_count + 1))
+    fi
+  else
+    # Non-imp spells: warn if >3 parameters (inline count_parameters logic)
+    comment_line=""
+    for linenum in 2 3 4 5; do
+      line=$(sed -n "${linenum}p" "$path" 2>/dev/null)
+      case "$line" in
+        '#'*)
+          comment_line="$line"
+          break
+          ;;
+        '')
+          continue
+          ;;
+        *)
+          break
+          ;;
+      esac
+    done
+    
+    param_count="-1"
+    if [ -n "$comment_line" ]; then
+      comment_line=${comment_line#'#'}
+      comment_line=${comment_line#' '}
+      case "$comment_line" in
+        *' - '*)
+          param_part=${comment_line%% - *}
+          param_count=0
+          first_word=1
+          for word in $param_part; do
+            if [ "$first_word" -eq 1 ]; then
+              first_word=0
+              continue
+            fi
+            case "$word" in
+              *'...') continue ;;
+            esac
+            param_count=$((param_count + 1))
+          done
+          ;;
+      esac
+    fi
+    
+    if [ "$param_count" != "-1" ] && [ "$param_count" -gt 3 ]; then
+      warning_entry="  $target: $param_count parameters"
+      if [ -n "$spell_param_warnings" ]; then
+        spell_param_warnings="$spell_param_warnings
+$warning_entry"
+      else
+        spell_param_warnings="$warning_entry"
+      fi
+      spell_param_warning_count=$((spell_param_warning_count + 1))
+    fi
+  fi
+  
+  # Inline check_inconsistent_indentation
+  tab=$(printf '\t')
+  has_tab_indent=$(grep -E "^[[:space:]]*${tab}" "$path" 2>/dev/null | head -1) || true
+  has_space_indent=$(grep -E '^  ' "$path" 2>/dev/null | head -1) || true
+  if [ -n "$has_tab_indent" ] && [ -n "$has_space_indent" ]; then
+    issues=${issues:+$issues; }'mixed tabs and spaces for indentation (prefer 2 spaces)'
+    issue_count=$((issue_count + 1))
+  fi
+
+  # Inline check_indent_depth
+  indent_issue=''
+  awk_script=$(temp-file lint-magic-indent-awk) || true
+  if [ -n "$awk_script" ]; then
+    cat >"$awk_script" <<'AWKSCRIPT'
+BEGIN { in_heredoc = 0; heredoc_end = ""; max_indent = 60; tab_width = 2 }
+/<<-?[ \t]*'[A-Za-z_][A-Za-z0-9_]*'/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*'/, "", delim)
+  sub(/'.*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*"[A-Za-z_][A-Za-z0-9_]*"/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*"/, "", delim)
+  sub(/".*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*/, "", delim)
+  sub(/[ \t]*$/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+in_heredoc && $0 == heredoc_end { in_heredoc = 0; next }
+in_heredoc { next }
+/^[[:space:]]*#/ { next }
+/^[[:space:]]*$/ { next }
+{
+  indent = 0
+  for (i = 1; i <= length($0); i++) {
+    c = substr($0, i, 1)
+    if (c == " ") {
+      indent++
+      continue
+    }
+    if (c == "\t") {
+      indent += tab_width
+      continue
+    }
+    break
+  }
+  if (indent > max_indent) {
+    printf "line %d (indent %d)", NR, indent
+    exit 1
+  }
+}
+AWKSCRIPT
+    indent_issue=$(awk -f "$awk_script" "$path" 2>/dev/null) || true
+    cleanup-file "$awk_script"
+  fi
+  if [ -n "$indent_issue" ]; then
+    issues=${issues:+$issues; }"excessive indentation (>60 spaces) at $indent_issue"
+    issue_count=$((issue_count + 1))
+  fi
+  
+  # Inline check_long_lines
+  awk_script=$(temp-file lint-magic-lines-awk) || true
+  if [ -n "$awk_script" ]; then
+    cat >"$awk_script" <<'AWKSCRIPT'
+BEGIN { in_heredoc = 0; heredoc_end = ""; max_len = 100; sq = sprintf("%c", 39) }
+/<<-?[ \t]*'[A-Za-z_][A-Za-z0-9_]*'/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*'/, "", delim)
+  sub(/'.*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*"[A-Za-z_][A-Za-z0-9_]*"/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*"/, "", delim)
+  sub(/".*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*/, "", delim)
+  sub(/[ \t]*$/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+in_heredoc && $0 == heredoc_end { in_heredoc = 0; next }
+in_heredoc { next }
+/^[[:space:]]*#/ { next }
+length($0) > max_len {
+  line = $0
+  gsub(/^[[:space:]]*/, "", line)
+  quoted_len = 0
+  in_quote = 0
+  quote_char = ""
+  escaped = 0
+  for (i = 1; i <= length(line); i++) {
+    c = substr(line, i, 1)
+    if (escaped) {
+      if (in_quote) quoted_len++
+      escaped = 0
+      continue
+    }
+    if (c == "\\") {
+      escaped = 1
+      if (in_quote) quoted_len++
+      continue
+    }
+    if (!in_quote && (c == "\"" || c == sq)) {
+      in_quote = 1
+      quote_char = c
+      quoted_len++
+      continue
+    }
+    if (in_quote && c == quote_char) {
+      in_quote = 0
+      quote_char = ""
+      quoted_len++
+      continue
+    }
+    if (in_quote) {
+      quoted_len++
+    }
+  }
+  line_len = length(line)
+  if (line_len > 0 && quoted_len > 0) {
+    quote_pct = (quoted_len * 100) / line_len
+    if (quote_pct >= 60) {
+      next
+    }
+  }
+  print NR ": " substr($0, 1, 50) "..."
+}
+AWKSCRIPT
+        
+        long_lines=$(awk -f "$awk_script" "$path" 2>/dev/null | head -3) || true
+        rm -f "$awk_script"
+        if [ -n "$long_lines" ]; then
+          first_line_num=$(printf '%s' "$long_lines" | head -1 | cut -d: -f1)
+          long_msg="lines exceed 100 characters (line $first_line_num and possibly others)"
+          long_msg="$long_msg; split logically or use intermediate variables"
+          issues=${issues:+$issues; }"$long_msg"
+          issue_count=$((issue_count + 1))
+        fi
+      fi
+  
+  # Inline check_echo_usage
+  awk_script=$(temp-file lint-magic-echo-awk) || true
+  if [ -n "$awk_script" ]; then
+    cat >"$awk_script" <<'AWKSCRIPT'
+BEGIN { in_heredoc = 0; heredoc_end = "" }
+/<<-?[ \t]*'[A-Za-z_][A-Za-z0-9_]*'/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*'/, "", delim)
+  sub(/'.*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*"[A-Za-z_][A-Za-z0-9_]*"/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*"/, "", delim)
+  sub(/".*/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+/<<-?[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {
+  delim = $0
+  sub(/.*<<-?[ \t]*/, "", delim)
+  sub(/[ \t]*$/, "", delim)
+  in_heredoc = 1
+  heredoc_end = delim
+  next
+}
+in_heredoc && $0 == heredoc_end { in_heredoc = 0; next }
+in_heredoc { next }
+/^[[:space:]]*#/ { next }
+/\becho[[:space:]]/ {
+  print NR
+  exit
+}
+AWKSCRIPT
+    
+    line_num=$(awk -f "$awk_script" "$path" 2>/dev/null) || true
+    rm -f "$awk_script"
+    if [ -n "$line_num" ]; then
+      issues=${issues:+$issues; }"uses echo (prefer printf for portability) at line $line_num"
+      issue_count=$((issue_count + 1))
+    fi
+  fi
+  
+  if [ "$issue_count" -eq 0 ]; then
+    if [ "$verbose" -eq 1 ]; then
+      printf '[%d/%d] PASS %s\n' "$current" "$total" "$target"
+    fi
+    passed=$((passed + 1))
+  else
+    fail_msg="[${current}/${total}] FAIL $target: $issues"
+    printf '%s\n' "$fail_msg"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    failed_messages="${failed_messages}${fail_msg}
+"
+  fi
+done <"$targets_file"
+
+trap - EXIT HUP INT TERM
+rm -f "$targets_file"
+
+# Print POSIX compliance summary
+printf '\n=== POSIX Compliance Checks ===\n'
+if has checkbashisms; then
+  if [ "$posix_failures" -eq 0 ]; then
+    printf 'All %d scripts are POSIX-compliant.\n' "$total"
+  else
+    printf '%d of %d scripts failed POSIX compliance.\n' "$posix_failures" "$total"
+  fi
+else
+  printf 'Warning: checkbashisms not found, skipped POSIX checks\n'
+fi
+
+# Print style check results
+printf '\n=== Style Check Results ===\n'
+
+if [ -n "$spell_param_warnings" ]; then
+  printf 'Warning: %d spell(s) have more than 3 parameters:\n' "$spell_param_warning_count"
+  printf '%s\n' "$spell_param_warnings"
+  printf '\n'
+fi
+
+if [ "$failures" -eq 0 ]; then
+  printf 'All %d spells passed style checks.\n' "$total"
+else
+  printf '%d of %d spells failed style checks.\n' "$failures" "$total"
+  if [ -n "$failed_messages" ]; then
+    printf '\nFailed style checks:\n'
+    printf '%s' "$failed_messages"
+  fi
+fi
+
+# Print combined summary (fails-only)
+printf '\n=== Lint Results ===\n'
+if [ "$failures" -eq 0 ] && [ "$posix_failures" -eq 0 ]; then
+  printf '✓ All checks passed\n'
+  exit 0
+fi
+
+# Show unified failure message
+total_failures=$((posix_failures + failures))
+if [ "$posix_failures" -ne 0 ] && [ "$failures" -ne 0 ]; then
+  printf '✗ Failed POSIX or style checks (%d files)\n' "$total_failures"
+elif [ "$posix_failures" -ne 0 ]; then
+  printf '✗ Failed POSIX or style checks (%d files)\n' "$posix_failures"
+else
+  printf '✗ Failed POSIX or style checks (%d files)\n' "$failures"
+fi
+
+# Show only failures in summary
+if [ "$posix_failures" -ne 0 ]; then
+  if [ -n "$posix_failed_list" ]; then
+    printf '\nFailed POSIX checks:\n%s' "$posix_failed_list"
+  fi
+fi
+
+if [ "$failures" -ne 0 ]; then
+  if [ -n "$failed_messages" ]; then
+    printf '\nFailed style checks:\n%s' "$failed_messages"
+  fi
+fi
+
+exit 1

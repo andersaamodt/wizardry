@@ -1,0 +1,12 @@
+#!/bin/sh
+# path PATH - convert relative path to absolute, normalized
+# Example: path ./foo -> /current/dir/foo
+set -eu
+
+
+p_path=$1
+case "$p_path" in
+  /*) : ;;
+  *) p_path="$(pwd -P)/$p_path" ;;
+esac
+printf '%s' "$p_path" | sed 's|///*|/|g'

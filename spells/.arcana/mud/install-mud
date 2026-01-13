@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# This spell installs and starts the MUD. It is the MUD's main loop and installer script.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-mud
+
+Installs the wizardry MUD experience, fetching supporting assets and enabling the themed menus and commands.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+
+# Install MUD
+printf '%s\n' "Installing MUD assets and configuration..."
+
+# Enable MUD features
+if command -v toggle-all-mud >/dev/null 2>&1; then
+  toggle-all-mud enable
+fi
+
+printf '%s\n' "MUD installation complete."

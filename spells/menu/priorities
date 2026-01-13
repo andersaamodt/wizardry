@@ -1,0 +1,224 @@
+#!/bin/sh
+
+# This spell displays and manages prioritized items in the current directory with echelon support.
+# Use it to view and reorder files by priority tiers (echelons).
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: priorities [-v]
+
+Display prioritized items in the current directory as an interactive menu, with -v to show echelon and priority numbers.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 0' INT TERM
+
+require menu
+
+# Initialize verbose flag to 0
+verbose=0
+
+# Parse options
+while getopts "v" opt; do
+  case $opt in
+    v) verbose=1 ;; # If -v is passed, set verbose to 1
+    \?) printf '%s\n' "priorities: invalid option: -$OPTARG" >&2; exit 2 ;;
+  esac
+done
+shift $((OPTIND-1)) # Shift off the options and optional --.
+
+# Function to display priorities
+display_priorities() {
+  # Get directory
+  dir="${PWD}"
+
+  # Build a list of all prioritized files in the directory
+  # Format: "echelon priority checked filename"
+  # Read all attributes in one pass to minimize xattr calls
+  priority_list=""
+  item_count=0
+  
+  for f in "$dir"/*; do
+    [ -e "$f" ] || continue
+    
+    # Read all three attributes at once (major optimization)
+    attrs=$(xattr-read-batch "$f" echelon priority checked 2>/dev/null || true)
+    
+    # Parse the batch result
+    file_echelon=""
+    file_priority=""
+    checked_value=""
+    
+    # Extract values from "echelon=X priority=Y checked=Z" format
+    for pair in $attrs; do
+      case "$pair" in
+        echelon=*) file_echelon="${pair#echelon=}" ;;
+        priority=*) file_priority="${pair#priority=}" ;;
+        checked=*) checked_value="${pair#checked=}" ;;
+      esac
+    done
+    
+    # Skip if no echelon (not prioritized)
+    case "$file_echelon" in
+      ''|*Error*|*[!0-9]*) continue ;;
+    esac
+    
+    # Default priority to 0 if not set
+    case "$file_priority" in
+      ''|*Error*|*[!0-9]*) file_priority=0 ;;
+    esac
+    
+    # Default checked to 0 if not set
+    case "$checked_value" in
+      ''|*Error*|*[!0-9]*) checked_value=0 ;;
+    esac
+    
+    # Add to list with all data needed
+    if [ -z "$priority_list" ]; then
+      priority_list="$file_echelon $file_priority $checked_value $f"
+    else
+      priority_list="$priority_list
+$file_echelon $file_priority $checked_value $f"
+    fi
+    
+    item_count=$((item_count + 1))
+  done
+  
+  # If there are no priorities, print an error message and exit
+  if [ -z "$priority_list" ]; then
+    printf '%s\n' "No priorities set in the current folder. Try 'prioritize <filename>'."
+    return 1
+  fi
+
+  # Sort by echelon (descending), then priority (ascending), then filename
+  # Using sort: -k1,1rn (first field reverse numeric), -k2,2n (second field numeric)
+  sorted_list=$(printf '%s\n' "$priority_list" | sort -k1,1rn -k2,2n -k4)
+
+  # Initialize variables
+  prev_echelon=""
+  menu_command="menu --start-selection $start_selection Priorities:"
+  
+  # Count items for tracking (includes all menu items for position calculation)
+  total_menu_items=0
+
+  # Process sorted list
+  while IFS=' ' read -r file_echelon file_priority checked_value priority_file; do
+    # Add separator when echelon changes
+    if [ -n "$prev_echelon" ] && [ "$file_echelon" != "$prev_echelon" ]; then
+      menu_command="${menu_command} \"---\""
+      total_menu_items=$((total_menu_items + 1))
+    fi
+    prev_echelon=$file_echelon
+
+    # Set checkbox display (data already cached from first loop)
+    if [ "$checked_value" = "1" ]; then
+      checkbox="[X] "
+    else
+      checkbox="[ ] "
+    fi
+
+    # Add the file to the menu command
+    menu_command="${menu_command} \""
+    if [ $verbose -eq 1 ]; then
+      menu_command="${menu_command}${file_echelon}.${file_priority} "
+    fi
+    item_name=$(basename "$priority_file")
+    # Add * after folder names
+    if [ -d "$priority_file" ]; then
+      item_name="${item_name}*"
+    fi
+    menu_command="${menu_command}${checkbox}$item_name%priority-menu \\\"${priority_file}\\\"\""
+
+    # Increment counts
+    total_menu_items=$((total_menu_items + 1))
+  done <<EOF
+$sorted_list
+EOF
+  
+  # Store counts for next iteration comparison
+  current_item_count=$item_count
+  
+  # Add separator before Add priority and Exit
+  menu_command="${menu_command} \"---\""
+  total_menu_items=$((total_menu_items + 1))
+  
+  # Add "Add priority" option
+  menu_command="${menu_command} \"Add priority%prioritize --interactive --yes\""
+  add_priority_position=$((total_menu_items + 1))
+  current_add_priority_position=$add_priority_position
+  
+  # Exit button kills this menu script via TERM signal
+  # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
+  exit_label=$(exit-label)
+  menu_command="${menu_command} \"${exit_label}%kill -TERM \\\$PPID\""
+
+  # Execute the constructed menu command
+  eval "${menu_command}" || _priorities_menu_status=$?
+  return "${_priorities_menu_status:-0}"
+}
+
+first_run=1
+start_selection=1
+previous_item_count=0
+
+while true; do
+  if [ "$first_run" -eq 0 ]; then
+    # Quick count of prioritized items (just count, don't read all attributes)
+    current_count_check=0
+    for f in "$PWD"/*; do
+      [ -e "$f" ] || continue
+      # Quick check: just see if echelon attribute exists
+      if read-magic "$f" echelon >/dev/null 2>&1; then
+        current_count_check=$((current_count_check + 1))
+      fi
+    done
+    
+    # If count increased since last iteration, keep "Add priority" selected
+    if [ "$current_count_check" -gt "$previous_item_count" ]; then
+      start_selection=$previous_add_priority_position
+    else
+      # If count didn't change, reset to first item
+      start_selection=1
+    fi
+    
+    # Call display_priorities which will update current_item_count and current_add_priority_position
+    display_priorities || menu_status=$?
+    menu_status=${menu_status:-0}
+    
+    # Save current values for next iteration comparison
+    previous_item_count=$current_item_count
+    previous_add_priority_position=$current_add_priority_position
+    
+    # ESC kills this menu script via TERM signal (same as Exit button)
+    # Direct kill: kill -TERM $$ → kills this script
+    if [ "$menu_status" -eq 130 ]; then
+      printf 'ESC\n' >&2
+      kill -TERM $$ 2>/dev/null || true
+      exit 0
+    fi
+  else
+    first_run=0
+    # On first run, exit if display_priorities fails (no priorities set)
+    if ! display_priorities; then
+      exit 1
+    fi
+    # Save initial values
+    previous_item_count=$current_item_count
+    previous_add_priority_position=$current_add_priority_position
+    menu_status=$?
+    # ESC kills this menu script via TERM signal (same as Exit button)
+    # Direct kill: kill -TERM $$ → kills this script
+    if [ "$menu_status" -eq 130 ]; then
+      printf 'ESC\n' >&2
+      kill -TERM $$ 2>/dev/null || true
+      exit 0
+    fi
+  fi
+done

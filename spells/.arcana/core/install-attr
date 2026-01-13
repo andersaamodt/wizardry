@@ -1,0 +1,93 @@
+#!/bin/sh
+
+# Bootstrap spell: installs xattr tools (attr package with setfattr/getfattr)
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-attr
+
+Install extended attribute tools (attr package with setfattr/getfattr).
+Required for enchantment spells and MUD filesystem metadata.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+# Check if already installed
+if command -v setfattr >/dev/null 2>&1 && command -v getfattr >/dev/null 2>&1; then
+  printf 'xattr tools already installed\n'
+  exit 0
+fi
+
+# Detect package manager and install
+if command -v apt-get >/dev/null 2>&1; then
+  # Debian/Ubuntu
+  printf 'Installing attr package via apt-get...\n'
+  if [ "${ASSUME_YES:-0}" = "1" ] || [ "$(id -u)" = "0" ]; then
+    apt-get update -qq && apt-get install -y -qq attr
+  else
+    sudo apt-get update -qq && sudo apt-get install -y attr
+  fi
+elif command -v pacman >/dev/null 2>&1; then
+  # Arch Linux
+  printf 'Installing attr package via pacman...\n'
+  if [ "${ASSUME_YES:-0}" = "1" ] || [ "$(id -u)" = "0" ]; then
+    pacman -S --noconfirm attr
+  else
+    sudo pacman -S --noconfirm attr
+  fi
+elif command -v dnf >/dev/null 2>&1; then
+  # Fedora/RHEL
+  printf 'Installing attr package via dnf...\n'
+  if [ "${ASSUME_YES:-0}" = "1" ] || [ "$(id -u)" = "0" ]; then
+    dnf install -y attr
+  else
+    sudo dnf install -y attr
+  fi
+elif command -v zypper >/dev/null 2>&1; then
+  # openSUSE
+  printf 'Installing attr package via zypper...\n'
+  if [ "${ASSUME_YES:-0}" = "1" ] || [ "$(id -u)" = "0" ]; then
+    zypper install -y attr
+  else
+    sudo zypper install -y attr
+  fi
+elif command -v apk >/dev/null 2>&1; then
+  # Alpine
+  printf 'Installing attr package via apk...\n'
+  if [ "${ASSUME_YES:-0}" = "1" ] || [ "$(id -u)" = "0" ]; then
+    apk add attr
+  else
+    sudo apk add attr
+  fi
+elif [ -f /etc/NIXOS ]; then
+  # NixOS - must be installed declaratively
+  cat >&2 <<'EOF'
+On NixOS, xattr tools must be installed by adding to configuration.nix:
+
+  environment.systemPackages = with pkgs; [
+    attr
+  ];
+
+Then run: sudo nixos-rebuild switch
+EOF
+  exit 1
+else
+  printf 'install-attr: unsupported package manager\n' >&2
+  printf 'Please install attr package manually for your distribution\n' >&2
+  exit 1
+fi
+
+# Verify installation
+if command -v setfattr >/dev/null 2>&1 && command -v getfattr >/dev/null 2>&1; then
+  printf 'xattr tools installed successfully\n'
+  exit 0
+else
+  printf 'install-attr: installation appeared to succeed but commands not found\n' >&2
+  exit 1
+fi

@@ -1,0 +1,56 @@
+#!/bin/sh
+
+# This spell displays the status of package managers on the system.
+# Use it to see which package managers are available.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: package-managers
+
+Show which package managers are available on this system and whether they are installed. Helps you quickly see the tools you can use to manage software on your platform.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+. colors
+
+distro=$(detect-distro)
+
+case $distro in
+  "arch")
+    if pacman -Q pacman >/dev/null 2>&1; then
+        printf '%b✔ pacman%b (default package manager on Arch Linux)\n' "$THEME_SUCCESS" "$RESET"
+    else
+        printf '%b✘ pacman%b (default package manager on Arch Linux)\n' "$THEME_ERROR" "$RESET"
+    fi
+    if yay -V >/dev/null 2>&1; then
+        printf '%b✔ yay%b (AUR helper for Arch Linux)\n' "$THEME_SUCCESS" "$RESET"
+    else
+        printf '%b✘ yay%b (AUR helper for Arch Linux)\n' "$THEME_ERROR" "$RESET"
+    fi
+    ;;
+  "debian")
+    if apt-get -v >/dev/null 2>&1; then
+        printf '%b✔ apt%b (default package manager on Debian and Ubuntu)\n' "$THEME_SUCCESS" "$RESET"
+    else
+        printf '%b✘ apt%b (default package manager on Debian and Ubuntu)\n' "$THEME_ERROR" "$RESET"
+    fi
+    ;;
+  "macos"|"mac")
+    if brew --version >/dev/null 2>&1; then
+        printf '%b✔ brew%b (default package manager on macOS)\n' "$THEME_SUCCESS" "$RESET"
+    else
+        printf '%b✘ brew%b (default package manager on macOS)\n' "$THEME_ERROR" "$RESET"
+    fi
+    if port -v >/dev/null 2>&1; then
+        printf '%b✔ port%b (MacPorts on macOS)\n' "$THEME_SUCCESS" "$RESET"
+    else
+        printf '%b✘ port%b (MacPorts on macOS)\n' "$THEME_ERROR" "$RESET"
+    fi
+    ;;
+esac

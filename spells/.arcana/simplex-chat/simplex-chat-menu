@@ -1,0 +1,46 @@
+#!/bin/sh
+
+# Present the simplex-chat management menu.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: simplex-chat-menu
+
+Displays the simplex-chat management menu.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+. colors
+
+trap 'exit 0' INT TERM
+
+first_run=1
+
+while true; do
+  if [ "$first_run" -eq 0 ]; then
+    printf '\n'
+  else
+    first_run=0
+  fi
+
+  # Build menu based on simplex-chat installation status
+  title="${BOLD}${CYAN}SimpleX Chat: $(simplex-chat-status)"
+  exit_label=$(exit-label)
+  exit_option="${exit_label}%kill -TERM \$PPID"
+  
+  if command -v simplex-chat >/dev/null 2>&1; then
+    run_option="Run SimpleX Chat%simplex-chat"
+    uninstall_option="Uninstall SimpleX Chat%uninstall-simplex-chat"
+    menu "$title" "$run_option" "$uninstall_option" "$exit_option" || true
+  else
+    install_option="Install SimpleX Chat%install-simplex-chat"
+    menu "$title" "$install_option" "$exit_option" || true
+  fi
+done

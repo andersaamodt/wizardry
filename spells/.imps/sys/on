@@ -1,0 +1,25 @@
+#!/bin/sh
+# on PLATFORM - test if running on platform (mac/linux/debian/nixos/arch/bsd)
+# Example: on mac && pkgin install git
+
+
+_on_platform=$1
+_on_kernel=$(uname -s 2>/dev/null || echo unknown)
+
+case "$_on_platform" in
+  mac|macos|darwin)
+    [ "$_on_kernel" = "Darwin" ] ;;
+  linux)
+    [ "$_on_kernel" = "Linux" ] ;;
+  bsd|freebsd)
+    case "$_on_kernel" in *BSD) true ;; *) false ;; esac ;;
+  debian|ubuntu)
+    [ -f /etc/debian_version ] ;;
+  nixos)
+    [ -f /etc/NIXOS ] ;;
+  arch)
+    [ -f /etc/arch-release ] ;;
+  *)
+    exit 1 ;;
+esac
+

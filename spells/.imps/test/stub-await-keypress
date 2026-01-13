@@ -1,0 +1,12 @@
+#!/bin/sh
+# stub-await-keypress - test stub mimicking await-keypress for single-key tests
+# Stubs mimic the interface of commands they replace
+# Returns "enter" by default, allowing menu tests to select and exit
+# Example: stub-await-keypress
+
+set -eu
+
+
+  # Return "enter" to simulate user pressing enter key
+  # This allows menu to select current item and exit
+  printf 'enter\n'

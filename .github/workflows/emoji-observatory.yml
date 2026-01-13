@@ -1,0 +1,45 @@
+name: Emoji Observatory
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Cancel previous runs when new commits are pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  emoji-catalog:
+    name: Print Emoji Observatory Report
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Print Emoji Observatory and Catalog
+        run: |
+          echo "=== EMOJI OBSERVATORY ==="
+          echo ""
+          
+          # Extract the Emoji Observatory section from EMOJI_ANNOTATIONS.md
+          awk '
+            /^## Emoji Observatory \(Instructions\)/ { found=1; next }
+            /^## Status/ { if (found) exit }
+            found { print }
+          ' .github/EMOJI_ANNOTATIONS.md
+          
+          echo ""
+          echo "=== CURRENT EMOJI CATALOG ==="
+          echo ""
+          
+          # Run catalog-emojis script (workflow-only, not a cross-platform spell)
+          ./.github/catalog-emojis

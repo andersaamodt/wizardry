@@ -1,0 +1,63 @@
+#!/bin/sh
+
+# This spell lists running processes and interactively chooses one to terminate.
+# It prompts with ask cantrips and sends a kill signal, customizable via KILL_CMD.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: kill-process
+
+List running processes, prompt you to pick one by number, and then send a kill signal to that PID. Uses ask-number and ask-yn for a gentle, confirmed termination, and you can override the signal command with KILL_CMD.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Present the process list so the user can choose what to terminate.
+printf '%s\n' "List of running processes:"
+ps -ax | awk '{print $5}' | tail -n +2 | nl -w 2 -s ') '
+
+ps_names=$(ps -ax | awk '{print $5}' | tail -n +2)
+
+if ! command -v ask-number >/dev/null 2>&1; then
+  printf '%s\n' "ask-number spell is required to choose a process." >&2
+  exit 1
+fi
+if ! command -v ask-yn >/dev/null 2>&1; then
+  printf '%s\n' "ask-yn spell is required to confirm termination." >&2
+  exit 1
+fi
+
+total_processes=$(printf '%s\n' "$ps_names" | sed '/^$/d' | wc -l | tr -d ' ')
+
+if [ "$total_processes" -eq 0 ]; then
+    printf '%s\n' "No processes available to kill." >&2
+    exit 1
+fi
+
+choice=$(ask-number "Enter the number of the process you want to kill:" 1 "$total_processes")
+selected_name=$(printf '%s\n' "$ps_names" | sed -n "${choice}p")
+
+pid=$(ps -ax | awk '{print $1 " " $5}' | grep "$selected_name" | awk '{print $1}')
+if [ -n "$pid" ]; then
+    if ask-yn "Are you sure you want to kill process $selected_name with pid $pid"; then
+        kill_cmd=${KILL_CMD:-kill}
+
+        if ! command -v "$kill_cmd" >/dev/null 2>&1; then
+          printf '%s\n' "kill command '$kill_cmd' is required to terminate processes." >&2
+          exit 1
+        fi
+
+        if "$kill_cmd" "$pid"; then
+            printf '%s\n' "Process $pid ($selected_name) has been killed."
+        else
+            status=$?
+            printf '%s\n' "Failed to kill process $pid ($selected_name)." >&2
+            exit "$status"
+        fi
+    fi
+fi

@@ -1,0 +1,92 @@
+#!/bin/sh
+
+# service-status prints systemctl's status output for a unit. The --no-pager
+# flag keeps results readable even when systemctl is configured to invoke less.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE' >&2
+Usage: service-status UNIT
+
+Shows the current status of the specified systemd unit with paging disabled. Prompts for a unit when none is provided.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_name=$(basename "$0")
+
+# Get service name from argument or prompt user
+service_name=${1-}
+if [ -z "$service_name" ]; then
+        # Find ask-text helper
+        if [ -n "${STATUS_SERVICE_ASK_TEXT-}" ]; then
+                ask_text_helper=$STATUS_SERVICE_ASK_TEXT
+        elif has ask-text; then
+                ask_text_helper=$(command -v ask-text)
+        else
+                # Try to find in same directory as script
+                script_source=$0
+                case $script_source in
+                */*)
+                        script_dir=${script_source%/*}
+                        ;;
+                *)
+                        resolved=$(command -v "$script_source" 2>/dev/null \
+                                || printf '%s' "$script_source")
+                        script_dir=${resolved%/*}
+                        ;;
+                esac
+                if [ -z "$script_dir" ] || [ "$script_dir" = "$script_source" ]; then
+                        script_dir=.
+                fi
+                script_dir=$(cd "$script_dir" && pwd -P)
+                
+                if [ -x "$script_dir/ask-text" ]; then
+                        ask_text_helper=$script_dir/ask_text                 else
+                        die "$script_name: ask_text spell not found."
+                fi
+        fi
+        
+        service_name=$("$ask_text_helper" "Which service status should I check?")
+fi
+
+if [ -z "$service_name" ]; then
+        die "$script_name: No service name supplied."
+        exit 1
+fi
+
+# Normalize unit name (add .service suffix if not present)
+case $service_name in
+*.service)
+        unit=$service_name
+        ;;
+*)
+        unit=${service_name}.service
+        ;;
+esac
+
+# Find systemctl command
+if [ -z "${systemctl_cmd-}" ]; then
+        if has systemctl; then
+                systemctl_cmd=$(command -v systemctl)
+        else
+                die "$script_name: systemctl is not available on this system."
+                exit 1
+        fi
+fi
+
+# Show status
+printf 'Showing status for %s...\n' "$unit"
+if "$systemctl_cmd" status --no-pager "$unit"; then
+        exit 0
+fi
+if [ "$(id -u)" -ne 0 ] && command -v sudo >/dev/null 2>&1; then
+        sudo "$systemctl_cmd" status --no-pager "$unit"
+        exit 0
+fi
+die "$script_name: Unable to read service status; try running as root."
+exit 1

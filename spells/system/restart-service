@@ -1,0 +1,88 @@
+#!/bin/sh
+
+# restart-service bounces a unit through systemctl restart, which is safer than
+# manually stopping/starting because systemd tracks dependencies for us.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE' >&2
+Usage: restart-service UNIT
+
+Restarts the specified systemd service through systemctl and lets you know if it comes back cleanly. Prompts for the unit name when omitted.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_name=$(basename "$0")
+
+# Get service name from argument or prompt user
+service_name=${1-}
+if [ -z "$service_name" ]; then
+        # Find ask-text helper
+        if [ -n "${RESTART_SERVICE_ASK_TEXT-}" ]; then
+                ask_text_helper=$RESTART_SERVICE_ASK_TEXT
+        elif has ask-text; then
+                ask_text_helper=$(command -v ask-text)
+        else
+                # Try to find in same directory as script
+                script_source=$0
+                case $script_source in
+                */*)
+                        script_dir=${script_source%/*}
+                        ;;
+                *)
+                        resolved=$(command -v "$script_source" 2>/dev/null \
+                                || printf '%s' "$script_source")
+                        script_dir=${resolved%/*}
+                        ;;
+                esac
+                if [ -z "$script_dir" ] || [ "$script_dir" = "$script_source" ]; then
+                        script_dir=.
+                fi
+                script_dir=$(cd "$script_dir" && pwd -P)
+                
+                if [ -x "$script_dir/ask-text" ]; then
+                        ask_text_helper=$script_dir/ask_text                 else
+                        die "$script_name: ask_text spell not found."
+                fi
+        fi
+        
+        service_name=$("$ask_text_helper" "Which service should I restart?")
+fi
+
+if [ -z "$service_name" ]; then
+        die "$script_name: No service name supplied."
+fi
+
+# Normalize unit name (add .service suffix if not present)
+case $service_name in
+*.service)
+        unit=$service_name
+        ;;
+*)
+        unit=${service_name}.service
+        ;;
+esac
+
+# Find systemctl command
+if [ -z "${systemctl_cmd-}" ]; then
+        if has systemctl; then
+                systemctl_cmd=$(command -v systemctl)
+        else
+                die "$script_name: systemctl is not available on this system."
+        fi
+fi
+
+# Restart the service (with sudo if needed)
+printf 'Restarting %s via systemctl...\n' "$unit"
+if [ "$(id -u)" -eq 0 ]; then
+        "$systemctl_cmd" restart "$unit"
+elif has sudo; then
+        sudo "$systemctl_cmd" restart "$unit"
+else
+        die "$script_name: systemctl requires root. Re-run as root or install sudo."
+fi

@@ -1,0 +1,8 @@
+#!/bin/sh
+# clear-traps - clear all signal traps
+# Example: clear-traps
+
+set -eu
+
+
+trap - EXIT HUP INT TERM

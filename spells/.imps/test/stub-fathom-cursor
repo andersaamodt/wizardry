@@ -1,0 +1,13 @@
+#!/bin/sh
+# stub-fathom-cursor - test stub mimicking fathom-cursor system command
+# Stubs mimic the interface of commands they replace, including flags
+# Example: stub-fathom-cursor -y
+
+set -eu
+
+
+  case ${1-} in
+    -y) printf '1\n' ;;
+    -x) printf '1\n' ;;
+    *) printf '1 1\n' ;;
+  esac

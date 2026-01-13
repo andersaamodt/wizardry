@@ -1,0 +1,12 @@
+#!/bin/sh
+# stub-stty - test stub mimicking stty system command
+# Stubs mimic the interface of commands they replace, including flags
+# Example: stub-stty -g
+
+set -eu
+
+
+  case ${1-} in
+    -g) printf 'saved-state\n' ;;
+    *) exit 0 ;;
+  esac

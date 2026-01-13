@@ -1,0 +1,67 @@
+#!/bin/sh
+
+# This spell lists extended attributes from a file, optionally narrowing to one key.
+# It walks through existence checks and available helpers in a linear, didactic order.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat << 'USAGE'
+Usage: read-magic <file> [attribute]
+
+List all extended attributes (enchantments) on a file or print the value of one attribute when named, using attr, xattr, or getfattr as available.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Validate arguments
+if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+  printf '%s\n' "read-magic: one or two parameters expected (file path and optional attribute name)." >&2
+  exit 1
+fi
+
+file=$1
+attribute=${2-}
+
+# Check file exists
+if [ ! -e "$file" ]; then
+  printf '%s\n' "read-magic: file does not exist." >&2
+  exit 1
+fi
+
+# Automatically prepend "user." namespace if attribute doesn't contain a dot
+if [ -n "$attribute" ]; then
+  case "$attribute" in
+    *.*) ;;  # Attribute already has a namespace, use as-is
+    *) attribute="user.$attribute" ;;  # No namespace, prepend "user."
+  esac
+fi
+
+# If specific attribute requested, read and print it
+if [ -n "$attribute" ]; then
+  if value=$(xattr-read-value "$attribute" "$file"); then
+    printf '%s\n' "$value"
+  else
+    printf '%s\n' "read-magic: attribute does not exist." >&2
+    exit 1
+  fi
+  exit 0
+fi
+
+# Otherwise, list all attributes
+keys=$(xattr-list-keys "$file" || printf '')
+
+if [ -z "$keys" ]; then
+  printf '%s\n' "No enchanted attributes found."
+  exit 0
+fi
+
+# Print each attribute with its value
+printf '%s\n' "$keys" | while IFS= read -r key || [ -n "$key" ]; do
+  [ -z "$key" ] && continue
+  value=$(xattr-read-value "$key" "$file" || printf '')
+  printf '%s\n' "$key: $value"
+done

@@ -1,0 +1,53 @@
+#!/bin/sh
+
+# Bootstrap spell: installs a clipboard helper for the current environment.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-clipboard-helper
+
+Installs a clipboard helper for the current environment. Detects if one is already installed and prefers the best option for the platform (macOS: pbcopy, Wayland: wl-copy, X11: xsel or xclip).
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+# Detect which clipboard helper is already installed
+if command -v pbcopy >/dev/null 2>&1; then
+  installed_helper='pbcopy'
+elif command -v xsel >/dev/null 2>&1; then
+  installed_helper='xsel'
+elif command -v xclip >/dev/null 2>&1; then
+  installed_helper='xclip'
+elif command -v wl-copy >/dev/null 2>&1; then
+  installed_helper='wl-copy'
+else
+  installed_helper=''
+fi
+
+# If a helper is already installed, we're done
+if [ -n "$installed_helper" ]; then
+  printf '%s\n' "Clipboard helper already installed: $installed_helper"
+  exit 0
+fi
+
+# Install appropriate helper based on platform
+if [ "$(uname -s)" = "Darwin" ]; then
+  printf '%s\n' "macOS detected - pbcopy/pbpaste should be available by default"
+  exit 0
+elif [ -n "${WAYLAND_DISPLAY-}" ] || [ -n "${WAYLAND_SOCKET-}" ]; then
+  printf '%s\n' "Wayland detected - installing wl-clipboard"
+  "$script_dir/manage-system-command" install wl-clipboard
+elif [ -n "${DISPLAY-}" ]; then
+  printf '%s\n' "X11 detected - installing xsel"
+  "$script_dir/manage-system-command" install xsel
+else
+  printf '%s\n' "install-clipboard-helper: could not detect display server" >&2
+  exit 1
+fi

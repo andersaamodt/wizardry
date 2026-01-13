@@ -1,0 +1,8 @@
+# Generated during installation
+.uninstall
+wizardry-compiled/
+ALL_INPUT
+
+# Test temporary files
+.tests/__temp_test_fixtures/
+.tests/__demos/

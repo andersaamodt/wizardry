@@ -1,0 +1,10 @@
+#!/bin/sh
+# info MESSAGE - print informational message with visual indicator
+# Example: info "Processing files..."
+
+set -eu
+
+_info_level=${WIZARDRY_LOG_LEVEL:-0}
+if [ "$_info_level" -ge 1 ]; then
+  printf '%s\n' "$*"
+fi

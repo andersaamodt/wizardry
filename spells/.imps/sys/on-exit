@@ -1,0 +1,7 @@
+#!/bin/sh
+# on-exit COMMAND [ARGS...] - register cleanup command to run on exit/interrupt
+# Example: on-exit cleanup-file "$tmpfile"
+
+set -eu
+
+trap "$*" EXIT HUP INT TERM

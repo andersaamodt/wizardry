@@ -1,0 +1,314 @@
+# Wizardry is the terminal's missing link
+
+Wizardry is a collection of shell scripts to complete your terminal experience.
+Themed as a magical MUD (Multi-User Dungeon), wizardry turns folders into rooms, and files into items.
+Wizardry also includes a comprehensive set of POSIX shell tutorials, and optional free software suite.
+
+Wizardry includes a set of interactive menus that transparently show what command each menu item will call, making discovering and using the command line much easier. Wizardry assembles cross-platform UNIX knowledge into usable menus and memorable commands.
+
+The language of magic—a human heirloom—is rich in evocative words for hidden forces and abstract transformations, making it a natural fit for extending the terminal's vocabulary, binding the worlds of thought and myth together as effective language.
+
+## Status for target platforms:
+
+**Current status:** 🟡 `install` + `menu` untested across listed platforms. Wizardry is brand new, so not all spells have been tested and debugged yet.
+
+| OS                        | Shortname | Status                              | `install` | `menu` | `banish` | `test-magic` | `demo-magic` |
+| ------------------------- | --------- | ----------------------------------- | --------- | ------ | -------- | ------------ | ------------ |
+| **Debian (and Ubuntu)**   | `debian`  | 🟡 **`install` + `menu` untested**    | 🟡        | 🟡     | 🟡       | 🟡           | 🟡           |
+| **NixOS**                 | `nixos`   | 🟡 **`install` + `menu` untested**    | 🟡        | 🟡     | 🟡       | 🟡           | 🟡           |
+| **MacOS**                 | `macos`   | 🟢 **core is working**    | 🟢        | 🟢     | 🟢 Lvl.23      | 🟡           | 🟡           |
+| **Arch**                  | `arch`    | 🟠 **untested**    | 🟠        | 🟠     | 🟠       | 🟠           | 🟠           |
+| **Android (Linux-based)** | —         | 🟠 **currently unsupported**    | 🟠        | 🟠     | 🟠       | 🟠           | 🟠           |
+| **Windows**               | —         | ✘ **no support planned (except WSL)**    | ✘         | ✘      | ✘        | ✘            | ✘            |
+
+## Installation
+
+### Easy install script
+
+Run the following line in a terminal to download and run the wizardry installer script:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
+```
+
+The install script requires either `git` or `tar` plus either `curl` or `wget`.
+
+### Install with git
+
+To download wizardry using git and then install it:
+
+```bash
+git clone https://github.com/andersaamodt/wizardry ~/.wizardry
+cd ~/.wizardry
+./install
+```
+
+This downloads wizardry to the default install location, `~/.wizardry`.
+
+## Usage
+
+To use wizardry, simply type:
+
+```
+menu
+```
+This displays an interactive menu. Most (soon all) wizardry spells and features will be discoverable through the menu.
+
+## Spells
+
+A spell is a specially-curated shell script:
+
+* Stored in the `spells/` folder or your spellbook (default `~/.spellbook/`), or a subfolder
+* Has a unique and memorable name (all spells are in PATH together; hyphens for multi-word names)
+* Does something useful or interesting
+* Is clearly-written and well-commented for novices
+* Is themed like a fantasy MUD
+* Is cross-platform
+* Has no `.sh` extension for easy invocation
+* Has a brief opening description comment (~2 lines)
+* Has a `--help` usage note which ultimately *is* its spec
+* Has a test script at a corresponding path under `.tests/`, which serves as a fully-specified operationalized spec
+* Is polished and fails elegantly
+* Works well when used in a menu (interactively)
+* Uses standard exit codes:
+  * `0`: Success
+  * `1`: General error
+  * `2`: Usage/argument error
+  * `126`: Command cannot execute
+  * `127`: Command not found
+  * `130`: Interrupted (Ctrl-C)
+
+This spec helps scripts evolve into living, polished exemplars of communal knowledge about best practices in using and optimizing the shell.
+
+### Spellbook
+
+The Spellbook is your personal grimoire for casting and organizing spells. Access it by typing `spellbook` or selecting it from the main menu.
+
+Spell categories:
+
+* custom commands
+* arcane
+* cantrips
+* crypto
+* divination
+* enchantment  
+* mud
+* psi
+* spellcraft
+* translocation
+* war
+* wards
+
+### Imps
+
+Imps are a type of spell—the smallest semantic building blocks in wizardry. They live in `spells/.imps/` and abstract common shell patterns into readable, well-documented microscripts.
+
+An **imp** is a microscript that:
+
+* Does exactly one thing
+* Executes directly as a flat, linear script (no function wrappers)
+* Has a unique and self-documenting name that novices can understand without looking it up (hyphens for multi-word names)
+* Uses space-separated arguments instead of `--flags`
+* Has no `--help` flag (just a comment header—imps are for coding, not running standalone)
+* Is cross-platform, abstracting OS differences behind a clean interface
+* Makes spells read almost like English while remaining POSIX-compliant
+
+Push as much logic as possible into imps for maximum semanticization.
+
+## Arcana
+
+An arcana is a grand working, a spell that knows the proper way to install and correctly configure a certain piece of software across all supported platforms.
+
+Wizardry includes a curated free software suite which can be easily and optionally installed from the `menu`.
+
+Criteria for inclusion:
+
+* Software that helps accomplish basic computer tasks (messaging, document editing, photos, sharing, etc.)
+* Free software is best; non-commercial open-source an acceptable alternative
+* Inclusions are opinionated; the free software suite is our recommendations of the best free software
+* No redundant apps; we will choose the best one to include for each purpose, or offer a clear choice if necessary
+
+Using the free software suite makes it easy to establish a standardized software environment across OSes, without having to use a heavier package manager or containerized solution. Wizardry helps you install the right software in the correct way, using built-in package managers on each OS when possible.
+
+The arcana menu (`install-menu`) loads arcana automatically from files, so you can also author your own modules, to make installing the software you use more convenient and repeatable.
+
+### MUD-like Parsing
+
+Wizardry supports space-separated commands for all wizardry commands (planned: all other commands), so you can also type `main menu` or `main-menu` to reach the same `menu`. Wizardry includes a `thesaurus`, which allows you to add synonyms for commands. Wizardry also includes a recursive parser, which will handle `main menu` as `main` and route it to `main-menu` correctly.
+
+You can also access other menus directly using the space format. Try these:
+
+`install menu`
+`mud admin menu`
+`shutdown menu`
+`system menu`
+`users menu`
+`spell menu <spellname>`
+`read magic <filename>`
+`magic missile`
+
+Parsing is deterministic and always resolves to the most specific command, and is therefore reasonably safe. A `disambiguate` menu (future feature—not yet tested) will automatically ask when the same space-separated command could be interpreted in two or more ways (for example, `install menu` might also mean "please install the 'menu' application").
+
+## Magical Glossary
+
+| Term | Definition |
+| ---- | ---------- |
+| **arcanum** (pl. **arcana**) | A grand working—a spell that installs and configures software across supported platforms, presented as a menu of functions. Also refers to the apps themselves. |
+| **aura** | The proto-meaning a spell name bears when evoked (future feature). |
+| **banish** | To reset to a known configuration in the execution environment via systematic assumption-checking. |
+| **bootstrap spell** | A spell that can run before wizardry is fully installed. These self-contained scripts (namely `install`, `detect-distro`, and spells in `spells/install/core/`) don't rely on other wizardry spells. |
+| **cantrip** | A small utility spell for common tasks. |
+| `cast` | To execute a spell. Memorized spells appear in the `cast` menu for quick access. |
+| **crypto** | Cryptographic spells for hashing and security. |
+| **daemon** | A background process that runs continuously, typically started at system boot. |
+| **daemonic complex** | A subfolder within a demon family that groups related imps that must work together. |
+| **demon family** | A subfolder within `spells/.imps/` that groups related imps by function. Each folder represents a family of imps that share a common purpose (e.g., `str/` for string operations, `fs/` for filesystem operations). |
+| **divination** | Spells that detect or discover information. |
+| **enchant** / **enchantment** | Spells that add or manipulate extended attributes (metadata) on files. |
+| **evoke** | To *mention* a spell name, presencing its aura without execution. |
+| `forget` | Remove a spell from your memorized (`cast`) list. |
+| **imp** | The smallest building block of magic—a microscript that does exactly one thing. Imps dwell in `spells/.imps/`. |
+| **incantation** | The name of a spell, used to invoke it. |
+| `invoke` | Source a script into the current shell. |
+| `learn` | Copy or link a spell into your spellbook, making it permanently available. Learned spells are immediately available to cast. |
+| `memorize` | Add a spell to your `cast` menu for quick access. |
+| **portal** | A persistent connection between two computers via SSH, created with `open-portal`, for MUD travel. |
+| **portkey** | A bookmark to a remote location. Use `enchant-portkey` to create one and `follow-portkey` to teleport there. (Future: If you have the `touch` hook installed, touching a portkey will also activate it.) |
+| **scribe** | Create a new custom spell. |
+| **scroll** | A linear script with zero or one internal functions (plus `show_usage`). All spells should ideally be scrolls—readable from top to bottom without "folds" that break narrative flow. |
+| **spell** | A specially-curated shell script that lives in `spells/` or your `.spellbook/` folder, has a unique name, and follows wizardry conventions. |
+| `spellbook` | Your personal grimoire for organizing and casting spells. Access it with `spellbook` or from the main `menu`. Also refers to custom spell folders. |
+| **spellcraft** | The writing of shell scripts. |
+| **tome** | A text file containing the contents of several other text files concatenated together, so a whole folder of spells can be sent or carried easily. |
+| **ward** | A protective spell for security or access control. |
+
+# **Ethos and Standards**
+
+Wizardry has four layers of guidance that define its purpose, behavior, and conventions.
+
+## **Values**
+
+These values express why the project exists and what principles guide its development.
+
+| Value              | Description                                                                                                      |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| Useful             | Wizardry is use-case-driven, created to support common everyday computer tasks.                                  |
+| Menu-driven        | A user should be able to manage their entire system by typing `menu`, without memorizing commands.               |
+| Teaching community | Scripts are written as didactic exemplars. Wizardry is a community of practice; code encodes shared knowledge.   |
+| Cross-platform     | Wizardry is for UNIX-like systems in general, not a single distro.                                               |
+| File-first         | All state is stored in files, ideally human-readable text. No databases that enclose data in opaque blobs.       |
+| POSIX sh-first     | POSIX `sh` is the lingua franca. Other languages are only used when there is a strong reason.                    |
+| FOSS missing link  | Wizardry supplies the “glue” that integrates standard UNIX tools into coherent workflows.                        |
+| Semantic synthesis | Scripts evolve toward higher-order grammars that encapsulate platform details behind concise, composable syntax. |
+| Fun                | Magic and MUD flavor text are first-class: they make the terminal more playful without hiding what is going on.  |
+
+## **Policies**
+
+These policies describe Wizardry’s stance toward software freedom, tooling, and the broader ecosystem.
+
+| Policy                | Description                                                                                                                     |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Non-commercial        | Wizardry itself is non-commercial. We prefer free software over merely open-source and choose the least commercialized options. |
+| FOSS-first suite      | The bundled software suite is an opinionated selection of free / non-commercial tools for everyday tasks. No redundant apps.    |
+| Built-in tools first  | Where possible, arcana use each OS’s built-in package managers rather than heavy external packaging layers.                     |
+| Hand-finished AI code | AI may help draft POSIX shell, but final scripts are hand-reviewed, commented, and tested.                                      |
+| No AI integration     | Wizardry spells themselves do not call out to AI tools or services.                                                             |
+| No fallback forks     | When debugging, fix the primary execution path instead of adding alternate fallback implementations that duplicate behavior.    |
+
+## **Design Tenets**
+
+These tenets define how Wizardry should feel to use and how spells present themselves.
+
+| Tenet               | Description                                                                                                                  |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Minimalism          | Do the most with the fewest moving parts.                                                                                    |
+| Atomicity           | Spells and imps are small, self-contained units that combine into larger workings.                                           |
+| One magical action  | A spell narrates one coherent magical action, expressed linearly as a scroll. Multiple conceptual actions indicate the need to refactor into multiple spells or extract reusable logic into imps. |
+| Document-in-place   | Every spell’s `--help` fully specifies its behavior; documentation lives where it is used.                                   |
+| Interface-neutral   | GUIs are thin skins over shell scripts. Any interface simply passes commands through to spells.                              |
+| Menu specialization | Complex workflows are organized as dedicated menus that call one spell per menu item.                                        |
+| Menu transparency   | Menu items show clear, one-line commands using standard tools so users learn real shell syntax.                              |
+| Output-first UX     | Humans and spells consume the same text. Output is designed to be readable at the prompt and pipeable into other tools.      |
+| Self-healing tone   | When something goes wrong, spells offer to fix it instead of barking orders at the user. Errors are factual, not imperative. |
+
+## **Engineering Standards**
+
+These standards describe the technical requirements that all spells, menus, and supporting scripts must fulfill.
+
+| Standard                        | Description                                                                                               |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Single-shell stance             | All code runs as POSIX `sh` with `#!/bin/sh` and `set -eu`.                                               |
+| POSIX-safe idioms               | Use `$( )` instead of backticks; avoid `which`; prefer `command -v`.                                      |
+| Portable pathing                | Use `pwd -P` for resolution; avoid non-portable tools like `realpath`.                                    |
+| Platform detection              | Detect kernels with `uname -s`; make PATH setup explicit and portable.                                    |
+| Early descriptiveness           | Each executable opens with a 1–2 line comment describing its purpose.                                     |
+| Help-on-tap                     | `--help` / `-h` / `--usage` print concrete usage, not hand-waving.                                        |
+| Strict-yet-flat flows           | `set -eu`, few functions, linear flow so behavior stays readable and hackable.                            |
+| Script-like scripts             | Favor flat, shell-friendly logic over elaborate function trees. No hidden libraries.                      |
+| Function discipline             | Spells have `show_usage()` plus at most 1 additional helper freely; 2-3 helpers allowed only when invoked from multiple paths and unsuitable as imps; 4+ helpers indicate a proto-library needing decomposition. |
+| Front-facing spells             | Every spell is a user-facing executable; no private wrapper binaries that hide behavior.                  |
+| Spell-by-name invocation        | Spells call other spells by name, assuming wizardry is already on `PATH`.                                 |
+| Hyphenated, extensionless names | Executables omit `.sh` and use hyphens for multi-word commands.                                           |
+| Careful quoting                 | Quote variables unless word splitting is intentional; use `var=''` for empty vars.                        |
+| `printf` over `echo`            | Use `printf '%s\n'` for portability; do not depend on `echo` quirks.                                      |
+| Deliberate temp handling        | Create temp files with `mktemp` and clean them up deterministically.                                      |
+| Gentle error contract           | Spells try to repair missing prerequisites or offer a fix; they only exit non-zero when real work failed. |
+| Error prefixing                 | Error messages go to stderr and are prefixed with the spell name for attribution.                         |
+| Unified logging tone            | Logging and prompts follow a consistent style and interruption semantics.                                 |
+| Standardized flag parsing       | All spells converge on a single pattern for parsing flags and arguments.                                  |
+| Input normalization             | Shared helpers normalize user paths and other inputs.                                                     |
+| Linting & formatting            | Run `lint-magic` to check style compliance. Enforces POSIX compliance, proper naming, and formatting conventions. |
+| Standard exit codes             | Common helpers define exit codes and error shaping.                                                       |
+| Directory-resolution idiom      | One canonical pattern for locating sibling resources.                                                     |
+| Validation helpers              | A reusable suite provides common input checks.                                                            |
+| Naming scheme                   | A consistent naming scheme governs helper functions. Spells use `snake_case` for helper functions when needed (discouraged - prefer flat code). |
+
+
+## Development
+
+### Testing
+
+Run the complete shell test suite with:
+
+```
+test-magic
+```
+
+The spell discovers every `test-*.sh` file (note: hyphen, not underscore) in `.tests/` and executes each in a sandboxed bubblewrap environment.
+
+Principles of the testing suite:
+
+| Testing Rule          | Description |
+| --------------------- | ----------- |
+| Tests are the spec    | Each spell's behavior is fully specified by its `test-*.sh` counterpart (e.g., `test-spell-name.sh`). |
+| Tests are POSIX shell | Tests are simply POSIX-compliant shell scripts that exercise expected behaviors. |
+| Help-as-spec          | Each spell's `--help` usage note is its primary spec; each unit test is the operationalized spec. |
+| Mirrored tree         | `.tests/` mirrors `spells/` structurally: one test script per spell. |
+| Shared test harness   | Tests use imps for consistent logging and helpers. |
+| Unique behavior focus | Each test covers that spell’s unique behaviors and failure modes, avoiding redundant coverage. |
+| Full mode coverage    | Subtests cover all valid paths and error conditions. |
+| Explicit shims        | Stub imps in `spells/.imps/test/stub-*` provide reusable terminal I/O mocking. Tests link to them via symlinks. Single-use stubs may remain inline in tests. Test real wizardry—stub only the bare minimum (terminal I/O). |
+| Sandboxed execution   | The `test-magic` spell discovers and runs all tests in an isolated bubblewrap environment. |
+| Tests required | All tests are required to pass before new code may be merged. |
+
+## POSIX Compatibility Matrix
+
+Wizardry assumes a small, portable POSIX toolchain. These are the interfaces we depend on and the minimal POSIX expectations for each.
+
+| Interface | Expected POSIX baseline | Wizardry reliance |
+| --- | --- | --- |
+| `sh` | POSIX `sh` with standard builtins and `set -eu` | All spells |
+| `awk` | POSIX awk (`BEGIN`, field splitting, basic patterns) | Parsing system files, linting, and checks |
+| `sed` | POSIX sed (basic regular expressions) | Transformations and extraction |
+| `grep` | POSIX grep (basic regex and exit codes) | Filtering and matching |
+| `find` | POSIX find predicates (`-type`, `-name`) | Discovering spells, tests, and files |
+| `xargs` | POSIX xargs (basic argument batching) | Batch command execution |
+| `sort`, `cut`, `head`, `tail`, `tr`, `wc` | POSIX text utilities | Core text shaping |
+| `mktemp` | POSIX temp file/dir creation | `temp-file` and `temp-dir` imps |
+| `uname` | POSIX `uname -s` | Platform detection |
+
+### Portable build
+
+The portable build is automatically generated, and includes all spells that work as standalone scripts. These are currently **untested and not recommended.**
+
+**[Download latest nightly build](https://github.com/andersaamodt/wizardry/actions/workflows/compile.yml)** → Click the most recent successful run → Download artifact

@@ -1,0 +1,7 @@
+#!/bin/sh
+# lines [FILE] - count lines in file or stdin
+# Example: n=$(ls | lines) | lines /etc/passwd
+set -eu
+
+
+if [ "$#" -ge 1 ]; then wc -l < "$1" | tr -d ' '; else wc -l | tr -d ' '; fi

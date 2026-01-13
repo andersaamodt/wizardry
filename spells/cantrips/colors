@@ -1,0 +1,240 @@
+#!/bin/sh
+
+# This magical knowledge serves as a colorful palette of hues and shades,
+# granting control over the appearance of the terminal.
+# Use these variables to add color to your writing.
+# Example: printf '%sError:%s An error message.\n' "${RED}" "${RESET}"
+# This script contains all color codes in the POSIX standard.
+# You must source this script with '. ./colors' (or an absolute path) to use it.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: . colors
+
+Source this file to load color variables for terminal output.
+This spell must be sourced, not executed.
+
+Example:
+  . colors
+  printf '%sError:%s An error message.\n' "${RED}" "${RESET}"
+USAGE
+  exit 0
+  ;;
+esac
+
+# Uncastable pattern - ensures spell is sourced, not executed
+_colors_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) _colors_sourced=1 ;;
+  esac
+else
+  _colors_base=${0##*/}
+  case "$_colors_base" in
+    sh|dash|bash|zsh|ksh|mksh) _colors_sourced=1 ;;
+    colors) _colors_sourced=0 ;;
+    *) _colors_sourced=1 ;;
+  esac
+fi
+
+if [ "$_colors_sourced" -eq 0 ]; then
+  printf '%s\n' "This spell cannot be cast directly. Invoke it with: . colors" >&2
+  return 1 2>/dev/null || exit 1
+fi
+unset _colors_sourced _colors_base
+
+colors() {
+# Note: No require-wizardry check here - colors must work standalone
+set -eu
+
+# Check NO_COLOR first before setting up colors
+# This allows early exit when colors are explicitly disabled
+if [ -n "${NO_COLOR-}" ]; then
+        WIZARDRY_COLORS_AVAILABLE=0
+        # Export empty color variables for compatibility
+        RESET='' BLACK='' RED='' GREEN='' YELLOW='' BLUE='' PURPLE='' CYAN='' WHITE='' GREY=''
+        BOLD='' ITALICS='' UNDERLINED='' BLINK='' INVERT='' STRIKE=''
+        BRIGHT_BLACK='' BRIGHT_RED='' BRIGHT_GREEN='' BRIGHT_YELLOW=''
+        BRIGHT_BLUE='' BRIGHT_PURPLE='' BRIGHT_CYAN='' BRIGHT_WHITE=''
+        LIGHT_BLUE=''
+        BG_BLACK='' BG_RED='' BG_GREEN='' BG_YELLOW='' BG_BLUE='' BG_PURPLE=''
+        BG_CYAN='' BG_WHITE='' BG_BRIGHT_BLACK='' BG_BRIGHT_RED=''
+        BG_BRIGHT_GREEN='' BG_BRIGHT_YELLOW='' BG_BRIGHT_BLUE=''
+        BG_BRIGHT_PURPLE='' BG_BRIGHT_CYAN='' BG_BRIGHT_WHITE=''
+        THEME_HIGHLIGHT='' THEME_MUTED='' THEME_CUSTOM='' THEME_SUCCESS=''
+        THEME_WARNING='' THEME_ERROR='' THEME_HEADING='' THEME_DIVIDER=''
+        MUD_LOCATION='' MUD_TITLE='' MUD_DESCRIPTION=''
+        MUD_ITEM='' MUD_HANDLE='' MUD_SPELL='' MUD_MONSTER=''
+        return 0
+fi
+
+# Check TERM for dumb/unknown terminals
+case ${TERM-} in
+        ''|dumb|unknown)
+                WIZARDRY_COLORS_AVAILABLE=0
+                # Export empty color variables for compatibility
+                RESET='' BLACK='' RED='' GREEN='' YELLOW='' BLUE='' PURPLE=''
+                CYAN='' WHITE='' GREY=''
+                BOLD='' ITALICS='' UNDERLINED='' BLINK='' INVERT='' STRIKE=''
+                BRIGHT_BLACK='' BRIGHT_RED='' BRIGHT_GREEN='' BRIGHT_YELLOW=''
+                BRIGHT_BLUE='' BRIGHT_PURPLE='' BRIGHT_CYAN='' BRIGHT_WHITE=''
+                LIGHT_BLUE=''
+                BG_BLACK='' BG_RED='' BG_GREEN='' BG_YELLOW='' BG_BLUE='' BG_PURPLE=''
+                BG_CYAN='' BG_WHITE='' BG_BRIGHT_BLACK='' BG_BRIGHT_RED=''
+                BG_BRIGHT_GREEN='' BG_BRIGHT_YELLOW='' BG_BRIGHT_BLUE=''
+                BG_BRIGHT_PURPLE='' BG_BRIGHT_CYAN='' BG_BRIGHT_WHITE=''
+                THEME_HIGHLIGHT='' THEME_MUTED='' THEME_CUSTOM='' THEME_SUCCESS=''
+                THEME_WARNING='' THEME_ERROR='' THEME_HEADING='' THEME_DIVIDER=''
+                MUD_LOCATION='' MUD_TITLE='' MUD_DESCRIPTION=''
+                MUD_ITEM='' MUD_HANDLE='' MUD_SPELL='' MUD_MONSTER=''
+                return 0
+                ;;
+esac
+
+WIZARDRY_COLORS_AVAILABLE=1
+
+# Create the escape character in a POSIX-compliant way.
+# This stores the actual escape character (ASCII 27) in the variable,
+# so that printf '%s' "$COLOR" works correctly.
+ESC=$(printf '\033')
+
+# Reset all attributes to their default values.
+RESET="${ESC}[0m"
+
+# Colours.
+BLACK="${ESC}[30m"
+RED="${ESC}[31m"
+GREEN="${ESC}[32m"
+YELLOW="${ESC}[33m"
+BLUE="${ESC}[34m"
+PURPLE="${ESC}[35m"
+CYAN="${ESC}[36m"
+WHITE="${ESC}[37m" # Or is this default/white?
+GREY="${ESC}[2m"
+
+# Formatting.
+BOLD="${ESC}[1m"
+ITALICS="${ESC}[3m" #or 3?
+UNDERLINED="${ESC}[4m"
+BLINK="${ESC}[5m"
+INVERT="${ESC}[7m"
+STRIKE="${ESC}[9m" # Strikethrough
+
+# Bright colours.
+BRIGHT_BLACK="${ESC}[30;1m"
+BRIGHT_RED="${ESC}[31;1m"
+BRIGHT_GREEN="${ESC}[32;1m"
+BRIGHT_YELLOW="${ESC}[33;1m"
+BRIGHT_BLUE="${ESC}[34;1m"
+BRIGHT_PURPLE="${ESC}[35;1m"
+BRIGHT_CYAN="${ESC}[36;1m"
+BRIGHT_WHITE="${ESC}[37;1m"
+
+# Light colours (extended 16-color palette).
+LIGHT_BLUE="${ESC}[94m"
+
+# Background colours.
+BG_BLACK="${ESC}[40m"
+BG_RED="${ESC}[41m"
+BG_GREEN="${ESC}[42m"
+BG_YELLOW="${ESC}[43m"
+BG_BLUE="${ESC}[44m"
+BG_PURPLE="${ESC}[45m"
+BG_CYAN="${ESC}[46m"
+BG_WHITE="${ESC}[47m"
+
+# Bright background colours.
+BG_BRIGHT_BLACK="${ESC}[40;1m"
+BG_BRIGHT_RED="${ESC}[41;1m"
+BG_BRIGHT_GREEN="${ESC}[42;1m"
+BG_BRIGHT_YELLOW="${ESC}[103m"
+BG_BRIGHT_BLUE="${ESC}[104m"
+BG_BRIGHT_PURPLE="${ESC}[105m"
+BG_BRIGHT_CYAN="${ESC}[106m"
+BG_BRIGHT_WHITE="${ESC}[107m"
+
+# Semantic theme colours for consistent UI styling.
+# Use these throughout wizardry spells for a unified look.
+THEME_HIGHLIGHT="$CYAN"          # Menu highlight / selected item
+THEME_MUTED="$GREY"              # Secondary text / commands on right side of menu
+THEME_CUSTOM="$YELLOW"           # User-created spell names
+THEME_SUCCESS="$GREEN"           # Success indicators
+THEME_WARNING="$YELLOW"          # Warning indicators
+THEME_ERROR="$RED"               # Error indicators
+THEME_HEADING="${GREEN}${BOLD}"  # Priority/heading highlight
+THEME_DIVIDER="$GREY"            # Menu dividers
+
+# MUD-specific colours for fantasy game elements.
+MUD_LOCATION="${BLUE}${BOLD}"    # Location/room titles
+MUD_TITLE="${BLUE}${BOLD}"       # Room title attribute (blue and bold)
+MUD_DESCRIPTION="${WHITE}"       # Room/item descriptions
+MUD_ITEM="${YELLOW}"             # Items and objects
+MUD_HANDLE="${CYAN}"             # Player names/handles
+MUD_SPELL="${PURPLE}"            # Spell names
+MUD_MONSTER="${RED}"             # Monster/enemy names
+
+# Helper function to disable color palette (works in both compiled and uncompiled modes)
+try_disable_palette() {
+        # Check if disable_palette function exists (inlined by compiler)
+        if command -v disable_palette >/dev/null 2>&1; then
+                disable_palette
+        elif disable_palette_path=$(command -v disable-palette 2>/dev/null) \
+                && [ -n "$disable_palette_path" ]; then
+                # shellcheck source=/dev/null
+                . "$disable_palette_path"
+        else
+                # Inline disable_palette logic for when it's not available
+                for _dp_name in \
+                  RESET BLACK RED GREEN YELLOW BLUE PURPLE CYAN WHITE GREY \
+                  BOLD ITALICS UNDERLINED BLINK INVERT STRIKE \
+                  BRIGHT_BLACK BRIGHT_RED BRIGHT_GREEN BRIGHT_YELLOW \
+                  BRIGHT_BLUE BRIGHT_PURPLE BRIGHT_CYAN BRIGHT_WHITE \
+                  LIGHT_BLUE \
+                  BG_BLACK BG_RED BG_GREEN BG_YELLOW BG_BLUE BG_PURPLE \
+                  BG_CYAN BG_WHITE BG_BRIGHT_BLACK BG_BRIGHT_RED \
+                  BG_BRIGHT_GREEN BG_BRIGHT_YELLOW BG_BRIGHT_BLUE \
+                  BG_BRIGHT_PURPLE BG_BRIGHT_CYAN BG_BRIGHT_WHITE \
+                  THEME_HIGHLIGHT THEME_MUTED THEME_CUSTOM THEME_SUCCESS \
+                  THEME_WARNING THEME_ERROR THEME_HEADING THEME_DIVIDER \
+                  MUD_LOCATION MUD_TITLE MUD_DESCRIPTION MUD_ITEM MUD_HANDLE MUD_SPELL MUD_MONSTER
+                do
+                  eval "$_dp_name=''"
+                done
+                WIZARDRY_COLORS_AVAILABLE=0
+        fi
+}
+
+# Allow the user or terminal capabilities to disable colour output entirely.
+case ${NO_COLOR-} in
+        '' ) : ;;
+        * ) try_disable_palette ;;
+esac
+
+case ${TERM-} in
+        ''|dumb|unknown)
+                try_disable_palette
+                ;;
+        *)
+                has_tput=0
+                if [ "${WIZARDRY_TEST_HELPERS_ONLY-}" != "1" ]; then
+                  if command -v tput >/dev/null 2>&1; then
+                    has_tput=1
+                  fi
+                fi
+                if [ "$has_tput" -eq 1 ]; then
+                        colors=$(tput colors 2>/dev/null || printf '')
+                        case ${colors:-} in
+                                ''|0|-*)
+                                        # Disable palette for empty, zero, or negative values
+                                        # (tput returns -1 when colors are not supported)
+                                        try_disable_palette
+                                        ;;
+                        esac
+                fi
+                ;;
+esac
+}
+
+# Call colors function when sourced to initialize color variables
+colors "$@"

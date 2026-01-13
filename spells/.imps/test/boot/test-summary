@@ -1,0 +1,37 @@
+#!/bin/sh
+# test-summary PASSED TOTAL [SKIPPED] - output test summary line with status icon
+# FAILED is calculated from PASSED, TOTAL, and SKIPPED
+# Outputs checkmark (✓) for all passing, x (✗) for any failures
+# Example: test-summary 5 5     → "✓ 5/5 tests passed"
+# Example: test-summary 5 10    → "✗ 5/10 tests passed (5 failed)"
+# Example: test-summary 5 10 3  → "✓ 5/10 tests passed (2 failed, 3 skipped)"
+
+set -eu
+
+passed=$1
+total=$2
+skipped=${3-0}
+failed=$((total - passed - skipped))
+
+# Determine status icon - checkmark if all passed or skipped, x if any failed
+if [ "$failed" -gt 0 ]; then
+  icon='✗'
+else
+  icon='✓'
+fi
+
+printf '%s %s/%s tests passed' "$icon" "$passed" "$total"
+
+if [ "$failed" -gt 0 ]; then
+  printf ' (%s failed' "$failed"
+  if [ "$skipped" -gt 0 ]; then
+    printf ', %s skipped' "$skipped"
+  fi
+  printf ')\n'
+elif [ "$skipped" -gt 0 ]; then
+  printf ' (%s skipped)\n' "$skipped"
+else
+  printf '\n'
+fi
+
+

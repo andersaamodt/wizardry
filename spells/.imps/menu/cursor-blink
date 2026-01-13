@@ -1,0 +1,37 @@
+#!/bin/sh
+# cursor-blink on|off - toggle cursor blinking with ANSI escape codes
+# Quietly succeeds on terminals that cannot honor the request
+# Example: cursor-blink off
+
+set -eu
+
+# The helper expects exactly one argument that declares the desired state.
+if [ "$#" -ne 1 ]; then
+  printf '%s\n' "cursor-blink: expected 'on' or 'off'" >&2
+  exit 2
+fi
+
+# Inline supports_cursor_control - only used once
+case ${TERM-} in
+  ''|dumb|unknown)
+    # Quietly succeed so scripts keep running even when the terminal lacks ANSI
+    # support (for example, on "dumb" terminals).
+    exit 0
+    ;;
+esac
+
+case "$1" in
+  on)
+    # Inline cursor_blink_on - trivial one-liner
+    printf '\033[?25h'
+    ;;
+  off)
+    # Inline cursor_blink_off - trivial one-liner
+    printf '\033[?25l'
+    ;;
+  *)
+    # Treat anything else as misuse so callers notice mistakes quickly.
+    printf '%s\n' "cursor-blink: expected 'on' or 'off'" >&2
+    exit 2
+    ;;
+esac

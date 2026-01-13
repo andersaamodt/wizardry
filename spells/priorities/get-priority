@@ -1,0 +1,52 @@
+#!/bin/sh
+
+# This spell retrieves the echelon and priority values of a file from its extended attributes.
+# Use it to check the relative importance of files within a directory.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat << 'USAGE'
+Usage: get-priority <file>
+
+Read and print the echelon and priority extended attributes from a file. Outputs "echelon priority" if both are set, just the echelon if only echelon is set, or nothing if neither is set.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Ensure file argument is provided
+if [ -z "${1-}" ]; then
+  printf '%s\n' "get-priority: file path required" >&2
+  exit 2
+fi
+
+file=$1
+
+# Verify file exists
+if [ ! -f "$file" ]; then
+  printf '%s\n' "get-priority: file not found: $file" >&2
+  exit 1
+fi
+
+# Read echelon and priority
+echelon=$(read-magic "$file" echelon 2>/dev/null || true)
+priority=$(read-magic "$file" priority 2>/dev/null || true)
+
+# Handle error messages or empty values
+case "$echelon" in
+  *Error*|'') echelon="" ;;
+esac
+
+case "$priority" in
+  *Error*|'') priority="" ;;
+esac
+
+# Output based on what's set
+if [ -n "$echelon" ] && [ -n "$priority" ]; then
+  printf '%s %s\n' "$echelon" "$priority"
+elif [ -n "$echelon" ]; then
+  printf '%s\n' "$echelon"
+fi

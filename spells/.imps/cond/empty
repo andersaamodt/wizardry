@@ -1,0 +1,9 @@
+#!/bin/sh
+# empty VALUE - test if string is empty or unset
+# Example: empty "$VAR" && echo "no value provided"
+
+# Note: No set -eu because this is a conditional imp (returns exit codes for flow control)
+
+
+[ -z "$1" ]
+

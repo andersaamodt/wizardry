@@ -1,0 +1,61 @@
+#!/bin/sh
+# must TEST TARGET [MESSAGE] - return failure with message if test fails
+# Use with 'set -e' or '|| exit $?' to propagate failure
+# Examples: must there /etc/config "config missing" || exit $?
+set -eu
+
+
+must_type=$1
+shift
+
+case "$must_type" in
+  file)
+    if [ "$#" -ge 2 ]; then must_target=$1; must_msg=$2
+    else must_target=$1; must_msg="file not found: $must_target"; fi
+    [ -f "$must_target" ] || { printf '%s\n' "$must_msg" >&2; exit 1; }
+    ;;
+  dir)
+    if [ "$#" -ge 2 ]; then must_target=$1; must_msg=$2
+    else must_target=$1; must_msg="directory not found: $must_target"; fi
+    [ -d "$must_target" ] || { printf '%s\n' "$must_msg" >&2; exit 1; }
+    ;;
+  link)
+    if [ "$#" -ge 2 ]; then must_target=$1; must_msg=$2
+    else must_target=$1; must_msg="link not found: $must_target"; fi
+    [ -L "$must_target" ] || { printf '%s\n' "$must_msg" >&2; exit 1; }
+    ;;
+  exec)
+    if [ "$#" -ge 2 ]; then must_target=$1; must_msg=$2
+    else must_target=$1; must_msg="executable not found: $must_target"; fi
+    [ -x "$must_target" ] || { printf '%s\n' "$must_msg" >&2; exit 1; }
+    ;;
+  readable)
+    if [ "$#" -ge 2 ]; then must_target=$1; must_msg=$2
+    else must_target=$1; must_msg="not readable: $must_target"; fi
+    [ -r "$must_target" ] || { printf '%s\n' "$must_msg" >&2; exit 1; }
+    ;;
+  writable)
+    if [ "$#" -ge 2 ]; then must_target=$1; must_msg=$2
+    else must_target=$1; must_msg="not writable: $must_target"; fi
+    [ -w "$must_target" ] || { printf '%s\n' "$must_msg" >&2; exit 1; }
+    ;;
+  set)
+    if [ "$#" -ge 2 ]; then must_target=$1; must_msg=$2
+    else must_target=$1; must_msg="value not provided"; fi
+    [ -n "$must_target" ] || { printf '%s\n' "$must_msg" >&2; exit 1; }
+    ;;
+  there)
+    if [ "$#" -ge 2 ]; then must_target=$1; must_msg=$2
+    else must_target=$1; must_msg="path not found: $must_target"; fi
+    [ -e "$must_target" ] || { printf '%s\n' "$must_msg" >&2; exit 1; }
+    ;;
+  has)
+    if [ "$#" -ge 2 ]; then must_target=$1; must_msg=$2
+    else must_target=$1; must_msg="command not found: $must_target"; fi
+    command -v "$must_target" >/dev/null 2>&1 || { printf '%s\n' "$must_msg" >&2; exit 1; }
+    ;;
+  *)
+    printf '%s\n' "must: unknown test type '$must_type'" >&2
+  exit 1
+    ;;
+esac

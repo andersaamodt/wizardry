@@ -1,0 +1,8 @@
+#!/bin/sh
+# given VALUE - test if string is non-empty (provided)
+# DEPRECATED: Use 'nonempty' instead for clarity
+# Example: nonempty "$NAME" && echo "Hello, $NAME"
+
+
+[ -n "$1" ]
+

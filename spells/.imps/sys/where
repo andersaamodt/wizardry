@@ -1,0 +1,7 @@
+#!/bin/sh
+# where COMMAND - print path to command if it exists, fail otherwise
+# Example: git_path=$(where git)
+set -eu
+
+
+command -v "$1" 2>/dev/null || exit 1

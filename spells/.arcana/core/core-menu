@@ -1,0 +1,160 @@
+#!/bin/sh
+
+# Bootstrap spell: install and manage the core prerequisites for wizardry.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: core-menu
+
+Displays the core prerequisites management menu.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+root_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
+
+colors_bin=${COLORS_BIN-}
+if [ -z "$colors_bin" ]; then
+  colors_bin=$(command -v colors 2>/dev/null)
+fi
+if [ -z "$colors_bin" ] && [ -x "$root_dir/spells/cantrips/colors" ]; then
+  colors_bin="$root_dir/spells/cantrips/colors"
+fi
+if [ -z "$colors_bin" ]; then
+  echo "core-menu: missing dependency: colors" >&2
+  exit 1
+fi
+
+menu_bin=${MENU_BIN-}
+if [ -z "$menu_bin" ]; then
+  menu_bin=$(command -v menu 2>/dev/null)
+fi
+if [ -z "$menu_bin" ] && [ -x "$root_dir/spells/cantrips/menu" ]; then
+  menu_bin="$root_dir/spells/cantrips/menu"
+fi
+if [ -z "$menu_bin" ]; then
+  echo "core-menu: missing dependency: menu" >&2
+  exit 1
+fi
+
+exit_label_bin=${EXIT_LABEL_BIN-}
+if [ -z "$exit_label_bin" ]; then
+  exit_label_bin=$(command -v exit-label 2>/dev/null) || exit_label_bin=""
+fi
+if [ -z "$exit_label_bin" ] && [ -x "$root_dir/spells/.imps/menu/exit-label" ]; then
+  exit_label_bin="$root_dir/spells/.imps/menu/exit-label"
+fi
+
+# shellcheck source=/dev/null
+. "$script_dir/install-core"
+
+# shellcheck source=/dev/null
+. "$colors_bin"
+
+loop_limit=${MENU_LOOP_LIMIT:-}
+
+if [ -n "$loop_limit" ] && ! printf '%s' "$loop_limit" | grep -Eq '^[0-9]+$'; then
+  echo "invalid MENU_LOOP_LIMIT: must be numeric" >&2
+  exit 1
+fi
+
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 0' INT TERM
+
+title="${BOLD}${CYAN}Core prerequisites"
+if [ -n "$exit_label_bin" ]; then
+  exit_label=$($exit_label_bin)
+else
+  exit_label="Exit"
+fi
+
+# Signal parent process to exit menu loop
+# Exit button kills this menu script via TERM signal
+# Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
+exit_entry="${exit_label}%kill -TERM \$PPID"
+
+core_menu_resolve_spell() {
+  spell_name=$1
+
+  if command -v "$spell_name" >/dev/null 2>&1; then
+    printf '%s\n' "$spell_name"
+    return 0
+  fi
+
+  if [ -x "$script_dir/$spell_name" ]; then
+    printf '%s\n' "$script_dir/$spell_name"
+    return 0
+  fi
+
+  printf '%s\n' "core-menu: missing helper '$spell_name'" >&2
+  return 1
+}
+
+# Loop until user exits
+iterations=0
+while true; do
+  iterations=$((iterations + 1))
+  if [ -n "$loop_limit" ] && [ "$iterations" -gt "$loop_limit" ]; then
+    break
+  fi
+  
+  # Build menu entries from core dependencies
+  set -- "$title"
+  
+  # Read core dependency entries (label:command:install:uninstall:essential)
+  core_dependencies | while IFS=: read -r label command_name \
+    install_spell uninstall_spell essential; do
+    # Check if command is installed
+    status=""
+    if [ "$command_name" = "$CLIPBOARD_MARKER" ]; then
+      # Special handling for clipboard - check any clipboard helper
+      if command -v pbcopy >/dev/null 2>&1 || \
+         command -v xsel >/dev/null 2>&1 || \
+         command -v xclip >/dev/null 2>&1 || \
+         command -v wl-copy >/dev/null 2>&1; then
+        status="[X]"
+        cmd=$(core_menu_resolve_spell "$uninstall_spell") || continue
+      else
+        status="[ ]"
+        cmd=$(core_menu_resolve_spell "$install_spell") || continue
+      fi
+    elif command -v "$command_name" >/dev/null 2>&1; then
+      status="[X]"
+      if [ "$essential" = "1" ]; then
+        # Essential commands can't be uninstalled
+        cmd="printf 'Cannot uninstall essential command: %s\n' '$command_name' >&2"
+      else
+        cmd=$(core_menu_resolve_spell "$uninstall_spell") || continue
+      fi
+    else
+      status="[ ]"
+      cmd=$(core_menu_resolve_spell "$install_spell") || continue
+    fi
+    
+    printf '%s %s%%$WIZARDRY_LOG_LEVEL=0 %s && exec %s\n' "$status" "$label" "$cmd" "$0"
+  done | {
+    # Read menu entries from core_dependencies output
+    while IFS= read -r entry; do
+      set -- "$@" "$entry"
+    done
+    
+    # Add exit option
+    set -- "$@" "$exit_entry"
+    
+    # Call menu
+    "$menu_bin" "$@" || menu_status=$?
+    menu_status=${menu_status:-0}
+    
+    # ESC kills this menu script via TERM signal (same as Exit button)
+    # Direct kill: kill -TERM $$ → kills this script
+    if [ "$menu_status" -eq 130 ]; then
+      printf 'ESC\n' >&2
+      kill -TERM $$ 2>/dev/null || true
+      exit 0
+    fi
+  }
+done

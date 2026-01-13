@@ -1,0 +1,96 @@
+#!/bin/sh
+
+# This spell determines the next appropriate echelon and priority for a file.
+# Use it to find what echelon and priority values to assign when adding a file to a priority list.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat << 'USAGE'
+Usage: get-new-priority <file>
+
+Compute the next echelon and priority values for a file within its directory. Outputs "echelon priority" where echelon is the highest existing echelon, and priority is one higher than the highest priority in that echelon (for adding to the end of the highest echelon).
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Ensure file argument is provided
+if [ -z "${1-}" ]; then
+  printf '%s\n' "get-new-priority: file path required" >&2
+  exit 2
+fi
+
+file=$1
+
+# Verify file exists
+if [ ! -f "$file" ]; then
+  printf '%s\n' "get-new-priority: file not found: $file" >&2
+  exit 1
+fi
+
+# Get the directory containing the file
+dir=$(dirname "$file")
+if [ "$dir" = "." ]; then
+  dir=$(pwd -P)
+fi
+
+# Find the highest echelon and the highest priority within that echelon in a single loop
+highest_echelon=0
+highest_priority_in_echelon=0
+
+# Loop through all files in the directory
+for f in "$dir"/*; do
+  # Skip if not a file
+  [ -f "$f" ] || continue
+
+  # Read both echelon and priority in one batch call
+  attrs=$(xattr-read-batch "$f" echelon priority 2>/dev/null || true)
+  
+  file_echelon=""
+  file_priority=""
+  
+  for pair in $attrs; do
+    case "$pair" in
+      echelon=*) file_echelon="${pair#echelon=}" ;;
+      priority=*) file_priority="${pair#priority=}" ;;
+    esac
+  done
+
+  # Skip if no echelon or error
+  case "$file_echelon" in
+    ''|*Error*|*[!0-9]*) continue ;;
+  esac
+
+  # Update highest echelon if this one is higher
+  if [ "$file_echelon" -gt "$highest_echelon" ]; then
+    highest_echelon=$file_echelon
+    # Reset highest priority when we find a new highest echelon
+    highest_priority_in_echelon=0
+  fi
+
+  # If this file is in the highest echelon, check its priority
+  if [ "$file_echelon" -eq "$highest_echelon" ]; then
+    # Skip if no priority or error
+    case "$file_priority" in
+      ''|*Error*|*[!0-9]*) continue ;;
+    esac
+    
+    # Update highest priority in echelon
+    if [ "$file_priority" -gt "$highest_priority_in_echelon" ]; then
+      highest_priority_in_echelon=$file_priority
+    fi
+  fi
+done
+
+# If no priorities exist yet, return echelon 1, priority 1
+if [ "$highest_echelon" -eq 0 ]; then
+  printf '%s %s\n' "1" "1"
+  exit 0
+fi
+
+# Return the highest echelon and next priority (one higher than the highest in that echelon)
+new_priority=$((highest_priority_in_echelon + 1))
+printf '%s %s\n' "$highest_echelon" "$new_priority"

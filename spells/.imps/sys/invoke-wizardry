@@ -1,0 +1,266 @@
+#!/bin/sh
+# invoke-wizardry - set up wizardry environment at shell startup
+# Simple PATH-based invocation (no word-of-binding preloading)
+# Source this script to enable wizardry spells and imps from PATH.
+
+# This script must be sourced, not executed
+# Uncastable pattern - ensures spell is sourced, not executed
+_iw_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) _iw_sourced=1 ;;
+  esac
+else
+  _iw_base=${0##*/}
+  case "$_iw_base" in
+    sh|dash|bash|zsh|ksh|mksh) _iw_sourced=1 ;;
+    invoke-wizardry) _iw_sourced=0 ;;
+    *) _iw_sourced=1 ;;
+  esac
+fi
+
+if [ "$_iw_sourced" -eq 0 ]; then
+  printf '%s\n' "This spell cannot be cast directly. Invoke it with: . invoke-wizardry" >&2
+  return 1 2>/dev/null || exit 1
+fi
+unset _iw_sourced _iw_base
+
+# Ensure baseline PATH before anything else (macOS may have empty PATH)
+baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+case ":${PATH-}:" in
+  *":/usr/bin:"*|*":/bin:"*) ;;
+  *)
+    PATH="${baseline_path}${PATH:+:}${PATH-}"
+    export PATH
+    ;;
+esac
+
+# Permissive mode - this file is sourced into user's shell
+set +eu
+
+# Prevent recursive sourcing
+if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
+  [ "${WIZARDRY_DEBUG-}" = "1" ] && \
+    printf '[invoke-wizardry] %s\n' "Already invoked, skipping" >&2
+  return 0
+fi
+_WIZARDRY_INVOKED=1
+export _WIZARDRY_INVOKED
+# Note: Exported so subprocesses (like test files) know wizardry is available
+
+[ "${WIZARDRY_DEBUG-}" = "1" ] && \
+  printf '[invoke-wizardry] %s\n' "Starting wizardry initialization" >&2
+
+# Detect WIZARDRY_DIR
+if [ -z "${WIZARDRY_DIR-}" ]; then
+  # Capture script path - in bash use BASH_SOURCE, in zsh use ${(%):-%x}
+  _iw_script_path=""
+  if eval '[ -n "${BASH_VERSION-}" ]' 2>/dev/null; then
+    _iw_script_path=$(eval 'printf "%s" "${BASH_SOURCE[0]-}"')
+  elif [ -n "${ZSH_VERSION-}" ]; then
+    # In zsh, use %x expansion to get sourced file path
+    _iw_script_path=$(eval 'printf "%s" "${(%):-%x}"' 2>/dev/null) || :
+    # Fallback to %N if %x didn't work
+    if [ -z "$_iw_script_path" ]; then
+      _iw_script_path=$(eval 'printf "%s" "${(%):-%N}"' 2>/dev/null) || :
+    fi
+  fi
+  
+  # Fallback to command -v
+  if [ -z "$_iw_script_path" ]; then
+    _iw_script_path=$(command -v invoke-wizardry 2>/dev/null | head -1) || :
+  fi
+  
+  # Fallback to default location
+  if [ -z "$_iw_script_path" ] && [ -n "${HOME-}" ]; then
+    _iw_script_path="$HOME/.wizardry/spells/.imps/sys/invoke-wizardry"
+  fi
+  
+  # Derive WIZARDRY_DIR from script path
+  if [ -n "$_iw_script_path" ] && [ -f "$_iw_script_path" ]; then
+    _iw_script_dir=$(CDPATH= cd -- "$(dirname "$_iw_script_path")" 2>/dev/null && pwd -P) || :
+    if [ -n "$_iw_script_dir" ]; then
+      WIZARDRY_DIR=$(CDPATH= cd -- "$_iw_script_dir/../../.." 2>/dev/null && pwd -P) || :
+    fi
+  fi
+  
+  # Final fallback: if in a directory with spells subdirectory, use PWD
+  if [ -z "${WIZARDRY_DIR-}" ] && [ -d "spells" ] && [ -d "spells/.imps" ]; then
+    WIZARDRY_DIR=$(pwd -P)
+  fi
+fi
+
+# Validate WIZARDRY_DIR
+if [ -z "${WIZARDRY_DIR-}" ] || [ ! -d "${WIZARDRY_DIR-}/spells" ]; then
+  printf '%s\n' "invoke-wizardry: ERROR - WIZARDRY_DIR not found" >&2
+  return 1
+fi
+
+[ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "WIZARDRY_DIR=$WIZARDRY_DIR" >&2
+export WIZARDRY_DIR
+
+# Set up SPELLBOOK_DIR
+: "${SPELLBOOK_DIR:=${HOME-}/.spellbook}"
+export SPELLBOOK_DIR
+
+# ============================================================================
+# PATH-BASED EXECUTION (Simple Paradigm)
+# ============================================================================
+# All spells and imps are added to PATH via learn-spellbook.
+# No preloading, no glosses, no word-of-binding - just simple PATH execution.
+# ============================================================================
+
+[ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Adding wizardry directories to PATH..." >&2
+
+# Add SPELLBOOK_DIR to PATH first (highest priority for user commands)
+if [ -d "$SPELLBOOK_DIR" ]; then
+  PATH="$SPELLBOOK_DIR:$PATH"
+  
+  # Also add SPELLBOOK_DIR subdirectories (custom categories) recursively
+  for subdir in "$SPELLBOOK_DIR"/*; do
+    [ -d "$subdir" ] || continue
+    # Skip hidden directories (check basename, not full path)
+    _subdir_name=${subdir##*/}
+    case "$_subdir_name" in
+      .*) continue ;;
+    esac
+    PATH="$subdir:$PATH"
+    
+    # Also add subdirectories of subdirectories (match wizardry structure)
+    for subsubdir in "$subdir"/*; do
+      [ -d "$subsubdir" ] || continue
+      PATH="$subsubdir:$PATH"
+    done
+  done
+fi
+
+# Add all spell directories to PATH (including subdirectories)
+for category_dir in "$WIZARDRY_DIR/spells"/* "$WIZARDRY_DIR/spells"/.*; do
+  [ -d "$category_dir" ] || continue
+  # Skip . and ..
+  case "$category_dir" in
+    */.|*/..) continue ;;
+  esac
+  PATH="$category_dir:$PATH"
+  
+  # Also add subdirectories to PATH
+  for subdir in "$category_dir"/*; do
+    [ -d "$subdir" ] || continue
+    PATH="$subdir:$PATH"
+  done
+done
+
+export PATH
+
+# Optional: Generate first-word glosses for space-separated invocation
+# This still allows "env or VAR DEFAULT" instead of just "env-or VAR DEFAULT"
+# Skip in test mode (tests don't need glosses)
+if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
+  if command -v generate-glosses >/dev/null 2>&1; then
+    [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Loading first-word glosses..." >&2
+    
+    # PERFORMANCE OPTIMIZATION: Cache glosses to avoid regenerating on every shell startup
+    # Glosses are ~640KB and take 0.07s to generate + 0.13s to eval
+    # Caching reduces this to ~0.03s (sourcing from file)
+    _iw_gloss_cache_dir="${TMPDIR:-/tmp}"
+    
+    # Use a persistent cache based on WIZARDRY_DIR to share across all shells
+    # Include user ID to avoid permission issues in multi-user systems
+    _iw_gloss_persistent="${_iw_gloss_cache_dir}/.wizardry-glosses-$(printf '%s' "$WIZARDRY_DIR" | cksum | cut -d' ' -f1)-$(id -u).sh"
+    
+    # CACHE INVALIDATION: Regenerate if any of these changed:
+    # 1. Any spell file in spells/
+    # 2. Synonym files in .spellbook/
+    # 3. The generate-glosses script itself
+    _iw_needs_regen=1
+    if [ -f "$_iw_gloss_persistent" ]; then
+      _iw_needs_regen=0
+      
+      # Check 1: generate-glosses script
+      if command -v generate-glosses >/dev/null 2>&1; then
+        _iw_gen_glosses_path=$(command -v generate-glosses)
+        if [ -f "$_iw_gen_glosses_path" ] && [ "$_iw_gen_glosses_path" -nt "$_iw_gloss_persistent" ]; then
+          _iw_needs_regen=1
+        fi
+      fi
+      
+      # Check 2: Any spell file newer than cache (find newest spell)
+      if [ "$_iw_needs_regen" -eq 0 ] && [ -d "$WIZARDRY_DIR/spells" ]; then
+        # Use find to check if any file in spells/ is newer than cache
+        # Don't filter by -executable since touching a file removes the bit temporarily
+        _iw_newest_spell=$(find "$WIZARDRY_DIR/spells" -type f -newer \
+          "$_iw_gloss_persistent" -print -quit 2>/dev/null || true)
+        if [ -n "$_iw_newest_spell" ]; then
+          _iw_needs_regen=1
+        fi
+      fi
+      
+      # Check 3: Synonym files in .spellbook/
+      if [ "$_iw_needs_regen" -eq 0 ]; then
+        _iw_spellbook="${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}"
+        for _iw_syn_file in "$_iw_spellbook/.synonyms" "$_iw_spellbook/.default-synonyms"; do
+          if [ -f "$_iw_syn_file" ] && [ "$_iw_syn_file" -nt "$_iw_gloss_persistent" ]; then
+            _iw_needs_regen=1
+            break
+          fi
+        done
+      fi
+    fi
+    
+    # Regenerate cache if needed
+    if [ "$_iw_needs_regen" -eq 1 ]; then
+      [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Regenerating gloss cache..." >&2
+      if generate-glosses --quiet > "$_iw_gloss_persistent.tmp" 2>&1; then
+        mv "$_iw_gloss_persistent.tmp" "$_iw_gloss_persistent"
+      else
+        # If generation fails, clean up and fall back to direct eval
+        rm -f "$_iw_gloss_persistent.tmp"
+        _iw_gloss_persistent=""
+      fi
+    fi
+    
+    # Source cached glosses if available
+    if [ -f "$_iw_gloss_persistent" ]; then
+      . "$_iw_gloss_persistent"
+      [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Gloss functions loaded from cache" >&2
+    else
+      # Fallback to direct generation if cache unavailable
+      if _iw_gloss_output=$(generate-glosses --quiet 2>&1); then
+        if [ -n "$_iw_gloss_output" ]; then
+          eval "$_iw_gloss_output"
+          [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Gloss functions loaded (uncached)" >&2
+        fi
+      fi
+    fi
+    
+    unset _iw_gloss_cache_dir _iw_gloss_persistent _iw_needs_regen
+    unset _iw_gen_glosses_path _iw_gloss_output _iw_newest_spell
+    unset _iw_spellbook _iw_syn_file
+  fi
+fi
+
+# Load MUD cd hook if enabled in config
+if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
+  _iw_mud_config="${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}/.mud"
+  if [ -f "$_iw_mud_config" ] && grep -q "^cd-hook=1$" "$_iw_mud_config" 2>/dev/null; then
+    _iw_cd_hook="$WIZARDRY_DIR/spells/.arcana/mud/cd"
+    if [ -f "$_iw_cd_hook" ]; then
+      [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Loading cd hook" >&2
+      . "$_iw_cd_hook"
+    fi
+  fi
+  unset _iw_mud_config _iw_cd_hook
+fi
+
+# Verify that menu command is available (skip in test mode)
+if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
+  if ! command -v menu >/dev/null 2>&1; then
+    printf '%s\n' "invoke-wizardry: ERROR - menu spell not found in PATH" >&2
+    return 1
+  fi
+fi
+
+# Wizardry initialization complete
+[ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Wizardry initialization complete" >&2
+set +eu
+return 0

@@ -1,0 +1,24 @@
+#!/bin/sh
+# or CMD CMD_ARGS MORE... - execute prior command, continue if it failed (||)
+# Receives: $1=command, $2=command_args, $3+=remaining args
+# Example: parse false or echo fallback
+
+
+or_cmd=${1:-}
+or_cmd_args=${2:-}
+shift 2 2>/dev/null || shift $#
+
+if [ -n "$or_cmd" ]; then
+  # shellcheck disable=SC2086
+  if "$or_cmd" $or_cmd_args; then
+    exit 0
+  fi
+fi
+
+if [ $# -eq 0 ]; then
+  exit 1
+fi
+
+or_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+"$or_lex_dir/parse" "$@"
+

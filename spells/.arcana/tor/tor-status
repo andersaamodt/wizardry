@@ -1,0 +1,47 @@
+#!/bin/sh
+
+# This spell checks and displays the running status of Tor.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: tor-status
+
+Reports whether Tor is installed, running, and bootstrapped by inspecting systemd status and recent logs.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if command -v colors >/dev/null 2>&1; then
+  # shellcheck source=/dev/null
+  . colors
+else
+  RESET=""
+  THEME_SUCCESS=""
+  THEME_WARNING=""
+  THEME_ERROR=""
+  GREY=""
+fi
+# Older scripts expect GRAY, so mirror GREY when missing.
+GRAY=${GREY-}
+
+# Main execution - check Tor installation and running status
+if ! command -v tor >/dev/null 2>&1; then
+  status="not installed"
+  color="$GRAY"
+elif command -v is-service-running >/dev/null 2>&1 && is-service-running tor >/dev/null 2>&1; then
+  status="installed, running, bootstrapped"
+  color="$THEME_SUCCESS"
+else
+  status="installed, not running"
+  color="$THEME_WARNING"
+fi
+
+# Print colored status
+printf "%s%s%s\n" "$color" "$status" "$RESET"

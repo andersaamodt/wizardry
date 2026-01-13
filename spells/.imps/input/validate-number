@@ -1,0 +1,20 @@
+#!/bin/sh
+# validate-number STRING - check if STRING is a non-negative integer
+# Returns 0 when the value is digits only, 1 otherwise
+# Example: validate-number "123" && echo "valid"
+
+set -eu
+
+# Check argument
+if [ -z "${1+x}" ]; then
+        exit 1
+fi
+
+case $1 in
+        ''|*[!0-9]*)
+                exit 1
+                ;;
+        *)
+                exit 0
+                ;;
+esac

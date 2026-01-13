@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# Weave CRC-32 checksums into extended attributes.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat << 'USAGE'
+Usage: hashchant <file>
+
+Compute a CRC-32 hash from the filename and contents, write it to the file's user.hash extended attribute when supported, and print the applied value.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+if [ -z "${1-}" ]; then
+  printf '%s\n' "hashchant: file path required" >&2
+  exit 2
+fi
+
+file=$1
+
+if [ ! -e "$file" ]; then
+  printf '%s\n' "hashchant: file not found" >&2
+  exit 1
+fi
+
+filename=$(basename "$file")
+hash=$( (echo "$filename" && cat "$file") | cksum | awk '{ print $1 }')
+hash=$(printf '0x%X' "$hash")
+
+# Use xattr-write-value imp to write the hash attribute
+# This delegates to the appropriate xattr helper (attr, xattr, or setfattr)
+if xattr-write-value "user.hash" "$hash" "$file"; then
+  printf '%s\n' "File enchanted with hash: $hash"
+  exit 0
+else
+  # Xattr commands not available - still print hash for read-magic fallback
+  printf '%s\n' "Warning: Could not write hash to xattr (commands not available)" >&2
+  printf '%s\n' "$hash"
+  exit 0
+fi

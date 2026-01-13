@@ -1,0 +1,66 @@
+#!/bin/sh
+
+# Transcribe text files to the clipboard. Prompts when invoked without a path.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat << 'USAGE'
+Usage: copy <file>
+
+Copy the contents of a text file to the system clipboard using pbcopy, xsel, or xclip. Prompts for a path when none is given and prints a confirmation when successful.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+if [ "$#" -eq 0 ]; then
+    if command -v ask-text >/dev/null 2>&1; then
+        file_path=$(ask-text "Enter file path to copy to clipboard:")
+        if [ -z "$file_path" ]; then
+            printf '%s\n' 'No file path provided.'
+            exit 1
+        fi
+        set -- "$file_path"
+    else
+        printf '%s\n' 'Usage: copy <file>' >&2
+        exit 1
+    fi
+fi
+
+# Check if file exists and is a regular file
+if [ ! -f "$1" ]; then
+  if [ -e "$1" ]; then
+    printf '%s\n' 'That path is not a file.'
+  else
+    printf '%s\n' 'That file does not exist.'
+  fi
+  exit 1
+fi
+
+# Copy file contents to clipboard using the clip-copy imp
+# Suppress clip-copy's error to avoid duplicate messages
+if ! clip-copy < "$1" 2>/dev/null; then
+    # Attempt to install a clipboard utility using the unified installer
+    if command -v install-clipboard-helper >/dev/null 2>&1; then
+        if install-clipboard-helper >/dev/null 2>&1 && clip-copy < "$1" 2>/dev/null; then
+            : # Installation succeeded and copy worked
+        else
+            printf '%s\n' 'Your spell fizzles. No clipboard utility available (xsel, xclip, wl-copy, or pbcopy).' >&2
+            exit 1
+        fi
+    else
+        printf '%s\n' 'Your spell fizzles. No clipboard utility available (xsel, xclip, wl-copy, or pbcopy).' >&2
+        exit 1
+    fi
+fi
+
+# Normalize path for display
+if command -v norm-path >/dev/null 2>&1; then
+  display_path=$(norm-path "$1")
+else
+  display_path=$1
+fi
+printf '%s\n' "Copied $display_path to your clipboard."

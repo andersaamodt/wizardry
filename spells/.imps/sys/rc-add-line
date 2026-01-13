@@ -1,0 +1,37 @@
+#!/bin/sh
+# rc-add-line MARKER RC_FILE LINE - add line to rc file with inline marker
+# Example: rc-add-line cd-hook ~/.zshrc '. "/path/to/cd"'
+# Adds: . "/path/to/cd" # wizardry: cd-hook
+set -eu
+
+
+ral_marker=${1:-}
+ral_rc_file=${2:-}
+ral_line=${3:-}
+
+if [ -z "$ral_marker" ] || [ -z "$ral_rc_file" ] || [ -z "$ral_line" ]; then
+  printf '%s\n' "rc-add-line: MARKER, RC_FILE, and LINE are required" >&2
+  exit 1
+fi
+
+ral_full_marker="# wizardry: $ral_marker"
+
+# Check if marker already exists
+if [ -f "$ral_rc_file" ] && grep -qF "$ral_full_marker" "$ral_rc_file" 2>/dev/null; then
+  # Marker exists, nothing to do
+  exit 0
+fi
+
+# Create rc file if it doesn't exist
+if [ ! -f "$ral_rc_file" ]; then
+  ral_dir=${ral_rc_file%/*}
+  [ "$ral_dir" != "$ral_rc_file" ] && [ ! -d "$ral_dir" ] && mkdir -p "$ral_dir"
+  touch "$ral_rc_file" || {
+    printf '%s\n' "rc-add-line: could not create $ral_rc_file" >&2
+    exit 1
+  }
+fi
+
+# Add line with inline marker
+printf '%s %s\n' "$ral_line" "$ral_full_marker" >> "$ral_rc_file"
+exit 0

@@ -1,0 +1,47 @@
+#!/bin/sh
+
+# Bootstrap spell: uninstalls the currently installed clipboard helper.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-clipboard-helper
+
+This spell uninstalls the currently installed clipboard helper.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+# Detect which clipboard helper is installed (other than pbcopy which is built-in)
+if command -v xsel >/dev/null 2>&1; then
+  installed_helper='xsel'
+elif command -v xclip >/dev/null 2>&1; then
+  installed_helper='xclip'
+elif command -v wl-copy >/dev/null 2>&1; then
+  installed_helper='wl-copy'
+else
+  installed_helper=''
+fi
+
+# If no helper is installed, nothing to uninstall
+if [ -z "$installed_helper" ]; then
+  printf '%s\n' "No clipboard helper to uninstall"
+  exit 0
+fi
+
+# Uninstall the detected helper
+printf '%s\n' "Uninstalling clipboard helper: $installed_helper"
+case "$installed_helper" in
+  xsel|xclip)
+    "$script_dir/manage-system-command" uninstall "$installed_helper"
+    ;;
+  wl-copy)
+    "$script_dir/manage-system-command" uninstall wl-clipboard
+    ;;
+esac

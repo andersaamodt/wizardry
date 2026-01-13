@@ -1,0 +1,7 @@
+#!/bin/sh
+# trim - remove leading/trailing whitespace from stdin
+# Example: echo "  hello  " | trim
+set -eu
+
+
+sed 's/^[[:space:]]*//;s/[[:space:]]*$//'

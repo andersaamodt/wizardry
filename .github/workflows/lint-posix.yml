@@ -1,0 +1,33 @@
+name: POSIX, linting, and style checks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Cancel previous runs when new commits are pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  lint:
+    name: POSIX, linting, and style checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install checkbashisms dependency
+        run: ./spells/.arcana/core/install-checkbashisms
+      - name: Run lint-magic (includes POSIX and style checks)
+        run: |
+          echo "Running POSIX compliance, style, and linting checks..."
+          ./spells/spellcraft/lint-magic --verbose

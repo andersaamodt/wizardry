@@ -1,0 +1,337 @@
+#!/bin/sh
+
+# Verify that wizardry spells use POSIX-compliant shell practices.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE' >&2
+Usage: verify-posix [script ...]
+
+Checks the provided spells—or every executable spell by default—for POSIX sh shebangs and common bashism pitfalls using checkbashisms. GNU-isms are treated as failures with no exceptions.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+repo_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
+
+# Add imps to PATH so we can use temp-file and cleanup-file directly
+if [ -d "$repo_dir/spells/.imps" ]; then
+  PATH="$repo_dir/spells/.imps:$PATH"
+  for impdir in "$repo_dir"/spells/.imps/*; do
+    [ -d "$impdir" ] || continue
+    PATH="$impdir:$PATH"
+  done
+  export PATH
+fi
+
+checkbashisms_cmd=${CHECKBASHISMS-}
+if [ -z "$checkbashisms_cmd" ] && has checkbashisms; then
+  checkbashisms_cmd=$(command -v checkbashisms)
+fi
+
+if [ -z "$checkbashisms_cmd" ]; then
+  die "verify-posix: checkbashisms is required but not found in PATH."
+fi
+
+failures=0
+total=0
+failed_targets=""
+failed_details=""
+detail_log=$(temp-file verify-posix-details) || exit 1
+
+check_gnuisms() {
+  path=$1
+  patterns_file=$(temp-file verify-posix-gnuisms) || return 1
+  cat >"$patterns_file" <<'PATTERNS'
+\bgrep[[:space:]].*-P\b|grep -P (PCRE, non-POSIX)
+\bgrep[[:space:]].*-o\b|grep -o (non-POSIX)
+\bsed[[:space:]].*-r\b|sed -r (GNU extension)
+\bsed[[:space:]].*-E\b|sed -E (non-POSIX)
+\bxargs[[:space:]].*-r\b|xargs -r (GNU extension)
+\breadlink[[:space:]].*-f\b|readlink -f (non-POSIX)
+\bstat[[:space:]].*-c\b|stat -c (GNU extension)
+\bdate[[:space:]].*-d\b|date -d (GNU extension)
+\brealpath\b|realpath (non-POSIX)
+\bmktemp[[:space:]].*-p\b|mktemp -p (non-POSIX)
+PATTERNS
+
+  awk -v patterns_file="$patterns_file" '
+    BEGIN {
+      in_heredoc = 0
+      heredoc_end = ""
+      count = 0
+      while ((getline line < patterns_file) > 0) {
+        if (line ~ /^[[:space:]]*$/) continue
+        split(line, parts, "|")
+        count++
+        pattern[count] = parts[1]
+        message[count] = parts[2]
+      }
+      close(patterns_file)
+    }
+    /<<-?[ \t]*'\''[A-Za-z_][A-Za-z0-9_]*'\''/ {
+      match($0, /<<-?[ \t]*'\''([A-Za-z_][A-Za-z0-9_]*)'\''/)
+      delim = $0
+      sub(/.*<<-?[ \t]*'\''/, "", delim)
+      sub(/'\''.*/, "", delim)
+      in_heredoc = 1
+      heredoc_end = delim
+      next
+    }
+    /<<-?[ \t]*"[A-Za-z_][A-Za-z0-9_]*"/ {
+      match($0, /<<-?[ \t]*"([A-Za-z_][A-Za-z0-9_]*)"/)
+      delim = $0
+      sub(/.*<<-?[ \t]*"/, "", delim)
+      sub(/".*/, "", delim)
+      in_heredoc = 1
+      heredoc_end = delim
+      next
+    }
+    /<<-?[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {
+      delim = $0
+      sub(/.*<<-?[ \t]*/, "", delim)
+      sub(/[ \t]*$/, "", delim)
+      in_heredoc = 1
+      heredoc_end = delim
+      next
+    }
+    in_heredoc && $0 == heredoc_end { in_heredoc = 0; next }
+    in_heredoc { next }
+    /^[ \t]*#/ { next }
+    {
+      for (i = 1; i <= count; i++) {
+        if ($0 ~ pattern[i]) {
+          found = 1
+          printf "  non-POSIX: %s (line %d)\n", message[i], NR
+        }
+      }
+    }
+    END { exit found }
+  ' "$path"
+  status=$?
+  cleanup-file "$patterns_file"
+  return "$status"
+}
+
+targets_file=$(temp-file verify-posix-targets) || return 1
+trap 'cleanup-file "$targets_file"; cleanup-file "$detail_log"' EXIT HUP INT TERM
+
+# Inline verify_posix_collect_targets and verify_posix_gather_default_targets
+if [ "$#" -gt 0 ]; then
+  # Use provided targets
+  printf '%s\n' "$@" >"$targets_file"
+else
+  # Gather default targets (all executable sh scripts)
+  find "$repo_dir/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) \
+    -print | sort | while IFS= read -r file; do
+      first_line=$(sed -n '1p' "$file")
+      case $first_line in
+        '#!/bin/sh'|'#! /bin/sh'|'#!/usr/bin/env sh'|'#! /usr/bin/env sh')
+          printf '%s\n' "${file#"$repo_dir/"}"
+          ;;
+      esac
+    done >"$targets_file"
+fi
+
+while IFS= read -r target; do
+  [ -n "$target" ] || continue
+  total=$((total + 1))
+
+  case $target in
+    /*)
+      path="$target"
+      ;;
+    *)
+      path="$repo_dir/$target"
+      ;;
+  esac
+
+  if [ ! -e "$path" ]; then
+    printf 'FAIL %s: missing file\n' "$target"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    if [ -n "$failed_details" ]; then
+      failed_details="$failed_details, $target (missing file)"
+    else
+      failed_details="$target (missing file)"
+    fi
+    continue
+  fi
+
+  if [ ! -f "$path" ]; then
+    printf 'FAIL %s: not a regular file\n' "$target"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    if [ -n "$failed_details" ]; then
+      failed_details="$failed_details, $target (not a regular file)"
+    else
+      failed_details="$target (not a regular file)"
+    fi
+    continue
+  fi
+
+  shebang=$(sed -n '1p' "$path")
+
+  case $shebang in
+    '')
+      printf 'FAIL %s: lacks a shebang; expected #!/bin/sh\n' "$target"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    if [ -n "$failed_details" ]; then
+      failed_details="$failed_details, $target (no shebang)"
+    else
+      failed_details="$target (no shebang)"
+    fi
+      continue
+      ;;
+    '#!')
+      printf 'FAIL %s: has an empty shebang; expected #!/bin/sh\n' "$target"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    if [ -n "$failed_details" ]; then
+      failed_details="$failed_details, $target (empty shebang)"
+    else
+      failed_details="$target (empty shebang)"
+    fi
+      continue
+      ;;
+    '#!'*)
+      interpreter=${shebang#\#!}
+      while [ "${interpreter# }" != "$interpreter" ]; do
+        interpreter=${interpreter# }
+      done
+      ;;
+    *)
+      printf 'FAIL %s: lacks a shebang; expected #!/bin/sh\n' "$target"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    if [ -n "$failed_details" ]; then
+      failed_details="$failed_details, $target (no shebang)"
+    else
+      failed_details="$target (no shebang)"
+    fi
+      continue
+      ;;
+  esac
+
+  case $interpreter in
+    '/bin/sh'|'/usr/bin/env sh')
+      :
+      ;;
+    '/usr/bin/env bash'*|'/bin/bash'*)
+      printf 'FAIL %s: uses %s (should use /bin/sh)\n' "$target" "$shebang"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    if [ -n "$failed_details" ]; then
+      failed_details="$failed_details, $target (bash shebang)"
+    else
+      failed_details="$target (bash shebang)"
+    fi
+      continue
+      ;;
+    *)
+      printf 'FAIL %s: uses %s (should use /bin/sh)\n' "$target" "$shebang"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    if [ -n "$failed_details" ]; then
+      failed_details="$failed_details, $target (wrong shebang)"
+    else
+      failed_details="$target (wrong shebang)"
+    fi
+      continue
+      ;;
+  esac
+
+  tmp_log=$(temp-file verify-posix-log) || return 1
+  gnuisms_log=$(temp-file verify-posix-gnuisms) || return 1
+  file_failed=0
+  if "$checkbashisms_cmd" "$path" >"$tmp_log" 2>&1; then
+    :
+  else
+    file_failed=1
+  fi
+
+  if check_gnuisms "$path" >"$gnuisms_log" 2>&1; then
+    :
+  else
+    file_failed=1
+  fi
+
+  if [ "$file_failed" -eq 0 ]; then
+    printf 'PASS %s\n' "$target"
+  else
+    # Only print failures during processing for progress indication
+    printf 'FAIL %s\n' "$target"
+    if [ -s "$tmp_log" ]; then
+      {
+        printf '%s\n' "$target"
+        while IFS= read -r line; do
+          printf '  %s\n' "$line"
+        done <"$tmp_log"
+      } >>"$detail_log"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    if [ -n "$failed_details" ]; then
+      failed_details="$failed_details, $target (bashisms detected)"
+    else
+      failed_details="$target (bashisms detected)"
+    fi
+    fi
+    if [ -s "$gnuisms_log" ]; then
+      {
+        if [ ! -s "$tmp_log" ]; then
+          printf '%s\n' "$target"
+        fi
+        cat "$gnuisms_log"
+      } >>"$detail_log"
+    failures=$((failures + 1))
+    failed_targets=${failed_targets:+$failed_targets,}$target
+    if [ -n "$failed_details" ]; then
+      failed_details="$failed_details, $target (non-POSIX usage)"
+    else
+      failed_details="$target (non-POSIX usage)"
+    fi
+    fi
+  fi
+  cleanup-file "$tmp_log"
+  cleanup-file "$gnuisms_log"
+done <"$targets_file"
+trap - EXIT HUP INT TERM
+rm -f "$targets_file"
+
+printf '\n'
+if [ "$failures" -eq 0 ]; then
+  if [ -t 1 ] && has tput && tput setaf 1 >/dev/null 2>&1; then
+    green=$(tput setaf 2 2>/dev/null || true)
+    bold=$(tput bold 2>/dev/null || true)
+    reset=$(tput sgr0 2>/dev/null || true)
+    printf '%s%sAll %d scripts are POSIX-compliant.%s\n' "$bold" "$green" "$total" "$reset"
+  else
+    printf 'All %d scripts are POSIX-compliant.\n' "$total"
+  fi
+  cleanup-file "$detail_log"
+else
+  heading-section "POSIX Compliance Summary"
+  passed=$((total - failures))
+  printf 'Passed: %d/%d\n' "$passed" "$total"
+  printf 'Failed: %d\n' "$failures"
+  if [ "$failures" -le 12 ] && [ -n "$failed_details" ]; then
+    printf '\nFailed scripts:\n'
+    # Split by comma and print each failure
+    printf '%s' "$failed_details" | tr ',' '\n' | while IFS= read -r failure; do
+      [ -n "$failure" ] && printf '  %s\n' "$failure"
+    done
+  else
+    printf '\nFailing spells: %s\n' "$failed_targets"
+  fi
+  if [ -s "$detail_log" ]; then
+    printf '\nFailure details:\n'
+    cat "$detail_log"
+  fi
+  cleanup-file "$detail_log"
+  exit 1
+fi

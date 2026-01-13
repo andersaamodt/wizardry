@@ -1,0 +1,52 @@
+#!/bin/sh
+
+# This spell activates a portkey enchantment to teleport to the stored destination.
+# The destination is read from the file's 'context' extended attribute.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: follow-portkey <file>
+
+Read the destination from a portkey-enchanted file and print the cd command needed to teleport there. Use with eval, for example: eval "$(follow-portkey file)".
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Ensure file argument is provided
+if [ -z "${1-}" ]; then
+        printf '%s\n' "follow-portkey: file path required" >&2
+        exit 2
+fi
+
+file=$1
+
+# Verify file exists
+if [ ! -f "$file" ]; then
+        printf '%s\n' "follow-portkey: file not found: $file" >&2
+        exit 1
+fi
+
+# Read the context attribute from the file
+context=$(read-magic "$file" context 2>/dev/null || true)
+
+# Verify context was found
+case "$context" in
+        ''|*Error*)
+                printf '%s\n' "follow-portkey: no portkey enchantment on file: $file" >&2
+                exit 1
+                ;;
+esac
+
+# Verify destination exists
+if [ ! -d "$context" ]; then
+        printf '%s\n' "follow-portkey: destination does not exist: $context" >&2
+fi
+
+# Output the cd command for eval
+printf 'cd "%s"\n' "$context"
+printf '%s\n' "Following portkey to $context."

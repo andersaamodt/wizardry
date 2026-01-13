@@ -1,0 +1,14 @@
+#!/bin/sh
+# tty-restore STATE - restore previously saved terminal settings
+# Example: state=$(tty-save) && ... && tty-restore "$state"
+set -eu
+
+
+_tr_state=${1:-}
+
+if [ -z "$_tr_state" ]; then
+  printf '%s\n' "tty-restore: state required" >&2
+  exit 1
+fi
+
+stty "$_tr_state" >/dev/null 2>&1 || :

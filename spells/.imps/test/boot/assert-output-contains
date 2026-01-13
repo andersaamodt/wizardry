@@ -1,0 +1,21 @@
+#!/bin/sh
+# assert-output-contains SUBSTRING [OUTPUT] - verify output contains the substring
+# If OUTPUT not provided, reads from $OUTPUT variable for backward compatibility.
+# Sets TEST_FAILURE_REASON on mismatch.
+set -eu
+
+substring=$1
+output_text=${2:-${OUTPUT-}}
+case "$output_text" in
+  *"$substring"*)
+  exit 0
+    ;;
+  *)
+    TEST_FAILURE_REASON="output missing substring: $substring"
+    export TEST_FAILURE_REASON
+    printf '%s' "$TEST_FAILURE_REASON" > "${WIZARDRY_TMPDIR}/_test_failure_reason" 2>/dev/null || true
+  exit 1
+    ;;
+esac
+
+

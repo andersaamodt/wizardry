@@ -1,0 +1,81 @@
+#!/bin/sh
+
+# This spell copies extended attributes into a YAML prologue within the file.
+# After the runes are preserved in text, it clears the attributes from the file.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat << 'USAGE'
+Usage: enchantment-to-yaml <path-to-file>
+
+Extract all extended attributes from a file, write them into a YAML front matter header, and strip the original attributes from the file.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Validate arguments
+if [ "$#" -ne 1 ]; then
+  printf '%s\n' "Error: incorrect number of arguments" >&2
+  cat >&2 << 'USAGE'
+Usage: enchantment-to-yaml <path-to-file>
+
+Extract all extended attributes from a file, write them into a YAML front matter header, and strip the original attributes from the file.
+USAGE
+  exit 1
+fi
+
+file=$1
+if [ ! -f "$file" ]; then
+  printf '%s\n' "Error: file does not exist" >&2
+  exit 1
+fi
+
+# Get all extended attribute keys
+keys=$(xattr-list-keys "$file" || true)
+if [ -z "$keys" ]; then
+  printf '%s\n' "Error: file does not have extended attributes" >&2
+  exit 1
+fi
+
+# Create YAML front matter with attributes
+tmp=$(temp-file wizardry-yaml) || exit 1
+{
+  printf '%s\n' '---'
+  for key in $keys; do
+    [ -z "$key" ] && continue
+    value=$(xattr-read-value "$key" "$file" || printf '')
+    printf '%s: %s\n' "$key" "$value"
+  done
+  printf '%s\n' '---'
+  printf '\n'
+} >"$tmp"
+cat "$file" >>"$tmp" || exit 1
+mv "$tmp" "$file"
+
+# Clear attributes from file - check if we have tools available
+if ! (xattr-helper-usable xattr || xattr-helper-usable attr || xattr-helper-usable setfattr); then
+  printf '%s\n' "Error: requires one of attr, xattr, or setfattr to clear attributes" >&2
+  exit 1
+fi
+
+# Clear all attributes using available tools
+if xattr-helper-usable xattr; then
+  xattr -c "$file" 2>/dev/null || true
+fi
+
+for key in $keys; do
+  [ -z "$key" ] && continue
+  if xattr-helper-usable attr; then
+    attr -r "$key" "$file" 2>/dev/null || true
+  fi
+  if xattr-helper-usable setfattr; then
+    setfattr -x "$key" "$file" 2>/dev/null || true
+  fi
+  if xattr-helper-usable xattr; then
+    xattr -d "$key" "$file" 2>/dev/null || true
+  fi
+done

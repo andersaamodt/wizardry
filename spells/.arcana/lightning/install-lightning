@@ -1,0 +1,42 @@
+#!/bin/sh
+
+# Install and configure Bitcoin Lightning (Core Lightning) across supported platforms.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-lightning
+
+Guides you through installing Bitcoin Lightning (Core Lightning). On NixOS, this will add
+clightning to environment.systemPackages when possible and run sudo nixos-rebuild all.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+# Install Lightning Network daemon
+printf '%s\n' "Installing Lightning Network (c-lightning)..."
+
+# Check if already installed
+if command -v lightningd >/dev/null 2>&1; then
+  printf '%s\n' "Lightning is already installed."
+  lightningd --version
+  exit 0
+fi
+
+# Try to install via package manager
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+core_dir=$(CDPATH= cd -- "$script_dir/../core" && pwd -P)
+if [ -f "$core_dir/manage-system-command" ]; then
+  "$core_dir/manage-system-command" install lightning
+else
+  printf '%s\n' "install-lightning: could not find manage-system-command" >&2
+  exit 1
+fi
+
+printf '%s\n' "Lightning Network installation complete."

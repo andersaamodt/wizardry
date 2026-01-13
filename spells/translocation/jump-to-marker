@@ -1,0 +1,312 @@
+#!/bin/sh
+
+# Teleport to bookmarks set by mark-location.
+# This spell must be sourced (not executed) because it changes the current directory.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: . jump-to-marker [marker]
+
+Teleport to a marker set with mark-location. 
+- No argument defaults to marker "1"
+- Use "next" or "0" to cycle through all saved locations
+Note: This spell must be sourced (use '. jump-to-marker') to affect your current shell.
+USAGE
+  return 0 2>/dev/null || exit 0
+  ;;
+-*)
+  printf '%s\n' "jump-to-marker: unknown option '$1'." >&2
+  return 1 2>/dev/null || exit 1
+  ;;
+esac
+
+# Uncastable pattern - ensures spell is sourced, not executed
+_jump_to_marker_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) _jump_to_marker_sourced=1 ;;
+  esac
+else
+  _jump_to_marker_base=${0##*/}
+  case "$_jump_to_marker_base" in
+    sh|dash|bash|zsh|ksh|mksh) _jump_to_marker_sourced=1 ;;
+    jump-to-marker) _jump_to_marker_sourced=0 ;;
+    *) _jump_to_marker_sourced=1 ;;
+  esac
+fi
+
+if [ "$_jump_to_marker_sourced" -eq 0 ]; then
+  printf '%s\n' "This spell cannot be cast directly. Invoke it with: jump to marker" >&2
+  return 1 2>/dev/null || exit 1
+fi
+unset _jump_to_marker_sourced _jump_to_marker_base
+
+# Calculate markers directory BEFORE env-clear (which may clear SPELLBOOK_DIR)
+_jm_spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+markers_dir=$_jm_spell_home/.markers
+
+set -eu
+. env-clear
+
+marker_name="${1:-1}"
+original_marker_arg="${1:-1}"
+
+# If marker is "0" or "next", cycle through markers
+if [ "$marker_name" = "0" ] || [ "$marker_name" = "next" ]; then
+        # Clear marker_name so cycling logic can set it fresh
+        marker_name=""
+        
+        # Get only numbered markers for cycling (not named markers)
+        all_markers=""
+        if [ -d "$markers_dir" ]; then
+                numeric_markers=""
+                for marker in "$markers_dir"/*; do
+                        [ -f "$marker" ] || continue
+                        name=$(basename "$marker")
+                        # Skip hidden files
+                        case "$name" in
+                                .*) continue ;;
+                        esac
+                        # Only include numeric markers for cycling
+                        case "$name" in
+                                *[!0-9]*) ;;
+                                *)
+                                        if [ -z "$numeric_markers" ]; then
+                                                numeric_markers="$name"
+                                        else
+                                                numeric_markers="$numeric_markers $name"
+                                        fi
+                                        ;;
+                        esac
+                done
+                # Sort numeric markers numerically
+                if [ -n "$numeric_markers" ]; then
+                        for n in $(printf '%s\n' $numeric_markers | sort -n); do
+                                if [ -z "$all_markers" ]; then
+                                        all_markers="$n"
+                                else
+                                        all_markers="$all_markers $n"
+                                fi
+                        done
+                fi
+        fi
+        
+        
+        # If we have markers, cycle through them
+        if [ -n "$all_markers" ]; then
+                # Find the most recently used NUMERIC marker (by mtime)
+                last_marker=""
+                if [ -d "$markers_dir" ]; then
+                        # Use command substitution to force word splitting in all shells (including zsh)
+                        sorted=$(ls -t "$markers_dir" 2>/dev/null || true)
+                        for recent in $(printf '%s\n' $sorted); do
+                                # Skip non-numeric markers
+                                case "$recent" in
+                                        *[!0-9]*) continue ;;
+                                esac
+                                if [ -f "$markers_dir/$recent" ]; then
+                                        last_marker=$recent
+                                        break
+                                fi
+                        done
+                fi
+                
+                
+                # Get next marker in sequence
+                if [ -n "$last_marker" ]; then
+                        found=0
+                        first=""
+                        # Force word splitting by using printf to output each marker on separate line
+                        # This works in all shells including zsh
+                        for m in $(printf '%s\n' $all_markers); do
+                                if [ -z "$first" ]; then
+                                        first=$m
+                                fi
+                                if [ "$found" -eq 1 ]; then
+                                        marker_name=$m
+                                        break
+                                fi
+                                if [ "$m" = "$last_marker" ]; then
+                                        found=1
+                                fi
+                        done
+                        # Wrap around to first marker if at end
+                        if [ "$found" -eq 1 ] && [ -z "$marker_name" ]; then
+                                marker_name=$first
+                        fi
+                else
+                        # No last marker (new session or first use), use first available
+                        # Use command substitution to force word splitting in all shells
+                        for m in $(printf '%s\n' $all_markers); do
+                                marker_name=$m
+                                break
+                        done
+                fi
+        fi
+        # If still empty after cycling, leave it empty to trigger proper error below
+fi
+
+marker_file="$markers_dir/$marker_name"
+
+# Check for markers directory
+if [ ! -d "$markers_dir" ]; then
+        printf '%s\n' "No markers have been set. Use 'mark-location' to mark a location first."
+        set +eu; return 1
+fi
+
+# Check if marker_name is empty (cycling failed to find markers)
+if [ -z "$marker_name" ]; then
+        printf '%s\n' "No markers available to cycle through. Use 'mark-location' to mark a location first." >&2
+        set +eu; return 1
+fi
+
+# Check for specific marker file
+if [ ! -f "$marker_file" ]; then
+        printf '%s\n' "No marker '$marker_name' found. Use 'mark-location $marker_name' to set it."
+        # List available markers
+        if [ -d "$markers_dir" ]; then
+                numeric_markers=""
+                alpha_markers=""
+                for marker in "$markers_dir"/*; do
+                        [ -f "$marker" ] || continue
+                        name=$(basename "$marker")
+                        # Skip hidden files
+                        case "$name" in
+                                .*) continue ;;
+                        esac
+                        # Separate numeric and non-numeric markers
+                        case "$name" in
+                                *[!0-9]*)
+                                        if [ -z "$alpha_markers" ]; then
+                                                alpha_markers="$name"
+                                        else
+                                                alpha_markers="$alpha_markers $name"
+                                        fi
+                                        ;;
+                                *)
+                                        if [ -z "$numeric_markers" ]; then
+                                                numeric_markers="$name"
+                                        else
+                                                numeric_markers="$numeric_markers $name"
+                                        fi
+                                        ;;
+                        esac
+                done
+                # Sort and output: numbers first (numerically), then names (alphabetically)
+                available=""
+                if [ -n "$numeric_markers" ]; then
+                        for n in $(printf '%s\n' $numeric_markers | sort -n); do
+                                if [ -z "$available" ]; then
+                                        available="$n"
+                                else
+                                        available="$available $n"
+                                fi
+                        done
+                fi
+                if [ -n "$alpha_markers" ]; then
+                        for n in $(printf '%s\n' $alpha_markers | sort); do
+                                if [ -z "$available" ]; then
+                                        available="$n"
+                                else
+                                        available="$available $n"
+                                fi
+                        done
+                fi
+                if [ -n "$available" ]; then
+                        printf '%s' "Available markers:"
+                        for m in $available; do
+                                printf ' %s' "$m"
+                        done
+                        printf '\n'
+                fi
+        fi
+        set +eu; return 1
+fi
+
+destination=$(cat "$marker_file")
+if [ -z "$destination" ]; then
+        printf '%s\n' "The rune '$marker_name' is blank; the marked location has faded away."
+        set +eu; return 1
+fi
+if [ ! -d "$destination" ]; then
+        printf '%s\n' "The ley-line remembers '$destination' for marker '$marker_name', but it no longer exists."
+        set +eu; return 1
+fi
+
+# Normalize paths to handle macOS double slashes and symlinks
+current=$(pwd -P | sed 's|//|/|g')
+# Resolve destination path to real path (handles symlinks)
+normalized_destination=$(cd "$destination" && pwd -P | sed 's|//|/|g')
+if [ "$current" = "$normalized_destination" ]; then
+        printf '%s\n' "You are already standing at marker '$marker_name'."
+        # Touch marker to update mtime for cycling
+        touch "$marker_file"
+        set +eu; return 0
+fi
+
+if ! cd "$destination"; then
+        printf '%s\n' "The portal refuses to stabilize; try marking again." >&2
+        set +eu; return 1
+fi
+
+# Pick a random arrival message
+arrival=$(cat <<'PORTAL'
+You feel a sudden warmth as you are enveloped in a glowing aura. When it fades, you find yourself at your destination.
+A strange sensation comes over you as you close your eyes. When you open them again, you are standing at your destination.
+You focus your mind on the marked location and feel yourself being pulled through the fabric of space. You open your eyes to find yourself at your destination.
+You feel a jolt as you are momentarily suspended in midair. When you land, you find yourself at your destination.
+You close your eyes and take a deep breath. When you open them, you are standing at your destination.
+A swirling vortex appears before you. You take a step forward and find yourself at your destination.
+You feel a tug on your stomach as you are suddenly pulled through a tunnel of light. When you emerge, you are at your destination.
+You hold out your hand and a bright portal appears. You step through and find yourself at your destination.
+You feel a rush of wind as you are teleported to your destination.
+You hear a faint ringing in your ears as you are transported to your destination.
+You close your eyes and visualize your destination. When you open them, you are standing there.
+You step into a glowing portal and are immediately transported to your destination.
+You feel a tug on your ankle as you are pulled through a wormhole. When you emerge, you are at your destination.
+You hear a faint hum as you are enveloped in a field of energy. When it dissipates, you are at your destination.
+You feel a sudden pressure on your chest as you are teleported to your destination.
+You feel a surge of magical energy as you are transported through the veil of reality.
+A glowing portal opens before you, and you step through it to your destination.
+A shimmering aura envelops you, and when it fades, you find yourself at the marked location.
+You close your eyes and focus, and when you open them again, you are standing at the marked location.
+A burst of light and sound surrounds you, and when it subsides, you are at the marked location.
+You feel a tug on your soul, and when it releases, you are standing at the marked location.
+You focus your magical energy and teleport to the marked location.
+A warp in the fabric of reality opens up, and you step through it to the marked location.
+You feel a sudden jolt, and when you regain your bearings, you are at the marked location.
+You close your eyes and visualize the marked location, and when you open them, you are there.
+You call upon the power of the elements to transport you to the marked location.
+You channel the energy of the celestial bodies to jump to the marked location.
+You recite an ancient incantation, and a magical portal appears, taking you to the marked location.
+A shimmering rune circle flares beneath your feet.
+You step through a swirling vortex of starlight.
+A gust of glittering dust whips past as space folds around you.
+Your stomach flips as ley-lines knit a tunnel through reality.
+A bell tolls softly as the air warps into a crystalline doorway.
+You whisper the coordinates and a ribbon of light drags you forward.
+A ripple of color cascades outward before snapping you elsewhere.
+The scent of ozone and old tomes surrounds you mid-teleport.
+A chalk sigil burns bright, then launches you into the void.
+You ride a comet of sparks toward the marked destination.
+A murmured incantation bends distance like molten glass.
+Reality hiccups; when it steadies, you are already in motion.
+PORTAL
+)
+arrival=$(printf '%s\n' "$arrival" | awk 'BEGIN{srand();}{lines[NR]=$0}END{if (NR==0) exit 0; idx=int(rand()*NR)+1; print lines[idx];}')
+
+if [ -n "$arrival" ]; then
+        printf '%s\n' "$arrival"
+fi
+
+# Touch marker to update mtime for cycling
+touch "$marker_file"
+
+# Describe current location if look command exists
+if command -v look >/dev/null 2>&1; then
+        look 2>/dev/null || true
+fi
+
+# Restore shell options before returning
+set +eu

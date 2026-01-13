@@ -1,0 +1,38 @@
+#!/bin/sh
+
+# Install simplex-chat using the available package manager, with optional NixOS rebuild support.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-simplex-chat
+
+Runs a short wizard to install simplex-chat using the system package manager and prepares default data directories.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+manage_cmd=${MANAGE_SYSTEM_COMMAND:-manage-system-command}
+
+if ! command -v "$manage_cmd" >/dev/null 2>&1; then
+  core_dir=$(CDPATH= cd -- "$script_dir" 2>/dev/null && cd .. && cd core && pwd -P)
+  if [ -n "$core_dir" ] && [ -x "$core_dir/manage-system-command" ]; then
+    manage_cmd="$core_dir/manage-system-command"
+  else
+    printf '%s\n' "install-simplex-chat: unable to find manage-system-command" >&2
+    exit 1
+  fi
+fi
+
+# Install SimpleX Chat
+printf '%s\n' "Installing SimpleX Chat..."
+"$manage_cmd" install simplex-chat
+
+printf '%s\n' "SimpleX Chat installation complete."

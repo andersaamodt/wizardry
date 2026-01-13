@@ -1,0 +1,24 @@
+#!/bin/sh
+# has COMMAND - test if command exists on PATH
+# Example: has git && git status
+
+# Note: No set -eu because this is a conditional imp (returns exit codes for flow control)
+
+has_name=${1-}
+if [ -z "$has_name" ]; then
+  exit 1
+fi
+
+if command -v "$has_name" >/dev/null 2>&1; then
+  exit 0
+fi
+
+case $has_name in
+  *-*)
+    has_alt=$(printf '%s' "$has_name" | tr '-' '_')
+    command -v "$has_alt" >/dev/null 2>&1
+    exit $?
+    ;;
+esac
+exit 1
+

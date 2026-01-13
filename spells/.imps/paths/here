@@ -1,0 +1,7 @@
+#!/bin/sh
+# here - output current directory path (normalized pwd -P)
+# Example: dir=$(here)
+set -eu
+
+
+pwd -P | sed 's|///*|/|g'

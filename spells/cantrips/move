@@ -1,0 +1,79 @@
+#!/bin/sh
+
+# Relocate files using natural language: "move from here to there".
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: move <source> <destination>
+
+Move a file or directory to a new location. Accepts natural language forms like "move <source> to <destination>" or "move from <source> to <destination>" so the command reads like a sentence.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+from=''
+to=''
+
+while [ "$#" -gt 0 ]; do
+        case "$1" in
+                from)
+                        shift
+                        if [ "$#" -gt 0 ]; then
+                                from=$1
+                                shift
+                        fi
+                        ;;
+                to)
+                        shift
+                        if [ "$#" -gt 0 ]; then
+                                to=$1
+                                shift
+                        fi
+                        ;;
+                *)
+                        if is unset "$from"; then
+                                from=$1
+                        elif is unset "$to"; then
+                                to=$1
+                        fi
+                        shift
+                        ;;
+        esac
+done
+
+# Validate arguments
+if is unset "$from"; then
+        printf '%s\n' "move: source path required." >&2
+        move_usage >&2
+        exit 1
+fi
+
+if is unset "$to"; then
+        printf '%s\n' "move: destination path required." >&2
+        move_usage >&2
+        exit 1
+fi
+
+# Check source exists before attempting move
+if ! there "$from"; then
+        die "move: source not found: $from" || exit 1
+fi
+
+# Check write permission on destination directory
+dest_dir=$(parent "$to")
+if [ "$dest_dir" = "." ]; then
+        dest_dir=$(here)
+fi
+
+if ! is writable "$dest_dir"; then
+        die "move: no write permission on: $dest_dir" || exit 1
+fi
+
+# Perform the move
+mv "$from" "$to"
+say "Moved '$(file-name "$from")' to '$to'."

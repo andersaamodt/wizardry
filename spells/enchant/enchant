@@ -1,0 +1,125 @@
+#!/bin/sh
+
+# Apply extended attributes to files. Autodetects file vs attribute=value.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: enchant [file] attribute=value
+
+Apply an extended attribute with the given name and value to a file using attr, xattr, or setfattr. With two arguments the spell figures out which is the path and which is attribute=value, defaulting to the current directory, and the legacy <file> <attribute> <value> form still works.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Parse arguments
+file=""
+key=""
+value=""
+
+if [ $# -eq 0 ]; then
+  printf '%s\n' "enchant: at least one argument required (attribute=value)" >&2
+  exit 1
+elif [ $# -eq 1 ]; then
+  # One arg: must be attribute=value, use current directory
+  case "$1" in
+  *=*)
+    # Check both sides are non-empty
+    _attr="${1%%=*}"
+    _val="${1#*=}"
+    if [ -n "$_attr" ] && [ -n "$_val" ]; then
+      key=$_attr
+      value=$_val
+      file=$PWD
+    else
+      printf '%s\n' "enchant: argument must be attribute=value format" >&2
+      exit 1
+    fi
+    ;;
+  *)
+    printf '%s\n' "enchant: argument must be attribute=value format" >&2
+    exit 1
+    ;;
+  esac
+elif [ $# -eq 2 ]; then
+  # Two args: detect which is file and which is attribute=value
+  arg1_is_attr=0
+  arg2_is_attr=0
+  
+  # Check if arg1 is attribute=value
+  case "$1" in
+  *=*)
+    _attr1="${1%%=*}"
+    _val1="${1#*=}"
+    [ -n "$_attr1" ] && [ -n "$_val1" ] && arg1_is_attr=1
+    ;;
+  esac
+  
+  # Check if arg2 is attribute=value
+  case "$2" in
+  *=*)
+    _attr2="${2%%=*}"
+    _val2="${2#*=}"
+    [ -n "$_attr2" ] && [ -n "$_val2" ] && arg2_is_attr=1
+    ;;
+  esac
+  
+  if [ "$arg1_is_attr" -eq 1 ] && [ "$arg2_is_attr" -eq 1 ]; then
+    printf '%s\n' "enchant: Both arguments look like attribute=value pairs." >&2
+    exit 1
+  elif [ "$arg1_is_attr" -eq 1 ]; then
+    # First is attr=val, second is file
+    key="${1%%=*}"
+    value="${1#*=}"
+    file=$2
+  elif [ "$arg2_is_attr" -eq 1 ]; then
+    # First is file, second is attr=val
+    file=$1
+    key="${2%%=*}"
+    value="${2#*=}"
+  else
+    # Neither has valid attr=value format
+    printf '%s\n' "enchant: Two-argument format requires one argument to be in 'attribute=value' format. Use 'enchant <file> attr=value' or 'enchant attr=value <file>'" >&2
+    exit 1
+  fi
+elif [ $# -eq 3 ]; then
+  # Legacy 3-arg format: file, attribute, value
+  file=$1
+  key=$2
+  value=$3
+else
+  printf '%s\n' "enchant: Too many arguments provided." >&2
+  exit 1
+fi
+
+# Validate we have all required parts
+if [ -z "$file" ] || [ -z "$key" ] || [ -z "$value" ]; then
+  printf '%s\n' "enchant: File, attribute, and value are all required." >&2
+  exit 1
+fi
+
+# Check file exists
+if [ ! -e "$file" ]; then
+  printf '%s\n' "enchant: The file does not exist." >&2
+  exit 1
+fi
+
+# Automatically prepend "user." namespace if key doesn't contain a dot
+case "$key" in
+  *.*) ;;  # Key already has a namespace, use as-is
+  *) key="user.$key" ;;  # No namespace, prepend "user."
+esac
+
+# Use xattr-write-value imp to set the attribute
+# This delegates to the appropriate xattr helper (attr, xattr, or setfattr)
+if xattr-write-value "$key" "$value" "$file"; then
+  printf '%s\n' "The file has been enchanted with the attribute '$key' and value '$value'."
+  exit 0
+else
+  printf '%s\n' "enchant: This spell requires the 'attr', 'xattr', or 'setfattr' command to be installed." >&2
+  exit 1
+fi

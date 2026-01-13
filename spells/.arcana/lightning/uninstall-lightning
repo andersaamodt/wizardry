@@ -1,0 +1,34 @@
+#!/bin/sh
+
+# Uninstall Bitcoin Lightning.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-lightning
+
+Removes Bitcoin Lightning binaries and undoes NixOS configuration where possible.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+# Uninstall Lightning Network
+printf '%s\n' "Uninstalling Lightning Network..."
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+core_dir=$(CDPATH= cd -- "$script_dir/../core" && pwd -P)
+if [ -f "$core_dir/manage-system-command" ]; then
+  "$core_dir/manage-system-command" uninstall lightning c-lightning \
+    clightning lightningd
+else
+  printf '%s\n' "uninstall-lightning: could not find manage-system-command" >&2
+  exit 1
+fi
+
+printf '%s\n' "Lightning Network uninstallation complete."

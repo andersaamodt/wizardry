@@ -1,0 +1,13 @@
+#!/bin/sh
+# any CMD [CMD...] - return first available command from list
+# Example: pkg=$(any apt-get brew pkgin) && $pkg install foo
+set -eu
+
+
+for _any_cmd in "$@"; do
+  if command -v "$_any_cmd" >/dev/null 2>&1; then
+    printf '%s' "$_any_cmd"
+  exit 0
+  fi
+done
+exit 1

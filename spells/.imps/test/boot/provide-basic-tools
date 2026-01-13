@@ -1,0 +1,14 @@
+#!/bin/sh
+# provide-basic-tools FIXTURE - symlink essential tools into fixture/bin
+# Links mktemp, mkdir, rm, cat, env, ln, sh, dirname, readlink if available.
+set -eu
+
+fixture=$1
+for cmd in mktemp mkdir rm cat env ln sh dirname readlink; do
+  tool_path=$(command -v "$cmd" 2>/dev/null || true)
+  if [ -n "$tool_path" ]; then
+    ln -s "$tool_path" "$fixture/bin/$cmd"
+  fi
+done
+
+

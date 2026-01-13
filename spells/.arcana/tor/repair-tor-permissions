@@ -1,0 +1,71 @@
+#!/bin/sh
+
+# Reset ownership and permissions on Tor directories for safe service startup.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: repair-tor-permissions
+
+Resets ownership and permissions on Tor configuration and runtime directories for your platform so the service can start safely.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+if [ "$(id -u)" != "0" ]; then
+   printf '%s\n' "repair-tor-permissions: root privileges required."
+   exit 1
+fi
+
+user_owner="debian-tor"
+group_owner="debian-tor"
+
+platform=$(detect-distro 2>/dev/null || printf 'unknown')
+case "$platform" in
+  debian)
+    user_owner="debian-tor"
+    group_owner="debian-tor"
+    ;;
+  arch)
+    user_owner="tor"
+    group_owner="tor"
+    ;;
+  mac)
+    user_owner="_tor"
+    group_owner="_tor"
+    ;;
+  *)
+    # Default to debian-tor for unknown Linux distros
+    user_owner="debian-tor"
+    group_owner="debian-tor"
+    ;;
+esac
+
+# Repair Tor directory permissions
+for tor_dir in /var/lib/tor /var/log/tor /etc/tor; do
+  if [ -d "$tor_dir" ]; then
+    chown -R "$user_owner":"$group_owner" "$tor_dir" 2>/dev/null || true
+    printf '%s\n' "Changed owner and group of $tor_dir to $user_owner:$group_owner"
+    
+    # Set appropriate permissions based on directory type
+    case "$tor_dir" in
+      /etc/tor)
+        chmod 755 "$tor_dir" 2>/dev/null || true
+        printf '%s\n' "Set permissions on $tor_dir to 755"
+        ;;
+      *)
+        chmod 700 "$tor_dir" 2>/dev/null || true
+        printf '%s\n' "Set permissions on $tor_dir to 700"
+        ;;
+    esac
+  else
+    printf '%s\n' "Directory $tor_dir does not exist. Skipping."
+  fi
+done
+
+printf '%s\n' "Tor permissions repair complete."

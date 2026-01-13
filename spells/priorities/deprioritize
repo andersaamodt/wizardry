@@ -1,0 +1,35 @@
+#!/bin/sh
+
+# Remove a file from the priorities list by clearing its echelon and priority attributes.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: deprioritize <file>
+
+Remove a file from the priorities list by clearing its echelon and priority attributes. The file remains in the directory but is no longer tracked in the priority system.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+if [ -z "${1-}" ]; then
+  printf '%s\n' "deprioritize: file path required" >&2
+  exit 2
+fi
+
+file=$1
+
+if [ ! -e "$file" ]; then
+  printf '%s\n' "deprioritize: file not found: $file" >&2
+  exit 1
+fi
+
+# Remove echelon and priority attributes from file
+disenchant "$file" user.echelon >/dev/null 2>&1 || true
+disenchant "$file" user.priority >/dev/null 2>&1 || true
+
+printf '%s\n' "Removed '$(basename "$file")' from priorities."

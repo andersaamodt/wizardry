@@ -1,0 +1,14 @@
+#!/bin/sh
+# assert-path-exists PATH - verify path exists
+# Sets TEST_FAILURE_REASON if path does not exist.
+set -eu
+
+if [ ! -e "$1" ]; then
+  TEST_FAILURE_REASON="expected path to exist: $1"
+  export TEST_FAILURE_REASON
+  printf '%s' "$TEST_FAILURE_REASON" > "${WIZARDRY_TMPDIR}/_test_failure_reason" 2>/dev/null || true
+  exit 1
+fi
+exit 0
+
+

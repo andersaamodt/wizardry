@@ -1,0 +1,10 @@
+#!/bin/sh
+# step MESSAGE - print a step in a multi-step process
+# Example: step "Installing dependencies..."
+
+set -eu
+
+_step_level=${WIZARDRY_LOG_LEVEL:-0}
+if [ "$_step_level" -ge 1 ]; then
+  printf '%s\n' "$*"
+fi

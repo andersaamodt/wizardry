@@ -1,0 +1,80 @@
+#!/bin/sh
+# This spell displays the main MUD (Multi-User Dungeon) menu interface.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: mud
+
+Displays the MUD (Multi-User Dungeon) menu.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Catch Ctrl-C and TERM signal to exit 1 cleanly
+trap 'exit 0' INT TERM
+
+# Load color palette (colors handles terminal capability detection internally)
+# shellcheck source=/dev/null
+. "$(command -v colors)"
+
+if ! require menu "The MUD menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+first_run=1
+
+while true; do
+  if [ "$first_run" -eq 0 ]; then
+    :
+  else
+    first_run=0
+  fi
+
+  # Get platform-specific portal chamber location
+  platform=$(detect-distro 2>/dev/null || printf 'unknown')
+  case "$platform" in
+    mac)
+      # macOS uses /Volumes for mounted drives
+      portal_location="/Volumes"
+      ;;
+    *)
+      # Linux and others use /mnt
+      portal_location="/mnt"
+      ;;
+  esac
+  
+  look="Look Around%look"
+  home="Teleport Home%cd"
+  jump="Teleport to Marker%jump-to-marker"
+  portal="Teleport to Portal Chamber%cd $portal_location"
+  admin="Admin MUD Hosting%mud-admin-menu"
+  settings="MUD Settings%mud-settings"
+  # Exit button kills this menu script via TERM signal
+  # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
+  exit_label=$(exit-label)
+  exit_item="${exit_label}%kill -TERM \$PPID"
+
+  set -- \
+    "$look" \
+    "$home" \
+    "$jump" \
+    "$portal" \
+    "$admin" \
+    "$settings" \
+    "$exit_item"
+  menu "MUD Menu:" "$@" || menu_status=$?
+  menu_status=${menu_status:-0}
+  
+  # ESC kills this menu script via TERM signal (same as Exit button)
+  # Direct kill: kill -TERM $$ → kills this script
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    kill -TERM $$ 2>/dev/null || true
+    exit 0
+  fi
+done

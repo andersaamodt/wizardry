@@ -1,0 +1,186 @@
+#!/bin/sh
+
+# Probe for POSIX toolchain availability and baseline POSIX shell behaviors.
+# Reports missing tools and simple capability checks to guide portability.
+# BOOTSTRAP: This spell works in bootstrap mode without requiring wizardry imps.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: detect-posix [--verbose]
+
+Report POSIX toolchain availability and probe baseline POSIX behaviors. Use --verbose for a per-tool report.
+USAGE
+  exit 0
+  ;;
+esac
+
+# Optional: try to use wizardry if available (for when used in normal mode)
+# But don't fail if wizardry isn't set up yet (for bootstrap use)
+if command -v require-wizardry >/dev/null 2>&1; then
+  require-wizardry || exit 1
+fi
+
+set -eu
+. env-clear
+
+verbose=0
+while [ "$#" -gt 0 ]; do
+  case $1 in
+    --verbose|-v)
+      verbose=1
+      shift
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -* )
+      cat >&2 <<'USAGE'
+Usage: detect-posix [--verbose]
+
+Report POSIX toolchain availability and probe baseline POSIX behaviors. Use --verbose for a per-tool report.
+USAGE
+      exit 2
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+if [ "$#" -gt 0 ]; then
+  cat >&2 <<'USAGE'
+Usage: detect-posix [--verbose]
+
+Report POSIX toolchain availability and probe baseline POSIX behaviors. Use --verbose for a per-tool report.
+USAGE
+  exit 2
+fi
+
+toolchain=${DETECT_POSIX_TOOLS-}
+if [ -z "$toolchain" ]; then
+  toolchain="sh awk sed grep find xargs sort cut head tail tr wc uname mktemp"
+fi
+
+probe_set=${DETECT_POSIX_PROBES-}
+if [ -z "$probe_set" ]; then
+  probe_set="sh awk sed grep find"
+fi
+
+missing_tools=''
+tool_fail=0
+probe_fail=0
+
+tmpdir=''
+case " $probe_set " in
+  *" find "*)
+    tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/detect-posix.XXXXXX") || exit 1
+    touch "$tmpdir/probe"
+    trap '[ -n "${tmpdir-}" ] && [ -d "$tmpdir" ] && rm -rf "$tmpdir"' EXIT HUP INT TERM
+    ;;
+esac
+
+if [ "$verbose" -eq 1 ]; then
+  printf '%s\n' 'POSIX toolchain:'
+fi
+
+for tool in $toolchain; do
+  if command -v "$tool"; then
+    if [ "$verbose" -eq 1 ]; then
+      printf '  ✓ %s\n' "$tool"
+    fi
+  else
+    tool_fail=1
+    missing_tools="${missing_tools:+$missing_tools }$tool"
+    if [ "$verbose" -eq 1 ]; then
+      printf '  ✗ %s: %s\n' "$tool" "missing" >&2
+    fi
+  fi
+done
+
+if [ "$verbose" -eq 1 ]; then
+  printf '\n%s\n' 'POSIX capability probes:'
+fi
+
+for probe in $probe_set; do
+  case $probe in
+    sh)
+      if sh -c 'foo=bar; [ "$foo" = "bar" ]'; then
+        if [ "$verbose" -eq 1 ]; then
+          printf '  ✓ %s\n' "sh basics"
+        fi
+      else
+        probe_fail=1
+        if [ "$verbose" -eq 1 ]; then
+          printf '  ✗ %s: %s\n' "sh basics" >&2 "failed"
+        fi
+      fi
+      ;;
+    awk)
+      if sh -c "printf 'a\\n' | awk 'NR==1 {print \$1}' | grep -q '^a$'"; then
+        if [ "$verbose" -eq 1 ]; then
+          printf '  ✓ %s\n' "awk basics"
+        fi
+      else
+        probe_fail=1
+        if [ "$verbose" -eq 1 ]; then
+          printf '  ✗ %s: %s\n' "awk basics" >&2 "failed"
+        fi
+      fi
+      ;;
+    sed)
+      if sh -c "printf 'a\\n' | sed 's/a/b/' | grep -q '^b$'"; then
+        if [ "$verbose" -eq 1 ]; then
+          printf '  ✓ %s\n' "sed basics"
+        fi
+      else
+        probe_fail=1
+        if [ "$verbose" -eq 1 ]; then
+          printf '  ✗ %s: %s\n' "sed basics" >&2 "failed"
+        fi
+      fi
+      ;;
+    grep)
+      if sh -c "printf 'a\\n' | grep -q 'a'"; then
+        if [ "$verbose" -eq 1 ]; then
+          printf '  ✓ %s\n' "grep basics"
+        fi
+      else
+        probe_fail=1
+        if [ "$verbose" -eq 1 ]; then
+          printf '  ✗ %s: %s\n' "grep basics" >&2 "failed"
+        fi
+      fi
+      ;;
+    find)
+      if [ -n "$tmpdir" ] && sh -c "find '$tmpdir' -type f -name probe | grep -q 'probe'"; then
+        if [ "$verbose" -eq 1 ]; then
+          printf '  ✓ %s\n' "find basics"
+        fi
+      else
+        probe_fail=1
+        if [ "$verbose" -eq 1 ]; then
+          printf '  ✗ %s: %s\n' "find basics" >&2 "failed"
+        fi
+      fi
+      ;;
+    *)
+      printf '  ✗ %s: %s\n' "detect-posix" "unknown >&2 probe '$probe'"
+      exit 2
+      ;;
+  esac
+done
+
+if [ "$tool_fail" -eq 0 ] && [ "$probe_fail" -eq 0 ]; then
+  printf '%s\n' 'POSIX toolchain and probes look healthy.'
+  exit 0
+fi
+
+if [ "$tool_fail" -ne 0 ]; then
+  printf '%s\n' "detect-posix: missing tools: $missing_tools" >&2
+fi
+if [ "$probe_fail" -ne 0 ]; then
+  printf '%s\n' 'detect-posix: one or more POSIX probes failed.' >&2
+fi
+exit 1

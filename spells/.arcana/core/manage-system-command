@@ -1,0 +1,134 @@
+#!/bin/sh
+
+# Bootstrap spell: install or uninstall a system command using the available package manager.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: manage-system-command [--uninstall] <command> <default-package>
+
+Installs or removes a system command via the available package manager, falling back to the provided default package name when no override is set. Respects FORCE_INSTALL to reinstall an already present command.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+action=install
+if [ "${1-}" = "--uninstall" ]; then
+  action=uninstall
+  shift
+fi
+
+if [ "$#" -lt 2 ]; then
+  printf '%s\n' "Usage: manage-system-command [--uninstall] <command> <default-package>" >&2
+  exit 1
+fi
+
+command_name=$1
+package_default=$2
+force_install=${FORCE_INSTALL:-0}
+
+# Detect NixOS for automatic installation via nix-env
+is_nixos=0
+if [ "${MANAGE_SYSTEM_COMMAND_NIXOS-}" = "1" ]; then
+        is_nixos=1
+elif [ -d /etc/nixos ] || [ -f /etc/NIXOS ] || grep -qi 'ID=nixos' /etc/os-release 2>/dev/null; then
+        is_nixos=1
+fi
+
+# Allow per-manager nix package override
+nix_package=${NIX_PACKAGE:-$package_default}
+
+# Allow per-manager package overrides when names diverge across distros.
+# Officially supported platforms: debian, arch, nixos, mac
+apt_package=${APT_PACKAGE:-$package_default}
+pacman_package=${PACMAN_PACKAGE:-$package_default}
+pkgin_package=${PKGIN_PACKAGE:-$package_default}
+pkgin_candidates=${PKGIN_CANDIDATES:-/usr/pkg/bin/pkgin /opt/pkg/bin/pkgin /usr/local/pkg/bin/pkgin}
+
+if ! command -v pkgin >/dev/null 2>&1; then
+  for candidate in $pkgin_candidates; do
+    if [ -x "$candidate" ]; then
+      PATH="$(dirname "$candidate"):$PATH"
+      export PATH
+      break
+    fi
+  done
+fi
+
+manage_system_command_run_installer() {
+  cmd=$1
+  shift
+  if command -v sudo >/dev/null 2>&1; then
+    sudo "$cmd" "$@"
+  else
+    "$cmd" "$@"
+  fi
+}
+
+# Check if command exists (skip for uninstall)
+if [ "$action" = "install" ]; then
+  if command -v "$command_name" >/dev/null 2>&1 && [ "$force_install" != "1" ]; then
+    exit 0
+  fi
+fi
+
+# Try package managers in order based on OS detection
+if [ "$is_nixos" = "1" ]; then
+  if [ "$action" = "install" ]; then
+    nix-env -iA "nixpkgs.${nix_package}" || {
+      printf '%s\n' "manage-system-command: unable to install ${nix_package} automatically via nix-env" >&2
+      exit 1
+    }
+  else
+    nix-env -e "$nix_package" || {
+      printf '%s\n' "manage-system-command: unable to uninstall $command_name via nix-env" >&2
+      exit 1
+    }
+  fi
+elif [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  if command -v pkgin >/dev/null 2>&1; then
+    if [ "$action" = "install" ]; then
+      manage_system_command_run_installer pkgin -y install "$pkgin_package" || {
+        printf '%s\n' "manage-system-command: unable to install ${pkgin_package} automatically via pkgin" >&2
+        exit 1
+      }
+    else
+      manage_system_command_run_installer pkgin -y remove "$pkgin_package" || {
+        printf '%s\n' "manage-system-command: unable to uninstall $command_name via pkgin" >&2
+        exit 1
+      }
+    fi
+  else
+    printf '%s\n' "manage-system-command: no supported package manager found on macOS" >&2
+    exit 1
+  fi
+elif command -v pacman >/dev/null 2>&1; then
+  if [ "$action" = "install" ]; then
+    manage_system_command_run_installer pacman --noconfirm -Sy "$pacman_package" || {
+      printf '%s\n' "manage-system-command: unable to install ${pacman_package} automatically via pacman" >&2
+      exit 1
+    }
+  else
+    manage_system_command_run_installer pacman --noconfirm -R "$pacman_package" || {
+      printf '%s\n' "manage-system-command: unable to uninstall $command_name via pacman" >&2
+      exit 1
+    }
+  fi
+elif command -v apt-get >/dev/null 2>&1; then
+  if [ "$action" = "install" ]; then
+    manage_system_command_run_installer apt-get -y install "$apt_package" || {
+      printf '%s\n' "manage-system-command: unable to install ${apt_package} automatically via apt-get" >&2
+      exit 1
+    }
+  else
+    manage_system_command_run_installer apt-get -y remove "$apt_package" || {
+      printf '%s\n' "manage-system-command: unable to uninstall $command_name via apt-get" >&2
+      exit 1
+    }
+  fi
+else
+  printf '%s\n' "manage-system-command: no supported package manager found" >&2
+  exit 1
+fi

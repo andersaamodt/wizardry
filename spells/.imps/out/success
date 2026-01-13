@@ -1,0 +1,7 @@
+#!/bin/sh
+# success MESSAGE - print success message
+# Example: success "Installation complete"
+
+set -eu
+
+printf '%s\n' "$*"

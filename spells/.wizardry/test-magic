@@ -1,0 +1,1167 @@
+#!/bin/sh
+# Level-based test runner - tests spells by wizardry level (0-27)
+#
+# PREREQUISITE: Source invoke-wizardry before running test-magic
+# Like all wizardry spells, test-magic assumes invoke-wizardry is already loaded.
+# In workflows: source invoke-wizardry before calling test-magic
+#
+# Responsibilities:
+# - Run tests organized by spell level (following banish structure)
+# - Auto-derive which tests to run from spell lists
+# - Report failures in same format as banish output
+# - Support banish → test-magic → demo-magic triad
+
+# CRITICAL: Seed a baseline PATH BEFORE set -eu
+baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+case ":${PATH-}:" in
+  *":/usr/bin:"*|*":/bin:"*) ;;
+  *)
+    PATH="${baseline_path}${PATH:+:}${PATH-}"
+    ;;
+esac
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: test-magic [LEVEL] [OPTIONS]
+
+Execute behavior-driven shell tests organized by spell level.
+
+Arguments:
+  LEVEL                 Test through level N (0-27, default: 27)
+  all                   Test all available levels
+
+Options:
+  --only                Only test this specific level (don't run lower levels)
+  --verbose             Show per-test output
+
+Examples:
+  test-magic            # Test all levels (0-27)
+  test-magic 5          # Test levels 0-5
+  test-magic 10 --only  # Test only level 10
+
+Environment variables:
+  WIZARDRY_TEST_TIMEOUT              Timeout in seconds for each test (default: 180)
+  WIZARDRY_TEST_PERFORMANCE_TIMEOUT  Performance limit in seconds (tests exceeding this fail, default: 60)
+  WIZARDRY_FIND_TIMEOUT              Timeout in seconds for find operations (default: 60)
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+# Detect WIZARDRY_DIR if not already set
+if [ -z "${WIZARDRY_DIR-}" ]; then
+  case "$0" in
+    sh|dash|bash|zsh|ksh|mksh|*/sh|*/dash|*/bash|*/zsh|*/ksh|*/mksh)
+      if [ -n "${HOME-}" ] && [ -d "${HOME}/.wizardry/spells" ]; then
+        WIZARDRY_DIR="${HOME}/.wizardry"
+      fi
+      ;;
+    *)
+      _script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || _script_dir=""
+      if [ -n "$_script_dir" ]; then
+        _wiz_root=$(CDPATH= cd -- "$_script_dir/../.." 2>/dev/null && pwd -P) || _wiz_root=""
+        if [ -n "$_wiz_root" ] && [ -d "$_wiz_root/spells" ]; then
+          WIZARDRY_DIR="$_wiz_root"
+        fi
+      fi
+      ;;
+  esac
+fi
+
+if [ -z "${WIZARDRY_DIR-}" ]; then
+  printf 'test-magic: WIZARDRY_DIR not set and could not be detected\n' >&2
+  printf 'Run from wizardry installation or set WIZARDRY_DIR environment variable\n' >&2
+  exit 1
+fi
+
+if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
+  printf 'test-magic: invalid WIZARDRY_DIR: %s\n' "$WIZARDRY_DIR" >&2
+  exit 1
+fi
+
+export WIZARDRY_DIR
+
+cmd_name=$(basename "$0")
+root_dir=$WIZARDRY_DIR
+test_dir="$root_dir/.tests"
+
+# Add wizardry spells and imps to PATH
+if [ -d "$root_dir/spells/.imps" ]; then
+  PATH="$root_dir/spells/.imps:$PATH"
+  for impdir in "$root_dir"/spells/.imps/*; do
+    [ -d "$impdir" ] || continue
+    PATH="$impdir:$PATH"
+  done
+fi
+
+# Parse arguments
+target_level=27
+max_level=27
+only_this_level=0
+verbose=0
+run_all=0
+
+if [ "$#" -gt 0 ]; then
+  case "$1" in
+    all)
+      run_all=1
+      target_level=$max_level
+      shift
+      ;;
+    [0-9]|[0-9][0-9])
+      target_level=$1
+      shift
+      ;;
+  esac
+fi
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --only)
+      only_this_level=1
+      shift
+      ;;
+    --verbose|-v)
+      verbose=1
+      shift
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -* )
+      printf 'test-magic: unknown option: %s\n' "$1" >&2
+      cat <<'USAGE'
+Usage: test-magic [LEVEL] [OPTIONS]
+
+Execute behavior-driven shell tests organized by spell level.
+
+Arguments:
+  LEVEL                 Test through level N (0-27, default: 27)
+  all                   Test all available levels
+
+Options:
+  --only                Only test this specific level (don't run lower levels)
+  --verbose             Show per-test output
+USAGE
+      exit 2
+      ;;
+    * )
+      case "$1" in
+        all)
+          run_all=1
+          target_level=$max_level
+          shift
+          ;;
+        [0-9]|[0-9][0-9])
+          target_level=$1
+          shift
+          ;;
+        * )
+          printf 'test-magic: unexpected argument: %s\n' "$1" >&2
+          cat <<'USAGE'
+Usage: test-magic [LEVEL] [OPTIONS]
+
+Execute behavior-driven shell tests organized by spell level.
+
+Arguments:
+  LEVEL                 Test through level N (0-27, default: 27)
+  all                   Test all available levels
+
+Options:
+  --only                Only test this specific level (don't run lower levels)
+  --verbose             Show per-test output
+USAGE
+          exit 2
+          ;;
+      esac
+      ;;
+  esac
+done
+
+# Validate level range
+if [ "$target_level" -lt 0 ] || [ "$target_level" -gt "$max_level" ]; then
+  printf 'test-magic: level must be 0-%d\n' "$max_level" >&2
+  exit 2
+fi
+
+export PATH
+
+# Run tests inside pocket-dimension unless in GitHub Actions (no isolation for speed)
+if [ "${GITHUB_ACTIONS-}" != "true" ]; then
+  if [ "${WIZARDRY_TEST_IN_POCKET-0}" -ne 1 ]; then
+    if command -v pocket-dimension >/dev/null 2>&1; then
+      if pocket-dimension --check >/dev/null 2>&1; then
+        # Determine the correct path to re-exec
+        # When run directly: $0 is the script path
+        # When sourced/loaded via word-of-binding: $0 is the shell name
+        test_magic_path="$0"
+        case "$0" in
+          */test-magic)
+            # Already have the correct path
+            ;;
+          *)
+            # Running as function - use WIZARDRY_DIR to find our path
+            if [ -f "$root_dir/spells/.wizardry/test-magic" ]; then
+              test_magic_path="$root_dir/spells/.wizardry/test-magic"
+            elif [ -f "${WIZARDRY_DIR}/spells/.wizardry/test-magic" ]; then
+              test_magic_path="${WIZARDRY_DIR}/spells/.wizardry/test-magic"
+            else
+              # Fallback: try to find via PATH
+              test_magic_path=$(command -v test-magic 2>/dev/null) || test_magic_path="$0"
+            fi
+            ;;
+        esac
+        exec pocket-dimension --network closed -- "$test_magic_path" "$@"
+      else
+        printf 'test-magic: pocket-dimension unavailable\n' >&2
+        exit 1
+      fi
+    else
+      printf 'test-magic: pocket-dimension not found\n' >&2
+      exit 1
+    fi
+  fi
+fi
+
+# Pre-flight checks (use command -v instead of has since invoke-wizardry not loaded yet)
+missing_commands=""
+for required_cmd in sh find grep awk sed sort cat printf; do
+  if ! command -v "$required_cmd" >/dev/null 2>&1; then
+    missing_commands="${missing_commands:+$missing_commands, }$required_cmd"
+  fi
+done
+
+if [ -n "$missing_commands" ]; then
+  printf 'test-magic: required commands not found: %s\n' "$missing_commands" >&2
+  exit 1
+fi
+
+if [ ! -x "$root_dir/spells/.wizardry/test-spell" ]; then
+  printf 'test-magic: test-spell not found\n' >&2
+  exit 1
+fi
+
+if [ ! -x "$root_dir/spells/.imps/sys/spell-levels" ]; then
+  printf 'test-magic: spell-levels imp not found or not executable\n' >&2
+  exit 1
+fi
+
+# spell-levels is a command in PATH - call it directly where needed
+
+# Note: invoke-wizardry is loaded by test-bootstrap (sourced by each test file)
+# This provides a standard environment with all functions available per test
+
+# Color codes (inline to avoid dependency)
+_esc=$(printf '\033')
+_green="${_esc}[32m"
+_red="${_esc}[31m"
+_reset="${_esc}[0m"
+
+# Initialize counters
+total_pass=0
+total_fail=0
+total_skip=0
+failed_tests=""
+failed_levels=""
+failed_scripts=""
+subtests_passed=0
+subtests_total=0
+incomplete_tests=""
+incomplete_count=0
+test_summary_line=""
+
+# Incomplete test thresholds
+min_subtests_imp=2
+min_subtests_spell=3
+
+# Count total number of test files for [x/y] numbering
+# This is done before running tests to show progress
+global_test_count=0
+global_test_total=0
+
+# Count test files across all levels
+if [ "$only_this_level" -eq 1 ]; then
+  count_start=$target_level
+  count_end=$target_level
+else
+  count_start=0
+  count_end=$target_level
+fi
+
+# Count common-tests.sh (special level before Level 0)
+if [ "$only_this_level" -eq 0 ] || [ "$count_start" -eq 0 ]; then
+  if [ -f "$test_dir/common-tests.sh" ]; then
+    global_test_total=$((global_test_total + 1))
+  fi
+fi
+
+count_level=$count_start
+while [ "$count_level" -le "$count_end" ]; do
+  count_spell_list=$(spell-levels "$count_level" spells 2>/dev/null || printf '')
+  count_imp_list=$(spell-levels "$count_level" imps 2>/dev/null || printf '')
+  
+  for count_spell_info in $count_spell_list; do
+    case "$count_spell_info" in
+      *:*)
+        count_spell=$(printf '%s' "$count_spell_info" | cut -d: -f1)
+        count_dir=$(printf '%s' "$count_spell_info" | cut -d: -f2)
+        ;;
+      *)
+        count_spell=$count_spell_info
+        count_dir="cantrips"
+        ;;
+    esac
+    
+    count_test_file="$test_dir/$count_dir/test-$count_spell.sh"
+    if [ -f "$count_test_file" ]; then
+      global_test_total=$((global_test_total + 1))
+    fi
+  done
+  
+  for count_imp in $count_imp_list; do
+    count_test_file="$test_dir/.imps/$count_imp"
+    count_test_file="${count_test_file%/*}/test-$(basename "$count_imp").sh"
+    if [ -f "$count_test_file" ]; then
+      global_test_total=$((global_test_total + 1))
+    fi
+  done
+  
+  count_level=$((count_level + 1))
+done
+
+failure_output_file=$(temp-file test-magic) || return 1
+trap 'cleanup-file "$failure_output_file"' EXIT HUP INT TERM
+
+test_timeout=${WIZARDRY_TEST_TIMEOUT:-180}
+compiled_mode=${WIZARDRY_TEST_COMPILED-0}
+
+timeout_cmd=""
+if command -v timeout >/dev/null 2>&1; then
+  timeout_cmd="timeout"
+fi
+
+stdbuf_cmd=""
+if command -v stdbuf >/dev/null 2>&1; then
+  stdbuf_cmd="stdbuf -oL"
+fi
+
+run_test_file() {
+  test_path=$1
+  spell_name=$2
+  test_output=""
+  cleaned_output=""
+  fail_numbers=""
+  test_exit_code=0
+  test_summary_line=""
+
+  test_output_file=$(temp-file test-output) || return 1
+  test_wrapper=$(temp-file test-wrapper) || return 1
+  test_exit_file=$(temp-file test-exit) || return 1
+
+  cat > "$test_wrapper" << WRAPPER_EOF
+#!/bin/sh
+set +e
+${stdbuf_cmd:+$stdbuf_cmd }"$root_dir/spells/.wizardry/test-spell" --skip-common "$test_path" < /dev/null 2>&1
+exit_code=\$?
+printf '%s\n' "\$exit_code" > "$test_exit_file"
+WRAPPER_EOF
+  chmod +x "$test_wrapper"
+
+  awk_filter='
+    /^FAIL_DETAIL:/ { next }
+    /^PASS / { print "    " $0; fflush(); next }
+    /^FAIL/ {
+      if (index($0, ":") > 0) {
+        line = $0
+        sub(/:.*$/, "", line)
+        print "    " line
+      } else {
+        print "    " $0
+      }
+      fflush()
+      next
+    }
+    /^SKIP / { print "    " $0; fflush(); next }
+    /^LACK / { print "    " $0; fflush(); next }
+    /[0-9]+\/[0-9]+ tests passed/ { next }
+  '
+
+  run_exit_file=$(temp-file test-run-exit) || return 1
+
+  # Capture test start time for profiling
+  test_start_time=$(date +%s 2>/dev/null || printf '0')
+
+  if [ -n "$timeout_cmd" ]; then
+    timeout_prefix="$timeout_cmd $test_timeout"
+    if [ "$verbose" -eq 1 ]; then
+      # shellcheck disable=SC2086
+      ( $timeout_prefix "$test_wrapper"; printf '%s\n' "$?" > "$run_exit_file" ) | \
+        ${stdbuf_cmd:+$stdbuf_cmd }tee "$test_output_file" | awk "$awk_filter"
+    else
+      # shellcheck disable=SC2086
+      $timeout_prefix "$test_wrapper" >"$test_output_file" 2>&1
+      printf '%s\n' "$?" > "$run_exit_file"
+    fi
+  else
+    if [ "$verbose" -eq 1 ]; then
+      # shellcheck disable=SC2086
+      ( "$test_wrapper"; printf '%s\n' "$?" > "$run_exit_file" ) | \
+        ${stdbuf_cmd:+$stdbuf_cmd }tee "$test_output_file" | awk "$awk_filter"
+    else
+      "$test_wrapper" >"$test_output_file" 2>&1
+      printf '%s\n' "$?" > "$run_exit_file"
+    fi
+  fi
+
+  # Capture test end time for profiling
+  test_end_time=$(date +%s 2>/dev/null || printf '0')
+  test_duration=0
+  if [ "$test_start_time" != "0" ] && [ "$test_end_time" != "0" ]; then
+    test_duration=$((test_end_time - test_start_time))
+  fi
+  
+  # Check for performance timeout (configurable, default 60s)
+  # Tests that take longer than this are considered too slow and fail
+  performance_timeout=${WIZARDRY_TEST_PERFORMANCE_TIMEOUT:-60}
+  is_too_slow=0
+  if [ "$test_duration" -gt "$performance_timeout" ]; then
+    is_too_slow=1
+  fi
+
+  if [ -f "$test_exit_file" ]; then
+    test_exit_code=$(cat "$test_exit_file" 2>/dev/null || printf '0')
+    test_exit_code=$(printf '%s' "$test_exit_code" | tr -d '[:space:]')
+    case "$test_exit_code" in
+      ''|*[!0-9]*) test_exit_code=0 ;;
+    esac
+  fi
+
+  run_exit_status=$(cat "$run_exit_file" 2>/dev/null || printf '0')
+  run_exit_status=$(printf '%s' "$run_exit_status" | tr -d '[:space:]')
+  case "$run_exit_status" in
+    ''|*[!0-9]*) run_exit_status=0 ;;
+  esac
+
+  if [ -z "$test_exit_code" ] || [ "$test_exit_code" = "0" ] && [ ! -s "$test_exit_file" ]; then
+    test_exit_code="$run_exit_status"
+  fi
+
+  cleanup-file "$run_exit_file"
+  cleanup-file "$test_exit_file"
+  cleanup-file "$test_wrapper"
+
+  test_output=$(cat "$test_output_file")
+  cleanup-file "$test_output_file"
+
+  is_timeout_124=0
+  is_timeout_143=0
+  [ "$test_exit_code" -eq 124 ] && is_timeout_124=1
+  [ "$test_exit_code" -eq 143 ] && is_timeout_143=1
+
+  if [ -n "$timeout_cmd" ] && { [ "$is_timeout_124" -eq 1 ] || [ "$is_timeout_143" -eq 1 ]; }; then
+    test_exit_code=1
+    test_output="FAIL: Test timed out after ${test_timeout}s"
+    cleaned_output="$test_output"
+  else
+    cleaned_output=$(printf '%s\n' "$test_output" | sed '/^FAIL_DETAIL:/d')
+  fi
+
+  fail_numbers=$(printf '%s\n' "$test_output" | awk -F ':' '
+    /^FAIL_DETAIL:/ {
+      if (NF >= 2) {
+        n = split($2, parts, ",")
+        for (i = 1; i <= n; i++) {
+          idx = parts[i]
+          gsub(/^ +| +$/, "", idx)
+          if (idx ~ /^[0-9]+$/) {
+            order[++count] = idx
+          }
+        }
+      }
+      next
+    }
+    END {
+      for (i = 1; i <= count; i++) {
+        if (i > 1) {
+          printf(", ")
+        }
+        printf("%s", order[i])
+      }
+      printf("\n")
+    }
+  ' | sed 's/[[:space:]]*$//')
+
+  # Extract test summary line for display (now includes ✓/✗ icon from test-summary)
+  test_summary_line=$(printf '%s\n' "$cleaned_output" | awk '
+    /[0-9]+\/[0-9]+ tests passed/ { print; exit }
+  ')
+
+  # Append test duration to summary line if available
+  if [ "$test_duration" -gt 0 ] && command -v format-duration >/dev/null 2>&1; then
+    formatted_duration=$(
+      format-duration "$test_duration" 2>/dev/null || printf '%ss' "$test_duration"
+    )
+    if [ -n "$test_summary_line" ]; then
+      test_summary_line="${test_summary_line} (${formatted_duration})"
+    fi
+  fi
+
+  counts=$(printf '%s\n' "$cleaned_output" | awk '
+    /[0-9]+\/[0-9]+ tests passed/ {
+      # Find the N/N pattern and extract it
+      match($0, /[0-9]+\/[0-9]+/)
+      counts_str = substr($0, RSTART, RLENGTH)
+      split(counts_str, parts, "/")
+      passed += parts[1]
+      total += parts[2]
+      next
+    }
+    /^FAIL_DETAIL:/ { next }
+    END { print (passed+0) " " (total+0) }
+  ')
+  set -- $counts
+  if [ "$#" -eq 2 ]; then
+    subtests_passed=$((subtests_passed + $1))
+    subtests_total=$((subtests_total + $2))
+  fi
+
+  test_subtest_count=$(printf '%s\n' "$cleaned_output" | awk '
+    /^[0-9]+\/[0-9]+ tests passed/ {
+      split($1, parts, "/")
+      print parts[2]
+      exit
+    }
+    END { if (!NR) print 0 }
+  ')
+
+  # Check if test was skipped (SKIP message in output)
+  test_is_skipped=0
+  if printf '%s\n' "$cleaned_output" | grep -q "^SKIP:"; then
+    test_is_skipped=1
+  fi
+
+  if [ "$compiled_mode" != "1" ] && [ "$test_is_skipped" -eq 0 ]; then
+    test_incomplete_reasons=""
+    case "$test_path" in
+      .imps/*|*/.imps/*)
+        if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$min_subtests_imp" ]; then
+          entry="$spell_name ($test_subtest_count subtests, need $min_subtests_imp)"
+          if [ -n "$incomplete_tests" ]; then
+            incomplete_tests="$incomplete_tests, $entry"
+          else
+            incomplete_tests="$entry"
+          fi
+          test_incomplete_reasons="$test_subtest_count subtests, need $min_subtests_imp"
+        fi
+        ;;
+      test-install.sh|test-suite.sh)
+        if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$min_subtests_imp" ]; then
+          entry="$spell_name ($test_subtest_count subtests, need $min_subtests_imp)"
+          if [ -n "$incomplete_tests" ]; then
+            incomplete_tests="$incomplete_tests, $entry"
+          else
+            incomplete_tests="$entry"
+          fi
+          test_incomplete_reasons="$test_subtest_count subtests, need $min_subtests_imp"
+        fi
+        ;;
+      *)
+        # Note: --help handler validation is done by common-tests.sh, not individual test files
+        if [ -n "$test_subtest_count" ] && [ "$test_subtest_count" -lt "$min_subtests_spell" ]; then
+          entry="$spell_name ($test_subtest_count subtests, need $min_subtests_spell)"
+          if [ -n "$incomplete_tests" ]; then
+            incomplete_tests="$incomplete_tests, $entry"
+          else
+            incomplete_tests="$entry"
+          fi
+          if [ -n "$test_incomplete_reasons" ]; then
+            subtest_reason="$test_subtest_count subtests, need $min_subtests_spell"
+            test_incomplete_reasons="$test_incomplete_reasons; $subtest_reason"
+          else
+            test_incomplete_reasons="$test_subtest_count subtests, need $min_subtests_spell"
+          fi
+        fi
+        ;;
+    esac
+
+    if [ -n "$test_incomplete_reasons" ]; then
+      incomplete_count=$((incomplete_count + 1))
+      if [ "$verbose" -eq 1 ]; then
+        printf '  LACK %s (%s)\n' "$spell_name" "$test_incomplete_reasons"
+      fi
+    fi
+  fi
+
+  if [ "$test_exit_code" -ne 0 ]; then
+    # Only collect detailed output for the first 20 failures
+    # total_fail hasn't been incremented yet for this failure,
+    # so check < 20 to collect failures 1-20
+    if [ "$total_fail" -lt 20 ]; then
+      {
+        printf '=== %s ===\n' "$test_path"
+        printf '%s\n\n' "$cleaned_output"
+      } >>"$failure_output_file"
+    fi
+
+    if [ -n "$fail_numbers" ]; then
+      entry="$spell_name ($fail_numbers)"
+    else
+      entry="$spell_name"
+    fi
+    if [ -n "$failed_scripts" ]; then
+      failed_scripts="$failed_scripts, $entry"
+    else
+      failed_scripts="$entry"
+    fi
+  fi
+
+  # Check for performance timeout - test was too slow
+  if [ "$is_too_slow" -eq 1 ] && [ "$test_exit_code" -eq 0 ]; then
+    test_exit_code=1
+    formatted_duration=""
+    if command -v format-duration >/dev/null 2>&1; then
+      formatted_duration=$(
+        format-duration "$test_duration" 2>/dev/null \
+          || printf '%ss' "$test_duration"
+      )
+    else
+      formatted_duration="${test_duration}s"
+    fi
+    # Append performance failure to test output
+    test_output="${test_output}
+FAIL: Test exceeded performance timeout (${formatted_duration} > ${performance_timeout}s)"
+    cleaned_output="${cleaned_output}
+FAIL: Test exceeded performance timeout (${formatted_duration} > ${performance_timeout}s)"
+    
+    # Mark as failed test
+    if [ "$total_fail" -lt 20 ]; then
+      {
+        printf '=== %s ===\n' "$test_path"
+        printf '%s\n' "$cleaned_output"
+        printf '\nPerformance timeout: Test took %s but limit is %ss\n\n' "$formatted_duration" "$performance_timeout"
+      } >>"$failure_output_file"
+    fi
+    
+    entry="$spell_name (performance timeout: ${formatted_duration})"
+    if [ -n "$failed_scripts" ]; then
+      failed_scripts="$failed_scripts, $entry"
+    else
+      failed_scripts="$entry"
+    fi
+  fi
+
+  if [ "$test_exit_code" -eq 0 ]; then
+    return 0
+  fi
+  return 1
+}
+
+test_common_tests() {
+  # Use GitHub Actions log grouping if in CI
+  if [ "${GITHUB_ACTIONS-}" = "true" ]; then
+    printf '::group::Common Tests\n'
+  else
+    printf '\nCommon Tests\n'
+  fi
+  
+  level_pass=0
+  level_fail=0
+  level_skip=0
+  level_total=0
+
+  if [ ! -f "$test_dir/common-tests.sh" ]; then
+    printf '  No common tests found.\n'
+    if [ "${GITHUB_ACTIONS-}" = "true" ]; then
+      printf '::endgroup::\n'
+    fi
+    return 0
+  fi
+
+  test_path="common-tests.sh"
+  test_name="common-tests.sh"
+  level_total=$((level_total + 1))
+  global_test_count=$((global_test_count + 1))
+
+  if [ "$verbose" -eq 1 ]; then
+    printf '  [%d/%d] Running %s...\n' "$global_test_count" "$global_test_total" "$test_name"
+  fi
+
+  test_timeout="${WIZARDRY_TEST_TIMEOUT:-180}"
+  if run_test_file "$test_path" "common-tests"; then
+    level_pass=$((level_pass + 1))
+    if [ -n "$test_summary_line" ]; then
+      printf '    %s%s%s\n' "$_green" "$test_summary_line" "$_reset"
+    else
+      printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_name"
+    fi
+  else
+    level_fail=$((level_fail + 1))
+    failed_tests="${failed_tests:+$failed_tests }$test_name"
+    if [ -n "$test_summary_line" ]; then
+      printf '    %s%s%s\n' "$_red" "$test_summary_line" "$_reset"
+    else
+      printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_name"
+    fi
+  fi
+
+  total_pass=$((total_pass + level_pass))
+  total_fail=$((total_fail + level_fail))
+  total_skip=$((total_skip + level_skip))
+
+  # Close GitHub Actions log group if in CI
+  if [ "${GITHUB_ACTIONS-}" = "true" ]; then
+    printf '::endgroup::\n'
+  fi
+
+  # Print summary line outside the group (unindented) so it shows when collapsed
+  if [ "$level_total" -gt 0 ]; then
+    if [ "$level_fail" -eq 0 ]; then
+      printf '%s✓%s Common Tests: %d/%d tests passed\n' "$_green" "$_reset" \
+        "$level_pass" "$level_total"
+    else
+      printf '%s✗%s Common Tests: %d/%d tests passed (%d failed)\n' "$_red" "$_reset" \
+        "$level_pass" "$level_total" "$level_fail"
+    fi
+  fi
+
+  if [ "$level_fail" -gt 0 ]; then
+    return 1
+  fi
+
+  return 0
+}
+
+test_level() {
+  level=$1
+  level_name=$(spell-levels "$level" name 2>/dev/null || printf 'Unknown Level')
+
+  # Use GitHub Actions log grouping if in CI
+  if [ "${GITHUB_ACTIONS-}" = "true" ]; then
+    printf '::group::Level %d: %s\n' "$level" "$level_name"
+  else
+    printf '\nLevel %d: %s\n' "$level" "$level_name"
+  fi
+
+  spell_list=$(spell-levels "$level" spells 2>/dev/null || printf '')
+  imp_list=$(spell-levels "$level" imps 2>/dev/null || printf '')
+
+  level_pass=0
+  level_fail=0
+  level_skip=0
+  level_total=0
+
+  if [ -z "$spell_list" ] && [ -z "$imp_list" ]; then
+    printf '  No spells or imps to test.\n'
+    if [ "${GITHUB_ACTIONS-}" = "true" ]; then
+      printf '::endgroup::\n'
+    fi
+    return 0
+  fi
+
+  for spell_info in $spell_list; do
+    case "$spell_info" in
+      *:*)
+        spell=$(printf '%s' "$spell_info" | cut -d: -f1)
+        dir=$(printf '%s' "$spell_info" | cut -d: -f2)
+        ;;
+      *)
+        spell=$spell_info
+        dir="cantrips"
+        ;;
+    esac
+
+    test_file="$test_dir/$dir/test-$spell.sh"
+    if [ ! -f "$test_file" ]; then
+      level_skip=$((level_skip + 1))
+      if [ "$verbose" -eq 1 ]; then
+        printf '  - %s (no tests)\n' "$spell"
+      fi
+      continue
+    fi
+
+    test_name=$(basename "$test_file")
+    test_path="${test_file#$root_dir/.tests/}"
+    level_total=$((level_total + 1))
+    
+    # Increment counter before running test so [x/y] displays correctly
+    global_test_count=$((global_test_count + 1))
+
+    if [ "$verbose" -eq 1 ]; then
+      printf '  [%d/%d] Running %s...\n' "$global_test_count" "$global_test_total" "$test_name"
+    fi
+
+    if [ "$compiled_mode" = "1" ]; then
+      if head -n 5 "$test_file" 2>/dev/null | grep -q "^# COMPILED_UNSUPPORTED"; then
+        level_skip=$((level_skip + 1))
+        if [ "$verbose" -eq 1 ]; then
+          printf '  - %s (skipped: unsupported in compiled mode)\n' "$spell"
+        fi
+        continue
+      fi
+    fi
+
+    case "$spell" in
+      install)
+        test_timeout="${WIZARDRY_TEST_TIMEOUT:-360}"
+        ;;
+      *)
+        test_timeout="${WIZARDRY_TEST_TIMEOUT:-180}"
+        ;;
+    esac
+
+    if run_test_file "$test_path" "$spell"; then
+      level_pass=$((level_pass + 1))
+      if [ -n "$test_summary_line" ]; then
+        printf '    %s%s%s\n' "$_green" "$test_summary_line" "$_reset"
+      else
+        printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_name"
+      fi
+    else
+      level_fail=$((level_fail + 1))
+      failed_tests="${failed_tests:+$failed_tests }$test_name"
+      if [ -n "$test_summary_line" ]; then
+        printf '    %s%s%s\n' "$_red" "$test_summary_line" "$_reset"
+      else
+        printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_name"
+      fi
+    fi
+  done
+
+  for imp in $imp_list; do
+    test_file="$test_dir/.imps/$imp"
+    test_file="${test_file%/*}/test-$(basename "$imp").sh"
+
+    if [ ! -f "$test_file" ]; then
+      level_skip=$((level_skip + 1))
+      if [ "$verbose" -eq 1 ]; then
+        printf '  - %s (no tests)\n' "$imp"
+      fi
+      continue
+    fi
+
+    test_name=$(basename "$test_file")
+    test_path="${test_file#$root_dir/.tests/}"
+    level_total=$((level_total + 1))
+    
+    # Increment counter before running test so [x/y] displays correctly
+    global_test_count=$((global_test_count + 1))
+
+    if [ "$verbose" -eq 1 ]; then
+      printf '  [%d/%d] Running %s...\n' "$global_test_count" "$global_test_total" "$test_name"
+    fi
+
+    if [ "$compiled_mode" = "1" ]; then
+      if head -n 5 "$test_file" 2>/dev/null | grep -q "^# COMPILED_UNSUPPORTED"; then
+        level_skip=$((level_skip + 1))
+        if [ "$verbose" -eq 1 ]; then
+          printf '  - %s (skipped: unsupported in compiled mode)\n' "$imp"
+        fi
+        continue
+      fi
+    fi
+
+    test_timeout="${WIZARDRY_TEST_TIMEOUT:-180}"
+    if run_test_file "$test_path" "$imp"; then
+      level_pass=$((level_pass + 1))
+      if [ -n "$test_summary_line" ]; then
+        printf '    %s%s%s\n' "$_green" "$test_summary_line" "$_reset"
+      else
+        printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_name"
+      fi
+    else
+      level_fail=$((level_fail + 1))
+      failed_tests="${failed_tests:+$failed_tests }$test_name"
+      if [ -n "$test_summary_line" ]; then
+        printf '    %s%s%s\n' "$_red" "$test_summary_line" "$_reset"
+      else
+        printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_name"
+      fi
+    fi
+  done
+
+  total_pass=$((total_pass + level_pass))
+  total_fail=$((total_fail + level_fail))
+  total_skip=$((total_skip + level_skip))
+
+  # Close GitHub Actions log group if in CI
+  if [ "${GITHUB_ACTIONS-}" = "true" ]; then
+    printf '::endgroup::\n'
+  fi
+
+  # Print summary line outside the group (unindented) so it shows when collapsed
+  if [ "$level_total" -gt 0 ]; then
+    if [ "$level_fail" -eq 0 ]; then
+      printf '%s✓%s Level %d: %d/%d tests passed' "$_green" "$_reset" \
+        "$level" "$level_pass" "$level_total"
+    else
+      printf '%s✗%s Level %d: %d/%d tests passed (%d failed)' "$_red" "$_reset" \
+        "$level" "$level_pass" "$level_total" "$level_fail"
+      failed_levels="${failed_levels:+$failed_levels }$level"
+    fi
+    if [ "$level_skip" -gt 0 ]; then
+      printf ' (%d skipped)\n' "$level_skip"
+    else
+      printf '\n'
+    fi
+  else
+    if [ "$level_skip" -gt 0 ]; then
+      printf 'No tests found (%d skipped)\n' "$level_skip"
+    else
+      printf 'No tests found\n'
+    fi
+  fi
+
+  return 0
+}
+
+if [ "$only_this_level" -eq 1 ]; then
+  printf '\nTesting Level %d only: %s\n' "$target_level" "$(spell-levels "$target_level" name 2>/dev/null || printf 'Unknown Level')"
+else
+  printf '\nTesting through Level %d: %s\n' "$target_level" "$(spell-levels "$target_level" name 2>/dev/null || printf 'Unknown Level')"
+fi
+
+if [ "$only_this_level" -eq 1 ]; then
+  current_level=$target_level
+else
+  current_level=0
+fi
+
+last_success_level=-1
+
+# Run common tests first (special level before Level 0)
+# Only run if testing Level 0 (either --only 0 or normal run starting from 0)
+# Note: We don't exit on failure - just record the results and continue
+if [ "$only_this_level" -eq 0 ] && [ "$current_level" -eq 0 ]; then
+  test_common_tests || true
+elif [ "$only_this_level" -eq 1 ] && [ "$target_level" -eq 0 ]; then
+  test_common_tests || true
+fi
+
+while [ "$current_level" -le "$target_level" ]; do
+  test_level "$current_level" || {
+    exit_code=$?
+    if [ "$last_success_level" -ge 0 ]; then
+      printf '\nTested to Level %d\n' "$last_success_level"
+    fi
+    printf '%s✗%s Testing failed at Level %d\n' "$_red" "$_reset" "$current_level"
+    exit "$exit_code"
+  }
+  last_success_level=$current_level
+  if [ "$only_this_level" -eq 1 ]; then
+    break
+  fi
+  current_level=$((current_level + 1))
+done
+
+printf '\n=== Test Summary ===\n'
+total=$((total_pass + total_fail))
+status=0
+if [ "$total" -gt 0 ]; then
+  printf 'Total: %d/%d tests passed' "$total_pass" "$total"
+  if [ "$total_skip" -gt 0 ]; then
+    printf ' (%d skipped)\n' "$total_skip"
+  else
+    printf '\n'
+  fi
+
+  printf 'Subtests: %d passed, %d total\n' "$subtests_passed" "$subtests_total"
+
+  if [ "$total_fail" -gt 0 ]; then
+    if [ -n "$failed_levels" ]; then
+      printf 'Failed levels: %s\n' "$failed_levels"
+    fi
+    status=1
+  fi
+else
+  printf 'No tests were run\n'
+  exit 0
+fi
+
+coverage_total=0
+coverage_covered=0
+uncovered_spells=""
+
+find_timeout="${WIZARDRY_FIND_TIMEOUT:-60}"
+spell_list=""
+if [ -n "$timeout_cmd" ]; then
+  spell_list=$(cd "$root_dir" && "$timeout_cmd" "$find_timeout" \
+    find spells -type f 2>/dev/null | sort)
+else
+  spell_list=$(cd "$root_dir" && find spells -type f 2>/dev/null | sort)
+fi
+
+while IFS= read -r spell; do
+  [ -n "$spell" ] || continue
+  rel="$spell"
+  case $rel in
+    spells/.wizardry/test-magic|spells/.wizardry/verify-posix)
+      continue
+      ;;
+    *.service|*.gitkeep|*.gitignore)
+      continue
+      ;;
+  esac
+  coverage_total=$((coverage_total + 1))
+
+  rel_check=${spell#spells/}
+  dir_check=$(dirname "$rel_check")
+  base_check=$(basename "$rel_check")
+  candidate_sh="$test_dir/$dir_check/test-${base_check}.sh"
+
+  if [ -f "$candidate_sh" ]; then
+    coverage_covered=$((coverage_covered + 1))
+  else
+    if [ -n "$uncovered_spells" ]; then
+      uncovered_spells=$(printf '%s\n%s' "$uncovered_spells" "$rel")
+    else
+      uncovered_spells="$rel"
+    fi
+  fi
+done <<EOF_SPELLS
+$spell_list
+EOF_SPELLS
+
+extraneous_files=""
+test_file_list=""
+if [ -n "$timeout_cmd" ]; then
+  test_file_list=$("$timeout_cmd" "$find_timeout" find "$test_dir" \
+    -type f -name 'test-*.sh' 2>/dev/null | sort)
+else
+  test_file_list=$(find "$test_dir" -type f -name 'test-*.sh' 2>/dev/null | sort)
+fi
+
+while IFS= read -r test_file; do
+  [ -n "$test_file" ] || continue
+  case $test_file in
+    */test-suite.sh) continue ;;
+    */test-spell-level-coverage.sh) continue ;;
+  esac
+
+  rel=${test_file#"$test_dir/"}
+  dir=$(dirname "$rel")
+  base=$(basename "$rel")
+  base=${base#test-}
+  base=${base%.sh}
+
+  case "$base" in
+    install|install-with-old-version)
+      if [ "$dir" = "install" ] || [ "$dir" = "." ]; then
+        if [ -f "$root_dir/install" ]; then
+          continue
+        fi
+      fi
+      ;;
+    tutorials)
+      if [ "$dir" = "." ]; then
+        if [ -d "$root_dir/tutorials" ]; then
+          continue
+        fi
+      fi
+      ;;
+  esac
+
+  spell_path="$root_dir/spells/$dir/$base"
+
+  if [ ! -f "$spell_path" ]; then
+    if [ -n "$extraneous_files" ]; then
+      extraneous_files=$(printf '%s\n%s' "$extraneous_files" ".tests/$rel")
+    else
+      extraneous_files=".tests/$rel"
+    fi
+  fi
+done <<EOF_TESTS
+$test_file_list
+EOF_TESTS
+
+coverage_uncovered=$((coverage_total - coverage_covered))
+if [ "$coverage_uncovered" -gt 0 ]; then
+  printf 'Coverage: %d uncovered\n' "$coverage_uncovered"
+  status=1
+fi
+if [ "$incomplete_count" -gt 0 ] && [ "$compiled_mode" != "1" ]; then
+  status=1
+fi
+
+if [ "$coverage_uncovered" -gt 0 ]; then
+  printf '\nUncovered spells:\n'
+  printf '  %s\n' "$uncovered_spells"
+fi
+
+if [ -n "$extraneous_files" ] && [ "${WIZARDRY_TEST_COMPILED-0}" != "1" ]; then
+  printf '\nExtraneous test files (no corresponding spell):\n'
+  printf '  %s\n' "$extraneous_files"
+  status=1
+fi
+
+if [ -n "$incomplete_tests" ] && [ "${WIZARDRY_TEST_COMPILED-0}" != "1" ]; then
+  printf '\nIncomplete tests (imps need %d+ subtests, spells need %d+ including --help):\n' \
+    "$min_subtests_imp" "$min_subtests_spell"
+  printf '  %s\n' "$incomplete_tests"
+  status=1
+fi
+
+if [ "$status" -eq 0 ]; then
+  if [ "$run_all" -eq 1 ]; then
+    printf '\nTested all (Level %d)\n' "$last_success_level"
+  else
+    printf '\nAll tests passed\n'
+  fi
+fi
+
+if [ "$status" -ne 0 ] && [ -n "$failed_scripts" ]; then
+  if [ "$total_fail" -le 20 ] && [ -s "$failure_output_file" ]; then
+    printf '\nFailure Details\n'
+    while IFS= read -r line; do
+      case $line in
+        "=== "*)
+          test_path=$(printf '%s' "$line" | sed 's/^=== //; s/ ===$//')
+          case "$test_path" in
+            */common-tests.sh|common-tests.sh)
+              spell_name="common tests"
+              ;;
+            *)
+              rel=${test_path#"$test_dir/"}
+              dir=$(dirname "$rel")
+              base=$(basename "$rel")
+              base=${base#test-}
+              base=${base%.*}
+              spell_path="$root_dir/spells/$dir/$base"
+              spell_name=$(basename "$spell_path")
+              ;;
+          esac
+          printf '\n=== %s ===\n' "$spell_name"
+          ;;
+        "PASS "*)
+          ;;
+        *[0-9]*/[0-9]*" tests passed"*)
+          ;;
+        "")
+          ;;
+        *)
+          printf '%s\n' "$line"
+          ;;
+      esac
+    done <"$failure_output_file"
+  fi
+
+  os_label="unknown"
+  if [ -n "${WIZARDRY_OS_LABEL-}" ]; then
+    os_label="$WIZARDRY_OS_LABEL"
+  elif [ -x "$root_dir/spells/divination/detect-distro" ]; then
+    os_label=$("$root_dir/spells/divination/detect-distro" 2>/dev/null || printf 'unknown')
+  elif has detect-distro; then
+    os_label=$(detect-distro 2>/dev/null || printf 'unknown')
+  elif has uname; then
+    os_label=$(uname -s 2>/dev/null | tr 'A-Z' 'a-z' || printf 'unknown')
+  fi
+
+  printf '\nFailed tests (%s): %s\n' "$os_label" "$failed_scripts"
+fi
+
+trap - EXIT HUP INT TERM
+cleanup-file "$failure_output_file"
+exit $status

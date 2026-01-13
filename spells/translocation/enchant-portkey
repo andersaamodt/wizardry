@@ -1,0 +1,57 @@
+#!/bin/sh
+
+# This spell enchants a file with a portkey that transports to a destination.
+# Activate the portkey with follow-portkey to teleport to the stored location.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: enchant-portkey <file> [destination]
+
+Enchant a file with a portkey that stores a destination path, defaulting to marker 1 ($SPELLBOOK_DIR/.markers/1) when none is provided. Activate the portkey later with follow-portkey to teleport to the stored location.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Ensure file argument is provided
+if [ -z "${1-}" ]; then
+        printf '%s\n' "enchant-portkey: file path required" >&2
+        exit 2
+fi
+
+file=$1
+destination=${2-}
+spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+markers_dir="$spell_home/.markers"
+marker_file="$markers_dir/1"
+
+# Verify file exists
+if [ ! -f "$file" ]; then
+        printf '%s\n' "enchant-portkey: file not found: $file" >&2
+        exit 1
+fi
+
+# If no destination provided, try to read from marker file
+if [ -z "$destination" ]; then
+        if [ -f "$marker_file" ]; then
+                destination=$(cat "$marker_file")
+        else
+                printf '%s\n' "enchant-portkey: no destination provided and no marker 1 found." >&2
+                exit 1
+        fi
+fi
+
+# Verify destination is valid
+if [ -z "$destination" ]; then
+        printf '%s\n' "enchant-portkey: destination cannot be empty." >&2
+        exit 1
+fi
+
+# Enchant the file with the destination context
+enchant "$file" context "$destination" >/dev/null
+
+printf '%s\n' "Portkey enchanted on '$(basename "$file")'. Use follow-portkey to activate."

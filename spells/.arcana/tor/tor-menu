@@ -1,0 +1,71 @@
+#!/bin/sh
+
+# Present the Tor management menu.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: tor-menu
+
+Displays the Tor management menu.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+. colors
+
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 0' INT TERM
+
+first_run=1
+
+while true; do
+  if [ "$first_run" -eq 0 ]; then
+    printf '\n'
+  else
+    first_run=0
+  fi
+
+  # Build menu
+  title="${BOLD}${CYAN}Tor: $(tor-status)"
+  exit_label=$(exit-label)
+  exit_option="${exit_label}%kill -TERM \$PPID"
+  
+  # Build service entries
+  service_status_option=""
+  tor_service_option=""
+  
+  if is-service-installed tor > /dev/null; then
+    service_status_option="View Tor Service Status%sudo systemctl status tor"
+    if is-service-running tor > /dev/null; then
+      tor_service_option="Stop Tor Service%sudo systemctl stop tor"
+    else
+      tor_service_option="Start Tor Service%sudo systemctl start tor"
+    fi
+  else
+    script_dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
+    service_status_option="Install Tor Service%install-service-template $script_dir/tor.service \"TORPATH=\$(command -v tor)\" \"TORRCPATH=/etc/tor/torrc\""
+  fi
+  
+  if command -v tor >/dev/null 2>&1; then
+    config_option="Configure Tor%configure-tor"
+    repair_option="Repair Permissions%repair-tor-permissions"
+    uninstall_option="Uninstall Tor%uninstall-tor"
+    
+    if [ -n "$service_status_option" ] && [ -n "$tor_service_option" ]; then
+      menu "$title" "$config_option" "$service_status_option" "$tor_service_option" "$repair_option" "$uninstall_option" "$exit_option" || true
+    elif [ -n "$service_status_option" ]; then
+      menu "$title" "$config_option" "$service_status_option" "$repair_option" "$uninstall_option" "$exit_option" || true
+    else
+      menu "$title" "$config_option" "$repair_option" "$uninstall_option" "$exit_option" || true
+    fi
+  else
+    install_option="Install Tor%install-tor"
+    menu "$title" "$install_option" "$exit_option" || true
+  fi
+done

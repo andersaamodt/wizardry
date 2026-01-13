@@ -1,0 +1,81 @@
+#!/bin/sh
+
+# Report installation and status of MUD features.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: mud-status
+
+Reports whether MUD features are installed and which ones are enabled.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if command -v colors >/dev/null 2>&1; then
+  # shellcheck source=/dev/null
+  . colors
+else
+  RESET=""
+  THEME_SUCCESS=""
+  THEME_WARNING=""
+  THEME_ERROR=""
+  GREY=""
+fi
+# Older scripts expect GRAY, so mirror GREY when missing.
+GRAY=${GREY-}
+
+# Check if mud-config exists and is executable
+if ! command -v mud-config >/dev/null 2>&1; then
+  status="not installed"
+  color="$GRAY"
+  printf "%s%s%s\n" "$color" "$status" "$RESET"
+  exit 0
+fi
+
+# Get the spellbook directory
+spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+config_file="$spell_home/.mud"
+
+# Check if config file exists
+if [ ! -f "$config_file" ]; then
+  status="installed, not configured"
+  color="$GRAY"
+  printf "%s%s%s\n" "$color" "$status" "$RESET"
+  exit 0
+fi
+
+# List of MUD features (matching toggle-all-mud)
+FEATURES="touch-hook fantasy-theme inventory combat"
+
+# Count enabled features
+enabled_count=0
+total_count=0
+
+for feature in $FEATURES; do
+  total_count=$((total_count + 1))
+  feature_status=$(mud-config get "$feature" 2>/dev/null || printf '0')
+  if [ "$feature_status" = "1" ]; then
+    enabled_count=$((enabled_count + 1))
+  fi
+done
+
+# Determine status message and color
+if [ "$enabled_count" -eq "$total_count" ]; then
+  status="installed, all features enabled"
+  color="$THEME_SUCCESS"
+elif [ "$enabled_count" -eq 0 ]; then
+  status="installed, no features enabled"
+  color="$GRAY"
+else
+  status="installed, $enabled_count/$total_count features enabled"
+  color="$THEME_WARNING"
+fi
+
+printf "%s%s%s\n" "$color" "$status" "$RESET"

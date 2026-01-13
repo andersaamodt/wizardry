@@ -1,0 +1,114 @@
+#!/bin/sh
+
+# This spell forgets (removes) a spell from the Cast menu.
+# Use this to remove memorized spells from the Cast menu.
+#
+# Usage: forget SPELL_NAME
+
+spell_name="forget"
+tab_char=$(printf '\t')
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: forget SPELL_NAME
+
+Remove a spell from the Cast menu (unmemize it).
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Helper for reading non-empty lines
+
+# Resolve cast directory with tilde expansion
+if [ -n "${WIZARDRY_CAST_DIR-}" ]; then
+  cast_dir=$WIZARDRY_CAST_DIR
+  case $cast_dir in
+    \~) cast_dir=${HOME:-.} ;;
+    \~/*) cast_dir=${HOME:-.}/${cast_dir#\~/} ;;
+  esac
+else
+  cast_dir=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+fi
+
+# Resolve command file with tilde expansion
+if [ -n "${WIZARDRY_CAST_FILE-}" ]; then
+  command_file=$WIZARDRY_CAST_FILE
+  case $command_file in
+    \~) command_file=${HOME:-.} ;;
+    \~/*) command_file=${HOME:-.}/${command_file#\~/} ;;
+  esac
+elif [ -n "${MEMORIZE_COMMAND_FILE-}" ]; then
+  command_file=$MEMORIZE_COMMAND_FILE
+  case $command_file in
+    \~) command_file=${HOME:-.} ;;
+    \~/*) command_file=${HOME:-.}/${command_file#\~/} ;;
+  esac
+else
+  command_file=$cast_dir/.memorized
+fi
+
+# Validate arguments
+case ${1-} in
+"")
+  usage-error "$spell_name" "spell name required"
+  ;;
+-*)
+  usage-error "$spell_name" "unknown option '$1'"
+  ;;
+esac
+
+name=$1
+
+# Validate spell name
+case $name in
+''|*[!A-Za-z0-9._-]*)
+  die "$spell_name: names may contain only letters, digits, dots, underscores, and dashes."
+        exit 1
+  ;;
+-*)
+  die "$spell_name: names may not begin with a dash."
+        exit 1
+  ;;
+esac
+
+# Check if command file exists
+if [ ! -f "$command_file" ]; then
+  die "$spell_name: spell '$name' is not memorized."
+        exit 1
+fi
+
+# Remove spell from command file
+tmp=$(temp-file forget) || exit 1
+trap 'cleanup-file "$tmp"' EXIT HUP INT TERM
+removed=0
+while IFS= read -r line || nonempty "$line"; do
+  entry_name=$line
+  case $line in
+  *"$tab_char"*)
+    entry_name=${line%%"$tab_char"*}
+    ;;
+  esac
+  if [ "$entry_name" = "$name" ] || [ -z "$entry_name" ]; then
+    if [ "$entry_name" = "$name" ]; then
+      removed=1
+      continue
+    fi
+    continue
+  fi
+  printf '%s\n' "$line" >>"$tmp"
+done <"$command_file"
+
+if [ "$removed" -eq 0 ]; then
+  trap - EXIT HUP INT TERM
+  rm -f "$tmp"
+  die "$spell_name: spell '$name' is not memorized."
+        exit 1
+fi
+
+trap - EXIT HUP INT TERM
+mv "$tmp" "$command_file"
