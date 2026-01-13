@@ -6,51 +6,43 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_format_seconds_only() {
-  run_spell spells/.imps/fmt/format-duration 45
-  assert_success
-  assert_output "45s"
+  output=$("$test_root/spells/.imps/fmt/format-duration" 45)
+  assert_equals "$output" "45s"
 }
 
 test_format_minutes_and_seconds() {
-  run_spell spells/.imps/fmt/format-duration 125
-  assert_success
-  assert_output "2m 5s"
+  output=$("$test_root/spells/.imps/fmt/format-duration" 125)
+  assert_equals "$output" "2m 5s"
 }
 
 test_format_hours_minutes_seconds() {
-  run_spell spells/.imps/fmt/format-duration 3665
-  assert_success
-  assert_output "1h 1m 5s"
+  output=$("$test_root/spells/.imps/fmt/format-duration" 3665)
+  assert_equals "$output" "1h 1m 5s"
 }
 
 test_format_days_hours_minutes_seconds() {
-  run_spell spells/.imps/fmt/format-duration 90061
-  assert_success
-  assert_output "1d 1h 1m 1s"
+  output=$("$test_root/spells/.imps/fmt/format-duration" 90061)
+  assert_equals "$output" "1d 1h 1m 1s"
 }
 
 test_format_exact_minute() {
-  run_spell spells/.imps/fmt/format-duration 120
-  assert_success
-  assert_output "2m"
+  output=$("$test_root/spells/.imps/fmt/format-duration" 120)
+  assert_equals "$output" "2m"
 }
 
 test_format_exact_hour() {
-  run_spell spells/.imps/fmt/format-duration 7200
-  assert_success
-  assert_output "2h"
+  output=$("$test_root/spells/.imps/fmt/format-duration" 7200)
+  assert_equals "$output" "2h"
 }
 
 test_format_zero_seconds() {
-  run_spell spells/.imps/fmt/format-duration 0
-  assert_success
-  assert_output "0s"
+  output=$("$test_root/spells/.imps/fmt/format-duration" 0)
+  assert_equals "$output" "0s"
 }
 
 test_format_large_duration() {
-  run_spell spells/.imps/fmt/format-duration 186543
-  assert_success
-  assert_output "2d 3h 49m 3s"
+  output=$("$test_root/spells/.imps/fmt/format-duration" 186543)
+  assert_equals "$output" "2d 3h 49m 3s"
 }
 
 run_test_case "seconds only" test_format_seconds_only
