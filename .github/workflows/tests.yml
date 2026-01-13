@@ -48,7 +48,8 @@ jobs:
         run: |
           nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr --run "
             . spells/.imps/sys/invoke-wizardry
-            echo 'SUCCESS: Nix workflow with invoke-wizardry completed'
+            banish 8
+            echo 'SUCCESS: Nix workflow with banish 8 completed'
             exit 0
           " || true
           echo "Nix shell exited with: $?"
@@ -66,7 +67,8 @@ jobs:
       - name: Run unit tests
         run: |
           . spells/.imps/sys/invoke-wizardry
-          echo "SUCCESS: macOS workflow with invoke-wizardry completed"
+          banish 8
+          echo "SUCCESS: macOS workflow with banish 8 completed"
 
   arch:
     name: Arch Linux unit tests
@@ -84,7 +86,8 @@ jobs:
       - name: Run unit tests
         run: |
           . spells/.imps/sys/invoke-wizardry
-          echo "SUCCESS: Arch Linux workflow with invoke-wizardry completed"
+          banish 8
+          echo "SUCCESS: Arch Linux workflow with banish 8 completed"
 
   debian:
     name: Debian unit tests
@@ -103,7 +106,8 @@ jobs:
       - name: Run unit tests
         run: |
           . spells/.imps/sys/invoke-wizardry
-          echo "SUCCESS: Debian workflow with invoke-wizardry completed"
+          banish 8
+          echo "SUCCESS: Debian workflow with banish 8 completed"
 
   ubuntu:
     name: Ubuntu unit tests
@@ -140,4 +144,5 @@ jobs:
       - name: Run unit tests
         run: |
           . spells/.imps/sys/invoke-wizardry
-          echo "SUCCESS: Ubuntu workflow with invoke-wizardry completed"
+          banish 8
+          echo "SUCCESS: Ubuntu workflow with banish 8 completed"
