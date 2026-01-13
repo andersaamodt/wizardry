@@ -49,9 +49,17 @@ jobs:
         run: |
           nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr --run "
             . spells/.imps/sys/invoke-wizardry
-            echo '[DEBUG workflow] About to call: banish 8' >&2
-            banish 8
-            echo '[DEBUG workflow] banish 8 completed with exit code: '\$? >&2
+            echo '[DEBUG workflow] About to call: timeout 30 banish 8' >&2
+            if timeout 30 banish 8; then
+              echo '[DEBUG workflow] banish 8 completed successfully' >&2
+            else
+              exit_code=\$?
+              echo '[DEBUG workflow] banish 8 failed with exit code: '\$exit_code >&2
+              if [ \"\$exit_code\" = '124' ]; then
+                echo '[DEBUG workflow] banish 8 TIMED OUT after 30 seconds - this is the hang!' >&2
+              fi
+              exit \$exit_code
+            fi
             ./spells/.wizardry/test-magic --verbose
           "
 
@@ -85,9 +93,17 @@ jobs:
       - name: Run unit tests
         run: |
           . spells/.imps/sys/invoke-wizardry
-          echo "[DEBUG workflow] About to call: banish 8" >&2
-          banish 8
-          echo "[DEBUG workflow] banish 8 completed with exit code: $?" >&2
+          echo "[DEBUG workflow] About to call: timeout 30 banish 8" >&2
+          if timeout 30 banish 8; then
+            echo "[DEBUG workflow] banish 8 completed successfully" >&2
+          else
+            exit_code=$?
+            echo "[DEBUG workflow] banish 8 failed with exit code: $exit_code" >&2
+            if [ "$exit_code" = "124" ]; then
+              echo "[DEBUG workflow] banish 8 TIMED OUT after 30 seconds - this is the hang!" >&2
+            fi
+            exit $exit_code
+          fi
           ./spells/.wizardry/test-magic --verbose
 
   debian:
@@ -143,7 +159,15 @@ jobs:
       - name: Run unit tests
         run: |
           . spells/.imps/sys/invoke-wizardry
-          echo "[DEBUG workflow] About to call: banish 8" >&2
-          banish 8
-          echo "[DEBUG workflow] banish 8 completed with exit code: $?" >&2
+          echo "[DEBUG workflow] About to call: timeout 30 banish 8" >&2
+          if timeout 30 banish 8; then
+            echo "[DEBUG workflow] banish 8 completed successfully" >&2
+          else
+            exit_code=$?
+            echo "[DEBUG workflow] banish 8 failed with exit code: $exit_code" >&2
+            if [ "$exit_code" = "124" ]; then
+              echo "[DEBUG workflow] banish 8 TIMED OUT after 30 seconds - this is the hang!" >&2
+            fi
+            exit $exit_code
+          fi
           ./spells/.wizardry/test-magic --verbose
