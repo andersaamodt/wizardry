@@ -15,7 +15,7 @@ Built-in destinations:
   wizardry     Jump to the wizardry installation directory ($WIZARDRY_DIR)
   home         Jump to your home directory ($HOME)
   trash        Jump to the system trash directory
-  
+
 Marker destinations:
   <marker>     Jump to a marker set with mark-location (e.g., 1, 2, myplace)
   to marker    Jump to a specific marker
@@ -70,6 +70,9 @@ fi
 
 destination="${1-}"
 
+# Get wizardry directory for potential delegation
+wiz_dir=$(env-or WIZARDRY_DIR "${HOME:-.}/.wizardry")
+
 # Handle built-in keywords
 case "$destination" in
   spellbook)
@@ -79,7 +82,7 @@ case "$destination" in
       printf '%s\n' "The spellbook directory will be created when you install wizardry." >&2
       set +eu; return 1
     fi
-    
+
     # Check if already at destination
     current=$(pwd -P | sed 's|//|/|g')
     target=$(cd "$spell_home" && pwd -P | sed 's|//|/|g')
@@ -87,27 +90,27 @@ case "$destination" in
       printf '%s\n' "You are already in the spellbook."
       set +eu; return 0
     fi
-    
+
     if ! cd "$spell_home"; then
       printf '%s\n' "jump: failed to jump to spellbook" >&2
       set +eu; return 1
     fi
     printf '%s\n' "You teleport to the spellbook at $spell_home"
-    
+
     # Describe location if look exists
     if command -v look >/dev/null 2>&1; then
       look 2>/dev/null || true
     fi
     set +eu
     ;;
-    
+
   wizardry)
     wiz_home=$(env-or WIZARDRY_DIR "${HOME:-.}/.wizardry")
     if [ ! -d "$wiz_home" ]; then
       printf '%s\n' "jump: wizardry directory does not exist: $wiz_home" >&2
       set +eu; return 1
     fi
-    
+
     # Check if already at destination
     current=$(pwd -P | sed 's|//|/|g')
     target=$(cd "$wiz_home" && pwd -P | sed 's|//|/|g')
@@ -115,27 +118,27 @@ case "$destination" in
       printf '%s\n' "You are already in the wizardry sanctum."
       set +eu; return 0
     fi
-    
+
     if ! cd "$wiz_home"; then
       printf '%s\n' "jump: failed to jump to wizardry" >&2
       set +eu; return 1
     fi
     printf '%s\n' "You teleport to the wizardry sanctum at $wiz_home"
-    
+
     # Describe location if look exists
     if command -v look >/dev/null 2>&1; then
       look 2>/dev/null || true
     fi
     set +eu
     ;;
-    
+
   home)
     home_dir=${HOME:-.}
     if [ ! -d "$home_dir" ]; then
       printf '%s\n' "jump: home directory does not exist: $home_dir" >&2
       set +eu; return 1
     fi
-    
+
     # Check if already at destination
     current=$(pwd -P | sed 's|//|/|g')
     target=$(cd "$home_dir" && pwd -P | sed 's|//|/|g')
@@ -143,23 +146,22 @@ case "$destination" in
       printf '%s\n' "You are already home."
       set +eu; return 0
     fi
-    
+
     if ! cd "$home_dir"; then
       printf '%s\n' "jump: failed to jump home" >&2
       set +eu; return 1
     fi
     printf '%s\n' "You teleport home to $home_dir"
-    
+
     # Describe location if look exists
     if command -v look >/dev/null 2>&1; then
       look 2>/dev/null || true
     fi
     set +eu
     ;;
-    
+
   trash)
     # Delegate to jump-trash
-    wiz_dir=$(env-or WIZARDRY_DIR "${HOME:-.}/.wizardry")
     if [ -f "$wiz_dir/spells/arcane/jump-trash" ]; then
       set +eu
       . "$wiz_dir/spells/arcane/jump-trash"
@@ -171,10 +173,9 @@ case "$destination" in
       set +eu; return 1
     fi
     ;;
-    
+
   to)
     # Handle "jump to marker X" pattern
-    wiz_dir=$(env-or WIZARDRY_DIR "${HOME:-.}/.wizardry")
     if [ "${2-}" = "marker" ]; then
       shift 2
       if [ -f "$wiz_dir/spells/translocation/jump-to-marker" ]; then
@@ -202,10 +203,9 @@ case "$destination" in
       fi
     fi
     ;;
-    
+
   *)
     # Any other argument - delegate to jump-to-marker
-    wiz_dir=$(env-or WIZARDRY_DIR "${HOME:-.}/.wizardry")
     if [ -f "$wiz_dir/spells/translocation/jump-to-marker" ]; then
       set +eu
       . "$wiz_dir/spells/translocation/jump-to-marker" "$@"
