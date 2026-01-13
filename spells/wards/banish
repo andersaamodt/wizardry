@@ -4,8 +4,6 @@
 # This spell assumption-checks, self-heals, and tests the environment,
 # ensuring all prerequisites are met for each spell level.
 
-printf '[banish DEBUG] Script execution started\n' >&2
-
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
@@ -31,9 +29,7 @@ USAGE
   ;;
 esac
 
-printf '[banish DEBUG] Before set -eu\n' >&2
 set -eu
-printf '[banish DEBUG] After set -eu\n' >&2
 
 # Detect WIZARDRY_DIR if not already set
 if [ -z "${WIZARDRY_DIR-}" ]; then
@@ -210,9 +206,7 @@ _banish_count_words="${WIZARDRY_DIR}/spells/.imps/text/count-words"
 # Run level-specific checks and actions using case statement
 banish_process_level() {
   level=$1
-  printf '[banish DEBUG] Entering banish_process_level with level=%s\n' "$level" >&2
   level_name=$("$spell_levels_script" "$level" name)
-  printf '[banish DEBUG] Level name retrieved: %s\n' "$level_name" >&2
   
   printf '\nLevel %d: %s\n' "$level" "$level_name"
   
@@ -2766,8 +2760,6 @@ HEREDOC_TEST
 
 
 # Main execution: Run levels 0 through target_level (or only target_level if --only)
-printf '[banish DEBUG] Starting main execution, target_level=%s only_this_level=%s\n' "$target_level" "$only_this_level" >&2
-
 if [ "$only_this_level" -eq 1 ]; then
   printf '\nValidating Level %d only: %s\n' "$target_level" "$("$spell_levels_script" "$target_level" name)"
 else
@@ -2790,7 +2782,6 @@ fi
 
 last_success_level=-1
 while [ "$current_level" -le "$target_level" ]; do
-  printf '[banish DEBUG] About to process level %s\n' "$current_level" >&2
   banish_process_level "$current_level" || {
     exit_code=$?
     if [ "$last_success_level" -ge 0 ]; then
