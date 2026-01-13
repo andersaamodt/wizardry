@@ -46,7 +46,14 @@ jobs:
           } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
           sudo sysctl --system || true
       - name: Run unit tests in Nix shell
-        run: nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr --run ". spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose"
+        run: |
+          nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr --run "
+            . spells/.imps/sys/invoke-wizardry
+            echo '[DEBUG workflow] About to call: banish 8' >&2
+            banish 8
+            echo '[DEBUG workflow] banish 8 completed with exit code: '\$? >&2
+            ./spells/.wizardry/test-magic --verbose
+          "
 
   aab-macos:
     name: macOS unit tests
@@ -76,7 +83,12 @@ jobs:
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
       - name: Run unit tests
-        run: . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose
+        run: |
+          . spells/.imps/sys/invoke-wizardry
+          echo "[DEBUG workflow] About to call: banish 8" >&2
+          banish 8
+          echo "[DEBUG workflow] banish 8 completed with exit code: $?" >&2
+          ./spells/.wizardry/test-magic --verbose
 
   debian:
     name: Debian unit tests
@@ -129,4 +141,9 @@ jobs:
             echo "bubblewrap unusable; proceeding without sandboxing" >&2
           fi
       - name: Run unit tests
-        run: . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose
+        run: |
+          . spells/.imps/sys/invoke-wizardry
+          echo "[DEBUG workflow] About to call: banish 8" >&2
+          banish 8
+          echo "[DEBUG workflow] banish 8 completed with exit code: $?" >&2
+          ./spells/.wizardry/test-magic --verbose
