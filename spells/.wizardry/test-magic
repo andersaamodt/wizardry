@@ -51,6 +51,8 @@ esac
 
 set -eu
 
+printf '[test-magic DEBUG] Script started, set -eu enabled\n' >&2
+
 # Detect WIZARDRY_DIR if not already set
 if [ -z "${WIZARDRY_DIR-}" ]; then
   case "$0" in
@@ -84,9 +86,13 @@ fi
 
 export WIZARDRY_DIR
 
+printf '[test-magic DEBUG] WIZARDRY_DIR set to: %s\n' "$WIZARDRY_DIR" >&2
+
 cmd_name=$(basename "$0")
 root_dir=$WIZARDRY_DIR
 test_dir="$root_dir/.tests"
+
+printf '[test-magic DEBUG] About to add imps to PATH\n' >&2
 
 # Add wizardry spells and imps to PATH
 if [ -d "$root_dir/spells/.imps" ]; then
@@ -96,6 +102,9 @@ if [ -d "$root_dir/spells/.imps" ]; then
     PATH="$impdir:$PATH"
   done
 fi
+
+printf '[test-magic DEBUG] PATH setup complete\n' >&2
+printf '[test-magic DEBUG] About to parse arguments\n' >&2
 
 # Parse arguments
 target_level=27
@@ -182,6 +191,8 @@ USAGE
   esac
 done
 
+printf '[test-magic DEBUG] Arguments parsed: target_level=%d only=%d verbose=%d\n' "$target_level" "$only_this_level" "$verbose" >&2
+
 # Validate level range
 if [ "$target_level" -lt 0 ] || [ "$target_level" -gt "$max_level" ]; then
   printf 'test-magic: level must be 0-%d\n' "$max_level" >&2
@@ -189,6 +200,8 @@ if [ "$target_level" -lt 0 ] || [ "$target_level" -gt "$max_level" ]; then
 fi
 
 export PATH
+
+printf '[test-magic DEBUG] Checking pocket-dimension (GITHUB_ACTIONS=%s)\n' "${GITHUB_ACTIONS-not set}" >&2
 
 # Run tests inside pocket-dimension unless in GitHub Actions (no isolation for speed)
 if [ "${GITHUB_ACTIONS-}" != "true" ]; then
@@ -227,6 +240,9 @@ if [ "${GITHUB_ACTIONS-}" != "true" ]; then
   fi
 fi
 
+printf '[test-magic DEBUG] Pocket-dimension check complete\n' >&2
+printf '[test-magic DEBUG] Running pre-flight checks\n' >&2
+
 # Pre-flight checks (use command -v instead of has since invoke-wizardry not loaded yet)
 missing_commands=""
 for required_cmd in sh find grep awk sed sort cat printf; do
@@ -249,6 +265,8 @@ if [ ! -x "$root_dir/spells/.imps/sys/spell-levels" ]; then
   printf 'test-magic: spell-levels imp not found or not executable\n' >&2
   exit 1
 fi
+
+printf '[test-magic DEBUG] Pre-flight checks passed\n' >&2
 
 # spell-levels is a command in PATH - call it directly where needed
 
