@@ -51,7 +51,7 @@ jobs:
             . spells/.imps/sys/invoke-wizardry
             echo 'SUCCESS: Nix workflow with invoke-wizardry completed'
             exit 0
-          " || true
+          "
           echo "Nix shell exited with: $?"
 
   aab-macos:
