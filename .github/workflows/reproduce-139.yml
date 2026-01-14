@@ -28,12 +28,12 @@ jobs:
           export WIZARDRY_DIR="${PWD}"
           # Create a minimal banish that skips POSIX checks in level 0
           cat > /tmp/banish-minimal <<'EOF'
-#!/bin/sh
-set -eu
-target_level=${1:-0}
-printf 'Minimal banish: skipping POSIX checks for level %s\n' "$target_level"
-exit 0
-EOF
+          #!/bin/sh
+          set -eu
+          target_level=${1:-0}
+          printf 'Minimal banish: skipping POSIX checks for level %s\n' "$target_level"
+          exit 0
+          EOF
           chmod +x /tmp/banish-minimal
           cat /tmp/banish-minimal
 
@@ -73,12 +73,12 @@ EOF
           export WIZARDRY_DIR="${PWD}"
           # Create a minimal banish that skips POSIX checks in level 0
           cat > /tmp/banish-minimal <<'EOF'
-#!/bin/sh
-set -eu
-target_level=${1:-0}
-printf 'Minimal banish: skipping POSIX checks for level %s\n' "$target_level"
-exit 0
-EOF
+          #!/bin/sh
+          set -eu
+          target_level=${1:-0}
+          printf 'Minimal banish: skipping POSIX checks for level %s\n' "$target_level"
+          exit 0
+          EOF
           chmod +x /tmp/banish-minimal
           cat /tmp/banish-minimal
 
