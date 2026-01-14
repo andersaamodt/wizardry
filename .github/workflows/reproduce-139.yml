@@ -32,7 +32,6 @@ jobs:
       - name: Try sourcing glosses directly
         run: |
           export WIZARDRY_DIR="${PWD}"
-          set -x
           echo "About to source glosses..."
           . /tmp/glosses.sh
           echo "Successfully sourced glosses"
@@ -63,7 +62,6 @@ jobs:
           WIZARDRY_DIR="${PWD}"
           nix-shell -p bash --run "
             export WIZARDRY_DIR='${WIZARDRY_DIR}'
-            set -x
             echo 'About to source glosses in nix-shell...'
             . /tmp/glosses.sh
             echo 'Successfully sourced glosses'
