@@ -286,6 +286,8 @@ uname|uniq|wc|xargs)
     emit_line "      ;;"
     emit_line "    *)"
     emit_line "      # Not an alias - use parse for normal spells and synonyms"
+    emit_line "      # Shift off consumed words before passing to parse"
+    emit_line "      shift \"\$_fw_words_used\""
     emit_line "      # Use reconstructed spell name (e.g., leap-to-location) not just first word (e.g., leap)"
     emit_line "      parse \"\$_fw_spell\" \"\$@\""
     emit_line "      ;;"
