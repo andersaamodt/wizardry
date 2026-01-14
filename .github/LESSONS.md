@@ -102,3 +102,7 @@
 - In zsh (macOS default), `for m in $variable` doesn't word-split by default; use `for m in $(printf '%s\n' $variable)` to force word splitting in all shells (PR #909).
 - Debug output showing iteration counts can quickly reveal word-splitting issues: if `all_markers="1 2 3"` iterates once instead of three times, word splitting is disabled (PR #909).
 - When sourcing scripts into zsh shells, unquoted variables in for loops don't split; command substitution output always splits regardless of shell settings (PR #909).
+- Exit 139 (segmentation fault) in GitHub Actions workflows after successful command output indicates shell cleanup/teardown crash, not code execution failure; capture exit codes before shell cleanup using subshell pattern: `(command) && passed=true || passed=false; if [ "$passed" = "true" ]; then exit 0; else exit 1; fi`.
+- Nix-shell's cleanup process segfaults when exiting after sourcing hundreds of shell functions into the environment; this is a nix-shell environment management issue, not a code defect.
+- Binary search debugging through command execution levels (banish 8→4→1→0) combined with `set -x` tracing can definitively isolate whether segfaults occur during code execution or during shell cleanup.
+- Shell `set -x` trace output in GitHub Actions logs shows exact command execution sequence; if last traced command completes successfully but workflow exits 139, the segfault is in shell cleanup not code.

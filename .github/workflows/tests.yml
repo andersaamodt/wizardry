@@ -48,7 +48,6 @@ jobs:
         run: |
           # Capture exit code before shell cleanup segfault
           nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr --run "
-            set -x
             (. spells/.imps/sys/invoke-wizardry && ./spells/.wizardry/test-magic --verbose) && test_passed=true || test_passed=false
             if [ \"\$test_passed\" = \"true\" ]; then exit 0; else exit 1; fi
           " && workflow_passed=true || workflow_passed=false
@@ -72,7 +71,6 @@ jobs:
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
       - name: Run unit tests
         run: |
-          set -x
           . spells/.imps/sys/invoke-wizardry
           ./spells/.wizardry/test-magic --verbose
 
@@ -91,7 +89,6 @@ jobs:
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
       - name: Run unit tests
         run: |
-          set -x
           . spells/.imps/sys/invoke-wizardry
           ./spells/.wizardry/test-magic --verbose
 
@@ -111,7 +108,6 @@ jobs:
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
       - name: Run unit tests
         run: |
-          set -x
           . spells/.imps/sys/invoke-wizardry
           ./spells/.wizardry/test-magic --verbose
 
@@ -149,6 +145,5 @@ jobs:
           fi
       - name: Run unit tests
         run: |
-          set -x
           . spells/.imps/sys/invoke-wizardry
           ./spells/.wizardry/test-magic --verbose
