@@ -1,6 +1,8 @@
 name: Reproduce exit 139
 
 on:
+  push:
+    branches: [ copilot/fix-exit-code-139-issue ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
