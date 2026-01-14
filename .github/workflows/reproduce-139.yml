@@ -4,7 +4,9 @@ on:
   pull_request:
   workflow_dispatch:
 
-# Testing minimal reproduction with generated functions
+# Minimal reproduction workflow from PR #937
+# Tests shell function loading limits on Ubuntu, Arch Linux, and Nix
+# to reproduce the exit code 139 segfault bug
 
 jobs:
   reproduce-segfault:
