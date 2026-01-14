@@ -7,7 +7,7 @@ on:
 
 jobs:
   reproduce-segfault:
-    name: Ubuntu - Test banish without POSIX checks
+    name: Ubuntu - Test banish with half POSIX checks
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -23,30 +23,63 @@ jobs:
           wc -l /tmp/glosses.sh
           ls -lh /tmp/glosses.sh
 
-      - name: Create stripped banish (no POSIX checks)
+      - name: Create banish with HALF POSIX checks
         run: |
           export WIZARDRY_DIR="${PWD}"
-          # Create a minimal banish that skips POSIX checks in level 0
-          cat > /tmp/banish-minimal <<'EOF'
+          # Extract first half of POSIX checks from actual banish spell (lines 388-456, approx half of level 0 checks)
+          # This tests if first half of POSIX checks cause the segfault
+          cat > /tmp/banish <<'EOF'
           #!/bin/sh
           set -eu
           target_level=${1:-0}
-          printf 'Minimal banish: skipping POSIX checks for level %s\n' "$target_level"
+          
+          # Minimal banish that runs FIRST HALF of level 0 POSIX checks only
+          WIZARDRY_DIR=${WIZARDRY_DIR:-${PWD}}
+          
+          # Check POSIX commands (lines 388-414 from original)
+          posix_failed=0
+          posix_cmds="sh test printf command dirname basename pwd cat"
+          posix_cmds="$posix_cmds grep find sort cut head tail tr wc awk sed xargs mktemp uname"
+          for cmd in $posix_cmds; do
+            if ! command -v "$cmd" >/dev/null 2>&1; then
+              posix_failed=1
+              break
+            fi
+          done
+          
+          if [ "$posix_failed" -eq 0 ]; then
+            printf 'POSIX foundation checks passed\n'
+          else
+            printf 'POSIX foundation check failed\n' >&2
+            exit 1
+          fi
+          
+          # Check download tools (lines 416-436)
+          if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
+            printf 'Download tools check: no curl/wget\n' >&2
+          fi
+          
+          # Check tar (lines 438-453)
+          if ! command -v tar >/dev/null 2>&1; then
+            printf 'tar check: not found\n' >&2
+          fi
+          
+          printf 'Banish with half POSIX checks: level %s validated\n' "$target_level"
           exit 0
           EOF
-          chmod +x /tmp/banish-minimal
-          cat /tmp/banish-minimal
+          chmod +x /tmp/banish
+          cat /tmp/banish
 
-      - name: Invoke wizardry with minimal banish and run test-magic
+      - name: Invoke wizardry with half-POSIX banish and run test-magic
         run: |
           export WIZARDRY_DIR="${PWD}"
           export PATH="/tmp:${PATH}"
-          echo "About to invoke wizardry, call minimal banish, and run test-magic..."
-          . spells/.imps/sys/invoke-wizardry && banish-minimal 0 && ./spells/.wizardry/test-magic --verbose
-          echo "Completed - if this STILL fails with 139, banish POSIX checks aren't the issue"
+          echo "About to invoke wizardry, call banish with HALF POSIX checks, and run test-magic..."
+          . spells/.imps/sys/invoke-wizardry && banish 0 && ./spells/.wizardry/test-magic --verbose
+          echo "Completed - if fails with 139, bug is in FIRST half of POSIX checks"
 
   reproduce-segfault-arch:
-    name: Arch - Test banish without POSIX checks
+    name: Arch - Test banish with half POSIX checks
     runs-on: ubuntu-latest
     container:
       image: archlinux:latest
@@ -68,27 +101,59 @@ jobs:
           wc -l /tmp/glosses.sh
           ls -lh /tmp/glosses.sh
 
-      - name: Create stripped banish (no POSIX checks)
+      - name: Create banish with HALF POSIX checks
         run: |
           export WIZARDRY_DIR="${PWD}"
-          # Create a minimal banish that skips POSIX checks in level 0
-          cat > /tmp/banish-minimal <<'EOF'
+          # Extract first half of POSIX checks from actual banish spell
+          cat > /tmp/banish <<'EOF'
           #!/bin/sh
           set -eu
           target_level=${1:-0}
-          printf 'Minimal banish: skipping POSIX checks for level %s\n' "$target_level"
+          
+          # Minimal banish that runs FIRST HALF of level 0 POSIX checks only
+          WIZARDRY_DIR=${WIZARDRY_DIR:-${PWD}}
+          
+          # Check POSIX commands
+          posix_failed=0
+          posix_cmds="sh test printf command dirname basename pwd cat"
+          posix_cmds="$posix_cmds grep find sort cut head tail tr wc awk sed xargs mktemp uname"
+          for cmd in $posix_cmds; do
+            if ! command -v "$cmd" >/dev/null 2>&1; then
+              posix_failed=1
+              break
+            fi
+          done
+          
+          if [ "$posix_failed" -eq 0 ]; then
+            printf 'POSIX foundation checks passed\n'
+          else
+            printf 'POSIX foundation check failed\n' >&2
+            exit 1
+          fi
+          
+          # Check download tools
+          if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
+            printf 'Download tools check: no curl/wget\n' >&2
+          fi
+          
+          # Check tar
+          if ! command -v tar >/dev/null 2>&1; then
+            printf 'tar check: not found\n' >&2
+          fi
+          
+          printf 'Banish with half POSIX checks: level %s validated\n' "$target_level"
           exit 0
           EOF
-          chmod +x /tmp/banish-minimal
-          cat /tmp/banish-minimal
+          chmod +x /tmp/banish
+          cat /tmp/banish
 
-      - name: Invoke wizardry with minimal banish and run test-magic
+      - name: Invoke wizardry with half-POSIX banish and run test-magic
         run: |
           export WIZARDRY_DIR="${PWD}"
           export PATH="/tmp:${PATH}"
-          echo "About to invoke wizardry, call minimal banish, and run test-magic..."
-          . spells/.imps/sys/invoke-wizardry && banish-minimal 0 && ./spells/.wizardry/test-magic --verbose
-          echo "Completed - if this STILL fails with 139, banish POSIX checks aren't the issue"
+          echo "About to invoke wizardry, call banish with HALF POSIX checks, and run test-magic..."
+          . spells/.imps/sys/invoke-wizardry && banish 0 && ./spells/.wizardry/test-magic --verbose
+          echo "Completed - if fails with 139, bug is in FIRST half of POSIX checks"
 
   reproduce-segfault-nix-3rd-quarter:
     name: Nix - 3rd quarter (for comparison)
@@ -111,9 +176,22 @@ jobs:
           end_line=$((quarter_lines * 3))
           echo "Full glosses: $total_lines lines"
           echo "Taking 3RD quarter: lines $start_line to $end_line"
-          sed -n "${start_line},${end_line}p" /tmp/glosses_full.sh > /tmp/glosses.sh
+          # Extract by COMPLETE FUNCTIONS to avoid syntax errors
+          # Use awk to extract whole function definitions that START in our range
+          awk -v start="$start_line" -v end="$end_line" '
+            /^[a-zA-Z_][a-zA-Z0-9_]*\(\)/ { in_func=1; func_start=NR; func_text="" }
+            in_func { func_text = func_text $0 "\n" }
+            in_func && /^}$/ { 
+              in_func=0
+              if (func_start >= start && func_start <= end) {
+                printf "%s", func_text
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses.sh
           wc -l /tmp/glosses.sh
           ls -lh /tmp/glosses.sh
+          echo "First 10 lines:"
+          head -10 /tmp/glosses.sh
 
       - name: Try sourcing 3RD quarter in nix-shell
         run: |
@@ -149,9 +227,21 @@ jobs:
           end_line=$((eighth_lines * 5))
           echo "Full glosses: $total_lines lines"
           echo "Taking 5TH eighth: lines $start_line to $end_line"
-          sed -n "${start_line},${end_line}p" /tmp/glosses_full.sh > /tmp/glosses.sh
+          # Extract by COMPLETE FUNCTIONS to avoid syntax errors
+          awk -v start="$start_line" -v end="$end_line" '
+            /^[a-zA-Z_][a-zA-Z0-9_]*\(\)/ { in_func=1; func_start=NR; func_text="" }
+            in_func { func_text = func_text $0 "\n" }
+            in_func && /^}$/ { 
+              in_func=0
+              if (func_start >= start && func_start <= end) {
+                printf "%s", func_text
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses.sh
           wc -l /tmp/glosses.sh
           ls -lh /tmp/glosses.sh
+          echo "First 10 lines:"
+          head -10 /tmp/glosses.sh
 
       - name: Try sourcing 5TH eighth in nix-shell
         run: |
@@ -187,9 +277,21 @@ jobs:
           end_line=$((eighth_lines * 6))
           echo "Full glosses: $total_lines lines"
           echo "Taking 6TH eighth: lines $start_line to $end_line"
-          sed -n "${start_line},${end_line}p" /tmp/glosses_full.sh > /tmp/glosses.sh
+          # Extract by COMPLETE FUNCTIONS to avoid syntax errors
+          awk -v start="$start_line" -v end="$end_line" '
+            /^[a-zA-Z_][a-zA-Z0-9_]*\(\)/ { in_func=1; func_start=NR; func_text="" }
+            in_func { func_text = func_text $0 "\n" }
+            in_func && /^}$/ { 
+              in_func=0
+              if (func_start >= start && func_start <= end) {
+                printf "%s", func_text
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses.sh
           wc -l /tmp/glosses.sh
           ls -lh /tmp/glosses.sh
+          echo "First 10 lines:"
+          head -10 /tmp/glosses.sh
 
       - name: Try sourcing 6TH eighth in nix-shell
         run: |
