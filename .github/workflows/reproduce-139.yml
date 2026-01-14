@@ -15,8 +15,6 @@ jobs:
         include:
           - os: ubuntu-latest
             label: ubuntu
-          - os: macos-latest
-            label: macos
 
     steps:
       - uses: actions/checkout@v4
@@ -29,18 +27,63 @@ jobs:
           wc -l /tmp/glosses.sh
           ls -lh /tmp/glosses.sh
 
-      - name: Try sourcing glosses directly
+      - name: Invoke wizardry and source glosses
         run: |
           export WIZARDRY_DIR="${PWD}"
-          echo "About to source glosses..."
-          . /tmp/glosses.sh
-          echo "Successfully sourced glosses"
+          echo "About to invoke wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "Successfully invoked wizardry"
           echo "Trying declare -F..."
           declare -F | head -20
-          echo "Completed successfully"
+          echo "Completed invoke-wizardry step"
+
+      - name: Run test-magic to trigger segfault
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "About to run test-magic..."
+          ./spells/.wizardry/test-magic --verbose
+          echo "test-magic completed successfully"
+
+  reproduce-segfault-arch:
+    name: Test gloss loading on Arch Linux
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - name: Install dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm git
+
+      - uses: actions/checkout@v4
+
+      - name: Generate glosses to file
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses.sh
+          wc -l /tmp/glosses.sh
+          ls -lh /tmp/glosses.sh
+
+      - name: Invoke wizardry and source glosses
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "About to invoke wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "Successfully invoked wizardry"
+          echo "Trying declare -F..."
+          declare -F | head -20
+          echo "Completed invoke-wizardry step"
+
+      - name: Run test-magic to trigger segfault
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "About to run test-magic..."
+          ./spells/.wizardry/test-magic --verbose
+          echo "test-magic completed successfully"
 
   reproduce-segfault-nix:
-    name: Test gloss loading on Nix
+    name: Test gloss loading on Nix (half functions)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -49,23 +92,28 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixos-unstable
 
-      - name: Generate glosses to file
+      - name: Generate glosses and keep only first half
         run: |
           export WIZARDRY_DIR="${PWD}"
           cd spells/.wizardry
-          ./generate-glosses > /tmp/glosses.sh
+          ./generate-glosses > /tmp/glosses_full.sh
+          total_lines=$(wc -l < /tmp/glosses_full.sh)
+          half_lines=$((total_lines / 2))
+          echo "Full glosses: $total_lines lines"
+          echo "Taking first half: $half_lines lines"
+          head -n "$half_lines" /tmp/glosses_full.sh > /tmp/glosses.sh
           wc -l /tmp/glosses.sh
           ls -lh /tmp/glosses.sh
 
-      - name: Try sourcing glosses in nix-shell
+      - name: Try sourcing half the glosses in nix-shell
         run: |
           WIZARDRY_DIR="${PWD}"
           nix-shell -p bash --run "
             export WIZARDRY_DIR='${WIZARDRY_DIR}'
-            echo 'About to source glosses in nix-shell...'
+            echo 'About to source HALF the glosses in nix-shell...'
             . /tmp/glosses.sh
-            echo 'Successfully sourced glosses'
+            echo 'Successfully sourced half glosses'
             echo 'Trying declare -F...'
             declare -F | head -20
-            echo 'Completed successfully'
+            echo 'Completed successfully - bug should NOT reproduce if specific function causes it'
           "
