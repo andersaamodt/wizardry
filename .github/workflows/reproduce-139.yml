@@ -27,22 +27,12 @@ jobs:
           wc -l /tmp/glosses.sh
           ls -lh /tmp/glosses.sh
 
-      - name: Invoke wizardry and source glosses
+      - name: Invoke wizardry, banish, and run test-magic
         run: |
           export WIZARDRY_DIR="${PWD}"
-          echo "About to invoke wizardry..."
-          . spells/.imps/sys/invoke-wizardry
-          echo "Successfully invoked wizardry"
-          echo "Trying declare -F..."
-          declare -F | head -20
-          echo "Completed invoke-wizardry step"
-
-      - name: Run test-magic to trigger segfault
-        run: |
-          export WIZARDRY_DIR="${PWD}"
-          echo "About to run test-magic..."
-          ./spells/.wizardry/test-magic --verbose
-          echo "test-magic completed successfully"
+          echo "About to invoke wizardry, banish 8, and run test-magic..."
+          . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose
+          echo "All steps completed successfully"
 
   reproduce-segfault-arch:
     name: Test gloss loading on Arch Linux
@@ -65,25 +55,15 @@ jobs:
           wc -l /tmp/glosses.sh
           ls -lh /tmp/glosses.sh
 
-      - name: Invoke wizardry and source glosses
+      - name: Invoke wizardry, banish, and run test-magic
         run: |
           export WIZARDRY_DIR="${PWD}"
-          echo "About to invoke wizardry..."
-          . spells/.imps/sys/invoke-wizardry
-          echo "Successfully invoked wizardry"
-          echo "Trying declare -F..."
-          declare -F | head -20
-          echo "Completed invoke-wizardry step"
-
-      - name: Run test-magic to trigger segfault
-        run: |
-          export WIZARDRY_DIR="${PWD}"
-          echo "About to run test-magic..."
-          ./spells/.wizardry/test-magic --verbose
-          echo "test-magic completed successfully"
+          echo "About to invoke wizardry, banish 8, and run test-magic..."
+          . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose
+          echo "All steps completed successfully"
 
   reproduce-segfault-nix:
-    name: Test gloss loading on Nix (half functions)
+    name: Test gloss loading on Nix (second half only)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -92,7 +72,7 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixos-unstable
 
-      - name: Generate glosses and keep only first half
+      - name: Generate glosses and keep only SECOND half
         run: |
           export WIZARDRY_DIR="${PWD}"
           cd spells/.wizardry
@@ -100,20 +80,21 @@ jobs:
           total_lines=$(wc -l < /tmp/glosses_full.sh)
           half_lines=$((total_lines / 2))
           echo "Full glosses: $total_lines lines"
-          echo "Taking first half: $half_lines lines"
-          head -n "$half_lines" /tmp/glosses_full.sh > /tmp/glosses.sh
+          echo "Taking SECOND half: from line $((half_lines + 1)) to end"
+          tail -n "+$((half_lines + 1))" /tmp/glosses_full.sh > /tmp/glosses.sh
           wc -l /tmp/glosses.sh
           ls -lh /tmp/glosses.sh
 
-      - name: Try sourcing half the glosses in nix-shell
+      - name: Try sourcing SECOND half of glosses in nix-shell
         run: |
           WIZARDRY_DIR="${PWD}"
           nix-shell -p bash --run "
             export WIZARDRY_DIR='${WIZARDRY_DIR}'
-            echo 'About to source HALF the glosses in nix-shell...'
+            echo 'About to source SECOND HALF of glosses in nix-shell...'
             . /tmp/glosses.sh
-            echo 'Successfully sourced half glosses'
+            echo 'Successfully sourced second half of glosses'
             echo 'Trying declare -F...'
             declare -F | head -20
-            echo 'Completed successfully - bug should NOT reproduce if specific function causes it'
+            echo 'Completed - if this succeeds, problematic function is in FIRST half'
+            echo 'If this fails, problematic function is in SECOND half'
           "
