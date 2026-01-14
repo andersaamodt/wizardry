@@ -111,3 +111,5 @@
 - Nix-shell's cleanup process segfaults when exiting after sourcing hundreds of shell functions into the environment; this is a nix-shell environment management issue, not a code defect.
 - Binary search debugging through command execution levels (banish 8→4→1→0) combined with `set -x` tracing can definitively isolate whether segfaults occur during code execution or during shell cleanup.
 - Shell `set -x` trace output in GitHub Actions logs shows exact command execution sequence; if last traced command completes successfully but workflow exits 139, the segfault is in shell cleanup not code.
+- Loading 21,655 lines of shell function definitions (from generate-glosses) can make subsequent shell operations extremely slow or hang, even simple commands like `declare -F`; massive function environments destabilize the shell.
+- First-word gloss functions must shift off consumed words (`shift "$_fw_words_used"`) before calling parse; otherwise parse receives duplicate args (e.g., `parse magic-missile missile --help` instead of `parse magic-missile --help`).
