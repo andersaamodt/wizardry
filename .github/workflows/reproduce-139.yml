@@ -15,10 +15,39 @@ jobs:
         include:
           - os: ubuntu-latest
             label: ubuntu
-          - os: macos-latest
-            label: macos
 
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate glosses to file
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses.sh
+          wc -l /tmp/glosses.sh
+          ls -lh /tmp/glosses.sh
+
+      - name: Try sourcing glosses directly
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "About to source glosses..."
+          . /tmp/glosses.sh
+          echo "Successfully sourced glosses"
+          echo "Trying declare -F..."
+          declare -F | head -20
+          echo "Completed successfully"
+
+  reproduce-segfault-arch:
+    name: Test gloss loading on Arch Linux
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - name: Install dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm git
+
       - uses: actions/checkout@v4
 
       - name: Generate glosses to file
