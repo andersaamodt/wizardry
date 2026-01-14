@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  reproduce-segfault-ubuntu-framework-only:
-    name: Ubuntu - Banish Framework Only (no POSIX checks)
+  reproduce-segfault-ubuntu-framework-half1:
+    name: Ubuntu - Banish Framework Half 1 (parsing only)
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -23,49 +23,95 @@ jobs:
           wc -l /tmp/glosses.sh
           ls -lh /tmp/glosses.sh
 
-      - name: Create banish with FRAMEWORK ONLY (no POSIX checks)
+      - name: Create banish with FRAMEWORK HALF 1 (argument parsing + setup only)
         run: |
           export WIZARDRY_DIR="${PWD}"
-          # Banish framework with argument parsing but NO POSIX validation
+          # First half of banish framework: argument parsing and initial setup
           cat > /tmp/banish <<'EOF'
           #!/bin/sh
           set -eu
+          printf '[TRACE] banish half1: start\n' >&2
           target_level=${1:-0}
+          printf '[TRACE] banish half1: got arg=%s\n' "$target_level" >&2
           
-          # Banish framework: parsing, error handling, flow control
-          # BUT completely empty POSIX validation section
           WIZARDRY_DIR=${WIZARDRY_DIR:-${PWD}}
+          printf '[TRACE] banish half1: WIZARDRY_DIR=%s\n' "$WIZARDRY_DIR" >&2
           
-          # Framework code: validate argument is a number
+          # Framework HALF 1: validate argument is a number
+          printf '[TRACE] banish half1: checking if number\n' >&2
           case "$target_level" in
             ''|*[!0-9]*) 
               printf 'banish: invalid level (must be number)\n' >&2
               exit 1
               ;;
           esac
+          printf '[TRACE] banish half1: is valid number\n' >&2
           
-          # Framework code: level range check
-          if [ "$target_level" -lt 0 ] || [ "$target_level" -gt 9 ]; then
-            printf 'banish: level out of range (0-9)\n' >&2
-            exit 1
-          fi
-          
-          # EMPTY POSIX VALIDATION SECTION (this is the test)
-          # No checks performed
-          
-          printf 'Banish framework-only: level %s validated (no POSIX checks)\n' "$target_level"
+          printf 'Banish framework half1: level %s parsed successfully\n' "$target_level"
+          printf '[TRACE] banish half1: exiting successfully\n' >&2
           exit 0
           EOF
           chmod +x /tmp/banish
           cat /tmp/banish
 
-      - name: Invoke wizardry with framework-only banish and run test-magic
+      - name: Invoke wizardry with framework-half1 banish and run test-magic
         run: |
           export WIZARDRY_DIR="${PWD}"
           export PATH="/tmp:${PATH}"
-          echo "About to invoke wizardry, call banish FRAMEWORK ONLY, and run test-magic..."
+          echo "About to invoke wizardry, call banish FRAMEWORK HALF 1, and run test-magic..."
           . spells/.imps/sys/invoke-wizardry && banish 0 && ./spells/.wizardry/test-magic --verbose
-          echo "Completed - if fails with 139, bug is in banish framework itself"
+          echo "Completed - if fails with 139, bug is in banish's argument parsing"
+
+  reproduce-segfault-ubuntu-framework-half2:
+    name: Ubuntu - Banish Framework Half 2 (validation only)
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate glosses to file
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses.sh
+          wc -l /tmp/glosses.sh
+          ls -lh /tmp/glosses.sh
+
+      - name: Create banish with FRAMEWORK HALF 2 (level validation only)
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          # Second half of banish framework: level range validation
+          cat > /tmp/banish <<'EOF'
+          #!/bin/sh
+          set -eu
+          printf '[TRACE] banish half2: start\n' >&2
+          target_level=${1:-0}
+          printf '[TRACE] banish half2: got arg=%s\n' "$target_level" >&2
+          
+          # Framework HALF 2: level range check
+          printf '[TRACE] banish half2: checking level range\n' >&2
+          if [ "$target_level" -lt 0 ] || [ "$target_level" -gt 9 ]; then
+            printf 'banish: level out of range (0-9)\n' >&2
+            exit 1
+          fi
+          printf '[TRACE] banish half2: level in valid range\n' >&2
+          
+          printf 'Banish framework half2: level %s validated successfully\n' "$target_level"
+          printf '[TRACE] banish half2: exiting successfully\n' >&2
+          exit 0
+          EOF
+          chmod +x /tmp/banish
+          cat /tmp/banish
+
+      - name: Invoke wizardry with framework-half2 banish and run test-magic
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          export PATH="/tmp:${PATH}"
+          echo "About to invoke wizardry, call banish FRAMEWORK HALF 2, and run test-magic..."
+          . spells/.imps/sys/invoke-wizardry && banish 0 && ./spells/.wizardry/test-magic --verbose
+          echo "Completed - if fails with 139, bug is in banish's level validation"
 
   reproduce-segfault-ubuntu-standalone-check:
     name: Ubuntu - Standalone POSIX Check (no banish)
@@ -113,8 +159,8 @@ jobs:
           ./spells/.wizardry/test-magic --verbose
           echo "Completed - if fails with 139, bug is in the POSIX check itself"
 
-  reproduce-segfault-arch-framework-only:
-    name: Arch - Banish Framework Only (no POSIX checks)
+  reproduce-segfault-arch-framework-half1:
+    name: Arch - Banish Framework Half 1 (parsing only)
     runs-on: ubuntu-latest
     container: archlinux:latest
     env:
@@ -131,41 +177,92 @@ jobs:
           wc -l /tmp/glosses.sh
           ls -lh /tmp/glosses.sh
 
-      - name: Create banish with FRAMEWORK ONLY (no POSIX checks)
+      - name: Create banish with FRAMEWORK HALF 1 (argument parsing + setup only)
         run: |
           export WIZARDRY_DIR="${PWD}"
           cat > /tmp/banish <<'EOF'
           #!/bin/sh
           set -eu
+          printf '[TRACE] banish half1: start\n' >&2
           target_level=${1:-0}
+          printf '[TRACE] banish half1: got arg=%s\n' "$target_level" >&2
           
           WIZARDRY_DIR=${WIZARDRY_DIR:-${PWD}}
+          printf '[TRACE] banish half1: WIZARDRY_DIR=%s\n' "$WIZARDRY_DIR" >&2
           
+          printf '[TRACE] banish half1: checking if number\n' >&2
           case "$target_level" in
             ''|*[!0-9]*) 
               printf 'banish: invalid level (must be number)\n' >&2
               exit 1
               ;;
           esac
+          printf '[TRACE] banish half1: is valid number\n' >&2
           
-          if [ "$target_level" -lt 0 ] || [ "$target_level" -gt 9 ]; then
-            printf 'banish: level out of range (0-9)\n' >&2
-            exit 1
-          fi
-          
-          printf 'Banish framework-only: level %s validated (no POSIX checks)\n' "$target_level"
+          printf 'Banish framework half1: level %s parsed successfully\n' "$target_level"
+          printf '[TRACE] banish half1: exiting successfully\n' >&2
           exit 0
           EOF
           chmod +x /tmp/banish
           cat /tmp/banish
 
-      - name: Invoke wizardry with framework-only banish and run test-magic
+      - name: Invoke wizardry with framework-half1 banish and run test-magic
         run: |
           export WIZARDRY_DIR="${PWD}"
           export PATH="/tmp:${PATH}"
-          echo "About to invoke wizardry, call banish FRAMEWORK ONLY, and run test-magic..."
+          echo "About to invoke wizardry, call banish FRAMEWORK HALF 1, and run test-magic..."
           . spells/.imps/sys/invoke-wizardry && banish 0 && ./spells/.wizardry/test-magic --verbose
-          echo "Completed - if fails with 139, bug is in banish framework itself"
+          echo "Completed - if fails with 139, bug is in banish's argument parsing"
+
+  reproduce-segfault-arch-framework-half2:
+    name: Arch - Banish Framework Half 2 (validation only)
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    env:
+      WIZARDRY_OS_LABEL: arch
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate glosses to file
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses.sh
+          wc -l /tmp/glosses.sh
+          ls -lh /tmp/glosses.sh
+
+      - name: Create banish with FRAMEWORK HALF 2 (level validation only)
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cat > /tmp/banish <<'EOF'
+          #!/bin/sh
+          set -eu
+          printf '[TRACE] banish half2: start\n' >&2
+          target_level=${1:-0}
+          printf '[TRACE] banish half2: got arg=%s\n' "$target_level" >&2
+          
+          printf '[TRACE] banish half2: checking level range\n' >&2
+          if [ "$target_level" -lt 0 ] || [ "$target_level" -gt 9 ]; then
+            printf 'banish: level out of range (0-9)\n' >&2
+            exit 1
+          fi
+          printf '[TRACE] banish half2: level in valid range\n' >&2
+          
+          printf 'Banish framework half2: level %s validated successfully\n' "$target_level"
+          printf '[TRACE] banish half2: exiting successfully\n' >&2
+          exit 0
+          EOF
+          chmod +x /tmp/banish
+          cat /tmp/banish
+
+      - name: Invoke wizardry with framework-half2 banish and run test-magic
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          export PATH="/tmp:${PATH}"
+          echo "About to invoke wizardry, call banish FRAMEWORK HALF 2, and run test-magic..."
+          . spells/.imps/sys/invoke-wizardry && banish 0 && ./spells/.wizardry/test-magic--verbose
+          echo "Completed - if fails with 139, bug is in banish's level validation"
 
   reproduce-segfault-arch-standalone-check:
     name: Arch - Standalone POSIX Check (no banish)
@@ -709,4 +806,132 @@ jobs:
             echo 'Trying declare -F...'
             declare -F | head -20
             echo 'Completed - if this fails, bug is in 10th sixteenth (second half of failing 5th eighth)'
+          "
+
+  reproduce-segfault-nix-19th-thirtysecond:
+    name: Nix - 19th Thirty-Second (first half of 10th sixteenth)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate full glosses to file
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          wc -l /tmp/glosses_full.sh
+          ls -lh /tmp/glosses_full.sh
+
+      - name: Extract 19TH THIRTY-SECOND of functions (first half of 10th sixteenth)
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          total_lines=$(wc -l < /tmp/glosses_full.sh)
+          start_line=$((total_lines / 32 * 18 + 1))
+          end_line=$((total_lines / 32 * 19))
+          echo "Total lines: $total_lines"
+          echo "Extracting 19th thirty-second: lines $start_line to $end_line"
+          
+          # Extract complete functions in this range using awk
+          awk -v start="$start_line" -v end="$end_line" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start >= start && func_start <= end) {
+                  printf "%s", func_lines
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses.sh
+          wc -l /tmp/glosses.sh
+          ls -lh /tmp/glosses.sh
+          echo "First 10 lines:"
+          head -10 /tmp/glosses.sh
+
+      - name: Try sourcing 19TH thirty-second in nix-shell
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            echo 'About to source 19TH THIRTY-SECOND of glosses in nix-shell...'
+            . /tmp/glosses.sh
+            echo 'Successfully sourced 19th thirty-second'
+            echo 'Trying declare -F...'
+            declare -F | head -20
+            echo 'Completed - if this fails, bug is in 19th thirty-second (first half of failing 10th sixteenth)'
+          "
+
+  reproduce-segfault-nix-20th-thirtysecond:
+    name: Nix - 20th Thirty-Second (second half of 10th sixteenth)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate full glosses to file
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          wc -l /tmp/glosses_full.sh
+          ls -lh /tmp/glosses_full.sh
+
+      - name: Extract 20TH THIRTY-SECOND of functions (second half of 10th sixteenth)
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          total_lines=$(wc -l < /tmp/glosses_full.sh)
+          start_line=$((total_lines / 32 * 19 + 1))
+          end_line=$((total_lines / 32 * 20))
+          echo "Total lines: $total_lines"
+          echo "Extracting 20th thirty-second: lines $start_line to $end_line"
+          
+          # Extract complete functions in this range using awk
+          awk -v start="$start_line" -v end="$end_line" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start >= start && func_start <= end) {
+                  printf "%s", func_lines
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses.sh
+          wc -l /tmp/glosses.sh
+          ls -lh /tmp/glosses.sh
+          echo "First 10 lines:"
+          head -10 /tmp/glosses.sh
+
+      - name: Try sourcing 20TH thirty-second in nix-shell
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            echo 'About to source 20TH THIRTY-SECOND of glosses in nix-shell...'
+            . /tmp/glosses.sh
+            echo 'Successfully sourced 20th thirty-second'
+            echo 'Trying declare -F...'
+            declare -F | head -20
+            echo 'Completed - if this fails, bug is in 20th thirty-second (second half of failing 10th sixteenth)'
           "
