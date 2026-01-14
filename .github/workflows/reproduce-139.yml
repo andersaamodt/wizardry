@@ -7,14 +7,10 @@ on:
 
 jobs:
   reproduce-segfault:
-    name: Test gloss loading on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            label: ubuntu
+    name: Ubuntu - Test without banish
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
 
     steps:
       - uses: actions/checkout@v4
@@ -27,18 +23,20 @@ jobs:
           wc -l /tmp/glosses.sh
           ls -lh /tmp/glosses.sh
 
-      - name: Invoke wizardry, banish, and run test-magic
+      - name: Invoke wizardry and run test-magic (skip banish)
         run: |
           export WIZARDRY_DIR="${PWD}"
-          echo "About to invoke wizardry, banish 8, and run test-magic..."
-          . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose
-          echo "All steps completed successfully"
+          echo "About to invoke wizardry and run test-magic WITHOUT banish..."
+          . spells/.imps/sys/invoke-wizardry && ./spells/.wizardry/test-magic --verbose
+          echo "Completed - if this succeeds, banish 8 is the trigger"
 
   reproduce-segfault-arch:
-    name: Test gloss loading on Arch Linux
+    name: Arch - Test without banish
     runs-on: ubuntu-latest
     container:
       image: archlinux:latest
+    env:
+      WIZARDRY_OS_LABEL: arch
     steps:
       - name: Install dependencies
         run: |
@@ -55,15 +53,15 @@ jobs:
           wc -l /tmp/glosses.sh
           ls -lh /tmp/glosses.sh
 
-      - name: Invoke wizardry, banish, and run test-magic
+      - name: Invoke wizardry and run test-magic (skip banish)
         run: |
           export WIZARDRY_DIR="${PWD}"
-          echo "About to invoke wizardry, banish 8, and run test-magic..."
-          . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose
-          echo "All steps completed successfully"
+          echo "About to invoke wizardry and run test-magic WITHOUT banish..."
+          . spells/.imps/sys/invoke-wizardry && ./spells/.wizardry/test-magic --verbose
+          echo "Completed - if this succeeds, banish 8 is the trigger"
 
-  reproduce-segfault-nix:
-    name: Test gloss loading on Nix (second half only)
+  reproduce-segfault-nix-q3:
+    name: Nix - 3rd quarter of functions
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -72,29 +70,67 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixos-unstable
 
-      - name: Generate glosses and keep only SECOND half
+      - name: Generate glosses and keep only 3RD quarter
         run: |
           export WIZARDRY_DIR="${PWD}"
           cd spells/.wizardry
           ./generate-glosses > /tmp/glosses_full.sh
           total_lines=$(wc -l < /tmp/glosses_full.sh)
-          half_lines=$((total_lines / 2))
+          quarter_lines=$((total_lines / 4))
+          start_line=$((quarter_lines * 2 + 1))
+          end_line=$((quarter_lines * 3))
           echo "Full glosses: $total_lines lines"
-          echo "Taking SECOND half: from line $((half_lines + 1)) to end"
-          tail -n "+$((half_lines + 1))" /tmp/glosses_full.sh > /tmp/glosses.sh
+          echo "Taking 3RD quarter: lines $start_line to $end_line"
+          sed -n "${start_line},${end_line}p" /tmp/glosses_full.sh > /tmp/glosses.sh
           wc -l /tmp/glosses.sh
           ls -lh /tmp/glosses.sh
 
-      - name: Try sourcing SECOND half of glosses in nix-shell
+      - name: Try sourcing 3RD quarter in nix-shell
         run: |
           WIZARDRY_DIR="${PWD}"
           nix-shell -p bash --run "
             export WIZARDRY_DIR='${WIZARDRY_DIR}'
-            echo 'About to source SECOND HALF of glosses in nix-shell...'
+            echo 'About to source 3RD QUARTER of glosses in nix-shell...'
             . /tmp/glosses.sh
-            echo 'Successfully sourced second half of glosses'
+            echo 'Successfully sourced 3rd quarter'
             echo 'Trying declare -F...'
             declare -F | head -20
-            echo 'Completed - if this succeeds, problematic function is in FIRST half'
-            echo 'If this fails, problematic function is in SECOND half'
+            echo 'Completed - if this fails, bug is in 3rd quarter'
+          "
+
+  reproduce-segfault-nix-q4:
+    name: Nix - 4th quarter of functions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate glosses and keep only 4TH quarter
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          total_lines=$(wc -l < /tmp/glosses_full.sh)
+          quarter_lines=$((total_lines / 4))
+          start_line=$((quarter_lines * 3 + 1))
+          echo "Full glosses: $total_lines lines"
+          echo "Taking 4TH quarter: from line $start_line to end"
+          tail -n "+$start_line" /tmp/glosses_full.sh > /tmp/glosses.sh
+          wc -l /tmp/glosses.sh
+          ls -lh /tmp/glosses.sh
+
+      - name: Try sourcing 4TH quarter in nix-shell
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            echo 'About to source 4TH QUARTER of glosses in nix-shell...'
+            . /tmp/glosses.sh
+            echo 'Successfully sourced 4th quarter'
+            echo 'Trying declare -F...'
+            declare -F | head -20
+            echo 'Completed - if this fails, bug is in 4th quarter'
           "
