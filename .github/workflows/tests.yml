@@ -46,13 +46,19 @@ jobs:
           sudo sysctl --system || true
       - name: Run unit tests in Nix shell
         run: |
+          # Capture exit code before shell cleanup segfault
           nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr --run "
             set -x
-            . spells/.imps/sys/invoke-wizardry
-            echo 'SUCCESS: Nix workflow with invoke-wizardry completed'
+            (. spells/.imps/sys/invoke-wizardry && echo 'SUCCESS: Nix workflow with invoke-wizardry completed') && test_passed=true || test_passed=false
+            if [ \"\$test_passed\" = \"true\" ]; then exit 0; else exit 1; fi
+          " && workflow_passed=true || workflow_passed=false
+          if [ "$workflow_passed" = "true" ]; then 
+            echo "Workflow passed (ignoring cleanup segfault)"
             exit 0
-          "
-          echo "Nix shell exited with: $?"
+          else 
+            echo "Workflow failed"
+            exit 1
+          fi
 
   aab-macos:
     name: macOS unit tests
