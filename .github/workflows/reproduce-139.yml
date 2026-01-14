@@ -1,10 +1,7 @@
 name: Reproduce exit 139
 
 on:
-  push:
-    branches: [ copilot/fix-exit-code-139-workflows ]
   pull_request:
-    branches: [ main ]
   workflow_dispatch:
 
 # Testing minimal reproduction with generated functions
