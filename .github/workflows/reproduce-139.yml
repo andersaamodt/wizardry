@@ -6,6 +6,212 @@ on:
   workflow_dispatch:
 
 jobs:
+  reproduce-segfault-ubuntu-framework-only:
+    name: Ubuntu - Banish Framework Only (no POSIX checks)
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate glosses to file
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses.sh
+          wc -l /tmp/glosses.sh
+          ls -lh /tmp/glosses.sh
+
+      - name: Create banish with FRAMEWORK ONLY (no POSIX checks)
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          # Banish framework with argument parsing but NO POSIX validation
+          cat > /tmp/banish <<'EOF'
+          #!/bin/sh
+          set -eu
+          target_level=${1:-0}
+          
+          # Banish framework: parsing, error handling, flow control
+          # BUT completely empty POSIX validation section
+          WIZARDRY_DIR=${WIZARDRY_DIR:-${PWD}}
+          
+          # Framework code: validate argument is a number
+          case "$target_level" in
+            ''|*[!0-9]*) 
+              printf 'banish: invalid level (must be number)\n' >&2
+              exit 1
+              ;;
+          esac
+          
+          # Framework code: level range check
+          if [ "$target_level" -lt 0 ] || [ "$target_level" -gt 9 ]; then
+            printf 'banish: level out of range (0-9)\n' >&2
+            exit 1
+          fi
+          
+          # EMPTY POSIX VALIDATION SECTION (this is the test)
+          # No checks performed
+          
+          printf 'Banish framework-only: level %s validated (no POSIX checks)\n' "$target_level"
+          exit 0
+          EOF
+          chmod +x /tmp/banish
+          cat /tmp/banish
+
+      - name: Invoke wizardry with framework-only banish and run test-magic
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          export PATH="/tmp:${PATH}"
+          echo "About to invoke wizardry, call banish FRAMEWORK ONLY, and run test-magic..."
+          . spells/.imps/sys/invoke-wizardry && banish 0 && ./spells/.wizardry/test-magic --verbose
+          echo "Completed - if fails with 139, bug is in banish framework itself"
+
+  reproduce-segfault-ubuntu-standalone-check:
+    name: Ubuntu - Standalone POSIX Check (no banish)
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate glosses to file
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses.sh
+          wc -l /tmp/glosses.sh
+          ls -lh /tmp/glosses.sh
+
+      - name: Invoke wizardry, run standalone POSIX check, then test-magic
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "About to invoke wizardry, run STANDALONE POSIX check, and run test-magic..."
+          . spells/.imps/sys/invoke-wizardry
+          
+          # Standalone POSIX commands check (not through banish)
+          echo "Running standalone POSIX check..."
+          posix_failed=0
+          posix_cmds="sh test printf command dirname basename pwd cat"
+          posix_cmds="$posix_cmds grep find sort cut head tail tr wc awk sed xargs mktemp uname"
+          for cmd in $posix_cmds; do
+            if ! command -v "$cmd" >/dev/null 2>&1; then
+              posix_failed=1
+              break
+            fi
+          done
+          
+          if [ "$posix_failed" -eq 0 ]; then
+            printf 'Standalone POSIX check passed\n'
+          else
+            printf 'Standalone POSIX check failed\n' >&2
+            exit 1
+          fi
+          
+          # Now run test-magic
+          ./spells/.wizardry/test-magic --verbose
+          echo "Completed - if fails with 139, bug is in the POSIX check itself"
+
+  reproduce-segfault-arch-framework-only:
+    name: Arch - Banish Framework Only (no POSIX checks)
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    env:
+      WIZARDRY_OS_LABEL: arch
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate glosses to file
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses.sh
+          wc -l /tmp/glosses.sh
+          ls -lh /tmp/glosses.sh
+
+      - name: Create banish with FRAMEWORK ONLY (no POSIX checks)
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cat > /tmp/banish <<'EOF'
+          #!/bin/sh
+          set -eu
+          target_level=${1:-0}
+          
+          WIZARDRY_DIR=${WIZARDRY_DIR:-${PWD}}
+          
+          case "$target_level" in
+            ''|*[!0-9]*) 
+              printf 'banish: invalid level (must be number)\n' >&2
+              exit 1
+              ;;
+          esac
+          
+          if [ "$target_level" -lt 0 ] || [ "$target_level" -gt 9 ]; then
+            printf 'banish: level out of range (0-9)\n' >&2
+            exit 1
+          fi
+          
+          printf 'Banish framework-only: level %s validated (no POSIX checks)\n' "$target_level"
+          exit 0
+          EOF
+          chmod +x /tmp/banish
+          cat /tmp/banish
+
+      - name: Invoke wizardry with framework-only banish and run test-magic
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          export PATH="/tmp:${PATH}"
+          echo "About to invoke wizardry, call banish FRAMEWORK ONLY, and run test-magic..."
+          . spells/.imps/sys/invoke-wizardry && banish 0 && ./spells/.wizardry/test-magic --verbose
+          echo "Completed - if fails with 139, bug is in banish framework itself"
+
+  reproduce-segfault-arch-standalone-check:
+    name: Arch - Standalone POSIX Check (no banish)
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    env:
+      WIZARDRY_OS_LABEL: arch
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate glosses to file
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses.sh
+          wc -l /tmp/glosses.sh
+          ls -lh /tmp/glosses.sh
+
+      - name: Invoke wizardry, run standalone POSIX check, then test-magic
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "About to invoke wizardry, run STANDALONE POSIX check, and run test-magic..."
+          . spells/.imps/sys/invoke-wizardry
+          
+          echo "Running standalone POSIX check..."
+          posix_failed=0
+          posix_cmds="sh test printf command dirname basename pwd cat"
+          posix_cmds="$posix_cmds grep find sort cut head tail tr wc awk sed xargs mktemp uname"
+          for cmd in $posix_cmds; do
+            if ! command -v "$cmd" >/dev/null 2>&1; then
+              posix_failed=1
+              break
+            fi
+          done
+          
+          if [ "$posix_failed" -eq 0 ]; then
+            printf 'Standalone POSIX check passed\n'
+          else
+            printf 'Standalone POSIX check failed\n' >&2
+            exit 1
+          fi
+          
+          ./spells/.wizardry/test-magic --verbose
+          echo "Completed - if fails with 139, bug is in the POSIX check itself"
+
   reproduce-segfault-ubuntu-quarter1:
     name: Ubuntu - Quarter 1 (POSIX commands only)
     runs-on: ubuntu-latest
