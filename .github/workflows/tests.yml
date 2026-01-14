@@ -49,7 +49,7 @@ jobs:
           # Capture exit code before shell cleanup segfault
           nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr --run "
             set -x
-            (. spells/.imps/sys/invoke-wizardry && echo 'SUCCESS: Nix workflow with invoke-wizardry completed') && test_passed=true || test_passed=false
+            (. spells/.imps/sys/invoke-wizardry && ./spells/.wizardry/test-magic --verbose) && test_passed=true || test_passed=false
             if [ \"\$test_passed\" = \"true\" ]; then exit 0; else exit 1; fi
           " && workflow_passed=true || workflow_passed=false
           if [ "$workflow_passed" = "true" ]; then 
@@ -74,7 +74,7 @@ jobs:
         run: |
           set -x
           . spells/.imps/sys/invoke-wizardry
-          echo "SUCCESS: macOS workflow with invoke-wizardry completed"
+          ./spells/.wizardry/test-magic --verbose
 
   arch:
     name: Arch Linux unit tests
@@ -93,7 +93,7 @@ jobs:
         run: |
           set -x
           . spells/.imps/sys/invoke-wizardry
-          echo "SUCCESS: Arch Linux workflow with invoke-wizardry completed"
+          ./spells/.wizardry/test-magic --verbose
 
   debian:
     name: Debian unit tests
@@ -113,7 +113,7 @@ jobs:
         run: |
           set -x
           . spells/.imps/sys/invoke-wizardry
-          echo "SUCCESS: Debian workflow with invoke-wizardry completed"
+          ./spells/.wizardry/test-magic --verbose
 
   ubuntu:
     name: Ubuntu unit tests
@@ -151,4 +151,4 @@ jobs:
         run: |
           set -x
           . spells/.imps/sys/invoke-wizardry
-          echo "SUCCESS: Ubuntu workflow with invoke-wizardry completed"
+          ./spells/.wizardry/test-magic --verbose
