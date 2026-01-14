@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  reproduce-segfault:
-    name: Ubuntu - Test banish with half POSIX checks
+  reproduce-segfault-ubuntu-quarter1:
+    name: Ubuntu - Quarter 1 (POSIX commands only)
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -23,20 +23,19 @@ jobs:
           wc -l /tmp/glosses.sh
           ls -lh /tmp/glosses.sh
 
-      - name: Create banish with HALF POSIX checks
+      - name: Create banish with FIRST QUARTER POSIX checks
         run: |
           export WIZARDRY_DIR="${PWD}"
-          # Extract first half of POSIX checks from actual banish spell (lines 388-456, approx half of level 0 checks)
-          # This tests if first half of POSIX checks cause the segfault
+          # First quarter: POSIX commands check ONLY
           cat > /tmp/banish <<'EOF'
           #!/bin/sh
           set -eu
           target_level=${1:-0}
           
-          # Minimal banish that runs FIRST HALF of level 0 POSIX checks only
+          # Banish with FIRST QUARTER: POSIX commands only
           WIZARDRY_DIR=${WIZARDRY_DIR:-${PWD}}
           
-          # Check POSIX commands (lines 388-414 from original)
+          # Check POSIX commands
           posix_failed=0
           posix_cmds="sh test printf command dirname basename pwd cat"
           posix_cmds="$posix_cmds grep find sort cut head tail tr wc awk sed xargs mktemp uname"
@@ -48,38 +47,85 @@ jobs:
           done
           
           if [ "$posix_failed" -eq 0 ]; then
-            printf 'POSIX foundation checks passed\n'
+            printf 'POSIX commands check passed\n'
           else
-            printf 'POSIX foundation check failed\n' >&2
+            printf 'POSIX commands check failed\n' >&2
             exit 1
           fi
           
-          # Check download tools (lines 416-436)
-          if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
-            printf 'Download tools check: no curl/wget\n' >&2
-          fi
-          
-          # Check tar (lines 438-453)
-          if ! command -v tar >/dev/null 2>&1; then
-            printf 'tar check: not found\n' >&2
-          fi
-          
-          printf 'Banish with half POSIX checks: level %s validated\n' "$target_level"
+          printf 'Banish quarter 1: level %s validated\n' "$target_level"
           exit 0
           EOF
           chmod +x /tmp/banish
           cat /tmp/banish
 
-      - name: Invoke wizardry with half-POSIX banish and run test-magic
+      - name: Invoke wizardry with quarter-1 banish and run test-magic
         run: |
           export WIZARDRY_DIR="${PWD}"
           export PATH="/tmp:${PATH}"
-          echo "About to invoke wizardry, call banish with HALF POSIX checks, and run test-magic..."
+          echo "About to invoke wizardry, call banish with QUARTER 1 POSIX checks, and run test-magic..."
           . spells/.imps/sys/invoke-wizardry && banish 0 && ./spells/.wizardry/test-magic --verbose
-          echo "Completed - if fails with 139, bug is in FIRST half of POSIX checks"
+          echo "Completed - if fails with 139, bug is in POSIX commands check"
 
-  reproduce-segfault-arch:
-    name: Arch - Test banish with half POSIX checks
+  reproduce-segfault-ubuntu-quarter2:
+    name: Ubuntu - Quarter 2 (download tools + tar)
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate glosses to file
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses.sh
+          wc -l /tmp/glosses.sh
+          ls -lh /tmp/glosses.sh
+
+      - name: Create banish with SECOND QUARTER POSIX checks
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          # Second quarter: download tools + tar checks
+          cat > /tmp/banish <<'EOF'
+          #!/bin/sh
+          set -eu
+          target_level=${1:-0}
+          
+          # Banish with SECOND QUARTER: download tools + tar
+          WIZARDRY_DIR=${WIZARDRY_DIR:-${PWD}}
+          
+          # Check download tools
+          if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
+            printf 'Download tools check: no curl/wget\n' >&2
+          else
+            printf 'Download tools check passed\n'
+          fi
+          
+          # Check tar
+          if ! command -v tar >/dev/null 2>&1; then
+            printf 'tar check: not found\n' >&2
+          else
+            printf 'tar check passed\n'
+          fi
+          
+          printf 'Banish quarter 2: level %s validated\n' "$target_level"
+          exit 0
+          EOF
+          chmod +x /tmp/banish
+          cat /tmp/banish
+
+      - name: Invoke wizardry with quarter-2 banish and run test-magic
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          export PATH="/tmp:${PATH}"
+          echo "About to invoke wizardry, call banish with QUARTER 2 POSIX checks, and run test-magic..."
+          . spells/.imps/sys/invoke-wizardry && banish 0 && ./spells/.wizardry/test-magic --verbose
+          echo "Completed - if fails with 139, bug is in download/tar checks"
+
+  reproduce-segfault-arch-quarter1:
+    name: Arch - Quarter 1 (POSIX commands only)
     runs-on: ubuntu-latest
     container:
       image: archlinux:latest
@@ -101,16 +147,16 @@ jobs:
           wc -l /tmp/glosses.sh
           ls -lh /tmp/glosses.sh
 
-      - name: Create banish with HALF POSIX checks
+      - name: Create banish with FIRST QUARTER POSIX checks
         run: |
           export WIZARDRY_DIR="${PWD}"
-          # Extract first half of POSIX checks from actual banish spell
+          # First quarter: POSIX commands check ONLY
           cat > /tmp/banish <<'EOF'
           #!/bin/sh
           set -eu
           target_level=${1:-0}
           
-          # Minimal banish that runs FIRST HALF of level 0 POSIX checks only
+          # Banish with FIRST QUARTER: POSIX commands only
           WIZARDRY_DIR=${WIZARDRY_DIR:-${PWD}}
           
           # Check POSIX commands
@@ -125,35 +171,88 @@ jobs:
           done
           
           if [ "$posix_failed" -eq 0 ]; then
-            printf 'POSIX foundation checks passed\n'
+            printf 'POSIX commands check passed\n'
           else
-            printf 'POSIX foundation check failed\n' >&2
+            printf 'POSIX commands check failed\n' >&2
             exit 1
           fi
           
-          # Check download tools
-          if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
-            printf 'Download tools check: no curl/wget\n' >&2
-          fi
-          
-          # Check tar
-          if ! command -v tar >/dev/null 2>&1; then
-            printf 'tar check: not found\n' >&2
-          fi
-          
-          printf 'Banish with half POSIX checks: level %s validated\n' "$target_level"
+          printf 'Banish quarter 1: level %s validated\n' "$target_level"
           exit 0
           EOF
           chmod +x /tmp/banish
           cat /tmp/banish
 
-      - name: Invoke wizardry with half-POSIX banish and run test-magic
+      - name: Invoke wizardry with quarter-1 banish and run test-magic
         run: |
           export WIZARDRY_DIR="${PWD}"
           export PATH="/tmp:${PATH}"
-          echo "About to invoke wizardry, call banish with HALF POSIX checks, and run test-magic..."
+          echo "About to invoke wizardry, call banish with QUARTER 1 POSIX checks, and run test-magic..."
           . spells/.imps/sys/invoke-wizardry && banish 0 && ./spells/.wizardry/test-magic --verbose
-          echo "Completed - if fails with 139, bug is in FIRST half of POSIX checks"
+          echo "Completed - if fails with 139, bug is in POSIX commands check"
+
+  reproduce-segfault-arch-quarter2:
+    name: Arch - Quarter 2 (download tools + tar)
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    env:
+      WIZARDRY_OS_LABEL: arch
+    steps:
+      - name: Install dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm git
+
+      - uses: actions/checkout@v4
+
+      - name: Generate glosses to file
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses.sh
+          wc -l /tmp/glosses.sh
+          ls -lh /tmp/glosses.sh
+
+      - name: Create banish with SECOND QUARTER POSIX checks
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          # Second quarter: download tools + tar checks
+          cat > /tmp/banish <<'EOF'
+          #!/bin/sh
+          set -eu
+          target_level=${1:-0}
+          
+          # Banish with SECOND QUARTER: download tools + tar
+          WIZARDRY_DIR=${WIZARDRY_DIR:-${PWD}}
+          
+          # Check download tools
+          if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
+            printf 'Download tools check: no curl/wget\n' >&2
+          else
+            printf 'Download tools check passed\n'
+          fi
+          
+          # Check tar
+          if ! command -v tar >/dev/null 2>&1; then
+            printf 'tar check: not found\n' >&2
+          else
+            printf 'tar check passed\n'
+          fi
+          
+          printf 'Banish quarter 2: level %s validated\n' "$target_level"
+          exit 0
+          EOF
+          chmod +x /tmp/banish
+          cat /tmp/banish
+
+      - name: Invoke wizardry with quarter-2 banish and run test-magic
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          export PATH="/tmp:${PATH}"
+          echo "About to invoke wizardry, call banish with QUARTER 2 POSIX checks, and run test-magic..."
+          . spells/.imps/sys/invoke-wizardry && banish 0 && ./spells/.wizardry/test-magic --verbose
+          echo "Completed - if fails with 139, bug is in download/tar checks"
 
   reproduce-segfault-nix-3rd-quarter:
     name: Nix - 3rd quarter (for comparison)
@@ -304,4 +403,104 @@ jobs:
             echo 'Trying declare -F...'
             declare -F | head -20
             echo 'Completed - if this fails, bug is in 6th eighth'
+          "
+
+  reproduce-segfault-nix-9th-sixteenth:
+    name: Nix - 9th sixteenth (first half of 5th eighth)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate glosses and keep only 9TH sixteenth
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          total_lines=$(wc -l < /tmp/glosses_full.sh)
+          sixteenth_lines=$((total_lines / 16))
+          start_line=$((sixteenth_lines * 8 + 1))
+          end_line=$((sixteenth_lines * 9))
+          echo "Full glosses: $total_lines lines"
+          echo "Taking 9TH sixteenth (first half of 5th eighth): lines $start_line to $end_line"
+          # Extract by COMPLETE FUNCTIONS to avoid syntax errors
+          awk -v start="$start_line" -v end="$end_line" '
+            /^[a-zA-Z_][a-zA-Z0-9_]*\(\)/ { in_func=1; func_start=NR; func_text="" }
+            in_func { func_text = func_text $0 "\n" }
+            in_func && /^}$/ { 
+              in_func=0
+              if (func_start >= start && func_start <= end) {
+                printf "%s", func_text
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses.sh
+          wc -l /tmp/glosses.sh
+          ls -lh /tmp/glosses.sh
+          echo "First 10 lines:"
+          head -10 /tmp/glosses.sh
+
+      - name: Try sourcing 9TH sixteenth in nix-shell
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            echo 'About to source 9TH SIXTEENTH of glosses in nix-shell...'
+            . /tmp/glosses.sh
+            echo 'Successfully sourced 9th sixteenth'
+            echo 'Trying declare -F...'
+            declare -F | head -20
+            echo 'Completed - if this fails, bug is in 9th sixteenth (first half of failing 5th eighth)'
+          "
+
+  reproduce-segfault-nix-10th-sixteenth:
+    name: Nix - 10th sixteenth (second half of 5th eighth)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate glosses and keep only 10TH sixteenth
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          total_lines=$(wc -l < /tmp/glosses_full.sh)
+          sixteenth_lines=$((total_lines / 16))
+          start_line=$((sixteenth_lines * 9 + 1))
+          end_line=$((sixteenth_lines * 10))
+          echo "Full glosses: $total_lines lines"
+          echo "Taking 10TH sixteenth (second half of 5th eighth): lines $start_line to $end_line"
+          # Extract by COMPLETE FUNCTIONS to avoid syntax errors
+          awk -v start="$start_line" -v end="$end_line" '
+            /^[a-zA-Z_][a-zA-Z0-9_]*\(\)/ { in_func=1; func_start=NR; func_text="" }
+            in_func { func_text = func_text $0 "\n" }
+            in_func && /^}$/ { 
+              in_func=0
+              if (func_start >= start && func_start <= end) {
+                printf "%s", func_text
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses.sh
+          wc -l /tmp/glosses.sh
+          ls -lh /tmp/glosses.sh
+          echo "First 10 lines:"
+          head -10 /tmp/glosses.sh
+
+      - name: Try sourcing 10TH sixteenth in nix-shell
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            echo 'About to source 10TH SIXTEENTH of glosses in nix-shell...'
+            . /tmp/glosses.sh
+            echo 'Successfully sourced 10th sixteenth'
+            echo 'Trying declare -F...'
+            declare -F | head -20
+            echo 'Completed - if this fails, bug is in 10th sixteenth (second half of failing 5th eighth)'
           "
