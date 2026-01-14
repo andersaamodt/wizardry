@@ -33,7 +33,6 @@ jobs:
 
       - name: Try sourcing glosses directly
         run: |
-          set -x
           echo "About to source glosses..."
           . /tmp/glosses.sh
           echo "Successfully sourced glosses"
@@ -62,7 +61,6 @@ jobs:
       - name: Try sourcing glosses in nix-shell
         run: |
           nix-shell -p bash --run '
-            set -x
             echo "About to source glosses in nix-shell..."
             . /tmp/glosses.sh
             echo "Successfully sourced glosses"
