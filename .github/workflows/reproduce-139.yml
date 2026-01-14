@@ -22,33 +22,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Generate DOUBLE the functions (412 instead of 206)
+      - name: Create test functions file
         run: |
-          echo "Generating 412 test functions..."
-          > /tmp/glosses.sh
-          for i in $(seq 1 412); do
-            printf 'segtestfunction%s() {\n' "$i" >> /tmp/glosses.sh
-            printf '  echo "test function %s"\n' "$i" >> /tmp/glosses.sh
-            printf '  _arg1="${1-}"\n' >> /tmp/glosses.sh
-            printf '  _arg2="${2-}"\n' >> /tmp/glosses.sh
-            printf '  if [ -n "$_arg1" ]; then\n' >> /tmp/glosses.sh
-            printf '    echo "arg1: $_arg1"\n' >> /tmp/glosses.sh
-            printf '  fi\n' >> /tmp/glosses.sh
-            printf '  if [ -n "$_arg2" ]; then\n' >> /tmp/glosses.sh
-            printf '    echo "arg2: $_arg2"\n' >> /tmp/glosses.sh
-            printf '  fi\n' >> /tmp/glosses.sh
-            printf '}\n' >> /tmp/glosses.sh
-          done
-          wc -l /tmp/glosses.sh
-          ls -lh /tmp/glosses.sh
+          cat > /tmp/glosses.sh <<'FUNCTIONS'
+          segtestfunction1() {
+            echo "test function 1"
+          }
+          
+          segtestfunction2() {
+            echo "test function 2"
+          }
+          
+          segtestfunction3() {
+            echo "test function 3"
+          }
+          
+          segtestfunction4() {
+            echo "test function 4"
+          }
+          
+          segtestfunction5() {
+            echo "test function 5"
+          }
+          FUNCTIONS
 
-      - name: Try sourcing doubled functions
+      - name: Try sourcing test functions
         run: |
-          echo "About to source 412 test functions..."
+          echo "About to source test functions..."
           . /tmp/glosses.sh
           echo "Successfully sourced glosses"
           echo "Trying declare -F..."
-          declare -F | head -20
+          declare -F
           echo "Completed successfully"
 
   reproduce-segfault-arch:
@@ -64,33 +68,37 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: Generate DOUBLE the functions (412 instead of 206)
+      - name: Create test functions file
         run: |
-          echo "Generating 412 test functions..."
-          > /tmp/glosses.sh
-          for i in $(seq 1 412); do
-            printf 'segtestfunction%s() {\n' "$i" >> /tmp/glosses.sh
-            printf '  echo "test function %s"\n' "$i" >> /tmp/glosses.sh
-            printf '  _arg1="${1-}"\n' >> /tmp/glosses.sh
-            printf '  _arg2="${2-}"\n' >> /tmp/glosses.sh
-            printf '  if [ -n "$_arg1" ]; then\n' >> /tmp/glosses.sh
-            printf '    echo "arg1: $_arg1"\n' >> /tmp/glosses.sh
-            printf '  fi\n' >> /tmp/glosses.sh
-            printf '  if [ -n "$_arg2" ]; then\n' >> /tmp/glosses.sh
-            printf '    echo "arg2: $_arg2"\n' >> /tmp/glosses.sh
-            printf '  fi\n' >> /tmp/glosses.sh
-            printf '}\n' >> /tmp/glosses.sh
-          done
-          wc -l /tmp/glosses.sh
-          ls -lh /tmp/glosses.sh
+          cat > /tmp/glosses.sh <<'FUNCTIONS'
+          segtestfunction1() {
+            echo "test function 1"
+          }
+          
+          segtestfunction2() {
+            echo "test function 2"
+          }
+          
+          segtestfunction3() {
+            echo "test function 3"
+          }
+          
+          segtestfunction4() {
+            echo "test function 4"
+          }
+          
+          segtestfunction5() {
+            echo "test function 5"
+          }
+          FUNCTIONS
 
-      - name: Try sourcing doubled functions
+      - name: Try sourcing test functions
         run: |
-          echo "About to source 412 test functions..."
+          echo "About to source test functions..."
           . /tmp/glosses.sh
           echo "Successfully sourced glosses"
           echo "Trying declare -F..."
-          declare -F | head -20
+          declare -F
           echo "Completed successfully"
 
   reproduce-segfault-nix:
@@ -103,33 +111,37 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixos-unstable
 
-      - name: Generate minimal reproduction - 206 test functions
+      - name: Create test functions file
         run: |
-          echo "Generating 206 test functions to match real gloss count..."
-          > /tmp/glosses.sh
-          for i in $(seq 1 206); do
-            printf 'segtestfunction%s() {\n' "$i" >> /tmp/glosses.sh
-            printf '  echo "test function %s"\n' "$i" >> /tmp/glosses.sh
-            printf '  _arg1="${1-}"\n' >> /tmp/glosses.sh
-            printf '  _arg2="${2-}"\n' >> /tmp/glosses.sh
-            printf '  if [ -n "$_arg1" ]; then\n' >> /tmp/glosses.sh
-            printf '    echo "arg1: $_arg1"\n' >> /tmp/glosses.sh
-            printf '  fi\n' >> /tmp/glosses.sh
-            printf '  if [ -n "$_arg2" ]; then\n' >> /tmp/glosses.sh
-            printf '    echo "arg2: $_arg2"\n' >> /tmp/glosses.sh
-            printf '  fi\n' >> /tmp/glosses.sh
-            printf '}\n' >> /tmp/glosses.sh
-          done
-          wc -l /tmp/glosses.sh
-          ls -lh /tmp/glosses.sh
+          cat > /tmp/glosses.sh <<'FUNCTIONS'
+          segtestfunction1() {
+            echo "test function 1"
+          }
+          
+          segtestfunction2() {
+            echo "test function 2"
+          }
+          
+          segtestfunction3() {
+            echo "test function 3"
+          }
+          
+          segtestfunction4() {
+            echo "test function 4"
+          }
+          
+          segtestfunction5() {
+            echo "test function 5"
+          }
+          FUNCTIONS
 
-      - name: Try sourcing minimal functions in nix-shell
+      - name: Try sourcing test functions in nix-shell
         run: |
           nix-shell -p bash --run "
-            echo 'About to source 206 test functions in nix-shell...'
+            echo 'About to source test functions in nix-shell...'
             . /tmp/glosses.sh
             echo 'Successfully sourced glosses'
             echo 'Trying declare -F...'
-            declare -F | head -20
+            declare -F
             echo 'Completed successfully'
           "
