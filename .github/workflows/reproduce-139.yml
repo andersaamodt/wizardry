@@ -7,6 +7,8 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+# Testing minimal reproduction with generated functions
+
 jobs:
   reproduce-segfault:
     name: Test gloss loading on ${{ matrix.os }}
