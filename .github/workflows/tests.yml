@@ -47,9 +47,9 @@ jobs:
       - name: Run unit tests in Nix shell
         run: |
           nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr --run "
+            set -x
             . spells/.imps/sys/invoke-wizardry
-            banish 0
-            echo 'SUCCESS: Nix workflow with banish 0 completed'
+            echo 'SUCCESS: Nix workflow with invoke-wizardry completed'
             exit 0
           " || true
           echo "Nix shell exited with: $?"
@@ -66,9 +66,9 @@ jobs:
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
       - name: Run unit tests
         run: |
+          set -x
           . spells/.imps/sys/invoke-wizardry
-          banish 0
-          echo "SUCCESS: macOS workflow with banish 0 completed"
+          echo "SUCCESS: macOS workflow with invoke-wizardry completed"
 
   arch:
     name: Arch Linux unit tests
@@ -85,9 +85,9 @@ jobs:
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
       - name: Run unit tests
         run: |
+          set -x
           . spells/.imps/sys/invoke-wizardry
-          banish 0
-          echo "SUCCESS: Arch Linux workflow with banish 0 completed"
+          echo "SUCCESS: Arch Linux workflow with invoke-wizardry completed"
 
   debian:
     name: Debian unit tests
@@ -105,9 +105,9 @@ jobs:
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
       - name: Run unit tests
         run: |
+          set -x
           . spells/.imps/sys/invoke-wizardry
-          banish 0
-          echo "SUCCESS: Debian workflow with banish 0 completed"
+          echo "SUCCESS: Debian workflow with invoke-wizardry completed"
 
   ubuntu:
     name: Ubuntu unit tests
@@ -143,6 +143,6 @@ jobs:
           fi
       - name: Run unit tests
         run: |
+          set -x
           . spells/.imps/sys/invoke-wizardry
-          banish 0
-          echo "SUCCESS: Ubuntu workflow with banish 0 completed"
+          echo "SUCCESS: Ubuntu workflow with invoke-wizardry completed"
