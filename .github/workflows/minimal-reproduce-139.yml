@@ -10,6 +10,7 @@ jobs:
   # WORKFLOW #1: Minimal NixOS declare() reproduction
   # ============================================================================
   nix-minimal-declare-repro:
+    if: false  # DISABLED - workflow #1-10 disabled per request
     name: "#1 Nix - Minimal declare() function reproduction"
     runs-on: ubuntu-latest
     
@@ -78,10 +79,11 @@ jobs:
             declare -F | head -5 || echo 'declare -F failed with exit code: \$?'
           "
   
-  # ============================================================================  
+  # ============================================================================
   # WORKFLOW #2: Ubuntu/Arch minimal full invoke-wizardry test
   # ============================================================================
   ubuntu-full-invoke-test:
+    if: false  # DISABLED - workflow #1-10 disabled per request
     name: "#2 Ubuntu - Full invoke-wizardry + banish test (original failure)"
     runs-on: ubuntu-latest
     env:
@@ -114,6 +116,7 @@ jobs:
   # WORKFLOW #3: Ubuntu without invoke-wizardry (isolate glosses)
   # ============================================================================
   ubuntu-glosses-only:
+    if: false  # DISABLED - workflow #1-10 disabled per request
     name: "#3 Ubuntu - Source glosses directly (no invoke-wizardry)"
     runs-on: ubuntu-latest
     env:
@@ -140,6 +143,7 @@ jobs:
   # WORKFLOW #4: Arch without invoke-wizardry
   # ============================================================================
   arch-glosses-only:
+    if: false  # DISABLED - workflow #1-10 disabled per request
     name: "#4 Arch - Source glosses directly (no invoke-wizardry)"
     runs-on: ubuntu-latest
     container: archlinux:latest
@@ -169,6 +173,7 @@ jobs:
   # WORKFLOW #5: Ubuntu with invoke-wizardry but NO banish
   # ============================================================================
   ubuntu-invoke-no-banish:
+    if: false  # DISABLED - workflow #1-10 disabled per request
     name: "#5 Ubuntu - invoke-wizardry without banish"
     runs-on: ubuntu-latest
     env:
@@ -202,6 +207,7 @@ jobs:
   # WORKFLOW #6: Ubuntu with banish but NO test-magic
   # ============================================================================
   ubuntu-banish-no-test:
+    if: false  # DISABLED - workflow #1-10 disabled per request
     name: "#6 Ubuntu - invoke-wizardry + banish only (no test-magic)"
     runs-on: ubuntu-latest
     env:
@@ -234,6 +240,7 @@ jobs:
   # WORKFLOW #7: Arch full test (original failure)
   # ============================================================================
   arch-full-invoke-test:
+    if: false  # DISABLED - workflow #1-10 disabled per request
     name: "#7 Arch - Full invoke-wizardry + banish test (original failure)"
     runs-on: ubuntu-latest
     container: archlinux:latest
@@ -258,6 +265,7 @@ jobs:
   # WORKFLOW #8: NixOS Decile 9-5 exact reproduction from PR #940
   # ============================================================================
   nix-decile-9-5-exact:
+    if: false  # DISABLED - workflow #1-10 disabled per request
     name: "#8 Nix - Decile 9 Sub 5 (lines 12823-12826) from PR #940"
     runs-on: ubuntu-latest
     
@@ -294,6 +302,7 @@ jobs:
   # WORKFLOW #9: Ubuntu banish in isolation (no glosses)
   # ============================================================================
   ubuntu-banish-no-glosses:
+    if: false  # DISABLED - workflow #1-10 disabled per request
     name: "#9 Ubuntu - banish without glosses (direct execution)"
     runs-on: ubuntu-latest
     env:
@@ -530,3 +539,353 @@ jobs:
           echo "First half sourced successfully"
           banish 8
           echo "SUCCESS!"
+  
+  # ============================================================================
+  # WORKFLOW #16: Ubuntu - Second half of glosses
+  # Hypothesis: Bug is in second half (declare is at line 12823, in 2nd half)
+  # Expected: FAIL if bug in 2nd half, PASS if in 1st half
+  # ============================================================================
+  ubuntu-glosses-second-half:
+    name: "#16 Ubuntu - Second half of glosses (expect FAIL)"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Generate second half of glosses
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          total_lines=$(wc -l < /tmp/full-glosses.sh)
+          half_lines=$((total_lines / 2))
+          
+          tail -n +$((half_lines + 1)) /tmp/full-glosses.sh > /tmp/second-half.sh
+          
+          echo "Total lines: $total_lines"
+          echo "Second half starts at line: $((half_lines + 1))"
+          echo "Second half has: $(wc -l < /tmp/second-half.sh) lines"
+          echo "Line 12823 in second half: $(if [ 12823 -gt $half_lines ]; then echo YES; else echo NO; fi)"
+      
+      - name: Source second half and run banish
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          . /tmp/second-half.sh
+          echo "Second half sourced successfully"
+          banish 8 || echo "banish failed or not available"
+          echo "Test completed"
+  
+  # ============================================================================
+  # WORKFLOW #17: Ubuntu - First quarter of glosses
+  # Hypothesis: Narrow down further - is bug in Q1 or Q2?
+  # Expected: If #15 failed and #16 passes, bug is in first half (Q1 or Q2)
+  # ============================================================================
+  ubuntu-glosses-first-quarter:
+    name: "#17 Ubuntu - First quarter of glosses (narrow Q1)"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Generate first quarter of glosses
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          total_lines=$(wc -l < /tmp/full-glosses.sh)
+          quarter_lines=$((total_lines / 4))
+          
+          head -n $quarter_lines /tmp/full-glosses.sh > /tmp/first-quarter.sh
+          
+          echo "Total lines: $total_lines"
+          echo "First quarter: $quarter_lines lines"
+      
+      - name: Source first quarter and run banish
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          . /tmp/first-quarter.sh
+          echo "First quarter sourced successfully"
+          banish 8 || echo "banish failed or not available"
+          echo "Test completed"
+  
+  # ============================================================================
+  # WORKFLOW #18: Ubuntu - Second quarter of glosses (Q2 only)
+  # Hypothesis: Test Q2 in isolation
+  # Expected: Helps identify if bug is in Q2
+  # ============================================================================
+  ubuntu-glosses-second-quarter:
+    name: "#18 Ubuntu - Second quarter only (narrow Q2)"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Generate second quarter of glosses  
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          total_lines=$(wc -l < /tmp/full-glosses.sh)
+          quarter_lines=$((total_lines / 4))
+          half_lines=$((total_lines / 2))
+          
+          # Extract Q2 (lines quarter+1 to half)
+          awk "NR > $quarter_lines && NR <= $half_lines" /tmp/full-glosses.sh > /tmp/second-quarter.sh
+          
+          echo "Total lines: $total_lines"
+          echo "Q2 lines: $((quarter_lines + 1)) to $half_lines"
+          echo "Q2 has: $(wc -l < /tmp/second-quarter.sh) lines"
+      
+      - name: Source second quarter and run banish
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          . /tmp/second-quarter.sh
+          echo "Second quarter sourced successfully"
+          banish 8 || echo "banish failed or not available"
+          echo "Test completed"
+  
+  # ============================================================================
+  # WORKFLOW #19: Ubuntu - Lines 1-5000 (very narrow first section)
+  # Hypothesis: Bug is in early glosses
+  # Expected: FAIL if bug in first ~5000 lines, else PASS
+  # ============================================================================
+  ubuntu-glosses-lines-1-5000:
+    name: "#19 Ubuntu - Lines 1-5000 (expect FAIL if early bug)"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Generate lines 1-5000
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          
+          head -n 5000 /tmp/full-glosses.sh > /tmp/lines-1-5000.sh
+          
+          echo "Extracted lines 1-5000"
+          wc -l /tmp/lines-1-5000.sh
+      
+      - name: Source lines 1-5000 and run banish
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          . /tmp/lines-1-5000.sh
+          echo "Lines 1-5000 sourced successfully"
+          banish 8 || echo "banish failed or not available"
+          echo "Test completed"
+  
+  # ============================================================================
+  # WORKFLOW #20: Ubuntu - Lines 5001-10000 (middle-early section)
+  # Hypothesis: Continue narrowing down the problem range
+  # Expected: Helps identify exact range
+  # ============================================================================
+  ubuntu-glosses-lines-5001-10000:
+    name: "#20 Ubuntu - Lines 5001-10000 (continue narrowing)"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Generate lines 5001-10000
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          
+          awk 'NR >= 5001 && NR <= 10000' /tmp/full-glosses.sh > /tmp/lines-5001-10000.sh
+          
+          echo "Extracted lines 5001-10000"
+          wc -l /tmp/lines-5001-10000.sh
+      
+      - name: Source lines 5001-10000 and run banish
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          . /tmp/lines-5001-10000.sh
+          echo "Lines 5001-10000 sourced successfully"
+          banish 8 || echo "banish failed or not available"
+          echo "Test completed"
+
+  # ============================================================================
+  # NixOS INVESTIGATION LINE
+  # ============================================================================
+
+  # ============================================================================
+  # WORKFLOW #21: NixOS - Full glosses with banish
+  # Hypothesis: NixOS has different root cause than Ubuntu/Arch
+  # Expected: FAIL - reproduce NixOS exit 139
+  # ============================================================================
+  nix-full-glosses-banish:
+    name: "#21 Nix - Full glosses + banish (expect FAIL for Nix bug)"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      
+      - name: Generate and source full glosses, then run banish
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            ./spells/.wizardry/generate-glosses --quiet > /tmp/glosses.sh
+            echo 'Generated glosses: '
+            wc -l /tmp/glosses.sh
+            
+            echo 'Sourcing glosses...'
+            . /tmp/glosses.sh
+            echo 'Glosses sourced successfully'
+            
+            echo 'Running banish 8...'
+            banish 8
+            echo 'SUCCESS!'
+          "
+
+  # ============================================================================
+  # WORKFLOW #22: NixOS - All glosses EXCEPT declare()
+  # Hypothesis: If Nix bug is declare(), removing it should fix
+  # Expected: PASS if declare is Nix issue, FAIL if different issue
+  # ============================================================================
+  nix-glosses-except-declare:
+    name: "#22 Nix - All glosses EXCEPT declare() (test Nix theory)"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      
+      - name: Generate glosses without declare() and test
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+            
+            # Remove the declare() function (lines 12823-12926)
+            awk 'NR<12823 || NR>12926' /tmp/full-glosses.sh > /tmp/glosses-no-declare.sh
+            
+            echo 'Original: $(wc -l < /tmp/full-glosses.sh) lines'
+            echo 'Without declare: $(wc -l < /tmp/glosses-no-declare.sh) lines'
+            
+            echo 'Sourcing glosses without declare...'
+            . /tmp/glosses-no-declare.sh
+            echo 'Glosses sourced successfully'
+            
+            echo 'Running banish 8...'
+            banish 8
+            echo 'SUCCESS!'
+          "
+
+  # ============================================================================
+  # WORKFLOW #23: NixOS - Only declare() function
+  # Hypothesis: Test if declare() alone causes Nix crash (retest #11 on Nix)
+  # Expected: FAIL if declare is Nix-specific issue
+  # ============================================================================
+  nix-only-declare-with-banish:
+    name: "#23 Nix - Only declare() then banish (Nix-specific test)"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      
+      - name: Source only declare() and try banish
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+            
+            # Extract ONLY the declare() function
+            awk 'NR==12823,/^}$/ && NR>12823 {print; if (/^}$/) exit}' /tmp/full-glosses.sh > /tmp/only-declare.sh
+            echo '# First-word gloss for commands starting with \"declare\"' | cat - /tmp/only-declare.sh > /tmp/declare-gloss.sh
+            
+            wc -l /tmp/declare-gloss.sh
+            
+            echo 'Sourcing ONLY declare() function...'
+            . /tmp/declare-gloss.sh
+            echo 'declare() sourced'
+            
+            echo 'Trying to run banish 8...'
+            banish 8 || echo 'banish not available or failed'
+            echo 'Test completed'
+          "
