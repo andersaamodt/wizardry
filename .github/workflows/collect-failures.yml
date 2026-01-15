@@ -75,6 +75,7 @@ jobs:
             "Test doppelganger compiled wizardry"
             "Demonstrate wizardry"
             "Compile wizardry"
+            "Minimal Reproduce Exit 139"
           )
           
           # Total number of workflows we're monitoring

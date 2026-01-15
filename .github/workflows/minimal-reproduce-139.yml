@@ -930,12 +930,15 @@ jobs:
           export WIZARDRY_DIR="${PWD}"
           ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
           
-          # Extract lines 1-2700, ensure we end on complete function
-          awk 'NR <= 2700' /tmp/full-glosses.sh > /tmp/temp.sh
-          # Remove incomplete function at end if any
-          tac /tmp/temp.sh | awk '/^[a-z_-]+\(\) \{/{exit} {print}' | tac > /tmp/lines-1-2700.sh
+          # Extract complete functions only (first ~150 functions ≈ 2700 lines)
+          awk '
+            /^[a-z_-]+\(\) \{$/ { in_func=1; func_count++ }
+            in_func { print }
+            /^}$/ && in_func { in_func=0; if (func_count >= 150) exit }
+          ' /tmp/full-glosses.sh > /tmp/lines-1-2700.sh
           
           echo "Extracted lines (cleaned): $(wc -l < /tmp/lines-1-2700.sh)"
+          echo "Functions extracted: approximately 150"
           
           . /tmp/lines-1-2700.sh
           echo "Sourced successfully"
@@ -1049,9 +1052,15 @@ jobs:
           export WIZARDRY_DIR="${PWD}"
           ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
           
-          head -n 1000 /tmp/full-glosses.sh > /tmp/lines-1-1000.sh
+          # Extract first ~55 complete functions (approximately 1000 lines)
+          awk '
+            /^[a-z_-]+\(\) \{$/ { in_func=1; func_count++ }
+            in_func { print }
+            /^}$/ && in_func { in_func=0; if (func_count >= 55) exit }
+          ' /tmp/full-glosses.sh > /tmp/lines-1-1000.sh
           
           echo "Lines: $(wc -l < /tmp/lines-1-1000.sh)"
+          echo "Functions: approximately 55"
           
           . /tmp/lines-1-1000.sh
           echo "Sourced successfully"
@@ -1090,9 +1099,15 @@ jobs:
           export WIZARDRY_DIR="${PWD}"
           ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
           
-          awk 'NR >= 1001 && NR <= 2000' /tmp/full-glosses.sh > /tmp/lines-1001-2000.sh
+          # Extract functions 56-110 (roughly lines 1001-2000)
+          awk '
+            /^[a-z_-]+\(\) \{$/ { in_func=1; func_count++ }
+            in_func && func_count > 55 && func_count <= 110 { print }
+            /^}$/ && in_func { in_func=0; if (func_count >= 110) exit }
+          ' /tmp/full-glosses.sh > /tmp/lines-1001-2000.sh
           
           echo "Lines: $(wc -l < /tmp/lines-1001-2000.sh)"
+          echo "Functions: approximately 55 (functions 56-110)"
           
           . /tmp/lines-1001-2000.sh
           echo "Sourced successfully"
@@ -1131,9 +1146,15 @@ jobs:
           export WIZARDRY_DIR="${PWD}"
           ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
           
-          awk 'NR >= 2001 && NR <= 2700' /tmp/full-glosses.sh > /tmp/lines-2001-2700.sh
+          # Extract functions 111-150 (roughly lines 2001-2700)
+          awk '
+            /^[a-z_-]+\(\) \{$/ { in_func=1; func_count++ }
+            in_func && func_count > 110 && func_count <= 150 { print }
+            /^}$/ && in_func { in_func=0; if (func_count >= 150) exit }
+          ' /tmp/full-glosses.sh > /tmp/lines-2001-2700.sh
           
           echo "Lines: $(wc -l < /tmp/lines-2001-2700.sh)"
+          echo "Functions: approximately 40 (functions 111-150)"
           
           . /tmp/lines-2001-2700.sh
           echo "Sourced successfully"
@@ -1370,10 +1391,16 @@ jobs:
           # Generate full glosses
           ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
           
-          # Extract first 1350 lines using head
-          head -n 1350 /tmp/full-glosses.sh > /tmp/lines-1-1350.sh
+          # Extract complete functions only (avoid cutting mid-function)
+          # Count functions and extract first ~70-80 complete functions (roughly 1350 lines)
+          awk '
+            /^[a-z_-]+\(\) \{$/ { in_func=1; func_count++ }
+            in_func { print }
+            /^}$/ && in_func { in_func=0; if (func_count >= 75) exit }
+          ' /tmp/full-glosses.sh > /tmp/lines-1-1350.sh
           
           echo "Lines extracted: $(wc -l < /tmp/lines-1-1350.sh)"
+          echo "Functions extracted: approximately 75"
           
           # Source and test
           . /tmp/lines-1-1350.sh
@@ -1406,10 +1433,15 @@ jobs:
           # Generate full glosses
           ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
           
-          # Extract lines 1351-2700
-          sed -n '1351,2700p' /tmp/full-glosses.sh > /tmp/lines-1351-2700.sh
+          # Extract complete functions from second section (skip first ~75, take next ~75)
+          awk '
+            /^[a-z_-]+\(\) \{$/ { in_func=1; func_count++ }
+            in_func && func_count > 75 { print }
+            /^}$/ && in_func { in_func=0; if (func_count >= 150) exit }
+          ' /tmp/full-glosses.sh > /tmp/lines-1351-2700.sh
           
           echo "Lines extracted: $(wc -l < /tmp/lines-1351-2700.sh)"
+          echo "Functions extracted: approximately 75 (functions 76-150)"
           
           # Source and test
           . /tmp/lines-1351-2700.sh
@@ -1442,10 +1474,15 @@ jobs:
           # Generate full glosses
           ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
           
-          # Extract first 500 lines
-          head -n 500 /tmp/full-glosses.sh > /tmp/lines-1-500.sh
+          # Extract complete functions only (first ~25-30 functions ≈ 500 lines)
+          awk '
+            /^[a-z_-]+\(\) \{$/ { in_func=1; func_count++ }
+            in_func { print }
+            /^}$/ && in_func { in_func=0; if (func_count >= 28) exit }
+          ' /tmp/full-glosses.sh > /tmp/lines-1-500.sh
           
           echo "Lines extracted: $(wc -l < /tmp/lines-1-500.sh)"
+          echo "Functions extracted: approximately 28"
           
           # Source and test
           . /tmp/lines-1-500.sh
@@ -1478,10 +1515,15 @@ jobs:
           # Generate full glosses
           ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
           
-          # Extract lines 501-1000
-          sed -n '501,1000p' /tmp/full-glosses.sh > /tmp/lines-501-1000.sh
+          # Extract functions 29-56 (roughly lines 501-1000)
+          awk '
+            /^[a-z_-]+\(\) \{$/ { in_func=1; func_count++ }
+            in_func && func_count > 28 && func_count <= 56 { print }
+            /^}$/ && in_func { in_func=0; if (func_count >= 56) exit }
+          ' /tmp/full-glosses.sh > /tmp/lines-501-1000.sh
           
           echo "Lines extracted: $(wc -l < /tmp/lines-501-1000.sh)"
+          echo "Functions extracted: approximately 28 (functions 29-56)"
           
           # Source and test
           . /tmp/lines-501-1000.sh
