@@ -3932,12 +3932,12 @@ jobs:
           ./install
           
           echo "Testing script wrapper workaround..."
-          cat > /tmp/test-script.sh <<EOF
+          cat > /tmp/test-script.sh <<'SCRIPT'
 #!/bin/bash
-export WIZARDRY_DIR="${PWD}"
+export WIZARDRY_DIR="$(pwd -P)"
 . spells/.imps/sys/invoke-wizardry
 banish 8
-EOF
+SCRIPT
           chmod +x /tmp/test-script.sh
           /tmp/test-script.sh
           echo "✓ SUCCESS! Script wrapper works!"
