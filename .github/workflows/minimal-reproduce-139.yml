@@ -344,6 +344,7 @@ jobs:
   # Expected: FAIL (exit 139)
   # ============================================================================
   ubuntu-only-declare-function:
+    if: false  # DISABLED - workflows #11-15 disabled per request
     name: "#11 Ubuntu - Source ONLY declare() (expect FAIL)"
     runs-on: ubuntu-latest
     env:
@@ -431,6 +432,7 @@ jobs:
   # Expected: Unclear - may PASS if incomplete function is okay
   # ============================================================================
   ubuntu-4-lines-only:
+    if: false  # DISABLED - workflows #11-15 disabled per request
     name: "#13 Ubuntu - Only 4 lines 12823-12826 (exploratory)"
     runs-on: ubuntu-latest
     env:
@@ -463,6 +465,7 @@ jobs:
   # Expected: FAIL (exit 139) if same root cause
   # ============================================================================
   arch-only-declare-function:
+    if: false  # DISABLED - workflows #11-15 disabled per request
     name: "#14 Arch - Source ONLY declare() (expect FAIL)"
     runs-on: ubuntu-latest
     container: archlinux:latest
@@ -498,6 +501,7 @@ jobs:
   # Expected: Either PASS or FAIL - helps narrow down
   # ============================================================================
   ubuntu-glosses-first-half:
+    if: false  # DISABLED - workflows #11-15 disabled per request
     name: "#15 Ubuntu - First half of glosses (exploratory)"
     runs-on: ubuntu-latest
     env:
@@ -889,3 +893,324 @@ jobs:
             banish 8 || echo 'banish not available or failed'
             echo 'Test completed'
           "
+
+  # ============================================================================
+  # NEW WORKFLOWS #24-30 based on latest findings
+  # ============================================================================
+  
+  # ============================================================================
+  # WORKFLOW #24: Ubuntu - Q1 first half (lines 1-2700)
+  # Hypothesis: Bug is in first half of Q1
+  # Expected: FAIL if bug in lines 1-2700, PASS if in 2701-5411
+  # ============================================================================
+  ubuntu-q1-first-half:
+    name: "#24 Ubuntu - Q1 first half lines 1-2700"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Generate lines 1-2700 and test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          
+          # Extract lines 1-2700, ensure we end on complete function
+          awk 'NR <= 2700' /tmp/full-glosses.sh > /tmp/temp.sh
+          # Remove incomplete function at end if any
+          tac /tmp/temp.sh | awk '/^[a-z_-]+\(\) \{/{exit} {print}' | tac > /tmp/lines-1-2700.sh
+          
+          echo "Extracted lines (cleaned): $(wc -l < /tmp/lines-1-2700.sh)"
+          
+          . /tmp/lines-1-2700.sh
+          echo "Sourced successfully"
+          banish 8
+          echo "SUCCESS!"
+  
+  # ============================================================================
+  # WORKFLOW #25: Ubuntu - Q1 second half (lines 2701-5411)
+  # Hypothesis: Bug is in second half of Q1  
+  # Expected: Complements #24
+  # ============================================================================
+  ubuntu-q1-second-half:
+    name: "#25 Ubuntu - Q1 second half lines 2701-5411"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Generate lines 2701-5411 and test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          
+          awk 'NR >= 2701 && NR <= 5411' /tmp/full-glosses.sh > /tmp/lines-2701-5411.sh
+          
+          echo "Extracted lines: $(wc -l < /tmp/lines-2701-5411.sh)"
+          
+          . /tmp/lines-2701-5411.sh
+          echo "Sourced successfully"
+          banish 8 || echo "banish not available"
+          echo "Test completed"
+  
+  # ============================================================================
+  # WORKFLOW #26: Nix - Test other builtin shadowing
+  # Hypothesis: Shadowing ANY shell builtin causes Nix crash
+  # Expected: FAIL if general builtin shadowing issue, PASS if declare-specific
+  # ============================================================================
+  nix-shadow-test-builtin:
+    name: "#26 Nix - Shadow 'test' builtin (not declare)"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      
+      - name: Test shadowing 'test' builtin
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            
+            echo 'Creating function that shadows test builtin...'
+            test() {
+              echo 'Custom test function'
+            }
+            
+            echo 'test function defined'
+            test
+            echo 'test function called successfully'
+            echo 'Exiting shell...'
+          "
+          echo "Shell exited successfully - no crash!"
+  
+  # ============================================================================
+  # WORKFLOW #27: Ubuntu - Lines 1-1000 (very narrow)
+  # Hypothesis: Bug is in very early glosses
+  # Expected: Helps narrow to specific 1000-line range
+  # ============================================================================
+  ubuntu-lines-1-1000:
+    name: "#27 Ubuntu - Lines 1-1000"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Generate lines 1-1000 and test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          
+          head -n 1000 /tmp/full-glosses.sh > /tmp/lines-1-1000.sh
+          
+          echo "Lines: $(wc -l < /tmp/lines-1-1000.sh)"
+          
+          . /tmp/lines-1-1000.sh
+          echo "Sourced successfully"
+          banish 8 || echo "banish not available"
+          echo "Test completed"
+  
+  # ============================================================================
+  # WORKFLOW #28: Ubuntu - Lines 1001-2000
+  # Hypothesis: Continue binary search
+  # Expected: Helps pinpoint range
+  # ============================================================================
+  ubuntu-lines-1001-2000:
+    name: "#28 Ubuntu - Lines 1001-2000"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Generate lines 1001-2000 and test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          
+          awk 'NR >= 1001 && NR <= 2000' /tmp/full-glosses.sh > /tmp/lines-1001-2000.sh
+          
+          echo "Lines: $(wc -l < /tmp/lines-1001-2000.sh)"
+          
+          . /tmp/lines-1001-2000.sh
+          echo "Sourced successfully"
+          banish 8 || echo "banish not available"
+          echo "Test completed"
+  
+  # ============================================================================
+  # WORKFLOW #29: Ubuntu - Lines 2001-2700
+  # Hypothesis: Continue binary search  
+  # Expected: Helps pinpoint range
+  # ============================================================================
+  ubuntu-lines-2001-2700:
+    name: "#29 Ubuntu - Lines 2001-2700"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Generate lines 2001-2700 and test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          
+          awk 'NR >= 2001 && NR <= 2700' /tmp/full-glosses.sh > /tmp/lines-2001-2700.sh
+          
+          echo "Lines: $(wc -l < /tmp/lines-2001-2700.sh)"
+          
+          . /tmp/lines-2001-2700.sh
+          echo "Sourced successfully"
+          banish 8 || echo "banish not available"
+          echo "Test completed"
+  
+  # ============================================================================
+  # WORKFLOW #30: Nix - Confirm declare is the ONLY problematic builtin
+  # Hypothesis: Only declare causes the issue, not other builtins
+  # Expected: PASS (no crash) to confirm declare is special
+  # ============================================================================
+  nix-shadow-enable-builtin:
+    name: "#30 Nix - Shadow 'enable' builtin (test another)"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      
+      - name: Test shadowing 'enable' builtin
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            
+            echo 'Creating function that shadows enable builtin...'
+            enable() {
+              echo 'Custom enable function'
+            }
+            
+            echo 'enable function defined'
+            enable
+            echo 'enable function called successfully'
+            echo 'Exiting shell...'
+          "
+          echo "Shell exited successfully - no crash!"
+  
+  # ============================================================================
+  # WORKFLOW #31: NixOS - DEFINITIVE minimal declare() reproduction
+  # Hypothesis: CONFIRMED - shadowing declare builtin causes segfault on shell exit
+  # Expected: FAIL (exit 139) - this is the minimal reproduction of the NixOS bug
+  # ============================================================================
+  nix-minimal-declare-reproduction:
+    name: "#31 Nix - MINIMAL declare() reproduction (DEFINITIVE)"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      
+      - name: Minimal reproduction - just define declare() and exit
+        run: |
+          echo "=========================================="
+          echo "DEFINITIVE NixOS exit 139 minimal reproduction"
+          echo "=========================================="
+          echo ""
+          echo "Root cause: Defining a function named 'declare()' that shadows"
+          echo "the shell builtin causes a segmentation fault when the shell exits."
+          echo ""
+          echo "Test: Create declare() function and let shell exit normally..."
+          echo ""
+          
+          nix-shell -p bash --run '
+            declare() {
+              echo "custom declare function"
+            }
+            echo "declare() function has been defined"
+            echo "Shell is now exiting..."
+          '
+          
+          echo ""
+          echo "=========================================="
+          echo "If you see this message, the bug is FIXED!"
+          echo "=========================================="

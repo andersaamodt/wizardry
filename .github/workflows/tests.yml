@@ -1,12 +1,14 @@
 name: Unit tests
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  # DISABLED per request - focusing on minimal-reproduce-139 workflows only
+  workflow_dispatch:
+  # push:
+  #   branches:
+  #     - main
+  # pull_request:
+  #   branches:
+  #     - main
 
 # Cancel previous runs when new commits are pushed
 concurrency:
