@@ -3438,3 +3438,150 @@ jobs:
             fi
             exit $EXIT_CODE
           }
+  
+  # ============================================================================
+  # WORKFLOW #73: Exact replica of #55
+  # Replicating the pattern that consistently produces exit 139
+  # ============================================================================
+  test-replica-55-exact:
+    name: "#73 Ubuntu - Exact replica of #55"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Exact replica of #55
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          
+          echo ""
+          echo "Testing say imp..."
+          say "test message" 2>/dev/null || echo "say returned: $?"
+          echo "✓ say works"
+          
+          echo ""
+          echo "Testing has imp..."
+          has bash || echo "has returned: $?"
+          echo "✓ has works"
+          
+          echo ""
+          echo "Testing banish..."
+          banish 8
+          echo "✓ banish works"
+          
+          echo ""
+          echo "✓ SUCCESS - All imps work!"
+  
+  # ============================================================================
+  # WORKFLOW #74: Like #55 but explicit banish 8
+  # ============================================================================
+  test-replica-55-banish-8:
+    name: "#74 Ubuntu - Like #55 but explicit banish 8"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Like #55 but banish 8 explicitly
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          
+          echo ""
+          echo "Testing say imp..."
+          say "test message" 2>/dev/null || echo "say returned: $?"
+          echo "✓ say tested"
+          
+          echo ""
+          echo "Testing has imp..."
+          has bash || echo "has returned: $?"
+          echo "✓ has tested"
+          
+          echo ""
+          echo "Testing banish 8 explicitly..."
+          banish 8
+          echo "✓ SUCCESS!"
+  
+  # ============================================================================
+  # WORKFLOW #75: Like #55 but skip imp tests
+  # ============================================================================
+  test-replica-55-skip-imps:
+    name: "#75 Ubuntu - Like #55 but skip imp tests"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Like #55 but skip imp tests
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          
+          echo ""
+          echo "Testing banish directly (no other imp tests)..."
+          banish 8
+          echo "✓ SUCCESS!"
