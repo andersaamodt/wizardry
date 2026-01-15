@@ -102,4 +102,3 @@
 - In zsh (macOS default), `for m in $variable` doesn't word-split by default; use `for m in $(printf '%s\n' $variable)` to force word splitting in all shells (PR #909).
 - Debug output showing iteration counts can quickly reveal word-splitting issues: if `all_markers="1 2 3"` iterates once instead of three times, word splitting is disabled (PR #909).
 - When sourcing scripts into zsh shells, unquoted variables in for loops don't split; command substitution output always splits regardless of shell settings (PR #909).
-- Shell builtin `declare` must be blacklisted in generate-glosses; shadowing it with a user-defined function causes segfaults (exit 139) when the shell tries to access the builtin after redefinition (PR #940).
