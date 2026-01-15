@@ -3970,7 +3970,7 @@ jobs:
         run: |
           export WIZARDRY_DIR="${PWD}"
           echo "Creating test script..."
-          cat > /tmp/test-script.sh <<'EOF'
+          cat > /tmp/test-script.sh <<EOF
 #!/bin/bash
 export WIZARDRY_DIR="${PWD}"
 . spells/.imps/sys/invoke-wizardry
