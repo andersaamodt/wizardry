@@ -2228,3 +2228,304 @@ jobs:
           echo "Running banish 8..."
           banish 8
           echo "✓ SUCCESS! Function 5 from batch 1 passed"
+
+  # ============================================================================
+  # WORKFLOW #49: Test banish without any first-word glosses
+  # Hypothesis: Banish itself doesn't crash, only when combined with glosses
+  # Expected: PASS (banish works fine alone)
+  # ============================================================================
+  test-banish-without-glosses:
+    name: "#49 Ubuntu - Test banish without first-word glosses"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Test banish without glosses
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Sourcing invoke-wizardry (loads banish and other imps)..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          
+          echo ""
+          echo "Testing banish 8 without any first-word glosses..."
+          banish 8
+          echo "✓ SUCCESS! Banish works fine without glosses"
+
+  # ============================================================================
+  # WORKFLOW #50: Test simple non-first-word-gloss function with banish
+  # Hypothesis: Regular functions don't crash with banish, only first-word glosses
+  # Expected: PASS
+  # ============================================================================
+  test-simple-function-with-banish:
+    name: "#50 Ubuntu - Test simple function (non-gloss) with banish"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Test simple function with banish
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          
+          echo ""
+          echo "Defining a simple test function (not a first-word gloss)..."
+          simple_test() {
+            echo "Simple function called with: $@"
+          }
+          echo "✓ Simple function defined"
+          
+          echo ""
+          echo "Running banish 8..."
+          banish 8
+          echo "✓ SUCCESS! Simple function + banish worked"
+
+  # ============================================================================
+  # WORKFLOW #51: Test minimal first-word gloss (no variable names from yaml)
+  # Hypothesis: The specific variable names (_fw_spell, _fw_arg, etc.) might conflict
+  # Expected: If PASS, variable names are the issue. If FAIL, it's the pattern itself
+  # ============================================================================
+  test-minimal-first-word-gloss:
+    name: "#51 Ubuntu - Test minimal first-word gloss with different vars"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Test minimal first-word gloss
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          
+          echo ""
+          echo "Defining minimal first-word gloss with different variable names..."
+          testgloss() {
+            my_spell="testgloss"
+            my_home=${HOME:-.}
+            
+            for my_arg in "$@"; do
+              case "$my_arg" in
+                -*) break ;;
+                *) ;;
+              esac
+              my_spell="${my_spell}-${my_arg}"
+            done
+            
+            echo "Test gloss called: $my_spell"
+          }
+          echo "✓ Minimal gloss defined"
+          
+          echo ""
+          echo "Running banish 8..."
+          banish 8
+          echo "✓ SUCCESS! Minimal gloss worked"
+
+  # ============================================================================
+  # WORKFLOW #52: Test yaml() but call it before running banish
+  # Hypothesis: Maybe the function needs to be executed to cause the crash
+  # Expected: If FAIL even when called, execution matters. If PASS, definition alone is the issue
+  # ============================================================================
+  test-yaml-execute-before-banish:
+    name: "#52 Ubuntu - Execute yaml() before running banish"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Test yaml() with execution before banish
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          
+          echo ""
+          echo "Defining yaml() function..."
+          yaml() {
+            _fw_spell="yaml"
+            _fw_words_used=0
+            _fw_spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+            
+            for _fw_arg in "$@"; do
+              case "$_fw_arg" in
+                -*) break ;;
+                *[!0-9]*) ;;
+                *) break ;;
+              esac
+              
+              _fw_candidate="${_fw_spell}-${_fw_arg}"
+              _fw_words_used=$((_fw_words_used + 1))
+              
+              _fw_found=0
+              for _fw_dir in "$WIZARDRY_DIR"/spells/*/; do
+                _fw_path="${_fw_dir}${_fw_candidate}"
+                if [ -f "$_fw_path" ] && grep -q "^# Uncastable pattern" "$_fw_path" 2>/dev/null; then
+                  shift "$_fw_words_used"
+                  . "$_fw_path"
+                  return $?
+                fi
+              done
+              
+              _fw_spell="$_fw_candidate"
+            done
+            
+            parse "$_fw_spell" "$@"
+          }
+          echo "✓ yaml() defined"
+          
+          echo ""
+          echo "Executing yaml() function with test arg..."
+          yaml --help 2>/dev/null || echo "yaml returned: $?"
+          echo "✓ yaml() executed"
+          
+          echo ""
+          echo "Running banish 8..."
+          banish 8
+          echo "✓ SUCCESS!"
+
+  # ============================================================================
+  # WORKFLOW #53: Test if it's the parse/shift commands causing issues
+  # Hypothesis: The shift command in first-word glosses might corrupt state
+  # Expected: If PASS, shift is the issue. If FAIL, something else
+  # ============================================================================
+  test-first-word-gloss-no-shift:
+    name: "#53 Ubuntu - First-word gloss without shift/parse"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Test first-word gloss without shift/parse
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          
+          echo ""
+          echo "Defining simplified yaml() without shift/parse..."
+          yaml() {
+            local spell="yaml"
+            local words_used=0
+            
+            for arg in "$@"; do
+              case "$arg" in
+                -*) break ;;
+                *[!0-9]*) ;;
+                *) break ;;
+              esac
+              
+              spell="${spell}-${arg}"
+              words_used=$((words_used + 1))
+            done
+            
+            echo "Would call: $spell with $words_used words consumed"
+            return 0
+          }
+          echo "✓ Simplified yaml() defined"
+          
+          echo ""
+          echo "Running banish 8..."
+          banish 8
+          echo "✓ SUCCESS!"
