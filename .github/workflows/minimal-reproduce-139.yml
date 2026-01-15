@@ -3901,3 +3901,117 @@ jobs:
           echo "Calling banish 8..."
           banish 8
           echo "✓ SUCCESS! Banish works without invoke-wizardry!"
+  
+  # ============================================================================
+  # WORKFLOW #83: Test newline separator workaround
+  # ============================================================================
+  test-newline-workaround:
+    name: "#83 Ubuntu - Newline separator workaround (no &&)"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Test with newline separator (no &&)
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Testing with newline separator (no &&)..."
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          echo "✓ SUCCESS! Newline separator works!"
+  
+  # ============================================================================
+  # WORKFLOW #84: Test script wrapper workaround
+  # ============================================================================
+  test-script-wrapper:
+    name: "#84 Ubuntu - Script wrapper workaround"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Test with script wrapper
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Creating test script..."
+          cat > /tmp/test-script.sh <<'EOF'
+#!/bin/bash
+export WIZARDRY_DIR="${PWD}"
+. spells/.imps/sys/invoke-wizardry
+banish 8
+EOF
+          chmod +x /tmp/test-script.sh
+          echo "Executing script..."
+          /tmp/test-script.sh
+          echo "✓ SUCCESS! Script wrapper works!"
+  
+  # ============================================================================
+  # WORKFLOW #85: Test semicolon separator workaround
+  # ============================================================================
+  test-semicolon-workaround:
+    name: "#85 Ubuntu - Semicolon separator workaround"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Test with semicolon separator
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Testing with semicolon separator..."
+          . spells/.imps/sys/invoke-wizardry; banish 8
+          echo "✓ SUCCESS! Semicolon separator works!"
