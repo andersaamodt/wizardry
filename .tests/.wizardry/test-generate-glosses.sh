@@ -199,6 +199,36 @@ EOF
   fi
 }
 
+test_declare_is_blacklisted() {
+  # Test that 'declare' is blacklisted to prevent exit code 139 on NixOS
+  # This test ensures that if there's a spell starting with 'declare', 
+  # it won't create a declare() function that would override the shell builtin
+  
+  tmpdir=$(make_tempdir)
+  
+  # Create a mock spell starting with 'declare' (declare-something)
+  spell_dir="$tmpdir/spells/test"
+  mkdir -p "$spell_dir"
+  cat > "$spell_dir/declare-test" << 'EOF'
+#!/bin/sh
+printf 'declare-test executed\n'
+EOF
+  chmod +x "$spell_dir/declare-test"
+  
+  # Generate glosses with this mock spell
+  WIZARDRY_DIR="$tmpdir" SPELLBOOK_DIR="$tmpdir" \
+    run_spell spells/.wizardry/generate-glosses --quiet
+  assert_success || return 1
+  
+  # Verify that NO declare() function was generated
+  # (it should be skipped because 'declare' is blacklisted)
+  _output_file="${WIZARDRY_TMPDIR}/_test_output"
+  if grep -q "^declare()" "$_output_file"; then
+    TEST_FAILURE_REASON="Found declare() function - should be blacklisted"
+    return 1
+  fi
+}
+
 run_test_case "generate-glosses shows usage" test_help
 run_test_case "generate-glosses generates glosses" test_basic_execution
 run_test_case "generate-glosses creates valid gloss content" test_gloss_content
@@ -207,5 +237,6 @@ run_test_case "generate-glosses --output writes to file" test_output_option
 run_test_case "generate-glosses creates glosses for all spell categories" test_all_spell_categories
 run_test_case "generate-glosses hard fails on invalid default synonyms" test_invalid_default_synonyms_hard_fail
 run_test_case "synonym multi-word invocations work (leap to location)" test_synonym_multi_word_invocation
+run_test_case "declare is blacklisted for first-word glosses" test_declare_is_blacklisted
 
 finish_tests
