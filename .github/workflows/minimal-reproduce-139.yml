@@ -7,11 +7,11 @@ on:
 
 jobs:
   # ============================================================================
-  # WORKFLOW #1: Minimal NixOS declare() reproduction
+  # WORKFLOWS #1-55: DISABLED - Investigation complete, keeping only active tests
   # ============================================================================
   nix-minimal-declare-repro:
-    if: false  # DISABLED - workflow #1-10 disabled per request
-    name: "#1 Nix - Minimal declare() function reproduction"
+    if: false  # DISABLED - workflows #1-55 archived
+    name: "#1-55 ARCHIVED"
     runs-on: ubuntu-latest
     
     steps:
@@ -2767,3 +2767,111 @@ jobs:
           
           set +x
           echo "✓ banish completed successfully!"
+
+  # ============================================================================
+  # WORKFLOW #59: Test banish with different argument values
+  # HYPOTHESIS: banish 1 works (per #58) but banish 8 crashes
+  # ============================================================================
+  test-banish-arguments:
+    name: "#59 Ubuntu - Test banish with different arguments (1-10)"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Test banish with arguments 1 through 10
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          echo ""
+          
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            echo "Testing: banish $i"
+            timeout 30 banish $i && {
+              echo "✓ banish $i succeeded"
+            } || {
+              EXIT_CODE=$?
+              echo "✗ banish $i failed with exit code: $EXIT_CODE"
+              if [ $EXIT_CODE -eq 139 ]; then
+                echo "FOUND IT! banish $i causes segfault"
+                exit 139
+              fi
+            }
+            echo ""
+          done
+          
+          echo "All banish commands (1-10) completed without segfault!"
+
+  # ============================================================================
+  # WORKFLOW #60: Binary search for crashing argument value
+  # ============================================================================
+  test-banish-binary-search:
+    name: "#60 Ubuntu - Binary search banish arguments"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Binary search to find first failing argument
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          echo ""
+          
+          # Test specific values to narrow down
+          for i in 1 2 4 8 16 32; do
+            echo "Testing: banish $i"
+            timeout 30 banish $i && {
+              echo "✓ banish $i succeeded"
+            } || {
+              EXIT_CODE=$?
+              echo "✗ banish $i failed with exit code: $EXIT_CODE"
+              if [ $EXIT_CODE -eq 139 ]; then
+                echo "CRASH FOUND: banish $i causes segfault (exit 139)"
+                exit 139
+              fi
+            }
+            echo ""
+          done
+
+  # ============================================================================
+  # WORKFLOW #61: Test banish 0 and negative values
+  # ============================================================================
+  test-banish-edge-values:
+    name: "#61 Ubuntu - Test banish with edge case arguments"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Test banish with edge cases
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          echo ""
+          
+          echo "Testing: banish 0"
+          timeout 30 banish 0 || echo "banish 0 exited with: $?"
+          echo ""
+          
+          echo "Testing: banish (no argument)"
+          timeout 30 banish || echo "banish (no arg) exited with: $?"
+          echo ""
+          
+          echo "Testing: banish 100"
+          timeout 30 banish 100 || echo "banish 100 exited with: $?"
