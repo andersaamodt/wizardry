@@ -2529,3 +2529,157 @@ jobs:
           echo "Running banish 8..."
           banish 8
           echo "✓ SUCCESS!"
+
+  # ============================================================================
+  # WORKFLOW #54: Load banish directly without invoke-wizardry
+  # Hypothesis: Banish works fine when loaded directly
+  # Expected: PASS - proves invoke-wizardry corrupts banish
+  # ============================================================================
+  test-banish-direct-load:
+    name: "#54 Ubuntu - Load banish directly (bypass invoke-wizardry)"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Test banish loaded directly
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Loading banish directly (NOT via invoke-wizardry)..."
+          . spells/.imps/ops/banish
+          echo "✓ banish loaded directly"
+          
+          echo ""
+          echo "Running banish 8..."
+          banish 8
+          echo "✓ SUCCESS!"
+
+  # ============================================================================
+  # WORKFLOW #55: Test other imps after invoke-wizardry
+  # Hypothesis: All imps crash after invoke-wizardry, not just banish
+  # Expected: Shows scope of issue
+  # ============================================================================
+  test-other-imps-after-invoke:
+    name: "#55 Ubuntu - Test other imps after invoke-wizardry"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Test other imps after invoke-wizardry
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          
+          echo ""
+          echo "Testing say imp..."
+          say "test message" 2>/dev/null || echo "say returned: $?"
+          echo "✓ say works"
+          
+          echo ""
+          echo "Testing has imp..."
+          has bash || echo "has returned: $?"
+          echo "✓ has works"
+          
+          echo ""
+          echo "Testing banish..."
+          banish 8
+          echo "✓ banish works"
+          
+          echo ""
+          echo "✓ SUCCESS - All imps work!"
+
+  # ============================================================================
+  # WORKFLOW #56: Minimal invoke-wizardry emulation
+  # Hypothesis: Something specific invoke-wizardry does breaks banish
+  # Expected: Identifies what action causes corruption
+  # ============================================================================
+  test-minimal-invoke-emulation:
+    name: "#56 Ubuntu - Minimal invoke-wizardry emulation"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Test minimal invoke-wizardry emulation
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Manually loading imps one by one..."
+          
+          # Load core imps in order
+          echo "Loading basic imps..."
+          . spells/.imps/cond/has
+          . spells/.imps/out/say
+          . spells/.imps/out/warn
+          . spells/.imps/out/die
+          . spells/.imps/out/fail
+          echo "✓ Basic imps loaded"
+          
+          echo ""
+          echo "Loading banish..."
+          . spells/.imps/ops/banish
+          echo "✓ banish loaded"
+          
+          echo ""
+          echo "Running banish 8..."
+          banish 8
+          echo "✓ SUCCESS!"
