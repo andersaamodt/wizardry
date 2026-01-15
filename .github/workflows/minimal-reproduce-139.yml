@@ -2127,3 +2127,75 @@ jobs:
           echo "Running banish 8..."
           banish 8
           echo "✓ SUCCESS! yaml() worked without crash"
+
+  # ============================================================================
+  # WORKFLOW #48: Test function from batch 1 (which passed)
+  # ============================================================================
+  test-batch1-function:
+    name: "#48 Ubuntu - Test function from batch 1 (control)"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Test function from batch 1 manually
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          # Generate full glosses to see what batch 1 functions look like
+          echo "Generating glosses to extract function 5 (from batch 1)..."
+          spells/.wizardry/generate-glosses > /tmp/full-glosses.sh
+          
+          # Extract function 5 (from batch 1 which passed)
+          echo "Extracting function 5..."
+          awk '
+            BEGIN { func_count=0; in_func=0 }
+            /^[a-z_-]+\(\) \{$/ { 
+              in_func=1
+              func_count++
+              if (func_count == 5) found=1
+            }
+            in_func && found { print }
+            /^}$/ && in_func && found { exit }
+          ' /tmp/full-glosses.sh > /tmp/func-5.sh
+          
+          lines_extracted=$(wc -l < /tmp/func-5.sh)
+          echo "Lines extracted: $lines_extracted"
+          
+          echo ""
+          echo "Function 5 content:"
+          cat /tmp/func-5.sh
+          echo ""
+          
+          # Source invoke-wizardry first
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          
+          echo ""
+          echo "Sourcing function 5..."
+          . /tmp/func-5.sh
+          echo "✓ Function sourced successfully"
+          
+          echo ""
+          echo "Running banish 8..."
+          banish 8
+          echo "✓ SUCCESS! Function 5 from batch 1 passed"
