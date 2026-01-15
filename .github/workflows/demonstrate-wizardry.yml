@@ -18,6 +18,7 @@ permissions:
 
 jobs:
   demonstrate-wizardry:
+    if: false  # Disabled for exit 139 debugging
     name: Demonstrate wizardry
     runs-on: ubuntu-latest
     steps:

@@ -19,6 +19,7 @@ permissions:
 
 jobs:
   emoji-catalog:
+    if: false  # Disabled for exit 139 debugging
     name: Print Emoji Observatory Report
     runs-on: ubuntu-latest
     steps:

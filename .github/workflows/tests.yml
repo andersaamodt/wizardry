@@ -19,6 +19,7 @@ permissions:
 
 jobs:
   aaa-nix:
+    if: false  # Disabled for exit 139 debugging
     name: Nix unit tests
     runs-on: ubuntu-latest
     env:

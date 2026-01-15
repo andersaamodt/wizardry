@@ -1,0 +1,196 @@
+name: Minimal Reproduction - Exit 139 on Arch/Ubuntu
+
+# This workflow contains individually-numbered tests to isolate the cause
+# of exit code 139 on Arch/Ubuntu (distinct from NixOS declare() bug)
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+# Cancel previous runs when new commits are pushed
+concurrency:
+  group: minimal-139-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Test #86: && chaining with invoke-wizardry + banish (expected to crash)
+  test-86-and-chaining:
+    name: "#86: && chaining (reproduce crash)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Test && chaining
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Testing && chaining with invoke-wizardry and banish..."
+          . spells/.imps/sys/invoke-wizardry && banish 4
+
+  # Test #87: Separate lines without && (test if this avoids crash)
+  test-87-separate-lines:
+    name: "#87: Separate lines (no &&)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Test separate lines
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Testing separate lines without && chaining..."
+          . spells/.imps/sys/invoke-wizardry
+          banish 4
+
+  # Test #88: Semicolon separator (test alternative to &&)
+  test-88-semicolon:
+    name: "#88: Semicolon separator"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Test semicolon separator
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Testing semicolon separator..."
+          . spells/.imps/sys/invoke-wizardry; banish 4
+
+  # Test #89: Script wrapper approach
+  test-89-script-wrapper:
+    name: "#89: Script wrapper"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Create test script
+        run: |
+          cat > /tmp/test-banish.sh <<'EOF'
+#!/bin/sh
+export WIZARDRY_DIR="${1}"
+. "${WIZARDRY_DIR}/spells/.imps/sys/invoke-wizardry"
+banish 4
+EOF
+          chmod +x /tmp/test-banish.sh
+      
+      - name: Run test script
+        run: /tmp/test-banish.sh "${PWD}"
+
+  # Test #90: Minimal banish without invoke-wizardry
+  test-90-banish-standalone:
+    name: "#90: Banish without invoke-wizardry"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Test banish standalone
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Testing banish standalone (source banish directly)..."
+          # Source banish directly without invoke-wizardry
+          . spells/.imps/ops/banish
+          echo "Banish function loaded, now calling it..."
+          banish 4
+
+  # Test #91: Test with different banish levels
+  test-91-banish-levels:
+    name: "#91: Different banish levels"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Test banish 1
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          . spells/.imps/sys/invoke-wizardry
+          echo "Testing banish 1..."
+          banish 1
+      
+      - name: Test banish 2
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          . spells/.imps/sys/invoke-wizardry
+          echo "Testing banish 2..."
+          banish 2
+      
+      - name: Test banish 3
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          . spells/.imps/sys/invoke-wizardry
+          echo "Testing banish 3..."
+          banish 3
+
+  # Test #92: Test on Arch Linux specifically
+  test-92-arch-linux:
+    name: "#92: Arch Linux test"
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Install git
+        run: pacman -Sy --noconfirm git
+      
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Test invoke-wizardry + banish on Arch
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Testing on Arch Linux..."
+          . spells/.imps/sys/invoke-wizardry
+          banish 4
+
+  # Test #93: Test with bash tracing enabled
+  test-93-bash-tracing:
+    name: "#93: With bash tracing"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Test with tracing
+        run: |
+          set -x
+          export WIZARDRY_DIR="${PWD}"
+          echo "Testing with bash tracing..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "invoke-wizardry sourced"
+          banish 4
+          echo "banish completed"
+
+  # Test #94: Test with minimal environment
+  test-94-minimal-env:
+    name: "#94: Minimal environment"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Test in minimal env
+        run: |
+          env -i PWD="${PWD}" HOME="${HOME}" PATH="/usr/bin:/bin" sh -c '
+            export WIZARDRY_DIR="${PWD}"
+            . spells/.imps/sys/invoke-wizardry
+            banish 4
+          '
+
+  # Test #95: Test without generating glosses
+  test-95-no-glosses:
+    name: "#95: Without gloss generation"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Test without glosses
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          export WIZARDRY_NO_GLOSSES=1
+          echo "Testing without gloss generation..."
+          . spells/.imps/sys/invoke-wizardry
+          banish 4

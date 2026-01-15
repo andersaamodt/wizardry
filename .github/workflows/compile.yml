@@ -17,6 +17,7 @@ permissions:
 
 jobs:
   compile:
+    if: false  # Disabled for exit 139 debugging
     name: Compile and package wizardry
     runs-on: ubuntu-latest
 

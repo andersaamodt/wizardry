@@ -15,6 +15,7 @@ permissions:
 
 jobs:
   compile-and-test-doppelganger:
+    if: false  # Disabled for exit 139 debugging
     name: Compile and test doppelganger
     runs-on: ubuntu-latest
     

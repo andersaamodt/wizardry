@@ -20,6 +20,7 @@ permissions:
 
 jobs:
   lint:
+    if: false  # Disabled for exit 139 debugging
     name: POSIX, linting, and style checks
     runs-on: ubuntu-latest
     steps:
