@@ -2875,3 +2875,172 @@ jobs:
           
           echo "Testing: banish 100"
           timeout 30 banish 100 || echo "banish 100 exited with: $?"
+
+  # ============================================================================
+  # WORKFLOW #62: Test banish 8 WITHOUT gloss functions (control test)
+  # ============================================================================
+  test-banish-8-no-glosses:
+    name: "#62 Ubuntu - banish 8 WITHOUT gloss functions (control)"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Test banish 8 without any gloss functions defined
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          echo ""
+          
+          echo "Testing banish 8 WITHOUT any gloss functions..."
+          echo "(This should succeed like #59-61)"
+          timeout 30 banish 8 && {
+            echo "✓ SUCCESS - banish 8 completed without crash"
+          } || {
+            EXIT_CODE=$?
+            echo "✗ FAILED with exit code: $EXIT_CODE"
+            exit $EXIT_CODE
+          }
+
+  # ============================================================================
+  # WORKFLOW #63: Test banish 8 WITH yaml() gloss function (should crash)
+  # ============================================================================
+  test-banish-8-with-yaml-gloss:
+    name: "#63 Ubuntu - banish 8 WITH yaml() gloss (should crash)"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Test banish 8 with yaml() gloss function defined
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          echo ""
+          
+          echo "Defining yaml() first-word gloss function..."
+          yaml() {
+            _fw_spell="yaml"
+            _fw_words_used=0
+            _fw_spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+            
+            for _fw_arg in "$@"; do
+              case "$_fw_arg" in
+                -*) break ;;
+                *[!0-9]*) ;;
+                *) break ;;
+              esac
+              
+              _fw_candidate="${_fw_spell}-${_fw_arg}"
+              _fw_words_used=$((_fw_words_used + 1))
+              
+              _fw_found=0
+              for _fw_dir in "$WIZARDRY_DIR"/spells/*/; do
+                _fw_path="${_fw_dir}${_fw_candidate}"
+                if [ -f "$_fw_path" ] && grep -q "^# Uncastable pattern" "$_fw_path" 2>/dev/null; then
+                  shift "$_fw_words_used"
+                  . "$_fw_path"
+                  return $?
+                fi
+              done
+              
+              _fw_spell="$_fw_candidate"
+            done
+            
+            parse "$_fw_spell" "$@"
+          }
+          echo "✓ yaml() function defined"
+          echo ""
+          
+          echo "Testing banish 8 WITH yaml() gloss..."
+          echo "(This should crash like #47 if gloss functions are required)"
+          timeout 120 banish 8 && {
+            echo "✓ SUCCESS - banish 8 completed without crash"
+            echo "This means gloss functions alone don't trigger the crash!"
+          } || {
+            EXIT_CODE=$?
+            echo "✗ FAILED with exit code: $EXIT_CODE"
+            if [ $EXIT_CODE -eq 139 ]; then
+              echo "CRASH CONFIRMED: gloss + banish 8 causes segfault"
+            fi
+            exit $EXIT_CODE
+          }
+
+  # ============================================================================
+  # WORKFLOW #64: Test banish 1 WITH yaml() gloss function
+  # ============================================================================
+  test-banish-1-with-yaml-gloss:
+    name: "#64 Ubuntu - banish 1 WITH yaml() gloss (test arg threshold)"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Test banish 1 with yaml() gloss function defined
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          echo ""
+          
+          echo "Defining yaml() first-word gloss function..."
+          yaml() {
+            _fw_spell="yaml"
+            _fw_words_used=0
+            _fw_spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+            
+            for _fw_arg in "$@"; do
+              case "$_fw_arg" in
+                -*) break ;;
+                *[!0-9]*) ;;
+                *) break ;;
+              esac
+              
+              _fw_candidate="${_fw_spell}-${_fw_arg}"
+              _fw_words_used=$((_fw_words_used + 1))
+              
+              _fw_found=0
+              for _fw_dir in "$WIZARDRY_DIR"/spells/*/; do
+                _fw_path="${_fw_dir}${_fw_candidate}"
+                if [ -f "$_fw_path" ] && grep -q "^# Uncastable pattern" "$_fw_path" 2>/dev/null; then
+                  shift "$_fw_words_used"
+                  . "$_fw_path"
+                  return $?
+                fi
+              done
+              
+              _fw_spell="$_fw_candidate"
+            done
+            
+            parse "$_fw_spell" "$@"
+          }
+          echo "✓ yaml() function defined"
+          echo ""
+          
+          echo "Testing banish 1 WITH yaml() gloss..."
+          echo "(Tests if banish 1 avoids crash even with gloss functions)"
+          timeout 120 banish 1 && {
+            echo "✓ SUCCESS - banish 1 completed without crash"
+            echo "This means argument value DOES matter when glosses present"
+          } || {
+            EXIT_CODE=$?
+            echo "✗ FAILED with exit code: $EXIT_CODE"
+            if [ $EXIT_CODE -eq 139 ]; then
+              echo "CRASH: Even banish 1 crashes with gloss functions!"
+            fi
+            exit $EXIT_CODE
+          }
