@@ -1682,8 +1682,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Nix
-        uses: cachix/install-nix-action@v24
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
       - name: Generate glosses and extract Decile 9 Sub 1
         run: |
           export WIZARDRY_DIR="${PWD}"
@@ -1695,8 +1696,9 @@ jobs:
           wc -l /tmp/glosses.sh
       - name: Source and test
         run: |
-          export WIZARDRY_DIR="${PWD}"
+          WIZARDRY_DIR="${PWD}"
           nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
             . /tmp/glosses.sh
             . spells/.imps/sys/invoke-wizardry
             ./spells/.wizardry/test-magic --verbose
@@ -1708,8 +1710,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Nix
-        uses: cachix/install-nix-action@v24
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
       - name: Generate glosses and extract Decile 9 Sub 2
         run: |
           export WIZARDRY_DIR="${PWD}"
@@ -1721,8 +1724,9 @@ jobs:
           wc -l /tmp/glosses.sh
       - name: Source and test
         run: |
-          export WIZARDRY_DIR="${PWD}"
+          WIZARDRY_DIR="${PWD}"
           nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
             . /tmp/glosses.sh
             . spells/.imps/sys/invoke-wizardry
             ./spells/.wizardry/test-magic --verbose
@@ -1734,8 +1738,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Nix
-        uses: cachix/install-nix-action@v24
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
       - name: Generate glosses and extract Decile 9 Sub 3
         run: |
           export WIZARDRY_DIR="${PWD}"
@@ -1747,8 +1752,9 @@ jobs:
           wc -l /tmp/glosses.sh
       - name: Source and test
         run: |
-          export WIZARDRY_DIR="${PWD}"
+          WIZARDRY_DIR="${PWD}"
           nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
             . /tmp/glosses.sh
             . spells/.imps/sys/invoke-wizardry
             ./spells/.wizardry/test-magic --verbose
@@ -1760,8 +1766,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Nix
-        uses: cachix/install-nix-action@v24
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
       - name: Generate glosses and extract Decile 9 Sub 4
         run: |
           export WIZARDRY_DIR="${PWD}"
@@ -1773,8 +1780,9 @@ jobs:
           wc -l /tmp/glosses.sh
       - name: Source and test
         run: |
-          export WIZARDRY_DIR="${PWD}"
+          WIZARDRY_DIR="${PWD}"
           nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
             . /tmp/glosses.sh
             . spells/.imps/sys/invoke-wizardry
             ./spells/.wizardry/test-magic --verbose
@@ -1786,8 +1794,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Nix
-        uses: cachix/install-nix-action@v24
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
       - name: Generate glosses and extract Decile 9 Sub 5
         run: |
           export WIZARDRY_DIR="${PWD}"
@@ -1799,8 +1808,9 @@ jobs:
           wc -l /tmp/glosses.sh
       - name: Source and test
         run: |
-          export WIZARDRY_DIR="${PWD}"
+          WIZARDRY_DIR="${PWD}"
           nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
             . /tmp/glosses.sh
             . spells/.imps/sys/invoke-wizardry
             ./spells/.wizardry/test-magic --verbose
@@ -1812,8 +1822,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Nix
-        uses: cachix/install-nix-action@v24
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
       - name: Generate glosses and extract Decile 9 Sub 6
         run: |
           export WIZARDRY_DIR="${PWD}"
@@ -1825,8 +1836,9 @@ jobs:
           wc -l /tmp/glosses.sh
       - name: Source and test
         run: |
-          export WIZARDRY_DIR="${PWD}"
+          WIZARDRY_DIR="${PWD}"
           nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
             . /tmp/glosses.sh
             . spells/.imps/sys/invoke-wizardry
             ./spells/.wizardry/test-magic --verbose
@@ -1838,8 +1850,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Nix
-        uses: cachix/install-nix-action@v24
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
       - name: Generate glosses and extract Decile 9 Sub 7
         run: |
           export WIZARDRY_DIR="${PWD}"
@@ -1851,8 +1864,9 @@ jobs:
           wc -l /tmp/glosses.sh
       - name: Source and test
         run: |
-          export WIZARDRY_DIR="${PWD}"
+          WIZARDRY_DIR="${PWD}"
           nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
             . /tmp/glosses.sh
             . spells/.imps/sys/invoke-wizardry
             ./spells/.wizardry/test-magic --verbose
@@ -1864,8 +1878,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Nix
-        uses: cachix/install-nix-action@v24
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
       - name: Generate glosses and extract Decile 9 Sub 8
         run: |
           export WIZARDRY_DIR="${PWD}"
@@ -1877,8 +1892,9 @@ jobs:
           wc -l /tmp/glosses.sh
       - name: Source and test
         run: |
-          export WIZARDRY_DIR="${PWD}"
+          WIZARDRY_DIR="${PWD}"
           nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
             . /tmp/glosses.sh
             . spells/.imps/sys/invoke-wizardry
             ./spells/.wizardry/test-magic --verbose
@@ -1890,8 +1906,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Nix
-        uses: cachix/install-nix-action@v24
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
       - name: Generate glosses and extract Decile 9 Sub 9
         run: |
           export WIZARDRY_DIR="${PWD}"
@@ -1903,8 +1920,9 @@ jobs:
           wc -l /tmp/glosses.sh
       - name: Source and test
         run: |
-          export WIZARDRY_DIR="${PWD}"
+          WIZARDRY_DIR="${PWD}"
           nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
             . /tmp/glosses.sh
             . spells/.imps/sys/invoke-wizardry
             ./spells/.wizardry/test-magic --verbose
