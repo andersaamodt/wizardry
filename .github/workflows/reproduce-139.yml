@@ -1159,9 +1159,9 @@ jobs:
       - name: Create minimal banish
         run: |
           cat > /tmp/banish <<'EOF'
-#!/bin/sh
-exit 0
-EOF
+          #!/bin/sh
+          exit 0
+          EOF
           chmod +x /tmp/banish
 
       - name: Run banish WITHOUT loading glosses
@@ -1191,9 +1191,9 @@ EOF
       - name: Create minimal banish
         run: |
           cat > /tmp/banish <<'EOF'
-#!/bin/sh
-exit 0
-EOF
+          #!/bin/sh
+          exit 0
+          EOF
           chmod +x /tmp/banish
 
       - name: Source glosses and run banish WITHOUT invoke-wizardry
