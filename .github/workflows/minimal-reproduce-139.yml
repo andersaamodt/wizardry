@@ -3906,7 +3906,6 @@ jobs:
   reproduce-83-ubuntu:
     name: "#83 Ubuntu - Newline separator workaround"
     runs-on: ubuntu-latest
-    if: false
     steps:
       - uses: actions/checkout@v4
       - name: Test newline separator workaround
@@ -3923,7 +3922,6 @@ jobs:
   reproduce-85-ubuntu:
     name: "#85 Ubuntu - Semicolon separator workaround"
     runs-on: ubuntu-latest
-    if: false
     steps:
       - uses: actions/checkout@v4
       - name: Test semicolon separator workaround
