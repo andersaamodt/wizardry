@@ -2683,3 +2683,50 @@ jobs:
           echo "Running banish 8..."
           banish 8
           echo "✓ SUCCESS!"
+  
+  # ============================================================================
+  # WORKFLOW #57: Test malformed eval hypothesis  
+  # ============================================================================
+  test-malformed-eval:
+    name: "#57 Ubuntu - Test malformed eval in banish"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Test malformed eval command
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Testing malformed eval (current banish code)..."
+          echo 'eval ""echo" test"' > /tmp/test-malformed.sh
+          chmod +x /tmp/test-malformed.sh
+          
+          echo "Running malformed eval..."
+          if bash /tmp/test-malformed.sh 2>/dev/null; then
+            echo "✓ Malformed eval did NOT crash"
+          else
+            echo "✗ Malformed eval crashed with exit code: $?"
+          fi
+          
+          echo ""
+          echo "Testing corrected eval..."
+          echo 'eval "echo test"' > /tmp/test-correct.sh
+          chmod +x /tmp/test-correct.sh
+          
+          echo "Running corrected eval..."
+          if bash /tmp/test-correct.sh 2>/dev/null; then
+            echo "✓ Corrected eval worked"
+          else
+            echo "✗ Corrected eval failed with exit code: $?"
+          fi
+          
+          echo ""
+          echo "Now testing actual banish with invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          
+          echo "Running banish 1 (will test eval at line 998)..."
+          banish 1
+          echo "✓ banish completed!"
