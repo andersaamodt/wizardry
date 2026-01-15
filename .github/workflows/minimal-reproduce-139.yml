@@ -3901,3 +3901,59 @@ jobs:
           echo "Calling banish 8..."
           banish 8
           echo "✓ SUCCESS! Banish works without invoke-wizardry!"
+
+  # Workflow #83: Test workaround using newline separator (no &&)
+  reproduce-83-ubuntu:
+    name: "#83 Ubuntu - Newline separator workaround"
+    runs-on: ubuntu-latest
+    if: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test newline separator workaround
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./install
+          
+          echo "Testing newline separator (no && chaining)..."
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          echo "✓ SUCCESS! Newline separator works!"
+
+  # Workflow #84: Test workaround using script wrapper
+  reproduce-84-ubuntu:
+    name: "#84 Ubuntu - Script wrapper workaround"
+    runs-on: ubuntu-latest
+    if: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test script wrapper workaround
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./install
+          
+          echo "Testing script wrapper workaround..."
+          cat > /tmp/test-script.sh <<EOF
+#!/bin/bash
+export WIZARDRY_DIR="${PWD}"
+. spells/.imps/sys/invoke-wizardry
+banish 8
+EOF
+          chmod +x /tmp/test-script.sh
+          /tmp/test-script.sh
+          echo "✓ SUCCESS! Script wrapper works!"
+
+  # Workflow #85: Test workaround using semicolon separator
+  reproduce-85-ubuntu:
+    name: "#85 Ubuntu - Semicolon separator workaround"
+    runs-on: ubuntu-latest
+    if: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test semicolon separator workaround
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./install
+          
+          echo "Testing semicolon separator..."
+          . spells/.imps/sys/invoke-wizardry; banish 8
+          echo "✓ SUCCESS! Semicolon separator works!"
