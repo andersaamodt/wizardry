@@ -918,3 +918,212 @@ jobs:
             declare -F | head -20
             echo 'Completed - if this fails, bug is in 20th thirty-second (second half of failing 10th sixteenth)'
           "
+
+  # PROOF TEST 1: Reproduce bug by explicitly redefining declare()
+  reproduce-declare-ubuntu:
+    name: PROOF - Ubuntu explicitly redefine declare() builtin
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate glosses WITHOUT declare
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          # Filter OUT the declare function to get clean glosses
+          awk '
+            /^declare *\(\)/ { in_declare=1; next }
+            in_declare { if (/^}$/) { in_declare=0 }; next }
+            !in_declare { print }
+          ' /tmp/glosses_full.sh > /tmp/glosses_clean.sh
+          echo "Clean glosses (without declare):"
+          wc -l /tmp/glosses_clean.sh
+          grep -c "^[a-zA-Z_][a-zA-Z0-9_-]* *()" /tmp/glosses_clean.sh || true
+
+      - name: Source clean glosses and then REDEFINE declare()
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          # Source clean glosses
+          . /tmp/glosses_clean.sh
+          echo "Sourced clean glosses successfully"
+          
+          # Now explicitly redefine the declare() builtin
+          declare() {
+            echo "Custom declare function"
+          }
+          
+          echo "Redefined declare() - this should cause segfault"
+          # Try to use declare
+          declare -F | head -5 || echo "FAILED with exit code $?"
+
+  # PROOF TEST 2: Same test on Nix
+  reproduce-declare-nix:
+    name: PROOF - Nix explicitly redefine declare() builtin
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate glosses WITHOUT declare
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          # Filter OUT the declare function
+          awk '
+            /^declare *\(\)/ { in_declare=1; next }
+            in_declare { if (/^}$/) { in_declare=0 }; next }
+            !in_declare { print }
+          ' /tmp/glosses_full.sh > /tmp/glosses_clean.sh
+          wc -l /tmp/glosses_clean.sh
+
+      - name: Source clean glosses and REDEFINE declare() in nix-shell
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            # Source clean glosses
+            . /tmp/glosses_clean.sh
+            echo 'Sourced clean glosses'
+            
+            # Redefine declare() builtin
+            declare() {
+              echo 'Custom declare in nix'
+            }
+            
+            echo 'Redefined declare() - should cause exit 139'
+            declare -F | head -5 || echo 'FAILED with exit code \$?'
+          "
+
+  # PROOF TEST 3: Fix the failing 38th sixty-fourth by excluding declare
+  reproduce-segfault-nix-38th-without-declare:
+    name: PROOF - Nix 38th sixty-fourth EXCLUDING declare() 
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate full glosses to file
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          wc -l /tmp/glosses_full.sh
+
+      - name: Extract 38TH SIXTY-FOURTH but EXCLUDE declare()
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          total_lines=$(wc -l < /tmp/glosses_full.sh)
+          start_line=$((total_lines / 64 * 37 + 1))
+          end_line=$((total_lines / 64 * 38))
+          echo "Total lines: $total_lines"
+          echo "Extracting 38th sixty-fourth: lines $start_line to $end_line (EXCLUDING declare)"
+          
+          # Extract complete functions in this range, EXCLUDING declare
+          awk -v start="$start_line" -v end="$end_line" '
+            /^declare *\(\)/ { in_declare=1; next }
+            in_declare { if (/^}$/) { in_declare=0 }; next }
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_name = $0
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start >= start && func_start <= end) {
+                  printf "%s", func_lines
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses.sh
+          wc -l /tmp/glosses.sh
+          echo "Functions extracted:"
+          grep "^[a-zA-Z_][a-zA-Z0-9_-]* *()" /tmp/glosses.sh || true
+          echo "First 20 lines:"
+          head -20 /tmp/glosses.sh
+
+      - name: Try sourcing 38TH SIXTY-FOURTH without declare
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            echo 'About to source 38TH SIXTY-FOURTH (without declare) in nix-shell...'
+            . /tmp/glosses.sh
+            echo 'SUCCESS! Sourced 38th sixty-fourth WITHOUT declare'
+            echo 'Trying declare -F...'
+            declare -F | head -20
+            echo 'Completed - should SUCCEED (previously failed with 139)'
+          "
+
+  # PROOF TEST 4: Fix framework test by excluding declare
+  reproduce-segfault-ubuntu-framework-without-declare:
+    name: PROOF - Ubuntu framework EXCLUDING declare()
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate glosses WITHOUT declare
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          # Filter OUT the declare function
+          awk '
+            /^declare *\(\)/ { in_declare=1; next }
+            in_declare { if (/^}$/) { in_declare=0 }; next }
+            !in_declare { print }
+          ' /tmp/glosses_full.sh > /tmp/glosses.sh
+          wc -l /tmp/glosses.sh
+          echo "Glosses generated WITHOUT declare function"
+
+      - name: Create banish framework half 2
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cat > /tmp/banish <<'EOF'
+          #!/bin/sh
+          set -eu
+          
+          level=${1:-0}
+          
+          # Framework Half 2: Level range validation (if statement)
+          echo "[TRACE] Checking level range..."
+          if [ "$level" -lt 0 ] || [ "$level" -gt 8 ]; then
+            echo "banish: level must be 0-8" >&2
+            exit 1
+          fi
+          
+          echo "[TRACE] Level $level validated"
+          exit 0
+          EOF
+          chmod +x /tmp/banish
+
+      - name: Invoke wizardry WITHOUT declare and run framework test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          export PATH="/tmp:${PATH}"
+          echo "About to invoke wizardry (WITHOUT declare), call banish framework, and run test-magic..."
+          . /tmp/glosses.sh
+          echo "Sourced glosses successfully"
+          banish 0
+          echo "Banish succeeded"
+          ./spells/.wizardry/test-magic --verbose
+          echo "SUCCESS! Framework test completed (previously failed with 139)"
