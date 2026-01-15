@@ -3211,3 +3211,50 @@ jobs:
             fi
             exit $EXIT_CODE
           }
+  
+  # ============================================================================
+  # WORKFLOW #68: Test with FULL glosses (not just yaml)
+  # ============================================================================
+  test-banish-4-with-full-glosses:
+    name: "#68 Ubuntu - banish 4 WITH FULL glosses (should crash)"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Test banish 4 with FULL generated glosses
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Generating FULL glosses (all functions)..."
+          spells/.wizardry/generate-glosses > /tmp/full-glosses.sh
+          echo "✓ Full glosses generated"
+          echo ""
+          
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          echo ""
+          
+          echo "Sourcing FULL glosses..."
+          . /tmp/full-glosses.sh
+          echo "✓ Full glosses sourced"
+          echo ""
+          
+          echo "Testing banish 4 WITH full glosses..."
+          timeout 120 banish 4 && {
+            echo "✓ UNEXPECTED SUCCESS - banish 4 worked with full glosses"
+            echo "This disproves the full-glosses-shadow-builtin hypothesis"
+          } || {
+            EXIT_CODE=$?
+            echo "✗ Exit code: $EXIT_CODE"
+            if [ $EXIT_CODE -eq 139 ]; then
+              echo "✓ REPRODUCED! banish crashes with full glosses"
+              echo "This confirms a gloss function shadows a builtin banish needs"
+            elif [ $EXIT_CODE -eq 124 ]; then
+              echo "✓ TIMEOUT - likely infinite loop (also confirms bug)"
+            fi
+            exit $EXIT_CODE
+          }
