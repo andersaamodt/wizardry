@@ -7,7 +7,8 @@ on:
 
 jobs:
   reproduce-segfault-ubuntu-absolute-minimal:
-    name: Ubuntu - Banish Absolute Minimal (no functions)
+    name: #1 Ubuntu - Banish Absolute Minimal (no functions)
+    if: false  # Disabled - superseded by later tests
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -43,7 +44,8 @@ jobs:
           echo "Completed - if fails with 139, bug is calling ANY script after invoke"
 
   reproduce-segfault-ubuntu-empty-function:
-    name: Ubuntu - Banish Empty Function (def but no call)
+    name: #2 Ubuntu - Banish Empty Function (def but no call)
+    if: false  # Disabled - superseded by later tests
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -82,7 +84,8 @@ jobs:
           echo "Completed - if fails with 139, bug is DEFINING a function after invoke"
 
   reproduce-segfault-ubuntu-call-empty:
-    name: Ubuntu - Banish Call Empty (call empty function)
+    name: #3 Ubuntu - Banish Call Empty (call empty function)
+    if: false  # Disabled - superseded by later tests
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -122,7 +125,8 @@ jobs:
           echo "Completed - if fails with 139, bug is CALLING a function after invoke"
 
   reproduce-segfault-ubuntu-framework-half2:
-    name: Ubuntu - Banish Framework Half 2 (validation only)
+    name: #4 Ubuntu - Banish Framework Half 2 (validation only)
+    if: false  # Disabled - superseded by later tests
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -173,7 +177,8 @@ jobs:
           echo "Completed - if fails with 139, bug is in banish's level validation"
 
   reproduce-segfault-ubuntu-standalone-check:
-    name: Ubuntu - Standalone POSIX Check (no banish)
+    name: #5 Ubuntu - Standalone POSIX Check (no banish)
+    if: false  # Disabled - superseded by later tests
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -219,7 +224,8 @@ jobs:
           echo "Completed - if fails with 139, bug is in the POSIX check itself"
 
   reproduce-segfault-arch-absolute-minimal:
-    name: Arch - Banish Absolute Minimal (no functions)
+    name: #6 Arch - Banish Absolute Minimal (no functions)
+    if: false  # Disabled - superseded by later tests
     runs-on: ubuntu-latest
     container: archlinux:latest
     env:
@@ -255,7 +261,8 @@ jobs:
           echo "Completed - if fails with 139, bug is calling ANY script after invoke"
 
   reproduce-segfault-arch-empty-function:
-    name: Arch - Banish Empty Function (def but no call)
+    name: #7 Arch - Banish Empty Function (def but no call)
+    if: false  # Disabled - superseded by later tests
     runs-on: ubuntu-latest
     container: archlinux:latest
     env:
@@ -294,7 +301,8 @@ jobs:
           echo "Completed - if fails with 139, bug is DEFINING a function after invoke"
 
   reproduce-segfault-arch-call-empty:
-    name: Arch - Banish Call Empty (call empty function)
+    name: #8 Arch - Banish Call Empty (call empty function)
+    if: false  # Disabled - superseded by later tests
     runs-on: ubuntu-latest
     container: archlinux:latest
     env:
@@ -334,7 +342,8 @@ jobs:
           echo "Completed - if fails with 139, bug is CALLING a function after invoke"
 
   reproduce-segfault-arch-framework-half2:
-    name: Arch - Banish Framework Half 2 (validation only)
+    name: #9 Arch - Banish Framework Half 2 (validation only)
+    if: false  # Disabled - superseded by later tests
     runs-on: ubuntu-latest
     container: archlinux:latest
     env:
@@ -384,7 +393,8 @@ jobs:
           echo "Completed - if fails with 139, bug is in banish's level validation"
 
   reproduce-segfault-arch-standalone-check:
-    name: Arch - Standalone POSIX Check (no banish)
+    name: #10 Arch - Standalone POSIX Check (no banish)
+    if: false  # Disabled - superseded by later tests
     runs-on: ubuntu-latest
     container: archlinux:latest
     env:
@@ -429,7 +439,8 @@ jobs:
           echo "Completed - if fails with 139, bug is in the POSIX check itself"
 
   reproduce-segfault-ubuntu-quarter1:
-    name: Ubuntu - Quarter 1 (POSIX commands only)
+    name: #11 Ubuntu - Quarter 1 (POSIX commands only)
+    if: false  # Disabled - superseded by later tests
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -490,7 +501,8 @@ jobs:
           echo "Completed - if fails with 139, bug is in POSIX commands check"
 
   reproduce-segfault-ubuntu-quarter2:
-    name: Ubuntu - Quarter 2 (download tools + tar)
+    name: #12 Ubuntu - Quarter 2 (download tools + tar)
+    if: false  # Disabled - superseded by later tests
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -547,7 +559,8 @@ jobs:
           echo "Completed - if fails with 139, bug is in download/tar checks"
 
   reproduce-segfault-arch-quarter1:
-    name: Arch - Quarter 1 (POSIX commands only)
+    name: #13 Arch - Quarter 1 (POSIX commands only)
+    if: false  # Disabled - superseded by later tests
     runs-on: ubuntu-latest
     container:
       image: archlinux:latest
@@ -614,7 +627,8 @@ jobs:
           echo "Completed - if fails with 139, bug is in POSIX commands check"
 
   reproduce-segfault-arch-quarter2:
-    name: Arch - Quarter 2 (download tools + tar)
+    name: #14 Arch - Quarter 2 (download tools + tar)
+    if: false  # Disabled - superseded by later tests
     runs-on: ubuntu-latest
     container:
       image: archlinux:latest
@@ -677,7 +691,8 @@ jobs:
           echo "Completed - if fails with 139, bug is in download/tar checks"
 
   reproduce-segfault-nix-3rd-quarter:
-    name: Nix - 3rd quarter (for comparison)
+    name: #15 Nix - 3rd quarter (for comparison)
+    if: false  # Disabled - superseded by later tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -728,7 +743,8 @@ jobs:
           "
 
   reproduce-segfault-nix-37th-sixtyfourth:
-    name: Nix - 37th Sixty-Fourth (first half of 19th)
+    name: #16 Nix - 37th Sixty-Fourth (first half of 19th)
+    if: false  # Disabled - superseded by later tests
     runs-on: ubuntu-latest
 
     steps:
@@ -792,7 +808,8 @@ jobs:
           "
 
   reproduce-segfault-nix-38th-sixtyfourth:
-    name: Nix - 38th Sixty-Fourth (second half of 19th)
+    name: #17 Nix - 38th Sixty-Fourth (second half of 19th)
+    if: false  # Disabled - superseded by later tests
     runs-on: ubuntu-latest
 
     steps:
@@ -856,7 +873,8 @@ jobs:
           "
 
   reproduce-segfault-nix-19th-thirtysecond:
-    name: Nix - 20th Thirty-Second (second half of 10th sixteenth)
+    name: #18 Nix - 20th Thirty-Second (second half of 10th sixteenth)
+    if: false  # Disabled - superseded by later tests
     runs-on: ubuntu-latest
 
     steps:
@@ -921,7 +939,8 @@ jobs:
 
   # PROOF TEST 1: Reproduce bug by explicitly redefining declare()
   reproduce-declare-ubuntu:
-    name: PROOF - Ubuntu explicitly redefine declare() builtin
+    name: #19 PROOF - Ubuntu explicitly redefine declare() builtin
+    if: false  # Disabled - superseded by later tests
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -962,7 +981,8 @@ jobs:
 
   # PROOF TEST 2: Same test on Nix
   reproduce-declare-nix:
-    name: PROOF - Nix explicitly redefine declare() builtin
+    name: #20 PROOF - Nix explicitly redefine declare() builtin
+    if: false  # Disabled - superseded by later tests
     runs-on: ubuntu-latest
 
     steps:
@@ -1005,7 +1025,8 @@ jobs:
 
   # PROOF TEST 3: Fix the failing 38th sixty-fourth by excluding declare
   reproduce-segfault-nix-38th-without-declare:
-    name: PROOF - Nix 38th sixty-fourth EXCLUDING declare() 
+    name: #21 PROOF - Nix 38th sixty-fourth EXCLUDING declare() 
+    if: false  # Disabled - superseded by later tests
     runs-on: ubuntu-latest
 
     steps:
@@ -1073,7 +1094,7 @@ jobs:
 
   # PROOF TEST 4: Fix framework test by excluding declare
   reproduce-segfault-ubuntu-framework-without-declare:
-    name: PROOF - Ubuntu framework EXCLUDING declare()
+    name: #22 PROOF - Ubuntu framework EXCLUDING declare()
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -1130,7 +1151,7 @@ jobs:
 
   # BRUTE FORCE: Ubuntu isolators to narrow down minimal banish failures
   ubuntu-test-magic-only:
-    name: Ubuntu - Test Magic Only (no banish)
+    name: #23 Ubuntu - Test Magic Only (no banish)
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -1148,7 +1169,7 @@ jobs:
           echo "SUCCESS! test-magic alone doesn't crash"
 
   ubuntu-no-glosses:
-    name: Ubuntu - Banish without glosses
+    name: #24 Ubuntu - Banish without glosses
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -1173,7 +1194,7 @@ jobs:
           echo "SUCCESS! Banish works without glosses"
 
   ubuntu-glosses-no-invoke:
-    name: Ubuntu - Glosses without invoke
+    name: #25 Ubuntu - Glosses without invoke
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -1208,7 +1229,7 @@ jobs:
 
   # BRUTE FORCE: Split 38th sixty-fourth into 10 deciles
   nix-38th-decile-1:
-    name: Nix - 38th Decile 1 (lines 12535-12568)
+    name: #26 Nix - 38th Decile 1 (lines 12535-12568)
     runs-on: ubuntu-latest
 
     steps:
@@ -1263,7 +1284,7 @@ jobs:
           "
 
   nix-38th-decile-2:
-    name: Nix - 38th Decile 2 (lines 12569-12602)
+    name: #27 Nix - 38th Decile 2 (lines 12569-12602)
     runs-on: ubuntu-latest
 
     steps:
@@ -1313,7 +1334,7 @@ jobs:
           "
 
   nix-38th-decile-3:
-    name: Nix - 38th Decile 3 (lines 12603-12636)
+    name: #28 Nix - 38th Decile 3 (lines 12603-12636)
     runs-on: ubuntu-latest
 
     steps:
@@ -1356,7 +1377,7 @@ jobs:
           "
 
   nix-38th-decile-4:
-    name: Nix - 38th Decile 4 (lines 12637-12670)
+    name: #29 Nix - 38th Decile 4 (lines 12637-12670)
     runs-on: ubuntu-latest
 
     steps:
@@ -1399,7 +1420,7 @@ jobs:
           "
 
   nix-38th-decile-5:
-    name: Nix - 38th Decile 5 (lines 12671-12704)
+    name: #30 Nix - 38th Decile 5 (lines 12671-12704)
     runs-on: ubuntu-latest
 
     steps:
@@ -1442,7 +1463,7 @@ jobs:
           "
 
   nix-38th-decile-6:
-    name: Nix - 38th Decile 6 (lines 12705-12738)
+    name: #31 Nix - 38th Decile 6 (lines 12705-12738)
     runs-on: ubuntu-latest
 
     steps:
@@ -1485,7 +1506,7 @@ jobs:
           "
 
   nix-38th-decile-7:
-    name: Nix - 38th Decile 7 (lines 12739-12772)
+    name: #32 Nix - 38th Decile 7 (lines 12739-12772)
     runs-on: ubuntu-latest
 
     steps:
@@ -1528,7 +1549,7 @@ jobs:
           "
 
   nix-38th-decile-8:
-    name: Nix - 38th Decile 8 (lines 12773-12806)
+    name: #33 Nix - 38th Decile 8 (lines 12773-12806)
     runs-on: ubuntu-latest
 
     steps:
@@ -1571,7 +1592,7 @@ jobs:
           "
 
   nix-38th-decile-9:
-    name: Nix - 38th Decile 9 (lines 12807-12840)
+    name: #34 Nix - 38th Decile 9 (lines 12807-12840)
     runs-on: ubuntu-latest
 
     steps:
@@ -1614,7 +1635,7 @@ jobs:
           "
 
   nix-38th-decile-10:
-    name: Nix - 38th Decile 10 (lines 12841-12873)
+    name: #35 Nix - 38th Decile 10 (lines 12841-12873)
     runs-on: ubuntu-latest
 
     steps:
@@ -1655,3 +1676,277 @@ jobs:
             . /tmp/glosses_decile.sh
             echo 'SUCCESS! Decile 10 completed'
           "
+
+  nix-38th-decile-9-1:
+    name: #36 Nix - Decile 9 Sub 1 (lines 12807-12810)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+      - name: Generate glosses and extract Decile 9 Sub 1
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses-full.sh
+          # Extract lines 12807-12810 (4 lines)
+          awk 'NR>=12807 && NR<=12810 && /^[a-z_-]+ *\(\)/ {in_func=1} in_func {print; if (/^}$/) in_func=0}' /tmp/glosses-full.sh > /tmp/glosses.sh
+          echo "Decile 9 Sub 1 (lines 12807-12810):"
+          wc -l /tmp/glosses.sh
+      - name: Source and test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          nix-shell --run "
+            . /tmp/glosses.sh
+            . spells/.imps/sys/invoke-wizardry
+            ./spells/.wizardry/test-magic --verbose
+            echo 'SUCCESS! Decile 9 Sub 1 completed'
+          "
+
+  nix-38th-decile-9-2:
+    name: #37 Nix - Decile 9 Sub 2 (lines 12811-12814)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+      - name: Generate glosses and extract Decile 9 Sub 2
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses-full.sh
+          # Extract lines 12811-12814 (4 lines)
+          awk 'NR>=12811 && NR<=12814 && /^[a-z_-]+ *\(\)/ {in_func=1} in_func {print; if (/^}$/) in_func=0}' /tmp/glosses-full.sh > /tmp/glosses.sh
+          echo "Decile 9 Sub 2 (lines 12811-12814):"
+          wc -l /tmp/glosses.sh
+      - name: Source and test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          nix-shell --run "
+            . /tmp/glosses.sh
+            . spells/.imps/sys/invoke-wizardry
+            ./spells/.wizardry/test-magic --verbose
+            echo 'SUCCESS! Decile 9 Sub 2 completed'
+          "
+
+  nix-38th-decile-9-3:
+    name: #38 Nix - Decile 9 Sub 3 (lines 12815-12818)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+      - name: Generate glosses and extract Decile 9 Sub 3
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses-full.sh
+          # Extract lines 12815-12818 (4 lines)
+          awk 'NR>=12815 && NR<=12818 && /^[a-z_-]+ *\(\)/ {in_func=1} in_func {print; if (/^}$/) in_func=0}' /tmp/glosses-full.sh > /tmp/glosses.sh
+          echo "Decile 9 Sub 3 (lines 12815-12818):"
+          wc -l /tmp/glosses.sh
+      - name: Source and test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          nix-shell --run "
+            . /tmp/glosses.sh
+            . spells/.imps/sys/invoke-wizardry
+            ./spells/.wizardry/test-magic --verbose
+            echo 'SUCCESS! Decile 9 Sub 3 completed'
+          "
+
+  nix-38th-decile-9-4:
+    name: #39 Nix - Decile 9 Sub 4 (lines 12819-12822)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+      - name: Generate glosses and extract Decile 9 Sub 4
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses-full.sh
+          # Extract lines 12819-12822 (4 lines)
+          awk 'NR>=12819 && NR<=12822 && /^[a-z_-]+ *\(\)/ {in_func=1} in_func {print; if (/^}$/) in_func=0}' /tmp/glosses-full.sh > /tmp/glosses.sh
+          echo "Decile 9 Sub 4 (lines 12819-12822):"
+          wc -l /tmp/glosses.sh
+      - name: Source and test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          nix-shell --run "
+            . /tmp/glosses.sh
+            . spells/.imps/sys/invoke-wizardry
+            ./spells/.wizardry/test-magic --verbose
+            echo 'SUCCESS! Decile 9 Sub 4 completed'
+          "
+
+  nix-38th-decile-9-5:
+    name: #40 Nix - Decile 9 Sub 5 (lines 12823-12826)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+      - name: Generate glosses and extract Decile 9 Sub 5
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses-full.sh
+          # Extract lines 12823-12826 (4 lines)
+          awk 'NR>=12823 && NR<=12826 && /^[a-z_-]+ *\(\)/ {in_func=1} in_func {print; if (/^}$/) in_func=0}' /tmp/glosses-full.sh > /tmp/glosses.sh
+          echo "Decile 9 Sub 5 (lines 12823-12826):"
+          wc -l /tmp/glosses.sh
+      - name: Source and test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          nix-shell --run "
+            . /tmp/glosses.sh
+            . spells/.imps/sys/invoke-wizardry
+            ./spells/.wizardry/test-magic --verbose
+            echo 'SUCCESS! Decile 9 Sub 5 completed'
+          "
+
+  nix-38th-decile-9-6:
+    name: #41 Nix - Decile 9 Sub 6 (lines 12827-12830)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+      - name: Generate glosses and extract Decile 9 Sub 6
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses-full.sh
+          # Extract lines 12827-12830 (4 lines)
+          awk 'NR>=12827 && NR<=12830 && /^[a-z_-]+ *\(\)/ {in_func=1} in_func {print; if (/^}$/) in_func=0}' /tmp/glosses-full.sh > /tmp/glosses.sh
+          echo "Decile 9 Sub 6 (lines 12827-12830):"
+          wc -l /tmp/glosses.sh
+      - name: Source and test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          nix-shell --run "
+            . /tmp/glosses.sh
+            . spells/.imps/sys/invoke-wizardry
+            ./spells/.wizardry/test-magic --verbose
+            echo 'SUCCESS! Decile 9 Sub 6 completed'
+          "
+
+  nix-38th-decile-9-7:
+    name: #42 Nix - Decile 9 Sub 7 (lines 12831-12834)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+      - name: Generate glosses and extract Decile 9 Sub 7
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses-full.sh
+          # Extract lines 12831-12834 (4 lines)
+          awk 'NR>=12831 && NR<=12834 && /^[a-z_-]+ *\(\)/ {in_func=1} in_func {print; if (/^}$/) in_func=0}' /tmp/glosses-full.sh > /tmp/glosses.sh
+          echo "Decile 9 Sub 7 (lines 12831-12834):"
+          wc -l /tmp/glosses.sh
+      - name: Source and test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          nix-shell --run "
+            . /tmp/glosses.sh
+            . spells/.imps/sys/invoke-wizardry
+            ./spells/.wizardry/test-magic --verbose
+            echo 'SUCCESS! Decile 9 Sub 7 completed'
+          "
+
+  nix-38th-decile-9-8:
+    name: #43 Nix - Decile 9 Sub 8 (lines 12835-12838)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+      - name: Generate glosses and extract Decile 9 Sub 8
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses-full.sh
+          # Extract lines 12835-12838 (4 lines)
+          awk 'NR>=12835 && NR<=12838 && /^[a-z_-]+ *\(\)/ {in_func=1} in_func {print; if (/^}$/) in_func=0}' /tmp/glosses-full.sh > /tmp/glosses.sh
+          echo "Decile 9 Sub 8 (lines 12835-12838):"
+          wc -l /tmp/glosses.sh
+      - name: Source and test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          nix-shell --run "
+            . /tmp/glosses.sh
+            . spells/.imps/sys/invoke-wizardry
+            ./spells/.wizardry/test-magic --verbose
+            echo 'SUCCESS! Decile 9 Sub 8 completed'
+          "
+
+  nix-38th-decile-9-9:
+    name: #44 Nix - Decile 9 Sub 9 (lines 12839-12840)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+      - name: Generate glosses and extract Decile 9 Sub 9
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses-full.sh
+          # Extract lines 12839-12840 (2 lines)
+          awk 'NR>=12839 && NR<=12840 && /^[a-z_-]+ *\(\)/ {in_func=1} in_func {print; if (/^}$/) in_func=0}' /tmp/glosses-full.sh > /tmp/glosses.sh
+          echo "Decile 9 Sub 9 (lines 12839-12840):"
+          wc -l /tmp/glosses.sh
+      - name: Source and test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          nix-shell --run "
+            . /tmp/glosses.sh
+            . spells/.imps/sys/invoke-wizardry
+            ./spells/.wizardry/test-magic --verbose
+            echo 'SUCCESS! Decile 9 Sub 9 completed'
+          "
+
+  ubuntu-glosses-halves:
+    name: #45 Ubuntu - Glosses First/Second Half (isolation)
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Generate glosses
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses-full.sh
+          total_lines=$(wc -l < /tmp/glosses-full.sh)
+          half_lines=$((total_lines / 2))
+          echo "Total gloss lines: $total_lines, half: $half_lines"
+          
+      - name: Test first half of glosses
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          total_lines=$(wc -l < /tmp/glosses-full.sh)
+          half_lines=$((total_lines / 2))
+          head -n "$half_lines" /tmp/glosses-full.sh > /tmp/glosses-first-half.sh
+          echo "Testing FIRST HALF of glosses..."
+          . /tmp/glosses-first-half.sh
+          ./spells/.wizardry/test-magic --verbose
+          echo "First half succeeded"
+          
+      - name: Test second half of glosses
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          total_lines=$(wc -l < /tmp/glosses-full.sh)
+          half_lines=$((total_lines / 2))
+          tail -n "+$((half_lines + 1))" /tmp/glosses-full.sh > /tmp/glosses-second-half.sh
+          echo "Testing SECOND HALF of glosses..."
+          . /tmp/glosses-second-half.sh
+          ./spells/.wizardry/test-magic --verbose
+          echo "Second half succeeded"
+
