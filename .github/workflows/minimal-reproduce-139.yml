@@ -3759,3 +3759,145 @@ jobs:
           . spells/.imps/sys/invoke-wizardry
           banish 8
           echo "✓ SUCCESS without &&!"
+  
+  # ============================================================================
+  # WORKFLOW #80: Test && vs other separators
+  # ============================================================================
+  test-command-separators:
+    name: "#80 Ubuntu - && vs newline vs semicolon"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Run 1 - Test with && (expected to crash based on #79)
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Testing with && chaining..."
+          . spells/.imps/sys/invoke-wizardry && banish 8
+          echo "✓ SUCCESS with &&!"
+      
+      - name: Run 2 - Test with newline (separate commands)
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Testing with newline separator..."
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          echo "✓ SUCCESS with newline!"
+      
+      - name: Run 3 - Test with semicolon
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Testing with semicolon separator..."
+          . spells/.imps/sys/invoke-wizardry; banish 8
+          echo "✓ SUCCESS with semicolon!"
+  
+  # ============================================================================
+  # WORKFLOW #81: Test && variations
+  # ============================================================================
+  test-and-variations:
+    name: "#81 Ubuntu - && pattern variations"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Test 1 - Multiple && in chain
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Testing multiple && in chain..."
+          . spells/.imps/sys/invoke-wizardry && echo "Loaded" && banish 8
+          echo "✓ SUCCESS with multiple &&!"
+      
+      - name: Test 2 - && with lower argument
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Testing && with banish 1..."
+          . spells/.imps/sys/invoke-wizardry && banish 1
+          echo "✓ SUCCESS with && and banish 1!"
+      
+      - name: Test 3 - source instead of dot
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Testing source instead of dot..."
+          source spells/.imps/sys/invoke-wizardry && banish 8
+          echo "✓ SUCCESS with source &&!"
+  
+  # ============================================================================
+  # WORKFLOW #82: Test banish standalone (fixed #76 path)
+  # ============================================================================
+  test-banish-standalone-fixed:
+    name: "#82 Ubuntu - Banish WITHOUT invoke-wizardry (fixed path)"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Test banish without invoke-wizardry
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Loading word_of_binding..."
+          . spells/.imps/sys/word-of-binding
+          echo "✓ word_of_binding loaded"
+          
+          echo "Preloading banish function..."
+          word_of_binding banish
+          echo "✓ banish function preloaded"
+          
+          echo "Calling banish 8..."
+          banish 8
+          echo "✓ SUCCESS! Banish works without invoke-wizardry!"
