@@ -3919,29 +3919,6 @@ jobs:
           banish 8
           echo "✓ SUCCESS! Newline separator works!"
 
-  # Workflow #84: Test workaround using script wrapper
-  reproduce-84-ubuntu:
-    name: "#84 Ubuntu - Script wrapper workaround"
-    runs-on: ubuntu-latest
-    if: false
-    steps:
-      - uses: actions/checkout@v4
-      - name: Test script wrapper workaround
-        run: |
-          export WIZARDRY_DIR="${PWD}"
-          ./install
-          
-          echo "Testing script wrapper workaround..."
-          cat > /tmp/test-script.sh <<'SCRIPT'
-#!/bin/bash
-export WIZARDRY_DIR="$(pwd -P)"
-. spells/.imps/sys/invoke-wizardry
-banish 8
-SCRIPT
-          chmod +x /tmp/test-script.sh
-          /tmp/test-script.sh
-          echo "✓ SUCCESS! Script wrapper works!"
-
   # Workflow #85: Test workaround using semicolon separator
   reproduce-85-ubuntu:
     name: "#85 Ubuntu - Semicolon separator workaround"
