@@ -229,6 +229,23 @@ EOF
   fi
 }
 
+test_enable_is_blacklisted() {
+  # Test that 'enable' is blacklisted to prevent exit code 139 on NixOS
+  # The spell 'enable-service' exists and was causing enable() override
+  
+  # Generate glosses and verify no enable() function is created
+  WIZARDRY_DIR="$ROOT_DIR" \
+    run_spell spells/.wizardry/generate-glosses --quiet
+  assert_success || return 1
+  
+  # Verify that NO enable() function was generated
+  _output_file="${WIZARDRY_TMPDIR}/_test_output"
+  if grep -q "^enable()" "$_output_file"; then
+    TEST_FAILURE_REASON="Found enable() function - should be blacklisted"
+    return 1
+  fi
+}
+
 run_test_case "generate-glosses shows usage" test_help
 run_test_case "generate-glosses generates glosses" test_basic_execution
 run_test_case "generate-glosses creates valid gloss content" test_gloss_content
@@ -238,5 +255,6 @@ run_test_case "generate-glosses creates glosses for all spell categories" test_a
 run_test_case "generate-glosses hard fails on invalid default synonyms" test_invalid_default_synonyms_hard_fail
 run_test_case "synonym multi-word invocations work (leap to location)" test_synonym_multi_word_invocation
 run_test_case "declare is blacklisted for first-word glosses" test_declare_is_blacklisted
+run_test_case "enable is blacklisted for first-word glosses" test_enable_is_blacklisted
 
 finish_tests
