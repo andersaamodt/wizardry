@@ -1934,3 +1934,92 @@ jobs:
           echo "Running banish 8..."
           banish 8
           echo "✓ SUCCESS! Batch ${{ matrix.batch }} passed"
+
+  # ============================================================================
+  # WORKFLOW #46: Test individual functions 31-40 (batch 4 isolation)
+  # ============================================================================
+  test-individual-functions-batch4:
+    name: "#46 Ubuntu - Individual function ${{ matrix.func_num }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        func_num: [31, 32, 33, 34, 35, 36, 37, 38, 39, 40]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Extract and test function ${{ matrix.func_num }}
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Generating full glosses..."
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          
+          echo "Extracting function number ${{ matrix.func_num }}..."
+          
+          # Extract exactly the specified function
+          awk '
+            /^[a-z_-]+\(\) \{$/ {
+              in_func=1
+              func_count++
+              if (func_count == ${{ matrix.func_num }}) {
+                capture=1
+                func_name=$1
+                print "# Function " func_count ": " func_name
+              }
+            }
+            capture && in_func { print }
+            /^}$/ && in_func {
+              in_func=0
+              if (capture) {
+                exit
+              }
+            }
+          ' /tmp/full-glosses.sh > /tmp/func-${{ matrix.func_num }}.sh
+          
+          lines_extracted=$(wc -l < /tmp/func-${{ matrix.func_num }}.sh)
+          echo "Lines extracted: $lines_extracted"
+          
+          if [ "$lines_extracted" -eq 0 ]; then
+            echo "ERROR: Function ${{ matrix.func_num }} not found!"
+            exit 1
+          fi
+          
+          echo ""
+          echo "Function ${{ matrix.func_num }} content:"
+          cat /tmp/func-${{ matrix.func_num }}.sh
+          echo ""
+          
+          # Source invoke-wizardry first to load banish
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          
+          echo ""
+          echo "Sourcing function ${{ matrix.func_num }}..."
+          . /tmp/func-${{ matrix.func_num }}.sh
+          echo "✓ Function sourced successfully"
+          
+          echo ""
+          echo "Running banish 8..."
+          banish 8
+          echo "✓ SUCCESS! Function ${{ matrix.func_num }} passed"
