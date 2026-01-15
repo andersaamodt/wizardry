@@ -3376,3 +3376,65 @@ jobs:
             fi
             exit $EXIT_CODE
           }
+  
+  # ============================================================================
+  # WORKFLOW #72: Verify clean state before banish 8
+  # ============================================================================
+  test-clean-state-banish-8:
+    name: "#72 Ubuntu - Verify clean state, then banish 8"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Verify clean state and test banish 8
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Step 1: Verify NO functions defined before invoke-wizardry"
+          BEFORE_COUNT=$(declare -F | wc -l)
+          echo "Functions before invoke-wizardry: $BEFORE_COUNT"
+          
+          if [ "$BEFORE_COUNT" -gt 0 ]; then
+            echo "⚠️ WARNING: Functions already defined:"
+            declare -F
+          else
+            echo "✓ Clean state confirmed"
+          fi
+          echo ""
+          
+          echo "Step 2: Source invoke-wizardry"
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          echo ""
+          
+          echo "Step 3: Count functions after invoke-wizardry"
+          AFTER_COUNT=$(declare -F | wc -l)
+          echo "Functions after invoke-wizardry: $AFTER_COUNT"
+          echo "Functions added: $(($AFTER_COUNT - $BEFORE_COUNT))"
+          echo ""
+          
+          echo "Step 4: List first 30 functions:"
+          declare -F | head -30
+          echo "..."
+          echo ""
+          
+          echo "Step 5: Check for shadowed builtins:"
+          declare -F | grep -E '^declare -f (test|eval|source|type|command|builtin|unset|readonly|declare)$' || echo "✓ No shadowed builtins found"
+          echo ""
+          
+          echo "Step 6: Testing banish 8 in verified clean state..."
+          timeout 120 banish 8 && {
+            echo "✓ SUCCESS - banish 8 works in clean state"
+            echo "This means #49 crash was due to residual state"
+          } || {
+            EXIT_CODE=$?
+            echo "✗ Exit code: $EXIT_CODE"
+            if [ $EXIT_CODE -eq 139 ]; then
+              echo "CRASH - even in clean state!"
+              echo "This means the bug IS in invoke-wizardry + banish"
+            fi
+            exit $EXIT_CODE
+          }
