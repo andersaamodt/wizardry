@@ -1696,7 +1696,7 @@ jobs:
       - name: Source and test
         run: |
           export WIZARDRY_DIR="${PWD}"
-          nix-shell --run "
+          nix-shell -p bash --run "
             . /tmp/glosses.sh
             . spells/.imps/sys/invoke-wizardry
             ./spells/.wizardry/test-magic --verbose
@@ -1722,7 +1722,7 @@ jobs:
       - name: Source and test
         run: |
           export WIZARDRY_DIR="${PWD}"
-          nix-shell --run "
+          nix-shell -p bash --run "
             . /tmp/glosses.sh
             . spells/.imps/sys/invoke-wizardry
             ./spells/.wizardry/test-magic --verbose
@@ -1748,7 +1748,7 @@ jobs:
       - name: Source and test
         run: |
           export WIZARDRY_DIR="${PWD}"
-          nix-shell --run "
+          nix-shell -p bash --run "
             . /tmp/glosses.sh
             . spells/.imps/sys/invoke-wizardry
             ./spells/.wizardry/test-magic --verbose
@@ -1774,7 +1774,7 @@ jobs:
       - name: Source and test
         run: |
           export WIZARDRY_DIR="${PWD}"
-          nix-shell --run "
+          nix-shell -p bash --run "
             . /tmp/glosses.sh
             . spells/.imps/sys/invoke-wizardry
             ./spells/.wizardry/test-magic --verbose
@@ -1800,7 +1800,7 @@ jobs:
       - name: Source and test
         run: |
           export WIZARDRY_DIR="${PWD}"
-          nix-shell --run "
+          nix-shell -p bash --run "
             . /tmp/glosses.sh
             . spells/.imps/sys/invoke-wizardry
             ./spells/.wizardry/test-magic --verbose
@@ -1826,7 +1826,7 @@ jobs:
       - name: Source and test
         run: |
           export WIZARDRY_DIR="${PWD}"
-          nix-shell --run "
+          nix-shell -p bash --run "
             . /tmp/glosses.sh
             . spells/.imps/sys/invoke-wizardry
             ./spells/.wizardry/test-magic --verbose
@@ -1852,7 +1852,7 @@ jobs:
       - name: Source and test
         run: |
           export WIZARDRY_DIR="${PWD}"
-          nix-shell --run "
+          nix-shell -p bash --run "
             . /tmp/glosses.sh
             . spells/.imps/sys/invoke-wizardry
             ./spells/.wizardry/test-magic --verbose
@@ -1878,7 +1878,7 @@ jobs:
       - name: Source and test
         run: |
           export WIZARDRY_DIR="${PWD}"
-          nix-shell --run "
+          nix-shell -p bash --run "
             . /tmp/glosses.sh
             . spells/.imps/sys/invoke-wizardry
             ./spells/.wizardry/test-magic --verbose
@@ -1904,7 +1904,7 @@ jobs:
       - name: Source and test
         run: |
           export WIZARDRY_DIR="${PWD}"
-          nix-shell --run "
+          nix-shell -p bash --run "
             . /tmp/glosses.sh
             . spells/.imps/sys/invoke-wizardry
             ./spells/.wizardry/test-magic --verbose
