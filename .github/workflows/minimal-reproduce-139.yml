@@ -3258,3 +3258,121 @@ jobs:
             fi
             exit $EXIT_CODE
           }
+  
+  # ============================================================================
+  # WORKFLOW #69: Replicate #49 with banish 1 (not 8)
+  # ============================================================================
+  test-banish-1-no-glosses-replicate-49:
+    name: "#69 Ubuntu - banish 1 WITHOUT glosses (replicate #49 with different arg)"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Test banish 1 without glosses (like #49 but arg=1)
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Sourcing invoke-wizardry (loads banish and other imps)..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          echo ""
+          
+          echo "Testing banish 1 without any glosses..."
+          timeout 120 banish 1 && {
+            echo "✓ SUCCESS - banish 1 works without glosses"
+            echo "This means argument value DOES matter"
+          } || {
+            EXIT_CODE=$?
+            echo "✗ Exit code: $EXIT_CODE"
+            if [ $EXIT_CODE -eq 139 ]; then
+              echo "CRASH - banish 1 also crashes! Argument value doesn't matter"
+            fi
+            exit $EXIT_CODE
+          }
+  
+  # ============================================================================
+  # WORKFLOW #70: Test with delay after invoke-wizardry
+  # ============================================================================
+  test-banish-8-with-delay:
+    name: "#70 Ubuntu - banish 8 with 1-second delay after invoke-wizardry"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Test banish 8 with delay
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          echo ""
+          
+          echo "Waiting 1 second for state to settle..."
+          sleep 1
+          echo "✓ Delay complete"
+          echo ""
+          
+          echo "Testing banish 8 after delay..."
+          timeout 120 banish 8 && {
+            echo "✓ SUCCESS - delay fixed the issue"
+            echo "This means it's a timing/state initialization problem"
+          } || {
+            EXIT_CODE=$?
+            echo "✗ Exit code: $EXIT_CODE"
+            if [ $EXIT_CODE -eq 139 ]; then
+              echo "CRASH - delay didn't help. Not a timing issue"
+            fi
+            exit $EXIT_CODE
+          }
+  
+  # ============================================================================
+  # WORKFLOW #71: List all functions after invoke-wizardry
+  # ============================================================================
+  test-list-functions-then-banish:
+    name: "#71 Ubuntu - List functions after invoke-wizardry, then banish"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: List functions and test banish
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          echo ""
+          
+          echo "Listing all defined functions:"
+          declare -F | head -20
+          echo "..."
+          echo "Total functions: $(declare -F | wc -l)"
+          echo ""
+          
+          echo "Checking for potentially problematic function names:"
+          declare -F | grep -E '^declare -f (test|eval|source|type|command|builtin|unset|readonly)$' || echo "None found"
+          echo ""
+          
+          echo "Testing banish 8..."
+          timeout 120 banish 8 && {
+            echo "✓ SUCCESS"
+          } || {
+            EXIT_CODE=$?
+            echo "✗ Exit code: $EXIT_CODE"
+            if [ $EXIT_CODE -eq 139 ]; then
+              echo "CRASH detected"
+              echo "Functions defined before crash:"
+              declare -F | sort
+            fi
+            exit $EXIT_CODE
+          }
