@@ -1534,3 +1534,252 @@ jobs:
           banish 8
           
           echo "Test completed without crash"
+  
+  # ============================================================================
+  # WORKFLOW #40: Extract first 75 functions + check if declare is included
+  # Hypothesis: declare() is in the first 75 functions, causing them to fail
+  # Expected: If "declare found", test should FAIL; if "declare not found", should PASS
+  # ============================================================================
+  ubuntu-first-75-check-declare:
+    name: "#40 Ubuntu - First 75 funcs + check for declare"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Extract first 75 functions and check for declare
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          # Generate full glosses
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          
+          # Extract first 75 complete functions
+          awk '
+            /^[a-z_-]+\(\) \{$/ { in_func=1; func_count++; func_name=$1 }
+            in_func { print }
+            /^}$/ && in_func { in_func=0; if (func_count >= 75) exit }
+          ' /tmp/full-glosses.sh > /tmp/first-75-funcs.sh
+          
+          echo "Lines extracted: $(wc -l < /tmp/first-75-funcs.sh)"
+          echo "Functions extracted: 75"
+          
+          # Check if declare is in the extraction
+          if grep -q '^declare() {$' /tmp/first-75-funcs.sh; then
+            echo "⚠️ DECLARE FOUND in first 75 functions!"
+          else
+            echo "✓ declare NOT in first 75 functions"
+          fi
+          
+          # Source and test
+          . /tmp/first-75-funcs.sh
+          echo "Glosses sourced successfully"
+          
+          # Try to trigger the bug
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          
+          echo "Test completed without crash"
+  
+  # ============================================================================
+  # WORKFLOW #41: Extract first 75 functions but SKIP declare - KEY TEST
+  # Hypothesis: Skipping declare will make the test PASS
+  # Expected: PASS (proves declare is the bug)
+  # This is the definitive test for the unified hypothesis!
+  # ============================================================================
+  ubuntu-first-75-skip-declare:
+    name: "#41 Ubuntu - First 75 funcs SKIP declare ⭐ KEY TEST"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Extract first 75 functions, explicitly SKIP declare
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          # Generate full glosses
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          
+          # Extract 75 complete functions but SKIP any named "declare"
+          awk '
+            /^[a-z_-]+\(\) \{$/ { 
+              in_func=1
+              func_name=$1
+              sub(/\(\).*/, "", func_name)  # Extract just the function name
+              buffer=$0 "\n"
+              next
+            }
+            in_func { buffer = buffer $0 "\n" }
+            /^}$/ && in_func {
+              in_func=0
+              # Only print if not declare AND we havent hit our limit
+              if (func_name != "declare" && func_count < 75) {
+                printf "%s", buffer
+                func_count++
+              }
+              buffer=""
+              if (func_count >= 75) exit
+            }
+          ' /tmp/full-glosses.sh > /tmp/first-75-no-declare.sh
+          
+          echo "Lines extracted: $(wc -l < /tmp/first-75-no-declare.sh)"
+          echo "Functions extracted: up to 75 (excluding declare)"
+          
+          # Verify declare was skipped
+          if grep -q '^declare() {$' /tmp/first-75-no-declare.sh; then
+            echo "❌ ERROR: declare still in extraction!"
+            exit 1
+          else
+            echo "✅ CONFIRMED: declare successfully excluded"
+          fi
+          
+          # Source and test
+          . /tmp/first-75-no-declare.sh
+          echo "Glosses sourced successfully"
+          
+          # Try to trigger the bug
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          
+          echo "✅ SUCCESS! Test completed without crash - declare was the bug!"
+  
+  # ============================================================================
+  # WORKFLOW #42: Extract functions 76-150 + check for declare
+  # Hypothesis: declare might also be in this range (if it appears late)
+  # Expected: Check if declare is present
+  # ============================================================================
+  ubuntu-funcs-76-150-check-declare:
+    name: "#42 Ubuntu - Funcs 76-150 + check for declare"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Extract functions 76-150 and check for declare
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          # Generate full glosses
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          
+          # Extract functions 76-150
+          awk '
+            /^[a-z_-]+\(\) \{$/ { in_func=1; func_count++ }
+            in_func && func_count > 75 && func_count <= 150 { print }
+            /^}$/ && in_func { in_func=0; if (func_count >= 150) exit }
+          ' /tmp/full-glosses.sh > /tmp/funcs-76-150.sh
+          
+          echo "Lines extracted: $(wc -l < /tmp/funcs-76-150.sh)"
+          echo "Functions extracted: 75 (functions 76-150)"
+          
+          # Check if declare is in this range
+          if grep -q '^declare() {$' /tmp/funcs-76-150.sh; then
+            echo "⚠️ DECLARE FOUND in functions 76-150!"
+          else
+            echo "✓ declare NOT in functions 76-150"
+          fi
+          
+          # Source and test
+          . /tmp/funcs-76-150.sh
+          echo "Glosses sourced successfully"
+          
+          # Try to trigger the bug
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          
+          echo "Test completed"
+  
+  # ============================================================================
+  # WORKFLOW #43: List all function names to find declare's position
+  # Hypothesis: Need to see exact position of declare in glosses
+  # Expected: Diagnostic output showing all function names
+  # ============================================================================
+  ubuntu-list-all-functions:
+    name: "#43 Ubuntu - List all function names (find declare position)"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: List all function names with positions
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          # Generate full glosses
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          
+          echo "=== All functions in glosses (first 100) ==="
+          awk '
+            /^[a-z_-]+\(\) \{$/ {
+              func_count++
+              func_name=$1
+              sub(/\(\).*/, "", func_name)
+              printf "%3d: %s\n", func_count, func_name
+              if (func_count >= 100) exit
+            }
+          ' /tmp/full-glosses.sh
+          
+          echo ""
+          echo "=== Searching for declare specifically ==="
+          awk '
+            /^[a-z_-]+\(\) \{$/ {
+              func_count++
+              func_name=$1
+              sub(/\(\).*/, "", func_name)
+              if (func_name == "declare") {
+                printf "FOUND: declare is function #%d\n", func_count
+                found=1
+                exit
+              }
+            }
+            END {
+              if (!found) print "declare function NOT FOUND in glosses"
+            }
+          ' /tmp/full-glosses.sh
+          
+          echo "Listing complete"
+  
+  # ============================================================================
+  # WORKFLOW #44: Verify declare() function exists in glosses
+  # Hypothesis: declare() is actually being generated
+  # Expected: Should find the declare function definition
+  # ============================================================================
+  ubuntu-verify-declare-exists:
+    name: "#44 Ubuntu - Verify declare() exists in glosses"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check if declare() is generated
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          # Generate full glosses
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          
+          echo "=== Searching for declare() function ==="
+          if grep -n '^declare() {$' /tmp/full-glosses.sh; then
+            echo ""
+            echo "✓ CONFIRMED: declare() function IS in glosses"
+            echo ""
+            echo "=== First 20 lines of declare() function ==="
+            grep -A 20 '^declare() {$' /tmp/full-glosses.sh | head -21
+          else
+            echo "✗ declare() function NOT FOUND in glosses"
+          fi
+          
+          echo ""
+          echo "=== Total functions in glosses ==="
+          grep -c '^[a-z_-]\+() {$' /tmp/full-glosses.sh || echo "Count: 0"
