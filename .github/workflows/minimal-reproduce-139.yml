@@ -326,10 +326,53 @@ jobs:
           echo "SUCCESS! banish completed without glosses"
 
   # ============================================================================
-  # WORKFLOW #10: Ubuntu minimal banish (preload only what's needed)
+  # WORKFLOW #10: REMOVED (word-of-binding doesn't exist)
   # ============================================================================
-  ubuntu-minimal-banish:
-    name: "#10 Ubuntu - banish with minimal preloading"
+  
+  # ============================================================================
+  # WORKFLOW #11: Ubuntu - Source ONLY declare() function
+  # Hypothesis: declare() function definition itself causes segfault
+  # Expected: FAIL (exit 139)
+  # ============================================================================
+  ubuntu-only-declare-function:
+    name: "#11 Ubuntu - Source ONLY declare() (expect FAIL)"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Create minimal script with ONLY declare() function
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          
+          # Extract ONLY the declare() function (lines 12823-12926)
+          awk 'NR==12823,/^}$/ && NR>12823 {print; if (/^}$/) exit}' /tmp/full-glosses.sh > /tmp/only-declare.sh
+          echo "# First-word gloss for commands starting with 'declare'" | cat - /tmp/only-declare.sh > /tmp/declare-gloss.sh
+          
+          wc -l /tmp/declare-gloss.sh
+          echo "--- Content of declare-gloss.sh ---"
+          head -20 /tmp/declare-gloss.sh
+      
+      - name: Source declare() and test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Sourcing ONLY declare() function..."
+          . /tmp/declare-gloss.sh
+          echo "SUCCESS! declare() sourced without crash"
+          
+          # Try using declare
+          type declare || echo "declare not available"
+  
+  # ============================================================================
+  # WORKFLOW #12: Ubuntu - Source all glosses EXCEPT declare()
+  # Hypothesis: Other glosses work fine, only declare() causes the issue
+  # Expected: PASS
+  # ============================================================================
+  ubuntu-glosses-except-declare:
+    name: "#12 Ubuntu - All glosses EXCEPT declare() (expect PASS)"
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -350,15 +393,140 @@ jobs:
           } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
           sudo sysctl --system
       
-      - name: Manually preload banish and run
+      - name: Generate glosses without declare()
         run: |
           export WIZARDRY_DIR="${PWD}"
-          cd "${WIZARDRY_DIR}"
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
           
-          # Manually source just the banish function (not all glosses)
-          echo "Manually loading banish function..."
-          . spells/.imps/sys/word-of-binding banish
+          # Remove the declare() function (lines 12823-12926)
+          awk 'NR<12823 || NR>12926' /tmp/full-glosses.sh > /tmp/glosses-no-declare.sh
+          
+          echo "Original glosses: $(wc -l < /tmp/full-glosses.sh) lines"
+          echo "Without declare: $(wc -l < /tmp/glosses-no-declare.sh) lines"
+          echo "Removed: $(($(wc -l < /tmp/full-glosses.sh) - $(wc -l < /tmp/glosses-no-declare.sh))) lines"
+      
+      - name: Source glosses and run banish
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Sourcing all glosses EXCEPT declare()..."
+          . /tmp/glosses-no-declare.sh
+          echo "SUCCESS! Glosses sourced"
           
           echo "Running banish 8..."
           banish 8
-          echo "SUCCESS! banish completed with minimal preloading"
+          echo "SUCCESS! banish completed"
+  
+  # ============================================================================
+  # WORKFLOW #13: Ubuntu - Just the 4 lines from decile 9-5 (12823-12826)
+  # Hypothesis: Even these 4 lines alone trigger the issue
+  # Expected: Unclear - may PASS if incomplete function is okay
+  # ============================================================================
+  ubuntu-4-lines-only:
+    name: "#13 Ubuntu - Only 4 lines 12823-12826 (exploratory)"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Create file with ONLY 4 lines
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          
+          # Extract EXACTLY 4 lines (12823-12826)
+          awk 'NR>=12823 && NR<=12826' /tmp/full-glosses.sh > /tmp/4-lines.sh
+          
+          echo "--- Exact 4 lines extracted ---"
+          cat /tmp/4-lines.sh
+      
+      - name: Try to source the 4 lines
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Attempting to source 4 lines..."
+          . /tmp/4-lines.sh || echo "Failed to source (expected - incomplete function)"
+          echo "Test completed"
+  
+  # ============================================================================
+  # WORKFLOW #14: Arch - Source ONLY declare() function
+  # Hypothesis: Same as #11 but on Arch to see if platform-specific
+  # Expected: FAIL (exit 139) if same root cause
+  # ============================================================================
+  arch-only-declare-function:
+    name: "#14 Arch - Source ONLY declare() (expect FAIL)"
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    env:
+      WIZARDRY_OS_LABEL: arch
+    
+    steps:
+      - name: Install dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm git
+      
+      - uses: actions/checkout@v4
+      
+      - name: Create and source ONLY declare() function
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          
+          # Extract ONLY the declare() function
+          awk 'NR==12823,/^}$/ && NR>12823 {print; if (/^}$/) exit}' /tmp/full-glosses.sh > /tmp/only-declare.sh
+          echo "# First-word gloss for commands starting with 'declare'" | cat - /tmp/only-declare.sh > /tmp/declare-gloss.sh
+          
+          wc -l /tmp/declare-gloss.sh
+          
+          echo "Sourcing ONLY declare() function..."
+          . /tmp/declare-gloss.sh
+          echo "SUCCESS! declare() sourced without crash"
+  
+  # ============================================================================
+  # WORKFLOW #15: Ubuntu - Bisect glosses (first half)
+  # Hypothesis: Narrow down which section of glosses contains the problematic function
+  # Expected: Either PASS or FAIL - helps narrow down
+  # ============================================================================
+  ubuntu-glosses-first-half:
+    name: "#15 Ubuntu - First half of glosses (exploratory)"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Generate first half of glosses
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          total_lines=$(wc -l < /tmp/full-glosses.sh)
+          half_lines=$((total_lines / 2))
+          
+          head -n $half_lines /tmp/full-glosses.sh > /tmp/first-half.sh
+          
+          echo "Total lines: $total_lines"
+          echo "First half: $half_lines lines"
+          echo "Line 12823 in range: $(if [ 12823 -le $half_lines ]; then echo YES; else echo NO; fi)"
+      
+      - name: Source first half and run banish
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          . /tmp/first-half.sh
+          echo "First half sourced successfully"
+          banish 8
+          echo "SUCCESS!"
