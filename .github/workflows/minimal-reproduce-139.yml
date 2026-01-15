@@ -3044,3 +3044,170 @@ jobs:
             fi
             exit $EXIT_CODE
           }
+
+  # ============================================================================
+  # WORKFLOW #65: Test banish 4 WITHOUT gloss functions (avoid xattr issue)
+  # ============================================================================
+  test-banish-4-without-glosses:
+    name: "#65 Ubuntu - banish 4 WITHOUT glosses (control, avoid xattr)"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Test banish 4 without any gloss functions
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          echo ""
+          
+          echo "Testing banish 4 WITHOUT any gloss functions..."
+          echo "(Uses level 4 to avoid xattr installation issues at level 5)"
+          timeout 120 banish 4 && {
+            echo "✓ SUCCESS - banish 4 completed without crash"
+          } || {
+            EXIT_CODE=$?
+            echo "✗ FAILED with exit code: $EXIT_CODE"
+            exit $EXIT_CODE
+          }
+
+  # ============================================================================
+  # WORKFLOW #66: Test banish 4 WITH yaml() gloss function (should crash)
+  # ============================================================================
+  test-banish-4-with-yaml-gloss:
+    name: "#66 Ubuntu - banish 4 WITH yaml() gloss (should crash)"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Test banish 4 with yaml() gloss function defined
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          echo ""
+          
+          echo "Defining yaml() first-word gloss function..."
+          yaml() {
+            _fw_spell="yaml"
+            _fw_words_used=0
+            _fw_spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+            
+            for _fw_arg in "$@"; do
+              case "$_fw_arg" in
+                -*) break ;;
+                *[!0-9]*) ;;
+                *) break ;;
+              esac
+              
+              _fw_candidate="${_fw_spell}-${_fw_arg}"
+              _fw_words_used=$((_fw_words_used + 1))
+              
+              _fw_found=0
+              for _fw_dir in "$WIZARDRY_DIR"/spells/*/; do
+                _fw_path="${_fw_dir}${_fw_candidate}"
+                if [ -f "$_fw_path" ] && grep -q "^# Uncastable pattern" "$_fw_path" 2>/dev/null; then
+                  shift "$_fw_words_used"
+                  . "$_fw_path"
+                  return $?
+                fi
+              done
+              
+              _fw_spell="$_fw_candidate"
+            done
+            
+            parse "$_fw_spell" "$@"
+          }
+          echo "✓ yaml() function defined"
+          echo ""
+          
+          echo "Testing banish 4 WITH yaml() gloss..."
+          echo "(Should crash with 139 if gloss functions trigger the bug)"
+          timeout 120 banish 4 && {
+            echo "✓ SUCCESS - banish 4 completed without crash"
+            echo "This means gloss functions DON'T trigger crash at level 4!"
+          } || {
+            EXIT_CODE=$?
+            echo "✗ FAILED with exit code: $EXIT_CODE"
+            if [ $EXIT_CODE -eq 139 ]; then
+              echo "CRASH CONFIRMED: gloss + banish 4 causes segfault"
+            fi
+            exit $EXIT_CODE
+          }
+
+  # ============================================================================
+  # WORKFLOW #67: Test banish 1 WITH yaml() gloss (reconfirm baseline)
+  # ============================================================================
+  test-banish-1-with-yaml-gloss-reconfirm:
+    name: "#67 Ubuntu - banish 1 WITH yaml() gloss (reconfirm)"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Reconfirm banish 1 with yaml() gloss works
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          echo ""
+          
+          echo "Defining yaml() first-word gloss function..."
+          yaml() {
+            _fw_spell="yaml"
+            _fw_words_used=0
+            _fw_spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+            
+            for _fw_arg in "$@"; do
+              case "$_fw_arg" in
+                -*) break ;;
+                *[!0-9]*) ;;
+                *) break ;;
+              esac
+              
+              _fw_candidate="${_fw_spell}-${_fw_arg}"
+              _fw_words_used=$((_fw_words_used + 1))
+              
+              _fw_found=0
+              for _fw_dir in "$WIZARDRY_DIR"/spells/*/; do
+                _fw_path="${_fw_dir}${_fw_candidate}"
+                if [ -f "$_fw_path" ] && grep -q "^# Uncastable pattern" "$_fw_path" 2>/dev/null; then
+                  shift "$_fw_words_used"
+                  . "$_fw_path"
+                  return $?
+                fi
+              done
+              
+              _fw_spell="$_fw_candidate"
+            done
+            
+            parse "$_fw_spell" "$@"
+          }
+          echo "✓ yaml() function defined"
+          echo ""
+          
+          echo "Testing banish 1 WITH yaml() gloss (reconfirm baseline)..."
+          timeout 120 banish 1 && {
+            echo "✓ SUCCESS - banish 1 still works with gloss functions"
+          } || {
+            EXIT_CODE=$?
+            echo "✗ FAILED with exit code: $EXIT_CODE"
+            if [ $EXIT_CODE -eq 139 ]; then
+              echo "UNEXPECTED: banish 1 now crashes with gloss functions!"
+            fi
+            exit $EXIT_CODE
+          }
