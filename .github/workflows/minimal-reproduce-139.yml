@@ -3585,3 +3585,177 @@ jobs:
           echo "Testing banish directly (no other imp tests)..."
           banish 8
           echo "✓ SUCCESS!"
+  
+  # ============================================================================
+  # WORKFLOW #76: Test banish WITHOUT invoke-wizardry
+  # ============================================================================
+  test-banish-without-invoke:
+    name: "#76 Ubuntu - Banish WITHOUT invoke-wizardry (word_of_binding)"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Test banish WITHOUT invoke-wizardry
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Loading word_of_binding..."
+          . spells/.imps/sys/word-of-binding
+          echo "✓ word_of_binding loaded"
+          
+          echo ""
+          echo "Preloading banish using word_of_binding..."
+          word_of_binding banish
+          echo "✓ banish preloaded"
+          
+          echo ""
+          echo "Testing banish 8 WITHOUT invoke-wizardry..."
+          banish 8
+          echo "✓ SUCCESS!"
+  
+  # ============================================================================
+  # WORKFLOW #77: List invoke-wizardry functions
+  # ============================================================================
+  test-list-invoke-functions:
+    name: "#77 Ubuntu - List invoke-wizardry functions"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: List invoke-wizardry functions
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          
+          echo ""
+          echo "Total functions: $(compgen -A function | wc -l)"
+          echo ""
+          echo "First 30 functions:"
+          compgen -A function | head -30
+          echo ""
+          echo "Banish function:"
+          declare -F banish
+          
+          echo ""
+          echo "Testing banish 8..."
+          banish 8
+          echo "✓ SUCCESS!"
+  
+  # ============================================================================
+  # WORKFLOW #78: Trace execution with set -x
+  # ============================================================================
+  test-trace-execution:
+    name: "#78 Ubuntu - Trace execution with set -x"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Trace execution
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          set -x
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          echo "✓ SUCCESS!"
+  
+  # ============================================================================
+  # WORKFLOW #79: Test && command chaining hypothesis
+  # ============================================================================
+  test-command-chaining:
+    name: "#79 Ubuntu - Test && command chaining"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Test with && chaining (like #73-75)
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          . spells/.imps/sys/invoke-wizardry && banish 8
+          echo "✓ SUCCESS with &&!"
+      
+      - name: Test without && chaining (separate commands)
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          echo "✓ SUCCESS without &&!"
