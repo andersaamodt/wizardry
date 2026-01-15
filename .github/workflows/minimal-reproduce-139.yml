@@ -1214,3 +1214,281 @@ jobs:
           echo "=========================================="
           echo "If you see this message, the bug is FIXED!"
           echo "=========================================="
+  
+  # ============================================================================
+  # WORKFLOW #32: NixOS - Define declare() then call "declare -F"
+  # Hypothesis: Crash occurs when shell tries to USE the shadowed declare builtin
+  # Expected: FAIL (exit 139) - using declare after redefining it causes crash
+  # ============================================================================
+  nix-declare-then-use:
+    name: "#32 Nix - Define declare() then call 'declare -F'"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      
+      - name: Define declare() then try to use declare -F
+        run: |
+          echo "Testing if USING shadowed declare builtin causes crash..."
+          
+          nix-shell -p bash --run '
+            echo "Defining custom declare() function..."
+            declare() {
+              echo "custom declare function called"
+            }
+            echo "declare() function has been defined"
+            
+            echo "Now trying to use the declare builtin with declare -F..."
+            declare -F || echo "declare -F failed with exit code: $?"
+            
+            echo "Shell is exiting..."
+          '
+          
+          echo "Test completed successfully - no crash!"
+  
+  # ============================================================================
+  # WORKFLOW #33: NixOS - Define declare() then run "type declare"
+  # Hypothesis: Using 'type' command triggers declare introspection which crashes
+  # Expected: FAIL (exit 139)
+  # ============================================================================
+  nix-declare-then-type:
+    name: "#33 Nix - Define declare() then run 'type declare'"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      
+      - name: Define declare() then try to use type command
+        run: |
+          echo "Testing if 'type declare' triggers crash..."
+          
+          nix-shell -p bash --run '
+            declare() {
+              echo "custom declare"
+            }
+            echo "declare() defined"
+            
+            echo "Running: type declare"
+            type declare
+            
+            echo "Shell exiting..."
+          '
+          
+          echo "Test completed - no crash!"
+  
+  # ============================================================================
+  # WORKFLOW #34: NixOS - Define declare() then invoke-wizardry
+  # Hypothesis: invoke-wizardry uses declare internally, triggering crash
+  # Expected: FAIL (exit 139)
+  # ============================================================================
+  nix-declare-then-invoke:
+    name: "#34 Nix - Define declare() then invoke-wizardry"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      
+      - name: Define declare() then source invoke-wizardry
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          nix-shell -p bash --run '
+            export WIZARDRY_DIR="'"${WIZARDRY_DIR}"'"
+            
+            echo "Defining declare() function..."
+            declare() {
+              echo "custom declare"
+            }
+            echo "declare() defined"
+            
+            echo "Sourcing invoke-wizardry..."
+            . spells/.imps/sys/invoke-wizardry || echo "invoke-wizardry failed: $?"
+            
+            echo "Trying to run banish..."
+            banish 8 || echo "banish failed: $?"
+            
+            echo "Test completed"
+          '
+  
+  # ============================================================================
+  # WORKFLOW #35: NixOS - Just "declare -F" without redefining (control test)
+  # Hypothesis: Normal declare usage works fine (this is the control)
+  # Expected: PASS - no crash when declare is not redefined
+  # ============================================================================
+  nix-declare-control:
+    name: "#35 Nix - Just 'declare -F' without redefining (control)"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      
+      - name: Use declare -F without redefining declare
+        run: |
+          echo "Control test: using declare -F without redefining it..."
+          
+          nix-shell -p bash --run '
+            echo "Calling declare -F (builtin should work normally)..."
+            declare -F | head -5
+            
+            echo "Success - declare builtin works as expected"
+          '
+  
+  # ============================================================================
+  # WORKFLOW #36: Ubuntu - Lines 1-1350 (first half of 1-2700 range)
+  # Hypothesis: Bug is in first half of narrowed range
+  # Expected: FAIL if bug in 1-1350, PASS if in 1351-2700
+  # ============================================================================
+  ubuntu-lines-1-1350:
+    name: "#36 Ubuntu - Lines 1-1350"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Extract and test lines 1-1350
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          # Generate full glosses
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          
+          # Extract first 1350 lines using head
+          head -n 1350 /tmp/full-glosses.sh > /tmp/lines-1-1350.sh
+          
+          echo "Lines extracted: $(wc -l < /tmp/lines-1-1350.sh)"
+          
+          # Source and test
+          . /tmp/lines-1-1350.sh
+          echo "Glosses sourced successfully"
+          
+          # Try to trigger the bug
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          
+          echo "Test completed without crash"
+  
+  # ============================================================================
+  # WORKFLOW #37: Ubuntu - Lines 1351-2700 (second half)
+  # Hypothesis: Bug is in second half if not in first half
+  # Expected: Opposite result of #36
+  # ============================================================================
+  ubuntu-lines-1351-2700:
+    name: "#37 Ubuntu - Lines 1351-2700"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Extract and test lines 1351-2700
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          # Generate full glosses
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          
+          # Extract lines 1351-2700
+          sed -n '1351,2700p' /tmp/full-glosses.sh > /tmp/lines-1351-2700.sh
+          
+          echo "Lines extracted: $(wc -l < /tmp/lines-1351-2700.sh)"
+          
+          # Source and test
+          . /tmp/lines-1351-2700.sh
+          echo "Glosses sourced successfully"
+          
+          # Try to trigger the bug
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          
+          echo "Test completed without crash"
+  
+  # ============================================================================
+  # WORKFLOW #38: Ubuntu - Lines 1-500 (very narrow range)
+  # Hypothesis: Bug might be in very early glosses
+  # Expected: Helps pinpoint if bug is in first 500 lines
+  # ============================================================================
+  ubuntu-lines-1-500:
+    name: "#38 Ubuntu - Lines 1-500"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Extract and test lines 1-500
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          # Generate full glosses
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          
+          # Extract first 500 lines
+          head -n 500 /tmp/full-glosses.sh > /tmp/lines-1-500.sh
+          
+          echo "Lines extracted: $(wc -l < /tmp/lines-1-500.sh)"
+          
+          # Source and test
+          . /tmp/lines-1-500.sh
+          echo "Glosses sourced successfully"
+          
+          # Try to trigger the bug
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          
+          echo "Test completed without crash"
+  
+  # ============================================================================
+  # WORKFLOW #39: Ubuntu - Lines 501-1000
+  # Hypothesis: Continue binary search to narrow down exact range
+  # Expected: Helps identify specific 500-line range containing bug
+  # ============================================================================
+  ubuntu-lines-501-1000:
+    name: "#39 Ubuntu - Lines 501-1000"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Extract and test lines 501-1000
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          # Generate full glosses
+          ./spells/.wizardry/generate-glosses --quiet > /tmp/full-glosses.sh
+          
+          # Extract lines 501-1000
+          sed -n '501,1000p' /tmp/full-glosses.sh > /tmp/lines-501-1000.sh
+          
+          echo "Lines extracted: $(wc -l < /tmp/lines-501-1000.sh)"
+          
+          # Source and test
+          . /tmp/lines-501-1000.sh
+          echo "Glosses sourced successfully"
+          
+          # Try to trigger the bug
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          
+          echo "Test completed without crash"
