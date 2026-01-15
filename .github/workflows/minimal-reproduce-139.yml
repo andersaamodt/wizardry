@@ -2730,3 +2730,40 @@ jobs:
           echo "Running banish 1 (will test eval at line 998)..."
           banish 1
           echo "✓ banish completed!"
+  
+  # ============================================================================
+  # WORKFLOW #58: Trace banish execution with set -x
+  # ============================================================================
+  trace-banish-execution:
+    name: "#58 Ubuntu - Trace banish execution to find crash location"
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Trace banish execution with debugging
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced"
+          
+          echo ""
+          echo "Enabling bash tracing (set -x) to see execution flow..."
+          set -x
+          
+          echo "Running banish 1 with timeout to prevent indefinite hang..."
+          timeout 30 banish 1 || {
+            EXIT_CODE=$?
+            set +x
+            echo ""
+            echo "banish exited with code: $EXIT_CODE"
+            echo "(139 = segfault, 124 = timeout)"
+            exit $EXIT_CODE
+          }
+          
+          set +x
+          echo "✓ banish completed successfully!"
