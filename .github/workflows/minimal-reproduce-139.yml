@@ -69,12 +69,12 @@ jobs:
       
       - name: Create test script
         run: |
-          cat > /tmp/test-banish.sh <<'EOF'
-#!/bin/sh
-export WIZARDRY_DIR="${1}"
-. "${WIZARDRY_DIR}/spells/.imps/sys/invoke-wizardry"
-banish 4
-EOF
+          cat > /tmp/test-banish.sh <<'SCRIPT'
+          #!/bin/sh
+          export WIZARDRY_DIR="${1}"
+          . "${WIZARDRY_DIR}/spells/.imps/sys/invoke-wizardry"
+          banish 4
+          SCRIPT
           chmod +x /tmp/test-banish.sh
       
       - name: Run test script
