@@ -2023,3 +2023,107 @@ jobs:
           echo "Running banish 8..."
           banish 8
           echo "✓ SUCCESS! Function ${{ matrix.func_num }} passed"
+
+  # ============================================================================
+  # WORKFLOW #47: Test yaml() function manually (bypass extraction)
+  # ============================================================================
+  test-yaml-manual:
+    name: "#47 Ubuntu - Manual yaml() test (no extraction)"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Manually define yaml() and test with banish
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          # Source invoke-wizardry first to get banish
+          echo "Sourcing invoke-wizardry..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "✓ invoke-wizardry sourced (banish available)"
+          
+          echo ""
+          echo "Manually defining yaml() function..."
+          
+          # Manually define yaml() exactly as it appears in the glosses
+          yaml() {
+            # Try progressively longer spell names to find uncastable spells
+            _fw_spell="yaml"
+            _fw_words_used=0
+            _fw_spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+            
+            for _fw_arg in "$@"; do
+              # Skip flags and pure numeric arguments (they're not part of command names)
+              case "$_fw_arg" in
+                -*) break ;;  # Flag - stop looking for command words
+                *[!0-9]*) ;; # Contains non-numeric - it's a command word, continue
+                *) break ;;  # Pure numeric - stop looking for command words
+              esac
+              
+              _fw_candidate="${_fw_spell}-${_fw_arg}"
+              _fw_words_used=$((_fw_words_used + 1))
+              
+              # Look for spell file in wizardry directories
+              _fw_found=0
+              for _fw_dir in "$WIZARDRY_DIR"/spells/*/; do
+                _fw_path="${_fw_dir}${_fw_candidate}"
+                if [ -f "$_fw_path" ] && grep -q "^# Uncastable pattern" "$_fw_path" 2>/dev/null; then
+                  # Found uncastable spell - source it with remaining args after consuming used words
+                  shift "$_fw_words_used"
+                  . "$_fw_path"
+                  return $?
+                fi
+              done
+              
+              # Check if candidate is a synonym
+              _fw_syn_target=""
+              if [ -f "$_fw_spell_home/.synonyms" ]; then
+                _fw_syn_target=$(grep "^${_fw_candidate}=" "$_fw_spell_home/.synonyms" 2>/dev/null | sed 's/^[^=]*=//' || true)
+              fi
+              if [ -z "$_fw_syn_target" ] && [ -f "$_fw_spell_home/.default-synonyms" ]; then
+                _fw_syn_target=$(grep "^${_fw_candidate}=" "$_fw_spell_home/.default-synonyms" 2>/dev/null | sed 's/^[^=]*=//' || true)
+              fi
+              if [ -n "$_fw_syn_target" ]; then
+                # Found synonym - check if target is uncastable
+                for _fw_dir in "$WIZARDRY_DIR"/spells/*/; do
+                  _fw_path="${_fw_dir}${_fw_syn_target}"
+                  if [ -f "$_fw_path" ] && grep -q "^# Uncastable pattern" "$_fw_path" 2>/dev/null; then
+                    shift "$_fw_words_used"
+                    . "$_fw_path"
+                    return $?
+                  fi
+                done
+              fi
+              
+              _fw_spell="$_fw_candidate"
+            done
+            
+            # No uncastable spell found - use parse for normal spells
+            parse "$_fw_spell" "$@"
+          }
+          
+          echo "✓ yaml() function defined"
+          
+          echo ""
+          echo "Running banish 8..."
+          banish 8
+          echo "✓ SUCCESS! yaml() worked without crash"
