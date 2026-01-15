@@ -1127,3 +1127,531 @@ jobs:
           echo "Banish succeeded"
           ./spells/.wizardry/test-magic --verbose
           echo "SUCCESS! Framework test completed (previously failed with 139)"
+
+  # BRUTE FORCE: Ubuntu isolators to narrow down minimal banish failures
+  ubuntu-test-magic-only:
+    name: Ubuntu - Test Magic Only (no banish)
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test invoke-wizardry + test-magic WITHOUT banish
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Testing: invoke-wizardry + test-magic (NO banish)"
+          . spells/.imps/sys/invoke-wizardry
+          echo "Invoked wizardry successfully"
+          ./spells/.wizardry/test-magic --verbose
+          echo "SUCCESS! test-magic alone doesn't crash"
+
+  ubuntu-no-glosses:
+    name: Ubuntu - Banish without glosses
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create minimal banish
+        run: |
+          cat > /tmp/banish <<'EOF'
+#!/bin/sh
+exit 0
+EOF
+          chmod +x /tmp/banish
+
+      - name: Run banish WITHOUT loading glosses
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          export PATH="/tmp:${PATH}"
+          echo "Testing: banish WITHOUT glosses loaded"
+          banish 0
+          echo "SUCCESS! Banish works without glosses"
+
+  ubuntu-glosses-no-invoke:
+    name: Ubuntu - Glosses without invoke
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate glosses to file
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses.sh
+          wc -l /tmp/glosses.sh
+
+      - name: Create minimal banish
+        run: |
+          cat > /tmp/banish <<'EOF'
+#!/bin/sh
+exit 0
+EOF
+          chmod +x /tmp/banish
+
+      - name: Source glosses and run banish WITHOUT invoke-wizardry
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          export PATH="/tmp:${PATH}"
+          echo "Testing: source glosses + banish (NO invoke-wizardry)"
+          . /tmp/glosses.sh
+          echo "Sourced glosses successfully"
+          banish 0
+          echo "SUCCESS! Glosses without invoke doesn't crash"
+
+  # BRUTE FORCE: Split 38th sixty-fourth into 10 deciles
+  nix-38th-decile-1:
+    name: Nix - 38th Decile 1 (lines 12535-12568)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate full glosses
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          total_lines=$(wc -l < /tmp/glosses_full.sh)
+          echo "Total lines: $total_lines"
+
+      - name: Extract functions for decile 1 (lines 12535-12568)
+        run: |
+          start=12535
+          end=12568
+          echo "Extracting decile 1: lines $start to $end"
+          awk -v start="$start" -v end="$end" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start >= start && func_start <= end) {
+                  printf "%s", func_lines
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_decile.sh
+          wc -l /tmp/glosses_decile.sh
+          echo "First 10 lines:"
+          head -10 /tmp/glosses_decile.sh
+
+      - name: Test decile 1
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            echo 'Sourcing decile 1...'
+            . /tmp/glosses_decile.sh
+            echo 'SUCCESS! Decile 1 completed'
+          "
+
+  nix-38th-decile-2:
+    name: Nix - 38th Decile 2 (lines 12569-12602)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate full glosses
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+
+      - name: Extract functions for decile 2 (lines 12569-12602)
+        run: |
+          start=12569
+          end=12602
+          echo "Extracting decile 2: lines $start to $end"
+          awk -v start="$start" -v end="$end" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start >= start && func_start <= end) {
+                  printf "%s", func_lines
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_decile.sh
+          wc -l /tmp/glosses_decile.sh
+
+      - name: Test decile 2
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            . /tmp/glosses_decile.sh
+            echo 'SUCCESS! Decile 2 completed'
+          "
+
+  nix-38th-decile-3:
+    name: Nix - 38th Decile 3 (lines 12603-12636)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate and extract decile 3
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          awk -v start="12603" -v end="12636" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start >= start && func_start <= end) {
+                  printf "%s", func_lines
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_decile.sh
+
+      - name: Test decile 3
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            . /tmp/glosses_decile.sh
+            echo 'SUCCESS! Decile 3 completed'
+          "
+
+  nix-38th-decile-4:
+    name: Nix - 38th Decile 4 (lines 12637-12670)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate and extract decile 4
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          awk -v start="12637" -v end="12670" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start >= start && func_start <= end) {
+                  printf "%s", func_lines
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_decile.sh
+
+      - name: Test decile 4
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            . /tmp/glosses_decile.sh
+            echo 'SUCCESS! Decile 4 completed'
+          "
+
+  nix-38th-decile-5:
+    name: Nix - 38th Decile 5 (lines 12671-12704)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate and extract decile 5
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          awk -v start="12671" -v end="12704" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start >= start && func_start <= end) {
+                  printf "%s", func_lines
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_decile.sh
+
+      - name: Test decile 5
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            . /tmp/glosses_decile.sh
+            echo 'SUCCESS! Decile 5 completed'
+          "
+
+  nix-38th-decile-6:
+    name: Nix - 38th Decile 6 (lines 12705-12738)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate and extract decile 6
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          awk -v start="12705" -v end="12738" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start >= start && func_start <= end) {
+                  printf "%s", func_lines
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_decile.sh
+
+      - name: Test decile 6
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            . /tmp/glosses_decile.sh
+            echo 'SUCCESS! Decile 6 completed'
+          "
+
+  nix-38th-decile-7:
+    name: Nix - 38th Decile 7 (lines 12739-12772)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate and extract decile 7
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          awk -v start="12739" -v end="12772" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start >= start && func_start <= end) {
+                  printf "%s", func_lines
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_decile.sh
+
+      - name: Test decile 7
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            . /tmp/glosses_decile.sh
+            echo 'SUCCESS! Decile 7 completed'
+          "
+
+  nix-38th-decile-8:
+    name: Nix - 38th Decile 8 (lines 12773-12806)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate and extract decile 8
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          awk -v start="12773" -v end="12806" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start >= start && func_start <= end) {
+                  printf "%s", func_lines
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_decile.sh
+
+      - name: Test decile 8
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            . /tmp/glosses_decile.sh
+            echo 'SUCCESS! Decile 8 completed'
+          "
+
+  nix-38th-decile-9:
+    name: Nix - 38th Decile 9 (lines 12807-12840)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate and extract decile 9
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          awk -v start="12807" -v end="12840" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start >= start && func_start <= end) {
+                  printf "%s", func_lines
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_decile.sh
+
+      - name: Test decile 9
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            . /tmp/glosses_decile.sh
+            echo 'SUCCESS! Decile 9 completed'
+          "
+
+  nix-38th-decile-10:
+    name: Nix - 38th Decile 10 (lines 12841-12873)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate and extract decile 10
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          awk -v start="12841" -v end="12873" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start >= start && func_start <= end) {
+                  printf "%s", func_lines
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_decile.sh
+
+      - name: Test decile 10
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            . /tmp/glosses_decile.sh
+            echo 'SUCCESS! Decile 10 completed'
+          "
