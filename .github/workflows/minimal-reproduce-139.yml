@@ -550,6 +550,7 @@ jobs:
   # Expected: FAIL if bug in 2nd half, PASS if in 1st half
   # ============================================================================
   ubuntu-glosses-second-half:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#16 Ubuntu - Second half of glosses (expect FAIL)"
     runs-on: ubuntu-latest
     env:
@@ -599,6 +600,7 @@ jobs:
   # Expected: If #15 failed and #16 passes, bug is in first half (Q1 or Q2)
   # ============================================================================
   ubuntu-glosses-first-quarter:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#17 Ubuntu - First quarter of glosses (narrow Q1)"
     runs-on: ubuntu-latest
     env:
@@ -646,6 +648,7 @@ jobs:
   # Expected: Helps identify if bug is in Q2
   # ============================================================================
   ubuntu-glosses-second-quarter:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#18 Ubuntu - Second quarter only (narrow Q2)"
     runs-on: ubuntu-latest
     env:
@@ -790,6 +793,7 @@ jobs:
   # Expected: FAIL - reproduce NixOS exit 139
   # ============================================================================
   nix-full-glosses-banish:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#21 Nix - Full glosses + banish (expect FAIL for Nix bug)"
     runs-on: ubuntu-latest
     
@@ -824,6 +828,7 @@ jobs:
   # Expected: PASS if declare is Nix issue, FAIL if different issue
   # ============================================================================
   nix-glosses-except-declare:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#22 Nix - All glosses EXCEPT declare() (test Nix theory)"
     runs-on: ubuntu-latest
     
@@ -862,6 +867,7 @@ jobs:
   # Expected: FAIL if declare is Nix-specific issue
   # ============================================================================
   nix-only-declare-with-banish:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#23 Nix - Only declare() then banish (Nix-specific test)"
     runs-on: ubuntu-latest
     
@@ -904,6 +910,7 @@ jobs:
   # Expected: FAIL if bug in lines 1-2700, PASS if in 2701-5411
   # ============================================================================
   ubuntu-q1-first-half:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#24 Ubuntu - Q1 first half lines 1-2700"
     runs-on: ubuntu-latest
     env:
@@ -951,6 +958,7 @@ jobs:
   # Expected: Complements #24
   # ============================================================================
   ubuntu-q1-second-half:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#25 Ubuntu - Q1 second half lines 2701-5411"
     runs-on: ubuntu-latest
     env:
@@ -992,6 +1000,7 @@ jobs:
   # Expected: FAIL if general builtin shadowing issue, PASS if declare-specific
   # ============================================================================
   nix-shadow-test-builtin:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#26 Nix - Shadow 'test' builtin (not declare)"
     runs-on: ubuntu-latest
     
@@ -1026,6 +1035,7 @@ jobs:
   # Expected: Helps narrow to specific 1000-line range
   # ============================================================================
   ubuntu-lines-1-1000:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#27 Ubuntu - Lines 1-1000"
     runs-on: ubuntu-latest
     env:
@@ -1073,6 +1083,7 @@ jobs:
   # Expected: Helps pinpoint range
   # ============================================================================
   ubuntu-lines-1001-2000:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#28 Ubuntu - Lines 1001-2000"
     runs-on: ubuntu-latest
     env:
@@ -1120,6 +1131,7 @@ jobs:
   # Expected: Helps pinpoint range
   # ============================================================================
   ubuntu-lines-2001-2700:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#29 Ubuntu - Lines 2001-2700"
     runs-on: ubuntu-latest
     env:
@@ -1167,6 +1179,7 @@ jobs:
   # Expected: PASS (no crash) to confirm declare is special
   # ============================================================================
   nix-shadow-enable-builtin:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#30 Nix - Shadow 'enable' builtin (test another)"
     runs-on: ubuntu-latest
     
@@ -1201,6 +1214,7 @@ jobs:
   # Expected: FAIL (exit 139) - this is the minimal reproduction of the NixOS bug
   # ============================================================================
   nix-minimal-declare-reproduction:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#31 Nix - MINIMAL declare() reproduction (DEFINITIVE)"
     runs-on: ubuntu-latest
     
@@ -1242,6 +1256,7 @@ jobs:
   # Expected: FAIL (exit 139) - using declare after redefining it causes crash
   # ============================================================================
   nix-declare-then-use:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#32 Nix - Define declare() then call 'declare -F'"
     runs-on: ubuntu-latest
     
@@ -1277,6 +1292,7 @@ jobs:
   # Expected: FAIL (exit 139)
   # ============================================================================
   nix-declare-then-type:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#33 Nix - Define declare() then run 'type declare'"
     runs-on: ubuntu-latest
     
@@ -1311,6 +1327,7 @@ jobs:
   # Expected: FAIL (exit 139)
   # ============================================================================
   nix-declare-then-invoke:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#34 Nix - Define declare() then invoke-wizardry"
     runs-on: ubuntu-latest
     
@@ -1349,6 +1366,7 @@ jobs:
   # Expected: PASS - no crash when declare is not redefined
   # ============================================================================
   nix-declare-control:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#35 Nix - Just 'declare -F' without redefining (control)"
     runs-on: ubuntu-latest
     
@@ -1376,6 +1394,7 @@ jobs:
   # Expected: FAIL if bug in 1-1350, PASS if in 1351-2700
   # ============================================================================
   ubuntu-lines-1-1350:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#36 Ubuntu - Lines 1-1350"
     runs-on: ubuntu-latest
     env:
@@ -1418,6 +1437,7 @@ jobs:
   # Expected: Opposite result of #36
   # ============================================================================
   ubuntu-lines-1351-2700:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#37 Ubuntu - Lines 1351-2700"
     runs-on: ubuntu-latest
     env:
@@ -1459,6 +1479,7 @@ jobs:
   # Expected: Helps pinpoint if bug is in first 500 lines
   # ============================================================================
   ubuntu-lines-1-500:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#38 Ubuntu - Lines 1-500"
     runs-on: ubuntu-latest
     env:
@@ -1500,6 +1521,7 @@ jobs:
   # Expected: Helps identify specific 500-line range containing bug
   # ============================================================================
   ubuntu-lines-501-1000:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#39 Ubuntu - Lines 501-1000"
     runs-on: ubuntu-latest
     env:
@@ -1541,6 +1563,7 @@ jobs:
   # Expected: If "declare found", test should FAIL; if "declare not found", should PASS
   # ============================================================================
   ubuntu-first-75-check-declare:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#40 Ubuntu - First 75 funcs + check for declare"
     runs-on: ubuntu-latest
     env:
@@ -1590,6 +1613,7 @@ jobs:
   # This is the definitive test for the unified hypothesis!
   # ============================================================================
   ubuntu-first-75-skip-declare:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#41 Ubuntu - First 75 funcs SKIP declare ⭐ KEY TEST"
     runs-on: ubuntu-latest
     env:
@@ -1654,6 +1678,7 @@ jobs:
   # Expected: Check if declare is present
   # ============================================================================
   ubuntu-funcs-76-150-check-declare:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#42 Ubuntu - Funcs 76-150 + check for declare"
     runs-on: ubuntu-latest
     env:
@@ -1702,6 +1727,7 @@ jobs:
   # Expected: Diagnostic output showing all function names
   # ============================================================================
   ubuntu-list-all-functions:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#43 Ubuntu - List all function names (find declare position)"
     runs-on: ubuntu-latest
     env:
@@ -1754,6 +1780,7 @@ jobs:
   # Expected: Should find the declare function definition
   # ============================================================================
   ubuntu-verify-declare-exists:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#44 Ubuntu - Verify declare() exists in glosses"
     runs-on: ubuntu-latest
     env:
@@ -1788,6 +1815,7 @@ jobs:
   # WORKFLOW #45: Ubuntu - Matrix batch testing (10 functions at a time)
   # ============================================================================
   ubuntu-batch-matrix-test:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#45 Ubuntu - Batch ${{ matrix.batch }} (funcs ${{ matrix.start }}-${{ matrix.end }})"
     runs-on: ubuntu-latest
     env:
@@ -1939,6 +1967,7 @@ jobs:
   # WORKFLOW #46: Test individual functions 31-40 (batch 4 isolation)
   # ============================================================================
   test-individual-functions-batch4:
+    if: false  # DISABLED - workflows #16-46 disabled after #47 confirmed first-word gloss pattern bug
     name: "#46 Ubuntu - Individual function ${{ matrix.func_num }}"
     runs-on: ubuntu-latest
     strategy:
