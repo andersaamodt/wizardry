@@ -1,7 +1,9 @@
-name: 139-33 Ubuntu generate-glosses loop repro
+name: 139-41 Ubuntu disable gloss cache source
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,12 +13,12 @@ permissions:
   contents: read
 
 jobs:
-  ubuntu-generate-glosses-loop:
-    name: Ubuntu generate-glosses loop repro
+  ubuntu-hypothesis-41:
+    name: 139-41 Ubuntu disable gloss cache source
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
-      WIZARDRY_GLOSSES: "0"
+      WIZARDRY_GLOSSES: "1"
       WIZARDRY_DEBUG: "1"
     steps:
       - name: Checkout
@@ -34,28 +36,34 @@ jobs:
             echo 'kernel.apparmor_restrict_unprivileged_userns=0'
           } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
           sudo sysctl --system
-      - name: Loop generate-glosses and source output
+      - name: Patch wizardry scripts for hypothesis
+        run: |
+          python - <<'PY'
+from pathlib import Path
+path = Path('spells/.imps/sys/invoke-wizardry')
+text = path.read_text()
+text = text.replace('if [ -f "$_iw_gloss_persistent" ]; then', 'if false; then # disable cache source')
+path.write_text(text)
+PY
+      - name: Run subshell banish repro
         run: |
           set +e
           ulimit -c unlimited || true
-          . spells/.imps/sys/invoke-wizardry
-          status=0
-          for i in $(seq 1 50); do
-            gloss_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-glosses.XXXXXX") || exit 1
-            if generate-glosses --quiet --output "$gloss_file"; then
-              . "$gloss_file"
-              status=$?
-            else
-              status=$?
-            fi
-            rm -f "$gloss_file"
-            if [ "$status" -eq 139 ]; then
-              printf '%s\n' "generate-glosses exited with code 139 (SIGSEGV)"
-              printf '%s\n' "Last 50 dmesg lines (if available):"
-              dmesg | tail -n 50 || true
-              break
-            elif [ "$status" -ne 0 ]; then
-              printf '%s\n' "generate-glosses exited with code ${status}"
-            fi
-          done
+          if command -v timeout >/dev/null 2>&1; then
+            timeout 120 bash -lc '. spells/.imps/sys/invoke-wizardry && banish 8 --only --no-tests --no-heal'
+            status=$?
+          else
+            bash -lc '. spells/.imps/sys/invoke-wizardry && banish 8 --only --no-tests --no-heal'
+            status=$?
+          fi
+          if [ "$status" -eq 139 ]; then
+            printf '%s
+' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s
+' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          elif [ "$status" -eq 124 ]; then
+            printf '%s
+' "subshell banish timed out after 120 seconds"
+          fi
           exit "$status"

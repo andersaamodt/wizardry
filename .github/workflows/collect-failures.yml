@@ -69,16 +69,26 @@ jobs:
 
           # Workflows to monitor
           workflows=(
-            "139-28 Ubuntu banish 8 loop glosses repro"
-            "139-29 Ubuntu banish 8 loop tests repro"
-            "139-30 Ubuntu banish 8 then test-magic loop repro"
-            "139-31 Ubuntu banish 0 loop glosses repro"
-            "139-32 Ubuntu parse banish 0 loop repro"
-            "139-33 Ubuntu generate-glosses loop repro"
-            "139-34 Ubuntu subshell invoke loop repro"
-            "139-35 Ubuntu banish 8 regenerate gloss cache repro"
-            "139-36 Ubuntu test-magic loop repro"
-            "139-37 Ubuntu manual gloss loop repro"
+            "139-38 Ubuntu disable gloss loading block"
+            "139-39 Ubuntu disable gloss cache regen"
+            "139-40 Ubuntu force gloss cache regen"
+            "139-41 Ubuntu disable gloss cache source"
+            "139-42 Ubuntu disable uncached gloss eval"
+            "139-43 Ubuntu clear gloss cache path"
+            "139-44 Ubuntu parse without exec spell path"
+            "139-45 Ubuntu parse numeric args as words"
+            "139-46 Ubuntu disable parse recursion guard"
+            "139-47 Ubuntu disable parse synonyms fallback"
+            "139-48 Ubuntu disable parse system fallback"
+            "139-49 Ubuntu disable invoke recursion guard"
+            "139-50 Ubuntu disable gloss find invalidation"
+            "139-51 Ubuntu disable gloss synonym invalidation"
+            "139-52 Ubuntu disable generate-glosses command check"
+            "139-53 Ubuntu disable spellbook PATH add"
+            "139-54 Ubuntu disable spellbook subdir PATH add"
+            "139-55 Ubuntu disable spell category PATH add"
+            "139-56 Ubuntu disable interactive gloss gate"
+            "139-57 Ubuntu force gloss caching off"
           )
           
           # Total number of workflows we're monitoring
