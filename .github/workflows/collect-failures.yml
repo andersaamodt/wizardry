@@ -70,6 +70,9 @@ jobs:
           # Workflows to monitor
           workflows=(
             "139-67 Ubuntu gloss per-gloss banish"
+            "139-68 Ubuntu gloss per-gloss skip invoke"
+            "139-69 Ubuntu invoke-only gloss loop"
+            "139-70 Ubuntu invoke shadow check"
           )
           
           # Total number of workflows we're monitoring
@@ -225,7 +228,9 @@ jobs:
                 echo "## 🔍 Latest Test Failures" && echo "" && \
                 echo "**Updated:** $(date -u '+%Y-%m-%d %H:%M:%S') UTC" && echo "" && \
                 if [ -n "$failure_summary_content" ]; then cat "$failure_summary_file"; fi && \
-                if [ -n "$success_summary_content" ]; then echo ""; cat "$success_summary_file"; fi && \
+                echo "" && \
+                echo "## ✅ Latest Test Successes" && echo "" && \
+                if [ -n "$success_summary_content" ]; then cat "$success_summary_file"; else echo "_No successful workflows recorded yet._"; fi && \
                 if [ -n "$status_message" ]; then echo ""; echo "$status_message"; fi && \
                 echo "" && echo "<!-- test-failures-end -->")" \
               > /dev/null 2>&1 || echo "⚠️ Could not update PR description"
@@ -588,8 +593,10 @@ jobs:
                 '**Updated:** ' + date + ' ' + time + ' UTC',
                 '',
                 failureSummary,
-                successSummary ? '' : '',
-                successSummary ? successSummary : '',
+                '',
+                '## ✅ Latest Test Successes',
+                '',
+                successSummary ? successSummary : '_No successful workflows recorded yet._',
                 '',
                 '💡 **View detailed logs:** Check the [workflow run logs](../../actions/runs/' + runId + ')',
                 '',
@@ -610,6 +617,10 @@ jobs:
                 '',
                 successSummary ? successSummary : '✅ All tests passing!',
                 successSummary ? '' : '',
+                '## ✅ Latest Test Successes',
+                '',
+                successSummary ? successSummary : '_No successful workflows recorded yet._',
+                '',
                 '<!-- test-failures-end -->'
               ].join('\n');
             }

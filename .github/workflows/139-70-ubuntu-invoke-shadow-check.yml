@@ -1,0 +1,78 @@
+name: 139-70 Ubuntu invoke shadow check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ubuntu-invoke-shadow-check:
+    name: 139-70 Ubuntu invoke shadow check
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+      WIZARDRY_GLOSSES: "0"
+      WIZARDRY_DEBUG: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Ensure installer spells are executable
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      - name: Install bubblewrap dependencies
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      - name: Configure bubblewrap user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      - name: Check invoke resolution before and after gloss
+        run: |
+          set -e
+          . spells/.imps/sys/invoke-wizardry
+
+          printf '%s\n' "[invoke-shadow] before gloss:"
+          command -v invoke || true
+          type invoke 2>/dev/null || true
+          if command -v invoke >/dev/null 2>&1; then
+            invoke --version 2>/dev/null || true
+          fi
+
+          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+          generate-glosses --output "$gloss_file"
+          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+          awk_program=$(printf '%s\n' \
+            'BEGIN { idx=0; out="" }' \
+            '/^# First-word gloss/ {' \
+            '  idx++' \
+            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+            '  print "# block " idx > out' \
+            '}' \
+            '{ if (out != "") print >> out }' \
+            'END { printf "%d\n", idx > outdir "/count" }')
+          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
+          invoke_block=$(grep -l "^# First-word gloss for commands starting with 'invoke'" "$gloss_dir"/* || true)
+          if [ -z "$invoke_block" ]; then
+            printf '%s\n' "[invoke-shadow] invoke gloss block not found"
+            exit 1
+          fi
+          . "$invoke_block"
+
+          printf '%s\n' "[invoke-shadow] after gloss:"
+          command -v invoke || true
+          type invoke 2>/dev/null || true
+          if command -v invoke >/dev/null 2>&1; then
+            invoke --version 2>/dev/null || true
+          fi
+
+          banish 8 --only --no-tests --no-heal

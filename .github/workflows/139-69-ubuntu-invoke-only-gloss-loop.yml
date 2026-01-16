@@ -1,0 +1,83 @@
+name: 139-69 Ubuntu invoke-only gloss loop
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ubuntu-invoke-only-gloss-loop:
+    name: 139-69 Ubuntu invoke-only gloss loop
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+      WIZARDRY_GLOSSES: "0"
+      WIZARDRY_DEBUG: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Ensure installer spells are executable
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      - name: Install bubblewrap dependencies
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      - name: Configure bubblewrap user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      - name: Source invoke gloss only and loop banish
+        run: |
+          set +e
+          ulimit -c unlimited || true
+          (
+            set -e
+            . spells/.imps/sys/invoke-wizardry
+            gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+            generate-glosses --output "$gloss_file"
+
+            awk_program=$(printf '%s\n' \
+              'BEGIN { idx=0; out="" }' \
+              '/^# First-word gloss/ {' \
+              '  idx++' \
+              '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+              '  print "# block " idx > out' \
+              '}' \
+              '{ if (out != "") print >> out }' \
+              'END { printf "%d\n", idx > outdir "/count" }')
+            gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+            awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
+
+            invoke_block=$(grep -l "^# First-word gloss for commands starting with 'invoke'" "$gloss_dir"/* || true)
+            if [ -z "$invoke_block" ]; then
+              printf '%s\n' "[invoke-test] invoke gloss block not found"
+              exit 1
+            fi
+
+            printf '%s\n' "[invoke-test] sourcing: $invoke_block"
+            . "$invoke_block"
+
+            i=1
+            while [ "$i" -le 40 ]; do
+              printf '%s\n' "[invoke-test] banish loop $i"
+              banish 8 --only --no-tests --no-heal
+              i=$((i + 1))
+            done
+          )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
