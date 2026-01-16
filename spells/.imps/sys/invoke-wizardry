@@ -155,7 +155,21 @@ export PATH
 # Optional: Generate first-word glosses for space-separated invocation
 # This still allows "env or VAR DEFAULT" instead of just "env-or VAR DEFAULT"
 # Skip in test mode (tests don't need glosses)
-if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
+_iw_enable_glosses=1
+if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" = "1" ]; then
+  _iw_enable_glosses=0
+fi
+if [ "${WIZARDRY_GLOSSES-}" = "0" ]; then
+  _iw_enable_glosses=0
+fi
+if [ "${WIZARDRY_GLOSSES-}" != "1" ]; then
+  case "$-" in
+    *i*) : ;;
+    *) _iw_enable_glosses=0 ;;
+  esac
+fi
+
+if [ "$_iw_enable_glosses" -eq 1 ]; then
   if command -v generate-glosses >/dev/null 2>&1; then
     [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Loading first-word glosses..." >&2
     
@@ -238,6 +252,7 @@ if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
     unset _iw_spellbook _iw_syn_file
   fi
 fi
+unset _iw_enable_glosses
 
 # Load MUD cd hook if enabled in config
 if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then

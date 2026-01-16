@@ -20,6 +20,8 @@ jobs:
     env:
       WIZARDRY_OS_LABEL: arch
       WIZARDRY_TEST_HELPERS_ONLY: "1"
+      USER: root
+      LOGNAME: root
     steps:
       - name: Install git and core utilities
         run: pacman -Sy --noconfirm git procps-ng coreutils sed gawk grep findutils attr file
