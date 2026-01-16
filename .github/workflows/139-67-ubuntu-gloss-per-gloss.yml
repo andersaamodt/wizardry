@@ -1,7 +1,9 @@
-name: 139-66 Ubuntu glosses tail slice
+name: 139-67 Ubuntu gloss per-gloss banish
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,8 +13,8 @@ permissions:
   contents: read
 
 jobs:
-  ubuntu-glosses-tail:
-    name: 139-66 Ubuntu glosses tail slice
+  ubuntu-gloss-per-gloss:
+    name: 139-67 Ubuntu gloss per-gloss banish
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -34,36 +36,48 @@ jobs:
             echo 'kernel.apparmor_restrict_unprivileged_userns=0'
           } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
           sudo sysctl --system
-      - name: Run subshell banish repro with gloss tail slice
+      - name: Source glosses one by one and run banish
         run: |
           set +e
           ulimit -c unlimited || true
-          if command -v timeout >/dev/null 2>&1; then
-            timeout 120 bash -lc '
-              . spells/.imps/sys/invoke-wizardry
-              gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
-              generate-glosses | tail -n 2000 >"$gloss_file"
-              . "$gloss_file"
-              rm -f "$gloss_file"
+          bash -lc '
+            set -e
+            . spells/.imps/sys/invoke-wizardry
+            gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+            gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+            generate-glosses --output "$gloss_file"
+
+            awk -v outdir="$gloss_dir" '
+              BEGIN { idx=0; out="" }
+              /^# First-word gloss/ {
+                idx++
+                out=sprintf("%s/block-%03d.sh", outdir, idx)
+                print "# block " idx > out
+              }
+              { if (out != "") print >> out }
+              END { printf "%d\n", idx > outdir "/count" }
+            ' "$gloss_file"
+
+            total=$(cat "$gloss_dir/count")
+            printf "%s\n" "[gloss-test] total gloss blocks: $total"
+
+            i=1
+            while [ "$i" -le "$total" ]; do
+              block="$gloss_dir/block-$(printf "%03d" "$i").sh"
+              if [ ! -s "$block" ]; then
+                printf "%s\n" "[gloss-test] missing block $i"
+                exit 1
+              fi
+              printf "%s\n" "[gloss-test] sourcing block $i"
+              . "$block"
               banish 8 --only --no-tests --no-heal
-            '
-            status=$?
-          else
-            bash -lc '
-              . spells/.imps/sys/invoke-wizardry
-              gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
-              generate-glosses | tail -n 2000 >"$gloss_file"
-              . "$gloss_file"
-              rm -f "$gloss_file"
-              banish 8 --only --no-tests --no-heal
-            '
-            status=$?
-          fi
+              i=$((i + 1))
+            done
+          '
+          status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
             printf '%s\n' "Last 50 dmesg lines (if available):"
             dmesg | tail -n 50 || true
-          elif [ "$status" -eq 124 ]; then
-            printf '%s\n' "subshell banish timed out after 120 seconds"
           fi
           exit "$status"

@@ -69,9 +69,7 @@ jobs:
 
           # Workflows to monitor
           workflows=(
-            "139-64 Ubuntu glosses source only"
-            "139-65 Ubuntu glosses head slice"
-            "139-66 Ubuntu glosses tail slice"
+            "139-67 Ubuntu gloss per-gloss banish"
           )
           
           # Total number of workflows we're monitoring
