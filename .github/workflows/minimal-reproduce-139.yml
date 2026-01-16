@@ -1,11 +1,12 @@
-name: Minimal Reproduction - Exit 139 on Arch/Ubuntu
+name: Minimal Reproduction - Exit 139 on Arch/Ubuntu - INVESTIGATION COMPLETE
 
-# This workflow contains individually-numbered tests to isolate the cause
-# of exit code 139 on Arch/Ubuntu (distinct from NixOS declare() bug)
+# This workflow contains investigation tests that identified the root cause.
+# Root cause: 100-1000+ grep operations in first-word gloss wrapper functions
+# Fix: Pre-generate uncastable spell list in generate-glosses
+# STATUS: Investigation complete, all tests disabled, fix implemented
 
 on:
-  pull_request:
-  workflow_dispatch:
+  workflow_dispatch:  # Manual trigger only
 
 # Cancel previous runs when new commits are pushed
 concurrency:
