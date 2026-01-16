@@ -1,0 +1,42 @@
+name: 139-7 Ubuntu banish 0 gloss repro
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ubuntu-banish0-gloss:
+    name: Ubuntu banish 0 gloss repro
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+      WIZARDRY_GLOSSES: "1"
+      WIZARDRY_DEBUG: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Ensure installer spells are executable
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      - name: Install bubblewrap dependencies
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      - name: Configure bubblewrap user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      - name: Run banish 0 with glosses
+        run: . spells/.imps/sys/invoke-wizardry && banish 0 --only --no-tests --no-heal
+      - name: Run parse banish baseline
+        run: . spells/.imps/sys/invoke-wizardry && parse banish

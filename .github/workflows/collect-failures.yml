@@ -61,9 +61,11 @@ jobs:
           # Track which workflows we've already reported (using file-based storage)
           mkdir -p /tmp/reported_runs
           
-          # Initialize failure summary file for PR description
+          # Initialize failure/success summary files for PR description
           failure_summary_file="/tmp/failure_summary.txt"
+          success_summary_file="/tmp/success_summary.txt"
           : > "$failure_summary_file"
+          : > "$success_summary_file"
 
           # Workflows to monitor
           workflows=(
@@ -73,6 +75,7 @@ jobs:
             "139-4 Ubuntu banish 0 no gloss repro"
             "139-5 Arch banish 0 no gloss repro"
             "139-6 NixOS banish 0 no gloss repro"
+            "139-7 Ubuntu banish 0 gloss repro"
           )
           
           # Total number of workflows we're monitoring
@@ -170,10 +173,20 @@ jobs:
             rm -f "$cleaned_log"
           }
 
+          # Function to extract success details from logs
+          extract_success_details() {
+            local logfile=$1
+            local cleaned_log="/tmp/cleaned_success_$$.txt"
+            sed '/Process \(exited\|completed\)/q' "$logfile" > "$cleaned_log"
+            tail -120 "$cleaned_log"
+            rm -f "$cleaned_log"
+          }
+
           # Function to update PR description with current failures
           update_pr_description() {
             local pr_number="$PR_NUMBER"
             local failure_summary_content
+            local success_summary_content
             local completed_count
             
             # Count how many workflows are completed
@@ -183,6 +196,12 @@ jobs:
               failure_summary_content=$(cat "$failure_summary_file")
             else
               failure_summary_content=""
+            fi
+            
+            if [ -s "$success_summary_file" ]; then
+              success_summary_content=$(cat "$success_summary_file")
+            else
+              success_summary_content=""
             fi
             
             # Determine status message
@@ -212,6 +231,7 @@ jobs:
                 echo "## 🔍 Latest Test Failures" && echo "" && \
                 echo "**Updated:** $(date -u '+%Y-%m-%d %H:%M:%S') UTC" && echo "" && \
                 if [ -n "$failure_summary_content" ]; then cat "$failure_summary_file"; fi && \
+                if [ -n "$success_summary_content" ]; then echo ""; cat "$success_summary_file"; fi && \
                 if [ -n "$status_message" ]; then echo ""; echo "$status_message"; fi && \
                 echo "" && echo "<!-- test-failures-end -->")" \
               > /dev/null 2>&1 || echo "⚠️ Could not update PR description"
@@ -239,6 +259,38 @@ jobs:
             if [ "$conclusion" = "success" ]; then
               echo "✅ Passed"
               echo ""
+              {
+                echo ""
+                echo "### ✅ $workflow_name"
+                echo ""
+              } >> "$success_summary_file"
+
+              if gh api "/repos/${{ github.repository }}/actions/runs/${run_id}/jobs" \
+                > /tmp/jobs_${run_id}.json 2>&1; then
+                jq -r '.jobs[] | "\(.id)|\(.name)"' /tmp/jobs_${run_id}.json | \
+                while IFS='|' read -r job_id job_name; do
+                  if gh api "/repos/${{ github.repository }}/actions/jobs/${job_id}/logs" \
+                    > /tmp/log_${job_id}.txt 2>&1; then
+                    success_text=$(extract_success_details "/tmp/log_${job_id}.txt")
+                    {
+                      echo "**Job:** $job_name"
+                      echo '```'
+                      echo "$success_text"
+                      echo '```'
+                      echo ""
+                    } >> "$success_summary_file"
+                  else
+                    {
+                      echo "**Job:** $job_name"
+                      echo ""
+                      echo "_Unable to download job logs._"
+                      echo ""
+                    } >> "$success_summary_file"
+                  fi
+                  rm -f /tmp/log_${job_id}.txt
+                done
+                rm -f /tmp/jobs_${run_id}.json
+              fi
               # Update PR description after each completion
               update_pr_description
               return
@@ -457,13 +509,23 @@ jobs:
               cat "$failure_summary_file"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
-            
+            {
+              echo "success_summary<<EOF"
+              cat "$success_summary_file"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+
             # Exit with failure status so this workflow fails when tests fail
             echo "❌ Some workflows failed"
             exit 1
           else
             echo "has_failures=false" >> "$GITHUB_OUTPUT"
             echo "failure_summary=" >> "$GITHUB_OUTPUT"
+            {
+              echo "success_summary<<EOF"
+              cat "$success_summary_file"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
             echo "✅ All workflows succeeded"
           fi
 
@@ -490,11 +552,13 @@ jobs:
         env:
           HAS_FAILURES: ${{ steps.collect.outputs.has_failures }}
           FAILURE_SUMMARY: ${{ steps.collect.outputs.failure_summary }}
+          SUCCESS_SUMMARY: ${{ steps.collect.outputs.success_summary }}
         with:
           script: |
             const pr = ${{ github.event.pull_request.number }};
             const hasFailures = process.env.HAS_FAILURES === 'true';
             const failureSummary = process.env.FAILURE_SUMMARY || '';
+            const successSummary = process.env.SUCCESS_SUMMARY || '';
             const runId = '${{ github.run_id }}';
             const date = new Date().toISOString().split('T')[0];
             const time = new Date().toISOString().split('T')[1].slice(0,8);
@@ -530,6 +594,8 @@ jobs:
                 '**Updated:** ' + date + ' ' + time + ' UTC',
                 '',
                 failureSummary,
+                successSummary ? '' : '',
+                successSummary ? successSummary : '',
                 '',
                 '💡 **View detailed logs:** Check the [workflow run logs](../../actions/runs/' + runId + ')',
                 '',
@@ -548,8 +614,8 @@ jobs:
                 '',
                 '**Updated:** ' + date + ' ' + time + ' UTC',
                 '',
-                '✅ All tests passing!',
-                '',
+                successSummary ? successSummary : '✅ All tests passing!',
+                successSummary ? '' : '',
                 '<!-- test-failures-end -->'
               ].join('\n');
             }
