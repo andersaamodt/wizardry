@@ -18,6 +18,7 @@ permissions:
 jobs:
   # Test #86: && chaining with invoke-wizardry + banish (expected to crash)
   test-86-and-chaining:
+    if: false  # Disabled - already analyzed
     name: "#86: && chaining (reproduce crash)"
     runs-on: ubuntu-latest
     steps:
@@ -32,6 +33,7 @@ jobs:
 
   # Test #87: Separate lines without && (test if this avoids crash)
   test-87-separate-lines:
+    if: false  # Disabled - already analyzed
     name: "#87: Separate lines (no &&)"
     runs-on: ubuntu-latest
     steps:
@@ -47,6 +49,7 @@ jobs:
 
   # Test #88: Semicolon separator (test alternative to &&)
   test-88-semicolon:
+    if: false  # Disabled - already analyzed
     name: "#88: Semicolon separator"
     runs-on: ubuntu-latest
     steps:
@@ -61,6 +64,7 @@ jobs:
 
   # Test #89: Script wrapper approach
   test-89-script-wrapper:
+    if: false  # Disabled - already analyzed
     name: "#89: Script wrapper"
     runs-on: ubuntu-latest
     steps:
@@ -82,6 +86,7 @@ jobs:
 
   # Test #90: Minimal banish without invoke-wizardry
   test-90-banish-standalone:
+    if: false  # Disabled - already analyzed
     name: "#90: Banish without invoke-wizardry"
     runs-on: ubuntu-latest
     steps:
@@ -99,6 +104,7 @@ jobs:
 
   # Test #91: Test with different banish levels
   test-91-banish-levels:
+    if: false  # Disabled - already analyzed
     name: "#91: Different banish levels"
     runs-on: ubuntu-latest
     steps:
@@ -128,6 +134,7 @@ jobs:
 
   # Test #92: Test on Arch Linux specifically
   test-92-arch-linux:
+    if: false  # Disabled - already analyzed
     name: "#92: Arch Linux test"
     runs-on: ubuntu-latest
     container: archlinux:latest
@@ -147,6 +154,7 @@ jobs:
 
   # Test #93: Test with bash tracing enabled
   test-93-bash-tracing:
+    if: false  # Disabled - already analyzed
     name: "#93: With bash tracing"
     runs-on: ubuntu-latest
     steps:
@@ -165,6 +173,7 @@ jobs:
 
   # Test #94: Test with minimal environment
   test-94-minimal-env:
+    if: false  # Disabled - already analyzed
     name: "#94: Minimal environment"
     runs-on: ubuntu-latest
     steps:
@@ -181,6 +190,7 @@ jobs:
 
   # Test #95: Test without generating glosses
   test-95-no-glosses:
+    if: false  # Disabled - already analyzed
     name: "#95: Without gloss generation"
     runs-on: ubuntu-latest
     steps:
@@ -199,6 +209,7 @@ jobs:
   # Based on PR #940 investigation that narrowed to Decile 9 (lines 12807-12840)
   
   test-96-nix-decile-9:
+    if: false  # Disabled - already analyzed
     name: "#96: NixOS - Decile 9 (lines 12807-12840)"
     runs-on: ubuntu-latest
     steps:
@@ -247,6 +258,7 @@ jobs:
           "
 
   test-97-nix-decile-9-sub-1:
+    if: false  # Disabled - already analyzed
     name: "#97: NixOS - Decile 9 Sub 1 (lines 12807-12820)"
     runs-on: ubuntu-latest
     steps:
@@ -294,6 +306,7 @@ jobs:
           "
 
   test-98-nix-decile-9-sub-2:
+    if: false  # Disabled - already analyzed
     name: "#98: NixOS - Decile 9 Sub 2 (lines 12821-12840)"
     runs-on: ubuntu-latest
     steps:
@@ -341,6 +354,7 @@ jobs:
           "
 
   test-99-nix-full-glosses:
+    if: false  # Disabled - already analyzed
     name: "#99: NixOS - Full glosses (baseline test)"
     runs-on: ubuntu-latest
     steps:
