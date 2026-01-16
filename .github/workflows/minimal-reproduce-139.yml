@@ -386,6 +386,7 @@ jobs:
   
   # H1: Test if invoke-wizardry itself crashes without calling any functions
   test-100-invoke-only:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#100: Invoke-wizardry only (no function calls)"
     runs-on: ubuntu-latest
     steps:
@@ -401,6 +402,7 @@ jobs:
 
   # H2: Test calling a simple imp function (not banish) after invoke-wizardry
   test-101-invoke-then-say:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#101: Invoke + call 'say' function"
     runs-on: ubuntu-latest
     steps:
@@ -417,6 +419,7 @@ jobs:
 
   # H3: Test if the crash happens with just PATH modification
   test-102-path-only:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#102: Manual PATH setup (no invoke-wizardry)"
     runs-on: ubuntu-latest
     steps:
@@ -433,6 +436,7 @@ jobs:
 
   # H4: Test sourcing individual imps without invoke-wizardry
   test-103-source-imps-directly:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#103: Source imps directly (no invoke-wizardry)"
     runs-on: ubuntu-latest
     steps:
@@ -517,6 +521,7 @@ jobs:
 
   # H7: NixOS - Narrow to lines 12828-12834 (second half of Sub 2)
   test-106-nix-decile-9-sub-2b:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#106: NixOS - Decile 9 Sub 2b (lines 12828-12834)"
     runs-on: ubuntu-latest
     steps:
@@ -564,6 +569,7 @@ jobs:
 
   # H8: NixOS - Narrow to lines 12835-12840 (last part of Sub 2)
   test-107-nix-decile-9-sub-2c:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#107: NixOS - Decile 9 Sub 2c (lines 12835-12840)"
     runs-on: ubuntu-latest
     steps:
@@ -615,6 +621,7 @@ jobs:
 
   # H1: Test with minimal glosses (just first 5 complete functions)
   test-108-minimal-glosses:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#108: Minimal glosses (first 5 functions)"
     runs-on: ubuntu-latest
     steps:
@@ -657,6 +664,7 @@ jobs:
 
   # H2: Test with medium-sized glosses (first 50 functions)
   test-109-medium-glosses:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#109: Medium glosses (first 50 functions)"
     runs-on: ubuntu-latest
     steps:
@@ -698,6 +706,7 @@ jobs:
 
   # H3: Test with large glosses (first 100 functions)
   test-110-large-glosses:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#110: Large glosses (first 100 functions)"
     runs-on: ubuntu-latest
     steps:
@@ -739,6 +748,7 @@ jobs:
 
   # H4: Test with glosses minus last 10 functions (see if it's at the end)
   test-111-glosses-minus-tail:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#111: Glosses without last 10 functions"
     runs-on: ubuntu-latest
     steps:
@@ -831,6 +841,7 @@ jobs:
 
   # H6: NixOS - Sub 2a second half (lines 12825-12827)
   test-113-nix-sub-2a-second-half:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#113: NixOS - Sub 2a second half (lines 12825-12827)"
     runs-on: ubuntu-latest
     steps:
@@ -878,6 +889,7 @@ jobs:
 
   # H7: Test sourcing glosses in sh (not bash) to see if it's bash-specific
   test-114-glosses-with-sh:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#114: Source glosses with /bin/sh instead of bash"
     runs-on: ubuntu-latest
     steps:
@@ -901,6 +913,7 @@ jobs:
 
   # H8: Print actual function names from problematic NixOS range
   test-115-nix-identify-functions:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#115: NixOS - Identify function names in lines 12821-12827"
     runs-on: ubuntu-latest
     steps:
@@ -927,6 +940,7 @@ jobs:
   
   # H9: NixOS - Test lines 12821-12822 (first half of the 4-line range)
   test-116-nix-12821-12822:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#116: NixOS - Lines 12821-12822 (first pair)"
     runs-on: ubuntu-latest
     steps:
@@ -1021,6 +1035,7 @@ jobs:
 
   # H11: NixOS - Test just line 12821 (single function test)
   test-118-nix-12821-only:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#118: NixOS - Line 12821 only (single line)"
     runs-on: ubuntu-latest
     steps:
@@ -1071,6 +1086,7 @@ jobs:
 
   # H12: Arch/Ubuntu - Test with 150 functions (between 100 and all)
   test-119-150-functions:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#119: Arch/Ubuntu - 150 functions"
     runs-on: ubuntu-latest
     steps:
@@ -1113,6 +1129,7 @@ jobs:
 
   # H13: Arch/Ubuntu - Test with 200 functions (even larger)
   test-120-200-functions:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#120: Arch/Ubuntu - 200 functions"
     runs-on: ubuntu-latest
     steps:
@@ -1158,6 +1175,7 @@ jobs:
   
   # H14: NixOS - Test line 12823 only
   test-121-nix-12823-only:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#121: NixOS - Line 12823 only"
     runs-on: ubuntu-latest
     steps:
@@ -1208,6 +1226,7 @@ jobs:
 
   # H15: NixOS - Test line 12824 only
   test-122-nix-12824-only:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#122: NixOS - Line 12824 only"
     runs-on: ubuntu-latest
     steps:
@@ -1258,6 +1277,7 @@ jobs:
 
   # H16: NixOS - Test line 12822 only (for comparison with 12821)
   test-123-nix-12822-only:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#123: NixOS - Line 12822 only"
     runs-on: ubuntu-latest
     steps:
@@ -1308,6 +1328,7 @@ jobs:
 
   # H17: Identify and print actual function names for all 4 lines
   test-124-nix-identify-all-4-lines:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#124: NixOS - Identify all 4 functions (12821-12824)"
     runs-on: ubuntu-latest
     steps:
@@ -1343,6 +1364,7 @@ jobs:
 
   # Test #125: NixOS - Identify exact function on line 12824
   test-125-nixos-identify-12824:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#125: NixOS - Identify function on line 12824"
     runs-on: ubuntu-latest
     steps:
@@ -1379,6 +1401,7 @@ jobs:
 
   # Test #126: NixOS - Test without line 12824 (should succeed)
   test-126-nixos-without-12824:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#126: NixOS - Glosses without line 12824"
     runs-on: ubuntu-latest
     steps:
@@ -1412,6 +1435,7 @@ jobs:
 
   # Test #127: Arch/Ubuntu - Test line 12824 function alone
   test-127-arch-line-12824-function:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#127: Arch - Source only line 12824 function"
     runs-on: ubuntu-latest
     steps:
@@ -1440,6 +1464,7 @@ jobs:
 
   # Test #128: MINIMAL NixOS reproduction - just the case pattern
   test-128-minimal-nixos:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#128: MINIMAL NixOS - case pattern only"
     runs-on: ubuntu-latest
     steps:
@@ -1483,6 +1508,7 @@ jobs:
 
   # Test #129: Arch/Ubuntu with varying function counts
   test-129-arch-function-threshold:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#129: Arch - Function count threshold"
     runs-on: ubuntu-latest
     container: archlinux:latest
@@ -1521,6 +1547,7 @@ jobs:
 
   # Test #130: Ubuntu with varying function counts  
   test-130-ubuntu-function-threshold:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#130: Ubuntu - Function count threshold"
     runs-on: ubuntu-latest
     steps:
@@ -1555,6 +1582,7 @@ jobs:
 
   # Test #131: Source glosses with verbose output during sourcing
   test-131-verbose-sourcing:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#131: Verbose output during sourcing"
     runs-on: ubuntu-latest
     steps:
@@ -1577,6 +1605,7 @@ jobs:
 
   # Test #132: Source glosses + call simple function (not banish)
   test-132-simple-function:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#132: Source + call simple function"
     runs-on: ubuntu-latest
     steps:
@@ -1602,6 +1631,7 @@ jobs:
 
   # Test #133: Source glosses + print success (no function calls)
   test-133-no-function-calls:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#133: Source only, no function calls"
     runs-on: ubuntu-latest
     steps:
@@ -1621,6 +1651,7 @@ jobs:
 
   # Test #134: Source glosses with set -x tracing
   test-134-trace-sourcing:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#134: Trace sourcing with set -x"
     runs-on: ubuntu-latest
     steps:
@@ -1640,6 +1671,7 @@ jobs:
 
   # Test #135: Source glosses with timeout monitoring
   test-135-timeout-monitor:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#135: Monitor sourcing with timeout"
     runs-on: ubuntu-latest
     steps:
@@ -1663,6 +1695,7 @@ jobs:
 
   # Test #136: Call banish without sourcing glosses (direct execution)
   test-136-direct-banish:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#136: Direct banish execution"
     runs-on: ubuntu-latest
     steps:
@@ -1684,6 +1717,7 @@ jobs:
 
   # Test #137: Source ONLY first-word glosses (skip hyphenated)
   test-137-only-firstword:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#137: Only first-word glosses"
     runs-on: ubuntu-latest
     steps:
@@ -1710,6 +1744,7 @@ jobs:
 
   # Test #138: Incremental sourcing test - source glosses in chunks
   test-138-incremental-sourcing:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#138: Incremental sourcing in chunks"
     runs-on: ubuntu-latest
     steps:
@@ -1742,6 +1777,7 @@ jobs:
 
   # Test #139: Call hyphenated command (bypass first-word gloss logic)
   test-139-hyphenated-command:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#139: Source + call hyphenated command"
     runs-on: ubuntu-latest
     steps:
@@ -1763,6 +1799,7 @@ jobs:
 
   # Test #140: Call banish via full path (bypass wrapper)
   test-140-full-path-banish:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#140: Source + call banish via full path"
     runs-on: ubuntu-latest
     steps:
@@ -1784,6 +1821,7 @@ jobs:
 
   # Test #141: Manually call banish function (not through wrapper)
   test-141-direct-function-call:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#141: Source + call banish function directly"
     runs-on: ubuntu-latest
     steps:
@@ -1808,6 +1846,7 @@ jobs:
 
   # Test #142: Trace banish execution with set -x
   test-142-trace-banish-execution:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#142: Trace banish execution with set -x"
     runs-on: ubuntu-latest
     steps:
@@ -1831,6 +1870,7 @@ jobs:
 
   # Test #143: Minimal first-word gloss (skip complex logic)
   test-143-minimal-firstword-gloss:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#143: Minimal first-word gloss wrapper"
     runs-on: ubuntu-latest
     steps:
@@ -1862,6 +1902,7 @@ jobs:
 
   # Test #144: First-word gloss with timeout
   test-144-firstword-with-timeout:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#144: First-word gloss with timeout"
     runs-on: ubuntu-latest
     steps:
@@ -1890,6 +1931,7 @@ jobs:
 
   # Test #145: Find actual gloss file
   test-145-find-gloss-file:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#145: Find actual gloss filename"
     runs-on: ubuntu-latest
     steps:
@@ -1921,6 +1963,7 @@ jobs:
 
   # Test #146: Source with correct filename
   test-146-source-properly:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#146: Source with proper filename"
     runs-on: ubuntu-latest
     steps:
@@ -1941,6 +1984,7 @@ jobs:
 
   # Test #147: List first-word functions
   test-147-list-firstword-functions:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#147: List first-word functions"
     runs-on: ubuntu-latest
     steps:
@@ -1961,6 +2005,7 @@ jobs:
 
   # Test #148: Trace banish execution  
   test-148-trace-banish:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#148: Trace banish with set -x"
     runs-on: ubuntu-latest
     timeout-minutes: 3
@@ -1985,6 +2030,7 @@ jobs:
 
   # Test #149: Banish with timeout
   test-149-banish-timeout:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#149: Banish with 15s timeout"
     runs-on: ubuntu-latest  
     steps:
@@ -2009,6 +2055,7 @@ jobs:
 
   # Test #150: Compare direct vs wrapper
   test-150-compare-execution:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#150: Direct vs wrapper call"
     runs-on: ubuntu-latest
     steps:
@@ -2039,6 +2086,7 @@ jobs:
 
   # Test #151: Count file operations with strace
   test-151-strace-count:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#151: Strace count of file ops"
     runs-on: ubuntu-latest
     steps:
@@ -2067,6 +2115,7 @@ jobs:
 
   # Test #152: Mock grep to instant return
   test-152-mock-grep:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#152: Mock grep (instant)"
     runs-on: ubuntu-latest
     steps:
@@ -2099,6 +2148,7 @@ jobs:
 
   # Test #153: Simplified first-word gloss (no grep checks)
   test-153-no-grep-gloss:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#153: Simplified gloss (no grep)"
     runs-on: ubuntu-latest
     steps:
@@ -2126,6 +2176,7 @@ jobs:
 
   # Test #154: Add debug logging to count grep calls
   test-154-debug-grep-count:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#154: Debug log grep count"
     runs-on: ubuntu-latest
     steps:
@@ -2165,6 +2216,7 @@ jobs:
 
   # Test #155: Empty spell directory (no files to grep)
   test-155-empty-spell-dir:
+    if: false  # Disabled - see #200-#203 for clean reproductions
     name: "#155: Empty WIZARDRY_DIR"
     runs-on: ubuntu-latest
     steps:
@@ -2188,3 +2240,135 @@ jobs:
           echo "=== Calling banish with empty WIZARDRY_DIR ==="
           echo "WIZARDRY_DIR is now: $WIZARDRY_DIR"
           timeout 5 banish 4 2>&1 && echo "SUCCESS! Fast with no files" || echo "Still hangs even with empty dir"
+
+  # ===================================================================
+  # CLEAN MINIMAL REPRODUCTIONS - Tests #200-#203
+  # Proving grep operations are the root cause
+  # ===================================================================
+
+  # Test #200: Baseline - Reproduce the original 97s hang + crash
+  test-200-baseline-crash:
+    name: "#200: BASELINE - Call banish through wrapper (expect 97s hang)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Reproduce original crash
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "=== Generating glosses ==="
+          ./spells/.wizardry/generate-glosses
+          
+          GLOSS_FILE=$(ls /tmp/.wizardry-glosses-*.sh 2>/dev/null | head -1)
+          echo "Gloss file: $GLOSS_FILE"
+          
+          echo "=== Sourcing glosses ==="
+          . "$GLOSS_FILE"
+          
+          echo "=== Calling banish 4 through first-word gloss wrapper ==="
+          echo "Expected: 97-second hang then exit 139"
+          banish 4
+          echo "If you see this, the bug is fixed!"
+
+  # Test #201: Proof - Direct call bypasses wrapper (should work instantly)
+  test-201-direct-call:
+    name: "#201: PROOF - Direct banish call (expect instant success)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Call banish directly
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "=== Generating glosses ==="
+          ./spells/.wizardry/generate-glosses
+          
+          GLOSS_FILE=$(ls /tmp/.wizardry-glosses-*.sh 2>/dev/null | head -1)
+          
+          echo "=== Sourcing glosses (for definitions only) ==="
+          . "$GLOSS_FILE"
+          
+          echo "=== Loading banish imp directly ==="
+          . spells/.imps/wards/banish
+          
+          echo "=== Calling banish function directly (bypass wrapper) ==="
+          echo "Expected: Instant success"
+          command banish 4
+          echo "SUCCESS! Direct call worked instantly"
+
+  # Test #202: Root Cause - Count grep/file operations with strace  
+  test-202-strace-proof:
+    name: "#202: ROOT CAUSE - strace shows 100+ grep calls"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Trace file operations
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "=== Generating glosses ==="
+          ./spells/.wizardry/generate-glosses
+          
+          GLOSS_FILE=$(ls /tmp/.wizardry-glosses-*.sh 2>/dev/null | head -1)
+          
+          echo "=== Sourcing glosses ==="
+          . "$GLOSS_FILE"
+          
+          echo "=== Calling banish with strace (15s timeout) ==="
+          echo "Expected: Show 100+ file opens/grep executions"
+          timeout 15 strace -e trace=open,openat,execve -o /tmp/strace.log banish 4 2>&1 || true
+          
+          echo ""
+          echo "=== File operation count ==="
+          grep -E "(open|execve.*grep)" /tmp/strace.log | wc -l || echo "0 file ops"
+          
+          echo ""
+          echo "=== Grep executions ==="
+          grep "execve.*grep" /tmp/strace.log | head -20 || echo "No grep calls"
+          
+          echo ""
+          echo "=== First 30 file opens ==="
+          grep -E "open(at)?" /tmp/strace.log | head -30 || echo "No opens"
+
+  # Test #203: Solution - Mock grep proves it's the bottleneck
+  test-203-mock-grep:
+    name: "#203: SOLUTION - Mock grep (expect instant success)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Test with mocked grep
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "=== Creating grep mock ==="
+          mkdir -p /tmp/mock-bin
+          cat > /tmp/mock-bin/grep <<'EOF'
+          #!/bin/sh
+          # Mock grep that returns instantly (simulates pre-generated list)
+          exit 1  # Return "not found" so normal path is taken
+          EOF
+          chmod +x /tmp/mock-bin/grep
+          
+          echo "=== Generating glosses ==="
+          ./spells/.wizardry/generate-glosses
+          
+          GLOSS_FILE=$(ls /tmp/.wizardry-glosses-*.sh 2>/dev/null | head -1)
+          
+          echo "=== Sourcing glosses ==="
+          . "$GLOSS_FILE"
+          
+          echo "=== Adding mock grep to PATH ==="
+          export PATH="/tmp/mock-bin:${PATH}"
+          
+          echo "=== Calling banish with mocked grep ==="
+          echo "Expected: Instant success (proves grep is the bottleneck)"
+          banish 4
+          echo "SUCCESS! Mocked grep worked instantly - grep IS the root cause!"
