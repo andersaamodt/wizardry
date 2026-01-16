@@ -1739,3 +1739,151 @@ jobs:
           echo "=== All chunks sourced successfully ==="
           echo "=== Now testing banish ==="
           banish 4 || echo "Banish failed after incremental sourcing"
+
+  # Test #139: Call hyphenated command (bypass first-word gloss logic)
+  test-139-hyphenated-command:
+    name: "#139: Source + call hyphenated command"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Test hyphenated command execution
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses
+          
+          echo "=== Sourcing glosses ==="
+          . /tmp/.wizardry-glosses-*.sh
+          echo "Sourcing complete"
+          
+          echo "=== Calling env-or (hyphenated command) ==="
+          env-or WIZARDRY_DIR /default/path
+          echo "SUCCESS! Hyphenated command worked"
+
+  # Test #140: Call banish via full path (bypass wrapper)
+  test-140-full-path-banish:
+    name: "#140: Source + call banish via full path"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Test full path execution
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses
+          
+          echo "=== Sourcing glosses ==="
+          . /tmp/.wizardry-glosses-*.sh
+          echo "Sourcing complete"
+          
+          echo "=== Calling banish via full path ==="
+          ${WIZARDRY_DIR}/spells/.glossary/banish 4
+          echo "SUCCESS! Full path call worked"
+
+  # Test #141: Manually call banish function (not through wrapper)
+  test-141-direct-function-call:
+    name: "#141: Source + call banish function directly"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Test direct function call
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses
+          
+          echo "=== Sourcing glosses ==="
+          . /tmp/.wizardry-glosses-*.sh
+          echo "Sourcing complete"
+          
+          echo "=== Checking if banish function exists ==="
+          type banish | head -5
+          
+          echo "=== Calling banish function with 'command' ==="
+          command banish 4
+          echo "SUCCESS! Direct function call worked"
+
+  # Test #142: Trace banish execution with set -x
+  test-142-trace-banish-execution:
+    name: "#142: Trace banish execution with set -x"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Trace execution
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses
+          
+          echo "=== Sourcing glosses ==="
+          . /tmp/.wizardry-glosses-*.sh
+          echo "Sourcing complete"
+          
+          echo "=== Enabling trace and calling banish ==="
+          set -x
+          banish 4 2>&1 | head -100
+          set +x
+          echo "=== Trace output above ==="
+
+  # Test #143: Minimal first-word gloss (skip complex logic)
+  test-143-minimal-firstword-gloss:
+    name: "#143: Minimal first-word gloss wrapper"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Test with minimal gloss wrapper
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          echo "=== Creating minimal first-word gloss ==="
+          cat > /tmp/minimal-gloss.sh <<'EOF'
+          banish() {
+            # Minimal wrapper - just call parse directly
+            parse banish "$@"
+          }
+          EOF
+          
+          echo "=== Sourcing minimal gloss ==="
+          . /tmp/minimal-gloss.sh
+          
+          echo "=== Loading parse and banish imp ==="
+          . spells/.imps/sys/parse
+          . spells/.imps/wards/banish
+          
+          echo "=== Calling banish through minimal wrapper ==="
+          banish 4
+          echo "SUCCESS! Minimal wrapper worked"
+
+  # Test #144: First-word gloss with timeout
+  test-144-firstword-with-timeout:
+    name: "#144: First-word gloss with timeout"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Test with timeout
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses
+          
+          echo "=== Sourcing glosses ==="
+          . /tmp/.wizardry-glosses-*.sh
+          echo "Sourcing complete"
+          
+          echo "=== Calling banish with 10-second timeout ==="
+          timeout 10 banish 4 && echo "SUCCESS within 10 seconds" || {
+            exit_code=$?
+            if [ $exit_code -eq 124 ]; then
+              echo "TIMEOUT after 10 seconds - confirms hang"
+            else
+              echo "CRASH with exit code $exit_code"
+            fi
+            exit $exit_code
+          }
