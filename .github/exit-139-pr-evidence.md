@@ -13,6 +13,9 @@
 - Arch repro workflow (`banish 0 --only --no-tests --no-heal`) exits with code 139. (Source: `./.github/read-test-failures 944` on 2026-01-16)
 - NixOS repro workflow segfaults in nix-shell while running `banish 0 --only --no-tests --no-heal` and exits 139. (Source: `./.github/read-test-failures 944` on 2026-01-16)
 
+## PR #945
+- Ubuntu repro workflow (`banish 0 --only --no-tests --no-heal`) exits with code 139. (Source: `./.github/read-test-failures 945` on 2026-01-16)
+
 ## PR #941
 - All tests passing. (Source: `./.github/read-test-failures 941` on 2026-01-16)
 

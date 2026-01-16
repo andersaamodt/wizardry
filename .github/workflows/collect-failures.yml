@@ -70,6 +70,9 @@ jobs:
             "139-1 Ubuntu banish 0 repro"
             "139-2 Arch banish 0 repro"
             "139-3 NixOS banish 0 repro"
+            "139-4 Ubuntu banish 0 no gloss repro"
+            "139-5 Arch banish 0 no gloss repro"
+            "139-6 NixOS banish 0 no gloss repro"
           )
           
           # Total number of workflows we're monitoring
