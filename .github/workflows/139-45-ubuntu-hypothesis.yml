@@ -1,9 +1,7 @@
 name: 139-45 Ubuntu parse numeric args as words
 
 on:
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

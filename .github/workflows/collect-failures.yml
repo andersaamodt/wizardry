@@ -69,9 +69,9 @@ jobs:
 
           # Workflows to monitor
           workflows=(
-            "139-61 Ubuntu glosses off via env"
-            "139-62 Ubuntu manual gloss eval"
-            "139-63 Ubuntu glosses with runner temp"
+            "139-64 Ubuntu glosses source only"
+            "139-65 Ubuntu glosses head slice"
+            "139-66 Ubuntu glosses tail slice"
           )
           
           # Total number of workflows we're monitoring
