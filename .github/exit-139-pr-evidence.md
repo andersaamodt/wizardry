@@ -8,6 +8,11 @@
 - Workflow 139-12 (banish direct path with glosses) completed successfully; no exit 139 observed. (Source: GitHub Actions run on 2026-01-16)
 - Workflow 139-13 (banish gloss function unset) completed successfully; no exit 139 observed. (Source: GitHub Actions run on 2026-01-16)
 
+## PR #933 vs #934 code comparison (local git review)
+- PR #933 adds the test-environment detection imp and wires environment fact reporting into banish (level 0) to improve test visibility and tooling checks. (Source: `git show --stat 946405bc` and `git show --stat 5e0c96d1` on 2026-01-16)
+- PR #934 introduces function-based gloss generation and relies on parse for first-word invocation, with deeper parsing rules (skip numeric args, recursion guard) plus gloss caching in invoke-wizardry. (Source: `git show --stat 5e0c96d1` on 2026-01-16)
+- Commands used for comparison: `git show --stat 946405bc`, `git show --stat 5e0c96d1`, `git log --oneline 946405bc..5e0c96d1`. (Source: local shell history on 2026-01-16)
+
 ## PR #942
 - Ubuntu unit tests: `. spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose` exits with code 139. (Source: `./.github/read-test-failures 942` on 2026-01-16)
 - Arch Linux unit tests: `nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr --run ". spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose"` segfaults and exits 139. (Source: `./.github/read-test-failures 942` on 2026-01-16)
