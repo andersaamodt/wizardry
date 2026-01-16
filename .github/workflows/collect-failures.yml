@@ -332,9 +332,9 @@ jobs:
 
               IFS='|' read -r run_id conclusion status <<< "$run_info"
 
-              # For "Unit tests" workflow, process individual jobs as they complete
+              # For "Unit tests" or "Minimal Reproduction" workflows, process individual jobs as they complete
               # This gives us one-by-one job reporting instead of all-at-once
-              if [ "$workflow_name" = "Unit tests" ]; then
+              if [ "$workflow_name" = "Unit tests" ] || [ "$workflow_name" = "Minimal Reproduction - Exit 139 on Arch/Ubuntu" ]; then
                 # Get jobs for this run
                 if gh api "/repos/${{ github.repository }}/actions/runs/${run_id}/jobs" \
                   > /tmp/unit_jobs_${run_id}.json 2>&1; then
@@ -378,15 +378,26 @@ jobs:
                       echo "$failure_text"
                       echo ""
                       
-                      # Add to PR description summary - use single-level heading
-                      {
-                        echo ""
-                        echo "### ❌ Unit tests - $job_name"
-                        echo '```'
-                        echo "$failure_text"
-                        echo '```'
-                        echo ""
-                      } >> "$failure_summary_file"
+                      # Add to PR description summary - use descriptive heading based on workflow
+                      if [ "$workflow_name" = "Unit tests" ]; then
+                        {
+                          echo ""
+                          echo "### ❌ Unit tests - $job_name"
+                          echo '```'
+                          echo "$failure_text"
+                          echo '```'
+                          echo ""
+                        } >> "$failure_summary_file"
+                      else
+                        {
+                          echo ""
+                          echo "### ❌ $workflow_name - $job_name"
+                          echo '```'
+                          echo "$failure_text"
+                          echo '```'
+                          echo ""
+                        } >> "$failure_summary_file"
+                      fi
                       
                       # Update PR description immediately after each job
                       update_pr_description
@@ -405,7 +416,11 @@ jobs:
                 if [ "$status" = "completed" ]; then
                   if [ ! -f "/tmp/reported_runs/$run_id" ]; then
                     touch "/tmp/reported_runs/$run_id"
-                    echo "✅ Unit tests workflow completed"
+                    if [ "$workflow_name" = "Unit tests" ]; then
+                      echo "✅ Unit tests workflow completed"
+                    else
+                      echo "✅ $workflow_name workflow completed"
+                    fi
                   fi
                 fi
               else
