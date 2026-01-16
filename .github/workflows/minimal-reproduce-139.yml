@@ -1152,3 +1152,191 @@ jobs:
           echo "Sourcing 200 functions..."
           . /tmp/glosses_200.sh
           echo "SUCCESS! 200 functions worked"
+
+  # New tests based on #117 crash (lines 12823-12824 confirmed problematic!)
+  # This means the bug is in one or both of lines 12823-12824
+  
+  # H14: NixOS - Test line 12823 only
+  test-121-nix-12823-only:
+    name: "#121: NixOS - Line 12823 only"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate and extract line 12823 only
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          awk -v target="12823" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start == target) {
+                  printf "%s", func_lines
+                  exit
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_decile.sh
+          echo "Extracted line 12823 only:"
+          wc -l /tmp/glosses_decile.sh
+          echo "Function name:"
+          grep '^[a-zA-Z_][a-zA-Z0-9_-]* *()' /tmp/glosses_decile.sh || echo "No function found"
+
+      - name: Test line 12823 only
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            . /tmp/glosses_decile.sh
+            echo 'SUCCESS! Line 12823 completed'
+          "
+
+  # H15: NixOS - Test line 12824 only
+  test-122-nix-12824-only:
+    name: "#122: NixOS - Line 12824 only"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate and extract line 12824 only
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          awk -v target="12824" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start == target) {
+                  printf "%s", func_lines
+                  exit
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_decile.sh
+          echo "Extracted line 12824 only:"
+          wc -l /tmp/glosses_decile.sh
+          echo "Function name:"
+          grep '^[a-zA-Z_][a-zA-Z0-9_-]* *()' /tmp/glosses_decile.sh || echo "No function found"
+
+      - name: Test line 12824 only
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            . /tmp/glosses_decile.sh
+            echo 'SUCCESS! Line 12824 completed'
+          "
+
+  # H16: NixOS - Test line 12822 only (for comparison with 12821)
+  test-123-nix-12822-only:
+    name: "#123: NixOS - Line 12822 only"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate and extract line 12822 only
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          awk -v target="12822" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start == target) {
+                  printf "%s", func_lines
+                  exit
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_decile.sh
+          echo "Extracted line 12822 only:"
+          wc -l /tmp/glosses_decile.sh
+          echo "Function name:"
+          grep '^[a-zA-Z_][a-zA-Z0-9_-]* *()' /tmp/glosses_decile.sh || echo "No function found"
+
+      - name: Test line 12822 only
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            . /tmp/glosses_decile.sh
+            echo 'SUCCESS! Line 12822 completed'
+          "
+
+  # H17: Identify and print actual function names for all 4 lines
+  test-124-nix-identify-all-4-lines:
+    name: "#124: NixOS - Identify all 4 functions (12821-12824)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Identify all 4 functions
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          echo "=== Line 12821 ==="
+          sed -n '12821p' /tmp/glosses_full.sh
+          echo ""
+          echo "=== Line 12822 ==="
+          sed -n '12822p' /tmp/glosses_full.sh
+          echo ""
+          echo "=== Line 12823 ==="
+          sed -n '12823p' /tmp/glosses_full.sh
+          echo ""
+          echo "=== Line 12824 ==="
+          sed -n '12824p' /tmp/glosses_full.sh
+          echo ""
+          echo "=== All function names in lines 12821-12824 ==="
+          awk 'NR>=12821 && NR<=12824 && /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {print NR": "$0}' /tmp/glosses_full.sh
+          echo ""
+          echo "=== SUCCESS - Identification complete ==="
