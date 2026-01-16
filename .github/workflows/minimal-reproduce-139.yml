@@ -1887,3 +1887,152 @@ jobs:
             fi
             exit $exit_code
           }
+
+  # Test #145: Find actual gloss file
+  test-145-find-gloss-file:
+    name: "#145: Find actual gloss filename"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Generate and find
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          export PATH="${WIZARDRY_DIR}/spells/.wizardry:${PATH}"
+          
+          echo "=== Generating glosses ==="
+          generate-glosses
+          
+          echo ""
+          echo "=== Listing /tmp files ==="
+          ls -lh /tmp/.wizardry-glosses* 2>&1 || echo "No files with pattern"
+          
+          echo ""
+          echo "=== Finding file programmatically ==="
+          GLOSS_FILE=$(ls /tmp/.wizardry-glosses-*.sh 2>/dev/null | head -1)
+          if [ -n "$GLOSS_FILE" ]; then
+            echo "Found: $GLOSS_FILE"
+            echo "Lines: $(wc -l < "$GLOSS_FILE")"
+          else
+            echo "ERROR: No gloss file found"
+            exit 1
+          fi
+
+  # Test #146: Source with correct filename
+  test-146-source-properly:
+    name: "#146: Source with proper filename"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Source correctly
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          export PATH="${WIZARDRY_DIR}/spells/.wizardry:${PATH}"
+          
+          generate-glosses
+          GLOSS_FILE=$(ls /tmp/.wizardry-glosses-*.sh 2>/dev/null | head -1)
+          
+          echo "=== Sourcing $GLOSS_FILE ==="
+          . "$GLOSS_FILE"
+          echo "SUCCESS: Sourced without crash"
+
+  # Test #147: List first-word functions
+  test-147-list-firstword-functions:
+    name: "#147: List first-word functions"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: List functions
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          export PATH="${WIZARDRY_DIR}/spells/.wizardry:${PATH}"
+          
+          generate-glosses
+          GLOSS_FILE=$(ls /tmp/.wizardry-glosses-*.sh 2>/dev/null | head -1)
+          . "$GLOSS_FILE"
+          
+          echo "=== First 20 functions ==="
+          declare -F | head -20
+
+  # Test #148: Trace banish execution  
+  test-148-trace-banish:
+    name: "#148: Trace banish with set -x"
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Trace
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          export PATH="${WIZARDRY_DIR}/spells/.wizardry:${PATH}"
+          
+          generate-glosses
+          GLOSS_FILE=$(ls /tmp/.wizardry-glosses-*.sh 2>/dev/null | head -1)
+          . "$GLOSS_FILE"
+          
+          echo "=== Calling banish with trace ==="
+          set -x
+          banish 4
+          set +x
+          echo "SUCCESS"
+
+  # Test #149: Banish with timeout
+  test-149-banish-timeout:
+    name: "#149: Banish with 15s timeout"
+    runs-on: ubuntu-latest  
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Timeout test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          export PATH="${WIZARDRY_DIR}/spells/.wizardry:${PATH}"
+          
+          generate-glosses
+          GLOSS_FILE=$(ls /tmp/.wizardry-glosses-*.sh 2>/dev/null | head -1)
+          . "$GLOSS_FILE"
+          
+          echo "=== Calling banish with 15s timeout ==="
+          timeout 15 banish 4 && echo "SUCCESS" || {
+            code=$?
+            [ $code -eq 124 ] && echo "TIMEOUT at 15s" || echo "CRASH (exit $code)"
+            exit $code
+          }
+
+  # Test #150: Compare direct vs wrapper
+  test-150-compare-execution:
+    name: "#150: Direct vs wrapper call"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Compare
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          export PATH="${WIZARDRY_DIR}/spells/.wizardry:${PATH}"
+          
+          echo "=== Direct call (no wrapper) ==="
+          . spells/.imps/sys/invoke-wizardry
+          banish 4
+          echo "Direct: SUCCESS"
+          
+          echo ""
+          echo "=== Wrapper call (through glosses) ==="
+          generate-glosses
+          GLOSS_FILE=$(ls /tmp/.wizardry-glosses-*.sh 2>/dev/null | head -1)
+          . "$GLOSS_FILE"
+          
+          timeout 15 banish 4 && echo "Wrapper: SUCCESS" || {
+            code=$?
+            [ $code -eq 124 ] && echo "Wrapper: TIMEOUT" || echo "Wrapper: CRASH ($code)"
+            exit $code
+          }
