@@ -1,12 +1,6 @@
 name: Emoji Observatory
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 # Cancel previous runs when new commits are pushed

@@ -1,9 +1,7 @@
 name: Test doppelganger compiled wizardry
 
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_dispatch:
 
 # Cancel previous runs when new commits are pushed
 concurrency:
