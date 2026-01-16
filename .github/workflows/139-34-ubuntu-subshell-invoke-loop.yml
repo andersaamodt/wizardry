@@ -1,7 +1,9 @@
-name: 139-26 Ubuntu parse banish level 8 repro
+name: 139-34 Ubuntu subshell invoke loop repro
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,8 +13,8 @@ permissions:
   contents: read
 
 jobs:
-  ubuntu-parse-banish-level8:
-    name: Ubuntu parse banish level 8 repro
+  ubuntu-subshell-invoke-loop:
+    name: Ubuntu subshell invoke loop repro
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -34,23 +36,28 @@ jobs:
             echo 'kernel.apparmor_restrict_unprivileged_userns=0'
           } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
           sudo sysctl --system
-      - name: Run banish via parse command path
+      - name: Loop subshell invoke-wizardry
         run: |
           set +e
           ulimit -c unlimited || true
-          . spells/.imps/sys/invoke-wizardry
-          if command -v timeout >/dev/null 2>&1; then
-            timeout 300 parse banish 8 --only --no-tests --no-heal
-            status=$?
-          else
-            parse banish 8 --only --no-tests --no-heal
-            status=$?
-          fi
-          if [ "$status" -eq 139 ]; then
-            printf '%s\n' "parse banish exited with code 139 (SIGSEGV)"
-            printf '%s\n' "Last 50 dmesg lines (if available):"
-            dmesg | tail -n 50 || true
-          elif [ "$status" -eq 124 ]; then
-            printf '%s\n' "parse banish timed out after 300 seconds"
-          fi
+          status=0
+          for i in $(seq 1 20); do
+            printf '%s\n' "subshell iteration ${i}/20"
+            if command -v timeout >/dev/null 2>&1; then
+              timeout 120 bash -lc '. spells/.imps/sys/invoke-wizardry && banish 8 --only --no-tests --no-heal'
+              status=$?
+            else
+              bash -lc '. spells/.imps/sys/invoke-wizardry && banish 8 --only --no-tests --no-heal'
+              status=$?
+            fi
+            if [ "$status" -eq 139 ]; then
+              printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+              printf '%s\n' "Last 50 dmesg lines (if available):"
+              dmesg | tail -n 50 || true
+              break
+            elif [ "$status" -eq 124 ]; then
+              printf '%s\n' "subshell banish timed out after 120 seconds"
+              break
+            fi
+          done
           exit "$status"

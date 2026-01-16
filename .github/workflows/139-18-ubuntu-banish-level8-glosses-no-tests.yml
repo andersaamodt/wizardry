@@ -1,9 +1,7 @@
 name: 139-18 Ubuntu banish level 8 glosses no-tests repro
 
 on:
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

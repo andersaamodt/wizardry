@@ -1,9 +1,7 @@
 name: 139-23 Ubuntu test-magic no-gloss repro
 
 on:
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

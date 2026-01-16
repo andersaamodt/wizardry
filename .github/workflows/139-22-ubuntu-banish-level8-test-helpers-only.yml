@@ -1,9 +1,7 @@
 name: 139-22 Ubuntu banish level 8 test-helpers-only repro
 
 on:
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
