@@ -210,17 +210,28 @@ if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
     # Regenerate cache if needed
     if [ "$_iw_needs_regen" -eq 1 ]; then
       [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Regenerating gloss cache..." >&2
-      if generate-glosses --quiet > "$_iw_gloss_persistent.tmp" 2>&1; then
-        mv "$_iw_gloss_persistent.tmp" "$_iw_gloss_persistent"
+      if generate-glosses --quiet --output "$_iw_gloss_persistent" 2>&1; then
+        # generate-glosses now creates split files to avoid NixOS bash parser bug
+        # The manifest file lists all parts
+        :
       else
         # If generation fails, clean up and fall back to direct eval
-        rm -f "$_iw_gloss_persistent.tmp"
+        rm -f "$_iw_gloss_persistent"* 2>/dev/null
         _iw_gloss_persistent=""
       fi
     fi
     
-    # Source cached glosses if available
-    if [ -f "$_iw_gloss_persistent" ]; then
+    # Source all cached gloss files (split mode to avoid NixOS bug)
+    if [ -f "$_iw_gloss_persistent.manifest" ]; then
+      # Split mode - source all parts listed in manifest
+      while IFS= read -r _iw_part_file; do
+        if [ -f "$_iw_part_file" ]; then
+          . "$_iw_part_file"
+        fi
+      done < "$_iw_gloss_persistent.manifest"
+      [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Gloss functions loaded from split cache" >&2
+    elif [ -f "$_iw_gloss_persistent" ]; then
+      # Legacy single file mode (fallback)
       . "$_iw_gloss_persistent"
       [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Gloss functions loaded from cache" >&2
     else
@@ -235,7 +246,7 @@ if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
     
     unset _iw_gloss_cache_dir _iw_gloss_persistent _iw_needs_regen
     unset _iw_gen_glosses_path _iw_gloss_output _iw_newest_spell
-    unset _iw_spellbook _iw_syn_file
+    unset _iw_spellbook _iw_syn_file _iw_part_file
   fi
 fi
 

@@ -105,15 +105,39 @@ set -eu
   fi
   
   # Setup output
+  # NEW: Support for split output to avoid NixOS bash parser bug (exit 139 at ~12K lines)
+  # When output_file is provided, we generate multiple split files instead of one large file
+  # This keeps each file under 5000 lines to avoid triggering the parser state bug
+  _split_mode=0
+  _split_max_lines=5000
+  _split_current_file=""
+  _split_file_index=0
+  _split_line_count=0
+  _split_base_file=""
+  
   if [ -n "$output_file" ]; then
-    # Clear output file
-    : > "$output_file"
-    # Helper function to append to file
+    _split_mode=1
+    _split_base_file="$output_file"
+    _split_current_file="${output_file}.part.0"
+    # Clear first split file
+    : > "$_split_current_file"
+    
+    # Helper function to append to current split file and rotate when needed
     emit_line() {
-      printf '%s\n' "$*" >> "$output_file"
+      _split_line_count=$((_split_line_count + 1))
+      printf '%s\n' "$*" >> "$_split_current_file"
+      
+      # Check if we need to rotate to next file
+      if [ "$_split_line_count" -ge "$_split_max_lines" ]; then
+        _split_file_index=$((_split_file_index + 1))
+        _split_current_file="${_split_base_file}.part.${_split_file_index}"
+        : > "$_split_current_file"
+        _split_line_count=0
+        [ "$quiet" -eq 0 ] && printf 'generate-glosses: Rotating to split file %d\n' "$_split_file_index" >&2
+      fi
     }
   else
-    # Helper function to output to stdout
+    # Helper function to output to stdout (no splitting for stdout)
     emit_line() {
       printf '%s\n' "$*"
     }
@@ -737,6 +761,21 @@ uname|uniq|wc|xargs)
     printf 'generate-glosses: Gloss generation complete\n' >&2
     printf 'generate-glosses:   First-word glosses: %d\n' "$total_first_word_glosses" >&2
     printf 'generate-glosses:   Total spells/imps: %d\n' "$_spell_count" >&2
+    if [ "$_split_mode" -eq 1 ]; then
+      printf 'generate-glosses:   Split files: %d (avoiding NixOS bash parser bug)\n' "$((_split_file_index + 1))" >&2
+    fi
+  fi
+  
+  # If in split mode, create a manifest file listing all parts
+  if [ "$_split_mode" -eq 1 ]; then
+    _split_manifest="${_split_base_file}.manifest"
+    : > "$_split_manifest"
+    _idx=0
+    while [ $_idx -le $_split_file_index ]; do
+      printf '%s\n' "${_split_base_file}.part.${_idx}" >> "$_split_manifest"
+      _idx=$((_idx + 1))
+    done
+    [ "$quiet" -eq 0 ] && printf 'generate-glosses:   Manifest: %s\n' "$_split_manifest" >&2
   fi
   
   exit 0
