@@ -367,3 +367,230 @@ jobs:
             . /tmp/glosses_full.sh
             echo 'SUCCESS! Full glosses completed (if this prints, bug is fixed!)'
           "
+
+  # New hypotheses based on test results analysis
+  
+  # H1: Test if invoke-wizardry itself crashes without calling any functions
+  test-100-invoke-only:
+    name: "#100: Invoke-wizardry only (no function calls)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Source invoke-wizardry without calling functions
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Sourcing invoke-wizardry without calling any functions..."
+          . spells/.imps/sys/invoke-wizardry
+          echo "SUCCESS! invoke-wizardry sourced without crash"
+
+  # H2: Test calling a simple imp function (not banish) after invoke-wizardry
+  test-101-invoke-then-say:
+    name: "#101: Invoke + call 'say' function"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Source invoke-wizardry and call say
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Testing invoke-wizardry + say..."
+          . spells/.imps/sys/invoke-wizardry
+          say "Test message"
+          echo "SUCCESS! say function worked"
+
+  # H3: Test if the crash happens with just PATH modification
+  test-102-path-only:
+    name: "#102: Manual PATH setup (no invoke-wizardry)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Manually set PATH and call banish
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          export PATH="${WIZARDRY_DIR}/spells/.glossary:${PATH}"
+          echo "Calling banish via PATH without invoke-wizardry..."
+          banish 4
+          echo "SUCCESS! banish worked via PATH alone"
+
+  # H4: Test sourcing individual imps without invoke-wizardry
+  test-103-source-imps-directly:
+    name: "#103: Source imps directly (no invoke-wizardry)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Source imps directly
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Sourcing imps directly..."
+          . spells/.imps/out/say
+          . spells/.imps/wards/banish
+          echo "Calling banish..."
+          banish 4
+          echo "SUCCESS! Direct imp sourcing worked"
+
+  # H5: Test if it's the combination of glosses + invoke-wizardry
+  test-104-glosses-without-invoke:
+    name: "#104: Source glosses without invoke-wizardry"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Generate and source glosses directly
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses.sh
+          echo "Sourcing glosses without invoke-wizardry..."
+          . /tmp/glosses.sh
+          echo "Calling banish..."
+          banish 4
+          echo "SUCCESS! Glosses worked without invoke-wizardry"
+
+  # H6: NixOS - Narrow to lines 12827-12833 (middle of Sub 2)
+  test-105-nix-decile-9-sub-2a:
+    name: "#105: NixOS - Decile 9 Sub 2a (lines 12821-12827)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate and extract Sub 2a
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          awk -v start="12821" -v end="12827" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start >= start && func_start <= end) {
+                  printf "%s", func_lines
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_decile.sh
+          echo "Extracted Sub 2a:"
+          wc -l /tmp/glosses_decile.sh
+
+      - name: Test Sub 2a
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            . /tmp/glosses_decile.sh
+            echo 'SUCCESS! Sub 2a completed'
+          "
+
+  # H7: NixOS - Narrow to lines 12828-12834 (second half of Sub 2)
+  test-106-nix-decile-9-sub-2b:
+    name: "#106: NixOS - Decile 9 Sub 2b (lines 12828-12834)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate and extract Sub 2b
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          awk -v start="12828" -v end="12834" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start >= start && func_start <= end) {
+                  printf "%s", func_lines
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_decile.sh
+          echo "Extracted Sub 2b:"
+          wc -l /tmp/glosses_decile.sh
+
+      - name: Test Sub 2b
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            . /tmp/glosses_decile.sh
+            echo 'SUCCESS! Sub 2b completed'
+          "
+
+  # H8: NixOS - Narrow to lines 12835-12840 (last part of Sub 2)
+  test-107-nix-decile-9-sub-2c:
+    name: "#107: NixOS - Decile 9 Sub 2c (lines 12835-12840)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate and extract Sub 2c
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          awk -v start="12835" -v end="12840" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start >= start && func_start <= end) {
+                  printf "%s", func_lines
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_decile.sh
+          echo "Extracted Sub 2c:"
+          wc -l /tmp/glosses_decile.sh
+
+      - name: Test Sub 2c
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            . /tmp/glosses_decile.sh
+            echo 'SUCCESS! Sub 2c completed'
+          "
