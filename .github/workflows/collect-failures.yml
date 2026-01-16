@@ -67,12 +67,9 @@ jobs:
 
           # Workflows to monitor
           workflows=(
-            "Unit tests"
-            "POSIX, linting, and style checks"
-            "Test standalone compiled spells"
-            "Test doppelganger compiled wizardry"
-            "Demonstrate wizardry"
-            "Compile wizardry"
+            "139-1 Ubuntu banish 0 repro"
+            "139-2 Arch banish 0 repro"
+            "139-3 NixOS banish 0 repro"
           )
           
           # Total number of workflows we're monitoring

@@ -1,12 +1,6 @@
 name: POSIX, linting, and style checks
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 # Cancel previous runs when new commits are pushed
