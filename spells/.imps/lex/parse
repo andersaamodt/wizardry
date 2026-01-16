@@ -179,9 +179,23 @@ if [ -n "$_cmd_type" ]; then
       ;;
     *)
       # No slash - could be a builtin, function, or alias
-      # Try to exec it - builtins will work, functions/aliases will fail
-      # If exec fails (function/alias), we fall through to error message
-      exec "$_first_word" "$@" 2>/dev/null || true
+      # CRITICAL FIX: Check if it's a function to prevent infinite recursion
+      # type returns different output for functions vs builtins
+      _type_output=$(type "$_first_word" 2>/dev/null || true)
+      case "$_type_output" in
+        *function*)
+          # It's a function - DO NOT exec to prevent infinite recursion
+          # Fall through to "command not found" error
+          ;;
+        *alias*)
+          # It's an alias - DO NOT exec to prevent infinite recursion
+          # Fall through to "command not found" error
+          ;;
+        *)
+          # It's a builtin or other command - try to exec it
+          exec "$_first_word" "$@" 2>/dev/null || true
+          ;;
+      esac
       ;;
   esac
 fi
