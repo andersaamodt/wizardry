@@ -1,7 +1,9 @@
-name: 139-17 Ubuntu test-magic only repro
+name: 139-23 Ubuntu test-magic no-gloss repro
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,12 +13,12 @@ permissions:
   contents: read
 
 jobs:
-  ubuntu-test-magic-only:
-    name: Ubuntu test-magic only repro
+  ubuntu-test-magic-no-gloss:
+    name: Ubuntu test-magic no-gloss repro
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
-      WIZARDRY_GLOSSES: "1"
+      WIZARDRY_GLOSSES: "0"
       WIZARDRY_DEBUG: "1"
     steps:
       - name: Checkout
@@ -34,7 +36,7 @@ jobs:
             echo 'kernel.apparmor_restrict_unprivileged_userns=0'
           } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
           sudo sysctl --system
-      - name: Run test-magic without banish (capture segfault)
+      - name: Run test-magic without glosses
         run: |
           set +e
           ulimit -c unlimited || true

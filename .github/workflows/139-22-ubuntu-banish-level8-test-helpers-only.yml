@@ -1,7 +1,9 @@
-name: 139-17 Ubuntu test-magic only repro
+name: 139-22 Ubuntu banish level 8 test-helpers-only repro
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,12 +13,13 @@ permissions:
   contents: read
 
 jobs:
-  ubuntu-test-magic-only:
-    name: Ubuntu test-magic only repro
+  ubuntu-banish-level8-test-helpers-only:
+    name: Ubuntu banish level 8 test-helpers-only repro
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
       WIZARDRY_GLOSSES: "1"
+      WIZARDRY_TEST_HELPERS_ONLY: "1"
       WIZARDRY_DEBUG: "1"
     steps:
       - name: Checkout
@@ -34,23 +37,23 @@ jobs:
             echo 'kernel.apparmor_restrict_unprivileged_userns=0'
           } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
           sudo sysctl --system
-      - name: Run test-magic without banish (capture segfault)
+      - name: Run banish level 8 with test helpers only
         run: |
           set +e
           ulimit -c unlimited || true
           . spells/.imps/sys/invoke-wizardry
           if command -v timeout >/dev/null 2>&1; then
-            timeout 300 ./spells/.wizardry/test-magic --verbose
+            timeout 300 banish 8 --only --no-tests --no-heal
             status=$?
           else
-            ./spells/.wizardry/test-magic --verbose
+            banish 8 --only --no-tests --no-heal
             status=$?
           fi
           if [ "$status" -eq 139 ]; then
-            printf '%s\n' "test-magic exited with code 139 (SIGSEGV)"
+            printf '%s\n' "banish exited with code 139 (SIGSEGV)"
             printf '%s\n' "Last 50 dmesg lines (if available):"
             dmesg | tail -n 50 || true
           elif [ "$status" -eq 124 ]; then
-            printf '%s\n' "test-magic timed out after 300 seconds"
+            printf '%s\n' "banish timed out after 300 seconds"
           fi
           exit "$status"

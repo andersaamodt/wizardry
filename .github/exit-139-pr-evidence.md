@@ -7,6 +7,8 @@
 ## Recent hypothesis workflow results
 - Workflow 139-12 (banish direct path with glosses) completed successfully; no exit 139 observed. (Source: GitHub Actions run on 2026-01-16)
 - Workflow 139-13 (banish gloss function unset) completed successfully; no exit 139 observed. (Source: GitHub Actions run on 2026-01-16)
+- Workflow 139-16 (banish level 8 with glosses disabled) completed successfully; no exit 139 observed. (Source: GitHub Actions run on 2026-01-16)
+- Workflow 139-17 (test-magic only) failed with ordinary test failures (exit 1), not exit 139. (Source: GitHub Actions run on 2026-01-16)
 
 ## PR #933 vs #934 code comparison (local git review)
 - PR #933 adds the test-environment detection imp and wires environment fact reporting into banish (level 0) to improve test visibility and tooling checks. (Source: `git show --stat 946405bc` and `git show --stat 5e0c96d1` on 2026-01-16)

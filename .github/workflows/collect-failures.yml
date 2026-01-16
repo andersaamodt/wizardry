@@ -69,8 +69,16 @@ jobs:
 
           # Workflows to monitor
           workflows=(
-            "139-16 Ubuntu banish level 8 no-gloss repro"
-            "139-17 Ubuntu test-magic only repro"
+            "139-18 Ubuntu banish level 8 glosses no-tests repro"
+            "139-19 Ubuntu banish level 8 glosses no-tests repro (heal)"
+            "139-20 Ubuntu banish level 8 glosses tests repro"
+            "139-21 Ubuntu banish level 8 glosses then test-magic repro"
+            "139-22 Ubuntu banish level 8 test-helpers-only repro"
+            "139-23 Ubuntu test-magic no-gloss repro"
+            "139-24 Ubuntu test-magic test-helpers-only repro"
+            "139-25 Ubuntu banish level 8 no-gloss then test-magic repro"
+            "139-26 Ubuntu parse banish level 8 repro"
+            "139-27 Ubuntu manual gloss banish level 8 repro"
           )
           
           # Total number of workflows we're monitoring
