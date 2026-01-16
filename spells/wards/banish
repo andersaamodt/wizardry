@@ -1713,20 +1713,42 @@ HEREDOC_TEST
       tmp_xattr_test=$(mktemp "${tmp_root%/}/banish-xattr.XXXXXX" 2>/dev/null || printf '')
       if [ -n "$tmp_xattr_test" ]; then
         xattr_works=0
+        if [ "${BANISH_TRACE_XATTR:-0}" -eq 1 ]; then
+          printf '[banish-trace] xattr test file: %s\n' "$tmp_xattr_test" >&2
+          printf '[banish-trace] xattr helper detected: %s\n' "${xattr_helper:-none}" >&2
+        fi
         
         # Try to set an extended attribute
         if command -v xattr >/dev/null 2>&1; then
+          if [ "${BANISH_TRACE_XATTR:-0}" -eq 1 ]; then
+            printf '[banish-trace] running: xattr -w user.test value %s\n' "$tmp_xattr_test" >&2
+          fi
           if xattr -w user.test "value" "$tmp_xattr_test" 2>/dev/null; then
             # Verify we can read it back
+            if [ "${BANISH_TRACE_XATTR:-0}" -eq 1 ]; then
+              printf '[banish-trace] running: xattr -p user.test %s\n' "$tmp_xattr_test" >&2
+            fi
             if xattr -p user.test "$tmp_xattr_test" 2>/dev/null | grep -q "value"; then
               xattr_works=1
+            fi
+            if [ "${BANISH_TRACE_XATTR:-0}" -eq 1 ]; then
+              printf '[banish-trace] running: xattr -d user.test %s\n' "$tmp_xattr_test" >&2
             fi
             xattr -d user.test "$tmp_xattr_test" 2>/dev/null || :
           fi
         elif command -v setfattr >/dev/null 2>&1 && command -v getfattr >/dev/null 2>&1; then
+          if [ "${BANISH_TRACE_XATTR:-0}" -eq 1 ]; then
+            printf '[banish-trace] running: setfattr -n user.test -v value %s\n' "$tmp_xattr_test" >&2
+          fi
           if setfattr -n user.test -v "value" "$tmp_xattr_test" 2>/dev/null; then
+            if [ "${BANISH_TRACE_XATTR:-0}" -eq 1 ]; then
+              printf '[banish-trace] running: getfattr -n user.test %s\n' "$tmp_xattr_test" >&2
+            fi
             if getfattr -n user.test "$tmp_xattr_test" 2>/dev/null | grep -q "value"; then
               xattr_works=1
+            fi
+            if [ "${BANISH_TRACE_XATTR:-0}" -eq 1 ]; then
+              printf '[banish-trace] running: setfattr -x user.test %s\n' "$tmp_xattr_test" >&2
             fi
             setfattr -x user.test "$tmp_xattr_test" 2>/dev/null || :
           fi
