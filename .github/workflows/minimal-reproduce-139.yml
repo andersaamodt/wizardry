@@ -608,3 +608,254 @@ jobs:
             . /tmp/glosses_decile.sh
             echo 'SUCCESS! Sub 2c completed'
           "
+
+  # New hypotheses based on #100-#107 results
+  # CRITICAL: #104 crashed - glosses WITHOUT invoke-wizardry crash!
+  # This means the bug is in glosses themselves, NOT invoke-wizardry
+
+  # H1: Test with minimal glosses (just a few functions)
+  test-108-minimal-glosses:
+    name: "#108: Minimal glosses (first 100 lines only)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Generate and truncate glosses
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          echo "Full glosses lines:"
+          wc -l /tmp/glosses_full.sh
+          # Take only first 100 lines (a few functions)
+          head -100 /tmp/glosses_full.sh > /tmp/glosses_minimal.sh
+          echo "Minimal glosses lines:"
+          wc -l /tmp/glosses_minimal.sh
+
+      - name: Source minimal glosses
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Sourcing minimal glosses..."
+          . /tmp/glosses_minimal.sh
+          echo "SUCCESS! Minimal glosses worked"
+
+  # H2: Test with medium-sized glosses (first 1000 lines)
+  test-109-medium-glosses:
+    name: "#109: Medium glosses (first 1000 lines)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Generate and truncate glosses
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          wc -l /tmp/glosses_full.sh
+          # Take first 1000 lines
+          head -1000 /tmp/glosses_full.sh > /tmp/glosses_medium.sh
+          echo "Medium glosses lines:"
+          wc -l /tmp/glosses_medium.sh
+
+      - name: Source medium glosses
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Sourcing medium glosses..."
+          . /tmp/glosses_medium.sh
+          echo "SUCCESS! Medium glosses worked"
+
+  # H3: Test with large glosses (first 5000 lines)
+  test-110-large-glosses:
+    name: "#110: Large glosses (first 5000 lines)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Generate and truncate glosses
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          wc -l /tmp/glosses_full.sh
+          # Take first 5000 lines
+          head -5000 /tmp/glosses_full.sh > /tmp/glosses_large.sh
+          echo "Large glosses lines:"
+          wc -l /tmp/glosses_large.sh
+
+      - name: Source large glosses
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Sourcing large glosses..."
+          . /tmp/glosses_large.sh
+          echo "SUCCESS! Large glosses worked"
+
+  # H4: Test with glosses minus last 100 lines (see if it's at the end)
+  test-111-glosses-minus-tail:
+    name: "#111: Glosses without last 100 lines"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Generate and truncate glosses
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          total_lines=$(wc -l < /tmp/glosses_full.sh)
+          echo "Total lines: $total_lines"
+          # Remove last 100 lines
+          head -$((total_lines - 100)) /tmp/glosses_full.sh > /tmp/glosses_no_tail.sh
+          echo "Without tail lines:"
+          wc -l /tmp/glosses_no_tail.sh
+
+      - name: Source glosses without tail
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Sourcing glosses without tail..."
+          . /tmp/glosses_no_tail.sh
+          echo "SUCCESS! Glosses without tail worked"
+
+  # H5: NixOS - Further narrow Sub 2a into halves (lines 12821-12824 vs 12825-12827)
+  test-112-nix-sub-2a-first-half:
+    name: "#112: NixOS - Sub 2a first half (lines 12821-12824)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate and extract Sub 2a first half
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          awk -v start="12821" -v end="12824" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start >= start && func_start <= end) {
+                  printf "%s", func_lines
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_decile.sh
+          echo "Extracted Sub 2a first half:"
+          wc -l /tmp/glosses_decile.sh
+
+      - name: Test Sub 2a first half
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            . /tmp/glosses_decile.sh
+            echo 'SUCCESS! Sub 2a first half completed'
+          "
+
+  # H6: NixOS - Sub 2a second half (lines 12825-12827)
+  test-113-nix-sub-2a-second-half:
+    name: "#113: NixOS - Sub 2a second half (lines 12825-12827)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate and extract Sub 2a second half
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          awk -v start="12825" -v end="12827" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start >= start && func_start <= end) {
+                  printf "%s", func_lines
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_decile.sh
+          echo "Extracted Sub 2a second half:"
+          wc -l /tmp/glosses_decile.sh
+
+      - name: Test Sub 2a second half
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            . /tmp/glosses_decile.sh
+            echo 'SUCCESS! Sub 2a second half completed'
+          "
+
+  # H7: Test sourcing glosses in sh (not bash) to see if it's bash-specific
+  test-114-glosses-with-sh:
+    name: "#114: Source glosses with /bin/sh instead of bash"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Generate glosses
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          wc -l /tmp/glosses_full.sh
+
+      - name: Source glosses with sh
+        shell: sh -e {0}
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Sourcing glosses with /bin/sh..."
+          . /tmp/glosses_full.sh
+          echo "SUCCESS! Glosses worked with sh"
+
+  # H8: Print actual function names from problematic NixOS range
+  test-115-nix-identify-functions:
+    name: "#115: NixOS - Identify function names in lines 12821-12827"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Identify functions in problematic range
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          echo "=== Functions starting in lines 12821-12827 ==="
+          awk 'NR>=12821 && NR<=12827 && /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {print NR": "$0}' /tmp/glosses_full.sh
+          echo "=== Full content of lines 12821-12827 ==="
+          sed -n '12821,12827p' /tmp/glosses_full.sh
+          echo "=== SUCCESS - Identification complete ==="
