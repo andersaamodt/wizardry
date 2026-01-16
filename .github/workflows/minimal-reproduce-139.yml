@@ -1552,3 +1552,190 @@ jobs:
               break
             fi
           done
+
+  # Test #131: Source glosses with verbose output during sourcing
+  test-131-verbose-sourcing:
+    name: "#131: Verbose output during sourcing"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Verbose sourcing test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses
+          
+          echo "=== Sourcing glosses with verbose output ==="
+          (
+            while read -r line; do
+              echo "Sourcing line: ${line:0:80}..."
+              eval "$line"
+            done < /tmp/.wizardry-glosses-*.sh
+            echo "=== Sourcing complete! ==="
+          ) || echo "CRASH during sourcing at line: $line"
+
+  # Test #132: Source glosses + call simple function (not banish)
+  test-132-simple-function:
+    name: "#132: Source + call simple function"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Simple function test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses
+          
+          echo "=== Sourcing glosses ==="
+          . /tmp/.wizardry-glosses-*.sh
+          echo "=== Sourcing complete ==="
+          
+          echo "=== Calling simple 'say' function ==="
+          if command -v say >/dev/null 2>&1; then
+            say "Test message"
+            echo "SUCCESS: say function worked"
+          else
+            echo "say function not found"
+          fi
+
+  # Test #133: Source glosses + print success (no function calls)
+  test-133-no-function-calls:
+    name: "#133: Source only, no function calls"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Source-only test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses
+          
+          echo "=== Sourcing glosses ==="
+          . /tmp/.wizardry-glosses-*.sh
+          echo "=== Sourcing complete! No crash during sourcing ==="
+          echo "=== NOT calling any functions - just exiting ==="
+          echo "SUCCESS: Sourced but didn't call anything"
+
+  # Test #134: Source glosses with set -x tracing
+  test-134-trace-sourcing:
+    name: "#134: Trace sourcing with set -x"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Traced sourcing test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses
+          
+          echo "=== Sourcing glosses with tracing ==="
+          set -x
+          . /tmp/.wizardry-glosses-*.sh 2>&1 | tail -100
+          set +x
+          echo "=== Sourcing complete ==="
+
+  # Test #135: Source glosses with timeout monitoring
+  test-135-timeout-monitor:
+    name: "#135: Monitor sourcing with timeout"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Timeout monitoring test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses
+          
+          echo "=== Sourcing with 120s timeout ==="
+          timeout 120 bash -c '. /tmp/.wizardry-glosses-*.sh && echo "Sourcing complete" && banish 4 && echo "Banish complete"' || {
+            code=$?
+            if [ $code -eq 124 ]; then
+              echo "TIMEOUT: Process exceeded 120 seconds"
+            else
+              echo "CRASH: Exit code $code"
+            fi
+          }
+
+  # Test #136: Call banish without sourcing glosses (direct execution)
+  test-136-direct-banish:
+    name: "#136: Direct banish execution"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Direct execution test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "=== Calling banish directly (no glosses) ==="
+          export PATH="${PWD}/spells/.imps/wards:${PATH}"
+          if [ -f spells/.imps/wards/banish ]; then
+            ./spells/.imps/wards/banish 4
+            echo "SUCCESS: Direct banish worked"
+          else
+            echo "Banish file not found at expected location"
+            find spells/.imps -name "*banish*"
+          fi
+
+  # Test #137: Source ONLY first-word glosses (skip hyphenated)
+  test-137-only-firstword:
+    name: "#137: Only first-word glosses"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: First-word only test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses
+          
+          echo "=== Extracting only first-word glosses ==="
+          awk '/^# First-word gloss for/,/^}$/' /tmp/.wizardry-glosses-*.sh > /tmp/firstword-only.sh
+          
+          echo "First-word functions: $(grep -c '^# First-word gloss' /tmp/firstword-only.sh || echo 0)"
+          echo "Total lines: $(wc -l < /tmp/firstword-only.sh)"
+          
+          echo "=== Sourcing first-word glosses only ==="
+          . /tmp/firstword-only.sh
+          echo "=== Sourcing complete ==="
+          
+          echo "=== Calling banish (should fail - no hyphenated commands) ==="
+          banish 4 || echo "Expected failure: banish not defined without hyphenated glosses"
+
+  # Test #138: Incremental sourcing test - source glosses in chunks
+  test-138-incremental-sourcing:
+    name: "#138: Incremental sourcing in chunks"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Incremental sourcing test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          ./spells/.wizardry/generate-glosses
+          
+          echo "=== Sourcing glosses incrementally ==="
+          total_lines=$(wc -l < /tmp/.wizardry-glosses-*.sh)
+          chunk_size=5000
+          
+          for start in $(seq 1 $chunk_size $total_lines); do
+            end=$((start + chunk_size - 1))
+            echo "Sourcing lines $start-$end..."
+            sed -n "${start},${end}p" /tmp/.wizardry-glosses-*.sh > /tmp/chunk.sh
+            . /tmp/chunk.sh 2>/dev/null || {
+              echo "CRASH at lines $start-$end"
+              exit 1
+            }
+            echo "  Chunk sourced successfully"
+          done
+          
+          echo "=== All chunks sourced successfully ==="
+          echo "=== Now testing banish ==="
+          banish 4 || echo "Banish failed after incremental sourcing"
