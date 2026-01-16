@@ -1437,3 +1437,118 @@ jobs:
           . /tmp/function_12824.sh
           
           echo "SUCCESS! Line 12824 function sourced without crash on Arch/Ubuntu"
+
+  # Test #128: MINIMAL NixOS reproduction - just the case pattern
+  test-128-minimal-nixos:
+    name: "#128: MINIMAL NixOS - case pattern only"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Install Nix
+        uses: cachix/install-nix-action@v25
+      
+      - name: Minimal reproduction test
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          # Create absolutely minimal test - just the problematic case pattern
+          cat > /tmp/minimal_repro.sh <<'EOF'
+          case "test" in
+            *alias*)
+              echo "matched"
+              ;;
+          esac
+          EOF
+          
+          echo "=== Test 1: Minimal case pattern alone ==="
+          nix-shell -p bash --run '. /tmp/minimal_repro.sh && echo SUCCESS: Pattern alone works'
+          
+          # Now test it at the same line number in a large file
+          echo ""
+          echo "=== Test 2: Pattern at line ~12824 in large file ==="
+          ./spells/.wizardry/generate-glosses > /tmp/full_glosses.sh
+          
+          echo "Lines in full glosses: $(wc -l < /tmp/full_glosses.sh)"
+          echo "Line 12824 content:"
+          sed -n '12824p' /tmp/full_glosses.sh
+          
+          # Source full glosses - this should crash on NixOS
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            . /tmp/full_glosses.sh
+            echo 'SUCCESS! Full glosses worked (bug may be fixed!)'
+          " || echo "CRASHED as expected with exit code $?"
+
+  # Test #129: Arch/Ubuntu with varying function counts
+  test-129-arch-function-threshold:
+    name: "#129: Arch - Function count threshold"
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: pacman -Syu --noconfirm grep sed
+      
+      - name: Test varying function counts
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          # Test with 50, 100, 150, 200 functions
+          for count in 50 100 150 200; do
+            echo ""
+            echo "=== Testing with $count functions ==="
+            
+            ./spells/.wizardry/generate-glosses | awk '
+              /^[a-z_-]+\(\)/ { in_func=1; func_count++ }
+              in_func { print }
+              /^}$/ && in_func { in_func=0; if (func_count >= '"$count"') exit }
+            ' > /tmp/glosses_${count}.sh
+            
+            echo "Functions extracted: $(grep -c '^[a-z_-]*()' /tmp/glosses_${count}.sh || echo 0)"
+            echo "Total lines: $(wc -l < /tmp/glosses_${count}.sh)"
+            
+            if . /tmp/glosses_${count}.sh 2>/dev/null; then
+              echo "SUCCESS: $count functions sourced OK"
+            else
+              echo "CRASH: $count functions triggered exit code $?"
+              break
+            fi
+          done
+
+  # Test #130: Ubuntu with varying function counts  
+  test-130-ubuntu-function-threshold:
+    name: "#130: Ubuntu - Function count threshold"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Test varying function counts
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          # Test with 50, 100, 150, 200 functions
+          for count in 50 100 150 200; do
+            echo ""
+            echo "=== Testing with $count functions ==="
+            
+            ./spells/.wizardry/generate-glosses | awk '
+              /^[a-z_-]+\(\)/ { in_func=1; func_count++ }
+              in_func { print }
+              /^}$/ && in_func { in_func=0; if (func_count >= '"$count"') exit }
+            ' > /tmp/glosses_${count}.sh
+            
+            echo "Functions extracted: $(grep -c '^[a-z_-]*()' /tmp/glosses_${count}.sh || echo 0)"
+            echo "Total lines: $(wc -l < /tmp/glosses_${count}.sh)"
+            
+            if . /tmp/glosses_${count}.sh 2>/dev/null; then
+              echo "SUCCESS: $count functions sourced OK"
+            else
+              echo "CRASH: $count functions triggered exit code $?"
+              break
+            fi
+          done
