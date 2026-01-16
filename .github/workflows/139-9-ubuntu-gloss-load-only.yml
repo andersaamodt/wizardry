@@ -1,7 +1,9 @@
-name: 139-6 NixOS banish 0 no gloss repro
+name: 139-9 Ubuntu gloss load only repro
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,24 +13,20 @@ permissions:
   contents: read
 
 jobs:
-  nix-banish0-no-gloss:
-    name: NixOS banish 0 no gloss repro
+  ubuntu-gloss-load-only:
+    name: Ubuntu gloss load only repro
     runs-on: ubuntu-latest
     env:
-      WIZARDRY_OS_LABEL: nixos
-      WIZARDRY_TEST_HELPERS_ONLY: "1"
+      WIZARDRY_OS_LABEL: ubuntu
+      WIZARDRY_GLOSSES: "1"
+      WIZARDRY_DEBUG: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
-      - name: Install Nix
-        uses: cachix/install-nix-action@v27
-      - name: Configure nixpkgs channel
-        run: |
-          nix-channel --add https://nixos.org/channels/nixos-unstable nixpkgs
-          nix-channel --update
-          echo "NIX_PATH=nixpkgs=$HOME/.nix-defexpr/channels/nixpkgs" >> "$GITHUB_ENV"
+      - name: Install bubblewrap dependencies
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
       - name: Configure bubblewrap user namespaces
         run: |
           sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
@@ -37,7 +35,16 @@ jobs:
             echo 'kernel.unprivileged_userns_clone=1'
             echo 'kernel.apparmor_restrict_unprivileged_userns=0'
           } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
-          sudo sysctl --system || true
-      - name: Run banish 0 in Nix shell without glosses
+          sudo sysctl --system
+      - name: Load glosses only (capture segfault)
         run: |
-          nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr --run ". spells/.imps/sys/invoke-wizardry && banish 0 --only --no-tests --no-heal"
+          set +e
+          ulimit -c unlimited || true
+          . spells/.imps/sys/invoke-wizardry
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "invoke-wizardry exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"

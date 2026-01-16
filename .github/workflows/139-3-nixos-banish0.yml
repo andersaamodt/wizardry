@@ -1,9 +1,7 @@
 name: 139-3 NixOS banish 0 repro
 
 on:
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
