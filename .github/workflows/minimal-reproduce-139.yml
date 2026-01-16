@@ -1340,3 +1340,102 @@ jobs:
           awk 'NR>=12821 && NR<=12824 && /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {print NR": "$0}' /tmp/glosses_full.sh
           echo ""
           echo "=== SUCCESS - Identification complete ==="
+
+  # Test #125: NixOS - Identify exact function on line 12824
+  test-125-nixos-identify-12824:
+    name: "#125: NixOS - Identify function on line 12824"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Install NixOS tools
+        run: |
+          sudo apt-get update && sudo apt-get install -y curl
+          sh <(curl -L https://nixos.org/nix/install) --daemon --yes || true
+          . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh || true
+      
+      - name: Generate glosses and identify line 12824
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          export PATH="${WIZARDRY_DIR}/spells/.glossary:${PATH}"
+          
+          # Generate full glosses
+          spells/.imps/sys/generate-glosses /tmp/glosses_full.sh
+          
+          echo "=== FUNCTION ON LINE 12824 ==="
+          sed -n '12824p' /tmp/glosses_full.sh
+          echo ""
+          
+          echo "=== Context (lines 12822-12826) ==="
+          sed -n '12822,12826p' /tmp/glosses_full.sh
+          echo ""
+          
+          echo "=== Extract function name ==="
+          awk 'NR==12824 && /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {gsub(/\(\).*/,""); print "Function name: "$0}' /tmp/glosses_full.sh
+          echo ""
+          
+          echo "=== SUCCESS - Line 12824 identified ==="
+
+  # Test #126: NixOS - Test without line 12824 (should succeed)
+  test-126-nixos-without-12824:
+    name: "#126: NixOS - Glosses without line 12824"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Install NixOS tools
+        run: |
+          sudo apt-get update && sudo apt-get install -y curl
+          sh <(curl -L https://nixos.org/nix/install) --daemon --yes || true
+      
+      - name: Test glosses without line 12824
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh || true
+          export PATH="${WIZARDRY_DIR}/spells/.glossary:${PATH}"
+          
+          # Generate full glosses
+          spells/.imps/sys/generate-glosses /tmp/glosses_full.sh
+          
+          # Create glosses without line 12824
+          sed '12824d' /tmp/glosses_full.sh > /tmp/glosses_no_12824.sh
+          
+          echo "Lines in filtered glosses: $(wc -l < /tmp/glosses_no_12824.sh)"
+          
+          # Test with NixOS bash (should succeed without line 12824)
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            . /tmp/glosses_no_12824.sh
+            echo 'SUCCESS! Glosses without line 12824 work on NixOS!'
+          "
+
+  # Test #127: Arch/Ubuntu - Test line 12824 function alone
+  test-127-arch-line-12824-function:
+    name: "#127: Arch - Source only line 12824 function"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Test line 12824 function on Arch/Ubuntu
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          export PATH="${WIZARDRY_DIR}/spells/.glossary:${PATH}"
+          
+          # Generate full glosses
+          spells/.imps/sys/generate-glosses /tmp/glosses_full.sh
+          
+          echo "=== Extracting function from line 12824 ==="
+          # Extract just line 12824
+          sed -n '12824p' /tmp/glosses_full.sh > /tmp/function_12824.sh
+          
+          echo "Function content:"
+          cat /tmp/function_12824.sh
+          echo ""
+          
+          echo "=== Sourcing line 12824 function on Arch/Ubuntu ==="
+          . /tmp/function_12824.sh
+          
+          echo "SUCCESS! Line 12824 function sourced without crash on Arch/Ubuntu"
