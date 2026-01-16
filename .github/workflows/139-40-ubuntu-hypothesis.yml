@@ -39,12 +39,12 @@ jobs:
       - name: Patch wizardry scripts for hypothesis
         run: |
           python - <<'PY'
-from pathlib import Path
-path = Path('spells/.imps/sys/invoke-wizardry')
-text = path.read_text()
-text = text.replace('if [ "$_iw_needs_regen" -eq 1 ]; then', 'if true; then # force regen')
-path.write_text(text)
-PY
+          from pathlib import Path
+          path = Path('spells/.imps/sys/invoke-wizardry')
+          text = path.read_text()
+          text = text.replace('if [ "$_iw_needs_regen" -eq 1 ]; then', 'if true; then # force regen')
+          path.write_text(text)
+          PY
       - name: Run subshell banish repro
         run: |
           set +e
@@ -57,13 +57,10 @@ PY
             status=$?
           fi
           if [ "$status" -eq 139 ]; then
-            printf '%s
-' "subshell banish exited with code 139 (SIGSEGV)"
-            printf '%s
-' "Last 50 dmesg lines (if available):"
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
             dmesg | tail -n 50 || true
           elif [ "$status" -eq 124 ]; then
-            printf '%s
-' "subshell banish timed out after 120 seconds"
+            printf '%s\n' "subshell banish timed out after 120 seconds"
           fi
           exit "$status"
