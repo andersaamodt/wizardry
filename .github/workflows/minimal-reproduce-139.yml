@@ -922,3 +922,233 @@ jobs:
           echo "=== Full content of lines 12821-12827 ==="
           sed -n '12821,12827p' /tmp/glosses_full.sh
           echo "=== SUCCESS - Identification complete ==="
+
+  # New tests based on #112 crash (lines 12821-12824 confirmed problematic)
+  
+  # H9: NixOS - Test lines 12821-12822 (first half of the 4-line range)
+  test-116-nix-12821-12822:
+    name: "#116: NixOS - Lines 12821-12822 (first pair)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate and extract lines 12821-12822
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          awk -v start="12821" -v end="12822" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start >= start && func_start <= end) {
+                  printf "%s", func_lines
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_decile.sh
+          echo "Extracted lines 12821-12822:"
+          wc -l /tmp/glosses_decile.sh
+
+      - name: Test lines 12821-12822
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            . /tmp/glosses_decile.sh
+            echo 'SUCCESS! Lines 12821-12822 completed'
+          "
+
+  # H10: NixOS - Test lines 12823-12824 (second half of the 4-line range)
+  test-117-nix-12823-12824:
+    name: "#117: NixOS - Lines 12823-12824 (second pair)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate and extract lines 12823-12824
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          awk -v start="12823" -v end="12824" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start >= start && func_start <= end) {
+                  printf "%s", func_lines
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_decile.sh
+          echo "Extracted lines 12823-12824:"
+          wc -l /tmp/glosses_decile.sh
+
+      - name: Test lines 12823-12824
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            . /tmp/glosses_decile.sh
+            echo 'SUCCESS! Lines 12823-12824 completed'
+          "
+
+  # H11: NixOS - Test just line 12821 (single function test)
+  test-118-nix-12821-only:
+    name: "#118: NixOS - Line 12821 only (single line)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v24
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Generate and extract line 12821 only
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          awk -v target="12821" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              in_func = 1
+              func_start = NR
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                if (func_start == target) {
+                  printf "%s", func_lines
+                  exit
+                }
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_decile.sh
+          echo "Extracted line 12821 only:"
+          wc -l /tmp/glosses_decile.sh
+          echo "Function content:"
+          cat /tmp/glosses_decile.sh
+
+      - name: Test line 12821 only
+        run: |
+          WIZARDRY_DIR="${PWD}"
+          nix-shell -p bash --run "
+            export WIZARDRY_DIR='${WIZARDRY_DIR}'
+            . /tmp/glosses_decile.sh
+            echo 'SUCCESS! Line 12821 completed'
+          "
+
+  # H12: Arch/Ubuntu - Test with 150 functions (between 100 and all)
+  test-119-150-functions:
+    name: "#119: Arch/Ubuntu - 150 functions"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Generate and extract first 150 functions
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          total_funcs=$(grep -c '^[a-zA-Z_][a-zA-Z0-9_-]* *()' /tmp/glosses_full.sh)
+          echo "Total functions: $total_funcs"
+          # Extract first 150 complete functions
+          awk '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              if (func_count >= 150) exit
+              in_func = 1
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                printf "%s", func_lines
+                func_count++
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_150.sh
+          echo "150 functions extracted:"
+          wc -l /tmp/glosses_150.sh
+
+      - name: Source 150 functions
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Sourcing 150 functions..."
+          . /tmp/glosses_150.sh
+          echo "SUCCESS! 150 functions worked"
+
+  # H13: Arch/Ubuntu - Test with 200 functions (even larger)
+  test-120-200-functions:
+    name: "#120: Arch/Ubuntu - 200 functions"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Generate and extract first 200 functions
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          cd spells/.wizardry
+          ./generate-glosses > /tmp/glosses_full.sh
+          total_funcs=$(grep -c '^[a-zA-Z_][a-zA-Z0-9_-]* *()' /tmp/glosses_full.sh)
+          echo "Total functions: $total_funcs"
+          # Extract first 200 complete functions
+          awk '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              if (func_count >= 200) exit
+              in_func = 1
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                printf "%s", func_lines
+                func_count++
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_200.sh
+          echo "200 functions extracted:"
+          wc -l /tmp/glosses_200.sh
+
+      - name: Source 200 functions
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          echo "Sourcing 200 functions..."
+          . /tmp/glosses_200.sh
+          echo "SUCCESS! 200 functions worked"
