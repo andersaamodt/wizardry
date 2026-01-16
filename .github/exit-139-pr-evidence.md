@@ -4,6 +4,10 @@
 - PR #934 shows exit 139 on Ubuntu/macOS/NixOS logs with DEBUG banish output and segfaults; PR #933 shows exit code 127 but no 139. (Source: `./.github/read-test-failures 934` and `./.github/read-test-failures 933` on 2026-01-16)
 - Workflow-log scan scope for exit 139 to date: PRs 932–942 via `read-test-failures`. (Source: `./.github/read-test-failures 932`–`942` on 2026-01-16)
 
+## Recent hypothesis workflow results
+- Workflow 139-12 (banish direct path with glosses) completed successfully; no exit 139 observed. (Source: GitHub Actions run on 2026-01-16)
+- Workflow 139-13 (banish gloss function unset) completed successfully; no exit 139 observed. (Source: GitHub Actions run on 2026-01-16)
+
 ## PR #942
 - Ubuntu unit tests: `. spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose` exits with code 139. (Source: `./.github/read-test-failures 942` on 2026-01-16)
 - Arch Linux unit tests: `nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr --run ". spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose"` segfaults and exits 139. (Source: `./.github/read-test-failures 942` on 2026-01-16)

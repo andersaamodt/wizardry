@@ -1,7 +1,9 @@
-name: 139-12 Ubuntu banish direct repro
+name: 139-15 Ubuntu banish level 8 + test-magic repro
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,8 +13,8 @@ permissions:
   contents: read
 
 jobs:
-  ubuntu-banish-direct:
-    name: Ubuntu banish direct repro
+  ubuntu-banish-level8-test-magic:
+    name: Ubuntu banish level 8 + test-magic repro
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -34,23 +36,32 @@ jobs:
             echo 'kernel.apparmor_restrict_unprivileged_userns=0'
           } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
           sudo sysctl --system
-      - name: Run banish via command path (capture segfault)
+      - name: Run banish level 8 with test-magic (capture segfault)
         run: |
           set +e
           ulimit -c unlimited || true
           . spells/.imps/sys/invoke-wizardry
           if command -v timeout >/dev/null 2>&1; then
-            timeout 300 "$WIZARDRY_DIR/spells/wards/banish" 0 --only --no-tests --no-heal
+            timeout 300 banish 8
             status=$?
           else
-            "$WIZARDRY_DIR/spells/wards/banish" 0 --only --no-tests --no-heal
+            banish 8
             status=$?
           fi
+          if [ "$status" -eq 0 ]; then
+            if command -v timeout >/dev/null 2>&1; then
+              timeout 300 ./spells/.wizardry/test-magic --verbose
+              status=$?
+            else
+              ./spells/.wizardry/test-magic --verbose
+              status=$?
+            fi
+          fi
           if [ "$status" -eq 139 ]; then
-            printf '%s\n' "banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "test run exited with code 139 (SIGSEGV)"
             printf '%s\n' "Last 50 dmesg lines (if available):"
             dmesg | tail -n 50 || true
           elif [ "$status" -eq 124 ]; then
-            printf '%s\n' "banish timed out after 300 seconds"
+            printf '%s\n' "test run timed out after 300 seconds"
           fi
           exit "$status"

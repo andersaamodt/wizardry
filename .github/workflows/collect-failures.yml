@@ -69,8 +69,8 @@ jobs:
 
           # Workflows to monitor
           workflows=(
-            "139-12 Ubuntu banish direct repro"
-            "139-13 Ubuntu banish gloss unset repro"
+            "139-14 Ubuntu banish level 8 no-tests repro"
+            "139-15 Ubuntu banish level 8 + test-magic repro"
           )
           
           # Total number of workflows we're monitoring
