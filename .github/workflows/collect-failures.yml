@@ -33,7 +33,6 @@ permissions:
 
 jobs:
   collect-failures:
-    if: false  # Disabled for exit 139 debugging
     name: Collect workflow failures
     runs-on: ubuntu-latest
     timeout-minutes: 60  # Maximum 1 hour monitoring
@@ -68,6 +67,7 @@ jobs:
 
           # Workflows to monitor
           workflows=(
+            "Minimal Reproduction - Exit 139 on Arch/Ubuntu"
             "Unit tests"
             "POSIX, linting, and style checks"
             "Test standalone compiled spells"
