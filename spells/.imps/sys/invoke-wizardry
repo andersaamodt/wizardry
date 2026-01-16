@@ -210,7 +210,8 @@ if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
     # Regenerate cache if needed
     if [ "$_iw_needs_regen" -eq 1 ]; then
       [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Regenerating gloss cache..." >&2
-      if generate-glosses --quiet > "$_iw_gloss_persistent.tmp" 2>&1; then
+      # CRITICAL: Do NOT redirect stderr (2>&1) - keep diagnostic messages separate from glosses
+      if generate-glosses --quiet > "$_iw_gloss_persistent.tmp" 2>&2; then
         mv "$_iw_gloss_persistent.tmp" "$_iw_gloss_persistent"
       else
         # If generation fails, clean up and fall back to direct eval
@@ -225,7 +226,8 @@ if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
       [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Gloss functions loaded from cache" >&2
     else
       # Fallback to direct generation if cache unavailable
-      if _iw_gloss_output=$(generate-glosses --quiet 2>&1); then
+      # CRITICAL: Do NOT redirect stderr - keep diagnostic messages separate from glosses
+      if _iw_gloss_output=$(generate-glosses --quiet 2>&2); then
         if [ -n "$_iw_gloss_output" ]; then
           eval "$_iw_gloss_output"
           [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Gloss functions loaded (uncached)" >&2
