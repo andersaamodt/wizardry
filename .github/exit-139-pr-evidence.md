@@ -1,8 +1,8 @@
 # Exit 139 evidence from recent PRs
 
-## First confirmed appearance
+## First confirmed appearance (from workflow logs)
 - PR #934 shows exit 139 on Ubuntu/macOS/NixOS logs with DEBUG banish output and segfaults; PR #933 shows exit code 127 but no 139. (Source: `./.github/read-test-failures 934` and `./.github/read-test-failures 933` on 2026-01-16)
-- Scan of the most recent 150 PR bodies (PRs 795–944) for “exit 139”/“Segmentation fault” finds the first match in PR #934. (Source: GitHub API scan of PR bodies on 2026-01-16)
+- Workflow-log scan scope for exit 139 to date: PRs 932–942 via `read-test-failures`. (Source: `./.github/read-test-failures 932`–`942` on 2026-01-16)
 
 ## PR #942
 - Ubuntu unit tests: `. spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose` exits with code 139. (Source: `./.github/read-test-failures 942` on 2026-01-16)
