@@ -49,14 +49,14 @@ jobs:
 
             awk_script=$(mktemp /tmp/wizardry-gloss-split.XXXXXX)
             cat >"$awk_script" <<'AWK'
-BEGIN { idx=0; out="" }
-/^# First-word gloss/ {
-  idx++
-  out=sprintf("%s/block-%03d.sh", outdir, idx)
-  print "# block " idx > out
-}
-{ if (out != "") print >> out }
-END { printf "%d\n", idx > outdir "/count" }
+              BEGIN { idx=0; out="" }
+              /^# First-word gloss/ {
+                idx++
+                out=sprintf("%s/block-%03d.sh", outdir, idx)
+                print "# block " idx > out
+              }
+              { if (out != "") print >> out }
+              END { printf "%d\n", idx > outdir "/count" }
 AWK
             awk -v outdir="$gloss_dir" -f "$awk_script" "$gloss_file"
             rm -f "$awk_script"
