@@ -1454,13 +1454,13 @@ jobs:
           export WIZARDRY_DIR="${PWD}"
           
           # Create absolutely minimal test - just the problematic case pattern
-          cat > /tmp/minimal_repro.sh <<'ENDOFFILE'
-          case "test" in
-            *alias*)
-              echo "matched"
-              ;;
-          esac
-          ENDOFFILE
+          cat > /tmp/minimal_repro.sh <<'EOF'
+case "test" in
+  *alias*)
+    echo "matched"
+    ;;
+esac
+EOF
           
           echo "=== Test 1: Minimal case pattern alone ==="
           nix-shell -p bash --run '. /tmp/minimal_repro.sh && echo SUCCESS: Pattern alone works'
