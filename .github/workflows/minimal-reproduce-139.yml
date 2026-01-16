@@ -2036,3 +2036,155 @@ jobs:
             [ $code -eq 124 ] && echo "Wrapper: TIMEOUT" || echo "Wrapper: CRASH ($code)"
             exit $code
           }
+
+  # Test #151: Count file operations with strace
+  test-151-strace-count:
+    name: "#151: Strace count of file ops"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Count file operations
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          export PATH="${WIZARDRY_DIR}/spells/.wizardry:${PATH}"
+          
+          generate-glosses
+          GLOSS_FILE=$(ls /tmp/.wizardry-glosses-*.sh 2>/dev/null | head -1)
+          
+          echo "=== Running banish with strace to count file operations ==="
+          strace -e trace=open,openat,read,stat -c -o /tmp/strace.out bash -c ". \"$GLOSS_FILE\" && timeout 20 banish 4" 2>&1 || true
+          
+          echo ""
+          echo "=== Strace summary ==="
+          cat /tmp/strace.out || echo "No strace output"
+          
+          echo ""
+          echo "=== Counting grep-related opens ==="
+          strace -e trace=open,openat -o /tmp/strace-full.out bash -c ". \"$GLOSS_FILE\" && timeout 20 banish 4" 2>&1 || true
+          grep -c "spells/" /tmp/strace-full.out || echo "0 spell file accesses"
+
+  # Test #152: Mock grep to instant return
+  test-152-mock-grep:
+    name: "#152: Mock grep (instant)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Mock grep
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          export PATH="${WIZARDRY_DIR}/spells/.wizardry:${PATH}"
+          
+          # Create mock grep that returns instantly
+          mkdir -p /tmp/mock-bin
+          cat > /tmp/mock-bin/grep << 'EOF'
+          #!/bin/sh
+          exit 1  # Always return "not found"
+          EOF
+          chmod +x /tmp/mock-bin/grep
+          
+          # Put mock grep first in PATH
+          export PATH="/tmp/mock-bin:${PATH}"
+          
+          echo "=== Testing with mocked grep ==="
+          generate-glosses
+          GLOSS_FILE=$(ls /tmp/.wizardry-glosses-*.sh 2>/dev/null | head -1)
+          . "$GLOSS_FILE"
+          
+          echo "Calling banish with mocked grep..."
+          timeout 10 banish 4 && echo "SUCCESS with mocked grep!" || echo "Failed even with mock"
+
+  # Test #153: Simplified first-word gloss (no grep checks)
+  test-153-no-grep-gloss:
+    name: "#153: Simplified gloss (no grep)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Test simplified gloss
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          
+          # Create simplified banish gloss without grep checks
+          cat > /tmp/simplified-gloss.sh << 'EOF'
+          banish() {
+            # Simplified version - just call parse, no grep checks
+            parse "banish" "$@"
+          }
+          EOF
+          
+          echo "=== Testing simplified gloss without grep ==="
+          . /tmp/simplified-gloss.sh
+          . spells/.imps/sys/invoke-wizardry
+          
+          echo "Calling simplified banish..."
+          timeout 5 banish 4 && echo "SUCCESS! Fast execution without grep" || echo "Failed"
+
+  # Test #154: Add debug logging to count grep calls
+  test-154-debug-grep-count:
+    name: "#154: Debug log grep count"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Count grep calls
+        run: |
+          export WIZARDRY_DIR="${PWD}"
+          export PATH="${WIZARDRY_DIR}/spells/.wizardry:${PATH}"
+          
+          # Wrap grep to count calls
+          mkdir -p /tmp/debug-bin
+          cat > /tmp/debug-bin/grep << 'EOF'
+          #!/bin/sh
+          echo "GREP_CALL: $*" >> /tmp/grep-calls.log
+          /usr/bin/grep "$@"
+          EOF
+          chmod +x /tmp/debug-bin/grep
+          
+          export PATH="/tmp/debug-bin:${PATH}"
+          
+          echo "=== Generating glosses and calling banish ==="
+          generate-glosses
+          GLOSS_FILE=$(ls /tmp/.wizardry-glosses-*.sh 2>/dev/null | head -1)
+          . "$GLOSS_FILE"
+          
+          timeout 120 banish 4 2>&1 || true
+          
+          echo ""
+          echo "=== Grep call count ==="
+          wc -l /tmp/grep-calls.log 2>/dev/null || echo "0 grep calls"
+          
+          echo ""
+          echo "=== First 20 grep calls ==="
+          head -20 /tmp/grep-calls.log 2>/dev/null || echo "No grep calls logged"
+
+  # Test #155: Empty spell directory (no files to grep)
+  test-155-empty-spell-dir:
+    name: "#155: Empty WIZARDRY_DIR"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Test with empty dir
+        run: |
+          # Create empty wizardry structure
+          mkdir -p /tmp/empty-wiz/spells/test
+          export WIZARDRY_DIR="/tmp/empty-wiz"
+          export PATH="${PWD}/spells/.wizardry:${PATH}"
+          
+          echo "=== Generating glosses with actual spell dir ==="
+          WIZARDRY_DIR="${PWD}" generate-glosses
+          GLOSS_FILE=$(ls /tmp/.wizardry-glosses-*.sh 2>/dev/null | head -1)
+          
+          echo "=== Sourcing glosses ==="
+          . "$GLOSS_FILE"
+          
+          echo "=== Calling banish with empty WIZARDRY_DIR ==="
+          echo "WIZARDRY_DIR is now: $WIZARDRY_DIR"
+          timeout 5 banish 4 2>&1 && echo "SUCCESS! Fast with no files" || echo "Still hangs even with empty dir"
