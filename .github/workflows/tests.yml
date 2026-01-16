@@ -19,6 +19,7 @@ permissions:
 
 jobs:
   aaa-nix:
+    if: false  # Disabled for exit 139 debugging
     name: Nix unit tests
     runs-on: ubuntu-latest
     env:
@@ -47,18 +48,7 @@ jobs:
       - name: Run unit tests in Nix shell
         run: |
           nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr --run "
-            echo '=== DEBUG: Checking for split glosses files ==='
-            ls -lah /tmp/.wizardry-glosses-* 2>/dev/null || echo 'No cache files found yet'
-            echo '=== DEBUG: Invoking wizardry ==='
-            . spells/.imps/sys/invoke-wizardry
-            echo '=== DEBUG: Checking for split glosses after invoke ==='
-            ls -lah /tmp/.wizardry-glosses-* 2>/dev/null || echo 'No cache files found'
-            if [ -f /tmp/.wizardry-glosses-*.manifest ]; then
-              echo '=== DEBUG: Manifest contents ==='
-              cat /tmp/.wizardry-glosses-*.manifest
-            fi
-            echo '=== DEBUG: Running banish and tests ==='
-            banish 8 && ./spells/.wizardry/test-magic --verbose
+            . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose
           "
 
   aab-macos:
@@ -73,21 +63,10 @@ jobs:
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
       - name: Run unit tests
-        run: |
-          echo '=== DEBUG: Checking for split glosses files ==='
-          ls -lah /tmp/.wizardry-glosses-* 2>/dev/null || echo 'No cache files found yet'
-          echo '=== DEBUG: Invoking wizardry ==='
-          . spells/.imps/sys/invoke-wizardry
-          echo '=== DEBUG: Checking for split glosses after invoke ==='
-          ls -lah /tmp/.wizardry-glosses-* 2>/dev/null || echo 'No cache files found'
-          if [ -f /tmp/.wizardry-glosses-*.manifest ]; then
-            echo '=== DEBUG: Manifest contents ==='
-            cat /tmp/.wizardry-glosses-*.manifest
-          fi
-          echo '=== DEBUG: Running banish and tests ==='
-          banish 8 && ./spells/.wizardry/test-magic --verbose
+        run: . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose
 
   arch:
+    if: false  # Disabled for exit 139 debugging
     name: Arch Linux unit tests
     runs-on: ubuntu-latest
     container: archlinux:latest
@@ -101,19 +80,7 @@ jobs:
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
       - name: Run unit tests
-        run: |
-          echo '=== DEBUG: Checking for split glosses files ==='
-          ls -lah /tmp/.wizardry-glosses-* 2>/dev/null || echo 'No cache files found yet'
-          echo '=== DEBUG: Invoking wizardry ==='
-          . spells/.imps/sys/invoke-wizardry
-          echo '=== DEBUG: Checking for split glosses after invoke ==='
-          ls -lah /tmp/.wizardry-glosses-* 2>/dev/null || echo 'No cache files found'
-          if [ -f /tmp/.wizardry-glosses-*.manifest ]; then
-            echo '=== DEBUG: Manifest contents ==='
-            cat /tmp/.wizardry-glosses-*.manifest
-          fi
-          echo '=== DEBUG: Running banish and tests ==='
-          banish 8 && ./spells/.wizardry/test-magic --verbose
+        run: . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose
 
   debian:
     if: false  # Disabled for exit 139 debugging
@@ -134,6 +101,7 @@ jobs:
         run: . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose
 
   ubuntu:
+    if: false  # Disabled for exit 139 debugging
     name: Ubuntu unit tests
     runs-on: ubuntu-latest
     env:

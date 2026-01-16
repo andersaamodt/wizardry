@@ -105,65 +105,17 @@ set -eu
   fi
   
   # Setup output
-  # NEW: Support for split output to avoid NixOS bash parser bug (exit 139 at ~12K lines)
-  # When output_file is provided, we generate multiple split files instead of one large file
-  # This keeps each file under 5000 lines to avoid triggering the parser state bug
-  # CRITICAL: We must split at function boundaries, not mid-function, to avoid syntax errors
-  _split_mode=0
-  _split_max_lines=5000
-  _split_current_file=""
-  _split_file_index=0
-  _split_line_count=0
-  _split_base_file=""
-  _split_buffer=""
-  _split_buffer_lines=0
-  
   if [ -n "$output_file" ]; then
-    _split_mode=1
-    _split_base_file="$output_file"
-    _split_current_file="${output_file}.part.0"
-    # Clear first split file
-    : > "$_split_current_file"
-    
-    # Helper function to buffer output (used within function generation)
+    # Clear output file
+    : > "$output_file"
+    # Helper function to append to file
     emit_line() {
-      _split_buffer="${_split_buffer}${*}
-"
-      _split_buffer_lines=$((_split_buffer_lines + 1))
-    }
-    
-    # Helper function to flush buffer to current file and rotate if needed
-    # Called AFTER each complete function to ensure functions don't get split
-    flush_function() {
-      # Check if adding buffered lines would exceed limit - if so, rotate BEFORE flushing
-      if [ "$_split_line_count" -gt 0 ] && \
-         [ $((_split_line_count + _split_buffer_lines)) -gt "$_split_max_lines" ]; then
-        _split_file_index=$((_split_file_index + 1))
-        _split_current_file="${_split_base_file}.part.${_split_file_index}"
-        : > "$_split_current_file"
-        _split_line_count=0
-        [ "$quiet" -eq 0 ] && printf 'generate-glosses: Rotating to split file %d\n' "$_split_file_index" >&2
-      fi
-      
-      # Flush buffer to current file
-      if [ -n "$_split_buffer" ]; then
-        printf '%s' "$_split_buffer" >> "$_split_current_file"
-        _split_line_count=$((_split_line_count + _split_buffer_lines))
-      fi
-      
-      # Clear buffer
-      _split_buffer=""
-      _split_buffer_lines=0
+      printf '%s\n' "$*" >> "$output_file"
     }
   else
-    # Helper function to output to stdout (no splitting for stdout)
+    # Helper function to output to stdout
     emit_line() {
       printf '%s\n' "$*"
-    }
-    
-    # No-op flush for stdout mode
-    flush_function() {
-      :
     }
   fi
   
@@ -469,7 +421,6 @@ uname|uniq|wc|xargs)
       
       # Emit first-word gloss function using helper
       emit_first_word_gloss "$_first_word"
-      flush_function  # Flush after each complete function to avoid splitting mid-function
       
       total_first_word_glosses=$((total_first_word_glosses + 1))
     done
@@ -773,7 +724,6 @@ uname|uniq|wc|xargs)
       
       # Emit first-word gloss function using helper
       emit_first_word_gloss "$_first_word"
-      flush_function  # Flush after each complete function to avoid splitting mid-function
       
       total_first_word_glosses=$((total_first_word_glosses + 1))
     done
@@ -782,29 +732,11 @@ uname|uniq|wc|xargs)
   # COMPLETION
   # ============================================================================
   
-  # Flush any remaining buffered content
-  flush_function
-  
   # Report statistics to stderr
   if [ "$quiet" -eq 0 ]; then
     printf 'generate-glosses: Gloss generation complete\n' >&2
     printf 'generate-glosses:   First-word glosses: %d\n' "$total_first_word_glosses" >&2
     printf 'generate-glosses:   Total spells/imps: %d\n' "$_spell_count" >&2
-    if [ "$_split_mode" -eq 1 ]; then
-      printf 'generate-glosses:   Split files: %d (avoiding NixOS bash parser bug)\n' "$((_split_file_index + 1))" >&2
-    fi
-  fi
-  
-  # If in split mode, create a manifest file listing all parts
-  if [ "$_split_mode" -eq 1 ]; then
-    _split_manifest="${_split_base_file}.manifest"
-    : > "$_split_manifest"
-    _idx=0
-    while [ $_idx -le $_split_file_index ]; do
-      printf '%s\n' "${_split_base_file}.part.${_idx}" >> "$_split_manifest"
-      _idx=$((_idx + 1))
-    done
-    [ "$quiet" -eq 0 ] && printf 'generate-glosses:   Manifest: %s\n' "$_split_manifest" >&2
   fi
   
   exit 0
