@@ -44,6 +44,7 @@
 - Ubuntu unit tests: repeated DEBUG banish loop logs followed by exit code 139. (Source: `./.github/read-test-failures 934` on 2026-01-16)
 - macOS unit tests: repeated DEBUG banish loop logs followed by exit code 139. (Source: `./.github/read-test-failures 934` on 2026-01-16)
 - Nix unit tests: `nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr --run ". spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose"` segfaults and exits 139. (Source: `./.github/read-test-failures 934` on 2026-01-16)
+- PR #934 introduced major gloss/parse changes (centralized `invoke_spell_helper` in generate-glosses, changes to gloss function invocation, parse recursion fixes, and banish level reshuffles). These changes align with the first appearance of exit 139 in CI. (Source: PR #934 API file list on 2026-01-16)
 
 ## PR #933
 - Ubuntu/Arch/macOS/NixOS unit tests fail with exit code 127 and parse errors (no exit 139). (Source: `./.github/read-test-failures 933` on 2026-01-16)
