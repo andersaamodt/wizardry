@@ -69,26 +69,9 @@ jobs:
 
           # Workflows to monitor
           workflows=(
-            "139-38 Ubuntu disable gloss loading block"
-            "139-39 Ubuntu disable gloss cache regen"
-            "139-40 Ubuntu force gloss cache regen"
-            "139-41 Ubuntu disable gloss cache source"
-            "139-42 Ubuntu disable uncached gloss eval"
-            "139-43 Ubuntu clear gloss cache path"
-            "139-44 Ubuntu parse without exec spell path"
-            "139-45 Ubuntu parse numeric args as words"
-            "139-46 Ubuntu disable parse recursion guard"
-            "139-47 Ubuntu disable parse synonyms fallback"
-            "139-48 Ubuntu disable parse system fallback"
-            "139-49 Ubuntu disable invoke recursion guard"
-            "139-50 Ubuntu disable gloss find invalidation"
-            "139-51 Ubuntu disable gloss synonym invalidation"
-            "139-52 Ubuntu disable generate-glosses command check"
-            "139-53 Ubuntu disable spellbook PATH add"
-            "139-54 Ubuntu disable spellbook subdir PATH add"
-            "139-55 Ubuntu disable spell category PATH add"
-            "139-56 Ubuntu disable interactive gloss gate"
-            "139-57 Ubuntu force gloss caching off"
+            "139-61 Ubuntu glosses off via env"
+            "139-62 Ubuntu manual gloss eval"
+            "139-63 Ubuntu glosses with runner temp"
           )
           
           # Total number of workflows we're monitoring
