@@ -67,7 +67,7 @@ jobs:
 
           # Workflows to monitor
           workflows=(
-            "Minimal Reproduction - Exit 139 on Arch/Ubuntu"
+            "Unit tests"
           )
           
           # Total number of workflows we're monitoring
