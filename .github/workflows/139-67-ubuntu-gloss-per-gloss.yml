@@ -47,16 +47,19 @@ jobs:
             gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
             generate-glosses --output "$gloss_file"
 
-            awk -v outdir="$gloss_dir" -f - "$gloss_file" <<'AWK'
-BEGIN { idx=0; out="" }
-/^# First-word gloss/ {
-  idx++
-  out=sprintf("%s/block-%03d.sh", outdir, idx)
-  print "# block " idx > out
-}
-{ if (out != "") print >> out }
-END { printf "%d\n", idx > outdir "/count" }
-AWK
+            awk_script=$(mktemp /tmp/wizardry-gloss-split.XXXXXX)
+            printf '%s\n' \
+              'BEGIN { idx=0; out="" }' \
+              '/^# First-word gloss/ {' \
+              '  idx++' \
+              '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+              '  print "# block " idx > out' \
+              '}' \
+              '{ if (out != "") print >> out }' \
+              'END { printf "%d\\n", idx > outdir "/count" }' \
+              >"$awk_script"
+            awk -v outdir="$gloss_dir" -f "$awk_script" "$gloss_file"
+            rm -f "$awk_script"
 
             total=$(cat "$gloss_dir/count")
             printf "%s\n" "[gloss-test] total gloss blocks: $total"
