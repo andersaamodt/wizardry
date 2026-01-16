@@ -613,23 +613,38 @@ jobs:
   # CRITICAL: #104 crashed - glosses WITHOUT invoke-wizardry crash!
   # This means the bug is in glosses themselves, NOT invoke-wizardry
 
-  # H1: Test with minimal glosses (just a few functions)
+  # H1: Test with minimal glosses (just first 5 complete functions)
   test-108-minimal-glosses:
-    name: "#108: Minimal glosses (first 100 lines only)"
+    name: "#108: Minimal glosses (first 5 functions)"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Generate and truncate glosses
+      - name: Generate and extract first 5 functions
         run: |
           export WIZARDRY_DIR="${PWD}"
           cd spells/.wizardry
           ./generate-glosses > /tmp/glosses_full.sh
           echo "Full glosses lines:"
           wc -l /tmp/glosses_full.sh
-          # Take only first 100 lines (a few functions)
-          head -100 /tmp/glosses_full.sh > /tmp/glosses_minimal.sh
+          # Extract first 5 complete functions
+          awk '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              if (func_count >= 5) exit
+              in_func = 1
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                printf "%s", func_lines
+                func_count++
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_minimal.sh
           echo "Minimal glosses lines:"
           wc -l /tmp/glosses_minimal.sh
 
@@ -640,22 +655,37 @@ jobs:
           . /tmp/glosses_minimal.sh
           echo "SUCCESS! Minimal glosses worked"
 
-  # H2: Test with medium-sized glosses (first 1000 lines)
+  # H2: Test with medium-sized glosses (first 50 functions)
   test-109-medium-glosses:
-    name: "#109: Medium glosses (first 1000 lines)"
+    name: "#109: Medium glosses (first 50 functions)"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Generate and truncate glosses
+      - name: Generate and extract first 50 functions
         run: |
           export WIZARDRY_DIR="${PWD}"
           cd spells/.wizardry
           ./generate-glosses > /tmp/glosses_full.sh
           wc -l /tmp/glosses_full.sh
-          # Take first 1000 lines
-          head -1000 /tmp/glosses_full.sh > /tmp/glosses_medium.sh
+          # Extract first 50 complete functions
+          awk '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              if (func_count >= 50) exit
+              in_func = 1
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                printf "%s", func_lines
+                func_count++
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_medium.sh
           echo "Medium glosses lines:"
           wc -l /tmp/glosses_medium.sh
 
@@ -666,22 +696,37 @@ jobs:
           . /tmp/glosses_medium.sh
           echo "SUCCESS! Medium glosses worked"
 
-  # H3: Test with large glosses (first 5000 lines)
+  # H3: Test with large glosses (first 100 functions)
   test-110-large-glosses:
-    name: "#110: Large glosses (first 5000 lines)"
+    name: "#110: Large glosses (first 100 functions)"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Generate and truncate glosses
+      - name: Generate and extract first 100 functions
         run: |
           export WIZARDRY_DIR="${PWD}"
           cd spells/.wizardry
           ./generate-glosses > /tmp/glosses_full.sh
           wc -l /tmp/glosses_full.sh
-          # Take first 5000 lines
-          head -5000 /tmp/glosses_full.sh > /tmp/glosses_large.sh
+          # Extract first 100 complete functions
+          awk '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              if (func_count >= 100) exit
+              in_func = 1
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                printf "%s", func_lines
+                func_count++
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_large.sh
           echo "Large glosses lines:"
           wc -l /tmp/glosses_large.sh
 
@@ -692,23 +737,41 @@ jobs:
           . /tmp/glosses_large.sh
           echo "SUCCESS! Large glosses worked"
 
-  # H4: Test with glosses minus last 100 lines (see if it's at the end)
+  # H4: Test with glosses minus last 10 functions (see if it's at the end)
   test-111-glosses-minus-tail:
-    name: "#111: Glosses without last 100 lines"
+    name: "#111: Glosses without last 10 functions"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Generate and truncate glosses
+      - name: Generate and remove last 10 functions
         run: |
           export WIZARDRY_DIR="${PWD}"
           cd spells/.wizardry
           ./generate-glosses > /tmp/glosses_full.sh
-          total_lines=$(wc -l < /tmp/glosses_full.sh)
-          echo "Total lines: $total_lines"
-          # Remove last 100 lines
-          head -$((total_lines - 100)) /tmp/glosses_full.sh > /tmp/glosses_no_tail.sh
+          # Count total functions
+          total_funcs=$(grep -c '^[a-zA-Z_][a-zA-Z0-9_-]* *()' /tmp/glosses_full.sh)
+          echo "Total functions: $total_funcs"
+          target_funcs=$((total_funcs - 10))
+          echo "Extracting first $target_funcs functions"
+          # Extract all but last 10 functions
+          awk -v max="$target_funcs" '
+            /^[a-zA-Z_][a-zA-Z0-9_-]* *\(\)/ {
+              if (func_count >= max) exit
+              in_func = 1
+              func_lines = $0 "\n"
+              next
+            }
+            in_func {
+              func_lines = func_lines $0 "\n"
+              if (/^}$/) {
+                printf "%s", func_lines
+                func_count++
+                in_func = 0
+              }
+            }
+          ' /tmp/glosses_full.sh > /tmp/glosses_no_tail.sh
           echo "Without tail lines:"
           wc -l /tmp/glosses_no_tail.sh
 
