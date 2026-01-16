@@ -109,6 +109,26 @@ jobs:
             local cleaned_log="/tmp/cleaned_$$.txt"
             sed '/Process \(exited\|completed\)/q' "$logfile" > "$cleaned_log"
 
+            # SPECIAL HANDLING FOR EXIT 139 - show extensive context
+            if grep -q "exit code 139" "$cleaned_log"; then
+              echo "=== EXIT 139 CRASH DETECTED ==="
+              echo ""
+              echo "Last 300 lines before crash:"
+              echo ""
+              tail -300 "$cleaned_log"
+              echo ""
+              echo "=== Searching for invoke-wizardry output ==="
+              grep -B 20 -A 5 "invoke-wizardry" "$cleaned_log" | tail -50 || echo "(no invoke-wizardry output found)"
+              echo ""
+              echo "=== Searching for generate-glosses output ==="
+              grep -B 5 -A 10 "generate-glosses" "$cleaned_log" | tail -50 || echo "(no generate-glosses output found)"
+              echo ""
+              echo "=== Searching for banish output ==="
+              grep -B 5 -A 10 "banish" "$cleaned_log" | tail -50 || echo "(no banish output found)"
+              rm -f "$cleaned_log"
+              return
+            fi
+
             # Check for early failure (workflow failed before tests ran)
             # Look for actual error indicators, not test messages that mention errors
             # Skip this check if we see test output (PASS/FAIL lines with timestamps)
