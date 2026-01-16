@@ -19,15 +19,6 @@ esac
 set -eu
 . env-clear
 
-# Prefer preloaded imp functions (underscore form) when available.
-await_keypress_temp_file() {
-    if command -v temp-file >/dev/null 2>&1; then
-        temp-file "$@"
-    else
-        temp-file "$@"
-    fi
-}
-
 # Resolve require-command location
 # Use command -v to find require-command when preloaded as a function
 if [ -n "${REQUIRE_COMMAND-}" ]; then
@@ -53,6 +44,27 @@ else
     fi
     [ "${WIZARDRY_DEBUG_AWAIT:-0}" = "1" ] && printf '[await-keypress] Fallback require_cmd=%s\n' "$require_cmd" >&2
 fi
+
+# Prefer preloaded imp functions (underscore form) when available.
+await_keypress_temp_file() {
+    if command -v temp-file >/dev/null 2>&1; then
+        temp-file "$@"
+        return 0
+    fi
+
+    if ! "$require_cmd" mktemp "The await-keypress spell needs 'mktemp' to create temp files."; then
+        return 1
+    fi
+
+    prefix=${1:-wizardry}
+    if [ -n "${WIZARDRY_TMPDIR-}" ] && [ -d "$WIZARDRY_TMPDIR" ]; then
+        mktemp "${WIZARDRY_TMPDIR}/${prefix}.XXXXXX"
+    elif [ -n "${TMPDIR-}" ] && [ -d "$TMPDIR" ]; then
+        mktemp "${TMPDIR}/${prefix}.XXXXXX"
+    else
+        mktemp "/tmp/${prefix}.XXXXXX"
+    fi
+}
 
 # Capture raw bytes with dd; bail out immediately when it is missing.
 if ! "$require_cmd" dd "The await-keypress spell needs 'dd' to capture raw key presses."; then
