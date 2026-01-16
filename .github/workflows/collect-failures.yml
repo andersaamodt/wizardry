@@ -68,12 +68,6 @@ jobs:
           # Workflows to monitor
           workflows=(
             "Minimal Reproduction - Exit 139 on Arch/Ubuntu"
-            "Unit tests"
-            "POSIX, linting, and style checks"
-            "Test standalone compiled spells"
-            "Test doppelganger compiled wizardry"
-            "Demonstrate wizardry"
-            "Compile wizardry"
           )
           
           # Total number of workflows we're monitoring

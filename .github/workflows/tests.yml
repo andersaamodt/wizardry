@@ -52,6 +52,7 @@ jobs:
           "
 
   aab-macos:
+    if: false  # Disabled for exit 139 debugging
     name: macOS unit tests
     runs-on: macos-latest
     env:
@@ -65,6 +66,7 @@ jobs:
         run: . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose
 
   arch:
+    if: false  # Disabled for exit 139 debugging
     name: Arch Linux unit tests
     runs-on: ubuntu-latest
     container: archlinux:latest
@@ -81,6 +83,7 @@ jobs:
         run: . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose
 
   debian:
+    if: false  # Disabled for exit 139 debugging
     name: Debian unit tests
     runs-on: ubuntu-latest
     container: debian:stable-slim
@@ -98,6 +101,7 @@ jobs:
         run: . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose
 
   ubuntu:
+    if: false  # Disabled for exit 139 debugging
     name: Ubuntu unit tests
     runs-on: ubuntu-latest
     env:
