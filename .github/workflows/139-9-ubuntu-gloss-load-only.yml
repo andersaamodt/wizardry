@@ -1,9 +1,7 @@
 name: 139-9 Ubuntu gloss load only repro
 
 on:
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

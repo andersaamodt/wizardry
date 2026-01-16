@@ -69,8 +69,8 @@ jobs:
 
           # Workflows to monitor
           workflows=(
-            "139-8 Ubuntu gloss regen repro"
-            "139-9 Ubuntu gloss load only repro"
+            "139-10 Ubuntu gloss unset repro"
+            "139-11 Ubuntu manual gloss repro"
           )
           
           # Total number of workflows we're monitoring

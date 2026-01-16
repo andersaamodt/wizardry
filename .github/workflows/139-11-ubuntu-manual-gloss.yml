@@ -1,7 +1,9 @@
-name: 139-8 Ubuntu gloss regen repro
+name: 139-11 Ubuntu manual gloss repro
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,12 +13,12 @@ permissions:
   contents: read
 
 jobs:
-  ubuntu-gloss-regen:
-    name: Ubuntu gloss regen repro
+  ubuntu-manual-gloss:
+    name: Ubuntu manual gloss repro
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
-      WIZARDRY_GLOSSES: "1"
+      WIZARDRY_GLOSSES: "0"
       WIZARDRY_DEBUG: "1"
     steps:
       - name: Checkout
@@ -34,34 +36,34 @@ jobs:
             echo 'kernel.apparmor_restrict_unprivileged_userns=0'
           } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
           sudo sysctl --system
-      - name: Remove gloss cache
-        run: |
-          cache_dir="${TMPDIR:-/tmp}"
-          cache_key=$(printf '%s' "$PWD" | cksum | cut -d' ' -f1)
-          cache_file="${cache_dir}/.wizardry-glosses-${cache_key}-$(id -u).sh"
-          printf '%s\n' "Removing gloss cache at ${cache_file}"
-          rm -f "$cache_file"
-      - name: Run banish 0 with gloss regen (capture segfault)
+      - name: Manually generate and source glosses
         run: |
           set +e
           ulimit -c unlimited || true
           . spells/.imps/sys/invoke-wizardry
-          cache_dir="${TMPDIR:-/tmp}"
-          cache_key=$(printf '%s' "$PWD" | cksum | cut -d' ' -f1)
-          cache_file="${cache_dir}/.wizardry-glosses-${cache_key}-$(id -u).sh"
-          if [ -f "$cache_file" ]; then
-            printf '%s\n' "Gloss cache checksum:"
-            cksum "$cache_file"
-            printf '%s\n' "Gloss cache preview:"
-            head -n 40 "$cache_file"
+          gloss_file=$(mktemp "${TMPDIR:-/tmp}/wizardry-glosses.XXXXXX") || exit 1
+          if generate-glosses --quiet --output "$gloss_file"; then
+            printf '%s\n' "Manual gloss checksum:"
+            cksum "$gloss_file"
+            printf '%s\n' "Manual gloss preview:"
+            head -n 40 "$gloss_file"
+            . "$gloss_file"
           else
-            printf '%s\n' "Gloss cache not found after invoke-wizardry"
+            printf '%s\n' "generate-glosses failed"
           fi
-          banish 0 --only --no-tests --no-heal
-          status=$?
+          if command -v timeout >/dev/null 2>&1; then
+            timeout 300 banish 0 --only --no-tests --no-heal
+            status=$?
+          else
+            banish 0 --only --no-tests --no-heal
+            status=$?
+          fi
+          rm -f "$gloss_file"
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "banish exited with code 139 (SIGSEGV)"
             printf '%s\n' "Last 50 dmesg lines (if available):"
             dmesg | tail -n 50 || true
+          elif [ "$status" -eq 124 ]; then
+            printf '%s\n' "banish timed out after 300 seconds"
           fi
           exit "$status"
