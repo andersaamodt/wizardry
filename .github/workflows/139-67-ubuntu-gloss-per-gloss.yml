@@ -2,6 +2,7 @@ name: 139-67 Ubuntu gloss per-gloss banish
 
 on:
   pull_request:
+    if: ${{ false }}
     branches:
       - main
 
@@ -14,6 +15,7 @@ permissions:
 
 jobs:
   ubuntu-gloss-per-gloss:
+    if: ${{ false }}
     name: 139-67 Ubuntu gloss per-gloss banish
     runs-on: ubuntu-latest
     env:

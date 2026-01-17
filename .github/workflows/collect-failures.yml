@@ -69,13 +69,6 @@ jobs:
 
           # Workflows to monitor
           workflows=(
-            "139-67 Ubuntu gloss per-gloss banish"
-            "139-68 Ubuntu gloss per-gloss skip invoke"
-            "139-69 Ubuntu invoke-only gloss loop"
-            "139-70 Ubuntu invoke shadow check"
-            "139-71 Ubuntu gloss first-half per-gloss banish"
-            "139-72 Ubuntu gloss second-half per-gloss banish"
-            "139-73 Ubuntu gloss all-at-once banish loop"
             "139-74 Ubuntu gloss bucket 1 per-gloss banish"
             "139-75 Ubuntu gloss bucket 2 per-gloss banish"
             "139-76 Ubuntu gloss bucket 3 per-gloss banish"

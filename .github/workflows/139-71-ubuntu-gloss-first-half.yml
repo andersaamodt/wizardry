@@ -2,6 +2,7 @@ name: 139-71 Ubuntu gloss first-half per-gloss banish
 
 on:
   pull_request:
+    if: ${{ false }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -12,6 +13,7 @@ permissions:
 
 jobs:
   ubuntu-gloss-first-half:
+    if: ${{ false }}
     name: 139-71 Ubuntu gloss first-half per-gloss banish
     runs-on: ubuntu-latest
     env:

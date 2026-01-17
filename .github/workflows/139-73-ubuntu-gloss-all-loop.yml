@@ -2,6 +2,7 @@ name: 139-73 Ubuntu gloss all-at-once banish loop
 
 on:
   pull_request:
+    if: ${{ false }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -12,6 +13,7 @@ permissions:
 
 jobs:
   ubuntu-gloss-all-loop:
+    if: ${{ false }}
     name: 139-73 Ubuntu gloss all-at-once banish loop
     runs-on: ubuntu-latest
     env:

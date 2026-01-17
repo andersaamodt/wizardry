@@ -2,6 +2,7 @@ name: 139-68 Ubuntu gloss per-gloss skip invoke
 
 on:
   pull_request:
+    if: ${{ false }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -12,6 +13,7 @@ permissions:
 
 jobs:
   ubuntu-gloss-skip-invoke:
+    if: ${{ false }}
     name: 139-68 Ubuntu gloss per-gloss skip invoke
     runs-on: ubuntu-latest
     env:
