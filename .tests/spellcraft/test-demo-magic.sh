@@ -20,7 +20,7 @@ test_level_0() {
   assert_success || return 1
   assert_output_contains "Level 0: POSIX & Platform Foundation" || return 1
   assert_output_contains "The wizard examines the foundation" || return 1
-  assert_output_contains "The wizard casts divine-posix" || return 1
+  assert_output_contains "The wizard casts detect-posix" || return 1
   assert_output_contains "Wizardry stands ready" || return 1
 }
 

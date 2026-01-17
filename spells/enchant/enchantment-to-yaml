@@ -57,7 +57,16 @@ cat "$file" >>"$tmp" || exit 1
 mv "$tmp" "$file"
 
 # Clear attributes from file - check if we have tools available
-if ! (attribute-tool-check xattr || attribute-tool-check attr || attribute-tool-check setfattr); then
+has_attr_tool=0
+if attribute-tool-check xattr; then
+  has_attr_tool=1
+elif attribute-tool-check attr; then
+  has_attr_tool=1
+elif attribute-tool-check setfattr; then
+  has_attr_tool=1
+fi
+
+if [ "$has_attr_tool" -eq 0 ]; then
   printf '%s\n' "Error: requires one of attr, xattr, or setfattr to clear attributes" >&2
   exit 1
 fi

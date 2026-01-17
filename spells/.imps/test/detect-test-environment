@@ -17,44 +17,34 @@ printf '=== Test Environment Facts ===\n'
 # Phase 1: Platform Detection
 # ============================================================================
 
-detect_os() {
-  case "$(uname -s)" in
-    Linux*) printf 'linux' ;;
-    Darwin*) printf 'macos' ;;
-    *BSD) printf 'bsd' ;;
+TEST_ENV_OS=$(case "$(uname -s)" in
+  Linux*) printf 'linux' ;;
+  Darwin*) printf 'macos' ;;
+  *BSD) printf 'bsd' ;;
+  *) printf 'unknown' ;;
+esac)
+
+TEST_ENV_DISTRO=$(if [ -f /etc/os-release ]; then
+  # shellcheck disable=SC1091
+  . /etc/os-release
+  case "${ID-}" in
+    debian) printf 'debian' ;;
+    ubuntu) printf 'ubuntu' ;;
+    arch) printf 'arch' ;;
+    nixos) printf 'nixos' ;;
+    alpine) printf 'alpine' ;;
     *) printf 'unknown' ;;
   esac
-}
+else
+  printf 'unknown'
+fi)
 
-detect_distro() {
-  if [ -f /etc/os-release ]; then
-    # shellcheck disable=SC1091
-    . /etc/os-release
-    case "${ID-}" in
-      debian) printf 'debian' ;;
-      ubuntu) printf 'ubuntu' ;;
-      arch) printf 'arch' ;;
-      nixos) printf 'nixos' ;;
-      alpine) printf 'alpine' ;;
-      *) printf 'unknown' ;;
-    esac
-  else
-    printf 'unknown'
-  fi
-}
-
-detect_arch() {
-  case "$(uname -m)" in
-    x86_64|amd64) printf 'x86_64' ;;
-    aarch64|arm64) printf 'arm64' ;;
-    i?86) printf 'i386' ;;
-    *) printf 'unknown' ;;
-  esac
-}
-
-TEST_ENV_OS=$(detect_os)
-TEST_ENV_DISTRO=$(detect_distro)
-TEST_ENV_ARCH=$(detect_arch)
+TEST_ENV_ARCH=$(case "$(uname -m)" in
+  x86_64|amd64) printf 'x86_64' ;;
+  aarch64|arm64) printf 'arm64' ;;
+  i?86) printf 'i386' ;;
+  *) printf 'unknown' ;;
+esac)
 
 printf 'Platform: %s/%s/%s\n' "$TEST_ENV_OS" "$TEST_ENV_DISTRO" "$TEST_ENV_ARCH"
 
@@ -77,12 +67,8 @@ fi
 # Phase 3: Tool Capabilities
 # ============================================================================
 
-has_command() {
-  command -v "$1" >/dev/null 2>&1
-}
-
 # xattr tools
-if has_command attr; then
+if command -v attr >/dev/null 2>&1; then
   TEST_ENV_HAS_XATTR_ATTR=1
   xattr_attr="yes"
 else
@@ -90,7 +76,7 @@ else
   xattr_attr="no"
 fi
 
-if has_command xattr; then
+if command -v xattr >/dev/null 2>&1; then
   TEST_ENV_HAS_XATTR_NATIVE=1
   xattr_native="yes"
 else
@@ -98,7 +84,7 @@ else
   xattr_native="no"
 fi
 
-if has_command setfattr && has_command getfattr; then
+if command -v setfattr >/dev/null 2>&1 && command -v getfattr >/dev/null 2>&1; then
   TEST_ENV_HAS_XATTR_SETFATTR=1
   xattr_setfattr="yes"
 else
@@ -110,7 +96,7 @@ printf 'xattr: attr=%s xattr-native=%s setfattr=%s\n' \
   "$xattr_attr" "$xattr_native" "$xattr_setfattr"
 
 # Core utilities
-if has_command realpath; then
+if command -v realpath >/dev/null 2>&1; then
   TEST_ENV_HAS_REALPATH=1
   has_realpath="yes"
 else
@@ -118,7 +104,7 @@ else
   has_realpath="no"
 fi
 
-if has_command timeout; then
+if command -v timeout >/dev/null 2>&1; then
   TEST_ENV_HAS_TIMEOUT=1
   has_timeout="yes"
 else
@@ -126,7 +112,7 @@ else
   has_timeout="no"
 fi
 
-if has_command tput; then
+if command -v tput >/dev/null 2>&1; then
   TEST_ENV_HAS_TPUT=1
   has_tput="yes"
 else
@@ -142,35 +128,26 @@ printf 'coreutils: realpath=%s timeout=%s tput=%s\n' \
 # ============================================================================
 
 # Test xattr support
-test_xattr_support() {
-  tmpfile=$(mktemp)
-  if [ "$TEST_ENV_HAS_XATTR_ATTR" = "1" ]; then
-    if attr -s test -V val "$tmpfile" >/dev/null 2>&1; then
-      rm -f "$tmpfile"
-      return 0
-    fi
-  elif [ "$TEST_ENV_HAS_XATTR_NATIVE" = "1" ]; then
-    if xattr -w test val "$tmpfile" >/dev/null 2>&1; then
-      rm -f "$tmpfile"
-      return 0
-    fi
-  elif [ "$TEST_ENV_HAS_XATTR_SETFATTR" = "1" ]; then
-    if setfattr -n user.test -v val "$tmpfile" >/dev/null 2>&1; then
-      rm -f "$tmpfile"
-      return 0
-    fi
+TEST_ENV_SUPPORTS_XATTR=0
+fs_xattr="no"
+_tmpfile=$(mktemp)
+if [ "$TEST_ENV_HAS_XATTR_ATTR" = "1" ]; then
+  if attr -s test -V val "$_tmpfile" >/dev/null 2>&1; then
+    TEST_ENV_SUPPORTS_XATTR=1
+    fs_xattr="yes"
   fi
-  rm -f "$tmpfile"
-  return 1
-}
-
-if test_xattr_support; then
-  TEST_ENV_SUPPORTS_XATTR=1
-  fs_xattr="yes"
-else
-  TEST_ENV_SUPPORTS_XATTR=0
-  fs_xattr="no"
+elif [ "$TEST_ENV_HAS_XATTR_NATIVE" = "1" ]; then
+  if xattr -w test val "$_tmpfile" >/dev/null 2>&1; then
+    TEST_ENV_SUPPORTS_XATTR=1
+    fs_xattr="yes"
+  fi
+elif [ "$TEST_ENV_HAS_XATTR_SETFATTR" = "1" ]; then
+  if setfattr -n user.test -v val "$_tmpfile" >/dev/null 2>&1; then
+    TEST_ENV_SUPPORTS_XATTR=1
+    fs_xattr="yes"
+  fi
 fi
+rm -f "$_tmpfile"
 
 printf 'filesystem: xattr-support=%s\n' "$fs_xattr"
 

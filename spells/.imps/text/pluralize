@@ -170,9 +170,10 @@ set -eu
       case "$_pluralize_rest" in
         *[A-Z]*) printf '%s' "$_pluralize_result" ;;
         *)
-          # Use dd for character extraction (most portable across all platforms)
-          _pluralize_first=$(printf '%s' "$_pluralize_result" | dd bs=1 count=1 2>/dev/null)
-          _pluralize_tail=$(printf '%s' "$_pluralize_result" | dd bs=1 skip=1 2>/dev/null)
+          # Extract first character and uppercase it
+          # Use cut for maximum portability across platforms
+          _pluralize_first=$(printf '%s' "$_pluralize_result" | cut -c1)
+          _pluralize_tail=$(printf '%s' "$_pluralize_result" | cut -c2-)
           printf '%s%s' "$(printf '%s' "$_pluralize_first" | tr 'a-z' 'A-Z')" "$_pluralize_tail"
           ;;
       esac
