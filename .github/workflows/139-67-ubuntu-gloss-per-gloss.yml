@@ -81,3 +81,129 @@ jobs:
             dmesg | tail -n 50 || true
           fi
           exit "$status"
+
+  ubuntu-parse-function-fallback:
+    name: 139-189 Ubuntu parse function fallback
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Ensure parse skips function fallback
+        run: |
+          set +e
+          ulimit -c unlimited || true
+          (
+            set -e
+            tmpdir=$(mktemp -d /tmp/wizardry-parse.XXXXXX)
+            mkdir -p "$tmpdir/wizardry/spells"
+            export WIZARDRY_DIR="$tmpdir/wizardry"
+            PATH="$GITHUB_WORKSPACE/spells/.imps/lex:$PATH"
+            fallback() {
+              printf '%s\n' "function executed"
+              return 1
+            }
+            set -x
+            parse fallback
+          )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          if [ "$status" -ne 127 ]; then
+            printf '%s\n' "unexpected status: $status" >&2
+            exit 1
+          fi
+          exit 0
+
+  ubuntu-parse-gloss-xattr:
+    name: 139-190 Ubuntu parse gloss xattr
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Load glosses and parse xattr
+        run: |
+          set +e
+          ulimit -c unlimited || true
+          (
+            set -e
+            export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+            gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+            "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+            . "$gloss_file"
+            PATH="$WIZARDRY_DIR/spells/.imps/lex:$PATH"
+            set -x
+            parse xattr -h
+          )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          if [ "$status" -eq 0 ]; then
+            exit 0
+          fi
+          if [ "$status" -ne 127 ]; then
+            printf '%s\n' "unexpected status: $status" >&2
+            exit 1
+          fi
+          exit 0
+
+  ubuntu-parse-banish-help:
+    name: 139-191 Ubuntu parse banish help
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Call parse banish --help under xtrace
+        run: |
+          set +e
+          ulimit -c unlimited || true
+          (
+            set -e
+            export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+            PATH="$WIZARDRY_DIR/spells/.imps/lex:$PATH"
+            set -x
+            parse banish --help
+          )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  ubuntu-gloss-banish-help:
+    name: 139-192 Ubuntu gloss banish help
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Call banish gloss under xtrace
+        run: |
+          set +e
+          ulimit -c unlimited || true
+          (
+            set -e
+            export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+            gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+            "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+            . "$gloss_file"
+            if ! type banish 2>/dev/null | grep -q "function"; then
+              printf '%s\n' "banish gloss function not found" >&2
+              exit 1
+            fi
+            set -x
+            banish --help
+          )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"

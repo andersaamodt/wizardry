@@ -69,10 +69,7 @@ jobs:
 
           # Workflows to monitor
           workflows=(
-            "139-185 Ubuntu parse function fallback"
-            "139-186 Ubuntu parse gloss xattr"
-            "139-187 Ubuntu parse banish help"
-            "139-188 Ubuntu gloss banish help"
+            "139-67 Ubuntu gloss per-gloss banish"
           )
           
           # Total number of workflows we're monitoring
