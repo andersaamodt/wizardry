@@ -1,8 +1,7 @@
-name: 139-143 Ubuntu Xtrace source pocket gloss only
+name: 139-148 Ubuntu Xtrace xattr filesystem check
 
 on:
   pull_request:
-    if: ${{ false }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -12,8 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  ubuntu-xtrace-pocket-function-only:
-    name: 139-143 Ubuntu Xtrace source pocket gloss only
+  ubuntu-xtrace-xattr-filesystem:
+    name: 139-148 Ubuntu Xtrace xattr filesystem check
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -35,7 +34,7 @@ jobs:
             echo 'kernel.apparmor_restrict_unprivileged_userns=0'
           } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
           sudo sysctl --system
-      - name: Xtrace source pocket gloss only
+      - name: Xtrace xattr filesystem check
         run: |
           set +e
           ulimit -c unlimited || true
@@ -54,34 +53,62 @@ jobs:
               printf "%s\n" "[gloss-test] missing block 36"
               exit 1
             fi
-
             . "$block_36"
             set -x
 
-            case "pocket_only" in
-              validate_pocket)
-                validate-spells --quiet pocket-dimension
+            case "xattr_fs" in
+              xattr_tools)
+                if command -v xattr >/dev/null 2>&1; then
+                  printf '%s\n' "[xattr] xattr available"
+                elif command -v getfattr >/dev/null 2>&1 && command -v setfattr >/dev/null 2>&1; then
+                  printf '%s\n' "[xattr] getfattr/setfattr available"
+                else
+                  printf '%s\n' "[xattr] no helper found"
+                  exit 1
+                fi
                 ;;
-              validate_wizard)
-                validate-spells --quiet wizard-eyes
+              xattr_fs)
+                tmp_root=${TMPDIR:-/tmp}
+                tmp_xattr_test=$(mktemp "${tmp_root%/}/banish-xattr.XXXXXX" 2>/dev/null || printf '')
+                if [ -n "$tmp_xattr_test" ]; then
+                  if command -v xattr >/dev/null 2>&1; then
+                    xattr -w user.test "value" "$tmp_xattr_test" 2>/dev/null
+                    xattr -p user.test "$tmp_xattr_test" 2>/dev/null | grep -q "value"
+                    xattr -d user.test "$tmp_xattr_test" 2>/dev/null || :
+                  elif command -v setfattr >/dev/null 2>&1 && command -v getfattr >/dev/null 2>&1; then
+                    setfattr -n user.test -v "value" "$tmp_xattr_test" 2>/dev/null
+                    getfattr -n user.test "$tmp_xattr_test" 2>/dev/null | grep -q "value"
+                    setfattr -x user.test "$tmp_xattr_test" 2>/dev/null || :
+                  else
+                    printf '%s\n' "[xattr] no helper found"
+                    exit 1
+                  fi
+                  rm -f "$tmp_xattr_test" 2>/dev/null || :
+                fi
                 ;;
-              validate_spellbook)
-                validate-spells --quiet spellbook-store
+              level8_spells_show)
+                spells=$(spell-levels 8 spells)
+                validate-spells --show-status $spells
                 ;;
-              validate_imps)
-                validate-spells --quiet --imps format-duration
+              level8_imps_show)
+                imps=$(spell-levels 8 imps)
+                validate-spells --imps --show-status $imps
                 ;;
-              spell_levels)
-                spell-levels 8 spells
-                spell-levels 8 imps
+              level8_skip_xattr)
+                spells=$(spell-levels 8 spells)
+                imps=$(spell-levels 8 imps)
+                validate-spells --quiet $spells
+                validate-spells --quiet --imps $imps
                 ;;
-              pocket_call)
-                pocket dimension || true
+              level8_skip_spells)
+                imps=$(spell-levels 8 imps)
+                validate-spells --quiet --imps $imps
                 ;;
-              pocket_only)
-                printf '%s\n' "[gloss-test] pocket function loaded"
+              level8_skip_imps)
+                spells=$(spell-levels 8 spells)
+                validate-spells --quiet $spells
                 ;;
-              banish_level8)
+              level8_minimal)
                 banish 8 --only --no-tests --no-heal
                 ;;
             esac

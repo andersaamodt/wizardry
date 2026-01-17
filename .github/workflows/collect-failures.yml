@@ -69,16 +69,14 @@ jobs:
 
           # Workflows to monitor
           workflows=(
-            "139-137 Ubuntu Xtrace validate-spells pocket-dimension"
-            "139-138 Ubuntu Xtrace validate-spells wizard-eyes"
-            "139-139 Ubuntu Xtrace validate-spells spellbook-store"
-            "139-140 Ubuntu Xtrace validate-spells imps format-duration"
-            "139-141 Ubuntu Xtrace spell-levels list"
-            "139-142 Ubuntu Xtrace pocket dimension call"
-            "139-143 Ubuntu Xtrace source pocket gloss only"
-            "139-144 Ubuntu Xtrace banish level 8 only"
-            "139-145 Ubuntu Xtrace validate-spells level8 spells"
-            "139-146 Ubuntu Xtrace validate-spells level8 imps"
+            "139-147 Ubuntu Xtrace xattr helper check"
+            "139-148 Ubuntu Xtrace xattr filesystem check"
+            "139-149 Ubuntu Xtrace level8 spells show-status"
+            "139-150 Ubuntu Xtrace level8 imps show-status"
+            "139-151 Ubuntu Xtrace level8 skip xattr checks"
+            "139-152 Ubuntu Xtrace level8 skip spell validation"
+            "139-153 Ubuntu Xtrace level8 skip imp validation"
+            "139-154 Ubuntu Xtrace level8 minimal path"
           )
           
           # Total number of workflows we're monitoring

@@ -2,6 +2,7 @@ name: 139-140 Ubuntu Xtrace validate-spells imps format-duration
 
 on:
   pull_request:
+    if: ${{ false }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
