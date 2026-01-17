@@ -159,6 +159,26 @@ test_parse_reconstructs_three_word_command() {
 _make_temp_file() {
   printf 'make_temp_file_called_with:[%s]\n' "$*"
 }
+case "$0" in
+  */make-temp-file) _make_temp_file "$@" ;; esac
+EOF
+  chmod +x "$test_spell_dir/make-temp-file"
+  
+  export WIZARDRY_DIR="$tmpdir/wizardry"
+  
+  run_spell "spells/.imps/lex/parse" "make" "temp" "file" "myfile.txt"
+  
+  # Restore original WIZARDRY_DIR
+  if [ -n "$_saved_wizdir" ]; then
+    export WIZARDRY_DIR="$_saved_wizdir"
+  else
+    unset WIZARDRY_DIR
+  fi
+  
+  assert_success || return 1
+  assert_output_contains "make_temp_file_called_with:[myfile.txt]" || return 1
+}
+
 test_parse_reconstructs_four_word_command() {
   # Save original WIZARDRY_DIR
   _saved_wizdir="${WIZARDRY_DIR-}"
@@ -172,6 +192,26 @@ test_parse_reconstructs_four_word_command() {
 _get_remote_file_path() {
   printf 'get_remote_file_path_called_with:[%s]\n' "$*"
 }
+case "$0" in
+  */get-remote-file-path) _get_remote_file_path "$@" ;; esac
+EOF
+  chmod +x "$test_spell_dir/get-remote-file-path"
+  
+  export WIZARDRY_DIR="$tmpdir/wizardry"
+  
+  run_spell "spells/.imps/lex/parse" "get" "remote" "file" "path" "/some/path"
+  
+  # Restore original WIZARDRY_DIR
+  if [ -n "$_saved_wizdir" ]; then
+    export WIZARDRY_DIR="$_saved_wizdir"
+  else
+    unset WIZARDRY_DIR
+  fi
+  
+  assert_success || return 1
+  assert_output_contains "get_remote_file_path_called_with:[/some/path]" || return 1
+}
+
 test_parse_prefers_longer_matches() {
   # Save original WIZARDRY_DIR
   _saved_wizdir="${WIZARDRY_DIR-}"
