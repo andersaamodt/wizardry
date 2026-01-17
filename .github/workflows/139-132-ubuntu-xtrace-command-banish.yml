@@ -1,8 +1,7 @@
-name: 139-120 Ubuntu Source block 36 with xtrace and banish
+name: 139-132 Ubuntu Source block 36, xtrace, command banish
 
 on:
   pull_request:
-    if: ${{ false }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -12,8 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  ubuntu-block-36-trace-output:
-    name: 139-120 Ubuntu Source block 36 with xtrace and banish
+  ubuntu-xtrace-command-banish:
+    name: 139-132 Ubuntu Source block 36, xtrace, command banish
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -35,7 +34,7 @@ jobs:
             echo 'kernel.apparmor_restrict_unprivileged_userns=0'
           } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
           sudo sysctl --system
-      - name: Source block 36 with xtrace and banish
+      - name: Source block 36, xtrace, command banish
         run: |
           set +e
           ulimit -c unlimited || true
@@ -57,31 +56,55 @@ jobs:
 
             gloss_name=$(awk '/^# First-word gloss for commands starting with /{print $NF}' "$block_36" | sed "s/'//g")
 
-            case "xtrace_banish" in
-              dump_only)
-                printf '%s\n' "[gloss-test] block 36 contents:";
-                sed -n '1,200p' "$block_36";
-                printf '%s\n' "[gloss-test] gloss name: $gloss_name";
-                ;;
-              unset_and_banish)
+            case "xtrace_command" in
+              xtrace_stderr_file)
                 . "$block_36";
+                exec 2>"$gloss_dir/xtrace.log";
+                set -x;
+                banish 8 --only --no-tests --no-heal;
+                ;;
+              xtrace_fresh_shell)
+                . "$block_36";
+                set -x;
+                set +x;
+                sh -c 'banish 8 --only --no-tests --no-heal';
+                ;;
+              xtrace_unset)
+                . "$block_36";
+                set -x;
                 if [ -n "$gloss_name" ]; then
                   unset -f "$gloss_name" 2>/dev/null || true;
                 fi;
                 banish 8 --only --no-tests --no-heal;
                 ;;
-              parse_only_banish)
-                printf '%s\n' "[gloss-test] gloss name: $gloss_name";
-                banish 8 --only --no-tests --no-heal;
-                ;;
-              exec_banish)
-                . "$block_36";
-                exec banish 8 --only --no-tests --no-heal;
-                ;;
-              xtrace_banish)
+              xtrace_command)
                 . "$block_36";
                 set -x;
+                command banish 8 --only --no-tests --no-heal;
+                ;;
+              xtrace_off_before)
+                . "$block_36";
+                set -x;
+                set +x;
                 banish 8 --only --no-tests --no-heal;
+                ;;
+              xtrace_reopen_stderr)
+                . "$block_36";
+                set -x;
+                exec 2>&1;
+                banish 8 --only --no-tests --no-heal;
+                ;;
+              xtrace_env_clean)
+                . "$block_36";
+                set -x;
+                set +x;
+                env -i WIZARDRY_DIR="$WIZARDRY_DIR" PATH="$PATH" banish 8 --only --no-tests --no-heal;
+                ;;
+              xtrace_sh_c)
+                . "$block_36";
+                set -x;
+                set +x;
+                sh -c 'set -e; banish 8 --only --no-tests --no-heal';
                 ;;
             esac
           )
