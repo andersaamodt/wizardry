@@ -69,10 +69,10 @@ jobs:
 
           # Workflows to monitor
           workflows=(
-            "139-177 Ubuntu xtrace gloss declare"
-            "139-178 Ubuntu xtrace gloss enable"
-            "139-179 Ubuntu parse declare"
-            "139-180 Ubuntu parse enable"
+            "139-181 Ubuntu parse banish help"
+            "139-182 Ubuntu gloss banish help"
+            "139-183 Ubuntu command banish help"
+            "139-184 Ubuntu parse printf"
           )
           
           # Total number of workflows we're monitoring

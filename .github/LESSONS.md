@@ -50,6 +50,7 @@
 - Parse MUST skip functions before trying to exec system commands; exec-ing a gloss function creates infinite recursion (gloss → parse → exec gloss → parse ...) causing segfault/exit 139.
 - When cloning a gloss function for testing, verify the new name is defined before invoking it to avoid false negatives from "command not found" failures.
 - First-word gloss generation should consider bash builtins like declare/enable/bind as potential conflicts when isolating crashes.
+- Blacklisting individual gloss names is insufficient to prove root cause; verify whether the crash persists with safe, non-builtin gloss targets.
 - The `find -perm` flags cause infinite hangs on some systems (macOS, Ubuntu in CI); always omit `-perm` checks when scanning for files and use simple `-type f` instead.
 - When synonym handling in gloss functions finds a target spell, MUST shift consumed words BEFORE calling parse; otherwise parse builds wrong multi-word command causing infinite recursion.
 - Duplicated uncastable detection logic (in gloss functions, synonyms, parse) is an antipattern; centralize in a single helper function (invoke_spell_helper) that's preloaded with glosses.

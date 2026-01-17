@@ -1,7 +1,9 @@
-name: 139-178 Ubuntu xtrace gloss enable
+name: 139-181 Ubuntu parse banish help
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,28 +13,22 @@ permissions:
   contents: read
 
 jobs:
-  ubuntu-xtrace-gloss-enable:
-    name: 139-178 Ubuntu xtrace gloss enable
+  ubuntu-parse-banish-help:
+    name: 139-181 Ubuntu parse banish help
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Load glosses and call enable under xtrace
+      - name: Call parse banish --help under xtrace
         run: |
           set +e
           ulimit -c unlimited || true
           (
             set -e
             export WIZARDRY_DIR="$GITHUB_WORKSPACE"
-            gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
-            "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
-            . "$gloss_file"
-            if ! type enable 2>/dev/null | grep -q "function"; then
-              printf '%s\n' "enable gloss function not found" >&2
-              exit 1
-            fi
+            PATH="$WIZARDRY_DIR/spells/.imps/lex:$PATH"
             set -x
-            enable
+            parse banish --help
           )
           status=$?
           if [ "$status" -eq 139 ]; then
