@@ -17,7 +17,7 @@ jobs:
           echo "$HOME/.wizardry/spells/glossary" >> $GITHUB_PATH
           
       - name: Strategy
-        run: echo "Strategy: Properly escape $, backticks, quotes, etc"
+        run: echo "Strategy: Properly escape dollar signs, backticks, quotes, etc"
         
       - name: Run tests
         run: |
