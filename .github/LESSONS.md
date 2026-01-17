@@ -47,13 +47,12 @@
 - Variable `$_i` (imps directory shorthand) is not preserved by env-clear; use `${WIZARDRY_DIR}/spells/.imps` instead when referencing imp paths after sourcing env-clear.
 - When converting synonym targets from hyphenated to space-separated form (e.g., jump-to-marker → jump to marker), preserve directory prefixes unchanged (translocation/jump-to-marker → translocation/jump to marker, not translocation/jump to marker with / converted to space).
 - First-word glosses must invoke aliases via eval (not parse or direct command invocation) because: (1) parse skips aliases to avoid recursion, (2) direct invocation "$_fw_spell" tries to find executable not expand alias, (3) eval expands alias correctly without passing $@ since multi-word was already consumed during reconstruction.
-- Parse MUST skip functions before trying to exec system commands; exec-ing a gloss function creates infinite recursion (gloss → parse → exec gloss → parse ...) causing segfault/exit 139 (CONFIRMED: disabling parser/glosses eliminates all exit 139 errors).
+- Parse MUST skip functions before trying to exec system commands; exec-ing a gloss function creates infinite recursion (gloss → parse → exec gloss → parse ...) causing segfault/exit 139.
 - The `find -perm` flags cause infinite hangs on some systems (macOS, Ubuntu in CI); always omit `-perm` checks when scanning for files and use simple `-type f` instead.
 - When synonym handling in gloss functions finds a target spell, MUST shift consumed words BEFORE calling parse; otherwise parse builds wrong multi-word command causing infinite recursion.
 - Duplicated uncastable detection logic (in gloss functions, synonyms, parse) is an antipattern; centralize in a single helper function (invoke_spell_helper) that's preloaded with glosses.
 - Parse should not depend on other imps (like env-or) being available; use inline parameter expansion ${VAR:-default} instead to ensure parse works in all contexts.
 - When generate-glosses creates first-word glosses, consumed words must be shifted BEFORE calling parse with synonym targets to prevent infinite loops (e.g., "jump-to" → "leap-to-location" with args still present causes parse to try "leap-to-location-to-marker-home").
-- To isolate cause of exit 139 bugs, disable parser/glosses system entirely by commenting out gloss generation in invoke-wizardry and adding early exits to parse/generate-glosses; this eliminates recursion while preserving PATH-based spell execution (confirmed: 314/328 tests pass with zero exit 139 errors).
 
 
 - When a file is sourced (`. filename`), using `exit` exits the parent shell; use `return` instead (discovered via doppelganger failing to create directories) (3)

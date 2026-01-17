@@ -1,6 +1,5 @@
 #!/bin/sh
 # Generate glosses (function wrappers) for all wizardry spells and imps
-# DISABLED FOR DEBUGGING EXIT CODE 139
 #
 # NEW PARADIGM: Function-based glosses
 # Instead of creating script files, this now generates shell function definitions
@@ -30,8 +29,6 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: generate-glosses [OPTIONS]
 
-DISABLED for debugging exit code 139 (segfault) issue.
-
 Generate gloss function definitions for wizardry spells and imps.
 
 Options:
@@ -45,12 +42,6 @@ USAGE
   exit 0
   ;;
 esac
-
-# EARLY EXIT FOR DEBUGGING EXIT 139
-printf 'generate-glosses: DISABLED for debugging exit code 139\n' >&2
-printf 'generate-glosses: Glosses are not being generated\n' >&2
-printf 'generate-glosses: Use hyphenated commands directly (e.g., env-or instead of env or)\n' >&2
-exit 0
 
 # Skip require-wizardry check - this is a bootstrap script called from invoke-wizardry
 # require-wizardry || exit 1
