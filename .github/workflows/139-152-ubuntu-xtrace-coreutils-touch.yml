@@ -1,7 +1,7 @@
-name: 139-147 Ubuntu xtrace banish 8 skip xattr checks
+name: 139-152 Ubuntu xtrace coreutils touch
 
 on:
-  workflow_dispatch:
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,14 +11,13 @@ permissions:
   contents: read
 
 jobs:
-  ubuntu-xtrace-banish-skip-xattr:
-    name: 139-147 Ubuntu xtrace banish 8 skip xattr checks
+  ubuntu-xtrace-coreutils-touch:
+    name: 139-152 Ubuntu xtrace coreutils touch
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
       WIZARDRY_GLOSSES: "1"
       WIZARDRY_DEBUG: "1"
-      WIZARDRY_SKIP_XATTR_CHECK: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,46 +34,32 @@ jobs:
             echo 'kernel.apparmor_restrict_unprivileged_userns=0'
           } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
           sudo sysctl --system
-      - name: Patch banish to skip xattr checks
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import re
-
-          path = Path('spells/wards/banish')
-          text = path.read_text()
-          pattern = r"\n      # Check extended attributes helpers\n.*?\n      # Check spells\n"
-          replacement = """
-      # Check extended attributes helpers
-      if [ \"${WIZARDRY_SKIP_XATTR_CHECK-0}\" -eq 1 ]; then
-        printf '  %s~%s Extended attributes: skipped by WIZARDRY_SKIP_XATTR_CHECK\n' "$_yellow" "$_reset"
-      else
-        printf '  %s~%s Extended attributes: skipped (patched)\n' "$_yellow" "$_reset"
-      fi
-
-      # Check spells
-"""
-          new_text, count = re.subn(pattern, replacement, text, flags=re.S)
-          if count != 1:
-            raise SystemExit(f"expected to patch 1 xattr block, found {count}")
-          path.write_text(new_text)
-          PY
-      - name: Run banish level 8 under xtrace (xattr checks skipped)
+      - name: Run touch under xtrace
         run: |
           set +e
           ulimit -c unlimited || true
           if command -v timeout >/dev/null 2>&1; then
-            timeout 120 bash -lc 'set -x; . spells/.imps/sys/invoke-wizardry; banish 8 --only --no-tests --no-heal'
+            timeout 120 bash -lc '
+              set -x
+              . spells/.imps/sys/invoke-wizardry
+              tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-touch.XXXXXX")
+              rm -f "$tmp"
+            '
             status=$?
           else
-            bash -lc 'set -x; . spells/.imps/sys/invoke-wizardry; banish 8 --only --no-tests --no-heal'
+            bash -lc '
+              set -x
+              . spells/.imps/sys/invoke-wizardry
+              tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-touch.XXXXXX")
+              rm -f "$tmp"
+            '
             status=$?
           fi
           if [ "$status" -eq 139 ]; then
-            printf '%s\n' "xtrace banish (skip xattr) exited with code 139 (SIGSEGV)"
+            printf '%s\n' "xtrace touch exited with code 139 (SIGSEGV)"
             printf '%s\n' "Last 50 dmesg lines (if available):"
             dmesg | tail -n 50 || true
           elif [ "$status" -eq 124 ]; then
-            printf '%s\n' "xtrace banish (skip xattr) timed out after 120 seconds"
+            printf '%s\n' "xtrace touch timed out after 120 seconds"
           fi
           exit "$status"

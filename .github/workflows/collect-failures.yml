@@ -69,10 +69,10 @@ jobs:
 
           # Workflows to monitor
           workflows=(
-            "139-145 Ubuntu xtrace xattr smoke"
-            "139-146 Ubuntu xtrace xattr then banish 8"
-            "139-147 Ubuntu xtrace banish 8 skip xattr checks"
-            "139-148 Ubuntu xtrace xattr then banish without xtrace"
+            "139-149 Ubuntu xtrace xattr direct"
+            "139-150 Ubuntu xtrace attr direct"
+            "139-151 Ubuntu xtrace setfattr/getfattr direct"
+            "139-152 Ubuntu xtrace coreutils touch"
           )
           
           # Total number of workflows we're monitoring

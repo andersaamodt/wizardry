@@ -1,7 +1,7 @@
 name: 139-146 Ubuntu xtrace xattr then banish 8
 
 on:
-  pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
