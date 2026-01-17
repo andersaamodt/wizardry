@@ -723,6 +723,18 @@ test_user_typed_warp() {
   fi
 }
 
+test_numeric_arg_level_0() {
+  OUTPUT=$(banish 0 2>&1 | head -5)
+  check_no_errors "$OUTPUT" || return 1
+  printf '%s' "$OUTPUT" | grep -qE "(Level 0|Validating)" || return 1
+}
+
+test_numeric_arg_level_8() {
+  OUTPUT=$(banish 8 2>&1 | head -5)
+  check_no_errors "$OUTPUT" || return 1
+  printf '%s' "$OUTPUT" | grep -qE "(Level 8|Validating)" || return 1
+}
+
 
 # Run all tests
 run_test_case "single word no args (jump)" test_single_word_no_args
