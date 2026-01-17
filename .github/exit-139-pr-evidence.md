@@ -5,6 +5,7 @@
 - Workflow-log scan scope for exit 139 to date: PRs 932–942 via `read-test-failures`. (Source: `./.github/read-test-failures 932`–`942` on 2026-01-16)
 
 ## Recent hypothesis workflow results
+- Workflow 139-365 showed block 36 only and block 36 noop parse exiting 139, while block 36 removed and block 36 command banish succeeded, implicating the is gloss wrapper rather than parse. (Source: GitHub Actions run on 2026-01-17)
 - Workflow 139-364 (gloss buckets 1–206) segfaulted after sourcing block 36, narrowing the suspect range to block 36. (Source: GitHub Actions run on 2026-01-17)
 - Workflow 139-363 (gloss buckets 1–206) produced a SIGSEGV during banish in one bucket, confirming a reproducible crash within the bucketed sweep. (Source: GitHub Actions run on 2026-01-17)
 - Workflow 139-362 (gloss buckets 1–206) failed with missing block 245; bucket ranges must cap to the generated count (206). (Source: GitHub Actions run on 2026-01-17)

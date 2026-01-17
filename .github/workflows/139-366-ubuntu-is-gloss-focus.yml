@@ -1,16 +1,16 @@
-name: 139-365 Ubuntu gloss block 36 focus
+name: 139-366 Ubuntu is-gloss focus
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
 concurrency:
-  group: 139-365-${{ github.event.pull_request.number }}
+  group: 139-366-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  job-139-365-block-36-only:
-    name: "139-365 block 36 only"
+  job-139-366-block-36-only:
+    name: "139-366 block 36 only"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -26,7 +26,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "[gloss-36] sourcing only block 36"
+          echo "[is-gloss] block 36 only"
           export WIZARDRY_DIR="$GITHUB_WORKSPACE"
           . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
           gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
@@ -58,8 +58,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-365-without-block-36:
-    name: "139-365 all blocks without 36"
+  job-139-366-block-36-unset-is:
+    name: "139-366 block 36 unset is"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -71,11 +71,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run all blocks without 36
+      - name: Run block 36 then unset is
         shell: bash
         run: |
           set -euo pipefail
-          echo "[gloss-36] sourcing all blocks except 36"
+          echo "[is-gloss] block 36 then unset is"
           export WIZARDRY_DIR="$GITHUB_WORKSPACE"
           . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
           gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
@@ -91,18 +91,13 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          total=$(cat "$gloss_dir/count")
-          for idx in $(seq 1 "$total"); do
-            if [ "$idx" -eq 36 ]; then
-              continue
-            fi
-            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
-            if [ ! -s "$block" ]; then
-              printf '%s\n' "missing block $idx" >&2
-              exit 1
-            fi
-            . "$block"
-          done
+          block="$gloss_dir/block-036.sh"
+          if [ ! -s "$block" ]; then
+            printf '%s\n' "missing block 36" >&2
+            exit 1
+          fi
+          . "$block"
+          unset -f is
           set +e
           ( banish 8 --only --no-tests --no-heal )
           status=$?
@@ -113,8 +108,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-365-block-36-command-banish:
-    name: "139-365 block 36 command banish"
+  job-139-366-block-36-command-is:
+    name: "139-366 block 36 command is"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -126,11 +121,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 36 with command banish
+      - name: Run block 36 with command is wrapper
         shell: bash
         run: |
           set -euo pipefail
-          echo "[gloss-36] block 36 with command banish"
+          echo "[is-gloss] block 36 with command is wrapper"
           export WIZARDRY_DIR="$GITHUB_WORKSPACE"
           . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
           gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
@@ -152,8 +147,9 @@ jobs:
             exit 1
           fi
           . "$block"
+          is() { command is "$@"; }
           set +e
-          ( command banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -162,8 +158,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-365-block-36-noop-parse:
-    name: "139-365 block 36 noop parse"
+  job-139-366-block-36-direct-imp:
+    name: "139-366 block 36 direct imp"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -175,11 +171,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 36 with parse noop
+      - name: Run block 36 with direct imp wrapper
         shell: bash
         run: |
           set -euo pipefail
-          echo "[gloss-36] block 36 with parse noop"
+          echo "[is-gloss] block 36 with direct imp wrapper"
           export WIZARDRY_DIR="$GITHUB_WORKSPACE"
           . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
           gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
@@ -200,8 +196,8 @@ jobs:
             printf '%s\n' "missing block 36" >&2
             exit 1
           fi
-          parse() { return 0; }
           . "$block"
+          is() { "$WIZARDRY_DIR/spells/.imps/cond/is" "$@"; }
           set +e
           ( banish 8 --only --no-tests --no-heal )
           status=$?
