@@ -1,0 +1,198 @@
+name: 139-371 Ubuntu gloss blacklist verify
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: 139-371-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  job-139-371-9-full-glosses-no-banish:
+    name: "139-371 #9 full glosses no banish"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: #9 Run banish with glosses enabled (banish gloss absent)
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "[#9] banish with glosses enabled (banish gloss absent)"
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+          if grep -q '^banish()' "$gloss_file"; then
+            printf '%s\n' "banish gloss still present" >&2
+            exit 1
+          fi
+          set +e
+          ( banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  job-139-371-10-block-36-only:
+    name: "139-371 #10 block 36 only"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: #10 Run block 36 only
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "[#10] block 36 only"
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+          awk_program=$(printf '%s\n' \
+            'BEGIN { idx=0; out="" }' \
+            '/^# First-word gloss/ {' \
+            '  idx++' \
+            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+            '  print "# block " idx > out' \
+            '}' \
+            '{ if (out != "") print >> out }' \
+            'END { printf "%d\n", idx > outdir "/count" }')
+          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
+          block="$gloss_dir/block-036.sh"
+          if [ ! -s "$block" ]; then
+            printf '%s\n' "missing block 36" >&2
+            exit 1
+          fi
+          sed -n '1,6p' "$block"
+          . "$block"
+          set +e
+          ( banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  job-139-371-11-block-36-command:
+    name: "139-371 #11 block 36 command banish"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: #11 Run block 36 then command banish
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "[#11] block 36 then command banish"
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+          awk_program=$(printf '%s\n' \
+            'BEGIN { idx=0; out="" }' \
+            '/^# First-word gloss/ {' \
+            '  idx++' \
+            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+            '  print "# block " idx > out' \
+            '}' \
+            '{ if (out != "") print >> out }' \
+            'END { printf "%d\n", idx > outdir "/count" }')
+          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
+          block="$gloss_dir/block-036.sh"
+          if [ ! -s "$block" ]; then
+            printf '%s\n' "missing block 36" >&2
+            exit 1
+          fi
+          . "$block"
+          set +e
+          ( command banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  job-139-371-12-block-36-unset:
+    name: "139-371 #12 block 36 unset"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: #12 Run block 36 then unset function
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "[#12] block 36 then unset function"
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+          awk_program=$(printf '%s\n' \
+            'BEGIN { idx=0; out="" }' \
+            '/^# First-word gloss/ {' \
+            '  idx++' \
+            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+            '  print "# block " idx > out' \
+            '}' \
+            '{ if (out != "") print >> out }' \
+            'END { printf "%d\n", idx > outdir "/count" }')
+          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
+          block="$gloss_dir/block-036.sh"
+          if [ ! -s "$block" ]; then
+            printf '%s\n' "missing block 36" >&2
+            exit 1
+          fi
+          gloss_name=$(awk '/^[a-zA-Z0-9_-]+\(\)/ { sub(/\(\).*/, "", $1); print $1; exit }' "$block")
+          . "$block"
+          if [ -n "$gloss_name" ]; then
+            unset -f "$gloss_name"
+          fi
+          set +e
+          ( banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
