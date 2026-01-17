@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   aaa-nix:
-    name: Nix unit tests ${{ matrix.job_name }}
+    name: Nix ${{ matrix.job_name }} unit tests
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -79,7 +79,7 @@ jobs:
           "
 
   aab-macos:
-    name: macOS unit tests ${{ matrix.job_name }}
+    name: macOS ${{ matrix.job_name }} unit tests
     runs-on: macos-latest
     strategy:
       fail-fast: false
@@ -120,7 +120,7 @@ jobs:
         run: . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && for level in $(seq ${{ matrix.min_level }} ${{ matrix.max_level }}); do ./spells/.wizardry/test-magic "$level" --only --verbose || exit 1; done
 
   arch:
-    name: Arch Linux unit tests ${{ matrix.job_name }}
+    name: Arch ${{ matrix.job_name }} unit tests
     runs-on: ubuntu-latest
     container: archlinux:latest
     strategy:
@@ -164,7 +164,7 @@ jobs:
         run: . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && for level in $(seq ${{ matrix.min_level }} ${{ matrix.max_level }}); do ./spells/.wizardry/test-magic "$level" --only --verbose || exit 1; done
 
   debian:
-    name: Debian unit tests ${{ matrix.job_name }}
+    name: Debian ${{ matrix.job_name }} unit tests
     runs-on: ubuntu-latest
     container: debian:stable-slim
     strategy:
@@ -209,7 +209,7 @@ jobs:
         run: . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && for level in $(seq ${{ matrix.min_level }} ${{ matrix.max_level }}); do ./spells/.wizardry/test-magic "$level" --only --verbose || exit 1; done
 
   ubuntu:
-    name: Ubuntu unit tests ${{ matrix.job_name }}
+    name: Ubuntu ${{ matrix.job_name }} unit tests
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
