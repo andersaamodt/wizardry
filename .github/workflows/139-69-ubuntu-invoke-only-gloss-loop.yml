@@ -2,7 +2,6 @@ name: 139-69 Ubuntu invoke-only gloss loop
 
 on:
   pull_request:
-    if: ${{ false }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
