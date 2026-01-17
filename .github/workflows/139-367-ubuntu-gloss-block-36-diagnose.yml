@@ -1,16 +1,47 @@
-name: 139-366 Ubuntu is-gloss focus
+name: 139-367 Ubuntu gloss block 36 diagnose
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
 concurrency:
-  group: 139-366-${{ github.event.pull_request.number }}
+  group: 139-367-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  job-139-366-block-36-only:
-    name: "139-366 block 36 only"
+  job-139-367-no-gloss:
+    name: "139-367 no gloss"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: Run banish with glosses disabled
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "[gloss-36] banish with WIZARDRY_GLOSSES=0"
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          export WIZARDRY_GLOSSES=0
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          set +e
+          ( banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  job-139-367-block-36-only:
+    name: "139-367 block 36 only"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -26,7 +57,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "[is-gloss] block 36 only"
+          echo "[gloss-36] block 36 only"
           export WIZARDRY_DIR="$GITHUB_WORKSPACE"
           . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
           gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
@@ -47,6 +78,8 @@ jobs:
             printf '%s\n' "missing block 36" >&2
             exit 1
           fi
+          printf '%s\n' "[gloss-36] block 36 header:"
+          sed -n '1,6p' "$block"
           . "$block"
           set +e
           ( banish 8 --only --no-tests --no-heal )
@@ -58,8 +91,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-366-block-36-unset-is:
-    name: "139-366 block 36 unset is"
+  job-139-367-block-36-unset:
+    name: "139-367 block 36 unset"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -71,11 +104,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 36 then unset is
+      - name: Run block 36 then unset its function
         shell: bash
         run: |
           set -euo pipefail
-          echo "[is-gloss] block 36 then unset is"
+          echo "[gloss-36] block 36 then unset"
           export WIZARDRY_DIR="$GITHUB_WORKSPACE"
           . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
           gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
@@ -96,8 +129,12 @@ jobs:
             printf '%s\n' "missing block 36" >&2
             exit 1
           fi
+          gloss_name=$(awk '/^[a-zA-Z0-9_-]+\(\)/ { sub(/\(\).*/, "", $1); print $1; exit }' "$block")
+          printf '%s\n' "[gloss-36] block 36 function: $gloss_name"
           . "$block"
-          unset -f is
+          if [ -n "$gloss_name" ]; then
+            unset -f "$gloss_name"
+          fi
           set +e
           ( banish 8 --only --no-tests --no-heal )
           status=$?
@@ -108,8 +145,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-366-block-36-command-is:
-    name: "139-366 block 36 command is"
+  job-139-367-block-36-noop:
+    name: "139-367 block 36 noop"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -121,11 +158,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 36 with command is wrapper
+      - name: Run block 36 then noop its function
         shell: bash
         run: |
           set -euo pipefail
-          echo "[is-gloss] block 36 with command is wrapper"
+          echo "[gloss-36] block 36 noop"
           export WIZARDRY_DIR="$GITHUB_WORKSPACE"
           . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
           gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
@@ -146,58 +183,12 @@ jobs:
             printf '%s\n' "missing block 36" >&2
             exit 1
           fi
+          gloss_name=$(awk '/^[a-zA-Z0-9_-]+\(\)/ { sub(/\(\).*/, "", $1); print $1; exit }' "$block")
+          printf '%s\n' "[gloss-36] block 36 function: $gloss_name"
           . "$block"
-          is() { command is "$@"; }
-          set +e
-          ( banish 8 --only --no-tests --no-heal )
-          status=$?
-          if [ "$status" -eq 139 ]; then
-            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
-            printf '%s\n' "Last 50 dmesg lines (if available):"
-            dmesg | tail -n 50 || true
+          if [ -n "$gloss_name" ]; then
+            eval "${gloss_name}() { return 0; }"
           fi
-          exit "$status"
-
-  job-139-366-block-36-direct-imp:
-    name: "139-366 block 36 direct imp"
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install attr
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y attr
-
-      - name: Run block 36 with direct imp wrapper
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "[is-gloss] block 36 with direct imp wrapper"
-          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
-          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
-          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
-          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
-          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
-          awk_program=$(printf '%s\n' \
-            'BEGIN { idx=0; out="" }' \
-            '/^# First-word gloss/ {' \
-            '  idx++' \
-            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
-            '  print "# block " idx > out' \
-            '}' \
-            '{ if (out != "") print >> out }' \
-            'END { printf "%d\n", idx > outdir "/count" }')
-          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-036.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 36" >&2
-            exit 1
-          fi
-          . "$block"
-          is() { "$WIZARDRY_DIR/spells/.imps/cond/is" "$@"; }
           set +e
           ( banish 8 --only --no-tests --no-heal )
           status=$?
