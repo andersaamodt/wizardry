@@ -73,6 +73,9 @@ jobs:
             "139-68 Ubuntu gloss per-gloss skip invoke"
             "139-69 Ubuntu invoke-only gloss loop"
             "139-70 Ubuntu invoke shadow check"
+            "139-71 Ubuntu gloss first-half per-gloss banish"
+            "139-72 Ubuntu gloss second-half per-gloss banish"
+            "139-73 Ubuntu gloss all-at-once banish loop"
           )
           
           # Total number of workflows we're monitoring

@@ -47,20 +47,15 @@ jobs:
           fi
 
           gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+          invoke_block=$(mktemp /tmp/wizardry-invoke-block.XXXXXX)
           generate-glosses --output "$gloss_file"
-          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
           awk_program=$(printf '%s\n' \
-            'BEGIN { idx=0; out="" }' \
-            '/^# First-word gloss/ {' \
-            '  idx++' \
-            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
-            '  print "# block " idx > out' \
-            '}' \
-            '{ if (out != "") print >> out }' \
-            'END { printf "%d\n", idx > outdir "/count" }')
-          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          invoke_block=$(grep -l "^# First-word gloss for commands starting with 'invoke'" "$gloss_dir"/* || true)
-          if [ -z "$invoke_block" ]; then
+            'BEGIN { found=0 }' \
+            '/^# First-word gloss for commands starting with '\''invoke'\''/ { found=1 }' \
+            'found { print }' \
+            'found && /^}$/ { exit }')
+          awk "$awk_program" "$gloss_file" > "$invoke_block"
+          if [ ! -s "$invoke_block" ]; then
             printf '%s\n' "[invoke-shadow] invoke gloss block not found"
             exit 1
           fi
