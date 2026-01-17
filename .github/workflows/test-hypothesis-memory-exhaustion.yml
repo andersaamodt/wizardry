@@ -1,0 +1,83 @@
+name: Hypothesis - Memory exhaustion
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test-memory-exhaustion:
+    name: Test memory exhaustion from too many functions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Ensure installer spells are executable
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test for memory exhaustion (exit 139)
+        run: |
+          set -eu
+          
+          echo "Testing hypothesis: Generating too many functions causes memory exhaustion"
+          
+          # Test 1: Generate thousands of gloss functions
+          echo "Test 1: Generate 1000 gloss functions"
+          temp_file="/tmp/test-many-glosses.sh"
+          
+          # Create file with 1000 function definitions
+          {
+            echo "#!/bin/sh"
+            for i in $(seq 1 1000); do
+              echo "test_func_$i() { printf 'function %s\\n' '$i'; }"
+            done
+          } > "$temp_file"
+          
+          # Try to source it
+          if . "$temp_file" 2>&1; then
+            echo "✓ 1000 functions loaded successfully"
+          else
+            exit_code=$?
+            echo "✗ Loading 1000 functions failed with exit code: $exit_code"
+            if [ $exit_code -eq 139 ]; then
+              echo "FOUND IT: Too many functions cause exit 139!"
+              rm -f "$temp_file"
+              exit 139
+            fi
+            rm -f "$temp_file"
+            exit $exit_code
+          fi
+          
+          # Test 2: Generate and run generate-glosses
+          echo "Test 2: Run actual generate-glosses"
+          if timeout 120 ./spells/.wizardry/generate-glosses --quiet >/dev/null 2>&1; then
+            echo "✓ generate-glosses completed"
+          else
+            exit_code=$?
+            if [ $exit_code -eq 124 ]; then
+              echo "✗ generate-glosses timed out after 120s"
+              exit 1
+            elif [ $exit_code -eq 139 ]; then
+              echo "FOUND IT: generate-glosses causes exit 139!"
+              exit 139
+            fi
+            echo "✗ generate-glosses failed with exit code: $exit_code"
+            exit $exit_code
+          fi
+          
+          rm -f "$temp_file"
+          echo "All memory tests passed - memory exhaustion not the cause"

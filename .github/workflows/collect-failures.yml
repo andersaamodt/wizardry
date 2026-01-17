@@ -73,6 +73,11 @@ jobs:
             "Test doppelganger compiled wizardry"
             "Demonstrate wizardry"
             "Compile wizardry"
+            "Hypothesis - Gloss recursion"
+            "Hypothesis - Memory exhaustion"
+            "Hypothesis - Exec misuse"
+            "Hypothesis - Stack overflow"
+            "Hypothesis - Circular synonyms"
           )
           
           # Total number of workflows we're monitoring

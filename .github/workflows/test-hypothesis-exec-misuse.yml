@@ -1,0 +1,93 @@
+name: Hypothesis - Exec misuse
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test-exec-misuse:
+    name: Test exec replacing process with gloss
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Ensure installer spells are executable
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test for exec misuse (exit 139)
+        run: |
+          set -eu
+          
+          echo "Testing hypothesis: Exec replacing process with gloss function causes segfault"
+          
+          # Source invoke-wizardry to load glosses
+          . spells/.imps/sys/invoke-wizardry
+          
+          # Test 1: Try exec with a gloss function
+          echo "Test 1: Exec with gloss function"
+          (
+            # In subshell so we don't kill parent
+            if exec env_or TEST_VAR "default" >/dev/null 2>&1; then
+              echo "✓ Exec with gloss works"
+            else
+              exit_code=$?
+              if [ $exit_code -eq 139 ]; then
+                echo "FOUND IT: Exec with gloss causes exit 139!"
+                exit 139
+              fi
+              exit $exit_code
+            fi
+          ) || {
+            exit_code=$?
+            if [ $exit_code -eq 139 ]; then
+              echo "FOUND IT: Exec with gloss function causes exit 139!"
+              exit 139
+            fi
+            echo "✗ Exec test failed with exit code: $exit_code (not 139)"
+          }
+          
+          # Test 2: Check if parse uses exec incorrectly
+          echo "Test 2: Examine parse for exec usage"
+          if grep -q "exec" spells/.imps/lex/parse; then
+            echo "⚠ Parse contains exec - checking context"
+            grep -n "exec" spells/.imps/lex/parse || true
+          else
+            echo "✓ Parse does not use exec"
+          fi
+          
+          # Test 3: Test command builtin vs exec
+          echo "Test 3: Command vs exec behavior"
+          (
+            if command env_or TEST "value" >/dev/null 2>&1; then
+              echo "✓ Command builtin with gloss works"
+            else
+              exit_code=$?
+              if [ $exit_code -eq 139 ]; then
+                echo "FOUND IT: Command with gloss causes exit 139!"
+                exit 139
+              fi
+            fi
+          ) || {
+            exit_code=$?
+            if [ $exit_code -eq 139 ]; then
+              echo "FOUND IT: Command builtin causes exit 139!"
+              exit 139
+            fi
+          }
+          
+          echo "All exec tests passed - exec misuse not the cause"

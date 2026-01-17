@@ -1,0 +1,102 @@
+name: Hypothesis - Circular synonyms
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test-circular-synonyms:
+    name: Test circular synonym chains
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Ensure installer spells are executable
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test for circular synonyms (exit 139)
+        run: |
+          set -eu
+          
+          echo "Testing hypothesis: Circular synonym chains cause infinite loops"
+          
+          # Test 1: Create circular synonym chain and test
+          echo "Test 1: Create A→B→C→A circular chain"
+          
+          # Create temp synonym file with circular references
+          temp_synonyms="/tmp/test-circular-synonyms"
+          cat > "$temp_synonyms" <<'EOF'
+          cmd_a:cmd_b
+          cmd_b:cmd_c
+          cmd_c:cmd_a
+          EOF
+          
+          # Try to use circular synonyms
+          export WIZARDRY_SYNONYMS="$temp_synonyms"
+          . spells/.imps/sys/invoke-wizardry
+          
+          # Try calling with the circular synonym
+          if timeout 5 parse cmd_a test arg >/dev/null 2>&1; then
+            echo "✓ Circular synonym handled (or timed out safely)"
+          else
+            exit_code=$?
+            if [ $exit_code -eq 124 ]; then
+              echo "⚠ Circular synonym caused timeout - likely infinite loop"
+              rm -f "$temp_synonyms"
+              exit 1
+            elif [ $exit_code -eq 139 ]; then
+              echo "FOUND IT: Circular synonyms cause exit 139!"
+              rm -f "$temp_synonyms"
+              exit 139
+            fi
+            echo "✗ Circular synonym test failed with exit code: $exit_code"
+            rm -f "$temp_synonyms"
+            exit $exit_code
+          fi
+          
+          # Test 2: Self-referencing synonym
+          echo "Test 2: Self-referencing synonym (A→A)"
+          cat > "$temp_synonyms" <<'EOF'
+          selfref:selfref
+          EOF
+          
+          export WIZARDRY_SYNONYMS="$temp_synonyms"
+          # Reload synonyms
+          unset -f parse env_or 2>/dev/null || true
+          . spells/.imps/sys/invoke-wizardry
+          
+          if timeout 5 parse selfref arg >/dev/null 2>&1; then
+            echo "✓ Self-reference handled (or timed out safely)"
+          else
+            exit_code=$?
+            if [ $exit_code -eq 124 ]; then
+              echo "⚠ Self-reference caused timeout"
+              rm -f "$temp_synonyms"
+              exit 1
+            elif [ $exit_code -eq 139 ]; then
+              echo "FOUND IT: Self-referencing synonym causes exit 139!"
+              rm -f "$temp_synonyms"
+              exit 139
+            fi
+            echo "✗ Self-reference test failed with exit code: $exit_code"
+            rm -f "$temp_synonyms"
+            exit $exit_code
+          fi
+          
+          rm -f "$temp_synonyms"
+          echo "All circular synonym tests passed - circular synonyms not the cause"

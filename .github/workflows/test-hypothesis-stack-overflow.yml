@@ -1,0 +1,101 @@
+name: Hypothesis - Stack overflow
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test-stack-overflow:
+    name: Test deep nesting stack overflow
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Ensure installer spells are executable
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test for stack overflow (exit 139)
+        run: |
+          set -eu
+          
+          echo "Testing hypothesis: Deep function nesting causes stack overflow"
+          
+          # Test 1: Deep function call nesting
+          echo "Test 1: Create deeply nested function calls"
+          recurse_test() {
+            depth=${1:-0}
+            max_depth=${2:-1000}
+            
+            if [ "$depth" -ge "$max_depth" ]; then
+              return 0
+            fi
+            
+            recurse_test $((depth + 1)) "$max_depth"
+          }
+          
+          if recurse_test 0 1000; then
+            echo "✓ 1000 levels of recursion works"
+          else
+            exit_code=$?
+            echo "✗ Recursion failed at some depth with exit code: $exit_code"
+            if [ $exit_code -eq 139 ]; then
+              echo "FOUND IT: Deep recursion causes exit 139!"
+              exit 139
+            fi
+            exit $exit_code
+          fi
+          
+          # Test 2: Deep command substitution nesting
+          echo "Test 2: Deeply nested command substitutions"
+          result=$(echo $(echo $(echo $(echo $(echo "test")))))
+          if [ "$result" = "test" ]; then
+            echo "✓ Nested command substitutions work"
+          else
+            echo "✗ Nested command substitutions failed"
+            exit 1
+          fi
+          
+          # Test 3: Source invoke-wizardry and test with glosses
+          echo "Test 3: Deep gloss call chain"
+          . spells/.imps/sys/invoke-wizardry
+          
+          # Create a chain of gloss calls
+          chain_test() {
+            depth=${1:-0}
+            if [ "$depth" -ge 100 ]; then
+              return 0
+            fi
+            
+            # Call env-or (which is a gloss) multiple times
+            env_or "TEST_$depth" "default" >/dev/null
+            chain_test $((depth + 1))
+          }
+          
+          if chain_test 0; then
+            echo "✓ 100 chained gloss calls work"
+          else
+            exit_code=$?
+            echo "✗ Gloss chain failed with exit code: $exit_code"
+            if [ $exit_code -eq 139 ]; then
+              echo "FOUND IT: Chained gloss calls cause exit 139!"
+              exit 139
+            fi
+            exit $exit_code
+          fi
+          
+          echo "All stack overflow tests passed - stack overflow not the cause"

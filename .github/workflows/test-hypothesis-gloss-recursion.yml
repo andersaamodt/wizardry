@@ -1,0 +1,83 @@
+name: Hypothesis - Gloss recursion
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test-gloss-recursion:
+    name: Test gloss→parse→gloss recursion
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Ensure installer spells are executable
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test for gloss recursion (exit 139)
+        run: |
+          set -eu
+          
+          echo "Testing hypothesis: Gloss function calls parse → parse execs gloss → infinite recursion"
+          
+          # Source invoke-wizardry to load glosses
+          . spells/.imps/sys/invoke-wizardry
+          
+          # Test 1: Try calling a gloss function directly
+          echo "Test 1: Direct gloss function call"
+          if env_or TEST_VAR "default_value" >/dev/null 2>&1; then
+            echo "✓ Direct call works"
+          else
+            exit_code=$?
+            echo "✗ Direct call failed with exit code: $exit_code"
+            if [ $exit_code -eq 139 ]; then
+              echo "FOUND IT: Direct gloss call causes exit 139!"
+              exit 139
+            fi
+            exit $exit_code
+          fi
+          
+          # Test 2: Call parse with gloss-able command
+          echo "Test 2: Parse calling gloss-able command"
+          if parse env or TEST_VAR default >/dev/null 2>&1; then
+            echo "✓ Parse with gloss works"
+          else
+            exit_code=$?
+            echo "✗ Parse failed with exit code: $exit_code"
+            if [ $exit_code -eq 139 ]; then
+              echo "FOUND IT: Parse → gloss causes exit 139!"
+              exit 139
+            fi
+            exit $exit_code
+          fi
+          
+          # Test 3: Nested parse calls
+          echo "Test 3: Nested parse invocations"
+          if parse parse env or TEST DEFAULT >/dev/null 2>&1; then
+            echo "✓ Nested parse works"
+          else
+            exit_code=$?
+            echo "✗ Nested parse failed with exit code: $exit_code"
+            if [ $exit_code -eq 139 ]; then
+              echo "FOUND IT: Nested parse causes exit 139!"
+              exit 139
+            fi
+            exit $exit_code
+          fi
+          
+          echo "All recursion tests passed - recursion not the cause"
