@@ -157,7 +157,7 @@ while [ $_attempt_len -gt 0 ]; do
     
     # Execute the spell, unsetting any function with the same name first
     # This prevents recursive loops when glosses create functions with the same name
-    unset -f "$_spell_name" 2>/dev/null || true
+    unset -f "$_cmd_name" 2>/dev/null || true
     exec "$_spell_path" "$@"
   fi
   
