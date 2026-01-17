@@ -1,9 +1,7 @@
 name: 139-181 Ubuntu parse banish help
 
 on:
-  pull_request_target:
-    branches:
-      - main
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -19,8 +17,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
       - name: Call parse banish --help under xtrace
         run: |
           set +e

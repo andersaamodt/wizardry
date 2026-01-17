@@ -1,7 +1,9 @@
-name: 139-182 Ubuntu gloss banish help
+name: 139-188 Ubuntu gloss banish help
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -12,7 +14,7 @@ permissions:
 
 jobs:
   ubuntu-gloss-banish-help:
-    name: 139-182 Ubuntu gloss banish help
+    name: 139-188 Ubuntu gloss banish help
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

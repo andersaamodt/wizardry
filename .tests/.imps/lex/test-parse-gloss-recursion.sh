@@ -53,6 +53,37 @@ EOF
   fi
 }
 
+# Test that parse doesn't exec a function when no spell exists (last-resort path)
+test_parse_skips_function_fallback() {
+  _saved_wizdir="${WIZARDRY_DIR-}"
+
+  tmpdir=$(make_tempdir)
+  mkdir -p "$tmpdir/wizardry/spells"
+  export WIZARDRY_DIR="$tmpdir/wizardry"
+
+  fallback() {
+    printf 'ERROR: fallback function executed\n'
+    return 1
+  }
+
+  run_spell "spells/.imps/lex/parse" "fallback"
+
+  if [ -n "$_saved_wizdir" ]; then
+    export WIZARDRY_DIR="$_saved_wizdir"
+  else
+    unset WIZARDRY_DIR
+  fi
+
+  assert_status 127 || return 1
+  case "$OUTPUT" in
+    *"fallback function executed"*)
+      TEST_FAILURE_REASON="Function was executed via fallback path"
+      return 1
+      ;;
+  esac
+  assert_error_contains "command not found" || return 1
+}
+
 # Test that parse doesn't exec builtins either
 test_parse_skips_builtins() {
   # Save original WIZARDRY_DIR  
@@ -87,6 +118,7 @@ EOF
 
 # Run all tests
 run_test_case "parse skips functions to avoid recursion" test_parse_skips_functions
+run_test_case "parse skips function fallback" test_parse_skips_function_fallback
 run_test_case "parse skips builtins" test_parse_skips_builtins
 
 finish_tests

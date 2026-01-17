@@ -87,6 +87,24 @@ require-wizardry() { ... }  # Syntax error
 
 **Wizardry solution:** Imps define underscore functions, glosses provide hyphenated CLI commands.
 
+### Detecting Functions/Aliases Before Exec
+
+**CRITICAL:** `command -v` returns function/alias names without a path, which can lead to accidentally exec'ing gloss functions (infinite recursion).
+
+```sh
+type_output=$(type "$cmd" 2>/dev/null || true)
+case "$type_output" in
+  *"function"*|*"alias"*) cmd_path="" ;;
+  *) cmd_path=$(command -v "$cmd" 2>/dev/null || true) ;;
+esac
+
+if [ -n "$cmd_path" ]; then
+  exec "$cmd" "$@"
+fi
+```
+
+**Why:** `type` can distinguish functions/aliases from executables. Filter those out before falling back to `command -v` to avoid gloss recursion.
+
 ### set -eu Behavior
 
 **set -e (errexit):** Exit on command failure, UNLESS:

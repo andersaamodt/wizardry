@@ -164,7 +164,17 @@ while [ $_attempt_len -gt 0 ]; do
 done
 
 # Last resort: try first word as system command (but not functions or aliases)
-_cmd_type=$(command -v "$_first_word" 2>/dev/null || true)
+_cmd_type_output=$(type "$_first_word" 2>/dev/null || true)
+case "$_cmd_type_output" in
+  *"function"*|*"alias"*)
+    # Skip functions/aliases to avoid recursion into glosses
+    _cmd_type=""
+    ;;
+  *)
+    _cmd_type=$(command -v "$_first_word" 2>/dev/null || true)
+    ;;
+esac
+
 if [ -n "$_cmd_type" ]; then
   # Check if it's an actual executable file (not a function or alias)
   # command -v returns path for executables, name for builtins/functions/aliases
@@ -178,9 +188,8 @@ if [ -n "$_cmd_type" ]; then
       fi
       ;;
     *)
-      # No slash - could be a builtin, function, or alias
-      # Try to exec it - builtins will work, functions/aliases will fail
-      # If exec fails (function/alias), we fall through to error message
+      # No slash - could be a builtin
+      # Builtins will work, functions/aliases were filtered above
       exec "$_first_word" "$@" 2>/dev/null || true
       ;;
   esac
@@ -211,7 +220,6 @@ fi
 
 printf 'parse: %s: command not found\n' "$_first_word" >&2
 exit 127
-
 
 
 
