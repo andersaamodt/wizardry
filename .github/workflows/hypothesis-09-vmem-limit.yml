@@ -1,0 +1,55 @@
+name: "Hypothesis #09 - Virtual memory limit"
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/hypothesis-09-vmem-limit.yml'
+      - 'spells/.wizardry/test-magic'
+  workflow_dispatch:
+
+jobs:
+  test-vmem-limit:
+    name: Test with unlimited virtual memory
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Hypothesis #09 - Test if ulimit -v (virtual memory) causes segfault
+        run: |
+          echo "Testing hypothesis: Virtual memory limit (ulimit -v) causes segfault"
+          echo ""
+          echo "Current virtual memory limit:"
+          ulimit -v
+          echo ""
+          echo "Setting virtual memory to unlimited..."
+          ulimit -v unlimited
+          echo "New virtual memory limit:"
+          ulimit -v
+          echo ""
+          echo "Monitoring memory usage during test..."
+          (while true; do
+            echo "Memory: $(ps aux | grep 'test-magic' | grep -v grep | awk '{print $4"%"}' | head -1)"
+            sleep 5
+          done) &
+          MONITOR_PID=$!
+          
+          START_TIME=$(date +%s)
+          . spells/.imps/sys/invoke-wizardry && banish 8 && timeout 300 ./spells/.wizardry/test-magic --verbose || EXIT=$?
+          END_TIME=$(date +%s)
+          kill $MONITOR_PID 2>/dev/null || true
+          
+          ELAPSED=$((END_TIME - START_TIME))
+          echo ""
+          echo "Elapsed time: ${ELAPSED}s"
+          echo "Exit code: ${EXIT:-0}"
+          if [ "${EXIT:-0}" = "139" ]; then
+            echo "✗ Still segfaulted - virtual memory limit was NOT the cause"
+            exit 139
+          elif [ "${EXIT:-0}" = "0" ]; then
+            echo "✓ CONFIRMED: Tests passed - virtual memory limit WAS the cause"
+            exit 0
+          else
+            echo "? Unexpected exit code: ${EXIT:-0}"
+            exit ${EXIT:-1}
+          fi

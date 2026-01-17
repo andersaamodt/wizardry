@@ -73,11 +73,12 @@ jobs:
             "Test doppelganger compiled wizardry"
             "Demonstrate wizardry"
             "Compile wizardry"
-            "Hypothesis #1 - Specific failing test"
-            "Hypothesis #2 - Resource accumulation"
-            "Hypothesis #3 - Platform syscall difference"
-            "Hypothesis #4 - Test ordering dependency"
-            "Hypothesis #5 - Timeout/signal handling"
+            "Hypothesis #06 - ulimit comparison"
+            "Hypothesis #07 - Shell difference"
+            "Hypothesis #08 - CPU time limit"
+            "Hypothesis #09 - Virtual memory limit"
+            "Hypothesis #10 - Stack size limit"
+            "Hypothesis #11 - Timeout at 120s"
           )
           
           # Total number of workflows we're monitoring

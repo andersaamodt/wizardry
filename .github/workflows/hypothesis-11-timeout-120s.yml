@@ -1,0 +1,69 @@
+name: "Hypothesis #11 - Timeout at 120s"
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/hypothesis-11-timeout-120s.yml'
+      - 'spells/.wizardry/test-magic'
+  workflow_dispatch:
+
+jobs:
+  test-timeout-threshold:
+    name: Test for hardcoded timeout
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Hypothesis #11 - Test if there's a hardcoded 120s timeout
+        run: |
+          echo "Testing hypothesis: Hardcoded timeout at exactly 120 seconds causes crash"
+          echo ""
+          echo "Test 1: Run for exactly 60 seconds (should not crash)"
+          START_TIME=$(date +%s)
+          timeout 60 sh -c '. spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose' || EXIT_60=$?
+          END_TIME=$(date +%s)
+          ELAPSED_60=$((END_TIME - START_TIME))
+          echo "60s test: exit=${EXIT_60:-0}, elapsed=${ELAPSED_60}s"
+          echo ""
+          
+          echo "Test 2: Run for exactly 90 seconds (may crash if <120s)"
+          START_TIME=$(date +%s)
+          timeout 90 sh -c '. spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose' || EXIT_90=$?
+          END_TIME=$(date +%s)
+          ELAPSED_90=$((END_TIME - START_TIME))
+          echo "90s test: exit=${EXIT_90:-0}, elapsed=${ELAPSED_90}s"
+          echo ""
+          
+          echo "Test 3: Run for 119 seconds (just under potential 120s limit)"
+          START_TIME=$(date +%s)
+          timeout 119 sh -c '. spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose' || EXIT_119=$?
+          END_TIME=$(date +%s)
+          ELAPSED_119=$((END_TIME - START_TIME))
+          echo "119s test: exit=${EXIT_119:-0}, elapsed=${ELAPSED_119}s"
+          echo ""
+          
+          echo "Test 4: Run for 121 seconds (just over potential 120s limit)"
+          START_TIME=$(date +%s)
+          timeout 121 sh -c '. spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose' || EXIT_121=$?
+          END_TIME=$(date +%s)
+          ELAPSED_121=$((END_TIME - START_TIME))
+          echo "121s test: exit=${EXIT_121:-0}, elapsed=${ELAPSED_121}s"
+          echo ""
+          
+          echo "=== Analysis ==="
+          if [ "${EXIT_119:-0}" != "139" ] && [ "${EXIT_121:-0}" = "139" ]; then
+            echo "✓ CONFIRMED: Crash happens between 119s and 121s - hardcoded timeout exists"
+            exit 0
+          elif [ "${EXIT_90:-0}" = "139" ]; then
+            echo "Crashed at 90s - threshold is lower than 120s"
+            echo "Actual threshold: ~90-100s"
+            exit 139
+          elif [ "${EXIT_119:-0}" = "139" ] && [ "${EXIT_121:-0}" = "139" ]; then
+            echo "Both crashed - not a clean threshold"
+            exit 139
+          else
+            echo "No clear 120s threshold found"
+            echo "Pattern: 60s=${EXIT_60:-0}, 90s=${EXIT_90:-0}, 119s=${EXIT_119:-0}, 121s=${EXIT_121:-0}"
+            exit 1
+          fi

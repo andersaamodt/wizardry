@@ -1,0 +1,47 @@
+name: "Hypothesis #10 - Stack size limit"
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/hypothesis-10-stack-limit.yml'
+      - 'spells/.wizardry/test-magic'
+  workflow_dispatch:
+
+jobs:
+  test-stack-limit:
+    name: Test with unlimited stack size
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Hypothesis #10 - Test if ulimit -s (stack size) too small
+        run: |
+          echo "Testing hypothesis: Stack size limit (ulimit -s) causes stack overflow"
+          echo ""
+          echo "Current stack size limit:"
+          ulimit -s
+          echo ""
+          echo "Setting stack size to unlimited..."
+          ulimit -s unlimited
+          echo "New stack size limit:"
+          ulimit -s
+          echo ""
+          echo "Running test-magic with unlimited stack..."
+          START_TIME=$(date +%s)
+          . spells/.imps/sys/invoke-wizardry && banish 8 && timeout 300 ./spells/.wizardry/test-magic --verbose || EXIT=$?
+          END_TIME=$(date +%s)
+          ELAPSED=$((END_TIME - START_TIME))
+          echo ""
+          echo "Elapsed time: ${ELAPSED}s"
+          echo "Exit code: ${EXIT:-0}"
+          if [ "${EXIT:-0}" = "139" ] && [ "$ELAPSED" -lt "150" ]; then
+            echo "✗ Still crashed at ~${ELAPSED}s - stack size was NOT the cause"
+            exit 139
+          elif [ "${EXIT:-0}" = "0" ] || [ "$ELAPSED" -gt "150" ]; then
+            echo "✓ CONFIRMED: Ran without stack overflow - stack limit WAS the cause"
+            exit 0
+          else
+            echo "? Unexpected: exit=${EXIT:-0}, elapsed=${ELAPSED}s"
+            exit ${EXIT:-1}
+          fi

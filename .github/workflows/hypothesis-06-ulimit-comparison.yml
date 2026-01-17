@@ -1,0 +1,44 @@
+name: "Hypothesis #06 - ulimit comparison"
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/hypothesis-06-ulimit-comparison.yml'
+      - 'spells/.wizardry/test-magic'
+      - 'spells/.wizardry/banish'
+  workflow_dispatch:
+
+jobs:
+  test-ulimit-comparison:
+    name: Compare ulimits (Debian vs Ubuntu)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Hypothesis #06 - Compare resource limits between Debian and Ubuntu
+        run: |
+          echo "Testing hypothesis: Debian has higher resource limits than Ubuntu"
+          echo ""
+          echo "=== Ubuntu limits (current platform) ==="
+          ulimit -a
+          echo ""
+          echo "=== Ubuntu specific limits ==="
+          echo "CPU time (seconds): $(ulimit -t)"
+          echo "Virtual memory (KB): $(ulimit -v)"
+          echo "Stack size (KB): $(ulimit -s)"
+          echo "Max memory size (KB): $(ulimit -m)"
+          echo "Max user processes: $(ulimit -u)"
+          echo ""
+          echo "If Debian limits are higher, that explains why tests pass on Debian"
+          echo ""
+          echo "Running test-magic to see if it crashes at ~120s..."
+          . spells/.imps/sys/invoke-wizardry && banish 8 && timeout 180 ./spells/.wizardry/test-magic --verbose || EXIT=$?
+          if [ "${EXIT:-0}" = "139" ]; then
+            echo "✗ Exit 139 at $(date +%s) seconds - confirms limit issue"
+          elif [ "${EXIT:-0}" = "0" ]; then
+            echo "✓ Tests passed - limits are sufficient"
+          else
+            echo "? Exit $EXIT - unexpected"
+          fi
+          exit ${EXIT:-0}

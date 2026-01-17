@@ -1,0 +1,46 @@
+name: "Hypothesis #07 - Shell difference"
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/hypothesis-07-shell-difference.yml'
+      - 'spells/.wizardry/test-magic'
+  workflow_dispatch:
+
+jobs:
+  test-shell-difference:
+    name: Test dash vs bash
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dash
+        run: sudo apt-get update && sudo apt-get install -y dash
+      
+      - name: Hypothesis #07 - Test if shell type (dash vs bash) affects crash
+        run: |
+          echo "Testing hypothesis: dash (Debian default) doesn't crash, bash does"
+          echo ""
+          echo "Test 1: Run with sh (should be dash symlink on some systems)"
+          sh -c '. spells/.imps/sys/invoke-wizardry && banish 8 && timeout 180 ./spells/.wizardry/test-magic --verbose' || EXIT_SH=$?
+          echo "sh exit code: ${EXIT_SH:-0}"
+          echo ""
+          echo "Test 2: Run with explicit bash"
+          bash -c '. spells/.imps/sys/invoke-wizardry && banish 8 && timeout 180 ./spells/.wizardry/test-magic --verbose' || EXIT_BASH=$?
+          echo "bash exit code: ${EXIT_BASH:-0}"
+          echo ""
+          echo "Test 3: Run with explicit dash"
+          dash -c '. spells/.imps/sys/invoke-wizardry && banish 8 && timeout 180 ./spells/.wizardry/test-magic --verbose' || EXIT_DASH=$?
+          echo "dash exit code: ${EXIT_DASH:-0}"
+          echo ""
+          if [ "${EXIT_DASH:-0}" = "0" ] && [ "${EXIT_BASH:-0}" = "139" ]; then
+            echo "✓ CONFIRMED: dash passes, bash crashes - shell difference is the cause"
+            exit 0
+          elif [ "${EXIT_BASH:-0}" = "139" ] && [ "${EXIT_DASH:-0}" = "139" ]; then
+            echo "✗ Both crash - shell is NOT the difference"
+            exit 139
+          else
+            echo "? Unexpected pattern: dash=${EXIT_DASH:-0}, bash=${EXIT_BASH:-0}"
+            exit 1
+          fi
