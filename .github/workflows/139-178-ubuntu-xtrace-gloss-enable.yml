@@ -1,7 +1,9 @@
-name: 139-175 Ubuntu gloss no xtrace call
+name: 139-178 Ubuntu xtrace gloss enable
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,22 +13,28 @@ permissions:
   contents: read
 
 jobs:
-  ubuntu-gloss-no-xtrace-call:
-    name: 139-175 Ubuntu gloss no xtrace call
+  ubuntu-xtrace-gloss-enable:
+    name: 139-178 Ubuntu xtrace gloss enable
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install xattr tooling
-        run: sudo apt-get update && sudo apt-get install -y attr xattr
-      - name: Call xattr gloss with xtrace disabled
+      - name: Load glosses and call enable under xtrace
         run: |
           set +e
           ulimit -c unlimited || true
           (
             set -e
-            export XATTR_REPRO_XTRACE=0
-            ./scripts/repro-139-xattr-gloss.sh
+            export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+            gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+            "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+            . "$gloss_file"
+            if ! type enable 2>/dev/null | grep -q "function"; then
+              printf '%s\n' "enable gloss function not found" >&2
+              exit 1
+            fi
+            set -x
+            enable
           )
           status=$?
           if [ "$status" -eq 139 ]; then

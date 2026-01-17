@@ -1,7 +1,9 @@
-name: 139-175 Ubuntu gloss no xtrace call
+name: 139-179 Ubuntu parse declare
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,22 +13,22 @@ permissions:
   contents: read
 
 jobs:
-  ubuntu-gloss-no-xtrace-call:
-    name: 139-175 Ubuntu gloss no xtrace call
+  ubuntu-parse-declare:
+    name: 139-179 Ubuntu parse declare
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install xattr tooling
-        run: sudo apt-get update && sudo apt-get install -y attr xattr
-      - name: Call xattr gloss with xtrace disabled
+      - name: Call parse declare under xtrace
         run: |
           set +e
           ulimit -c unlimited || true
           (
             set -e
-            export XATTR_REPRO_XTRACE=0
-            ./scripts/repro-139-xattr-gloss.sh
+            export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+            PATH="$WIZARDRY_DIR/spells/.imps/lex:$PATH"
+            set -x
+            parse declare
           )
           status=$?
           if [ "$status" -eq 139 ]; then

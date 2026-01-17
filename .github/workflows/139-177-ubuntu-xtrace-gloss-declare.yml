@@ -1,7 +1,9 @@
-name: 139-176 Ubuntu parse direct xattr
+name: 139-177 Ubuntu xtrace gloss declare
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,27 +13,28 @@ permissions:
   contents: read
 
 jobs:
-  ubuntu-parse-direct-xattr:
-    name: 139-176 Ubuntu parse direct xattr
+  ubuntu-xtrace-gloss-declare:
+    name: 139-177 Ubuntu xtrace gloss declare
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install xattr tooling
-        run: sudo apt-get update && sudo apt-get install -y attr xattr
-      - name: Call parse directly under xtrace
+      - name: Load glosses and call declare under xtrace
         run: |
           set +e
           ulimit -c unlimited || true
           (
             set -e
             export WIZARDRY_DIR="$GITHUB_WORKSPACE"
-            tmp=$(mktemp /tmp/wizardry-xattr.XXXXXX)
-            PATH="$WIZARDRY_DIR/spells/.imps/lex:$PATH"
+            gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+            "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+            . "$gloss_file"
+            if ! type declare 2>/dev/null | grep -q "function"; then
+              printf '%s\n' "declare gloss function not found" >&2
+              exit 1
+            fi
             set -x
-            parse xattr -w user.test value "$tmp"
-            parse xattr -p user.test "$tmp"
-            parse xattr -d user.test "$tmp"
+            declare
           )
           status=$?
           if [ "$status" -eq 139 ]; then
