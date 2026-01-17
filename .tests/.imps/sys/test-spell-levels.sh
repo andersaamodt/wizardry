@@ -17,8 +17,8 @@ test_level_spells_have_expected_entries() {
 #!/bin/sh
 spells=$(spell-levels 0 spells)
 case "$spells" in
-  *divine-posix:divination*) printf 'found divine-posix\n' ;;
-  *) printf 'missing divine-posix\n'; exit 1 ;;
+  *detect-posix:divination*) printf 'found detect-posix\n' ;;
+  *) printf 'missing detect-posix\n'; exit 1 ;;
 esac
 case "$spells" in
   *verify-posix:.wizardry*) printf 'found verify-posix\n' ;;
@@ -30,7 +30,7 @@ SCRIPT_EOF
   # Add spell-levels to PATH
   run_cmd env PATH="$ROOT_DIR/spells/.imps/sys:$PATH" sh "$tmpdir/test-level-spells.sh"
   assert_success
-  assert_output_contains "found divine-posix"
+  assert_output_contains "found detect-posix"
   assert_output_contains "found verify-posix"
 }
 

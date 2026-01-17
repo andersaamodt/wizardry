@@ -57,11 +57,11 @@ test_unsupported_platform() {
   skip-if-compiled || return $?
   temp_dir=$(make_tempdir)
   cp "$(pwd)/spells/system/update-all" "$temp_dir/update-all"
-  cat >"$temp_dir/divine-distro" <<'EOF'
+  cat >"$temp_dir/detect-distro" <<'EOF'
 #!/bin/sh
 exit 1
 EOF
-  chmod +x "$temp_dir/divine-distro"
+  chmod +x "$temp_dir/detect-distro"
 
   run_cmd env PATH="$temp_dir:$PATH" "$temp_dir/update-all"
   assert_failure && assert_error_contains "Unable to detect operating system"
