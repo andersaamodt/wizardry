@@ -32,14 +32,19 @@ jobs:
           gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
           gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
           "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
-          awk_program=$(printf '%s
-'             'BEGIN { idx=0; out="" }'             '/^# First-word gloss/ {'             '  idx++'             '  out=sprintf("%s/block-%03d.sh", outdir, idx)'             '  print "# block " idx > out'             '}'             '{ if (out != "") print >> out }'             'END { printf "%d
-", idx > outdir "/count" }')
+          awk_program=$(printf '%s\n' \
+            'BEGIN { idx=0; out="" }' \
+            '/^# First-word gloss/ {' \
+            '  idx++' \
+            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+            '  print "# block " idx > out' \
+            '}' \
+            '{ if (out != "") print >> out }' \
+            'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
           block="$gloss_dir/block-036.sh"
           if [ ! -s "$block" ]; then
-            printf '%s
-' "missing block 36" >&2
+            printf '%s\n' "missing block 36" >&2
             exit 1
           fi
           . "$block"
@@ -47,10 +52,8 @@ jobs:
           ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
-            printf '%s
-' "subshell banish exited with code 139 (SIGSEGV)"
-            printf '%s
-' "Last 50 dmesg lines (if available):"
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
             dmesg | tail -n 50 || true
           fi
           exit "$status"
@@ -78,9 +81,15 @@ jobs:
           gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
           gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
           "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
-          awk_program=$(printf '%s
-'             'BEGIN { idx=0; out="" }'             '/^# First-word gloss/ {'             '  idx++'             '  out=sprintf("%s/block-%03d.sh", outdir, idx)'             '  print "# block " idx > out'             '}'             '{ if (out != "") print >> out }'             'END { printf "%d
-", idx > outdir "/count" }')
+          awk_program=$(printf '%s\n' \
+            'BEGIN { idx=0; out="" }' \
+            '/^# First-word gloss/ {' \
+            '  idx++' \
+            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+            '  print "# block " idx > out' \
+            '}' \
+            '{ if (out != "") print >> out }' \
+            'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
           total=$(cat "$gloss_dir/count")
           for idx in $(seq 1 "$total"); do
@@ -89,8 +98,7 @@ jobs:
             fi
             block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
             if [ ! -s "$block" ]; then
-              printf '%s
-' "missing block $idx" >&2
+              printf '%s\n' "missing block $idx" >&2
               exit 1
             fi
             . "$block"
@@ -99,10 +107,8 @@ jobs:
           ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
-            printf '%s
-' "subshell banish exited with code 139 (SIGSEGV)"
-            printf '%s
-' "Last 50 dmesg lines (if available):"
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
             dmesg | tail -n 50 || true
           fi
           exit "$status"
@@ -130,14 +136,19 @@ jobs:
           gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
           gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
           "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
-          awk_program=$(printf '%s
-'             'BEGIN { idx=0; out="" }'             '/^# First-word gloss/ {'             '  idx++'             '  out=sprintf("%s/block-%03d.sh", outdir, idx)'             '  print "# block " idx > out'             '}'             '{ if (out != "") print >> out }'             'END { printf "%d
-", idx > outdir "/count" }')
+          awk_program=$(printf '%s\n' \
+            'BEGIN { idx=0; out="" }' \
+            '/^# First-word gloss/ {' \
+            '  idx++' \
+            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+            '  print "# block " idx > out' \
+            '}' \
+            '{ if (out != "") print >> out }' \
+            'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
           block="$gloss_dir/block-036.sh"
           if [ ! -s "$block" ]; then
-            printf '%s
-' "missing block 36" >&2
+            printf '%s\n' "missing block 36" >&2
             exit 1
           fi
           . "$block"
@@ -145,10 +156,8 @@ jobs:
           ( command banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
-            printf '%s
-' "subshell banish exited with code 139 (SIGSEGV)"
-            printf '%s
-' "Last 50 dmesg lines (if available):"
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
             dmesg | tail -n 50 || true
           fi
           exit "$status"
@@ -176,14 +185,19 @@ jobs:
           gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
           gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
           "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
-          awk_program=$(printf '%s
-'             'BEGIN { idx=0; out="" }'             '/^# First-word gloss/ {'             '  idx++'             '  out=sprintf("%s/block-%03d.sh", outdir, idx)'             '  print "# block " idx > out'             '}'             '{ if (out != "") print >> out }'             'END { printf "%d
-", idx > outdir "/count" }')
+          awk_program=$(printf '%s\n' \
+            'BEGIN { idx=0; out="" }' \
+            '/^# First-word gloss/ {' \
+            '  idx++' \
+            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+            '  print "# block " idx > out' \
+            '}' \
+            '{ if (out != "") print >> out }' \
+            'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
           block="$gloss_dir/block-036.sh"
           if [ ! -s "$block" ]; then
-            printf '%s
-' "missing block 36" >&2
+            printf '%s\n' "missing block 36" >&2
             exit 1
           fi
           parse() { return 0; }
@@ -192,10 +206,8 @@ jobs:
           ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
-            printf '%s
-' "subshell banish exited with code 139 (SIGSEGV)"
-            printf '%s
-' "Last 50 dmesg lines (if available):"
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
             dmesg | tail -n 50 || true
           fi
           exit "$status"
