@@ -1,7 +1,7 @@
-name: 139-265 Ubuntu gloss single blocks 67-81
+name: 139-280 Ubuntu gloss single blocks 82-96
 
 on:
-  workflow_dispatch:
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,15 +11,15 @@ permissions:
   contents: read
 
 jobs:
-  block-67:
-    name: 139-265 Ubuntu gloss block 67
+  block-82:
+    name: 139-280 Ubuntu gloss block 82
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install xattr tooling
         run: sudo apt-get update && sudo apt-get install -y attr
-      - name: Load block 67 and run banish
+      - name: Load block 82 and run banish
         run: |
           set +e
           ulimit -c unlimited || true
@@ -41,9 +41,9 @@ jobs:
               'END { printf "%d\n", idx > outdir "/count" }')
             awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
 
-            block="$gloss_dir/block-067.sh"
+            block="$gloss_dir/block-082.sh"
             if [ ! -s "$block" ]; then
-              printf "%s\n" "[gloss-test] missing block 67" >&2
+              printf "%s\n" "[gloss-test] missing block 82" >&2
               exit 1
             fi
             . "$block"
@@ -57,15 +57,15 @@ jobs:
           fi
           exit "$status"
 
-  block-68:
-    name: 139-266 Ubuntu gloss block 68
+  block-83:
+    name: 139-281 Ubuntu gloss block 83
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install xattr tooling
         run: sudo apt-get update && sudo apt-get install -y attr
-      - name: Load block 68 and run banish
+      - name: Load block 83 and run banish
         run: |
           set +e
           ulimit -c unlimited || true
@@ -87,9 +87,9 @@ jobs:
               'END { printf "%d\n", idx > outdir "/count" }')
             awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
 
-            block="$gloss_dir/block-068.sh"
+            block="$gloss_dir/block-083.sh"
             if [ ! -s "$block" ]; then
-              printf "%s\n" "[gloss-test] missing block 68" >&2
+              printf "%s\n" "[gloss-test] missing block 83" >&2
               exit 1
             fi
             . "$block"
@@ -103,15 +103,15 @@ jobs:
           fi
           exit "$status"
 
-  block-69:
-    name: 139-267 Ubuntu gloss block 69
+  block-84:
+    name: 139-282 Ubuntu gloss block 84
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install xattr tooling
         run: sudo apt-get update && sudo apt-get install -y attr
-      - name: Load block 69 and run banish
+      - name: Load block 84 and run banish
         run: |
           set +e
           ulimit -c unlimited || true
@@ -133,9 +133,9 @@ jobs:
               'END { printf "%d\n", idx > outdir "/count" }')
             awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
 
-            block="$gloss_dir/block-069.sh"
+            block="$gloss_dir/block-084.sh"
             if [ ! -s "$block" ]; then
-              printf "%s\n" "[gloss-test] missing block 69" >&2
+              printf "%s\n" "[gloss-test] missing block 84" >&2
               exit 1
             fi
             . "$block"
@@ -149,15 +149,15 @@ jobs:
           fi
           exit "$status"
 
-  block-70:
-    name: 139-268 Ubuntu gloss block 70
+  block-85:
+    name: 139-283 Ubuntu gloss block 85
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install xattr tooling
         run: sudo apt-get update && sudo apt-get install -y attr
-      - name: Load block 70 and run banish
+      - name: Load block 85 and run banish
         run: |
           set +e
           ulimit -c unlimited || true
@@ -179,9 +179,9 @@ jobs:
               'END { printf "%d\n", idx > outdir "/count" }')
             awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
 
-            block="$gloss_dir/block-070.sh"
+            block="$gloss_dir/block-085.sh"
             if [ ! -s "$block" ]; then
-              printf "%s\n" "[gloss-test] missing block 70" >&2
+              printf "%s\n" "[gloss-test] missing block 85" >&2
               exit 1
             fi
             . "$block"
@@ -195,15 +195,15 @@ jobs:
           fi
           exit "$status"
 
-  block-71:
-    name: 139-269 Ubuntu gloss block 71
+  block-86:
+    name: 139-284 Ubuntu gloss block 86
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install xattr tooling
         run: sudo apt-get update && sudo apt-get install -y attr
-      - name: Load block 71 and run banish
+      - name: Load block 86 and run banish
         run: |
           set +e
           ulimit -c unlimited || true
@@ -225,9 +225,9 @@ jobs:
               'END { printf "%d\n", idx > outdir "/count" }')
             awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
 
-            block="$gloss_dir/block-071.sh"
+            block="$gloss_dir/block-086.sh"
             if [ ! -s "$block" ]; then
-              printf "%s\n" "[gloss-test] missing block 71" >&2
+              printf "%s\n" "[gloss-test] missing block 86" >&2
               exit 1
             fi
             . "$block"
@@ -241,15 +241,15 @@ jobs:
           fi
           exit "$status"
 
-  block-72:
-    name: 139-270 Ubuntu gloss block 72
+  block-87:
+    name: 139-285 Ubuntu gloss block 87
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install xattr tooling
         run: sudo apt-get update && sudo apt-get install -y attr
-      - name: Load block 72 and run banish
+      - name: Load block 87 and run banish
         run: |
           set +e
           ulimit -c unlimited || true
@@ -271,9 +271,9 @@ jobs:
               'END { printf "%d\n", idx > outdir "/count" }')
             awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
 
-            block="$gloss_dir/block-072.sh"
+            block="$gloss_dir/block-087.sh"
             if [ ! -s "$block" ]; then
-              printf "%s\n" "[gloss-test] missing block 72" >&2
+              printf "%s\n" "[gloss-test] missing block 87" >&2
               exit 1
             fi
             . "$block"
@@ -287,15 +287,15 @@ jobs:
           fi
           exit "$status"
 
-  block-73:
-    name: 139-271 Ubuntu gloss block 73
+  block-88:
+    name: 139-286 Ubuntu gloss block 88
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install xattr tooling
         run: sudo apt-get update && sudo apt-get install -y attr
-      - name: Load block 73 and run banish
+      - name: Load block 88 and run banish
         run: |
           set +e
           ulimit -c unlimited || true
@@ -317,9 +317,9 @@ jobs:
               'END { printf "%d\n", idx > outdir "/count" }')
             awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
 
-            block="$gloss_dir/block-073.sh"
+            block="$gloss_dir/block-088.sh"
             if [ ! -s "$block" ]; then
-              printf "%s\n" "[gloss-test] missing block 73" >&2
+              printf "%s\n" "[gloss-test] missing block 88" >&2
               exit 1
             fi
             . "$block"
@@ -333,15 +333,15 @@ jobs:
           fi
           exit "$status"
 
-  block-74:
-    name: 139-272 Ubuntu gloss block 74
+  block-89:
+    name: 139-287 Ubuntu gloss block 89
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install xattr tooling
         run: sudo apt-get update && sudo apt-get install -y attr
-      - name: Load block 74 and run banish
+      - name: Load block 89 and run banish
         run: |
           set +e
           ulimit -c unlimited || true
@@ -363,9 +363,9 @@ jobs:
               'END { printf "%d\n", idx > outdir "/count" }')
             awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
 
-            block="$gloss_dir/block-074.sh"
+            block="$gloss_dir/block-089.sh"
             if [ ! -s "$block" ]; then
-              printf "%s\n" "[gloss-test] missing block 74" >&2
+              printf "%s\n" "[gloss-test] missing block 89" >&2
               exit 1
             fi
             . "$block"
@@ -379,15 +379,15 @@ jobs:
           fi
           exit "$status"
 
-  block-75:
-    name: 139-273 Ubuntu gloss block 75
+  block-90:
+    name: 139-288 Ubuntu gloss block 90
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install xattr tooling
         run: sudo apt-get update && sudo apt-get install -y attr
-      - name: Load block 75 and run banish
+      - name: Load block 90 and run banish
         run: |
           set +e
           ulimit -c unlimited || true
@@ -409,9 +409,9 @@ jobs:
               'END { printf "%d\n", idx > outdir "/count" }')
             awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
 
-            block="$gloss_dir/block-075.sh"
+            block="$gloss_dir/block-090.sh"
             if [ ! -s "$block" ]; then
-              printf "%s\n" "[gloss-test] missing block 75" >&2
+              printf "%s\n" "[gloss-test] missing block 90" >&2
               exit 1
             fi
             . "$block"
@@ -425,15 +425,15 @@ jobs:
           fi
           exit "$status"
 
-  block-76:
-    name: 139-274 Ubuntu gloss block 76
+  block-91:
+    name: 139-289 Ubuntu gloss block 91
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install xattr tooling
         run: sudo apt-get update && sudo apt-get install -y attr
-      - name: Load block 76 and run banish
+      - name: Load block 91 and run banish
         run: |
           set +e
           ulimit -c unlimited || true
@@ -455,9 +455,9 @@ jobs:
               'END { printf "%d\n", idx > outdir "/count" }')
             awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
 
-            block="$gloss_dir/block-076.sh"
+            block="$gloss_dir/block-091.sh"
             if [ ! -s "$block" ]; then
-              printf "%s\n" "[gloss-test] missing block 76" >&2
+              printf "%s\n" "[gloss-test] missing block 91" >&2
               exit 1
             fi
             . "$block"
@@ -471,15 +471,15 @@ jobs:
           fi
           exit "$status"
 
-  block-77:
-    name: 139-275 Ubuntu gloss block 77
+  block-92:
+    name: 139-290 Ubuntu gloss block 92
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install xattr tooling
         run: sudo apt-get update && sudo apt-get install -y attr
-      - name: Load block 77 and run banish
+      - name: Load block 92 and run banish
         run: |
           set +e
           ulimit -c unlimited || true
@@ -501,9 +501,9 @@ jobs:
               'END { printf "%d\n", idx > outdir "/count" }')
             awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
 
-            block="$gloss_dir/block-077.sh"
+            block="$gloss_dir/block-092.sh"
             if [ ! -s "$block" ]; then
-              printf "%s\n" "[gloss-test] missing block 77" >&2
+              printf "%s\n" "[gloss-test] missing block 92" >&2
               exit 1
             fi
             . "$block"
@@ -517,15 +517,15 @@ jobs:
           fi
           exit "$status"
 
-  block-78:
-    name: 139-276 Ubuntu gloss block 78
+  block-93:
+    name: 139-291 Ubuntu gloss block 93
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install xattr tooling
         run: sudo apt-get update && sudo apt-get install -y attr
-      - name: Load block 78 and run banish
+      - name: Load block 93 and run banish
         run: |
           set +e
           ulimit -c unlimited || true
@@ -547,9 +547,9 @@ jobs:
               'END { printf "%d\n", idx > outdir "/count" }')
             awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
 
-            block="$gloss_dir/block-078.sh"
+            block="$gloss_dir/block-093.sh"
             if [ ! -s "$block" ]; then
-              printf "%s\n" "[gloss-test] missing block 78" >&2
+              printf "%s\n" "[gloss-test] missing block 93" >&2
               exit 1
             fi
             . "$block"
@@ -563,15 +563,15 @@ jobs:
           fi
           exit "$status"
 
-  block-79:
-    name: 139-277 Ubuntu gloss block 79
+  block-94:
+    name: 139-292 Ubuntu gloss block 94
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install xattr tooling
         run: sudo apt-get update && sudo apt-get install -y attr
-      - name: Load block 79 and run banish
+      - name: Load block 94 and run banish
         run: |
           set +e
           ulimit -c unlimited || true
@@ -593,9 +593,9 @@ jobs:
               'END { printf "%d\n", idx > outdir "/count" }')
             awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
 
-            block="$gloss_dir/block-079.sh"
+            block="$gloss_dir/block-094.sh"
             if [ ! -s "$block" ]; then
-              printf "%s\n" "[gloss-test] missing block 79" >&2
+              printf "%s\n" "[gloss-test] missing block 94" >&2
               exit 1
             fi
             . "$block"
@@ -609,15 +609,15 @@ jobs:
           fi
           exit "$status"
 
-  block-80:
-    name: 139-278 Ubuntu gloss block 80
+  block-95:
+    name: 139-293 Ubuntu gloss block 95
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install xattr tooling
         run: sudo apt-get update && sudo apt-get install -y attr
-      - name: Load block 80 and run banish
+      - name: Load block 95 and run banish
         run: |
           set +e
           ulimit -c unlimited || true
@@ -639,9 +639,9 @@ jobs:
               'END { printf "%d\n", idx > outdir "/count" }')
             awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
 
-            block="$gloss_dir/block-080.sh"
+            block="$gloss_dir/block-095.sh"
             if [ ! -s "$block" ]; then
-              printf "%s\n" "[gloss-test] missing block 80" >&2
+              printf "%s\n" "[gloss-test] missing block 95" >&2
               exit 1
             fi
             . "$block"
@@ -655,15 +655,15 @@ jobs:
           fi
           exit "$status"
 
-  block-81:
-    name: 139-279 Ubuntu gloss block 81
+  block-96:
+    name: 139-294 Ubuntu gloss block 96
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install xattr tooling
         run: sudo apt-get update && sudo apt-get install -y attr
-      - name: Load block 81 and run banish
+      - name: Load block 96 and run banish
         run: |
           set +e
           ulimit -c unlimited || true
@@ -685,9 +685,9 @@ jobs:
               'END { printf "%d\n", idx > outdir "/count" }')
             awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
 
-            block="$gloss_dir/block-081.sh"
+            block="$gloss_dir/block-096.sh"
             if [ ! -s "$block" ]; then
-              printf "%s\n" "[gloss-test] missing block 81" >&2
+              printf "%s\n" "[gloss-test] missing block 96" >&2
               exit 1
             fi
             . "$block"
