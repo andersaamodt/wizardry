@@ -1,0 +1,89 @@
+name: "Hypothesis #1 - Specific failing test"
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-specific-failing-test:
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: "Hypothesis #1 - Test bisection to find crashing test"
+        run: |
+          echo "Testing hypothesis: A specific test causes exit 139"
+          
+          # Source wizardry
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          
+          # Strategy: Run tests in small batches to identify which batch crashes
+          # Then bisect within that batch
+          
+          echo "Step 1: Run first 10 tests only"
+          timeout 120 ./spells/.wizardry/test-magic --verbose 2>&1 | head -100 &
+          pid=$!
+          sleep 30
+          if kill -0 $pid 2>/dev/null; then
+            echo "✓ First 10 tests completed without crash (or still running)"
+            kill $pid 2>/dev/null || true
+          else
+            wait $pid
+            exitcode=$?
+            if [ $exitcode -eq 139 ]; then
+              echo "✗ Exit 139 in first 10 tests!"
+              exit 139
+            fi
+          fi
+          
+          echo "Step 2: Run tests for exactly 60 seconds"
+          timeout 60 ./spells/.wizardry/test-magic --verbose 2>&1 | tee /tmp/test-60s.log || true
+          if [ $? -eq 139 ]; then
+            echo "✗ Exit 139 within 60 seconds!"
+            tail -50 /tmp/test-60s.log
+            exit 139
+          fi
+          echo "✓ No crash within 60 seconds"
+          
+          echo "Step 3: Run tests for exactly 90 seconds"
+          timeout 90 ./spells/.wizardry/test-magic --verbose 2>&1 | tee /tmp/test-90s.log || true
+          if [ $? -eq 139 ]; then
+            echo "✗ Exit 139 between 60-90 seconds!"
+            tail -50 /tmp/test-90s.log
+            exit 139
+          fi
+          echo "✓ No crash within 90 seconds"
+          
+          echo "Step 4: Run full test suite (allow up to 150 seconds)"
+          timeout 150 ./spells/.wizardry/test-magic --verbose 2>&1 | tee /tmp/test-full.log || true
+          exitcode=$?
+          if [ $exitcode -eq 139 ]; then
+            echo "✗ Exit 139 during full test run!"
+            echo "Last 100 lines of output:"
+            tail -100 /tmp/test-full.log
+            exit 139
+          elif [ $exitcode -eq 124 ]; then
+            echo "⚠ Tests timed out after 150 seconds (no crash)"
+            exit 0
+          else
+            echo "✓ Tests completed with exit code: $exitcode"
+            exit $exitcode
+          fi

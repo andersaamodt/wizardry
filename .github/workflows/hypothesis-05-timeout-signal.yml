@@ -1,0 +1,109 @@
+name: "Hypothesis #5 - Timeout/signal handling"
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-timeout-signal:
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: "Hypothesis #5 - Timeout correlates with crash"
+        run: |
+          echo "Testing hypothesis: Exit 139 correlates with elapsed time, not test count"
+          
+          # Source wizardry
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          
+          echo "Observation: Exit 139 happens at ~90-120 seconds across platforms"
+          echo "Testing if this is time-based or test-count-based"
+          echo ""
+          
+          # Test 1: Run for exactly 80 seconds
+          echo "=== Test 1: Run for 80 seconds (before crash window) ==="
+          start_time=$(date +%s)
+          timeout 80 ./spells/.wizardry/test-magic --verbose > /tmp/test-80s.log 2>&1 || true
+          exit_80=$?
+          end_time=$(date +%s)
+          elapsed_80=$((end_time - start_time))
+          
+          echo "Exit code: $exit_80, Elapsed: ${elapsed_80}s"
+          if [ $exit_80 -eq 139 ]; then
+            echo "✗ Crashed before 80s - hypothesis may be wrong"
+          else
+            echo "✓ No crash at 80s"
+          fi
+          
+          echo ""
+          # Test 2: Run for exactly 100 seconds
+          echo "=== Test 2: Run for 100 seconds (in crash window) ==="
+          start_time=$(date +%s)
+          timeout 100 ./spells/.wizardry/test-magic --verbose > /tmp/test-100s.log 2>&1 || true
+          exit_100=$?
+          end_time=$(date +%s)
+          elapsed_100=$((end_time - start_time))
+          
+          echo "Exit code: $exit_100, Elapsed: ${elapsed_100}s"
+          if [ $exit_100 -eq 139 ]; then
+            echo "✓ Crashed at ~${elapsed_100}s - correlates with time!"
+            echo "Last 50 lines:"
+            tail -50 /tmp/test-100s.log
+            exit 139
+          else
+            echo "⚠ No crash at 100s"
+          fi
+          
+          echo ""
+          # Test 3: Run for exactly 150 seconds
+          echo "=== Test 3: Run for 150 seconds (after crash window) ==="
+          start_time=$(date +%s)
+          timeout 150 ./spells/.wizardry/test-magic --verbose > /tmp/test-150s.log 2>&1 || true
+          exit_150=$?
+          end_time=$(date +%s)
+          elapsed_150=$((end_time - start_time))
+          
+          echo "Exit code: $exit_150, Elapsed: ${elapsed_150}s"
+          if [ $exit_150 -eq 139 ]; then
+            echo "✓ Crashed at ~${elapsed_150}s"
+            echo "Last 50 lines:"
+            tail -50 /tmp/test-150s.log
+            exit 139
+          elif [ $exit_150 -eq 124 ]; then
+            echo "⏱ Timed out at 150s (no crash)"
+          else
+            echo "✓ Completed without crash"
+          fi
+          
+          echo ""
+          echo "=== Analysis ==="
+          if [ $exit_100 -eq 139 ] || [ $exit_150 -eq 139 ]; then
+            echo "✓ HYPOTHESIS CONFIRMED - crash correlates with time (90-150s window)"
+            echo "This suggests:"
+            echo "  - Timeout-based mechanism"
+            echo "  - Resource accumulation over time"
+            echo "  - Time-based test that runs late"
+            exit 139
+          else
+            echo "✗ No crash detected in time windows - hypothesis rejected"
+            exit 0
+          fi

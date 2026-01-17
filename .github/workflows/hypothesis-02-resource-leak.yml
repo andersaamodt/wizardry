@@ -1,0 +1,94 @@
+name: "Hypothesis #2 - Resource accumulation"
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-resource-leak:
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: "Hypothesis #2 - Resource leak over time"
+        run: |
+          echo "Testing hypothesis: Tests leak resources causing crash after threshold"
+          
+          # Source wizardry
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          
+          # Monitor resource usage before tests
+          echo "=== Initial resource usage ==="
+          ps aux | head -5
+          free -h
+          ulimit -a
+          
+          # Run test-magic and monitor resources
+          echo ""
+          echo "=== Running tests with resource monitoring ==="
+          
+          # Start test-magic in background
+          ./spells/.wizardry/test-magic --verbose > /tmp/test-output.log 2>&1 &
+          test_pid=$!
+          
+          # Monitor every 10 seconds
+          start_time=$(date +%s)
+          while kill -0 $test_pid 2>/dev/null; do
+            current_time=$(date +%s)
+            elapsed=$((current_time - start_time))
+            
+            # Get resource usage
+            mem_usage=$(ps -p $test_pid -o %mem --no-headers 2>/dev/null || echo "0.0")
+            cpu_usage=$(ps -p $test_pid -o %cpu --no-headers 2>/dev/null || echo "0.0")
+            open_files=$(lsof -p $test_pid 2>/dev/null | wc -l)
+            
+            echo "[${elapsed}s] PID:$test_pid MEM:${mem_usage}% CPU:${cpu_usage}% FILES:${open_files}"
+            
+            # Check if we've exceeded 120 seconds
+            if [ $elapsed -gt 120 ]; then
+              echo "⚠ Tests running longer than 120s, killing..."
+              kill $test_pid 2>/dev/null || true
+              break
+            fi
+            
+            sleep 10
+          done
+          
+          # Wait for test to complete
+          wait $test_pid 2>/dev/null
+          exitcode=$?
+          
+          echo ""
+          echo "=== Test completed with exit code: $exitcode ==="
+          
+          if [ $exitcode -eq 139 ]; then
+            echo "✗ Exit 139 detected - resource leak hypothesis CONFIRMED"
+            echo "Last 100 lines of test output:"
+            tail -100 /tmp/test-output.log
+            exit 139
+          elif [ $exitcode -eq 0 ]; then
+            echo "✓ Tests passed - no resource leak"
+            exit 0
+          else
+            echo "⚠ Tests failed with exit code $exitcode (not 139)"
+            tail -50 /tmp/test-output.log
+            exit $exitcode
+          fi

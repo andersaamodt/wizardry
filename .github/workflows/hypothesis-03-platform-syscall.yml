@@ -1,0 +1,79 @@
+name: "Hypothesis #3 - Platform syscall difference"
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-platform-syscall:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        include:
+          - os: ubuntu-latest
+            label: ubuntu
+    
+    runs-on: ${{ matrix.os }}
+    env:
+      WIZARDRY_OS_LABEL: ${{ matrix.label }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap uidmap attr file strace
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: "Hypothesis #3 - Platform-specific syscall crash"
+        run: |
+          echo "Testing hypothesis: Specific syscalls cause crash on Ubuntu/Arch but not Debian"
+          
+          # Source wizardry
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          
+          echo "Step 1: Run test-magic under strace to capture syscalls"
+          # Run with timeout and capture syscalls
+          timeout 120 strace -f -o /tmp/syscall-trace.log \
+            ./spells/.wizardry/test-magic --verbose > /tmp/test-output.log 2>&1 || true
+          
+          exitcode=$?
+          
+          if [ $exitcode -eq 139 ]; then
+            echo "✗ Exit 139 detected!"
+            echo ""
+            echo "=== Last 50 lines of test output ==="
+            tail -50 /tmp/test-output.log
+            echo ""
+            echo "=== Last 100 syscalls before crash ==="
+            tail -100 /tmp/syscall-trace.log
+            echo ""
+            echo "=== Syscall summary ==="
+            grep -oE '^[0-9]+ +[a-z_]+\(' /tmp/syscall-trace.log | \
+              sed 's/^[0-9]* *//' | sort | uniq -c | sort -rn | head -20
+            echo ""
+            echo "=== Signals received ==="
+            grep -E '(SIGSEGV|SIGKILL|SIGTERM|SIGABRT)' /tmp/syscall-trace.log || echo "No signals found"
+            exit 139
+          elif [ $exitcode -eq 124 ]; then
+            echo "⚠ Tests timed out after 120s (no crash)"
+            echo "=== Syscall summary at timeout ==="
+            grep -oE '^[0-9]+ +[a-z_]+\(' /tmp/syscall-trace.log | \
+              sed 's/^[0-9]* *//' | sort | uniq -c | sort -rn | head -20
+            exit 0
+          else
+            echo "✓ Tests completed with exit code $exitcode (no crash)"
+            exit $exitcode
+          fi

@@ -1,0 +1,100 @@
+name: "Hypothesis #4 - Test ordering dependency"
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-ordering-dependency:
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: "Hypothesis #4 - Test ordering causes crash"
+        run: |
+          echo "Testing hypothesis: Test execution order creates state that causes crash"
+          
+          # Source wizardry
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          
+          echo "Step 1: Identify all test files"
+          test_files=$(find .tests -name 'test-*.sh' -type f | sort)
+          test_count=$(echo "$test_files" | wc -l)
+          echo "Found $test_count test files"
+          
+          echo ""
+          echo "Step 2: Run normal test suite (expected to crash)"
+          timeout 120 ./spells/.wizardry/test-magic --verbose > /tmp/normal-order.log 2>&1 || true
+          normal_exit=$?
+          
+          if [ $normal_exit -eq 139 ]; then
+            echo "✓ Normal order crashed with exit 139 (as expected)"
+            echo "Last test before crash:"
+            tail -20 /tmp/normal-order.log | grep -E '(PASS|FAIL|Running)' || true
+          elif [ $normal_exit -eq 124 ]; then
+            echo "⚠ Normal order timed out (no crash)"
+          else
+            echo "⚠ Normal order exit code: $normal_exit (not 139)"
+          fi
+          
+          echo ""
+          echo "Step 3: Run tests in reverse order"
+          # Create reversed test list
+          echo "$test_files" | tac > /tmp/reversed-tests.txt
+          
+          # Run tests individually in reverse order
+          reverse_exit=0
+          test_num=0
+          while IFS= read -r test_file; do
+            test_num=$((test_num + 1))
+            if [ $test_num -gt 50 ]; then
+              echo "Stopping after 50 tests in reverse order"
+              break
+            fi
+            
+            timeout 10 "$test_file" > /dev/null 2>&1 || true
+            test_exit=$?
+            if [ $test_exit -eq 139 ]; then
+              echo "✗ Exit 139 on reversed test #$test_num: $test_file"
+              reverse_exit=139
+              break
+            fi
+          done < /tmp/reversed-tests.txt
+          
+          if [ $reverse_exit -eq 139 ]; then
+            echo "✗ Reverse order also crashed - NOT an ordering issue"
+            exit 139
+          else
+            echo "✓ Reverse order completed without crash"
+          fi
+          
+          echo ""
+          echo "Step 4: Analysis"
+          if [ $normal_exit -eq 139 ] && [ $reverse_exit -ne 139 ]; then
+            echo "✓ HYPOTHESIS CONFIRMED - test ordering matters!"
+            exit 0
+          elif [ $normal_exit -eq 139 ] && [ $reverse_exit -eq 139 ]; then
+            echo "✗ Both orders crash - likely specific test, not ordering"
+            exit 139
+          else
+            echo "⚠ Neither order crashed consistently"
+            exit 0
+          fi
