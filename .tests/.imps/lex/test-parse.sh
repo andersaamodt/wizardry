@@ -7,12 +7,6 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
-test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
-  test_root=$(dirname "$test_root")
-done
-# shellcheck source=/dev/null
-. "$test_root/spells/.imps/test/test-bootstrap"
 
 test_parse_imperative_is_executable() {
   [ -x "$ROOT_DIR/spells/.imps/lex/parse" ]
@@ -537,11 +531,6 @@ EOF
 }
 run_test_case "parse numeric arg not part of command name (banish 5)" test_parse_numeric_arg_not_part_of_command_name
 
-test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
-  test_root=$(dirname "$test_root")
-done
-. "$test_root/spells/.imps/test/test-bootstrap"
 
 # Helper to check no shift/parse errors
 check_no_errors() {
@@ -699,12 +688,6 @@ run_test_case "command with mixed args" test_command_with_mixed_args
 run_test_case "numeric only args (jump 1)" test_numeric_only_args
 run_test_case "command ending in number (jump to 5)" test_command_ending_in_number
 
-test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
-  test_root=$(dirname "$test_root")
-done
-# shellcheck source=/dev/null
-. "$test_root/spells/.imps/test/test-bootstrap"
 
 # Test that parse doesn't try to exec functions (which would cause infinite recursion)
 test_parse_skips_functions() {
@@ -781,12 +764,6 @@ EOF
 run_test_case "parse skips functions to avoid recursion" test_parse_skips_functions
 run_test_case "parse skips builtins" test_parse_skips_builtins
 
-test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
-  test_root=$(dirname "$test_root")
-done
-# shellcheck source=/dev/null
-. "$test_root/spells/.imps/test/test-bootstrap"
 
 # Test that numeric arguments don't get concatenated into command names
 test_parse_skips_numeric_args() {
@@ -883,12 +860,6 @@ run_test_case "parse skips numeric arguments" test_parse_skips_numeric_args
 run_test_case "parse skips flags" test_parse_skips_flags
 run_test_case "parse handles multi-word command with numeric arg" test_parse_multiword_with_numeric
 
-test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
-  test_root=$(dirname "$test_root")
-done
-# shellcheck source=/dev/null
-. "$test_root/spells/.imps/test/test-bootstrap"
 
 # Bug: Parse counted command words correctly but built names with ALL args including numbers
 # Test: Ensure "banish 5" calls banish with arg 5, not looks for "banish-5"
@@ -1013,11 +984,6 @@ run_test_case "parse is POSIX compliant (no type command)" test_parse_posix_comp
 run_test_case "parse building loop skips flags" test_parse_building_skips_flags
 run_test_case "parse multi-word with numeric arg" test_parse_multiword_with_number
 
-test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
-  test_root=$(dirname "$test_root")
-done
-. "$test_root/spells/.imps/test/test-bootstrap"
 
 test_jump_to_marker_no_args() {
   # Test that jump-to-marker works without arguments (doesn't try to over-shift)
@@ -1094,11 +1060,6 @@ run_test_case "jump-to-marker without args (no shift error)" test_jump_to_marker
 run_test_case "jump to marker without args (no shift error)" test_jump_to_marker_with_spaces_no_args
 run_test_case "jump to location without args (no shift error)" test_jump_to_location_no_args
 
-test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
-  test_root=$(dirname "$test_root")
-done
-. "$test_root/spells/.imps/test/test-bootstrap"
 
 # Test 1: User typed "jump-to-marker" - should work
 test_user_typed_jump_to_marker_hyphenated() {
