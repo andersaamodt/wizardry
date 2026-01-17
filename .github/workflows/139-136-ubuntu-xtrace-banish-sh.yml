@@ -2,6 +2,7 @@ name: 139-136 Ubuntu Source block 36, xtrace, run banish via sh -c
 
 on:
   pull_request:
+    if: ${{ false }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

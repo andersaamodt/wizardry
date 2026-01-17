@@ -69,14 +69,14 @@ jobs:
 
           # Workflows to monitor
           workflows=(
-            "139-129 Ubuntu Source block 36, xtrace to file, banish"
-            "139-130 Ubuntu Source block 36, xtrace, banish in fresh sh"
-            "139-131 Ubuntu Source block 36, xtrace, unset function, banish"
-            "139-132 Ubuntu Source block 36, xtrace, command banish"
-            "139-133 Ubuntu Source block 36, xtrace with set +x before banish"
-            "139-134 Ubuntu Source block 36, xtrace, reopen stderr, banish"
-            "139-135 Ubuntu Source block 36, xtrace, env-clean banish"
-            "139-136 Ubuntu Source block 36, xtrace, run banish via sh -c"
+            "139-137 Ubuntu Xtrace validate-spells pocket-dimension"
+            "139-138 Ubuntu Xtrace validate-spells wizard-eyes"
+            "139-139 Ubuntu Xtrace validate-spells spellbook-store"
+            "139-140 Ubuntu Xtrace validate-spells imps format-duration"
+            "139-141 Ubuntu Xtrace spell-levels list"
+            "139-142 Ubuntu Xtrace pocket dimension call"
+            "139-143 Ubuntu Xtrace source pocket gloss only"
+            "139-144 Ubuntu Xtrace banish level 8 only"
           )
           
           # Total number of workflows we're monitoring
