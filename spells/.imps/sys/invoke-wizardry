@@ -42,14 +42,6 @@ set +eu
 if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
   [ "${WIZARDRY_DEBUG-}" = "1" ] && \
     printf '[invoke-wizardry] %s\n' "Already invoked, skipping" >&2
-  # Even if already invoked, ensure banish function is available
-  # Define it as a function (takes precedence over PATH)
-  if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
-    banish() {
-      [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[banish] %s\n' "Function called" >&2
-      "${WIZARDRY_DIR:-$HOME/.wizardry}/spells/wards/banish" "$@"
-    }
-  fi
   return 0
 fi
 _WIZARDRY_INVOKED=1
@@ -270,15 +262,5 @@ fi
 
 # Wizardry initialization complete
 [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Wizardry initialization complete" >&2
-
-# Preload banish function for quick access
-# This allows 'banish' to be called directly without PATH lookup
-if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
-  banish() {
-    [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[banish] %s\n' "Function called" >&2
-    "$WIZARDRY_DIR/spells/wards/banish" "$@"
-  }
-fi
-
 set +eu
 return 0
