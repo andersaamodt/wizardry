@@ -71,7 +71,7 @@ SPELLBOOK_DIR="$spellbook"
 export SPELLBOOK_DIR
 . "$ROOT_DIR/spells/.imps/sys/invoke-thesaurus" >/dev/null 2>&1 || true
 # Check that default synonyms file has content in word=target format
-grep -q "^detect-os=divine-distro" "$spellbook/.default-synonyms" || exit 1
+grep -q "^detect-os=detect-distro" "$spellbook/.default-synonyms" || exit 1
 grep -q "^home=jump-to-marker" "$spellbook/.default-synonyms" || exit 1
 printf 'defaults loaded\n'
 EOF

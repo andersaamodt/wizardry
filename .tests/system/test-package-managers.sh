@@ -2,7 +2,7 @@
 # Test coverage for package-managers spell:
 # - Shows usage with --help
 # - Script exists and is executable
-# - Uses divine-distro
+# - Uses detect-distro
 
 set -eu
 
