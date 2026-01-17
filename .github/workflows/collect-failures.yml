@@ -94,6 +94,15 @@ jobs:
             "139-96 Ubuntu gloss bucket 23 per-gloss banish"
             "139-97 Ubuntu gloss bucket 24 per-gloss banish"
             "139-98 Ubuntu gloss bucket 25 per-gloss banish"
+            "139-99 Ubuntu gloss block 33 banish"
+            "139-100 Ubuntu gloss block 34 banish"
+            "139-101 Ubuntu gloss block 35 banish"
+            "139-102 Ubuntu gloss block 36 banish"
+            "139-103 Ubuntu gloss block 37 banish"
+            "139-104 Ubuntu gloss block 38 banish"
+            "139-105 Ubuntu gloss block 39 banish"
+            "139-106 Ubuntu gloss block 40 banish"
+            "139-107 Ubuntu gloss block 41 banish"
           )
           
           # Total number of workflows we're monitoring
@@ -400,7 +409,7 @@ jobs:
             for workflow_name in "${workflows[@]}"; do
               # Find the latest run for this workflow
               run_info=$(echo "$runs_json" | jq -r --arg name "$workflow_name" \
-                '.workflow_runs[] | select(.name == $name) | "\(.id)|\(.conclusion)|\(.status)"' \
+                '[.workflow_runs[] | select(.name == $name)] | sort_by(.run_number) | reverse | .[0] | "\(.id)|\(.conclusion)|\(.status)"' \
                 | head -1)
 
               if [ -z "$run_info" ]; then
