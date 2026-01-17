@@ -1,0 +1,36 @@
+name: "Hypothesis #123: Test set -e in subshells"
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install wizardry
+        run: |
+          ./install --yes --default
+          echo "$HOME/.wizardry/spells/glossary" >> $GITHUB_PATH
+          
+      - name: Source invoke-wizardry
+        run: |
+          . "$HOME/.wizardry/spells/.imps/sys/invoke-wizardry"
+          echo "WIZARDRY_DIR=$WIZARDRY_DIR" >> $GITHUB_ENV
+          
+      - name: Strategy
+        run: echo "Strategy: Test set -e in subshells"
+        
+      - name: Run test
+        run: |
+          . "$HOME/.wizardry/spells/.imps/sys/invoke-wizardry"
+          
+set -e
+(
+  set -e
+  banish 8 && test-magic --verbose
+)
+
