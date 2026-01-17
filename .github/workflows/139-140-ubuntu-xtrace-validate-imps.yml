@@ -68,7 +68,7 @@ jobs:
                 validate-spells --quiet spellbook-store
                 ;;
               validate_imps)
-                validate-spells --quiet --imps format-duration
+                validate-spells --quiet --imps fmt/format-duration
                 ;;
               spell_levels)
                 spell-levels 8 spells

@@ -77,6 +77,8 @@ jobs:
             "139-142 Ubuntu Xtrace pocket dimension call"
             "139-143 Ubuntu Xtrace source pocket gloss only"
             "139-144 Ubuntu Xtrace banish level 8 only"
+            "139-145 Ubuntu Xtrace validate-spells level8 spells"
+            "139-146 Ubuntu Xtrace validate-spells level8 imps"
           )
           
           # Total number of workflows we're monitoring

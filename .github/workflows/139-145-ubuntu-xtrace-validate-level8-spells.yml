@@ -1,4 +1,4 @@
-name: 139-139 Ubuntu Xtrace validate-spells spellbook-store
+name: 139-145 Ubuntu Xtrace validate-spells level8 spells
 
 on:
   pull_request:
@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  ubuntu-xtrace-validate-spellbook:
-    name: 139-139 Ubuntu Xtrace validate-spells spellbook-store
+  ubuntu-xtrace-validate-level8-spells:
+    name: 139-145 Ubuntu Xtrace validate-spells level8 spells
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -34,7 +34,7 @@ jobs:
             echo 'kernel.apparmor_restrict_unprivileged_userns=0'
           } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
           sudo sysctl --system
-      - name: Xtrace validate-spells spellbook-store
+      - name: Xtrace validate-spells level8 spells
         run: |
           set +e
           ulimit -c unlimited || true
@@ -57,31 +57,14 @@ jobs:
             . "$block_36"
             set -x
 
-            case "validate_spellbook" in
-              validate_pocket)
-                validate-spells --quiet pocket-dimension
+            case "validate_level8_spells" in
+              validate_level8_spells)
+                spells=$(spell-levels 8 spells)
+                validate-spells --quiet $spells
                 ;;
-              validate_wizard)
-                validate-spells --quiet wizard-eyes
-                ;;
-              validate_spellbook)
-                validate-spells --quiet spellbook-store:.wizardry
-                ;;
-              validate_imps)
-                validate-spells --quiet --imps format-duration
-                ;;
-              spell_levels)
-                spell-levels 8 spells
-                spell-levels 8 imps
-                ;;
-              pocket_call)
-                pocket dimension || true
-                ;;
-              pocket_only)
-                printf '%s\n' "[gloss-test] pocket function loaded"
-                ;;
-              banish_level8)
-                banish 8 --only --no-tests --no-heal
+              validate_level8_imps)
+                imps=$(spell-levels 8 imps)
+                validate-spells --quiet --imps $imps
                 ;;
             esac
           )

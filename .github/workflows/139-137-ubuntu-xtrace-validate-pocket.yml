@@ -59,7 +59,7 @@ jobs:
 
             case "validate_pocket" in
               validate_pocket)
-                validate-spells --quiet pocket-dimension
+                validate-spells --quiet pocket-dimension:system
                 ;;
               validate_wizard)
                 validate-spells --quiet wizard-eyes
