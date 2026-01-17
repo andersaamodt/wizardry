@@ -1,0 +1,28 @@
+name: "Hypothesis #159: Call banish multiple times"
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/hypothesis-159-*.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+          
+      - name: Test hypothesis
+        run: |
+
+          # Test if second banish works
+          . spells/.imps/sys/invoke-wizardry
+          banish 8 || true
+          sleep 1
+          banish 8
+          ./spells/.wizardry/test-magic --verbose

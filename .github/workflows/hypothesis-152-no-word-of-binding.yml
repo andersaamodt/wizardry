@@ -1,0 +1,25 @@
+name: "Hypothesis #152: Skip word-of-binding entirely"
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/hypothesis-152-*.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+          
+      - name: Test hypothesis
+        run: |
+          
+          # Modify banish to skip word-of-binding call
+          sed -i "/word_of_binding/d" spells/.imps/wards/banish
+          . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose

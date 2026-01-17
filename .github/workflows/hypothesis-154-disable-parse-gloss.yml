@@ -1,0 +1,25 @@
+name: "Hypothesis #154: Disable parse command glossing"
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/hypothesis-154-*.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+          sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+          
+      - name: Test hypothesis
+        run: |
+
+          # Make parse not use glosses
+          sed -i "s/command -v \"\$_spell_name\"/false/" spells/.imps/lex/parse
+          . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose
