@@ -1,7 +1,7 @@
-name: 139-198 Ubuntu detect gloss variants
+name: 139-201 Ubuntu gloss block bisect
 
 on:
-  workflow_dispatch:
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,15 +11,15 @@ permissions:
   contents: read
 
 jobs:
-  ubuntu-gloss-without-detect:
-    name: 139-198 Ubuntu gloss without detect
+  ubuntu-gloss-blocks-1-103:
+    name: 139-201 Ubuntu gloss blocks 1-103
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install xattr tooling
         run: sudo apt-get update && sudo apt-get install -y attr
-      - name: Remove detect gloss and run banish
+      - name: Load blocks 1-103 and run banish
         run: |
           set +e
           ulimit -c unlimited || true
@@ -30,10 +30,12 @@ jobs:
             gloss_trim=$(mktemp /tmp/wizardry-gloss-trim.XXXXXX)
             generate-glosses --output "$gloss_file"
             awk '
-              BEGIN { skip=0 }
-              /^# First-word gloss for commands starting with '\''detect'\''/ { skip=1; next }
-              /^# First-word gloss/ { skip=0 }
-              !skip { print }
+              BEGIN { idx=0; keep=0 }
+              /^# First-word gloss/ {
+                idx++
+                keep = (idx >= 1 && idx <= 103)
+              }
+              keep { print }
             ' "$gloss_file" > "$gloss_trim"
             . "$gloss_trim"
             set -x
@@ -47,15 +49,15 @@ jobs:
           fi
           exit "$status"
 
-  ubuntu-gloss-only-detect:
-    name: 139-199 Ubuntu gloss only detect
+  ubuntu-gloss-blocks-104-206:
+    name: 139-202 Ubuntu gloss blocks 104-206
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install xattr tooling
         run: sudo apt-get update && sudo apt-get install -y attr
-      - name: Source only detect gloss and run banish
+      - name: Load blocks 104-206 and run banish
         run: |
           set +e
           ulimit -c unlimited || true
@@ -63,17 +65,17 @@ jobs:
             set -e
             . spells/.imps/sys/invoke-wizardry
             gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
-            gloss_only=$(mktemp /tmp/wizardry-gloss-only.XXXXXX)
+            gloss_trim=$(mktemp /tmp/wizardry-gloss-trim.XXXXXX)
             generate-glosses --output "$gloss_file"
             awk '
-              BEGIN { keep=0 }
-              /^# First-word gloss for commands starting with '\''detect'\''/ { keep=1 }
-              /^# First-word gloss/ && $0 !~ /detect/ { if (keep) exit }
+              BEGIN { idx=0; keep=0 }
+              /^# First-word gloss/ {
+                idx++
+                keep = (idx >= 104 && idx <= 206)
+              }
               keep { print }
-            ' "$gloss_file" > "$gloss_only"
-            printf '%s\n' "[gloss-test] detect block preview"
-            sed -n '1,200p' "$gloss_only"
-            . "$gloss_only"
+            ' "$gloss_file" > "$gloss_trim"
+            . "$gloss_trim"
             set -x
             banish 8 --only --no-tests --no-heal
           )
@@ -85,15 +87,15 @@ jobs:
           fi
           exit "$status"
 
-  ubuntu-gloss-detect-noop:
-    name: 139-200 Ubuntu gloss detect noop
+  ubuntu-gloss-blocks-1-68:
+    name: 139-203 Ubuntu gloss blocks 1-68
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install xattr tooling
         run: sudo apt-get update && sudo apt-get install -y attr
-      - name: Replace detect gloss body and run banish
+      - name: Load blocks 1-68 and run banish
         run: |
           set +e
           ulimit -c unlimited || true
@@ -101,11 +103,17 @@ jobs:
             set -e
             . spells/.imps/sys/invoke-wizardry
             gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+            gloss_trim=$(mktemp /tmp/wizardry-gloss-trim.XXXXXX)
             generate-glosses --output "$gloss_file"
-            . "$gloss_file"
-            detect() {
-              return 0
-            }
+            awk '
+              BEGIN { idx=0; keep=0 }
+              /^# First-word gloss/ {
+                idx++
+                keep = (idx >= 1 && idx <= 68)
+              }
+              keep { print }
+            ' "$gloss_file" > "$gloss_trim"
+            . "$gloss_trim"
             set -x
             banish 8 --only --no-tests --no-heal
           )
