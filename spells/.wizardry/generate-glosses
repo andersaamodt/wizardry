@@ -133,7 +133,7 @@ set -eu
   # This enables space-separated invocation: env or VAR DEFAULT
   # ============================================================================
   
-  [ "$quiet" -eq 0 ] && printf 'generate-glosses: Collecting first words from all spells and imps...\n' >&2 || true
+  [ "$quiet" -eq 0 ] && printf 'generate-glosses: Collecting first words from all spells and imps...\n' >&2
   
   # ============================================================================
   # FUNCTION GENERATION HELPERS
@@ -299,7 +299,7 @@ uname|uniq|wc|xargs|xattr)
   # SCAN AND GENERATE GLOSSES FOR ALL SPELLS AND IMPS (OPTIMIZED)
   # ============================================================================
   
-  [ "$quiet" -eq 0 ] && printf 'generate-glosses: Scanning for spells and imps...\n' >&2 || true
+  [ "$quiet" -eq 0 ] && printf 'generate-glosses: Scanning for spells and imps...\n' >&2
   
   # OPTIMIZATION STRATEGY:
   # 1. Use find (necessary for nested directories like .arcana)
@@ -347,7 +347,7 @@ uname|uniq|wc|xargs|xattr)
     _spell_count=$((_spell_count + 1))
   done < "$_tmpfile"
   
-  [ "$quiet" -eq 0 ] && printf 'generate-glosses: Found %d executable files\n' "$_spell_count" >&2 || true
+  [ "$quiet" -eq 0 ] && printf 'generate-glosses: Found %d executable files\n' "$_spell_count" >&2
   
   # Warn if no files found
   if [ "$_spell_count" -eq 0 ]; then
@@ -357,7 +357,7 @@ uname|uniq|wc|xargs|xattr)
   # OPTIMIZATION: Single grep pass to find all uncastable spells
   # This is much faster than grepping each file individually (405 greps → 1 grep)
   # Use xargs to avoid "Argument list too long" error
-  [ "$quiet" -eq 0 ] && printf 'generate-glosses: Scanning for uncastable spells...\n' >&2 || true
+  [ "$quiet" -eq 0 ] && printf 'generate-glosses: Scanning for uncastable spells...\n' >&2
   _uncastable_spells=" "  # Space-separated list
   if _uncastable_files=$(cat "$_tmpfile" | xargs grep -l "^# Uncastable pattern" 2>/dev/null); then
     for _uc_path in $_uncastable_files; do
@@ -366,7 +366,7 @@ uname|uniq|wc|xargs|xattr)
     done
   fi
   
-  [ "$quiet" -eq 0 ] && printf 'generate-glosses: Found %d uncastable spells\n' "$(printf '%s' "$_uncastable_spells" | tr ' ' '\n' | grep -c .)" >&2 || true
+  [ "$quiet" -eq 0 ] && printf 'generate-glosses: Found %d uncastable spells\n' "$(printf '%s' "$_uncastable_spells" | tr ' ' '\n' | grep -c .)" >&2
   
   # Emit comment
   emit_line "# ============================================================================"
@@ -513,7 +513,7 @@ uname|uniq|wc|xargs|xattr)
   # Process user synonyms
   synonym_file="$spell_home/.synonyms"
   if [ -f "$synonym_file" ]; then
-    [ "$quiet" -eq 0 ] && printf '%s\n' "generate-glosses: Processing user synonyms..." >&2 || true
+    [ "$quiet" -eq 0 ] && info "Processing user synonyms..." >&2
     while IFS= read -r line || [ -n "$line" ]; do
       # Skip empty lines and comments
       case "$line" in
@@ -522,7 +522,7 @@ uname|uniq|wc|xargs|xattr)
       
       # Parse word=target format
       if ! printf '%s' "$line" | grep -q "="; then
-        [ "$quiet" -eq 0 ] && printf '%s\n' "generate-glosses: Malformed synonym line: $line" >&2 || true
+        [ "$quiet" -eq 0 ] && warn "Malformed synonym line: $line" >&2
         continue
       fi
       
@@ -531,14 +531,14 @@ uname|uniq|wc|xargs|xattr)
       
       # Validate synonym word
       if ! is_synonym_valid "$_word"; then
-        [ "$quiet" -eq 0 ] && printf '%s\n' "generate-glosses: Invalid synonym: $_word" >&2 || true
+        [ "$quiet" -eq 0 ] && warn "Invalid synonym: $_word" >&2
         continue
       fi
       
       # Check for duplicates
       case "$_synonyms_seen" in
         *" $_word "*) 
-          [ "$quiet" -eq 0 ] && printf '%s\n' "generate-glosses: Skipping duplicate synonym: $_word" >&2 || true
+          [ "$quiet" -eq 0 ] && warn "Skipping duplicate synonym: $_word" >&2
           continue
           ;;
       esac
@@ -584,7 +584,7 @@ uname|uniq|wc|xargs|xattr)
           case "$_first_words_seen" in
             *" $_word "*)
               # Conflicts with first-word gloss - skip (gloss will handle via parse)
-              [ "$quiet" -eq 0 ] && printf '%s\n' "generate-glosses: Synonym '$_word' handled by first-word gloss" >&2 || true
+              [ "$quiet" -eq 0 ] && info "Synonym '$_word' handled by first-word gloss" >&2
               ;;
             *)
               # No conflict - generate function for direct invocation
@@ -600,7 +600,7 @@ uname|uniq|wc|xargs|xattr)
   # Process default synonyms
   default_synonym_file="$spell_home/.default-synonyms"
   if [ -f "$default_synonym_file" ]; then
-    [ "$quiet" -eq 0 ] && printf '%s\n' "generate-glosses: Processing default synonyms..." >&2 || true
+    [ "$quiet" -eq 0 ] && info "Processing default synonyms..." >&2
     while IFS= read -r line || [ -n "$line" ]; do
       # Skip empty lines and comments
       case "$line" in
@@ -609,7 +609,7 @@ uname|uniq|wc|xargs|xattr)
       
       # Parse word=target format
       if ! printf '%s' "$line" | grep -q "="; then
-        [ "$quiet" -eq 0 ] && printf '%s\n' "generate-glosses: Malformed default synonym line: $line" >&2 || true
+        [ "$quiet" -eq 0 ] && warn "Malformed default synonym line: $line" >&2
         continue
       fi
       
@@ -625,7 +625,7 @@ uname|uniq|wc|xargs|xattr)
       # Check for duplicates (user synonyms take precedence)
       case "$_synonyms_seen" in
         *" $_word "*) 
-          [ "$quiet" -eq 0 ] && printf '%s\n' "generate-glosses: User synonym overrides default: $_word" >&2 || true
+          [ "$quiet" -eq 0 ] && info "User synonym overrides default: $_word" >&2
           continue
           ;;
       esac
@@ -671,7 +671,7 @@ uname|uniq|wc|xargs|xattr)
           case "$_first_words_seen" in
             *" $_word "*)
               # Conflicts with first-word gloss - skip (gloss will handle via parse)
-              [ "$quiet" -eq 0 ] && printf '%s\n' "generate-glosses: Synonym '$_word' handled by first-word gloss" >&2 || true
+              [ "$quiet" -eq 0 ] && info "Synonym '$_word' handled by first-word gloss" >&2
               ;;
             *)
               # No conflict - generate function for direct invocation
