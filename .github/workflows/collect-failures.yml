@@ -69,14 +69,12 @@ jobs:
 
           # Workflows to monitor
           workflows=(
-            "139-147 Ubuntu Xtrace xattr helper check"
-            "139-148 Ubuntu Xtrace xattr filesystem check"
-            "139-149 Ubuntu Xtrace level8 spells show-status"
-            "139-150 Ubuntu Xtrace level8 imps show-status"
-            "139-151 Ubuntu Xtrace level8 skip xattr checks"
-            "139-152 Ubuntu Xtrace level8 skip spell validation"
-            "139-153 Ubuntu Xtrace level8 skip imp validation"
-            "139-154 Ubuntu Xtrace level8 minimal path"
+            "139-155 Ubuntu Xtrace banish 8 with validate-spells stubbed"
+            "139-156 Ubuntu Xtrace banish 8 with spell-levels stubbed"
+            "139-157 Ubuntu Xtrace banish 8 with xattr stubbed"
+            "139-158 Ubuntu Xtrace banish 8 with getfattr/setfattr stubbed"
+            "139-159 Ubuntu Xtrace banish 8 with validate-spells and spell-levels stubbed"
+            "139-160 Ubuntu Xtrace banish 8 without block 36"
           )
           
           # Total number of workflows we're monitoring

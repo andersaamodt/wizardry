@@ -2,6 +2,7 @@ name: 139-147 Ubuntu Xtrace xattr helper check
 
 on:
   pull_request:
+    if: ${{ false }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

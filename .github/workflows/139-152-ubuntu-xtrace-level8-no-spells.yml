@@ -2,6 +2,7 @@ name: 139-152 Ubuntu Xtrace level8 skip spell validation
 
 on:
   pull_request:
+    if: ${{ false }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
