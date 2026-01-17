@@ -1,0 +1,21 @@
+name: "Hypothesis #110 - Check for HERE-doc issues"
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    steps:
+      - uses: actions/checkout@v4
+      - run: chmod +x install spells/.wizardry/generate-glosses
+      - run: ./install
+      - run: |
+          echo "Strategy: Check if HERE-documents in gloss file cause bash parsing issues"
+          ~/.wizardry/spells/.wizardry/generate-glosses > /tmp/glosses.sh
+          echo "Searching for HERE-doc markers (<<):"
+          grep "<<" /tmp/glosses.sh | head -n 20 || echo "No HERE-docs found"
+          echo "---"
+          echo "Testing gloss file in bash vs dash:"
+          bash -n /tmp/glosses.sh 2>&1 || echo "BASH syntax check failed: $?"
+          dash -n /tmp/glosses.sh 2>&1 || echo "DASH syntax check failed: $?"
+      - run: banish 8 && test-magic --verbose

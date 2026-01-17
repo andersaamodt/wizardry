@@ -1,0 +1,20 @@
+name: "Hypothesis #108 - Limit to first 50 glosses"
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    steps:
+      - uses: actions/checkout@v4
+      - run: chmod +x install spells/.wizardry/generate-glosses
+      - run: ./install
+      - run: |
+          echo "Strategy: Generate only first 50 glosses to isolate problematic function"
+          cd ~/.wizardry/spells/.wizardry
+          # Modify to stop after 50 glosses
+          sed -i '/for _emit_first_word in/a\
+          _emit_count=0' generate-glosses
+          sed -i '/emit_first_word_gloss "$_emit_first_word"/a\
+          _emit_count=$((_emit_count + 1)); [ "$_emit_count" -ge 50 ] && break' generate-glosses
+      - run: banish 8 && test-magic --verbose

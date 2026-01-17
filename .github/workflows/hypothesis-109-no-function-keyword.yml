@@ -1,0 +1,18 @@
+name: "Hypothesis #109 - No function keyword (use name() syntax)"
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    steps:
+      - uses: actions/checkout@v4
+      - run: chmod +x install spells/.wizardry/generate-glosses
+      - run: ./install
+      - run: |
+          echo "Strategy: Remove 'function' keyword, use only name() syntax for POSIX compliance"
+          cd ~/.wizardry/spells/.wizardry
+          # The emit_line calls in generate-glosses should use name() not function name()
+          # Check if any 'function' keywords are being generated
+          generate-glosses 2>&1 | grep -i "function " || echo "No 'function' keyword found"
+      - run: banish 8 && test-magic --verbose

@@ -1,0 +1,20 @@
+name: "Hypothesis #114 - Test with dash explicitly"
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    steps:
+      - uses: actions/checkout@v4
+      - run: chmod +x install spells/.wizardry/generate-glosses
+      - run: |
+          echo "Strategy: Run entire test suite with dash to confirm it passes"
+          sudo apt-get update && sudo apt-get install -y dash
+          # Replace /bin/sh with dash explicitly
+          sudo ln -sf /bin/dash /bin/sh
+          which sh
+          ls -la /bin/sh
+          sh --version || dash --version
+      - run: ./install
+      - run: banish 8 && test-magic --verbose

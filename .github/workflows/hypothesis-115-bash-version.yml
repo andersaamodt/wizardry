@@ -1,0 +1,20 @@
+name: "Hypothesis #115 - Bash version comparison"
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    steps:
+      - uses: actions/checkout@v4
+      - run: chmod +x install spells/.wizardry/generate-glosses
+      - run: |
+          echo "Strategy: Document bash version and test with multiple bash versions if available"
+          bash --version
+          echo "---"
+          echo "Testing with bash --posix mode:"
+          bash --posix -c 'echo POSIX mode works'
+      - run: ./install
+      - run: |
+          echo "Running tests with bash --posix:"
+          bash --posix -c 'cd ~/.wizardry && . ~/.wizardry/invoke-wizardry && banish 8 && test-magic --verbose'

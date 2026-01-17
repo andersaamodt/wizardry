@@ -1,0 +1,23 @@
+name: "Hypothesis #112 - Bash strict mode compatibility"
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    steps:
+      - uses: actions/checkout@v4
+      - run: chmod +x install spells/.wizardry/generate-glosses
+      - run: ./install
+      - run: |
+          echo "Strategy: Test if bash strict mode (set -euo pipefail) triggers the bug"
+          cd ~/.wizardry/spells/.wizardry
+          # Prepend strict mode to generated glosses
+          generate-glosses > /tmp/glosses-strict.sh
+          sed -i '1i set -euo pipefail' /tmp/glosses-strict.sh
+          echo "Testing strict mode gloss file:"
+          bash -n /tmp/glosses-strict.sh 2>&1 || echo "Syntax check exit: $?"
+          # Source it
+          echo "Sourcing with strict mode..."
+          (set -euo pipefail; . /tmp/glosses-strict.sh) 2>&1 | head -20 || echo "Source exit: $?"
+      - run: banish 8 && test-magic --verbose

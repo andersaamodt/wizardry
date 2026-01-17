@@ -1,0 +1,21 @@
+name: "Hypothesis #113 - Variable quoting issues"
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    steps:
+      - uses: actions/checkout@v4
+      - run: chmod +x install spells/.wizardry/generate-glosses
+      - run: ./install
+      - run: |
+          echo "Strategy: Check for unquoted variables that could cause word splitting in bash"
+          ~/.wizardry/spells/.wizardry/generate-glosses > /tmp/glosses.sh
+          echo "Searching for potentially unquoted variable expansions:"
+          # Look for $ without quotes around it (basic heuristic)
+          grep -n '\$[A-Za-z_][A-Za-z0-9_]*[^"]' /tmp/glosses.sh | head -n 30 || echo "No obvious unquoted vars"
+          echo "---"
+          echo "Checking for IFS-sensitive patterns:"
+          grep -n 'for .* in \$' /tmp/glosses.sh | head -n 20 || echo "No unquoted for loops"
+      - run: banish 8 && test-magic --verbose

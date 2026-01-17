@@ -1,0 +1,29 @@
+name: "Hypothesis #111 - Simple gloss format (minimal function bodies)"
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    steps:
+      - uses: actions/checkout@v4
+      - run: chmod +x install spells/.wizardry/generate-glosses
+      - run: ./install
+      - run: |
+          echo "Strategy: Simplify all gloss functions to absolute minimum"
+          cd ~/.wizardry/spells/.wizardry
+          cp generate-glosses generate-glosses.orig
+          # Modify emit_first_word_gloss to generate ultra-simple functions
+          cat > /tmp/simple-gloss-patch.sed <<'SEDSCRIPT'
+/emit_first_word_gloss()/,/^}$/ {
+  /emit_line "  # First-word gloss/,/emit_line "}"/ {
+    /emit_line "  # First-word gloss/!{
+      /emit_line "}"/!d
+    }
+  }
+  /emit_line "  parse/c\
+  emit_line "  : # Simplified gloss"
+}
+SEDSCRIPT
+          sed -i -f /tmp/simple-gloss-patch.sed generate-glosses || echo "Patch may have failed"
+      - run: banish 8 && test-magic --verbose

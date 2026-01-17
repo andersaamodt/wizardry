@@ -1,0 +1,27 @@
+name: "Hypothesis #107 - Extract gloss file for analysis"
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    steps:
+      - uses: actions/checkout@v4
+      - run: chmod +x install spells/.wizardry/generate-glosses
+      - run: ./install
+      - run: |
+          echo "Generating glosses and saving to file..."
+          ~/.wizardry/spells/.wizardry/generate-glosses > /tmp/glosses.sh 2>&1 || true
+          echo "First 200 lines of gloss file:"
+          head -n 200 /tmp/glosses.sh || true
+          echo "---"
+          echo "Line count:"
+          wc -l /tmp/glosses.sh || true
+          echo "---"
+          echo "Check for syntax errors:"
+          sh -n /tmp/glosses.sh 2>&1 || echo "Syntax validation exit code: $?"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gloss-file-107
+          path: /tmp/glosses.sh
