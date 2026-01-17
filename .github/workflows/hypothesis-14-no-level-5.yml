@@ -1,0 +1,47 @@
+name: "Hypothesis #14 - Test without Level 5"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-14-no-level-5.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+        
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Test hypothesis - Completely skip Level 5 execution
+        run: |
+          echo "Testing hypothesis: Removing Level 5 (Extended Attributes) from test-magic prevents crash"
+          echo ""
+          echo "Strategy: Modify test-magic to skip Level 5 entirely"
+          echo "Expected: Exit 0 (Level 5 never executes)"
+          echo "If exit 139: Something else at same timing (not Level 5)"
+          echo ""
+          
+          # Backup test-magic
+          cp spells/.wizardry/test-magic spells/.wizardry/test-magic.backup
+          
+          # Comment out Level 5 xattr tests (find the line and disable it)
+          # This is a bit hacky but works for hypothesis testing
+          sed -i '/Level 5: Extended Attributes/,/^$/s/^/#/' spells/.wizardry/test-magic || true
+          
+          echo "Modified test-magic to skip Level 5"
+          
+          . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose

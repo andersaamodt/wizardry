@@ -73,12 +73,11 @@ jobs:
             "Test doppelganger compiled wizardry"
             "Demonstrate wizardry"
             "Compile wizardry"
-            "Hypothesis #06 - ulimit comparison"
-            "Hypothesis #07 - Shell difference"
-            "Hypothesis #08 - CPU time limit"
-            "Hypothesis #09 - Virtual memory limit"
-            "Hypothesis #10 - Stack size limit"
-            "Hypothesis #11 - Timeout at 120s"
+            "Hypothesis #12 - Skip xattr tests"
+            "Hypothesis #13 - Mock xattr commands"
+            "Hypothesis #14 - Test without Level 5"
+            "Hypothesis #15 - Platform xattr implementation"
+            "Hypothesis #16 - FD leak in xattr operations"
           )
           
           # Total number of workflows we're monitoring

@@ -1,0 +1,39 @@
+name: "Hypothesis #12 - Skip xattr tests"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-12-skip-xattr-tests.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+        
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Test hypothesis - Skip xattr tests entirely
+        run: |
+          echo "Testing hypothesis: Skipping Level 5 (Extended Attributes) tests prevents crash"
+          echo ""
+          echo "Strategy: Set WIZARDRY_SKIP_XATTR=1 to skip xattr-related tests"
+          echo "Expected: Exit 0 (tests complete without crash)"
+          echo "If exit 139: Xattr tests are NOT the direct cause"
+          echo ""
+          
+          export WIZARDRY_SKIP_XATTR=1
+          . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose

@@ -1,0 +1,56 @@
+name: "Hypothesis #16 - FD leak in xattr operations"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-16-xattr-fd-leak.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+        
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Test hypothesis - File descriptor leak during xattr tests
+        run: |
+          echo "Testing hypothesis: FD leak during xattr operations causes crash"
+          echo ""
+          echo "Strategy: Monitor open file descriptors during test execution"
+          echo "Expected: FD count explosion before crash"
+          echo "If FDs stable: Not a file descriptor leak"
+          echo ""
+          
+          # Start monitoring FDs in background
+          (
+            while sleep 5; do
+              echo "=== FD count at $(date +%s) ==="
+              ls -1 /proc/self/fd | wc -l
+              ls -la /proc/self/fd | head -n 20
+            done
+          ) &
+          MONITOR_PID=$!
+          
+          # Run test-magic
+          . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose || EXIT_CODE=$?
+          
+          # Kill monitor
+          kill $MONITOR_PID 2>/dev/null || true
+          
+          echo ""
+          echo "Test exited with code: ${EXIT_CODE:-0}"
+          exit ${EXIT_CODE:-0}

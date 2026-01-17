@@ -1,0 +1,49 @@
+name: "Hypothesis #15 - Platform xattr implementation"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-15-xattr-platform.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file strace
+        
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Test hypothesis - Platform xattr syscall differences
+        run: |
+          echo "Testing hypothesis: Platform xattr implementation causes segfault"
+          echo ""
+          echo "Strategy: strace xattr operations to see syscall patterns"
+          echo "Expected: Identify segfault-causing syscalls"
+          echo "If no segfault in strace: Different behavior under tracing"
+          echo ""
+          
+          # Run test-magic under strace, filtering for xattr-related syscalls
+          # This will likely timeout but should capture the segfault
+          timeout 180 strace -f -e trace=getxattr,setxattr,listxattr,removexattr,lgetxattr,lsetxattr,llistxattr,lremovexattr -o /tmp/xattr-strace.log \
+            sh -c '. spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose' || true
+          
+          echo ""
+          echo "=== Last 50 lines of strace output ==="
+          tail -n 50 /tmp/xattr-strace.log || echo "No strace output"
+          
+          echo ""
+          echo "=== Xattr syscall summary ==="
+          grep -E 'getxattr|setxattr|listxattr|removexattr' /tmp/xattr-strace.log | tail -n 20 || echo "No xattr syscalls found"

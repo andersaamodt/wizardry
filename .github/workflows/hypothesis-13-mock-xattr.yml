@@ -1,0 +1,63 @@
+name: "Hypothesis #13 - Mock xattr commands"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-13-mock-xattr.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies  
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+        
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Test hypothesis - Mock xattr commands
+        run: |
+          echo "Testing hypothesis: Replacing xattr commands with no-op mocks prevents crash"
+          echo ""
+          echo "Strategy: Create stub getfattr/setfattr that do nothing"
+          echo "Expected: Exit 0 (xattr operations neutralized)"
+          echo "If exit 139: Not the xattr commands themselves"
+          echo ""
+          
+          # Create mock xattr commands
+          mkdir -p /tmp/mock-xattr
+          cat > /tmp/mock-xattr/getfattr <<'EOF'
+#!/bin/sh
+# Mock getfattr - does nothing
+exit 0
+EOF
+          cat > /tmp/mock-xattr/setfattr <<'EOF'
+#!/bin/sh
+# Mock setfattr - does nothing
+exit 0
+EOF
+          cat > /tmp/mock-xattr/attr <<'EOF'
+#!/bin/sh
+# Mock attr - does nothing
+exit 0
+EOF
+          chmod +x /tmp/mock-xattr/*
+          
+          # Put mocks at front of PATH
+          export PATH="/tmp/mock-xattr:$PATH"
+          
+          echo "Mocked xattr commands:"
+          which getfattr setfattr attr
+          
+          . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose
