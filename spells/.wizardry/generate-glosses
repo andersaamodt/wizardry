@@ -46,7 +46,7 @@ esac
 # Skip require-wizardry check - this is a bootstrap script called from invoke-wizardry
 # require-wizardry || exit 1
 
-set -u
+set -eu
 # Skip env-clear - this is a bootstrap script, we want to preserve caller's environment
 # . env-clear
 
@@ -327,7 +327,7 @@ trap 'rm -f "$_tmpfile"' EXIT HUP INT TERM
       [ -x "$f" ] && printf '%s\n' "$f"
     done
   fi
-} > "$_tmpfile"
+} > "$_tmpfile" || true
 
 _spell_names=""
 _spell_count=0
@@ -599,6 +599,7 @@ fi
 
 # Process default synonyms
 default_synonym_file="$spell_home/.default-synonyms"
+_default_synonym_errors=0
 if [ -f "$default_synonym_file" ]; then
   [ "$quiet" -eq 0 ] && info "Processing default synonyms..." >&2
   while IFS= read -r line || [ -n "$line" ]; do
@@ -619,6 +620,7 @@ if [ -f "$default_synonym_file" ]; then
     # Validate synonym word
     if ! is_synonym_valid "$_word"; then
       printf '%s\n' "ERROR: invalid default synonym: $_word" >&2
+      _default_synonym_errors=$((_default_synonym_errors + 1))
       continue
     fi
     
@@ -682,6 +684,14 @@ if [ -f "$default_synonym_file" ]; then
         ;;
     esac
   done < "$default_synonym_file"
+  
+  # Exit with error if invalid default synonyms were found
+  # This catches configuration errors at development time
+  if [ "$_default_synonym_errors" -gt 0 ]; then
+    printf 'generate-glosses: Found %d invalid default synonym(s)\n' "$_default_synonym_errors" >&2
+    exit 1
+  fi
+  
   emit_line ""
 fi
 
