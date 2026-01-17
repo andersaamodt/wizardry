@@ -154,7 +154,7 @@ set -eu
         ;;
       # BLACKLIST: Shell builtins that CANNOT be overridden
       alias|banish|bg|bind|builtin|cd|command|compgen|compopt|declare|\
-disable|enable|false|fc|fg|getopts|hash|jobs|kill|let|newgrp|pwd|read|\
+disable|enable|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|read|\
 readonly|set|sh|times|trap|true|type|ulimit|umask|unalias|wait|\
 break|case|continue|do|done|elif|else|esac|eval|exec|exit|export|fi|for|if|in|local|return|\
 shift|then|unset|until|while)
