@@ -25,7 +25,7 @@ case "$level" in
   2)
     name='Installation Infrastructure'
     spells=''
-    imps='declare-globals fs/cleanup-dir fs/cleanup-file fs/temp-dir fs/temp-file input/read-line input/tty-raw input/tty-restore input/tty-save paths/abs-path paths/file-name paths/here paths/make paths/norm-path paths/parent paths/path paths/script-dir paths/strip-trailing-slashes paths/temp paths/tilde-path str/contains str/differs str/ends str/equals str/lower str/matches str/seeks str/starts str/trim str/upper sys/any sys/ask-install-wizardry sys/clear-traps sys/clipboard-available sys/env-clear sys/env-or sys/invoke-thesaurus sys/invoke-wizardry sys/must sys/need sys/nix-rebuild sys/nix-shell-add sys/nix-shell-remove sys/nix-shell-status sys/now sys/on sys/on-exit sys/require sys/require-wizardry sys/where'
+    imps='wizardry-globals fs/cleanup-dir fs/cleanup-file fs/temp-dir fs/temp-file input/read-line input/tty-raw input/tty-restore input/tty-save paths/abs-path paths/file-name paths/here paths/make paths/norm-path paths/parent paths/path paths/script-dir paths/strip-trailing-slashes paths/temp paths/tilde-path str/contains str/differs str/ends str/equals str/lower str/matches str/seeks str/starts str/trim str/upper sys/any sys/ask-install-wizardry sys/clear-traps sys/clipboard-available sys/env-clear sys/env-or sys/invoke-thesaurus sys/invoke-wizardry sys/must sys/need sys/nix-rebuild sys/nix-shell-add sys/nix-shell-remove sys/nix-shell-status sys/now sys/on sys/on-exit sys/require sys/require-wizardry sys/where'
     ;;
   3)
     name='Glossary & Parsing'
@@ -60,7 +60,7 @@ case "$level" in
   9)
     name='MUD Basics'
     spells='check-cd-hook:mud look:mud'
-    imps='fs/xattr-helper-usable fs/xattr-list-keys fs/xattr-read-batch fs/xattr-read-value fs/xattr-write-value'
+    imps='fs/attribute-get fs/attribute-get-batch fs/attribute-list fs/attribute-set fs/attribute-tool-check'
     ;;
   10)
     name='Arcane File Operations'
@@ -119,7 +119,7 @@ case "$level" in
     ;;
   21)
     name='Spellcraft Development Tools'
-    spells='add-synonym:spellcraft bind-tome:spellcraft compile-spell:spellcraft delete-synonym:spellcraft doppelganger:spellcraft edit-synonym:spellcraft erase-spell:spellcraft forget:spellcraft learn:spellcraft lint-magic:spellcraft merge-yaml-text:spellcraft reset-default-synonyms:spellcraft scribe-spell:spellcraft unbind-tome:spellcraft'
+    spells='add-synonym:spellcraft compile-tome:spellcraft compile-spell:spellcraft delete-synonym:spellcraft doppelganger:spellcraft edit-synonym:spellcraft erase-spell:spellcraft forget:spellcraft learn:spellcraft lint-magic:spellcraft merge-yaml-text:spellcraft reset-default-synonyms:spellcraft scribe-spell:spellcraft uncompile-tome:spellcraft'
     imps=''
     ;;
   22)
@@ -144,7 +144,7 @@ case "$level" in
     ;;
   26)
     name='System Service Management'
-    spells='disable-service:system enable-service:system install-service-template:system is-service-installed:system reload-ssh:system remove-service:system restart-service:system restart-ssh:system service-status:system start-service:system stop-service:system'
+    spells='disable-service:system activate-service:system install-service-template:system is-service-installed:system reload-ssh:system remove-service:system restart-service:system restart-ssh:system service-status:system start-service:system stop-service:system'
     imps=''
     ;;
   27)

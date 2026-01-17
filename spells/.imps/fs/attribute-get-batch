@@ -1,5 +1,5 @@
 #!/bin/sh
-# xattr-read-batch FILE ATTR1 ATTR2 ... - read multiple extended attributes at once
+# attribute-get-batch FILE ATTR1 ATTR2 ... - read multiple extended attributes at once
 # Outputs "ATTR1=value1 ATTR2=value2 ..." format with proper quoting
 # Returns 0 if at least one attribute read, 1 if all failed
 set -eu

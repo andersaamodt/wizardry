@@ -3,7 +3,7 @@
 # - jump-trash prints usage with --help
 # - jump-trash rejects unknown options
 # - jump-trash cds to trash when sourced (via jump_trash function)
-# - jump-trash uses inline fallback when detect-trash is missing
+# - jump-trash uses inline fallback when divine-trash is missing
 # - jump-trash fails if trash directory does not exist
 # - jump-trash prompts to memorize when run directly
 
@@ -25,12 +25,12 @@ test_cds_when_sourced() {
   trash_dir="$stub/Trash"
   mkdir -p "$trash_dir"
 
-  # Create detect-trash stub that returns our test trash dir
-  cat >"$stub/detect-trash" <<STUB
+  # Create divine-trash stub that returns our test trash dir
+  cat >"$stub/divine-trash" <<STUB
 #!/bin/sh
 printf '%s\n' "$trash_dir"
 STUB
-  chmod +x "$stub/detect-trash"
+  chmod +x "$stub/divine-trash"
 
   # Source the spell (it executes immediately when sourced)
   run_cmd sh -c "
@@ -59,7 +59,7 @@ printf 'Linux\n'
 STUB
   chmod +x "$stub/uname"
   
-  # Provide only basic utilities, no detect-trash
+  # Provide only basic utilities, no divine-trash
   link_tools "$stub" sh printf test cd
 
   # Source the spell (it executes immediately when sourced)
@@ -78,12 +78,12 @@ test_fails_if_trash_dir_missing() {
   stub=$(make_tempdir)
   nonexistent_dir="$stub/nonexistent/Trash"
 
-  # Create detect-trash stub that returns a nonexistent path
-  cat >"$stub/detect-trash" <<STUB
+  # Create divine-trash stub that returns a nonexistent path
+  cat >"$stub/divine-trash" <<STUB
 #!/bin/sh
 printf '%s\n' "$nonexistent_dir"
 STUB
-  chmod +x "$stub/detect-trash"
+  chmod +x "$stub/divine-trash"
 
   # Source the spell (it executes immediately when sourced)
   run_cmd sh -c "
@@ -101,11 +101,11 @@ test_jump_trash_function_help() {
   trash_dir="$stub/Trash"
   mkdir -p "$trash_dir"
 
-  cat >"$stub/detect-trash" <<STUB
+  cat >"$stub/divine-trash" <<STUB
 #!/bin/sh
 printf '%s\n' "$trash_dir"
 STUB
-  chmod +x "$stub/detect-trash"
+  chmod +x "$stub/divine-trash"
 
   # Test --help when sourcing the spell
   run_cmd sh -c "
@@ -130,7 +130,7 @@ test_unknown_option() {
 run_test_case "jump-trash prints usage" test_help
 run_test_case "jump-trash rejects unknown option" test_unknown_option
 run_test_case "jump-trash cds when sourced" test_cds_when_sourced
-run_test_case "jump-trash uses inline fallback without detect-trash" test_uses_inline_fallback
+run_test_case "jump-trash uses inline fallback without divine-trash" test_uses_inline_fallback
 run_test_case "jump-trash fails if trash dir missing" test_fails_if_trash_dir_missing
 run_test_case "jump_trash function shows help" test_jump_trash_function_help
 
@@ -141,12 +141,12 @@ test_gloss_jump_trash() {
   trash_dir="$stub/Trash"
   mkdir -p "$trash_dir"
 
-  # Create detect-trash stub that returns our test trash dir
-  cat >"$stub/detect-trash" <<STUB
+  # Create divine-trash stub that returns our test trash dir
+  cat >"$stub/divine-trash" <<STUB
 #!/bin/sh
 printf '%s\n' "$trash_dir"
 STUB
-  chmod +x "$stub/detect-trash"
+  chmod +x "$stub/divine-trash"
 
   # Test 'jump trash' via first-word gloss
   trash_resolved=$(cd "$trash_dir" && pwd -P | sed 's|//|/|g')

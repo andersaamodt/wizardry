@@ -1,5 +1,5 @@
 #!/bin/sh
-# Tests for xattr-list-keys imp
+# Tests for attribute-list imp
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -7,12 +7,12 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-test_xattr_list_keys_exists() {
-  run_cmd sh -c 'command -v xattr-list-keys'
+test_attr_list_exists() {
+  run_cmd sh -c 'command -v attribute-list'
   assert_success || return 1
 }
 
-test_xattr_list_keys_with_mock_xattr() {
+test_attr_list_with_mock_xattr() {
   skip-if-compiled || return $?
   # Create a test file and mock xattr command
   tmpdir=$(make_tempdir)
@@ -27,15 +27,15 @@ printf 'user.key1\nuser.key2\nuser.key3\n'
 STUB
   chmod +x "$tmpdir/bin/xattr"
   
-  # Create stub xattr-helper-usable that accepts xattr
-  cat > "$tmpdir/bin/xattr-helper-usable" <<'STUB'
+  # Create stub attribute-tool-check that accepts xattr
+  cat > "$tmpdir/bin/attribute-tool-check" <<'STUB'
 #!/bin/sh
 [ "$1" = "xattr" ]
 STUB
-  chmod +x "$tmpdir/bin/xattr-helper-usable"
+  chmod +x "$tmpdir/bin/attribute-tool-check"
   
-  # Run xattr-list-keys with mocked PATH
-  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && xattr-list-keys "'"$testfile"'"'
+  # Run attribute-list with mocked PATH
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && attribute-list "'"$testfile"'"'
   assert_success || return 1
   assert_output_contains "user.key1" || return 1
   assert_output_contains "user.key2" || return 1
@@ -43,7 +43,7 @@ STUB
   rm -rf "$tmpdir"
 }
 
-test_xattr_list_keys_fallback_to_attr() {
+test_attr_list_fallback_to_attr() {
   skip-if-compiled || return $?
   # Test fallback to attr command when xattr not available
   tmpdir=$(make_tempdir)
@@ -59,14 +59,14 @@ printf 'Attribute "user.email" had a 10 byte value\n'
 STUB
   chmod +x "$tmpdir/bin/attr"
   
-  # Create stub xattr-helper-usable that only accepts attr
-  cat > "$tmpdir/bin/xattr-helper-usable" <<'STUB'
+  # Create stub attribute-tool-check that only accepts attr
+  cat > "$tmpdir/bin/attribute-tool-check" <<'STUB'
 #!/bin/sh
 [ "$1" = "attr" ]
 STUB
-  chmod +x "$tmpdir/bin/xattr-helper-usable"
+  chmod +x "$tmpdir/bin/attribute-tool-check"
   
-  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && xattr-list-keys "'"$testfile"'"'
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && attribute-list "'"$testfile"'"'
   assert_success || return 1
   assert_output_contains "user.name" || return 1
   assert_output_contains "user.email" || return 1
@@ -74,7 +74,7 @@ STUB
   rm -rf "$tmpdir"
 }
 
-test_xattr_list_keys_returns_error_when_no_attrs() {
+test_attr_list_returns_error_when_no_attrs() {
   skip-if-compiled || return $?
   # Should return 1 when no attributes found
   tmpdir=$(make_tempdir)
@@ -89,21 +89,21 @@ test_xattr_list_keys_returns_error_when_no_attrs() {
 STUB
   chmod +x "$tmpdir/bin/xattr"
   
-  cat > "$tmpdir/bin/xattr-helper-usable" <<'STUB'
+  cat > "$tmpdir/bin/attribute-tool-check" <<'STUB'
 #!/bin/sh
 [ "$1" = "xattr" ]
 STUB
-  chmod +x "$tmpdir/bin/xattr-helper-usable"
+  chmod +x "$tmpdir/bin/attribute-tool-check"
   
-  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && xattr-list-keys "'"$testfile"'"'
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && attribute-list "'"$testfile"'"'
   assert_failure || return 1
   
   rm -rf "$tmpdir"
 }
 
-run_test_case "xattr-list-keys exists" test_xattr_list_keys_exists
-run_test_case "xattr-list-keys with mock xattr" test_xattr_list_keys_with_mock_xattr
-run_test_case "xattr-list-keys fallback to attr" test_xattr_list_keys_fallback_to_attr
-run_test_case "xattr-list-keys returns error when no attrs" test_xattr_list_keys_returns_error_when_no_attrs
+run_test_case "attribute-list exists" test_attr_list_exists
+run_test_case "attribute-list with mock xattr" test_attr_list_with_mock_xattr
+run_test_case "attribute-list fallback to attr" test_attr_list_fallback_to_attr
+run_test_case "attribute-list returns error when no attrs" test_attr_list_returns_error_when_no_attrs
 
 finish_tests

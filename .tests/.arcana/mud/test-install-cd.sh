@@ -30,15 +30,15 @@ test_install_cd_installs_to_rc_file() {
   rc_file="$fake_home/.bashrc"
   touch "$rc_file"
   
-  # Create a stub detect-rc-file that returns our test rc file
+  # Create a stub divine-rc-file that returns our test rc file
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
-  cat > "$stub_dir/detect-rc-file" << STUB_EOF
+  cat > "$stub_dir/divine-rc-file" << STUB_EOF
 #!/bin/sh
 printf 'rc_file=%s\n' "$rc_file"
 printf 'format=shell\n'
 STUB_EOF
-  chmod +x "$stub_dir/detect-rc-file"
+  chmod +x "$stub_dir/divine-rc-file"
   
   # Run install-cd with stubbed PATH and HOME
   cd_hook_path="$ROOT_DIR/spells/.arcana/mud/cd"
@@ -86,15 +86,15 @@ test_install_cd_skips_if_already_installed() {
   cd_hook_path="$ROOT_DIR/spells/.arcana/mud/cd"
   printf '. "%s" # wizardry: cd-hook\n' "$cd_hook_path" > "$rc_file"
   
-  # Create stub detect-rc-file
+  # Create stub divine-rc-file
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
-  cat > "$stub_dir/detect-rc-file" << STUB_EOF
+  cat > "$stub_dir/divine-rc-file" << STUB_EOF
 #!/bin/sh
 printf 'rc_file=%s\n' "$rc_file"
 printf 'format=shell\n'
 STUB_EOF
-  chmod +x "$stub_dir/detect-rc-file"
+  chmod +x "$stub_dir/divine-rc-file"
   
   # Run install-cd
   output=$(env HOME="$fake_home" PATH="$stub_dir:$PATH" sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
@@ -127,11 +127,11 @@ test_install_cd_handles_nix_format() {
   nix_file="$fake_home/.config/home-manager/home.nix"
   printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nix_file"
   
-  # Set up PATH to include wizardry imps and spells (needed for nix-shell-add, detect-rc-file, etc.)
+  # Set up PATH to include wizardry imps and spells (needed for nix-shell-add, divine-rc-file, etc.)
   test_path="$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/divination:$PATH"
   
   # Run install-cd with DETECT_RC_FILE_PLATFORM set to nixos and HOME set to fake home
-  # This will make detect-rc-file find the home.nix file
+  # This will make divine-rc-file find the home.nix file
   # Also set TMPDIR to ensure mktemp works correctly
   cd_hook_path="$ROOT_DIR/spells/.arcana/mud/cd"
   output=$(env HOME="$fake_home" PATH="$test_path" TMPDIR="$tmpdir" DETECT_RC_FILE_PLATFORM=nixos sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
@@ -173,10 +173,10 @@ test_install_cd_creates_rc_file_if_missing() {
   fake_home="$tmpdir/home"
   mkdir -p "$fake_home"
   
-  # Create stub detect-rc-file that returns a suggested rc_file
+  # Create stub divine-rc-file that returns a suggested rc_file
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
-  cat > "$stub_dir/detect-rc-file" << 'STUB_EOF'
+  cat > "$stub_dir/divine-rc-file" << 'STUB_EOF'
 #!/bin/sh
 # Return suggested rc file based on SHELL or default
 case "${SHELL:-/bin/bash}" in
@@ -187,7 +187,7 @@ esac
 printf 'rc_file=%s\n' "$rc_file"
 printf 'format=shell\n'
 STUB_EOF
-  chmod +x "$stub_dir/detect-rc-file"
+  chmod +x "$stub_dir/divine-rc-file"
   
   # Set up PATH to include wizardry imps (needed for rc-add-line, temp-file, etc)
   test_path="$stub_dir:$WIZARDRY_IMPS_PATH:$PATH"

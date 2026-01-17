@@ -1,5 +1,5 @@
 #!/bin/sh
-# Tests for xattr-write-value imp
+# Tests for attribute-set imp
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -8,7 +8,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_xattr_write_value_exists() {
-  run_cmd sh -c 'command -v xattr-write-value'
+  run_cmd sh -c 'command -v attribute-set'
   assert_success || return 1
 }
 
@@ -33,13 +33,13 @@ exit 1
 STUB
   chmod +x "$tmpdir/bin/attr"
   
-  cat > "$tmpdir/bin/xattr-helper-usable" <<'STUB'
+  cat > "$tmpdir/bin/attribute-tool-check" <<'STUB'
 #!/bin/sh
 [ "$1" = "attr" ]
 STUB
-  chmod +x "$tmpdir/bin/xattr-helper-usable"
+  chmod +x "$tmpdir/bin/attribute-tool-check"
   
-  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && xattr-write-value user.name Alice "'"$testfile"'"'
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && attribute-set user.name Alice "'"$testfile"'"'
   assert_success || return 1
   
   # Verify the mock was called with correct parameters
@@ -71,13 +71,13 @@ exit 1
 STUB
   chmod +x "$tmpdir/bin/xattr"
   
-  cat > "$tmpdir/bin/xattr-helper-usable" <<'STUB'
+  cat > "$tmpdir/bin/attribute-tool-check" <<'STUB'
 #!/bin/sh
 [ "$1" = "xattr" ]
 STUB
-  chmod +x "$tmpdir/bin/xattr-helper-usable"
+  chmod +x "$tmpdir/bin/attribute-tool-check"
   
-  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && xattr-write-value user.email bob@example.com "'"$testfile"'"'
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && attribute-set user.email bob@example.com "'"$testfile"'"'
   assert_success || return 1
   
   # Verify the mock was called with correct parameters
@@ -97,22 +97,22 @@ test_xattr_write_value_returns_error_when_no_helpers() {
   printf "test content\n" > "$testfile"
   
   mkdir -p "$tmpdir/bin"
-  cat > "$tmpdir/bin/xattr-helper-usable" <<'STUB'
+  cat > "$tmpdir/bin/attribute-tool-check" <<'STUB'
 #!/bin/sh
 # All helpers unavailable
 exit 1
 STUB
-  chmod +x "$tmpdir/bin/xattr-helper-usable"
+  chmod +x "$tmpdir/bin/attribute-tool-check"
   
-  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && xattr-write-value user.key value "'"$testfile"'"'
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && attribute-set user.key value "'"$testfile"'"'
   assert_failure || return 1
   
   rm -rf "$tmpdir"
 }
 
-run_test_case "xattr-write-value exists" test_xattr_write_value_exists
-run_test_case "xattr-write-value with mock attr" test_xattr_write_value_with_mock_attr
-run_test_case "xattr-write-value fallback to xattr" test_xattr_write_value_fallback_to_xattr
-run_test_case "xattr-write-value returns error when no helpers" test_xattr_write_value_returns_error_when_no_helpers
+run_test_case "attribute-set exists" test_xattr_write_value_exists
+run_test_case "attribute-set with mock attr" test_xattr_write_value_with_mock_attr
+run_test_case "attribute-set fallback to xattr" test_xattr_write_value_fallback_to_xattr
+run_test_case "attribute-set returns error when no helpers" test_xattr_write_value_returns_error_when_no_helpers
 
 finish_tests

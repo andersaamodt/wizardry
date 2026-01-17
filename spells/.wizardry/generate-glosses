@@ -153,16 +153,17 @@ set -eu
         return 0  # Allow test (used in test-spell, etc.)
         ;;
       # BLACKLIST: Shell builtins that CANNOT be overridden
-      alias|bg|cd|command|disable|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|\
-read|readonly|set|sh|\
-times|trap|true|type|ulimit|umask|unalias|wait|break|case|continue|do|done|elif|else|\
-esac|eval|exec|exit|export|fi|for|if|in|local|return|shift|then|unset|until|while)
+      alias|banish|bg|bind|builtin|cd|command|compgen|compopt|declare|\
+disable|enable|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|read|\
+readonly|set|sh|times|trap|true|type|ulimit|umask|unalias|wait|\
+break|case|continue|do|done|elif|else|esac|eval|exec|exit|export|fi|for|if|in|local|return|\
+shift|then|unset|until|while)
         return 1  # Blacklisted
         ;;
       # BLACKLIST: Common system commands that should not be overridden
       awk|cat|cp|cut|date|df|diff|dirname|du|echo|egrep|env|expr|fgrep|file|find|grep|head|\
 hostname|id|ln|ls|mkdir|mv|printf|ps|rm|rmdir|sed|sleep|sort|stat|tail|tar|tee|touch|tr|\
-uname|uniq|wc|xargs)
+uname|uniq|wc|xargs|xattr)
         return 1  # Blacklisted
         ;;
     esac
@@ -486,14 +487,16 @@ uname|uniq|wc|xargs)
     
     # Check if blacklisted (same as first-word blacklist)
     case "$_syn_word" in
-      alias|bg|cd|command|disable|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|readonly|set|sh|\
-times|trap|true|type|ulimit|umask|unalias|wait|break|case|continue|do|done|elif|else|\
-esac|eval|exec|exit|export|fi|for|if|in|local|return|shift|then|unset|until|while)
+      alias|banish|bg|bind|builtin|cd|command|compgen|compopt|declare|\
+disable|enable|false|fc|fg|getopts|hash|jobs|kill|let|newgrp|pwd|read|\
+readonly|set|sh|times|trap|true|type|ulimit|umask|unalias|wait|\
+break|case|continue|do|done|elif|else|esac|eval|exec|exit|export|fi|for|if|in|local|return|\
+shift|then|unset|until|while)
         return 1
         ;;
       awk|cat|cp|cut|date|df|diff|dirname|du|echo|egrep|env|expr|fgrep|file|find|grep|head|\
 hostname|id|ln|ls|mkdir|mv|printf|ps|rm|rmdir|sed|sleep|sort|stat|tail|tar|tee|touch|tr|\
-uname|uniq|wc|xargs)
+uname|uniq|wc|xargs|xattr)
         return 1
         ;;
     esac

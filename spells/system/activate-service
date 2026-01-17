@@ -1,12 +1,12 @@
 #!/bin/sh
 
-# enable-service flips systemd's enable flag so units start automatically on
+# activate-service flips systemd's enable flag so units start automatically on
 # boot. It prompts for a service name when invoked without arguments.
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE' >&2
-Usage: enable-service UNIT
+Usage: activate-service UNIT
 
 Enables the given systemd service so it starts on boot, prompting for a unit when none is provided.
 USAGE

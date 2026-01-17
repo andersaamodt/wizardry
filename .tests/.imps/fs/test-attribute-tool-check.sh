@@ -1,5 +1,5 @@
 #!/bin/sh
-# Tests for xattr-helper-usable imp
+# Tests for attribute-tool-check imp
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -8,7 +8,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_xattr_helper_usable_exists() {
-  run_cmd sh -c 'command -v xattr-helper-usable'
+  run_cmd sh -c 'command -v attribute-tool-check'
   assert_success || return 1
 }
 
@@ -20,7 +20,7 @@ test_xattr_helper_usable_accepts_command() {
   printf '#!/bin/sh\nprintf "stub"\n' > "$tmpdir/bin/mycmd"
   chmod +x "$tmpdir/bin/mycmd"
   
-  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && xattr-helper-usable mycmd'
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && attribute-tool-check mycmd'
   assert_success || return 1
   
   rm -rf "$tmpdir"
@@ -29,14 +29,14 @@ test_xattr_helper_usable_accepts_command() {
 test_xattr_helper_usable_rejects_nonexistent() {
   skip-if-compiled || return $?
   # Should return 1 for non-existent command
-  run_cmd xattr-helper-usable nonexistent-command-xyz123
+  run_cmd attribute-tool-check nonexistent-command-xyz123
   assert_failure || return 1
 }
 
 test_xattr_helper_usable_respects_test_mode() {
   skip-if-compiled || return $?
   # When WIZARDRY_TEST_HELPERS_ONLY=1, system commands should be rejected
-  run_cmd sh -c 'WIZARDRY_TEST_HELPERS_ONLY=1 xattr-helper-usable sh'
+  run_cmd sh -c 'WIZARDRY_TEST_HELPERS_ONLY=1 attribute-tool-check sh'
   assert_failure || return 1
 }
 
@@ -49,16 +49,16 @@ test_xattr_helper_usable_allows_non_system_in_test_mode() {
   chmod +x "$tmpdir/bin/mystub"
   
   # With WIZARDRY_TEST_HELPERS_ONLY=1, non-system helpers should work
-  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && WIZARDRY_TEST_HELPERS_ONLY=1 xattr-helper-usable mystub'
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && WIZARDRY_TEST_HELPERS_ONLY=1 attribute-tool-check mystub'
   assert_success || return 1
   
   rm -rf "$tmpdir"
 }
 
-run_test_case "xattr-helper-usable exists" test_xattr_helper_usable_exists
-run_test_case "xattr-helper-usable accepts valid command" test_xattr_helper_usable_accepts_command
-run_test_case "xattr-helper-usable rejects nonexistent command" test_xattr_helper_usable_rejects_nonexistent
-run_test_case "xattr-helper-usable respects test mode" test_xattr_helper_usable_respects_test_mode
-run_test_case "xattr-helper-usable allows non-system in test mode" test_xattr_helper_usable_allows_non_system_in_test_mode
+run_test_case "attribute-tool-check exists" test_xattr_helper_usable_exists
+run_test_case "attribute-tool-check accepts valid command" test_xattr_helper_usable_accepts_command
+run_test_case "attribute-tool-check rejects nonexistent command" test_xattr_helper_usable_rejects_nonexistent
+run_test_case "attribute-tool-check respects test mode" test_xattr_helper_usable_respects_test_mode
+run_test_case "attribute-tool-check allows non-system in test mode" test_xattr_helper_usable_allows_non_system_in_test_mode
 
 finish_tests

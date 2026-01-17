@@ -1,9 +1,9 @@
 #!/bin/sh
 # Behavioral cases (derived from --help):
-# - detect-distro shows usage with --help
-# - detect-distro rejects unexpected arguments
-# - detect-distro prints the detected identifier
-# - detect-distro narrates with -v
+# - divine-distro shows usage with --help
+# - divine-distro rejects unexpected arguments
+# - divine-distro prints the detected identifier
+# - divine-distro narrates with -v
 
 set -eu
 
@@ -15,7 +15,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 make_fake_root() {
-  dir=$(mktemp -d "$WIZARDRY_TMPDIR/detect-distro.XXXXXX") || return 1
+  dir=$(mktemp -d "$WIZARDRY_TMPDIR/divine-distro.XXXXXX") || return 1
   mkdir -p "$dir/etc"
   printf '%s' "$dir"
 }
@@ -25,7 +25,7 @@ run_with_root() {
   shift
   DETECT_DISTRO_ROOT="$root" \
   DETECT_DISTRO_OS_RELEASE="$root/etc/os-release" \
-  run_spell "spells/divination/detect-distro" "$@"
+  run_spell "spells/divination/divine-distro" "$@"
 }
 
 write_os_release() {
@@ -37,15 +37,15 @@ EOF
 }
 
 shows_usage_on_help() {
-  run_spell "spells/divination/detect-distro" "--help"
+  run_spell "spells/divination/divine-distro" "--help"
   assert_success || return 1
-  assert_output_contains "Usage: detect-distro" || return 1
+  assert_output_contains "Usage: divine-distro" || return 1
 }
 
 rejects_unexpected_arguments() {
-  run_spell "spells/divination/detect-distro" "extra"
+  run_spell "spells/divination/divine-distro" "extra"
   assert_failure || return 1
-  assert_error_contains "Usage: detect-distro" || return 1
+  assert_error_contains "Usage: divine-distro" || return 1
 }
 
 prints_detected_identifier() {
@@ -102,14 +102,14 @@ fails_when_no_markers_found() {
   rm -rf "$root"
 }
 
-run_test_case "detect-distro shows usage with --help" shows_usage_on_help
-run_test_case "detect-distro rejects unexpected arguments" rejects_unexpected_arguments
-run_test_case "detect-distro prints the detected identifier" prints_detected_identifier
-run_test_case "detect-distro narrates with -v" verbose_mode_narrates
-run_test_case "detect-distro prefers nixos markers over other signatures" prefers_nixos_markers_even_with_other_signatures
-run_test_case "detect-distro detects arch via release marker" detects_arch_release_marker
-run_test_case "detect-distro detects mac via uname fallback" detects_mac_via_stubbed_uname
-run_test_case "detect-distro fails when no markers are present" fails_when_no_markers_found
+run_test_case "divine-distro shows usage with --help" shows_usage_on_help
+run_test_case "divine-distro rejects unexpected arguments" rejects_unexpected_arguments
+run_test_case "divine-distro prints the detected identifier" prints_detected_identifier
+run_test_case "divine-distro narrates with -v" verbose_mode_narrates
+run_test_case "divine-distro prefers nixos markers over other signatures" prefers_nixos_markers_even_with_other_signatures
+run_test_case "divine-distro detects arch via release marker" detects_arch_release_marker
+run_test_case "divine-distro detects mac via uname fallback" detects_mac_via_stubbed_uname
+run_test_case "divine-distro fails when no markers are present" fails_when_no_markers_found
 
 
 # Test via source-then-invoke pattern  

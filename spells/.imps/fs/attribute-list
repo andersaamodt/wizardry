@@ -1,5 +1,5 @@
 #!/bin/sh
-# xattr-list-keys FILE - list all extended attribute keys for a file
+# attribute-list FILE - list all extended attribute keys for a file
 # Tries xattr, attr, and getfattr in order, outputting keys one per line
 # Returns 0 if keys found, 1 if no attributes or all helpers failed
 set -eu
@@ -8,7 +8,7 @@ set -eu
 file=$1
 
 # Try xattr first (macOS)
-if xattr-helper-usable xattr; then
+if attribute-tool-check xattr; then
   if keys=$(xattr "$file" 2>/dev/null); then
     if [ -n "$keys" ]; then
       printf '%s\n' "$keys"
@@ -18,7 +18,7 @@ if xattr-helper-usable xattr; then
 fi
 
 # Try attr (Linux)
-if xattr-helper-usable attr; then
+if attribute-tool-check attr; then
   if keys=$(attr -l "$file" 2>/dev/null); then
     # Parse attr -l output which may be in format:
     # Attribute "key" has a value...
@@ -37,7 +37,7 @@ if xattr-helper-usable attr; then
 fi
 
 # Try getfattr (Linux)
-if xattr-helper-usable getfattr; then
+if attribute-tool-check getfattr; then
   if keys=$(getfattr -d "$file" 2>/dev/null); then
     parsed=$(printf '%s' "$keys" | awk -F '=' '/^# / {next} {print $1}')
     if [ -n "$parsed" ]; then
