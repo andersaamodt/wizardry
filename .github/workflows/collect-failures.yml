@@ -77,6 +77,11 @@ jobs:
             "139-113 Ubuntu Source blocks 35 then 36 and run banish"
             "139-114 Ubuntu Source blocks 36 then 37 and run banish"
             "139-115 Ubuntu Source block 36 in a nested subshell then banish"
+            "139-116 Ubuntu Dump block 36 only"
+            "139-117 Ubuntu Source block 36 then unset function and banish"
+            "139-118 Ubuntu Parse block 36 function without sourcing and banish"
+            "139-119 Ubuntu Source block 36 and exec banish"
+            "139-120 Ubuntu Source block 36 with xtrace and banish"
           )
           
           # Total number of workflows we're monitoring
@@ -309,8 +314,17 @@ jobs:
             echo ""
 
             # Get failed jobs
-            gh api "/repos/${{ github.repository }}/actions/runs/${run_id}/jobs" \
-              > /tmp/jobs_${run_id}.json
+            if ! gh api "/repos/${{ github.repository }}/actions/runs/${run_id}/jobs" \
+              > /tmp/jobs_${run_id}.json 2>&1; then
+              {
+                echo '```'
+                echo "Unable to download job list for workflow run ${run_id}."
+                echo '```'
+                echo ""
+              } >> "$failure_summary_file"
+              update_pr_description
+              return
+            fi
 
             local failed_count=$(jq '[.jobs[] | select(.conclusion == "failure")] | length' \
               /tmp/jobs_${run_id}.json)
@@ -351,6 +365,13 @@ jobs:
               else
                 echo "⚠️ Could not download logs"
                 echo ""
+                {
+                  echo '```'
+                  echo "Unable to download logs for job: $job_name"
+                  echo '```'
+                  echo ""
+                } >> "$failure_summary_file"
+                update_pr_description
               fi
 
               rm -f /tmp/log_${job_id}.txt

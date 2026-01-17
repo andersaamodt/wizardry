@@ -1,0 +1,93 @@
+name: 139-120 Ubuntu Source block 36 with xtrace and banish
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ubuntu-block-36-trace-output:
+    name: 139-120 Ubuntu Source block 36 with xtrace and banish
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+      WIZARDRY_GLOSSES: "0"
+      WIZARDRY_DEBUG: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Ensure installer spells are executable
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      - name: Install bubblewrap dependencies
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      - name: Configure bubblewrap user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      - name: Source block 36 with xtrace and banish
+        run: |
+          set +e
+          ulimit -c unlimited || true
+          (
+            set -e
+            . spells/.imps/sys/invoke-wizardry
+            gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+            gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+            generate-glosses --output "$gloss_file"
+
+            printf '%s\n'               'BEGIN { idx=0; out="" }'               '/^# First-word gloss/ {'               '  idx++'               '  out=sprintf("%s/block-%03d.sh", outdir, idx)'               '  print "# block " idx > out'               '}'               '{ if (out != "") print >> out }'               'END { printf "%d\n", idx > outdir "/count" }'               > "$gloss_dir/split.awk"
+            awk -v outdir="$gloss_dir" -f "$gloss_dir/split.awk" "$gloss_file"
+
+            block_36="$gloss_dir/block-$(printf "%03d" "36").sh"
+            if [ ! -s "$block_36" ]; then
+              printf "%s\n" "[gloss-test] missing block 36"
+              exit 1
+            fi
+
+            gloss_name=$(awk '/^# First-word gloss for commands starting with /{print $NF}' "$block_36" | sed "s/'//g")
+
+            case "xtrace_banish" in
+              dump_only)
+                printf '%s\n' "[gloss-test] block 36 contents:";
+                sed -n '1,200p' "$block_36";
+                printf '%s\n' "[gloss-test] gloss name: $gloss_name";
+                ;;
+              unset_and_banish)
+                . "$block_36";
+                if [ -n "$gloss_name" ]; then
+                  unset -f "$gloss_name" 2>/dev/null || true;
+                fi;
+                banish 8 --only --no-tests --no-heal;
+                ;;
+              parse_only_banish)
+                printf '%s\n' "[gloss-test] gloss name: $gloss_name";
+                banish 8 --only --no-tests --no-heal;
+                ;;
+              exec_banish)
+                . "$block_36";
+                exec banish 8 --only --no-tests --no-heal;
+                ;;
+              xtrace_banish)
+                . "$block_36";
+                set -x;
+                banish 8 --only --no-tests --no-heal;
+                ;;
+            esac
+          )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
