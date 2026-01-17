@@ -38,7 +38,7 @@ disenchant_attr() {
 
   # Try each available helper in order
   for helper in attr xattr setfattr; do
-    if xattr-helper-usable "$helper"; then
+    if attr-tool-check "$helper"; then
       case "$helper" in
         attr)
           if attr -r "$key" "$target" 2>/dev/null; then
@@ -73,7 +73,7 @@ if [ -n "$requested_key" ]; then
 fi
 
 # Otherwise, list keys and let user choose
-keys=$(xattr-list-keys "$file" || printf '')
+keys=$(attr-list "$file" || printf '')
 if [ -z "$keys" ]; then
   printf '%s\n' "disenchant: no enchanted attributes found on $file" >&2
   exit 1

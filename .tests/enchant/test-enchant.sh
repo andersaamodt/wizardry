@@ -60,18 +60,18 @@ test_two_args_file_first() {
   target="$tmpdir/target"
   mkdir -p "$stub_dir"
   : >"$target"
-  cat >"$stub_dir/xattr-write-value" <<STUB
+  cat >"$stub_dir/attr-set" <<STUB
 #!/bin/sh
-# Mock xattr-write-value imp
+# Mock attr-set imp
 printf '%s %s %s\n' "\$1" "\$2" "\$3" >"${WIZARDRY_TMPDIR:?}/enchant.called"
 exit 0
 STUB
-  chmod +x "$stub_dir/xattr-write-value"
+  chmod +x "$stub_dir/attr-set"
   PATH="$stub_dir:$PATH" run_spell "spells/enchant/enchant" "$target" "user.name=test_value"
   assert_success || return 1
   called=$(cat "$WIZARDRY_TMPDIR/enchant.called")
   assert_output_contains "enchanted with the attribute 'user.name'" || return 1
-  [ "$called" = "user.name test_value $target" ] || { TEST_FAILURE_REASON="unexpected xattr-write-value call: $called"; return 1; }
+  [ "$called" = "user.name test_value $target" ] || { TEST_FAILURE_REASON="unexpected attr-set call: $called"; return 1; }
 }
 
 test_two_args_attr_first() {
@@ -80,18 +80,18 @@ test_two_args_attr_first() {
   target="$tmpdir/target"
   mkdir -p "$stub_dir"
   : >"$target"
-  cat >"$stub_dir/xattr-write-value" <<STUB
+  cat >"$stub_dir/attr-set" <<STUB
 #!/bin/sh
-# Mock xattr-write-value imp
+# Mock attr-set imp
 printf '%s %s %s\n' "\$1" "\$2" "\$3" >"${WIZARDRY_TMPDIR:?}/enchant.called"
 exit 0
 STUB
-  chmod +x "$stub_dir/xattr-write-value"
+  chmod +x "$stub_dir/attr-set"
   PATH="$stub_dir:$PATH" run_spell "spells/enchant/enchant" "user.other=another_val" "$target"
   assert_success || return 1
   called=$(cat "$WIZARDRY_TMPDIR/enchant.called")
   assert_output_contains "enchanted with the attribute 'user.other'" || return 1
-  [ "$called" = "user.other another_val $target" ] || { TEST_FAILURE_REASON="unexpected xattr-write-value call: $called"; return 1; }
+  [ "$called" = "user.other another_val $target" ] || { TEST_FAILURE_REASON="unexpected attr-set call: $called"; return 1; }
 }
 
 test_legacy_three_arg_format() {
@@ -100,30 +100,30 @@ test_legacy_three_arg_format() {
   target="$tmpdir/target"
   mkdir -p "$stub_dir"
   : >"$target"
-  cat >"$stub_dir/xattr-write-value" <<STUB
+  cat >"$stub_dir/attr-set" <<STUB
 #!/bin/sh
-# Mock xattr-write-value imp
+# Mock attr-set imp
 printf '%s %s %s\n' "\$1" "\$2" "\$3" >"${WIZARDRY_TMPDIR:?}/enchant.called"
 exit 0
 STUB
-  chmod +x "$stub_dir/xattr-write-value"
+  chmod +x "$stub_dir/attr-set"
   PATH="$stub_dir:$PATH" run_spell "spells/enchant/enchant" "$target" charm sparkle
   assert_success || return 1
   called=$(cat "$WIZARDRY_TMPDIR/enchant.called")
   assert_output_contains "enchanted with the attribute 'user.charm'" || return 1
-  [ "$called" = "user.charm sparkle $target" ] || { TEST_FAILURE_REASON="unexpected xattr-write-value call: $called"; return 1; }
+  [ "$called" = "user.charm sparkle $target" ] || { TEST_FAILURE_REASON="unexpected attr-set call: $called"; return 1; }
 }
 
 test_reports_missing_helpers() {
   tmpdir=$(make_tempdir)
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
-  cat >"$stub_dir/xattr-write-value" <<'STUB'
+  cat >"$stub_dir/attr-set" <<'STUB'
 #!/bin/sh
-# Mock xattr-write-value that always fails
+# Mock attr-set that always fails
 exit 1
 STUB
-  chmod +x "$stub_dir/xattr-write-value"
+  chmod +x "$stub_dir/attr-set"
   target="$tmpdir/target"
   : >"$target"
   PATH="$stub_dir:$PATH" run_spell "spells/enchant/enchant" "$target" user.key note

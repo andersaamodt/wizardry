@@ -60,7 +60,7 @@ case "$level" in
   9)
     name='MUD Basics'
     spells='check-cd-hook:mud look:mud'
-    imps='fs/xattr-helper-usable fs/xattr-list-keys fs/xattr-read-batch fs/xattr-read-value fs/xattr-write-value'
+    imps='fs/attr-get fs/attr-get-batch fs/attr-list fs/attr-set fs/attr-tool-check'
     ;;
   10)
     name='Arcane File Operations'
