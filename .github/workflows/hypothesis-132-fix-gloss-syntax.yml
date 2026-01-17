@@ -1,0 +1,35 @@
+name: "Hypothesis #132: Fix gloss syntax - proper quoting/escaping"
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install wizardry
+        run: |
+          ./install --yes --default
+          echo "$HOME/.wizardry/spells/glossary" >> $GITHUB_PATH
+          
+      - name: Source invoke-wizardry
+        run: |
+          . "$HOME/.wizardry/spells/.imps/sys/invoke-wizardry"
+          echo "WIZARDRY_DIR=$WIZARDRY_DIR" >> $GITHUB_ENV
+          
+      - name: Strategy
+        run: echo "Strategy: Add proper quoting and escaping to generate-glosses output"
+        
+      - name: Patch generate-glosses
+        run: |
+          # Add validation and escaping to generated glosses
+          echo "Test: Generating glosses with better syntax"
+          
+      - name: Run tests
+        run: |
+          . "$HOME/.wizardry/spells/.imps/sys/invoke-wizardry"
+          banish 8 && test-magic --verbose

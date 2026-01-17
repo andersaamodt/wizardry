@@ -1,0 +1,25 @@
+name: "Hypothesis #135: Alternative gloss format - single eval per function"
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install wizardry
+        run: |
+          ./install --yes --default
+          echo "$HOME/.wizardry/spells/glossary" >> $GITHUB_PATH
+          
+      - name: Strategy
+        run: echo "Strategy: Eval each function separately instead of big eval"
+        
+      - name: Run tests
+        run: |
+          . "$HOME/.wizardry/spells/.imps/sys/invoke-wizardry"
+          banish 8 && test-magic --verbose

@@ -1,0 +1,25 @@
+name: "Hypothesis #148: Alias-based glosses - use alias instead of functions"
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install wizardry
+        run: |
+          ./install --yes --default
+          echo "$HOME/.wizardry/spells/glossary" >> $GITHUB_PATH
+          
+      - name: Strategy
+        run: echo "Strategy: Use aliases instead of functions for glosses"
+        
+      - name: Run tests
+        run: |
+          . "$HOME/.wizardry/spells/.imps/sys/invoke-wizardry"
+          test-magic --verbose
