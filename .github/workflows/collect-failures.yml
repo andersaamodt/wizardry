@@ -69,14 +69,10 @@ jobs:
 
           # Workflows to monitor
           workflows=(
-            "139-137 Ubuntu xtrace validate-spells pocket-dimension"
-            "139-138 Ubuntu xtrace validate-spells wizard-eyes"
-            "139-139 Ubuntu xtrace validate-spells spellbook-store"
-            "139-140 Ubuntu xtrace validate-spells format-duration"
-            "139-141 Ubuntu xtrace spell-levels 8"
-            "139-142 Ubuntu xtrace pocket-dimension"
-            "139-143 Ubuntu xtrace pocket gloss"
-            "139-144 Ubuntu xtrace banish 8"
+            "139-145 Ubuntu xtrace xattr smoke"
+            "139-146 Ubuntu xtrace xattr then banish 8"
+            "139-147 Ubuntu xtrace banish 8 skip xattr checks"
+            "139-148 Ubuntu xtrace xattr then banish without xtrace"
           )
           
           # Total number of workflows we're monitoring

@@ -1,0 +1,99 @@
+name: 139-146 Ubuntu xtrace xattr then banish 8
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ubuntu-xtrace-xattr-then-banish:
+    name: 139-146 Ubuntu xtrace xattr then banish 8
+    runs-on: ubuntu-latest
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+      WIZARDRY_GLOSSES: "1"
+      WIZARDRY_DEBUG: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Ensure installer spells are executable
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      - name: Install bubblewrap dependencies
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      - name: Configure bubblewrap user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      - name: Run xattr smoke then banish under xtrace
+        run: |
+          set +e
+          ulimit -c unlimited || true
+          if command -v timeout >/dev/null 2>&1; then
+            timeout 120 bash -lc '
+              set -x
+              . spells/.imps/sys/invoke-wizardry
+              tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-xattr.XXXXXX")
+              if command -v xattr >/dev/null 2>&1; then
+                xattr -w user.test value "$tmp"
+                xattr -p user.test "$tmp"
+                xattr -d user.test "$tmp" || :
+              elif command -v setfattr >/dev/null 2>&1 && command -v getfattr >/dev/null 2>&1; then
+                setfattr -n user.test -v value "$tmp"
+                getfattr -n user.test "$tmp"
+                setfattr -x user.test "$tmp" || :
+              elif command -v attr >/dev/null 2>&1; then
+                attr -s user.test -V value "$tmp"
+                attr -g user.test "$tmp"
+                attr -r user.test "$tmp" || :
+              else
+                printf "%s\n" "no xattr helper found" >&2
+                exit 1
+              fi
+              rm -f "$tmp"
+              banish 8 --only --no-tests --no-heal
+            '
+            status=$?
+          else
+            bash -lc '
+              set -x
+              . spells/.imps/sys/invoke-wizardry
+              tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-xattr.XXXXXX")
+              if command -v xattr >/dev/null 2>&1; then
+                xattr -w user.test value "$tmp"
+                xattr -p user.test "$tmp"
+                xattr -d user.test "$tmp" || :
+              elif command -v setfattr >/dev/null 2>&1 && command -v getfattr >/dev/null 2>&1; then
+                setfattr -n user.test -v value "$tmp"
+                getfattr -n user.test "$tmp"
+                setfattr -x user.test "$tmp" || :
+              elif command -v attr >/dev/null 2>&1; then
+                attr -s user.test -V value "$tmp"
+                attr -g user.test "$tmp"
+                attr -r user.test "$tmp" || :
+              else
+                printf "%s\n" "no xattr helper found" >&2
+                exit 1
+              fi
+              rm -f "$tmp"
+              banish 8 --only --no-tests --no-heal
+            '
+            status=$?
+          fi
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "xtrace xattr then banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          elif [ "$status" -eq 124 ]; then
+            printf '%s\n' "xtrace xattr then banish timed out after 120 seconds"
+          fi
+          exit "$status"
