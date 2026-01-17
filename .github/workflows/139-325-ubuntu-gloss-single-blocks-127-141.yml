@@ -1,7 +1,7 @@
 name: 139-325 Ubuntu gloss single blocks 127-141
 
 on:
-  pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
