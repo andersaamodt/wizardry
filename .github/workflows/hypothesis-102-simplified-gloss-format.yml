@@ -1,0 +1,39 @@
+name: Hypothesis #102 - Generate minimal single-line functions
+
+on:
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  test-hypothesis-102:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap uidmap attr file dash
+          
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          echo 'kernel.unprivileged_userns_clone=1' | sudo tee -a /etc/sysctl.conf
+          echo 'kernel.apparmor_restrict_unprivileged_userns=0' | sudo tee -a /etc/sysctl.conf
+          sudo sysctl -p
+          
+      - name: Test Hypothesis #102
+        run: |
+          echo "Testing hypothesis #102: Generate minimal single-line functions"
+          echo ""
+          echo "Strategy: Modify generate-glosses to create simple glosses"
+          echo "Expected: Exit 0 if complex syntax causes issue"
+          echo ""
+          # Simplify gloss generation
+sed -i 's/function \(.*\)() {/\1() { :/g' spells/.wizardry/generate-glosses 2>/dev/null || true
+. spells/.imps/sys/invoke-wizardry  
+banish 8
+./spells/.wizardry/test-magic --verbose

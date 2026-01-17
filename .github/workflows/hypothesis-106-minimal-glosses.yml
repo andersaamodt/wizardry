@@ -1,0 +1,42 @@
+name: Hypothesis #106 - Generate only first 10 glosses
+
+on:
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  test-hypothesis-106:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap uidmap attr file dash
+          
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          echo 'kernel.unprivileged_userns_clone=1' | sudo tee -a /etc/sysctl.conf
+          echo 'kernel.apparmor_restrict_unprivileged_userns=0' | sudo tee -a /etc/sysctl.conf
+          sudo sysctl -p
+          
+      - name: Test Hypothesis #106
+        run: |
+          echo "Testing hypothesis #106: Generate only first 10 glosses"
+          echo ""
+          echo "Strategy: Limit gloss count to minimal set"
+          echo "Expected: Exit 0 if specific gloss causes issue"
+          echo ""
+          spells/.wizardry/generate-glosses
+if [ -f "$HOME/.local/share/wizardry/glossary/glosses" ]; then
+  head -n 50 "$HOME/.local/share/wizardry/glossary/glosses" > /tmp/minimal_glosses
+  mv /tmp/minimal_glosses "$HOME/.local/share/wizardry/glossary/glosses"
+fi
+. spells/.imps/sys/invoke-wizardry
+banish 8
+./spells/.wizardry/test-magic --verbose

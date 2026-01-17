@@ -1,0 +1,43 @@
+name: Hypothesis #99 - Print generated gloss file before execution
+
+on:
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  test-hypothesis-99:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap uidmap attr file dash
+          
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          echo 'kernel.unprivileged_userns_clone=1' | sudo tee -a /etc/sysctl.conf
+          echo 'kernel.apparmor_restrict_unprivileged_userns=0' | sudo tee -a /etc/sysctl.conf
+          sudo sysctl -p
+          
+      - name: Test Hypothesis #99
+        run: |
+          echo "Testing hypothesis #99: Print generated gloss file before execution"
+          echo ""
+          echo "Strategy: Examine gloss file content to find malformation"
+          echo "Expected: Reveals syntax error in gloss file"
+          echo ""
+          spells/.wizardry/generate-glosses
+if [ -f "$HOME/.local/share/wizardry/glossary/glosses" ]; then
+  echo "=== GLOSS FILE CONTENT ===" 
+  head -n 100 "$HOME/.local/share/wizardry/glossary/glosses"
+  echo "=== END GLOSS CONTENT ==="
+fi
+. spells/.imps/sys/invoke-wizardry
+banish 8
+./spells/.wizardry/test-magic --verbose

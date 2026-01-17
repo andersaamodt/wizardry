@@ -1,0 +1,39 @@
+name: Hypothesis #105 - Print bash version and test
+
+on:
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  test-hypothesis-105:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap uidmap attr file dash
+          
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          echo 'kernel.unprivileged_userns_clone=1' | sudo tee -a /etc/sysctl.conf
+          echo 'kernel.apparmor_restrict_unprivileged_userns=0' | sudo tee -a /etc/sysctl.conf
+          sudo sysctl -p
+          
+      - name: Test Hypothesis #105
+        run: |
+          echo "Testing hypothesis #105: Print bash version and test"
+          echo ""
+          echo "Strategy: Identify if specific bash version triggers bug"
+          echo "Expected: Correlate crash with bash version"
+          echo ""
+          echo "Bash version:"
+bash --version | head -n 1
+. spells/.imps/sys/invoke-wizardry
+banish 8
+./spells/.wizardry/test-magic --verbose

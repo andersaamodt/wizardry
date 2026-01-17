@@ -1,0 +1,39 @@
+name: Hypothesis #101 - Use dot-sourcing instead of eval
+
+on:
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  test-hypothesis-101:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap uidmap attr file dash
+          
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          echo 'kernel.unprivileged_userns_clone=1' | sudo tee -a /etc/sysctl.conf
+          echo 'kernel.apparmor_restrict_unprivileged_userns=0' | sudo tee -a /etc/sysctl.conf
+          sudo sysctl -p
+          
+      - name: Test Hypothesis #101
+        run: |
+          echo "Testing hypothesis #101: Use dot-sourcing instead of eval"
+          echo ""
+          echo "Strategy: Modify banish to source instead of eval"
+          echo "Expected: Exit 0 if eval causes corruption"
+          echo ""
+          # Modify banish to use sourcing
+sed -i 's/eval.*_glosses/. "$HOME\/.local\/share\/wizardry\/glossary\/glosses"/g' spells/.imps/sys/banish 2>/dev/null || true
+. spells/.imps/sys/invoke-wizardry
+banish 8
+./spells/.wizardry/test-magic --verbose

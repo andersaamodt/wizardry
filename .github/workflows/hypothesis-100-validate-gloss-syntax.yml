@@ -1,0 +1,44 @@
+name: Hypothesis #100 - Validate gloss file syntax with sh -n
+
+on:
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  test-hypothesis-100:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap uidmap attr file dash
+          
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          echo 'kernel.unprivileged_userns_clone=1' | sudo tee -a /etc/sysctl.conf
+          echo 'kernel.apparmor_restrict_unprivileged_userns=0' | sudo tee -a /etc/sysctl.conf
+          sudo sysctl -p
+          
+      - name: Test Hypothesis #100
+        run: |
+          echo "Testing hypothesis #100: Validate gloss file syntax with sh -n"
+          echo ""
+          echo "Strategy: Check syntax before sourcing"
+          echo "Expected: Exit 2 if syntax error detected"
+          echo ""
+          spells/.wizardry/generate-glosses
+if [ -f "$HOME/.local/share/wizardry/glossary/glosses" ]; then
+  if ! sh -n "$HOME/.local/share/wizardry/glossary/glosses" 2>&1; then
+    echo "SYNTAX ERROR DETECTED IN GLOSSES"
+    exit 2
+  fi
+fi
+. spells/.imps/sys/invoke-wizardry
+banish 8
+./spells/.wizardry/test-magic --verbose

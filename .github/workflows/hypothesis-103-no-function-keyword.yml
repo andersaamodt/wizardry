@@ -1,0 +1,41 @@
+name: Hypothesis #103 - Use name() instead of function name()
+
+on:
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  test-hypothesis-103:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap uidmap attr file dash
+          
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          echo 'kernel.unprivileged_userns_clone=1' | sudo tee -a /etc/sysctl.conf
+          echo 'kernel.apparmor_restrict_unprivileged_userns=0' | sudo tee -a /etc/sysctl.conf
+          sudo sysctl -p
+          
+      - name: Test Hypothesis #103
+        run: |
+          echo "Testing hypothesis #103: Use name() instead of function name()"
+          echo ""
+          echo "Strategy: Remove 'function' keyword from glosses"
+          echo "Expected: Exit 0 if function keyword causes issue"
+          echo ""
+          spells/.wizardry/generate-glosses
+if [ -f "$HOME/.local/share/wizardry/glossary/glosses" ]; then
+  sed -i 's/^function \([a-zA-Z0-9_-]*\)()/\1()/g' "$HOME/.local/share/wizardry/glossary/glosses"
+fi
+. spells/.imps/sys/invoke-wizardry
+banish 8
+./spells/.wizardry/test-magic --verbose

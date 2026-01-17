@@ -1,0 +1,35 @@
+name: Hypothesis #98 - Run bash in POSIX mode
+
+on:
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  test-hypothesis-98:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap uidmap attr file dash
+          
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          echo 'kernel.unprivileged_userns_clone=1' | sudo tee -a /etc/sysctl.conf
+          echo 'kernel.apparmor_restrict_unprivileged_userns=0' | sudo tee -a /etc/sysctl.conf
+          sudo sysctl -p
+          
+      - name: Test Hypothesis #98
+        run: |
+          echo "Testing hypothesis #98: Run bash in POSIX mode"
+          echo ""
+          echo "Strategy: Use bash --posix to disable bash extensions"
+          echo "Expected: Exit 0 if bash extension causes issue"
+          echo ""
+          bash --posix -c '. spells/.imps/sys/invoke-wizardry && banish 8 && bash --posix ./spells/.wizardry/test-magic --verbose'
