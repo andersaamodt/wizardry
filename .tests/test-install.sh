@@ -640,9 +640,9 @@ install_uses_explicit_helper_paths() {
     return 1
   fi
   
-  # Check that detect-rc-file is referenced with an explicit path
-  if ! grep -q 'DETECT_RC_FILE=.*\$ABS_DIR/spells/divination/detect-rc-file' "$ROOT_DIR/install"; then
-    TEST_FAILURE_REASON="install script should use explicit path to detect-rc-file"
+  # Check that divine-rc-file is referenced with an explicit path
+  if ! grep -q 'DETECT_RC_FILE=.*\$ABS_DIR/spells/divination/divine-rc-file' "$ROOT_DIR/install"; then
+    TEST_FAILURE_REASON="install script should use explicit path to divine-rc-file"
     return 1
   fi
   
@@ -714,9 +714,9 @@ install_uses_only_bootstrappable_spells() {
     return 1
   fi
   
-  # detect-rc-file should be invoked as $DETECT_RC_FILE
-  if grep -E '^\s*detect-rc-file\s' "$ROOT_DIR/install" 2>/dev/null | grep -v '^#' | grep -v 'DETECT_RC_FILE=' >/dev/null; then
-    TEST_FAILURE_REASON="install script invokes 'detect-rc-file' directly instead of via \$DETECT_RC_FILE"
+  # divine-rc-file should be invoked as $DETECT_RC_FILE
+  if grep -E '^\s*divine-rc-file\s' "$ROOT_DIR/install" 2>/dev/null | grep -v '^#' | grep -v 'DETECT_RC_FILE=' >/dev/null; then
+    TEST_FAILURE_REASON="install script invokes 'divine-rc-file' directly instead of via \$DETECT_RC_FILE"
     return 1
   fi
   

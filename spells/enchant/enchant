@@ -114,9 +114,9 @@ case "$key" in
   *) key="user.$key" ;;  # No namespace, prepend "user."
 esac
 
-# Use xattr-write-value imp to set the attribute
+# Use attribute-set imp to set the attribute
 # This delegates to the appropriate xattr helper (attr, xattr, or setfattr)
-if xattr-write-value "$key" "$value" "$file"; then
+if attribute-set "$key" "$value" "$file"; then
   printf '%s\n' "The file has been enchanted with the attribute '$key' and value '$value'."
   exit 0
 else

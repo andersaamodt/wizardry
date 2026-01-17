@@ -85,8 +85,8 @@ kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$tmp/menu"
   
-  # Create xattr-read-batch stub that returns attributes in batch format
-  cat >"$tmp/xattr-read-batch" <<'SH'
+  # Create attribute-get-batch stub that returns attributes in batch format
+  cat >"$tmp/attribute-get-batch" <<'SH'
 #!/bin/sh
 file=$1
 shift
@@ -99,7 +99,7 @@ case "$file" in
     ;;
 esac
 SH
-  chmod +x "$tmp/xattr-read-batch"
+  chmod +x "$tmp/attribute-get-batch"
   
   # Create read-magic stub for backward compatibility
   cat >"$tmp/read-magic" <<'SH'
@@ -176,8 +176,8 @@ kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$tmp/menu"
   
-  # Create xattr-read-batch stub
-  cat >"$tmp/xattr-read-batch" <<'SH'
+  # Create attribute-get-batch stub
+  cat >"$tmp/attribute-get-batch" <<'SH'
 #!/bin/sh
 file=$1
 shift
@@ -187,7 +187,7 @@ case "$file" in
     ;;
 esac
 SH
-  chmod +x "$tmp/xattr-read-batch"
+  chmod +x "$tmp/attribute-get-batch"
   
   # Create read-magic stub that returns echelon and priority
   cat >"$tmp/read-magic" <<'SH'
@@ -279,8 +279,8 @@ exit 0
 SH
   chmod +x "$tmp/menu"
   
-  # Create xattr-read-batch stub
-  cat >"$tmp/xattr-read-batch" <<'SH'
+  # Create attribute-get-batch stub
+  cat >"$tmp/attribute-get-batch" <<'SH'
 #!/bin/sh
 file=$1
 shift
@@ -293,7 +293,7 @@ case "$file" in
     ;;
 esac
 SH
-  chmod +x "$tmp/xattr-read-batch"
+  chmod +x "$tmp/attribute-get-batch"
   
   # Create read-magic stub that returns echelon/priority for files
   cat >"$tmp/read-magic" <<'SH'
