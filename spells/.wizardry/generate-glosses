@@ -153,7 +153,7 @@ set -eu
         return 0  # Allow test (used in test-spell, etc.)
         ;;
       # BLACKLIST: Shell builtins that CANNOT be overridden
-      alias|bg|cd|command|disable|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|\
+      alias|bg|cd|command|disable|false|fc|fg|getopts|hash|is|jobs|kill|newgrp|pwd|\
 read|readonly|set|sh|\
 times|trap|true|type|ulimit|umask|unalias|wait|break|case|continue|do|done|elif|else|\
 esac|eval|exec|exit|export|fi|for|if|in|local|return|shift|then|unset|until|while)
