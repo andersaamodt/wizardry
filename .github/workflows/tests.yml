@@ -27,21 +27,27 @@ jobs:
         include:
           - job_name: "1/6"
             levels: "0-0"
+            min_level: 0
             max_level: 0
           - job_name: "2/6"
             levels: "1-2"
+            min_level: 1
             max_level: 2
           - job_name: "3/6"
             levels: "3-8"
+            min_level: 3
             max_level: 8
           - job_name: "4/6"
             levels: "9-15"
+            min_level: 9
             max_level: 15
           - job_name: "5/6"
             levels: "16-24"
+            min_level: 16
             max_level: 24
           - job_name: "6/6"
             levels: "25-27"
+            min_level: 25
             max_level: 27
     env:
       WIZARDRY_OS_LABEL: nixos
@@ -69,7 +75,7 @@ jobs:
       - name: Run unit tests (levels ${{ matrix.levels }}) in Nix shell
         run: |
           nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr --run "
-            . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && ./spells/.wizardry/test-magic ${{ matrix.max_level }} --verbose
+            . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && for level in $(seq ${{ matrix.min_level }} ${{ matrix.max_level }}); do ./spells/.wizardry/test-magic "$level" --only --verbose || exit 1; done
           "
 
   aab-macos:
@@ -81,21 +87,27 @@ jobs:
         include:
           - job_name: "1/6"
             levels: "0-0"
+            min_level: 0
             max_level: 0
           - job_name: "2/6"
             levels: "1-2"
+            min_level: 1
             max_level: 2
           - job_name: "3/6"
             levels: "3-8"
+            min_level: 3
             max_level: 8
           - job_name: "4/6"
             levels: "9-15"
+            min_level: 9
             max_level: 15
           - job_name: "5/6"
             levels: "16-24"
+            min_level: 16
             max_level: 24
           - job_name: "6/6"
             levels: "25-27"
+            min_level: 25
             max_level: 27
     env:
       WIZARDRY_OS_LABEL: mac
@@ -105,7 +117,7 @@ jobs:
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/attribute-tool-check spells/.imps/fs/attribute-list spells/.imps/fs/attribute-get
       - name: Run unit tests (levels ${{ matrix.levels }})
-        run: . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && ./spells/.wizardry/test-magic ${{ matrix.max_level }} --verbose
+        run: . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && for level in $(seq ${{ matrix.min_level }} ${{ matrix.max_level }}); do ./spells/.wizardry/test-magic "$level" --only --verbose || exit 1; done
 
   arch:
     name: Arch Linux unit tests ${{ matrix.job_name }}
@@ -117,21 +129,27 @@ jobs:
         include:
           - job_name: "1/6"
             levels: "0-0"
+            min_level: 0
             max_level: 0
           - job_name: "2/6"
             levels: "1-2"
+            min_level: 1
             max_level: 2
           - job_name: "3/6"
             levels: "3-8"
+            min_level: 3
             max_level: 8
           - job_name: "4/6"
             levels: "9-15"
+            min_level: 9
             max_level: 15
           - job_name: "5/6"
             levels: "16-24"
+            min_level: 16
             max_level: 24
           - job_name: "6/6"
             levels: "25-27"
+            min_level: 25
             max_level: 27
     env:
       WIZARDRY_OS_LABEL: arch
@@ -143,7 +161,7 @@ jobs:
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/attribute-tool-check spells/.imps/fs/attribute-list spells/.imps/fs/attribute-get
       - name: Run unit tests (levels ${{ matrix.levels }})
-        run: . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && ./spells/.wizardry/test-magic ${{ matrix.max_level }} --verbose
+        run: . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && for level in $(seq ${{ matrix.min_level }} ${{ matrix.max_level }}); do ./spells/.wizardry/test-magic "$level" --only --verbose || exit 1; done
 
   debian:
     name: Debian unit tests ${{ matrix.job_name }}
@@ -155,21 +173,27 @@ jobs:
         include:
           - job_name: "1/6"
             levels: "0-0"
+            min_level: 0
             max_level: 0
           - job_name: "2/6"
             levels: "1-2"
+            min_level: 1
             max_level: 2
           - job_name: "3/6"
             levels: "3-8"
+            min_level: 3
             max_level: 8
           - job_name: "4/6"
             levels: "9-15"
+            min_level: 9
             max_level: 15
           - job_name: "5/6"
             levels: "16-24"
+            min_level: 16
             max_level: 24
           - job_name: "6/6"
             levels: "25-27"
+            min_level: 25
             max_level: 27
     env:
       WIZARDRY_OS_LABEL: debian
@@ -182,7 +206,7 @@ jobs:
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/attribute-tool-check spells/.imps/fs/attribute-list spells/.imps/fs/attribute-get
       - name: Run unit tests (levels ${{ matrix.levels }})
-        run: . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && ./spells/.wizardry/test-magic ${{ matrix.max_level }} --verbose
+        run: . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && for level in $(seq ${{ matrix.min_level }} ${{ matrix.max_level }}); do ./spells/.wizardry/test-magic "$level" --only --verbose || exit 1; done
 
   ubuntu:
     name: Ubuntu unit tests ${{ matrix.job_name }}
@@ -193,21 +217,27 @@ jobs:
         include:
           - job_name: "1/6"
             levels: "0-0"
+            min_level: 0
             max_level: 0
           - job_name: "2/6"
             levels: "1-2"
+            min_level: 1
             max_level: 2
           - job_name: "3/6"
             levels: "3-8"
+            min_level: 3
             max_level: 8
           - job_name: "4/6"
             levels: "9-15"
+            min_level: 9
             max_level: 15
           - job_name: "5/6"
             levels: "16-24"
+            min_level: 16
             max_level: 24
           - job_name: "6/6"
             levels: "25-27"
+            min_level: 25
             max_level: 27
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -239,4 +269,4 @@ jobs:
             echo "bubblewrap unusable; proceeding without sandboxing" >&2
           fi
       - name: Run unit tests (levels ${{ matrix.levels }})
-        run: . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && ./spells/.wizardry/test-magic ${{ matrix.max_level }} --verbose
+        run: . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && for level in $(seq ${{ matrix.min_level }} ${{ matrix.max_level }}); do ./spells/.wizardry/test-magic "$level" --only --verbose || exit 1; done
