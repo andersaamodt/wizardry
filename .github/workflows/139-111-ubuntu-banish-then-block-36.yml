@@ -2,6 +2,7 @@ name: 139-111 Ubuntu Banish before and after sourcing block 36
 
 on:
   pull_request:
+    if: ${{ false }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

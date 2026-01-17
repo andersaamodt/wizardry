@@ -2,6 +2,7 @@ name: 139-116 Ubuntu Dump block 36 only
 
 on:
   pull_request:
+    if: ${{ false }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

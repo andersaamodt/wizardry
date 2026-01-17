@@ -69,19 +69,15 @@ jobs:
 
           # Workflows to monitor
           workflows=(
-            "139-108 Ubuntu Dump block 36 and run banish"
-            "139-109 Ubuntu Source block 36 only"
-            "139-110 Ubuntu Source block 36 and run banish twice"
-            "139-111 Ubuntu Banish before and after sourcing block 36"
-            "139-112 Ubuntu Source block 36 and capture defined function"
-            "139-113 Ubuntu Source blocks 35 then 36 and run banish"
-            "139-114 Ubuntu Source blocks 36 then 37 and run banish"
-            "139-115 Ubuntu Source block 36 in a nested subshell then banish"
-            "139-116 Ubuntu Dump block 36 only"
-            "139-117 Ubuntu Source block 36 then unset function and banish"
-            "139-118 Ubuntu Parse block 36 function without sourcing and banish"
-            "139-119 Ubuntu Source block 36 and exec banish"
             "139-120 Ubuntu Source block 36 with xtrace and banish"
+            "139-121 Ubuntu Banish with xtrace only (no block 36)"
+            "139-122 Ubuntu Source block 36, set -x then disable before banish"
+            "139-123 Ubuntu Set -x before source block 36, disable before banish"
+            "139-124 Ubuntu Source block 36, set -x with PS4, banish"
+            "139-125 Ubuntu Source block 36, xtrace banish in subshell"
+            "139-126 Ubuntu Source block 36, toggle xtrace on/off then banish"
+            "139-127 Ubuntu Source block 36, banish then xtrace banish"
+            "139-128 Ubuntu Source block 36, xtrace before banish only"
           )
           
           # Total number of workflows we're monitoring
