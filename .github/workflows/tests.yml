@@ -69,7 +69,7 @@ jobs:
       - name: Run unit tests (levels ${{ matrix.levels }}) in Nix shell
         run: |
           nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr --run "
-            . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && ./spells/.wizardry/test-magic ${{ matrix.max_level }} --only --verbose
+            . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && ./spells/.wizardry/test-magic ${{ matrix.max_level }} --verbose
           "
 
   aab-macos:
@@ -105,7 +105,7 @@ jobs:
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/attribute-tool-check spells/.imps/fs/attribute-list spells/.imps/fs/attribute-get
       - name: Run unit tests (levels ${{ matrix.levels }})
-        run: . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && ./spells/.wizardry/test-magic ${{ matrix.max_level }} --only --verbose
+        run: . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && ./spells/.wizardry/test-magic ${{ matrix.max_level }} --verbose
 
   arch:
     name: Arch Linux unit tests ${{ matrix.job_name }}
@@ -143,7 +143,7 @@ jobs:
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/attribute-tool-check spells/.imps/fs/attribute-list spells/.imps/fs/attribute-get
       - name: Run unit tests (levels ${{ matrix.levels }})
-        run: . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && ./spells/.wizardry/test-magic ${{ matrix.max_level }} --only --verbose
+        run: . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && ./spells/.wizardry/test-magic ${{ matrix.max_level }} --verbose
 
   debian:
     name: Debian unit tests ${{ matrix.job_name }}
@@ -182,7 +182,7 @@ jobs:
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/attribute-tool-check spells/.imps/fs/attribute-list spells/.imps/fs/attribute-get
       - name: Run unit tests (levels ${{ matrix.levels }})
-        run: . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && ./spells/.wizardry/test-magic ${{ matrix.max_level }} --only --verbose
+        run: . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && ./spells/.wizardry/test-magic ${{ matrix.max_level }} --verbose
 
   ubuntu:
     name: Ubuntu unit tests ${{ matrix.job_name }}
@@ -239,4 +239,4 @@ jobs:
             echo "bubblewrap unusable; proceeding without sandboxing" >&2
           fi
       - name: Run unit tests (levels ${{ matrix.levels }})
-        run: . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && ./spells/.wizardry/test-magic ${{ matrix.max_level }} --only --verbose
+        run: . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && ./spells/.wizardry/test-magic ${{ matrix.max_level }} --verbose
