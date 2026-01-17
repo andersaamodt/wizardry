@@ -96,7 +96,8 @@ test_all_spell_categories() {
 }
 
 test_invalid_default_synonyms_hard_fail() {
-  # Test that invalid default synonyms cause an error
+  # Test that invalid default synonyms cause script to fail
+  # This catches bad default synonyms at development time
   tmpdir=$(make_tempdir)
   
   # Create a default-synonyms file with an invalid synonym
@@ -107,22 +108,25 @@ test_invalid_default_synonyms_hard_fail() {
 valid=echo
 EOF
   
-  # Run generate-glosses - should report error for invalid synonym
+  # Run generate-glosses - should fail due to invalid default synonym
   WIZARDRY_DIR="$ROOT_DIR" SPELLBOOK_DIR="$tmpdir" \
     run_spell spells/.wizardry/generate-glosses --quiet
   
-  # Should succeed (doesn't exit with error, but reports to stderr)
-  assert_success || return 1
-  
-  # Error message should mention invalid default synonym
-  if ! printf '%s' "$ERROR" | grep -q "invalid default synonym"; then
-    TEST_FAILURE_REASON="Expected error message about invalid default synonym"
+  # Should fail (exit non-zero) to catch bad default synonyms at dev time
+  if [ "$STATUS" -eq 0 ]; then
+    TEST_FAILURE_REASON="Expected failure for invalid default synonym, but got success"
     return 1
   fi
   
-  # Should also have error count message
+  # Error message should mention invalid default synonym
+  if ! printf '%s' "$ERROR" | grep -q "invalid default synonym"; then
+    TEST_FAILURE_REASON="Expected error message about invalid default synonym in stderr"
+    return 1
+  fi
+  
+  # Should have ERROR prefix to indicate severity
   if ! printf '%s' "$ERROR" | grep -q "ERROR.*invalid default synonym"; then
-    TEST_FAILURE_REASON="Expected ERROR message about invalid synonyms"
+    TEST_FAILURE_REASON="Expected ERROR prefix in message about invalid synonyms"
     return 1
   fi
 }
