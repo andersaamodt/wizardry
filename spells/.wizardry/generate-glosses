@@ -46,7 +46,7 @@ esac
 # Skip require-wizardry check - this is a bootstrap script called from invoke-wizardry
 # require-wizardry || exit 1
 
-set -eu
+set -u
 # Skip env-clear - this is a bootstrap script, we want to preserve caller's environment
 # . env-clear
 
