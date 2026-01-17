@@ -170,6 +170,50 @@ jobs:
             rm -f "$cleaned_log"
           }
 
+          # Function to sort failure entries alphabetically by job name
+          sort_failures() {
+            local input_file="$1"
+            
+            if [ ! -s "$input_file" ]; then
+              return
+            fi
+            
+            # Create a temporary directory for sorting
+            local sort_dir="/tmp/failure_sort_$$"
+            mkdir -p "$sort_dir"
+            
+            # Split failures into separate files based on heading
+            awk '
+              /^### ❌/ {
+                # Extract job name for sorting (everything after "### ❌ ")
+                job_name = substr($0, 7)
+                # Create a safe filename from the job name
+                gsub(/[^a-zA-Z0-9_-]/, "_", job_name)
+                current_file = "'"$sort_dir"'/" job_name ".txt"
+                print $0 > current_file
+                in_block = 1
+                next
+              }
+              in_block {
+                print $0 >> current_file
+                # End of block is empty line after closing ```
+                if ($0 == "" && prev_line == "```") {
+                  in_block = 0
+                }
+              }
+              { prev_line = $0 }
+            ' "$input_file"
+            
+            # Output files in sorted order
+            for file in "$sort_dir"/*.txt; do
+              [ -f "$file" ] || continue
+              cat "$file"
+            done
+            
+            # Cleanup
+            rm -rf "$sort_dir"
+          }
+
           # Function to update PR description with current failures
           update_pr_description() {
             local pr_number="$PR_NUMBER"
@@ -180,7 +224,8 @@ jobs:
             completed_count=$(ls -1 /tmp/reported_runs 2>/dev/null | wc -l)
             
             if [ -s "$failure_summary_file" ]; then
-              failure_summary_content=$(cat "$failure_summary_file")
+              # Sort failures alphabetically before displaying
+              failure_summary_content=$(sort_failures "$failure_summary_file")
             else
               failure_summary_content=""
             fi
@@ -211,7 +256,7 @@ jobs:
                 echo "" && echo "---" && echo "" && \
                 echo "## 🔍 Latest Test Failures" && echo "" && \
                 echo "**Updated:** $(date -u '+%Y-%m-%d %H:%M:%S') UTC" && echo "" && \
-                if [ -n "$failure_summary_content" ]; then cat "$failure_summary_file"; fi && \
+                if [ -n "$failure_summary_content" ]; then echo "$failure_summary_content"; fi && \
                 if [ -n "$status_message" ]; then echo ""; echo "$status_message"; fi && \
                 echo "" && echo "<!-- test-failures-end -->")" \
               > /dev/null 2>&1 || echo "⚠️ Could not update PR description"

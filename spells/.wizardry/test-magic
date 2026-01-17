@@ -100,6 +100,7 @@ fi
 # Parse arguments
 target_level=27
 max_level=27
+min_level_range=0
 only_this_level=0
 verbose=0
 run_all=0
@@ -109,6 +110,13 @@ if [ "$#" -gt 0 ]; then
     all)
       run_all=1
       target_level=$max_level
+      shift
+      ;;
+    [0-9]-[0-9]|[0-9]-[0-9][0-9]|[0-9][0-9]-[0-9]|[0-9][0-9]-[0-9][0-9])
+      # Range syntax like 4-6
+      min_level_range=$(printf '%s' "$1" | cut -d- -f1)
+      target_level=$(printf '%s' "$1" | cut -d- -f2)
+      only_this_level=1
       shift
       ;;
     [0-9]|[0-9][0-9])
@@ -141,6 +149,7 @@ Execute behavior-driven shell tests organized by spell level.
 
 Arguments:
   LEVEL                 Test through level N (0-27, default: 27)
+  RANGE                 Test range of levels (e.g., 4-6) with --only implied
   all                   Test all available levels
 
 Options:
@@ -156,6 +165,13 @@ USAGE
           target_level=$max_level
           shift
           ;;
+        [0-9]-[0-9]|[0-9]-[0-9][0-9]|[0-9][0-9]-[0-9]|[0-9][0-9]-[0-9][0-9])
+          # Range syntax like 4-6
+          min_level_range=$(printf '%s' "$1" | cut -d- -f1)
+          target_level=$(printf '%s' "$1" | cut -d- -f2)
+          only_this_level=1
+          shift
+          ;;
         [0-9]|[0-9][0-9])
           target_level=$1
           shift
@@ -169,6 +185,7 @@ Execute behavior-driven shell tests organized by spell level.
 
 Arguments:
   LEVEL                 Test through level N (0-27, default: 27)
+  RANGE                 Test range of levels (e.g., 4-6) with --only implied
   all                   Test all available levels
 
 Options:
@@ -285,7 +302,7 @@ global_test_total=0
 
 # Count test files across all levels
 if [ "$only_this_level" -eq 1 ]; then
-  count_start=$target_level
+  count_start=$min_level_range
   count_end=$target_level
 else
   count_start=0
@@ -919,13 +936,17 @@ test_level() {
 }
 
 if [ "$only_this_level" -eq 1 ]; then
-  printf '\nTesting Level %d only: %s\n' "$target_level" "$(spell-levels "$target_level" name 2>/dev/null || printf 'Unknown Level')"
+  if [ "$min_level_range" -ne "$target_level" ]; then
+    printf '\nTesting Levels %d-%d only\n' "$min_level_range" "$target_level"
+  else
+    printf '\nTesting Level %d only: %s\n' "$target_level" "$(spell-levels "$target_level" name 2>/dev/null || printf 'Unknown Level')"
+  fi
 else
   printf '\nTesting through Level %d: %s\n' "$target_level" "$(spell-levels "$target_level" name 2>/dev/null || printf 'Unknown Level')"
 fi
 
 if [ "$only_this_level" -eq 1 ]; then
-  current_level=$target_level
+  current_level=$min_level_range
 else
   current_level=0
 fi
@@ -937,7 +958,7 @@ last_success_level=-1
 # Note: We don't exit on failure - just record the results and continue
 if [ "$only_this_level" -eq 0 ] && [ "$current_level" -eq 0 ]; then
   test_common_tests || true
-elif [ "$only_this_level" -eq 1 ] && [ "$target_level" -eq 0 ]; then
+elif [ "$only_this_level" -eq 1 ] && [ "$min_level_range" -eq 0 ]; then
   test_common_tests || true
 fi
 
