@@ -1,0 +1,48 @@
+name: "Hypothesis #168: Run single test directly"
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-ubuntu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      WIZARDRY_OS_LABEL: ubuntu
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Make scripts executable
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+        
+      - name: Setup user namespaces
+        run: |
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
+          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
+          {
+            echo 'kernel.unprivileged_userns_clone=1'
+            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
+          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
+          sudo sysctl --system
+      
+      - name: Test bubblewrap
+        run: |
+          if bwrap --unshare-user-try --ro-bind / / /bin/true; then
+            echo "bubblewrap usable with user namespaces"
+          elif sudo -n bwrap --unshare-user-try --ro-bind / / /bin/true; then
+            echo "bubblewrap usable via sudo with user namespaces"
+          elif sudo -n bwrap --ro-bind / / /bin/true; then
+            echo "bubblewrap usable via sudo"
+          else
+            echo "bubblewrap unusable; proceeding without sandboxing" >&2
+          fi
+      
+      - name: Run single test directly
+        run: |
+          . spells/.imps/sys/invoke-wizardry && banish 8 && /bin/sh .tests/common/test-common-tests.sh
