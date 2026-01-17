@@ -69,10 +69,10 @@ jobs:
 
           # Workflows to monitor
           workflows=(
-            "139-149 Ubuntu xtrace xattr direct"
-            "139-150 Ubuntu xtrace attr direct"
-            "139-151 Ubuntu xtrace setfattr/getfattr direct"
-            "139-152 Ubuntu xtrace coreutils touch"
+            "139-153 Ubuntu xtrace xattr no invoke"
+            "139-154 Ubuntu xtrace xattr no glosses"
+            "139-155 Ubuntu xtrace xattr after invoke"
+            "139-156 Ubuntu xtrace xattr command bypass"
           )
           
           # Total number of workflows we're monitoring

@@ -1,7 +1,7 @@
 name: 139-152 Ubuntu xtrace coreutils touch
 
 on:
-  pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
