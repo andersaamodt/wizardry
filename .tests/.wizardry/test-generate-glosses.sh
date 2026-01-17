@@ -96,7 +96,8 @@ test_all_spell_categories() {
 }
 
 test_invalid_default_synonyms_hard_fail() {
-  # Test that invalid default synonyms cause an error
+  # Test that invalid default synonyms cause script to fail
+  # This catches bad default synonyms at development time
   tmpdir=$(make_tempdir)
   
   # Create a default-synonyms file with an invalid synonym
@@ -107,22 +108,25 @@ test_invalid_default_synonyms_hard_fail() {
 valid=echo
 EOF
   
-  # Run generate-glosses - should report error for invalid synonym
+  # Run generate-glosses - should fail due to invalid default synonym
   WIZARDRY_DIR="$ROOT_DIR" SPELLBOOK_DIR="$tmpdir" \
     run_spell spells/.wizardry/generate-glosses --quiet
   
-  # Should succeed (doesn't exit with error, but reports to stderr)
-  assert_success || return 1
-  
-  # Error message should mention invalid default synonym
-  if ! printf '%s' "$ERROR" | grep -q "invalid default synonym"; then
-    TEST_FAILURE_REASON="Expected error message about invalid default synonym"
+  # Should fail (exit non-zero) to catch bad default synonyms at dev time
+  if [ "$STATUS" -eq 0 ]; then
+    TEST_FAILURE_REASON="Expected failure for invalid default synonym, but got success"
     return 1
   fi
   
-  # Should also have error count message
+  # Error message should mention invalid default synonym
+  if ! printf '%s' "$ERROR" | grep -q "invalid default synonym"; then
+    TEST_FAILURE_REASON="Expected error message about invalid default synonym in stderr"
+    return 1
+  fi
+  
+  # Should have ERROR prefix to indicate severity
   if ! printf '%s' "$ERROR" | grep -q "ERROR.*invalid default synonym"; then
-    TEST_FAILURE_REASON="Expected ERROR message about invalid synonyms"
+    TEST_FAILURE_REASON="Expected ERROR prefix in message about invalid synonyms"
     return 1
   fi
 }
@@ -207,5 +211,104 @@ run_test_case "generate-glosses --output writes to file" test_output_option
 run_test_case "generate-glosses creates glosses for all spell categories" test_all_spell_categories
 run_test_case "generate-glosses hard fails on invalid default synonyms" test_invalid_default_synonyms_hard_fail
 run_test_case "synonym multi-word invocations work (leap to location)" test_synonym_multi_word_invocation
+
+#!/bin/sh
+# Test custom synonyms with multi-word gloss commands
+# This reproduces the bugs reported with warp and leap-to-location
+
+
+# Note: These tests require custom synonyms to be set up
+# They test that the gloss/parse system correctly handles user-defined synonyms
+
+test_custom_synonym_single_word() {
+  # This test verifies that a single-word synonym (warp) works
+  # To test locally, add to ~/.spellbook/.synonyms: warp=jump-to-marker
+  
+  # Create temporary synonym
+  tmpspellbook=$(make_tempdir)
+  mkdir -p "$tmpspellbook"
+  printf 'warp=jump-to-marker\n' > "$tmpspellbook/.synonyms"
+  
+  # Save current state
+  saved_spellbook="${SPELLBOOK_DIR-}"
+  saved_home="${HOME-}"
+  
+  # Set up environment and regenerate glosses  
+  export SPELLBOOK_DIR="$tmpspellbook"
+  export HOME="$tmpspellbook"
+  
+  # Regenerate glosses
+  tmpgloss="$tmpspellbook/glosses"
+  export WIZARDRY_DIR="$ROOT_DIR"
+  "$ROOT_DIR/spells/.wizardry/generate-glosses" --output "$tmpgloss" --quiet
+  
+  # Source glosses in current shell
+  . "$tmpgloss"
+  
+  # Test warp command
+  OUTPUT=$(warp --help 2>&1)
+  STATUS=$?
+  
+  # Restore environment
+  if [ -n "$saved_spellbook" ]; then export SPELLBOOK_DIR="$saved_spellbook"; else unset SPELLBOOK_DIR; fi
+  if [ -n "$saved_home" ]; then export HOME="$saved_home"; else unset HOME; fi
+  
+  if [ $STATUS -ne 0 ]; then
+    TEST_FAILURE_REASON="warp failed with status $STATUS"
+    return 1
+  fi
+  
+  if ! printf '%s' "$OUTPUT" | grep -q "Usage:"; then
+    TEST_FAILURE_REASON="warp output missing 'Usage:'"
+    return 1
+  fi
+}
+
+test_custom_synonym_multi_word_spaces() {
+  # This test verifies that a multi-word synonym works with spaces (leap to location)
+  # To test locally, add to ~/.spellbook/.synonyms: leap-to-location=jump-to-marker
+  
+  # Create temporary synonym
+  tmpspellbook=$(make_tempdir)
+  mkdir -p "$tmpspellbook"
+  printf 'leap-to-location=jump-to-marker\n' > "$tmpspellbook/.synonyms"
+  
+  # Save current state
+  saved_spellbook="${SPELLBOOK_DIR-}"
+  saved_home="${HOME-}"
+  
+  # Set up environment and regenerate glosses
+  export SPELLBOOK_DIR="$tmpspellbook"
+  export HOME="$tmpspellbook"
+  
+  # Regenerate glosses
+  tmpgloss="$tmpspellbook/glosses"
+  export WIZARDRY_DIR="$ROOT_DIR"
+  "$ROOT_DIR/spells/.wizardry/generate-glosses" --output "$tmpgloss" --quiet
+  
+  # Source glosses in current shell
+  . "$tmpgloss"
+  
+  # Test "leap to location" command (spaces)
+  OUTPUT=$(leap to location --help 2>&1)
+  STATUS=$?
+  
+  # Restore environment
+  if [ -n "$saved_spellbook" ]; then export SPELLBOOK_DIR="$saved_spellbook"; else unset SPELLBOOK_DIR; fi
+  if [ -n "$saved_home" ]; then export HOME="$saved_home"; else unset HOME; fi
+  
+  if [ $STATUS -ne 0 ]; then
+    TEST_FAILURE_REASON="leap to location failed with status $STATUS"
+    return 1
+  fi
+  
+  if ! printf '%s' "$OUTPUT" | grep -q "Usage:"; then
+    TEST_FAILURE_REASON="leap to location output missing 'Usage:'"
+    return 1
+  fi
+}
+
+run_test_case "custom synonym single-word (warp)" test_custom_synonym_single_word
+run_test_case "custom synonym multi-word with spaces (leap to location)" test_custom_synonym_multi_word_spaces
 
 finish_tests
