@@ -1,5 +1,5 @@
 #!/bin/sh
-# xattr-write-value KEY VALUE FILE - write the value of a specific extended attribute
+# attr-set KEY VALUE FILE - write the value of a specific extended attribute
 # Tries attr, xattr, and setfattr in order
 # Returns 0 if successfully written, 1 if all helpers failed
 set -eu
@@ -10,21 +10,21 @@ value=$2
 file=$3
 
 # Try attr first (Linux, simplest output)
-if xattr-helper-usable attr; then
+if attr-tool-check attr; then
   if attr -s "$key" -V "$value" "$file" 2>/dev/null; then
     exit 0
   fi
 fi
 
 # Try xattr (macOS)
-if xattr-helper-usable xattr; then
+if attr-tool-check xattr; then
   if xattr -w "$key" "$value" "$file" 2>/dev/null; then
     exit 0
   fi
 fi
 
 # Try setfattr (Linux)
-if xattr-helper-usable setfattr; then
+if attr-tool-check setfattr; then
   if setfattr -n "$key" -v "$value" "$file" 2>/dev/null; then
     exit 0
   fi
