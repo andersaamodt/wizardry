@@ -1,7 +1,7 @@
-name: 139-197 Ubuntu gloss block variants
+name: 139-198 Ubuntu detect gloss variants
 
 on:
-  workflow_dispatch:
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,50 +11,15 @@ permissions:
   contents: read
 
 jobs:
-  ubuntu-gloss-no-functions:
-    name: 139-197 Ubuntu gloss no functions
+  ubuntu-gloss-without-detect:
+    name: 139-198 Ubuntu gloss without detect
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install xattr tooling
         run: sudo apt-get update && sudo apt-get install -y attr
-      - name: Load gloss system without functions
-        run: |
-          set +e
-          ulimit -c unlimited || true
-          (
-            set -e
-            . spells/.imps/sys/invoke-wizardry
-            gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
-            gloss_clean=$(mktemp /tmp/wizardry-gloss-clean.XXXXXX)
-            generate-glosses --output "$gloss_file"
-            awk '
-              BEGIN { in_block=0 }
-              /^# First-word gloss/ { in_block=1 }
-              !in_block { print }
-            ' "$gloss_file" > "$gloss_clean"
-            . "$gloss_clean"
-            set -x
-            banish 8 --only --no-tests --no-heal
-          )
-          status=$?
-          if [ "$status" -eq 139 ]; then
-            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
-            printf '%s\n' "Last 50 dmesg lines (if available):"
-            dmesg | tail -n 50 || true
-          fi
-          exit "$status"
-
-  ubuntu-gloss-without-block-36:
-    name: 139-197 Ubuntu gloss without block 36
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Install xattr tooling
-        run: sudo apt-get update && sudo apt-get install -y attr
-      - name: Remove block 36 and run banish
+      - name: Remove detect gloss and run banish
         run: |
           set +e
           ulimit -c unlimited || true
@@ -65,11 +30,9 @@ jobs:
             gloss_trim=$(mktemp /tmp/wizardry-gloss-trim.XXXXXX)
             generate-glosses --output "$gloss_file"
             awk '
-              BEGIN { idx=0; skip=0 }
-              /^# First-word gloss/ {
-                idx++
-                skip = (idx == 36)
-              }
+              BEGIN { skip=0 }
+              /^# First-word gloss for commands starting with '\''detect'\''/ { skip=1; next }
+              /^# First-word gloss/ { skip=0 }
               !skip { print }
             ' "$gloss_file" > "$gloss_trim"
             . "$gloss_trim"
@@ -84,45 +47,66 @@ jobs:
           fi
           exit "$status"
 
-  ubuntu-gloss-only-block-36:
-    name: 139-197 Ubuntu gloss only block 36
+  ubuntu-gloss-only-detect:
+    name: 139-199 Ubuntu gloss only detect
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install xattr tooling
         run: sudo apt-get update && sudo apt-get install -y attr
-      - name: Source only block 36 and run banish
+      - name: Source only detect gloss and run banish
         run: |
           set +e
           ulimit -c unlimited || true
           (
             set -e
             . spells/.imps/sys/invoke-wizardry
-            gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+            gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+            gloss_only=$(mktemp /tmp/wizardry-gloss-only.XXXXXX)
+            generate-glosses --output "$gloss_file"
+            awk '
+              BEGIN { keep=0 }
+              /^# First-word gloss for commands starting with '\''detect'\''/ { keep=1 }
+              /^# First-word gloss/ && $0 !~ /detect/ { if (keep) exit }
+              keep { print }
+            ' "$gloss_file" > "$gloss_only"
+            printf '%s\n' "[gloss-test] detect block preview"
+            sed -n '1,200p' "$gloss_only"
+            . "$gloss_only"
+            set -x
+            banish 8 --only --no-tests --no-heal
+          )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  ubuntu-gloss-detect-noop:
+    name: 139-200 Ubuntu gloss detect noop
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install xattr tooling
+        run: sudo apt-get update && sudo apt-get install -y attr
+      - name: Replace detect gloss body and run banish
+        run: |
+          set +e
+          ulimit -c unlimited || true
+          (
+            set -e
+            . spells/.imps/sys/invoke-wizardry
             gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
             generate-glosses --output "$gloss_file"
-
-            awk_program=$(printf '%s\n' \
-              'BEGIN { idx=0; out="" }' \
-              '/^# First-word gloss/ {' \
-              '  idx++' \
-              '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
-              '  print "# block " idx > out' \
-              '}' \
-              '{ if (out != "") print >> out }' \
-              'END { printf "%d\n", idx > outdir "/count" }')
-            awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-
-            block="$gloss_dir/block-036.sh"
-            if [ ! -s "$block" ]; then
-              printf "%s\n" "[gloss-test] missing block 36"
-              exit 1
-            fi
-            printf "%s\n" "[gloss-test] block 36 preview"
-            sed -n '1,200p' "$block"
+            . "$gloss_file"
+            detect() {
+              return 0
+            }
             set -x
-            . "$block"
             banish 8 --only --no-tests --no-heal
           )
           status=$?
