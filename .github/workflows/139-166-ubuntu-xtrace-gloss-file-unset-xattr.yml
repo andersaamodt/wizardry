@@ -1,7 +1,7 @@
-name: 139-161 Ubuntu xtrace xattr unset function
+name: 139-166 Ubuntu xtrace gloss file unset xattr
 
 on:
-  workflow_dispatch:
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,12 +11,11 @@ permissions:
   contents: read
 
 jobs:
-  ubuntu-xtrace-xattr-unset-function:
-    name: 139-161 Ubuntu xtrace xattr unset function
+  ubuntu-xtrace-gloss-file-unset-xattr:
+    name: 139-166 Ubuntu xtrace gloss file unset xattr
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
-      WIZARDRY_GLOSSES: "1"
       WIZARDRY_DEBUG: "1"
     steps:
       - name: Checkout
@@ -34,20 +33,21 @@ jobs:
             echo 'kernel.apparmor_restrict_unprivileged_userns=0'
           } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
           sudo sysctl --system
-      - name: Run invoke-wizardry then unset xattr function under xtrace
+      - name: Generate gloss file, unset xattr function, call xattr under xtrace
         run: |
           set +e
           ulimit -c unlimited || true
           if command -v timeout >/dev/null 2>&1; then
             timeout 120 bash -lc '
-              . spells/.imps/sys/invoke-wizardry
-              set -x
-              type xattr || true
-              if command -v xattr >/dev/null 2>&1; then
-                if type xattr 2>/dev/null | grep -q "function"; then
-                  unset -f xattr
-                fi
+              set -e
+              export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+              gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+              "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+              . "$gloss_file"
+              if type xattr 2>/dev/null | grep -q "function"; then
+                unset -f xattr
               fi
+              set -x
               tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-xattr.XXXXXX")
               command xattr -w user.test value "$tmp"
               command xattr -p user.test "$tmp"
@@ -57,14 +57,15 @@ jobs:
             status=$?
           else
             bash -lc '
-              . spells/.imps/sys/invoke-wizardry
-              set -x
-              type xattr || true
-              if command -v xattr >/dev/null 2>&1; then
-                if type xattr 2>/dev/null | grep -q "function"; then
-                  unset -f xattr
-                fi
+              set -e
+              export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+              gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+              "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+              . "$gloss_file"
+              if type xattr 2>/dev/null | grep -q "function"; then
+                unset -f xattr
               fi
+              set -x
               tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-xattr.XXXXXX")
               command xattr -w user.test value "$tmp"
               command xattr -p user.test "$tmp"
@@ -74,10 +75,10 @@ jobs:
             status=$?
           fi
           if [ "$status" -eq 139 ]; then
-            printf '%s\n' "xtrace xattr unset function exited with code 139 (SIGSEGV)"
+            printf '%s\n' "xtrace gloss file unset xattr exited with code 139 (SIGSEGV)"
             printf '%s\n' "Last 50 dmesg lines (if available):"
             dmesg | tail -n 50 || true
           elif [ "$status" -eq 124 ]; then
-            printf '%s\n' "xtrace xattr unset function timed out after 120 seconds"
+            printf '%s\n' "xtrace gloss file unset xattr timed out after 120 seconds"
           fi
           exit "$status"

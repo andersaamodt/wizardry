@@ -69,10 +69,10 @@ jobs:
 
           # Workflows to monitor
           workflows=(
-            "139-161 Ubuntu xtrace xattr unset function"
-            "139-162 Ubuntu xtrace xattr blacklist gloss"
-            "139-163 Ubuntu xtrace xattr subshell clean"
-            "139-164 Ubuntu xtrace xattr gloss function only"
+            "139-165 Ubuntu xtrace gloss file only"
+            "139-166 Ubuntu xtrace gloss file unset xattr"
+            "139-167 Ubuntu xtrace gloss file override parse"
+            "139-168 Ubuntu xtrace gloss file late xtrace"
           )
           
           # Total number of workflows we're monitoring
