@@ -9,7 +9,7 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: divine-magic
+Usage: detect-magic
 
 Scan the current directory for files with extended attributes using the read-magic spell, tally how many enchantments each file holds, and print a whimsical summary of the ambient magic.
 USAGE
@@ -32,7 +32,7 @@ if [ -z "$read_magic" ]; then
         elif command -v read-magic >/dev/null 2>&1; then
                 read_magic=$(command -v read-magic)
         else
-                printf '%s\n' "divine-magic: read-magic spell is missing." >&2
+                printf '%s\n' "detect-magic: read-magic spell is missing." >&2
                 exit 1
         fi
 fi
@@ -78,7 +78,7 @@ for entry in *; do
         if attrs_output=$("$read_magic" "$entry" 2>&1); then
                 :
         else
-                printf '%s\n' "divine-magic: failed to read $entry: $attrs_output" >&2
+                printf '%s\n' "detect-magic: failed to read $entry: $attrs_output" >&2
                 continue
         fi
 
@@ -94,10 +94,10 @@ for entry in *; do
         set -e
 
         if [ "$filter_status" -eq 97 ]; then
-                printf '%s\n' "divine-magic: ignoring malformed output from $entry" >&2
+                printf '%s\n' "detect-magic: ignoring malformed output from $entry" >&2
                 continue
         elif [ "$filter_status" -ne 0 ]; then
-                printf '%s\n' "divine-magic: failed to parse output from $entry" >&2
+                printf '%s\n' "detect-magic: failed to parse output from $entry" >&2
                 continue
         fi
 

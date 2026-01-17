@@ -6,7 +6,7 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: divine-distro [-v]
+Usage: detect-distro [-v]
 
 Detect the host operating system and print a concise identifier such as "debian", "mac", or "nixos". Use -v for narrated detection while exporting DISTRO for callers.
 USAGE
@@ -27,7 +27,7 @@ do
     ;;
   h)
     cat <<'USAGE'
-Usage: divine-distro [-v]
+Usage: detect-distro [-v]
 
 Detect the host operating system and print a concise identifier such as "debian", "mac", or "nixos". Use -v for narrated detection while exporting DISTRO for callers.
 USAGE
@@ -35,7 +35,7 @@ USAGE
     ;;
   *)
     cat >&2 <<'USAGE'
-Usage: divine-distro [-v]
+Usage: detect-distro [-v]
 
 Detect the host operating system and print a concise identifier such as "debian", "mac", or "nixos". Use -v for narrated detection while exporting DISTRO for callers.
 USAGE
@@ -47,7 +47,7 @@ shift $((OPTIND - 1))
 
 if [ "$#" -ne 0 ]; then
   cat >&2 <<'USAGE'
-Usage: divine-distro [-v]
+Usage: detect-distro [-v]
 
 Detect the host operating system and print a concise identifier such as "debian", "mac", or "nixos". Use -v for narrated detection while exporting DISTRO for callers.
 USAGE

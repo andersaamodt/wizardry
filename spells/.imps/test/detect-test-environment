@@ -1,5 +1,5 @@
 #!/bin/sh
-# divine-test-environment - Detect and report test environment capabilities
+# detect-test-environment - Detect and report test environment capabilities
 #
 # Outputs facts to stdout in a clearly marked section for:
 # - Test logic (skip decisions)
