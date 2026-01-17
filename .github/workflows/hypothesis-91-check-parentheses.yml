@@ -1,0 +1,21 @@
+name: "Hypothesis #91 - check-parentheses"
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          echo "Testing hypothesis #91: Validate parentheses balance in glosses"
+          chmod +x spells/.wizardry/generate-glosses
+          spells/.wizardry/generate-glosses
+          if [ -f "$HOME/.local/share/wizardry/glossary/glosses" ]; then
+            # Check for unbalanced parens
+            if grep -n '(' "$HOME/.local/share/wizardry/glossary/glosses" | wc -l != grep -n ')' "$HOME/.local/share/wizardry/glossary/glosses" | wc -l; then
+              echo "ERROR: Unbalanced parentheses detected!"
+              exit 2
+            fi
+          fi
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          ./spells/.wizardry/test-magic --verbose

@@ -1,0 +1,13 @@
+name: "Hypothesis #78 - character-whitelist"
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          echo "Testing hypothesis #78: Filter function names to [a-zA-Z0-9_-] only"
+          sed -i 's/basename "\$f"/basename "\$f" | sed "s\/[^a-zA-Z0-9_-]\/\_\/g"/' spells/.wizardry/generate-glosses
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          ./spells/.wizardry/test-magic --verbose

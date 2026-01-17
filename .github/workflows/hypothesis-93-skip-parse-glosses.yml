@@ -1,0 +1,13 @@
+name: "Hypothesis #93 - skip-parse-glosses"
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          echo "Testing hypothesis #93: Don't generate glosses for parse command"
+          sed -i '/parse/d' spells/.wizardry/generate-glosses 2>/dev/null || true
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          ./spells/.wizardry/test-magic --verbose

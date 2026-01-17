@@ -1,0 +1,17 @@
+name: "Hypothesis #77 - syntax-check-glosses"
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          echo "Testing hypothesis #77: Validate each generated gloss with sh -n"
+          chmod +x spells/.wizardry/generate-glosses
+          spells/.wizardry/generate-glosses
+          if [ -f "$HOME/.local/share/wizardry/glossary/glosses" ]; then
+            sh -n "$HOME/.local/share/wizardry/glossary/glosses" || exit 2
+          fi
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          ./spells/.wizardry/test-magic --verbose
