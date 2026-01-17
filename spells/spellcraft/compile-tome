@@ -6,7 +6,7 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: bind-tome [-d] <page-directory>
+Usage: compile-tome [-d] <page-directory>
 
 Bind every file in a directory into a single <dirname>.txt tome. Use -d to delete the original pages after binding if you want to keep only the finished book.
 USAGE
@@ -26,7 +26,7 @@ while getopts ":dh" opt; do
             ;;
         h)
             cat <<'USAGE'
-Usage: bind-tome [-d] <page-directory>
+Usage: compile-tome [-d] <page-directory>
 
 Bind every file in a directory into a single <dirname>.txt tome. Use -d to delete the original pages after binding if you want to keep only the finished book.
 USAGE
@@ -34,7 +34,7 @@ USAGE
             ;;
         *)
             cat <<'USAGE' >&2
-Usage: bind-tome [-d] <page-directory>
+Usage: compile-tome [-d] <page-directory>
 
 Bind every file in a directory into a single <dirname>.txt tome. Use -d to delete the original pages after binding if you want to keep only the finished book.
 USAGE
@@ -46,9 +46,9 @@ shift $((OPTIND - 1))
 
 # Require a directory of pages to stitch together.
 if [ "$#" -lt 1 ]; then
-    warn "bind-tome: folder path required."
+    warn "compile-tome: folder path required."
     cat <<'USAGE' >&2
-Usage: bind-tome [-d] <page-directory>
+Usage: compile-tome [-d] <page-directory>
 
 Bind every file in a directory into a single <dirname>.txt tome. Use -d to delete the original pages after binding if you want to keep only the finished book.
 USAGE
