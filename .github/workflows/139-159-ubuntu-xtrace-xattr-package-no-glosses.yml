@@ -1,7 +1,7 @@
-name: 139-156 Ubuntu xtrace xattr command bypass
+name: 139-159 Ubuntu xtrace xattr package no glosses
 
 on:
-  workflow_dispatch:
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,20 +11,20 @@ permissions:
   contents: read
 
 jobs:
-  ubuntu-xtrace-xattr-command-bypass:
-    name: 139-156 Ubuntu xtrace xattr command bypass
+  ubuntu-xtrace-xattr-package-no-glosses:
+    name: 139-159 Ubuntu xtrace xattr package no glosses
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
-      WIZARDRY_GLOSSES: "1"
+      WIZARDRY_GLOSSES: "0"
       WIZARDRY_DEBUG: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
-      - name: Install bubblewrap dependencies
-        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
+      - name: Install dependencies (include xattr)
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file xattr
       - name: Configure bubblewrap user namespaces
         run: |
           sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
@@ -34,7 +34,7 @@ jobs:
             echo 'kernel.apparmor_restrict_unprivileged_userns=0'
           } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
           sudo sysctl --system
-      - name: Run xattr with command bypass under xtrace
+      - name: Run xattr with invoke-wizardry (no glosses) under xtrace
         run: |
           set +e
           ulimit -c unlimited || true
@@ -42,15 +42,14 @@ jobs:
             timeout 120 bash -lc '
               set -x
               . spells/.imps/sys/invoke-wizardry
-              xattr_path=$(command -v xattr || printf "")
-              if [ -z "$xattr_path" ]; then
+              if ! command -v xattr >/dev/null 2>&1; then
                 printf "%s\n" "xattr command not found" >&2
                 exit 1
               fi
               tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-xattr.XXXXXX")
-              "$xattr_path" -w user.test value "$tmp"
-              "$xattr_path" -p user.test "$tmp"
-              "$xattr_path" -d user.test "$tmp" || :
+              command xattr -w user.test value "$tmp"
+              command xattr -p user.test "$tmp"
+              command xattr -d user.test "$tmp" || :
               rm -f "$tmp"
             '
             status=$?
@@ -58,24 +57,23 @@ jobs:
             bash -lc '
               set -x
               . spells/.imps/sys/invoke-wizardry
-              xattr_path=$(command -v xattr || printf "")
-              if [ -z "$xattr_path" ]; then
+              if ! command -v xattr >/dev/null 2>&1; then
                 printf "%s\n" "xattr command not found" >&2
                 exit 1
               fi
               tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-xattr.XXXXXX")
-              "$xattr_path" -w user.test value "$tmp"
-              "$xattr_path" -p user.test "$tmp"
-              "$xattr_path" -d user.test "$tmp" || :
+              command xattr -w user.test value "$tmp"
+              command xattr -p user.test "$tmp"
+              command xattr -d user.test "$tmp" || :
               rm -f "$tmp"
             '
             status=$?
           fi
           if [ "$status" -eq 139 ]; then
-            printf '%s\n' "xtrace xattr command bypass exited with code 139 (SIGSEGV)"
+            printf '%s\n' "xtrace xattr package no glosses exited with code 139 (SIGSEGV)"
             printf '%s\n' "Last 50 dmesg lines (if available):"
             dmesg | tail -n 50 || true
           elif [ "$status" -eq 124 ]; then
-            printf '%s\n' "xtrace xattr command bypass timed out after 120 seconds"
+            printf '%s\n' "xtrace xattr package no glosses timed out after 120 seconds"
           fi
           exit "$status"
