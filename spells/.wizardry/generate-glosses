@@ -319,8 +319,12 @@ uname|uniq|wc|xargs)
   {
     # Only scan wizardry spells, not user spellbook (avoids network/symlink issues)
     # Use find with maxdepth to avoid infinite recursion
-    # Skip the [ -x ] test entirely - assume all files in spells/ should be checked
-    find "$wizardry_dir/spells" -maxdepth 5 -type f ! -name ".*" ! -name "*~" ! -name "*.swp" 2>/dev/null
+    # Filter non-script files: .service, .md, .txt, etc. to avoid syntax errors
+    find "$wizardry_dir/spells" -maxdepth 5 -type f \
+      ! -name ".*" ! -name "*~" ! -name "*.swp" \
+      ! -name "*.service" ! -name "*.md" ! -name "*.txt" \
+      ! -name "*.json" ! -name "*.xml" ! -name "*.yaml" ! -name "*.yml" \
+      2>/dev/null
     
     # DISABLED: User spellbook scanning (can hang on network filesystems, circular symlinks, xattr)
     # if [ -d "$spell_home" ]; then
