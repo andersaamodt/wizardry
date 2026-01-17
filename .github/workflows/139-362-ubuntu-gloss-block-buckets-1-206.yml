@@ -1,16 +1,16 @@
-name: 139-361 Ubuntu gloss single blocks 207-246
+name: 139-362 Ubuntu gloss block buckets 1-206
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
 concurrency:
-  group: 139-361-${{ github.event.pull_request.number }}
+  group: 139-362-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  job-139-361-207:
-    name: "139-361 block 207"
+  job-139-362-1-6:
+    name: "139-362 blocks 1-6"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -22,7 +22,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 207
+      - name: Run blocks 1-6
         shell: bash
         run: |
           set -euo pipefail
@@ -41,13 +41,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-207.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 207" >&2
-            exit 1
-          fi
+          for idx in $(seq 1 6); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -56,8 +59,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-208:
-    name: "139-361 block 208"
+  job-139-362-7-12:
+    name: "139-362 blocks 7-12"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -69,7 +72,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 208
+      - name: Run blocks 7-12
         shell: bash
         run: |
           set -euo pipefail
@@ -88,13 +91,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-208.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 208" >&2
-            exit 1
-          fi
+          for idx in $(seq 7 12); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -103,8 +109,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-209:
-    name: "139-361 block 209"
+  job-139-362-13-18:
+    name: "139-362 blocks 13-18"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -116,7 +122,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 209
+      - name: Run blocks 13-18
         shell: bash
         run: |
           set -euo pipefail
@@ -135,13 +141,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-209.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 209" >&2
-            exit 1
-          fi
+          for idx in $(seq 13 18); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -150,8 +159,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-210:
-    name: "139-361 block 210"
+  job-139-362-19-24:
+    name: "139-362 blocks 19-24"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -163,7 +172,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 210
+      - name: Run blocks 19-24
         shell: bash
         run: |
           set -euo pipefail
@@ -182,13 +191,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-210.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 210" >&2
-            exit 1
-          fi
+          for idx in $(seq 19 24); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -197,8 +209,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-211:
-    name: "139-361 block 211"
+  job-139-362-25-30:
+    name: "139-362 blocks 25-30"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -210,7 +222,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 211
+      - name: Run blocks 25-30
         shell: bash
         run: |
           set -euo pipefail
@@ -229,13 +241,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-211.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 211" >&2
-            exit 1
-          fi
+          for idx in $(seq 25 30); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -244,8 +259,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-212:
-    name: "139-361 block 212"
+  job-139-362-31-36:
+    name: "139-362 blocks 31-36"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -257,7 +272,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 212
+      - name: Run blocks 31-36
         shell: bash
         run: |
           set -euo pipefail
@@ -276,13 +291,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-212.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 212" >&2
-            exit 1
-          fi
+          for idx in $(seq 31 36); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -291,8 +309,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-213:
-    name: "139-361 block 213"
+  job-139-362-37-42:
+    name: "139-362 blocks 37-42"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -304,7 +322,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 213
+      - name: Run blocks 37-42
         shell: bash
         run: |
           set -euo pipefail
@@ -323,13 +341,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-213.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 213" >&2
-            exit 1
-          fi
+          for idx in $(seq 37 42); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -338,8 +359,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-214:
-    name: "139-361 block 214"
+  job-139-362-43-48:
+    name: "139-362 blocks 43-48"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -351,7 +372,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 214
+      - name: Run blocks 43-48
         shell: bash
         run: |
           set -euo pipefail
@@ -370,13 +391,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-214.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 214" >&2
-            exit 1
-          fi
+          for idx in $(seq 43 48); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -385,8 +409,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-215:
-    name: "139-361 block 215"
+  job-139-362-49-54:
+    name: "139-362 blocks 49-54"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -398,7 +422,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 215
+      - name: Run blocks 49-54
         shell: bash
         run: |
           set -euo pipefail
@@ -417,13 +441,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-215.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 215" >&2
-            exit 1
-          fi
+          for idx in $(seq 49 54); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -432,8 +459,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-216:
-    name: "139-361 block 216"
+  job-139-362-55-60:
+    name: "139-362 blocks 55-60"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -445,7 +472,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 216
+      - name: Run blocks 55-60
         shell: bash
         run: |
           set -euo pipefail
@@ -464,13 +491,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-216.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 216" >&2
-            exit 1
-          fi
+          for idx in $(seq 55 60); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -479,8 +509,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-217:
-    name: "139-361 block 217"
+  job-139-362-61-66:
+    name: "139-362 blocks 61-66"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -492,7 +522,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 217
+      - name: Run blocks 61-66
         shell: bash
         run: |
           set -euo pipefail
@@ -511,13 +541,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-217.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 217" >&2
-            exit 1
-          fi
+          for idx in $(seq 61 66); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -526,8 +559,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-218:
-    name: "139-361 block 218"
+  job-139-362-67-72:
+    name: "139-362 blocks 67-72"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -539,7 +572,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 218
+      - name: Run blocks 67-72
         shell: bash
         run: |
           set -euo pipefail
@@ -558,13 +591,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-218.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 218" >&2
-            exit 1
-          fi
+          for idx in $(seq 67 72); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -573,8 +609,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-219:
-    name: "139-361 block 219"
+  job-139-362-73-78:
+    name: "139-362 blocks 73-78"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -586,7 +622,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 219
+      - name: Run blocks 73-78
         shell: bash
         run: |
           set -euo pipefail
@@ -605,13 +641,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-219.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 219" >&2
-            exit 1
-          fi
+          for idx in $(seq 73 78); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -620,8 +659,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-220:
-    name: "139-361 block 220"
+  job-139-362-79-84:
+    name: "139-362 blocks 79-84"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -633,7 +672,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 220
+      - name: Run blocks 79-84
         shell: bash
         run: |
           set -euo pipefail
@@ -652,13 +691,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-220.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 220" >&2
-            exit 1
-          fi
+          for idx in $(seq 79 84); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -667,8 +709,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-221:
-    name: "139-361 block 221"
+  job-139-362-85-90:
+    name: "139-362 blocks 85-90"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -680,7 +722,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 221
+      - name: Run blocks 85-90
         shell: bash
         run: |
           set -euo pipefail
@@ -699,13 +741,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-221.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 221" >&2
-            exit 1
-          fi
+          for idx in $(seq 85 90); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -714,8 +759,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-222:
-    name: "139-361 block 222"
+  job-139-362-91-96:
+    name: "139-362 blocks 91-96"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -727,7 +772,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 222
+      - name: Run blocks 91-96
         shell: bash
         run: |
           set -euo pipefail
@@ -746,13 +791,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-222.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 222" >&2
-            exit 1
-          fi
+          for idx in $(seq 91 96); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -761,8 +809,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-223:
-    name: "139-361 block 223"
+  job-139-362-97-102:
+    name: "139-362 blocks 97-102"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -774,7 +822,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 223
+      - name: Run blocks 97-102
         shell: bash
         run: |
           set -euo pipefail
@@ -793,13 +841,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-223.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 223" >&2
-            exit 1
-          fi
+          for idx in $(seq 97 102); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -808,8 +859,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-224:
-    name: "139-361 block 224"
+  job-139-362-103-108:
+    name: "139-362 blocks 103-108"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -821,7 +872,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 224
+      - name: Run blocks 103-108
         shell: bash
         run: |
           set -euo pipefail
@@ -840,13 +891,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-224.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 224" >&2
-            exit 1
-          fi
+          for idx in $(seq 103 108); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -855,8 +909,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-225:
-    name: "139-361 block 225"
+  job-139-362-109-114:
+    name: "139-362 blocks 109-114"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -868,7 +922,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 225
+      - name: Run blocks 109-114
         shell: bash
         run: |
           set -euo pipefail
@@ -887,13 +941,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-225.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 225" >&2
-            exit 1
-          fi
+          for idx in $(seq 109 114); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -902,8 +959,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-226:
-    name: "139-361 block 226"
+  job-139-362-115-120:
+    name: "139-362 blocks 115-120"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -915,7 +972,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 226
+      - name: Run blocks 115-120
         shell: bash
         run: |
           set -euo pipefail
@@ -934,13 +991,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-226.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 226" >&2
-            exit 1
-          fi
+          for idx in $(seq 115 120); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -949,8 +1009,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-227:
-    name: "139-361 block 227"
+  job-139-362-121-126:
+    name: "139-362 blocks 121-126"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -962,7 +1022,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 227
+      - name: Run blocks 121-126
         shell: bash
         run: |
           set -euo pipefail
@@ -981,13 +1041,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-227.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 227" >&2
-            exit 1
-          fi
+          for idx in $(seq 121 126); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -996,8 +1059,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-228:
-    name: "139-361 block 228"
+  job-139-362-127-132:
+    name: "139-362 blocks 127-132"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -1009,7 +1072,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 228
+      - name: Run blocks 127-132
         shell: bash
         run: |
           set -euo pipefail
@@ -1028,13 +1091,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-228.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 228" >&2
-            exit 1
-          fi
+          for idx in $(seq 127 132); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -1043,8 +1109,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-229:
-    name: "139-361 block 229"
+  job-139-362-133-138:
+    name: "139-362 blocks 133-138"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -1056,7 +1122,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 229
+      - name: Run blocks 133-138
         shell: bash
         run: |
           set -euo pipefail
@@ -1075,13 +1141,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-229.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 229" >&2
-            exit 1
-          fi
+          for idx in $(seq 133 138); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -1090,8 +1159,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-230:
-    name: "139-361 block 230"
+  job-139-362-139-144:
+    name: "139-362 blocks 139-144"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -1103,7 +1172,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 230
+      - name: Run blocks 139-144
         shell: bash
         run: |
           set -euo pipefail
@@ -1122,13 +1191,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-230.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 230" >&2
-            exit 1
-          fi
+          for idx in $(seq 139 144); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -1137,8 +1209,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-231:
-    name: "139-361 block 231"
+  job-139-362-145-150:
+    name: "139-362 blocks 145-150"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -1150,7 +1222,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 231
+      - name: Run blocks 145-150
         shell: bash
         run: |
           set -euo pipefail
@@ -1169,13 +1241,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-231.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 231" >&2
-            exit 1
-          fi
+          for idx in $(seq 145 150); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -1184,8 +1259,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-232:
-    name: "139-361 block 232"
+  job-139-362-151-156:
+    name: "139-362 blocks 151-156"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -1197,7 +1272,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 232
+      - name: Run blocks 151-156
         shell: bash
         run: |
           set -euo pipefail
@@ -1216,13 +1291,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-232.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 232" >&2
-            exit 1
-          fi
+          for idx in $(seq 151 156); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -1231,8 +1309,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-233:
-    name: "139-361 block 233"
+  job-139-362-157-162:
+    name: "139-362 blocks 157-162"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -1244,7 +1322,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 233
+      - name: Run blocks 157-162
         shell: bash
         run: |
           set -euo pipefail
@@ -1263,13 +1341,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-233.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 233" >&2
-            exit 1
-          fi
+          for idx in $(seq 157 162); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -1278,8 +1359,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-234:
-    name: "139-361 block 234"
+  job-139-362-163-168:
+    name: "139-362 blocks 163-168"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -1291,7 +1372,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 234
+      - name: Run blocks 163-168
         shell: bash
         run: |
           set -euo pipefail
@@ -1310,13 +1391,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-234.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 234" >&2
-            exit 1
-          fi
+          for idx in $(seq 163 168); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -1325,8 +1409,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-235:
-    name: "139-361 block 235"
+  job-139-362-169-174:
+    name: "139-362 blocks 169-174"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -1338,7 +1422,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 235
+      - name: Run blocks 169-174
         shell: bash
         run: |
           set -euo pipefail
@@ -1357,13 +1441,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-235.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 235" >&2
-            exit 1
-          fi
+          for idx in $(seq 169 174); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -1372,8 +1459,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-236:
-    name: "139-361 block 236"
+  job-139-362-175-180:
+    name: "139-362 blocks 175-180"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -1385,7 +1472,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 236
+      - name: Run blocks 175-180
         shell: bash
         run: |
           set -euo pipefail
@@ -1404,13 +1491,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-236.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 236" >&2
-            exit 1
-          fi
+          for idx in $(seq 175 180); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -1419,8 +1509,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-237:
-    name: "139-361 block 237"
+  job-139-362-181-186:
+    name: "139-362 blocks 181-186"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -1432,7 +1522,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 237
+      - name: Run blocks 181-186
         shell: bash
         run: |
           set -euo pipefail
@@ -1451,13 +1541,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-237.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 237" >&2
-            exit 1
-          fi
+          for idx in $(seq 181 186); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -1466,8 +1559,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-238:
-    name: "139-361 block 238"
+  job-139-362-187-192:
+    name: "139-362 blocks 187-192"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -1479,7 +1572,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 238
+      - name: Run blocks 187-192
         shell: bash
         run: |
           set -euo pipefail
@@ -1498,13 +1591,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-238.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 238" >&2
-            exit 1
-          fi
+          for idx in $(seq 187 192); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -1513,8 +1609,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-239:
-    name: "139-361 block 239"
+  job-139-362-193-198:
+    name: "139-362 blocks 193-198"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -1526,7 +1622,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 239
+      - name: Run blocks 193-198
         shell: bash
         run: |
           set -euo pipefail
@@ -1545,13 +1641,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-239.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 239" >&2
-            exit 1
-          fi
+          for idx in $(seq 193 198); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -1560,8 +1659,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-240:
-    name: "139-361 block 240"
+  job-139-362-199-204:
+    name: "139-362 blocks 199-204"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -1573,7 +1672,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 240
+      - name: Run blocks 199-204
         shell: bash
         run: |
           set -euo pipefail
@@ -1592,13 +1691,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-240.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 240" >&2
-            exit 1
-          fi
+          for idx in $(seq 199 204); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
@@ -1607,8 +1709,8 @@ jobs:
           fi
           exit "$status"
 
-  job-139-361-241:
-    name: "139-361 block 241"
+  job-139-362-205-206:
+    name: "139-362 blocks 205-206"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -1620,7 +1722,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 241
+      - name: Run blocks 205-206
         shell: bash
         run: |
           set -euo pipefail
@@ -1639,248 +1741,16 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-241.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 241" >&2
-            exit 1
-          fi
+          for idx in $(seq 205 206); do
+            block="$gloss_dir/block-$(printf '%03d' "$idx").sh"
+            if [ ! -s "$block" ]; then
+              printf '%s\n' "missing block $idx" >&2
+              exit 1
+            fi
+            . "$block"
+          done
           set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
-          status=$?
-          if [ "$status" -eq 139 ]; then
-            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
-            printf '%s\n' "Last 50 dmesg lines (if available):"
-            dmesg | tail -n 50 || true
-          fi
-          exit "$status"
-
-  job-139-361-242:
-    name: "139-361 block 242"
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install attr
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y attr
-
-      - name: Run block 242
-        shell: bash
-        run: |
-          set -euo pipefail
-          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
-          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
-          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
-          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
-          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
-          awk_program=$(printf '%s\n' \
-            'BEGIN { idx=0; out="" }' \
-            '/^# First-word gloss/ {' \
-            '  idx++' \
-            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
-            '  print "# block " idx > out' \
-            '}' \
-            '{ if (out != "") print >> out }' \
-            'END { printf "%d\n", idx > outdir "/count" }')
-          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-242.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 242" >&2
-            exit 1
-          fi
-          set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
-          status=$?
-          if [ "$status" -eq 139 ]; then
-            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
-            printf '%s\n' "Last 50 dmesg lines (if available):"
-            dmesg | tail -n 50 || true
-          fi
-          exit "$status"
-
-  job-139-361-243:
-    name: "139-361 block 243"
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install attr
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y attr
-
-      - name: Run block 243
-        shell: bash
-        run: |
-          set -euo pipefail
-          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
-          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
-          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
-          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
-          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
-          awk_program=$(printf '%s\n' \
-            'BEGIN { idx=0; out="" }' \
-            '/^# First-word gloss/ {' \
-            '  idx++' \
-            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
-            '  print "# block " idx > out' \
-            '}' \
-            '{ if (out != "") print >> out }' \
-            'END { printf "%d\n", idx > outdir "/count" }')
-          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-243.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 243" >&2
-            exit 1
-          fi
-          set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
-          status=$?
-          if [ "$status" -eq 139 ]; then
-            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
-            printf '%s\n' "Last 50 dmesg lines (if available):"
-            dmesg | tail -n 50 || true
-          fi
-          exit "$status"
-
-  job-139-361-244:
-    name: "139-361 block 244"
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install attr
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y attr
-
-      - name: Run block 244
-        shell: bash
-        run: |
-          set -euo pipefail
-          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
-          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
-          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
-          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
-          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
-          awk_program=$(printf '%s\n' \
-            'BEGIN { idx=0; out="" }' \
-            '/^# First-word gloss/ {' \
-            '  idx++' \
-            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
-            '  print "# block " idx > out' \
-            '}' \
-            '{ if (out != "") print >> out }' \
-            'END { printf "%d\n", idx > outdir "/count" }')
-          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-244.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 244" >&2
-            exit 1
-          fi
-          set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
-          status=$?
-          if [ "$status" -eq 139 ]; then
-            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
-            printf '%s\n' "Last 50 dmesg lines (if available):"
-            dmesg | tail -n 50 || true
-          fi
-          exit "$status"
-
-  job-139-361-245:
-    name: "139-361 block 245"
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install attr
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y attr
-
-      - name: Run block 245
-        shell: bash
-        run: |
-          set -euo pipefail
-          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
-          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
-          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
-          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
-          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
-          awk_program=$(printf '%s\n' \
-            'BEGIN { idx=0; out="" }' \
-            '/^# First-word gloss/ {' \
-            '  idx++' \
-            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
-            '  print "# block " idx > out' \
-            '}' \
-            '{ if (out != "") print >> out }' \
-            'END { printf "%d\n", idx > outdir "/count" }')
-          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-245.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 245" >&2
-            exit 1
-          fi
-          set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
-          status=$?
-          if [ "$status" -eq 139 ]; then
-            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
-            printf '%s\n' "Last 50 dmesg lines (if available):"
-            dmesg | tail -n 50 || true
-          fi
-          exit "$status"
-
-  job-139-361-246:
-    name: "139-361 block 246"
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install attr
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y attr
-
-      - name: Run block 246
-        shell: bash
-        run: |
-          set -euo pipefail
-          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
-          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
-          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
-          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
-          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
-          awk_program=$(printf '%s\n' \
-            'BEGIN { idx=0; out="" }' \
-            '/^# First-word gloss/ {' \
-            '  idx++' \
-            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
-            '  print "# block " idx > out' \
-            '}' \
-            '{ if (out != "") print >> out }' \
-            'END { printf "%d\n", idx > outdir "/count" }')
-          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-246.sh"
-          if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 246" >&2
-            exit 1
-          fi
-          set +e
-          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          ( banish 8 --only --no-tests --no-heal )
           status=$?
           if [ "$status" -eq 139 ]; then
             printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
