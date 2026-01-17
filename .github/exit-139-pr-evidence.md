@@ -5,6 +5,7 @@
 - Workflow-log scan scope for exit 139 to date: PRs 932–942 via `read-test-failures`. (Source: `./.github/read-test-failures 932`–`942` on 2026-01-16)
 
 ## Recent hypothesis workflow results
+- Workflow 139-362 (gloss buckets 1–206) failed with missing block 245; bucket ranges must cap to the generated count (206). (Source: GitHub Actions run on 2026-01-17)
 - Workflow 139-361 (gloss blocks 207–246) failed immediately with missing block 207; generate-glosses currently emits 206 blocks. (Source: GitHub Actions run on 2026-01-17)
 - Workflow 139-360 (gloss blocks 182–206) completed successfully; no exit 139 observed. (Source: GitHub Actions run on 2026-01-17)
 - Workflow 139-340 (gloss blocks 142–181) completed successfully; no exit 139 observed. (Source: GitHub Actions run on 2026-01-17)
