@@ -436,6 +436,12 @@ test_jump_to_marker_no_args() {
 }
 test_jump_to_marker_with_spaces_no_args() {
   # Test that "jump to marker" works without arguments
+  # Generate and source glosses first
+  tmpgloss=$(make_tempdir)/glosses
+  export WIZARDRY_DIR="$ROOT_DIR"
+  "$ROOT_DIR/spells/.wizardry/generate-glosses" --output "$tmpgloss" --quiet
+  . "$tmpgloss"
+  
   OUTPUT=$(jump to marker 2>&1)
   STATUS=$?
   
@@ -512,6 +518,12 @@ test_user_typed_jump_to_marker_hyphenated() {
   fi
 }
 test_user_typed_jump_to_marker_spaces() {
+  # Generate and source glosses first
+  tmpgloss=$(make_tempdir)/glosses
+  export WIZARDRY_DIR="$ROOT_DIR"
+  "$ROOT_DIR/spells/.wizardry/generate-glosses" --output "$tmpgloss" --quiet
+  . "$tmpgloss"
+  
   OUTPUT=$(jump to marker 2>&1)
   STATUS=$?
   
@@ -535,6 +547,12 @@ test_user_typed_jump_to_marker_spaces() {
 }
 test_user_typed_jump_alone() {
   # jump without args should work (cycles through markers or shows message)
+  # Generate and source glosses first
+  tmpgloss=$(make_tempdir)/glosses
+  export WIZARDRY_DIR="$ROOT_DIR"
+  "$ROOT_DIR/spells/.wizardry/generate-glosses" --output "$tmpgloss" --quiet
+  . "$tmpgloss"
+  
   OUTPUT=$(printf '' | jump 2>&1)
   STATUS=$?
   
