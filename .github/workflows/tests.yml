@@ -27,27 +27,21 @@ jobs:
         include:
           - job_name: "1/6"
             levels: "0-0"
-            min_level: 0
             max_level: 0
           - job_name: "2/6"
             levels: "1-2"
-            min_level: 1
             max_level: 2
           - job_name: "3/6"
             levels: "3-8"
-            min_level: 3
             max_level: 8
           - job_name: "4/6"
             levels: "9-15"
-            min_level: 9
             max_level: 15
           - job_name: "5/6"
             levels: "16-24"
-            min_level: 16
             max_level: 24
           - job_name: "6/6"
             levels: "25-27"
-            min_level: 25
             max_level: 27
     env:
       WIZARDRY_OS_LABEL: nixos
@@ -78,9 +72,7 @@ jobs:
             set -e
             . spells/.imps/sys/invoke-wizardry
             banish ${{ matrix.max_level }}
-            for level in \$(seq ${{ matrix.min_level }} ${{ matrix.max_level }}); do
-              ./spells/.wizardry/test-magic \"\$level\" --only --verbose
-            done
+            ./spells/.wizardry/test-magic ${{ matrix.levels }} --verbose
           "
 
   aab-macos:
@@ -92,27 +84,21 @@ jobs:
         include:
           - job_name: "1/6"
             levels: "0-0"
-            min_level: 0
             max_level: 0
           - job_name: "2/6"
             levels: "1-2"
-            min_level: 1
             max_level: 2
           - job_name: "3/6"
             levels: "3-8"
-            min_level: 3
             max_level: 8
           - job_name: "4/6"
             levels: "9-15"
-            min_level: 9
             max_level: 15
           - job_name: "5/6"
             levels: "16-24"
-            min_level: 16
             max_level: 24
           - job_name: "6/6"
             levels: "25-27"
-            min_level: 25
             max_level: 27
     env:
       WIZARDRY_OS_LABEL: mac
@@ -126,9 +112,7 @@ jobs:
           set -e
           . spells/.imps/sys/invoke-wizardry
           banish ${{ matrix.max_level }}
-          for level in $(seq ${{ matrix.min_level }} ${{ matrix.max_level }}); do
-            ./spells/.wizardry/test-magic "$level" --only --verbose
-          done
+          ./spells/.wizardry/test-magic ${{ matrix.levels }} --verbose
 
   arch:
     name: Arch ${{ matrix.job_name }} unit tests
@@ -140,27 +124,21 @@ jobs:
         include:
           - job_name: "1/6"
             levels: "0-0"
-            min_level: 0
             max_level: 0
           - job_name: "2/6"
             levels: "1-2"
-            min_level: 1
             max_level: 2
           - job_name: "3/6"
             levels: "3-8"
-            min_level: 3
             max_level: 8
           - job_name: "4/6"
             levels: "9-15"
-            min_level: 9
             max_level: 15
           - job_name: "5/6"
             levels: "16-24"
-            min_level: 16
             max_level: 24
           - job_name: "6/6"
             levels: "25-27"
-            min_level: 25
             max_level: 27
     env:
       WIZARDRY_OS_LABEL: arch
@@ -176,9 +154,7 @@ jobs:
           set -e
           . spells/.imps/sys/invoke-wizardry
           banish ${{ matrix.max_level }}
-          for level in $(seq ${{ matrix.min_level }} ${{ matrix.max_level }}); do
-            ./spells/.wizardry/test-magic "$level" --only --verbose
-          done
+          ./spells/.wizardry/test-magic ${{ matrix.levels }} --verbose
 
   debian:
     name: Debian ${{ matrix.job_name }} unit tests
@@ -190,27 +166,21 @@ jobs:
         include:
           - job_name: "1/6"
             levels: "0-0"
-            min_level: 0
             max_level: 0
           - job_name: "2/6"
             levels: "1-2"
-            min_level: 1
             max_level: 2
           - job_name: "3/6"
             levels: "3-8"
-            min_level: 3
             max_level: 8
           - job_name: "4/6"
             levels: "9-15"
-            min_level: 9
             max_level: 15
           - job_name: "5/6"
             levels: "16-24"
-            min_level: 16
             max_level: 24
           - job_name: "6/6"
             levels: "25-27"
-            min_level: 25
             max_level: 27
     env:
       WIZARDRY_OS_LABEL: debian
@@ -227,9 +197,7 @@ jobs:
           set -e
           . spells/.imps/sys/invoke-wizardry
           banish ${{ matrix.max_level }}
-          for level in $(seq ${{ matrix.min_level }} ${{ matrix.max_level }}); do
-            ./spells/.wizardry/test-magic "$level" --only --verbose
-          done
+          ./spells/.wizardry/test-magic ${{ matrix.levels }} --verbose
 
   ubuntu:
     name: Ubuntu ${{ matrix.job_name }} unit tests
@@ -240,27 +208,21 @@ jobs:
         include:
           - job_name: "1/6"
             levels: "0-0"
-            min_level: 0
             max_level: 0
           - job_name: "2/6"
             levels: "1-2"
-            min_level: 1
             max_level: 2
           - job_name: "3/6"
             levels: "3-8"
-            min_level: 3
             max_level: 8
           - job_name: "4/6"
             levels: "9-15"
-            min_level: 9
             max_level: 15
           - job_name: "5/6"
             levels: "16-24"
-            min_level: 16
             max_level: 24
           - job_name: "6/6"
             levels: "25-27"
-            min_level: 25
             max_level: 27
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -296,6 +258,4 @@ jobs:
           set -e
           . spells/.imps/sys/invoke-wizardry
           banish ${{ matrix.max_level }}
-          for level in $(seq ${{ matrix.min_level }} ${{ matrix.max_level }}); do
-            ./spells/.wizardry/test-magic "$level" --only --verbose
-          done
+          ./spells/.wizardry/test-magic ${{ matrix.levels }} --verbose
