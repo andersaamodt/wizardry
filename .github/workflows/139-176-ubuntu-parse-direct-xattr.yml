@@ -1,0 +1,44 @@
+name: 139-176 Ubuntu parse direct xattr
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ubuntu-parse-direct-xattr:
+    name: 139-176 Ubuntu parse direct xattr
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install xattr tooling
+        run: sudo apt-get update && sudo apt-get install -y attr xattr
+      - name: Call parse directly under xtrace
+        run: |
+          set +e
+          ulimit -c unlimited || true
+          (
+            set -e
+            export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+            tmp=$(mktemp /tmp/wizardry-xattr.XXXXXX)
+            PATH="$WIZARDRY_DIR/spells/.imps/lex:$PATH"
+            set -x
+            parse xattr -w user.test value "$tmp"
+            parse xattr -p user.test "$tmp"
+            parse xattr -d user.test "$tmp"
+          )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"

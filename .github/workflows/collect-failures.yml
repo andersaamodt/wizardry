@@ -69,7 +69,10 @@ jobs:
 
           # Workflows to monitor
           workflows=(
-            "139-67 Ubuntu gloss per-gloss banish"
+            "139-173 Ubuntu xtrace gloss rename function"
+            "139-174 Ubuntu xtrace gloss override parse"
+            "139-175 Ubuntu gloss no xtrace call"
+            "139-176 Ubuntu parse direct xattr"
           )
           
           # Total number of workflows we're monitoring
