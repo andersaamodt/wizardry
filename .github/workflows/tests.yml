@@ -75,7 +75,12 @@ jobs:
       - name: Run unit tests (levels ${{ matrix.levels }}) in Nix shell
         run: |
           nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr --run "
-            . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && for level in $(seq ${{ matrix.min_level }} ${{ matrix.max_level }}); do ./spells/.wizardry/test-magic "$level" --only --verbose || exit 1; done
+            set -e
+            . spells/.imps/sys/invoke-wizardry
+            banish ${{ matrix.max_level }}
+            for level in \$(seq ${{ matrix.min_level }} ${{ matrix.max_level }}); do
+              ./spells/.wizardry/test-magic \"\$level\" --only --verbose
+            done
           "
 
   aab-macos:
@@ -117,7 +122,13 @@ jobs:
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/attribute-tool-check spells/.imps/fs/attribute-list spells/.imps/fs/attribute-get
       - name: Run unit tests (levels ${{ matrix.levels }})
-        run: . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && for level in $(seq ${{ matrix.min_level }} ${{ matrix.max_level }}); do ./spells/.wizardry/test-magic "$level" --only --verbose || exit 1; done
+        run: |
+          set -e
+          . spells/.imps/sys/invoke-wizardry
+          banish ${{ matrix.max_level }}
+          for level in $(seq ${{ matrix.min_level }} ${{ matrix.max_level }}); do
+            ./spells/.wizardry/test-magic "$level" --only --verbose
+          done
 
   arch:
     name: Arch ${{ matrix.job_name }} unit tests
@@ -161,7 +172,13 @@ jobs:
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/attribute-tool-check spells/.imps/fs/attribute-list spells/.imps/fs/attribute-get
       - name: Run unit tests (levels ${{ matrix.levels }})
-        run: . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && for level in $(seq ${{ matrix.min_level }} ${{ matrix.max_level }}); do ./spells/.wizardry/test-magic "$level" --only --verbose || exit 1; done
+        run: |
+          set -e
+          . spells/.imps/sys/invoke-wizardry
+          banish ${{ matrix.max_level }}
+          for level in $(seq ${{ matrix.min_level }} ${{ matrix.max_level }}); do
+            ./spells/.wizardry/test-magic "$level" --only --verbose
+          done
 
   debian:
     name: Debian ${{ matrix.job_name }} unit tests
@@ -206,7 +223,13 @@ jobs:
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/attribute-tool-check spells/.imps/fs/attribute-list spells/.imps/fs/attribute-get
       - name: Run unit tests (levels ${{ matrix.levels }})
-        run: . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && for level in $(seq ${{ matrix.min_level }} ${{ matrix.max_level }}); do ./spells/.wizardry/test-magic "$level" --only --verbose || exit 1; done
+        run: |
+          set -e
+          . spells/.imps/sys/invoke-wizardry
+          banish ${{ matrix.max_level }}
+          for level in $(seq ${{ matrix.min_level }} ${{ matrix.max_level }}); do
+            ./spells/.wizardry/test-magic "$level" --only --verbose
+          done
 
   ubuntu:
     name: Ubuntu ${{ matrix.job_name }} unit tests
@@ -269,4 +292,10 @@ jobs:
             echo "bubblewrap unusable; proceeding without sandboxing" >&2
           fi
       - name: Run unit tests (levels ${{ matrix.levels }})
-        run: . spells/.imps/sys/invoke-wizardry && banish ${{ matrix.max_level }} && for level in $(seq ${{ matrix.min_level }} ${{ matrix.max_level }}); do ./spells/.wizardry/test-magic "$level" --only --verbose || exit 1; done
+        run: |
+          set -e
+          . spells/.imps/sys/invoke-wizardry
+          banish ${{ matrix.max_level }}
+          for level in $(seq ${{ matrix.min_level }} ${{ matrix.max_level }}); do
+            ./spells/.wizardry/test-magic "$level" --only --verbose
+          done
