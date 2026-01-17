@@ -1,5 +1,5 @@
 #!/bin/sh
-# attr-tool-check HELPER - check if an xattr helper command is available and usable
+# attribute-tool-check HELPER - check if an xattr helper command is available and usable
 # Returns 0 if helper is available, 1 otherwise
 # Note: xattr commands (setfattr, getfattr, attr, xattr) are allowed even in test mode
 # because they are essential platform tools, like coreutils

@@ -47,7 +47,7 @@ for f in "$dir"/*; do
   [ -f "$f" ] || continue
 
   # Read both echelon and priority in one batch call
-  attrs=$(attr-get-batch "$f" echelon priority 2>/dev/null || true)
+  attrs=$(attribute-get-batch "$f" echelon priority 2>/dev/null || true)
   
   file_echelon=""
   file_priority=""
