@@ -1,5 +1,5 @@
 #!/bin/sh
-# Tests for attr-set imp
+# Tests for attribute-set imp
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -8,7 +8,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_xattr_write_value_exists() {
-  run_cmd sh -c 'command -v attr-set'
+  run_cmd sh -c 'command -v attribute-set'
   assert_success || return 1
 }
 
@@ -33,13 +33,13 @@ exit 1
 STUB
   chmod +x "$tmpdir/bin/attr"
   
-  cat > "$tmpdir/bin/attr-tool-check" <<'STUB'
+  cat > "$tmpdir/bin/attribute-tool-check" <<'STUB'
 #!/bin/sh
 [ "$1" = "attr" ]
 STUB
-  chmod +x "$tmpdir/bin/attr-tool-check"
+  chmod +x "$tmpdir/bin/attribute-tool-check"
   
-  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && attr-set user.name Alice "'"$testfile"'"'
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && attribute-set user.name Alice "'"$testfile"'"'
   assert_success || return 1
   
   # Verify the mock was called with correct parameters
@@ -71,13 +71,13 @@ exit 1
 STUB
   chmod +x "$tmpdir/bin/xattr"
   
-  cat > "$tmpdir/bin/attr-tool-check" <<'STUB'
+  cat > "$tmpdir/bin/attribute-tool-check" <<'STUB'
 #!/bin/sh
 [ "$1" = "xattr" ]
 STUB
-  chmod +x "$tmpdir/bin/attr-tool-check"
+  chmod +x "$tmpdir/bin/attribute-tool-check"
   
-  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && attr-set user.email bob@example.com "'"$testfile"'"'
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && attribute-set user.email bob@example.com "'"$testfile"'"'
   assert_success || return 1
   
   # Verify the mock was called with correct parameters
@@ -97,22 +97,22 @@ test_xattr_write_value_returns_error_when_no_helpers() {
   printf "test content\n" > "$testfile"
   
   mkdir -p "$tmpdir/bin"
-  cat > "$tmpdir/bin/attr-tool-check" <<'STUB'
+  cat > "$tmpdir/bin/attribute-tool-check" <<'STUB'
 #!/bin/sh
 # All helpers unavailable
 exit 1
 STUB
-  chmod +x "$tmpdir/bin/attr-tool-check"
+  chmod +x "$tmpdir/bin/attribute-tool-check"
   
-  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && attr-set user.key value "'"$testfile"'"'
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && attribute-set user.key value "'"$testfile"'"'
   assert_failure || return 1
   
   rm -rf "$tmpdir"
 }
 
-run_test_case "attr-set exists" test_xattr_write_value_exists
-run_test_case "attr-set with mock attr" test_xattr_write_value_with_mock_attr
-run_test_case "attr-set fallback to xattr" test_xattr_write_value_fallback_to_xattr
-run_test_case "attr-set returns error when no helpers" test_xattr_write_value_returns_error_when_no_helpers
+run_test_case "attribute-set exists" test_xattr_write_value_exists
+run_test_case "attribute-set with mock attr" test_xattr_write_value_with_mock_attr
+run_test_case "attribute-set fallback to xattr" test_xattr_write_value_fallback_to_xattr
+run_test_case "attribute-set returns error when no helpers" test_xattr_write_value_returns_error_when_no_helpers
 
 finish_tests

@@ -49,7 +49,7 @@ display_priorities() {
     [ -e "$f" ] || continue
     
     # Read all three attributes at once (major optimization)
-    attrs=$(attr-get-batch "$f" echelon priority checked 2>/dev/null || true)
+    attrs=$(attribute-get-batch "$f" echelon priority checked 2>/dev/null || true)
     
     # Parse the batch result
     file_echelon=""
