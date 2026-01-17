@@ -351,7 +351,7 @@ Wizardry uses several focused documentation files. Keep content in the right doc
 - macOS uses xattr natively
 - Linux requires xattr tools package
 - Fallback mechanisms when xattr unavailable (implementation varies by spell)
-- Extended attribute helpers: `fs/xattr-helper-usable`, `fs/xattr-list-keys`, `fs/xattr-read-value`
+- Extended attribute helpers: `fs/attr-tool-check`, `fs/attr-list`, `fs/attr-get`, `fs/attr-set`, `fs/attr-get-batch`
 
 ### Enchantment Spells
 

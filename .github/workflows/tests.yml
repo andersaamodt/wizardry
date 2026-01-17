@@ -27,7 +27,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
-        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/attr-tool-check spells/.imps/fs/attr-list spells/.imps/fs/attr-get
       - name: Install Nix
         uses: cachix/install-nix-action@v27
       - name: Configure nixpkgs channel
@@ -59,7 +59,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
-        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/attr-tool-check spells/.imps/fs/attr-list spells/.imps/fs/attr-get
       - name: Run unit tests
         run: . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose
 
@@ -75,7 +75,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
-        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/attr-tool-check spells/.imps/fs/attr-list spells/.imps/fs/attr-get
       - name: Run unit tests
         run: . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose
 
@@ -92,7 +92,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
-        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/attr-tool-check spells/.imps/fs/attr-list spells/.imps/fs/attr-get
       - name: Run unit tests
         run: . spells/.imps/sys/invoke-wizardry && banish 8 && ./spells/.wizardry/test-magic --verbose
 
@@ -105,7 +105,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
-        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/attr-tool-check spells/.imps/fs/attr-list spells/.imps/fs/attr-get
       - name: Install bubblewrap dependency
         run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
       - name: Configure bubblewrap user namespaces
