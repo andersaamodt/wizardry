@@ -119,7 +119,7 @@ case "$level" in
     ;;
   21)
     name='Spellcraft Development Tools'
-    spells='add-synonym:spellcraft bind-tome:spellcraft compile-spell:spellcraft delete-synonym:spellcraft doppelganger:spellcraft edit-synonym:spellcraft erase-spell:spellcraft forget:spellcraft learn:spellcraft lint-magic:spellcraft merge-yaml-text:spellcraft reset-default-synonyms:spellcraft scribe-spell:spellcraft unbind-tome:spellcraft'
+    spells='add-synonym:spellcraft compile-tome:spellcraft compile-spell:spellcraft delete-synonym:spellcraft doppelganger:spellcraft edit-synonym:spellcraft erase-spell:spellcraft forget:spellcraft learn:spellcraft lint-magic:spellcraft merge-yaml-text:spellcraft reset-default-synonyms:spellcraft scribe-spell:spellcraft uncompile-tome:spellcraft'
     imps=''
     ;;
   22)
@@ -144,7 +144,7 @@ case "$level" in
     ;;
   26)
     name='System Service Management'
-    spells='disable-service:system enable-service:system install-service-template:system is-service-installed:system reload-ssh:system remove-service:system restart-service:system restart-ssh:system service-status:system start-service:system stop-service:system'
+    spells='disable-service:system activate-service:system install-service-template:system is-service-installed:system reload-ssh:system remove-service:system restart-service:system restart-ssh:system service-status:system start-service:system stop-service:system'
     imps=''
     ;;
   27)

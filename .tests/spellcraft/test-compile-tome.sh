@@ -1,11 +1,11 @@
 #!/bin/sh
 # Behavioral cases (derived from --help):
-# - bind-tome requires a directory argument
-# - bind-tome combines files into a tome
-# - bind-tome refuses missing directories
-# - bind-tome deletes pages when -d is provided
-# - bind-tome prints helpful usage text
-# - bind-tome rejects invalid options and non-directories
+# - compile-tome requires a directory argument
+# - compile-tome combines files into a tome
+# - compile-tome refuses missing directories
+# - compile-tome deletes pages when -d is provided
+# - compile-tome prints helpful usage text
+# - compile-tome rejects invalid options and non-directories
 
 set -eu
 
@@ -17,16 +17,16 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 bind_shows_usage() {
-  run_spell "spells/spellcraft/bind-tome" --help
+  run_spell "spells/spellcraft/compile-tome" --help
   assert_success || return 1
-  assert_output_contains "Usage: bind-tome" || return 1
+  assert_output_contains "Usage: compile-tome" || return 1
   assert_output_contains "Bind every file" || return 1
 }
 
 require_arg_for_bind() {
-  run_spell "spells/spellcraft/bind-tome"
+  run_spell "spells/spellcraft/compile-tome"
   assert_failure || return 1
-  assert_error_contains "bind-tome: folder path required." || return 1
+  assert_error_contains "compile-tome: folder path required." || return 1
 }
 
 binds_pages_into_tome() {
@@ -37,7 +37,7 @@ binds_pages_into_tome() {
 
   oldpwd=$(pwd)
   cd "$workdir"
-  run_spell "spells/spellcraft/bind-tome" "pages"
+  run_spell "spells/spellcraft/compile-tome" "pages"
   cd "$oldpwd"
   assert_success || return 1
   assert_output_contains "Text file created: pages.txt" || return 1
@@ -64,25 +64,25 @@ binds_pages_into_tome() {
 }
 
 bind_requires_existing_directory() {
-  run_spell "spells/spellcraft/bind-tome" "-d"
+  run_spell "spells/spellcraft/compile-tome" "-d"
   assert_failure || return 1
-  assert_error_contains "bind-tome: folder path required." || return 1
+  assert_error_contains "compile-tome: folder path required." || return 1
 
-  run_spell "spells/spellcraft/bind-tome" "/no/such/place"
+  run_spell "spells/spellcraft/compile-tome" "/no/such/place"
   assert_failure || return 1
   assert_error_contains "Error: '/no/such/place' is not a directory." || return 1
 
   file_path="$WIZARDRY_TMPDIR/bind-single.txt"
   printf 'lone page' >"$file_path"
-  run_spell "spells/spellcraft/bind-tome" "$file_path"
+  run_spell "spells/spellcraft/compile-tome" "$file_path"
   assert_failure || return 1
   assert_error_contains "is not a directory" || return 1
 }
 
 bind_rejects_unknown_option() {
-  run_spell "spells/spellcraft/bind-tome" -z
+  run_spell "spells/spellcraft/compile-tome" -z
   assert_failure || return 1
-  assert_error_contains "Usage: bind-tome" || return 1
+  assert_error_contains "Usage: compile-tome" || return 1
 }
 
 bind_deletes_pages_with_flag() {
@@ -93,7 +93,7 @@ bind_deletes_pages_with_flag() {
 
   oldpwd=$(pwd)
   cd "$workdir"
-  run_spell "spells/spellcraft/bind-tome" "-d" "pages"
+  run_spell "spells/spellcraft/compile-tome" "-d" "pages"
   cd "$oldpwd"
   assert_success || return 1
   assert_output_contains "Text file created: pages.txt" || return 1
@@ -103,12 +103,12 @@ bind_deletes_pages_with_flag() {
   assert_path_missing "$workdir/pages/two" || return 1
 }
 
-run_test_case "bind-tome requires a directory argument" require_arg_for_bind
-run_test_case "bind-tome combines files into a tome" binds_pages_into_tome
-run_test_case "bind-tome refuses missing directories" bind_requires_existing_directory
-run_test_case "bind-tome deletes pages when -d is provided" bind_deletes_pages_with_flag
-run_test_case "bind-tome shows usage text" bind_shows_usage
-run_test_case "bind-tome rejects unknown options" bind_rejects_unknown_option
+run_test_case "compile-tome requires a directory argument" require_arg_for_bind
+run_test_case "compile-tome combines files into a tome" binds_pages_into_tome
+run_test_case "compile-tome refuses missing directories" bind_requires_existing_directory
+run_test_case "compile-tome deletes pages when -d is provided" bind_deletes_pages_with_flag
+run_test_case "compile-tome shows usage text" bind_shows_usage
+run_test_case "compile-tome rejects unknown options" bind_rejects_unknown_option
 
 
 # Test via source-then-invoke pattern  
