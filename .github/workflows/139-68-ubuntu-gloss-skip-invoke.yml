@@ -2,8 +2,6 @@ name: 139-68 Ubuntu gloss per-gloss skip invoke
 
 on:
   pull_request:
-    branches:
-      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
