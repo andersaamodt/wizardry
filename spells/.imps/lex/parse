@@ -1,5 +1,9 @@
 #!/bin/sh
 # parse CMD... - recursively parse and execute written imperatives
+# DISABLED FOR DEBUGGING EXIT CODE 139
+# This imp has been disabled to help debug the exit code 139 (segfault) issue
+# which appears to be caused by infinite recursion in the parse/gloss system.
+#
 # Reconstructs multi-word commands from space-separated arguments.
 # For "env or VAR DEFAULT", tries env-or first, then falls back to env.
 #
@@ -17,6 +21,11 @@
 # RECURSION PREVENTION: Uses WIZARDRY_PARSE_DEPTH to prevent infinite loops
 
 set -eu
+
+# EARLY EXIT FOR DEBUGGING EXIT 139
+printf 'parse: DISABLED for debugging exit code 139\n' >&2
+printf 'parse: Use hyphenated commands directly (e.g., env-or instead of env or)\n' >&2
+exit 1
 
 # Increment recursion depth
 _parse_depth=${WIZARDRY_PARSE_DEPTH:-0}
