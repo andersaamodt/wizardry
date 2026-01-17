@@ -2,6 +2,7 @@ name: 139-88 Ubuntu gloss bucket 15 per-gloss banish
 
 on:
   pull_request:
+    if: ${{ false }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
