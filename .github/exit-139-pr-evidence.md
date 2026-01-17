@@ -5,6 +5,7 @@
 - Workflow-log scan scope for exit 139 to date: PRs 932–942 via `read-test-failures`. (Source: `./.github/read-test-failures 932`–`942` on 2026-01-16)
 
 ## Recent hypothesis workflow results
+- Workflow 139-222 (block 35 only, core gloss) completed successfully; block 36 (manage gloss) was suspected after block 35 success and block 35-36 lagging in 139-210. (Source: local gloss block scan via generate-glosses on 2026-01-17)
 - Workflow 139-12 (banish direct path with glosses) completed successfully; no exit 139 observed. (Source: GitHub Actions run on 2026-01-16)
 - Workflow 139-13 (banish gloss function unset) completed successfully; no exit 139 observed. (Source: GitHub Actions run on 2026-01-16)
 - Workflow 139-16 (banish level 8 with glosses disabled) completed successfully; no exit 139 observed. (Source: GitHub Actions run on 2026-01-16)

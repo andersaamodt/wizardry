@@ -1,0 +1,197 @@
+name: 139-224 Ubuntu manage gloss target
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ubuntu-manage-gloss-only:
+    name: 139-224 Ubuntu manage gloss only
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install xattr tooling
+        run: sudo apt-get update && sudo apt-get install -y attr
+      - name: Load block 36 (manage) and run banish
+        run: |
+          set +e
+          ulimit -c unlimited || true
+          (
+            set -e
+            . spells/.imps/sys/invoke-wizardry
+            gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+            gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+            generate-glosses --output "$gloss_file"
+
+            awk_program=$(printf '%s\n' \
+              'BEGIN { idx=0; out="" }' \
+              '/^# First-word gloss/ {' \
+              '  idx++' \
+              '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+              '  print "# block " idx > out' \
+              '}' \
+              '{ if (out != "") print >> out }' \
+              'END { printf "%d\n", idx > outdir "/count" }')
+            awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
+
+            block="$gloss_dir/block-036.sh"
+            if [ ! -s "$block" ]; then
+              printf "%s\n" "[gloss-test] missing block 36" >&2
+              exit 1
+            fi
+            printf "%s\n" "[gloss-test] block 36 preview"
+            sed -n '1,200p' "$block"
+            set -x
+            . "$block"
+            banish 8 --only --no-tests --no-heal
+          )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  ubuntu-manage-gloss-noop:
+    name: 139-225 Ubuntu manage gloss noop
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install xattr tooling
+        run: sudo apt-get update && sudo apt-get install -y attr
+      - name: Override manage to noop
+        run: |
+          set +e
+          ulimit -c unlimited || true
+          (
+            set -e
+            . spells/.imps/sys/invoke-wizardry
+            gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+            gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+            generate-glosses --output "$gloss_file"
+
+            awk_program=$(printf '%s\n' \
+              'BEGIN { idx=0; out="" }' \
+              '/^# First-word gloss/ {' \
+              '  idx++' \
+              '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+              '  print "# block " idx > out' \
+              '}' \
+              '{ if (out != "") print >> out }' \
+              'END { printf "%d\n", idx > outdir "/count" }')
+            awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
+
+            block="$gloss_dir/block-036.sh"
+            if [ ! -s "$block" ]; then
+              printf "%s\n" "[gloss-test] missing block 36" >&2
+              exit 1
+            fi
+            . "$block"
+            manage() {
+              return 0
+            }
+            set -x
+            banish 8 --only --no-tests --no-heal
+          )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  ubuntu-manage-gloss-no-parse:
+    name: 139-226 Ubuntu manage gloss no parse
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install xattr tooling
+        run: sudo apt-get update && sudo apt-get install -y attr
+      - name: Override parse for manage gloss
+        run: |
+          set +e
+          ulimit -c unlimited || true
+          (
+            set -e
+            . spells/.imps/sys/invoke-wizardry
+            gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+            gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+            generate-glosses --output "$gloss_file"
+
+            awk_program=$(printf '%s\n' \
+              'BEGIN { idx=0; out="" }' \
+              '/^# First-word gloss/ {' \
+              '  idx++' \
+              '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+              '  print "# block " idx > out' \
+              '}' \
+              '{ if (out != "") print >> out }' \
+              'END { printf "%d\n", idx > outdir "/count" }')
+            awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
+
+            block="$gloss_dir/block-036.sh"
+            if [ ! -s "$block" ]; then
+              printf "%s\n" "[gloss-test] missing block 36" >&2
+              exit 1
+            fi
+            . "$block"
+            parse() {
+              return 0
+            }
+            set -x
+            banish 8 --only --no-tests --no-heal
+          )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  ubuntu-manage-gloss-removed:
+    name: 139-227 Ubuntu gloss without manage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install xattr tooling
+        run: sudo apt-get update && sudo apt-get install -y attr
+      - name: Remove manage gloss and run banish
+        run: |
+          set +e
+          ulimit -c unlimited || true
+          (
+            set -e
+            . spells/.imps/sys/invoke-wizardry
+            gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+            gloss_trim=$(mktemp /tmp/wizardry-gloss-trim.XXXXXX)
+            generate-glosses --output "$gloss_file"
+            awk '
+              BEGIN { skip=0 }
+              /^# First-word gloss for commands starting with '\''manage'\''/ { skip=1; next }
+              /^# First-word gloss/ { skip=0 }
+              !skip { print }
+            ' "$gloss_file" > "$gloss_trim"
+            . "$gloss_trim"
+            set -x
+            banish 8 --only --no-tests --no-heal
+          )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
