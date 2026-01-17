@@ -1,0 +1,26 @@
+name: "Hypothesis #75 - disable-optimization"
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup
+        run: |
+          chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor
+          chmod +x spells/.imps/fs/xattr-helper-usable spells/.imps/fs/xattr-list-keys spells/.imps/fs/xattr-read-value
+          sudo apt-get update && sudo apt-get install -y attr
+      
+      - name: Test hypothesis
+        run: |
+          echo "Testing hypothesis #75: Disable shell optimization"
+          sed -i "1 a set +o" spells/.imps/sys/word-of-binding
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          ./spells/.wizardry/test-magic --verbose
