@@ -312,20 +312,22 @@ uname|uniq|wc|xargs)
   _tmpfile=$(mktemp "${TMPDIR:-/tmp}/generate-glosses.XXXXXX")
   trap 'rm -f "$_tmpfile"' EXIT HUP INT TERM
   
-  # Use find without -perm checks (which hang on macOS/CI)
-  # Just find all files and filter executable ones
-  # Scan both wizardry spells directory and user's spellbook directory
+  # DISABLED: Use find without -perm checks (which hang on macOS/CI)
+  # BUGFIX: The [ -x "$f" ] test can trigger xattr reads that cause hangs
+  # See: https://github.com/andersaamodt/wizardry/issues/XXX
+  # Safer approach: Only scan wizardry directory, skip xattr-triggering tests
   {
-    find "$wizardry_dir/spells" -type f 2>/dev/null | while IFS= read -r f; do
-      [ -x "$f" ] && printf '%s\n' "$f"
-    done
+    # Only scan wizardry spells, not user spellbook (avoids network/symlink issues)
+    # Use find with maxdepth to avoid infinite recursion
+    # Skip the [ -x ] test entirely - assume all files in spells/ should be checked
+    find "$wizardry_dir/spells" -maxdepth 5 -type f ! -name ".*" ! -name "*~" ! -name "*.swp" 2>/dev/null
     
-    # Also scan user's spellbook directory if it exists
-    if [ -d "$spell_home" ]; then
-      find "$spell_home" -type f 2>/dev/null | while IFS= read -r f; do
-        [ -x "$f" ] && printf '%s\n' "$f"
-      done
-    fi
+    # DISABLED: User spellbook scanning (can hang on network filesystems, circular symlinks, xattr)
+    # if [ -d "$spell_home" ]; then
+    #   find "$spell_home" -type f 2>/dev/null | while IFS= read -r f; do
+    #     [ -x "$f" ] && printf '%s\n' "$f"
+    #   done
+    # fi
   } > "$_tmpfile"
   
   _spell_names=""
@@ -353,17 +355,25 @@ uname|uniq|wc|xargs)
     printf 'generate-glosses: WARNING: no executable files found in %s\n' "$wizardry_dir/spells" >&2
   fi
   
-  # OPTIMIZATION: Single grep pass to find all uncastable spells
-  # This is much faster than grepping each file individually (405 greps → 1 grep)
-  # Use xargs to avoid "Argument list too long" error
-  [ "$quiet" -eq 0 ] && printf 'generate-glosses: Scanning for uncastable spells...\n' >&2
+  # DISABLED: xargs grep (causes hangs/segfaults on files with xattr)
+  # BUGFIX: xargs grep hangs when processing files with extended attributes
+  # See: https://github.com/andersaamodt/wizardry/issues/XXX
+  # Safer approach: Process files one at a time, only read first 20 lines
+  [ "$quiet" -eq 0 ] && printf 'generate-glosses: Scanning for uncastable spells (safe mode)...\n' >&2
   _uncastable_spells=" "  # Space-separated list
-  if _uncastable_files=$(cat "$_tmpfile" | xargs grep -l "^# Uncastable pattern" 2>/dev/null); then
-    for _uc_path in $_uncastable_files; do
-      _uc_name=${_uc_path##*/}
+  
+  # Process files one at a time to avoid xargs issues and xattr hangs
+  while IFS= read -r filepath; do
+    # Skip if file doesn't exist or is a directory
+    [ -f "$filepath" ] || continue
+    
+    # Only read first 20 lines (uncastable pattern must be near top)
+    # Use head to avoid grep hanging on binary/xattr files
+    if head -n 20 "$filepath" 2>/dev/null | grep -q "^# Uncastable pattern"; then
+      _uc_name=${filepath##*/}
       _uncastable_spells="$_uncastable_spells$_uc_name "
-    done
-  fi
+    fi
+  done < "$_tmpfile"
   
   [ "$quiet" -eq 0 ] && printf 'generate-glosses: Found %d uncastable spells\n' "$(printf '%s' "$_uncastable_spells" | tr ' ' '\n' | grep -c .)" >&2
   
