@@ -1,7 +1,7 @@
 #!/bin/sh
-# divine-trash - print the path to the user's trash directory
+# detect-trash - print the path to the user's trash directory
 # Returns the correct trash directory path for the current OS.
-# Example: cd "$(divine-trash)"
+# Example: cd "$(detect-trash)"
 
 
 _dt_kernel=$(uname -s 2>/dev/null || printf 'unknown')
@@ -15,7 +15,7 @@ case "$_dt_kernel" in
     printf '%s/Trash/files\n' "$_dt_xdg_data"
     ;;
   *)
-    printf '%s\n' "divine-trash: unsupported operating system: $_dt_kernel" >&2
+    printf '%s\n' "detect-trash: unsupported operating system: $_dt_kernel" >&2
     exit 1
     ;;
 esac

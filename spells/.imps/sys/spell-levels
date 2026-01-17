@@ -14,7 +14,7 @@ field="${2:-all}"
 case "$level" in
   0)
     name='POSIX & Platform Foundation'
-    spells='divine-distro:divination divine-posix:divination verify-posix:.wizardry'
+    spells='detect-distro:divination detect-posix:divination verify-posix:.wizardry'
     imps=''
     ;;
   1)
@@ -65,7 +65,7 @@ case "$level" in
   10)
     name='Arcane File Operations'
     spells='copy:arcane file-list:arcane file-to-folder:arcane forall:arcane jump-trash:arcane read-magic:arcane trash:arcane'
-    imps='fs/backup fs/clip-copy fs/clip-paste fs/ensure-parent-dir menu/divine-trash text/append text/count-chars text/drop text/each text/field text/first text/last text/lines text/make-indent text/pick text/read-file text/skip text/take text/write-file'
+    imps='fs/backup fs/clip-copy fs/clip-paste fs/ensure-parent-dir menu/detect-trash text/append text/count-chars text/drop text/each text/field text/first text/last text/lines text/make-indent text/pick text/read-file text/skip text/take text/write-file'
     ;;
   11)
     name='Basic Cantrips'
@@ -89,8 +89,8 @@ case "$level" in
     ;;
   15)
     name='Divination'
-    spells='divine-magic:divination divine-rc-file:divination identify-room:divination'
-    imps='lang/possessive sys/os sys/term text/divine-indent-char text/divine-indent-width'
+    spells='detect-magic:divination detect-rc-file:divination identify-room:divination'
+    imps='lang/possessive sys/os sys/term text/detect-indent-char text/detect-indent-width'
     ;;
   16)
     name='Advanced MUD Features'

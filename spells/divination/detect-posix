@@ -7,7 +7,7 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: divine-posix [--verbose]
+Usage: detect-posix [--verbose]
 
 Report POSIX toolchain availability and probe baseline POSIX behaviors. Use --verbose for a per-tool report.
 USAGE
@@ -37,7 +37,7 @@ while [ "$#" -gt 0 ]; do
       ;;
     -* )
       cat >&2 <<'USAGE'
-Usage: divine-posix [--verbose]
+Usage: detect-posix [--verbose]
 
 Report POSIX toolchain availability and probe baseline POSIX behaviors. Use --verbose for a per-tool report.
 USAGE
@@ -51,7 +51,7 @@ done
 
 if [ "$#" -gt 0 ]; then
   cat >&2 <<'USAGE'
-Usage: divine-posix [--verbose]
+Usage: detect-posix [--verbose]
 
 Report POSIX toolchain availability and probe baseline POSIX behaviors. Use --verbose for a per-tool report.
 USAGE
@@ -75,7 +75,7 @@ probe_fail=0
 tmpdir=''
 case " $probe_set " in
   *" find "*)
-    tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/divine-posix.XXXXXX") || exit 1
+    tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/detect-posix.XXXXXX") || exit 1
     touch "$tmpdir/probe"
     trap '[ -n "${tmpdir-}" ] && [ -d "$tmpdir" ] && rm -rf "$tmpdir"' EXIT HUP INT TERM
     ;;
@@ -166,7 +166,7 @@ for probe in $probe_set; do
       fi
       ;;
     *)
-      printf '  ✗ %s: %s\n' "divine-posix" "unknown >&2 probe '$probe'"
+      printf '  ✗ %s: %s\n' "detect-posix" "unknown >&2 probe '$probe'"
       exit 2
       ;;
   esac
@@ -178,9 +178,9 @@ if [ "$tool_fail" -eq 0 ] && [ "$probe_fail" -eq 0 ]; then
 fi
 
 if [ "$tool_fail" -ne 0 ]; then
-  printf '%s\n' "divine-posix: missing tools: $missing_tools" >&2
+  printf '%s\n' "detect-posix: missing tools: $missing_tools" >&2
 fi
 if [ "$probe_fail" -ne 0 ]; then
-  printf '%s\n' 'divine-posix: one or more POSIX probes failed.' >&2
+  printf '%s\n' 'detect-posix: one or more POSIX probes failed.' >&2
 fi
 exit 1
