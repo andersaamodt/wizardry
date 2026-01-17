@@ -14,6 +14,19 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
+# Helper to initialize default synonyms in a temp spellbook
+init_default_synonyms() {
+  _spellbook_dir=$1
+  mkdir -p "$_spellbook_dir" 2>/dev/null || true
+  cat > "$_spellbook_dir/.default-synonyms" << 'SYNONYMS'
+# Default synonyms for tests
+jump=jump-to-marker
+jump-to-location=jump-to-marker
+leap-to-location=jump-to-marker
+warp=jump-to-marker
+SYNONYMS
+}
+
 # Helper to check no shift/parse errors
 check_no_errors() {
   output="$1"
@@ -436,9 +449,15 @@ test_jump_to_marker_no_args() {
 }
 test_jump_to_marker_with_spaces_no_args() {
   # Test that "jump to marker" works without arguments
-  # Generate and source glosses first
-  tmpgloss=$(make_tempdir)/glosses
+  # Set up temp spellbook with default synonyms
+  tmpspellbook=$(make_tempdir)
+  init_default_synonyms "$tmpspellbook"
+  
+  export SPELLBOOK_DIR="$tmpspellbook"
   export WIZARDRY_DIR="$ROOT_DIR"
+  
+  # Generate and source glosses
+  tmpgloss="$tmpspellbook/glosses"
   "$ROOT_DIR/spells/.wizardry/generate-glosses" --output "$tmpgloss" --quiet
   . "$tmpgloss"
   
@@ -518,9 +537,15 @@ test_user_typed_jump_to_marker_hyphenated() {
   fi
 }
 test_user_typed_jump_to_marker_spaces() {
-  # Generate and source glosses first
-  tmpgloss=$(make_tempdir)/glosses
+  # Set up temp spellbook with default synonyms
+  tmpspellbook=$(make_tempdir)
+  init_default_synonyms "$tmpspellbook"
+  
+  export SPELLBOOK_DIR="$tmpspellbook"
   export WIZARDRY_DIR="$ROOT_DIR"
+  
+  # Generate and source glosses
+  tmpgloss="$tmpspellbook/glosses"
   "$ROOT_DIR/spells/.wizardry/generate-glosses" --output "$tmpgloss" --quiet
   . "$tmpgloss"
   
@@ -547,15 +572,20 @@ test_user_typed_jump_to_marker_spaces() {
 }
 test_user_typed_jump_alone() {
   # jump without args should work (cycles through markers or shows message)
-  # NOTE: There is no "jump" spell, only "jump-to-marker" and "jump-trash"
-  # So calling "jump" alone should give a "command not found" error from parse
-  # Generate and source glosses first
-  tmpgloss=$(make_tempdir)/glosses
+  # 'jump' is a default synonym for jump-to-marker
+  # Set up temp spellbook with default synonyms
+  tmpspellbook=$(make_tempdir)
+  init_default_synonyms "$tmpspellbook"
+  
+  export SPELLBOOK_DIR="$tmpspellbook"
   export WIZARDRY_DIR="$ROOT_DIR"
+  
+  # Generate and source glosses
+  tmpgloss="$tmpspellbook/glosses"
   "$ROOT_DIR/spells/.wizardry/generate-glosses" --output "$tmpgloss" --quiet
   . "$tmpgloss"
   
-  OUTPUT=$(printf '' | jump 2>&1 || true)
+  OUTPUT=$(printf '' | jump 2>&1)
   
   # Should not have shift error
   if printf '%s' "$OUTPUT" | grep -q "shift count"; then
@@ -563,10 +593,9 @@ test_user_typed_jump_alone() {
     return 1
   fi
   
-  # Since there's no "jump" spell, we expect parse to report "command not found"
-  # This is correct behavior
-  if ! printf '%s' "$OUTPUT" | grep -q "command not found"; then
-    TEST_FAILURE_REASON="FAIL: Expected 'command not found' error for non-existent spell"
+  # Should not have parse error (jump is a default synonym)
+  if printf '%s' "$OUTPUT" | grep -q "parse:.*command not found"; then
+    TEST_FAILURE_REASON="FAIL: Parse error (jump should work as default synonym): $OUTPUT"
     return 1
   fi
 }
@@ -609,16 +638,16 @@ test_user_typed_jump_to_location() {
   fi
 }
 test_user_typed_jump_to_location_hyphenated() {
-  # Set up custom synonym
+  # Set up temp spellbook with default synonyms and custom synonym
   tmpspellbook=$(make_tempdir)
-  mkdir -p "$tmpspellbook"
+  init_default_synonyms "$tmpspellbook"
   printf 'jump-to-location=jump-to-marker\n' > "$tmpspellbook/.synonyms"
   
   saved_spellbook="${SPELLBOOK_DIR-}"
   export SPELLBOOK_DIR="$tmpspellbook"
   export WIZARDRY_DIR="$ROOT_DIR"
   
-  # Regenerate glosses with synonym
+  # Regenerate glosses with synonyms
   tmpgloss="$tmpspellbook/glosses"
   "$ROOT_DIR/spells/.wizardry/generate-glosses" --output "$tmpgloss" --quiet
   . "$tmpgloss"
@@ -647,8 +676,9 @@ test_user_typed_jump_to_location_hyphenated() {
   fi
 }
 test_user_typed_leap_to_location_hyphenated() {
+  # Set up temp spellbook with default synonyms and custom synonym  
   tmpspellbook=$(make_tempdir)
-  mkdir -p "$tmpspellbook"
+  init_default_synonyms "$tmpspellbook"
   printf 'leap-to-location=jump-to-marker\n' > "$tmpspellbook/.synonyms"
   
   saved_spellbook="${SPELLBOOK_DIR-}"
