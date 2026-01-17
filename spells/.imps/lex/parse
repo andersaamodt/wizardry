@@ -180,9 +180,9 @@ if [ -n "$_cmd_type" ]; then
     *)
       # No slash - could be a builtin, function, or alias
       # Skip functions/aliases to avoid recursive gloss → parse → gloss loops
-      _cmd_desc=$(command -V "$_first_word" 2>/dev/null || true)
+      _cmd_desc=$(command -V "$_first_word" 2>/dev/null | head -n 1 || true)
       case "$_cmd_desc" in
-        *"function"*|*"alias"*)
+        *" is a function"*|*" is a shell function"*|*" is an alias"*)
           ;;
         *)
           exec "$_first_word" "$@" 2>/dev/null || true
@@ -217,7 +217,6 @@ fi
 
 printf 'parse: %s: command not found\n' "$_first_word" >&2
 exit 127
-
 
 
 
