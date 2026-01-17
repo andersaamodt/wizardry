@@ -69,7 +69,7 @@ jobs:
 
           # Workflows to monitor
           workflows=(
-            "139-310 Ubuntu gloss single blocks 112-126"
+            "139-325 Ubuntu gloss single blocks 127-141"
           )
           
           # Total number of workflows we're monitoring
