@@ -843,7 +843,7 @@ test_imps_have_opening_comments() {
 # --- Check: Bootstrap spells have "Bootstrap spell" in opening comment ---
 # Canonical list of bootstrap spells (hardcoded):
 # - install (root installer)
-# - detect-distro (platform detection)
+# - divine-distro (platform detection)
 # - All spells in spells/.arcana/core/
 # These spells must have "Bootstrap spell" in their opening comment (first few lines after shebang).
 test_bootstrap_spells_identified() {
@@ -852,7 +852,7 @@ test_bootstrap_spells_identified() {
   # This list is the authoritative source for what constitutes a bootstrap spell
   bootstrap_paths="
 install
-spells/divination/detect-distro
+spells/divination/divine-distro
 spells/.arcana/core/
 "
   
@@ -1510,7 +1510,7 @@ test_scripts_have_set_eu_early() {
       # Sourceable configuration scripts
       .imps/wizardry-globals|.imps/test/boot/skip-if-*|.imps/sys/invoke-thesaurus) return ;;
       # Bootstrap spells that have long argument parsing before set
-      divination/detect-rc-file|system/test-magic|.wizardry/test-magic|spellcraft/demo-magic|translocation/blink) return ;;
+      divination/divine-rc-file|system/test-magic|.wizardry/test-magic|spellcraft/demo-magic|translocation/blink) return ;;
     esac
     
     # In compiled mode, wrapper functions are unwrapped so set may appear later
@@ -1613,7 +1613,7 @@ test_spells_source_env_clear_after_set_eu() {
       # Autocast spells exempt (use autocast pattern, not env-clear)
       cantrips/colors) return ;;
       # Bootstrap spells used by install (must be standalone)
-      divination/detect-rc-file|cantrips/ask-yn|cantrips/memorize|cantrips/require-wizardry|spellcraft/learn) return ;;
+      divination/divine-rc-file|cantrips/ask-yn|cantrips/memorize|cantrips/require-wizardry|spellcraft/learn) return ;;
       # Bootstrap scripts with conditional env-clear sourcing (run before wizardry fully installed)
       wards/banish|spellcraft/compile-spell|spellcraft/doppelganger) return ;;
       # Scripts that need PATH setup before env-clear to find it
@@ -2338,15 +2338,15 @@ test_fail_imp_returns_error_code() {
 
 # META: Platform detection must work
 test_platform_detection_available() {
-  # Verify detect-distro spell exists
-  if [ ! -f "$ROOT_DIR/spells/divination/detect-distro" ]; then
-    TEST_FAILURE_REASON="detect-distro spell not found"
+  # Verify divine-distro spell exists
+  if [ ! -f "$ROOT_DIR/spells/divination/divine-distro" ]; then
+    TEST_FAILURE_REASON="divine-distro spell not found"
     return 1
   fi
   
   # Verify it's executable
-  if [ ! -x "$ROOT_DIR/spells/divination/detect-distro" ]; then
-    TEST_FAILURE_REASON="detect-distro is not executable"
+  if [ ! -x "$ROOT_DIR/spells/divination/divine-distro" ]; then
+    TEST_FAILURE_REASON="divine-distro is not executable"
     return 1
   fi
   

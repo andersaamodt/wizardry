@@ -153,11 +153,11 @@ set -eu
         return 0  # Allow test (used in test-spell, etc.)
         ;;
       # BLACKLIST: Shell builtins that CANNOT be overridden
-      alias|bg|bind|builtin|caller|cd|command|compgen|complete|compopt|declare|disable|enable|\
-false|fc|fg|getopts|hash|jobs|kill|let|mapfile|newgrp|pwd|read|readarray|readonly|select|set|\
-sh|shopt|source|suspend|times|trap|true|type|ulimit|umask|unalias|wait|break|case|continue|\
-do|done|elif|else|esac|eval|exec|exit|export|fi|for|if|in|local|return|shift|then|unset|\
-until|while)
+      alias|bg|bind|builtin|caller|cd|command|compgen|complete|compopt|declare|detect|disable|\
+enable|false|fc|fg|getopts|hash|jobs|kill|let|mapfile|newgrp|pwd|read|readarray|readonly|\
+select|set|sh|shopt|source|suspend|times|trap|true|type|ulimit|umask|unalias|wait|break|\
+case|continue|do|done|elif|else|esac|eval|exec|exit|export|fi|for|if|in|local|return|shift|\
+then|unset|until|while)
         return 1  # Blacklisted
         ;;
       # BLACKLIST: Common system commands that should not be overridden
@@ -487,11 +487,11 @@ uname|uniq|wc|xargs|xattr)
     
     # Check if blacklisted (same as first-word blacklist)
     case "$_syn_word" in
-      alias|bg|bind|builtin|caller|cd|command|compgen|complete|compopt|declare|disable|enable|\
-false|fc|fg|getopts|hash|jobs|kill|let|mapfile|newgrp|pwd|read|readarray|readonly|select|set|\
-sh|shopt|source|suspend|times|trap|true|type|ulimit|umask|unalias|wait|break|case|continue|\
-do|done|elif|else|esac|eval|exec|exit|export|fi|for|if|in|local|return|shift|then|unset|\
-until|while)
+      alias|bg|bind|builtin|caller|cd|command|compgen|complete|compopt|declare|detect|disable|\
+enable|false|fc|fg|getopts|hash|jobs|kill|let|mapfile|newgrp|pwd|read|readarray|readonly|\
+select|set|sh|shopt|source|suspend|times|trap|true|type|ulimit|umask|unalias|wait|break|\
+case|continue|do|done|elif|else|esac|eval|exec|exit|export|fi|for|if|in|local|return|shift|\
+then|unset|until|while)
         return 1
         ;;
       awk|cat|cp|cut|date|df|diff|dirname|du|echo|egrep|env|expr|fgrep|file|find|grep|head|\
