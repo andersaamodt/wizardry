@@ -1,16 +1,16 @@
-name: 139-360 Ubuntu gloss single blocks 182-206
+name: 139-361 Ubuntu gloss single blocks 207-246
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
 concurrency:
-  group: 139-360-${{ github.event.pull_request.number }}
+  group: 139-361-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  block-182:
-    name: "139-360 block 182"
+  job-139-361-207:
+    name: "139-361 block 207"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -22,7 +22,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 182
+      - name: Run block 207
         shell: bash
         run: |
           set -euo pipefail
@@ -41,9 +41,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-182.sh"
+          block="$gloss_dir/block-207.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 182" >&2
+            printf '%s\n' "missing block 207" >&2
             exit 1
           fi
           set +e
@@ -56,8 +56,8 @@ jobs:
           fi
           exit "$status"
 
-  block-183:
-    name: "139-360 block 183"
+  job-139-361-208:
+    name: "139-361 block 208"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -69,7 +69,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 183
+      - name: Run block 208
         shell: bash
         run: |
           set -euo pipefail
@@ -88,9 +88,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-183.sh"
+          block="$gloss_dir/block-208.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 183" >&2
+            printf '%s\n' "missing block 208" >&2
             exit 1
           fi
           set +e
@@ -103,8 +103,8 @@ jobs:
           fi
           exit "$status"
 
-  block-184:
-    name: "139-360 block 184"
+  job-139-361-209:
+    name: "139-361 block 209"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -116,7 +116,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 184
+      - name: Run block 209
         shell: bash
         run: |
           set -euo pipefail
@@ -135,9 +135,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-184.sh"
+          block="$gloss_dir/block-209.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 184" >&2
+            printf '%s\n' "missing block 209" >&2
             exit 1
           fi
           set +e
@@ -150,8 +150,8 @@ jobs:
           fi
           exit "$status"
 
-  block-185:
-    name: "139-360 block 185"
+  job-139-361-210:
+    name: "139-361 block 210"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -163,7 +163,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 185
+      - name: Run block 210
         shell: bash
         run: |
           set -euo pipefail
@@ -182,9 +182,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-185.sh"
+          block="$gloss_dir/block-210.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 185" >&2
+            printf '%s\n' "missing block 210" >&2
             exit 1
           fi
           set +e
@@ -197,8 +197,8 @@ jobs:
           fi
           exit "$status"
 
-  block-186:
-    name: "139-360 block 186"
+  job-139-361-211:
+    name: "139-361 block 211"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -210,7 +210,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 186
+      - name: Run block 211
         shell: bash
         run: |
           set -euo pipefail
@@ -229,9 +229,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-186.sh"
+          block="$gloss_dir/block-211.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 186" >&2
+            printf '%s\n' "missing block 211" >&2
             exit 1
           fi
           set +e
@@ -244,8 +244,8 @@ jobs:
           fi
           exit "$status"
 
-  block-187:
-    name: "139-360 block 187"
+  job-139-361-212:
+    name: "139-361 block 212"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -257,7 +257,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 187
+      - name: Run block 212
         shell: bash
         run: |
           set -euo pipefail
@@ -276,9 +276,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-187.sh"
+          block="$gloss_dir/block-212.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 187" >&2
+            printf '%s\n' "missing block 212" >&2
             exit 1
           fi
           set +e
@@ -291,8 +291,8 @@ jobs:
           fi
           exit "$status"
 
-  block-188:
-    name: "139-360 block 188"
+  job-139-361-213:
+    name: "139-361 block 213"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -304,7 +304,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 188
+      - name: Run block 213
         shell: bash
         run: |
           set -euo pipefail
@@ -323,9 +323,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-188.sh"
+          block="$gloss_dir/block-213.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 188" >&2
+            printf '%s\n' "missing block 213" >&2
             exit 1
           fi
           set +e
@@ -338,8 +338,8 @@ jobs:
           fi
           exit "$status"
 
-  block-189:
-    name: "139-360 block 189"
+  job-139-361-214:
+    name: "139-361 block 214"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -351,7 +351,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 189
+      - name: Run block 214
         shell: bash
         run: |
           set -euo pipefail
@@ -370,9 +370,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-189.sh"
+          block="$gloss_dir/block-214.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 189" >&2
+            printf '%s\n' "missing block 214" >&2
             exit 1
           fi
           set +e
@@ -385,8 +385,8 @@ jobs:
           fi
           exit "$status"
 
-  block-190:
-    name: "139-360 block 190"
+  job-139-361-215:
+    name: "139-361 block 215"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -398,7 +398,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 190
+      - name: Run block 215
         shell: bash
         run: |
           set -euo pipefail
@@ -417,9 +417,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-190.sh"
+          block="$gloss_dir/block-215.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 190" >&2
+            printf '%s\n' "missing block 215" >&2
             exit 1
           fi
           set +e
@@ -432,8 +432,8 @@ jobs:
           fi
           exit "$status"
 
-  block-191:
-    name: "139-360 block 191"
+  job-139-361-216:
+    name: "139-361 block 216"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -445,7 +445,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 191
+      - name: Run block 216
         shell: bash
         run: |
           set -euo pipefail
@@ -464,9 +464,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-191.sh"
+          block="$gloss_dir/block-216.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 191" >&2
+            printf '%s\n' "missing block 216" >&2
             exit 1
           fi
           set +e
@@ -479,8 +479,8 @@ jobs:
           fi
           exit "$status"
 
-  block-192:
-    name: "139-360 block 192"
+  job-139-361-217:
+    name: "139-361 block 217"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -492,7 +492,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 192
+      - name: Run block 217
         shell: bash
         run: |
           set -euo pipefail
@@ -511,9 +511,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-192.sh"
+          block="$gloss_dir/block-217.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 192" >&2
+            printf '%s\n' "missing block 217" >&2
             exit 1
           fi
           set +e
@@ -526,8 +526,8 @@ jobs:
           fi
           exit "$status"
 
-  block-193:
-    name: "139-360 block 193"
+  job-139-361-218:
+    name: "139-361 block 218"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -539,7 +539,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 193
+      - name: Run block 218
         shell: bash
         run: |
           set -euo pipefail
@@ -558,9 +558,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-193.sh"
+          block="$gloss_dir/block-218.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 193" >&2
+            printf '%s\n' "missing block 218" >&2
             exit 1
           fi
           set +e
@@ -573,8 +573,8 @@ jobs:
           fi
           exit "$status"
 
-  block-194:
-    name: "139-360 block 194"
+  job-139-361-219:
+    name: "139-361 block 219"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -586,7 +586,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 194
+      - name: Run block 219
         shell: bash
         run: |
           set -euo pipefail
@@ -605,9 +605,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-194.sh"
+          block="$gloss_dir/block-219.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 194" >&2
+            printf '%s\n' "missing block 219" >&2
             exit 1
           fi
           set +e
@@ -620,8 +620,8 @@ jobs:
           fi
           exit "$status"
 
-  block-195:
-    name: "139-360 block 195"
+  job-139-361-220:
+    name: "139-361 block 220"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -633,7 +633,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 195
+      - name: Run block 220
         shell: bash
         run: |
           set -euo pipefail
@@ -652,9 +652,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-195.sh"
+          block="$gloss_dir/block-220.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 195" >&2
+            printf '%s\n' "missing block 220" >&2
             exit 1
           fi
           set +e
@@ -667,8 +667,8 @@ jobs:
           fi
           exit "$status"
 
-  block-196:
-    name: "139-360 block 196"
+  job-139-361-221:
+    name: "139-361 block 221"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -680,7 +680,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 196
+      - name: Run block 221
         shell: bash
         run: |
           set -euo pipefail
@@ -699,9 +699,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-196.sh"
+          block="$gloss_dir/block-221.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 196" >&2
+            printf '%s\n' "missing block 221" >&2
             exit 1
           fi
           set +e
@@ -714,8 +714,8 @@ jobs:
           fi
           exit "$status"
 
-  block-197:
-    name: "139-360 block 197"
+  job-139-361-222:
+    name: "139-361 block 222"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -727,7 +727,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 197
+      - name: Run block 222
         shell: bash
         run: |
           set -euo pipefail
@@ -746,9 +746,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-197.sh"
+          block="$gloss_dir/block-222.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 197" >&2
+            printf '%s\n' "missing block 222" >&2
             exit 1
           fi
           set +e
@@ -761,8 +761,8 @@ jobs:
           fi
           exit "$status"
 
-  block-198:
-    name: "139-360 block 198"
+  job-139-361-223:
+    name: "139-361 block 223"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -774,7 +774,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 198
+      - name: Run block 223
         shell: bash
         run: |
           set -euo pipefail
@@ -793,9 +793,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-198.sh"
+          block="$gloss_dir/block-223.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 198" >&2
+            printf '%s\n' "missing block 223" >&2
             exit 1
           fi
           set +e
@@ -808,8 +808,8 @@ jobs:
           fi
           exit "$status"
 
-  block-199:
-    name: "139-360 block 199"
+  job-139-361-224:
+    name: "139-361 block 224"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -821,7 +821,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 199
+      - name: Run block 224
         shell: bash
         run: |
           set -euo pipefail
@@ -840,9 +840,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-199.sh"
+          block="$gloss_dir/block-224.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 199" >&2
+            printf '%s\n' "missing block 224" >&2
             exit 1
           fi
           set +e
@@ -855,8 +855,8 @@ jobs:
           fi
           exit "$status"
 
-  block-200:
-    name: "139-360 block 200"
+  job-139-361-225:
+    name: "139-361 block 225"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -868,7 +868,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 200
+      - name: Run block 225
         shell: bash
         run: |
           set -euo pipefail
@@ -887,9 +887,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-200.sh"
+          block="$gloss_dir/block-225.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 200" >&2
+            printf '%s\n' "missing block 225" >&2
             exit 1
           fi
           set +e
@@ -902,8 +902,8 @@ jobs:
           fi
           exit "$status"
 
-  block-201:
-    name: "139-360 block 201"
+  job-139-361-226:
+    name: "139-361 block 226"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -915,7 +915,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 201
+      - name: Run block 226
         shell: bash
         run: |
           set -euo pipefail
@@ -934,9 +934,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-201.sh"
+          block="$gloss_dir/block-226.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 201" >&2
+            printf '%s\n' "missing block 226" >&2
             exit 1
           fi
           set +e
@@ -949,8 +949,8 @@ jobs:
           fi
           exit "$status"
 
-  block-202:
-    name: "139-360 block 202"
+  job-139-361-227:
+    name: "139-361 block 227"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -962,7 +962,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 202
+      - name: Run block 227
         shell: bash
         run: |
           set -euo pipefail
@@ -981,9 +981,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-202.sh"
+          block="$gloss_dir/block-227.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 202" >&2
+            printf '%s\n' "missing block 227" >&2
             exit 1
           fi
           set +e
@@ -996,8 +996,8 @@ jobs:
           fi
           exit "$status"
 
-  block-203:
-    name: "139-360 block 203"
+  job-139-361-228:
+    name: "139-361 block 228"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -1009,7 +1009,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 203
+      - name: Run block 228
         shell: bash
         run: |
           set -euo pipefail
@@ -1028,9 +1028,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-203.sh"
+          block="$gloss_dir/block-228.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 203" >&2
+            printf '%s\n' "missing block 228" >&2
             exit 1
           fi
           set +e
@@ -1043,8 +1043,8 @@ jobs:
           fi
           exit "$status"
 
-  block-204:
-    name: "139-360 block 204"
+  job-139-361-229:
+    name: "139-361 block 229"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -1056,7 +1056,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 204
+      - name: Run block 229
         shell: bash
         run: |
           set -euo pipefail
@@ -1075,9 +1075,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-204.sh"
+          block="$gloss_dir/block-229.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 204" >&2
+            printf '%s\n' "missing block 229" >&2
             exit 1
           fi
           set +e
@@ -1090,8 +1090,8 @@ jobs:
           fi
           exit "$status"
 
-  block-205:
-    name: "139-360 block 205"
+  job-139-361-230:
+    name: "139-361 block 230"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -1103,7 +1103,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 205
+      - name: Run block 230
         shell: bash
         run: |
           set -euo pipefail
@@ -1122,9 +1122,9 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-205.sh"
+          block="$gloss_dir/block-230.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 205" >&2
+            printf '%s\n' "missing block 230" >&2
             exit 1
           fi
           set +e
@@ -1137,8 +1137,8 @@ jobs:
           fi
           exit "$status"
 
-  block-206:
-    name: "139-360 block 206"
+  job-139-361-231:
+    name: "139-361 block 231"
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -1150,7 +1150,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y attr
 
-      - name: Run block 206
+      - name: Run block 231
         shell: bash
         run: |
           set -euo pipefail
@@ -1169,9 +1169,714 @@ jobs:
             '{ if (out != "") print >> out }' \
             'END { printf "%d\n", idx > outdir "/count" }')
           awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
-          block="$gloss_dir/block-206.sh"
+          block="$gloss_dir/block-231.sh"
           if [ ! -s "$block" ]; then
-            printf '%s\n' "missing block 206" >&2
+            printf '%s\n' "missing block 231" >&2
+            exit 1
+          fi
+          set +e
+          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  job-139-361-232:
+    name: "139-361 block 232"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: Run block 232
+        shell: bash
+        run: |
+          set -euo pipefail
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+          awk_program=$(printf '%s\n' \
+            'BEGIN { idx=0; out="" }' \
+            '/^# First-word gloss/ {' \
+            '  idx++' \
+            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+            '  print "# block " idx > out' \
+            '}' \
+            '{ if (out != "") print >> out }' \
+            'END { printf "%d\n", idx > outdir "/count" }')
+          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
+          block="$gloss_dir/block-232.sh"
+          if [ ! -s "$block" ]; then
+            printf '%s\n' "missing block 232" >&2
+            exit 1
+          fi
+          set +e
+          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  job-139-361-233:
+    name: "139-361 block 233"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: Run block 233
+        shell: bash
+        run: |
+          set -euo pipefail
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+          awk_program=$(printf '%s\n' \
+            'BEGIN { idx=0; out="" }' \
+            '/^# First-word gloss/ {' \
+            '  idx++' \
+            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+            '  print "# block " idx > out' \
+            '}' \
+            '{ if (out != "") print >> out }' \
+            'END { printf "%d\n", idx > outdir "/count" }')
+          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
+          block="$gloss_dir/block-233.sh"
+          if [ ! -s "$block" ]; then
+            printf '%s\n' "missing block 233" >&2
+            exit 1
+          fi
+          set +e
+          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  job-139-361-234:
+    name: "139-361 block 234"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: Run block 234
+        shell: bash
+        run: |
+          set -euo pipefail
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+          awk_program=$(printf '%s\n' \
+            'BEGIN { idx=0; out="" }' \
+            '/^# First-word gloss/ {' \
+            '  idx++' \
+            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+            '  print "# block " idx > out' \
+            '}' \
+            '{ if (out != "") print >> out }' \
+            'END { printf "%d\n", idx > outdir "/count" }')
+          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
+          block="$gloss_dir/block-234.sh"
+          if [ ! -s "$block" ]; then
+            printf '%s\n' "missing block 234" >&2
+            exit 1
+          fi
+          set +e
+          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  job-139-361-235:
+    name: "139-361 block 235"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: Run block 235
+        shell: bash
+        run: |
+          set -euo pipefail
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+          awk_program=$(printf '%s\n' \
+            'BEGIN { idx=0; out="" }' \
+            '/^# First-word gloss/ {' \
+            '  idx++' \
+            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+            '  print "# block " idx > out' \
+            '}' \
+            '{ if (out != "") print >> out }' \
+            'END { printf "%d\n", idx > outdir "/count" }')
+          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
+          block="$gloss_dir/block-235.sh"
+          if [ ! -s "$block" ]; then
+            printf '%s\n' "missing block 235" >&2
+            exit 1
+          fi
+          set +e
+          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  job-139-361-236:
+    name: "139-361 block 236"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: Run block 236
+        shell: bash
+        run: |
+          set -euo pipefail
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+          awk_program=$(printf '%s\n' \
+            'BEGIN { idx=0; out="" }' \
+            '/^# First-word gloss/ {' \
+            '  idx++' \
+            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+            '  print "# block " idx > out' \
+            '}' \
+            '{ if (out != "") print >> out }' \
+            'END { printf "%d\n", idx > outdir "/count" }')
+          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
+          block="$gloss_dir/block-236.sh"
+          if [ ! -s "$block" ]; then
+            printf '%s\n' "missing block 236" >&2
+            exit 1
+          fi
+          set +e
+          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  job-139-361-237:
+    name: "139-361 block 237"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: Run block 237
+        shell: bash
+        run: |
+          set -euo pipefail
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+          awk_program=$(printf '%s\n' \
+            'BEGIN { idx=0; out="" }' \
+            '/^# First-word gloss/ {' \
+            '  idx++' \
+            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+            '  print "# block " idx > out' \
+            '}' \
+            '{ if (out != "") print >> out }' \
+            'END { printf "%d\n", idx > outdir "/count" }')
+          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
+          block="$gloss_dir/block-237.sh"
+          if [ ! -s "$block" ]; then
+            printf '%s\n' "missing block 237" >&2
+            exit 1
+          fi
+          set +e
+          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  job-139-361-238:
+    name: "139-361 block 238"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: Run block 238
+        shell: bash
+        run: |
+          set -euo pipefail
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+          awk_program=$(printf '%s\n' \
+            'BEGIN { idx=0; out="" }' \
+            '/^# First-word gloss/ {' \
+            '  idx++' \
+            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+            '  print "# block " idx > out' \
+            '}' \
+            '{ if (out != "") print >> out }' \
+            'END { printf "%d\n", idx > outdir "/count" }')
+          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
+          block="$gloss_dir/block-238.sh"
+          if [ ! -s "$block" ]; then
+            printf '%s\n' "missing block 238" >&2
+            exit 1
+          fi
+          set +e
+          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  job-139-361-239:
+    name: "139-361 block 239"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: Run block 239
+        shell: bash
+        run: |
+          set -euo pipefail
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+          awk_program=$(printf '%s\n' \
+            'BEGIN { idx=0; out="" }' \
+            '/^# First-word gloss/ {' \
+            '  idx++' \
+            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+            '  print "# block " idx > out' \
+            '}' \
+            '{ if (out != "") print >> out }' \
+            'END { printf "%d\n", idx > outdir "/count" }')
+          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
+          block="$gloss_dir/block-239.sh"
+          if [ ! -s "$block" ]; then
+            printf '%s\n' "missing block 239" >&2
+            exit 1
+          fi
+          set +e
+          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  job-139-361-240:
+    name: "139-361 block 240"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: Run block 240
+        shell: bash
+        run: |
+          set -euo pipefail
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+          awk_program=$(printf '%s\n' \
+            'BEGIN { idx=0; out="" }' \
+            '/^# First-word gloss/ {' \
+            '  idx++' \
+            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+            '  print "# block " idx > out' \
+            '}' \
+            '{ if (out != "") print >> out }' \
+            'END { printf "%d\n", idx > outdir "/count" }')
+          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
+          block="$gloss_dir/block-240.sh"
+          if [ ! -s "$block" ]; then
+            printf '%s\n' "missing block 240" >&2
+            exit 1
+          fi
+          set +e
+          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  job-139-361-241:
+    name: "139-361 block 241"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: Run block 241
+        shell: bash
+        run: |
+          set -euo pipefail
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+          awk_program=$(printf '%s\n' \
+            'BEGIN { idx=0; out="" }' \
+            '/^# First-word gloss/ {' \
+            '  idx++' \
+            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+            '  print "# block " idx > out' \
+            '}' \
+            '{ if (out != "") print >> out }' \
+            'END { printf "%d\n", idx > outdir "/count" }')
+          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
+          block="$gloss_dir/block-241.sh"
+          if [ ! -s "$block" ]; then
+            printf '%s\n' "missing block 241" >&2
+            exit 1
+          fi
+          set +e
+          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  job-139-361-242:
+    name: "139-361 block 242"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: Run block 242
+        shell: bash
+        run: |
+          set -euo pipefail
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+          awk_program=$(printf '%s\n' \
+            'BEGIN { idx=0; out="" }' \
+            '/^# First-word gloss/ {' \
+            '  idx++' \
+            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+            '  print "# block " idx > out' \
+            '}' \
+            '{ if (out != "") print >> out }' \
+            'END { printf "%d\n", idx > outdir "/count" }')
+          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
+          block="$gloss_dir/block-242.sh"
+          if [ ! -s "$block" ]; then
+            printf '%s\n' "missing block 242" >&2
+            exit 1
+          fi
+          set +e
+          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  job-139-361-243:
+    name: "139-361 block 243"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: Run block 243
+        shell: bash
+        run: |
+          set -euo pipefail
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+          awk_program=$(printf '%s\n' \
+            'BEGIN { idx=0; out="" }' \
+            '/^# First-word gloss/ {' \
+            '  idx++' \
+            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+            '  print "# block " idx > out' \
+            '}' \
+            '{ if (out != "") print >> out }' \
+            'END { printf "%d\n", idx > outdir "/count" }')
+          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
+          block="$gloss_dir/block-243.sh"
+          if [ ! -s "$block" ]; then
+            printf '%s\n' "missing block 243" >&2
+            exit 1
+          fi
+          set +e
+          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  job-139-361-244:
+    name: "139-361 block 244"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: Run block 244
+        shell: bash
+        run: |
+          set -euo pipefail
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+          awk_program=$(printf '%s\n' \
+            'BEGIN { idx=0; out="" }' \
+            '/^# First-word gloss/ {' \
+            '  idx++' \
+            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+            '  print "# block " idx > out' \
+            '}' \
+            '{ if (out != "") print >> out }' \
+            'END { printf "%d\n", idx > outdir "/count" }')
+          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
+          block="$gloss_dir/block-244.sh"
+          if [ ! -s "$block" ]; then
+            printf '%s\n' "missing block 244" >&2
+            exit 1
+          fi
+          set +e
+          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  job-139-361-245:
+    name: "139-361 block 245"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: Run block 245
+        shell: bash
+        run: |
+          set -euo pipefail
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+          awk_program=$(printf '%s\n' \
+            'BEGIN { idx=0; out="" }' \
+            '/^# First-word gloss/ {' \
+            '  idx++' \
+            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+            '  print "# block " idx > out' \
+            '}' \
+            '{ if (out != "") print >> out }' \
+            'END { printf "%d\n", idx > outdir "/count" }')
+          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
+          block="$gloss_dir/block-245.sh"
+          if [ ! -s "$block" ]; then
+            printf '%s\n' "missing block 245" >&2
+            exit 1
+          fi
+          set +e
+          ( . "$block"; banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  job-139-361-246:
+    name: "139-361 block 246"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: Run block 246
+        shell: bash
+        run: |
+          set -euo pipefail
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          gloss_dir=$(mktemp -d /tmp/wizardry-gloss-blocks.XXXXXX)
+          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+          awk_program=$(printf '%s\n' \
+            'BEGIN { idx=0; out="" }' \
+            '/^# First-word gloss/ {' \
+            '  idx++' \
+            '  out=sprintf("%s/block-%03d.sh", outdir, idx)' \
+            '  print "# block " idx > out' \
+            '}' \
+            '{ if (out != "") print >> out }' \
+            'END { printf "%d\n", idx > outdir "/count" }')
+          awk -v outdir="$gloss_dir" "$awk_program" "$gloss_file"
+          block="$gloss_dir/block-246.sh"
+          if [ ! -s "$block" ]; then
+            printf '%s\n' "missing block 246" >&2
             exit 1
           fi
           set +e
