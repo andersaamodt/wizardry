@@ -13,15 +13,15 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y attr file
-      
+
       - name: Test hypothesis
         run: |
           echo "Testing hypothesis #27: Limit parse recursion to 3 levels"
-          
-. spells/.imps/sys/invoke-wizardry
-export WIZARDRY_PARSE_DEPTH_LIMIT=3
-banish 8
-./spells/.wizardry/test-magic --verbose
+
+          . spells/.imps/sys/invoke-wizardry
+          export WIZARDRY_PARSE_DEPTH_LIMIT=3
+          banish 8
+          ./spells/.wizardry/test-magic --verbose

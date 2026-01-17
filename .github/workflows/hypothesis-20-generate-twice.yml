@@ -13,15 +13,15 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y attr file
-      
+
       - name: Test hypothesis
         run: |
           echo "Testing hypothesis #20: Run generate-glosses twice (idempotency test)"
-          
-. spells/.imps/sys/invoke-wizardry
-banish 8
-banish 8  # Run twice
-./spells/.wizardry/test-magic --verbose
+
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          banish 8  # Run twice
+          ./spells/.wizardry/test-magic --verbose

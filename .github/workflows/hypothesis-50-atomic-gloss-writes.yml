@@ -13,15 +13,15 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y attr file
-      
+
       - name: Test hypothesis
         run: |
           echo "Testing hypothesis #50: Use atomic write operations for glosses"
-          
-. spells/.imps/sys/invoke-wizardry
-export WIZARDRY_ATOMIC_WRITES=1
-banish 8
-./spells/.wizardry/test-magic --verbose
+
+          . spells/.imps/sys/invoke-wizardry
+          export WIZARDRY_ATOMIC_WRITES=1
+          banish 8
+          ./spells/.wizardry/test-magic --verbose

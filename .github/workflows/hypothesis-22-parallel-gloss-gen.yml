@@ -13,17 +13,17 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y attr file
-      
+
       - name: Test hypothesis
         run: |
           echo "Testing hypothesis #22: Parallel gloss generation (race test)"
-          
-. spells/.imps/sys/invoke-wizardry
-# Run banish in parallel
-banish 8 &
-banish 8 &
-wait
-./spells/.wizardry/test-magic --verbose
+
+          . spells/.imps/sys/invoke-wizardry
+          # Run banish in parallel
+          banish 8 &
+          banish 8 &
+          wait
+          ./spells/.wizardry/test-magic --verbose

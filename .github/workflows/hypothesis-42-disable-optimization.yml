@@ -13,15 +13,15 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y attr file
-      
+
       - name: Test hypothesis
         run: |
           echo "Testing hypothesis #42: Run with shell optimization disabled"
-          
-set +o || true
-. spells/.imps/sys/invoke-wizardry
-banish 8
-./spells/.wizardry/test-magic --verbose
+
+          set +o || true
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          ./spells/.wizardry/test-magic --verbose

@@ -13,22 +13,22 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y attr file
-      
+
       - name: Test hypothesis
         run: |
           echo "Testing hypothesis #23: Check for invalid gloss function names"
-          
-. spells/.imps/sys/invoke-wizardry
-banish 8
-# Check for invalid function names in gloss file
-for f in /tmp/.wizardry-glosses-*.sh; do
-  if [ -f "$f" ]; then
-    if grep -E '^[0-9]|[^a-zA-Z0-9_-]' "$f" | head -5; then
-      echo 'Found potentially invalid function names'
-    fi
-  fi
-done
-./spells/.wizardry/test-magic --verbose
+
+          . spells/.imps/sys/invoke-wizardry
+          banish 8
+          # Check for invalid function names in gloss file
+          for f in /tmp/.wizardry-glosses-*.sh; do
+            if [ -f "$f" ]; then
+              if grep -E '^[0-9]|[^a-zA-Z0-9_-]' "$f" | head -5; then
+                echo 'Found potentially invalid function names'
+              fi
+            fi
+          done
+          ./spells/.wizardry/test-magic --verbose

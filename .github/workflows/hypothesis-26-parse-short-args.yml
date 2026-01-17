@@ -13,23 +13,23 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y attr file
-      
+
       - name: Test hypothesis
         run: |
           echo "Testing hypothesis #26: Limit parse to single-arg commands only"
-          
-. spells/.imps/sys/invoke-wizardry
-# Wrap parse to limit arguments
-original_parse=$(command -v parse)
-parse() {
-  if [ $# -gt 2 ]; then
-    shift; shift
-  fi
-  "$original_parse" "$@"
-}
-export -f parse
-banish 8
-./spells/.wizardry/test-magic --verbose
+
+          . spells/.imps/sys/invoke-wizardry
+          # Wrap parse to limit arguments
+          original_parse=$(command -v parse)
+          parse() {
+            if [ $# -gt 2 ]; then
+              shift; shift
+            fi
+            "$original_parse" "$@"
+          }
+          export -f parse
+          banish 8
+          ./spells/.wizardry/test-magic --verbose
