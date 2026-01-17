@@ -1,0 +1,138 @@
+name: 139-369 Ubuntu banish gloss blacklist
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: 139-369-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  job-139-369-1-banished-gloss-absent:
+    name: "139-369 #1 banish gloss absent"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: #1 Verify gloss absent and run banish
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "[#1] verify banish gloss is absent"
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
+          "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
+          if grep -q '^banish()' "$gloss_file"; then
+            printf '%s\n' "banish gloss still present" >&2
+            exit 1
+          fi
+          set +e
+          ( banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  job-139-369-2-command-banish:
+    name: "139-369 #2 command banish"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: #2 Run command banish
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "[#2] command banish"
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          set +e
+          ( command banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  job-139-369-3-inline-banish-parse:
+    name: "139-369 #3 inline banish parse"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: #3 Inline banish wrapper using parse
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "[#3] inline banish wrapper with parse"
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          banish() { parse banish "$@"; }
+          set +e
+          ( banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
+
+  job-139-369-4-inline-banish-direct:
+    name: "139-369 #4 inline banish direct"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install attr
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y attr
+
+      - name: #4 Inline banish wrapper calling spell
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "[#4] inline banish wrapper with direct spell"
+          export WIZARDRY_DIR="$GITHUB_WORKSPACE"
+          . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry"
+          banish() { "$WIZARDRY_DIR/spells/wards/banish" "$@"; }
+          set +e
+          ( banish 8 --only --no-tests --no-heal )
+          status=$?
+          if [ "$status" -eq 139 ]; then
+            printf '%s\n' "subshell banish exited with code 139 (SIGSEGV)"
+            printf '%s\n' "Last 50 dmesg lines (if available):"
+            dmesg | tail -n 50 || true
+          fi
+          exit "$status"
