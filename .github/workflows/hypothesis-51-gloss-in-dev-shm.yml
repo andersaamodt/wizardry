@@ -1,0 +1,27 @@
+name: "Hypothesis #51 - gloss-in-dev-shm"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-51-*.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test hypothesis
+        run: |
+          echo "Testing hypothesis #51: Store gloss files in /dev/shm"
+          
+. spells/.imps/sys/invoke-wizardry
+export TMPDIR=/dev/shm
+banish 8
+./spells/.wizardry/test-magic --verbose

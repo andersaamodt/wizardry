@@ -1,0 +1,27 @@
+name: "Hypothesis #17 - skip-generate-glosses"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-17-*.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test hypothesis
+        run: |
+          echo "Testing hypothesis #17: Skip generate-glosses entirely"
+          
+. spells/.imps/sys/invoke-wizardry
+# Skip banish (which runs generate-glosses)
+export WIZARDRY_SKIP_GLOSSES=1
+./spells/.wizardry/test-magic --verbose

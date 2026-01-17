@@ -1,0 +1,26 @@
+name: "Hypothesis #24 - gloss-gen-timeout"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-24-*.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test hypothesis
+        run: |
+          echo "Testing hypothesis #24: Timeout generate-glosses at 30s"
+          
+. spells/.imps/sys/invoke-wizardry
+timeout 30 banish 8 || echo 'Generate-glosses timed out or failed'
+./spells/.wizardry/test-magic --verbose

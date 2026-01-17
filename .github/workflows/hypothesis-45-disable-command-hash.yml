@@ -1,0 +1,27 @@
+name: "Hypothesis #45 - disable-command-hash"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-45-*.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test hypothesis
+        run: |
+          echo "Testing hypothesis #45: Disable command hashing (set +h)"
+          
+set +h
+. spells/.imps/sys/invoke-wizardry
+banish 8
+./spells/.wizardry/test-magic --verbose

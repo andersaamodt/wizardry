@@ -1,0 +1,27 @@
+name: "Hypothesis #31 - parse-sanitize-args"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-31-*.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test hypothesis
+        run: |
+          echo "Testing hypothesis #31: Sanitize all parse arguments"
+          
+. spells/.imps/sys/invoke-wizardry
+export WIZARDRY_PARSE_SANITIZE=1
+banish 8
+./spells/.wizardry/test-magic --verbose

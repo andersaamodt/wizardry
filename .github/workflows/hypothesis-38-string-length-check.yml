@@ -1,0 +1,29 @@
+name: "Hypothesis #38 - string-length-check"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-38-*.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test hypothesis
+        run: |
+          echo "Testing hypothesis #38: Check for very long strings in glosses"
+          
+. spells/.imps/sys/invoke-wizardry
+banish 8
+for f in /tmp/.wizardry-glosses-*.sh; do
+  [ -f "$f" ] && awk 'length > 1000 {print "Long line:", length}' "$f" | head -5
+done
+./spells/.wizardry/test-magic --verbose

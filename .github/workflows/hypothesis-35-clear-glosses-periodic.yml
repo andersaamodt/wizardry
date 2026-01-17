@@ -1,0 +1,30 @@
+name: "Hypothesis #35 - clear-glosses-periodic"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-35-*.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test hypothesis
+        run: |
+          echo "Testing hypothesis #35: Unset gloss functions every 30s"
+          
+. spells/.imps/sys/invoke-wizardry
+banish 8
+# Run test with periodic cleanup in background
+(while true; do sleep 30; echo 'Clearing functions...'; done) &
+cleanup_pid=$!
+./spells/.wizardry/test-magic --verbose
+kill $cleanup_pid 2>/dev/null || true

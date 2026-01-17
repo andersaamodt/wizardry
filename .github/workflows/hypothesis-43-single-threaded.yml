@@ -1,0 +1,27 @@
+name: "Hypothesis #43 - single-threaded"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-43-*.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test hypothesis
+        run: |
+          echo "Testing hypothesis #43: Prevent any parallel operations"
+          
+. spells/.imps/sys/invoke-wizardry
+export WIZARDRY_SINGLE_THREADED=1
+banish 8
+./spells/.wizardry/test-magic --verbose

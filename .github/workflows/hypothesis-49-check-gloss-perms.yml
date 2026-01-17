@@ -1,0 +1,29 @@
+name: "Hypothesis #49 - check-gloss-perms"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-49-*.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test hypothesis
+        run: |
+          echo "Testing hypothesis #49: Check gloss file permissions"
+          
+. spells/.imps/sys/invoke-wizardry
+banish 8
+for f in /tmp/.wizardry-glosses-*.sh; do
+  [ -f "$f" ] && ls -la "$f"
+done
+./spells/.wizardry/test-magic --verbose

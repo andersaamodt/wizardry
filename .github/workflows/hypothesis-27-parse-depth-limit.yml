@@ -1,0 +1,27 @@
+name: "Hypothesis #27 - parse-depth-limit"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-27-*.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test hypothesis
+        run: |
+          echo "Testing hypothesis #27: Limit parse recursion to 3 levels"
+          
+. spells/.imps/sys/invoke-wizardry
+export WIZARDRY_PARSE_DEPTH_LIMIT=3
+banish 8
+./spells/.wizardry/test-magic --verbose

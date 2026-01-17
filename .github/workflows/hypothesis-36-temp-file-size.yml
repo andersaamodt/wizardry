@@ -1,0 +1,28 @@
+name: "Hypothesis #36 - temp-file-size"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-36-*.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test hypothesis
+        run: |
+          echo "Testing hypothesis #36: Monitor temp file size growth"
+          
+. spells/.imps/sys/invoke-wizardry
+du -sh /tmp before_banish.txt 2>/dev/null || true
+banish 8
+du -sh /tmp after_banish.txt 2>/dev/null || true
+./spells/.wizardry/test-magic --verbose

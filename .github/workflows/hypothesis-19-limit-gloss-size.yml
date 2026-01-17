@@ -1,0 +1,30 @@
+name: "Hypothesis #19 - limit-gloss-size"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-19-*.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test hypothesis
+        run: |
+          echo "Testing hypothesis #19: Limit gloss file to 1000 lines"
+          
+. spells/.imps/sys/invoke-wizardry
+banish 8
+# Truncate gloss file to 1000 lines
+for f in /tmp/.wizardry-glosses-*.sh; do
+  [ -f "$f" ] && head -n 1000 "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+done
+./spells/.wizardry/test-magic --verbose

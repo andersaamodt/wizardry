@@ -1,0 +1,27 @@
+name: "Hypothesis #32 - parse-builtins-only"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-32-*.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test hypothesis
+        run: |
+          echo "Testing hypothesis #32: Prefer shell builtins over external commands"
+          
+. spells/.imps/sys/invoke-wizardry
+export WIZARDRY_PARSE_BUILTINS_FIRST=1
+banish 8
+./spells/.wizardry/test-magic --verbose

@@ -1,0 +1,28 @@
+name: "Hypothesis #29 - parse-logging"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-29-*.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test hypothesis
+        run: |
+          echo "Testing hypothesis #29: Log every parse invocation"
+          
+. spells/.imps/sys/invoke-wizardry
+export WIZARDRY_PARSE_LOG=/tmp/parse.log
+banish 8
+./spells/.wizardry/test-magic --verbose
+[ -f /tmp/parse.log ] && tail -100 /tmp/parse.log

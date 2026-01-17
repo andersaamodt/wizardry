@@ -1,0 +1,29 @@
+name: "Hypothesis #22 - parallel-gloss-gen"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-22-*.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test hypothesis
+        run: |
+          echo "Testing hypothesis #22: Parallel gloss generation (race test)"
+          
+. spells/.imps/sys/invoke-wizardry
+# Run banish in parallel
+banish 8 &
+banish 8 &
+wait
+./spells/.wizardry/test-magic --verbose

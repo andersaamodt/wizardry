@@ -1,0 +1,29 @@
+name: "Hypothesis #37 - env-size-monitor"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-37-*.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test hypothesis
+        run: |
+          echo "Testing hypothesis #37: Monitor environment size during execution"
+          
+. spells/.imps/sys/invoke-wizardry
+env | wc -l > /tmp/env_before.txt
+banish 8
+env | wc -l > /tmp/env_after.txt
+diff /tmp/env_before.txt /tmp/env_after.txt || true
+./spells/.wizardry/test-magic --verbose

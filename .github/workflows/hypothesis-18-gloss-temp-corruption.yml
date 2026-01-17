@@ -1,0 +1,36 @@
+name: "Hypothesis #18 - gloss-temp-corruption"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-18-*.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test hypothesis
+        run: |
+          echo "Testing hypothesis #18: Check gloss temp file integrity"
+          
+. spells/.imps/sys/invoke-wizardry
+banish 8
+# Check gloss file integrity
+if [ -f /tmp/.wizardry-glosses-*.sh ]; then
+  echo 'Gloss file exists, checking for corruption...'
+  if sh -n /tmp/.wizardry-glosses-*.sh 2>/dev/null; then
+    echo 'Gloss file syntax valid'
+  else
+    echo 'Gloss file has syntax errors!'
+    exit 1
+  fi
+fi
+./spells/.wizardry/test-magic --verbose

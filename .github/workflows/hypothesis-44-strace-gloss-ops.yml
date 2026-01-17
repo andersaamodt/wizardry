@@ -1,0 +1,28 @@
+name: "Hypothesis #44 - strace-gloss-ops"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-44-*.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test hypothesis
+        run: |
+          echo "Testing hypothesis #44: strace only gloss-related syscalls"
+          
+. spells/.imps/sys/invoke-wizardry
+sudo apt-get install -y strace || true
+strace -f -e trace=open,openat,read,write,mmap -o /tmp/gloss.strace banish 8 2>&1 || true
+tail -100 /tmp/gloss.strace || true
+./spells/.wizardry/test-magic --verbose

@@ -1,0 +1,30 @@
+name: "Hypothesis #40 - function-count-monitor"
+
+on:
+  pull_request:
+    paths:
+      - 'spells/**'
+      - '.tests/**'
+      - '.github/workflows/hypothesis-40-*.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y attr file
+      
+      - name: Test hypothesis
+        run: |
+          echo "Testing hypothesis #40: Monitor total function count"
+          
+. spells/.imps/sys/invoke-wizardry
+typeset -F | wc -l > /tmp/funcs_before.txt
+banish 8
+typeset -F | wc -l > /tmp/funcs_after.txt
+echo "Functions before: $(cat /tmp/funcs_before.txt)"
+echo "Functions after: $(cat /tmp/funcs_after.txt)"
+./spells/.wizardry/test-magic --verbose
