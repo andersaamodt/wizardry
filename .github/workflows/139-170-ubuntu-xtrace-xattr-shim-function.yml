@@ -1,7 +1,7 @@
-name: 139-166 Ubuntu xtrace gloss file unset xattr
+name: 139-170 Ubuntu xtrace xattr shim function
 
 on:
-  workflow_dispatch:
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  ubuntu-xtrace-gloss-file-unset-xattr:
-    name: 139-166 Ubuntu xtrace gloss file unset xattr
+  ubuntu-xtrace-xattr-shim-function:
+    name: 139-170 Ubuntu xtrace xattr shim function
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -33,52 +33,44 @@ jobs:
             echo 'kernel.apparmor_restrict_unprivileged_userns=0'
           } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
           sudo sysctl --system
-      - name: Generate gloss file, unset xattr function, call xattr under xtrace
+      - name: Define shim function and run xattr under xtrace
         run: |
           set +e
           ulimit -c unlimited || true
           if command -v timeout >/dev/null 2>&1; then
             timeout 120 bash -lc '
               set -e
-              export WIZARDRY_DIR="$GITHUB_WORKSPACE"
-              gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
-              "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
-              . "$gloss_file"
-              if type xattr 2>/dev/null | grep -q "function"; then
-                unset -f xattr
-              fi
+              xattr() {
+                command xattr "$@"
+              }
               set -x
               tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-xattr.XXXXXX")
-              command xattr -w user.test value "$tmp"
-              command xattr -p user.test "$tmp"
-              command xattr -d user.test "$tmp" || :
+              xattr -w user.test value "$tmp"
+              xattr -p user.test "$tmp"
+              xattr -d user.test "$tmp" || :
               rm -f "$tmp"
             '
             status=$?
           else
             bash -lc '
               set -e
-              export WIZARDRY_DIR="$GITHUB_WORKSPACE"
-              gloss_file=$(mktemp /tmp/wizardry-gloss.XXXXXX)
-              "$WIZARDRY_DIR/spells/.wizardry/generate-glosses" --output "$gloss_file"
-              . "$gloss_file"
-              if type xattr 2>/dev/null | grep -q "function"; then
-                unset -f xattr
-              fi
+              xattr() {
+                command xattr "$@"
+              }
               set -x
               tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-xattr.XXXXXX")
-              command xattr -w user.test value "$tmp"
-              command xattr -p user.test "$tmp"
-              command xattr -d user.test "$tmp" || :
+              xattr -w user.test value "$tmp"
+              xattr -p user.test "$tmp"
+              xattr -d user.test "$tmp" || :
               rm -f "$tmp"
             '
             status=$?
           fi
           if [ "$status" -eq 139 ]; then
-            printf '%s\n' "xtrace gloss file unset xattr exited with code 139 (SIGSEGV)"
+            printf '%s\n' "xtrace xattr shim function exited with code 139 (SIGSEGV)"
             printf '%s\n' "Last 50 dmesg lines (if available):"
             dmesg | tail -n 50 || true
           elif [ "$status" -eq 124 ]; then
-            printf '%s\n' "xtrace gloss file unset xattr timed out after 120 seconds"
+            printf '%s\n' "xtrace xattr shim function timed out after 120 seconds"
           fi
           exit "$status"

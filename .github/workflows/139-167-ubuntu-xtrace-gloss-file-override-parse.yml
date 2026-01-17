@@ -1,7 +1,7 @@
 name: 139-167 Ubuntu xtrace gloss file override parse
 
 on:
-  pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
