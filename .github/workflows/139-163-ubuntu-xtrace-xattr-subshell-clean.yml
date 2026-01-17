@@ -1,7 +1,7 @@
-name: 139-158 Ubuntu xtrace xattr package after invoke
+name: 139-163 Ubuntu xtrace xattr subshell clean
 
 on:
-  workflow_dispatch:
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  ubuntu-xtrace-xattr-package-after-invoke:
-    name: 139-158 Ubuntu xtrace xattr package after invoke
+  ubuntu-xtrace-xattr-subshell-clean:
+    name: 139-163 Ubuntu xtrace xattr subshell clean
     runs-on: ubuntu-latest
     env:
       WIZARDRY_OS_LABEL: ubuntu
@@ -34,46 +34,28 @@ jobs:
             echo 'kernel.apparmor_restrict_unprivileged_userns=0'
           } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
           sudo sysctl --system
-      - name: Run invoke-wizardry then xattr under xtrace
+      - name: Run invoke-wizardry, then clean subshell xattr
         run: |
           set +e
           ulimit -c unlimited || true
           if command -v timeout >/dev/null 2>&1; then
             timeout 120 bash -lc '
               . spells/.imps/sys/invoke-wizardry
-              set -x
-              if ! command -v xattr >/dev/null 2>&1; then
-                printf "%s\n" "xattr command not found" >&2
-                exit 1
-              fi
-              tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-xattr.XXXXXX")
-              xattr -w user.test value "$tmp"
-              xattr -p user.test "$tmp"
-              xattr -d user.test "$tmp" || :
-              rm -f "$tmp"
+              bash -lc "set -x; tmp=\$(mktemp \"${TMPDIR:-/tmp}/wizardry-xattr.XXXXXX\"); xattr -w user.test value \"$tmp\"; xattr -p user.test \"$tmp\"; xattr -d user.test \"$tmp\" || :; rm -f \"$tmp\""
             '
             status=$?
           else
             bash -lc '
               . spells/.imps/sys/invoke-wizardry
-              set -x
-              if ! command -v xattr >/dev/null 2>&1; then
-                printf "%s\n" "xattr command not found" >&2
-                exit 1
-              fi
-              tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-xattr.XXXXXX")
-              xattr -w user.test value "$tmp"
-              xattr -p user.test "$tmp"
-              xattr -d user.test "$tmp" || :
-              rm -f "$tmp"
+              bash -lc "set -x; tmp=\$(mktemp \"${TMPDIR:-/tmp}/wizardry-xattr.XXXXXX\"); xattr -w user.test value \"$tmp\"; xattr -p user.test \"$tmp\"; xattr -d user.test \"$tmp\" || :; rm -f \"$tmp\""
             '
             status=$?
           fi
           if [ "$status" -eq 139 ]; then
-            printf '%s\n' "xtrace xattr package after invoke exited with code 139 (SIGSEGV)"
+            printf '%s\n' "xtrace xattr subshell clean exited with code 139 (SIGSEGV)"
             printf '%s\n' "Last 50 dmesg lines (if available):"
             dmesg | tail -n 50 || true
           elif [ "$status" -eq 124 ]; then
-            printf '%s\n' "xtrace xattr package after invoke timed out after 120 seconds"
+            printf '%s\n' "xtrace xattr subshell clean timed out after 120 seconds"
           fi
           exit "$status"

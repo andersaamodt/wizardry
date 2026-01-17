@@ -69,10 +69,10 @@ jobs:
 
           # Workflows to monitor
           workflows=(
-            "139-157 Ubuntu xtrace xattr package no invoke"
-            "139-158 Ubuntu xtrace xattr package after invoke"
-            "139-159 Ubuntu xtrace xattr package no glosses"
-            "139-160 Ubuntu xtrace xattr package command bypass"
+            "139-161 Ubuntu xtrace xattr unset function"
+            "139-162 Ubuntu xtrace xattr blacklist gloss"
+            "139-163 Ubuntu xtrace xattr subshell clean"
+            "139-164 Ubuntu xtrace xattr gloss function only"
           )
           
           # Total number of workflows we're monitoring
