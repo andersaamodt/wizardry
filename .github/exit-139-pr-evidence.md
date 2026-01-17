@@ -5,6 +5,7 @@
 - Workflow-log scan scope for exit 139 to date: PRs 932–942 via `read-test-failures`. (Source: `./.github/read-test-failures 932`–`942` on 2026-01-16)
 
 ## Recent hypothesis workflow results
+- User report: blacklisting all words observed in block 36 (including banish) resolves exit 139 on a fresh PR, suggesting the crash is tied to specific gloss wrappers in early blocks. (Source: user report on 2026-01-17)
 - Workflow 139-370: tests #5–#8 (banish name-collision without glosses) all succeeded, suggesting the crash requires the generated gloss wrapper. (Source: GitHub Actions run on 2026-01-17)
 - Workflow 139-369 added a banish gloss blacklist and numbered validation, queued to verify whether removing the banish wrapper resolves 139. (Source: GitHub Actions run on 2026-01-17)
 - Workflow 139-368: #1 (block 36 only) segfaulted while #2-#4 succeeded; block 36 currently maps to banish gloss. (Source: GitHub Actions run on 2026-01-17)
