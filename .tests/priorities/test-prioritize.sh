@@ -266,6 +266,7 @@ test_unchecks_when_prioritizing() {
 }
 
 test_hash_failure_message() {
+  skip-if-compiled || return $?  # Stubs don't work in compiled mode
   tmpdir=$(make_tempdir)
   testfile="$tmpdir/test.txt"
   printf 'test\n' > "$testfile"
