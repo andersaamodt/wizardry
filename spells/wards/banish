@@ -974,11 +974,18 @@ HEREDOC_TEST
       printf '  %s✓%s Wizardry structure: Spells directory exists\n' "$_green" "$_reset"
 
       # Check installer presence (single item - combine on one line)
+      # Note: Compiled/doppelganger installations don't need the install script
+      # Only fail if this appears to be a source installation (has .git directory)
       if [ ! -f "${WIZARDRY_DIR}/install" ]; then
-        printf '  %s✗%s Installer: install script not found\n' "$_red" "$_reset"
-        return 1
+        if [ -d "${WIZARDRY_DIR}/.git" ]; then
+          printf '  %s✗%s Installer: install script not found\n' "$_red" "$_reset"
+          return 1
+        else
+          printf '  %s✓%s Installer: Compiled installation (install script not needed)\n' "$_green" "$_reset"
+        fi
+      else
+        printf '  %s✓%s Installer: install script present\n' "$_green" "$_reset"
       fi
-      printf '  %s✓%s Installer: install script present\n' "$_green" "$_reset"
 
       # Check function definitions and calls
       # Functions are used in spells and banish itself for organization
