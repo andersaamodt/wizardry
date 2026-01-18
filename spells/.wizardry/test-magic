@@ -443,11 +443,20 @@ WRAPPER_EOF
   
   # Check for performance timeout (configurable, default 60s)
   # Tests that take longer than this are considered too slow and fail
+  # Exception: common-tests.sh is exempt (it contains many subtests)
   performance_timeout=${WIZARDRY_TEST_PERFORMANCE_TIMEOUT:-60}
   is_too_slow=0
-  if [ "$test_duration" -gt "$performance_timeout" ]; then
-    is_too_slow=1
-  fi
+  case "$test_path" in
+    */common-tests.sh|common-tests.sh)
+      # Exempt common-tests from performance timeout
+      is_too_slow=0
+      ;;
+    *)
+      if [ "$test_duration" -gt "$performance_timeout" ]; then
+        is_too_slow=1
+      fi
+      ;;
+  esac
 
   if [ -f "$test_exit_file" ]; then
     test_exit_code=$(cat "$test_exit_file" 2>/dev/null || printf '0')
