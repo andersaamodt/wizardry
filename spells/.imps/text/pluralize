@@ -170,9 +170,9 @@ set -eu
       case "$_pluralize_rest" in
         *[A-Z]*) printf '%s' "$_pluralize_result" ;;
         *)
-          # Capitalize first letter using dd (most portable across BSD/GNU)
-          _pluralize_first=$(printf '%s' "$_pluralize_result" | dd bs=1 count=1 2>/dev/null)
-          _pluralize_tail=$(printf '%s' "$_pluralize_result" | dd bs=1 skip=1 2>/dev/null)
+          # Capitalize first letter using awk (portable across all systems)
+          _pluralize_first=$(printf '%s' "$_pluralize_result" | awk '{print substr($0,1,1)}')
+          _pluralize_tail=$(printf '%s' "$_pluralize_result" | awk '{print substr($0,2)}')
           printf '%s%s' "$(printf '%s' "$_pluralize_first" | tr 'a-z' 'A-Z')" "$_pluralize_tail"
           ;;
       esac
