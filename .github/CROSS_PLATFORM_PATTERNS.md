@@ -194,7 +194,7 @@ fi
 ## String Manipulation
 
 ```sh
-# Character extraction - awk (most portable across all systems)
+# Character extraction - awk substr() (RECOMMENDED - most portable)
 first_char=$(printf '%s' "$string" | awk '{print substr($0,1,1)}')
 rest=$(printf '%s' "$string" | awk '{print substr($0,2)}')
 
@@ -202,15 +202,12 @@ rest=$(printf '%s' "$string" | awk '{print substr($0,2)}')
 first_char=${string%"${string#?}"}     # Extract first character
 rest=${string#?}                        # Everything after first char
 
-# Alternative: sed (works but awk is preferred for BSD compatibility)
+# Alternative: sed (portable but less reliable than awk on macOS)
 first_char=$(printf '%s' "$string" | sed 's/^\(.\).*/\1/')
 rest=$(printf '%s' "$string" | sed 's/^.//')
 
-# AVOID: dd (may have buffering issues on some systems)
-first=$(printf '%s' "$string" | dd bs=1 count=1 2>/dev/null)  # Can fail on BSD
-
-# AVOID: awk (BSD vs GNU differences)
-first=$(printf '%s' "$string" | awk '{print substr($0,1,1)}')  # BSD awk may differ
+# AVOID: dd (has buffering issues on BSD/macOS)
+first=$(printf '%s' "$string" | dd bs=1 count=1 2>/dev/null)  # Fails on macOS
 
 # WRONG (not portable - cut behavior varies on macOS):
 first=$(printf '%s' "$string" | cut -c1)     # cut -c behavior varies
@@ -242,9 +239,8 @@ fi
 | Empty PATH | macOS CI | Set baseline first |
 | SIGPIPE varies | bash/dash | bash may exit, dash ignores |
 | `wc -l` output | BSD/macOS | Includes leading spaces, use `tr -d ' '` or case |
-| `cut -c` behavior | macOS | Use `sed 's/^\(.\).*/\1/'` for char extraction |
-| `awk substr()` | macOS | BSD awk differs; use `sed` instead |
-| `dd` buffering | macOS | Use `sed` for character extraction (more reliable) |
+| `cut -c` behavior | macOS | Use `awk substr()` for char extraction |
+| `dd` buffering | macOS/BSD | Use `awk substr()` for character extraction (most reliable) |
 | Case in `$()` | macOS bash 3.2 | Move case statement to function outside `$()` |
 
 **Testing:** Test on Linux + macOS, with bash + dash, check `checkbashisms`.
