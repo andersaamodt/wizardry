@@ -55,7 +55,7 @@ test_missing_file() {
 
 # Tests for new 2-arg format with order detection
 test_two_args_file_first() {
-  skip-if-compiled  # Stubs don't work in compiled mode
+  skip-if-compiled || return $?  # Stubs don't work in compiled mode
   tmpdir=$(make_tempdir)
   stub_dir="$tmpdir/stubs"
   target="$tmpdir/target"
@@ -76,7 +76,7 @@ STUB
 }
 
 test_two_args_attr_first() {
-  skip-if-compiled  # Stubs don't work in compiled mode
+  skip-if-compiled || return $?  # Stubs don't work in compiled mode
   tmpdir=$(make_tempdir)
   stub_dir="$tmpdir/stubs"
   target="$tmpdir/target"
@@ -97,7 +97,7 @@ STUB
 }
 
 test_legacy_three_arg_format() {
-  skip-if-compiled  # Stubs don't work in compiled mode
+  skip-if-compiled || return $?  # Stubs don't work in compiled mode
   tmpdir=$(make_tempdir)
   stub_dir="$tmpdir/stubs"
   target="$tmpdir/target"
@@ -118,7 +118,7 @@ STUB
 }
 
 test_reports_missing_helpers() {
-  skip-if-compiled  # Stubs don't work in compiled mode
+  skip-if-compiled || return $?  # Stubs don't work in compiled mode
   tmpdir=$(make_tempdir)
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"

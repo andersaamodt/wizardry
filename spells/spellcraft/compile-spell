@@ -105,8 +105,24 @@ spell_content=$(cat "$spell_path")
 dependencies=$(printf '%s\n' "$spell_content" | \
   grep -v "^#" | \
   grep -v "^[[:space:]]*#" | \
-  grep -oE '\b(say|warn|die|fail|is|has|there|empty|full|given|lacks|memorize|env-or|[a-z][a-z0-9]*(-[a-z0-9]+)+)\b' | \
+  grep -oE '\b(say|warn|die|fail|is|has|there|empty|full|given|lacks|memorize|env-or|enchant|disenchant|attribute-tool-check|[a-z][a-z0-9]*(-[a-z0-9]+)+)\b' | \
   sort -u || true)
+
+# Also scan commonly-used imps that might be called by inlined dependencies
+# This handles transitive dependencies without complex recursion
+common_transitive_deps="attribute-tool-check attribute-get attribute-set read-magic write-magic disenchant"
+for trans_dep in $common_transitive_deps; do
+  # Check if any found dependencies might use this transitive dep
+  case "$dependencies" in
+    *attribute-set*|*attribute-get*|*read-magic*|*write-magic*|*disenchant*)
+      # Add attribute-tool-check if we're inlining any xattr-related imp
+      case " $dependencies " in
+        *" $trans_dep "*) ;;
+        *) dependencies="$dependencies $trans_dep" ;;
+      esac
+      ;;
+  esac
+done
 
 # Collect inline implementations and track what was inlined
 inlined_deps=""
@@ -245,6 +261,27 @@ $spell_body
   fi
 done
 
+# Transform all inlined dependencies to replace hyphenated calls with underscore versions
+# This handles nested dependencies (e.g., attribute-set calling attribute-tool-check)
+for dep in $inlined_names; do
+  func_name="_$(printf '%s' "$dep" | tr '-' '_')"
+  
+  # Replace calls in inlined_deps (not the main spell - that's done later)
+  inlined_deps=$(printf '%s\n' "$inlined_deps" | awk -v old="$dep" -v new="$func_name" '
+    /^[[:space:]]*cat <<.*USAGE/ { usage_start=1; print; next }
+    usage_start && /^USAGE$/ { print; usage_start=0; next }
+    usage_start { print; next }
+    /^[[:space:]]*\. / { print; next }
+    /^[[:space:]]*\. "/ { print; next }
+    /\).*;;/ { print; next }
+    /\$\(\(.*\<'"$dep"'\>.*\)\)/ { print; next }
+    /^[[:space:]]*trap[[:space:]]/ { gsub("\\<" old "\\>", new); print; next }
+    /"[^"$]*\<'"$dep"'\>[^"$]*"/ { print; next }
+    /'\''[^'\''$]*\<'"$dep"'\>[^'\''$]*'\''/ { print; next }
+    { gsub("\\<" old "\\>", new); print }
+  ')
+done
+
 # Transform spell content:
 # 1. Remove shebang, require-wizardry, and wizardry infrastructure sourcing
 # 2. Replace imp calls with underscore versions (e.g., say -> say, clip-copy -> clip_copy)
@@ -266,8 +303,11 @@ transformed=$(printf '%s\n' "$spell_content" | \
     /^require-wizardry/ { next }
     /^[[:space:]]*require-wizardry([[:space:]]|\|\||$)/ { next }
     /^[[:space:]]*\. env_clear([[:space:]]|$)/ { next }
+    /^[[:space:]]*\. env-clear([[:space:]]|$)/ { next }
     /^[[:space:]]*source env_clear([[:space:]]|$)/ { next }
+    /^[[:space:]]*source env-clear([[:space:]]|$)/ { next }
     /^[[:space:]]*env_clear([[:space:]]|$)/ { next }
+    /^[[:space:]]*env-clear([[:space:]]|$)/ { next }
     /^[[:space:]]*\. .*invoke-wizardry/ { next }
     /^[[:space:]]*source .*invoke-wizardry/ { next }
     # Skip loading pattern sections but remember what to call
