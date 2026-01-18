@@ -1,5 +1,5 @@
 #!/bin/sh
-# Tests for attribute-get imp
+# Tests for get-attribute imp
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -8,7 +8,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_xattr_read_value_exists() {
-  run_cmd sh -c 'command -v attribute-get'
+  run_cmd sh -c 'command -v get-attribute'
   assert_success || return 1
 }
 
@@ -33,13 +33,13 @@ fi
 STUB
   chmod +x "$tmpdir/bin/xattr"
   
-  cat > "$tmpdir/bin/attribute-tool-check" <<'STUB'
+  cat > "$tmpdir/bin/check-attribute-tool" <<'STUB'
 #!/bin/sh
 [ "$1" = "xattr" ]
 STUB
-  chmod +x "$tmpdir/bin/attribute-tool-check"
+  chmod +x "$tmpdir/bin/check-attribute-tool"
   
-  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && attribute-get user.name "'"$testfile"'"'
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && get-attribute user.name "'"$testfile"'"'
   assert_success || return 1
   assert_output_contains "Alice" || return 1
   
@@ -64,13 +64,13 @@ fi
 STUB
   chmod +x "$tmpdir/bin/attr"
   
-  cat > "$tmpdir/bin/attribute-tool-check" <<'STUB'
+  cat > "$tmpdir/bin/check-attribute-tool" <<'STUB'
 #!/bin/sh
 [ "$1" = "attr" ]
 STUB
-  chmod +x "$tmpdir/bin/attribute-tool-check"
+  chmod +x "$tmpdir/bin/check-attribute-tool"
   
-  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && attribute-get user.name "'"$testfile"'"'
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && get-attribute user.name "'"$testfile"'"'
   assert_success || return 1
   assert_output_contains "Alice" || return 1
   # Should NOT contain the header line
@@ -96,21 +96,21 @@ exit 1
 STUB
   chmod +x "$tmpdir/bin/xattr"
   
-  cat > "$tmpdir/bin/attribute-tool-check" <<'STUB'
+  cat > "$tmpdir/bin/check-attribute-tool" <<'STUB'
 #!/bin/sh
 [ "$1" = "xattr" ]
 STUB
-  chmod +x "$tmpdir/bin/attribute-tool-check"
+  chmod +x "$tmpdir/bin/check-attribute-tool"
   
-  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && attribute-get nonexistent.key "'"$testfile"'"'
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && get-attribute nonexistent.key "'"$testfile"'"'
   assert_failure || return 1
   
   rm -rf "$tmpdir"
 }
 
-run_test_case "attribute-get exists" test_xattr_read_value_exists
-run_test_case "attribute-get with mock xattr" test_xattr_read_value_with_mock_xattr
-run_test_case "attribute-get fallback to attr" test_xattr_read_value_fallback_to_attr
-run_test_case "attribute-get returns error for missing key" test_xattr_read_value_returns_error_for_missing_key
+run_test_case "get-attribute exists" test_xattr_read_value_exists
+run_test_case "get-attribute with mock xattr" test_xattr_read_value_with_mock_xattr
+run_test_case "get-attribute fallback to attr" test_xattr_read_value_fallback_to_attr
+run_test_case "get-attribute returns error for missing key" test_xattr_read_value_returns_error_for_missing_key
 
 finish_tests

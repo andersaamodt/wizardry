@@ -42,7 +42,7 @@ fi
 
 # If specific attribute requested, read and print it
 if [ -n "$attribute" ]; then
-  if value=$(attribute-get "$attribute" "$file"); then
+  if value=$(get-attribute "$attribute" "$file"); then
     printf '%s\n' "$value"
   else
     printf '%s\n' "read-magic: attribute does not exist." >&2
@@ -52,7 +52,7 @@ if [ -n "$attribute" ]; then
 fi
 
 # Otherwise, list all attributes
-keys=$(attribute-list "$file" || printf '')
+keys=$(list-attributes "$file" || printf '')
 
 if [ -z "$keys" ]; then
   printf '%s\n' "No enchanted attributes found."
@@ -62,6 +62,6 @@ fi
 # Print each attribute with its value
 printf '%s\n' "$keys" | while IFS= read -r key || [ -n "$key" ]; do
   [ -z "$key" ] && continue
-  value=$(attribute-get "$key" "$file" || printf '')
+  value=$(get-attribute "$key" "$file" || printf '')
   printf '%s\n' "$key: $value"
 done

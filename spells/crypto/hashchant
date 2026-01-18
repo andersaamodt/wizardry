@@ -32,9 +32,9 @@ filename=$(basename "$file")
 hash=$( (echo "$filename" && cat "$file") | cksum | awk '{ print $1 }')
 hash=$(printf '0x%X' "$hash")
 
-# Use attribute-set imp to write the hash attribute
+# Use set-attribute imp to write the hash attribute
 # This delegates to the appropriate xattr helper (attr, xattr, or setfattr)
-if attribute-set "user.hash" "$hash" "$file"; then
+if set-attribute "user.hash" "$hash" "$file"; then
   printf '%s\n' "File enchanted with hash: $hash"
   exit 0
 else
