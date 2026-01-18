@@ -95,7 +95,7 @@ jobs:
             elif grep -q "=== Test Summary ===" "$cleaned_log"; then
               # Extract from "=== Test Summary ===" to "Failed tests" line (inclusive)
               # This captures the summary, failure details, and the final failed tests list
-              sed -n '/=== Test Summary ===/,/^Failed tests.*:/p' "$cleaned_log"
+              sed -n '/=== Test Summary ===/,/^Failed tests/p' "$cleaned_log"
             else
               # If no test summary, show more of the tail (tests are likely incomplete/running)
               # Show last 200 lines to capture the complete test tail
