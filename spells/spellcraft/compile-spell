@@ -292,7 +292,7 @@ done
 transformed=$(printf '%s\n' "$spell_content" | \
   tail -n +2 | \
   awk -v spell="$spell_basename" '
-    BEGIN { skip=0; in_bootstrap=0 }
+    BEGIN { skip=0; in_bootstrap=0; skip_colors=0 }
     # Preserve bootstrap blocks
     /^if command -v require-wizardry/ { in_bootstrap=1; print; next }
     /^elif command -v require-wizardry/ { in_bootstrap=1; print; next }
@@ -310,9 +310,14 @@ transformed=$(printf '%s\n' "$spell_content" | \
     /^[[:space:]]*env-clear([[:space:]]|$)/ { next }
     /^[[:space:]]*\. .*invoke-wizardry/ { next }
     /^[[:space:]]*source .*invoke-wizardry/ { next }
-    # Remove color palette loading (colors don'"'"'t work the same in compiled spells)
-    /^[[:space:]]*\. "\$\(command -v colors\)"/ { next }
-    /^[[:space:]]*source "\$\(command -v colors\)"/ { next }
+    # Remove color palette loading blocks (elif command -v colors ... fi)
+    /^elif command -v colors/ { skip_colors=1; next }
+    skip_colors && /^[[:space:]]*\. "\$\(command -v colors\)"/ { next }
+    skip_colors && /^[[:space:]]*source "\$\(command -v colors\)"/ { next }
+    skip_colors && /^elif / { skip_colors=0; print; next }
+    skip_colors && /^else/ { skip_colors=0; print; next }
+    skip_colors && /^fi/ { skip_colors=0; print; next }
+    skip_colors { next }
     # Skip loading pattern sections but remember what to call
     /^# Load (castable|autocast|uncastable) imp/ { 
       skip=1

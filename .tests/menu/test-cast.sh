@@ -76,6 +76,7 @@ SH
 }
 
 test_cast_fails_without_menu_dependency() {
+  skip-if-compiled || return $?  # require is inlined in compiled mode
   tmp=$(make_tempdir)
   make_stub_cast_list "$tmp" fire "cast fire"
   make_failing_require "$tmp"
