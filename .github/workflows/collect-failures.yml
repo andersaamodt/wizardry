@@ -93,8 +93,9 @@ jobs:
               # Limit to 500 lines to prevent PR description overflow
               sed -n '/=== Lint Results ===/,$p' "$cleaned_log" | head -500
             elif grep -q "=== Test Summary ===" "$cleaned_log"; then
-              # Fallback to old format
-              sed -n '/=== Test Summary ===/,/^===/p' "$cleaned_log" | head -n -1 | head -500
+              # Extract from "=== Test Summary ===" to "Failed tests" line (inclusive)
+              # This captures the summary, failure details, and the final failed tests list
+              sed -n '/=== Test Summary ===/,/^Failed tests.*:/p' "$cleaned_log"
             else
               # If no test summary, show more of the tail (tests are likely incomplete/running)
               # Show last 200 lines to capture the complete test tail
