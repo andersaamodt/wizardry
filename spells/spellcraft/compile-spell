@@ -105,7 +105,7 @@ spell_content=$(cat "$spell_path")
 dependencies=$(printf '%s\n' "$spell_content" | \
   grep -v "^#" | \
   grep -v "^[[:space:]]*#" | \
-  grep -oE '\b(say|warn|die|fail|is|has|there|empty|full|given|lacks|memorize|env-or|enchant|disenchant|attribute-tool-check|[a-z][a-z0-9]*(-[a-z0-9]+)+)\b' | \
+  grep -oE '\b(say|warn|die|fail|is|has|there|empty|full|given|lacks|memorize|env-or|enchant|disenchant|hashchant|attribute-tool-check|[a-z][a-z0-9]*(-[a-z0-9]+)+)\b' | \
   sort -u || true)
 
 # Also scan commonly-used imps that might be called by inlined dependencies
