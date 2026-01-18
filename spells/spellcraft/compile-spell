@@ -310,6 +310,9 @@ transformed=$(printf '%s\n' "$spell_content" | \
     /^[[:space:]]*env-clear([[:space:]]|$)/ { next }
     /^[[:space:]]*\. .*invoke-wizardry/ { next }
     /^[[:space:]]*source .*invoke-wizardry/ { next }
+    # Remove standalone color palette loading
+    /^[[:space:]]*\. "\$\(command -v colors\)"/ { next }
+    /^[[:space:]]*source "\$\(command -v colors\)"/ { next }
     # Remove color palette loading blocks (elif command -v colors ... fi)
     /^elif command -v colors/ { skip_colors=1; next }
     skip_colors && /^[[:space:]]*\. "\$\(command -v colors\)"/ { next }
