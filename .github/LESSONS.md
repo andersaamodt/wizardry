@@ -98,6 +98,7 @@
 - Multi-cd shell patterns for path calculation (`cd dir1 && cd dir2`) create 2-3 extra process forks per execution; use parameter expansion ${var%/*} for significant performance improvement (PR #674).
 - Always create realistic unit tests for every feature BEFORE writing or fixing code; tests are the fastest path to working code and catch edge cases immediately (TDD principle).
 - Hyphenated spell names with uncastable pattern must have aliases generated (not just hyphenated synonyms) to prevent terminal crashes when typed directly by users.
+- The sed command `/pattern/q` quits AFTER printing the matching line; use `/pattern/,$d` to delete from the pattern to end-of-file without including the pattern line itself.
 - In sourced-only spells with `set -eu`, always do `set +eu` before every `return` statement to prevent shell options from leaking into the parent shell, which can cause unexpected behavior or terminal exits.
 - In zsh (macOS default), `for m in $variable` doesn't word-split by default; use `for m in $(printf '%s\n' $variable)` to force word splitting in all shells (PR #909).
 - Debug output showing iteration counts can quickly reveal word-splitting issues: if `all_markers="1 2 3"` iterates once instead of three times, word splitting is disabled (PR #909).

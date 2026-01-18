@@ -81,9 +81,9 @@ jobs:
           # Function to extract test summary from logs
           extract_test_summary() {
             local logfile=$1
-            # Keep the "Process completed/exited" line but remove everything after it
+            # Remove the "Process completed/exited" line and everything after it
             local cleaned_log="/tmp/cleaned_$$.txt"
-            sed '/Process \(exited\|completed\)/q' "$logfile" > "$cleaned_log"
+            sed '/Process \(exited\|completed\)/,$d' "$logfile" > "$cleaned_log"
             
             # Extract from "Summary" heading line to the end of file
             # Note: GitHub Actions adds timestamps to each line, so patterns need to account for that
@@ -114,9 +114,9 @@ jobs:
             local job_name=$2
             local workflow_name=$3
 
-            # Keep the "Process completed/exited" line but remove everything after it from the entire log
+            # Remove the "Process completed/exited" line and everything after it from the entire log
             local cleaned_log="/tmp/cleaned_$$.txt"
-            sed '/Process \(exited\|completed\)/q' "$logfile" > "$cleaned_log"
+            sed '/Process \(exited\|completed\)/,$d' "$logfile" > "$cleaned_log"
 
             # Check for early failure (workflow failed before tests ran)
             # Look for actual error indicators, not test messages that mention errors
@@ -154,6 +154,13 @@ jobs:
             # For POSIX/linting workflows, show summary section
             if echo "$workflow_name" | grep -qi "POSIX\|linting\|style"; then
               # Use standard test summary extraction for lint-magic
+              extract_test_summary "$logfile"
+              rm -f "$cleaned_log"
+              return
+            fi
+
+            # For doppelganger tests, extract test summary (uses test-magic)
+            if echo "$workflow_name" | grep -qi "doppelganger"; then
               extract_test_summary "$logfile"
               rm -f "$cleaned_log"
               return
