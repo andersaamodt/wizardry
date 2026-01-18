@@ -58,6 +58,7 @@ EOF
 }
 
 test_decorates_with_description() {
+  skip-if-compiled || return $?  # Stubs don't work in compiled mode
   stub=$(make_stub_dir)
   target=$(make_tempdir)
   cat >"$stub/enchant" <<'EOF'
@@ -82,6 +83,7 @@ EOF
 }
 
 test_decorates_with_reversed_args() {
+  skip-if-compiled || return $?  # Stubs don't work in compiled mode
   stub=$(make_stub_dir)
   target=$(make_tempdir)
   cat >"$stub/enchant" <<'EOF'
@@ -107,6 +109,7 @@ EOF
 }
 
 test_decorates_current_directory_with_description_only() {
+  skip-if-compiled || return $?  # Stubs don't work in compiled mode
   stub=$(make_stub_dir)
   target=$(make_tempdir)
   cat >"$stub/enchant" <<'EOF'
@@ -132,6 +135,7 @@ EOF
 }
 
 test_reports_enchant_failure() {
+  skip-if-compiled || return $?  # Stubs don't work in compiled mode
   stub=$(make_stub_dir)
   target=$(make_tempdir)
   cat >"$stub/enchant" <<'EOF'

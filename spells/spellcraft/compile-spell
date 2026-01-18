@@ -105,8 +105,24 @@ spell_content=$(cat "$spell_path")
 dependencies=$(printf '%s\n' "$spell_content" | \
   grep -v "^#" | \
   grep -v "^[[:space:]]*#" | \
-  grep -oE '\b(say|warn|die|fail|is|has|there|empty|full|given|lacks|memorize|env-or|[a-z][a-z0-9]*(-[a-z0-9]+)+)\b' | \
+  grep -oE '\b(say|warn|die|fail|is|has|there|empty|full|given|lacks|memorize|env-or|enchant|disenchant|hashchant|require|attribute-tool-check|[a-z][a-z0-9]*(-[a-z0-9]+)+)\b' | \
   sort -u || true)
+
+# Also scan commonly-used imps that might be called by inlined dependencies
+# This handles transitive dependencies without complex recursion
+common_transitive_deps="attribute-tool-check attribute-get attribute-set read-magic write-magic disenchant"
+for trans_dep in $common_transitive_deps; do
+  # Check if any found dependencies might use this transitive dep
+  case "$dependencies" in
+    *attribute-set*|*attribute-get*|*read-magic*|*write-magic*|*disenchant*)
+      # Add attribute-tool-check if we're inlining any xattr-related imp
+      case " $dependencies " in
+        *" $trans_dep "*) ;;
+        *) dependencies="$dependencies $trans_dep" ;;
+      esac
+      ;;
+  esac
+done
 
 # Collect inline implementations and track what was inlined
 inlined_deps=""
@@ -233,7 +249,9 @@ $func_def
     
     # Wrap as function
     # Replace 'exit' with 'return' since this is now a function, not a script
-    spell_body=$(printf '%s\n' "$spell_body" | sed 's/\<exit\>/return/g')
+    # Only replace shell exit commands (exit 0, exit 1, exit $var, etc.)
+    # Don't replace bare 'exit' which might be in awk/sed scripts
+    spell_body=$(printf '%s\n' "$spell_body" | sed 's/\<exit\([[:space:]]\+[0-9$]\)/return\1/g')
     
     inlined_deps="$inlined_deps
 # Inlined spell: $dep
@@ -243,6 +261,27 @@ $spell_body
 "
     inlined_names="$inlined_names $dep"
   fi
+done
+
+# Transform all inlined dependencies to replace hyphenated calls with underscore versions
+# This handles nested dependencies (e.g., attribute-set calling attribute-tool-check)
+for dep in $inlined_names; do
+  func_name="_$(printf '%s' "$dep" | tr '-' '_')"
+  
+  # Replace calls in inlined_deps (not the main spell - that's done later)
+  inlined_deps=$(printf '%s\n' "$inlined_deps" | awk -v old="$dep" -v new="$func_name" '
+    /^[[:space:]]*cat <<.*USAGE/ { usage_start=1; print; next }
+    usage_start && /^USAGE$/ { print; usage_start=0; next }
+    usage_start { print; next }
+    /^[[:space:]]*\. / { print; next }
+    /^[[:space:]]*\. "/ { print; next }
+    /\).*;;/ { print; next }
+    /\$\(\(.*\<'"$dep"'\>.*\)\)/ { print; next }
+    /^[[:space:]]*trap[[:space:]]/ { gsub("\\<" old "\\>", new); print; next }
+    /"[^"$]*\<'"$dep"'\>[^"$]*"/ { print; next }
+    /'\''[^'\''$]*\<'"$dep"'\>[^'\''$]*'\''/ { print; next }
+    { gsub("\\<" old "\\>", new); print }
+  ')
 done
 
 # Transform spell content:
@@ -255,7 +294,7 @@ done
 transformed=$(printf '%s\n' "$spell_content" | \
   tail -n +2 | \
   awk -v spell="$spell_basename" '
-    BEGIN { skip=0; in_bootstrap=0 }
+    BEGIN { skip=0; in_bootstrap=0; skip_colors=0 }
     # Preserve bootstrap blocks
     /^if command -v require-wizardry/ { in_bootstrap=1; print; next }
     /^elif command -v require-wizardry/ { in_bootstrap=1; print; next }
@@ -266,10 +305,24 @@ transformed=$(printf '%s\n' "$spell_content" | \
     /^require-wizardry/ { next }
     /^[[:space:]]*require-wizardry([[:space:]]|\|\||$)/ { next }
     /^[[:space:]]*\. env_clear([[:space:]]|$)/ { next }
+    /^[[:space:]]*\. env-clear([[:space:]]|$)/ { next }
     /^[[:space:]]*source env_clear([[:space:]]|$)/ { next }
+    /^[[:space:]]*source env-clear([[:space:]]|$)/ { next }
     /^[[:space:]]*env_clear([[:space:]]|$)/ { next }
+    /^[[:space:]]*env-clear([[:space:]]|$)/ { next }
     /^[[:space:]]*\. .*invoke-wizardry/ { next }
     /^[[:space:]]*source .*invoke-wizardry/ { next }
+    # Remove standalone color palette loading
+    /^[[:space:]]*\. "\$\(command -v colors\)"/ { next }
+    /^[[:space:]]*source "\$\(command -v colors\)"/ { next }
+    # Remove color palette loading blocks (elif command -v colors ... fi)
+    /^elif command -v colors/ { skip_colors=1; next }
+    skip_colors && /^[[:space:]]*\. "\$\(command -v colors\)"/ { next }
+    skip_colors && /^[[:space:]]*source "\$\(command -v colors\)"/ { next }
+    skip_colors && /^elif / { skip_colors=0; print; next }
+    skip_colors && /^else/ { skip_colors=0; print; next }
+    skip_colors && /^fi/ { skip_colors=0; print; next }
+    skip_colors { next }
     # Skip loading pattern sections but remember what to call
     /^# Load (castable|autocast|uncastable) imp/ { 
       skip=1

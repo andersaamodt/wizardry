@@ -466,7 +466,7 @@ test_tests_use_imps_for_helpers() {
 }
 
 # --- Check: Scripts using declared globals must have set -u enabled ---
-# The wizardry-globals imp defines allowed global environment variables.
+# The declare-globals imp defines allowed global environment variables.
 # Any script using these globals must have set -u enabled to ensure
 # undefined variable access fails loudly.
 # This is a behavioral check - enforces global variable policy
@@ -509,17 +509,17 @@ script_uses_declared_global() {
 }
 
 test_scripts_using_globals_have_set_u() {
-  # List of globals declared in wizardry-globals
+  # List of globals declared in declare-globals
   declared_globals="WIZARDRY_DIR SPELLBOOK_DIR MUD_DIR"
   violations=""
   
   check_global_usage() {
     spell=$1
-    # Skip wizardry-globals itself
+    # Skip declare-globals itself
     # Skip invoke-wizardry - it's sourced into user shell and can't set strict mode
     # Skip word-of-binding - it uses safe patterns (checks ${VAR-} before raw use)
     case "$spell" in
-      */.imps/wizardry-globals|*/.imps/sys/invoke-wizardry|*/.imps/sys/word-of-binding) return ;;
+      */.imps/declare-globals|*/.imps/sys/invoke-wizardry|*/.imps/sys/word-of-binding) return ;;
     esac
     
     # Check if script uses any declared global (not in heredocs or comments)
@@ -548,20 +548,20 @@ test_scripts_using_globals_have_set_u() {
   return 0
 }
 
-# --- Check: No global declarations outside wizardry-globals ---
-# Global declarations (using : "${VAR:=...}" syntax) should ONLY be in wizardry-globals.
+# --- Check: No global declarations outside declare-globals ---
+# Global declarations (using : "${VAR:=...}" syntax) should ONLY be in declare-globals.
 # This prevents undeclared globals from sneaking in through alternate syntax.
 test_no_global_declarations_outside_declare_globals() {
   skip-if-compiled || return $?
   
   check_global_declarations() {
     spell=$1
-    # Skip wizardry-globals itself - that's where declarations belong
+    # Skip declare-globals itself - that's where declarations belong
     # Skip test-bootstrap - WIZARDRY_TMPDIR is a test-local temp directory,
     # not a persistent global exported to user scripts
     # Skip invoke-wizardry - it sets SPELLBOOK_DIR which is a declared global
     case "$spell" in
-      */.imps/wizardry-globals|*/.imps/test/test-bootstrap|*/.imps/sys/invoke-wizardry) return ;;
+      */.imps/declare-globals|*/.imps/test/test-bootstrap|*/.imps/sys/invoke-wizardry) return ;;
     esac
     
     # Look for global declaration pattern: : "${VAR:=...}" or : "${VAR:=}"
@@ -582,20 +582,20 @@ test_no_global_declarations_outside_declare_globals() {
   rm -f "$tmpfile"
   
   if [ -n "$violations" ]; then
-    TEST_FAILURE_REASON="global declarations outside wizardry-globals: $violations"
+    TEST_FAILURE_REASON="global declarations outside declare-globals: $violations"
     return 1
   fi
   return 0
 }
 
-# --- Check: wizardry-globals has exactly 4 globals ---
+# --- Check: declare-globals has exactly 4 globals ---
 # Ensures no new globals are added without explicit tracking
 test_declare_globals_count() {
   skip-if-compiled || return $?
-  declare_globals_file="$ROOT_DIR/spells/.imps/wizardry-globals"
+  declare_globals_file="$ROOT_DIR/spells/.imps/declare-globals"
   
   if [ ! -f "$declare_globals_file" ]; then
-    TEST_FAILURE_REASON="wizardry-globals file not found"
+    TEST_FAILURE_REASON="declare-globals file not found"
     return 1
   fi
   
@@ -607,14 +607,14 @@ test_declare_globals_count() {
   global_count=$(grep -cE '^[[:space:]]*: "\$\{[A-Z][A-Z0-9_]+:=' "$declare_globals_file" 2>/dev/null || printf '0')
   
   if [ "$global_count" -ne 4 ]; then
-    TEST_FAILURE_REASON="expected exactly 4 globals in wizardry-globals, found $global_count"
+    TEST_FAILURE_REASON="expected exactly 4 globals in declare-globals, found $global_count"
     return 1
   fi
   return 0
 }
 
 # --- Check: No undeclared globals exported ---
-# Catches spells trying to create/export new globals that aren't in wizardry-globals.
+# Catches spells trying to create/export new globals that aren't in declare-globals.
 # Allowed globals: WIZARDRY_DIR, SPELLBOOK_DIR, MUD_DIR
 # Also allows common patterns that aren't really globals:
 #   - PATH modifications
@@ -1508,7 +1508,7 @@ test_scripts_have_set_eu_early() {
       # Additional conditional/utility imps without set -eu
       .imps/sys/term|.imps/sys/on|.imps/sys/clipboard-available|.imps/sys/rc-has-line) return ;;
       # Sourceable configuration scripts
-      .imps/wizardry-globals|.imps/test/boot/skip-if-*|.imps/sys/invoke-thesaurus) return ;;
+      .imps/declare-globals|.imps/test/boot/skip-if-*|.imps/sys/invoke-thesaurus) return ;;
       # Bootstrap spells that have long argument parsing before set
       divination/detect-rc-file|system/test-magic|.wizardry/test-magic|spellcraft/demo-magic|translocation/blink) return ;;
     esac
@@ -1898,9 +1898,9 @@ run_test_case "warn about full paths to spells" test_warn_full_paths_to_spells
 run_test_case "test files have matching spells" test_test_files_have_matching_spells
 run_test_case "tests rely only on imps for helpers" test_tests_use_imps_for_helpers
 run_test_case "scripts using declared globals have set -u" test_scripts_using_globals_have_set_u
-run_test_case "wizardry-globals has exactly 4 globals" test_declare_globals_count
+run_test_case "declare-globals has exactly 4 globals" test_declare_globals_count
 run_test_case "no undeclared globals exported" test_no_undeclared_global_exports
-run_test_case "no global declarations outside wizardry-globals" test_no_global_declarations_outside_declare_globals
+run_test_case "no global declarations outside declare-globals" test_no_global_declarations_outside_declare_globals
 run_test_case "no pseudo-globals stored in rc files" test_no_pseudo_globals_in_rc_files
 run_test_case "imps follow one-function-or-zero rule" test_imps_follow_function_rule
 run_test_case "imps have opening comments" test_imps_have_opening_comments
