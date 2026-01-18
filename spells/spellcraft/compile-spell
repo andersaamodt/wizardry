@@ -249,7 +249,9 @@ $func_def
     
     # Wrap as function
     # Replace 'exit' with 'return' since this is now a function, not a script
-    spell_body=$(printf '%s\n' "$spell_body" | sed 's/\<exit\>/return/g')
+    # Only replace shell exit commands (exit 0, exit 1, exit $var, etc.)
+    # Don't replace bare 'exit' which might be in awk/sed scripts
+    spell_body=$(printf '%s\n' "$spell_body" | sed 's/\<exit\([[:space:]]\+[0-9$]\)/return\1/g')
     
     inlined_deps="$inlined_deps
 # Inlined spell: $dep
