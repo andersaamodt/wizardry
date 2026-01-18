@@ -146,6 +146,7 @@ file_to_folder_accepts_text_files() {
 }
 
 file_to_folder_transfers_priority_attribute() {
+  skip-if-compiled  # Stubs don't work in compiled mode
   tmpdir=$(make_tempdir)
   stub_dir="$tmpdir/stubs"
   testfile="$tmpdir/myfile.txt"

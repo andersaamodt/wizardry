@@ -34,6 +34,7 @@ Arguments:
 Options:
   --only                Only test this specific level (don't run lower levels)
   --verbose             Show per-test output
+  --skip-common         Skip common tests (used by parallel test workflows)
 
 Examples:
   test-magic            # Test all levels (0-27)
@@ -104,6 +105,7 @@ min_level_range=0
 only_this_level=0
 verbose=0
 run_all=0
+skip_common=0
 
 if [ "$#" -gt 0 ]; then
   case "$1" in
@@ -136,6 +138,10 @@ while [ "$#" -gt 0 ]; do
       verbose=1
       shift
       ;;
+    --skip-common)
+      skip_common=1
+      shift
+      ;;
     --)
       shift
       break
@@ -155,6 +161,7 @@ Arguments:
 Options:
   --only                Only test this specific level (don't run lower levels)
   --verbose             Show per-test output
+  --skip-common         Skip common tests (used by parallel test workflows)
 USAGE
       exit 2
       ;;
@@ -964,11 +971,14 @@ last_success_level=-1
 
 # Run common tests first (special level before Level 0)
 # Only run if testing Level 0 (either --only 0 or normal run starting from 0)
+# Skip if --skip-common flag is set
 # Note: We don't exit on failure - just record the results and continue
-if [ "$only_this_level" -eq 0 ] && [ "$current_level" -eq 0 ]; then
-  test_common_tests || true
-elif [ "$only_this_level" -eq 1 ] && [ "$min_level_range" -eq 0 ]; then
-  test_common_tests || true
+if [ "$skip_common" -eq 0 ]; then
+  if [ "$only_this_level" -eq 0 ] && [ "$current_level" -eq 0 ]; then
+    test_common_tests || true
+  elif [ "$only_this_level" -eq 1 ] && [ "$min_level_range" -eq 0 ]; then
+    test_common_tests || true
+  fi
 fi
 
 while [ "$current_level" -le "$target_level" ]; do
