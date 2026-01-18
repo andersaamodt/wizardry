@@ -170,10 +170,9 @@ set -eu
       case "$_pluralize_rest" in
         *[A-Z]*) printf '%s' "$_pluralize_result" ;;
         *)
-          # Extract first character and tail using pure POSIX parameter expansion
-          # More portable and reliable than external tools (awk/sed/cut/dd)
-          _pluralize_tail=${_pluralize_result#?}
-          _pluralize_first=${_pluralize_result%"$_pluralize_tail"}
+          # Capitalize first letter using dd (most portable across BSD/GNU)
+          _pluralize_first=$(printf '%s' "$_pluralize_result" | dd bs=1 count=1 2>/dev/null)
+          _pluralize_tail=$(printf '%s' "$_pluralize_result" | dd bs=1 skip=1 2>/dev/null)
           printf '%s%s' "$(printf '%s' "$_pluralize_first" | tr 'a-z' 'A-Z')" "$_pluralize_tail"
           ;;
       esac
