@@ -22,7 +22,7 @@ STUB
   printf 'content' >"$tmpdir/a.txt"
   printf 'other' >"$tmpdir/b.txt"
 
-  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" run_spell_in_dir "$tmpdir" "spells/divination/divine-magic"
+  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
   assert_success || return 1
   assert_output_contains "File" || return 1
   assert_output_contains "a.txt" || return 1
@@ -33,15 +33,15 @@ STUB
 
 detect_magic_handles_empty_rooms() {
   tmpdir=$(make_tempdir)
-  NO_COLOR=1 run_spell_in_dir "$tmpdir" "spells/divination/divine-magic"
+  NO_COLOR=1 run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
   assert_success || return 1
   assert_output_contains "No enchantments reveal themselves today." || return 1
 }
 
 detect_magic_shows_usage() {
-  run_spell "spells/divination/divine-magic" --help
+  run_spell "spells/divination/detect-magic" --help
   assert_success || return 1
-  assert_output_contains "Usage: divine-magic" || return 1
+  assert_output_contains "Usage: detect-magic" || return 1
 }
 
 detect_magic_supports_plain_sh_and_skips_dirs() {
@@ -58,7 +58,7 @@ STUB
   chmod +x "$stub"
 
   printf 'note' >"$tmpdir/aura.txt"
-  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" RUN_CMD_WORKDIR="$tmpdir" run_cmd sh "$ROOT_DIR/spells/divination/divine-magic"
+  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" RUN_CMD_WORKDIR="$tmpdir" run_cmd sh "$ROOT_DIR/spells/divination/detect-magic"
   assert_success || return 1
   case "$OUTPUT" in
     *keep_out*) TEST_FAILURE_REASON="directory appeared in output"; return 1 ;;
@@ -82,7 +82,7 @@ STUB
   chmod +x "$stub"
   : >"$tmpdir/glimmer.txt"
 
-  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" run_spell_in_dir "$tmpdir" "spells/divination/divine-magic"
+  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
   assert_success || return 1
   assert_output_contains "faint glimmer" || return 1
 }
@@ -106,7 +106,7 @@ STUB
   chmod +x "$stub"
   : >"$tmpdir/torrent.txt"
 
-  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" run_spell_in_dir "$tmpdir" "spells/divination/divine-magic"
+  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
   assert_success || return 1
   assert_output_contains "off the charts" || return 1
 }
@@ -121,7 +121,7 @@ STUB
   chmod +x "$stub"
   : >"$tmpdir/soft.txt"
 
-  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" run_spell_in_dir "$tmpdir" "spells/divination/divine-magic"
+  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
   assert_success || return 1
   case "$OUTPUT" in
     *"\033"*) TEST_FAILURE_REASON="colour codes present despite NO_COLOR"; return 1 ;;
@@ -132,10 +132,10 @@ STUB
 detect_magic_reports_missing_helper() {
   skip-if-compiled || return $?
   tmpdir=$(make_tempdir)
-  cp "$ROOT_DIR/spells/divination/divine-magic" "$tmpdir/divine-magic"
-  chmod +x "$tmpdir/divine-magic"
+  cp "$ROOT_DIR/spells/divination/detect-magic" "$tmpdir/detect-magic"
+  chmod +x "$tmpdir/detect-magic"
 
-  run_cmd env PATH="$WIZARDRY_IMPS_PATH:/bin:/usr/bin" "$tmpdir/divine-magic"
+  run_cmd env PATH="$WIZARDRY_IMPS_PATH:/bin:/usr/bin" "$tmpdir/detect-magic"
   assert_failure || return 1
   case "$OUTPUT" in
     "") : ;;
@@ -158,7 +158,7 @@ STUB
   : >"$tmpdir/shy.txt"
   : >"$tmpdir/eager.txt"
 
-  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" run_spell_in_dir "$tmpdir" "spells/divination/divine-magic"
+  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
   assert_success || return 1
   case "$OUTPUT" in
     *shy.txt*) TEST_FAILURE_REASON="unreadable file was listed"; return 1 ;;
@@ -186,7 +186,7 @@ STUB
   : >"$tmpdir/troubled.txt"
   : >"$tmpdir/steady.txt"
 
-  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" run_spell_in_dir "$tmpdir" "spells/divination/divine-magic"
+  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
   assert_success || return 1
   assert_output_contains "steady.txt" || return 1
   case "$OUTPUT" in
@@ -210,7 +210,7 @@ STUB
   : >"$tmpdir/warped.txt"
   : >"$tmpdir/good.txt"
 
-  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" run_spell_in_dir "$tmpdir" "spells/divination/divine-magic"
+  NO_COLOR=1 DETECT_MAGIC_READ_MAGIC="$stub" run_spell_in_dir "$tmpdir" "spells/divination/detect-magic"
   assert_success || return 1
   assert_output_contains "good.txt" || return 1
   case "$OUTPUT" in
@@ -219,17 +219,17 @@ STUB
   assert_error_contains "ignoring malformed output from warped.txt" || return 1
 }
 
-run_test_case "divine-magic lists files with attributes" detect_magic_reports_found_files
-run_test_case "divine-magic reports when nothing is enchanted" detect_magic_handles_empty_rooms
-run_test_case "divine-magic shows usage" detect_magic_shows_usage
-run_test_case "divine-magic stays POSIX and skips directories" detect_magic_supports_plain_sh_and_skips_dirs
-run_test_case "divine-magic describes faint auras" detect_magic_handles_faint_auras
-run_test_case "divine-magic narrates dense rooms" detect_magic_handles_dense_rooms
-run_test_case "divine-magic disables colour on request" detect_magic_handles_colour_toggle
-run_test_case "divine-magic warns when helper missing" detect_magic_reports_missing_helper
-run_test_case "divine-magic skips unreadable files" detect_magic_skips_unreadable_enchantments
-run_test_case "divine-magic reports helper failures" detect_magic_reports_helper_errors_without_stopping
-run_test_case "divine-magic skips malformed helper output" detect_magic_skips_malformed_helper_output
+run_test_case "detect-magic lists files with attributes" detect_magic_reports_found_files
+run_test_case "detect-magic reports when nothing is enchanted" detect_magic_handles_empty_rooms
+run_test_case "detect-magic shows usage" detect_magic_shows_usage
+run_test_case "detect-magic stays POSIX and skips directories" detect_magic_supports_plain_sh_and_skips_dirs
+run_test_case "detect-magic describes faint auras" detect_magic_handles_faint_auras
+run_test_case "detect-magic narrates dense rooms" detect_magic_handles_dense_rooms
+run_test_case "detect-magic disables colour on request" detect_magic_handles_colour_toggle
+run_test_case "detect-magic warns when helper missing" detect_magic_reports_missing_helper
+run_test_case "detect-magic skips unreadable files" detect_magic_skips_unreadable_enchantments
+run_test_case "detect-magic reports helper failures" detect_magic_reports_helper_errors_without_stopping
+run_test_case "detect-magic skips malformed helper output" detect_magic_skips_malformed_helper_output
 
 
 # Test via source-then-invoke pattern  
