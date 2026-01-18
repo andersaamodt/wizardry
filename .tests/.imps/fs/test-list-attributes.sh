@@ -1,5 +1,5 @@
 #!/bin/sh
-# Tests for attribute-list imp
+# Tests for list-attributes imp
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -8,7 +8,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_attr_list_exists() {
-  run_cmd sh -c 'command -v attribute-list'
+  run_cmd sh -c 'command -v list-attributes'
   assert_success || return 1
 }
 
@@ -34,8 +34,8 @@ STUB
 STUB
   chmod +x "$tmpdir/bin/attribute-tool-check"
   
-  # Run attribute-list with mocked PATH
-  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && attribute-list "'"$testfile"'"'
+  # Run list-attributes with mocked PATH
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && list-attributes "'"$testfile"'"'
   assert_success || return 1
   assert_output_contains "user.key1" || return 1
   assert_output_contains "user.key2" || return 1
@@ -66,7 +66,7 @@ STUB
 STUB
   chmod +x "$tmpdir/bin/attribute-tool-check"
   
-  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && attribute-list "'"$testfile"'"'
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && list-attributes "'"$testfile"'"'
   assert_success || return 1
   assert_output_contains "user.name" || return 1
   assert_output_contains "user.email" || return 1
@@ -95,15 +95,15 @@ STUB
 STUB
   chmod +x "$tmpdir/bin/attribute-tool-check"
   
-  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && attribute-list "'"$testfile"'"'
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && list-attributes "'"$testfile"'"'
   assert_failure || return 1
   
   rm -rf "$tmpdir"
 }
 
-run_test_case "attribute-list exists" test_attr_list_exists
-run_test_case "attribute-list with mock xattr" test_attr_list_with_mock_xattr
-run_test_case "attribute-list fallback to attr" test_attr_list_fallback_to_attr
-run_test_case "attribute-list returns error when no attrs" test_attr_list_returns_error_when_no_attrs
+run_test_case "list-attributes exists" test_attr_list_exists
+run_test_case "list-attributes with mock xattr" test_attr_list_with_mock_xattr
+run_test_case "list-attributes fallback to attr" test_attr_list_fallback_to_attr
+run_test_case "list-attributes returns error when no attrs" test_attr_list_returns_error_when_no_attrs
 
 finish_tests

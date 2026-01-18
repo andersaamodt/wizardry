@@ -1,5 +1,5 @@
 #!/bin/sh
-# Test coverage for attribute-get-batch imp
+# Test coverage for get-attribute-batch imp
 
 set -eu
 
@@ -31,14 +31,14 @@ fi
 STUB
   chmod +x "$tmpdir/bin/xattr"
   
-  cat > "$tmpdir/bin/attribute-tool-check" <<'STUB'
+  cat > "$tmpdir/bin/check-attribute-tool" <<'STUB'
 #!/bin/sh
 [ "$1" = "xattr" ]
 STUB
-  chmod +x "$tmpdir/bin/attribute-tool-check"
+  chmod +x "$tmpdir/bin/check-attribute-tool"
   
   # Read all three at once
-  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && attribute-get-batch "'"$testfile"'" echelon priority checked'
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && get-attribute-batch "'"$testfile"'" echelon priority checked'
   assert_success || return 1
   assert_output_contains "echelon=5" || return 1
   assert_output_contains "priority=3" || return 1
@@ -64,14 +64,14 @@ fi
 STUB
   chmod +x "$tmpdir/bin/xattr"
   
-  cat > "$tmpdir/bin/attribute-tool-check" <<'STUB'
+  cat > "$tmpdir/bin/check-attribute-tool" <<'STUB'
 #!/bin/sh
 [ "$1" = "xattr" ]
 STUB
-  chmod +x "$tmpdir/bin/attribute-tool-check"
+  chmod +x "$tmpdir/bin/check-attribute-tool"
   
   # Try to read three (only one exists)
-  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && attribute-get-batch "'"$testfile"'" echelon priority checked'
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && get-attribute-batch "'"$testfile"'" echelon priority checked'
   assert_success || return 1
   assert_output_contains "echelon=2" || return 1
   # Should not contain missing attributes
@@ -94,14 +94,14 @@ exit 1
 STUB
   chmod +x "$tmpdir/bin/xattr"
   
-  cat > "$tmpdir/bin/attribute-tool-check" <<'STUB'
+  cat > "$tmpdir/bin/check-attribute-tool" <<'STUB'
 #!/bin/sh
 [ "$1" = "xattr" ]
 STUB
-  chmod +x "$tmpdir/bin/attribute-tool-check"
+  chmod +x "$tmpdir/bin/check-attribute-tool"
   
   # Try to read attributes that don't exist
-  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && attribute-get-batch "'"$testfile"'" echelon priority checked'
+  run_cmd sh -c 'export PATH="'"$tmpdir"'/bin:$PATH" && get-attribute-batch "'"$testfile"'" echelon priority checked'
   assert_failure || return 1
 }
 

@@ -1,5 +1,5 @@
 #!/bin/sh
-# attribute-get KEY FILE - read the value of a specific extended attribute
+# get-attribute KEY FILE - read the value of a specific extended attribute
 # Tries xattr, attr, and getfattr in order
 # Returns 0 and outputs value if found, 1 if not found or all helpers failed
 set -eu
@@ -9,7 +9,7 @@ key=$1
 file=$2
 
 # Try xattr first (macOS)
-if attribute-tool-check xattr; then
+if check-attribute-tool xattr; then
   if output=$(xattr -p "$key" "$file" 2>/dev/null); then
     printf '%s' "$output"
   exit 0
@@ -17,7 +17,7 @@ if attribute-tool-check xattr; then
 fi
 
 # Try attr (Linux)
-if attribute-tool-check attr; then
+if check-attribute-tool attr; then
   if output=$(attr -g "$key" "$file" 2>/dev/null); then
     # Strip the header line from attr output
     printf '%s' "$output" | sed '1d'
@@ -26,7 +26,7 @@ if attribute-tool-check attr; then
 fi
 
 # Try getfattr (Linux)
-if attribute-tool-check getfattr; then
+if check-attribute-tool getfattr; then
   if output=$(getfattr -n "$key" --only-values "$file" 2>/dev/null); then
     printf '%s' "$output"
   exit 0
