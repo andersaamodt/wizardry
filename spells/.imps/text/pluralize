@@ -171,8 +171,14 @@ set -eu
         *[A-Z]*) printf '%s' "$_pluralize_result" ;;
         *)
           # Capitalize first letter using awk (portable across all systems)
-          _pluralize_first=$(printf '%s' "$_pluralize_result" | awk '{print substr($0,1,1)}')
-          _pluralize_tail=$(printf '%s' "$_pluralize_result" | awk '{print substr($0,2)}')
+          # Use single awk call to extract both first character and tail
+          _pluralize_caps=$(printf '%s' "$_pluralize_result" | awk '{
+            first = substr($0,1,1)
+            tail = substr($0,2)
+            print first "|" tail
+          }')
+          _pluralize_first=${_pluralize_caps%%|*}
+          _pluralize_tail=${_pluralize_caps#*|}
           printf '%s%s' "$(printf '%s' "$_pluralize_first" | tr 'a-z' 'A-Z')" "$_pluralize_tail"
           ;;
       esac
