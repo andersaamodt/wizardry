@@ -121,6 +121,10 @@ for dep in $dependencies; do
   [ "$dep" = "require-wizardry" ] && continue
   [ "$dep" = "invoke-wizardry" ] && continue
   
+  # Skip spell-levels - it's called as an external script by banish, not as a function
+  # Inlining it would break the script path check in banish
+  [ "$dep" = "spell-levels" ] && continue
+  
   # Skip common English words that are rarely used as commands
   # These cause issues when replaced in strings
   # Note: Only add words here that are causing real problems, as this may
