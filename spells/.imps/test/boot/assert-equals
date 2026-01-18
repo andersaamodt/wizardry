@@ -1,0 +1,16 @@
+#!/bin/sh
+# assert-equals ACTUAL EXPECTED - verify actual value equals expected value
+# Sets TEST_FAILURE_REASON on mismatch.
+set -eu
+
+actual=$1
+expected=$2
+
+if [ "$actual" = "$expected" ]; then
+  exit 0
+else
+  TEST_FAILURE_REASON="expected '$expected' but got '$actual'"
+  export TEST_FAILURE_REASON
+  printf '%s' "$TEST_FAILURE_REASON" > "${WIZARDRY_TMPDIR}/_test_failure_reason" 2>/dev/null || true
+  exit 1
+fi
