@@ -202,7 +202,7 @@ rest=$(printf '%s' "$string" | awk '{print substr($0,2)}')
 first_char=${string%"${string#?}"}     # Extract first character
 rest=${string#?}                        # Everything after first char
 
-# Alternative: sed (portable but less reliable than awk on macOS)
+# Alternative: sed (portable but slower and less consistent than awk with multi-byte chars)
 first_char=$(printf '%s' "$string" | sed 's/^\(.\).*/\1/')
 rest=$(printf '%s' "$string" | sed 's/^.//')
 
