@@ -121,6 +121,10 @@ for dep in $dependencies; do
   [ "$dep" = "require-wizardry" ] && continue
   [ "$dep" = "invoke-wizardry" ] && continue
   
+  # Skip spell-levels - banish executes it as external script via $WIZARDRY_DIR path
+  # Inlining as _spell_levels() function breaks banish's file existence check
+  [ "$dep" = "spell-levels" ] && continue
+  
   # Skip common English words that are rarely used as commands
   # These cause issues when replaced in strings
   # Note: Only add words here that are causing real problems, as this may
@@ -217,13 +221,20 @@ $func_def
         /^[[:space:]]*\. "/ { print; next }
         /\).*;;/ { print; next }
         /\$\(\(.*\<'"$already_inlined"'\>.*\)\)/ { print; next }
+        # For trap statements: Allow replacement (they contain executable code in quoted strings)
+        # Check this BEFORE the general string literal checks to avoid false matches
+        /^[[:space:]]*trap[[:space:]]/ { gsub("\\<" old "\\>", new); print; next }
         /"[^"$]*\<'"$already_inlined"'\>[^"$]*"/ { print; next }
+        # Skip single-quoted strings containing the dependency (no $ means pure literals, not code)
         /'\''[^'\''$]*\<'"$already_inlined"'\>[^'\''$]*'\''/ { print; next }
         { gsub("\\<" old "\\>", new); print }
       ')
     done
     
     # Wrap as function
+    # Replace 'exit' with 'return' since this is now a function, not a script
+    spell_body=$(printf '%s\n' "$spell_body" | sed 's/\<exit\>/return/g')
+    
     inlined_deps="$inlined_deps
 # Inlined spell: $dep
 $func_name() {
@@ -310,9 +321,13 @@ for dep in $inlined_names; do
     /\).*;;/ { print; next }
     # Skip arithmetic expansion where variables can be used without $
     /\$\(\(.*\<'"$dep"'\>.*\)\)/ { print; next }
+    # For trap statements: Allow replacement (they contain executable code in quoted strings)
+    # Check this BEFORE the general string literal checks to avoid false matches
+    /^[[:space:]]*trap[[:space:]]/ { gsub("\\<" old "\\>", new); print; next }
     # Only skip lines where the dependency appears in string literals (between quotes, not in command substitution)
     # Pattern: "...dep..." but NOT "$(dep...)" or "...$(dep...)..."
     /"[^"$]*\<'"$dep"'\>[^"$]*"/ { print; next }
+    # Skip single-quoted strings containing the dependency (no $ means pure literals, not code)
     /'\''[^'\''$]*\<'"$dep"'\>[^'\''$]*'\''/ { print; next }
     { gsub("\\<" old "\\>", new); print }
   ')

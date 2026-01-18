@@ -86,15 +86,19 @@ jobs:
             sed '/Process \(exited\|completed\)/q' "$logfile" > "$cleaned_log"
             
             # Extract from "Summary" heading line to the end of file
-            if grep -q "^Summary$" "$cleaned_log"; then
-              sed -n '/^Summary$/,$p' "$cleaned_log" | head -500
+            # Note: GitHub Actions adds timestamps to each line, so patterns need to account for that
+            if grep -q "^Summary$" "$cleaned_log" || grep -q "Z Summary$" "$cleaned_log"; then
+              sed -n '/Summary$/,$p' "$cleaned_log" | head -500
             elif grep -q "=== Lint Results ===" "$cleaned_log"; then
               # Lint-magic format: extract from "=== Lint Results ===" to end
               # Limit to 500 lines to prevent PR description overflow
               sed -n '/=== Lint Results ===/,$p' "$cleaned_log" | head -500
             elif grep -q "=== Test Summary ===" "$cleaned_log"; then
-              # Fallback to old format
-              sed -n '/=== Test Summary ===/,/^===/p' "$cleaned_log" | head -n -1 | head -500
+              # Extract from "=== Test Summary ===" through the end, stopping before "Process" line
+              # This captures the summary, all failure details, and the final failed tests list
+              # GitHub Actions prefixes each line with timestamps like "2026-01-18T19:26:35.8260687Z "
+              # So we need to match the pattern anywhere in the line, not just at start
+              awk '/=== Test Summary ===/,0' "$cleaned_log"
             else
               # If no test summary, show more of the tail (tests are likely incomplete/running)
               # Show last 200 lines to capture the complete test tail
