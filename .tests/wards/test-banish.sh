@@ -20,7 +20,8 @@ copy_wizardry() {
   if [ -d "$dest_dir" ]; then
     rm -rf "$dest_dir" || return 1
   fi
-  cp -R "$ROOT_DIR" "$dest_dir" || return 1
+  mkdir -p "$dest_dir" || return 1
+  cp -R "$ROOT_DIR/." "$dest_dir/" || return 1
   
   # Verify the copy worked by checking for a key file
   if [ -f "$dest_dir/spells/.imps/sys/invoke-wizardry" ]; then
