@@ -105,7 +105,7 @@ spell_content=$(cat "$spell_path")
 dependencies=$(printf '%s\n' "$spell_content" | \
   grep -v "^#" | \
   grep -v "^[[:space:]]*#" | \
-  grep -oE '\b(say|warn|die|fail|is|has|there|empty|full|given|lacks|memorize|env-or|enchant|disenchant|hashchant|attribute-tool-check|[a-z][a-z0-9]*(-[a-z0-9]+)+)\b' | \
+  grep -oE '\b(say|warn|die|fail|is|has|there|empty|full|given|lacks|memorize|env-or|enchant|disenchant|hashchant|require|attribute-tool-check|[a-z][a-z0-9]*(-[a-z0-9]+)+)\b' | \
   sort -u || true)
 
 # Also scan commonly-used imps that might be called by inlined dependencies
@@ -310,6 +310,9 @@ transformed=$(printf '%s\n' "$spell_content" | \
     /^[[:space:]]*env-clear([[:space:]]|$)/ { next }
     /^[[:space:]]*\. .*invoke-wizardry/ { next }
     /^[[:space:]]*source .*invoke-wizardry/ { next }
+    # Remove color palette loading (colors don'"'"'t work the same in compiled spells)
+    /^[[:space:]]*\. "\$\(command -v colors\)"/ { next }
+    /^[[:space:]]*source "\$\(command -v colors\)"/ { next }
     # Skip loading pattern sections but remember what to call
     /^# Load (castable|autocast|uncastable) imp/ { 
       skip=1
