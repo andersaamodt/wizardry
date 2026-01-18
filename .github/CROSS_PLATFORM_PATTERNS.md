@@ -194,15 +194,21 @@ fi
 ## String Manipulation
 
 ```sh
-# Character extraction - awk substr() (RECOMMENDED - most portable)
+# Character extraction - POSIX parameter expansion (RECOMMENDED - no subprocesses)
+first_char=${string%"${string#?}"}     # Extract first character  
+rest=${string#?}                        # Everything after first char
+
+# Case-preserving capitalization (recommended pattern for case conversion)
+upper=$(printf '%s' "$string" | tr 'a-z' 'A-Z')
+first_upper=${upper%"${upper#?}"}      # Extract first char from uppercase
+tail=${string#?}                        # Extract tail from original
+capitalized="${first_upper}${tail}"     # Combine: First uppercase + rest original case
+
+# Alternative: awk substr() (works but spawns subprocess, may have issues with multi-line awk on macOS sh)
 first_char=$(printf '%s' "$string" | awk '{print substr($0,1,1)}')
 rest=$(printf '%s' "$string" | awk '{print substr($0,2)}')
 
-# Alternative: POSIX parameter expansion (works on most shells but may fail on some BSD variants)
-first_char=${string%"${string#?}"}     # Extract first character
-rest=${string#?}                        # Everything after first char
-
-# Alternative: sed (portable but slower and less consistent than awk with multi-byte chars)
+# Alternative: sed (portable but slower, may have multi-byte char issues)
 first_char=$(printf '%s' "$string" | sed 's/^\(.\).*/\1/')
 rest=$(printf '%s' "$string" | sed 's/^.//')
 
@@ -239,8 +245,9 @@ fi
 | Empty PATH | macOS CI | Set baseline first |
 | SIGPIPE varies | bash/dash | bash may exit, dash ignores |
 | `wc -l` output | BSD/macOS | Includes leading spaces, use `tr -d ' '` or case |
-| `cut -c` behavior | macOS | Use `awk substr()` for char extraction |
-| `dd` buffering | macOS/BSD | Use `awk substr()` for character extraction (most reliable) |
+| `cut -c` behavior | macOS | Use POSIX parameter expansion `${var%"${var#?}"}` |
+| `dd` buffering | macOS/BSD | Use POSIX parameter expansion instead |
+| Multi-line awk in `$()` | macOS sh | Use single-line awk or avoid awk in command substitution |
 | Case in `$()` | macOS bash 3.2 | Move case statement to function outside `$()` |
 
 **Testing:** Test on Linux + macOS, with bash + dash, check `checkbashisms`.
