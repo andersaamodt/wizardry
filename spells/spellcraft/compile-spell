@@ -221,6 +221,7 @@ $func_def
         # Check this BEFORE the general string literal checks to avoid false matches
         /^[[:space:]]*trap[[:space:]]/ { gsub("\\<" old "\\>", new); print; next }
         /"[^"$]*\<'"$already_inlined"'\>[^"$]*"/ { print; next }
+        # Skip single-quoted strings without dollar signs (they are data/literals, not code)
         /'\''[^'\''$]*\<'"$already_inlined"'\>[^'\''$]*'\''/ { print; next }
         { gsub("\\<" old "\\>", new); print }
       ')
@@ -228,9 +229,7 @@ $func_def
     
     # Wrap as function
     # Replace 'exit' with 'return' since this is now a function, not a script
-    # Use word boundaries to avoid replacing 'exit' in comments/strings
-    spell_body=$(printf '%s\n' "$spell_body" | \
-      sed 's/\([^a-zA-Z_]\)exit\([^a-zA-Z_]\)/\1return\2/g; s/^exit\([^a-zA-Z_]\)/return\1/; s/\([^a-zA-Z_]\)exit$/\1return/')
+    spell_body=$(printf '%s\n' "$spell_body" | sed 's/\<exit\>/return/g')
     
     inlined_deps="$inlined_deps
 # Inlined spell: $dep
@@ -324,7 +323,7 @@ for dep in $inlined_names; do
     # Only skip lines where the dependency appears in string literals (between quotes, not in command substitution)
     # Pattern: "...dep..." but NOT "$(dep...)" or "...$(dep...)..."
     /"[^"$]*\<'"$dep"'\>[^"$]*"/ { print; next }
-    # For single quotes: skip single-quoted strings (they are data/literals, not code)
+    # Skip single-quoted strings without dollar signs (they are data/literals, not code)
     /'\''[^'\''$]*\<'"$dep"'\>[^'\''$]*'\''/ { print; next }
     { gsub("\\<" old "\\>", new); print }
   ')
