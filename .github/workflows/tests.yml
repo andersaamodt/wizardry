@@ -28,21 +28,27 @@ jobs:
           - job_name: "1/6"
             levels: "0-0"
             max_level: 0
+            test_flags: ""
           - job_name: "2/6"
             levels: "1-2"
             max_level: 2
+            test_flags: "--skip-common"
           - job_name: "3/6"
             levels: "3-8"
             max_level: 8
+            test_flags: "--skip-common"
           - job_name: "4/6"
             levels: "9-15"
             max_level: 15
+            test_flags: "--skip-common"
           - job_name: "5/6"
             levels: "16-24"
             max_level: 24
+            test_flags: "--skip-common"
           - job_name: "6/6"
             levels: "25-27"
             max_level: 27
+            test_flags: "--skip-common"
     env:
       WIZARDRY_OS_LABEL: nixos
     steps:
@@ -72,7 +78,7 @@ jobs:
             set -e
             . spells/.imps/sys/invoke-wizardry
             banish ${{ matrix.max_level }}
-            ./spells/.wizardry/test-magic ${{ matrix.levels }} --verbose
+            ./spells/.wizardry/test-magic ${{ matrix.levels }} ${{ matrix.test_flags }} --verbose
           "
 
   aab-macos:
@@ -85,21 +91,27 @@ jobs:
           - job_name: "1/6"
             levels: "0-0"
             max_level: 0
+            test_flags: ""
           - job_name: "2/6"
             levels: "1-2"
             max_level: 2
+            test_flags: "--skip-common"
           - job_name: "3/6"
             levels: "3-8"
             max_level: 8
+            test_flags: "--skip-common"
           - job_name: "4/6"
             levels: "9-15"
             max_level: 15
+            test_flags: "--skip-common"
           - job_name: "5/6"
             levels: "16-24"
             max_level: 24
+            test_flags: "--skip-common"
           - job_name: "6/6"
             levels: "25-27"
             max_level: 27
+            test_flags: "--skip-common"
     env:
       WIZARDRY_OS_LABEL: mac
     steps:
@@ -112,7 +124,7 @@ jobs:
           set -e
           . spells/.imps/sys/invoke-wizardry
           banish ${{ matrix.max_level }}
-          ./spells/.wizardry/test-magic ${{ matrix.levels }} --verbose
+          ./spells/.wizardry/test-magic ${{ matrix.levels }} ${{ matrix.test_flags }} --verbose
 
   arch:
     name: Arch ${{ matrix.job_name }} unit tests
@@ -125,21 +137,27 @@ jobs:
           - job_name: "1/6"
             levels: "0-0"
             max_level: 0
+            test_flags: ""
           - job_name: "2/6"
             levels: "1-2"
             max_level: 2
+            test_flags: "--skip-common"
           - job_name: "3/6"
             levels: "3-8"
             max_level: 8
+            test_flags: "--skip-common"
           - job_name: "4/6"
             levels: "9-15"
             max_level: 15
+            test_flags: "--skip-common"
           - job_name: "5/6"
             levels: "16-24"
             max_level: 24
+            test_flags: "--skip-common"
           - job_name: "6/6"
             levels: "25-27"
             max_level: 27
+            test_flags: "--skip-common"
     env:
       WIZARDRY_OS_LABEL: arch
     steps:
@@ -154,7 +172,7 @@ jobs:
           set -e
           . spells/.imps/sys/invoke-wizardry
           banish ${{ matrix.max_level }}
-          ./spells/.wizardry/test-magic ${{ matrix.levels }} --verbose
+          ./spells/.wizardry/test-magic ${{ matrix.levels }} ${{ matrix.test_flags }} --verbose
 
   debian:
     name: Debian ${{ matrix.job_name }} unit tests
@@ -167,21 +185,27 @@ jobs:
           - job_name: "1/6"
             levels: "0-0"
             max_level: 0
+            test_flags: ""
           - job_name: "2/6"
             levels: "1-2"
             max_level: 2
+            test_flags: "--skip-common"
           - job_name: "3/6"
             levels: "3-8"
             max_level: 8
+            test_flags: "--skip-common"
           - job_name: "4/6"
             levels: "9-15"
             max_level: 15
+            test_flags: "--skip-common"
           - job_name: "5/6"
             levels: "16-24"
             max_level: 24
+            test_flags: "--skip-common"
           - job_name: "6/6"
             levels: "25-27"
             max_level: 27
+            test_flags: "--skip-common"
     env:
       WIZARDRY_OS_LABEL: debian
       DEBIAN_FRONTEND: noninteractive
@@ -197,7 +221,7 @@ jobs:
           set -e
           . spells/.imps/sys/invoke-wizardry
           banish ${{ matrix.max_level }}
-          ./spells/.wizardry/test-magic ${{ matrix.levels }} --verbose
+          ./spells/.wizardry/test-magic ${{ matrix.levels }} ${{ matrix.test_flags }} --verbose
 
   ubuntu:
     name: Ubuntu ${{ matrix.job_name }} unit tests
@@ -209,21 +233,27 @@ jobs:
           - job_name: "1/6"
             levels: "0-0"
             max_level: 0
+            test_flags: ""
           - job_name: "2/6"
             levels: "1-2"
             max_level: 2
+            test_flags: "--skip-common"
           - job_name: "3/6"
             levels: "3-8"
             max_level: 8
+            test_flags: "--skip-common"
           - job_name: "4/6"
             levels: "9-15"
             max_level: 15
+            test_flags: "--skip-common"
           - job_name: "5/6"
             levels: "16-24"
             max_level: 24
+            test_flags: "--skip-common"
           - job_name: "6/6"
             levels: "25-27"
             max_level: 27
+            test_flags: "--skip-common"
     env:
       WIZARDRY_OS_LABEL: ubuntu
     steps:
@@ -258,4 +288,4 @@ jobs:
           set -e
           . spells/.imps/sys/invoke-wizardry
           banish ${{ matrix.max_level }}
-          ./spells/.wizardry/test-magic ${{ matrix.levels }} --verbose
+          ./spells/.wizardry/test-magic ${{ matrix.levels }} ${{ matrix.test_flags }} --verbose
