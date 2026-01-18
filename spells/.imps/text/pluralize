@@ -177,17 +177,19 @@ set -eu
         printf '[DEBUG] Matched mixed case pattern\n' >&2
         printf '[DEBUG] Rest of word: [%s]\n' "$_pluralize_rest" >&2
       fi
-      case "$_pluralize_rest" in
-        *[A-Z]*) 
-          if [ "${PLURALIZE_DEBUG:-0}" = "1" ]; then
-            printf '[DEBUG] Rest has uppercase - output lowercase result\n' >&2
-          fi
-          printf '%s' "$_pluralize_result" 
-          ;;
-        *)
-          if [ "${PLURALIZE_DEBUG:-0}" = "1" ]; then
-            printf '[DEBUG] Rest is lowercase - capitalizing first letter\n' >&2
-          fi
+      
+      # Check if rest contains uppercase by comparing with lowercase version
+      # More reliable than [A-Z] pattern (locale-dependent on macOS)
+      _pluralize_rest_lower=$(printf '%s' "$_pluralize_rest" | tr 'A-Z' 'a-z')
+      if [ "$_pluralize_rest" != "$_pluralize_rest_lower" ]; then
+        if [ "${PLURALIZE_DEBUG:-0}" = "1" ]; then
+          printf '[DEBUG] Rest has uppercase (verified) - output lowercase\n' >&2
+        fi
+        printf '%s' "$_pluralize_result" 
+      else
+        if [ "${PLURALIZE_DEBUG:-0}" = "1" ]; then
+          printf '[DEBUG] Rest is lowercase - capitalizing first letter\n' >&2
+        fi
           
           # Method 1: Pure POSIX parameter expansion
           _pluralize_upper=$(printf '%s' "$_pluralize_result" | tr 'a-z' 'A-Z')
@@ -199,13 +201,18 @@ set -eu
             printf '[DEBUG]   Upper: [%s]\n' "$_pluralize_upper" >&2
             printf '[DEBUG]   First: [%s]\n' "$_pluralize_first" >&2
             printf '[DEBUG]   Tail: [%s]\n' "$_pluralize_tail" >&2
-            printf '[DEBUG]   Result: [%s%s]\n' "$_pluralize_first" "$_pluralize_tail" >&2
+            printf '[DEBUG]   Result: [%s%s]\n' \
+              "$_pluralize_first" "$_pluralize_tail" >&2
             
             # Try alternative methods for comparison
-            _test_awk=$(printf '%s' "$_pluralize_result" | awk '{print substr($0,1,1)}' 2>/dev/null || printf 'FAILED')
-            _test_sed=$(printf '%s' "$_pluralize_result" | sed 's/^\(.\).*/\1/' 2>/dev/null || printf 'FAILED')
-            _test_dd=$(printf '%s' "$_pluralize_result" | dd bs=1 count=1 2>/dev/null || printf 'FAILED')
-            _test_cut=$(printf '%s' "$_pluralize_result" | cut -c1 2>/dev/null || printf 'FAILED')
+            _test_awk=$(printf '%s' "$_pluralize_result" | \
+              awk '{print substr($0,1,1)}' 2>/dev/null || printf 'FAILED')
+            _test_sed=$(printf '%s' "$_pluralize_result" | \
+              sed 's/^\(.\).*/\1/' 2>/dev/null || printf 'FAILED')
+            _test_dd=$(printf '%s' "$_pluralize_result" | \
+              dd bs=1 count=1 2>/dev/null || printf 'FAILED')
+            _test_cut=$(printf '%s' "$_pluralize_result" | \
+              cut -c1 2>/dev/null || printf 'FAILED')
             
             printf '[DEBUG] Method 2 (awk): first=[%s]\n' "$_test_awk" >&2
             printf '[DEBUG] Method 3 (sed): first=[%s]\n' "$_test_sed" >&2
@@ -214,8 +221,7 @@ set -eu
           fi
           
           printf '%s%s' "$_pluralize_first" "$_pluralize_tail"
-          ;;
-      esac
+        fi
       ;;
     *[A-Z]*)
       if [ "${PLURALIZE_DEBUG:-0}" = "1" ]; then
