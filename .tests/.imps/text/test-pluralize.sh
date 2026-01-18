@@ -40,7 +40,10 @@ test_pluralize_with_custom_plural() {
 
 test_pluralize_preserves_capitalization() {
   skip-if-compiled || return $?
+  # Enable debug mode for this test on macOS to see what's happening
+  export PLURALIZE_DEBUG=1
   run_spell spells/.imps/text/pluralize Wizard 2
+  unset PLURALIZE_DEBUG
   assert_success
   assert_output_contains "Wizards"
 }
