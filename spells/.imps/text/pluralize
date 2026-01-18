@@ -164,23 +164,79 @@ set -eu
       ;;
   esac
 
-  case "$_pluralize_word" in
-    *[A-Z]*[a-z]*)
-      _pluralize_rest=${_pluralize_word#?}
-      case "$_pluralize_rest" in
-        *[A-Z]*) printf '%s' "$_pluralize_result" ;;
-        *)
-          # Capitalize first letter using dd (most portable across BSD/GNU)
-          _pluralize_first=$(printf '%s' "$_pluralize_result" | dd bs=1 count=1 2>/dev/null)
-          _pluralize_tail=$(printf '%s' "$_pluralize_result" | dd bs=1 skip=1 2>/dev/null)
-          printf '%s%s' "$(printf '%s' "$_pluralize_first" | tr 'a-z' 'A-Z')" "$_pluralize_tail"
-          ;;
-      esac
-      ;;
-    *[A-Z]*)
-      printf '%s' "$(printf '%s' "$_pluralize_result" | tr 'a-z' 'A-Z')"
-      ;;
-    *)
+  # DEBUG: Show what we're working with
+  if [ "${PLURALIZE_DEBUG:-0}" = "1" ]; then
+    printf '[DEBUG] Original word: [%s]\n' "$_pluralize_word" >&2
+    printf '[DEBUG] Lowercase result: [%s]\n' "$_pluralize_result" >&2
+  fi
+
+  # Check capitalization using tr (locale-independent)
+  # Avoid case patterns with [A-Z] which are locale-dependent on macOS
+  _pluralize_word_lower=$(printf '%s' "$_pluralize_word" | tr 'A-Z' 'a-z')
+  _pluralize_word_upper=$(printf '%s' "$_pluralize_word" | tr 'a-z' 'A-Z')
+  
+  if [ "$_pluralize_word" != "$_pluralize_word_lower" ] && \
+     [ "$_pluralize_word" != "$_pluralize_word_upper" ]; then
+    # Mixed case (has both upper and lower)
+    _pluralize_rest=${_pluralize_word#?}
+    if [ "${PLURALIZE_DEBUG:-0}" = "1" ]; then
+      printf '[DEBUG] Matched mixed case pattern\n' >&2
+      printf '[DEBUG] Rest of word: [%s]\n' "$_pluralize_rest" >&2
+    fi
+    
+    # Check if rest contains uppercase by comparing with lowercase version
+    _pluralize_rest_lower=$(printf '%s' "$_pluralize_rest" | tr 'A-Z' 'a-z')
+    if [ "$_pluralize_rest" != "$_pluralize_rest_lower" ]; then
+      if [ "${PLURALIZE_DEBUG:-0}" = "1" ]; then
+        printf '[DEBUG] Rest has uppercase (verified) - output lowercase\n' >&2
+      fi
       printf '%s' "$_pluralize_result"
-      ;;
-  esac
+    else
+      if [ "${PLURALIZE_DEBUG:-0}" = "1" ]; then
+        printf '[DEBUG] Rest is lowercase - capitalizing first letter\n' >&2
+      fi
+          
+          # Method 1: Pure POSIX parameter expansion
+          _pluralize_upper=$(printf '%s' "$_pluralize_result" | tr 'a-z' 'A-Z')
+          _pluralize_first=${_pluralize_upper%"${_pluralize_upper#?}"}
+          _pluralize_tail=${_pluralize_result#?}
+          
+          if [ "${PLURALIZE_DEBUG:-0}" = "1" ]; then
+            printf '[DEBUG] Method 1 (POSIX expansion):\n' >&2
+            printf '[DEBUG]   Upper: [%s]\n' "$_pluralize_upper" >&2
+            printf '[DEBUG]   First: [%s]\n' "$_pluralize_first" >&2
+            printf '[DEBUG]   Tail: [%s]\n' "$_pluralize_tail" >&2
+            printf '[DEBUG]   Result: [%s%s]\n' \
+              "$_pluralize_first" "$_pluralize_tail" >&2
+            
+            # Try alternative methods for comparison
+            _test_awk=$(printf '%s' "$_pluralize_result" | \
+              awk '{print substr($0,1,1)}' 2>/dev/null || printf 'FAILED')
+            _test_sed=$(printf '%s' "$_pluralize_result" | \
+              sed 's/^\(.\).*/\1/' 2>/dev/null || printf 'FAILED')
+            _test_dd=$(printf '%s' "$_pluralize_result" | \
+              dd bs=1 count=1 2>/dev/null || printf 'FAILED')
+            _test_cut=$(printf '%s' "$_pluralize_result" | \
+              cut -c1 2>/dev/null || printf 'FAILED')
+            
+            printf '[DEBUG] Method 2 (awk): first=[%s]\n' "$_test_awk" >&2
+            printf '[DEBUG] Method 3 (sed): first=[%s]\n' "$_test_sed" >&2
+            printf '[DEBUG] Method 4 (dd): first=[%s]\n' "$_test_dd" >&2
+            printf '[DEBUG] Method 5 (cut): first=[%s]\n' "$_test_cut" >&2
+          fi
+          
+          printf '%s%s' "$_pluralize_first" "$_pluralize_tail"
+        fi
+  elif [ "$_pluralize_word" != "$_pluralize_word_lower" ]; then
+    # All uppercase
+    if [ "${PLURALIZE_DEBUG:-0}" = "1" ]; then
+      printf '[DEBUG] Matched all uppercase pattern\n' >&2
+    fi
+    printf '%s' "$(printf '%s' "$_pluralize_result" | tr 'a-z' 'A-Z')"
+  else
+    # All lowercase
+    if [ "${PLURALIZE_DEBUG:-0}" = "1" ]; then
+      printf '[DEBUG] Matched lowercase pattern\n' >&2
+    fi
+    printf '%s' "$_pluralize_result"
+  fi
