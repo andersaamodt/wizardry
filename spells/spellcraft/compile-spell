@@ -217,6 +217,9 @@ $func_def
         /^[[:space:]]*\. "/ { print; next }
         /\).*;;/ { print; next }
         /\$\(\(.*\<'"$already_inlined"'\>.*\)\)/ { print; next }
+        # For trap statements: Allow replacement (they contain executable code in quoted strings)
+        # Check this BEFORE the general string literal checks to avoid false matches
+        /^[[:space:]]*trap[[:space:]]/ { gsub("\\<" old "\\>", new); print; next }
         /"[^"$]*\<'"$already_inlined"'\>[^"$]*"/ { print; next }
         /'\''[^'\''$]*\<'"$already_inlined"'\>[^'\''$]*'\''/ { print; next }
         { gsub("\\<" old "\\>", new); print }
@@ -224,6 +227,11 @@ $func_def
     done
     
     # Wrap as function
+    # Replace 'exit' with 'return' since this is now a function, not a script
+    # Use word boundaries to avoid replacing 'exit' in comments/strings
+    spell_body=$(printf '%s\n' "$spell_body" | \
+      sed 's/\([^a-zA-Z_]\)exit\([^a-zA-Z_]\)/\1return\2/g; s/^exit\([^a-zA-Z_]\)/return\1/; s/\([^a-zA-Z_]\)exit$/\1return/')
+    
     inlined_deps="$inlined_deps
 # Inlined spell: $dep
 $func_name() {
@@ -310,9 +318,13 @@ for dep in $inlined_names; do
     /\).*;;/ { print; next }
     # Skip arithmetic expansion where variables can be used without $
     /\$\(\(.*\<'"$dep"'\>.*\)\)/ { print; next }
+    # For trap statements: Allow replacement (they contain executable code in quoted strings)
+    # Check this BEFORE the general string literal checks to avoid false matches
+    /^[[:space:]]*trap[[:space:]]/ { gsub("\\<" old "\\>", new); print; next }
     # Only skip lines where the dependency appears in string literals (between quotes, not in command substitution)
     # Pattern: "...dep..." but NOT "$(dep...)" or "...$(dep...)..."
     /"[^"$]*\<'"$dep"'\>[^"$]*"/ { print; next }
+    # For single quotes: skip single-quoted strings (they are data/literals, not code)
     /'\''[^'\''$]*\<'"$dep"'\>[^'\''$]*'\''/ { print; next }
     { gsub("\\<" old "\\>", new); print }
   ')
