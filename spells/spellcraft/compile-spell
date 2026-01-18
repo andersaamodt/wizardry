@@ -221,7 +221,7 @@ $func_def
         # Check this BEFORE the general string literal checks to avoid false matches
         /^[[:space:]]*trap[[:space:]]/ { gsub("\\<" old "\\>", new); print; next }
         /"[^"$]*\<'"$already_inlined"'\>[^"$]*"/ { print; next }
-        # Skip single-quoted strings without dollar signs (they are data/literals, not code)
+        # Skip single-quoted strings containing the dependency (no $ means pure literals, not code)
         /'\''[^'\''$]*\<'"$already_inlined"'\>[^'\''$]*'\''/ { print; next }
         { gsub("\\<" old "\\>", new); print }
       ')
@@ -323,7 +323,7 @@ for dep in $inlined_names; do
     # Only skip lines where the dependency appears in string literals (between quotes, not in command substitution)
     # Pattern: "...dep..." but NOT "$(dep...)" or "...$(dep...)..."
     /"[^"$]*\<'"$dep"'\>[^"$]*"/ { print; next }
-    # Skip single-quoted strings without dollar signs (they are data/literals, not code)
+    # Skip single-quoted strings containing the dependency (no $ means pure literals, not code)
     /'\''[^'\''$]*\<'"$dep"'\>[^'\''$]*'\''/ { print; next }
     { gsub("\\<" old "\\>", new); print }
   ')
