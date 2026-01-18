@@ -171,9 +171,9 @@ set -eu
         *[A-Z]*) printf '%s' "$_pluralize_result" ;;
         *)
           # Extract first character and uppercase it
-          # Use dd for maximum BSD/macOS compatibility
-          _pluralize_first=$(printf '%s' "$_pluralize_result" | dd bs=1 count=1 2>/dev/null)
-          _pluralize_tail=$(printf '%s' "$_pluralize_result" | dd bs=1 skip=1 2>/dev/null)
+          # Use sed for maximum portability across BSD and GNU systems
+          _pluralize_first=$(printf '%s' "$_pluralize_result" | sed 's/^\(.\).*/\1/')
+          _pluralize_tail=$(printf '%s' "$_pluralize_result" | sed 's/^.\(.*\)/\1/')
           printf '%s%s' "$(printf '%s' "$_pluralize_first" | tr 'a-z' 'A-Z')" "$_pluralize_tail"
           ;;
       esac
