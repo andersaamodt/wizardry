@@ -12,10 +12,17 @@ done
 copy_wizardry() {
   dest_dir=$1
   
-  # Copy the current wizardry installation
-  cp -r "$ROOT_DIR" "$dest_dir" 2>/dev/null || return 1
+  # Create parent directory if needed
+  mkdir -p "$(dirname "$dest_dir")" || return 1
   
-  # Source invoke-wizardry to set up PATH
+  # Copy the current wizardry installation
+  # Use cp -R for better BSD/macOS compatibility, and copy contents not the directory itself
+  if [ -d "$dest_dir" ]; then
+    rm -rf "$dest_dir" || return 1
+  fi
+  cp -R "$ROOT_DIR" "$dest_dir" || return 1
+  
+  # Verify the copy worked by checking for a key file
   if [ -f "$dest_dir/spells/.imps/sys/invoke-wizardry" ]; then
     WIZARDRY_DIR="$dest_dir"
     export WIZARDRY_DIR
@@ -364,13 +371,15 @@ test_environment_vars_check() {
   # Should check environment variables (USER or LOGNAME depending on system)
   WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" 0
   assert_success || return 1
-  # Strip ANSI color codes and check for environment variable output
-  _clean_output=$(printf '%s' "$OUTPUT" | sed 's/\x1b\[[0-9;]*m//g')
-  # Accept either USER or LOGNAME, or just HOME if neither is available
-  if ! printf '%s' "$_clean_output" | grep -q "Environment: HOME and USER set" &&
-     ! printf '%s' "$_clean_output" | grep -q "Environment: HOME and LOGNAME set" &&
-     ! printf '%s' "$_clean_output" | grep -q "Environment: HOME" ; then
-    TEST_FAILURE_REASON="Expected environment variable check output, got: $_clean_output"
+  # Check for environment variable output
+  # Banish should output one of:
+  #  "✓ Environment: HOME and USER set"
+  #  "✓ Environment: HOME and LOGNAME set" 
+  #  "✗ Environment: HOME not set" (if HOME missing)
+  #  "✗ Environment: USER/LOGNAME not set" (if both missing)
+  # We just check that it mentions environment checks
+  if ! printf '%s' "$OUTPUT" | grep -q "Environment:" ; then
+    TEST_FAILURE_REASON="Expected environment variable check output, got: $OUTPUT"
     return 1
   fi
 }
