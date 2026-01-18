@@ -105,17 +105,17 @@ spell_content=$(cat "$spell_path")
 dependencies=$(printf '%s\n' "$spell_content" | \
   grep -v "^#" | \
   grep -v "^[[:space:]]*#" | \
-  grep -oE '\b(say|warn|die|fail|is|has|there|empty|full|given|lacks|memorize|env-or|enchant|disenchant|hashchant|require|attribute-tool-check|[a-z][a-z0-9]*(-[a-z0-9]+)+)\b' | \
+  grep -oE '\b(say|warn|die|fail|is|has|there|empty|full|given|lacks|memorize|env-or|enchant|disenchant|hashchant|require|check-attribute-tool|[a-z][a-z0-9]*(-[a-z0-9]+)+)\b' | \
   sort -u || true)
 
 # Also scan commonly-used imps that might be called by inlined dependencies
 # This handles transitive dependencies without complex recursion
-common_transitive_deps="attribute-tool-check attribute-get attribute-set read-magic write-magic disenchant"
+common_transitive_deps="check-attribute-tool get-attribute set-attribute read-magic write-magic disenchant"
 for trans_dep in $common_transitive_deps; do
   # Check if any found dependencies might use this transitive dep
   case "$dependencies" in
-    *attribute-set*|*attribute-get*|*read-magic*|*write-magic*|*disenchant*)
-      # Add attribute-tool-check if we're inlining any xattr-related imp
+    *set-attribute*|*get-attribute*|*read-magic*|*write-magic*|*disenchant*)
+      # Add check-attribute-tool if we're inlining any xattr-related imp
       case " $dependencies " in
         *" $trans_dep "*) ;;
         *) dependencies="$dependencies $trans_dep" ;;
@@ -264,7 +264,7 @@ $spell_body
 done
 
 # Transform all inlined dependencies to replace hyphenated calls with underscore versions
-# This handles nested dependencies (e.g., attribute-set calling attribute-tool-check)
+# This handles nested dependencies (e.g., set-attribute calling check-attribute-tool)
 for dep in $inlined_names; do
   func_name="_$(printf '%s' "$dep" | tr '-' '_')"
   

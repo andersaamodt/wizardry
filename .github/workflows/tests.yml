@@ -55,7 +55,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
-        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/attribute-tool-check spells/.imps/fs/attribute-list spells/.imps/fs/attribute-get
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/check-attribute-tool spells/.imps/fs/list-attributes spells/.imps/fs/get-attribute
       - name: Install Nix
         uses: cachix/install-nix-action@v27
       - name: Configure nixpkgs channel
@@ -118,7 +118,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
-        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/attribute-tool-check spells/.imps/fs/attribute-list spells/.imps/fs/attribute-get
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/check-attribute-tool spells/.imps/fs/list-attributes spells/.imps/fs/get-attribute
       - name: Run unit tests (levels ${{ matrix.levels }})
         run: |
           set -e
@@ -166,7 +166,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
-        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/attribute-tool-check spells/.imps/fs/attribute-list spells/.imps/fs/attribute-get
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/check-attribute-tool spells/.imps/fs/list-attributes spells/.imps/fs/get-attribute
       - name: Run unit tests (levels ${{ matrix.levels }})
         run: |
           set -e
@@ -215,7 +215,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
-        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/attribute-tool-check spells/.imps/fs/attribute-list spells/.imps/fs/attribute-get
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/check-attribute-tool spells/.imps/fs/list-attributes spells/.imps/fs/get-attribute
       - name: Run unit tests (levels ${{ matrix.levels }})
         run: |
           set -e
@@ -260,7 +260,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
-        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/attribute-tool-check spells/.imps/fs/attribute-list spells/.imps/fs/attribute-get
+        run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/check-attribute-tool spells/.imps/fs/list-attributes spells/.imps/fs/get-attribute
       - name: Install bubblewrap dependency
         run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap attr file
       - name: Configure bubblewrap user namespaces

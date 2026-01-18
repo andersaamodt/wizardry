@@ -376,7 +376,7 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 - `divination/identify-room` (7→2) - **Inlined all single-use helpers**, uses detect-distro spell instead of inline platform detection
 - `cantrips/cursor-blink` (4→1) - **Inlined trivial helpers** (cursor_blink_on, cursor_blink_off, supports_cursor_control)
 - `crypto/hashchant` (4→1) - **Inlined all helpers** (helper_usable, apply_hash, apply_first_available)
-- `cantrips/enable-service` (4→1) - **Inlined service helpers** (find_ask_text, run_systemctl, normalize_unit)
+- `system/enable-service` (4→1) - **Inlined service helpers** (find_ask_text, run_systemctl, normalize_unit)
 - `cantrips/disable-service` (4→1) - **Inlined service helpers** (find_ask_text, run_systemctl, normalize_unit)
 - `cantrips/ask-text` (4→1) - **Inlined input logic** (select_input, prompt, read_line)
 - `cantrips/ask-number` (4→1) - **Inlined input logic** (select_input, prompt, read_value)

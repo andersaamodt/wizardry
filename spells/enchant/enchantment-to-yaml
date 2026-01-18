@@ -35,7 +35,7 @@ if [ ! -f "$file" ]; then
 fi
 
 # Get all extended attribute keys
-keys=$(attribute-list "$file" || true)
+keys=$(list-attributes "$file" || true)
 if [ -z "$keys" ]; then
   printf '%s\n' "Error: file does not have extended attributes" >&2
   exit 1
@@ -47,7 +47,7 @@ tmp=$(temp-file wizardry-yaml) || exit 1
   printf '%s\n' '---'
   for key in $keys; do
     [ -z "$key" ] && continue
-    value=$(attribute-get "$key" "$file" || printf '')
+    value=$(get-attribute "$key" "$file" || printf '')
     printf '%s: %s\n' "$key" "$value"
   done
   printf '%s\n' '---'
@@ -58,11 +58,11 @@ mv "$tmp" "$file"
 
 # Clear attributes from file - check if we have tools available
 has_attr_tool=0
-if attribute-tool-check xattr; then
+if check-attribute-tool xattr; then
   has_attr_tool=1
-elif attribute-tool-check attr; then
+elif check-attribute-tool attr; then
   has_attr_tool=1
-elif attribute-tool-check setfattr; then
+elif check-attribute-tool setfattr; then
   has_attr_tool=1
 fi
 
@@ -78,13 +78,13 @@ fi
 
 for key in $keys; do
   [ -z "$key" ] && continue
-  if attribute-tool-check attr; then
+  if check-attribute-tool attr; then
     attr -r "$key" "$file" 2>/dev/null || true
   fi
-  if attribute-tool-check setfattr; then
+  if check-attribute-tool setfattr; then
     setfattr -x "$key" "$file" 2>/dev/null || true
   fi
-  if attribute-tool-check xattr; then
+  if check-attribute-tool xattr; then
     xattr -d "$key" "$file" 2>/dev/null || true
   fi
 done
