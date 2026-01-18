@@ -16,12 +16,13 @@ copy_wizardry() {
   mkdir -p "$(dirname "$dest_dir")" || return 1
   
   # Copy the current wizardry installation
-  # Use cp -R for better BSD/macOS compatibility, and copy contents not the directory itself
+  # Use cp -Rp to preserve permissions (including execute bit)
+  # Copy contents not the directory itself for better compatibility
   if [ -d "$dest_dir" ]; then
     rm -rf "$dest_dir" || return 1
   fi
   mkdir -p "$dest_dir" || return 1
-  cp -R "$ROOT_DIR/." "$dest_dir/" || return 1
+  cp -Rp "$ROOT_DIR/." "$dest_dir/" || return 1
   
   # Verify the copy worked by checking for a key file
   if [ -f "$dest_dir/spells/.imps/sys/invoke-wizardry" ]; then
