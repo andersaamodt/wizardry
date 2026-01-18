@@ -159,6 +159,13 @@ jobs:
               return
             fi
 
+            # For doppelganger tests, extract test summary (uses test-magic)
+            if echo "$workflow_name" | grep -qi "doppelganger"; then
+              extract_test_summary "$logfile"
+              rm -f "$cleaned_log"
+              return
+            fi
+
             # For other workflows, find the failing step in cleaned log
             if grep -q "##\[error\]" "$cleaned_log"; then
               # Extract error lines and surrounding context
