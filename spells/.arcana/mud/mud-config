@@ -7,7 +7,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: mud-config {get|set|toggle|list} [FEATURE] [VALUE]
 
-Manage MUD feature toggles stored in $SPELLBOOK_DIR/.mud. Supports get, set, toggle, and list for features like parse-enabled, command-not-found, touch-hook, fantasy-theme, inventory, and combat.
+Manage MUD feature toggles stored in $SPELLBOOK_DIR/.mud. Supports get, set, toggle, and list for features like parse-enabled, touch-hook, fantasy-theme, inventory, and combat.
 USAGE
   exit 0
   ;;
