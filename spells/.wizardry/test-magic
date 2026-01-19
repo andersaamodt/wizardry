@@ -29,17 +29,20 @@ Execute behavior-driven shell tests organized by spell level.
 
 Arguments:
   LEVEL                 Test through level N (0-27, default: 27)
+                        Note: Level 0 includes common-tests.sh + Level 0 spells
   all                   Test all available levels
 
 Options:
   --only                Only test this specific level (don't run lower levels)
   --verbose             Show per-test output
-  --skip-common         Skip common tests (used by parallel test workflows)
+  --skip-common         Skip common-tests.sh (used by parallel test workflows)
 
 Examples:
-  test-magic            # Test all levels (0-27)
-  test-magic 5          # Test levels 0-5
-  test-magic 10 --only  # Test only level 10
+  test-magic            # Test all levels (common-tests + 0-27)
+  test-magic 5          # Test levels 0-5 (common-tests + spells 0-5)
+  test-magic 0-1        # Test common-tests + levels 0-1
+  test-magic 0-1 --skip-common  # Test only levels 0-1 (skip common-tests)
+  test-magic 10 --only  # Test only level 10 (skip common-tests + levels 0-9)
 
 Environment variables:
   WIZARDRY_TEST_TIMEOUT              Timeout in seconds for each test (default: 180)
@@ -316,10 +319,16 @@ else
   count_end=$target_level
 fi
 
-# Count common-tests.sh (special level before Level 0)
-if [ "$only_this_level" -eq 0 ] || [ "$count_start" -eq 0 ]; then
-  if [ -f "$test_dir/common-tests.sh" ]; then
-    global_test_total=$((global_test_total + 1))
+# Count common-tests.sh (conceptually "Level 0" - runs before actual Level 0)
+# Only count if:
+# 1. Not using --only flag (normal progression from start)
+# 2. OR using range starting at 0 (e.g., 0-5)
+# 3. AND not using --skip-common
+if [ "$skip_common" -eq 0 ]; then
+  if [ "$only_this_level" -eq 0 ] || [ "$count_start" -eq 0 ]; then
+    if [ -f "$test_dir/common-tests.sh" ]; then
+      global_test_total=$((global_test_total + 1))
+    fi
   fi
 fi
 
@@ -952,14 +961,17 @@ fi
 
 last_success_level=-1
 
-# Run common tests first (special level before Level 0)
-# Only run if testing Level 0 (either --only 0 or normal run starting from 0)
-# Skip if --skip-common flag is set
+# Run common tests first (treated as "Level 0" conceptually)
+# Run if:
+# 1. --skip-common is NOT set, AND
+# 2. Either normal mode starting from 0, OR range mode including 0
 # Note: We don't exit on failure - just record the results and continue
 if [ "$skip_common" -eq 0 ]; then
   if [ "$only_this_level" -eq 0 ] && [ "$current_level" -eq 0 ]; then
+    # Normal mode: run common tests when starting from level 0
     test_common_tests || true
   elif [ "$only_this_level" -eq 1 ] && [ "$min_level_range" -eq 0 ]; then
+    # Range mode: run common tests if range starts at 0 (e.g., 0-5)
     test_common_tests || true
   fi
 fi

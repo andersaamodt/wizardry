@@ -48,6 +48,7 @@
 - When converting synonym targets from hyphenated to space-separated form (e.g., jump-to-marker → jump to marker), preserve directory prefixes unchanged (translocation/jump-to-marker → translocation/jump to marker, not translocation/jump to marker with / converted to space).
 - First-word glosses must invoke aliases via eval (not parse or direct command invocation) because: (1) parse skips aliases to avoid recursion, (2) direct invocation "$_fw_spell" tries to find executable not expand alias, (3) eval expands alias correctly without passing $@ since multi-word was already consumed during reconstruction.
 - Parse MUST skip functions before trying to exec system commands; exec-ing a gloss function creates infinite recursion (gloss → parse → exec gloss → parse ...) causing segfault/exit 139.
+- Underscore-prefixed functions/variables are an anti-pattern suggesting "private" functions, but spells/imps shouldn't have functions at all; use imps for reusable code instead.
 - Spells and imps must NEVER define functions, even with underscore prefixes; extract logic into separate imps instead (e.g., move-avatar imp, not _move_avatar function).
 - Underscore-prefixed identifiers (variables/functions) are an anti-pattern that attempts to circumvent the "no functions in spells/imps" rule; always refactor into imps.
 - The `find -perm` flags cause infinite hangs on some systems (macOS, Ubuntu in CI); always omit `-perm` checks when scanning for files and use simple `-type f` instead.

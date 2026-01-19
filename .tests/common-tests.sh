@@ -370,9 +370,15 @@ test_warn_full_paths_to_spells() {
 # --- Check: Test files mirror spell structure ---
 # Each test file should correspond to a spell
 # This is a structural check - maintains test suite integrity
+# This test checks for "extraneous" test files (tests without matching spells)
 
 test_test_files_have_matching_spells() {
   skip-if-compiled || return $?
+  
+  # This is a "common test" that can be skipped with --skip-common in test-magic
+  # When test-magic is run in parallel workflows, this test runs in only 1/6 workflows
+  # to avoid redundant checking across all parallel runs
+  
   orphan_tests=""
   
   find "$ROOT_DIR/.tests" -type f -name 'test-*.sh' -o -name 'common-*.sh' -print | while IFS= read -r test_file; do
@@ -1747,6 +1753,50 @@ test_no_mixed_case_variables() {
   return 0
 }
 
+# --- Check: No underscore-prefixed identifiers ---
+# Functions and variables with leading underscores are an anti-pattern.
+# They suggest "private/internal" but spells/imps shouldn't have functions.
+# Use imps for reusable code instead.
+
+test_no_underscore_identifiers() {
+  violations=""
+  
+  check_underscores() {
+    spell=$1
+    rel_path=${spell#"$ROOT_DIR/spells/"}
+    
+    # Search for function definitions with underscore prefixes
+    underscore_funcs=$(grep -nE '^[[:space:]]*_[a-zA-Z_][a-zA-Z0-9_]*\(\)' "$spell" 2>/dev/null || true)
+    
+    if [ -n "$underscore_funcs" ]; then
+      violations="${violations}${violations:+, }$rel_path (functions)"
+    fi
+    
+    # Search for underscore-prefixed loop variables
+    underscore_vars=$(grep -nE 'for _[a-zA-Z_][a-zA-Z0-9_]* in' "$spell" 2>/dev/null || true)
+    
+    if [ -n "$underscore_vars" ]; then
+      violations="${violations}${violations:+, }$rel_path (loop vars)"
+    fi
+    
+    # Search for underscore-prefixed variable assignments
+    underscore_assigns=$(grep -nE '^[[:space:]]*_[a-zA-Z_][a-zA-Z0-9_]*=' "$spell" 2>/dev/null | head -3 || true)
+    
+    if [ -n "$underscore_assigns" ]; then
+      violations="${violations}${violations:+, }$rel_path (assignments)"
+    fi
+  }
+  
+  for_each_posix_spell check_underscores
+  
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="underscore-prefixed identifiers found (use imps instead): $violations"
+    return 1
+  fi
+  
+  return 0
+}
+
 # --- Warning Check: No parent directory references /../ outside cd commands ---
 # Spells should use proper path resolution (cd with pwd -P) instead of bare /../
 # references in path strings. This prevents fragile path construction.
@@ -1924,6 +1974,7 @@ run_test_case "spells have limited flags" test_spells_have_limited_flags
 run_test_case "spells have limited positional arguments" test_spells_have_limited_positional_args
 run_test_case "no all-caps variable assignments" test_no_allcaps_variable_assignments
 run_test_case "no mixed-case variables" test_no_mixed_case_variables
+run_test_case "no underscore-prefixed identifiers" test_no_underscore_identifiers
 run_test_case "scripts have set -eu early" test_scripts_have_set_eu_early
 run_test_case "spells source env-clear after set -eu" test_spells_source_env_clear_after_set_eu
 run_test_case "warn about parent directory references" test_warn_parent_dir_references
