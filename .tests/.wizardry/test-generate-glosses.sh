@@ -172,10 +172,16 @@ EOF
     return 1
   fi
   
-  # 4. NEW: The leap() gloss should call parse with the first word
+  # 4. NEW: The leap() gloss should source parse after setting args
+  #    It prepends the first word to args, then sources parse
   #    Parse will handle finding the longest match and resolving synonyms
-  if ! grep -q 'parse.*"leap"' "$_output_file"; then
-    TEST_FAILURE_REASON="Expected leap() gloss to call parse with first word"
+  if ! grep -q 'set -- "leap"' "$_output_file"; then
+    TEST_FAILURE_REASON="Expected leap() gloss to set args with first word before sourcing parse"
+    return 1
+  fi
+  
+  if ! grep -q '\. parse' "$_output_file"; then
+    TEST_FAILURE_REASON="Expected leap() gloss to source parse"
     return 1
   fi
   
