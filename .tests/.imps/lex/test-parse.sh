@@ -175,7 +175,7 @@ EOF
   }
   
   # Call parse - it should find the spell file, not try to exec the function
-  run_spell "spells/.imps/lex/parse" "testspell"
+  run_sourced_spell "spells/.imps/lex/parse" "testspell"
   
   # Restore original WIZARDRY_DIR
   if [ -n "$_saved_wizdir" ]; then
@@ -210,7 +210,7 @@ EOF
   export WIZARDRY_DIR="$tmpdir/wizardry"
   
   # Call parse with "echo" - should find our custom spell, not try to exec the builtin
-  run_spell "spells/.imps/lex/parse" "echo"
+  run_sourced_spell "spells/.imps/lex/parse" "echo"
   
   # Restore original WIZARDRY_DIR
   if [ -n "$_saved_wizdir" ]; then
@@ -241,7 +241,7 @@ EOF
   export WIZARDRY_DIR="$tmpdir/wizardry"
   
   # Call parse with "banish 5" - should call banish with arg "5", not look for "banish-5"
-  run_spell "spells/.imps/lex/parse" "banish" "5"
+  run_sourced_spell "spells/.imps/lex/parse" "banish" "5"
   
   # Restore original WIZARDRY_DIR
   if [ -n "$_saved_wizdir" ]; then
@@ -271,7 +271,7 @@ EOF
   export WIZARDRY_DIR="$tmpdir/wizardry"
   
   # Call parse with "myecho --flag arg" - should call myecho with "--flag arg", not look for "myecho--flag-arg"
-  run_spell "spells/.imps/lex/parse" "myecho" "--flag" "arg"
+  run_sourced_spell "spells/.imps/lex/parse" "myecho" "--flag" "arg"
   
   # Restore original WIZARDRY_DIR
   if [ -n "$_saved_wizdir" ]; then
@@ -301,7 +301,7 @@ EOF
   export WIZARDRY_DIR="$tmpdir/wizardry"
   
   # Call parse with "jump to 5" - should call jump-to with arg "5", not look for "jump-to-5"
-  run_spell "spells/.imps/lex/parse" "jump" "to" "5"
+  run_sourced_spell "spells/.imps/lex/parse" "jump" "to" "5"
   
   # Restore original WIZARDRY_DIR
   if [ -n "$_saved_wizdir" ]; then
@@ -327,7 +327,7 @@ EOF
   chmod +x "$test_spell_dir/banish"
   
   export WIZARDRY_DIR="$tmpdir/wizardry"
-  run_spell "spells/.imps/lex/parse" "banish" "5"
+  run_sourced_spell "spells/.imps/lex/parse" "banish" "5"
   
   if [ -n "$_saved_wizdir" ]; then export WIZARDRY_DIR="$_saved_wizdir"; else unset WIZARDRY_DIR; fi
   
@@ -354,7 +354,7 @@ EOF
     return 1
   }
   
-  run_spell "spells/.imps/lex/parse" "mycommand"
+  run_sourced_spell "spells/.imps/lex/parse" "mycommand"
   
   if [ -n "$_saved_wizdir" ]; then export WIZARDRY_DIR="$_saved_wizdir"; else unset WIZARDRY_DIR; fi
   
@@ -382,7 +382,7 @@ EOF
   
   # Unset type if it exists (to simulate POSIX-only environment)
   # Note: Can't actually unset builtins, but we can verify parse doesn't fail
-  run_spell "spells/.imps/lex/parse" "test" "posix"
+  run_sourced_spell "spells/.imps/lex/parse" "test" "posix"
   
   if [ -n "$_saved_wizdir" ]; then export WIZARDRY_DIR="$_saved_wizdir"; else unset WIZARDRY_DIR; fi
   
@@ -402,7 +402,7 @@ EOF
   chmod +x "$test_spell_dir/myspell"
   
   export WIZARDRY_DIR="$tmpdir/wizardry"
-  run_spell "spells/.imps/lex/parse" "myspell" "--verbose" "arg"
+  run_sourced_spell "spells/.imps/lex/parse" "myspell" "--verbose" "arg"
   
   if [ -n "$_saved_wizdir" ]; then export WIZARDRY_DIR="$_saved_wizdir"; else unset WIZARDRY_DIR; fi
   
@@ -422,7 +422,7 @@ EOF
   chmod +x "$test_spell_dir/leap-to"
   
   export WIZARDRY_DIR="$tmpdir/wizardry"
-  run_spell "spells/.imps/lex/parse" "leap" "to" "5"
+  run_sourced_spell "spells/.imps/lex/parse" "leap" "to" "5"
   
   if [ -n "$_saved_wizdir" ]; then export WIZARDRY_DIR="$_saved_wizdir"; else unset WIZARDRY_DIR; fi
   
