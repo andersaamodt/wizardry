@@ -62,22 +62,12 @@ while true; do
   change="Change Player%choose-player"
   new="New Player%new-player"
   
-  # MUD feature toggles
-  toggle_avatar="Toggle Avatar System%toggle-avatar"
-  toggle_combat="Toggle Combat%toggle-combat"
-  toggle_inventory="Toggle Inventory%toggle-inventory"
-  toggle_fantasy="Toggle Fantasy Theme%toggle-fantasy-theme"
-  toggle_touch="Toggle Touch Hook%toggle-touch-hook"
-  toggle_cd="Toggle CD Hook%toggle-cd"
-  toggle_parse="Toggle Parse%toggle-parse"
-  toggle_menu="Toggle MUD Menu%toggle-mud-menu"
-  
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
   exit_label=$(exit-label)
   exit_item="${exit_label}%kill -TERM \$PPID"
 
-  set -- "$player_key_item" "$change" "$new" "$toggle_avatar" "$toggle_combat" "$toggle_inventory" "$toggle_fantasy" "$toggle_touch" "$toggle_cd" "$toggle_parse" "$toggle_menu" "$exit_item"
+  set -- "$player_key_item" "$change" "$new" "$exit_item"
   menu "MUD Settings:" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
   
