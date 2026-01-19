@@ -172,10 +172,16 @@ EOF
     return 1
   fi
   
-  # 4. Critical: The leap() gloss must use \$_fw_spell not hardcoded "leap"
-  #    in the final parse call, so multi-word invocations work
-  if ! grep -q 'parse.*\$_fw_spell' "$_output_file"; then
-    TEST_FAILURE_REASON="Expected leap() gloss to use \$_fw_spell for multi-word reconstruction"
+  # 4. NEW: The leap() gloss should source parse after setting args
+  #    It prepends the first word to args, then sources parse
+  #    Parse will handle finding the longest match and resolving synonyms
+  if ! grep -q 'set -- "leap"' "$_output_file"; then
+    TEST_FAILURE_REASON="Expected leap() gloss to set args with first word before sourcing parse"
+    return 1
+  fi
+  
+  if ! grep -q '\. parse' "$_output_file"; then
+    TEST_FAILURE_REASON="Expected leap() gloss to source parse"
     return 1
   fi
   
@@ -185,20 +191,6 @@ EOF
   #    NOT alias leap-to-location='translocation/jump to marker'  (with / → space)
   if ! grep -q "alias leap-to-location='translocation/jump to marker'" "$_output_file"; then
     TEST_FAILURE_REASON="Expected alias to preserve directory path: translocation/jump to marker"
-    return 1
-  fi
-  
-  # 6. CRITICAL FIX: First-word glosses must invoke aliases via eval (not parse or direct command)
-  #    because: (1) parse skips aliases to avoid recursion, (2) direct "$_fw_spell" tries to find
-  #    executable not expand alias. When "leap to location" is typed, leap() gloss reconstructs
-  #    it to "leap-to-location". It must check if it's an alias and use eval to expand it.
-  if ! grep -q 'type.*\$_fw_spell' "$_output_file"; then
-    TEST_FAILURE_REASON="Expected leap() gloss to check type of reconstructed spell name"
-    return 1
-  fi
-  
-  if ! grep -q 'eval.*"\$_fw_spell"' "$_output_file"; then
-    TEST_FAILURE_REASON="Expected leap() gloss to use eval to expand alias (not direct invocation)"
     return 1
   fi
 }
