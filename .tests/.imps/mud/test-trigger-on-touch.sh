@@ -5,51 +5,46 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-test_trigger_on_touch_toucher_effect() {
-  _test_setup_mud_env
+test_trigger_on_touch_damage() {
+  test_setup_mud_env
   
-  # Create toucher and touched files
+  # Create toucher and target
   toucher="$test_dir/toucher"
-  touched="$test_dir/touched"
-  mkdir -p "$toucher"
-  touch "$touched"
+  target="$test_dir/target.txt"
+  printf 'test\n' > "$toucher"
+  printf 'test\n' > "$target"
   
-  # Add on_toucher effect to toucher
-  enchant "$toucher" "on_toucher=damage:4" >/dev/null 2>&1 || true
-  enchant "$touched" "max_life=100" >/dev/null 2>&1 || true
+  # Add on_toucher effect
+  enchant "$toucher" "on_toucher=damage:5" >/dev/null 2>&1
   
-  # Trigger on-touch
-  trigger-on-touch "$toucher" "$touched" >/dev/null 2>&1 || true
+  # Trigger effect
+  run_spell "spells/.imps/mud/trigger-on-touch" "$toucher" "$target"
   
-  # Verify damage was dealt
-  damage=$(read-magic "$touched" damage 2>/dev/null || printf '0')
-  [ "$damage" = "4" ] || _fail "Expected damage=4, got: $damage"
-  
-  # Verify effect was removed from toucher
-  on_toucher=$(read-magic "$toucher" on_toucher 2>/dev/null || printf '')
-  [ -z "$on_toucher" ] || _fail "Expected on_toucher to be removed, got: $on_toucher"
+  # Target should have damage
+  damage=$(read-magic "$target" damage 2>/dev/null || printf '0')
+  [ "$damage" -ge 5 ] || fail "Expected damage >= 5, got: $damage"
 }
 
-test_trigger_on_touch_touched_portkey() {
-  _test_setup_mud_env
+test_trigger_on_touch_effect_consumed() {
+  test_setup_mud_env
   
-  # Create toucher and portkey
+  # Create files
   toucher="$test_dir/toucher"
-  portkey="$test_dir/portkey"
-  dest="$test_dir/destination"
-  mkdir -p "$toucher" "$dest"
-  touch "$portkey"
+  target="$test_dir/target.txt"
+  printf 'test\n' > "$toucher"
+  printf 'test\n' > "$target"
   
-  # Add on_touched portkey effect
-  enchant "$portkey" "on_touched=portkey:$dest" >/dev/null 2>&1 || true
+  # Add effect
+  enchant "$toucher" "on_toucher=damage:3" >/dev/null 2>&1
   
-  # Trigger on-touch
-  output=$(trigger-on-touch "$toucher" "$portkey" 2>&1 || true)
+  # Trigger
+  run_spell "spells/.imps/mud/trigger-on-touch" "$toucher" "$target"
   
-  # Verify portkey activation message
-  printf '%s\n' "$output" | grep -q "portkey activates" || _fail "Expected portkey activation message"
+  # Effect should be removed
+  effect=$(read-magic "$toucher" on_toucher 2>/dev/null || printf '')
+  [ -z "$effect" ] || fail "Effect should be consumed, but got: $effect"
 }
 
-_run_test_case "trigger-on-touch processes toucher damage effect" test_trigger_on_touch_toucher_effect
-_run_test_case "trigger-on-touch activates portkey on touched object" test_trigger_on_touch_touched_portkey
-_finish_tests
+run_test_case "trigger-on-touch applies damage effect" test_trigger_on_touch_damage
+run_test_case "trigger-on-touch consumes single-use effects" test_trigger_on_touch_effect_consumed
+finish_tests

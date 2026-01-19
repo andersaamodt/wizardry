@@ -1,24 +1,8 @@
 #!/bin/sh
-
-# incarnate - Initialize or update the player's avatar folder.
-
-case "${1-}" in
---help|--usage|-h)
-  cat <<'USAGE'
-Usage: incarnate
-
-Initialize the player's avatar in the current directory.
-The avatar is a folder that represents your character and follows you as you move.
-It contains your inventory and tracks your current stats.
-
-This is typically called automatically when the avatar system is enabled.
-USAGE
-  exit 0
-  ;;
-esac
+# incarnate - Initialize or update the player's avatar folder in current directory
+set -eu
 
 require-wizardry || exit 1
-set -eu
 . env-clear
 
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
@@ -67,5 +51,5 @@ enchant "$avatar_path" "is_avatar=1" >/dev/null 2>&1 || true
 # Update avatar path in config
 config-set "$config_file" "avatar-path" "$avatar_path"
 
-printf 'You incarnate as %s.\n' "$avatar_path"
+printf 'Avatar initialized at %s\n' "$avatar_path"
 exit 0

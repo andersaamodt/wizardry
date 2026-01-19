@@ -43,13 +43,17 @@ case "$action" in
     
     # Initialize avatar if not already done
     if command -v incarnate >/dev/null 2>&1; then
-      incarnate || true
+      avatar_result=$(incarnate 2>&1) || true
+      # Extract just the avatar name from the path for thematic message
+      avatar_name=$(config-get "$config_file" "avatar-name" 2>/dev/null || printf 'adventurer')
+      printf 'You incarnate as %s.\n' ".$avatar_name"
     fi
     ;;
   disable)
     # Get current avatar info
     avatar_path=$(config-get "$config_file" "avatar-path" 2>/dev/null || printf '')
-    avatar_name=$(config-get "$config_file" "avatar-name" 2>/dev/null || whoami 2>/dev/null || printf 'adventurer')
+    default_name=$(whoami 2>/dev/null || printf 'adventurer')
+    avatar_name=$(config-get "$config_file" "avatar-name" 2>/dev/null || printf '%s' "$default_name")
     
     config-set "$config_file" "avatar-enabled" "0"
     mud-config set "avatar" "0" >/dev/null 2>&1 || true

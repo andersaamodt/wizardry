@@ -134,7 +134,7 @@ case "$level" in
     ;;
   24)
     name='MUD Administration Menus'
-    spells='add-ssh-player:menu/mud-admin mud:menu mud-admin-menu:menu mud-menu:menu mud-settings:menu new-player:menu/mud-admin set-player:menu/mud-admin toggle-avatar:.arcana/mud toggle-touch-hook:.arcana/mud'
+    spells='add-ssh-player:menu/mud-admin mud:menu mud-admin-menu:menu mud-menu:menu mud-settings:menu new-player:menu/mud-admin set-player:menu/mud-admin toggle-avatar:.arcana/mud toggle-touch-hook:.arcana/mud touch:.arcana/mud'
     imps=''
     ;;
   25)
