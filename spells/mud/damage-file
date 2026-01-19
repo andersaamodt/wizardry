@@ -43,20 +43,16 @@ if [ ! -e "$file" ]; then
   exit 1
 fi
 
-# Get current damage (if any)
-current_damage=0
+# Apply damage using the deal-damage imp
+deal-damage "$file" "$new_damage"
+
+# Get total damage for display
+total_damage=0
 if existing_damage=$(read-magic "$file" damage 2>/dev/null); then
-  # Check if we got a valid number
   case "$existing_damage" in
-    ''|*[!0-9]*) current_damage=0 ;;
-    *) current_damage=$existing_damage ;;
+    ''|*[!0-9]*) total_damage=0 ;;
+    *) total_damage=$existing_damage ;;
   esac
 fi
-
-# Calculate total damage
-total_damage=$((current_damage + new_damage))
-
-# Apply the damage using enchant
-enchant "$file" "damage=$total_damage"
 
 printf '%s\n' "The file has taken $new_damage damage (total: $total_damage)."
