@@ -52,18 +52,30 @@ test_move_avatar_moves_folder() {
   
   # Source the imp directly (it needs to run in current shell to get PWD)
   move_avatar_imp="$test_root/spells/.imps/mud/move-avatar"
-  . "$move_avatar_imp"
+  . "$move_avatar_imp" || {
+    cd "$orig_pwd" || true
+    rm -rf "$test_dir" "$new_dir"
+    return 1
+  }
   
   # Check avatar moved (it should now be in new_dir)
-  if [ -d "$new_dir/.testuser" ] && [ -f "$new_dir/.testuser/item.txt" ]; then
-    result=0
-  else
-    result=1
+  cd "$orig_pwd" || return 1
+  
+  # Debug: show what's in new_dir
+  if [ ! -d "$new_dir/.testuser" ]; then
+    TEST_FAILURE_REASON="Avatar directory $new_dir/.testuser does not exist after move"
+    rm -rf "$test_dir" "$new_dir"
+    return 1
   fi
   
-  cd "$orig_pwd" || true
+  if [ ! -f "$new_dir/.testuser/item.txt" ]; then
+    TEST_FAILURE_REASON="File $new_dir/.testuser/item.txt missing (dir exists but empty)"
+    rm -rf "$test_dir" "$new_dir"
+    return 1
+  fi
+  
   rm -rf "$test_dir" "$new_dir"
-  return $result
+  return 0
 }
 
 run_test_case "move-avatar imp exists and is executable" test_move_avatar_exists
