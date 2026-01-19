@@ -30,16 +30,16 @@ fi
 # Find the repository root
 # We need ROOT_DIR before we can set up PATH to include boot imps
 # So we inline this minimal logic here (no function, just inline code)
-__bootstrap_dir=$(CDPATH= cd -- "$(dirname "${0:-$PWD}")" && pwd -P)
-while [ "$__bootstrap_dir" != "/" ]; do
-  if [ -d "$__bootstrap_dir/spells" ] && [ -d "$__bootstrap_dir/.tests" ]; then
-    ROOT_DIR=$__bootstrap_dir
+bootstrap_dir=$(CDPATH= cd -- "$(dirname "${0:-$PWD}")" && pwd -P)
+while [ "$bootstrap_dir" != "/" ]; do
+  if [ -d "$bootstrap_dir/spells" ] && [ -d "$bootstrap_dir/.tests" ]; then
+    ROOT_DIR=$bootstrap_dir
     break
   fi
-  __bootstrap_dir=$(dirname "$__bootstrap_dir")
+  bootstrap_dir=$(dirname "$bootstrap_dir")
 done
 : "${ROOT_DIR:=$(pwd -P)}"
-unset __bootstrap_dir
+unset bootstrap_dir
 export ROOT_DIR
 
 # The baseline PATH was already set at the top of this file.
