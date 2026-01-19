@@ -18,16 +18,8 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-MUD_CONFIG="$SCRIPT_DIR/mud-config"
-
-if [ ! -x "$MUD_CONFIG" ]; then
-  printf '%s\n' "Error: mud-config not found at '$MUD_CONFIG'." >&2
-  return 1
-fi
-
-# Toggle the mud-enabled setting
-new_state=$("$MUD_CONFIG" toggle "mud-enabled")
+# Toggle the mud-enabled setting using mud-config
+new_state=$(mud-config toggle "mud-enabled")
 
 if [ "$new_state" = "1" ]; then
   printf '%s\n' "✓ MUD menu enabled in main menu."
