@@ -121,13 +121,13 @@ set -eu
     police) pluralize_result=police ;;
     cattle) pluralize_result=cattle ;;
     *man)
-      pluralize_result=pluralize_lower%man}men
+      pluralize_result=${pluralize_lower%man}men
       ;;
     *mouse)
-      pluralize_result=pluralize_lower%mouse}mice
+      pluralize_result=${pluralize_lower%mouse}mice
       ;;
     *goose)
-      pluralize_result=pluralize_lower%goose}geese
+      pluralize_result=${pluralize_lower%goose}geese
       ;;
     *tooth)
       pluralize_result=pluralize_lower%tooth}teeth

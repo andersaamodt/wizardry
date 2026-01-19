@@ -11,11 +11,11 @@ vn_context=${2:-name}
 
 case $vn_name in
   ''|*[!A-Za-z0-9._-]*)
-    printf '%s\n' "${_vn_context}s may contain only letters, digits, dots, underscores, and dashes (no spaces)." >&2
+    printf '%s\n' "${vn_context}s may contain only letters, digits, dots, underscores, and dashes (no spaces)." >&2
   exit 1
     ;;
   -*)
-    printf '%s\n' "${_vn_context}s may not begin with a dash." >&2
+    printf '%s\n' "${vn_context}s may not begin with a dash." >&2
   exit 1
     ;;
 esac
