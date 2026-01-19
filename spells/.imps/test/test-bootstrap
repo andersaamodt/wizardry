@@ -289,12 +289,12 @@ run_sourced_spell() {
   _full_path="$ROOT_DIR/$_script"
   
   # Source the script with arguments in a subshell to capture output
-  # Set positional parameters before sourcing
+  # POSIX-compliant way: set positional parameters, then source without args
   (
     set -- "$@"
     # Redirect output and error
     {
-      . "$_full_path" "$@"
+      . "$_full_path"
       _status=$?
       printf '%s' "$_status" > "${WIZARDRY_TMPDIR}/_test_status"
       exit "$_status"

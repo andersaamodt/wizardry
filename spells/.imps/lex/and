@@ -22,5 +22,5 @@ if [ $# -eq 0 ]; then
 fi
 
 and_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-"$and_lex_dir/parse" "$@"
+. "$and_lex_dir/parse"
 
