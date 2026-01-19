@@ -471,7 +471,7 @@ test_jump_to_marker_with_spaces_no_args() {
   fi
   
   # Should give expected error (no markers set)
-  if ! printf '%s' "$OUTPUT" | grep -qE "(No markers|Usage:)"; then
+  if ! printf '%s' "$OUTPUT" | grep -qE "(No markers?|Usage:)"; then
     TEST_FAILURE_REASON="Unexpected output: $OUTPUT"
     return 1
   fi
@@ -508,7 +508,7 @@ test_jump_to_location_no_args() {
   fi
   
   # Should give expected error or usage
-  if ! printf '%s' "$OUTPUT" | grep -qE "(No markers|Usage:|cannot be cast directly)"; then
+  if ! printf '%s' "$OUTPUT" | grep -qE "(No markers?|Usage:|cannot be cast directly)"; then
     TEST_FAILURE_REASON="Unexpected output: $OUTPUT"
     return 1
   fi
