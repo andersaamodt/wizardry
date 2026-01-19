@@ -225,7 +225,17 @@ while [ $_attempt_len -gt 0 ]; do
         _n=$(($_n + 1))
       done
       # Source parse recursively to handle the synonym target
-      . "$0" "$_synonym_target" "$@"
+      # Find parse using the same method as glosses
+      if command -v parse >/dev/null 2>&1; then
+        set -- "$_synonym_target" "$@"
+        . parse
+      elif [ -f "${WIZARDRY_DIR:-./.wizardry}/spells/.imps/lex/parse" ]; then
+        set -- "$_synonym_target" "$@"
+        . "${WIZARDRY_DIR:-./.wizardry}/spells/.imps/lex/parse"
+      else
+        printf '%s\n' "parse: cannot find parse to handle synonym $_cmd_name" >&2
+        return 127
+      fi
       return $?
     fi
   fi
@@ -262,21 +272,27 @@ _cmd_type=$(command -v "$_first_word" 2>/dev/null || true)
 if [ -n "$_cmd_type" ]; then
   # Check if it's an actual executable file (not a function or alias)
   # command -v returns path for executables, name for builtins/functions/aliases
-  # We only want real executable files and builtins, not functions/aliases
   case "$_cmd_type" in
     */*)
       # Contains a slash - it's a path to an executable file
       if [ -f "$_cmd_type" ] && [ -x "$_cmd_type" ]; then
         # It's a real executable command, run it
+        # Unset any gloss function first to prevent recursion
+        unset -f "$_first_word" 2>/dev/null || true
         "$_first_word" "$@"
         return $?
       fi
       ;;
     *)
       # No slash - could be a builtin, function, or alias
-      # Try to run it - builtins and functions will work
-      "$_first_word" "$@"
-      return $?
+      # Unset any gloss function first to prevent infinite recursion
+      unset -f "$_first_word" 2>/dev/null || true
+      # Try to run it - if it was a function we just unset, this will fail
+      # and we'll fall through to the error message
+      if "$_first_word" "$@" 2>/dev/null; then
+        return $?
+      fi
+      # Command failed (was likely a function we just unset), continue to error
       ;;
   esac
 fi
@@ -300,13 +316,24 @@ fi
 # If synonym found, recursively source parse with the target
 if [ -n "$_synonym_target" ]; then
   shift  # Remove the synonym word itself
-  # Source parse recursively to handle the synonym target  
-  . "$0" "$_synonym_target" "$@"
+  # Source parse recursively to handle the synonym target
+  # Find parse using the same method as glosses
+  if command -v parse >/dev/null 2>&1; then
+    set -- "$_synonym_target" "$@"
+    . parse
+  elif [ -f "${WIZARDRY_DIR:-./.wizardry}/spells/.imps/lex/parse" ]; then
+    set -- "$_synonym_target" "$@"
+    . "${WIZARDRY_DIR:-./.wizardry}/spells/.imps/lex/parse"
+  else
+    printf '%s\n' "parse: cannot find parse to handle synonym $_first_word" >&2
+    return 127
+  fi
   return $?
 fi
 
 printf 'parse: %s: command not found\n' "$_first_word" >&2
 return 127
+
 
 
 
