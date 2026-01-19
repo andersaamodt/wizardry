@@ -36,7 +36,7 @@ else
   BLUE=""
   YELLOW=""
   CYAN=""
-  MAGENTA=""
+  PURPLE=""
   BOLD=""
 fi
 
@@ -139,7 +139,7 @@ fi
 printf '  %sMana:%s    %s%d%s / %d\n' "${BOLD}" "${RESET}" "${mana_color}" "$mana" "${RESET}" "$max_mana"
 
 # Kills and Experience
-printf '  %sKills:%s   %s%d%s\n' "${BOLD}" "${RESET}" "${MAGENTA}" "$kills" "${RESET}"
+printf '  %sKills:%s   %s%d%s\n' "${BOLD}" "${RESET}" "${PURPLE}" "$kills" "${RESET}"
 printf '  %sXP:%s      %s%d%s\n' "${BOLD}" "${RESET}" "${CYAN}" "$experience" "${RESET}"
 
 printf '\n'
