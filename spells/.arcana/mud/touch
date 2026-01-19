@@ -1,0 +1,78 @@
+#!/bin/sh
+
+# The touch cantrip: source this file to enable the touch hook that triggers on-touch effects.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: Source this file in your shell rc file to enable the touch hook.
+
+    . $HOME/.wizardry/spells/.arcana/mud/touch
+
+Then use 'toggle-touch-hook' to enable/disable the hook.
+
+The hook runs trigger-on-touch after every successful touch command.
+USAGE
+  exit 0
+  ;;
+esac
+
+# Uncastable pattern - ensures spell is sourced, not executed
+_touch_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) _touch_sourced=1 ;;
+  esac
+else
+  _touch_base=${0##*/}
+  case "$_touch_base" in
+    sh|dash|bash|zsh|ksh|mksh) _touch_sourced=1 ;;
+    touch) _touch_sourced=0 ;;
+    *) _touch_sourced=1 ;;
+  esac
+fi
+
+if [ "$_touch_sourced" -eq 0 ]; then
+  printf '%s\n' "This spell cannot be cast directly. Invoke it with: . touch" >&2
+  return 1 2>/dev/null || exit 1
+fi
+unset _touch_sourced _touch_base
+
+# Explicitly use permissive error handling - this file is meant to be sourced into user's shell
+# and we don't want their shell to exit on command failures
+set +e
+set -u
+
+# The touch override - checks setting in .mud config file before triggering on-touch effects
+touch() {
+    command touch "$@" || return $?
+    
+    # Check if touch-hook is enabled via mud-config
+    spell_home="${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}"
+    config_file="$spell_home/.mud"
+    
+    if [ -f "$config_file" ]; then
+        touch_enabled=$(grep "^touch-hook=1$" "$config_file" 2>/dev/null || printf '')
+        
+        if [ -n "$touch_enabled" ]; then
+            # Get avatar path
+            avatar_path=$(grep "^avatar-path=" "$config_file" 2>/dev/null | cut -d= -f2-)
+            
+            # Process each file argument
+            for _touch_file in "$@"; do
+                # Skip flag arguments
+                case "$_touch_file" in
+                    -*) continue ;;
+                esac
+                
+                # Trigger on-touch effects if trigger-on-touch is available
+                if [ -n "$avatar_path" ] && [ -e "$avatar_path" ] && [ -e "$_touch_file" ]; then
+                    if command -v trigger-on-touch >/dev/null 2>&1; then
+                        trigger-on-touch "$avatar_path" "$_touch_file" 2>/dev/null || true
+                    fi
+                fi
+            done
+            unset _touch_file
+        fi
+    fi
+}

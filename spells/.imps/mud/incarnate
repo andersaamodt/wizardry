@@ -39,7 +39,7 @@ if [ -z "$avatar_name" ]; then
 fi
 
 # Create avatar folder in current directory
-avatar_path="$PWD/.avatar-$avatar_name"
+avatar_path="$PWD/.$avatar_name"
 
 if [ ! -d "$avatar_path" ]; then
   mkdir -p "$avatar_path" || {
@@ -67,5 +67,5 @@ enchant "$avatar_path" "is_avatar=1" >/dev/null 2>&1 || true
 # Update avatar path in config
 config-set "$config_file" "avatar-path" "$avatar_path"
 
-printf '%s\n' "Avatar initialized at: $avatar_path"
+printf 'You incarnate as %s.\n' "$avatar_path"
 exit 0

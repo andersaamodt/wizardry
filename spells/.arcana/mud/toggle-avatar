@@ -35,8 +35,11 @@ fi
 
 case "$action" in
   enable)
+    # Store previous avatar path before enabling
+    old_avatar_path=$(config-get "$config_file" "avatar-path" 2>/dev/null || printf '')
+    
     config-set "$config_file" "avatar-enabled" "1"
-    printf '%s\n' "Avatar system enabled."
+    mud-config set "avatar" "1" >/dev/null 2>&1 || true
     
     # Initialize avatar if not already done
     if command -v incarnate >/dev/null 2>&1; then
@@ -44,8 +47,33 @@ case "$action" in
     fi
     ;;
   disable)
+    # Get current avatar info
+    avatar_path=$(config-get "$config_file" "avatar-path" 2>/dev/null || printf '')
+    avatar_name=$(config-get "$config_file" "avatar-name" 2>/dev/null || whoami 2>/dev/null || printf 'adventurer')
+    
     config-set "$config_file" "avatar-enabled" "0"
-    printf '%s\n' "Avatar system disabled."
+    mud-config set "avatar" "0" >/dev/null 2>&1 || true
+    
+    # If avatar exists and has contents, create corpse in home directory
+    if [ -n "$avatar_path" ] && [ -d "$avatar_path" ]; then
+      # Check if avatar has any contents
+      if [ -n "$(ls -A "$avatar_path" 2>/dev/null)" ]; then
+        # Create corpse in home directory
+        home_dir="${HOME:-.}"
+        corpse_name=$(possessive "$avatar_name")
+        corpse_path="$home_dir/${corpse_name} corpse"
+        
+        # Move avatar to home as corpse
+        mv "$avatar_path" "$corpse_path" 2>/dev/null || true
+        printf 'Avatar disabled. %s corpse remains in %s.\n' "$corpse_name" "$home_dir"
+      else
+        # Empty avatar, just remove it
+        rmdir "$avatar_path" 2>/dev/null || true
+        printf 'Avatar disabled.\n'
+      fi
+    else
+      printf 'Avatar disabled.\n'
+    fi
     ;;
   toggle)
     current=$(config-get "$config_file" "avatar-enabled" 2>/dev/null || printf '0')
