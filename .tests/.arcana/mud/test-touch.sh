@@ -6,7 +6,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_touch_wrapper_exists() {
-  assert_file_exists "spells/.arcana/mud/touch"
+  assert_path_exists "spells/.arcana/mud/touch"
 }
 
 test_touch_can_be_sourced() {

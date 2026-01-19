@@ -210,7 +210,7 @@ while [ $attempt_len -gt 0 ]; do
         n=0
         while [ $n -lt $attempt_len ]; do
           shift
-          n=$((_n + 1))
+          n=$((n + 1))
         done
         # Source the uncastable spell
         . "$synonym_target_path"
@@ -244,7 +244,7 @@ while [ $attempt_len -gt 0 ]; do
   if [ -n "$spell_path" ]; then
     # Skip first $attempt_len args to get remaining args for the spell
     n=0
-    while [ $n -lt $attempt_len ]; do
+    while [ $n -lt $attempt_len ] && [ $# -gt 0 ]; do
       shift
       n=$((n + 1))
     done

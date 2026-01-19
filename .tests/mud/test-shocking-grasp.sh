@@ -29,7 +29,7 @@ test_shocking_grasp_requires_avatar() {
   
   # Try without avatar
   run_spell "spells/mud/shocking-grasp"
-  assert_failure && assert_stderr_contains "no avatar found"
+  assert_failure && assert_error_contains "no avatar found"
 }
 
 run_test_case "shocking-grasp charges avatar with electrical damage" test_shocking_grasp_charges_avatar
