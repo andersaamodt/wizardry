@@ -8,23 +8,23 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/mud/init-avatar" --help
-  assert_success && assert_output_contains "Usage: init-avatar"
+  run_spell "spells/.imps/mud/incarnate" --help
+  assert_success && assert_output_contains "Usage: incarnate"
 }
 
-test_init_basic() {
+test_incarnate_basic() {
   tmpdir=$(make_tempdir)
   export SPELLBOOK_DIR="$tmpdir/custom-spellbook"
-  export PATH="$ROOT_DIR/spells/mud:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/fs:$PATH"
+  export PATH="$ROOT_DIR/spells/.imps/mud:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/fs:$PATH"
   
   mkdir -p "$SPELLBOOK_DIR"
   
   cd "$tmpdir"
-  run_spell "spells/mud/init-avatar"
+  run_spell "spells/.imps/mud/incarnate"
   assert_success && assert_output_contains "Avatar initialized"
 }
 
-run_test_case "init-avatar prints usage" test_help
-run_test_case "init-avatar creates avatar" test_init_basic
+run_test_case "incarnate prints usage" test_help
+run_test_case "incarnate creates avatar" test_incarnate_basic
 
 finish_tests

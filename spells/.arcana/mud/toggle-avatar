@@ -39,8 +39,8 @@ case "$action" in
     printf '%s\n' "Avatar system enabled."
     
     # Initialize avatar if not already done
-    if command -v init-avatar >/dev/null 2>&1; then
-      init-avatar || true
+    if command -v incarnate >/dev/null 2>&1; then
+      incarnate || true
     fi
     ;;
   disable)
