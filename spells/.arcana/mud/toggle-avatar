@@ -53,7 +53,8 @@ case "$action" in
     # Get current avatar info
     avatar_path=$(config-get "$config_file" "avatar-path" 2>/dev/null || printf '')
     default_name=$(whoami 2>/dev/null || printf 'adventurer')
-    avatar_name=$(config-get "$config_file" "avatar-name" 2>/dev/null || printf '%s' "$default_name")
+    avatar_name=$(config-get "$config_file" "avatar-name" 2>/dev/null \
+      || printf '%s' "$default_name")
     
     config-set "$config_file" "avatar-enabled" "0"
     mud-config set "avatar" "0" >/dev/null 2>&1 || true
