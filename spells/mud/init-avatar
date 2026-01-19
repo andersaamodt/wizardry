@@ -1,0 +1,70 @@
+#!/bin/sh
+
+# Initialize or update the player's avatar folder.
+
+show_usage() { cat <<'USAGE'
+Usage: init-avatar
+
+Initialize the player's avatar in the current directory.
+The avatar is a folder that represents your character and follows you as you move.
+It contains your inventory and tracks your current stats.
+
+This is typically called automatically when the avatar system is enabled.
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h) show_usage; exit 0 ;; esac
+
+require-wizardry || exit 1
+set -eu
+. env-clear
+
+spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+config_file="$spell_home/.mud"
+
+# Ensure config file exists
+if [ ! -f "$config_file" ]; then
+  mkdir -p "$spell_home" 2>/dev/null || true
+  touch "$config_file" 2>/dev/null || true
+fi
+
+# Get or create avatar name
+avatar_name=$(config-get "$config_file" "avatar-name" 2>/dev/null || printf '')
+if [ -z "$avatar_name" ]; then
+  # Use username or default
+  avatar_name=$(whoami 2>/dev/null || printf 'adventurer')
+  config-set "$config_file" "avatar-name" "$avatar_name"
+fi
+
+# Create avatar folder in current directory
+avatar_path="$PWD/.avatar-$avatar_name"
+
+if [ ! -d "$avatar_path" ]; then
+  mkdir -p "$avatar_path" || {
+    printf '%s\n' "init-avatar: cannot create avatar folder" >&2
+    exit 1
+  }
+fi
+
+# Set initial stats if not present
+if ! read-magic "$avatar_path" max_life >/dev/null 2>&1; then
+  enchant "$avatar_path" "max_life=100" >/dev/null 2>&1 || true
+fi
+
+if ! read-magic "$avatar_path" max_mana >/dev/null 2>&1; then
+  enchant "$avatar_path" "max_mana=100" >/dev/null 2>&1 || true
+fi
+
+if ! read-magic "$avatar_path" mana >/dev/null 2>&1; then
+  enchant "$avatar_path" "mana=100" >/dev/null 2>&1 || true
+fi
+
+# Mark as avatar
+enchant "$avatar_path" "is_avatar=1" >/dev/null 2>&1 || true
+
+# Update avatar path in config
+config-set "$config_file" "avatar-path" "$avatar_path"
+
+printf '%s\n' "Avatar initialized at: $avatar_path"
+exit 0

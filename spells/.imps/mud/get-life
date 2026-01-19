@@ -1,0 +1,25 @@
+#!/bin/sh
+# get-life FILE - get current life of a file/avatar
+# Calculates as max_life - damage, returns max_life if no damage
+set -eu
+
+file=${1:?get-life: file path required}
+
+# Get max_life (from extended attributes)
+max_life=$(read-magic "$file" max_life 2>/dev/null || printf '0')
+case "$max_life" in
+  ''|*[!0-9]*) max_life=100 ;;  # Default max life
+esac
+
+# Get current damage
+damage=$(read-magic "$file" damage 2>/dev/null || printf '0')
+case "$damage" in
+  ''|*[!0-9]*) damage=0 ;;
+esac
+
+# Calculate current life
+current_life=$((max_life - damage))
+[ "$current_life" -lt 0 ] && current_life=0
+
+printf '%s\n' "$current_life"
+exit 0

@@ -1,0 +1,65 @@
+#!/bin/sh
+
+# Toggle the avatar system on or off.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: toggle-avatar [enable|disable]
+
+Toggle the MUD avatar system. When enabled, creates a folder avatar that
+represents your character and follows you between directories.
+
+With no argument, toggles the current state.
+With 'enable', turns on the avatar system.
+With 'disable', turns off the avatar system.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+set -eu
+. env-clear
+
+action=${1-toggle}
+
+spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+config_file="$spell_home/.mud"
+
+# Ensure config file exists
+if [ ! -f "$config_file" ]; then
+  mkdir -p "$spell_home" 2>/dev/null || true
+  touch "$config_file" 2>/dev/null || true
+fi
+
+case "$action" in
+  enable)
+    config-set "$config_file" "avatar-enabled" "1"
+    printf '%s\n' "Avatar system enabled."
+    
+    # Initialize avatar if not already done
+    if command -v init-avatar >/dev/null 2>&1; then
+      init-avatar || true
+    fi
+    ;;
+  disable)
+    config-set "$config_file" "avatar-enabled" "0"
+    printf '%s\n' "Avatar system disabled."
+    ;;
+  toggle)
+    current=$(config-get "$config_file" "avatar-enabled" 2>/dev/null || printf '0')
+    if [ "$current" = "1" ]; then
+      toggle-avatar disable
+    else
+      toggle-avatar enable
+    fi
+    ;;
+  *)
+    printf '%s\n' "toggle-avatar: unknown action '$action'" >&2
+    printf '%s\n' "Usage: toggle-avatar [enable|disable]" >&2
+    exit 1
+    ;;
+esac
+
+exit 0
