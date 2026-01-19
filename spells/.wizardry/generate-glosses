@@ -324,7 +324,7 @@ while IFS= read -r spell_path; do
   
   # Add to space-separated list
   spell_names="$spell_names $name"
-  spell_count=$((_spell_count + 1))
+  spell_count=$((spell_count + 1))
 done < "$tmpfile"
 
 [ "$quiet" -eq 0 ] && printf 'generate-glosses: Found %d executable files\n' "$spell_count" >&2
