@@ -130,25 +130,25 @@ set -eu
       pluralize_result=${pluralize_lower%goose}geese
       ;;
     *tooth)
-      pluralize_result=pluralize_lower%tooth}teeth
+      pluralize_result=${pluralize_lower%tooth}teeth
       ;;
     *foot)
-      pluralize_result=pluralize_lower%foot}feet
+      pluralize_result=${pluralize_lower%foot}feet
       ;;
     *louse)
-      pluralize_result=pluralize_lower%louse}lice
+      pluralize_result=${pluralize_lower%louse}lice
       ;;
     *[sxz]|*ch|*sh)
       pluralize_result=${pluralize_lower}es
       ;;
     *[!aeiou]y)
-      pluralize_result=pluralize_lower%y}ies
+      pluralize_result=${pluralize_lower%y}ies
       ;;
     *fe)
-      pluralize_result=pluralize_lower%fe}ves
+      pluralize_result=${pluralize_lower%fe}ves
       ;;
     *f)
-      pluralize_result=pluralize_lower%f}ves
+      pluralize_result=${pluralize_lower%f}ves
       ;;
     *[!aeiou]o)
       pluralize_result=${pluralize_lower}es
@@ -157,7 +157,7 @@ set -eu
       pluralize_result=${pluralize_lower}es
       ;;
     *is)
-      pluralize_result=pluralize_lower%is}es
+      pluralize_result=${pluralize_lower%is}es
       ;;
     *)
       pluralize_result=${pluralize_lower}s
@@ -178,7 +178,7 @@ set -eu
   if [ "$pluralize_word" != "$pluralize_word_lower" ] && \
      [ "$pluralize_word" != "$pluralize_word_upper" ]; then
     # Mixed case (has both upper and lower)
-    pluralize_rest=pluralize_word#?}
+    pluralize_rest=${pluralize_word#?}
     if [ "${PLURALIZE_DEBUG:-0}" = "1" ]; then
       printf '[DEBUG] Matched mixed case pattern\n' >&2
       printf '[DEBUG] Rest of word: [%s]\n' "$pluralize_rest" >&2
@@ -198,8 +198,8 @@ set -eu
           
           # Method 1: Pure POSIX parameter expansion
           pluralize_upper=$(printf '%s' "$pluralize_result" | tr 'a-z' 'A-Z')
-          pluralize_first=pluralize_upper%"pluralize_upper#?}"}
-          pluralize_tail=pluralize_result#?}
+          pluralize_first=${pluralize_upper%"${pluralize_upper#?}"}
+          pluralize_tail=${pluralize_result#?}
           
           if [ "${PLURALIZE_DEBUG:-0}" = "1" ]; then
             printf '[DEBUG] Method 1 (POSIX expansion):\n' >&2
