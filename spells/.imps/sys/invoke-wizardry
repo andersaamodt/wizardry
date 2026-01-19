@@ -137,9 +137,9 @@ fi
 # Add all spell directories to PATH (including subdirectories)
 for category_dir in "$WIZARDRY_DIR/spells"/* "$WIZARDRY_DIR/spells"/.*; do
   [ -d "$category_dir" ] || continue
-  # Skip . and ..
+  # Skip . and .. and .arcana (contains hook wrappers that shouldn't be in PATH)
   case "$category_dir" in
-    */.|*/..) continue ;;
+    */.|*/..|*/.arcana) continue ;;
   esac
   PATH="$category_dir:$PATH"
   
