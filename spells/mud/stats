@@ -2,7 +2,9 @@
 
 # Display character or file stats including life, mana, kills, and experience.
 
-show_usage() { cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: stats [target]
 
 Display stats for the player's avatar or a specified target file/avatar.
@@ -15,10 +17,9 @@ Example:
   stats other-avatar
   stats treasure-chest
 USAGE
-}
-
-case "${1-}" in
---help|--usage|-h) show_usage; exit 0 ;; esac
+  exit 0
+  ;;
+esac
 
 require-wizardry || exit 1
 set -eu

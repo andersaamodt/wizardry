@@ -2,7 +2,9 @@
 
 # Initialize or update the player's avatar folder.
 
-show_usage() { cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: init-avatar
 
 Initialize the player's avatar in the current directory.
@@ -11,10 +13,9 @@ It contains your inventory and tracks your current stats.
 
 This is typically called automatically when the avatar system is enabled.
 USAGE
-}
-
-case "${1-}" in
---help|--usage|-h) show_usage; exit 0 ;; esac
+  exit 0
+  ;;
+esac
 
 require-wizardry || exit 1
 set -eu

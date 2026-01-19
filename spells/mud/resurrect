@@ -2,7 +2,9 @@
 
 # Resurrect the player, restoring them to life with 1 HP.
 
-show_usage() { cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: resurrect
 
 Resurrect yourself if you are dead. This spell can only be cast in your home
@@ -12,10 +14,9 @@ When you resurrect, your health is restored to 1 HP.
 
 Aliases: revive
 USAGE
-}
-
-case "${1-}" in
---help|--usage|-h) show_usage; exit 0 ;; esac
+  exit 0
+  ;;
+esac
 
 require-wizardry || exit 1
 set -eu

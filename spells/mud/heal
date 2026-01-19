@@ -2,7 +2,9 @@
 
 # Smart heal spell that casts the best available healing spell.
 
-show_usage() { cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: heal [target]
 
 Cast the most powerful healing spell you have available.
@@ -14,10 +16,9 @@ Example:
   heal
   heal other-avatar
 USAGE
-}
-
-case "${1-}" in
---help|--usage|-h) show_usage; exit 0 ;; esac
+  exit 0
+  ;;
+esac
 
 require-wizardry || exit 1
 set -eu

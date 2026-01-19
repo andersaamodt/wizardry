@@ -94,8 +94,8 @@ case "$level" in
     ;;
   16)
     name='Advanced MUD Features'
-    spells='choose-player:mud damage-file:mud decorate:mud magic-missile:mud'
-    imps=''
+    spells='choose-player:mud decorate:mud greater-heal:mud heal:mud init-avatar:mud lesser-heal:mud magic-missile:mud resurrect:mud stats:mud'
+    imps='mud/deal-damage mud/get-life'
     ;;
   17)
     name='Cryptography'
@@ -134,7 +134,7 @@ case "$level" in
     ;;
   24)
     name='MUD Administration Menus'
-    spells='add-ssh-player:menu/mud-admin mud:menu mud-admin-menu:menu mud-menu:menu mud-settings:menu new-player:menu/mud-admin set-player:menu/mud-admin'
+    spells='add-ssh-player:menu/mud-admin mud:menu mud-admin-menu:menu mud-menu:menu mud-settings:menu new-player:menu/mud-admin set-player:menu/mud-admin toggle-avatar:.arcana/mud'
     imps=''
     ;;
   25)
