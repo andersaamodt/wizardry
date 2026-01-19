@@ -18,7 +18,7 @@ permissions:
   pull-requests: read
 
 jobs:
-  aaa-nix:
+  nix:
     name: Nix ${{ matrix.job_name }} unit tests
     runs-on: ubuntu-latest
     strategy:
@@ -81,7 +81,7 @@ jobs:
             ./spells/.wizardry/test-magic ${{ matrix.levels }} ${{ matrix.test_flags }}
           "
 
-  aab-macos:
+  macos:
     name: macOS ${{ matrix.job_name }} unit tests
     runs-on: macos-latest
     strategy:
