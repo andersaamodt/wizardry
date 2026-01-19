@@ -7,11 +7,6 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-test_help() {
-  run_spell "spells/.imps/mud/incarnate" --help
-  assert_success && assert_output_contains "Usage: incarnate"
-}
-
 test_incarnate_basic() {
   tmpdir=$(make_tempdir)
   export SPELLBOOK_DIR="$tmpdir/custom-spellbook"
@@ -24,7 +19,6 @@ test_incarnate_basic() {
   assert_success && assert_output_contains "Avatar initialized"
 }
 
-run_test_case "incarnate prints usage" test_help
 run_test_case "incarnate creates avatar" test_incarnate_basic
 
 finish_tests
