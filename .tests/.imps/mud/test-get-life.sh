@@ -82,8 +82,10 @@ while [ $# -gt 0 ]; do
 done
 if [ -n "$key" ] && [ -n "$value" ] && [ -n "$file" ]; then
   attr_file="${file}.attrs"
+  # Escape special regex characters in key for grep
+  escaped_key=$(printf '%s\n' "$key" | sed 's/[.[\*^$]/\\&/g')
   if [ -f "$attr_file" ]; then
-    grep -v "^${key}=" "$attr_file" > "${attr_file}.tmp" 2>/dev/null || true
+    grep -v "^${escaped_key}=" "$attr_file" > "${attr_file}.tmp" 2>/dev/null || true
     mv "${attr_file}.tmp" "$attr_file" 2>/dev/null || true
   fi
   printf '%s=%s\n' "$key" "$value" >> "$attr_file"
@@ -112,8 +114,10 @@ while [ $# -gt 0 ]; do
   esac
 done
 attr_file="${file}.attrs"
+# Escape special regex characters in key for grep
+escaped_key=$(printf '%s\n' "$key" | sed 's/[.[\*^$]/\\&/g')
 if [ -f "$attr_file" ]; then
-  grep -v "^${key}=" "$attr_file" > "${attr_file}.tmp" 2>/dev/null || true
+  grep -v "^${escaped_key}=" "$attr_file" > "${attr_file}.tmp" 2>/dev/null || true
   mv "${attr_file}.tmp" "$attr_file" 2>/dev/null || true
 fi
 printf '%s=%s\n' "$key" "$value" >> "$attr_file"

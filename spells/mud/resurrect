@@ -50,13 +50,14 @@ if [ "$dead" != "1" ]; then
   exit 0
 fi
 
-# Check if we're in home directory or jump 1 location
+# Check if we're in home directory, jump 1 location, or avatar directory
 current_dir=$(pwd -P)
 home_dir=$(cd "$HOME" && pwd -P)
+avatar_dir=$(cd "$(dirname "$avatar_path")" && pwd -P)
 
 # TODO: Check jump 1 location when jump spell exists
-# For now, just check home
-if [ "$current_dir" != "$home_dir" ]; then
+# For now, check home or avatar directory
+if [ "$current_dir" != "$home_dir" ] && [ "$current_dir" != "$avatar_dir" ]; then
   printf '%s\n' "resurrect: you can only resurrect in your home directory" >&2
   exit 1
 fi

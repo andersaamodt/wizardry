@@ -95,7 +95,7 @@ case "$level" in
   16)
     name='Advanced MUD Features'
     spells='choose-player:mud decorate:mud greater-heal:mud heal:mud init-avatar:mud lesser-heal:mud magic-missile:mud resurrect:mud stats:mud'
-    imps='mud/deal-damage mud/get-life'
+    imps='mud/damage-file mud/deal-damage mud/get-life'
     ;;
   17)
     name='Cryptography'
