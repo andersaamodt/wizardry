@@ -28,14 +28,14 @@ config_file="$spell_home/.mud"
 # Check if avatar is enabled
 avatar_enabled=$(config-get "$config_file" "avatar-enabled" 2>/dev/null || printf '0')
 if [ "$avatar_enabled" != "1" ]; then
-  printf '%s\n' "resurrect: avatar system is not enabled"
+  printf '%s\n' "resurrect: avatar system is not enabled" >&2
   exit 1
 fi
 
 # Get avatar
 avatar_path=$(config-get "$config_file" "avatar-path" 2>/dev/null || printf '')
 if [ -z "$avatar_path" ] || [ ! -e "$avatar_path" ]; then
-  printf '%s\n' "resurrect: avatar not found"
+  printf '%s\n' "resurrect: avatar not found" >&2
   exit 1
 fi
 
@@ -57,9 +57,7 @@ home_dir=$(cd "$HOME" && pwd -P)
 # TODO: Check jump 1 location when jump spell exists
 # For now, just check home
 if [ "$current_dir" != "$home_dir" ]; then
-  printf '%s\n' "resurrect: you can only resurrect in your home directory"
-  printf '%s\n' "Current: $current_dir"
-  printf '%s\n' "Home: $home_dir"
+  printf '%s\n' "resurrect: you can only resurrect in your home directory" >&2
   exit 1
 fi
 
@@ -70,8 +68,14 @@ case "$max_life" in
 esac
 
 new_damage=$((max_life - 1))
-enchant "$avatar_path" "damage=$new_damage" >/dev/null 2>&1
-enchant "$avatar_path" "dead=0" >/dev/null 2>&1
+if ! enchant "$avatar_path" "damage=$new_damage" >/dev/null 2>&1; then
+  printf '%s\n' "resurrect: failed to restore HP" >&2
+  exit 1
+fi
+if ! enchant "$avatar_path" "dead=0" >/dev/null 2>&1; then
+  printf '%s\n' "resurrect: failed to clear dead status" >&2
+  exit 1
+fi
 
 printf '%s\n' "You have been resurrected! Your health is restored to 1 HP."
 exit 0
