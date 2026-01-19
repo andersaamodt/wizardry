@@ -30,25 +30,25 @@ USAGE
 esac
 
 # Uncastable pattern - ensures spell is sourced, not executed
-_blink_sourced=0
+blink_sourced=0
 if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
   case "${ZSH_EVAL_CONTEXT-}" in
-    *:file) _blink_sourced=1 ;;
+    *:file) blink_sourced=1 ;;
   esac
 else
-  _blink_base=${0##*/}
-  case "$_blink_base" in
-    sh|dash|bash|zsh|ksh|mksh) _blink_sourced=1 ;;
-    blink) _blink_sourced=0 ;;
-    *) _blink_sourced=1 ;;
+  blink_base=${0##*/}
+  case "$blink_base" in
+    sh|dash|bash|zsh|ksh|mksh) blink_sourced=1 ;;
+    blink) blink_sourced=0 ;;
+    *) blink_sourced=1 ;;
   esac
 fi
 
-if [ "$_blink_sourced" -eq 0 ]; then
+if [ "$blink_sourced" -eq 0 ]; then
   printf '%s\n' "This spell cannot be cast directly. Invoke it with: blink" >&2
   return 1 2>/dev/null || exit 1
 fi
-unset _blink_sourced _blink_base
+unset blink_sourced blink_base
 
 set -eu
 . env-clear

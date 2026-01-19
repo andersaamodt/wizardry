@@ -24,25 +24,25 @@ USAGE
 esac
 
 # Uncastable pattern - ensures spell is sourced, not executed
-_colors_sourced=0
+colors_sourced=0
 if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
   case "${ZSH_EVAL_CONTEXT-}" in
-    *:file) _colors_sourced=1 ;;
+    *:file) colors_sourced=1 ;;
   esac
 else
-  _colors_base=${0##*/}
-  case "$_colors_base" in
-    sh|dash|bash|zsh|ksh|mksh) _colors_sourced=1 ;;
-    colors) _colors_sourced=0 ;;
-    *) _colors_sourced=1 ;;
+  colors_base=${0##*/}
+  case "$colors_base" in
+    sh|dash|bash|zsh|ksh|mksh) colors_sourced=1 ;;
+    colors) colors_sourced=0 ;;
+    *) colors_sourced=1 ;;
   esac
 fi
 
-if [ "$_colors_sourced" -eq 0 ]; then
+if [ "$colors_sourced" -eq 0 ]; then
   printf '%s\n' "This spell cannot be cast directly. Invoke it with: . colors" >&2
   return 1 2>/dev/null || exit 1
 fi
-unset _colors_sourced _colors_base
+unset colors_sourced colors_base
 
 colors() {
 # Note: No require-wizardry check here - colors must work standalone
