@@ -1,24 +1,6 @@
 #!/bin/sh
-
-# Apply or increase damage to a file using extended attributes.
-
-case "${1-}" in
---help|--usage|-h)
-  cat <<'USAGE'
-Usage: damage-file <file> <damage>
-
-Apply or increase damage to a file using the 'damage' extended attribute.
-The damage amount is added to any existing damage on the file.
-
-Example:
-  damage-file treasure-chest 5
-USAGE
-  exit 0
-  ;;
-esac
-
+# damage-file FILE DAMAGE - apply damage to a file using deal-damage imp
 set -eu
-. env-clear
 
 # Validate arguments
 if [ "$#" -ne 2 ]; then
