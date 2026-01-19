@@ -1014,7 +1014,7 @@ test_custom_synonym_multiword() {
   cp "$ROOT_DIR/spells/.wizardry/generate-glosses" "$tmpdir/wizardry/spells/.wizardry/generate-glosses"
   chmod +x "$tmpdir/wizardry/spells/.wizardry/generate-glosses"
   
-  # Create jump-to-marker spell
+  # Create jump-to-marker spell (castable version for this test)
   cat > "$test_spell_dir/jump-to-marker" <<'EOF'
 #!/bin/sh
 printf 'jump-to-marker called with args: [%s]\n' "$*"
@@ -1052,9 +1052,95 @@ EOF
   fi
 }
 
+test_custom_synonym_uncastable() {
+  # Test that custom synonyms to UNCASTABLE spells work (issue: leap to location with real jump-to-marker)
+  # This tests that parse detects uncastable synonym targets and sources them
+  _saved_wizdir="${WIZARDRY_DIR-}"
+  
+  # Create temp wizardry directory
+  tmpdir=$(make_tempdir)
+  test_spell_dir="$tmpdir/wizardry/spells/translocation"
+  mkdir -p "$test_spell_dir"
+  
+  # Copy parse imp
+  mkdir -p "$tmpdir/wizardry/spells/.imps/lex"
+  cp "$ROOT_DIR/spells/.imps/lex/parse" "$tmpdir/wizardry/spells/.imps/lex/parse"
+  chmod +x "$tmpdir/wizardry/spells/.imps/lex/parse"
+  
+  # Copy generate-glosses
+  mkdir -p "$tmpdir/wizardry/spells/.wizardry"
+  cp "$ROOT_DIR/spells/.wizardry/generate-glosses" "$tmpdir/wizardry/spells/.wizardry/generate-glosses"
+  chmod +x "$tmpdir/wizardry/spells/.wizardry/generate-glosses"
+  
+  # Create an uncastable spell (like real jump-to-marker)
+  cat > "$test_spell_dir/jump-to-marker" <<'EOF'
+#!/bin/sh
+# Uncastable pattern - ensures spell is sourced, not executed
+_jump_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) _jump_sourced=1 ;;
+  esac
+else
+  _jump_base=${0##*/}
+  case "$_jump_base" in
+    sh|dash|bash|zsh|ksh|mksh) _jump_sourced=1 ;;
+    jump-to-marker) _jump_sourced=0 ;;
+    *) _jump_sourced=1 ;;
+  esac
+fi
+
+if [ "$_jump_sourced" -eq 0 ]; then
+  printf '%s\n' "This spell cannot be cast directly. Invoke it with: jump to marker" >&2
+  exit 1
+fi
+
+# If sourced, do the work
+printf 'jump-to-marker sourced successfully with args: [%s]\n' "$*"
+EOF
+  chmod +x "$test_spell_dir/jump-to-marker"
+  
+  export WIZARDRY_DIR="$tmpdir/wizardry"
+  
+  # Create custom synonym
+  tmpspellbook=$(make_tempdir)
+  cat > "$tmpspellbook/.synonyms" <<'EOF'
+leap-to-location=jump-to-marker
+EOF
+  
+  export SPELLBOOK_DIR="$tmpspellbook"
+  tmpgloss="$tmpspellbook/glosses"
+  "$tmpdir/wizardry/spells/.wizardry/generate-glosses" --output "$tmpgloss" --quiet
+  . "$tmpgloss"
+  
+  # Test: "leap to location" should SOURCE jump-to-marker (not execute it)
+  OUTPUT=$(leap to location 2>&1)
+  STATUS=$?
+  
+  # Restore
+  if [ -n "$_saved_wizdir" ]; then export WIZARDRY_DIR="$_saved_wizdir"; else unset WIZARDRY_DIR; fi
+  
+  if [ "$STATUS" -ne 0 ]; then
+    TEST_FAILURE_REASON="Command failed with status $STATUS: $OUTPUT"
+    return 1
+  fi
+  
+  # Should see the success message, NOT "cannot be cast directly"
+  if printf '%s' "$OUTPUT" | grep -q "cannot be cast directly"; then
+    TEST_FAILURE_REASON="Uncastable spell was executed instead of sourced: $OUTPUT"
+    return 1
+  fi
+  
+  if ! printf '%s' "$OUTPUT" | grep -q "jump-to-marker sourced successfully"; then
+    TEST_FAILURE_REASON="Expected 'jump-to-marker sourced successfully' but got: $OUTPUT"
+    return 1
+  fi
+}
+
 run_test_case "Single-word spell with argument (issue: prioritize mytask)" test_single_word_spell_with_arg
 run_test_case "Multi-word spell with argument (issue: magic missile target)" test_multiword_spell_with_arg
 run_test_case "Longest match priority (cast spell fireball)" test_longest_match_priority
-run_test_case "Custom synonym multi-word (issue: leap to location)" test_custom_synonym_multiword
+run_test_case "Custom synonym multi-word castable (issue: leap to location)" test_custom_synonym_multiword
+run_test_case "Custom synonym multi-word uncastable (issue: leap to location sourcing)" test_custom_synonym_uncastable
 
 finish_tests
