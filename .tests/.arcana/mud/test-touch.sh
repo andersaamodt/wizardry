@@ -6,17 +6,17 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_touch_wrapper_exists() {
-  _assert_file_exists "spells/.arcana/mud/touch"
+  assert_file_exists "spells/.arcana/mud/touch"
 }
 
 test_touch_can_be_sourced() {
   # Touch wrapper should be sourceable
   (
     . "$test_root/spells/.arcana/mud/touch" 2>/dev/null
-    _assert_success
+    assert_success
   )
 }
 
-_run_test_case "touch wrapper exists" test_touch_wrapper_exists
-_run_test_case "touch wrapper can be sourced" test_touch_can_be_sourced
-_finish_tests
+run_test_case "touch wrapper exists" test_touch_wrapper_exists
+run_test_case "touch wrapper can be sourced" test_touch_can_be_sourced
+finish_tests

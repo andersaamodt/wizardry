@@ -11,7 +11,7 @@ fail_count=$(cat "${WIZARDRY_TMPDIR}/_fail_count")
 skip_count=$(cat "${WIZARDRY_TMPDIR}/_skip_count" 2>/dev/null || printf '0')
 fail_detail_indices=$(cat "${WIZARDRY_TMPDIR}/_fail_detail_indices" 2>/dev/null || printf '')
 
-total=$((_pass_count + _fail_count + _skip_count))
+total=$((pass_count + fail_count + skip_count))
 test-summary "$pass_count" "$total" "$skip_count"
 
 if [ "$fail_count" -gt 0 ]; then

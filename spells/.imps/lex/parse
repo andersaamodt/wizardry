@@ -85,7 +85,7 @@ for loop_arg in "$@"; do
       if [ -z "$first_word" ]; then
         first_word=$loop_arg
       fi
-      cmd_word_count=$((_cmd_word_count + 1))
+      cmd_word_count=$((cmd_word_count + 1))
       ;;
     *)
       # Pure numeric argument - stop counting command words
