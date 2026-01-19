@@ -6,11 +6,12 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_trigger_on_touch_damage() {
-  test_setup_mud_env
+  # Create test directory
+  test_tempdir=$(mktemp -d)
   
   # Create toucher and target
-  toucher="$test_dir/toucher"
-  target="$test_dir/target.txt"
+  toucher="$test_tempdir/toucher"
+  target="$test_tempdir/target.txt"
   printf 'test\n' > "$toucher"
   printf 'test\n' > "$target"
   
@@ -26,11 +27,12 @@ test_trigger_on_touch_damage() {
 }
 
 test_trigger_on_touch_effect_consumed() {
-  test_setup_mud_env
+  # Create test directory
+  test_tempdir=$(mktemp -d)
   
   # Create files
-  toucher="$test_dir/toucher"
-  target="$test_dir/target.txt"
+  toucher="$test_tempdir/toucher"
+  target="$test_tempdir/target.txt"
   printf 'test\n' > "$toucher"
   printf 'test\n' > "$target"
   
