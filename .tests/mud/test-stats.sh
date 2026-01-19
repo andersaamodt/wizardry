@@ -62,7 +62,7 @@ test_help() {
 
 test_stats_no_avatar() {
   tmpdir=$(make_tempdir)
-  export SPELLBOOK_DIR="$tmpdir/.spellbook"
+  export SPELLBOOK_DIR="$tmpdir/custom-spellbook"
   
   run_spell "spells/mud/stats"
   assert_failure && assert_error_contains "not enabled"
@@ -71,7 +71,7 @@ test_stats_no_avatar() {
 test_stats_display() {
   tmpdir=$(make_tempdir)
   stub_dir=$(make_tempdir)
-  export SPELLBOOK_DIR="$tmpdir/.spellbook"
+  export SPELLBOOK_DIR="$tmpdir/custom-spellbook"
   
   create_xattr_stub "$stub_dir"
   

@@ -63,7 +63,7 @@ test_help() {
 test_resurrect_not_dead() {
   tmpdir=$(make_tempdir)
   stub_dir=$(make_tempdir)
-  export SPELLBOOK_DIR="$tmpdir/.spellbook"
+  export SPELLBOOK_DIR="$tmpdir/custom-spellbook"  # Use non-standard path
   export HOME="$tmpdir"
   
   create_xattr_stub "$stub_dir"
@@ -89,7 +89,7 @@ test_resurrect_not_dead() {
 test_resurrect_success() {
   tmpdir=$(make_tempdir)
   stub_dir=$(make_tempdir)
-  export SPELLBOOK_DIR="$tmpdir/.spellbook"
+  export SPELLBOOK_DIR="$tmpdir/custom-spellbook"  # Use non-standard path
   export HOME="$tmpdir"
   
   create_xattr_stub "$stub_dir"
@@ -123,7 +123,7 @@ test_resurrect_success() {
 test_resurrect_wrong_location() {
   tmpdir=$(make_tempdir)
   stub_dir=$(make_tempdir)
-  export SPELLBOOK_DIR="$tmpdir/.spellbook"
+  export SPELLBOOK_DIR="$tmpdir/custom-spellbook"  # Use non-standard path
   export HOME="$tmpdir"
   
   create_xattr_stub "$stub_dir"

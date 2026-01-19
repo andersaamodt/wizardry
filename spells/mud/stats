@@ -51,7 +51,7 @@ if [ -z "$target" ]; then
   avatar_enabled=$(config-get "$config_file" "avatar-enabled" 2>/dev/null || printf '0')
   
   if [ "$avatar_enabled" != "1" ]; then
-    printf '%s\n' "stats: avatar system is not enabled. Enable it from the MUD menu."
+    printf '%s\n' "stats: avatar system is not enabled. Enable it from the MUD menu." >&2
     exit 1
   fi
   
@@ -59,7 +59,7 @@ if [ -z "$target" ]; then
   avatar_path=$(config-get "$config_file" "avatar-path" 2>/dev/null || printf '')
   
   if [ -z "$avatar_path" ] || [ ! -e "$avatar_path" ]; then
-    printf '%s\n' "stats: avatar not found. Your avatar may need to be created."
+    printf '%s\n' "stats: avatar not found. Your avatar may need to be created." >&2
     exit 1
   fi
   

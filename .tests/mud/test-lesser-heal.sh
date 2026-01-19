@@ -63,7 +63,7 @@ test_help() {
 test_lesser_heal_self() {
   tmpdir=$(make_tempdir)
   stub_dir=$(make_tempdir)
-  export SPELLBOOK_DIR="$tmpdir/.spellbook"
+  export SPELLBOOK_DIR="$tmpdir/custom-spellbook"
   
   create_xattr_stub "$stub_dir"
   
@@ -96,7 +96,7 @@ test_lesser_heal_self() {
 test_lesser_heal_insufficient_mana() {
   tmpdir=$(make_tempdir)
   stub_dir=$(make_tempdir)
-  export SPELLBOOK_DIR="$tmpdir/.spellbook"
+  export SPELLBOOK_DIR="$tmpdir/custom-spellbook"
   
   create_xattr_stub "$stub_dir"
   
