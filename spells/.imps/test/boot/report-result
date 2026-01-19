@@ -26,16 +26,16 @@ fail_count=$(cat "${WIZARDRY_TMPDIR}/_fail_count")
 skip_count=$(cat "${WIZARDRY_TMPDIR}/_skip_count" 2>/dev/null || printf '0')
 
 if [ "$status" -eq 0 ]; then
-  pass_count=$((_pass_count + 1))
+  pass_count=$((pass_count + 1))
   printf '%s' "$pass_count" > "${WIZARDRY_TMPDIR}/_pass_count"
   test-pass "$num" "$desc"
 elif [ "$status" -eq 222 ]; then
   # Skip status
-  skip_count=$((_skip_count + 1))
+  skip_count=$((skip_count + 1))
   printf '%s' "$skip_count" > "${WIZARDRY_TMPDIR}/_skip_count"
   test-skip "$num" "$desc" "$skip_reason"
 else
-  fail_count=$((_fail_count + 1))
+  fail_count=$((fail_count + 1))
   printf '%s' "$fail_count" > "${WIZARDRY_TMPDIR}/_fail_count"
   test-fail "$num" "$desc" "$reason"
 fi
