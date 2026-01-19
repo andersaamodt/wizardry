@@ -72,12 +72,11 @@ loop_limit=${MENU_LOOP_LIMIT:-}
 first_run=1
 start_selection=1
 
-# Track toggle states: 1=parse, 2=mud-menu, 3=CD hook, 4=avatar, 5=touch, 6=inventory, 7=all
+# Track toggle states: 1=parse, 2=mud-menu, 3=CD hook, 4=avatar, 5=touch, 6=all
 was_parse=0
 was_cd=0
 was_avatar=0
 was_touch=0
-was_inventory=0
 was_all=0
 
 while true; do
@@ -87,11 +86,10 @@ while true; do
     if is_cd_hook_enabled; then now_cd=1; else now_cd=0; fi
     if is_feature_enabled "avatar"; then now_avatar=1; else now_avatar=0; fi
     if is_feature_enabled "touch-hook"; then now_touch=1; else now_touch=0; fi
-    if is_feature_enabled "inventory"; then now_inventory=1; else now_inventory=0; fi
     
     # Check if all features are enabled
     now_all=1
-    for feature in avatar touch-hook inventory; do
+    for feature in avatar touch-hook; do
       if ! is_feature_enabled "$feature"; then
         now_all=0
         break
@@ -106,10 +104,8 @@ while true; do
       start_selection=4
     elif [ "$was_touch" != "$now_touch" ]; then
       start_selection=5
-    elif [ "$was_inventory" != "$now_inventory" ]; then
-      start_selection=6
     elif [ "$was_all" != "$now_all" ]; then
-      start_selection=7
+      start_selection=6
     else
       start_selection=1
     fi
@@ -122,11 +118,10 @@ while true; do
   if is_cd_hook_enabled; then was_cd=1; else was_cd=0; fi
   if is_feature_enabled "avatar"; then was_avatar=1; else was_avatar=0; fi
   if is_feature_enabled "touch-hook"; then was_touch=1; else was_touch=0; fi
-  if is_feature_enabled "inventory"; then was_inventory=1; else was_inventory=0; fi
   
   # Check if all features are enabled
   was_all=1
-  for feature in avatar touch-hook inventory; do
+  for feature in avatar touch-hook; do
     if ! is_feature_enabled "$feature"; then
       was_all=0
       break
@@ -162,13 +157,6 @@ while true; do
     touch_hook="[ ] Touch hook (planned)%toggle-touch-hook"
   fi
   
-  # Build inventory toggle
-  if is_feature_enabled "inventory"; then
-    inventory="[X] Inventory feature (planned)%toggle-inventory"
-  else
-    inventory="[ ] Inventory feature (planned)%toggle-inventory"
-  fi
-  
   # Build show/hide MUD in main menu toggle
   if is_feature_enabled "mud-enabled"; then
     mud_menu="[X] Show MUD in main menu%toggle-mud-menu"
@@ -178,7 +166,7 @@ while true; do
   
   # Build enable/disable all toggle
   all_enabled=1
-  for feature in avatar touch-hook inventory; do
+  for feature in avatar touch-hook; do
     if ! is_feature_enabled "$feature"; then
       all_enabled=0
       break
@@ -186,9 +174,9 @@ while true; do
   done
   
   if [ "$all_enabled" -eq 1 ]; then
-    toggle_all="[X] Enable all MUD features%toggle-all-mud --disable"
+    toggle_all="Disable all MUD features%toggle-all-mud --disable"
   else
-    toggle_all="[ ] Enable all MUD features%toggle-all-mud --enable"
+    toggle_all="Enable all MUD features%toggle-all-mud --enable"
   fi
   
   tor="Set up tor hidden service%setup-tor"
@@ -197,7 +185,7 @@ while true; do
   exit_label=$(exit-label)
   exit_item="${exit_label}%kill -TERM \$PPID"
 
-  set -- "$parse_toggle" "$mud_menu" "$cd_hook" "$avatar" "$touch_hook" "$inventory" "$toggle_all" "$tor" "$exit_item"
+  set -- "$parse_toggle" "$mud_menu" "$cd_hook" "$avatar" "$touch_hook" "$toggle_all" "$tor" "$exit_item"
   menu --start-selection "$start_selection" "MUD Install:" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
   
