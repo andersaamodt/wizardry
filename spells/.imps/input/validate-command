@@ -9,12 +9,12 @@ vc_cmd=${1-}
 vc_context=${2:-command}
 
 if [ -z "$vc_cmd" ]; then
-  printf '%s\n' "${_vc_context} must not be empty." >&2
+  printf '%s\n' "${vc_context} must not be empty." >&2
   exit 1
 fi
 
 if [ "$(printf '%s' "$vc_cmd" | tr -d '\t')" != "$vc_cmd" ]; then
-  printf '%s\n' "${_vc_context} may not contain tabs." >&2
+  printf '%s\n' "${vc_context} may not contain tabs." >&2
   exit 1
 fi
 

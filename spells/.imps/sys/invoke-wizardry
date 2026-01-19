@@ -39,13 +39,13 @@ esac
 set +eu
 
 # Prevent recursive sourcing
-if [ "WIZARDRY_INVOKED-}" = "1" ]; then
+if [ "${WIZARDRY_INVOKED-}" = "1" ]; then
   [ "${WIZARDRY_DEBUG-}" = "1" ] && \
     printf '[invoke-wizardry] %s\n' "Already invoked, skipping" >&2
   return 0
 fi
 WIZARDRY_INVOKED=1
-export _WIZARDRY_INVOKED
+export WIZARDRY_INVOKED
 # Note: Exported so subprocesses (like test files) know wizardry is available
 
 [ "${WIZARDRY_DEBUG-}" = "1" ] && \

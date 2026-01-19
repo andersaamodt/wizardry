@@ -50,7 +50,7 @@ set -eu
   exit 0
   fi
   nsa_shell_code=""
-  while IFS= read -r nsa_line || [ -n "" ]; do
+  while IFS= read -r nsa_line || [ -n "$nsa_line" ]; do
     if [ -z "$nsa_shell_code" ]; then nsa_shell_code=$nsa_line
     else nsa_shell_code="$nsa_shell_code
 $nsa_line"; fi
@@ -62,7 +62,7 @@ $nsa_line"; fi
   nsa_escaped_code=$(printf '%s' "$nsa_shell_code" | sed "s/''/'''/g; s/\\\${/''\${/g")
   nsa_marked_code=$(printf '%s' "$nsa_escaped_code" | sed "s/$/ $nsa_marker/")
   if [ ! -f "$nsa_nix_file" ]; then
-    nsa_dir=nsa_nix_file%/*}
+    nsa_dir=${nsa_nix_file%/*}
     [ "$nsa_dir" != "$nsa_nix_file" ] && [ ! -d "$nsa_dir" ] && mkdir -p "$nsa_dir"
     printf '{ config, pkgs, ... }:\n\n{\n}\n' > "$nsa_nix_file"
   fi

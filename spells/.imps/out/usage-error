@@ -7,7 +7,7 @@ set -eu
 ue_name=${1:-}
 ue_message=${2:-}
 if [ -n "$ue_name" ]; then
-  printf '%s: %s\n' "$ue_name" "ue_message:-usage error}" >&2
+  printf '%s: %s\n' "$ue_name" "${ue_message:-usage error}" >&2
 elif [ -n "$ue_message" ]; then
   printf '%s\n' "$ue_message" >&2
 fi
