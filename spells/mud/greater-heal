@@ -2,7 +2,9 @@
 
 # Cast greater heal to restore 100 HP to self or another target.
 
-show_usage() { cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: greater-heal [target]
 
 Cast greater heal to restore 100 hit points to yourself or a target.
@@ -14,10 +16,9 @@ Example:
   greater-heal
   greater-heal other-avatar
 USAGE
-}
-
-case "${1-}" in
---help|--usage|-h) show_usage; exit 0 ;; esac
+  exit 0
+  ;;
+esac
 
 require-wizardry || exit 1
 set -eu

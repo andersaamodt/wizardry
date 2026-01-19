@@ -2,7 +2,9 @@
 
 # Cast lesser heal to restore 10 HP to self or another target.
 
-show_usage() { cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: lesser-heal [target]
 
 Cast lesser heal to restore 10 hit points to yourself or a target.
@@ -14,10 +16,9 @@ Example:
   lesser-heal
   lesser-heal other-avatar
 USAGE
-}
-
-case "${1-}" in
---help|--usage|-h) show_usage; exit 0 ;; esac
+  exit 0
+  ;;
+esac
 
 require-wizardry || exit 1
 set -eu
