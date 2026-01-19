@@ -44,41 +44,9 @@ unset _cd_sourced _cd_base
 set +e
 set -u
 
-# The cd override - checks setting in .mud config file before running look and moving avatar
+# The cd override - calls cd-hook imp after successful directory change
 cd() {
     command cd "$@" || return $?
-    
-    # Check if cd-hook is enabled via config file (cd-hook=1)
-    config_file="${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud"
-    if [ -f "$config_file" ] && grep -q "^cd-hook=1$" "$config_file" 2>/dev/null; then
-        command -v look >/dev/null 2>&1 && look 2>/dev/null || true
-    fi
-    
-    # Move avatar if avatar system is enabled
-    if [ -f "$config_file" ] && grep -q "^avatar-enabled=1$" "$config_file" 2>/dev/null; then
-        _move_avatar 2>/dev/null || true
-    fi
-}
-
-# Helper function to move avatar to current directory
-_move_avatar() {
-    config_file="${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud"
-    old_path=$(grep "^avatar-path=" "$config_file" 2>/dev/null | cut -d= -f2-)
-    
-    if [ -n "$old_path" ] && [ -d "$old_path" ]; then
-        avatar_name=$(basename "$old_path")
-        new_path="$PWD/$avatar_name"
-        
-        # Only move if different location
-        if [ "$old_path" != "$new_path" ]; then
-            # Move avatar folder to new location
-            if mv "$old_path" "$new_path" 2>/dev/null; then
-                # Update config with new path
-                if command -v config-set >/dev/null 2>&1; then
-                    config-set "$config_file" "avatar-path" "$new_path" 2>/dev/null || true
-                fi
-            fi
-        fi
-    fi
+    command -v cd-hook >/dev/null 2>&1 && cd-hook || true
 }
 
