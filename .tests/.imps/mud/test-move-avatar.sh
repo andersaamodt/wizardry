@@ -50,8 +50,8 @@ test_move_avatar_moves_folder() {
   SPELLBOOK_DIR="$test_dir"
   export SPELLBOOK_DIR
   
-  move_avatar_imp="$test_root/spells/.imps/mud/move-avatar"
-  "$move_avatar_imp" 2>&1
+  # Use run_sourced_spell to properly execute the imp
+  run_sourced_spell ".imps/mud/move-avatar"
   
   # Check avatar moved (it should now be in new_dir)
   if [ -d "$new_dir/.testuser" ] && [ -f "$new_dir/.testuser/item.txt" ]; then

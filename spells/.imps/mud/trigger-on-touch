@@ -27,7 +27,14 @@ if [ -e "$toucher" ]; then
         ;;
     esac
     # Remove the effect after use
-    enchant "$toucher" "on_toucher=" >/dev/null 2>&1 || true
+    # Try different attribute tools to remove the attribute
+    if command -v xattr >/dev/null 2>&1; then
+      xattr -d "user.on_toucher" "$toucher" 2>/dev/null || true
+    elif command -v attr >/dev/null 2>&1; then
+      attr -r "user.on_toucher" "$toucher" 2>/dev/null || true
+    elif command -v setfattr >/dev/null 2>&1; then
+      setfattr -x "user.on_toucher" "$toucher" 2>/dev/null || true
+    fi
   fi
 fi
 
