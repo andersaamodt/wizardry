@@ -442,7 +442,7 @@ test_jump_to_marker_no_args() {
   fi
   
   # Should give expected error (no markers set) or usage message
-  if ! printf '%s' "$OUTPUT" | grep -qE "(No markers|Usage:|cannot be cast directly)"; then
+  if ! printf '%s' "$OUTPUT" | grep -qE "(No markers?|Usage:|cannot be cast directly)"; then
     TEST_FAILURE_REASON="Unexpected output: $OUTPUT"
     return 1
   fi
@@ -531,7 +531,7 @@ test_user_typed_jump_to_marker_hyphenated() {
   fi
   
   # Should get valid output (either usage or "no markers" message)
-  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers|cannot be cast)"; then
+  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers?|cannot be cast)"; then
     TEST_FAILURE_REASON="FAIL: Unexpected output: $OUTPUT"
     return 1
   fi
@@ -565,7 +565,7 @@ test_user_typed_jump_to_marker_spaces() {
   fi
   
   # Should get valid output
-  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers)"; then
+  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers?)"; then
     TEST_FAILURE_REASON="FAIL: Unexpected output: $OUTPUT"
     return 1
   fi
@@ -632,7 +632,7 @@ test_user_typed_jump_to_location() {
   fi
   
   # Should get valid output
-  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers|cannot be cast)"; then
+  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers?|cannot be cast)"; then
     TEST_FAILURE_REASON="FAIL: Unexpected output: $OUTPUT"
     return 1
   fi
@@ -670,7 +670,7 @@ test_user_typed_jump_to_location_hyphenated() {
   fi
   
   # Should get valid output
-  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers|cannot be cast)"; then
+  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers?|cannot be cast)"; then
     TEST_FAILURE_REASON="FAIL: Unexpected output: $OUTPUT"
     return 1
   fi
@@ -707,7 +707,7 @@ test_user_typed_leap_to_location_spaces() {
     return 1
   fi
   
-  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers|cannot be cast)"; then
+  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers?|cannot be cast)"; then
     TEST_FAILURE_REASON="FAIL: Unexpected output: $OUTPUT"
     return 1
   fi
@@ -739,7 +739,7 @@ test_user_typed_warp() {
     return 1
   fi
   
-  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers|cannot be cast)"; then
+  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers?|cannot be cast)"; then
     TEST_FAILURE_REASON="FAIL: Unexpected output: $OUTPUT"
     return 1
   fi
