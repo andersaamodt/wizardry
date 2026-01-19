@@ -18,7 +18,7 @@ permissions:
   pull-requests: read
 
 jobs:
-  aaa-nix:
+  nix:
     name: Nix ${{ matrix.job_name }} unit tests
     runs-on: ubuntu-latest
     strategy:
@@ -78,10 +78,10 @@ jobs:
             set -e
             . spells/.imps/sys/invoke-wizardry
             banish ${{ matrix.max_level }}
-            ./spells/.wizardry/test-magic ${{ matrix.levels }} ${{ matrix.test_flags }} --verbose
+            ./spells/.wizardry/test-magic ${{ matrix.levels }} ${{ matrix.test_flags }}
           "
 
-  aab-macos:
+  macos:
     name: macOS ${{ matrix.job_name }} unit tests
     runs-on: macos-latest
     strategy:
@@ -124,7 +124,7 @@ jobs:
           set -e
           . spells/.imps/sys/invoke-wizardry
           banish ${{ matrix.max_level }}
-          ./spells/.wizardry/test-magic ${{ matrix.levels }} ${{ matrix.test_flags }} --verbose
+          ./spells/.wizardry/test-magic ${{ matrix.levels }} ${{ matrix.test_flags }}
 
   arch:
     name: Arch ${{ matrix.job_name }} unit tests
@@ -172,7 +172,7 @@ jobs:
           set -e
           . spells/.imps/sys/invoke-wizardry
           banish ${{ matrix.max_level }}
-          ./spells/.wizardry/test-magic ${{ matrix.levels }} ${{ matrix.test_flags }} --verbose
+          ./spells/.wizardry/test-magic ${{ matrix.levels }} ${{ matrix.test_flags }}
 
   debian:
     name: Debian ${{ matrix.job_name }} unit tests
@@ -221,7 +221,7 @@ jobs:
           set -e
           . spells/.imps/sys/invoke-wizardry
           banish ${{ matrix.max_level }}
-          ./spells/.wizardry/test-magic ${{ matrix.levels }} ${{ matrix.test_flags }} --verbose
+          ./spells/.wizardry/test-magic ${{ matrix.levels }} ${{ matrix.test_flags }}
 
   ubuntu:
     name: Ubuntu ${{ matrix.job_name }} unit tests
@@ -288,4 +288,4 @@ jobs:
           set -e
           . spells/.imps/sys/invoke-wizardry
           banish ${{ matrix.max_level }}
-          ./spells/.wizardry/test-magic ${{ matrix.levels }} ${{ matrix.test_flags }} --verbose
+          ./spells/.wizardry/test-magic ${{ matrix.levels }} ${{ matrix.test_flags }}
