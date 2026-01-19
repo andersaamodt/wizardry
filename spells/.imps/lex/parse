@@ -208,7 +208,7 @@ while [ $attempt_len -gt 0 ]; do
       if [ -n "$synonym_target_path" ]; then
         # Skip first $attempt_len args (the synonym name parts)
         n=0
-        while [ $n -lt $attempt_len ]; do
+        while [ $n -lt $attempt_len ] && [ $# -gt 0 ]; do
           shift
           n=$((n + 1))
         done
@@ -220,9 +220,9 @@ while [ $attempt_len -gt 0 ]; do
       # Synonym target is castable - recursively source parse
       # Skip first $attempt_len args (the synonym name parts)
       n=0
-      while [ $n -lt $attempt_len ]; do
+      while [ $n -lt $attempt_len ] && [ $# -gt 0 ]; do
         shift
-        n=$(($n + 1))
+        n=$((n + 1))
       done
       # Source parse recursively to handle the synonym target
       # Find parse using the same method as glosses
