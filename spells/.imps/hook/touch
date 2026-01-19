@@ -1,0 +1,37 @@
+#!/bin/sh
+# touch FILES... - touch hook that triggers on-touch effects for each touched file
+# Example: Define as function: touch() { command touch "$@" || return $?; touch-hook "$@"; }
+
+set -eu
+
+# Check if touch-hook is enabled via mud-config
+spell_home="${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}"
+config_file="$spell_home/.mud"
+
+if [ ! -f "$config_file" ]; then
+    exit 0
+fi
+
+touch_enabled=$(grep "^touch-hook=1$" "$config_file" 2>/dev/null || printf '')
+
+if [ -z "$touch_enabled" ]; then
+    exit 0
+fi
+
+# Get avatar path
+avatar_path=$(grep "^avatar-path=" "$config_file" 2>/dev/null | cut -d= -f2-)
+
+# Process each file argument
+for file in "$@"; do
+    # Skip flag arguments
+    case "$file" in
+        -*) continue ;;
+    esac
+    
+    # Trigger on-touch effects if trigger-on-touch is available
+    if [ -n "$avatar_path" ] && [ -e "$avatar_path" ] && [ -e "$file" ]; then
+        if command -v trigger-on-touch >/dev/null 2>&1; then
+            trigger-on-touch "$avatar_path" "$file" 2>/dev/null || true
+        fi
+    fi
+done

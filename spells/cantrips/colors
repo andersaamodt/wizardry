@@ -185,7 +185,7 @@ try_disable_palette() {
                 . "$disable_palette_path"
         else
                 # Inline disable_palette logic for when it's not available
-                for _dp_name in \
+                for dp_name in \
                   RESET BLACK RED GREEN YELLOW BLUE PURPLE CYAN WHITE GREY \
                   BOLD ITALICS UNDERLINED BLINK INVERT STRIKE \
                   BRIGHT_BLACK BRIGHT_RED BRIGHT_GREEN BRIGHT_YELLOW \
@@ -199,8 +199,9 @@ try_disable_palette() {
                   THEME_WARNING THEME_ERROR THEME_HEADING THEME_DIVIDER \
                   MUD_LOCATION MUD_TITLE MUD_DESCRIPTION MUD_ITEM MUD_HANDLE MUD_SPELL MUD_MONSTER
                 do
-                  eval "$_dp_name=''"
+                  eval "$dp_name=''"
                 done
+                unset dp_name
                 WIZARDRY_COLORS_AVAILABLE=0
         fi
 }
