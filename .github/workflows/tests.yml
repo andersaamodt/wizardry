@@ -16,152 +16,11 @@ concurrency:
 permissions:
   contents: read
   pull-requests: read
-  actions: write  # Required for artifact cleanup
 
 jobs:
-  # Run compile and doppelganger first to reduce overall test wait time
-  # Platform tests depend on these completing
-  aaa-compile:
-    name: Compile wizardry
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Create compiled doppelganger
-        run: |
-          # Set wizardry directory
-          export WIZARDRY_DIR="${{ github.workspace }}"
-          
-          # Call doppelganger directly (as standalone script)
-          "${{ github.workspace }}/spells/spellcraft/doppelganger" /tmp/wizardry-compiled
-
-          echo "=== Doppelganger created ==="
-          ls -la /tmp/wizardry-compiled/
-
-          # Verify spells directory exists
-          if [ ! -d "/tmp/wizardry-compiled/spells" ]; then
-            echo "ERROR: spells directory not created"
-            exit 1
-          fi
-
-      - name: Remove excluded files from compiled directory
-        run: |
-          cd /tmp/wizardry-compiled
-          
-          # Remove SKIP-IF-COMPILED files
-          rm -f SKIP-IF-COMPILED-ANALYSIS.md
-          rm -f SKIP-IF-COMPILED-SUMMARY.md
-          
-          # Remove .tests directory
-          rm -rf .tests
-          
-          echo "=== Cleaned compiled directory ==="
-          mv /tmp/wizardry-compiled ${{ github.workspace }}/wizardry-compiled
-
-      - name: Generate artifact name with date
-        id: artifact-name
-        run: |
-          DATE=$(date +'%Y-%-m-%-d')
-          echo "name=wizardry-compiled-${DATE}" >> "$GITHUB_OUTPUT"
-
-      - name: Upload compiled wizardry artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.artifact-name.outputs.name }}
-          path: |
-            wizardry-compiled/LICENSE
-            wizardry-compiled/README.md
-            wizardry-compiled/spells/
-          retention-days: 90
-          if-no-files-found: error
-
-  aab-test-doppelganger:
-    name: Test doppelganger
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y attr
-      
-      - name: Create and test doppelganger
-        run: |
-          # Set wizardry directory
-          export WIZARDRY_DIR="${{ github.workspace }}"
-          
-          # Add necessary paths
-          export PATH="${{ github.workspace }}/spells/.imps/out:${PATH}"
-          export PATH="${{ github.workspace }}/spells/.imps/sys:${PATH}"
-          export PATH="${{ github.workspace }}/spells/spellcraft:${PATH}"
-          
-          # Create doppelganger
-          "${{ github.workspace }}/spells/spellcraft/doppelganger" /tmp/wizardry-doppelganger
-          
-          echo "=== Testing doppelganger spells ==="
-          
-          # Exclusions
-          excluded="invoke-wizardry require-wizardry declare-globals learn-spellbook learn mud decorate select-player pkg-upgrade pkg-update"
-          
-          # Test all compiled spells
-          fail_count=0
-          find /tmp/wizardry-doppelganger/spells -type f -executable | while IFS= read -r compiled; do
-            [ -f "$compiled" ] || continue
-            spell_name=$(basename "$compiled")
-            
-            # Skip excluded
-            skip=0
-            for ex in $excluded; do
-              if [ "$spell_name" = "$ex" ]; then
-                skip=1
-                break
-              fi
-            done
-            [ "$skip" = "1" ] && continue
-            
-            # Determine if imp or spell
-            is_imp=0
-            case "$compiled" in
-              */.imps/*) is_imp=1 ;;
-            esac
-            
-            # Test appropriately
-            if [ "$is_imp" = "1" ]; then
-              if echo "" | timeout 1 env -i PATH="/usr/bin:/bin" "$compiled" >/dev/null 2>&1; then
-                echo "  ✓ $spell_name"
-              else
-                ec=$?
-                if [ "$ec" != "124" ]; then
-                  echo "  ✓ $spell_name (exit $ec OK)"
-                else
-                  echo "  ✗ $spell_name (timeout)"
-                  fail_count=$((fail_count + 1))
-                fi
-              fi
-            else
-              if timeout 2 env -i PATH="/usr/bin:/bin" "$compiled" --help >/dev/null 2>&1; then
-                echo "  ✓ $spell_name"
-              else
-                echo "  ✗ $spell_name"
-                fail_count=$((fail_count + 1))
-              fi
-            fi
-          done
-          
-          if [ "$fail_count" -gt 0 ]; then
-            echo "ERROR: $fail_count doppelganger spells failed"
-            exit 1
-          fi
-          
-          echo "=== All doppelganger spells passed ==="
-
-  aac-nix:
+  aaa-nix:
     name: Nix ${{ matrix.job_name }} unit tests
     runs-on: ubuntu-latest
-    needs: [aaa-compile, aab-test-doppelganger]
     strategy:
       fail-fast: false
       matrix:
@@ -222,10 +81,9 @@ jobs:
             ./spells/.wizardry/test-magic ${{ matrix.levels }} ${{ matrix.test_flags }}
           "
 
-  aad-macos:
+  aab-macos:
     name: macOS ${{ matrix.job_name }} unit tests
     runs-on: macos-latest
-    needs: [aaa-compile, aab-test-doppelganger]
     strategy:
       fail-fast: false
       matrix:
@@ -268,11 +126,10 @@ jobs:
           banish ${{ matrix.max_level }}
           ./spells/.wizardry/test-magic ${{ matrix.levels }} ${{ matrix.test_flags }}
 
-  aae-arch:
+  arch:
     name: Arch ${{ matrix.job_name }} unit tests
     runs-on: ubuntu-latest
     container: archlinux:latest
-    needs: [aaa-compile, aab-test-doppelganger]
     strategy:
       fail-fast: false
       matrix:
@@ -317,11 +174,10 @@ jobs:
           banish ${{ matrix.max_level }}
           ./spells/.wizardry/test-magic ${{ matrix.levels }} ${{ matrix.test_flags }}
 
-  aaf-debian:
+  debian:
     name: Debian ${{ matrix.job_name }} unit tests
     runs-on: ubuntu-latest
     container: debian:stable-slim
-    needs: [aaa-compile, aab-test-doppelganger]
     strategy:
       fail-fast: false
       matrix:
@@ -367,10 +223,9 @@ jobs:
           banish ${{ matrix.max_level }}
           ./spells/.wizardry/test-magic ${{ matrix.levels }} ${{ matrix.test_flags }}
 
-  aag-ubuntu:
+  ubuntu:
     name: Ubuntu ${{ matrix.job_name }} unit tests
     runs-on: ubuntu-latest
-    needs: [aaa-compile, aab-test-doppelganger]
     strategy:
       fail-fast: false
       matrix:
