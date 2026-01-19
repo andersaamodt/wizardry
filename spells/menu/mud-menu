@@ -72,11 +72,11 @@ loop_limit=${MENU_LOOP_LIMIT:-}
 first_run=1
 start_selection=1
 
-# Track toggle states: 1=parse, 2=mud-menu, 3=CD hook, 4=touch, 5=fantasy, 6=inventory, 7=combat, 8=all
+# Track toggle states: 1=parse, 2=mud-menu, 3=CD hook, 4=avatar, 5=touch, 6=inventory, 7=combat, 8=all
 was_parse=0
 was_cd=0
+was_avatar=0
 was_touch=0
-was_fantasy=0
 was_inventory=0
 was_combat=0
 was_all=0
@@ -86,14 +86,14 @@ while true; do
     # Check which toggle changed and keep cursor there
     if is_feature_enabled "parse-enabled"; then now_parse=1; else now_parse=0; fi
     if is_cd_hook_enabled; then now_cd=1; else now_cd=0; fi
+    if is_feature_enabled "avatar"; then now_avatar=1; else now_avatar=0; fi
     if is_feature_enabled "touch-hook"; then now_touch=1; else now_touch=0; fi
-    if is_feature_enabled "fantasy-theme"; then now_fantasy=1; else now_fantasy=0; fi
     if is_feature_enabled "inventory"; then now_inventory=1; else now_inventory=0; fi
     if is_feature_enabled "combat"; then now_combat=1; else now_combat=0; fi
     
     # Check if all features are enabled
     now_all=1
-    for feature in touch-hook fantasy-theme inventory combat; do
+    for feature in avatar touch-hook inventory combat; do
       if ! is_feature_enabled "$feature"; then
         now_all=0
         break
@@ -104,9 +104,9 @@ while true; do
       start_selection=1
     elif [ "$was_cd" != "$now_cd" ]; then
       start_selection=3
-    elif [ "$was_touch" != "$now_touch" ]; then
+    elif [ "$was_avatar" != "$now_avatar" ]; then
       start_selection=4
-    elif [ "$was_fantasy" != "$now_fantasy" ]; then
+    elif [ "$was_touch" != "$now_touch" ]; then
       start_selection=5
     elif [ "$was_inventory" != "$now_inventory" ]; then
       start_selection=6
@@ -124,14 +124,14 @@ while true; do
   # Save toggle states before displaying menu (for comparison on next iteration)
   if is_feature_enabled "parse-enabled"; then was_parse=1; else was_parse=0; fi
   if is_cd_hook_enabled; then was_cd=1; else was_cd=0; fi
+  if is_feature_enabled "avatar"; then was_avatar=1; else was_avatar=0; fi
   if is_feature_enabled "touch-hook"; then was_touch=1; else was_touch=0; fi
-  if is_feature_enabled "fantasy-theme"; then was_fantasy=1; else was_fantasy=0; fi
   if is_feature_enabled "inventory"; then was_inventory=1; else was_inventory=0; fi
   if is_feature_enabled "combat"; then was_combat=1; else was_combat=0; fi
   
   # Check if all features are enabled
   was_all=1
-  for feature in touch-hook fantasy-theme inventory combat; do
+  for feature in avatar touch-hook inventory combat; do
     if ! is_feature_enabled "$feature"; then
       was_all=0
       break
@@ -153,18 +153,18 @@ while true; do
     cd_hook="[ ] cd hook (look on directory change)%toggle-cd"
   fi
   
+  # Build avatar toggle
+  if is_feature_enabled "avatar"; then
+    avatar="[X] Avatar system (stats, HP/MP)%toggle-avatar"
+  else
+    avatar="[ ] Avatar system (stats, HP/MP)%toggle-avatar"
+  fi
+  
   # Build touch hook toggle
   if is_feature_enabled "touch-hook"; then
     touch_hook="[X] Touch hook (planned)%toggle-touch-hook"
   else
     touch_hook="[ ] Touch hook (planned)%toggle-touch-hook"
-  fi
-  
-  # Build fantasy theme toggle
-  if is_feature_enabled "fantasy-theme"; then
-    fantasy="[X] Fantasy theme (planned)%toggle-fantasy-theme"
-  else
-    fantasy="[ ] Fantasy theme (planned)%toggle-fantasy-theme"
   fi
   
   # Build inventory toggle
@@ -176,9 +176,9 @@ while true; do
   
   # Build combat toggle
   if is_feature_enabled "combat"; then
-    combat="[X] HP/MP and combat (planned)%toggle-combat"
+    combat="[X] Combat (magic-missile, etc.)%toggle-combat"
   else
-    combat="[ ] HP/MP and combat (planned)%toggle-combat"
+    combat="[ ] Combat (magic-missile, etc.)%toggle-combat"
   fi
   
   # Build show/hide MUD in main menu toggle
@@ -190,7 +190,7 @@ while true; do
   
   # Build enable/disable all toggle
   all_enabled=1
-  for feature in touch-hook fantasy-theme inventory combat; do
+  for feature in avatar touch-hook inventory combat; do
     if ! is_feature_enabled "$feature"; then
       all_enabled=0
       break
@@ -209,7 +209,7 @@ while true; do
   exit_label=$(exit-label)
   exit_item="${exit_label}%kill -TERM \$PPID"
 
-  set -- "$parse_toggle" "$mud_menu" "$cd_hook" "$touch_hook" "$fantasy" "$inventory" "$combat" "$toggle_all" "$tor" "$exit_item"
+  set -- "$parse_toggle" "$mud_menu" "$cd_hook" "$avatar" "$touch_hook" "$inventory" "$combat" "$toggle_all" "$tor" "$exit_item"
   menu --start-selection "$start_selection" "MUD Install:" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
   
