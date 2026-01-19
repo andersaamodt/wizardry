@@ -10,6 +10,8 @@ done
 # Create stub xattr helper
 create_xattr_stub() {
   stub_dir=$1
+  
+  # Create xattr stub (macOS style)
   cat >"$stub_dir/xattr" <<'STUB'
 #!/bin/sh
 # Simple xattr stub that tracks attributes in a temp file
@@ -53,6 +55,74 @@ case "$1" in
 esac
 STUB
   chmod +x "$stub_dir/xattr"
+  
+  # Create attr stub (Linux style) - handles: attr -s key -V value file
+  cat >"$stub_dir/attr" <<'STUB'
+#!/bin/sh
+key=""; value=""; file=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -s) key=$2; shift 2 ;;
+    -V) value=$2; shift 2 ;;
+    *) file=$1; shift ;;
+  esac
+done
+if [ -n "$key" ] && [ -n "$value" ] && [ -n "$file" ]; then
+  attr_file="${file}.attrs"
+  if [ -f "$attr_file" ]; then
+    grep -v "^${key}=" "$attr_file" > "${attr_file}.tmp" 2>/dev/null || true
+    mv "${attr_file}.tmp" "$attr_file" 2>/dev/null || true
+  fi
+  printf '%s=%s\n' "$key" "$value" >> "$attr_file"
+fi
+STUB
+  chmod +x "$stub_dir/attr"
+  
+  # Create setfattr stub (Linux style)
+  cat >"$stub_dir/setfattr" <<'STUB'
+#!/bin/sh
+key=""; value=""; file=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -n) key=$2; shift 2 ;;
+    -v) value=$2; shift 2 ;;
+    *) file=$1; shift ;;
+  esac
+done
+if [ -n "$file" ]; then
+  attr_file="${file}.attrs"
+  if [ -f "$attr_file" ]; then
+    grep -v "^${key}=" "$attr_file" > "${attr_file}.tmp" 2>/dev/null || true
+    mv "${attr_file}.tmp" "$attr_file" 2>/dev/null || true
+  fi
+  printf '%s=%s\n' "$key" "$value" >> "$attr_file"
+fi
+STUB
+  chmod +x "$stub_dir/setfattr"
+  
+  # Create getfattr stub (Linux style)
+  cat >"$stub_dir/getfattr" <<'STUB'
+#!/bin/sh
+key=""; file=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -n) key=$2; shift 2 ;;
+    *) file=$1; shift ;;
+  esac
+done
+if [ -n "$file" ]; then
+  attr_file="${file}.attrs"
+  if [ -f "$attr_file" ]; then
+    value=$(grep "^${key}=" "$attr_file" 2>/dev/null | cut -d= -f2-)
+    if [ -n "$value" ]; then
+      printf '%s="%s"\n' "$key" "$value"
+      exit 0
+    fi
+  fi
+fi
+exit 1
+STUB
+  chmod +x "$stub_dir/getfattr"
 }
 
 test_help() {
