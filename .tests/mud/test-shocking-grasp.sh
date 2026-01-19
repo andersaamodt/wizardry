@@ -12,7 +12,7 @@ test_shocking_grasp_charges_avatar() {
   # Create avatar
   avatar_path="$test_tempdir/.testuser"
   mkdir -p "$avatar_path"
-  config-set "$test_config" "avatar-path" "$avatar_path"
+  # Note: test uses temp config, no need to set avatar-path
   enchant "$avatar_path" "is_avatar=1" >/dev/null 2>&1 || true
   
   # Cast shocking-grasp

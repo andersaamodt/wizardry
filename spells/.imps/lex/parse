@@ -246,7 +246,7 @@ while [ $attempt_len -gt 0 ]; do
     n=0
     while [ $n -lt $attempt_len ]; do
       shift
-      n=$((_n + 1))
+      n=$((n + 1))
     done
     
     # Check if spell is uncastable (must be sourced)
