@@ -4,9 +4,9 @@
 set -eu
 
 
-for _any_cmd in "$@"; do
-  if command -v "$_any_cmd" >/dev/null 2>&1; then
-    printf '%s' "$_any_cmd"
+for any_cmd in "$@"; do
+  if command -v "$any_cmd" >/dev/null 2>&1; then
+    printf '%s' "$any_cmd"
   exit 0
   fi
 done

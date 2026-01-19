@@ -34,7 +34,7 @@ fi
 
 # Skip env clearing when being sourced by invoke-wizardry during spell loading
 # This prevents clearing parent's loop variables
-if [ "${_WIZARDRY_LOADING_SPELLS:-0}" = "1" ]; then
+if [ "${WIZARDRY_LOADING_SPELLS:-0}" = "1" ]; then
   set -eu
   return 0
 fi
@@ -52,7 +52,7 @@ saved_oldpwd="${OLDPWD:-}"
 
 # Preserve wizardry declared globals (from declare-globals)
 saved_wizardry_dir="${WIZARDRY_DIR:-}"
-saved_wizardry_invoked="${_WIZARDRY_INVOKED:-}"
+saved_wizardry_invoked="${WIZARDRY_INVOKED:-}"
 saved_spellbook_dir="${SPELLBOOK_DIR:-}"
 saved_mud_dir="${MUD_DIR:-}"
 saved_log_level="${WIZARDRY_LOG_LEVEL:-}"
@@ -119,8 +119,8 @@ saved_runner_temp="${RUNNER_TEMP:-}"
 saved_runner_tool_cache="${RUNNER_TOOL_CACHE:-}"
 
 # Clear all environment variables
-for _var in $(env | cut -d= -f1); do
-  unset "$_var" 2>/dev/null || true
+for env_var in $(env | cut -d= -f1); do
+  unset "$env_var" 2>/dev/null || true
 done
 
 # Restore essential variables
@@ -136,7 +136,7 @@ export OLDPWD="$saved_oldpwd"
 
 # Restore wizardry globals
 [ -n "$saved_wizardry_dir" ] && export WIZARDRY_DIR="$saved_wizardry_dir"
-[ -n "$saved_wizardry_invoked" ] && export _WIZARDRY_INVOKED="$saved_wizardry_invoked"
+[ -n "$saved_wizardry_invoked" ] && export WIZARDRY_INVOKED="$saved_wizardry_invoked"
 [ -n "$saved_spellbook_dir" ] && export SPELLBOOK_DIR="$saved_spellbook_dir"
 [ -n "$saved_mud_dir" ] && export MUD_DIR="$saved_mud_dir"
 [ -n "$saved_log_level" ] && export WIZARDRY_LOG_LEVEL="$saved_log_level"

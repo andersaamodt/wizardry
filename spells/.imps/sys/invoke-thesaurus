@@ -113,11 +113,11 @@ rename mv
 show cat
 where-is which"
   
-  printf '%s\n' "$it_defaults" | while IFS=' ' read -r _word _spell; do
-    [ -n "$_word" ] && [ -n "$_spell" ] || continue
+  printf '%s\n' "$it_defaults" | while IFS=' ' read -r word spell; do
+    [ -n "$word" ] && [ -n "$spell" ] || continue
     
     # Write in equals format: word=target
-    printf "%s=%s\n" "$_word" "$_spell" >> "$it_default_file"
+    printf "%s=%s\n" "$word" "$spell" >> "$it_default_file"
   done
   
   touch "$it_default_initialized" 2>/dev/null || true
@@ -170,11 +170,11 @@ it_count=0
 if command -v generate-glosses >/dev/null 2>&1; then
   # Generate glosses and eval them into current shell
   if _it_gloss_output=$(generate-glosses --quiet 2>&1); then
-    if [ -n "$_it_gloss_output" ]; then
-      eval "$_it_gloss_output"
+    if [ -n "$it_gloss_output" ]; then
+      eval "$it_gloss_output"
       
       # Count synonyms (approximate - count functions and aliases in output)
-      it_count=$(printf '%s' "$_it_gloss_output" | grep -c "^alias \|() {" || printf '0')
+      it_count=$(printf '%s' "$it_gloss_output" | grep -c "^alias \|() {" || printf '0')
     fi
   else
     printf '%s\n' "invoke-thesaurus: generate-glosses failed" >&2

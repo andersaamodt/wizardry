@@ -198,8 +198,8 @@ if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
       # Check 3: Synonym files in .spellbook/
       if [ "$iw_needs_regen" -eq 0 ]; then
         iw_spellbook="${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}"
-        for _iw_syn_file in "$iw_spellbook/.synonyms" "$iw_spellbook/.default-synonyms"; do
-          if [ -f "$_iw_syn_file" ] && [ "$_iw_syn_file" -nt "$iw_gloss_persistent" ]; then
+        for iw_syn_file in "$iw_spellbook/.synonyms" "$iw_spellbook/.default-synonyms"; do
+          if [ -f "$iw_syn_file" ] && [ "$iw_syn_file" -nt "$iw_gloss_persistent" ]; then
             iw_needs_regen=1
             break
           fi
@@ -226,8 +226,8 @@ if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
     else
       # Fallback to direct generation if cache unavailable
       if _iw_gloss_output=$(generate-glosses --quiet 2>&1); then
-        if [ -n "$_iw_gloss_output" ]; then
-          eval "$_iw_gloss_output"
+        if [ -n "$iw_gloss_output" ]; then
+          eval "$iw_gloss_output"
           [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Gloss functions loaded (uncached)" >&2
         fi
       fi

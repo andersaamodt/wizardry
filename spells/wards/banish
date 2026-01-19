@@ -301,7 +301,7 @@ banish_process_level() {
       wizardry_not_installed=0
       
       if [ -n "${WIZARDRY_DIR-}" ]; then
-        printf '  %s✓%s Wizardry directory: WIZARDRY_DIR is set\n' "$_green" "$_reset"
+        printf '  %s✓%s Wizardry directory: WIZARDRY_DIR is set\n' "$green" "$reset"
       else
         printf '  Wizardry directory:\n'
         printf '    Checking for wizardry installation...\n'
@@ -315,7 +315,7 @@ banish_process_level() {
             potential_dir=$(CDPATH= cd -- "$script_dir/../.." 2>/dev/null && pwd -P) || true
             if [ -n "$potential_dir" ] && [ -d "$potential_dir/spells" ]; then
               WIZARDRY_DIR=$potential_dir
-              printf '    %s✓%s Detected from script location\n' "$_green" "$_reset"
+              printf '    %s✓%s Detected from script location\n' "$green" "$reset"
             fi
           fi
         fi
@@ -323,10 +323,10 @@ banish_process_level() {
         if [ -z "${WIZARDRY_DIR-}" ]; then
           if [ -n "${HOME-}" ] && [ -d "${HOME}/.wizardry/spells" ]; then
             WIZARDRY_DIR="${HOME}/.wizardry"
-            printf '    %s✓%s Found at standard location\n' "$_green" "$_reset"
+            printf '    %s✓%s Found at standard location\n' "$green" "$reset"
           else
             wizardry_not_installed=1
-            printf '    %s✗%s Not found\n' "$_red" "$_reset"
+            printf '    %s✗%s Not found\n' "$red" "$reset"
           fi
         fi
       fi
@@ -349,9 +349,9 @@ banish_process_level() {
         *) path_missing="${path_missing}${path_missing:+ }/usr/bin" ;;
       esac
       if [ -z "$path_missing" ]; then
-        printf '  %s✓%s PATH baseline: /bin and /usr/bin\n' "$_green" "$_reset"
+        printf '  %s✓%s PATH baseline: /bin and /usr/bin\n' "$green" "$reset"
       else
-        printf '  %s✗%s PATH baseline: Missing %s\n' "$_red" "$_reset" "$path_missing"
+        printf '  %s✗%s PATH baseline: Missing %s\n' "$red" "$reset" "$path_missing"
         if [ "$skip_heal" -eq 0 ]; then
           baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
           PATH="${baseline_path}${PATH:+:}${PATH-}"
@@ -366,9 +366,9 @@ banish_process_level() {
             *) path_missing="${path_missing}${path_missing:+ }/usr/bin" ;;
           esac
           if [ -z "$path_missing" ]; then
-            printf '    %s✓%s PATH baseline restored\n' "$_green" "$_reset"
+            printf '    %s✓%s PATH baseline restored\n' "$green" "$reset"
           else
-            printf '    %s✗%s PATH baseline still missing: %s\n' "$_red" "$_reset" "$path_missing"
+            printf '    %s✗%s PATH baseline still missing: %s\n' "$red" "$reset" "$path_missing"
           fi
         fi
         if [ -n "$path_missing" ]; then
@@ -397,17 +397,17 @@ banish_process_level() {
       done
       
       if [ "$posix_failed" -eq 0 ]; then
-        printf '  %s✓%s POSIX foundation:\n' "$_green" "$_reset"
+        printf '  %s✓%s POSIX foundation:\n' "$green" "$reset"
         for cmd in $posix_cmds; do
-          printf '    %s✓%s %s\n' "$_green" "$_reset" "$cmd"
+          printf '    %s✓%s %s\n' "$green" "$reset" "$cmd"
         done
       else
-        printf '  %s✗%s POSIX foundation:\n' "$_red" "$_reset"
+        printf '  %s✗%s POSIX foundation:\n' "$red" "$reset"
         for cmd in $posix_cmds; do
           if command -v "$cmd" >/dev/null 2>&1; then
-            printf '    %s✓%s %s\n' "$_green" "$_reset" "$cmd"
+            printf '    %s✓%s %s\n' "$green" "$reset" "$cmd"
           else
-            printf '    %s✗%s %s not found\n' "$_red" "$_reset" "$cmd"
+            printf '    %s✗%s %s not found\n' "$red" "$reset" "$cmd"
           fi
         done
         return 1
@@ -415,9 +415,9 @@ banish_process_level() {
 
       # Check download tools (curl or wget)
       if command -v curl >/dev/null 2>&1 || command -v wget >/dev/null 2>&1; then
-        printf '  %s✓%s Download tools: curl or wget available\n' "$_green" "$_reset"
+        printf '  %s✓%s Download tools: curl or wget available\n' "$green" "$reset"
       else
-        printf '  %s✗%s Download tools: curl and wget not found\n' "$_red" "$_reset"
+        printf '  %s✗%s Download tools: curl and wget not found\n' "$red" "$reset"
         if [ -n "$manage_system_command" ]; then
           printf '    Attempting to install curl...\n'
           if "$manage_system_command" curl curl >/dev/null 2>&1; then
@@ -428,26 +428,26 @@ banish_process_level() {
           fi
         fi
         if command -v curl >/dev/null 2>&1 || command -v wget >/dev/null 2>&1; then
-          printf '    %s✓%s Download tool ready\n' "$_green" "$_reset"
+          printf '    %s✓%s Download tool ready\n' "$green" "$reset"
         else
-          printf '    %s✗%s Download tools still missing\n' "$_red" "$_reset"
+          printf '    %s✗%s Download tools still missing\n' "$red" "$reset"
           return 1
         fi
       fi
 
       # Check tar
       if command -v tar >/dev/null 2>&1; then
-        printf '  %s✓%s Archive tool: tar available\n' "$_green" "$_reset"
+        printf '  %s✓%s Archive tool: tar available\n' "$green" "$reset"
       else
-        printf '  %s✗%s Archive tool: tar not found\n' "$_red" "$_reset"
+        printf '  %s✗%s Archive tool: tar not found\n' "$red" "$reset"
         if [ -n "$manage_system_command" ]; then
           printf '    Attempting to install tar...\n'
           "$manage_system_command" tar tar >/dev/null 2>&1 || :
         fi
         if command -v tar >/dev/null 2>&1; then
-          printf '    %s✓%s tar installed\n' "$_green" "$_reset"
+          printf '    %s✓%s tar installed\n' "$green" "$reset"
         else
-          printf '    %s✗%s tar still missing\n' "$_red" "$_reset"
+          printf '    %s✗%s tar still missing\n' "$red" "$reset"
           return 1
         fi
       fi
@@ -460,9 +460,9 @@ banish_process_level() {
         fi
       done
       if [ -n "$package_managers" ]; then
-        printf '  %s✓%s Package manager: %s\n' "$_green" "$_reset" "$package_managers"
+        printf '  %s✓%s Package manager: %s\n' "$green" "$reset" "$package_managers"
       else
-        printf '  %s✗%s Package manager: none detected\n' "$_red" "$_reset"
+        printf '  %s✗%s Package manager: none detected\n' "$red" "$reset"
         return 1
       fi
 
@@ -474,15 +474,15 @@ banish_process_level() {
       shell_type=${shell_type:-sh}
       case "$shell_type" in
         sh|bash|dash|zsh|ksh|ash)
-          printf '  %s✓%s Shell type: %s (POSIX-compatible)\n' "$_green" "$_reset" "$shell_type"
+          printf '  %s✓%s Shell type: %s (POSIX-compatible)\n' "$green" "$reset" "$shell_type"
           ;;
         csh|tcsh|fish)
-          printf '  %s✗%s Shell type: %s (not POSIX-compatible)\n' "$_red" "$_reset" "$shell_type"
+          printf '  %s✗%s Shell type: %s (not POSIX-compatible)\n' "$red" "$reset" "$shell_type"
           printf '    Wizardry requires a POSIX-compatible shell (sh, bash, dash, zsh, ksh)\n'
           return 1
           ;;
         *)
-          printf '  %s✓%s Shell type: %s (assuming POSIX-compatible)\n' "$_green" "$_reset" "$shell_type"
+          printf '  %s✓%s Shell type: %s (assuming POSIX-compatible)\n' "$green" "$reset" "$shell_type"
           ;;
       esac
 
@@ -492,13 +492,13 @@ banish_process_level() {
       default_ifs=" 	
 "
       if [ "${IFS-unset}" = "unset" ] || [ "$IFS" = "$default_ifs" ]; then
-        printf '  %s✓%s IFS: Default (space, tab, newline)\n' "$_green" "$_reset"
+        printf '  %s✓%s IFS: Default (space, tab, newline)\n' "$green" "$reset"
       else
-        printf '  %s✗%s IFS: Non-default value detected\n' "$_red" "$_reset"
+        printf '  %s✗%s IFS: Non-default value detected\n' "$red" "$reset"
         if [ "$skip_heal" -eq 0 ]; then
           IFS="$default_ifs"
           export IFS
-          printf '    %s✓%s IFS reset to default\n' "$_green" "$_reset"
+          printf '    %s✓%s IFS reset to default\n' "$green" "$reset"
         else
           return 1
         fi
@@ -509,31 +509,31 @@ banish_process_level() {
       # configuration. Self-heal by querying system or using fallbacks.
       env_vars_ok=1
       if [ -z "${HOME-}" ]; then
-        printf '  %s✗%s Environment: HOME not set\n' "$_red" "$_reset"
+        printf '  %s✗%s Environment: HOME not set\n' "$red" "$reset"
         env_vars_ok=0
       fi
       if [ -z "${USER-}" ] && [ -z "${LOGNAME-}" ]; then
-        printf '  %s✗%s Environment: USER/LOGNAME not set\n' "$_red" "$_reset"
+        printf '  %s✗%s Environment: USER/LOGNAME not set\n' "$red" "$reset"
         env_vars_ok=0
       fi
       if [ "$env_vars_ok" -eq 1 ]; then
         # Report which variables are actually set
         if [ -n "${USER-}" ]; then
-          printf '  %s✓%s Environment: HOME and USER set\n' "$_green" "$_reset"
+          printf '  %s✓%s Environment: HOME and USER set\n' "$green" "$reset"
         else
-          printf '  %s✓%s Environment: HOME and LOGNAME set\n' "$_green" "$_reset"
+          printf '  %s✓%s Environment: HOME and LOGNAME set\n' "$green" "$reset"
         fi
       else
         if [ "$skip_heal" -eq 0 ]; then
           if [ -z "${HOME-}" ]; then
             HOME=$(getent passwd "$USER" 2>/dev/null | cut -d: -f6) || HOME="/tmp"
             export HOME
-            printf '    %s✓%s HOME set to %s\n' "$_green" "$_reset" "$HOME"
+            printf '    %s✓%s HOME set to %s\n' "$green" "$reset" "$HOME"
           fi
           if [ -z "${USER-}" ]; then
             USER=$(id -un 2>/dev/null) || USER="unknown"
             export USER
-            printf '    %s✓%s USER set to %s\n' "$_green" "$_reset" "$USER"
+            printf '    %s✓%s USER set to %s\n' "$green" "$reset" "$USER"
           fi
         else
           return 1
@@ -547,16 +547,16 @@ banish_process_level() {
       current_umask=$(umask)
       case "$current_umask" in
         0000|0777)
-          printf '  %s✗%s umask: Unsafe value %s\n' "$_red" "$_reset" "$current_umask"
+          printf '  %s✗%s umask: Unsafe value %s\n' "$red" "$reset" "$current_umask"
           if [ "$skip_heal" -eq 0 ]; then
             umask 0022
-            printf '    %s✓%s umask set to 0022\n' "$_green" "$_reset"
+            printf '    %s✓%s umask set to 0022\n' "$green" "$reset"
           else
             return 1
           fi
           ;;
         *)
-          printf '  %s✓%s umask: %s\n' "$_green" "$_reset" "$current_umask"
+          printf '  %s✓%s umask: %s\n' "$green" "$reset" "$current_umask"
           ;;
       esac
 
@@ -568,14 +568,14 @@ banish_process_level() {
       if [ -n "$tmp_check" ]; then
         if printf '%s\n' "test" >"$tmp_check" 2>/dev/null && [ -s "$tmp_check" ]; then
           rm -f "$tmp_check" 2>/dev/null || :
-          printf '  %s✓%s Filesystem write: %s writable\n' "$_green" "$_reset" "$tmp_root"
+          printf '  %s✓%s Filesystem write: %s writable\n' "$green" "$reset" "$tmp_root"
         else
           rm -f "$tmp_check" 2>/dev/null || :
-          printf '  %s✗%s Filesystem write: Cannot write to %s\n' "$_red" "$_reset" "$tmp_root"
+          printf '  %s✗%s Filesystem write: Cannot write to %s\n' "$red" "$reset" "$tmp_root"
           return 1
         fi
       else
-        printf '  %s✗%s Filesystem write: Cannot create temp file in %s\n' "$_red" "$_reset" "$tmp_root"
+        printf '  %s✗%s Filesystem write: Cannot create temp file in %s\n' "$red" "$reset" "$tmp_root"
         return 1
       fi
 
@@ -587,15 +587,15 @@ banish_process_level() {
         tmp_link="${tmp_link_test}.link"
         if ln -s "$tmp_link_test" "$tmp_link" 2>/dev/null; then
           if [ -L "$tmp_link" ]; then
-            printf '  %s✓%s Symbolic links: Supported\n' "$_green" "$_reset"
+            printf '  %s✓%s Symbolic links: Supported\n' "$green" "$reset"
             rm -f "$tmp_link" "$tmp_link_test" 2>/dev/null || :
           else
-            printf '  %s✗%s Symbolic links: Not working\n' "$_red" "$_reset"
+            printf '  %s✗%s Symbolic links: Not working\n' "$red" "$reset"
             rm -f "$tmp_link" "$tmp_link_test" 2>/dev/null || :
             return 1
           fi
         else
-          printf '  %s✗%s Symbolic links: Creation failed\n' "$_red" "$_reset"
+          printf '  %s✗%s Symbolic links: Creation failed\n' "$red" "$reset"
           rm -f "$tmp_link_test" 2>/dev/null || :
           return 1
         fi
@@ -611,14 +611,14 @@ banish_process_level() {
         if [ -x "$tmp_exec_test" ]; then
           exec_output=$("$tmp_exec_test" 2>/dev/null || printf '')
           if [ "$exec_output" = "ok" ]; then
-            printf '  %s✓%s Execute permissions: Working\n' "$_green" "$_reset"
+            printf '  %s✓%s Execute permissions: Working\n' "$green" "$reset"
           else
-            printf '  %s✗%s Execute permissions: Script execution failed\n' "$_red" "$_reset"
+            printf '  %s✗%s Execute permissions: Script execution failed\n' "$red" "$reset"
             rm -f "$tmp_exec_test" 2>/dev/null || :
             return 1
           fi
         else
-          printf '  %s✗%s Execute permissions: chmod +x failed\n' "$_red" "$_reset"
+          printf '  %s✗%s Execute permissions: chmod +x failed\n' "$red" "$reset"
           rm -f "$tmp_exec_test" 2>/dev/null || :
           return 1
         fi
@@ -631,9 +631,9 @@ banish_process_level() {
       subshell_test=$(test_var=outer; \
         (test_var=inner; printf '%s' "$test_var") 2>/dev/null || printf '')
       if [ "$subshell_test" = "inner" ]; then
-        printf '  %s✓%s Subshells: Working correctly\n' "$_green" "$_reset"
+        printf '  %s✓%s Subshells: Working correctly\n' "$green" "$reset"
       else
-        printf '  %s✗%s Subshells: Not working correctly\n' "$_red" "$_reset"
+        printf '  %s✗%s Subshells: Not working correctly\n' "$red" "$reset"
         return 1
       fi
 
@@ -642,9 +642,9 @@ banish_process_level() {
       # Verifies kernel supports anonymous pipes (should always work on POSIX systems).
       pipe_test=$(printf 'hello' | cat 2>/dev/null || printf '')
       if [ "$pipe_test" = "hello" ]; then
-        printf '  %s✓%s Pipes: Working\n' "$_green" "$_reset"
+        printf '  %s✓%s Pipes: Working\n' "$green" "$reset"
       else
-        printf '  %s✗%s Pipes: Not working\n' "$_red" "$_reset"
+        printf '  %s✗%s Pipes: Not working\n' "$red" "$reset"
         return 1
       fi
 
@@ -656,14 +656,14 @@ banish_process_level() {
         if printf 'test' >"$tmp_redir_test" 2>/dev/null; then
           redir_content=$(cat "$tmp_redir_test" 2>/dev/null || printf '')
           if [ "$redir_content" = "test" ]; then
-            printf '  %s✓%s Redirections: Working\n' "$_green" "$_reset"
+            printf '  %s✓%s Redirections: Working\n' "$green" "$reset"
           else
-            printf '  %s✗%s Redirections: Read failed\n' "$_red" "$_reset"
+            printf '  %s✗%s Redirections: Read failed\n' "$red" "$reset"
             rm -f "$tmp_redir_test" 2>/dev/null || :
             return 1
           fi
         else
-          printf '  %s✗%s Redirections: Write failed\n' "$_red" "$_reset"
+          printf '  %s✗%s Redirections: Write failed\n' "$red" "$reset"
           rm -f "$tmp_redir_test" 2>/dev/null || :
           return 1
         fi
@@ -678,13 +678,13 @@ banish_process_level() {
         trap 'trap_test=1' USR1 2>/dev/null || trap_test=-1
         if [ "$trap_test" -ne -1 ]; then
           trap - USR1 2>/dev/null || :
-          printf '  %s✓%s Signal handling: trap command works\n' "$_green" "$_reset"
+          printf '  %s✓%s Signal handling: trap command works\n' "$green" "$reset"
         else
-          printf '  %s✗%s Signal handling: trap command failed\n' "$_red" "$_reset"
+          printf '  %s✗%s Signal handling: trap command failed\n' "$red" "$reset"
           return 1
         fi
       else
-        printf '  %s✗%s Signal handling: trap command not found\n' "$_red" "$_reset"
+        printf '  %s✗%s Signal handling: trap command not found\n' "$red" "$reset"
         return 1
       fi
 
@@ -693,9 +693,9 @@ banish_process_level() {
       # Used extensively in wizardry for dynamic values and command results.
       cmd_sub_test=$(printf 'substitution')
       if [ "$cmd_sub_test" = "substitution" ]; then
-        printf '  %s✓%s Command substitution: Working\n' "$_green" "$_reset"
+        printf '  %s✓%s Command substitution: Working\n' "$green" "$reset"
       else
-        printf '  %s✗%s Command substitution: Not working\n' "$_red" "$_reset"
+        printf '  %s✗%s Command substitution: Not working\n' "$red" "$reset"
         return 1
       fi
 
@@ -705,9 +705,9 @@ banish_process_level() {
       param_test="value"
       param_result=${param_test#val}
       if [ "$param_result" = "ue" ]; then
-        printf '  %s✓%s Parameter expansion: Working\n' "$_green" "$_reset"
+        printf '  %s✓%s Parameter expansion: Working\n' "$green" "$reset"
       else
-        printf '  %s✗%s Parameter expansion: Pattern removal failed\n' "$_red" "$_reset"
+        printf '  %s✗%s Parameter expansion: Pattern removal failed\n' "$red" "$reset"
         return 1
       fi
 
@@ -720,9 +720,9 @@ banish_process_level() {
         *) case_works=0 ;;
       esac
       if [ "$case_works" -eq 1 ]; then
-        printf '  %s✓%s Case pattern matching: Wildcard patterns work\n' "$_green" "$_reset"
+        printf '  %s✓%s Case pattern matching: Wildcard patterns work\n' "$green" "$reset"
       else
-        printf '  %s✗%s Case pattern matching: Wildcard patterns failed\n' "$_red" "$_reset"
+        printf '  %s✗%s Case pattern matching: Wildcard patterns failed\n' "$red" "$reset"
         return 1
       fi
 
@@ -730,9 +730,9 @@ banish_process_level() {
       # Shell arithmetic is used for counters, array indices, and calculations
       arith_result=$(( 2 + 2 )) 2>/dev/null || arith_result=0
       if [ "$arith_result" -eq 4 ]; then
-        printf '  %s✓%s Arithmetic: $(( )) expressions work\n' "$_green" "$_reset"
+        printf '  %s✓%s Arithmetic: $(( )) expressions work\n' "$green" "$reset"
       else
-        printf '  %s✗%s Arithmetic: $(( )) expressions not working\n' "$_red" "$_reset"
+        printf '  %s✗%s Arithmetic: $(( )) expressions not working\n' "$red" "$reset"
         return 1
       fi
 
@@ -752,9 +752,9 @@ banish_process_level() {
         rm -f "$test_file" 2>/dev/null || :
         
         if [ "$test_ok" -eq 1 ]; then
-          printf '  %s✓%s Test operators: -f -r -w -n -z all work\n' "$_green" "$_reset"
+          printf '  %s✓%s Test operators: -f -r -w -n -z all work\n' "$green" "$reset"
         else
-          printf '  %s✗%s Test operators: Some test operators failed\n' "$_red" "$_reset"
+          printf '  %s✗%s Test operators: Some test operators failed\n' "$red" "$reset"
           return 1
         fi
       fi
@@ -766,9 +766,9 @@ banish_process_level() {
         loop_count=$(( loop_count + 1 ))
       done
       if [ "$loop_count" -eq 3 ]; then
-        printf '  %s✓%s While loops: Iteration works correctly\n' "$_green" "$_reset"
+        printf '  %s✓%s While loops: Iteration works correctly\n' "$green" "$reset"
       else
-        printf '  %s✗%s While loops: Loop iteration failed\n' "$_red" "$_reset"
+        printf '  %s✗%s While loops: Loop iteration failed\n' "$red" "$reset"
         return 1
       fi
 
@@ -779,9 +779,9 @@ banish_process_level() {
         for_result="${for_result}${item}"
       done
       if [ "$for_result" = "abc" ]; then
-        printf '  %s✓%s For loops: Word list iteration works\n' "$_green" "$_reset"
+        printf '  %s✓%s For loops: Word list iteration works\n' "$green" "$reset"
       else
-        printf '  %s✗%s For loops: Word list iteration failed\n' "$_red" "$_reset"
+        printf '  %s✗%s For loops: Word list iteration failed\n' "$red" "$reset"
         return 1
       fi
 
@@ -789,9 +789,9 @@ banish_process_level() {
       # ${#var} is used to get string length without subprocesses
       len_test="12345"
       if [ "${#len_test}" -eq 5 ]; then
-        printf '  %s✓%s String length: ${#var} expansion works\n' "$_green" "$_reset"
+        printf '  %s✓%s String length: ${#var} expansion works\n' "$green" "$reset"
       else
-        printf '  %s✗%s String length: ${#var} expansion failed\n' "$_red" "$_reset"
+        printf '  %s✗%s String length: ${#var} expansion failed\n' "$red" "$reset"
         return 1
       fi
 
@@ -802,9 +802,9 @@ banish_process_level() {
       false
       exit_code_false=$?
       if [ "$exit_code_true" -eq 0 ] && [ "$exit_code_false" -ne 0 ]; then
-        printf '  %s✓%s Exit codes: $? captures command status\n' "$_green" "$_reset"
+        printf '  %s✓%s Exit codes: $? captures command status\n' "$green" "$reset"
       else
-        printf '  %s✗%s Exit codes: $? not working correctly\n' "$_red" "$_reset"
+        printf '  %s✗%s Exit codes: $? not working correctly\n' "$red" "$reset"
         return 1
       fi
 
@@ -818,9 +818,9 @@ HEREDOC_TEST
       has_line1=$(printf '%s' "$heredoc_result" | grep -q "line1" && echo 1 || echo 0)
       has_line2=$(printf '%s' "$heredoc_result" | grep -q "line2" && echo 1 || echo 0)
       if [ "$has_line1" = "1" ] && [ "$has_line2" = "1" ]; then
-        printf '  %s✓%s Here documents: Multi-line strings work\n' "$_green" "$_reset"
+        printf '  %s✓%s Here documents: Multi-line strings work\n' "$green" "$reset"
       else
-        printf '  %s✗%s Here documents: Not working correctly\n' "$_red" "$_reset"
+        printf '  %s✗%s Here documents: Not working correctly\n' "$red" "$reset"
         return 1
       fi
 
@@ -833,9 +833,9 @@ HEREDOC_TEST
       fi
       # Check for at least 10MB free space
       if [ "$available_kb" -gt 10240 ]; then
-        printf '  %s✓%s Disk space: Sufficient space available (%d KB free)\n' "$_green" "$_reset" "$available_kb"
+        printf '  %s✓%s Disk space: Sufficient space available (%d KB free)\n' "$green" "$reset" "$available_kb"
       else
-        printf '  %s✗%s Disk space: Low disk space (%d KB free, need >10MB)\n' "$_red" "$_reset" "$available_kb"
+        printf '  %s✗%s Disk space: Low disk space (%d KB free, need >10MB)\n' "$red" "$reset" "$available_kb"
         if [ "$available_kb" -lt 1024 ]; then
           return 1
         fi
@@ -846,14 +846,14 @@ HEREDOC_TEST
       test_locale="${LANG:-C}"
       case "$test_locale" in
         *.UTF-8|*.utf8|C|POSIX)
-          printf '  %s✓%s Locale: %s (supported)\n' "$_green" "$_reset" "$test_locale"
+          printf '  %s✓%s Locale: %s (supported)\n' "$green" "$reset" "$test_locale"
           ;;
         *)
-          printf '  %s✗%s Locale: %s (may cause issues with character processing)\n' "$_red" "$_reset" "$test_locale"
+          printf '  %s✗%s Locale: %s (may cause issues with character processing)\n' "$red" "$reset" "$test_locale"
           if [ "$skip_heal" -eq 0 ]; then
             LANG=C.UTF-8
             export LANG
-            printf '    %s✓%s Locale set to C.UTF-8\n' "$_green" "$_reset"
+            printf '    %s✓%s Locale set to C.UTF-8\n' "$green" "$reset"
           else
             return 1
           fi
@@ -864,24 +864,24 @@ HEREDOC_TEST
       # Wizardry stores configs, markers, and spellbooks in home directory
       home_dir="${HOME:-}"
       if [ -z "$home_dir" ]; then
-        printf '  %s✗%s Home directory: HOME not set\n' "$_red" "$_reset"
+        printf '  %s✗%s Home directory: HOME not set\n' "$red" "$reset"
         return 1
       elif [ ! -d "$home_dir" ]; then
-        printf '  %s✗%s Home directory: %s does not exist\n' "$_red" "$_reset" "$home_dir"
+        printf '  %s✗%s Home directory: %s does not exist\n' "$red" "$reset" "$home_dir"
         return 1
       elif [ -r "$home_dir" ] && [ -x "$home_dir" ]; then
-        printf '  %s✓%s Home directory: Readable and accessible\n' "$_green" "$_reset"
+        printf '  %s✓%s Home directory: Readable and accessible\n' "$green" "$reset"
       else
-        printf '  %s✗%s Home directory: Not readable or not executable\n' "$_red" "$_reset"
+        printf '  %s✗%s Home directory: Not readable or not executable\n' "$red" "$reset"
         return 1
       fi
 
       # Check process limits (can we fork?)
       # Shell scripts need to create subprocesses
       if (true) 2>/dev/null; then
-        printf '  %s✓%s Process creation: Can fork subprocesses\n' "$_green" "$_reset"
+        printf '  %s✓%s Process creation: Can fork subprocesses\n' "$green" "$reset"
       else
-        printf '  %s✗%s Process creation: Cannot fork subprocesses\n' "$_red" "$_reset"
+        printf '  %s✗%s Process creation: Cannot fork subprocesses\n' "$red" "$reset"
         return 1
       fi
 
@@ -890,9 +890,9 @@ HEREDOC_TEST
       test_str=$(printf '%s' "test" 2>/dev/null)
       test_num=$(printf '%d\n' 42 2>/dev/null | head -1)
       if [ "$test_str" = "test" ] && [ "$test_num" = "42" ]; then
-        printf '  %s✓%s printf: Format specifiers work (%%s, %%d)\n' "$_green" "$_reset"
+        printf '  %s✓%s printf: Format specifiers work (%%s, %%d)\n' "$green" "$reset"
       else
-        printf '  %s✗%s printf: Format specifiers not working correctly\n' "$_red" "$_reset"
+        printf '  %s✗%s printf: Format specifiers not working correctly\n' "$red" "$reset"
         return 1
       fi
 
@@ -901,13 +901,13 @@ HEREDOC_TEST
       if command -v date >/dev/null 2>&1; then
         test_date=$(date +%s 2>/dev/null)
         if [ -n "$test_date" ] && [ "$test_date" -gt 0 ] 2>/dev/null; then
-          printf '  %s✓%s Date command: Available and functional\n' "$_green" "$_reset"
+          printf '  %s✓%s Date command: Available and functional\n' "$green" "$reset"
         else
-          printf '  %s✗%s Date command: Found but not working\n' "$_red" "$_reset"
+          printf '  %s✗%s Date command: Found but not working\n' "$red" "$reset"
           return 1
         fi
       else
-        printf '  %s✗%s Date command: Not available\n' "$_red" "$_reset"
+        printf '  %s✗%s Date command: Not available\n' "$red" "$reset"
         return 1
       fi
 
@@ -916,9 +916,9 @@ HEREDOC_TEST
       test_base=$(basename "/path/to/file" 2>/dev/null)
       test_dir=$(dirname "/path/to/file" 2>/dev/null)
       if [ "$test_base" = "file" ] && [ "$test_dir" = "/path/to" ]; then
-        printf '  %s✓%s Path manipulation: basename/dirname work\n' "$_green" "$_reset"
+        printf '  %s✓%s Path manipulation: basename/dirname work\n' "$green" "$reset"
       else
-        printf '  %s✗%s Path manipulation: basename/dirname not working\n' "$_red" "$_reset"
+        printf '  %s✗%s Path manipulation: basename/dirname not working\n' "$red" "$reset"
         return 1
       fi
 
@@ -929,35 +929,35 @@ HEREDOC_TEST
       # Test awk
       if ! printf 'test' | awk '{print $1}' 2>/dev/null | grep -q 'test'; then
         text_tools_ok=0
-        printf '  %s✗%s Text processing: awk not working\n' "$_red" "$_reset"
+        printf '  %s✗%s Text processing: awk not working\n' "$red" "$reset"
       fi
       
       # Test sed
       if ! printf 'test' | sed 's/test/ok/' 2>/dev/null | grep -q 'ok'; then
         text_tools_ok=0
-        printf '  %s✗%s Text processing: sed not working\n' "$_red" "$_reset"
+        printf '  %s✗%s Text processing: sed not working\n' "$red" "$reset"
       fi
       
       # Test tr
       if ! printf 'test' | tr 'e' 'a' 2>/dev/null | grep -q 'tast'; then
         text_tools_ok=0
-        printf '  %s✗%s Text processing: tr not working\n' "$_red" "$_reset"
+        printf '  %s✗%s Text processing: tr not working\n' "$red" "$reset"
       fi
       
       # Test cut
       if ! printf 'a:b:c' | cut -d: -f2 2>/dev/null | grep -q 'b'; then
         text_tools_ok=0
-        printf '  %s✗%s Text processing: cut not working\n' "$_red" "$_reset"
+        printf '  %s✗%s Text processing: cut not working\n' "$red" "$reset"
       fi
       
       # Test sort
       if ! printf 'b\na\nc' | sort 2>/dev/null | head -1 | grep -q 'a'; then
         text_tools_ok=0
-        printf '  %s✗%s Text processing: sort not working\n' "$_red" "$_reset"
+        printf '  %s✗%s Text processing: sort not working\n' "$red" "$reset"
       fi
       
       if [ "$text_tools_ok" -eq 1 ]; then
-        printf '  %s✓%s Text processing: awk, sed, tr, cut, sort functional\n' "$_green" "$_reset"
+        printf '  %s✓%s Text processing: awk, sed, tr, cut, sort functional\n' "$green" "$reset"
       else
         return 1
       fi
@@ -968,23 +968,23 @@ HEREDOC_TEST
       
       # Check wizardry structure (single item - combine on one line)
       if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
-        printf '  %s✗%s Wizardry structure: Spells directory not found\n' "$_red" "$_reset"
+        printf '  %s✗%s Wizardry structure: Spells directory not found\n' "$red" "$reset"
         return 1
       fi
-      printf '  %s✓%s Wizardry structure: Spells directory exists\n' "$_green" "$_reset"
+      printf '  %s✓%s Wizardry structure: Spells directory exists\n' "$green" "$reset"
 
       # Check installer presence (single item - combine on one line)
       # Note: Compiled/doppelganger installations don't need the install script
       # Only fail if this appears to be a source installation (has .git directory)
       if [ ! -f "${WIZARDRY_DIR}/install" ]; then
         if [ -d "${WIZARDRY_DIR}/.git" ]; then
-          printf '  %s✗%s Installer: install script not found\n' "$_red" "$_reset"
+          printf '  %s✗%s Installer: install script not found\n' "$red" "$reset"
           return 1
         else
-          printf '  %s✓%s Installer: Compiled installation (install script not needed)\n' "$_green" "$_reset"
+          printf '  %s✓%s Installer: Compiled installation (install script not needed)\n' "$green" "$reset"
         fi
       else
-        printf '  %s✓%s Installer: install script present\n' "$_green" "$_reset"
+        printf '  %s✓%s Installer: install script present\n' "$green" "$reset"
       fi
 
       # Check function definitions and calls
@@ -994,9 +994,9 @@ HEREDOC_TEST
       }
       func_result=$(test_func)
       if [ "$func_result" = "function_works" ]; then
-        printf '  %s✓%s Function definitions: Shell functions work correctly\n' "$_green" "$_reset"
+        printf '  %s✓%s Function definitions: Shell functions work correctly\n' "$green" "$reset"
       else
-        printf '  %s✗%s Function definitions: Functions not working\n' "$_red" "$_reset"
+        printf '  %s✗%s Function definitions: Functions not working\n' "$red" "$reset"
         return 1
       fi
       # Check spells
@@ -1006,14 +1006,14 @@ HEREDOC_TEST
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
           missing_count=$("$banish_count_words" "$missing")
           label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
-          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          printf '  %s✗%s %s: Missing: %s\n' "$red" "$reset" "$label" "$missing"
           return 1
         fi
         spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
           printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
-          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no spell status available)%s\n' "$red" "$reset"
         fi
       fi
 
@@ -1035,14 +1035,14 @@ HEREDOC_TEST
       if [ -n "$imp_list" ]; then
         if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
-          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          printf '  %s✗%s Missing imps: %s\n' "$red" "$reset" "$missing"
           return 1
         fi
         imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
           printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
-          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no imp status available)%s\n' "$red" "$reset"
         fi
       fi
       ;;
@@ -1053,14 +1053,14 @@ HEREDOC_TEST
       # Check spellbook directory for glossary
       spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
       if [ -d "$spell_home" ] && [ -w "$spell_home" ]; then
-        printf '  %s✓%s Spellbook directory: %s\n' "$_green" "$_reset" "$spell_home"
+        printf '  %s✓%s Spellbook directory: %s\n' "$green" "$reset" "$spell_home"
       else
-        printf '  %s✗%s Spellbook directory: %s unavailable\n' "$_red" "$_reset" "$spell_home"
+        printf '  %s✗%s Spellbook directory: %s unavailable\n' "$red" "$reset" "$spell_home"
         if [ "$skip_heal" -eq 0 ]; then
           if mkdir -p "$spell_home" 2>/dev/null; then
-            printf '    %s✓%s Spellbook directory created\n' "$_green" "$_reset"
+            printf '    %s✓%s Spellbook directory created\n' "$green" "$reset"
           else
-            printf '    %s✗%s Spellbook directory creation failed\n' "$_green" "$_reset"
+            printf '    %s✗%s Spellbook directory creation failed\n' "$green" "$reset"
           fi
         fi
         if [ ! -d "$spell_home" ] || [ ! -w "$spell_home" ]; then
@@ -1076,9 +1076,9 @@ HEREDOC_TEST
       unset TEST_BANISH_VAR 2>/dev/null || :
       
       if [ "$exported_value" = "test_value_$$" ]; then
-        printf '  %s✓%s Environment export: Variables persist across subshells\n' "$_green" "$_reset"
+        printf '  %s✓%s Environment export: Variables persist across subshells\n' "$green" "$reset"
       else
-        printf '  %s✗%s Environment export: Variables not persisting\n' "$_red" "$_reset"
+        printf '  %s✗%s Environment export: Variables not persisting\n' "$red" "$reset"
         return 1
       fi
 
@@ -1105,9 +1105,9 @@ HEREDOC_TEST
       esac
       
       if [ "$name_check_works" -eq 1 ]; then
-        printf '  %s✓%s Variable name validation: Character class patterns work\n' "$_green" "$_reset"
+        printf '  %s✓%s Variable name validation: Character class patterns work\n' "$green" "$reset"
       else
-        printf '  %s✗%s Variable name validation: Pattern matching failed\n' "$_red" "$_reset"
+        printf '  %s✗%s Variable name validation: Pattern matching failed\n' "$red" "$reset"
         return 1
       fi
 
@@ -1116,17 +1116,17 @@ HEREDOC_TEST
       if command -v nslookup >/dev/null 2>&1 || \
          command -v host >/dev/null 2>&1 || \
          command -v dig >/dev/null 2>&1; then
-        printf '  %s✓%s DNS resolution: DNS tools available\n' "$_green" "$_reset"
+        printf '  %s✓%s DNS resolution: DNS tools available\n' "$green" "$reset"
       else
         # Try to resolve a hostname using getent if available
         if command -v getent >/dev/null 2>&1; then
           if getent hosts github.com >/dev/null 2>&1; then
-            printf '  %s✓%s DNS resolution: Can resolve hostnames\n' "$_green" "$_reset"
+            printf '  %s✓%s DNS resolution: Can resolve hostnames\n' "$green" "$reset"
           else
-            printf '  %s✗%s DNS resolution: Cannot resolve hostnames (updates may fail)\n' "$_red" "$_reset"
+            printf '  %s✗%s DNS resolution: Cannot resolve hostnames (updates may fail)\n' "$red" "$reset"
           fi
         else
-          printf '  %s✓%s DNS resolution: Tools not available (may limit updates)\n' "$_green" "$_reset"
+          printf '  %s✓%s DNS resolution: Tools not available (may limit updates)\n' "$green" "$reset"
         fi
       fi
 
@@ -1138,14 +1138,14 @@ HEREDOC_TEST
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
           missing_count=$("$banish_count_words" "$missing")
           label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
-          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          printf '  %s✗%s %s: Missing: %s\n' "$red" "$reset" "$label" "$missing"
           return 1
         fi
         spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
           printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
-          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no spell status available)%s\n' "$red" "$reset"
         fi
       fi
 
@@ -1169,19 +1169,19 @@ HEREDOC_TEST
       if [ -n "$imp_list" ]; then
         if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
-          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          printf '  %s✗%s Missing imps: %s\n' "$red" "$reset" "$missing"
           return 1
         fi
         imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
           printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
-          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no imp status available)%s\n' "$red" "$reset"
         fi
       elif [ "$had_imps" -eq 1 ]; then
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       else
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       fi
       ;;
 
@@ -1190,92 +1190,92 @@ HEREDOC_TEST
       
       # Check stty (single item - combine on one line)
       if ! command -v stty >/dev/null 2>&1; then
-        printf '  %s✗%s Terminal control: stty not found\n' "$_red" "$_reset"
+        printf '  %s✗%s Terminal control: stty not found\n' "$red" "$reset"
         if [ "$skip_heal" -eq 0 ]; then
           if command -v install-stty >/dev/null 2>&1; then
             printf '    Installing stty...\n'
             if install-stty 2>/dev/null; then
               if command -v stty >/dev/null 2>&1; then
-                printf '    %s✓%s stty installed\n' "$_green" "$_reset"
+                printf '    %s✓%s stty installed\n' "$green" "$reset"
               else
-                printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+                printf '    %s✗%s Install failed\n' "$red" "$reset"
               fi
             else
-              printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+              printf '    %s✗%s Install failed\n' "$red" "$reset"
             fi
           else
             printf '    Cannot auto-install stty\n'
           fi
         fi
       else
-        printf '  %s✓%s Terminal control: stty available\n' "$_green" "$_reset"
+        printf '  %s✓%s Terminal control: stty available\n' "$green" "$reset"
       fi
 
       # Check tput (fathom-terminal dependency)
       if ! command -v tput >/dev/null 2>&1; then
-        printf '  %s✗%s Terminal capabilities: tput not found\n' "$_red" "$_reset"
+        printf '  %s✗%s Terminal capabilities: tput not found\n' "$red" "$reset"
         if [ "$skip_heal" -eq 0 ]; then
           if command -v install-tput >/dev/null 2>&1; then
             printf '    Installing tput...\n'
             if install-tput 2>/dev/null; then
               if command -v tput >/dev/null 2>&1; then
-                printf '    %s✓%s tput installed\n' "$_green" "$_reset"
+                printf '    %s✓%s tput installed\n' "$green" "$reset"
               else
-                printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+                printf '    %s✗%s Install failed\n' "$red" "$reset"
               fi
             else
-              printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+              printf '    %s✗%s Install failed\n' "$red" "$reset"
             fi
           else
             printf '    Auto-install not available\n'
           fi
         fi
       else
-        printf '  %s✓%s Terminal capabilities: tput available\n' "$_green" "$_reset"
+        printf '  %s✓%s Terminal capabilities: tput available\n' "$green" "$reset"
       fi
 
       # Check dd (await-keypress dependency)
       if ! command -v dd >/dev/null 2>&1; then
-        printf '  %s✗%s Input capture: dd not found\n' "$_red" "$_reset"
+        printf '  %s✗%s Input capture: dd not found\n' "$red" "$reset"
         if [ "$skip_heal" -eq 0 ]; then
           if command -v install-dd >/dev/null 2>&1; then
             printf '    Installing dd...\n'
             if install-dd 2>/dev/null; then
               if command -v dd >/dev/null 2>&1; then
-                printf '    %s✓%s dd installed\n' "$_green" "$_reset"
+                printf '    %s✓%s dd installed\n' "$green" "$reset"
               else
-                printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+                printf '    %s✗%s Install failed\n' "$red" "$reset"
               fi
             else
-              printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+              printf '    %s✗%s Install failed\n' "$red" "$reset"
             fi
           else
             printf '    Auto-install not available\n'
           fi
         fi
       else
-        printf '  %s✓%s Input capture: dd available\n' "$_green" "$_reset"
+        printf '  %s✓%s Input capture: dd available\n' "$green" "$reset"
       fi
 
       # Check terminal device access for menu
       menu_tty=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
       if [ ! -r "$menu_tty" ] || [ ! -w "$menu_tty" ]; then
-        printf '  %s✗%s Terminal access: %s not readable/writable\n' "$_red" "$_reset" "$menu_tty"
+        printf '  %s✗%s Terminal access: %s not readable/writable\n' "$red" "$reset" "$menu_tty"
         if [ "$skip_heal" -eq 0 ] && [ -n "${AWAIT_KEYPRESS_DEVICE-}" ]; then
           menu_tty=/dev/tty
           AWAIT_KEYPRESS_DEVICE=$menu_tty
           export AWAIT_KEYPRESS_DEVICE
           if [ -r "$menu_tty" ] && [ -w "$menu_tty" ]; then
-            printf '    %s✓%s Terminal access restored to /dev/tty\n' "$_green" "$_reset"
+            printf '    %s✓%s Terminal access restored to /dev/tty\n' "$green" "$reset"
           else
-            printf '    %s✗%s Terminal access still unavailable\n' "$_red" "$_reset"
+            printf '    %s✗%s Terminal access still unavailable\n' "$red" "$reset"
           fi
         fi
         if [ ! -r "$menu_tty" ] || [ ! -w "$menu_tty" ]; then
           return 1
         fi
       else
-        printf '  %s✓%s Terminal access: %s\n' "$_green" "$_reset" "$menu_tty"
+        printf '  %s✓%s Terminal access: %s\n' "$green" "$reset" "$menu_tty"
       fi
 
       # Check terminal type for ANSI cursor control
@@ -1285,9 +1285,9 @@ HEREDOC_TEST
         *) : ;;
       esac
       if [ "$term_status" -eq 1 ]; then
-        printf '  %s✓%s Terminal type: %s\n' "$_green" "$_reset" "${TERM-unknown}"
+        printf '  %s✓%s Terminal type: %s\n' "$green" "$reset" "${TERM-unknown}"
       else
-        printf '  %s✗%s Terminal type: %s\n' "$_red" "$_reset" "${TERM-unknown}"
+        printf '  %s✗%s Terminal type: %s\n' "$red" "$reset" "${TERM-unknown}"
         if [ "$skip_heal" -eq 0 ]; then
           TERM="xterm-256color"
           export TERM
@@ -1297,9 +1297,9 @@ HEREDOC_TEST
             *) : ;;
           esac
           if [ "$term_status" -eq 1 ]; then
-            printf '    %s✓%s Terminal type set to %s\n' "$_green" "$_reset" "$TERM"
+            printf '    %s✓%s Terminal type set to %s\n' "$green" "$reset" "$TERM"
           else
-            printf '    %s✗%s Terminal type still minimal\n' "$_red" "$_reset"
+            printf '    %s✗%s Terminal type still minimal\n' "$red" "$reset"
           fi
         fi
       fi
@@ -1312,9 +1312,9 @@ HEREDOC_TEST
         cols=$(tput cols 2>/dev/null || printf '')
         lines=$(tput lines 2>/dev/null || printf '')
         if [ -n "$cols" ] && [ -n "$lines" ]; then
-          printf '  %s✓%s Terminfo dimensions: %sx%s\n' "$_green" "$_reset" "$cols" "$lines"
+          printf '  %s✓%s Terminfo dimensions: %sx%s\n' "$green" "$reset" "$cols" "$lines"
         else
-          printf '  %s✗%s Terminfo dimensions unavailable\n' "$_red" "$_reset"
+          printf '  %s✗%s Terminfo dimensions unavailable\n' "$red" "$reset"
           return 1
         fi
       fi
@@ -1324,9 +1324,9 @@ HEREDOC_TEST
       test_var="test_value"
       test_expansion=$(eval "printf '%s' \"\$test_var\"" 2>/dev/null || printf '')
       if [ "$test_expansion" = "test_value" ]; then
-        printf '  %s✓%s Variable expansion: eval works correctly\n' "$_green" "$_reset"
+        printf '  %s✓%s Variable expansion: eval works correctly\n' "$green" "$reset"
       else
-        printf '  %s✗%s Variable expansion: eval not working\n' "$_red" "$_reset"
+        printf '  %s✗%s Variable expansion: eval not working\n' "$red" "$reset"
         return 1
       fi
 
@@ -1337,14 +1337,14 @@ HEREDOC_TEST
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
           missing_count=$("$banish_count_words" "$missing")
           label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
-          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          printf '  %s✗%s %s: Missing: %s\n' "$red" "$reset" "$label" "$missing"
           return 1
         fi
         spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
           printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
-          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no spell status available)%s\n' "$red" "$reset"
         fi
       fi
 
@@ -1368,19 +1368,19 @@ HEREDOC_TEST
       if [ -n "$imp_list" ]; then
         if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
-          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          printf '  %s✗%s Missing imps: %s\n' "$red" "$reset" "$missing"
           return 1
         fi
         imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
           printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
-          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no imp status available)%s\n' "$red" "$reset"
         fi
       elif [ "$had_imps" -eq 1 ]; then
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       else
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       fi
       ;;
 
@@ -1396,9 +1396,9 @@ HEREDOC_TEST
       fi
 
       if [ -n "$xattr_helper" ]; then
-        printf '  %s✓%s Extended attributes: %s available\n' "$_green" "$_reset" "$xattr_helper"
+        printf '  %s✓%s Extended attributes: %s available\n' "$green" "$reset" "$xattr_helper"
       else
-        printf '  %s✗%s Extended attributes: no helper found\n' "$_red" "$_reset"
+        printf '  %s✗%s Extended attributes: no helper found\n' "$red" "$reset"
         if [ "$skip_heal" -eq 0 ]; then
           install_attr_script=""
           if [ -x "${WIZARDRY_DIR}/spells/.arcana/core/install-attr" ]; then
@@ -1416,9 +1416,9 @@ HEREDOC_TEST
           has_xattr=1
         fi
         if [ "$has_xattr" -eq 1 ]; then
-          printf '    %s✓%s Extended attributes helper ready\n' "$_green" "$_reset"
+          printf '    %s✓%s Extended attributes helper ready\n' "$green" "$reset"
         else
-          printf '    %s✗%s Extended attributes still unavailable\n' "$_red" "$_reset"
+          printf '    %s✗%s Extended attributes still unavailable\n' "$red" "$reset"
           return 1
         fi
       fi
@@ -1430,14 +1430,14 @@ HEREDOC_TEST
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
           missing_count=$("$banish_count_words" "$missing")
           label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
-          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          printf '  %s✗%s %s: Missing: %s\n' "$red" "$reset" "$label" "$missing"
           return 1
         fi
         spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
           printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
-          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no spell status available)%s\n' "$red" "$reset"
         fi
       fi
 
@@ -1461,19 +1461,19 @@ HEREDOC_TEST
       if [ -n "$imp_list" ]; then
         if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
-          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          printf '  %s✗%s Missing imps: %s\n' "$red" "$reset" "$missing"
           return 1
         fi
         imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
           printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
-          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no imp status available)%s\n' "$red" "$reset"
         fi
       elif [ "$had_imps" -eq 1 ]; then
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       else
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       fi
       ;;
 
@@ -1491,19 +1491,19 @@ HEREDOC_TEST
         if printf 'test' > "$lock_test" 2>/dev/null; then
           if flock -n "$lock_test" printf 'locked' 2>/dev/null; then
             rm -f "$lock_test" 2>/dev/null || :
-            printf '  %s✓%s File locking: flock available\n' "$_green" "$_reset"
+            printf '  %s✓%s File locking: flock available\n' "$green" "$reset"
           else
             rm -f "$lock_test" 2>/dev/null || :
-            printf '  %s✗%s File locking: flock not working\n' "$_red" "$_reset"
+            printf '  %s✗%s File locking: flock not working\n' "$red" "$reset"
             return 1
           fi
         else
-          printf '  %s✗%s File locking: Cannot create test file\n' "$_red" "$_reset"
+          printf '  %s✗%s File locking: Cannot create test file\n' "$red" "$reset"
           return 1
         fi
       else
         # No flock available - priorities may have race conditions
-        printf '  %s✓%s File locking: flock not available (priorities may have race conditions)\n' "$_green" "$_reset"
+        printf '  %s✓%s File locking: flock not available (priorities may have race conditions)\n' "$green" "$reset"
       fi
       
       # Check spells
@@ -1513,14 +1513,14 @@ HEREDOC_TEST
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
           missing_count=$("$banish_count_words" "$missing")
           label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
-          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          printf '  %s✗%s %s: Missing: %s\n' "$red" "$reset" "$label" "$missing"
           return 1
         fi
         spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
           printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
-          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no spell status available)%s\n' "$red" "$reset"
         fi
       fi
 
@@ -1544,19 +1544,19 @@ HEREDOC_TEST
       if [ -n "$imp_list" ]; then
         if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
-          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          printf '  %s✗%s Missing imps: %s\n' "$red" "$reset" "$missing"
           return 1
         fi
         imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
           printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
-          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no imp status available)%s\n' "$red" "$reset"
         fi
       elif [ "$had_imps" -eq 1 ]; then
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       else
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       fi
       ;;
 
@@ -1567,14 +1567,14 @@ HEREDOC_TEST
       spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
       markers_dir="$spell_home/.markers"
       if [ -d "$markers_dir" ] && [ -w "$markers_dir" ]; then
-        printf '  %s✓%s Marker directory: %s\n' "$_green" "$_reset" "$markers_dir"
+        printf '  %s✓%s Marker directory: %s\n' "$green" "$reset" "$markers_dir"
       else
-        printf '  %s✗%s Marker directory: %s unavailable\n' "$_red" "$_reset" "$markers_dir"
+        printf '  %s✗%s Marker directory: %s unavailable\n' "$red" "$reset" "$markers_dir"
         if [ "$skip_heal" -eq 0 ]; then
           if mkdir -p "$markers_dir" 2>/dev/null; then
-            printf '    %s✓%s Marker directory created\n' "$_green" "$_reset"
+            printf '    %s✓%s Marker directory created\n' "$green" "$reset"
           else
-            printf '    %s✗%s Marker directory creation failed\n' "$_red" "$_reset"
+            printf '    %s✗%s Marker directory creation failed\n' "$red" "$reset"
           fi
         fi
         if [ ! -d "$markers_dir" ] || [ ! -w "$markers_dir" ]; then
@@ -1591,26 +1591,26 @@ HEREDOC_TEST
         rm -f "$test_marker" 2>/dev/null || :
         
         if [ "$read_path" = "$test_path" ]; then
-          printf '  %s✓%s Marker persistence: Can create and read marker files\n' "$_green" "$_reset"
+          printf '  %s✓%s Marker persistence: Can create and read marker files\n' "$green" "$reset"
         else
-          printf '  %s✗%s Marker persistence: File read/write mismatch\n' "$_red" "$_reset"
+          printf '  %s✗%s Marker persistence: File read/write mismatch\n' "$red" "$reset"
           return 1
         fi
       else
-        printf '  %s✗%s Marker persistence: Cannot create marker files\n' "$_red" "$_reset"
+        printf '  %s✗%s Marker persistence: Cannot create marker files\n' "$red" "$reset"
         return 1
       fi
 
       # Check spellbook directory access
       if [ -d "$spell_home" ] && [ -w "$spell_home" ]; then
-        printf '  %s✓%s Spellbook directory: %s\n' "$_green" "$_reset" "$spell_home"
+        printf '  %s✓%s Spellbook directory: %s\n' "$green" "$reset" "$spell_home"
       else
-        printf '  %s✗%s Spellbook directory: %s unavailable\n' "$_red" "$_reset" "$spell_home"
+        printf '  %s✗%s Spellbook directory: %s unavailable\n' "$red" "$reset" "$spell_home"
         if [ "$skip_heal" -eq 0 ]; then
           if mkdir -p "$spell_home" 2>/dev/null; then
-            printf '    %s✓%s Spellbook directory created\n' "$_green" "$_reset"
+            printf '    %s✓%s Spellbook directory created\n' "$green" "$reset"
           else
-            printf '    %s✗%s Spellbook directory creation failed\n' "$_red" "$_reset"
+            printf '    %s✗%s Spellbook directory creation failed\n' "$red" "$reset"
           fi
         fi
         if [ ! -d "$spell_home" ] || [ ! -w "$spell_home" ]; then
@@ -1625,14 +1625,14 @@ HEREDOC_TEST
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
           missing_count=$("$banish_count_words" "$missing")
           label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
-          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          printf '  %s✗%s %s: Missing: %s\n' "$red" "$reset" "$label" "$missing"
           return 1
         fi
         spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
           printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
-          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no spell status available)%s\n' "$red" "$reset"
         fi
       fi
 
@@ -1656,19 +1656,19 @@ HEREDOC_TEST
       if [ -n "$imp_list" ]; then
         if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
-          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          printf '  %s✗%s Missing imps: %s\n' "$red" "$reset" "$missing"
           return 1
         fi
         imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
           printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
-          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no imp status available)%s\n' "$red" "$reset"
         fi
       elif [ "$had_imps" -eq 1 ]; then
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       else
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       fi
       ;;
 
@@ -1684,9 +1684,9 @@ HEREDOC_TEST
       fi
 
       if [ -n "$xattr_helper" ]; then
-        printf '  %s✓%s Extended attributes: %s available\n' "$_green" "$_reset" "$xattr_helper"
+        printf '  %s✓%s Extended attributes: %s available\n' "$green" "$reset" "$xattr_helper"
       else
-        printf '  %s✗%s Extended attributes: no helper found\n' "$_red" "$_reset"
+        printf '  %s✗%s Extended attributes: no helper found\n' "$red" "$reset"
         if [ "$skip_heal" -eq 0 ]; then
           manage_system_command=""
           if command -v manage-system-command >/dev/null 2>&1; then
@@ -1707,9 +1707,9 @@ HEREDOC_TEST
           has_xattr=1
         fi
         if [ "$has_xattr" -eq 1 ]; then
-          printf '    %s✓%s Extended attributes helper ready\n' "$_green" "$_reset"
+          printf '    %s✓%s Extended attributes helper ready\n' "$green" "$reset"
         else
-          printf '    %s✗%s Extended attributes still unavailable\n' "$_red" "$_reset"
+          printf '    %s✗%s Extended attributes still unavailable\n' "$red" "$reset"
           return 1
         fi
       fi
@@ -1742,9 +1742,9 @@ HEREDOC_TEST
         rm -f "$tmp_xattr_test" 2>/dev/null || :
         
         if [ "$xattr_works" -eq 1 ]; then
-          printf '  %s✓%s Extended attributes: Filesystem supports xattrs\n' "$_green" "$_reset"
+          printf '  %s✓%s Extended attributes: Filesystem supports xattrs\n' "$green" "$reset"
         else
-          printf '  %s✗%s Extended attributes: Filesystem does not support xattrs\n' "$_red" "$_reset"
+          printf '  %s✗%s Extended attributes: Filesystem does not support xattrs\n' "$red" "$reset"
           printf '    MUD features (look, check-cd-hook) require xattr support\n'
           return 1
         fi
@@ -1757,14 +1757,14 @@ HEREDOC_TEST
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
           missing_count=$("$banish_count_words" "$missing")
           label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
-          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          printf '  %s✗%s %s: Missing: %s\n' "$red" "$reset" "$label" "$missing"
           return 1
         fi
         spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
           printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
-          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no spell status available)%s\n' "$red" "$reset"
         fi
       fi
 
@@ -1788,19 +1788,19 @@ HEREDOC_TEST
       if [ -n "$imp_list" ]; then
         if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
-          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          printf '  %s✗%s Missing imps: %s\n' "$red" "$reset" "$missing"
           return 1
         fi
         imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
           printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
-          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no imp status available)%s\n' "$red" "$reset"
         fi
       elif [ "$had_imps" -eq 1 ]; then
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       else
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       fi
       ;;
 
@@ -1816,9 +1816,9 @@ HEREDOC_TEST
       done
 
       if [ "$file_utils_ok" -eq 1 ]; then
-        printf '  %s✓%s File utilities: cp mv rm find\n' "$_green" "$_reset"
+        printf '  %s✓%s File utilities: cp mv rm find\n' "$green" "$reset"
       else
-        printf '  %s✗%s File utilities: missing command\n' "$_red" "$_reset"
+        printf '  %s✗%s File utilities: missing command\n' "$red" "$reset"
         return 1
       fi
 
@@ -1828,14 +1828,14 @@ HEREDOC_TEST
       if [ -n "$tmp_check" ]; then
         if printf '%s\n' "banish" >"$tmp_check" 2>/dev/null && [ -s "$tmp_check" ]; then
           rm -f "$tmp_check" 2>/dev/null || :
-          printf '  %s✓%s Filesystem read/write: %s\n' "$_green" "$_reset" "$tmp_root"
+          printf '  %s✓%s Filesystem read/write: %s\n' "$green" "$reset" "$tmp_root"
         else
           rm -f "$tmp_check" 2>/dev/null || :
-          printf '  %s✗%s Filesystem read/write: %s unavailable\n' "$_red" "$_reset" "$tmp_root"
+          printf '  %s✗%s Filesystem read/write: %s unavailable\n' "$red" "$reset" "$tmp_root"
           return 1
         fi
       else
-        printf '  %s✗%s Filesystem read/write: temp file unavailable\n' "$_red" "$_reset"
+        printf '  %s✗%s Filesystem read/write: temp file unavailable\n' "$red" "$reset"
         return 1
       fi
 
@@ -1849,20 +1849,20 @@ HEREDOC_TEST
           if find "$tmp_dir" -type d >/dev/null 2>&1; then
             # Test recursive removal
             if rm -rf "$tmp_dir" 2>/dev/null; then
-              printf '  %s✓%s Recursive operations: mkdir -p, find, rm -rf work\n' "$_green" "$_reset"
+              printf '  %s✓%s Recursive operations: mkdir -p, find, rm -rf work\n' "$green" "$reset"
             else
               rm -rf "$tmp_dir" 2>/dev/null || :
-              printf '  %s✗%s Recursive operations: rm -rf failed\n' "$_red" "$_reset"
+              printf '  %s✗%s Recursive operations: rm -rf failed\n' "$red" "$reset"
               return 1
             fi
           else
             rm -rf "$tmp_dir" 2>/dev/null || :
-            printf '  %s✗%s Recursive operations: find failed\n' "$_red" "$_reset"
+            printf '  %s✗%s Recursive operations: find failed\n' "$red" "$reset"
             return 1
           fi
         else
           rm -rf "$tmp_dir" 2>/dev/null || :
-          printf '  %s✗%s Recursive operations: mkdir -p failed\n' "$_red" "$_reset"
+          printf '  %s✗%s Recursive operations: mkdir -p failed\n' "$red" "$reset"
           return 1
         fi
       fi
@@ -1874,13 +1874,13 @@ HEREDOC_TEST
       if printf '%s\n' "$grep_test" | grep -Fq "pattern" 2>/dev/null; then
         # Test basic regex
         if printf '%s\n' "$grep_test" | grep -q "test.*123" 2>/dev/null; then
-          printf '  %s✓%s Pattern matching: grep literal and regex work\n' "$_green" "$_reset"
+          printf '  %s✓%s Pattern matching: grep literal and regex work\n' "$green" "$reset"
         else
-          printf '  %s✗%s Pattern matching: grep regex not working\n' "$_red" "$_reset"
+          printf '  %s✗%s Pattern matching: grep regex not working\n' "$red" "$reset"
           return 1
         fi
       else
-        printf '  %s✗%s Pattern matching: grep literal search failed\n' "$_red" "$_reset"
+        printf '  %s✗%s Pattern matching: grep literal search failed\n' "$red" "$reset"
         return 1
       fi
 
@@ -1891,13 +1891,13 @@ HEREDOC_TEST
         # XDG spec allows it to not exist yet - just verify we can create it if needed
         if [ -d "$xdg_data_home" ] || mkdir -p "$xdg_data_home" 2>/dev/null; then
           if [ -w "$xdg_data_home" ] || [ ! -e "$xdg_data_home" ]; then
-            printf '  %s✓%s XDG data directory: %s accessible\n' "$_green" "$_reset" "$xdg_data_home"
+            printf '  %s✓%s XDG data directory: %s accessible\n' "$green" "$reset" "$xdg_data_home"
           else
-            printf '  %s✗%s XDG data directory: %s not writable\n' "$_red" "$_reset" "$xdg_data_home"
+            printf '  %s✗%s XDG data directory: %s not writable\n' "$red" "$reset" "$xdg_data_home"
             return 1
           fi
         else
-          printf '  %s✗%s XDG data directory: cannot create %s\n' "$_red" "$_reset" "$xdg_data_home"
+          printf '  %s✗%s XDG data directory: cannot create %s\n' "$red" "$reset" "$xdg_data_home"
           return 1
         fi
       fi
@@ -1909,14 +1909,14 @@ HEREDOC_TEST
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
           missing_count=$("$banish_count_words" "$missing")
           label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
-          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          printf '  %s✗%s %s: Missing: %s\n' "$red" "$reset" "$label" "$missing"
           return 1
         fi
         spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
           printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
-          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no spell status available)%s\n' "$red" "$reset"
         fi
       fi
 
@@ -1940,19 +1940,19 @@ HEREDOC_TEST
       if [ -n "$imp_list" ]; then
         if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
-          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          printf '  %s✗%s Missing imps: %s\n' "$red" "$reset" "$missing"
           return 1
         fi
         imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
           printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
-          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no imp status available)%s\n' "$red" "$reset"
         fi
       elif [ "$had_imps" -eq 1 ]; then
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       else
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       fi
       ;;
 
@@ -1962,17 +1962,17 @@ HEREDOC_TEST
       # Check interactive input device
       input_tty=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
       if [ -r "$input_tty" ] && [ -w "$input_tty" ]; then
-        printf '  %s✓%s Interactive input: %s\n' "$_green" "$_reset" "$input_tty"
+        printf '  %s✓%s Interactive input: %s\n' "$green" "$reset" "$input_tty"
       else
-        printf '  %s✗%s Interactive input: %s unavailable\n' "$_red" "$_reset" "$input_tty"
+        printf '  %s✗%s Interactive input: %s unavailable\n' "$red" "$reset" "$input_tty"
         if [ "$skip_heal" -eq 0 ] && [ -n "${AWAIT_KEYPRESS_DEVICE-}" ]; then
           input_tty=/dev/tty
           AWAIT_KEYPRESS_DEVICE=$input_tty
           export AWAIT_KEYPRESS_DEVICE
           if [ -r "$input_tty" ] && [ -w "$input_tty" ]; then
-            printf '    %s✓%s Interactive input restored to /dev/tty\n' "$_green" "$_reset"
+            printf '    %s✓%s Interactive input restored to /dev/tty\n' "$green" "$reset"
           else
-            printf '    %s✗%s Interactive input still unavailable\n' "$_red" "$_reset"
+            printf '    %s✗%s Interactive input still unavailable\n' "$red" "$reset"
           fi
         fi
         if [ ! -r "$input_tty" ] || [ ! -w "$input_tty" ]; then
@@ -1983,9 +1983,9 @@ HEREDOC_TEST
       # Check read builtin (needed for ask-text, ask-yn)
       # Basic cantrips rely on shell's read builtin for user input
       if printf 'test\n' | ( read -r test_input; [ "$test_input" = "test" ] ) 2>/dev/null; then
-        printf '  %s✓%s Read builtin: Shell read command works\n' "$_green" "$_reset"
+        printf '  %s✓%s Read builtin: Shell read command works\n' "$green" "$reset"
       else
-        printf '  %s✗%s Read builtin: Shell read command not working\n' "$_red" "$_reset"
+        printf '  %s✗%s Read builtin: Shell read command not working\n' "$red" "$reset"
         return 1
       fi
 
@@ -1996,14 +1996,14 @@ HEREDOC_TEST
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
           missing_count=$("$banish_count_words" "$missing")
           label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
-          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          printf '  %s✗%s %s: Missing: %s\n' "$red" "$reset" "$label" "$missing"
           return 1
         fi
         spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
           printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
-          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no spell status available)%s\n' "$red" "$reset"
         fi
       fi
 
@@ -2027,19 +2027,19 @@ HEREDOC_TEST
       if [ -n "$imp_list" ]; then
         if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
-          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          printf '  %s✗%s Missing imps: %s\n' "$red" "$reset" "$missing"
           return 1
         fi
         imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
           printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
-          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no imp status available)%s\n' "$red" "$reset"
         fi
       elif [ "$had_imps" -eq 1 ]; then
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       else
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       fi
       ;;
 
@@ -2049,14 +2049,14 @@ HEREDOC_TEST
       # Check configuration directory access
       config_home=${WIZARDRY_CONFIG_DIR:-${HOME:-.}/.wizardry}
       if [ -d "$config_home" ] && [ -w "$config_home" ]; then
-        printf '  %s✓%s Config directory: %s\n' "$_green" "$_reset" "$config_home"
+        printf '  %s✓%s Config directory: %s\n' "$green" "$reset" "$config_home"
       else
-        printf '  %s✗%s Config directory: %s unavailable\n' "$_red" "$_reset" "$config_home"
+        printf '  %s✗%s Config directory: %s unavailable\n' "$red" "$reset" "$config_home"
         if [ "$skip_heal" -eq 0 ]; then
           if mkdir -p "$config_home" 2>/dev/null; then
-            printf '    %s✓%s Config directory created\n' "$_green" "$_reset"
+            printf '    %s✓%s Config directory created\n' "$green" "$reset"
           else
-            printf '    %s✗%s Config directory creation failed\n' "$_red" "$_reset"
+            printf '    %s✗%s Config directory creation failed\n' "$red" "$reset"
           fi
         fi
         if [ ! -d "$config_home" ] || [ ! -w "$config_home" ]; then
@@ -2070,14 +2070,14 @@ HEREDOC_TEST
       if printf '%s\n' "test log entry" >> "$log_test" 2>/dev/null; then
         if [ -f "$log_test" ] && [ -r "$log_test" ]; then
           rm -f "$log_test" 2>/dev/null || :
-          printf '  %s✓%s Log file creation: Can write config logs\n' "$_green" "$_reset"
+          printf '  %s✓%s Log file creation: Can write config logs\n' "$green" "$reset"
         else
           rm -f "$log_test" 2>/dev/null || :
-          printf '  %s✗%s Log file creation: File not readable after write\n' "$_red" "$_reset"
+          printf '  %s✗%s Log file creation: File not readable after write\n' "$red" "$reset"
           return 1
         fi
       else
-        printf '  %s✗%s Log file creation: Cannot write log files\n' "$_red" "$_reset"
+        printf '  %s✗%s Log file creation: Cannot write log files\n' "$red" "$reset"
         return 1
       fi
 
@@ -2088,14 +2088,14 @@ HEREDOC_TEST
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
           missing_count=$("$banish_count_words" "$missing")
           label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
-          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          printf '  %s✗%s %s: Missing: %s\n' "$red" "$reset" "$label" "$missing"
           return 1
         fi
         spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
           printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
-          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no spell status available)%s\n' "$red" "$reset"
         fi
       fi
 
@@ -2119,19 +2119,19 @@ HEREDOC_TEST
       if [ -n "$imp_list" ]; then
         if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
-          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          printf '  %s✗%s Missing imps: %s\n' "$red" "$reset" "$missing"
           return 1
         fi
         imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
           printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
-          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no imp status available)%s\n' "$red" "$reset"
         fi
       elif [ "$had_imps" -eq 1 ]; then
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       else
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       fi
       ;;
 
@@ -2141,16 +2141,16 @@ HEREDOC_TEST
       # Check tests directory
       tests_root="${WIZARDRY_DIR}/.tests"
       if [ -d "$tests_root" ]; then
-        printf '  %s✓%s Test suite: %s\n' "$_green" "$_reset" "$tests_root"
+        printf '  %s✓%s Test suite: %s\n' "$green" "$reset" "$tests_root"
       else
-        printf '  %s✗%s Test suite: %s missing\n' "$_red" "$_reset" "$tests_root"
+        printf '  %s✗%s Test suite: %s missing\n' "$red" "$reset" "$tests_root"
         return 1
       fi
 
       # Skip pocket-dimension and bwrap checks in GitHub Actions
       # (bwrap should only be used in local environments, not CI workflows)
       if [ "${GITHUB_ACTIONS-}" = "true" ]; then
-        printf '  %s✓%s Sandbox tools: Skipped (GitHub Actions environment)\n' "$_green" "$_reset"
+        printf '  %s✓%s Sandbox tools: Skipped (GitHub Actions environment)\n' "$green" "$reset"
       else
         # Check pocket-dimension sandboxing
         platform=$(uname -s 2>/dev/null || printf 'unknown')
@@ -2163,39 +2163,39 @@ HEREDOC_TEST
 
         if [ -n "$pocket_cmd" ]; then
           if "$pocket_cmd" --check >/dev/null 2>&1; then
-            printf '  %s✓%s Sandbox tool: pocket-dimension available\n' "$_green" "$_reset"
+            printf '  %s✓%s Sandbox tool: pocket-dimension available\n' "$green" "$reset"
           else
-            printf '  %s✗%s Sandbox tool: pocket-dimension unavailable\n' "$_red" "$_reset"
+            printf '  %s✗%s Sandbox tool: pocket-dimension unavailable\n' "$red" "$reset"
             return 1
           fi
         else
-          printf '  %s✗%s Sandbox tool: pocket-dimension not found\n' "$_red" "$_reset"
+          printf '  %s✗%s Sandbox tool: pocket-dimension not found\n' "$red" "$reset"
           return 1
         fi
 
         if [ "$platform" = "Darwin" ]; then
           if command -v sandbox-exec >/dev/null 2>&1; then
-            printf '  %s✓%s Sandbox tool: sandbox-exec available (macOS)\n' "$_green" "$_reset"
+            printf '  %s✓%s Sandbox tool: sandbox-exec available (macOS)\n' "$green" "$reset"
           else
-            printf '  %s✗%s Sandbox tool: sandbox-exec not found (macOS)\n' "$_red" "$_reset"
+            printf '  %s✗%s Sandbox tool: sandbox-exec not found (macOS)\n' "$red" "$reset"
             return 1
           fi
         else
           if command -v bwrap >/dev/null 2>&1; then
-            printf '  %s✓%s Sandbox tool: bwrap available\n' "$_green" "$_reset"
+            printf '  %s✓%s Sandbox tool: bwrap available\n' "$green" "$reset"
           else
-            printf '  %s✗%s Sandbox tool: bwrap not found\n' "$_red" "$_reset"
+            printf '  %s✗%s Sandbox tool: bwrap not found\n' "$red" "$reset"
             if [ "$skip_heal" -eq 0 ]; then
               if command -v install-bwrap >/dev/null 2>&1; then
                 printf '    Installing bwrap...\n'
                 if install-bwrap 2>/dev/null; then
                   if command -v bwrap >/dev/null 2>&1; then
-                    printf '    %s✓%s bwrap installed\n' "$_green" "$_reset"
+                    printf '    %s✓%s bwrap installed\n' "$green" "$reset"
                   else
-                    printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+                    printf '    %s✗%s Install failed\n' "$red" "$reset"
                   fi
                 else
-                  printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+                  printf '    %s✗%s Install failed\n' "$red" "$reset"
                 fi
               else
                 printf '    Auto-install not available\n'
@@ -2224,9 +2224,9 @@ HEREDOC_TEST
         rm -f "$tmp_source_test" 2>/dev/null || :
         
         if [ "$banish_source_test" = "sourced_successfully" ]; then
-          printf '  %s✓%s Script sourcing: Can source shell scripts with .\n' "$_green" "$_reset"
+          printf '  %s✓%s Script sourcing: Can source shell scripts with .\n' "$green" "$reset"
         else
-          printf '  %s✗%s Script sourcing: Cannot source shell scripts\n' "$_red" "$_reset"
+          printf '  %s✗%s Script sourcing: Cannot source shell scripts\n' "$red" "$reset"
           return 1
         fi
       fi
@@ -2238,14 +2238,14 @@ HEREDOC_TEST
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
           missing_count=$("$banish_count_words" "$missing")
           label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
-          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          printf '  %s✗%s %s: Missing: %s\n' "$red" "$reset" "$label" "$missing"
           return 1
         fi
         spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
           printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
-          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no spell status available)%s\n' "$red" "$reset"
         fi
       fi
 
@@ -2269,19 +2269,19 @@ HEREDOC_TEST
       if [ -n "$imp_list" ]; then
         if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
-          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          printf '  %s✗%s Missing imps: %s\n' "$red" "$reset" "$missing"
           return 1
         fi
         imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
           printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
-          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no imp status available)%s\n' "$red" "$reset"
         fi
       elif [ "$had_imps" -eq 1 ]; then
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       else
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       fi
       ;;
 
@@ -2291,20 +2291,20 @@ HEREDOC_TEST
 
       # Check checkbashisms for lint-magic
       if command -v checkbashisms >/dev/null 2>&1; then
-        printf '  %s✓%s Shell lint: checkbashisms available\n' "$_green" "$_reset"
+        printf '  %s✓%s Shell lint: checkbashisms available\n' "$green" "$reset"
       else
-        printf '  %s✗%s Shell lint: checkbashisms not found\n' "$_red" "$_reset"
+        printf '  %s✗%s Shell lint: checkbashisms not found\n' "$red" "$reset"
         if [ "$skip_heal" -eq 0 ]; then
           if command -v install-checkbashisms >/dev/null 2>&1; then
             printf '    Installing checkbashisms...\n'
             if install-checkbashisms 2>/dev/null; then
               if command -v checkbashisms >/dev/null 2>&1; then
-                printf '    %s✓%s checkbashisms installed\n' "$_green" "$_reset"
+                printf '    %s✓%s checkbashisms installed\n' "$green" "$reset"
               else
-                printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+                printf '    %s✗%s Install failed\n' "$red" "$reset"
               fi
             else
-              printf '    %s✗%s Install failed\n' "$_red" "$_reset"
+              printf '    %s✗%s Install failed\n' "$red" "$reset"
             fi
           else
             printf '    Auto-install not available\n'
@@ -2322,14 +2322,14 @@ HEREDOC_TEST
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
           missing_count=$("$banish_count_words" "$missing")
           label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
-          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          printf '  %s✗%s %s: Missing: %s\n' "$red" "$reset" "$label" "$missing"
           return 1
         fi
         spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
           printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
-          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no spell status available)%s\n' "$red" "$reset"
         fi
       fi
 
@@ -2353,19 +2353,19 @@ HEREDOC_TEST
       if [ -n "$imp_list" ]; then
         if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
-          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          printf '  %s✗%s Missing imps: %s\n' "$red" "$reset" "$missing"
           return 1
         fi
         imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
           printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
-          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no imp status available)%s\n' "$red" "$reset"
         fi
       elif [ "$had_imps" -eq 1 ]; then
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       else
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       fi
       ;;
 
@@ -2375,14 +2375,14 @@ HEREDOC_TEST
       # Check spellbook directory access
       spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
       if [ -d "$spell_home" ] && [ -w "$spell_home" ]; then
-        printf '  %s✓%s Spellbook directory: %s\n' "$_green" "$_reset" "$spell_home"
+        printf '  %s✓%s Spellbook directory: %s\n' "$green" "$reset" "$spell_home"
       else
-        printf '  %s✗%s Spellbook directory: %s unavailable\n' "$_red" "$_reset" "$spell_home"
+        printf '  %s✗%s Spellbook directory: %s unavailable\n' "$red" "$reset" "$spell_home"
         if [ "$skip_heal" -eq 0 ]; then
           if mkdir -p "$spell_home" 2>/dev/null; then
-            printf '    %s✓%s Spellbook directory created\n' "$_green" "$_reset"
+            printf '    %s✓%s Spellbook directory created\n' "$green" "$reset"
           else
-            printf '    %s✗%s Spellbook directory creation failed\n' "$_red" "$_reset"
+            printf '    %s✗%s Spellbook directory creation failed\n' "$red" "$reset"
           fi
         fi
         if [ ! -d "$spell_home" ] || [ ! -w "$spell_home" ]; then
@@ -2397,14 +2397,14 @@ HEREDOC_TEST
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
           missing_count=$("$banish_count_words" "$missing")
           label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
-          printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
+          printf '  %s✗%s %s: Missing: %s\n' "$red" "$reset" "$label" "$missing"
           return 1
         fi
         spell_output=$(eval ""$validate_spells" --show-status $spell_list" 2>&1) || true
         if [ -n "$spell_output" ]; then
           printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
-          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no spell status available)%s\n' "$red" "$reset"
         fi
       fi
 
@@ -2428,19 +2428,19 @@ HEREDOC_TEST
       if [ -n "$imp_list" ]; then
         if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
-          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          printf '  %s✗%s Missing imps: %s\n' "$red" "$reset" "$missing"
           return 1
         fi
         imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
           printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
-          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no imp status available)%s\n' "$red" "$reset"
         fi
       elif [ "$had_imps" -eq 1 ]; then
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       else
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       fi
       ;;
       
@@ -2448,7 +2448,7 @@ HEREDOC_TEST
       # Level 27: Optional Arcana (single item - combine on one line)
       if [ -d "${WIZARDRY_DIR}/spells/.arcana" ]; then
         arcana_count=$(find "${WIZARDRY_DIR}/spells/.arcana" -type f 2>/dev/null | wc -l)
-        printf '  %s✓%s Arcana (optional): Found %d scripts\n' "$_green" "$_reset" "$arcana_count"
+        printf '  %s✓%s Arcana (optional): Found %d scripts\n' "$green" "$reset" "$arcana_count"
       else
         printf '  Arcana (optional): Not installed\n'
       fi
@@ -2464,15 +2464,15 @@ HEREDOC_TEST
       # Skip in CI/non-interactive environments
       if [ "${CI-}" = "true" ] || [ "${GITHUB_ACTIONS-}" = "true" ] || [ ! -t 0 ]; then
         if [ -t 0 ]; then
-          printf '  %s✓%s stdin: Connected to terminal\n' "$_green" "$_reset"
+          printf '  %s✓%s stdin: Connected to terminal\n' "$green" "$reset"
         else
-          printf '  %s✓%s stdin: Non-interactive (CI/testing environment)\n' "$_green" "$_reset"
+          printf '  %s✓%s stdin: Non-interactive (CI/testing environment)\n' "$green" "$reset"
         fi
       else
         if [ -t 0 ]; then
-          printf '  %s✓%s stdin: Connected to terminal\n' "$_green" "$_reset"
+          printf '  %s✓%s stdin: Connected to terminal\n' "$green" "$reset"
         else
-          printf '  %s✗%s stdin: Not a terminal (pipe/file detected)\n' "$_red" "$_reset"
+          printf '  %s✗%s stdin: Not a terminal (pipe/file detected)\n' "$red" "$reset"
           printf '    Menu system requires interactive terminal input\n'
           return 1
         fi
@@ -2481,9 +2481,9 @@ HEREDOC_TEST
       # Verify stdout is a terminal (not redirected)
       # More lenient - just report status without failing
       if [ -t 1 ]; then
-        printf '  %s✓%s stdout: Connected to terminal\n' "$_green" "$_reset"
+        printf '  %s✓%s stdout: Connected to terminal\n' "$green" "$reset"
       else
-        printf '  %s✓%s stdout: Redirected (testing mode)\n' "$_green" "$_reset"
+        printf '  %s✓%s stdout: Redirected (testing mode)\n' "$green" "$reset"
       fi
 
       # Check terminal size is reasonable for menu display
@@ -2495,12 +2495,12 @@ HEREDOC_TEST
         min_lines=10
         
         if [ "$term_cols" -ge "$min_cols" ] && [ "$term_lines" -ge "$min_lines" ]; then
-          printf '  %s✓%s Terminal size: %sx%s (adequate for menus)\n' "$_green" "$_reset" "$term_cols" "$term_lines"
+          printf '  %s✓%s Terminal size: %sx%s (adequate for menus)\n' "$green" "$reset" "$term_cols" "$term_lines"
         elif [ "$term_cols" -eq 0 ] || [ "$term_lines" -eq 0 ]; then
           # Terminal size unavailable (common in CI)
-          printf '  %s✓%s Terminal size: Unknown (non-interactive environment)\n' "$_green" "$_reset"
+          printf '  %s✓%s Terminal size: Unknown (non-interactive environment)\n' "$green" "$reset"
         else
-          printf '  %s✗%s Terminal size: %sx%s (too small, need at least %sx%s)\n' "$_red" "$_reset" "$term_cols" "$term_lines" "$min_cols" "$min_lines"
+          printf '  %s✗%s Terminal size: %sx%s (too small, need at least %sx%s)\n' "$red" "$reset" "$term_cols" "$term_lines" "$min_cols" "$min_lines"
           return 1
         fi
       fi
@@ -2514,14 +2514,14 @@ HEREDOC_TEST
           # Test if we can use raw mode
           if stty raw -echo 2>/dev/null; then
             stty "$original_stty" 2>/dev/null || :
-            printf '  %s✓%s Terminal raw mode: Available (for keypress capture)\n' "$_green" "$_reset"
+            printf '  %s✓%s Terminal raw mode: Available (for keypress capture)\n' "$green" "$reset"
           else
-            printf '  %s✗%s Terminal raw mode: Not available\n' "$_red" "$_reset"
+            printf '  %s✗%s Terminal raw mode: Not available\n' "$red" "$reset"
             return 1
           fi
         fi
       else
-        printf '  %s✓%s Terminal raw mode: Skipped (non-interactive)\n' "$_green" "$_reset"
+        printf '  %s✓%s Terminal raw mode: Skipped (non-interactive)\n' "$green" "$reset"
       fi
 
       # Check spells
@@ -2533,7 +2533,7 @@ HEREDOC_TEST
         if [ -n "$spell_output" ]; then
           printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
-          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no spell status available)%s\n' "$red" "$reset"
         fi
         
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
@@ -2561,19 +2561,19 @@ HEREDOC_TEST
       if [ -n "$imp_list" ]; then
         if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
-          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          printf '  %s✗%s Missing imps: %s\n' "$red" "$reset" "$missing"
           return 1
         fi
         imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
           printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
-          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no imp status available)%s\n' "$red" "$reset"
         fi
       elif [ "$had_imps" -eq 1 ]; then
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       else
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       fi
       
       if [ "$has_missing_spells" -eq 1 ]; then
@@ -2589,13 +2589,13 @@ HEREDOC_TEST
       if command -v git >/dev/null 2>&1; then
         # Verify git actually works (can run git --version)
         if git --version >/dev/null 2>&1; then
-          printf '  %s✓%s Version control: git available\n' "$_green" "$_reset"
+          printf '  %s✓%s Version control: git available\n' "$green" "$reset"
         else
-          printf '  %s✗%s Version control: git found but not working\n' "$_red" "$_reset"
+          printf '  %s✗%s Version control: git found but not working\n' "$red" "$reset"
           return 1
         fi
       else
-        printf '  %s✗%s Version control: git not found\n' "$_red" "$_reset"
+        printf '  %s✗%s Version control: git not found\n' "$red" "$reset"
         printf '    update-wizardry requires git for repository updates\n'
         if [ "$skip_heal" -eq 0 ]; then
           manage_system_command=""
@@ -2608,9 +2608,9 @@ HEREDOC_TEST
             printf '    Attempting to install git...\n'
             "$manage_system_command" git git >/dev/null 2>&1 || :
             if command -v git >/dev/null 2>&1; then
-              printf '    %s✓%s git installed\n' "$_green" "$_reset"
+              printf '    %s✓%s git installed\n' "$green" "$reset"
             else
-              printf '    %s✗%s git installation failed\n' "$_red" "$_reset"
+              printf '    %s✗%s git installation failed\n' "$red" "$reset"
             fi
           fi
         fi
@@ -2628,15 +2628,15 @@ HEREDOC_TEST
         
         # Check for at least 100MB available memory
         if [ "$mem_available_kb" -gt 102400 ]; then
-          printf '  %s✓%s Memory: Sufficient RAM available (%d MB)\n' "$_green" "$_reset" "$((mem_available_kb / 1024))"
+          printf '  %s✓%s Memory: Sufficient RAM available (%d MB)\n' "$green" "$reset" "$((mem_available_kb / 1024))"
         elif [ "$mem_available_kb" -gt 51200 ]; then
-          printf '  %s✓%s Memory: Limited RAM (%d MB, git ops may be slow)\n' "$_green" "$_reset" "$((mem_available_kb / 1024))"
+          printf '  %s✓%s Memory: Limited RAM (%d MB, git ops may be slow)\n' "$green" "$reset" "$((mem_available_kb / 1024))"
         else
-          printf '  %s✗%s Memory: Low RAM (%d MB, git may fail)\n' "$_red" "$_reset" "$((mem_available_kb / 1024))"
+          printf '  %s✗%s Memory: Low RAM (%d MB, git may fail)\n' "$red" "$reset" "$((mem_available_kb / 1024))"
         fi
       else
         # macOS or other systems without /proc/meminfo
-        printf '  %s✓%s Memory: Cannot check (non-Linux system)\n' "$_green" "$_reset"
+        printf '  %s✓%s Memory: Cannot check (non-Linux system)\n' "$green" "$reset"
       fi
 
       # Check spells
@@ -2649,7 +2649,7 @@ HEREDOC_TEST
         if [ -n "$spell_output" ]; then
           printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
-          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no spell status available)%s\n' "$red" "$reset"
         fi
         
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
@@ -2677,19 +2677,19 @@ HEREDOC_TEST
       if [ -n "$imp_list" ]; then
         if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
-          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          printf '  %s✗%s Missing imps: %s\n' "$red" "$reset" "$missing"
           return 1
         fi
         imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
           printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
-          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no imp status available)%s\n' "$red" "$reset"
         fi
       elif [ "$had_imps" -eq 1 ]; then
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       else
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       fi
       
       if [ "$has_missing_spells" -eq 1 ]; then
@@ -2711,7 +2711,7 @@ HEREDOC_TEST
         if [ -n "$spell_output" ]; then
           printf '%s\n' "$spell_output" | sed 's/^/  /'
         else
-          printf '  %s(no spell status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no spell status available)%s\n' "$red" "$reset"
         fi
         
         # Check if there were missing spells (will fail at the end)
@@ -2740,19 +2740,19 @@ HEREDOC_TEST
       if [ -n "$imp_list" ]; then
         if ! eval ""$validate_spells" --quiet --imps $imp_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --imps --missing-only $imp_list" 2>/dev/null || true)
-          printf '  %s✗%s Missing imps: %s\n' "$_red" "$_reset" "$missing"
+          printf '  %s✗%s Missing imps: %s\n' "$red" "$reset" "$missing"
           return 1
         fi
         imp_output=$(eval ""$validate_spells" --imps --show-status $imp_list" 2>&1) || true
         if [ -n "$imp_output" ]; then
           printf '%s\n' "$imp_output" | sed 's/^/  /'
         else
-          printf '  %s(no imp status available)%s\n' "$_red" "$_reset"
+          printf '  %s(no imp status available)%s\n' "$red" "$reset"
         fi
       elif [ "$had_imps" -eq 1 ]; then
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       else
-        printf '  %s✓%s No new imps.\n' "$_green" "$_reset"
+        printf '  %s✓%s No new imps.\n' "$green" "$reset"
       fi
       
       # Return error if there were missing spells
@@ -2792,9 +2792,9 @@ while [ "$current_level" -le "$target_level" ]; do
   banish_process_level "$current_level" || {
     exit_code=$?
     if [ "$last_success_level" -ge 0 ]; then
-      printf '\n%s✓%s Banished to Level %d\n' "$_green" "$_reset" "$last_success_level"
+      printf '\n%s✓%s Banished to Level %d\n' "$green" "$reset" "$last_success_level"
     fi
-    printf '%s✗%s Failed to banish Level %d\n' "$_red" "$_reset" "$current_level"
+    printf '%s✗%s Failed to banish Level %d\n' "$red" "$reset" "$current_level"
     exit "$exit_code"
   }
   last_success_level=$current_level
@@ -2806,9 +2806,9 @@ done
 
 # Final success message
 if [ "$run_all" -eq 1 ]; then
-  printf '\n%s✓%s Banished all\n' "$_green" "$_reset"
+  printf '\n%s✓%s Banished all\n' "$green" "$reset"
 else
-  printf '\n%s✓%s Banished to Level %d\n' "$_green" "$_reset" "$last_success_level"
+  printf '\n%s✓%s Banished to Level %d\n' "$green" "$reset" "$last_success_level"
 fi
 
 exit 0

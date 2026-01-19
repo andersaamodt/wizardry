@@ -93,7 +93,7 @@ export WIZARDRY_DIR
 
 # Check if invoke-wizardry is already loaded (from workflow or test-magic)
 # If so, skip re-loading it for major performance improvement
-if [ "${_WIZARDRY_INVOKED-}" = "1" ]; then
+if [ "${WIZARDRY_INVOKED-}" = "1" ]; then
   # invoke-wizardry already loaded - reuse it (no-op, very fast)
   : # All functions already available
 elif [ "${WIZARDRY_TEST_SKIP_INVOKE-0}" != "1" ] && [ -f "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" ]; then
@@ -107,11 +107,11 @@ elif [ "${WIZARDRY_TEST_SKIP_INVOKE-0}" != "1" ] && [ -f "$ROOT_DIR/spells/.imps
   
   # Source invoke-wizardry (it sets +eu internally for permissive mode)
   # We source it directly without piping (to preserve environment variables)
-  # Errors are suppressed since we check _WIZARDRY_INVOKED afterward
+  # Errors are suppressed since we check WIZARDRY_INVOKED afterward
   . "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" >/dev/null 2>&1 || true
   
   # Check if it loaded successfully by checking the flag it sets
-  if [ "${_WIZARDRY_INVOKED-}" != "1" ]; then
+  if [ "${WIZARDRY_INVOKED-}" != "1" ]; then
     printf 'WARNING: invoke-wizardry failed to load in test-bootstrap\n' >&2
   fi
 fi
