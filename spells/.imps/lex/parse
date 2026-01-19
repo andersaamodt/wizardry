@@ -7,16 +7,37 @@
 # command invocation like "read magic" instead of "read-magic".
 #
 # Usage (via glosses): Any wizardry command with spaces
-# Usage (direct): parse <word1> <word2> ... <args>
+# Usage (direct): . parse <word1> <word2> ... <args>
 #
 # Examples:
-#   parse env or VAR DEFAULT    # Tries env-or-VAR-DEFAULT, env-or-VAR, env-or, then env
-#   parse read magic file.txt   # Tries read-magic-file.txt, read-magic, then read
-#   parse temp file             # Tries temp-file, then temp
+#   . parse env or VAR DEFAULT    # Tries env-or-VAR-DEFAULT, env-or-VAR, env-or, then env
+#   . parse read magic file.txt   # Tries read-magic-file.txt, read-magic, then read
+#   . parse temp file             # Tries temp-file, then temp
 #
 # RECURSION PREVENTION: Uses WIZARDRY_PARSE_DEPTH to prevent infinite loops
+#
+# NOTE: This imp must be SOURCED, not executed. It modifies the calling shell
+# to preserve context for uncastable spells that change directories, etc.
 
-set -eu
+# Uncastable pattern - ensures this imp is sourced, not executed
+_parse_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) _parse_sourced=1 ;;
+  esac
+else
+  _parse_base=${0##*/}
+  case "$_parse_base" in
+    sh|dash|bash|zsh|ksh|mksh) _parse_sourced=1 ;;
+    parse) _parse_sourced=0 ;;
+    *) _parse_sourced=1 ;;
+  esac
+fi
+
+if [ "$_parse_sourced" -eq 0 ]; then
+  printf '%s\n' "parse: This imp must be sourced, not executed. Use: . parse <args>" >&2
+  exit 1
+fi
 
 # Increment recursion depth
 _parse_depth=${WIZARDRY_PARSE_DEPTH:-0}
@@ -25,14 +46,14 @@ _parse_depth=$((_parse_depth + 1))
 # Prevent infinite recursion
 if [ "$_parse_depth" -gt 10 ]; then
   printf 'parse: Maximum recursion depth exceeded\n' >&2
-  exit 1
+  return 1
 fi
 
 export WIZARDRY_PARSE_DEPTH=$_parse_depth
 
 # If no arguments, just succeed
 if [ $# -eq 0 ]; then
-  exit 0
+  return 0
 fi
 
 # Get WIZARDRY_DIR
@@ -76,7 +97,7 @@ done
 # If no command words, nothing to do
 if [ $_cmd_word_count -eq 0 ]; then
   printf 'parse: no command specified\n' >&2
-  exit 1
+  return 1
 fi
 
 # Try progressively longer combinations (from max down to 1)
@@ -146,7 +167,80 @@ while [ $_attempt_len -gt 0 ]; do
     done
   fi
   
-  # If found, check if it needs sourcing or can be exec'd
+  # Check if this command name is a synonym
+  if [ -z "$_spell_path" ]; then
+    _spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+    _synonym_target=""
+    
+    # Check user synonyms first
+    if [ -f "$_spell_home/.synonyms" ]; then
+      _synonym_target=$(grep "^$_cmd_name=" "$_spell_home/.synonyms" 2>/dev/null | \
+        sed 's/^[^=]*=//' || true)
+    fi
+    
+    # Check default synonyms if not found in user synonyms
+    if [ -z "$_synonym_target" ] && [ -f "$_spell_home/.default-synonyms" ]; then
+      _synonym_target=$(grep "^$_cmd_name=" "$_spell_home/.default-synonyms" 2>/dev/null | \
+        sed 's/^[^=]*=//' || true)
+    fi
+    
+    # If synonym found, check if target is uncastable before recursing
+    if [ -n "$_synonym_target" ]; then
+      # Check if synonym target is an uncastable spell that needs sourcing
+      _synonym_target_path=""
+      
+      # Search for the synonym target in spell directories
+      for _category_dir in "$_wizardry_dir/spells"/*; do
+        [ -d "$_category_dir" ] || continue
+        case "$_category_dir" in
+          */.|*/..|*/.imps|*/.wizardry|*/.arcana) continue ;;
+        esac
+        if [ -f "$_category_dir/$_synonym_target" ]; then
+          if grep -q "^# Uncastable pattern" "$_category_dir/$_synonym_target" 2>/dev/null; then
+            # Found uncastable synonym target - source it with remaining args
+            _synonym_target_path="$_category_dir/$_synonym_target"
+            break
+          fi
+        fi
+      done
+      
+      # If synonym target is uncastable, source it
+      if [ -n "$_synonym_target_path" ]; then
+        # Skip first $_attempt_len args (the synonym name parts)
+        _n=0
+        while [ $_n -lt $_attempt_len ]; do
+          shift
+          _n=$((_n + 1))
+        done
+        # Source the uncastable spell
+        . "$_synonym_target_path"
+        return $?
+      fi
+      
+      # Synonym target is castable - recursively source parse
+      # Skip first $_attempt_len args (the synonym name parts)
+      _n=0
+      while [ $_n -lt $_attempt_len ]; do
+        shift
+        _n=$(($_n + 1))
+      done
+      # Source parse recursively to handle the synonym target
+      # Find parse using the same method as glosses
+      if command -v parse >/dev/null 2>&1; then
+        set -- "$_synonym_target" "$@"
+        . parse
+      elif [ -f "${WIZARDRY_DIR:-./.wizardry}/spells/.imps/lex/parse" ]; then
+        set -- "$_synonym_target" "$@"
+        . "${WIZARDRY_DIR:-./.wizardry}/spells/.imps/lex/parse"
+      else
+        printf '%s\n' "parse: cannot find parse to handle synonym $_cmd_name" >&2
+        return 127
+      fi
+      return $?
+    fi
+  fi
+  
+  # If found, source or execute the spell
   if [ -n "$_spell_path" ]; then
     # Skip first $_attempt_len args to get remaining args for the spell
     _n=0
@@ -155,10 +249,18 @@ while [ $_attempt_len -gt 0 ]; do
       _n=$((_n + 1))
     done
     
-    # Execute the spell, unsetting any function with the same name first
+    # Check if spell is uncastable (must be sourced)
+    if grep -q "^# Uncastable pattern" "$_spell_path" 2>/dev/null; then
+      # Source the uncastable spell
+      . "$_spell_path"
+      return $?
+    fi
+    
+    # Castable spell - execute it, unsetting any function with the same name first
     # This prevents recursive loops when glosses create functions with the same name
     unset -f "$_cmd_name" 2>/dev/null || true
-    exec "$_spell_path" "$@"
+    "$_spell_path" "$@"
+    return $?
   fi
   
   # Try next shorter combination
@@ -170,20 +272,27 @@ _cmd_type=$(command -v "$_first_word" 2>/dev/null || true)
 if [ -n "$_cmd_type" ]; then
   # Check if it's an actual executable file (not a function or alias)
   # command -v returns path for executables, name for builtins/functions/aliases
-  # We only want real executable files and builtins, not functions/aliases
   case "$_cmd_type" in
     */*)
       # Contains a slash - it's a path to an executable file
       if [ -f "$_cmd_type" ] && [ -x "$_cmd_type" ]; then
-        # It's a real executable command, try to exec it
-        exec "$_first_word" "$@"
+        # It's a real executable command, run it
+        # Unset any gloss function first to prevent recursion
+        unset -f "$_first_word" 2>/dev/null || true
+        "$_first_word" "$@"
+        return $?
       fi
       ;;
     *)
       # No slash - could be a builtin, function, or alias
-      # Try to exec it - builtins will work, functions/aliases will fail
-      # If exec fails (function/alias), we fall through to error message
-      exec "$_first_word" "$@" 2>/dev/null || true
+      # Unset any gloss function first to prevent infinite recursion
+      unset -f "$_first_word" 2>/dev/null || true
+      # Try to run it - if it was a function we just unset, this will fail
+      # and we'll fall through to the error message
+      if "$_first_word" "$@" 2>/dev/null; then
+        return $?
+      fi
+      # Command failed (was likely a function we just unset), continue to error
       ;;
   esac
 fi
@@ -204,15 +313,28 @@ if [ -z "$_synonym_target" ] && [ -f "$_spell_home/.default-synonyms" ]; then
     sed 's/^[^=]*=//' || true)
 fi
 
-# If synonym found, recursively call parse with the target
+# If synonym found, recursively source parse with the target
 if [ -n "$_synonym_target" ]; then
   shift  # Remove the synonym word itself
-  # Call parse recursively to handle the synonym target  
-  exec "$0" "$_synonym_target" "$@"
+  # Source parse recursively to handle the synonym target
+  # Find parse using the same method as glosses
+  if command -v parse >/dev/null 2>&1; then
+    set -- "$_synonym_target" "$@"
+    . parse
+  elif [ -f "${WIZARDRY_DIR:-./.wizardry}/spells/.imps/lex/parse" ]; then
+    set -- "$_synonym_target" "$@"
+    . "${WIZARDRY_DIR:-./.wizardry}/spells/.imps/lex/parse"
+  else
+    printf '%s\n' "parse: cannot find parse to handle synonym $_first_word" >&2
+    return 127
+  fi
+  return $?
 fi
 
 printf 'parse: %s: command not found\n' "$_first_word" >&2
-exit 127
+return 127
+
+
 
 
 

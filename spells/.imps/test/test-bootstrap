@@ -273,6 +273,47 @@ run_spell() {
   fi
 }
 
+# run_sourced_spell - like run_spell but sources the script instead of executing it
+# Used for testing uncastable spells like parse that must be sourced
+run_sourced_spell() {
+  # Clear previous results
+  > "${WIZARDRY_TMPDIR}/_test_output"
+  > "${WIZARDRY_TMPDIR}/_test_error"
+  printf '0' > "${WIZARDRY_TMPDIR}/_test_status"
+  
+  # Get the script path and arguments
+  _script=$1
+  shift || true
+  
+  # Build full path to script
+  _full_path="$ROOT_DIR/$_script"
+  
+  # Source the script with arguments in a subshell to capture output
+  # POSIX-compliant way: set positional parameters, then source without args
+  (
+    set -- "$@"
+    # Redirect output and error
+    {
+      . "$_full_path"
+      _status=$?
+      printf '%s' "$_status" > "${WIZARDRY_TMPDIR}/_test_status"
+      exit "$_status"
+    } > "${WIZARDRY_TMPDIR}/_test_output" 2> "${WIZARDRY_TMPDIR}/_test_error"
+  )
+  _status=$?
+  printf '%s' "$_status" > "${WIZARDRY_TMPDIR}/_test_status"
+  
+  # Read STATUS, OUTPUT, ERROR from files
+  if [ -f "${WIZARDRY_TMPDIR}/_test_status" ]; then
+    STATUS=$(cat "${WIZARDRY_TMPDIR}/_test_status")
+    OUTPUT=$(head -c 102400 "${WIZARDRY_TMPDIR}/_test_output" 2>/dev/null || \
+      cat "${WIZARDRY_TMPDIR}/_test_output")
+    ERROR=$(head -c 102400 "${WIZARDRY_TMPDIR}/_test_error" 2>/dev/null || \
+      cat "${WIZARDRY_TMPDIR}/_test_error")
+    export STATUS OUTPUT ERROR
+  fi
+}
+
 # Special handling for run_cmd - also needs to set STATUS/OUTPUT/ERROR in parent shell
 # run-cmd writes these to files, run_cmd reads them back
 run_cmd() {
