@@ -21,7 +21,7 @@ if [ "$env_clear_sourced" -eq 0 ]; then
   printf '%s\n' "This spell cannot be cast directly. Invoke it with: . env-clear" >&2
   return 1 2>/dev/null || exit 1
 fi
-unset env_clear_sourced _env_clear_base
+unset env_clear_sourced env_clear_base
 
 # Explicitly use permissive mode - this imp mutates the caller's environment.
 set +eu
@@ -34,7 +34,7 @@ fi
 
 # Skip env clearing when being sourced by invoke-wizardry during spell loading
 # This prevents clearing parent's loop variables
-if [ "${WIZARDRY_LOADING_SPELLS:-0}" = "1" ]; then
+if [ "${_WIZARDRY_LOADING_SPELLS:-0}" = "1" ]; then
   set -eu
   return 0
 fi
