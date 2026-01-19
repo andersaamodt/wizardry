@@ -6,10 +6,11 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_shocking_grasp_charges_avatar() {
-  test_setup_mud_env
+  # Create test directory
+  test_tempdir=$(mktemp -d)
   
   # Create avatar
-  avatar_path="$test_dir/.testuser"
+  avatar_path="$test_tempdir/.testuser"
   mkdir -p "$avatar_path"
   config-set "$test_config" "avatar-path" "$avatar_path"
   enchant "$avatar_path" "is_avatar=1" >/dev/null 2>&1 || true
@@ -24,7 +25,7 @@ test_shocking_grasp_charges_avatar() {
 }
 
 test_shocking_grasp_requires_avatar() {
-  test_setup_mud_env
+  # No avatar setup - spell should fail
   
   # Try without avatar
   run_spell "spells/mud/shocking-grasp"
