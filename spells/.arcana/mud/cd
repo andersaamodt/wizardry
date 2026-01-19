@@ -36,7 +36,7 @@ if [ "$cd_sourced" -eq 0 ]; then
   printf '%s\n' "This spell cannot be cast directly. Invoke it with: . cd" >&2
   return 1 2>/dev/null || exit 1
 fi
-unset cd_sourced _cd_base
+unset cd_sourced cd_base
 
 # Explicitly use permissive error handling - this file is meant to be sourced into user's shell
 # and we don't want their shell to exit on command failures

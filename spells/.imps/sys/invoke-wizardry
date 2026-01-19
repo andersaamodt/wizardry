@@ -23,7 +23,7 @@ if [ "$iw_sourced" -eq 0 ]; then
   printf '%s\n' "This spell cannot be cast directly. Invoke it with: . invoke-wizardry" >&2
   return 1 2>/dev/null || exit 1
 fi
-unset iw_sourced _iw_base
+unset iw_sourced iw_base
 
 # Ensure baseline PATH before anything else (macOS may have empty PATH)
 baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
@@ -233,9 +233,9 @@ if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
       fi
     fi
     
-    unset iw_gloss_cache_dir iw_gloss_persistent _iw_needs_regen
-    unset iw_gen_glosses_path _iw_gloss_output _iw_newest_spell
-    unset iw_spellbook _iw_syn_file
+    unset iw_gloss_cache_dir iw_gloss_persistent iw_needs_regen
+    unset iw_gen_glosses_path iw_gloss_output iw_newest_spell
+    unset iw_spellbook iw_syn_file
   fi
 fi
 
@@ -249,7 +249,7 @@ if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
       . "$iw_cd_hook"
     fi
   fi
-  unset iw_mud_config _iw_cd_hook
+  unset iw_mud_config iw_cd_hook
 fi
 
 # Load MUD touch hook if enabled in config
@@ -264,7 +264,7 @@ if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
       fi
     fi
   fi
-  unset iw_mud_config _iw_touch_hook
+  unset iw_mud_config iw_touch_hook
 fi
 
 # Verify that menu command is available (skip in test mode)
