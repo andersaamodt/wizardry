@@ -4,18 +4,18 @@
 # Example: cd "$(detect-trash)"
 
 
-_dt_kernel=$(uname -s 2>/dev/null || printf 'unknown')
+dt_kernel=$(uname -s 2>/dev/null || printf 'unknown')
 
-case "$_dt_kernel" in
+case "$dt_kernel" in
   Darwin)
     printf '%s/.Trash\n' "$HOME"
     ;;
   Linux)
-    _dt_xdg_data="${XDG_DATA_HOME:-$HOME/.local/share}"
-    printf '%s/Trash/files\n' "$_dt_xdg_data"
+    dt_xdg_data="${XDG_DATA_HOME:-$HOME/.local/share}"
+    printf '%s/Trash/files\n' "$dt_xdg_data"
     ;;
   *)
-    printf '%s\n' "detect-trash: unsupported operating system: $_dt_kernel" >&2
+    printf '%s\n' "detect-trash: unsupported operating system: $dt_kernel" >&2
     exit 1
     ;;
 esac

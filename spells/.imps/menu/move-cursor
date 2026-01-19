@@ -43,17 +43,17 @@ if [ "$y" -le 0 ]; then
 fi
 
 # Check if terminal supports cursor positioning
-_supports_positioning=0
+supports_positioning=0
 case ${TERM-} in
     ''|dumb|unknown)
-        _supports_positioning=0
+        supports_positioning=0
         ;;
     *)
-        _supports_positioning=1
+        supports_positioning=1
         ;;
 esac
 
-if [ "$_supports_positioning" -eq 0 ]; then
+if [ "$supports_positioning" -eq 0 ]; then
     # Skip emitting escape sequences when the terminal refuses them so menu
     # helpers degrade gracefully.
     exit 0

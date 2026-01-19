@@ -76,10 +76,10 @@ tab_char=$(printf '\t')
 
 # Helper function to check if spell is memorized
 is_memorized() {
-      _spell_name=$1
-      _memorized_list=$(memorize list 2>/dev/null || true)
-      case "$_memorized_list" in
-              "$_spell_name"*|*"$tab_char$_spell_name"*) return 0 ;;
+      spell_name=$1
+      memorized_list=$(memorize list 2>/dev/null || true)
+      case "$memorized_list" in
+              "$spell_name"*|*"$tab_char$spell_name"*) return 0 ;;
               *) return 1 ;;
       esac
 }

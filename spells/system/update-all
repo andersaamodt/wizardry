@@ -127,17 +127,17 @@ run_with_progress() {
     printf '%s\n' "$_cmd_status" >"$_progress_tmp"
     exit 0
   ) | tr '\r' '\n' | {
-    _last_progress=''
+    last_progress=''
     while IFS= read -r _line || nonempty "$_line"; do
       case $_line in
         Progress:*)
-          _last_progress=$_line
+          last_progress=$_line
           printf '\r%s' "$_line"
           ;;
         *)
-          if [ -n "$_last_progress" ]; then
-            printf '\r%s\n' "$_last_progress"
-            _last_progress=''
+          if [ -n "$last_progress" ]; then
+            printf '\r%s\n' "$last_progress"
+            last_progress=''
           fi
           if [ -n "$_line" ]; then
             printf '%s\n' "$_line"
@@ -145,8 +145,8 @@ run_with_progress() {
           ;;
       esac
     done
-    if [ -n "$_last_progress" ]; then
-      printf '\r%s\n' "$_last_progress"
+    if [ -n "$last_progress" ]; then
+      printf '\r%s\n' "$last_progress"
     fi
   }
 

@@ -4,9 +4,9 @@
 set -eu
 
 
-_diw_file=${1-}
+diw_file=${1-}
 
-if [ -z "$_diw_file" ] || [ ! -f "$_diw_file" ]; then
+if [ -z "$diw_file" ] || [ ! -f "$diw_file" ]; then
   printf '2\n'
   exit 0
 fi
@@ -28,4 +28,4 @@ END {
     print 2
   }
 }
-' "$_diw_file"
+' "$diw_file"
