@@ -421,24 +421,13 @@ WRAPPER_EOF
 
   if [ -n "$timeout_cmd" ]; then
     timeout_prefix="$timeout_cmd $test_timeout"
-    if [ "$verbose" -eq 1 ]; then
-      # shellcheck disable=SC2086
-      ( $timeout_prefix "$test_wrapper"; printf '%s\n' "$?" > "$run_exit_file" ) | \
-        ${stdbuf_cmd:+$stdbuf_cmd }tee "$test_output_file" | awk "$awk_filter"
-    else
-      # shellcheck disable=SC2086
-      $timeout_prefix "$test_wrapper" >"$test_output_file" 2>&1
-      printf '%s\n' "$?" > "$run_exit_file"
-    fi
+    # shellcheck disable=SC2086
+    ( $timeout_prefix "$test_wrapper"; printf '%s\n' "$?" > "$run_exit_file" ) | \
+      ${stdbuf_cmd:+$stdbuf_cmd }tee "$test_output_file" | awk "$awk_filter"
   else
-    if [ "$verbose" -eq 1 ]; then
-      # shellcheck disable=SC2086
-      ( "$test_wrapper"; printf '%s\n' "$?" > "$run_exit_file" ) | \
-        ${stdbuf_cmd:+$stdbuf_cmd }tee "$test_output_file" | awk "$awk_filter"
-    else
-      "$test_wrapper" >"$test_output_file" 2>&1
-      printf '%s\n' "$?" > "$run_exit_file"
-    fi
+    # shellcheck disable=SC2086
+    ( "$test_wrapper"; printf '%s\n' "$?" > "$run_exit_file" ) | \
+      ${stdbuf_cmd:+$stdbuf_cmd }tee "$test_output_file" | awk "$awk_filter"
   fi
 
   # Capture test end time for profiling
@@ -719,9 +708,7 @@ test_common_tests() {
   level_total=$((level_total + 1))
   global_test_count=$((global_test_count + 1))
 
-  if [ "$verbose" -eq 1 ]; then
-    printf '  [%d/%d] Running %s...\n' "$global_test_count" "$global_test_total" "$test_name"
-  fi
+  printf '  [%d/%d] Running %s...\n' "$global_test_count" "$global_test_total" "$test_name"
 
   test_timeout="${WIZARDRY_TEST_TIMEOUT:-180}"
   if run_test_file "$test_path" "common-tests"; then
@@ -823,9 +810,7 @@ test_level() {
     # Increment counter before running test so [x/y] displays correctly
     global_test_count=$((global_test_count + 1))
 
-    if [ "$verbose" -eq 1 ]; then
-      printf '  [%d/%d] Running %s...\n' "$global_test_count" "$global_test_total" "$test_name"
-    fi
+    printf '  [%d/%d] Running %s...\n' "$global_test_count" "$global_test_total" "$test_name"
 
     if [ "$compiled_mode" = "1" ]; then
       if head -n 5 "$test_file" 2>/dev/null | grep -q "^# COMPILED_UNSUPPORTED"; then
@@ -883,9 +868,7 @@ test_level() {
     # Increment counter before running test so [x/y] displays correctly
     global_test_count=$((global_test_count + 1))
 
-    if [ "$verbose" -eq 1 ]; then
-      printf '  [%d/%d] Running %s...\n' "$global_test_count" "$global_test_total" "$test_name"
-    fi
+    printf '  [%d/%d] Running %s...\n' "$global_test_count" "$global_test_total" "$test_name"
 
     if [ "$compiled_mode" = "1" ]; then
       if head -n 5 "$test_file" 2>/dev/null | grep -q "^# COMPILED_UNSUPPORTED"; then
