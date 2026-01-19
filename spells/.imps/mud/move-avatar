@@ -5,6 +5,12 @@
 set -eu
 
 config_file="${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud"
+
+# Exit early if config file doesn't exist
+if [ ! -f "$config_file" ]; then
+    exit 0
+fi
+
 old_path=$(grep "^avatar-path=" "$config_file" 2>/dev/null | cut -d= -f2-)
 
 if [ -z "$old_path" ] || [ ! -d "$old_path" ]; then

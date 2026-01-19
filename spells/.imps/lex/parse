@@ -315,7 +315,7 @@ fi
 
 # If synonym found, recursively source parse with the target
 if [ -n "$synonym_target" ]; then
-  shift  # Remove the synonym word itself
+  [ $# -gt 0 ] && shift  # Remove the synonym word itself
   # Source parse recursively to handle the synonym target
   # Find parse using the same method as glosses
   if command -v parse >/dev/null 2>&1; then
