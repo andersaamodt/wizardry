@@ -244,8 +244,8 @@ while [ $attempt_len -gt 0 ]; do
   if [ -n "$spell_path" ]; then
     # Skip first $attempt_len args to get remaining args for the spell
     n=0
-    while [ $n -lt $attempt_len ] && [ $# -gt 0 ]; do
-      shift
+    while [ $n -lt $attempt_len ]; do
+      [ $# -gt 0 ] && shift
       n=$((n + 1))
     done
     
