@@ -814,9 +814,20 @@ run_test_case "USER LOG: warp" test_user_typed_warp
 test_single_word_spell_with_arg() {
   _saved_wizdir="${WIZARDRY_DIR-}"
   
-  # Use real wizardry dir but add our test spell
-  test_spell_dir="$ROOT_DIR/spells/test-tmp"
+  # Create temp wizardry directory (compatible with doppelganger)
+  tmpdir=$(make_tempdir)
+  test_spell_dir="$tmpdir/wizardry/spells/test"
   mkdir -p "$test_spell_dir"
+  
+  # Also need to copy parse imp for the test to work
+  mkdir -p "$tmpdir/wizardry/spells/.imps/lex"
+  cp "$ROOT_DIR/spells/.imps/lex/parse" "$tmpdir/wizardry/spells/.imps/lex/parse"
+  chmod +x "$tmpdir/wizardry/spells/.imps/lex/parse"
+  
+  # Copy generate-glosses
+  mkdir -p "$tmpdir/wizardry/spells/.wizardry"
+  cp "$ROOT_DIR/spells/.wizardry/generate-glosses" "$tmpdir/wizardry/spells/.wizardry/generate-glosses"
+  chmod +x "$tmpdir/wizardry/spells/.wizardry/generate-glosses"
   
   # Create a single-word spell that takes an argument
   cat > "$test_spell_dir/process" <<'EOF'
@@ -825,22 +836,19 @@ printf 'process called with arg: [%s]\n' "$1"
 EOF
   chmod +x "$test_spell_dir/process"
   
-  export WIZARDRY_DIR="$ROOT_DIR"
+  export WIZARDRY_DIR="$tmpdir/wizardry"
   
   # Generate glosses
   tmpspellbook=$(make_tempdir)
   export SPELLBOOK_DIR="$tmpspellbook"
   tmpgloss="$tmpspellbook/glosses"
-  "$ROOT_DIR/spells/.wizardry/generate-glosses" --output "$tmpgloss" --quiet
+  "$tmpdir/wizardry/spells/.wizardry/generate-glosses" --output "$tmpgloss" --quiet
   . "$tmpgloss"
   
   # Test: "process myfile" should call "process" with arg "myfile"
   # NOT try to find "process-myfile"
   OUTPUT=$(process myfile 2>&1)
   STATUS=$?
-  
-  # Cleanup
-  rm -rf "$test_spell_dir"
   
   # Restore
   if [ -n "$_saved_wizdir" ]; then export WIZARDRY_DIR="$_saved_wizdir"; else unset WIZARDRY_DIR; fi
@@ -865,9 +873,20 @@ EOF
 test_multiword_spell_with_arg() {
   _saved_wizdir="${WIZARDRY_DIR-}"
   
-  # Use real wizardry dir but add our test spell
-  test_spell_dir="$ROOT_DIR/spells/test-tmp"
+  # Create temp wizardry directory (compatible with doppelganger)
+  tmpdir=$(make_tempdir)
+  test_spell_dir="$tmpdir/wizardry/spells/test"
   mkdir -p "$test_spell_dir"
+  
+  # Copy parse imp
+  mkdir -p "$tmpdir/wizardry/spells/.imps/lex"
+  cp "$ROOT_DIR/spells/.imps/lex/parse" "$tmpdir/wizardry/spells/.imps/lex/parse"
+  chmod +x "$tmpdir/wizardry/spells/.imps/lex/parse"
+  
+  # Copy generate-glosses
+  mkdir -p "$tmpdir/wizardry/spells/.wizardry"
+  cp "$ROOT_DIR/spells/.wizardry/generate-glosses" "$tmpdir/wizardry/spells/.wizardry/generate-glosses"
+  chmod +x "$tmpdir/wizardry/spells/.wizardry/generate-glosses"
   
   # Create a multi-word spell that takes an argument
   cat > "$test_spell_dir/cast-spell" <<'EOF'
@@ -876,22 +895,19 @@ printf 'cast-spell called with arg: [%s]\n' "$1"
 EOF
   chmod +x "$test_spell_dir/cast-spell"
   
-  export WIZARDRY_DIR="$ROOT_DIR"
+  export WIZARDRY_DIR="$tmpdir/wizardry"
   
   # Generate glosses
   tmpspellbook=$(make_tempdir)
   export SPELLBOOK_DIR="$tmpspellbook"
   tmpgloss="$tmpspellbook/glosses"
-  "$ROOT_DIR/spells/.wizardry/generate-glosses" --output "$tmpgloss" --quiet
+  "$tmpdir/wizardry/spells/.wizardry/generate-glosses" --output "$tmpgloss" --quiet
   . "$tmpgloss"
   
   # Test: "cast spell fireball" should call "cast-spell" with arg "fireball"
   # NOT try to find "cast-spell-fireball"
   OUTPUT=$(cast spell fireball 2>&1)
   STATUS=$?
-  
-  # Cleanup
-  rm -rf "$test_spell_dir"
   
   # Restore
   if [ -n "$_saved_wizdir" ]; then export WIZARDRY_DIR="$_saved_wizdir"; else unset WIZARDRY_DIR; fi
@@ -916,9 +932,20 @@ EOF
 test_longest_match_priority() {
   _saved_wizdir="${WIZARDRY_DIR-}"
   
-  # Use real wizardry dir but add our test spells
-  test_spell_dir="$ROOT_DIR/spells/test-tmp"
+  # Create temp wizardry directory (compatible with doppelganger)
+  tmpdir=$(make_tempdir)
+  test_spell_dir="$tmpdir/wizardry/spells/test"
   mkdir -p "$test_spell_dir"
+  
+  # Copy parse imp
+  mkdir -p "$tmpdir/wizardry/spells/.imps/lex"
+  cp "$ROOT_DIR/spells/.imps/lex/parse" "$tmpdir/wizardry/spells/.imps/lex/parse"
+  chmod +x "$tmpdir/wizardry/spells/.imps/lex/parse"
+  
+  # Copy generate-glosses
+  mkdir -p "$tmpdir/wizardry/spells/.wizardry"
+  cp "$ROOT_DIR/spells/.wizardry/generate-glosses" "$tmpdir/wizardry/spells/.wizardry/generate-glosses"
+  chmod +x "$tmpdir/wizardry/spells/.wizardry/generate-glosses"
   
   # Create both "cast-spell" and "cast-spell-fireball" spells
   cat > "$test_spell_dir/cast-spell" <<'EOF'
@@ -933,22 +960,19 @@ printf 'cast-spell-fireball (special) called with args: [%s]\n' "$*"
 EOF
   chmod +x "$test_spell_dir/cast-spell-fireball"
   
-  export WIZARDRY_DIR="$ROOT_DIR"
+  export WIZARDRY_DIR="$tmpdir/wizardry"
   
   # Generate glosses
   tmpspellbook=$(make_tempdir)
   export SPELLBOOK_DIR="$tmpspellbook"
   tmpgloss="$tmpspellbook/glosses"
-  "$ROOT_DIR/spells/.wizardry/generate-glosses" --output "$tmpgloss" --quiet
+  "$tmpdir/wizardry/spells/.wizardry/generate-glosses" --output "$tmpgloss" --quiet
   . "$tmpgloss"
   
   # Test: "cast spell fireball target" should call "cast-spell-fireball" with arg "target"
   # NOT "cast-spell" with args "fireball target"
   OUTPUT=$(cast spell fireball target 2>&1)
   STATUS=$?
-  
-  # Cleanup
-  rm -rf "$test_spell_dir"
   
   # Restore
   if [ -n "$_saved_wizdir" ]; then export WIZARDRY_DIR="$_saved_wizdir"; else unset WIZARDRY_DIR; fi
@@ -970,8 +994,67 @@ EOF
   fi
 }
 
+test_custom_synonym_multiword() {
+  # Test that custom multi-word synonyms work (issue: leap to location)
+  # This specifically tests user-reported bug with custom synonym
+  _saved_wizdir="${WIZARDRY_DIR-}"
+  
+  # Create temp wizardry directory
+  tmpdir=$(make_tempdir)
+  test_spell_dir="$tmpdir/wizardry/spells/translocation"
+  mkdir -p "$test_spell_dir"
+  
+  # Copy parse imp
+  mkdir -p "$tmpdir/wizardry/spells/.imps/lex"
+  cp "$ROOT_DIR/spells/.imps/lex/parse" "$tmpdir/wizardry/spells/.imps/lex/parse"
+  chmod +x "$tmpdir/wizardry/spells/.imps/lex/parse"
+  
+  # Copy generate-glosses
+  mkdir -p "$tmpdir/wizardry/spells/.wizardry"
+  cp "$ROOT_DIR/spells/.wizardry/generate-glosses" "$tmpdir/wizardry/spells/.wizardry/generate-glosses"
+  chmod +x "$tmpdir/wizardry/spells/.wizardry/generate-glosses"
+  
+  # Create jump-to-marker spell
+  cat > "$test_spell_dir/jump-to-marker" <<'EOF'
+#!/bin/sh
+printf 'jump-to-marker called with args: [%s]\n' "$*"
+EOF
+  chmod +x "$test_spell_dir/jump-to-marker"
+  
+  export WIZARDRY_DIR="$tmpdir/wizardry"
+  
+  # Create custom synonym
+  tmpspellbook=$(make_tempdir)
+  cat > "$tmpspellbook/.synonyms" <<'EOF'
+leap-to-location=jump-to-marker
+EOF
+  
+  export SPELLBOOK_DIR="$tmpspellbook"
+  tmpgloss="$tmpspellbook/glosses"
+  "$tmpdir/wizardry/spells/.wizardry/generate-glosses" --output "$tmpgloss" --quiet
+  . "$tmpgloss"
+  
+  # Test: "leap to location" should call "jump-to-marker"
+  OUTPUT=$(leap to location 2>&1)
+  STATUS=$?
+  
+  # Restore
+  if [ -n "$_saved_wizdir" ]; then export WIZARDRY_DIR="$_saved_wizdir"; else unset WIZARDRY_DIR; fi
+  
+  if [ "$STATUS" -ne 0 ]; then
+    TEST_FAILURE_REASON="Command failed with status $STATUS: $OUTPUT"
+    return 1
+  fi
+  
+  if ! printf '%s' "$OUTPUT" | grep -q "jump-to-marker called"; then
+    TEST_FAILURE_REASON="Expected 'jump-to-marker called' but got: $OUTPUT"
+    return 1
+  fi
+}
+
 run_test_case "Single-word spell with argument (issue: prioritize mytask)" test_single_word_spell_with_arg
 run_test_case "Multi-word spell with argument (issue: magic missile target)" test_multiword_spell_with_arg
 run_test_case "Longest match priority (cast spell fireball)" test_longest_match_priority
+run_test_case "Custom synonym multi-word (issue: leap to location)" test_custom_synonym_multiword
 
 finish_tests
