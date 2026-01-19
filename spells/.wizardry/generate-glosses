@@ -339,9 +339,9 @@ fi
 # Use xargs to avoid "Argument list too long" error
 [ "$quiet" -eq 0 ] && printf 'generate-glosses: Scanning for uncastable spells...\n' >&2
 uncastable_spells=" "  # Space-separated list
-if _uncastable_files=$(cat "$tmpfile" | xargs grep -l "^# Uncastable pattern" 2>/dev/null); then
-  for _uc_path in $_uncastable_files; do
-    uc_name=${_uc_path##*/}
+if uncastable_files=$(cat "$tmpfile" | xargs grep -l "^# Uncastable pattern" 2>/dev/null); then
+  for uc_path in $uncastable_files; do
+    uc_name=${uc_path##*/}
     uncastable_spells="$uncastable_spells$uc_name "
   done
 fi

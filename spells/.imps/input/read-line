@@ -24,9 +24,9 @@ else
 fi
 
 case $rl_src in
-  stdin) IFS= read -r _rl_line || _rl_line= ;;
-  tty)   IFS= read -r _rl_line </dev/tty || _rl_line= ;;
+  stdin) IFS= read -r rl_line || rl_line= ;;
+  tty)   IFS= read -r rl_line </dev/tty || rl_line= ;;
   *)     exit 1 ;;
 esac
 
-printf '%s' "$_rl_line"
+printf '%s' "$rl_line"

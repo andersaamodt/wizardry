@@ -12,7 +12,7 @@ case "$1" in
   *) exit 1 ;;
 esac
 case "$1" in
-  -*) _ii_rest=${1#-}; case "$_ii_rest" in *[!0-9]*) exit 1 ;; esac ;;
+  -*) ii_rest=${1#-}; case "$ii_rest" in *[!0-9]*) exit 1 ;; esac ;;
   *[!0-9]*) exit 1 ;;
 esac
 exit 0

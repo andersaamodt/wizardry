@@ -50,10 +50,10 @@ set -eu
   exit 0
   fi
   nsa_shell_code=""
-  while IFS= read -r _nsa_line || [ -n "$_nsa_line" ]; do
-    if [ -z "$nsa_shell_code" ]; then nsa_shell_code=$_nsa_line
+  while IFS= read -r nsa_line || [ -n "" ]; do
+    if [ -z "$nsa_shell_code" ]; then nsa_shell_code=$nsa_line
     else nsa_shell_code="$nsa_shell_code
-$_nsa_line"; fi
+$nsa_line"; fi
   done
   if [ -z "$nsa_shell_code" ]; then
     printf '%s\n' "nix-shell-add: no shell code provided on stdin" >&2
@@ -74,50 +74,50 @@ $_nsa_line"; fi
     else _nsa_content=$(cat "$nsa_nix_file"); fi
   else _nsa_content=$(cat "$nsa_nix_file"); fi
 
-  if printf '%s\n' "$_nsa_content" | grep -q "$_nsa_nix_option[[:space:]]*="; then
+  if printf '%s\n' "$nsa_content" | grep -q "$nsa_nix_option[[:space:]]*="; then
     nsa_input_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-add-input.XXXXXX") || exit 1
-    printf '%s\n' "$_nsa_content" > "$nsa_input_file"
+    printf '%s\n' "$nsa_content" > "$nsa_input_file"
     nsa_in_block=0
-    while IFS= read -r _nsa_line; do
+    while IFS= read -r nsa_line; do
       has_option="no"
-      if printf '%s\n' "$_nsa_line" | grep -q "$_nsa_nix_option[[:space:]]*="; then
+      if printf '%s\n' "$nsa_line" | grep -q "$nsa_nix_option[[:space:]]*="; then
         has_option="yes"
       fi
     
       has_quote="no"
-      if printf '%s\n' "$_nsa_line" | grep -q "''"; then
+      if printf '%s\n' "$nsa_line" | grep -q "''"; then
         has_quote="yes"
       fi
     
       if [ "$has_option" = "yes" ] && [ "$has_quote" = "yes" ]; then
         nsa_in_block=1
-        printf '%s\n' "$_nsa_line"
+        printf '%s\n' "$nsa_line"
         continue
       fi
       # Check if we're at the end of a packages list block
       nsa_is_end_block=0
       if [ "$nsa_in_block" -eq 1 ]; then
-        if printf '%s\n' "$_nsa_line" | grep -q "^[[:space:]]*'';"; then
+        if printf '%s\n' "$nsa_line" | grep -q "^[[:space:]]*'';"; then
           nsa_is_end_block=1
         fi
       fi
       if [ "$nsa_is_end_block" -eq 1 ]; then
         printf '%s\n' "$nsa_marked_code"
-        printf '%s\n' "$_nsa_line"
+        printf '%s\n' "$nsa_line"
         nsa_in_block=0
         continue
       fi
-      printf '%s\n' "$_nsa_line"
+      printf '%s\n' "$nsa_line"
     done < "$nsa_input_file" > "$nsa_tmp_file"
     rm -f "$nsa_input_file"
   else
     # Write the block to a temp file and use it with awk (macOS awk compatible)
     nsa_block_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-add-block.XXXXXX") || exit 1
-    printf '%s\n' "  $_nsa_nix_option = ''" > "$nsa_block_file"
+    printf '%s\n' "  $nsa_nix_option = ''" > "$nsa_block_file"
     printf '%s\n' "$nsa_marked_code" >> "$nsa_block_file"
     printf '%s\n' "  '';" >> "$nsa_block_file"
   
-    printf '%s\n' "$_nsa_content" | awk -v blockfile="$nsa_block_file" '
+    printf '%s\n' "$nsa_content" | awk -v blockfile="$nsa_block_file" '
     BEGIN { while ((getline line < blockfile) > 0) block = block line "\n" }
     { lines[NR] = $0 }
     END {

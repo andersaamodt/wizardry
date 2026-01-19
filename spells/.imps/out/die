@@ -8,4 +8,4 @@ case "$1" in
   *) _die_code=1 ;;
 esac
 printf '%s\n' "$*" >&2
-exit "$_die_code"
+exit "$die_code"

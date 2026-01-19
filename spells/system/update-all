@@ -117,30 +117,30 @@ run_with_progress() {
 
   # Run with progress filtering (inline progress_filter)
   progress_tmp=$(temp-file update-all) || exit 1
-  on-exit cleanup-file "$_progress_tmp"
+  on-exit cleanup-file "$progress_tmp"
   
   (
     set +e
     "$@" 2>&1
-    cmd_status=$?
+    cmdcmd_status=$?
     set -e
-    printf '%s\n' "$_cmd_status" >"$_progress_tmp"
+    printf '%s\n' "$cmd_status" >"$progress_tmp"
     exit 0
   ) | tr '\r' '\n' | {
     last_progress=''
-    while IFS= read -r _line || nonempty "$_line"; do
-      case $_line in
+    while IFS= read -r output_line || nonempty "$output_line"; do
+      case $output_line in
         Progress:*)
-          last_progress=$_line
-          printf '\r%s' "$_line"
+          last_progress=$output_line
+          printf '\r%s' "$output_line"
           ;;
         *)
           if [ -n "$last_progress" ]; then
             printf '\r%s\n' "$last_progress"
             last_progress=''
           fi
-          if [ -n "$_line" ]; then
-            printf '%s\n' "$_line"
+          if [ -n "$output_line" ]; then
+            printf '%s\n' "$output_line"
           fi
           ;;
       esac
@@ -152,13 +152,13 @@ run_with_progress() {
 
   status=$(cat "$progress_tmp" 2>/dev/null || printf '1\n')
   clear-traps
-  rm -f "$_progress_tmp"
+  rm -f "$progress_tmp"
 
   case ${_status:-} in
-    '' ) _status=1 ;;
+    '' ) cmd_status=1 ;;
   esac
 
-  return "$_status"
+  return "$cmd_status"
 }
 
 # Main update logic - inline all simple helpers
