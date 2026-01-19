@@ -69,6 +69,100 @@ while [ $# -gt 0 ]; do
 done
 if [ -n "$key" ] && [ -n "$value" ] && [ -n "$file" ]; then
   attr_file="${file}.attrs"
+  # Escape special regex characters in key for grep
+  escaped_key=$(printf '%s\n' "$key" | sed 's/[.[\*^$]/\\&/g')
+  if [ -f "$attr_file" ]; then
+    grep -v "^${escaped_key}=" "$attr_file" > "${attr_file}.tmp" 2>/dev/null || true
+    mv "${attr_file}.tmp" "$attr_file" 2>/dev/null || true
+  fi
+  printf '%s=%s\n' "$key" "$value" >> "$attr_file"
+fi
+STUB
+  chmod +x "$stub_dir/attr"
+  
+  # Create setfattr stub (Linux style)
+  cat >"$stub_dir/setfattr" <<'STUB'
+#!/bin/sh
+key=""; value=""; file=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -n) key=$2; shift 2 ;;
+    -v) value=$2; shift 2 ;;
+    *) file=$1; shift ;;
+  esac
+done
+if [ -n "$file" ]; then
+  attr_file="${file}.attrs"
+  if [ -f "$attr_file" ]; then
+    grep -v "^${key}=" "$attr_file" > "${attr_file}.tmp" 2>/dev/null || true
+    mv "${attr_file}.tmp" "$attr_file" 2>/dev/null || true
+  fi
+  printf '%s=%s\n' "$key" "$value" >> "$attr_file"
+fi
+STUB
+  chmod +x "$stub_dir/setfattr"
+  
+  # Create getfattr stub (Linux style)
+  cat >"$stub_dir/getfattr" <<'STUB'
+#!/bin/sh
+key=""; file=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -n) key=$2; shift 2 ;;
+    *) file=$1; shift ;;
+  esac
+done
+if [ -n "$file" ]; then
+  attr_file="${file}.attrs"
+  if [ -f "$attr_file" ]; then
+    value=$(grep "^${key}=" "$attr_file" 2>/dev/null | cut -d= -f2-)
+    if [ -n "$value" ]; then
+      printf '%s="%s"\n' "$key" "$value"
+      exit 0
+    fi
+  fi
+fi
+exit 1
+STUB
+  chmod +x "$stub_dir/getfattr"
+}
+
+test_help() {
+  run_spell "spells/mud/resurrect" --help
+  assert_success && assert_output_contains "Usage: resurrect"
+}
+
+test_resurrect_not_dead() {
+  tmpdir=$(make_tempdir)
+  stub_dir=$(make_tempdir)
+  export SPELLBOOK_DIR="$tmpdir/custom-spellbook"  # Use non-standard path
+  export HOME="$tmpdir"
+  
+  create_xattr_stub "$stub_dir"
+  
+  # Set up config
+  mkdir -p "$SPELLBOOK_DIR"
+  printf 'avatar-enabled=1\n' > "$SPELLBOOK_DIR/.mud"
+  
+  # Create avatar (not dead)
+  avatar_path="$tmpdir/.avatar-test"
+  mkdir -p "$avatar_path"
+  printf 'avatar-path=%s\n' "$avatar_path" >> "$SPELLBOOK_DIR/.mud"
+  chmod +x "$stub_dir/xattr"
+  
+  # Create attr stub (Linux style) - handles: attr -s key -V value file
+  cat >"$stub_dir/attr" <<'STUB'
+#!/bin/sh
+key=""; value=""; file=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -s) key=$2; shift 2 ;;
+    -V) value=$2; shift 2 ;;
+    *) file=$1; shift ;;
+  esac
+done
+if [ -n "$key" ] && [ -n "$value" ] && [ -n "$file" ]; then
+  attr_file="${file}.attrs"
   if [ -f "$attr_file" ]; then
     grep -v "^${key}=" "$attr_file" > "${attr_file}.tmp" 2>/dev/null || true
     mv "${attr_file}.tmp" "$attr_file" 2>/dev/null || true
