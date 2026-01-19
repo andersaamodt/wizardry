@@ -169,7 +169,7 @@ while [ $attempt_len -gt 0 ]; do
   
   # Check if this command name is a synonym
   if [ -z "$spell_path" ]; then
-    spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+    spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
     synonym_target=""
     
     # Check user synonyms first
@@ -266,7 +266,7 @@ while [ $attempt_len -gt 0 ]; do
   fi
   
   # Try next shorter combination
-  attempt_len=$((_attempt_len - 1))
+  attempt_len=$((attempt_len - 1))
 done
 
 # Last resort: try first word as system command (but not functions or aliases)
@@ -300,7 +300,7 @@ if [ -n "$cmd_type" ]; then
 fi
 
 # Check synonyms as final fallback
-spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
 synonym_target=""
 
 # Check user synonyms first

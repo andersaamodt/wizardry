@@ -550,8 +550,8 @@ if [ -f "$synonym_file" ]; then
             case "$target" in
               */*)
                 # Has directory prefix - preserve it
-                dir_prefix="target%/*}/"
-                spell_part="target##*/}"
+                dir_prefix="${target%/*}/"
+                spell_part="${target##*/}"
                 alias_target="$dir_prefix$(printf '%s' "$spell_part" | sed 's/-/ /g')"
                 ;;
               *)
@@ -639,8 +639,8 @@ if [ -f "$default_synonym_file" ]; then
             case "$target" in
               */*)
                 # Has directory prefix - preserve it
-                dir_prefix="target%/*}/"
-                spell_part="target##*/}"
+                dir_prefix="${target%/*}/"
+                spell_part="${target##*/}"
                 alias_target="$dir_prefix$(printf '%s' "$spell_part" | sed 's/-/ /g')"
                 ;;
               *)
