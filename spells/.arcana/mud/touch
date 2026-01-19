@@ -18,25 +18,25 @@ USAGE
 esac
 
 # Uncastable pattern - ensures spell is sourced, not executed
-_touch_sourced=0
+touch_sourced=0
 if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
   case "${ZSH_EVAL_CONTEXT-}" in
-    *:file) _touch_sourced=1 ;;
+    *:file) touch_sourced=1 ;;
   esac
 else
-  _touch_base=${0##*/}
-  case "$_touch_base" in
-    sh|dash|bash|zsh|ksh|mksh) _touch_sourced=1 ;;
-    touch) _touch_sourced=0 ;;
-    *) _touch_sourced=1 ;;
+  touch_base=${0##*/}
+  case "$touch_base" in
+    sh|dash|bash|zsh|ksh|mksh) touch_sourced=1 ;;
+    touch) touch_sourced=0 ;;
+    *) touch_sourced=1 ;;
   esac
 fi
 
-if [ "$_touch_sourced" -eq 0 ]; then
+if [ "$touch_sourced" -eq 0 ]; then
   printf '%s\n' "This spell cannot be cast directly. Invoke it with: . touch" >&2
   return 1 2>/dev/null || exit 1
 fi
-unset _touch_sourced _touch_base
+unset touch_sourced _touch_base
 
 # Explicitly use permissive error handling - this file is meant to be sourced into user's shell
 # and we don't want their shell to exit on command failures

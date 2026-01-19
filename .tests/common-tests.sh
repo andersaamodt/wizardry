@@ -80,25 +80,25 @@ done
 
 # Helper function to run a test conditionally based on filter
 run_filtered_test() {
-  _test_name=$1
-  _test_desc=$2
-  _test_func=$3
+  test_name=$1
+  test_desc=$2
+  test_func=$3
   
   # If listing tests, just print the name
   if [ "$TEST_FILTER" = "--list" ]; then
-    printf '%s\n' "$_test_name"
+    printf '%s\n' "$test_name"
     return 0
   fi
   
   # If filtering by test name, only run matching test
   if [ -n "$TEST_FILTER" ]; then
-    case "$_test_name" in
-      *"$TEST_FILTER"*) run_test_case "$_test_desc" "$_test_func" ;;
+    case "$test_name" in
+      *"$TEST_FILTER"*) run_test_case "$test_desc" "$test_func" ;;
       *) return 0 ;;
     esac
   else
     # No filter, run all tests
-    run_test_case "$_test_desc" "$_test_func"
+    run_test_case "$test_desc" "$test_func"
   fi
 }
 
@@ -2538,7 +2538,7 @@ test_spells_do_not_source_by_path() {
 # Test that all sourced-only spells use the standardized uncastable pattern
 test_uncastable_pattern_is_standardized() {
   # List of spells that must be sourced (not executed)
-  _sourced_spells="
+  sourced_spells="
     spells/arcane/jump-trash
     spells/translocation/jump-to-marker
     spells/cantrips/colors
@@ -2548,61 +2548,61 @@ test_uncastable_pattern_is_standardized() {
     spells/.imps/sys/invoke-wizardry
   "
   
-  for _spell in $_sourced_spells; do
-    _spell_path="$ROOT_DIR/$_spell"
+  for _spell in $sourced_spells; do
+    spell_path="$ROOT_DIR/$_spell"
     
     # Check that the spell exists
-    if [ ! -f "$_spell_path" ]; then
+    if [ ! -f "$spell_path" ]; then
       TEST_FAILURE_REASON="Sourced-only spell not found: $_spell"
       return 1
     fi
     
     # Check that the spell has the "# Uncastable pattern" comment
-    if ! grep -q "^# Uncastable pattern" "$_spell_path"; then
+    if ! grep -q "^# Uncastable pattern" "$spell_path"; then
       TEST_FAILURE_REASON="Spell missing '# Uncastable pattern' comment: $_spell"
       return 1
     fi
     
     # Extract the uncastable pattern block (from comment to unset line)
-    _pattern=$(sed -n '/^# Uncastable pattern/,/^unset.*_sourced.*_base/p' "$_spell_path")
+    pattern=$(sed -n '/^# Uncastable pattern/,/^unset.*_sourced.*_base/p' "$spell_path")
     
-    if [ -z "$_pattern" ]; then
+    if [ -z "$pattern" ]; then
       TEST_FAILURE_REASON="Could not extract uncastable pattern from: $_spell"
       return 1
     fi
     
     # Verify the pattern contains the expected components
-    if ! printf '%s\n' "$_pattern" | grep -q "_sourced=0"; then
+    if ! printf '%s\n' "$pattern" | grep -q "_sourced=0"; then
       TEST_FAILURE_REASON="Pattern missing '_sourced=0' initialization in: $_spell"
       return 1
     fi
     
-    if ! printf '%s\n' "$_pattern" | grep -q 'ZSH_VERSION'; then
+    if ! printf '%s\n' "$pattern" | grep -q 'ZSH_VERSION'; then
       TEST_FAILURE_REASON="Pattern missing ZSH_VERSION check in: $_spell"
       return 1
     fi
     
-    if ! printf '%s\n' "$_pattern" | grep -q 'ZSH_EVAL_CONTEXT'; then
+    if ! printf '%s\n' "$pattern" | grep -q 'ZSH_EVAL_CONTEXT'; then
       TEST_FAILURE_REASON="Pattern missing ZSH_EVAL_CONTEXT check in: $_spell"
       return 1
     fi
     
-    if ! printf '%s\n' "$_pattern" | grep -q 'sh|dash|bash|zsh|ksh|mksh'; then
+    if ! printf '%s\n' "$pattern" | grep -q 'sh|dash|bash|zsh|ksh|mksh'; then
       TEST_FAILURE_REASON="Pattern missing shell detection in: $_spell"
       return 1
     fi
     
-    if ! printf '%s\n' "$_pattern" | grep -q 'This spell cannot be cast directly'; then
+    if ! printf '%s\n' "$pattern" | grep -q 'This spell cannot be cast directly'; then
       TEST_FAILURE_REASON="Pattern missing error message in: $_spell"
       return 1
     fi
     
-    if ! printf '%s\n' "$_pattern" | grep -q 'return 1 2>/dev/null || exit 1'; then
+    if ! printf '%s\n' "$pattern" | grep -q 'return 1 2>/dev/null || exit 1'; then
       TEST_FAILURE_REASON="Pattern missing safe return/exit in: $_spell"
       return 1
     fi
     
-    if ! printf '%s\n' "$_pattern" | grep -q 'unset.*_sourced.*_base'; then
+    if ! printf '%s\n' "$pattern" | grep -q 'unset.*_sourced.*_base'; then
       TEST_FAILURE_REASON="Pattern missing cleanup (unset) in: $_spell"
       return 1
     fi

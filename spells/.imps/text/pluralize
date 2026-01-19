@@ -11,232 +11,232 @@ set -eu
     exit 2
   fi
 
-  _pluralize_word=$1
-  _pluralize_count=$2
-  _pluralize_plural=${3-}
+  pluralize_word=$1
+  pluralize_count=$2
+  pluralize_plural=${3-}
 
-  if [ "$_pluralize_count" -eq 1 ]; then
-    printf '%s' "$_pluralize_word"
+  if [ "$pluralize_count" -eq 1 ]; then
+    printf '%s' "$pluralize_word"
   exit 0
   fi
 
-  if [ -n "$_pluralize_plural" ]; then
-    printf '%s' "$_pluralize_plural"
+  if [ -n "$pluralize_plural" ]; then
+    printf '%s' "$pluralize_plural"
   exit 0
   fi
 
-  _pluralize_lower=$(printf '%s' "$_pluralize_word" | tr 'A-Z' 'a-z')
-  _pluralize_result=""
+  pluralize_lower=$(printf '%s' "$pluralize_word" | tr 'A-Z' 'a-z')
+  pluralize_result=""
 
-  case "$_pluralize_lower" in
-    child) _pluralize_result=children ;;
-    person) _pluralize_result=people ;;
-    man) _pluralize_result=men ;;
-    woman) _pluralize_result=women ;;
-    mouse) _pluralize_result=mice ;;
-    goose) _pluralize_result=geese ;;
-    tooth) _pluralize_result=teeth ;;
-    foot) _pluralize_result=feet ;;
-    louse) _pluralize_result=lice ;;
-    ox) _pluralize_result=oxen ;;
-    die) _pluralize_result=dice ;;
-    cactus) _pluralize_result=cacti ;;
-    focus) _pluralize_result=foci ;;
-    fungus) _pluralize_result=fungi ;;
-    nucleus) _pluralize_result=nuclei ;;
-    syllabus) _pluralize_result=syllabi ;;
-    analysis) _pluralize_result=analyses ;;
-    diagnosis) _pluralize_result=diagnoses ;;
-    synopsis) _pluralize_result=synopses ;;
-    thesis) _pluralize_result=theses ;;
-    crisis) _pluralize_result=crises ;;
-    phenomenon) _pluralize_result=phenomena ;;
-    criterion) _pluralize_result=criteria ;;
-    datum) _pluralize_result=data ;;
-    medium) _pluralize_result=media ;;
-    bacterium) _pluralize_result=bacteria ;;
-    curriculum) _pluralize_result=curricula ;;
-    memorandum) _pluralize_result=memoranda ;;
-    stadium) _pluralize_result=stadia ;;
-    addendum) _pluralize_result=addenda ;;
-    stratum) _pluralize_result=strata ;;
-    bureau) _pluralize_result=bureaux ;;
-    index) _pluralize_result=indices ;;
-    appendix) _pluralize_result=appendices ;;
-    matrix) _pluralize_result=matrices ;;
-    vertex) _pluralize_result=vertices ;;
-    vortex) _pluralize_result=vortices ;;
-    axis) _pluralize_result=axes ;;
-    basis) _pluralize_result=bases ;;
-    oasis) _pluralize_result=oases ;;
-    radius) _pluralize_result=radii ;;
-    stimulus) _pluralize_result=stimuli ;;
-    alumnus) _pluralize_result=alumni ;;
-    alumna) _pluralize_result=alumnae ;;
-    vertebra) _pluralize_result=vertebrae ;;
-    formula) _pluralize_result=formulae ;;
-    antenna) _pluralize_result=antennae ;;
-    nebula) _pluralize_result=nebulae ;;
-    millennium) _pluralize_result=millennia ;;
-    genus) _pluralize_result=genera ;;
-    corpus) _pluralize_result=corpora ;;
-    opus) _pluralize_result=opera ;;
-    status) _pluralize_result=statuses ;;
-    bus) _pluralize_result=buses ;;
-    alias) _pluralize_result=aliases ;;
-    embargo) _pluralize_result=embargoes ;;
-    hero) _pluralize_result=heroes ;;
-    potato) _pluralize_result=potatoes ;;
-    tomato) _pluralize_result=tomatoes ;;
-    echo) _pluralize_result=echoes ;;
-    torpedo) _pluralize_result=torpedoes ;;
-    veto) _pluralize_result=vetoes ;;
-    calf) _pluralize_result=calves ;;
-    leaf) _pluralize_result=leaves ;;
-    life) _pluralize_result=lives ;;
-    loaf) _pluralize_result=loaves ;;
-    self) _pluralize_result=selves ;;
-    elf) _pluralize_result=elves ;;
-    shelf) _pluralize_result=shelves ;;
-    wolf) _pluralize_result=wolves ;;
-    knife) _pluralize_result=knives ;;
-    wife) _pluralize_result=wives ;;
-    thief) _pluralize_result=thieves ;;
-    scarf) _pluralize_result=scarves ;;
-    hoof) _pluralize_result=hooves ;;
-    dwarf) _pluralize_result=dwarves ;;
-    wharf) _pluralize_result=wharves ;;
-    fish) _pluralize_result=fish ;;
-    sheep) _pluralize_result=sheep ;;
-    deer) _pluralize_result=deer ;;
-    series) _pluralize_result=series ;;
-    species) _pluralize_result=species ;;
-    aircraft) _pluralize_result=aircraft ;;
-    moose) _pluralize_result=moose ;;
-    salmon) _pluralize_result=salmon ;;
-    trout) _pluralize_result=trout ;;
-    bison) _pluralize_result=bison ;;
-    means) _pluralize_result=means ;;
-    news) _pluralize_result=news ;;
-    police) _pluralize_result=police ;;
-    cattle) _pluralize_result=cattle ;;
+  case "$pluralize_lower" in
+    child) pluralize_result=children ;;
+    person) pluralize_result=people ;;
+    man) pluralize_result=men ;;
+    woman) pluralize_result=women ;;
+    mouse) pluralize_result=mice ;;
+    goose) pluralize_result=geese ;;
+    tooth) pluralize_result=teeth ;;
+    foot) pluralize_result=feet ;;
+    louse) pluralize_result=lice ;;
+    ox) pluralize_result=oxen ;;
+    die) pluralize_result=dice ;;
+    cactus) pluralize_result=cacti ;;
+    focus) pluralize_result=foci ;;
+    fungus) pluralize_result=fungi ;;
+    nucleus) pluralize_result=nuclei ;;
+    syllabus) pluralize_result=syllabi ;;
+    analysis) pluralize_result=analyses ;;
+    diagnosis) pluralize_result=diagnoses ;;
+    synopsis) pluralize_result=synopses ;;
+    thesis) pluralize_result=theses ;;
+    crisis) pluralize_result=crises ;;
+    phenomenon) pluralize_result=phenomena ;;
+    criterion) pluralize_result=criteria ;;
+    datum) pluralize_result=data ;;
+    medium) pluralize_result=media ;;
+    bacterium) pluralize_result=bacteria ;;
+    curriculum) pluralize_result=curricula ;;
+    memorandum) pluralize_result=memoranda ;;
+    stadium) pluralize_result=stadia ;;
+    addendum) pluralize_result=addenda ;;
+    stratum) pluralize_result=strata ;;
+    bureau) pluralize_result=bureaux ;;
+    index) pluralize_result=indices ;;
+    appendix) pluralize_result=appendices ;;
+    matrix) pluralize_result=matrices ;;
+    vertex) pluralize_result=vertices ;;
+    vortex) pluralize_result=vortices ;;
+    axis) pluralize_result=axes ;;
+    basis) pluralize_result=bases ;;
+    oasis) pluralize_result=oases ;;
+    radius) pluralize_result=radii ;;
+    stimulus) pluralize_result=stimuli ;;
+    alumnus) pluralize_result=alumni ;;
+    alumna) pluralize_result=alumnae ;;
+    vertebra) pluralize_result=vertebrae ;;
+    formula) pluralize_result=formulae ;;
+    antenna) pluralize_result=antennae ;;
+    nebula) pluralize_result=nebulae ;;
+    millennium) pluralize_result=millennia ;;
+    genus) pluralize_result=genera ;;
+    corpus) pluralize_result=corpora ;;
+    opus) pluralize_result=opera ;;
+    status) pluralize_result=statuses ;;
+    bus) pluralize_result=buses ;;
+    alias) pluralize_result=aliases ;;
+    embargo) pluralize_result=embargoes ;;
+    hero) pluralize_result=heroes ;;
+    potato) pluralize_result=potatoes ;;
+    tomato) pluralize_result=tomatoes ;;
+    echo) pluralize_result=echoes ;;
+    torpedo) pluralize_result=torpedoes ;;
+    veto) pluralize_result=vetoes ;;
+    calf) pluralize_result=calves ;;
+    leaf) pluralize_result=leaves ;;
+    life) pluralize_result=lives ;;
+    loaf) pluralize_result=loaves ;;
+    self) pluralize_result=selves ;;
+    elf) pluralize_result=elves ;;
+    shelf) pluralize_result=shelves ;;
+    wolf) pluralize_result=wolves ;;
+    knife) pluralize_result=knives ;;
+    wife) pluralize_result=wives ;;
+    thief) pluralize_result=thieves ;;
+    scarf) pluralize_result=scarves ;;
+    hoof) pluralize_result=hooves ;;
+    dwarf) pluralize_result=dwarves ;;
+    wharf) pluralize_result=wharves ;;
+    fish) pluralize_result=fish ;;
+    sheep) pluralize_result=sheep ;;
+    deer) pluralize_result=deer ;;
+    series) pluralize_result=series ;;
+    species) pluralize_result=species ;;
+    aircraft) pluralize_result=aircraft ;;
+    moose) pluralize_result=moose ;;
+    salmon) pluralize_result=salmon ;;
+    trout) pluralize_result=trout ;;
+    bison) pluralize_result=bison ;;
+    means) pluralize_result=means ;;
+    news) pluralize_result=news ;;
+    police) pluralize_result=police ;;
+    cattle) pluralize_result=cattle ;;
     *man)
-      _pluralize_result=${_pluralize_lower%man}men
+      pluralize_result=pluralize_lower%man}men
       ;;
     *mouse)
-      _pluralize_result=${_pluralize_lower%mouse}mice
+      pluralize_result=pluralize_lower%mouse}mice
       ;;
     *goose)
-      _pluralize_result=${_pluralize_lower%goose}geese
+      pluralize_result=pluralize_lower%goose}geese
       ;;
     *tooth)
-      _pluralize_result=${_pluralize_lower%tooth}teeth
+      pluralize_result=pluralize_lower%tooth}teeth
       ;;
     *foot)
-      _pluralize_result=${_pluralize_lower%foot}feet
+      pluralize_result=pluralize_lower%foot}feet
       ;;
     *louse)
-      _pluralize_result=${_pluralize_lower%louse}lice
+      pluralize_result=pluralize_lower%louse}lice
       ;;
     *[sxz]|*ch|*sh)
-      _pluralize_result=${_pluralize_lower}es
+      pluralize_result=${pluralize_lower}es
       ;;
     *[!aeiou]y)
-      _pluralize_result=${_pluralize_lower%y}ies
+      pluralize_result=pluralize_lower%y}ies
       ;;
     *fe)
-      _pluralize_result=${_pluralize_lower%fe}ves
+      pluralize_result=pluralize_lower%fe}ves
       ;;
     *f)
-      _pluralize_result=${_pluralize_lower%f}ves
+      pluralize_result=pluralize_lower%f}ves
       ;;
     *[!aeiou]o)
-      _pluralize_result=${_pluralize_lower}es
+      pluralize_result=${pluralize_lower}es
       ;;
     *us)
-      _pluralize_result=${_pluralize_lower}es
+      pluralize_result=${pluralize_lower}es
       ;;
     *is)
-      _pluralize_result=${_pluralize_lower%is}es
+      pluralize_result=pluralize_lower%is}es
       ;;
     *)
-      _pluralize_result=${_pluralize_lower}s
+      pluralize_result=${pluralize_lower}s
       ;;
   esac
 
   # DEBUG: Show what we're working with
   if [ "${PLURALIZE_DEBUG:-0}" = "1" ]; then
-    printf '[DEBUG] Original word: [%s]\n' "$_pluralize_word" >&2
-    printf '[DEBUG] Lowercase result: [%s]\n' "$_pluralize_result" >&2
+    printf '[DEBUG] Original word: [%s]\n' "$pluralize_word" >&2
+    printf '[DEBUG] Lowercase result: [%s]\n' "$pluralize_result" >&2
   fi
 
   # Check capitalization using tr (locale-independent)
   # Avoid case patterns with [A-Z] which are locale-dependent on macOS
-  _pluralize_word_lower=$(printf '%s' "$_pluralize_word" | tr 'A-Z' 'a-z')
-  _pluralize_word_upper=$(printf '%s' "$_pluralize_word" | tr 'a-z' 'A-Z')
+  pluralize_word_lower=$(printf '%s' "$pluralize_word" | tr 'A-Z' 'a-z')
+  pluralize_word_upper=$(printf '%s' "$pluralize_word" | tr 'a-z' 'A-Z')
   
-  if [ "$_pluralize_word" != "$_pluralize_word_lower" ] && \
-     [ "$_pluralize_word" != "$_pluralize_word_upper" ]; then
+  if [ "$pluralize_word" != "$pluralize_word_lower" ] && \
+     [ "$pluralize_word" != "$pluralize_word_upper" ]; then
     # Mixed case (has both upper and lower)
-    _pluralize_rest=${_pluralize_word#?}
+    pluralize_rest=pluralize_word#?}
     if [ "${PLURALIZE_DEBUG:-0}" = "1" ]; then
       printf '[DEBUG] Matched mixed case pattern\n' >&2
-      printf '[DEBUG] Rest of word: [%s]\n' "$_pluralize_rest" >&2
+      printf '[DEBUG] Rest of word: [%s]\n' "$pluralize_rest" >&2
     fi
     
     # Check if rest contains uppercase by comparing with lowercase version
-    _pluralize_rest_lower=$(printf '%s' "$_pluralize_rest" | tr 'A-Z' 'a-z')
-    if [ "$_pluralize_rest" != "$_pluralize_rest_lower" ]; then
+    pluralize_rest_lower=$(printf '%s' "$pluralize_rest" | tr 'A-Z' 'a-z')
+    if [ "$pluralize_rest" != "$pluralize_rest_lower" ]; then
       if [ "${PLURALIZE_DEBUG:-0}" = "1" ]; then
         printf '[DEBUG] Rest has uppercase (verified) - output lowercase\n' >&2
       fi
-      printf '%s' "$_pluralize_result"
+      printf '%s' "$pluralize_result"
     else
       if [ "${PLURALIZE_DEBUG:-0}" = "1" ]; then
         printf '[DEBUG] Rest is lowercase - capitalizing first letter\n' >&2
       fi
           
           # Method 1: Pure POSIX parameter expansion
-          _pluralize_upper=$(printf '%s' "$_pluralize_result" | tr 'a-z' 'A-Z')
-          _pluralize_first=${_pluralize_upper%"${_pluralize_upper#?}"}
-          _pluralize_tail=${_pluralize_result#?}
+          pluralize_upper=$(printf '%s' "$pluralize_result" | tr 'a-z' 'A-Z')
+          pluralize_first=pluralize_upper%"pluralize_upper#?}"}
+          pluralize_tail=pluralize_result#?}
           
           if [ "${PLURALIZE_DEBUG:-0}" = "1" ]; then
             printf '[DEBUG] Method 1 (POSIX expansion):\n' >&2
-            printf '[DEBUG]   Upper: [%s]\n' "$_pluralize_upper" >&2
-            printf '[DEBUG]   First: [%s]\n' "$_pluralize_first" >&2
-            printf '[DEBUG]   Tail: [%s]\n' "$_pluralize_tail" >&2
+            printf '[DEBUG]   Upper: [%s]\n' "$pluralize_upper" >&2
+            printf '[DEBUG]   First: [%s]\n' "$pluralize_first" >&2
+            printf '[DEBUG]   Tail: [%s]\n' "$pluralize_tail" >&2
             printf '[DEBUG]   Result: [%s%s]\n' \
-              "$_pluralize_first" "$_pluralize_tail" >&2
+              "$pluralize_first" "$pluralize_tail" >&2
             
             # Try alternative methods for comparison
-            _test_awk=$(printf '%s' "$_pluralize_result" | \
+            test_awk=$(printf '%s' "$pluralize_result" | \
               awk '{print substr($0,1,1)}' 2>/dev/null || printf 'FAILED')
-            _test_sed=$(printf '%s' "$_pluralize_result" | \
+            test_sed=$(printf '%s' "$pluralize_result" | \
               sed 's/^\(.\).*/\1/' 2>/dev/null || printf 'FAILED')
-            _test_dd=$(printf '%s' "$_pluralize_result" | \
+            test_dd=$(printf '%s' "$pluralize_result" | \
               dd bs=1 count=1 2>/dev/null || printf 'FAILED')
-            _test_cut=$(printf '%s' "$_pluralize_result" | \
+            test_cut=$(printf '%s' "$pluralize_result" | \
               cut -c1 2>/dev/null || printf 'FAILED')
             
-            printf '[DEBUG] Method 2 (awk): first=[%s]\n' "$_test_awk" >&2
-            printf '[DEBUG] Method 3 (sed): first=[%s]\n' "$_test_sed" >&2
-            printf '[DEBUG] Method 4 (dd): first=[%s]\n' "$_test_dd" >&2
-            printf '[DEBUG] Method 5 (cut): first=[%s]\n' "$_test_cut" >&2
+            printf '[DEBUG] Method 2 (awk): first=[%s]\n' "$test_awk" >&2
+            printf '[DEBUG] Method 3 (sed): first=[%s]\n' "$test_sed" >&2
+            printf '[DEBUG] Method 4 (dd): first=[%s]\n' "$test_dd" >&2
+            printf '[DEBUG] Method 5 (cut): first=[%s]\n' "$test_cut" >&2
           fi
           
-          printf '%s%s' "$_pluralize_first" "$_pluralize_tail"
+          printf '%s%s' "$pluralize_first" "$pluralize_tail"
         fi
-  elif [ "$_pluralize_word" != "$_pluralize_word_lower" ]; then
+  elif [ "$pluralize_word" != "$pluralize_word_lower" ]; then
     # All uppercase
     if [ "${PLURALIZE_DEBUG:-0}" = "1" ]; then
       printf '[DEBUG] Matched all uppercase pattern\n' >&2
     fi
-    printf '%s' "$(printf '%s' "$_pluralize_result" | tr 'a-z' 'A-Z')"
+    printf '%s' "$(printf '%s' "$pluralize_result" | tr 'a-z' 'A-Z')"
   else
     # All lowercase
     if [ "${PLURALIZE_DEBUG:-0}" = "1" ]; then
       printf '[DEBUG] Matched lowercase pattern\n' >&2
     fi
-    printf '%s' "$_pluralize_result"
+    printf '%s' "$pluralize_result"
   fi

@@ -8,9 +8,9 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 # Save original counters (read from files)
-_orig_pass=$(cat "${WIZARDRY_TMPDIR}/_pass_count" 2>/dev/null || printf '0')
-_orig_fail=$(cat "${WIZARDRY_TMPDIR}/_fail_count" 2>/dev/null || printf '0')
-_orig_idx=$(cat "${WIZARDRY_TMPDIR}/_test_index" 2>/dev/null || printf '0')
+orig_pass=$(cat "${WIZARDRY_TMPDIR}/_pass_count" 2>/dev/null || printf '0')
+orig_fail=$(cat "${WIZARDRY_TMPDIR}/_fail_count" 2>/dev/null || printf '0')
+orig_idx=$(cat "${WIZARDRY_TMPDIR}/_test_index" 2>/dev/null || printf '0')
 
 _passing_test() {
   return 0
@@ -28,9 +28,9 @@ test_increments_pass_count() {
   run_test_case "test" _passing_test >/dev/null 2>&1
   result=$(cat "${WIZARDRY_TMPDIR}/_pass_count")
   # Restore counters
-  printf '%s' "$_orig_pass" > "${WIZARDRY_TMPDIR}/_pass_count"
-  printf '%s' "$_orig_fail" > "${WIZARDRY_TMPDIR}/_fail_count"
-  printf '%s' "$_orig_idx" > "${WIZARDRY_TMPDIR}/_test_index"
+  printf '%s' "$orig_pass" > "${WIZARDRY_TMPDIR}/_pass_count"
+  printf '%s' "$orig_fail" > "${WIZARDRY_TMPDIR}/_fail_count"
+  printf '%s' "$orig_idx" > "${WIZARDRY_TMPDIR}/_test_index"
   [ "$result" -eq 1 ]
 }
 
@@ -42,9 +42,9 @@ test_increments_fail_count() {
   run_test_case "test" _failing_test >/dev/null 2>&1
   result=$(cat "${WIZARDRY_TMPDIR}/_fail_count")
   # Restore counters
-  printf '%s' "$_orig_pass" > "${WIZARDRY_TMPDIR}/_pass_count"
-  printf '%s' "$_orig_fail" > "${WIZARDRY_TMPDIR}/_fail_count"
-  printf '%s' "$_orig_idx" > "${WIZARDRY_TMPDIR}/_test_index"
+  printf '%s' "$orig_pass" > "${WIZARDRY_TMPDIR}/_pass_count"
+  printf '%s' "$orig_fail" > "${WIZARDRY_TMPDIR}/_fail_count"
+  printf '%s' "$orig_idx" > "${WIZARDRY_TMPDIR}/_test_index"
   [ "$result" -eq 1 ]
 }
 
@@ -52,7 +52,7 @@ test_increments_fail_count() {
 printf 'PASS run-test-case increments pass count\n'
 printf 'PASS run-test-case increments fail count\n'
 # Increment pass count
-_current_pass=$(cat "${WIZARDRY_TMPDIR}/_pass_count" 2>/dev/null || printf '0')
+current_pass=$(cat "${WIZARDRY_TMPDIR}/_pass_count" 2>/dev/null || printf '0')
 printf '%s' "$((_current_pass + 2))" > "${WIZARDRY_TMPDIR}/_pass_count"
 
 finish_tests

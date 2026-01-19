@@ -8,12 +8,12 @@ if [ -z "${1-}" ]; then
   exit 1
 fi
 
-_ii_spell_cmd=$1
-_ii_spell_path=$(command -v "$_ii_spell_cmd" 2>/dev/null) || _ii_spell_path=$_ii_spell_cmd
+ii_spell_cmd=$1
+ii_spell_path=$(command -v "$ii_spell_cmd" 2>/dev/null) || ii_spell_path=$ii_spell_cmd
 
-if [ ! -r "$_ii_spell_path" ]; then
+if [ ! -r "$ii_spell_path" ]; then
   exit 1
 fi
 
-grep -Eq '^[[:space:]]*install[[:space:]]*\(\)' "$_ii_spell_path" 2>/dev/null
+grep -Eq '^[[:space:]]*install[[:space:]]*\(\)' "$ii_spell_path" 2>/dev/null
 

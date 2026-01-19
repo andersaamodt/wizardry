@@ -8,8 +8,8 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 # Save original counters (read from files)
-_orig_pass=$(cat "${WIZARDRY_TMPDIR}/_pass_count" 2>/dev/null || printf '0')
-_orig_fail=$(cat "${WIZARDRY_TMPDIR}/_fail_count" 2>/dev/null || printf '0')
+orig_pass=$(cat "${WIZARDRY_TMPDIR}/_pass_count" 2>/dev/null || printf '0')
+orig_fail=$(cat "${WIZARDRY_TMPDIR}/_fail_count" 2>/dev/null || printf '0')
 
 test_reports_pass_count() {
   # Reset counters for this test (write to files)
@@ -18,8 +18,8 @@ test_reports_pass_count() {
   output=$(finish_tests)
   result=$?
   # Restore counters (write to files)
-  printf '%s' "$_orig_pass" > "${WIZARDRY_TMPDIR}/_pass_count"
-  printf '%s' "$_orig_fail" > "${WIZARDRY_TMPDIR}/_fail_count"
+  printf '%s' "$orig_pass" > "${WIZARDRY_TMPDIR}/_pass_count"
+  printf '%s' "$orig_fail" > "${WIZARDRY_TMPDIR}/_fail_count"
   [ $result -eq 0 ] && echo "$output" | grep -q "5/5"
 }
 
@@ -30,8 +30,8 @@ test_returns_failure_on_fails() {
   finish_tests >/dev/null 2>&1
   result=$?
   # Restore counters (write to files)
-  printf '%s' "$_orig_pass" > "${WIZARDRY_TMPDIR}/_pass_count"
-  printf '%s' "$_orig_fail" > "${WIZARDRY_TMPDIR}/_fail_count"
+  printf '%s' "$orig_pass" > "${WIZARDRY_TMPDIR}/_pass_count"
+  printf '%s' "$orig_fail" > "${WIZARDRY_TMPDIR}/_fail_count"
   [ $result -ne 0 ]
 }
 
@@ -39,7 +39,7 @@ test_returns_failure_on_fails() {
 printf 'PASS finish-tests reports pass count\n'
 printf 'PASS finish-tests returns failure when tests fail\n'
 # Increment pass count (read current, increment, write back)
-_current_pass=$(cat "${WIZARDRY_TMPDIR}/_pass_count" 2>/dev/null || printf '0')
+current_pass=$(cat "${WIZARDRY_TMPDIR}/_pass_count" 2>/dev/null || printf '0')
 printf '%s' "$((_current_pass + 2))" > "${WIZARDRY_TMPDIR}/_pass_count"
 
 finish_tests

@@ -49,8 +49,8 @@ if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
   exit 1
 fi
 
-_vs_pluralize="${WIZARDRY_DIR}/spells/.imps/text/pluralize"
-_vs_count_words="${WIZARDRY_DIR}/spells/.imps/text/count-words"
+vs_pluralize="${WIZARDRY_DIR}/spells/.imps/text/pluralize"
+vs_count_words="${WIZARDRY_DIR}/spells/.imps/text/count-words"
 
 # Parse options
 quiet=0
@@ -172,8 +172,8 @@ for spell_info in "$@"; do
     for name_variant in "$func_name" "$(printf '%s' "$func_name" | tr '-' '_')"; do
       if command -v "$name_variant" >/dev/null 2>&1; then
         # Check if it's a function using POSIX-compliant method
-        _cmd_result=$(command -v "$name_variant" 2>/dev/null || printf '')
-        case "$_cmd_result" in
+        cmd_result=$(command -v "$name_variant" 2>/dev/null || printf '')
+        case "$cmd_result" in
           alias\ *) ;;  # Is an alias, skip
           /*) ;;        # Is a path (external command), skip
           "$name_variant")  # Is a function or builtin
@@ -239,8 +239,8 @@ done
 # Output grouped results for spells with --show-status
 if [ "$validate_imps" -eq 0 ] && [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ]; then
   if [ -n "$spell_loaded" ]; then
-    spell_loaded_count=$("$_vs_count_words" "$spell_loaded")
-    label=$("$_vs_pluralize" "Spell" "$spell_loaded_count" "Spells")
+    spell_loaded_count=$("$vs_count_words" "$spell_loaded")
+    label=$("$vs_pluralize" "Spell" "$spell_loaded_count" "Spells")
     printf '\033[32m✓\033[0m Loaded %s\n' "$label"
     printf '%s\n' "$spell_loaded" | tr ' ' '\n' | while IFS= read -r spell; do
       [ -n "$spell" ] && printf '  \033[32m✓\033[0m %s\n' "$spell"
@@ -248,8 +248,8 @@ if [ "$validate_imps" -eq 0 ] && [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ];
   fi
 
   if [ -n "$spell_available" ]; then
-    spell_available_count=$("$_vs_count_words" "$spell_available")
-    label=$("$_vs_pluralize" "Spell" "$spell_available_count" "Spells")
+    spell_available_count=$("$vs_count_words" "$spell_available")
+    label=$("$vs_pluralize" "Spell" "$spell_available_count" "Spells")
     printf '\033[32m✓\033[0m %s\n' "$label"
     printf '%s\n' "$spell_available" | tr ' ' '\n' | while IFS= read -r spell; do
       [ -n "$spell" ] && printf '  \033[32m✓\033[0m %s\n' "$spell"
@@ -257,8 +257,8 @@ if [ "$validate_imps" -eq 0 ] && [ "$quiet" -eq 0 ] && [ "$show_status" -eq 1 ];
   fi
 
   if [ -n "$spell_unavailable" ]; then
-    spell_unavailable_count=$("$_vs_count_words" "$spell_unavailable")
-    label=$("$_vs_pluralize" "Spell" "$spell_unavailable_count" "Spells")
+    spell_unavailable_count=$("$vs_count_words" "$spell_unavailable")
+    label=$("$vs_pluralize" "Spell" "$spell_unavailable_count" "Spells")
     printf '\033[31m✗\033[0m Missing %s\n' "$label"
     printf '%s\n' "$spell_unavailable" | tr ' ' '\n' | while IFS= read -r spell; do
       [ -n "$spell" ] && printf '  \033[31m✗\033[0m %s\n' "$spell"
@@ -285,20 +285,20 @@ EOF
   fi
 
   if [ -n "$loaded_imps" ]; then
-    loaded_count=$("$_vs_count_words" "$loaded_imps")
-    label=$("$_vs_pluralize" "imp" "$loaded_count" "imps")
+    loaded_count=$("$vs_count_words" "$loaded_imps")
+    label=$("$vs_pluralize" "imp" "$loaded_count" "imps")
     printf '\033[32m✓\033[0m Loaded %s: %s\n' "$label" "$loaded_imps"
   fi
 
   if [ -n "$available_imps" ]; then
-    available_count=$("$_vs_count_words" "$available_imps")
-    label=$("$_vs_pluralize" "Imp" "$available_count" "Imps")
+    available_count=$("$vs_count_words" "$available_imps")
+    label=$("$vs_pluralize" "Imp" "$available_count" "Imps")
     printf '\033[32m✓\033[0m %s: %s\n' "$label" "$available_imps"
   fi
 
   if [ -n "$imp_unavailable" ]; then
-    unavailable_count=$("$_vs_count_words" "$imp_unavailable")
-    label=$("$_vs_pluralize" "Imp" "$unavailable_count" "Imps")
+    unavailable_count=$("$vs_count_words" "$imp_unavailable")
+    label=$("$vs_pluralize" "Imp" "$unavailable_count" "Imps")
     printf '\033[31m✗\033[0m Missing %s: %s\n' "$label" "$imp_unavailable"
   fi
 fi
@@ -311,12 +311,12 @@ if [ "$missing_only" -eq 1 ]; then
 fi
 
 if [ -n "$missing" ]; then
-  missing_count=$("$_vs_count_words" "$missing")
+  missing_count=$("$vs_count_words" "$missing")
   if [ "$validate_imps" -eq 1 ]; then
-    label=$("$_vs_pluralize" "imp" "$missing_count" "imps")
+    label=$("$vs_pluralize" "imp" "$missing_count" "imps")
     printf 'Missing %s: %s\n' "$label" "$missing" >&2
   else
-    label=$("$_vs_pluralize" "spell" "$missing_count" "spells")
+    label=$("$vs_pluralize" "spell" "$missing_count" "spells")
     printf 'Missing %s: %s\n' "$label" "$missing" >&2
   fi
   exit 1

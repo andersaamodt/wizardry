@@ -3,16 +3,16 @@
 # Example: on mac && pkgin install git
 
 
-_on_platform=$1
-_on_kernel=$(uname -s 2>/dev/null || echo unknown)
+on_platform=$1
+on_kernel=$(uname -s 2>/dev/null || echo unknown)
 
-case "$_on_platform" in
+case "$on_platform" in
   mac|macos|darwin)
-    [ "$_on_kernel" = "Darwin" ] ;;
+    [ "$on_kernel" = "Darwin" ] ;;
   linux)
-    [ "$_on_kernel" = "Linux" ] ;;
+    [ "$on_kernel" = "Linux" ] ;;
   bsd|freebsd)
-    case "$_on_kernel" in *BSD) true ;; *) false ;; esac ;;
+    case "$on_kernel" in *BSD) true ;; *) false ;; esac ;;
   debian|ubuntu)
     [ -f /etc/debian_version ] ;;
   nixos)

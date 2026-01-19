@@ -34,11 +34,11 @@ set -eu
 # Detect WIZARDRY_DIR if not already set
 if [ -z "${WIZARDRY_DIR-}" ]; then
   # We're being executed directly - detect from script location
-  _script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || _script_dir=""
-  if [ -n "$_script_dir" ]; then
-    _wiz_root=$(CDPATH= cd -- "$_script_dir/../.." 2>/dev/null && pwd -P) || _wiz_root=""
-    if [ -n "$_wiz_root" ] && [ -d "$_wiz_root/spells" ]; then
-      WIZARDRY_DIR=$_wiz_root
+  script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || script_dir=""
+  if [ -n "$script_dir" ]; then
+    wiz_root=$(CDPATH= cd -- "$script_dir/../.." 2>/dev/null && pwd -P) || wiz_root=""
+    if [ -n "$wiz_root" ] && [ -d "$wiz_root/spells" ]; then
+      WIZARDRY_DIR=$wiz_root
     fi
   fi
 fi
@@ -194,14 +194,14 @@ if [ ! -x "$spell_levels_script" ]; then
 fi
 
 # Color codes (inline to avoid dependency)
-_esc=$(printf '\033')
-_green="${_esc}[32m"
-_red="${_esc}[31m"
-_reset="${_esc}[0m"
+esc=$(printf '\033')
+green="${esc}[32m"
+red="${esc}[31m"
+reset="${esc}[0m"
 
-_banish_seen_imps=""
-_banish_pluralize="${WIZARDRY_DIR}/spells/.imps/text/pluralize"
-_banish_count_words="${WIZARDRY_DIR}/spells/.imps/text/count-words"
+banish_seen_imps=""
+banish_pluralize="${WIZARDRY_DIR}/spells/.imps/text/pluralize"
+banish_count_words="${WIZARDRY_DIR}/spells/.imps/text/count-words"
 
 # Run level-specific checks and actions using case statement
 banish_process_level() {
@@ -254,10 +254,10 @@ banish_process_level() {
         esac
       }
       
-      _env_os=$(detect_os)
-      _env_distro=$(detect_distro)
-      _env_arch=$(detect_arch)
-      printf 'Platform: %s/%s/%s\n' "$_env_os" "$_env_distro" "$_env_arch"
+      env_os=$(detect_os)
+      env_distro=$(detect_distro)
+      env_arch=$(detect_arch)
+      printf 'Platform: %s/%s/%s\n' "$env_os" "$env_distro" "$env_arch"
       
       # CI detection
       if [ "${CI-}" = "true" ] || [ "${GITHUB_ACTIONS-}" = "true" ]; then
@@ -273,27 +273,27 @@ banish_process_level() {
       
       # xattr tools
       if has_cmd attr || has_cmd xattr || (has_cmd setfattr && has_cmd getfattr); then
-        _xattr_available="yes"
+        xattr_available="yes"
       else
-        _xattr_available="no"
+        xattr_available="no"
       fi
       
-      if has_cmd realpath; then _has_realpath="yes"; else _has_realpath="no"; fi
-      if has_cmd timeout; then _has_timeout="yes"; else _has_timeout="no"; fi
-      if has_cmd tput; then _has_tput="yes"; else _has_tput="no"; fi
+      if has_cmd realpath; then has_realpath="yes"; else has_realpath="no"; fi
+      if has_cmd timeout; then has_timeout="yes"; else has_timeout="no"; fi
+      if has_cmd tput; then has_tput="yes"; else has_tput="no"; fi
       
-      printf 'xattr-tools: %s\n' "$_xattr_available"
-      printf 'coreutils: realpath=%s timeout=%s tput=%s\n' "$_has_realpath" "$_has_timeout" "$_has_tput"
+      printf 'xattr-tools: %s\n' "$xattr_available"
+      printf 'coreutils: realpath=%s timeout=%s tput=%s\n' "$has_realpath" "$has_timeout" "$has_tput"
       
       # Environment variables
       if [ -n "${USER-}" ]; then
-        _env_user="$USER"
+        env_user="$USER"
       elif [ -n "${LOGNAME-}" ]; then
-        _env_user="$LOGNAME"
+        env_user="$LOGNAME"
       else
-        _env_user="none"
+        env_user="none"
       fi
-      printf 'environment: user=%s\n' "$_env_user"
+      printf 'environment: user=%s\n' "$env_user"
       
       printf '=== End Environment Facts ===\n\n'
       
@@ -312,9 +312,9 @@ banish_process_level() {
         if [ "$has_dirname" = "1" ] && [ "$has_cd" = "1" ] && [ "$has_pwd" = "1" ]; then
           script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || true
           if [ -n "$script_dir" ]; then
-            _potential_dir=$(CDPATH= cd -- "$script_dir/../.." 2>/dev/null && pwd -P) || true
-            if [ -n "$_potential_dir" ] && [ -d "$_potential_dir/spells" ]; then
-              WIZARDRY_DIR=$_potential_dir
+            potential_dir=$(CDPATH= cd -- "$script_dir/../.." 2>/dev/null && pwd -P) || true
+            if [ -n "$potential_dir" ] && [ -d "$potential_dir/spells" ]; then
+              WIZARDRY_DIR=$potential_dir
               printf '    %s✓%s Detected from script location\n' "$_green" "$_reset"
             fi
           fi
@@ -1004,8 +1004,8 @@ HEREDOC_TEST
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
-          missing_count=$("$_banish_count_words" "$missing")
-          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          missing_count=$("$banish_count_words" "$missing")
+          label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
@@ -1022,11 +1022,11 @@ HEREDOC_TEST
       if [ -n "$imp_list" ]; then
         new_imp_list=""
         for imp in $imp_list; do
-          case " ${_banish_seen_imps} " in
+          case " ${banish_seen_imps} " in
             *" ${imp} "*) ;;
             *)
               new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
-              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              banish_seen_imps="${banish_seen_imps}${banish_seen_imps:+ }${imp}"
               ;;
           esac
         done
@@ -1136,8 +1136,8 @@ HEREDOC_TEST
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
-          missing_count=$("$_banish_count_words" "$missing")
-          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          missing_count=$("$banish_count_words" "$missing")
+          label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
@@ -1156,11 +1156,11 @@ HEREDOC_TEST
         had_imps=1
         new_imp_list=""
         for imp in $imp_list; do
-          case " ${_banish_seen_imps} " in
+          case " ${banish_seen_imps} " in
             *" ${imp} "*) ;;
             *)
               new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
-              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              banish_seen_imps="${banish_seen_imps}${banish_seen_imps:+ }${imp}"
               ;;
           esac
         done
@@ -1335,8 +1335,8 @@ HEREDOC_TEST
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
-          missing_count=$("$_banish_count_words" "$missing")
-          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          missing_count=$("$banish_count_words" "$missing")
+          label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
@@ -1355,11 +1355,11 @@ HEREDOC_TEST
         had_imps=1
         new_imp_list=""
         for imp in $imp_list; do
-          case " ${_banish_seen_imps} " in
+          case " ${banish_seen_imps} " in
             *" ${imp} "*) ;;
             *)
               new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
-              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              banish_seen_imps="${banish_seen_imps}${banish_seen_imps:+ }${imp}"
               ;;
           esac
         done
@@ -1428,8 +1428,8 @@ HEREDOC_TEST
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
-          missing_count=$("$_banish_count_words" "$missing")
-          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          missing_count=$("$banish_count_words" "$missing")
+          label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
@@ -1448,11 +1448,11 @@ HEREDOC_TEST
         had_imps=1
         new_imp_list=""
         for imp in $imp_list; do
-          case " ${_banish_seen_imps} " in
+          case " ${banish_seen_imps} " in
             *" ${imp} "*) ;;
             *)
               new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
-              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              banish_seen_imps="${banish_seen_imps}${banish_seen_imps:+ }${imp}"
               ;;
           esac
         done
@@ -1511,8 +1511,8 @@ HEREDOC_TEST
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
-          missing_count=$("$_banish_count_words" "$missing")
-          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          missing_count=$("$banish_count_words" "$missing")
+          label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
@@ -1531,11 +1531,11 @@ HEREDOC_TEST
         had_imps=1
         new_imp_list=""
         for imp in $imp_list; do
-          case " ${_banish_seen_imps} " in
+          case " ${banish_seen_imps} " in
             *" ${imp} "*) ;;
             *)
               new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
-              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              banish_seen_imps="${banish_seen_imps}${banish_seen_imps:+ }${imp}"
               ;;
           esac
         done
@@ -1623,8 +1623,8 @@ HEREDOC_TEST
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
-          missing_count=$("$_banish_count_words" "$missing")
-          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          missing_count=$("$banish_count_words" "$missing")
+          label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
@@ -1643,11 +1643,11 @@ HEREDOC_TEST
         had_imps=1
         new_imp_list=""
         for imp in $imp_list; do
-          case " ${_banish_seen_imps} " in
+          case " ${banish_seen_imps} " in
             *" ${imp} "*) ;;
             *)
               new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
-              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              banish_seen_imps="${banish_seen_imps}${banish_seen_imps:+ }${imp}"
               ;;
           esac
         done
@@ -1755,8 +1755,8 @@ HEREDOC_TEST
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
-          missing_count=$("$_banish_count_words" "$missing")
-          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          missing_count=$("$banish_count_words" "$missing")
+          label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
@@ -1775,11 +1775,11 @@ HEREDOC_TEST
         had_imps=1
         new_imp_list=""
         for imp in $imp_list; do
-          case " ${_banish_seen_imps} " in
+          case " ${banish_seen_imps} " in
             *" ${imp} "*) ;;
             *)
               new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
-              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              banish_seen_imps="${banish_seen_imps}${banish_seen_imps:+ }${imp}"
               ;;
           esac
         done
@@ -1907,8 +1907,8 @@ HEREDOC_TEST
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
-          missing_count=$("$_banish_count_words" "$missing")
-          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          missing_count=$("$banish_count_words" "$missing")
+          label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
@@ -1927,11 +1927,11 @@ HEREDOC_TEST
         had_imps=1
         new_imp_list=""
         for imp in $imp_list; do
-          case " ${_banish_seen_imps} " in
+          case " ${banish_seen_imps} " in
             *" ${imp} "*) ;;
             *)
               new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
-              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              banish_seen_imps="${banish_seen_imps}${banish_seen_imps:+ }${imp}"
               ;;
           esac
         done
@@ -1994,8 +1994,8 @@ HEREDOC_TEST
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
-          missing_count=$("$_banish_count_words" "$missing")
-          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          missing_count=$("$banish_count_words" "$missing")
+          label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
@@ -2014,11 +2014,11 @@ HEREDOC_TEST
         had_imps=1
         new_imp_list=""
         for imp in $imp_list; do
-          case " ${_banish_seen_imps} " in
+          case " ${banish_seen_imps} " in
             *" ${imp} "*) ;;
             *)
               new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
-              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              banish_seen_imps="${banish_seen_imps}${banish_seen_imps:+ }${imp}"
               ;;
           esac
         done
@@ -2086,8 +2086,8 @@ HEREDOC_TEST
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
-          missing_count=$("$_banish_count_words" "$missing")
-          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          missing_count=$("$banish_count_words" "$missing")
+          label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
@@ -2106,11 +2106,11 @@ HEREDOC_TEST
         had_imps=1
         new_imp_list=""
         for imp in $imp_list; do
-          case " ${_banish_seen_imps} " in
+          case " ${banish_seen_imps} " in
             *" ${imp} "*) ;;
             *)
               new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
-              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              banish_seen_imps="${banish_seen_imps}${banish_seen_imps:+ }${imp}"
               ;;
           esac
         done
@@ -2236,8 +2236,8 @@ HEREDOC_TEST
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
-          missing_count=$("$_banish_count_words" "$missing")
-          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          missing_count=$("$banish_count_words" "$missing")
+          label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
@@ -2256,11 +2256,11 @@ HEREDOC_TEST
         had_imps=1
         new_imp_list=""
         for imp in $imp_list; do
-          case " ${_banish_seen_imps} " in
+          case " ${banish_seen_imps} " in
             *" ${imp} "*) ;;
             *)
               new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
-              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              banish_seen_imps="${banish_seen_imps}${banish_seen_imps:+ }${imp}"
               ;;
           esac
         done
@@ -2320,8 +2320,8 @@ HEREDOC_TEST
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
-          missing_count=$("$_banish_count_words" "$missing")
-          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          missing_count=$("$banish_count_words" "$missing")
+          label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
@@ -2340,11 +2340,11 @@ HEREDOC_TEST
         had_imps=1
         new_imp_list=""
         for imp in $imp_list; do
-          case " ${_banish_seen_imps} " in
+          case " ${banish_seen_imps} " in
             *" ${imp} "*) ;;
             *)
               new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
-              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              banish_seen_imps="${banish_seen_imps}${banish_seen_imps:+ }${imp}"
               ;;
           esac
         done
@@ -2395,8 +2395,8 @@ HEREDOC_TEST
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
           missing=$(eval ""$validate_spells" --missing-only $spell_list" 2>/dev/null || true)
-          missing_count=$("$_banish_count_words" "$missing")
-          label=$("$_banish_pluralize" "Spell" "$missing_count" "Spells")
+          missing_count=$("$banish_count_words" "$missing")
+          label=$("$banish_pluralize" "Spell" "$missing_count" "Spells")
           printf '  %s✗%s %s: Missing: %s\n' "$_red" "$_reset" "$label" "$missing"
           return 1
         fi
@@ -2415,11 +2415,11 @@ HEREDOC_TEST
         had_imps=1
         new_imp_list=""
         for imp in $imp_list; do
-          case " ${_banish_seen_imps} " in
+          case " ${banish_seen_imps} " in
             *" ${imp} "*) ;;
             *)
               new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
-              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              banish_seen_imps="${banish_seen_imps}${banish_seen_imps:+ }${imp}"
               ;;
           esac
         done
@@ -2548,11 +2548,11 @@ HEREDOC_TEST
         had_imps=1
         new_imp_list=""
         for imp in $imp_list; do
-          case " ${_banish_seen_imps} " in
+          case " ${banish_seen_imps} " in
             *" ${imp} "*) ;;
             *)
               new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
-              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              banish_seen_imps="${banish_seen_imps}${banish_seen_imps:+ }${imp}"
               ;;
           esac
         done
@@ -2664,11 +2664,11 @@ HEREDOC_TEST
         had_imps=1
         new_imp_list=""
         for imp in $imp_list; do
-          case " ${_banish_seen_imps} " in
+          case " ${banish_seen_imps} " in
             *" ${imp} "*) ;;
             *)
               new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
-              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              banish_seen_imps="${banish_seen_imps}${banish_seen_imps:+ }${imp}"
               ;;
           esac
         done
@@ -2727,11 +2727,11 @@ HEREDOC_TEST
         had_imps=1
         new_imp_list=""
         for imp in $imp_list; do
-          case " ${_banish_seen_imps} " in
+          case " ${banish_seen_imps} " in
             *" ${imp} "*) ;;
             *)
               new_imp_list="${new_imp_list}${new_imp_list:+ }${imp}"
-              _banish_seen_imps="${_banish_seen_imps}${_banish_seen_imps:+ }${imp}"
+              banish_seen_imps="${banish_seen_imps}${banish_seen_imps:+ }${imp}"
               ;;
           esac
         done

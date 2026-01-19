@@ -5,25 +5,25 @@
 set -eu
 
 
-_rl_prompt=${1:-}
-[ -n "$_rl_prompt" ] && printf '%s' "$_rl_prompt" >&2
+rl_prompt=${1:-}
+[ -n "$rl_prompt" ] && printf '%s' "$rl_prompt" >&2
 
 if command -v choose-input >/dev/null 2>&1; then
-  _rl_src=$(choose-input) || exit 1
+  rl_src=$(choose-input) || exit 1
 else
   case ${CHOOSE_INPUT_MODE:-auto} in
-    stdin) _rl_src=stdin ;;
-    tty)   _rl_src=tty ;;
+    stdin) rl_src=stdin ;;
+    tty)   rl_src=tty ;;
     none)  exit 1 ;;
     *)
       # Use /dev/fd/0 instead of /dev/stdin for cross-platform compatibility
-      if [ -t 0 ] || [ -p /dev/fd/0 ] || [ -s /dev/fd/0 ]; then _rl_src=stdin
-      elif [ -r /dev/tty ]; then _rl_src=tty
+      if [ -t 0 ] || [ -p /dev/fd/0 ] || [ -s /dev/fd/0 ]; then rl_src=stdin
+      elif [ -r /dev/tty ]; then rl_src=tty
       else exit 1; fi ;;
   esac
 fi
 
-case $_rl_src in
+case $rl_src in
   stdin) IFS= read -r _rl_line || _rl_line= ;;
   tty)   IFS= read -r _rl_line </dev/tty || _rl_line= ;;
   *)     exit 1 ;;
