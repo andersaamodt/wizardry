@@ -163,8 +163,40 @@ while [ $_attempt_len -gt 0 ]; do
         sed 's/^[^=]*=//' || true)
     fi
     
-    # If synonym found, recursively call parse with the target
+    # If synonym found, check if target is uncastable before recursing
     if [ -n "$_synonym_target" ]; then
+      # Check if synonym target is an uncastable spell that needs sourcing
+      _synonym_target_path=""
+      
+      # Search for the synonym target in spell directories
+      for _category_dir in "$_wizardry_dir/spells"/*; do
+        [ -d "$_category_dir" ] || continue
+        case "$_category_dir" in
+          */.|*/..|*/.imps|*/.wizardry|*/.arcana) continue ;;
+        esac
+        if [ -f "$_category_dir/$_synonym_target" ]; then
+          if grep -q "^# Uncastable pattern" "$_category_dir/$_synonym_target" 2>/dev/null; then
+            # Found uncastable synonym target - source it with remaining args
+            _synonym_target_path="$_category_dir/$_synonym_target"
+            break
+          fi
+        fi
+      done
+      
+      # If synonym target is uncastable, source it
+      if [ -n "$_synonym_target_path" ]; then
+        # Skip first $_attempt_len args (the synonym name parts)
+        _n=0
+        while [ $_n -lt $_attempt_len ]; do
+          shift
+          _n=$((_n + 1))
+        done
+        # Source the uncastable spell
+        . "$_synonym_target_path"
+        exit $?
+      fi
+      
+      # Synonym target is castable - recursively call parse
       # Skip first $_attempt_len args (the synonym name parts)
       _n=0
       while [ $_n -lt $_attempt_len ]; do
