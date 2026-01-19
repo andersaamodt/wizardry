@@ -12,8 +12,15 @@ test_shocking_grasp_charges_avatar() {
   # Create avatar
   avatar_path="$test_tempdir/.testuser"
   mkdir -p "$avatar_path"
-  # Note: test uses temp config, no need to set avatar-path
   enchant "$avatar_path" "is_avatar=1" >/dev/null 2>&1 || true
+  
+  # Set up config file
+  config_file="$test_tempdir/.mud"
+  printf 'avatar-path=%s\n' "$avatar_path" > "$config_file"
+  
+  # Set SPELLBOOK_DIR for the spell to find the config
+  SPELLBOOK_DIR="$test_tempdir"
+  export SPELLBOOK_DIR
   
   # Cast shocking-grasp
   run_spell "spells/mud/shocking-grasp"
@@ -22,6 +29,10 @@ test_shocking_grasp_charges_avatar() {
   # Verify on_toucher effect was added
   on_toucher=$(read-magic "$avatar_path" on_toucher 2>/dev/null || printf '')
   [ "$on_toucher" = "damage:4" ] || fail "Expected on_toucher=damage:4, got: $on_toucher"
+  
+  # Cleanup
+  rm -rf "$test_tempdir"
+  unset SPELLBOOK_DIR
 }
 
 test_shocking_grasp_requires_avatar() {
