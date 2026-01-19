@@ -19,7 +19,7 @@ if [ "$(printf '%s' "$vc_cmd" | tr -d '\t')" != "$vc_cmd" ]; then
 fi
 
 if [ "$(printf '%s' "$vc_cmd" | tr -d '\n')" != "$vc_cmd" ]; then
-  printf '%s\n' "${_vc_context} must be a single line." >&2
+  printf '%s\n' "${vc_context} must be a single line." >&2
   exit 1
 fi
 

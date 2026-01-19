@@ -24,13 +24,13 @@ set -eu
 
   if [ "$nsa_is_system_config" -eq 1 ]; then
     case $nsa_shell_type in
-      bash) _nsa_nix_option="programs.bash.interactiveShellInit" ;;
-      zsh)  _nsa_nix_option="programs.zsh.interactiveShellInit" ;;
+      bash) nsa_nix_option="programs.bash.interactiveShellInit" ;;
+      zsh)  nsa_nix_option="programs.zsh.interactiveShellInit" ;;
     esac
   else
     case $nsa_shell_type in
-      bash) _nsa_nix_option="programs.bash.initExtra" ;;
-      zsh)  _nsa_nix_option="programs.zsh.initExtra" ;;
+      bash) nsa_nix_option="programs.bash.initExtra" ;;
+      zsh)  nsa_nix_option="programs.zsh.initExtra" ;;
     esac
   fi
 
@@ -69,10 +69,10 @@ $nsa_line"; fi
   nsa_tmp_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-add.XXXXXX") || exit 1
   # Read file content inline
   if [ "$nsa_needs_sudo" -eq 1 ]; then
-    if command -v sudo >/dev/null 2>&1; then _nsa_content=$(sudo cat "$nsa_nix_file")
-    elif command -v doas >/dev/null 2>&1; then _nsa_content=$(doas cat "$nsa_nix_file")
-    else _nsa_content=$(cat "$nsa_nix_file"); fi
-  else _nsa_content=$(cat "$nsa_nix_file"); fi
+    if command -v sudo >/dev/null 2>&1; then nsa_content=$(sudo cat "$nsa_nix_file")
+    elif command -v doas >/dev/null 2>&1; then nsa_content=$(doas cat "$nsa_nix_file")
+    else nsa_content=$(cat "$nsa_nix_file"); fi
+  else nsa_content=$(cat "$nsa_nix_file"); fi
 
   if printf '%s\n' "$nsa_content" | grep -q "$nsa_nix_option[[:space:]]*="; then
     nsa_input_file=$(mktemp "${TMPDIR:-/tmp}/nix-shell-add-input.XXXXXX") || exit 1
