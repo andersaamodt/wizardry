@@ -808,4 +808,170 @@ run_test_case "USER LOG: jump to location" test_user_typed_jump_to_location
 run_test_case "USER LOG: leap to location" test_user_typed_leap_to_location_spaces
 run_test_case "USER LOG: warp" test_user_typed_warp
 
+# Tests for GitHub issue: parse/glosses bugs with arguments being treated as spell name parts
+# Bug 1: Single-word spell with single argument (like "prioritize mytask")
+# Bug 2: Multi-word spell with argument (like "magic missile target")
+test_single_word_spell_with_arg() {
+  _saved_wizdir="${WIZARDRY_DIR-}"
+  
+  # Use real wizardry dir but add our test spell
+  test_spell_dir="$ROOT_DIR/spells/test-tmp"
+  mkdir -p "$test_spell_dir"
+  
+  # Create a single-word spell that takes an argument
+  cat > "$test_spell_dir/process" <<'EOF'
+#!/bin/sh
+printf 'process called with arg: [%s]\n' "$1"
+EOF
+  chmod +x "$test_spell_dir/process"
+  
+  export WIZARDRY_DIR="$ROOT_DIR"
+  
+  # Generate glosses
+  tmpspellbook=$(make_tempdir)
+  export SPELLBOOK_DIR="$tmpspellbook"
+  tmpgloss="$tmpspellbook/glosses"
+  "$ROOT_DIR/spells/.wizardry/generate-glosses" --output "$tmpgloss" --quiet
+  . "$tmpgloss"
+  
+  # Test: "process myfile" should call "process" with arg "myfile"
+  # NOT try to find "process-myfile"
+  OUTPUT=$(process myfile 2>&1)
+  STATUS=$?
+  
+  # Cleanup
+  rm -rf "$test_spell_dir"
+  
+  # Restore
+  if [ -n "$_saved_wizdir" ]; then export WIZARDRY_DIR="$_saved_wizdir"; else unset WIZARDRY_DIR; fi
+  
+  if [ "$STATUS" -ne 0 ]; then
+    TEST_FAILURE_REASON="Command failed with status $STATUS: $OUTPUT"
+    return 1
+  fi
+  
+  if ! printf '%s' "$OUTPUT" | grep -q "process called with arg: \[myfile\]"; then
+    TEST_FAILURE_REASON="Expected 'process called with arg: [myfile]' but got: $OUTPUT"
+    return 1
+  fi
+  
+  # Should NOT contain "command not found" for "process-myfile"
+  if printf '%s' "$OUTPUT" | grep -q "process-myfile.*command not found"; then
+    TEST_FAILURE_REASON="Bug: tried to find process-myfile instead of calling process with myfile"
+    return 1
+  fi
+}
+
+test_multiword_spell_with_arg() {
+  _saved_wizdir="${WIZARDRY_DIR-}"
+  
+  # Use real wizardry dir but add our test spell
+  test_spell_dir="$ROOT_DIR/spells/test-tmp"
+  mkdir -p "$test_spell_dir"
+  
+  # Create a multi-word spell that takes an argument
+  cat > "$test_spell_dir/cast-spell" <<'EOF'
+#!/bin/sh
+printf 'cast-spell called with arg: [%s]\n' "$1"
+EOF
+  chmod +x "$test_spell_dir/cast-spell"
+  
+  export WIZARDRY_DIR="$ROOT_DIR"
+  
+  # Generate glosses
+  tmpspellbook=$(make_tempdir)
+  export SPELLBOOK_DIR="$tmpspellbook"
+  tmpgloss="$tmpspellbook/glosses"
+  "$ROOT_DIR/spells/.wizardry/generate-glosses" --output "$tmpgloss" --quiet
+  . "$tmpgloss"
+  
+  # Test: "cast spell fireball" should call "cast-spell" with arg "fireball"
+  # NOT try to find "cast-spell-fireball"
+  OUTPUT=$(cast spell fireball 2>&1)
+  STATUS=$?
+  
+  # Cleanup
+  rm -rf "$test_spell_dir"
+  
+  # Restore
+  if [ -n "$_saved_wizdir" ]; then export WIZARDRY_DIR="$_saved_wizdir"; else unset WIZARDRY_DIR; fi
+  
+  if [ "$STATUS" -ne 0 ]; then
+    TEST_FAILURE_REASON="Command failed with status $STATUS: $OUTPUT"
+    return 1
+  fi
+  
+  if ! printf '%s' "$OUTPUT" | grep -q "cast-spell called with arg: \[fireball\]"; then
+    TEST_FAILURE_REASON="Expected 'cast-spell called with arg: [fireball]' but got: $OUTPUT"
+    return 1
+  fi
+  
+  # Should NOT contain "command not found" for "cast-spell-fireball"
+  if printf '%s' "$OUTPUT" | grep -q "cast-spell-fireball.*command not found"; then
+    TEST_FAILURE_REASON="Bug: tried to find cast-spell-fireball instead of calling cast-spell with fireball"
+    return 1
+  fi
+}
+
+test_longest_match_priority() {
+  _saved_wizdir="${WIZARDRY_DIR-}"
+  
+  # Use real wizardry dir but add our test spells
+  test_spell_dir="$ROOT_DIR/spells/test-tmp"
+  mkdir -p "$test_spell_dir"
+  
+  # Create both "cast-spell" and "cast-spell-fireball" spells
+  cat > "$test_spell_dir/cast-spell" <<'EOF'
+#!/bin/sh
+printf 'cast-spell (basic) called with args: [%s]\n' "$*"
+EOF
+  chmod +x "$test_spell_dir/cast-spell"
+  
+  cat > "$test_spell_dir/cast-spell-fireball" <<'EOF'
+#!/bin/sh
+printf 'cast-spell-fireball (special) called with args: [%s]\n' "$*"
+EOF
+  chmod +x "$test_spell_dir/cast-spell-fireball"
+  
+  export WIZARDRY_DIR="$ROOT_DIR"
+  
+  # Generate glosses
+  tmpspellbook=$(make_tempdir)
+  export SPELLBOOK_DIR="$tmpspellbook"
+  tmpgloss="$tmpspellbook/glosses"
+  "$ROOT_DIR/spells/.wizardry/generate-glosses" --output "$tmpgloss" --quiet
+  . "$tmpgloss"
+  
+  # Test: "cast spell fireball target" should call "cast-spell-fireball" with arg "target"
+  # NOT "cast-spell" with args "fireball target"
+  OUTPUT=$(cast spell fireball target 2>&1)
+  STATUS=$?
+  
+  # Cleanup
+  rm -rf "$test_spell_dir"
+  
+  # Restore
+  if [ -n "$_saved_wizdir" ]; then export WIZARDRY_DIR="$_saved_wizdir"; else unset WIZARDRY_DIR; fi
+  
+  if [ "$STATUS" -ne 0 ]; then
+    TEST_FAILURE_REASON="Command failed with status $STATUS: $OUTPUT"
+    return 1
+  fi
+  
+  if ! printf '%s' "$OUTPUT" | grep -q "cast-spell-fireball (special) called with args: \[target\]"; then
+    TEST_FAILURE_REASON="Expected 'cast-spell-fireball (special) called with args: [target]' but got: $OUTPUT"
+    return 1
+  fi
+  
+  # Should NOT call the basic version
+  if printf '%s' "$OUTPUT" | grep -q "cast-spell (basic)"; then
+    TEST_FAILURE_REASON="Bug: called basic cast-spell instead of cast-spell-fireball"
+    return 1
+  fi
+}
+
+run_test_case "Single-word spell with argument (issue: prioritize mytask)" test_single_word_spell_with_arg
+run_test_case "Multi-word spell with argument (issue: magic missile target)" test_multiword_spell_with_arg
+run_test_case "Longest match priority (cast spell fireball)" test_longest_match_priority
+
 finish_tests
