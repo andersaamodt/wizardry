@@ -72,7 +72,7 @@ if [ "$action" = "enable" ]; then
 else
   printf '%s\n' "Disabling all MUD features..."
   for feature in $FEATURES; do
-    "$IMPS_DIR/config-del" "$CONFIG_FILE" "$feature"
+    "$IMPS_DIR/config-set" "$CONFIG_FILE" "$feature" "0"
   done
   printf '%s\n' "✓ All MUD features disabled."
 fi
