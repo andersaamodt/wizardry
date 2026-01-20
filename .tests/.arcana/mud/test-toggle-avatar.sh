@@ -37,7 +37,8 @@ test_disable_avatar() {
   tmp=$(make_tempdir)
   export SPELLBOOK_DIR="$tmp"
   
-  # Set initial state to enabled
+  # Create config directory and set initial state to enabled
+  mkdir -p "$SPELLBOOK_DIR/.mud"
   printf 'avatar=1\navatar-enabled=1\n' > "$SPELLBOOK_DIR/.mud/config"
   
   # Disable avatar

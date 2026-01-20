@@ -48,11 +48,6 @@ if [ ! -f "$config_file" ]; then
   }
 fi
 
-# Get script directory for config imps
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-root_dir=$(cd "$script_dir/../../.." && pwd -P)
-config_imps_dir="$root_dir/spells/.imps/fs"
-
 # Parse command
 command=${1-list}
 feature=${2-}
@@ -64,29 +59,30 @@ case "$command" in
       printf '%s\n' "mud-config: feature name required for get" >&2
       exit 1
     fi
-    "$config_imps_dir/config-get" "$config_file" "$feature"
+    config-get "$config_file" "$feature"
     ;;
   set)
     if [ -z "$feature" ] || [ -z "$value" ]; then
       printf '%s\n' "mud-config: feature name and value required for set" >&2
       exit 1
     fi
-    "$config_imps_dir/config-set" "$config_file" "$feature" "$value"
+    config-set "$config_file" "$feature" "$value"
     ;;
   toggle)
     if [ -z "$feature" ]; then
       printf '%s\n' "mud-config: feature name required for toggle" >&2
       exit 1
     fi
-    current=$("$config_imps_dir/config-get" "$config_file" "$feature" 2>/dev/null || printf '0')
+    current=$(config-get "$config_file" "$feature" 2>/dev/null || printf '0')
     if [ "$current" = "1" ]; then
-      "$config_imps_dir/config-set" "$config_file" "$feature" "0"
+      config-set "$config_file" "$feature" "0"
       printf '0\n'
     else
-      "$config_imps_dir/config-set" "$config_file" "$feature" "1"
+      config-set "$config_file" "$feature" "1"
       printf '1\n'
     fi
     ;;
+
   list)
     if [ -f "$config_file" ]; then
       cat "$config_file"
