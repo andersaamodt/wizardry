@@ -58,11 +58,19 @@ if [ -f "$config_file" ]; then
   parse_enabled=$(grep "^parse-enabled=" "$config_file" 2>/dev/null | cut -d= -f2- || printf '')
   # If parse-enabled is explicitly set to 0, disable parsing
   if [ "$parse_enabled" = "0" ]; then
-    # Parse is disabled - just execute the first word directly without parsing
-    # This falls through to try executing "$@" as-is
+    # Parse is disabled - try to execute command directly without parsing
     if [ $# -gt 0 ]; then
-      "$@"
-      return $?
+      # Try to find and execute the command without parsing
+      # Use the first word as-is and pass remaining args
+      first_cmd="$1"
+      shift
+      if command -v "$first_cmd" >/dev/null 2>&1; then
+        "$first_cmd" "$@"
+        return $?
+      else
+        printf 'parse: %s: command not found (parsing is disabled)\n' "$first_cmd" >&2
+        return 127
+      fi
     fi
     return 0
   fi

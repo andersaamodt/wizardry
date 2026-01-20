@@ -88,7 +88,18 @@ while true; do
       fi
     done
 
-    if [ "$was_parse" != "$now_parse" ]; then
+    # Count how many features changed - if all changed, it was toggle-all
+    changes=0
+    if [ "$was_parse" != "$now_parse" ]; then changes=$((changes + 1)); fi
+    if [ "$was_mud_menu" != "$now_mud_menu" ]; then changes=$((changes + 1)); fi
+    if [ "$was_cd" != "$now_cd" ]; then changes=$((changes + 1)); fi
+    if [ "$was_avatar" != "$now_avatar" ]; then changes=$((changes + 1)); fi
+    if [ "$was_touch" != "$now_touch" ]; then changes=$((changes + 1)); fi
+    
+    # If all 5 features changed, it was toggle-all - keep selection on item 6
+    if [ "$changes" -ge 5 ]; then
+      start_selection=6
+    elif [ "$was_parse" != "$now_parse" ]; then
       start_selection=1
     elif [ "$was_mud_menu" != "$now_mud_menu" ]; then
       start_selection=2
@@ -98,8 +109,6 @@ while true; do
       start_selection=4
     elif [ "$was_touch" != "$now_touch" ]; then
       start_selection=5
-    elif [ "$was_all" != "$now_all" ]; then
-      start_selection=6
     else
       # No change detected, keep current selection
       : # do nothing, start_selection stays as is
