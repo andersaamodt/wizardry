@@ -40,83 +40,83 @@ if [ "${_WIZARDRY_LOADING_SPELLS:-0}" = "1" ]; then
 fi
 
 # Preserve standard system environment variables
-saved_path="${PATH:-}"
-saved_home="${HOME:-}"
-saved_user="${USER:-}"
-saved_shell="${SHELL:-}"
-saved_term="${TERM:-}"
-saved_lang="${LANG:-}"
-saved_tmpdir="${TMPDIR:-}"
-saved_pwd="${PWD:-}"
-saved_oldpwd="${OLDPWD:-}"
+ec_saved_path="${PATH:-}"
+ec_saved_home="${HOME:-}"
+ec_saved_user="${USER:-}"
+ec_saved_shell="${SHELL:-}"
+ec_saved_term="${TERM:-}"
+ec_saved_lang="${LANG:-}"
+ec_saved_tmpdir="${TMPDIR:-}"
+ec_saved_pwd="${PWD:-}"
+ec_saved_oldpwd="${OLDPWD:-}"
 
 # Preserve wizardry declared globals (from declare-globals)
-saved_wizardry_dir="${WIZARDRY_DIR:-}"
-saved_wizardry_invoked="${WIZARDRY_INVOKED:-}"
-saved_spellbook_dir="${SPELLBOOK_DIR:-}"
-saved_mud_dir="${MUD_DIR:-}"
-saved_log_level="${WIZARDRY_LOG_LEVEL:-}"
+ec_saved_wizardry_dir="${WIZARDRY_DIR:-}"
+ec_saved_wizardry_invoked="${WIZARDRY_INVOKED:-}"
+ec_saved_spellbook_dir="${SPELLBOOK_DIR:-}"
+ec_saved_mud_dir="${MUD_DIR:-}"
+ec_saved_log_level="${WIZARDRY_LOG_LEVEL:-}"
 
 # Preserve package manager override variables (used by pkg-install in arcana)
 # Officially supported platforms only: debian, arch, nixos, mac
-saved_nix_pkg="${NIX_PACKAGE:-}"
-saved_apt_pkg="${APT_PACKAGE:-}"
-saved_pacman_pkg="${PACMAN_PACKAGE:-}"
-saved_pkgin_pkg="${PKGIN_PACKAGE:-}"
+ec_saved_nix_pkg="${NIX_PACKAGE:-}"
+ec_saved_apt_pkg="${APT_PACKAGE:-}"
+ec_saved_pacman_pkg="${PACMAN_PACKAGE:-}"
+ec_saved_pkgin_pkg="${PKGIN_PACKAGE:-}"
 
 # Preserve test infrastructure variables (when running tests)
-saved_test_failure="${TEST_FAILURE_REASON:-}"
-saved_test_skip="${TEST_SKIP_REASON:-}"
-saved_wiz_tmpdir="${WIZARDRY_TMPDIR:-}"
-saved_global_subtest="${WIZARDRY_GLOBAL_SUBTEST_NUM:-}"
-saved_test_compiled="${WIZARDRY_TEST_COMPILED:-}"
-saved_test_helpers="${WIZARDRY_TEST_HELPERS_ONLY:-}"
-saved_system_path="${WIZARDRY_SYSTEM_PATH:-}"
-saved_ask_input="${ASK_CANTRIP_INPUT:-}"
-saved_choose_input="${CHOOSE_INPUT_MODE:-}"
-saved_menu_loop_limit="${MENU_LOOP_LIMIT:-}"
-saved_require_command="${REQUIRE_COMMAND:-}"
-saved_menu_log="${MENU_LOG:-}"
-saved_git_log="${GIT_LOG:-}"
-saved_require_log="${REQUIRE_LOG:-}"
-saved_mock_toplevel="${MOCK_TOPLEVEL:-}"
-saved_pull_status="${PULL_STATUS:-}"
-saved_await_buffer_file="${AWAIT_KEYPRESS_BUFFER_FILE:-}"
+ec_saved_test_failure="${TEST_FAILURE_REASON:-}"
+ec_saved_test_skip="${TEST_SKIP_REASON:-}"
+ec_saved_wiz_tmpdir="${WIZARDRY_TMPDIR:-}"
+ec_saved_global_subtest="${WIZARDRY_GLOBAL_SUBTEST_NUM:-}"
+ec_saved_test_compiled="${WIZARDRY_TEST_COMPILED:-}"
+ec_saved_test_helpers="${WIZARDRY_TEST_HELPERS_ONLY:-}"
+ec_saved_system_path="${WIZARDRY_SYSTEM_PATH:-}"
+ec_saved_ask_input="${ASK_CANTRIP_INPUT:-}"
+ec_saved_choose_input="${CHOOSE_INPUT_MODE:-}"
+ec_saved_menu_loop_limit="${MENU_LOOP_LIMIT:-}"
+ec_saved_require_command="${REQUIRE_COMMAND:-}"
+ec_saved_menu_log="${MENU_LOG:-}"
+ec_saved_git_log="${GIT_LOG:-}"
+ec_saved_require_log="${REQUIRE_LOG:-}"
+ec_saved_mock_toplevel="${MOCK_TOPLEVEL:-}"
+ec_saved_pull_status="${PULL_STATUS:-}"
+ec_saved_await_buffer_file="${AWAIT_KEYPRESS_BUFFER_FILE:-}"
 
 # Preserve bootstrap/installer variables
-saved_assume_yes="${ASSUME_YES:-}"
-saved_force_install="${FORCE_INSTALL:-}"
-saved_root_dir="${ROOT_DIR:-}"
+ec_saved_assume_yes="${ASSUME_YES:-}"
+ec_saved_force_install="${FORCE_INSTALL:-}"
+ec_saved_root_dir="${ROOT_DIR:-}"
 
 # Preserve RC detection variables
-saved_platform="${WIZARDRY_PLATFORM:-}"
-saved_rc_file="${WIZARDRY_RC_FILE:-}"
-saved_rc_format="${WIZARDRY_RC_FORMAT:-}"
+ec_saved_platform="${WIZARDRY_PLATFORM:-}"
+ec_saved_rc_file="${WIZARDRY_RC_FILE:-}"
+ec_saved_rc_format="${WIZARDRY_RC_FORMAT:-}"
 
 # Preserve special feature flags
-saved_await_keep_raw="${AWAIT_KEYPRESS_KEEP_RAW:-}"
-saved_disable_sandbox="${WIZARDRY_DISABLE_SANDBOX:-}"
-saved_bwrap_warning="${WIZARDRY_BWRAP_WARNING:-}"
-saved_colors_available="${WIZARDRY_COLORS_AVAILABLE:-}"
+ec_saved_await_keep_raw="${AWAIT_KEYPRESS_KEEP_RAW:-}"
+ec_saved_disable_sandbox="${WIZARDRY_DISABLE_SANDBOX:-}"
+ec_saved_bwrap_warning="${WIZARDRY_BWRAP_WARNING:-}"
+ec_saved_colors_available="${WIZARDRY_COLORS_AVAILABLE:-}"
 
 # Preserve GitHub Actions environment variables (for CI/CD workflows)
-saved_github_env="${GITHUB_ENV:-}"
-saved_github_path="${GITHUB_PATH:-}"
-saved_github_output="${GITHUB_OUTPUT:-}"
-saved_github_step_summary="${GITHUB_STEP_SUMMARY:-}"
-saved_github_workspace="${GITHUB_WORKSPACE:-}"
-saved_github_action="${GITHUB_ACTION:-}"
-saved_github_actions="${GITHUB_ACTIONS:-}"
-saved_github_actor="${GITHUB_ACTOR:-}"
-saved_github_repository="${GITHUB_REPOSITORY:-}"
-saved_github_sha="${GITHUB_SHA:-}"
-saved_github_ref="${GITHUB_REF:-}"
-saved_github_ref_name="${GITHUB_REF_NAME:-}"
-saved_github_head_ref="${GITHUB_HEAD_REF:-}"
-saved_github_base_ref="${GITHUB_BASE_REF:-}"
-saved_runner_os="${RUNNER_OS:-}"
-saved_runner_temp="${RUNNER_TEMP:-}"
-saved_runner_tool_cache="${RUNNER_TOOL_CACHE:-}"
+ec_saved_github_env="${GITHUB_ENV:-}"
+ec_saved_github_path="${GITHUB_PATH:-}"
+ec_saved_github_output="${GITHUB_OUTPUT:-}"
+ec_saved_github_step_summary="${GITHUB_STEP_SUMMARY:-}"
+ec_saved_github_workspace="${GITHUB_WORKSPACE:-}"
+ec_saved_github_action="${GITHUB_ACTION:-}"
+ec_saved_github_actions="${GITHUB_ACTIONS:-}"
+ec_saved_github_actor="${GITHUB_ACTOR:-}"
+ec_saved_github_repository="${GITHUB_REPOSITORY:-}"
+ec_saved_github_sha="${GITHUB_SHA:-}"
+ec_saved_github_ref="${GITHUB_REF:-}"
+ec_saved_github_ref_name="${GITHUB_REF_NAME:-}"
+ec_saved_github_head_ref="${GITHUB_HEAD_REF:-}"
+ec_saved_github_base_ref="${GITHUB_BASE_REF:-}"
+ec_saved_runner_os="${RUNNER_OS:-}"
+ec_saved_runner_temp="${RUNNER_TEMP:-}"
+ec_saved_runner_tool_cache="${RUNNER_TOOL_CACHE:-}"
 
 # Clear all environment variables
 for env_var in $(env | cut -d= -f1); do
@@ -124,103 +124,101 @@ for env_var in $(env | cut -d= -f1); do
 done
 
 # Restore essential variables (unconditionally - even if empty)
-PATH="${saved_path}"
-HOME="${saved_home}"
-export PATH
-export HOME
-export USER="$saved_user"
-export SHELL="$saved_shell"
-export TERM="$saved_term"
-export LANG="$saved_lang"
-export TMPDIR="$saved_tmpdir"
-export PWD="$saved_pwd"
-export OLDPWD="$saved_oldpwd"
+export PATH="${ec_saved_path}"
+export HOME="${ec_saved_home}"
+export USER="$ec_saved_user"
+export SHELL="$ec_saved_shell"
+export TERM="$ec_saved_term"
+export LANG="$ec_saved_lang"
+export TMPDIR="$ec_saved_tmpdir"
+export PWD="$ec_saved_pwd"
+export OLDPWD="$ec_saved_oldpwd"
 
 # Restore wizardry globals
-[ -n "$saved_wizardry_dir" ] && export WIZARDRY_DIR="$saved_wizardry_dir"
-[ -n "$saved_wizardry_invoked" ] && export WIZARDRY_INVOKED="$saved_wizardry_invoked"
-[ -n "$saved_spellbook_dir" ] && export SPELLBOOK_DIR="$saved_spellbook_dir"
-[ -n "$saved_mud_dir" ] && export MUD_DIR="$saved_mud_dir"
-[ -n "$saved_log_level" ] && export WIZARDRY_LOG_LEVEL="$saved_log_level"
+[ -n "$ec_saved_wizardry_dir" ] && export WIZARDRY_DIR="$ec_saved_wizardry_dir"
+[ -n "$ec_saved_wizardry_invoked" ] && export WIZARDRY_INVOKED="$ec_saved_wizardry_invoked"
+[ -n "$ec_saved_spellbook_dir" ] && export SPELLBOOK_DIR="$ec_saved_spellbook_dir"
+[ -n "$ec_saved_mud_dir" ] && export MUD_DIR="$ec_saved_mud_dir"
+[ -n "$ec_saved_log_level" ] && export WIZARDRY_LOG_LEVEL="$ec_saved_log_level"
 
 # Restore package manager overrides (officially supported platforms only)
-[ -n "$saved_nix_pkg" ] && export NIX_PACKAGE="$saved_nix_pkg"
-[ -n "$saved_apt_pkg" ] && export APT_PACKAGE="$saved_apt_pkg"
-[ -n "$saved_pacman_pkg" ] && export PACMAN_PACKAGE="$saved_pacman_pkg"
-[ -n "$saved_pkgin_pkg" ] && export PKGIN_PACKAGE="$saved_pkgin_pkg"
+[ -n "$ec_saved_nix_pkg" ] && export NIX_PACKAGE="$ec_saved_nix_pkg"
+[ -n "$ec_saved_apt_pkg" ] && export APT_PACKAGE="$ec_saved_apt_pkg"
+[ -n "$ec_saved_pacman_pkg" ] && export PACMAN_PACKAGE="$ec_saved_pacman_pkg"
+[ -n "$ec_saved_pkgin_pkg" ] && export PKGIN_PACKAGE="$ec_saved_pkgin_pkg"
 
 # Restore test infrastructure
-[ -n "$saved_test_failure" ] && export TEST_FAILURE_REASON="$saved_test_failure"
-[ -n "$saved_test_skip" ] && export TEST_SKIP_REASON="$saved_test_skip"
-[ -n "$saved_wiz_tmpdir" ] && export WIZARDRY_TMPDIR="$saved_wiz_tmpdir"
-[ -n "$saved_global_subtest" ] && export WIZARDRY_GLOBAL_SUBTEST_NUM="$saved_global_subtest"
-[ -n "$saved_test_compiled" ] && export WIZARDRY_TEST_COMPILED="$saved_test_compiled"
-[ -n "$saved_test_helpers" ] && export WIZARDRY_TEST_HELPERS_ONLY="$saved_test_helpers"
-[ -n "$saved_system_path" ] && export WIZARDRY_SYSTEM_PATH="$saved_system_path"
-[ -n "$saved_ask_input" ] && export ASK_CANTRIP_INPUT="$saved_ask_input"
-[ -n "$saved_choose_input" ] && export CHOOSE_INPUT_MODE="$saved_choose_input"
-[ -n "$saved_menu_loop_limit" ] && export MENU_LOOP_LIMIT="$saved_menu_loop_limit"
-[ -n "$saved_require_command" ] && export REQUIRE_COMMAND="$saved_require_command"
-[ -n "$saved_menu_log" ] && export MENU_LOG="$saved_menu_log"
-[ -n "$saved_git_log" ] && export GIT_LOG="$saved_git_log"
-[ -n "$saved_require_log" ] && export REQUIRE_LOG="$saved_require_log"
-[ -n "$saved_mock_toplevel" ] && export MOCK_TOPLEVEL="$saved_mock_toplevel"
-[ -n "$saved_pull_status" ] && export PULL_STATUS="$saved_pull_status"
-if [ -n "$saved_await_buffer_file" ]; then
-  export AWAIT_KEYPRESS_BUFFER_FILE="$saved_await_buffer_file"
+[ -n "$ec_saved_test_failure" ] && export TEST_FAILURE_REASON="$ec_saved_test_failure"
+[ -n "$ec_saved_test_skip" ] && export TEST_SKIP_REASON="$ec_saved_test_skip"
+[ -n "$ec_saved_wiz_tmpdir" ] && export WIZARDRY_TMPDIR="$ec_saved_wiz_tmpdir"
+[ -n "$ec_saved_global_subtest" ] && export WIZARDRY_GLOBAL_SUBTEST_NUM="$ec_saved_global_subtest"
+[ -n "$ec_saved_test_compiled" ] && export WIZARDRY_TEST_COMPILED="$ec_saved_test_compiled"
+[ -n "$ec_saved_test_helpers" ] && export WIZARDRY_TEST_HELPERS_ONLY="$ec_saved_test_helpers"
+[ -n "$ec_saved_system_path" ] && export WIZARDRY_SYSTEM_PATH="$ec_saved_system_path"
+[ -n "$ec_saved_ask_input" ] && export ASK_CANTRIP_INPUT="$ec_saved_ask_input"
+[ -n "$ec_saved_choose_input" ] && export CHOOSE_INPUT_MODE="$ec_saved_choose_input"
+[ -n "$ec_saved_menu_loop_limit" ] && export MENU_LOOP_LIMIT="$ec_saved_menu_loop_limit"
+[ -n "$ec_saved_require_command" ] && export REQUIRE_COMMAND="$ec_saved_require_command"
+[ -n "$ec_saved_menu_log" ] && export MENU_LOG="$ec_saved_menu_log"
+[ -n "$ec_saved_git_log" ] && export GIT_LOG="$ec_saved_git_log"
+[ -n "$ec_saved_require_log" ] && export REQUIRE_LOG="$ec_saved_require_log"
+[ -n "$ec_saved_mock_toplevel" ] && export MOCK_TOPLEVEL="$ec_saved_mock_toplevel"
+[ -n "$ec_saved_pull_status" ] && export PULL_STATUS="$ec_saved_pull_status"
+if [ -n "$ec_saved_await_buffer_file" ]; then
+  export AWAIT_KEYPRESS_BUFFER_FILE="$ec_saved_await_buffer_file"
 fi
 
 # Restore bootstrap variables
-[ -n "$saved_assume_yes" ] && export ASSUME_YES="$saved_assume_yes"
-[ -n "$saved_force_install" ] && export FORCE_INSTALL="$saved_force_install"
-[ -n "$saved_root_dir" ] && export ROOT_DIR="$saved_root_dir"
+[ -n "$ec_saved_assume_yes" ] && export ASSUME_YES="$ec_saved_assume_yes"
+[ -n "$ec_saved_force_install" ] && export FORCE_INSTALL="$ec_saved_force_install"
+[ -n "$ec_saved_root_dir" ] && export ROOT_DIR="$ec_saved_root_dir"
 
 # Restore RC detection
-[ -n "$saved_platform" ] && export WIZARDRY_PLATFORM="$saved_platform"
-[ -n "$saved_rc_file" ] && export WIZARDRY_RC_FILE="$saved_rc_file"
-[ -n "$saved_rc_format" ] && export WIZARDRY_RC_FORMAT="$saved_rc_format"
+[ -n "$ec_saved_platform" ] && export WIZARDRY_PLATFORM="$ec_saved_platform"
+[ -n "$ec_saved_rc_file" ] && export WIZARDRY_RC_FILE="$ec_saved_rc_file"
+[ -n "$ec_saved_rc_format" ] && export WIZARDRY_RC_FORMAT="$ec_saved_rc_format"
 
 # Restore feature flags
-[ -n "$saved_await_keep_raw" ] && export AWAIT_KEYPRESS_KEEP_RAW="$saved_await_keep_raw"
-[ -n "$saved_disable_sandbox" ] && export WIZARDRY_DISABLE_SANDBOX="$saved_disable_sandbox"
-[ -n "$saved_bwrap_warning" ] && export WIZARDRY_BWRAP_WARNING="$saved_bwrap_warning"
-[ -n "$saved_colors_available" ] && export WIZARDRY_COLORS_AVAILABLE="$saved_colors_available"
+[ -n "$ec_saved_await_keep_raw" ] && export AWAIT_KEYPRESS_KEEP_RAW="$ec_saved_await_keep_raw"
+[ -n "$ec_saved_disable_sandbox" ] && export WIZARDRY_DISABLE_SANDBOX="$ec_saved_disable_sandbox"
+[ -n "$ec_saved_bwrap_warning" ] && export WIZARDRY_BWRAP_WARNING="$ec_saved_bwrap_warning"
+[ -n "$ec_saved_colors_available" ] && export WIZARDRY_COLORS_AVAILABLE="$ec_saved_colors_available"
 
 # Restore GitHub Actions variables
-[ -n "$saved_github_env" ] && export GITHUB_ENV="$saved_github_env"
-[ -n "$saved_github_path" ] && export GITHUB_PATH="$saved_github_path"
-[ -n "$saved_github_output" ] && export GITHUB_OUTPUT="$saved_github_output"
-[ -n "$saved_github_step_summary" ] && export GITHUB_STEP_SUMMARY="$saved_github_step_summary"
-[ -n "$saved_github_workspace" ] && export GITHUB_WORKSPACE="$saved_github_workspace"
-[ -n "$saved_github_action" ] && export GITHUB_ACTION="$saved_github_action"
-[ -n "$saved_github_actions" ] && export GITHUB_ACTIONS="$saved_github_actions"
-[ -n "$saved_github_actor" ] && export GITHUB_ACTOR="$saved_github_actor"
-[ -n "$saved_github_repository" ] && export GITHUB_REPOSITORY="$saved_github_repository"
-[ -n "$saved_github_sha" ] && export GITHUB_SHA="$saved_github_sha"
-[ -n "$saved_github_ref" ] && export GITHUB_REF="$saved_github_ref"
-[ -n "$saved_github_ref_name" ] && export GITHUB_REF_NAME="$saved_github_ref_name"
-[ -n "$saved_github_head_ref" ] && export GITHUB_HEAD_REF="$saved_github_head_ref"
-[ -n "$saved_github_base_ref" ] && export GITHUB_BASE_REF="$saved_github_base_ref"
-[ -n "$saved_runner_os" ] && export RUNNER_OS="$saved_runner_os"
-[ -n "$saved_runner_temp" ] && export RUNNER_TEMP="$saved_runner_temp"
-[ -n "$saved_runner_tool_cache" ] && export RUNNER_TOOL_CACHE="$saved_runner_tool_cache"
+[ -n "$ec_saved_github_env" ] && export GITHUB_ENV="$ec_saved_github_env"
+[ -n "$ec_saved_github_path" ] && export GITHUB_PATH="$ec_saved_github_path"
+[ -n "$ec_saved_github_output" ] && export GITHUB_OUTPUT="$ec_saved_github_output"
+[ -n "$ec_saved_github_step_summary" ] && export GITHUB_STEP_SUMMARY="$ec_saved_github_step_summary"
+[ -n "$ec_saved_github_workspace" ] && export GITHUB_WORKSPACE="$ec_saved_github_workspace"
+[ -n "$ec_saved_github_action" ] && export GITHUB_ACTION="$ec_saved_github_action"
+[ -n "$ec_saved_github_actions" ] && export GITHUB_ACTIONS="$ec_saved_github_actions"
+[ -n "$ec_saved_github_actor" ] && export GITHUB_ACTOR="$ec_saved_github_actor"
+[ -n "$ec_saved_github_repository" ] && export GITHUB_REPOSITORY="$ec_saved_github_repository"
+[ -n "$ec_saved_github_sha" ] && export GITHUB_SHA="$ec_saved_github_sha"
+[ -n "$ec_saved_github_ref" ] && export GITHUB_REF="$ec_saved_github_ref"
+[ -n "$ec_saved_github_ref_name" ] && export GITHUB_REF_NAME="$ec_saved_github_ref_name"
+[ -n "$ec_saved_github_head_ref" ] && export GITHUB_HEAD_REF="$ec_saved_github_head_ref"
+[ -n "$ec_saved_github_base_ref" ] && export GITHUB_BASE_REF="$ec_saved_github_base_ref"
+[ -n "$ec_saved_runner_os" ] && export RUNNER_OS="$ec_saved_runner_os"
+[ -n "$ec_saved_runner_temp" ] && export RUNNER_TEMP="$ec_saved_runner_temp"
+[ -n "$ec_saved_runner_tool_cache" ] && export RUNNER_TOOL_CACHE="$ec_saved_runner_tool_cache"
 
 # Clean up temporary variables
-unset saved_path saved_home saved_user saved_shell saved_term _saved_lang
-unset saved_tmpdir saved_pwd saved_oldpwd saved_wizardry_dir _saved_wizardry_invoked
-unset saved_spellbook_dir saved_mud_dir saved_log_level saved_nix_pkg _saved_apt_pkg
-unset saved_pacman_pkg saved_pkgin_pkg saved_test_failure saved_test_skip _saved_wiz_tmpdir
-unset saved_global_subtest saved_test_compiled saved_test_helpers _saved_system_path
-unset saved_ask_input saved_choose_input saved_menu_loop_limit _saved_require_command
-unset saved_menu_log saved_await_buffer_file _saved_assume_yes
-unset saved_force_install _saved_root_dir
-unset saved_platform saved_rc_file saved_rc_format _saved_await_keep_raw
-unset saved_disable_sandbox saved_bwrap_warning _saved_colors_available
-unset saved_github_env saved_github_path saved_github_output _saved_github_step_summary
-unset saved_github_workspace saved_github_action saved_github_actions _saved_github_actor
-unset saved_github_repository saved_github_sha saved_github_ref _saved_github_ref_name
-unset saved_github_head_ref saved_github_base_ref saved_runner_os _saved_runner_temp
-unset saved_runner_tool_cache _var
+unset ec_saved_path ec_saved_home ec_saved_user ec_saved_shell ec_saved_term ec_saved_lang
+unset ec_saved_tmpdir ec_saved_pwd ec_saved_oldpwd ec_saved_wizardry_dir ec_saved_wizardry_invoked
+unset ec_saved_spellbook_dir ec_saved_mud_dir ec_saved_log_level ec_saved_nix_pkg ec_saved_apt_pkg
+unset ec_saved_pacman_pkg ec_saved_pkgin_pkg ec_saved_test_failure ec_saved_test_skip ec_saved_wiz_tmpdir
+unset ec_saved_global_subtest ec_saved_test_compiled ec_saved_test_helpers ec_saved_system_path
+unset ec_saved_ask_input ec_saved_choose_input ec_saved_menu_loop_limit ec_saved_require_command
+unset ec_saved_menu_log ec_saved_await_buffer_file ec_saved_assume_yes
+unset ec_saved_force_install ec_saved_root_dir
+unset ec_saved_platform ec_saved_rc_file ec_saved_rc_format ec_saved_await_keep_raw
+unset ec_saved_disable_sandbox ec_saved_bwrap_warning ec_saved_colors_available
+unset ec_saved_github_env ec_saved_github_path ec_saved_github_output ec_saved_github_step_summary
+unset ec_saved_github_workspace ec_saved_github_action ec_saved_github_actions ec_saved_github_actor
+unset ec_saved_github_repository ec_saved_github_sha ec_saved_github_ref ec_saved_github_ref_name
+unset ec_saved_github_head_ref ec_saved_github_base_ref ec_saved_runner_os ec_saved_runner_temp
+unset ec_saved_runner_tool_cache env_var
 
 # Re-enable strict mode for the calling spell
 # The spell set `-eu` before sourcing this file, so we restore that state
