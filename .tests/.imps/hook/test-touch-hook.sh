@@ -20,7 +20,7 @@ test_touch_hook_runs_without_config() {
 test_touch_hook_with_config() {
   # Create a test config
   test_dir=$(mktemp -d)
-  test_config="$test_dir/.mud/config"
+  test_config="$test_dir/.mud"
   mkdir -p "$test_dir/.mud"
   printf 'touch-hook=0\n' > "$test_config"
   

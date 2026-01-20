@@ -1,7 +1,7 @@
 #!/bin/sh
 # Tests for cd spell (settings-based, sourceable)
 # The cd spell is a sourceable file that defines a cd() override function.
-# It reads settings from ~/.spellbook/.mud/config to decide whether to run look.
+# It reads settings from ~/.spellbook/.mud to decide whether to run look.
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -32,7 +32,7 @@ test_cd_function_runs_look_when_enabled() {
   
   # Create settings file with cd-look enabled
   mkdir -p "$tmpdir/.spellbook/.mud"
-  printf "cd-look=1\n" > "$tmpdir/.spellbook/.mud/config"
+  printf "cd-look=1\n" > "$tmpdir/.spellbook/.mud"
   
   # Create look stub that creates a marker file
   cat >"$tmpdir/look" <<'SH'
@@ -63,7 +63,7 @@ test_cd_function_skips_look_when_disabled() {
   
   # Create settings file with cd-look disabled (no cd-look=1 line)
   mkdir -p "$tmpdir/.spellbook/.mud"
-  printf "other-setting=1\n" > "$tmpdir/.spellbook/.mud/config"
+  printf "other-setting=1\n" > "$tmpdir/.spellbook/.mud"
   
   # Create look stub
   cat >"$tmpdir/look" <<'SH'

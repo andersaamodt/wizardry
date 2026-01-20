@@ -260,7 +260,7 @@ SH
   # Set up empty spellbook (no cd-look config)
   spellbook_dir="$tmp/spellbook"
   mkdir -p "$spellbook_dir/.mud"
-  : > "$spellbook_dir/.mud/config"
+  : > "$spellbook_dir/.mud"
   
   SPELLBOOK_DIR="$spellbook_dir" run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.arcana/mud:/bin:/usr/bin" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || return 1
@@ -305,7 +305,7 @@ SH
   # Set up config file with cd-look enabled (new config-based approach)
   spellbook_dir="$tmp/spellbook"
   mkdir -p "$spellbook_dir/.mud"
-  printf 'cd-look=1\n' > "$spellbook_dir/.mud/config"
+  printf 'cd-look=1\n' > "$spellbook_dir/.mud"
   
   SPELLBOOK_DIR="$spellbook_dir" run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.arcana/mud:/bin:/usr/bin" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || return 1

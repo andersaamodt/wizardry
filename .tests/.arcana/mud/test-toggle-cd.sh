@@ -1,6 +1,6 @@
 #!/bin/sh
 # Tests for toggle-cd spell (settings-based)
-# toggle-cd manages the cd-look=1 setting in ~/.spellbook/.mud/config
+# toggle-cd manages the cd-look=1 setting in ~/.spellbook/.mud
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -22,7 +22,7 @@ test_toggle_cd_enables_when_disabled() {
   
   
   # Start with disabled (no cd-look=1 line)
-printf "other-setting=1\n" > "$tmpdir/.spellbook/.mud/config"
+printf "other-setting=1\n" > "$tmpdir/.spellbook/.mud"
   # Run toggle-cd directly (not through run_cmd sandbox)
   output=$(env SPELLBOOK_DIR="$tmpdir/.spellbook" sh "$ROOT_DIR/spells/.arcana/mud/toggle-cd" 2>&1)
   # Check output
@@ -34,20 +34,20 @@ printf "other-setting=1\n" > "$tmpdir/.spellbook/.mud/config"
       return 1
   esac
   # Verify setting was added
-  if ! grep -q "^cd-look=1$" "$tmpdir/.spellbook/.mud/config"; then
+  if ! grep -q "^cd-look=1$" "$tmpdir/.spellbook/.mud"; then
     TEST_FAILURE_REASON="cd-look=1 not found in config after enable"
     return 1
   fi
 test_toggle_cd_disables_when_enabled() {
   # Start with enabled
-printf "cd-look=1\nother-setting=1\n" > "$tmpdir/.spellbook/.mud/config"
+printf "cd-look=1\nother-setting=1\n" > "$tmpdir/.spellbook/.mud"
     *disabled*)
       TEST_FAILURE_REASON="Output missing 'disabled': $output"
   # Verify setting was removed
-  if grep -q "^cd-look=1$" "$tmpdir/.spellbook/.mud/config"; then
+  if grep -q "^cd-look=1$" "$tmpdir/.spellbook/.mud"; then
     TEST_FAILURE_REASON="cd-look=1 still in config after disable"
   # Verify other settings preserved
-  if ! grep -q "^other-setting=1$" "$tmpdir/.spellbook/.mud/config"; then
+  if ! grep -q "^other-setting=1$" "$tmpdir/.spellbook/.mud"; then
     TEST_FAILURE_REASON="other settings were not preserved"
 run_test_case "toggle-cd is executable" test_toggle_cd_is_executable
 run_test_case "toggle-cd --help shows usage" test_toggle_cd_help_shows_usage

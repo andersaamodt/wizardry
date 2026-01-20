@@ -25,7 +25,7 @@ test_toggle_enables_when_initially_disabled() {
   assert_output_contains "enabled" || return 1
   
   # Verify the config was updated (.mud is a file, not a directory)
-  config_file="$SPELLBOOK_DIR/.mud/config"
+  config_file="$SPELLBOOK_DIR/.mud"
   if [ -f "$config_file" ]; then
     value=$(grep "^mud-enabled=" "$config_file" | cut -d= -f2)
     [ "$value" = "1" ] || { TEST_FAILURE_REASON="Expected mud-enabled=1, got: $value"; return 1; }
@@ -40,8 +40,7 @@ test_toggle_disables_when_enabled() {
   export SPELLBOOK_DIR="$tmp"
   
   # Set initial state to enabled
-  mkdir -p "$SPELLBOOK_DIR/.mud"
-  printf 'mud-enabled=1\n' > "$SPELLBOOK_DIR/.mud/config"
+  printf 'mud-enabled=1\n' > "$SPELLBOOK_DIR/.mud"
   
   # Toggle should disable
   run_spell "spells/.arcana/mud/toggle-mud-menu"
@@ -49,7 +48,7 @@ test_toggle_disables_when_enabled() {
   assert_output_contains "hidden" || return 1
   
   # Verify the config was updated
-  config_file="$SPELLBOOK_DIR/.mud/config"
+  config_file="$SPELLBOOK_DIR/.mud"
   if [ -f "$config_file" ]; then
     value=$(grep "^mud-enabled=" "$config_file" | cut -d= -f2)
     [ "$value" = "0" ] || { TEST_FAILURE_REASON="Expected mud-enabled=0, got: $value"; return 1; }
@@ -74,7 +73,7 @@ test_toggle_twice_returns_to_original_state() {
   assert_output_contains "hidden" || return 1
   
   # Verify we're back to disabled (.mud is a file)
-  config_file="$SPELLBOOK_DIR/.mud/config"
+  config_file="$SPELLBOOK_DIR/.mud"
   value=$(grep "^mud-enabled=" "$config_file" | cut -d= -f2)
   [ "$value" = "0" ] || { TEST_FAILURE_REASON="Expected mud-enabled=0 after two toggles, got: $value"; return 1; }
 }
@@ -88,7 +87,7 @@ test_creates_config_if_missing() {
   assert_success || return 1
   
   # Verify config file was created
-  config_file="$SPELLBOOK_DIR/.mud/config"
+  config_file="$SPELLBOOK_DIR/.mud"
   [ -f "$config_file" ] || { TEST_FAILURE_REASON="Config file was not created"; return 1; }
 }
 

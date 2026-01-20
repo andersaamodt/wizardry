@@ -20,7 +20,7 @@ test_cd_hook_runs_without_config() {
 test_cd_hook_with_config() {
   # Create a test config
   test_dir=$(mktemp -d)
-  test_config="$test_dir/.mud/config"
+  test_config="$test_dir/.mud"
   mkdir -p "$test_dir/.mud"
   printf 'cd-look=0\navatar=0\n' > "$test_config"
   

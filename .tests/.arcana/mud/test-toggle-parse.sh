@@ -21,7 +21,7 @@ test_toggle_enables_parse() {
   assert_success || return 1
   
   # Verify config was set (.mud is a file)
-  config_file="$SPELLBOOK_DIR/.mud/config"
+  config_file="$SPELLBOOK_DIR/.mud"
   if [ -f "$config_file" ]; then
     value=$(grep "^parse-enabled=" "$config_file" | cut -d= -f2)
     [ "$value" = "1" ] || { TEST_FAILURE_REASON="Expected parse-enabled=1, got: $value"; return 1; }
@@ -37,14 +37,14 @@ test_toggle_disables_parse() {
   
   # Set initial state to enabled
   
-  printf 'parse-enabled=1\n' > "$SPELLBOOK_DIR/.mud/config"
+  printf 'parse-enabled=1\n' > "$SPELLBOOK_DIR/.mud"
   
   # Toggle should disable
   run_spell "spells/.arcana/mud/toggle-parse"
   assert_success || return 1
   
   # Verify config was updated
-  config_file="$SPELLBOOK_DIR/.mud/config"
+  config_file="$SPELLBOOK_DIR/.mud"
   value=$(grep "^parse-enabled=" "$config_file" | cut -d= -f2)
   [ "$value" = "0" ] || { TEST_FAILURE_REASON="Expected parse-enabled=0, got: $value"; return 1; }
 }
@@ -62,7 +62,7 @@ test_toggle_twice_returns_to_original() {
   assert_success || return 1
   
   # Verify we're back to disabled
-  config_file="$SPELLBOOK_DIR/.mud/config"
+  config_file="$SPELLBOOK_DIR/.mud"
   value=$(grep "^parse-enabled=" "$config_file" | cut -d= -f2)
   [ "$value" = "0" ] || { TEST_FAILURE_REASON="Expected parse-enabled=0 after two toggles, got: $value"; return 1; }
 }
