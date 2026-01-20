@@ -16,6 +16,13 @@ esac
 set -eu
 . env-clear
 
+# Verify required MUD commands are available
+if ! command -v mud-config >/dev/null 2>&1; then
+  printf '%s\n' "mud-menu: mud-config command not found" >&2
+  printf '%s\n' "Please ensure invoke-wizardry has been called in your shell." >&2
+  exit 1
+fi
+
 # Catch Ctrl-C and TERM signal to exit 1 cleanly
 trap 'exit 0' INT TERM
 
