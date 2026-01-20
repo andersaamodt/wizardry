@@ -100,8 +100,6 @@ while true; do
       start_selection=5
     elif [ "$was_all" != "$now_all" ]; then
       start_selection=6
-    else
-      start_selection=1
     fi
   else
     first_run=0
