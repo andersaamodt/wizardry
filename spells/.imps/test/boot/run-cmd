@@ -6,12 +6,12 @@ set -eu
 # Save the caller's PATH and temporarily use the system PATH for run_cmd's
 # internal operations (mktemp, mkdir, cat, rm, pwd). This ensures run_cmd
 # works even when tests intentionally set a restricted PATH.
-_saved_path=$PATH
-_saved_home=${HOME-}
+saved_path=$PATH
+saved_home=${HOME-}
 PATH=${WIZARDRY_SYSTEM_PATH:-$PATH}
 
-_stdout=$(mktemp "${WIZARDRY_TMPDIR}/stdout.XXXXXX") || exit 1
-_stderr=$(mktemp "${WIZARDRY_TMPDIR}/stderr.XXXXXX") || exit 1
+stdout=$(mktemp "${WIZARDRY_TMPDIR}/stdout.XXXXXX") || exit 1
+stderr=$(mktemp "${WIZARDRY_TMPDIR}/stderr.XXXXXX") || exit 1
 
 workdir=${RUN_CMD_WORKDIR:-$(pwd)}
 mkdir -p "$workdir"
@@ -22,7 +22,7 @@ homedir="$sandbox/home"
 mkdir -p "$tmpdir" "$homedir"
 
 # Restore the caller's PATH for use in the sandbox
-PATH=$_saved_path
+PATH=$saved_path
 
 if [ "${BWRAP_AVAILABLE:-0}" -eq 1 ]; then
   # Pass through test-related environment variables that tests commonly set
@@ -83,7 +83,7 @@ if [ "${BWRAP_AVAILABLE:-0}" -eq 1 ]; then
     set -- --unshare-user-try "$@"
   fi
 
-  if run-bwrap "$@" >"$_stdout" 2>"$_stderr"; then
+  if run-bwrap "$@" >"$stdout" 2>"$stderr"; then
     STATUS=0
   else
     STATUS=$?
@@ -117,7 +117,7 @@ elif [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
   # the default pattern $HOME/.spellbook (to avoid passing the outer home path)
   if [ -n "${SPELLBOOK_DIR-}" ]; then
     case "$SPELLBOOK_DIR" in
-      "$_saved_home"/.spellbook|"$_saved_home"/.spellbook/)
+      "$saved_home"/.spellbook|"$saved_home"/.spellbook/)
         # Default value - unset it so spell uses new $HOME/.spellbook
         unset SPELLBOOK_DIR
         ;;
@@ -128,7 +128,7 @@ elif [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
     esac
   fi
   
-  if (cd "$workdir" && run-macos-sandbox "$@" >"$_stdout" 2>"$_stderr"); then
+  if (cd "$workdir" && run-macos-sandbox "$@" >"$stdout" 2>"$stderr"); then
     STATUS=0
   else
     STATUS=$?
@@ -161,7 +161,7 @@ else
   # the default pattern $HOME/.spellbook (to avoid passing the outer home path)
   if [ -n "${SPELLBOOK_DIR-}" ]; then
     case "$SPELLBOOK_DIR" in
-      "$_saved_home"/.spellbook|"$_saved_home"/.spellbook/)
+      "$saved_home"/.spellbook|"$saved_home"/.spellbook/)
         # Default value - unset it so spell uses new $HOME/.spellbook
         unset SPELLBOOK_DIR
         ;;
@@ -172,7 +172,7 @@ else
     esac
   fi
   
-  if (cd "$workdir" && "$@" >"$_stdout" 2>"$_stderr"); then
+  if (cd "$workdir" && "$@" >"$stdout" 2>"$stderr"); then
     STATUS=0
   else
     STATUS=$?
@@ -185,11 +185,11 @@ PATH=${WIZARDRY_SYSTEM_PATH:-$PATH}
 # Write STATUS, OUTPUT, ERROR to files so parent shell can access them
 # Use mv instead of cat to avoid ARG_MAX issues with large output
 printf '%s' "$STATUS" > "${WIZARDRY_TMPDIR}/_test_status"
-mv "$_stdout" "${WIZARDRY_TMPDIR}/_test_output" 2>/dev/null || printf '' > "${WIZARDRY_TMPDIR}/_test_output"
-mv "$_stderr" "${WIZARDRY_TMPDIR}/_test_error" 2>/dev/null || printf '' > "${WIZARDRY_TMPDIR}/_test_error"
+mv "$stdout" "${WIZARDRY_TMPDIR}/_test_output" 2>/dev/null || printf '' > "${WIZARDRY_TMPDIR}/_test_output"
+mv "$stderr" "${WIZARDRY_TMPDIR}/_test_error" 2>/dev/null || printf '' > "${WIZARDRY_TMPDIR}/_test_error"
 rm -rf "$sandbox"
 
 # Restore caller's PATH before returning
-PATH=$_saved_path
+PATH=$saved_path
 
 

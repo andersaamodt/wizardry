@@ -1,0 +1,145 @@
+#!/bin/sh
+
+# Display character or file stats including life, mana, kills, and experience.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: stats [target]
+
+Display stats for the player's avatar or a specified target file/avatar.
+Shows life (HP), mana (MP), kills, and experience (XP).
+
+If no target is specified, displays stats for the current player's avatar.
+
+Example:
+  stats
+  stats other-avatar
+  stats treasure-chest
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+set -eu
+. env-clear
+
+# Load colors for output
+if command -v colors >/dev/null 2>&1; then
+  # shellcheck source=/dev/null
+  . colors
+else
+  RESET=""
+  RED=""
+  GREEN=""
+  BLUE=""
+  YELLOW=""
+  CYAN=""
+  PURPLE=""
+  BOLD=""
+fi
+
+# Determine target
+target=${1-}
+
+if [ -z "$target" ]; then
+  # Get player's avatar location from config
+  spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+  config_file="$spell_home/.mud"
+  
+  # Check if avatar is enabled
+  avatar_enabled=$(config-get "$config_file" "avatar-enabled" 2>/dev/null || printf '0')
+  
+  if [ "$avatar_enabled" != "1" ]; then
+    printf '%s\n' "stats: avatar system is not enabled. Enable it from the MUD menu." >&2
+    exit 1
+  fi
+  
+  # Get avatar location
+  avatar_path=$(config-get "$config_file" "avatar-path" 2>/dev/null || printf '')
+  
+  if [ -z "$avatar_path" ] || [ ! -e "$avatar_path" ]; then
+    printf '%s\n' "stats: avatar not found. Your avatar may need to be created." >&2
+    exit 1
+  fi
+  
+  target=$avatar_path
+  is_player=1
+else
+  # Specified target
+  if [ ! -e "$target" ]; then
+    printf '%s\n' "stats: target does not exist." >&2
+    exit 1
+  fi
+  is_player=0
+fi
+
+# Get stats
+life=$(get-life "$target")
+max_life=$(read-magic "$target" max_life 2>/dev/null || printf '0')
+case "$max_life" in
+  ''|*[!0-9]*) max_life=100 ;;
+esac
+
+mana=$(read-magic "$target" mana 2>/dev/null || printf '0')
+case "$mana" in
+  ''|*[!0-9]*) mana=0 ;;
+esac
+
+max_mana=$(read-magic "$target" max_mana 2>/dev/null || printf '0')
+case "$max_mana" in
+  ''|*[!0-9]*) max_mana=100 ;;
+esac
+
+kills=$(read-magic "$target" kills 2>/dev/null || printf '0')
+case "$kills" in
+  ''|*[!0-9]*) kills=0 ;;
+esac
+
+experience=$(read-magic "$target" experience 2>/dev/null || printf '0')
+case "$experience" in
+  ''|*[!0-9]*) experience=0 ;;
+esac
+
+dead=$(read-magic "$target" dead 2>/dev/null || printf '0')
+case "$dead" in
+  ''|*[!0-9]*) dead=0 ;;
+esac
+
+# Display stats in a colorful format
+target_name=$(basename "$target")
+
+printf '\n'
+printf '%s%s=== Stats for %s ===%s\n' "${CYAN}${BOLD}" "${RESET}" "$target_name" "${RESET}"
+printf '\n'
+
+# Life
+if [ "$dead" = "1" ]; then
+  printf '  %sLife:%s    %s%d%s / %d %s(DEAD)%s\n' "${BOLD}" "${RESET}" "${RED}${BOLD}" "$life" "${RESET}" "$max_life" "${RED}" "${RESET}"
+else
+  if [ "$life" -lt 20 ]; then
+    life_color="${RED}"
+  elif [ "$life" -lt 50 ]; then
+    life_color="${YELLOW}"
+  else
+    life_color="${GREEN}"
+  fi
+  printf '  %sLife:%s    %s%d%s / %d\n' "${BOLD}" "${RESET}" "${life_color}" "$life" "${RESET}" "$max_life"
+fi
+
+# Mana
+if [ "$mana" -lt 10 ]; then
+  mana_color="${RED}"
+elif [ "$mana" -lt 40 ]; then
+  mana_color="${YELLOW}"
+else
+  mana_color="${BLUE}"
+fi
+printf '  %sMana:%s    %s%d%s / %d\n' "${BOLD}" "${RESET}" "${mana_color}" "$mana" "${RESET}" "$max_mana"
+
+# Kills and Experience
+printf '  %sKills:%s   %s%d%s\n' "${BOLD}" "${RESET}" "${PURPLE}" "$kills" "${RESET}"
+printf '  %sXP:%s      %s%d%s\n' "${BOLD}" "${RESET}" "${CYAN}" "$experience" "${RESET}"
+
+printf '\n'

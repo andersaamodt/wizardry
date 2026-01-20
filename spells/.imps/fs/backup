@@ -4,18 +4,18 @@
 set -eu
 
 
-_bk_file=${1:-}
-_bk_suffix=${2:-.bak}
+bk_file=${1:-}
+bk_suffix=${2:-.bak}
 
-if [ -z "$_bk_file" ]; then
+if [ -z "$bk_file" ]; then
   printf '%s\n' "backup: file path required" >&2
   exit 1
 fi
 
-if [ ! -f "$_bk_file" ]; then
-  printf '%s\n' "backup: not a file: $_bk_file" >&2
+if [ ! -f "$bk_file" ]; then
+  printf '%s\n' "backup: not a file: $bk_file" >&2
   exit 1
 fi
 
-cp "$_bk_file" "${_bk_file}${_bk_suffix}" || exit 1
-printf '%s\n' "${_bk_file}${_bk_suffix}"
+cp "$bk_file" "${bk_file}${bk_suffix}" || exit 1
+printf '%s\n' "${bk_file}${bk_suffix}"

@@ -49,6 +49,7 @@ while true; do
   esac
   
   look="Look Around%look"
+  stats="View Stats%stats"
   home="Teleport Home%cd"
   jump="Teleport to Marker%jump-to-marker"
   portal="Teleport to Portal Chamber%cd $portal_location"
@@ -61,6 +62,7 @@ while true; do
 
   set -- \
     "$look" \
+    "$stats" \
     "$home" \
     "$jump" \
     "$portal" \

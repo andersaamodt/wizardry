@@ -24,25 +24,25 @@ USAGE
 esac
 
 # Uncastable pattern - ensures spell is sourced, not executed
-_colors_sourced=0
+colors_sourced=0
 if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
   case "${ZSH_EVAL_CONTEXT-}" in
-    *:file) _colors_sourced=1 ;;
+    *:file) colors_sourced=1 ;;
   esac
 else
-  _colors_base=${0##*/}
-  case "$_colors_base" in
-    sh|dash|bash|zsh|ksh|mksh) _colors_sourced=1 ;;
-    colors) _colors_sourced=0 ;;
-    *) _colors_sourced=1 ;;
+  colors_base=${0##*/}
+  case "$colors_base" in
+    sh|dash|bash|zsh|ksh|mksh) colors_sourced=1 ;;
+    colors) colors_sourced=0 ;;
+    *) colors_sourced=1 ;;
   esac
 fi
 
-if [ "$_colors_sourced" -eq 0 ]; then
+if [ "$colors_sourced" -eq 0 ]; then
   printf '%s\n' "This spell cannot be cast directly. Invoke it with: . colors" >&2
   return 1 2>/dev/null || exit 1
 fi
-unset _colors_sourced _colors_base
+unset colors_sourced colors_base
 
 colors() {
 # Note: No require-wizardry check here - colors must work standalone
@@ -185,7 +185,7 @@ try_disable_palette() {
                 . "$disable_palette_path"
         else
                 # Inline disable_palette logic for when it's not available
-                for _dp_name in \
+                for dp_name in \
                   RESET BLACK RED GREEN YELLOW BLUE PURPLE CYAN WHITE GREY \
                   BOLD ITALICS UNDERLINED BLINK INVERT STRIKE \
                   BRIGHT_BLACK BRIGHT_RED BRIGHT_GREEN BRIGHT_YELLOW \
@@ -199,8 +199,9 @@ try_disable_palette() {
                   THEME_WARNING THEME_ERROR THEME_HEADING THEME_DIVIDER \
                   MUD_LOCATION MUD_TITLE MUD_DESCRIPTION MUD_ITEM MUD_HANDLE MUD_SPELL MUD_MONSTER
                 do
-                  eval "$_dp_name=''"
+                  eval "$dp_name=''"
                 done
+                unset dp_name
                 WIZARDRY_COLORS_AVAILABLE=0
         fi
 }

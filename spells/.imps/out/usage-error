@@ -4,11 +4,11 @@
 set -eu
 
 
-_ue_name=${1:-}
-_ue_message=${2:-}
-if [ -n "$_ue_name" ]; then
-  printf '%s: %s\n' "$_ue_name" "${_ue_message:-usage error}" >&2
-elif [ -n "$_ue_message" ]; then
-  printf '%s\n' "$_ue_message" >&2
+ue_name=${1:-}
+ue_message=${2:-}
+if [ -n "$ue_name" ]; then
+  printf '%s: %s\n' "$ue_name" "${ue_message:-usage error}" >&2
+elif [ -n "$ue_message" ]; then
+  printf '%s\n' "$ue_message" >&2
 fi
 exit 2

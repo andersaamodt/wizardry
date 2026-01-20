@@ -3,13 +3,13 @@
 # Example: tmp=$(temp-file myapp) && trap 'cleanup-file "$tmp"' EXIT
 set -eu
 
-_tf_prefix=${1:-wizardry}
+tf_prefix=${1:-wizardry}
 # Prefer WIZARDRY_TMPDIR if set and exists, otherwise use TMPDIR or /tmp
 # This handles test environments where TMPDIR may point to sandbox dirs
 if [ -n "${WIZARDRY_TMPDIR-}" ] && [ -d "$WIZARDRY_TMPDIR" ]; then
-  mktemp "${WIZARDRY_TMPDIR}/${_tf_prefix}.XXXXXX"
+  mktemp "${WIZARDRY_TMPDIR}/${tf_prefix}.XXXXXX"
 elif [ -n "${TMPDIR-}" ] && [ -d "$TMPDIR" ]; then
-  mktemp "${TMPDIR}/${_tf_prefix}.XXXXXX"
+  mktemp "${TMPDIR}/${tf_prefix}.XXXXXX"
 else
-  mktemp "/tmp/${_tf_prefix}.XXXXXX"
+  mktemp "/tmp/${tf_prefix}.XXXXXX"
 fi

@@ -6,15 +6,15 @@
 set -eu
 
 # Read counter values from files
-_pass_count=$(cat "${WIZARDRY_TMPDIR}/_pass_count")
-_fail_count=$(cat "${WIZARDRY_TMPDIR}/_fail_count")
-_skip_count=$(cat "${WIZARDRY_TMPDIR}/_skip_count" 2>/dev/null || printf '0')
-_fail_detail_indices=$(cat "${WIZARDRY_TMPDIR}/_fail_detail_indices" 2>/dev/null || printf '')
+pass_count=$(cat "${WIZARDRY_TMPDIR}/_pass_count")
+fail_count=$(cat "${WIZARDRY_TMPDIR}/_fail_count")
+skip_count=$(cat "${WIZARDRY_TMPDIR}/_skip_count" 2>/dev/null || printf '0')
+fail_detail_indices=$(cat "${WIZARDRY_TMPDIR}/_fail_detail_indices" 2>/dev/null || printf '')
 
-total=$((_pass_count + _fail_count + _skip_count))
-test-summary "$_pass_count" "$total" "$_skip_count"
+total=$((pass_count + fail_count + skip_count))
+test-summary "$pass_count" "$total" "$skip_count"
 
-if [ "$_fail_count" -gt 0 ]; then
+if [ "$fail_count" -gt 0 ]; then
   # Print organized failure summary (improved output to show all failures)
   if [ "${WIZARDRY_TEST_BOTH_PATTERNS-}" = "1" ]; then
     # Dual-pattern mode: show failures by pattern
@@ -43,8 +43,8 @@ if [ "$_fail_count" -gt 0 ]; then
   fi
   
   # Print traditional failure detail indices (always show, fixes truncation)
-  if [ -n "${_fail_detail_indices-}" ]; then
-    printf '\nFAIL_DETAIL:%s\n' "$_fail_detail_indices"
+  if [ -n "${fail_detail_indices-}" ]; then
+    printf '\nFAIL_DETAIL:%s\n' "$fail_detail_indices"
   fi
   
   exit 1

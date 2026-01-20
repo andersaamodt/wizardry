@@ -16,9 +16,9 @@ done
 
 # Helper to initialize default synonyms in a temp spellbook
 init_default_synonyms() {
-  _spellbook_dir=$1
-  mkdir -p "$_spellbook_dir" 2>/dev/null || true
-  cat > "$_spellbook_dir/.default-synonyms" << 'SYNONYMS'
+  spellbook_dir=$1
+  mkdir -p "$spellbook_dir" 2>/dev/null || true
+  cat > "$spellbook_dir/.default-synonyms" << 'SYNONYMS'
 # Default synonyms for tests
 jump=jump-to-marker
 jump-to-location=jump-to-marker
@@ -153,7 +153,7 @@ test_command_ending_in_number() {
 
 test_parse_skips_functions() {
   # Save original WIZARDRY_DIR
-  _saved_wizdir="${WIZARDRY_DIR-}"
+  saved_wizdir="${WIZARDRY_DIR-}"
   
   tmpdir=$(make_tempdir)
   test_spell_dir="$tmpdir/wizardry/spells/test"
@@ -178,8 +178,8 @@ EOF
   run_sourced_spell "spells/.imps/lex/parse" "testspell"
   
   # Restore original WIZARDRY_DIR
-  if [ -n "$_saved_wizdir" ]; then
-    export WIZARDRY_DIR="$_saved_wizdir"
+  if [ -n "$saved_wizdir" ]; then
+    export WIZARDRY_DIR="$saved_wizdir"
   else
     unset WIZARDRY_DIR
   fi
@@ -194,7 +194,7 @@ EOF
 }
 test_parse_skips_builtins() {
   # Save original WIZARDRY_DIR  
-  _saved_wizdir="${WIZARDRY_DIR-}"
+  saved_wizdir="${WIZARDRY_DIR-}"
   
   tmpdir=$(make_tempdir)
   test_spell_dir="$tmpdir/wizardry/spells/test"
@@ -213,8 +213,8 @@ EOF
   run_sourced_spell "spells/.imps/lex/parse" "echo"
   
   # Restore original WIZARDRY_DIR
-  if [ -n "$_saved_wizdir" ]; then
-    export WIZARDRY_DIR="$_saved_wizdir"
+  if [ -n "$saved_wizdir" ]; then
+    export WIZARDRY_DIR="$saved_wizdir"
   else
     unset WIZARDRY_DIR
   fi
@@ -225,7 +225,7 @@ EOF
 
 test_parse_skips_numeric_args() {
   # Save original WIZARDRY_DIR
-  _saved_wizdir="${WIZARDRY_DIR-}"
+  saved_wizdir="${WIZARDRY_DIR-}"
   
   tmpdir=$(make_tempdir)
   test_spell_dir="$tmpdir/wizardry/spells/test"
@@ -244,8 +244,8 @@ EOF
   run_sourced_spell "spells/.imps/lex/parse" "banish" "5"
   
   # Restore original WIZARDRY_DIR
-  if [ -n "$_saved_wizdir" ]; then
-    export WIZARDRY_DIR="$_saved_wizdir"
+  if [ -n "$saved_wizdir" ]; then
+    export WIZARDRY_DIR="$saved_wizdir"
   else
     unset WIZARDRY_DIR
   fi
@@ -255,7 +255,7 @@ EOF
 }
 test_parse_skips_flags() {
   # Save original WIZARDRY_DIR
-  _saved_wizdir="${WIZARDRY_DIR-}"
+  saved_wizdir="${WIZARDRY_DIR-}"
   
   tmpdir=$(make_tempdir)
   test_spell_dir="$tmpdir/wizardry/spells/test"
@@ -274,8 +274,8 @@ EOF
   run_sourced_spell "spells/.imps/lex/parse" "myecho" "--flag" "arg"
   
   # Restore original WIZARDRY_DIR
-  if [ -n "$_saved_wizdir" ]; then
-    export WIZARDRY_DIR="$_saved_wizdir"
+  if [ -n "$saved_wizdir" ]; then
+    export WIZARDRY_DIR="$saved_wizdir"
   else
     unset WIZARDRY_DIR
   fi
@@ -285,7 +285,7 @@ EOF
 }
 test_parse_multiword_with_numeric() {
   # Save original WIZARDRY_DIR
-  _saved_wizdir="${WIZARDRY_DIR-}"
+  saved_wizdir="${WIZARDRY_DIR-}"
   
   tmpdir=$(make_tempdir)
   test_spell_dir="$tmpdir/wizardry/spells/test"
@@ -304,8 +304,8 @@ EOF
   run_sourced_spell "spells/.imps/lex/parse" "jump" "to" "5"
   
   # Restore original WIZARDRY_DIR
-  if [ -n "$_saved_wizdir" ]; then
-    export WIZARDRY_DIR="$_saved_wizdir"
+  if [ -n "$saved_wizdir" ]; then
+    export WIZARDRY_DIR="$saved_wizdir"
   else
     unset WIZARDRY_DIR
   fi
@@ -315,7 +315,7 @@ EOF
 }
 
 test_parse_building_skips_numeric_args() {
-  _saved_wizdir="${WIZARDRY_DIR-}"
+  saved_wizdir="${WIZARDRY_DIR-}"
   tmpdir=$(make_tempdir)
   test_spell_dir="$tmpdir/wizardry/spells/wards"
   mkdir -p "$test_spell_dir"
@@ -329,13 +329,13 @@ EOF
   export WIZARDRY_DIR="$tmpdir/wizardry"
   run_sourced_spell "spells/.imps/lex/parse" "banish" "5"
   
-  if [ -n "$_saved_wizdir" ]; then export WIZARDRY_DIR="$_saved_wizdir"; else unset WIZARDRY_DIR; fi
+  if [ -n "$saved_wizdir" ]; then export WIZARDRY_DIR="$saved_wizdir"; else unset WIZARDRY_DIR; fi
   
   assert_success || return 1
   assert_output_contains "banish executed with args: 5" || return 1
 }
 test_parse_doesnt_exec_functions() {
-  _saved_wizdir="${WIZARDRY_DIR-}"
+  saved_wizdir="${WIZARDRY_DIR-}"
   tmpdir=$(make_tempdir)
   test_spell_dir="$tmpdir/wizardry/spells/test"
   mkdir -p "$test_spell_dir"
@@ -356,7 +356,7 @@ EOF
   
   run_sourced_spell "spells/.imps/lex/parse" "mycommand"
   
-  if [ -n "$_saved_wizdir" ]; then export WIZARDRY_DIR="$_saved_wizdir"; else unset WIZARDRY_DIR; fi
+  if [ -n "$saved_wizdir" ]; then export WIZARDRY_DIR="$saved_wizdir"; else unset WIZARDRY_DIR; fi
   
   assert_success || return 1
   assert_output_contains "spell executed" || return 1
@@ -367,7 +367,7 @@ EOF
   fi
 }
 test_parse_posix_compliant() {
-  _saved_wizdir="${WIZARDRY_DIR-}"
+  saved_wizdir="${WIZARDRY_DIR-}"
   tmpdir=$(make_tempdir)
   test_spell_dir="$tmpdir/wizardry/spells/test"
   mkdir -p "$test_spell_dir"
@@ -384,13 +384,13 @@ EOF
   # Note: Can't actually unset builtins, but we can verify parse doesn't fail
   run_sourced_spell "spells/.imps/lex/parse" "test" "posix"
   
-  if [ -n "$_saved_wizdir" ]; then export WIZARDRY_DIR="$_saved_wizdir"; else unset WIZARDRY_DIR; fi
+  if [ -n "$saved_wizdir" ]; then export WIZARDRY_DIR="$saved_wizdir"; else unset WIZARDRY_DIR; fi
   
   assert_success || return 1
   assert_output_contains "POSIX compliance OK" || return 1
 }
 test_parse_building_skips_flags() {
-  _saved_wizdir="${WIZARDRY_DIR-}"
+  saved_wizdir="${WIZARDRY_DIR-}"
   tmpdir=$(make_tempdir)
   test_spell_dir="$tmpdir/wizardry/spells/test"
   mkdir -p "$test_spell_dir"
@@ -404,13 +404,13 @@ EOF
   export WIZARDRY_DIR="$tmpdir/wizardry"
   run_sourced_spell "spells/.imps/lex/parse" "myspell" "--verbose" "arg"
   
-  if [ -n "$_saved_wizdir" ]; then export WIZARDRY_DIR="$_saved_wizdir"; else unset WIZARDRY_DIR; fi
+  if [ -n "$saved_wizdir" ]; then export WIZARDRY_DIR="$saved_wizdir"; else unset WIZARDRY_DIR; fi
   
   assert_success || return 1
   assert_output_contains "myspell got: --verbose arg" || return 1
 }
 test_parse_multiword_with_number() {
-  _saved_wizdir="${WIZARDRY_DIR-}"
+  saved_wizdir="${WIZARDRY_DIR-}"
   tmpdir=$(make_tempdir)
   test_spell_dir="$tmpdir/wizardry/spells/arcane"
   mkdir -p "$test_spell_dir"
@@ -424,7 +424,7 @@ EOF
   export WIZARDRY_DIR="$tmpdir/wizardry"
   run_sourced_spell "spells/.imps/lex/parse" "leap" "to" "5"
   
-  if [ -n "$_saved_wizdir" ]; then export WIZARDRY_DIR="$_saved_wizdir"; else unset WIZARDRY_DIR; fi
+  if [ -n "$saved_wizdir" ]; then export WIZARDRY_DIR="$saved_wizdir"; else unset WIZARDRY_DIR; fi
   
   assert_success || return 1
   assert_output_contains "leap-to called with: 5" || return 1
@@ -442,7 +442,7 @@ test_jump_to_marker_no_args() {
   fi
   
   # Should give expected error (no markers set) or usage message
-  if ! printf '%s' "$OUTPUT" | grep -qE "(No markers|Usage:|cannot be cast directly)"; then
+  if ! printf '%s' "$OUTPUT" | grep -qE "(No markers?|Usage:|cannot be cast directly)"; then
     TEST_FAILURE_REASON="Unexpected output: $OUTPUT"
     return 1
   fi
@@ -471,7 +471,7 @@ test_jump_to_marker_with_spaces_no_args() {
   fi
   
   # Should give expected error (no markers set)
-  if ! printf '%s' "$OUTPUT" | grep -qE "(No markers|Usage:)"; then
+  if ! printf '%s' "$OUTPUT" | grep -qE "(No markers?|Usage:)"; then
     TEST_FAILURE_REASON="Unexpected output: $OUTPUT"
     return 1
   fi
@@ -508,7 +508,7 @@ test_jump_to_location_no_args() {
   fi
   
   # Should give expected error or usage
-  if ! printf '%s' "$OUTPUT" | grep -qE "(No markers|Usage:|cannot be cast directly)"; then
+  if ! printf '%s' "$OUTPUT" | grep -qE "(No markers?|Usage:|cannot be cast directly)"; then
     TEST_FAILURE_REASON="Unexpected output: $OUTPUT"
     return 1
   fi
@@ -531,7 +531,7 @@ test_user_typed_jump_to_marker_hyphenated() {
   fi
   
   # Should get valid output (either usage or "no markers" message)
-  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers|cannot be cast)"; then
+  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers?|cannot be cast)"; then
     TEST_FAILURE_REASON="FAIL: Unexpected output: $OUTPUT"
     return 1
   fi
@@ -565,7 +565,7 @@ test_user_typed_jump_to_marker_spaces() {
   fi
   
   # Should get valid output
-  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers)"; then
+  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers?)"; then
     TEST_FAILURE_REASON="FAIL: Unexpected output: $OUTPUT"
     return 1
   fi
@@ -632,7 +632,7 @@ test_user_typed_jump_to_location() {
   fi
   
   # Should get valid output
-  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers|cannot be cast)"; then
+  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers?|cannot be cast)"; then
     TEST_FAILURE_REASON="FAIL: Unexpected output: $OUTPUT"
     return 1
   fi
@@ -670,7 +670,7 @@ test_user_typed_jump_to_location_hyphenated() {
   fi
   
   # Should get valid output
-  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers|cannot be cast)"; then
+  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers?|cannot be cast)"; then
     TEST_FAILURE_REASON="FAIL: Unexpected output: $OUTPUT"
     return 1
   fi
@@ -707,7 +707,7 @@ test_user_typed_leap_to_location_spaces() {
     return 1
   fi
   
-  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers|cannot be cast)"; then
+  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers?|cannot be cast)"; then
     TEST_FAILURE_REASON="FAIL: Unexpected output: $OUTPUT"
     return 1
   fi
@@ -739,7 +739,7 @@ test_user_typed_warp() {
     return 1
   fi
   
-  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers|cannot be cast)"; then
+  if ! printf '%s' "$OUTPUT" | grep -qE "(Usage:|No markers?|cannot be cast)"; then
     TEST_FAILURE_REASON="FAIL: Unexpected output: $OUTPUT"
     return 1
   fi
@@ -812,7 +812,7 @@ run_test_case "USER LOG: warp" test_user_typed_warp
 # Bug 1: Single-word spell with single argument (like "prioritize mytask")
 # Bug 2: Multi-word spell with argument (like "magic missile target")
 test_single_word_spell_with_arg() {
-  _saved_wizdir="${WIZARDRY_DIR-}"
+  saved_wizdir="${WIZARDRY_DIR-}"
   
   # Create temp wizardry directory (compatible with doppelganger)
   tmpdir=$(make_tempdir)
@@ -851,7 +851,7 @@ EOF
   STATUS=$?
   
   # Restore
-  if [ -n "$_saved_wizdir" ]; then export WIZARDRY_DIR="$_saved_wizdir"; else unset WIZARDRY_DIR; fi
+  if [ -n "$saved_wizdir" ]; then export WIZARDRY_DIR="$saved_wizdir"; else unset WIZARDRY_DIR; fi
   
   if [ "$STATUS" -ne 0 ]; then
     TEST_FAILURE_REASON="Command failed with status $STATUS: $OUTPUT"
@@ -871,7 +871,7 @@ EOF
 }
 
 test_multiword_spell_with_arg() {
-  _saved_wizdir="${WIZARDRY_DIR-}"
+  saved_wizdir="${WIZARDRY_DIR-}"
   
   # Create temp wizardry directory (compatible with doppelganger)
   tmpdir=$(make_tempdir)
@@ -910,7 +910,7 @@ EOF
   STATUS=$?
   
   # Restore
-  if [ -n "$_saved_wizdir" ]; then export WIZARDRY_DIR="$_saved_wizdir"; else unset WIZARDRY_DIR; fi
+  if [ -n "$saved_wizdir" ]; then export WIZARDRY_DIR="$saved_wizdir"; else unset WIZARDRY_DIR; fi
   
   if [ "$STATUS" -ne 0 ]; then
     TEST_FAILURE_REASON="Command failed with status $STATUS: $OUTPUT"
@@ -930,7 +930,7 @@ EOF
 }
 
 test_longest_match_priority() {
-  _saved_wizdir="${WIZARDRY_DIR-}"
+  saved_wizdir="${WIZARDRY_DIR-}"
   
   # Create temp wizardry directory (compatible with doppelganger)
   tmpdir=$(make_tempdir)
@@ -975,7 +975,7 @@ EOF
   STATUS=$?
   
   # Restore
-  if [ -n "$_saved_wizdir" ]; then export WIZARDRY_DIR="$_saved_wizdir"; else unset WIZARDRY_DIR; fi
+  if [ -n "$saved_wizdir" ]; then export WIZARDRY_DIR="$saved_wizdir"; else unset WIZARDRY_DIR; fi
   
   if [ "$STATUS" -ne 0 ]; then
     TEST_FAILURE_REASON="Command failed with status $STATUS: $OUTPUT"
@@ -997,7 +997,7 @@ EOF
 test_custom_synonym_multiword() {
   # Test that custom multi-word synonyms work (issue: leap to location)
   # This specifically tests user-reported bug with custom synonym
-  _saved_wizdir="${WIZARDRY_DIR-}"
+  saved_wizdir="${WIZARDRY_DIR-}"
   
   # Create temp wizardry directory
   tmpdir=$(make_tempdir)
@@ -1039,7 +1039,7 @@ EOF
   STATUS=$?
   
   # Restore
-  if [ -n "$_saved_wizdir" ]; then export WIZARDRY_DIR="$_saved_wizdir"; else unset WIZARDRY_DIR; fi
+  if [ -n "$saved_wizdir" ]; then export WIZARDRY_DIR="$saved_wizdir"; else unset WIZARDRY_DIR; fi
   
   if [ "$STATUS" -ne 0 ]; then
     TEST_FAILURE_REASON="Command failed with status $STATUS: $OUTPUT"
@@ -1055,7 +1055,7 @@ EOF
 test_custom_synonym_uncastable() {
   # Test that custom synonyms to UNCASTABLE spells work (issue: leap to location with real jump-to-marker)
   # This tests that parse detects uncastable synonym targets and sources them
-  _saved_wizdir="${WIZARDRY_DIR-}"
+  saved_wizdir="${WIZARDRY_DIR-}"
   
   # Create temp wizardry directory
   tmpdir=$(make_tempdir)
@@ -1076,21 +1076,21 @@ test_custom_synonym_uncastable() {
   cat > "$test_spell_dir/jump-to-marker" <<'EOF'
 #!/bin/sh
 # Uncastable pattern - ensures spell is sourced, not executed
-_jump_sourced=0
+jump_sourced=0
 if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
   case "${ZSH_EVAL_CONTEXT-}" in
-    *:file) _jump_sourced=1 ;;
+    *:file) jump_sourced=1 ;;
   esac
 else
-  _jump_base=${0##*/}
-  case "$_jump_base" in
-    sh|dash|bash|zsh|ksh|mksh) _jump_sourced=1 ;;
-    jump-to-marker) _jump_sourced=0 ;;
-    *) _jump_sourced=1 ;;
+  jump_base=${0##*/}
+  case "$jump_base" in
+    sh|dash|bash|zsh|ksh|mksh) jump_sourced=1 ;;
+    jump-to-marker) jump_sourced=0 ;;
+    *) jump_sourced=1 ;;
   esac
 fi
 
-if [ "$_jump_sourced" -eq 0 ]; then
+if [ "$jump_sourced" -eq 0 ]; then
   printf '%s\n' "This spell cannot be cast directly. Invoke it with: jump to marker" >&2
   exit 1
 fi
@@ -1118,7 +1118,7 @@ EOF
   STATUS=$?
   
   # Restore
-  if [ -n "$_saved_wizdir" ]; then export WIZARDRY_DIR="$_saved_wizdir"; else unset WIZARDRY_DIR; fi
+  if [ -n "$saved_wizdir" ]; then export WIZARDRY_DIR="$saved_wizdir"; else unset WIZARDRY_DIR; fi
   
   if [ "$STATUS" -ne 0 ]; then
     TEST_FAILURE_REASON="Command failed with status $STATUS: $OUTPUT"

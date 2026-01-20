@@ -1,0 +1,58 @@
+#!/bin/sh
+
+# trigger-on-touch TOUCHER TOUCHED - Process on-touch triggers between toucher and touched
+
+set -eu
+
+toucher=${1-}
+touched=${2-}
+
+if [ -z "$toucher" ] || [ -z "$touched" ]; then
+  exit 1
+fi
+
+# Check for on_toucher effect on the toucher
+if [ -e "$toucher" ]; then
+  on_toucher=$(read-magic "$toucher" on_toucher 2>/dev/null || printf '')
+  if [ -n "$on_toucher" ]; then
+    # Parse effect (format: damage:4)
+    case "$on_toucher" in
+      damage:*)
+        damage_amount=${on_toucher#damage:}
+        # Deal damage to touched
+        if [ -e "$touched" ]; then
+          deal-damage "$touched" "$damage_amount" >/dev/null 2>&1 || true
+          printf 'Electrical energy arcs from you to %s!\n' "$(basename "$touched")"
+        fi
+        ;;
+    esac
+    # Remove the effect after use
+    # Try different attribute tools to remove the attribute
+    if command -v xattr >/dev/null 2>&1; then
+      xattr -d "user.on_toucher" "$toucher" 2>/dev/null || true
+    elif command -v attr >/dev/null 2>&1; then
+      attr -r "user.on_toucher" "$toucher" 2>/dev/null || true
+    elif command -v setfattr >/dev/null 2>&1; then
+      setfattr -x "user.on_toucher" "$toucher" 2>/dev/null || true
+    fi
+  fi
+fi
+
+# Check for on_touched effect on the touched object
+if [ -e "$touched" ]; then
+  on_touched=$(read-magic "$touched" on_touched 2>/dev/null || printf '')
+  if [ -n "$on_touched" ]; then
+    # Parse effect (format: portkey:path or other effects)
+    case "$on_touched" in
+      portkey:*)
+        dest_path=${on_touched#portkey:}
+        if [ -d "$dest_path" ]; then
+          printf 'The portkey activates!\n'
+          cd "$dest_path" || true
+        fi
+        ;;
+    esac
+  fi
+fi
+
+exit 0

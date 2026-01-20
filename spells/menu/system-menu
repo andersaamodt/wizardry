@@ -53,8 +53,8 @@ system_menu_display_menu() {
   fi
   set -- "$@" "$verify_posix" "$test_suite" "$profile_tests" "$uninstall_wizardry" "$exit_item"
 
-  menu "System Menu:" "$@" || _system_menu_status=$?
-  return "${_system_menu_status:-0}"
+  menu "System Menu:" "$@" || system_menu_status=$?
+  return "${system_menu_status:-0}"
 }
 
 # Catch Ctrl-C and TERM signal to exit 1 cleanly

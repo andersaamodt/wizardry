@@ -80,25 +80,25 @@ done
 
 # Helper function to run a test conditionally based on filter
 run_filtered_test() {
-  _test_name=$1
-  _test_desc=$2
-  _test_func=$3
+  test_name=$1
+  test_desc=$2
+  test_func=$3
   
   # If listing tests, just print the name
   if [ "$TEST_FILTER" = "--list" ]; then
-    printf '%s\n' "$_test_name"
+    printf '%s\n' "$test_name"
     return 0
   fi
   
   # If filtering by test name, only run matching test
   if [ -n "$TEST_FILTER" ]; then
-    case "$_test_name" in
-      *"$TEST_FILTER"*) run_test_case "$_test_desc" "$_test_func" ;;
+    case "$test_name" in
+      *"$TEST_FILTER"*) run_test_case "$test_desc" "$test_func" ;;
       *) return 0 ;;
     esac
   else
     # No filter, run all tests
-    run_test_case "$_test_desc" "$_test_func"
+    run_test_case "$test_desc" "$test_func"
   fi
 }
 
@@ -370,9 +370,15 @@ test_warn_full_paths_to_spells() {
 # --- Check: Test files mirror spell structure ---
 # Each test file should correspond to a spell
 # This is a structural check - maintains test suite integrity
+# This test checks for "extraneous" test files (tests without matching spells)
 
 test_test_files_have_matching_spells() {
   skip-if-compiled || return $?
+  
+  # This is a "common test" that can be skipped with --skip-common in test-magic
+  # When test-magic is run in parallel workflows, this test runs in only 1/6 workflows
+  # to avoid redundant checking across all parallel runs
+  
   orphan_tests=""
   
   find "$ROOT_DIR/.tests" -type f -name 'test-*.sh' -o -name 'common-*.sh' -print | while IFS= read -r test_file; do
@@ -1747,6 +1753,50 @@ test_no_mixed_case_variables() {
   return 0
 }
 
+# --- Check: No underscore-prefixed identifiers ---
+# Functions and variables with leading underscores are an anti-pattern.
+# They suggest "private/internal" but spells/imps shouldn't have functions.
+# Use imps for reusable code instead.
+
+test_no_underscore_identifiers() {
+  violations=""
+  
+  check_underscores() {
+    spell=$1
+    rel_path=${spell#"$ROOT_DIR/spells/"}
+    
+    # Search for function definitions with underscore prefixes
+    underscore_funcs=$(grep -nE '^[[:space:]]*_[a-zA-Z_][a-zA-Z0-9_]*\(\)' "$spell" 2>/dev/null || true)
+    
+    if [ -n "$underscore_funcs" ]; then
+      violations="${violations}${violations:+, }$rel_path (functions)"
+    fi
+    
+    # Search for underscore-prefixed loop variables
+    underscore_vars=$(grep -nE 'for _[a-zA-Z_][a-zA-Z0-9_]* in' "$spell" 2>/dev/null || true)
+    
+    if [ -n "$underscore_vars" ]; then
+      violations="${violations}${violations:+, }$rel_path (loop vars)"
+    fi
+    
+    # Search for underscore-prefixed variable assignments
+    underscore_assigns=$(grep -nE '^[[:space:]]*_[a-zA-Z_][a-zA-Z0-9_]*=' "$spell" 2>/dev/null | head -3 || true)
+    
+    if [ -n "$underscore_assigns" ]; then
+      violations="${violations}${violations:+, }$rel_path (assignments)"
+    fi
+  }
+  
+  for_each_posix_spell check_underscores
+  
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="underscore-prefixed identifiers found (use imps instead): $violations"
+    return 1
+  fi
+  
+  return 0
+}
+
 # --- Warning Check: No parent directory references /../ outside cd commands ---
 # Spells should use proper path resolution (cd with pwd -P) instead of bare /../
 # references in path strings. This prevents fragile path construction.
@@ -1924,6 +1974,7 @@ run_test_case "spells have limited flags" test_spells_have_limited_flags
 run_test_case "spells have limited positional arguments" test_spells_have_limited_positional_args
 run_test_case "no all-caps variable assignments" test_no_allcaps_variable_assignments
 run_test_case "no mixed-case variables" test_no_mixed_case_variables
+run_test_case "no underscore-prefixed identifiers" test_no_underscore_identifiers
 run_test_case "scripts have set -eu early" test_scripts_have_set_eu_early
 run_test_case "spells source env-clear after set -eu" test_spells_source_env_clear_after_set_eu
 run_test_case "warn about parent directory references" test_warn_parent_dir_references
@@ -2487,7 +2538,7 @@ test_spells_do_not_source_by_path() {
 # Test that all sourced-only spells use the standardized uncastable pattern
 test_uncastable_pattern_is_standardized() {
   # List of spells that must be sourced (not executed)
-  _sourced_spells="
+  sourced_spells="
     spells/arcane/jump-trash
     spells/translocation/jump-to-marker
     spells/cantrips/colors
@@ -2497,61 +2548,61 @@ test_uncastable_pattern_is_standardized() {
     spells/.imps/sys/invoke-wizardry
   "
   
-  for _spell in $_sourced_spells; do
-    _spell_path="$ROOT_DIR/$_spell"
+  for _spell in $sourced_spells; do
+    spell_path="$ROOT_DIR/$_spell"
     
     # Check that the spell exists
-    if [ ! -f "$_spell_path" ]; then
+    if [ ! -f "$spell_path" ]; then
       TEST_FAILURE_REASON="Sourced-only spell not found: $_spell"
       return 1
     fi
     
     # Check that the spell has the "# Uncastable pattern" comment
-    if ! grep -q "^# Uncastable pattern" "$_spell_path"; then
+    if ! grep -q "^# Uncastable pattern" "$spell_path"; then
       TEST_FAILURE_REASON="Spell missing '# Uncastable pattern' comment: $_spell"
       return 1
     fi
     
     # Extract the uncastable pattern block (from comment to unset line)
-    _pattern=$(sed -n '/^# Uncastable pattern/,/^unset.*_sourced.*_base/p' "$_spell_path")
+    pattern=$(sed -n '/^# Uncastable pattern/,/^unset.*_sourced.*_base/p' "$spell_path")
     
-    if [ -z "$_pattern" ]; then
+    if [ -z "$pattern" ]; then
       TEST_FAILURE_REASON="Could not extract uncastable pattern from: $_spell"
       return 1
     fi
     
     # Verify the pattern contains the expected components
-    if ! printf '%s\n' "$_pattern" | grep -q "_sourced=0"; then
+    if ! printf '%s\n' "$pattern" | grep -q "_sourced=0"; then
       TEST_FAILURE_REASON="Pattern missing '_sourced=0' initialization in: $_spell"
       return 1
     fi
     
-    if ! printf '%s\n' "$_pattern" | grep -q 'ZSH_VERSION'; then
+    if ! printf '%s\n' "$pattern" | grep -q 'ZSH_VERSION'; then
       TEST_FAILURE_REASON="Pattern missing ZSH_VERSION check in: $_spell"
       return 1
     fi
     
-    if ! printf '%s\n' "$_pattern" | grep -q 'ZSH_EVAL_CONTEXT'; then
+    if ! printf '%s\n' "$pattern" | grep -q 'ZSH_EVAL_CONTEXT'; then
       TEST_FAILURE_REASON="Pattern missing ZSH_EVAL_CONTEXT check in: $_spell"
       return 1
     fi
     
-    if ! printf '%s\n' "$_pattern" | grep -q 'sh|dash|bash|zsh|ksh|mksh'; then
+    if ! printf '%s\n' "$pattern" | grep -q 'sh|dash|bash|zsh|ksh|mksh'; then
       TEST_FAILURE_REASON="Pattern missing shell detection in: $_spell"
       return 1
     fi
     
-    if ! printf '%s\n' "$_pattern" | grep -q 'This spell cannot be cast directly'; then
+    if ! printf '%s\n' "$pattern" | grep -q 'This spell cannot be cast directly'; then
       TEST_FAILURE_REASON="Pattern missing error message in: $_spell"
       return 1
     fi
     
-    if ! printf '%s\n' "$_pattern" | grep -q 'return 1 2>/dev/null || exit 1'; then
+    if ! printf '%s\n' "$pattern" | grep -q 'return 1 2>/dev/null || exit 1'; then
       TEST_FAILURE_REASON="Pattern missing safe return/exit in: $_spell"
       return 1
     fi
     
-    if ! printf '%s\n' "$_pattern" | grep -q 'unset.*_sourced.*_base'; then
+    if ! printf '%s\n' "$pattern" | grep -q 'unset.*_sourced.*_base'; then
       TEST_FAILURE_REASON="Pattern missing cleanup (unset) in: $_spell"
       return 1
     fi

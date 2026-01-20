@@ -10,9 +10,9 @@ func=$2
 spell_path=${3-}
 
 # Increment subtest number for this test case (no globals - read from file, pass as arg)
-_test_index=$(cat "${WIZARDRY_TMPDIR}/_test_index")
-_test_index=$((_test_index + 1))
-printf '%s' "$_test_index" > "${WIZARDRY_TMPDIR}/_test_index"
+test_index=$(cat "${WIZARDRY_TMPDIR}/_test_index")
+test_index=$((_test_index + 1))
+printf '%s' "$test_index" > "${WIZARDRY_TMPDIR}/_test_index"
 
 # Check if we should filter this test (skip if not in filter list)
 # NOTE: Subtest filtering is currently not working reliably
@@ -21,7 +21,7 @@ printf '%s' "$_test_index" > "${WIZARDRY_TMPDIR}/_test_index"
 # if [ -n "${WIZARDRY_TEST_FILTER-}" ]; then
 #   should_run=0
 #   for filter_num in $WIZARDRY_TEST_FILTER; do
-#     if [ "$filter_num" = "$_test_index" ]; then
+#     if [ "$filter_num" = "$test_index" ]; then
 #       should_run=1
 #       break
 #     fi
@@ -35,13 +35,13 @@ printf '%s' "$_test_index" > "${WIZARDRY_TMPDIR}/_test_index"
 # Direct execution (fast, sufficient for most testing)
 # Run the test function and capture its exit status
 if "$func"; then
-  report-result "$_test_index" "$desc" 0
+  report-result "$test_index" "$desc" 0
 else
   status=$?
   # Set default failure reason if not already set by assertions
   TEST_FAILURE_REASON=${TEST_FAILURE_REASON-test function failed}
   export TEST_FAILURE_REASON
-  report-result "$_test_index" "$desc" "$status"
+  report-result "$test_index" "$desc" "$status"
 fi
 
 

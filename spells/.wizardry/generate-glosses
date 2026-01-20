@@ -98,9 +98,9 @@ parse_enabled=1
 mud_config_file="$spell_home/.mud"
 if [ -f "$mud_config_file" ]; then
   # Read parse-enabled setting from config file
-  _parse_setting=$(grep '^parse-enabled=' "$mud_config_file" 2>/dev/null | cut -d= -f2)
-  if [ -n "$_parse_setting" ]; then
-    parse_enabled=$_parse_setting
+  parse_setting=$(grep '^parse-enabled=' "$mud_config_file" 2>/dev/null | cut -d= -f2)
+  if [ -n "$parse_setting" ]; then
+    parse_enabled=$parse_setting
   fi
 fi
 
@@ -142,12 +142,12 @@ emit_line ""
 # Check if a first word is blacklisted
 # Returns 0 if allowed, 1 if blacklisted
 is_first_word_blacklisted() {
-  _check_word=$1
+  check_word=$1
   
   # CRITICAL: Skip shell builtins and common system commands to avoid overriding them
   # GREYLIST: Some shell builtins CAN be safely overridden if ALL spells using that first word
   # are multi-word commands (e.g., test-spell).
-  case "$_check_word" in
+  case "$check_word" in
     # GREYLIST: Shell builtins that CAN be safely overridden (see above)
     test)
       return 0  # Allow test (used in test-spell, etc.)
@@ -173,11 +173,11 @@ uname|uniq|wc|xargs|xattr)
 
 # Check if a spell name is in the uncastable list
 # Returns 0 if uncastable, 1 if not
-# Uses pre-computed _uncastable_spells list (must be set before calling)
+# Uses pre-computed uncastable_spells list (must be set before calling)
 is_spell_uncastable() {
-  _spell_check=$1
-  case "$_uncastable_spells" in
-    *" $_spell_check "*) return 0 ;;
+  spell_check=$1
+  case "$uncastable_spells" in
+    *" $spell_check "*) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -186,89 +186,97 @@ is_spell_uncastable() {
 # This is the standard first-word gloss implementation used throughout
 # Args: $1 = first word (e.g., "jump", "leap")
 emit_first_word_gloss() {
-  _emit_first_word=$1
+  emit_first_word=$1
   
-  emit_line "# First-word gloss for commands starting with '$_emit_first_word'"
-  emit_line "${_emit_first_word}() {"
+  emit_line "# First-word gloss for commands starting with '$emit_first_word'"
+  emit_line "${emit_first_word}() {"
   emit_line "  # Count command words (non-flag, non-numeric args from the beginning)"
-  emit_line "  _fw_cmd_word_count=0"
-  emit_line "  for _fw_arg in \"\$@\"; do"
-  emit_line "    case \"\$_fw_arg\" in"
+  emit_line "  fw_cmd_word_count=0"
+  emit_line "  for fw_arg in \"\$@\"; do"
+  emit_line "    case \"\$fw_arg\" in"
   emit_line "      -*) break ;;  # Flag - stop counting"
-  emit_line "      *[!0-9]*) _fw_cmd_word_count=\$((_fw_cmd_word_count + 1)) ;;  # Command word"
+  emit_line "      *[!0-9]*) fw_cmd_word_count=\$((fw_cmd_word_count + 1)) ;;  # Command word"
   emit_line "      *) break ;;  # Pure numeric - stop counting"
   emit_line "    esac"
   emit_line "  done"
   emit_line "  "
-  emit_line "  _fw_spell_home=\${SPELLBOOK_DIR:-\${HOME:-.}/.spellbook}"
+  emit_line "  fw_spell_home=\${SPELLBOOK_DIR:-\${HOME:-.}/.spellbook}"
   emit_line "  "
   emit_line "  # Try progressively longer combinations (from max down to 0)"
   emit_line "  # This matches parse's algorithm: try longest first, then work down"
-  emit_line "  _fw_attempt_len=\$_fw_cmd_word_count"
-  emit_line "  while [ \$_fw_attempt_len -ge 0 ]; do"
+  emit_line "  fw_attempt_len=\$fw_cmd_word_count"
+  emit_line "  while [ \$fw_attempt_len -ge 0 ]; do"
   emit_line "    # Build candidate name from first N words"
-  emit_line "    _fw_candidate=\"$_emit_first_word\""
-  emit_line "    _fw_i=0"
-  emit_line "    for _fw_arg in \"\$@\"; do"
-  emit_line "      case \"\$_fw_arg\" in"
+  emit_line "    fw_candidate=\"$emit_first_word\""
+  emit_line "    fw_i=0"
+  emit_line "    for fw_arg in \"\$@\"; do"
+  emit_line "      case \"\$fw_arg\" in"
   emit_line "        -*) break ;;  # Flag - stop"
   emit_line "        *[!0-9]*) ;;  # Command word - use it"
   emit_line "        *) break ;;  # Pure numeric - stop"
   emit_line "      esac"
   emit_line "      "
-  emit_line "      if [ \$_fw_i -ge \$_fw_attempt_len ]; then"
+  emit_line "      if [ \$fw_i -ge \$fw_attempt_len ]; then"
   emit_line "        break"
   emit_line "      fi"
-  emit_line "      _fw_candidate=\"\${_fw_candidate}-\${_fw_arg}\""
-  emit_line "      _fw_i=\$((_fw_i + 1))"
+  emit_line "      fw_candidate=\"\${fw_candidate}-\${fw_arg}\""
+  emit_line "      fw_i=\$((fw_i + 1))"
   emit_line "    done"
   emit_line "    "
   emit_line "    # Check if this candidate exists as an uncastable spell"
-  emit_line "    for _fw_dir in \"\$WIZARDRY_DIR\"/spells/*/; do"
-  emit_line "      _fw_path=\"\${_fw_dir}\${_fw_candidate}\""
-  emit_line "      if [ -f \"\$_fw_path\" ] && grep -q \"^# Uncastable pattern\" \"\$_fw_path\" 2>/dev/null; then"
+  emit_line "    for fw_dir in \"\$WIZARDRY_DIR\"/spells/*/; do"
+  emit_line "      fw_path=\"\${fw_dir}\${fw_candidate}\""
+  emit_line "      if [ -f \"\$fw_path\" ] && grep -q \"^# Uncastable pattern\" \"\$fw_path\" 2>/dev/null; then"
   emit_line "        # Found uncastable spell - source it with remaining args"
-  emit_line "        shift \"\$_fw_attempt_len\""
-  emit_line "        . \"\$_fw_path\""
+  emit_line "        fw_n=0"
+  emit_line "        while [ \$fw_n -lt \$fw_attempt_len ]; do"
+  emit_line "          [ \$# -gt 0 ] && shift"
+  emit_line "          fw_n=\$((fw_n + 1))"
+  emit_line "        done"
+  emit_line "        . \"\$fw_path\""
   emit_line "        return \$?"
   emit_line "      fi"
   emit_line "    done"
   emit_line "    "
   emit_line "    # Check if candidate is a synonym pointing to uncastable spell"
-  emit_line "    _fw_syn_target=\"\""
-  emit_line "    if [ -f \"\$_fw_spell_home/.synonyms\" ]; then"
-  emit_line "      _fw_syn_target=\$(grep \"^\${_fw_candidate}=\" \"\$_fw_spell_home/.synonyms\" 2>/dev/null | sed 's/^[^=]*=//' || true)"
+  emit_line "    fw_syn_target=\"\""
+  emit_line "    if [ -f \"\$fw_spell_home/.synonyms\" ]; then"
+  emit_line "      fw_syn_target=\$(grep \"^\${fw_candidate}=\" \"\$fw_spell_home/.synonyms\" 2>/dev/null | sed 's/^[^=]*=//' || true)"
   emit_line "    fi"
-  emit_line "    if [ -z \"\$_fw_syn_target\" ] && [ -f \"\$_fw_spell_home/.default-synonyms\" ]; then"
-  emit_line "      _fw_syn_target=\$(grep \"^\${_fw_candidate}=\" \"\$_fw_spell_home/.default-synonyms\" 2>/dev/null | sed 's/^[^=]*=//' || true)"
+  emit_line "    if [ -z \"\$fw_syn_target\" ] && [ -f \"\$fw_spell_home/.default-synonyms\" ]; then"
+  emit_line "      fw_syn_target=\$(grep \"^\${fw_candidate}=\" \"\$fw_spell_home/.default-synonyms\" 2>/dev/null | sed 's/^[^=]*=//' || true)"
   emit_line "    fi"
-  emit_line "    if [ -n \"\$_fw_syn_target\" ]; then"
+  emit_line "    if [ -n \"\$fw_syn_target\" ]; then"
   emit_line "      # Check if synonym target is uncastable"
-  emit_line "      for _fw_dir in \"\$WIZARDRY_DIR\"/spells/*/; do"
-  emit_line "        _fw_path=\"\${_fw_dir}\${_fw_syn_target}\""
-  emit_line "        if [ -f \"\$_fw_path\" ] && grep -q \"^# Uncastable pattern\" \"\$_fw_path\" 2>/dev/null; then"
+  emit_line "      for fw_dir in \"\$WIZARDRY_DIR\"/spells/*/; do"
+  emit_line "        fw_path=\"\${fw_dir}\${fw_syn_target}\""
+  emit_line "        if [ -f \"\$fw_path\" ] && grep -q \"^# Uncastable pattern\" \"\$fw_path\" 2>/dev/null; then"
   emit_line "          # Synonym target is uncastable - source it"
-  emit_line "          shift \"\$_fw_attempt_len\""
-  emit_line "          . \"\$_fw_path\""
+  emit_line "          fw_n=0"
+  emit_line "          while [ \$fw_n -lt \$fw_attempt_len ]; do"
+  emit_line "            [ \$# -gt 0 ] && shift"
+  emit_line "            fw_n=\$((fw_n + 1))"
+  emit_line "          done"
+  emit_line "          . \"\$fw_path\""
   emit_line "          return \$?"
   emit_line "        fi"
   emit_line "      done"
   emit_line "    fi"
   emit_line "    "
   emit_line "    # Try next shorter combination"
-  emit_line "    _fw_attempt_len=\$((_fw_attempt_len - 1))"
+  emit_line "    fw_attempt_len=\$((fw_attempt_len - 1))"
   emit_line "  done"
   emit_line "  "
   emit_line "  # No uncastable spell found - source parse to handle castable spells"
   emit_line "  # Sourcing preserves shell context for uncastable spells found via synonyms"
   emit_line "  # We need to set up arguments for parse since sourcing doesn't support passing args"
-  emit_line "  set -- \"$_emit_first_word\" \"\$@\""
+  emit_line "  set -- \"$emit_first_word\" \"\$@\""
   emit_line "  if command -v parse >/dev/null 2>&1; then"
   emit_line "    . parse"
   emit_line "  elif [ -f \"\${WIZARDRY_DIR:-./.wizardry}/spells/.imps/lex/parse\" ]; then"
   emit_line "    . \"\${WIZARDRY_DIR:-./.wizardry}/spells/.imps/lex/parse\""
   emit_line "  else"
-  emit_line "    printf '%s\\n' \"$_emit_first_word: parse command not found\" >&2"
+  emit_line "    printf '%s\\n' \"$emit_first_word: parse command not found\" >&2"
   emit_line "    return 127 2>/dev/null || exit 127"
   emit_line "  fi"
   emit_line "}"
@@ -290,8 +298,8 @@ emit_first_word_gloss() {
 
 # First pass: Build spell name list with find + parameter expansion
 # Use mktemp for bootstrap compatibility
-_tmpfile=$(mktemp "${TMPDIR:-/tmp}/generate-glosses.XXXXXX")
-trap 'rm -f "$_tmpfile"' EXIT HUP INT TERM
+tmpfile=$(mktemp "${TMPDIR:-/tmp}/generate-glosses.XXXXXX")
+trap 'rm -f "$tmpfile"' EXIT HUP INT TERM
 
 # Use find without -perm checks (which hang on macOS/CI)
 # Just find all files and filter executable ones
@@ -307,30 +315,30 @@ trap 'rm -f "$_tmpfile"' EXIT HUP INT TERM
       [ -x "$f" ] && printf '%s\n' "$f"
     done
   fi
-} > "$_tmpfile" || true
+} > "$tmpfile" || true
 
-_spell_names=""
-_spell_count=0
+spell_names=""
+spell_count=0
 
 # Read file paths and extract basenames efficiently
 while IFS= read -r spell_path; do
   # Use parameter expansion instead of basename (100x faster)
-  _name=${spell_path##*/}
+  name=${spell_path##*/}
   
   # Skip invalid names and parse
-  case "$_name" in
+  case "$name" in
     ''|.*|parse) continue ;;
   esac
   
   # Add to space-separated list
-  _spell_names="$_spell_names $_name"
-  _spell_count=$((_spell_count + 1))
-done < "$_tmpfile"
+  spell_names="$spell_names $name"
+  spell_count=$((spell_count + 1))
+done < "$tmpfile"
 
-[ "$quiet" -eq 0 ] && printf 'generate-glosses: Found %d executable files\n' "$_spell_count" >&2
+[ "$quiet" -eq 0 ] && printf 'generate-glosses: Found %d executable files\n' "$spell_count" >&2
 
 # Warn if no files found
-if [ "$_spell_count" -eq 0 ]; then
+if [ "$spell_count" -eq 0 ]; then
   printf 'generate-glosses: WARNING: no executable files found in %s\n' "$wizardry_dir/spells" >&2
 fi
 
@@ -338,15 +346,15 @@ fi
 # This is much faster than grepping each file individually (405 greps → 1 grep)
 # Use xargs to avoid "Argument list too long" error
 [ "$quiet" -eq 0 ] && printf 'generate-glosses: Scanning for uncastable spells...\n' >&2
-_uncastable_spells=" "  # Space-separated list
-if _uncastable_files=$(cat "$_tmpfile" | xargs grep -l "^# Uncastable pattern" 2>/dev/null); then
-  for _uc_path in $_uncastable_files; do
-    _uc_name=${_uc_path##*/}
-    _uncastable_spells="$_uncastable_spells$_uc_name "
+uncastable_spells=" "  # Space-separated list
+if uncastable_files=$(cat "$tmpfile" | xargs grep -l "^# Uncastable pattern" 2>/dev/null); then
+  for uc_path in $uncastable_files; do
+    uc_name=${uc_path##*/}
+    uncastable_spells="$uncastable_spells$uc_name "
   done
 fi
 
-[ "$quiet" -eq 0 ] && printf 'generate-glosses: Found %d uncastable spells\n' "$(printf '%s' "$_uncastable_spells" | tr ' ' '\n' | grep -c .)" >&2
+[ "$quiet" -eq 0 ] && printf 'generate-glosses: Found %d uncastable spells\n' "$(printf '%s' "$uncastable_spells" | tr ' ' '\n' | grep -c .)" >&2
 
 # Emit comment
 emit_line "# ============================================================================"
@@ -366,42 +374,42 @@ emit_line ""
 # OPTIMIZATION: Generate first-word glosses in batched mode
 # Use in-memory tracking instead of temp file + grep
 # Pattern: " word1 word2 word3 " (leading and trailing spaces ensure exact match)
-_first_words_seen=" "  # Track with space-separated list (space prefix for matching)
+first_words_seen=" "  # Track with space-separated list (space prefix for matching)
 
 if [ "$parse_enabled" -eq 1 ]; then
-  for spell_name in $_spell_names; do
+  for spell_name in $spell_names; do
     # Extract first word using parameter expansion (faster than sed)
     case "$spell_name" in
       *-*)
         # Multi-word spell - extract first word
-        _first_word=${spell_name%%-*}
+        first_word=${spell_name%%-*}
         ;;
       *)
         # Single-word spell - use the spell name itself as the first word
-        _first_word=$spell_name
+        first_word=$spell_name
         ;;
     esac
     
     # Check if first word is blacklisted
-    if ! is_first_word_blacklisted "$_first_word"; then
+    if ! is_first_word_blacklisted "$first_word"; then
       if [ "$quiet" -eq 0 ]; then
         warn_msg="Skipping spell \"$spell_name\" - first word"
-        warn_msg="$warn_msg \"$_first_word\" conflicts with system command"
+        warn_msg="$warn_msg \"$first_word\" conflicts with system command"
         printf 'generate-glosses: WARNING: %s\n' "$warn_msg" >&2
       fi
       continue
     fi
     
     # Check if already generated (in-memory check, no subprocess)
-    case "$_first_words_seen" in
-      *" $_first_word "*) continue ;;
+    case "$first_words_seen" in
+      *" $first_word "*) continue ;;
     esac
     
     # Mark as seen
-    _first_words_seen="$_first_words_seen$_first_word "
+    first_words_seen="$first_words_seen$first_word "
     
     # Emit first-word gloss function using helper
-    emit_first_word_gloss "$_first_word"
+    emit_first_word_gloss "$first_word"
     
     total_first_word_glosses=$((total_first_word_glosses + 1))
   done
@@ -415,7 +423,7 @@ fi
 # (e.g., jump-to-marker → jump to marker) so they route through first-word gloss
 # which can properly source the spell instead of executing it
 
-for spell_name in $_spell_names; do
+for spell_name in $spell_names; do
   # Only process hyphenated spell names
   case "$spell_name" in
     *-*) ;;
@@ -425,8 +433,8 @@ for spell_name in $_spell_names; do
   # Check if spell is in uncastable list (fast in-memory check)
   if is_spell_uncastable "$spell_name"; then
     # Convert hyphens to spaces (e.g., jump-to-marker → jump to marker)
-    _alias_target=$(printf '%s' "$spell_name" | sed 's/-/ /g')
-    emit_line "alias $spell_name='$_alias_target'"
+    alias_target=$(printf '%s' "$spell_name" | sed 's/-/ /g')
+    emit_line "alias $spell_name='$alias_target'"
   fi
 done
 emit_line ""
@@ -449,24 +457,24 @@ emit_line ""
 
 # Helper function to check if a synonym word is valid
 is_synonym_valid() {
-  _syn_word=$1
+  syn_word=$1
   
   # Check for invalid characters
-  case "$_syn_word" in
+  case "$syn_word" in
     ''|*[/\ \	\'\"\$\`\\\|\&\;\(\)\<\>\*\?\[\]]*|-*|.*|[0-9]*)
       return 1
       ;;
   esac
   
   # Check if it's a shell keyword
-  case "$_syn_word" in
+  case "$syn_word" in
     if|then|else|elif|fi|case|esac|for|while|until|do|done|in|function|time)
       return 1
       ;;
   esac
   
   # Check if blacklisted (same as first-word blacklist)
-  case "$_syn_word" in
+  case "$syn_word" in
     alias|banish|bg|bind|builtin|cd|command|compgen|compopt|declare|\
 disable|enable|false|fc|fg|getopts|hash|jobs|kill|let|newgrp|pwd|read|\
 readonly|set|sh|times|trap|true|type|ulimit|umask|unalias|wait|\
@@ -485,10 +493,10 @@ uname|uniq|wc|xargs|xattr)
 }
 
 # Track seen synonyms to avoid duplicates
-_synonyms_seen=" "
+synonyms_seen=" "
 
 # Track synonym words for first-word gloss generation
-_synonym_words=""
+synonym_words=""
 
 # Process user synonyms
 synonym_file="$spell_home/.synonyms"
@@ -506,70 +514,70 @@ if [ -f "$synonym_file" ]; then
       continue
     fi
     
-    _word=$(printf '%s' "$line" | sed 's/=.*//')
-    _target=$(printf '%s' "$line" | sed 's/^[^=]*=//')
+    word=$(printf '%s' "$line" | sed 's/=.*//')
+    target=$(printf '%s' "$line" | sed 's/^[^=]*=//')
     
     # Validate synonym word
-    if ! is_synonym_valid "$_word"; then
-      [ "$quiet" -eq 0 ] && warn "Invalid synonym: $_word" >&2
+    if ! is_synonym_valid "$word"; then
+      [ "$quiet" -eq 0 ] && warn "Invalid synonym: $word" >&2
       continue
     fi
     
     # Check for duplicates
-    case "$_synonyms_seen" in
-      *" $_word "*) 
-        [ "$quiet" -eq 0 ] && warn "Skipping duplicate synonym: $_word" >&2
+    case "$synonyms_seen" in
+      *" $word "*) 
+        [ "$quiet" -eq 0 ] && warn "Skipping duplicate synonym: $word" >&2
         continue
         ;;
     esac
     
     # Mark as seen
-    _synonyms_seen="$_synonyms_seen$_word "
+    synonyms_seen="$synonyms_seen$word "
     
     # Add to synonym words list for first-word gloss generation
-    _synonym_words="$_synonym_words $_word"
+    synonym_words="$synonym_words $word"
     
     # Generate aliases for hyphenated synonyms, functions for non-hyphenated (if no conflict)
-    case "$_word" in
+    case "$word" in
       *-*)
         # Hyphenated synonym - must use alias (POSIX limitation)
         # For hyphenated targets, convert hyphens to spaces for first-word gloss routing
-        case "$_target" in
+        case "$target" in
           *-*)
             # Convert hyphens to spaces ONLY in spell name, not in directory path
             # E.g., "translocation/jump-to-marker" → "translocation/jump to marker"
             #       "jump-to-marker" → "jump to marker"
-            case "$_target" in
+            case "$target" in
               */*)
                 # Has directory prefix - preserve it
-                _dir_prefix="${_target%/*}/"
-                _spell_part="${_target##*/}"
-                _alias_target="$_dir_prefix$(printf '%s' "$_spell_part" | sed 's/-/ /g')"
+                dir_prefix="${target%/*}/"
+                spell_part="${target##*/}"
+                alias_target="$dir_prefix$(printf '%s' "$spell_part" | sed 's/-/ /g')"
                 ;;
               *)
                 # No directory - convert all hyphens
-                _alias_target=$(printf '%s' "$_target" | sed 's/-/ /g')
+                alias_target=$(printf '%s' "$target" | sed 's/-/ /g')
                 ;;
             esac
-            emit_line "alias $_word='$_alias_target'"
+            emit_line "alias $word='$alias_target'"
             ;;
           *)
             # Single-word target, use as-is
-            emit_line "alias $_word='$_target'"
+            emit_line "alias $word='$target'"
             ;;
         esac
         ;;
       *)
         # Non-hyphenated synonym - check if it conflicts with first-word gloss
-        case "$_first_words_seen" in
-          *" $_word "*)
+        case "$first_words_seen" in
+          *" $word "*)
             # Conflicts with first-word gloss - skip (gloss will handle via parse)
-            [ "$quiet" -eq 0 ] && info "Synonym '$_word' handled by first-word gloss" >&2
+            [ "$quiet" -eq 0 ] && info "Synonym '$word' handled by first-word gloss" >&2
             ;;
           *)
             # No conflict - generate function for direct invocation
             # For hyphenated targets, use the hyphenated form directly (it will have an alias)
-            emit_line "$_word() { $_target \"\$@\"; }"
+            emit_line "$word() { $target \"\$@\"; }"
             ;;
         esac
         ;;
@@ -579,7 +587,7 @@ fi
 
 # Process default synonyms
 default_synonym_file="$spell_home/.default-synonyms"
-_default_synonym_errors=0
+default_synonym_errors=0
 if [ -f "$default_synonym_file" ]; then
   [ "$quiet" -eq 0 ] && info "Processing default synonyms..." >&2
   while IFS= read -r line || [ -n "$line" ]; do
@@ -594,71 +602,71 @@ if [ -f "$default_synonym_file" ]; then
       continue
     fi
     
-    _word=$(printf '%s' "$line" | sed 's/=.*//')
-    _target=$(printf '%s' "$line" | sed 's/^[^=]*=//')
+    word=$(printf '%s' "$line" | sed 's/=.*//')
+    target=$(printf '%s' "$line" | sed 's/^[^=]*=//')
     
     # Validate synonym word
-    if ! is_synonym_valid "$_word"; then
-      printf '%s\n' "ERROR: invalid default synonym: $_word" >&2
-      _default_synonym_errors=$((_default_synonym_errors + 1))
+    if ! is_synonym_valid "$word"; then
+      printf '%s\n' "ERROR: invalid default synonym: $word" >&2
+      default_synonym_errors=$((default_synonym_errors + 1))
       continue
     fi
     
     # Check for duplicates (user synonyms take precedence)
-    case "$_synonyms_seen" in
-      *" $_word "*) 
-        [ "$quiet" -eq 0 ] && info "User synonym overrides default: $_word" >&2
+    case "$synonyms_seen" in
+      *" $word "*) 
+        [ "$quiet" -eq 0 ] && info "User synonym overrides default: $word" >&2
         continue
         ;;
     esac
     
     # Mark as seen
-    _synonyms_seen="$_synonyms_seen$_word "
+    synonyms_seen="$synonyms_seen$word "
     
     # Add to synonym words list for first-word gloss generation
-    _synonym_words="$_synonym_words $_word"
+    synonym_words="$synonym_words $word"
     
     # Generate aliases for hyphenated synonyms, functions for non-hyphenated (if no conflict)
-    case "$_word" in
+    case "$word" in
       *-*)
         # Hyphenated synonym - must use alias (POSIX limitation)
         # For hyphenated targets, convert hyphens to spaces for first-word gloss routing
-        case "$_target" in
+        case "$target" in
           *-*)
             # Convert hyphens to spaces ONLY in spell name, not in directory path
             # E.g., "translocation/jump-to-marker" → "translocation/jump to marker"
             #       "jump-to-marker" → "jump to marker"
-            case "$_target" in
+            case "$target" in
               */*)
                 # Has directory prefix - preserve it
-                _dir_prefix="${_target%/*}/"
-                _spell_part="${_target##*/}"
-                _alias_target="$_dir_prefix$(printf '%s' "$_spell_part" | sed 's/-/ /g')"
+                dir_prefix="${target%/*}/"
+                spell_part="${target##*/}"
+                alias_target="$dir_prefix$(printf '%s' "$spell_part" | sed 's/-/ /g')"
                 ;;
               *)
                 # No directory - convert all hyphens
-                _alias_target=$(printf '%s' "$_target" | sed 's/-/ /g')
+                alias_target=$(printf '%s' "$target" | sed 's/-/ /g')
                 ;;
             esac
-            emit_line "alias $_word='$_alias_target'"
+            emit_line "alias $word='$alias_target'"
             ;;
           *)
             # Single-word target, use as-is
-            emit_line "alias $_word='$_target'"
+            emit_line "alias $word='$target'"
             ;;
         esac
         ;;
       *)
         # Non-hyphenated synonym - check if it conflicts with first-word gloss
-        case "$_first_words_seen" in
-          *" $_word "*)
+        case "$first_words_seen" in
+          *" $word "*)
             # Conflicts with first-word gloss - skip (gloss will handle via parse)
-            [ "$quiet" -eq 0 ] && info "Synonym '$_word' handled by first-word gloss" >&2
+            [ "$quiet" -eq 0 ] && info "Synonym '$word' handled by first-word gloss" >&2
             ;;
           *)
             # No conflict - generate function for direct invocation
             # For hyphenated targets, use the hyphenated form directly (it will have an alias)
-            emit_line "$_word() { $_target \"\$@\"; }"
+            emit_line "$word() { $target \"\$@\"; }"
             ;;
         esac
         ;;
@@ -667,8 +675,8 @@ if [ -f "$default_synonym_file" ]; then
   
   # Exit with error if invalid default synonyms were found
   # This catches configuration errors at development time
-  if [ "$_default_synonym_errors" -gt 0 ]; then
-    printf 'generate-glosses: Found %d invalid default synonym(s)\n' "$_default_synonym_errors" >&2
+  if [ "$default_synonym_errors" -gt 0 ]; then
+    printf 'generate-glosses: Found %d invalid default synonym(s)\n' "$default_synonym_errors" >&2
     exit 1
   fi
   
@@ -682,7 +690,7 @@ fi
 # This ensures that "leap to location" works just like "jump to marker" works
 # ============================================================================
 
-if [ "$parse_enabled" -eq 1 ] && [ -n "$_synonym_words" ]; then
+if [ "$parse_enabled" -eq 1 ] && [ -n "$synonym_words" ]; then
   emit_line "# ============================================================================"
   emit_line "# FIRST-WORD GLOSSES FROM SYNONYMS"
   emit_line "# ============================================================================"
@@ -690,7 +698,7 @@ if [ "$parse_enabled" -eq 1 ] && [ -n "$_synonym_words" ]; then
   emit_line "# ============================================================================"
   emit_line ""
   
-  for syn_word in $_synonym_words; do
+  for syn_word in $synonym_words; do
     # Only process hyphenated synonym names
     case "$syn_word" in
       *-*) ;;
@@ -698,25 +706,25 @@ if [ "$parse_enabled" -eq 1 ] && [ -n "$_synonym_words" ]; then
     esac
     
     # Extract first word
-    _first_word=${syn_word%%-*}
+    first_word=${syn_word%%-*}
     
     # Check if first word is blacklisted - skip if it is
     # NOTE: is_first_word_blacklisted returns 0 if ALLOWED, 1 if BLACKLISTED
     # So we negate to skip when blacklisted (returns 1, negated to 0/success)
-    if ! is_first_word_blacklisted "$_first_word"; then
+    if ! is_first_word_blacklisted "$first_word"; then
       continue
     fi
     
     # Check if already generated (from real spells or earlier synonyms)
-    case "$_first_words_seen" in
-      *" $_first_word "*) continue ;;
+    case "$first_words_seen" in
+      *" $first_word "*) continue ;;
     esac
     
     # Mark as seen
-    _first_words_seen="$_first_words_seen$_first_word "
+    first_words_seen="$first_words_seen$first_word "
     
     # Emit first-word gloss function using helper
-    emit_first_word_gloss "$_first_word"
+    emit_first_word_gloss "$first_word"
     
     total_first_word_glosses=$((total_first_word_glosses + 1))
   done
@@ -729,7 +737,7 @@ fi
 if [ "$quiet" -eq 0 ]; then
   printf 'generate-glosses: Gloss generation complete\n' >&2
   printf 'generate-glosses:   First-word glosses: %d\n' "$total_first_word_glosses" >&2
-  printf 'generate-glosses:   Total spells/imps: %d\n' "$_spell_count" >&2
+  printf 'generate-glosses:   Total spells/imps: %d\n' "$spell_count" >&2
 fi
 
 exit 0

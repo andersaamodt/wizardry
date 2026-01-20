@@ -7,7 +7,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: toggle-touch-hook
 
-Toggle the planned touch hook on or off. When enabled it will fire actions when you touch a portkey or other special file; for now the toggle only updates $MUD_DIR/config.
+Toggle the touch hook that triggers on-touch effects when you touch files. When enabled, touching a portkey will activate it, and shocking-grasp will deal damage to touched files.
 USAGE
   exit 0
   ;;
@@ -18,19 +18,11 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-MUD_CONFIG="$SCRIPT_DIR/mud-config"
-
-if [ ! -x "$MUD_CONFIG" ]; then
-        printf '%s\n' "Error: mud-config not found at '$MUD_CONFIG'." >&2
-        return 1
-fi
-
 # Toggle the feature and report state
-new_state=$("$MUD_CONFIG" toggle touch-hook)
+new_state=$("$WIZARDRY_DIR"/spells/.arcana/mud/mud-config toggle touch-hook)
 
 if [ "$new_state" = "1" ]; then
-        printf '%s\n' "✓ Touch hook enabled (planned feature)."
+  printf '%s\n' "✓ Touch hook enabled. Restart your shell or run 'invoke-wizardry' to activate."
 else
-        printf '%s\n' "✓ Touch hook disabled."
+  printf '%s\n' "✓ Touch hook disabled."
 fi

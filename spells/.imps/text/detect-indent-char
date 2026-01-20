@@ -4,19 +4,19 @@
 set -eu
 
 
-_dic_file=${1-}
+dic_file=${1-}
 
-if [ -z "$_dic_file" ] || [ ! -f "$_dic_file" ]; then
+if [ -z "$dic_file" ] || [ ! -f "$dic_file" ]; then
   printf 'space\n'
   exit 0
 fi
 
-_dic_tabs=0
-_dic_spaces=0
-_dic_tabs=$(grep -c '^	' "$_dic_file" 2>/dev/null) || _dic_tabs=0
-_dic_spaces=$(grep -c '^  ' "$_dic_file" 2>/dev/null) || _dic_spaces=0
+dic_tabs=0
+dic_spaces=0
+dic_tabs=$(grep -c '^	' "$dic_file" 2>/dev/null) || dic_tabs=0
+dic_spaces=$(grep -c '^  ' "$dic_file" 2>/dev/null) || dic_spaces=0
 
-if [ "$_dic_tabs" -gt "$_dic_spaces" ]; then
+if [ "$dic_tabs" -gt "$dic_spaces" ]; then
   printf 'tab\n'
 else
   printf 'space\n'
