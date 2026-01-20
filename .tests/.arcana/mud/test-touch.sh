@@ -10,11 +10,9 @@ test_touch_wrapper_exists() {
 }
 
 test_touch_can_be_sourced() {
-  # Touch wrapper should be sourceable
-  (
-    . "$test_root/spells/.arcana/mud/touch" 2>/dev/null
-    assert_success
-  )
+  # Touch wrapper should be sourceable without error
+  run_cmd sh -c '. '"$ROOT_DIR"'/spells/.arcana/mud/touch 2>/dev/null'
+  assert_success
 }
 
 run_test_case "touch wrapper exists" test_touch_wrapper_exists

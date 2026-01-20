@@ -19,7 +19,7 @@ esac
 
 # Uncastable pattern - ensures spell is sourced, not executed
 touch_sourced=0
-if [ -n "${ZSH_VERSION+x}" ]; then
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
   case "${ZSH_EVAL_CONTEXT-}" in
     *:file) touch_sourced=1 ;;
   esac
@@ -34,7 +34,7 @@ fi
 
 if [ "$touch_sourced" -eq 0 ]; then
   printf '%s\n' "This spell cannot be cast directly. Invoke it with: . touch" >&2
-  return 1 2>/dev/null || exit 1
+  return 1 2>/dev/null || exit 999
 fi
 unset touch_sourced touch_base
 
