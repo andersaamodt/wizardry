@@ -61,6 +61,7 @@ is_feature_enabled() {
 loop_limit=${MENU_LOOP_LIMIT:-}
 first_run=1
 start_selection=1
+last_selection=1  # Track what was selected last time
 
 # Track toggle states: 1=parse, 2=mud-menu, 3=CD hook, 4=avatar, 5=touch, 6=all
 was_parse=0
@@ -88,7 +89,7 @@ while true; do
       fi
     done
 
-    # Count how many features changed - if all changed, it was toggle-all
+    # Count how many features changed
     changes=0
     if [ "$was_parse" != "$now_parse" ]; then changes=$((changes + 1)); fi
     if [ "$was_mud_menu" != "$now_mud_menu" ]; then changes=$((changes + 1)); fi
@@ -96,8 +97,9 @@ while true; do
     if [ "$was_avatar" != "$now_avatar" ]; then changes=$((changes + 1)); fi
     if [ "$was_touch" != "$now_touch" ]; then changes=$((changes + 1)); fi
     
-    # If all 5 features changed, it was toggle-all - keep selection on item 6
-    if [ "$changes" -ge 5 ]; then
+    # If last selection was toggle-all (item 6), keep it there regardless of changes
+    # This handles both "Enable all" and "Disable all" cases
+    if [ "$last_selection" -eq 6 ]; then
       start_selection=6
     elif [ "$was_parse" != "$now_parse" ]; then
       start_selection=1
@@ -192,8 +194,19 @@ while true; do
   exit_item="${exit_label}%kill -TERM \$PPID"
 
   set -- "$parse_toggle" "$mud_menu" "$cd_hook" "$avatar" "$touch_hook" "$toggle_all" "$tor" "$exit_item"
-  menu --start-selection "$start_selection" "MUD Install:" "$@" || menu_status=$?
+  selection=$(menu --start-selection "$start_selection" "MUD Install:" "$@") || menu_status=$?
   menu_status=${menu_status:-0}
+  
+  # Track which item was selected for next iteration
+  case "$selection" in
+    *toggle-parse*) last_selection=1 ;;
+    *toggle-mud-menu*) last_selection=2 ;;
+    *toggle-cd*) last_selection=3 ;;
+    *toggle-avatar*) last_selection=4 ;;
+    *toggle-touch-hook*) last_selection=5 ;;
+    *toggle-all-mud*) last_selection=6 ;;
+    *) last_selection="$start_selection" ;;
+  esac
   
   # ESC kills this menu script via TERM signal (same as Exit button)
   # Direct kill: kill -TERM $$ → kills this script

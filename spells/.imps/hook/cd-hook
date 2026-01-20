@@ -6,11 +6,17 @@ set -eu
 
 # Check if cd-look is enabled via config file (cd-look=1)
 config_file="${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud"
-if [ -f "$config_file" ] && grep -q "^cd-look=1$" "$config_file" 2>/dev/null; then
-    command -v look >/dev/null 2>&1 && look 2>/dev/null || true
+if [ -f "$config_file" ]; then
+    cd_look_value=$(grep "^cd-look=" "$config_file" 2>/dev/null | cut -d= -f2- || printf '')
+    if [ "$cd_look_value" = "1" ]; then
+        command -v look >/dev/null 2>&1 && look 2>/dev/null || true
+    fi
 fi
 
 # Move avatar if avatar system is enabled
-if [ -f "$config_file" ] && grep -q "^avatar=1$" "$config_file" 2>/dev/null; then
-    command -v move-avatar >/dev/null 2>&1 && move-avatar 2>/dev/null || true
+if [ -f "$config_file" ]; then
+    avatar_value=$(grep "^avatar=" "$config_file" 2>/dev/null | cut -d= -f2- || printf '')
+    if [ "$avatar_value" = "1" ]; then
+        command -v move-avatar >/dev/null 2>&1 && move-avatar 2>/dev/null || true
+    fi
 fi
