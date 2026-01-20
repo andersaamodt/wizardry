@@ -74,7 +74,7 @@ if [ -z "$target" ]; then
       target=$character_file
       is_player=1
     else
-      printf '%s\n' "stats: avatar system is not enabled. Enable it from the MUD menu." >&2
+      printf '%s\n' "stats: no character file found. Create one first." >&2
       exit 1
     fi
   fi

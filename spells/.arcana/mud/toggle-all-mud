@@ -21,8 +21,8 @@ if ! command -v mud-config >/dev/null 2>&1; then
         exit 1
 fi
 
-# List of config-based features (not including CD hook which is a shell hook)
-FEATURES="parse-enabled mud-enabled avatar touch-hook"
+# List of config-based features
+FEATURES="parse-enabled mud-enabled avatar touch-hook cd-look"
 
 # Determine action based on arguments or current state
 action=""
