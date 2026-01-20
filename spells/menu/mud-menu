@@ -16,13 +16,6 @@ esac
 set -eu
 . env-clear
 
-# Verify required MUD commands are available
-if ! command -v mud-config >/dev/null 2>&1; then
-  printf '%s\n' "mud-menu: mud-config command not found" >&2
-  printf '%s\n' "Please ensure invoke-wizardry has been called in your shell." >&2
-  exit 1
-fi
-
 # Catch Ctrl-C and TERM signal to exit 1 cleanly
 trap 'exit 0' INT TERM
 
@@ -61,14 +54,17 @@ is_feature_enabled() {
   [ "$value" = "1" ]
 }
 
-# Check if cd hook is enabled
+# Check if cd hook is enabled (uses separate config file for historical reasons)
 is_cd_hook_enabled() {
-  # Use mud-config to check cd-look feature (defaults to disabled)
-  if ! command -v mud-config >/dev/null 2>&1; then
+  spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+  cd_config="$spell_home/.mud/config"
+  
+  if [ ! -f "$cd_config" ]; then
     return 1
   fi
   
-  value=$(mud-config get "cd-look" 2>/dev/null) || value=""
+  # Check if cd-look=1 is set
+  value=$(config-get "$cd_config" "cd-look" 2>/dev/null || printf '0')
   [ "$value" = "1" ]
 }
 
@@ -101,9 +97,6 @@ while true; do
         break
       fi
     done
-    if ! is_cd_hook_enabled; then
-      now_all=0
-    fi
 
     if [ "$was_parse" != "$now_parse" ]; then
       start_selection=1
@@ -139,9 +132,6 @@ while true; do
       break
     fi
   done
-  if ! is_cd_hook_enabled; then
-    was_all=0
-  fi
 
   # Build menu entries based on current state
   # Build parse toggle
@@ -187,9 +177,6 @@ while true; do
       break
     fi
   done
-  if ! is_cd_hook_enabled; then
-    all_enabled=0
-  fi
   
   if [ "$all_enabled" -eq 1 ]; then
     toggle_all="Disable all MUD features%toggle-all-mud --disable"
