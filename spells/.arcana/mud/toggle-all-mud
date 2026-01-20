@@ -23,7 +23,7 @@ MUD_CONFIG="$SCRIPT_DIR/mud-config"
 
 if [ ! -x "$MUD_CONFIG" ]; then
         printf '%s\n' "Error: mud-config not found at '$MUD_CONFIG'." >&2
-        return 1
+        exit 1
 fi
 
 # List of config-based features (not including CD hook which is a shell hook)
