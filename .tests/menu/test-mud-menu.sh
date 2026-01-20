@@ -85,6 +85,22 @@ SH
   chmod +x "$tmp/check-command-not-found-hook"
 }
 
+make_stub_config_get() {
+  tmp=$1
+  expected_value=${2:-0}
+  cat >"$tmp/config-get" <<SH
+#!/bin/sh
+# Stub for config-get - returns $expected_value for cd-look
+if [ "\$2" = "cd-look" ]; then
+  printf '%s\n' "$expected_value"
+  exit 0
+fi
+printf '0\n'
+exit 0
+SH
+  chmod +x "$tmp/config-get"
+}
+
 make_failing_menu() {
   tmp=$1
   cat >"$tmp/menu" <<'SH'
@@ -239,6 +255,7 @@ SH
   make_stub_check_cd_hook "$tmp"
   make_stub_mud_config "$tmp"
   make_stub_check_command_not_found_hook "$tmp"
+  make_stub_config_get "$tmp" "0"  # cd-look disabled
   
   # Set up empty spellbook (no cd-look config)
   spellbook_dir="$tmp/spellbook"
@@ -283,6 +300,7 @@ SH
   make_stub_check_cd_hook "$tmp"
   make_stub_mud_config "$tmp"
   make_stub_check_command_not_found_hook "$tmp"
+  make_stub_config_get "$tmp" "1"  # cd-look enabled
   
   # Set up config file with cd-look enabled (new config-based approach)
   spellbook_dir="$tmp/spellbook"
@@ -337,6 +355,7 @@ SH
   make_stub_check_cd_hook "$tmp"
   make_stub_mud_config "$tmp"
   make_stub_check_command_not_found_hook "$tmp"
+  make_stub_config_get "$tmp" "0"  # cd-look disabled
   
   rc_file="$tmp/rc"
   : >"$rc_file"
@@ -380,6 +399,7 @@ SH
   make_stub_check_cd_hook "$tmp"
   make_stub_mud_config "$tmp"
   make_stub_check_command_not_found_hook "$tmp"
+  make_stub_config_get "$tmp" "0"  # cd-look disabled
   
   rc_file="$tmp/rc"
   : >"$rc_file"
