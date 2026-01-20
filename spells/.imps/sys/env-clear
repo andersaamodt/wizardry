@@ -124,8 +124,10 @@ for env_var in $(env | cut -d= -f1); do
 done
 
 # Restore essential variables (unconditionally - even if empty)
-export PATH="${saved_path}"
-export HOME="${saved_home}"
+PATH="${saved_path}"
+HOME="${saved_home}"
+export PATH
+export HOME
 export USER="$saved_user"
 export SHELL="$saved_shell"
 export TERM="$saved_term"
