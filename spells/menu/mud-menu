@@ -59,81 +59,9 @@ is_feature_enabled() {
 }
 
 loop_limit=${MENU_LOOP_LIMIT:-}
-first_run=1
 start_selection=1
-last_selection=1  # Track what was selected last time
-
-# Track toggle states: 1=parse, 2=mud-menu, 3=CD hook, 4=avatar, 5=touch, 6=all
-was_parse=0
-was_mud_menu=0
-was_cd=0
-was_avatar=0
-was_touch=0
-was_all=0
 
 while true; do
-  if [ "$first_run" -eq 0 ]; then
-    # Check which toggle changed and keep cursor there
-    if is_feature_enabled "parse-enabled"; then now_parse=1; else now_parse=0; fi
-    if is_feature_enabled "mud-enabled"; then now_mud_menu=1; else now_mud_menu=0; fi
-    if is_feature_enabled "cd-look"; then now_cd=1; else now_cd=0; fi
-    if is_feature_enabled "avatar"; then now_avatar=1; else now_avatar=0; fi
-    if is_feature_enabled "touch-hook"; then now_touch=1; else now_touch=0; fi
-    
-    # Check if all features are enabled (including cd-look)
-    now_all=1
-    for feature in parse-enabled mud-enabled avatar touch-hook cd-look; do
-      if ! is_feature_enabled "$feature"; then
-        now_all=0
-        break
-      fi
-    done
-
-    # Count how many features changed
-    changes=0
-    if [ "$was_parse" != "$now_parse" ]; then changes=$((changes + 1)); fi
-    if [ "$was_mud_menu" != "$now_mud_menu" ]; then changes=$((changes + 1)); fi
-    if [ "$was_cd" != "$now_cd" ]; then changes=$((changes + 1)); fi
-    if [ "$was_avatar" != "$now_avatar" ]; then changes=$((changes + 1)); fi
-    if [ "$was_touch" != "$now_touch" ]; then changes=$((changes + 1)); fi
-    
-    # If last selection was toggle-all (item 6), keep it there regardless of changes
-    # This handles both "Enable all" and "Disable all" cases
-    if [ "$last_selection" -eq 6 ]; then
-      start_selection=6
-    elif [ "$was_parse" != "$now_parse" ]; then
-      start_selection=1
-    elif [ "$was_mud_menu" != "$now_mud_menu" ]; then
-      start_selection=2
-    elif [ "$was_cd" != "$now_cd" ]; then
-      start_selection=3
-    elif [ "$was_avatar" != "$now_avatar" ]; then
-      start_selection=4
-    elif [ "$was_touch" != "$now_touch" ]; then
-      start_selection=5
-    else
-      # No change detected, keep current selection
-      : # do nothing, start_selection stays as is
-    fi
-  else
-    first_run=0
-  fi
-
-  # Save toggle states before displaying menu (for comparison on next iteration)
-  if is_feature_enabled "parse-enabled"; then was_parse=1; else was_parse=0; fi
-  if is_feature_enabled "mud-enabled"; then was_mud_menu=1; else was_mud_menu=0; fi
-  if is_feature_enabled "cd-look"; then was_cd=1; else was_cd=0; fi
-  if is_feature_enabled "avatar"; then was_avatar=1; else was_avatar=0; fi
-  if is_feature_enabled "touch-hook"; then was_touch=1; else was_touch=0; fi
-  
-  # Check if all features are enabled (including cd-look)
-  was_all=1
-  for feature in parse-enabled mud-enabled avatar touch-hook cd-look; do
-    if ! is_feature_enabled "$feature"; then
-      was_all=0
-      break
-    fi
-  done
 
   # Build menu entries based on current state
   
@@ -197,15 +125,16 @@ while true; do
   selection=$(menu --start-selection "$start_selection" "MUD Install:" "$@") || menu_status=$?
   menu_status=${menu_status:-0}
   
-  # Track which item was selected for next iteration
+  # Remember which item was selected for next iteration
+  # This ensures cursor stays on the selected toggle after activating it
   case "$selection" in
-    *toggle-parse*) last_selection=1 ;;
-    *toggle-mud-menu*) last_selection=2 ;;
-    *toggle-cd*) last_selection=3 ;;
-    *toggle-avatar*) last_selection=4 ;;
-    *toggle-touch-hook*) last_selection=5 ;;
-    *toggle-all-mud*) last_selection=6 ;;
-    *) last_selection="$start_selection" ;;
+    *toggle-parse*) start_selection=1 ;;
+    *toggle-mud-menu*) start_selection=2 ;;
+    *toggle-cd*) start_selection=3 ;;
+    *toggle-avatar*) start_selection=4 ;;
+    *toggle-touch-hook*) start_selection=5 ;;
+    *toggle-all-mud*) start_selection=6 ;;
+    *) start_selection=1 ;;  # Non-toggle actions reset to first item
   esac
   
   # ESC kills this menu script via TERM signal (same as Exit button)
