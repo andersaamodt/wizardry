@@ -63,6 +63,9 @@ test_help() {
 test_stats_no_avatar() {
   tmpdir=$(make_tempdir)
   export SPELLBOOK_DIR="$tmpdir/custom-spellbook"
+  mkdir -p "$SPELLBOOK_DIR/.mud"
+  # Create config with avatar disabled
+  printf 'avatar=0\n' > "$SPELLBOOK_DIR/.mud/config"
   
   run_spell "spells/mud/stats"
   assert_failure && assert_error_contains "not enabled"
@@ -75,14 +78,14 @@ test_stats_display() {
   
   create_xattr_stub "$stub_dir"
   
-  # Set up config
-  mkdir -p "$SPELLBOOK_DIR"
-  printf 'avatar-enabled=1\n' > "$SPELLBOOK_DIR/.mud"
+  # Set up config with avatar enabled
+  mkdir -p "$SPELLBOOK_DIR/.mud"
+  printf 'avatar=1\n' > "$SPELLBOOK_DIR/.mud/config"
   
   # Create avatar
   avatar_path="$tmpdir/.avatar-test"
   mkdir -p "$avatar_path"
-  printf 'avatar-path=%s\n' "$avatar_path" >> "$SPELLBOOK_DIR/.mud"
+  printf 'avatar-path=%s\n' "$avatar_path" >> "$SPELLBOOK_DIR/.mud/config"
   
   # Build PATH
   export PATH="$stub_dir:$ROOT_DIR/spells/mud:$ROOT_DIR/spells/arcane:$ROOT_DIR/spells/enchant:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/mud:$PATH"
