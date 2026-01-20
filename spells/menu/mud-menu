@@ -41,15 +41,16 @@ is_feature_enabled() {
     parse-enabled) default_enabled=1 ;;
   esac
   
-  mud_config_path=$(command -v mud-config 2>/dev/null)
-  if [ -z "$mud_config_path" ] || [ ! -x "$mud_config_path" ]; then
+  # Use full path to mud-config
+  mud_config_path="$arcana_mud_dir/mud-config"
+  if [ ! -x "$mud_config_path" ]; then
     # mud-config not available, use default
     [ "$default_enabled" -eq 1 ]
     return $?
   fi
   
   # Get the value, using default if key doesn't exist
-  value=$(mud-config get "$feature" 2>/dev/null) || value=""
+  value=$("$mud_config_path" get "$feature" 2>/dev/null) || value=""
   if [ -z "$value" ]; then
     [ "$default_enabled" -eq 1 ]
     return $?
