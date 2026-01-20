@@ -455,8 +455,8 @@ SH
   
   # Use a temp spellbook dir that doesn't have the cd hook installed
   spellbook_dir="$tmp/spellbook"
-  mkdir -p "$spellbook_dir/.mud"
-  : >"$spellbook_dir/.mud/config"
+  mkdir -p "$spellbook_dir"
+  : >"$spellbook_dir/.mud"
   
   # Menu stub that simulates CD hook toggle by directly modifying the config file
   cat >"$tmp/menu" <<'SH'
@@ -479,10 +479,11 @@ printf '%s\n' "START_SELECTION=$start_sel" >>"$MENU_LOG"
 call_count=$((call_count + 1))
 printf '%s\n' "$call_count" >"$CALL_COUNT_FILE"
 if [ "$call_count" -eq 1 ]; then
-  # First call: simulate CD hook toggle by directly modifying config file
+  # First call: simulate CD hook toggle by directly modifying config file and outputting selection
   spellbook_dir=${SPELLBOOK_DIR:-$HOME/.spellbook}
-  mkdir -p "$spellbook_dir/.mud"
-  printf 'cd-look=1\n' >> "$spellbook_dir/.mud/config"
+  printf 'cd-look=1\n' >> "$spellbook_dir/.mud"
+  # Output the selection that was made (CD hook toggle is item 3)
+  printf '%s\n' "[ ] Look on directory change (cd hook)%toggle-cd"
   exit 0
 fi
 # Second call: exit
