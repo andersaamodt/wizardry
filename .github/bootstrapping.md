@@ -9,7 +9,7 @@ install (self-contained)
 ```
 
 **Scripts BEFORE invoke-wizardry:** Cannot use wizardry (self-contained)  
-**Scripts AFTER invoke-wizardry:** Can use wizardry (require_wizardry, env_clear, etc.)
+**Scripts AFTER invoke-wizardry:** Can use wizardry (require_wizardry, `. env-clear`, etc.)
 
 ---
 
@@ -20,13 +20,13 @@ install (self-contained)
 ```sh
 # ✅ CORRECT - Direct function calls
 require_wizardry || return 1
-env_clear
+. env-clear
 temp_file "name"
 cursor_blink on
 
 # ❌ WRONG - Goes through glosses → parse → LOOP
 require-wizardry  # Creates parse loop!
-env-clear         # Creates parse loop!
+env_clear         # Wrong - source the file instead!
 temp-file "name"  # Creates parse loop!
 ```
 
@@ -67,7 +67,7 @@ spell_name() {
   case "${1-}" in --help) usage; return 0 ;; esac
   require_wizardry || return 1  # Underscore!
   set -eu
-  env_clear                      # Underscore!
+  . env-clear                    # Source file from PATH!
   
   # All calls use underscores
   temp_file "data"               # NOT temp-file
@@ -81,7 +81,7 @@ castable "$@"
 1. Help handler (uses `return`)
 2. `require_wizardry` BEFORE `set -eu` (underscore name!)
 3. `set -eu` inside function
-4. `env_clear` AFTER `set -eu` (underscore name!)
+4. `. env-clear` AFTER `set -eu` (source file from PATH!)
 5. `castable` at end
 6. Use `return` (not `exit`) to allow sourcing
 
@@ -125,7 +125,7 @@ No strict mode for exit-code-based flow control.
 | `invoke-wizardry` | 3 | ❌ No | Loads wizardry |
 | `require-wizardry` | 3+ | ✅ Yes | Checks WIZARDRY_DIR |
 | `env-clear` | 3+ | ✅ Yes | Clears environment |
-| Regular spells | 3+ | ✅ Yes | require_wizardry, env_clear |
+| Regular spells | 3+ | ✅ Yes | require_wizardry, `. env-clear` |
 
 ---
 
@@ -134,7 +134,7 @@ No strict mode for exit-code-based flow control.
 | Mistake | Fix |
 |---------|-----|
 | `require-wizardry` in spell | Use `require_wizardry` |
-| `env-clear` in spell | Use `env_clear` |
+| `env_clear` in spell | Use `. env-clear` |
 | `temp-file` in spell | Use `temp_file` |
 | Duplicate `set -eu` in imp | ONE at top only |
 | `set -eu` before castable loading | Put inside function |
@@ -164,7 +164,7 @@ fi
 - [ ] All spell calls use underscores (`cursor_blink` not `cursor-blink`)  
 - [ ] No fallback to hyphenated versions
 - [ ] `require_wizardry` (not `require-wizardry`)
-- [ ] `env_clear` (not `env-clear`)
+- [ ] `. env-clear` (not `env_clear`)
 - [ ] castable checks `_WIZARDRY_LOADING_SPELLS`
 - [ ] No `exit` in spell functions (use `return`)
 - [ ] ONE `set -eu` per imp file
