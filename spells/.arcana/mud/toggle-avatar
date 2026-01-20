@@ -22,6 +22,9 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
+# Get script directory to find mud-config
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
 action=${1-toggle}
 
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
@@ -39,7 +42,7 @@ case "$action" in
     old_avatar_path=$(config-get "$config_file" "avatar-path" 2>/dev/null || printf '')
     
     config-set "$config_file" "avatar-enabled" "1"
-    mud-config set "avatar" "1" >/dev/null 2>&1 || true
+    "$script_dir/mud-config" set "avatar" "1" >/dev/null 2>&1 || true
     
     # Initialize avatar if not already done
     if command -v incarnate >/dev/null 2>&1; then
@@ -57,7 +60,7 @@ case "$action" in
       || printf '%s' "$default_name")
     
     config-set "$config_file" "avatar-enabled" "0"
-    mud-config set "avatar" "0" >/dev/null 2>&1 || true
+    "$script_dir/mud-config" set "avatar" "0" >/dev/null 2>&1 || true
     
     # If avatar exists and has contents, create corpse in home directory
     if [ -n "$avatar_path" ] && [ -d "$avatar_path" ]; then

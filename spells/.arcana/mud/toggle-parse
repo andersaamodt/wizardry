@@ -20,10 +20,8 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
+# Get script directory to find mud-config
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
 # Use mud-config to toggle
-if command -v mud-config >/dev/null 2>&1; then
-  mud-config toggle parse-enabled
-else
-  printf 'toggle-parse: mud-config not found\n' >&2
-  exit 1
-fi
+"$script_dir/mud-config" toggle parse-enabled
