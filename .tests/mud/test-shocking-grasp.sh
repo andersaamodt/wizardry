@@ -16,7 +16,6 @@ test_shocking_grasp_charges_avatar() {
   enchant "$avatar_path" "mana=100" >/dev/null 2>&1 || true
   
   # Set up config file with avatar enabled
-  mkdir -p "$test_tempdir/.mud"
   config_file="$test_tempdir/.mud"
   printf 'avatar=1\n' > "$config_file"
   printf 'avatar-path=%s\n' "$avatar_path" >> "$config_file"
