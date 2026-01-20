@@ -43,4 +43,5 @@ fi
 
 # Currently disabled or not set, enable it
 "$IMPS_DIR/config-set" "$CONFIG_FILE" "parse-enabled" "1"
-printf '%s\n' "✓ Parse enabled. Natural language commands will be available after running 'invoke-wizardry'."
+printf '%s\n' "✓ Parse enabled. Natural language commands will be available."
+printf '%s\n' "Note: Restart your shell or run 'invoke-wizardry' to activate."

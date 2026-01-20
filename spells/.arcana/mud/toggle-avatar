@@ -45,8 +45,10 @@ case "$action" in
       # Extract just the avatar name for thematic message
       avatar_name=$("$IMPS_DIR/config-get" "$CONFIG_FILE" "avatar-name" 2>/dev/null || printf 'adventurer')
       printf '✓ Avatar enabled. You incarnate as %s.\n' ".$avatar_name"
+      printf '%s\n' "Note: Restart your shell or run 'invoke-wizardry' to activate avatar movement."
     else
       printf '✓ Avatar enabled.\n'
+      printf '%s\n' "Note: Restart your shell or run 'invoke-wizardry' to activate avatar movement."
     fi
     ;;
   disable)

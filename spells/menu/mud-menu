@@ -100,6 +100,9 @@ while true; do
       start_selection=5
     elif [ "$was_all" != "$now_all" ]; then
       start_selection=6
+    else
+      # No change detected, keep current selection
+      : # do nothing, start_selection stays as is
     fi
   else
     first_run=0

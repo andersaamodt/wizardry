@@ -21,7 +21,7 @@ if [ -e "$toucher" ]; then
         # Deal damage to touched
         if [ -e "$touched" ]; then
           deal-damage "$touched" "$damage_amount" >/dev/null 2>&1 || true
-          printf 'Electrical energy arcs from you to %s!\n' "$(basename "$touched")"
+          printf 'Electrical energy arcs from you to %s, dealing %s damage!\n' "$(basename "$touched")" "$damage_amount"
         fi
         ;;
     esac
