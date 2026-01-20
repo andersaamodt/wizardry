@@ -44,7 +44,7 @@ unset jump_to_marker_sourced jump_to_marker_base
 
 # Calculate markers directory BEFORE env-clear (which may clear SPELLBOOK_DIR)
 jm_spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
-markers_dir=$jm_spell_home
+markers_dir=$jm_spell_home/.markers
 
 set -eu
 . env-clear
