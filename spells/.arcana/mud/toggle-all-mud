@@ -22,7 +22,7 @@ if ! command -v mud-config >/dev/null 2>&1; then
 fi
 
 # List of config-based features (not including CD hook which is a shell hook)
-FEATURES="avatar touch-hook"
+FEATURES="parse-enabled mud-enabled avatar touch-hook"
 
 # Determine action based on arguments or current state
 action=""

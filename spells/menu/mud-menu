@@ -74,6 +74,7 @@ start_selection=1
 
 # Track toggle states: 1=parse, 2=mud-menu, 3=CD hook, 4=avatar, 5=touch, 6=all
 was_parse=0
+was_mud_menu=0
 was_cd=0
 was_avatar=0
 was_touch=0
@@ -83,13 +84,14 @@ while true; do
   if [ "$first_run" -eq 0 ]; then
     # Check which toggle changed and keep cursor there
     if is_feature_enabled "parse-enabled"; then now_parse=1; else now_parse=0; fi
+    if is_feature_enabled "mud-enabled"; then now_mud_menu=1; else now_mud_menu=0; fi
     if is_cd_hook_enabled; then now_cd=1; else now_cd=0; fi
     if is_feature_enabled "avatar"; then now_avatar=1; else now_avatar=0; fi
     if is_feature_enabled "touch-hook"; then now_touch=1; else now_touch=0; fi
     
     # Check if all features are enabled
     now_all=1
-    for feature in avatar touch-hook; do
+    for feature in parse-enabled mud-enabled avatar touch-hook; do
       if ! is_feature_enabled "$feature"; then
         now_all=0
         break
@@ -98,6 +100,8 @@ while true; do
 
     if [ "$was_parse" != "$now_parse" ]; then
       start_selection=1
+    elif [ "$was_mud_menu" != "$now_mud_menu" ]; then
+      start_selection=2
     elif [ "$was_cd" != "$now_cd" ]; then
       start_selection=3
     elif [ "$was_avatar" != "$now_avatar" ]; then
@@ -115,13 +119,14 @@ while true; do
 
   # Save toggle states before displaying menu (for comparison on next iteration)
   if is_feature_enabled "parse-enabled"; then was_parse=1; else was_parse=0; fi
+  if is_feature_enabled "mud-enabled"; then was_mud_menu=1; else was_mud_menu=0; fi
   if is_cd_hook_enabled; then was_cd=1; else was_cd=0; fi
   if is_feature_enabled "avatar"; then was_avatar=1; else was_avatar=0; fi
   if is_feature_enabled "touch-hook"; then was_touch=1; else was_touch=0; fi
   
   # Check if all features are enabled
   was_all=1
-  for feature in avatar touch-hook; do
+  for feature in parse-enabled mud-enabled avatar touch-hook; do
     if ! is_feature_enabled "$feature"; then
       was_all=0
       break
@@ -166,7 +171,7 @@ while true; do
   
   # Build enable/disable all toggle
   all_enabled=1
-  for feature in avatar touch-hook; do
+  for feature in parse-enabled mud-enabled avatar touch-hook; do
     if ! is_feature_enabled "$feature"; then
       all_enabled=0
       break

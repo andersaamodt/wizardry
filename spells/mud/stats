@@ -44,28 +44,40 @@ fi
 target=${1-}
 
 if [ -z "$target" ]; then
-  # Get player's avatar location from config
+  # Get player's character/avatar
   spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
-  config_file="$spell_home/.mud"
+  character_file="$spell_home/.character"
   
   # Check if avatar is enabled
-  avatar_enabled=$(config-get "$config_file" "avatar-enabled" 2>/dev/null || printf '0')
+  avatar_enabled=$(mud-config get avatar 2>/dev/null || printf '0')
   
-  if [ "$avatar_enabled" != "1" ]; then
-    printf '%s\n' "stats: avatar system is not enabled. Enable it from the MUD menu." >&2
-    exit 1
+  if [ "$avatar_enabled" = "1" ]; then
+    # Avatar system is enabled - show avatar stats
+    avatar_path=$(config-get "$spell_home/.mud/config" "avatar-path" 2>/dev/null || printf '')
+    
+    if [ -z "$avatar_path" ] || [ ! -e "$avatar_path" ]; then
+      # Avatar enabled but not incarnated - fall back to character file
+      if [ -f "$character_file" ]; then
+        target=$character_file
+        is_player=1
+      else
+        printf '%s\n' "stats: no character or avatar found." >&2
+        exit 1
+      fi
+    else
+      target=$avatar_path
+      is_player=1
+    fi
+  else
+    # Avatar not enabled - show character file stats
+    if [ -f "$character_file" ]; then
+      target=$character_file
+      is_player=1
+    else
+      printf '%s\n' "stats: no character file found. Create one with the avatar system or manually." >&2
+      exit 1
+    fi
   fi
-  
-  # Get avatar location
-  avatar_path=$(config-get "$config_file" "avatar-path" 2>/dev/null || printf '')
-  
-  if [ -z "$avatar_path" ] || [ ! -e "$avatar_path" ]; then
-    printf '%s\n' "stats: avatar not found. Your avatar may need to be created." >&2
-    exit 1
-  fi
-  
-  target=$avatar_path
-  is_player=1
 else
   # Specified target
   if [ ! -e "$target" ]; then
