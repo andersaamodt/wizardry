@@ -49,7 +49,7 @@ if [ -z "$target" ]; then
   character_file="$spell_home/.character"
   
   # Check if avatar is enabled
-  avatar_enabled=$(mud-config get avatar 2>/dev/null || printf '0')
+  avatar_enabled=$(config-get "$spell_home/.mud" "avatar" 2>/dev/null || printf '0')
   
   if [ "$avatar_enabled" = "1" ]; then
     # Avatar system is enabled - show avatar stats

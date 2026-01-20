@@ -20,14 +20,14 @@ set -eu
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 
 # Check if avatar is enabled
-avatar_enabled=$(mud-config get avatar 2>/dev/null || printf '0')
+avatar_enabled=$(config-get "$spell_home/.mud" "avatar" 2>/dev/null || printf '0')
 if [ "$avatar_enabled" != "1" ]; then
   printf '%s\n' "shocking-grasp: no avatar found. Enable the avatar system first." >&2
   exit 1
 fi
 
 # Get avatar path from config
-avatar_path=$(config-get "$spell_home/.mud/config" "avatar-path" 2>/dev/null || printf '')
+avatar_path=$(config-get "$spell_home/.mud" "avatar-path" 2>/dev/null || printf '')
 
 if [ -z "$avatar_path" ] || [ ! -d "$avatar_path" ]; then
   printf '%s\n' "shocking-grasp: no avatar found. Your avatar may need to be incarnated." >&2
