@@ -27,6 +27,14 @@ if ! require menu "The MUD Install menu needs the 'menu' command to present opti
   exit 1
 fi
 
+# Get config file location
+spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+CONFIG_FILE="$spell_home/.mud"
+
+# Ensure spellbook directory and config file exist
+mkdir -p "$spell_home"
+touch "$CONFIG_FILE"
+
 # Check if a MUD config feature is enabled
 is_feature_enabled() {
   feature=$1
@@ -37,34 +45,13 @@ is_feature_enabled() {
     parse-enabled) default_enabled=1 ;;
   esac
   
-  # Use mud-config from PATH
-  if ! command -v mud-config >/dev/null 2>&1; then
-    # mud-config not available, use default
-    [ "$default_enabled" -eq 1 ]
-    return $?
-  fi
-  
-  # Get the value, using default if key doesn't exist
-  value=$(mud-config get "$feature" 2>/dev/null) || value=""
+  # Get the value using config-get
+  value=$(config-get "$CONFIG_FILE" "$feature" 2>/dev/null || printf '')
   if [ -z "$value" ]; then
     [ "$default_enabled" -eq 1 ]
     return $?
   fi
   
-  [ "$value" = "1" ]
-}
-
-# Check if cd hook is enabled (uses separate config file for historical reasons)
-is_cd_hook_enabled() {
-  spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
-  cd_config="$spell_home/.mud/config"
-  
-  if [ ! -f "$cd_config" ]; then
-    return 1
-  fi
-  
-  # Check if cd-look=1 is set
-  value=$(config-get "$cd_config" "cd-look" 2>/dev/null || printf '0')
   [ "$value" = "1" ]
 }
 
@@ -85,13 +72,13 @@ while true; do
     # Check which toggle changed and keep cursor there
     if is_feature_enabled "parse-enabled"; then now_parse=1; else now_parse=0; fi
     if is_feature_enabled "mud-enabled"; then now_mud_menu=1; else now_mud_menu=0; fi
-    if is_cd_hook_enabled; then now_cd=1; else now_cd=0; fi
+    if is_feature_enabled "cd-look"; then now_cd=1; else now_cd=0; fi
     if is_feature_enabled "avatar"; then now_avatar=1; else now_avatar=0; fi
     if is_feature_enabled "touch-hook"; then now_touch=1; else now_touch=0; fi
     
-    # Check if all features are enabled
+    # Check if all features are enabled (including cd-look)
     now_all=1
-    for feature in parse-enabled mud-enabled avatar touch-hook; do
+    for feature in parse-enabled mud-enabled avatar touch-hook cd-look; do
       if ! is_feature_enabled "$feature"; then
         now_all=0
         break
@@ -120,13 +107,13 @@ while true; do
   # Save toggle states before displaying menu (for comparison on next iteration)
   if is_feature_enabled "parse-enabled"; then was_parse=1; else was_parse=0; fi
   if is_feature_enabled "mud-enabled"; then was_mud_menu=1; else was_mud_menu=0; fi
-  if is_cd_hook_enabled; then was_cd=1; else was_cd=0; fi
+  if is_feature_enabled "cd-look"; then was_cd=1; else was_cd=0; fi
   if is_feature_enabled "avatar"; then was_avatar=1; else was_avatar=0; fi
   if is_feature_enabled "touch-hook"; then was_touch=1; else was_touch=0; fi
   
-  # Check if all features are enabled
+  # Check if all features are enabled (including cd-look)
   was_all=1
-  for feature in parse-enabled mud-enabled avatar touch-hook; do
+  for feature in parse-enabled mud-enabled avatar touch-hook cd-look; do
     if ! is_feature_enabled "$feature"; then
       was_all=0
       break
@@ -142,7 +129,7 @@ while true; do
   fi
   
   # Build cd hook toggle label based on current state
-  if is_cd_hook_enabled; then
+  if is_feature_enabled "cd-look"; then
     cd_hook="[X] Look on directory change (cd hook)%toggle-cd"
   else
     cd_hook="[ ] Look on directory change (cd hook)%toggle-cd"
@@ -169,9 +156,9 @@ while true; do
     mud_menu="[ ] Show MUD in main menu%toggle-mud-menu"
   fi
   
-  # Build enable/disable all toggle
+  # Build enable/disable all toggle (including cd-look)
   all_enabled=1
-  for feature in parse-enabled mud-enabled avatar touch-hook; do
+  for feature in parse-enabled mud-enabled avatar touch-hook cd-look; do
     if ! is_feature_enabled "$feature"; then
       all_enabled=0
       break
