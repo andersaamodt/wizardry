@@ -15,11 +15,8 @@ esac
 
 set -eu
 
-# Get script directory to find mud-config
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-
 # Toggle the feature and report state
-new_state=$("$script_dir/mud-config" toggle touch-hook)
+new_state=$(mud-config toggle touch-hook)
 
 if [ "$new_state" = "1" ]; then
   printf '%s\n' "✓ Touch hook enabled. Restart your shell or run 'invoke-wizardry' to activate."

@@ -20,9 +20,9 @@ esac
 
 set -eu
 
-# Get script directory to find mud-config
+# Get root directory to find config imps
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-root_dir=$(cd "$script_dir/../../.." && pwd -P)
+root_dir=$(cd "$script_dir/../.." && pwd -P)
 config_imps_dir="$root_dir/spells/.imps/fs"
 
 action=${1-toggle}
@@ -47,7 +47,7 @@ case "$action" in
     old_avatar_path=$("$config_imps_dir/config-get" "$config_file" "avatar-path" 2>/dev/null || printf '')
     
     "$config_imps_dir/config-set" "$config_file" "avatar-enabled" "1"
-    "$script_dir/mud-config" set "avatar" "1" >/dev/null 2>&1 || true
+    mud-config set "avatar" "1" >/dev/null 2>&1 || true
     
     # Initialize avatar if not already done
     if command -v incarnate >/dev/null 2>&1; then
@@ -65,7 +65,7 @@ case "$action" in
       || printf '%s' "$default_name")
     
     "$config_imps_dir/config-set" "$config_file" "avatar-enabled" "0"
-    "$script_dir/mud-config" set "avatar" "0" >/dev/null 2>&1 || true
+    mud-config set "avatar" "0" >/dev/null 2>&1 || true
     
     # If avatar exists and has contents, create corpse in home directory
     if [ -n "$avatar_path" ] && [ -d "$avatar_path" ]; then

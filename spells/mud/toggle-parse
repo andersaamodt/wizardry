@@ -17,11 +17,8 @@ esac
 
 set -eu
 
-# Get script directory to find mud-config
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-
 # Use mud-config to toggle
-new_state=$("$script_dir/mud-config" toggle parse-enabled)
+new_state=$(mud-config toggle parse-enabled)
 
 if [ "$new_state" = "1" ]; then
   printf '%s\n' "✓ Parse enabled. Natural language commands will be available after running 'invoke-wizardry'."

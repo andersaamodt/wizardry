@@ -8,7 +8,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/.arcana/mud/toggle-parse" --help
+  run_spell "spells/mud/toggle-parse" --help
   assert_success && assert_output_contains "Usage:"
 }
 
@@ -17,7 +17,7 @@ test_toggle_enables_parse() {
   export SPELLBOOK_DIR="$tmp"
   
   # First toggle - enable (from default disabled)
-  run_spell "spells/.arcana/mud/toggle-parse"
+  run_spell "spells/mud/toggle-parse"
   assert_success || return 1
   
   # Verify config was set (.mud is a file)
@@ -39,7 +39,7 @@ test_toggle_disables_parse() {
   printf 'parse-enabled=1\n' > "$SPELLBOOK_DIR/.mud"
   
   # Toggle should disable
-  run_spell "spells/.arcana/mud/toggle-parse"
+  run_spell "spells/mud/toggle-parse"
   assert_success || return 1
   
   # Verify config was updated
@@ -53,11 +53,11 @@ test_toggle_twice_returns_to_original() {
   export SPELLBOOK_DIR="$tmp"
   
   # First toggle - enable
-  run_spell "spells/.arcana/mud/toggle-parse"
+  run_spell "spells/mud/toggle-parse"
   assert_success || return 1
   
   # Second toggle - disable
-  run_spell "spells/.arcana/mud/toggle-parse"
+  run_spell "spells/mud/toggle-parse"
   assert_success || return 1
   
   # Verify we're back to disabled

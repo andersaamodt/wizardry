@@ -15,11 +15,9 @@ esac
 
 set -eu
 
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-MUD_CONFIG="$SCRIPT_DIR/mud-config"
-
-if [ ! -x "$MUD_CONFIG" ]; then
-        printf '%s\n' "Error: mud-config not found at '$MUD_CONFIG'." >&2
+# Check that mud-config is available
+if ! command -v mud-config >/dev/null 2>&1; then
+        printf '%s\n' "Error: mud-config not found in PATH." >&2
         exit 1
 fi
 
@@ -39,7 +37,7 @@ case "${1-}" in
                 # Auto-detect: if any is disabled, enable all; otherwise disable all
                 all_enabled=1
                 for feature in $FEATURES; do
-                        state=$("$MUD_CONFIG" get "$feature" 2>/dev/null || printf '0')
+                        state=$(mud-config get "$feature" 2>/dev/null || printf '0')
                         if [ "$state" = "0" ] || [ -z "$state" ]; then
                                 all_enabled=0
                                 break
@@ -62,13 +60,13 @@ esac
 if [ "$action" = "enable" ]; then
         printf '%s\n' "Enabling all MUD features..."
         for feature in $FEATURES; do
-                "$MUD_CONFIG" set "$feature" 1
+                mud-config set "$feature" 1
         done
         printf '%s\n' "✓ All MUD features enabled."
 else
         printf '%s\n' "Disabling all MUD features..."
         for feature in $FEATURES; do
-                "$MUD_CONFIG" set "$feature" 0
+                mud-config set "$feature" 0
         done
         printf '%s\n' "✓ All MUD features disabled."
 fi
