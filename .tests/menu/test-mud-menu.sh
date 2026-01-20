@@ -237,6 +237,7 @@ SH
   chmod +x "$tmp/exit-label"
   
   make_stub_check_cd_hook "$tmp"
+  make_stub_mud_config "$tmp"
   
   # Set up empty spellbook (no cd-look config)
   spellbook_dir="$tmp/spellbook"
@@ -279,6 +280,7 @@ SH
   chmod +x "$tmp/exit-label"
   
   make_stub_check_cd_hook "$tmp"
+  make_stub_mud_config "$tmp"
   
   # Set up config file with cd-look enabled (new config-based approach)
   spellbook_dir="$tmp/spellbook"
