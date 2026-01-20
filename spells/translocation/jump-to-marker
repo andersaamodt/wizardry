@@ -46,6 +46,16 @@ unset jump_to_marker_sourced jump_to_marker_base
 jm_spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
 markers_dir=$jm_spell_home/.markers
 
+# Check if parse is enabled before proceeding
+config_file="$jm_spell_home/.mud"
+if [ -f "$config_file" ]; then
+  parse_enabled=$(grep "^parse-enabled=" "$config_file" 2>/dev/null | cut -d= -f2- || printf '')
+  if [ "$parse_enabled" = "0" ]; then
+    printf '%s\n' "jump-to-marker: command not found (parsing is disabled)" >&2
+    return 127 2>/dev/null || exit 127
+  fi
+fi
+
 set -eu
 . env-clear
 
