@@ -18,16 +18,21 @@ USAGE
   ;;
 esac
 
-require-wizardry || exit 1
 set -eu
-. env-clear
 
 # Get script directory to find mud-config
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+root_dir=$(cd "$script_dir/../../.." && pwd -P)
+config_imps_dir="$root_dir/spells/.imps/fs"
 
 action=${1-toggle}
 
-spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+# Inline env-or logic
+if [ -n "${SPELLBOOK_DIR-}" ]; then
+  spell_home="$SPELLBOOK_DIR"
+else
+  spell_home="${HOME:-.}/.spellbook"
+fi
 config_file="$spell_home/.mud"
 
 # Ensure config file exists
@@ -39,27 +44,27 @@ fi
 case "$action" in
   enable)
     # Store previous avatar path before enabling
-    old_avatar_path=$(config-get "$config_file" "avatar-path" 2>/dev/null || printf '')
+    old_avatar_path=$("$config_imps_dir/config-get" "$config_file" "avatar-path" 2>/dev/null || printf '')
     
-    config-set "$config_file" "avatar-enabled" "1"
+    "$config_imps_dir/config-set" "$config_file" "avatar-enabled" "1"
     "$script_dir/mud-config" set "avatar" "1" >/dev/null 2>&1 || true
     
     # Initialize avatar if not already done
     if command -v incarnate >/dev/null 2>&1; then
       avatar_result=$(incarnate 2>&1) || true
       # Extract just the avatar name from the path for thematic message
-      avatar_name=$(config-get "$config_file" "avatar-name" 2>/dev/null || printf 'adventurer')
+      avatar_name=$("$config_imps_dir/config-get" "$config_file" "avatar-name" 2>/dev/null || printf 'adventurer')
       printf 'You incarnate as %s.\n' ".$avatar_name"
     fi
     ;;
   disable)
     # Get current avatar info
-    avatar_path=$(config-get "$config_file" "avatar-path" 2>/dev/null || printf '')
+    avatar_path=$("$config_imps_dir/config-get" "$config_file" "avatar-path" 2>/dev/null || printf '')
     default_name=$(whoami 2>/dev/null || printf 'adventurer')
-    avatar_name=$(config-get "$config_file" "avatar-name" 2>/dev/null \
+    avatar_name=$("$config_imps_dir/config-get" "$config_file" "avatar-name" 2>/dev/null \
       || printf '%s' "$default_name")
     
-    config-set "$config_file" "avatar-enabled" "0"
+    "$config_imps_dir/config-set" "$config_file" "avatar-enabled" "0"
     "$script_dir/mud-config" set "avatar" "0" >/dev/null 2>&1 || true
     
     # If avatar exists and has contents, create corpse in home directory
@@ -84,7 +89,7 @@ case "$action" in
     fi
     ;;
   toggle)
-    current=$(config-get "$config_file" "avatar-enabled" 2>/dev/null || printf '0')
+    current=$("$config_imps_dir/config-get" "$config_file" "avatar-enabled" 2>/dev/null || printf '0')
     if [ "$current" = "1" ]; then
       "$0" disable
     else

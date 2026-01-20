@@ -13,10 +13,7 @@ USAGE
   ;;
 esac
 
-require-wizardry || exit 1
-
 set -eu
-. env-clear
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 MUD_CONFIG="$SCRIPT_DIR/mud-config"

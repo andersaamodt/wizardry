@@ -13,13 +13,14 @@ USAGE
   ;;
 esac
 
-require-wizardry || exit 1
-
 set -eu
-. env-clear
 
-# Resolve config file
-spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+# Resolve config file (inline env-or logic)
+if [ -n "${SPELLBOOK_DIR-}" ]; then
+  spell_home="$SPELLBOOK_DIR"
+else
+  spell_home="${HOME:-.}/.spellbook"
+fi
 config_file="$spell_home/.mud"
 
 # Ensure spellbook directory exists
@@ -38,6 +39,11 @@ if [ ! -f "$config_file" ]; then
   }
 fi
 
+# Get script directory for config imps
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+root_dir=$(cd "$script_dir/../../.." && pwd -P)
+config_imps_dir="$root_dir/spells/.imps/fs"
+
 # Parse command
 command=${1-list}
 feature=${2-}
@@ -49,26 +55,26 @@ case "$command" in
       printf '%s\n' "mud-config: feature name required for get" >&2
       exit 1
     fi
-    config-get "$config_file" "$feature"
+    "$config_imps_dir/config-get" "$config_file" "$feature"
     ;;
   set)
     if [ -z "$feature" ] || [ -z "$value" ]; then
       printf '%s\n' "mud-config: feature name and value required for set" >&2
       exit 1
     fi
-    config-set "$config_file" "$feature" "$value"
+    "$config_imps_dir/config-set" "$config_file" "$feature" "$value"
     ;;
   toggle)
     if [ -z "$feature" ]; then
       printf '%s\n' "mud-config: feature name required for toggle" >&2
       exit 1
     fi
-    current=$(config-get "$config_file" "$feature" 2>/dev/null || printf '0')
+    current=$("$config_imps_dir/config-get" "$config_file" "$feature" 2>/dev/null || printf '0')
     if [ "$current" = "1" ]; then
-      config-set "$config_file" "$feature" "0"
+      "$config_imps_dir/config-set" "$config_file" "$feature" "0"
       printf '0\n'
     else
-      config-set "$config_file" "$feature" "1"
+      "$config_imps_dir/config-set" "$config_file" "$feature" "1"
       printf '1\n'
     fi
     ;;
