@@ -54,4 +54,7 @@ fi
 # Enchant the file with the destination context
 enchant "$file" context "$destination" >/dev/null
 
+# Also add on_touched trigger for touch hook
+enchant "$file" "on_touched=portkey:$destination" >/dev/null 2>&1 || true
+
 printf '%s\n' "Portkey enchanted on '$(basename "$file")'. Use follow-portkey to activate."

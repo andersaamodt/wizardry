@@ -27,7 +27,7 @@ if [ ! -x "$MUD_CONFIG" ]; then
 fi
 
 # List of config-based features (not including CD hook which is a shell hook)
-FEATURES="touch-hook fantasy-theme inventory combat command-not-found"
+FEATURES="avatar touch-hook"
 
 # Determine action based on arguments or current state
 action=""

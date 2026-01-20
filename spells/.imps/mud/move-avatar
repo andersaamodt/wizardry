@@ -1,0 +1,40 @@
+#!/bin/sh
+# move-avatar - Move avatar folder to current directory
+# Example: move-avatar
+
+set -eu
+
+config_file="${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud"
+
+# Exit early if config file doesn't exist
+if [ ! -f "$config_file" ]; then
+    return 0 2>/dev/null || exit 0
+fi
+
+old_path=$(grep "^avatar-path=" "$config_file" 2>/dev/null | cut -d= -f2-)
+
+if [ -z "$old_path" ] || [ ! -d "$old_path" ]; then
+    return 0 2>/dev/null || exit 0
+fi
+
+avatar_name=$(basename "$old_path")
+new_path="$PWD/$avatar_name"
+
+# Only move if different location
+if [ "$old_path" = "$new_path" ]; then
+    return 0 2>/dev/null || exit 0
+fi
+
+# Move avatar folder to new location
+if [ -e "$new_path" ]; then
+    # Target already exists - remove it first to avoid nesting
+    rm -rf "$new_path" 2>/dev/null || { return 1 2>/dev/null || exit 1; }
+fi
+if ! mv "$old_path" "$new_path" 2>/dev/null; then
+    return 1 2>/dev/null || exit 1
+fi
+
+# Update config with new path
+if command -v config-set >/dev/null 2>&1; then
+    config-set "$config_file" "avatar-path" "$new_path" 2>/dev/null || true
+fi

@@ -61,6 +61,7 @@ while true; do
   
   change="Change Player%choose-player"
   new="New Player%new-player"
+  
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
   exit_label=$(exit-label)

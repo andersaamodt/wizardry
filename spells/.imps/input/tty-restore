@@ -4,11 +4,11 @@
 set -eu
 
 
-_tr_state=${1:-}
+tr_state=${1:-}
 
-if [ -z "$_tr_state" ]; then
+if [ -z "$tr_state" ]; then
   printf '%s\n' "tty-restore: state required" >&2
   exit 1
 fi
 
-stty "$_tr_state" >/dev/null 2>&1 || :
+stty "$tr_state" >/dev/null 2>&1 || :

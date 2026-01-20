@@ -102,7 +102,7 @@ export AWAIT_KEYPRESS_BUFFER_FILE
 
 # Load colour helpers when present; otherwise fall back to plain text.
 # Try to find colors in the same directory when executed directly
-if [ "${_WIZARDRY_LOADING_SPELLS-}" != "1" ]; then
+if [ "${WIZARDRY_LOADING_SPELLS-}" != "1" ]; then
         script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
         if [ -r "$script_dir/colors" ]; then
                 # shellcheck disable=SC1090

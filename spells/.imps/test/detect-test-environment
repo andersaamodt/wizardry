@@ -130,24 +130,24 @@ printf 'coreutils: realpath=%s timeout=%s tput=%s\n' \
 # Test xattr support
 TEST_ENV_SUPPORTS_XATTR=0
 fs_xattr="no"
-_tmpfile=$(mktemp)
+tmpfile=$(mktemp)
 if [ "$TEST_ENV_HAS_XATTR_ATTR" = "1" ]; then
-  if attr -s test -V val "$_tmpfile" >/dev/null 2>&1; then
+  if attr -s test -V val "$tmpfile" >/dev/null 2>&1; then
     TEST_ENV_SUPPORTS_XATTR=1
     fs_xattr="yes"
   fi
 elif [ "$TEST_ENV_HAS_XATTR_NATIVE" = "1" ]; then
-  if xattr -w test val "$_tmpfile" >/dev/null 2>&1; then
+  if xattr -w test val "$tmpfile" >/dev/null 2>&1; then
     TEST_ENV_SUPPORTS_XATTR=1
     fs_xattr="yes"
   fi
 elif [ "$TEST_ENV_HAS_XATTR_SETFATTR" = "1" ]; then
-  if setfattr -n user.test -v val "$_tmpfile" >/dev/null 2>&1; then
+  if setfattr -n user.test -v val "$tmpfile" >/dev/null 2>&1; then
     TEST_ENV_SUPPORTS_XATTR=1
     fs_xattr="yes"
   fi
 fi
-rm -f "$_tmpfile"
+rm -f "$tmpfile"
 
 printf 'filesystem: xattr-support=%s\n' "$fs_xattr"
 

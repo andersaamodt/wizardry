@@ -1,0 +1,50 @@
+#!/bin/sh
+
+# The touch cantrip: source this file to enable the touch hook that triggers on-touch effects.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: Source this file in your shell rc file to enable the touch hook.
+
+    . $HOME/.wizardry/spells/.arcana/mud/touch
+
+Then use 'toggle-touch-hook' to enable/disable the hook.
+
+The hook runs trigger-on-touch after every successful touch command.
+USAGE
+  return 0 2>/dev/null || exit 0
+  ;;
+esac
+
+# Uncastable pattern - ensures spell is sourced, not executed
+touch_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) touch_sourced=1 ;;
+  esac
+else
+  touch_base=${0##*/}
+  case "$touch_base" in
+    sh|dash|bash|zsh|ksh|mksh) touch_sourced=1 ;;
+    touch) touch_sourced=0 ;;
+    *) touch_sourced=1 ;;
+  esac
+fi
+
+if [ "$touch_sourced" -eq 0 ]; then
+  printf '%s\n' "This spell cannot be cast directly. Invoke it with: . touch" >&2
+  return 1 2>/dev/null || exit 999
+fi
+unset touch_sourced touch_base
+
+# Explicitly use permissive error handling - this file is meant to be sourced into user's shell
+# and we don't want their shell to exit on command failures
+set +e
+set -u
+
+# The touch override - calls touch-hook imp after successful touch command
+touch() {
+    command touch "$@" || return $?
+    command -v touch-hook >/dev/null 2>&1 && touch-hook "$@" || true
+}

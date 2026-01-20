@@ -22,29 +22,29 @@ USAGE
 esac
 
 # Uncastable pattern - ensures spell is sourced, not executed
-_jump_to_marker_sourced=0
+jump_to_marker_sourced=0
 if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
   case "${ZSH_EVAL_CONTEXT-}" in
-    *:file) _jump_to_marker_sourced=1 ;;
+    *:file) jump_to_marker_sourced=1 ;;
   esac
 else
-  _jump_to_marker_base=${0##*/}
-  case "$_jump_to_marker_base" in
-    sh|dash|bash|zsh|ksh|mksh) _jump_to_marker_sourced=1 ;;
-    jump-to-marker) _jump_to_marker_sourced=0 ;;
-    *) _jump_to_marker_sourced=1 ;;
+  jump_to_marker_base=${0##*/}
+  case "$jump_to_marker_base" in
+    sh|dash|bash|zsh|ksh|mksh) jump_to_marker_sourced=1 ;;
+    jump-to-marker) jump_to_marker_sourced=0 ;;
+    *) jump_to_marker_sourced=1 ;;
   esac
 fi
 
-if [ "$_jump_to_marker_sourced" -eq 0 ]; then
-  printf '%s\n' "This spell cannot be cast directly. Invoke it with: jump to marker" >&2
+if [ "$jump_to_marker_sourced" -eq 0 ]; then
+  printf '%s\n' "This spell cannot be cast directly. Invoke it with: . jump-to-marker" >&2
   return 1 2>/dev/null || exit 1
 fi
-unset _jump_to_marker_sourced _jump_to_marker_base
+unset jump_to_marker_sourced jump_to_marker_base
 
 # Calculate markers directory BEFORE env-clear (which may clear SPELLBOOK_DIR)
-_jm_spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
-markers_dir=$_jm_spell_home/.markers
+jm_spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+markers_dir=$jm_spell_home/.markers
 
 set -eu
 . env-clear

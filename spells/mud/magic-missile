@@ -92,6 +92,34 @@ if [ ! -f "$target" ]; then
   exit 1
 fi
 
+# Check if player has avatar and enough mana
+spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+config_file="$spell_home/.mud"
+avatar_enabled=$(config-get "$config_file" "avatar-enabled" 2>/dev/null || printf '0')
+
+if [ "$avatar_enabled" = "1" ]; then
+  avatar_path=$(config-get "$config_file" "avatar-path" 2>/dev/null || printf '')
+  
+  if [ -n "$avatar_path" ] && [ -e "$avatar_path" ]; then
+    # Check mana
+    current_mana=$(read-magic "$avatar_path" mana 2>/dev/null || printf '0')
+    case "$current_mana" in
+      ''|*[!0-9]*) current_mana=0 ;;
+    esac
+    
+    mana_cost=4
+    
+    if [ "$current_mana" -lt "$mana_cost" ]; then
+      printf '%s\n' "magic-missile: insufficient mana! You need $mana_cost mana but only have $current_mana." >&2
+      exit 1
+    fi
+    
+    # Deduct mana
+    new_mana=$((current_mana - mana_cost))
+    enchant "$avatar_path" "mana=$new_mana" >/dev/null 2>&1
+  fi
+fi
+
 # Generate random damage (1d4+1, range 2-5)
 random_seed=$(date +%s%N 2>/dev/null || date +%s)
 damage_value=$(printf '%s' "$random_seed" | cksum | cut -d' ' -f1)

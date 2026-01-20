@@ -6,11 +6,11 @@
 set -eu
 
 
-_cg_file=${1:?config-get: file path required}
-_cg_key=${2:?config-get: key required}
+cg_file=${1:?config-get: file path required}
+cg_key=${2:?config-get: key required}
 
 # Validate key format (alphanumeric, dash, underscore only)
-case "$_cg_key" in
+case "$cg_key" in
   *[!a-zA-Z0-9_-]*)
     printf 'config-get: invalid key format (use alphanumeric, dash, underscore only)\n' >&2
   exit 1
@@ -22,13 +22,13 @@ case "$_cg_key" in
 esac
 
 # File doesn't exist - return empty
-if [ ! -f "$_cg_file" ]; then
+if [ ! -f "$cg_file" ]; then
   exit 0
 fi
 
 # Find and extract value
 # Use awk for safe parsing (handles = in values, no shell expansion)
-awk -F= -v key="$_cg_key" '
+awk -F= -v key="$cg_key" '
   $1 == key {
     # Print everything after first =
     sub(/^[^=]+=/, "")
@@ -37,4 +37,4 @@ awk -F= -v key="$_cg_key" '
     exit
   }
   END { exit !found }
-' "$_cg_file"
+' "$cg_file"

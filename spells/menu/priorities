@@ -160,8 +160,8 @@ EOF
   menu_command="${menu_command} \"${exit_label}%kill -TERM \\\$PPID\""
 
   # Execute the constructed menu command
-  eval "${menu_command}" || _priorities_menu_status=$?
-  return "${_priorities_menu_status:-0}"
+  eval "${menu_command}" || priorities_menu_status=$?
+  return "${priorities_menu_status:-0}"
 }
 
 first_run=1

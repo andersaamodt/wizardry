@@ -19,9 +19,9 @@ case $1 in
   translocation) printf 'Translocation' ;;
   wards)        printf 'Wards' ;;
   *)
-    _ct_first=$(printf '%s' "$1" | cut -c1 | tr '[:lower:]' '[:upper:]')
-    _ct_rest=$(printf '%s' "$1" | cut -c2-)
-    printf '%s%s' "$_ct_first" "$_ct_rest"
+    ct_first=$(printf '%s' "$1" | cut -c1 | tr '[:lower:]' '[:upper:]')
+    ct_rest=$(printf '%s' "$1" | cut -c2-)
+    printf '%s%s' "$ct_first" "$ct_rest"
     ;;
 esac
 

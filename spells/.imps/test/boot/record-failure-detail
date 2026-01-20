@@ -6,14 +6,14 @@ set -eu
 idx=$1
 
 # Read current value from file
-_current=$(cat "${WIZARDRY_TMPDIR}/_fail_detail_indices" 2>/dev/null || printf '')
+current=$(cat "${WIZARDRY_TMPDIR}/_fail_detail_indices" 2>/dev/null || printf '')
 
 # Append new index and deduplicate
-_fail_detail_indices=$(printf '%s\n%s\n' "$_current" "$idx" |
+fail_detail_indices=$(printf '%s\n%s\n' "$current" "$idx" |
   awk 'NF { if (!seen[$0]++) { order[++count]=$0 } }
        END { for (i=1; i<=count; i++) { if (i>1) printf(","); printf order[i] } }')
 
 # Write back to file
-printf '%s' "$_fail_detail_indices" > "${WIZARDRY_TMPDIR}/_fail_detail_indices"
+printf '%s' "$fail_detail_indices" > "${WIZARDRY_TMPDIR}/_fail_detail_indices"
 
 
