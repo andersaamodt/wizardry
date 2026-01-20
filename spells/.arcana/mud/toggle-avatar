@@ -22,14 +22,13 @@ set -eu
 
 action=${1-toggle}
 
-# Get paths for avatar-specific config (not the same as mud config)
+# Get paths for avatar-specific config (same as mud config)
 if [ -n "${SPELLBOOK_DIR-}" ]; then
   spell_home="$SPELLBOOK_DIR"
 else
   spell_home="${HOME:-.}/.spellbook"
 fi
-avatar_config_dir="$spell_home/.mud"
-avatar_config_file="$avatar_config_dir/config"
+avatar_config_file="$spell_home/.mud"
 
 # Get root directory to find config imps
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
@@ -37,7 +36,7 @@ root_dir=$(cd "$script_dir/../../.." && pwd -P)
 config_imps_dir="$root_dir/spells/.imps/fs"
 
 # Ensure avatar config exists
-mkdir -p "$avatar_config_dir" 2>/dev/null || true
+mkdir -p "$spell_home" 2>/dev/null || true
 touch "$avatar_config_file" 2>/dev/null || true
 
 case "$action" in

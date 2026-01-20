@@ -53,7 +53,7 @@ if [ -z "$target" ]; then
   
   if [ "$avatar_enabled" = "1" ]; then
     # Avatar system is enabled - show avatar stats
-    avatar_path=$(config-get "$spell_home/.mud/config" "avatar-path" 2>/dev/null || printf '')
+    avatar_path=$(config-get "$spell_home/.mud" "avatar-path" 2>/dev/null || printf '')
     
     if [ -z "$avatar_path" ] || [ ! -e "$avatar_path" ]; then
       # Avatar enabled but not incarnated - fall back to character file

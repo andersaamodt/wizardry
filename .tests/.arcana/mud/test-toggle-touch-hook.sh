@@ -40,7 +40,7 @@ test_toggle_disables_feature() {
   export SPELLBOOK_DIR="$tmp"
   
   # Set initial state to enabled
-  mkdir -p "$SPELLBOOK_DIR/.mud"
+  
   printf 'touch-hook=1\n' > "$SPELLBOOK_DIR/.mud/config"
   
   # Toggle should disable
