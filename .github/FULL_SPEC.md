@@ -607,9 +607,9 @@ Wizardry uses several focused documentation files. Keep content in the right doc
 
 - Shebang: `#!/bin/sh` (exactly, no variations)
 - Opening comment: 1-2 lines describing purpose
-- Help handler: `case "${1-}" in --help|--usage|-h) show_usage; exit 0 ;; esac` before `set -eu`
+- Help handler: inline heredoc in case statement, NOT in a function
+- Help pattern: `case "${1-}" in --help|--usage|-h) cat <<'USAGE' ... exit 0 ;; esac` before `set -eu`
 - Strict mode: `set -eu` after help handler, before main logic
-- Usage function: `show_usage()` with heredoc (displays help text)
 - Spell name in usage: "Usage: spell-name [options] [arguments]"
 - Help text is primary spec (describes expected behavior)
 - Cross-platform compatibility (work on Linux, macOS, BSD)
@@ -617,6 +617,23 @@ Wizardry uses several focused documentation files. Keep content in the right doc
 - Multi-word names use hyphens: `spell-name` not `spell_name`
 - Spell files must be executable (chmod +x)
 - Tests required for every spell (non-negotiable)
+- Use `exit` for flow control in regular spells (NOT `return`)
+- Use `return` for flow control in uncastable spells (must be sourced)
+
+### Uncastable Pattern (Sourced-Only Spells)
+
+- Some spells MUST be sourced (not executed) because they change the parent shell state
+- Examples: `jump-to-marker` (changes directory), `blink` (cd wrapper), `colors` (sets variables)
+- Uncastable spells use guard pattern to detect execution vs sourcing
+- Guard checks `$0` (script name when executed, shell name when sourced)
+- Uncastable block MUST start with `# Uncastable` comment (enforced by tests)
+- Pattern detects ZSH via `ZSH_EVAL_CONTEXT` and POSIX shells via `$0` basename
+- If executed, displays error: "This spell cannot be cast directly. Invoke it with: spell name"
+- Multi-word uncastable spells MUST have space-separated aliases (NOT hyphenated)
+- Alias expansion: `alias jump-to-marker='jump to marker'` routes through first-word gloss
+- First-word gloss detects uncastable pattern and sources spell correctly
+- Without alias, typing `jump-to-marker` executes → uncastable guard → `exit 1` → closes terminal
+- Uncastable spells use `return` (not `exit`) for flow control since they're sourced
 
 ### Imp Requirements
 
@@ -634,12 +651,25 @@ Wizardry uses several focused documentation files. Keep content in the right doc
 ### Function Discipline
 
 - Spells should be flat, linear scripts (scrolls, not programs)
-- Maximum 1 function total in spells (including usage function)
-- Usage/help text should be inline, not in a function
-- Imps must have 0 functions (flat scripts only)
+- Maximum 1 helper function in spells (MORE THAN 1 requires documentation in EXEMPTIONS.md)
+- Usage/help text MUST be inline in case statement, NOT in a function
+- Imps MUST have 0 functions (completely flat scripts only)
 - Helper functions in spells discouraged (prefer flat code or extract to imps)
-- Functions named in snake_case when needed: `show_usage`, `detect_os`, `validate_input`
+- Functions named in snake_case when needed: `my_helper`, `detect_os`, `validate_input`
 - NEVER use hyphens in function names (POSIX shell doesn't support them)
+- This rule is enforced by automated tests
+
+### Spell Calling Convention
+
+- **CRITICAL**: ALL wizardry spells (including imps—imps ARE spells) call each other by hyphenated command names from PATH
+- After invoke-wizardry runs, all spells and imps are available in PATH
+- Spell code MUST call other spells by hyphenated name: `env-clear`, `has git`, `temp-file "x"`
+- NEVER use underscores in spell calls: NOT `env_clear` or `temp_file`
+- NEVER use full paths: NOT `$WIZARDRY_DIR/spells/.imps/sys/env-clear` or `. "$WIZARDRY_DIR/..."`
+- Function names use underscores (POSIX requirement): `my_function()`
+- Spell/imp calls use hyphens (from PATH): `env-clear`, `temp-file`
+- All wizardry spells can safely assume invoke-wizardry was called and all spells are available
+- Exception: Bootstrap scripts (install, invoke-wizardry itself) cannot use wizardry spells
 
 ### Code Style
 
@@ -678,7 +708,10 @@ Wizardry uses several focused documentation files. Keep content in the right doc
 - Test file naming: `test-spell-name.sh` (hyphens not underscores)
 - Test location mirrors spell: `spells/cat/spell` → `.tests/cat/test-spell.sh`
 - Tests cover: help output, success cases, error cases, platform-specific fallbacks
-- Tests use test framework helpers: `_run_spell`, `_assert_success`, `_assert_output_contains`
+- Tests use test framework helpers: `run_spell`, `run_sourced_spell`, `assert_success`, `assert_output_contains`
+- Test helper naming: underscore versions available for convenience (`_run_spell` calls `run-spell`)
+- Use `run_spell` for regular spells (executes the spell as a script)
+- Use `run_sourced_spell` for uncastable spells (sources the spell to test)
 - Tests bootstrap via `test-bootstrap` imp (finds repo root, sources framework)
 - Stub terminal I/O (fathom-cursor, stty) not wizardry logic
 - Test results must be verified by running tests (never assume/guess pass/fail)
