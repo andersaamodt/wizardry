@@ -19,7 +19,7 @@ set -eu
 . env-clear
 
 # Toggle the feature and report state
-new_state=$(mud-config toggle touch-hook)
+new_state=$("$WIZARDRY_DIR"/spells/.arcana/mud/mud-config toggle touch-hook)
 
 if [ "$new_state" = "1" ]; then
   printf '%s\n' "✓ Touch hook enabled. Restart your shell or run 'invoke-wizardry' to activate."
