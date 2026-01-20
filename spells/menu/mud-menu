@@ -97,6 +97,9 @@ while true; do
         break
       fi
     done
+    if ! is_cd_hook_enabled; then
+      now_all=0
+    fi
 
     if [ "$was_parse" != "$now_parse" ]; then
       start_selection=1
@@ -132,6 +135,9 @@ while true; do
       break
     fi
   done
+  if ! is_cd_hook_enabled; then
+    was_all=0
+  fi
 
   # Build menu entries based on current state
   # Build parse toggle
@@ -177,6 +183,9 @@ while true; do
       break
     fi
   done
+  if ! is_cd_hook_enabled; then
+    all_enabled=0
+  fi
   
   if [ "$all_enabled" -eq 1 ]; then
     toggle_all="Disable all MUD features%toggle-all-mud --disable"
