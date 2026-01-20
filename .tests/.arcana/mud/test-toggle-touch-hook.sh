@@ -17,25 +17,63 @@ test_help_shows_usage() {
 
 test_toggle_enables_feature() {
   tmp=$(make_tempdir)
-  run_cmd env SPELLBOOK_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/toggle-touch-hook"
+  export SPELLBOOK_DIR="$tmp"
+  
+  # First toggle - enable
+  run_spell "spells/.arcana/mud/toggle-touch-hook"
   assert_success || return 1
   assert_output_contains "enabled" || return 1
+  
+  # Verify config (.mud is a file)
+  config_file="$SPELLBOOK_DIR/.mud"
+  if [ -f "$config_file" ]; then
+    value=$(grep "^touch-hook=" "$config_file" | cut -d= -f2)
+    [ "$value" = "1" ] || { TEST_FAILURE_REASON="Expected touch-hook=1, got: $value"; return 1; }
+  else
+    TEST_FAILURE_REASON="Config file not created"
+    return 1
+  fi
 }
 
 test_toggle_disables_feature() {
   tmp=$(make_tempdir)
-  # First enable
-  run_cmd env SPELLBOOK_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/toggle-touch-hook"
-  assert_success || return 1
+  export SPELLBOOK_DIR="$tmp"
   
-  # Then disable
-  run_cmd env SPELLBOOK_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/toggle-touch-hook"
+  # Set initial state to enabled
+  printf 'touch-hook=1\n' > "$SPELLBOOK_DIR/.mud"
+  
+  # Toggle should disable
+  run_spell "spells/.arcana/mud/toggle-touch-hook"
   assert_success || return 1
   assert_output_contains "disabled" || return 1
+  
+  # Verify config
+  config_file="$SPELLBOOK_DIR/.mud"
+  value=$(grep "^touch-hook=" "$config_file" | cut -d= -f2)
+  [ "$value" = "0" ] || { TEST_FAILURE_REASON="Expected touch-hook=0, got: $value"; return 1; }
+}
+
+test_toggle_twice_returns_to_original() {
+  tmp=$(make_tempdir)
+  export SPELLBOOK_DIR="$tmp"
+  
+  # First toggle - enable
+  run_spell "spells/.arcana/mud/toggle-touch-hook"
+  assert_success || return 1
+  
+  # Second toggle - disable
+  run_spell "spells/.arcana/mud/toggle-touch-hook"
+  assert_success || return 1
+  
+  # Verify we're back to disabled
+  config_file="$SPELLBOOK_DIR/.mud"
+  value=$(grep "^touch-hook=" "$config_file" | cut -d= -f2)
+  [ "$value" = "0" ] || { TEST_FAILURE_REASON="Expected touch-hook=0 after two toggles, got: $value"; return 1; }
 }
 
 run_test_case "toggle-touch-hook --help shows usage" test_help_shows_usage
 run_test_case "toggle-touch-hook enables feature" test_toggle_enables_feature
-run_test_case "toggle-touch-hook toggles feature off" test_toggle_disables_feature
+run_test_case "toggle-touch-hook disables feature" test_toggle_disables_feature
+run_test_case "toggle-touch-hook twice returns to original state" test_toggle_twice_returns_to_original
 
 finish_tests
