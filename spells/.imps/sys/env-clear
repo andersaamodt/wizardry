@@ -124,8 +124,8 @@ for env_var in $(env | cut -d= -f1); do
 done
 
 # Restore essential variables
-[ -n "$saved_path" ] && export PATH="$saved_path"
-[ -n "$saved_home" ] && export HOME="$saved_home"
+export PATH="$saved_path"
+export HOME="$saved_home"
 export USER="$saved_user"
 export SHELL="$saved_shell"
 export TERM="$saved_term"
