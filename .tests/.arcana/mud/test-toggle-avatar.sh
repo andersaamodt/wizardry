@@ -23,7 +23,7 @@ test_enable_avatar() {
   assert_output_contains "incarnate" || return 1
   
   # Verify config was set (.mud is a file)
-  config_file="$SPELLBOOK_DIR/.mud"
+  config_file="$SPELLBOOK_DIR/.mud/config"
   if [ -f "$config_file" ]; then
     value=$(grep "^avatar=" "$config_file" | cut -d= -f2)
     [ "$value" = "1" ] || { TEST_FAILURE_REASON="Expected avatar=1, got: $value"; return 1; }
@@ -38,7 +38,7 @@ test_disable_avatar() {
   export SPELLBOOK_DIR="$tmp"
   
   # Set initial state to enabled
-  printf 'avatar=1\navatar-enabled=1\n' > "$SPELLBOOK_DIR/.mud"
+  printf 'avatar=1\navatar-enabled=1\n' > "$SPELLBOOK_DIR/.mud/config"
   
   # Disable avatar
   run_spell "spells/.arcana/mud/toggle-avatar" disable
@@ -46,7 +46,7 @@ test_disable_avatar() {
   assert_output_contains "disabled" || return 1
   
   # Verify config was updated
-  config_file="$SPELLBOOK_DIR/.mud"
+  config_file="$SPELLBOOK_DIR/.mud/config"
   value=$(grep "^avatar=" "$config_file" | cut -d= -f2)
   [ "$value" = "0" ] || { TEST_FAILURE_REASON="Expected avatar=0, got: $value"; return 1; }
 }
@@ -65,9 +65,9 @@ test_toggle_avatar() {
   assert_output_contains "disabled" || return 1
   
   # Verify we're disabled
-  config_file="$SPELLBOOK_DIR/.mud"
-  value=$(grep "^avatar-enabled=" "$config_file" | cut -d= -f2)
-  [ "$value" = "0" ] || { TEST_FAILURE_REASON="Expected avatar-enabled=0 after toggle, got: $value"; return 1; }
+  config_file="$SPELLBOOK_DIR/.mud/config"
+  value=$(grep "^avatar=" "$config_file" | cut -d= -f2)
+  [ "$value" = "0" ] || { TEST_FAILURE_REASON="Expected avatar=0 after toggle, got: $value"; return 1; }
 }
 
 run_test_case "toggle-avatar prints usage" test_help

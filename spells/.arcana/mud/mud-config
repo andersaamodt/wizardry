@@ -21,12 +21,21 @@ if [ -n "${SPELLBOOK_DIR-}" ]; then
 else
   spell_home="${HOME:-.}/.spellbook"
 fi
-config_file="$spell_home/.mud"
+config_dir="$spell_home/.mud"
+config_file="$config_dir/config"
 
 # Ensure spellbook directory exists
 if [ ! -d "$spell_home" ]; then
   mkdir -p "$spell_home" || {
     printf '%s\n' "mud-config: cannot create spellbook directory '$spell_home'" >&2
+    exit 1
+  }
+fi
+
+# Ensure config directory exists
+if [ ! -d "$config_dir" ]; then
+  mkdir -p "$config_dir" || {
+    printf '%s\n' "mud-config: cannot create config directory '$config_dir'" >&2
     exit 1
   }
 fi
