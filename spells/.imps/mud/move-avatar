@@ -4,7 +4,7 @@
 
 set -eu
 
-config_file="${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud/config"
+config_file="${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud"
 
 # Exit early if config file doesn't exist
 if [ ! -f "$config_file" ]; then

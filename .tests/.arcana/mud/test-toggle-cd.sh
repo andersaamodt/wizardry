@@ -19,7 +19,7 @@ test_toggle_cd_help_shows_usage() {
 test_toggle_cd_enables_when_disabled() {
   skip-if-compiled || return $?
   tmpdir=$(make_tempdir)
-  mkdir -p "$tmpdir/.spellbook/.mud"
+  
   
   # Start with disabled (no cd-look=1 line)
 printf "other-setting=1\n" > "$tmpdir/.spellbook/.mud/config"

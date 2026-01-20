@@ -64,9 +64,9 @@ test_stats_no_avatar() {
   tmpdir=$(make_tempdir)
   stub_dir=$(make_tempdir)
   export SPELLBOOK_DIR="$tmpdir/custom-spellbook"
-  mkdir -p "$SPELLBOOK_DIR/.mud"
+  mkdir -p "$SPELLBOOK_DIR"
   # Create config with avatar disabled
-  printf 'avatar=0\n' > "$SPELLBOOK_DIR/.mud/config"
+  printf 'avatar=0\n' > "$SPELLBOOK_DIR/.mud"
   
   # Create character file (not directory) with stats
   character_file="$SPELLBOOK_DIR/.character"
@@ -96,13 +96,13 @@ test_stats_display() {
   create_xattr_stub "$stub_dir"
   
   # Set up config with avatar enabled
-  mkdir -p "$SPELLBOOK_DIR/.mud"
-  printf 'avatar=1\n' > "$SPELLBOOK_DIR/.mud/config"
+  mkdir -p "$SPELLBOOK_DIR"
+  printf 'avatar=1\n' > "$SPELLBOOK_DIR/.mud"
   
   # Create avatar
   avatar_path="$tmpdir/.avatar-test"
   mkdir -p "$avatar_path"
-  printf 'avatar-path=%s\n' "$avatar_path" >> "$SPELLBOOK_DIR/.mud/config"
+  printf 'avatar-path=%s\n' "$avatar_path" >> "$SPELLBOOK_DIR/.mud"
   
   # Build PATH
   export PATH="$stub_dir:$ROOT_DIR/spells/mud:$ROOT_DIR/spells/arcane:$ROOT_DIR/spells/enchant:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/mud:$PATH"

@@ -22,10 +22,10 @@ IMPS_DIR="$ROOT_DIR/spells/.imps/fs"
 
 # Determine config file location
 SPELLBOOK_DIR="${SPELLBOOK_DIR:-$HOME/.spellbook}"
-CONFIG_FILE="$SPELLBOOK_DIR/.mud/config"
+CONFIG_FILE="$SPELLBOOK_DIR/.mud"
 
-# Ensure parent directory exists
-mkdir -p "$(dirname "$CONFIG_FILE")"
+# Ensure spellbook directory exists
+mkdir -p "$SPELLBOOK_DIR"
 touch "$CONFIG_FILE"
 
 # Check current state
