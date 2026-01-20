@@ -56,9 +56,11 @@ while true; do
   exit_item="${exit_label_text}%kill -TERM \$PPID"
 
   # Check if MUD is enabled in config and include if so
+  spell_home="${SPELLBOOK_DIR:-$HOME/.spellbook}"
+  mud_config_file="$spell_home/.mud"
   mud_enabled=0
-  if command -v mud-config >/dev/null 2>&1; then
-    value=$(mud-config get mud-enabled 2>/dev/null) || value=""
+  if [ -f "$mud_config_file" ]; then
+    value=$(config-get "$mud_config_file" "mud-enabled" 2>/dev/null) || value=""
     [ "$value" = "1" ] && mud_enabled=1
   fi
   

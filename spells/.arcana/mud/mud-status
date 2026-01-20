@@ -31,14 +31,6 @@ fi
 # Older scripts expect GRAY, so mirror GREY when missing.
 GRAY=${GREY-}
 
-# Check if mud-config exists and is executable
-if ! command -v mud-config >/dev/null 2>&1; then
-  status="not installed"
-  color="$GRAY"
-  printf "%s%s%s\n" "$color" "$status" "$RESET"
-  exit 0
-fi
-
 # Get the spellbook directory
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 config_file="$spell_home/.mud"
@@ -60,7 +52,7 @@ total_count=0
 
 for feature in $FEATURES; do
   total_count=$((total_count + 1))
-  feature_status=$(mud-config get "$feature" 2>/dev/null || printf '0')
+  feature_status=$(config-get "$config_file" "$feature" 2>/dev/null || printf '0')
   if [ "$feature_status" = "1" ]; then
     enabled_count=$((enabled_count + 1))
   fi
