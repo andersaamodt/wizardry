@@ -22,7 +22,7 @@ set -eu
 
 # Get root directory to find config imps
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-root_dir=$(cd "$script_dir/../.." && pwd -P)
+root_dir=$(cd "$script_dir/../../.." && pwd -P)
 config_imps_dir="$root_dir/spells/.imps/fs"
 
 action=${1-toggle}

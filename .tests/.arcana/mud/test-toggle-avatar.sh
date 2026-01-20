@@ -9,7 +9,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/mud/toggle-avatar" --help
+  run_spell "spells/.arcana/mud/toggle-avatar" --help
   assert_success && assert_output_contains "Usage: toggle-avatar"
 }
 
@@ -18,7 +18,7 @@ test_enable_avatar() {
   export SPELLBOOK_DIR="$tmp"
   
   # Enable avatar
-  run_spell "spells/mud/toggle-avatar" enable
+  run_spell "spells/.arcana/mud/toggle-avatar" enable
   assert_success || return 1
   assert_output_contains "incarnate" || return 1
   
@@ -41,7 +41,7 @@ test_disable_avatar() {
   printf 'avatar=1\navatar-enabled=1\n' > "$SPELLBOOK_DIR/.mud"
   
   # Disable avatar
-  run_spell "spells/mud/toggle-avatar" disable
+  run_spell "spells/.arcana/mud/toggle-avatar" disable
   assert_success || return 1
   assert_output_contains "disabled" || return 1
   
@@ -56,11 +56,11 @@ test_toggle_avatar() {
   export SPELLBOOK_DIR="$tmp"
   
   # First toggle - enable (from default disabled)
-  run_spell "spells/mud/toggle-avatar"
+  run_spell "spells/.arcana/mud/toggle-avatar"
   assert_success || return 1
   
   # Second toggle - disable
-  run_spell "spells/mud/toggle-avatar"
+  run_spell "spells/.arcana/mud/toggle-avatar"
   assert_success || return 1
   assert_output_contains "disabled" || return 1
   

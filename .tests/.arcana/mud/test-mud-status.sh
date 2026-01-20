@@ -9,19 +9,19 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 spell_is_executable() {
-  [ -x "$ROOT_DIR/spells/mud/mud-status" ]
+  [ -x "$ROOT_DIR/spells/.arcana/mud/mud-status" ]
 }
 
 run_test_case ".arcana/mud/mud-status is executable" spell_is_executable
 
 spell_has_content() {
-  [ -s "$ROOT_DIR/spells/mud/mud-status" ]
+  [ -s "$ROOT_DIR/spells/.arcana/mud/mud-status" ]
 }
 
 run_test_case ".arcana/mud/mud-status has content" spell_has_content
 
 test_mud_status_help() {
-  run_spell "spells/mud/mud-status" --help
+  run_spell "spells/.arcana/mud/mud-status" --help
   assert_success && assert_output_contains "Usage:"
 }
 

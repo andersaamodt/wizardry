@@ -10,11 +10,11 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_toggle_cd_is_executable() {
-  [ -x "$ROOT_DIR/spells/mud/toggle-cd" ]
+  [ -x "$ROOT_DIR/spells/.arcana/mud/toggle-cd" ]
 }
 
 test_toggle_cd_help_shows_usage() {
-  run_spell spells/mud/toggle-cd --help
+  run_spell spells/.arcana/mud/toggle-cd --help
   assert_success || return 1
   assert_output_contains "Usage:" || return 1
   assert_output_contains "toggle" || return 1
@@ -29,7 +29,7 @@ test_toggle_cd_enables_when_disabled() {
   printf "other-setting=1\n" > "$tmpdir/.spellbook/.mud/config"
   
   # Run toggle-cd directly (not through run_cmd sandbox)
-  output=$(env SPELLBOOK_DIR="$tmpdir/.spellbook" sh "$ROOT_DIR/spells/mud/toggle-cd" 2>&1)
+  output=$(env SPELLBOOK_DIR="$tmpdir/.spellbook" sh "$ROOT_DIR/spells/.arcana/mud/toggle-cd" 2>&1)
   
   # Check output
   case "$output" in
@@ -57,7 +57,7 @@ test_toggle_cd_disables_when_enabled() {
   printf "cd-look=1\nother-setting=1\n" > "$tmpdir/.spellbook/.mud/config"
   
   # Run toggle-cd directly (not through run_cmd sandbox)
-  output=$(env SPELLBOOK_DIR="$tmpdir/.spellbook" sh "$ROOT_DIR/spells/mud/toggle-cd" 2>&1)
+  output=$(env SPELLBOOK_DIR="$tmpdir/.spellbook" sh "$ROOT_DIR/spells/.arcana/mud/toggle-cd" 2>&1)
   
   # Check output
   case "$output" in

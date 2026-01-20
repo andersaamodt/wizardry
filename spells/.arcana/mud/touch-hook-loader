@@ -7,7 +7,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: Source this file in your shell rc file to enable the touch hook.
 
-    . $HOME/.wizardry/spells/.arcana/mud/touch
+    . $HOME/.wizardry/spells/.arcana/mud/touch-hook-loader
 
 Then use 'toggle-touch-hook' to enable/disable the hook.
 
@@ -27,7 +27,7 @@ else
   touch_base=${0##*/}
   case "$touch_base" in
     sh|dash|bash|zsh|ksh|mksh) touch_sourced=1 ;;
-    touch) touch_sourced=0 ;;
+    touch-hook-loader) touch_sourced=0 ;;
     *) touch_sourced=1 ;;
   esac
 fi
