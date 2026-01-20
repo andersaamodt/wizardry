@@ -25,7 +25,7 @@ test_toggle_enables_feature() {
   assert_output_contains "enabled" || return 1
   
   # Verify config (.mud is a file)
-  config_file="$SPELLBOOK_DIR/.mud"
+  config_file="$SPELLBOOK_DIR/.mud/config"
   if [ -f "$config_file" ]; then
     value=$(grep "^touch-hook=" "$config_file" | cut -d= -f2)
     [ "$value" = "1" ] || { TEST_FAILURE_REASON="Expected touch-hook=1, got: $value"; return 1; }
@@ -40,7 +40,8 @@ test_toggle_disables_feature() {
   export SPELLBOOK_DIR="$tmp"
   
   # Set initial state to enabled
-  printf 'touch-hook=1\n' > "$SPELLBOOK_DIR/.mud"
+  mkdir -p "$SPELLBOOK_DIR/.mud"
+  printf 'touch-hook=1\n' > "$SPELLBOOK_DIR/.mud/config"
   
   # Toggle should disable
   run_spell "spells/.arcana/mud/toggle-touch-hook"
@@ -48,7 +49,7 @@ test_toggle_disables_feature() {
   assert_output_contains "disabled" || return 1
   
   # Verify config
-  config_file="$SPELLBOOK_DIR/.mud"
+  config_file="$SPELLBOOK_DIR/.mud/config"
   value=$(grep "^touch-hook=" "$config_file" | cut -d= -f2)
   [ "$value" = "0" ] || { TEST_FAILURE_REASON="Expected touch-hook=0, got: $value"; return 1; }
 }
@@ -66,7 +67,7 @@ test_toggle_twice_returns_to_original() {
   assert_success || return 1
   
   # Verify we're back to disabled
-  config_file="$SPELLBOOK_DIR/.mud"
+  config_file="$SPELLBOOK_DIR/.mud/config"
   value=$(grep "^touch-hook=" "$config_file" | cut -d= -f2)
   [ "$value" = "0" ] || { TEST_FAILURE_REASON="Expected touch-hook=0 after two toggles, got: $value"; return 1; }
 }

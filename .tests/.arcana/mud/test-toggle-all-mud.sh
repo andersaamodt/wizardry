@@ -22,13 +22,11 @@ test_enable_flag_enables_all() {
   assert_success || return 1
   assert_output_contains "All MUD features enabled" || return 1
   
-  # Verify all features are enabled (command-not-found removed - always enabled via invoke-wizardry)
+  # Verify all features are enabled (avatar and touch-hook)
   run_cmd env SPELLBOOK_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/mud-config" list
   assert_success || return 1
+  assert_output_contains "avatar=1" || return 1
   assert_output_contains "touch-hook=1" || return 1
-  assert_output_contains "fantasy-theme=1" || return 1
-  assert_output_contains "inventory=1" || return 1
-  assert_output_contains "combat=1" || return 1
 }
 
 test_disable_flag_disables_all() {
@@ -42,13 +40,11 @@ test_disable_flag_disables_all() {
   assert_success || return 1
   assert_output_contains "All MUD features disabled" || return 1
   
-  # Verify all features are disabled (command-not-found removed - always enabled via invoke-wizardry)
+  # Verify all features are disabled (avatar and touch-hook)
   run_cmd env SPELLBOOK_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/mud-config" list
   assert_success || return 1
+  assert_output_contains "avatar=0" || return 1
   assert_output_contains "touch-hook=0" || return 1
-  assert_output_contains "fantasy-theme=0" || return 1
-  assert_output_contains "inventory=0" || return 1
-  assert_output_contains "combat=0" || return 1
 }
 
 test_auto_toggle_enables_when_any_disabled() {
