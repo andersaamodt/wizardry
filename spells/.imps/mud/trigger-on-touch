@@ -1,5 +1,4 @@
 #!/bin/sh
-
 # trigger-on-touch TOUCHER TOUCHED - Process on-touch triggers between toucher and touched
 
 set -eu
