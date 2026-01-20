@@ -68,9 +68,9 @@ test_stats_no_avatar() {
   # Create config with avatar disabled
   printf 'avatar=0\n' > "$SPELLBOOK_DIR/.mud/config"
   
-  # Create character file with stats
+  # Create character file (not directory) with stats
   character_file="$SPELLBOOK_DIR/.character"
-  mkdir -p "$character_file"
+  touch "$character_file"
   
   create_xattr_stub "$stub_dir"
   
