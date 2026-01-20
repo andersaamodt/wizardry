@@ -12,49 +12,63 @@ test_help() {
   assert_success && assert_output_contains "Usage:"
 }
 
-test_requires_mud_config() {
-  # When mud-config is not available, should fail gracefully
-  tmpdir=$(make_tempdir)
+test_toggle_enables_parse() {
+  tmp=$(make_tempdir)
+  export SPELLBOOK_DIR="$tmp"
   
-  # Create minimal PATH without mud-config
-  PATH="$ROOT_DIR/spells/.imps:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:/usr/local/bin:/usr/bin:/bin" \
-    run_spell "spells/.arcana/mud/toggle-parse"
+  # First toggle - enable (from default disabled)
+  run_spell "spells/.arcana/mud/toggle-parse"
+  assert_success || return 1
   
-  assert_failure
-  assert_error_contains "mud-config not found"
+  # Verify config was set (.mud is a file)
+  config_file="$SPELLBOOK_DIR/.mud"
+  if [ -f "$config_file" ]; then
+    value=$(grep "^parse-enabled=" "$config_file" | cut -d= -f2)
+    [ "$value" = "1" ] || { TEST_FAILURE_REASON="Expected parse-enabled=1, got: $value"; return 1; }
+  else
+    TEST_FAILURE_REASON="Config file not created"
+    return 1
+  fi
 }
 
-test_calls_mud_config_toggle() {
-  # Create a stub mud-config that records being called
-  tmpdir=$(make_tempdir)
-  stub_dir="$tmpdir/stubs"
-  mkdir -p "$stub_dir"
+test_toggle_disables_parse() {
+  tmp=$(make_tempdir)
+  export SPELLBOOK_DIR="$tmp"
   
-  # Create stub mud-config
-  cat > "$stub_dir/mud-config" <<'STUB'
-#!/bin/sh
-printf 'mud-config called with args: %s\n' "$*"
-# Just output something to verify it was called with "toggle parse-enabled"
-if [ "$1" = "toggle" ] && [ "$2" = "parse-enabled" ]; then
-  printf 'Parse-enabled toggled\n'
-  exit 0
-fi
-exit 1
-STUB
-  chmod +x "$stub_dir/mud-config"
+  # Set initial state to enabled
+  printf 'parse-enabled=1\n' > "$SPELLBOOK_DIR/.mud"
   
-  # Run toggle-parse with stub in PATH
-  PATH="$stub_dir:$ROOT_DIR/spells/.imps:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:/usr/local/bin:/usr/bin:/bin" \
-    run_spell "spells/.arcana/mud/toggle-parse"
+  # Toggle should disable
+  run_spell "spells/.arcana/mud/toggle-parse"
+  assert_success || return 1
   
-  assert_success
-  assert_output_contains "toggle parse-enabled"
+  # Verify config was updated
+  config_file="$SPELLBOOK_DIR/.mud"
+  value=$(grep "^parse-enabled=" "$config_file" | cut -d= -f2)
+  [ "$value" = "0" ] || { TEST_FAILURE_REASON="Expected parse-enabled=0, got: $value"; return 1; }
+}
+
+test_toggle_twice_returns_to_original() {
+  tmp=$(make_tempdir)
+  export SPELLBOOK_DIR="$tmp"
+  
+  # First toggle - enable
+  run_spell "spells/.arcana/mud/toggle-parse"
+  assert_success || return 1
+  
+  # Second toggle - disable
+  run_spell "spells/.arcana/mud/toggle-parse"
+  assert_success || return 1
+  
+  # Verify we're back to disabled
+  config_file="$SPELLBOOK_DIR/.mud"
+  value=$(grep "^parse-enabled=" "$config_file" | cut -d= -f2)
+  [ "$value" = "0" ] || { TEST_FAILURE_REASON="Expected parse-enabled=0 after two toggles, got: $value"; return 1; }
 }
 
 run_test_case "toggle-parse shows usage" test_help
-run_test_case "toggle-parse requires mud-config" test_requires_mud_config
-run_test_case "toggle-parse calls mud-config toggle" test_calls_mud_config_toggle
-
-# Test via source-then-invoke pattern
+run_test_case "toggle-parse enables parse" test_toggle_enables_parse
+run_test_case "toggle-parse disables parse" test_toggle_disables_parse
+run_test_case "toggle-parse twice returns to original state" test_toggle_twice_returns_to_original
 
 finish_tests

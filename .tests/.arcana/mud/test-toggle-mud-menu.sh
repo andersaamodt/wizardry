@@ -15,39 +15,86 @@ test_help_shows_usage() {
   assert_output_contains "MUD" || return 1
 }
 
-test_toggle_enables_mud_menu() {
+test_toggle_enables_when_initially_disabled() {
   tmp=$(make_tempdir)
-  run_cmd env SPELLBOOK_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/toggle-mud-menu"
+  export SPELLBOOK_DIR="$tmp"
+  
+  # Initially, mud-enabled should not be set (defaults to 0/disabled)
+  run_spell "spells/.arcana/mud/toggle-mud-menu"
   assert_success || return 1
   assert_output_contains "enabled" || return 1
+  
+  # Verify the config was updated (.mud is a file, not a directory)
+  config_file="$SPELLBOOK_DIR/.mud"
+  if [ -f "$config_file" ]; then
+    value=$(grep "^mud-enabled=" "$config_file" | cut -d= -f2)
+    [ "$value" = "1" ] || { TEST_FAILURE_REASON="Expected mud-enabled=1, got: $value"; return 1; }
+  else
+    TEST_FAILURE_REASON="Config file not created at $config_file"
+    return 1
+  fi
 }
 
-test_toggle_disables_mud_menu() {
+test_toggle_disables_when_enabled() {
   tmp=$(make_tempdir)
-  # First enable
-  run_cmd env SPELLBOOK_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/toggle-mud-menu"
-  assert_success || return 1
+  export SPELLBOOK_DIR="$tmp"
   
-  # Then disable
-  run_cmd env SPELLBOOK_DIR="$tmp" "$ROOT_DIR/spells/.arcana/mud/toggle-mud-menu"
+  # Set initial state to enabled (.mud is a file)
+  printf 'mud-enabled=1\n' > "$SPELLBOOK_DIR/.mud"
+  
+  # Toggle should disable
+  run_spell "spells/.arcana/mud/toggle-mud-menu"
   assert_success || return 1
   assert_output_contains "hidden" || return 1
+  
+  # Verify the config was updated
+  config_file="$SPELLBOOK_DIR/.mud"
+  if [ -f "$config_file" ]; then
+    value=$(grep "^mud-enabled=" "$config_file" | cut -d= -f2)
+    [ "$value" = "0" ] || { TEST_FAILURE_REASON="Expected mud-enabled=0, got: $value"; return 1; }
+  else
+    TEST_FAILURE_REASON="Config file not found at $config_file"
+    return 1
+  fi
 }
 
-test_fails_when_mud_config_missing() {
+test_toggle_twice_returns_to_original_state() {
   tmp=$(make_tempdir)
-  # Copy the toggle script to a temp location without mud-config
-  cp "$ROOT_DIR/spells/.arcana/mud/toggle-mud-menu" "$tmp/toggle-mud-menu"
-  chmod +x "$tmp/toggle-mud-menu"
+  export SPELLBOOK_DIR="$tmp"
   
-  run_cmd env SPELLBOOK_DIR="$tmp" "$tmp/toggle-mud-menu"
-  assert_failure || return 1
-  assert_error_contains "mud-config not found" || return 1
+  # First toggle - enable
+  run_spell "spells/.arcana/mud/toggle-mud-menu"
+  assert_success || return 1
+  assert_output_contains "enabled" || return 1
+  
+  # Second toggle - disable  
+  run_spell "spells/.arcana/mud/toggle-mud-menu"
+  assert_success || return 1
+  assert_output_contains "hidden" || return 1
+  
+  # Verify we're back to disabled (.mud is a file)
+  config_file="$SPELLBOOK_DIR/.mud"
+  value=$(grep "^mud-enabled=" "$config_file" | cut -d= -f2)
+  [ "$value" = "0" ] || { TEST_FAILURE_REASON="Expected mud-enabled=0 after two toggles, got: $value"; return 1; }
+}
+
+test_creates_config_if_missing() {
+  tmp=$(make_tempdir)
+  export SPELLBOOK_DIR="$tmp"
+  
+  # Don't create the .mud directory - let the script handle it
+  run_spell "spells/.arcana/mud/toggle-mud-menu"
+  assert_success || return 1
+  
+  # Verify config file was created
+  config_file="$SPELLBOOK_DIR/.mud"
+  [ -f "$config_file" ] || { TEST_FAILURE_REASON="Config file was not created"; return 1; }
 }
 
 run_test_case "toggle-mud-menu --help shows usage" test_help_shows_usage
-run_test_case "toggle-mud-menu enables MUD in main menu" test_toggle_enables_mud_menu
-run_test_case "toggle-mud-menu toggles MUD off" test_toggle_disables_mud_menu
-run_test_case "toggle-mud-menu fails when mud-config missing" test_fails_when_mud_config_missing
+run_test_case "toggle-mud-menu enables when initially disabled" test_toggle_enables_when_initially_disabled
+run_test_case "toggle-mud-menu disables when enabled" test_toggle_disables_when_enabled
+run_test_case "toggle-mud-menu twice returns to original state" test_toggle_twice_returns_to_original_state
+run_test_case "toggle-mud-menu creates config if missing" test_creates_config_if_missing
 
 finish_tests
