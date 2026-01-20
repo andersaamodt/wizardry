@@ -4,94 +4,92 @@ applyTo: "spells/**,.tests/**,spells/.imps/**"
 
 ## Core Architecture
 
-**CRITICAL:** POSIX sh doesn't support hyphens in function names. Wizardry solves this via underscore functions + glosses.
+**CRITICAL:** All wizardry spells (including imps—imps ARE spells) call each other by hyphenated command names from PATH.
 
-1. **Imps define underscore functions**: `require_wizardry()`, `env_or()`, `menu()`
-2. **Glosses provide hyphenated commands**: `require-wizardry`, `env-or`, `main-menu`
-3. **invoke-wizardry preloads functions** via word_of_binding (not PATH)
-4. **Only glossary in PATH** (not imp/spell directories)
-5. **Background jobs call functions** (not scripts)
+**After invoke-wizardry runs:**
+1. All wizardry spells and imps are available in PATH
+2. Spells call each other by hyphenated names: `env-clear`, `has`, `temp-file`
+3. Never use full paths: NOT `$WIZARDRY_DIR/spells/.imps/...`
+4. Never use underscores in spell calls: NOT `env_clear` or `temp_file`
 
-## Function Naming
-
-**NOTE:** Imps are now flat scripts without functions. This section describes historical architecture for reference only.
-
-**In spell code (when calling imps/glosses):**
-```sh
-# Modern pattern - all imps are executable scripts
-require-wizardry || return 1       # ✓ Calls the imp script
-value=$(env-or VAR "default")      # ✓ Calls the imp script
-```
-
-**Users execute imps directly:**
-```sh
-$ require-wizardry                 # ✓ Works (imp is executable)
-$ env-or SPELLBOOK "$HOME/.spellbook"  # ✓ Works
-```
+**Function names vs spell names:**
+- **Function names** (inside functions): Use underscores (POSIX requirement) - `my_function()`
+- **Spell calls** (calling other spells): Use hyphens (from PATH) - `env-clear`, `has git`
 
 ## How Glosses Work
 
 `parse` imp reconstructs multi-word commands from space-separated args:
 
 ```sh
-# User: env or VAR DEFAULT
-# Gloss: parse "env" "or" "VAR" "DEFAULT"
-# Parse tries (longest first):
-#   env_or_VAR_DEFAULT → env_or_VAR → env_or ✓ → env
-# Calls: env_or("VAR", "DEFAULT")
+# User types: env or VAR DEFAULT
+# First-word gloss: parse "or" "VAR" "DEFAULT"
+# Parse reconstructs: env-or "VAR" "DEFAULT"
+# Executes the env-or spell from PATH
 ```
 
-**Priority:** Preloaded functions → wizardry spells → system commands
+Multi-word commands are split into space-separated words, then reconstructed by first-word glosses calling parse.
 
-## Background Jobs
+## Spell Invocation
 
-**✓ CORRECT:** Call function (has access to preloaded functions)
+**Modern pattern (all spells in PATH):**
 ```sh
-generate_glosses --quiet &
+# ✅ CORRECT - Call spells by hyphenated name from PATH
+env-clear
+has git || exit 1
+temp-file "data.txt"
+cursor-blink on
 ```
 
-**✗ WRONG:** Execute script (new process, no functions)
+**WRONG patterns:**
 ```sh
-"$WIZARDRY_DIR/spells/system/generate-glosses" --quiet &
+# ❌ WRONG - Never use underscores
+env_clear
+temp_file "data.txt"
+
+# ❌ WRONG - Never use full paths
+"$WIZARDRY_DIR/spells/.imps/sys/env-clear"
+. "$WIZARDRY_DIR/spells/.imps/sys/env-clear"
 ```
 
 ## Testing
 
-**Modern (sourced spell):**
+**For regular spells (executed):**
 ```sh
-run_sourced_spell generate-glosses --quiet
+run_spell "spells/category/spell-name" --args
 ```
 
-**Legacy (direct execution - doesn't work for spells needing functions):**
+**For uncastable spells (must be sourced):**
 ```sh
-run_spell "spells/system/generate-glosses" --quiet
+run_sourced_spell "spells/category/spell-name" --args
 ```
+
+**run_spell vs run_sourced_spell:**
+- `run_spell`: Executes the spell as a script (most spells)
+- `run_sourced_spell`: Sources the spell (for uncastable spells like jump-to-marker)
 
 ## invoke-wizardry Sequence
 
 1. **Set baseline PATH** (especially macOS)
-2. **Load word_of_binding** via `WIZARDRY_SOURCE_WORD_OF_BINDING=1`
-3. **Preload imps** (levels 0-3): require-wizardry, env-or, parse, etc.
-4. **Preload spells** (levels 0-3): detect-posix, validate-spells, generate-glosses, menu
-5. **Generate glosses** (synchronous - creates functions/aliases in shell)
-6. **Verify** menu loaded
+2. **Add all spell/imp directories to PATH**
+3. **Validate spells** 
+4. **Generate glosses** (creates first-word wrappers for multi-word commands)
+5. **Verify** menu loaded
 
 ## Common Mistakes
 
 | Wrong | Right | Issue |
 |-------|-------|-------|
-| `require-wizardry` in spell | `require_wizardry` | Hyphen causes parse loop |
-| Add imps to PATH | Preload with word_of_binding | Violates architecture |
-| `./spell &` background | `spell_function &` | Script has no functions |
-| `run_spell` modern spell | `run_sourced_spell` | Needs preloaded functions |
+| `env_clear` in spell | `env-clear` | Use hyphenated command name |
+| `temp_file` in spell | `temp-file` | Use hyphenated command name |
+| `"$WIZARDRY_DIR/..."` | `spell-name` | Use PATH, not full paths |
+| `run_spell` for uncastable | `run_sourced_spell` | Uncastable spells must be sourced |
 
 ## Debugging
 
-**"require_wizardry: not found"** → Spell using underscore but function not preloaded
-- Fix: Ensure invoke-wizardry preloaded it, or use `run_sourced_spell` in tests
+**"env-clear: not found"** → PATH not set up correctly
+- Fix: Ensure invoke-wizardry ran successfully
+- Check: `echo $PATH` should include wizardry directories
 
-**"require-wizardry: not found"** → Hyphenated command not in PATH
-- Fix: Use underscore in spell code: `require_wizardry`
-
-**Background job fails** → Executing script instead of calling function
-- Fix: `spell_function &` not `"$path/spell" &`
+**Background job fails** → Spell not in PATH
+- Fix: Call spell by hyphenated name from PATH: `spell-name &`
+- NOT: `"$path/spell" &`

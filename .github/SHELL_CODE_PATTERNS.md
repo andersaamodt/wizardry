@@ -156,27 +156,7 @@ case "${1-}" in
 esac
 ```
 
-### Self-Execute Pattern
 
-### Self-Execute Pattern (For Imps Only)
-
-**Makes imp work both sourced and executed:**
-
-```sh
-#!/bin/sh
-
-_imp_name() {
-  # Function body
-}
-
-# Self-execute when run directly
-case "$0" in
-  */imp-name) _imp_name "$@" ;; esac
-```
-
-**Why:** `$0` is script path when executed, shell name when sourced. Pattern `*/imp-name` matches only execution.
-
-**Note:** Spells are now flat, linear scripts (no function wrappers). This pattern is only used for imps.
 
 ### Command Substitution
 
@@ -248,12 +228,9 @@ exit_code=$?
 # WRONG: Variable not set in parent
 echo "test" | grep "test" && found=1
 
-# WRONG: Function not loaded in parent
-word_of_binding spell 2>&1 | grep "Loaded"
-
 # CORRECT: Don't pipe state changes
-word_of_binding spell >/dev/null 2>&1
-command -v spell >/dev/null 2>&1 && echo "Loaded"
+output=$(generate-glosses 2>&1)
+echo "$output" | grep "Success" && echo "Loaded"
 ```
 
 ### Here Documents

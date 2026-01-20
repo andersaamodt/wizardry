@@ -60,7 +60,7 @@
 - Sourced-only scripts (invoke-wizardry, env-clear, invoke-thesaurus) must use `return 0` not `exit 0` for normal completion to avoid exiting parent shell (2)
 - Test helper imps that are sourced (skip-if-compiled) must define functions and use self-execute pattern, not use bare `exit` statements which exit the calling test
 - When implementing a feature across "all items" (e.g., adding colors to all install-menu entries), systematically verify each item is covered rather than assuming completion - PR #874 added colors to core-status and tor-status, but mud-status was never created, leaving one menu item without colors.
-- The word-of-binding function-preloading paradigm was deprecated in favor of simpler PATH-based imp execution.
+
 - .imps/sys directory must be in PATH so system imps like require-wizardry are directly callable as commands (PR #594).
 - Circular dependency during sourcing: imps must be available before spells call them; add all imp families to PATH before sourcing (PR #595).
 - Scripts must verify prerequisites exist before calling them to avoid "command not found" errors during bootstrap (PR #596).
