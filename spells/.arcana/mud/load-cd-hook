@@ -7,7 +7,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: Source this file in your shell rc file to enable the cd hook.
 
-    . $HOME/.wizardry/spells/.arcana/mud/cd-hook-loader
+    . $HOME/.wizardry/spells/.arcana/mud/load-cd-hook
 
 Then use 'toggle-cd' to enable/disable the hook.
 
@@ -27,7 +27,7 @@ else
   cd_base=${0##*/}
   case "$cd_base" in
     sh|dash|bash|zsh|ksh|mksh) cd_sourced=1 ;;
-    cd-hook-loader) cd_sourced=0 ;;
+    load-cd-hook) cd_sourced=0 ;;
     *) cd_sourced=1 ;;
   esac
 fi
