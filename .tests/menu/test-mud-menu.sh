@@ -267,7 +267,7 @@ SH
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *"[ ] cd hook"*) : ;;
+    *"[ ] Look on directory change (cd hook)"*) : ;;
     *) TEST_FAILURE_REASON="cd hook should show [ ] when not installed: $args"; return 1 ;;
   esac
 }
@@ -312,7 +312,7 @@ SH
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *"[X] cd hook"*) : ;;
+    *"[X] Look on directory change (cd hook)"*) : ;;
     *) TEST_FAILURE_REASON="cd hook should show [X] when installed: $args"; return 1 ;;
   esac
 }
@@ -412,20 +412,16 @@ SH
   args=$(cat "$tmp/log")
   # Check all planned features are shown
   case "$args" in
-    *"Touch hook"*) : ;;
+    *"On-touch triggers (touch hook)"*) : ;;
     *) TEST_FAILURE_REASON="Menu should show Touch hook: $args"; return 1 ;;
   esac
   case "$args" in
-    *"Fantasy theme"*) : ;;
-    *) TEST_FAILURE_REASON="Menu should show Fantasy theme: $args"; return 1 ;;
+    *"Avatar (HP/MP, inventory)"*) : ;;
+    *) TEST_FAILURE_REASON="Menu should show Avatar: $args"; return 1 ;;
   esac
   case "$args" in
-    *"Inventory feature"*) : ;;
-    *) TEST_FAILURE_REASON="Menu should show Inventory feature: $args"; return 1 ;;
-  esac
-  case "$args" in
-    *"HP/MP and combat"*) : ;;
-    *) TEST_FAILURE_REASON="Menu should show HP/MP and combat: $args"; return 1 ;;
+    *"Look on directory change (cd hook)"*) : ;;
+    *) TEST_FAILURE_REASON="Menu should show cd hook: $args"; return 1 ;;
   esac
 }
 
