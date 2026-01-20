@@ -70,7 +70,7 @@ This fetches test failures from PR description via GitHub API. Works immediately
 - `tests.md` — Testing framework and patterns
 - `logging.md` — Output and error handling
 - `glossary-and-function-architecture.md` — Glossary system details
-- `castable-uncastable-pattern.md` — DEPRECATED old pattern (reference only)
+- `bootstrapping.md` — Bootstrapping and uncastable pattern guide
 
 ## What is Wizardry?
 
@@ -168,20 +168,22 @@ A collection of POSIX shell scripts themed as magical spells for the terminal. T
 #!/bin/sh
 # Brief description
 
-show_usage() { cat <<'USAGE'
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
 Usage: spell-name [args]
 Description.
 USAGE
-}
+  exit 0
+  ;;
+esac
 
-case "${1-}" in
---help|--usage|-h) show_usage; exit 0 ;; esac
-
-require-wizardry || exit 1
 set -eu
-. env-clear
 
 # Main logic
+# Call other spells by hyphenated name:
+env-clear
+has git || exit 1
 ```
 
 ### Imp Template (Action)
@@ -258,41 +260,39 @@ has git || fail "git required"
 | `$var` unquoted | `"$var"` |
 | `value=$1` | `value=${1-}` |
 | "Please install X" | "spell-name: X not found" + auto-fix |
-| 4+ functions in spell | Split into spells or use imps |
+| More than 1 function in spell | Document in EXEMPTIONS.md |
 | `test_name.sh` | `test-name.sh` (hyphens!) |
 | Guess test results | Run tests, report actual counts |
-| `require-wizardry` in code | `require_wizardry` (underscore!) |
-| `. env-clear` | `env_clear` (call function!) |
-| Execute script in background | Call function in background |
-| Add imps to PATH | Preload with word_of_binding |
-| `run_spell` for modern spells | `run_sourced_spell` |
+| `env_clear` in spell | `env-clear` (hyphenated!) |
+| `temp_file` in spell | `temp-file` (hyphenated!) |
+| `$WIZARDRY_DIR/...` path | Use spell name from PATH |
+| `run_spell` for uncastable | `run_sourced_spell` |
 
-## CRITICAL: Glossary and Function Architecture
+## CRITICAL: Spell Calling Convention
 
-**READ THIS BEFORE WORKING ON SPELLS, IMPS, OR GLOSSES:**
+**READ THIS BEFORE WORKING ON SPELLS:**
 
-See `.github/glossary-and-function-architecture.md` for complete details.
+See `.github/glossary-and-function-architecture.md` and `.github/bootstrapping.md` for complete details.
 
 **Key rules:**
-1. **Spells use underscore function names:** `require_wizardry`, `env_or`, `temp_file`
-2. **Glosses provide hyphenated commands:** `require-wizardry`, `env-or`, `temp-file`
-3. **Only glossary directory in PATH:** No imp/spell directories
-4. **Background jobs call functions:** `generate_glosses &`, not `./generate-glosses &`
-5. **Tests use sourced spells:** `run_sourced_spell spell-name` for modern spells
+1. **ALL wizardry spells call each other by hyphenated names from PATH:** `env-clear`, `temp-file`, `has git`
+2. **NEVER use underscores in spell calls:** NOT `env_clear` or `temp_file`
+3. **NEVER use full paths:** NOT `$WIZARDRY_DIR/spells/.imps/...`
+4. **Function names use underscores:** `my_function()` (POSIX requirement)
+5. **Spell calls use hyphens:** `env-clear` (from PATH)
 
 **Common mistakes that cause "command not found" errors:**
-- Using hyphenated names in spell code (`require-wizardry` → `require_wizardry`)
-- Executing scripts in background instead of calling functions
-- Adding imp directories to PATH (violates architecture)
-- Using `run_spell` for spells that need preloaded functions
+- Using underscores in spell calls (`env_clear` → should be `env-clear`)
+- Using full paths to spells (violates design)
+- Forgetting invoke-wizardry adds all spells to PATH
 
 ## Workflows
 
 ### Creating a New Spell
 
-1. **Plan**: One focused thing? < 100 lines? ≤ 3 functions?
+1. **Plan**: One focused thing? < 100 lines? ≤ 1 helper function?
 2. **Copy template** from above
-3. **Implement** following `.github/instructions/spells.instructions.md`
+3. **Implement** following `.github/spells.md`
 4. **Create test** at `.tests/category/test-spell-name.sh` (REQUIRED)
 5. **Run test** with `test-spell category/test-spell-name.sh` (includes common tests)
 6. **Lint**: `lint-magic spells/category/spell-name`
@@ -301,7 +301,7 @@ See `.github/glossary-and-function-architecture.md` for complete details.
 ### Creating a New Imp
 
 1. **Verify reuse**: Is code used in at least 2 spells? (If not, don't create imp)
-2. **Plan**: One thing? < 50 lines? Zero or one function?
+2. **Plan**: One thing? < 50 lines? NO functions allowed!
 3. **Determine type**: Conditional (no `set -eu`) or Action (`set -eu`)?
 4. **Copy template** from above
 5. **Implement** following `.github/imps.md`

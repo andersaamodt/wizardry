@@ -6,7 +6,7 @@ applyTo: "spells/**"
 
 **CRITICAL**: When creating a new spell, you MUST also create a corresponding test file:
 - Spell location: `spells/category/spell-name`
-- Test location: `.tests/category/test_spell-name.sh`
+- Test location: `.tests/category/test-spell-name.sh`
 
 Test files are NOT optional. Every spell requires tests covering:
 1. `--help` output
@@ -15,7 +15,7 @@ Test files are NOT optional. Every spell requires tests covering:
 
 **After creating tests, you MUST run them and report actual results:**
 ```sh
-.tests/category/test_spell-name.sh
+.tests/category/test-spell-name.sh
 ```
 Never claim tests pass without actually executing them. Report the actual pass/fail counts.
 
@@ -60,15 +60,17 @@ set -eu
 
 ### Function Naming
 
-All functions in spells must use **snake_case** naming:
+**CRITICAL**: Usage/help text should be inline (in case statement), NOT in a function.
+
+All helper functions in spells must use **snake_case** naming:
 
 ```sh
-# CORRECT
-show_usage() { ... }
+# CORRECT (helper function if absolutely needed)
 detect_os() { ... }
-helper_usable() { ... }
-read_value() { ... }
 validate_name() { ... }
+
+# WRONG - usage should NOT be in a function
+show_usage() { ... }  # Use inline heredoc instead!
 
 # WRONG - do not use underscore prefix in spells
 _jump() { ... }
@@ -79,11 +81,13 @@ my-function() { ... }
 ```
 
 **Convention**:  📐
-- **Spells**: Use `snake_case` for helper functions (when needed)
+- **Spells**: Use `snake_case` for helper functions (maximum 1, more requires EXEMPTIONS.md documentation)
+- **Usage**: MUST be inline in case statement with heredoc, NOT in a function
 - **Imps**: Are flat scripts with NO functions - they execute directly
 
 **Rationale**:
 - `snake_case` is the dominant convention in POSIX shell for helper functions
+- Usage inline keeps spells simple and follows flat script philosophy
 - Imps are now flat, linear scripts without function wrappers
 - Consistent naming makes code easier to read and maintain
 - Helper functions should be minimal - more than 1 helper function requires documentation in EXEMPTIONS.md
