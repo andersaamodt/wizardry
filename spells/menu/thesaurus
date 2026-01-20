@@ -19,8 +19,8 @@ esac
 
 # Set up WIZARDRY_DIR if not already set
 if [ -z "${WIZARDRY_DIR-}" ]; then
-  _thes_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  WIZARDRY_DIR=$(cd "$_thes_script_dir/../.." && pwd -P)
+  thes_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  WIZARDRY_DIR=$(cd "$thes_script_dir/../.." && pwd -P)
   export WIZARDRY_DIR
 fi
 

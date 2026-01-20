@@ -1,0 +1,40 @@
+#!/bin/sh
+# damage-file FILE DAMAGE - apply damage to a file using deal-damage imp
+set -eu
+
+# Validate arguments
+if [ "$#" -ne 2 ]; then
+  printf '%s\n' "damage-file: requires exactly two arguments (file path and damage amount)." >&2
+  exit 2
+fi
+
+file=$1
+new_damage=$2
+
+# Validate damage is a number
+case "$new_damage" in
+  ''|*[!0-9]*)
+    printf '%s\n' "damage-file: damage must be a positive number." >&2
+    exit 2
+    ;;
+esac
+
+# Check file exists
+if [ ! -e "$file" ]; then
+  printf '%s\n' "damage-file: file does not exist." >&2
+  exit 1
+fi
+
+# Apply damage using the deal-damage imp
+deal-damage "$file" "$new_damage"
+
+# Get total damage for display
+total_damage=0
+if existing_damage=$(read-magic "$file" damage 2>/dev/null); then
+  case "$existing_damage" in
+    ''|*[!0-9]*) total_damage=0 ;;
+    *) total_damage=$existing_damage ;;
+  esac
+fi
+
+printf '%s\n' "The file has taken $new_damage damage (total: $total_damage)."

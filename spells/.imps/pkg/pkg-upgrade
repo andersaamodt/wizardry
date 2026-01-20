@@ -4,12 +4,12 @@
 set -eu
 
 
-_pug_pm=$(pkg-manager) || {
+pug_pm=$(pkg-manager) || {
   printf '%s\n' "pkg-upgrade: no supported package manager" >&2
   exit 1
 }
 
-case $_pug_pm in
+case $pug_pm in
   apt)    sudo apt-get -y upgrade ;;
   pacman) sudo pacman --noconfirm -Su ;;
   nix)    nix-env -u ;;

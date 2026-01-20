@@ -16,25 +16,25 @@ USAGE
 esac
 
 # Uncastable pattern - ensures spell is sourced, not executed
-_jump_trash_sourced=0
+jump_trash_sourced=0
 if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
   case "${ZSH_EVAL_CONTEXT-}" in
-    *:file) _jump_trash_sourced=1 ;;
+    *:file) jump_trash_sourced=1 ;;
   esac
 else
-  _jump_trash_base=${0##*/}
-  case "$_jump_trash_base" in
-    sh|dash|bash|zsh|ksh|mksh) _jump_trash_sourced=1 ;;
-    jump-trash) _jump_trash_sourced=0 ;;
-    *) _jump_trash_sourced=1 ;;
+  jump_trash_base=${0##*/}
+  case "$jump_trash_base" in
+    sh|dash|bash|zsh|ksh|mksh) jump_trash_sourced=1 ;;
+    jump-trash) jump_trash_sourced=0 ;;
+    *) jump_trash_sourced=1 ;;
   esac
 fi
 
-if [ "$_jump_trash_sourced" -eq 0 ]; then
+if [ "$jump_trash_sourced" -eq 0 ]; then
   printf '%s\n' "This spell cannot be cast directly. Invoke it with: jump trash" >&2
   return 1 2>/dev/null || exit 1
 fi
-unset _jump_trash_sourced _jump_trash_base
+unset jump_trash_sourced jump_trash_base
 
 set -eu
 . env-clear

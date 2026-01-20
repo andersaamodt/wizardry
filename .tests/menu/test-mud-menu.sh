@@ -85,6 +85,22 @@ SH
   chmod +x "$tmp/check-command-not-found-hook"
 }
 
+make_stub_config_get() {
+  tmp=$1
+  expected_value=${2:-0}
+  cat >"$tmp/config-get" <<SH
+#!/bin/sh
+# Stub for config-get - returns $expected_value for cd-look
+if [ "\$2" = "cd-look" ]; then
+  printf '%s\n' "$expected_value"
+  exit 0
+fi
+printf '0\n'
+exit 0
+SH
+  chmod +x "$tmp/config-get"
+}
+
 make_failing_menu() {
   tmp=$1
   cat >"$tmp/menu" <<'SH'
@@ -237,17 +253,21 @@ SH
   chmod +x "$tmp/exit-label"
   
   make_stub_check_cd_hook "$tmp"
+  make_stub_mud_config "$tmp"
+  make_stub_check_command_not_found_hook "$tmp"
+  make_stub_config_get "$tmp" "0"  # cd-look disabled
   
-  # Use a temp rc file that doesn't have the cd hook installed
-  rc_file="$tmp/rc"
-  : >"$rc_file"
+  # Set up empty spellbook (no cd-look config)
+  spellbook_dir="$tmp/spellbook"
+  mkdir -p "$spellbook_dir/.mud"
+  : > "$spellbook_dir/.mud/config"
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" MENU_LOG="$tmp/log" WIZARDRY_RC_FILE="$rc_file" "$ROOT_DIR/spells/menu/mud-menu"
+  SPELLBOOK_DIR="$spellbook_dir" run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.arcana/mud:/bin:/usr/bin" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || return 1
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *"[ ] cd hook"*) : ;;
+    *"[ ] Look on directory change (cd hook)"*) : ;;
     *) TEST_FAILURE_REASON="cd hook should show [ ] when not installed: $args"; return 1 ;;
   esac
 }
@@ -278,18 +298,21 @@ SH
   chmod +x "$tmp/exit-label"
   
   make_stub_check_cd_hook "$tmp"
+  make_stub_mud_config "$tmp"
+  make_stub_check_command_not_found_hook "$tmp"
+  make_stub_config_get "$tmp" "1"  # cd-look enabled
   
   # Set up config file with cd-look enabled (new config-based approach)
   spellbook_dir="$tmp/spellbook"
   mkdir -p "$spellbook_dir/.mud"
   printf 'cd-look=1\n' > "$spellbook_dir/.mud/config"
   
-  SPELLBOOK_DIR="$spellbook_dir" run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-menu"
+  SPELLBOOK_DIR="$spellbook_dir" run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.arcana/mud:/bin:/usr/bin" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || return 1
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *"[X] cd hook"*) : ;;
+    *"[X] Look on directory change (cd hook)"*) : ;;
     *) TEST_FAILURE_REASON="cd hook should show [X] when installed: $args"; return 1 ;;
   esac
 }
@@ -332,13 +355,14 @@ SH
   make_stub_check_cd_hook "$tmp"
   make_stub_mud_config "$tmp"
   make_stub_check_command_not_found_hook "$tmp"
+  make_stub_config_get "$tmp" "0"  # cd-look disabled
   
   rc_file="$tmp/rc"
   : >"$rc_file"
   config_dir="$tmp/mud"
   mkdir -p "$config_dir"
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" MENU_LOG="$tmp/log" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.arcana/mud:/bin:/usr/bin" MENU_LOG="$tmp/log" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -375,32 +399,29 @@ SH
   make_stub_check_cd_hook "$tmp"
   make_stub_mud_config "$tmp"
   make_stub_check_command_not_found_hook "$tmp"
+  make_stub_config_get "$tmp" "0"  # cd-look disabled
   
   rc_file="$tmp/rc"
   : >"$rc_file"
   config_dir="$tmp/mud"
   mkdir -p "$config_dir"
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" MENU_LOG="$tmp/log" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.arcana/mud:/bin:/usr/bin" MENU_LOG="$tmp/log" MUD_DIR="$config_dir" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || return 1
   
   args=$(cat "$tmp/log")
   # Check all planned features are shown
   case "$args" in
-    *"Touch hook"*) : ;;
+    *"On-touch triggers (touch hook)"*) : ;;
     *) TEST_FAILURE_REASON="Menu should show Touch hook: $args"; return 1 ;;
   esac
   case "$args" in
-    *"Fantasy theme"*) : ;;
-    *) TEST_FAILURE_REASON="Menu should show Fantasy theme: $args"; return 1 ;;
+    *"Avatar (HP/MP, inventory)"*) : ;;
+    *) TEST_FAILURE_REASON="Menu should show Avatar: $args"; return 1 ;;
   esac
   case "$args" in
-    *"Inventory feature"*) : ;;
-    *) TEST_FAILURE_REASON="Menu should show Inventory feature: $args"; return 1 ;;
-  esac
-  case "$args" in
-    *"HP/MP and combat"*) : ;;
-    *) TEST_FAILURE_REASON="Menu should show HP/MP and combat: $args"; return 1 ;;
+    *"Look on directory change (cd hook)"*) : ;;
+    *) TEST_FAILURE_REASON="Menu should show cd hook: $args"; return 1 ;;
   esac
 }
 
@@ -434,8 +455,8 @@ SH
   
   # Use a temp spellbook dir that doesn't have the cd hook installed
   spellbook_dir="$tmp/spellbook"
-  mkdir -p "$spellbook_dir/.mud"
-  : >"$spellbook_dir/.mud/config"
+  mkdir -p "$spellbook_dir"
+  : >"$spellbook_dir/.mud"
   
   # Menu stub that simulates CD hook toggle by directly modifying the config file
   cat >"$tmp/menu" <<'SH'
@@ -458,10 +479,11 @@ printf '%s\n' "START_SELECTION=$start_sel" >>"$MENU_LOG"
 call_count=$((call_count + 1))
 printf '%s\n' "$call_count" >"$CALL_COUNT_FILE"
 if [ "$call_count" -eq 1 ]; then
-  # First call: simulate CD hook toggle by directly modifying config file
+  # First call: simulate CD hook toggle by directly modifying config file and outputting selection
   spellbook_dir=${SPELLBOOK_DIR:-$HOME/.spellbook}
-  mkdir -p "$spellbook_dir/.mud"
-  printf 'cd-look=1\n' >> "$spellbook_dir/.mud/config"
+  printf 'cd-look=1\n' >> "$spellbook_dir/.mud"
+  # Output the selection that was made (CD hook toggle is item 3)
+  printf '%s\n' "[ ] Look on directory change (cd hook)%toggle-cd"
   exit 0
 fi
 # Second call: exit
@@ -469,7 +491,7 @@ kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$tmp/menu"
   
-  SPELLBOOK_DIR="$spellbook_dir" run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" "$ROOT_DIR/spells/menu/mud-menu"
+  SPELLBOOK_DIR="$spellbook_dir" run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.arcana/mud:/bin:/usr/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
   
   log_content=$(cat "$tmp/log")

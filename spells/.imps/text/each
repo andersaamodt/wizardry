@@ -4,4 +4,4 @@
 set -eu
 
 
-while IFS= read -r _each_line; do "$@" "$_each_line"; done
+while IFS= read -r each_line; do "$@" "$each_line"; done

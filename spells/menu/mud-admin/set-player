@@ -23,11 +23,10 @@ if [ -z "$player" ]; then
     usage-error "set-player" "player name required"
 fi
 
-# Store player name using mud-config instead of polluting rc files
-if has mud-config; then
-    mud-config set player "$player"
-    printf '%s\n' "Player identity set to '$player'."
-else
-    die "set-player: mud-config not found. Install wizardry or ensure spells are in PATH."
-        exit 1
-fi
+# Store player name using config-set
+spell_home="${SPELLBOOK_DIR:-$HOME/.spellbook}"
+config_file="$spell_home/.mud"
+mkdir -p "$spell_home"
+touch "$config_file"
+config-set "$config_file" "player" "$player"
+printf '%s\n' "Player identity set to '$player'."

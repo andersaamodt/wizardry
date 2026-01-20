@@ -633,11 +633,11 @@ if [ -z "${WIZARDRY_DIR-}" ]; then
   # Try to detect from script location
   if command -v dirname >/dev/null 2>&1 && command -v cd >/dev/null 2>&1 \
      && command -v pwd >/dev/null 2>&1; then
-    _script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || _script_dir=""
-    if [ -n "$_script_dir" ]; then
-      _wiz_root=$(CDPATH= cd -- "$_script_dir/../.." 2>/dev/null && pwd -P) || _wiz_root=""
-      if [ -n "$_wiz_root" ] && [ -d "$_wiz_root/spells" ]; then
-        WIZARDRY_DIR=$_wiz_root
+    script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || script_dir=""
+    if [ -n "$script_dir" ]; then
+      wiz_root=$(CDPATH= cd -- "$script_dir/../.." 2>/dev/null && pwd -P) || wiz_root=""
+      if [ -n "$wiz_root" ] && [ -d "$wiz_root/spells" ]; then
+        WIZARDRY_DIR=$wiz_root
         export WIZARDRY_DIR
       fi
     fi
@@ -678,20 +678,20 @@ set -eu
 # Add imps to PATH for spell demonstrations
 if [ -n "${WIZARDRY_DIR-}" ]; then
   # Build imp path
-  _imp_path="${WIZARDRY_DIR}/spells/.imps/sys"
-  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/cond"
-  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/out"
-  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/fs"
-  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/str"
-  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/paths"
-  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/text"
-  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/input"
-  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/lex"
-  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/menu"
-  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/pkg"
-  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/test"
-  _imp_path="$_imp_path:${WIZARDRY_DIR}/spells/.imps/lang"
-  PATH="$_imp_path:$PATH"
+  imp_path="${WIZARDRY_DIR}/spells/.imps/sys"
+  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/cond"
+  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/out"
+  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/fs"
+  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/str"
+  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/paths"
+  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/text"
+  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/input"
+  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/lex"
+  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/menu"
+  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/pkg"
+  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/test"
+  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/lang"
+  PATH="$imp_path:$PATH"
   export PATH
 fi
 

@@ -1,0 +1,103 @@
+#!/bin/sh
+
+# Toggle the avatar system on or off.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: toggle-avatar [enable|disable]
+
+Toggle the MUD avatar system. When enabled, creates a folder avatar that
+represents your character and follows you between directories.
+
+With no argument, toggles the current state.
+With 'enable', turns on the avatar system.
+With 'disable', turns off the avatar system.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+action=${1-toggle}
+
+# Get script directory to find imps
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+ROOT_DIR=$(cd "$SCRIPT_DIR/../../.." && pwd -P)
+IMPS_DIR="$ROOT_DIR/spells/.imps/fs"
+
+# Determine config file location
+SPELLBOOK_DIR="${SPELLBOOK_DIR:-$HOME/.spellbook}"
+CONFIG_FILE="$SPELLBOOK_DIR/.mud"
+
+# Ensure spellbook directory exists
+mkdir -p "$SPELLBOOK_DIR"
+touch "$CONFIG_FILE"
+
+case "$action" in
+  enable)
+    "$IMPS_DIR/config-set" "$CONFIG_FILE" "avatar" "1"
+    
+    # Initialize avatar if not already done
+    if command -v incarnate >/dev/null 2>&1; then
+      avatar_result=$(incarnate 2>&1) || true
+      # Extract just the avatar name for thematic message
+      avatar_name=$("$IMPS_DIR/config-get" "$CONFIG_FILE" "avatar-name" 2>/dev/null || printf 'adventurer')
+      printf '✓ Avatar enabled. You incarnate as %s.\n' ".$avatar_name"
+      printf '%s\n' "Note: Restart your shell or run 'invoke-wizardry' to activate avatar movement."
+    else
+      printf '✓ Avatar enabled.\n'
+      printf '%s\n' "Note: Restart your shell or run 'invoke-wizardry' to activate avatar movement."
+    fi
+    ;;
+  disable)
+    # Get current avatar info
+    avatar_path=$("$IMPS_DIR/config-get" "$CONFIG_FILE" "avatar-path" 2>/dev/null || printf '')
+    default_name=$(whoami 2>/dev/null || printf 'adventurer')
+    avatar_name=$("$IMPS_DIR/config-get" "$CONFIG_FILE" "avatar-name" 2>/dev/null \
+      || printf '%s' "$default_name")
+    
+    "$IMPS_DIR/config-set" "$CONFIG_FILE" "avatar" "0"
+    
+    # If avatar exists and has contents, create corpse in home directory
+    if [ -n "$avatar_path" ] && [ -d "$avatar_path" ]; then
+      # Check if avatar has any contents
+      if [ -n "$(ls -A "$avatar_path" 2>/dev/null)" ]; then
+        # Create corpse in home directory
+        home_dir="${HOME:-.}"
+        if command -v possessive >/dev/null 2>&1; then
+          corpse_name=$(possessive "$avatar_name")
+        else
+          corpse_name="$avatar_name's"
+        fi
+        corpse_path="$home_dir/${corpse_name} corpse"
+        
+        # Move avatar to home as corpse
+        mv "$avatar_path" "$corpse_path" 2>/dev/null || true
+        printf '✓ Avatar disabled. %s corpse remains in %s.\n' "$corpse_name" "$home_dir"
+      else
+        # Empty avatar, just remove it
+        rmdir "$avatar_path" 2>/dev/null || true
+        printf '✓ Avatar disabled.\n'
+      fi
+    else
+      printf '✓ Avatar disabled.\n'
+    fi
+    ;;
+  toggle)
+    current=$("$IMPS_DIR/config-get" "$CONFIG_FILE" "avatar" 2>/dev/null || printf '0')
+    if [ "$current" = "1" ]; then
+      "$0" disable
+    else
+      "$0" enable
+    fi
+    ;;
+  *)
+    printf '%s\n' "toggle-avatar: unknown action '$action'" >&2
+    printf '%s\n' "Usage: toggle-avatar [enable|disable]" >&2
+    exit 1
+    ;;
+esac
+
+exit 0

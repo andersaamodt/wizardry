@@ -32,23 +32,23 @@ jobs:
           - job_name: "2/6"
             levels: "1-2"
             max_level: 2
-            test_flags: "--skip-common"
+            test_flags: ""
           - job_name: "3/6"
             levels: "3-8"
             max_level: 8
-            test_flags: "--skip-common"
+            test_flags: ""
           - job_name: "4/6"
             levels: "9-15"
             max_level: 15
-            test_flags: "--skip-common"
+            test_flags: ""
           - job_name: "5/6"
             levels: "16-24"
             max_level: 24
-            test_flags: "--skip-common"
+            test_flags: ""
           - job_name: "6/6"
             levels: "25-27"
             max_level: 27
-            test_flags: "--skip-common"
+            test_flags: ""
     env:
       WIZARDRY_OS_LABEL: nixos
     steps:
@@ -95,23 +95,23 @@ jobs:
           - job_name: "2/6"
             levels: "1-2"
             max_level: 2
-            test_flags: "--skip-common"
+            test_flags: ""
           - job_name: "3/6"
             levels: "3-8"
             max_level: 8
-            test_flags: "--skip-common"
+            test_flags: ""
           - job_name: "4/6"
             levels: "9-15"
             max_level: 15
-            test_flags: "--skip-common"
+            test_flags: ""
           - job_name: "5/6"
             levels: "16-24"
             max_level: 24
-            test_flags: "--skip-common"
+            test_flags: ""
           - job_name: "6/6"
             levels: "25-27"
             max_level: 27
-            test_flags: "--skip-common"
+            test_flags: ""
     env:
       WIZARDRY_OS_LABEL: mac
     steps:
@@ -141,23 +141,23 @@ jobs:
           - job_name: "2/6"
             levels: "1-2"
             max_level: 2
-            test_flags: "--skip-common"
+            test_flags: ""
           - job_name: "3/6"
             levels: "3-8"
             max_level: 8
-            test_flags: "--skip-common"
+            test_flags: ""
           - job_name: "4/6"
             levels: "9-15"
             max_level: 15
-            test_flags: "--skip-common"
+            test_flags: ""
           - job_name: "5/6"
             levels: "16-24"
             max_level: 24
-            test_flags: "--skip-common"
+            test_flags: ""
           - job_name: "6/6"
             levels: "25-27"
             max_level: 27
-            test_flags: "--skip-common"
+            test_flags: ""
     env:
       WIZARDRY_OS_LABEL: arch
     steps:
@@ -189,23 +189,23 @@ jobs:
           - job_name: "2/6"
             levels: "1-2"
             max_level: 2
-            test_flags: "--skip-common"
+            test_flags: ""
           - job_name: "3/6"
             levels: "3-8"
             max_level: 8
-            test_flags: "--skip-common"
+            test_flags: ""
           - job_name: "4/6"
             levels: "9-15"
             max_level: 15
-            test_flags: "--skip-common"
+            test_flags: ""
           - job_name: "5/6"
             levels: "16-24"
             max_level: 24
-            test_flags: "--skip-common"
+            test_flags: ""
           - job_name: "6/6"
             levels: "25-27"
             max_level: 27
-            test_flags: "--skip-common"
+            test_flags: ""
     env:
       WIZARDRY_OS_LABEL: debian
       DEBIAN_FRONTEND: noninteractive
@@ -237,23 +237,23 @@ jobs:
           - job_name: "2/6"
             levels: "1-2"
             max_level: 2
-            test_flags: "--skip-common"
+            test_flags: ""
           - job_name: "3/6"
             levels: "3-8"
             max_level: 8
-            test_flags: "--skip-common"
+            test_flags: ""
           - job_name: "4/6"
             levels: "9-15"
             max_level: 15
-            test_flags: "--skip-common"
+            test_flags: ""
           - job_name: "5/6"
             levels: "16-24"
             max_level: 24
-            test_flags: "--skip-common"
+            test_flags: ""
           - job_name: "6/6"
             levels: "25-27"
             max_level: 27
-            test_flags: "--skip-common"
+            test_flags: ""
     env:
       WIZARDRY_OS_LABEL: ubuntu
     steps:

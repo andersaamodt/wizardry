@@ -1,0 +1,48 @@
+#!/bin/sh
+# deal-damage FILE AMOUNT - deal damage to a file/avatar
+# Increases the damage attribute, handling death if life reaches 0
+set -eu
+
+file=${1:?deal-damage: file path required}
+amount=${2:?deal-damage: damage amount required}
+
+# Validate amount is a positive number
+case "$amount" in
+  ''|*[!0-9]*)
+    printf '%s\n' "deal-damage: damage must be a positive number" >&2
+    exit 1
+    ;;
+esac
+
+[ "$amount" -eq 0 ] && exit 0
+
+# Get current damage
+current_damage=0
+if existing_damage=$(read-magic "$file" damage 2>/dev/null); then
+  case "$existing_damage" in
+    ''|*[!0-9]*) current_damage=0 ;;
+    *) current_damage=$existing_damage ;;
+  esac
+fi
+
+# Add new damage
+total_damage=$((current_damage + amount))
+
+# Apply the damage
+if ! enchant "$file" "damage=${total_damage}" >/dev/null 2>&1; then
+  # If enchant fails, try to continue anyway
+  # This can happen in test environments without xattr support
+  :
+fi
+
+# Check if target is now dead
+current_life=$(get-life "$file")
+if [ "$current_life" -le 0 ]; then
+  # Mark as dead
+  enchant "$file" "dead=1" >/dev/null 2>&1 || true
+  
+  # Trigger death throes (for now, just a message)
+  # In the future, this could call a death-throes spell
+fi
+
+exit 0

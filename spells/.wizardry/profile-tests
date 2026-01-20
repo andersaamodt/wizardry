@@ -4,16 +4,16 @@
 
 # Ensure WIZARDRY_DIR is set for tests
 if [ -z "${WIZARDRY_DIR-}" ]; then
-  _script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
   # Find repository root by looking for spells/.imps directory
-  _wiz_root=$(
-    cd "$_script_dir" && \
+  wiz_root=$(
+    cd "$script_dir" && \
     while [ ! -d "spells/.imps" ] && [ "$(pwd)" != "/" ]; do
       cd ..
     done
     pwd
   )
-  WIZARDRY_DIR=$_wiz_root
+  WIZARDRY_DIR=$wiz_root
   export WIZARDRY_DIR
 fi
 

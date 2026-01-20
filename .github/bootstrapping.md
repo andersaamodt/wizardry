@@ -9,166 +9,111 @@ install (self-contained)
 ```
 
 **Scripts BEFORE invoke-wizardry:** Cannot use wizardry (self-contained)  
-**Scripts AFTER invoke-wizardry:** Can use wizardry (all spells available in PATH)
+**Scripts AFTER invoke-wizardry:** Can use wizardry (require_wizardry, `. env-clear`, etc.)
 
 ---
 
-## CRITICAL: ALL Wizardry Spells Call Each Other by Hyphenated Names
+## CRITICAL: Function Naming (Parse Loop Prevention)
 
-### Inside Code: Use HYPHENATED Names
+### Inside Code: Use UNDERSCORE Names
 
 ```sh
-# ✅ CORRECT - Call spells by hyphenated command name
-env-clear
-temp-file "name"
-cursor-blink on
-has git || exit 1
+# ✅ CORRECT - Direct function calls
+require_wizardry || return 1
+. env-clear
+temp_file "name"
+cursor_blink on
 
-# ❌ WRONG - Never use underscores in spell code
-env_clear         # WRONG!
-temp_file "name"  # WRONG!
-cursor_blink on   # WRONG!
-
-# ❌ WRONG - Never use full paths to spells
-"$WIZARDRY_DIR/spells/.imps/sys/env-clear"  # WRONG!
+# ❌ WRONG - Goes through glosses → parse → LOOP
+require-wizardry  # Creates parse loop!
+env_clear         # Wrong - source the file instead!
+temp-file "name"  # Creates parse loop!
 ```
 
-**Why:** All wizardry spells (including imps—imps ARE spells) are available in PATH after invoke-wizardry is called. All spell code should assume wizardry is already invoked and call other spells by their hyphenated command name.
+**Why:** Hyphenated names execute as glosses (`exec parse "cmd" "$@"`). On macOS this creates visible "parse parse parse..." in terminal title and causes hangs.
 
 ### When to Use Each
 
 | Context | Use | Why |
 |---------|-----|-----|
-| Inside spells/imps | `cursor-blink` (hyphenated) | Call spell command from PATH |
-| User terminal | `cursor-blink` (hyphenated via PATH) | User-facing command |
+| Inside spells/imps | `cursor_blink` (underscore) | Direct function call |
+| User terminal | `cursor-blink` (hyphenated via gloss) | User-facing command |
 | Help text | `cursor-blink` (hyphenated) | Describes user command |
-| Function names | `cursor_blink` (underscored) | POSIX doesn't allow hyphens in function names |
 
-**CRITICAL:** Functions cannot use hyphens in their names (not POSIX-compliant). But spell CALLS always use hyphens.
+### Never Use Fallback Pattern
+
+```sh
+# ❌ WRONG - Fallback creates loops
+if command -v temp_file >/dev/null 2>&1; then
+  temp_file "$@"
+else
+  temp-file "$@"  # Goes through parse!
+fi
+
+# ✅ CORRECT - Direct call only
+temp_file "$@"  # Guaranteed by invoke-wizardry
+```
 
 ---
 
 ## Spell Templates
 
-### Standard Spell (99% of spells)
+### Castable Spell (99% of spells)
 
 ```sh
 #!/bin/sh
 
-# Brief description of what this spell does.
+spell_name() {
+  case "${1-}" in --help) usage; return 0 ;; esac
+  require_wizardry || return 1  # Underscore!
+  set -eu
+  . env-clear                    # Source file from PATH!
+  
+  # All calls use underscores
+  temp_file "data"               # NOT temp-file
+  cursor_blink on                # NOT cursor-blink
+}
 
-case "${1-}" in
---help|--usage|-h)
-  cat <<'USAGE'
-Usage: spell-name [options] [arguments]
-
-Description of what the spell does and how to use it.
-USAGE
-  exit 0
-  ;;
-esac
-
-set -eu
-
-# Main logic here
-# Call other spells by hyphenated name:
-env-clear
-has git || exit 1
-temp-file "data.txt"
+castable "$@"
 ```
 
-**Key points:**
-1. Help handler BEFORE `set -eu`
-2. `set -eu` AFTER help handler
-3. NO functions (except ONE helper function if absolutely necessary)
-4. --usage is NEVER in a function (inline heredoc in case statement)
-5. Use `exit` (not `return`) - these are scripts, not sourced functions
-6. Call ALL other spells by hyphenated name from PATH
-
-### Uncastable Spell (must be sourced, not executed)
-
-For spells that MUST be sourced (like `jump-to-marker` which changes directory):
-
-```sh
-#!/bin/sh
-
-# Brief description.
-# This spell must be sourced (not executed) because it changes the current directory.
-
-case "${1-}" in
---help|--usage|-h)
-  cat <<'USAGE'
-Usage: . spell-name [args]
-
-Description.
-Note: This spell must be sourced (use '. spell-name') to affect your current shell.
-USAGE
-  return 0 2>/dev/null || exit 0
-  ;;
-esac
-
-# Uncastable pattern - ensures spell is sourced, not executed
-_spell_name_sourced=0
-if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
-  case "${ZSH_EVAL_CONTEXT-}" in
-    *:file) _spell_name_sourced=1 ;;
-  esac
-else
-  _spell_name_base=${0##*/}
-  case "$_spell_name_base" in
-    sh|dash|bash|zsh|ksh|mksh) _spell_name_sourced=1 ;;
-    spell-name) _spell_name_sourced=0 ;;
-    *) _spell_name_sourced=1 ;;
-  esac
-fi
-
-if [ "$_spell_name_sourced" -eq 0 ]; then
-  printf '%s\n' "This spell cannot be cast directly. Invoke it with: spell name" >&2
-  exit 1
-fi
-unset _spell_name_sourced _spell_name_base
-
-# Main logic here
-# Use `return` for flow control (since spell is sourced)
-```
-
-**Uncastable spells:**
-- MUST have `# Uncastable` comment at start of uncastable pattern block
-- Use `return` (not `exit`) for flow control (since they're sourced)
-- Include helpful error message telling user how to invoke
-- Examples: jump-to-marker, blink, cd (spells that change shell state)
+**Order matters:**
+1. Help handler (uses `return`)
+2. `require_wizardry` BEFORE `set -eu` (underscore name!)
+3. `set -eu` inside function
+4. `. env-clear` AFTER `set -eu` (source file from PATH!)
+5. `castable` at end
+6. Use `return` (not `exit`) to allow sourcing
 
 ### Action Imp
 
 ```sh
 #!/bin/sh
-# imp-name ARG - brief description
+set -eu  # At top of file
 
-set -eu
+_imp_name() {
+  # Implementation
+}
 
-# Flat, linear implementation (NO functions)
-printf '%s\n' "$1"
+case "$0" in */imp-name) _imp_name "$@" ;; esac
 ```
 
-**Imps CANNOT have ANY functions** - they must be completely flat.
+**ONE `set -eu` only!** Never duplicate before case statement.
 
-### Conditional Imp (NO set -eu!)
+### Conditional Imp
 
 ```sh
 #!/bin/sh
-# imp-name ARG - test if condition
+# NO set -eu
 
-# NO set -eu because this is a conditional imp (returns exit codes for flow control)
+_imp_name() {
+  [ "$1" = "expected" ]  # Returns 0/1
+}
 
-# Flat, linear implementation (NO functions)
-# Return 0 for true, 1 for false
-[ -n "$1" ]
+case "$0" in */imp-name) _imp_name "$@" ;; esac
 ```
 
-**Conditional imps:**
-- NO `set -eu` (use exit codes for flow control)
-- NO functions
-- Return 0 for true, 1 for false
+No strict mode for exit-code-based flow control.
 
 ---
 
@@ -178,7 +123,9 @@ printf '%s\n' "$1"
 |-----------|-------|------------------|--------------|
 | `install` | 1-2 | ❌ No | Self-contained |
 | `invoke-wizardry` | 3 | ❌ No | Loads wizardry |
-| Regular spells | 3+ | ✅ Yes | All spells in PATH |
+| `require-wizardry` | 3+ | ✅ Yes | Checks WIZARDRY_DIR |
+| `env-clear` | 3+ | ✅ Yes | Clears environment |
+| Regular spells | 3+ | ✅ Yes | require_wizardry, `. env-clear` |
 
 ---
 
@@ -186,33 +133,41 @@ printf '%s\n' "$1"
 
 | Mistake | Fix |
 |---------|-----|
-| `env_clear` in spell | Use `env-clear` (hyphenated) |
-| `temp_file` in spell | Use `temp-file` (hyphenated) |
-| `cursor_blink` in spell | Use `cursor-blink` (hyphenated) |
-| Using full path to spell | Use hyphenated name from PATH |
-| `exit` in uncastable spell function | Use `return` |
-| Adding function to imp | Imps are flat (no functions) |
-| `show_usage()` function | Use inline heredoc in case statement |
-| More than 1 helper function in spell | Document in EXEMPTIONS.md |
+| `require-wizardry` in spell | Use `require_wizardry` |
+| `env_clear` in spell | Use `. env-clear` |
+| `temp-file` in spell | Use `temp_file` |
+| Duplicate `set -eu` in imp | ONE at top only |
+| `set -eu` before castable loading | Put inside function |
+| Fallback to hyphenated gloss | Never fallback |
+| `exit` in spell function | Use `return` |
 
 ---
 
-## Function Discipline
+## Castable Variable Bug
 
-**Spells:**
-- ≤ 1 helper function if absolutely necessary
-- More than 1 helper requires documentation in EXEMPTIONS.md
-- --usage is NEVER in a function (always inline)
+**Critical:** `word-of-binding` sets `_WIZARDRY_LOADING_SPELLS=1` when sourcing spells.
 
-**Imps:**
-- NO functions allowed
-- Completely flat, linear code
-- This rule is enforced by tests
+`castable` MUST check this variable to skip execution during loading. If it checks the wrong variable, spell functions execute during sourcing → hyphenated commands called → parse loop.
 
-**Functions vs Commands:**
-- Function names: MUST use underscores (`my_function`)
-- Spell calls: ALWAYS use hyphens (`my-spell`)
-- POSIX shell doesn't allow hyphens in function names
+```sh
+# In castable imp:
+if [ -n "${_WIZARDRY_LOADING_SPELLS-}" ] || [ -n "${_WIZARDRY_SOURCING_SPELL-}" ]; then
+  return 0  # Skip execution, just load function
+fi
+```
+
+---
+
+## Parse Loop Debug Checklist
+
+- [ ] All imp calls use underscores (`temp_file` not `temp-file`)
+- [ ] All spell calls use underscores (`cursor_blink` not `cursor-blink`)  
+- [ ] No fallback to hyphenated versions
+- [ ] `require_wizardry` (not `require-wizardry`)
+- [ ] `. env-clear` (not `env_clear`)
+- [ ] castable checks `_WIZARDRY_LOADING_SPELLS`
+- [ ] No `exit` in spell functions (use `return`)
+- [ ] ONE `set -eu` per imp file
 
 ---
 
@@ -220,6 +175,6 @@ printf '%s\n' "$1"
 
 **Self-contained (no wizardry):** install, detect-posix, detect-distro  
 **Loads wizardry:** invoke-wizardry  
-**Uses wizardry:** All regular spells (call each other by hyphenated names)
+**Uses wizardry:** All regular spells (MUST use underscore names internally)
 
-**Golden rule:** ALL wizardry spells call each other by hyphenated names from PATH, NEVER with full paths, NEVER with underscores.
+**Golden rule:** Underscore names inside code, hyphenated names for users.

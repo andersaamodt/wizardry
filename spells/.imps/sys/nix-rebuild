@@ -9,13 +9,13 @@ set -eu
   exit 0
   fi
 
-  _nr_rebuild_success=0
+  nr_rebuild_success=0
 
-  _nr_priv_cmd=""
+  nr_priv_cmd=""
   if command -v sudo >/dev/null 2>&1; then
-    _nr_priv_cmd="sudo"
+    nr_priv_cmd="sudo"
   elif command -v doas >/dev/null 2>&1; then
-    _nr_priv_cmd="doas"
+    nr_priv_cmd="doas"
   fi
 
   if command -v home-manager >/dev/null 2>&1; then
@@ -23,29 +23,29 @@ set -eu
     printf '%s\n' "nix-rebuild: this may take several minutes, please wait..." >&2
     if home-manager switch; then
       printf '%s\n' "nix-rebuild: user environment rebuilt successfully."
-      _nr_rebuild_success=1
+      nr_rebuild_success=1
     fi
   fi
 
-  has_priv_cmd=$([ -n "$_nr_priv_cmd" ] && echo "yes" || echo "no")
+  has_priv_cmd=$([ -n "$nr_priv_cmd" ] && echo "yes" || echo "no")
   has_nixos_rebuild=$(command -v nixos-rebuild >/dev/null 2>&1 && echo "yes" || echo "no")
 
   should_rebuild=$(
-    [ "$_nr_rebuild_success" -eq 0 ] && \
+    [ "$nr_rebuild_success" -eq 0 ] && \
     [ "$has_priv_cmd" = "yes" ] && \
     [ "$has_nixos_rebuild" = "yes" ] && echo "yes" || echo "no"
   )
 
   if [ "$should_rebuild" = "yes" ]; then
-    printf '%s\n' "nix-rebuild: running $_nr_priv_cmd nixos-rebuild switch..." >&2
+    printf '%s\n' "nix-rebuild: running $nr_priv_cmd nixos-rebuild switch..." >&2
     printf '%s\n' "nix-rebuild: this may take several minutes, please wait..." >&2
-    if "$_nr_priv_cmd" nixos-rebuild switch; then
+    if "$nr_priv_cmd" nixos-rebuild switch; then
       printf '%s\n' "nix-rebuild: NixOS system rebuilt successfully."
-      _nr_rebuild_success=1
+      nr_rebuild_success=1
     fi
   fi
 
-  if [ "$_nr_rebuild_success" -eq 0 ]; then
+  if [ "$nr_rebuild_success" -eq 0 ]; then
     printf '%s\n' "nix-rebuild: NixOS configuration could not be automatically rebuilt." >&2
   exit 1
   fi

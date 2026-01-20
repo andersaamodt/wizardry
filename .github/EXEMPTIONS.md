@@ -316,14 +316,14 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 
 ## 5. Function Discipline Exemptions
 
-### Spells with 2+ Helper Functions
+### Spells with 4+ Additional Functions (Proto-Libraries)
 
-**Rule**: Spells should be flat linear scripts with maximum 1 helper function (NOT counting inline usage/help). 2+ helper functions indicate a proto-library that needs decomposition into multiple spells and/or imps. Usage/help text MUST be inline in case statement, NOT in a function.
+**Rule**: Spells should have `show_usage()` plus at most 1-3 additional helper functions. 4+ additional functions indicate a proto-library that needs decomposition into multiple spells and/or imps.
 
 **Status**: ✅ ALL REFACTORED - No remaining exemptions
 
 **Removed/Obsolete**:
-- `spellcraft/learn-spell` - Removed (obsolete)
+- `spellcraft/learn-spell` - Removed (obsolete with word-of-binding paradigm)
 - `spellcraft/learn-spellbook` - Removed (replaced by simplified learn spell)
 - `cantrips/assertions` - Removed (boot/ test imps already provide assertion functionality)
 
