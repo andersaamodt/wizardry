@@ -51,6 +51,23 @@ fi
 
 export WIZARDRY_PARSE_DEPTH=$parse_depth
 
+# Check if parse is enabled in config
+spell_home="${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}"
+config_file="$spell_home/.mud"
+if [ -f "$config_file" ]; then
+  parse_enabled=$(grep "^parse-enabled=" "$config_file" 2>/dev/null | cut -d= -f2- || printf '')
+  # If parse-enabled is explicitly set to 0, disable parsing
+  if [ "$parse_enabled" = "0" ]; then
+    # Parse is disabled - just execute the first word directly without parsing
+    # This falls through to try executing "$@" as-is
+    if [ $# -gt 0 ]; then
+      "$@"
+      return $?
+    fi
+    return 0
+  fi
+fi
+
 # If no arguments, just succeed
 if [ $# -eq 0 ]; then
   return 0
