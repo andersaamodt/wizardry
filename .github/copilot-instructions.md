@@ -262,7 +262,7 @@ has git || fail "git required"
 | `test_name.sh` | `test-name.sh` (hyphens!) |
 | Guess test results | Run tests, report actual counts |
 | `require-wizardry` in code | `require_wizardry` (underscore!) |
-| `. env-clear` | `env_clear` (call function!) |
+| `env_clear` (function call) | `. env-clear` (source file from PATH!) |
 | Execute script in background | Call function in background |
 | Add imps to PATH | Preload with word_of_binding |
 | `run_spell` for modern spells | `run_sourced_spell` |

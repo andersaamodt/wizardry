@@ -14,26 +14,35 @@ USAGE
 esac
 
 set -eu
+
+printf '[DEBUG] Starting mud-menu\n' >&2
 . env-clear
+printf '[DEBUG] Sourced env-clear\n' >&2
 
 # Catch Ctrl-C and TERM signal to exit 1 cleanly
 trap 'exit 0' INT TERM
+printf '[DEBUG] Set trap\n' >&2
 
 # Load color palette (colors handles terminal capability detection internally)
 # shellcheck source=/dev/null
 . "$(command -v colors)"
+printf '[DEBUG] Loaded colors\n' >&2
 
 if ! require menu "The MUD Install menu needs the 'menu' command to present options."; then
+  printf '[DEBUG] Menu command not available\n' >&2
   exit 1
 fi
+printf '[DEBUG] Menu command available\n' >&2
 
 # Get config file location
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 CONFIG_FILE="$spell_home/.mud"
+printf '[DEBUG] Config file: %s\n' "$CONFIG_FILE" >&2
 
 # Ensure spellbook directory and config file exist
 mkdir -p "$spell_home"
 touch "$CONFIG_FILE"
+printf '[DEBUG] Created config file\n' >&2
 
 # Check if a MUD config feature is enabled
 is_feature_enabled() {
