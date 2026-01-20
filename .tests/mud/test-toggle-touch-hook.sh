@@ -9,7 +9,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help_shows_usage() {
-  run_spell "spells/.arcana/mud/toggle-touch-hook" --help
+  run_spell "spells/mud/toggle-touch-hook" --help
   assert_success || return 1
   assert_output_contains "Usage:" || return 1
   assert_output_contains "touch hook" || return 1
@@ -20,7 +20,7 @@ test_toggle_enables_feature() {
   export SPELLBOOK_DIR="$tmp"
   
   # First toggle - enable
-  run_spell "spells/.arcana/mud/toggle-touch-hook"
+  run_spell "spells/mud/toggle-touch-hook"
   assert_success || return 1
   assert_output_contains "enabled" || return 1
   
@@ -43,7 +43,7 @@ test_toggle_disables_feature() {
   printf 'touch-hook=1\n' > "$SPELLBOOK_DIR/.mud"
   
   # Toggle should disable
-  run_spell "spells/.arcana/mud/toggle-touch-hook"
+  run_spell "spells/mud/toggle-touch-hook"
   assert_success || return 1
   assert_output_contains "disabled" || return 1
   
@@ -58,11 +58,11 @@ test_toggle_twice_returns_to_original() {
   export SPELLBOOK_DIR="$tmp"
   
   # First toggle - enable
-  run_spell "spells/.arcana/mud/toggle-touch-hook"
+  run_spell "spells/mud/toggle-touch-hook"
   assert_success || return 1
   
   # Second toggle - disable
-  run_spell "spells/.arcana/mud/toggle-touch-hook"
+  run_spell "spells/mud/toggle-touch-hook"
   assert_success || return 1
   
   # Verify we're back to disabled
