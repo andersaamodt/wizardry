@@ -62,13 +62,30 @@ test_help() {
 
 test_stats_no_avatar() {
   tmpdir=$(make_tempdir)
+  stub_dir=$(make_tempdir)
   export SPELLBOOK_DIR="$tmpdir/custom-spellbook"
   mkdir -p "$SPELLBOOK_DIR/.mud"
   # Create config with avatar disabled
   printf 'avatar=0\n' > "$SPELLBOOK_DIR/.mud/config"
   
+  # Create character file with stats
+  character_file="$SPELLBOOK_DIR/.character"
+  mkdir -p "$character_file"
+  
+  create_xattr_stub "$stub_dir"
+  
+  # Build PATH
+  export PATH="$stub_dir:$ROOT_DIR/spells/mud:$ROOT_DIR/spells/arcane:$ROOT_DIR/spells/enchant:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/mud:$PATH"
+  
+  # Set some stats on character file
+  "$stub_dir/xattr" -w user.max_life 100 "$character_file"
+  "$stub_dir/xattr" -w user.mana 40 "$character_file"
+  
   run_spell "spells/mud/stats"
-  assert_failure && assert_error_contains "not enabled"
+  assert_success
+  assert_output_contains "Stats for"
+  assert_output_contains "Life:"
+  assert_output_contains "Mana:"
 }
 
 test_stats_display() {
@@ -123,8 +140,8 @@ test_stats_with_target() {
 }
 
 run_test_case "stats prints usage" test_help
-run_test_case "stats fails when avatar not enabled" test_stats_no_avatar
-run_test_case "stats displays character stats" test_stats_display
+run_test_case "stats displays character stats when avatar not enabled" test_stats_no_avatar
+run_test_case "stats displays avatar stats when avatar enabled" test_stats_display
 run_test_case "stats displays target stats" test_stats_with_target
 
 finish_tests
