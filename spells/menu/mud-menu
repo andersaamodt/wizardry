@@ -54,17 +54,14 @@ is_feature_enabled() {
   [ "$value" = "1" ]
 }
 
-# Check if cd hook is enabled (uses separate config file for historical reasons)
+# Check if cd hook is enabled
 is_cd_hook_enabled() {
-  spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
-  cd_config="$spell_home/.mud/config"
-  
-  if [ ! -f "$cd_config" ]; then
+  # Use mud-config to check cd-look feature (defaults to disabled)
+  if ! command -v mud-config >/dev/null 2>&1; then
     return 1
   fi
   
-  # Check if cd-look=1 is set
-  value=$(config-get "$cd_config" "cd-look" 2>/dev/null || printf '0')
+  value=$(mud-config get "cd-look" 2>/dev/null) || value=""
   [ "$value" = "1" ]
 }
 
