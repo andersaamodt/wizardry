@@ -9,7 +9,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help_shows_usage() {
-  run_spell "spells/mud/toggle-mud-menu" --help
+  run_spell "spells/.arcana/mud/toggle-mud-menu" --help
   assert_success || return 1
   assert_output_contains "Usage:" || return 1
   assert_output_contains "MUD" || return 1
@@ -20,7 +20,7 @@ test_toggle_enables_when_initially_disabled() {
   export SPELLBOOK_DIR="$tmp"
   
   # Initially, mud-enabled should not be set (defaults to 0/disabled)
-  run_spell "spells/mud/toggle-mud-menu"
+  run_spell "spells/.arcana/mud/toggle-mud-menu"
   assert_success || return 1
   assert_output_contains "enabled" || return 1
   
@@ -43,7 +43,7 @@ test_toggle_disables_when_enabled() {
   printf 'mud-enabled=1\n' > "$SPELLBOOK_DIR/.mud"
   
   # Toggle should disable
-  run_spell "spells/mud/toggle-mud-menu"
+  run_spell "spells/.arcana/mud/toggle-mud-menu"
   assert_success || return 1
   assert_output_contains "hidden" || return 1
   
@@ -63,12 +63,12 @@ test_toggle_twice_returns_to_original_state() {
   export SPELLBOOK_DIR="$tmp"
   
   # First toggle - enable
-  run_spell "spells/mud/toggle-mud-menu"
+  run_spell "spells/.arcana/mud/toggle-mud-menu"
   assert_success || return 1
   assert_output_contains "enabled" || return 1
   
   # Second toggle - disable  
-  run_spell "spells/mud/toggle-mud-menu"
+  run_spell "spells/.arcana/mud/toggle-mud-menu"
   assert_success || return 1
   assert_output_contains "hidden" || return 1
   
@@ -83,7 +83,7 @@ test_creates_config_if_missing() {
   export SPELLBOOK_DIR="$tmp"
   
   # Don't create the .mud directory - let the script handle it
-  run_spell "spells/mud/toggle-mud-menu"
+  run_spell "spells/.arcana/mud/toggle-mud-menu"
   assert_success || return 1
   
   # Verify config file was created

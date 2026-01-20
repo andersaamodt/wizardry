@@ -10,11 +10,11 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_install_cd_is_executable() {
-  [ -x "$ROOT_DIR/spells/mud/install-cd" ]
+  [ -x "$ROOT_DIR/spells/.arcana/mud/install-cd" ]
 }
 
 test_install_cd_help_shows_usage() {
-  run_spell spells/mud/install-cd --help
+  run_spell spells/.arcana/mud/install-cd --help
   assert_success || return 1
   assert_output_contains "Usage:" || return 1
   assert_output_contains "install-cd" || return 1
@@ -41,8 +41,8 @@ STUB_EOF
   chmod +x "$stub_dir/detect-rc-file"
   
   # Run install-cd with stubbed PATH and HOME
-  cd_hook_path="$ROOT_DIR/spells/mud/cd"
-  output=$(env HOME="$fake_home" PATH="$stub_dir:$PATH" sh "$ROOT_DIR/spells/mud/install-cd" 2>&1)
+  cd_hook_path="$ROOT_DIR/spells/.arcana/mud/cd"
+  output=$(env HOME="$fake_home" PATH="$stub_dir:$PATH" sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
   
   # Check output contains success message
   case "$output" in
@@ -83,7 +83,7 @@ test_install_cd_skips_if_already_installed() {
   rc_file="$fake_home/.bashrc"
   
   # Pre-populate RC file with cd hook (using new inline marker format)
-  cd_hook_path="$ROOT_DIR/spells/mud/cd"
+  cd_hook_path="$ROOT_DIR/spells/.arcana/mud/cd"
   printf '. "%s" # wizardry: cd-hook\n' "$cd_hook_path" > "$rc_file"
   
   # Create stub detect-rc-file
@@ -97,7 +97,7 @@ STUB_EOF
   chmod +x "$stub_dir/detect-rc-file"
   
   # Run install-cd
-  output=$(env HOME="$fake_home" PATH="$stub_dir:$PATH" sh "$ROOT_DIR/spells/mud/install-cd" 2>&1)
+  output=$(env HOME="$fake_home" PATH="$stub_dir:$PATH" sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
   
   # Check output says already installed
   case "$output" in
@@ -133,8 +133,8 @@ test_install_cd_handles_nix_format() {
   # Run install-cd with DETECT_RC_FILE_PLATFORM set to nixos and HOME set to fake home
   # This will make detect-rc-file find the home.nix file
   # Also set TMPDIR to ensure mktemp works correctly
-  cd_hook_path="$ROOT_DIR/spells/mud/cd"
-  output=$(env HOME="$fake_home" PATH="$test_path" TMPDIR="$tmpdir" DETECT_RC_FILE_PLATFORM=nixos sh "$ROOT_DIR/spells/mud/install-cd" 2>&1)
+  cd_hook_path="$ROOT_DIR/spells/.arcana/mud/cd"
+  output=$(env HOME="$fake_home" PATH="$test_path" TMPDIR="$tmpdir" DETECT_RC_FILE_PLATFORM=nixos sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
   
   # Should successfully install using nix-shell-add
   case "$output" in
@@ -193,7 +193,7 @@ STUB_EOF
   test_path="$stub_dir:$WIZARDRY_IMPS_PATH:$PATH"
   
   # Run install-cd with TMPDIR set for mktemp
-  output=$(env HOME="$fake_home" PATH="$test_path" TMPDIR="$tmpdir" sh "$ROOT_DIR/spells/mud/install-cd" 2>&1)
+  output=$(env HOME="$fake_home" PATH="$test_path" TMPDIR="$tmpdir" sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
   
   # Extract which rc_file was actually created from the output
   created_rc_file=""
@@ -210,7 +210,7 @@ STUB_EOF
   fi
   
   # Verify it has the cd hook source line
-  cd_hook_path="$ROOT_DIR/spells/mud/cd"
+  cd_hook_path="$ROOT_DIR/spells/.arcana/mud/cd"
   if ! grep -qF "$cd_hook_path" "$created_rc_file"; then
     TEST_FAILURE_REASON="RC file doesn't contain cd hook path"
     return 1

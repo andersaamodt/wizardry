@@ -137,9 +137,9 @@ fi
 # Add all spell directories to PATH (including subdirectories)
 for category_dir in "$WIZARDRY_DIR/spells"/* "$WIZARDRY_DIR/spells"/.*; do
   [ -d "$category_dir" ] || continue
-  # Skip . and .. and .arcana (contains hook wrappers that shouldn't be in PATH)
+  # Skip . and ..
   case "$category_dir" in
-    */.|*/..|*/.arcana) continue ;;
+    */.|*/..) continue ;;
   esac
   PATH="$category_dir:$PATH"
   
@@ -243,7 +243,7 @@ fi
 if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
   iw_mud_config="${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}/.mud"
   if [ -f "$iw_mud_config" ] && grep -q "^cd-hook=1$" "$iw_mud_config" 2>/dev/null; then
-    iw_cd_hook="$WIZARDRY_DIR/spells/.arcana/mud/cd"
+    iw_cd_hook="$WIZARDRY_DIR/spells/.arcana/mud/cd-hook-loader"
     if [ -f "$iw_cd_hook" ]; then
       [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Loading cd hook" >&2
       . "$iw_cd_hook"
@@ -257,7 +257,7 @@ if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
   iw_mud_config="${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}/.mud"
   if [ -f "$iw_mud_config" ]; then
     if grep -q "^touch-hook=1$" "$iw_mud_config" 2>/dev/null; then
-      iw_touch_hook="$WIZARDRY_DIR/spells/.arcana/mud/touch"
+      iw_touch_hook="$WIZARDRY_DIR/spells/.arcana/mud/touch-hook-loader"
       if [ -f "$iw_touch_hook" ]; then
         [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Loading touch hook" >&2
         . "$iw_touch_hook"
