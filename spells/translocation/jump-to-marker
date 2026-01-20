@@ -37,7 +37,7 @@ else
 fi
 
 if [ "$jump_to_marker_sourced" -eq 0 ]; then
-  printf '%s\n' "This spell cannot be cast directly. Invoke it with: jump to marker" >&2
+  printf '%s\n' "This spell cannot be cast directly. Invoke it with: . jump-to-marker" >&2
   return 1 2>/dev/null || exit 1
 fi
 unset jump_to_marker_sourced jump_to_marker_base
