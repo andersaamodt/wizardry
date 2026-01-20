@@ -243,7 +243,7 @@ fi
 if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
   iw_mud_config="${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}/.mud"
   if [ -f "$iw_mud_config" ] && grep -q "^cd-hook=1$" "$iw_mud_config" 2>/dev/null; then
-    iw_cd_hook="$WIZARDRY_DIR/spells/.arcana/mud/cd-hook-loader"
+    iw_cd_hook="$WIZARDRY_DIR/spells/.arcana/mud/load-cd-hook"
     if [ -f "$iw_cd_hook" ]; then
       [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Loading cd hook" >&2
       . "$iw_cd_hook"
@@ -257,7 +257,7 @@ if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
   iw_mud_config="${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}/.mud"
   if [ -f "$iw_mud_config" ]; then
     if grep -q "^touch-hook=1$" "$iw_mud_config" 2>/dev/null; then
-      iw_touch_hook="$WIZARDRY_DIR/spells/.arcana/mud/touch-hook-loader"
+      iw_touch_hook="$WIZARDRY_DIR/spells/.arcana/mud/load-touch-hook"
       if [ -f "$iw_touch_hook" ]; then
         [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Loading touch hook" >&2
         . "$iw_touch_hook"
