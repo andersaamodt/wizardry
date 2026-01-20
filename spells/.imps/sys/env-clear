@@ -4,7 +4,7 @@
 
 # Uncastable pattern - ensures spell is sourced, not executed
 env_clear_sourced=0
-if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+if eval '[ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
   case "${ZSH_EVAL_CONTEXT-}" in
     *:file) env_clear_sourced=1 ;;
   esac
