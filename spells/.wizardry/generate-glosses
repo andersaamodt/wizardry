@@ -608,7 +608,7 @@ if [ -f "$default_synonym_file" ]; then
     # Validate synonym word
     if ! is_synonym_valid "$word"; then
       printf '%s\n' "ERROR: invalid default synonym: $word" >&2
-      default_synonym_errors=$((_default_synonym_errors + 1))
+      default_synonym_errors=$((default_synonym_errors + 1))
       continue
     fi
     

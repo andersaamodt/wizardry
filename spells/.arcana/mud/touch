@@ -13,7 +13,7 @@ Then use 'toggle-touch-hook' to enable/disable the hook.
 
 The hook runs trigger-on-touch after every successful touch command.
 USAGE
-  exit 0
+  return 0 2>/dev/null || exit 0
   ;;
 esac
 
