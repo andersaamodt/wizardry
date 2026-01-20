@@ -6,7 +6,7 @@ applyTo: "spells/**"
 
 **CRITICAL**: When creating a new spell, you MUST also create a corresponding test file:
 - Spell location: `spells/category/spell-name`
-- Test location: `.tests/category/test_spell-name.sh`
+- Test location: `.tests/category/test-spell-name.sh`
 
 Test files are NOT optional. Every spell requires tests covering:
 1. `--help` output
@@ -15,7 +15,7 @@ Test files are NOT optional. Every spell requires tests covering:
 
 **After creating tests, you MUST run them and report actual results:**
 ```sh
-.tests/category/test_spell-name.sh
+.tests/category/test-spell-name.sh
 ```
 Never claim tests pass without actually executing them. Report the actual pass/fail counts.
 
