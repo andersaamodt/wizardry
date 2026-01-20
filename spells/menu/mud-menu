@@ -47,12 +47,20 @@ is_feature_enabled() {
   
   # Get the value using config-get
   value=$(config-get "$CONFIG_FILE" "$feature" 2>/dev/null || printf '')
+  
+  printf '[DEBUG is_feature_enabled] feature=%s config_file=%s value="%s" default=%s\n' "$feature" "$CONFIG_FILE" "$value" "$default_enabled" >&2
+  
   if [ -z "$value" ]; then
     [ "$default_enabled" -eq 1 ]
-    return $?
+    result=$?
+    printf '[DEBUG is_feature_enabled] feature=%s returning %s (default)\n' "$feature" "$result" >&2
+    return $result
   fi
   
   [ "$value" = "1" ]
+  result=$?
+  printf '[DEBUG is_feature_enabled] feature=%s returning %s (value=%s)\n' "$feature" "$result" "$value" >&2
+  return $result
 }
 
 loop_limit=${MENU_LOOP_LIMIT:-}
@@ -121,11 +129,18 @@ while true; do
   done
 
   # Build menu entries based on current state
+  printf '\n[DEBUG MENU BUILD START] Building menu items...\n' >&2
+  printf '[DEBUG CONFIG FILE] Contents of %s:\n' "$CONFIG_FILE" >&2
+  cat "$CONFIG_FILE" >&2 || printf '(file empty or unreadable)\n' >&2
+  printf '[DEBUG CONFIG FILE END]\n\n' >&2
+  
   # Build parse toggle
   if is_feature_enabled "parse-enabled"; then
     parse_toggle="[X] Parse (natural language commands)%toggle-parse"
+    printf '[DEBUG] parse_toggle = [X] (enabled)\n' >&2
   else
     parse_toggle="[ ] Parse (natural language commands)%toggle-parse"
+    printf '[DEBUG] parse_toggle = [ ] (disabled)\n' >&2
   fi
   
   # Build cd hook toggle label based on current state
@@ -152,8 +167,10 @@ while true; do
   # Build show/hide MUD in main menu toggle
   if is_feature_enabled "mud-enabled"; then
     mud_menu="[X] Show MUD in main menu%toggle-mud-menu"
+    printf '[DEBUG] mud_menu = [X] (enabled)\n' >&2
   else
     mud_menu="[ ] Show MUD in main menu%toggle-mud-menu"
+    printf '[DEBUG] mud_menu = [ ] (disabled)\n' >&2
   fi
   
   # Build enable/disable all toggle (including cd-look)
@@ -178,8 +195,10 @@ while true; do
   exit_item="${exit_label}%kill -TERM \$PPID"
 
   set -- "$parse_toggle" "$mud_menu" "$cd_hook" "$avatar" "$touch_hook" "$toggle_all" "$tor" "$exit_item"
+  printf '[DEBUG MENU BUILD END] About to display menu with start_selection=%s\n\n' "$start_selection" >&2
   menu --start-selection "$start_selection" "MUD Install:" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
+  printf '\n[DEBUG MENU RETURNED] menu returned with status=%s\n' "$menu_status" >&2
   
   # ESC kills this menu script via TERM signal (same as Exit button)
   # Direct kill: kill -TERM $$ → kills this script
