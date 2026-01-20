@@ -18,15 +18,37 @@ set -eu
 . env-clear
 
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
-config_file="$spell_home/.mud"
 
-# Get avatar path
-avatar_path=$(config-get "$config_file" "avatar-path" 2>/dev/null || printf '')
-
-if [ -z "$avatar_path" ] || [ ! -d "$avatar_path" ]; then
-  printf '%s\n' "shocking-grasp: no avatar found. Enable the avatar system first." >&2
+# Check if avatar is enabled
+if ! mud-config get avatar >/dev/null 2>&1 || [ "$(mud-config get avatar 2>/dev/null || printf '0')" != "1" ]; then
+  printf '%s\n' "shocking-grasp: avatar system is not enabled. Enable it from the MUD menu." >&2
   exit 1
 fi
+
+# Get avatar path from config
+avatar_path=$(config-get "$spell_home/.mud/config" "avatar-path" 2>/dev/null || printf '')
+
+if [ -z "$avatar_path" ] || [ ! -d "$avatar_path" ]; then
+  printf '%s\n' "shocking-grasp: no avatar found. Your avatar may need to be incarnated." >&2
+  exit 1
+fi
+
+# Check mana
+current_mana=$(read-magic "$avatar_path" mana 2>/dev/null || printf '0')
+case "$current_mana" in
+  ''|*[!0-9]*) current_mana=0 ;;
+esac
+
+mana_cost=4
+
+if [ "$current_mana" -lt "$mana_cost" ]; then
+  printf '%s\n' "shocking-grasp: insufficient mana! You need $mana_cost mana but only have $current_mana." >&2
+  exit 1
+fi
+
+# Deduct mana
+new_mana=$((current_mana - mana_cost))
+enchant "$avatar_path" "mana=$new_mana" >/dev/null 2>&1
 
 # Enchant avatar with on-toucher effect
 # Format: on_toucher=damage:4
