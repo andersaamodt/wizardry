@@ -70,11 +70,15 @@ is_feature_enabled() {
 loop_limit=${MENU_LOOP_LIMIT:-}
 start_selection=1
 
+printf '[DEBUG] Entering main loop\n' >&2
+
 while true; do
+  printf '[DEBUG] Loop iteration start\n' >&2
 
   # Build menu entries based on current state
   
   # Build parse toggle
+  printf '[DEBUG] Checking parse-enabled\n' >&2
   if is_feature_enabled "parse-enabled"; then
     parse_toggle="[X] Parse (natural language commands)%toggle-parse"
   else
@@ -82,6 +86,7 @@ while true; do
   fi
   
   # Build cd hook toggle label based on current state
+  printf '[DEBUG] Checking cd-look\n' >&2
   if is_feature_enabled "cd-look"; then
     cd_hook="[X] Look on directory change (cd hook)%toggle-cd"
   else
@@ -89,6 +94,7 @@ while true; do
   fi
   
   # Build avatar toggle
+  printf '[DEBUG] Checking avatar\n' >&2
   if is_feature_enabled "avatar"; then
     avatar="[X] Avatar (HP/MP, inventory)%toggle-avatar"
   else
@@ -96,6 +102,7 @@ while true; do
   fi
   
   # Build touch hook toggle
+  printf '[DEBUG] Checking touch-hook\n' >&2
   if is_feature_enabled "touch-hook"; then
     touch_hook="[X] On-touch triggers (touch hook)%toggle-touch-hook"
   else
@@ -103,6 +110,7 @@ while true; do
   fi
   
   # Build show/hide MUD in main menu toggle
+  printf '[DEBUG] Checking mud-enabled\n' >&2
   if is_feature_enabled "mud-enabled"; then
     mud_menu="[X] Show MUD in main menu%toggle-mud-menu"
   else
@@ -110,8 +118,10 @@ while true; do
   fi
   
   # Build enable/disable all toggle (including cd-look)
+  printf '[DEBUG] Building toggle-all\n' >&2
   all_enabled=1
   for feature in parse-enabled mud-enabled avatar touch-hook cd-look; do
+    printf '[DEBUG] Checking feature: %s\n' "$feature" >&2
     if ! is_feature_enabled "$feature"; then
       all_enabled=0
       break
@@ -124,12 +134,16 @@ while true; do
     toggle_all="Enable all MUD features%toggle-all-mud --enable"
   fi
   
+  printf '[DEBUG] Building menu items\n' >&2
   tor="Set up tor hidden service%setup-tor"
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
+  printf '[DEBUG] Setting exit label\n' >&2
   exit_label=$(exit-label)
+  printf '[DEBUG] Got exit label: %s\n' "$exit_label" >&2
   exit_item="${exit_label}%kill -TERM \$PPID"
 
+  printf '[DEBUG] Calling menu command\n' >&2
   set -- "$parse_toggle" "$mud_menu" "$cd_hook" "$avatar" "$touch_hook" "$toggle_all" "$tor" "$exit_item"
   selection=$(menu --start-selection "$start_selection" "MUD Install:" "$@") || menu_status=$?
   menu_status=${menu_status:-0}
