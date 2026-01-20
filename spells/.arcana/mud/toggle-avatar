@@ -86,9 +86,9 @@ case "$action" in
   toggle)
     current=$(config-get "$config_file" "avatar-enabled" 2>/dev/null || printf '0')
     if [ "$current" = "1" ]; then
-      toggle-avatar disable
+      "$0" disable
     else
-      toggle-avatar enable
+      "$0" enable
     fi
     ;;
   *)
