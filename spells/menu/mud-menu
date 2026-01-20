@@ -16,6 +16,10 @@ esac
 set -eu
 . env-clear
 
+# Get script directory to find toggle commands
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+arcana_mud_dir="$script_dir/../.arcana/mud"
+
 # Catch Ctrl-C and TERM signal to exit 1 cleanly
 trap 'exit 0' INT TERM
 
@@ -131,37 +135,37 @@ while true; do
   # Build menu entries based on current state
   # Build parse toggle
   if is_feature_enabled "parse-enabled"; then
-    parse_toggle="[X] Parse (natural language commands)%toggle-parse"
+    parse_toggle="[X] Parse (natural language commands)%$arcana_mud_dir/toggle-parse"
   else
-    parse_toggle="[ ] Parse (natural language commands)%toggle-parse"
+    parse_toggle="[ ] Parse (natural language commands)%$arcana_mud_dir/toggle-parse"
   fi
   
   # Build cd hook toggle label based on current state
   if is_cd_hook_enabled; then
-    cd_hook="[X] Look on directory change (cd hook)%toggle-cd"
+    cd_hook="[X] Look on directory change (cd hook)%$arcana_mud_dir/toggle-cd"
   else
-    cd_hook="[ ] Look on directory change (cd hook)%toggle-cd"
+    cd_hook="[ ] Look on directory change (cd hook)%$arcana_mud_dir/toggle-cd"
   fi
   
   # Build avatar toggle
   if is_feature_enabled "avatar"; then
-    avatar="[X] Avatar (HP/MP, inventory)%toggle-avatar"
+    avatar="[X] Avatar (HP/MP, inventory)%$arcana_mud_dir/toggle-avatar"
   else
-    avatar="[ ] Avatar (HP/MP, inventory)%toggle-avatar"
+    avatar="[ ] Avatar (HP/MP, inventory)%$arcana_mud_dir/toggle-avatar"
   fi
   
   # Build touch hook toggle
   if is_feature_enabled "touch-hook"; then
-    touch_hook="[X] On-touch triggers (touch hook)%toggle-touch-hook"
+    touch_hook="[X] On-touch triggers (touch hook)%$arcana_mud_dir/toggle-touch-hook"
   else
-    touch_hook="[ ] On-touch triggers (touch hook)%toggle-touch-hook"
+    touch_hook="[ ] On-touch triggers (touch hook)%$arcana_mud_dir/toggle-touch-hook"
   fi
   
   # Build show/hide MUD in main menu toggle
   if is_feature_enabled "mud-enabled"; then
-    mud_menu="[X] Show MUD in main menu%toggle-mud-menu"
+    mud_menu="[X] Show MUD in main menu%$arcana_mud_dir/toggle-mud-menu"
   else
-    mud_menu="[ ] Show MUD in main menu%toggle-mud-menu"
+    mud_menu="[ ] Show MUD in main menu%$arcana_mud_dir/toggle-mud-menu"
   fi
   
   # Build enable/disable all toggle
@@ -174,9 +178,9 @@ while true; do
   done
   
   if [ "$all_enabled" -eq 1 ]; then
-    toggle_all="Disable all MUD features%toggle-all-mud --disable"
+    toggle_all="Disable all MUD features%$arcana_mud_dir/toggle-all-mud --disable"
   else
-    toggle_all="Enable all MUD features%toggle-all-mud --enable"
+    toggle_all="Enable all MUD features%$arcana_mud_dir/toggle-all-mud --enable"
   fi
   
   tor="Set up tor hidden service%setup-tor"

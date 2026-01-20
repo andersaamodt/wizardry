@@ -38,7 +38,7 @@ if "$IMPS_DIR/config-has" "$CONFIG_FILE" "cd-look" 2>/dev/null; then
                 # Currently enabled, disable it
                 "$IMPS_DIR/config-del" "$CONFIG_FILE" "cd-look"
                 printf '%s\n' "✓ cd hook disabled. Directory changes will no longer display room descriptions."
-                return 0
+                exit 0
         fi
 fi
 
