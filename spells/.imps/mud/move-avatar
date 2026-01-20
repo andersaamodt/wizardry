@@ -44,7 +44,8 @@ if command -v config-set >/dev/null 2>&1; then
         # If config-set fails, try direct update
         if grep -q "^avatar-path=" "$config_file" 2>/dev/null; then
             # Replace existing line using sed
-            sed_result=$(sed "s|^avatar-path=.*|avatar-path=$new_path|" "$config_file" 2>/dev/null || printf '')
+            sed_pattern="s|^avatar-path=.*|avatar-path=$new_path|"
+            sed_result=$(sed "$sed_pattern" "$config_file" 2>/dev/null || printf '')
             if [ -n "$sed_result" ]; then
                 printf '%s\n' "$sed_result" > "$config_file"
             fi
@@ -57,7 +58,8 @@ else
     # No config-set available, update directly
     if grep -q "^avatar-path=" "$config_file" 2>/dev/null; then
         # Replace existing line
-        sed_result=$(sed "s|^avatar-path=.*|avatar-path=$new_path|" "$config_file" 2>/dev/null || printf '')
+        sed_pattern="s|^avatar-path=.*|avatar-path=$new_path|"
+        sed_result=$(sed "$sed_pattern" "$config_file" 2>/dev/null || printf '')
         if [ -n "$sed_result" ]; then
             printf '%s\n' "$sed_result" > "$config_file"
         fi

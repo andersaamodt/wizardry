@@ -125,8 +125,8 @@ while true; do
   selection=$(menu --start-selection "$start_selection" "MUD Install:" "$@") || menu_status=$?
   menu_status=${menu_status:-0}
   
-  # Remember which item was selected for next iteration
-  # This ensures cursor stays on the selected toggle after activating it
+  # Track which item was selected to keep cursor position after toggling
+  # Items are in order: parse(1), mud-menu(2), cd(3), avatar(4), touch-hook(5), toggle-all(6), tor(7), exit(8)
   case "$selection" in
     *toggle-parse*) start_selection=1 ;;
     *toggle-mud-menu*) start_selection=2 ;;
@@ -134,7 +134,7 @@ while true; do
     *toggle-avatar*) start_selection=4 ;;
     *toggle-touch-hook*) start_selection=5 ;;
     *toggle-all-mud*) start_selection=6 ;;
-    *) start_selection=1 ;;  # Non-toggle actions reset to first item
+    # Non-toggle items (tor, exit) don't need to preserve selection since they exit the loop
   esac
   
   # ESC kills this menu script via TERM signal (same as Exit button)
