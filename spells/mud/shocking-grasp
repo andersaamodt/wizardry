@@ -20,8 +20,9 @@ set -eu
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 
 # Check if avatar is enabled
-if ! mud-config get avatar >/dev/null 2>&1 || [ "$(mud-config get avatar 2>/dev/null || printf '0')" != "1" ]; then
-  printf '%s\n' "shocking-grasp: avatar system is not enabled. Enable it from the MUD menu." >&2
+avatar_enabled=$(mud-config get avatar 2>/dev/null || printf '0')
+if [ "$avatar_enabled" != "1" ]; then
+  printf '%s\n' "shocking-grasp: no avatar found. Enable the avatar system first." >&2
   exit 1
 fi
 
