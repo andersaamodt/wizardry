@@ -31,9 +31,32 @@ fi
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 CONFIG_FILE="$spell_home/.mud"
 
-# Ensure spellbook directory and config file exist
+# Ensure spellbook directory exists
 mkdir -p "$spell_home"
-touch "$CONFIG_FILE"
+
+# MIGRATION: If .mud is a directory (from old structure), convert it to a file
+if [ -d "$CONFIG_FILE" ]; then
+  say "[DEBUG MIGRATION] .mud is a directory, converting to file..."
+  # Back up any config from old location
+  if [ -f "$CONFIG_FILE/config" ]; then
+    say "[DEBUG MIGRATION] Backing up config from .mud/config"
+    cp "$CONFIG_FILE/config" "$CONFIG_FILE.backup"
+  fi
+  # Remove the directory
+  rm -rf "$CONFIG_FILE"
+  # Restore backed up config if it exists
+  if [ -f "$CONFIG_FILE.backup" ]; then
+    mv "$CONFIG_FILE.backup" "$CONFIG_FILE"
+    say "[DEBUG MIGRATION] Restored config from backup"
+  else
+    # Create empty file
+    touch "$CONFIG_FILE"
+    say "[DEBUG MIGRATION] Created new empty .mud file"
+  fi
+else
+  # Ensure config file exists
+  touch "$CONFIG_FILE"
+fi
 
 # Check if a MUD config feature is enabled
 is_feature_enabled() {
