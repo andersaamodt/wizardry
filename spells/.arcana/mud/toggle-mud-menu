@@ -29,7 +29,7 @@ if config-has "$CONFIG_FILE" "mud-enabled" 2>/dev/null; then
   current_value=$(config-get "$CONFIG_FILE" "mud-enabled" 2>/dev/null)
   if [ "$current_value" = "1" ]; then
     # Currently enabled, disable it
-    config-del "$CONFIG_FILE" "mud-enabled"
+    config-set "$CONFIG_FILE" "mud-enabled" "0"
     printf '%s\n' "✓ MUD menu hidden from main menu."
     exit 0
   fi

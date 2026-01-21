@@ -29,7 +29,7 @@ if config-has "$CONFIG_FILE" "touch-hook" 2>/dev/null; then
   current_value=$(config-get "$CONFIG_FILE" "touch-hook" 2>/dev/null)
   if [ "$current_value" = "1" ]; then
     # Currently enabled, disable it
-    config-del "$CONFIG_FILE" "touch-hook"
+    config-set "$CONFIG_FILE" "touch-hook" "0"
     printf '%s\n' "✓ Touch hook disabled."
     exit 0
   fi

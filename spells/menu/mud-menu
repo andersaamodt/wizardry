@@ -32,12 +32,10 @@ fi
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 CONFIG_FILE="$spell_home/.mud"
 
-# Use a process-specific temp file for selection tracking (cleaned up on exit)
-SELECTION_FILE="/tmp/.mud-menu-selection.$$"
+# Use temp file imp for selection tracking
+SELECTION_FILE=$(temp-file mud-menu-selection)
 export SELECTION_FILE
-
-# Clean up selection file on exit
-trap 'rm -f "$SELECTION_FILE" 2>/dev/null' EXIT INT TERM
+trap 'cleanup-file "$SELECTION_FILE"' EXIT INT TERM
 
 # Ensure spellbook directory and config file exist
 mkdir -p "$spell_home"
