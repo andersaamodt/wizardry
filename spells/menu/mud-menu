@@ -46,9 +46,11 @@ is_feature_enabled() {
   feature=$1
   default_enabled=0
   
-  # parse-enabled defaults to enabled (1), mud-enabled defaults to enabled (1), all others default to disabled (0)
+  # All MUD features default to enabled (1) when unset
+  # This matches the behavior when MUD is installed without creating config files
   case "$feature" in
-    parse-enabled|mud-enabled) default_enabled=1 ;;
+    parse-enabled|mud-enabled|cd-look|avatar|touch-hook) default_enabled=1 ;;
+    *) default_enabled=0 ;;
   esac
   
   # Get the value using config-get
