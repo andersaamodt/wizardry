@@ -10,7 +10,7 @@ set -eu
 num=$1
 desc=$2
 status=$3
-reason=${TEST_FAILURE_REASON-}
+reason=${4-${TEST_FAILURE_REASON-}}
 skip_reason=${TEST_SKIP_REASON-}
 
 # If reason not in environment, try reading from file (for assert functions)
