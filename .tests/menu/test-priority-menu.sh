@@ -60,7 +60,7 @@ test_help_usage_flag() {
 test_priority_menu_presents_actions() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   make_read_magic_stub "$tmp"
   
@@ -98,7 +98,7 @@ SH
 test_priority_menu_shows_filename_in_title() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   make_read_magic_stub "$tmp"
   
@@ -124,7 +124,7 @@ SH
 test_priority_menu_shows_uncheck_when_checked() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   
   # Create read-magic stub that says item is checked
@@ -168,7 +168,7 @@ run_test_case "priority-menu shows uncheck when checked" test_priority_menu_show
 test_esc_exit_behavior() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   make_read_magic_stub "$tmp"
   
@@ -196,7 +196,7 @@ run_test_case "priority-menu ESC/Exit behavior" test_esc_exit_behavior
 test_priority_menu_shows_browse_subpriorities() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   
   # Create colors stub that provides theme colors
@@ -279,7 +279,7 @@ SH
 test_priority_menu_hides_browse_for_file() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   make_read_magic_stub "$tmp"
   
@@ -306,7 +306,7 @@ SH
 test_priority_menu_hides_browse_for_empty_dir() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   
   # Create read-magic stub that returns no priority for items
@@ -361,7 +361,7 @@ SH
 test_priority_menu_shows_prioritize_for_very_first() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   
   # Create read-magic stub that says this file is the very first priority
@@ -438,7 +438,7 @@ SH
 test_priority_menu_shows_prioritize_for_non_first_in_highest() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   
   # Create read-magic stub for a non-first item in highest echelon
@@ -513,7 +513,7 @@ run_test_case "priority-menu shows prioritize for non-first in highest echelon" 
 test_priority_menu_shows_make_project_for_files() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   make_read_magic_stub "$tmp"
   
@@ -539,7 +539,7 @@ SH
 test_priority_menu_hides_make_project_for_dirs() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   make_read_magic_stub "$tmp"
   
@@ -569,7 +569,7 @@ run_test_case "priority-menu hides make project for directories" test_priority_m
 test_priority_menu_shows_unchecked_in_header() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   make_read_magic_stub "$tmp"
   
@@ -595,7 +595,7 @@ SH
 test_priority_menu_shows_checked_in_header() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   
   # Create read-magic stub that says item is checked

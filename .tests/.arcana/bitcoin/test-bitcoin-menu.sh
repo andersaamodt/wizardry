@@ -33,9 +33,9 @@ SH
 
 test_bitcoin_menu_prompts_install_when_missing() {
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
-  write-stub-colors "$tmp"
-  write-stub-exit-label "$tmp"
+  stub-menu "$tmp"
+  stub-colors "$tmp"
+  stub-exit-label "$tmp"
   make_status_stub "$tmp" "missing"
   make_boolean_stub "$tmp/is-bitcoin-installed" 1
   make_boolean_stub "$tmp/is-service-installed" 1
@@ -50,9 +50,9 @@ test_bitcoin_menu_prompts_install_when_missing() {
 test_bitcoin_menu_controls_running_service() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
-  write-stub-colors "$tmp"
-  write-stub-exit-label "$tmp"
+  stub-menu "$tmp"
+  stub-colors "$tmp"
+  stub-exit-label "$tmp"
   make_status_stub "$tmp" "ready"
   make_boolean_stub "$tmp/is-bitcoin-installed" 0
   make_boolean_stub "$tmp/is-service-installed" 0
@@ -68,9 +68,9 @@ test_bitcoin_menu_controls_running_service() {
 test_bitcoin_menu_offers_service_install_when_missing() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
-  write-stub-colors "$tmp"
-  write-stub-exit-label "$tmp"
+  stub-menu "$tmp"
+  stub-colors "$tmp"
+  stub-exit-label "$tmp"
   make_status_stub "$tmp" "ready"
   make_boolean_stub "$tmp/is-bitcoin-installed" 0
   make_boolean_stub "$tmp/is-service-installed" 1

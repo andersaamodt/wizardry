@@ -43,7 +43,7 @@ spell_is_executable() {
 test_mud_presents_navigation_options() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -76,7 +76,7 @@ SH
 test_mud_presents_admin_options() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -100,7 +100,7 @@ SH
 test_mud_shows_menu_title() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -121,7 +121,7 @@ SH
 test_esc_exit_behavior() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'

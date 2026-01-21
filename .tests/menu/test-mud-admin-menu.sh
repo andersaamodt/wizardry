@@ -25,8 +25,8 @@ SH
 test_mud_admin_calls_menu_with_actions() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
-  write-stub-colors "$tmp"
+  stub-menu "$tmp"
+  stub-colors "$tmp"
   cat >"$tmp/require-command" <<'SH'
 #!/bin/sh
 command -v "$1" >/dev/null 2>&1
@@ -52,7 +52,7 @@ SH
 test_mud_admin_requires_menu_helper() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-colors "$tmp"
+  stub-colors "$tmp"
   cat >"$tmp/require-command" <<'SH'
 #!/bin/sh
 printf '%s\n' "The MUD Admin menu needs the 'menu' command to present options." >&2
@@ -76,7 +76,7 @@ SH
 
 test_mud_admin_reports_menu_failure() {
   tmp=$(make_tempdir)
-  write-stub-colors "$tmp"
+  stub-colors "$tmp"
   make_failing_menu "$tmp"
   cat >"$tmp/require-command" <<'SH'
 #!/bin/sh
@@ -108,7 +108,7 @@ run_test_case "mud-admin surfaces menu failures" test_mud_admin_reports_menu_fai
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
   tmp=$(make_tempdir)
-  write-stub-colors "$tmp"
+  stub-colors "$tmp"
   
   # Create menu stub that returns escape status
   cat >"$tmp/menu" <<'SH'
