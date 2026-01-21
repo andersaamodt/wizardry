@@ -276,6 +276,8 @@ test-magic
 
 The spell discovers every `test-*.sh` file (note: hyphen, not underscore) in `.tests/` and executes each in a sandboxed bubblewrap environment.
 
+Our testing infrastructure uses `socat` for real pseudo-TTY allocation when testing interactive features, and `bwrap` (bubblewrap) for sandboxed test isolation.
+
 Principles of the testing suite:
 
 | Testing Rule          | Description |

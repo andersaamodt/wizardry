@@ -1,0 +1,58 @@
+#!/bin/sh
+# socat-pty COMMAND [ARGS...] - run command with real pseudo-TTY via socat
+# Example: socat-pty menu "Test" "Item%echo hi"
+#
+# This imp allocates a real pseudo-TTY using socat and runs the command on it.
+# Output is captured from the PTY and returned.
+# Use with socat-send-keys to drive interactive programs.
+
+set -eu
+
+if [ "$#" -lt 1 ]; then
+  printf 'socat-pty: command required\n' >&2
+  exit 1
+fi
+
+# Check if socat is available
+if ! command -v socat >/dev/null 2>&1; then
+  printf 'socat-pty: socat not found\n' >&2
+  printf 'socat-pty: install socat for interactive testing with real PTY\n' >&2
+  exit 1
+fi
+
+# Create temporary directory for PTY communication
+tmpdir=${TMPDIR:-/tmp}
+pty_dir=$(mktemp -d "$tmpdir/socat-pty.XXXXXX")
+trap 'rm -rf "$pty_dir"' EXIT INT TERM
+
+# Create files for communication
+input_file="$pty_dir/input"
+output_file="$pty_dir/output"
+
+# Create input file with default input (can be overridden via stdin or env)
+# For now, just send enter to complete interactive prompts
+printf '\r' > "$input_file"
+
+# Configurable timeout (default 2 seconds, can be overridden)
+timeout_seconds=${SOCAT_TIMEOUT:-2}
+
+# Start the command with PTY on one side and input from file on the other
+# This allows the command to think it's running in a real terminal
+(
+  # Use script approach with timeout to prevent hanging
+  # The command runs in a PTY, input comes from our file, output goes to our file
+  timeout "$timeout_seconds" socat \
+    "EXEC:$*,pty,setsid,ctty,stderr" \
+    "SYSTEM:cat '$input_file'; sleep 0.5" \
+    > "$output_file" 2>&1 || true
+) &
+wait $!
+
+# Output the captured content
+if [ -f "$output_file" ]; then
+  cat "$output_file"
+fi
+
+# Cleanup is handled by trap
+
+

@@ -1,0 +1,58 @@
+#!/bin/sh
+# run-with-pty COMMAND [ARGS...] - run command with real PTY using socat
+# Environment variables:
+#   PTY_INPUT - raw input to send to the command (default: single newline)
+#   PTY_KEYS - symbolic keys to send (e.g., "up up enter") - converted to escape sequences
+#   PATH - inherited for command execution
+#
+# This helper uses socat to create a real PTY for interactive command testing.
+# Use PTY_KEYS for symbolic key names (more readable) or PTY_INPUT for raw bytes.
+
+set -eu
+
+if [ "$#" -lt 1 ]; then
+  printf 'run-with-pty: command required\n' >&2
+  exit 1
+fi
+
+# Check if socat is available
+if ! command -v socat >/dev/null 2>&1; then
+  printf 'run-with-pty: socat not found\n' >&2
+  exit 1
+fi
+
+# Create temporary directory
+tmpdir=${TMPDIR:-/tmp}
+test_dir=$(mktemp -d "$tmpdir/run-pty.XXXXXX")
+trap 'rm -rf "$test_dir"' EXIT INT TERM
+
+# Determine input data
+if [ -n "${PTY_KEYS:-}" ]; then
+  # Convert symbolic keys to escape sequences using socat-send-keys
+  input_data=$(socat-send-keys $PTY_KEYS)
+elif [ -n "${PTY_INPUT:-}" ]; then
+  # Use raw input as-is
+  input_data="$PTY_INPUT"
+else
+  # Default to single newline
+  input_data='
+'
+fi
+
+# Create a script that runs the exact command
+# Properly quote each argument
+{
+  printf '#!/bin/sh\n'
+  printf 'export PATH=%s\n' "'$PATH'"
+  printf 'exec'
+  for arg in "$@"; do
+    # Escape single quotes in the argument
+    escaped=$(printf '%s' "$arg" | sed "s/'/'\\\\''/g")
+    printf " '%s'" "$escaped"
+  done
+  printf '\n'
+} > "$test_dir/cmd.sh"
+chmod +x "$test_dir/cmd.sh"
+
+# Use socat with stdin as input side and EXEC with PTY on output side
+printf '%s' "$input_data" | timeout 5 socat - "EXEC:$test_dir/cmd.sh,pty,stderr" 2>&1 || true

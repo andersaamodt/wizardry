@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# Bootstrap spell: Install the socat command using the system package manager.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-socat
+
+This spell installs the socat command using the system package manager.
+socat is required for interactive testing with real pseudo-TTY allocation.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+ASSUME_YES=1
+FORCE_INSTALL=${INSTALL_SOCAT_FORCE_INSTALL:-0}
+export ASSUME_YES FORCE_INSTALL
+
+"$SCRIPT_DIR/manage-system-command" socat socat
