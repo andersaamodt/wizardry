@@ -80,7 +80,6 @@ stty:stty:install-stty:uninstall-stty:1
 tput:tput:install-tput:uninstall-tput:1
 ps:ps:install-ps:uninstall-ps:1
 socat:socat:install-socat:uninstall-socat:0
-script:script:install-script:uninstall-script:0
 EOF
       ;;
     *)
@@ -98,7 +97,6 @@ stty:stty:install-stty:uninstall-stty:1
 tput:tput:install-tput:uninstall-tput:1
 ps:ps:install-ps:uninstall-ps:1
 socat:socat:install-socat:uninstall-socat:0
-script:script:install-script:uninstall-script:0
 EOF
       ;;
   esac
