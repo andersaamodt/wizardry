@@ -17,9 +17,8 @@ fi
 # portable across login shells that set CDPATH to multiple directories.
 unset CDPATH
 
-# NOTE: With the new word-of-binding paradigm (PR #410), directories no longer
-# need to be added to PATH manually. Instead, invoke-wizardry is sourced from
-# the rc file and dynamically sets up PATH at shell startup.
+# NOTE: Directories are added to PATH automatically when invoke-wizardry is
+# sourced from the rc file at shell startup.
 
 # Determine the default target directory shown in the install prompt. The
 # installer accepts three environment variables to steer non-interactive
@@ -335,8 +334,7 @@ INSTALL_CD="$ABS_DIR/spells/.arcana/mud/install-cd"
 TOGGLE_CD="$ABS_DIR/spells/.arcana/mud/toggle-cd"
 TOGGLE_ALL_MUD="$ABS_DIR/spells/.arcana/mud/toggle-all-mud"
 
-# NOTE: With the word-of-binding paradigm, spells no longer need to be pre-installed.
-# word-of-binding auto-sources spells on first use when called via handle-command-not-found.
+# NOTE: Spells no longer need to be pre-installed.
 # Users can still use install() functions in spells for explicit customizations like aliases.
 
 # Export environment variables for all helper spells so that they use the new
@@ -1005,8 +1003,7 @@ if [ -n "${HOME-}" ]; then
         fi
 fi
 
-# NOTE: With the word-of-binding paradigm (PR #410), spells are auto-sourced on
-# first use via handle-command-not-found. Pre-installing spells is no longer needed.
+# NOTE: Pre-installing spells is no longer needed.
 # Users can still manually run spell install() functions for customizations.
 
 # MUD Installation (optional) - already asked earlier, now configure if enabled

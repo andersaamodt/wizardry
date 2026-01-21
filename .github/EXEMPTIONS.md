@@ -329,12 +329,12 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 
 
 **Refactored** (52 spells - COMPLETED ✅):
-- `spellcraft/lint-magic` (22→2) - Added word-of-binding wrapper function, maintains 0 extra functions beyond usage
+- `spellcraft/lint-magic` (22→2) - Added wrapper function, maintains 0 extra functions beyond usage
 - `menu/spellbook` (30→10→4→1) - Major refactor: created 3 reusable imps, inlined single-use functions, removed duplicate scribing functionality (now delegates to scribe-spell), reduced to 2 total functions
 - `spellcraft/learn-spell` (8→1) - Inlined warn and detect_env_once - **NOW REMOVED (obsolete)**
 - `spellcraft/scribe-spell` (10→1) - Inlined helpers, removed learn-spellbook dependency
 - `spellcraft/learn` (15→0) - Dramatically simplified to copy/link spells to spellbook
-- `spellcraft/learn-spellbook` (24→REMOVED) - Obsolete with word-of-binding, replaced by learn
+- `spellcraft/learn-spellbook` (24→REMOVED) - Obsolete, replaced by learn
 - `cantrips/assertions` (4→REMOVED) - Test library removed, boot/ test imps already exist
 - `menu/spell-menu` (17→1) - Major refactor
 - `.arcana/bitcoin/install-bitcoin` (11→0) - Refactored
@@ -370,8 +370,8 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 - `.arcana/bitcoin/uninstall-bitcoin` (7→1)
 - `.arcana/tor/configure-tor` (6→1)
 - `.arcana/mud/mud-config` (5→4)
-- `system/test-magic` (15→2) - **Word-of-binding compliant** - Wrapped main logic in function, maintains 2 functions total (usage + main)
-- `.arcana/mud/cd` (15→2) - **MASSIVELY SIMPLIFIED** - Uses settings file + word-of-binding pattern, 2 functions total (usage + hook), 34 lines (was 401!)
+- `system/test-magic` (15→2) - Wrapped main logic in function, maintains 2 functions total (usage + main)
+- `.arcana/mud/cd` (15→2) - **MASSIVELY SIMPLIFIED** - Uses settings file, 2 functions total (usage + hook), 34 lines (was 401!)
 - `system/update-all` (10→1) - **Inlined all helpers**, using existing imps (step, must has, etc.)
 - `divination/identify-room` (7→2) - **Inlined all single-use helpers**, uses detect-distro spell instead of inline platform detection
 - `cantrips/cursor-blink` (4→1) - **Inlined trivial helpers** (cursor_blink_on, cursor_blink_off, supports_cursor_control)
@@ -635,7 +635,7 @@ fi
 
 #### 11. Internal Spell Loading Variables
 
-**Allowed**: Variables used by the word-of-binding infrastructure during spell sourcing.
+**Allowed**: Variables used by the spell sourcing infrastructure.
 
 - `_WIZARDRY_LOADING_SPELLS` — Flag indicating spells are being sourced by `invoke-wizardry`
 

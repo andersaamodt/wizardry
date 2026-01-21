@@ -523,9 +523,8 @@ test_scripts_using_globals_have_set_u() {
     spell=$1
     # Skip declare-globals itself
     # Skip invoke-wizardry - it's sourced into user shell and can't set strict mode
-    # Skip word-of-binding - it uses safe patterns (checks ${VAR-} before raw use)
     case "$spell" in
-      */.imps/declare-globals|*/.imps/sys/invoke-wizardry|*/.imps/sys/word-of-binding) return ;;
+      */.imps/declare-globals|*/.imps/sys/invoke-wizardry) return ;;
     esac
     
     # Check if script uses any declared global (not in heredocs or comments)
@@ -1110,7 +1109,7 @@ test_spells_have_true_name_functions() {
   
   # This is a non-failing check - just print warnings
   if [ -n "$warnings" ]; then
-    printf 'INFO: spells/imps without true name functions (consider adding for word-of-binding): %s\n' "$warnings" >&2
+    printf 'INFO: spells/imps without true name functions (consider adding): %s\n' "$warnings" >&2
   fi
   
   # Always return success (non-failing check)
@@ -1152,7 +1151,7 @@ test_true_names_have_no_leading_underscore() {
 }
 
 # --- Check: All spells MUST have wrapper functions (FAILING TEST) ---
-# All spells must have a wrapper function matching their filename for word-of-binding.
+# All spells must have a wrapper function matching their filename.
 # For spells: snake_case name (e.g., lint-magic -> lint_magic)
 # This enables sourcing spells into the shell for efficient invocation.
 # Unlike test_spells_have_true_name_functions, this is a FAILING test.
@@ -1200,7 +1199,7 @@ test_spells_require_wrapper_functions() {
   rm -f "${WIZARDRY_TMPDIR}/missing-wrappers.txt"
   
   if [ -n "$violations" ]; then
-    TEST_FAILURE_REASON="spells missing wrapper functions (required for word-of-binding): $violations"
+    TEST_FAILURE_REASON="spells missing wrapper functions: $violations"
     return 1
   fi
   return 0
@@ -1528,7 +1527,7 @@ test_scripts_have_set_eu_early() {
       return
     fi
     
-    # Auto-detect castable/uncastable pattern or traditional word-of-binding pattern:
+    # Auto-detect castable/uncastable pattern or traditional wrapper pattern:
     # Modern flat pattern (preferred):
     #   - No function wrappers
     #   - set -eu at top level (after help handler)
@@ -1561,10 +1560,10 @@ test_scripts_have_set_eu_early() {
       has_self_execute=1
     fi
     
-    # If word-of-binding pattern detected (castable/uncastable OR traditional), 
+    # If wrapper pattern detected (castable/uncastable OR traditional), 
     # check for set -eu or set +eu anywhere in the file
     if [ "$has_wrapper" = "1" ] && { [ "$has_castable_pattern" = "1" ] || [ "$has_self_execute" = "1" ]; }; then
-      # Word-of-binding spell: set -eu or set +eu should exist somewhere (inside or outside wrapper)
+      # Wrapper spell: set -eu or set +eu should exist somewhere (inside or outside wrapper)
       if ! grep -qE '^[[:space:]]*set [+-][euo]*[eu][euo]*' "$spell"; then
         printf '%s\n' "$rel_path"
       fi
@@ -2351,18 +2350,18 @@ test_test_bootstrap_provides_failure_reporting() {
   return 0
 }
 
-# META: die imp must work correctly with word-of-binding
+# META: die imp must work correctly when sourced
 test_die_imp_uses_return_not_exit() {
   die_file="$ROOT_DIR/spells/.imps/out/die"
   
   # Verify die uses return, not exit
   if grep -q "^[[:space:]]*exit " "$die_file"; then
-    TEST_FAILURE_REASON="die imp uses 'exit' instead of 'return' (breaks word-of-binding)"
+    TEST_FAILURE_REASON="die imp uses 'exit' instead of 'return' (breaks sourced execution)"
     return 1
   fi
   
   if ! grep -q "^[[:space:]]*return " "$die_file"; then
-    TEST_FAILURE_REASON="die imp doesn't use 'return' (required for word-of-binding)"
+    TEST_FAILURE_REASON="die imp doesn't use 'return' (required for sourced execution)"
     return 1
   fi
   

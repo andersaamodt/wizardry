@@ -839,8 +839,8 @@ EOF
 
 install_does_not_show_spell_installation() {
   skip-if-compiled || return $?
-  # With word-of-binding paradigm, the installer should NOT pre-install spells
-  # Spells are auto-sourced on first use via command_not_found_handle
+  # The installer should NOT pre-install spells
+  # Spells are available via PATH when invoke-wizardry is sourced
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
   link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -1185,12 +1185,12 @@ path_wizard_remove_all_handles_empty_file() {
 # === Install Spells Before Rebuild Tests ===
 
 install_no_spell_preinstallation() {
-  # With word-of-binding paradigm, spells are NOT pre-installed
+  # Spells are NOT pre-installed
   # This test verifies the install script doesn't have the old spell installation logic
   
   # Check that the install script does NOT have LEARNABLE_SPELLS variable
   if grep -q 'LEARNABLE_SPELLS=' "$ROOT_DIR/install"; then
-    TEST_FAILURE_REASON="install script should not have LEARNABLE_SPELLS (word-of-binding handles this)"
+    TEST_FAILURE_REASON="install script should not have LEARNABLE_SPELLS"
     return 1
   fi
   
@@ -1221,9 +1221,9 @@ install_mud_setup() {
 
   assert_success || return 1
   
-  # With word-of-binding paradigm, should NOT mention individual spell installation
+  # Should NOT mention individual spell installation
   if printf '%s' "$OUTPUT" | grep -q "jump-to-marker"; then
-    TEST_FAILURE_REASON="installer should not pre-install individual spells (word-of-binding handles this)"
+    TEST_FAILURE_REASON="installer should not pre-install individual spells"
     return 1
   fi
 }

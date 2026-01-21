@@ -369,7 +369,6 @@ AWKSCRIPT
     # NOTE: Hyphenated spell calls and subprocess execution checks removed after
     # SPIRAL conversion (2026-01-03). In the flat-file paradigm, spells ARE called
     # with hyphens as executables in PATH, not as functions with underscores.
-    # These were word-of-binding era checks that are no longer applicable.
     
     rm -f "$awk_script"
   fi
