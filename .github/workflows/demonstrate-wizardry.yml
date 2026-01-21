@@ -69,6 +69,8 @@ jobs:
             exit 2
           fi
           . spells/.imps/sys/invoke-wizardry || exit 2
+          # Skip banish in PTY environment to avoid hanging
+          export SKIP_BANISH=1
           exec ./spells/spellcraft/demo-magic all
           INNERCMD
           chmod +x "$test_dir/cmd.sh"
