@@ -18,80 +18,7 @@ make_stub_dir() {
   printf '%s\n' "$dir"
 }
 
-write_memorize_command_stub() {
-  dir=$1
-  cat >"$dir/memorize" <<'STUB'
-#!/bin/sh
-case $1 in
-  add)
-    shift
-    name=$1
-    shift
-    cmd=$1
-    shift || :
-    while [ "$#" -gt 0 ]; do
-      cmd="$cmd $1"
-      shift
-    done
-    cast_dir=${WIZARDRY_CAST_DIR:-${HOME:-.}/.spellbook}
-    cast_file_default=$cast_dir/.memorized
-    cast_file=${WIZARDRY_CAST_FILE:-$cast_file_default}
-    mkdir -p "$cast_dir"
-    printf '%s\t%s\n' "$name" "$cmd" >>"$cast_file"
-    printf '%s\n' "$cmd" >"$cast_dir/$name"
-    chmod +x "$cast_dir/$name"
-    ;;
-  remove)
-    shift
-    name=$1
-    cast_dir=${WIZARDRY_CAST_DIR:-${HOME:-.}/.spellbook}
-    cast_file_default=$cast_dir/.memorized
-    cast_file=${WIZARDRY_CAST_FILE:-$cast_file_default}
-    tmp=$(mktemp)
-    while IFS= read -r line || [ -n "$line" ]; do
-      case $line in
-        "$name"*) continue ;;
-        *) printf '%s\n' "$line" >>"$tmp" ;;
-      esac
-    done <"$cast_file"
-    mv "$tmp" "$cast_file"
-    rm -f "$cast_dir/$name"
-    ;;
-  list)
-    cast_dir=${WIZARDRY_CAST_DIR:-${HOME:-.}/.spellbook}
-    cast_file_default=$cast_dir/.memorized
-    cast_file=${WIZARDRY_CAST_FILE:-$cast_file_default}
-    cat "$cast_file" 2>/dev/null || true
-    ;;
-  dir)
-    cast_dir=${WIZARDRY_CAST_DIR:-${HOME:-.}/.spellbook}
-    printf '%s\n' "$cast_dir"
-    ;;
-  *)
-    # Default action: memorize the spell (same as add with spell name as command)
-    name=$1
-    cmd=$name
-    cast_dir=${WIZARDRY_CAST_DIR:-${HOME:-.}/.spellbook}
-    cast_file_default=$cast_dir/.memorized
-    cast_file=${WIZARDRY_CAST_FILE:-$cast_file_default}
-    mkdir -p "$cast_dir"
-    printf '%s\t%s\n' "$name" "$cmd" >>"$cast_file"
-    printf '%s\n' "$cmd" >"$cast_dir/$name"
-    chmod +x "$cast_dir/$name"
-    ;;
-esac
-STUB
-  chmod +x "$dir/memorize"
-}
 
-write_require_command_stub() {
-  dir=$1
-  cat >"$dir/require-command" <<'STUB'
-#!/bin/sh
-exit 0
-STUB
-  chmod +x "$dir/require-command"
-}
 
 write_menu_stub() {
   dir=$1
@@ -113,7 +40,7 @@ test_errors_when_helper_missing() {
 test_shows_usage_with_help() {
   skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
-  write_memorize_command_stub "$stub_dir"
+  stub-memorize-command "$stub_dir"
   PATH="$stub_dir:$PATH" run_spell "spells/menu/spell-menu" --help
   assert_success || return 1
   case "$OUTPUT" in
@@ -125,8 +52,8 @@ test_shows_usage_with_help() {
 test_requires_minimum_arguments() {
   skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
-  write_memorize_command_stub "$stub_dir"
-  write_require_command_stub "$stub_dir"
+  stub-memorize-command "$stub_dir"
+  stub-require-command-simple "$stub_dir"
   # Call with no arguments (needs 1)
   PATH="$stub_dir:$PATH" run_spell "spells/menu/spell-menu"
   assert_failure || return 1
@@ -139,7 +66,7 @@ test_requires_minimum_arguments() {
 test_cast_action_executes_command() {
   skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
-  write_memorize_command_stub "$stub_dir"
+  stub-memorize-command "$stub_dir"
   PATH="$stub_dir:$PATH" run_spell "spells/menu/spell-menu" --cast "echo hello"
   assert_success || return 1
   case "$OUTPUT" in
@@ -156,8 +83,8 @@ run_test_case "spell-menu --cast executes command" test_cast_action_executes_com
 test_esc_exit_behavior() {
   skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
-  write_memorize_command_stub "$stub_dir"
-  write_require_command_stub "$stub_dir"
+  stub-memorize-command "$stub_dir"
+  stub-require-command-simple "$stub_dir"
   
   # Create menu stub that logs entries and returns escape status
   cat >"$stub_dir/menu" <<'SH'
@@ -192,8 +119,8 @@ run_test_case "spell-menu ESC/Exit behavior" test_esc_exit_behavior
 test_toggle_keeps_cursor_position() {
   skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
-  write_memorize_command_stub "$stub_dir"
-  write_require_command_stub "$stub_dir"
+  stub-memorize-command "$stub_dir"
+  stub-require-command-simple "$stub_dir"
   
   cat >"$stub_dir/exit-label" <<'SH'
 #!/bin/sh
@@ -270,8 +197,8 @@ run_test_case "spell-menu toggle keeps cursor position" test_toggle_keeps_cursor
 test_non_toggle_resets_cursor() {
   skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
-  write_memorize_command_stub "$stub_dir"
-  write_require_command_stub "$stub_dir"
+  stub-memorize-command "$stub_dir"
+  stub-require-command-simple "$stub_dir"
   
   cat >"$stub_dir/exit-label" <<'SH'
 #!/bin/sh

@@ -23,43 +23,13 @@ STUB
   chmod +x "$dir/ask-yn"
 }
 
-write_ask_text_stub() {
-  dir=$1
-  cat >"$dir/ask-text" <<'STUB'
-#!/bin/sh
-file=${ASK_TEXT_STUB_FILE:-}
-if [ -n "$file" ] && [ -s "$file" ]; then
-  line=$(head -n1 "$file")
-  tail -n +2 "$file" >"$file.tmp" && mv "$file.tmp" "$file"
-  printf '%s\n' "$line"
-  exit 0
-fi
-printf '%s\n' "${ASK_TEXT_DEFAULT:-}"
-STUB
-  chmod +x "$dir/ask-text"
-}
 
-write_systemctl_stub() {
-  dir=$1
-  cat >"$dir/systemctl" <<'STUB'
-#!/bin/sh
-state_dir=${SYSTEMCTL_STATE_DIR:-$(mktemp -d)}
-mkdir -p "$state_dir"
-case "$1" in
-  daemon-reload)
-    printf 'reloaded' >"$state_dir/daemon-reload"
-    exit 0 ;;
-  *) exit 0 ;;
-esac
-STUB
-  chmod +x "$dir/systemctl"
-}
 
 test_declines_overwrite() {
   stub_dir=$(make_stub_dir)
   write_ask_yn_stub "$stub_dir"
-  write_ask_text_stub "$stub_dir"
-  write_systemctl_stub "$stub_dir"
+  stub-ask-text-simple "$stub_dir"
+  stub-systemctl-simple "$stub_dir"
 
   service_dir=$(mktemp -d "$WIZARDRY_TMPDIR/services.XXXXXX") || return 1
   template="$service_dir/example.service"
@@ -81,8 +51,8 @@ test_declines_overwrite() {
 test_fills_placeholders_and_reloads() {
   stub_dir=$(make_stub_dir)
   write_ask_yn_stub "$stub_dir"
-  write_ask_text_stub "$stub_dir"
-  write_systemctl_stub "$stub_dir"
+  stub-ask-text-simple "$stub_dir"
+  stub-systemctl-simple "$stub_dir"
 
   service_dir=$(mktemp -d "$WIZARDRY_TMPDIR/services.XXXXXX") || return 1
   template="$service_dir/example.service"
@@ -123,8 +93,8 @@ SERVICE
 test_skips_sudo_when_service_dir_writable() {
   stub_dir=$(make_stub_dir)
   write_ask_yn_stub "$stub_dir"
-  write_ask_text_stub "$stub_dir"
-  write_systemctl_stub "$stub_dir"
+  stub-ask-text-simple "$stub_dir"
+  stub-systemctl-simple "$stub_dir"
 
   printf '#!/bin/sh\nexit 99' >"$stub_dir/sudo"
   chmod +x "$stub_dir/sudo"
@@ -149,8 +119,8 @@ test_skips_sudo_when_service_dir_writable() {
 test_replaces_special_characters() {
   stub_dir=$(make_stub_dir)
   write_ask_yn_stub "$stub_dir"
-  write_ask_text_stub "$stub_dir"
-  write_systemctl_stub "$stub_dir"
+  stub-ask-text-simple "$stub_dir"
+  stub-systemctl-simple "$stub_dir"
 
   service_dir=$(mktemp -d "$WIZARDRY_TMPDIR/services.XXXXXX") || return 1
   template="$service_dir/example.service"

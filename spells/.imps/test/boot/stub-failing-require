@@ -1,0 +1,11 @@
+#!/bin/sh
+# stub-failing-require TMP - create require stub that fails with menu error
+set -eu
+
+tmp=$1
+cat >"$tmp/require" <<'SH'
+#!/bin/sh
+printf '%s\n' "The casting menu needs the 'menu' command." >&2
+exit 1
+SH
+chmod +x "$tmp/require"

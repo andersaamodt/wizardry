@@ -1,0 +1,10 @@
+#!/bin/sh
+# stub-require-command-simple DIR - create require-command stub that always succeeds
+set -eu
+
+dir=$1
+cat >"$dir/require-command" <<'STUB'
+#!/bin/sh
+exit 0
+STUB
+chmod +x "$dir/require-command"

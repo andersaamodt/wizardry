@@ -8,52 +8,6 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 # Create stub xattr helper
-create_xattr_stub() {
-  stub_dir=$1
-  cat >"$stub_dir/xattr" <<'STUB'
-#!/bin/sh
-# Simple xattr stub that tracks attributes in a temp file
-case "$1" in
-  -w)
-    # Write: xattr -w key value file
-    key=$2
-    value=$3
-    file=$4
-    attr_file="${file}.attrs"
-    # Remove existing key if present
-    if [ -f "$attr_file" ]; then
-      grep -v "^${key}=" "$attr_file" > "${attr_file}.tmp" 2>/dev/null || true
-      mv "${attr_file}.tmp" "$attr_file" 2>/dev/null || true
-    fi
-    # Add new key=value
-    printf '%s=%s\n' "$key" "$value" >> "$attr_file"
-    ;;
-  -p)
-    # Read: xattr -p key file
-    key=$2
-    file=$3
-    attr_file="${file}.attrs"
-    if [ -f "$attr_file" ]; then
-      value=$(grep "^${key}=" "$attr_file" 2>/dev/null | cut -d= -f2-)
-      if [ -n "$value" ]; then
-        printf '%s\n' "$value"
-        exit 0
-      fi
-    fi
-    exit 1
-    ;;
-  *)
-    # List: xattr file
-    file=$1
-    attr_file="${file}.attrs"
-    if [ -f "$attr_file" ]; then
-      cut -d= -f1 < "$attr_file"
-    fi
-    ;;
-esac
-STUB
-  chmod +x "$stub_dir/xattr"
-}
 
 test_help() {
   run_spell "spells/mud/stats" --help
@@ -72,7 +26,7 @@ test_stats_no_avatar() {
   character_file="$SPELLBOOK_DIR/.character"
   touch "$character_file"
   
-  create_xattr_stub "$stub_dir"
+  stub-xattr "$stub_dir"
   
   # Build PATH
   export PATH="$stub_dir:$ROOT_DIR/spells/mud:$ROOT_DIR/spells/arcane:$ROOT_DIR/spells/enchant:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/mud:$PATH"
@@ -93,7 +47,7 @@ test_stats_display() {
   stub_dir=$(make_tempdir)
   export SPELLBOOK_DIR="$tmpdir/custom-spellbook"
   
-  create_xattr_stub "$stub_dir"
+  stub-xattr "$stub_dir"
   
   # Set up config with avatar enabled
   mkdir -p "$SPELLBOOK_DIR"
@@ -126,7 +80,7 @@ test_stats_with_target() {
   test_file="$tmpdir/target.txt"
   printf 'test\n' > "$test_file"
   
-  create_xattr_stub "$stub_dir"
+  stub-xattr "$stub_dir"
   
   # Build PATH
   export PATH="$stub_dir:$ROOT_DIR/spells/mud:$ROOT_DIR/spells/arcane:$ROOT_DIR/spells/enchant:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/mud:$PATH"
