@@ -45,14 +45,36 @@ test_level_7() {
   WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/spellcraft/demo-magic 7
   assert_success || return 1
   assert_output_contains "Level 7: Navigation" || return 1
-  assert_output_contains "The wizard" || return 1
+  assert_output_contains "translocation" || return 1
+  assert_output_contains "mark-location" || return 1
 }
 
 test_level_8() {
   WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/spellcraft/demo-magic 8
   assert_success || return 1
   assert_output_contains "Level 8: Testing Infrastructure" || return 1
-  assert_output_contains "The wizard" || return 1
+  assert_output_contains "test-magic" || return 1
+}
+
+test_level_9() {
+  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/spellcraft/demo-magic 9
+  assert_success || return 1
+  assert_output_contains "Level 9: MUD Basics" || return 1
+  assert_output_contains "The wizard casts \"look\"" || return 1
+}
+
+test_level_10() {
+  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/spellcraft/demo-magic 10
+  assert_success || return 1
+  assert_output_contains "Level 10: Arcane File Operations" || return 1
+  assert_output_contains "read-magic" || return 1
+}
+
+test_level_11() {
+  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/spellcraft/demo-magic 11
+  assert_success || return 1
+  assert_output_contains "Level 11: Basic Cantrips" || return 1
+  assert_output_contains "ask-yn" || return 1
 }
 
 test_default_level() {
@@ -66,9 +88,12 @@ test_default_level() {
 run_test_case "demo-magic shows help" test_help
 run_test_case "demo-magic level 0 demonstrates actual spells" test_level_0
 run_test_case "demo-magic level 1 runs validate-spells" test_level_1
-run_test_case "demo-magic level 3 runs fathom-terminal" test_level_3
-run_test_case "demo-magic level 7 runs read-magic" test_level_7
-run_test_case "demo-magic level 8 runs ask-yn" test_level_8
+run_test_case "demo-magic level 3 demonstrates menu capabilities" test_level_3
+run_test_case "demo-magic level 7 demonstrates navigation" test_level_7
+run_test_case "demo-magic level 8 demonstrates testing framework" test_level_8
+run_test_case "demo-magic level 9 demonstrates MUD basics" test_level_9
+run_test_case "demo-magic level 10 demonstrates arcane file operations" test_level_10
+run_test_case "demo-magic level 11 demonstrates basic cantrips" test_level_11
 run_test_case "demo-magic works with default level" test_default_level
 
 finish_tests
