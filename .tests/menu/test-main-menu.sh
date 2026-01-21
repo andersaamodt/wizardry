@@ -12,15 +12,6 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-make_failing_require() {
-  tmp=$1
-  cat >"$tmp/require-command" <<'SH'
-#!/bin/sh
-printf '%s\n' "The main menu needs the 'menu' command to present options." >&2
-exit 1
-SH
-  chmod +x "$tmp/require-command"
-}
 
 test_main_menu_checks_dependency() {
   skip-if-compiled || return $?
@@ -55,7 +46,7 @@ SH
 test_main_menu_fails_without_menu_dependency() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_failing_require "$tmp"
+  stub-failing-require "$tmp"
   run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/menu/main-menu"
   assert_failure || return 1
   assert_error_contains "The main menu needs the 'menu' command" || return 1

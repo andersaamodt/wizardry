@@ -1,0 +1,11 @@
+#!/bin/sh
+# stub-boolean PATH EXIT_CODE - create boolean stub with specific exit code
+set -eu
+
+path=$1
+exit_code=$2
+cat >"$path" <<SH
+#!/bin/sh
+exit $exit_code
+SH
+chmod +x "$path"

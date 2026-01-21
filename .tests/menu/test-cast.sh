@@ -47,21 +47,12 @@ EOF
 }
 
 
-make_failing_require() {
-  tmp=$1
-  cat >"$tmp/require" <<'SH'
-#!/bin/sh
-printf '%s\n' "The casting menu needs the '\''menu'\'' command." >&2
-exit 1
-SH
-  chmod +x "$tmp/require"
-}
 
 test_cast_fails_without_menu_dependency() {
   skip-if-compiled || return $?  # require is inlined in compiled mode
   tmp=$(make_tempdir)
   make_stub_cast_list "$tmp" fire "cast fire"
-  make_failing_require "$tmp"
+  stub-failing-require "$tmp"
   PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize" "$ROOT_DIR/spells/menu/cast"
   assert_failure || return 1
   assert_error_contains "menu" || return 1

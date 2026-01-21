@@ -18,39 +18,14 @@ make_stub_dir() {
   printf '%s\n' "$dir"
 }
 
-write_stub_ask_text() {
-  dir=$1
-  response=$2
-  cat >"$dir/ask-text" <<EOF_INNER
-#!/bin/sh
-echo "$response"
-EOF_INNER
-  chmod +x "$dir/ask-text"
-}
 
-write_stub_systemctl() {
-  dir=$1
-  cat >"$dir/systemctl" <<'EOF_INNER'
-#!/bin/sh
-printf '%s' "$*" >"$(dirname "$0")/systemctl.args"
-EOF_INNER
-  chmod +x "$dir/systemctl"
-}
 
-write_stub_sudo() {
-  dir=$1
-  cat >"$dir/sudo" <<'EOF_INNER'
-#!/bin/sh
-exec "$@"
-EOF_INNER
-  chmod +x "$dir/sudo"
-}
 
 stop_service_prompts_and_invokes() {
   stub_dir=$(make_stub_dir)
-  write_stub_ask_text "$stub_dir" "beta"
-  write_stub_systemctl "$stub_dir"
-  write_stub_sudo "$stub_dir"
+  stub-ask-text "$stub_dir" "beta"
+  stub-systemctl "$stub_dir"
+  stub-sudo "$stub_dir"
   PATH="$stub_dir:$PATH" run_spell "spells/system/stop-service"
   assert_success || return 1
   assert_output_contains "Stopping beta.service via systemctl..." || return 1
@@ -60,7 +35,7 @@ stop_service_prompts_and_invokes() {
 
 stop_service_requires_name() {
   stub_dir=$(make_stub_dir)
-  write_stub_ask_text "$stub_dir" ""
+  stub-ask-text "$stub_dir" ""
   PATH="$stub_dir:$PATH" run_spell "spells/system/stop-service"
   assert_failure || return 1
   assert_error_contains "No service name supplied." || return 1

@@ -18,29 +18,10 @@ make_stub_dir() {
   printf '%s\n' "$dir"
 }
 
-write_stub_ask_text() {
-  dir=$1
-  response=$2
-  cat >"$dir/ask-text" <<EOF_INNER
-#!/bin/sh
-echo "$response"
-EOF_INNER
-  chmod +x "$dir/ask-text"
-}
-
-write_stub_systemctl() {
-  dir=$1
-  cat >"$dir/systemctl" <<'EOF_INNER'
-#!/bin/sh
-echo "status-ok"; printf '%s' "$*" >"$(dirname "$0")/systemctl.args"
-EOF_INNER
-  chmod +x "$dir/systemctl"
-}
-
 service_status_prompts_and_prints() {
   stub_dir=$(make_stub_dir)
-  write_stub_ask_text "$stub_dir" "zeta"
-  write_stub_systemctl "$stub_dir"
+  stub-ask-text "$stub_dir" "zeta"
+  stub-systemctl "$stub_dir"
   PATH="$stub_dir:$PATH" run_spell "spells/system/service-status"
   assert_success || return 1
   assert_output_contains "Showing status for zeta.service..." || return 1
@@ -51,7 +32,7 @@ service_status_prompts_and_prints() {
 
 service_status_requires_name() {
   stub_dir=$(make_stub_dir)
-  write_stub_ask_text "$stub_dir" ""
+  stub-ask-text "$stub_dir" ""
   PATH="$stub_dir:$PATH" run_spell "spells/system/service-status"
   assert_failure || return 1
   assert_error_contains "No service name supplied." || return 1

@@ -11,35 +11,17 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-make_status_stub() {
-  tmp=$1
-  status=$2
-  cat >"$tmp/bitcoin-status" <<SH
-#!/bin/sh
-echo "$status"
-SH
-  chmod +x "$tmp/bitcoin-status"
-}
 
-make_boolean_stub() {
-  path=$1
-  exit_code=$2
-  cat >"$path" <<SH
-#!/bin/sh
-exit $exit_code
-SH
-  chmod +x "$path"
-}
 
 test_bitcoin_menu_prompts_install_when_missing() {
   tmp=$(make_tempdir)
   stub-menu "$tmp"
   stub-colors "$tmp"
   stub-exit-label "$tmp"
-  make_status_stub "$tmp" "missing"
-  make_boolean_stub "$tmp/is-bitcoin-installed" 1
-  make_boolean_stub "$tmp/is-service-installed" 1
-  make_boolean_stub "$tmp/is-bitcoin-running" 1
+  stub-status "$tmp" "missing"
+  stub-boolean "$tmp/is-bitcoin-installed" 1
+  stub-boolean "$tmp/is-service-installed" 1
+  stub-boolean "$tmp/is-bitcoin-running" 1
 
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/.arcana/bitcoin/bitcoin-menu"
   assert_success
@@ -53,10 +35,10 @@ test_bitcoin_menu_controls_running_service() {
   stub-menu "$tmp"
   stub-colors "$tmp"
   stub-exit-label "$tmp"
-  make_status_stub "$tmp" "ready"
-  make_boolean_stub "$tmp/is-bitcoin-installed" 0
-  make_boolean_stub "$tmp/is-service-installed" 0
-  make_boolean_stub "$tmp/is-bitcoin-running" 0
+  stub-status "$tmp" "ready"
+  stub-boolean "$tmp/is-bitcoin-installed" 0
+  stub-boolean "$tmp/is-service-installed" 0
+  stub-boolean "$tmp/is-bitcoin-running" 0
 
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/.arcana/bitcoin/bitcoin-menu"
   assert_success
@@ -71,10 +53,10 @@ test_bitcoin_menu_offers_service_install_when_missing() {
   stub-menu "$tmp"
   stub-colors "$tmp"
   stub-exit-label "$tmp"
-  make_status_stub "$tmp" "ready"
-  make_boolean_stub "$tmp/is-bitcoin-installed" 0
-  make_boolean_stub "$tmp/is-service-installed" 1
-  make_boolean_stub "$tmp/is-bitcoin-running" 1
+  stub-status "$tmp" "ready"
+  stub-boolean "$tmp/is-bitcoin-installed" 0
+  stub-boolean "$tmp/is-service-installed" 1
+  stub-boolean "$tmp/is-bitcoin-running" 1
   cat >"$tmp/which" <<'SH'
 #!/bin/sh
 echo /usr/bin/bitcoind
