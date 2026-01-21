@@ -46,16 +46,6 @@ EOF
   fi
 }
 
-make_stub_menu() {
-  tmp=$1
-  cat >"$tmp/menu" <<'SH'
-#!/bin/sh
-printf '%s\n' "$@" >>"$MENU_LOG"
-kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
-SH
-  chmod +x "$tmp/menu"
-}
-
 make_stub_require() {
   tmp=$1
   cat >"$tmp/require-command" <<'SH'
@@ -105,7 +95,7 @@ test_cast_sends_entries_to_menu() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   make_stub_cast_list "$tmp" fizz "cast fizz"
-  make_stub_menu "$tmp"
+  write-stub-menu "$tmp"
   make_stub_require "$tmp"
   PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/cast"
   assert_success
@@ -174,7 +164,7 @@ test_cast_shows_alias_without_command_in_label() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   make_stub_cast_list "$tmp" spark "echo spark"
-  make_stub_menu "$tmp"
+  write-stub-menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -208,7 +198,7 @@ test_cast_no_duplicate_when_alias_equals_command() {
   tmp=$(make_tempdir)
   # Create a memorize stub where alias = command (e.g., "myspell" and "myspell")
   make_stub_cast_list "$tmp" myspell "myspell"
-  make_stub_menu "$tmp"
+  write-stub-menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -239,7 +229,7 @@ test_esc_exit_behavior() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   make_stub_cast_list "$tmp" fizz "cast fizz"
-  make_stub_menu "$tmp"
+  write-stub-menu "$tmp"
   make_stub_require "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'

@@ -1,0 +1,13 @@
+#!/bin/sh
+# write-stub-exit-label DIR - create an exit-label stub script in DIR
+# Creates a stub that returns "Exit" for testing menu labels
+set -eu
+
+dir=$1
+cat <<'STUB' >"$dir/exit-label"
+#!/bin/sh
+printf '%s' "Exit"
+STUB
+chmod +x "$dir/exit-label"
+
+

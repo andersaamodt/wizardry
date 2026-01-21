@@ -11,36 +11,6 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-make_stub_menu() {
-  tmp=$1
-  cat >"$tmp/menu" <<'SH'
-#!/bin/sh
-printf '%s\n' "$@" >>"$MENU_LOG"
-kill -s INT "$PPID"
-exit 0
-SH
-  chmod +x "$tmp/menu"
-}
-
-make_stub_colors() {
-  tmp=$1
-  cat >"$tmp/colors" <<'SH'
-#!/bin/sh
-BOLD=""
-CYAN=""
-SH
-  chmod +x "$tmp/colors"
-}
-
-make_stub_exit_label() {
-  tmp=$1
-  cat >"$tmp/exit-label" <<'SH'
-#!/bin/sh
-printf '%s' "Exit"
-SH
-  chmod +x "$tmp/exit-label"
-}
-
 make_status_stub() {
   tmp=$1
   status=$2
@@ -63,9 +33,9 @@ SH
 
 test_bitcoin_menu_prompts_install_when_missing() {
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_colors "$tmp"
-  make_stub_exit_label "$tmp"
+  write-stub-menu "$tmp"
+  write-stub-colors "$tmp"
+  write-stub-exit-label "$tmp"
   make_status_stub "$tmp" "missing"
   make_boolean_stub "$tmp/is-bitcoin-installed" 1
   make_boolean_stub "$tmp/is-service-installed" 1
@@ -80,9 +50,9 @@ test_bitcoin_menu_prompts_install_when_missing() {
 test_bitcoin_menu_controls_running_service() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_colors "$tmp"
-  make_stub_exit_label "$tmp"
+  write-stub-menu "$tmp"
+  write-stub-colors "$tmp"
+  write-stub-exit-label "$tmp"
   make_status_stub "$tmp" "ready"
   make_boolean_stub "$tmp/is-bitcoin-installed" 0
   make_boolean_stub "$tmp/is-service-installed" 0
@@ -98,9 +68,9 @@ test_bitcoin_menu_controls_running_service() {
 test_bitcoin_menu_offers_service_install_when_missing() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_colors "$tmp"
-  make_stub_exit_label "$tmp"
+  write-stub-menu "$tmp"
+  write-stub-colors "$tmp"
+  write-stub-exit-label "$tmp"
   make_status_stub "$tmp" "ready"
   make_boolean_stub "$tmp/is-bitcoin-installed" 0
   make_boolean_stub "$tmp/is-service-installed" 1

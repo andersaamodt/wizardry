@@ -10,15 +10,7 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-make_stub_menu() {
-  tmp=$1
-  cat >"$tmp/menu" <<'SH'
-#!/bin/sh
-printf '%s\n' "$@" >>"$MENU_LOG"
-kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
-SH
-  chmod +x "$tmp/menu"
-}
+
 
 make_stub_require() {
   tmp=$1
@@ -51,7 +43,7 @@ spell_is_executable() {
 test_mud_presents_navigation_options() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
+  write-stub-menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -84,7 +76,7 @@ SH
 test_mud_presents_admin_options() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
+  write-stub-menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -108,7 +100,7 @@ SH
 test_mud_shows_menu_title() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
+  write-stub-menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -129,7 +121,7 @@ SH
 test_esc_exit_behavior() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
+  write-stub-menu "$tmp"
   make_stub_require "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
