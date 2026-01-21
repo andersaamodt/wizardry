@@ -38,3 +38,4 @@ fi
 # Currently disabled, enable it
 config-set "$CONFIG_FILE" "touch-hook" "1"
 printf '%s\n' "✓ Touch hook enabled. Restart your shell or run 'invoke-wizardry' to activate."
+exit 0
