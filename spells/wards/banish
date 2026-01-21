@@ -1673,7 +1673,37 @@ HEREDOC_TEST
       ;;
 
     8)
-      # Level 8: MUD Basics
+      # Level 8: Testing Infrastructure
+
+      # Check socat for interactive testing with real pseudo-TTY
+      if command -v socat >/dev/null 2>&1; then
+        printf '  %s✓%s socat: Available for interactive testing\n' "$green" "$reset"
+      else
+        printf '  %s✗%s socat: Not found (required for interactive testing)\n' "$red" "$reset"
+        if [ "$skip_heal" -eq 0 ]; then
+          manage_system_command=""
+          if command -v manage-system-command >/dev/null 2>&1; then
+            manage_system_command="manage-system-command"
+          elif [ -x "${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command" ]; then
+            manage_system_command="${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command"
+          fi
+          if [ -n "$manage_system_command" ]; then
+            printf '    Attempting to install socat...\n'
+            if "$manage_system_command" socat socat >/dev/null 2>&1; then
+              printf '    %s✓%s socat installed successfully\n' "$green" "$reset"
+            else
+              printf '    %s✗%s socat installation failed\n' "$red" "$reset"
+              printf '    Interactive tests require socat for real pseudo-TTY allocation\n'
+              return 1
+            fi
+          else
+            printf '    %s✗%s Cannot install socat (manage-system-command not available)\n' "$red" "$reset"
+            return 1
+          fi
+        else
+          return 1
+        fi
+      fi
 
       # Check extended attributes helpers
       xattr_helper=""
