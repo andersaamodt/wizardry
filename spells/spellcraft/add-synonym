@@ -60,8 +60,10 @@ set -eu
   fi
 
   # Check for invalid characters in synonym word
-  # Valid: alphanumeric, hyphens (not leading), and special chars that work in aliases: . : = + , @ ! ? % ^ ~
+  # Valid: alphanumeric, hyphens (not leading), and special chars: . : = + , @ ! ? % ^ ~
   # Invalid: leading dash/dot, spaces, tabs, quotes, and shell special chars
+  # Pattern breakdown:
+  #   *[/\ \	\'\"\$\`\\\|\&\;\(\)\<\>\*\[\]]* = contains any of: / space tab ' " $ ` \ | & ; ( ) < > * [ ]
   case $synonym_word in
     *[/\ \	\'\"\$\`\\\|\&\;\(\)\<\>\*\[\]]*)
       printf '%s\n' "add-synonym: synonym word cannot contain spaces or invalid special characters" >&2

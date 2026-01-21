@@ -463,8 +463,13 @@ is_synonym_valid() {
   syn_word=$1
   
   # Check for invalid characters
-  # Still reject: empty, space, tab, /, ', ", $, `, \, |, &, ;, (, ), <, >, *, [, ]
-  # Now allow: numbers at start, and special chars: . : = + , @ ! ? % ^ ~ (but not at start for . and -)
+  # Reject: empty, space, tab, /, ', ", $, `, \, |, &, ;, (, ), <, >, *, [, ]
+  # Allow: numbers, hyphens, and special chars: . : = + , @ ! ? % ^ ~ (but not - or . at start)
+  # Pattern breakdown:
+  #   '' = empty string
+  #   *[/\ \	\'\"\$\`\\\|\&\;\(\)\<\>\*\[\]]* = contains any invalid char
+  #   -* = starts with dash
+  #   .* = starts with dot
   case "$syn_word" in
     ''|*[/\ \	\'\"\$\`\\\|\&\;\(\)\<\>\*\[\]]*|-*|.*)
       return 1
