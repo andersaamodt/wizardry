@@ -14,11 +14,6 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-make_stub_bin() {
-  dir=$(make_tempdir)
-  mkdir -p "$dir/bin"
-  printf '%s\n' "$dir/bin"
-}
 
 test_help() {
   run_spell "spells/crypto/hashchant" --help
@@ -36,7 +31,7 @@ test_missing_file() {
 }
 
 test_missing_helpers() {
-  stub=$(make_stub_bin)
+  stub=$(stub-bin-dir)
   # Create failing stubs for all xattr helpers to simulate missing/broken xattr support
   cat >"$stub/attr" <<'EOF'
 #!/bin/sh
@@ -71,7 +66,7 @@ test_prefers_attr() {
   echo "amulet" >"$file"
   expected=$( (echo "data.txt" && cat "$file") | cksum | awk '{printf "0x%X", $1}')
 
-  stub=$(make_stub_bin)
+  stub=$(stub-bin-dir)
   log="$workdir/attr.log"
   cat >"$stub/attr" <<'EOF'
 #!/bin/sh
@@ -105,7 +100,7 @@ test_fallback_to_xattr() {
   echo "scroll" >"$file"
   expected=$( (echo "book.txt" && cat "$file") | cksum | awk '{printf "0x%X", $1}')
 
-  stub=$(make_stub_bin)
+  stub=$(stub-bin-dir)
   log="$workdir/helper.log"
   cat >"$stub/xattr" <<'EOF'
 #!/bin/sh
@@ -141,7 +136,7 @@ test_fallback_to_setfattr() {
   echo "enigma" >"$file"
   expected=$( (echo "charm.txt" && cat "$file") | cksum | awk '{printf "0x%X", $1}')
 
-  stub=$(make_stub_bin)
+  stub=$(stub-bin-dir)
   log="$workdir/helper.log"
   cat >"$stub/setfattr" <<'EOF'
 #!/bin/sh

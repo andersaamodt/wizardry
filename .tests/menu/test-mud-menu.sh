@@ -81,16 +81,6 @@ SH
   chmod +x "$tmp/config-get"
 }
 
-make_failing_menu() {
-  tmp=$1
-  cat >"$tmp/menu" <<'SH'
-#!/bin/sh
-printf '%s\n' "$@" >>"$MENU_LOG"
-printf 'menu busted\n' >&2
-exit 5
-SH
-  chmod +x "$tmp/menu"
-}
 
 test_mud_install_menu_calls_tor_installer() {
   tmp=$(make_tempdir)
@@ -148,7 +138,7 @@ SH
 test_mud_install_menu_reports_menu_failure() {
   tmp=$(make_tempdir)
   stub-colors "$tmp"
-  make_failing_menu "$tmp"
+  stub-failing-menu "$tmp"
   stub-temp-file "$tmp"
   stub-cleanup-file "$tmp"
   cat >"$tmp/require-command" <<'SH'

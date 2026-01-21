@@ -12,14 +12,6 @@ done
 
 
 
-make_stub_require() {
-  tmp=$1
-  cat >"$tmp/require-command" <<'SH'
-#!/bin/sh
-exit 0
-SH
-  chmod +x "$tmp/require-command"
-}
 
 mud_requires_menu_dependency() {
   skip-if-compiled || return $?
@@ -44,7 +36,7 @@ test_mud_presents_navigation_options() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
 printf '%s' "Exit"
@@ -77,7 +69,7 @@ test_mud_presents_admin_options() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
 printf '%s' "Exit"
@@ -101,7 +93,7 @@ test_mud_shows_menu_title() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
 printf '%s' "Exit"
@@ -122,7 +114,7 @@ test_esc_exit_behavior() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh

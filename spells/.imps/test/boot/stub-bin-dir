@@ -1,0 +1,11 @@
+#!/bin/sh
+# stub-bin-dir - create a temporary bin directory for stubs
+# Creates a temp directory with a bin subdirectory and returns the bin path
+set -eu
+
+dir=$(temp-file stub-bin)
+rm -f "$dir"
+mkdir -p "$dir/bin"
+printf '%s\n' "$dir/bin"
+
+

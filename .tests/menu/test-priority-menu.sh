@@ -14,14 +14,6 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-make_stub_require() {
-  tmp=$1
-  cat >"$tmp/require-command" <<'SH'
-#!/bin/sh
-exit 0
-SH
-  chmod +x "$tmp/require-command"
-}
 
 make_read_magic_stub() {
   tmp=$1
@@ -61,7 +53,7 @@ test_priority_menu_presents_actions() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   make_read_magic_stub "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
@@ -99,7 +91,7 @@ test_priority_menu_shows_filename_in_title() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   make_read_magic_stub "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
@@ -125,7 +117,7 @@ test_priority_menu_shows_uncheck_when_checked() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   
   # Create read-magic stub that says item is checked
   cat >"$tmp/read-magic" <<'SH'
@@ -169,7 +161,7 @@ test_esc_exit_behavior() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   make_read_magic_stub "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
@@ -197,7 +189,7 @@ test_priority_menu_shows_browse_subpriorities() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   
   # Create colors stub that provides theme colors
   cat >"$tmp/colors" <<'SH'
@@ -280,7 +272,7 @@ test_priority_menu_hides_browse_for_file() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   make_read_magic_stub "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
@@ -307,7 +299,7 @@ test_priority_menu_hides_browse_for_empty_dir() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   
   # Create read-magic stub that returns no priority for items
   cat >"$tmp/read-magic" <<'SH'
@@ -362,7 +354,7 @@ test_priority_menu_shows_prioritize_for_very_first() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   
   # Create read-magic stub that says this file is the very first priority
   # (lowest priority number in highest echelon)
@@ -439,7 +431,7 @@ test_priority_menu_shows_prioritize_for_non_first_in_highest() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   
   # Create read-magic stub for a non-first item in highest echelon
   cat >"$tmp/read-magic" <<'SH'
@@ -514,7 +506,7 @@ test_priority_menu_shows_make_project_for_files() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   make_read_magic_stub "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
@@ -540,7 +532,7 @@ test_priority_menu_hides_make_project_for_dirs() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   make_read_magic_stub "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
@@ -570,7 +562,7 @@ test_priority_menu_shows_unchecked_in_header() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   make_read_magic_stub "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
@@ -596,7 +588,7 @@ test_priority_menu_shows_checked_in_header() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   
   # Create read-magic stub that says item is checked
   cat >"$tmp/read-magic" <<'SH'
