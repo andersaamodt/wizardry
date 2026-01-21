@@ -6,8 +6,78 @@ This document provides a comprehensive list of all interactive spells in wizardr
 
 Interactive spells can hang during testing if:
 1. Error functions (die/fail/usage-error) are called in conditional blocks without `|| return 1`
-2. Input operations (read, await-keypress, menu) aren't properly stubbed
+2. Input operations (read, await-keypress, menu) aren't properly stubbed OR tested with socat
 3. Test-specific code is added to spells (violates clean code principles)
+
+## Interactive Testing Approaches
+
+### Approach 1: socat with Real PTY (Preferred for Integration Tests)
+
+Use `socat-pty` for true interactive testing with real pseudo-TTY:
+
+```sh
+test_menu_navigation() {
+  # Skip if socat unavailable
+  if ! command -v socat >/dev/null 2>&1; then
+    test_skip "requires socat for real PTY testing"
+    return 0
+  fi
+  
+  tmpdir=$(make_tempdir)
+  
+  # Run menu with real PTY allocated by socat
+  output=$("$ROOT_DIR/spells/.imps/test/socat-pty" \
+    "$ROOT_DIR/spells/cantrips/menu" "Test:" "Item%echo selected")
+  
+  # Normalize output (strip ANSI codes, carriage returns)
+  normalized=$(printf '%s' "$output" | socat-normalize-output)
+  
+  # Assert on normalized transcript
+  case "$normalized" in
+    *"Test:"*)
+      return 0
+      ;;
+    *)
+      TEST_FAILURE_REASON="expected menu title in output"
+      return 1
+      ;;
+  esac
+}
+```
+
+**When to use socat:**
+- Testing real interactive behavior (menu navigation, prompts)
+- Validating TTY-dependent features (cursor movement, colors)
+- Integration tests of complete interactive flows
+
+### Approach 2: Stubs (For Unit Tests)
+
+Use stub imps for fast unit tests without TTY complexity:
+
+```sh
+test_menu_logic() {
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/stubs"
+  mkdir -p "$stub_dir"
+  
+  # Link to stub imps (terminal I/O only)
+  for stub in fathom-cursor fathom-terminal move-cursor await-keypress; do
+    ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
+  done
+  
+  # Run with stubs
+  PATH="$stub_dir:...:$PATH" run_spell "spells/cantrips/menu" "Test" "Item%echo hi"
+  
+  assert_success || return 1
+}
+```
+
+**When to use stubs:**
+- Unit testing non-TTY logic
+- Testing error conditions without interactive complexity
+- Fast isolated tests
+
+**Key principle:** Never mock interactive behavior. Use real PTY via socat or stubs for I/O, but test real wizardry.
 
 ## Root Cause: set -e in Conditional Contexts
 
