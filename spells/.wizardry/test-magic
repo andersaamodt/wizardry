@@ -218,7 +218,7 @@ if [ "${GITHUB_ACTIONS-}" != "true" ]; then
       if pocket-dimension --check >/dev/null 2>&1; then
         # Determine the correct path to re-exec
         # When run directly: $0 is the script path
-        # When sourced/loaded via word-of-binding: $0 is the shell name
+        # When sourced: $0 is the shell name
         test_magic_path="$0"
         case "$0" in
           */test-magic)

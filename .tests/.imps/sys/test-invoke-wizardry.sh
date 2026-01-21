@@ -276,7 +276,7 @@ test_recursion_guard() {
   fi
 }
 
-# Test removed: cd function is no longer pre-loaded in word-of-binding paradigm
+# Test removed: cd function is no longer pre-loaded
 # The cd hook is now installed separately if MUD features are enabled
 # See spells/.arcana/mud/toggle-cd for cd hook functionality
 
@@ -353,7 +353,7 @@ EOF
   assert_output_contains "menu available" || return 1
 }
 
-# Test: Spell directories not added to PATH (word-of-binding paradigm)
+# Test: Spell directories not added to PATH
 test_spell_dirs_not_added_to_path() {
   tmpdir=$(make_tempdir)
   
@@ -465,7 +465,7 @@ EOF
 
 run_test_case "invoke-wizardry is sourceable" test_sourceable
 run_test_case "invoke-wizardry sets WIZARDRY_DIR" test_sets_wizardry_dir
-# Test #3 removed: outdated (word-of-binding means spell dirs NOT in PATH)
+# Test #3 removed: outdated (spell dirs NOT in PATH)
 run_test_case "core imps are available as commands" test_core_imps_available
 run_test_case "sourcing invoke-wizardry doesn't hang" test_no_hanging
 run_test_case "invoke-wizardry maintains permissive shell mode" test_maintains_permissive_mode
@@ -478,6 +478,6 @@ run_test_case "invoke-wizardry works in non-bash shells via default path" test_d
 run_test_case "menu is available in PATH" test_menu_preloaded
 run_test_case "empty spellbook directory doesn't cause errors" test_empty_spellbook_directory
 run_test_case ".arcana subdirectories are added to PATH" test_arcana_subdirs_in_path
-# Test #11 removed: redundant with word-of-binding paradigm (spell dirs never added to PATH)
+# Test #11 removed: redundant (spell dirs never added to PATH)
 
 finish_tests

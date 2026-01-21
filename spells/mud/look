@@ -72,9 +72,9 @@ fi
 path_input=${1:-$PWD}
 path=$(strip-trailing-slashes "$(abs-path "$path_input")")
 
-# NOTE: Legacy RC file editing code was removed in favor of word-of-binding paradigm.
-# The old code prompted users to add 'alias look=...' to their shell RC files to override
-# the system /usr/bin/look command. For NixOS, it used nix-shell-add to add the alias to
+# NOTE: Legacy RC file editing code was removed. The old code prompted users
+# to add 'alias look=...' to their shell RC files to override the system
+# /usr/bin/look command. For NixOS, it used nix-shell-add to add the alias to
 # configuration.nix, which was working correctly. Future versions will handle this via
 # the synonyms system to centralize and standardize command aliases.
 
