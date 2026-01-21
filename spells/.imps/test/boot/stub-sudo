@@ -1,0 +1,10 @@
+#!/bin/sh
+# stub-sudo DIR - create sudo stub that executes commands directly
+set -eu
+
+dir=$1
+cat >"$dir/sudo" <<'EOF_INNER'
+#!/bin/sh
+exec "$@"
+EOF_INNER
+chmod +x "$dir/sudo"

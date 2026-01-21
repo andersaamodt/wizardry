@@ -11,31 +11,14 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-make_stub_menu() {
-  tmp=$1
-  cat >"$tmp/menu" <<'SH'
-#!/bin/sh
-printf '%s\n' "$@" >>"$MENU_LOG"
-kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
-SH
-  chmod +x "$tmp/menu"
-}
 
-make_stub_require() {
-  tmp=$1
-  cat >"$tmp/require-command" <<'SH'
-#!/bin/sh
-printf '%s %s\n' "$1" "$2" >>"$REQUIRE_LOG"
-exit 0
-SH
-  chmod +x "$tmp/require-command"
-}
+
 
 test_shutdown_menu_checks_requirements() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_require "$tmp"
+  stub-menu "$tmp"
+  stub-require-command "$tmp"
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/shutdown-menu"
   assert_success && assert_path_exists "$tmp/req"
 }
@@ -43,8 +26,8 @@ test_shutdown_menu_checks_requirements() {
 test_shutdown_menu_includes_core_actions() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_require "$tmp"
+  stub-menu "$tmp"
+  stub-require-command "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
 printf '%s' "Back"
@@ -68,8 +51,8 @@ run_test_case "shutdown-menu passes shutdown actions to menu" test_shutdown_menu
 test_esc_exit_behavior() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_require "$tmp"
+  stub-menu "$tmp"
+  stub-require-command "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -98,8 +81,8 @@ test_sleep_kernel_fallback() {
   fi
   
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_require "$tmp"
+  stub-menu "$tmp"
+  stub-require-command "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -148,8 +131,8 @@ test_hibernate_kernel_fallback() {
   fi
   
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_require "$tmp"
+  stub-menu "$tmp"
+  stub-require-command "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh

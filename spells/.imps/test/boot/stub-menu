@@ -1,0 +1,15 @@
+#!/bin/sh
+# write-stub-menu DIR - create a menu stub script in DIR
+# Creates a stub that logs menu calls and signals parent process
+set -eu
+
+dir=$1
+cat <<'STUB' >"$dir/menu"
+#!/bin/sh
+printf '%s\n' "$@" >>"$MENU_LOG"
+kill -s INT "$PPID"
+exit 0
+STUB
+chmod +x "$dir/menu"
+
+

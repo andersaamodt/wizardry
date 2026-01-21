@@ -11,38 +11,7 @@ make_stub_dir() {
   printf '%s\n' "$dir"
 }
 
-write_ask_text_stub() {
-  dir=$1
-  cat >"$dir/ask-text" <<'STUB'
-#!/bin/sh
-printf '%s\n' "${ASK_TEXT_RESPONSE:-}"
-STUB
-  chmod +x "$dir/ask-text"
-}
 
-write_systemctl_stub() {
-  dir=$1
-  cat >"$dir/systemctl" <<'STUB'
-#!/bin/sh
-state_dir=${SYSTEMCTL_STATE_DIR:-$(mktemp -d)}
-mkdir -p "$state_dir"
-case "$1" in
-  is-active)
-    exit ${SYSTEMCTL_IS_ACTIVE_STATUS:-1}
-    ;;
-  stop)
-    printf 'stopped %s\n' "$2" >>"$state_dir/systemctl.log"
-    exit 0
-    ;;
-  daemon-reload)
-    printf 'reloaded' >"$state_dir/daemon-reload"
-    exit 0
-    ;;
-  *) exit 0 ;;
-esac
-STUB
-  chmod +x "$dir/systemctl"
-}
 
 write_sudo_stub() {
   dir=$1
@@ -55,8 +24,8 @@ STUB
 
 test_requires_service_name() {
   stub_dir=$(make_stub_dir)
-  write_ask_text_stub "$stub_dir"
-  write_systemctl_stub "$stub_dir"
+  stub-ask-text-simple "$stub_dir"
+  stub-systemctl-simple "$stub_dir"
   write_sudo_stub "$stub_dir"
 
   ASK_TEXT_RESPONSE="" \
@@ -73,8 +42,8 @@ test_requires_service_name() {
 
 test_reports_missing_service() {
   stub_dir=$(make_stub_dir)
-  write_ask_text_stub "$stub_dir"
-  write_systemctl_stub "$stub_dir"
+  stub-ask-text-simple "$stub_dir"
+  stub-systemctl-simple "$stub_dir"
   write_sudo_stub "$stub_dir"
 
   service_dir=$(mktemp -d "$WIZARDRY_TMPDIR/services.XXXXXX") || return 1
@@ -92,8 +61,8 @@ test_reports_missing_service() {
 
 test_stops_and_removes_service() {
   stub_dir=$(make_stub_dir)
-  write_ask_text_stub "$stub_dir"
-  write_systemctl_stub "$stub_dir"
+  stub-ask-text-simple "$stub_dir"
+  stub-systemctl-simple "$stub_dir"
   write_sudo_stub "$stub_dir"
 
   service_dir=$(mktemp -d "$WIZARDRY_TMPDIR/services.XXXXXX") || return 1

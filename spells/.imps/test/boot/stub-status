@@ -1,0 +1,11 @@
+#!/bin/sh
+# stub-status TMP STATUS - create bitcoin-status stub with fixed status
+set -eu
+
+tmp=$1
+status=$2
+cat >"$tmp/bitcoin-status" <<SH
+#!/bin/sh
+echo "$status"
+SH
+chmod +x "$tmp/bitcoin-status"

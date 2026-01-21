@@ -11,65 +11,17 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-make_stub_menu() {
-  tmp=$1
-  cat >"$tmp/menu" <<'SH'
-#!/bin/sh
-printf '%s\n' "$@" >>"$MENU_LOG"
-kill -s INT "$PPID"
-exit 0
-SH
-  chmod +x "$tmp/menu"
-}
 
-make_stub_colors() {
-  tmp=$1
-  cat >"$tmp/colors" <<'SH'
-#!/bin/sh
-BOLD=""
-CYAN=""
-SH
-  chmod +x "$tmp/colors"
-}
-
-make_stub_exit_label() {
-  tmp=$1
-  cat >"$tmp/exit-label" <<'SH'
-#!/bin/sh
-printf '%s' "Exit"
-SH
-  chmod +x "$tmp/exit-label"
-}
-
-make_status_stub() {
-  tmp=$1
-  status=$2
-  cat >"$tmp/bitcoin-status" <<SH
-#!/bin/sh
-echo "$status"
-SH
-  chmod +x "$tmp/bitcoin-status"
-}
-
-make_boolean_stub() {
-  path=$1
-  exit_code=$2
-  cat >"$path" <<SH
-#!/bin/sh
-exit $exit_code
-SH
-  chmod +x "$path"
-}
 
 test_bitcoin_menu_prompts_install_when_missing() {
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_colors "$tmp"
-  make_stub_exit_label "$tmp"
-  make_status_stub "$tmp" "missing"
-  make_boolean_stub "$tmp/is-bitcoin-installed" 1
-  make_boolean_stub "$tmp/is-service-installed" 1
-  make_boolean_stub "$tmp/is-bitcoin-running" 1
+  stub-menu "$tmp"
+  stub-colors "$tmp"
+  stub-exit-label "$tmp"
+  stub-status "$tmp" "missing"
+  stub-boolean "$tmp/is-bitcoin-installed" 1
+  stub-boolean "$tmp/is-service-installed" 1
+  stub-boolean "$tmp/is-bitcoin-running" 1
 
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/.arcana/bitcoin/bitcoin-menu"
   assert_success
@@ -80,13 +32,13 @@ test_bitcoin_menu_prompts_install_when_missing() {
 test_bitcoin_menu_controls_running_service() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_colors "$tmp"
-  make_stub_exit_label "$tmp"
-  make_status_stub "$tmp" "ready"
-  make_boolean_stub "$tmp/is-bitcoin-installed" 0
-  make_boolean_stub "$tmp/is-service-installed" 0
-  make_boolean_stub "$tmp/is-bitcoin-running" 0
+  stub-menu "$tmp"
+  stub-colors "$tmp"
+  stub-exit-label "$tmp"
+  stub-status "$tmp" "ready"
+  stub-boolean "$tmp/is-bitcoin-installed" 0
+  stub-boolean "$tmp/is-service-installed" 0
+  stub-boolean "$tmp/is-bitcoin-running" 0
 
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/.arcana/bitcoin/bitcoin-menu"
   assert_success
@@ -98,13 +50,13 @@ test_bitcoin_menu_controls_running_service() {
 test_bitcoin_menu_offers_service_install_when_missing() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_colors "$tmp"
-  make_stub_exit_label "$tmp"
-  make_status_stub "$tmp" "ready"
-  make_boolean_stub "$tmp/is-bitcoin-installed" 0
-  make_boolean_stub "$tmp/is-service-installed" 1
-  make_boolean_stub "$tmp/is-bitcoin-running" 1
+  stub-menu "$tmp"
+  stub-colors "$tmp"
+  stub-exit-label "$tmp"
+  stub-status "$tmp" "ready"
+  stub-boolean "$tmp/is-bitcoin-installed" 0
+  stub-boolean "$tmp/is-service-installed" 1
+  stub-boolean "$tmp/is-bitcoin-running" 1
   cat >"$tmp/which" <<'SH'
 #!/bin/sh
 echo /usr/bin/bitcoind

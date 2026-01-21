@@ -14,11 +14,6 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-make_stub_bin() {
-  dir=$(make_tempdir)
-  mkdir -p "$dir/bin"
-  printf '%s\n' "$dir/bin"
-}
 
 test_help() {
   run_spell "spells/priorities/prioritize" --help
@@ -272,7 +267,7 @@ test_hash_failure_message() {
   printf 'test\n' > "$testfile"
   
   # With real xattr in CI, test that prioritize fails when hashchant fails
-  stub=$(make_stub_bin)
+  stub=$(stub-bin-dir)
   printf '#!/bin/sh\nexit 1\n' >"$stub/hashchant"
   chmod +x "$stub/hashchant"
   
