@@ -1,0 +1,70 @@
+#!/bin/sh
+# move-avatar - Move avatar folder to current directory
+# Example: move-avatar
+
+set -eu
+
+config_file="${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud"
+
+# Exit early if config file doesn't exist
+if [ ! -f "$config_file" ]; then
+    return 0 2>/dev/null || exit 0
+fi
+
+old_path=$(grep "^avatar-path=" "$config_file" 2>/dev/null | cut -d= -f2- || printf '')
+
+if [ -z "$old_path" ] || [ ! -d "$old_path" ]; then
+    return 0 2>/dev/null || exit 0
+fi
+
+avatar_name=$(basename "$old_path")
+new_path="$PWD/$avatar_name"
+
+# Only move if different location
+if [ "$old_path" = "$new_path" ]; then
+    return 0 2>/dev/null || exit 0
+fi
+
+# If target exists and is NOT the same as source, remove it to avoid conflicts
+if [ -e "$new_path" ] && [ "$old_path" != "$new_path" ]; then
+    # Check if it's actually an avatar before removing
+    if [ -d "$new_path" ]; then
+        rm -rf "$new_path" 2>/dev/null || { return 1 2>/dev/null || exit 1; }
+    fi
+fi
+
+# Move avatar folder to new location (this should MOVE, not copy)
+if ! mv "$old_path" "$new_path" 2>/dev/null; then
+    return 1 2>/dev/null || exit 1
+fi
+
+# Update config with new path - use config-set if available, otherwise update directly
+if command -v config-set >/dev/null 2>&1; then
+    config-set "$config_file" "avatar-path" "$new_path" 2>/dev/null || {
+        # If config-set fails, try direct update
+        if grep -q "^avatar-path=" "$config_file" 2>/dev/null; then
+            # Replace existing line using sed
+            sed_pattern="s|^avatar-path=.*|avatar-path=$new_path|"
+            sed_result=$(sed "$sed_pattern" "$config_file" 2>/dev/null || printf '')
+            if [ -n "$sed_result" ]; then
+                printf '%s\n' "$sed_result" > "$config_file"
+            fi
+        else
+            # Append new line
+            printf 'avatar-path=%s\n' "$new_path" >> "$config_file"
+        fi
+    }
+else
+    # No config-set available, update directly
+    if grep -q "^avatar-path=" "$config_file" 2>/dev/null; then
+        # Replace existing line
+        sed_pattern="s|^avatar-path=.*|avatar-path=$new_path|"
+        sed_result=$(sed "$sed_pattern" "$config_file" 2>/dev/null || printf '')
+        if [ -n "$sed_result" ]; then
+            printf '%s\n' "$sed_result" > "$config_file"
+        fi
+    else
+        # Append new line
+        printf 'avatar-path=%s\n' "$new_path" >> "$config_file"
+    fi
+fi

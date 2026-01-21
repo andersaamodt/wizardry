@@ -7,30 +7,34 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: toggle-touch-hook
 
-Toggle the planned touch hook on or off. When enabled it will fire actions when you touch a portkey or other special file; for now the toggle only updates $MUD_DIR/config.
+Toggle the touch hook that triggers on-touch effects when you touch files. When enabled, touching a portkey will activate it, and shocking-grasp will deal damage to touched files.
 USAGE
   exit 0
   ;;
 esac
 
-require-wizardry || exit 1
-
 set -eu
-. env-clear
 
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-MUD_CONFIG="$SCRIPT_DIR/mud-config"
 
-if [ ! -x "$MUD_CONFIG" ]; then
-        printf '%s\n' "Error: mud-config not found at '$MUD_CONFIG'." >&2
-        return 1
+# Determine config file location
+SPELLBOOK_DIR="${SPELLBOOK_DIR:-$HOME/.spellbook}"
+CONFIG_FILE="$SPELLBOOK_DIR/.mud"
+
+# Ensure spellbook directory exists
+mkdir -p "$SPELLBOOK_DIR"
+touch "$CONFIG_FILE"
+
+# Check current state
+if config-has "$CONFIG_FILE" "touch-hook" 2>/dev/null; then
+  current_value=$(config-get "$CONFIG_FILE" "touch-hook" 2>/dev/null)
+  if [ "$current_value" = "1" ]; then
+    # Currently enabled, disable it
+    config-set "$CONFIG_FILE" "touch-hook" "0"
+    printf '%s\n' "✓ Touch hook disabled."
+    exit 0
+  fi
 fi
 
-# Toggle the feature and report state
-new_state=$("$MUD_CONFIG" toggle touch-hook)
-
-if [ "$new_state" = "1" ]; then
-        printf '%s\n' "✓ Touch hook enabled (planned feature)."
-else
-        printf '%s\n' "✓ Touch hook disabled."
-fi
+# Currently disabled, enable it
+config-set "$CONFIG_FILE" "touch-hook" "1"
+printf '%s\n' "✓ Touch hook enabled. Restart your shell or run 'invoke-wizardry' to activate."

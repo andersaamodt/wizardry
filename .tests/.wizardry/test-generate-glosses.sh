@@ -152,22 +152,22 @@ EOF
   assert_success || return 1
   
   # Verify the glosses contain (read from file for large outputs):
-  _output_file="${WIZARDRY_TMPDIR}/_test_output"
+  output_file="${WIZARDRY_TMPDIR}/_test_output"
   
   # 1. Alias for hyphenated synonym (leap-to-marker)
-  if ! grep -q "alias leap-to-marker=" "$_output_file"; then
+  if ! grep -q "alias leap-to-marker=" "$output_file"; then
     TEST_FAILURE_REASON="Expected alias for leap-to-marker synonym"
     return 1
   fi
   
   # 2. Function for non-hyphenated synonym (warp)
-  if ! grep -q "warp()" "$_output_file"; then
+  if ! grep -q "warp()" "$output_file"; then
     TEST_FAILURE_REASON="Expected function for warp synonym"
     return 1
   fi
   
   # 3. First-word gloss for 'leap' (extracted from leap-to-marker)
-  if ! grep -q "leap()" "$_output_file"; then
+  if ! grep -q "leap()" "$output_file"; then
     TEST_FAILURE_REASON="Expected first-word gloss function for leap"
     return 1
   fi
@@ -175,12 +175,12 @@ EOF
   # 4. NEW: The leap() gloss should source parse after setting args
   #    It prepends the first word to args, then sources parse
   #    Parse will handle finding the longest match and resolving synonyms
-  if ! grep -q 'set -- "leap"' "$_output_file"; then
+  if ! grep -q 'set -- "leap"' "$output_file"; then
     TEST_FAILURE_REASON="Expected leap() gloss to set args with first word before sourcing parse"
     return 1
   fi
   
-  if ! grep -q '\. parse' "$_output_file"; then
+  if ! grep -q '\. parse' "$output_file"; then
     TEST_FAILURE_REASON="Expected leap() gloss to source parse"
     return 1
   fi
@@ -189,7 +189,7 @@ EOF
   #    E.g., "leap-to-location=translocation/jump-to-marker" should generate
   #    alias leap-to-location='translocation/jump to marker'
   #    NOT alias leap-to-location='translocation/jump to marker'  (with / → space)
-  if ! grep -q "alias leap-to-location='translocation/jump to marker'" "$_output_file"; then
+  if ! grep -q "alias leap-to-location='translocation/jump to marker'" "$output_file"; then
     TEST_FAILURE_REASON="Expected alias to preserve directory path: translocation/jump to marker"
     return 1
   fi

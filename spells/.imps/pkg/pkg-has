@@ -4,14 +4,14 @@
 set -eu
 
 
-_ph_package=${1:-}
-[ -z "$_ph_package" ] && { printf '%s\n' "pkg-has: package name required" >&2; exit 1; }
+ph_package=${1:-}
+[ -z "$ph_package" ] && { printf '%s\n' "pkg-has: package name required" >&2; exit 1; }
 
-_ph_pm=$(pkg-manager) || { printf '%s\n' "pkg-has: no supported package manager" >&2; exit 1; }
+ph_pm=$(pkg-manager) || { printf '%s\n' "pkg-has: no supported package manager" >&2; exit 1; }
 
-case $_ph_pm in
-  apt)    dpkg -l "$_ph_package" 2>/dev/null | grep -q "^ii" ;;
-  pacman) pacman -Q "$_ph_package" >/dev/null 2>&1 ;;
-  nix)    nix-env -q "$_ph_package" >/dev/null 2>&1 ;;
+case $ph_pm in
+  apt)    dpkg -l "$ph_package" 2>/dev/null | grep -q "^ii" ;;
+  pacman) pacman -Q "$ph_package" >/dev/null 2>&1 ;;
+  nix)    nix-env -q "$ph_package" >/dev/null 2>&1 ;;
   pkgin)  pkgin list 2>/dev/null | grep -q "^${_ph_package}-" ;;
 esac

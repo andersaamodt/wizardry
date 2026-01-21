@@ -15,8 +15,8 @@ esac
 
 # Set up WIZARDRY_DIR if not already set
 if [ -z "${WIZARDRY_DIR-}" ]; then
-  _rds_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  WIZARDRY_DIR=$(cd "$_rds_script_dir/../.." && pwd -P)
+  rds_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  WIZARDRY_DIR=$(cd "$rds_script_dir/../.." && pwd -P)
   export WIZARDRY_DIR
 fi
 

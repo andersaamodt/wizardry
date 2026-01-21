@@ -46,11 +46,11 @@ if [ -z "${WIZARDRY_DIR-}" ]; then
       fi
       ;;
     *)
-      _script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || _script_dir=""
-      if [ -n "$_script_dir" ]; then
-        _wiz_root=$(CDPATH= cd -- "$_script_dir/../.." 2>/dev/null && pwd -P) || _wiz_root=""
-        if [ -n "$_wiz_root" ] && [ -d "$_wiz_root/spells" ]; then
-          WIZARDRY_DIR="$_wiz_root"
+      script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || script_dir=""
+      if [ -n "$script_dir" ]; then
+        wiz_root=$(CDPATH= cd -- "$script_dir/../.." 2>/dev/null && pwd -P) || wiz_root=""
+        if [ -n "$wiz_root" ] && [ -d "$wiz_root/spells" ]; then
+          WIZARDRY_DIR="$wiz_root"
         fi
       fi
       ;;

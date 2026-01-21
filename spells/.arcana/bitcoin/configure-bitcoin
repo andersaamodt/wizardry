@@ -53,10 +53,10 @@ fi
 
 # Function to modify bitcoin.conf using awk
 modify_bitcoin_conf() {
-    _key=$1
-    _value=$2
+    key=$1
+    value=$2
     printf '\n' >> "$bitcoin_conf" # Ensure a newline exists at the end of the file
-    awk -v key="$_key" -v value="$_value" 'BEGIN {OFS=FS="="; found=0} {gsub(/^[ 	]+|[ 	]+$/, "", $1)} !/^#/ && $1==key {found=1; print key"="value; next} {if(NF>1) print $1"="$2; else if(NF==1) print $1} END {if (!found) print key"="value}' "$bitcoin_conf" > "$bitcoin_conf.tmp" && mv "$bitcoin_conf.tmp" "$bitcoin_conf" || retry_with_sudo mv "$bitcoin_conf.tmp" "$bitcoin_conf"
+    awk -v key="$key" -v value="$value" 'BEGIN {OFS=FS="="; found=0} {gsub(/^[ 	]+|[ 	]+$/, "", $1)} !/^#/ && $1==key {found=1; print key"="value; next} {if(NF>1) print $1"="$2; else if(NF==1) print $1} END {if (!found) print key"="value}' "$bitcoin_conf" > "$bitcoin_conf.tmp" && mv "$bitcoin_conf.tmp" "$bitcoin_conf" || retry_with_sudo mv "$bitcoin_conf.tmp" "$bitcoin_conf"
     awk '/./' "$bitcoin_conf" > "$bitcoin_conf.tmp" && mv "$bitcoin_conf.tmp" "$bitcoin_conf" || retry_with_sudo mv "$bitcoin_conf.tmp" "$bitcoin_conf" # Remove trailing newlines
 }
 

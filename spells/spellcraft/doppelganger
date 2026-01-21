@@ -31,8 +31,8 @@ esac
 
 # Set up WIZARDRY_DIR if not already set
 if [ -z "${WIZARDRY_DIR-}" ]; then
-  _dg_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  WIZARDRY_DIR=$(cd "$_dg_script_dir/../.." && pwd -P)
+  dg_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  WIZARDRY_DIR=$(cd "$dg_script_dir/../.." && pwd -P)
   export WIZARDRY_DIR
 fi
 
@@ -42,8 +42,8 @@ set -eu
 if [ -n "${WIZARDRY_DIR-}" ] && [ -f "${WIZARDRY_DIR}/spells/.imps/sys/env-clear" ]; then
   . "${WIZARDRY_DIR}/spells/.imps/sys/env-clear"
 else
-  _dg_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  . "$_dg_script_dir/../../.imps/sys/env-clear"
+  dg_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  . "$dg_script_dir/../../.imps/sys/env-clear"
 fi
 
 # Add wizardry dirs to PATH so we can call say, warn, etc.
@@ -52,10 +52,10 @@ if [ -n "${WIZARDRY_DIR-}" ]; then
   PATH="${WIZARDRY_DIR}/spells/.imps/out:${PATH}"
   PATH="${WIZARDRY_DIR}/spells/spellcraft:${PATH}"
 else
-  _dg_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-  PATH="$_dg_script_dir/../../.imps/sys:${PATH}"
-  PATH="$_dg_script_dir/../../.imps/out:${PATH}"
-  PATH="$_dg_script_dir:${PATH}"
+  dg_script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  PATH="$dg_script_dir/../../.imps/sys:${PATH}"
+  PATH="$dg_script_dir/../../.imps/out:${PATH}"
+  PATH="$dg_script_dir:${PATH}"
 fi
 export PATH
 
@@ -87,7 +87,7 @@ failed_count=0
 # Only skip .git and .github directories
 # Store list in variable to avoid subshell and preserve counter variables
 # Use -perm for portability (works on both GNU and BSD find)
-_spell_list=$(find "$repo_dir/spells" -type f -perm -100 \
+spell_list=$(find "$repo_dir/spells" -type f -perm -100 \
   ! -path "*/.git/*" \
   ! -path "*/.github/*")
 
@@ -133,7 +133,7 @@ while IFS= read -r spell_path; do
   # Compile spell: save current directory, cd to repo, compile, return
   # Don't use subshell () because functions don't pass to child processes
   # compile-spell needs require-wizardry which was sourced earlier in this script
-  _dg_pwd=$(pwd -P)
+  dg_pwd=$(pwd -P)
   cd "$repo_dir" || {
     warn "doppelganger: failed to cd to $repo_dir"
     failed_count=$((failed_count + 1))
@@ -141,7 +141,7 @@ while IFS= read -r spell_path; do
   }
   
   if "$repo_dir/spells/spellcraft/compile-spell" "$spell_rel_path" < /dev/null > "$target_file" 2>&1; then
-    cd "$_dg_pwd" || true
+    cd "$dg_pwd" || true
     # Check if the target file is valid (has shebang)
     if head -n 1 "$target_file" 2>/dev/null | grep -q '^#!'; then
       chmod +x "$target_file"
@@ -152,13 +152,13 @@ while IFS= read -r spell_path; do
       rm -f "$target_file"
     fi
   else
-    cd "$_dg_pwd" || true
+    cd "$dg_pwd" || true
     warn "doppelganger: failed to compile $spell_name"
     failed_count=$((failed_count + 1))
     rm -f "$target_file"
   fi
 done <<EOF
-$_spell_list
+$spell_list
 EOF
 
 # Copy test files (including hidden directories like .arcana and .imps)

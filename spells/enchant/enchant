@@ -29,11 +29,11 @@ elif [ $# -eq 1 ]; then
   case "$1" in
   *=*)
     # Check both sides are non-empty
-    _attr="${1%%=*}"
-    _val="${1#*=}"
-    if [ -n "$_attr" ] && [ -n "$_val" ]; then
-      key=$_attr
-      value=$_val
+    attr_part="${1%%=*}"
+    val_part="${1#*=}"
+    if [ -n "$attr_part" ] && [ -n "$val_part" ]; then
+      key=$attr_part
+      value=$val_part
       file=$PWD
     else
       printf '%s\n' "enchant: argument must be attribute=value format" >&2
@@ -53,18 +53,18 @@ elif [ $# -eq 2 ]; then
   # Check if arg1 is attribute=value
   case "$1" in
   *=*)
-    _attr1="${1%%=*}"
-    _val1="${1#*=}"
-    [ -n "$_attr1" ] && [ -n "$_val1" ] && arg1_is_attr=1
+    attr1_part="${1%%=*}"
+    val1_part="${1#*=}"
+    [ -n "$attr1_part" ] && [ -n "$val1_part" ] && arg1_is_attr=1
     ;;
   esac
   
   # Check if arg2 is attribute=value
   case "$2" in
   *=*)
-    _attr2="${2%%=*}"
-    _val2="${2#*=}"
-    [ -n "$_attr2" ] && [ -n "$_val2" ] && arg2_is_attr=1
+    attr2_part="${2%%=*}"
+    val2_part="${2#*=}"
+    [ -n "$attr2_part" ] && [ -n "$val2_part" ] && arg2_is_attr=1
     ;;
   esac
   

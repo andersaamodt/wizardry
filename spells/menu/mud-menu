@@ -14,6 +14,7 @@ USAGE
 esac
 
 set -eu
+
 . env-clear
 
 # Catch Ctrl-C and TERM signal to exit 1 cleanly
@@ -27,6 +28,19 @@ if ! require menu "The MUD Install menu needs the 'menu' command to present opti
   exit 1
 fi
 
+# Get config file location
+spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+CONFIG_FILE="$spell_home/.mud"
+
+# Use temp file imp for selection tracking
+SELECTION_FILE=$(temp-file mud-menu-selection)
+export SELECTION_FILE
+trap 'cleanup-file "$SELECTION_FILE"' EXIT INT TERM
+
+# Ensure spellbook directory and config file exist
+mkdir -p "$spell_home"
+touch "$CONFIG_FILE"
+
 # Check if a MUD config feature is enabled
 is_feature_enabled() {
   feature=$1
@@ -37,172 +51,68 @@ is_feature_enabled() {
     parse-enabled) default_enabled=1 ;;
   esac
   
-  mud_config_path=$(command -v mud-config 2>/dev/null)
-  if [ -z "$mud_config_path" ] || [ ! -x "$mud_config_path" ]; then
-    # mud-config not available, use default
-    [ "$default_enabled" -eq 1 ]
-    return $?
-  fi
+  # Get the value using config-get
+  value=$(config-get "$CONFIG_FILE" "$feature" 2>/dev/null || printf '')
   
-  # Get the value, using default if key doesn't exist
-  value=$(mud-config get "$feature" 2>/dev/null) || value=""
+  # If no value set, use default
   if [ -z "$value" ]; then
     [ "$default_enabled" -eq 1 ]
     return $?
   fi
   
-  [ "$value" = "1" ]
-}
-
-# Check if cd hook is enabled (uses separate config file for historical reasons)
-is_cd_hook_enabled() {
-  spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
-  cd_config="$spell_home/.mud/config"
-  
-  if [ ! -f "$cd_config" ]; then
-    return 1
-  fi
-  
-  # Check if cd-look=1 is set
-  value=$(config-get "$cd_config" "cd-look" 2>/dev/null || printf '0')
+  # Otherwise check if value is "1"
   [ "$value" = "1" ]
 }
 
 loop_limit=${MENU_LOOP_LIMIT:-}
-first_run=1
-start_selection=1
-
-# Track toggle states: 1=parse, 2=mud-menu, 3=CD hook, 4=command-not-found, 5=touch, 6=fantasy, 7=inventory, 8=combat, 9=all
-was_parse=0
-was_cd=0
-was_cnf=0
-was_touch=0
-was_fantasy=0
-was_inventory=0
-was_combat=0
-was_all=0
 
 while true; do
-  if [ "$first_run" -eq 0 ]; then
-    # Check which toggle changed and keep cursor there
-    if is_feature_enabled "parse-enabled"; then now_parse=1; else now_parse=0; fi
-    if is_cd_hook_enabled; then now_cd=1; else now_cd=0; fi
-    if is_feature_enabled "command-not-found"; then now_cnf=1; else now_cnf=0; fi
-    if is_feature_enabled "touch-hook"; then now_touch=1; else now_touch=0; fi
-    if is_feature_enabled "fantasy-theme"; then now_fantasy=1; else now_fantasy=0; fi
-    if is_feature_enabled "inventory"; then now_inventory=1; else now_inventory=0; fi
-    if is_feature_enabled "combat"; then now_combat=1; else now_combat=0; fi
-    
-    # Check if all features are enabled
-    now_all=1
-    for feature in touch-hook fantasy-theme inventory combat command-not-found; do
-      if ! is_feature_enabled "$feature"; then
-        now_all=0
-        break
-      fi
-    done
-
-    if [ "$was_parse" != "$now_parse" ]; then
-      start_selection=1
-    elif [ "$was_cd" != "$now_cd" ]; then
-      start_selection=3
-    elif [ "$was_cnf" != "$now_cnf" ]; then
-      start_selection=4
-    elif [ "$was_touch" != "$now_touch" ]; then
-      start_selection=5
-    elif [ "$was_fantasy" != "$now_fantasy" ]; then
-      start_selection=6
-    elif [ "$was_inventory" != "$now_inventory" ]; then
-      start_selection=7
-    elif [ "$was_combat" != "$now_combat" ]; then
-      start_selection=8
-    elif [ "$was_all" != "$now_all" ]; then
-      start_selection=9
-    else
-      start_selection=1
-    fi
+  # Read last selected position from temp file, default to 1
+  if [ -f "$SELECTION_FILE" ]; then
+    start_selection=$(cat "$SELECTION_FILE" 2>/dev/null || printf '1')
   else
-    first_run=0
+    start_selection=1
   fi
-
-  # Save toggle states before displaying menu (for comparison on next iteration)
-  if is_feature_enabled "parse-enabled"; then was_parse=1; else was_parse=0; fi
-  if is_cd_hook_enabled; then was_cd=1; else was_cd=0; fi
-  if is_feature_enabled "command-not-found"; then was_cnf=1; else was_cnf=0; fi
-  if is_feature_enabled "touch-hook"; then was_touch=1; else was_touch=0; fi
-  if is_feature_enabled "fantasy-theme"; then was_fantasy=1; else was_fantasy=0; fi
-  if is_feature_enabled "inventory"; then was_inventory=1; else was_inventory=0; fi
-  if is_feature_enabled "combat"; then was_combat=1; else was_combat=0; fi
-  
-  # Check if all features are enabled
-  was_all=1
-  for feature in touch-hook fantasy-theme inventory combat command-not-found; do
-    if ! is_feature_enabled "$feature"; then
-      was_all=0
-      break
-    fi
-  done
-
   # Build menu entries based on current state
+  
   # Build parse toggle
   if is_feature_enabled "parse-enabled"; then
-    parse_toggle="[X] Parse (natural language commands)%toggle-parse"
+    parse_toggle="[X] Parse (natural language commands)%sh -c 'toggle-parse; echo 1 > \"$SELECTION_FILE\"'"
   else
-    parse_toggle="[ ] Parse (natural language commands)%toggle-parse"
+    parse_toggle="[ ] Parse (natural language commands)%sh -c 'toggle-parse; echo 1 > \"$SELECTION_FILE\"'"
   fi
   
   # Build cd hook toggle label based on current state
-  if is_cd_hook_enabled; then
-    cd_hook="[X] cd hook (look on directory change)%toggle-cd"
+  if is_feature_enabled "cd-look"; then
+    cd_hook="[X] Look on directory change (cd hook)%sh -c 'toggle-cd; echo 3 > \"$SELECTION_FILE\"'"
   else
-    cd_hook="[ ] cd hook (look on directory change)%toggle-cd"
+    cd_hook="[ ] Look on directory change (cd hook)%sh -c 'toggle-cd; echo 3 > \"$SELECTION_FILE\"'"
   fi
   
-  # Build command-not-found hook toggle
-  if is_feature_enabled "command-not-found"; then
-    cnf_hook="[X] handle-command-not-found hook%toggle-command-not-found"
+  # Build avatar toggle
+  if is_feature_enabled "avatar"; then
+    avatar="[X] Avatar (HP/MP, inventory)%sh -c 'toggle-avatar; echo 4 > \"$SELECTION_FILE\"'"
   else
-    cnf_hook="[ ] handle-command-not-found hook%toggle-command-not-found"
+    avatar="[ ] Avatar (HP/MP, inventory)%sh -c 'toggle-avatar; echo 4 > \"$SELECTION_FILE\"'"
   fi
   
   # Build touch hook toggle
   if is_feature_enabled "touch-hook"; then
-    touch_hook="[X] Touch hook (planned)%toggle-touch-hook"
+    touch_hook="[X] On-touch triggers (touch hook)%sh -c 'toggle-touch-hook; echo 5 > \"$SELECTION_FILE\"'"
   else
-    touch_hook="[ ] Touch hook (planned)%toggle-touch-hook"
-  fi
-  
-  # Build fantasy theme toggle
-  if is_feature_enabled "fantasy-theme"; then
-    fantasy="[X] Fantasy theme (planned)%toggle-fantasy-theme"
-  else
-    fantasy="[ ] Fantasy theme (planned)%toggle-fantasy-theme"
-  fi
-  
-  # Build inventory toggle
-  if is_feature_enabled "inventory"; then
-    inventory="[X] Inventory feature (planned)%toggle-inventory"
-  else
-    inventory="[ ] Inventory feature (planned)%toggle-inventory"
-  fi
-  
-  # Build combat toggle
-  if is_feature_enabled "combat"; then
-    combat="[X] HP/MP and combat (planned)%toggle-combat"
-  else
-    combat="[ ] HP/MP and combat (planned)%toggle-combat"
+    touch_hook="[ ] On-touch triggers (touch hook)%sh -c 'toggle-touch-hook; echo 5 > \"$SELECTION_FILE\"'"
   fi
   
   # Build show/hide MUD in main menu toggle
   if is_feature_enabled "mud-enabled"; then
-    mud_menu="[X] Show MUD in main menu%toggle-mud-menu"
+    mud_menu="[X] Show MUD in main menu%sh -c 'toggle-mud-menu; echo 2 > \"$SELECTION_FILE\"'"
   else
-    mud_menu="[ ] Show MUD in main menu%toggle-mud-menu"
+    mud_menu="[ ] Show MUD in main menu%sh -c 'toggle-mud-menu; echo 2 > \"$SELECTION_FILE\"'"
   fi
   
-  # Build enable/disable all toggle
+  # Build enable/disable all toggle (including cd-look)
   all_enabled=1
-  for feature in touch-hook fantasy-theme inventory combat command-not-found; do
+  for feature in parse-enabled mud-enabled avatar touch-hook cd-look; do
     if ! is_feature_enabled "$feature"; then
       all_enabled=0
       break
@@ -210,18 +120,17 @@ while true; do
   done
   
   if [ "$all_enabled" -eq 1 ]; then
-    toggle_all="[X] Enable all MUD features%toggle-all-mud --disable"
+    toggle_all="Disable all MUD features%sh -c 'toggle-all-mud --disable; echo 6 > \"$SELECTION_FILE\"'"
   else
-    toggle_all="[ ] Enable all MUD features%toggle-all-mud --enable"
+    toggle_all="Enable all MUD features%sh -c 'toggle-all-mud --enable; echo 6 > \"$SELECTION_FILE\"'"
   fi
   
-  tor="Set up tor hidden service%setup-tor"
+  tor="Set up tor hidden service%sh -c 'setup-tor; echo 7 > \"$SELECTION_FILE\"'"
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
-  exit_label=$(exit-label)
-  exit_item="${exit_label}%kill -TERM \$PPID"
+  exit_item="Exit%kill -TERM \$PPID"
 
-  set -- "$parse_toggle" "$mud_menu" "$cd_hook" "$cnf_hook" "$touch_hook" "$fantasy" "$inventory" "$combat" "$toggle_all" "$tor" "$exit_item"
+  set -- "$parse_toggle" "$mud_menu" "$cd_hook" "$avatar" "$touch_hook" "$toggle_all" "$tor" "$exit_item"
   menu --start-selection "$start_selection" "MUD Install:" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
   

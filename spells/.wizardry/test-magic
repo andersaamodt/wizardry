@@ -29,17 +29,20 @@ Execute behavior-driven shell tests organized by spell level.
 
 Arguments:
   LEVEL                 Test through level N (0-27, default: 27)
+                        Note: Level 0 includes common-tests.sh + Level 0 spells
   all                   Test all available levels
 
 Options:
   --only                Only test this specific level (don't run lower levels)
   --verbose             Show per-test output
-  --skip-common         Skip common tests (used by parallel test workflows)
+
 
 Examples:
-  test-magic            # Test all levels (0-27)
-  test-magic 5          # Test levels 0-5
-  test-magic 10 --only  # Test only level 10
+  test-magic            # Test all levels (common-tests + 0-27)
+  test-magic 5          # Test levels 0-5 (common-tests + spells 0-5)
+  test-magic 0-1        # Test common-tests + levels 0-1
+
+  test-magic 10 --only  # Test only level 10 (skip levels 0-9)
 
 Environment variables:
   WIZARDRY_TEST_TIMEOUT              Timeout in seconds for each test (default: 180)
@@ -61,11 +64,11 @@ if [ -z "${WIZARDRY_DIR-}" ]; then
       fi
       ;;
     *)
-      _script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || _script_dir=""
-      if [ -n "$_script_dir" ]; then
-        _wiz_root=$(CDPATH= cd -- "$_script_dir/../.." 2>/dev/null && pwd -P) || _wiz_root=""
-        if [ -n "$_wiz_root" ] && [ -d "$_wiz_root/spells" ]; then
-          WIZARDRY_DIR="$_wiz_root"
+      script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || script_dir=""
+      if [ -n "$script_dir" ]; then
+        wiz_root=$(CDPATH= cd -- "$script_dir/../.." 2>/dev/null && pwd -P) || wiz_root=""
+        if [ -n "$wiz_root" ] && [ -d "$wiz_root/spells" ]; then
+          WIZARDRY_DIR="$wiz_root"
         fi
       fi
       ;;
@@ -105,7 +108,6 @@ min_level_range=0
 only_this_level=0
 verbose=0
 run_all=0
-skip_common=0
 
 if [ "$#" -gt 0 ]; then
   case "$1" in
@@ -138,10 +140,6 @@ while [ "$#" -gt 0 ]; do
       verbose=1
       shift
       ;;
-    --skip-common)
-      skip_common=1
-      shift
-      ;;
     --)
       shift
       break
@@ -161,7 +159,6 @@ Arguments:
 Options:
   --only                Only test this specific level (don't run lower levels)
   --verbose             Show per-test output
-  --skip-common         Skip common tests (used by parallel test workflows)
 USAGE
       exit 2
       ;;
@@ -280,10 +277,10 @@ fi
 # This provides a standard environment with all functions available per test
 
 # Color codes (inline to avoid dependency)
-_esc=$(printf '\033')
-_green="${_esc}[32m"
-_red="${_esc}[31m"
-_reset="${_esc}[0m"
+esc=$(printf '\033')
+green="${esc}[32m"
+red="${esc}[31m"
+reset="${esc}[0m"
 
 # Initialize counters
 total_pass=0
@@ -316,12 +313,7 @@ else
   count_end=$target_level
 fi
 
-# Count common-tests.sh (special level before Level 0)
-if [ "$only_this_level" -eq 0 ] || [ "$count_start" -eq 0 ]; then
-  if [ -f "$test_dir/common-tests.sh" ]; then
-    global_test_total=$((global_test_total + 1))
-  fi
-fi
+# Common tests NOT counted by default - they're separate from level-based testing
 
 count_level=$count_start
 while [ "$count_level" -le "$count_end" ]; do
@@ -714,17 +706,17 @@ test_common_tests() {
   if run_test_file "$test_path" "common-tests"; then
     level_pass=$((level_pass + 1))
     if [ -n "$test_summary_line" ]; then
-      printf '    %s%s%s\n' "$_green" "$test_summary_line" "$_reset"
+      printf '    %s%s%s\n' "$green" "$test_summary_line" "$reset"
     else
-      printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_name"
+      printf '    %s✓%s %s\n' "$green" "$reset" "$test_name"
     fi
   else
     level_fail=$((level_fail + 1))
     failed_tests="${failed_tests:+$failed_tests }$test_name"
     if [ -n "$test_summary_line" ]; then
-      printf '    %s%s%s\n' "$_red" "$test_summary_line" "$_reset"
+      printf '    %s%s%s\n' "$red" "$test_summary_line" "$reset"
     else
-      printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_name"
+      printf '    %s✗%s %s\n' "$red" "$reset" "$test_name"
     fi
   fi
 
@@ -740,10 +732,10 @@ test_common_tests() {
   # Print summary line outside the group (unindented) so it shows when collapsed
   if [ "$level_total" -gt 0 ]; then
     if [ "$level_fail" -eq 0 ]; then
-      printf '%s✓%s Common Tests: %d/%d tests passed\n' "$_green" "$_reset" \
+      printf '%s✓%s Common Tests: %d/%d tests passed\n' "$green" "$reset" \
         "$level_pass" "$level_total"
     else
-      printf '%s✗%s Common Tests: %d/%d tests passed (%d failed)\n' "$_red" "$_reset" \
+      printf '%s✗%s Common Tests: %d/%d tests passed (%d failed)\n' "$red" "$reset" \
         "$level_pass" "$level_total" "$level_fail"
     fi
   fi
@@ -834,17 +826,17 @@ test_level() {
     if run_test_file "$test_path" "$spell"; then
       level_pass=$((level_pass + 1))
       if [ -n "$test_summary_line" ]; then
-        printf '    %s%s%s\n' "$_green" "$test_summary_line" "$_reset"
+        printf '    %s%s%s\n' "$green" "$test_summary_line" "$reset"
       else
-        printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_name"
+        printf '    %s✓%s %s\n' "$green" "$reset" "$test_name"
       fi
     else
       level_fail=$((level_fail + 1))
       failed_tests="${failed_tests:+$failed_tests }$test_name"
       if [ -n "$test_summary_line" ]; then
-        printf '    %s%s%s\n' "$_red" "$test_summary_line" "$_reset"
+        printf '    %s%s%s\n' "$red" "$test_summary_line" "$reset"
       else
-        printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_name"
+        printf '    %s✗%s %s\n' "$red" "$reset" "$test_name"
       fi
     fi
   done
@@ -884,17 +876,17 @@ test_level() {
     if run_test_file "$test_path" "$imp"; then
       level_pass=$((level_pass + 1))
       if [ -n "$test_summary_line" ]; then
-        printf '    %s%s%s\n' "$_green" "$test_summary_line" "$_reset"
+        printf '    %s%s%s\n' "$green" "$test_summary_line" "$reset"
       else
-        printf '    %s✓%s %s\n' "$_green" "$_reset" "$test_name"
+        printf '    %s✓%s %s\n' "$green" "$reset" "$test_name"
       fi
     else
       level_fail=$((level_fail + 1))
       failed_tests="${failed_tests:+$failed_tests }$test_name"
       if [ -n "$test_summary_line" ]; then
-        printf '    %s%s%s\n' "$_red" "$test_summary_line" "$_reset"
+        printf '    %s%s%s\n' "$red" "$test_summary_line" "$reset"
       else
-        printf '    %s✗%s %s\n' "$_red" "$_reset" "$test_name"
+        printf '    %s✗%s %s\n' "$red" "$reset" "$test_name"
       fi
     fi
   done
@@ -911,10 +903,10 @@ test_level() {
   # Print summary line outside the group (unindented) so it shows when collapsed
   if [ "$level_total" -gt 0 ]; then
     if [ "$level_fail" -eq 0 ]; then
-      printf '%s✓%s Level %d: %d/%d tests passed' "$_green" "$_reset" \
+      printf '%s✓%s Level %d: %d/%d tests passed' "$green" "$reset" \
         "$level" "$level_pass" "$level_total"
     else
-      printf '%s✗%s Level %d: %d/%d tests passed (%d failed)' "$_red" "$_reset" \
+      printf '%s✗%s Level %d: %d/%d tests passed (%d failed)' "$red" "$reset" \
         "$level" "$level_pass" "$level_total" "$level_fail"
       failed_levels="${failed_levels:+$failed_levels }$level"
     fi
@@ -952,17 +944,8 @@ fi
 
 last_success_level=-1
 
-# Run common tests first (special level before Level 0)
-# Only run if testing Level 0 (either --only 0 or normal run starting from 0)
-# Skip if --skip-common flag is set
-# Note: We don't exit on failure - just record the results and continue
-if [ "$skip_common" -eq 0 ]; then
-  if [ "$only_this_level" -eq 0 ] && [ "$current_level" -eq 0 ]; then
-    test_common_tests || true
-  elif [ "$only_this_level" -eq 1 ] && [ "$min_level_range" -eq 0 ]; then
-    test_common_tests || true
-  fi
-fi
+# Common tests are now separate from level-based testing - NOT run by default with test-magic
+# To run common tests, use: test-spell common-tests.sh
 
 while [ "$current_level" -le "$target_level" ]; do
   test_level "$current_level" || {
@@ -970,7 +953,7 @@ while [ "$current_level" -le "$target_level" ]; do
     if [ "$last_success_level" -ge 0 ]; then
       printf '\nTested to Level %d\n' "$last_success_level"
     fi
-    printf '%s✗%s Testing failed at Level %d\n' "$_red" "$_reset" "$current_level"
+    printf '%s✗%s Testing failed at Level %d\n' "$red" "$reset" "$current_level"
     exit "$exit_code"
   }
   last_success_level=$current_level
@@ -1111,7 +1094,9 @@ fi
 
 if [ "$coverage_uncovered" -gt 0 ]; then
   printf '\nUncovered spells:\n'
-  printf '  %s\n' "$uncovered_spells"
+  printf '%s\n' "$uncovered_spells" | while IFS= read -r spell || [ -n "$spell" ]; do
+    printf '  %s\n' "$spell"
+  done
 fi
 
 if [ -n "$extraneous_files" ] && [ "${WIZARDRY_TEST_COMPILED-0}" != "1" ]; then
