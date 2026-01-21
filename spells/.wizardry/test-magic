@@ -390,17 +390,7 @@ WRAPPER_EOF
   awk_filter='
     /^FAIL_DETAIL:/ { next }
     /^PASS / { print "    " $0; fflush(); next }
-    /^FAIL/ {
-      if (index($0, ":") > 0) {
-        line = $0
-        sub(/:.*$/, "", line)
-        print "    " line
-      } else {
-        print "    " $0
-      }
-      fflush()
-      next
-    }
+    /^FAIL/ { print "    " $0; fflush(); next }
     /^SKIP / { print "    " $0; fflush(); next }
     /^LACK / { print "    " $0; fflush(); next }
     /[0-9]+\/[0-9]+ tests passed/ { next }
