@@ -509,7 +509,7 @@ can_be_function_name() {
   case "$check_name" in
     # Starts with digit - cannot be function name
     [0-9]*) return 1 ;;
-    # Contains only alphanumeric and underscore - can be function name
+    # Contains characters other than alphanumeric and underscore - cannot be function name
     *[!a-zA-Z0-9_]*) return 1 ;;
     # Valid function name
     *) return 0 ;;
