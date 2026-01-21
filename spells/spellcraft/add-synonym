@@ -66,17 +66,45 @@ set -eu
   #   *[/\ \	\'\"\$\`\\\|\&\;\(\)\<\>\*\[\]]* = contains any of: / space tab ' " $ ` \ | & ; ( ) < > * [ ]
   case $synonym_word in
     *[/\ \	\'\"\$\`\\\|\&\;\(\)\<\>\*\[\]]*)
-      printf '%s\n' "add-synonym: synonym word cannot contain spaces or invalid special characters" >&2
-      printf '%s\n' "Invalid characters: / \\ | & ; ( ) < > * [ ] \$ \` ' \" space tab" >&2
-      printf '%s\n' "Valid special characters: - . : = + , @ ! ? % ^ ~ (- and . cannot be first)" >&2
+      # Detect and show specific invalid character for better user feedback
+      detected_char=""
+      case "$synonym_word" in
+        */*) detected_char="/" ;;
+        *' '*) detected_char="(space)" ;;
+        *'	'*) detected_char="(tab)" ;;
+        *\'*) detected_char="'" ;;
+        *\"*) detected_char='\"' ;;
+        *\$*) detected_char="\$" ;;
+        *\`*) detected_char="\`" ;;
+        *\\*) detected_char="\\" ;;
+        *\|*) detected_char="|" ;;
+        *\&*) detected_char="&" ;;
+        *\;*) detected_char=";" ;;
+        *\(*) detected_char="(" ;;
+        *\)*) detected_char=")" ;;
+        *\<*) detected_char="<" ;;
+        *\>*) detected_char=">" ;;
+        *\**) detected_char="*" ;;
+        *\[*) detected_char="[" ;;
+        *\]*) detected_char="]" ;;
+      esac
+      
+      printf '%s\n' "add-synonym: invalid character in '$synonym_word'" >&2
+      if [ -n "$detected_char" ]; then
+        printf '%s\n' "  Found: $detected_char" >&2
+      fi
+      printf '%s\n' "  Invalid characters: / \\ | & ; ( ) < > * [ ] \$ \` ' \" space tab" >&2
+      printf '%s\n' "  Valid special characters: - . : = + , @ ! ? % ^ ~ (- and . cannot be first)" >&2
       exit 2
       ;;
     -*)
-      printf '%s\n' "add-synonym: synonym word cannot start with a dash" >&2
+      printf '%s\n' "add-synonym: synonym word cannot start with a dash (-)" >&2
+      printf '%s\n' "  Synonym: '$synonym_word'" >&2
       exit 2
       ;;
     .*)
-      printf '%s\n' "add-synonym: synonym word cannot start with a dot" >&2
+      printf '%s\n' "add-synonym: synonym word cannot start with a dot (.)" >&2
+      printf '%s\n' "  Synonym: '$synonym_word'" >&2
       exit 2
       ;;
   esac

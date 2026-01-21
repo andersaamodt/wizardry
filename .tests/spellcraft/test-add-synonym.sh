@@ -79,6 +79,8 @@ test_rejects_word_with_slash() {
     run_spell "spells/spellcraft/add-synonym" "my/alias" echo
   
   assert_failure || return 1
+  # Verify error message shows the invalid character
+  assert_error_contains "Found: /" || return 1
 }
 
 test_rejects_word_starting_with_dash() {
@@ -88,6 +90,8 @@ test_rejects_word_starting_with_dash() {
     run_spell "spells/spellcraft/add-synonym" "-myalias" echo
   
   assert_failure || return 1
+  # Verify error message shows the synonym
+  assert_error_contains "'-myalias'" || return 1
 }
 
 test_rejects_word_starting_with_dot() {
@@ -97,6 +101,19 @@ test_rejects_word_starting_with_dot() {
     run_spell "spells/spellcraft/add-synonym" ".myalias" echo
   
   assert_failure || return 1
+  # Verify error message shows the synonym
+  assert_error_contains "'.myalias'" || return 1
+}
+
+test_rejects_word_with_dollar() {
+  case_dir=$(make_tempdir)
+  
+  SPELLBOOK_DIR="$case_dir" \
+    run_spell "spells/spellcraft/add-synonym" 'test$bad' echo
+  
+  assert_failure || return 1
+  # Verify error message shows the invalid character
+  assert_error_contains 'Found: $' || return 1
 }
 
 test_allows_word_starting_with_number() {
@@ -271,6 +288,7 @@ run_test_case "creates correct alias definition" test_alias_definition_content
 run_test_case "rejects empty word" test_rejects_empty_word
 run_test_case "rejects word with spaces" test_rejects_word_with_spaces
 run_test_case "rejects word with slash" test_rejects_word_with_slash
+run_test_case "rejects word with dollar sign" test_rejects_word_with_dollar
 run_test_case "rejects word starting with dash" test_rejects_word_starting_with_dash
 run_test_case "rejects word starting with dot" test_rejects_word_starting_with_dot
 run_test_case "allows word starting with number (creates alias)" test_allows_word_starting_with_number
