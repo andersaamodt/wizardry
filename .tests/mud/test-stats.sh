@@ -64,7 +64,6 @@ test_stats_display() {
   # Set some stats
   "$stub_dir/xattr" -w user.max_life 100 "$avatar_path"
   "$stub_dir/xattr" -w user.mana 50 "$avatar_path"
-  "$stub_dir/xattr" -w user.kills 5 "$avatar_path"
   "$stub_dir/xattr" -w user.experience 1000 "$avatar_path"
   
   run_spell "spells/mud/stats"
