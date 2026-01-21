@@ -28,20 +28,22 @@ trap 'rm -rf "$pty_dir"' EXIT INT TERM
 # Create files for communication
 input_file="$pty_dir/input"
 output_file="$pty_dir/output"
-pty_link="$pty_dir/pty"
 
 # Create input file with default input (can be overridden via stdin or env)
 # For now, just send enter to complete interactive prompts
 printf '\r' > "$input_file"
+
+# Configurable timeout (default 2 seconds, can be overridden)
+timeout_seconds=${SOCAT_TIMEOUT:-2}
 
 # Start the command with PTY on one side and input from file on the other
 # This allows the command to think it's running in a real terminal
 (
   # Use script approach with timeout to prevent hanging
   # The command runs in a PTY, input comes from our file, output goes to our file
-  timeout 2 socat \
+  timeout "$timeout_seconds" socat \
     "EXEC:$*,pty,setsid,ctty,stderr" \
-    "SYSTEM:cat $input_file; sleep 0.5" \
+    "SYSTEM:cat '$input_file'; sleep 0.5" \
     > "$output_file" 2>&1 || true
 ) &
 wait $!
@@ -52,4 +54,5 @@ if [ -f "$output_file" ]; then
 fi
 
 # Cleanup is handled by trap
+
 
