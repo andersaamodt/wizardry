@@ -23,7 +23,7 @@ SH
 test_system_menu_checks_requirements() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/system-menu" &
   menu_pid=$!
@@ -36,7 +36,7 @@ test_system_menu_checks_requirements() {
 test_system_menu_includes_test_utilities() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh

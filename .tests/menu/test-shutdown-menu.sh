@@ -26,7 +26,7 @@ SH
 test_shutdown_menu_checks_requirements() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/shutdown-menu"
   assert_success && assert_path_exists "$tmp/req"
@@ -35,7 +35,7 @@ test_shutdown_menu_checks_requirements() {
 test_shutdown_menu_includes_core_actions() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -60,7 +60,7 @@ run_test_case "shutdown-menu passes shutdown actions to menu" test_shutdown_menu
 test_esc_exit_behavior() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
@@ -90,7 +90,7 @@ test_sleep_kernel_fallback() {
   fi
   
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
@@ -140,7 +140,7 @@ test_hibernate_kernel_fallback() {
   fi
   
   tmp=$(make_tempdir)
-  write-stub-menu "$tmp"
+  stub-menu "$tmp"
   make_stub_require "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
