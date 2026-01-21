@@ -7,10 +7,22 @@ cat >"$dir/systemctl" <<'STUB'
 #!/bin/sh
 state_dir=${SYSTEMCTL_STATE_DIR:-$(mktemp -d)}
 mkdir -p "$state_dir"
+log_file="$state_dir/systemctl.log"
+
+# Log all systemctl commands
+printf '%s\n' "$*" >>"$log_file"
+
 case "$1" in
   daemon-reload)
     printf 'reloaded' >"$state_dir/daemon-reload"
     exit 0 ;;
+  stop)
+    # Log the stop command in a parseable way
+    printf 'stopped %s\n' "$2" >>"$log_file"
+    exit 0 ;;
+  is-active)
+    # Return the status from environment variable if set
+    exit "${SYSTEMCTL_IS_ACTIVE_STATUS:-1}" ;;
   *) exit 0 ;;
 esac
 STUB

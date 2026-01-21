@@ -1,10 +1,22 @@
 #!/bin/sh
-# stub-ask-text-simple DIR - create ask-text stub using ASK_TEXT_RESPONSE env var
+# stub-ask-text-simple DIR - create ask-text stub using ASK_TEXT_RESPONSE or ASK_TEXT_STUB_FILE
 set -eu
 
 dir=$1
 cat >"$dir/ask-text" <<'STUB'
 #!/bin/sh
-printf '%s\n' "${ASK_TEXT_RESPONSE:-}"
+# Support both ASK_TEXT_RESPONSE (single value) and ASK_TEXT_STUB_FILE (file with multiple values)
+if [ -n "${ASK_TEXT_STUB_FILE:-}" ] && [ -f "$ASK_TEXT_STUB_FILE" ]; then
+  # Read next line from file
+  line=$(head -1 "$ASK_TEXT_STUB_FILE" 2>/dev/null || printf '')
+  if [ -n "$line" ]; then
+    # Remove the first line from the file for next call
+    tail -n +2 "$ASK_TEXT_STUB_FILE" > "$ASK_TEXT_STUB_FILE.tmp" 2>/dev/null || true
+    mv "$ASK_TEXT_STUB_FILE.tmp" "$ASK_TEXT_STUB_FILE" 2>/dev/null || true
+    printf '%s\n' "$line"
+  fi
+else
+  printf '%s\n' "${ASK_TEXT_RESPONSE:-}"
+fi
 STUB
 chmod +x "$dir/ask-text"

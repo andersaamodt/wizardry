@@ -70,6 +70,10 @@ while true; do
   # Read last selected position from temp file, default to 1
   if [ -f "$SELECTION_FILE" ]; then
     start_selection=$(cat "$SELECTION_FILE" 2>/dev/null || printf '1')
+    # Handle empty file
+    if [ -z "$start_selection" ]; then
+      start_selection=1
+    fi
   else
     start_selection=1
   fi
