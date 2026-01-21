@@ -55,20 +55,26 @@ while true; do
   exit_label_text=$(exit-label)
   exit_item="${exit_label_text}%kill -TERM \$PPID"
 
-  # Check if MUD is enabled in config and include if so
+  # Check if MUD is enabled in config
+  # Default to enabled (1) if config value doesn't exist or is unset
   spell_home="${SPELLBOOK_DIR:-$HOME/.spellbook}"
   mud_config_file="$spell_home/.mud"
-  mud_enabled=0
+  mud_enabled=1
   if [ -f "$mud_config_file" ]; then
     value=$(config-get "$mud_config_file" "mud-enabled" 2>/dev/null) || value=""
-    [ "$value" = "1" ] && mud_enabled=1
+    if [ -n "$value" ]; then
+      [ "$value" = "1" ] && mud_enabled=1 || mud_enabled=0
+    fi
   fi
   
+  # Build menu based on whether MUD is enabled
   if [ "$mud_enabled" -eq 1 ]; then
     mud="MUD%mud"
-    set -- "$cast" "$mud" "$spellbook" "$install" "$system" "$exit_item"
+    install_mud="Install MUD features%mud-menu"
+    set -- "$cast" "$mud" "$spellbook" "$install" "$system" "$install_mud" "$exit_item"
   else
-    set -- "$cast" "$spellbook" "$install" "$system" "$exit_item"
+    install_mud="Install MUD features%mud-menu"
+    set -- "$cast" "$spellbook" "$install" "$system" "$install_mud" "$exit_item"
   fi
   
   menu "Main Menu:" "$@" || menu_status=$?

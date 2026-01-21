@@ -845,6 +845,46 @@ test_imps_have_opening_comments() {
   return 0
 }
 
+# --- Check: Imps must not have help handlers ---
+# Imps are meant to be simple building blocks, not user-facing commands.
+# Only spells (not imps) should have --help|--usage|-h handlers.
+test_imps_dont_have_help() {
+  violations=""
+  
+  # Use timeout-wrapped find without slow -perm checks
+  imp_list=$(mktemp "${WIZARDRY_TMPDIR}/imp-list.XXXXXX")
+  if [ -n "$timeout_cmd" ]; then
+    "$timeout_cmd" "$find_timeout" find "$ROOT_DIR/spells/.imps" -type f -print > "$imp_list"
+  else
+    find "$ROOT_DIR/spells/.imps" -type f -print > "$imp_list"
+  fi
+  
+  while IFS= read -r imp; do
+    [ -n "$imp" ] || continue
+    name=$(basename "$imp")
+    should_skip_file "$name" && continue
+    is_posix_shell_script "$imp" || continue
+    
+    # Skip test infrastructure - test-bootstrap is exempt
+    rel_path=${imp#"$ROOT_DIR/spells/.imps/"}
+    case "$rel_path" in
+      test/test-bootstrap) continue ;;
+    esac
+    
+    # Check if imp has help handler
+    if grep -qF -- '--help|--usage|-h)' "$imp" 2>/dev/null; then
+      violations="${violations:+$violations, }$rel_path"
+    fi
+  done < "$imp_list"
+  rm -f "$imp_list"
+  
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="imps with help handlers (not allowed): $violations"
+    return 1
+  fi
+  return 0
+}
+
 # --- Check: Bootstrap spells have "Bootstrap spell" in opening comment ---
 # Canonical list of bootstrap spells (hardcoded):
 # - install (root installer)
@@ -1953,6 +1993,7 @@ run_test_case "no global declarations outside declare-globals" test_no_global_de
 run_test_case "no pseudo-globals stored in rc files" test_no_pseudo_globals_in_rc_files
 run_test_case "imps follow one-function-or-zero rule" test_imps_follow_function_rule
 run_test_case "imps have opening comments" test_imps_have_opening_comments
+run_test_case "imps don't have help handlers" test_imps_dont_have_help
 run_test_case "bootstrap spells have identifying comment" test_bootstrap_spells_identified
 run_test_case "spells follow function discipline" test_spells_follow_function_discipline
 run_test_case "no function name collisions" test_no_function_name_collisions

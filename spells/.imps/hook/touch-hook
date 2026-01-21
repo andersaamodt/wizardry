@@ -4,17 +4,20 @@
 
 set -eu
 
-# Check if touch-hook is enabled via mud-config
+# Check if touch-hook is enabled via mud-config (defaults to disabled when unset)
 spell_home="${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}"
 config_file="$spell_home/.mud"
 
-if [ ! -f "$config_file" ]; then
-    exit 0
+touch_enabled=""
+if [ -f "$config_file" ]; then
+    touch_enabled=$(grep "^touch-hook=" "$config_file" 2>/dev/null | cut -d= -f2- || printf '')
+fi
+# Default to disabled (0) if not set
+if [ -z "$touch_enabled" ]; then
+    touch_enabled=$(mud-defaults touch-hook 2>/dev/null || printf '0')
 fi
 
-touch_enabled=$(grep "^touch-hook=1$" "$config_file" 2>/dev/null || printf '')
-
-if [ -z "$touch_enabled" ]; then
+if [ "$touch_enabled" != "1" ]; then
     exit 0
 fi
 
