@@ -289,10 +289,9 @@ run_test_case "banish script mode uses set -eu" test_conditional_set_e_script_mo
 
 # NOTE: Test for function mode shell exit prevention has been verified manually
 # but has test framework issues. The functionality works correctly:
-# - When banish is called as function (via word-of-binding), $0 doesn't match */banish
+# - When banish is called as function, $0 doesn't match */banish
 # - This triggers the set -u (not set -e) branch
 # - Function returns error codes without exiting the calling shell
-# Manual verification: sh -c '. spells/.imps/sys/word-of-binding; word_of_binding banish; banish invalid; echo still running'
 
 # Test that imps are detected correctly (not reported as missing)
 test_imps_detected_not_missing() {
