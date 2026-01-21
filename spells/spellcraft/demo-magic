@@ -713,8 +713,10 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: demo-magic [LEVEL|all]
 
-Demonstrate wizardry features by running checks on spells and narrating results.
+Demonstrate wizardry features with narrated, guided tour of spell capabilities.
 Each level demonstrates spells validated by the corresponding banish level.
+The wizard narrator will guide you through each spell category with live
+demonstrations and explanations.
 
 Arguments:
   LEVEL         Demonstration level (0-27)
@@ -724,6 +726,15 @@ Arguments:
                 Level 2: Glossary system
                 Level 3: Menu system
                 Level 4+: Higher-level spells (see SPELL_LEVELS.md)
+
+Environment:
+  WIZARDRY_DEMO_NO_PAUSE=1    Skip dramatic pauses (faster demos)
+  WIZARDRY_DEMO_NO_BWRAP=1    Skip bwrap sandbox isolation
+
+Examples:
+  demo-magic 0                # Demonstrate level 0 only
+  demo-magic all              # Full demonstration (all 28 levels)
+  demo-magic                  # Same as 'all'
 USAGE
   exit 0
   ;;
