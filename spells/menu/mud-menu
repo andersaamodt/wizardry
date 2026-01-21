@@ -46,10 +46,11 @@ is_feature_enabled() {
   feature=$1
   default_enabled=0
   
-  # All MUD features default to enabled (1) when unset
-  # This matches the behavior when MUD is installed without creating config files
+  # Default enabled features: parse-enabled, mud-enabled, cd-look
+  # These are the core MUD experience that demonstrate wizardry's unique value
+  # Avatar and touch-hook are more invasive and better as opt-in features
   case "$feature" in
-    parse-enabled|mud-enabled|cd-look|avatar|touch-hook) default_enabled=1 ;;
+    parse-enabled|mud-enabled|cd-look) default_enabled=1 ;;
     *) default_enabled=0 ;;
   esac
   
