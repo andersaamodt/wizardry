@@ -690,43 +690,10 @@ else
 fi
 substep_msg "This sets up wizardry commands in your terminal"
 
-# Ask about MUD features BEFORE writing to rc file (so we only write once)
-install_mud=0
-printf '\n'
-if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
-        # In non-interactive mode, skip MUD installation by default
-        # unless explicitly requested via environment variable
-        if [ "${WIZARDRY_INSTALL_MUD-}" = "1" ]; then
-                install_mud=1
-        fi
-else
-        # Handle different input scenarios for curl|sh and other non-interactive cases
-        if [ ! -t 0 ]; then
-                # stdin is not a terminal (e.g., curl|sh, wget|sh, or piped input)
-                if [ -r /dev/tty ]; then
-                        # /dev/tty is available - force ask-yn to use it instead of stdin
-                        # This prevents ask-yn from trying to read from stdin (which contains the script)
-                        if ASK_CANTRIP_INPUT=tty "$ASK_YN" "Also install MUD (multi-user dungeon) features?" yes >/dev/null; then
-                                install_mud=1
-                        fi
-                elif [ -z "${ASK_CANTRIP_INPUT-}" ]; then
-                        # No /dev/tty and no ASK_CANTRIP_INPUT set - use default
-                        if ASK_CANTRIP_INPUT=none "$ASK_YN" "Also install MUD (multi-user dungeon) features?" yes >/dev/null; then
-                                install_mud=1
-                        fi
-                else
-                        # ASK_CANTRIP_INPUT is already set by the user - respect it
-                        if "$ASK_YN" "Also install MUD (multi-user dungeon) features?" yes >/dev/null; then
-                                install_mud=1
-                        fi
-                fi
-        else
-                # stdin is a terminal - normal interactive mode
-                if "$ASK_YN" "Also install MUD (multi-user dungeon) features?" yes >/dev/null; then
-                        install_mud=1
-                fi
-        fi
-fi
+# MUD features are now always enabled by default (no prompt)
+# The config will default to enabled when unset, making MUD discoverable in main-menu
+# Users can disable via mud-menu after installation if desired
+install_mud=1
 
 # Confirm with the user (or their automation) before editing their configuration.
 # When stdin is not interactive we fall back to the non-blocking ASK_CANTRIP_INPUT=none
