@@ -1,0 +1,10 @@
+#!/bin/sh
+# stub-ask-text-simple DIR - create ask-text stub using ASK_TEXT_RESPONSE env var
+set -eu
+
+dir=$1
+cat >"$dir/ask-text" <<'STUB'
+#!/bin/sh
+printf '%s\n' "${ASK_TEXT_RESPONSE:-}"
+STUB
+chmod +x "$dir/ask-text"

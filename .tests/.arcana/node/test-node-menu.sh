@@ -15,23 +15,13 @@ spell_is_executable() {
 
 run_test_case "install/node/node-menu is executable" spell_is_executable
 
-make_stub_menu() {
-  tmp=$1
-  cat >"$tmp/menu" <<'SHI'
-#!/bin/sh
-printf '%s\n' "$@" >>"$MENU_LOG"
-kill -TERM "$PPID" 2>/dev/null || exit 0
-SHI
-  chmod +x "$tmp/menu"
-}
-
 menu_shows_install_when_node_missing() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   # Link essential utilities but NOT node
   link_tools "$tmp" sh cat printf test env basename dirname pwd tr
   
-  make_stub_menu "$tmp"
+  stub-menu "$tmp"
   cat >"$tmp/exit-label" <<'SHI'
 #!/bin/sh
 printf '%s' "Exit"
@@ -70,7 +60,7 @@ menu_places_uninstall_before_exit_when_installed() {
   # Link essential utilities
   link_tools "$tmp" sh cat printf test env basename dirname pwd tr
   
-  make_stub_menu "$tmp"
+  stub-menu "$tmp"
 
   cat >"$tmp/exit-label" <<'SHI'
 #!/bin/sh

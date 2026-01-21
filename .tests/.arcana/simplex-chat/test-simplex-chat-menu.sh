@@ -15,30 +15,11 @@ spell_is_executable() {
 
 run_test_case "install/simplex-chat/simplex-chat-menu is executable" spell_is_executable
 
-make_stub_menu() {
-  tmp=$1
-  cat >"$tmp/menu" <<'SHI'
-#!/bin/sh
-printf '%s\n' "$@" >>"$MENU_LOG"
-kill -TERM "$PPID" 2>/dev/null || exit 0
-SHI
-  chmod +x "$tmp/menu"
-}
-
-make_stub_exit_label() {
-  tmp=$1
-  cat >"$tmp/exit-label" <<'SHI'
-#!/bin/sh
-printf '%s' "Exit"
-SHI
-  chmod +x "$tmp/exit-label"
-}
-
 menu_prompts_install_when_missing() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_exit_label "$tmp"
+  stub-menu "$tmp"
+  stub-exit-label "$tmp"
   cat >"$tmp/simplex-chat-status" <<'SHI'
 #!/bin/sh
 echo "not installed"
@@ -64,8 +45,8 @@ run_test_case "simplex-chat-menu offers install when simplex-chat is missing" me
 menu_orders_uninstall_before_exit_when_installed() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_exit_label "$tmp"
+  stub-menu "$tmp"
+  stub-exit-label "$tmp"
 
   cat >"$tmp/simplex-chat-status" <<'SHI'
 #!/bin/sh

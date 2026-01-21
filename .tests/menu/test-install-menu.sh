@@ -22,20 +22,12 @@ SH
   chmod +x "$tmp/menu"
 }
 
-make_stub_require() {
-  tmp=$1
-  cat >"$tmp/require-command" <<'SH'
-#!/bin/sh
-exit 0
-SH
-  chmod +x "$tmp/require-command"
-}
 
 test_install_menu_prefers_install_root_commands() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   make_stub_menu_env "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
 
   install_root="$tmp/install"
   mkdir -p "$install_root/alpha" "$install_root/beta" "$install_root/gamma"
@@ -92,7 +84,7 @@ test_install_menu_errors_when_empty() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   make_stub_menu_env "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_DIRS=" " MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/install-menu"
   assert_failure && assert_error_contains "no installable spells"
 }
@@ -101,7 +93,7 @@ test_install_menu_builds_entries_with_status() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   make_stub_menu_env "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   cat >"$tmp/alpha-status" <<'SH'
 #!/bin/sh
 echo ready
@@ -140,7 +132,7 @@ exit 0
 SH
   chmod +x "$tmp/menu"
   
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -176,7 +168,7 @@ run_test_case "install-menu ESC/Exit behavior" test_esc_exit_behavior
 shows_help() {
   tmp=$(make_tempdir)
   make_stub_menu_env "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
 printf '%s' "Exit"
@@ -201,7 +193,7 @@ test_no_exit_message_on_esc() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   make_stub_menu_env "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -250,7 +242,7 @@ exit 0
 SH
   chmod +x "$tmp/menu"
   
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -282,7 +274,7 @@ test_import_arcanum_in_menu() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   make_stub_menu_env "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -356,7 +348,7 @@ exit 0
 SH
   chmod +x "$tmp/menu"
   
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh

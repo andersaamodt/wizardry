@@ -12,43 +12,12 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-make_stub_menu() {
-  tmp=$1
-  cat >"$tmp/menu" <<'SH'
-#!/bin/sh
-printf '%s\n' "$@" >>"$MENU_LOG"
-# Send TERM signal to parent to simulate ESC behavior
-kill -TERM "$PPID" 2>/dev/null || exit 0
-exit 0
-SH
-  chmod +x "$tmp/menu"
-}
-
-make_stub_require() {
-  tmp=$1
-  cat >"$tmp/require-command" <<'SH'
-#!/bin/sh
-printf '%s %s\n' "$1" "$2" >>"$REQUIRE_LOG"
-exit 0
-SH
-  chmod +x "$tmp/require-command"
-}
-
-make_failing_require() {
-  tmp=$1
-  cat >"$tmp/require-command" <<'SH'
-#!/bin/sh
-printf '%s\n' "The main menu needs the 'menu' command to present options." >&2
-exit 1
-SH
-  chmod +x "$tmp/require-command"
-}
 
 test_main_menu_checks_dependency() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_require "$tmp"
+  stub-menu "$tmp"
+  stub-require-command "$tmp"
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/main-menu"
   assert_success && assert_path_exists "$tmp/req"
 }
@@ -56,8 +25,8 @@ test_main_menu_checks_dependency() {
 test_main_menu_passes_expected_entries() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_require "$tmp"
+  stub-menu "$tmp"
+  stub-require-command "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
 printf '%s' "Exit"
@@ -77,7 +46,7 @@ SH
 test_main_menu_fails_without_menu_dependency() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_failing_require "$tmp"
+  stub-failing-require "$tmp"
   run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/menu/main-menu"
   assert_failure || return 1
   assert_error_contains "The main menu needs the 'menu' command" || return 1
@@ -86,8 +55,8 @@ test_main_menu_fails_without_menu_dependency() {
 test_main_menu_shows_title() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_require "$tmp"
+  stub-menu "$tmp"
+  stub-require-command "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
 printf '%s' "Exit"
@@ -119,7 +88,7 @@ run_test_case "main-menu loads colors gracefully" test_main_menu_loads_colors_gr
 test_esc_exit_behavior() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   
   # Create menu stub that logs entries and sends TERM to parent
   cat >"$tmp/menu" <<'SH'
@@ -154,8 +123,8 @@ run_test_case "main-menu ESC/Exit handles nested and unnested" test_esc_exit_beh
 test_main_menu_shows_mud_when_enabled() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_require "$tmp"
+  stub-menu "$tmp"
+  stub-require-command "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
 printf '%s' "Exit"
@@ -187,8 +156,8 @@ run_test_case "main-menu shows MUD when enabled" test_main_menu_shows_mud_when_e
 
 shows_help() {
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_require "$tmp"
+  stub-menu "$tmp"
+  stub-require-command "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
 printf '%s' "Exit"
@@ -205,8 +174,8 @@ run_test_case "main-menu accepts --help" shows_help
 test_no_exit_message_on_esc() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_require "$tmp"
+  stub-menu "$tmp"
+  stub-require-command "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -247,7 +216,7 @@ exit 0
 SH
   chmod +x "$tmp/menu"
   
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -301,7 +270,7 @@ exit 0
 SH
   chmod +x "$tmp/menu"
   
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh

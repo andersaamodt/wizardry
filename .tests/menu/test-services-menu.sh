@@ -10,31 +10,12 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-make_stub_menu() {
-  tmp=$1
-  cat >"$tmp/menu" <<'SH'
-#!/bin/sh
-printf '%s\n' "$@" >>"$MENU_LOG"
-kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
-SH
-  chmod +x "$tmp/menu"
-}
-
-make_stub_require() {
-  tmp=$1
-  cat >"$tmp/require-command" <<'SH'
-#!/bin/sh
-printf '%s' "$1" >>"$REQUIRE_LOG"
-exit 0
-SH
-  chmod +x "$tmp/require-command"
-}
 
 test_services_menu_checks_dependencies() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_require "$tmp"
+  stub-menu "$tmp"
+  stub-require-command "$tmp"
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/services-menu"
   assert_success && assert_path_exists "$tmp/req"
 }
@@ -42,8 +23,8 @@ test_services_menu_checks_dependencies() {
 test_services_menu_presents_actions() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_require "$tmp"
+  stub-menu "$tmp"
+  stub-require-command "$tmp"
   # Stub exit-label to return "Back" for submenu behavior
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -67,8 +48,8 @@ run_test_case "services-menu sends service actions to menu" test_services_menu_p
 test_esc_exit_behavior() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_require "$tmp"
+  stub-menu "$tmp"
+  stub-require-command "$tmp"
   
   
   cat >"$tmp/exit-label" <<'SH'

@@ -24,26 +24,9 @@ shows_usage_with_help_flag() {
 
 run_test_case "simplex-chat-status shows usage with --help" shows_usage_with_help_flag
 
-make_stub_colors() {
-  tmp=$1
-  cat >"$tmp/colors" <<'SHI'
-#!/bin/sh
-RESET=""
-GREEN=""
-YELLOW=""
-RED=""
-GRAY=""
-GREY=""
-THEME_SUCCESS=""
-THEME_WARNING=""
-THEME_ERROR=""
-SHI
-  chmod +x "$tmp/colors"
-}
-
 reports_not_installed_without_binary() {
   tmp=$(make_tempdir)
-  make_stub_colors "$tmp"
+  stub-colors "$tmp"
   # Link essential utilities
   link_tools "$tmp" sh cat printf test env basename dirname pwd
   
@@ -60,7 +43,7 @@ run_test_case "simplex-chat-status reports not installed when binary missing" re
 
 reports_installed_with_directories() {
   tmp=$(make_tempdir)
-  make_stub_colors "$tmp"
+  stub-colors "$tmp"
   mkdir -p "$tmp/home/config" "$tmp/home/data"
   # Link essential utilities
   link_tools "$tmp" sh cat printf test env basename dirname pwd
@@ -84,7 +67,7 @@ run_test_case "simplex-chat-status reports installed when version works and dire
 
 warns_when_setup_missing() {
   tmp=$(make_tempdir)
-  make_stub_colors "$tmp"
+  stub-colors "$tmp"
   mkdir -p "$tmp/home/config"
   # Link essential utilities
   link_tools "$tmp" sh cat printf test env basename dirname pwd
@@ -108,7 +91,7 @@ run_test_case "simplex-chat-status warns when data directory is missing" warns_w
 
 reports_error_when_version_fails() {
   tmp=$(make_tempdir)
-  make_stub_colors "$tmp"
+  stub-colors "$tmp"
   # Link essential utilities
   link_tools "$tmp" sh cat printf test env basename dirname pwd
   cat >"$tmp/simplex-chat" <<'SHI'

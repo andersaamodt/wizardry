@@ -1,0 +1,15 @@
+#!/bin/sh
+# write-stub-cleanup-file DIR - create a cleanup-file stub script in DIR
+# Creates a stub that removes files for testing
+set -eu
+
+dir=$1
+cat <<'STUB' >"$dir/cleanup-file"
+#!/bin/sh
+# Stub cleanup-file that removes the file
+[ -n "${1:-}" ] && [ -f "$1" ] && rm -f "$1"
+exit 0
+STUB
+chmod +x "$dir/cleanup-file"
+
+

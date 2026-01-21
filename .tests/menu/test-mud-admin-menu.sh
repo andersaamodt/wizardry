@@ -11,44 +11,12 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-make_stub_menu() {
-  tmp=$1
-  cat >"$tmp/menu" <<'SH'
-#!/bin/sh
-printf '%s\n' "$@" >>"$MENU_LOG"
-kill -s INT "$PPID"
-exit 0
-SH
-  chmod +x "$tmp/menu"
-}
-
-make_stub_colors() {
-  tmp=$1
-  cat >"$tmp/colors" <<'SH'
-#!/bin/sh
-RESET=''
-CYAN=''
-GREY=''
-SH
-  chmod +x "$tmp/colors"
-}
-
-make_failing_menu() {
-  tmp=$1
-  cat >"$tmp/menu" <<'SH'
-#!/bin/sh
-printf '%s\n' "$@" >>"$MENU_LOG"
-printf 'oops\n' >&2
-exit 7
-SH
-  chmod +x "$tmp/menu"
-}
 
 test_mud_admin_calls_menu_with_actions() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_colors "$tmp"
+  stub-menu "$tmp"
+  stub-colors "$tmp"
   cat >"$tmp/require-command" <<'SH'
 #!/bin/sh
 command -v "$1" >/dev/null 2>&1
@@ -74,7 +42,7 @@ SH
 test_mud_admin_requires_menu_helper() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_colors "$tmp"
+  stub-colors "$tmp"
   cat >"$tmp/require-command" <<'SH'
 #!/bin/sh
 printf '%s\n' "The MUD Admin menu needs the 'menu' command to present options." >&2
@@ -98,8 +66,8 @@ SH
 
 test_mud_admin_reports_menu_failure() {
   tmp=$(make_tempdir)
-  make_stub_colors "$tmp"
-  make_failing_menu "$tmp"
+  stub-colors "$tmp"
+  stub-failing-menu "$tmp"
   cat >"$tmp/require-command" <<'SH'
 #!/bin/sh
 command -v "$1" >/dev/null 2>&1
@@ -130,7 +98,7 @@ run_test_case "mud-admin surfaces menu failures" test_mud_admin_reports_menu_fai
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
   tmp=$(make_tempdir)
-  make_stub_colors "$tmp"
+  stub-colors "$tmp"
   
   # Create menu stub that returns escape status
   cat >"$tmp/menu" <<'SH'

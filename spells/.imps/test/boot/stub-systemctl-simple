@@ -1,0 +1,17 @@
+#!/bin/sh
+# stub-systemctl-simple DIR - create systemctl stub with daemon-reload support
+set -eu
+
+dir=$1
+cat >"$dir/systemctl" <<'STUB'
+#!/bin/sh
+state_dir=${SYSTEMCTL_STATE_DIR:-$(mktemp -d)}
+mkdir -p "$state_dir"
+case "$1" in
+  daemon-reload)
+    printf 'reloaded' >"$state_dir/daemon-reload"
+    exit 0 ;;
+  *) exit 0 ;;
+esac
+STUB
+chmod +x "$dir/systemctl"
