@@ -35,8 +35,10 @@ test_strips_carriage_returns() {
   output=$(printf '%s' "$input" | "$ROOT_DIR/spells/.imps/test/socat-normalize-output")
   
   # Output should have \r removed but keep \n
+  # Use portable approach to check for CR
+  cr=$(printf '\r')
   case "$output" in
-    *$'\r'*)
+    *"$cr"*)
       TEST_FAILURE_REASON="expected no carriage returns in output, got: $(printf '%s' "$output" | od -An -tx1)"
       return 1
       ;;

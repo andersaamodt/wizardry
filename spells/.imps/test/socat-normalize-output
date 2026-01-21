@@ -9,12 +9,11 @@
 
 set -eu
 
-# Remove ANSI escape sequences
+# Remove ANSI escape sequences and carriage returns
 # Pattern: ESC followed by [ and then any number of characters until a letter
 # This catches most ANSI sequences including colors, cursor movements, etc.
 sed \
   -e 's/\x1b\[[0-9;]*[a-zA-Z]//g' \
-  -e 's/\x1b\[[0-9;]*m//g' \
   -e 's/\x1b\[?[0-9;]*[hlJKmsu]//g' \
   -e 's/\r//g' \
   -e 's/\x1b[()][AB012]//g'
