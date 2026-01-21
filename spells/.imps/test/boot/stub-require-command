@@ -1,0 +1,14 @@
+#!/bin/sh
+# stub-require-command DIR - create a require-command stub that always succeeds
+# Creates a stub for testing spells that use require-command
+set -eu
+
+dir=$1
+cat <<'STUB' >"$dir/require-command"
+#!/bin/sh
+printf '%s %s\n' "$1" "$2" >>"$REQUIRE_LOG"
+exit 0
+STUB
+chmod +x "$dir/require-command"
+
+

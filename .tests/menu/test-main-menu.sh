@@ -12,16 +12,6 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-make_stub_require() {
-  tmp=$1
-  cat >"$tmp/require-command" <<'SH'
-#!/bin/sh
-printf '%s %s\n' "$1" "$2" >>"$REQUIRE_LOG"
-exit 0
-SH
-  chmod +x "$tmp/require-command"
-}
-
 make_failing_require() {
   tmp=$1
   cat >"$tmp/require-command" <<'SH'
@@ -36,7 +26,7 @@ test_main_menu_checks_dependency() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/main-menu"
   assert_success && assert_path_exists "$tmp/req"
 }
@@ -45,7 +35,7 @@ test_main_menu_passes_expected_entries() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
 printf '%s' "Exit"
@@ -75,7 +65,7 @@ test_main_menu_shows_title() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
 printf '%s' "Exit"
@@ -107,7 +97,7 @@ run_test_case "main-menu loads colors gracefully" test_main_menu_loads_colors_gr
 test_esc_exit_behavior() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   
   # Create menu stub that logs entries and sends TERM to parent
   cat >"$tmp/menu" <<'SH'
@@ -143,7 +133,7 @@ test_main_menu_shows_mud_when_enabled() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
 printf '%s' "Exit"
@@ -176,7 +166,7 @@ run_test_case "main-menu shows MUD when enabled" test_main_menu_shows_mud_when_e
 shows_help() {
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
 printf '%s' "Exit"
@@ -194,7 +184,7 @@ test_no_exit_message_on_esc() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -235,7 +225,7 @@ exit 0
 SH
   chmod +x "$tmp/menu"
   
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
@@ -289,7 +279,7 @@ exit 0
 SH
   chmod +x "$tmp/menu"
   
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh

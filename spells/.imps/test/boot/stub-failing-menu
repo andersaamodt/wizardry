@@ -1,0 +1,15 @@
+#!/bin/sh
+# stub-failing-menu DIR - create a menu stub that fails with exit 7
+# Creates a failing menu stub for testing error handling
+set -eu
+
+dir=$1
+cat <<'STUB' >"$dir/menu"
+#!/bin/sh
+printf '%s\n' "$@" >>"$MENU_LOG"
+printf 'oops\n' >&2
+exit 7
+STUB
+chmod +x "$dir/menu"
+
+

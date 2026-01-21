@@ -15,15 +15,6 @@ done
 
 
 
-make_stub_require() {
-  tmp=$1
-  cat >"$tmp/require-command" <<'SH'
-#!/bin/sh
-printf '%s %s\n' "$1" "$2" >>"$REQUIRE_LOG"
-exit 0
-SH
-  chmod +x "$tmp/require-command"
-}
 
 test_help() {
   run_spell "spells/menu/users-menu" --help
@@ -55,7 +46,7 @@ test_users_menu_checks_requirements() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/users-menu"
   assert_success && assert_path_exists "$tmp/req"
 }
@@ -64,7 +55,7 @@ test_users_menu_presents_actions() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
 printf '%s' "Exit"
@@ -84,7 +75,7 @@ test_users_menu_includes_group_management() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
 printf '%s' "Exit"
@@ -104,7 +95,7 @@ test_users_menu_includes_user_admin() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
 printf '%s' "Exit"
@@ -145,7 +136,7 @@ test_esc_exit_behavior() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh

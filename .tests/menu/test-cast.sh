@@ -46,14 +46,6 @@ EOF
   fi
 }
 
-make_stub_require() {
-  tmp=$1
-  cat >"$tmp/require-command" <<'SH'
-#!/bin/sh
-exit 0
-SH
-  chmod +x "$tmp/require-command"
-}
 
 make_failing_require() {
   tmp=$1
@@ -86,7 +78,7 @@ test_cast_lists_stored_spells() {
 test_cast_prints_empty_message() {
   tmp=$(make_tempdir)
   make_stub_cast_list "$tmp" "" ""
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize" "$ROOT_DIR/spells/menu/cast"
   assert_success && assert_output_contains "No spells are available to cast."
 }
@@ -96,7 +88,7 @@ test_cast_sends_entries_to_menu() {
   tmp=$(make_tempdir)
   make_stub_cast_list "$tmp" fizz "cast fizz"
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/cast"
   assert_success
   if [ ! -f "$tmp/log" ]; then
@@ -165,7 +157,7 @@ test_cast_shows_alias_without_command_in_label() {
   tmp=$(make_tempdir)
   make_stub_cast_list "$tmp" spark "echo spark"
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
 printf '%s' "Exit"
@@ -199,7 +191,7 @@ test_cast_no_duplicate_when_alias_equals_command() {
   # Create a memorize stub where alias = command (e.g., "myspell" and "myspell")
   make_stub_cast_list "$tmp" myspell "myspell"
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
 printf '%s' "Exit"
@@ -230,7 +222,7 @@ test_esc_exit_behavior() {
   tmp=$(make_tempdir)
   make_stub_cast_list "$tmp" fizz "cast fizz"
   stub-menu "$tmp"
-  make_stub_require "$tmp"
+  stub-require-command "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh

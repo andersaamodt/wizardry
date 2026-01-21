@@ -11,16 +11,6 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-make_failing_menu() {
-  tmp=$1
-  cat >"$tmp/menu" <<'SH'
-#!/bin/sh
-printf '%s\n' "$@" >>"$MENU_LOG"
-printf 'failure\n' >&2
-exit 9
-SH
-  chmod +x "$tmp/menu"
-}
 
 test_mud_settings_menu_actions() {
   skip-if-compiled || return $?
@@ -79,7 +69,7 @@ SH
 test_mud_settings_reports_menu_failure() {
   tmp=$(make_tempdir)
   stub-colors "$tmp"
-  make_failing_menu "$tmp"
+  stub-failing-menu "$tmp"
   cat >"$tmp/require-command" <<'SH'
 #!/bin/sh
 command -v "$1" >/dev/null 2>&1
