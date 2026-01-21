@@ -1,6 +1,6 @@
 #!/bin/sh
 # invoke-wizardry - set up wizardry environment at shell startup
-# Simple PATH-based invocation (no word-of-binding preloading)
+# Simple PATH-based invocation
 # Source this script to enable wizardry spells and imps from PATH.
 
 # This script must be sourced, not executed
@@ -104,10 +104,9 @@ export WIZARDRY_DIR
 export SPELLBOOK_DIR
 
 # ============================================================================
-# PATH-BASED EXECUTION (Simple Paradigm)
+# PATH-BASED EXECUTION
 # ============================================================================
 # All spells and imps are added to PATH via learn-spellbook.
-# No preloading, no glosses, no word-of-binding - just simple PATH execution.
 # ============================================================================
 
 [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Adding wizardry directories to PATH..." >&2

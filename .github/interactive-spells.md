@@ -82,14 +82,13 @@ These spells have complex interactive editing operations:
 
 **Testing**: These require careful stubbing of both terminal I/O and user input. They may use read operations, menu systems, or custom input handling.
 
-### System and Utility Spells (18)
+### System and Utility Spells (17)
 
 These spells have interactive components or can hang if error handling is incorrect:
 
 1. `spells/arcane/trash` - Move files to trash (can hang on usage errors)
-2. `spells/.arcana/mud/handle-command-not-found` - Interactive command suggestions
-3. `spells/.arcana/core/core-status` - May have interactive prompts
-4. Various system configuration spells
+2. `spells/.arcana/core/core-status` - May have interactive prompts
+3. Various system configuration spells
 
 **Testing**: These may not be fully interactive but can still hang if error handling is incorrect in conditional blocks. Ensure all die/fail/usage-error calls in conditional contexts use `|| return 1`.
 
@@ -150,7 +149,7 @@ These spells have been fixed to prevent hanging:
 
 ## Summary
 
-This project contains **53+ interactive spells** that require special testing considerations. The key to preventing test hangs is:
+This project contains **52+ interactive spells** that require special testing considerations. The key to preventing test hangs is:
 
 1. Understand that `set -e` is disabled in conditional contexts
 2. Always add `|| return 1` after error functions in conditional blocks
