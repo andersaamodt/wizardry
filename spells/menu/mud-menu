@@ -31,8 +31,13 @@ fi
 # Get config file location
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 CONFIG_FILE="$spell_home/.mud"
-SELECTION_FILE="$spell_home/.mud-menu-selection"
+
+# Use a process-specific temp file for selection tracking (cleaned up on exit)
+SELECTION_FILE="/tmp/.mud-menu-selection.$$"
 export SELECTION_FILE
+
+# Clean up selection file on exit
+trap 'rm -f "$SELECTION_FILE" 2>/dev/null' EXIT INT TERM
 
 # Ensure spellbook directory and config file exist
 mkdir -p "$spell_home"
@@ -64,7 +69,7 @@ is_feature_enabled() {
 loop_limit=${MENU_LOOP_LIMIT:-}
 
 while true; do
-  # Read last selected position from file, default to 1
+  # Read last selected position from temp file, default to 1
   if [ -f "$SELECTION_FILE" ]; then
     start_selection=$(cat "$SELECTION_FILE" 2>/dev/null || printf '1')
   else
