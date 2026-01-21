@@ -46,9 +46,9 @@ is_feature_enabled() {
   feature=$1
   default_enabled=0
   
-  # parse-enabled defaults to enabled (1), all others default to disabled (0)
+  # parse-enabled defaults to enabled (1), mud-enabled defaults to enabled (1), all others default to disabled (0)
   case "$feature" in
-    parse-enabled) default_enabled=1 ;;
+    parse-enabled|mud-enabled) default_enabled=1 ;;
   esac
   
   # Get the value using config-get
