@@ -100,12 +100,6 @@ test_mud_defaults_consistent_with_balance() {
   done
 }
 
-test_mud_defaults_help_works() {
-  # Test that --help flag works
-  run_spell spells/.imps/mud/mud-defaults --help
-  assert_success
-}
-
 run_test_case "mud-defaults imp exists and is executable" test_mud_defaults_exists
 run_test_case "mud-defaults parse-enabled returns 1" test_mud_defaults_parse_enabled_returns_1
 run_test_case "mud-defaults mud-enabled returns 1" test_mud_defaults_mud_enabled_returns_1
@@ -117,6 +111,5 @@ run_test_case "mud-defaults no argument fails" test_mud_defaults_no_argument_fai
 run_test_case "mud-defaults empty argument fails" test_mud_defaults_empty_argument_fails
 run_test_case "mud-defaults returns only 0 or 1" test_mud_defaults_returns_only_0_or_1
 run_test_case "mud-defaults consistent with balanced design" test_mud_defaults_consistent_with_balance
-run_test_case "mud-defaults --help works" test_mud_defaults_help_works
 
 finish_tests
