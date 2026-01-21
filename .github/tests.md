@@ -258,20 +258,6 @@ PATH="$stub_dir:$ROOT_DIR/spells/cantrips:$WIZARDRY_IMPS_PATH:...:$PATH" run_spe
 
 **Key principle**: Stub the bare minimum (terminal I/O), test real wizardry for everything else.
 
-## Dual-Pattern Testing (DEPRECATED)
-
-**NOTE:** The dual-pattern testing system (testing spells both via direct execution and source-then-invoke) was designed for the old castable/uncastable pattern with function wrappers. Since spells are now flat, linear scripts, dual-pattern testing is no longer applicable.
-
-**Current approach:** Test spells via direct execution only.
-
-```sh
-# Test spell directly
-run_spell "spells/category/spell" --help
-assert_success
-```
-
-**Historical note:** The `_run_both_patterns` wrapper and `WIZARDRY_TEST_BOTH_PATTERNS` environment variable were used when spells could be both executed as scripts and sourced as functions.
-
 ## Cross-Platform Testing
 
 - Include both `/bin` and `/usr/bin` when setting PATH
