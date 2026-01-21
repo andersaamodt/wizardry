@@ -8,7 +8,7 @@ eo_var=$1
 case "$eo_var" in
   *[!A-Za-z0-9_]*|"")
     printf '%s\n' "$2"
-  exit 0
+    exit 0
     ;;
 esac
 eval "eo_val=\${$eo_var-}"
