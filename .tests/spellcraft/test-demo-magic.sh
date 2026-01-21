@@ -20,7 +20,8 @@ test_level_0() {
   assert_success || return 1
   assert_output_contains "Level 0: POSIX & Platform Foundation" || return 1
   assert_output_contains "The wizard examines the foundation" || return 1
-  assert_output_contains "The wizard casts detect-posix" || return 1
+  assert_output_contains "wizard casts" || return 1
+  assert_output_contains "detect-posix" || return 1
   assert_output_contains "Wizardry stands ready" || return 1
 }
 
@@ -28,7 +29,8 @@ test_level_1() {
   run_spell spells/spellcraft/demo-magic --no-bwrap 1
   assert_success || return 1
   assert_output_contains "Level 1: Banish & Validation Infrastructure" || return 1
-  assert_output_contains "The wizard casts validate-spells" || return 1
+  assert_output_contains "wizard casts" || return 1
+  assert_output_contains "validate-spells" || return 1
   assert_output_contains "✓ Found spell: banish" || return 1
   assert_output_contains "Core imps summoned" || return 1
 }

@@ -21,6 +21,11 @@ say_narrator() {
   printf '%s%s%s\n' "$CYAN" "$*" "$RESET"
 }
 
+# Highlight spell name in green
+spell_name() {
+  printf '%s%s%s' "$GREEN" "$1" "$RESET"
+}
+
 # Demo a single level using spell-levels data
 demo_level() {
   level=$1
@@ -40,14 +45,14 @@ demo_level() {
       demo_pause
       
       if command -v detect-posix >/dev/null 2>&1; then
-        say_narrator "The wizard casts detect-posix."
+        printf '%sThe wizard casts %s.%s\n' "$CYAN" "$(spell_name detect-posix)" "$RESET"
         detect-posix 2>&1
         printf '\n'
         demo_pause
       fi
       
       if command -v detect-distro >/dev/null 2>&1; then
-        say_narrator "The wizard casts detect-distro."
+        printf '%sThe wizard casts %s.%s\n' "$CYAN" "$(spell_name detect-distro)" "$RESET"
         detect-distro
         printf '\n'
         demo_pause
@@ -60,7 +65,7 @@ demo_level() {
       demo_pause
       
       if command -v validate-spells >/dev/null 2>&1; then
-        say_narrator "The wizard casts validate-spells."
+        printf '%sThe wizard casts %s.%s\n' "$CYAN" "$(spell_name validate-spells)" "$RESET"
         validate-spells banish:wards validate-spells:.wizardry 2>&1
         printf '\n'
         demo_pause
@@ -75,7 +80,7 @@ demo_level() {
       demo_pause
       
       if command -v generate-glosses >/dev/null 2>&1; then
-        say_narrator "The wizard casts generate-glosses."
+        printf '%sThe wizard casts %s.%s\n' "$CYAN" "$(spell_name generate-glosses)" "$RESET"
         # Suppress function definitions, show only summary
         generate-glosses 2>&1 | grep -E "^generate-glosses:" || true
         printf '\n'
@@ -89,7 +94,7 @@ demo_level() {
       demo_pause
       
       if command -v fathom-terminal >/dev/null 2>&1; then
-        say_narrator "The wizard casts fathom-terminal."
+        printf '%sThe wizard casts %s.%s\n' "$CYAN" "$(spell_name fathom-terminal)" "$RESET"
         fathom-terminal 2>&1
         printf '\n'
         demo_pause
@@ -102,7 +107,7 @@ demo_level() {
       demo_pause
       
       if command -v colors >/dev/null 2>&1; then
-        say_narrator "The wizard casts colors."
+        printf '%sThe wizard casts %s.%s\n' "$CYAN" "$(spell_name colors)" "$RESET"
         colors 2>&1
         printf '\n'
         demo_pause
@@ -145,7 +150,7 @@ demo_level() {
       demo_pause
       
       if command -v look >/dev/null 2>&1; then
-        say_narrator 'The wizard casts "look".'
+        printf '%sThe wizard casts %s.%s\n' "$CYAN" "$(spell_name look)" "$RESET"
         look 2>&1
         printf '\n'
         demo_pause
@@ -168,7 +173,7 @@ demo_level() {
       demo_pause
       
       if command -v ask-yn >/dev/null 2>&1; then
-        say_narrator "The wizard demonstrates ask-yn."
+        printf '%sThe wizard demonstrates %s.%s\n' "$CYAN" "$(spell_name ask-yn)" "$RESET"
         printf 'y\n' | ask-yn "Is wizardry magical?" yes 2>&1
         printf '\n'
         demo_pause
@@ -181,7 +186,7 @@ demo_level() {
       demo_pause
       
       if command -v package-managers >/dev/null 2>&1; then
-        say_narrator "The wizard casts package-managers."
+        printf '%sThe wizard casts %s.%s\n' "$CYAN" "$(spell_name package-managers)" "$RESET"
         package-managers 2>&1
         printf '\n'
         demo_pause
