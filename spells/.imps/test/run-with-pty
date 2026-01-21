@@ -25,7 +25,8 @@ test_dir=$(mktemp -d "$tmpdir/run-pty.XXXXXX")
 trap 'rm -rf "$test_dir"' EXIT INT TERM
 
 # Input to send (from env or default to newline)
-input_data=${PTY_INPUT:-$'\n'}
+input_data=${PTY_INPUT:-'
+'}
 
 # Create a script that runs the exact command
 # Properly quote each argument

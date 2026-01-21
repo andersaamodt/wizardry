@@ -102,31 +102,39 @@ run_test_case "menu respects --start-selection (Issue #198)" menu_respects_start
 # Test that highlighted items strip ANSI codes from labels
 # This ensures the highlight color (CYAN) overrides embedded colors (like YELLOW)
 menu_highlight_strips_ansi_codes() {
+  # Skip if socat not available
+  if ! command -v socat >/dev/null 2>&1; then
+    test_skip "requires socat"
+    return 0
+  fi
+  
   tmpdir=$(make_tempdir)
   
-  # Use reusable stub imps via symlinks
+  # Use real PTY with stubs for terminal queries only
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
   
-  # Link to stub imps (terminal I/O + interactive input stubs)
-  for stub in fathom-cursor fathom-terminal move-cursor cursor-blink stty await-keypress; do
+  # Stub only terminal query commands
+  for stub in fathom-cursor fathom-terminal; do
     ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
   done
   
   # Create an ANSI-colored label with ESC[33m (yellow) embedded
-  # The output should NOT contain the yellow ANSI code (ESC[33m) for the highlighted item
-  # but SHOULD contain the highlight color (ESC[36m = cyan)
   yellow_code=$(printf '\033[33m')
   reset_code=$(printf '\033[0m')
   
-  PATH="$stub_dir:$ROOT_DIR/spells/cantrips:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" run_cmd env \
+  # Run with real PTY
+  PTY_INPUT='
+' run_cmd env \
+    PATH="$stub_dir:$PATH" \
     TERM=xterm \
-    "$ROOT_DIR/spells/cantrips/menu" "Test:" \
+    run-with-pty \
+    menu "Test:" \
     "${yellow_code}ColoredItem${reset_code}%printf selected"
   
   assert_success || return 1
   
-  # Verify the command executed (item was selectable)
+  # Verify the command executed
   case "$OUTPUT" in
     *selected*)
       : # good
@@ -154,26 +162,33 @@ run_test_case "menu highlight strips ANSI codes from labels" menu_highlight_stri
 # Test that cursor is restored when exiting menu
 # This verifies the fix for the cursor disappearance issue
 menu_restores_cursor_on_exit() {
+  # Skip if socat not available
+  if ! command -v socat >/dev/null 2>&1; then
+    test_skip "requires socat"
+    return 0
+  fi
+  
   tmpdir=$(make_tempdir)
   
-  # Use reusable stub imps via symlinks
+  # Use real PTY with stubs for terminal queries
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
   
-  # Link to stub imps (terminal I/O stubs only)
-  for stub in fathom-cursor fathom-terminal move-cursor cursor-blink stty await-keypress; do
+  for stub in fathom-cursor fathom-terminal; do
     ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
   done
   
-  # Run menu and verify cursor is restored (turned back on)
-  PATH="$stub_dir:$ROOT_DIR/spells/cantrips:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" run_cmd env \
-    PATH="$stub_dir:$ROOT_DIR/spells/cantrips:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" \
+  # Run with real PTY
+  PTY_INPUT='
+' run_cmd env \
+    PATH="$stub_dir:$PATH" \
     TERM=xterm \
-    "$ROOT_DIR/spells/cantrips/menu" "Test:" "Item%printf selected"
+    run-with-pty \
+    menu "Test:" "Item%printf selected"
   
   assert_success || return 1
   
-  # Verify the menu output contains the cursor-off escape code (menu hides cursor)
+  # Verify the menu output contains the cursor-off escape code
   cursor_off=$(printf '\033[?25l')
   case "$OUTPUT" in
     *"$cursor_off"*)
@@ -185,7 +200,7 @@ menu_restores_cursor_on_exit() {
       ;;
   esac
   
-  # Verify the menu output contains the cursor-on escape code (menu restores cursor)
+  # Verify the menu output contains the cursor-on escape code
   cursor_on=$(printf '\033[?25h')
   case "$OUTPUT" in
     *"$cursor_on"*)
@@ -200,8 +215,14 @@ menu_restores_cursor_on_exit() {
 run_test_case "menu restores cursor on exit" menu_restores_cursor_on_exit
 
 # Arrow key navigation tests
-# These use custom stub-await-keypress to simulate arrow key presses
+# These use run-with-pty with custom await-keypress stubs for arrow keys
 menu_arrow_up_navigation() {
+  # Skip if socat not available
+  if ! command -v socat >/dev/null 2>&1; then
+    test_skip "requires socat"
+    return 0
+  fi
+  
   tmpdir=$(make_tempdir)
   
   stub_dir="$tmpdir/stubs"
@@ -227,16 +248,19 @@ STUB_EOF
   chmod +x "$stub_dir/await-keypress"
   
   # Link other stubs
-  for stub in fathom-cursor fathom-terminal move-cursor cursor-blink stty; do
+  for stub in fathom-cursor fathom-terminal; do
     ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
   done
   
   export AWAIT_KEYPRESS_INDEX_FILE="$tmpdir/key-index"
   
-  # Run menu starting at item 3, navigate up twice to item 1
-  PATH="$stub_dir:$ROOT_DIR/spells/cantrips:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" run_cmd \
-    env AWAIT_KEYPRESS_INDEX_FILE="$tmpdir/key-index" \
-    "$ROOT_DIR/spells/cantrips/menu" --start-selection 3 "Navigation Test:" \
+  # Run menu with PTY starting at item 3, navigate up twice to item 1
+  PTY_INPUT='
+' run_cmd env \
+    AWAIT_KEYPRESS_INDEX_FILE="$tmpdir/key-index" \
+    PATH="$stub_dir:$PATH" \
+    run-with-pty \
+    menu --start-selection 3 "Navigation Test:" \
     "First Item%printf first" \
     "Second Item%printf second" \
     "Third Item%printf third"
@@ -254,9 +278,16 @@ STUB_EOF
       ;;
   esac
 }
+run_test_case "menu responds to arrow up keys" menu_arrow_up_navigation
 
 # Test that menu responds to arrow down key
 menu_arrow_down_navigation() {
+  # Skip if socat not available
+  if ! command -v socat >/dev/null 2>&1; then
+    test_skip "requires socat"
+    return 0
+  fi
+  
   tmpdir=$(make_tempdir)
   
   stub_dir="$tmpdir/stubs"
@@ -278,15 +309,18 @@ esac
 STUB_EOF
   chmod +x "$stub_dir/await-keypress"
   
-  for stub in fathom-cursor fathom-terminal move-cursor cursor-blink stty; do
+  for stub in fathom-cursor fathom-terminal; do
     ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
   done
   
   export AWAIT_KEYPRESS_INDEX_FILE="$tmpdir/key-index"
   
-  PATH="$stub_dir:$ROOT_DIR/spells/cantrips:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" run_cmd \
-    env AWAIT_KEYPRESS_INDEX_FILE="$tmpdir/key-index" \
-    "$ROOT_DIR/spells/cantrips/menu" --start-selection 1 "Navigation Test:" \
+  PTY_INPUT='
+' run_cmd env \
+    AWAIT_KEYPRESS_INDEX_FILE="$tmpdir/key-index" \
+    PATH="$stub_dir:$PATH" \
+    run-with-pty \
+    menu --start-selection 1 "Navigation Test:" \
     "First Item%printf first" \
     "Second Item%printf second" \
     "Third Item%printf third"
@@ -307,6 +341,12 @@ STUB_EOF
 
 # Test wrapping: arrow up from first item wraps to last
 menu_arrow_wrapping() {
+  # Skip if socat not available
+  if ! command -v socat >/dev/null 2>&1; then
+    test_skip "requires socat"
+    return 0
+  fi
+  
   tmpdir=$(make_tempdir)
   
   stub_dir="$tmpdir/stubs"
@@ -328,15 +368,18 @@ esac
 STUB_EOF
   chmod +x "$stub_dir/await-keypress"
   
-  for stub in fathom-cursor fathom-terminal move-cursor cursor-blink stty; do
+  for stub in fathom-cursor fathom-terminal; do
     ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
   done
   
   export AWAIT_KEYPRESS_INDEX_FILE="$tmpdir/key-index"
   
-  PATH="$stub_dir:$ROOT_DIR/spells/cantrips:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" run_cmd \
-    env AWAIT_KEYPRESS_INDEX_FILE="$tmpdir/key-index" \
-    "$ROOT_DIR/spells/cantrips/menu" --start-selection 1 "Navigation Test:" \
+  PTY_INPUT='
+' run_cmd env \
+    AWAIT_KEYPRESS_INDEX_FILE="$tmpdir/key-index" \
+    PATH="$stub_dir:$PATH" \
+    run-with-pty \
+    menu --start-selection 1 "Navigation Test:" \
     "First Item%printf first" \
     "Second Item%printf second" \
     "Third Item%printf third"
@@ -360,13 +403,19 @@ run_test_case "menu wraps around when navigating with arrows" menu_arrow_wrappin
 
 # Test that long menu items are truncated to preserve command column
 menu_truncates_long_labels() {
+  # Skip if socat not available
+  if ! command -v socat >/dev/null 2>&1; then
+    test_skip "requires socat"
+    return 0
+  fi
+  
   tmpdir=$(make_tempdir)
   
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
   
-  # Link to stub imps (terminal I/O + interactive input stubs)
-  for stub in fathom-cursor fathom-terminal move-cursor cursor-blink stty await-keypress; do
+  # Link to stub imps (terminal query stubs only)
+  for stub in fathom-cursor fathom-terminal; do
     ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
   done
   
@@ -375,8 +424,11 @@ menu_truncates_long_labels() {
   long_label="This is a very long menu item label that should be truncated to preserve command column space"
   
   # Run menu with long label
-  PATH="$stub_dir:$ROOT_DIR/spells/cantrips:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" run_cmd \
-    "$ROOT_DIR/spells/cantrips/menu" "Test:" \
+  PTY_INPUT='
+' run_cmd env \
+    PATH="$stub_dir:$PATH" \
+    run-with-pty \
+    menu "Test:" \
     "${long_label}%printf 'test-cmd'"
   
   assert_success || return 1
