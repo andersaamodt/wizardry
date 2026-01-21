@@ -128,13 +128,6 @@ When adding a new stub, create it as a test imp:
 
 set -eu
 
-```sh
-#!/bin/sh
-# stub-example - test stub for example command
-# Example: stub-example arg1
-
-set -eu
-
 # Stub implementation
 printf 'mocked-output\n'
 ```
@@ -142,6 +135,93 @@ printf 'mocked-output\n'
 Make it executable: `chmod +x spells/.imps/test/stub-example`
 
 Then use it in tests via symlink, not by copying or inlining the stub code.
+
+## socat-Based Interactive Testing
+
+**For true interactive testing, use socat with real pseudo-TTY allocation.**
+
+### Why socat?
+
+- **Real PTY**: Allocates actual pseudo-TTY, not pipes or mocks
+- **Raw input**: Send raw escape bytes for arrow keys, control keys, etc.
+- **POSIX only**: No Tcl, expect, tmux, screen, or foreign languages
+- **Transcript-based**: Capture output, normalize, then assert
+
+### socat Test Helpers
+
+Located in `spells/.imps/test/socat-*`:
+
+- `socat-pty COMMAND [ARGS]` - Run command with real PTY via socat
+- `socat-send-keys KEYS` - Convert symbolic keys to raw escape bytes
+- `socat-normalize-output` - Strip ANSI codes and carriage returns from output
+
+### socat Testing Pattern
+
+```sh
+test_interactive_feature() {
+  tmpdir=$(make_tempdir)
+  
+  # Run command with real PTY via socat
+  # Output is captured automatically
+  output=$("$ROOT_DIR/spells/.imps/test/socat-pty" \
+    "$ROOT_DIR/spells/cantrips/ask-yn" "Proceed?")
+  
+  # Normalize output (strip ANSI codes, carriage returns)
+  normalized=$(printf '%s' "$output" | socat-normalize-output)
+  
+  # Assert on normalized transcript
+  case "$normalized" in
+    *"Proceed?"*)
+      return 0
+      ;;
+    *)
+      TEST_FAILURE_REASON="expected prompt in output"
+      return 1
+      ;;
+  esac
+}
+```
+
+### socat Key Conversion
+
+`socat-send-keys` converts symbolic names to raw escape bytes:
+
+- `enter` → `\r` (carriage return)
+- `up` → `ESC[A`
+- `down` → `ESC[B`
+- `left` → `ESC[D`
+- `right` → `ESC[C`
+- `escape` or `esc` → `ESC`
+- `tab` → `\t`
+- `space` → ` `
+- `backspace` → `\010`
+- Any other text → literal characters
+
+Example:
+```sh
+# Send arrow down, then enter
+keys=$(socat-send-keys down enter)
+```
+
+### socat Requirements
+
+- **Installation**: `banish 8` checks for socat and auto-installs if missing
+- **Manual install**: Via core menu or `spells/.arcana/core/install-socat`
+- **Fail loudly**: Tests fail if socat unavailable, never degrade to mocks
+
+### socat vs Stub Philosophy
+
+**When to use socat:**
+- Testing real interactive behavior (menu navigation, prompts with real TTY)
+- Validating cursor movements, colors, screen updates
+- Integration testing of interactive spells
+
+**When to use stubs:**
+- Unit testing non-interactive logic
+- Testing error conditions without TTY complexity
+- Fast, isolated tests of specific functions
+
+**Key principle**: Never mock interactive behavior. Use real PTY via socat or skip the test.
 
 ## CRITICAL: Test Result Accuracy
 
@@ -197,6 +277,8 @@ Test files mirror the `spells/` directory structure with `test-` prefix (all hyp
 
 ## Test Template
 
+### Basic Test Template
+
 ```sh
 #!/bin/sh
 
@@ -213,6 +295,44 @@ test_help() {
 }
 
 run_test_case "spell prints usage" test_help
+finish_tests
+```
+
+### Interactive Test Template (socat)
+
+For spells that require real TTY interaction:
+
+```sh
+#!/bin/sh
+
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/test_common.sh" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+# shellcheck source=/dev/null
+. "$test_root/test_common.sh"
+
+test_interactive_prompt() {
+  # Skip if socat not available
+  if ! command -v socat >/dev/null 2>&1; then
+    test_skip "requires socat for real PTY testing"
+    return 0
+  fi
+  
+  tmpdir=$(make_tempdir)
+  
+  # Run spell with real PTY via socat
+  output=$("$ROOT_DIR/spells/.imps/test/socat-pty" \
+    "$ROOT_DIR/spells/category/spell-name" "arg1")
+  
+  # Normalize output (strip ANSI, CR)
+  normalized=$(printf '%s' "$output" | socat-normalize-output)
+  
+  # Assert on normalized transcript
+  assert_output_contains "expected text" || return 1
+}
+
+run_test_case "spell shows interactive prompt" test_interactive_prompt
 finish_tests
 ```
 
