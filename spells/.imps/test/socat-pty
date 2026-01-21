@@ -1,0 +1,67 @@
+#!/bin/sh
+# socat-pty COMMAND [ARGS...] - run command with real pseudo-TTY via socat
+# Example: socat-pty menu "Test" "Item%echo hi"
+#
+# This imp allocates a real pseudo-TTY using socat and runs the command on it.
+# Output is captured from the PTY and returned.
+# Use with socat-send-keys to drive interactive programs.
+
+set -eu
+
+if [ "$#" -lt 1 ]; then
+  printf 'socat-pty: command required\n' >&2
+  exit 1
+fi
+
+# Check if socat is available
+if ! command -v socat >/dev/null 2>&1; then
+  printf 'socat-pty: socat not found\n' >&2
+  printf 'socat-pty: install socat for interactive testing with real PTY\n' >&2
+  exit 1
+fi
+
+# Create temporary directory for PTY communication
+tmpdir=${TMPDIR:-/tmp}
+pty_dir=$(mktemp -d "$tmpdir/socat-pty.XXXXXX")
+trap 'rm -rf "$pty_dir"' EXIT INT TERM
+
+# Create named pipes for input and output
+input_fifo="$pty_dir/input"
+output_file="$pty_dir/output"
+mkfifo "$input_fifo"
+
+# Start socat with PTY on both sides for full interactive capability
+# Left side: PTY for the command, Right side: PTY for test control
+# We use exec to redirect output to a file while keeping the PTY interactive
+(
+  # Execute the command with a PTY allocated by socat
+  socat \
+    "PTY,link=$pty_dir/pty,raw,echo=0" \
+    "EXEC:$*,pty,stderr" \
+    > "$output_file" 2>&1
+) &
+socat_pid=$!
+
+# Wait a moment for PTY to be ready
+sleep 0.1
+
+# Wait for socat to complete or timeout
+timeout=5
+elapsed=0
+while kill -0 "$socat_pid" 2>/dev/null && [ "$elapsed" -lt "$timeout" ]; do
+  sleep 0.1
+  elapsed=$((elapsed + 1))
+done
+
+# Kill socat if still running
+if kill -0 "$socat_pid" 2>/dev/null; then
+  kill "$socat_pid" 2>/dev/null || :
+  wait "$socat_pid" 2>/dev/null || :
+fi
+
+# Output the captured content
+if [ -f "$output_file" ]; then
+  cat "$output_file"
+fi
+
+# Cleanup is handled by trap
