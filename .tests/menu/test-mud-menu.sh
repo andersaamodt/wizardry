@@ -10,53 +10,7 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-make_stub_menu() {
-  tmp=$1
-  cat >"$tmp/menu" <<'SH'
-#!/bin/sh
-printf '%s\n' "$@" >>"$MENU_LOG"
-kill -s INT "$PPID"
-exit 0
-SH
-  chmod +x "$tmp/menu"
-}
 
-make_stub_colors() {
-  tmp=$1
-  cat >"$tmp/colors" <<'SH'
-#!/bin/sh
-RESET=''
-CYAN=''
-GREY=''
-SH
-  chmod +x "$tmp/colors"
-}
-
-make_stub_temp_file() {
-  tmp=$1
-  cat >"$tmp/temp-file" <<'SH'
-#!/bin/sh
-# Stub temp-file that creates a predictable temp file
-prefix=${1:-wizardry}
-temp_dir=${WIZARDRY_TMPDIR:-${TMPDIR:-/tmp}}
-# Create a unique file using PID
-temp_file="$temp_dir/${prefix}.$$"
-: > "$temp_file"
-printf '%s\n' "$temp_file"
-SH
-  chmod +x "$tmp/temp-file"
-}
-
-make_stub_cleanup_file() {
-  tmp=$1
-  cat >"$tmp/cleanup-file" <<'SH'
-#!/bin/sh
-# Stub cleanup-file that removes the file
-[ -n "${1:-}" ] && [ -f "$1" ] && rm -f "$1"
-exit 0
-SH
-  chmod +x "$tmp/cleanup-file"
-}
 
 make_stub_check_cd_hook() {
   tmp=$1
@@ -140,10 +94,10 @@ SH
 
 test_mud_install_menu_calls_tor_installer() {
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
-  make_stub_colors "$tmp"
-  make_stub_temp_file "$tmp"
-  make_stub_cleanup_file "$tmp"
+  write-stub-menu "$tmp"
+  write-stub-colors "$tmp"
+  write-stub-temp-file "$tmp"
+  write-stub-cleanup-file "$tmp"
   cat >"$tmp/require-command" <<'SH'
 #!/bin/sh
 command -v "$1" >/dev/null 2>&1
@@ -169,7 +123,7 @@ SH
 test_mud_install_menu_requires_menu_helper() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_colors "$tmp"
+  write-stub-colors "$tmp"
   cat >"$tmp/require-command" <<'SH'
 #!/bin/sh
 printf '%s\n' "The MUD Install menu needs the 'menu' command to present options." >&2
@@ -193,10 +147,10 @@ SH
 
 test_mud_install_menu_reports_menu_failure() {
   tmp=$(make_tempdir)
-  make_stub_colors "$tmp"
+  write-stub-colors "$tmp"
   make_failing_menu "$tmp"
-  make_stub_temp_file "$tmp"
-  make_stub_cleanup_file "$tmp"
+  write-stub-temp-file "$tmp"
+  write-stub-cleanup-file "$tmp"
   cat >"$tmp/require-command" <<'SH'
 #!/bin/sh
 command -v "$1" >/dev/null 2>&1
@@ -220,9 +174,9 @@ run_test_case "mud-menu surfaces menu failures" test_mud_install_menu_reports_me
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
   tmp=$(make_tempdir)
-  make_stub_colors "$tmp"
-  make_stub_temp_file "$tmp"
-  make_stub_cleanup_file "$tmp"
+  write-stub-colors "$tmp"
+  write-stub-temp-file "$tmp"
+  write-stub-cleanup-file "$tmp"
   
   # Create menu stub that returns escape status
   cat >"$tmp/menu" <<'SH'
@@ -262,9 +216,9 @@ run_test_case "mud-menu ESC/Exit behavior" test_esc_exit_behavior
 # Test cd hook toggle shows [ ] when not installed
 test_cd_hook_toggle_unchecked() {
   tmp=$(make_tempdir)
-  make_stub_colors "$tmp"
-  make_stub_temp_file "$tmp"
-  make_stub_cleanup_file "$tmp"
+  write-stub-colors "$tmp"
+  write-stub-temp-file "$tmp"
+  write-stub-cleanup-file "$tmp"
   
   # Create menu stub that logs and exits
   cat >"$tmp/menu" <<'SH'
@@ -309,9 +263,9 @@ SH
 # Test cd hook toggle shows [X] when installed
 test_cd_hook_toggle_checked() {
   tmp=$(make_tempdir)
-  make_stub_colors "$tmp"
-  make_stub_temp_file "$tmp"
-  make_stub_cleanup_file "$tmp"
+  write-stub-colors "$tmp"
+  write-stub-temp-file "$tmp"
+  write-stub-cleanup-file "$tmp"
   
   # Create menu stub that logs and exits
   cat >"$tmp/menu" <<'SH'
@@ -367,9 +321,9 @@ run_test_case "mud-menu --help shows usage" test_mud_install_menu_help
 
 test_all_features_toggle_shown() {
   tmp=$(make_tempdir)
-  make_stub_colors "$tmp"
-  make_stub_temp_file "$tmp"
-  make_stub_cleanup_file "$tmp"
+  write-stub-colors "$tmp"
+  write-stub-temp-file "$tmp"
+  write-stub-cleanup-file "$tmp"
   
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
@@ -413,9 +367,9 @@ SH
 
 test_all_planned_features_shown() {
   tmp=$(make_tempdir)
-  make_stub_colors "$tmp"
-  make_stub_temp_file "$tmp"
-  make_stub_cleanup_file "$tmp"
+  write-stub-colors "$tmp"
+  write-stub-temp-file "$tmp"
+  write-stub-cleanup-file "$tmp"
   
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
@@ -471,9 +425,9 @@ run_test_case "All planned MUD features shown" test_all_planned_features_shown
 # Test that toggle selection keeps cursor position
 test_toggle_keeps_cursor_position_cd_hook() {
   tmp=$(make_tempdir)
-  make_stub_colors "$tmp"
-  make_stub_temp_file "$tmp"
-  make_stub_cleanup_file "$tmp"
+  write-stub-colors "$tmp"
+  write-stub-temp-file "$tmp"
+  write-stub-cleanup-file "$tmp"
   
   cat >"$tmp/require-command" <<'SH'
 #!/bin/sh
@@ -573,9 +527,9 @@ SH
 # Test that non-toggle action resets cursor to first item
 test_non_toggle_resets_cursor() {
   tmp=$(make_tempdir)
-  make_stub_colors "$tmp"
-  make_stub_temp_file "$tmp"
-  make_stub_cleanup_file "$tmp"
+  write-stub-colors "$tmp"
+  write-stub-temp-file "$tmp"
+  write-stub-cleanup-file "$tmp"
   
   cat >"$tmp/require-command" <<'SH'
 #!/bin/sh

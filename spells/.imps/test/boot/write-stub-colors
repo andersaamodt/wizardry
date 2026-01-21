@@ -1,0 +1,15 @@
+#!/bin/sh
+# write-stub-colors DIR - create a colors stub script in DIR
+# Creates a stub that provides empty color variables for testing
+set -eu
+
+dir=$1
+cat <<'STUB' >"$dir/colors"
+#!/bin/sh
+RESET=''
+CYAN=''
+GREY=''
+STUB
+chmod +x "$dir/colors"
+
+

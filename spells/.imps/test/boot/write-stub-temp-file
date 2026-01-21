@@ -1,0 +1,19 @@
+#!/bin/sh
+# write-stub-temp-file DIR - create a temp-file stub script in DIR
+# Creates a stub that creates predictable temp files for testing
+set -eu
+
+dir=$1
+cat <<'STUB' >"$dir/temp-file"
+#!/bin/sh
+# Stub temp-file that creates a predictable temp file
+prefix=${1:-wizardry}
+temp_dir=${WIZARDRY_TMPDIR:-${TMPDIR:-/tmp}}
+# Create a unique file using PID
+temp_file="$temp_dir/${prefix}.$$"
+: > "$temp_file"
+printf '%s\n' "$temp_file"
+STUB
+chmod +x "$dir/temp-file"
+
+

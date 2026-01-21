@@ -10,16 +10,6 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-make_stub_menu() {
-  tmp=$1
-  cat >"$tmp/menu" <<'SH'
-#!/bin/sh
-printf '%s\n' "$@" >>"$MENU_LOG"
-exit 0
-SH
-  chmod +x "$tmp/menu"
-}
-
 make_stub_require() {
   tmp=$1
   cat >"$tmp/require-command" <<'SH'
@@ -33,7 +23,7 @@ SH
 test_system_menu_checks_requirements() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
+  write-stub-menu "$tmp"
   make_stub_require "$tmp"
   env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/system-menu" &
   menu_pid=$!
@@ -46,7 +36,7 @@ test_system_menu_checks_requirements() {
 test_system_menu_includes_test_utilities() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  make_stub_menu "$tmp"
+  write-stub-menu "$tmp"
   make_stub_require "$tmp"
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
