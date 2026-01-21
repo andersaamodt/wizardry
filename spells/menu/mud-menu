@@ -17,9 +17,6 @@ set -eu
 
 . env-clear
 
-# Catch Ctrl-C and TERM signal to exit 1 cleanly
-trap 'exit 0' INT TERM
-
 # Load color palette (colors handles terminal capability detection internally)
 # shellcheck source=/dev/null
 . "$(command -v colors)"
@@ -35,7 +32,7 @@ CONFIG_FILE="$spell_home/.mud"
 # Use temp file imp for selection tracking
 SELECTION_FILE=$(temp-file mud-menu-selection)
 export SELECTION_FILE
-trap 'cleanup-file "$SELECTION_FILE"' EXIT INT TERM
+trap 'cleanup-file "$SELECTION_FILE"; exit 0' EXIT INT TERM
 
 # Ensure spellbook directory and config file exist
 mkdir -p "$spell_home"
