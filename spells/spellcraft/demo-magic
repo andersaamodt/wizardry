@@ -37,6 +37,17 @@ demo_level() {
   printf '%s%s=== Level %d: %s ===%s\n' "$YELLOW" "$BOLD" "$level" "$level_name" "$RESET"
   printf '\n'
   
+  # Run banish to validate and set up this level
+  # This ensures prerequisites are met, just like a real user would do
+  if [ "$level" -gt 0 ]; then
+    say_narrator "The wizard prepares the ritual circle for level $level..."
+    # Run banish for levels 0 through current level to ensure setup
+    if command -v banish >/dev/null 2>&1; then
+      banish "$level" --no-tests >/dev/null 2>&1 || true
+    fi
+    printf '\n'
+  fi
+  
   # Add level-specific narration and demonstrations
   case "$level" in
     0)
@@ -97,7 +108,7 @@ demo_level() {
       
       if command -v fathom-terminal >/dev/null 2>&1; then
         printf '%sThe wizard casts %s.%s\n' "$CYAN" "$(spell_name fathom-terminal)" "$RESET"
-        fathom-terminal 2>&1 || printf '(Terminal dimensions unavailable)\n'
+        fathom-terminal 2>&1
         printf '\n'
         demo_pause
       fi
@@ -110,7 +121,7 @@ demo_level() {
       
       if command -v colors >/dev/null 2>&1; then
         printf '%sThe wizard casts %s.%s\n' "$CYAN" "$(spell_name colors)" "$RESET"
-        colors 2>&1 || printf '(Colors already loaded)\n'
+        colors 2>&1
         printf '\n'
         demo_pause
       fi
