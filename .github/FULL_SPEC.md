@@ -433,6 +433,14 @@ Wizardry uses several focused documentation files. Keep content in the right doc
 
 ### Testing Infrastructure (Level 14)
 
+**First-Class Inclusion Policy:**
+- All testing dependencies and tools must be first-class citizens (no second-class, hidden, or afterthought includes)
+- First-class means: install/uninstall scripts in `.arcana/core/`, toggle in core-menu, banish level check with self-healing, comprehensive documentation
+- If a tool is important enough to use, it's important enough to be fully integrated into the project infrastructure
+- This applies to socat, script (util-linux), bwrap, and any future testing tools
+
+**PTY Testing Tools:**
+
 - Test framework in `.tests/` directory mirrors `spells/` structure
 - Every spell must have corresponding test file: `spells/category/spell-name` → `.tests/category/test-spell-name.sh`
 - Test naming uses hyphens: `test-spell-name.sh` not `test_spell-name.sh`

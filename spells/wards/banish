@@ -1705,6 +1705,36 @@ HEREDOC_TEST
         fi
       fi
 
+      # Check script for PTY-based testing
+      if command -v script >/dev/null 2>&1; then
+        printf '  %s✓%s script: Available for PTY testing\n' "$green" "$reset"
+      else
+        printf '  %s✗%s script: Not found (required for PTY testing)\n' "$red" "$reset"
+        if [ "$skip_heal" -eq 0 ]; then
+          manage_system_command=""
+          if command -v manage-system-command >/dev/null 2>&1; then
+            manage_system_command="manage-system-command"
+          elif [ -x "${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command" ]; then
+            manage_system_command="${WIZARDRY_DIR}/spells/.arcana/core/manage-system-command"
+          fi
+          if [ -n "$manage_system_command" ]; then
+            printf '    Attempting to install script (util-linux)...\n'
+            if "$manage_system_command" script util-linux >/dev/null 2>&1; then
+              printf '    %s✓%s script installed successfully\n' "$green" "$reset"
+            else
+              printf '    %s✗%s script installation failed\n' "$red" "$reset"
+              printf '    PTY-based tests require script command from util-linux\n'
+              return 1
+            fi
+          else
+            printf '    %s✗%s Cannot install script (manage-system-command not available)\n' "$red" "$reset"
+            return 1
+          fi
+        else
+          return 1
+        fi
+      fi
+
       # Check extended attributes helpers
       xattr_helper=""
       if command -v xattr >/dev/null 2>&1; then
