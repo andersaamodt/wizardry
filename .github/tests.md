@@ -149,13 +149,73 @@ Then use it in tests via symlink, not by copying or inlining the stub code.
 
 ### socat Test Helpers
 
-Located in `spells/.imps/test/socat-*`:
+Located in `spells/.imps/test/`:
 
-- `socat-pty COMMAND [ARGS]` - Run command with real PTY via socat
+- `run-with-pty COMMAND [ARGS]` - **Recommended** - Run command in real PTY with symbolic keys
+- `socat-pty COMMAND [ARGS]` - Advanced PTY allocation
 - `socat-send-keys KEYS` - Convert symbolic keys to raw escape bytes
 - `socat-normalize-output` - Strip ANSI codes and carriage returns from output
 
-### socat Testing Pattern
+### run-with-pty Helper (Recommended)
+
+**Simplest way to run commands in real PTY via socat:**
+
+```sh
+test_menu_navigation() {
+  # Skip if socat not available
+  if ! command -v socat >/dev/null 2>&1; then
+    test_skip "requires socat"
+    return 0
+  fi
+  
+  # Use PTY_KEYS for symbolic key input (converted to escape sequences)
+  PTY_KEYS="down down enter" run_cmd run-with-pty \
+    menu "Select option:" \
+    "First%cmd1" "Second%cmd2" "Third%cmd3"
+  
+  assert_success || return 1
+  assert_output_contains "cmd2" || return 1  # Selected second item
+}
+```
+
+**Environment variables:**
+- `PTY_KEYS` - Symbolic key names converted to escape sequences (e.g., "up down enter")
+  - Recommended for arrow keys, enter, etc.
+  - More readable than raw bytes
+  - Converts to actual terminal escape sequences
+- `PTY_INPUT` - Raw bytes to send (e.g., "text\n")
+  - Use for simple text input
+- If neither provided, defaults to single newline
+
+**Supported symbolic keys:**
+- `enter` → `\r` (carriage return)
+- `up`, `down`, `left`, `right` → Arrow escape sequences (`\033[A`, `\033[B`, etc.)
+- `escape`/`esc`, `tab`, `space`, `backspace`
+- Any other text → literal characters
+
+**Example with terminal query stubs:**
+```sh
+test_with_stubs() {
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/stubs"
+  mkdir -p "$stub_dir"
+  
+  # Stub terminal queries for CI compatibility
+  for stub in fathom-cursor fathom-terminal; do
+    ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
+  done
+  
+  # Arrow keys go through real PTY as escape sequences!
+  PTY_KEYS="up enter" run_cmd env \
+    PATH="$stub_dir:$PATH" \
+    run-with-pty \
+    menu "Test:" "A%cmd1" "B%cmd2"
+  
+  assert_success
+}
+```
+
+### socat Testing Pattern (Advanced)
 
 ```sh
 test_interactive_feature() {
