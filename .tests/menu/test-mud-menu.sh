@@ -449,6 +449,15 @@ SH
   make_stub_mud_config "$tmp"
   make_stub_check_command_not_found_hook "$tmp"
   
+  # Create toggle stubs
+  cat >"$tmp/toggle-cd" <<'SH'
+#!/bin/sh
+# Simulate toggling cd-look in config
+spellbook_dir=${SPELLBOOK_DIR:-$HOME/.spellbook}
+printf 'cd-look=1\n' >> "$spellbook_dir/.mud"
+SH
+  chmod +x "$tmp/toggle-cd"
+  
   # Create a menu stub that logs --start-selection argument and simulates toggle action
   call_count_file="$tmp/call_count"
   printf '0\n' >"$call_count_file"
@@ -458,7 +467,7 @@ SH
   mkdir -p "$spellbook_dir"
   : >"$spellbook_dir/.mud"
   
-  # Menu stub that simulates CD hook toggle by directly modifying the config file
+  # Menu stub that executes the selected command
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
 call_count=$(cat "$CALL_COUNT_FILE")
@@ -479,12 +488,19 @@ printf '%s\n' "START_SELECTION=$start_sel" >>"$MENU_LOG"
 call_count=$((call_count + 1))
 printf '%s\n' "$call_count" >"$CALL_COUNT_FILE"
 if [ "$call_count" -eq 1 ]; then
-  # First call: simulate CD hook toggle by directly modifying config file and outputting selection
-  spellbook_dir=${SPELLBOOK_DIR:-$HOME/.spellbook}
-  printf 'cd-look=1\n' >> "$spellbook_dir/.mud"
-  # Output the selection that was made (CD hook toggle is item 3)
-  printf '%s\n' "[ ] Look on directory change (cd hook)%toggle-cd"
-  exit 0
+  # First call: execute the CD hook toggle command (item 3)
+  # Find the CD hook item and extract its command
+  for item in "$@"; do
+    case "$item" in
+      *"Look on directory change"*)
+        # Extract command part after %
+        cmd="${item#*%}"
+        # Execute the command to update config and write selection
+        eval "$cmd"
+        exit 0
+        ;;
+    esac
+  done
 fi
 # Second call: exit
 kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
