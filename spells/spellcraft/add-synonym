@@ -66,7 +66,7 @@ set -eu
     *[/\ \	\'\"\$\`\\\|\&\;\(\)\<\>\*\[\]]*)
       printf '%s\n' "add-synonym: synonym word cannot contain spaces or invalid special characters" >&2
       printf '%s\n' "Invalid characters: / \\ | & ; ( ) < > * [ ] \$ \` ' \" space tab" >&2
-      printf '%s\n' "Valid special characters: - . : = + , @ ! ? %% ^ ~ (- and . cannot be first)" >&2
+      printf '%s\n' "Valid special characters: - . : = + , @ ! ? % ^ ~ (- and . cannot be first)" >&2
       exit 2
       ;;
     -*)
