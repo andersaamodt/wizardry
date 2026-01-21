@@ -172,7 +172,7 @@ if [ -n "${WIZARDRY_INSTALL_DIR-}" ]; then
 elif [ -n "${WIZARDRY_ROOT-}" ]; then
         INSTALL_INPUT=$WIZARDRY_ROOT
 else
-        message="Wizardry install directory? [$PROMPT_DEFAULT] "
+        message="Wizardry install directory (or press Enter for default)? [$PROMPT_DEFAULT] "
         # Check for interactive input. When running via curl | sh, stdin is a pipe
         # containing the script content, not user input. We must check if we can
         # read from /dev/tty instead.
@@ -690,43 +690,10 @@ else
 fi
 substep_msg "This sets up wizardry commands in your terminal"
 
-# Ask about MUD features BEFORE writing to rc file (so we only write once)
-install_mud=0
-printf '\n'
-if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
-        # In non-interactive mode, skip MUD installation by default
-        # unless explicitly requested via environment variable
-        if [ "${WIZARDRY_INSTALL_MUD-}" = "1" ]; then
-                install_mud=1
-        fi
-else
-        # Handle different input scenarios for curl|sh and other non-interactive cases
-        if [ ! -t 0 ]; then
-                # stdin is not a terminal (e.g., curl|sh, wget|sh, or piped input)
-                if [ -r /dev/tty ]; then
-                        # /dev/tty is available - force ask-yn to use it instead of stdin
-                        # This prevents ask-yn from trying to read from stdin (which contains the script)
-                        if ASK_CANTRIP_INPUT=tty "$ASK_YN" "Also install MUD (multi-user dungeon) features?" yes >/dev/null; then
-                                install_mud=1
-                        fi
-                elif [ -z "${ASK_CANTRIP_INPUT-}" ]; then
-                        # No /dev/tty and no ASK_CANTRIP_INPUT set - use default
-                        if ASK_CANTRIP_INPUT=none "$ASK_YN" "Also install MUD (multi-user dungeon) features?" yes >/dev/null; then
-                                install_mud=1
-                        fi
-                else
-                        # ASK_CANTRIP_INPUT is already set by the user - respect it
-                        if "$ASK_YN" "Also install MUD (multi-user dungeon) features?" yes >/dev/null; then
-                                install_mud=1
-                        fi
-                fi
-        else
-                # stdin is a terminal - normal interactive mode
-                if "$ASK_YN" "Also install MUD (multi-user dungeon) features?" yes >/dev/null; then
-                        install_mud=1
-                fi
-        fi
-fi
+# MUD features are now always enabled by default (no prompt)
+# The config will default to enabled when unset, making MUD discoverable in main-menu
+# Users can disable via mud-menu after installation if desired
+install_mud=1
 
 # Confirm with the user (or their automation) before editing their configuration.
 # When stdin is not interactive we fall back to the non-blocking ASK_CANTRIP_INPUT=none
@@ -778,17 +745,9 @@ if [ -x "$CORE_INSTALLER" ]; then
         info_msg "Verifying required tools:"
         
         # Check and display status of each core dependency
-        # List common prerequisites
-        prereq_git_ok=0
+        # List all common prerequisites together
         prereq_tar_ok=0
         prereq_curl_wget_ok=0
-        
-        if command -v git >/dev/null 2>&1; then
-                prereq_git_ok=1
-                substep_msg "git: ${GREEN}✓ installed${RESET}"
-        else
-                substep_msg "git: ${YELLOW}not found (will attempt install)${RESET}"
-        fi
         
         if command -v tar >/dev/null 2>&1; then
                 prereq_tar_ok=1
@@ -805,6 +764,12 @@ if [ -x "$CORE_INSTALLER" ]; then
                 substep_msg "wget: ${GREEN}✓ installed${RESET}"
         else
                 substep_msg "curl/wget: ${YELLOW}neither found (needed for remote downloads)${RESET}"
+        fi
+        
+        if command -v git >/dev/null 2>&1; then
+                substep_msg "git: ${GREEN}✓ installed${RESET}"
+        else
+                substep_msg "git: ${YELLOW}not found (will attempt install)${RESET}"
         fi
         
         # Platform-specific checks
@@ -1006,23 +971,12 @@ fi
 # NOTE: Pre-installing spells is no longer needed.
 # Users can still manually run spell install() functions for customizations.
 
-# MUD Installation (optional) - already asked earlier, now configure if enabled
+# MUD Installation - features are always installed and enabled by default
+# No config is created during install; features default to enabled when unset
+# This keeps the install script simple and relies on runtime defaults in menus
 if [ "$install_mud" -eq 1 ]; then
         section_msg "Installing MUD"
-
-        # CD hook is now built into invoke-wizardry, so we just need to enable it
-        # Enable CD hook by default using toggle-cd
-        if [ -x "$TOGGLE_CD" ]; then
-                "$TOGGLE_CD" >/dev/null 2>&1 || true
-                substep_msg "CD hook enabled (runs 'look' on directory change)"
-        fi
-
-        # Enable all other MUD features using toggle-all-mud
-        if [ -x "$TOGGLE_ALL_MUD" ]; then
-                "$TOGGLE_ALL_MUD" --enable >/dev/null 2>&1 || true
-                substep_msg "MUD features configured"
-        fi
-
+        substep_msg "MUD features will be enabled by default"
         success_msg "MUD features installed"
 fi
 

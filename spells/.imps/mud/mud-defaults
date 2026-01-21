@@ -1,0 +1,35 @@
+#!/bin/sh
+# mud-defaults FEATURE_NAME - Get default value for a MUD config setting when unset
+# Returns the preferred default value for MUD features
+#
+# Enabled by default (returns 1): parse-enabled, mud-enabled, cd-look
+# Disabled by default (returns 0): avatar, touch-hook
+# Unknown features default to 0 for safety
+
+set -eu
+
+feature=${1-}
+
+if [ -z "$feature" ]; then
+  printf '%s\n' "mud-defaults: feature name required" >&2
+  exit 1
+fi
+
+# MUD feature defaults:
+# - parse-enabled: 1 (non-invasive, adds convenience)
+# - mud-enabled: 1 (show MUD in menu - essential for discoverability)
+# - cd-look: 1 (gateway feature demonstrating MUD value)
+# - avatar: 0 (invasive - literal directory following user)
+# - touch-hook: 0 (advanced feature, better as opt-in)
+case "$feature" in
+  parse-enabled|mud-enabled|cd-look)
+    printf '1'
+    ;;
+  avatar|touch-hook)
+    printf '0'
+    ;;
+  *)
+    # Unknown feature - default to disabled for safety
+    printf '0'
+    ;;
+esac
