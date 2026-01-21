@@ -23,8 +23,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install bubblewrap dependency
-        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap socat
       - name: Configure bubblewrap user namespaces
         run: |
           sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
@@ -46,5 +46,24 @@ jobs:
             echo "bubblewrap unusable" >&2
             exit 1
           fi
-      - name: Run demo-magic
-        run: . spells/.imps/sys/invoke-wizardry && ./spells/spellcraft/demo-magic all
+      - name: Run demo-magic with PTY
+        run: |
+          . spells/.imps/sys/invoke-wizardry
+          # Create PTY wrapper for demo (socat provides real terminal)
+          cat > /tmp/run-with-pty.sh << 'PTYWRAPPER'
+          #!/bin/sh
+          set -eu
+          test_dir=$(mktemp -d "${TMPDIR:-/tmp}/demo-pty.XXXXXX")
+          trap 'rm -rf "$test_dir"' EXIT INT TERM
+          {
+            printf '#!/bin/sh\nexport PATH='"'"'%s'"'"'\nexec' "$PATH"
+            for arg in "$@"; do
+              printf " '%s'" "$(printf '%s' "$arg" | sed "s/'/'\\\\''/g")"
+            done
+            printf '\n'
+          } > "$test_dir/cmd.sh"
+          chmod +x "$test_dir/cmd.sh"
+          printf '' | socat - "EXEC:$test_dir/cmd.sh,pty,stderr" 2>&1
+          PTYWRAPPER
+          chmod +x /tmp/run-with-pty.sh
+          /tmp/run-with-pty.sh ./spells/spellcraft/demo-magic all
