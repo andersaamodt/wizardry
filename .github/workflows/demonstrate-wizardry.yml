@@ -62,8 +62,13 @@ jobs:
           # Create wrapper that sources invoke-wizardry and runs demo
           cat > "$test_dir/cmd.sh" << 'INNERCMD'
           #!/bin/sh
-          cd /home/runner/work/wizardry/wizardry
-          . spells/.imps/sys/invoke-wizardry
+          set -eu
+          cd /home/runner/work/wizardry/wizardry || exit 2
+          if [ ! -f spells/.imps/sys/invoke-wizardry ]; then
+            echo "Error: invoke-wizardry not found" >&2
+            exit 2
+          fi
+          . spells/.imps/sys/invoke-wizardry || exit 2
           exec ./spells/spellcraft/demo-magic all
           INNERCMD
           chmod +x "$test_dir/cmd.sh"

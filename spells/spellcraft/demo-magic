@@ -81,8 +81,10 @@ demo_level() {
       
       if command -v generate-glosses >/dev/null 2>&1; then
         printf '%sThe wizard casts %s.%s\n' "$CYAN" "$(spell_name generate-glosses)" "$RESET"
-        # Filter out the verbose function definitions, show only summary
-        generate-glosses 2>&1 | grep -v "^#" | grep -v "^  " | grep -v "return 127" | grep -v "^}" | grep -v "^[a-z_-]*() {" || true
+        # Filter to show only meaningful output (not verbose function definitions)
+        generate-glosses 2>&1 | \
+          grep -E "^generate-glosses: (Collecting|Scanning|Found|Gloss generation|  )" | \
+          grep -v "Skipping spell" || true
         printf '\n'
         demo_pause
       fi
