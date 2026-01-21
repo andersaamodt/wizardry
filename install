@@ -154,13 +154,16 @@ download_via_git() {
         # Download wizardry using git clone with a shallow clone to minimize download size.
         # This sets up a proper git repository with remote configured, enabling update-wizardry
         # to work via git pull.
-        # Args: dest_dir repo_url
+        # Args: dest_dir repo_url [branch]
         dest=$1
         repo_url=$2
+        branch=${3:-main}
         
-        # Use shallow clone to minimize download size (~1MB vs ~550KB tarball)
-        # This is acceptable tradeoff for getting a proper git repo
-        if git clone --depth=1 "$repo_url" "$dest" >/dev/null 2>&1; then
+        # Use shallow clone of main branch to minimize download size (~1MB vs ~550KB tarball)
+        # --depth=1 creates a shallow clone (only latest commit)
+        # --branch=main ensures we clone main and set up tracking for it
+        # This enables git pull to work for updating wizardry
+        if git clone --depth=1 --branch="$branch" "$repo_url" "$dest" >/dev/null 2>&1; then
                 return 0
         fi
         return 1
