@@ -988,7 +988,9 @@ else
 fi
 
 # Only check coverage and extraneous files when testing from Level 0 (Common Tests)
-# This ensures these checks only run when common tests are included
+# This ensures these checks only run when common tests are included, which makes sense
+# because coverage/extraneous checks are part of the common test quality gates, not
+# spell-level tests. When testing higher levels only, we don't need these checks.
 if [ "$min_level_range" -eq 0 ]; then
   coverage_total=0
   coverage_covered=0
