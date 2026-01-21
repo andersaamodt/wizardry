@@ -456,12 +456,22 @@ emit_line "# ===================================================================
 emit_line ""
 
 # Helper function to check if a synonym word is valid
+# Valid characters for aliases: alphanumeric, hyphens, dots, colons, equals, plus, comma,
+# at-sign, exclamation, question, percent, caret, tilde
+# Invalid: leading dash/dot, spaces, tabs, slashes, quotes, special shell chars
 is_synonym_valid() {
   syn_word=$1
   
   # Check for invalid characters
+  # Reject: empty, space, tab, /, ', ", $, `, \, |, &, ;, (, ), <, >, *, [, ]
+  # Allow: numbers, hyphens, and special chars: . : = + , @ ! ? % ^ ~ (but not - or . at start)
+  # Pattern breakdown:
+  #   '' = empty string
+  #   *[/\ \	\'\"\$\`\\\|\&\;\(\)\<\>\*\[\]]* = contains any invalid char
+  #   -* = starts with dash
+  #   .* = starts with dot
   case "$syn_word" in
-    ''|*[/\ \	\'\"\$\`\\\|\&\;\(\)\<\>\*\?\[\]]*|-*|.*|[0-9]*)
+    ''|*[/\ \	\'\"\$\`\\\|\&\;\(\)\<\>\*\[\]]*|-*|.*)
       return 1
       ;;
   esac
@@ -490,6 +500,25 @@ uname|uniq|wc|xargs|xattr)
   esac
   
   return 0
+}
+
+# Helper function to check if a name can be a valid POSIX function name
+# Function names can only contain: alphanumeric and underscore
+# They cannot start with a digit
+# Returns 0 if can be function, 1 if must use alias
+can_be_function_name() {
+  check_name=$1
+  
+  # Check if name contains only alphanumeric and underscore
+  # And does NOT start with a digit
+  case "$check_name" in
+    # Starts with digit - cannot be function name
+    [0-9]*) return 1 ;;
+    # Contains characters other than alphanumeric and underscore - cannot be function name
+    *[!a-zA-Z0-9_]*) return 1 ;;
+    # Valid function name
+    *) return 0 ;;
+  esac
 }
 
 # Track seen synonyms to avoid duplicates
@@ -537,51 +566,49 @@ if [ -f "$synonym_file" ]; then
     # Add to synonym words list for first-word gloss generation
     synonym_words="$synonym_words $word"
     
-    # Generate aliases for hyphenated synonyms, functions for non-hyphenated (if no conflict)
-    case "$word" in
-      *-*)
-        # Hyphenated synonym - must use alias (POSIX limitation)
-        # For hyphenated targets, convert hyphens to spaces for first-word gloss routing
-        case "$target" in
-          *-*)
-            # Convert hyphens to spaces ONLY in spell name, not in directory path
-            # E.g., "translocation/jump-to-marker" → "translocation/jump to marker"
-            #       "jump-to-marker" → "jump to marker"
-            case "$target" in
-              */*)
-                # Has directory prefix - preserve it
-                dir_prefix="${target%/*}/"
-                spell_part="${target##*/}"
-                alias_target="$dir_prefix$(printf '%s' "$spell_part" | sed 's/-/ /g')"
-                ;;
-              *)
-                # No directory - convert all hyphens
-                alias_target=$(printf '%s' "$target" | sed 's/-/ /g')
-                ;;
-            esac
-            emit_line "alias $word='$alias_target'"
-            ;;
-          *)
-            # Single-word target, use as-is
-            emit_line "alias $word='$target'"
-            ;;
-        esac
-        ;;
-      *)
-        # Non-hyphenated synonym - check if it conflicts with first-word gloss
-        case "$first_words_seen" in
-          *" $word "*)
-            # Conflicts with first-word gloss - skip (gloss will handle via parse)
-            [ "$quiet" -eq 0 ] && info "Synonym '$word' handled by first-word gloss" >&2
-            ;;
-          *)
-            # No conflict - generate function for direct invocation
-            # For hyphenated targets, use the hyphenated form directly (it will have an alias)
-            emit_line "$word() { $target \"\$@\"; }"
-            ;;
-        esac
-        ;;
-    esac
+    # Generate aliases or functions based on what the synonym name supports
+    # Names with chars invalid for functions (hyphens, special chars, starting with digit) must use alias
+    if ! can_be_function_name "$word"; then
+      # Must use alias (contains chars invalid for function names)
+      # For hyphenated targets, convert hyphens to spaces for first-word gloss routing
+      case "$target" in
+        *-*)
+          # Convert hyphens to spaces ONLY in spell name, not in directory path
+          # E.g., "translocation/jump-to-marker" → "translocation/jump to marker"
+          #       "jump-to-marker" → "jump to marker"
+          case "$target" in
+            */*)
+              # Has directory prefix - preserve it
+              dir_prefix="${target%/*}/"
+              spell_part="${target##*/}"
+              alias_target="$dir_prefix$(printf '%s' "$spell_part" | sed 's/-/ /g')"
+              ;;
+            *)
+              # No directory - convert all hyphens
+              alias_target=$(printf '%s' "$target" | sed 's/-/ /g')
+              ;;
+          esac
+          emit_line "alias $word='$alias_target'"
+          ;;
+        *)
+          # Single-word target, use as-is
+          emit_line "alias $word='$target'"
+          ;;
+      esac
+    else
+      # Can use function name - check if it conflicts with first-word gloss
+      case "$first_words_seen" in
+        *" $word "*)
+          # Conflicts with first-word gloss - skip (gloss will handle via parse)
+          [ "$quiet" -eq 0 ] && info "Synonym '$word' handled by first-word gloss" >&2
+          ;;
+        *)
+          # No conflict - generate function for direct invocation
+          # For hyphenated targets, use the hyphenated form directly (it will have an alias)
+          emit_line "$word() { $target \"\$@\"; }"
+          ;;
+      esac
+    fi
   done < "$synonym_file"
 fi
 
@@ -626,51 +653,49 @@ if [ -f "$default_synonym_file" ]; then
     # Add to synonym words list for first-word gloss generation
     synonym_words="$synonym_words $word"
     
-    # Generate aliases for hyphenated synonyms, functions for non-hyphenated (if no conflict)
-    case "$word" in
-      *-*)
-        # Hyphenated synonym - must use alias (POSIX limitation)
-        # For hyphenated targets, convert hyphens to spaces for first-word gloss routing
-        case "$target" in
-          *-*)
-            # Convert hyphens to spaces ONLY in spell name, not in directory path
-            # E.g., "translocation/jump-to-marker" → "translocation/jump to marker"
-            #       "jump-to-marker" → "jump to marker"
-            case "$target" in
-              */*)
-                # Has directory prefix - preserve it
-                dir_prefix="${target%/*}/"
-                spell_part="${target##*/}"
-                alias_target="$dir_prefix$(printf '%s' "$spell_part" | sed 's/-/ /g')"
-                ;;
-              *)
-                # No directory - convert all hyphens
-                alias_target=$(printf '%s' "$target" | sed 's/-/ /g')
-                ;;
-            esac
-            emit_line "alias $word='$alias_target'"
-            ;;
-          *)
-            # Single-word target, use as-is
-            emit_line "alias $word='$target'"
-            ;;
-        esac
-        ;;
-      *)
-        # Non-hyphenated synonym - check if it conflicts with first-word gloss
-        case "$first_words_seen" in
-          *" $word "*)
-            # Conflicts with first-word gloss - skip (gloss will handle via parse)
-            [ "$quiet" -eq 0 ] && info "Synonym '$word' handled by first-word gloss" >&2
-            ;;
-          *)
-            # No conflict - generate function for direct invocation
-            # For hyphenated targets, use the hyphenated form directly (it will have an alias)
-            emit_line "$word() { $target \"\$@\"; }"
-            ;;
-        esac
-        ;;
-    esac
+    # Generate aliases or functions based on what the synonym name supports
+    # Names with chars invalid for functions (hyphens, special chars, starting with digit) must use alias
+    if ! can_be_function_name "$word"; then
+      # Must use alias (contains chars invalid for function names)
+      # For hyphenated targets, convert hyphens to spaces for first-word gloss routing
+      case "$target" in
+        *-*)
+          # Convert hyphens to spaces ONLY in spell name, not in directory path
+          # E.g., "translocation/jump-to-marker" → "translocation/jump to marker"
+          #       "jump-to-marker" → "jump to marker"
+          case "$target" in
+            */*)
+              # Has directory prefix - preserve it
+              dir_prefix="${target%/*}/"
+              spell_part="${target##*/}"
+              alias_target="$dir_prefix$(printf '%s' "$spell_part" | sed 's/-/ /g')"
+              ;;
+            *)
+              # No directory - convert all hyphens
+              alias_target=$(printf '%s' "$target" | sed 's/-/ /g')
+              ;;
+          esac
+          emit_line "alias $word='$alias_target'"
+          ;;
+        *)
+          # Single-word target, use as-is
+          emit_line "alias $word='$target'"
+          ;;
+      esac
+    else
+      # Can use function name - check if it conflicts with first-word gloss
+      case "$first_words_seen" in
+        *" $word "*)
+          # Conflicts with first-word gloss - skip (gloss will handle via parse)
+          [ "$quiet" -eq 0 ] && info "Synonym '$word' handled by first-word gloss" >&2
+          ;;
+        *)
+          # No conflict - generate function for direct invocation
+          # For hyphenated targets, use the hyphenated form directly (it will have an alias)
+          emit_line "$word() { $target \"\$@\"; }"
+          ;;
+      esac
+    fi
   done < "$default_synonym_file"
   
   # Exit with error if invalid default synonyms were found
