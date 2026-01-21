@@ -172,7 +172,7 @@ if [ -n "${WIZARDRY_INSTALL_DIR-}" ]; then
 elif [ -n "${WIZARDRY_ROOT-}" ]; then
         INSTALL_INPUT=$WIZARDRY_ROOT
 else
-        message="Wizardry install directory? [$PROMPT_DEFAULT] "
+        message="Wizardry install directory (or press Enter for default)? [$PROMPT_DEFAULT] "
         # Check for interactive input. When running via curl | sh, stdin is a pipe
         # containing the script content, not user input. We must check if we can
         # read from /dev/tty instead.
@@ -778,17 +778,9 @@ if [ -x "$CORE_INSTALLER" ]; then
         info_msg "Verifying required tools:"
         
         # Check and display status of each core dependency
-        # List common prerequisites
-        prereq_git_ok=0
+        # List all common prerequisites together
         prereq_tar_ok=0
         prereq_curl_wget_ok=0
-        
-        if command -v git >/dev/null 2>&1; then
-                prereq_git_ok=1
-                substep_msg "git: ${GREEN}✓ installed${RESET}"
-        else
-                substep_msg "git: ${YELLOW}not found (will attempt install)${RESET}"
-        fi
         
         if command -v tar >/dev/null 2>&1; then
                 prereq_tar_ok=1
@@ -805,6 +797,12 @@ if [ -x "$CORE_INSTALLER" ]; then
                 substep_msg "wget: ${GREEN}✓ installed${RESET}"
         else
                 substep_msg "curl/wget: ${YELLOW}neither found (needed for remote downloads)${RESET}"
+        fi
+        
+        if command -v git >/dev/null 2>&1; then
+                substep_msg "git: ${GREEN}✓ installed${RESET}"
+        else
+                substep_msg "git: ${YELLOW}not found (will attempt install)${RESET}"
         fi
         
         # Platform-specific checks
