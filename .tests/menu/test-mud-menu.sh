@@ -235,10 +235,10 @@ SH
   make_stub_check_command_not_found_hook "$tmp"
   make_stub_config_get "$tmp" "0"  # cd-look disabled
   
-  # Set up empty spellbook (no cd-look config)
+  # Set up spellbook with cd-look disabled for compiled version
   spellbook_dir="$tmp/spellbook"
-  mkdir -p "$spellbook_dir/.mud"
-  : > "$spellbook_dir/.mud/config"
+  mkdir -p "$spellbook_dir"
+  printf 'cd-look=0\n' > "$spellbook_dir/.mud"
   
   SPELLBOOK_DIR="$spellbook_dir" run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.arcana/mud:/bin:/usr/bin" MENU_LOG="$tmp/log" WIZARDRY_TMPDIR="$tmp" "$ROOT_DIR/spells/menu/mud-menu"
   assert_success || return 1
