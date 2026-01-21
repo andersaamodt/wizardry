@@ -154,6 +154,14 @@ download_via_git() {
         # Download wizardry using git clone with a shallow clone to minimize download size.
         # This sets up a proper git repository with remote configured, enabling update-wizardry
         # to work via git pull.
+        # 
+        # The shallow clone (--depth=1) and single-branch setup keeps download size minimal
+        # (~1MB) while still allowing git pull to fetch new commits on the main branch.
+        # 
+        # For developers who need full history or other branches:
+        #   - Full history of main: git fetch --unshallow
+        #   - All branches: git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*' && git fetch
+        # 
         # Args: dest_dir repo_url [branch]
         dest=$1
         repo_url=$2
