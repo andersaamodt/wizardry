@@ -53,9 +53,9 @@ run_test_case "menu reports missing controlling terminal" menu_reports_missing_t
 # Test --start-selection argument - Issue #198
 # When --start-selection 2 is passed, pressing enter should select the second item
 menu_respects_start_selection() {
-  # Skip if script command not available (needed for real PTY)
-  if ! command -v script >/dev/null 2>&1; then
-    test_skip "requires script command for PTY testing"
+  # Skip if socat not available (needed for real PTY)
+  if ! command -v socat >/dev/null 2>&1; then
+    test_skip "requires socat for PTY testing"
     return 0
   fi
   
@@ -74,9 +74,10 @@ menu_respects_start_selection() {
   
   # Run with real PTY - sends enter key to select item
   # The PATH includes stubs first so terminal queries get responses
-  PTY_INPUT=$'\n' run_cmd env \
+  PTY_INPUT='
+' run_cmd env \
     PATH="$stub_dir:$PATH" \
-    "$ROOT_DIR/spells/.imps/test/run-with-pty" \
+    run-with-pty \
     menu --start-selection 2 "Test:" \
     "First%printf first" \
     "Second%printf second" \
