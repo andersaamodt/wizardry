@@ -15,10 +15,6 @@ esac
 
 set -eu
 
-# Get script directory to find imps
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-ROOT_DIR=$(cd "$SCRIPT_DIR/../../.." && pwd -P)
-IMPS_DIR="$ROOT_DIR/spells/.imps/fs"
 
 # Determine config file location
 SPELLBOOK_DIR="${SPELLBOOK_DIR:-$HOME/.spellbook}"
@@ -44,7 +40,7 @@ case "${1-}" in
     # Auto-detect: if any is disabled, enable all; otherwise disable all
     all_enabled=1
     for feature in $FEATURES; do
-      state=$("$IMPS_DIR/config-get" "$CONFIG_FILE" "$feature" 2>/dev/null || printf '0')
+      state=$(config-get "$CONFIG_FILE" "$feature" 2>/dev/null || printf '0')
       if [ "$state" = "0" ] || [ -z "$state" ]; then
         all_enabled=0
         break
@@ -66,13 +62,13 @@ esac
 if [ "$action" = "enable" ]; then
   printf '%s\n' "Enabling all MUD features..."
   for feature in $FEATURES; do
-    "$IMPS_DIR/config-set" "$CONFIG_FILE" "$feature" "1"
+    config-set "$CONFIG_FILE" "$feature" "1"
   done
   printf '%s\n' "✓ All MUD features enabled."
 else
   printf '%s\n' "Disabling all MUD features..."
   for feature in $FEATURES; do
-    "$IMPS_DIR/config-set" "$CONFIG_FILE" "$feature" "0"
+    config-set "$CONFIG_FILE" "$feature" "0"
   done
   printf '%s\n' "✓ All MUD features disabled."
 fi
