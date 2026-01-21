@@ -25,39 +25,26 @@ tmpdir=${TMPDIR:-/tmp}
 pty_dir=$(mktemp -d "$tmpdir/socat-pty.XXXXXX")
 trap 'rm -rf "$pty_dir"' EXIT INT TERM
 
-# Create named pipes for input and output
-input_fifo="$pty_dir/input"
+# Create files for communication
+input_file="$pty_dir/input"
 output_file="$pty_dir/output"
-mkfifo "$input_fifo"
+pty_link="$pty_dir/pty"
 
-# Start socat with PTY on both sides for full interactive capability
-# Left side: PTY for the command, Right side: PTY for test control
-# We use exec to redirect output to a file while keeping the PTY interactive
+# Create input file with default input (can be overridden via stdin or env)
+# For now, just send enter to complete interactive prompts
+printf '\r' > "$input_file"
+
+# Start the command with PTY on one side and input from file on the other
+# This allows the command to think it's running in a real terminal
 (
-  # Execute the command with a PTY allocated by socat
-  socat \
-    "PTY,link=$pty_dir/pty,raw,echo=0" \
-    "EXEC:$*,pty,stderr" \
-    > "$output_file" 2>&1
+  # Use script approach with timeout to prevent hanging
+  # The command runs in a PTY, input comes from our file, output goes to our file
+  timeout 2 socat \
+    "EXEC:$*,pty,setsid,ctty,stderr" \
+    "SYSTEM:cat $input_file; sleep 0.5" \
+    > "$output_file" 2>&1 || true
 ) &
-socat_pid=$!
-
-# Wait a moment for PTY to be ready
-sleep 0.1
-
-# Wait for socat to complete or timeout
-timeout=5
-elapsed=0
-while kill -0 "$socat_pid" 2>/dev/null && [ "$elapsed" -lt "$timeout" ]; do
-  sleep 0.1
-  elapsed=$((elapsed + 1))
-done
-
-# Kill socat if still running
-if kill -0 "$socat_pid" 2>/dev/null; then
-  kill "$socat_pid" 2>/dev/null || :
-  wait "$socat_pid" 2>/dev/null || :
-fi
+wait $!
 
 # Output the captured content
 if [ -f "$output_file" ]; then
@@ -65,3 +52,4 @@ if [ -f "$output_file" ]; then
 fi
 
 # Cleanup is handled by trap
+
