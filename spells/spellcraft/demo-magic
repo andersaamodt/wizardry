@@ -97,7 +97,7 @@ demo_level() {
       
       if command -v fathom-terminal >/dev/null 2>&1; then
         printf '%sThe wizard casts %s.%s\n' "$CYAN" "$(spell_name fathom-terminal)" "$RESET"
-        fathom-terminal 2>&1
+        fathom-terminal 2>&1 || printf '(Terminal dimensions unavailable)\n'
         printf '\n'
         demo_pause
       fi
@@ -110,7 +110,7 @@ demo_level() {
       
       if command -v colors >/dev/null 2>&1; then
         printf '%sThe wizard casts %s.%s\n' "$CYAN" "$(spell_name colors)" "$RESET"
-        colors 2>&1
+        colors 2>&1 || printf '(Colors already loaded)\n'
         printf '\n'
         demo_pause
       fi
