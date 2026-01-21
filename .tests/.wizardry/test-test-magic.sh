@@ -505,6 +505,65 @@ EOF
   return 0
 }
 
+# Test that uncovered/extraneous checks only run when testing from level 0
+uncovered_checks_only_run_from_level_0() {
+  tmpdir="$(make_tempdir)"
+  tmpfile_level0="$tmpdir/output-level0.txt"
+  tmpfile_range="$tmpdir/output-range.txt"
+  
+  cd "$ROOT_DIR" || return 1
+  
+  # Run test-magic from level 0 (should include coverage checks)
+  sh spells/.wizardry/test-magic 0 >"$tmpfile_level0" 2>&1 || true
+  
+  # Run test-magic with range 5-10 (should NOT include coverage checks)
+  sh spells/.wizardry/test-magic 5-10 >"$tmpfile_range" 2>&1 || true
+  
+  # Verify level 0 contains "Coverage:" or processes coverage (it may not appear if all covered)
+  # Instead, check that the code path was taken by grepping for the logic
+  if ! grep -q "min_level_range.*-eq 0" "$ROOT_DIR/spells/.wizardry/test-magic"; then
+    TEST_FAILURE_REASON="Coverage check conditional not found in test-magic"
+    return 1
+  fi
+  
+  # Verify range 5-10 does NOT contain "Uncovered spells:" or "Extraneous test files:"
+  if grep -q "Uncovered spells:" "$tmpfile_range"; then
+    TEST_FAILURE_REASON="Uncovered check ran from level 5 (should only run from 0)"
+    return 1
+  fi
+  
+  if grep -q "Extraneous test files:" "$tmpfile_range"; then
+    TEST_FAILURE_REASON="Extraneous check ran from level 5 (should only run from 0)"
+    return 1
+  fi
+  
+  return 0
+}
+
+# Test that help text clarifies Level 0 = Common Tests
+help_clarifies_level_0_is_common_tests() {
+  tmpdir="$(make_tempdir)"
+  tmpfile="$tmpdir/output.txt"
+  
+  cd "$ROOT_DIR" || return 1
+  
+  sh spells/.wizardry/test-magic --help >"$tmpfile" 2>&1 || true
+  
+  # Verify help text says "Level 0 = Common Tests"
+  if ! grep -q "Level 0 = Common Tests" "$tmpfile"; then
+    TEST_FAILURE_REASON="Help text does not clarify that Level 0 = Common Tests"
+    return 1
+  fi
+  
+  # Verify old text is removed
+  if grep -q "Level 0 includes common-tests.sh + Level 0 spells" "$tmpfile"; then
+    TEST_FAILURE_REASON="Old help text still present (should say 'Level 0 = Common Tests')"
+    return 1
+  fi
+  
+  return 0
+}
+
 run_test_case "system/test-magic is executable" spell_is_executable
 run_test_case "system/test-magic shows help" shows_help
 run_test_case "system/test-magic has content" spell_has_content
@@ -513,6 +572,8 @@ run_test_case "system/test-magic has no test rerun logic" no_test_reruns
 run_test_case "system/test-magic has pre-flight checks" has_preflight_checks
 run_test_case "system/test-magic has timeout protection" has_timeout_protection
 run_test_case "system/test-magic requires pocket-dimension" requires_pocket_dimension
+run_test_case "system/test-magic uncovered checks only run from level 0" uncovered_checks_only_run_from_level_0
+run_test_case "system/test-magic help clarifies Level 0 = Common Tests" help_clarifies_level_0_is_common_tests
 # Tests below require test-magic to accept specific test file paths as arguments
 # This functionality is not currently implemented (test-magic only accepts level numbers)
 # Disabled until feature is implemented:
