@@ -2,8 +2,27 @@
 # mud-defaults - Get default value for a MUD config setting when unset
 # Returns the preferred default value for MUD features
 
-# Usage: default=$(mud-defaults FEATURE_NAME)
-# Example: default=$(mud-defaults cd-look)
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: mud-defaults FEATURE_NAME
+
+Returns the default value for a MUD config feature when unset.
+
+Enabled by default (returns 1):
+  - parse-enabled
+  - mud-enabled
+  - cd-look
+
+Disabled by default (returns 0):
+  - avatar
+  - touch-hook
+
+Unknown features default to 0 for safety.
+USAGE
+  exit 0
+  ;;
+esac
 
 set -eu
 
