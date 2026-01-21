@@ -48,22 +48,26 @@ jobs:
           fi
       - name: Run demo-magic with PTY
         run: |
-          . spells/.imps/sys/invoke-wizardry
           # Create PTY wrapper for demo (socat provides real terminal)
           cat > /tmp/run-with-pty.sh << 'PTYWRAPPER'
           #!/bin/sh
           set -eu
+          # Run the command with a PTY, inheriting environment
+          if ! command -v socat >/dev/null 2>&1; then
+            echo "socat not found, running without PTY" >&2
+            exec "$@"
+          fi
           test_dir=$(mktemp -d "${TMPDIR:-/tmp}/demo-pty.XXXXXX")
           trap 'rm -rf "$test_dir"' EXIT INT TERM
-          {
-            printf '#!/bin/sh\nexport PATH='"'"'%s'"'"'\nexec' "$PATH"
-            for arg in "$@"; do
-              printf " '%s'" "$(printf '%s' "$arg" | sed "s/'/'\\\\''/g")"
-            done
-            printf '\n'
-          } > "$test_dir/cmd.sh"
+          # Create wrapper that sources invoke-wizardry and runs demo
+          cat > "$test_dir/cmd.sh" << 'INNERCMD'
+          #!/bin/sh
+          cd /home/runner/work/wizardry/wizardry
+          . spells/.imps/sys/invoke-wizardry
+          exec ./spells/spellcraft/demo-magic all
+          INNERCMD
           chmod +x "$test_dir/cmd.sh"
           printf '' | socat - "EXEC:$test_dir/cmd.sh,pty,stderr" 2>&1
           PTYWRAPPER
           chmod +x /tmp/run-with-pty.sh
-          /tmp/run-with-pty.sh ./spells/spellcraft/demo-magic all
+          /tmp/run-with-pty.sh
