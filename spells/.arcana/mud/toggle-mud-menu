@@ -13,24 +13,28 @@ USAGE
   ;;
 esac
 
-require-wizardry || exit 1
-
 set -eu
-. env-clear
 
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-MUD_CONFIG="$SCRIPT_DIR/mud-config"
 
-if [ ! -x "$MUD_CONFIG" ]; then
-  printf '%s\n' "Error: mud-config not found at '$MUD_CONFIG'." >&2
-  return 1
+# Determine config file location
+SPELLBOOK_DIR="${SPELLBOOK_DIR:-$HOME/.spellbook}"
+CONFIG_FILE="$SPELLBOOK_DIR/.mud"
+
+# Ensure spellbook directory exists
+mkdir -p "$SPELLBOOK_DIR"
+touch "$CONFIG_FILE"
+
+# Check current state
+if config-has "$CONFIG_FILE" "mud-enabled" 2>/dev/null; then
+  current_value=$(config-get "$CONFIG_FILE" "mud-enabled" 2>/dev/null)
+  if [ "$current_value" = "1" ]; then
+    # Currently enabled, disable it
+    config-set "$CONFIG_FILE" "mud-enabled" "0"
+    printf '%s\n' "✓ MUD menu hidden from main menu."
+    exit 0
+  fi
 fi
 
-# Toggle the mud-enabled setting
-new_state=$("$MUD_CONFIG" toggle "mud-enabled")
-
-if [ "$new_state" = "1" ]; then
-  printf '%s\n' "✓ MUD menu enabled in main menu."
-else
-  printf '%s\n' "✓ MUD menu hidden from main menu."
-fi
+# Currently disabled, enable it
+config-set "$CONFIG_FILE" "mud-enabled" "1"
+printf '%s\n' "✓ MUD menu enabled in main menu."

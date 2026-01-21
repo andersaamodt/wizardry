@@ -15,15 +15,29 @@ USAGE
   ;;
 esac
 
-require-wizardry || exit 1
-
 set -eu
-. env-clear
 
-# Use mud-config to toggle
-if command -v mud-config >/dev/null 2>&1; then
-  mud-config toggle parse-enabled
-else
-  printf 'toggle-parse: mud-config not found\n' >&2
-  exit 1
+
+# Determine config file location
+SPELLBOOK_DIR="${SPELLBOOK_DIR:-$HOME/.spellbook}"
+CONFIG_FILE="$SPELLBOOK_DIR/.mud"
+
+# Ensure spellbook directory exists
+mkdir -p "$SPELLBOOK_DIR"
+touch "$CONFIG_FILE"
+
+# Check current state
+if config-has "$CONFIG_FILE" "parse-enabled" 2>/dev/null; then
+  current_value=$(config-get "$CONFIG_FILE" "parse-enabled" 2>/dev/null)
+  if [ "$current_value" = "1" ]; then
+    # Currently enabled, disable it
+    config-set "$CONFIG_FILE" "parse-enabled" "0"
+    printf '%s\n' "✓ Parse disabled. Only exact spell names will work."
+    exit 0
+  fi
 fi
+
+# Currently disabled or not set, enable it
+config-set "$CONFIG_FILE" "parse-enabled" "1"
+printf '%s\n' "✓ Parse enabled. Natural language commands will be available."
+printf '%s\n' "Note: Restart your shell or run 'invoke-wizardry' to activate."

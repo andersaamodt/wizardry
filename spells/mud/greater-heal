@@ -1,0 +1,88 @@
+#!/bin/sh
+
+# Cast greater heal to restore 100 HP to self or another target.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: greater-heal [target]
+
+Cast greater heal to restore 100 hit points to yourself or a target.
+Costs 20 mana to cast.
+
+If no target is specified, heals yourself.
+
+Example:
+  greater-heal
+  greater-heal other-avatar
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+set -eu
+. env-clear
+
+spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+config_file="$spell_home/.mud"
+
+# Check if avatar is enabled
+avatar_enabled=$(config-get "$config_file" "avatar-enabled" 2>/dev/null || printf '0')
+if [ "$avatar_enabled" != "1" ]; then
+  printf '%s\n' "greater-heal: avatar system is not enabled"
+  exit 1
+fi
+
+# Get caster's avatar
+avatar_path=$(config-get "$config_file" "avatar-path" 2>/dev/null || printf '')
+if [ -z "$avatar_path" ] || [ ! -e "$avatar_path" ]; then
+  printf '%s\n' "greater-heal: avatar not found"
+  exit 1
+fi
+
+# Check mana
+mana_cost=20
+current_mana=$(read-magic "$avatar_path" mana 2>/dev/null || printf '0')
+case "$current_mana" in
+  ''|*[!0-9]*) current_mana=0 ;;
+esac
+
+if [ "$current_mana" -lt "$mana_cost" ]; then
+  printf '%s\n' "greater-heal: insufficient mana! You need $mana_cost mana but only have $current_mana." >&2
+  exit 1
+fi
+
+# Determine target
+target=${1:-$avatar_path}
+
+if [ ! -e "$target" ]; then
+  printf '%s\n' "greater-heal: target does not exist" >&2
+  exit 1
+fi
+
+# Deduct mana
+new_mana=$((current_mana - mana_cost))
+enchant "$avatar_path" "mana=$new_mana" >/dev/null 2>&1
+
+# Heal target (reduce damage by 100, minimum 0)
+current_damage=$(read-magic "$target" damage 2>/dev/null || printf '0')
+case "$current_damage" in
+  ''|*[!0-9]*) current_damage=0 ;;
+esac
+
+heal_amount=100
+new_damage=$((current_damage - heal_amount))
+[ "$new_damage" -lt 0 ] && new_damage=0
+
+enchant "$target" "damage=$new_damage" >/dev/null 2>&1
+
+# Clear dead flag if alive now
+current_life=$(get-life "$target")
+if [ "$current_life" -gt 0 ]; then
+  enchant "$target" "dead=0" >/dev/null 2>&1 || true
+fi
+
+target_name=$(basename "$target")
+printf '%s\n' "You cast greater heal on $target_name, restoring $heal_amount HP."
+exit 0
