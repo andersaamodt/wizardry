@@ -4,19 +4,29 @@
 
 set -eu
 
-# Check if cd-look is enabled via config file (cd-look=1)
+# Check if cd-look is enabled via config file (defaults to enabled when unset)
 config_file="${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud"
+cd_look_value=""
 if [ -f "$config_file" ]; then
     cd_look_value=$(grep "^cd-look=" "$config_file" 2>/dev/null | cut -d= -f2- || printf '')
-    if [ "$cd_look_value" = "1" ]; then
-        command -v look >/dev/null 2>&1 && look 2>/dev/null || true
-    fi
+fi
+# Default to enabled (1) if not set
+if [ -z "$cd_look_value" ]; then
+    cd_look_value=$(mud-defaults cd-look 2>/dev/null || printf '1')
+fi
+if [ "$cd_look_value" = "1" ]; then
+    command -v look >/dev/null 2>&1 && look 2>/dev/null || true
 fi
 
-# Move avatar if avatar system is enabled
+# Move avatar if avatar system is enabled (defaults to disabled when unset)
+avatar_value=""
 if [ -f "$config_file" ]; then
     avatar_value=$(grep "^avatar=" "$config_file" 2>/dev/null | cut -d= -f2- || printf '')
-    if [ "$avatar_value" = "1" ]; then
-        command -v move-avatar >/dev/null 2>&1 && move-avatar 2>/dev/null || true
-    fi
+fi
+# Default to disabled (0) if not set
+if [ -z "$avatar_value" ]; then
+    avatar_value=$(mud-defaults avatar 2>/dev/null || printf '0')
+fi
+if [ "$avatar_value" = "1" ]; then
+    command -v move-avatar >/dev/null 2>&1 && move-avatar 2>/dev/null || true
 fi
