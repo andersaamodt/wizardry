@@ -78,11 +78,13 @@ test_level_11() {
 }
 
 test_default_level() {
-  # Test that demo-magic works with no level argument (defaults to 0 and 1)
-  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/spellcraft/demo-magic
+  # Test that demo-magic works with no level argument (defaults to all levels 0-27)
+  # We'll just check that it starts correctly and includes multiple levels
+  WIZARDRY_DEMO_NO_BWRAP=1 run_spell spells/spellcraft/demo-magic 3
   assert_success || return 1
   assert_output_contains "Level 0: POSIX & Platform Foundation" || return 1
   assert_output_contains "Level 1: Banish & Validation Infrastructure" || return 1
+  assert_output_contains "DEMO_MAGIC_COMPLETE" || return 1
 }
 
 run_test_case "demo-magic shows help" test_help

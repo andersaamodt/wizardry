@@ -6,7 +6,12 @@
 
 # Pause for dramatic effect
 dramatic_pause() {
-  sleep "${1:-1}"
+  # Short pauses for readability without slowing down demos too much
+  # Set WIZARDRY_DEMO_NO_PAUSE=1 to skip all pauses
+  if [ "${WIZARDRY_DEMO_NO_PAUSE:-0}" -ne 1 ]; then
+    # Use 0.2 seconds for any pause to keep demo moving
+    sleep 0.2
+  fi
 }
 
 # Demo a single level using spell-levels data
