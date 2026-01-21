@@ -216,7 +216,7 @@ menu_restores_cursor_on_exit() {
 run_test_case "menu restores cursor on exit" menu_restores_cursor_on_exit
 
 # Arrow key navigation tests
-# These use run-with-pty with custom await-keypress stubs for arrow keys
+# These use run-with-pty with PTY_KEYS to send real escape sequences via socat
 menu_arrow_up_navigation() {
   # Skip if socat not available
   if ! command -v socat >/dev/null 2>&1; then
@@ -229,36 +229,16 @@ menu_arrow_up_navigation() {
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
   
-  # Create a custom await-keypress that returns our sequence
-  cat > "$stub_dir/await-keypress" <<'STUB_EOF'
-#!/bin/sh
-# Custom await-keypress for testing - returns up, up, enter sequence
-index_file="${AWAIT_KEYPRESS_INDEX_FILE:-/tmp/menu-test-index}"
-if [ ! -f "$index_file" ]; then
-  printf '0' > "$index_file"
-fi
-index=$(cat "$index_file")
-
-# Sequence: up, up, enter (from item 3 -> 2 -> 1)
-case "$index" in
-  0) printf 'up\n'; printf '1' > "$index_file" ;;
-  1) printf 'up\n'; printf '2' > "$index_file" ;;
-  *) printf 'enter\n' ;;
-esac
-STUB_EOF
-  chmod +x "$stub_dir/await-keypress"
-  
   # Link other stubs
   for stub in fathom-cursor fathom-terminal; do
     ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
   done
   
-  export AWAIT_KEYPRESS_INDEX_FILE="$tmpdir/key-index"
+  # Send actual arrow escape sequences via PTY
+  PTY_KEYS="up up enter"
   
   # Run menu with PTY starting at item 3, navigate up twice to item 1
-  PTY_INPUT='
-' run_cmd env \
-    AWAIT_KEYPRESS_INDEX_FILE="$tmpdir/key-index" \
+  run_cmd env \
     PATH="$stub_dir:$PATH" \
     run-with-pty \
     menu --start-selection 3 "Navigation Test:" \
@@ -294,31 +274,14 @@ menu_arrow_down_navigation() {
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
   
-  # Custom await-keypress: down, enter
-  cat > "$stub_dir/await-keypress" <<'STUB_EOF'
-#!/bin/sh
-index_file="${AWAIT_KEYPRESS_INDEX_FILE:-/tmp/menu-test-index}"
-if [ ! -f "$index_file" ]; then
-  printf '0' > "$index_file"
-fi
-index=$(cat "$index_file")
-
-case "$index" in
-  0) printf 'down\n'; printf '1' > "$index_file" ;;
-  *) printf 'enter\n' ;;
-esac
-STUB_EOF
-  chmod +x "$stub_dir/await-keypress"
-  
   for stub in fathom-cursor fathom-terminal; do
     ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
   done
   
-  export AWAIT_KEYPRESS_INDEX_FILE="$tmpdir/key-index"
+  # Send actual arrow escape sequences via PTY
+  PTY_KEYS="down enter"
   
-  PTY_INPUT='
-' run_cmd env \
-    AWAIT_KEYPRESS_INDEX_FILE="$tmpdir/key-index" \
+  run_cmd env \
     PATH="$stub_dir:$PATH" \
     run-with-pty \
     menu --start-selection 1 "Navigation Test:" \
@@ -353,31 +316,14 @@ menu_arrow_wrapping() {
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
   
-  # Custom await-keypress: up (from item 1 should wrap to item 3), enter
-  cat > "$stub_dir/await-keypress" <<'STUB_EOF'
-#!/bin/sh
-index_file="${AWAIT_KEYPRESS_INDEX_FILE:-/tmp/menu-test-index}"
-if [ ! -f "$index_file" ]; then
-  printf '0' > "$index_file"
-fi
-index=$(cat "$index_file")
-
-case "$index" in
-  0) printf 'up\n'; printf '1' > "$index_file" ;;
-  *) printf 'enter\n' ;;
-esac
-STUB_EOF
-  chmod +x "$stub_dir/await-keypress"
-  
   for stub in fathom-cursor fathom-terminal; do
     ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
   done
   
-  export AWAIT_KEYPRESS_INDEX_FILE="$tmpdir/key-index"
+  # Send actual arrow escape sequences via PTY
+  PTY_KEYS="up enter"
   
-  PTY_INPUT='
-' run_cmd env \
-    AWAIT_KEYPRESS_INDEX_FILE="$tmpdir/key-index" \
+  run_cmd env \
     PATH="$stub_dir:$PATH" \
     run-with-pty \
     menu --start-selection 1 "Navigation Test:" \
