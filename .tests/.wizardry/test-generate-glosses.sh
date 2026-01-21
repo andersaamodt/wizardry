@@ -389,4 +389,71 @@ run_test_case "synonyms with numbers at start work (create alias)" test_synonym_
 run_test_case "synonyms with special chars work (create alias)" test_synonym_with_special_chars
 run_test_case "synonyms with truly invalid chars still rejected" test_synonym_invalid_chars_still_rejected
 
+# Realistic tests for glosses with special characters - verify they can be sourced
+test_glosses_with_numbers_can_be_sourced() {
+  # Test that glosses with number-starting aliases can be sourced without error
+  tmpspellbook=$(make_tempdir)
+  
+  # Create synonym with number at start
+  cat > "$tmpspellbook/.synonyms" << 'EOF'
+123test=echo NUMBER_ALIAS_WORKS
+9x=echo NINE_WORKS
+EOF
+  
+  # Generate glosses
+  WIZARDRY_DIR="$ROOT_DIR" SPELLBOOK_DIR="$tmpspellbook" \
+    run_spell spells/.wizardry/generate-glosses --output "$tmpspellbook/glosses" --quiet
+  assert_success || return 1
+  
+  # Verify aliases were generated
+  if ! grep -q "^alias 123test=" "$tmpspellbook/glosses"; then
+    TEST_FAILURE_REASON="123test alias not found in glosses"
+    return 1
+  fi
+  
+  if ! grep -q "^alias 9x=" "$tmpspellbook/glosses"; then
+    TEST_FAILURE_REASON="9x alias not found in glosses"
+    return 1
+  fi
+  
+  # Verify glosses can be sourced without error (how invoke-wizardry uses them)
+  run_cmd sh -c ". '$tmpspellbook/glosses'"
+  assert_success || return 1
+}
+
+test_glosses_with_special_chars_can_be_sourced() {
+  # Test that glosses with special character aliases can be sourced without error
+  tmpspellbook=$(make_tempdir)
+  
+  # Create synonyms with various special characters
+  cat > "$tmpspellbook/.synonyms" << 'EOF'
+test.dot=echo DOT_WORKS
+test:colon=echo COLON_WORKS
+test@at=echo AT_WORKS
+test+plus=echo PLUS_WORKS
+test,comma=echo COMMA_WORKS
+test!bang=echo BANG_WORKS
+EOF
+  
+  # Generate glosses
+  WIZARDRY_DIR="$ROOT_DIR" SPELLBOOK_DIR="$tmpspellbook" \
+    run_spell spells/.wizardry/generate-glosses --output "$tmpspellbook/glosses" --quiet
+  assert_success || return 1
+  
+  # Verify all aliases were generated
+  for name in "test.dot" "test:colon" "test@at" "test+plus" "test,comma" "test!bang"; do
+    if ! grep -q "^alias $name=" "$tmpspellbook/glosses"; then
+      TEST_FAILURE_REASON="$name alias not found in glosses"
+      return 1
+    fi
+  done
+  
+  # Verify glosses can be sourced without error
+  run_cmd sh -c ". '$tmpspellbook/glosses'"
+  assert_success || return 1
+}
+
+run_test_case "glosses with numbers can be sourced" test_glosses_with_numbers_can_be_sourced
+run_test_case "glosses with special chars can be sourced" test_glosses_with_special_chars_can_be_sourced
+
 finish_tests
