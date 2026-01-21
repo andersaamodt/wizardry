@@ -31,6 +31,8 @@ fi
 # Get config file location
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 CONFIG_FILE="$spell_home/.mud"
+SELECTION_FILE="$spell_home/.mud-menu-selection"
+export SELECTION_FILE
 
 # Ensure spellbook directory and config file exist
 mkdir -p "$spell_home"
@@ -60,44 +62,49 @@ is_feature_enabled() {
 }
 
 loop_limit=${MENU_LOOP_LIMIT:-}
-start_selection=1
 
 while true; do
+  # Read last selected position from file, default to 1
+  if [ -f "$SELECTION_FILE" ]; then
+    start_selection=$(cat "$SELECTION_FILE" 2>/dev/null || printf '1')
+  else
+    start_selection=1
+  fi
   # Build menu entries based on current state
   
   # Build parse toggle
   if is_feature_enabled "parse-enabled"; then
-    parse_toggle="[X] Parse (natural language commands)%toggle-parse"
+    parse_toggle="[X] Parse (natural language commands)%sh -c 'toggle-parse; echo 1 > \"$SELECTION_FILE\"'"
   else
-    parse_toggle="[ ] Parse (natural language commands)%toggle-parse"
+    parse_toggle="[ ] Parse (natural language commands)%sh -c 'toggle-parse; echo 1 > \"$SELECTION_FILE\"'"
   fi
   
   # Build cd hook toggle label based on current state
   if is_feature_enabled "cd-look"; then
-    cd_hook="[X] Look on directory change (cd hook)%toggle-cd"
+    cd_hook="[X] Look on directory change (cd hook)%sh -c 'toggle-cd; echo 3 > \"$SELECTION_FILE\"'"
   else
-    cd_hook="[ ] Look on directory change (cd hook)%toggle-cd"
+    cd_hook="[ ] Look on directory change (cd hook)%sh -c 'toggle-cd; echo 3 > \"$SELECTION_FILE\"'"
   fi
   
   # Build avatar toggle
   if is_feature_enabled "avatar"; then
-    avatar="[X] Avatar (HP/MP, inventory)%toggle-avatar"
+    avatar="[X] Avatar (HP/MP, inventory)%sh -c 'toggle-avatar; echo 4 > \"$SELECTION_FILE\"'"
   else
-    avatar="[ ] Avatar (HP/MP, inventory)%toggle-avatar"
+    avatar="[ ] Avatar (HP/MP, inventory)%sh -c 'toggle-avatar; echo 4 > \"$SELECTION_FILE\"'"
   fi
   
   # Build touch hook toggle
   if is_feature_enabled "touch-hook"; then
-    touch_hook="[X] On-touch triggers (touch hook)%toggle-touch-hook"
+    touch_hook="[X] On-touch triggers (touch hook)%sh -c 'toggle-touch-hook; echo 5 > \"$SELECTION_FILE\"'"
   else
-    touch_hook="[ ] On-touch triggers (touch hook)%toggle-touch-hook"
+    touch_hook="[ ] On-touch triggers (touch hook)%sh -c 'toggle-touch-hook; echo 5 > \"$SELECTION_FILE\"'"
   fi
   
   # Build show/hide MUD in main menu toggle
   if is_feature_enabled "mud-enabled"; then
-    mud_menu="[X] Show MUD in main menu%toggle-mud-menu"
+    mud_menu="[X] Show MUD in main menu%sh -c 'toggle-mud-menu; echo 2 > \"$SELECTION_FILE\"'"
   else
-    mud_menu="[ ] Show MUD in main menu%toggle-mud-menu"
+    mud_menu="[ ] Show MUD in main menu%sh -c 'toggle-mud-menu; echo 2 > \"$SELECTION_FILE\"'"
   fi
   
   # Build enable/disable all toggle (including cd-look)
@@ -110,12 +117,12 @@ while true; do
   done
   
   if [ "$all_enabled" -eq 1 ]; then
-    toggle_all="Disable all MUD features%toggle-all-mud --disable"
+    toggle_all="Disable all MUD features%sh -c 'toggle-all-mud --disable; echo 6 > \"$SELECTION_FILE\"'"
   else
-    toggle_all="Enable all MUD features%toggle-all-mud --enable"
+    toggle_all="Enable all MUD features%sh -c 'toggle-all-mud --enable; echo 6 > \"$SELECTION_FILE\"'"
   fi
   
-  tor="Set up tor hidden service%setup-tor"
+  tor="Set up tor hidden service%sh -c 'setup-tor; echo 7 > \"$SELECTION_FILE\"'"
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
   exit_item="Exit%kill -TERM \$PPID"
