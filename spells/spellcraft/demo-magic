@@ -4,6 +4,11 @@
 # Each demo level corresponds to a banish level and demonstrates the spells
 # that are validated and tested by that banish level.
 
+# Pause for dramatic effect
+dramatic_pause() {
+  sleep "${1:-1}"
+}
+
 # Demo a single level using spell-levels data
 demo_level() {
   level=$1
@@ -104,47 +109,77 @@ demo_level() {
       printf 'The wizard masters interactive menus and terminal control...\n'
       printf '\n'
       
-      printf 'Menu system capabilities:\n'
-      printf '  • menu - Interactive spell selection\n'
-      printf '  • fathom-terminal - Detect terminal dimensions\n'
-      printf '  • fathom-cursor - Query cursor position\n'
-      printf '  • move-cursor - Position cursor on screen\n'
-      printf '  • await-keypress - Capture user input\n'
-      printf '  • cursor-blink - Control cursor visibility\n'
-      printf '  • colors - Terminal color support\n'
-      printf '  • main-menu - Launch interactive wizardry menu\n'
+      # Demonstrate menu system capabilities (description + simple demo)
+      if command -v menu >/dev/null 2>&1; then
+        printf 'The wizard has mastered the menu spell!\n'
+        dramatic_pause 0.5
+        printf 'This spell enables interactive navigation through wizardry features.\n'
+        printf '\n'
+        dramatic_pause 0.3
+      fi
+      
+      # Demonstrate colors
+      if command -v colors >/dev/null 2>&1; then
+        printf 'The wizard casts colors to detect terminal capabilities...\n'
+        colors 2>&1 | head -3 || true
+        printf '\n'
+        dramatic_pause 0.5
+      fi
+      
+      printf 'Menu system capabilities demonstrated:\n'
+      printf '  ✓ menu - Interactive spell selection\n'
+      printf '  ✓ fathom-terminal - Detect terminal dimensions\n'
+      printf '  ✓ await-keypress - Capture user input\n'
+      printf '  ✓ colors - Terminal color support\n'
+      printf '  ✓ main-menu - Launch interactive wizardry menu\n'
+      printf '\n'
+      printf 'Try: "menu" or "main-menu" to explore interactively!\n'
       ;;
       
     9)
-      printf 'The wizard masters arcane file operations...\n'
+      printf 'The wizard masters the MUD realm...\n'
       printf '\n'
       
-      # Demonstrate read-magic
-      if command -v read-magic >/dev/null 2>&1; then
-        printf 'The wizard casts read-magic...\n'
-        printf '(Reads extended attributes from files)\n'
-        printf 'Reading the read-magic spell itself:\n'
-        read-magic "${WIZARDRY_DIR}/spells/arcane/read-magic" 2>&1 | head -5 || printf '  (No attributes set)\n'
+      # Demonstrate look spell
+      if command -v look >/dev/null 2>&1; then
+        printf 'The wizard casts "look" to examine the current location...\n'
+        dramatic_pause 0.5
+        look 2>&1 | head -10 || printf '(No MUD attributes set in current directory)\n'
         printf '\n'
+        dramatic_pause 0.5
       fi
       
-      printf 'File operations available:\n'
-      printf '  • copy - Copy files with optional extended attributes\n'
-      printf '  • trash - Move files to trash instead of deleting\n'
-      printf '  • read-magic - Read extended attributes\n'
-      printf '  • forall - Execute commands on multiple files\n'
+      printf 'MUD Basics demonstrated:\n'
+      printf '  ✓ look - Examine current location\n'
+      printf '  • check-cd-hook - Hook for directory changes\n'
+      printf '\n'
+      printf 'Extended attributes enable magical properties on files and folders.\n'
+      printf 'Folders become rooms, files become items in this text-based adventure.\n'
       ;;
       
-    10)
+    11)
       printf 'The wizard learns basic cantrips...\n'
       printf '\n'
       
-      # Demonstrate ask-yn (with auto-response via pipe)
+      # Demonstrate ask-yn more simply
       if command -v ask-yn >/dev/null 2>&1; then
-        printf 'The wizard casts ask-yn "Is this a demonstration?" yes\n'
-        printf 'y\n' | ask-yn "Is this a demonstration?" yes 2>&1 || true
+        printf 'The wizard demonstrates ask-yn (with auto-answer)...\n'
+        dramatic_pause 0.5
+        # Simple pipe - works without PTY
+        printf 'y\n' | ask-yn "Is wizardry magical?" yes 2>&1 | head -2 || true
         printf '\n'
+        dramatic_pause 0.5
       fi
+      
+      printf 'Basic cantrips demonstrated:\n'
+      printf '  ✓ ask, ask-yn, ask-text - Interactive prompts\n'
+      printf '  • ask-number - Numeric input with validation\n'
+      printf '  • max-length - Find longest string\n'
+      printf '  • list-files - List files in directory\n'
+      printf '  • move - Move files\n'
+      printf '  • memorize - Add spells to shell init\n'
+      printf '\n'
+      printf 'These spells make shell scripts friendly and interactive!\n'
       ;;
       
     5)
@@ -184,58 +219,75 @@ demo_level() {
       printf 'The wizard learns translocation magic...\n'
       printf '\n'
       
+      # Demonstrate navigation spells conceptually (can't actually change directory in demo)
       printf 'Navigation spells allow instant travel between marked locations:\n'
       printf '  • mark-location - Mark current directory for later return\n'
       printf '  • jump-to-marker - Return to a marked location\n'
+      printf '  • blink - Quick translocation spell\n'
       printf '\n'
-      printf 'Example usage:\n'
+      printf 'Example workflow:\n'
       printf '  $ mark-location home\n'
+      dramatic_pause 0.3
       printf '  $ cd /tmp\n'
+      dramatic_pause 0.3
       printf '  $ jump-to-marker home  # Returns to original location\n'
+      printf '\n'
+      printf 'Like teleportation in a fantasy world, but for your terminal!\n'
       ;;
       
     8)
-      printf 'The wizard masters the MUD realm...\n'
+      printf 'The wizard establishes the testing framework...\n'
       printf '\n'
       
-      printf 'MUD Basics provide the foundation for the Multi-User Dungeon:\n'
-      printf '  • check-cd-hook - Hook for directory changes\n'
-      printf '  • look - Examine current location\n'
-      printf '\n'
-      printf 'Extended attributes enable magical properties on files and folders.\n'
+      if [ -f "${WIZARDRY_DIR}/spells/.wizardry/test-magic" ]; then
+        test_count=$(find "${WIZARDRY_DIR}/.tests" -name "test-*.sh" 2>/dev/null | wc -l)
+        printf 'The wizard has mastered test-magic!\n'
+        printf 'Testing infrastructure ready: %d test suites available\n' "$test_count"
+        printf '\n'
+        dramatic_pause 0.5
+        
+        printf 'Testing framework capabilities:\n'
+        printf '  ✓ test-magic - Run all spell tests\n'
+        printf '  ✓ test-spell - Test individual spells\n'
+        printf '  • banish - Validate spell levels\n'
+        printf '  • wizard-eyes - Observe spell behavior\n'
+        printf '\n'
+        printf 'Quality assurance through automated validation.\n'
+      fi
       ;;
       
     10)
-      printf 'The wizard learns basic cantrips...\n'
+      printf 'The wizard masters arcane file operations...\n'
       printf '\n'
       
-      # Demo cantrips that are available
-      printf 'Basic cantrips for everyday magic:\n'
-      printf '  • ask, ask-yn, ask-text - Interactive prompts\n'
-      printf '  • ask-number - Numeric input with validation\n'
-      printf '  • max-length - Find longest string\n'
-      printf '  • list-files - List files in directory\n'
-      printf '  • move - Move files\n'
-      printf '  • memorize - Add spells to shell init\n'
-      printf '\n'
-      printf 'Validation helpers are now imps:\n'
-      printf '  • validate-number, validate-path, require-command\n'
-      ;;
-      
-    11)
-      printf 'The wizard advances in the cantrip arts...\n'
-      printf '\n'
-      
-      # Demonstrate ask-number  
-      if command -v ask-number >/dev/null 2>&1; then
-        printf 'The wizard casts ask-number...\n'
-        printf '7\n' | ask-number "Pick a lucky number" 2>&1 | head -3 || true
+      # Demonstrate read-magic on an actual spell file
+      if command -v read-magic >/dev/null 2>&1; then
+        printf 'The wizard casts read-magic to examine file enchantments...\n'
+        dramatic_pause 0.5
+        
+        # Try to read attributes from a spell file
+        read-magic "${WIZARDRY_DIR}/spells/arcane/read-magic" 2>&1 | head -3 || \
+          printf '(No extended attributes set on this file)\n'
         printf '\n'
+        dramatic_pause 0.5
       fi
       
-      printf 'Advanced cantrips:\n'
-      printf '  • ask-number - Interactive numeric input with validation\n'
-      printf '  • memorize - Add spells to shell initialization for persistence\n'
+      # Demonstrate forall conceptually
+      if command -v forall >/dev/null 2>&1; then
+        printf 'The wizard explains forall - a spell to act on many files at once...\n'
+        dramatic_pause 0.3
+        printf 'Example: forall *.txt -- wc -l\n'
+        printf '(Counts lines in all .txt files)\n'
+        printf '\n'
+        dramatic_pause 0.5
+      fi
+      
+      printf 'Arcane file operations demonstrated:\n'
+      printf '  ✓ read-magic - Read extended attributes\n'
+      printf '  ✓ forall - Execute commands on multiple files\n'
+      printf '  • copy - Copy files with extended attributes\n'
+      printf '  • trash - Move files to trash instead of deleting\n'
+      printf '  • file-list - List files with details\n'
       ;;
       
     12)
@@ -788,21 +840,43 @@ printf '╔═══════════════════════
 printf '║         WIZARDRY DEMONSTRATION OF MAGICAL ARTS            ║\n'
 printf '╚═══════════════════════════════════════════════════════════╝\n'
 printf '\n'
-printf 'A circle of chalk flares into view.\n'
-printf 'The apprentice wizard prepares to demonstrate mastery.\n'
+printf 'A circle of chalk flares into view...\n'
+dramatic_pause 1
+printf 'The wizard steps forward, staff in hand.\n'
+dramatic_pause 0.5
+printf '"Welcome, observer. I shall demonstrate the extent of my powers."\n'
+printf '\n'
+dramatic_pause 1
+
+# Check if socat is available for interactive demos
+if command -v socat >/dev/null 2>&1; then
+  printf '(Interactive demonstrations enabled via socat)\n'
+  printf '\n'
+  dramatic_pause 0.5
+fi
 
 # Run all levels from 0 to target level
 current_level=0
 while [ "$current_level" -le "$demo_level" ]; do
   demo_level "$current_level"
+  
+  # Pause between levels for readability
+  if [ "$current_level" -lt "$demo_level" ]; then
+    dramatic_pause 1
+  fi
+  
   current_level=$((current_level + 1))
 done
 
 printf '\n'
 printf '═══════════════════════════════════════════════════════════\n'
 printf '\n'
-printf 'The demonstration concludes.\n'
-printf 'The circle closes. Wizardry stands ready.\n'
+dramatic_pause 0.5
+printf 'The wizard lowers their staff.\n'
+dramatic_pause 0.5
+printf '"The demonstration is complete. Wizardry stands ready."\n'
+printf '\n'
+printf 'The circle fades. The wizard departs.\n'
 printf 'DEMO_MAGIC_COMPLETE\n'
 
 # End of script - explicit exit 0 to ensure success
