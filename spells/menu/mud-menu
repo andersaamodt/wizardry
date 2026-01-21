@@ -14,7 +14,6 @@ USAGE
 esac
 
 set -eu
-
 . env-clear
 
 # Catch Ctrl-C and TERM signal to exit 1 cleanly
@@ -59,6 +58,11 @@ is_feature_enabled() {
   [ "$value" = "1" ]
 }
 
+# Check if cd hook is enabled
+is_cd_hook_enabled() {
+  is_feature_enabled "cd-look"
+}
+
 loop_limit=${MENU_LOOP_LIMIT:-}
 start_selection=1
 
@@ -73,7 +77,7 @@ while true; do
   fi
   
   # Build cd hook toggle label based on current state
-  if is_feature_enabled "cd-look"; then
+  if is_cd_hook_enabled; then
     cd_hook="[X] Look on directory change (cd hook)%toggle-cd"
   else
     cd_hook="[ ] Look on directory change (cd hook)%toggle-cd"
