@@ -1,0 +1,76 @@
+#!/bin/sh
+# socat-send-keys KEYS - send raw escape bytes to PTY
+# Example: socat-send-keys "down enter"
+#
+# Converts symbolic key names to raw escape sequences:
+# - enter: \r (CR)
+# - up: ESC[A
+# - down: ESC[B  
+# - left: ESC[D
+# - right: ESC[C
+# - escape/esc: ESC
+# - tab: \t
+# - space: (space)
+# - Any other text: literal characters
+
+set -eu
+
+if [ "$#" -lt 1 ]; then
+  printf 'socat-send-keys: keys required\n' >&2
+  exit 1
+fi
+
+keys="$*"
+
+# Convert symbolic names to escape sequences
+# Note: This is a simple implementation. Real usage would pipe to PTY.
+for key in $keys; do
+  case "$key" in
+    enter)
+      printf '\r'
+      ;;
+    up)
+      printf '\033[A'
+      ;;
+    down)
+      printf '\033[B'
+      ;;
+    left)
+      printf '\033[D'
+      ;;
+    right)
+      printf '\033[C'
+      ;;
+    escape|esc)
+      printf '\033'
+      ;;
+    tab)
+      printf '\t'
+      ;;
+    space)
+      printf ' '
+      ;;
+    backspace)
+      printf '\010'
+      ;;
+    delete|del)
+      printf '\033[3~'
+      ;;
+    home)
+      printf '\033[H'
+      ;;
+    end)
+      printf '\033[F'
+      ;;
+    pageup)
+      printf '\033[5~'
+      ;;
+    pagedown)
+      printf '\033[6~'
+      ;;
+    *)
+      # Literal text
+      printf '%s' "$key"
+      ;;
+  esac
+done
