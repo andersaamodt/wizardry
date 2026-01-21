@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Display character or file stats including life, mana, kills, and experience.
+# Display character or file stats including life, mana, and experience.
 
 case "${1-}" in
 --help|--usage|-h)
@@ -8,7 +8,7 @@ case "${1-}" in
 Usage: stats [target]
 
 Display stats for the player's avatar or a specified target file/avatar.
-Shows life (HP), mana (MP), kills, and experience (XP).
+Shows life (HP), mana (MP), and experience (XP).
 
 If no target is specified, displays stats for the current player's avatar.
 
@@ -104,11 +104,6 @@ case "$max_mana" in
   ''|*[!0-9]*) max_mana=100 ;;
 esac
 
-kills=$(read-magic "$target" kills 2>/dev/null || printf '0')
-case "$kills" in
-  ''|*[!0-9]*) kills=0 ;;
-esac
-
 experience=$(read-magic "$target" experience 2>/dev/null || printf '0')
 case "$experience" in
   ''|*[!0-9]*) experience=0 ;;
@@ -150,8 +145,7 @@ else
 fi
 printf '  %sMana:%s    %s%d%s / %d\n' "${BOLD}" "${RESET}" "${mana_color}" "$mana" "${RESET}" "$max_mana"
 
-# Kills and Experience
-printf '  %sKills:%s   %s%d%s\n' "${BOLD}" "${RESET}" "${PURPLE}" "$kills" "${RESET}"
+# Experience
 printf '  %sXP:%s      %s%d%s\n' "${BOLD}" "${RESET}" "${CYAN}" "$experience" "${RESET}"
 
 printf '\n'
