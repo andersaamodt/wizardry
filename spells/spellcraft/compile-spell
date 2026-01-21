@@ -249,9 +249,26 @@ $func_def
     
     # Wrap as function
     # Replace 'exit' with 'return' since this is now a function, not a script
-    # Only replace shell exit commands (exit 0, exit 1, exit $var, etc.)
-    # Don't replace bare 'exit' which might be in awk/sed scripts
-    spell_body=$(printf '%s\n' "$spell_body" | sed 's/\<exit\([[:space:]]\+[0-9$]\)/return\1/g')
+    # Use awk to skip awk/sed script blocks (they use exit for their own purposes)
+    spell_body=$(printf '%s\n' "$spell_body" | awk '
+      # Detect start of awk/sed script block
+      /^[[:space:]]*(awk|sed).*'\''[[:space:]]*$/ { in_script=1; print; next }
+      # Detect end of awk/sed script block
+      in_script && /^'\''/ { in_script=0; print; next }
+      # Inside awk/sed script - dont replace exit
+      in_script { print; next }
+      # Outside awk/sed script - replace exit with return
+      {
+        gsub(/\<exit 0\>/, "return 0")
+        gsub(/\<exit 1\>/, "return 1")
+        gsub(/\<exit 2\>/, "return 2")
+        gsub(/\<exit \$\?/, "return $?")
+        gsub(/\<exit \$[a-zA-Z_][a-zA-Z0-9_]*/, "return &")
+        gsub(/return exit /, "return ")
+        gsub(/\<exit[[:space:]]*$/, "return")
+        print
+      }
+    ')
     
     inlined_deps="$inlined_deps
 # Inlined spell: $dep
