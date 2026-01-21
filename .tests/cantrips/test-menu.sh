@@ -53,34 +53,46 @@ run_test_case "menu reports missing controlling terminal" menu_reports_missing_t
 # Test --start-selection argument - Issue #198
 # When --start-selection 2 is passed, pressing enter should select the second item
 menu_respects_start_selection() {
+  # Skip if script command not available (needed for real PTY)
+  if ! command -v script >/dev/null 2>&1; then
+    test_skip "requires script command for PTY testing"
+    return 0
+  fi
+  
   tmpdir=$(make_tempdir)
   
-  # Use real wizardry spells with stub imps for terminal I/O AND interactive input
-  # This tests the REAL menu spell with stubbed await-keypress
+  # Use real PTY with stubs for terminal queries only
+  # This gives us realistic terminal behavior while allowing tests to run in CI
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
   
-  # Link to stub imps (terminal I/O + interactive input stubs)
-  for stub in fathom-cursor fathom-terminal move-cursor cursor-blink stty await-keypress; do
+  # Stub only terminal query commands (not interactive input)
+  # These provide responses to terminal capability queries
+  for stub in fathom-cursor fathom-terminal; do
     ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
   done
   
-  # Run REAL menu with stub await-keypress that returns "enter"
-  # This allows menu to select the current item and exit cleanly
-  PATH="$stub_dir:$ROOT_DIR/spells/cantrips:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" run_cmd \
-    "$ROOT_DIR/spells/cantrips/menu" --start-selection 2 "Test:" \
+  # Run with real PTY - sends enter key to select item
+  # The PATH includes stubs first so terminal queries get responses
+  PTY_INPUT=$'\n' run_cmd env \
+    PATH="$stub_dir:$PATH" \
+    "$ROOT_DIR/spells/.imps/test/run-with-pty" \
+    menu --start-selection 2 "Test:" \
     "First%printf first" \
     "Second%printf second" \
     "Third%printf third"
   
   assert_success || return 1
+  
   # The second item should have been selected since --start-selection 2
-  case "$OUTPUT" in
+  # Strip ANSI codes for easier assertion
+  clean_output=$(printf '%s' "$OUTPUT" | socat-normalize-output)
+  case "$clean_output" in
     *second*)
       return 0
       ;;
     *)
-      TEST_FAILURE_REASON="expected 'second' in output but got: $OUTPUT"
+      TEST_FAILURE_REASON="expected 'second' in output but got: $clean_output"
       return 1
       ;;
   esac
