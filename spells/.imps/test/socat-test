@@ -1,0 +1,85 @@
+#!/bin/sh
+# socat-test COMMAND [ARGS...] - run interactive command with PTY for testing
+# Example: socat-test --input "y\n" ask-yn "Proceed?"
+#
+# This helper uses socat to create a PTY and drive interactive commands.
+# Works in CI environments without /dev/tty.
+
+set -eu
+
+# Parse options
+input_data=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --input)
+      input_data="$2"
+      shift 2
+      ;;
+    --input=*)
+      input_data="${1#--input=}"
+      shift
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      printf 'socat-test: unknown option: %s\n' "$1" >&2
+      exit 2
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+if [ "$#" -lt 1 ]; then
+  printf 'socat-test: command required\n' >&2
+  printf 'Usage: socat-test [--input DATA] COMMAND [ARGS...]\n' >&2
+  exit 1
+fi
+
+# Check if socat is available
+if ! command -v socat >/dev/null 2>&1; then
+  printf 'socat-test: socat not found\n' >&2
+  printf 'socat-test: install socat for interactive testing\n' >&2
+  exit 1
+fi
+
+# Create temporary directory
+tmpdir=${TMPDIR:-/tmp}
+test_dir=$(mktemp -d "$tmpdir/socat-test.XXXXXX")
+trap 'rm -rf "$test_dir"' EXIT INT TERM
+
+# Files for communication
+input_file="$test_dir/input"
+output_file="$test_dir/output"
+
+# Write input data if provided
+if [ -n "$input_data" ]; then
+  printf '%b' "$input_data" > "$input_file"
+else
+  printf '\n' > "$input_file"
+fi
+
+# Timeout configuration
+timeout_seconds=${SOCAT_TIMEOUT:-3}
+
+# Use socat to create a PTY pair and run the command
+# One side connects to the command, the other to our input/output
+(
+  # Create a pty pair with socat
+  # Left side: connects to the command with PTY
+  # Right side: we send input and read output
+  timeout "$timeout_seconds" socat \
+    -d -d \
+    "EXEC:$*,pty,stderr,setsid,ctty" \
+    "SYSTEM:cat '$input_file' && sleep 0.3" \
+    > "$output_file" 2>&1 || true
+)
+
+# Output captured content
+if [ -f "$output_file" ]; then
+  cat "$output_file"
+fi
+
