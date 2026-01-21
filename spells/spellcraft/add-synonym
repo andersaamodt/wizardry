@@ -60,10 +60,13 @@ set -eu
   fi
 
   # Check for invalid characters in synonym word
+  # Valid: alphanumeric, hyphens (not leading), and special chars that work in aliases: . : = + , @ ! ? % ^ ~
+  # Invalid: leading dash/dot, spaces, tabs, quotes, and shell special chars
   case $synonym_word in
-    *[/\ \	\'\"\$\`\\\|\&\;\(\)\<\>\*\?\[\]]*)
-      printf '%s\n' "add-synonym: synonym word cannot contain spaces or special characters" >&2
-      printf '%s\n' "Invalid characters: / \\ | & ; ( ) < > * ? [ ] \$ \` ' \" space tab" >&2
+    *[/\ \	\'\"\$\`\\\|\&\;\(\)\<\>\*\[\]]*)
+      printf '%s\n' "add-synonym: synonym word cannot contain spaces or invalid special characters" >&2
+      printf '%s\n' "Invalid characters: / \\ | & ; ( ) < > * [ ] \$ \` ' \" space tab" >&2
+      printf '%s\n' "Valid special characters: - . : = + , @ ! ? %% ^ ~ (- and . cannot be first)" >&2
       exit 2
       ;;
     -*)
@@ -74,9 +77,15 @@ set -eu
       printf '%s\n' "add-synonym: synonym word cannot start with a dot" >&2
       exit 2
       ;;
-    [0-9]*)
-      printf '%s\n' "add-synonym: synonym word cannot start with a number" >&2
-      exit 2
+  esac
+  
+  # Inform user if synonym will use alias (cannot be a function name)
+  # Function names can only contain alphanumeric and underscore, and cannot start with digit
+  case $synonym_word in
+    [0-9]*|*[!a-zA-Z0-9_]*)
+      # Contains characters that make it invalid for function names
+      # Will be created as an alias instead (this is fine and expected)
+      printf '%s\n' "add-synonym: '$synonym_word' will be created as an alias (contains special characters or starts with digit)" >&2
       ;;
   esac
 

@@ -99,13 +99,45 @@ test_rejects_word_starting_with_dot() {
   assert_failure || return 1
 }
 
-test_rejects_word_starting_with_number() {
+test_allows_word_starting_with_number() {
   case_dir=$(make_tempdir)
   
+  # Numbers at start are now allowed (creates alias instead of function)
   SPELLBOOK_DIR="$case_dir" \
-    run_spell "spells/spellcraft/add-synonym" "1alias" echo
+    run_spell "spells/spellcraft/add-synonym" "123test" echo
   
-  assert_failure || return 1
+  assert_success || return 1
+  assert_error_contains "will be created as an alias" || return 1
+}
+
+test_allows_special_chars_in_word() {
+  case_dir=$(make_tempdir)
+  synonyms_file="$case_dir/.synonyms"
+  
+  # Special chars that work in aliases: . : = + , @ ! ? % ^ ~
+  # Test a few representative ones
+  SPELLBOOK_DIR="$case_dir" \
+    run_spell "spells/spellcraft/add-synonym" "test.dot" echo
+  assert_success || return 1
+  assert_error_contains "will be created as an alias" || return 1
+  
+  SPELLBOOK_DIR="$case_dir" \
+    run_spell "spells/spellcraft/add-synonym" "test:colon" echo
+  assert_success || return 1
+  
+  SPELLBOOK_DIR="$case_dir" \
+    run_spell "spells/spellcraft/add-synonym" "test+plus" echo
+  assert_success || return 1
+  
+  SPELLBOOK_DIR="$case_dir" \
+    run_spell "spells/spellcraft/add-synonym" "test@at" echo
+  assert_success || return 1
+  
+  # Verify all were created
+  grep -q "^test.dot=" "$synonyms_file" || return 1
+  grep -q "^test:colon=" "$synonyms_file" || return 1
+  grep -q "^test+plus=" "$synonyms_file" || return 1
+  grep -q "^test@at=" "$synonyms_file" || return 1
 }
 
 test_rejects_empty_spell() {
@@ -241,7 +273,8 @@ run_test_case "rejects word with spaces" test_rejects_word_with_spaces
 run_test_case "rejects word with slash" test_rejects_word_with_slash
 run_test_case "rejects word starting with dash" test_rejects_word_starting_with_dash
 run_test_case "rejects word starting with dot" test_rejects_word_starting_with_dot
-run_test_case "rejects word starting with number" test_rejects_word_starting_with_number
+run_test_case "allows word starting with number (creates alias)" test_allows_word_starting_with_number
+run_test_case "allows special chars in word (creates alias)" test_allows_special_chars_in_word
 run_test_case "rejects empty spell" test_rejects_empty_spell
 run_test_case "allows overwriting synonym" test_allows_overwriting_existing_synonym
 run_test_case "handles complex target with args" test_handles_complex_target_with_args

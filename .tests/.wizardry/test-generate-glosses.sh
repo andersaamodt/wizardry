@@ -303,4 +303,90 @@ test_custom_synonym_multi_word_spaces() {
 run_test_case "custom synonym single-word (warp)" test_custom_synonym_single_word
 run_test_case "custom synonym multi-word with spaces (leap to location)" test_custom_synonym_multi_word_spaces
 
+# New tests for special character support in synonyms
+test_synonym_with_numbers() {
+  # Test that synonyms starting with numbers work (creates alias)
+  tmpdir=$(make_tempdir)
+  
+  cat > "$tmpdir/.synonyms" << 'EOF'
+123test=echo
+456cmd=echo
+EOF
+  
+  # Generate glosses
+  WIZARDRY_DIR="$ROOT_DIR" SPELLBOOK_DIR="$tmpdir" \
+    run_spell spells/.wizardry/generate-glosses --quiet
+  assert_success || return 1
+  
+  # Verify aliases were created (not functions, since they start with digits)
+  output_file="${WIZARDRY_TMPDIR}/_test_output"
+  if ! grep -q "alias 123test=" "$output_file"; then
+    TEST_FAILURE_REASON="Expected alias for 123test (starts with digit)"
+    return 1
+  fi
+  
+  if ! grep -q "alias 456cmd=" "$output_file"; then
+    TEST_FAILURE_REASON="Expected alias for 456cmd (starts with digit)"
+    return 1
+  fi
+}
+
+test_synonym_with_special_chars() {
+  # Test that synonyms with special chars work (creates aliases)
+  # Valid special chars: . : = + , @ ! ? % ^ ~
+  tmpdir=$(make_tempdir)
+  
+  cat > "$tmpdir/.synonyms" << 'EOF'
+test.dot=echo
+test:colon=echo
+test+plus=echo
+test,comma=echo
+test@at=echo
+test!bang=echo
+test?question=echo
+test%percent=echo
+test^caret=echo
+test~tilde=echo
+EOF
+  
+  # Generate glosses
+  WIZARDRY_DIR="$ROOT_DIR" SPELLBOOK_DIR="$tmpdir" \
+    run_spell spells/.wizardry/generate-glosses --quiet
+  assert_success || return 1
+  
+  # Verify aliases were created for all special char synonyms
+  output_file="${WIZARDRY_TMPDIR}/_test_output"
+  
+  for name in "test.dot" "test:colon" "test+plus" "test,comma" "test@at" "test!bang" "test?question" "test%percent" "test^caret" "test~tilde"; do
+    if ! grep -q "alias $name=" "$output_file"; then
+      TEST_FAILURE_REASON="Expected alias for $name (contains special chars)"
+      return 1
+    fi
+  done
+}
+
+test_synonym_invalid_chars_still_rejected() {
+  # Test that truly invalid characters are still rejected
+  tmpdir=$(make_tempdir)
+  
+  # Create a default-synonyms file with invalid characters
+  # These should fail: / space ' " $ ` \ | & ; ( ) < > * [ ]
+  cat > "$tmpdir/.default-synonyms" << 'EOF'
+test/invalid=echo
+EOF
+  
+  # Should fail
+  WIZARDRY_DIR="$ROOT_DIR" SPELLBOOK_DIR="$tmpdir" \
+    run_spell spells/.wizardry/generate-glosses --quiet
+  
+  if [ "$STATUS" -eq 0 ]; then
+    TEST_FAILURE_REASON="Expected failure for synonym with / character"
+    return 1
+  fi
+}
+
+run_test_case "synonyms with numbers at start work (create alias)" test_synonym_with_numbers
+run_test_case "synonyms with special chars work (create alias)" test_synonym_with_special_chars
+run_test_case "synonyms with truly invalid chars still rejected" test_synonym_invalid_chars_still_rejected
+
 finish_tests
