@@ -88,16 +88,7 @@ Then open a new terminal. You should see diagnostic output like:
 
 **Important:** The `menu` command MUST be pre-loaded to work. If pre-loading fails, you'll get "command not found".
 
-### 5. Manual Workaround
-
-If all else fails, you can invoke spells using word-of-binding directly:
-
-```bash
-export WIZARDRY_DIR=~/.wizardry
-~/.wizardry/spells/.imps/sys/word-of-binding menu
-```
-
-### 6. Getting Help
+### 5. Getting Help
 
 If none of these steps help, please file an issue with:
 - Your OS and shell version (`uname -a` and `$SHELL --version`)
