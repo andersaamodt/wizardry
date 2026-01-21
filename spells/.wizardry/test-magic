@@ -29,7 +29,7 @@ Execute behavior-driven shell tests organized by spell level.
 
 Arguments:
   LEVEL                 Test through level N (0-27, default: 27)
-                        Note: Level 0 includes common-tests.sh + Level 0 spells
+                        Note: Level 0 = Common Tests (common-tests.sh)
   all                   Test all available levels
 
 Options:
@@ -987,121 +987,126 @@ else
   exit 0
 fi
 
-coverage_total=0
-coverage_covered=0
-uncovered_spells=""
+# Only check coverage and extraneous files when testing from Level 0 (Common Tests)
+# This ensures these checks only run when common tests are included
+if [ "$min_level_range" -eq 0 ]; then
+  coverage_total=0
+  coverage_covered=0
+  uncovered_spells=""
 
-find_timeout="${WIZARDRY_FIND_TIMEOUT:-60}"
-spell_list=""
-if [ -n "$timeout_cmd" ]; then
-  spell_list=$(cd "$root_dir" && "$timeout_cmd" "$find_timeout" \
-    find spells -type f 2>/dev/null | sort)
-else
-  spell_list=$(cd "$root_dir" && find spells -type f 2>/dev/null | sort)
-fi
-
-while IFS= read -r spell; do
-  [ -n "$spell" ] || continue
-  rel="$spell"
-  case $rel in
-    spells/.wizardry/test-magic|spells/.wizardry/verify-posix)
-      continue
-      ;;
-    *.service|*.gitkeep|*.gitignore)
-      continue
-      ;;
-  esac
-  coverage_total=$((coverage_total + 1))
-
-  rel_check=${spell#spells/}
-  dir_check=$(dirname "$rel_check")
-  base_check=$(basename "$rel_check")
-  candidate_sh="$test_dir/$dir_check/test-${base_check}.sh"
-
-  if [ -f "$candidate_sh" ]; then
-    coverage_covered=$((coverage_covered + 1))
+  find_timeout="${WIZARDRY_FIND_TIMEOUT:-60}"
+  spell_list=""
+  if [ -n "$timeout_cmd" ]; then
+    spell_list=$(cd "$root_dir" && "$timeout_cmd" "$find_timeout" \
+      find spells -type f 2>/dev/null | sort)
   else
-    if [ -n "$uncovered_spells" ]; then
-      uncovered_spells=$(printf '%s\n%s' "$uncovered_spells" "$rel")
-    else
-      uncovered_spells="$rel"
-    fi
+    spell_list=$(cd "$root_dir" && find spells -type f 2>/dev/null | sort)
   fi
-done <<EOF_SPELLS
+
+  while IFS= read -r spell; do
+    [ -n "$spell" ] || continue
+    rel="$spell"
+    case $rel in
+      spells/.wizardry/test-magic|spells/.wizardry/verify-posix)
+        continue
+        ;;
+      *.service|*.gitkeep|*.gitignore)
+        continue
+        ;;
+    esac
+    coverage_total=$((coverage_total + 1))
+
+    rel_check=${spell#spells/}
+    dir_check=$(dirname "$rel_check")
+    base_check=$(basename "$rel_check")
+    candidate_sh="$test_dir/$dir_check/test-${base_check}.sh"
+
+    if [ -f "$candidate_sh" ]; then
+      coverage_covered=$((coverage_covered + 1))
+    else
+      if [ -n "$uncovered_spells" ]; then
+        uncovered_spells=$(printf '%s\n%s' "$uncovered_spells" "$rel")
+      else
+        uncovered_spells="$rel"
+      fi
+    fi
+  done <<EOF_SPELLS
 $spell_list
 EOF_SPELLS
 
-extraneous_files=""
-test_file_list=""
-if [ -n "$timeout_cmd" ]; then
-  test_file_list=$("$timeout_cmd" "$find_timeout" find "$test_dir" \
-    -type f -name 'test-*.sh' 2>/dev/null | sort)
-else
-  test_file_list=$(find "$test_dir" -type f -name 'test-*.sh' 2>/dev/null | sort)
-fi
-
-while IFS= read -r test_file; do
-  [ -n "$test_file" ] || continue
-  case $test_file in
-    */test-suite.sh) continue ;;
-    */test-spell-level-coverage.sh) continue ;;
-  esac
-
-  rel=${test_file#"$test_dir/"}
-  dir=$(dirname "$rel")
-  base=$(basename "$rel")
-  base=${base#test-}
-  base=${base%.sh}
-
-  case "$base" in
-    install|install-with-old-version)
-      if [ "$dir" = "install" ] || [ "$dir" = "." ]; then
-        if [ -f "$root_dir/install" ]; then
-          continue
-        fi
-      fi
-      ;;
-    tutorials)
-      if [ "$dir" = "." ]; then
-        if [ -d "$root_dir/tutorials" ]; then
-          continue
-        fi
-      fi
-      ;;
-  esac
-
-  spell_path="$root_dir/spells/$dir/$base"
-
-  if [ ! -f "$spell_path" ]; then
-    if [ -n "$extraneous_files" ]; then
-      extraneous_files=$(printf '%s\n%s' "$extraneous_files" ".tests/$rel")
-    else
-      extraneous_files=".tests/$rel"
-    fi
+  extraneous_files=""
+  test_file_list=""
+  if [ -n "$timeout_cmd" ]; then
+    test_file_list=$("$timeout_cmd" "$find_timeout" find "$test_dir" \
+      -type f -name 'test-*.sh' 2>/dev/null | sort)
+  else
+    test_file_list=$(find "$test_dir" -type f -name 'test-*.sh' 2>/dev/null | sort)
   fi
-done <<EOF_TESTS
+
+  while IFS= read -r test_file; do
+    [ -n "$test_file" ] || continue
+    case $test_file in
+      */test-suite.sh) continue ;;
+      */test-spell-level-coverage.sh) continue ;;
+    esac
+
+    rel=${test_file#"$test_dir/"}
+    dir=$(dirname "$rel")
+    base=$(basename "$rel")
+    base=${base#test-}
+    base=${base%.sh}
+
+    case "$base" in
+      install|install-with-old-version)
+        if [ "$dir" = "install" ] || [ "$dir" = "." ]; then
+          if [ -f "$root_dir/install" ]; then
+            continue
+          fi
+        fi
+        ;;
+      tutorials)
+        if [ "$dir" = "." ]; then
+          if [ -d "$root_dir/tutorials" ]; then
+            continue
+          fi
+        fi
+        ;;
+    esac
+
+    spell_path="$root_dir/spells/$dir/$base"
+
+    if [ ! -f "$spell_path" ]; then
+      if [ -n "$extraneous_files" ]; then
+        extraneous_files=$(printf '%s\n%s' "$extraneous_files" ".tests/$rel")
+      else
+        extraneous_files=".tests/$rel"
+      fi
+    fi
+  done <<EOF_TESTS
 $test_file_list
 EOF_TESTS
 
-coverage_uncovered=$((coverage_total - coverage_covered))
-if [ "$coverage_uncovered" -gt 0 ]; then
-  printf 'Coverage: %d uncovered\n' "$coverage_uncovered"
-  status=1
+  coverage_uncovered=$((coverage_total - coverage_covered))
+  if [ "$coverage_uncovered" -gt 0 ]; then
+    printf 'Coverage: %d uncovered\n' "$coverage_uncovered"
+    status=1
+  fi
+
+  if [ "$coverage_uncovered" -gt 0 ]; then
+    printf '\nUncovered spells:\n'
+    printf '%s\n' "$uncovered_spells" | while IFS= read -r spell || [ -n "$spell" ]; do
+      printf '  %s\n' "$spell"
+    done
+  fi
+
+  if [ -n "$extraneous_files" ] && [ "${WIZARDRY_TEST_COMPILED-0}" != "1" ]; then
+    printf '\nExtraneous test files (no corresponding spell):\n'
+    printf '  %s\n' "$extraneous_files"
+    status=1
+  fi
 fi
+
 if [ "$incomplete_count" -gt 0 ] && [ "$compiled_mode" != "1" ]; then
-  status=1
-fi
-
-if [ "$coverage_uncovered" -gt 0 ]; then
-  printf '\nUncovered spells:\n'
-  printf '%s\n' "$uncovered_spells" | while IFS= read -r spell || [ -n "$spell" ]; do
-    printf '  %s\n' "$spell"
-  done
-fi
-
-if [ -n "$extraneous_files" ] && [ "${WIZARDRY_TEST_COMPILED-0}" != "1" ]; then
-  printf '\nExtraneous test files (no corresponding spell):\n'
-  printf '  %s\n' "$extraneous_files"
   status=1
 fi
 
