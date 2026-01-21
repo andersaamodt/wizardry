@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# Bootstrap spell: Install the script command using the system package manager.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-script
+
+This spell installs the script command (from util-linux) using the system package manager.
+script is required for PTY-based interactive testing.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+ASSUME_YES=1
+FORCE_INSTALL=${INSTALL_SCRIPT_FORCE_INSTALL:-0}
+export ASSUME_YES FORCE_INSTALL
+
+# script comes from util-linux package
+# On most systems, util-linux is already installed (provides essential tools)
+# This targets the script command specifically
+"$SCRIPT_DIR/manage-system-command" script util-linux
