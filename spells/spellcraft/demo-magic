@@ -30,17 +30,33 @@ spell_name() {
 demo_level() {
   level=$1
   
+  printf 'DEBUG[00]: demo_level called with level=%s\n' "$level" >&2
+  
   # Get level name using spell-levels imp
   level_name=$(spell-levels "$level" name)
   
+  printf 'DEBUG[01]: level_name=%s\n' "$level_name" >&2
   printf '\n'
   printf '%s%s=== Level %d: %s ===%s\n' "$YELLOW" "$BOLD" "$level" "$level_name" "$RESET"
   printf '\n'
   
+  printf 'DEBUG[02]: Printed header\n' >&2
+  
   # Run banish validation before each level (except 0) to ensure prerequisites
   # Use --skip-terminal-tests to avoid hanging in PTY environments
   if [ "$level" -gt 0 ]; then
+    printf 'DEBUG[A]: About to call banish %s\n' "$level" >&2
+    printf 'DEBUG[B]: banish command location: %s\n' "$(command -v banish)" >&2
+    printf 'DEBUG[C]: Calling banish now...\n' >&2
     banish "$level" --no-tests --skip-terminal-tests >/dev/null 2>&1
+    banish_exit=$?
+    printf 'DEBUG[D]: banish completed with exit code %s\n' "$banish_exit" >&2
+    if [ "$banish_exit" -ne 0 ]; then
+      printf 'DEBUG[E]: banish failed, will exit\n' >&2
+      say "demo-magic: banish level $level failed (exit code $banish_exit)"
+      exit 1
+    fi
+    printf 'DEBUG[F]: banish succeeded, continuing\n' >&2
     say_narrator "The wizard banished level $level."
     printf '\n'
     demo_pause
