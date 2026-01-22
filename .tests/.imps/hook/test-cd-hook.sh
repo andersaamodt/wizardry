@@ -67,8 +67,8 @@ test_toggle_cd_sets_cd_look() {
   test_spellbook="$tmpdir/.spellbook"
   mkdir -p "$test_spellbook"
   
-  # Enable cd-look using toggle-cd (can be executed or sourced)
-  output=$(env SPELLBOOK_DIR="$test_spellbook" WIZARDRY_DIR="$ROOT_DIR" "$ROOT_DIR/spells/.arcana/mud/toggle-cd" 2>&1)
+  # Enable cd-look using toggle-cd (must be sourced)
+  output=$(env SPELLBOOK_DIR="$test_spellbook" WIZARDRY_DIR="$ROOT_DIR" sh -c '. "$ROOT_DIR/spells/.arcana/mud/toggle-cd"' 2>&1)
   
   # Verify toggle-cd set cd-look=1 (not cd-hook=1)
   if ! grep -q "^cd-look=1$" "$test_spellbook/.mud"; then
