@@ -86,6 +86,7 @@ system_menu_display_menu() {
 # Catch Ctrl-C and TERM signal to return 1 cleanly
 trap 'return 0' INT TERM
 
+loop_limit=${MENU_LOOP_LIMIT:-}
 first_run=1
 
 while true; do
