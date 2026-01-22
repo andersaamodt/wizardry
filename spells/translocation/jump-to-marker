@@ -313,10 +313,5 @@ fi
 # Touch marker to update mtime for cycling
 touch "$marker_file"
 
-# Describe current location if look command exists
-if command -v look >/dev/null 2>&1; then
-        look 2>/dev/null || true
-fi
-
 # Restore shell options before returning
 set +eu
