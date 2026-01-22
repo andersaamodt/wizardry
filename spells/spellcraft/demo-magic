@@ -40,12 +40,17 @@ demo_level() {
   # Run banish to validate and set up this level
   # This ensures prerequisites are met, just like a real user would do
   if [ "$level" -gt 0 ]; then
-    # Run banish silently (stdin from /dev/null, output suppressed)
+    # Run banish silently (stdin from /dev/null, output to temp file for debugging)
     if command -v banish >/dev/null 2>&1; then
-      if ! banish "$level" --no-tests </dev/null >/dev/null 2>&1; then
+      banish_tmp=$(mktemp "${TMPDIR:-/tmp}/demo-banish.XXXXXX")
+      if ! banish "$level" --no-tests </dev/null >"$banish_tmp" 2>&1; then
         printf '%s\n' "demo-magic: banish level $level failed - prerequisites not met" >&2
+        printf 'Banish output:\n' >&2
+        cat "$banish_tmp" >&2
+        rm -f "$banish_tmp"
         exit 1
       fi
+      rm -f "$banish_tmp"
       say_narrator "The wizard banished level $level."
       printf '\n'
     fi
