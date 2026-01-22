@@ -67,8 +67,8 @@ test_toggle_cd_sets_cd_look() {
   test_spellbook="$tmpdir/.spellbook"
   mkdir -p "$test_spellbook"
   
-  # Enable cd-look using toggle-cd
-  output=$(env SPELLBOOK_DIR="$test_spellbook" sh "$ROOT_DIR/spells/.arcana/mud/toggle-cd" 2>&1)
+  # Enable cd-look using toggle-cd (must be sourced)
+  output=$(env SPELLBOOK_DIR="$test_spellbook" WIZARDRY_DIR="$ROOT_DIR" sh -c '. "$ROOT_DIR/spells/.arcana/mud/toggle-cd"' 2>&1)
   
   # Verify toggle-cd set cd-look=1 (not cd-hook=1)
   if ! grep -q "^cd-look=1$" "$test_spellbook/.mud"; then
@@ -157,11 +157,14 @@ test_cd_function_changes_directory() {
   # Undefine cd function to restore shell state
   unset -f cd 2>/dev/null || true
   
-  # Check result
-  if [ "$current" = "$testdir" ]; then
+  # Check result - resolve both paths to handle symlinks (macOS /private/var issue)
+  current_resolved=$(cd "$current" 2>/dev/null && pwd -P || printf '%s' "$current")
+  testdir_resolved=$(cd "$testdir" 2>/dev/null && pwd -P || printf '%s' "$testdir")
+  
+  if [ "$current_resolved" = "$testdir_resolved" ]; then
     return 0
   else
-    TEST_FAILURE_REASON="cd function didn't change directory (expected $testdir, got $current)"
+    TEST_FAILURE_REASON="cd function didn't change directory (expected $testdir_resolved, got $current_resolved)"
     return 1
   fi
 }

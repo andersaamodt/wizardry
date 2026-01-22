@@ -1,20 +1,45 @@
 #!/bin/sh
 
-# Toggle cd hook on/off using config imps
+# Toggle cd hook on/off - must be sourced to affect current shell
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: toggle-cd
+Usage: . toggle-cd    OR    toggle cd    (via parse/gloss)
 
 Turn the cd hook that runs 'look' after each directory change on or off.
+Changes take effect immediately in the current shell.
+
+This spell must be sourced (not executed) to affect your current shell.
 USAGE
   exit 0
   ;;
 esac
 
-set -eu
+# Uncastable pattern - detect if sourced
+toggle_cd_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) toggle_cd_sourced=1 ;;
+  esac
+else
+  toggle_cd_base=${0##*/}
+  case "$toggle_cd_base" in
+    sh|dash|bash|zsh|ksh|mksh) toggle_cd_sourced=1 ;;
+    toggle-cd) toggle_cd_sourced=0 ;;
+    parse) toggle_cd_sourced=1 ;;  # Sourced via parse
+    *) toggle_cd_sourced=1 ;;
+  esac
+fi
 
+if [ "$toggle_cd_sourced" -eq 0 ]; then
+  printf '%s\n' "This spell must be sourced. Use: . toggle-cd  OR  toggle cd" >&2
+  return 1 2>/dev/null || exit 1
+fi
+unset toggle_cd_sourced toggle_cd_base
+
+set +e  # Permissive mode since we're in user's shell
+set -u
 
 # Determine config file location
 SPELLBOOK_DIR="${SPELLBOOK_DIR:-$HOME/.spellbook}"
@@ -30,14 +55,29 @@ if config-has "$CONFIG_FILE" "cd-look" 2>/dev/null; then
         if [ "$current_value" = "1" ]; then
                 # Currently enabled, disable it
                 config-set "$CONFIG_FILE" "cd-look" "0"
+                
+                # Unload the cd function immediately
+                unset -f cd 2>/dev/null || true
+                
                 printf '%s\n' "✓ cd hook disabled. Directory changes will no longer display room descriptions."
-                exit 0
+                printf '%s\n' "  The cd function has been removed from your current shell."
+                return 0
         fi
 fi
 
 # Currently disabled or set to 0, enable it
 config-set "$CONFIG_FILE" "cd-look" "1"
-printf '%s\n' "✓ cd hook enabled. Each directory change will now display the room description."
-printf '%s\n' ""
-printf '%s\n' "Note: The cd function is automatically loaded by invoke-wizardry."
-printf '%s\n' "Open a new terminal window for changes to take effect."
+
+# Load the cd function immediately by sourcing load-cd-hook
+load_cd_hook_path="${WIZARDRY_DIR:-$HOME/.wizardry}/spells/.arcana/mud/load-cd-hook"
+if [ -f "$load_cd_hook_path" ]; then
+    # Source the load-cd-hook file to define cd function
+    . "$load_cd_hook_path" 2>/dev/null || {
+        printf '%s\n' "Warning: Failed to load cd hook function. It will be loaded on next shell startup."
+        return 1
+    }
+    printf '%s\n' "✓ cd hook enabled. Each directory change will now display the room description."
+    printf '%s\n' "  The cd function is now active in your current shell."
+else
+    printf '%s\n' "✓ cd hook enabled in config. The cd function will load on next shell startup."
+fi
