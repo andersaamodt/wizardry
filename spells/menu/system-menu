@@ -5,41 +5,15 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: . system-menu    OR    system menu    (via parse/gloss)
+Usage: system-menu
 
 Displays the system maintenance menu.
-
-This spell must be sourced (not executed) to affect your current shell.
 USAGE
-  return 0 2>/dev/null || return 0
+  exit 0
   ;;
 esac
 
-# Uncastable pattern - detect if sourced
-system_menu_sourced=0
-if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
-  case "${ZSH_EVAL_CONTEXT-}" in
-    *:file) system_menu_sourced=1 ;;
-  esac
-else
-  system_menu_base=${0##*/}
-  case "$system_menu_base" in
-    sh|dash|bash|zsh|ksh|mksh) system_menu_sourced=1 ;;
-    system-menu) system_menu_sourced=0 ;;
-    parse) system_menu_sourced=1 ;;  # Sourced via parse
-    *) system_menu_sourced=1 ;;
-  esac
-fi
-
-if [ "$system_menu_sourced" -eq 0 ]; then
-  printf '%s\n' "This spell must be sourced. Use:  . system-menu  OR  system menu" >&2
-  return 1 2>/dev/null || return 1
-fi
-unset system_menu_sourced system_menu_base
-
-set +e  # Permissive mode since we're in user's shell
-set -u
-
+set -eu
 . env-clear
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 spells_dir=$(dirname "$script_dir")
@@ -50,7 +24,7 @@ repo_dir=$(dirname "$spells_dir")
 . "$(command -v colors)"
 
 if ! require menu "The system menu needs the 'menu' command to present options."; then
-  return 1
+  exit 1
 fi
 
 # Detect whether we are running on NixOS to offer system-specific actions.
@@ -67,7 +41,7 @@ system_menu_display_menu() {
   test_suite="Test all wizardry spells%test-magic"
   profile_tests="Profile test performance%profile-tests"
   update_all="Update all software%update-all -v"
-  uninstall_wizardry="Uninstall wizardry%$repo_dir/.uninstall; return 0"
+  uninstall_wizardry="Uninstall wizardry%$repo_dir/.uninstall; exit 0"
   exit_label=$(exit-label)
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
@@ -83,10 +57,9 @@ system_menu_display_menu() {
   return "${system_menu_status:-0}"
 }
 
-# Catch Ctrl-C and TERM signal to return 1 cleanly
-trap 'return 0' INT TERM
+# Catch Ctrl-C and TERM signal to exit 1 cleanly
+trap 'exit 0' INT TERM
 
-loop_limit=${MENU_LOOP_LIMIT:-}
 first_run=1
 
 while true; do
@@ -104,14 +77,6 @@ while true; do
   if [ "$menu_status" -eq 130 ]; then
     printf 'ESC\n' >&2
     kill -TERM $$ 2>/dev/null || true
-    return 0
-  fi
-  
-  # Support MENU_LOOP_LIMIT for testing
-  if [ -n "$loop_limit" ]; then
-    loop_limit=$((loop_limit - 1))
-    if [ "$loop_limit" -le 0 ]; then
-      break
-    fi
+    exit 0
   fi
 done

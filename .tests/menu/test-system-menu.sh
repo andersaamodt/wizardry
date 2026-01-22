@@ -16,7 +16,11 @@ test_system_menu_checks_requirements() {
   tmp=$(make_tempdir)
   stub-menu "$tmp"
   stub-require-command "$tmp"
-  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" MENU_LOOP_LIMIT=1 run_sourced_spell "spells/menu/system-menu"
+  env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/system-menu" &
+  menu_pid=$!
+  sleep 0.5
+  kill -TERM "$menu_pid" 2>/dev/null || true
+  wait "$menu_pid" 2>/dev/null || true
   assert_path_exists "$tmp/req"
 }
 
@@ -30,8 +34,11 @@ test_system_menu_includes_test_utilities() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 run_sourced_spell "spells/menu/system-menu"
-  assert_success || return 1
+  env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/system-menu" &
+  menu_pid=$!
+  sleep 0.5
+  kill -TERM "$menu_pid" 2>/dev/null || true
+  wait "$menu_pid" 2>/dev/null || true
   args=$(cat "$tmp/log" 2>/dev/null || printf '')
   case "$args" in
     *"System Menu:"*"Restart...%shutdown-menu"*"Update all software%update-all -v"*"Update wizardry%update-wizardry"*"Manage services%"*"services-menu"*"Test all wizardry spells%test-magic"*'Exit%kill -TERM $PPID' ) : ;;
@@ -63,8 +70,12 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
-  # Run system-menu with MENU_LOOP_LIMIT
-  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 run_sourced_spell "spells/menu/system-menu"
+  # Run system-menu in background
+  env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/system-menu" &
+  menu_pid=$!
+  sleep 0.5
+  kill -TERM "$menu_pid" 2>/dev/null || true
+  wait "$menu_pid" 2>/dev/null || true
   
   args=$(cat "$tmp/log" 2>/dev/null || printf '')
   case "$args" in
@@ -76,10 +87,9 @@ SH
 run_test_case "system-menu ESC/Exit behavior" test_esc_exit_behavior
 
 test_shows_help() {
-  run_sourced_spell "spells/menu/system-menu" --help
+  run_cmd "$ROOT_DIR/spells/menu/system-menu" --help
   assert_success
-  assert_output_contains "Usage:"
-  assert_output_contains "system-menu"
+  assert_output_contains "Usage: system-menu"
 }
 
 run_test_case "system-menu --help shows usage" test_shows_help
@@ -105,7 +115,7 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
-  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 run_sourced_spell "spells/menu/system-menu"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/system-menu"
   assert_success || return 1
   
   # Verify no "Exiting" message appears in stderr
@@ -156,7 +166,7 @@ SH
   chmod +x "$tmp/exit-label"
   
   MENU_OUTPUT="$tmp/output"
-  PATH="$tmp:$PATH" MENU_OUTPUT="$MENU_OUTPUT" run_sourced_spell "spells/menu/system-menu"
+  run_cmd env PATH="$tmp:$PATH" MENU_OUTPUT="$MENU_OUTPUT" "$ROOT_DIR/spells/menu/system-menu"
   assert_success || return 1
   
   if [ -f "$MENU_OUTPUT" ]; then

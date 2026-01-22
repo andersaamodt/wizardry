@@ -16,7 +16,7 @@ test_services_menu_checks_dependencies() {
   tmp=$(make_tempdir)
   stub-menu "$tmp"
   stub-require-command "$tmp"
-  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" run_sourced_spell "spells/menu/services-menu"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/services-menu"
   assert_success && assert_path_exists "$tmp/req"
 }
 
@@ -32,7 +32,7 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   # Test as submenu (as it would be called from system-menu)
-  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/services-menu"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/services-menu"
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
@@ -59,7 +59,7 @@ SH
   chmod +x "$tmp/exit-label"
   
   
-  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/services-menu"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/services-menu"
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$tmp/log")
@@ -73,7 +73,7 @@ SH
 run_test_case "services-menu ESC/Exit behavior" test_esc_exit_behavior
 
 test_shows_help() {
-  run_sourced_spell "spells/menu/services-menu" --help
+  run_cmd "$ROOT_DIR/spells/menu/services-menu" --help
   assert_success
   assert_output_contains "Usage: services-menu"
 }

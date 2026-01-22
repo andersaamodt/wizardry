@@ -5,46 +5,21 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: . node-menu    OR    node menu    (via parse/gloss)
+Usage: node-menu
 
 Displays the Node.js management menu.
-
-This spell must be sourced (not executed) to affect your current shell.
 USAGE
-  return 0 2>/dev/null || exit 0
+  exit 0
   ;;
 esac
 
-require-wizardry || return 1 2>/dev/null || exit 1
+require-wizardry || exit 1
 
-# Uncastable pattern - detect if sourced
-node_menu_sourced=0
-if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
-  case "${ZSH_EVAL_CONTEXT-}" in
-    *:file) node_menu_sourced=1 ;;
-  esac
-else
-  node_menu_base=${0##*/}
-  case "$node_menu_base" in
-    sh|dash|bash|zsh|ksh|mksh) node_menu_sourced=1 ;;
-    node-menu) node_menu_sourced=0 ;;
-    parse) node_menu_sourced=1 ;;  # Sourced via parse
-    *) node_menu_sourced=1 ;;
-  esac
-fi
-
-if [ "$node_menu_sourced" -eq 0 ]; then
-  printf '%s\n' "This spell must be sourced. Use:  . node-menu  OR  node menu" >&2
-  return 1 2>/dev/null || exit 1
-fi
-unset node_menu_sourced node_menu_base
-
-set +e  # Permissive mode since we're in user's shell
-set -u
+set -eu
 . env-clear
 . colors
 
-trap 'return 0' INT TERM
+trap 'exit 0' INT TERM
 
 first_run=1
 

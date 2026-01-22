@@ -16,26 +16,26 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_sourced_spell "spells/menu/priorities" --help
+  run_spell "spells/menu/priorities" --help
   assert_success || return 1
   assert_output_contains "Usage: priorities" || return 1
 }
 
 test_help_h_flag() {
-  run_sourced_spell "spells/menu/priorities" -h
+  run_spell "spells/menu/priorities" -h
   assert_success || return 1
   assert_output_contains "Usage: priorities" || return 1
 }
 
 test_help_usage_flag() {
-  run_sourced_spell "spells/menu/priorities" --usage
+  run_spell "spells/menu/priorities" --usage
   assert_success || return 1
   assert_output_contains "Usage: priorities" || return 1
 }
 
 test_verbose_flag_accepted() {
   # Test that -v flag with --help is recognized
-  run_sourced_spell "spells/menu/priorities" --help
+  run_spell "spells/menu/priorities" --help
   assert_success || return 1
   # Verify help mentions verbose mode
   assert_output_contains "-v" || return 1
@@ -57,14 +57,14 @@ SH
   chmod +x "$tmp/exit-label"
   
   # Run in the temp directory
-  PATH="$tmp:$PATH" PWD="$tmp" run_sourced_spell "spells/menu/priorities"
+  run_cmd env PATH="$tmp:$PATH" PWD="$tmp" "$ROOT_DIR/spells/menu/priorities"
   # Should fail with message about no priorities
   assert_failure || return 1
   assert_output_contains "No priorities set" || return 1
 }
 
 test_invalid_option_produces_error() {
-  run_sourced_spell "spells/menu/priorities" -z 2>&1
+  run_spell "spells/menu/priorities" -z 2>&1
   # Invalid option should produce error message (getopts says "Illegal option")
   # The stderr may capture the error
   case "$OUTPUT$ERROR" in
@@ -141,7 +141,7 @@ SH
   touch "$tmp/test-dir/testfile2"
   
   cd "$tmp/test-dir"
-  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" TEST_DIR="$tmp/test-dir" PWD="$tmp/test-dir" run_sourced_spell "spells/menu/priorities"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" TEST_DIR="$tmp/test-dir" PWD="$tmp/test-dir" "$ROOT_DIR/spells/menu/priorities"
   
   # Verify checkbox [X] for checked item
   grep -q "\[X\] testfile1" "$tmp/log" || {
@@ -219,7 +219,7 @@ SH
   touch "$tmp/test-dir/testfile1"
   
   cd "$tmp/test-dir"
-  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" TEST_DIR="$tmp/test-dir" PWD="$tmp/test-dir" run_sourced_spell "spells/menu/priorities"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" TEST_DIR="$tmp/test-dir" PWD="$tmp/test-dir" "$ROOT_DIR/spells/menu/priorities"
   
   # Verify "Add priority" option appears
   grep -q "Add priority%" "$tmp/log" || {
@@ -328,7 +328,7 @@ SH
   touch "$tmp/test-dir/priority1.txt"
   
   cd "$tmp/test-dir"
-  PATH="$tmp:$PATH" MENU_CALLS="$tmp/calls.log" TEST_DIR="$tmp/test-dir" PWD="$tmp/test-dir" run_sourced_spell "spells/menu/priorities" 2>/dev/null || true
+  run_cmd env PATH="$tmp:$PATH" MENU_CALLS="$tmp/calls.log" TEST_DIR="$tmp/test-dir" PWD="$tmp/test-dir" "$ROOT_DIR/spells/menu/priorities" 2>/dev/null || true
   
   # Check that we had at least 2 calls
   if [ ! -f "$tmp/calls.log" ]; then
