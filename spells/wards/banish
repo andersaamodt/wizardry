@@ -1119,20 +1119,23 @@ HEREDOC_TEST
 
       # Check DNS resolution capability (for potential package downloads)
       # Installation may need to download packages or check repositories
-      if command -v nslookup >/dev/null 2>&1 || \
-         command -v host >/dev/null 2>&1 || \
-         command -v dig >/dev/null 2>&1; then
-        printf '  %s✓%s DNS resolution: DNS tools available\n' "$green" "$reset"
-      else
-        # Try to resolve a hostname using getent if available
-        if command -v getent >/dev/null 2>&1; then
-          if getent hosts github.com >/dev/null 2>&1; then
-            printf '  %s✓%s DNS resolution: Can resolve hostnames\n' "$green" "$reset"
-          else
-            printf '  %s✗%s DNS resolution: Cannot resolve hostnames (updates may fail)\n' "$red" "$reset"
-          fi
+      # Skip in PTY environments (--skip-terminal-tests) as DNS lookups can hang
+      if [ "$skip_terminal_tests" = "0" ]; then
+        if command -v nslookup >/dev/null 2>&1 || \
+           command -v host >/dev/null 2>&1 || \
+           command -v dig >/dev/null 2>&1; then
+          printf '  %s✓%s DNS resolution: DNS tools available\n' "$green" "$reset"
         else
-          printf '  %s✓%s DNS resolution: Tools not available (may limit updates)\n' "$green" "$reset"
+          # Try to resolve a hostname using getent if available
+          if command -v getent >/dev/null 2>&1; then
+            if getent hosts github.com >/dev/null 2>&1; then
+              printf '  %s✓%s DNS resolution: Can resolve hostnames\n' "$green" "$reset"
+            else
+              printf '  %s✗%s DNS resolution: Cannot resolve hostnames (updates may fail)\n' "$red" "$reset"
+            fi
+          else
+            printf '  %s✓%s DNS resolution: Tools not available (may limit updates)\n' "$green" "$reset"
+          fi
         fi
       fi
 
