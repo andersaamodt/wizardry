@@ -35,7 +35,7 @@ SH
 test_errors_when_helper_missing() {
   skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
-  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$stub_dir:/bin:/usr/bin" CAST_STORE="$stub_dir/does-not-exist" run_sourced_spell "spells/menu/spellbook" --list
+  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$stub_dir:/bin:/usr/bin" CAST_STORE="$stub_dir/does-not-exist" run_spell "spells/menu/spellbook" --list
   assert_failure || return 1
   case "$OUTPUT$ERROR" in
     *"memorize helper is missing"*) : ;;
@@ -52,7 +52,7 @@ test_scribe_records_command() {
   stub-require-command-simple "$stub_dir"
   
   # spellbook should not support --scribe anymore
-  PATH="$stub_dir:$PATH" run_sourced_spell "spells/menu/spellbook" --scribe spark "echo ignite"
+  PATH="$stub_dir:$PATH" run_spell "spells/menu/spellbook" --scribe spark "echo ignite"
   assert_failure || return 1
 }
 
@@ -65,7 +65,7 @@ test_scribe_multiple_commands() {
   stub-require-command-simple "$stub_dir"
   
   # spellbook should not support --scribe anymore
-  PATH="$stub_dir:$PATH" run_sourced_spell "spells/menu/spellbook" --scribe spark1 "echo ignite1"
+  PATH="$stub_dir:$PATH" run_spell "spells/menu/spellbook" --scribe spark1 "echo ignite1"
   assert_failure || return 1
 }
 
@@ -74,7 +74,7 @@ test_path_argument_accepted() {
   stub-memorize-command "$stub_dir"
   stub-require-command-simple "$stub_dir"
   # Test that spellbook --help includes the PATH usage
-  PATH="$stub_dir:$PATH" run_sourced_spell "spells/menu/spellbook" --help
+  PATH="$stub_dir:$PATH" run_spell "spells/menu/spellbook" --help
   assert_success || return 1
   case "$OUTPUT" in
     *"[PATH|"*) : ;;

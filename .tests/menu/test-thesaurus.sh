@@ -26,7 +26,7 @@ run_test_case "menu/thesaurus is executable" spell_is_executable
 run_test_case "menu/thesaurus has content" spell_has_content
 
 test_shows_help() {
-  run_sourced_spell "spells/menu/thesaurus" --help
+  run_cmd "$ROOT_DIR/spells/menu/thesaurus" --help
   assert_success
   assert_output_contains "Usage: thesaurus"
 }
@@ -42,7 +42,7 @@ printf '%s\n' "thesaurus: The 'menu' command is required." >&2
 exit 1
 SH
   chmod +x "$tmp/require-command"
-  PATH="$tmp:$PATH" run_sourced_spell "spells/menu/thesaurus"
+  PATH="$tmp:$PATH" run_cmd "$ROOT_DIR/spells/menu/thesaurus"
   assert_failure || return 1
   assert_error_contains "menu" || return 1
 }
@@ -50,7 +50,7 @@ SH
 run_test_case "thesaurus fails without menu dependency" test_fails_without_menu_dependency
 
 test_accepts_list_flag() {
-  run_sourced_spell "spells/menu/thesaurus" --help
+  run_cmd "$ROOT_DIR/spells/menu/thesaurus" --help
   assert_success || return 1
   assert_output_contains "--list" || return 1
 }
@@ -70,7 +70,7 @@ test_works_with_empty_synonyms() {
   
   # Run thesaurus --list (should not crash)
   export SPELLBOOK_DIR="$spellbook"
-  run_sourced_spell "spells/menu/thesaurus" --list >/dev/null 2>&1 || true
+  run_spell "spells/menu/thesaurus" --list >/dev/null 2>&1 || true
   
   # If we got here without crashing, test passes
   return 0
@@ -87,7 +87,7 @@ test_works_without_wizardry_dir() {
   # Run thesaurus without WIZARDRY_DIR set (should set it automatically)
   export SPELLBOOK_DIR="$spellbook"
   unset WIZARDRY_DIR || true
-  run_sourced_spell "spells/menu/thesaurus" --help >/dev/null 2>&1
+  run_spell "spells/menu/thesaurus" --help >/dev/null 2>&1
   assert_success || return 1
 }
 
@@ -106,7 +106,7 @@ test_no_integer_expression_error_with_empty_files() {
   
   # Run thesaurus --list and check for integer expression error
   export SPELLBOOK_DIR="$spellbook"
-  OUTPUT=$(run_sourced_spell "spells/menu/thesaurus" --list 2>&1) || true
+  OUTPUT=$(run_spell "spells/menu/thesaurus" --list 2>&1) || true
   
   # Should not contain "integer expression expected" error
   if printf '%s' "$OUTPUT" | grep -q "integer expression expected"; then
