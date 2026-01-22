@@ -25,26 +25,26 @@ SH
 }
 
 test_help() {
-  run_spell "spells/menu/priority-menu" --help
+  run_sourced_spell "spells/menu/priority-menu" --help
   assert_success || return 1
   assert_output_contains "Usage: priority-menu" || return 1
 }
 
 test_requires_file_argument() {
   skip-if-compiled || return $?
-  run_spell "spells/menu/priority-menu"
+  run_sourced_spell "spells/menu/priority-menu"
   assert_failure || return 1
   assert_error_contains "file path required" || return 1
 }
 
 test_help_h_flag() {
-  run_spell "spells/menu/priority-menu" -h
+  run_sourced_spell "spells/menu/priority-menu" -h
   assert_success || return 1
   assert_output_contains "Usage: priority-menu" || return 1
 }
 
 test_help_usage_flag() {
-  run_spell "spells/menu/priority-menu" --usage
+  run_sourced_spell "spells/menu/priority-menu" --usage
   assert_success || return 1
   assert_output_contains "Usage: priority-menu" || return 1
 }

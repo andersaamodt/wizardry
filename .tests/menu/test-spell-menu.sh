@@ -32,7 +32,7 @@ STUB
 
 test_errors_when_helper_missing() {
   stub_dir=$(make_stub_dir)
-  PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" CAST_STORE="$stub_dir/does-not-exist" run_spell "spells/menu/spell-menu" --help
+  PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" CAST_STORE="$stub_dir/does-not-exist" run_sourced_spell "spells/menu/spell-menu" --help
   # --help should work even without memorize
   assert_success || return 1
 }
@@ -41,7 +41,7 @@ test_shows_usage_with_help() {
   skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   stub-memorize-command "$stub_dir"
-  PATH="$stub_dir:$PATH" run_spell "spells/menu/spell-menu" --help
+  PATH="$stub_dir:$PATH" run_sourced_spell "spells/menu/spell-menu" --help
   assert_success || return 1
   case "$OUTPUT" in
     *"Usage: spell-menu"*) : ;;
@@ -55,7 +55,7 @@ test_requires_minimum_arguments() {
   stub-memorize-command "$stub_dir"
   stub-require-command-simple "$stub_dir"
   # Call with no arguments (needs 1)
-  PATH="$stub_dir:$PATH" run_spell "spells/menu/spell-menu"
+  PATH="$stub_dir:$PATH" run_sourced_spell "spells/menu/spell-menu"
   assert_failure || return 1
   case "$OUTPUT$ERROR" in
     *"Usage:"*) : ;;
@@ -67,7 +67,7 @@ test_cast_action_executes_command() {
   skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   stub-memorize-command "$stub_dir"
-  PATH="$stub_dir:$PATH" run_spell "spells/menu/spell-menu" --cast "echo hello"
+  PATH="$stub_dir:$PATH" run_sourced_spell "spells/menu/spell-menu" --cast "echo hello"
   assert_success || return 1
   case "$OUTPUT" in
     *"hello"*) : ;;

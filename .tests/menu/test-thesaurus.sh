@@ -70,7 +70,7 @@ test_works_with_empty_synonyms() {
   
   # Run thesaurus --list (should not crash)
   export SPELLBOOK_DIR="$spellbook"
-  run_spell "spells/menu/thesaurus" --list >/dev/null 2>&1 || true
+  run_sourced_spell "spells/menu/thesaurus" --list >/dev/null 2>&1 || true
   
   # If we got here without crashing, test passes
   return 0
@@ -87,7 +87,7 @@ test_works_without_wizardry_dir() {
   # Run thesaurus without WIZARDRY_DIR set (should set it automatically)
   export SPELLBOOK_DIR="$spellbook"
   unset WIZARDRY_DIR || true
-  run_spell "spells/menu/thesaurus" --help >/dev/null 2>&1
+  run_sourced_spell "spells/menu/thesaurus" --help >/dev/null 2>&1
   assert_success || return 1
 }
 
@@ -106,7 +106,7 @@ test_no_integer_expression_error_with_empty_files() {
   
   # Run thesaurus --list and check for integer expression error
   export SPELLBOOK_DIR="$spellbook"
-  OUTPUT=$(run_spell "spells/menu/thesaurus" --list 2>&1) || true
+  OUTPUT=$(run_sourced_spell "spells/menu/thesaurus" --list 2>&1) || true
   
   # Should not contain "integer expression expected" error
   if printf '%s' "$OUTPUT" | grep -q "integer expression expected"; then

@@ -18,7 +18,7 @@ test_main_menu_checks_dependency() {
   tmp=$(make_tempdir)
   stub-menu "$tmp"
   stub-require-command "$tmp"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/main-menu"
+  run_sourced_spell "spells/menu/main-menu" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req"
   assert_success && assert_path_exists "$tmp/req"
 }
 
@@ -32,7 +32,7 @@ test_main_menu_passes_expected_entries() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/main-menu"
+  run_sourced_spell "spells/menu/main-menu" MENU_LOG="$tmp/log"
   assert_success
   args=$(cat "$tmp/log")
   # MUD is not shown by default (requires enabling via mud-config)
@@ -47,7 +47,7 @@ test_main_menu_fails_without_menu_dependency() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stub-failing-require "$tmp"
-  run_cmd env PATH="$tmp:$PATH" "$ROOT_DIR/spells/menu/main-menu"
+  PATH="$tmp:$PATH" run_sourced_spell "spells/menu/main-menu"
   assert_failure || return 1
   assert_error_contains "The main menu needs the 'menu' command" || return 1
 }
@@ -62,7 +62,7 @@ test_main_menu_shows_title() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/main-menu"
+  run_sourced_spell "spells/menu/main-menu" MENU_LOG="$tmp/log"
   assert_success
   grep -q "Main Menu:" "$tmp/log" || {
     TEST_FAILURE_REASON="Main Menu: title missing"
@@ -106,7 +106,7 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/main-menu"
+  run_sourced_spell "spells/menu/main-menu" MENU_LOG="$tmp/log"
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully on TERM signal"; return 1; }
   
   args=$(cat "$tmp/log")
@@ -143,7 +143,7 @@ case "$1" in
 esac
 SH
   chmod +x "$tmp/mud-config"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/main-menu"
+  run_sourced_spell "spells/menu/main-menu" MENU_LOG="$tmp/log"
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
@@ -163,7 +163,7 @@ shows_help() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/main-menu" --help
+  run_sourced_spell "spells/menu/main-menu" MENU_LOG="$tmp/log" --help
   # Note: spell may not have --help implemented yet, so we just ensure it doesn't crash
   true
 }
@@ -183,7 +183,7 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/main-menu"
+  run_sourced_spell "spells/menu/main-menu" MENU_LOG="$tmp/log"
   assert_success || return 1
   
   # Verify no "Exiting" message appears in stderr
@@ -225,7 +225,7 @@ SH
   chmod +x "$tmp/exit-label"
   
   INVOCATION_FILE="$tmp/invocations"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" INVOCATION_FILE="$INVOCATION_FILE" "$ROOT_DIR/spells/menu/main-menu"
+  run_sourced_spell "spells/menu/main-menu" MENU_LOG="$tmp/log" INVOCATION_FILE="$INVOCATION_FILE"
   assert_success || return 1
   
   # The menu loop should have run once (on first_run, no leading newline)
@@ -279,7 +279,7 @@ SH
   chmod +x "$tmp/exit-label"
   
   MENU_OUTPUT="$tmp/output"
-  run_cmd env PATH="$tmp:$PATH" MENU_OUTPUT="$MENU_OUTPUT" "$ROOT_DIR/spells/menu/main-menu"
+  run_sourced_spell "spells/menu/main-menu" MENU_OUTPUT="$MENU_OUTPUT"
   assert_success || return 1
   
   # Count blank lines in output - should be exactly 1
