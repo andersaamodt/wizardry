@@ -105,4 +105,12 @@ while true; do
     kill -TERM $$ 2>/dev/null || true
     return 0
   fi
+  
+  # Support MENU_LOOP_LIMIT for testing
+  if [ -n "$loop_limit" ]; then
+    loop_limit=$((loop_limit - 1))
+    if [ "$loop_limit" -le 0 ]; then
+      break
+    fi
+  fi
 done
