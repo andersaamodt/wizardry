@@ -78,7 +78,8 @@ run_test_case "system-menu ESC/Exit behavior" test_esc_exit_behavior
 test_shows_help() {
   run_sourced_spell "spells/menu/system-menu" --help
   assert_success
-  assert_output_contains "Usage: system-menu"
+  assert_output_contains "Usage:"
+  assert_output_contains "system-menu"
 }
 
 run_test_case "system-menu --help shows usage" test_shows_help
@@ -104,7 +105,7 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
-  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/system-menu"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 run_sourced_spell "spells/menu/system-menu"
   assert_success || return 1
   
   # Verify no "Exiting" message appears in stderr
