@@ -46,8 +46,9 @@ set -u
 
 # The cd override - calls cd-hook imp after successful directory change
 cd() {
-    # Use builtin for zsh/bash, command for other shells
-    if [ -n "${ZSH_VERSION-}" ] || [ -n "${BASH_VERSION-}" ]; then
+    # Use builtin for zsh/bash (where it's available), command for POSIX sh
+    # Test if builtin exists by trying it in a way that won't cause errors
+    if command -v builtin >/dev/null 2>&1; then
         builtin cd "$@" || return $?
     else
         command cd "$@" || return $?
