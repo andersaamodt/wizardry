@@ -39,14 +39,10 @@ demo_level() {
   
   # Run banish to validate and set up this level
   # This ensures prerequisites are met, just like a real user would do
-  # Skip in CI PTY environment where banish can hang
-  if [ "$level" -gt 0 ] && [ "${SKIP_BANISH-}" != "1" ]; then
+  if [ "$level" -gt 0 ]; then
     say_narrator "The wizard prepares the ritual circle for level $level..."
     # Run banish for levels 0 through current level to ensure setup
-    # Use timeout to prevent hanging, stdin from /dev/null for PTY safety
-    if command -v banish >/dev/null 2>&1 && command -v timeout >/dev/null 2>&1; then
-      timeout 10 banish "$level" --no-tests </dev/null >/dev/null 2>&1 || true
-    elif command -v banish >/dev/null 2>&1; then
+    if command -v banish >/dev/null 2>&1; then
       banish "$level" --no-tests </dev/null >/dev/null 2>&1 || true
     fi
     printf '\n'

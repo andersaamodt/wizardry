@@ -69,12 +69,12 @@ jobs:
             exit 2
           fi
           . spells/.imps/sys/invoke-wizardry || exit 2
-          # Skip banish in PTY environment to avoid hanging
-          export SKIP_BANISH=1
           exec ./spells/spellcraft/demo-magic all
           INNERCMD
           chmod +x "$test_dir/cmd.sh"
-          printf '' | socat - "EXEC:$test_dir/cmd.sh,pty,stderr" 2>&1
+          # Use stdin closed to prevent socat hanging, but still pass through output
+          exec 0</dev/null
+          socat - "EXEC:$test_dir/cmd.sh,pty,sighup,stderr" 2>&1
           PTYWRAPPER
           chmod +x /tmp/run-with-pty.sh
           /tmp/run-with-pty.sh
