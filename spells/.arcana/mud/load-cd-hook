@@ -46,10 +46,12 @@ set -u
 
 # The cd override - calls cd-hook imp after successful directory change
 cd() {
-    # Use builtin for zsh/bash (where it's available), command for POSIX sh
-    # Test if builtin exists by trying it in a way that won't cause errors
-    if command -v builtin >/dev/null 2>&1; then
-        builtin cd "$@" || return $?
+    # Use builtin for zsh/bash (where it's required for function override), command for POSIX sh
+    # We use eval to check for bash/zsh in a way that won't fail in POSIX sh
+    # This is necessary because 'builtin cd' is required in zsh, but doesn't exist in pure POSIX sh
+    if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
+        # In bash/zsh, must use 'builtin' to call the actual cd builtin from within override function
+        eval 'builtin cd "$@"' || return $?
     else
         command cd "$@" || return $?
     fi
