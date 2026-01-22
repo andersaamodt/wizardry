@@ -16,7 +16,6 @@ Arguments:
 Options:
   --no-bwrap    Skip bubblewrap sandboxing (use with caution)
   --color       Force colored output even without TTY
-  --verbose     Show commands before execution using wizard-eyes
 
 This demonstrates actual wizardry spells at each level.
 
@@ -34,7 +33,6 @@ set -eu
 target_level=27
 no_bwrap=0
 force_color=0
-verbose=0
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -44,10 +42,6 @@ while [ "$#" -gt 0 ]; do
       ;;
     --color)
       force_color=1
-      shift
-      ;;
-    --verbose)
-      verbose=1
       shift
       ;;
     all)
@@ -97,9 +91,7 @@ demo_level() {
   if command -v banish >/dev/null 2>&1; then
     banish_cmd="banish $level --only --no-tests --no-heal"
     printf '%sThe wizard banishes level %d:%s\n' "$cyan" "$level" "$reset"
-    if [ "$verbose" -eq 1 ]; then
-      wizard-eyes "$banish_cmd"
-    fi
+    wizard-eyes "$banish_cmd"
     printf '\n'
     if eval "$banish_cmd" >/dev/null 2>&1; then
       printf '%sThe wizard banished level %d.%s\n' "$green" "$level" "$reset"
@@ -120,9 +112,7 @@ demo_level() {
         spell_cmd="validate-spells banish:wards validate-spells:.wizardry"
         printf '%sThe wizard casts %s%svalidate-spells%s to verify core spells:%s\n' \
           "$cyan" "$bold$green" "$reset$cyan" "$reset"
-        if [ "$verbose" -eq 1 ]; then
           wizard-eyes "$spell_cmd"
-        fi
         printf '\n'
         eval "$spell_cmd" 2>&1 | head -3
         printf '\n'
@@ -134,9 +124,7 @@ demo_level() {
         spell_cmd="generate-glosses"
         printf '%sThe wizard casts %s%sgenerate-glosses%s to build the glossary:%s\n' \
           "$cyan" "$bold$green" "$reset$cyan" "$reset"
-        if [ "$verbose" -eq 1 ]; then
           wizard-eyes "$spell_cmd"
-        fi
         printf '\n'
         # Run generate-glosses and show count
         eval "$spell_cmd" >/dev/null 2>&1 || true
@@ -166,9 +154,7 @@ demo_level() {
         printf '%sThe wizard casts %s%sgenerate-glosses%s ' \
           "$cyan" "$bold$green" "$reset$cyan"
         printf 'to create these convenient aliases:%s\n' "$reset"
-        if [ "$verbose" -eq 1 ]; then
           wizard-eyes "$spell_cmd"
-        fi
         printf '\n'
         # Show gloss generation
         gloss_output=$(eval "$spell_cmd" 2>&1 | grep "Found.*executable" | head -1)
@@ -183,9 +169,7 @@ demo_level() {
         printf '%sThe wizard casts %s%sfathom-terminal%s ' \
           "$cyan" "$bold$green" "$reset$cyan"
         printf 'to detect terminal dimensions:%s\n' "$reset"
-        if [ "$verbose" -eq 1 ]; then
           wizard-eyes "$spell_cmd"
-        fi
         printf '\n'
         if term_size=$(eval "$spell_cmd" 2>&1); then
           printf '%s\n' "$term_size"
@@ -215,16 +199,12 @@ demo_level() {
           "$cyan" "$bold$green" "$reset$cyan" "$reset"
         printf '\n'
         spell_cmd="temp-file demo-xattr"
-        if [ "$verbose" -eq 1 ]; then
           wizard-eyes "$spell_cmd"
-        fi
         test_file=$(eval "$spell_cmd")
         printf 'Created temporary file: %s\n' "$test_file"
         if command -v enchant >/dev/null 2>&1; then
           spell_cmd="enchant \"$test_file\" demo-key \"demo-value\""
-          if [ "$verbose" -eq 1 ]; then
             wizard-eyes "$spell_cmd"
-          fi
           eval "$spell_cmd" 2>&1 || true
           printf 'Applied enchantment to file\n'
         fi
@@ -238,15 +218,11 @@ demo_level() {
           "$cyan" "$bold$green" "$reset$cyan" "$reset"
         printf '\n'
         spell_cmd="temp-file demo-priority"
-        if [ "$verbose" -eq 1 ]; then
           wizard-eyes "$spell_cmd"
-        fi
         test_file=$(eval "$spell_cmd")
         printf 'Created file: %s\n' "$test_file"
         spell_cmd="prioritize \"$test_file\" 5"
-        if [ "$verbose" -eq 1 ]; then
           wizard-eyes "$spell_cmd"
-        fi
         eval "$spell_cmd" 2>&1 || true
         printf 'Set priority to 5\n'
         printf '\n'
@@ -278,9 +254,7 @@ demo_level() {
         spell_cmd="look"
         printf '%sThe wizard casts %s%slook%s to examine the current location:%s\n' \
           "$cyan" "$bold$green" "$reset$cyan" "$reset"
-        if [ "$verbose" -eq 1 ]; then
           wizard-eyes "$spell_cmd"
-        fi
         printf '\n'
         eval "$spell_cmd" 2>&1 | head -5 || printf 'No MUD description available\n'
         printf '\n'
@@ -293,9 +267,7 @@ demo_level() {
           "$cyan" "$bold$green" "$reset$cyan" "$reset"
         printf '\n'
         spell_cmd="temp-file demo-copy-src"
-        if [ "$verbose" -eq 1 ]; then
           wizard-eyes "$spell_cmd"
-        fi
         test_file=$(eval "$spell_cmd")
         printf 'Source file created\n'
         printf '\n'
@@ -308,9 +280,7 @@ demo_level() {
           "$cyan" "$bold$green" "$reset$cyan" "$reset"
         printf '\n'
         spell_cmd="ask-yn \"Is this a demonstration?\" yes"
-        if [ "$verbose" -eq 1 ]; then
           wizard-eyes "$spell_cmd"
-        fi
         printf '%s  $ %sask-yn%s "Is this a demonstration?" yes%s\n' \
           "$cyan" "$green" "$reset$cyan" "$reset"
         printf 'y\n' | eval "$spell_cmd" 2>&1 || true
@@ -324,9 +294,7 @@ demo_level() {
         printf '%sThe wizard casts %s%spackage-managers%s ' \
           "$cyan" "$bold$green" "$reset$cyan"
         printf 'to detect system package managers:%s\n' "$reset"
-        if [ "$verbose" -eq 1 ]; then
           wizard-eyes "$spell_cmd"
-        fi
         printf '\n'
         eval "$spell_cmd" 2>&1 | head -5
         printf '\n'
@@ -338,9 +306,7 @@ demo_level() {
         spell_cmd="service-manager"
         printf '%sThe wizard casts %s%sservice-manager%s to detect the init system:%s\n' \
           "$cyan" "$bold$green" "$reset$cyan" "$reset"
-        if [ "$verbose" -eq 1 ]; then
           wizard-eyes "$spell_cmd"
-        fi
         printf '\n'
         eval "$spell_cmd" 2>&1 || printf 'Init system detection unavailable\n'
         printf '\n'
@@ -361,9 +327,7 @@ demo_level() {
         spell_cmd="divine-path sh"
         printf '%sThe wizard casts %s%sdivine-path%s to locate commands:%s\n' \
           "$cyan" "$bold$green" "$reset$cyan" "$reset"
-        if [ "$verbose" -eq 1 ]; then
           wizard-eyes "$spell_cmd"
-        fi
         printf '\n'
         eval "$spell_cmd" 2>&1 | head -3 || printf '/bin/sh\n'
         printf '\n'
@@ -481,12 +445,10 @@ if [ "$no_bwrap" -eq 0 ] && [ "${WIZARDRY_DEMO_IN_BWRAP-0}" -ne 1 ]; then
     
     # Re-exec with bwrap sandbox
     color_arg=""
-    verbose_arg=""
     [ "$force_color" -eq 1 ] && color_arg="--color"
-    [ "$verbose" -eq 1 ] && verbose_arg="--verbose"
     exec bwrap --unshare-user --ro-bind / / --dev-bind /dev /dev --bind /proc /proc \
       --bind /tmp /tmp --setenv PATH "$PATH" --setenv WIZARDRY_DEMO_IN_BWRAP 1 -- \
-      "$0" "$target_level" --no-bwrap $color_arg $verbose_arg
+      "$0" "$target_level" --no-bwrap $color_arg
   fi
 fi
 
