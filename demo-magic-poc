@@ -141,11 +141,24 @@ demo_level() {
       ;;
       
     3)
-      if command -v gloss >/dev/null 2>&1; then
-        printf '%sThe wizard casts %s%sgloss%s%s to look up a spell:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      # Demonstrate what glosses do
+      printf '%sThe wizard demonstrates the glossary system:%s\n' "$cyan" "$reset"
+      printf '\n'
+      
+      if command -v generate-glosses >/dev/null 2>&1; then
+        printf '%sGlosses enable natural space-separated commands:%s\n' "$cyan" "$reset"
         printf '\n'
-        printf '%s  $ gloss banish%s\n' "$green" "$reset"
-        gloss banish 2>&1 | head -10
+        printf '  Instead of:  %sjump-to-marker%s home\n' "$green" "$reset"
+        printf '  You can use: %sjump to marker%s home\n' "$green" "$reset"
+        printf '\n'
+        printf '  Instead of:  %stemp-file%s myfile\n' "$green" "$reset"
+        printf '  You can use: %stemp file%s myfile\n' "$green" "$reset"
+        printf '\n'
+        printf '%sThe wizard casts %s%sgenerate-glosses%s%s to create these convenient aliases:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '\n'
+        # Show gloss generation
+        gloss_output=$(generate-glosses 2>&1 | grep "Found.*executable" | head -1)
+        printf '%s\n' "$gloss_output"
         printf '\n'
       fi
       ;;
