@@ -42,9 +42,12 @@ demo_level() {
   if [ "$level" -gt 0 ]; then
     # Run banish silently (stdin from /dev/null, output suppressed)
     if command -v banish >/dev/null 2>&1; then
-      banish "$level" --no-tests </dev/null >/dev/null 2>&1
+      if ! banish "$level" --no-tests </dev/null >/dev/null 2>&1; then
+        printf '%s\n' "demo-magic: banish level $level failed - prerequisites not met" >&2
+        exit 1
+      fi
+      say_narrator "The wizard banished level $level."
     fi
-    say_narrator "The wizard banished level $level."
     printf '\n'
   fi
   
