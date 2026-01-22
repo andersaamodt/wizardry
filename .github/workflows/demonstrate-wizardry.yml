@@ -30,4 +30,4 @@ jobs:
       - name: Run demo-magic with PTY (all levels)
         run: |
           . spells/.imps/sys/invoke-wizardry
-          run-with-pty ./demo-magic-poc all --color --no-bwrap --verbose
+          run-with-pty ./demo-magic-poc all --color --no-bwrap

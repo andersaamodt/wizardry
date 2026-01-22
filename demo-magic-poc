@@ -16,7 +16,6 @@ Arguments:
 Options:
   --no-bwrap    Skip bubblewrap sandboxing (use with caution)
   --color       Force colored output even without TTY
-  --verbose     Show commands before executing them (using wizard-cast)
 
 This demonstrates actual wizardry spells at each level.
 
@@ -34,7 +33,6 @@ set -eu
 target_level=27
 no_bwrap=0
 force_color=0
-verbose=0
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -44,10 +42,6 @@ while [ "$#" -gt 0 ]; do
       ;;
     --color)
       force_color=1
-      shift
-      ;;
-    --verbose)
-      verbose=1
       shift
       ;;
     all)
@@ -80,16 +74,6 @@ else
   reset=''
 fi
 
-# Helper function to run commands (with wizard-cast in verbose mode)
-run_cmd() {
-  cmd="$*"
-  if [ "$verbose" -eq 1 ] && command -v wizard-cast >/dev/null 2>&1; then
-    wizard-cast $cmd
-  else
-    $cmd
-  fi
-}
-
 # Demo a single level
 demo_level() {
   level=$1
@@ -102,19 +86,12 @@ demo_level() {
   
   # Validate prerequisites with banish
   if command -v banish >/dev/null 2>&1; then
-    banish_cmd="banish $level --only --no-tests --no-heal"
-    if [ "$verbose" -eq 1 ] && command -v wizard-cast >/dev/null 2>&1; then
-      wizard-cast $banish_cmd >/dev/null 2>&1
-      banish_result=$?
+    printf '%sThe wizard casts %s%sbanish%s%s to validate prerequisites:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+    printf '\n'
+    if banish "$level" --only --no-tests --no-heal >/dev/null 2>&1; then
+      printf '%s✓ Prerequisites validated for level %d%s\n' "$green" "$level" "$reset"
     else
-      $banish_cmd >/dev/null 2>&1
-      banish_result=$?
-    fi
-    
-    if [ "$banish_result" -eq 0 ]; then
-      printf '%sThe wizard banished level %d.%s\n' "$cyan" "$level" "$reset"
-    else
-      printf '%sThe wizard failed to fully banish level %d.%s\n' "$cyan" "$level" "$reset"
+      printf '%s⚠ Some prerequisites not met (continuing demonstration)%s\n' "$yellow" "$reset"
     fi
     printf '\n'
   fi
@@ -125,11 +102,11 @@ demo_level() {
       # Level 0 is for test-magic only, skip in demo-magic
       ;;
       
-     1)
+    1)
       if command -v validate-spells >/dev/null 2>&1; then
         printf '%sThe wizard casts %s%svalidate-spells%s%s to verify core spells:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
-        run_cmd validate-spells banish:wards validate-spells:.wizardry 2>&1 | head -3
+        validate-spells banish:wards validate-spells:.wizardry 2>&1 | head -3
         printf '\n'
       fi
       ;;
@@ -139,7 +116,7 @@ demo_level() {
         printf '%sThe wizard casts %s%sgenerate-glosses%s%s to build the glossary:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
         # Run generate-glosses and show count
-        run_cmd generate-glosses >/dev/null 2>&1 || true
+        generate-glosses >/dev/null 2>&1 || true
         if [ -d "${WIZARDRY_DIR}/.glossary" ]; then
           gloss_count=$(find "${WIZARDRY_DIR}/.glossary" -type f 2>/dev/null | wc -l)
           printf 'Generated %d gloss files\n' "$gloss_count"
@@ -165,7 +142,7 @@ demo_level() {
         printf '%sThe wizard casts %s%sgenerate-glosses%s%s to create these convenient aliases:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
         # Show gloss generation
-        gloss_output=$(run_cmd generate-glosses 2>&1 | grep "Found.*executable" | head -1)
+        gloss_output=$(generate-glosses 2>&1 | grep "Found.*executable" | head -1)
         printf '%s\n' "$gloss_output"
         printf '\n'
       fi
@@ -417,11 +394,9 @@ if [ "$no_bwrap" -eq 0 ] && [ "${WIZARDRY_DEMO_IN_BWRAP-0}" -ne 1 ]; then
     # Re-exec with bwrap sandbox
     color_arg=""
     [ "$force_color" -eq 1 ] && color_arg="--color"
-    verbose_arg=""
-    [ "$verbose" -eq 1 ] && verbose_arg="--verbose"
     exec bwrap --unshare-user --ro-bind / / --dev-bind /dev /dev --bind /proc /proc \
       --bind /tmp /tmp --setenv PATH "$PATH" --setenv WIZARDRY_DEMO_IN_BWRAP 1 -- \
-      "$0" "$target_level" --no-bwrap $color_arg $verbose_arg
+      "$0" "$target_level" --no-bwrap $color_arg
   fi
 fi
 
@@ -457,7 +432,8 @@ while [ "$current" -le "$target_level" ]; do
 done
 
 printf '\n'
-printf '%sThe demonstration concludes. The wizard closes the circle of magic.%s\n' "$cyan" "$reset"
+printf '%sThe demonstration concludes. The circle of magic fades.%s\n' "$cyan" "$reset"
 printf '\n'
+printf 'DEMO_MAGIC_COMPLETE\n'
 
 exit 0
