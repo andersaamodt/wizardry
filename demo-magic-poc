@@ -20,7 +20,7 @@ esac
 
 set -eu
 
-# Simple level demonstrations without banish
+# Simple level demonstrations with incremental banish integration
 demo_level() {
   level=$1
   
@@ -31,13 +31,13 @@ demo_level() {
       printf 'Level 0: POSIX & Platform Foundation\n'
       printf 'The wizard examines the foundation of reality itself...\n\n'
       
-      # Simple commands that should always work
-      if command -v sh >/dev/null 2>&1; then
-        printf 'Shell: %s\n' "$(command -v sh)"
-      fi
-      
-      if command -v uname >/dev/null 2>&1; then
-        printf 'Platform: %s\n' "$(uname -s)"
+      # Run banish for level 0 validation
+      printf 'Running banish validation for level 0...\n'
+      if banish 0 --only --no-tests 2>&1; then
+        printf '\nBanish level 0: PASSED\n'
+      else
+        printf '\nBanish level 0: FAILED\n'
+        return 1
       fi
       
       printf '\nLevel 0 complete.\n'
