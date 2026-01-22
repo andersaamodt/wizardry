@@ -66,7 +66,9 @@ while [ "$#" -gt 0 ]; do
 done
 
 # Colors for narration
-if { [ -t 1 ] || [ "$force_color" -eq 1 ] || [ -n "${CI-}" ]; } && command -v tput >/dev/null 2>&1; then
+use_colors=0
+{ [ -t 1 ] || [ "$force_color" -eq 1 ] || [ -n "${CI-}" ]; } && use_colors=1
+if [ "$use_colors" -eq 1 ] && command -v tput >/dev/null 2>&1; then
   cyan=$(tput setaf 6 2>/dev/null || printf '\033[36m')
   green=$(tput setaf 2 2>/dev/null || printf '\033[32m')
   yellow=$(tput setaf 3 2>/dev/null || printf '\033[33m')
