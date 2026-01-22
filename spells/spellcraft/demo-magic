@@ -37,9 +37,14 @@ demo_level() {
   printf '%s%s=== Level %d: %s ===%s\n' "$YELLOW" "$BOLD" "$level" "$level_name" "$RESET"
   printf '\n'
   
-  # NOTE: banish validation removed - doesn't work reliably in PTY environments
-  # In normal usage, users would run banish before demonstrating, but for
-  # automated demonstrations we skip this step
+  # Run banish validation before each level (except 0) to ensure prerequisites
+  # Use --skip-terminal-tests to avoid hanging in PTY environments
+  if [ "$level" -gt 0 ]; then
+    banish "$level" --no-tests --skip-terminal-tests >/dev/null 2>&1
+    say_narrator "The wizard banished level $level."
+    printf '\n'
+    demo_pause
+  fi
   
   # Add level-specific narration and demonstrations
   case "$level" in

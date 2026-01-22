@@ -19,6 +19,7 @@ Options:
   --no-heal             Skip self-healing (only report issues)
   --no-tests            Skip running tests (only check assumptions)
   --only                Only validate this specific level (don't run lower levels)
+  --skip-terminal-tests Skip terminal capability tests (for PTY environments)
 
 Examples:
   banish          # Validate through level 4 (default - menu system)
@@ -64,6 +65,7 @@ skip_tests=0
 skip_heal=0
 only_this_level=0
 run_all=0
+skip_terminal_tests=0
 
 # First, check if first arg is a number (the level)
 if [ "$#" -gt 0 ]; then
@@ -92,6 +94,10 @@ while [ "$#" -gt 0 ]; do
       ;;
     --only)
       only_this_level=1
+      shift
+      ;;
+    --skip-terminal-tests)
+      skip_terminal_tests=1
       shift
       ;;
     --)
@@ -2536,8 +2542,10 @@ HEREDOC_TEST
       fi
 
       # Check stty raw mode support (required for await-keypress)
-      # Only test if we have a real terminal
-      if [ -t 0 ] && [ -t 1 ]; then
+      # Only test if we have a real terminal and terminal tests aren't skipped
+      if [ "$skip_terminal_tests" = "1" ]; then
+        printf '  %s✓%s Terminal raw mode: Skipped (--skip-terminal-tests)\n' "$green" "$reset"
+      elif [ -t 0 ] && [ -t 1 ]; then
         original_stty=$(stty -g 2>/dev/null || printf '')
         
         if [ -n "$original_stty" ]; then
