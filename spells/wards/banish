@@ -32,6 +32,8 @@ esac
 
 set -eu
 
+printf 'DEBUG[BANISH-START]: banish started\n' >&2
+
 # Detect WIZARDRY_DIR if not already set
 if [ -z "${WIZARDRY_DIR-}" ]; then
   # We're being executed directly - detect from script location
@@ -57,6 +59,8 @@ if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
 fi
 
 export WIZARDRY_DIR
+
+printf 'DEBUG[BANISH-ARGS]: About to parse arguments\n' >&2
 
 # Parse arguments
 target_level=4
@@ -212,6 +216,7 @@ banish_count_words="${WIZARDRY_DIR}/spells/.imps/text/count-words"
 # Run level-specific checks and actions using case statement
 banish_process_level() {
   level=$1
+  printf 'DEBUG[BANISH-LEVEL]: Processing level %d\n' "$level" >&2
   level_name=$("$spell_levels_script" "$level" name)
   
   printf '\nLevel %d: %s\n' "$level" "$level_name"
@@ -2838,6 +2843,7 @@ if [ ! -x "$validate_spells" ]; then
 fi
 
 # Run each level from 0 to target_level (or just target_level if --only)
+printf 'DEBUG[BANISH-LOOP]: About to start level loop, target_level=%d\n' "$target_level" >&2
 if [ "$only_this_level" -eq 1 ]; then
   current_level=$target_level
 else
