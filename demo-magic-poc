@@ -88,18 +88,18 @@ demo_level() {
   # Get level info
   level_name=$(spell-levels "$level" name 2>/dev/null || printf "Level %d" "$level")
   
-  printf '\n%sThe wizard will now demonstrate %sSpell Level %d%s (%s).%s\n' \
-    "$cyan" "$bold$yellow" "$level" "$reset$cyan" "$level_name" "$reset"
+  printf '\n%s⊕ Spell Level %d ⊕%s\n' "$bold$yellow" "$level" "$reset"
+  printf '%sThe wizard will now demonstrate (%s).%s\n' "$cyan" "$level_name" "$reset"
   printf '\n'
   
   # Validate prerequisites with banish
   if command -v banish >/dev/null 2>&1; then
     banish_cmd="banish $level --only --no-tests --no-heal"
+    printf '%sThe wizard casts %s%sbanish%s to validate prerequisites:%s\n' \
+      "$cyan" "$bold$green" "$reset$cyan" "$reset"
     if [ "$verbose" -eq 1 ]; then
       wizard-eyes "$banish_cmd"
     fi
-    printf '%sThe wizard casts %s%sbanish%s%s to validate prerequisites:%s\n' \
-      "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
     printf '\n'
     if eval "$banish_cmd" >/dev/null 2>&1; then
       printf '%sThe wizard banished level %d.%s\n' "$green" "$level" "$reset"
@@ -118,11 +118,11 @@ demo_level() {
     1)
       if command -v validate-spells >/dev/null 2>&1; then
         spell_cmd="validate-spells banish:wards validate-spells:.wizardry"
+        printf '%sThe wizard casts %s%svalidate-spells%s to verify core spells:%s\n' \
+          "$cyan" "$bold$green" "$reset$cyan" "$reset"
         if [ "$verbose" -eq 1 ]; then
           wizard-eyes "$spell_cmd"
         fi
-        printf '%sThe wizard casts %s%svalidate-spells%s%s to verify core spells:%s\n' \
-          "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
         eval "$spell_cmd" 2>&1 | head -3
         printf '\n'
@@ -132,11 +132,11 @@ demo_level() {
     2)
       if command -v generate-glosses >/dev/null 2>&1; then
         spell_cmd="generate-glosses"
+        printf '%sThe wizard casts %s%sgenerate-glosses%s to build the glossary:%s\n' \
+          "$cyan" "$bold$green" "$reset$cyan" "$reset"
         if [ "$verbose" -eq 1 ]; then
           wizard-eyes "$spell_cmd"
         fi
-        printf '%sThe wizard casts %s%sgenerate-glosses%s%s to build the glossary:%s\n' \
-          "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
         # Run generate-glosses and show count
         eval "$spell_cmd" >/dev/null 2>&1 || true
@@ -163,12 +163,12 @@ demo_level() {
         printf '  You can use: %stemp file%s myfile\n' "$green" "$reset"
         printf '\n'
         spell_cmd="generate-glosses"
+        printf '%sThe wizard casts %s%sgenerate-glosses%s ' \
+          "$cyan" "$bold$green" "$reset$cyan"
+        printf 'to create these convenient aliases:%s\n' "$reset"
         if [ "$verbose" -eq 1 ]; then
           wizard-eyes "$spell_cmd"
         fi
-        printf '%sThe wizard casts %s%sgenerate-glosses%s%s ' \
-          "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan"
-        printf 'to create these convenient aliases:%s\n' "$reset"
         printf '\n'
         # Show gloss generation
         gloss_output=$(eval "$spell_cmd" 2>&1 | grep "Found.*executable" | head -1)
@@ -180,12 +180,12 @@ demo_level() {
     4)
       if command -v fathom-terminal >/dev/null 2>&1; then
         spell_cmd="fathom-terminal"
+        printf '%sThe wizard casts %s%sfathom-terminal%s ' \
+          "$cyan" "$bold$green" "$reset$cyan"
+        printf 'to detect terminal dimensions:%s\n' "$reset"
         if [ "$verbose" -eq 1 ]; then
           wizard-eyes "$spell_cmd"
         fi
-        printf '%sThe wizard casts %s%sfathom-terminal%s%s ' \
-          "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan"
-        printf 'to detect terminal dimensions:%s\n' "$reset"
         printf '\n'
         if term_size=$(eval "$spell_cmd" 2>&1); then
           printf '%s\n' "$term_size"
@@ -197,8 +197,8 @@ demo_level() {
       
       # Menu demonstration with PTY
       if command -v menu >/dev/null 2>&1; then
-        printf '%sThe wizard demonstrates the %s%smenu%s%s system:%s\n' \
-          "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%sThe wizard demonstrates the %s%smenu%s system:%s\n' \
+          "$cyan" "$bold$green" "$reset$cyan" "$reset"
         printf '\n'
         printf 'Menu system provides interactive navigation.\n'
         printf 'Example menu structure:\n'
@@ -211,8 +211,8 @@ demo_level() {
       
     5)
       if command -v temp-file >/dev/null 2>&1; then
-        printf '%sThe wizard demonstrates extended attributes with %s%stemp-file%s%s:%s\n' \
-          "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%sThe wizard demonstrates extended attributes with %s%stemp-file%s:%s\n' \
+          "$cyan" "$bold$green" "$reset$cyan" "$reset"
         printf '\n'
         spell_cmd="temp-file demo-xattr"
         if [ "$verbose" -eq 1 ]; then
@@ -234,8 +234,8 @@ demo_level() {
       
     6)
       if command -v temp-file >/dev/null 2>&1 && command -v prioritize >/dev/null 2>&1; then
-        printf '%sThe wizard demonstrates %s%sprioritize%s%s:%s\n' \
-          "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%sThe wizard demonstrates %s%sprioritize%s:%s\n' \
+          "$cyan" "$bold$green" "$reset$cyan" "$reset"
         printf '\n'
         spell_cmd="temp-file demo-priority"
         if [ "$verbose" -eq 1 ]; then
@@ -265,8 +265,8 @@ demo_level() {
       
     8)
       if command -v test-spell >/dev/null 2>&1; then
-        printf '%sThe wizard demonstrates %s%stest-spell%s%s:%s\n' \
-          "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%sThe wizard demonstrates %s%stest-spell%s:%s\n' \
+          "$cyan" "$bold$green" "$reset$cyan" "$reset"
         printf '\n'
         printf 'Testing infrastructure ready\n'
         printf '\n'
@@ -276,11 +276,11 @@ demo_level() {
     9)
       if command -v look >/dev/null 2>&1; then
         spell_cmd="look"
+        printf '%sThe wizard casts %s%slook%s to examine the current location:%s\n' \
+          "$cyan" "$bold$green" "$reset$cyan" "$reset"
         if [ "$verbose" -eq 1 ]; then
           wizard-eyes "$spell_cmd"
         fi
-        printf '%sThe wizard casts %s%slook%s%s to examine the current location:%s\n' \
-          "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
         eval "$spell_cmd" 2>&1 | head -5 || printf 'No MUD description available\n'
         printf '\n'
@@ -289,8 +289,8 @@ demo_level() {
       
     10)
       if command -v temp-file >/dev/null 2>&1 && command -v copy >/dev/null 2>&1; then
-        printf '%sThe wizard demonstrates %s%scopy%s%s:%s\n' \
-          "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%sThe wizard demonstrates %s%scopy%s:%s\n' \
+          "$cyan" "$bold$green" "$reset$cyan" "$reset"
         printf '\n'
         spell_cmd="temp-file demo-copy-src"
         if [ "$verbose" -eq 1 ]; then
@@ -304,8 +304,8 @@ demo_level() {
       
     11)
       if command -v ask-yn >/dev/null 2>&1; then
-        printf '%sThe wizard demonstrates %s%sask-yn%s%s:%s\n' \
-          "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%sThe wizard demonstrates %s%sask-yn%s:%s\n' \
+          "$cyan" "$bold$green" "$reset$cyan" "$reset"
         printf '\n'
         spell_cmd="ask-yn \"Is this a demonstration?\" yes"
         if [ "$verbose" -eq 1 ]; then
@@ -321,12 +321,12 @@ demo_level() {
     12)
       if command -v package-managers >/dev/null 2>&1; then
         spell_cmd="package-managers"
+        printf '%sThe wizard casts %s%spackage-managers%s ' \
+          "$cyan" "$bold$green" "$reset$cyan"
+        printf 'to detect system package managers:%s\n' "$reset"
         if [ "$verbose" -eq 1 ]; then
           wizard-eyes "$spell_cmd"
         fi
-        printf '%sThe wizard casts %s%spackage-managers%s%s ' \
-          "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan"
-        printf 'to detect system package managers:%s\n' "$reset"
         printf '\n'
         eval "$spell_cmd" 2>&1 | head -5
         printf '\n'
@@ -336,11 +336,11 @@ demo_level() {
     13)
       if command -v service-manager >/dev/null 2>&1; then
         spell_cmd="service-manager"
+        printf '%sThe wizard casts %s%sservice-manager%s to detect the init system:%s\n' \
+          "$cyan" "$bold$green" "$reset$cyan" "$reset"
         if [ "$verbose" -eq 1 ]; then
           wizard-eyes "$spell_cmd"
         fi
-        printf '%sThe wizard casts %s%sservice-manager%s%s to detect the init system:%s\n' \
-          "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
         eval "$spell_cmd" 2>&1 || printf 'Init system detection unavailable\n'
         printf '\n'
@@ -359,11 +359,11 @@ demo_level() {
     15)
       if command -v divine-path >/dev/null 2>&1; then
         spell_cmd="divine-path sh"
+        printf '%sThe wizard casts %s%sdivine-path%s to locate commands:%s\n' \
+          "$cyan" "$bold$green" "$reset$cyan" "$reset"
         if [ "$verbose" -eq 1 ]; then
           wizard-eyes "$spell_cmd"
         fi
-        printf '%sThe wizard casts %s%sdivine-path%s%s to locate commands:%s\n' \
-          "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
         eval "$spell_cmd" 2>&1 | head -3 || printf '/bin/sh\n'
         printf '\n'
