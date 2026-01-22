@@ -46,7 +46,12 @@ set -u
 
 # The cd override - calls cd-hook imp after successful directory change
 cd() {
-    command cd "$@" || return $?
+    # Use builtin for zsh/bash, command for other shells
+    if [ -n "${ZSH_VERSION-}" ] || [ -n "${BASH_VERSION-}" ]; then
+        builtin cd "$@" || return $?
+    else
+        command cd "$@" || return $?
+    fi
     command -v cd-hook >/dev/null 2>&1 && cd-hook || true
 }
 
