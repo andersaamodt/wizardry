@@ -138,7 +138,8 @@ run_test_case "menu/mud is executable" spell_is_executable
 test_shows_help() {
   run_sourced_spell "spells/menu/mud" --help
   assert_success
-  assert_output_contains "Usage: mud"
+  assert_output_contains "Usage:"
+  assert_output_contains "mud"
 }
 
 run_test_case "mud --help shows usage" test_shows_help

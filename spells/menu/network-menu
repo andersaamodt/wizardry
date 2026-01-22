@@ -4,45 +4,20 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: . network-menu    OR    network menu    (via parse/gloss)
+Usage: network-menu
 
 Displays network configuration options.
-
-This spell must be sourced (not executed) to affect your current shell.
 USAGE
-  return 0 2>/dev/null || exit 0
+  exit 0
   ;;
 esac
 
-# Uncastable pattern - detect if sourced
-network_menu_sourced=0
-if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
-  case "${ZSH_EVAL_CONTEXT-}" in
-    *:file) network_menu_sourced=1 ;;
-  esac
-else
-  network_menu_base=${0##*/}
-  case "$network_menu_base" in
-    sh|dash|bash|zsh|ksh|mksh) network_menu_sourced=1 ;;
-    network-menu) network_menu_sourced=0 ;;
-    parse) network_menu_sourced=1 ;;  # Sourced via parse
-    *) network_menu_sourced=1 ;;
-  esac
-fi
-
-if [ "$network_menu_sourced" -eq 0 ]; then
-  printf '%s\n' "This spell must be sourced. Use:  . network-menu  OR  network menu" >&2
-  return 1 2>/dev/null || exit 1
-fi
-unset network_menu_sourced network_menu_base
-
-set +e  # Permissive mode since we're in user's shell
-set -u
+set -eu
 . env-clear
 
-require-command menu || return 1
+require-command menu || exit 1
 
-trap 'return 0' INT TERM
+trap 'exit 0' INT TERM
 exit_label=$(exit-label)
 # Exit button kills this menu script via TERM signal
 # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
@@ -59,6 +34,6 @@ menu_status=${menu_status:-0}
 if [ "$menu_status" -eq 130 ]; then
   printf 'ESC\n' >&2
   kill -TERM $$ 2>/dev/null || true
-  return 0
+  exit 0
 fi
 

@@ -30,7 +30,7 @@ SH
   chmod +x "$tmp/exit-label"
   # Test as submenu (as it would be called from mud menu)
   # Use MENU_LOOP_LIMIT=1 to exit after one iteration
-  REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 run_sourced_spell "spells/menu/mud-admin-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-admin-menu"
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
@@ -59,7 +59,7 @@ else
 fi
 SH
   chmod +x "$tmp/require"
-  REQUIRE_COMMAND="$tmp/require-command" PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$tmp:/bin:/usr/bin" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/mud-admin-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$tmp:/bin:/usr/bin" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-admin-menu"
   assert_failure
   assert_error_contains "The MUD Admin menu needs the 'menu' command"
 }
@@ -79,13 +79,13 @@ SH
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 run_sourced_spell "spells/menu/mud-admin-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 "$ROOT_DIR/spells/menu/mud-admin-menu"
   assert_status 7
   assert_file_contains "$tmp/log" "MUD Admin:"
 }
 
 test_shows_help() {
-  run_sourced_spell "spells/menu/mud-admin-menu" --help
+  run_spell "spells/menu/mud-admin-menu" --help
   assert_success || return 1
   assert_error_contains "Usage:" || return 1
 }
@@ -122,7 +122,7 @@ SH
   chmod +x "$tmp/exit-label"
   
   
-  REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/mud-admin-menu"
+  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-admin-menu"
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$tmp/log")

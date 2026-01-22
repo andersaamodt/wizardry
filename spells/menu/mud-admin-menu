@@ -5,51 +5,26 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE' >&2
-Usage: . mud-admin-menu    OR    mud admin menu    (via parse/gloss)
+Usage: mud-admin
 
 Opens the MUD admin menu so you can manage authorized players, review shared rooms, and oversee your hosted server.
-
-This spell must be sourced (not executed) to affect your current shell.
 USAGE
-  return 0 2>/dev/null || exit 0
+  exit 0
   ;;
 esac
 
-# Uncastable pattern - detect if sourced
-mud_admin_menu_sourced=0
-if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
-  case "${ZSH_EVAL_CONTEXT-}" in
-    *:file) mud_admin_menu_sourced=1 ;;
-  esac
-else
-  mud_admin_menu_base=${0##*/}
-  case "$mud_admin_menu_base" in
-    sh|dash|bash|zsh|ksh|mksh) mud_admin_menu_sourced=1 ;;
-    mud-admin-menu) mud_admin_menu_sourced=0 ;;
-    parse) mud_admin_menu_sourced=1 ;;  # Sourced via parse
-    *) mud_admin_menu_sourced=1 ;;
-  esac
-fi
-
-if [ "$mud_admin_menu_sourced" -eq 0 ]; then
-  printf '%s\n' "This spell must be sourced. Use:  . mud-admin-menu  OR  mud admin menu" >&2
-  return 1 2>/dev/null || exit 1
-fi
-unset mud_admin_menu_sourced mud_admin_menu_base
-
-set +e  # Permissive mode since we're in user's shell
-set -u
+set -eu
 . env-clear
 
-# Catch Ctrl-C and TERM signal to return cleanly
-trap 'return 0' INT TERM
+# Catch Ctrl-C and TERM signal to exit 1 cleanly
+trap 'exit 0' INT TERM
 
 # Load color palette (colors handles terminal capability detection internally)
 # shellcheck source=/dev/null
 . "$(command -v colors)"
 
 if ! require menu "The MUD Admin menu needs the 'menu' command to present options."; then
-  return 1
+  exit 1
 fi
 
 mud_admin_menu_display_menu() {
@@ -83,7 +58,7 @@ while true; do
   if [ "$menu_status" -eq 130 ]; then
     printf 'ESC\n' >&2
     kill -TERM $$ 2>/dev/null || true
-    return 0
+    exit 0
   fi
 
   # Support MENU_LOOP_LIMIT for testing
