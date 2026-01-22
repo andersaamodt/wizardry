@@ -48,7 +48,7 @@ demo_level() {
     printf 'DEBUG[A]: About to call banish %s\n' "$level" >&2
     printf 'DEBUG[B]: banish command location: %s\n' "$(command -v banish)" >&2
     printf 'DEBUG[C]: Calling banish now...\n' >&2
-    banish "$level" --no-tests --skip-terminal-tests >/dev/null 2>&1
+    banish "$level" --no-tests --skip-terminal-tests >/dev/null
     banish_exit=$?
     printf 'DEBUG[D]: banish completed with exit code %s\n' "$banish_exit" >&2
     if [ "$banish_exit" -ne 0 ]; then
