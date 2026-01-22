@@ -23,28 +23,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install bubblewrap dependency
-        run: sudo apt-get update && sudo apt-get install -y bubblewrap uidmap
-      - name: Configure bubblewrap user namespaces
+        
+      - name: Install socat for PTY support
+        run: sudo apt-get update && sudo apt-get install -y socat
+        
+      - name: Run demo-magic with PTY (levels 0-4)
         run: |
-          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$(whoami)"
-          sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root
-          {
-            echo 'kernel.unprivileged_userns_clone=1'
-            echo 'kernel.apparmor_restrict_unprivileged_userns=0'
-          } | sudo tee /etc/sysctl.d/99-unprivileged-userns.conf
-          sudo sysctl --system
-      - name: Verify bubblewrap setup
+          . spells/.imps/sys/invoke-wizardry
+          run-with-pty ./demo-magic-poc 4 --color --no-bwrap
+          
+      - name: Run demo-magic with PTY (all levels)
         run: |
-          if bwrap --unshare-user-try --ro-bind / / /bin/true; then
-            echo "bubblewrap usable with user namespaces"
-          elif sudo -n bwrap --unshare-user-try --ro-bind / / /bin/true; then
-            echo "bubblewrap usable via sudo with user namespaces"
-          elif sudo -n bwrap --ro-bind / / /bin/true; then
-            echo "bubblewrap usable via sudo"
-          else
-            echo "bubblewrap unusable" >&2
-            exit 1
-          fi
-      - name: Run demo-magic
-        run: . spells/.imps/sys/invoke-wizardry && ./spells/spellcraft/demo-magic all
+          . spells/.imps/sys/invoke-wizardry
+          run-with-pty ./demo-magic-poc all --color --no-bwrap
