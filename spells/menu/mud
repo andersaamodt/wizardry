@@ -15,26 +15,29 @@ USAGE
 esac
 
 # Uncastable pattern - detect if sourced
-mud_sourced=0
-if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
-  case "${ZSH_EVAL_CONTEXT-}" in
-    *:file) mud_sourced=1 ;;
-  esac
-else
-  mud_base=${0##*/}
-  case "$mud_base" in
-    sh|dash|bash|zsh|ksh|mksh) mud_sourced=1 ;;
-    mud) mud_sourced=0 ;;
-    parse) mud_sourced=1 ;;  # Sourced via parse
-    *) mud_sourced=1 ;;
-  esac
-fi
+# Skip check if running in compiled/doppelganger context
+if [ -z "${WIZARDRY_TEST_COMPILED:-}" ]; then
+  mud_sourced=0
+  if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+    case "${ZSH_EVAL_CONTEXT-}" in
+      *:file) mud_sourced=1 ;;
+    esac
+  else
+    mud_base=${0##*/}
+    case "$mud_base" in
+      sh|dash|bash|zsh|ksh|mksh) mud_sourced=1 ;;
+      mud) mud_sourced=0 ;;
+      parse) mud_sourced=1 ;;  # Sourced via parse
+      *) mud_sourced=1 ;;
+    esac
+  fi
 
-if [ "$mud_sourced" -eq 0 ]; then
-  printf '%s\n' "This spell must be sourced. Use:  . mud  OR  mud" >&2
-  return 1 2>/dev/null || return 1
+  if [ "$mud_sourced" -eq 0 ]; then
+    printf '%s\n' "This spell must be sourced. Use:  . mud  OR  mud" >&2
+    return 1 2>/dev/null || return 1
+  fi
+  unset mud_sourced mud_base
 fi
-unset mud_sourced mud_base
 
 set +e  # Permissive mode since we're in user's shell
 set -u

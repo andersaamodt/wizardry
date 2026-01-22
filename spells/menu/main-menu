@@ -16,26 +16,29 @@ USAGE
 esac
 
 # Uncastable pattern - detect if sourced
-main_menu_sourced=0
-if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
-  case "${ZSH_EVAL_CONTEXT-}" in
-    *:file) main_menu_sourced=1 ;;
-  esac
-else
-  main_menu_base=${0##*/}
-  case "$main_menu_base" in
-    sh|dash|bash|zsh|ksh|mksh) main_menu_sourced=1 ;;
-    main-menu) main_menu_sourced=0 ;;
-    parse) main_menu_sourced=1 ;;  # Sourced via parse
-    *) main_menu_sourced=1 ;;
-  esac
-fi
+# Skip check if running in compiled/doppelganger context
+if [ -z "${WIZARDRY_TEST_COMPILED:-}" ]; then
+  main_menu_sourced=0
+  if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+    case "${ZSH_EVAL_CONTEXT-}" in
+      *:file) main_menu_sourced=1 ;;
+    esac
+  else
+    main_menu_base=${0##*/}
+    case "$main_menu_base" in
+      sh|dash|bash|zsh|ksh|mksh) main_menu_sourced=1 ;;
+      main-menu) main_menu_sourced=0 ;;
+      parse) main_menu_sourced=1 ;;  # Sourced via parse
+      *) main_menu_sourced=1 ;;
+    esac
+  fi
 
-if [ "$main_menu_sourced" -eq 0 ]; then
-  printf '%s\n' "This spell must be sourced. Use:  . main-menu  OR  main menu" >&2
-  return 1 2>/dev/null || exit 1
+  if [ "$main_menu_sourced" -eq 0 ]; then
+    printf '%s\n' "This spell must be sourced. Use:  . main-menu  OR  main menu" >&2
+    return 1 2>/dev/null || exit 1
+  fi
+  unset main_menu_sourced main_menu_base
 fi
-unset main_menu_sourced main_menu_base
 
 set +e  # Permissive mode since we're in user's shell
 set -u
