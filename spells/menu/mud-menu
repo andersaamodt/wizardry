@@ -113,9 +113,9 @@ while true; do
   
   # Build cd hook toggle label based on current state
   if is_feature_enabled "cd-look"; then
-    cd_hook="[X] Look on directory change (cd hook)%sh -c 'toggle-cd; echo 3 > \"$SELECTION_FILE\"'"
+    cd_hook="[X] Look on directory change (cd hook)%. toggle-cd; echo 3 > \"$SELECTION_FILE\""
   else
-    cd_hook="[ ] Look on directory change (cd hook)%sh -c 'toggle-cd; echo 3 > \"$SELECTION_FILE\"'"
+    cd_hook="[ ] Look on directory change (cd hook)%. toggle-cd; echo 3 > \"$SELECTION_FILE\""
   fi
   
   # Build avatar toggle

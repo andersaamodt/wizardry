@@ -16,26 +16,26 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/menu/priorities" --help
+  run_sourced_spell "spells/menu/priorities" --help
   assert_success || return 1
   assert_output_contains "Usage: priorities" || return 1
 }
 
 test_help_h_flag() {
-  run_spell "spells/menu/priorities" -h
+  run_sourced_spell "spells/menu/priorities" -h
   assert_success || return 1
   assert_output_contains "Usage: priorities" || return 1
 }
 
 test_help_usage_flag() {
-  run_spell "spells/menu/priorities" --usage
+  run_sourced_spell "spells/menu/priorities" --usage
   assert_success || return 1
   assert_output_contains "Usage: priorities" || return 1
 }
 
 test_verbose_flag_accepted() {
   # Test that -v flag with --help is recognized
-  run_spell "spells/menu/priorities" --help
+  run_sourced_spell "spells/menu/priorities" --help
   assert_success || return 1
   # Verify help mentions verbose mode
   assert_output_contains "-v" || return 1
@@ -64,7 +64,7 @@ SH
 }
 
 test_invalid_option_produces_error() {
-  run_spell "spells/menu/priorities" -z 2>&1
+  run_sourced_spell "spells/menu/priorities" -z 2>&1
   # Invalid option should produce error message (getopts says "Illegal option")
   # The stderr may capture the error
   case "$OUTPUT$ERROR" in

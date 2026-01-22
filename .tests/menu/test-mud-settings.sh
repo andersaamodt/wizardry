@@ -87,7 +87,7 @@ SH
 }
 
 test_shows_help() {
-  run_spell "spells/menu/mud-settings" --help
+  run_sourced_spell "spells/menu/mud-settings" --help
   assert_success || return 1
   assert_error_contains "Usage:" || return 1
 }

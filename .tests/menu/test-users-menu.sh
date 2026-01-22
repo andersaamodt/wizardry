@@ -17,19 +17,19 @@ done
 
 
 test_help() {
-  run_spell "spells/menu/users-menu" --help
+  run_sourced_spell "spells/menu/users-menu" --help
   assert_success || return 1
   assert_output_contains "Usage: users-menu" || return 1
 }
 
 test_help_h_flag() {
-  run_spell "spells/menu/users-menu" -h
+  run_sourced_spell "spells/menu/users-menu" -h
   assert_success || return 1
   assert_output_contains "Usage: users-menu" || return 1
 }
 
 test_help_usage_flag() {
-  run_spell "spells/menu/users-menu" --usage
+  run_sourced_spell "spells/menu/users-menu" --usage
   assert_success || return 1
   assert_output_contains "Usage: users-menu" || return 1
 }
