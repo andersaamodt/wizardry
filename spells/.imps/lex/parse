@@ -197,6 +197,17 @@ while [ $attempt_len -gt 0 ]; do
     done
   fi
   
+  # Try .arcana subdirectories
+  if [ -z "$spell_path" ]; then
+    for arcana_dir in "$wizardry_dir/spells/.arcana"/*; do
+      [ -d "$arcana_dir" ] || continue
+      if [ -x "$arcana_dir/$cmd_name" ]; then
+        spell_path="$arcana_dir/$cmd_name"
+        break
+      fi
+    done
+  fi
+  
   # Check if this command name is a synonym
   if [ -z "$spell_path" ]; then
     spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
