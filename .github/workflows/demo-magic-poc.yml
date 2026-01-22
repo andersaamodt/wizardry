@@ -27,14 +27,14 @@ jobs:
       - name: Run demo-magic-poc directly (no PTY)
         run: |
           . spells/.imps/sys/invoke-wizardry
-          ./demo-magic-poc 2 --color
+          ./demo-magic-poc 2 --color --no-bwrap
           
       - name: Run demo-magic-poc with PTY (levels 0-2)
         run: |
           . spells/.imps/sys/invoke-wizardry
-          run-with-pty ./demo-magic-poc 2 --color
+          run-with-pty ./demo-magic-poc 2 --color --no-bwrap
           
       - name: Run demo-magic-poc with PTY (levels 0-4)
         run: |
           . spells/.imps/sys/invoke-wizardry
-          run-with-pty ./demo-magic-poc 4 --color
+          run-with-pty ./demo-magic-poc 4 --color --no-bwrap
