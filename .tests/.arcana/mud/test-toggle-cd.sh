@@ -12,7 +12,7 @@ test_toggle_cd_is_executable() {
   [ -x "$ROOT_DIR/spells/.arcana/mud/toggle-cd" ]
 }
 test_toggle_cd_help_shows_usage() {
-  run_spell spells/.arcana/mud/toggle-cd --help
+  run_sourced_spell spells/.arcana/mud/toggle-cd --help
   assert_success || return 1
   assert_output_contains "Usage:" || return 1
   assert_output_contains "toggle" || return 1
