@@ -47,10 +47,13 @@ demo_level() {
       printf 'Level 1: Banish & Validation Infrastructure\n'
       printf 'The wizard gathers the core components of wizardry...\n\n'
       
-      if [ -n "${WIZARDRY_DIR-}" ]; then
-        printf 'WIZARDRY_DIR: %s\n' "$WIZARDRY_DIR"
+      # Run banish for level 1 validation
+      printf 'Running banish validation for level 1...\n'
+      if banish 1 --only --no-tests 2>&1; then
+        printf '\nBanish level 1: PASSED\n'
       else
-        printf 'WIZARDRY_DIR: not set\n'
+        printf '\nBanish level 1: FAILED\n'
+        return 1
       fi
       
       printf '\nLevel 1 complete.\n'
