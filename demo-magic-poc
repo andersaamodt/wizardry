@@ -14,6 +14,7 @@ Arguments:
 
 Options:
   --no-bwrap    Skip bubblewrap sandboxing (use with caution)
+  --color       Force colored output even without TTY
 
 This demonstrates actual wizardry spells at each level, with prerequisite
 validation via banish running silently in the background.
@@ -25,139 +26,19 @@ esac
 set -eu
 . env-clear
 
-# Colors for narration
-if [ -t 1 ]; then
-  cyan='\033[36m'
-  green='\033[32m'
-  yellow='\033[1;33m'
-  reset='\033[0m'
-else
-  cyan=''
-  green=''
-  yellow=''
-  reset=''
-fi
-
-# Demo a single level with banish validation + spell demonstrations
-demo_level() {
-  level=$1
-  
-  # Get level info
-  level_name=$(spell-levels "$level" name 2>/dev/null || printf "Level %d" "$level")
-  
-  printf '\n'
-  printf '%s=== Level %d: %s ===%s\n' "$yellow" "$level" "$level_name" "$reset"
-  printf '\n'
-  
-  # Silently validate with banish (user doesn't need to see this detail)
-  if ! banish "$level" --only --no-tests >/dev/null 2>&1; then
-    printf '%sWarning: Level %d prerequisites not fully met (continuing anyway)%s\n' "$cyan" "$level" "$reset" >&2
-  fi
-  
-  # Level-specific demonstrations with narration
-  case "$level" in
-    0)
-      printf '%sThe wizard examines the foundation of reality itself...%s\n' "$cyan" "$reset"
-      printf '\n'
-      
-      if command -v detect-posix >/dev/null 2>&1; then
-        printf '%sThe wizard casts %sdetect-posix%s...%s\n' "$cyan" "$green" "$cyan" "$reset"
-        detect-posix 2>&1 | head -5
-        printf '\n'
-      fi
-      
-      if command -v detect-distro >/dev/null 2>&1; then
-        printf '%sThe wizard casts %sdetect-distro%s...%s\n' "$cyan" "$green" "$cyan" "$reset"
-        printf 'Distribution: %s\n' "$(detect-distro)"
-        printf '\n'
-      fi
-      
-      if [ -d "${WIZARDRY_DIR}/spells" ]; then
-        spell_count=$(find "${WIZARDRY_DIR}/spells" -type f -executable 2>/dev/null | wc -l)
-        printf 'The spells grimoire: %d spells inscribed\n' "$spell_count"
-      fi
-      ;;
-      
-    1)
-      printf '%sThe wizard gathers the core components of wizardry...%s\n' "$cyan" "$reset"
-      printf '\n'
-      
-      if command -v validate-spells >/dev/null 2>&1; then
-        printf '%sThe wizard casts %svalidate-spells%s on core infrastructure...%s\n' "$cyan" "$green" "$cyan" "$reset"
-        validate-spells banish:wards validate-spells:.wizardry 2>&1 | head -3
-        printf '\n'
-      fi
-      
-      imp_list=$(spell-levels "$level" imps 2>/dev/null || true)
-      if [ -n "$imp_list" ]; then
-        imp_count=$(printf '%s' "$imp_list" | wc -w)
-        printf 'Core imps summoned: %d foundational helpers\n' "$imp_count"
-        printf 'Including: has, there, is, say, warn, die, temp-file, and more...\n'
-      fi
-      ;;
-      
-    2)
-      printf '%sThe wizard conjures the glossary system...%s\n' "$cyan" "$reset"
-      printf '\n'
-      
-      if [ -f "${WIZARDRY_DIR}/spells/.wizardry/generate-glosses" ]; then
-        printf 'The wizard has the power to cast %sgenerate-glosses%s...\n' "$green" "$reset"
-        printf '(Glossary generation extracts help text from all spells)\n'
-      fi
-      ;;
-      
-    3)
-      printf '%sThe wizard weaves the glossary and parsing infrastructure...%s\n' "$cyan" "$reset"
-      printf '\n'
-      
-      printf 'Glossary and parsing capabilities available\n'
-      ;;
-      
-    4)
-      printf '%sThe wizard masters the menu system...%s\n' "$cyan" "$reset"
-      printf '\n'
-      
-      if command -v fathom-terminal >/dev/null 2>&1; then
-        printf '%sThe wizard casts %sfathom-terminal%s...%s\n' "$cyan" "$green" "$cyan" "$reset"
-        if term_size=$(fathom-terminal 2>&1); then
-          printf 'Terminal dimensions discovered: %s\n' "$term_size"
-        else
-          printf 'Terminal dimensions unavailable (no TTY)\n'
-        fi
-        printf '\n'
-      fi
-      
-      printf 'Menu system capabilities unlocked:\n'
-      printf '  • Interactive menu navigation\n'
-      printf '  • Terminal size detection\n'
-      printf '  • Cursor positioning\n'
-      printf '  • Keypress detection\n'
-      printf '  • Color support\n'
-      ;;
-      
-    *)
-      printf '%sThe wizard demonstrates level %d capabilities...%s\n' "$cyan" "$level" "$reset"
-      printf '\n'
-      
-      spell_list=$(spell-levels "$level" spells 2>/dev/null || true)
-      if [ -n "$spell_list" ]; then
-        spell_count=$(printf '%s' "$spell_list" | wc -w)
-        printf 'Spells at this level: %d\n' "$spell_count"
-      fi
-      ;;
-  esac
-  
-  printf '\n'
-}
-
-# Parse arguments
+# Parse arguments first to check for --color
 target_level=4
 no_bwrap=0
+force_color=0
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --no-bwrap)
       no_bwrap=1
+      shift
+      ;;
+    --color)
+      force_color=1
       shift
       ;;
     [0-9]|[0-9][0-9])
@@ -171,14 +52,159 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
+# Colors for narration using tput (more portable and reliable)
+# Force colors in CI or if explicitly requested
+if { [ -t 1 ] || [ "$force_color" -eq 1 ] || [ -n "${CI-}" ]; } && command -v tput >/dev/null 2>&1; then
+  cyan=$(tput setaf 6 2>/dev/null || printf '\033[36m')
+  green=$(tput setaf 2 2>/dev/null || printf '\033[32m')
+  yellow=$(tput setaf 3 2>/dev/null || printf '\033[33m')
+  bold=$(tput bold 2>/dev/null || printf '\033[1m')
+  reset=$(tput sgr0 2>/dev/null || printf '\033[0m')
+else
+  cyan=''
+  green=''
+  yellow=''
+  bold=''
+  reset=''
+fi
+
+# Demo a single level with banish validation + spell demonstrations
+demo_level() {
+  level=$1
+  
+  # Get level info
+  level_name=$(spell-levels "$level" name 2>/dev/null || printf "Level %d" "$level")
+  
+  printf '\n'
+  printf '%s✦ %s ✦%s\n' "$bold$yellow" "$level_name" "$reset"
+  printf '\n'
+  
+  # Silently validate with banish (user doesn't need to see this detail)
+  if ! banish "$level" --only --no-tests >/dev/null 2>&1; then
+    printf '%s⚠ Warning: Some prerequisites for this level are not fully met, but the demonstration continues...%s\n\n' "$cyan" "$reset" >&2
+  fi
+  
+  # Level-specific demonstrations with narration
+  case "$level" in
+    0)
+      printf '%sIn the beginning, there was the command line. The wizard peers into the very fabric of the system, examining the POSIX foundation upon which all magic is built.%s\n' "$cyan" "$reset"
+      printf '\n'
+      
+      if command -v detect-posix >/dev/null 2>&1; then
+        printf '%sThe wizard reaches out with %sdetect-posix%s, a diagnostic spell that reveals the location of fundamental POSIX tools...%s\n' "$cyan" "$green" "$cyan" "$reset"
+        printf '\n'
+        detect-posix 2>&1 | head -5
+        printf '\n'
+        printf '%s...and confirms that the POSIX toolchain is intact and ready for use.%s\n' "$cyan" "$reset"
+        printf '\n'
+      fi
+      
+      if command -v detect-distro >/dev/null 2>&1; then
+        printf '%sThe wizard invokes %sdetect-distro%s to identify the operating system variant...%s\n' "$cyan" "$green" "$cyan" "$reset"
+        printf '\n'
+        distro=$(detect-distro)
+        printf 'Distribution: %s\n' "$distro"
+        printf '\n'
+        printf '%sThe system reveals itself as %s, a known realm in the Unix multiverse.%s\n' "$cyan" "$distro" "$reset"
+        printf '\n'
+      fi
+      
+      if [ -d "${WIZARDRY_DIR}/spells" ]; then
+        spell_count=$(find "${WIZARDRY_DIR}/spells" -type f -executable 2>/dev/null | wc -l)
+        printf '%sThe wizard surveys the grimoire and counts %d spells waiting to be cast.%s\n' "$cyan" "$spell_count" "$reset"
+      fi
+      ;;
+      
+    1)
+      printf '%sHaving verified the foundation, the wizard now assembles the core infrastructure of wizardry itself.%s\n' "$cyan" "$reset"
+      printf '\n'
+      
+      if command -v validate-spells >/dev/null 2>&1; then
+        printf '%sThe wizard performs a diagnostic with %svalidate-spells%s, ensuring critical components are in place...%s\n' "$cyan" "$green" "$cyan" "$reset"
+        printf '\n'
+        validate-spells banish:wards validate-spells:.wizardry 2>&1 | head -3
+        printf '\n'
+        printf '%sThe core spells respond to the summons—banish stands ready to guard against chaos, and validate-spells confirms structural integrity.%s\n' "$cyan" "$reset"
+        printf '\n'
+      fi
+      
+      imp_list=$(spell-levels "$level" imps 2>/dev/null || true)
+      if [ -n "$imp_list" ]; then
+        imp_count=$(printf '%s' "$imp_list" | wc -w)
+        printf '%sThe wizard summons %d imps—tiny helper spirits that power the spell infrastructure. These include fundamental tools like %shas%s (for testing existence), %ssay%s (for output), %sdie%s (for error handling), and %stemp-file%s (for managing temporary artifacts).%s\n' "$cyan" "$imp_count" "$green" "$cyan" "$green" "$cyan" "$green" "$cyan" "$green" "$cyan" "$reset"
+      fi
+      ;;
+      
+    2)
+      printf '%sThe wizard begins constructing the glossary system, a mystical index that catalogs all known spells and their incantations.%s\n' "$cyan" "$reset"
+      printf '\n'
+      
+      if [ -f "${WIZARDRY_DIR}/spells/.wizardry/generate-glosses" ]; then
+        printf '%sThe %sgenerate-glosses%s spell lies dormant, ready to extract wisdom from the grimoire. When invoked, it reads the help text from every spell and weaves them into a comprehensive reference guide.%s\n' "$cyan" "$green" "$cyan" "$reset"
+        printf '\n'
+        printf '%sThough we do not invoke it here (it would produce volumes of text), know that this spell makes all wizardry knowledge searchable and accessible.%s\n' "$cyan" "$reset"
+      fi
+      ;;
+      
+    3)
+      printf '%sThe glossary and parsing infrastructure take shape. The wizard establishes the linguistic framework that allows spells to understand and process complex commands.%s\n' "$cyan" "$reset"
+      printf '\n'
+      
+      printf '%sAt this level, spells gain the ability to parse arguments, validate inputs, and interpret user intentions with greater sophistication.%s\n' "$cyan" "$reset"
+      ;;
+      
+    4)
+      printf '%sThe wizard weaves together the menu system—an interactive interface that transforms the command line into a navigable realm of choices.%s\n' "$cyan" "$reset"
+      printf '\n'
+      
+      if command -v fathom-terminal >/dev/null 2>&1; then
+        printf '%sFirst, the wizard casts %sfathom-terminal%s to measure the boundaries of the terminal window...%s\n' "$cyan" "$green" "$cyan" "$reset"
+        printf '\n'
+        if term_size=$(fathom-terminal 2>&1); then
+          printf 'Terminal dimensions: %s\n' "$term_size"
+          printf '\n'
+          printf '%sThe terminal reveals its dimensions—width and height measured in character cells.%s\n' "$cyan" "$reset"
+        else
+          printf '%sNo terminal dimensions available (perhaps this realm lacks a physical screen).%s\n' "$cyan" "$reset"
+        fi
+        printf '\n'
+      fi
+      
+      printf '%sWith the menu system in place, wizardry gains powerful capabilities:%s\n' "$cyan" "$reset"
+      printf '%s  • Navigate through spell options with arrow keys%s\n' "$cyan" "$reset"
+      printf '%s  • Detect terminal dimensions for optimal display%s\n' "$cyan" "$reset"
+      printf '%s  • Position the cursor anywhere on screen%s\n' "$cyan" "$reset"
+      printf '%s  • Capture individual keystrokes for interaction%s\n' "$cyan" "$reset"
+      printf '%s  • Present colorful, formatted text for clarity%s\n' "$cyan" "$reset"
+      printf '\n'
+      printf '%sThese are the building blocks of user-friendly spell interfaces.%s\n' "$cyan" "$reset"
+      ;;
+      
+    *)
+      printf '%sThe wizard demonstrates the capabilities unlocked at this level...%s\n' "$cyan" "$reset"
+      printf '\n'
+      
+      spell_list=$(spell-levels "$level" spells 2>/dev/null || true)
+      if [ -n "$spell_list" ]; then
+        spell_count=$(printf '%s' "$spell_list" | wc -w)
+        printf '%sAt level %d, %d spells become available to the practitioner.%s\n' "$cyan" "$level" "$spell_count" "$reset"
+      fi
+      ;;
+  esac
+  
+  printf '\n'
+}
+
 # Sandbox with bwrap if available and not disabled
 if [ "$no_bwrap" -eq 0 ] && [ "${WIZARDRY_DEMO_IN_BWRAP-0}" -ne 1 ]; then
   if [ -z "${GITHUB_ACTIONS-}" ] || [ "${GITHUB_ACTIONS}" != "true" ]; then
     if command -v bwrap >/dev/null 2>&1; then
-      # Re-exec with bwrap sandbox
+      # Re-exec with bwrap sandbox - preserve color flag
+      color_arg=""
+      [ "$force_color" -eq 1 ] && color_arg="--color"
       exec bwrap --unshare-user --ro-bind / / --dev-bind /dev /dev --bind /proc /proc \
         --bind /tmp /tmp --setenv PATH "$PATH" --setenv WIZARDRY_DEMO_IN_BWRAP 1 -- \
-        "$0" "$target_level" --no-bwrap
+        "$0" "$target_level" --no-bwrap $color_arg
     fi
   fi
 fi
@@ -188,8 +214,8 @@ printf '╔═══════════════════════
 printf '║         WIZARDRY DEMONSTRATION OF MAGICAL ARTS            ║\n'
 printf '╚═══════════════════════════════════════════════════════════╝\n'
 printf '\n'
-printf '%sA circle of chalk flares into view.%s\n' "$cyan" "$reset"
-printf '%sThe apprentice wizard prepares to demonstrate mastery.%s\n' "$cyan" "$reset"
+printf '%sA circle of chalk flares into view, its lines glowing with arcane power.%s\n' "$cyan" "$reset"
+printf '%sThe apprentice wizard steps forward, ready to demonstrate the arts of command-line sorcery.%s\n' "$cyan" "$reset"
 
 # Add imps and spells to PATH
 if [ -n "${WIZARDRY_DIR-}" ]; then
@@ -216,10 +242,9 @@ while [ "$current" -le "$target_level" ]; do
 done
 
 printf '\n'
-printf '═══════════════════════════════════════════════════════════\n'
+printf '%sThe demonstration concludes. The chalk circle fades, its energy spent.%s\n' "$cyan" "$reset"
+printf '%sThe wizard bows. Wizardry stands ready to serve.%s\n' "$cyan" "$reset"
 printf '\n'
-printf '%sThe demonstration concludes.%s\n' "$cyan" "$reset"
-printf '%sThe circle closes. Wizardry stands ready.%s\n' "$cyan" "$reset"
 printf 'DEMO_MAGIC_COMPLETE\n'
 
 exit 0
