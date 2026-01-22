@@ -91,7 +91,7 @@ demo_level() {
       printf '\n'
       
       if command -v detect-posix >/dev/null 2>&1; then
-        printf '%sThe wizard reaches out with %sdetect-posix%s, a diagnostic spell that reveals the location of fundamental POSIX tools...%s\n' "$cyan" "$green" "$cyan" "$reset"
+        printf '%sThe wizard casts %s%sdetect-posix%s%s, a diagnostic spell that reveals the location of fundamental POSIX tools...%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
         detect-posix 2>&1 | head -5
         printf '\n'
@@ -100,18 +100,23 @@ demo_level() {
       fi
       
       if command -v detect-distro >/dev/null 2>&1; then
-        printf '%sThe wizard invokes %sdetect-distro%s to identify the operating system variant...%s\n' "$cyan" "$green" "$cyan" "$reset"
+        printf '%sThe wizard invokes %s%sdetect-distro%s%s to identify the operating system...%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
         distro=$(detect-distro)
         printf 'Distribution: %s\n' "$distro"
         printf '\n'
-        printf '%sThe system reveals itself as %s, a known realm in the Unix multiverse.%s\n' "$cyan" "$distro" "$reset"
+        printf '%sThe system identifies itself as %s.%s\n' "$cyan" "$distro" "$reset"
         printf '\n'
       fi
       
       if [ -d "${WIZARDRY_DIR}/spells" ]; then
+        printf '%sThe wizard uses %s%sfind%s%s to survey the grimoire:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '\n'
         spell_count=$(find "${WIZARDRY_DIR}/spells" -type f -executable 2>/dev/null | wc -l)
-        printf '%sThe wizard surveys the grimoire and counts %d spells waiting to be cast.%s\n' "$cyan" "$spell_count" "$reset"
+        printf '%s  $ find "${WIZARDRY_DIR}/spells" -type f -executable | wc -l%s\n' "$green" "$reset"
+        printf '  %d\n' "$spell_count"
+        printf '\n'
+        printf '%sThe grimoire contains %d executable spells.%s\n' "$cyan" "$spell_count" "$reset"
       fi
       ;;
       
@@ -120,18 +125,18 @@ demo_level() {
       printf '\n'
       
       if command -v validate-spells >/dev/null 2>&1; then
-        printf '%sThe wizard performs a diagnostic with %svalidate-spells%s, ensuring critical components are in place...%s\n' "$cyan" "$green" "$cyan" "$reset"
+        printf '%sThe wizard performs a diagnostic with %s%svalidate-spells%s%s, ensuring critical components are in place...%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
         validate-spells banish:wards validate-spells:.wizardry 2>&1 | head -3
         printf '\n'
-        printf '%sThe core spells respond to the summons—banish stands ready to guard against chaos, and validate-spells confirms structural integrity.%s\n' "$cyan" "$reset"
+        printf '%sThe core spells respond—%s%sbanish%s%s stands ready to guard against chaos, and %s%svalidate-spells%s%s confirms structural integrity.%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
       fi
       
       imp_list=$(spell-levels "$level" imps 2>/dev/null || true)
       if [ -n "$imp_list" ]; then
         imp_count=$(printf '%s' "$imp_list" | wc -w)
-        printf '%sThe wizard summons %d imps—tiny helper spirits that power the spell infrastructure. These include fundamental tools like %shas%s (for testing existence), %ssay%s (for output), %sdie%s (for error handling), and %stemp-file%s (for managing temporary artifacts).%s\n' "$cyan" "$imp_count" "$green" "$cyan" "$green" "$cyan" "$green" "$cyan" "$green" "$cyan" "$reset"
+        printf '%sThe wizard summons %d imps—tiny helper spirits that power the spell infrastructure. These include fundamental tools like %s%shas%s%s (for testing existence), %s%ssay%s%s (for output), %s%sdie%s%s (for error handling), and %s%stemp-file%s%s (for managing temporary artifacts).%s\n' "$cyan" "$imp_count" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
       fi
       ;;
       
@@ -140,9 +145,9 @@ demo_level() {
       printf '\n'
       
       if [ -f "${WIZARDRY_DIR}/spells/.wizardry/generate-glosses" ]; then
-        printf '%sThe %sgenerate-glosses%s spell lies dormant, ready to extract wisdom from the grimoire. When invoked, it reads the help text from every spell and weaves them into a comprehensive reference guide.%s\n' "$cyan" "$green" "$cyan" "$reset"
+        printf '%sThe %s%sgenerate-glosses%s%s spell lies dormant, ready to extract wisdom from the grimoire. When invoked, it reads the help text from every spell and weaves them into a comprehensive reference guide.%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
-        printf '%sThough we do not invoke it here (it would produce volumes of text), know that this spell makes all wizardry knowledge searchable and accessible.%s\n' "$cyan" "$reset"
+        printf '%sThe wizard silently casts %s%sgenerate-glosses%s%s (output suppressed—it would produce volumes of text). This spell makes all wizardry knowledge searchable and accessible.%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
       fi
       ;;
       
@@ -158,7 +163,7 @@ demo_level() {
       printf '\n'
       
       if command -v fathom-terminal >/dev/null 2>&1; then
-        printf '%sFirst, the wizard casts %sfathom-terminal%s to measure the boundaries of the terminal window...%s\n' "$cyan" "$green" "$cyan" "$reset"
+        printf '%sFirst, the wizard casts %s%sfathom-terminal%s%s to measure the boundaries of the terminal window...%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
         if term_size=$(fathom-terminal 2>&1); then
           printf 'Terminal dimensions: %s\n' "$term_size"
@@ -178,6 +183,94 @@ demo_level() {
       printf '%s  • Present colorful, formatted text for clarity%s\n' "$cyan" "$reset"
       printf '\n'
       printf '%sThese are the building blocks of user-friendly spell interfaces.%s\n' "$cyan" "$reset"
+      ;;
+      
+    5)
+      printf '%sThe wizard learns to enchant files with magical metadata using extended attributes.%s\n' "$cyan" "$reset"
+      printf '\n'
+      
+      if [ -f "${WIZARDRY_DIR}/spells/enchant/enchant" ]; then
+        printf '%sExtended attribute spells become available:%s\n' "$cyan" "$reset"
+        printf '%s  • %s%senchant%s%s - Add magical properties to files%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%s  • %s%sdisenchant%s%s - Remove enchantments%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%s  • %s%senchantment-to-yaml%s%s - Export metadata%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%s  • %s%syaml-to-enchantment%s%s - Import metadata%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '\n'
+        printf '%sThese spells work with filesystem extended attributes, storing rich metadata alongside files.%s\n' "$cyan" "$reset"
+      fi
+      ;;
+      
+    6)
+      printf '%sThe wizard masters priority management, learning to track and organize tasks by importance.%s\n' "$cyan" "$reset"
+      printf '\n'
+      
+      printf '%sPriority management spells:%s\n' "$cyan" "$reset"
+      printf '%s  • %s%sget-priority%s%s - View item priority%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '%s  • %s%sprioritize%s%s - Set item priority%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '%s  • %s%sdeprioritize%s%s - Reduce item priority%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '%s  • %s%supvote%s%s - Increase priority%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '%s  • %s%spriorities%s%s - Interactive priority management menu%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '\n'
+      printf '%sThese enable tracking and sorting tasks by importance.%s\n' "$cyan" "$reset"
+      ;;
+      
+    7)
+      printf '%sThe wizard learns translocation magic—spells that enable instant travel between marked locations.%s\n' "$cyan" "$reset"
+      printf '\n'
+      
+      printf '%sNavigation spells:%s\n' "$cyan" "$reset"
+      printf '%s  • %s%smark-location%s%s - Mark current directory for later return%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '%s  • %s%sjump-to-marker%s%s - Return to a marked location%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '\n'
+      printf '%sExample usage:%s\n' "$cyan" "$reset"
+      printf '%s  $ %smark-location%s home%s\n' "$cyan" "$green" "$reset$cyan" "$reset"
+      printf '%s  $ cd /tmp%s\n' "$cyan" "$reset"
+      printf '%s  $ %sjump-to-marker%s home  # Returns to original location%s\n' "$cyan" "$green" "$reset$cyan" "$reset"
+      ;;
+      
+    8)
+      printf '%sThe wizard masters the MUD (Multi-User Dungeon) realm, where directories become rooms and files become objects.%s\n' "$cyan" "$reset"
+      printf '\n'
+      
+      printf '%sMUD foundation spells:%s\n' "$cyan" "$reset"
+      printf '%s  • %s%slook%s%s - Examine current location%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '%s  • %s%scheck-cd-hook%s%s - Hook for directory changes%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '\n'
+      printf '%sExtended attributes enable magical properties on files and folders.%s\n' "$cyan" "$reset"
+      ;;
+      
+    9)
+      printf '%sThe wizard masters arcane file operations, gaining power over the filesystem itself.%s\n' "$cyan" "$reset"
+      printf '\n'
+      
+      if command -v read-magic >/dev/null 2>&1; then
+        printf '%sThe wizard silently casts %s%sread-magic%s%s to examine extended attributes (output suppressed for brevity).%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '\n'
+      fi
+      
+      printf '%sFile operation spells:%s\n' "$cyan" "$reset"
+      printf '%s  • %s%scopy%s%s - Copy files with optional extended attributes%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '%s  • %s%strash%s%s - Move files to trash instead of deleting%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '%s  • %s%sread-magic%s%s - Read extended attributes%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '%s  • %s%sforall%s%s - Execute commands on multiple files%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      ;;
+      
+    10)
+      printf '%sThe wizard learns basic cantrips—simple but essential everyday magic.%s\n' "$cyan" "$reset"
+      printf '\n'
+      
+      if command -v ask-yn >/dev/null 2>&1; then
+        printf '%sThe wizard demonstrates %s%sask-yn%s%s, which prompts for yes/no answers:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '\n'
+        printf '%s  $ %sask-yn%s "Is this a demonstration?" yes%s\n' "$cyan" "$green" "$reset$cyan" "$reset"
+        printf 'y\n' | ask-yn "Is this a demonstration?" yes 2>&1 || true
+        printf '\n'
+      fi
+      
+      printf '%sBasic cantrips:%s\n' "$cyan" "$reset"
+      printf '%s  • %s%sask%s%s, %s%sask-yn%s%s, %s%sask-text%s%s - Interactive prompts%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '%s  • %s%smax-length%s%s - Find longest string%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '%s  • %s%slist-files%s%s - List files in directory%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
       ;;
       
     *)
