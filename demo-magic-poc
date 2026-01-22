@@ -84,6 +84,18 @@ demo_level() {
   printf '\n%sThe wizard will now demonstrate %sSpell Level %d%s (%s).%s\n' "$cyan" "$bold$yellow" "$level" "$reset$cyan" "$level_name" "$reset"
   printf '\n'
   
+  # Validate prerequisites with banish
+  if command -v banish >/dev/null 2>&1; then
+    printf '%sThe wizard casts %s%sbanish%s%s to validate prerequisites:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+    printf '\n'
+    if banish "$level" --only --no-tests 2>&1 | tail -1 | grep -q "✓"; then
+      printf '%s✓ Prerequisites validated for level %d%s\n' "$green" "$level" "$reset"
+    else
+      printf '%s⚠ Some prerequisites not met (continuing demonstration)%s\n' "$yellow" "$reset"
+    fi
+    printf '\n'
+  fi
+  
   # Level-specific demonstrations
   case "$level" in
     0)
