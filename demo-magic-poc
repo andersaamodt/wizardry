@@ -96,8 +96,7 @@ demo_level() {
   # Validate prerequisites with banish
   if command -v banish >/dev/null 2>&1; then
     banish_cmd="banish $level --only --no-tests --no-heal"
-    printf '%sThe wizard casts %s%sbanish%s to validate prerequisites:%s\n' \
-      "$cyan" "$bold$green" "$reset$cyan" "$reset"
+    printf '%sThe wizard banishes level %d:%s\n' "$cyan" "$level" "$reset"
     if [ "$verbose" -eq 1 ]; then
       wizard-eyes "$banish_cmd"
     fi
