@@ -1,5 +1,5 @@
 #!/bin/sh
-# Enhanced demo-magic with banish integration and spell demonstrations
+# Enhanced demo-magic with spell demonstrations
 # Demonstrates wizardry spells at each level with PTY support
 
 case "${1-}" in
@@ -7,18 +7,17 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: demo-magic [LEVEL|all] [OPTIONS]
 
-Demonstrate wizardry spells at each level with banish validation.
+Demonstrate wizardry spells at each level.
 
 Arguments:
-  LEVEL         Demonstrate through level N (0-27)
+  LEVEL         Demonstrate through level N (1-27)
   all           Demonstrate all levels (default: 27)
 
 Options:
   --no-bwrap    Skip bubblewrap sandboxing (use with caution)
   --color       Force colored output even without TTY
 
-This demonstrates actual wizardry spells at each level, with prerequisite
-validation via banish running silently in the background.
+This demonstrates actual wizardry spells at each level.
 
 By default, this script requires bubblewrap (bwrap) for safe sandboxing.
 Use --no-bwrap to run without sandboxing (not recommended).
@@ -85,36 +84,10 @@ demo_level() {
   printf '\n%sThe wizard will now demonstrate %sSpell Level %d%s (%s).%s\n' "$cyan" "$bold$yellow" "$level" "$reset$cyan" "$level_name" "$reset"
   printf '\n'
   
-  # Silently validate with banish
-  if ! banish "$level" --only --no-tests >/dev/null 2>&1; then
-    printf '%s⚠ Warning: Some prerequisites for this level are not fully met, but the demonstration continues...%s\n\n' "$cyan" "$reset" >&2
-  fi
-  
   # Level-specific demonstrations
   case "$level" in
     0)
-      if command -v detect-posix >/dev/null 2>&1; then
-        printf '%sThe wizard casts %s%sdetect-posix%s%s to detect the UNIX environment:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-        printf '\n'
-        detect-posix 2>&1 | head -5
-        printf '\n'
-      fi
-      
-      if command -v detect-distro >/dev/null 2>&1; then
-        printf '%sThe wizard casts %s%sdetect-distro%s%s:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-        printf '\n'
-        detect-distro
-        printf '\n'
-      fi
-      
-      if [ -d "${WIZARDRY_DIR}/spells" ]; then
-        printf '%sThe wizard casts %s%sfind%s%s to count spells:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-        printf '\n'
-        spell_count=$(find "${WIZARDRY_DIR}/spells" -type f -executable 2>/dev/null | wc -l)
-        printf '%s  $ find "${WIZARDRY_DIR}/spells" -type f -executable | wc -l%s\n' "$green" "$reset"
-        printf '  %d\n' "$spell_count"
-        printf '\n'
-      fi
+      # Level 0 is for test-magic only, skip in demo-magic
       ;;
       
     1)
@@ -172,6 +145,18 @@ demo_level() {
         else
           printf 'Terminal dimensions unavailable\n'
         fi
+        printf '\n'
+      fi
+      
+      # Menu demonstration with PTY
+      if command -v menu >/dev/null 2>&1; then
+        printf '%sThe wizard demonstrates the %s%smenu%s%s system:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '\n'
+        printf 'Menu system provides interactive navigation.\n'
+        printf 'Example menu structure:\n'
+        printf '  1) System\n'
+        printf '  2) Configuration\n'
+        printf '  3) Help\n'
         printf '\n'
       fi
       ;;
@@ -427,8 +412,8 @@ if [ -n "${WIZARDRY_DIR-}" ]; then
   export PATH
 fi
 
-# Run levels 0 through target
-current=0
+# Run levels 1 through target
+current=1
 while [ "$current" -le "$target_level" ]; do
   demo_level "$current"
   current=$((current + 1))
