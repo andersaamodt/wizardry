@@ -33,7 +33,7 @@ else
 fi
 
 if [ "$cd_sourced" -eq 0 ]; then
-  printf '%s\n' "This spell cannot be cast directly. Invoke it with: load cd hook" >&2
+  printf '%s\n' "This spell cannot be cast directly. Invoke it with: . cd" >&2
   return 1 2>/dev/null || exit 1
 fi
 unset cd_sourced cd_base
