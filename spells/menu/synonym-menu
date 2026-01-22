@@ -4,34 +4,59 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: synonym-menu WORD
+Usage: . synonym-menu WORD    OR    synonym menu WORD    (via parse/gloss)
 
 Display management menu for a specific synonym.
 Auto-detects whether the synonym is custom or default.
 
+This spell must be sourced (not executed) to affect your current shell.
+
 Options:
   --help    Show this help message
 USAGE
-  exit 0
+  return 0 2>/dev/null || exit 0
   ;;
 esac
 
-set -eu
+# Uncastable pattern - detect if sourced
+synonym_menu_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) synonym_menu_sourced=1 ;;
+  esac
+else
+  synonym_menu_base=${0##*/}
+  case "$synonym_menu_base" in
+    sh|dash|bash|zsh|ksh|mksh) synonym_menu_sourced=1 ;;
+    synonym-menu) synonym_menu_sourced=0 ;;
+    parse) synonym_menu_sourced=1 ;;  # Sourced via parse
+    *) synonym_menu_sourced=1 ;;
+  esac
+fi
+
+if [ "$synonym_menu_sourced" -eq 0 ]; then
+  printf '%s\n' "This spell must be sourced. Use:  . synonym-menu  OR  synonym menu" >&2
+  return 1 2>/dev/null || exit 1
+fi
+unset synonym_menu_sourced synonym_menu_base
+
+set +e  # Permissive mode since we're in user's shell
+set -u
 . env-clear
 
   
   # Catch Ctrl-C and TERM signal to return cleanly
-  trap 'exit 0' INT TERM
+  trap 'return 0' INT TERM
   
   if [ "$#" -lt 1 ]; then
     printf '%s\n' "synonym-menu: requires WORD argument" >&2
-    exit 2
+    return 2 2>/dev/null || exit 2
   fi
   
   synonym_word=$1
   
   if ! require menu "The synonym menu needs the 'menu' command."; then
-    exit 1
+    return 1
   fi
   
   spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
@@ -56,7 +81,7 @@ set -eu
   
   if [ -z "$target_spell" ]; then
     printf '%s\n' "synonym-menu: synonym '$synonym_word' not found" >&2
-    exit 1
+    return 1 2>/dev/null || exit 1
   fi
   
   # Escape single quotes for safe passing
@@ -105,6 +130,6 @@ set -eu
     if [ "$menu_status" -eq 130 ]; then
       printf 'ESC\n' >&2
       kill -TERM $$ 2>/dev/null || true
-      exit 0
+      return 0
     fi
   done

@@ -5,21 +5,46 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: lightning-menu
+Usage: . lightning-menu    OR    lightning menu    (via parse/gloss)
 
 Displays the Lightning management menu.
+
+This spell must be sourced (not executed) to affect your current shell.
 USAGE
-  exit 0
+  return 0 2>/dev/null || exit 0
   ;;
 esac
 
-require-wizardry || exit 1
+require-wizardry || return 1 2>/dev/null || exit 1
 
-set -eu
+# Uncastable pattern - detect if sourced
+lightning_menu_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) lightning_menu_sourced=1 ;;
+  esac
+else
+  lightning_menu_base=${0##*/}
+  case "$lightning_menu_base" in
+    sh|dash|bash|zsh|ksh|mksh) lightning_menu_sourced=1 ;;
+    lightning-menu) lightning_menu_sourced=0 ;;
+    parse) lightning_menu_sourced=1 ;;  # Sourced via parse
+    *) lightning_menu_sourced=1 ;;
+  esac
+fi
+
+if [ "$lightning_menu_sourced" -eq 0 ]; then
+  printf '%s\n' "This spell must be sourced. Use:  . lightning-menu  OR  lightning menu" >&2
+  return 1 2>/dev/null || exit 1
+fi
+unset lightning_menu_sourced lightning_menu_base
+
+set +e  # Permissive mode since we're in user's shell
+set -u
 . env-clear
 . colors
 
-trap 'exit 0' INT TERM
+trap 'return 0' INT TERM
 
 first_run=1
 

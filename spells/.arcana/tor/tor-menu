@@ -5,22 +5,47 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: tor-menu
+Usage: . tor-menu    OR    tor menu    (via parse/gloss)
 
 Displays the Tor management menu.
+
+This spell must be sourced (not executed) to affect your current shell.
 USAGE
-  exit 0
+  return 0 2>/dev/null || exit 0
   ;;
 esac
 
-require-wizardry || exit 1
+require-wizardry || return 1 2>/dev/null || exit 1
 
-set -eu
+# Uncastable pattern - detect if sourced
+tor_menu_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) tor_menu_sourced=1 ;;
+  esac
+else
+  tor_menu_base=${0##*/}
+  case "$tor_menu_base" in
+    sh|dash|bash|zsh|ksh|mksh) tor_menu_sourced=1 ;;
+    tor-menu) tor_menu_sourced=0 ;;
+    parse) tor_menu_sourced=1 ;;  # Sourced via parse
+    *) tor_menu_sourced=1 ;;
+  esac
+fi
+
+if [ "$tor_menu_sourced" -eq 0 ]; then
+  printf '%s\n' "This spell must be sourced. Use:  . tor-menu  OR  tor menu" >&2
+  return 1 2>/dev/null || exit 1
+fi
+unset tor_menu_sourced tor_menu_base
+
+set +e  # Permissive mode since we're in user's shell
+set -u
 . env-clear
 . colors
 
-# Catch Ctrl-C and TERM signal to exit cleanly
-trap 'exit 0' INT TERM
+# Catch Ctrl-C and TERM signal to return cleanly
+trap 'return 0' INT TERM
 
 first_run=1
 

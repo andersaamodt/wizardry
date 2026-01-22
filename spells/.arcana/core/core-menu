@@ -5,15 +5,40 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: core-menu
+Usage: . core-menu    OR    core menu    (via parse/gloss)
 
 Displays the core prerequisites management menu.
+
+This spell must be sourced (not executed) to affect your current shell.
 USAGE
-  exit 0
+  return 0 2>/dev/null || exit 0
   ;;
 esac
 
-set -eu
+# Uncastable pattern - detect if sourced
+core_menu_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) core_menu_sourced=1 ;;
+  esac
+else
+  core_menu_base=${0##*/}
+  case "$core_menu_base" in
+    sh|dash|bash|zsh|ksh|mksh) core_menu_sourced=1 ;;
+    core-menu) core_menu_sourced=0 ;;
+    parse) core_menu_sourced=1 ;;  # Sourced via parse
+    *) core_menu_sourced=1 ;;
+  esac
+fi
+
+if [ "$core_menu_sourced" -eq 0 ]; then
+  printf '%s\n' "This spell must be sourced. Use:  . core-menu  OR  core menu" >&2
+  return 1 2>/dev/null || exit 1
+fi
+unset core_menu_sourced core_menu_base
+
+set +e  # Permissive mode since we're in user's shell
+set -u
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 root_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
 
@@ -26,7 +51,7 @@ if [ -z "$colors_bin" ] && [ -x "$root_dir/spells/cantrips/colors" ]; then
 fi
 if [ -z "$colors_bin" ]; then
   echo "core-menu: missing dependency: colors" >&2
-  exit 1
+  return 1 2>/dev/null || exit 1
 fi
 
 menu_bin=${MENU_BIN-}
@@ -38,7 +63,7 @@ if [ -z "$menu_bin" ] && [ -x "$root_dir/spells/cantrips/menu" ]; then
 fi
 if [ -z "$menu_bin" ]; then
   echo "core-menu: missing dependency: menu" >&2
-  exit 1
+  return 1 2>/dev/null || exit 1
 fi
 
 exit_label_bin=${EXIT_LABEL_BIN-}
@@ -59,11 +84,11 @@ loop_limit=${MENU_LOOP_LIMIT:-}
 
 if [ -n "$loop_limit" ] && ! printf '%s' "$loop_limit" | grep -Eq '^[0-9]+$'; then
   echo "invalid MENU_LOOP_LIMIT: must be numeric" >&2
-  exit 1
+  return 1 2>/dev/null || exit 1
 fi
 
-# Catch Ctrl-C and TERM signal to exit cleanly
-trap 'exit 0' INT TERM
+# Catch Ctrl-C and TERM signal to return cleanly
+trap 'return 0' INT TERM
 
 title="${BOLD}${CYAN}Core prerequisites"
 if [ -n "$exit_label_bin" ]; then
@@ -154,7 +179,7 @@ while true; do
     if [ "$menu_status" -eq 130 ]; then
       printf 'ESC\n' >&2
       kill -TERM $$ 2>/dev/null || true
-      exit 0
+      return 0
     fi
   }
 done
