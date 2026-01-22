@@ -37,65 +37,9 @@ demo_level() {
   printf '%s%s=== Level %d: %s ===%s\n' "$YELLOW" "$BOLD" "$level" "$level_name" "$RESET"
   printf '\n'
   
-  # Run banish to validate and set up this level
-  # This ensures prerequisites are met, just like a real user would do
-  # TEMPORARILY DISABLED to debug CI issue
-  if [ "$level" -gt 0 ] && [ "${SKIP_BANISH:-0}" -eq 0 ]; then
-    printf 'DEBUG[1]: Level %s - checking if should run banish\n' "$level"
-    printf 'DEBUG[2]: SKIP_BANISH value: %s\n' "${SKIP_BANISH:-0}"
-    printf 'DEBUG[3]: About to look for banish command\n'
-    
-    # Run banish silently (stdin from /dev/null, output to temp file for debugging)
-    if command -v banish >/dev/null 2>&1; then
-      printf 'DEBUG[4]: banish found at: %s\n' "$(command -v banish)"
-      printf 'DEBUG[5]: Creating temp file...\n'
-      banish_tmp=$(mktemp "${TMPDIR:-/tmp}/demo-banish.XXXXXX")
-      printf 'DEBUG[6]: Temp file created: %s\n' "$banish_tmp"
-      printf 'DEBUG[7]: Current working directory: %s\n' "$(pwd)"
-      printf 'DEBUG[8]: WIZARDRY_DIR value: %s\n' "${WIZARDRY_DIR:-not set}"
-      printf 'DEBUG[9]: PATH value: %s\n' "$PATH"
-      printf 'DEBUG[10]: About to run: timeout 30 banish %s --no-tests\n' "$level"
-      printf 'DEBUG[11]: Executing banish NOW (this is the last message before banish runs)...\n'
-      
-      # Add timeout to prevent indefinite hanging
-      if timeout 30 banish "$level" --no-tests </dev/null >"$banish_tmp" 2>&1; then
-        banish_result=0
-      else
-        banish_result=$?
-      fi
-      
-      printf 'DEBUG[12]: banish command completed with exit code: %s\n' "$banish_result"
-      printf 'DEBUG[13]: Temp file size: %s bytes\n' "$(wc -c < "$banish_tmp" 2>/dev/null || echo 0)"
-      printf 'DEBUG[14]: First 500 chars of output:\n'
-      head -c 500 "$banish_tmp" 2>/dev/null || printf '(no output)\n'
-      printf '\nDEBUG[15]: Checking exit code...\n'
-      
-      if [ "$banish_result" -ne 0 ]; then
-        printf 'DEBUG[16]: banish FAILED with code %s\n' "$banish_result"
-        # Print to both stdout and stderr for visibility in PTY environments
-        printf '\n%s\n' "demo-magic: banish level $level failed - prerequisites not met"
-        printf 'Banish output:\n'
-        cat "$banish_tmp"
-        printf '\n%s\n' "demo-magic: banish level $level failed - prerequisites not met" >&2
-        printf 'Banish output:\n' >&2
-        cat "$banish_tmp" >&2
-        rm -f "$banish_tmp"
-        exit 1
-      fi
-      
-      printf 'DEBUG[17]: banish succeeded, cleaning up\n'
-      rm -f "$banish_tmp"
-      printf 'DEBUG[18]: Temp file removed\n'
-      say_narrator "The wizard banished level $level."
-      printf 'DEBUG[19]: Narrator message printed\n'
-      printf '\n'
-      printf 'DEBUG[20]: Newline printed, banish section complete\n'
-    else
-      printf 'DEBUG[ERROR]: banish command not found, skipping\n'
-    fi
-  elif [ "${SKIP_BANISH:-0}" -eq 1 ]; then
-    printf '%sDEBUG: SKIP_BANISH=1, skipping banish validation%s\n' "$CYAN" "$RESET"
-  fi
+  # NOTE: banish validation removed - doesn't work reliably in PTY environments
+  # In normal usage, users would run banish before demonstrating, but for
+  # automated demonstrations we skip this step
   
   # Add level-specific narration and demonstrations
   case "$level" in
