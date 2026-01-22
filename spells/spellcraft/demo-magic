@@ -82,11 +82,10 @@ fi
 
 # Helper function to run commands (with wizard-cast in verbose mode)
 run_cmd() {
-  cmd="$*"
   if [ "$verbose" -eq 1 ] && command -v wizard-cast >/dev/null 2>&1; then
-    wizard-cast $cmd
+    wizard-cast "$@"
   else
-    $cmd
+    "$@"
   fi
 }
 
