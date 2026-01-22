@@ -20,7 +20,7 @@ set -eu
 . env-clear
 
 # Enable cd hook in MUD configuration
-# This sets cd-hook=1 in $SPELLBOOK_DIR/.mud
+# This sets cd-look=1 in $SPELLBOOK_DIR/.mud
 # invoke-wizardry will load the hook when this setting is enabled
 
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
@@ -35,7 +35,7 @@ if [ ! -d "$spell_home" ]; then
 fi
 
 # Use config-set to enable cd hook
-config-set "$config_file" "cd-hook" "1"
+config-set "$config_file" "cd-look" "1"
 
 printf '%s\n' "CD hook enabled in MUD configuration."
 printf '%s\n' "Restart your shell or run 'invoke-wizardry' to activate."

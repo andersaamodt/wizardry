@@ -58,6 +58,33 @@ test_toggle_cd_sets_cd_look() {
   return 0
 }
 
+test_install_cd_sets_cd_look() {
+  skip-if-compiled || return $?
+  
+  # Create temporary spellbook directory
+  tmpdir=$(make_tempdir)
+  test_spellbook="$tmpdir/.spellbook"
+  mkdir -p "$test_spellbook"
+  
+  # Install cd hook using install-cd
+  output=$(env SPELLBOOK_DIR="$test_spellbook" sh "$ROOT_DIR/spells/.arcana/mud/install-cd" 2>&1)
+  
+  # Verify install-cd set cd-look=1 (not cd-hook=1)
+  if ! grep -q "^cd-look=1$" "$test_spellbook/.mud"; then
+    TEST_FAILURE_REASON="install-cd did not set cd-look=1 in config"
+    return 1
+  fi
+  
+  # Make sure it didn't set cd-hook=1
+  if grep -q "^cd-hook=1$" "$test_spellbook/.mud"; then
+    TEST_FAILURE_REASON="install-cd set cd-hook=1, but it should set cd-look=1"
+    return 1
+  fi
+  
+  return 0
+}
+
 run_test_case "invoke-wizardry checks for cd-look=1 config key" test_invoke_wizardry_checks_correct_config_key
 run_test_case "toggle-cd sets cd-look=1 config key" test_toggle_cd_sets_cd_look
+run_test_case "install-cd sets cd-look=1 config key" test_install_cd_sets_cd_look
 finish_tests
