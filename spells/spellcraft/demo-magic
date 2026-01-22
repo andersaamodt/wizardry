@@ -44,7 +44,11 @@ demo_level() {
     if command -v banish >/dev/null 2>&1; then
       banish_tmp=$(mktemp "${TMPDIR:-/tmp}/demo-banish.XXXXXX")
       if ! banish "$level" --no-tests </dev/null >"$banish_tmp" 2>&1; then
-        printf '%s\n' "demo-magic: banish level $level failed - prerequisites not met" >&2
+        # Print to both stdout and stderr for visibility in PTY environments
+        printf '\n%s\n' "demo-magic: banish level $level failed - prerequisites not met"
+        printf 'Banish output:\n'
+        cat "$banish_tmp"
+        printf '\n%s\n' "demo-magic: banish level $level failed - prerequisites not met" >&2
         printf 'Banish output:\n' >&2
         cat "$banish_tmp" >&2
         rm -f "$banish_tmp"
