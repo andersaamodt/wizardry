@@ -39,10 +39,14 @@ demo_level() {
   
   # Run banish to validate and set up this level
   # This ensures prerequisites are met, just like a real user would do
-  if [ "$level" -gt 0 ]; then
+  # TEMPORARILY DISABLED to debug CI issue
+  if [ "$level" -gt 0 ] && [ "${SKIP_BANISH:-0}" -eq 0 ]; then
+    printf '%sDEBUG: About to run banish %s%s\n' "$CYAN" "$level" "$RESET"
     # Run banish silently (stdin from /dev/null, output to temp file for debugging)
     if command -v banish >/dev/null 2>&1; then
+      printf '%sDEBUG: banish command found, creating temp file%s\n' "$CYAN" "$RESET"
       banish_tmp=$(mktemp "${TMPDIR:-/tmp}/demo-banish.XXXXXX")
+      printf '%sDEBUG: Running banish %s --no-tests%s\n' "$CYAN" "$level" "$RESET"
       if ! banish "$level" --no-tests </dev/null >"$banish_tmp" 2>&1; then
         # Print to both stdout and stderr for visibility in PTY environments
         printf '\n%s\n' "demo-magic: banish level $level failed - prerequisites not met"
@@ -54,10 +58,15 @@ demo_level() {
         rm -f "$banish_tmp"
         exit 1
       fi
+      printf '%sDEBUG: banish succeeded, cleaning up%s\n' "$CYAN" "$RESET"
       rm -f "$banish_tmp"
       say_narrator "The wizard banished level $level."
       printf '\n'
+    else
+      printf '%sDEBUG: banish command not found, skipping%s\n' "$CYAN" "$RESET"
     fi
+  elif [ "${SKIP_BANISH:-0}" -eq 1 ]; then
+    printf '%sDEBUG: SKIP_BANISH=1, skipping banish validation%s\n' "$CYAN" "$RESET"
   fi
   
   # Add level-specific narration and demonstrations
