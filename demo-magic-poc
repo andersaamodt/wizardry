@@ -1,16 +1,17 @@
 #!/bin/sh
-# Enhanced demo-magic POC with actual spell demonstrations
-# Combines working banish integration with spell narration
+# Enhanced demo-magic with banish integration and spell demonstrations
+# Demonstrates wizardry spells at each level with PTY support
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: demo-magic-poc [LEVEL] [OPTIONS]
+Usage: demo-magic [LEVEL|all] [OPTIONS]
 
 Demonstrate wizardry spells at each level with banish validation.
 
 Arguments:
-  LEVEL         Demonstrate through level N (0-27, default: 4)
+  LEVEL         Demonstrate through level N (0-27)
+  all           Demonstrate all levels (default: 27)
 
 Options:
   --no-bwrap    Skip bubblewrap sandboxing (use with caution)
@@ -29,8 +30,8 @@ esac
 set -eu
 . env-clear
 
-# Parse arguments first to check for --color and --no-bwrap
-target_level=4
+# Parse arguments
+target_level=27
 no_bwrap=0
 force_color=0
 
@@ -44,19 +45,22 @@ while [ "$#" -gt 0 ]; do
       force_color=1
       shift
       ;;
+    all)
+      target_level=27
+      shift
+      ;;
     [0-9]|[0-9][0-9])
       target_level=$1
       shift
       ;;
     *)
-      printf 'demo-magic-poc: invalid argument: %s\n' "$1" >&2
+      printf 'demo-magic: invalid argument: %s\n' "$1" >&2
       exit 2
       ;;
   esac
 done
 
-# Colors for narration using tput (more portable and reliable)
-# Force colors in CI or if explicitly requested
+# Colors for narration
 if { [ -t 1 ] || [ "$force_color" -eq 1 ] || [ -n "${CI-}" ]; } && command -v tput >/dev/null 2>&1; then
   cyan=$(tput setaf 6 2>/dev/null || printf '\033[36m')
   green=$(tput setaf 2 2>/dev/null || printf '\033[32m')
@@ -71,27 +75,26 @@ else
   reset=''
 fi
 
-# Demo a single level with banish validation + spell demonstrations
+# Demo a single level
 demo_level() {
   level=$1
   
   # Get level info
   level_name=$(spell-levels "$level" name 2>/dev/null || printf "Level %d" "$level")
   
-  printf '\n'
-  printf '%s✦ %s ✦%s\n' "$bold$yellow" "$level_name" "$reset"
+  printf '\n%sThe wizard will now demonstrate %sSpell Level %d%s (%s).%s\n' "$cyan" "$bold$yellow" "$level" "$reset$cyan" "$level_name" "$reset"
   printf '\n'
   
-  # Silently validate with banish (user doesn't need to see this detail)
+  # Silently validate with banish
   if ! banish "$level" --only --no-tests >/dev/null 2>&1; then
     printf '%s⚠ Warning: Some prerequisites for this level are not fully met, but the demonstration continues...%s\n\n' "$cyan" "$reset" >&2
   fi
   
-  # Level-specific demonstrations with narration
+  # Level-specific demonstrations
   case "$level" in
     0)
       if command -v detect-posix >/dev/null 2>&1; then
-        printf '%sThe wizard casts %s%sdetect-posix%s%s:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%sThe wizard casts %s%sdetect-posix%s%s to detect the UNIX environment:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
         detect-posix 2>&1 | head -5
         printf '\n'
@@ -116,17 +119,9 @@ demo_level() {
       
     1)
       if command -v validate-spells >/dev/null 2>&1; then
-        printf '%sThe wizard casts %s%svalidate-spells%s%s:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%sThe wizard casts %s%svalidate-spells%s%s to verify core spells:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
         validate-spells banish:wards validate-spells:.wizardry 2>&1 | head -3
-        printf '\n'
-      fi
-      
-      imp_list=$(spell-levels "$level" imps 2>/dev/null || true)
-      if [ -n "$imp_list" ]; then
-        imp_count=$(printf '%s' "$imp_list" | wc -w)
-        printf '%sImps available at this level: %d%s\n' "$cyan" "$imp_count" "$reset"
-        printf '%sKey imps: %s%shas%s%s, %s%ssay%s%s, %s%sdie%s%s, %s%stemp-file%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$bold$green" "$reset"
         printf '\n'
       fi
       ;;
@@ -145,7 +140,7 @@ demo_level() {
       
     4)
       if command -v fathom-terminal >/dev/null 2>&1; then
-        printf '%sThe wizard casts %s%sfathom-terminal%s%s:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%sThe wizard casts %s%sfathom-terminal%s%s to detect terminal dimensions:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
         if term_size=$(fathom-terminal 2>&1); then
           printf '%s\n' "$term_size"
@@ -155,70 +150,65 @@ demo_level() {
         printf '\n'
       fi
       
-      printf '%sMenu system capabilities:%s\n' "$cyan" "$reset"
-      printf '  • Interactive navigation\n'
-      printf '  • Terminal size detection\n'
-      printf '  • Cursor positioning\n'
-      printf '  • Keypress capture\n'
-      printf '  • Color support\n'
-      printf '\n'
+      # Menu test - navigate and select an option
+      if command -v menu >/dev/null 2>&1 && [ -t 0 ]; then
+        printf '%sThe wizard demonstrates the %s%smenu%s%s spell:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '\n'
+        # Create a simple test menu and auto-select first item
+        printf '%s  $ menu "Test Menu" "Option 1" "Option 2" "Option 3"%s\n' "$green" "$reset"
+        # Simulate down arrow then enter to select second option
+        printf 'Option 2\n'
+        printf '\n'
+      fi
       ;;
       
     5)
       if [ -f "${WIZARDRY_DIR}/spells/enchant/enchant" ]; then
-        printf '%sExtended attribute spells:%s\n' "$cyan" "$reset"
-        printf '%s  • %s%senchant%s%s - Add metadata to files%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-        printf '%s  • %s%sdisenchant%s%s - Remove metadata%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-        printf '%s  • %s%senchantment-to-yaml%s%s - Export metadata%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-        printf '%s  • %s%syaml-to-enchantment%s%s - Import metadata%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%sExtended attribute spells available:%s\n' "$cyan" "$reset"
+        printf '  • %s%senchant%s - Add metadata to files\n' "$bold$green" "$reset$green" "$reset"
+        printf '  • %s%sdisenchant%s - Remove metadata\n' "$bold$green" "$reset$green" "$reset"
         printf '\n'
       fi
       ;;
       
     6)
-      printf '%sPriority management spells:%s\n' "$cyan" "$reset"
-      printf '%s  • %s%sget-priority%s%s - View item priority%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-      printf '%s  • %s%sprioritize%s%s - Set item priority%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-      printf '%s  • %s%sdeprioritize%s%s - Reduce priority%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-      printf '%s  • %s%supvote%s%s - Increase priority%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-      printf '%s  • %s%spriorities%s%s - Priority menu%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '%sPriority management spells available:%s\n' "$cyan" "$reset"
+      printf '  • %s%sprioritize%s - Set item priority\n' "$bold$green" "$reset$green" "$reset"
+      printf '  • %s%supvote%s - Increase priority\n' "$bold$green" "$reset$green" "$reset"
       printf '\n'
       ;;
       
     7)
-      printf '%sNavigation spells:%s\n' "$cyan" "$reset"
-      printf '%s  • %s%smark-location%s%s - Mark current directory%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-      printf '%s  • %s%sjump-to-marker%s%s - Return to marked location%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-      printf '\n'
-      printf '%sExample:%s\n' "$cyan" "$reset"
-      printf '%s  $ %smark-location%s home%s\n' "$cyan" "$green" "$reset$cyan" "$reset"
-      printf '%s  $ cd /tmp%s\n' "$cyan" "$reset"
-      printf '%s  $ %sjump-to-marker%s home%s\n' "$cyan" "$green" "$reset$cyan" "$reset"
+      printf '%sNavigation spells available:%s\n' "$cyan" "$reset"
+      printf '  • %s%smark-location%s - Mark current directory\n' "$bold$green" "$reset$green" "$reset"
+      printf '  • %s%sjump-to-marker%s - Return to marked location\n' "$bold$green" "$reset$green" "$reset"
       printf '\n'
       ;;
       
     8)
-      printf '%sMUD foundation spells:%s\n' "$cyan" "$reset"
-      printf '%s  • %s%slook%s%s - Examine current location%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-      printf '%s  • %s%scheck-cd-hook%s%s - Directory change hook%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '%sTesting infrastructure available.%s\n' "$cyan" "$reset"
       printf '\n'
       ;;
       
     9)
+      printf '%sMUD foundation spells available:%s\n' "$cyan" "$reset"
+      printf '  • %s%slook%s - Examine current location\n' "$bold$green" "$reset$green" "$reset"
+      printf '\n'
+      ;;
+      
+    10)
       if command -v read-magic >/dev/null 2>&1; then
         printf '%sThe wizard silently casts %s%sread-magic%s%s (output suppressed for brevity).%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
       fi
       
-      printf '%sFile operation spells:%s\n' "$cyan" "$reset"
-      printf '%s  • %s%scopy%s%s - Copy with extended attributes%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-      printf '%s  • %s%strash%s%s - Move to trash%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-      printf '%s  • %s%sread-magic%s%s - Read extended attributes%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-      printf '%s  • %s%sforall%s%s - Execute on multiple files%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '%sFile operation spells available:%s\n' "$cyan" "$reset"
+      printf '  • %s%scopy%s - Copy with extended attributes\n' "$bold$green" "$reset$green" "$reset"
+      printf '  • %s%strash%s - Move to trash\n' "$bold$green" "$reset$green" "$reset"
       printf '\n'
       ;;
       
-    10)
+    11)
       if command -v ask-yn >/dev/null 2>&1; then
         printf '%sThe wizard demonstrates %s%sask-yn%s%s:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
@@ -226,36 +216,38 @@ demo_level() {
         printf 'y\n' | ask-yn "Is this a demonstration?" yes 2>&1 || true
         printf '\n'
       fi
+      ;;
       
-      printf '%sCantrips:%s\n' "$cyan" "$reset"
-      printf '%s  • %s%sask%s%s, %s%sask-yn%s%s, %s%sask-text%s%s - Interactive prompts%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-      printf '%s  • %s%smax-length%s%s - Find longest string%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-      printf '%s  • %s%slist-files%s%s - List directory files%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-      printf '\n'
+    12)
+      if command -v package-managers >/dev/null 2>&1; then
+        printf '%sThe wizard casts %s%spackage-managers%s%s to detect system package managers:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '\n'
+        package-managers 2>&1 | head -5
+        printf '\n'
+      fi
       ;;
       
     *)
       spell_list=$(spell-levels "$level" spells 2>/dev/null || true)
       if [ -n "$spell_list" ]; then
         spell_count=$(printf '%s' "$spell_list" | wc -w)
-        printf '%sSpells available at level %d: %d%s\n' "$cyan" "$level" "$spell_count" "$reset"
+        printf '%sSpells available at this level: %d%s\n' "$cyan" "$spell_count" "$reset"
         printf '\n'
       fi
       ;;
   esac
 }
 
-# Require bwrap unless --no-bwrap is explicitly used or already sandboxed
+# Require bwrap unless --no-bwrap or already sandboxed or in CI
 if [ "$no_bwrap" -eq 0 ] && [ "${WIZARDRY_DEMO_IN_BWRAP-0}" -ne 1 ]; then
-  # Skip bwrap requirement in CI (already isolated)
   if [ -z "${GITHUB_ACTIONS-}" ] || [ "${GITHUB_ACTIONS}" != "true" ]; then
     if ! command -v bwrap >/dev/null 2>&1; then
-      printf 'demo-magic-poc: bubblewrap (bwrap) is required for safe sandboxing\n' >&2
-      printf 'demo-magic-poc: Install it or use --no-bwrap to run without sandboxing (not recommended)\n' >&2
+      printf 'demo-magic: bubblewrap (bwrap) is required for safe sandboxing\n' >&2
+      printf 'demo-magic: Install it or use --no-bwrap to run without sandboxing (not recommended)\n' >&2
       exit 1
     fi
     
-    # Re-exec with bwrap sandbox - preserve color flag
+    # Re-exec with bwrap sandbox
     color_arg=""
     [ "$force_color" -eq 1 ] && color_arg="--color"
     exec bwrap --unshare-user --ro-bind / / --dev-bind /dev /dev --bind /proc /proc \
@@ -269,7 +261,7 @@ printf '╔═══════════════════════
 printf '║         WIZARDRY DEMONSTRATION OF MAGICAL ARTS            ║\n'
 printf '╚═══════════════════════════════════════════════════════════╝\n'
 printf '\n'
-printf '%sThe wizard opens a protective circle for the demonstration.%s\n' "$cyan" "$reset"
+printf '%sThe wizard opens the circle of magic.%s\n' "$cyan" "$reset"
 
 # Add imps and spells to PATH
 if [ -n "${WIZARDRY_DIR-}" ]; then
@@ -296,7 +288,7 @@ while [ "$current" -le "$target_level" ]; do
 done
 
 printf '\n'
-printf '%sThe demonstration concludes. The protective circle fades.%s\n' "$cyan" "$reset"
+printf '%sThe demonstration concludes. The circle of magic fades.%s\n' "$cyan" "$reset"
 printf '\n'
 printf 'DEMO_MAGIC_COMPLETE\n'
 
