@@ -30,21 +30,33 @@ USAGE
   ;;
 esac
 
+printf 'DEBUG[BANISH-00]: Before set -eu\n'
+
 set -eu
 
-printf 'DEBUG[BANISH-START]: banish started\n' >&2
+printf 'DEBUG[BANISH-01]: After set -eu\n'
+
+printf 'DEBUG[BANISH-02]: About to detect WIZARDRY_DIR\n'
 
 # Detect WIZARDRY_DIR if not already set
 if [ -z "${WIZARDRY_DIR-}" ]; then
+  printf 'DEBUG[BANISH-03]: WIZARDRY_DIR not set, detecting...\n'
   # We're being executed directly - detect from script location
   script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || script_dir=""
+  printf 'DEBUG[BANISH-04]: script_dir=%s\n' "$script_dir"
   if [ -n "$script_dir" ]; then
     wiz_root=$(CDPATH= cd -- "$script_dir/../.." 2>/dev/null && pwd -P) || wiz_root=""
+    printf 'DEBUG[BANISH-05]: wiz_root=%s\n' "$wiz_root"
     if [ -n "$wiz_root" ] && [ -d "$wiz_root/spells" ]; then
       WIZARDRY_DIR=$wiz_root
+      printf 'DEBUG[BANISH-06]: Set WIZARDRY_DIR=%s\n' "$WIZARDRY_DIR"
     fi
   fi
+else
+  printf 'DEBUG[BANISH-07]: WIZARDRY_DIR already set to %s\n' "$WIZARDRY_DIR"
 fi
+
+printf 'DEBUG[BANISH-08]: Validating WIZARDRY_DIR\n'
 
 # Validate WIZARDRY_DIR is set and valid
 if [ -z "${WIZARDRY_DIR-}" ]; then
@@ -53,14 +65,18 @@ if [ -z "${WIZARDRY_DIR-}" ]; then
   exit 1
 fi
 
+printf 'DEBUG[BANISH-09]: Checking if %s/spells exists\n' "$WIZARDRY_DIR"
+
 if [ ! -d "${WIZARDRY_DIR}/spells" ]; then
   printf 'banish: invalid WIZARDRY_DIR: %s\n' "$WIZARDRY_DIR" >&2
   exit 1
 fi
 
+printf 'DEBUG[BANISH-10]: Exporting WIZARDRY_DIR\n'
+
 export WIZARDRY_DIR
 
-printf 'DEBUG[BANISH-ARGS]: About to parse arguments\n' >&2
+printf 'DEBUG[BANISH-ARGS]: About to parse arguments\n'
 
 # Parse arguments
 target_level=4
