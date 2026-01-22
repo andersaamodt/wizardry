@@ -88,7 +88,7 @@ demo_level() {
   if command -v banish >/dev/null 2>&1; then
     printf '%sThe wizard casts %s%sbanish%s%s to validate prerequisites:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
     printf '\n'
-    if banish "$level" --only --no-tests >/dev/null 2>&1; then
+    if banish "$level" --only --no-tests --no-heal >/dev/null 2>&1; then
       printf '%s✓ Prerequisites validated for level %d%s\n' "$green" "$level" "$reset"
     else
       printf '%s⚠ Some prerequisites not met (continuing demonstration)%s\n' "$yellow" "$reset"
