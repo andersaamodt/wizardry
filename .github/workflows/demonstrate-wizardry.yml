@@ -69,7 +69,7 @@ jobs:
             exit 2
           fi
           . spells/.imps/sys/invoke-wizardry || exit 2
-          exec ./spells/spellcraft/demo-magic all
+          exec ./spells/spellcraft/demo-magic --no-pauses --no-bwrap all
           INNERCMD
           chmod +x "$test_dir/cmd.sh"
           # Use stdin closed to prevent socat hanging, but still pass through output
