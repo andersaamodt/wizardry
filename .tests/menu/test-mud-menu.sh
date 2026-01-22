@@ -101,7 +101,7 @@ SH
   chmod +x "$tmp/exit-label"
   # Test as submenu (as it would be called from mud menu)
   # Use MENU_LOOP_LIMIT=1 to exit after one iteration
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 WIZARDRY_TMPDIR="$tmp" "$ROOT_DIR/spells/menu/mud-menu"
+  REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 WIZARDRY_TMPDIR="$tmp" run_sourced_spell "spells/menu/mud-menu"
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
@@ -130,7 +130,7 @@ else
 fi
 SH
   chmod +x "$tmp/require"
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$tmp:/bin:/usr/bin" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud-menu"
+  REQUIRE_COMMAND="$tmp/require-command" PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$tmp:/bin:/usr/bin" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/mud-menu"
   assert_failure
   assert_error_contains "The MUD Install menu needs the 'menu' command"
 }
@@ -152,7 +152,7 @@ SH
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 WIZARDRY_TMPDIR="$tmp" "$ROOT_DIR/spells/menu/mud-menu"
+  REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MENU_LOOP_LIMIT=1 WIZARDRY_TMPDIR="$tmp" run_sourced_spell "spells/menu/mud-menu"
   assert_status 5
   assert_file_contains "$tmp/log" "MUD Install:"
 }
@@ -190,7 +190,7 @@ SH
   chmod +x "$tmp/exit-label"
   
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_TMPDIR="$tmp" "$ROOT_DIR/spells/menu/mud-menu"
+  REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" WIZARDRY_TMPDIR="$tmp" run_sourced_spell "spells/menu/mud-menu"
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$tmp/log")
@@ -240,7 +240,7 @@ SH
   mkdir -p "$spellbook_dir"
   printf 'cd-look=0\n' > "$spellbook_dir/.mud"
   
-  SPELLBOOK_DIR="$spellbook_dir" run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.arcana/mud:/bin:/usr/bin" MENU_LOG="$tmp/log" WIZARDRY_TMPDIR="$tmp" "$ROOT_DIR/spells/menu/mud-menu"
+  SPELLBOOK_DIR="$spellbook_dir" REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.arcana/mud:/bin:/usr/bin" MENU_LOG="$tmp/log" WIZARDRY_TMPDIR="$tmp" run_sourced_spell "spells/menu/mud-menu"
   assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -287,7 +287,7 @@ SH
   mkdir -p "$spellbook_dir/.mud"
   printf 'cd-look=1\n' > "$spellbook_dir/.mud/config"
   
-  SPELLBOOK_DIR="$spellbook_dir" run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.arcana/mud:/bin:/usr/bin" MENU_LOG="$tmp/log" WIZARDRY_TMPDIR="$tmp" "$ROOT_DIR/spells/menu/mud-menu"
+  SPELLBOOK_DIR="$spellbook_dir" REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.arcana/mud:/bin:/usr/bin" MENU_LOG="$tmp/log" WIZARDRY_TMPDIR="$tmp" run_sourced_spell "spells/menu/mud-menu"
   assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -299,7 +299,7 @@ SH
 
 # Test --help shows usage
 test_mud_install_menu_help() {
-  run_cmd "$ROOT_DIR/spells/menu/mud-menu" --help
+  run_sourced_spell "spells/menu/mud-menu" --help
   assert_success || return 1
   assert_output_contains "Usage:" || return 1
   assert_output_contains "cd hook" || return 1
@@ -344,7 +344,7 @@ SH
   config_dir="$tmp/mud"
   mkdir -p "$config_dir"
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.arcana/mud:/bin:/usr/bin" MENU_LOG="$tmp/log" MUD_DIR="$config_dir" WIZARDRY_TMPDIR="$tmp" "$ROOT_DIR/spells/menu/mud-menu"
+  REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.arcana/mud:/bin:/usr/bin" MENU_LOG="$tmp/log" MUD_DIR="$config_dir" WIZARDRY_TMPDIR="$tmp" run_sourced_spell "spells/menu/mud-menu"
   assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -390,7 +390,7 @@ SH
   config_dir="$tmp/mud"
   mkdir -p "$config_dir"
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.arcana/mud:/bin:/usr/bin" MENU_LOG="$tmp/log" MUD_DIR="$config_dir" WIZARDRY_TMPDIR="$tmp" "$ROOT_DIR/spells/menu/mud-menu"
+  REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.arcana/mud:/bin:/usr/bin" MENU_LOG="$tmp/log" MUD_DIR="$config_dir" WIZARDRY_TMPDIR="$tmp" run_sourced_spell "spells/menu/mud-menu"
   assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -493,7 +493,7 @@ kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$tmp/menu"
   
-  SPELLBOOK_DIR="$spellbook_dir" run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.arcana/mud:/bin:/usr/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" WIZARDRY_TMPDIR="$tmp" "$ROOT_DIR/spells/menu/mud-menu"
+  SPELLBOOK_DIR="$spellbook_dir" REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.arcana/mud:/bin:/usr/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" WIZARDRY_TMPDIR="$tmp" run_sourced_spell "spells/menu/mud-menu"
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
   
   log_content=$(cat "$tmp/log")
@@ -573,7 +573,7 @@ kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$tmp/menu"
   
-  run_cmd env REQUIRE_COMMAND="$tmp/require-command" PATH="$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" MUD_DIR="$config_dir" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_TMPDIR="$tmp" "$ROOT_DIR/spells/menu/mud-menu"
+  REQUIRE_COMMAND="$tmp/require-command" PATH="$WIZARDRY_IMPS_PATH:$tmp:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/text:$ROOT_DIR/spells/.imps/paths:$ROOT_DIR/spells/.imps/pkg:$ROOT_DIR/spells/.imps/menu:$ROOT_DIR/spells/.imps/test:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/input:/bin:/usr/bin" MENU_LOG="$tmp/log" CALL_COUNT_FILE="$call_count_file" MUD_DIR="$config_dir" WIZARDRY_RC_FILE="$rc_file" WIZARDRY_TMPDIR="$tmp" run_sourced_spell "spells/menu/mud-menu"
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
   
   log_content=$(cat "$tmp/log")

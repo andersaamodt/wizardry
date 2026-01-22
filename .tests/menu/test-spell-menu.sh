@@ -102,7 +102,7 @@ SH
   chmod +x "$stub_dir/exit-label"
   
   
-  run_cmd env PATH="$stub_dir:$PATH" MENU_LOG="$stub_dir/log" "$ROOT_DIR/spells/menu/spell-menu" testspell
+  PATH="$stub_dir:$PATH" MENU_LOG="$stub_dir/log" run_sourced_spell "spells/menu/spell-menu" testspell
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$stub_dir/log")
@@ -171,7 +171,7 @@ kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$stub_dir/menu"
   
-  run_cmd env PATH="$stub_dir:$PATH:/usr/bin:/bin" MENU_LOG="$stub_dir/log" CALL_COUNT_FILE="$call_count_file" "$ROOT_DIR/spells/menu/spell-menu" testspell
+  PATH="$stub_dir:$PATH:/usr/bin:/bin" MENU_LOG="$stub_dir/log" CALL_COUNT_FILE="$call_count_file" run_sourced_spell "spells/menu/spell-menu" testspell
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
   
   log_content=$(cat "$stub_dir/log")
@@ -247,7 +247,7 @@ kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
 SH
   chmod +x "$stub_dir/menu"
   
-  run_cmd env PATH="$stub_dir:$PATH:/usr/bin:/bin" MENU_LOG="$stub_dir/log" CALL_COUNT_FILE="$call_count_file" "$ROOT_DIR/spells/menu/spell-menu" testspell
+  PATH="$stub_dir:$PATH:/usr/bin:/bin" MENU_LOG="$stub_dir/log" CALL_COUNT_FILE="$call_count_file" run_sourced_spell "spells/menu/spell-menu" testspell
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully"; return 1; }
   
   log_content=$(cat "$stub_dir/log")

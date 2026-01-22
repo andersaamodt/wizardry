@@ -87,7 +87,7 @@ SH
 run_test_case "system-menu ESC/Exit behavior" test_esc_exit_behavior
 
 test_shows_help() {
-  run_cmd "$ROOT_DIR/spells/menu/system-menu" --help
+  run_sourced_spell "spells/menu/system-menu" --help
   assert_success
   assert_output_contains "Usage: system-menu"
 }
@@ -115,7 +115,7 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/system-menu"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/system-menu"
   assert_success || return 1
   
   # Verify no "Exiting" message appears in stderr
@@ -166,7 +166,7 @@ SH
   chmod +x "$tmp/exit-label"
   
   MENU_OUTPUT="$tmp/output"
-  run_cmd env PATH="$tmp:$PATH" MENU_OUTPUT="$MENU_OUTPUT" "$ROOT_DIR/spells/menu/system-menu"
+  PATH="$tmp:$PATH" MENU_OUTPUT="$MENU_OUTPUT" run_sourced_spell "spells/menu/system-menu"
   assert_success || return 1
   
   if [ -f "$MENU_OUTPUT" ]; then

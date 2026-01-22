@@ -25,7 +25,7 @@ run_test_case "menu/network-menu is executable" spell_is_executable
 run_test_case "menu/network-menu has content" spell_has_content
 
 test_shows_help() {
-  run_cmd "$ROOT_DIR/spells/menu/network-menu" --help
+  run_sourced_spell "spells/menu/network-menu" --help
   assert_success
   assert_output_contains "Usage: network-menu"
 }
@@ -41,7 +41,7 @@ printf '%s\n' "network-menu: The 'menu' command is required." >&2
 exit 1
 SH
   chmod +x "$tmp/require-command"
-  PATH="$tmp:$PATH" run_cmd "$ROOT_DIR/spells/menu/network-menu"
+  PATH="$tmp:$PATH" run_sourced_spell "spells/menu/network-menu"
   assert_failure || return 1
   assert_error_contains "menu" || return 1
 }
