@@ -1,0 +1,103 @@
+#!/bin/sh
+# Minimal proof-of-concept demo-magic to test socat/PTY integration
+# This version does NOT call banish - just demonstrates level output
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: demo-magic-poc [LEVEL]
+
+Minimal demonstration of wizardry levels (POC for banish integration).
+
+Arguments:
+  LEVEL         Demonstrate through level N (0-2, default: 2)
+
+This is a proof-of-concept for testing banish integration with socat/PTY.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+# Simple level demonstrations without banish
+demo_level() {
+  level=$1
+  
+  printf '\n=== Level %d ===\n\n' "$level"
+  
+  case "$level" in
+    0)
+      printf 'Level 0: POSIX & Platform Foundation\n'
+      printf 'The wizard examines the foundation of reality itself...\n\n'
+      
+      # Simple commands that should always work
+      if command -v sh >/dev/null 2>&1; then
+        printf 'Shell: %s\n' "$(command -v sh)"
+      fi
+      
+      if command -v uname >/dev/null 2>&1; then
+        printf 'Platform: %s\n' "$(uname -s)"
+      fi
+      
+      printf '\nLevel 0 complete.\n'
+      ;;
+      
+    1)
+      printf 'Level 1: Banish & Validation Infrastructure\n'
+      printf 'The wizard gathers the core components of wizardry...\n\n'
+      
+      if [ -n "${WIZARDRY_DIR-}" ]; then
+        printf 'WIZARDRY_DIR: %s\n' "$WIZARDRY_DIR"
+      else
+        printf 'WIZARDRY_DIR: not set\n'
+      fi
+      
+      printf '\nLevel 1 complete.\n'
+      ;;
+      
+    2)
+      printf 'Level 2: Glossary & Parsing\n'
+      printf 'The wizard conjures the glossary system...\n\n'
+      
+      printf 'Glossary infrastructure ready\n'
+      
+      printf '\nLevel 2 complete.\n'
+      ;;
+      
+    *)
+      printf 'Level %d: Not implemented in POC\n' "$level"
+      ;;
+  esac
+}
+
+# Determine target level
+target_level=2
+if [ "$#" -gt 0 ]; then
+  case "$1" in
+    [0-9])
+      target_level=$1
+      ;;
+    *)
+      printf 'demo-magic-poc: invalid level: %s\n' "$1" >&2
+      exit 2
+      ;;
+  esac
+fi
+
+printf '\n╔═══════════════════════════════════════════════╗\n'
+printf '║     DEMO-MAGIC POC - Testing PTY Support     ║\n'
+printf '╚═══════════════════════════════════════════════╝\n'
+
+# Run levels 0 through target
+current=0
+while [ "$current" -le "$target_level" ]; do
+  demo_level "$current"
+  current=$((current + 1))
+done
+
+printf '\n═══════════════════════════════════════════════\n'
+printf 'POC demonstration complete.\n'
+printf 'DEMO_POC_COMPLETE\n'
+
+exit 0
