@@ -42,7 +42,7 @@ demo_level() {
   if [ "$level" -gt 0 ]; then
     # Run banish silently (stdin from /dev/null, output suppressed)
     if command -v banish >/dev/null 2>&1; then
-      banish "$level" --no-tests </dev/null >/dev/null 2>&1 || true
+      banish "$level" --no-tests </dev/null >/dev/null 2>&1
     fi
     say_narrator "The wizard banished level $level."
     printf '\n'
@@ -95,7 +95,7 @@ demo_level() {
         # Filter to show only meaningful output (not verbose function definitions)
         generate-glosses 2>&1 | \
           grep -E "^generate-glosses: (Collecting|Scanning|Found|Gloss generation|  )" | \
-          grep -v "Skipping spell" || true
+          grep -v "Skipping spell"
         printf '\n'
         demo_pause
       fi
