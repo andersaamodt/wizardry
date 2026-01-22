@@ -47,8 +47,8 @@ demo_level() {
         exit 1
       fi
       say_narrator "The wizard banished level $level."
+      printf '\n'
     fi
-    printf '\n'
   fi
   
   # Add level-specific narration and demonstrations
