@@ -63,7 +63,14 @@ demo_level() {
       printf 'Level 2: Glossary & Parsing\n'
       printf 'The wizard conjures the glossary system...\n\n'
       
-      printf 'Glossary infrastructure ready\n'
+      # Run banish for level 2 validation
+      printf 'Running banish validation for level 2...\n'
+      if banish 2 --only --no-tests 2>&1; then
+        printf '\nBanish level 2: PASSED\n'
+      else
+        printf '\nBanish level 2: FAILED\n'
+        return 1
+      fi
       
       printf '\nLevel 2 complete.\n'
       ;;
