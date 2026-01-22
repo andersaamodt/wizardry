@@ -89,7 +89,8 @@ demo_level() {
   level_name=$(spell-levels "$level" name 2>/dev/null || printf "Level %d" "$level")
   
   printf '\n%s✶ Spell Level %d ✶%s\n' "$bold$yellow" "$level" "$reset"
-  printf '%sThe wizard will now demonstrate (%s).%s\n' "$cyan" "$level_name" "$reset"
+  printf '%sThe wizard will now demonstrate Spell Level %d (%s).%s\n' \
+    "$cyan" "$level" "$level_name" "$reset"
   printf '\n'
   
   # Validate prerequisites with banish
