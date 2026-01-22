@@ -1,18 +1,19 @@
 #!/bin/sh
-# Minimal proof-of-concept demo-magic to test socat/PTY integration
-# This version does NOT call banish - just demonstrates level output
+# Minimal proof-of-concept demo-magic to test socat/PTY integration with banish
+# This version calls banish for each level to validate prerequisites
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
 Usage: demo-magic-poc [LEVEL]
 
-Minimal demonstration of wizardry levels (POC for banish integration).
+Minimal demonstration of wizardry levels with banish validation (POC).
 
 Arguments:
-  LEVEL         Demonstrate through level N (0-2, default: 2)
+  LEVEL         Demonstrate through level N (0-10, default: 2)
 
 This is a proof-of-concept for testing banish integration with socat/PTY.
+Each level runs banish validation before demonstrating that level's capabilities.
 USAGE
   exit 0
   ;;
@@ -20,72 +21,43 @@ esac
 
 set -eu
 
-# Simple level demonstrations with incremental banish integration
+# Generic level demonstration with banish validation
 demo_level() {
   level=$1
   
   printf '\n=== Level %d ===\n\n' "$level"
   
-  case "$level" in
-    0)
-      printf 'Level 0: POSIX & Platform Foundation\n'
-      printf 'The wizard examines the foundation of reality itself...\n\n'
-      
-      # Run banish for level 0 validation
-      printf 'Running banish validation for level 0...\n'
-      if banish 0 --only --no-tests 2>&1; then
-        printf '\nBanish level 0: PASSED\n'
-      else
-        printf '\nBanish level 0: FAILED\n'
-        return 1
-      fi
-      
-      printf '\nLevel 0 complete.\n'
-      ;;
-      
-    1)
-      printf 'Level 1: Banish & Validation Infrastructure\n'
-      printf 'The wizard gathers the core components of wizardry...\n\n'
-      
-      # Run banish for level 1 validation
-      printf 'Running banish validation for level 1...\n'
-      if banish 1 --only --no-tests 2>&1; then
-        printf '\nBanish level 1: PASSED\n'
-      else
-        printf '\nBanish level 1: FAILED\n'
-        return 1
-      fi
-      
-      printf '\nLevel 1 complete.\n'
-      ;;
-      
-    2)
-      printf 'Level 2: Glossary & Parsing\n'
-      printf 'The wizard conjures the glossary system...\n\n'
-      
-      # Run banish for level 2 validation
-      printf 'Running banish validation for level 2...\n'
-      if banish 2 --only --no-tests 2>&1; then
-        printf '\nBanish level 2: PASSED\n'
-      else
-        printf '\nBanish level 2: FAILED\n'
-        return 1
-      fi
-      
-      printf '\nLevel 2 complete.\n'
-      ;;
-      
-    *)
-      printf 'Level %d: Not implemented in POC\n' "$level"
-      ;;
-  esac
+  # Get level info if spell-levels is available
+  level_name=""
+  if command -v spell-levels >/dev/null 2>&1; then
+    level_name=$(spell-levels "$level" name 2>/dev/null || true)
+  fi
+  
+  if [ -n "$level_name" ]; then
+    printf 'Level %d: %s\n' "$level" "$level_name"
+  else
+    printf 'Level %d\n' "$level"
+  fi
+  
+  printf 'Validating prerequisites with banish...\n\n'
+  
+  # Run banish for this level validation (--only to avoid redundant lower levels)
+  # Use --no-tests to skip actual tests, just validate assumptions
+  if banish "$level" --only --no-tests 2>&1; then
+    printf '\n✓ Banish level %d: PASSED\n' "$level"
+  else
+    printf '\n✗ Banish level %d: FAILED\n' "$level"
+    return 1
+  fi
+  
+  printf '\nLevel %d complete.\n' "$level"
 }
 
 # Determine target level
 target_level=2
 if [ "$#" -gt 0 ]; then
   case "$1" in
-    [0-9])
+    [0-9]|[0-9][0-9])
       target_level=$1
       ;;
     *)
@@ -96,7 +68,7 @@ if [ "$#" -gt 0 ]; then
 fi
 
 printf '\n╔═══════════════════════════════════════════════╗\n'
-printf '║     DEMO-MAGIC POC - Testing PTY Support     ║\n'
+printf '║     DEMO-MAGIC POC - Banish Integration      ║\n'
 printf '╚═══════════════════════════════════════════════╝\n'
 
 # Run levels 0 through target
