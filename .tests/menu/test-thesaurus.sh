@@ -26,7 +26,7 @@ run_test_case "menu/thesaurus is executable" spell_is_executable
 run_test_case "menu/thesaurus has content" spell_has_content
 
 test_shows_help() {
-  run_cmd "$ROOT_DIR/spells/menu/thesaurus" --help
+  run_sourced_spell "spells/menu/thesaurus" --help
   assert_success
   assert_output_contains "Usage: thesaurus"
 }
@@ -42,7 +42,7 @@ printf '%s\n' "thesaurus: The 'menu' command is required." >&2
 exit 1
 SH
   chmod +x "$tmp/require-command"
-  PATH="$tmp:$PATH" run_cmd "$ROOT_DIR/spells/menu/thesaurus"
+  PATH="$tmp:$PATH" run_sourced_spell "spells/menu/thesaurus"
   assert_failure || return 1
   assert_error_contains "menu" || return 1
 }
@@ -50,7 +50,7 @@ SH
 run_test_case "thesaurus fails without menu dependency" test_fails_without_menu_dependency
 
 test_accepts_list_flag() {
-  run_cmd "$ROOT_DIR/spells/menu/thesaurus" --help
+  run_sourced_spell "spells/menu/thesaurus" --help
   assert_success || return 1
   assert_output_contains "--list" || return 1
 }

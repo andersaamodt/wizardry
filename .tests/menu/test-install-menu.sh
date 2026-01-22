@@ -57,7 +57,7 @@ SH
   chmod +x "$install_root/beta-menu"
 
   MENU_LOG="$tmp/log"
-  run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="alpha beta gamma" MENU_LOG="$MENU_LOG" "$ROOT_DIR/spells/menu/install-menu"
+  PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="alpha beta gamma" MENU_LOG="$MENU_LOG" run_sourced_spell "spells/menu/install-menu"
 
   assert_success && assert_path_exists "$MENU_LOG" && \
     assert_output_contains "Install Menu:"
@@ -85,7 +85,7 @@ test_install_menu_errors_when_empty() {
   tmp=$(make_tempdir)
   make_stub_menu_env "$tmp"
   stub-require-command "$tmp"
-  run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_DIRS=" " MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/install-menu"
+  PATH="$tmp:$PATH" INSTALL_MENU_DIRS=" " MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/install-menu"
   assert_failure && assert_error_contains "no installable spells"
 }
 
@@ -105,7 +105,7 @@ exit 0
 SH
   chmod +x "$tmp/alpha-menu"
   MENU_LOG="$tmp/log"
-  run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_DIRS="alpha beta" MENU_LOG="$MENU_LOG" "$ROOT_DIR/spells/menu/install-menu"
+  PATH="$tmp:$PATH" INSTALL_MENU_DIRS="alpha beta" MENU_LOG="$MENU_LOG" run_sourced_spell "spells/menu/install-menu"
   assert_success && assert_path_exists "$MENU_LOG" && \
     assert_output_contains "Install Menu:"
   menu_args=$(cat "$MENU_LOG")
@@ -181,7 +181,7 @@ SH
 echo ready
 SH
   chmod +x "$install_root/test/test-status"
-  run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/install-menu" --help
+  PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/install-menu" --help
   # Note: spell may not have --help implemented yet
   true
 }
@@ -209,7 +209,7 @@ echo ready
 SH
   chmod +x "$install_root/test/test-status"
   
-  run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/install-menu"
+  PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/install-menu"
   assert_success || return 1
   
   # Verify no "Exiting" message appears in stderr
@@ -259,7 +259,7 @@ SH
   chmod +x "$install_root/test/test-status"
   
   INVOCATION_FILE="$tmp/invocations"
-  run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" INVOCATION_FILE="$INVOCATION_FILE" "$ROOT_DIR/spells/menu/install-menu"
+  PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" INVOCATION_FILE="$INVOCATION_FILE" run_sourced_spell "spells/menu/install-menu"
   assert_success || return 1
   
   # The menu loop should have run once (on first_run, no leading newline)
@@ -296,7 +296,7 @@ echo "import-arcanum called"
 SH
   chmod +x "$install_root/import-arcanum"
   
-  run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/install-menu"
+  PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/install-menu"
   assert_success || return 1
   
   # Check that menu includes import-arcanum with divider before it
@@ -357,7 +357,7 @@ SH
   chmod +x "$tmp/exit-label"
   
   MENU_OUTPUT="$tmp/output"
-  run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_OUTPUT="$MENU_OUTPUT" "$ROOT_DIR/spells/menu/install-menu"
+  PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_OUTPUT="$MENU_OUTPUT" run_sourced_spell "spells/menu/install-menu"
   assert_success || return 1
   
   if [ -f "$MENU_OUTPUT" ]; then

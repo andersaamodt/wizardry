@@ -47,7 +47,7 @@ test_users_menu_checks_requirements() {
   tmp=$(make_tempdir)
   stub-menu "$tmp"
   stub-require-command "$tmp"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/users-menu"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" run_sourced_spell "spells/menu/users-menu"
   assert_success && assert_path_exists "$tmp/req"
 }
 
@@ -61,7 +61,7 @@ test_users_menu_presents_actions() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/users-menu"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/users-menu"
   assert_success
   args=$(cat "$tmp/log")
   # Verify key user management actions are present
@@ -81,7 +81,7 @@ test_users_menu_includes_group_management() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/users-menu"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/users-menu"
   assert_success
   args=$(cat "$tmp/log")
   # Verify group management actions are present
@@ -101,7 +101,7 @@ test_users_menu_includes_user_admin() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/users-menu"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/users-menu"
   assert_success
   # Check menu log contains expected user admin actions (one per line in log)
   grep -q "Create new user%" "$tmp/log" || {
@@ -144,7 +144,7 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/users-menu"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/users-menu"
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$tmp/log")

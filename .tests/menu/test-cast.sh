@@ -53,7 +53,7 @@ test_cast_fails_without_menu_dependency() {
   tmp=$(make_tempdir)
   make_stub_cast_list "$tmp" fire "cast fire"
   stub-failing-require "$tmp"
-  PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize" "$ROOT_DIR/spells/menu/cast"
+  PATH="$tmp:$PATH" CAST_STORE="$tmp/memorize" run_sourced_spell "spells/menu/cast"
   assert_failure || return 1
   assert_error_contains "menu" || return 1
 }
@@ -62,7 +62,7 @@ test_cast_lists_stored_spells() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   make_stub_cast_list "$tmp" fire "cast fire"
-  PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize" "$ROOT_DIR/spells/menu/cast" --list
+  PATH="$tmp:$PATH" CAST_STORE="$tmp/memorize" run_sourced_spell "spells/menu/cast" --list
   assert_success && assert_output_contains "$(printf 'fire\tcast fire')"
 }
 
@@ -70,7 +70,7 @@ test_cast_prints_empty_message() {
   tmp=$(make_tempdir)
   make_stub_cast_list "$tmp" "" ""
   stub-require-command "$tmp"
-  PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize" "$ROOT_DIR/spells/menu/cast"
+  PATH="$tmp:$PATH" CAST_STORE="$tmp/memorize" run_sourced_spell "spells/menu/cast"
   assert_success && assert_output_contains "No spells are available to cast."
 }
 
@@ -80,7 +80,7 @@ test_cast_sends_entries_to_menu() {
   make_stub_cast_list "$tmp" fizz "cast fizz"
   stub-menu "$tmp"
   stub-require-command "$tmp"
-  PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/cast"
+  PATH="$tmp:$PATH" CAST_STORE="$tmp/memorize" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/cast"
   assert_success
   if [ ! -f "$tmp/log" ]; then
     TEST_FAILURE_REASON="menu was not invoked"
@@ -98,7 +98,7 @@ test_cast_dir_prints_directory() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   make_stub_cast_list "$tmp" fire "cast fire"
-  PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize" "$ROOT_DIR/spells/menu/cast" --dir
+  PATH="$tmp:$PATH" CAST_STORE="$tmp/memorize" run_sourced_spell "spells/menu/cast" --dir
   assert_success || return 1
   # The output should contain the temp directory path
   assert_output_contains "$tmp" || return 1
@@ -107,7 +107,7 @@ test_cast_dir_prints_directory() {
 test_cast_help_shows_usage() {
   tmp=$(make_tempdir)
   make_stub_cast_list "$tmp" fire "cast fire"
-  PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize" "$ROOT_DIR/spells/menu/cast" --help
+  PATH="$tmp:$PATH" CAST_STORE="$tmp/memorize" run_sourced_spell "spells/menu/cast" --help
   assert_success || return 1
   assert_output_contains "Usage:" || return 1
   assert_output_contains "--list" || return 1
@@ -117,7 +117,7 @@ test_cast_help_shows_usage() {
 test_cast_h_flag_shows_usage() {
   tmp=$(make_tempdir)
   make_stub_cast_list "$tmp" fire "cast fire"
-  PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize" "$ROOT_DIR/spells/menu/cast" -h
+  PATH="$tmp:$PATH" CAST_STORE="$tmp/memorize" run_sourced_spell "spells/menu/cast" -h
   assert_success || return 1
   assert_output_contains "Usage:" || return 1
 }
@@ -125,7 +125,7 @@ test_cast_h_flag_shows_usage() {
 test_cast_invalid_argument_shows_usage() {
   tmp=$(make_tempdir)
   make_stub_cast_list "$tmp" fire "cast fire"
-  PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize" "$ROOT_DIR/spells/menu/cast" --invalid
+  PATH="$tmp:$PATH" CAST_STORE="$tmp/memorize" run_sourced_spell "spells/menu/cast" --invalid
   assert_failure || return 1
   # Should print usage to stderr
   assert_error_contains "Usage:" || return 1
@@ -134,7 +134,7 @@ test_cast_invalid_argument_shows_usage() {
 test_cast_list_empty_returns_nothing() {
   tmp=$(make_tempdir)
   make_stub_cast_list "$tmp" "" ""
-  PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize" "$ROOT_DIR/spells/menu/cast" --list
+  PATH="$tmp:$PATH" CAST_STORE="$tmp/memorize" run_sourced_spell "spells/menu/cast" --list
   assert_success || return 1
   # Output should be empty when no spells stored
   if [ -n "$OUTPUT" ]; then
@@ -154,7 +154,7 @@ test_cast_shows_alias_without_command_in_label() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/cast"
+  PATH="$tmp:$PATH" CAST_STORE="$tmp/memorize" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/cast"
   assert_success || return 1
   # The menu label is the alias, and command (after %) is the spell name directly
   args=$(cat "$tmp/log")
@@ -188,7 +188,7 @@ test_cast_no_duplicate_when_alias_equals_command() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  PATH="$tmp:$PATH" run_cmd env CAST_STORE="$tmp/memorize" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/cast"
+  PATH="$tmp:$PATH" CAST_STORE="$tmp/memorize" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/cast"
   assert_success || return 1
   args=$(cat "$tmp/log")
   # Should show just "myspell" not "myspell – myspell"
@@ -221,7 +221,7 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
-  run_cmd env PATH="$tmp:$PATH" CAST_STORE="$tmp/memorize" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/cast"
+  PATH="$tmp:$PATH" CAST_STORE="$tmp/memorize" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/cast"
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$tmp/log")

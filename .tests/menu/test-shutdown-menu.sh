@@ -19,7 +19,7 @@ test_shutdown_menu_checks_requirements() {
   tmp=$(make_tempdir)
   stub-menu "$tmp"
   stub-require-command "$tmp"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/shutdown-menu"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" run_sourced_spell "spells/menu/shutdown-menu"
   assert_success && assert_path_exists "$tmp/req"
 }
 
@@ -33,7 +33,7 @@ test_shutdown_menu_includes_core_actions() {
 printf '%s' "Back"
 SH
   chmod +x "$tmp/exit-label"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/shutdown-menu"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/shutdown-menu"
   assert_success
   args=$(cat "$tmp/log")
   # Logout command varies: loginctl terminate-user on systemd, pkill -TERM otherwise
@@ -60,7 +60,7 @@ printf '%s' "Back"
 SH
   chmod +x "$tmp/exit-label"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/shutdown-menu"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/shutdown-menu"
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$tmp/log")
@@ -107,7 +107,7 @@ esac
 SH
   chmod +x "$tmp/systemctl"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/shutdown-menu"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/shutdown-menu"
   assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -157,7 +157,7 @@ esac
 SH
   chmod +x "$tmp/systemctl"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/shutdown-menu"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/shutdown-menu"
   assert_success || return 1
   
   args=$(cat "$tmp/log")
@@ -173,7 +173,7 @@ SH
 run_test_case "shutdown-menu uses kernel fallback for hibernate detection" test_hibernate_kernel_fallback
 
 test_shows_help() {
-  run_cmd "$ROOT_DIR/spells/menu/shutdown-menu" --help
+  run_sourced_spell "spells/menu/shutdown-menu" --help
   assert_success
   assert_output_contains "Usage: shutdown-menu"
 }

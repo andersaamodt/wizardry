@@ -57,7 +57,7 @@ SH
   chmod +x "$tmp/exit-label"
   
   # Run in the temp directory
-  run_cmd env PATH="$tmp:$PATH" PWD="$tmp" "$ROOT_DIR/spells/menu/priorities"
+  PATH="$tmp:$PATH" PWD="$tmp" run_sourced_spell "spells/menu/priorities"
   # Should fail with message about no priorities
   assert_failure || return 1
   assert_output_contains "No priorities set" || return 1
@@ -141,7 +141,7 @@ SH
   touch "$tmp/test-dir/testfile2"
   
   cd "$tmp/test-dir"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" TEST_DIR="$tmp/test-dir" PWD="$tmp/test-dir" "$ROOT_DIR/spells/menu/priorities"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" TEST_DIR="$tmp/test-dir" PWD="$tmp/test-dir" run_sourced_spell "spells/menu/priorities"
   
   # Verify checkbox [X] for checked item
   grep -q "\[X\] testfile1" "$tmp/log" || {
@@ -219,7 +219,7 @@ SH
   touch "$tmp/test-dir/testfile1"
   
   cd "$tmp/test-dir"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" TEST_DIR="$tmp/test-dir" PWD="$tmp/test-dir" "$ROOT_DIR/spells/menu/priorities"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" TEST_DIR="$tmp/test-dir" PWD="$tmp/test-dir" run_sourced_spell "spells/menu/priorities"
   
   # Verify "Add priority" option appears
   grep -q "Add priority%" "$tmp/log" || {
@@ -328,7 +328,7 @@ SH
   touch "$tmp/test-dir/priority1.txt"
   
   cd "$tmp/test-dir"
-  run_cmd env PATH="$tmp:$PATH" MENU_CALLS="$tmp/calls.log" TEST_DIR="$tmp/test-dir" PWD="$tmp/test-dir" "$ROOT_DIR/spells/menu/priorities" 2>/dev/null || true
+  PATH="$tmp:$PATH" MENU_CALLS="$tmp/calls.log" TEST_DIR="$tmp/test-dir" PWD="$tmp/test-dir" run_sourced_spell "spells/menu/priorities" 2>/dev/null || true
   
   # Check that we had at least 2 calls
   if [ ! -f "$tmp/calls.log" ]; then

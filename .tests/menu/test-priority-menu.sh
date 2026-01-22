@@ -65,7 +65,7 @@ SH
   # Create test file
   touch "$tmp/testfile"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testfile"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/priority-menu" "$tmp/testfile"
   assert_success || return 1
   
   # Verify key actions are present
@@ -103,7 +103,7 @@ SH
   # Create test file with recognizable name
   touch "$tmp/myspecialfile"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/myspecialfile"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/priority-menu" "$tmp/myspecialfile"
   assert_success || return 1
   
   # Verify filename is shown in menu title
@@ -138,7 +138,7 @@ SH
   
   touch "$tmp/testfile"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testfile"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/priority-menu" "$tmp/testfile"
   assert_success || return 1
   
   # When checked, should show "Uncheck" instead of "Check"
@@ -173,7 +173,7 @@ SH
   # Create test file
   touch "$tmp/testfile"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testfile"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/priority-menu" "$tmp/testfile"
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$tmp/log")
@@ -258,7 +258,7 @@ SH
   touch "$tmp/testdir/subitem1"
   touch "$tmp/testdir/subitem2"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testdir"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/priority-menu" "$tmp/testdir"
   assert_success || return 1
   
   # Verify "Subpriorities..." appears in menu (may include color codes)
@@ -284,7 +284,7 @@ SH
   # Create test file (not directory)
   touch "$tmp/testfile"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testfile"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/priority-menu" "$tmp/testfile"
   assert_success || return 1
   
   # Verify "Subpriorities..." does NOT appear for regular file
@@ -333,7 +333,7 @@ SH
   touch "$tmp/testdir/item1"
   touch "$tmp/testdir/item2"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testdir"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/priority-menu" "$tmp/testdir"
   assert_success || return 1
   
   # Verify "Subpriorities..." does NOT appear when no items have priority >= 1
@@ -410,7 +410,7 @@ SH
   touch "$tmp/testfile"
   touch "$tmp/otherfile"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testfile"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/priority-menu" "$tmp/testfile"
   assert_success || return 1
   
   # Verify "Prioritize" DOES appear for very first priority (change from old behavior)
@@ -485,7 +485,7 @@ SH
   touch "$tmp/testfile"
   touch "$tmp/otherfile"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testfile"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/priority-menu" "$tmp/testfile"
   assert_success || return 1
   
   # Verify "Prioritize" DOES appear for non-first item in highest echelon
@@ -518,7 +518,7 @@ SH
   # Create test file (not directory)
   touch "$tmp/testfile"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testfile"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/priority-menu" "$tmp/testfile"
   assert_success || return 1
   
   # Verify "Make project" appears for regular file
@@ -544,7 +544,7 @@ SH
   # Create test directory
   mkdir -p "$tmp/testdir"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testdir"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/priority-menu" "$tmp/testdir"
   assert_success || return 1
   
   # Verify "Make project" does NOT appear for directory
@@ -574,7 +574,7 @@ SH
   # Create test file
   touch "$tmp/testfile"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testfile"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/priority-menu" "$tmp/testfile"
   assert_success || return 1
   
   # Verify "[ ]" appears in header (unchecked state)
@@ -609,7 +609,7 @@ SH
   
   touch "$tmp/testfile"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/priority-menu" "$tmp/testfile"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/priority-menu" "$tmp/testfile"
   assert_success || return 1
   
   # Verify "[X]" appears in header (checked state)

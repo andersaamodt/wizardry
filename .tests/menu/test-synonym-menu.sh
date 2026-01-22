@@ -26,7 +26,7 @@ run_test_case "menu/synonym-menu is executable" spell_is_executable
 run_test_case "menu/synonym-menu has content" spell_has_content
 
 test_shows_help() {
-  run_cmd "$ROOT_DIR/spells/menu/synonym-menu" --help
+  run_sourced_spell "spells/menu/synonym-menu" --help
   assert_success
   assert_output_contains "Usage: synonym-menu"
 }
@@ -34,7 +34,7 @@ test_shows_help() {
 run_test_case "synonym-menu --help shows usage" test_shows_help
 
 test_requires_word_argument() {
-  run_cmd "$ROOT_DIR/spells/menu/synonym-menu"
+  run_sourced_spell "spells/menu/synonym-menu"
   assert_failure || return 1
   assert_error_contains "requires WORD argument" || return 1
 }
@@ -46,7 +46,7 @@ test_fails_for_nonexistent_synonym() {
   spellbook="$tmpdir/.spellbook"
   mkdir -p "$spellbook"
   
-  SPELLBOOK_DIR="$spellbook" run_cmd "$ROOT_DIR/spells/menu/synonym-menu" nonexistent
+  SPELLBOOK_DIR="$spellbook" run_sourced_spell "spells/menu/synonym-menu" nonexistent
   assert_failure || return 1
   assert_error_contains "not found" || return 1
 }
@@ -65,7 +65,7 @@ alias mytest='echo'
 EOF
   
   # Run synonym-menu with the custom synonym
-  SPELLBOOK_DIR="$spellbook" run_cmd "$ROOT_DIR/spells/menu/synonym-menu" --help
+  SPELLBOOK_DIR="$spellbook" run_sourced_spell "spells/menu/synonym-menu" --help
   assert_success || return 1
   assert_output_contains "Auto-detects" || return 1
 }
