@@ -1,6 +1,6 @@
 #!/bin/sh
 # cd-hook - cd hook that runs look and moves avatar after successful directory change
-# Example: Define as function: cd() { command cd "$@" || return $?; cd-hook; }
+# Example: Define as function: cd() { builtin cd "$@" || return $?; cd-hook; }
 
 set -eu
 
