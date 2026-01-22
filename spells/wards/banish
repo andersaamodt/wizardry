@@ -1055,9 +1055,11 @@ HEREDOC_TEST
       
     2)
       # Level 2: Installation Infrastructure
+      printf 'DEBUG[L2-A]: Starting level 2 validation\n' >&2
       
       # Check spellbook directory for glossary
       spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+      printf 'DEBUG[L2-B]: Checked spellbook dir\n' >&2
       if [ -d "$spell_home" ] && [ -w "$spell_home" ]; then
         printf '  %s✓%s Spellbook directory: %s\n' "$green" "$reset" "$spell_home"
       else
@@ -1073,12 +1075,16 @@ HEREDOC_TEST
           return 1
         fi
       fi
+      printf 'DEBUG[L2-C]: Spellbook check complete\n' >&2
 
       # Check environment variable export/persistence
       # env-or and other imps rely on environment variable propagation
+      printf 'DEBUG[L2-D]: About to test env export\n' >&2
       TEST_BANISH_VAR="test_value_$$"
       export TEST_BANISH_VAR
+      printf 'DEBUG[L2-E]: Exported var, about to run subshell\n' >&2
       exported_value=$(sh -c 'printf "%s" "$TEST_BANISH_VAR"' 2>/dev/null || printf '')
+      printf 'DEBUG[L2-F]: Subshell complete\n' >&2
       unset TEST_BANISH_VAR 2>/dev/null || :
       
       if [ "$exported_value" = "test_value_$$" ]; then
@@ -1087,9 +1093,11 @@ HEREDOC_TEST
         printf '  %s✗%s Environment export: Variables not persisting\n' "$red" "$reset"
         return 1
       fi
+      printf 'DEBUG[L2-G]: Env export check complete\n' >&2
 
       # Check variable name validation (alphanumeric + underscore)
       # env-or validates variable names - ensure pattern matching works
+      printf 'DEBUG[L2-H]: About to test variable name validation\n' >&2
       valid_name="_Valid_Name123"
       invalid_name="invalid-name"
       name_check_works=0
@@ -1116,11 +1124,15 @@ HEREDOC_TEST
         printf '  %s✗%s Variable name validation: Pattern matching failed\n' "$red" "$reset"
         return 1
       fi
+      printf 'DEBUG[L2-I]: Variable name validation complete\n' >&2
 
       # Check DNS resolution capability (for potential package downloads)
       # Installation may need to download packages or check repositories
       # Skip in PTY environments (--skip-terminal-tests) as DNS lookups can hang
+      printf 'DEBUG[L2-J]: About to check DNS (skip_terminal_tests=%s)\n' "$skip_terminal_tests" >&2
+      printf 'DEBUG[L2-J]: About to check DNS (skip_terminal_tests=%s)\n' "$skip_terminal_tests" >&2
       if [ "$skip_terminal_tests" = "0" ]; then
+        printf 'DEBUG[L2-K]: DNS check NOT skipped, running commands\n' >&2
         if command -v nslookup >/dev/null 2>&1 || \
            command -v host >/dev/null 2>&1 || \
            command -v dig >/dev/null 2>&1; then
@@ -1137,10 +1149,14 @@ HEREDOC_TEST
             printf '  %s✓%s DNS resolution: Tools not available (may limit updates)\n' "$green" "$reset"
           fi
         fi
+      else
+        printf 'DEBUG[L2-K]: DNS check SKIPPED (skip_terminal_tests=%s)\n' "$skip_terminal_tests" >&2
       fi
+      printf 'DEBUG[L2-L]: DNS check section complete\n' >&2
 
 
       # Check spells
+      printf 'DEBUG[L2-M]: About to check spells\n' >&2
       spell_list=$("$spell_levels_script" 2 spells)
       if [ -n "$spell_list" ]; then
         if ! eval ""$validate_spells" --quiet $spell_list" 2>/dev/null; then
