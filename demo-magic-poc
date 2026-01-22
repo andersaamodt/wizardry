@@ -18,6 +18,9 @@ Options:
 
 This demonstrates actual wizardry spells at each level, with prerequisite
 validation via banish running silently in the background.
+
+By default, this script requires bubblewrap (bwrap) for safe sandboxing.
+Use --no-bwrap to run without sandboxing (not recommended).
 USAGE
   exit 0
   ;;
@@ -26,7 +29,7 @@ esac
 set -eu
 . env-clear
 
-# Parse arguments first to check for --color
+# Parse arguments first to check for --color and --no-bwrap
 target_level=4
 no_bwrap=0
 force_color=0
@@ -87,218 +90,177 @@ demo_level() {
   # Level-specific demonstrations with narration
   case "$level" in
     0)
-      printf '%sIn the beginning, there was the command line. The wizard peers into the very fabric of the system, examining the POSIX foundation upon which all magic is built.%s\n' "$cyan" "$reset"
-      printf '\n'
-      
       if command -v detect-posix >/dev/null 2>&1; then
-        printf '%sThe wizard casts %s%sdetect-posix%s%s, a diagnostic spell that reveals the location of fundamental POSIX tools...%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%sThe wizard casts %s%sdetect-posix%s%s:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
         detect-posix 2>&1 | head -5
-        printf '\n'
-        printf '%s...and confirms that the POSIX toolchain is intact and ready for use.%s\n' "$cyan" "$reset"
         printf '\n'
       fi
       
       if command -v detect-distro >/dev/null 2>&1; then
-        printf '%sThe wizard invokes %s%sdetect-distro%s%s to identify the operating system...%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%sThe wizard casts %s%sdetect-distro%s%s:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
-        distro=$(detect-distro)
-        printf 'Distribution: %s\n' "$distro"
-        printf '\n'
-        printf '%sThe system identifies itself as %s.%s\n' "$cyan" "$distro" "$reset"
+        detect-distro
         printf '\n'
       fi
       
       if [ -d "${WIZARDRY_DIR}/spells" ]; then
-        printf '%sThe wizard uses %s%sfind%s%s to survey the grimoire:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%sThe wizard casts %s%sfind%s%s to count spells:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
         spell_count=$(find "${WIZARDRY_DIR}/spells" -type f -executable 2>/dev/null | wc -l)
         printf '%s  $ find "${WIZARDRY_DIR}/spells" -type f -executable | wc -l%s\n' "$green" "$reset"
         printf '  %d\n' "$spell_count"
         printf '\n'
-        printf '%sThe grimoire contains %d executable spells.%s\n' "$cyan" "$spell_count" "$reset"
       fi
       ;;
       
     1)
-      printf '%sHaving verified the foundation, the wizard now assembles the core infrastructure of wizardry itself.%s\n' "$cyan" "$reset"
-      printf '\n'
-      
       if command -v validate-spells >/dev/null 2>&1; then
-        printf '%sThe wizard performs a diagnostic with %s%svalidate-spells%s%s, ensuring critical components are in place...%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%sThe wizard casts %s%svalidate-spells%s%s:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
         validate-spells banish:wards validate-spells:.wizardry 2>&1 | head -3
-        printf '\n'
-        printf '%sThe core spells respond—%s%sbanish%s%s stands ready to guard against chaos, and %s%svalidate-spells%s%s confirms structural integrity.%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
       fi
       
       imp_list=$(spell-levels "$level" imps 2>/dev/null || true)
       if [ -n "$imp_list" ]; then
         imp_count=$(printf '%s' "$imp_list" | wc -w)
-        printf '%sThe wizard summons %d imps—tiny helper spirits that power the spell infrastructure. These include fundamental tools like %s%shas%s%s (for testing existence), %s%ssay%s%s (for output), %s%sdie%s%s (for error handling), and %s%stemp-file%s%s (for managing temporary artifacts).%s\n' "$cyan" "$imp_count" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%sImps available at this level: %d%s\n' "$cyan" "$imp_count" "$reset"
+        printf '%sKey imps: %s%shas%s%s, %s%ssay%s%s, %s%sdie%s%s, %s%stemp-file%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$bold$green" "$reset"
+        printf '\n'
       fi
       ;;
       
     2)
-      printf '%sThe wizard begins constructing the glossary system, a mystical index that catalogs all known spells and their incantations.%s\n' "$cyan" "$reset"
-      printf '\n'
-      
       if [ -f "${WIZARDRY_DIR}/spells/.wizardry/generate-glosses" ]; then
-        printf '%sThe %s%sgenerate-glosses%s%s spell lies dormant, ready to extract wisdom from the grimoire. When invoked, it reads the help text from every spell and weaves them into a comprehensive reference guide.%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%sThe wizard silently casts %s%sgenerate-glosses%s%s (output suppressed—produces volumes of text).%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
-        printf '%sThe wizard silently casts %s%sgenerate-glosses%s%s (output suppressed—it would produce volumes of text). This spell makes all wizardry knowledge searchable and accessible.%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
       fi
       ;;
       
     3)
-      printf '%sThe glossary and parsing infrastructure take shape. The wizard establishes the linguistic framework that allows spells to understand and process complex commands.%s\n' "$cyan" "$reset"
+      printf '%sGlossary and parsing infrastructure available.%s\n' "$cyan" "$reset"
       printf '\n'
-      
-      printf '%sAt this level, spells gain the ability to parse arguments, validate inputs, and interpret user intentions with greater sophistication.%s\n' "$cyan" "$reset"
       ;;
       
     4)
-      printf '%sThe wizard weaves together the menu system—an interactive interface that transforms the command line into a navigable realm of choices.%s\n' "$cyan" "$reset"
-      printf '\n'
-      
       if command -v fathom-terminal >/dev/null 2>&1; then
-        printf '%sFirst, the wizard casts %s%sfathom-terminal%s%s to measure the boundaries of the terminal window...%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%sThe wizard casts %s%sfathom-terminal%s%s:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
         if term_size=$(fathom-terminal 2>&1); then
-          printf 'Terminal dimensions: %s\n' "$term_size"
-          printf '\n'
-          printf '%sThe terminal reveals its dimensions—width and height measured in character cells.%s\n' "$cyan" "$reset"
+          printf '%s\n' "$term_size"
         else
-          printf '%sNo terminal dimensions available (perhaps this realm lacks a physical screen).%s\n' "$cyan" "$reset"
+          printf 'Terminal dimensions unavailable\n'
         fi
         printf '\n'
       fi
       
-      printf '%sWith the menu system in place, wizardry gains powerful capabilities:%s\n' "$cyan" "$reset"
-      printf '%s  • Navigate through spell options with arrow keys%s\n' "$cyan" "$reset"
-      printf '%s  • Detect terminal dimensions for optimal display%s\n' "$cyan" "$reset"
-      printf '%s  • Position the cursor anywhere on screen%s\n' "$cyan" "$reset"
-      printf '%s  • Capture individual keystrokes for interaction%s\n' "$cyan" "$reset"
-      printf '%s  • Present colorful, formatted text for clarity%s\n' "$cyan" "$reset"
+      printf '%sMenu system capabilities:%s\n' "$cyan" "$reset"
+      printf '  • Interactive navigation\n'
+      printf '  • Terminal size detection\n'
+      printf '  • Cursor positioning\n'
+      printf '  • Keypress capture\n'
+      printf '  • Color support\n'
       printf '\n'
-      printf '%sThese are the building blocks of user-friendly spell interfaces.%s\n' "$cyan" "$reset"
       ;;
       
     5)
-      printf '%sThe wizard learns to enchant files with magical metadata using extended attributes.%s\n' "$cyan" "$reset"
-      printf '\n'
-      
       if [ -f "${WIZARDRY_DIR}/spells/enchant/enchant" ]; then
-        printf '%sExtended attribute spells become available:%s\n' "$cyan" "$reset"
-        printf '%s  • %s%senchant%s%s - Add magical properties to files%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-        printf '%s  • %s%sdisenchant%s%s - Remove enchantments%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%sExtended attribute spells:%s\n' "$cyan" "$reset"
+        printf '%s  • %s%senchant%s%s - Add metadata to files%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%s  • %s%sdisenchant%s%s - Remove metadata%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '%s  • %s%senchantment-to-yaml%s%s - Export metadata%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '%s  • %s%syaml-to-enchantment%s%s - Import metadata%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
-        printf '%sThese spells work with filesystem extended attributes, storing rich metadata alongside files.%s\n' "$cyan" "$reset"
       fi
       ;;
       
     6)
-      printf '%sThe wizard masters priority management, learning to track and organize tasks by importance.%s\n' "$cyan" "$reset"
-      printf '\n'
-      
       printf '%sPriority management spells:%s\n' "$cyan" "$reset"
       printf '%s  • %s%sget-priority%s%s - View item priority%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
       printf '%s  • %s%sprioritize%s%s - Set item priority%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-      printf '%s  • %s%sdeprioritize%s%s - Reduce item priority%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '%s  • %s%sdeprioritize%s%s - Reduce priority%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
       printf '%s  • %s%supvote%s%s - Increase priority%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-      printf '%s  • %s%spriorities%s%s - Interactive priority management menu%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '%s  • %s%spriorities%s%s - Priority menu%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
       printf '\n'
-      printf '%sThese enable tracking and sorting tasks by importance.%s\n' "$cyan" "$reset"
       ;;
       
     7)
-      printf '%sThe wizard learns translocation magic—spells that enable instant travel between marked locations.%s\n' "$cyan" "$reset"
-      printf '\n'
-      
       printf '%sNavigation spells:%s\n' "$cyan" "$reset"
-      printf '%s  • %s%smark-location%s%s - Mark current directory for later return%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-      printf '%s  • %s%sjump-to-marker%s%s - Return to a marked location%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '%s  • %s%smark-location%s%s - Mark current directory%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '%s  • %s%sjump-to-marker%s%s - Return to marked location%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
       printf '\n'
-      printf '%sExample usage:%s\n' "$cyan" "$reset"
+      printf '%sExample:%s\n' "$cyan" "$reset"
       printf '%s  $ %smark-location%s home%s\n' "$cyan" "$green" "$reset$cyan" "$reset"
       printf '%s  $ cd /tmp%s\n' "$cyan" "$reset"
-      printf '%s  $ %sjump-to-marker%s home  # Returns to original location%s\n' "$cyan" "$green" "$reset$cyan" "$reset"
+      printf '%s  $ %sjump-to-marker%s home%s\n' "$cyan" "$green" "$reset$cyan" "$reset"
+      printf '\n'
       ;;
       
     8)
-      printf '%sThe wizard masters the MUD (Multi-User Dungeon) realm, where directories become rooms and files become objects.%s\n' "$cyan" "$reset"
-      printf '\n'
-      
       printf '%sMUD foundation spells:%s\n' "$cyan" "$reset"
       printf '%s  • %s%slook%s%s - Examine current location%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-      printf '%s  • %s%scheck-cd-hook%s%s - Hook for directory changes%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '%s  • %s%scheck-cd-hook%s%s - Directory change hook%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
       printf '\n'
-      printf '%sExtended attributes enable magical properties on files and folders.%s\n' "$cyan" "$reset"
       ;;
       
     9)
-      printf '%sThe wizard masters arcane file operations, gaining power over the filesystem itself.%s\n' "$cyan" "$reset"
-      printf '\n'
-      
       if command -v read-magic >/dev/null 2>&1; then
-        printf '%sThe wizard silently casts %s%sread-magic%s%s to examine extended attributes (output suppressed for brevity).%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%sThe wizard silently casts %s%sread-magic%s%s (output suppressed for brevity).%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
       fi
       
       printf '%sFile operation spells:%s\n' "$cyan" "$reset"
-      printf '%s  • %s%scopy%s%s - Copy files with optional extended attributes%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-      printf '%s  • %s%strash%s%s - Move files to trash instead of deleting%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '%s  • %s%scopy%s%s - Copy with extended attributes%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '%s  • %s%strash%s%s - Move to trash%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
       printf '%s  • %s%sread-magic%s%s - Read extended attributes%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-      printf '%s  • %s%sforall%s%s - Execute commands on multiple files%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '%s  • %s%sforall%s%s - Execute on multiple files%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '\n'
       ;;
       
     10)
-      printf '%sThe wizard learns basic cantrips—simple but essential everyday magic.%s\n' "$cyan" "$reset"
-      printf '\n'
-      
       if command -v ask-yn >/dev/null 2>&1; then
-        printf '%sThe wizard demonstrates %s%sask-yn%s%s, which prompts for yes/no answers:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+        printf '%sThe wizard demonstrates %s%sask-yn%s%s:%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
         printf '\n'
         printf '%s  $ %sask-yn%s "Is this a demonstration?" yes%s\n' "$cyan" "$green" "$reset$cyan" "$reset"
         printf 'y\n' | ask-yn "Is this a demonstration?" yes 2>&1 || true
         printf '\n'
       fi
       
-      printf '%sBasic cantrips:%s\n' "$cyan" "$reset"
+      printf '%sCantrips:%s\n' "$cyan" "$reset"
       printf '%s  • %s%sask%s%s, %s%sask-yn%s%s, %s%sask-text%s%s - Interactive prompts%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
       printf '%s  • %s%smax-length%s%s - Find longest string%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
-      printf '%s  • %s%slist-files%s%s - List files in directory%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '%s  • %s%slist-files%s%s - List directory files%s\n' "$cyan" "$bold$green" "$reset$green" "$bold$green" "$cyan" "$reset"
+      printf '\n'
       ;;
       
     *)
-      printf '%sThe wizard demonstrates the capabilities unlocked at this level...%s\n' "$cyan" "$reset"
-      printf '\n'
-      
       spell_list=$(spell-levels "$level" spells 2>/dev/null || true)
       if [ -n "$spell_list" ]; then
         spell_count=$(printf '%s' "$spell_list" | wc -w)
-        printf '%sAt level %d, %d spells become available to the practitioner.%s\n' "$cyan" "$level" "$spell_count" "$reset"
+        printf '%sSpells available at level %d: %d%s\n' "$cyan" "$level" "$spell_count" "$reset"
+        printf '\n'
       fi
       ;;
   esac
-  
-  printf '\n'
 }
 
-# Sandbox with bwrap if available and not disabled
+# Require bwrap unless --no-bwrap is explicitly used or already sandboxed
 if [ "$no_bwrap" -eq 0 ] && [ "${WIZARDRY_DEMO_IN_BWRAP-0}" -ne 1 ]; then
+  # Skip bwrap requirement in CI (already isolated)
   if [ -z "${GITHUB_ACTIONS-}" ] || [ "${GITHUB_ACTIONS}" != "true" ]; then
-    if command -v bwrap >/dev/null 2>&1; then
-      # Re-exec with bwrap sandbox - preserve color flag
-      color_arg=""
-      [ "$force_color" -eq 1 ] && color_arg="--color"
-      exec bwrap --unshare-user --ro-bind / / --dev-bind /dev /dev --bind /proc /proc \
-        --bind /tmp /tmp --setenv PATH "$PATH" --setenv WIZARDRY_DEMO_IN_BWRAP 1 -- \
-        "$0" "$target_level" --no-bwrap $color_arg
+    if ! command -v bwrap >/dev/null 2>&1; then
+      printf 'demo-magic-poc: bubblewrap (bwrap) is required for safe sandboxing\n' >&2
+      printf 'demo-magic-poc: Install it or use --no-bwrap to run without sandboxing (not recommended)\n' >&2
+      exit 1
     fi
+    
+    # Re-exec with bwrap sandbox - preserve color flag
+    color_arg=""
+    [ "$force_color" -eq 1 ] && color_arg="--color"
+    exec bwrap --unshare-user --ro-bind / / --dev-bind /dev /dev --bind /proc /proc \
+      --bind /tmp /tmp --setenv PATH "$PATH" --setenv WIZARDRY_DEMO_IN_BWRAP 1 -- \
+      "$0" "$target_level" --no-bwrap $color_arg
   fi
 fi
 
@@ -307,8 +269,7 @@ printf '╔═══════════════════════
 printf '║         WIZARDRY DEMONSTRATION OF MAGICAL ARTS            ║\n'
 printf '╚═══════════════════════════════════════════════════════════╝\n'
 printf '\n'
-printf '%sA circle of chalk flares into view, its lines glowing with arcane power.%s\n' "$cyan" "$reset"
-printf '%sThe apprentice wizard steps forward, ready to demonstrate the arts of command-line sorcery.%s\n' "$cyan" "$reset"
+printf '%sThe wizard opens a protective circle for the demonstration.%s\n' "$cyan" "$reset"
 
 # Add imps and spells to PATH
 if [ -n "${WIZARDRY_DIR-}" ]; then
@@ -335,8 +296,7 @@ while [ "$current" -le "$target_level" ]; do
 done
 
 printf '\n'
-printf '%sThe demonstration concludes. The chalk circle fades, its energy spent.%s\n' "$cyan" "$reset"
-printf '%sThe wizard bows. Wizardry stands ready to serve.%s\n' "$cyan" "$reset"
+printf '%sThe demonstration concludes. The protective circle fades.%s\n' "$cyan" "$reset"
 printf '\n'
 printf 'DEMO_MAGIC_COMPLETE\n'
 
