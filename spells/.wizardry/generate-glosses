@@ -587,24 +587,31 @@ if [ -f "$synonym_file" ]; then
     # Names with chars invalid for functions (hyphens, special chars, starting with digit) must use alias
     if ! can_be_function_name "$word"; then
       # Must use alias (contains chars invalid for function names)
-      # For hyphenated targets, convert hyphens to spaces for first-word gloss routing
+      # For hyphenated targets:
+      #   - When parse-enabled=1: convert hyphens to spaces for first-word gloss routing
+      #   - When parse-enabled=0: use hyphenated form directly (no gloss routing)
       case "$target" in
         *-*)
-          # Convert hyphens to spaces ONLY in spell name, not in directory path
-          # E.g., "translocation/jump-to-marker" → "translocation/jump to marker"
-          #       "jump-to-marker" → "jump to marker"
-          case "$target" in
-            */*)
-              # Has directory prefix - preserve it
-              dir_prefix="${target%/*}/"
-              spell_part="${target##*/}"
-              alias_target="$dir_prefix$(printf '%s' "$spell_part" | sed 's/-/ /g')"
-              ;;
-            *)
-              # No directory - convert all hyphens
-              alias_target=$(printf '%s' "$target" | sed 's/-/ /g')
-              ;;
-          esac
+          if [ "$parse_enabled" -eq 1 ]; then
+            # Convert hyphens to spaces ONLY in spell name, not in directory path
+            # E.g., "translocation/jump-to-marker" → "translocation/jump to marker"
+            #       "jump-to-marker" → "jump to marker"
+            case "$target" in
+              */*)
+                # Has directory prefix - preserve it
+                dir_prefix="${target%/*}/"
+                spell_part="${target##*/}"
+                alias_target="$dir_prefix$(printf '%s' "$spell_part" | sed 's/-/ /g')"
+                ;;
+              *)
+                # No directory - convert all hyphens
+                alias_target=$(printf '%s' "$target" | sed 's/-/ /g')
+                ;;
+            esac
+          else
+            # parse-enabled=0: Use hyphenated form directly (no gloss routing needed)
+            alias_target="$target"
+          fi
           emit_line "alias $word='$alias_target'"
           ;;
         *)
@@ -674,24 +681,31 @@ if [ -f "$default_synonym_file" ]; then
     # Names with chars invalid for functions (hyphens, special chars, starting with digit) must use alias
     if ! can_be_function_name "$word"; then
       # Must use alias (contains chars invalid for function names)
-      # For hyphenated targets, convert hyphens to spaces for first-word gloss routing
+      # For hyphenated targets:
+      #   - When parse-enabled=1: convert hyphens to spaces for first-word gloss routing
+      #   - When parse-enabled=0: use hyphenated form directly (no gloss routing)
       case "$target" in
         *-*)
-          # Convert hyphens to spaces ONLY in spell name, not in directory path
-          # E.g., "translocation/jump-to-marker" → "translocation/jump to marker"
-          #       "jump-to-marker" → "jump to marker"
-          case "$target" in
-            */*)
-              # Has directory prefix - preserve it
-              dir_prefix="${target%/*}/"
-              spell_part="${target##*/}"
-              alias_target="$dir_prefix$(printf '%s' "$spell_part" | sed 's/-/ /g')"
-              ;;
-            *)
-              # No directory - convert all hyphens
-              alias_target=$(printf '%s' "$target" | sed 's/-/ /g')
-              ;;
-          esac
+          if [ "$parse_enabled" -eq 1 ]; then
+            # Convert hyphens to spaces ONLY in spell name, not in directory path
+            # E.g., "translocation/jump-to-marker" → "translocation/jump to marker"
+            #       "jump-to-marker" → "jump to marker"
+            case "$target" in
+              */*)
+                # Has directory prefix - preserve it
+                dir_prefix="${target%/*}/"
+                spell_part="${target##*/}"
+                alias_target="$dir_prefix$(printf '%s' "$spell_part" | sed 's/-/ /g')"
+                ;;
+              *)
+                # No directory - convert all hyphens
+                alias_target=$(printf '%s' "$target" | sed 's/-/ /g')
+                ;;
+            esac
+          else
+            # parse-enabled=0: Use hyphenated form directly (no gloss routing needed)
+            alias_target="$target"
+          fi
           emit_line "alias $word='$alias_target'"
           ;;
         *)
