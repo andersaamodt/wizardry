@@ -17,8 +17,12 @@ test_toggle_enables_parse() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   export SPELLBOOK_DIR="$tmp"
+  mkdir -p "$SPELLBOOK_DIR"
   
-  # First toggle - enable (from default disabled)
+  # Set initial state to disabled
+  printf 'parse-enabled=0\n' > "$SPELLBOOK_DIR/.mud"
+  
+  # Toggle should enable
   run_sourced_spell "spells/.arcana/mud/toggle-parse"
   assert_success || return 1
   
@@ -58,6 +62,10 @@ test_toggle_twice_returns_to_original() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   export SPELLBOOK_DIR="$tmp"
+  mkdir -p "$SPELLBOOK_DIR"
+  
+  # Set initial state to disabled
+  printf 'parse-enabled=0\n' > "$SPELLBOOK_DIR/.mud"
   
   # First toggle - enable
   run_sourced_spell "spells/.arcana/mud/toggle-parse"

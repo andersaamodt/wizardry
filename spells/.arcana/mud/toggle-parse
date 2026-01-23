@@ -53,32 +53,59 @@ mkdir -p "$SPELLBOOK_DIR"
 touch "$CONFIG_FILE"
 
 # Check current state
+# Default is enabled (1) when not set, matching generate-glosses behavior
+current_value="1"
 if config-has "$CONFIG_FILE" "parse-enabled" 2>/dev/null; then
   current_value=$(config-get "$CONFIG_FILE" "parse-enabled" 2>/dev/null)
-  if [ "$current_value" = "1" ]; then
-    # Currently enabled, disable it
-    config-set "$CONFIG_FILE" "parse-enabled" "0"
+fi
+
+if [ "$current_value" = "1" ]; then
+  # Currently enabled, disable it
+  config-set "$CONFIG_FILE" "parse-enabled" "0"
+  
+  # Invalidate gloss cache and unload functions
+  gloss_cache_dir="${TMPDIR:-/tmp}"
+  wizardry_dir="${WIZARDRY_DIR:-$HOME/.wizardry}"
+  cache_id=$(printf '%s' "$wizardry_dir" | cksum | cut -d' ' -f1)
+  gloss_cache="$gloss_cache_dir/.wizardry-glosses-$cache_id-$(id -u).sh"
+  
+  # Unload gloss functions from current shell by parsing cache
+  if [ -f "$gloss_cache" ]; then
+    # Extract function names into a variable (not in subshell)
+    func_names=$(grep -E '^\w+\(\)' "$gloss_cache" 2>/dev/null | \
+      sed 's/().*//' || true)
     
-    # Invalidate gloss cache to force regeneration
-    gloss_cache_dir="${TMPDIR:-/tmp}"
-    wizardry_dir="${WIZARDRY_DIR:-$HOME/.wizardry}"
-    cache_id=$(printf '%s' "$wizardry_dir" | cksum | cut -d' ' -f1)
-    gloss_cache="$gloss_cache_dir/.wizardry-glosses-$cache_id-$(id -u).sh"
-    rm -f "$gloss_cache" 2>/dev/null || true
+    # Unset each function
+    for func_name in $func_names; do
+      unset -f "$func_name" 2>/dev/null || true
+    done
     
-    # Re-source invoke-wizardry to reload without glosses
-    if command -v invoke-wizardry >/dev/null 2>&1; then
-      # Unset WIZARDRY_INVOKED to allow re-invocation
-      unset WIZARDRY_INVOKED
-      . invoke-wizardry
-      msg="✓ Parse disabled and gloss functions unloaded from current shell."
-      printf '%s\n' "$msg"
-    else
-      msg="✓ Parse disabled. Restart shell to unload gloss functions."
-      printf '%s\n' "$msg"
-    fi
-    return 0
+    # Extract alias names into a variable (not in subshell)
+    alias_names=$(grep -E '^alias ' "$gloss_cache" 2>/dev/null | \
+      sed 's/^alias //' | \
+      sed 's/=.*//' || true)
+    
+    # Unalias each alias
+    for alias_name in $alias_names; do
+      unalias "$alias_name" 2>/dev/null || true
+    done
   fi
+  
+  # Remove cache to force regeneration
+  rm -f "$gloss_cache" 2>/dev/null || true
+  
+  # Re-source invoke-wizardry to load new cache without glosses
+  if command -v invoke-wizardry >/dev/null 2>&1; then
+    # Unset WIZARDRY_INVOKED to allow re-invocation
+    unset WIZARDRY_INVOKED
+    . invoke-wizardry
+    msg="✓ Parse disabled and gloss functions unloaded from current shell."
+    printf '%s\n' "$msg"
+  else
+    msg="✓ Parse disabled. Restart shell to unload gloss functions."
+    printf '%s\n' "$msg"
+  fi
+  return 0
 fi
 
 # Currently disabled or not set, enable it
