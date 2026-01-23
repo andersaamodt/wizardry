@@ -416,14 +416,14 @@ if [ "$parse_enabled" -eq 1 ]; then
 fi
 
 # ============================================================================
-# HYPHENATED SPELL FUNCTIONS
+# HYPHENATED SPELL ALIASES
 # ============================================================================
-# Generate functions for hyphenated spells with uncastable pattern
-# These functions convert hyphenated form to space-separated form
+# Generate aliases for hyphenated spells with uncastable pattern
+# These aliases convert hyphenated form to space-separated form
 # (e.g., jump-to-marker → jump to marker) so they route through first-word gloss
 # which can properly source the spell instead of executing it
-# NOTE: Using functions instead of aliases because functions take precedence
-# over executables in PATH, allowing them to override spell files in PATH
+# NOTE: .arcana subdirectories are excluded from PATH to prevent executable
+# conflicts with these aliases
 
 for spell_name in $spell_names; do
   # Only process hyphenated spell names
@@ -435,12 +435,8 @@ for spell_name in $spell_names; do
   # Check if spell is in uncastable list (fast in-memory check)
   if is_spell_uncastable "$spell_name"; then
     # Convert hyphens to spaces (e.g., jump-to-marker → jump to marker)
-    # Create a function that sources parse with space-separated arguments
-    first_word=${spell_name%%-*}
-    remaining=${spell_name#*-}
-    # Convert all hyphens to spaces for remaining words
-    remaining=$(printf '%s' "$remaining" | sed 's/-/ /g')
-    emit_line "${spell_name}() { $first_word $remaining \"\$@\"; }"
+    alias_target=$(printf '%s' "$spell_name" | sed 's/-/ /g')
+    emit_line "alias $spell_name='$alias_target'"
   fi
 done
 emit_line ""
