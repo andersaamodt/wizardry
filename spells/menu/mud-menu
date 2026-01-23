@@ -92,6 +92,9 @@ is_feature_enabled() {
 loop_limit=${MENU_LOOP_LIMIT:-}
 
 while true; do
+  # Clear menu_status from previous iteration (important for uncastable/sourced menus)
+  unset menu_status
+  
   # Read last selected position from temp file, default to 1
   if [ -f "$SELECTION_FILE" ]; then
     start_selection=$(cat "$SELECTION_FILE" 2>/dev/null || printf '1')
