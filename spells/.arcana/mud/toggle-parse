@@ -30,7 +30,7 @@ else
   case "$toggle_parse_base" in
     sh|dash|bash|zsh|ksh|mksh) toggle_parse_sourced=1 ;;
     toggle-parse) toggle_parse_sourced=0 ;;
-    parse) toggle_parse_sourced=1 ;;  # Sourced via parse
+    parse) toggle_parse_sourced=1 ;;  # Sourced via parse gloss function
     *) toggle_parse_sourced=1 ;;
   esac
 fi
@@ -70,7 +70,7 @@ if [ "$current_value" = "1" ]; then
   # Get list of all gloss functions and unset them
   if command -v declare >/dev/null 2>&1; then
     # bash/zsh - use declare -F to list functions
-    for func in $(declare -F 2>/dev/null | sed 's/declare -f //'); do
+    for func in $(declare -F 2>/dev/null | sed 's/^declare -f //'); do
       # Skip critical shell functions and wizardry core functions
       case "$func" in
         # Skip shell builtins and critical functions
@@ -86,7 +86,7 @@ if [ "$current_value" = "1" ]; then
   # Also unalias all aliases (gloss-generated aliases for uncastable spells)
   if command -v unalias >/dev/null 2>&1; then
     # Get all aliases and unset them (except critical ones)
-    for alias_name in $(alias 2>/dev/null | sed 's/=.*//' | sed "s/alias //"); do
+    for alias_name in $(alias 2>/dev/null | sed 's/=.*//' | sed 's/^alias //'); do
       case "$alias_name" in
         # Skip critical aliases
         ls|ll|la|grep|egrep|fgrep) continue ;;
@@ -108,9 +108,8 @@ config-set "$CONFIG_FILE" "parse-enabled" "1"
 invoke_wizardry_path="${WIZARDRY_DIR:-$HOME/.wizardry}/spells/.imps/sys/invoke-wizardry"
 if [ -f "$invoke_wizardry_path" ]; then
   # Source invoke-wizardry to load gloss functions
-  # Use WIZARDRY_INVOKED=0 to force reinvocation
-  WIZARDRY_INVOKED=0
-  . "$invoke_wizardry_path" 2>/dev/null || {
+  # Reset WIZARDRY_INVOKED to force reinvocation in the current environment
+  WIZARDRY_INVOKED=0 . "$invoke_wizardry_path" 2>/dev/null || {
     printf '%s\n' "Warning: Failed to load gloss functions. Run 'invoke-wizardry' to activate."
     return 1
   }
