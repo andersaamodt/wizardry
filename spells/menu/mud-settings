@@ -57,6 +57,9 @@ loop_limit=${MENU_LOOP_LIMIT:-}
 first_run=1
 
 while true; do
+  # Clear menu_status from previous iteration (important for uncastable/sourced menus)
+  unset menu_status
+  
   if [ "$first_run" -eq 0 ]; then
     :
   else
