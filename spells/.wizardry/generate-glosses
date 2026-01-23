@@ -421,30 +421,39 @@ fi
 # HYPHENATED SPELL ALIASES
 # ============================================================================
 # Generate aliases for hyphenated spells with uncastable pattern
-# These aliases convert hyphenated form to space-separated form
-# (e.g., jump-to-marker → jump to marker) so they route through first-word gloss
-# which can properly source the spell instead of executing it
+# 
+# When parse-enabled=1:
+#   Aliases convert hyphenated form to space-separated form
+#   (e.g., jump-to-marker → jump to marker) which routes through first-word gloss
+# 
+# When parse-enabled=0:
+#   Aliases directly source the uncastable spell
+#   (e.g., jump-to-marker → '. $WIZARDRY_DIR/spells/translocation/jump-to-marker')
+#   This allows hyphenated forms to work without parsing or glosses
+# 
 # NOTE: .arcana subdirectories are excluded from PATH to prevent executable
 # conflicts with these aliases
-# IMPORTANT: These aliases require first-word glosses to work, so they should
-# only be generated when parse is enabled
 
-if [ "$parse_enabled" -eq 1 ]; then
-  for spell_name in $spell_names; do
-    # Only process hyphenated spell names
-    case "$spell_name" in
-      *-*) ;;
-      *) continue ;;
-    esac
-    
-    # Check if spell is in uncastable list (fast in-memory check)
-    if is_spell_uncastable "$spell_name"; then
-      # Convert hyphens to spaces (e.g., jump-to-marker → jump to marker)
+for spell_name in $spell_names; do
+  # Only process hyphenated spell names
+  case "$spell_name" in
+    *-*) ;;
+    *) continue ;;
+  esac
+  
+  # Check if spell is in uncastable list (fast in-memory check)
+  if is_spell_uncastable "$spell_name"; then
+    if [ "$parse_enabled" -eq 1 ]; then
+      # Parse enabled: Convert hyphens to spaces (routes through first-word gloss)
       alias_target=$(printf '%s' "$spell_name" | sed 's/-/ /g')
       emit_line "alias $spell_name='$alias_target'"
+    else
+      # Parse disabled: Directly source the spell (no gloss needed)
+      # Find the spell file in spell directories
+      emit_line "alias $spell_name='for _uc_dir in \"\$WIZARDRY_DIR\"/spells/*/ \"\$WIZARDRY_DIR\"/spells/.arcana/*/; do if [ -f \"\${_uc_dir}$spell_name\" ]; then . \"\${_uc_dir}$spell_name\"; return \$?; fi; done; printf \"%s: spell not found\\\\n\" \"$spell_name\" >&2; return 127'"
     fi
-  done
-fi
+  fi
+done
 emit_line ""
 
 # ============================================================================
