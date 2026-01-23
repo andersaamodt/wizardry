@@ -1,21 +1,47 @@
 #!/bin/sh
 
-# Toggle parse-enabled setting in MUD config
+# Toggle parse-enabled setting in MUD config - must be sourced for immediate effect
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: toggle-parse
+Usage: . toggle-parse    OR    toggle parse    (via parse/gloss)
 
 Toggle the parse-enabled setting. When parse is enabled, generate-glosses
 creates first-word glosses that enable natural language commands like
 "read magic" instead of "read-magic".
+Changes take effect immediately in the current shell.
+
+This spell must be sourced (not executed) to affect your current shell.
 USAGE
   exit 0
   ;;
 esac
 
-set -eu
+# Uncastable pattern - detect if sourced
+toggle_parse_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) toggle_parse_sourced=1 ;;
+  esac
+else
+  toggle_parse_base=${0##*/}
+  case "$toggle_parse_base" in
+    sh|dash|bash|zsh|ksh|mksh) toggle_parse_sourced=1 ;;
+    toggle-parse) toggle_parse_sourced=0 ;;
+    parse) toggle_parse_sourced=1 ;;  # Sourced via parse
+    *) toggle_parse_sourced=1 ;;
+  esac
+fi
+
+if [ "$toggle_parse_sourced" -eq 0 ]; then
+  printf '%s\n' "This spell must be sourced. Use:  . toggle-parse  OR  toggle parse" >&2
+  return 1 2>/dev/null || exit 1
+fi
+unset toggle_parse_sourced toggle_parse_base
+
+set +e  # Permissive mode since we're in user's shell
+set -u
 
 
 # Determine config file location
@@ -32,12 +58,47 @@ if config-has "$CONFIG_FILE" "parse-enabled" 2>/dev/null; then
   if [ "$current_value" = "1" ]; then
     # Currently enabled, disable it
     config-set "$CONFIG_FILE" "parse-enabled" "0"
-    printf '%s\n' "✓ Parse disabled. Only exact spell names will work."
-    exit 0
+    
+    # Invalidate gloss cache to force regeneration
+    gloss_cache_dir="${TMPDIR:-/tmp}"
+    wizardry_dir="${WIZARDRY_DIR:-$HOME/.wizardry}"
+    cache_id=$(printf '%s' "$wizardry_dir" | cksum | cut -d' ' -f1)
+    gloss_cache="$gloss_cache_dir/.wizardry-glosses-$cache_id-$(id -u).sh"
+    rm -f "$gloss_cache" 2>/dev/null || true
+    
+    # Re-source invoke-wizardry to reload without glosses
+    if command -v invoke-wizardry >/dev/null 2>&1; then
+      # Unset WIZARDRY_INVOKED to allow re-invocation
+      unset WIZARDRY_INVOKED
+      . invoke-wizardry
+      msg="✓ Parse disabled and gloss functions unloaded from current shell."
+      printf '%s\n' "$msg"
+    else
+      msg="✓ Parse disabled. Restart shell to unload gloss functions."
+      printf '%s\n' "$msg"
+    fi
+    return 0
   fi
 fi
 
 # Currently disabled or not set, enable it
 config-set "$CONFIG_FILE" "parse-enabled" "1"
-printf '%s\n' "✓ Parse enabled. Natural language commands will be available."
-printf '%s\n' "Note: Restart your shell or run 'invoke-wizardry' to activate."
+
+# Invalidate gloss cache to force regeneration with new setting
+gloss_cache_dir="${TMPDIR:-/tmp}"
+wizardry_dir="${WIZARDRY_DIR:-$HOME/.wizardry}"
+cache_id=$(printf '%s' "$wizardry_dir" | cksum | cut -d' ' -f1)
+gloss_cache="$gloss_cache_dir/.wizardry-glosses-$cache_id-$(id -u).sh"
+rm -f "$gloss_cache" 2>/dev/null || true
+
+# Re-source invoke-wizardry to load glosses
+if command -v invoke-wizardry >/dev/null 2>&1; then
+  # Unset WIZARDRY_INVOKED to allow re-invocation
+  unset WIZARDRY_INVOKED
+  . invoke-wizardry
+  msg="✓ Parse enabled and gloss functions loaded in your current shell."
+  printf '%s\n' "$msg"
+else
+  msg="✓ Parse enabled. Gloss functions will load on next shell startup."
+  printf '%s\n' "$msg"
+fi

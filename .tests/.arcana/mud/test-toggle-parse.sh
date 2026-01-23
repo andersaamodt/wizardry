@@ -1,4 +1,5 @@
 #!/bin/sh
+# Tests for toggle-parse - uncastable spell that loads/unloads gloss functions
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -8,23 +9,25 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/.arcana/mud/toggle-parse" --help
+  run_sourced_spell "spells/.arcana/mud/toggle-parse" --help
   assert_success && assert_output_contains "Usage:"
 }
 
 test_toggle_enables_parse() {
+  skip-if-compiled || return $?
   tmp=$(make_tempdir)
   export SPELLBOOK_DIR="$tmp"
   
   # First toggle - enable (from default disabled)
-  run_spell "spells/.arcana/mud/toggle-parse"
+  run_sourced_spell "spells/.arcana/mud/toggle-parse"
   assert_success || return 1
   
   # Verify config was set (.mud is a file)
-  config_file="$SPELLBOOK_DIR/.mud/config"
+  config_file="$SPELLBOOK_DIR/.mud"
   if [ -f "$config_file" ]; then
     value=$(grep "^parse-enabled=" "$config_file" | cut -d= -f2)
-    [ "$value" = "1" ] || { TEST_FAILURE_REASON="Expected parse-enabled=1, got: $value"; return 1; }
+    test_msg="Expected parse-enabled=1, got: $value"
+    [ "$value" = "1" ] || { TEST_FAILURE_REASON="$test_msg"; return 1; }
   else
     TEST_FAILURE_REASON="Config file not created"
     return 1
@@ -32,44 +35,48 @@ test_toggle_enables_parse() {
 }
 
 test_toggle_disables_parse() {
+  skip-if-compiled || return $?
   tmp=$(make_tempdir)
   export SPELLBOOK_DIR="$tmp"
+  mkdir -p "$SPELLBOOK_DIR"
   
   # Set initial state to enabled
-  
-  printf 'parse-enabled=1\n' > "$SPELLBOOK_DIR/.mud/config"
+  printf 'parse-enabled=1\n' > "$SPELLBOOK_DIR/.mud"
   
   # Toggle should disable
-  run_spell "spells/.arcana/mud/toggle-parse"
+  run_sourced_spell "spells/.arcana/mud/toggle-parse"
   assert_success || return 1
   
   # Verify config was updated
-  config_file="$SPELLBOOK_DIR/.mud/config"
+  config_file="$SPELLBOOK_DIR/.mud"
   value=$(grep "^parse-enabled=" "$config_file" | cut -d= -f2)
-  [ "$value" = "0" ] || { TEST_FAILURE_REASON="Expected parse-enabled=0, got: $value"; return 1; }
+  test_msg="Expected parse-enabled=0, got: $value"
+  [ "$value" = "0" ] || { TEST_FAILURE_REASON="$test_msg"; return 1; }
 }
 
 test_toggle_twice_returns_to_original() {
+  skip-if-compiled || return $?
   tmp=$(make_tempdir)
   export SPELLBOOK_DIR="$tmp"
   
   # First toggle - enable
-  run_spell "spells/.arcana/mud/toggle-parse"
+  run_sourced_spell "spells/.arcana/mud/toggle-parse"
   assert_success || return 1
   
   # Second toggle - disable
-  run_spell "spells/.arcana/mud/toggle-parse"
+  run_sourced_spell "spells/.arcana/mud/toggle-parse"
   assert_success || return 1
   
   # Verify we're back to disabled
-  config_file="$SPELLBOOK_DIR/.mud/config"
+  config_file="$SPELLBOOK_DIR/.mud"
   value=$(grep "^parse-enabled=" "$config_file" | cut -d= -f2)
-  [ "$value" = "0" ] || { TEST_FAILURE_REASON="Expected parse-enabled=0 after two toggles, got: $value"; return 1; }
+  test_msg="Expected parse-enabled=0 after two toggles, got: $value"
+  [ "$value" = "0" ] || { TEST_FAILURE_REASON="$test_msg"; return 1; }
 }
 
 run_test_case "toggle-parse shows usage" test_help
 run_test_case "toggle-parse enables parse" test_toggle_enables_parse
 run_test_case "toggle-parse disables parse" test_toggle_disables_parse
-run_test_case "toggle-parse twice returns to original state" test_toggle_twice_returns_to_original
+run_test_case "toggle-parse twice returns to original" test_toggle_twice_returns_to_original
 
 finish_tests
