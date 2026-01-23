@@ -248,20 +248,49 @@ fi
 
 # Normalize paths to handle macOS double slashes and symlinks
 current=$(pwd -P | sed 's|//|/|g')
+
 # Resolve destination path to real path (handles symlinks)
 # Use 'command cd' to bypass cd function override (which may run look/cd-hook)
-# Split the command to avoid potential pipeline issues
+# WORKAROUND for macOS/zsh issue: if cd && pwd -P returns wrong path,
+# try alternative normalization methods
 if [ "${WIZARDRY_LOG_LEVEL:-0}" -ge 2 ]; then
         printf 'DEBUG: About to normalize destination\n' >&2
         printf 'DEBUG: destination="%s"\n' "$destination" >&2
         printf 'DEBUG: destination exists: %s\n' "$([ -d "$destination" ] && echo YES || echo NO)" >&2
-        printf 'DEBUG: Testing cd in subshell...\n' >&2
-        test_result=$(command cd "$destination" 2>&1 && pwd -P 2>&1 || echo "CD_FAILED")
-        printf 'DEBUG: cd test result: %s\n' "$test_result" >&2
 fi
 
-normalized_destination=$(command cd "$destination" && pwd -P)
+# Try to normalize the destination
+normalized_destination=$(command cd "$destination" 2>/dev/null && pwd -P 2>/dev/null)
+if [ -z "$normalized_destination" ]; then
+        # cd failed, destination might not exist or not accessible
+        printf '%s\n' "jump-to-marker: cannot access destination '$destination'" >&2
+        set +eu; return 1
+fi
 normalized_destination=$(printf '%s' "$normalized_destination" | sed 's|//|/|g')
+
+# Workaround: If normalized_destination doesn't end with the basename of destination,
+# something went wrong with pwd -P. Use the destination as-is if it's absolute.
+dest_basename=$(basename "$destination")
+case "$normalized_destination" in
+        */"$dest_basename")
+                # Looks correct
+                ;;
+        *)
+                # pwd -P returned wrong path, check if destination is absolute
+                case "$destination" in
+                        /*)
+                                # It's already absolute, check if it matches destination basename
+                                if [ "$(basename "$destination")" = "$dest_basename" ]; then
+                                        # Use destination as normalized path
+                                        if [ "${WIZARDRY_LOG_LEVEL:-0}" -ge 2 ]; then
+                                                printf 'DEBUG: pwd -P returned unexpected path, using destination as-is\n' >&2
+                                        fi
+                                        normalized_destination="$destination"
+                                fi
+                                ;;
+                esac
+                ;;
+esac
 
 # Debug output for path comparison (only shown when WIZARDRY_LOG_LEVEL >= 2)
 if [ "${WIZARDRY_LOG_LEVEL:-0}" -ge 2 ]; then
