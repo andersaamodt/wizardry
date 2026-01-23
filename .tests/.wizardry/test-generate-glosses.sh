@@ -185,12 +185,12 @@ EOF
     return 1
   fi
   
-  # 5. CRITICAL FIX: Aliases with directory paths must preserve the directory
+  # 5. CRITICAL: Hyphenated synonyms use hyphenated targets (deterministic)
   #    E.g., "leap-to-location=translocation/jump-to-marker" should generate
-  #    alias leap-to-location='translocation/jump to marker'
-  #    NOT alias leap-to-location='translocation/jump to marker'  (with / → space)
-  if ! grep -q "alias leap-to-location='translocation/jump to marker'" "$output_file"; then
-    TEST_FAILURE_REASON="Expected alias to preserve directory path: translocation/jump to marker"
+  #    alias leap-to-location='translocation/jump-to-marker'
+  #    The first-word gloss leap() handles "leap to location" invocations
+  if ! grep -q "alias leap-to-location='translocation/jump-to-marker'" "$output_file"; then
+    TEST_FAILURE_REASON="Expected alias to use hyphenated target: translocation/jump-to-marker"
     return 1
   fi
 }
