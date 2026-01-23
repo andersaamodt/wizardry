@@ -113,7 +113,13 @@ else
       fi
       ;;
     *)
-      destination="$(pwd -P)/$target_path"
+      # Resolve relative path to absolute, then normalize with pwd -P
+      abs_path="$(pwd -P)/$target_path"
+      if [ -d "$abs_path" ]; then
+        destination=$(command cd "$abs_path" && pwd -P)
+      else
+        destination="$(command cd "$(dirname "$abs_path")" && pwd -P)/$(basename "$abs_path")"
+      fi
       ;;
   esac
   if [ ! -e "$destination" ]; then
