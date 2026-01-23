@@ -229,6 +229,18 @@ if [ -z "$destination" ]; then
         printf '%s\n' "The rune '$marker_name' is blank; the marked location has faded away."
         set +eu; return 1
 fi
+
+# Reject relative paths in marker files (markers should always be absolute paths)
+case "$destination" in
+        /*)
+                # Absolute path - OK
+                ;;
+        *)
+                printf '%s\n' "The marker '$marker_name' contains a relative path '$destination', which is invalid. Use 'mark-location $marker_name' to reset it."
+                set +eu; return 1
+                ;;
+esac
+
 if [ ! -d "$destination" ]; then
         printf '%s\n' "The ley-line remembers '$destination' for marker '$marker_name', but it no longer exists."
         set +eu; return 1
