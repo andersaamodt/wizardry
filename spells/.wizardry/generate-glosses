@@ -267,16 +267,7 @@ emit_first_word_gloss() {
   emit_line "    fw_attempt_len=\$((fw_attempt_len - 1))"
   emit_line "  done"
   emit_line "  "
-  emit_line "  # No uncastable spell found - need to use parse for castable spells"
-  emit_line "  # Check if parsing is enabled before calling parse"
-  emit_line "  if [ -f \"\$fw_spell_home/.mud\" ]; then"
-  emit_line "    fw_parse_enabled=\$(grep '^parse-enabled=' \"\$fw_spell_home/.mud\" 2>/dev/null | cut -d= -f2- || printf '')"
-  emit_line "    if [ \"\$fw_parse_enabled\" = \"0\" ]; then"
-  emit_line "      printf 'parse: command not found (parsing is disabled)\n' >&2"
-  emit_line "      return 127 2>/dev/null || exit 127"
-  emit_line "    fi"
-  emit_line "  fi"
-  emit_line "  "
+  emit_line "  # No uncastable spell found - source parse to handle castable spells"
   emit_line "  # Sourcing preserves shell context for uncastable spells found via synonyms"
   emit_line "  # We need to set up arguments for parse since sourcing doesn't support passing args"
   emit_line "  set -- \"$emit_first_word\" \"\$@\""
@@ -369,13 +360,16 @@ fi
 emit_line "# ============================================================================"
 emit_line "# FIRST-WORD GLOSSES"
 emit_line "# ============================================================================"
-emit_line "# These enable space-separated command invocation:"
-emit_line "#   env or VAR DEFAULT  -> calls parse with all args"
-emit_line "#   temp file           -> calls parse with all args"
-emit_line "# NOTE: When parse-enabled=0, glosses still work for uncastable spells"
-emit_line "#       (like jump-to-marker), but fail when trying to call parse for"
-emit_line "#       castable spells. This preserves natural language semantics while"
-emit_line "#       disabling actual parsing."
+if [ "$parse_enabled" -eq 1 ]; then
+  emit_line "# These enable space-separated command invocation:"
+  emit_line "#   env or VAR DEFAULT  -> calls parse with all args"
+  emit_line "#   temp file           -> calls parse with all args"
+else
+  emit_line "# DISABLED: parse-enabled=0 in $mud_config_file"
+  emit_line "# First-word glosses are not generated when parse is disabled"
+  emit_line "# This prevents commands like 'jump to marker' from working,"
+  emit_line "# requiring exact spell names like 'jump-to-marker' instead"
+fi
 emit_line "# ============================================================================"
 emit_line ""
 
@@ -384,7 +378,8 @@ emit_line ""
 # Pattern: " word1 word2 word3 " (leading and trailing spaces ensure exact match)
 first_words_seen=" "  # Track with space-separated list (space prefix for matching)
 
-for spell_name in $spell_names; do
+if [ "$parse_enabled" -eq 1 ]; then
+  for spell_name in $spell_names; do
     # Extract first word using parameter expansion (faster than sed)
     case "$spell_name" in
       *-*)
@@ -420,6 +415,7 @@ for spell_name in $spell_names; do
     
     total_first_word_glosses=$((total_first_word_glosses + 1))
   done
+fi
 
 # ============================================================================
 # HYPHENATED SPELL ALIASES
@@ -430,10 +426,11 @@ for spell_name in $spell_names; do
 # which can properly source the spell instead of executing it
 # NOTE: .arcana subdirectories are excluded from PATH to prevent executable
 # conflicts with these aliases
-# IMPORTANT: These aliases require first-word glosses to work, so they're
-# always generated (glosses handle parse-enabled check internally)
+# IMPORTANT: These aliases require first-word glosses to work, so they should
+# only be generated when parse is enabled
 
-for spell_name in $spell_names; do
+if [ "$parse_enabled" -eq 1 ]; then
+  for spell_name in $spell_names; do
     # Only process hyphenated spell names
     case "$spell_name" in
       *-*) ;;
@@ -447,6 +444,7 @@ for spell_name in $spell_names; do
       emit_line "alias $spell_name='$alias_target'"
     fi
   done
+fi
 emit_line ""
 
 # ============================================================================
