@@ -52,20 +52,9 @@ if [ -z "$parse_enabled" ]; then
 fi
 # If parse-enabled is explicitly set to 0, fail immediately before any parsing
 if [ "$parse_enabled" = "0" ]; then
-  # Parse is disabled - don't do any parsing work
-  if [ $# -gt 0 ]; then
-    # Try to execute the first word as a command directly without parsing
-    first_cmd="$1"
-    shift
-    if command -v "$first_cmd" >/dev/null 2>&1; then
-      "$first_cmd" "$@"
-      return $?
-    else
-      printf 'parse: command not found (parsing is disabled)\n' >&2
-      return 127
-    fi
-  fi
-  return 0
+  # Parse is disabled - don't do any parsing work, just fail
+  printf 'parse: command not found (parsing is disabled)\n' >&2
+  return 127
 fi
 
 # Increment recursion depth
