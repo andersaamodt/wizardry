@@ -32,7 +32,7 @@ SH
   # Test as submenu (as it would be called from mud menu)
   # Use MENU_LOOP_LIMIT=1 to exit after one iteration
   # Note: Without a player key, menu shows "Create player key" instead of "Copy player key"
-  REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_PLAYER="$player" MENU_LOOP_LIMIT=1 run_sourced_spell "spells/menu/mud-settings"
+  REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_PLAYER="$player" MENU_LOOP_LIMIT=1 run_spell "spells/menu/mud-settings"
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
@@ -61,7 +61,7 @@ else
 fi
 SH
   chmod +x "$tmp/require"
-  REQUIRE_COMMAND="$tmp/require-command" PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$tmp:/bin:/usr/bin" MENU_LOG="$tmp/log" MUD_PLAYER=hero run_sourced_spell "spells/menu/mud-settings"
+  REQUIRE_COMMAND="$tmp/require-command" PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$tmp:/bin:/usr/bin" MENU_LOG="$tmp/log" MUD_PLAYER=hero run_spell "spells/menu/mud-settings"
   assert_failure
   assert_error_contains "The MUD Settings menu needs the 'menu' command"
 }
@@ -81,13 +81,13 @@ SH
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_PLAYER=hero MENU_LOOP_LIMIT=1 run_sourced_spell "spells/menu/mud-settings"
+  REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_PLAYER=hero MENU_LOOP_LIMIT=1 run_spell "spells/menu/mud-settings"
   assert_status 9
   assert_file_contains "$tmp/log" "MUD Settings:"
 }
 
 test_shows_help() {
-  run_sourced_spell "spells/menu/mud-settings" --help
+  run_spell "spells/menu/mud-settings" --help
   assert_success || return 1
   assert_error_contains "Usage:" || return 1
 }
@@ -124,7 +124,7 @@ SH
   chmod +x "$tmp/exit-label"
   
   
-  REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_PLAYER=hero run_sourced_spell "spells/menu/mud-settings"
+  REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" MUD_PLAYER=hero run_spell "spells/menu/mud-settings"
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$tmp/log")

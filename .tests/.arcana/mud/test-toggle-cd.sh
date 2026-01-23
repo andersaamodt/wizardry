@@ -9,22 +9,22 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_sourced_spell "spells/.arcana/mud/toggle-cd" --help
+  run_spell "spells/.arcana/mud/toggle-cd" --help
   assert_success && assert_output_contains "Usage:"
 }
 
 test_toggle_enables() {
   skip-if-compiled || return $?
-  run_sourced_spell "spells/.arcana/mud/toggle-cd"
+  run_spell "spells/.arcana/mud/toggle-cd"
   assert_success
 }
 
 test_toggle_disables() {
   skip-if-compiled || return $?
   # Enable first
-  run_sourced_spell "spells/.arcana/mud/toggle-cd"
+  run_spell "spells/.arcana/mud/toggle-cd"
   # Then disable
-  run_sourced_spell "spells/.arcana/mud/toggle-cd"
+  run_spell "spells/.arcana/mud/toggle-cd"
   assert_success
 }
 
