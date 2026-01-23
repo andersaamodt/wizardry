@@ -1143,4 +1143,34 @@ run_test_case "Longest match priority (cast spell fireball)" test_longest_match_
 run_test_case "Custom synonym multi-word castable (issue: leap to location)" test_custom_synonym_multiword
 run_test_case "Custom synonym multi-word uncastable (issue: leap to location sourcing)" test_custom_synonym_uncastable
 
+# Test parse-enabled=0 behavior
+test_parse_disabled() {
+  tmp=$(make_tempdir)
+  export SPELLBOOK_DIR="$tmp"
+  mkdir -p "$SPELLBOOK_DIR"
+  
+  # Disable parsing
+  printf 'parse-enabled=0\n' > "$SPELLBOOK_DIR/.mud"
+  
+  # Try to parse a command
+  run_sourced_spell "spells/.imps/lex/parse" "jump" "to" "marker"
+  
+  # Should fail with parse disabled message
+  if [ "$STATUS" -eq 127 ]; then
+    :  # Expected exit code
+  else
+    TEST_FAILURE_REASON="Expected exit code 127, got $STATUS"
+    return 1
+  fi
+  
+  # Check both OUTPUT and ERROR for the message
+  combined="$OUTPUT$ERROR"
+  if ! printf '%s' "$combined" | grep -q "parse: command not found (parsing is disabled)"; then
+    TEST_FAILURE_REASON="Expected 'parse: command not found (parsing is disabled)' but got OUTPUT: '$OUTPUT' ERROR: '$ERROR'"
+    return 1
+  fi
+}
+
+run_test_case "Parse disabled (parse-enabled=0)" test_parse_disabled
+
 finish_tests
