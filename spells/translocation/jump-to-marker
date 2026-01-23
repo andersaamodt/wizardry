@@ -250,57 +250,10 @@ fi
 current=$(pwd -P | sed 's|//|/|g')
 
 # Resolve destination path to real path (handles symlinks)
-# Use 'command cd' to bypass cd function override (which may run look/cd-hook)
-if [ "${WIZARDRY_LOG_LEVEL:-0}" -ge 2 ]; then
-        printf '\n=== DIAGNOSTIC: Path Normalization Debug ===\n' >&2
-        printf 'DEBUG: destination="%s"\n' "$destination" >&2
-        printf 'DEBUG: current directory="%s"\n' "$current" >&2
-        printf 'DEBUG: destination exists (-d check): %s\n' "$([ -d "$destination" ] && echo YES || echo NO)" >&2
-        printf 'DEBUG: destination is file (-f check): %s\n' "$([ -f "$destination" ] && echo YES || echo NO)" >&2
-        printf 'DEBUG: destination is symlink (-L check): %s\n' "$([ -L "$destination" ] && echo YES || echo NO)" >&2
-        printf 'DEBUG: destination permissions: %s\n' "$(ls -ld "$destination" 2>&1 | head -1)" >&2
-        
-        # Test cd in various ways
-        printf '\nDEBUG: Testing cd command in subshell:\n' >&2
-        printf 'DEBUG:   Step 1 - Plain cd: ' >&2
-        test1=$(cd "$destination" 2>&1 && echo "SUCCESS: $(pwd)" || echo "FAILED: $?")
-        printf '%s\n' "$test1" >&2
-        
-        printf 'DEBUG:   Step 2 - command cd: ' >&2
-        test2=$(command cd "$destination" 2>&1 && echo "SUCCESS: $(pwd)" || echo "FAILED: $?")
-        printf '%s\n' "$test2" >&2
-        
-        printf 'DEBUG:   Step 3 - command cd && pwd: ' >&2
-        test3=$(command cd "$destination" 2>&1 && pwd 2>&1 || echo "FAILED")
-        printf '%s\n' "$test3" >&2
-        
-        printf 'DEBUG:   Step 4 - command cd && pwd -P: ' >&2
-        test4=$(command cd "$destination" 2>&1 && pwd -P 2>&1 || echo "FAILED")
-        printf '%s\n' "$test4" >&2
-        
-        # Check if it's a mount point or has special attributes
-        printf '\nDEBUG: Additional filesystem checks:\n' >&2
-        printf 'DEBUG:   df output for destination: %s\n' "$(df "$destination" 2>&1 | tail -1)" >&2
-        printf 'DEBUG:   mount | grep .tower: %s\n' "$(mount 2>/dev/null | grep -i tower || echo 'not mounted separately')" >&2
-        
-        # Check xattrs on macOS
-        if command -v xattr >/dev/null 2>&1; then
-                printf 'DEBUG:   xattrs: %s\n' "$(xattr -l "$destination" 2>&1 | head -3 || echo 'none')" >&2
-        fi
-        
-        # Check if cd actually changes directory
-        printf '\nDEBUG: Testing if cd actually changes directory:\n' >&2
-        before_cd=$(pwd -P)
-        test_cd_result=$(sh -c "cd '$destination' 2>&1 && pwd -P 2>&1")
-        after_cd=$(pwd -P)
-        printf 'DEBUG:   Before cd: %s\n' "$before_cd" >&2
-        printf 'DEBUG:   After cd in subshell: %s\n' "$test_cd_result" >&2
-        printf 'DEBUG:   After (still in parent): %s\n' "$after_cd" >&2
-        printf '=== END DIAGNOSTIC ===\n\n' >&2
-fi
-
-# Try to normalize the destination by cd'ing to it and getting pwd -P
-normalized_destination=$(command cd "$destination" 2>/dev/null && pwd -P 2>/dev/null)
+# NOTE: On some systems (macOS/zsh), 'command cd' in a subshell created by $()
+# fails to actually change directory. We use 'sh -c' to run cd in a fresh shell
+# without any cd function overrides, which works reliably across platforms.
+normalized_destination=$(sh -c "cd '$destination' 2>/dev/null && pwd -P" 2>/dev/null)
 if [ -z "$normalized_destination" ]; then
         # cd failed - check why
         if [ ! -d "$destination" ]; then
@@ -312,43 +265,12 @@ if [ -z "$normalized_destination" ]; then
 fi
 normalized_destination=$(printf '%s' "$normalized_destination" | sed 's|//|/|g')
 
-# WORKAROUND: On macOS/zsh, pwd -P sometimes returns parent directory instead of
-# the actual directory (observed with ~/.tower). Detect this by checking if the
-# normalized path ends with the expected directory name.
-dest_basename=$(basename "$destination")
-case "$normalized_destination" in
-        */"$dest_basename")
-                # Path looks correct - normalized path ends with expected directory name
-                if [ "${WIZARDRY_LOG_LEVEL:-0}" -ge 2 ]; then
-                        printf 'DEBUG: normalized_destination looks correct (ends with %s)\n' "$dest_basename" >&2
-                fi
-                ;;
-        *)
-                # Path looks suspicious - normalized path doesn't end with expected name
-                if [ "${WIZARDRY_LOG_LEVEL:-0}" -ge 2 ]; then
-                        printf 'DEBUG: WARNING - normalized_destination does NOT end with expected basename!\n' >&2
-                        printf 'DEBUG:   Expected basename: %s\n' "$dest_basename" >&2
-                        printf 'DEBUG:   Actual normalized: %s\n' "$normalized_destination" >&2
-                fi
-                # If destination is already absolute, use it directly instead of trusting pwd -P
-                case "$destination" in
-                        /*)
-                                if [ "${WIZARDRY_LOG_LEVEL:-0}" -ge 2 ]; then
-                                        printf 'DEBUG: Applying workaround - using destination as-is\n' >&2
-                                fi
-                                normalized_destination="$destination"
-                                ;;
-                esac
-                ;;
-esac
-
 # Debug output for path comparison (only shown when WIZARDRY_LOG_LEVEL >= 2)
 if [ "${WIZARDRY_LOG_LEVEL:-0}" -ge 2 ]; then
-        printf '\nDEBUG: Final comparison:\n' >&2
         printf 'DEBUG: current="%s"\n' "$current" >&2
+        printf 'DEBUG: destination="%s"\n' "$destination" >&2
         printf 'DEBUG: normalized_destination="%s"\n' "$normalized_destination" >&2
         printf 'DEBUG: Comparison: current == normalized? %s\n' "$([ "$current" = "$normalized_destination" ] && echo YES || echo NO)" >&2
-        printf '\n' >&2
 fi
 
 # Sanity check: normalized_destination should not be empty if we got this far
