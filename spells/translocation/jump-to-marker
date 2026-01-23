@@ -251,42 +251,43 @@ current=$(pwd -P | sed 's|//|/|g')
 
 # Resolve destination path to real path (handles symlinks)
 # Use 'command cd' to bypass cd function override (which may run look/cd-hook)
-# WORKAROUND for macOS/zsh issue: if cd && pwd -P returns wrong path,
-# try alternative normalization methods
+# WORKAROUND for macOS/zsh issue where 'cd ~/.tower && pwd -P' returns parent dir
 if [ "${WIZARDRY_LOG_LEVEL:-0}" -ge 2 ]; then
         printf 'DEBUG: About to normalize destination\n' >&2
         printf 'DEBUG: destination="%s"\n' "$destination" >&2
         printf 'DEBUG: destination exists: %s\n' "$([ -d "$destination" ] && echo YES || echo NO)" >&2
 fi
 
-# Try to normalize the destination
+# Try to normalize the destination by cd'ing to it and getting pwd -P
 normalized_destination=$(command cd "$destination" 2>/dev/null && pwd -P 2>/dev/null)
 if [ -z "$normalized_destination" ]; then
-        # cd failed, destination might not exist or not accessible
-        printf '%s\n' "jump-to-marker: cannot access destination '$destination'" >&2
+        # cd failed - check why
+        if [ ! -d "$destination" ]; then
+                printf '%s\n' "jump-to-marker: destination directory does not exist: '$destination'" >&2
+        else
+                printf '%s\n' "jump-to-marker: cannot access destination '$destination'" >&2
+        fi
         set +eu; return 1
 fi
 normalized_destination=$(printf '%s' "$normalized_destination" | sed 's|//|/|g')
 
-# Workaround: If normalized_destination doesn't end with the basename of destination,
-# something went wrong with pwd -P. Use the destination as-is if it's absolute.
+# WORKAROUND: On macOS/zsh, pwd -P sometimes returns parent directory instead of
+# the actual directory (observed with ~/.tower). Detect this by checking if the
+# normalized path ends with the expected directory name.
 dest_basename=$(basename "$destination")
 case "$normalized_destination" in
         */"$dest_basename")
-                # Looks correct
+                # Path looks correct - normalized path ends with expected directory name
                 ;;
         *)
-                # pwd -P returned wrong path, check if destination is absolute
+                # Path looks suspicious - normalized path doesn't end with expected name
+                # If destination is already absolute, use it directly instead of trusting pwd -P
                 case "$destination" in
                         /*)
-                                # It's already absolute, check if it matches destination basename
-                                if [ "$(basename "$destination")" = "$dest_basename" ]; then
-                                        # Use destination as normalized path
-                                        if [ "${WIZARDRY_LOG_LEVEL:-0}" -ge 2 ]; then
-                                                printf 'DEBUG: pwd -P returned unexpected path, using destination as-is\n' >&2
-                                        fi
-                                        normalized_destination="$destination"
+                                if [ "${WIZARDRY_LOG_LEVEL:-0}" -ge 2 ]; then
+                                        printf 'DEBUG: pwd -P returned unexpected path, using destination as-is\n' >&2
                                 fi
+                                normalized_destination="$destination"
                                 ;;
                 esac
                 ;;
