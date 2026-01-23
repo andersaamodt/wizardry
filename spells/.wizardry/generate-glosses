@@ -367,6 +367,8 @@ if [ "$parse_enabled" -eq 1 ]; then
 else
   emit_line "# DISABLED: parse-enabled=0 in $mud_config_file"
   emit_line "# First-word glosses are not generated when parse is disabled"
+  emit_line "# This prevents commands like 'jump to marker' from working,"
+  emit_line "# requiring exact spell names like 'jump-to-marker' instead"
 fi
 emit_line "# ============================================================================"
 emit_line ""
@@ -419,9 +421,16 @@ fi
 # HYPHENATED SPELL ALIASES
 # ============================================================================
 # Generate aliases for hyphenated spells with uncastable pattern
-# These aliases convert hyphenated form to space-separated form
-# (e.g., jump-to-marker → jump to marker) so they route through first-word gloss
-# which can properly source the spell instead of executing it
+# 
+# When parse-enabled=1:
+#   Aliases convert hyphenated form to space-separated form
+#   (e.g., jump-to-marker → jump to marker) which routes through first-word gloss
+# 
+# When parse-enabled=0:
+#   Aliases directly source the uncastable spell
+#   (e.g., jump-to-marker → '. $WIZARDRY_DIR/spells/translocation/jump-to-marker')
+#   This allows hyphenated forms to work without parsing or glosses
+# 
 # NOTE: .arcana subdirectories are excluded from PATH to prevent executable
 # conflicts with these aliases
 
@@ -434,9 +443,15 @@ for spell_name in $spell_names; do
   
   # Check if spell is in uncastable list (fast in-memory check)
   if is_spell_uncastable "$spell_name"; then
-    # Convert hyphens to spaces (e.g., jump-to-marker → jump to marker)
-    alias_target=$(printf '%s' "$spell_name" | sed 's/-/ /g')
-    emit_line "alias $spell_name='$alias_target'"
+    if [ "$parse_enabled" -eq 1 ]; then
+      # Parse enabled: Convert hyphens to spaces (routes through first-word gloss)
+      alias_target=$(printf '%s' "$spell_name" | sed 's/-/ /g')
+      emit_line "alias $spell_name='$alias_target'"
+    else
+      # Parse disabled: Directly source the spell (no gloss needed)
+      # Recursively search spells/ directory including hidden directories
+      emit_line "alias $spell_name='_uc_file=\$(find \"\$WIZARDRY_DIR/spells\" -type f -name \"$spell_name\" 2>/dev/null | head -n 1); if [ -n \"\$_uc_file\" ]; then . \"\$_uc_file\"; else printf \"%s: spell not found\\\\n\" \"$spell_name\" >&2; return 127; fi'"
+    fi
   fi
 done
 emit_line ""
@@ -572,31 +587,8 @@ if [ -f "$synonym_file" ]; then
     # Names with chars invalid for functions (hyphens, special chars, starting with digit) must use alias
     if ! can_be_function_name "$word"; then
       # Must use alias (contains chars invalid for function names)
-      # For hyphenated targets, convert hyphens to spaces for first-word gloss routing
-      case "$target" in
-        *-*)
-          # Convert hyphens to spaces ONLY in spell name, not in directory path
-          # E.g., "translocation/jump-to-marker" → "translocation/jump to marker"
-          #       "jump-to-marker" → "jump to marker"
-          case "$target" in
-            */*)
-              # Has directory prefix - preserve it
-              dir_prefix="${target%/*}/"
-              spell_part="${target##*/}"
-              alias_target="$dir_prefix$(printf '%s' "$spell_part" | sed 's/-/ /g')"
-              ;;
-            *)
-              # No directory - convert all hyphens
-              alias_target=$(printf '%s' "$target" | sed 's/-/ /g')
-              ;;
-          esac
-          emit_line "alias $word='$alias_target'"
-          ;;
-        *)
-          # Single-word target, use as-is
-          emit_line "alias $word='$target'"
-          ;;
-      esac
+      # Always use target as-is (hyphenated forms are fully specified and deterministic)
+      emit_line "alias $word='$target'"
     else
       # Can use function name - check if it conflicts with first-word gloss
       case "$first_words_seen" in
@@ -659,31 +651,8 @@ if [ -f "$default_synonym_file" ]; then
     # Names with chars invalid for functions (hyphens, special chars, starting with digit) must use alias
     if ! can_be_function_name "$word"; then
       # Must use alias (contains chars invalid for function names)
-      # For hyphenated targets, convert hyphens to spaces for first-word gloss routing
-      case "$target" in
-        *-*)
-          # Convert hyphens to spaces ONLY in spell name, not in directory path
-          # E.g., "translocation/jump-to-marker" → "translocation/jump to marker"
-          #       "jump-to-marker" → "jump to marker"
-          case "$target" in
-            */*)
-              # Has directory prefix - preserve it
-              dir_prefix="${target%/*}/"
-              spell_part="${target##*/}"
-              alias_target="$dir_prefix$(printf '%s' "$spell_part" | sed 's/-/ /g')"
-              ;;
-            *)
-              # No directory - convert all hyphens
-              alias_target=$(printf '%s' "$target" | sed 's/-/ /g')
-              ;;
-          esac
-          emit_line "alias $word='$alias_target'"
-          ;;
-        *)
-          # Single-word target, use as-is
-          emit_line "alias $word='$target'"
-          ;;
-      esac
+      # Always use target as-is (hyphenated forms are fully specified and deterministic)
+      emit_line "alias $word='$target'"
     else
       # Can use function name - check if it conflicts with first-word gloss
       case "$first_words_seen" in
