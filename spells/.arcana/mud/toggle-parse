@@ -54,6 +54,7 @@ touch "$CONFIG_FILE"
 
 # Check current state
 # Default is enabled (1) when not set, matching generate-glosses behavior
+# This ensures consistent behavior across wizardry components
 current_value="1"
 if config-has "$CONFIG_FILE" "parse-enabled" 2>/dev/null; then
   current_value=$(config-get "$CONFIG_FILE" "parse-enabled" 2>/dev/null)
@@ -72,7 +73,8 @@ if [ "$current_value" = "1" ]; then
   # Unload gloss functions from current shell by parsing cache
   if [ -f "$gloss_cache" ]; then
     # Extract function names into a variable (not in subshell)
-    func_names=$(grep -E '^\w+\(\)' "$gloss_cache" 2>/dev/null | \
+    # Use POSIX-compatible regex pattern
+    func_names=$(grep -E '^[A-Za-z0-9_]+\(\)' "$gloss_cache" 2>/dev/null | \
       sed 's/().*//' || true)
     
     # Unset each function
@@ -81,9 +83,9 @@ if [ "$current_value" = "1" ]; then
     done
     
     # Extract alias names into a variable (not in subshell)
+    # Combine sed commands for better performance
     alias_names=$(grep -E '^alias ' "$gloss_cache" 2>/dev/null | \
-      sed 's/^alias //' | \
-      sed 's/=.*//' || true)
+      sed 's/^alias //; s/=.*//' || true)
     
     # Unalias each alias
     for alias_name in $alias_names; do
