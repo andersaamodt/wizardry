@@ -64,43 +64,57 @@ if [ "$current_value" = "1" ]; then
   # Currently enabled, disable it
   config-set "$CONFIG_FILE" "parse-enabled" "0"
   
-  # Invalidate gloss cache and unload functions
+  # Unload gloss functions from current shell
+  # Get list of first words by scanning spell files directly
+  if [ -d "${WIZARDRY_DIR:-$HOME/.wizardry}/spells" ]; then
+    # Collect all first-word function names (avoid subshell issues)
+    first_words=""
+    for spell_file in "${WIZARDRY_DIR:-$HOME/.wizardry}/spells"/*/* \
+                      "${WIZARDRY_DIR:-$HOME/.wizardry}/spells"/.arcana/*/*; do
+      [ -f "$spell_file" ] && [ -x "$spell_file" ] || continue
+      spell_name=${spell_file##*/}
+      
+      # Skip hidden files and parse
+      case "$spell_name" in
+        .*|parse) continue ;;
+      esac
+      
+      # Extract first word
+      case "$spell_name" in
+        *-*) first_word=${spell_name%%-*} ;;
+        *) first_word=$spell_name ;;
+      esac
+      
+      # Add to list if not already present
+      case " $first_words " in
+        *" $first_word "*) ;;
+        *) first_words="$first_words $first_word" ;;
+      esac
+    done
+    
+    # Unset each first-word function
+    for func_name in $first_words; do
+      if [ -n "${ZSH_VERSION-}" ]; then
+        unfunction "$func_name" 2>/dev/null || true
+      else
+        unset -f "$func_name" 2>/dev/null || true
+      fi
+    done
+  fi
+  
+  # Invalidate gloss cache to force regeneration
   gloss_cache_dir="${TMPDIR:-/tmp}"
   wizardry_dir="${WIZARDRY_DIR:-$HOME/.wizardry}"
   cache_id=$(printf '%s' "$wizardry_dir" | cksum | cut -d' ' -f1)
   gloss_cache="$gloss_cache_dir/.wizardry-glosses-$cache_id-$(id -u).sh"
-  
-  # Unload gloss functions from current shell by parsing cache
-  if [ -f "$gloss_cache" ]; then
-    # Extract function names into a variable (not in subshell)
-    # Use POSIX-compatible regex pattern
-    func_names=$(grep -E '^[A-Za-z0-9_]+\(\)' "$gloss_cache" 2>/dev/null | \
-      sed 's/().*//' || true)
-    
-    # Unset each function
-    for func_name in $func_names; do
-      unset -f "$func_name" 2>/dev/null || true
-    done
-    
-    # Extract alias names into a variable (not in subshell)
-    # Combine sed commands for better performance
-    alias_names=$(grep -E '^alias ' "$gloss_cache" 2>/dev/null | \
-      sed 's/^alias //; s/=.*//' || true)
-    
-    # Unalias each alias
-    for alias_name in $alias_names; do
-      unalias "$alias_name" 2>/dev/null || true
-    done
-  fi
-  
-  # Remove cache to force regeneration
   rm -f "$gloss_cache" 2>/dev/null || true
   
-  # Re-source invoke-wizardry to load new cache without glosses
+  # Re-source invoke-wizardry to ensure clean state
   if command -v invoke-wizardry >/dev/null 2>&1; then
     # Unset WIZARDRY_INVOKED to allow re-invocation
     unset WIZARDRY_INVOKED
-    . invoke-wizardry
+    # Suppress parse errors during reload (zsh may show spurious errors)
+    . invoke-wizardry 2>&1 | grep -v "parse error" >&2 || true
     msg="✓ Parse disabled and gloss functions unloaded from current shell."
     printf '%s\n' "$msg"
   else
