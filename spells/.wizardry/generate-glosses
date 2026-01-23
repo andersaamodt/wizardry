@@ -587,8 +587,27 @@ if [ -f "$synonym_file" ]; then
     # Names with chars invalid for functions (hyphens, special chars, starting with digit) must use alias
     if ! can_be_function_name "$word"; then
       # Must use alias (contains chars invalid for function names)
-      # Always use target as-is (hyphenated forms are fully specified and deterministic)
-      emit_line "alias $word='$target'"
+      # When parse-enabled=1: Convert hyphens in spell name to spaces (preserving directory path if present)
+      # When parse-enabled=0: Use hyphenated form directly
+      if [ "$parse_enabled" -eq 1 ]; then
+        # Split target into directory path and spell name
+        case "$target" in
+          */*)
+            # Has directory path - preserve it, convert only spell name
+            target_dir="${target%/*}/"
+            target_spell="${target##*/}"
+            alias_target="${target_dir}$(printf '%s' "$target_spell" | sed 's/-/ /g')"
+            ;;
+          *)
+            # No directory path - convert hyphens in entire target
+            alias_target=$(printf '%s' "$target" | sed 's/-/ /g')
+            ;;
+        esac
+        emit_line "alias $word='$alias_target'"
+      else
+        # parse-enabled=0: Use hyphenated form directly
+        emit_line "alias $word='$target'"
+      fi
     else
       # Can use function name - check if it conflicts with first-word gloss
       case "$first_words_seen" in
@@ -651,8 +670,27 @@ if [ -f "$default_synonym_file" ]; then
     # Names with chars invalid for functions (hyphens, special chars, starting with digit) must use alias
     if ! can_be_function_name "$word"; then
       # Must use alias (contains chars invalid for function names)
-      # Always use target as-is (hyphenated forms are fully specified and deterministic)
-      emit_line "alias $word='$target'"
+      # When parse-enabled=1: Convert hyphens in spell name to spaces (preserving directory path if present)
+      # When parse-enabled=0: Use hyphenated form directly
+      if [ "$parse_enabled" -eq 1 ]; then
+        # Split target into directory path and spell name
+        case "$target" in
+          */*)
+            # Has directory path - preserve it, convert only spell name
+            target_dir="${target%/*}/"
+            target_spell="${target##*/}"
+            alias_target="${target_dir}$(printf '%s' "$target_spell" | sed 's/-/ /g')"
+            ;;
+          *)
+            # No directory path - convert hyphens in entire target
+            alias_target=$(printf '%s' "$target" | sed 's/-/ /g')
+            ;;
+        esac
+        emit_line "alias $word='$alias_target'"
+      else
+        # parse-enabled=0: Use hyphenated form directly
+        emit_line "alias $word='$target'"
+      fi
     else
       # Can use function name - check if it conflicts with first-word gloss
       case "$first_words_seen" in
