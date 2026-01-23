@@ -38,6 +38,12 @@ esac
 # Permissive mode - this file is sourced into user's shell
 set +eu
 
+# In zsh, enable null_glob to prevent errors when glob patterns don't match
+# This is needed for loops like: for dir in $WIZARDRY_DIR/spells/.*
+if [ -n "${ZSH_VERSION-}" ]; then
+  setopt null_glob 2>/dev/null || true
+fi
+
 # Prevent recursive sourcing
 if [ "${WIZARDRY_INVOKED-}" = "1" ]; then
   [ "${WIZARDRY_DEBUG-}" = "1" ] && \
