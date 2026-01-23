@@ -229,6 +229,18 @@ if [ -z "$destination" ]; then
         printf '%s\n' "The rune '$marker_name' is blank; the marked location has faded away."
         set +eu; return 1
 fi
+
+# Reject relative paths in marker files (markers should always be absolute paths)
+case "$destination" in
+        /*)
+                # Absolute path - OK
+                ;;
+        *)
+                printf '%s\n' "The marker '$marker_name' contains a relative path '$destination', which is invalid. Use 'mark-location $marker_name' to reset it."
+                set +eu; return 1
+                ;;
+esac
+
 if [ ! -d "$destination" ]; then
         printf '%s\n' "The ley-line remembers '$destination' for marker '$marker_name', but it no longer exists."
         set +eu; return 1
@@ -236,9 +248,37 @@ fi
 
 # Normalize paths to handle macOS double slashes and symlinks
 current=$(pwd -P | sed 's|//|/|g')
+
 # Resolve destination path to real path (handles symlinks)
-# Use 'command cd' to bypass cd function override (which may run look/cd-hook)
-normalized_destination=$(command cd "$destination" && pwd -P | sed 's|//|/|g')
+# NOTE: On some systems (macOS/zsh), 'command cd' in a subshell created by $()
+# fails to actually change directory. We use 'sh -c' to run cd in a fresh shell
+# without any cd function overrides, which works reliably across platforms.
+normalized_destination=$(sh -c "cd '$destination' 2>/dev/null && pwd -P" 2>/dev/null)
+if [ -z "$normalized_destination" ]; then
+        # cd failed - check why
+        if [ ! -d "$destination" ]; then
+                printf '%s\n' "jump-to-marker: destination directory does not exist: '$destination'" >&2
+        else
+                printf '%s\n' "jump-to-marker: cannot access destination '$destination'" >&2
+        fi
+        set +eu; return 1
+fi
+normalized_destination=$(printf '%s' "$normalized_destination" | sed 's|//|/|g')
+
+# Debug output for path comparison (only shown when WIZARDRY_LOG_LEVEL >= 2)
+if [ "${WIZARDRY_LOG_LEVEL:-0}" -ge 2 ]; then
+        printf 'DEBUG: current="%s"\n' "$current" >&2
+        printf 'DEBUG: destination="%s"\n' "$destination" >&2
+        printf 'DEBUG: normalized_destination="%s"\n' "$normalized_destination" >&2
+        printf 'DEBUG: Comparison: current == normalized? %s\n' "$([ "$current" = "$normalized_destination" ] && echo YES || echo NO)" >&2
+fi
+
+# Sanity check: normalized_destination should not be empty if we got this far
+if [ -z "$normalized_destination" ]; then
+        printf '%s\n' "jump-to-marker: internal error: failed to normalize destination path" >&2
+        set +eu; return 1
+fi
+
 if [ "$current" = "$normalized_destination" ]; then
         printf '%s\n' "You are already standing at marker '$marker_name'."
         # Touch marker to update mtime for cycling
