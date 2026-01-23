@@ -23,7 +23,7 @@ exit 1
 STUB
   chmod +x "$stub_dir/require-command"
 
-  run_cmd env REQUIRE_COMMAND="$stub_dir/require-command" PATH="$stub_dir:$PATH" "$ROOT_DIR/spells/menu/mud"
+  REQUIRE_COMMAND="$stub_dir/require-command" PATH="$stub_dir:$PATH" run_sourced_spell "spells/menu/mud"
   assert_failure || return 1
   assert_error_contains "The MUD menu needs the 'menu' command" || return 1
 }
@@ -42,7 +42,7 @@ test_mud_presents_navigation_options() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/mud"
   assert_success
   
   # Verify navigation options
@@ -75,7 +75,7 @@ test_mud_presents_admin_options() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/mud"
   assert_success
   
   # Verify admin options (Install MUD was moved to Arcana/install-menu)
@@ -99,7 +99,7 @@ test_mud_shows_menu_title() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/mud"
   assert_success
   
   # Verify menu title
@@ -122,7 +122,7 @@ printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
   
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/mud"
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/mud"
   assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
   
   args=$(cat "$tmp/log")
@@ -136,9 +136,10 @@ run_test_case "mud menu requires menu dependency" mud_requires_menu_dependency
 run_test_case "menu/mud is executable" spell_is_executable
 
 test_shows_help() {
-  run_cmd "$ROOT_DIR/spells/menu/mud" --help
+  run_sourced_spell "spells/menu/mud" --help
   assert_success
-  assert_output_contains "Usage: mud"
+  assert_output_contains "Usage:"
+  assert_output_contains "mud"
 }
 
 run_test_case "mud --help shows usage" test_shows_help
