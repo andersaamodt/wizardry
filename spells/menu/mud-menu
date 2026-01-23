@@ -5,40 +5,15 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: . mud-menu    OR    mud menu    (via parse/gloss)
+Usage: mud-menu
 
 Display the MUD installation menu with toggleable features like the cd hook, showing [X] for enabled items and [ ] for disabled ones.
-
-This spell must be sourced (not executed) to affect your current shell.
 USAGE
-  return 0 2>/dev/null || exit 0
+  exit 0
   ;;
 esac
 
-# Uncastable pattern - detect if sourced
-mud_menu_sourced=0
-if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
-  case "${ZSH_EVAL_CONTEXT-}" in
-    *:file) mud_menu_sourced=1 ;;
-  esac
-else
-  mud_menu_base=${0##*/}
-  case "$mud_menu_base" in
-    sh|dash|bash|zsh|ksh|mksh) mud_menu_sourced=1 ;;
-    mud-menu) mud_menu_sourced=0 ;;
-    parse) mud_menu_sourced=1 ;;  # Sourced via parse
-    *) mud_menu_sourced=1 ;;
-  esac
-fi
-
-if [ "$mud_menu_sourced" -eq 0 ]; then
-  printf '%s\n' "This spell must be sourced. Use:  . mud-menu  OR  mud menu" >&2
-  return 1 2>/dev/null || exit 1
-fi
-unset mud_menu_sourced mud_menu_base
-
-set +e  # Permissive mode since we're in user's shell
-set -u
+set -eu
 
 . env-clear
 
@@ -47,8 +22,11 @@ set -u
 . "$(command -v colors)"
 
 if ! require menu "The MUD Install menu needs the 'menu' command to present options."; then
-  return 1
+  exit 1
 fi
+
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 0' INT TERM
 
 # Get config file location
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
@@ -57,7 +35,7 @@ CONFIG_FILE="$spell_home/.mud"
 # Use temp file imp for selection tracking
 SELECTION_FILE=$(temp-file mud-menu-selection)
 export SELECTION_FILE
-trap 'cleanup-file "$SELECTION_FILE"; return 0' EXIT INT TERM
+trap 'cleanup-file "$SELECTION_FILE"; exit 0' EXIT INT TERM
 
 # Ensure spellbook directory and config file exist
 mkdir -p "$spell_home"
@@ -168,7 +146,7 @@ while true; do
   if [ "$menu_status" -eq 130 ]; then
     printf 'ESC\n' >&2
     kill -TERM $$ 2>/dev/null || true
-    return 0
+    exit 0
   fi
 
   # Support MENU_LOOP_LIMIT for testing
