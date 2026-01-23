@@ -174,6 +174,48 @@ test_jump_defaults_to_one() {
   assert_success
 }
 
+test_jump_detects_current_location_with_cd_hook() {
+  destination="$WIZARDRY_TMPDIR/already-here-hook"
+  markers_dir="$WIZARDRY_TMPDIR/markers-here-hook"
+  spellbook_dir="$WIZARDRY_TMPDIR/test-spellbook-hook-$$"
+  mkdir -p "$destination" "$markers_dir" "$spellbook_dir"
+  rm -f "$spellbook_dir/.markers"
+  ln -s "$markers_dir" "$spellbook_dir/.markers"
+  
+  # Write resolved path to marker to match what jump will compare
+  destination_resolved=$(command cd "$destination" && pwd -P | sed 's|//|/|g')
+  printf '%s\n' "$destination_resolved" >"$markers_dir/1"
+  
+  # Create .mud config with cd-look enabled
+  printf 'cd-look=1\n' >"$spellbook_dir/.mud"
+  
+  # Test with cd-hook enabled (simulating the cd function override)
+  # The cd function calls 'look' which outputs room description
+  # This tests that jump-to-marker correctly uses 'command cd' to bypass the hook
+  PATH="$WIZARDRY_IMPS_PATH:$(wizardry_base_path):$ROOT_DIR/spells/mud:/bin:/usr/bin"
+  SPELLBOOK_DIR="$spellbook_dir"
+  export SPELLBOOK_DIR PATH
+  
+  run_cmd sh -c "
+    # Define a cd function that mimics the cd-hook behavior (outputs text like 'look' does)
+    cd() {
+      if eval '[ -n \"\${BASH_VERSION:-}\" ] || [ -n \"\${ZSH_VERSION:-}\" ]' 2>/dev/null; then
+        eval 'builtin cd \"\$@\"' || return \$?
+      else
+        command cd \"\$@\" || return \$?
+      fi
+      # Simulate look output
+      printf '.tower\nAn ordinary room.\n'
+    }
+    cd '$destination' || exit 1
+    set -- '1'
+    . '$ROOT_DIR/spells/translocation/jump-to-marker'
+  "
+  
+  rm -rf "$spellbook_dir"
+  assert_success && assert_output_contains "already standing"
+}
+
 run_test_case "jump-to-marker prints usage" test_help
 run_test_case "jump-to-marker rejects unknown options" test_unknown_option_fails
 run_test_case "jump-to-marker fails when markers dir is missing" test_jump_requires_markers_dir
@@ -181,6 +223,7 @@ run_test_case "jump-to-marker fails when specific marker is missing" test_jump_r
 run_test_case "jump-to-marker fails when marker is blank" test_jump_rejects_blank_marker
 run_test_case "jump-to-marker fails when destination is missing" test_jump_rejects_missing_destination
 run_test_case "jump-to-marker reports when already at destination" test_jump_detects_current_location
+run_test_case "jump-to-marker reports when already at destination with cd-hook" test_jump_detects_current_location_with_cd_hook
 run_test_case "jump-to-marker jumps to marked directory" test_jump_changes_directory
 run_test_case "jump-to-marker jumps to named marker" test_jump_to_named_marker
 run_test_case "jump-to-marker lists available markers on error" test_jump_lists_available_markers
