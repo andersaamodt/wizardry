@@ -367,6 +367,8 @@ if [ "$parse_enabled" -eq 1 ]; then
 else
   emit_line "# DISABLED: parse-enabled=0 in $mud_config_file"
   emit_line "# First-word glosses are not generated when parse is disabled"
+  emit_line "# This prevents commands like 'jump to marker' from working,"
+  emit_line "# requiring exact spell names like 'jump-to-marker' instead"
 fi
 emit_line "# ============================================================================"
 emit_line ""
