@@ -25,9 +25,6 @@ if ! require menu "The MUD Install menu needs the 'menu' command to present opti
   exit 1
 fi
 
-# Catch Ctrl-C and TERM signal to exit cleanly
-trap 'exit 0' INT TERM
-
 # Get config file location
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 CONFIG_FILE="$spell_home/.mud"
