@@ -195,7 +195,7 @@ emit_first_word_gloss() {
   emit_line "  if [ -f \"\$fw_spell_home/.mud\" ]; then"
   emit_line "    fw_parse_enabled=\$(grep '^parse-enabled=' \"\$fw_spell_home/.mud\" 2>/dev/null | cut -d= -f2- || printf '')"
   emit_line "    if [ \"\$fw_parse_enabled\" = \"0\" ]; then"
-  emit_line "      printf 'parse: command not found (parsing is disabled)\\n' >&2"
+  emit_line "      printf 'parse: command not found (parsing is disabled)\n' >&2"
   emit_line "      return 127 2>/dev/null || exit 127"
   emit_line "    fi"
   emit_line "  fi"
