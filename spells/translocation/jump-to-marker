@@ -250,13 +250,17 @@ fi
 current=$(pwd -P | sed 's|//|/|g')
 # Resolve destination path to real path (handles symlinks)
 # Use 'command cd' to bypass cd function override (which may run look/cd-hook)
-normalized_destination=$(command cd "$destination" && pwd -P | sed 's|//|/|g')
+# Split the command to avoid potential pipeline issues
+normalized_destination=$(command cd "$destination" && pwd -P)
+normalized_destination=$(printf '%s' "$normalized_destination" | sed 's|//|/|g')
 
 # Debug output for path comparison (only shown when WIZARDRY_LOG_LEVEL >= 2)
 if [ "${WIZARDRY_LOG_LEVEL:-0}" -ge 2 ]; then
         printf 'DEBUG: current="%s"\n' "$current" >&2
         printf 'DEBUG: destination="%s"\n' "$destination" >&2
         printf 'DEBUG: normalized_destination="%s"\n' "$normalized_destination" >&2
+        printf 'DEBUG: destination exists: %s\n' "$([ -d "$destination" ] && echo YES || echo NO)" >&2
+        printf 'DEBUG: cd test: %s\n' "$(command cd "$destination" 2>&1 && echo SUCCESS || echo FAILED)" >&2
 fi
 
 # Sanity check: normalized_destination should not be empty if we got this far
