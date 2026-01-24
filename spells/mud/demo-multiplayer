@@ -2,6 +2,18 @@
 # MUD Multiplayer Demo Script
 # Demonstrates the basic multiplayer workflow
 
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: demo-multiplayer
+
+Demonstrates the MUD multiplayer proof-of-concept by simulating
+two players interacting in a shared filesystem world.
+USAGE
+  exit 0
+  ;;
+esac
+
 set -eu
 
 printf '\n%s\n' "=== Wizardry MUD Multiplayer Demo ==="
@@ -84,7 +96,8 @@ fi
 # Player 1 attacks the goblin
 if command -v magic-missile >/dev/null 2>&1; then
   printf '\n%s\n' "--- Alice casts magic missile at the goblin ---"
-  MUD_PLAYER="Alice" magic-missile goblin 2>/dev/null || printf 'Note: Avatar/mana system may prevent casting\n'
+  MUD_PLAYER="Alice" magic-missile goblin 2>/dev/null || \
+    printf 'Note: Avatar/mana system may prevent casting\n'
 fi
 
 # Player 2 looks and sees the combat

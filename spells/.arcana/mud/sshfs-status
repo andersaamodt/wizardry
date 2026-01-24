@@ -1,6 +1,18 @@
 #!/bin/sh
 # Report installation status of sshfs
 
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: sshfs-status
+
+Report whether sshfs is installed on this system.
+Returns "installed" or "not installed".
+USAGE
+  exit 0
+  ;;
+esac
+
 set -eu
 
 if command -v colors >/dev/null 2>&1; then

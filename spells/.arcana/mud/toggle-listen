@@ -22,7 +22,7 @@ esac
 
 # Uncastable pattern - detect if sourced
 toggle_listen_sourced=0
-if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+if [ -n "${ZSH_VERSION:-}" ]; then
   case "${ZSH_EVAL_CONTEXT-}" in
     *:file) toggle_listen_sourced=1 ;;
   esac

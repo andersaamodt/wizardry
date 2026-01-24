@@ -1,6 +1,18 @@
 #!/bin/sh
 # Install sshfs for MUD multiplayer portals
 
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-sshfs
+
+Install sshfs package for MUD multiplayer portal support.
+Detects your package manager and installs sshfs automatically.
+USAGE
+  exit 0
+  ;;
+esac
+
 set -eu
 
 printf '%s\n' "Installing sshfs for MUD multiplayer..."
