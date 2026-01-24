@@ -47,7 +47,7 @@ test_missile_silent_by_default() {
   run_spell "spells/mud/magic-missile" "$test_file"
   assert_success || return 1
   # Should not output anything (silent)
-  assert_output_empty || return 1
+  [ -z "$OUTPUT" ] || return 1
   
   # But should log to .log file
   [ -f ".log" ] || return 1

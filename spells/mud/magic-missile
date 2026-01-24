@@ -143,10 +143,12 @@ esac
 if [ "$verbose" -eq 1 ]; then
   printf '%s%sYou cast magic missile!%s %s. ' "${PURPLE}${BOLD}" "${RESET}" "${CYAN}" "$description"
   printf 'It deals %s%s%d%s damage to %s%s%s.%s\n' "${RED}${BOLD}" "${RESET}" "$damage" "${RESET}" "${YELLOW}" "$target" "${RESET}" "${RESET}"
+  # Apply damage using damage-file (shows output)
+  damage-file "$target" "$damage"
+else
+  # Apply damage silently
+  damage-file "$target" "$damage" >/dev/null 2>&1
 fi
-
-# Apply damage using damage-file
-damage-file "$target" "$damage"
 
 # Log the attack to room log for multiplayer visibility
 player_name=${MUD_PLAYER:-${USER:-Someone}}

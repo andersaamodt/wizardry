@@ -36,7 +36,7 @@ test_starts_listener_silent() {
   
   # Should succeed but not output any startup messages
   assert_success || return 1
-  assert_output_empty || return 1
+  [ -z "$OUTPUT" ] || return 1
 }
 
 test_stop_option() {
