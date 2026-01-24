@@ -2,8 +2,9 @@
 # Test coverage for think spell:
 # - Shows usage with --help
 # - Requires a thought argument  
-# - Appends thought to .log with quotes format
+# - Appends thought to avatar's .log with quotes format
 # - Includes timestamp and player name
+# - Fails if no avatar exists
 
 set -eu
 
@@ -26,45 +27,48 @@ test_requires_thought() {
   assert_error_contains "requires a thought" || return 1
 }
 
-test_appends_to_log() {
+test_appends_to_avatar_log() {
   tmpdir=$(make_tempdir)
   cd "$tmpdir" || return 1
+  
+  # Create avatar folder
+  mkdir -p ".testplayer"
+  
+  # Set up config to point to this avatar
+  config_home=$(make_tempdir)
+  mkdir -p "$config_home/.spellbook"
+  config_file="$config_home/.spellbook/.mud"
+  printf 'avatar-path=%s/.testplayer\n' "$tmpdir" > "$config_file"
   
   # Think something
-  MUD_PLAYER="TestPlayer" run_spell "spells/mud/think" "I wonder what's next"
+  SPELLBOOK_DIR="$config_home/.spellbook" MUD_PLAYER="testplayer" run_spell "spells/mud/think" "I wonder what's next"
   assert_success || return 1
   
-  # Check log file was created
-  [ -f ".log" ] || return 1
+  # Check avatar log file was created (not room log)
+  [ -f ".testplayer/.log" ] || return 1
+  [ ! -f ".log" ] || return 1
   
   # Check log contains the thought with correct format (name thinks, "thought")
-  grep -q 'TestPlayer thinks, "I wonder what'"'"'s next"' .log || return 1
-  grep -q "TestPlayer thinks," .log || return 1
+  grep -q 'testplayer thinks, "I wonder what'"'"'s next"' .testplayer/.log || return 1
 }
 
-test_multiple_thoughts() {
+test_fails_without_avatar() {
   tmpdir=$(make_tempdir)
   cd "$tmpdir" || return 1
   
-  # Think multiple things
-  MUD_PLAYER="Player1" run_spell "spells/mud/think" "Where is everyone?"
-  assert_success || return 1
+  # Set up empty config
+  config_home=$(make_tempdir)
+  mkdir -p "$config_home/.spellbook"
   
-  MUD_PLAYER="Player2" run_spell "spells/mud/think" "This is strange"
-  assert_success || return 1
-  
-  # Check both are in log with new format (name thinks, "thought")
-  grep -q 'Player1 thinks, "Where is everyone?"' .log || return 1
-  grep -q 'Player2 thinks, "This is strange"' .log || return 1
-  
-  # Check we have 2 lines
-  line_count=$(wc -l < .log)
-  [ "$line_count" -eq 2 ] || return 1
+  # Try to think without avatar
+  SPELLBOOK_DIR="$config_home/.spellbook" MUD_PLAYER="testplayer" run_spell "spells/mud/think" "test thought"
+  assert_failure || return 1
+  assert_error_contains "no avatar found" || return 1
 }
 
 run_test_case "think shows usage text" test_help
 run_test_case "think requires thought" test_requires_thought
-run_test_case "think appends to room log" test_appends_to_log
-run_test_case "think handles multiple thoughts" test_multiple_thoughts
+run_test_case "think appends to avatar log" test_appends_to_avatar_log
+run_test_case "think fails without avatar" test_fails_without_avatar
 
 finish_tests

@@ -5,14 +5,16 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: say <message>
+Usage: say [-v] <message>
 
 Speak in the current room by appending your message to the .log file.
 Other players in the same room (directory) can see your messages by reading
-the log file or using 'look' which displays recent activity.
+the log file or using 'listen' which displays activity in real-time.
+
+By default, 'say' is silent (writes to log only). Use -v for verbose output.
 
 In multiplayer MUD, speech is simply append operations to the room log.
-Each player can tail -f .log to listen in real-time.
+Each player can use 'listen' to see messages in real-time.
 
 Note: If your message contains special characters like !, use single quotes:
   say 'Hello, world!'
@@ -20,7 +22,7 @@ Note: If your message contains special characters like !, use single quotes:
 Example:
   say "Hello, adventurers"
   say 'Has anyone seen the dragon?'
-  say 'Watch out!'
+  say -v 'Watch out!'  # Show output locally
 
 See also: look, listen
 USAGE
@@ -30,6 +32,13 @@ esac
 
 set -eu
 . env-clear
+
+# Check for -v verbose flag
+verbose=0
+if [ "${1-}" = "-v" ]; then
+  verbose=1
+  shift
+fi
 
 # Get message from all arguments
 if [ $# -eq 0 ]; then
@@ -56,8 +65,10 @@ room_log="$room_dir/.log"
 
 # Create or append to log file
 if printf '%s\n' "$log_entry" >> "$room_log" 2>/dev/null; then
-  # Echo to stdout for the speaker to see
-  printf '%s\n' "$log_entry"
+  # Echo to stdout only if verbose flag was used
+  if [ "$verbose" -eq 1 ]; then
+    printf '%s\n' "$log_entry"
+  fi
 else
   printf '%s\n' "say: failed to write to room log (directory may be read-only)" >&2
   exit 1
