@@ -1,13 +1,12 @@
 #!/bin/sh
 
 # Start monitoring room activity in the background for real-time notifications.
-# This spell must be sourced for proper prompt handling in zsh.
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
 Usage: listen [room_path]
-       . listen [room_path]  (recommended for zsh)
+       . listen [room_path]
 
 Start (or restart) background monitoring of the .log file in the current
 (or specified) directory and display new entries in real-time.
@@ -18,12 +17,12 @@ cast spells, or perform actions, you see them immediately in your terminal.
 The listener runs as a background process. Running listen again will automatically
 stop any existing listener and start a new one.
 
-For best prompt restoration in zsh, source this spell with '. listen'.
-It can be executed directly but prompt handling will be degraded.
+Note: Messages from other players will interrupt your command prompt. This is
+normal for real-time notifications. Simply press Enter to get a fresh prompt.
 
 Examples:
   listen                    # Monitor current directory
-  . listen                  # Monitor current directory (sourced, better for zsh)
+  . listen                  # Monitor current directory (sourced)
   listen /mnt/server/dungeon   # Monitor specific directory
   . listen --stop           # Stop listening (no new listener started)
 
@@ -112,94 +111,44 @@ if [ ! -f "$_listen_room_log" ]; then
   }
 fi
 
-# Detect if we're in zsh and sourced
-_listen_use_zle=0
-if [ -n "${ZSH_VERSION-}" ] && [ "$_listen_is_sourced" -eq 1 ]; then
-  # Check if zle is available (we're in an interactive zsh shell)
-  if command -v zle >/dev/null 2>&1; then
-    _listen_use_zle=1
-  fi
-fi
-
 # Start monitoring in background
 # Use tail -f -n 0 to follow the log file from current position (no history)
-if [ "$_listen_use_zle" -eq 1 ]; then
-  # ZSH with zle - use signal-based prompt refresh
-  {
-    tail -f -n 0 "$_listen_room_log" 2>/dev/null | while IFS= read -r line; do
-      # Skip empty lines
-      [ -z "$line" ] && continue
-      
-      # Parse the log entry to extract player name and colorize it
-      # Expected format: [HH:MM] PlayerName: message
-      case "$line" in
-        \[*\]\ *:\ *)
-          # Extract timestamp, player name, and message
-          rest=$(printf '%s' "$line" | sed 's/^\[[^]]*\] //')
-          player=$(printf '%s' "$rest" | sed 's/:.*//')
-          message=$(printf '%s' "$rest" | sed 's/^[^:]*: //')
-          
-          # Get color for player name
-          color=$(colorize-player-name "$player")
-          
-          # Print message (zle will handle prompt redraw via trap)
-          printf '\r\033[K\033[1;%dm%s:\033[0m %s\n' \
-            "$color" "$player" "$message"
-          
-          # Signal parent zsh to reset prompt
-          kill -USR1 $$ 2>/dev/null || true
-          ;;
-        *)
-          # Fallback for lines that don't match expected format
-          printf '\r\033[K🔮 %s\n' "$line"
-          kill -USR1 $$ 2>/dev/null || true
-          ;;
-      esac
-    done
-  } &
-else
-  # Non-zsh or not sourced: use simple approach
-  {
-    tail -f -n 0 "$_listen_room_log" 2>/dev/null | while IFS= read -r line; do
-      # Skip empty lines
-      [ -z "$line" ] && continue
-      
-      # Parse the log entry to extract player name and colorize it
-      # Expected format: [HH:MM] PlayerName: message
-      case "$line" in
-        \[*\]\ *:\ *)
-          # Extract timestamp, player name, and message
-          rest=$(printf '%s' "$line" | sed 's/^\[[^]]*\] //')
-          player=$(printf '%s' "$rest" | sed 's/:.*//')
-          message=$(printf '%s' "$rest" | sed 's/^[^:]*: //')
-          
-          # Get color for player name
-          color=$(colorize-player-name "$player")
-          
-          # Simple output
-          printf '\r\033[K\033[1;%dm%s:\033[0m %s\n' \
-            "$color" "$player" "$message"
-          ;;
-        *)
-          # Fallback for lines that don't match expected format
-          printf '\r\033[K🔮 %s\n' "$line"
-          ;;
-      esac
-    done
-  } &
-fi
+# Note: Background processes cannot reliably restore shell prompts across all platforms.
+# Messages will interrupt the prompt, which is expected behavior for async notifications.
+{
+  tail -f -n 0 "$_listen_room_log" 2>/dev/null | while IFS= read -r line; do
+    # Skip empty lines
+    [ -z "$line" ] && continue
+    
+    # Parse the log entry to extract player name and colorize it
+    # Expected format: [HH:MM] PlayerName: message
+    case "$line" in
+      \[*\]\ *:\ *)
+        # Extract timestamp, player name, and message
+        rest=$(printf '%s' "$line" | sed 's/^\[[^]]*\] //')
+        player=$(printf '%s' "$rest" | sed 's/:.*//')
+        message=$(printf '%s' "$rest" | sed 's/^[^:]*: //')
+        
+        # Get color for player name
+        color=$(colorize-player-name "$player")
+        
+        # Output the message on a new line
+        # The prompt will naturally redraw on next user interaction
+        printf '\n\033[1;%dm%s:\033[0m %s\n' \
+          "$color" "$player" "$message"
+        ;;
+      *)
+        # Fallback for lines that don't match expected format
+        printf '\n🔮 %s\n' "$line"
+        ;;
+    esac
+  done
+} &
 
 _listen_monitor_pid=$!
 
 # Save PID for later stopping
 printf '%s\n' "$_listen_monitor_pid" > "$_listen_pid_file"
-
-# Set up zsh hook if we're sourced in zsh
-if [ "$_listen_use_zle" -eq 1 ]; then
-  # Define a trap handler for USR1 that resets the prompt
-  # This runs in the parent shell context since we're sourced
-  trap 'zle && zle reset-prompt' USR1
-fi
 
 # Clean up variables
 unset _listen_stop_only _listen_pid_file _listen_room_path _listen_room_log _listen_is_sourced _listen_use_zle _listen_monitor_pid _listen_old_pid
