@@ -109,9 +109,9 @@ while true; do
   
   # Build parse toggle
   if is_feature_enabled "parse-enabled"; then
-    parse_toggle="[X] Parse (natural language commands)%toggle-parse; echo 1 > \"$SELECTION_FILE\""
+    parse_toggle="[X] Parse (natural language commands)%. toggle-parse; echo 1 > \"$SELECTION_FILE\""
   else
-    parse_toggle="[ ] Parse (natural language commands)%toggle-parse; echo 1 > \"$SELECTION_FILE\""
+    parse_toggle="[ ] Parse (natural language commands)%. toggle-parse; echo 1 > \"$SELECTION_FILE\""
   fi
   
   # Build cd hook toggle label based on current state
