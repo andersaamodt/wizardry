@@ -1,0 +1,6 @@
+#!/bin/sh
+# clear-line - clear the current terminal line using ANSI escape sequences
+set -eu
+
+# Return to start of line and clear to end
+printf '\r\033[K'
