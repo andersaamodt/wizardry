@@ -62,6 +62,7 @@ fi
 
 if [ "$current_value" = "1" ]; then
   # Currently enabled, disable it
+  printf '[DEBUG] Disabling parse...\n' >&2
   config-set "$CONFIG_FILE" "parse-enabled" "0"
   
   # Invalidate gloss cache to force regeneration with new setting
@@ -72,13 +73,23 @@ if [ "$current_value" = "1" ]; then
   cache_id=$(printf '%s' "$wizardry_dir" | cksum | cut -d' ' -f1)
   gloss_cache="$gloss_cache_dir/.wizardry-glosses-$cache_id-$(id -u).sh"
   
+  printf '[DEBUG] Cache file: %s\n' "$gloss_cache" >&2
+  printf '[DEBUG] Deleting old cache...\n' >&2
+  
   # Delete old cache first to ensure we don't source stale data
   rm -f "$gloss_cache" 2>/dev/null || true
+  
+  printf '[DEBUG] Regenerating cache with parse-enabled=0...\n' >&2
   
   # Explicitly regenerate cache with parse-enabled=0
   if command -v generate-glosses >/dev/null 2>&1; then
     generate-glosses --quiet --output "$gloss_cache" 2>/dev/null || true
+    printf '[DEBUG] Cache regenerated\n' >&2
+  else
+    printf '[DEBUG] WARNING: generate-glosses not found!\n' >&2
   fi
+  
+  printf '[DEBUG] Collecting first-word function names...\n' >&2
   
   # Unload ALL gloss functions and aliases from current shell
   # Get list of first words by scanning spell files directly
@@ -108,8 +119,12 @@ if [ "$current_value" = "1" ]; then
       esac
     done
     
+    printf '[DEBUG] First words to unset: %s\n' "$first_words" >&2
+    printf '[DEBUG] Unsetting functions...\n' >&2
+    
     # Unset each first-word gloss function
     for func_name in $first_words; do
+      printf '[DEBUG]   Unsetting: %s\n' "$func_name" >&2
       if [ -n "${ZSH_VERSION-}" ]; then
         # In zsh, use both unfunction and unset -f for robustness
         unfunction "$func_name" 2>/dev/null || true
@@ -117,13 +132,33 @@ if [ "$current_value" = "1" ]; then
       else
         unset -f "$func_name" 2>/dev/null || true
       fi
+      # Check if it's still defined
+      if typeset -f "$func_name" >/dev/null 2>&1 || type "$func_name" >/dev/null 2>&1; then
+        printf '[DEBUG]   WARNING: %s still defined after unset!\n' "$func_name" >&2
+      fi
     done
   fi
   
+  printf '[DEBUG] About to source new cache...\n' >&2
+  
   # Source the new cache to load aliases (no first-word glosses when parse=0)
   if [ -f "$gloss_cache" ]; then
+    printf '[DEBUG] Sourcing cache: %s\n' "$gloss_cache" >&2
     . "$gloss_cache"
+    printf '[DEBUG] Cache sourced\n' >&2
+  else
+    printf '[DEBUG] WARNING: Cache file not found!\n' >&2
   fi
+  
+  # Final check: are functions still defined?
+  printf '[DEBUG] Final function check:\n' >&2
+  for func_name in jump toggle; do
+    if typeset -f "$func_name" >/dev/null 2>&1 || type "$func_name" >/dev/null 2>&1; then
+      printf '[DEBUG]   %s is STILL DEFINED\n' "$func_name" >&2
+    else
+      printf '[DEBUG]   %s is NOT defined (correct)\n' "$func_name" >&2
+    fi
+  done
   
   msg="✓ Parse disabled and gloss functions unloaded from current shell."
   printf '%s\n' "$msg"
@@ -131,6 +166,7 @@ if [ "$current_value" = "1" ]; then
 fi
 
 # Currently disabled or not set, enable it
+printf '[DEBUG] Enabling parse...\n' >&2
 config-set "$CONFIG_FILE" "parse-enabled" "1"
 
 # Invalidate gloss cache to force regeneration with new setting
@@ -141,18 +177,42 @@ wizardry_dir="${WIZARDRY_DIR:-$HOME/.wizardry}"
 cache_id=$(printf '%s' "$wizardry_dir" | cksum | cut -d' ' -f1)
 gloss_cache="$gloss_cache_dir/.wizardry-glosses-$cache_id-$(id -u).sh"
 
+printf '[DEBUG] Cache file: %s\n' "$gloss_cache" >&2
+printf '[DEBUG] Deleting old cache...\n' >&2
+
 # Delete old cache first to ensure we don't source stale data
 rm -f "$gloss_cache" 2>/dev/null || true
+
+printf '[DEBUG] Regenerating cache with parse-enabled=1...\n' >&2
 
 # Explicitly regenerate cache with parse-enabled=1
 if command -v generate-glosses >/dev/null 2>&1; then
   generate-glosses --quiet --output "$gloss_cache" 2>/dev/null || true
+  printf '[DEBUG] Cache regenerated\n' >&2
+else
+  printf '[DEBUG] WARNING: generate-glosses not found!\n' >&2
 fi
+
+printf '[DEBUG] About to source new cache...\n' >&2
 
 # Source the new cache to load functions
 if [ -f "$gloss_cache" ]; then
+  printf '[DEBUG] Sourcing cache: %s\n' "$gloss_cache" >&2
   . "$gloss_cache"
+  printf '[DEBUG] Cache sourced\n' >&2
+else
+  printf '[DEBUG] WARNING: Cache file not found!\n' >&2
 fi
+
+# Final check: are functions defined?
+printf '[DEBUG] Final function check:\n' >&2
+for func_name in jump toggle; do
+  if typeset -f "$func_name" >/dev/null 2>&1 || type "$func_name" >/dev/null 2>&1; then
+    printf '[DEBUG]   %s is defined (correct)\n' "$func_name" >&2
+  else
+    printf '[DEBUG]   %s is NOT defined (incorrect!)\n' "$func_name" >&2
+  fi
+done
 
 msg="✓ Parse enabled and gloss functions loaded in your current shell."
 printf '%s\n' "$msg"
