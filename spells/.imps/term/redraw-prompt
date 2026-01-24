@@ -1,28 +1,18 @@
 #!/bin/sh
-# redraw-prompt - attempt to redraw the shell prompt after async output
-# This works best when called from a sourced spell in an interactive shell
+# redraw-prompt - redraw the shell prompt with saved context
+# When sourced in listen, uses LISTEN_SAVED_PROMPT if available
 set -eu
 
-# Detect shell and use appropriate mechanism
-if [ -n "${ZSH_VERSION-}" ]; then
-  # In zsh, try to use zle if available
-  if command -v zle >/dev/null 2>&1 2>&1; then
-    # Try to reset the prompt using zle
-    # This only works if zle is active (interactive shell)
-    zle reset-prompt 2>/dev/null || {
-      # Fallback: print a generic prompt
-      printf '$ '
-    }
-  else
-    # Not in interactive zsh, print generic prompt
-    printf '$ '
-  fi
-elif [ -n "${BASH_VERSION-}" ]; then
-  # In bash, we can try to use the prompt
-  # Strip ANSI codes from PS1 for simplicity, or just use generic prompt
-  # PS1 might have complex escape sequences, so safest is generic
+# Check if we have a saved prompt from the parent spell
+if [ -n "${LISTEN_SAVED_PROMPT-}" ]; then
+  # Use the saved prompt (may include colors and formatting)
+  # The prompt variable should be pre-expanded
+  printf '%s' "$LISTEN_SAVED_PROMPT"
+elif [ -n "${PS1-}" ]; then
+  # Try to use PS1 but it may have escape sequences
+  # For now, just use a simple version
   printf '$ '
 else
-  # Generic POSIX shell - just print a simple prompt
+  # Fallback to generic prompt
   printf '$ '
 fi
