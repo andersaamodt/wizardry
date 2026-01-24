@@ -95,7 +95,9 @@ if [ "$current_value" = "1" ]; then
     # Unset each first-word function
     for func_name in $first_words; do
       if [ -n "${ZSH_VERSION-}" ]; then
+        # In zsh, use both unfunction and unset -f for robustness
         unfunction "$func_name" 2>/dev/null || true
+        unset -f "$func_name" 2>/dev/null || true
       else
         unset -f "$func_name" 2>/dev/null || true
       fi
@@ -113,8 +115,8 @@ if [ "$current_value" = "1" ]; then
   if command -v invoke-wizardry >/dev/null 2>&1; then
     # Unset WIZARDRY_INVOKED to allow re-invocation
     unset WIZARDRY_INVOKED
-    # Source invoke-wizardry (may show parse errors in zsh, but they're harmless)
-    . invoke-wizardry 2>/dev/null || true
+    # Source invoke-wizardry to regenerate cache without glosses
+    . invoke-wizardry
     msg="✓ Parse disabled and gloss functions unloaded from current shell."
     printf '%s\n' "$msg"
   else
