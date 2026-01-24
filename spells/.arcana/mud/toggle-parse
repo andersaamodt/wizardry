@@ -73,7 +73,7 @@ if config-has "$CONFIG_FILE" "parse-enabled" 2>/dev/null; then
     # This is critical for cache invalidation across all shells
     touch "$CONFIG_FILE" 2>/dev/null || true
     
-    # Delete gloss cache to ensure invoke-wizardry regenerates with new setting
+    # Delete gloss cache to ensure NEW shells regenerate with new setting
     # Cache is based on WIZARDRY_DIR and user ID
     cache_dir="${TMPDIR:-/tmp}"
     cache_file="${cache_dir}/.wizardry-glosses-$(printf '%s' "${WIZARDRY_DIR:-$HOME/.wizardry}" | cksum | cut -d' ' -f1)-$(id -u).sh"
@@ -84,22 +84,6 @@ if config-has "$CONFIG_FILE" "parse-enabled" 2>/dev/null; then
       for func in $gloss_funcs; do
         unset -f "$func" 2>/dev/null || true
       done
-    fi
-    
-    # Reload glosses with parse disabled by sourcing invoke-wizardry
-    # This will regenerate glosses with only synonyms (no first-word glosses)
-    invoke_wizardry_path="${WIZARDRY_DIR:-$HOME/.wizardry}/spells/.imps/sys/invoke-wizardry"
-    if [ -f "$invoke_wizardry_path" ]; then
-      # Temporarily unset WIZARDRY_INVOKED to allow re-sourcing
-      temp_invoked="${WIZARDRY_INVOKED-}"
-      unset WIZARDRY_INVOKED
-      . "$invoke_wizardry_path" 2>/dev/null || {
-        printf '%s\n' "Warning: Failed to reload glosses."
-        printf '%s\n' "They will be reloaded on next shell startup."
-        WIZARDRY_INVOKED="$temp_invoked"
-        return 1
-      }
-      unset temp_invoked
     fi
     
     printf '%s\n' "✓ Parse disabled and unloaded from your current shell."
