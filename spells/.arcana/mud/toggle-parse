@@ -167,23 +167,38 @@ if [ "$current_value" = "1" ]; then
     done
   fi
   
-  # DO NOT source the cache when disabling parse!
-  # When parse is disabled, synonym functions should NOT be loaded.
-  # Users must use exact hyphenated spell names like "jump-to-marker"
-  printf '[DEBUG] Skipping cache sourcing (parse disabled - functions should stay unset)\n' >&2
+  # Reload synonyms (but not parse glosses)
+  # Synonyms are independent of the parse system and should remain available
+  # invoke-thesaurus loads synonym functions without parse glosses
+  printf '[DEBUG] Reloading synonyms (without parse glosses)...\n' >&2
+  if command -v invoke-thesaurus >/dev/null 2>&1; then
+    # Source invoke-thesaurus to reload synonym functions
+    # Suppress errors since we're in permissive mode
+    . invoke-thesaurus 2>/dev/null || {
+      printf '[DEBUG] WARNING: invoke-thesaurus failed to source\n' >&2
+      true
+    }
+    printf '[DEBUG] Synonyms reload attempted\n' >&2
+  else
+    printf '[DEBUG] WARNING: invoke-thesaurus not found!\n' >&2
+  fi
   
-  # Final check: are functions still defined?
+  # Final check: synonym functions should exist, parse glosses should not
   printf '[DEBUG] Final function check:\n' >&2
-  for func_name in jump toggle; do
-    if typeset -f "$func_name" >/dev/null 2>&1 || type "$func_name" >/dev/null 2>&1; then
-      printf '[DEBUG]   %s is STILL DEFINED\n' "$func_name" >&2
-    else
-      printf '[DEBUG]   %s is NOT defined (correct)\n' "$func_name" >&2
-    fi
-  done
+  if typeset -f jump >/dev/null 2>&1 || type jump >/dev/null 2>&1; then
+    printf '[DEBUG]   jump() is defined (correct - synonym function)\n' >&2
+  else
+    printf '[DEBUG]   jump() is NOT defined (synonyms may not be loaded)\n' >&2
+  fi
+  if typeset -f toggle >/dev/null 2>&1 || type toggle >/dev/null 2>&1; then
+    printf '[DEBUG]   toggle() is defined (INCORRECT - parse gloss should be unset)\n' >&2
+  else
+    printf '[DEBUG]   toggle() is NOT defined (correct - parse gloss unset)\n' >&2
+  fi
   
   msg="✓ Parse disabled and gloss functions unloaded from current shell."
   printf '%s\n' "$msg"
+  # Ensure we always return success
   return 0
 fi
 
