@@ -57,20 +57,29 @@ if config-has "$CONFIG_FILE" "parse-enabled" 2>/dev/null; then
   current_value=$(config-get "$CONFIG_FILE" "parse-enabled" 2>/dev/null)
   if [ "$current_value" = "1" ]; then
     # Currently enabled, disable it
-    config-set "$CONFIG_FILE" "parse-enabled" "0"
     
-    # Unload all gloss functions immediately
-    # Get list of gloss functions to unload (functions that call parse)
-    # This is done by regenerating glosses and extracting function names
+    # IMPORTANT: Get list of gloss functions BEFORE changing config
+    # Otherwise generate-glosses will see parse-enabled=0 and return empty list
     if command -v generate-glosses >/dev/null 2>&1; then
       gloss_output=$(generate-glosses --quiet 2>/dev/null || true)
       gloss_funcs=$(printf '%s\n' "$gloss_output" | \
         grep '^[a-zA-Z_][a-zA-Z0-9_]*() {$' | sed 's/() {$//' || true)
-      if [ -n "$gloss_funcs" ]; then
-        for func in $gloss_funcs; do
-          unset -f "$func" 2>/dev/null || true
-        done
-      fi
+    fi
+    
+    # Now change the config
+    config-set "$CONFIG_FILE" "parse-enabled" "0"
+    
+    # Delete gloss cache to ensure invoke-wizardry regenerates with new setting
+    # Cache is based on WIZARDRY_DIR and user ID
+    cache_dir="${TMPDIR:-/tmp}"
+    cache_file="${cache_dir}/.wizardry-glosses-$(printf '%s' "${WIZARDRY_DIR:-$HOME/.wizardry}" | cksum | cut -d' ' -f1)-$(id -u).sh"
+    rm -f "$cache_file" 2>/dev/null || true
+    
+    # Unload all gloss functions immediately
+    if [ -n "${gloss_funcs-}" ]; then
+      for func in $gloss_funcs; do
+        unset -f "$func" 2>/dev/null || true
+      done
     fi
     
     # Reload glosses with parse disabled by sourcing invoke-wizardry
@@ -98,6 +107,11 @@ fi
 
 # Currently disabled or set to 0, enable it
 config-set "$CONFIG_FILE" "parse-enabled" "1"
+
+# Delete gloss cache to ensure invoke-wizardry regenerates with new setting
+cache_dir="${TMPDIR:-/tmp}"
+cache_file="${cache_dir}/.wizardry-glosses-$(printf '%s' "${WIZARDRY_DIR:-$HOME/.wizardry}" | cksum | cut -d' ' -f1)-$(id -u).sh"
+rm -f "$cache_file" 2>/dev/null || true
 
 # Reload glosses with parse enabled by sourcing invoke-wizardry
 invoke_wizardry_path="${WIZARDRY_DIR:-$HOME/.wizardry}/spells/.imps/sys/invoke-wizardry"
