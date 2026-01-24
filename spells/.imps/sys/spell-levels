@@ -20,7 +20,7 @@ case "$level" in
   1)
     name='Banish & Validation Infrastructure'
     spells='banish:wards validate-spells:.wizardry'
-    imps='cond/empty cond/full cond/given cond/gone cond/has cond/has-ancestor cond/is cond/is-path cond/is-posint cond/lacks cond/newer cond/no cond/nonempty cond/older cond/there cond/within-range cond/yes out/debug out/die out/disable-palette out/fail out/first-of out/heading-section out/heading-separator out/heading-simple out/info out/ok out/or-else out/print-fail out/print-pass out/quiet out/say out/step out/success out/usage-error out/warn sys/spell-levels text/count-words text/pluralize'
+    imps='cond/empty cond/full cond/given cond/gone cond/has cond/has-ancestor cond/is cond/is-path cond/is-posint cond/lacks cond/newer cond/no cond/nonempty cond/older cond/there cond/within-range cond/yes out/debug out/die out/disable-palette out/fail out/first-of out/heading-section out/heading-separator out/heading-simple out/info out/ok out/or-else out/output out/print-fail out/print-pass out/quiet out/step out/success out/usage-error out/warn sys/spell-levels text/count-words text/pluralize'
     ;;
   2)
     name='Installation Infrastructure'
