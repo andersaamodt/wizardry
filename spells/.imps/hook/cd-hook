@@ -28,14 +28,9 @@ if [ -z "$cd_listen_value" ]; then
     cd_listen_value=$(mud-defaults cd-listen 2>/dev/null || printf '0')
 fi
 if [ "$cd_listen_value" = "1" ]; then
-    # Stop listening to previous directory if currently listening
-    if command -v stop-listening >/dev/null 2>&1; then
-        stop-listening 2>/dev/null || true
-    fi
-    
-    # Start listening in the new directory
-    if command -v start-listening >/dev/null 2>&1; then
-        start-listening 2>/dev/null || true
+    # Stop and restart listening in the new directory
+    if command -v listen >/dev/null 2>&1; then
+        listen 2>/dev/null || true
     fi
 fi
 
