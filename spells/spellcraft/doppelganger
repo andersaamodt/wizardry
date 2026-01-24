@@ -171,7 +171,7 @@ if [ -d "$repo_dir/.tests" ]; then
 fi
 
 # Copy essential files (README, LICENSE, etc.) but skip .git and .github
-print "Copying essential files..."
+printf '%s\n' "Copying essential files..."
 for file in "$repo_dir"/*; do
   basename_file=$(basename "$file")
   case "$basename_file" in
