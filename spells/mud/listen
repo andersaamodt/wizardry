@@ -19,8 +19,9 @@ stop any existing listener and start a new one.
 
 Messages overwrite your current prompt line, then restore your cursor position.
 
-Note: Set LISTEN_PROMPT environment variable if you want a custom prompt displayed
-after messages (otherwise PS1 is used with basic expansion, or "$ " as fallback).
+Note: Messages overwrite your current prompt line and reprint "$ " afterwards.
+Set LISTEN_PROMPT environment variable (e.g., in your .bashrc or .zshrc) to
+display your custom prompt after messages. Example: export LISTEN_PROMPT="$(whoami)@$(hostname):$(pwd)$ "
 
 Examples:
   listen                    # Monitor current directory
@@ -114,35 +115,9 @@ if [ ! -f "$_listen_room_log" ]; then
 fi
 
 # Save the current prompt for the background process to use
-# Priority:
-# 1. Use LISTEN_PROMPT if user has set it explicitly
-# 2. Try to derive from PS1 (but PS1 has escape codes we can't easily evaluate)
-# 3. Default to "$ "
-if [ -n "${LISTEN_PROMPT-}" ]; then
-  export LISTEN_SAVED_PROMPT="$LISTEN_PROMPT"
-elif [ -n "${PS1-}" ]; then
-  # Try basic PS1 expansion - replace common escape sequences
-  # This is a best-effort attempt, won't handle all PS1 features
-  _listen_user=${USER-user}
-  _listen_host=${HOSTNAME-host}
-  _listen_pwd=$PWD
-  _listen_pwd_base=${PWD##*/}
-  
-  _listen_prompt=$(printf '%s' "$PS1" | sed \
-    -e "s/\\\\u/$_listen_user/g" \
-    -e "s/\\\\h/$_listen_host/g" \
-    -e "s/\\\\H/$_listen_host/g" \
-    -e "s|\\\\w|$_listen_pwd|g" \
-    -e "s/\\\\W/$_listen_pwd_base/g" \
-    -e 's/\\\$/$/g' \
-    -e 's/\\#/!/g' \
-    -e 's/\\\[//g' \
-    -e 's/\\\]//g')
-  export LISTEN_SAVED_PROMPT="$_listen_prompt"
-  unset _listen_prompt _listen_user _listen_host _listen_pwd _listen_pwd_base
-else
-  export LISTEN_SAVED_PROMPT="$ "
-fi
+# Use LISTEN_PROMPT if set, otherwise default to "$ "
+# Note: Set LISTEN_PROMPT in your shell RC to display your custom prompt after messages
+export LISTEN_SAVED_PROMPT="${LISTEN_PROMPT:-\$ }"
 
 # Start monitoring in background
 # Use tail -f -n 0 to follow the log file from current position (no history)
