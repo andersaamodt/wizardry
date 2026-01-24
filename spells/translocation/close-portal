@@ -26,13 +26,13 @@ set -eu
 
 # Function to list active portals
 list_portals() {
-  if [ ! -d "/mnt/portals" ]; then
-    printf '%s\n' "No portals directory found at /mnt/portals"
+  if [ ! -d "/mnt" ]; then
+    printf '%s\n' "No /mnt directory found"
     return 0
   fi
   
   found=0
-  for dir in "/mnt/portals"/*; do
+  for dir in "/mnt"/*; do
     # Skip if glob didn't match
     [ -e "$dir" ] || continue
     
