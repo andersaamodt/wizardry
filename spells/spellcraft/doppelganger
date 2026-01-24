@@ -72,14 +72,14 @@ case "$output_dir" in
   *) output_dir="$repo_dir/$output_dir" ;;
 esac
 
-output "Creating wizardry doppelganger in: $output_dir"
+print "Creating wizardry doppelganger in: $output_dir"
 
 # Create output directory structure
 mkdir -p "$output_dir/spells"
 mkdir -p "$output_dir/.tests"
 
 # Compile all spells
-output "Compiling all spells..."
+print "Compiling all spells..."
 compiled_count=0
 failed_count=0
 
@@ -162,7 +162,7 @@ $spell_list
 EOF
 
 # Copy test files (including hidden directories like .arcana and .imps)
-output "Copying test files..."
+print "Copying test files..."
 if [ -d "$repo_dir/.tests" ]; then
   # Copy all files including hidden ones
   (cd "$repo_dir/.tests" && \
@@ -171,7 +171,7 @@ if [ -d "$repo_dir/.tests" ]; then
 fi
 
 # Copy essential files (README, LICENSE, etc.) but skip .git and .github
-output "Copying essential files..."
+print "Copying essential files..."
 for file in "$repo_dir"/*; do
   basename_file=$(basename "$file")
   case "$basename_file" in
@@ -185,8 +185,8 @@ for file in "$repo_dir"/*; do
 done
 
 success "Doppelganger created successfully!"
-output "Location: $output_dir"
-output "Compiled: $compiled_count spells"
+print "Location: $output_dir"
+print "Compiled: $compiled_count spells"
 if [ "$failed_count" -gt 0 ]; then
   warn "doppelganger: $failed_count spells failed to compile"
 fi
