@@ -1,16 +1,16 @@
 #!/bin/sh
 
-# Stop the background room monitor.
+# Stop the background listener.
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: stop-room-monitor
+Usage: stop-listening
 
-Stop the background room activity monitor that was started with
-start-room-monitor.
+Stop the background room activity listener that was started with
+start-listening.
 
-See also: start-room-monitor, listen
+See also: start-listening, listen
 USAGE
   exit 0
   ;;
@@ -19,10 +19,10 @@ esac
 set -eu
 . env-clear
 
-pid_file="$HOME/.wizardry-room-monitor.pid"
+pid_file="$HOME/.wizardry-listening.pid"
 
 if [ ! -f "$pid_file" ]; then
-  printf '%s\n' "No room monitor is running."
+  printf '%s\n' "Not currently listening to any room."
   exit 0
 fi
 
@@ -52,12 +52,12 @@ if kill -0 "$monitor_pid" 2>/dev/null; then
   
   # Check if it's really gone
   if kill -0 "$monitor_pid" 2>/dev/null; then
-    printf '%s\n' "Warning: Monitor process may still be running (PID: $monitor_pid)"
+    printf '%s\n' "Warning: Listener process may still be running (PID: $monitor_pid)"
   else
-    printf '%s\n' "✓ Room monitor stopped"
+    printf '%s\n' "✓ Stopped listening to room activity"
   fi
 else
-  printf '%s\n' "Room monitor was not running (stale PID file)"
+  printf '%s\n' "Listener was not running (stale PID file)"
 fi
 
 rm -f "$pid_file"

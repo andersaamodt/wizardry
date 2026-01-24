@@ -5,7 +5,7 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: start-room-monitor [room_path]
+Usage: start-listening [room_path]
 
 Start a background process that monitors the .room.log file in the current
 (or specified) directory and displays new entries in real-time.
@@ -13,14 +13,14 @@ Start a background process that monitors the .room.log file in the current
 This enables live MUD multiplayer notifications - when other players speak,
 cast spells, or perform actions, you see them immediately in your terminal.
 
-The monitor runs as a background process and continues until you call
-stop-room-monitor or exit the shell.
+The listener runs as a background process and continues until you call
+stop-listening or exit the shell.
 
 Examples:
-  start-room-monitor                    # Monitor current directory
-  start-room-monitor /mnt/portals/server/dungeon
+  start-listening                    # Monitor current directory
+  start-listening /mnt/portals/server/dungeon
 
-See also: stop-room-monitor, listen
+See also: stop-listening, listen
 USAGE
   exit 0
   ;;
@@ -34,7 +34,7 @@ room_path=${1:-$PWD}
 
 # Check if directory exists
 if [ ! -d "$room_path" ]; then
-  printf '%s\n' "start-room-monitor: directory does not exist: $room_path" >&2
+  printf '%s\n' "start-listening: directory does not exist: $room_path" >&2
   exit 1
 fi
 
@@ -43,18 +43,18 @@ room_log="$room_path/.room.log"
 # Create log file if it doesn't exist
 if [ ! -f "$room_log" ]; then
   touch "$room_log" 2>/dev/null || {
-    printf '%s\n' "start-room-monitor: cannot create log file (directory may be read-only)" >&2
+    printf '%s\n' "start-listening: cannot create log file (directory may be read-only)" >&2
     exit 1
   }
 fi
 
 # Check if already monitoring this room
-pid_file="$HOME/.wizardry-room-monitor.pid"
+pid_file="$HOME/.wizardry-listening.pid"
 if [ -f "$pid_file" ]; then
   old_pid=$(cat "$pid_file" 2>/dev/null || printf '')
   if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
-    printf '%s\n' "Room monitor already running (PID: $old_pid)"
-    printf '%s\n' "Use stop-room-monitor to stop it first."
+    printf '%s\n' "Already listening to room activity (PID: $old_pid)"
+    printf '%s\n' "Use stop-listening to stop it first."
     exit 1
   fi
 fi
@@ -81,6 +81,6 @@ monitor_pid=$!
 # Save PID for later stopping
 printf '%s\n' "$monitor_pid" > "$pid_file"
 
-printf '%s\n' "✓ Room monitor started (PID: $monitor_pid)"
+printf '%s\n' "✓ Started listening to room activity (PID: $monitor_pid)"
 printf '%s\n' "Monitoring: $room_log"
-printf '%s\n' "Stop with: stop-room-monitor"
+printf '%s\n' "Stop with: stop-listening"
