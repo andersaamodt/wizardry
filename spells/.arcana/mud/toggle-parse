@@ -58,27 +58,20 @@ if config-has "$CONFIG_FILE" "parse-enabled" 2>/dev/null; then
   if [ "$current_value" = "1" ]; then
     # Currently enabled, disable it
     
-    # IMPORTANT: Get list of currently loaded gloss functions
-    # We need to unset the functions that are currently in memory
-    # Using compgen or typeset to list all functions, then filter for glosses
-    if [ -n "${ZSH_VERSION-}" ]; then
-      # In zsh, use print with function list
-      gloss_funcs=$(print -l ${(ok)functions} 2>/dev/null | grep -E '^[a-z]' || true)
-    elif [ -n "${BASH_VERSION-}" ]; then
-      # In bash, use compgen -A function
-      gloss_funcs=$(compgen -A function 2>/dev/null | grep -E '^[a-z]' || true)
-    else
-      # Fallback: try to generate list from generate-glosses
-      if command -v generate-glosses >/dev/null 2>&1; then
-        gloss_output=$(generate-glosses --quiet 2>/dev/null || true)
-        gloss_funcs=$(printf '%s\n' "$gloss_output" | \
-          grep '^[a-zA-Z_][a-zA-Z0-9_]*() {$' | sed 's/() {$//' || true)
-      fi
+    # IMPORTANT: Get list of gloss functions from the cache file
+    # The cache file contains all the gloss functions that were loaded
+    cache_dir="${TMPDIR:-/tmp}"
+    cache_file="${cache_dir}/.wizardry-glosses-$(printf '%s' "${WIZARDRY_DIR:-$HOME/.wizardry}" | cksum | cut -d' ' -f1)-$(id -u).sh"
+    
+    gloss_funcs=""
+    if [ -f "$cache_file" ]; then
+      # Extract function names from cache file
+      gloss_funcs=$(grep '^[a-zA-Z_][a-zA-Z0-9_]*() {$' "$cache_file" 2>/dev/null | sed 's/() {$//' || true)
     fi
     
     # Debug: verify we got functions
     if [ -z "${gloss_funcs-}" ]; then
-      printf 'Warning: No gloss functions found to unset.\n' >&2
+      printf 'Warning: No gloss cache file found or no functions to unset.\n' >&2
     fi
     
     # Now change the config
@@ -89,9 +82,6 @@ if config-has "$CONFIG_FILE" "parse-enabled" 2>/dev/null; then
     touch "$CONFIG_FILE" 2>/dev/null || true
     
     # Delete gloss cache to ensure NEW shells regenerate with new setting
-    # Cache is based on WIZARDRY_DIR and user ID
-    cache_dir="${TMPDIR:-/tmp}"
-    cache_file="${cache_dir}/.wizardry-glosses-$(printf '%s' "${WIZARDRY_DIR:-$HOME/.wizardry}" | cksum | cut -d' ' -f1)-$(id -u).sh"
     rm -f "$cache_file" 2>/dev/null || true
     
     # Unload all gloss functions immediately
