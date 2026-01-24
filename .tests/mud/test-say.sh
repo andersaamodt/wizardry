@@ -36,7 +36,7 @@ test_appends_to_log_silent() {
   assert_success || return 1
   
   # Should not output anything by default
-  assert_output_empty || return 1
+  [ -z "$OUTPUT" ] || return 1
   
   # Check log file was created
   [ -f ".log" ] || return 1
