@@ -72,12 +72,12 @@ if [ "$current_value" = "1" ]; then
   cache_id=$(printf '%s' "$wizardry_dir" | cksum | cut -d' ' -f1)
   gloss_cache="$gloss_cache_dir/.wizardry-glosses-$cache_id-$(id -u).sh"
   
+  # Delete old cache first to ensure we don't source stale data
+  rm -f "$gloss_cache" 2>/dev/null || true
+  
   # Explicitly regenerate cache with parse-enabled=0
   if command -v generate-glosses >/dev/null 2>&1; then
-    generate-glosses --quiet --output "$gloss_cache" 2>/dev/null || {
-      # Generation failed, delete the cache
-      rm -f "$gloss_cache" 2>/dev/null || true
-    }
+    generate-glosses --quiet --output "$gloss_cache" 2>/dev/null || true
   fi
   
   # Unload ALL gloss functions and aliases from current shell
@@ -141,12 +141,12 @@ wizardry_dir="${WIZARDRY_DIR:-$HOME/.wizardry}"
 cache_id=$(printf '%s' "$wizardry_dir" | cksum | cut -d' ' -f1)
 gloss_cache="$gloss_cache_dir/.wizardry-glosses-$cache_id-$(id -u).sh"
 
+# Delete old cache first to ensure we don't source stale data
+rm -f "$gloss_cache" 2>/dev/null || true
+
 # Explicitly regenerate cache with parse-enabled=1
 if command -v generate-glosses >/dev/null 2>&1; then
-  generate-glosses --quiet --output "$gloss_cache" 2>/dev/null || {
-    # Generation failed, delete the cache
-    rm -f "$gloss_cache" 2>/dev/null || true
-  }
+  generate-glosses --quiet --output "$gloss_cache" 2>/dev/null || true
 fi
 
 # Source the new cache to load functions
