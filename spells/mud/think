@@ -58,7 +58,7 @@ if [ -z "$avatar_path" ] || [ ! -d "$avatar_path" ]; then
   fi
 fi
 
-# Create timestamp (HH:MM format, like say)
+# Create timestamp (HH:MM format, for log file only)
 timestamp=$(date '+%H:%M' 2>/dev/null || date '+%H:%M')
 
 # Format the thought with quotes and comma (name thinks, "thought")
@@ -70,7 +70,14 @@ avatar_log="$avatar_path/.log"
 # Create or append to log file
 if printf '%s\n' "$log_entry" >> "$avatar_log" 2>/dev/null; then
   # Echo to stdout for the thinker to see
-  printf '%s\n' "$log_entry"
+  # Colorize player name if outputting to a terminal
+  if [ -t 1 ] && [ -z "${NO_COLOR-}" ]; then
+    color=$(colorize-player-name "$player_name")
+    printf '\033[1;%dm%s\033[0m thinks, "%s"\n' "$color" "$player_name" "$thought"
+  else
+    # No colors for non-TTY or when NO_COLOR is set
+    printf '%s thinks, "%s"\n' "$player_name" "$thought"
+  fi
 else
   printf '%s\n' "think: failed to write to avatar log" >&2
   exit 1
