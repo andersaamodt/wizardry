@@ -1,24 +1,27 @@
 #!/bin/sh
 
-# Open a portal to a remote directory using sshfs for MUD multiplayer.
+# Open a portal to a remote directory using sshfs (optionally over Tor).
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: portal <server:path> [local_mount_point]
-       portal <server> <path> [local_mount_point]
+Usage: open-portal [--tor] <server:path> [local_mount_point]
+       open-portal [--tor] <server> <path> [local_mount_point]
 
 Open a portal (mount a remote directory via sshfs) for MUD multiplayer.
-The syntax is similar to sshfs: server:path or server path.
+By default uses direct SSH connection; use --tor for anonymous Tor routing.
 
+The syntax supports: server:path or server path.
 If local_mount_point is not provided, defaults to ~/portals/<server>
 
 Examples:
-  portal player@example.com:~/shared-dungeon
-  portal 192.168.1.100 /home/wizard/dungeon
-  portal player@server.com:~/world ~/my-portal
+  open-portal player@example.com:~/shared-dungeon
+  open-portal --tor somehiddenservice.onion:~/world
+  open-portal 192.168.1.100 /home/wizard/dungeon
+  open-portal player@server.com:~/world ~/my-portal
 
 Uses MUD_PLAYER SSH key if available, otherwise uses default SSH authentication.
+Extended attributes (xattrs) are preserved for game state synchronization.
 
 See also: close-portal
 USAGE
@@ -31,8 +34,23 @@ set -eu
 
 # Check for required commands
 if ! command -v sshfs >/dev/null 2>&1; then
-  printf '%s\n' "portal: sshfs not found. Install sshfs to use portals." >&2
+  printf '%s\n' "open-portal: sshfs not found. Install sshfs to use portals." >&2
   exit 1
+fi
+
+# Parse --tor flag
+use_tor=0
+if [ "${1-}" = "--tor" ]; then
+  use_tor=1
+  shift
+fi
+
+# Check for torify if --tor is used
+if [ "$use_tor" -eq 1 ]; then
+  if ! command -v torify >/dev/null 2>&1; then
+    printf '%s\n' "open-portal: torify (tor) not found. Install tor to use --tor option." >&2
+    exit 1
+  fi
 fi
 
 # Parse arguments
@@ -42,7 +60,7 @@ local_mount=""
 
 # Handle different argument patterns
 if [ $# -eq 0 ]; then
-  printf '%s\n' "portal: requires at least one argument (server:path or server path)" >&2
+  printf '%s\n' "open-portal: requires at least one argument (server:path or server path)" >&2
   exit 2
 elif [ $# -eq 1 ]; then
   # Single argument: must be server:path
@@ -53,7 +71,7 @@ elif [ $# -eq 1 ]; then
       remote_path="${arg#*:}"
       ;;
     *)
-      printf '%s\n' "portal: single argument must be in server:path format" >&2
+      printf '%s\n' "open-portal: single argument must be in server:path format" >&2
       exit 2
       ;;
   esac
@@ -78,13 +96,13 @@ elif [ $# -eq 3 ]; then
   remote_path=$2
   local_mount=$3
 else
-  printf '%s\n' "portal: too many arguments" >&2
+  printf '%s\n' "open-portal: too many arguments" >&2
   exit 2
 fi
 
 # Validate we have server and path
 if [ -z "$server" ] || [ -z "$remote_path" ]; then
-  printf '%s\n' "portal: server and remote path are required" >&2
+  printf '%s\n' "open-portal: server and remote path are required" >&2
   exit 2
 fi
 
@@ -100,19 +118,19 @@ fi
 
 # Ensure portals directory exists
 if ! mkdir -p "$HOME/portals"; then
-  printf '%s\n' "portal: cannot create portals directory: $HOME/portals" >&2
+  printf '%s\n' "open-portal: cannot create portals directory: $HOME/portals" >&2
   exit 1
 fi
 
 # Ensure local mount point exists
 if ! mkdir -p "$local_mount"; then
-  printf '%s\n' "portal: cannot create mount point: $local_mount" >&2
+  printf '%s\n' "open-portal: cannot create mount point: $local_mount" >&2
   exit 1
 fi
 
 # Check if already mounted
 if mount | grep -q " $local_mount "; then
-  printf '%s\n' "portal: $local_mount is already mounted" >&2
+  printf '%s\n' "open-portal: $local_mount is already mounted" >&2
   exit 1
 fi
 
@@ -136,11 +154,24 @@ else
 fi
 
 # Mount the remote directory
-# shellcheck disable=SC2086
-if sshfs $sshfs_opts "$server:$remote_path" "$local_mount"; then
-  printf '%s\n' "Portal opened: $server:$remote_path mounted at $local_mount"
-  printf '%s\n' "To close this portal, use: close-portal $local_mount"
+if [ "$use_tor" -eq 1 ]; then
+  # Mount through Tor
+  # shellcheck disable=SC2086
+  if torify sshfs $sshfs_opts "$server:$remote_path" "$local_mount"; then
+    printf '%s\n' "Portal opened (via Tor): $server:$remote_path mounted at $local_mount"
+    printf '%s\n' "To close this portal, use: close-portal $local_mount"
+  else
+    printf '%s\n' "open-portal: failed to mount $server:$remote_path via Tor" >&2
+    exit 1
+  fi
 else
-  printf '%s\n' "portal: failed to mount $server:$remote_path" >&2
-  exit 1
+  # Direct mount
+  # shellcheck disable=SC2086
+  if sshfs $sshfs_opts "$server:$remote_path" "$local_mount"; then
+    printf '%s\n' "Portal opened: $server:$remote_path mounted at $local_mount"
+    printf '%s\n' "To close this portal, use: close-portal $local_mount"
+  else
+    printf '%s\n' "open-portal: failed to mount $server:$remote_path" >&2
+    exit 1
+  fi
 fi

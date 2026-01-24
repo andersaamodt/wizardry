@@ -82,7 +82,7 @@ while true; do
   speak="Say Something%printf 'Message: ' && read msg && say \"\$msg\""
   home="Teleport Home%cd"
   jump="Teleport to Marker%jump-to-marker"
-  open_portal="Open Portal%printf 'Server:Path: ' && read addr && portal \"\$addr\""
+  open_portal="Open Portal%printf 'Server:Path: ' && read addr && open-portal \"\$addr\""
   close_portal="Close Portal%close-portal"
   portal="Teleport to Portal Chamber%cd $portal_location"
   admin="Admin MUD Hosting%mud-admin-menu"

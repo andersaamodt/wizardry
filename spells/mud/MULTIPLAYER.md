@@ -17,26 +17,58 @@ Wizardry multiplayer is a shared-filesystem MUD where all game state lives in fi
 
 ## Getting Started
 
-### 1. Opening a Portal
+### 0. Installing Requirements
 
-Connect to a remote shared directory using the `portal` spell:
+Before using MUD multiplayer, you need to install sshfs and optionally Tor:
+
+#### Via Install Menu
 
 ```sh
-# Basic syntax
-portal user@server.com:~/shared-world
+menu           # Open main menu
+# Navigate to: Install Menu > mud
 
-# With custom mount point
-portal player@example.com:/game/world ~/my-portal
-
-# Alternative syntax
-portal server.com /remote/path
+# Install sshfs for portal functionality
+# Then optionally: Install Menu > tor (for anonymous portals)
 ```
 
-The portal spell:
+#### Manual Installation
+
+**sshfs:**
+- Linux (Debian/Ubuntu): `sudo apt-get install sshfs`
+- Linux (Arch): `sudo pacman -S sshfs`
+- macOS: `brew install --cask macfuse && brew install gromgit/fuse/sshfs-mac`
+- NixOS: `nix-env -iA nixpkgs.sshfs`
+
+**Tor (optional, for `--tor` mode):**
+- Linux (Debian/Ubuntu): `sudo apt-get install tor`
+- Linux (Arch): `sudo pacman -S tor`
+- macOS: `brew install tor`
+- NixOS: `nix-env -iA nixpkgs.tor`
+
+### 1. Opening a Portal
+
+Connect to a remote shared directory using the `open-portal` spell:
+
+```sh
+# Basic syntax (direct connection)
+open-portal user@server.com:~/shared-world
+
+# With Tor for anonymous/secure connection
+open-portal --tor somehiddenservice.onion:~/world
+
+# With custom mount point
+open-portal player@example.com:/game/world ~/my-portal
+
+# Alternative syntax
+open-portal server.com /remote/path
+```
+
+The open-portal spell:
 - Creates a local mount point (default: `~/portals/<server>`)
 - Uses sshfs with xattr support enabled
 - Uses your MUD_PLAYER SSH key if available
 - Preserves extended attributes for game state
+- Optional `--tor` flag routes through Tor for anonymity
 
 ### 2. Exploring the World
 
@@ -234,9 +266,10 @@ Wizardry multiplayer follows these principles:
 ## Spell Reference
 
 ### Translocation
-- `portal` - Open a portal (mount remote directory via sshfs)
+- `open-portal` - Open a portal (mount remote directory via sshfs, optionally over Tor)
 - `close-portal` - Close a portal (unmount)
-- `open-portal-tor` - Open portal via Tor (anonymous)
+
+Use `open-portal --tor` for anonymous connections via Tor hidden services.
 
 ### Communication
 - `say` - Speak in current room (append to `.room.log`)
@@ -288,10 +321,17 @@ enchant . "description=An ancient fortress shrouded in mystery."
 
 Client side:
 ```sh
-portal user@server:~/worlds/dragon-keep
+open-portal user@server:~/worlds/dragon-keep
 cd ~/portals/server/dragon-keep
 look
 say "I've arrived at the keep!"
+```
+
+Or with Tor for anonymous access:
+```sh
+open-portal --tor somehiddenservice.onion:~/worlds/dragon-keep
+cd ~/portals/somehiddenservice_onion/dragon-keep
+look
 ```
 
 ### Combat Example
