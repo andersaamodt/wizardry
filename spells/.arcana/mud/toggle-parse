@@ -69,6 +69,10 @@ if config-has "$CONFIG_FILE" "parse-enabled" 2>/dev/null; then
     # Now change the config
     config-set "$CONFIG_FILE" "parse-enabled" "0"
     
+    # Touch the config file to ensure it's newer than any cache
+    # This is critical for cache invalidation across all shells
+    touch "$CONFIG_FILE" 2>/dev/null || true
+    
     # Delete gloss cache to ensure invoke-wizardry regenerates with new setting
     # Cache is based on WIZARDRY_DIR and user ID
     cache_dir="${TMPDIR:-/tmp}"
@@ -107,6 +111,10 @@ fi
 
 # Currently disabled or set to 0, enable it
 config-set "$CONFIG_FILE" "parse-enabled" "1"
+
+# Touch the config file to ensure it's newer than any cache
+# This is critical for cache invalidation across all shells
+touch "$CONFIG_FILE" 2>/dev/null || true
 
 # Delete gloss cache to ensure invoke-wizardry regenerates with new setting
 cache_dir="${TMPDIR:-/tmp}"
