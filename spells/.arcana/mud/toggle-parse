@@ -167,30 +167,10 @@ if [ "$current_value" = "1" ]; then
     done
   fi
   
-  printf '[DEBUG] About to source new cache...\n' >&2
-  
-  # Source the new cache to load aliases (no first-word glosses when parse=0)
-  if [ -f "$gloss_cache" ]; then
-    printf '[DEBUG] Sourcing cache: %s\n' "$gloss_cache" >&2
-    # Check functions before sourcing
-    if type jump >/dev/null 2>&1; then
-      printf '[DEBUG] WARNING: jump() exists BEFORE sourcing cache!\n' >&2
-    else
-      printf '[DEBUG] jump() not defined before sourcing (good)\n' >&2
-    fi
-    . "$gloss_cache"
-    printf '[DEBUG] Cache sourced\n' >&2
-    # Check functions after sourcing  
-    if type jump >/dev/null 2>&1; then
-      printf '[DEBUG] ERROR: jump() exists AFTER sourcing cache!\n' >&2
-      printf '[DEBUG] jump() function definition:\n' >&2
-      type jump 2>&1 | head -10 >&2 || true
-    else
-      printf '[DEBUG] jump() not defined after sourcing (good)\n' >&2
-    fi
-  else
-    printf '[DEBUG] WARNING: Cache file not found!\n' >&2
-  fi
+  # DO NOT source the cache when disabling parse!
+  # When parse is disabled, synonym functions should NOT be loaded.
+  # Users must use exact hyphenated spell names like "jump-to-marker"
+  printf '[DEBUG] Skipping cache sourcing (parse disabled - functions should stay unset)\n' >&2
   
   # Final check: are functions still defined?
   printf '[DEBUG] Final function check:\n' >&2
