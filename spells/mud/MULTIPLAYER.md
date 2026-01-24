@@ -95,19 +95,19 @@ say "Hello, adventurers!"
 This appends to `.room.log` with timestamp and player name. Other players can:
 - Use `look` to see recent messages
 - Use `listen` to watch messages in real-time
-- Use `start-room-monitor` for live notifications (proof-of-concept feature)
+- Use `start-listening` for live notifications (proof-of-concept feature)
 
 **Real-time notifications (proof-of-concept):**
 
 Start background monitoring for live event notifications:
 
 ```sh
-start-room-monitor
+start-listening
 # Now you'll see messages from other players in real-time as they happen
 # Each notification appears with a 🔮 prefix
 
 # When done, stop the monitor:
-stop-room-monitor
+stop-listening
 ```
 
 Listen to room activity (manual monitoring):
@@ -288,10 +288,10 @@ Use `open-portal --tor` for anonymous connections via Tor hidden services.
 ### Communication
 - `say` - Speak in current room (append to `.room.log`)
 - `listen` - Watch room activity in real-time (tail -f `.room.log`)
-- `start-room-monitor` - Start background process for live event notifications (proof-of-concept)
-- `stop-room-monitor` - Stop the background room monitor
+- `start-listening` - Start background process for live event notifications (proof-of-concept)
+- `stop-listening` - Stop the background room monitor
 
-**Note:** `start-room-monitor` provides true real-time multiplayer liveness - messages from other players appear in your terminal as they happen, prefixed with 🔮.
+**Note:** `start-listening` provides true real-time multiplayer liveness - messages from other players appear in your terminal as they happen, prefixed with 🔮.
 
 ### Observation
 - `look` - View room with recent activity
