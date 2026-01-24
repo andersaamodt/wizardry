@@ -75,7 +75,8 @@ config-set "$CONFIG_FILE" "cd-listen" "1"
 load_cd_hook_path="${WIZARDRY_DIR:-$HOME/.wizardry}/spells/.arcana/mud/load-cd-hook"
 if [ -f "$load_cd_hook_path" ]; then
     # Check if cd function is already defined
-    if ! type cd 2>/dev/null | grep -q "cd is a function"; then
+    cd_check=$(command -v cd 2>/dev/null || echo "builtin")
+    if [ "$cd_check" = "builtin" ] || [ "$cd_check" = "cd" ]; then
         # Source the load-cd-hook file to define cd function
         . "$load_cd_hook_path" 2>/dev/null || {
             printf '%s\n' "Warning: Failed to load cd hook function."
