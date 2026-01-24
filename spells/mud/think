@@ -1,0 +1,64 @@
+#!/bin/sh
+
+# Narrate a thought in the current room (append to room log as internal monologue).
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: think <thought>
+
+Narrate your character's thoughts in the current room by appending to the
+.room.log file. Unlike 'say', thoughts are displayed in italics/parentheses
+to distinguish them from speech.
+
+Thoughts are visible to all players in the room, representing your character's
+internal monologue or narration.
+
+Note: If your thought contains special characters like !, use single quotes:
+  think 'I wonder what that sound was!'
+
+Example:
+  think "Where did everyone go?"
+  think 'This place gives me the creeps...'
+  think 'Maybe I should have brought a torch.'
+
+See also: say, look, listen
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Get thought from all arguments
+if [ $# -eq 0 ]; then
+  printf '%s\n' "think: requires a thought to narrate" >&2
+  exit 2
+fi
+
+thought="$*"
+
+# Get current directory (the room we're in)
+room_dir=${PWD}
+
+# Get player name from environment or use 'Anonymous'
+player_name=${MUD_PLAYER:-${USER:-Anonymous}}
+
+# Create timestamp (HH:MM format, like say)
+timestamp=$(date '+%H:%M' 2>/dev/null || date '+%H:%M')
+
+# Format the thought (italics via * or parentheses to distinguish from speech)
+log_entry="[$timestamp] ($player_name thinks: $thought)"
+
+# Append to room log
+room_log="$room_dir/.room.log"
+
+# Create or append to log file
+if printf '%s\n' "$log_entry" >> "$room_log" 2>/dev/null; then
+  # Echo to stdout for the thinker to see
+  printf '%s\n' "$log_entry"
+else
+  printf '%s\n' "think: failed to write to room log (directory may be read-only)" >&2
+  exit 1
+fi

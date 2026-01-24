@@ -21,7 +21,7 @@ Examples:
   listen /mnt/server/dungeon   # Monitor specific directory
   listen --stop             # Stop listening (no new listener started)
 
-See also: listend
+See also: say, think
 USAGE
   exit 0
   ;;
