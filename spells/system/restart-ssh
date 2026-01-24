@@ -42,4 +42,4 @@ case "$current_os" in
                 ;;
 esac
 
-say "SSH service restarted."
+output "SSH service restarted."
