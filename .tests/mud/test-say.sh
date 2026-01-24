@@ -38,7 +38,7 @@ test_appends_to_log() {
   [ -f ".room.log" ] || return 1
   
   # Check log contains the message
-  grep -q "TestPlayer says: Hello world" .room.log || return 1
+  grep -q "TestPlayer: Hello world" .room.log || return 1
   grep -q "Hello world" .room.log || return 1
 }
 
@@ -54,8 +54,8 @@ test_multiple_messages() {
   assert_success || return 1
   
   # Check both are in log
-  grep -q "Player1 says: First message" .room.log || return 1
-  grep -q "Player2 says: Second message" .room.log || return 1
+  grep -q "Player1: First message" .room.log || return 1
+  grep -q "Player2: Second message" .room.log || return 1
   
   # Check we have 2 lines
   line_count=$(wc -l < .room.log)
