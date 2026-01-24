@@ -83,8 +83,17 @@ if [ "$current_value" = "1" ]; then
   
   # Explicitly regenerate cache with parse-enabled=0
   if command -v generate-glosses >/dev/null 2>&1; then
-    generate-glosses --quiet --output "$gloss_cache" 2>/dev/null || true
-    printf '[DEBUG] Cache regenerated\n' >&2
+    if generate-glosses --quiet --output "$gloss_cache" 2>&1; then
+      printf '[DEBUG] Cache regenerated successfully\n' >&2
+      # Verify the cache doesn't have first-word glosses
+      if grep -q "^jump()" "$gloss_cache" 2>/dev/null; then
+        printf '[DEBUG] ERROR: Cache still contains jump() gloss function!\n' >&2
+      else
+        printf '[DEBUG] Verified: Cache has no jump() gloss function\n' >&2
+      fi
+    else
+      printf '[DEBUG] ERROR: generate-glosses failed!\n' >&2
+    fi
   else
     printf '[DEBUG] WARNING: generate-glosses not found!\n' >&2
   fi
@@ -144,8 +153,20 @@ if [ "$current_value" = "1" ]; then
   # Source the new cache to load aliases (no first-word glosses when parse=0)
   if [ -f "$gloss_cache" ]; then
     printf '[DEBUG] Sourcing cache: %s\n' "$gloss_cache" >&2
+    # Check functions before sourcing
+    if type jump >/dev/null 2>&1; then
+      printf '[DEBUG] WARNING: jump() exists BEFORE sourcing cache!\n' >&2
+    else
+      printf '[DEBUG] jump() not defined before sourcing (good)\n' >&2
+    fi
     . "$gloss_cache"
     printf '[DEBUG] Cache sourced\n' >&2
+    # Check functions after sourcing  
+    if type jump >/dev/null 2>&1; then
+      printf '[DEBUG] ERROR: jump() exists AFTER sourcing cache!\n' >&2
+    else
+      printf '[DEBUG] jump() not defined after sourcing (good)\n' >&2
+    fi
   else
     printf '[DEBUG] WARNING: Cache file not found!\n' >&2
   fi
