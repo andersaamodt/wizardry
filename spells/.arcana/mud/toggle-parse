@@ -183,6 +183,8 @@ if [ "$current_value" = "1" ]; then
     # Check functions after sourcing  
     if type jump >/dev/null 2>&1; then
       printf '[DEBUG] ERROR: jump() exists AFTER sourcing cache!\n' >&2
+      printf '[DEBUG] jump() function definition:\n' >&2
+      type jump 2>&1 | head -10 >&2 || true
     else
       printf '[DEBUG] jump() not defined after sourcing (good)\n' >&2
     fi
