@@ -107,7 +107,9 @@ if [ "$current_value" = "1" ]; then
   fi
   
   # Invalidate gloss cache to force regeneration
+  # Handle TMPDIR with or without trailing slash
   gloss_cache_dir="${TMPDIR:-/tmp}"
+  gloss_cache_dir="${gloss_cache_dir%/}"  # Remove trailing slash if present
   wizardry_dir="${WIZARDRY_DIR:-$HOME/.wizardry}"
   cache_id=$(printf '%s' "$wizardry_dir" | cksum | cut -d' ' -f1)
   gloss_cache="$gloss_cache_dir/.wizardry-glosses-$cache_id-$(id -u).sh"
@@ -140,7 +142,9 @@ fi
 config-set "$CONFIG_FILE" "parse-enabled" "1"
 
 # Invalidate gloss cache to force regeneration with new setting
+# Handle TMPDIR with or without trailing slash
 gloss_cache_dir="${TMPDIR:-/tmp}"
+gloss_cache_dir="${gloss_cache_dir%/}"  # Remove trailing slash if present
 wizardry_dir="${WIZARDRY_DIR:-$HOME/.wizardry}"
 cache_id=$(printf '%s' "$wizardry_dir" | cksum | cut -d' ' -f1)
 gloss_cache="$gloss_cache_dir/.wizardry-glosses-$cache_id-$(id -u).sh"
