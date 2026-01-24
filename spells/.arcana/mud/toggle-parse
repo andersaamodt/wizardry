@@ -90,13 +90,23 @@ if [ "$current_value" = "1" ]; then
   printf '[DEBUG] Regenerating cache with parse-enabled=0...\n' >&2
   printf '[DEBUG] SPELLBOOK_DIR=%s\n' "$SPELLBOOK_DIR" >&2
   
+  # Debug: Check what generate-glosses will read
+  printf '[DEBUG] About to call generate-glosses...\n' >&2
+  printf '[DEBUG] Config file that generate-glosses will read: %s\n' "${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud" >&2
+  printf '[DEBUG] parse-enabled value in config:\n' >&2
+  grep '^parse-enabled=' "${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud" 2>/dev/null || printf '[DEBUG] parse-enabled not found in config!\n' >&2
+  
   # Explicitly regenerate cache with parse-enabled=0
   if command -v generate-glosses >/dev/null 2>&1; then
-    if generate-glosses --quiet --output "$gloss_cache" 2>&1; then
+    printf '[DEBUG] Calling: generate-glosses --output %s\n' "$gloss_cache" >&2
+    # Call generate-glosses without --quiet to see diagnostic output
+    if generate-glosses --output "$gloss_cache"; then
       printf '[DEBUG] Cache regenerated successfully\n' >&2
       # Verify the cache doesn't have first-word glosses
       if grep -q "^jump()" "$gloss_cache" 2>/dev/null; then
         printf '[DEBUG] ERROR: Cache still contains jump() gloss function!\n' >&2
+        printf '[DEBUG] First 10 lines of cache that have jump:\n' >&2
+        grep "jump" "$gloss_cache" 2>/dev/null | head -10 >&2 || true
       else
         printf '[DEBUG] Verified: Cache has no jump() gloss function\n' >&2
       fi
