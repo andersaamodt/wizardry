@@ -142,22 +142,26 @@ fi
         color=$(colorize-player-name "$player")
         
         # Approach for preserving typed text:
-        # 1. Save cursor position (this saves row, col, and attributes)
-        # 2. Move to start of line and clear it
-        # 3. Print message and newline (pushes content down)
-        # 4. Restore cursor (now one line down, at same column)
-        # This preserves the prompt and any typed text
+        # 1. Save cursor position (saves row, col, and attributes)
+        # 2. Move to start of line and clear it (removes prompt/typed text)
+        # 3. Print message with newline (pushes everything down)
+        # 4. Reprint the prompt on the new line
+        # 5. Restore cursor column position (move down 1 line from saved position)
         printf '\0337'  # Save cursor position (ESC 7)
         printf '\r\033[2K'  # Move to start of line and clear entire line
         printf '\033[1;%dm%s:\033[0m %s\n' "$color" "$player" "$message"
-        printf '\0338'  # Restore cursor position (ESC 8) - now one line down
+        printf '%s' "$LISTEN_SAVED_PROMPT"  # Reprint prompt on new line
+        printf '\0338'  # Restore cursor position (still at old row)
+        printf '\033[1B'  # Move down 1 line (now at new prompt line with saved column)
         ;;
       *)
         # Fallback for lines that don't match expected format
         printf '\0337'  # Save cursor
         printf '\r\033[2K'  # Clear line
         printf '🔮 %s\n' "$line"
+        printf '%s' "$LISTEN_SAVED_PROMPT"  # Reprint prompt
         printf '\0338'  # Restore cursor
+        printf '\033[1B'  # Move down 1 line
         ;;
     esac
   done
