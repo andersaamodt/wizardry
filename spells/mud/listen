@@ -1,23 +1,27 @@
 #!/bin/sh
 
-# Listen to room activity in real-time (tail -f the room log).
+# Listen to room activity in real-time (background monitoring with live output).
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
 Usage: listen [room_path]
 
-Listen to room activity in real-time by tailing the .room.log file.
+Listen to room activity in real-time by monitoring the .room.log file.
 Defaults to the current directory if no path is provided.
 
+This runs in the background, allowing you to continue using your terminal
+while new room activity appears automatically. New messages are displayed
+inline, with your prompt redrawn below them.
+
 This is the multiplayer equivalent of sitting in a room and watching
-what other players say and do. Press Ctrl-C to stop listening.
+what other players say and do. Use stop-listening to stop.
 
 Example:
-  listen
-  listen ~/portals/shared-dungeon
+  listen                              # Monitor current directory
+  listen ~/portals/shared-dungeon     # Monitor specific room
 
-See also: say, look
+See also: say, look, start-listening, stop-listening
 USAGE
   exit 0
   ;;
@@ -44,13 +48,36 @@ if [ ! -f "$room_log" ]; then
   exit 1
 fi
 
-# Tail the log file
-printf '%s\n' "Listening to room activity in $room_path (Ctrl-C to stop)..."
-printf '%s\n' "---"
-
-if command -v tail >/dev/null 2>&1; then
-  exec tail -f "$room_log"
-else
-  printf '%s\n' "listen: tail command not found" >&2
-  exit 1
+# Check if already listening
+pid_file="$HOME/.wizardry-listening.pid"
+if [ -f "$pid_file" ]; then
+  old_pid=$(cat "$pid_file" 2>/dev/null || printf '')
+  if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
+    printf '%s\n' "Already listening to room activity (PID: $old_pid)"
+    printf '%s\n' "Use stop-listening to stop it first."
+    exit 1
+  fi
 fi
+
+# Start monitoring in background
+# Use tail -f to follow the log file
+# Display new messages inline with terminal-friendly output
+{
+  tail -f "$room_log" 2>/dev/null | while IFS= read -r line; do
+    # Skip empty lines
+    [ -z "$line" ] && continue
+    
+    # Clear current line and display message with visual indicator
+    # This allows the message to appear above the current prompt
+    printf '\r\033[K%s%s\n' "🔮 " "$line"
+  done
+} &
+
+monitor_pid=$!
+
+# Save PID for later stopping
+printf '%s\n' "$monitor_pid" > "$pid_file"
+
+printf '%s\n' "✓ Now listening to room activity (PID: $monitor_pid)"
+printf '%s\n' "Monitoring: $room_log"
+printf '%s\n' "New messages will appear automatically. Stop with: stop-listening"
