@@ -64,7 +64,7 @@ open-portal server.com /remote/path
 ```
 
 The open-portal spell:
-- Creates a local mount point (default: `/mnt/portals/<server>`)
+- Creates a local mount point (default: `/mnt/<server>`)
 - Uses sshfs with xattr support enabled
 - Uses your MUD_PLAYER SSH key if available
 - Preserves extended attributes for game state
@@ -75,7 +75,7 @@ The open-portal spell:
 Navigate to the portal and look around:
 
 ```sh
-cd /mnt/portals/server
+cd /mnt/server
 look
 ```
 
@@ -114,7 +114,7 @@ Listen to room activity (manual monitoring):
 
 ```sh
 listen          # Current room
-listen /mnt/portals/server/dungeon  # Specific room
+listen /mnt/server/dungeon  # Specific room
 ```
 
 ### 4. Combat and Magic
@@ -135,7 +135,7 @@ This:
 When done, unmount the portal:
 
 ```sh
-close-portal /mnt/portals/server
+close-portal /mnt/server
 ```
 
 Or list all active portals:
@@ -340,7 +340,7 @@ enchant . "description=An ancient fortress shrouded in mystery."
 Client side:
 ```sh
 open-portal user@server:~/worlds/dragon-keep
-cd /mnt/portals/server/dragon-keep
+cd /mnt/server/dragon-keep
 look
 say "I've arrived at the keep!"
 ```
@@ -348,7 +348,7 @@ say "I've arrived at the keep!"
 Or with Tor for anonymous access:
 ```sh
 open-portal --tor somehiddenservice.onion:~/worlds/dragon-keep
-cd /mnt/portals/somehiddenservice_onion/dragon-keep
+cd /mnt/somehiddenservice_onion/dragon-keep
 look
 ```
 
@@ -369,7 +369,7 @@ look  # Shows "Player1 casts magic missile at goblin"
 ### Multi-Room Adventure
 
 ```sh
-cd /mnt/portals/server/world
+cd /mnt/server/world
 mkdir -p throne-room library armory
 enchant throne-room "title=The Throne Room"
 enchant library "title=The Ancient Library"

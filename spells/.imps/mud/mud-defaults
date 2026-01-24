@@ -19,13 +19,14 @@ fi
 # - parse-enabled: 1 (non-invasive, adds convenience)
 # - mud-enabled: 1 (show MUD in menu - essential for discoverability)
 # - cd-look: 1 (gateway feature demonstrating MUD value)
+# - cd-listen: 0 (advanced feature, requires background process)
 # - avatar: 0 (invasive - literal directory following user)
 # - touch-hook: 0 (advanced feature, better as opt-in)
 case "$feature" in
   parse-enabled|mud-enabled|cd-look)
     printf '1'
     ;;
-  avatar|touch-hook)
+  avatar|touch-hook|cd-listen)
     printf '0'
     ;;
   *)

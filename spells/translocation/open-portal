@@ -23,7 +23,7 @@ Examples:
 Uses MUD_PLAYER SSH key if available, otherwise uses default SSH authentication.
 Extended attributes (xattrs) are preserved for game state synchronization.
 
-Default mount point: /mnt/portals/<server>
+Default mount point: /mnt/<server>
 
 See also: close-portal
 USAGE
@@ -115,12 +115,12 @@ remote_path="${remote_path%/}"
 if [ -z "$local_mount" ]; then
   # Create a safe directory name from the server
   safe_name=$(printf '%s' "$server" | tr -c 'A-Za-z0-9.-' '_')
-  local_mount="/mnt/portals/$safe_name"
+  local_mount="/mnt/$safe_name"
 fi
 
-# Ensure portals directory exists
-if ! mkdir -p "/mnt/portals"; then
-  printf '%s\n' "open-portal: cannot create portals directory: /mnt/portals" >&2
+# Ensure local mount point exists
+if ! mkdir -p "$local_mount"; then
+  printf '%s\n' "open-portal: cannot create mount point: $local_mount" >&2
   printf '%s\n' "You may need to run with sudo or adjust /mnt permissions." >&2
   exit 1
 fi
