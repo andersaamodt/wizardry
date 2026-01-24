@@ -17,8 +17,9 @@ cast spells, or perform actions, you see them immediately in your terminal.
 The listener runs as a background process. Running listen again will automatically
 stop any existing listener and start a new one.
 
-Note: Messages from other players will interrupt your command prompt. This is
-normal for real-time notifications. Simply press Enter to get a fresh prompt.
+Messages from other players will clear the current line, display the message,
+and redraw the prompt. This provides clean real-time notifications while
+preserving your command line context.
 
 Examples:
   listen                    # Monitor current directory
@@ -113,8 +114,6 @@ fi
 
 # Start monitoring in background
 # Use tail -f -n 0 to follow the log file from current position (no history)
-# Note: Background processes cannot reliably restore shell prompts across all platforms.
-# Messages will interrupt the prompt, which is expected behavior for async notifications.
 {
   tail -f -n 0 "$_listen_room_log" 2>/dev/null | while IFS= read -r line; do
     # Skip empty lines
@@ -132,14 +131,17 @@ fi
         # Get color for player name
         color=$(colorize-player-name "$player")
         
-        # Output the message on a new line
-        # The prompt will naturally redraw on next user interaction
-        printf '\n\033[1;%dm%s:\033[0m %s\n' \
+        # Clear the current line, print message, and redraw prompt
+        clear-line
+        printf '\033[1;%dm%s:\033[0m %s\n' \
           "$color" "$player" "$message"
+        redraw-prompt
         ;;
       *)
         # Fallback for lines that don't match expected format
-        printf '\n🔮 %s\n' "$line"
+        clear-line
+        printf '🔮 %s\n' "$line"
+        redraw-prompt
         ;;
     esac
   done
