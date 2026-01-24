@@ -14,9 +14,13 @@ the log file or using 'look' which displays recent activity.
 In multiplayer MUD, speech is simply append operations to the room log.
 Each player can tail -f .room.log to listen in real-time.
 
+Note: If your message contains special characters like !, use single quotes:
+  say 'Hello, world!'
+
 Example:
-  say "Hello, adventurers!"
-  say "Has anyone seen the dragon?"
+  say "Hello, adventurers"
+  say 'Has anyone seen the dragon?'
+  say 'Watch out!'
 
 See also: look, listen
 USAGE
