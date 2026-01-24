@@ -1,0 +1,19 @@
+#!/bin/sh
+# listen ROOM_PATH - tail the room log (blocking)
+set -eu
+
+room_path=${1:-$PWD}
+
+if [ ! -d "$room_path" ]; then
+  printf '%s\n' "listen: directory does not exist: $room_path" >&2
+  exit 1
+fi
+
+room_log="$room_path/.room.log"
+
+if [ ! -f "$room_log" ]; then
+  printf '%s\n' "listen: no activity in this room yet (no .room.log file)" >&2
+  exit 1
+fi
+
+exec tail -f "$room_log"

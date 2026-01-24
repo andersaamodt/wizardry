@@ -61,18 +61,46 @@ fi
 
 # Start monitoring in background
 # Use tail -f to follow the log file
-# Prefix each line with a visual indicator so user knows it's from the monitor
+# Display messages with colors and restore terminal input
 {
   tail -f "$room_log" 2>/dev/null | while IFS= read -r line; do
     # Skip empty lines
     [ -z "$line" ] && continue
     
-    # Display with prefix to distinguish from local commands
-    printf '\r\033[K%s%s%s\n' "🔮 " "$line" ""
+    # Parse the log entry to extract player name and colorize it
+    # Expected format: [HH:MM] PlayerName: message
+    case "$line" in
+      \[*\]\ *:\ *)
+        # Extract timestamp, player name, and message
+        timestamp=$(printf '%s' "$line" | sed 's/^\[\([^]]*\)\].*/\1/')
+        rest=$(printf '%s' "$line" | sed 's/^\[[^]]*\] //')
+        player=$(printf '%s' "$rest" | sed 's/:.*//')
+        message=$(printf '%s' "$rest" | sed 's/^[^:]*: //')
+        
+        # Generate a color from player name (hash to ANSI color)
+        # Use simple character sum modulo for color selection
+        color_num=0
+        for char in $(printf '%s' "$player" | fold -w1); do
+          color_num=$((color_num + $(printf '%d' "'$char")))
+        done
+        # Map to colors 31-36 (red, green, yellow, blue, magenta, cyan)
+        color=$((31 + (color_num % 6)))
+        
+        # Clear line, display colored player name (bold) and message
+        # Format: [HH:MM] PlayerName: message
+        # \033[1;COLORm = bold + color, \033[0m = reset
+        printf '\r\033[K[%s] \033[1;%dm%s:\033[0m %s\n' \
+          "$timestamp" "$color" "$player" "$message"
+        ;;
+      *)
+        # Fallback for lines that don't match expected format
+        printf '\r\033[K🔮 %s\n' "$line"
+        ;;
+    esac
     
-    # Re-display prompt (if in interactive shell)
-    # This is a bit hacky but works for most shells
-    printf '%s' "" >&2
+    # Restore terminal prompt and any partially typed input
+    # Send WINCH signal to trigger prompt redraw in bash/zsh
+    kill -WINCH $$ 2>/dev/null || true
   done
 } &
 

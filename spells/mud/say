@@ -45,11 +45,11 @@ room_dir=${PWD}
 # Get player name from environment or use 'Anonymous'
 player_name=${MUD_PLAYER:-${USER:-Anonymous}}
 
-# Create timestamp
-timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date)
+# Create timestamp (HH:MM format, no date or seconds)
+timestamp=$(date '+%H:%M' 2>/dev/null || date '+%H:%M')
 
-# Format the message
-log_entry="[$timestamp] $player_name says: $message"
+# Format the message (player_name: message format, no "says")
+log_entry="[$timestamp] $player_name: $message"
 
 # Append to room log
 room_log="$room_dir/.room.log"
