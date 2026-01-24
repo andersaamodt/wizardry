@@ -1,6 +1,18 @@
 #!/bin/sh
 # Toggle sshfs installation (install if not present, uninstall if present)
 
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: toggle-sshfs
+
+Toggle sshfs installation. If sshfs is installed, uninstalls it.
+If not installed, installs it.
+USAGE
+  exit 0
+  ;;
+esac
+
 set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
