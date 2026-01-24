@@ -64,7 +64,18 @@ if [ "$current_value" = "1" ]; then
   # Currently enabled, disable it
   config-set "$CONFIG_FILE" "parse-enabled" "0"
   
-  # Unload gloss functions from current shell
+  # Invalidate gloss cache to force regeneration with new setting
+  # Handle TMPDIR with or without trailing slash  
+  gloss_cache_dir="${TMPDIR:-/tmp}"
+  gloss_cache_dir="${gloss_cache_dir%/}"  # Remove trailing slash if present
+  wizardry_dir="${WIZARDRY_DIR:-$HOME/.wizardry}"
+  cache_id=$(printf '%s' "$wizardry_dir" | cksum | cut -d' ' -f1)
+  gloss_cache="$gloss_cache_dir/.wizardry-glosses-$cache_id-$(id -u).sh"
+  
+  # Delete cache to force regeneration
+  rm -f "$gloss_cache" 2>/dev/null || true
+  
+  # Unload gloss functions from current shell BEFORE regenerating cache
   # Get list of first words by scanning spell files directly
   if [ -d "${WIZARDRY_DIR:-$HOME/.wizardry}/spells" ]; then
     # Collect all first-word function names (avoid subshell issues)
@@ -106,28 +117,11 @@ if [ "$current_value" = "1" ]; then
     done
   fi
   
-  # Invalidate gloss cache to force regeneration
-  # Handle TMPDIR with or without trailing slash
-  gloss_cache_dir="${TMPDIR:-/tmp}"
-  gloss_cache_dir="${gloss_cache_dir%/}"  # Remove trailing slash if present
-  wizardry_dir="${WIZARDRY_DIR:-$HOME/.wizardry}"
-  cache_id=$(printf '%s' "$wizardry_dir" | cksum | cut -d' ' -f1)
-  gloss_cache="$gloss_cache_dir/.wizardry-glosses-$cache_id-$(id -u).sh"
-  rm -f "$gloss_cache" 2>/dev/null || true
-  
-  # CRITICAL: Regenerate cache immediately with parse-enabled=0
-  # This ensures invoke-wizardry sources the correct cache
-  if command -v generate-glosses >/dev/null 2>&1; then
-    gen_tmp="$gloss_cache.tmp"
-    generate-glosses --quiet > "$gen_tmp" 2>/dev/null && \
-      mv "$gen_tmp" "$gloss_cache" || rm -f "$gen_tmp"
-  fi
-  
-  # Re-source invoke-wizardry to ensure clean state
+  # Re-source invoke-wizardry to regenerate cache with parse-enabled=0 and load new functions
   if command -v invoke-wizardry >/dev/null 2>&1; then
     # Unset WIZARDRY_INVOKED to allow re-invocation
     unset WIZARDRY_INVOKED
-    # Source invoke-wizardry to load new cache (with synonym functions, not glosses)
+    # Source invoke-wizardry - since cache is deleted, it will regenerate
     . invoke-wizardry 2>/dev/null
     msg="✓ Parse disabled and gloss functions unloaded from current shell."
     printf '%s\n' "$msg"
