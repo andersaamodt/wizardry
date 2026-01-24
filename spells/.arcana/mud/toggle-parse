@@ -81,9 +81,8 @@ if config-has "$CONFIG_FILE" "parse-enabled" 2>/dev/null; then
       temp_invoked="${WIZARDRY_INVOKED-}"
       unset WIZARDRY_INVOKED
       . "$invoke_wizardry_path" 2>/dev/null || {
-        msg="Warning: Failed to reload glosses."
-        msg="$msg They will be reloaded on next shell startup."
-        printf '%s\n' "$msg"
+        printf '%s\n' "Warning: Failed to reload glosses."
+        printf '%s\n' "They will be reloaded on next shell startup."
         WIZARDRY_INVOKED="$temp_invoked"
         return 1
       }
@@ -91,9 +90,8 @@ if config-has "$CONFIG_FILE" "parse-enabled" 2>/dev/null; then
     fi
     
     printf '%s\n' "✓ Parse disabled and unloaded from your current shell."
-    msg="  Only exact spell names and synonyms will work"
-    msg="$msg (e.g., 'jump-to-marker', not 'jump to marker')."
-    printf '%s\n' "$msg"
+    printf '%s\n' "  Only exact spell names and synonyms will work"
+    printf '%s\n' "  (e.g., 'jump-to-marker', not 'jump to marker')."
     return 0
   fi
 fi
