@@ -32,17 +32,19 @@ test_creates_log_if_missing() {
   # Check that log doesn't exist yet
   [ ! -f "$tmpdir/.room.log" ] || return 1
   
-  # Note: We can't actually test tail -f in a test, but we can verify
-  # the spell would create the log file. We'll timeout quickly.
-  # Use a subshell with timeout to avoid hanging
+  # Run listen in background with a short timeout
+  # Use sh -c with sleep and kill to avoid dependency on timeout command
   (
     cd "$tmpdir" || exit 1
-    timeout 1 "$ROOT_DIR/spells/mud/listen" 2>/dev/null || true
-  ) &
-  pid=$!
-  sleep 0.5
-  kill $pid 2>/dev/null || true
-  wait $pid 2>/dev/null || true
+    # Start listen in background
+    "$ROOT_DIR/spells/mud/listen" >/dev/null 2>&1 &
+    listen_pid=$!
+    # Give it time to create the file
+    sleep 1
+    # Kill it
+    kill "$listen_pid" 2>/dev/null || true
+    wait "$listen_pid" 2>/dev/null || true
+  )
   
   # Check log was created
   [ -f "$tmpdir/.room.log" ] || return 1
