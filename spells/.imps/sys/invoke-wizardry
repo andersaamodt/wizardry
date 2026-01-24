@@ -167,7 +167,9 @@ if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
     # PERFORMANCE OPTIMIZATION: Cache glosses to avoid regenerating on every shell startup
     # Glosses are ~640KB and take 0.07s to generate + 0.13s to eval
     # Caching reduces this to ~0.03s (sourcing from file)
+    # Handle TMPDIR with or without trailing slash (macOS uses /var/folders/.../T/)
     iw_gloss_cache_dir="${TMPDIR:-/tmp}"
+    iw_gloss_cache_dir="${iw_gloss_cache_dir%/}"  # Remove trailing slash if present
     
     # Use a persistent cache based on WIZARDRY_DIR to share across all shells
     # Include user ID to avoid permission issues in multi-user systems
