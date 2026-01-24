@@ -1,0 +1,146 @@
+#!/bin/sh
+
+# Open a portal to a remote directory using sshfs for MUD multiplayer.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: portal <server:path> [local_mount_point]
+       portal <server> <path> [local_mount_point]
+
+Open a portal (mount a remote directory via sshfs) for MUD multiplayer.
+The syntax is similar to sshfs: server:path or server path.
+
+If local_mount_point is not provided, defaults to ~/portals/<server>
+
+Examples:
+  portal player@example.com:~/shared-dungeon
+  portal 192.168.1.100 /home/wizard/dungeon
+  portal player@server.com:~/world ~/my-portal
+
+Uses MUD_PLAYER SSH key if available, otherwise uses default SSH authentication.
+
+See also: close-portal
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Check for required commands
+if ! command -v sshfs >/dev/null 2>&1; then
+  printf '%s\n' "portal: sshfs not found. Install sshfs to use portals." >&2
+  exit 1
+fi
+
+# Parse arguments
+server=""
+remote_path=""
+local_mount=""
+
+# Handle different argument patterns
+if [ $# -eq 0 ]; then
+  printf '%s\n' "portal: requires at least one argument (server:path or server path)" >&2
+  exit 2
+elif [ $# -eq 1 ]; then
+  # Single argument: must be server:path
+  arg=$1
+  case "$arg" in
+    *:*)
+      server="${arg%%:*}"
+      remote_path="${arg#*:}"
+      ;;
+    *)
+      printf '%s\n' "portal: single argument must be in server:path format" >&2
+      exit 2
+      ;;
+  esac
+elif [ $# -eq 2 ]; then
+  # Two arguments: could be server path or server:path mount_point
+  case "$1" in
+    *:*)
+      # First arg is server:path, second is mount point
+      server="${1%%:*}"
+      remote_path="${1#*:}"
+      local_mount=$2
+      ;;
+    *)
+      # First arg is server, second is path
+      server=$1
+      remote_path=$2
+      ;;
+  esac
+elif [ $# -eq 3 ]; then
+  # Three arguments: server path mount_point
+  server=$1
+  remote_path=$2
+  local_mount=$3
+else
+  printf '%s\n' "portal: too many arguments" >&2
+  exit 2
+fi
+
+# Validate we have server and path
+if [ -z "$server" ] || [ -z "$remote_path" ]; then
+  printf '%s\n' "portal: server and remote path are required" >&2
+  exit 2
+fi
+
+# Normalize remote path (remove trailing slash for consistency)
+remote_path="${remote_path%/}"
+
+# Set default local mount point if not provided
+if [ -z "$local_mount" ]; then
+  # Create a safe directory name from the server
+  safe_name=$(printf '%s' "$server" | tr -c 'A-Za-z0-9.-' '_')
+  local_mount="$HOME/portals/$safe_name"
+fi
+
+# Ensure portals directory exists
+if ! mkdir -p "$HOME/portals"; then
+  printf '%s\n' "portal: cannot create portals directory: $HOME/portals" >&2
+  exit 1
+fi
+
+# Ensure local mount point exists
+if ! mkdir -p "$local_mount"; then
+  printf '%s\n' "portal: cannot create mount point: $local_mount" >&2
+  exit 1
+fi
+
+# Check if already mounted
+if mount | grep -q " $local_mount "; then
+  printf '%s\n' "portal: $local_mount is already mounted" >&2
+  exit 1
+fi
+
+# Build sshfs options
+sshfs_opts=""
+
+# Use MUD_PLAYER key if available
+if [ -n "${MUD_PLAYER-}" ]; then
+  player_key="$HOME/.ssh/$MUD_PLAYER"
+  if [ -f "$player_key" ]; then
+    sshfs_opts="-o IdentityFile=$player_key"
+  fi
+fi
+
+# Add options to preserve extended attributes (xattrs)
+# This is critical for MUD multiplayer to sync health, damage, etc.
+if [ -n "$sshfs_opts" ]; then
+  sshfs_opts="$sshfs_opts -o xattr"
+else
+  sshfs_opts="-o xattr"
+fi
+
+# Mount the remote directory
+# shellcheck disable=SC2086
+if sshfs $sshfs_opts "$server:$remote_path" "$local_mount"; then
+  printf '%s\n' "Portal opened: $server:$remote_path mounted at $local_mount"
+  printf '%s\n' "To close this portal, use: close-portal $local_mount"
+else
+  printf '%s\n' "portal: failed to mount $server:$remote_path" >&2
+  exit 1
+fi
