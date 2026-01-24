@@ -67,7 +67,14 @@ room_log="$room_dir/.log"
 if printf '%s\n' "$log_entry" >> "$room_log" 2>/dev/null; then
   # Echo to stdout only if verbose flag was used
   if [ "$verbose" -eq 1 ]; then
-    printf '%s\n' "$log_entry"
+    # Colorize player name if outputting to a terminal
+    if [ -t 1 ] && [ -z "${NO_COLOR-}" ]; then
+      color=$(colorize-player-name "$player_name")
+      printf '\033[1;%dm%s:\033[0m %s\n' "$color" "$player_name" "$message"
+    else
+      # No colors for non-TTY or when NO_COLOR is set
+      printf '%s: %s\n' "$player_name" "$message"
+    fi
   fi
 else
   printf '%s\n' "say: failed to write to room log (directory may be read-only)" >&2

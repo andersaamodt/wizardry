@@ -101,30 +101,25 @@ fi
         player=$(printf '%s' "$rest" | sed 's/:.*//')
         message=$(printf '%s' "$rest" | sed 's/^[^:]*: //')
         
-        # Generate a color from player name (hash to ANSI color)
-        # Use simple character sum modulo for color selection
-        color_num=0
-        for char in $(printf '%s' "$player" | fold -w1); do
-          color_num=$((color_num + $(printf '%d' "'$char")))
-        done
-        # Map to colors 31-36 (red, green, yellow, blue, magenta, cyan)
-        color=$((31 + (color_num % 6)))
+        # Get color for player name using the colorization imp
+        color=$(colorize-player-name "$player")
         
-        # Clear line, display colored player name (bold) and message (no timestamp)
+        # Display with proper terminal handling:
+        # 1. Save cursor position
+        # 2. Clear line and display message
+        # 3. Restore cursor position
         # Format: PlayerName: message
+        # \033[s = save cursor, \033[u = restore cursor
+        # \033[K = clear to end of line
         # \033[1;COLORm = bold + color, \033[0m = reset
-        printf '\r\033[K\033[1;%dm%s:\033[0m %s\n' \
+        printf '\033[s\r\033[K\033[1;%dm%s:\033[0m %s\n\033[u' \
           "$color" "$player" "$message"
         ;;
       *)
         # Fallback for lines that don't match expected format
-        printf '\r\033[K🔮 %s\n' "$line"
+        printf '\033[s\r\033[K🔮 %s\n\033[u' "$line"
         ;;
     esac
-    
-    # Restore terminal prompt and any partially typed input
-    # Send WINCH signal to trigger prompt redraw in bash/zsh
-    kill -WINCH $$ 2>/dev/null || true
   done
 } &
 
