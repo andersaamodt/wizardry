@@ -5,9 +5,11 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: shocking-grasp
+Usage: shocking-grasp [-v]
 
 Enchant yourself with shocking grasp. The next file or object you touch takes 4 damage, then the effect dissipates.
+
+The spell logs actions to the room .log file. Use -v for verbose local output.
 USAGE
   exit 0
   ;;
@@ -16,6 +18,13 @@ esac
 require-wizardry || exit 1
 set -eu
 . env-clear
+
+# Check for -v verbose flag
+verbose=0
+if [ "${1-}" = "-v" ]; then
+  verbose=1
+  shift
+fi
 
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
 
@@ -58,5 +67,16 @@ enchant "$avatar_path" "on_toucher=damage:4" >/dev/null 2>&1 || {
   exit 1
 }
 
-printf '%s\n' "Your hands crackle with electrical energy."
+# Output message only if verbose
+if [ "$verbose" -eq 1 ]; then
+  printf '%s\n' "Your hands crackle with electrical energy."
+fi
+
+# Log to room log
+player_name=${MUD_PLAYER:-${USER:-Someone}}
+timestamp=$(date '+%H:%M' 2>/dev/null || date '+%H:%M')
+room_log="$PWD/.log"
+log_entry="[$timestamp] $player_name: casts shocking grasp, hands crackling with energy!"
+printf '%s\n' "$log_entry" >> "$room_log" 2>/dev/null || true
+
 exit 0
