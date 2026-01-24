@@ -92,9 +92,6 @@ fi
     # Skip empty lines
     [ -z "$line" ] && continue
     
-    # Get current player name to filter out own messages
-    current_player=${MUD_PLAYER:-${USER:-Anonymous}}
-    
     # Parse the log entry to extract player name and colorize it
     # Expected format: [HH:MM] PlayerName: message
     case "$line" in
@@ -103,9 +100,6 @@ fi
         rest=$(printf '%s' "$line" | sed 's/^\[[^]]*\] //')
         player=$(printf '%s' "$rest" | sed 's/:.*//')
         message=$(printf '%s' "$rest" | sed 's/^[^:]*: //')
-        
-        # Skip messages from self
-        [ "$player" = "$current_player" ] && continue
         
         # Generate a color from player name (hash to ANSI color)
         # Use simple character sum modulo for color selection
