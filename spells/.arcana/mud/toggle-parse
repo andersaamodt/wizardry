@@ -86,13 +86,12 @@ if config-has "$CONFIG_FILE" "parse-enabled" 2>/dev/null; then
     
     # Unload all gloss functions immediately
     if [ -n "${gloss_funcs-}" ]; then
-      # Unset each function individually
       # shellcheck disable=SC2086
       for func in $gloss_funcs; do
         [ -n "$func" ] || continue
-        # Use unset -f for POSIX shells
+        
+        # Try multiple unset methods for maximum compatibility
         unset -f "$func" 2>/dev/null || true
-        # Also try unfunction for zsh compatibility
         if [ -n "${ZSH_VERSION-}" ]; then
           unfunction "$func" 2>/dev/null || true
         fi
