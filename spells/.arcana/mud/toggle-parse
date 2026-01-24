@@ -92,7 +92,9 @@ if [ "$current_value" = "1" ]; then
       esac
     done
     
-    # Unset each first-word function
+    # Unset each first-word gloss function
+    # Note: This unsets ALL first-word glosses, even those that have synonyms
+    # The cache regeneration will then create synonym functions for those
     for func_name in $first_words; do
       if [ -n "${ZSH_VERSION-}" ]; then
         # In zsh, use both unfunction and unset -f for robustness
