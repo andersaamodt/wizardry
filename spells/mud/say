@@ -1,0 +1,60 @@
+#!/bin/sh
+
+# Say something in the current room (append to room log for multiplayer chat).
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: say <message>
+
+Speak in the current room by appending your message to the .room.log file.
+Other players in the same room (directory) can see your messages by reading
+the log file or using 'look' which displays recent activity.
+
+In multiplayer MUD, speech is simply append operations to the room log.
+Each player can tail -f .room.log to listen in real-time.
+
+Example:
+  say "Hello, adventurers!"
+  say "Has anyone seen the dragon?"
+
+See also: look, listen
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Get message from all arguments
+if [ $# -eq 0 ]; then
+  printf '%s\n' "say: requires a message to say" >&2
+  exit 2
+fi
+
+message="$*"
+
+# Get current directory (the room we're in)
+room_dir=${PWD}
+
+# Get player name from environment or use 'Anonymous'
+player_name=${MUD_PLAYER:-${USER:-Anonymous}}
+
+# Create timestamp
+timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date)
+
+# Format the message
+log_entry="[$timestamp] $player_name says: $message"
+
+# Append to room log
+room_log="$room_dir/.room.log"
+
+# Create or append to log file
+if printf '%s\n' "$log_entry" >> "$room_log" 2>/dev/null; then
+  # Echo to stdout for the speaker to see
+  printf '%s\n' "$log_entry"
+else
+  printf '%s\n' "say: failed to write to room log (directory may be read-only)" >&2
+  exit 1
+fi

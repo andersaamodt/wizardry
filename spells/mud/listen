@@ -1,0 +1,60 @@
+#!/bin/sh
+
+# Listen to room activity in real-time (tail -f the room log).
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: listen [room_path]
+
+Listen to room activity in real-time by tailing the .room.log file.
+Defaults to the current directory if no path is provided.
+
+This is the multiplayer equivalent of sitting in a room and watching
+what other players say and do. Press Ctrl-C to stop listening.
+
+Example:
+  listen
+  listen ~/portals/shared-dungeon
+
+See also: say, look
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Get room path (default to current directory)
+room_path=${1:-$PWD}
+
+# Check if directory exists
+if [ ! -d "$room_path" ]; then
+  printf '%s\n' "listen: directory does not exist: $room_path" >&2
+  exit 1
+fi
+
+room_log="$room_path/.room.log"
+
+# Check if log exists
+if [ ! -f "$room_log" ]; then
+  printf '%s\n' "listen: no activity in this room yet (no .room.log file)" >&2
+  printf '%s\n' "Waiting for activity..." >&2
+  # Create empty log so tail can watch it
+  touch "$room_log" 2>/dev/null || {
+    printf '%s\n' "listen: cannot create log file (directory may be read-only)" >&2
+    exit 1
+  }
+fi
+
+# Tail the log file
+printf '%s\n' "Listening to room activity in $room_path (Ctrl-C to stop)..."
+printf '%s\n' "---"
+
+if command -v tail >/dev/null 2>&1; then
+  exec tail -f "$room_log"
+else
+  printf '%s\n' "listen: tail command not found" >&2
+  exit 1
+fi
