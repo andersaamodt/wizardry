@@ -40,12 +40,8 @@ room_log="$room_path/.room.log"
 # Check if log exists
 if [ ! -f "$room_log" ]; then
   printf '%s\n' "listen: no activity in this room yet (no .room.log file)" >&2
-  printf '%s\n' "Waiting for activity..." >&2
-  # Create empty log so tail can watch it
-  touch "$room_log" 2>/dev/null || {
-    printf '%s\n' "listen: cannot create log file (directory may be read-only)" >&2
-    exit 1
-  }
+  printf '%s\n' "Use 'say' to start a conversation in this room." >&2
+  exit 1
 fi
 
 # Tail the log file
