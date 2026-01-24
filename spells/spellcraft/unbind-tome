@@ -78,7 +78,7 @@ if printf '%s' "$first_line" | grep -q "^# -.*- "; then
             *)
                 # Regular content line - write to current page if we have one
                 if nonempty "$current_page"; then
-                    output "$line" >>"$current_page"
+                    print "$line" >>"$current_page"
                 fi
                 ;;
         esac
@@ -88,7 +88,7 @@ else
     while IFS= read -r line || nonempty "$line"; do
         clean_name=$(printf '%s' "$line" | tr -dc '[:alnum:] .,;_-' | tr ' ' '_')
         empty "$clean_name" && clean_name="page_${page_num}"
-        output "$line" >"$pages_dir/$clean_name"
+        print "$line" >"$pages_dir/$clean_name"
         page_num=$((page_num + 1))
     done <"$tome"
 fi

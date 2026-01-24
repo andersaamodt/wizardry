@@ -76,4 +76,4 @@ fi
 
 # Perform the move
 mv "$from" "$to"
-output "Moved '$(file-name "$from")' to '$to'."
+print "Moved '$(file-name "$from")' to '$to'."
