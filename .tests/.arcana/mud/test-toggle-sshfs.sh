@@ -9,15 +9,15 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 spell_is_executable() {
-  [ -x "$ROOT_DIR/spells/.arcana/mud/sshfs" ]
+  [ -x "$ROOT_DIR/spells/.arcana/mud/toggle-sshfs" ]
 }
 
-run_test_case "sshfs toggle is executable" spell_is_executable
+run_test_case "toggle-sshfs is executable" spell_is_executable
 
 spell_has_content() {
-  [ -s "$ROOT_DIR/spells/.arcana/mud/sshfs" ]
+  [ -s "$ROOT_DIR/spells/.arcana/mud/toggle-sshfs" ]
 }
 
-run_test_case "sshfs toggle has content" spell_has_content
+run_test_case "toggle-sshfs has content" spell_has_content
 
 finish_tests
