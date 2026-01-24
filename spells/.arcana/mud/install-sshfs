@@ -1,0 +1,33 @@
+#!/bin/sh
+# Install sshfs for MUD multiplayer portals
+
+set -eu
+
+printf '%s\n' "Installing sshfs for MUD multiplayer..."
+
+# Detect package manager and install
+if command -v pkg-install >/dev/null 2>&1; then
+  pkg-install sshfs
+elif command -v apt-get >/dev/null 2>&1; then
+  sudo apt-get update && sudo apt-get install -y sshfs
+elif command -v pacman >/dev/null 2>&1; then
+  sudo pacman -S --noconfirm sshfs
+elif command -v brew >/dev/null 2>&1; then
+  brew install --cask macfuse
+  brew install gromgit/fuse/sshfs-mac
+elif command -v nix-env >/dev/null 2>&1; then
+  nix-env -iA nixpkgs.sshfs
+else
+  printf '%s\n' "install-sshfs: Could not detect package manager." >&2
+  printf '%s\n' "Please install sshfs manually for your system." >&2
+  exit 1
+fi
+
+# Verify installation
+if command -v sshfs >/dev/null 2>&1; then
+  printf '%s\n' "✓ sshfs installed successfully"
+  exit 0
+else
+  printf '%s\n' "install-sshfs: Installation may have succeeded but sshfs command not found." >&2
+  exit 1
+fi
