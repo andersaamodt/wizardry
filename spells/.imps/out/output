@@ -1,0 +1,6 @@
+#!/bin/sh
+# output MESSAGE - print message to stdout with newline
+# Example: output "Hello world"
+set -eu
+
+printf '%s\n' "$*"
