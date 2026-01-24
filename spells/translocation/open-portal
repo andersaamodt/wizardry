@@ -18,10 +18,12 @@ Examples:
   open-portal player@example.com:~/shared-dungeon
   open-portal --tor somehiddenservice.onion:~/world
   open-portal 192.168.1.100 /home/wizard/dungeon
-  open-portal player@server.com:~/world ~/my-portal
+  open-portal player@server.com:~/world /custom/mount/point
 
 Uses MUD_PLAYER SSH key if available, otherwise uses default SSH authentication.
 Extended attributes (xattrs) are preserved for game state synchronization.
+
+Default mount point: /mnt/portals/<server>
 
 See also: close-portal
 USAGE
@@ -113,12 +115,13 @@ remote_path="${remote_path%/}"
 if [ -z "$local_mount" ]; then
   # Create a safe directory name from the server
   safe_name=$(printf '%s' "$server" | tr -c 'A-Za-z0-9.-' '_')
-  local_mount="$HOME/portals/$safe_name"
+  local_mount="/mnt/portals/$safe_name"
 fi
 
 # Ensure portals directory exists
-if ! mkdir -p "$HOME/portals"; then
-  printf '%s\n' "open-portal: cannot create portals directory: $HOME/portals" >&2
+if ! mkdir -p "/mnt/portals"; then
+  printf '%s\n' "open-portal: cannot create portals directory: /mnt/portals" >&2
+  printf '%s\n' "You may need to run with sudo or adjust /mnt permissions." >&2
   exit 1
 fi
 

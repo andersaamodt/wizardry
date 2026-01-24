@@ -1,0 +1,14 @@
+#!/bin/sh
+# Toggle sshfs installation (install if not present, uninstall if present)
+
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+if command -v sshfs >/dev/null 2>&1; then
+  # sshfs is installed, so uninstall it
+  "$script_dir/uninstall-sshfs"
+else
+  # sshfs is not installed, so install it
+  "$script_dir/install-sshfs"
+fi

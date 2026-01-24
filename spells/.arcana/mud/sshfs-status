@@ -1,0 +1,19 @@
+#!/bin/sh
+# Report installation status of sshfs
+
+set -eu
+
+if command -v colors >/dev/null 2>&1; then
+  # shellcheck source=/dev/null
+  . colors
+else
+  RESET=""
+  THEME_SUCCESS=""
+  GREY=""
+fi
+
+if command -v sshfs >/dev/null 2>&1; then
+  printf "%s%s%s\n" "$THEME_SUCCESS" "installed" "$RESET"
+else
+  printf "%s%s%s\n" "$GREY" "not installed" "$RESET"
+fi

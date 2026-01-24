@@ -1,0 +1,86 @@
+#!/bin/sh
+
+# Start monitoring room activity in the background for real-time notifications.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: start-room-monitor [room_path]
+
+Start a background process that monitors the .room.log file in the current
+(or specified) directory and displays new entries in real-time.
+
+This enables live MUD multiplayer notifications - when other players speak,
+cast spells, or perform actions, you see them immediately in your terminal.
+
+The monitor runs as a background process and continues until you call
+stop-room-monitor or exit the shell.
+
+Examples:
+  start-room-monitor                    # Monitor current directory
+  start-room-monitor /mnt/portals/server/dungeon
+
+See also: stop-room-monitor, listen
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Get room path (default to current directory)
+room_path=${1:-$PWD}
+
+# Check if directory exists
+if [ ! -d "$room_path" ]; then
+  printf '%s\n' "start-room-monitor: directory does not exist: $room_path" >&2
+  exit 1
+fi
+
+room_log="$room_path/.room.log"
+
+# Create log file if it doesn't exist
+if [ ! -f "$room_log" ]; then
+  touch "$room_log" 2>/dev/null || {
+    printf '%s\n' "start-room-monitor: cannot create log file (directory may be read-only)" >&2
+    exit 1
+  }
+fi
+
+# Check if already monitoring this room
+pid_file="$HOME/.wizardry-room-monitor.pid"
+if [ -f "$pid_file" ]; then
+  old_pid=$(cat "$pid_file" 2>/dev/null || printf '')
+  if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
+    printf '%s\n' "Room monitor already running (PID: $old_pid)"
+    printf '%s\n' "Use stop-room-monitor to stop it first."
+    exit 1
+  fi
+fi
+
+# Start monitoring in background
+# Use tail -f to follow the log file
+# Prefix each line with a visual indicator so user knows it's from the monitor
+{
+  tail -f "$room_log" 2>/dev/null | while IFS= read -r line; do
+    # Skip empty lines
+    [ -z "$line" ] && continue
+    
+    # Display with prefix to distinguish from local commands
+    printf '\r\033[K%s%s%s\n' "🔮 " "$line" ""
+    
+    # Re-display prompt (if in interactive shell)
+    # This is a bit hacky but works for most shells
+    printf '%s' "" >&2
+  done
+} &
+
+monitor_pid=$!
+
+# Save PID for later stopping
+printf '%s\n' "$monitor_pid" > "$pid_file"
+
+printf '%s\n' "✓ Room monitor started (PID: $monitor_pid)"
+printf '%s\n' "Monitoring: $room_log"
+printf '%s\n' "Stop with: stop-room-monitor"
