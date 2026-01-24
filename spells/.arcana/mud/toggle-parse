@@ -58,12 +58,27 @@ if config-has "$CONFIG_FILE" "parse-enabled" 2>/dev/null; then
   if [ "$current_value" = "1" ]; then
     # Currently enabled, disable it
     
-    # IMPORTANT: Get list of gloss functions BEFORE changing config
-    # Otherwise generate-glosses will see parse-enabled=0 and return empty list
-    if command -v generate-glosses >/dev/null 2>&1; then
-      gloss_output=$(generate-glosses --quiet 2>/dev/null || true)
-      gloss_funcs=$(printf '%s\n' "$gloss_output" | \
-        grep '^[a-zA-Z_][a-zA-Z0-9_]*() {$' | sed 's/() {$//' || true)
+    # IMPORTANT: Get list of currently loaded gloss functions
+    # We need to unset the functions that are currently in memory
+    # Using compgen or typeset to list all functions, then filter for glosses
+    if [ -n "${ZSH_VERSION-}" ]; then
+      # In zsh, use print with function list
+      gloss_funcs=$(print -l ${(ok)functions} 2>/dev/null | grep -E '^[a-z]' || true)
+    elif [ -n "${BASH_VERSION-}" ]; then
+      # In bash, use compgen -A function
+      gloss_funcs=$(compgen -A function 2>/dev/null | grep -E '^[a-z]' || true)
+    else
+      # Fallback: try to generate list from generate-glosses
+      if command -v generate-glosses >/dev/null 2>&1; then
+        gloss_output=$(generate-glosses --quiet 2>/dev/null || true)
+        gloss_funcs=$(printf '%s\n' "$gloss_output" | \
+          grep '^[a-zA-Z_][a-zA-Z0-9_]*() {$' | sed 's/() {$//' || true)
+      fi
+    fi
+    
+    # Debug: verify we got functions
+    if [ -z "${gloss_funcs-}" ]; then
+      printf 'Warning: No gloss functions found to unset.\n' >&2
     fi
     
     # Now change the config
@@ -81,8 +96,16 @@ if config-has "$CONFIG_FILE" "parse-enabled" 2>/dev/null; then
     
     # Unload all gloss functions immediately
     if [ -n "${gloss_funcs-}" ]; then
+      # Unset each function individually
+      # shellcheck disable=SC2086
       for func in $gloss_funcs; do
+        [ -n "$func" ] || continue
+        # Use unset -f for POSIX shells
         unset -f "$func" 2>/dev/null || true
+        # Also try unfunction for zsh compatibility
+        if [ -n "${ZSH_VERSION-}" ]; then
+          unfunction "$func" 2>/dev/null || true
+        fi
       done
     fi
     
