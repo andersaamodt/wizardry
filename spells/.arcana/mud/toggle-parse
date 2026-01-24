@@ -65,6 +65,14 @@ if [ "$current_value" = "1" ]; then
   printf '[DEBUG] Disabling parse...\n' >&2
   config-set "$CONFIG_FILE" "parse-enabled" "0"
   
+  # Force filesystem sync to ensure config write is flushed
+  sync 2>/dev/null || true
+  
+  # Verify config was updated
+  printf '[DEBUG] Config file: %s\n' "$CONFIG_FILE" >&2
+  printf '[DEBUG] Config contents after update:\n' >&2
+  cat "$CONFIG_FILE" >&2 || true
+  
   # Invalidate gloss cache to force regeneration with new setting
   # Handle TMPDIR with or without trailing slash  
   gloss_cache_dir="${TMPDIR:-/tmp}"
@@ -80,6 +88,7 @@ if [ "$current_value" = "1" ]; then
   rm -f "$gloss_cache" 2>/dev/null || true
   
   printf '[DEBUG] Regenerating cache with parse-enabled=0...\n' >&2
+  printf '[DEBUG] SPELLBOOK_DIR=%s\n' "$SPELLBOOK_DIR" >&2
   
   # Explicitly regenerate cache with parse-enabled=0
   if command -v generate-glosses >/dev/null 2>&1; then
