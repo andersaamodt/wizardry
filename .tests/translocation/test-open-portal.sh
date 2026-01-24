@@ -2,8 +2,8 @@
 # Test coverage for open-portal spell:
 # - Shows usage with --help
 # - Requires sshfs command
-# - Requires torify command
-# - Requires MUD_PLAYER environment variable
+# - Optionally requires torify for --tor mode
+# - Handles server:path syntax
 
 set -eu
 
@@ -34,33 +34,50 @@ test_requires_sshfs() {
   assert_error_contains "sshfs not found" || return 1
 }
 
-test_requires_mud_player() {
+test_requires_torify_for_tor_mode() {
   stubdir=$(make_tempdir)/bin
   mkdir -p "$stubdir"
-  # Create stub sshfs and torify
+  # Create stub sshfs but not torify
   cat > "$stubdir/sshfs" <<'EOF'
 #!/bin/sh
 exit 0
 EOF
-  cat > "$stubdir/torify" <<'EOF'
-#!/bin/sh
-exit 0
-EOF
-  chmod +x "$stubdir/sshfs" "$stubdir/torify"
+  chmod +x "$stubdir/sshfs"
   for util in sh env printf mkdir; do
     if command -v "$util" >/dev/null 2>&1; then
       ln -sf "$(command -v "$util")" "$stubdir/$util" 2>/dev/null || true
     fi
   done
-  # Run without MUD_PLAYER set
-  MUD_PLAYER="" PATH="$stubdir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:/bin:/usr/bin" run_spell "spells/translocation/open-portal"
+  # Run with --tor flag but no torify available
+  PATH="$stubdir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:/bin:/usr/bin" run_spell "spells/translocation/open-portal" --tor
   assert_failure || return 1
-  assert_error_contains "MUD_PLAYER" || return 1
+  assert_error_contains "torify" || return 1
+}
+
+test_requires_arguments() {
+  stubdir=$(make_tempdir)/bin
+  mkdir -p "$stubdir"
+  # Create stub sshfs
+  cat > "$stubdir/sshfs" <<'EOF'
+#!/bin/sh
+exit 0
+EOF
+  chmod +x "$stubdir/sshfs"
+  for util in sh env printf mkdir; do
+    if command -v "$util" >/dev/null 2>&1; then
+      ln -sf "$(command -v "$util")" "$stubdir/$util" 2>/dev/null || true
+    fi
+  done
+  # Run without arguments
+  PATH="$stubdir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:/bin:/usr/bin" run_spell "spells/translocation/open-portal"
+  assert_failure || return 1
+  assert_error_contains "requires at least one argument" || return 1
 }
 
 run_test_case "open-portal shows usage text" test_help
 run_test_case "open-portal requires sshfs" test_requires_sshfs
-run_test_case "open-portal requires MUD_PLAYER" test_requires_mud_player
+run_test_case "open-portal --tor requires torify" test_requires_torify_for_tor_mode
+run_test_case "open-portal requires arguments" test_requires_arguments
 
 
 # Test via source-then-invoke pattern  

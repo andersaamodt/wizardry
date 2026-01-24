@@ -1,5 +1,5 @@
 #!/bin/sh
-# cd-hook - cd hook that runs look and moves avatar after successful directory change
+# cd-hook - cd hook that runs look, moves avatar, and manages listening after successful directory change
 # Example: Define as function: cd() { builtin cd "$@" || return $?; cd-hook; }
 
 set -eu
@@ -16,6 +16,22 @@ if [ -z "$cd_look_value" ]; then
 fi
 if [ "$cd_look_value" = "1" ]; then
     command -v look >/dev/null 2>&1 && look 2>/dev/null || true
+fi
+
+# Check if cd-listen is enabled
+cd_listen_value=""
+if [ -f "$config_file" ]; then
+    cd_listen_value=$(grep "^cd-listen=" "$config_file" 2>/dev/null | cut -d= -f2- || printf '')
+fi
+# Default to disabled (0) if not set
+if [ -z "$cd_listen_value" ]; then
+    cd_listen_value=$(mud-defaults cd-listen 2>/dev/null || printf '0')
+fi
+if [ "$cd_listen_value" = "1" ]; then
+    # Stop and restart listening in the new directory
+    if command -v listen >/dev/null 2>&1; then
+        listen 2>/dev/null || true
+    fi
 fi
 
 # Move avatar if avatar system is enabled (defaults to disabled when unset)

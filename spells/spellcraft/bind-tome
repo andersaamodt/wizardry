@@ -74,7 +74,7 @@ for page in "$pages_dir"/*; do
     cat "$page" >>"$text_file"
 done
 
-say "Text file created: $text_file"
+printf '%s\n' "Text file created: $text_file"
 
 # Optionally remove the original pages once the tome is complete.
 if [ "$delete_sources" -eq 1 ]; then
@@ -82,5 +82,5 @@ if [ "$delete_sources" -eq 1 ]; then
         there "$page" || continue
         rm -- "$page"
     done
-    say "Original files deleted."
+    printf '%s\n' "Original files deleted."
 fi

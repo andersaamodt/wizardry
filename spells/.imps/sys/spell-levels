@@ -20,7 +20,7 @@ case "$level" in
   1)
     name='Banish & Validation Infrastructure'
     spells='banish:wards validate-spells:.wizardry'
-    imps='cond/empty cond/full cond/given cond/gone cond/has cond/has-ancestor cond/is cond/is-path cond/is-posint cond/lacks cond/newer cond/no cond/nonempty cond/older cond/there cond/within-range cond/yes out/debug out/die out/disable-palette out/fail out/first-of out/heading-section out/heading-separator out/heading-simple out/info out/ok out/or-else out/print-fail out/print-pass out/quiet out/say out/step out/success out/usage-error out/warn sys/spell-levels text/count-words text/pluralize'
+    imps='cond/empty cond/full cond/given cond/gone cond/has cond/has-ancestor cond/is cond/is-path cond/is-posint cond/lacks cond/newer cond/no cond/nonempty cond/older cond/there cond/within-range cond/yes out/debug out/die out/disable-palette out/fail out/first-of out/heading-section out/heading-separator out/heading-simple out/info out/ok out/or-else out/print-fail out/print-pass out/quiet out/step out/success out/usage-error out/warn sys/spell-levels text/count-words text/pluralize'
     ;;
   2)
     name='Installation Infrastructure'
@@ -94,7 +94,7 @@ case "$level" in
     ;;
   16)
     name='Advanced MUD Features'
-    spells='choose-player:mud decorate:mud greater-heal:mud heal:mud lesser-heal:mud magic-missile:mud resurrect:mud shocking-grasp:mud stats:mud'
+    spells='choose-player:mud decorate:mud greater-heal:mud heal:mud lesser-heal:mud listen:mud magic-missile:mud resurrect:mud say:mud shocking-grasp:mud start-listening:mud stats:mud stop-listening:mud'
     imps='hook/cd-hook hook/touch-hook mud/damage-file mud/deal-damage mud/get-life mud/incarnate mud/move-avatar mud/trigger-on-touch'
     ;;
   17)
@@ -104,7 +104,7 @@ case "$level" in
     ;;
   18)
     name='SSH & Remote Access'
-    spells='enchant-portkey:translocation follow-portkey:translocation open-portal:translocation open-teletype:translocation validate-ssh-key'
+    spells='close-portal:translocation enchant-portkey:translocation follow-portkey:translocation open-portal:translocation open-teletype:translocation validate-ssh-key'
     imps=''
     ;;
   19)

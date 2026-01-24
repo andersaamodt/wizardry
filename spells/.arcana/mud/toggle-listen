@@ -1,0 +1,91 @@
+#!/bin/sh
+
+# Toggle cd-listen hook on/off - must be sourced for immediate effect
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: . toggle-listen    OR    toggle listen    (via parse/gloss)
+
+Turn the cd hook that automatically manages 'start-listening' after each 
+directory change on or off. When enabled, entering a new directory 
+automatically stops listening to the previous directory and starts listening 
+to the new one.
+
+Changes take effect immediately in the current shell.
+
+This spell must be sourced (not executed) to affect your current shell.
+USAGE
+  exit 0
+  ;;
+esac
+
+# Uncastable pattern - detect if sourced
+toggle_listen_sourced=0
+if [ -n "${ZSH_VERSION:-}" ]; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) toggle_listen_sourced=1 ;;
+  esac
+else
+  toggle_listen_base=${0##*/}
+  case "$toggle_listen_base" in
+    sh|dash|bash|zsh|ksh|mksh) toggle_listen_sourced=1 ;;
+    toggle-listen) toggle_listen_sourced=0 ;;
+    parse) toggle_listen_sourced=1 ;;  # Sourced via parse
+    *) toggle_listen_sourced=1 ;;
+  esac
+fi
+
+if [ "$toggle_listen_sourced" -eq 0 ]; then
+  printf '%s\n' "This spell must be sourced. Use:  . toggle-listen  OR  toggle listen" >&2
+  return 1 2>/dev/null || exit 1
+fi
+unset toggle_listen_sourced toggle_listen_base
+
+set +e  # Permissive mode since we're in user's shell
+set -u
+
+# Determine config file location
+SPELLBOOK_DIR="${SPELLBOOK_DIR:-$HOME/.spellbook}"
+CONFIG_FILE="$SPELLBOOK_DIR/.mud"
+
+# Ensure spellbook directory exists
+mkdir -p "$SPELLBOOK_DIR"
+touch "$CONFIG_FILE"
+
+# Check current state
+if config-has "$CONFIG_FILE" "cd-listen" 2>/dev/null; then
+        current_value=$(config-get "$CONFIG_FILE" "cd-listen" 2>/dev/null)
+        if [ "$current_value" = "1" ]; then
+                # Currently enabled, disable it
+                config-set "$CONFIG_FILE" "cd-listen" "0"
+                
+                # Stop any active listening
+                command -v stop-listening >/dev/null 2>&1 && stop-listening 2>/dev/null || true
+                
+                printf '%s\n' "✓ cd-listen hook disabled."
+                return 0
+        fi
+fi
+
+# Currently disabled or set to 0, enable it
+config-set "$CONFIG_FILE" "cd-listen" "1"
+
+# Ensure cd hook is loaded (cd-listen requires the cd hook to work)
+load_cd_hook_path="${WIZARDRY_DIR:-$HOME/.wizardry}/spells/.arcana/mud/load-cd-hook"
+if [ -f "$load_cd_hook_path" ]; then
+    # Check if cd function is already defined
+    cd_check=$(command -v cd 2>/dev/null || echo "builtin")
+    if [ "$cd_check" = "builtin" ] || [ "$cd_check" = "cd" ]; then
+        # Source the load-cd-hook file to define cd function
+        . "$load_cd_hook_path" 2>/dev/null || {
+            printf '%s\n' "Warning: Failed to load cd hook function."
+            return 1
+        }
+    fi
+fi
+
+# Start listening in current directory
+command -v start-listening >/dev/null 2>&1 && start-listening 2>/dev/null || true
+
+printf '%s\n' "✓ cd-listen hook enabled. Will auto-listen when changing directories."

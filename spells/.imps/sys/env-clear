@@ -56,6 +56,7 @@ ec_saved_wizardry_invoked="${WIZARDRY_INVOKED:-}"
 ec_saved_spellbook_dir="${SPELLBOOK_DIR:-}"
 ec_saved_mud_dir="${MUD_DIR:-}"
 ec_saved_log_level="${WIZARDRY_LOG_LEVEL:-}"
+ec_saved_mud_player="${MUD_PLAYER:-}"
 
 # Preserve package manager override variables (used by pkg-install in arcana)
 # Officially supported platforms only: debian, arch, nixos, mac
@@ -140,6 +141,7 @@ export OLDPWD="$ec_saved_oldpwd"
 [ -n "$ec_saved_spellbook_dir" ] && export SPELLBOOK_DIR="$ec_saved_spellbook_dir"
 [ -n "$ec_saved_mud_dir" ] && export MUD_DIR="$ec_saved_mud_dir"
 [ -n "$ec_saved_log_level" ] && export WIZARDRY_LOG_LEVEL="$ec_saved_log_level"
+[ -n "$ec_saved_mud_player" ] && export MUD_PLAYER="$ec_saved_mud_player"
 
 # Restore package manager overrides (officially supported platforms only)
 [ -n "$ec_saved_nix_pkg" ] && export NIX_PACKAGE="$ec_saved_nix_pkg"
@@ -207,8 +209,8 @@ fi
 unset ec_saved_path ec_saved_home ec_saved_user ec_saved_shell ec_saved_term
 unset ec_saved_lang ec_saved_tmpdir ec_saved_pwd ec_saved_oldpwd
 unset ec_saved_wizardry_dir ec_saved_wizardry_invoked ec_saved_spellbook_dir
-unset ec_saved_mud_dir ec_saved_log_level ec_saved_nix_pkg ec_saved_apt_pkg
-unset ec_saved_pacman_pkg ec_saved_pkgin_pkg ec_saved_test_failure
+unset ec_saved_mud_dir ec_saved_log_level ec_saved_mud_player ec_saved_nix_pkg
+unset ec_saved_apt_pkg ec_saved_pacman_pkg ec_saved_pkgin_pkg ec_saved_test_failure
 unset ec_saved_test_skip ec_saved_wiz_tmpdir ec_saved_global_subtest
 unset ec_saved_test_compiled ec_saved_test_helpers ec_saved_system_path
 unset ec_saved_ask_input ec_saved_choose_input ec_saved_menu_loop_limit

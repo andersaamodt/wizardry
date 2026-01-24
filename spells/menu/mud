@@ -79,8 +79,11 @@ while true; do
   
   look="Look Around%look"
   stats="View Stats%stats"
+  speak="Say Something%printf 'Message: ' && read msg && say \"\$msg\""
   home="Teleport Home%cd"
   jump="Teleport to Marker%jump-to-marker"
+  open_portal="Open Portal%printf 'Server:Path: ' && read addr && open-portal \"\$addr\""
+  close_portal="Close Portal%close-portal"
   portal="Teleport to Portal Chamber%cd $portal_location"
   admin="Admin MUD Hosting%mud-admin-menu"
   settings="MUD Settings%mud-settings"
@@ -92,8 +95,11 @@ while true; do
   set -- \
     "$look" \
     "$stats" \
+    "$speak" \
     "$home" \
     "$jump" \
+    "$open_portal" \
+    "$close_portal" \
     "$portal" \
     "$admin" \
     "$settings" \

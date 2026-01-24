@@ -20,10 +20,10 @@ test_validate_existing_spells() {
 }
 
 test_validate_existing_imps() {
-  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" --imps "cond/has" "out/say"
+  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" --imps "cond/has" "out/warn"
   assert_success || return 1
   assert_output_contains "Found imp: cond/has" || return 1
-  assert_output_contains "Found imp: out/say" || return 1
+  assert_output_contains "Found imp: out/warn" || return 1
 }
 
 test_validate_missing_spells() {
@@ -46,16 +46,16 @@ test_missing_only_flag() {
 
 test_show_status_unloaded() {
   # When imps are not loaded, they should show as "Available"
-  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" --imps --show-status "cond/has" "out/say"
+  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" --imps --show-status "cond/has" "out/warn"
   assert_success || return 1
-  assert_output_contains "Imps: has say" || return 1
+  assert_output_contains "Imps: has warn" || return 1
 }
 
 test_show_status_loaded() {
   # In flat-file paradigm, spells/imps are always "available" as scripts
   # This test is no longer applicable since we don't preload functions
   # Just test that --show-status works correctly
-  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" --imps --show-status "cond/has" "out/say"
+  WIZARDRY_DIR="$ROOT_DIR" run_spell "spells/.wizardry/validate-spells" --imps --show-status "cond/has" "out/warn"
   assert_success || return 1
   # In flat-file paradigm, all imps show as "Imps:" (not "Loaded")
   assert_output_contains "Imps:" || return 1
