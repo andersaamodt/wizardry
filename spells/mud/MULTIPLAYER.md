@@ -64,7 +64,7 @@ open-portal server.com /remote/path
 ```
 
 The open-portal spell:
-- Creates a local mount point (default: `~/portals/<server>`)
+- Creates a local mount point (default: `/mnt/portals/<server>`)
 - Uses sshfs with xattr support enabled
 - Uses your MUD_PLAYER SSH key if available
 - Preserves extended attributes for game state
@@ -75,7 +75,7 @@ The open-portal spell:
 Navigate to the portal and look around:
 
 ```sh
-cd ~/portals/server
+cd /mnt/portals/server
 look
 ```
 
@@ -95,12 +95,26 @@ say "Hello, adventurers!"
 This appends to `.room.log` with timestamp and player name. Other players can:
 - Use `look` to see recent messages
 - Use `listen` to watch messages in real-time
+- Use `start-room-monitor` for live notifications (proof-of-concept feature)
 
-Listen to room activity:
+**Real-time notifications (proof-of-concept):**
+
+Start background monitoring for live event notifications:
+
+```sh
+start-room-monitor
+# Now you'll see messages from other players in real-time as they happen
+# Each notification appears with a 🔮 prefix
+
+# When done, stop the monitor:
+stop-room-monitor
+```
+
+Listen to room activity (manual monitoring):
 
 ```sh
 listen          # Current room
-listen ~/portals/server/dungeon  # Specific room
+listen /mnt/portals/server/dungeon  # Specific room
 ```
 
 ### 4. Combat and Magic
@@ -121,7 +135,7 @@ This:
 When done, unmount the portal:
 
 ```sh
-close-portal ~/portals/server
+close-portal /mnt/portals/server
 ```
 
 Or list all active portals:
@@ -274,6 +288,10 @@ Use `open-portal --tor` for anonymous connections via Tor hidden services.
 ### Communication
 - `say` - Speak in current room (append to `.room.log`)
 - `listen` - Watch room activity in real-time (tail -f `.room.log`)
+- `start-room-monitor` - Start background process for live event notifications (proof-of-concept)
+- `stop-room-monitor` - Stop the background room monitor
+
+**Note:** `start-room-monitor` provides true real-time multiplayer liveness - messages from other players appear in your terminal as they happen, prefixed with 🔮.
 
 ### Observation
 - `look` - View room with recent activity
@@ -322,7 +340,7 @@ enchant . "description=An ancient fortress shrouded in mystery."
 Client side:
 ```sh
 open-portal user@server:~/worlds/dragon-keep
-cd ~/portals/server/dragon-keep
+cd /mnt/portals/server/dragon-keep
 look
 say "I've arrived at the keep!"
 ```
@@ -330,7 +348,7 @@ say "I've arrived at the keep!"
 Or with Tor for anonymous access:
 ```sh
 open-portal --tor somehiddenservice.onion:~/worlds/dragon-keep
-cd ~/portals/somehiddenservice_onion/dragon-keep
+cd /mnt/portals/somehiddenservice_onion/dragon-keep
 look
 ```
 
@@ -351,7 +369,7 @@ look  # Shows "Player1 casts magic missile at goblin"
 ### Multi-Room Adventure
 
 ```sh
-cd ~/portals/server/world
+cd /mnt/portals/server/world
 mkdir -p throne-room library armory
 enchant throne-room "title=The Throne Room"
 enchant library "title=The Ancient Library"

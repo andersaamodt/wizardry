@@ -1,0 +1,63 @@
+#!/bin/sh
+
+# Stop the background room monitor.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: stop-room-monitor
+
+Stop the background room activity monitor that was started with
+start-room-monitor.
+
+See also: start-room-monitor, listen
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+pid_file="$HOME/.wizardry-room-monitor.pid"
+
+if [ ! -f "$pid_file" ]; then
+  printf '%s\n' "No room monitor is running."
+  exit 0
+fi
+
+monitor_pid=$(cat "$pid_file" 2>/dev/null || printf '')
+
+if [ -z "$monitor_pid" ]; then
+  printf '%s\n' "Invalid PID file."
+  rm -f "$pid_file"
+  exit 1
+fi
+
+if kill -0 "$monitor_pid" 2>/dev/null; then
+  # Kill the monitor process
+  kill "$monitor_pid" 2>/dev/null || true
+  
+  # Also try to kill any child processes (tail)
+  # Use ps to find children instead of pkill for portability
+  if command -v ps >/dev/null 2>&1; then
+    # Find and kill child processes
+    ps -o pid= --ppid "$monitor_pid" 2>/dev/null | while read -r child_pid; do
+      kill "$child_pid" 2>/dev/null || true
+    done
+  fi
+  
+  # Wait a moment for cleanup
+  sleep 0.5
+  
+  # Check if it's really gone
+  if kill -0 "$monitor_pid" 2>/dev/null; then
+    printf '%s\n' "Warning: Monitor process may still be running (PID: $monitor_pid)"
+  else
+    printf '%s\n' "✓ Room monitor stopped"
+  fi
+else
+  printf '%s\n' "Room monitor was not running (stale PID file)"
+fi
+
+rm -f "$pid_file"
