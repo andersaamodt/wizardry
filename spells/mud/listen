@@ -1,0 +1,139 @@
+#!/bin/sh
+
+# Start monitoring room activity in the background for real-time notifications.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: listen [room_path]
+
+Start (or restart) background monitoring of the .log file in the current
+(or specified) directory and display new entries in real-time.
+
+This enables live MUD multiplayer notifications - when other players speak,
+cast spells, or perform actions, you see them immediately in your terminal.
+
+The listener runs as a background process. Running listen again will automatically
+stop any existing listener and start a new one.
+
+Examples:
+  listen                    # Monitor current directory
+  listen /mnt/server/dungeon   # Monitor specific directory
+  listen --stop             # Stop listening (no new listener started)
+
+See also: say, think
+USAGE
+  exit 0
+  ;;
+--stop)
+  # Stop listening mode
+  stop_only=1
+  ;;
+*)
+  stop_only=0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Stop any existing listener first
+pid_file="$HOME/.wizardry-listening.pid"
+if [ -f "$pid_file" ]; then
+  old_pid=$(cat "$pid_file" 2>/dev/null || printf '')
+  if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
+    # Kill the monitor process
+    kill "$old_pid" 2>/dev/null || true
+    
+    # Also try to kill any child processes (tail)
+    if command -v ps >/dev/null 2>&1; then
+      # Find and kill child processes  
+      ps -o pid= --ppid "$old_pid" 2>/dev/null | while read -r child_pid; do
+        kill "$child_pid" 2>/dev/null || true
+      done
+    fi
+    
+    # Wait a moment for cleanup
+    sleep 0.5
+  fi
+  rm -f "$pid_file"
+fi
+
+# If --stop was specified, we're done
+if [ "$stop_only" = "1" ]; then
+  printf '%s\n' "✓ Stopped listening to room activity"
+  exit 0
+fi
+
+# Get room path (default to current directory)
+room_path=${1:-$PWD}
+
+# Check if directory exists
+if [ ! -d "$room_path" ]; then
+  printf '%s\n' "listen: directory does not exist: $room_path" >&2
+  exit 1
+fi
+
+room_log="$room_path/.log"
+
+# Create log file if it doesn't exist
+if [ ! -f "$room_log" ]; then
+  touch "$room_log" 2>/dev/null || {
+    printf '%s\n' "listen: cannot create log file (directory may be read-only)" >&2
+    exit 1
+  }
+fi
+
+# Start monitoring in background
+# Use tail -f to follow the log file
+# Display messages with colors and restore terminal input
+{
+  tail -f "$room_log" 2>/dev/null | while IFS= read -r line; do
+    # Skip empty lines
+    [ -z "$line" ] && continue
+    
+    # Parse the log entry to extract player name and colorize it
+    # Expected format: [HH:MM] PlayerName: message
+    case "$line" in
+      \[*\]\ *:\ *)
+        # Extract timestamp, player name, and message
+        timestamp=$(printf '%s' "$line" | sed 's/^\[\([^]]*\)\].*/\1/')
+        rest=$(printf '%s' "$line" | sed 's/^\[[^]]*\] //')
+        player=$(printf '%s' "$rest" | sed 's/:.*//')
+        message=$(printf '%s' "$rest" | sed 's/^[^:]*: //')
+        
+        # Generate a color from player name (hash to ANSI color)
+        # Use simple character sum modulo for color selection
+        color_num=0
+        for char in $(printf '%s' "$player" | fold -w1); do
+          color_num=$((color_num + $(printf '%d' "'$char")))
+        done
+        # Map to colors 31-36 (red, green, yellow, blue, magenta, cyan)
+        color=$((31 + (color_num % 6)))
+        
+        # Clear line, display colored player name (bold) and message
+        # Format: [HH:MM] PlayerName: message
+        # \033[1;COLORm = bold + color, \033[0m = reset
+        printf '\r\033[K[%s] \033[1;%dm%s:\033[0m %s\n' \
+          "$timestamp" "$color" "$player" "$message"
+        ;;
+      *)
+        # Fallback for lines that don't match expected format
+        printf '\r\033[K🔮 %s\n' "$line"
+        ;;
+    esac
+    
+    # Restore terminal prompt and any partially typed input
+    # Send WINCH signal to trigger prompt redraw in bash/zsh
+    kill -WINCH $$ 2>/dev/null || true
+  done
+} &
+
+monitor_pid=$!
+
+# Save PID for later stopping
+printf '%s\n' "$monitor_pid" > "$pid_file"
+
+printf '%s\n' "✓ Started listening to room activity (PID: $monitor_pid)"
+printf '%s\n' "Monitoring: $room_log"
+printf '%s\n' "Stop with: listen --stop"

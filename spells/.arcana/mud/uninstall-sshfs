@@ -1,0 +1,45 @@
+#!/bin/sh
+# Uninstall sshfs for MUD multiplayer portals
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-sshfs
+
+Uninstall sshfs package from this system.
+Detects your package manager and removes sshfs automatically.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+printf '%s\n' "Uninstalling sshfs..."
+
+# Detect package manager and uninstall
+if command -v pkg-remove >/dev/null 2>&1; then
+  pkg-remove sshfs
+elif command -v apt-get >/dev/null 2>&1; then
+  sudo apt-get remove -y sshfs
+elif command -v pacman >/dev/null 2>&1; then
+  sudo pacman -R --noconfirm sshfs
+elif command -v brew >/dev/null 2>&1; then
+  brew uninstall sshfs-mac
+  # Note: macfuse is often used by other tools, so we don't remove it
+elif command -v nix-env >/dev/null 2>&1; then
+  nix-env -e sshfs
+else
+  printf '%s\n' "uninstall-sshfs: Could not detect package manager." >&2
+  printf '%s\n' "Please uninstall sshfs manually for your system." >&2
+  exit 1
+fi
+
+# Verify uninstallation
+if ! command -v sshfs >/dev/null 2>&1; then
+  printf '%s\n' "✓ sshfs uninstalled successfully"
+  exit 0
+else
+  printf '%s\n' "uninstall-sshfs: Uninstallation may have succeeded but sshfs command still found." >&2
+  exit 1
+fi

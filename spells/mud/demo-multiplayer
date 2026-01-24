@@ -1,0 +1,132 @@
+#!/bin/sh
+# MUD Multiplayer Demo Script
+# Demonstrates the basic multiplayer workflow
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: demo-multiplayer
+
+Demonstrates the MUD multiplayer proof-of-concept by simulating
+two players interacting in a shared filesystem world.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+printf '\n%s\n' "=== Wizardry MUD Multiplayer Demo ==="
+printf '%s\n\n' "This script demonstrates the multiplayer proof-of-concept."
+
+# Create a demo world
+demo_world="/tmp/wizardry-demo-world"
+printf 'Setting up demo world at %s...\n' "$demo_world"
+
+# Clean up if exists
+if [ -d "$demo_world" ]; then
+  rm -rf "$demo_world"
+fi
+
+mkdir -p "$demo_world/entrance"
+mkdir -p "$demo_world/treasure-room"
+mkdir -p "$demo_world/throne-room"
+
+cd "$demo_world" || exit 1
+
+# Set up room descriptions using enchant if available
+if command -v enchant >/dev/null 2>&1; then
+  printf 'Enchanting rooms with descriptions...\n'
+  
+  enchant entrance "title=The Grand Entrance" 2>/dev/null || true
+  enchant entrance "description=A vast hallway with marble floors and soaring arches." 2>/dev/null || true
+  
+  enchant treasure-room "title=The Treasure Room" 2>/dev/null || true
+  enchant treasure-room "description=Gold and gems sparkle in the torchlight." 2>/dev/null || true
+  
+  enchant throne-room "title=The Throne Room" 2>/dev/null || true
+  enchant throne-room "description=An ornate throne sits upon a raised dais." 2>/dev/null || true
+fi
+
+# Create some items
+printf 'Creating items in the world...\n'
+printf 'A wooden chest bound with iron.\n' > treasure-room/chest
+printf 'An ancient sword with runes etched in the blade.\n' > treasure-room/sword
+printf 'A goblin warrior with a rusty axe.\n' > entrance/goblin
+
+# Give items attributes
+if command -v enchant >/dev/null 2>&1; then
+  enchant treasure-room/chest "life=50" 2>/dev/null || true
+  enchant entrance/goblin "life=20" 2>/dev/null || true
+  enchant entrance/goblin "damage=0" 2>/dev/null || true
+fi
+
+printf '\n%s\n' "=== Demo World Created ==="
+printf '%s\n' "World location: $demo_world"
+printf '\n%s\n' "=== Simulating Two Players ==="
+
+# Simulate Player 1
+printf '\n%s\n' "--- Player 1 (Alice) enters the entrance ---"
+cd "$demo_world/entrance" || exit 1
+
+if command -v look >/dev/null 2>&1; then
+  printf '%s\n' "Alice: look"
+  MUD_PLAYER="Alice" look
+fi
+
+if command -v say >/dev/null 2>&1; then
+  printf '\n%s\n' "Alice: say 'Hello! Anyone here?'"
+  MUD_PLAYER="Alice" say "Hello! Anyone here?"
+fi
+
+# Simulate Player 2
+printf '\n%s\n' "--- Player 2 (Bob) enters the entrance ---"
+
+if command -v look >/dev/null 2>&1; then
+  printf '%s\n' "Bob: look"
+  MUD_PLAYER="Bob" look
+  printf '\n%s\n' "(Notice: Bob sees Alice's message in Recent Activity!)"
+fi
+
+if command -v say >/dev/null 2>&1; then
+  printf '\n%s\n' "Bob: say 'Hi Alice! Ready for adventure?'"
+  MUD_PLAYER="Bob" say "Hi Alice! Ready for adventure?"
+fi
+
+# Player 1 attacks the goblin
+if command -v magic-missile >/dev/null 2>&1; then
+  printf '\n%s\n' "--- Alice casts magic missile at the goblin ---"
+  MUD_PLAYER="Alice" magic-missile goblin 2>/dev/null || \
+    printf 'Note: Avatar/mana system may prevent casting\n'
+fi
+
+# Player 2 looks and sees the combat
+if command -v look >/dev/null 2>&1; then
+  printf '\n%s\n' "--- Bob looks around after the spell ---"
+  MUD_PLAYER="Bob" look
+  printf '\n%s\n' "(Notice: Bob sees the magic missile attack in Recent Activity!)"
+fi
+
+# Show the room log
+printf '\n%s\n' "=== Full Room Log ==="
+if [ -f .room.log ]; then
+  cat .room.log
+else
+  printf '%s\n' "No room log created (spells may not be in PATH)"
+fi
+
+printf '\n%s\n' "=== Demo Complete ==="
+printf '\n%s\n' "Key Takeaways:"
+printf '%s\n' "1. Players see each other's actions via .room.log"
+printf '%s\n' "2. 'look' shows recent activity automatically"
+printf '%s\n' "3. 'say' appends messages to the log"
+printf '%s\n' "4. Combat spells log their actions"
+printf '%s\n' "5. Everything is just file operations!"
+printf '\n%s\n' "To test with real multiplayer:"
+printf '%s\n' "1. Set up SSH between two machines"
+printf '%s\n' "2. Use 'open-portal user@server:~/world' to connect"
+printf '%s\n' "3. Both players navigate to the same directory"
+printf '%s\n' "4. Use look, say, and spells as demonstrated"
+printf '%s\n' "5. For anonymous connections, use 'open-portal --tor hidden.onion:~/world'"
+printf '\n%s\n' "See spells/mud/MULTIPLAYER.md for full documentation."
+printf '\n'

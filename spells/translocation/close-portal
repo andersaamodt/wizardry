@@ -1,0 +1,88 @@
+#!/bin/sh
+
+# Close a portal (unmount an sshfs mount point).
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: close-portal [mount_point]
+
+Close a portal by unmounting the sshfs mount point.
+If no mount point is specified, lists all active portals.
+
+Examples:
+  close-portal ~/portals/server
+  close-portal /home/wizard/my-portal
+  close-portal  (lists active portals)
+
+See also: portal
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Function to list active portals
+list_portals() {
+  if [ ! -d "/mnt" ]; then
+    printf '%s\n' "No /mnt directory found"
+    return 0
+  fi
+  
+  found=0
+  for dir in "/mnt"/*; do
+    # Skip if glob didn't match
+    [ -e "$dir" ] || continue
+    
+    # Check if it's mounted
+    if mount | grep -q " $dir "; then
+      printf '%s\n' "$dir"
+      found=1
+    fi
+  done
+  
+  if [ "$found" -eq 0 ]; then
+    printf '%s\n' "No active portals found."
+  fi
+}
+
+# If no argument, list portals
+if [ $# -eq 0 ]; then
+  list_portals
+  exit 0
+fi
+
+mount_point=$1
+
+# Validate mount point exists
+if [ ! -d "$mount_point" ]; then
+  printf '%s\n' "close-portal: mount point does not exist: $mount_point" >&2
+  exit 1
+fi
+
+# Check if it's actually mounted
+if ! mount | grep -q " $mount_point "; then
+  printf '%s\n' "close-portal: $mount_point is not mounted" >&2
+  exit 1
+fi
+
+# Try to unmount using fusermount (preferred for FUSE filesystems like sshfs)
+if command -v fusermount >/dev/null 2>&1; then
+  if fusermount -u "$mount_point" 2>/dev/null; then
+    printf '%s\n' "Portal closed: $mount_point"
+    exit 0
+  fi
+fi
+
+# Fallback to umount
+if command -v umount >/dev/null 2>&1; then
+  if umount "$mount_point" 2>/dev/null; then
+    printf '%s\n' "Portal closed: $mount_point"
+    exit 0
+  fi
+fi
+
+printf '%s\n' "close-portal: failed to unmount $mount_point" >&2
+exit 1

@@ -236,7 +236,7 @@ test_banish_shows_detailed_status() {
   
   # Should show imps listed by name
   assert_output_contains "has" || return 1
-  assert_output_contains "say" || return 1
+  assert_output_contains "warn" || return 1
   
   return 0
 }
@@ -312,7 +312,7 @@ test_imps_detected_not_missing() {
   
   # Should list individual imps
   assert_output_contains "has" || return 1
-  assert_output_contains "say" || return 1
+  assert_output_contains "warn" || return 1
   
   return 0
 }
