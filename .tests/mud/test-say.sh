@@ -2,7 +2,7 @@
 # Test coverage for say spell:
 # - Shows usage with --help
 # - Requires a message argument
-# - Appends message to .room.log
+# - Appends message to .log
 # - Includes timestamp and player name
 
 set -eu
@@ -35,11 +35,11 @@ test_appends_to_log() {
   assert_success || return 1
   
   # Check log file was created
-  [ -f ".room.log" ] || return 1
+  [ -f ".log" ] || return 1
   
   # Check log contains the message
-  grep -q "TestPlayer: Hello world" .room.log || return 1
-  grep -q "Hello world" .room.log || return 1
+  grep -q "TestPlayer: Hello world" .log || return 1
+  grep -q "Hello world" .log || return 1
 }
 
 test_multiple_messages() {
@@ -54,11 +54,11 @@ test_multiple_messages() {
   assert_success || return 1
   
   # Check both are in log
-  grep -q "Player1: First message" .room.log || return 1
-  grep -q "Player2: Second message" .room.log || return 1
+  grep -q "Player1: First message" .log || return 1
+  grep -q "Player2: Second message" .log || return 1
   
   # Check we have 2 lines
-  line_count=$(wc -l < .room.log)
+  line_count=$(wc -l < .log)
   [ "$line_count" -eq 2 ] || return 1
 }
 

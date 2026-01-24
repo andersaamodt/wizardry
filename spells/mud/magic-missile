@@ -150,6 +150,6 @@ damage-file "$target" "$damage"
 # Log the attack to room log for multiplayer visibility
 player_name=${MUD_PLAYER:-${USER:-Someone}}
 timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date)
-room_log="$PWD/.room.log"
+room_log="$PWD/.log"
 log_entry="[$timestamp] $player_name casts magic missile at $target, dealing $damage damage!"
 printf '%s\n' "$log_entry" >> "$room_log" 2>/dev/null || true

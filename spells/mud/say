@@ -7,12 +7,12 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: say <message>
 
-Speak in the current room by appending your message to the .room.log file.
+Speak in the current room by appending your message to the .log file.
 Other players in the same room (directory) can see your messages by reading
 the log file or using 'look' which displays recent activity.
 
 In multiplayer MUD, speech is simply append operations to the room log.
-Each player can tail -f .room.log to listen in real-time.
+Each player can tail -f .log to listen in real-time.
 
 Note: If your message contains special characters like !, use single quotes:
   say 'Hello, world!'
@@ -52,7 +52,7 @@ timestamp=$(date '+%H:%M' 2>/dev/null || date '+%H:%M')
 log_entry="[$timestamp] $player_name: $message"
 
 # Append to room log
-room_log="$room_dir/.room.log"
+room_log="$room_dir/.log"
 
 # Create or append to log file
 if printf '%s\n' "$log_entry" >> "$room_log" 2>/dev/null; then

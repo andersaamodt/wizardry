@@ -7,7 +7,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: listen [room_path]
 
-Start (or restart) background monitoring of the .room.log file in the current
+Start (or restart) background monitoring of the .log file in the current
 (or specified) directory and display new entries in real-time.
 
 This enables live MUD multiplayer notifications - when other players speak,
@@ -74,7 +74,7 @@ if [ ! -d "$room_path" ]; then
   exit 1
 fi
 
-room_log="$room_path/.room.log"
+room_log="$room_path/.log"
 
 # Create log file if it doesn't exist
 if [ ! -f "$room_log" ]; then

@@ -126,7 +126,7 @@ printf '%s%s%s\n' "$mud_title" "$room_title" "$RESET"
 printf '%s%s%s\n' "$mud_description" "$room_description" "$RESET"
 
 # Show recent room activity if log exists (multiplayer mode)
-room_log="$path/.room.log"
+room_log="$path/.log"
 if [ -f "$room_log" ]; then
   printf '\n%sRecent Activity:%s\n' "${BOLD}" "$RESET"
   # Show last 5 entries from room log

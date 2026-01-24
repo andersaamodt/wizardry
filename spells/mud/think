@@ -8,8 +8,7 @@ case "${1-}" in
 Usage: think <thought>
 
 Narrate your character's thoughts in the current room by appending to the
-.room.log file. Unlike 'say', thoughts are displayed in italics/parentheses
-to distinguish them from speech.
+.log file. Thoughts are displayed in quotes to distinguish them from speech.
 
 Thoughts are visible to all players in the room, representing your character's
 internal monologue or narration.
@@ -48,11 +47,11 @@ player_name=${MUD_PLAYER:-${USER:-Anonymous}}
 # Create timestamp (HH:MM format, like say)
 timestamp=$(date '+%H:%M' 2>/dev/null || date '+%H:%M')
 
-# Format the thought (italics via * or parentheses to distinguish from speech)
-log_entry="[$timestamp] ($player_name thinks: $thought)"
+# Format the thought with quotes and comma (name thinks, "thought")
+log_entry="[$timestamp] $player_name thinks, \"$thought\""
 
 # Append to room log
-room_log="$room_dir/.room.log"
+room_log="$room_dir/.log"
 
 # Create or append to log file
 if printf '%s\n' "$log_entry" >> "$room_log" 2>/dev/null; then
