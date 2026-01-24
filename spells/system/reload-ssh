@@ -38,4 +38,4 @@ case "$current_os" in
                 ;;
 esac
 
-say "SSH service reloaded."
+output "SSH service reloaded."
