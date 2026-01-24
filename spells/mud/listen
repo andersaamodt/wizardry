@@ -6,6 +6,7 @@ case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
 Usage: listen [room_path]
+       . listen [room_path]  (for better prompt handling in zsh)
 
 Start (or restart) background monitoring of the .log file in the current
 (or specified) directory and display new entries in real-time.
@@ -16,8 +17,13 @@ cast spells, or perform actions, you see them immediately in your terminal.
 The listener runs as a background process. Running listen again will automatically
 stop any existing listener and start a new one.
 
+For best prompt restoration in zsh, source this spell with '. listen' instead
+of running it directly. This allows proper integration with the shell's line
+editor.
+
 Examples:
   listen                    # Monitor current directory
+  . listen                  # Monitor current directory (sourced, better for zsh)
   listen /mnt/server/dungeon   # Monitor specific directory
   listen --stop             # Stop listening (no new listener started)
 
@@ -84,46 +90,94 @@ if [ ! -f "$room_log" ]; then
   }
 fi
 
+# Detect if we're in zsh and have access to zle
+use_zle=0
+if [ -n "${ZSH_VERSION-}" ]; then
+  # Check if zle is available (we're in an interactive zsh shell)
+  if command -v zle >/dev/null 2>&1; then
+    use_zle=1
+  fi
+fi
+
 # Start monitoring in background
 # Use tail -f -n 0 to follow the log file from current position (no history)
 # Display messages with colors and restore terminal input
-{
-  tail -f -n 0 "$room_log" 2>/dev/null | while IFS= read -r line; do
-    # Skip empty lines
-    [ -z "$line" ] && continue
-    
-    # Parse the log entry to extract player name and colorize it
-    # Expected format: [HH:MM] PlayerName: message
-    case "$line" in
-      \[*\]\ *:\ *)
-        # Extract timestamp, player name, and message
-        rest=$(printf '%s' "$line" | sed 's/^\[[^]]*\] //')
-        player=$(printf '%s' "$rest" | sed 's/:.*//')
-        message=$(printf '%s' "$rest" | sed 's/^[^:]*: //')
-        
-        # Get color for player name using the colorization imp
-        color=$(colorize-player-name "$player")
-        
-        # Display with proper terminal handling:
-        # 1. Save cursor position
-        # 2. Clear line and display message
-        # 3. Restore cursor position
-        # Format: PlayerName: message
-        # \033[s = save cursor, \033[u = restore cursor
-        # \033[K = clear to end of line
-        # \033[1;COLORm = bold + color, \033[0m = reset
-        printf '\033[s\r\033[K\033[1;%dm%s:\033[0m %s\n\033[u' \
-          "$color" "$player" "$message"
-        ;;
-      *)
-        # Fallback for lines that don't match expected format
-        printf '\033[s\r\033[K🔮 %s\n\033[u' "$line"
-        ;;
-    esac
-  done
-} &
+if [ "$use_zle" -eq 1 ]; then
+  # ZSH with zle - use a more sophisticated approach
+  # We need to create a handler function for zle
+  {
+    tail -f -n 0 "$room_log" 2>/dev/null | while IFS= read -r line; do
+      # Skip empty lines
+      [ -z "$line" ] && continue
+      
+      # Parse the log entry to extract player name and colorize it
+      # Expected format: [HH:MM] PlayerName: message
+      case "$line" in
+        \[*\]\ *:\ *)
+          # Extract timestamp, player name, and message
+          rest=$(printf '%s' "$line" | sed 's/^\[[^]]*\] //')
+          player=$(printf '%s' "$rest" | sed 's/:.*//')
+          message=$(printf '%s' "$rest" | sed 's/^[^:]*: //')
+          
+          # Get color for player name using the colorization imp
+          color=$(colorize-player-name "$player")
+          
+          # For zsh: print above the prompt
+          # Move cursor up, print message, move back down
+          printf '\033[1A\r\033[K\033[1;%dm%s:\033[0m %s\n' \
+            "$color" "$player" "$message"
+          
+          # Signal parent zsh to reset prompt
+          # This is done by sending USR1 to the parent shell
+          kill -USR1 $PPID 2>/dev/null || true
+          ;;
+        *)
+          # Fallback for lines that don't match expected format
+          printf '\033[1A\r\033[K🔮 %s\n' "$line"
+          kill -USR1 $PPID 2>/dev/null || true
+          ;;
+      esac
+    done
+  } &
+else
+  # Non-zsh or non-interactive: use simple approach
+  {
+    tail -f -n 0 "$room_log" 2>/dev/null | while IFS= read -r line; do
+      # Skip empty lines
+      [ -z "$line" ] && continue
+      
+      # Parse the log entry to extract player name and colorize it
+      # Expected format: [HH:MM] PlayerName: message
+      case "$line" in
+        \[*\]\ *:\ *)
+          # Extract timestamp, player name, and message
+          rest=$(printf '%s' "$line" | sed 's/^\[[^]]*\] //')
+          player=$(printf '%s' "$rest" | sed 's/:.*//')
+          message=$(printf '%s' "$rest" | sed 's/^[^:]*: //')
+          
+          # Get color for player name using the colorization imp
+          color=$(colorize-player-name "$player")
+          
+          # Simple output: just print and hope for the best
+          printf '\r\033[K\033[1;%dm%s:\033[0m %s\n' \
+            "$color" "$player" "$message"
+          ;;
+        *)
+          # Fallback for lines that don't match expected format
+          printf '\r\033[K🔮 %s\n' "$line"
+          ;;
+      esac
+    done
+  } &
+fi
 
 monitor_pid=$!
 
 # Save PID for later stopping
 printf '%s\n' "$monitor_pid" > "$pid_file"
+
+# Set up zsh hook if available
+if [ "$use_zle" -eq 1 ]; then
+  # Define a trap handler for USR1 that resets the prompt
+  trap 'zle && zle reset-prompt' USR1
+fi
