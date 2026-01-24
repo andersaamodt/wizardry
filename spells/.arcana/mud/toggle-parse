@@ -63,7 +63,9 @@ if config-has "$CONFIG_FILE" "parse-enabled" 2>/dev/null; then
     # Get list of gloss functions to unload (functions that call parse)
     # This is done by regenerating glosses and extracting function names
     if command -v generate-glosses >/dev/null 2>&1; then
-      gloss_funcs=$(generate-glosses --quiet 2>/dev/null | grep '^[a-zA-Z_][a-zA-Z0-9_]*() {$' | sed 's/() {$//' || true)
+      gloss_output=$(generate-glosses --quiet 2>/dev/null || true)
+      gloss_funcs=$(printf '%s\n' "$gloss_output" | \
+        grep '^[a-zA-Z_][a-zA-Z0-9_]*() {$' | sed 's/() {$//' || true)
       if [ -n "$gloss_funcs" ]; then
         for func in $gloss_funcs; do
           unset -f "$func" 2>/dev/null || true
@@ -79,7 +81,9 @@ if config-has "$CONFIG_FILE" "parse-enabled" 2>/dev/null; then
       temp_invoked="${WIZARDRY_INVOKED-}"
       unset WIZARDRY_INVOKED
       . "$invoke_wizardry_path" 2>/dev/null || {
-        printf '%s\n' "Warning: Failed to reload glosses. They will be reloaded on next shell startup."
+        msg="Warning: Failed to reload glosses."
+        msg="$msg They will be reloaded on next shell startup."
+        printf '%s\n' "$msg"
         WIZARDRY_INVOKED="$temp_invoked"
         return 1
       }
@@ -87,7 +91,9 @@ if config-has "$CONFIG_FILE" "parse-enabled" 2>/dev/null; then
     fi
     
     printf '%s\n' "✓ Parse disabled and unloaded from your current shell."
-    printf '%s\n' "  Only exact spell names and synonyms will work (e.g., 'jump-to-marker', not 'jump to marker')."
+    msg="  Only exact spell names and synonyms will work"
+    msg="$msg (e.g., 'jump-to-marker', not 'jump to marker')."
+    printf '%s\n' "$msg"
     return 0
   fi
 fi
