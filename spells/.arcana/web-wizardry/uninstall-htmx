@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# Uninstall htmx JavaScript library.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-htmx
+
+Removes htmx.min.js from the local directory.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+# Determine installation directory
+install_dir="${HTMX_DIR:-$HOME/.local/share/htmx}"
+
+if [ ! -f "$install_dir/htmx.min.js" ]; then
+  printf '%s\n' "Htmx is not installed."
+  exit 0
+fi
+
+printf '%s\n' "Uninstalling htmx..."
+rm -f "$install_dir/htmx.min.js"
+rmdir "$install_dir" 2>/dev/null || true
+
+printf '%s\n' "Htmx uninstallation complete."

@@ -1,0 +1,65 @@
+#!/bin/sh
+
+# Present the nginx administration menu.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: nginx-admin
+
+Displays the nginx administration menu with options to start, stop, restart, and check status.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+. colors
+
+if ! require menu "The nginx-admin menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 130' INT
+trap 'exit 0' TERM
+
+first_run=1
+
+while true; do
+  if [ "$first_run" -eq 0 ]; then
+    printf '\n'
+  else
+    first_run=0
+  fi
+
+  # Check if nginx is installed
+  if ! command -v nginx >/dev/null 2>&1; then
+    printf '%s\n' "nginx-admin: nginx is not installed" >&2
+    exit 1
+  fi
+
+  # Build menu
+  title="${BOLD}${CYAN}Nginx Administration"
+  exit_label=$(exit-label)
+  exit_option="${exit_label}%kill -TERM \$PPID"
+  
+  # Common nginx commands - these work across different init systems
+  start_option="Start nginx%sudo nginx 2>&1 || true"
+  stop_option="Stop nginx%sudo nginx -s stop 2>&1 || true"
+  reload_option="Reload config%sudo nginx -s reload 2>&1 || true"
+  test_option="Test config%sudo nginx -t 2>&1 || true"
+  status_option="Show version%nginx -v 2>&1 || true"
+  
+  menu "$title" "$status_option" "$test_option" "$start_option" "$stop_option" "$reload_option" "$exit_option" || menu_status=$?
+  menu_status=${menu_status:-0}
+  
+  # ESC causes menu to exit with 130 - handle gracefully by exiting
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    exit 0
+  fi
+done

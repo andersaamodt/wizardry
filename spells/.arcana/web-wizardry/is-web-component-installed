@@ -1,0 +1,41 @@
+#!/bin/sh
+
+# Check if a web wizardry component is installed.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-web-component-installed COMPONENT
+
+Returns 0 if the component is installed, 1 otherwise.
+Components: pandoc, nginx, fcgiwrap, openssl, htmx, coreutils
+USAGE
+  exit 0
+  ;;
+esac
+
+# Note: No set -eu because this is a conditional script (returns exit codes for flow control)
+set +e
+set +u
+
+component=${1:-}
+[ -z "$component" ] && exit 1
+
+case "$component" in
+  pandoc|nginx|fcgiwrap|openssl)
+    command -v "$component" >/dev/null 2>&1
+    ;;
+  htmx)
+    htmx_dir="${HTMX_DIR:-$HOME/.local/share/htmx}"
+    [ -f "$htmx_dir/htmx.min.js" ] || \
+    [ -f /usr/local/share/htmx/htmx.min.js ] || \
+    [ -f /usr/share/htmx/htmx.min.js ]
+    ;;
+  coreutils)
+    # Assert-only: just check if core utilities are present
+    command -v readlink >/dev/null 2>&1
+    ;;
+  *)
+    exit 1
+    ;;
+esac
