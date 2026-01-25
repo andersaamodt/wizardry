@@ -1,0 +1,89 @@
+#!/bin/sh
+
+# Present the Syncthing management menu.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: syncthing-menu
+
+Displays the Syncthing management menu with options to install, configure,
+start, stop, restart, and access the web interface.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+. colors
+
+# Catch Ctrl-C and TERM signal to exit cleanly
+# INT (Ctrl-C) should exit 130, TERM should exit 0
+trap 'exit 130' INT
+trap 'exit 0' TERM
+
+# Find the script directory to locate sibling scripts
+SCRIPT_SOURCE=$0
+case $SCRIPT_SOURCE in
+*/*)
+        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        ;;
+*)
+        resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
+        SCRIPT_DIR=${resolved%/*}
+        SCRIPT_SOURCE=$resolved
+        ;;
+esac
+if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
+        SCRIPT_DIR=.
+fi
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+
+first_run=1
+
+while true; do
+  if [ "$first_run" -eq 0 ]; then
+    printf '\n'
+  else
+    first_run=0
+  fi
+
+  # Build menu based on Syncthing installation status
+  title="${BOLD}${CYAN}Syncthing: $("$SCRIPT_DIR/syncthing-status")"
+  exit_label=$(exit-label)
+  exit_option="${exit_label}%kill -TERM \$PPID"
+  
+  if "$SCRIPT_DIR/is-syncthing-installed"; then
+    # Syncthing is installed - show management options
+    open_option="Open Syncthing%$SCRIPT_DIR/open-syncthing"
+    
+    if "$SCRIPT_DIR/is-syncthing-running"; then
+      # Syncthing is running
+      restart_option="Restart Syncthing%$SCRIPT_DIR/restart-syncthing"
+      stop_option="Stop Syncthing%$SCRIPT_DIR/stop-syncthing"
+      uninstall_option="Uninstall Syncthing%$SCRIPT_DIR/uninstall-syncthing"
+      
+      menu "$title" "$open_option" "$restart_option" "$stop_option" "$uninstall_option" "$exit_option" || menu_status=$?
+    else
+      # Syncthing is not running
+      start_option="Start Syncthing%$SCRIPT_DIR/start-syncthing"
+      uninstall_option="Uninstall Syncthing%$SCRIPT_DIR/uninstall-syncthing"
+      
+      menu "$title" "$open_option" "$start_option" "$uninstall_option" "$exit_option" || menu_status=$?
+    fi
+  else
+    # Syncthing is not installed - show install option
+    install_option="Install Syncthing%$SCRIPT_DIR/install-syncthing"
+    menu "$title" "$install_option" "$exit_option" || menu_status=$?
+  fi
+  menu_status=${menu_status:-0}
+  
+  # ESC causes menu to exit with 130 - handle gracefully by exiting
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    exit 0
+  fi
+done

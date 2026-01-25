@@ -1,0 +1,74 @@
+#!/bin/sh
+
+# Start Syncthing in the background.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: start-syncthing
+
+Starts Syncthing in the background or as a systemd service if available.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+# Find the script directory to locate sibling helper scripts
+SCRIPT_SOURCE=$0
+case $SCRIPT_SOURCE in
+*/*)
+        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        ;;
+*)
+        resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
+        SCRIPT_DIR=${resolved%/*}
+        SCRIPT_SOURCE=$resolved
+        ;;
+esac
+if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
+        SCRIPT_DIR=.
+fi
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+
+if ! "$SCRIPT_DIR/is-syncthing-installed"; then
+  die "start-syncthing: Syncthing is not installed"
+fi
+
+if "$SCRIPT_DIR/is-syncthing-running"; then
+  printf '%s\n' 'Syncthing is already running.'
+  exit 0
+fi
+
+# Try to start via systemd if available
+if command -v systemctl >/dev/null 2>&1; then
+  # Check for user service first
+  if systemctl --user list-unit-files 2>/dev/null | grep -q "^syncthing.service"; then
+    printf '%s\n' 'Starting Syncthing user service...'
+    systemctl --user start syncthing.service
+    exit 0
+  fi
+  
+  # Check for system service
+  if systemctl list-unit-files 2>/dev/null | grep -q "^syncthing@.service"; then
+    printf '%s\n' 'Starting Syncthing system service...'
+    sudo systemctl start "syncthing@$(whoami).service"
+    exit 0
+  fi
+fi
+
+# Fall back to manual start
+printf '%s\n' 'Starting Syncthing in the background...'
+nohup syncthing >/dev/null 2>&1 &
+sleep 2
+
+if "$SCRIPT_DIR/is-syncthing-running"; then
+  printf '%s\n' 'Syncthing started successfully.'
+  printf '%s\n' 'Access the web interface at http://127.0.0.1:8384'
+else
+  die "start-syncthing: Failed to start Syncthing"
+fi
