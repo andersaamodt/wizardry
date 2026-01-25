@@ -1,14 +1,13 @@
 #!/bin/sh
 
-# Install Node.js using the available package manager, with NixOS rebuild support.
+# Uninstall pandoc document converter.
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: install-node
+Usage: uninstall-pandoc
 
-Runs a short wizard to install Node.js using the system package manager (or nix-env on NixOS),
-prompting for package choices and optionally running nixos-rebuild when appropriate.
+Removes pandoc using the system package manager.
 USAGE
   exit 0
   ;;
@@ -27,13 +26,12 @@ if ! command -v "$manage_cmd" >/dev/null 2>&1; then
   if [ -n "$core_dir" ] && [ -x "$core_dir/manage-system-command" ]; then
     manage_cmd="$core_dir/manage-system-command"
   else
-    printf '%s\n' "install-node: unable to find manage-system-command" >&2
+    printf '%s\n' "uninstall-pandoc: unable to find manage-system-command" >&2
     exit 1
   fi
 fi
 
-# Install Node.js
-printf '%s\n' "Installing Node.js..."
-"$manage_cmd" install nodejs node
+printf '%s\n' "Uninstalling pandoc..."
+"$manage_cmd" --uninstall pandoc pandoc
 
-printf '%s\n' "Node.js installation complete."
+printf '%s\n' "Pandoc uninstallation complete."

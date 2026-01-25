@@ -1,0 +1,49 @@
+#!/bin/sh
+
+# Enable or disable all web wizardry components.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: toggle-all-web-wizardry [--enable|--disable]
+
+Installs or uninstalls all web wizardry components.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+action=${1:-}
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+if [ "$action" = "--enable" ]; then
+  printf '%s\n' "Installing all web wizardry components..."
+  
+  "$script_dir/install-pandoc" || true
+  "$script_dir/install-nginx" || true
+  "$script_dir/install-fcgiwrap" || true
+  "$script_dir/install-openssl" || true
+  "$script_dir/install-htmx" || true
+  "$script_dir/install-coreutils" || true
+  
+  printf '%s\n' "All components installation attempted."
+elif [ "$action" = "--disable" ]; then
+  printf '%s\n' "Uninstalling all web wizardry components..."
+  
+  "$script_dir/uninstall-pandoc" || true
+  "$script_dir/uninstall-nginx" || true
+  "$script_dir/uninstall-fcgiwrap" || true
+  "$script_dir/uninstall-openssl" || true
+  "$script_dir/uninstall-htmx" || true
+  # Note: coreutils cannot be uninstalled
+  
+  printf '%s\n' "All components uninstallation attempted."
+else
+  printf '%s\n' "Usage: toggle-all-web-wizardry [--enable|--disable]" >&2
+  exit 2
+fi
