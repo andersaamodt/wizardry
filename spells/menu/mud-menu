@@ -57,7 +57,11 @@ CONFIG_FILE="$spell_home/.mud"
 # Use temp file imp for selection tracking
 SELECTION_FILE=$(temp-file mud-menu-selection)
 export SELECTION_FILE
-trap 'cleanup-file "$SELECTION_FILE"; return 0' EXIT INT TERM
+# Catch Ctrl-C, TERM, and EXIT signals to clean up properly
+# For sourced scripts: INT (Ctrl-C) returns 130, TERM returns 0, EXIT always cleans up
+trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true' EXIT
+trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true; return 130' INT
+trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true; return 0' TERM
 
 # Ensure spellbook directory and config file exist
 mkdir -p "$spell_home"

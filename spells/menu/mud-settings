@@ -43,7 +43,10 @@ set -u
 . env-clear
 
 # Catch Ctrl-C and TERM signal to return cleanly
-trap 'return 0' INT TERM
+# Catch Ctrl-C and TERM signal to return cleanly
+# INT (Ctrl-C) should return 130, TERM should return 0
+trap 'return 130' INT
+trap 'return 0' TERM
 
 # Load color palette (colors handles terminal capability detection internally)
 # shellcheck source=/dev/null

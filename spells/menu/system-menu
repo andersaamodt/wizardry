@@ -58,7 +58,10 @@ system_menu_display_menu() {
 }
 
 # Catch Ctrl-C and TERM signal to exit 1 cleanly
-trap 'exit 0' INT TERM
+# Catch Ctrl-C and TERM signal to exit cleanly
+# INT (Ctrl-C) should exit 130, TERM should exit 0
+trap 'exit 130' INT
+trap 'exit 0' TERM
 
 first_run=1
 
