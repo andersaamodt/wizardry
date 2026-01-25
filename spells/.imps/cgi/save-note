@@ -1,0 +1,30 @@
+#!/bin/sh
+# save-note - CGI script that saves text to a file
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+# Parse POST data from stdin
+if [ "${REQUEST_METHOD:-}" = "POST" ]; then
+  note=$(cat)
+  note=$(printf '%s' "$note" | sed 's/note=//' | url-decode)
+  
+  # Save to temp file (in production, would save to site uploads)
+  notes_file="${TMPDIR:-/tmp}/wizardry-notes.txt"
+  printf '%s\n' "$note" >> "$notes_file"
+  
+  cat <<HTML
+<div class="demo-result success">
+  <p>✓ Note saved at $(date '+%H:%M:%S')</p>
+  <p class="meta">Total notes: $(wc -l < "$notes_file" 2>/dev/null || echo 0)</p>
+</div>
+HTML
+else
+  cat <<HTML
+<div class="demo-result error">
+  <p>✗ Invalid request method</p>
+</div>
+HTML
+fi

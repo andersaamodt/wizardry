@@ -1,0 +1,22 @@
+#!/bin/sh
+# file-info - Show uploaded file information (demo)
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+# In a real scenario, this would process multipart/form-data
+# For demo purposes, we'll simulate
+filename="${QUERY_STRING:-demo.txt}"
+filename=$(printf '%s' "$filename" | sed 's/file=//' | url-decode)
+
+cat <<HTML
+<div class="demo-result upload">
+  <h3>File Upload Simulation</h3>
+  <p>📁 Filename: <strong>$filename</strong></p>
+  <p>📊 Size: <em>1.2 KB (simulated)</em></p>
+  <p>📅 Uploaded: $(date)</p>
+  <p class="meta">In production, file would be saved to site/uploads/</p>
+</div>
+HTML

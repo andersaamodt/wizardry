@@ -1,0 +1,27 @@
+#!/bin/sh
+# random-quote - CGI script that returns a random quote
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+# Array of quotes (using newline-separated format)
+quotes="The only way to do great work is to love what you do. - Steve Jobs
+Innovation distinguishes between a leader and a follower. - Steve Jobs
+Code is like humor. When you have to explain it, it's bad. - Cory House
+First, solve the problem. Then, write the code. - John Johnson
+Simplicity is the soul of efficiency. - Austin Freeman
+Make it work, make it right, make it fast. - Kent Beck"
+
+# Get random line (POSIX-compliant)
+total=$(printf '%s\n' "$quotes" | wc -l)
+random_num=$(($(date +%s) % total + 1))
+quote=$(printf '%s\n' "$quotes" | sed -n "${random_num}p")
+
+cat <<HTML
+<div class="demo-result quote">
+  <blockquote>"${quote}"</blockquote>
+  <p class="meta">Generated at $(date '+%H:%M:%S')</p>
+</div>
+HTML

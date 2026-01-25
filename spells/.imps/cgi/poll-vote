@@ -1,0 +1,60 @@
+#!/bin/sh
+# poll-vote - Simple polling system
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+poll_file="${TMPDIR:-/tmp}/wizardry-poll.txt"
+choice="${QUERY_STRING:-}"
+choice=$(printf '%s' "$choice" | sed 's/vote=//')
+
+# Initialize poll file
+if [ ! -f "$poll_file" ]; then
+  printf "0 0 0\n" > "$poll_file"
+fi
+
+# Read current votes
+read a b c < "$poll_file"
+
+# Increment vote
+case "$choice" in
+  A) a=$((a + 1)) ;;
+  B) b=$((b + 1)) ;;
+  C) c=$((c + 1)) ;;
+esac
+
+# Save votes
+printf "%d %d %d\n" "$a" "$b" "$c" > "$poll_file"
+
+total=$((a + b + c))
+if [ "$total" -gt 0 ]; then
+  pct_a=$((a * 100 / total))
+  pct_b=$((b * 100 / total))
+  pct_c=$((c * 100 / total))
+else
+  pct_a=0 pct_b=0 pct_c=0
+fi
+
+cat <<HTML
+<div class="demo-result poll">
+  <h3>Poll Results</h3>
+  <div class="poll-option">
+    <span>Option A:</span>
+    <div class="poll-bar" style="width: ${pct_a}%"></div>
+    <span>$a votes (${pct_a}%)</span>
+  </div>
+  <div class="poll-option">
+    <span>Option B:</span>
+    <div class="poll-bar" style="width: ${pct_b}%"></div>
+    <span>$b votes (${pct_b}%)</span>
+  </div>
+  <div class="poll-option">
+    <span>Option C:</span>
+    <div class="poll-bar" style="width: ${pct_c}%"></div>
+    <span>$c votes (${pct_c}%)</span>
+  </div>
+  <p class="meta">Total votes: $total</p>
+</div>
+HTML
