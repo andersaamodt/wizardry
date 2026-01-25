@@ -10,18 +10,23 @@ if [ -z "$_ep_prompt" ]; then
   exit 0
 fi
 
-# Check if ZSH_VERSION is set (zsh-specific expansion)
-if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
-  # For zsh, use print -P in a zsh subshell
-  # We need to invoke zsh explicitly to access the print builtin
-  # Use double quotes and escape properly to allow expansion
-  _ep_result=$(zsh -c "print -P \"$_ep_prompt\"" 2>/dev/null) || _ep_result=""
-  
-  if [ -n "$_ep_result" ]; then
-    printf '%s' "$_ep_result"
-    exit 0
-  fi
-fi
+# Detect if this is a zsh-format prompt (contains % escapes)
+# Zsh prompts use %n, %m, %~, etc. while bash uses \u, \h, \w, etc.
+case "$_ep_prompt" in
+  *%[nmhHdDtwWcCT.~#?!j]*)
+    # This looks like a zsh prompt - try to use zsh to expand it
+    if command -v zsh >/dev/null 2>&1; then
+      # Pass the prompt string as an argument to avoid shell expansion issues
+      _ep_result=$(zsh -c 'print -P "$1"' -- "$_ep_prompt" 2>/dev/null) || _ep_result=""
+      
+      if [ -n "$_ep_result" ]; then
+        printf '%s' "$_ep_result"
+        exit 0
+      fi
+    fi
+    # If zsh not available or expansion failed, fall through to bash logic
+    ;;
+esac
 
 # For bash/sh, do manual expansion
 _ep_user="${USER-}"
