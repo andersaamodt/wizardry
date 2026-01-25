@@ -84,7 +84,7 @@ printf '%s\n' ""
 success "SSHFS and MUD group setup complete!"
 printf '%s\n' ""
 printf '%s\n' "Next steps:"
-printf '%s\n' "1. Add players with: add-ssh-player"
+printf '%s\n' "1. Add players with: add-player"
 printf '%s\n' "2. Players connect with: ssh player@your-server"
 printf '%s\n' "3. Share the world at: $shared_world"
 
