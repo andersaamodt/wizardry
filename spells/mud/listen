@@ -153,8 +153,8 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         done
         
         # Cursor is now at the first inserted blank line - just print the message
-        # Use \r to start at beginning of line
-        printf '\r%s' "$formatted_msg"
+        # Use \r to start at beginning of line, \n to end so cursor moves to next line
+        printf '\r%s\n' "$formatted_msg"
         
         # Restore cursor to saved position, then move down by lines_needed
         # (the saved position is now lines_needed lines up from where we want to be)
@@ -179,7 +179,8 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         done
         
         # Cursor is now at the first inserted blank line - just print
-        printf '\r🔮 %s' "$line"
+        # Use \r to start at beginning of line, \n to end so cursor moves to next line
+        printf '\r🔮 %s\n' "$line"
         
         # Restore cursor to saved position, then move down by lines_needed
         printf '\0338\033[%dB' "$lines_needed"
