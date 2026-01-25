@@ -140,24 +140,36 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         lines_needed=$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
         [ "$lines_needed" -lt 1 ] && lines_needed=1
         
-        # Approach: Clear current line, print newlines to scroll and create space,
-        # move up, print message. The shell will redraw the prompt afterward.
+        # Strategy: Use IL (Insert Line) to insert blank lines above current line.
+        # IL works when there's room in the scrolling region, but when at terminal
+        # bottom we need to scroll first to make room.
         
-        # Move to column 0 and clear the current line
-        printf '\r\033[K'
+        # Save cursor position
+        printf '\0337'
         
-        # Print newlines to create space (scrolls terminal if at bottom)
+        # Move to beginning of line (important for IL to work correctly)
+        printf '\r'
+        
+        # Scroll the display up by lines_needed to make room at bottom
+        # This ensures IL will have space to work even at terminal bottom
         i=0
         while [ "$i" -lt "$lines_needed" ]; do
-          printf '\n'
+          printf '\033[1S'  # Scroll up one line
           i=$((i + 1))
         done
         
-        # Move cursor up to where the message should be printed
-        printf '\033[%dA' "$lines_needed"
+        # Now insert blank lines at cursor position
+        i=0
+        while [ "$i" -lt "$lines_needed" ]; do
+          printf '\033[1L'  # Insert one line
+          i=$((i + 1))
+        done
         
-        # Print the message
-        printf '%s\n' "$formatted_msg"
+        # Print the message at the inserted position
+        printf '%s' "$formatted_msg"
+        
+        # Restore cursor position and move down
+        printf '\0338\033[%dB' "$lines_needed"
         ;;
       *)
         # Fallback for lines that don't match expected format
@@ -166,21 +178,31 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         lines_needed=$(( (msg_len + 3 + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))  # +3 for "🔮 "
         [ "$lines_needed" -lt 1 ] && lines_needed=1
         
-        # Move to column 0 and clear the current line
-        printf '\r\033[K'
+        # Save cursor position
+        printf '\0337'
         
-        # Print newlines to create space (scrolls terminal if at bottom)
+        # Move to beginning of line
+        printf '\r'
+        
+        # Scroll the display up to make room
         i=0
         while [ "$i" -lt "$lines_needed" ]; do
-          printf '\n'
+          printf '\033[1S'
           i=$((i + 1))
         done
         
-        # Move cursor up to where the message should be printed
-        printf '\033[%dA' "$lines_needed"
+        # Insert blank lines at cursor position
+        i=0
+        while [ "$i" -lt "$lines_needed" ]; do
+          printf '\033[1L'
+          i=$((i + 1))
+        done
         
         # Print the message
-        printf '🔮 %s\n' "$line"
+        printf '🔮 %s' "$line"
+        
+        # Restore cursor position and move down
+        printf '\0338\033[%dB' "$lines_needed"
         ;;
     esac
   done

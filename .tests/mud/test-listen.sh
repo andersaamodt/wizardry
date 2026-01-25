@@ -66,17 +66,22 @@ msg_len=${#msg_text}
 LISTEN_TERM_WIDTH=80
 lines_needed=$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
 
-# Simulate the new escape sequence: clear line, print newlines, move up, print message
-printf '\r\033[K'
+# Simulate the escape sequence: save, move to col 0, scroll up, insert lines, print, restore+move down
+printf '\0337\r'
 i=0
 while [ "$i" -lt "$lines_needed" ]; do
-  printf '\n'
+  printf '\033[1S'
   i=$((i + 1))
 done
-printf '\033[%dA' "$lines_needed"
-printf '%s\n' "$msg_text"
+i=0
+while [ "$i" -lt "$lines_needed" ]; do
+  printf '\033[1L'
+  i=$((i + 1))
+done
+printf '%s' "$msg_text"
+printf '\0338\033[%dB' "$lines_needed"
 
-printf 'lines_needed=%d\n' "$lines_needed"
+printf '\nlines_needed=%d\n' "$lines_needed"
 SCRIPT
   
   chmod +x "$tmpdir/test-format.sh"
@@ -104,16 +109,21 @@ LISTEN_TERM_WIDTH=80
 lines_needed=$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
 
 # Simulate the escape sequence
-printf '\r\033[K'
+printf '\0337\r'
 i=0
 while [ "$i" -lt "$lines_needed" ]; do
-  printf '\n'
+  printf '\033[1S'
   i=$((i + 1))
 done
-printf '\033[%dA' "$lines_needed"
-printf '%s\n' "$msg_text"
+i=0
+while [ "$i" -lt "$lines_needed" ]; do
+  printf '\033[1L'
+  i=$((i + 1))
+done
+printf '%s' "$msg_text"
+printf '\0338\033[%dB' "$lines_needed"
 
-printf 'lines_needed=%d\n' "$lines_needed"
+printf '\nlines_needed=%d\n' "$lines_needed"
 printf 'test_complete=yes\n'
 SCRIPT
   
@@ -144,16 +154,21 @@ msg_len=$len
 LISTEN_TERM_WIDTH=80
 lines_needed=\$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
 
-printf '\r\033[K'
+printf '\0337\r'
 i=0
 while [ "\$i" -lt "\$lines_needed" ]; do
-  printf '\n'
+  printf '\033[1S'
   i=\$((i + 1))
 done
-printf '\033[%dA' "\$lines_needed"
-printf '%s\n' "\$msg"
+i=0
+while [ "\$i" -lt "\$lines_needed" ]; do
+  printf '\033[1L'
+  i=\$((i + 1))
+done
+printf '%s' "\$msg"
+printf '\0338\033[%dB' "\$lines_needed"
 
-printf 'lines_needed=%d\n' "\$lines_needed"
+printf '\nlines_needed=%d\n' "\$lines_needed"
 SCRIPT
     
     chmod +x "$tmpdir/test-exact-$len.sh"
@@ -182,16 +197,21 @@ msg_len=$len
 LISTEN_TERM_WIDTH=80
 lines_needed=\$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
 
-printf '\r\033[K'
+printf '\0337\r'
 i=0
 while [ "\$i" -lt "\$lines_needed" ]; do
-  printf '\n'
+  printf '\033[1S'
   i=\$((i + 1))
 done
-printf '\033[%dA' "\$lines_needed"
-printf '%s\n' "\$msg"
+i=0
+while [ "\$i" -lt "\$lines_needed" ]; do
+  printf '\033[1L'
+  i=\$((i + 1))
+done
+printf '%s' "\$msg"
+printf '\0338\033[%dB' "\$lines_needed"
 
-printf 'lines_needed=%d\n' "\$lines_needed"
+printf '\nlines_needed=%d\n' "\$lines_needed"
 SCRIPT
     
     chmod +x "$tmpdir/test-frac-$len.sh"
