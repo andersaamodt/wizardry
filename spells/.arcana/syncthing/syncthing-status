@@ -51,7 +51,7 @@ SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
 # Main execution - check Syncthing installation and running status
 if ! "$SCRIPT_DIR/is-syncthing-installed"; then
   status="not installed"
-  color="$GRAY"
+  color="$GREY"
 elif "$SCRIPT_DIR/is-syncthing-running"; then
   status="running"
   color="$THEME_SUCCESS"
