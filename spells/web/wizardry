@@ -27,8 +27,8 @@ The web platform integrates:
   - Let's Encrypt (HTTPS)
   - htmx (client-side interactivity)
 
-All site files live under $HOME/.web-wizardry/sites/SITENAME/
-Build output goes to $HOME/.web-wizardry/sites/SITENAME/build/
+All site files live under $HOME/sites/SITENAME/
+Build output goes to $HOME/sites/SITENAME/build/
 CGI scripts must be in spells/.imps/cgi/
 USAGE
   exit 0
@@ -50,15 +50,12 @@ trap 'exit 130' INT
 trap 'exit 0' TERM
 
 # Default web root directory
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/.web-wizardry}
-SITES_DIR="$WEB_ROOT/sites"
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+SITES_DIR="$WEB_ROOT"
 
 # Ensure web root exists
 if [ ! -d "$WEB_ROOT" ]; then
   mkdir -p "$WEB_ROOT"
-fi
-if [ ! -d "$SITES_DIR" ]; then
-  mkdir -p "$SITES_DIR"
 fi
 
 # Handle command-line arguments
