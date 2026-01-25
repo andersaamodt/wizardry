@@ -1,0 +1,88 @@
+#!/bin/sh
+
+# Boot a player from the MUD by forcibly closing their portal (sshfs mount).
+# Use this to disconnect a player when needed.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: boot-player
+
+Display a menu of currently connected players and boot (disconnect) the selected player by forcibly closing their portal.
+
+Requires confirmation before booting a player.
+
+See also: open-portal, close-portal
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Function to list connected players via sshfs mounts
+list_connected_players() {
+  # Look for sshfs mounts which indicate connected players
+  # SSHFS mounts typically show up in mount output
+  mount | grep -E "sshfs|fuse.sshfs" | while IFS= read -r line; do
+    # Extract mount point from line like: user@host:/path on /mnt/point type fuse.sshfs
+    mount_point=$(printf '%s' "$line" | sed 's/.*on \([^ ]*\) type.*/\1/')
+    remote=$(printf '%s' "$line" | sed 's/\([^ ]*\) on .*/\1/')
+    
+    # Try to extract player name from remote (format: player@host:/path)
+    player=$(printf '%s' "$remote" | sed 's/\([^@]*\)@.*/\1/')
+    
+    printf '%s|%s\n' "$player" "$mount_point"
+  done
+}
+
+# Build list of connected players
+player_list=$(list_connected_players)
+
+if [ -z "$player_list" ]; then
+  printf '%s\n' "No players currently connected via portals."
+  exit 0
+fi
+
+# Build menu options from connected players
+set --
+while IFS='|' read -r player_name mount_point; do
+  [ -n "$player_name" ] || continue
+  set -- "$@" "$player_name ($mount_point)%boot_confirmed $player_name $mount_point"
+done <<EOF
+$player_list
+EOF
+set -- "$@" "Cancel%return"
+
+# Function to handle confirmed boot
+boot_confirmed() {
+  player_name=$1
+  mount_point=$2
+  
+  # Confirm before booting
+  if ask-yn "Boot player '$player_name'? This will forcibly disconnect them." "no"; then
+    # Close the portal
+    if close-portal "$mount_point" 2>/dev/null; then
+      success "Player '$player_name' has been booted."
+    else
+      # Try with fusermount -uz (force unmount)
+      if command -v fusermount >/dev/null 2>&1; then
+        if fusermount -uz "$mount_point" 2>/dev/null; then
+          success "Player '$player_name' has been forcibly booted."
+        else
+          warn "boot-player: failed to unmount $mount_point"
+          exit 1
+        fi
+      else
+        warn "boot-player: failed to unmount $mount_point"
+        exit 1
+      fi
+    fi
+  else
+    printf '%s\n' "Boot cancelled."
+  fi
+}
+
+# Execute menu with options
+menu "Boot Player:" "$@"
