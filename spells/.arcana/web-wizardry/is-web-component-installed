@@ -8,7 +8,7 @@ case "${1-}" in
 Usage: is-web-component-installed COMPONENT
 
 Returns 0 if the component is installed, 1 otherwise.
-Components: pandoc, nginx, fcgiwrap, openssl, htmx, coreutils
+Components: pandoc, nginx, fcgiwrap, openssl, htmx, certbot, coreutils
 USAGE
   exit 0
   ;;
@@ -30,6 +30,9 @@ case "$component" in
     [ -f "$htmx_dir/htmx.min.js" ] || \
     [ -f /usr/local/share/htmx/htmx.min.js ] || \
     [ -f /usr/share/htmx/htmx.min.js ]
+    ;;
+  certbot)
+    command -v certbot >/dev/null 2>&1
     ;;
   coreutils)
     # Assert-only: just check if core utilities are present

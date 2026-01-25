@@ -12,8 +12,8 @@ printf 'Enter site name: '
 read -r site_name
 
 if [ -z "$site_name" ]; then
-  warn "web-create-site-prompt: no site name entered"
+  warn "create-site-prompt: no site name entered"
   exit 1
 fi
 
-web-create-site "$site_name"
+create-site "$site_name"

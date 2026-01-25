@@ -5,7 +5,7 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: web-build SITENAME [--full] [--watch]
+Usage: build SITENAME [--full] [--watch]
 
 Builds a website by converting Markdown to HTML with Pandoc.
 
@@ -28,7 +28,7 @@ set -eu
 
 site_name=${1-}
 if [ -z "$site_name" ]; then
-  die 2 "web-build: SITENAME required"
+  die 2 "build: SITENAME required"
 fi
 
 # Parse options
@@ -39,21 +39,21 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --full) full_rebuild=1; shift ;;
     --watch) watch_mode=1; shift ;;
-    *) die 2 "web-build: unknown option '$1'" ;;
+    *) die 2 "build: unknown option '$1'" ;;
   esac
 done
 
-WEB_ROOT=${WIZARDRY_WEB_ROOT:-$HOME/.wizardry-web}
+WEB_ROOT=${WIZARDRY_WEB_ROOT:-$HOME/.web-wizardry}
 SITES_DIR="$WEB_ROOT/sites"
 SITE_DIR="$SITES_DIR/$site_name"
 
 if [ ! -d "$SITE_DIR" ]; then
-  die "web-build: site '$site_name' not found"
+  die "build: site '$site_name' not found"
 fi
 
 # Check for pandoc
 if ! has pandoc; then
-  die "web-build: pandoc is required but not installed"
+  die "build: pandoc is required but not installed"
 fi
 
 build_site() {

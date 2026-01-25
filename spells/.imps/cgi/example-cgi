@@ -1,0 +1,44 @@
+#!/bin/sh
+# example-cgi - example CGI script for wizardry web
+# This is an example of a CGI script that can be called from web pages
+
+set -eu
+
+# Source CGI helpers
+. http-status
+. http-header
+. http-end-headers
+
+# Output HTTP headers
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+# Output HTML body
+cat <<'HTML'
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CGI Example</title>
+</head>
+<body>
+    <h1>Hello from CGI!</h1>
+    <p>This is an example CGI script running via wizardry web.</p>
+    <p>The script is written in POSIX shell and executed via fcgiwrap.</p>
+    
+    <h2>Environment</h2>
+    <pre>
+HTML
+
+# Show some environment variables
+printf 'REQUEST_METHOD: %s\n' "${REQUEST_METHOD-}"
+printf 'QUERY_STRING: %s\n' "${QUERY_STRING-}"
+printf 'SERVER_SOFTWARE: %s\n' "${SERVER_SOFTWARE-}"
+
+cat <<'HTML'
+    </pre>
+    
+    <p><a href="/">Back to home</a></p>
+</body>
+</html>
+HTML

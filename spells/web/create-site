@@ -5,7 +5,7 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: web-create-site SITENAME
+Usage: create-site SITENAME
 
 Creates a new website with standard directory structure:
   - site/ (source files)
@@ -27,23 +27,23 @@ set -eu
 
 site_name=${1-}
 if [ -z "$site_name" ]; then
-  die 2 "web-create-site: SITENAME required"
+  die 2 "create-site: SITENAME required"
 fi
 
 # Validate site name (alphanumeric, dash, underscore only)
 case "$site_name" in
   *[!a-zA-Z0-9_-]*)
-    die 2 "web-create-site: invalid site name (use alphanumeric, dash, underscore only)"
+    die 2 "create-site: invalid site name (use alphanumeric, dash, underscore only)"
     ;;
 esac
 
-WEB_ROOT=${WIZARDRY_WEB_ROOT:-$HOME/.wizardry-web}
+WEB_ROOT=${WIZARDRY_WEB_ROOT:-$HOME/.web-wizardry}
 SITES_DIR="$WEB_ROOT/sites"
 SITE_DIR="$SITES_DIR/$site_name"
 
 # Check if site already exists
 if [ -d "$SITE_DIR" ]; then
-  die "web-create-site: site '$site_name' already exists"
+  die "create-site: site '$site_name' already exists"
 fi
 
 # Create directory structure
@@ -75,8 +75,12 @@ This is your homepage. Edit `site/pages/index.md` to customize it.
 
 1. Edit pages in `site/pages/`
 2. Add static files to `site/static/`
-3. Build with `wizardry-web build SITENAME`
-4. Serve with `wizardry-web serve SITENAME`
+3. Build with `wizardry build SITENAME`
+4. Serve with `wizardry serve SITENAME`
+
+## Example CGI
+
+Try the [example CGI script](/cgi/example-cgi) to see server-side shell execution in action.
 EOF
 
 # Create example CSS
@@ -111,4 +115,4 @@ EOF
 
 success "Site '$site_name' created at $SITE_DIR"
 info "Edit pages in: $SITE_DIR/site/pages/"
-info "Build with: wizardry-web build $site_name"
+info "Build with: wizardry build $site_name"

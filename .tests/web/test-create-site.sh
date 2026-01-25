@@ -1,5 +1,5 @@
 #!/bin/sh
-# Tests for the 'web-create-site' spell
+# Tests for the 'create-site' spell
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -8,20 +8,20 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_web_create_site_help() {
-  run_spell spells/system/web-create-site --help
+  run_spell spells/web/create-site --help
   assert_success
-  assert_output_contains "Usage: web-create-site"
+  assert_output_contains "Usage: create-site"
 }
 
 test_web_create_site_creates_structure() {
   skip-if-compiled || return $?
   
   # Set up test environment
-  test_web_root=$(temp-dir wizardry-web-test)
-  export WIZARDRY_WEB_ROOT="$test_web_root"
+  test_web_root=$(temp-dir web-wizardry-test)
+  export WEB_WIZARDRY_ROOT="$test_web_root"
   
   # Create a test site
-  run_spell spells/system/web-create-site mytestsite
+  run_spell spells/web/create-site mytestsite
   assert_success
   
   # Verify directory structure
@@ -46,7 +46,7 @@ test_web_create_site_creates_structure() {
   rm -rf "$test_web_root"
 }
 
-run_test_case "web-create-site --help works" test_web_create_site_help
-run_test_case "web-create-site creates structure" test_web_create_site_creates_structure
+run_test_case "create-site --help works" test_web_create_site_help
+run_test_case "create-site creates structure" test_web_create_site_creates_structure
 
 finish_tests

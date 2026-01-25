@@ -1,0 +1,149 @@
+#!/bin/sh
+
+# Configure HTTPS with Let's Encrypt for a wizardry web site.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: https SITENAME [--email EMAIL]
+
+Configures HTTPS for a website using Let's Encrypt.
+
+Options:
+  --email EMAIL     Email address for Let's Encrypt notifications
+
+Prerequisites:
+  - certbot must be installed
+  - Domain must be publicly accessible
+  - Port 80 must be available for ACME challenge
+
+Example: web-https mysite --email admin@example.com
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+site_name=${1-}
+if [ -z "$site_name" ]; then
+  die 2 "https: SITENAME required"
+fi
+shift
+
+# Parse options
+email=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --email)
+      email=${2-}
+      if [ -z "$email" ]; then
+        die 2 "https: --email requires value"
+      fi
+      shift 2
+      ;;
+    *)
+      die 2 "https: unknown option '$1'"
+      ;;
+  esac
+done
+
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/.web-wizardry}
+SITES_DIR="$WEB_ROOT/sites"
+SITE_DIR="$SITES_DIR/$site_name"
+
+if [ ! -d "$SITE_DIR" ]; then
+  die "https: site '$site_name' not found"
+fi
+
+# Check for certbot
+if ! has certbot; then
+  warn "https: certbot is not installed"
+  info "Install certbot to enable Let's Encrypt HTTPS"
+  info "On Debian/Ubuntu: sudo apt-get install certbot"
+  info "On macOS: brew install certbot"
+  exit 1
+fi
+
+# Get domain from config
+domain=$(config-get "$SITE_DIR/site.conf" domain 2>/dev/null || echo "")
+if [ -z "$domain" ] || [ "$domain" = "localhost" ]; then
+  die "https: valid domain required (configure with web-configure-nginx --domain DOMAIN)"
+fi
+
+if [ -z "$email" ]; then
+  printf 'Enter email for Let'\''s Encrypt notifications: '
+  read -r email
+  if [ -z "$email" ]; then
+    die 2 "https: email required"
+  fi
+fi
+
+step "Configuring Let's Encrypt for $domain..."
+
+# Ensure site is built and nginx config exists
+if [ ! -f "$SITE_DIR/nginx/nginx.conf" ]; then
+  info "Generating nginx configuration first..."
+  configure-nginx "$site_name" --domain "$domain"
+fi
+
+# Run certbot to obtain certificate
+info "Running certbot to obtain certificate..."
+info "This will use the HTTP-01 challenge method."
+info ""
+
+# Use certbot with webroot plugin
+if sudo certbot certonly \
+  --webroot \
+  -w "$SITE_DIR/build" \
+  -d "$domain" \
+  --email "$email" \
+  --agree-tos \
+  --non-interactive; then
+  
+  success "Certificate obtained successfully"
+  
+  # Update nginx config to use HTTPS
+  cert_path="/etc/letsencrypt/live/$domain/fullchain.pem"
+  key_path="/etc/letsencrypt/live/$domain/privkey.pem"
+  
+  info "Updating nginx configuration for HTTPS..."
+  
+  # Backup current config
+  cp "$SITE_DIR/nginx/nginx.conf" "$SITE_DIR/nginx/nginx.conf.bak"
+  
+  # Add SSL configuration to nginx
+  # This is a simplified version - in production you'd want to regenerate the whole config
+  printf '\n# HTTPS configuration added by Let'\''s Encrypt\n' >> "$SITE_DIR/nginx/nginx.conf"
+  printf '# Certificate: %s\n' "$cert_path" >> "$SITE_DIR/nginx/nginx.conf"
+  printf '# Private key: %s\n' "$key_path" >> "$SITE_DIR/nginx/nginx.conf"
+  
+  info "Certificate paths:"
+  info "  Cert: $cert_path"
+  info "  Key:  $key_path"
+  info ""
+  info "To enable HTTPS, reconfigure nginx with:"
+  info "  configure-nginx $site_name --port 443 --domain $domain --https"
+  info ""
+  info "Set up auto-renewal with a cron job:"
+  info "  0 0 * * * sudo certbot renew --quiet"
+  
+else
+  warn "Certificate obtainment failed"
+  info "Make sure:"
+  info "  1. Domain $domain points to this server"
+  info "  2. Port 80 is accessible from the internet"
+  info "  3. nginx is running and serving the site"
+  exit 1
+fi
+
+config-set "$SITE_DIR/site.conf" https "true"
+config-set "$SITE_DIR/site.conf" email "$email"
+config-set "$SITE_DIR/site.conf" cert-path "$cert_path"
+config-set "$SITE_DIR/site.conf" key-path "$key_path"
+
+success "HTTPS configuration complete"
+info "Restart nginx to apply changes: stop-site $site_name && serve-site $site_name"
