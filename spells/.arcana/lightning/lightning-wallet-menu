@@ -19,7 +19,10 @@ set -eu
 . env-clear
 . colors
 
-trap 'exit 0' INT TERM
+# Catch Ctrl-C and TERM signal to exit cleanly
+# INT (Ctrl-C) should exit 130, TERM should exit 0
+trap 'exit 130' INT
+trap 'exit 0' TERM
 
 first_run=1
 
@@ -39,5 +42,12 @@ while true; do
   list_funds="List Funds%lightning-cli listfunds"
   withdraw="Withdraw%printf 'Destination: '; read -r dest; printf 'Amount (sats): '; read -r amt; lightning-cli withdraw \"\$dest\" \"\$amt\""
   
-  menu "$title" "$new_addr" "$list_funds" "$withdraw" "$exit_option" || true
+  menu "$title" "$new_addr" "$list_funds" "$withdraw" "$exit_option" || menu_status=$?
+  menu_status=${menu_status:-0}
+  
+  # ESC causes menu to exit with 130 - handle gracefully by exiting
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    exit 0
+  fi
 done
