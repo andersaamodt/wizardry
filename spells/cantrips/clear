@@ -22,29 +22,17 @@ esac
 
 set -eu
 
-# Handle the 'all' mode - completely clear the terminal
+# Handle the 'all' mode - completely clear the terminal session history
 if [ "${1-}" = "all" ]; then
-  # Use the standard POSIX clear command if available
-  if command -v /usr/bin/clear >/dev/null 2>&1; then
-    /usr/bin/clear
-  elif command -v tput >/dev/null 2>&1; then
-    # Use tput to send the clear command
-    tput clear 2>/dev/null
-  else
-    # Fallback: use ANSI escape sequences
-    printf '\033[H\033[2J\033[3J'
-  fi
+  # Use ANSI escape sequences to clear terminal and scrollback buffer
+  # \033[H = move cursor to home position (0,0)
+  # \033[2J = clear entire screen
+  # \033[3J = clear scrollback buffer
+  printf '\033[H\033[2J\033[3J'
 else
   # Default mode: scroll content off-screen
-  # Get terminal height, defaulting to 40 if unable to determine
-  if command -v tput >/dev/null 2>&1; then
-    lines=$(tput lines 2>/dev/null || echo "40")
-  elif command -v stty >/dev/null 2>&1; then
-    # stty size outputs "rows cols", we want rows
-    lines=$(stty size 2>/dev/null | awk '{print $1}' || echo "40")
-  else
-    lines=40
-  fi
+  # Get terminal height using fathom-terminal, fallback to 40
+  lines=$(fathom-terminal --height 2>/dev/null || echo "40")
   
   i=0
   while [ "$i" -lt "$lines" ]; do
