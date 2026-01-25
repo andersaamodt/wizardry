@@ -140,19 +140,13 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         lines_needed=$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
         [ "$lines_needed" -lt 1 ] && lines_needed=1
         
-        # Save cursor position first (before any changes)
-        printf '\0337'
+        # Approach: Clear current line, print newlines to scroll and create space,
+        # move up, print message. The shell will redraw the prompt afterward.
         
-        # Move to column 0 to ensure positioning works correctly
-        printf '\r'
+        # Move to column 0 and clear the current line
+        printf '\r\033[K'
         
-        # Instead of using IL which fails at terminal bottom, use a different approach:
-        # 1. Print newlines to scroll content up and create space
-        # 2. Move cursor up to where message should be printed
-        # 3. Print message
-        # 4. Restore cursor to original position (now scrolled up) and move down
-        
-        # Print lines_needed newlines to scroll terminal and create space
+        # Print newlines to create space (scrolls terminal if at bottom)
         i=0
         while [ "$i" -lt "$lines_needed" ]; do
           printf '\n'
@@ -162,12 +156,8 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         # Move cursor up to where the message should be printed
         printf '\033[%dA' "$lines_needed"
         
-        # Print the message at beginning of line
-        printf '\r%s' "$formatted_msg"
-        
-        # Restore cursor to saved position, then move down by lines_needed
-        # (the saved position is now lines_needed lines up from where we want to be)
-        printf '\0338\033[%dB' "$lines_needed"
+        # Print the message
+        printf '%s\n' "$formatted_msg"
         ;;
       *)
         # Fallback for lines that don't match expected format
@@ -176,13 +166,10 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         lines_needed=$(( (msg_len + 3 + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))  # +3 for "🔮 "
         [ "$lines_needed" -lt 1 ] && lines_needed=1
         
-        # Save cursor position first (before any changes)
-        printf '\0337'
+        # Move to column 0 and clear the current line
+        printf '\r\033[K'
         
-        # Move to column 0 to ensure positioning works correctly
-        printf '\r'
-        
-        # Print newlines to scroll terminal and create space
+        # Print newlines to create space (scrolls terminal if at bottom)
         i=0
         while [ "$i" -lt "$lines_needed" ]; do
           printf '\n'
@@ -192,11 +179,8 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         # Move cursor up to where the message should be printed
         printf '\033[%dA' "$lines_needed"
         
-        # Print the message at beginning of line
-        printf '\r🔮 %s' "$line"
-        
-        # Restore cursor to saved position, then move down by lines_needed
-        printf '\0338\033[%dB' "$lines_needed"
+        # Print the message
+        printf '🔮 %s\n' "$line"
         ;;
     esac
   done
