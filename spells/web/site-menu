@@ -44,19 +44,43 @@ trap 'exit 0' TERM
 
 while true; do
   # Build menu based on site status
-  status=$(web-site-status "$site_name")
+  status=$(site-status "$site_name")
+  
+  # Check if site is being served
+  is_serving=0
+  if [ -f "$SITE_DIR/nginx/nginx.pid" ]; then
+    pid=$(cat "$SITE_DIR/nginx/nginx.pid" 2>/dev/null || echo "")
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+      is_serving=1
+    fi
+  fi
+  
+  # Get port from config
+  port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || echo "8080")
   
   exit_label=$(exit-label)
   
-  set -- \
-    "Build site%build \"$site_name\"" \
-    "Build site (full)%build \"$site_name\" --full" \
-    "Serve site%serve-site \"$site_name\"" \
-    "Stop serving%stop-site \"$site_name\"" \
-    "Configure nginx%configure-nginx \"$site_name\"" \
-    "Open site directory%cd \"$SITE_DIR\" && \$SHELL" \
-    "Delete site%delete-site \"$site_name\"" \
-    "${exit_label}%kill -TERM \$PPID"
+  if [ "$is_serving" -eq 1 ]; then
+    set -- \
+      "Open in browser%command -v xdg-open >/dev/null 2>&1 && xdg-open http://localhost:$port || command -v open >/dev/null 2>&1 && open http://localhost:$port || printf 'Visit: http://localhost:$port\n'" \
+      "Build site%build \"$site_name\"" \
+      "Build site (full)%build \"$site_name\" --full" \
+      "Stop serving%stop-site \"$site_name\"" \
+      "Configure nginx%configure-nginx \"$site_name\"" \
+      "Open site directory%cd \"$SITE_DIR\" && \$SHELL" \
+      "Delete site%delete-site \"$site_name\"" \
+      "${exit_label}%kill -TERM \$PPID"
+  else
+    set -- \
+      "Build site%build \"$site_name\"" \
+      "Build site (full)%build \"$site_name\" --full" \
+      "Serve site%serve-site \"$site_name\"" \
+      "Build & Serve%build \"$site_name\" && serve-site \"$site_name\"" \
+      "Configure nginx%configure-nginx \"$site_name\"" \
+      "Open site directory%cd \"$SITE_DIR\" && \$SHELL" \
+      "Delete site%delete-site \"$site_name\"" \
+      "${exit_label}%kill -TERM \$PPID"
+  fi
 
   menu "${BOLD}${CYAN}Site: $site_name${RESET} ($status)" "$@" || menu_status=$?
   menu_status=${menu_status:-0}

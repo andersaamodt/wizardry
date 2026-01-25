@@ -147,9 +147,9 @@ while true; do
   if [ -n "$site_entries" ]; then
     # shellcheck disable=SC2039
     site_menu=$(printf "$site_entries")
-    set -- "Create new site%create-site-prompt" "---" $site_menu "---" "${exit_label}%kill -TERM \$PPID"
+    set -- "Create new site%create-site-prompt" "Create from template%template-menu" "---" $site_menu "---" "${exit_label}%kill -TERM \$PPID"
   else
-    set -- "Create new site%create-site-prompt" "${exit_label}%kill -TERM \$PPID"
+    set -- "Create new site%create-site-prompt" "Create from template%template-menu" "${exit_label}%kill -TERM \$PPID"
   fi
 
   menu "${BOLD}${CYAN}Wizardry Web Platform" "$@" || menu_status=$?

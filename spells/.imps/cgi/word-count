@@ -1,0 +1,32 @@
+#!/bin/sh
+# word-count - Count words in submitted text
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+text="${QUERY_STRING:-}"
+text=$(printf '%s' "$text" | sed 's/text=//' | url-decode)
+
+if [ -z "$text" ]; then
+  cat <<HTML
+<div class="demo-result">
+  <p>No text provided</p>
+</div>
+HTML
+else
+  words=$(printf '%s' "$text" | wc -w)
+  chars=$(printf '%s' "$text" | wc -c)
+  lines=$(printf '%s' "$text" | wc -l)
+  
+  cat <<HTML
+<div class="demo-result">
+  <table>
+    <tr><th>Words</th><td>$words</td></tr>
+    <tr><th>Characters</th><td>$chars</td></tr>
+    <tr><th>Lines</th><td>$((lines + 1))</td></tr>
+  </table>
+</div>
+HTML
+fi

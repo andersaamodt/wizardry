@@ -1,0 +1,23 @@
+#!/bin/sh
+# system-info - CGI script showing system information
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+uptime_info=$(uptime 2>/dev/null || echo "N/A")
+mem_info=$(free -h 2>/dev/null | head -2 | tail -1 || echo "N/A")
+disk_info=$(df -h / 2>/dev/null | tail -1 || echo "N/A")
+
+cat <<HTML
+<div class="demo-result system">
+  <h3>System Information</h3>
+  <table>
+    <tr><th>Hostname</th><td>$(hostname)</td></tr>
+    <tr><th>Kernel</th><td>$(uname -sr)</td></tr>
+    <tr><th>Uptime</th><td>$uptime_info</td></tr>
+    <tr><th>Timestamp</th><td>$(date)</td></tr>
+  </table>
+</div>
+HTML

@@ -1,0 +1,16 @@
+#!/bin/sh
+# color-picker - Return color information
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+color="${QUERY_STRING:-#3498db}"
+color=$(printf '%s' "$color" | sed 's/color=//')
+
+cat <<HTML
+<div class="demo-result" style="background: ${color}; padding: 20px; border-radius: 8px;">
+  <p style="color: white; text-shadow: 1px 1px 2px black;"><strong>Selected: ${color}</strong></p>
+</div>
+HTML

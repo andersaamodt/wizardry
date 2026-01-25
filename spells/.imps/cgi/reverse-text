@@ -1,0 +1,23 @@
+#!/bin/sh
+# reverse-text - Reverse the input text
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+text="${QUERY_STRING:-}"
+text=$(printf '%s' "$text" | sed 's/text=//' | url-decode)
+
+if [ -z "$text" ]; then
+  reversed="(empty)"
+else
+  reversed=$(printf '%s' "$text" | rev)
+fi
+
+cat <<HTML
+<div class="demo-result">
+  <p>Original: <code>$text</code></p>
+  <p>Reversed: <strong>$reversed</strong></p>
+</div>
+HTML

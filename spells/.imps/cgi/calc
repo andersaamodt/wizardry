@@ -1,0 +1,35 @@
+#!/bin/sh
+# calc - Simple calculator CGI script
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+# Parse query string
+expr="${QUERY_STRING:-}"
+expr=$(printf '%s' "$expr" | sed 's/expr=//' | url-decode)
+
+if [ -z "$expr" ]; then
+  cat <<HTML
+<div class="demo-result error">
+  <p>No expression provided</p>
+</div>
+HTML
+else
+  # Safely evaluate (only allow numbers and basic operators)
+  if printf '%s' "$expr" | grep -qE '^[0-9+\-*/ ().]+$'; then
+    result=$(printf '%s\n' "$expr" | bc 2>/dev/null || echo "Error")
+    cat <<HTML
+<div class="demo-result">
+  <p><code>$expr</code> = <strong>$result</strong></p>
+</div>
+HTML
+  else
+    cat <<HTML
+<div class="demo-result error">
+  <p>Invalid expression (only numbers and +, -, *, / allowed)</p>
+</div>
+HTML
+  fi
+fi

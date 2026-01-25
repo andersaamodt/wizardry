@@ -1,0 +1,60 @@
+#!/bin/sh
+
+# Present template selection menu for creating sites.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: template-menu
+
+Displays a menu to select and create a site from templates.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+. colors
+
+if ! require menu "The template-menu needs the 'menu' command."; then
+  exit 1
+fi
+
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 130' INT
+trap 'exit 0' TERM
+
+# Prompt for site name
+printf 'Enter name for new site: '
+read -r site_name
+
+if [ -z "$site_name" ]; then
+  warn "template-menu: no site name entered"
+  exit 1
+fi
+
+# Check if site already exists
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+if [ -d "$WEB_ROOT/$site_name" ]; then
+  die "template-menu: site '$site_name' already exists"
+fi
+
+# Template menu
+exit_label=$(exit-label)
+
+set -- \
+  "Demo Site (Interactive CGI demos)%create-from-template \"$site_name\" demo && web-wizardry build \"$site_name\"" \
+  "Personal Blog (Coming soon)%printf 'Blog template not yet implemented\n'" \
+  "${exit_label}%kill -TERM \$PPID"
+
+menu "${BOLD}${CYAN}Select Template for '$site_name'" "$@" || menu_status=$?
+menu_status=${menu_status:-0}
+
+# ESC causes menu to exit with 130 - handle gracefully by exiting
+if [ "$menu_status" -eq 130 ]; then
+  printf 'ESC\n' >&2
+  exit 0
+fi
