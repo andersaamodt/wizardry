@@ -83,7 +83,7 @@ while true; do
   fi
   
   if [ "$has_key" -eq 1 ]; then
-    player_key_item="Show My Public Key%cat ~/.ssh/\${MUD_PLAYER}.pub 2>/dev/null || printf 'No key for player: %s\\n' \"\$MUD_PLAYER\""
+    player_key_item="Copy player key to clipboard%copy ~/.ssh/\$MUD_PLAYER.pub"
   else
     player_key_item="Create Player Key%new-player"
   fi

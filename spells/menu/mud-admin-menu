@@ -28,8 +28,8 @@ if ! require menu "The MUD Admin menu needs the 'menu' command to present option
 fi
 
 mud_admin_menu_display_menu() {
-  add="Add Player to Server%add-player"
-  boot="Boot Player from Server%boot-player"
+  add="Add Player%add-player"
+  boot="Boot Player%boot-player"
   list_players="List System Users%getent passwd | grep /home | cut -d: -f1 | sort"
   list_rooms="List Shared Rooms%ls -la /srv/mud/world 2>/dev/null || printf 'Shared world not set up. Run install-sshfs first.\\n'"
   exit_label=$(exit-label)

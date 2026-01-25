@@ -80,10 +80,9 @@ while true; do
   look="Look Around%look"
   stats="View Stats%stats"
   speak="Say Something%printf 'Message: ' && read msg && say \"\$msg\""
-  listen_room="Listen to Room Activity%listen"
   home="Teleport Home%cd"
   jump="Teleport to Marker%jump-to-marker"
-  open_portal="Open Portal%printf 'Player name: ' && read player && printf 'Server address: ' && read server && printf 'Remote path (or Enter for ~): ' && read path && path=\${path:-~} && open-portal \"\$player@\$server:\$path\""
+  open_portal="Open Portal%printf 'Use Tor? (y/N): ' && read use_tor && tor_flag=\"\" && [ \"\$use_tor\" = \"y\" ] || [ \"\$use_tor\" = \"Y\" ] && tor_flag=\"--tor \" && printf 'Player name: ' && read player && printf 'Server address (IP or .onion): ' && read server && printf 'Remote path (or Enter for ~): ' && read path && path=\${path:-~} && open-portal \$tor_flag\"\$player@\$server:\$path\""
   close_portal="Close Portal%close-portal"
   portal="Teleport to Portal Chamber%cd $portal_location"
   admin="Admin MUD Hosting%mud-admin-menu"
@@ -97,7 +96,6 @@ while true; do
     "$look" \
     "$stats" \
     "$speak" \
-    "$listen_room" \
     "$home" \
     "$jump" \
     "$open_portal" \

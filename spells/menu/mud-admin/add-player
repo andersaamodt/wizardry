@@ -81,8 +81,14 @@ while true; do
 done
 
 # Create new system user with mud group
+# -m: create home directory
+# -G mud: add to mud group
+# -s /bin/sh: set shell (default)
 printf '%s\n' "Creating system user '${playername}'..."
-useradd -m -G mud "$playername"
+useradd -m -G mud -s /bin/sh "$playername"
+
+# Secure home directory permissions (owner only, no group/other access except via mud group on shared dirs)
+chmod 750 "/home/$playername"
 
 # Create the SSH directory
 mkdir -p "/home/$playername/.ssh"
@@ -92,6 +98,9 @@ chmod 700 "/home/$playername/.ssh"
 printf '%s %s@mud\n' "$sshkey" "$playername" >> "/home/$playername/.ssh/authorized_keys"
 chmod 600 "/home/$playername/.ssh/authorized_keys"
 chown -R "$playername:$playername" "/home/$playername/.ssh"
+
+# Ensure home directory is owned by the user
+chown "$playername:$playername" "/home/$playername"
 
 printf '%s\n' ""
 success "Player ${playername} added successfully!"
