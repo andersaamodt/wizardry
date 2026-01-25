@@ -88,7 +88,7 @@ while true; do
   close_portal="Close Portal%close-portal"
   portal="Teleport to Portal Chamber%cd $portal_location"
   admin="Admin MUD Hosting%mud-admin-menu"
-  settings="MUD Settings%mud-settings"
+  settings="MUD Settings%. mud-settings"
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
   exit_label=$(exit-label)

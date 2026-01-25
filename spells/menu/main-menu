@@ -100,12 +100,10 @@ while true; do
   
   # Build menu based on whether MUD is enabled
   if [ "$mud_enabled" -eq 1 ]; then
-    mud="MUD%mud"
-    install_mud="Install MUD features%mud-menu"
-    set -- "$cast" "$mud" "$spellbook" "$install" "$system" "$install_mud" "$exit_item"
+    mud="MUD%. mud"
+    set -- "$cast" "$mud" "$spellbook" "$install" "$system" "$exit_item"
   else
-    install_mud="Install MUD features%mud-menu"
-    set -- "$cast" "$spellbook" "$install" "$system" "$install_mud" "$exit_item"
+    set -- "$cast" "$spellbook" "$install" "$system" "$exit_item"
   fi
   
   menu "Main Menu:" "$@" || menu_status=$?
