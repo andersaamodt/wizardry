@@ -32,19 +32,14 @@ fi
 installed=0
 total=6
 
-# Check each component
-command -v pandoc >/dev/null 2>&1 && installed=$((installed + 1))
-command -v nginx >/dev/null 2>&1 && installed=$((installed + 1))
-command -v fcgiwrap >/dev/null 2>&1 && installed=$((installed + 1))
-command -v openssl >/dev/null 2>&1 && installed=$((installed + 1))
-# htmx is just a static file, check common locations
-if [ -f /usr/local/share/htmx/htmx.min.js ] || \
-   [ -f /usr/share/htmx/htmx.min.js ] || \
-   [ -f "$HOME/.local/share/htmx/htmx.min.js" ]; then
-  installed=$((installed + 1))
-fi
-# coreutils is assert-only
-command -v readlink >/dev/null 2>&1 && installed=$((installed + 1))
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+# Check each component using the helper
+for component in pandoc nginx fcgiwrap openssl htmx coreutils; do
+  if "$script_dir/is-web-component-installed" "$component" 2>/dev/null; then
+    installed=$((installed + 1))
+  fi
+done
 
 if [ "$installed" -eq 0 ]; then
   color="$GREY"

@@ -93,7 +93,7 @@ while true; do
   
   # Coreutils (assert-only)
   if "$script_dir/is-web-component-installed" coreutils 2>/dev/null; then
-    coreutils_toggle="[X] Coreutils (assert-only)%$script_dir/install-coreutils; echo 7 > \"$SELECTION_FILE\""
+    coreutils_toggle="[X] Coreutils (assert-only)%$script_dir/uninstall-coreutils; echo 7 > \"$SELECTION_FILE\""
   else
     coreutils_toggle="[ ] Coreutils (assert-only)%$script_dir/install-coreutils; echo 7 > \"$SELECTION_FILE\""
   fi
