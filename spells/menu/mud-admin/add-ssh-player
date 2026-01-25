@@ -17,12 +17,22 @@ Player names must:
 - Be unique on this server
 
 SSH keys must be in the format: ssh-<type> <base64-data> [comment]
+
+This requires the 'mud' group to exist. Run install-sshfs first to set up the MUD server.
 USAGE
   exit 0
   ;;
 esac
 
 set -eu
+
+# Check if mud group exists
+if ! getent group mud >/dev/null 2>&1; then
+  printf '%s\n' "add-ssh-player: the 'mud' group does not exist." >&2
+  printf '%s\n' "Please run 'install-sshfs' first to set up the MUD server." >&2
+  printf '%s\n' "Or manually create the group: sudo groupadd mud" >&2
+  exit 1
+fi
 
 printf '%s\n' "Add a new player to this MUD server."
 printf '%s\n' "This creates a system user account with limited permissions for the player."
@@ -70,7 +80,7 @@ while true; do
   break
 done
 
-# Create new system user
+# Create new system user with mud group
 printf '%s\n' "Creating system user '${playername}'..."
 useradd -m -G mud "$playername"
 
@@ -86,3 +96,6 @@ chown -R "$playername:$playername" "/home/$playername/.ssh"
 printf '%s\n' ""
 success "Player ${playername} added successfully!"
 printf '%s\n' "They can now connect to this server using their SSH key."
+printf '%s\n' ""
+printf '%s\n' "Connection command for player:"
+printf '%s\n' "  ssh -i ~/.ssh/${playername} ${playername}@your-server-address"
