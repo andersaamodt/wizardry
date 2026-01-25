@@ -1,0 +1,54 @@
+#!/bin/sh
+
+# Clear the terminal screen by scrolling content off-screen or completely clearing the session.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: clear [all]
+
+Clear the terminal screen.
+
+With no arguments, scrolls content off-screen by printing newlines.
+With 'all' argument, completely clears the terminal session back to the start.
+
+Examples:
+  clear       # Scroll content off-screen
+  clear all   # Clear terminal session completely
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+# Handle the 'all' mode - completely clear the terminal
+if [ "${1-}" = "all" ]; then
+  # Use the standard POSIX clear command if available
+  if command -v /usr/bin/clear >/dev/null 2>&1; then
+    /usr/bin/clear
+  elif command -v tput >/dev/null 2>&1; then
+    # Use tput to send the clear command
+    tput clear 2>/dev/null
+  else
+    # Fallback: use ANSI escape sequences
+    printf '\033[H\033[2J\033[3J'
+  fi
+else
+  # Default mode: scroll content off-screen
+  # Get terminal height, defaulting to 40 if unable to determine
+  if command -v tput >/dev/null 2>&1; then
+    lines=$(tput lines 2>/dev/null || echo "40")
+  elif command -v stty >/dev/null 2>&1; then
+    # stty size outputs "rows cols", we want rows
+    lines=$(stty size 2>/dev/null | awk '{print $1}' || echo "40")
+  else
+    lines=40
+  fi
+  
+  i=0
+  while [ "$i" -lt "$lines" ]; do
+    printf '\n'
+    i=$((i + 1))
+  done
+fi
