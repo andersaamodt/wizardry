@@ -39,11 +39,43 @@ while true; do
   exit_option="${exit_label}%kill -TERM \$PPID"
   
   if command -v lightning-cli >/dev/null 2>&1; then
+    # Lightning is installed - show management options
     wallet_option="Wallet Menu%lightning-wallet-menu"
     info_option="Show Info%lightning-cli getinfo"
+    configure_option="Configure Lightning%configure-lightning"
+    repair_option="Repair Permissions%repair-lightning-permissions"
     uninstall_option="Uninstall Lightning%uninstall-lightning"
-    menu "$title" "$wallet_option" "$info_option" "$uninstall_option" "$exit_option" || menu_status=$?
+    
+    # Check for service management
+    service_status_option=""
+    lightning_service_option=""
+    
+    if is-service-installed lightningd > /dev/null 2>&1; then
+      service_status_option="View Lightning Service Status%sudo systemctl status lightningd"
+      if is-service-running lightningd > /dev/null 2>&1; then
+        lightning_service_option="Stop Lightning Service%sudo systemctl stop lightningd"
+      else
+        lightning_service_option="Start Lightning Service%sudo systemctl start lightningd"
+      fi
+    else
+      script_dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
+      service_status_option="Install Lightning Service%install-service-template $script_dir/lightning.service \"LIGHTNINGD=\$(command -v lightningd)\" \"USER=\$USER\""
+    fi
+    
+    # Build menu with available options
+    if [ -n "$service_status_option" ] && [ -n "$lightning_service_option" ]; then
+      menu "$title" "$wallet_option" "$info_option" "$configure_option" \
+        "$repair_option" "$service_status_option" "$lightning_service_option" \
+        "$uninstall_option" "$exit_option" || menu_status=$?
+    elif [ -n "$service_status_option" ]; then
+      menu "$title" "$wallet_option" "$info_option" "$configure_option" \
+        "$repair_option" "$service_status_option" "$uninstall_option" "$exit_option" || menu_status=$?
+    else
+      menu "$title" "$wallet_option" "$info_option" "$configure_option" \
+        "$repair_option" "$uninstall_option" "$exit_option" || menu_status=$?
+    fi
   else
+    # Lightning not installed - show install option
     install_option="Install Lightning%install-lightning"
     menu "$title" "$install_option" "$exit_option" || menu_status=$?
   fi
