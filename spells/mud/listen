@@ -140,7 +140,7 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         lines_needed=$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
         [ "$lines_needed" -lt 1 ] && lines_needed=1
         
-        # Save cursor position (row, column)
+        # Save cursor position first (before any changes)
         printf '\0337'
         
         # Insert blank lines to make room for the message
@@ -155,11 +155,12 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         printf '\033[%dA' "$lines_needed"
         
         # Print the message on the inserted line(s)
-        # Use \r to start at beginning of line, no trailing newline
+        # Use \r to start at beginning of line
         printf '\r%s' "$formatted_msg"
         
-        # Restore cursor position (now one line down from where it was saved)
-        printf '\0338'
+        # Restore cursor to saved position, then move down by lines_needed
+        # (the saved position is now lines_needed lines up from where we want to be)
+        printf '\0338\033[%dB' "$lines_needed"
         ;;
       *)
         # Fallback for lines that don't match expected format
@@ -168,7 +169,7 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         lines_needed=$(( (msg_len + 3 + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))  # +3 for "🔮 "
         [ "$lines_needed" -lt 1 ] && lines_needed=1
         
-        # Save cursor position
+        # Save cursor position first (before any changes)
         printf '\0337'
         
         # Insert blank lines
@@ -178,12 +179,12 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
           i=$((i + 1))
         done
         
-        # Move up and print (no trailing newline)
+        # Move up and print
         printf '\033[%dA' "$lines_needed"
         printf '\r🔮 %s' "$line"
         
-        # Restore cursor position
-        printf '\0338'
+        # Restore cursor to saved position, then move down by lines_needed
+        printf '\0338\033[%dB' "$lines_needed"
         ;;
     esac
   done
