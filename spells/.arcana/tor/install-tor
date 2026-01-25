@@ -63,12 +63,48 @@ case $distro in
     fi
     ;;
   mac|macos)
-    printf '%s\n' 'Installing tor via Homebrew...'
-    if ! command -v brew >/dev/null 2>&1; then
-      printf '%s\n' 'Homebrew is required to install Tor on macOS.'
+    printf '%s\n' 'Installing Tor from source on macOS...'
+    
+    # Check for required tools
+    if ! command -v make >/dev/null 2>&1; then
+      printf '%s\n' 'Error: make is required. Install Xcode Command Line Tools: xcode-select --install'
       return 1
     fi
-    brew install tor
+    
+    # Create temp directory for build
+    tmp_dir=$(temp-dir tor-install) || return 1
+    trap 'cleanup-dir "$tmp_dir"' EXIT HUP INT TERM
+    cd "$tmp_dir" || return 1
+    
+    # Download and build latest stable tor
+    TOR_VERSION="0.4.8.10"
+    printf 'Downloading Tor %s...\n' "$TOR_VERSION"
+    if command -v curl >/dev/null 2>&1; then
+      curl -L -O "https://dist.torproject.org/tor-${TOR_VERSION}.tar.gz" || return 1
+    elif command -v wget >/dev/null 2>&1; then
+      wget "https://dist.torproject.org/tor-${TOR_VERSION}.tar.gz" || return 1
+    else
+      printf '%s\n' 'Error: curl or wget required to download Tor'
+      return 1
+    fi
+    
+    tar -xzf "tor-${TOR_VERSION}.tar.gz"
+    cd "tor-${TOR_VERSION}" || return 1
+    
+    printf 'Configuring and building Tor (this may take a few minutes)...\n'
+    ./configure --prefix=/usr/local || return 1
+    make || return 1
+    
+    printf 'Installing Tor to /usr/local/bin...\n'
+    if command -v sudo >/dev/null 2>&1; then
+      sudo make install || return 1
+    else
+      make install || return 1
+    fi
+    
+    cd - >/dev/null || true
+    trap - EXIT HUP INT TERM
+    rm -rf "$tmp_dir"
     ;;
   nixos)
     # Ask for configuration path
