@@ -103,7 +103,7 @@ while true; do
   menu "MUD Settings:" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
   
-    # ESC causes menu to exit with 130 - handle gracefully by returning
+  # ESC causes menu to exit with 130 - handle gracefully by returning
   if [ "$menu_status" -eq 130 ]; then
     printf 'ESC\n' >&2
     return 0
