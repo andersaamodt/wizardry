@@ -1,0 +1,42 @@
+#!/bin/sh
+
+# Clear the terminal screen by scrolling content off-screen or completely clearing the session.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: clear [all]
+
+Clear the terminal screen.
+
+With no arguments, scrolls content off-screen by printing newlines.
+With 'all' argument, completely clears the terminal session back to the start.
+
+Examples:
+  clear       # Scroll content off-screen
+  clear all   # Clear terminal session completely
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+# Handle the 'all' mode - completely clear the terminal session history
+if [ "${1-}" = "all" ]; then
+  # Use ANSI escape sequences to clear terminal and scrollback buffer
+  # \033[H = move cursor to home position (0,0)
+  # \033[2J = clear entire screen
+  # \033[3J = clear scrollback buffer
+  printf '\033[H\033[2J\033[3J'
+else
+  # Default mode: scroll content off-screen
+  # Get terminal height using fathom-terminal, fallback to 40
+  lines=$(fathom-terminal --height 2>/dev/null || echo "40")
+  
+  i=0
+  while [ "$i" -lt "$lines" ]; do
+    printf '\n'
+    i=$((i + 1))
+  done
+fi
