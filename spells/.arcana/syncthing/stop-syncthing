@@ -1,0 +1,73 @@
+#!/bin/sh
+
+# Stop Syncthing.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: stop-syncthing
+
+Stops the running Syncthing process or systemd service.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+# Find the script directory to locate sibling helper scripts
+SCRIPT_SOURCE=$0
+case $SCRIPT_SOURCE in
+*/*)
+        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        ;;
+*)
+        resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
+        SCRIPT_DIR=${resolved%/*}
+        SCRIPT_SOURCE=$resolved
+        ;;
+esac
+if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
+        SCRIPT_DIR=.
+fi
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+
+if ! "$SCRIPT_DIR/is-syncthing-running"; then
+  printf '%s\n' 'Syncthing is not running.'
+  exit 0
+fi
+
+# Try to stop via systemd if available
+if command -v systemctl >/dev/null 2>&1; then
+  # Check for user service
+  if systemctl --user is-active --quiet syncthing.service 2>/dev/null; then
+    printf '%s\n' 'Stopping Syncthing user service...'
+    systemctl --user stop syncthing.service
+    printf '%s\n' 'Syncthing stopped.'
+    exit 0
+  fi
+  
+  # Check for system service
+  if systemctl is-active --quiet "syncthing@$(whoami).service" 2>/dev/null || \
+     systemctl is-active --quiet syncthing.service 2>/dev/null; then
+    printf '%s\n' 'Stopping Syncthing system service...'
+    sudo systemctl stop "syncthing@$(whoami).service" 2>/dev/null || \
+      sudo systemctl stop syncthing.service 2>/dev/null
+    printf '%s\n' 'Syncthing stopped.'
+    exit 0
+  fi
+fi
+
+# Fall back to killing the process
+printf '%s\n' 'Stopping Syncthing process...'
+pkill -x syncthing || true
+sleep 1
+
+if ! "$SCRIPT_DIR/is-syncthing-running"; then
+  printf '%s\n' 'Syncthing stopped.'
+else
+  warn "stop-syncthing: Syncthing may still be running"
+fi

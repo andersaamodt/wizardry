@@ -1,0 +1,84 @@
+#!/bin/sh
+
+# Disable Syncthing auto-start on system boot.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: disable-syncthing-autostart
+
+Disables Syncthing from starting automatically on system boot.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+# Find the script directory to locate sibling helper scripts
+SCRIPT_SOURCE=$0
+case $SCRIPT_SOURCE in
+*/*)
+        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        ;;
+*)
+        resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
+        SCRIPT_DIR=${resolved%/*}
+        SCRIPT_SOURCE=$resolved
+        ;;
+esac
+if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
+        SCRIPT_DIR=.
+fi
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+
+# Detect platform
+kernel=$(uname -s 2>/dev/null || printf 'unknown')
+
+case $kernel in
+  Linux)
+    if ! command -v systemctl >/dev/null 2>&1; then
+      printf '%s\n' 'systemctl not found - no auto-start to disable.'
+      exit 0
+    fi
+    
+    printf '%s\n' 'Disabling Syncthing auto-start...'
+    
+    # Try user service first
+    if systemctl --user is-enabled syncthing.service >/dev/null 2>&1; then
+      systemctl --user disable syncthing.service
+      printf '%s\n' 'Syncthing user service disabled.'
+    elif systemctl is-enabled "syncthing@$(whoami).service" >/dev/null 2>&1; then
+      sudo systemctl disable "syncthing@$(whoami).service"
+      printf '%s\n' 'Syncthing system service disabled.'
+    else
+      printf '%s\n' 'Syncthing auto-start is not enabled.'
+    fi
+    ;;
+  Darwin)
+    # macOS - remove launchd plist
+    plist_file="$HOME/Library/LaunchAgents/syncthing.plist"
+    
+    if [ ! -f "$plist_file" ]; then
+      printf '%s\n' 'Syncthing auto-start is not enabled.'
+      exit 0
+    fi
+    
+    printf '%s\n' 'Disabling Syncthing auto-start...'
+    
+    # Unload the plist
+    launchctl unload "$plist_file" 2>/dev/null || true
+    
+    # Remove the plist file
+    rm -f "$plist_file"
+    
+    printf '%s\n' 'Syncthing auto-start disabled.'
+    ;;
+  *)
+    printf '%s\n' "Unsupported platform: $kernel"
+    exit 1
+    ;;
+esac

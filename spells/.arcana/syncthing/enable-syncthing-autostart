@@ -1,0 +1,124 @@
+#!/bin/sh
+
+# Enable Syncthing auto-start on system boot.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: enable-syncthing-autostart
+
+Enables Syncthing to start automatically on system boot using the platform's
+recommended method (systemd on Linux, launchd on macOS).
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+# Find the script directory to locate sibling helper scripts
+SCRIPT_SOURCE=$0
+case $SCRIPT_SOURCE in
+*/*)
+        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        ;;
+*)
+        resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
+        SCRIPT_DIR=${resolved%/*}
+        SCRIPT_SOURCE=$resolved
+        ;;
+esac
+if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
+        SCRIPT_DIR=.
+fi
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+
+if ! "$SCRIPT_DIR/is-syncthing-installed"; then
+  die "enable-syncthing-autostart: Syncthing is not installed"
+fi
+
+# Detect platform
+kernel=$(uname -s 2>/dev/null || printf 'unknown')
+
+case $kernel in
+  Linux)
+    if ! command -v systemctl >/dev/null 2>&1; then
+      die "enable-syncthing-autostart: systemctl not found"
+    fi
+    
+    # Try user service first (recommended by Syncthing)
+    printf '%s\n' 'Enabling Syncthing user service...'
+    
+    # Check if user service exists
+    if systemctl --user list-unit-files 2>/dev/null | \
+       grep -q "^syncthing.service"; then
+      systemctl --user enable syncthing.service
+      printf '%s\n' 'Syncthing user service enabled.'
+      printf '%s\n' 'Syncthing will start automatically on next login.'
+    elif systemctl list-unit-files 2>/dev/null | \
+         grep -q "^syncthing@.service"; then
+      # Fall back to system service
+      sudo systemctl enable "syncthing@$(whoami).service"
+      printf '%s\n' 'Syncthing system service enabled.'
+      printf '%s\n' 'Syncthing will start automatically on boot.'
+    else
+      die "enable-syncthing-autostart: No systemd service found"
+    fi
+    ;;
+  Darwin)
+    # macOS - create launchd plist
+    printf '%s\n' 'Setting up Syncthing auto-start via launchd...'
+    
+    # Find syncthing binary
+    syncthing_bin=$(command -v syncthing)
+    if [ -z "$syncthing_bin" ]; then
+      die "enable-syncthing-autostart: syncthing binary not found"
+    fi
+    
+    # Create LaunchAgents directory if it doesn't exist
+    launch_dir="$HOME/Library/LaunchAgents"
+    mkdir -p "$launch_dir"
+    
+    # Create plist file
+    plist_file="$launch_dir/syncthing.plist"
+    cat > "$plist_file" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" 
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>syncthing</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>$syncthing_bin</string>
+    <string>-no-browser</string>
+    <string>-no-restart</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>$HOME/Library/Logs/Syncthing.log</string>
+  <key>StandardErrorPath</key>
+  <string>$HOME/Library/Logs/Syncthing-errors.log</string>
+</dict>
+</plist>
+EOF
+    
+    # Load the plist
+    launchctl load "$plist_file" 2>/dev/null || true
+    
+    printf '%s\n' 'Syncthing auto-start enabled via launchd.'
+    printf '%s\n' 'Syncthing will start automatically on login.'
+    ;;
+  *)
+    die "enable-syncthing-autostart: Unsupported platform: $kernel"
+    ;;
+esac

@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# Check if Syncthing auto-start is enabled.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-syncthing-autostart-enabled
+
+Returns 0 if Syncthing auto-start is enabled, 1 otherwise.
+USAGE
+  exit 0
+  ;;
+esac
+
+# Note: No set -eu because this is a conditional script (returns exit codes)
+set +eu
+
+# Detect platform
+kernel=$(uname -s 2>/dev/null || printf 'unknown')
+
+case $kernel in
+  Linux)
+    # Check systemd user service
+    if command -v systemctl >/dev/null 2>&1; then
+      # Check user service first
+      if systemctl --user is-enabled syncthing.service >/dev/null 2>&1; then
+        exit 0
+      fi
+      # Check system service
+      if systemctl is-enabled "syncthing@$(whoami).service" >/dev/null 2>&1; then
+        exit 0
+      fi
+    fi
+    ;;
+  Darwin)
+    # Check macOS launchd
+    plist="$HOME/Library/LaunchAgents/syncthing.plist"
+    if [ -f "$plist" ]; then
+      exit 0
+    fi
+    ;;
+esac
+
+exit 1
