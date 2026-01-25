@@ -1,0 +1,47 @@
+#!/bin/sh
+
+# Install htmx JavaScript library.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-htmx
+
+Downloads and installs htmx.min.js to a local directory.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+# Determine installation directory
+install_dir="${HTMX_DIR:-$HOME/.local/share/htmx}"
+
+printf '%s\n' "Installing htmx..."
+
+# Create installation directory
+mkdir -p "$install_dir"
+
+# Download htmx using curl or wget
+htmx_url="https://unpkg.com/htmx.org@1.9.10/dist/htmx.min.js"
+
+if command -v curl >/dev/null 2>&1; then
+  curl -fsSL "$htmx_url" -o "$install_dir/htmx.min.js" || {
+    printf '%s\n' "install-htmx: failed to download htmx" >&2
+    exit 1
+  }
+elif command -v wget >/dev/null 2>&1; then
+  wget -q "$htmx_url" -O "$install_dir/htmx.min.js" || {
+    printf '%s\n' "install-htmx: failed to download htmx" >&2
+    exit 1
+  }
+else
+  printf '%s\n' "install-htmx: curl or wget required" >&2
+  exit 1
+fi
+
+printf '%s\n' "Htmx installed to $install_dir/htmx.min.js"

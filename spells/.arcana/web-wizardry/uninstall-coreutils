@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# Assert that coreutils remain installed.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-coreutils
+
+This is a no-op. Coreutils cannot be uninstalled as they are essential system utilities.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+printf '%s\n' "Coreutils cannot be uninstalled - they are essential system utilities."

@@ -1,0 +1,56 @@
+#!/bin/sh
+
+# Report installation status for web wizardry components.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: web-wizardry-status
+
+Reports the installation status of web wizardry components (pandoc, nginx, fcgiwrap, openssl, htmx, coreutils).
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if command -v colors >/dev/null 2>&1; then
+  # shellcheck source=/dev/null
+  . colors
+else
+  RESET=""
+  THEME_SUCCESS=""
+  THEME_WARNING=""
+  GREY=""
+fi
+
+# Count installed components
+installed=0
+total=6
+
+# Check each component
+command -v pandoc >/dev/null 2>&1 && installed=$((installed + 1))
+command -v nginx >/dev/null 2>&1 && installed=$((installed + 1))
+command -v fcgiwrap >/dev/null 2>&1 && installed=$((installed + 1))
+command -v openssl >/dev/null 2>&1 && installed=$((installed + 1))
+# htmx is just a static file, check common locations
+[ -f /usr/local/share/htmx/htmx.min.js ] || [ -f /usr/share/htmx/htmx.min.js ] || [ -f "$HOME/.local/share/htmx/htmx.min.js" ] && installed=$((installed + 1))
+# coreutils is assert-only
+command -v readlink >/dev/null 2>&1 && installed=$((installed + 1))
+
+if [ "$installed" -eq 0 ]; then
+  color="$GREY"
+  status="not installed"
+elif [ "$installed" -eq "$total" ]; then
+  color="$THEME_SUCCESS"
+  status="installed"
+else
+  color="$THEME_WARNING"
+  status="$installed/$total installed"
+fi
+
+printf "%s%s%s\n" "$color" "$status" "$RESET"
