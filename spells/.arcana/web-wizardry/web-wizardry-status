@@ -38,7 +38,11 @@ command -v nginx >/dev/null 2>&1 && installed=$((installed + 1))
 command -v fcgiwrap >/dev/null 2>&1 && installed=$((installed + 1))
 command -v openssl >/dev/null 2>&1 && installed=$((installed + 1))
 # htmx is just a static file, check common locations
-[ -f /usr/local/share/htmx/htmx.min.js ] || [ -f /usr/share/htmx/htmx.min.js ] || [ -f "$HOME/.local/share/htmx/htmx.min.js" ] && installed=$((installed + 1))
+if [ -f /usr/local/share/htmx/htmx.min.js ] || \
+   [ -f /usr/share/htmx/htmx.min.js ] || \
+   [ -f "$HOME/.local/share/htmx/htmx.min.js" ]; then
+  installed=$((installed + 1))
+fi
 # coreutils is assert-only
 command -v readlink >/dev/null 2>&1 && installed=$((installed + 1))
 

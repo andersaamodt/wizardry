@@ -20,8 +20,8 @@ renders_usage_information() {
   run_cmd "$ROOT_DIR/spells/.arcana/web-wizardry/web-wizardry-menu" --help
 
   assert_success || return 1
-  assert_error_contains "Usage: web-wizardry-menu" || return 1
-  assert_error_contains "management menu" || return 1
+  assert_output_contains "Usage: web-wizardry-menu" || return 1
+  assert_output_contains "management menu" || return 1
 }
 
 run_test_case "web-wizardry-menu prints usage with --help" renders_usage_information

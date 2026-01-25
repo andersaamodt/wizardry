@@ -14,7 +14,9 @@ USAGE
   ;;
 esac
 
-# Note: No set -eu because this is a conditional imp (returns exit codes for flow control)
+# Note: No set -eu because this is a conditional script (returns exit codes for flow control)
+set +e
+set +u
 
 component=${1:-}
 [ -z "$component" ] && exit 1
