@@ -74,7 +74,10 @@ else
 fi
 
 # Catch Ctrl-C and TERM signal to exit 1 cleanly
-trap 'exit 0' INT TERM
+# Catch Ctrl-C and TERM signal to exit cleanly
+# INT (Ctrl-C) should exit 130, TERM should exit 0
+trap 'exit 130' INT
+trap 'exit 0' TERM
 
 shutdown_menu_display_menu() {
   # Graceful restart/shutdown give processes time to clean up

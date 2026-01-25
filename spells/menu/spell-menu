@@ -22,7 +22,10 @@ set -eu
 . env-clear
 
 # Catch Ctrl-C and TERM signal to exit cleanly
-trap 'exit 0' INT TERM
+# Catch Ctrl-C and TERM signal to exit cleanly
+# INT (Ctrl-C) should exit 130, TERM should exit 0
+trap 'exit 130' INT
+trap 'exit 0' TERM
 
 # Handle --cast option
 if [ "${1-}" = "--cast" ]; then
