@@ -140,25 +140,31 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         lines_needed=$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
         [ "$lines_needed" -lt 1 ] && lines_needed=1
         
+        # We need lines_needed + 1 total: N lines for message + 1 blank line after
+        lines_to_insert=$(( lines_needed + 1 ))
+        
         # Save cursor position first (before any changes)
         printf '\0337'
         
-        # Insert blank lines to make room for the message
+        # Insert blank lines to make room for the message and blank line after
         # \033[1L inserts 1 blank line at cursor, pushing current line down
         # After inserting, cursor is still at the first inserted line
         i=0
-        while [ "$i" -lt "$lines_needed" ]; do
+        while [ "$i" -lt "$lines_to_insert" ]; do
           printf '\033[1L'
           i=$((i + 1))
         done
         
-        # Cursor is now at the first inserted blank line - just print the message
-        # Use \r to start at beginning of line, \n to end so cursor moves to next line
-        printf '\r%s\n' "$formatted_msg"
+        # Cursor is now at the first inserted blank line - print the message
+        # Use \r to start at beginning of line
+        printf '\r%s' "$formatted_msg"
         
-        # Restore cursor to saved position, then move down by lines_needed
-        # (the saved position is now lines_needed lines up from where we want to be)
-        printf '\0338\033[%dB' "$lines_needed"
+        # Move cursor to start of next line explicitly (handles terminal autowrap edge cases)
+        printf '\r\n'
+        
+        # Restore cursor to saved position, then move down by lines_to_insert
+        # (the saved position is now lines_to_insert lines up from where we want to be)
+        printf '\0338\033[%dB' "$lines_to_insert"
         ;;
       *)
         # Fallback for lines that don't match expected format
@@ -167,23 +173,29 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         lines_needed=$(( (msg_len + 3 + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))  # +3 for "🔮 "
         [ "$lines_needed" -lt 1 ] && lines_needed=1
         
+        # We need lines_needed + 1 total: N lines for message + 1 blank line after
+        lines_to_insert=$(( lines_needed + 1 ))
+        
         # Save cursor position first (before any changes)
         printf '\0337'
         
-        # Insert blank lines
+        # Insert blank lines to make room for the message and blank line after
         # After inserting, cursor is at the first inserted line
         i=0
-        while [ "$i" -lt "$lines_needed" ]; do
+        while [ "$i" -lt "$lines_to_insert" ]; do
           printf '\033[1L'
           i=$((i + 1))
         done
         
-        # Cursor is now at the first inserted blank line - just print
-        # Use \r to start at beginning of line, \n to end so cursor moves to next line
-        printf '\r🔮 %s\n' "$line"
+        # Cursor is now at the first inserted blank line - print the message
+        # Use \r to start at beginning of line
+        printf '\r🔮 %s' "$line"
         
-        # Restore cursor to saved position, then move down by lines_needed
-        printf '\0338\033[%dB' "$lines_needed"
+        # Move cursor to start of next line explicitly (handles terminal autowrap edge cases)
+        printf '\r\n'
+        
+        # Restore cursor to saved position, then move down by lines_to_insert
+        printf '\0338\033[%dB' "$lines_to_insert"
         ;;
     esac
   done
