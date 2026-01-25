@@ -28,7 +28,7 @@ copy_wizardry() {
   cp -Rp "$ROOT_DIR/spells" "$dest_dir/" || return 1
   
   # Copy install if it exists (not present in doppelganger/compiled environments)
-  if [ -e "$ROOT_DIR/install" ]; then
+  if [ -f "$ROOT_DIR/install" ]; then
     cp -Rp "$ROOT_DIR/install" "$dest_dir/" || true
   fi
   
