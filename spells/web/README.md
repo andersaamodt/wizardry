@@ -36,7 +36,7 @@ Or install individually:
 ### 1. Create a Site
 
 ```sh
-wizardry create mysite
+web-wizardry create mysite
 ```
 
 This creates:
@@ -63,19 +63,19 @@ This is my website built with wizardry web.
 ### 3. Build
 
 ```sh
-wizardry build mysite
+web-wizardry build mysite
 ```
 
 Or for continuous rebuild:
 
 ```sh
-wizardry build mysite --watch
+web-wizardry build mysite --watch
 ```
 
 ### 4. Serve
 
 ```sh
-wizardry serve mysite
+web-wizardry serve mysite
 ```
 
 Visit http://localhost:8080
@@ -159,7 +159,7 @@ Available CGI helper imps:
 ### Main Command
 
 ```sh
-wizardry [COMMAND]        # Interactive menu or run command
+web-wizardry [COMMAND]        # Interactive menu or run command
 ```
 
 ### Site Management
@@ -243,7 +243,7 @@ configure-nginx mysite --port 8081
 
 ```sh
 # Force full rebuild
-wizardry build mysite --full
+web-wizardry build mysite --full
 ```
 
 ### nginx won't start

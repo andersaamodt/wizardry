@@ -75,8 +75,8 @@ This is your homepage. Edit `site/pages/index.md` to customize it.
 
 1. Edit pages in `site/pages/`
 2. Add static files to `site/static/`
-3. Build with `wizardry build SITENAME`
-4. Serve with `wizardry serve SITENAME`
+3. Build with `web-wizardry build SITENAME`
+4. Serve with `web-wizardry serve SITENAME`
 
 ## Example CGI
 
@@ -115,4 +115,4 @@ EOF
 
 success "Site '$site_name' created at $SITE_DIR"
 info "Edit pages in: $SITE_DIR/site/pages/"
-info "Build with: wizardry build $site_name"
+info "Build with: web-wizardry build $site_name"

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Tests for the 'wizardry' spell
+# Tests for the 'web-wizardry' spell
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -8,9 +8,9 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_web_wizardry_help() {
-  run_spell spells/web/wizardry --help
+  run_spell spells/web/web-wizardry --help
   assert_success
-  assert_output_contains "Usage: wizardry"
+  assert_output_contains "Usage: web-wizardry"
   assert_output_contains "create"
   assert_output_contains "build"
 }
@@ -23,7 +23,7 @@ test_web_wizardry_create_site() {
   export WEB_WIZARDRY_ROOT="$test_web_root"
   
   # Create a test site
-  run_spell spells/web/wizardry create testsite
+  run_spell spells/web/web-wizardry create testsite
   assert_success
   
   # Verify site directory exists
@@ -50,11 +50,11 @@ test_web_wizardry_status() {
   export WEB_WIZARDRY_ROOT="$test_web_root"
   
   # Create a test site
-  run_spell spells/web/wizardry create testsite
+  run_spell spells/web/web-wizardry create testsite
   assert_success
   
   # Check status
-  run_spell spells/web/wizardry status testsite
+  run_spell spells/web/web-wizardry status testsite
   assert_success
   assert_output_contains "testsite"
   
@@ -62,8 +62,8 @@ test_web_wizardry_status() {
   rm -rf "$test_web_root"
 }
 
-run_test_case "wizardry --help works" test_web_wizardry_help
-run_test_case "wizardry can create site" test_web_wizardry_create_site
-run_test_case "wizardry can show status" test_web_wizardry_status
+run_test_case "web-wizardry --help works" test_web_wizardry_help
+run_test_case "web-wizardry can create site" test_web_wizardry_create_site
+run_test_case "web-wizardry can show status" test_web_wizardry_status
 
 finish_tests
