@@ -140,9 +140,8 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         lines_needed=$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
         [ "$lines_needed" -lt 1 ] && lines_needed=1
         
-        # Strategy: Use only Insert Line to create space and push prompt down
-        # First, create minimal room at terminal bottom by printing one newline if needed
-        # This ensures Insert Line has space to work even when at terminal bottom
+        # Strategy: Scroll display up, move cursor up to compensate, insert lines, print message
+        # This ensures message appears ABOVE the prompt in all scenarios
         
         # Save cursor position
         printf '\0337'
@@ -150,9 +149,16 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         # Move to beginning of line (required for Insert Line to work correctly)
         printf '\r'
         
-        # Print one newline to create room at bottom, then move back up
-        # This gives Insert Line the space it needs to work at terminal bottom
-        printf '\n\033[1A'
+        # Scroll the display up to make room at bottom (critical for terminal bottom case)
+        i=0
+        while [ "$i" -lt "$lines_needed" ]; do
+          printf '\033[S'  # Scroll up one line
+          i=$((i + 1))
+        done
+        
+        # After scrolling, content moved up but cursor stayed at same row
+        # Move cursor up by lines_needed to get to where prompt scrolled to
+        printf '\033[%dA' "$lines_needed"
         
         # Insert blank lines - pushes prompt down from this position
         i=0
@@ -181,9 +187,15 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         # Move to beginning of line (required for Insert Line to work correctly)
         printf '\r'
         
-        # Print one newline to create room at bottom, then move back up
-        # This gives Insert Line the space it needs to work at terminal bottom
-        printf '\n\033[1A'
+        # Scroll the display up to make room at bottom
+        i=0
+        while [ "$i" -lt "$lines_needed" ]; do
+          printf '\033[S'  # Scroll up one line
+          i=$((i + 1))
+        done
+        
+        # Move cursor up to compensate for scroll
+        printf '\033[%dA' "$lines_needed"
         
         # Insert blank lines (pushes prompt down)
         i=0
