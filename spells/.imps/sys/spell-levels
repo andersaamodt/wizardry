@@ -70,7 +70,7 @@ case "$level" in
   11)
     name='Basic Cantrips'
     spells='ask ask-number ask-text ask-yn list-files max-length memorize move'
-    imps='input/choose-input input/require-command input/validate-command input/validate-name input/validate-number input/validate-path lex/and lex/and-then lex/disambiguate lex/from lex/into lex/or lex/to'
+    imps='input/choose-input input/require-command input/validate-command input/validate-name input/validate-number input/validate-path input/validate-player-name lex/and lex/and-then lex/disambiguate lex/from lex/into lex/or lex/to'
     ;;
   12)
     name='System Configuration'
@@ -94,7 +94,7 @@ case "$level" in
     ;;
   16)
     name='Advanced MUD Features'
-    spells='choose-player:mud decorate:mud greater-heal:mud heal:mud lesser-heal:mud listen:mud magic-missile:mud resurrect:mud say:mud shocking-grasp:mud start-listening:mud stats:mud stop-listening:mud'
+    spells='boot-player:mud choose-player:mud decorate:mud greater-heal:mud heal:mud lesser-heal:mud listen:mud magic-missile:mud resurrect:mud say:mud shocking-grasp:mud start-listening:mud stats:mud stop-listening:mud'
     imps='hook/cd-hook hook/touch-hook mud/damage-file mud/deal-damage mud/get-life mud/incarnate mud/move-avatar mud/trigger-on-touch'
     ;;
   17)
@@ -134,7 +134,7 @@ case "$level" in
     ;;
   24)
     name='MUD Administration Menus'
-    spells='add-ssh-player:menu/mud-admin mud:menu mud-admin-menu:menu mud-menu:menu mud-settings:menu new-player:menu/mud-admin set-player:menu/mud-admin toggle-avatar:.arcana/mud toggle-touch-hook:.arcana/mud touch:.arcana/mud'
+    spells='add-player:menu/mud-admin mud:menu mud-admin-menu:menu mud-menu:menu mud-settings:menu new-player:menu/mud-admin set-player:menu/mud-admin toggle-avatar:.arcana/mud toggle-touch-hook:.arcana/mud touch:.arcana/mud'
     imps=''
     ;;
   25)
