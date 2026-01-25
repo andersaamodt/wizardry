@@ -51,8 +51,8 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/.web-wizardry}
-SITES_DIR="$WEB_ROOT/sites"
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+SITES_DIR="$WEB_ROOT"
 SITE_DIR="$SITES_DIR/$site_name"
 
 if [ ! -d "$SITE_DIR" ]; then

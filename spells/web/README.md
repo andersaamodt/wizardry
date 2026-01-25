@@ -40,15 +40,15 @@ wizardry create mysite
 ```
 
 This creates:
-- `~/.web-wizardry/sites/mysite/site/` - Source files
-- `~/.web-wizardry/sites/mysite/site/pages/` - Markdown pages
-- `~/.web-wizardry/sites/mysite/site/static/` - CSS, images, etc.
-- `~/.web-wizardry/sites/mysite/site/uploads/` - User uploads
-- `~/.web-wizardry/sites/mysite/build/` - Generated HTML
+- `~/sites/mysite/site/` - Source files
+- `~/sites/mysite/site/pages/` - Markdown pages
+- `~/sites/mysite/site/static/` - CSS, images, etc.
+- `~/sites/mysite/site/uploads/` - User uploads
+- `~/sites/mysite/build/` - Generated HTML
 
 ### 2. Edit Content
 
-Edit `~/.web-wizardry/sites/mysite/site/pages/index.md`:
+Edit `~/sites/mysite/site/pages/index.md`:
 
 ```markdown
 ---
@@ -96,7 +96,7 @@ https mysite --email admin@example.com
 ## Site Structure
 
 ```
-~/.web-wizardry/sites/mysite/
+~/sites/mysite/
 ├── site/
 │   ├── pages/           # Markdown source files
 │   │   └── index.md
@@ -195,7 +195,7 @@ https SITENAME --email EMAIL  # Set up Let's Encrypt
 
 ## Environment Variables
 
-- `WEB_WIZARDRY_ROOT` - Root directory (default: `~/.web-wizardry`)
+- `WEB_WIZARDRY_ROOT` - Root directory (default: `~/sites`)
 - `WIZARDRY_DIR` - Wizardry installation directory
 
 ## Architecture
@@ -250,10 +250,10 @@ wizardry build mysite --full
 
 ```sh
 # Check nginx config
-nginx -t -c ~/.web-wizardry/sites/mysite/nginx/nginx.conf
+nginx -t -c ~/sites/mysite/nginx/nginx.conf
 
 # Check logs
-cat ~/.web-wizardry/sites/mysite/nginx/error.log
+cat ~/sites/mysite/nginx/error.log
 ```
 
 ### Let's Encrypt fails

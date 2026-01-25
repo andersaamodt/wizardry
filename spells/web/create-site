@@ -37,8 +37,8 @@ case "$site_name" in
     ;;
 esac
 
-WEB_ROOT=${WIZARDRY_WEB_ROOT:-$HOME/.web-wizardry}
-SITES_DIR="$WEB_ROOT/sites"
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+SITES_DIR="$WEB_ROOT"
 SITE_DIR="$SITES_DIR/$site_name"
 
 # Check if site already exists
