@@ -144,23 +144,21 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         printf '\0337'
         
         # Insert blank lines to make room for the message
-        # \033[1L inserts 1 blank line, pushing current line down
+        # \033[1L inserts 1 blank line at cursor, pushing current line down
+        # After inserting, cursor is still at the first inserted line
         i=0
         while [ "$i" -lt "$lines_needed" ]; do
           printf '\033[1L'
           i=$((i + 1))
         done
         
-        # Move cursor up to the first inserted blank line
-        printf '\033[%dA' "$lines_needed"
-        
-        # Print the message on the inserted line(s)
+        # Cursor is now at the first inserted blank line - just print the message
         # Use \r to start at beginning of line
         printf '\r%s' "$formatted_msg"
         
-        # Restore cursor to saved position
-        # The saved position is still at the prompt line where we want to be
-        printf '\0338'
+        # Restore cursor to saved position, then move down by lines_needed
+        # (the saved position is now lines_needed lines up from where we want to be)
+        printf '\0338\033[%dB' "$lines_needed"
         ;;
       *)
         # Fallback for lines that don't match expected format
@@ -173,19 +171,18 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         printf '\0337'
         
         # Insert blank lines
+        # After inserting, cursor is at the first inserted line
         i=0
         while [ "$i" -lt "$lines_needed" ]; do
           printf '\033[1L'
           i=$((i + 1))
         done
         
-        # Move up and print
-        printf '\033[%dA' "$lines_needed"
+        # Cursor is now at the first inserted blank line - just print
         printf '\r🔮 %s' "$line"
         
-        # Restore cursor to saved position
-        # The saved position is still at the prompt line where we want to be
-        printf '\0338'
+        # Restore cursor to saved position, then move down by lines_needed
+        printf '\0338\033[%dB' "$lines_needed"
         ;;
     esac
   done
