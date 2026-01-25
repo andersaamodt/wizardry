@@ -43,6 +43,7 @@ while true; do
     wallet_option="Wallet Menu%lightning-wallet-menu"
     info_option="Show Info%lightning-cli getinfo"
     configure_option="Configure Lightning%configure-lightning"
+    repair_option="Repair Permissions%repair-lightning-permissions"
     uninstall_option="Uninstall Lightning%uninstall-lightning"
     
     # Check for service management
@@ -64,14 +65,14 @@ while true; do
     # Build menu with available options
     if [ -n "$service_status_option" ] && [ -n "$lightning_service_option" ]; then
       menu "$title" "$wallet_option" "$info_option" "$configure_option" \
-        "$service_status_option" "$lightning_service_option" \
+        "$repair_option" "$service_status_option" "$lightning_service_option" \
         "$uninstall_option" "$exit_option" || menu_status=$?
     elif [ -n "$service_status_option" ]; then
       menu "$title" "$wallet_option" "$info_option" "$configure_option" \
-        "$service_status_option" "$uninstall_option" "$exit_option" || menu_status=$?
+        "$repair_option" "$service_status_option" "$uninstall_option" "$exit_option" || menu_status=$?
     else
       menu "$title" "$wallet_option" "$info_option" "$configure_option" \
-        "$uninstall_option" "$exit_option" || menu_status=$?
+        "$repair_option" "$uninstall_option" "$exit_option" || menu_status=$?
     fi
   else
     # Lightning not installed - show install option

@@ -7,8 +7,8 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: install-lightning
 
-Guides you through installing Bitcoin Lightning (Core Lightning). On NixOS, this will add
-clightning to environment.systemPackages when possible and run sudo nixos-rebuild all.
+Guides you through installing Bitcoin Lightning (Core Lightning). On NixOS and other platforms,
+uses package managers or builds from source when needed.
 USAGE
   exit 0
   ;;
@@ -20,7 +20,7 @@ set -eu
 . env-clear
 
 # Install Lightning Network daemon
-printf '%s\n' "Installing Lightning Network (c-lightning)..."
+printf '%s\n' "Installing Lightning Network (Core Lightning)..."
 
 # Check if already installed
 if command -v lightningd >/dev/null 2>&1; then
@@ -29,14 +29,84 @@ if command -v lightningd >/dev/null 2>&1; then
   exit 0
 fi
 
-# Try to install via package manager
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-core_dir=$(CDPATH= cd -- "$script_dir/../core" && pwd -P)
-if [ -f "$core_dir/manage-system-command" ]; then
-  "$core_dir/manage-system-command" install lightning
+# Detect platform
+if command -v detect-distro >/dev/null 2>&1; then
+  distro=$(detect-distro 2>/dev/null || printf 'unknown')
 else
-  printf '%s\n' "install-lightning: could not find manage-system-command" >&2
-  exit 1
+  distro='unknown'
 fi
 
-printf '%s\n' "Lightning Network installation complete."
+# Try package manager installation first
+pkg_installed=0
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+core_dir=$(CDPATH= cd -- "$script_dir/../core" && pwd -P)
+
+if [ -f "$core_dir/manage-system-command" ]; then
+  # Try to install via package manager (handles apt, pacman, nix, pkgin)
+  if "$core_dir/manage-system-command" install lightningd clightning 2>/dev/null; then
+    pkg_installed=1
+  fi
+fi
+
+# If package installation failed or not available, try building from source
+if [ "$pkg_installed" -eq 0 ]; then
+  printf '%s\n' "Package manager installation not available. Building from source..."
+  
+  # Check for required build tools
+  if ! command -v make >/dev/null 2>&1; then
+    printf '%s\n' 'Error: make is required to build Lightning. Install build tools first.'
+    exit 1
+  fi
+  
+  if ! command -v git >/dev/null 2>&1; then
+    printf '%s\n' 'Error: git is required to build Lightning. Install git first.'
+    exit 1
+  fi
+  
+  # Create temp directory for build
+  tmp_dir=$(temp-dir lightning-install) || exit 1
+  trap 'cleanup-dir "$tmp_dir"' EXIT HUP INT TERM
+  cd "$tmp_dir" || exit 1
+  
+  # Clone and build Core Lightning
+  LIGHTNING_VERSION="v24.02.2"
+  printf 'Cloning Core Lightning %s...\n' "$LIGHTNING_VERSION"
+  git clone --branch "$LIGHTNING_VERSION" --depth 1 https://github.com/ElementsProject/lightning.git || exit 1
+  cd lightning || exit 1
+  
+  printf 'Configuring and building Core Lightning (this may take several minutes)...\n'
+  ./configure || exit 1
+  make || exit 1
+  
+  printf 'Installing Core Lightning to /usr/local/bin...\n'
+  if command -v sudo >/dev/null 2>&1; then
+    sudo make install || exit 1
+  else
+    make install || exit 1
+  fi
+  
+  cd - >/dev/null || true
+  trap - EXIT HUP INT TERM
+  rm -rf "$tmp_dir"
+fi
+
+# Verify installation
+if command -v lightningd >/dev/null 2>&1; then
+  printf '%s\n' "Lightning Network installation complete."
+  lightningd --version
+  
+  # Optionally configure
+  if command -v ask-yn >/dev/null 2>&1; then
+    if ask-yn "Configure Lightning with sensible defaults now?" "y"; then
+      configure-lightning
+    fi
+  else
+    printf "Configure Lightning with sensible defaults now? [Y/n] "
+    read -r reply
+    [ -z "$reply" ] && reply=y
+    case "$reply" in [Yy]*) configure-lightning ;; esac
+  fi
+else
+  printf '%s\n' "Lightning installation attempted, but lightningd is not available. Check logs."
+  exit 1
+fi

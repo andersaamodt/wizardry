@@ -1,0 +1,54 @@
+#!/bin/sh
+
+# Reset ownership and permissions on Lightning directories for safe service startup.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: repair-lightning-permissions
+
+Fixes ownership and permissions on Lightning directories and files so the daemon can start cleanly after migrations or backups.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+default_dir="$HOME/.lightning"
+
+# Check if the default directory exists
+if [ -d "$default_dir" ]; then
+  lightning_dir="$default_dir"
+else
+  # Prompt the user to enter the path to the Lightning directory
+  printf '%s' "Enter the path to the Lightning directory: "
+  IFS= read -r lightning_dir
+fi
+
+# Check if the provided directory exists
+if [ -d "$lightning_dir" ]; then
+  # Set appropriate permissions
+  chmod 700 "$lightning_dir"
+  printf '%s\n' "Set permissions on $lightning_dir to 700"
+  
+  # Fix permissions on config file if it exists
+  if [ -f "$lightning_dir/config" ]; then
+    chmod 600 "$lightning_dir/config"
+    printf '%s\n' "Set permissions on $lightning_dir/config to 600"
+  fi
+  
+  # Fix permissions on wallet files if they exist
+  if [ -d "$lightning_dir/bitcoin" ]; then
+    chmod 700 "$lightning_dir/bitcoin"
+    printf '%s\n' "Set permissions on $lightning_dir/bitcoin to 700"
+  fi
+  
+  printf '%s\n' "Lightning permissions repair complete."
+else
+  printf '%s\n' "The provided directory does not exist."
+  exit 1
+fi
