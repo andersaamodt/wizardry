@@ -119,17 +119,23 @@ fi
 # When executed, we fall back to "$ "
 if [ "$_listen_is_sourced" = "1" ] && [ -n "${PS1-}" ]; then
   # Expand PS1 - basic expansion for common sequences
-  # Note: This is basic expansion - complex PS1 with ANSI codes may not work perfectly
   _listen_prompt="$PS1"
   
-  # Replace common PS1 escape sequences one at a time
+  # First, remove \[ and \] markers
+  _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed 's/\\[][[]//g')
+  
+  # Remove ANSI escape sequences (both \033[...m and \e[...m formats)
+  _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed 's/\\033\[[0-9;]*m//g')
+  _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed 's/\\e\[[0-9;]*m//g')
+  
+  # Replace common PS1 escape sequences
   _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed "s/\\\\u/$(whoami)/g")
   _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed "s/\\\\h/$(hostname -s 2>/dev/null || hostname | cut -d. -f1)/g")
   _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed "s/\\\\H/$(hostname)/g")
   _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed "s|\\\\w|$(pwd)|g")
   _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed "s|\\\\W|$(basename "$(pwd)")|g")
   _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed 's/\\\$/$/g')
-  _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed 's/\\[[][]]//g')
+  _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed 's/\\#/!/g')
   
   export LISTEN_SAVED_PROMPT="$_listen_prompt"
   unset _listen_prompt
