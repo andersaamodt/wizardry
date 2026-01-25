@@ -1,0 +1,7 @@
+#!/bin/sh
+# url-decode STRING - decode URL-encoded string
+# Example: url-decode "hello%20world" → "hello world"
+set -eu
+
+# Replace + with space and decode %XX sequences
+printf '%s' "$1" | sed 's/+/ /g; s/%\([0-9A-Fa-f][0-9A-Fa-f]\)/\\x\1/g' | xargs -0 printf '%b'
