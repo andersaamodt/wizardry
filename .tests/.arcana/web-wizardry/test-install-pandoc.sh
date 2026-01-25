@@ -20,8 +20,8 @@ renders_usage_information() {
   run_cmd "$ROOT_DIR/spells/.arcana/web-wizardry/install-pandoc" --help
 
   assert_success || return 1
-  assert_error_contains "Usage: install-pandoc" || return 1
-  assert_error_contains "Installs pandoc" || return 1
+  assert_output_contains "Usage: install-pandoc" || return 1
+  assert_output_contains "Installs pandoc" || return 1
 }
 
 run_test_case "install-pandoc prints usage with --help" renders_usage_information
