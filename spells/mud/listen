@@ -103,74 +103,25 @@ fi
 if [ "$_listen_is_sourced" = "1" ]; then
   printf '[DEBUG listen] Sourced mode detected\n' >&2
   printf '[DEBUG listen] Shell: %s\n' "${SHELL-unknown}" >&2
+  printf '[DEBUG listen] Original PS1: "%s"\n' "${PS1-NOT_SET}" >&2
   
-  # Check if ZSH_VERSION is set
-  if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
-    printf '[DEBUG listen] Zsh detected (version: %s)\n' "$ZSH_VERSION" >&2
-    printf '[DEBUG listen] Original PS1: "%s"\n' "${PS1-NOT_SET}" >&2
+  # Use expand-prompt imp to expand PS1
+  if [ -n "${PS1-}" ]; then
+    _listen_expanded=$(expand-prompt "${PS1}" 2>&1)
+    _listen_expand_status=$?
+    printf '[DEBUG listen] expand-prompt exit status: %d\n' "$_listen_expand_status" >&2
+    printf '[DEBUG listen] expand-prompt output: "%s"\n' "$_listen_expanded" >&2
     
-    # Try to expand PS1 using zsh's print -P
-    if command -v print >/dev/null 2>&1; then
-      _listen_expanded=$(print -P "${PS1-}" 2>&1)
-      _listen_expand_status=$?
-      printf '[DEBUG listen] print -P exit status: %d\n' "$_listen_expand_status" >&2
-      printf '[DEBUG listen] print -P output: "%s"\n' "$_listen_expanded" >&2
-      
-      if [ "$_listen_expand_status" = "0" ] && [ -n "$_listen_expanded" ]; then
-        export LISTEN_SAVED_PROMPT="$_listen_expanded"
-        printf '[DEBUG listen] SUCCESS: Using expanded zsh prompt\n' >&2
-      else
-        export LISTEN_SAVED_PROMPT="$ "
-        printf '[DEBUG listen] FALLBACK: print -P failed, using default\n' >&2
-      fi
+    if [ "$_listen_expand_status" = "0" ] && [ -n "$_listen_expanded" ]; then
+      export LISTEN_SAVED_PROMPT="$_listen_expanded"
+      printf '[DEBUG listen] SUCCESS: Using expanded prompt\n' >&2
     else
       export LISTEN_SAVED_PROMPT="$ "
-      printf '[DEBUG listen] FALLBACK: print command not found\n' >&2
+      printf '[DEBUG listen] FALLBACK: expand-prompt failed, using default\n' >&2
     fi
   else
-    # Bash/sh
-    printf '[DEBUG listen] Bash/sh detected\n' >&2
-    printf '[DEBUG listen] Original PS1: "%s"\n' "${PS1-NOT_SET}" >&2
-    
-    # Try basic expansion for bash
-    if [ -n "${PS1-}" ]; then
-      # Use parameter expansion to get current values
-      _listen_user="${USER-}"
-      _listen_host="${HOSTNAME-$(hostname 2>/dev/null || printf 'localhost')}"
-      _listen_pwd="${PWD-}"
-      _listen_pwd_base=$(basename "$_listen_pwd" 2>/dev/null || printf '~')
-      
-      printf '[DEBUG listen] user=%s host=%s pwd=%s pwd_base=%s\n' "$_listen_user" "$_listen_host" "$_listen_pwd" "$_listen_pwd_base" >&2
-      
-      # Simple sed-based expansion
-      _listen_expanded="$PS1"
-      _listen_expanded=$(printf '%s' "$_listen_expanded" | sed "s/\\\\u/$_listen_user/g")
-      _listen_expanded=$(printf '%s' "$_listen_expanded" | sed "s/\\\\h/${_listen_host%%.*}/g")
-      _listen_expanded=$(printf '%s' "$_listen_expanded" | sed "s/\\\\H/$_listen_host/g")
-      _listen_expanded=$(printf '%s' "$_listen_expanded" | sed "s|\\\\w|$_listen_pwd|g")
-      _listen_expanded=$(printf '%s' "$_listen_expanded" | sed "s|\\\\W|$_listen_pwd_base|g")
-      _listen_expanded=$(printf '%s' "$_listen_expanded" | sed 's/\\\\\\$/$/g')
-      _listen_expanded=$(printf '%s' "$_listen_expanded" | sed 's/\\\\#/!/g')
-      
-      # Remove ANSI codes and \[ \] markers
-      _listen_expanded=$(printf '%s' "$_listen_expanded" | sed 's/\\033\[[0-9;]*m//g')
-      _listen_expanded=$(printf '%s' "$_listen_expanded" | sed 's/\\e\[[0-9;]*m//g')
-      _listen_expanded=$(printf '%s' "$_listen_expanded" | sed 's/\\\\\\[//g')
-      _listen_expanded=$(printf '%s' "$_listen_expanded" | sed 's/\\\\\\]//g')
-      
-      printf '[DEBUG listen] After expansion: "%s"\n' "$_listen_expanded" >&2
-      
-      if [ -n "$_listen_expanded" ]; then
-        export LISTEN_SAVED_PROMPT="$_listen_expanded"
-        printf '[DEBUG listen] SUCCESS: Using expanded bash prompt\n' >&2
-      else
-        export LISTEN_SAVED_PROMPT="$ "
-        printf '[DEBUG listen] FALLBACK: Expansion resulted in empty string\n' >&2
-      fi
-    else
-      export LISTEN_SAVED_PROMPT="$ "
-      printf '[DEBUG listen] FALLBACK: PS1 not set\n' >&2
-    fi
+    export LISTEN_SAVED_PROMPT="$ "
+    printf '[DEBUG listen] FALLBACK: PS1 not set\n' >&2
   fi
 else
   printf '[DEBUG listen] NOT sourced - using default prompt\n' >&2

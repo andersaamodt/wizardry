@@ -29,8 +29,9 @@ if [ -z "$cd_listen_value" ]; then
 fi
 if [ "$cd_listen_value" = "1" ]; then
     # Stop and restart listening in the new directory
+    # Source listen instead of executing it so it can capture PS1
     if command -v listen >/dev/null 2>&1; then
-        listen 2>/dev/null || true
+        . listen 2>/dev/null || true
     fi
 fi
 
