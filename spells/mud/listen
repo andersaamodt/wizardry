@@ -19,9 +19,9 @@ stop any existing listener and start a new one.
 
 Messages overwrite your current prompt line, then restore your cursor position.
 
-Note: Messages overwrite your current prompt line and reprint "$ " afterwards.
-Set LISTEN_PROMPT environment variable (e.g., in your .bashrc or .zshrc) to
-display your custom prompt after messages. Example: export LISTEN_PROMPT="$(whoami)@$(hostname):$(pwd)$ "
+Note: When sourced (recommended), listen captures your actual shell prompt and
+restores it after displaying messages. When executed directly, it uses "$ " as
+the prompt
 
 Examples:
   listen                    # Monitor current directory
@@ -115,9 +115,28 @@ if [ ! -f "$_listen_room_log" ]; then
 fi
 
 # Save the current prompt for the background process to use
-# Use LISTEN_PROMPT if set, otherwise default to "$ "
-# Note: Set LISTEN_PROMPT in your shell RC to display your custom prompt after messages
-export LISTEN_SAVED_PROMPT="${LISTEN_PROMPT:-\$ }"
+# When sourced, we can access PS1 and expand it
+# When executed, we fall back to "$ "
+if [ "$_listen_is_sourced" = "1" ] && [ -n "${PS1-}" ]; then
+  # Expand PS1 - basic expansion for common sequences
+  # Note: This is basic expansion - complex PS1 with ANSI codes may not work perfectly
+  _listen_prompt="$PS1"
+  
+  # Replace common PS1 escape sequences one at a time
+  _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed "s/\\\\u/$(whoami)/g")
+  _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed "s/\\\\h/$(hostname -s 2>/dev/null || hostname | cut -d. -f1)/g")
+  _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed "s/\\\\H/$(hostname)/g")
+  _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed "s|\\\\w|$(pwd)|g")
+  _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed "s|\\\\W|$(basename "$(pwd)")|g")
+  _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed 's/\\\$/$/g')
+  _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed 's/\\[[][]]//g')
+  
+  export LISTEN_SAVED_PROMPT="$_listen_prompt"
+  unset _listen_prompt
+else
+  # Not sourced or no PS1, use simple default
+  export LISTEN_SAVED_PROMPT="$ "
+fi
 
 # Start monitoring in background
 # Use tail -f -n 0 to follow the log file from current position (no history)
