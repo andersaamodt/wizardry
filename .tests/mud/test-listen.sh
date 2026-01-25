@@ -103,8 +103,14 @@ msg_len=${#msg_text}
 LISTEN_TERM_WIDTH=80
 lines_needed=$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
 
-# Simulate the escape sequence (newline+cursor up, insert lines, print, restore)
-printf '\0337\r\n\033[1A'
+# Simulate the escape sequence (scroll up, cursor up, insert lines, print, restore)
+printf '\0337\r'
+i=0
+while [ "$i" -lt "$lines_needed" ]; do
+  printf '\033[S'
+  i=$((i + 1))
+done
+printf '\033[%dA' "$lines_needed"
 i=0
 while [ "$i" -lt "$lines_needed" ]; do
   printf '\033[1L'
@@ -144,7 +150,13 @@ msg_len=$len
 LISTEN_TERM_WIDTH=80
 lines_needed=\$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
 
-printf '\0337\r\n\033[1A'
+printf '\0337\r'
+i=0
+while [ "\$i" -lt "\$lines_needed" ]; do
+  printf '\033[S'
+  i=\$((i + 1))
+done
+printf '\033[%dA' "\$lines_needed"
 i=0
 while [ "\$i" -lt "\$lines_needed" ]; do
   printf '\033[1L'
@@ -182,7 +194,13 @@ msg_len=$len
 LISTEN_TERM_WIDTH=80
 lines_needed=\$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
 
-printf '\0337\r\n\033[1A'
+printf '\0337\r'
+i=0
+while [ "\$i" -lt "\$lines_needed" ]; do
+  printf '\033[S'
+  i=\$((i + 1))
+done
+printf '\033[%dA' "\$lines_needed"
 i=0
 while [ "\$i" -lt "\$lines_needed" ]; do
   printf '\033[1L'
