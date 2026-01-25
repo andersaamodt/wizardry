@@ -66,15 +66,23 @@ msg_len=${#msg_text}
 LISTEN_TERM_WIDTH=80
 lines_needed=$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
 
-# Simulate the escape sequence: save, move to col 0, insert lines, print, restore+move down
+# Simulate the escape sequence with scroll up, cursor up, insert lines, print, restore
+# Scroll up (lines_needed - 1) for messages > 1 line to prevent extra blank line
+scroll_amount=$((lines_needed > 1 ? lines_needed - 1 : lines_needed))
 printf '\0337\r'
+i=0
+while [ "$i" -lt "$scroll_amount" ]; do
+  printf '\033[S'
+  i=$((i + 1))
+done
+printf '\033[%dA' "$scroll_amount"
 i=0
 while [ "$i" -lt "$lines_needed" ]; do
   printf '\033[1L'
   i=$((i + 1))
 done
 printf '\r%s' "$msg_text"
-printf '\0338\033[%dB' "$lines_needed"
+printf '\0338'
 
 printf '\nlines_needed=%d\n' "$lines_needed"
 SCRIPT
@@ -104,13 +112,15 @@ LISTEN_TERM_WIDTH=80
 lines_needed=$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
 
 # Simulate the escape sequence (scroll up, cursor up, insert lines, print, restore)
+# Scroll up (lines_needed - 1) for messages > 1 line to prevent extra blank line
+scroll_amount=$((lines_needed > 1 ? lines_needed - 1 : lines_needed))
 printf '\0337\r'
 i=0
-while [ "$i" -lt "$lines_needed" ]; do
+while [ "$i" -lt "$scroll_amount" ]; do
   printf '\033[S'
   i=$((i + 1))
 done
-printf '\033[%dA' "$lines_needed"
+printf '\033[%dA' "$scroll_amount"
 i=0
 while [ "$i" -lt "$lines_needed" ]; do
   printf '\033[1L'
@@ -149,14 +159,15 @@ msg=\$(printf '%*s' $len '' | tr ' ' 'M')
 msg_len=$len
 LISTEN_TERM_WIDTH=80
 lines_needed=\$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
+scroll_amount=\$((lines_needed > 1 ? lines_needed - 1 : lines_needed))
 
 printf '\0337\r'
 i=0
-while [ "\$i" -lt "\$lines_needed" ]; do
+while [ "\$i" -lt "\$scroll_amount" ]; do
   printf '\033[S'
   i=\$((i + 1))
 done
-printf '\033[%dA' "\$lines_needed"
+printf '\033[%dA' "\$scroll_amount"
 i=0
 while [ "\$i" -lt "\$lines_needed" ]; do
   printf '\033[1L'
@@ -193,14 +204,15 @@ msg=\$(printf '%*s' $len '' | tr ' ' 'X')
 msg_len=$len
 LISTEN_TERM_WIDTH=80
 lines_needed=\$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
+scroll_amount=\$((lines_needed > 1 ? lines_needed - 1 : lines_needed))
 
 printf '\0337\r'
 i=0
-while [ "\$i" -lt "\$lines_needed" ]; do
+while [ "\$i" -lt "\$scroll_amount" ]; do
   printf '\033[S'
   i=\$((i + 1))
 done
-printf '\033[%dA' "\$lines_needed"
+printf '\033[%dA' "\$scroll_amount"
 i=0
 while [ "\$i" -lt "\$lines_needed" ]; do
   printf '\033[1L'
