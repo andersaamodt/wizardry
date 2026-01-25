@@ -26,9 +26,10 @@ case "$component" in
     command -v "$component" >/dev/null 2>&1
     ;;
   htmx)
+    htmx_dir="${HTMX_DIR:-$HOME/.local/share/htmx}"
+    [ -f "$htmx_dir/htmx.min.js" ] || \
     [ -f /usr/local/share/htmx/htmx.min.js ] || \
-    [ -f /usr/share/htmx/htmx.min.js ] || \
-    [ -f "$HOME/.local/share/htmx/htmx.min.js" ]
+    [ -f /usr/share/htmx/htmx.min.js ]
     ;;
   coreutils)
     # Assert-only: just check if core utilities are present
