@@ -28,10 +28,10 @@ copy_wizardry() {
   cp -Rp "$ROOT_DIR/spells" "$dest_dir/" || return 1
   cp -Rp "$ROOT_DIR/install" "$dest_dir/" || return 1
   
-  # Copy essential metadata files if they exist
+  # Copy essential metadata files if they exist (optional - failures are non-fatal)
   for file in LICENSE OATH README.md .gitignore; do
     if [ -f "$ROOT_DIR/$file" ]; then
-      cp -p "$ROOT_DIR/$file" "$dest_dir/" 2>/dev/null || true
+      cp -p "$ROOT_DIR/$file" "$dest_dir/" || true
     fi
   done
   
