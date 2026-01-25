@@ -4,11 +4,9 @@ After=network-online.target bitcoind.service
 Wants=network-online.target
 
 [Service]
-Type=notify
-NotifyAccess=all
+Type=forking
 ExecStart=$LIGHTNINGD --daemon --lightning-dir=$HOME/.lightning --pid-file=$HOME/.lightning/lightningd.pid
 
-Type=forking
 PIDFile=$HOME/.lightning/lightningd.pid
 Restart=on-failure
 TimeoutStartSec=300
