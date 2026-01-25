@@ -17,11 +17,8 @@ cast spells, or perform actions, you see them immediately in your terminal.
 The listener runs as a background process. Running listen again will automatically
 stop any existing listener and start a new one.
 
-Messages overwrite your current prompt line, then restore your cursor position.
-
-Note: When sourced (recommended), listen captures your actual shell prompt and
-restores it after displaying messages. When executed directly, it uses "$ " as
-the prompt
+Messages overwrite your current prompt line, then a simple "$ " prompt and your
+typed text are restored on the following line with cursor positioned correctly.
 
 Examples:
   listen                    # Monitor current directory
@@ -64,28 +61,12 @@ unset _listen_sourced _listen_base
 set -eu
 . env-clear
 
-# Get room path first (we need it to check for existing listener for same path)
+# Get room path
 _listen_room_path=${1:-$PWD}
 
 # Stop any existing listener
 _listen_pid_file="$HOME/.wizardry-listening.pid"
-_listen_path_file="$HOME/.wizardry-listening.path"
 
-# Check if already listening to the same directory
-if [ -f "$_listen_path_file" ]; then
-  _listen_old_path=$(cat "$_listen_path_file" 2>/dev/null || printf '')
-  if [ "$_listen_old_path" = "$_listen_room_path" ] && [ -f "$_listen_pid_file" ]; then
-    _listen_old_pid=$(cat "$_listen_pid_file" 2>/dev/null || printf '')
-    if [ -n "$_listen_old_pid" ] && kill -0 "$_listen_old_pid" 2>/dev/null; then
-      # Already listening to this directory
-      printf '%s\n' "✓ Already listening to: $_listen_room_path" >&2
-      unset _listen_stop_only _listen_pid_file _listen_path_file _listen_room_path _listen_old_path _listen_old_pid _listen_is_sourced
-      return 0 2>/dev/null || exit 0
-    fi
-  fi
-fi
-
-# Stop any existing listener (even if different directory)
 if [ -f "$_listen_pid_file" ]; then
   _listen_old_pid=$(cat "$_listen_pid_file" 2>/dev/null || printf '')
   if [ -n "$_listen_old_pid" ] && kill -0 "$_listen_old_pid" 2>/dev/null; then
@@ -105,19 +86,18 @@ if [ -f "$_listen_pid_file" ]; then
   fi
   rm -f "$_listen_pid_file"
 fi
-rm -f "$_listen_path_file"
 
 # If --stop was specified, we're done
 if [ "$_listen_stop_only" = "1" ]; then
   printf '%s\n' "✓ Stopped listening to room activity"
-  unset _listen_stop_only _listen_pid_file _listen_path_file _listen_old_pid _listen_is_sourced _listen_room_path
+  unset _listen_stop_only _listen_pid_file _listen_old_pid _listen_is_sourced _listen_room_path
   return 0 2>/dev/null || exit 0
 fi
 
 # Check if directory exists
 if [ ! -d "$_listen_room_path" ]; then
   printf '%s\n' "listen: directory does not exist: $_listen_room_path" >&2
-  unset _listen_stop_only _listen_pid_file _listen_path_file _listen_room_path _listen_is_sourced
+  unset _listen_stop_only _listen_pid_file _listen_room_path _listen_is_sourced
   return 1 2>/dev/null || exit 1
 fi
 
@@ -127,77 +107,17 @@ _listen_room_log="$_listen_room_path/.log"
 if [ ! -f "$_listen_room_log" ]; then
   touch "$_listen_room_log" 2>/dev/null || {
     printf '%s\n' "listen: cannot create log file (directory may be read-only)" >&2
-    unset _listen_stop_only _listen_pid_file _listen_path_file _listen_room_path _listen_room_log _listen_is_sourced
+    unset _listen_stop_only _listen_pid_file _listen_room_path _listen_room_log _listen_is_sourced
     return 1 2>/dev/null || exit 1
   }
 fi
 
-# Save the current prompt for the background process to use
-if [ "$_listen_is_sourced" = "1" ] && [ -n "${PS1-}" ]; then
-  # When sourced, try to capture a simple text representation of the prompt
-  
-  # DEBUG: Show what we're starting with
-  printf '[DEBUG listen] Original PS1: %s\n' "$PS1" >&2
-  
-  # Detect shell type and expand appropriately
-  if [ -n "${ZSH_VERSION-}" ]; then
-    # ZSH uses % escapes, not \ escapes
-    # Use print -P to expand zsh prompt sequences
-    if command -v print >/dev/null 2>&1; then
-      _listen_prompt_text=$(print -P "$PS1" 2>/dev/null || printf '$ ')
-    else
-      # Fallback: try basic zsh expansion
-      _listen_prompt_text=$(printf '%s' "$PS1" | \
-        sed 's/%n/'"$(whoami)"'/g' | \
-        sed 's/%m/'"$(hostname -s 2>/dev/null || hostname | sed 's/\..*//')"'/g' | \
-        sed 's/%M/'"$(hostname)"'/g' | \
-        sed 's|%~|'"$HOME"'|g' | \
-        sed 's|%/|'"$(pwd)"'|g' | \
-        sed 's|%1~|'"$(basename "$(pwd)")"'|g' | \
-        sed 's|%2~|'"$(pwd | sed 's|.*/\([^/]*/[^/]*\)$|\1|')"'|g' | \
-        sed 's/%#/$/g' | \
-        sed 's/%{//g' | \
-        sed 's/%}//g')
-    fi
-  else
-    # Bash/sh uses \ escapes
-    # Expand bash-style PS1 variables, using | as sed delimiter to avoid / issues
-    _listen_prompt_text=$(printf '%s' "$PS1" | \
-      sed 's|\\033\[[0-9;]*m||g' | \
-      sed 's|\\e\[[0-9;]*m||g' | \
-      sed 's|\\\[||g' | \
-      sed 's|\\\]||g' | \
-      sed 's|\\u|'"$(whoami)"'|g' | \
-      sed 's|\\h|'"$(hostname -s 2>/dev/null || hostname)"'|g' | \
-      sed 's|\\H|'"$(hostname)"'|g' | \
-      sed 's|\\w|'"$(pwd)"'|g' | \
-      sed 's|\\W|'"$(basename "$(pwd)")"'|g' | \
-      sed 's|\\\$|$|g' | \
-      sed 's|\\#|!|g')
-  fi
-  
-  # DEBUG: Show what we captured
-  printf '[DEBUG listen] Processed prompt: "%s"\n' "$_listen_prompt_text" >&2
-  printf '[DEBUG listen] Prompt length: %d\n' "${#_listen_prompt_text}" >&2
-  
-  export LISTEN_SAVED_PROMPT="$_listen_prompt_text"
-  unset _listen_prompt_text
-else
-  # When executed or PS1 not available, use simple default
-  printf '[DEBUG listen] Using default prompt (not sourced or no PS1)\n' >&2
-  export LISTEN_SAVED_PROMPT="$ "
-fi
-
-# DEBUG: Confirm what's exported
-printf '[DEBUG listen] Final LISTEN_SAVED_PROMPT: "%s"\n' "$LISTEN_SAVED_PROMPT" >&2
+# Always use simple "$ " prompt for reliability
+export LISTEN_SAVED_PROMPT="$ "
 
 # Start monitoring in background
 # Use tail -f -n 0 to follow the log file from current position (no history)
 {
-  # DEBUG: Show what prompt the background process sees
-  printf '[DEBUG background] LISTEN_SAVED_PROMPT: "%s"\n' "$LISTEN_SAVED_PROMPT" >&2
-  printf '[DEBUG background] Prompt length: %d\n' "${#LISTEN_SAVED_PROMPT}" >&2
-  
   tail -f -n 0 "$_listen_room_log" 2>/dev/null | while IFS= read -r line; do
     # Skip empty lines
     [ -z "$line" ] && continue
@@ -243,9 +163,8 @@ printf '[DEBUG listen] Final LISTEN_SAVED_PROMPT: "%s"\n' "$LISTEN_SAVED_PROMPT"
 
 _listen_monitor_pid=$!
 
-# Save PID and path for later stopping
+# Save PID for later stopping
 printf '%s\n' "$_listen_monitor_pid" > "$_listen_pid_file"
-printf '%s\n' "$_listen_room_path" > "$_listen_path_file"
 
 # Clean up variables
-unset _listen_stop_only _listen_pid_file _listen_path_file _listen_room_path _listen_room_log _listen_is_sourced _listen_use_zle _listen_monitor_pid _listen_old_pid _listen_old_path
+unset _listen_stop_only _listen_pid_file _listen_room_path _listen_room_log _listen_is_sourced _listen_use_zle _listen_monitor_pid _listen_old_pid
