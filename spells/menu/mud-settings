@@ -93,13 +93,14 @@ while true; do
   
   change="Change Player%choose-player"
   new="New Player%new-player"
+  features="MUD features%. mud-menu"
   
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
   exit_label=$(exit-label)
   exit_item="${exit_label}%kill -TERM \$PPID"
 
-  set -- "$player_key_item" "$change" "$new" "$exit_item"
+  set -- "$player_key_item" "$change" "$new" "$features" "$exit_item"
   menu "MUD Settings:" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
   
