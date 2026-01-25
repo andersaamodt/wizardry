@@ -147,6 +147,58 @@ EOF
   assert_failure && assert_error_contains "failed to apply description"
 }
 
+test_multiword_description() {
+  skip-if-compiled || return $?  # Stubs don't work in compiled mode
+  stub=$(make_stub_dir)
+  target=$(make_tempdir)
+  cat >"$stub/enchant" <<'EOF'
+#!/bin/sh
+printf '%s\n' "$*" >"${WIZARDRY_TMPDIR:?}/decorate.called"
+exit 0
+EOF
+  chmod +x "$stub/enchant"
+  # Test multi-word description without quotes (like: decorate room A dark and mysterious cave)
+  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" run_spell "spells/mud/decorate" "$target" A dark and mysterious cave
+  assert_success && assert_output_contains "decorated with the description"
+  called=$(cat "$WIZARDRY_TMPDIR/decorate.called")
+  # Check that enchant was called with the full multi-word description
+  case "$called" in
+    *"description"*"A dark and mysterious cave"*)
+      return 0
+      ;;
+    *)
+      TEST_FAILURE_REASON="unexpected enchant call (expected multi-word description): $called"
+      return 1
+      ;;
+  esac
+}
+
+test_multiword_description_no_path() {
+  skip-if-compiled || return $?  # Stubs don't work in compiled mode
+  stub=$(make_stub_dir)
+  target=$(make_tempdir)
+  cat >"$stub/enchant" <<'EOF'
+#!/bin/sh
+printf '%s\n' "$*" >"${WIZARDRY_TMPDIR:?}/decorate.called"
+exit 0
+EOF
+  chmod +x "$stub/enchant"
+  # Test multi-word description without path (uses current directory)
+  RUN_CMD_WORKDIR="$target" PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$stub:/bin:/usr/bin" run_spell "spells/mud/decorate" A cozy reading nook
+  assert_success
+  called=$(cat "$WIZARDRY_TMPDIR/decorate.called")
+  # Check that the full description is in the call
+  case "$called" in
+    *"description"*"A cozy reading nook"*)
+      return 0
+      ;;
+    *)
+      TEST_FAILURE_REASON="unexpected enchant call (expected multi-word description): $called"
+      return 1
+      ;;
+  esac
+}
+
 run_test_case "decorate prints usage" test_help
 run_test_case "decorate fails when enchant is missing" test_missing_enchant
 run_test_case "decorate fails when no valid path found" test_no_valid_path
@@ -155,6 +207,8 @@ run_test_case "decorate applies description successfully" test_decorates_with_de
 run_test_case "decorate works with reversed argument order" test_decorates_with_reversed_args
 run_test_case "decorate works with description only" test_decorates_current_directory_with_description_only
 run_test_case "decorate reports enchant failure" test_reports_enchant_failure
+run_test_case "decorate handles multi-word descriptions with path" test_multiword_description
+run_test_case "decorate handles multi-word descriptions without path" test_multiword_description_no_path
 
 # Test via source-then-invoke pattern  
 
