@@ -26,7 +26,11 @@ copy_wizardry() {
   # Copy only essential files (exclude .git, .tests, demo-magic-poc, tutorials)
   # This reduces copy from 6.9M to 2.7M (60% reduction)
   cp -Rp "$ROOT_DIR/spells" "$dest_dir/" || return 1
-  cp -Rp "$ROOT_DIR/install" "$dest_dir/" || return 1
+  
+  # Copy install if it exists (not present in doppelganger/compiled environments)
+  if [ -e "$ROOT_DIR/install" ]; then
+    cp -Rp "$ROOT_DIR/install" "$dest_dir/" || true
+  fi
   
   # Copy essential metadata files if they exist (optional - failures are non-fatal)
   for file in LICENSE OATH README.md .gitignore; do
