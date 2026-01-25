@@ -66,18 +66,17 @@ msg_len=${#msg_text}
 LISTEN_TERM_WIDTH=80
 lines_needed=$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
 
-# Simulate the escape sequence: save, move to col 0, print newlines, move up, print, restore+move
-printf '\0337\r'
+# Simulate the new escape sequence: clear line, print newlines, move up, print message
+printf '\r\033[K'
 i=0
 while [ "$i" -lt "$lines_needed" ]; do
   printf '\n'
   i=$((i + 1))
 done
 printf '\033[%dA' "$lines_needed"
-printf '\r%s' "$msg_text"
-printf '\0338\033[%dB' "$lines_needed"
+printf '%s\n' "$msg_text"
 
-printf '\nlines_needed=%d\n' "$lines_needed"
+printf 'lines_needed=%d\n' "$lines_needed"
 SCRIPT
   
   chmod +x "$tmpdir/test-format.sh"
@@ -105,17 +104,16 @@ LISTEN_TERM_WIDTH=80
 lines_needed=$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
 
 # Simulate the escape sequence
-printf '\0337\r'
+printf '\r\033[K'
 i=0
 while [ "$i" -lt "$lines_needed" ]; do
   printf '\n'
   i=$((i + 1))
 done
 printf '\033[%dA' "$lines_needed"
-printf '\r%s' "$msg_text"
-printf '\0338\033[%dB' "$lines_needed"
+printf '%s\n' "$msg_text"
 
-printf '\nlines_needed=%d\n' "$lines_needed"
+printf 'lines_needed=%d\n' "$lines_needed"
 printf 'test_complete=yes\n'
 SCRIPT
   
@@ -146,17 +144,16 @@ msg_len=$len
 LISTEN_TERM_WIDTH=80
 lines_needed=\$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
 
-printf '\0337\r'
+printf '\r\033[K'
 i=0
 while [ "\$i" -lt "\$lines_needed" ]; do
   printf '\n'
   i=\$((i + 1))
 done
 printf '\033[%dA' "\$lines_needed"
-printf '\r%s' "\$msg"
-printf '\0338\033[%dB' "\$lines_needed"
+printf '%s\n' "\$msg"
 
-printf '\nlines_needed=%d\n' "\$lines_needed"
+printf 'lines_needed=%d\n' "\$lines_needed"
 SCRIPT
     
     chmod +x "$tmpdir/test-exact-$len.sh"
@@ -185,17 +182,16 @@ msg_len=$len
 LISTEN_TERM_WIDTH=80
 lines_needed=\$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
 
-printf '\0337\r'
+printf '\r\033[K'
 i=0
 while [ "\$i" -lt "\$lines_needed" ]; do
   printf '\n'
   i=\$((i + 1))
 done
 printf '\033[%dA' "\$lines_needed"
-printf '\r%s' "\$msg"
-printf '\0338\033[%dB' "\$lines_needed"
+printf '%s\n' "\$msg"
 
-printf '\nlines_needed=%d\n' "\$lines_needed"
+printf 'lines_needed=%d\n' "\$lines_needed"
 SCRIPT
     
     chmod +x "$tmpdir/test-frac-$len.sh"
