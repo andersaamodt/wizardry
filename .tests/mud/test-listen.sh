@@ -4,6 +4,8 @@
 # - Validates directory exists
 # - Starts background process
 # - Stops with --stop option
+# - No startup messages (silent start)
+# - Shows only new activity (not history)
 
 set -eu
 
@@ -26,15 +28,15 @@ test_nonexistent_directory() {
   assert_error_contains "does not exist" || return 1
 }
 
-test_starts_listener() {
+test_starts_listener_silent() {
   tmpdir=$(make_tempdir)
   
   # Start listener in test directory
   HOME="$tmpdir" run_spell "spells/mud/listen" "$tmpdir"
   
-  # Just check that it reported success
+  # Should succeed but not output any startup messages
   assert_success || return 1
-  assert_output_contains "Started listening" || return 1
+  [ -z "$OUTPUT" ] || return 1
 }
 
 test_stop_option() {
@@ -48,7 +50,7 @@ test_stop_option() {
 
 run_test_case "listen shows usage text" test_help
 run_test_case "listen validates directory exists" test_nonexistent_directory  
-run_test_case "listen starts background process" test_starts_listener
+run_test_case "listen starts silently" test_starts_listener_silent
 run_test_case "listen --stop stops listener" test_stop_option
 
 finish_tests

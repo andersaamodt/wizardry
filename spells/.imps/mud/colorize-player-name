@@ -1,0 +1,23 @@
+#!/bin/sh
+# colorize-player-name PLAYER_NAME - output ANSI color code for consistent player name colorization
+set -eu
+
+player_name=${1-}
+
+if [ -z "$player_name" ]; then
+  printf '%s\n' "colorize-player-name: requires player name" >&2
+  exit 2
+fi
+
+# Generate a color from player name (hash to ANSI color)
+# Use simple character sum modulo for color selection
+color_num=0
+for char in $(printf '%s' "$player_name" | fold -w1); do
+  color_num=$((color_num + $(printf '%d' "'$char")))
+done
+
+# Map to colors 31-36 (red, green, yellow, blue, magenta, cyan)
+color=$((31 + (color_num % 6)))
+
+# Output the color code
+printf '%d' "$color"

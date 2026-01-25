@@ -1,0 +1,6 @@
+#!/bin/sh
+# clear-line - clear the current terminal line using ANSI escape sequences
+set -eu
+
+# Move to beginning of line and clear entire line
+printf '\r\033[2K'

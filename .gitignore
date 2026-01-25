@@ -8,3 +8,4 @@ ALL_INPUT
 .tests/__demos/
 *.attrs
 .room.log
+/.log

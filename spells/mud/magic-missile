@@ -5,15 +5,16 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: magic-missile [target]
+Usage: magic-missile [-v] [target]
 
-Cast a magic missile that deals random damage to a target file.
-If no target is specified, a random file in the current directory is selected.
+Cast a magic missile that deals random damage to a target file or folder.
+If no target is specified, a random file or folder in the current directory is selected.
 
-The spell displays colorful output and uses extended attributes to track damage.
+The spell logs actions to the room .log file. Use -v for verbose local output.
 
 Example:
   magic-missile treasure-chest
+  magic-missile -v monster
   magic-missile
 USAGE
   exit 0
@@ -22,6 +23,13 @@ esac
 
 set -eu
 . env-clear
+
+# Check for -v verbose flag
+verbose=0
+if [ "${1-}" = "-v" ]; then
+  verbose=1
+  shift
+fi
 
 # Load colors for tasteful output
 if command -v colors >/dev/null 2>&1; then
@@ -42,53 +50,44 @@ fi
 target=${1-}
 
 if [ -z "$target" ]; then
-  # Select random file from current directory
-  # Get list of files (not directories)
-  files=""
+  # Select random file or folder from current directory
+  # Get list of files and directories (exclude hidden files)
+  entries=""
   for entry in *; do
     # Check if glob expanded (if entry is *, no files exist)
     if [ "$entry" = "*" ] && [ ! -e "*" ]; then
       break
     fi
-    if [ -f "$entry" ]; then
-      if [ -z "$files" ]; then
-        files="$entry"
+    if [ -e "$entry" ]; then
+      if [ -z "$entries" ]; then
+        entries="$entry"
       else
-        files="$files
+        entries="$entries
 $entry"
       fi
     fi
   done
   
-  if [ -z "$files" ]; then
-    printf '%s\n' "magic-missile: no files found in current directory." >&2
+  if [ -z "$entries" ]; then
+    printf '%s\n' "magic-missile: no files or folders found in current directory." >&2
     exit 1
   fi
   
-  # Count files
-  file_count=0
-  printf '%s\n' "$files" | while IFS= read -r f || [ -n "$f" ]; do
-    file_count=$((file_count + 1))
-  done
-  file_count=$(printf '%s\n' "$files" | wc -l)
+  # Count entries
+  entry_count=$(printf '%s\n' "$entries" | wc -l)
   
   # Use cksum to generate a pseudo-random number
   random_seed=$(date +%s%N 2>/dev/null || date +%s)
   random_index=$(printf '%s' "$random_seed" | cksum | cut -d' ' -f1)
-  random_index=$((random_index % file_count + 1))
+  random_index=$((random_index % entry_count + 1))
   
-  # Select the nth file
-  target=$(printf '%s\n' "$files" | sed -n "${random_index}p")
+  # Select the nth entry
+  target=$(printf '%s\n' "$entries" | sed -n "${random_index}p")
 fi
 
 # Validate target exists
 if [ ! -e "$target" ]; then
-  printf '%s\n' "magic-missile: target file does not exist." >&2
-  exit 1
-fi
-
-if [ ! -f "$target" ]; then
-  printf '%s\n' "magic-missile: target must be a file (not a directory)." >&2
+  printf '%s\n' "magic-missile: target does not exist." >&2
   exit 1
 fi
 
@@ -140,16 +139,20 @@ case $desc_index in
   7) description="Eldritch power manifests as a radiant missile" ;;
 esac
 
-# Display colorful output
-printf '%s%sYou cast magic missile!%s %s. ' "${PURPLE}${BOLD}" "${RESET}" "${CYAN}" "$description"
-printf 'It deals %s%s%d%s damage to %s%s%s.%s\n' "${RED}${BOLD}" "${RESET}" "$damage" "${RESET}" "${YELLOW}" "$target" "${RESET}" "${RESET}"
-
-# Apply damage using damage-file
-damage-file "$target" "$damage"
+# Display colorful output only if verbose
+if [ "$verbose" -eq 1 ]; then
+  printf '%s%sYou cast magic missile!%s %s. ' "${PURPLE}${BOLD}" "${RESET}" "${CYAN}" "$description"
+  printf 'It deals %s%s%d%s damage to %s%s%s.%s\n' "${RED}${BOLD}" "${RESET}" "$damage" "${RESET}" "${YELLOW}" "$target" "${RESET}" "${RESET}"
+  # Apply damage using damage-file (shows output)
+  damage-file "$target" "$damage"
+else
+  # Apply damage silently
+  damage-file "$target" "$damage" >/dev/null 2>&1
+fi
 
 # Log the attack to room log for multiplayer visibility
 player_name=${MUD_PLAYER:-${USER:-Someone}}
-timestamp=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date)
+timestamp=$(date '+%H:%M' 2>/dev/null || date '+%H:%M')
 room_log="$PWD/.log"
-log_entry="[$timestamp] $player_name casts magic missile at $target, dealing $damage damage!"
+log_entry="[$timestamp] $player_name: casts magic missile at $target, dealing $damage damage!"
 printf '%s\n' "$log_entry" >> "$room_log" 2>/dev/null || true
