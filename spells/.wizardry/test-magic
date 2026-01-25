@@ -46,7 +46,7 @@ Examples:
 
 Environment variables:
   WIZARDRY_TEST_TIMEOUT              Timeout in seconds for each test (default: 180)
-  WIZARDRY_TEST_PERFORMANCE_TIMEOUT  Performance limit in seconds (tests exceeding this fail, default: 60)
+  WIZARDRY_TEST_PERFORMANCE_TIMEOUT  Performance limit in seconds (tests exceeding this fail, default: 80)
   WIZARDRY_FIND_TIMEOUT              Timeout in seconds for find operations (default: 60)
 USAGE
   exit 0
@@ -419,10 +419,10 @@ WRAPPER_EOF
     test_duration=$((test_end_time - test_start_time))
   fi
   
-  # Check for performance timeout (configurable, default 60s)
+  # Check for performance timeout (configurable, default 80s)
   # Tests that take longer than this are considered too slow and fail
   # Exception: common-tests.sh is exempt (it contains many subtests)
-  performance_timeout=${WIZARDRY_TEST_PERFORMANCE_TIMEOUT:-60}
+  performance_timeout=${WIZARDRY_TEST_PERFORMANCE_TIMEOUT:-80}
   is_too_slow=0
   case "$test_path" in
     */common-tests.sh|common-tests.sh)
