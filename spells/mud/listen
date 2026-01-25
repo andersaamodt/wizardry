@@ -140,16 +140,30 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         lines_needed=$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
         [ "$lines_needed" -lt 1 ] && lines_needed=1
         
-        # Strategy: Use IL (Insert Line) to insert blank lines at current position.
-        # IL inserts blank lines and pushes the current line (prompt) down.
+        # Strategy: Combine scroll + insert line to work at terminal bottom
+        # 1. Save cursor at prompt position
+        # 2. Move to column 0
+        # 3. Scroll display up to make room (works even at bottom)
+        # 4. Insert blank lines to push prompt down
+        # 5. Print message in inserted space
+        # 6. Restore cursor and move down
         
         # Save cursor position
         printf '\0337'
         
-        # Move to beginning of line (important for IL to work correctly)
+        # Move to beginning of line
         printf '\r'
         
-        # Insert blank lines at cursor position (pushes prompt down)
+        # First scroll the display up to ensure there's room for IL to work
+        # This is crucial when at terminal bottom
+        i=0
+        while [ "$i" -lt "$lines_needed" ]; do
+          printf '\033[S'  # Scroll up one line
+          i=$((i + 1))
+        done
+        
+        # Now insert blank lines - these will push the prompt down
+        # After scrolling, there's guaranteed room for this to work
         i=0
         while [ "$i" -lt "$lines_needed" ]; do
           printf '\033[1L'  # Insert one line
@@ -175,7 +189,14 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         # Move to beginning of line
         printf '\r'
         
-        # Insert blank lines at cursor position (pushes prompt down)
+        # Scroll display up to make room
+        i=0
+        while [ "$i" -lt "$lines_needed" ]; do
+          printf '\033[S'
+          i=$((i + 1))
+        done
+        
+        # Insert blank lines (pushes prompt down)
         i=0
         while [ "$i" -lt "$lines_needed" ]; do
           printf '\033[1L'
