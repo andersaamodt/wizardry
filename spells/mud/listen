@@ -118,6 +118,10 @@ fi
 if [ "$_listen_is_sourced" = "1" ] && [ -n "${PS1-}" ]; then
   # When sourced, try to capture a simple text representation of the prompt
   # Remove ANSI escape sequences and PS1 special characters
+  
+  # DEBUG: Show what we're starting with
+  printf '[DEBUG listen] Original PS1: %s\n' "$PS1" >&2
+  
   _listen_prompt_text=$(printf '%s' "$PS1" | \
     sed 's/\\033\[[0-9;]*m//g' | \
     sed 's/\\e\[[0-9;]*m//g' | \
@@ -130,16 +134,29 @@ if [ "$_listen_is_sourced" = "1" ] && [ -n "${PS1-}" ]; then
     sed 's/\\W/'"$(basename "$(pwd)")"'/g' | \
     sed 's/\\\$/$/g' | \
     sed 's/\\#/!/g')
+  
+  # DEBUG: Show what we captured
+  printf '[DEBUG listen] Processed prompt: "%s"\n' "$_listen_prompt_text" >&2
+  printf '[DEBUG listen] Prompt length: %d\n' "${#_listen_prompt_text}" >&2
+  
   export LISTEN_SAVED_PROMPT="$_listen_prompt_text"
   unset _listen_prompt_text
 else
   # When executed or PS1 not available, use simple default
+  printf '[DEBUG listen] Using default prompt (not sourced or no PS1)\n' >&2
   export LISTEN_SAVED_PROMPT="$ "
 fi
+
+# DEBUG: Confirm what's exported
+printf '[DEBUG listen] Final LISTEN_SAVED_PROMPT: "%s"\n' "$LISTEN_SAVED_PROMPT" >&2
 
 # Start monitoring in background
 # Use tail -f -n 0 to follow the log file from current position (no history)
 {
+  # DEBUG: Show what prompt the background process sees
+  printf '[DEBUG background] LISTEN_SAVED_PROMPT: "%s"\n' "$LISTEN_SAVED_PROMPT" >&2
+  printf '[DEBUG background] Prompt length: %d\n' "${#LISTEN_SAVED_PROMPT}" >&2
+  
   tail -f -n 0 "$_listen_room_log" 2>/dev/null | while IFS= read -r line; do
     # Skip empty lines
     [ -z "$line" ] && continue
