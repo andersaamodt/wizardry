@@ -140,17 +140,27 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         lines_needed=$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
         [ "$lines_needed" -lt 1 ] && lines_needed=1
         
-        # Strategy: Scroll display, move cursor up to compensate, insert lines, print message
-        # This ensures message appears ABOVE the prompt
+        # Strategy: Scroll display up, move cursor up to compensate, insert lines, print message
+        # This ensures message appears ABOVE the prompt in all scenarios
         
         # Save cursor position
         printf '\0337'
         
-        # Move to beginning of line (Insert Line requires being at column 0)
+        # Move to beginning of line (required for Insert Line to work correctly)
         printf '\r'
         
-        # Insert blank lines at cursor position - this pushes the current line (prompt) down
-        # At terminal bottom, most terminals will automatically scroll to make room
+        # Scroll the display up to make room at bottom (critical for terminal bottom case)
+        i=0
+        while [ "$i" -lt "$lines_needed" ]; do
+          printf '\033[S'  # Scroll up one line
+          i=$((i + 1))
+        done
+        
+        # After scrolling, content moved up but cursor stayed at same row
+        # Move cursor up by lines_needed to get to where prompt scrolled to
+        printf '\033[%dA' "$lines_needed"
+        
+        # Insert blank lines - pushes prompt down from this position
         i=0
         while [ "$i" -lt "$lines_needed" ]; do
           printf '\033[1L'  # Insert one line
@@ -160,8 +170,9 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         # Print the message in the inserted space
         printf '\r%s' "$formatted_msg"
         
-        # Restore cursor position and move down by lines_needed to where prompt now is
-        printf '\0338\033[%dB' "$lines_needed"
+        # Restore cursor position - this brings us back to the original prompt position
+        # The Insert Line operations have pushed the prompt down, so cursor is now at the right place
+        printf '\0338'
         ;;
       *)
         # Fallback for lines that don't match expected format
@@ -173,10 +184,20 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         # Save cursor position
         printf '\0337'
         
-        # Move to beginning of line (Insert Line requires being at column 0)
+        # Move to beginning of line (required for Insert Line to work correctly)
         printf '\r'
         
-        # Insert blank lines (pushes prompt down, terminals auto-scroll at bottom)
+        # Scroll the display up to make room at bottom
+        i=0
+        while [ "$i" -lt "$lines_needed" ]; do
+          printf '\033[S'  # Scroll up one line
+          i=$((i + 1))
+        done
+        
+        # Move cursor up to compensate for scroll
+        printf '\033[%dA' "$lines_needed"
+        
+        # Insert blank lines (pushes prompt down)
         i=0
         while [ "$i" -lt "$lines_needed" ]; do
           printf '\033[1L'
@@ -186,8 +207,8 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         # Print the message
         printf '\r🔮 %s' "$line"
         
-        # Restore cursor position and move down to where prompt is now
-        printf '\0338\033[%dB' "$lines_needed"
+        # Restore cursor position - cursor is now at the right place
+        printf '\0338'
         ;;
     esac
   done
