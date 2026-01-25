@@ -14,7 +14,8 @@ fi
 if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
   # For zsh, use print -P in a zsh subshell
   # We need to invoke zsh explicitly to access the print builtin
-  _ep_result=$(zsh -c "print -P '$_ep_prompt'" 2>/dev/null) || _ep_result=""
+  # Use double quotes and escape properly to allow expansion
+  _ep_result=$(zsh -c "print -P \"$_ep_prompt\"" 2>/dev/null) || _ep_result=""
   
   if [ -n "$_ep_result" ]; then
     printf '%s' "$_ep_result"
