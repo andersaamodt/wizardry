@@ -158,9 +158,9 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         # Use \r to start at beginning of line
         printf '\r%s' "$formatted_msg"
         
-        # Restore cursor to saved position, then move down by lines_needed
-        # (the saved position is now lines_needed lines up from where we want to be)
-        printf '\0338\033[%dB' "$lines_needed"
+        # Restore cursor to saved position
+        # The saved position is still at the prompt line where we want to be
+        printf '\0338'
         ;;
       *)
         # Fallback for lines that don't match expected format
@@ -183,8 +183,9 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         printf '\033[%dA' "$lines_needed"
         printf '\r🔮 %s' "$line"
         
-        # Restore cursor to saved position, then move down by lines_needed
-        printf '\0338\033[%dB' "$lines_needed"
+        # Restore cursor to saved position
+        # The saved position is still at the prompt line where we want to be
+        printf '\0338'
         ;;
     esac
   done
