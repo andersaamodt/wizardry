@@ -207,16 +207,16 @@ function_to_override() { ... }
 
 **Test Runner**: `spells/.wizardry/test-magic`
 
-**Reason**: Common-tests.sh contains 55+ individual subtests that collectively can exceed the 60-second performance timeout on some platforms (Arch: ~1m10s, Nix: ~1m20s, macOS: ~2m15s). Each subtest passes individually - the timeout is purely due to running many tests sequentially in a single file.
+**Reason**: Common-tests.sh contains 55+ individual subtests that collectively can exceed the 80-second performance timeout on some platforms (Arch: ~1m10s, Nix: ~1m20s, macOS: ~2m15s). Each subtest passes individually - the timeout is purely due to running many tests sequentially in a single file.
 
 **Behavior**:
 - **Performance check**: Skipped for common-tests.sh
 - **Functional tests**: All 55 subtests still run and must pass
-- **Other tests**: Still subject to 60s performance timeout
+- **Other tests**: Still subject to 80s performance timeout
 
 **Implementation**: test-magic checks if test filename matches `common-tests.sh` and skips the performance timeout check (lines 446-451).
 
-**Rationale**: This is a performance characteristic, not a functional bug. All subtests pass - the file simply contains more tests than can complete in 60s on slower platforms. The timeout exists to catch hangs and infinite loops, which is not the case here.
+**Rationale**: This is a performance characteristic, not a functional bug. All subtests pass - the file simply contains more tests than can complete in 80s on slower platforms. The timeout exists to catch hangs and infinite loops, which is not the case here.
 
 **Added**: 2026-01-18 - Commit 420cb1d
 
@@ -240,7 +240,7 @@ function_to_override() { ... }
 
 4. **Test-Only Files**: Test framework uses helper files (`.imps/test/*`) that aren't part of production wizardry.
 
-5. **Timing**: Tests use fixed timeouts (default 180s per test, 60s performance limit) which may not reflect real-world usage patterns on all systems.
+5. **Timing**: Tests use fixed timeouts (default 180s per test, 80s performance limit) which may not reflect real-world usage patterns on all systems.
 
 6. **Platform Differences**: Some tests behave differently on BSD (macOS) vs GNU (Linux) systems due to tool differences (sed, awk, grep, etc.), though we strive for POSIX compatibility.
 
