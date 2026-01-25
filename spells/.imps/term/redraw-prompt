@@ -1,0 +1,18 @@
+#!/bin/sh
+# redraw-prompt - redraw the shell prompt with saved context
+# When sourced in listen, uses LISTEN_SAVED_PROMPT if available
+set -eu
+
+# Check if we have a saved prompt from the parent spell
+if [ -n "${LISTEN_SAVED_PROMPT-}" ]; then
+  # Use the saved prompt (may include colors and formatting)
+  # The prompt variable should be pre-expanded
+  printf '%s' "$LISTEN_SAVED_PROMPT"
+elif [ -n "${PS1-}" ]; then
+  # Try to use PS1 but it may have escape sequences
+  # For now, just use a simple version
+  printf '$ '
+else
+  # Fallback to generic prompt
+  printf '$ '
+fi

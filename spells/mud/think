@@ -1,17 +1,17 @@
 #!/bin/sh
 
-# Narrate a thought in the current room (append to room log as internal monologue).
+# Record a private thought in your avatar's personal log (not visible to others).
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
 Usage: think <thought>
 
-Narrate your character's thoughts in the current room by appending to the
-.log file. Thoughts are displayed in quotes to distinguish them from speech.
+Record your character's private thoughts in your avatar's personal log file.
+Thoughts are displayed in quotes to distinguish them from speech.
 
-Thoughts are visible to all players in the room, representing your character's
-internal monologue or narration.
+Thoughts are private and only visible to you, representing your character's
+internal monologue that others cannot hear.
 
 Note: If your thought contains special characters like !, use single quotes:
   think 'I wonder what that sound was!'
@@ -38,26 +38,47 @@ fi
 
 thought="$*"
 
-# Get current directory (the room we're in)
-room_dir=${PWD}
-
 # Get player name from environment or use 'Anonymous'
 player_name=${MUD_PLAYER:-${USER:-Anonymous}}
 
-# Create timestamp (HH:MM format, like say)
+# Get config file location
+spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+config_file="$spell_home/.mud"
+
+# Get avatar path from config
+avatar_path=$(config-get "$config_file" "avatar-path" 2>/dev/null || printf '')
+
+# If no avatar path or avatar doesn't exist, fall back to using player name
+if [ -z "$avatar_path" ] || [ ! -d "$avatar_path" ]; then
+  # Try to find avatar folder in current directory
+  avatar_path="$PWD/.$player_name"
+  if [ ! -d "$avatar_path" ]; then
+    printf '%s\n' "think: no avatar found. Thoughts require an avatar folder." >&2
+    exit 1
+  fi
+fi
+
+# Create timestamp (HH:MM format, for log file only)
 timestamp=$(date '+%H:%M' 2>/dev/null || date '+%H:%M')
 
 # Format the thought with quotes and comma (name thinks, "thought")
 log_entry="[$timestamp] $player_name thinks, \"$thought\""
 
-# Append to room log
-room_log="$room_dir/.log"
+# Append to avatar's personal log
+avatar_log="$avatar_path/.log"
 
 # Create or append to log file
-if printf '%s\n' "$log_entry" >> "$room_log" 2>/dev/null; then
+if printf '%s\n' "$log_entry" >> "$avatar_log" 2>/dev/null; then
   # Echo to stdout for the thinker to see
-  printf '%s\n' "$log_entry"
+  # Colorize player name if outputting to a terminal
+  if [ -t 1 ] && [ -z "${NO_COLOR-}" ]; then
+    color=$(colorize-player-name "$player_name")
+    printf '\033[1;%dm%s\033[0m thinks, "%s"\n' "$color" "$player_name" "$thought"
+  else
+    # No colors for non-TTY or when NO_COLOR is set
+    printf '%s thinks, "%s"\n' "$player_name" "$thought"
+  fi
 else
-  printf '%s\n' "think: failed to write to room log (directory may be read-only)" >&2
+  printf '%s\n' "think: failed to write to avatar log" >&2
   exit 1
 fi
