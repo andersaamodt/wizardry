@@ -60,19 +60,28 @@ while true; do
     # Syncthing is installed - show management options
     open_option="Open Syncthing%$SCRIPT_DIR/open-syncthing"
     
+    # Determine auto-start option
+    if "$SCRIPT_DIR/is-syncthing-autostart-enabled"; then
+      autostart_option="Disable Auto-start%$SCRIPT_DIR/disable-syncthing-autostart"
+    else
+      autostart_option="Enable Auto-start%$SCRIPT_DIR/enable-syncthing-autostart"
+    fi
+    
     if "$SCRIPT_DIR/is-syncthing-running"; then
       # Syncthing is running
       restart_option="Restart Syncthing%$SCRIPT_DIR/restart-syncthing"
       stop_option="Stop Syncthing%$SCRIPT_DIR/stop-syncthing"
       uninstall_option="Uninstall Syncthing%$SCRIPT_DIR/uninstall-syncthing"
       
-      menu "$title" "$open_option" "$restart_option" "$stop_option" "$uninstall_option" "$exit_option" || menu_status=$?
+      menu "$title" "$open_option" "$restart_option" "$stop_option" \
+        "$autostart_option" "$uninstall_option" "$exit_option" || menu_status=$?
     else
       # Syncthing is not running
       start_option="Start Syncthing%$SCRIPT_DIR/start-syncthing"
       uninstall_option="Uninstall Syncthing%$SCRIPT_DIR/uninstall-syncthing"
       
-      menu "$title" "$open_option" "$start_option" "$uninstall_option" "$exit_option" || menu_status=$?
+      menu "$title" "$open_option" "$start_option" "$autostart_option" \
+        "$uninstall_option" "$exit_option" || menu_status=$?
     fi
   else
     # Syncthing is not installed - show install option
