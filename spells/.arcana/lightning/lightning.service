@@ -1,0 +1,28 @@
+[Unit]
+Description=Core Lightning Network Daemon
+After=network-online.target bitcoind.service
+Wants=network-online.target
+
+[Service]
+Type=notify
+NotifyAccess=all
+ExecStart=$LIGHTNINGD --daemon --lightning-dir=$HOME/.lightning --pid-file=$HOME/.lightning/lightningd.pid
+
+Type=forking
+PIDFile=$HOME/.lightning/lightningd.pid
+Restart=on-failure
+TimeoutStartSec=300
+TimeoutStopSec=60
+
+KillSignal=SIGINT
+LimitNOFILE=32768
+User=$USER
+Group=$USER
+
+# Hardening
+PrivateTmp=yes
+PrivateDevices=yes
+MemoryDenyWriteExecute=true
+
+[Install]
+WantedBy=multi-user.target

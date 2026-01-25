@@ -56,12 +56,34 @@ if [ "$distro" = "nixos" ]; then
     # Binary installation inline
     binary_name=""
     arch=$(uname -m)
-    case "$arch" in
-      x86_64) binary_name="bitcoin-$version-x86_64-linux-gnu.tar.gz" ;;
-      aarch64) binary_name="bitcoin-$version-aarch64-linux-gnu.tar.gz" ;;
-      armv7l) binary_name="bitcoin-$version-arm-linux-gnueabihf.tar.gz" ;;
+    os_type=$(uname -s)
+    
+    case "$os_type" in
+      Darwin)
+        # macOS binaries
+        case "$arch" in
+          x86_64) binary_name="bitcoin-$version-x86_64-apple-darwin.tar.gz" ;;
+          arm64) binary_name="bitcoin-$version-arm64-apple-darwin.tar.gz" ;;
+          *)
+            echo "Unsupported macOS architecture: $arch"
+            return 1
+            ;;
+        esac
+        ;;
+      Linux)
+        # Linux binaries (NixOS is Linux)
+        case "$arch" in
+          x86_64) binary_name="bitcoin-$version-x86_64-linux-gnu.tar.gz" ;;
+          aarch64) binary_name="bitcoin-$version-aarch64-linux-gnu.tar.gz" ;;
+          armv7l) binary_name="bitcoin-$version-arm-linux-gnueabihf.tar.gz" ;;
+          *)
+            echo "Unsupported Linux architecture: $arch"
+            return 1
+            ;;
+        esac
+        ;;
       *)
-        echo "Unsupported architecture: $arch"
+        echo "Unsupported operating system: $os_type"
         return 1
         ;;
     esac
@@ -70,9 +92,26 @@ if [ "$distro" = "nixos" ]; then
     tmp_dir=$(temp-dir bitcoin-install) || return 1
     trap 'cleanup-dir "$tmp_dir"' EXIT HUP INT TERM
     cd "$tmp_dir" || return 1
-    wget "$bitcoin_url" || return 1
+    
+    # Download with curl or wget
+    if command -v curl >/dev/null 2>&1; then
+      curl -L -O "$bitcoin_url" || return 1
+    elif command -v wget >/dev/null 2>&1; then
+      wget "$bitcoin_url" || return 1
+    else
+      echo "Error: curl or wget required to download Bitcoin"
+      return 1
+    fi
+    
     tar -xzf "$binary_name"
-    sudo install -m 0755 -o root -g root -t /usr/local/bin "bitcoin-$version"/bin/*
+    
+    # Install binaries (macOS install command doesn't support -g flag)
+    if [ "$os_type" = "Darwin" ]; then
+      sudo install -m 0755 -o root -t /usr/local/bin "bitcoin-$version"/bin/*
+    else
+      sudo install -m 0755 -o root -g root -t /usr/local/bin "bitcoin-$version"/bin/*
+    fi
+    
     cd - >/dev/null || true
     trap - EXIT HUP INT TERM
     rm -rf "$tmp_dir"
@@ -135,12 +174,11 @@ fi
 # Standard Linux installation
 echo "Detected platform: $distro"
 
-# Check if package manager available and ask
+# Check if package manager available and ask (excluding homebrew)
 pkg_install_success=0
 pkg_mgr_available=0
 command -v apt >/dev/null 2>&1 && pkg_mgr_available=1
 command -v pacman >/dev/null 2>&1 && pkg_mgr_available=1
-command -v brew >/dev/null 2>&1 && pkg_mgr_available=1
 
 use_pkg_mgr=0
 if [ "$pkg_mgr_available" -eq 1 ]; then
@@ -160,8 +198,6 @@ if [ "$use_pkg_mgr" -eq 1 ]; then
     sudo apt update && sudo apt install -y bitcoind bitcoin-qt && pkg_install_success=1
   elif command -v pacman >/dev/null 2>&1; then
     sudo pacman -Sy --noconfirm bitcoind && pkg_install_success=1
-  elif command -v brew >/dev/null 2>&1; then
-    brew install bitcoin-core && pkg_install_success=1
   fi
 fi
 
@@ -169,12 +205,34 @@ fi
 if [ "$pkg_install_success" -eq 0 ]; then
   binary_name=""
   arch=$(uname -m)
-  case "$arch" in
-    x86_64) binary_name="bitcoin-$version-x86_64-linux-gnu.tar.gz" ;;
-    aarch64) binary_name="bitcoin-$version-aarch64-linux-gnu.tar.gz" ;;
-    armv7l) binary_name="bitcoin-$version-arm-linux-gnueabihf.tar.gz" ;;
+  os_type=$(uname -s)
+  
+  case "$os_type" in
+    Darwin)
+      # macOS binaries
+      case "$arch" in
+        x86_64) binary_name="bitcoin-$version-x86_64-apple-darwin.tar.gz" ;;
+        arm64) binary_name="bitcoin-$version-arm64-apple-darwin.tar.gz" ;;
+        *)
+          echo "Unsupported macOS architecture: $arch"
+          return 1
+          ;;
+      esac
+      ;;
+    Linux)
+      # Linux binaries
+      case "$arch" in
+        x86_64) binary_name="bitcoin-$version-x86_64-linux-gnu.tar.gz" ;;
+        aarch64) binary_name="bitcoin-$version-aarch64-linux-gnu.tar.gz" ;;
+        armv7l) binary_name="bitcoin-$version-arm-linux-gnueabihf.tar.gz" ;;
+        *)
+          echo "Unsupported Linux architecture: $arch"
+          return 1
+          ;;
+      esac
+      ;;
     *)
-      echo "Unsupported architecture: $arch"
+      echo "Unsupported operating system: $os_type"
       return 1
       ;;
   esac
@@ -183,9 +241,26 @@ if [ "$pkg_install_success" -eq 0 ]; then
   tmp_dir=$(temp-dir bitcoin-install) || return 1
   trap 'cleanup-dir "$tmp_dir"' EXIT HUP INT TERM
   cd "$tmp_dir" || return 1
-  wget "$bitcoin_url" || return 1
+  
+  # Download with curl or wget
+  if command -v curl >/dev/null 2>&1; then
+    curl -L -O "$bitcoin_url" || return 1
+  elif command -v wget >/dev/null 2>&1; then
+    wget "$bitcoin_url" || return 1
+  else
+    echo "Error: curl or wget required to download Bitcoin"
+    return 1
+  fi
+  
   tar -xzf "$binary_name"
-  sudo install -m 0755 -o root -g root -t /usr/local/bin "bitcoin-$version"/bin/*
+  
+  # Install binaries (macOS install command doesn't support -g flag)
+  if [ "$os_type" = "Darwin" ]; then
+    sudo install -m 0755 -o root -t /usr/local/bin "bitcoin-$version"/bin/*
+  else
+    sudo install -m 0755 -o root -g root -t /usr/local/bin "bitcoin-$version"/bin/*
+  fi
+  
   cd - >/dev/null || true
   trap - EXIT HUP INT TERM
   rm -rf "$tmp_dir"
