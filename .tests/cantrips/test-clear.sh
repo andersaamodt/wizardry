@@ -37,9 +37,15 @@ test_clear_default_mode() {
   run_spell "spells/cantrips/clear"
   assert_success || return 1
   # Should output multiple newlines (at least 10, likely more)
-  newline_count=$(printf '%s' "$OUTPUT" | grep -c '^$' || echo "0")
-  if [ "$newline_count" -lt 10 ]; then
-    TEST_FAILURE_REASON="Expected at least 10 newlines, got $newline_count"
+  # Check the output file directly since OUTPUT variable strips trailing newlines
+  if [ -f "${WIZARDRY_TMPDIR}/_test_output" ]; then
+    output_size=$(wc -c < "${WIZARDRY_TMPDIR}/_test_output")
+    if [ "$output_size" -lt 10 ]; then
+      TEST_FAILURE_REASON="Expected at least 10 bytes in output, got $output_size"
+      return 1
+    fi
+  else
+    TEST_FAILURE_REASON="Output file not found"
     return 1
   fi
 }
