@@ -1,0 +1,114 @@
+#!/bin/sh
+
+# Create a new wizardry web site with directory structure.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: web-create-site SITENAME
+
+Creates a new website with standard directory structure:
+  - site/ (source files)
+  - site/pages/ (Markdown pages)
+  - site/uploads/ (uploaded files)
+  - site/static/ (static assets like images, CSS)
+  - build/ (generated HTML)
+
+Example: web-create-site mysite
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+site_name=${1-}
+if [ -z "$site_name" ]; then
+  die 2 "web-create-site: SITENAME required"
+fi
+
+# Validate site name (alphanumeric, dash, underscore only)
+case "$site_name" in
+  *[!a-zA-Z0-9_-]*)
+    die 2 "web-create-site: invalid site name (use alphanumeric, dash, underscore only)"
+    ;;
+esac
+
+WEB_ROOT=${WIZARDRY_WEB_ROOT:-$HOME/.wizardry-web}
+SITES_DIR="$WEB_ROOT/sites"
+SITE_DIR="$SITES_DIR/$site_name"
+
+# Check if site already exists
+if [ -d "$SITE_DIR" ]; then
+  die "web-create-site: site '$site_name' already exists"
+fi
+
+# Create directory structure
+step "Creating site: $site_name"
+mkdir -p "$SITE_DIR/site/pages"
+mkdir -p "$SITE_DIR/site/uploads"
+mkdir -p "$SITE_DIR/site/static"
+mkdir -p "$SITE_DIR/build"
+
+# Create default index page
+cat > "$SITE_DIR/site/pages/index.md" <<'EOF'
+---
+title: Welcome
+---
+
+# Welcome to Your Website
+
+This is your homepage. Edit `site/pages/index.md` to customize it.
+
+## Features
+
+- **Markdown**: Write content in Markdown
+- **POSIX Shell**: Interactivity via shell scripts
+- **htmx**: Partial page updates
+- **nginx**: Fast, reliable serving
+- **Let's Encrypt**: Automatic HTTPS
+
+## Getting Started
+
+1. Edit pages in `site/pages/`
+2. Add static files to `site/static/`
+3. Build with `wizardry-web build SITENAME`
+4. Serve with `wizardry-web serve SITENAME`
+EOF
+
+# Create example CSS
+cat > "$SITE_DIR/site/static/style.css" <<'EOF'
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  line-height: 1.6;
+}
+
+h1, h2, h3 {
+  margin-top: 2rem;
+}
+
+code {
+  background: #f4f4f4;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+}
+EOF
+
+# Create site config file
+cat > "$SITE_DIR/site.conf" <<EOF
+# Site configuration for $site_name
+site-name=$site_name
+port=8080
+domain=localhost
+https=false
+EOF
+
+success "Site '$site_name' created at $SITE_DIR"
+info "Edit pages in: $SITE_DIR/site/pages/"
+info "Build with: wizardry-web build $site_name"

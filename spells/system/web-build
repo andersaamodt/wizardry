@@ -1,0 +1,117 @@
+#!/bin/sh
+
+# Build a wizardry web site (Markdown to HTML with Pandoc).
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: web-build SITENAME [--full] [--watch]
+
+Builds a website by converting Markdown to HTML with Pandoc.
+
+Options:
+  --full    Full rebuild (ignore mtime)
+  --watch   Watch mode (rebuild on changes)
+
+Default is incremental rebuild using mtime.
+
+Example: web-build mysite
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+site_name=${1-}
+if [ -z "$site_name" ]; then
+  die 2 "web-build: SITENAME required"
+fi
+
+# Parse options
+full_rebuild=0
+watch_mode=0
+shift
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --full) full_rebuild=1; shift ;;
+    --watch) watch_mode=1; shift ;;
+    *) die 2 "web-build: unknown option '$1'" ;;
+  esac
+done
+
+WEB_ROOT=${WIZARDRY_WEB_ROOT:-$HOME/.wizardry-web}
+SITES_DIR="$WEB_ROOT/sites"
+SITE_DIR="$SITES_DIR/$site_name"
+
+if [ ! -d "$SITE_DIR" ]; then
+  die "web-build: site '$site_name' not found"
+fi
+
+# Check for pandoc
+if ! has pandoc; then
+  die "web-build: pandoc is required but not installed"
+fi
+
+build_site() {
+  step "Building site: $site_name"
+  
+  # Create build directories
+  mkdir -p "$SITE_DIR/build/pages"
+  mkdir -p "$SITE_DIR/build/static"
+  
+  # Copy static files
+  if [ -d "$SITE_DIR/site/static" ]; then
+    cp -r "$SITE_DIR/site/static"/* "$SITE_DIR/build/static/" 2>/dev/null || true
+  fi
+  
+  # Build each Markdown page
+  built_count=0
+  if [ -d "$SITE_DIR/site/pages" ]; then
+    for md_file in "$SITE_DIR/site/pages"/*.md; do
+      [ -f "$md_file" ] || continue
+      
+      base_name=$(basename "$md_file" .md)
+      html_file="$SITE_DIR/build/pages/${base_name}.html"
+      
+      # Incremental build: skip if HTML is newer than MD (unless --full)
+      if [ "$full_rebuild" -eq 0 ] && [ -f "$html_file" ] && newer "$html_file" "$md_file"; then
+        debug "Skipping $base_name (up to date)"
+        continue
+      fi
+      
+      info "Building: $base_name.md → $base_name.html"
+      
+      # Use Pandoc to convert Markdown to HTML with YAML front matter
+      pandoc \
+        --from markdown+yaml_metadata_block \
+        --to html5 \
+        --standalone \
+        --template=  \
+        --css=/static/style.css \
+        --output="$html_file" \
+        "$md_file"
+      
+      built_count=$((built_count + 1))
+    done
+  fi
+  
+  success "Built $built_count pages for $site_name"
+  info "Build output: $SITE_DIR/build/"
+}
+
+if [ "$watch_mode" -eq 1 ]; then
+  # Watch mode - rebuild on changes
+  # This is a simple implementation; a production version might use inotify
+  step "Watching $site_name for changes (Ctrl-C to stop)"
+  while true; do
+    build_site
+    sleep 2
+  done
+else
+  # Single build
+  build_site
+fi

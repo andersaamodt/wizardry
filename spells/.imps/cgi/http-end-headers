@@ -1,0 +1,6 @@
+#!/bin/sh
+# http-end-headers - output empty line to end HTTP headers
+# Example: http-end-headers
+set -eu
+
+printf '\r\n'

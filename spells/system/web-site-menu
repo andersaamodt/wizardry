@@ -1,0 +1,66 @@
+#!/bin/sh
+
+# Show menu for managing a specific site.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: web-site-menu SITENAME
+
+Shows an interactive menu for managing a specific website.
+
+Example: web-site-menu mysite
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+. colors
+
+if ! require menu "The web-site-menu command needs the 'menu' command."; then
+  exit 1
+fi
+
+site_name=${1-}
+if [ -z "$site_name" ]; then
+  die 2 "web-site-menu: SITENAME required"
+fi
+
+WEB_ROOT=${WIZARDRY_WEB_ROOT:-$HOME/.wizardry-web}
+SITES_DIR="$WEB_ROOT/sites"
+SITE_DIR="$SITES_DIR/$site_name"
+
+if [ ! -d "$SITE_DIR" ]; then
+  die "web-site-menu: site '$site_name' not found"
+fi
+
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 130' INT
+trap 'exit 0' TERM
+
+while true; do
+  # Build menu based on site status
+  status=$(web-site-status "$site_name")
+  
+  exit_label=$(exit-label)
+  
+  set -- \
+    "Build site%web-build \"$site_name\"" \
+    "Build site (full)%web-build \"$site_name\" --full" \
+    "Open site directory%cd \"$SITE_DIR\" && \$SHELL" \
+    "Delete site%web-delete-site \"$site_name\"" \
+    "${exit_label}%kill -TERM \$PPID"
+
+  menu "${BOLD}${CYAN}Site: $site_name${RESET} ($status)" "$@" || menu_status=$?
+  menu_status=${menu_status:-0}
+  
+  # ESC causes menu to exit with 130 - handle gracefully by exiting
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    exit 0
+  fi
+done
