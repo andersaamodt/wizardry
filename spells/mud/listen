@@ -115,34 +115,9 @@ if [ ! -f "$_listen_room_log" ]; then
 fi
 
 # Save the current prompt for the background process to use
-# When sourced, we can access PS1 and expand it
-# When executed, we fall back to "$ "
-if [ "$_listen_is_sourced" = "1" ] && [ -n "${PS1-}" ]; then
-  # Expand PS1 - basic expansion for common sequences
-  _listen_prompt="$PS1"
-  
-  # First, remove \[ and \] markers
-  _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed 's/\\[][[]//g')
-  
-  # Remove ANSI escape sequences (both \033[...m and \e[...m formats)
-  _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed 's/\\033\[[0-9;]*m//g')
-  _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed 's/\\e\[[0-9;]*m//g')
-  
-  # Replace common PS1 escape sequences
-  _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed "s/\\\\u/$(whoami)/g")
-  _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed "s/\\\\h/$(hostname -s 2>/dev/null || hostname | cut -d. -f1)/g")
-  _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed "s/\\\\H/$(hostname)/g")
-  _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed "s|\\\\w|$(pwd)|g")
-  _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed "s|\\\\W|$(basename "$(pwd)")|g")
-  _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed 's/\\\$/$/g')
-  _listen_prompt=$(printf '%s\n' "$_listen_prompt" | sed 's/\\#/!/g')
-  
-  export LISTEN_SAVED_PROMPT="$_listen_prompt"
-  unset _listen_prompt
-else
-  # Not sourced or no PS1, use simple default
-  export LISTEN_SAVED_PROMPT="$ "
-fi
+# Use a simple default since we can't reliably capture/reconstruct PS1
+# The user will see "$ " as the prompt after messages, which is acceptable
+export LISTEN_SAVED_PROMPT="$ "
 
 # Start monitoring in background
 # Use tail -f -n 0 to follow the log file from current position (no history)
