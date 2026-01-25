@@ -1,0 +1,74 @@
+#!/bin/sh
+
+# Open the Syncthing web interface in a browser.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: open-syncthing
+
+Opens the Syncthing web interface in the default browser.
+If Syncthing is not running, it will start it first.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+# Find the script directory to locate sibling helper scripts
+SCRIPT_SOURCE=$0
+case $SCRIPT_SOURCE in
+*/*)
+        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        ;;
+*)
+        resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
+        SCRIPT_DIR=${resolved%/*}
+        SCRIPT_SOURCE=$resolved
+        ;;
+esac
+if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
+        SCRIPT_DIR=.
+fi
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+
+if ! "$SCRIPT_DIR/is-syncthing-installed"; then
+  die "open-syncthing: Syncthing is not installed"
+fi
+
+# Start Syncthing if not running
+if ! "$SCRIPT_DIR/is-syncthing-running"; then
+  printf '%s\n' 'Syncthing is not running. Starting it now...'
+  "$SCRIPT_DIR/start-syncthing"
+  sleep 3
+fi
+
+# Syncthing web UI URL
+url="http://127.0.0.1:8384"
+
+# Open URL in default browser
+printf 'Opening Syncthing web interface at %s\n' "$url"
+
+# Detect platform and open browser
+kernel=$(uname -s 2>/dev/null || printf 'unknown')
+case $kernel in
+  Darwin)
+    open "$url"
+    ;;
+  Linux)
+    if command -v xdg-open >/dev/null 2>&1; then
+      xdg-open "$url" >/dev/null 2>&1 &
+    elif command -v sensible-browser >/dev/null 2>&1; then
+      sensible-browser "$url" >/dev/null 2>&1 &
+    else
+      printf '%s\n' "Please open $url in your browser."
+    fi
+    ;;
+  *)
+    printf '%s\n' "Please open $url in your browser."
+    ;;
+esac

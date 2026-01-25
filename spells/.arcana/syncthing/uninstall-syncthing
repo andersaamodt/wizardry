@@ -1,0 +1,88 @@
+#!/bin/sh
+
+# Uninstall Syncthing from the system.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-syncthing
+
+Uninstalls Syncthing from the system.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if ! command -v syncthing >/dev/null 2>&1; then
+  printf '%s\n' 'Syncthing is not installed.'
+  exit 0
+fi
+
+printf '%s\n' 'Uninstalling Syncthing...'
+distro="$(detect-distro 2>/dev/null || os)"
+
+# Platform-specific uninstallation
+case $distro in
+  debian|ubuntu)
+    printf '%s\n' 'Removing Syncthing via apt...'
+    if command -v sudo >/dev/null 2>&1; then
+      sudo apt-get remove -y syncthing
+      # Optionally remove the repository
+      printf 'Remove Syncthing APT repository? [y/N]: '
+      read -r reply
+      case "$reply" in
+        y|Y|yes|Yes)
+          sudo rm -f /etc/apt/sources.list.d/syncthing.list
+          sudo rm -f /etc/apt/keyrings/syncthing-archive-keyring.gpg
+          sudo apt-get update
+          ;;
+      esac
+    else
+      apt-get remove -y syncthing
+    fi
+    ;;
+  linux)
+    printf '%s\n' 'Removing Syncthing binary from /usr/local/bin...'
+    if command -v sudo >/dev/null 2>&1; then
+      sudo rm -f /usr/local/bin/syncthing
+    else
+      rm -f /usr/local/bin/syncthing
+    fi
+    ;;
+  arch)
+    printf '%s\n' 'Removing Syncthing via pacman...'
+    if command -v sudo >/dev/null 2>&1; then
+      sudo pacman -R --noconfirm syncthing
+    else
+      pacman -R --noconfirm syncthing
+    fi
+    ;;
+  mac|macos)
+    printf '%s\n' 'Removing Syncthing binary from /usr/local/bin...'
+    if command -v sudo >/dev/null 2>&1; then
+      sudo rm -f /usr/local/bin/syncthing
+    else
+      rm -f /usr/local/bin/syncthing
+    fi
+    ;;
+  nixos)
+    printf '%s\n' 'For NixOS, you need to manually remove syncthing from your configuration.nix'
+    printf '%s\n' 'and run: sudo nixos-rebuild switch'
+    exit 1
+    ;;
+  *)
+    printf '%s\n' "Unsupported distribution for automatic Syncthing uninstallation."
+    exit 1
+    ;;
+esac
+
+if ! command -v syncthing >/dev/null 2>&1; then
+  printf '%s\n' 'Syncthing has been uninstalled.'
+else
+  printf '%s\n' 'Syncthing uninstallation attempted, but the binary is still present.'
+fi

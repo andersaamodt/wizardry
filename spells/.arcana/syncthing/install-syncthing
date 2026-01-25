@@ -1,0 +1,275 @@
+#!/bin/sh
+
+# Install and configure Syncthing across supported platforms.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-syncthing
+
+Guides you through installing Syncthing using official methods for each platform.
+On NixOS, this will update configuration.nix when possible and run sudo nixos-rebuild switch.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+# Welcome message
+printf '%s\n' 'Welcome to the Syncthing installation wizard.'
+distro="$(detect-distro 2>/dev/null || os)"
+printf 'Detected platform: %s\n' "$distro"
+
+# Platform-specific installation
+case $distro in
+  debian|ubuntu)
+    printf '%s\n' 'Installing Syncthing via official APT repository...'
+    
+    # Add official Syncthing APT repository
+    if command -v sudo >/dev/null 2>&1; then
+      # Install prerequisites
+      sudo apt-get update
+      sudo apt-get install -y curl gnupg apt-transport-https
+      
+      # Add the release PGP keys
+      sudo mkdir -p /etc/apt/keyrings
+      keyring_path=/etc/apt/keyrings/syncthing-archive-keyring.gpg
+      sudo curl -L -o "$keyring_path" https://syncthing.net/release-key.gpg
+      
+      # Add the "stable" channel to sources.list.d
+      repo_line="deb [signed-by=$keyring_path] "
+      repo_line="${repo_line}https://apt.syncthing.net/ syncthing stable"
+      printf '%s\n' "$repo_line" | \
+        sudo tee /etc/apt/sources.list.d/syncthing.list
+      
+      # Update and install syncthing
+      sudo apt-get update
+      sudo apt-get install -y syncthing
+    else
+      apt-get update
+      apt-get install -y curl gnupg apt-transport-https
+      mkdir -p /etc/apt/keyrings
+      keyring_path=/etc/apt/keyrings/syncthing-archive-keyring.gpg
+      curl -L -o "$keyring_path" https://syncthing.net/release-key.gpg
+      repo_line="deb [signed-by=$keyring_path] "
+      repo_line="${repo_line}https://apt.syncthing.net/ syncthing stable"
+      printf '%s\n' "$repo_line" | \
+        tee /etc/apt/sources.list.d/syncthing.list
+      apt-get update
+      apt-get install -y syncthing
+    fi
+    ;;
+  linux)
+    printf '%s\n' 'Generic Linux detected. Installing via static binary...'
+    
+    # Detect architecture
+    arch=$(uname -m)
+    case $arch in
+      x86_64|amd64)
+        syncthing_arch="amd64"
+        ;;
+      aarch64|arm64)
+        syncthing_arch="arm64"
+        ;;
+      armv7l|armv7)
+        syncthing_arch="arm"
+        ;;
+      *)
+        printf '%s\n' "Unsupported architecture: $arch"
+        exit 1
+        ;;
+    esac
+    
+    # Create temp directory for download
+    tmp_dir=$(temp-dir syncthing-install) || exit 1
+    trap 'cleanup-dir "$tmp_dir"' EXIT HUP INT TERM
+    cd "$tmp_dir" || exit 1
+    
+    # Download latest release
+    printf 'Downloading latest Syncthing release...\n'
+    base_url="https://github.com/syncthing/syncthing/releases/latest/download"
+    filename="syncthing-linux-${syncthing_arch}-latest.tar.gz"
+    if command -v curl >/dev/null 2>&1; then
+      curl -L -O "${base_url}/${filename}" || exit 1
+    elif command -v wget >/dev/null 2>&1; then
+      wget "${base_url}/${filename}" || exit 1
+    else
+      printf '%s\n' 'Error: curl or wget required to download Syncthing'
+      exit 1
+    fi
+    
+    # Extract and install
+    tar -xzf "syncthing-linux-${syncthing_arch}-latest.tar.gz"
+    cd syncthing-linux-"${syncthing_arch}"-* || exit 1
+    
+    printf 'Installing Syncthing to /usr/local/bin...\n'
+    if command -v sudo >/dev/null 2>&1; then
+      sudo cp syncthing /usr/local/bin/
+      sudo chmod +x /usr/local/bin/syncthing
+    else
+      cp syncthing /usr/local/bin/
+      chmod +x /usr/local/bin/syncthing
+    fi
+    
+    cd - >/dev/null || true
+    trap - EXIT HUP INT TERM
+    rm -rf "$tmp_dir"
+    ;;
+  arch)
+    printf '%s\n' 'Installing Syncthing via pacman...'
+    if command -v sudo >/dev/null 2>&1; then
+      sudo pacman -Sy --noconfirm syncthing
+    else
+      pacman -Sy --noconfirm syncthing
+    fi
+    ;;
+  mac|macos)
+    printf '%s\n' 'Installing Syncthing via direct binary download on macOS...'
+    
+    # Detect architecture
+    arch=$(uname -m)
+    case $arch in
+      x86_64|amd64)
+        syncthing_arch="amd64"
+        ;;
+      arm64|aarch64)
+        syncthing_arch="arm64"
+        ;;
+      *)
+        printf '%s\n' "Unsupported architecture: $arch"
+        exit 1
+        ;;
+    esac
+    
+    # Create temp directory for download
+    tmp_dir=$(temp-dir syncthing-install) || exit 1
+    trap 'cleanup-dir "$tmp_dir"' EXIT HUP INT TERM
+    cd "$tmp_dir" || exit 1
+    
+    # Download latest release
+    printf 'Downloading latest Syncthing release...\n'
+    base_url="https://github.com/syncthing/syncthing/releases/latest/download"
+    filename="syncthing-macos-${syncthing_arch}-latest.tar.gz"
+    if command -v curl >/dev/null 2>&1; then
+      curl -L -O "${base_url}/${filename}" || exit 1
+    elif command -v wget >/dev/null 2>&1; then
+      wget "${base_url}/${filename}" || exit 1
+    else
+      printf '%s\n' 'Error: curl or wget required to download Syncthing'
+      exit 1
+    fi
+    
+    # Extract and install
+    tar -xzf "syncthing-macos-${syncthing_arch}-latest.tar.gz"
+    cd syncthing-macos-"${syncthing_arch}"-* || exit 1
+    
+    printf 'Installing Syncthing to /usr/local/bin...\n'
+    if command -v sudo >/dev/null 2>&1; then
+      sudo cp syncthing /usr/local/bin/
+      sudo chmod +x /usr/local/bin/syncthing
+    else
+      cp syncthing /usr/local/bin/
+      chmod +x /usr/local/bin/syncthing
+    fi
+    
+    cd - >/dev/null || true
+    trap - EXIT HUP INT TERM
+    rm -rf "$tmp_dir"
+    
+    printf '\n%s\n' \
+      'Note: On macOS, you may need to allow the binary in'
+    printf '%s\n' 'System Preferences > Security & Privacy when first run.'
+    ;;
+  nixos)
+    # Ask for configuration path
+    printf "Path to NixOS configuration [/etc/nixos/configuration.nix]: "
+    read -r config_path
+    config_path=${config_path:-/etc/nixos/configuration.nix}
+    
+    changes=0
+    if [ ! -f "$config_path" ]; then
+      printf '%s\n' "NixOS configuration file $config_path was not found."
+      exit 1
+    fi
+
+    if command -v backup-nix-config >/dev/null 2>&1; then
+      backup-nix-config "$config_path" >&2 || true
+    fi
+
+    # Find script directory for sibling resources
+    SCRIPT_SOURCE=$0
+    case $SCRIPT_SOURCE in
+    */*)
+            SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+            ;;
+    *)
+            resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
+            SCRIPT_DIR=${resolved%/*}
+            SCRIPT_SOURCE=$resolved
+            ;;
+    esac
+    if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
+            SCRIPT_DIR=.
+    fi
+    SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+    IMPS_TEXT_DIR=$(cd "$SCRIPT_DIR" 2>/dev/null && cd .. && cd .. && cd .imps/text && pwd -P)
+
+    # Detect indentation style from config file
+    indent_l1="  "
+    indent_l2="    "
+    if [ -x "$IMPS_TEXT_DIR/make-indent" ]; then
+      indent_l1=$("$IMPS_TEXT_DIR/make-indent" 1 "$config_path")
+      indent_l2=$("$IMPS_TEXT_DIR/make-indent" 2 "$config_path")
+    fi
+
+    if grep -q 'environment.systemPackages' "$config_path"; then
+      if ! grep -q 'syncthing' "$config_path"; then
+        printf '%s\n' 'Adding syncthing to environment.systemPackages...'
+        pattern1="(environment\\.systemPackages\\s*=\\s*with\\s+pkgs;"
+        pattern1="${pattern1}\\s*\\[[^\\]]*)\\]"
+        replace1="\$1\\n${indent_l2}syncthing\\n${indent_l1}]"
+        sudo perl -0pi -e "s/$pattern1/$replace1/" "$config_path" || {
+          pattern2="(environment\\.systemPackages\\s*=\\s*\\[[^\\]]*)\\]"
+          replace2="\$1\\n${indent_l2}syncthing\\n${indent_l1}]"
+          sudo perl -0pi -e "s/$pattern2/$replace2/" "$config_path"
+        }
+        changes=1
+      fi
+    fi
+
+    if ! grep -q 'services.syncthing.enable' "$config_path"; then
+      printf '%s\n' 'Enabling Syncthing service in configuration.nix...'
+      pattern="(\\n\\})"
+      replace="\\n${indent_l1}services.syncthing.enable = true;\\n}"
+      sudo perl -0pi -e "s/$pattern/$replace/" "$config_path"
+      changes=1
+    fi
+
+    if [ "$changes" -eq 1 ]; then
+      printf '%s\n' 'Rebuilding NixOS to apply Syncthing installation...'
+      sudo nixos-rebuild switch
+    else
+      printf '%s\n' 'Syncthing already present in configuration.nix.'
+    fi
+    ;;
+  *)
+    printf '%s\n' "Unsupported distribution for automatic Syncthing installation."
+    exit 1
+    ;;
+esac
+
+# Check if installation was successful
+if command -v syncthing >/dev/null 2>&1; then
+  printf '%s\n' 'Syncthing installation complete.'
+  printf '\n%s\n' \
+    'To access the web interface, start Syncthing and navigate to'
+  printf '%s\n' 'http://127.0.0.1:8384'
+else
+  printf '%s\n' \
+    'Syncthing installation attempted, but binary not yet available.'
+  printf '%s\n' 'Check logs.'
+fi
