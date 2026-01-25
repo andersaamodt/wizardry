@@ -5,7 +5,7 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: wizardry-web [COMMAND]
+Usage: wizardry [COMMAND]
 
 Wizardry web platform provides a unified interface for creating and managing
 UNIX-centric websites with interactivity backed by POSIX shell scripts.
@@ -27,8 +27,8 @@ The web platform integrates:
   - Let's Encrypt (HTTPS)
   - htmx (client-side interactivity)
 
-All site files live under $HOME/.wizardry-web/sites/SITENAME/
-Build output goes to $HOME/.wizardry-web/sites/SITENAME/build/
+All site files live under $HOME/.web-wizardry/sites/SITENAME/
+Build output goes to $HOME/.web-wizardry/sites/SITENAME/build/
 CGI scripts must be in spells/.imps/cgi/
 USAGE
   exit 0
@@ -41,7 +41,7 @@ set -eu
 . env-clear
 . colors
 
-if ! require menu "The wizardry-web command needs the 'menu' command."; then
+if ! require menu "The web-wizardry command needs the 'menu' command."; then
   exit 1
 fi
 
@@ -50,7 +50,7 @@ trap 'exit 130' INT
 trap 'exit 0' TERM
 
 # Default web root directory
-WEB_ROOT=${WIZARDRY_WEB_ROOT:-$HOME/.wizardry-web}
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/.web-wizardry}
 SITES_DIR="$WEB_ROOT/sites"
 
 # Ensure web root exists
@@ -67,23 +67,23 @@ case "$cmd" in
   create)
     site_name=${2-}
     if [ -z "$site_name" ]; then
-      die 2 "wizardry-web: create requires SITENAME argument"
+      die 2 "wizardry: create requires SITENAME argument"
     fi
-    web-create-site "$site_name"
+    create-site "$site_name"
     exit 0
     ;;
   build)
     site_name=${2-}
     if [ -z "$site_name" ]; then
-      die 2 "wizardry-web: build requires SITENAME argument"
+      die 2 "wizardry: build requires SITENAME argument"
     fi
-    web-build "$site_name"
+    build "$site_name"
     exit 0
     ;;
   status)
     site_name=${2-}
     if [ -n "$site_name" ]; then
-      web-site-status "$site_name"
+      site-status "$site_name"
     else
       # Show all sites
       if [ -d "$SITES_DIR" ]; then
@@ -91,7 +91,7 @@ case "$cmd" in
           [ -d "$site" ] || continue
           name=$(basename "$site")
           printf '%s: ' "$name"
-          web-site-status "$name"
+          site-status "$name"
         done
       else
         printf 'No sites found\n'
@@ -99,18 +99,36 @@ case "$cmd" in
     fi
     exit 0
     ;;
-  serve|stop|configure)
+  serve)
     site_name=${2-}
     if [ -z "$site_name" ]; then
-      die 2 "wizardry-web: $cmd requires SITENAME argument"
+      die 2 "wizardry: serve requires SITENAME argument"
     fi
-    die "wizardry-web: $cmd not yet implemented"
+    serve-site "$site_name"
+    exit 0
+    ;;
+  stop)
+    site_name=${2-}
+    if [ -z "$site_name" ]; then
+      die 2 "wizardry: stop requires SITENAME argument"
+    fi
+    stop-site "$site_name"
+    exit 0
+    ;;
+  configure)
+    site_name=${2-}
+    if [ -z "$site_name" ]; then
+      die 2 "wizardry: configure requires SITENAME argument"
+    fi
+    shift 2
+    configure-nginx "$site_name" "$@"
+    exit 0
     ;;
   '')
     # No command - show interactive menu
     ;;
   *)
-    die 2 "wizardry-web: unknown command '$cmd'"
+    die 2 "wizardry: unknown command '$cmd'"
     ;;
 esac
 
@@ -122,7 +140,7 @@ while true; do
     for site in "$SITES_DIR"/*; do
       [ -d "$site" ] || continue
       name=$(basename "$site")
-      site_entries="${site_entries}${name}%web-site-menu \"$name\"\n"
+      site_entries="${site_entries}${name}%site-menu \"$name\"\n"
     done
   fi
 
@@ -132,9 +150,9 @@ while true; do
   if [ -n "$site_entries" ]; then
     # shellcheck disable=SC2039
     site_menu=$(printf "$site_entries")
-    set -- "Create new site%web-create-site-prompt" "---" $site_menu "---" "${exit_label}%kill -TERM \$PPID"
+    set -- "Create new site%create-site-prompt" "---" $site_menu "---" "${exit_label}%kill -TERM \$PPID"
   else
-    set -- "Create new site%web-create-site-prompt" "${exit_label}%kill -TERM \$PPID"
+    set -- "Create new site%create-site-prompt" "${exit_label}%kill -TERM \$PPID"
   fi
 
   menu "${BOLD}${CYAN}Wizardry Web Platform" "$@" || menu_status=$?

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Tests for the 'wizardry-web' spell
+# Tests for the 'wizardry' spell
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -7,23 +7,23 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-test_wizardry_web_help() {
-  run_spell spells/system/wizardry-web --help
+test_web_wizardry_help() {
+  run_spell spells/web/wizardry --help
   assert_success
-  assert_output_contains "Usage: wizardry-web"
+  assert_output_contains "Usage: wizardry"
   assert_output_contains "create"
   assert_output_contains "build"
 }
 
-test_wizardry_web_create_site() {
+test_web_wizardry_create_site() {
   skip-if-compiled || return $?
   
   # Set up test environment
-  test_web_root=$(temp-dir wizardry-web-test)
-  export WIZARDRY_WEB_ROOT="$test_web_root"
+  test_web_root=$(temp-dir wizardry-test)
+  export WEB_WIZARDRY_ROOT="$test_web_root"
   
   # Create a test site
-  run_spell spells/system/wizardry-web create testsite
+  run_spell spells/web/wizardry create testsite
   assert_success
   
   # Verify site directory exists
@@ -42,19 +42,19 @@ test_wizardry_web_create_site() {
   rm -rf "$test_web_root"
 }
 
-test_wizardry_web_status() {
+test_web_wizardry_status() {
   skip-if-compiled || return $?
   
   # Set up test environment
-  test_web_root=$(temp-dir wizardry-web-test)
-  export WIZARDRY_WEB_ROOT="$test_web_root"
+  test_web_root=$(temp-dir wizardry-test)
+  export WEB_WIZARDRY_ROOT="$test_web_root"
   
   # Create a test site
-  run_spell spells/system/wizardry-web create testsite
+  run_spell spells/web/wizardry create testsite
   assert_success
   
   # Check status
-  run_spell spells/system/wizardry-web status testsite
+  run_spell spells/web/wizardry status testsite
   assert_success
   assert_output_contains "testsite"
   
@@ -62,8 +62,8 @@ test_wizardry_web_status() {
   rm -rf "$test_web_root"
 }
 
-run_test_case "wizardry-web --help works" test_wizardry_web_help
-run_test_case "wizardry-web can create site" test_wizardry_web_create_site
-run_test_case "wizardry-web can show status" test_wizardry_web_status
+run_test_case "wizardry --help works" test_web_wizardry_help
+run_test_case "wizardry can create site" test_web_wizardry_create_site
+run_test_case "wizardry can show status" test_web_wizardry_status
 
 finish_tests

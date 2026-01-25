@@ -5,7 +5,7 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: web-site-menu SITENAME
+Usage: site-menu SITENAME
 
 Shows an interactive menu for managing a specific website.
 
@@ -27,15 +27,15 @@ fi
 
 site_name=${1-}
 if [ -z "$site_name" ]; then
-  die 2 "web-site-menu: SITENAME required"
+  die 2 "site-menu: SITENAME required"
 fi
 
-WEB_ROOT=${WIZARDRY_WEB_ROOT:-$HOME/.wizardry-web}
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/.web-wizardry}
 SITES_DIR="$WEB_ROOT/sites"
 SITE_DIR="$SITES_DIR/$site_name"
 
 if [ ! -d "$SITE_DIR" ]; then
-  die "web-site-menu: site '$site_name' not found"
+  die "site-menu: site '$site_name' not found"
 fi
 
 # Catch Ctrl-C and TERM signal to exit cleanly
@@ -49,10 +49,13 @@ while true; do
   exit_label=$(exit-label)
   
   set -- \
-    "Build site%web-build \"$site_name\"" \
-    "Build site (full)%web-build \"$site_name\" --full" \
+    "Build site%build \"$site_name\"" \
+    "Build site (full)%build \"$site_name\" --full" \
+    "Serve site%serve-site \"$site_name\"" \
+    "Stop serving%stop-site \"$site_name\"" \
+    "Configure nginx%configure-nginx \"$site_name\"" \
     "Open site directory%cd \"$SITE_DIR\" && \$SHELL" \
-    "Delete site%web-delete-site \"$site_name\"" \
+    "Delete site%delete-site \"$site_name\"" \
     "${exit_label}%kill -TERM \$PPID"
 
   menu "${BOLD}${CYAN}Site: $site_name${RESET} ($status)" "$@" || menu_status=$?

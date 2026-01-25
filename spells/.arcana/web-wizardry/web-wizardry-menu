@@ -91,16 +91,23 @@ while true; do
     htmx_toggle="[ ] Htmx (JS library)%$script_dir/install-htmx; echo 6 > \"$SELECTION_FILE\""
   fi
   
+  # Certbot toggle
+  if "$script_dir/is-web-component-installed" certbot 2>/dev/null; then
+    certbot_toggle="[X] Certbot (Let's Encrypt)%$script_dir/uninstall-certbot; echo 7 > \"$SELECTION_FILE\""
+  else
+    certbot_toggle="[ ] Certbot (Let's Encrypt)%$script_dir/install-certbot; echo 7 > \"$SELECTION_FILE\""
+  fi
+  
   # Coreutils (assert-only)
   if "$script_dir/is-web-component-installed" coreutils 2>/dev/null; then
-    coreutils_toggle="[X] Coreutils (assert-only)%$script_dir/uninstall-coreutils; echo 7 > \"$SELECTION_FILE\""
+    coreutils_toggle="[X] Coreutils (assert-only)%$script_dir/uninstall-coreutils; echo 8 > \"$SELECTION_FILE\""
   else
-    coreutils_toggle="[ ] Coreutils (assert-only)%$script_dir/install-coreutils; echo 7 > \"$SELECTION_FILE\""
+    coreutils_toggle="[ ] Coreutils (assert-only)%$script_dir/install-coreutils; echo 8 > \"$SELECTION_FILE\""
   fi
   
   # Check if all are installed for enable/disable all toggle
   all_installed=1
-  for component in pandoc nginx fcgiwrap openssl htmx coreutils; do
+  for component in pandoc nginx fcgiwrap openssl htmx certbot coreutils; do
     if ! "$script_dir/is-web-component-installed" "$component" 2>/dev/null; then
       all_installed=0
       break
@@ -108,9 +115,9 @@ while true; do
   done
   
   if [ "$all_installed" -eq 1 ]; then
-    toggle_all="Disable all components%$script_dir/toggle-all-web-wizardry --disable; echo 8 > \"$SELECTION_FILE\""
+    toggle_all="Disable all components%$script_dir/toggle-all-web-wizardry --disable; echo 9 > \"$SELECTION_FILE\""
   else
-    toggle_all="Enable all components%$script_dir/toggle-all-web-wizardry --enable; echo 8 > \"$SELECTION_FILE\""
+    toggle_all="Enable all components%$script_dir/toggle-all-web-wizardry --enable; echo 9 > \"$SELECTION_FILE\""
   fi
   
   # Exit button
@@ -119,9 +126,9 @@ while true; do
   
   # Build menu arguments
   if [ -n "$nginx_admin" ]; then
-    set -- "$pandoc_toggle" "$nginx_toggle" "$nginx_admin" "$fcgiwrap_toggle" "$openssl_toggle" "$htmx_toggle" "$coreutils_toggle" "$toggle_all" "$exit_item"
+    set -- "$pandoc_toggle" "$nginx_toggle" "$nginx_admin" "$fcgiwrap_toggle" "$openssl_toggle" "$htmx_toggle" "$certbot_toggle" "$coreutils_toggle" "$toggle_all" "$exit_item"
   else
-    set -- "$pandoc_toggle" "$nginx_toggle" "$fcgiwrap_toggle" "$openssl_toggle" "$htmx_toggle" "$coreutils_toggle" "$toggle_all" "$exit_item"
+    set -- "$pandoc_toggle" "$nginx_toggle" "$fcgiwrap_toggle" "$openssl_toggle" "$htmx_toggle" "$certbot_toggle" "$coreutils_toggle" "$toggle_all" "$exit_item"
   fi
   
   menu --start-selection "$start_selection" "Web Wizardry:" "$@" || menu_status=$?
