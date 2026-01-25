@@ -26,7 +26,10 @@ if ! require menu "The Users menu needs the 'menu' command to present options.";
 fi
 
 # Catch Ctrl-C and TERM signal to exit 1 cleanly
-trap 'exit 0' INT TERM
+# Catch Ctrl-C and TERM signal to exit cleanly
+# INT (Ctrl-C) should exit 130, TERM should exit 0
+trap 'exit 130' INT
+trap 'exit 0' TERM
 
 users_menu_display_menu() {
   change_my_password="Change my password%passwd"
@@ -65,11 +68,9 @@ while true; do
   users_menu_display_menu || menu_status=$?
   menu_status=${menu_status:-0}
   
-  # ESC kills this menu script via TERM signal (same as Exit button)
-  # Direct kill: kill -TERM $$ → kills this script
+  # ESC causes menu to exit with 130 - handle gracefully by exiting
   if [ "$menu_status" -eq 130 ]; then
     printf 'ESC\n' >&2
-    kill -TERM $$ 2>/dev/null || true
     exit 0
   fi
 done

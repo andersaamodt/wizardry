@@ -57,7 +57,11 @@ CONFIG_FILE="$spell_home/.mud"
 # Use temp file imp for selection tracking
 SELECTION_FILE=$(temp-file mud-menu-selection)
 export SELECTION_FILE
-trap 'cleanup-file "$SELECTION_FILE"; return 0' EXIT INT TERM
+# Catch Ctrl-C, TERM, and EXIT signals to clean up properly
+# For sourced scripts: INT (Ctrl-C) returns 130, TERM returns 0, EXIT always cleans up
+trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true' EXIT
+trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true; return 130' INT
+trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true; return 0' TERM
 
 # Ensure spellbook directory and config file exist
 mkdir -p "$spell_home"
@@ -173,11 +177,9 @@ while true; do
   menu --start-selection "$start_selection" "MUD Install:" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
   
-  # ESC kills this menu script via TERM signal (same as Exit button)
-  # Direct kill: kill -TERM $$ → kills this script
+  # ESC causes menu to exit with 130 - handle gracefully by returning
   if [ "$menu_status" -eq 130 ]; then
     printf 'ESC\n' >&2
-    kill -TERM $$ 2>/dev/null || true
     return 0
   fi
 

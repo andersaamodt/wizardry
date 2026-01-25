@@ -18,7 +18,10 @@ set -eu
 . env-clear
 
 # Catch Ctrl-C and TERM signal to exit cleanly
-trap 'exit 0' INT TERM
+# Catch Ctrl-C and TERM signal to exit cleanly
+# INT (Ctrl-C) should exit 130, TERM should exit 0
+trap 'exit 130' INT
+trap 'exit 0' TERM
 
 require menu
 
@@ -196,11 +199,9 @@ while true; do
     previous_item_count=$current_item_count
     previous_add_priority_position=$current_add_priority_position
     
-    # ESC kills this menu script via TERM signal (same as Exit button)
-    # Direct kill: kill -TERM $$ → kills this script
+    # ESC causes menu to exit with 130 - handle gracefully by exiting
     if [ "$menu_status" -eq 130 ]; then
       printf 'ESC\n' >&2
-      kill -TERM $$ 2>/dev/null || true
       exit 0
     fi
   else
@@ -213,11 +214,9 @@ while true; do
     previous_item_count=$current_item_count
     previous_add_priority_position=$current_add_priority_position
     menu_status=$?
-    # ESC kills this menu script via TERM signal (same as Exit button)
-    # Direct kill: kill -TERM $$ → kills this script
+    # ESC causes menu to exit with 130 - handle gracefully by exiting
     if [ "$menu_status" -eq 130 ]; then
       printf 'ESC\n' >&2
-      kill -TERM $$ 2>/dev/null || true
       exit 0
     fi
   fi
