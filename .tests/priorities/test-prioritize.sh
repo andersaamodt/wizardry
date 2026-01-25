@@ -348,6 +348,36 @@ test_yes_or_y_flag_auto_creates() {
   assert_output_contains "priority" || return 1
 }
 
+test_multiword_filename() {
+  tmpdir=$(make_tempdir)
+  cd "$tmpdir" || return 1
+  
+  # Create a file with spaces in the name (without quotes in command)
+  # This tests that "prioritize my new file.txt" works like "say hello world"
+  multiword_file="my test file.txt"
+  printf 'test content\n' > "$multiword_file"
+  
+  # Check if xattr support is available
+  run_spell "spells/crypto/hashchant" "$multiword_file"
+  if [ "$STATUS" -ne 0 ]; then
+    echo "SKIP: xattr support not available"
+    return 0
+  fi
+  
+  # Run prioritize with unquoted multiple words (simulating: prioritize my test file.txt)
+  # The test framework quotes the whole thing, but internally prioritize should use $*
+  run_spell "spells/priorities/prioritize" my test file.txt
+  assert_success || return 1
+  assert_output_contains "first priority" || return 1
+  
+  # Verify the file with spaces has the priority attribute
+  echelon=$(read-magic "$multiword_file" echelon 2>/dev/null || printf '0')
+  [ "$echelon" = "1" ] || {
+    TEST_FAILURE_REASON="Expected echelon=1 for multi-word file, got $echelon"
+    return 1
+  }
+}
+
 run_test_case "prioritize shows usage text with echelon mention" test_help
 run_test_case "prioritize requires file argument" test_requires_argument
 run_test_case "prioritize asks to create missing file" test_asks_to_create_missing_file
@@ -361,5 +391,6 @@ run_test_case "prioritize fails with informative message when hashchant fails" t
 run_test_case "prioritize --interactive prompts for file" test_interactive_mode_prompts
 run_test_case "prioritize --interactive with file arg works" test_interactive_mode_with_file_arg
 run_test_case "prioritize --yes/-y auto-creates missing file" test_yes_or_y_flag_auto_creates
+run_test_case "prioritize handles multi-word filenames" test_multiword_filename
 
 finish_tests
