@@ -150,15 +150,18 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         printf '\r'
         
         # Scroll the display up to make room at bottom (critical for terminal bottom case)
+        # We scroll up (lines_needed - 1) because Insert Line will cause one additional scroll
+        # if we're at the bottom, preventing an extra blank line
+        scroll_amount=$((lines_needed > 1 ? lines_needed - 1 : lines_needed))
         i=0
-        while [ "$i" -lt "$lines_needed" ]; do
+        while [ "$i" -lt "$scroll_amount" ]; do
           printf '\033[S'  # Scroll up one line
           i=$((i + 1))
         done
         
         # After scrolling, content moved up but cursor stayed at same row
-        # Move cursor up by lines_needed to get to where prompt scrolled to
-        printf '\033[%dA' "$lines_needed"
+        # Move cursor up by scroll_amount to get to where prompt scrolled to
+        printf '\033[%dA' "$scroll_amount"
         
         # Insert blank lines - pushes prompt down from this position
         i=0
@@ -188,14 +191,17 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         printf '\r'
         
         # Scroll the display up to make room at bottom
+        # We scroll up (lines_needed - 1) because Insert Line will cause one additional scroll
+        # if we're at the bottom, preventing an extra blank line
+        scroll_amount=$((lines_needed > 1 ? lines_needed - 1 : lines_needed))
         i=0
-        while [ "$i" -lt "$lines_needed" ]; do
+        while [ "$i" -lt "$scroll_amount" ]; do
           printf '\033[S'  # Scroll up one line
           i=$((i + 1))
         done
         
         # Move cursor up to compensate for scroll
-        printf '\033[%dA' "$lines_needed"
+        printf '\033[%dA' "$scroll_amount"
         
         # Insert blank lines (pushes prompt down)
         i=0
