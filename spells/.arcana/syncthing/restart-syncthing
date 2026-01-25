@@ -1,0 +1,60 @@
+#!/bin/sh
+
+# Restart Syncthing.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: restart-syncthing
+
+Restarts Syncthing (stops and starts it).
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+# Find the script directory to locate sibling scripts
+SCRIPT_SOURCE=$0
+case $SCRIPT_SOURCE in
+*/*)
+        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        ;;
+*)
+        resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
+        SCRIPT_DIR=${resolved%/*}
+        SCRIPT_SOURCE=$resolved
+        ;;
+esac
+if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
+        SCRIPT_DIR=.
+fi
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+
+printf '%s\n' 'Restarting Syncthing...'
+
+# Try to restart via systemd if available
+if command -v systemctl >/dev/null 2>&1; then
+  # Check for user service
+  if systemctl --user list-unit-files 2>/dev/null | grep -q "^syncthing.service"; then
+    systemctl --user restart syncthing.service
+    printf '%s\n' 'Syncthing restarted.'
+    exit 0
+  fi
+  
+  # Check for system service
+  if systemctl list-unit-files 2>/dev/null | grep -q "^syncthing@.service"; then
+    sudo systemctl restart "syncthing@$(whoami).service"
+    printf '%s\n' 'Syncthing restarted.'
+    exit 0
+  fi
+fi
+
+# Fall back to stop and start
+"$SCRIPT_DIR/stop-syncthing"
+sleep 1
+"$SCRIPT_DIR/start-syncthing"

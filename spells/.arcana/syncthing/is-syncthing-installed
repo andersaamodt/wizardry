@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# Check if Syncthing is installed.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-syncthing-installed
+
+Returns 0 if Syncthing is installed, 1 otherwise.
+USAGE
+  exit 0
+  ;;
+esac
+
+# Note: No set -eu because this is a conditional script (returns exit codes)
+set +eu
+
+command -v syncthing >/dev/null 2>&1

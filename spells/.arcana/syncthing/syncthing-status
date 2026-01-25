@@ -1,0 +1,64 @@
+#!/bin/sh
+
+# Check and display the running status of Syncthing.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: syncthing-status
+
+Reports whether Syncthing is installed and running.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if command -v colors >/dev/null 2>&1; then
+  # shellcheck source=/dev/null
+  . colors
+else
+  RESET=""
+  THEME_SUCCESS=""
+  THEME_WARNING=""
+  THEME_ERROR=""
+  GREY=""
+fi
+# Older scripts expect GRAY, so mirror GREY when missing.
+GRAY=${GREY-}
+
+# Find the script directory to locate sibling helper scripts
+SCRIPT_SOURCE=$0
+case $SCRIPT_SOURCE in
+*/*)
+        SCRIPT_DIR=${SCRIPT_SOURCE%/*}
+        ;;
+*)
+        resolved=$(command -v "$SCRIPT_SOURCE" 2>/dev/null || printf '%s' "$SCRIPT_SOURCE")
+        SCRIPT_DIR=${resolved%/*}
+        SCRIPT_SOURCE=$resolved
+        ;;
+esac
+if [ -z "$SCRIPT_DIR" ] || [ "$SCRIPT_DIR" = "$SCRIPT_SOURCE" ]; then
+        SCRIPT_DIR=.
+fi
+SCRIPT_DIR=$(cd "$SCRIPT_DIR" && pwd -P)
+
+# Main execution - check Syncthing installation and running status
+if ! "$SCRIPT_DIR/is-syncthing-installed"; then
+  status="not installed"
+  color="$GRAY"
+elif "$SCRIPT_DIR/is-syncthing-running"; then
+  status="running"
+  color="$THEME_SUCCESS"
+else
+  status="installed, not running"
+  color="$THEME_WARNING"
+fi
+
+# Print colored status
+printf "%s%s%s\n" "$color" "$status" "$RESET"
