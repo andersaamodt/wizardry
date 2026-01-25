@@ -8,6 +8,7 @@ Usage: install-sshfs
 
 Install sshfs package for MUD multiplayer portal support.
 Detects your package manager and installs sshfs automatically.
+Also sets up the 'mud' group for shared MUD access.
 USAGE
   exit 0
   ;;
@@ -38,8 +39,53 @@ fi
 # Verify installation
 if command -v sshfs >/dev/null 2>&1; then
   printf '%s\n' "✓ sshfs installed successfully"
-  exit 0
 else
   printf '%s\n' "install-sshfs: Installation may have succeeded but sshfs command not found." >&2
   exit 1
 fi
+
+# Set up MUD group for player access control
+printf '%s\n' ""
+printf '%s\n' "Setting up MUD group for player access..."
+
+# Check if mud group already exists
+if getent group mud >/dev/null 2>&1; then
+  printf '%s\n' "✓ mud group already exists"
+else
+  # Create mud group
+  if command -v groupadd >/dev/null 2>&1; then
+    if sudo groupadd mud 2>/dev/null; then
+      printf '%s\n' "✓ mud group created"
+    else
+      warn "install-sshfs: could not create mud group (may need manual setup)"
+    fi
+  else
+    warn "install-sshfs: groupadd not found, mud group not created"
+    printf '%s\n' "Please create the 'mud' group manually: sudo groupadd mud" >&2
+  fi
+fi
+
+# Create shared MUD world directory if it doesn't exist
+shared_world="/srv/mud/world"
+if [ ! -d "$shared_world" ]; then
+  printf '%s\n' "Creating shared MUD world directory..."
+  if sudo mkdir -p "$shared_world" 2>/dev/null; then
+    # Set ownership and permissions for mud group
+    sudo chown root:mud "$shared_world" 2>/dev/null || true
+    sudo chmod 2775 "$shared_world" 2>/dev/null || true  # setgid bit for group inheritance
+    printf '%s\n' "✓ Shared MUD world created at $shared_world"
+    printf '%s\n' "  All players in the 'mud' group can access this directory."
+  else
+    info "Could not create $shared_world (may need to run with sudo)"
+  fi
+fi
+
+printf '%s\n' ""
+success "SSHFS and MUD group setup complete!"
+printf '%s\n' ""
+printf '%s\n' "Next steps:"
+printf '%s\n' "1. Add players with: add-ssh-player"
+printf '%s\n' "2. Players connect with: ssh player@your-server"
+printf '%s\n' "3. Share the world at: $shared_world"
+
+exit 0
