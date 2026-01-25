@@ -115,9 +115,27 @@ if [ ! -f "$_listen_room_log" ]; then
 fi
 
 # Save the current prompt for the background process to use
-# Use a simple default since we can't reliably capture/reconstruct PS1
-# The user will see "$ " as the prompt after messages, which is acceptable
-export LISTEN_SAVED_PROMPT="$ "
+if [ "$_listen_is_sourced" = "1" ] && [ -n "${PS1-}" ]; then
+  # When sourced, try to capture a simple text representation of the prompt
+  # Remove ANSI escape sequences and PS1 special characters
+  _listen_prompt_text=$(printf '%s' "$PS1" | \
+    sed 's/\\033\[[0-9;]*m//g' | \
+    sed 's/\\e\[[0-9;]*m//g' | \
+    sed 's/\\\[//g' | \
+    sed 's/\\\]//g' | \
+    sed 's/\\u/'"$(whoami)"'/g' | \
+    sed 's/\\h/'"$(hostname -s 2>/dev/null || hostname)"'/g' | \
+    sed 's/\\H/'"$(hostname)"'/g' | \
+    sed 's/\\w/'"$(pwd)"'/g' | \
+    sed 's/\\W/'"$(basename "$(pwd)")"'/g' | \
+    sed 's/\\\$/$/g' | \
+    sed 's/\\#/!/g')
+  export LISTEN_SAVED_PROMPT="$_listen_prompt_text"
+  unset _listen_prompt_text
+else
+  # When executed or PS1 not available, use simple default
+  export LISTEN_SAVED_PROMPT="$ "
+fi
 
 # Start monitoring in background
 # Use tail -f -n 0 to follow the log file from current position (no history)
