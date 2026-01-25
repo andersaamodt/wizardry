@@ -841,7 +841,7 @@ The following spells are temporarily exempted while being refactored to flat-fil
 - ~~.arcana/mud/cd~~ (0 functions) ✓
 - ~~.arcana/lightning/install-lightning~~ (1 function) ✓
 - ~~.arcana/lightning/lightning-menu~~ (1 function) ✓
-- ~~.arcana/node/node-menu~~ (1 function) ✓
+- ~~.arcana/web-wizardry/web-wizardry-menu~~ (1 function) ✓
 - ~~system/update-all~~ (1 function) ✓
 - ~~wards/banish~~ (1 function) ✓
 - ~~spellcraft/demo-magic~~ (1 function) ✓
@@ -911,10 +911,11 @@ Test infrastructure is exempted from the 0-function rule:
 - `.arcana/tor/tor-menu` - Flat menu implementation ✅
 - `.arcana/tor/repair-tor-permissions` - Flat permission repair ✅
 - `.arcana/tor/uninstall-tor` - Flat uninstall script ✅
-- `.arcana/node/node-status` - Flat linear status check ✅
-- `.arcana/node/node-menu` - Flat menu implementation ✅
-- `.arcana/node/install-node` - Flat install script ✅
-- `.arcana/node/uninstall-node` - Flat uninstall script ✅
+- `.arcana/web-wizardry/web-wizardry-status` - Flat linear status check ✅
+- `.arcana/web-wizardry/web-wizardry-menu` - Flat menu implementation ✅
+- `.arcana/web-wizardry/nginx-admin` - Flat menu implementation ✅
+- `.arcana/web-wizardry/install-*` - Flat install scripts ✅
+- `.arcana/web-wizardry/uninstall-*` - Flat uninstall scripts ✅
 - `.arcana/lightning/lightning-status` - Flat linear status check ✅
 - `.arcana/lightning/lightning-menu` - Flat menu implementation ✅
 - `.arcana/lightning/lightning-wallet-menu` - Flat wallet menu ✅

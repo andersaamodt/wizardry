@@ -112,7 +112,7 @@ These spells use the `menu` system and require `await-keypress` stubbing:
 4. `spells/.arcana/lightning/lightning-menu`
 5. `spells/.arcana/lightning/lightning-wallet-menu`
 6. `spells/.arcana/mud/toggle-mud-menu`
-7. `spells/.arcana/node/node-menu`
+7. `spells/.arcana/web-wizardry/web-wizardry-menu`
 8. `spells/.arcana/rust/rust-menu`
 9. `spells/.arcana/spellbook/spellbook-menu`
 10. `spells/system/menu` - Main menu implementation
@@ -133,8 +133,8 @@ These spells prompt users for input and require input stubbing or environment va
 7. `spells/.arcana/core/install-core`
 8. `spells/.arcana/core/uninstall-core`
 9. `spells/.arcana/lightning/install-lightning`
-10. `spells/.arcana/node/install-node`
-11. `spells/.arcana/node/uninstall-node`
+10. `spells/.arcana/web-wizardry/install-*`
+11. `spells/.arcana/web-wizardry/uninstall-*`
 12. `spells/.arcana/import-arcanum`
 13. `spells/.arcana/mud/install-mud`
 14. Various configure-* and install-* spells
