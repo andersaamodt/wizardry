@@ -5,7 +5,7 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: wizardry [COMMAND]
+Usage: web-wizardry [COMMAND]
 
 Wizardry web platform provides a unified interface for creating and managing
 UNIX-centric websites with interactivity backed by POSIX shell scripts.
@@ -64,7 +64,7 @@ case "$cmd" in
   create)
     site_name=${2-}
     if [ -z "$site_name" ]; then
-      die 2 "wizardry: create requires SITENAME argument"
+      die 2 "web-wizardry: create requires SITENAME argument"
     fi
     create-site "$site_name"
     exit 0
@@ -72,7 +72,7 @@ case "$cmd" in
   build)
     site_name=${2-}
     if [ -z "$site_name" ]; then
-      die 2 "wizardry: build requires SITENAME argument"
+      die 2 "web-wizardry: build requires SITENAME argument"
     fi
     build "$site_name"
     exit 0
@@ -99,7 +99,7 @@ case "$cmd" in
   serve)
     site_name=${2-}
     if [ -z "$site_name" ]; then
-      die 2 "wizardry: serve requires SITENAME argument"
+      die 2 "web-wizardry: serve requires SITENAME argument"
     fi
     serve-site "$site_name"
     exit 0
@@ -107,7 +107,7 @@ case "$cmd" in
   stop)
     site_name=${2-}
     if [ -z "$site_name" ]; then
-      die 2 "wizardry: stop requires SITENAME argument"
+      die 2 "web-wizardry: stop requires SITENAME argument"
     fi
     stop-site "$site_name"
     exit 0
@@ -115,7 +115,7 @@ case "$cmd" in
   configure)
     site_name=${2-}
     if [ -z "$site_name" ]; then
-      die 2 "wizardry: configure requires SITENAME argument"
+      die 2 "web-wizardry: configure requires SITENAME argument"
     fi
     shift 2
     configure-nginx "$site_name" "$@"
@@ -125,7 +125,7 @@ case "$cmd" in
     # No command - show interactive menu
     ;;
   *)
-    die 2 "wizardry: unknown command '$cmd'"
+    die 2 "web-wizardry: unknown command '$cmd'"
     ;;
 esac
 
