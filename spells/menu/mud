@@ -42,7 +42,9 @@ set -u
 . env-clear
 
 # Catch Ctrl-C and TERM signal to return cleanly
-trap 'return 0' INT TERM
+# INT (Ctrl-C) should return 130, TERM should return 0
+trap 'return 130' INT
+trap 'return 0' TERM
 
 # Load color palette (colors handles terminal capability detection internally)
 # shellcheck source=/dev/null
@@ -85,8 +87,7 @@ while true; do
   open_portal="Open Portal%printf 'Use Tor? (y/N): ' && read use_tor && tor_flag=\"\" && [ \"\$use_tor\" = \"y\" ] || [ \"\$use_tor\" = \"Y\" ] && tor_flag=\"--tor \" && printf 'Player name: ' && read player && printf 'Server address (IP or .onion): ' && read server && printf 'Remote path (or Enter for ~): ' && read path && path=\${path:-~} && open-portal \$tor_flag\"\$player@\$server:\$path\""
   close_portal="Close Portal%close-portal"
   portal="Teleport to Portal Chamber%cd $portal_location"
-  admin="Admin MUD Hosting%mud-admin-menu"
-  settings="MUD Settings%mud-settings"
+  settings="MUD Settings%. mud-settings"
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
   exit_label=$(exit-label)
@@ -101,17 +102,14 @@ while true; do
     "$open_portal" \
     "$close_portal" \
     "$portal" \
-    "$admin" \
     "$settings" \
     "$exit_item"
   menu "MUD Menu:" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
   
-  # ESC kills this menu script via TERM signal (same as Exit button)
-  # Direct kill: kill -TERM $$ → kills this script
+  # ESC causes menu to exit with 130 - handle gracefully by returning
   if [ "$menu_status" -eq 130 ]; then
     printf 'ESC\n' >&2
-    kill -TERM $$ 2>/dev/null || true
     return 0
   fi
 done

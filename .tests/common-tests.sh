@@ -2674,3 +2674,115 @@ if [ "$TEST_FILTER" = "--list" ]; then
 fi
 
 finish_tests
+
+# ==============================================================================
+# MENU SIGNAL HANDLING TESTS
+# Verify all menus properly handle ESC, Exit, and Ctrl-C signals
+# ==============================================================================
+
+test_menu_signal_handling() {
+  # List of all menu files that should have proper signal handling
+  menu_files="
+    spells/menu/install-menu
+    spells/menu/cast
+    spells/menu/main-menu
+    spells/menu/mud
+    spells/menu/mud-menu
+    spells/menu/mud-settings
+    spells/menu/network-menu
+    spells/menu/priority-menu
+    spells/menu/services-menu
+    spells/menu/shutdown-menu
+    spells/menu/spell-menu
+    spells/menu/spellbook
+    spells/menu/synonym-menu
+    spells/menu/system-menu
+    spells/menu/thesaurus
+    spells/menu/users-menu
+    spells/menu/priorities
+    spells/.arcana/bitcoin/bitcoin-menu
+    spells/.arcana/bitcoin/wallet-menu
+    spells/.arcana/core/core-menu
+    spells/.arcana/lightning/lightning-menu
+    spells/.arcana/lightning/lightning-wallet-menu
+    spells/.arcana/node/node-menu
+    spells/.arcana/simplex-chat/simplex-chat-menu
+    spells/.arcana/tor/tor-menu
+  "
+  
+  for menu_file in $menu_files; do
+    menu_path="$ROOT_DIR/$menu_file"
+    
+    # Skip if file doesn't exist (e.g., mud-admin-menu was removed)
+    if [ ! -f "$menu_path" ]; then
+      continue
+    fi
+    
+    # Check 1: Menu should have separate INT and TERM traps
+    # Executed menus: trap 'exit 130' INT and trap 'exit 0' TERM
+    # Sourced menus: trap 'return 130' INT and trap 'return 0' TERM
+    
+    has_int_trap=0
+    has_term_trap=0
+    
+    # Check for INT trap (should exit/return 130)
+    if grep -q "trap.*exit 130.*INT" "$menu_path" || \
+       grep -q "trap.*return 130.*INT" "$menu_path"; then
+      has_int_trap=1
+    fi
+    
+    # Check for TERM trap (should exit/return 0)
+    if grep -q "trap.*exit 0.*TERM" "$menu_path" || \
+       grep -q "trap.*return 0.*TERM" "$menu_path"; then
+      has_term_trap=1
+    fi
+    
+    if [ "$has_int_trap" -eq 0 ]; then
+      TEST_FAILURE_REASON="Menu missing proper INT trap (should exit/return 130): $menu_file"
+      return 1
+    fi
+    
+    if [ "$has_term_trap" -eq 0 ]; then
+      TEST_FAILURE_REASON="Menu missing proper TERM trap (should exit/return 0): $menu_file"
+      return 1
+    fi
+    
+    # Check 2: Menu should NOT have old combined trap pattern
+    if grep -q "trap.*exit 0.*INT TERM" "$menu_path" || \
+       grep -q "trap.*exit 1.*INT TERM" "$menu_path" || \
+       grep -q "trap.*return 0.*INT TERM" "$menu_path"; then
+      TEST_FAILURE_REASON="Menu has old combined trap pattern (should be separate): $menu_file"
+      return 1
+    fi
+    
+    # Check 3: Menu should handle exit code 130 from menu cantrip (ESC handling)
+    # Look for: if [ "$menu_status" -eq 130 ]
+    if ! grep -q 'menu_status.*-eq 130' "$menu_path"; then
+      TEST_FAILURE_REASON="Menu missing ESC handling (check for menu_status == 130): $menu_file"
+      return 1
+    fi
+    
+    # Check 4: Menu should capture exit codes, not use || true
+    # We expect: || menu_status=$? or similar
+    # We DON'T want: || true  (which ignores exit codes)
+    if grep -q 'menu.*||.*true' "$menu_path"; then
+      # Check if it's in a comment or string
+      if grep 'menu.*||.*true' "$menu_path" | grep -v -E '^\s*#' | grep -v -E "printf.*true"; then
+        TEST_FAILURE_REASON="Menu uses '|| true' which ignores exit codes (should use || menu_status=\$?): $menu_file"
+        return 1
+      fi
+    fi
+    
+    # Check 5: Menu should have ESC printf statement
+    if ! grep -q "printf.*ESC" "$menu_path"; then
+      TEST_FAILURE_REASON="Menu missing ESC debug output (should printf 'ESC'): $menu_file"
+      return 1
+    fi
+  done
+  
+  # All checks passed
+  return 0
+}
+
+run_filtered_test "menu_signal_handling" "Menus have proper ESC/Exit/Ctrl-C handling" test_menu_signal_handling
+

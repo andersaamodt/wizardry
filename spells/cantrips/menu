@@ -150,7 +150,7 @@ fi
 
 if [ "$#" -lt 2 ]; then
   if command -v main-menu >/dev/null 2>&1; then
-    main-menu
+    . main-menu
     exit 0
   fi
   printf '%s\n' "menu: no menu entries provided and main-menu not found" >&2
@@ -175,7 +175,10 @@ cleanup() {
                 menu_cleanup_file "$await_keypress_buffer_file"
         fi
 }
-trap 'cleanup; exit 1' INT TERM
+# Catch signals to clean up terminal state
+# INT (Ctrl-C) should exit with 130, TERM exits with 1, EXIT always cleans up
+trap 'cleanup; exit 130' INT
+trap 'cleanup; exit 1' TERM
 trap 'cleanup' EXIT
 
 max_name_length=0

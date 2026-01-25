@@ -59,7 +59,9 @@ if ! require menu "The main menu needs the 'menu' command to present options."; 
 fi
 
 # Catch Ctrl-C and TERM signal to return cleanly  
-trap 'return 0' INT TERM
+# INT (Ctrl-C) should return 130, TERM should return 0
+trap 'return 130' INT
+trap 'return 0' TERM
 
 first_run=1
 
@@ -98,22 +100,18 @@ while true; do
   
   # Build menu based on whether MUD is enabled
   if [ "$mud_enabled" -eq 1 ]; then
-    mud="MUD%mud"
-    install_mud="Install MUD features%mud-menu"
-    set -- "$cast" "$mud" "$spellbook" "$install" "$system" "$install_mud" "$exit_item"
+    mud="MUD%. mud"
+    set -- "$cast" "$mud" "$spellbook" "$install" "$system" "$exit_item"
   else
-    install_mud="Install MUD features%mud-menu"
-    set -- "$cast" "$spellbook" "$install" "$system" "$install_mud" "$exit_item"
+    set -- "$cast" "$spellbook" "$install" "$system" "$exit_item"
   fi
   
   menu "Main Menu:" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
   
-  # ESC kills this menu script via TERM signal (same as Exit button)
-  # Direct kill: kill -TERM $$ → kills this script
+  # ESC causes menu to exit with 130 - handle gracefully by returning
   if [ "$menu_status" -eq 130 ]; then
     printf 'ESC\n' >&2
-    kill -TERM $$ 2>/dev/null || true
     return 0
   fi
   

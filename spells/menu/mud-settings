@@ -7,7 +7,7 @@ case "${1-}" in
   cat <<'USAGE' >&2
 Usage: . mud-settings    OR    mud settings    (via parse/gloss)
 
-Opens the MUD Settings menu so you can create or select a player and manage the public key used for adventures.
+Opens the MUD Settings menu so you can create or select a player, manage the public key used for adventures, and configure MUD hosting options.
 
 This spell must be sourced (not executed) to affect your current shell.
 USAGE
@@ -43,7 +43,10 @@ set -u
 . env-clear
 
 # Catch Ctrl-C and TERM signal to return cleanly
-trap 'return 0' INT TERM
+# Catch Ctrl-C and TERM signal to return cleanly
+# INT (Ctrl-C) should return 130, TERM should return 0
+trap 'return 130' INT
+trap 'return 0' TERM
 
 # Load color palette (colors handles terminal capability detection internally)
 # shellcheck source=/dev/null
@@ -66,45 +69,48 @@ while true; do
     first_run=0
   fi
 
-  # Check if player key exists and show appropriate option
-  has_key=0
-  if [ -n "${MUD_PLAYER-}" ] && [ -f "$HOME/.ssh/${MUD_PLAYER}.pub" ]; then
-    has_key=1
-  else
-    # Check for any player key in ~/.ssh with common naming patterns
-    for key in "$HOME"/.ssh/*.pub; do
-      # Skip if glob didn't match (returns literal *.pub)
-      [ -e "$key" ] || continue
-      if [ -f "$key" ]; then
-        has_key=1
-        break
-      fi
-    done
-  fi
+  # Count number of player keys in ~/.ssh
+  key_count=0
+  for key in "$HOME"/.ssh/*.pub; do
+    # Skip if glob didn't match (returns literal *.pub)
+    [ -e "$key" ] || continue
+    if [ -f "$key" ]; then
+      key_count=$((key_count + 1))
+    fi
+  done
   
-  if [ "$has_key" -eq 1 ]; then
-    player_key_item="Copy player key to clipboard%copy ~/.ssh/\$MUD_PLAYER.pub"
-  else
-    player_key_item="Create Player Key%new-player"
-  fi
-  
-  change="Change Player%choose-player"
+  # Build menu items based on number of keys
   new="New Player%new-player"
+  
+  # Admin items (for MUD hosting)
+  add="Add Player%add-player"
+  boot="Boot Player%boot-player"
+  list_players="List System Users%getent passwd | grep /home | cut -d: -f1 | sort"
+  list_rooms="List Shared Rooms%ls -la /srv/mud/world 2>/dev/null || printf 'Shared world not set up. Run install-sshfs first.\\n'"
+  
+  # MUD Features (at the end)
+  features="MUD Features%. mud-menu"
   
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
   exit_label=$(exit-label)
   exit_item="${exit_label}%kill -TERM \$PPID"
 
-  set -- "$player_key_item" "$change" "$new" "$exit_item"
+  # Build menu arguments based on key count
+  if [ "$key_count" -ge 2 ]; then
+    # Show Change Player only if there are at least 2 keys
+    change="Change Player%choose-player"
+    set -- "$change" "$new" "---" "$add" "$boot" "$list_players" "$list_rooms" "---" "$features" "$exit_item"
+  else
+    # Don't show Change Player if fewer than 2 keys
+    set -- "$new" "---" "$add" "$boot" "$list_players" "$list_rooms" "---" "$features" "$exit_item"
+  fi
   menu "MUD Settings:" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
   
-  # ESC kills this menu script via TERM signal (same as Exit button)
-  # Direct kill: kill -TERM $$ → kills this script
+  # ESC causes menu to exit with 130 - handle gracefully by returning
   if [ "$menu_status" -eq 130 ]; then
     printf 'ESC\n' >&2
-    kill -TERM $$ 2>/dev/null || true
     return 0
   fi
 
