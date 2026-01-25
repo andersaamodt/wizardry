@@ -63,7 +63,7 @@ else
     printf '%s\n' "prioritize: file path required" >&2
     exit 2
   fi
-  file=$1
+  file="$*"
 fi
 
 # Check if the target file exists

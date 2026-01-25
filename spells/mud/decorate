@@ -40,7 +40,7 @@ elif [ $# -eq 1 ]; then
                 description=$1
         fi
 elif [ $# -eq 2 ]; then
-        # Two arguments: detect which is the path
+        # Two arguments: detect which is the path (original behavior for backwards compatibility)
         # Note: empty strings are not valid descriptions
         if [ -e "$1" ] && [ -n "$2" ] && [ ! -e "$2" ]; then
                 # First is path, second is description
@@ -64,8 +64,16 @@ elif [ $# -eq 2 ]; then
                 exit 1
         fi
 else
-        printf '%s\n' "decorate: too many arguments provided." >&2
-        exit 1
+        # Three or more arguments: first is path, rest is description (multi-word support)
+        if [ -e "$1" ]; then
+                path=$1
+                shift
+                description="$*"
+        else
+                # First argument doesn't exist - use current directory and all arguments as description
+                path=$PWD
+                description="$*"
+        fi
 fi
 
 # Resolve path to absolute
