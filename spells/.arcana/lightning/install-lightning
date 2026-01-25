@@ -70,8 +70,9 @@ if [ "$pkg_installed" -eq 0 ]; then
   
   # Clone and build Core Lightning
   LIGHTNING_VERSION="v24.02.2"
+  LIGHTNING_REPO="https://github.com/ElementsProject/lightning.git"
   printf 'Cloning Core Lightning %s...\n' "$LIGHTNING_VERSION"
-  git clone --branch "$LIGHTNING_VERSION" --depth 1 https://github.com/ElementsProject/lightning.git || exit 1
+  git clone --branch "$LIGHTNING_VERSION" --depth 1 "$LIGHTNING_REPO" || exit 1
   cd lightning || exit 1
   
   printf 'Configuring and building Core Lightning (this may take several minutes)...\n'
