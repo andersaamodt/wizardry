@@ -191,4 +191,5 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
 _listen_monitor_pid=$!
 
 # Clean up variables
-unset _listen_stop_only _listen_room_path _listen_room_log _listen_is_sourced _listen_monitor_pid _listen_term_width
+unset _listen_stop_only _listen_room_path _listen_room_log _listen_is_sourced \
+  _listen_monitor_pid _listen_term_width
