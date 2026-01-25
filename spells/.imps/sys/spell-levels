@@ -70,7 +70,7 @@ case "$level" in
   11)
     name='Basic Cantrips'
     spells='ask ask-number ask-text ask-yn list-files max-length memorize move'
-    imps='input/choose-input input/require-command input/validate-command input/validate-name input/validate-number input/validate-path lex/and lex/and-then lex/disambiguate lex/from lex/into lex/or lex/to'
+    imps='input/choose-input input/require-command input/validate-command input/validate-name input/validate-number input/validate-path input/validate-player-name lex/and lex/and-then lex/disambiguate lex/from lex/into lex/or lex/to'
     ;;
   12)
     name='System Configuration'
