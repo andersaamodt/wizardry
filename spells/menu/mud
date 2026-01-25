@@ -87,7 +87,6 @@ while true; do
   open_portal="Open Portal%printf 'Use Tor? (y/N): ' && read use_tor && tor_flag=\"\" && [ \"\$use_tor\" = \"y\" ] || [ \"\$use_tor\" = \"Y\" ] && tor_flag=\"--tor \" && printf 'Player name: ' && read player && printf 'Server address (IP or .onion): ' && read server && printf 'Remote path (or Enter for ~): ' && read path && path=\${path:-~} && open-portal \$tor_flag\"\$player@\$server:\$path\""
   close_portal="Close Portal%close-portal"
   portal="Teleport to Portal Chamber%cd $portal_location"
-  admin="Admin MUD Hosting%mud-admin-menu"
   settings="MUD Settings%. mud-settings"
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
@@ -103,7 +102,6 @@ while true; do
     "$open_portal" \
     "$close_portal" \
     "$portal" \
-    "$admin" \
     "$settings" \
     "$exit_item"
   menu "MUD Menu:" "$@" || menu_status=$?
