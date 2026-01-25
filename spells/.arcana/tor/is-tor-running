@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# Check if Tor daemon is currently running.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-tor-running
+
+Checks whether tor is active; exits 0 if running, 1 if not.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+# Check if tor process is running
+if ps -e | grep -q '[t]or'; then
+    if [ -t 1 ]; then  # Check if output is a terminal
+        echo "Tor is running."
+    fi
+    exit 0  # Tor is running (success)
+else
+    if [ -t 1 ]; then  # Check if output is a terminal
+        echo "Tor is not running."
+    fi
+    exit 1  # Tor is not running (failure)
+fi

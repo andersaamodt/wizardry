@@ -1,0 +1,117 @@
+#!/bin/sh
+
+# Configure Core Lightning with sensible defaults.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: configure-lightning
+
+Creates or updates Core Lightning configuration with sensible defaults for network, RPC, and data directory.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+# Create lightning directory and configuration file if they do not exist
+lightning_dir="$HOME/.lightning"
+config_file="$lightning_dir/config"
+
+mkdir -p "$lightning_dir"
+touch "$config_file"
+
+# Lightning defaults
+defaults="network=bitcoin
+log-level=info
+daemon"
+
+# If the file was just created (is empty), write defaults
+if [ ! -s "$config_file" ]; then
+    printf '%s\n' "$defaults" > "$config_file"
+    printf 'Created Core Lightning configuration at %s\n' "$config_file"
+else
+    if command -v ask-yn >/dev/null 2>&1; then
+        if ask-yn "Would you like to reset the Lightning config file to defaults?" "n"; then
+            printf '%s\n' "$defaults" > "$config_file"
+            printf 'Reset Core Lightning configuration to defaults.\n'
+        fi
+    else
+        printf "Would you like to reset the Lightning config file to defaults? [y/N]: "
+        read -r reply
+        reply=${reply:-n}
+        case "$reply" in
+            [Yy]*)
+                printf '%s\n' "$defaults" > "$config_file"
+                printf 'Reset Core Lightning configuration to defaults.\n'
+                ;;
+        esac
+    fi
+fi
+
+# Function to modify config using awk
+modify_lightning_conf() {
+    key=$1
+    value=$2
+    printf '\n' >> "$config_file" # Ensure a newline exists at the end
+    awk -v key="$key" -v value="$value" 'BEGIN {OFS=FS="="; found=0} {gsub(/^[ 	]+|[ 	]+$/, "", $1)} !/^#/ && $1==key {found=1; print key"="value; next} {print} END {if (!found) print key"="value}' "$config_file" > "$config_file.tmp" && mv "$config_file.tmp" "$config_file"
+    awk '/./' "$config_file" > "$config_file.tmp" && mv "$config_file.tmp" "$config_file" # Remove trailing newlines
+}
+
+# Network selection
+if command -v ask-yn >/dev/null 2>&1; then
+    if ask-yn "Are you operating on the main Bitcoin network?" "y"; then
+        modify_lightning_conf "network" "bitcoin"
+    else
+        modify_lightning_conf "network" "testnet"
+    fi
+else
+    printf "Are you operating on the main Bitcoin network? [Y/n]: "
+    read -r reply
+    reply=${reply:-y}
+    case "$reply" in
+        [Yy]*) modify_lightning_conf "network" "bitcoin" ;;
+        *) modify_lightning_conf "network" "testnet" ;;
+    esac
+fi
+
+# Data directory
+default_data_dir="$HOME/.lightning"
+if command -v ask-yn >/dev/null 2>&1; then
+    if ! ask-yn "Would you like to store Lightning data in the default location ($default_data_dir)?" "y"; then
+        while true; do
+            printf "Type the alternate path for Lightning data storage: "
+            read -r alt_path
+            if [ -n "$alt_path" ]; then
+                modify_lightning_conf "lightning-dir" "$alt_path"
+                break
+            else
+                printf "Invalid path. Please try again.\n"
+            fi
+        done
+    fi
+else
+    printf "Would you like to store Lightning data in the default location ($default_data_dir)? [Y/n]: "
+    read -r reply
+    reply=${reply:-y}
+    case "$reply" in
+        [Nn]*)
+            while true; do
+                printf "Type the alternate path for Lightning data storage: "
+                read -r alt_path
+                if [ -n "$alt_path" ]; then
+                    modify_lightning_conf "lightning-dir" "$alt_path"
+                    break
+                else
+                    printf "Invalid path. Please try again.\n"
+                fi
+            done
+            ;;
+    esac
+fi
+
+printf 'Lightning configuration has been updated.\n'
