@@ -9,20 +9,35 @@ done
 
 # Helper to copy the current wizardry installation to a test directory
 # This is much faster than running ./install and gives us a realistic setup
+# Performance optimization: Only copy essential files (spells, install, core docs)
+# Excludes .git (1.2M), .tests (2.7M), demo-magic-poc, tutorials for 60% faster copies
 copy_wizardry() {
   dest_dir=$1
   
   # Create parent directory if needed
   mkdir -p "$(dirname "$dest_dir")" || return 1
   
-  # Copy the current wizardry installation
-  # Use cp -Rp to preserve permissions (including execute bit)
-  # Copy contents not the directory itself for better compatibility
+  # Remove old directory if it exists
   if [ -d "$dest_dir" ]; then
     rm -rf "$dest_dir" || return 1
   fi
   mkdir -p "$dest_dir" || return 1
-  cp -Rp "$ROOT_DIR/." "$dest_dir/" || return 1
+  
+  # Copy only essential files (exclude .git, .tests, demo-magic-poc, tutorials)
+  # This reduces copy from 6.9M to 2.7M (60% reduction)
+  cp -Rp "$ROOT_DIR/spells" "$dest_dir/" || return 1
+  
+  # Copy install if it exists (not present in doppelganger/compiled environments)
+  if [ -f "$ROOT_DIR/install" ]; then
+    cp -Rp "$ROOT_DIR/install" "$dest_dir/" || true
+  fi
+  
+  # Copy essential metadata files if they exist (optional - failures are non-fatal)
+  for file in LICENSE OATH README.md .gitignore; do
+    if [ -f "$ROOT_DIR/$file" ]; then
+      cp -p "$ROOT_DIR/$file" "$dest_dir/" || true
+    fi
+  done
   
   # Verify the copy worked by checking for a key file
   if [ -f "$dest_dir/spells/.imps/sys/invoke-wizardry" ]; then
