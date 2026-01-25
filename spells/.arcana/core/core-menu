@@ -63,7 +63,9 @@ if [ -n "$loop_limit" ] && ! printf '%s' "$loop_limit" | grep -Eq '^[0-9]+$'; th
 fi
 
 # Catch Ctrl-C and TERM signal to exit cleanly
-trap 'exit 0' INT TERM
+# INT (Ctrl-C) should exit 130, TERM should exit 0
+trap 'exit 130' INT
+trap 'exit 0' TERM
 
 title="${BOLD}${CYAN}Core prerequisites"
 if [ -n "$exit_label_bin" ]; then
@@ -149,11 +151,9 @@ while true; do
     "$menu_bin" "$@" || menu_status=$?
     menu_status=${menu_status:-0}
     
-    # ESC kills this menu script via TERM signal (same as Exit button)
-    # Direct kill: kill -TERM $$ → kills this script
+    # ESC causes menu to exit with 130 - handle gracefully by exiting
     if [ "$menu_status" -eq 130 ]; then
       printf 'ESC\n' >&2
-      kill -TERM $$ 2>/dev/null || true
       exit 0
     fi
   }
