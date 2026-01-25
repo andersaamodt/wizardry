@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# Returns 0 (true) if Tor is installed, 1 (false) if not
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-tor-installed
+
+Checks PATH for tor to confirm whether Tor is installed.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+command -v tor >/dev/null 2>&1
