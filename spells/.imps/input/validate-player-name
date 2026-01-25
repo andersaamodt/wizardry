@@ -1,0 +1,47 @@
+#!/bin/sh
+# validate-player-name NAME - validate player name for MUD use
+# Example: validate-player-name "$name" || exit 1
+# Player names: letters, digits, underscores only (no spaces, dashes, dots)
+# Must start with letter, 3-16 chars, legible and easily typed
+
+set -eu
+
+vp_name=${1-}
+
+# Check if empty
+if [ -z "$vp_name" ]; then
+  printf '%s\n' "Player name cannot be empty." >&2
+  exit 1
+fi
+
+# Check length (3-16 characters)
+vp_len=${#vp_name}
+if [ "$vp_len" -lt 3 ]; then
+  printf '%s\n' "Player name must be at least 3 characters." >&2
+  exit 1
+fi
+if [ "$vp_len" -gt 16 ]; then
+  printf '%s\n' "Player name must be 16 characters or less." >&2
+  exit 1
+fi
+
+# Check first character is letter
+case $vp_name in
+  [a-zA-Z]*)
+    # Good - starts with letter
+    ;;
+  *)
+    printf '%s\n' "Player name must start with a letter." >&2
+    exit 1
+    ;;
+esac
+
+# Check only contains letters, digits, underscores
+case $vp_name in
+  *[!a-zA-Z0-9_]*)
+    printf '%s\n' "Player name may only contain letters, digits, and underscores." >&2
+    exit 1
+    ;;
+esac
+
+exit 0
