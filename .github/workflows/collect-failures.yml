@@ -363,7 +363,7 @@ jobs:
 
           # Poll for workflow completions and individual job completions
           poll_count=0
-          max_polls=720  # 720 * 5s = 1 hour max
+          max_polls=1440  # 1440 * 2.5s = 1 hour max
           completed_count=0
           
           # Track reported jobs (separate from reported workflow runs)
@@ -486,13 +486,13 @@ jobs:
               break
             fi
 
-            # Log progress every minute (12 polls)
-            if [ $((poll_count % 12)) -eq 0 ]; then
+            # Log progress every minute (24 polls)
+            if [ $((poll_count % 24)) -eq 0 ]; then
               echo "[$(date -u +%H:%M:%S)] Monitoring... ($completed_count/${#workflows[@]} workflows completed)"
             fi
 
             # Sleep before next poll
-            sleep 5
+            sleep 2.5
           done
 
           if [ $poll_count -ge $max_polls ]; then
