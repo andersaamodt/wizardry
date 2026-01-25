@@ -6,7 +6,7 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: add-ssh-player
+Usage: add-player
 
 Interactively create a new player account on the MUD host by prompting for a player name and SSH key, then creating a limited system user with that key.
 
@@ -28,7 +28,7 @@ set -eu
 
 # Check if mud group exists
 if ! getent group mud >/dev/null 2>&1; then
-  printf '%s\n' "add-ssh-player: the 'mud' group does not exist." >&2
+  printf '%s\n' "add-player: the 'mud' group does not exist." >&2
   printf '%s\n' "Please run 'install-sshfs' first to set up the MUD server." >&2
   printf '%s\n' "Or manually create the group: sudo groupadd mud" >&2
   exit 1
@@ -52,7 +52,7 @@ while true; do
   
   # Check if user already exists
   if id "$playername" >/dev/null 2>&1; then
-    printf '%s\n' "add-ssh-player: player '$playername' already exists on this server. Choose a different name." >&2
+    printf '%s\n' "add-player: player '$playername' already exists on this server. Choose a different name." >&2
     continue
   fi
   
@@ -66,14 +66,14 @@ while true; do
   
   # Validate SSH key format
   if ! validate-ssh-key "$sshkey" 2>/dev/null; then
-    printf '%s\n' "add-ssh-player: invalid SSH key format." >&2
+    printf '%s\n' "add-player: invalid SSH key format." >&2
     printf '%s\n' "SSH keys should start with ssh-rsa, ssh-ed25519, ssh-dss, or ecdsa-sha2-*" >&2
     continue
   fi
   
   # Check if key already exists in authorized_keys file
   if grep -qF "$sshkey" ~/.ssh/authorized_keys 2>/dev/null; then
-    printf '%s\n' "add-ssh-player: this SSH key is already authorized. Use a different key." >&2
+    printf '%s\n' "add-player: this SSH key is already authorized. Use a different key." >&2
     continue
   fi
   
