@@ -9,6 +9,11 @@ case "${1-}" in
 Usage: new-player
 
 Interactively create a new player identity by generating an SSH key pair at ~/.ssh/<player_name> after prompting for a name.
+
+Player names must:
+- Be 3-16 characters long
+- Start with a letter
+- Contain only letters, digits, and underscores
 USAGE
   exit 0
   ;;
@@ -16,17 +21,36 @@ esac
 
 set -eu
 
-# Prompt user for player name
-printf '%s' "Enter a player name: "
-read -r player_name
+printf '%s\n' "Create a new player identity for the MUD."
+printf '%s\n' "Player names must be 3-16 characters, start with a letter, and contain only letters, digits, and underscores."
+printf '%s\n' ""
 
-# Check if key files already exist
-if [ -f "$HOME/.ssh/${player_name}" ] && [ -f "$HOME/.ssh/${player_name}.pub" ]; then
-    printf '%s' "Key files for player ${player_name} already exist. Enter a different player name: "
-    read -r player_name
-fi
+# Loop until we get a valid player name
+while true; do
+  printf '%s' "Enter player name: "
+  read -r player_name
+  
+  # Validate player name
+  if validate-player-name "$player_name" 2>/dev/null; then
+    # Check if key files already exist
+    if [ -f "$HOME/.ssh/${player_name}" ] || [ -f "$HOME/.ssh/${player_name}.pub" ]; then
+      printf '%s\n' "Player ${player_name} already has SSH keys. Choose a different name." >&2
+      continue
+    fi
+    break
+  else
+    # Re-run validation to show error message
+    validate-player-name "$player_name" || true
+  fi
+done
 
 # Generate ssh key
-ssh-keygen -t rsa -b 4096 -C "${player_name}@MUD" -f "$HOME/.ssh/${player_name}" -q -N ""
+printf '%s\n' "Generating SSH key pair for ${player_name}..."
+ssh-keygen -t ed25519 -C "${player_name}@MUD" -f "$HOME/.ssh/${player_name}" -q -N ""
 
-printf '%s\n' "New player ${player_name} created with ssh key files at ~/.ssh/${player_name} and ~/.ssh/${player_name}.pub"
+printf '%s\n' ""
+success "Player ${player_name} created successfully!"
+printf '%s\n' "SSH key pair saved to ~/.ssh/${player_name}"
+printf '%s\n' ""
+printf '%s\n' "To connect to a MUD server, share your public key:"
+printf '%s\n' "  cat ~/.ssh/${player_name}.pub"

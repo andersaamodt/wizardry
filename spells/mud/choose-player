@@ -9,6 +9,8 @@ case "${1-}" in
 Usage: choose-player
 
 Display an interactive menu of player identities from ~/.ssh/*.pub and set MUD_PLAYER to the one you choose.
+
+Only shows player names that are valid (3-16 chars, start with letter, letters/digits/underscores only).
 USAGE
   exit 0
   ;;
@@ -29,11 +31,10 @@ set --
 for file in "$HOME"/.ssh/*.pub; do
     [ -f "$file" ] || continue
     player_name=$(basename "$file" ".pub")
-    # Validate player name contains only safe characters
-    case "$player_name" in
-        *[!a-zA-Z0-9._-]*) continue ;;
-    esac
-    set -- "$@" "$player_name%set-player $player_name"
+    # Validate player name using the strict validation
+    if validate-player-name "$player_name" 2>/dev/null; then
+        set -- "$@" "$player_name%set-player $player_name"
+    fi
 done
 set -- "$@" "Cancel%return"
 
