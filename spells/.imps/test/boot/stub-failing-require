@@ -7,7 +7,7 @@ cat >"$tmp/require-command" <<'SH'
 #!/bin/sh
 # Stub require-command that always fails
 # Outputs the custom message if provided, otherwise a default
-shift  # Skip command name
+shift  # Skip the command name argument (first positional parameter)
 if [ "$#" -gt 0 ]; then
   printf 'require-command: %s\n' "$*" >&2
 else
