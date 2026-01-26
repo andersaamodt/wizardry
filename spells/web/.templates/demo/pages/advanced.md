@@ -73,5 +73,10 @@ This section refreshes every 5 seconds automatically:
 
 ## Navigation
 - [Home](/pages/index.html)
+- [Advanced Demos](/pages/advanced.html)
+- [Poll](/pages/poll.html)
+- [Chat](/pages/chat.html)
+- [About](/pages/about.html)
+- [Home](/pages/index.html)
 - [Poll](/pages/poll.html)
 - [About](/pages/about.html)

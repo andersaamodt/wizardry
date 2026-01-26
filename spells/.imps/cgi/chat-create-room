@@ -1,0 +1,56 @@
+#!/bin/sh
+# chat-create-room - Create a new chat room
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+# Parse room name from query string
+room_name="${QUERY_STRING:-}"
+room_name=$(printf '%s' "$room_name" | sed 's/room=//' | url-decode)
+
+# Validate room name
+if [ -z "$room_name" ]; then
+  cat <<HTML
+<div class="demo-result error">
+  <p>Room name required</p>
+</div>
+HTML
+  exit 0
+fi
+
+# Sanitize room name (alphanumeric, dash, underscore only)
+if ! printf '%s' "$room_name" | grep -qE '^[a-zA-Z0-9_-]+$'; then
+  cat <<HTML
+<div class="demo-result error">
+  <p>Invalid room name. Use only letters, numbers, dash, and underscore.</p>
+</div>
+HTML
+  exit 0
+fi
+
+# Chat rooms directory
+CHAT_DIR="${TMPDIR:-/tmp}/wizardry-chat"
+mkdir -p "$CHAT_DIR"
+
+ROOM_DIR="$CHAT_DIR/$room_name"
+
+# Check if room already exists
+if [ -d "$ROOM_DIR" ]; then
+  cat <<HTML
+<div class="demo-result">
+  <p>Room <strong>$room_name</strong> already exists. Joining...</p>
+</div>
+HTML
+else
+  # Create room directory and log file
+  mkdir -p "$ROOM_DIR"
+  touch "$ROOM_DIR/.log"
+  
+  cat <<HTML
+<div class="demo-result success">
+  <p>✓ Room <strong>$room_name</strong> created!</p>
+</div>
+HTML
+fi

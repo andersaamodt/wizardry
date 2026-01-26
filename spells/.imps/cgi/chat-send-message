@@ -1,0 +1,71 @@
+#!/bin/sh
+# chat-send-message - Send a message to a chat room (MUD-compatible format)
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+# Parse POST data from stdin (format: room=ROOM&user=USER&msg=MESSAGE)
+if [ "${REQUEST_METHOD:-}" = "POST" ]; then
+  post_data=$(cat)
+else
+  # Fallback to query string
+  post_data="${QUERY_STRING:-}"
+fi
+
+# Parse parameters
+room_name=$(printf '%s' "$post_data" | sed 's/.*room=\([^&]*\).*/\1/' | url-decode)
+user_name=$(printf '%s' "$post_data" | sed 's/.*user=\([^&]*\).*/\1/' | url-decode)
+message=$(printf '%s' "$post_data" | sed 's/.*msg=\([^&]*\).*/\1/' | url-decode)
+
+# Validate inputs
+if [ -z "$room_name" ] || [ -z "$message" ]; then
+  cat <<HTML
+<div class="demo-result error">
+  <p>Room and message required</p>
+</div>
+HTML
+  exit 0
+fi
+
+# Default user if not provided
+if [ -z "$user_name" ]; then
+  user_name="Anonymous"
+fi
+
+# Chat rooms directory
+CHAT_DIR="${TMPDIR:-/tmp}/wizardry-chat"
+ROOM_DIR="$CHAT_DIR/$room_name"
+
+if [ ! -d "$ROOM_DIR" ]; then
+  cat <<HTML
+<div class="demo-result error">
+  <p>Room not found</p>
+</div>
+HTML
+  exit 0
+fi
+
+LOG_FILE="$ROOM_DIR/.log"
+
+# Create timestamp in same format as MUD 'say' command: [HH:MM]
+timestamp=$(date '+%H:%M' 2>/dev/null || date '+%H:%M')
+
+# Format message exactly like MUD 'say' command: [HH:MM] player_name: message
+log_entry="[$timestamp] $user_name: $message"
+
+# Append to log file
+if printf '%s\n' "$log_entry" >> "$LOG_FILE" 2>/dev/null; then
+  cat <<HTML
+<div class="demo-result success">
+  <p>✓ Message sent</p>
+</div>
+HTML
+else
+  cat <<HTML
+<div class="demo-result error">
+  <p>Failed to send message</p>
+</div>
+HTML
+fi

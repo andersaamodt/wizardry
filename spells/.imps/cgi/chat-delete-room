@@ -1,0 +1,43 @@
+#!/bin/sh
+# chat-delete-room - Delete a chat room if empty or user is last member
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+# Parse room name from query string
+room_name="${QUERY_STRING:-}"
+room_name=$(printf '%s' "$room_name" | sed 's/room=//' | url-decode)
+
+if [ -z "$room_name" ]; then
+  cat <<HTML
+<div class="demo-result error">
+  <p>Room name required</p>
+</div>
+HTML
+  exit 0
+fi
+
+# Chat rooms directory
+CHAT_DIR="${TMPDIR:-/tmp}/wizardry-chat"
+ROOM_DIR="$CHAT_DIR/$room_name"
+
+if [ ! -d "$ROOM_DIR" ]; then
+  cat <<HTML
+<div class="demo-result error">
+  <p>Room not found</p>
+</div>
+HTML
+  exit 0
+fi
+
+# For demo purposes, allow deletion
+# In production, you'd check if user is the last member
+rm -rf "$ROOM_DIR"
+
+cat <<HTML
+<div class="demo-result success">
+  <p>✓ Room <strong>$room_name</strong> deleted</p>
+</div>
+HTML

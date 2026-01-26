@@ -1,0 +1,51 @@
+#!/bin/sh
+# chat-list-rooms - List available chat rooms
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+# Chat rooms directory
+CHAT_DIR="${TMPDIR:-/tmp}/wizardry-chat"
+mkdir -p "$CHAT_DIR"
+
+cat <<'HTML'
+<div class="demo-result chat-rooms">
+  <h3>Available Chat Rooms</h3>
+  <ul class="room-list">
+HTML
+
+# List all room directories
+if [ -d "$CHAT_DIR" ]; then
+  for room_dir in "$CHAT_DIR"/*; do
+    [ -d "$room_dir" ] || continue
+    room_name=$(basename "$room_dir")
+    
+    # Count messages in room
+    msg_count=0
+    if [ -f "$room_dir/.log" ]; then
+      msg_count=$(wc -l < "$room_dir/.log" 2>/dev/null || echo 0)
+    fi
+    
+    # Get last activity time
+    last_msg=""
+    if [ -f "$room_dir/.log" ]; then
+      last_msg=$(tail -1 "$room_dir/.log" 2>/dev/null || echo "")
+    fi
+    
+    printf '    <li class="room-item" data-room="%s">\n' "$room_name"
+    printf '      <strong>%s</strong>\n' "$room_name"
+    printf '      <span class="room-meta">%d messages</span>\n' "$msg_count"
+    if [ -n "$last_msg" ]; then
+      printf '      <div class="last-msg">%s</div>\n' "$last_msg"
+    fi
+    printf '    </li>\n'
+  done
+fi
+
+cat <<'HTML'
+  </ul>
+  <p class="meta">Click a room name to join or create a new room below</p>
+</div>
+HTML

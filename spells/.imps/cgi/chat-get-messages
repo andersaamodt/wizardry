@@ -1,0 +1,60 @@
+#!/bin/sh
+# chat-get-messages - Get messages from a chat room
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+# Parse room name from query string
+room_name="${QUERY_STRING:-}"
+room_name=$(printf '%s' "$room_name" | sed 's/room=//' | url-decode)
+
+if [ -z "$room_name" ]; then
+  cat <<HTML
+<div class="demo-result error">
+  <p>Room name required</p>
+</div>
+HTML
+  exit 0
+fi
+
+# Chat rooms directory
+CHAT_DIR="${TMPDIR:-/tmp}/wizardry-chat"
+ROOM_DIR="$CHAT_DIR/$room_name"
+
+if [ ! -d "$ROOM_DIR" ]; then
+  cat <<HTML
+<div class="demo-result error">
+  <p>Room not found</p>
+</div>
+HTML
+  exit 0
+fi
+
+# Read messages from .log file (same format as MUD 'say' command)
+LOG_FILE="$ROOM_DIR/.log"
+
+if [ ! -f "$LOG_FILE" ] || [ ! -s "$LOG_FILE" ]; then
+  cat <<HTML
+<div class="chat-messages">
+  <p class="meta">No messages yet. Be the first to say something!</p>
+</div>
+HTML
+else
+  cat <<HTML
+<div class="chat-messages">
+HTML
+  
+  # Display last 50 messages
+  tail -50 "$LOG_FILE" | while IFS= read -r line; do
+    # Parse format: [HH:MM] player_name: message
+    # Escape HTML special characters
+    escaped_line=$(printf '%s' "$line" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
+    printf '  <div class="chat-msg">%s</div>\n' "$escaped_line"
+  done
+  
+  cat <<HTML
+</div>
+HTML
+fi

@@ -80,4 +80,8 @@ This is a custom reusable component showing repeated elements:
 ## Navigation
 - [Home](/pages/index.html)
 - [Advanced Demos](/pages/advanced.html)
+- [Poll](/pages/poll.html)
+- [Chat](/pages/chat.html)
+- [About](/pages/about.html)
+- [Advanced Demos](/pages/advanced.html)
 - [About](/pages/about.html)
