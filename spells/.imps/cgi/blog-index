@@ -1,0 +1,152 @@
+#!/bin/sh
+# blog-index - Generate blog homepage with chronological post listing
+
+set -eu
+
+# Parse query string for pagination
+page=${QUERY_STRING##*page=}
+page=${page%%&*}
+: "${page:=1}"
+
+# Pagination settings
+posts_per_page=10
+
+# Output headers
+http-status 200 "OK"
+http-header "Content-Type" "text/html; charset=utf-8"
+http-end-headers
+
+# Get site directory from environment or default
+SITE_DIR=${WEB_SITE_DIR:-$HOME/sites/current}
+POSTS_DIR="$SITE_DIR/site/pages/posts"
+
+# Check if posts directory exists
+if [ ! -d "$POSTS_DIR" ]; then
+  printf '<p>No posts yet. Create your first post in <code>%s</code></p>\n' "$POSTS_DIR"
+  exit 0
+fi
+
+# Create temp file to collect published posts
+temp_posts=$(temp-file)
+
+# Find all markdown files, filter out drafts, sort by filename (reverse chronological)
+find "$POSTS_DIR" -name "*.md" -type f | sort -r | while read -r post_file; do
+  # Check if post is draft
+  yaml_section=$(sed -n '/^---$/,/^---$/p' "$post_file")
+  visibility=$(printf '%s' "$yaml_section" | grep '^visibility:' | \
+    sed 's/^visibility: *//;s/"//g' || printf 'public')
+  
+  # Skip drafts
+  if [ "$visibility" = "draft" ]; then
+    continue
+  fi
+  
+  printf '%s\n' "$post_file"
+done > "$temp_posts"
+
+# Count total posts
+total_posts=$(wc -l < "$temp_posts" | sed 's/^ *//')
+total_pages=$(( (total_posts + posts_per_page - 1) / posts_per_page ))
+
+# Validate page number
+if [ "$page" -lt 1 ]; then
+  page=1
+elif [ "$total_pages" -gt 0 ] && [ "$page" -gt "$total_pages" ]; then
+  page=$total_pages
+fi
+
+# Calculate pagination offsets
+skip=$(( (page - 1) * posts_per_page ))
+
+# Generate post listing
+printf '<div class="post-list">\n'
+
+# Display posts for current page
+total_to_show=$(( skip + posts_per_page ))
+head -n "$total_to_show" "$temp_posts" | \
+  tail -n "$posts_per_page" | \
+  while read -r post_file; do
+  # Extract YAML front matter
+  yaml_section=$(sed -n '/^---$/,/^---$/p' "$post_file")
+  
+  title=$(printf '%s' "$yaml_section" | grep '^title:' | \
+    sed 's/^title: *//;s/"//g;s/'"'"'//g' || printf 'Untitled')
+  published_at=$(printf '%s' "$yaml_section" | grep '^published_at:' | \
+    sed 's/^published_at: *//;s/"//g' || printf '')
+  summary=$(printf '%s' "$yaml_section" | grep '^summary:' | \
+    sed 's/^summary: *//;s/"//g' || printf '')
+  tags=$(printf '%s' "$yaml_section" | grep '^tags:' | \
+    sed 's/^tags: *//;s/\[//;s/\]//;s/"//g' || printf '')
+  
+  # Get base filename for link
+  base_name=${post_file##*/}
+  base_name=${base_name%.md}
+  
+  # Format published date
+  if [ -n "$published_at" ]; then
+    # Simple date formatting (just take the date part)
+    pub_date=${published_at%%T*}
+  else
+    pub_date="Unknown date"
+  fi
+  
+  # Output post item
+  printf '<article class="post-item">\n'
+  post_url="/pages/posts/%s.html"
+  printf '  <h2 class="post-title"><a href="'"$post_url"'">%s</a></h2>\n' \
+    "$base_name" "$title"
+  printf '  <div class="post-meta">\n'
+  printf '    <span class="post-date">%s</span>\n' "$pub_date"
+  printf '  </div>\n'
+  
+  # Output tags if present
+  if [ -n "$tags" ]; then
+    printf '  <div class="tags">\n'
+    # Parse tags (comma-separated)
+    printf '%s\n' "$tags" | tr ',' '\n' | while read -r tag; do
+      tag=$(printf '%s' "$tag" | sed 's/^ *//;s/ *$//')
+      if [ -n "$tag" ]; then
+        printf '    <a href="/pages/tags.html#%s" class="tag">%s</a>\n' "$tag" "$tag"
+      fi
+    done
+    printf '  </div>\n'
+  fi
+  
+  # Output summary if present
+  if [ -n "$summary" ]; then
+    printf '  <p class="post-summary">%s</p>\n' "$summary"
+  fi
+  
+  printf '</article>\n\n'
+done
+
+printf '</div>\n'
+
+# Add pagination controls
+if [ "$total_pages" -gt 1 ]; then
+  printf '<div class="pagination">\n'
+  
+  # Previous page link
+  if [ "$page" -gt 1 ]; then
+    prev_page=$(( page - 1 ))
+    printf '  <a href="?page=%s" class="page-link">&laquo; Previous</a>\n' "$prev_page"
+  else
+    printf '  <span class="page-link disabled">&laquo; Previous</span>\n'
+  fi
+  
+  # Page numbers
+  printf '  <span class="page-info">Page %s of %s</span>\n' "$page" "$total_pages"
+  
+  # Next page link
+  if [ "$page" -lt "$total_pages" ]; then
+    next_page=$(( page + 1 ))
+    printf '  <a href="?page=%s" class="page-link">Next &raquo;</a>\n' "$next_page"
+  else
+    printf '  <span class="page-link disabled">Next &raquo;</span>\n'
+  fi
+  
+  printf '</div>\n'
+fi
+
+# Clean up temp file
+rm -f "$temp_posts"
