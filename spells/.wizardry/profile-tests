@@ -50,7 +50,8 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 root_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
 test_dir="$root_dir/.tests"
 
-# Helper function for pattern matching (defined outside command substitution to avoid macOS bash issues)
+# Helper function for pattern matching
+# (defined outside command substitution to avoid macOS bash issues)
 matches_pattern() {
   mp_path=$1
   mp_pattern=$2
@@ -91,16 +92,21 @@ done
 test_list=""
 if [ -n "$only_pattern" ]; then
   # Build list efficiently without temporary file
-  test_list=$(find "$test_dir" -type f \( -name 'test-*.sh' -o -name 'common-*.sh' \) 2>/dev/null | \
+  test_list=$(
+    find "$test_dir" -type f \
+      \( -name 'test-*.sh' -o -name 'common-*.sh' \) 2>/dev/null | \
     while IFS= read -r test_path; do
       if matches_pattern "$test_path" "$only_pattern"; then
         printf '%s\n' "$test_path"
       fi
-    done | sort)
+    done | sort
+  )
 else
   # Use single find command for better performance
-  test_list=$(find "$test_dir" -type f \
-    \( -name 'test-*.sh' -o -name 'common-*.sh' \) 2>/dev/null | sort)
+  test_list=$(
+    find "$test_dir" -type f \
+      \( -name 'test-*.sh' -o -name 'common-*.sh' \) 2>/dev/null | sort
+  )
 fi
 
 if [ -z "$test_list" ]; then
@@ -189,7 +195,8 @@ stats=$(awk -F'|' '
 ' "$tmpfile")
 
 # Parse statistics using IFS to avoid multiple cut invocations
-IFS='|' read -r test_total passed failed total_time avg_time under_01 range_01_05 range_05_1 range_1_5 range_5_10 over_10 <<EOF
+IFS='|' read -r test_total passed failed total_time avg_time \
+  under_01 range_01_05 range_05_1 range_1_5 range_5_10 over_10 <<EOF
 $stats
 EOF
 
