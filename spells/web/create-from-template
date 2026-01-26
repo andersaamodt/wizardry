@@ -11,7 +11,7 @@ Creates a new site by copying a template.
 
 Templates:
   demo    - Interactive demo site with 15+ CGI examples
-  blog    - Personal blog template (stub)
+  blog    - Personal blog with content-addressable posts
 
 Example: create-from-template mysite demo
 USAGE
