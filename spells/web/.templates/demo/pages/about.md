@@ -114,7 +114,8 @@ Visit the site at http://localhost:8080
 - `temperature-convert` - Unit conversion
 - `reverse-text` - String reversal
 - `word-count` - Text analysis
-- `file-info` - File upload simulation
+- `file-info` - File upload metadata display
+- `upload-image` - Real-time image upload & display (tests interactivity)
 - `list-files` - Directory listing
 - `chat-list-rooms` - List chat rooms
 - `chat-create-room` - Create chat room
@@ -123,6 +124,8 @@ Visit the site at http://localhost:8080
 - `chat-delete-room` - Delete empty chat room
 
 All written in pure POSIX shell!
+
+**Total: 21 CGI scripts** demonstrating real-time interactivity, file operations, calculations, system info, persistent state, and MUD interoperability.
 
 ## Source Code
 

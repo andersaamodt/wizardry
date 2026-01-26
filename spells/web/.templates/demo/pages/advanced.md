@@ -42,17 +42,34 @@ Convert between Celsius and Fahrenheit:
   <div id="temp-output" class="output"></div>
 </div>
 
-## 📁 File Browser (Demo)
-Simulate file upload and browse directories:
+## 📁 File Operations & Real-Time Upload
+
+### File Upload with Instant Display
+Demonstrates real-time file upload and display - the uploaded image appears immediately:
 
 <div class="demo-box">
-  <input type="text" id="file-input" placeholder="Enter filename (demo)" value="document.pdf" />
-  <button hx-get="/cgi/file-info" hx-vals='js:{file: document.getElementById("file-input").value}' hx-target="#file-output" hx-swap="innerHTML">
-    Upload (Simulated)
+  <h4>Upload & Display Image</h4>
+  <input type="text" id="upload-filename" placeholder="Enter image name (e.g., logo.png)" value="demo-image.png" />
+  <button hx-get="/cgi/upload-image" hx-vals='js:{filename: document.getElementById("upload-filename").value}' hx-target="#upload-display" hx-swap="innerHTML" class="primary">
+    Upload & Display
+  </button>
+  <div id="upload-display" class="output">
+    <p class="meta">Click Upload to see real-time image generation and display</p>
+  </div>
+</div>
+
+### File Information
+Get details about uploaded files:
+
+<div class="demo-box">
+  <input type="text" id="file-input" placeholder="Enter filename" value="document.pdf" />
+  <button hx-get="/cgi/file-info" hx-vals='js:{name: document.getElementById("file-input").value}' hx-target="#file-output" hx-swap="innerHTML">
+    Get File Info
   </button>
   <div id="file-output" class="output"></div>
 </div>
 
+### Directory Browser
 <div class="demo-box">
   <button hx-get="/cgi/list-files" hx-target="#files-output" hx-swap="innerHTML">
     List Files
