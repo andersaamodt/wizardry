@@ -42,9 +42,8 @@ if [ -d "$SITE_DIR" ]; then
   die "create-from-template: site '$site_name' already exists"
 fi
 
-# Get script directory to find templates
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
-template_dir="$script_dir/.templates/$template"
+# Get WIZARDRY_DIR to find templates
+template_dir="$WIZARDRY_DIR/.templates/$template"
 
 if [ ! -d "$template_dir" ]; then
   die "create-from-template: template '$template' not found"
