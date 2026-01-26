@@ -1,0 +1,141 @@
+#!/bin/sh
+# blog-search - Search blog posts by title, content, and tags
+
+set -eu
+
+# Parse query string
+query=${QUERY_STRING##*q=}
+query=${query%%&*}
+
+# URL decode the query
+query=$(url-decode "$query")
+
+# Output headers
+http-status 200 "OK"
+http-header "Content-Type" "text/html; charset=utf-8"
+http-end-headers
+
+# Get site directory from environment or default
+SITE_DIR=${WEB_SITE_DIR:-$HOME/sites/current}
+POSTS_DIR="$SITE_DIR/site/pages/posts"
+
+# Check if posts directory exists
+if [ ! -d "$POSTS_DIR" ]; then
+  printf '<p>No posts to search.</p>\n'
+  exit 0
+fi
+
+# Check if query is empty
+if [ -z "$query" ]; then
+  printf '<div class="search-form">\n'
+  printf '  <form method="get" action="/cgi/blog-search">\n'
+  printf '    <input type="text" name="q" placeholder="Search posts..." autofocus />\n'
+  printf '    <button type="submit">Search</button>\n'
+  printf '  </form>\n'
+  printf '</div>\n'
+  exit 0
+fi
+
+# Display search form with current query
+printf '<div class="search-form">\n'
+printf '  <form method="get" action="/cgi/blog-search">\n'
+printf '    <input type="text" name="q" value="%s" placeholder="Search posts..." autofocus />\n' "$query"
+printf '    <button type="submit">Search</button>\n'
+printf '  </form>\n'
+printf '</div>\n'
+
+# Create temp file for matching posts
+temp_results=$(temp-file)
+
+# Search through all posts
+find "$POSTS_DIR" -name "*.md" -type f | sort -r | while read -r post_file; do
+  # Check if post is draft
+  visibility=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^visibility:' | sed 's/^visibility: *//;s/"//g' || printf 'public')
+  
+  # Skip drafts
+  if [ "$visibility" = "draft" ]; then
+    continue
+  fi
+  
+  # Extract metadata
+  title=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^title:' | sed 's/^title: *//;s/"//g;s/'"'"'//g' || printf '')
+  tags=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^tags:' | sed 's/^tags: *//;s/\[//;s/\]//;s/"//g' || printf '')
+  summary=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^summary:' | sed 's/^summary: *//;s/"//g' || printf '')
+  
+  # Get post content (skip YAML front matter)
+  content=$(sed '1,/^---$/d; /^---$/,/^---$/d' "$post_file")
+  
+  # Search in title, tags, summary, and content (case-insensitive)
+  search_text=$(printf '%s\n%s\n%s\n%s' "$title" "$tags" "$summary" "$content" | tr 'A-Z' 'a-z')
+  query_lower=$(printf '%s' "$query" | tr 'A-Z' 'a-z')
+  
+  if printf '%s' "$search_text" | grep -q "$query_lower"; then
+    printf '%s\n' "$post_file"
+  fi
+done > "$temp_results"
+
+# Count results
+result_count=$(wc -l < "$temp_results" | sed 's/^ *//')
+
+# Display results
+if [ "$result_count" -eq 0 ]; then
+  printf '<div class="search-results">\n'
+  printf '  <p>No results found for "<strong>%s</strong>".</p>\n' "$query"
+  printf '</div>\n'
+else
+  printf '<div class="search-results">\n'
+  printf '  <h2>Found %s result(s) for "<strong>%s</strong>"</h2>\n' "$result_count" "$query"
+  printf '  <div class="post-list">\n'
+  
+  while read -r post_file; do
+    # Extract post info
+    title=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^title:' | sed 's/^title: *//;s/"//g;s/'"'"'//g' || printf 'Untitled')
+    published_at=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^published_at:' | sed 's/^published_at: *//;s/"//g' || printf '')
+    summary=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^summary:' | sed 's/^summary: *//;s/"//g' || printf '')
+    tags=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^tags:' | sed 's/^tags: *//;s/\[//;s/\]//;s/"//g' || printf '')
+    
+    # Get base filename for link
+    base_name=${post_file##*/}
+    base_name=${base_name%.md}
+    
+    # Format published date
+    if [ -n "$published_at" ]; then
+      pub_date=${published_at%%T*}
+    else
+      pub_date="Unknown date"
+    fi
+    
+    # Output post item
+    printf '    <article class="post-item">\n'
+    printf '      <h3 class="post-title"><a href="/pages/posts/%s.html">%s</a></h3>\n' "$base_name" "$title"
+    printf '      <div class="post-meta">\n'
+    printf '        <span class="post-date">%s</span>\n' "$pub_date"
+    printf '      </div>\n'
+    
+    # Output tags if present
+    if [ -n "$tags" ]; then
+      printf '      <div class="tags">\n'
+      # Parse tags (comma-separated)
+      printf '%s\n' "$tags" | tr ',' '\n' | while read -r tag; do
+        tag=$(printf '%s' "$tag" | sed 's/^ *//;s/ *$//')
+        if [ -n "$tag" ]; then
+          printf '        <a href="/pages/tags.html#%s" class="tag">%s</a>\n' "$tag" "$tag"
+        fi
+      done
+      printf '      </div>\n'
+    fi
+    
+    # Output summary if present
+    if [ -n "$summary" ]; then
+      printf '      <p class="post-summary">%s</p>\n' "$summary"
+    fi
+    
+    printf '    </article>\n\n'
+  done < "$temp_results"
+  
+  printf '  </div>\n'
+  printf '</div>\n'
+fi
+
+# Clean up temp file
+rm -f "$temp_results"

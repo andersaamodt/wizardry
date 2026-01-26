@@ -3,6 +3,14 @@
 
 set -eu
 
+# Parse query string for pagination
+page=${QUERY_STRING##*page=}
+page=${page%%&*}
+: "${page:=1}"
+
+# Pagination settings
+posts_per_page=10
+
 # Output headers
 http-status 200 "OK"
 http-header "Content-Type" "text/html; charset=utf-8"
@@ -18,11 +26,41 @@ if [ ! -d "$POSTS_DIR" ]; then
   exit 0
 fi
 
+# Create temp file to collect published posts
+temp_posts=$(temp-file)
+
+# Find all markdown files, filter out drafts, sort by filename (reverse chronological)
+find "$POSTS_DIR" -name "*.md" -type f | sort -r | while read -r post_file; do
+  # Check if post is draft
+  visibility=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^visibility:' | sed 's/^visibility: *//;s/"//g' || printf 'public')
+  
+  # Skip drafts
+  if [ "$visibility" = "draft" ]; then
+    continue
+  fi
+  
+  printf '%s\n' "$post_file"
+done > "$temp_posts"
+
+# Count total posts
+total_posts=$(wc -l < "$temp_posts" | sed 's/^ *//')
+total_pages=$(( (total_posts + posts_per_page - 1) / posts_per_page ))
+
+# Validate page number
+if [ "$page" -lt 1 ]; then
+  page=1
+elif [ "$total_pages" -gt 0 ] && [ "$page" -gt "$total_pages" ]; then
+  page=$total_pages
+fi
+
+# Calculate pagination offsets
+skip=$(( (page - 1) * posts_per_page ))
+
 # Generate post listing
 printf '<div class="post-list">\n'
 
-# Find all markdown files, sort by filename (reverse chronological)
-find "$POSTS_DIR" -name "*.md" -type f | sort -r | while read -r post_file; do
+# Display posts for current page
+head -n $(( skip + posts_per_page )) "$temp_posts" | tail -n "$posts_per_page" | while read -r post_file; do
   # Extract YAML front matter
   title=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^title:' | sed 's/^title: *//;s/"//g;s/'"'"'//g' || printf 'Untitled')
   published_at=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^published_at:' | sed 's/^published_at: *//;s/"//g' || printf '')
@@ -70,3 +108,32 @@ find "$POSTS_DIR" -name "*.md" -type f | sort -r | while read -r post_file; do
 done
 
 printf '</div>\n'
+
+# Add pagination controls
+if [ "$total_pages" -gt 1 ]; then
+  printf '<div class="pagination">\n'
+  
+  # Previous page link
+  if [ "$page" -gt 1 ]; then
+    prev_page=$(( page - 1 ))
+    printf '  <a href="?page=%s" class="page-link">&laquo; Previous</a>\n' "$prev_page"
+  else
+    printf '  <span class="page-link disabled">&laquo; Previous</span>\n'
+  fi
+  
+  # Page numbers
+  printf '  <span class="page-info">Page %s of %s</span>\n' "$page" "$total_pages"
+  
+  # Next page link
+  if [ "$page" -lt "$total_pages" ]; then
+    next_page=$(( page + 1 ))
+    printf '  <a href="?page=%s" class="page-link">Next &raquo;</a>\n' "$next_page"
+  else
+    printf '  <span class="page-link disabled">Next &raquo;</span>\n'
+  fi
+  
+  printf '</div>\n'
+fi
+
+# Clean up temp file
+rm -f "$temp_posts"

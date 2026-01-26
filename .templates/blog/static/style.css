@@ -336,3 +336,123 @@ footer {
 .info-box strong {
   color: var(--primary);
 }
+
+/* Search Box */
+.search-box {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: var(--light-bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+
+.search-box form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.search-box input[type="text"] {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 1rem;
+}
+
+.search-box button {
+  padding: 0.75rem 1.5rem;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.search-box button:hover {
+  background: #2980b9;
+}
+
+/* Search Form (in results page) */
+.search-form {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: var(--light-bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+
+.search-form form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.search-form input[type="text"] {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 1rem;
+}
+
+.search-form button {
+  padding: 0.75rem 1.5rem;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.search-form button:hover {
+  background: #2980b9;
+}
+
+/* Search Results */
+.search-results {
+  margin: 2rem 0;
+}
+
+.search-results h2 {
+  margin-bottom: 1.5rem;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin: 3rem 0;
+  padding: 1rem 0;
+}
+
+.page-link {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.page-link:hover:not(.disabled) {
+  background: var(--light-bg);
+  text-decoration: none;
+}
+
+.page-link.disabled {
+  color: var(--light-text);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.page-info {
+  padding: 0.5rem 1rem;
+  color: var(--text);
+  font-weight: 500;
+}
+
