@@ -24,10 +24,10 @@ printf '<div class="post-list">\n'
 # Find all markdown files, sort by filename (reverse chronological)
 find "$POSTS_DIR" -name "*.md" -type f | sort -r | while read -r post_file; do
   # Extract YAML front matter
-  title=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^title:' | sed 's/^title: *//;s/"//g;s/'"'"'//g' || echo "Untitled")
-  published_at=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^published_at:' | sed 's/^published_at: *//;s/"//g' || echo "")
-  summary=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^summary:' | sed 's/^summary: *//;s/"//g' || echo "")
-  tags=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^tags:' | sed 's/^tags: *//;s/\[//;s/\]//;s/"//g' || echo "")
+  title=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^title:' | sed 's/^title: *//;s/"//g;s/'"'"'//g' || printf 'Untitled')
+  published_at=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^published_at:' | sed 's/^published_at: *//;s/"//g' || printf '')
+  summary=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^summary:' | sed 's/^summary: *//;s/"//g' || printf '')
+  tags=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^tags:' | sed 's/^tags: *//;s/\[//;s/\]//;s/"//g' || printf '')
   
   # Get base filename for link
   base_name=${post_file##*/}
@@ -52,8 +52,8 @@ find "$POSTS_DIR" -name "*.md" -type f | sort -r | while read -r post_file; do
   if [ -n "$tags" ]; then
     printf '  <div class="tags">\n'
     # Parse tags (comma-separated)
-    echo "$tags" | tr ',' '\n' | while read -r tag; do
-      tag=$(echo "$tag" | sed 's/^ *//;s/ *$//')
+    printf '%s\n' "$tags" | tr ',' '\n' | while read -r tag; do
+      tag=$(printf '%s' "$tag" | sed 's/^ *//;s/ *$//')
       if [ -n "$tag" ]; then
         printf '    <a href="/pages/tags.html#%s" class="tag">%s</a>\n' "$tag" "$tag"
       fi
