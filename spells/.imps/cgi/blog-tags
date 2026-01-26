@@ -1,0 +1,102 @@
+#!/bin/sh
+# blog-tags - Generate tag cloud with post counts
+
+set -eu
+
+# Output headers
+http-status 200 "OK"
+http-header "Content-Type" "text/html; charset=utf-8"
+http-end-headers
+
+# Get site directory from environment or default
+SITE_DIR=${WEB_SITE_DIR:-$HOME/sites/current}
+POSTS_DIR="$SITE_DIR/site/pages/posts"
+
+# Check if posts directory exists
+if [ ! -d "$POSTS_DIR" ]; then
+  printf '<p>No tags yet. Tags will appear when you create posts.</p>\n'
+  exit 0
+fi
+
+# Create temp file for tag collection
+temp_tags=$(temp-file)
+
+# Extract all tags from all posts
+find "$POSTS_DIR" -name "*.md" -type f | while read -r post_file; do
+  # Extract tags from YAML front matter
+  tags=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^tags:' | sed 's/^tags: *//;s/\[//;s/\]//;s/"//g' || echo "")
+  
+  if [ -n "$tags" ]; then
+    # Split tags by comma and output each
+    echo "$tags" | tr ',' '\n' | while read -r tag; do
+      tag=$(echo "$tag" | sed 's/^ *//;s/ *$//')
+      if [ -n "$tag" ]; then
+        echo "$tag"
+      fi
+    done
+  fi
+done > "$temp_tags"
+
+# Count and display tags
+if [ -s "$temp_tags" ]; then
+  printf '<div class="tag-cloud">\n'
+  
+  # Sort, count unique tags, and display
+  sort "$temp_tags" | uniq -c | sort -rn | while read -r count tag; do
+    # Trim whitespace from count
+    count=$(echo "$count" | sed 's/^ *//')
+    printf '  <a href="#%s" class="tag">%s <span class="tag-count">(%s)</span></a>\n' "$tag" "$tag" "$count"
+  done
+  
+  printf '</div>\n'
+  
+  # Display posts for each tag
+  printf '\n<div class="tag-sections">\n'
+  
+  sort "$temp_tags" | uniq | while read -r tag; do
+    printf '<section id="%s" class="tag-section">\n' "$tag"
+    printf '  <h2>Posts tagged "%s"</h2>\n' "$tag"
+    printf '  <ul class="post-list">\n'
+    
+    # Find posts with this tag
+    find "$POSTS_DIR" -name "*.md" -type f | sort -r | while read -r post_file; do
+      # Check if post has this tag
+      post_tags=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^tags:' | sed 's/^tags: *//;s/\[//;s/\]//;s/"//g' || echo "")
+      
+      # Check if tag is in post_tags
+      if echo ",$post_tags," | grep -q ",$tag,"; then
+        # Extract post info
+        title=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^title:' | sed 's/^title: *//;s/"//g;s/'"'"'//g' || echo "Untitled")
+        published_at=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^published_at:' | sed 's/^published_at: *//;s/"//g' || echo "")
+        
+        # Get base filename for link
+        base_name=${post_file##*/}
+        base_name=${base_name%.md}
+        
+        # Format date
+        if [ -n "$published_at" ]; then
+          pub_date=${published_at%%T*}
+        else
+          pub_date=""
+        fi
+        
+        printf '    <li class="post-item">\n'
+        printf '      <a href="/pages/posts/%s.html">%s</a>\n' "$base_name" "$title"
+        if [ -n "$pub_date" ]; then
+          printf '      <span class="post-date">(%s)</span>\n' "$pub_date"
+        fi
+        printf '    </li>\n'
+      fi
+    done
+    
+    printf '  </ul>\n'
+    printf '</section>\n\n'
+  done
+  
+  printf '</div>\n'
+else
+  printf '<p>No tags found in posts.</p>\n'
+fi
+
+# Clean up temp file
+rm -f "$temp_tags"

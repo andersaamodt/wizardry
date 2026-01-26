@@ -1,0 +1,72 @@
+#!/bin/sh
+# blog-index - Generate blog homepage with chronological post listing
+
+set -eu
+
+# Output headers
+http-status 200 "OK"
+http-header "Content-Type" "text/html; charset=utf-8"
+http-end-headers
+
+# Get site directory from environment or default
+SITE_DIR=${WEB_SITE_DIR:-$HOME/sites/current}
+POSTS_DIR="$SITE_DIR/site/pages/posts"
+
+# Check if posts directory exists
+if [ ! -d "$POSTS_DIR" ]; then
+  printf '<p>No posts yet. Create your first post in <code>%s</code></p>\n' "$POSTS_DIR"
+  exit 0
+fi
+
+# Generate post listing
+printf '<div class="post-list">\n'
+
+# Find all markdown files, sort by filename (reverse chronological)
+find "$POSTS_DIR" -name "*.md" -type f | sort -r | while read -r post_file; do
+  # Extract YAML front matter
+  title=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^title:' | sed 's/^title: *//;s/"//g;s/'"'"'//g' || echo "Untitled")
+  published_at=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^published_at:' | sed 's/^published_at: *//;s/"//g' || echo "")
+  summary=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^summary:' | sed 's/^summary: *//;s/"//g' || echo "")
+  tags=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^tags:' | sed 's/^tags: *//;s/\[//;s/\]//;s/"//g' || echo "")
+  
+  # Get base filename for link
+  base_name=${post_file##*/}
+  base_name=${base_name%.md}
+  
+  # Format published date
+  if [ -n "$published_at" ]; then
+    # Simple date formatting (just take the date part)
+    pub_date=${published_at%%T*}
+  else
+    pub_date="Unknown date"
+  fi
+  
+  # Output post item
+  printf '<article class="post-item">\n'
+  printf '  <h2 class="post-title"><a href="/pages/posts/%s.html">%s</a></h2>\n' "$base_name" "$title"
+  printf '  <div class="post-meta">\n'
+  printf '    <span class="post-date">%s</span>\n' "$pub_date"
+  printf '  </div>\n'
+  
+  # Output tags if present
+  if [ -n "$tags" ]; then
+    printf '  <div class="tags">\n'
+    # Parse tags (comma-separated)
+    echo "$tags" | tr ',' '\n' | while read -r tag; do
+      tag=$(echo "$tag" | sed 's/^ *//;s/ *$//')
+      if [ -n "$tag" ]; then
+        printf '    <a href="/pages/tags.html#%s" class="tag">%s</a>\n' "$tag" "$tag"
+      fi
+    done
+    printf '  </div>\n'
+  fi
+  
+  # Output summary if present
+  if [ -n "$summary" ]; then
+    printf '  <p class="post-summary">%s</p>\n' "$summary"
+  fi
+  
+  printf '</article>\n\n'
+done
+
+printf '</div>\n'
