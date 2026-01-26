@@ -122,7 +122,7 @@ run_with_progress() {
   (
     set +e
     "$@" 2>&1
-    cmdcmd_status=$?
+    cmd_status=$?
     set -e
     printf '%s\n' "$cmd_status" >"$progress_tmp"
     exit 0
@@ -154,8 +154,9 @@ run_with_progress() {
   clear-traps
   rm -f "$progress_tmp"
 
-  case ${_status:-} in
+  case ${status:-} in
     '' ) cmd_status=1 ;;
+    * ) cmd_status=$status ;;
   esac
 
   return "$cmd_status"
