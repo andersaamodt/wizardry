@@ -90,16 +90,13 @@ done
 # Get list of tests to profile
 test_list=""
 if [ -n "$only_pattern" ]; then
-  # Build list more efficiently using temporary file
-  tmplist=$(temp-file profile-list)
-  find "$test_dir" -type f \( -name 'test-*.sh' -o -name 'common-*.sh' \) 2>/dev/null | \
+  # Build list efficiently without temporary file
+  test_list=$(find "$test_dir" -type f \( -name 'test-*.sh' -o -name 'common-*.sh' \) 2>/dev/null | \
     while IFS= read -r test_path; do
       if matches_pattern "$test_path" "$only_pattern"; then
         printf '%s\n' "$test_path"
       fi
-    done | sort > "$tmplist"
-  test_list=$(cat "$tmplist")
-  rm -f "$tmplist"
+    done | sort)
 else
   # Use single find command for better performance
   test_list=$(find "$test_dir" -type f \
@@ -191,18 +188,10 @@ stats=$(awk -F'|' '
   }
 ' "$tmpfile")
 
-# Parse statistics
-test_total=$(printf '%s' "$stats" | cut -d'|' -f1)
-passed=$(printf '%s' "$stats" | cut -d'|' -f2)
-failed=$(printf '%s' "$stats" | cut -d'|' -f3)
-total_time=$(printf '%s' "$stats" | cut -d'|' -f4)
-avg_time=$(printf '%s' "$stats" | cut -d'|' -f5)
-under_01=$(printf '%s' "$stats" | cut -d'|' -f6)
-range_01_05=$(printf '%s' "$stats" | cut -d'|' -f7)
-range_05_1=$(printf '%s' "$stats" | cut -d'|' -f8)
-range_1_5=$(printf '%s' "$stats" | cut -d'|' -f9)
-range_5_10=$(printf '%s' "$stats" | cut -d'|' -f10)
-over_10=$(printf '%s' "$stats" | cut -d'|' -f11)
+# Parse statistics using IFS to avoid multiple cut invocations
+IFS='|' read -r test_total passed failed total_time avg_time under_01 range_01_05 range_05_1 range_1_5 range_5_10 over_10 <<EOF
+$stats
+EOF
 
 # Generate and output report
 if [ -n "$output_file" ]; then
