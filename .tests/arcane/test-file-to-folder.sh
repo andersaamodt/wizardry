@@ -160,7 +160,7 @@ file_to_folder_transfers_priority_attribute() {
   # Create stub xattr that simulates priority attribute on file
   cat >"$stub_dir/xattr" <<'STUB_SCRIPT'
 #!/bin/sh
-printf 'xattr called: %s\n' "$*" >> "$operations_log"
+printf 'xattr called: %s\n' "$*" >> "$OPERATIONS_LOG"
 case "$1" in
   -p)
     # Read operation for read-magic
@@ -187,11 +187,11 @@ case "$1" in
   -w)
     # Write operation for enchant
     if [ "$2" = "user.priority" ] && [ "$3" = "high" ]; then
-      printf 'enchant: priority set to high on %s\n' "$4" >> "$operations_log"
+      printf 'enchant: priority set to high on %s\n' "$4" >> "$OPERATIONS_LOG"
       exit 0
     fi
     if [ "$2" = "user.echelon" ]; then
-      printf 'enchant: echelon set on %s\n' "$4" >> "$operations_log"
+      printf 'enchant: echelon set on %s\n' "$4" >> "$OPERATIONS_LOG"
       exit 0
     fi
     exit 1
@@ -199,11 +199,11 @@ case "$1" in
   -d)
     # Delete operation for disenchant (accepts both priority and user.priority)
     if [ "$2" = "user.priority" ] || [ "$2" = "priority" ]; then
-      printf 'disenchant: priority removed from %s\n' "$3" >> "$operations_log"
+      printf 'disenchant: priority removed from %s\n' "$3" >> "$OPERATIONS_LOG"
       exit 0
     fi
     if [ "$2" = "user.echelon" ] || [ "$2" = "echelon" ]; then
-      printf 'disenchant: echelon removed from %s\n' "$3" >> "$operations_log"
+      printf 'disenchant: echelon removed from %s\n' "$3" >> "$OPERATIONS_LOG"
       exit 0
     fi
     exit 1
@@ -217,8 +217,8 @@ esac
 STUB_SCRIPT
   chmod +x "$stub_dir/xattr"
   
-  # Replace $operations_log and $testfile in the script
-  sed -i "s|\$operations_log|$operations_log|g" "$stub_dir/xattr"
+  # Export operations log path for the stub
+  export OPERATIONS_LOG="$operations_log"
   
   # Run file-to-folder with stub xattr in PATH
   PATH="$stub_dir:$PATH" run_spell "spells/arcane/file-to-folder" "$testfile"
