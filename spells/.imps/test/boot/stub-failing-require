@@ -3,9 +3,16 @@
 set -eu
 
 tmp=$1
-cat >"$tmp/require" <<'SH'
+cat >"$tmp/require-command" <<'SH'
 #!/bin/sh
-printf '%s\n' "The casting menu needs the 'menu' command." >&2
+# Stub require-command that always fails
+# Outputs the custom message if provided, otherwise a default
+shift  # Skip command name
+if [ "$#" -gt 0 ]; then
+  printf 'require-command: %s\n' "$*" >&2
+else
+  printf 'require-command: command not found\n' >&2
+fi
 exit 1
 SH
-chmod +x "$tmp/require"
+chmod +x "$tmp/require-command"

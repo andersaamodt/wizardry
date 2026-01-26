@@ -49,7 +49,7 @@ test_main_menu_fails_without_menu_dependency() {
   stub-failing-require "$tmp"
   PATH="$tmp:$PATH" run_sourced_spell "spells/menu/main-menu"
   assert_failure || return 1
-  assert_error_contains "The main menu needs the 'menu' command" || return 1
+  assert_error_contains "require-command: The main menu needs the 'menu' command" || return 1
 }
 
 test_main_menu_shows_title() {
