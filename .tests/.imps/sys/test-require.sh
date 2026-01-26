@@ -157,7 +157,7 @@ test_require_fallback_failure_with_message() {
 
 test_require_fallback_failure_default_message() {
   # Skip when invoke-wizardry is loaded (require-command always available)
-  if [ "${_WIZARDRY_INVOKED-0}" = "1" ]; then
+  if [ "${WIZARDRY_INVOKED-0}" = "1" ]; then
     TEST_SKIP_REASON="(requires unloaded wizardry)"
     return 222
   fi
@@ -170,7 +170,7 @@ test_require_fallback_failure_default_message() {
 
 test_require_fallback_shows_install_hint() {
   # Skip when invoke-wizardry is loaded (require-command always available)
-  if [ "${_WIZARDRY_INVOKED-0}" = "1" ]; then
+  if [ "${WIZARDRY_INVOKED-0}" = "1" ]; then
     TEST_SKIP_REASON="(requires unloaded wizardry)"
     return 222
   fi
