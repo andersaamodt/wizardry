@@ -1,0 +1,63 @@
+#!/bin/sh
+# upload-image - Upload and immediately display image (demonstrates real-time interactivity)
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+# This demonstrates the web platform's capability for real-time uploads and display
+# In production, this would process actual multipart/form-data POST requests
+
+query="${QUERY_STRING:-}"
+
+if [ -z "$query" ]; then
+  cat <<HTML
+<div class="demo-result">
+  <p>Upload an image to see real-time display.</p>
+</div>
+HTML
+  exit 0
+fi
+
+# Parse the simulated upload (format: filename=name.png)
+filename=$(printf '%s' "$query" | url-decode | sed 's/^filename=//')
+filename=${filename:-test.png}
+
+upload_dir="${TMPDIR:-/tmp}/wizardry-uploads"
+mkdir -p "$upload_dir"
+
+# Create a simple SVG image as demo (in production would save actual uploaded file)
+timestamp=$(date +%s)
+img_file="$upload_dir/${timestamp}-${filename}"
+
+# Generate a demo SVG with timestamp
+cat > "$img_file" <<'SVG'
+<svg width="200" height="100" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="100" fill="#4CAF50"/>
+  <text x="100" y="50" font-family="monospace" font-size="12" fill="white" text-anchor="middle">
+SVG
+printf '    Uploaded: %s\n' "$(date +%H:%M:%S)" >> "$img_file"
+cat >> "$img_file" <<'SVG'
+  </text>
+</svg>
+SVG
+
+# Read the SVG content and encode for data URL
+svg_content=$(cat "$img_file")
+svg_encoded=$(printf '%s' "$svg_content" | sed 's/"/\&quot;/g')
+
+cat <<HTML
+<div class="demo-result upload success">
+  <h3>✅ Image Uploaded &amp; Displayed!</h3>
+  <p>📁 Filename: <strong>$filename</strong></p>
+  <p>⏰ Uploaded: <strong>$(date +"%Y-%m-%d %H:%M:%S")</strong></p>
+  <div class="upload-preview">
+    <h4>Real-time Display:</h4>
+    <div style="margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 5px;">
+      <img src="data:image/svg+xml;charset=utf-8,$svg_encoded" alt="Uploaded image" style="max-width: 100%; border: 2px solid #ddd;"/>
+    </div>
+    <p class="meta"><em>Image was just uploaded to server and immediately fetched and displayed - demonstrating real-time interactivity!</em></p>
+  </div>
+</div>
+HTML

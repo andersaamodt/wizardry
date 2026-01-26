@@ -29,6 +29,7 @@ if [ "$action" = "--enable" ]; then
   "$script_dir/install-fcgiwrap" || true
   "$script_dir/install-openssl" || true
   "$script_dir/install-htmx" || true
+  "$script_dir/install-certbot" || true
   "$script_dir/install-coreutils" || true
   
   printf '%s\n' "All components installation attempted."
@@ -40,6 +41,7 @@ elif [ "$action" = "--disable" ]; then
   "$script_dir/uninstall-fcgiwrap" || true
   "$script_dir/uninstall-openssl" || true
   "$script_dir/uninstall-htmx" || true
+  "$script_dir/uninstall-certbot" || true
   # Note: coreutils cannot be uninstalled
   
   printf '%s\n' "All components uninstallation attempted."

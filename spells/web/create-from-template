@@ -1,0 +1,89 @@
+#!/bin/sh
+
+# Create a site from a template.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: create-from-template SITENAME TEMPLATE
+
+Creates a new site by copying a template.
+
+Templates:
+  demo    - Interactive demo site with 15+ CGI examples
+  blog    - Personal blog template (stub)
+
+Example: create-from-template mysite demo
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+site_name=${1-}
+template=${2-}
+
+if [ -z "$site_name" ]; then
+  die 2 "create-from-template: SITENAME required"
+fi
+
+if [ -z "$template" ]; then
+  die 2 "create-from-template: TEMPLATE required"
+fi
+
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+SITES_DIR="$WEB_ROOT"
+SITE_DIR="$SITES_DIR/$site_name"
+
+# Check if site already exists
+if [ -d "$SITE_DIR" ]; then
+  die "create-from-template: site '$site_name' already exists"
+fi
+
+# Get WIZARDRY_DIR to find templates
+template_dir="$WIZARDRY_DIR/.templates/$template"
+
+if [ ! -d "$template_dir" ]; then
+  die "create-from-template: template '$template' not found"
+fi
+
+step "Creating site '$site_name' from template '$template'..."
+
+# Copy template to site directory
+mkdir -p "$SITE_DIR"
+cp -r "$template_dir"/* "$SITE_DIR/"
+
+# Rename to match expected structure
+if [ -d "$SITE_DIR/pages" ]; then
+  mkdir -p "$SITE_DIR/site"
+  mv "$SITE_DIR/pages" "$SITE_DIR/site/"
+fi
+
+if [ -d "$SITE_DIR/static" ]; then
+  [ ! -d "$SITE_DIR/site" ] && mkdir -p "$SITE_DIR/site"
+  mv "$SITE_DIR/static" "$SITE_DIR/site/"
+fi
+
+# Create additional required directories
+mkdir -p "$SITE_DIR/site/uploads"
+mkdir -p "$SITE_DIR/build"
+
+# Create site config
+cat > "$SITE_DIR/site.conf" <<EOF
+# Site configuration for $site_name
+site-name=$site_name
+template=$template
+port=8080
+domain=localhost
+https=false
+EOF
+
+success "Site '$site_name' created from template '$template'"
+info "Site directory: $SITE_DIR"
+info ""
+info "Next steps:"
+info "  1. Build: web-wizardry build $site_name"
+info "  2. Serve: web-wizardry serve $site_name"
+info "  3. Visit: http://localhost:8080"

@@ -1,0 +1,7 @@
+#!/bin/sh
+# parse-query QUERY_STRING - parse query string into key=value lines
+# Example: parse-query "foo=bar&baz=qux" → foo=bar\nbaz=qux
+set -eu
+
+# Split on & and replace with newlines
+printf '%s' "${1-}" | tr '&' '\n'

@@ -1,0 +1,48 @@
+#!/bin/sh
+
+# Delete a wizardry web site.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: delete-site SITENAME
+
+Deletes a website and all its files.
+
+Example: web-delete-site mysite
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+site_name=${1-}
+if [ -z "$site_name" ]; then
+  die 2 "delete-site: SITENAME required"
+fi
+
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+SITES_DIR="$WEB_ROOT"
+SITE_DIR="$SITES_DIR/$site_name"
+
+if [ ! -d "$SITE_DIR" ]; then
+  die "delete-site: site '$site_name' not found"
+fi
+
+# Confirm deletion
+printf 'Delete site %s? [y/N] ' "$site_name"
+read -r confirm
+
+case "$confirm" in
+  y|Y|yes|YES)
+    step "Deleting site: $site_name"
+    rm -rf "$SITE_DIR"
+    success "Site '$site_name' deleted"
+    ;;
+  *)
+    info "Deletion cancelled"
+    ;;
+esac
+esac

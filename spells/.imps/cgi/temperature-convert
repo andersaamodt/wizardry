@@ -1,0 +1,37 @@
+#!/bin/sh
+# temperature-convert - Convert between Celsius and Fahrenheit
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+params="${QUERY_STRING:-}"
+temp=$(printf '%s' "$params" | sed 's/.*temp=\([^&]*\).*/\1/' | url-decode)
+unit=$(printf '%s' "$params" | sed 's/.*unit=\([^&]*\).*/\1/' | url-decode)
+
+if [ -z "$temp" ]; then
+  cat <<HTML
+<div class="demo-result">
+  <p>Please enter a temperature</p>
+</div>
+HTML
+else
+  if [ "$unit" = "C" ]; then
+    # Celsius to Fahrenheit
+    result=$(printf "scale=1; ($temp * 9/5) + 32\n" | bc)
+    cat <<HTML
+<div class="demo-result">
+  <p>${temp}°C = <strong>${result}°F</strong></p>
+</div>
+HTML
+  else
+    # Fahrenheit to Celsius
+    result=$(printf "scale=1; ($temp - 32) * 5/9\n" | bc)
+    cat <<HTML
+<div class="demo-result">
+  <p>${temp}°F = <strong>${result}°C</strong></p>
+</div>
+HTML
+  fi
+fi

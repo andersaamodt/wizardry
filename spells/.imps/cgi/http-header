@@ -1,0 +1,6 @@
+#!/bin/sh
+# http-header NAME VALUE - output HTTP header
+# Example: http-header Content-Type "text/html"
+set -eu
+
+printf '%s: %s\r\n' "$1" "$2"
