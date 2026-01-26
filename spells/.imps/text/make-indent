@@ -9,8 +9,8 @@ mi_file=${2-}
 mi_imp_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
 if [ -n "$mi_file" ] && [ -f "$mi_file" ]; then
-  mi_char=$("$mi_imp_dir/detect-indent-char" "$mi_file")
-  mi_width=$("$mi_imp_dir/detect-indent-width" "$mi_file")
+  mi_char=$("$mi_imp_dir/divine-indent-char" "$mi_file")
+  mi_width=$("$mi_imp_dir/divine-indent-width" "$mi_file")
 else
   mi_char=space
   mi_width=2
@@ -21,15 +21,15 @@ case $mi_char in
     mi_i=0
     while [ "$mi_i" -lt "$mi_level" ]; do
       printf '\t'
-      mi_i=$((_mi_i + 1))
+      mi_i=$((mi_i + 1))
     done
     ;;
   *)
-    mi_total=$((_mi_level * _mi_width))
+    mi_total=$((mi_level * mi_width))
     mi_i=0
     while [ "$mi_i" -lt "$mi_total" ]; do
       printf ' '
-      mi_i=$((_mi_i + 1))
+      mi_i=$((mi_i + 1))
     done
     ;;
 esac
