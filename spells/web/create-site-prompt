@@ -2,7 +2,6 @@
 
 # Prompt for site name and create it.
 
-require-wizardry || exit 1
 
 set -eu
 . env-clear

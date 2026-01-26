@@ -35,8 +35,6 @@ USAGE
   ;;
 esac
 
-require-wizardry || exit 1
-
 set -eu
 . env-clear
 . colors
@@ -128,7 +126,6 @@ case "$cmd" in
     die 2 "web-wizardry: unknown command '$cmd'"
     ;;
 esac
-
 # Interactive menu
 while true; do
   # Build list of existing sites

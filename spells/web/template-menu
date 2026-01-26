@@ -13,8 +13,6 @@ USAGE
   ;;
 esac
 
-require-wizardry || exit 1
-
 set -eu
 . env-clear
 . colors
