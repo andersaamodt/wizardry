@@ -1,0 +1,38 @@
+#!/bin/sh
+# stub-forget-command DIR - create forget stub
+set -eu
+
+dir=$1
+cat >"$dir/forget" <<'STUB'
+#!/bin/sh
+tab_char=$(printf '\t')
+name=$1
+cast_dir=${WIZARDRY_CAST_DIR:-${HOME:-.}/.spellbook}
+cast_file_default=$cast_dir/.memorized
+cast_file=${WIZARDRY_CAST_FILE:-$cast_file_default}
+
+if [ ! -f "$cast_file" ]; then
+  printf '%s\n' "forget: spell '$name' is not memorized." >&2
+  exit 1
+fi
+
+tmp=$(mktemp)
+removed=0
+while IFS= read -r line || [ -n "$line" ]; do
+  entry_name=${line%%"$tab_char"*}
+  if [ "$entry_name" = "$name" ]; then
+    removed=1
+    continue
+  fi
+  [ -n "$entry_name" ] && printf '%s\n' "$line" >>"$tmp"
+done <"$cast_file"
+
+if [ "$removed" -eq 0 ]; then
+  rm -f "$tmp"
+  printf '%s\n' "forget: spell '$name' is not memorized." >&2
+  exit 1
+fi
+
+mv "$tmp" "$cast_file"
+STUB
+chmod +x "$dir/forget"

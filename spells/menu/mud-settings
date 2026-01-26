@@ -69,42 +69,28 @@ while true; do
     first_run=0
   fi
 
-  # Count number of player keys in ~/.ssh
-  key_count=0
-  for key in "$HOME"/.ssh/*.pub; do
-    # Skip if glob didn't match (returns literal *.pub)
-    [ -e "$key" ] || continue
-    if [ -f "$key" ]; then
-      key_count=$((key_count + 1))
-    fi
-  done
+  # Get current player for menu label
+  current_player=${MUD_PLAYER:-$(whoami)}
   
-  # Build menu items based on number of keys
+  # Check if player has a key (copy vs create)
+  player_key_path="$HOME/.ssh/${current_player}.pub"
+  if [ -f "$player_key_path" ]; then
+    key_action="Copy player key%cat \"$player_key_path\" | pbcopy 2>/dev/null || cat \"$player_key_path\" | xclip -selection clipboard 2>/dev/null || cat \"$player_key_path\""
+  else
+    key_action="Create player key%ssh-keygen -t ed25519 -f \"$HOME/.ssh/$current_player\" -N '' && cat \"$HOME/.ssh/${current_player}.pub\""
+  fi
+  
+  # Build menu items
+  change="Change Player%choose-player"
   new="New Player%new-player"
-  
-  # Admin items (for MUD hosting)
-  add="Add Player%add-player"
-  boot="Boot Player%boot-player"
-  list_players="List System Users%getent passwd | grep /home | cut -d: -f1 | sort"
-  list_rooms="List Shared Rooms%ls -la /srv/mud/world 2>/dev/null || printf 'Shared world not set up. Run install-sshfs first.\\n'"
-  
-  # MUD Features (at the end)
-  features="MUD Features%. mud-menu"
   
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
   exit_label=$(exit-label)
   exit_item="${exit_label}%kill -TERM \$PPID"
 
-  # Build menu arguments based on key count
-  if [ "$key_count" -ge 2 ]; then
-    # Show Change Player only if there are at least 2 keys
-    change="Change Player%choose-player"
-    set -- "$change" "$new" "---" "$add" "$boot" "$list_players" "$list_rooms" "---" "$features" "$exit_item"
-  else
-    # Don't show Change Player if fewer than 2 keys
-    set -- "$new" "---" "$add" "$boot" "$list_players" "$list_rooms" "---" "$features" "$exit_item"
-  fi
+  # Build menu arguments
+  set -- "$key_action" "$change" "$new" "$exit_item"
   menu "MUD Settings:" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
   
