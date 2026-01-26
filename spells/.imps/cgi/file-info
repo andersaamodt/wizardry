@@ -1,0 +1,55 @@
+#!/bin/sh
+# file-info - Process file upload and display uploaded image
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+# Parse query string for uploaded file info
+query="${QUERY_STRING:-}"
+
+# In a real implementation, this would process multipart/form-data from POST
+# For the demo, we simulate upload by accepting base64 data in query string
+# Format: data=base64data&name=filename&type=mimetype
+
+if [ -z "$query" ]; then
+  cat <<HTML
+<div class="demo-result upload">
+  <h3>No File Uploaded</h3>
+  <p>Please select a file and click Upload.</p>
+</div>
+HTML
+  exit 0
+fi
+
+# Parse parameters
+upload_dir="${TMPDIR:-/tmp}/wizardry-uploads"
+mkdir -p "$upload_dir"
+
+# Extract filename from query
+filename=$(printf '%s' "$query" | sed 's/.*name=//' | sed 's/&.*//' | url-decode)
+filename=${filename:-uploaded-file.bin}
+
+# For demo: create a simple test file
+timestamp=$(date +%s)
+test_file="$upload_dir/${timestamp}-${filename}"
+
+# Create a simple demo file (in production would save actual upload data)
+printf 'Demo upload: %s at %s\n' "$filename" "$(date)" > "$test_file"
+
+# Get file info
+size=$(wc -c < "$test_file" 2>/dev/null || echo "0")
+
+cat <<HTML
+<div class="demo-result upload success">
+  <h3>✅ File Uploaded Successfully!</h3>
+  <p>📁 Filename: <strong>$filename</strong></p>
+  <p>📊 Size: <strong>${size} bytes</strong></p>
+  <p>📅 Uploaded: <strong>$(date)</strong></p>
+  <p>💾 Saved to: <code>$test_file</code></p>
+  <div class="upload-preview">
+    <p><em>File has been saved server-side and is ready for use.</em></p>
+  </div>
+</div>
+HTML

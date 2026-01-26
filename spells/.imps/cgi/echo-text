@@ -1,0 +1,19 @@
+#!/bin/sh
+# echo-text - CGI script that echoes back the submitted text
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+# Parse query string or POST data
+text="${QUERY_STRING:-No text provided}"
+text=$(printf '%s' "$text" | sed 's/text=//' | url-decode)
+
+cat <<HTML
+<div class="demo-result">
+  <h3>Echo Result:</h3>
+  <p><strong>${text}</strong></p>
+  <p class="meta">Processed by shell CGI at $(date)</p>
+</div>
+HTML

@@ -1,0 +1,6 @@
+#!/bin/sh
+# http-status CODE MESSAGE - output HTTP status line
+# Example: http-status 200 "OK"
+set -eu
+
+printf 'Status: %s %s\r\n' "$1" "$2"

@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# Install certbot for Let's Encrypt certificates.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-certbot
+
+Installs certbot using the system package manager.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+manage_cmd=${MANAGE_SYSTEM_COMMAND:-manage-system-command}
+
+if ! command -v "$manage_cmd" >/dev/null 2>&1; then
+  core_dir=$(CDPATH= cd -- "$script_dir" 2>/dev/null && cd .. && cd core && pwd -P)
+  if [ -n "$core_dir" ] && [ -x "$core_dir/manage-system-command" ]; then
+    manage_cmd="$core_dir/manage-system-command"
+  else
+    printf '%s\n' "install-certbot: unable to find manage-system-command" >&2
+    exit 1
+  fi
+fi
+
+printf '%s\n' "Installing certbot..."
+"$manage_cmd" install certbot certbot
+
+printf '%s\n' "Certbot installation complete."

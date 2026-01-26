@@ -1,0 +1,26 @@
+#!/bin/sh
+# counter - Increment a counter stored in a file
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+counter_file="${TMPDIR:-/tmp}/wizardry-counter.txt"
+
+# Initialize if doesn't exist
+if [ ! -f "$counter_file" ]; then
+  echo "0" > "$counter_file"
+fi
+
+# Increment
+count=$(cat "$counter_file")
+count=$((count + 1))
+echo "$count" > "$counter_file"
+
+cat <<HTML
+<div class="demo-result counter">
+  <h2>$count</h2>
+  <p class="meta">Button clicks since last reset</p>
+</div>
+HTML

@@ -1,28 +1,14 @@
 #!/bin/sh
-set -eu
-
-# Locate repo root
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
   test_root=$(dirname "$test_root")
 done
-# shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-spell_is_executable() {
-  [ -x "$ROOT_DIR/spells/.arcana/web-wizardry/uninstall-openssl" ]
+test_uninstall_openssl_help() {
+  run_spell "spells/.arcana/web-wizardry/uninstall-openssl" --help
+  assert_success && assert_output_contains "certbot"
 }
-run_test_case "install/web-wizardry/uninstall-openssl is executable" spell_is_executable
 
-spell_has_content() {
-  [ -s "$ROOT_DIR/spells/.arcana/web-wizardry/uninstall-openssl" ]
-}
-run_test_case "install/web-wizardry/uninstall-openssl has content" spell_has_content
-
-shows_help() {
-  run_spell spells/.arcana/web-wizardry/uninstall-openssl --help
-  true
-}
-run_test_case "uninstall-openssl shows help" shows_help
-
+run_test_case "uninstall-openssl shows help" test_uninstall_openssl_help
 finish_tests

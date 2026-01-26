@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# Show status of a wizardry web site.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: site-status SITENAME
+
+Shows the status of a website including build state and serving status.
+
+Example: web-site-status mysite
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+site_name=${1-}
+if [ -z "$site_name" ]; then
+  die 2 "site-status: SITENAME required"
+fi
+
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+SITES_DIR="$WEB_ROOT"
+SITE_DIR="$SITES_DIR/$site_name"
+
+if [ ! -d "$SITE_DIR" ]; then
+  printf 'not found\n'
+  exit 1
+fi
+
+# Check if built
+if [ -d "$SITE_DIR/build" ] && [ -f "$SITE_DIR/build/pages/index.html" ]; then
+  build_status="built"
+else
+  build_status="not built"
+fi
+
+# Check if serving (placeholder - would check nginx/process)
+serve_status="not serving"
+
+printf '%s, %s\n' "$build_status" "$serve_status"

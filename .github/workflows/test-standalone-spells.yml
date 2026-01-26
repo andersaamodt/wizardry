@@ -79,8 +79,8 @@ jobs:
           : > "$tmpfile"
           : > "$skipfile"
           
-          # Known excluded spells (wizardry infrastructure)
-          excluded="invoke-wizardry require-wizardry declare-globals learn-spellbook learn mud decorate select-player"
+          # Known excluded spells (wizardry infrastructure and interactive menu-based spells)
+          excluded="invoke-wizardry require-wizardry declare-globals learn-spellbook learn mud decorate select-player site-menu template-menu web-wizardry"
           
           # Test each compiled spell with minimal PATH and timeout
           for compiled in /tmp/compiled-standalone/*; do

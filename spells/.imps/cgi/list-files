@@ -1,0 +1,30 @@
+#!/bin/sh
+# list-files - List files in a directory
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+# List some safe system directories
+cat <<HTML
+<div class="demo-result files">
+  <h3>Directory Listing (CGI Demo)</h3>
+  <ul>
+HTML
+
+# List files in /usr/bin (first 10)
+for file in /usr/bin/*; do
+  [ -e "$file" ] || continue
+  basename "$file"
+  count=$((${count:-0} + 1))
+  [ "$count" -ge 10 ] && break
+done | while read fname; do
+  printf '    <li>%s</li>\n' "$fname"
+done
+
+cat <<HTML
+  </ul>
+  <p class="meta">Showing first 10 files from /usr/bin</p>
+</div>
+HTML
