@@ -85,6 +85,13 @@ if [ ! -e "$file" ]; then
   fi
 fi
 
+# Ensure file has a content hash before setting priority
+# This allows tracking file changes and integrity
+if ! hashchant "$file"; then
+  printf '%s\n' "prioritize: hashchant failed for file: $file" >&2
+  exit 1
+fi
+
 # Get the directory the file is in
 directory=$(dirname "$file")
 if [ "$directory" = "." ]; then
