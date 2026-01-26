@@ -158,15 +158,15 @@ file_to_folder_transfers_priority_attribute() {
   : > "$operations_log"
   
   # Create stub xattr that simulates priority attribute on file
-  cat >"$stub_dir/xattr" <<STUB_SCRIPT
+  cat >"$stub_dir/xattr" <<'STUB_SCRIPT'
 #!/bin/sh
-printf 'xattr called: %s\n' "\$*" >> "$operations_log"
-case "\$1" in
+printf 'xattr called: %s\n' "$*" >> "$operations_log"
+case "$1" in
   -p)
     # Read operation for read-magic
-    if [ "\$2" = "user.priority" ]; then
+    if [ "$2" = "user.priority" ]; then
       # Check which file is being read
-      case "\$3" in
+      case "$3" in
         *"project notes.txt")
           # After disenchant, priority should not exist on project notes
           exit 1
@@ -178,32 +178,47 @@ case "\$1" in
           ;;
       esac
     fi
+    if [ "$2" = "user.echelon" ]; then
+      # No echelon initially
+      exit 1
+    fi
     exit 1
     ;;
   -w)
     # Write operation for enchant
-    if [ "\$2" = "user.priority" ] && [ "\$3" = "high" ]; then
-      printf 'enchant: priority set to high on %s\n' "\$4" >> "$operations_log"
+    if [ "$2" = "user.priority" ] && [ "$3" = "high" ]; then
+      printf 'enchant: priority set to high on %s\n' "$4" >> "$operations_log"
+      exit 0
+    fi
+    if [ "$2" = "user.echelon" ]; then
+      printf 'enchant: echelon set on %s\n' "$4" >> "$operations_log"
       exit 0
     fi
     exit 1
     ;;
   -d)
     # Delete operation for disenchant (accepts both priority and user.priority)
-    if [ "\$2" = "user.priority" ] || [ "\$2" = "priority" ]; then
-      printf 'disenchant: priority removed from %s\n' "\$3" >> "$operations_log"
+    if [ "$2" = "user.priority" ] || [ "$2" = "priority" ]; then
+      printf 'disenchant: priority removed from %s\n' "$3" >> "$operations_log"
+      exit 0
+    fi
+    if [ "$2" = "user.echelon" ] || [ "$2" = "echelon" ]; then
+      printf 'disenchant: echelon removed from %s\n' "$3" >> "$operations_log"
       exit 0
     fi
     exit 1
     ;;
   *)
-    # List operation (no args)
+    # List operation (no args) - return priority as existing attribute
     printf 'user.priority\n'
     exit 0
     ;;
 esac
 STUB_SCRIPT
   chmod +x "$stub_dir/xattr"
+  
+  # Replace $operations_log and $testfile in the script
+  sed -i "s|\$operations_log|$operations_log|g" "$stub_dir/xattr"
   
   # Run file-to-folder with stub xattr in PATH
   PATH="$stub_dir:$PATH" run_spell "spells/arcane/file-to-folder" "$testfile"
