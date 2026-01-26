@@ -87,33 +87,15 @@ is_memorized() {
       esac
 }
 
-first_run=1
 start_selection=1
-was_memorized=0
 
 while :; do
-      if [ "$first_run" -eq 0 ]; then
-              # Check if memorization state changed
-              if is_memorized "$name"; then
-                      now_memorized=1
-              else
-                      now_memorized=0
-              fi
-              if [ "$was_memorized" != "$now_memorized" ]; then
-                      start_selection=2
-              else
-                      start_selection=1
-              fi
-      else
-              first_run=0
-      fi
-
-      # Build menu toggle label
+      # Store current memorization state before menu
       if is_memorized "$name"; then
-              was_memorized=1
+              before_memorized=1
               cast_toggle="[X] Forget%forget '$name'"
       else
-              was_memorized=0
+              before_memorized=0
               cast_toggle="[ ] Memorize%memorize '$name'"
       fi
       
@@ -201,5 +183,20 @@ while :; do
       if [ "$menu_status" -eq 130 ]; then
               printf 'ESC\n' >&2
               exit 0
+      fi
+      
+      # After menu returns, check if memorization state changed
+      if is_memorized "$name"; then
+              after_memorized=1
+      else
+              after_memorized=0
+      fi
+      
+      if [ "$before_memorized" != "$after_memorized" ]; then
+              # Toggle action occurred - keep cursor at position 2
+              start_selection=2
+      else
+              # Non-toggle action - reset to position 1
+              start_selection=1
       fi
 done
