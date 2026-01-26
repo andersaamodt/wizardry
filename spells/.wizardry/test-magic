@@ -203,6 +203,11 @@ USAGE
   esac
 done
 
+# When --only is used with a single level (not a range), adjust min_level_range
+if [ "$only_this_level" -eq 1 ] && [ "$min_level_range" -eq 0 ]; then
+  min_level_range=$target_level
+fi
+
 # Validate level range
 if [ "$target_level" -lt 0 ] || [ "$target_level" -gt "$max_level" ]; then
   printf 'test-magic: level must be 0-%d\n' "$max_level" >&2
@@ -947,7 +952,7 @@ while [ "$current_level" -le "$target_level" ]; do
     exit "$exit_code"
   }
   last_success_level=$current_level
-  if [ "$only_this_level" -eq 1 ]; then
+  if [ "$only_this_level" -eq 1 ] && [ "$min_level_range" -eq "$target_level" ]; then
     break
   fi
   current_level=$((current_level + 1))
