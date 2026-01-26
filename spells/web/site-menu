@@ -19,9 +19,7 @@ set -eu
 . env-clear
 . colors
 
-if ! require menu "The web-site-menu command needs the 'menu' command."; then
-  exit 1
-fi
+has menu || die "site-menu: menu command required"
 
 site_name=${1-}
 if [ -z "$site_name" ]; then
