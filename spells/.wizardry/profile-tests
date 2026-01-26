@@ -90,19 +90,20 @@ done
 # Get list of tests to profile
 test_list=""
 if [ -n "$only_pattern" ]; then
-  # Use function for pattern matching instead of inline case statement
-  for test_path in $(find "$test_dir" -type f \( -name 'test-*.sh' -o -name 'common-*.sh' \)); do
-    if matches_pattern "$test_path" "$only_pattern"; then
-      test_list="$test_list
-$test_path"
-    fi
-  done
-  test_list=$(printf '%s\n' "$test_list" | grep . | sort)
+  # Build list more efficiently using temporary file
+  tmplist=$(temp-file profile-list)
+  find "$test_dir" -type f \( -name 'test-*.sh' -o -name 'common-*.sh' \) 2>/dev/null | \
+    while IFS= read -r test_path; do
+      if matches_pattern "$test_path" "$only_pattern"; then
+        printf '%s\n' "$test_path"
+      fi
+    done | sort > "$tmplist"
+  test_list=$(cat "$tmplist")
+  rm -f "$tmplist"
 else
-  test_list=$(find "$test_dir" -maxdepth 1 -type f \
+  # Use single find command for better performance
+  test_list=$(find "$test_dir" -type f \
     \( -name 'test-*.sh' -o -name 'common-*.sh' \) 2>/dev/null | sort)
-  test_list="$test_list
-$(find "$test_dir" -mindepth 2 -type f -name 'test-*.sh' 2>/dev/null | sort)"
 fi
 
 if [ -z "$test_list" ]; then
