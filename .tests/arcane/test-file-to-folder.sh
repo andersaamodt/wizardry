@@ -224,6 +224,9 @@ STUB_SCRIPT
   PATH="$stub_dir:$PATH" run_spell "spells/arcane/file-to-folder" "$testfile"
   assert_success || return 1
   
+  # Clean up environment
+  unset OPERATIONS_LOG
+  
   # Verify folder was created
   [ -d "$testfile" ] || { TEST_FAILURE_REASON="folder not created"; return 1; }
   
