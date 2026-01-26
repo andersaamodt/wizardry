@@ -24,14 +24,14 @@ temp_tags=$(temp-file)
 # Extract all tags from all posts
 find "$POSTS_DIR" -name "*.md" -type f | while read -r post_file; do
   # Extract tags from YAML front matter
-  tags=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^tags:' | sed 's/^tags: *//;s/\[//;s/\]//;s/"//g' || echo "")
+  tags=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^tags:' | sed 's/^tags: *//;s/\[//;s/\]//;s/"//g' || printf '')
   
   if [ -n "$tags" ]; then
     # Split tags by comma and output each
-    echo "$tags" | tr ',' '\n' | while read -r tag; do
-      tag=$(echo "$tag" | sed 's/^ *//;s/ *$//')
+    printf '%s\n' "$tags" | tr ',' '\n' | while read -r tag; do
+      tag=$(printf '%s' "$tag" | sed 's/^ *//;s/ *$//')
       if [ -n "$tag" ]; then
-        echo "$tag"
+        printf '%s\n' "$tag"
       fi
     done
   fi
@@ -44,7 +44,7 @@ if [ -s "$temp_tags" ]; then
   # Sort, count unique tags, and display
   sort "$temp_tags" | uniq -c | sort -rn | while read -r count tag; do
     # Trim whitespace from count
-    count=$(echo "$count" | sed 's/^ *//')
+    count=$(printf '%s' "$count" | sed 's/^ *//')
     printf '  <a href="#%s" class="tag">%s <span class="tag-count">(%s)</span></a>\n' "$tag" "$tag" "$count"
   done
   
@@ -61,13 +61,13 @@ if [ -s "$temp_tags" ]; then
     # Find posts with this tag
     find "$POSTS_DIR" -name "*.md" -type f | sort -r | while read -r post_file; do
       # Check if post has this tag
-      post_tags=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^tags:' | sed 's/^tags: *//;s/\[//;s/\]//;s/"//g' || echo "")
+      post_tags=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^tags:' | sed 's/^tags: *//;s/\[//;s/\]//;s/"//g' || printf '')
       
       # Check if tag is in post_tags
-      if echo ",$post_tags," | grep -q ",$tag,"; then
+      if printf ',%s,' "$post_tags" | grep -q ",$tag,"; then
         # Extract post info
-        title=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^title:' | sed 's/^title: *//;s/"//g;s/'"'"'//g' || echo "Untitled")
-        published_at=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^published_at:' | sed 's/^published_at: *//;s/"//g' || echo "")
+        title=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^title:' | sed 's/^title: *//;s/"//g;s/'"'"'//g' || printf 'Untitled')
+        published_at=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^published_at:' | sed 's/^published_at: *//;s/"//g' || printf '')
         
         # Get base filename for link
         base_name=${post_file##*/}
