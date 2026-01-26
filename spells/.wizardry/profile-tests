@@ -115,48 +115,80 @@ on-exit cleanup-file "$tmpfile"
 
 info "Profiling tests..."
 
-# Time each test
+# Time each test - optimized to reduce subshell spawns
 test_count=$(printf '%s\n' "$test_list" | grep -c .)
 current=0
 
-printf '%s\n' "$test_list" | while IFS= read -r test_path; do
-  [ -n "$test_path" ] || continue
-  current=$((current + 1))
-  
-  test_name=$(basename "$test_path" .sh)
-  rel_path=${test_path#"$test_dir/"}
-  
-  printf '\r[%d/%d] %s...' "$current" "$test_count" "$test_name" >&2
-  
-  # Time the test execution
-  start_time=$(date +%s.%N 2>/dev/null || date +%s)
-  
-  # Run test and capture exit code but suppress output
-  test_exit=0
-  sh "$test_path" >/dev/null 2>&1 || test_exit=$?
-  
-  end_time=$(date +%s.%N 2>/dev/null || date +%s)
-  
-  # Calculate duration
-  duration=$(awk -v start="$start_time" -v end="$end_time" \
-    'BEGIN { printf "%.3f", end - start; exit }')
-  
-  # Record: duration|status|path
-  printf '%s|%s|%s\n' "$duration" "$test_exit" "$rel_path" >> "$tmpfile"
-done
+# Process tests - write directly to tmpfile to avoid subshell overhead
+printf '%s\n' "$test_list" | {
+  while IFS= read -r test_path; do
+    [ -n "$test_path" ] || continue
+    current=$((current + 1))
+    
+    test_name=$(basename "$test_path" .sh)
+    rel_path=${test_path#"$test_dir/"}
+    
+    printf '\r[%d/%d] %s...' "$current" "$test_count" "$test_name" >&2
+    
+    # Time the test execution - use single date call when possible
+    start_time=$(date +%s.%N 2>/dev/null || date +%s)
+    test_exit=0
+    sh "$test_path" >/dev/null 2>&1 || test_exit=$?
+    end_time=$(date +%s.%N 2>/dev/null || date +%s)
+    
+    # Calculate duration inline
+    duration=$(awk -v start="$start_time" -v end="$end_time" \
+      'BEGIN { printf "%.3f", end - start; exit }')
+    
+    # Record: duration|status|path
+    printf '%s|%s|%s\n' "$duration" "$test_exit" "$rel_path"
+  done
+} >> "$tmpfile"
 
 printf '\n' >&2
 
-# Sort results by duration (descending)
+# Sort results by duration (descending) and calculate all statistics in one pass
 sorted_results=$(sort -t'|' -k1 -rn "$tmpfile")
 
-# Calculate statistics
-total_time=$(awk -F'|' '{ sum += $1 } END { printf "%.3f", sum }' "$tmpfile")
-test_total=$(wc -l < "$tmpfile" | tr -d ' ')
-avg_time=$(awk -v total="$total_time" -v count="$test_total" \
-  'BEGIN { printf "%.3f", total / count; exit }')
-passed=$(awk -F'|' '$2 == 0 { count++ } END { print count+0 }' "$tmpfile")
-failed=$(awk -F'|' '$2 != 0 { count++ } END { print count+0 }' "$tmpfile")
+# Calculate all statistics in a single awk pass for efficiency
+stats=$(awk -F'|' '
+  {
+    duration = $1
+    status = $2
+    
+    # Collect data
+    total_time += duration
+    count++
+    if (status == 0) passed++
+    else failed++
+    
+    # Time distribution
+    if (duration < 0.1) under_01++
+    else if (duration < 0.5) range_01_05++
+    else if (duration < 1.0) range_05_1++
+    else if (duration < 5.0) range_1_5++
+    else if (duration < 10.0) range_5_10++
+    else over_10++
+  }
+  END {
+    printf "%d|%d|%d|%.3f|%.3f|%d|%d|%d|%d|%d|%d\n", 
+      count, passed, failed, total_time, (count > 0 ? total_time/count : 0),
+      under_01, range_01_05, range_05_1, range_1_5, range_5_10, over_10
+  }
+' "$tmpfile")
+
+# Parse statistics
+test_total=$(printf '%s' "$stats" | cut -d'|' -f1)
+passed=$(printf '%s' "$stats" | cut -d'|' -f2)
+failed=$(printf '%s' "$stats" | cut -d'|' -f3)
+total_time=$(printf '%s' "$stats" | cut -d'|' -f4)
+avg_time=$(printf '%s' "$stats" | cut -d'|' -f5)
+under_01=$(printf '%s' "$stats" | cut -d'|' -f6)
+range_01_05=$(printf '%s' "$stats" | cut -d'|' -f7)
+range_05_1=$(printf '%s' "$stats" | cut -d'|' -f8)
+range_1_5=$(printf '%s' "$stats" | cut -d'|' -f9)
+range_5_10=$(printf '%s' "$stats" | cut -d'|' -f10)
+over_10=$(printf '%s' "$stats" | cut -d'|' -f11)
 
 # Generate and output report
 if [ -n "$output_file" ]; then
@@ -190,13 +222,6 @@ printf '\n'
 
 # Show distribution by time ranges
 printf 'Time Distribution:\n'
-
-under_01=$(awk -F'|' '$1 < 0.1 { count++ } END { print count+0 }' "$tmpfile")
-range_01_05=$(awk -F'|' '$1 >= 0.1 && $1 < 0.5 { count++ } END { print count+0 }' "$tmpfile")
-range_05_1=$(awk -F'|' '$1 >= 0.5 && $1 < 1.0 { count++ } END { print count+0 }' "$tmpfile")
-range_1_5=$(awk -F'|' '$1 >= 1.0 && $1 < 5.0 { count++ } END { print count+0 }' "$tmpfile")
-range_5_10=$(awk -F'|' '$1 >= 5.0 && $1 < 10.0 { count++ } END { print count+0 }' "$tmpfile")
-over_10=$(awk -F'|' '$1 >= 10.0 { count++ } END { print count+0 }' "$tmpfile")
 
 printf '  < 0.1s:     %d tests\n' "$under_01"
 printf '  0.1-0.5s:   %d tests\n' "$range_01_05"
