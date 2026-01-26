@@ -120,6 +120,12 @@ info "Profiling tests..."
 test_count=$(printf '%s\n' "$test_list" | grep -c .)
 current=0
 
+# Check once if nanosecond timing is available
+has_nanoseconds=0
+if date +%s.%N >/dev/null 2>&1; then
+  has_nanoseconds=1
+fi
+
 # Process tests - write directly to tmpfile to avoid subshell overhead
 printf '%s\n' "$test_list" | {
   while IFS= read -r test_path; do
@@ -131,15 +137,22 @@ printf '%s\n' "$test_list" | {
     
     printf '\r[%d/%d] %s...' "$current" "$test_count" "$test_name" >&2
     
-    # Time the test execution - use single date call when possible
-    start_time=$(date +%s.%N 2>/dev/null || date +%s)
-    test_exit=0
-    sh "$test_path" >/dev/null 2>&1 || test_exit=$?
-    end_time=$(date +%s.%N 2>/dev/null || date +%s)
-    
-    # Calculate duration inline
-    duration=$(awk -v start="$start_time" -v end="$end_time" \
-      'BEGIN { printf "%.3f", end - start; exit }')
+    # Time the test execution - timing method determined once above
+    if [ "$has_nanoseconds" -eq 1 ]; then
+      start_time=$(date +%s.%N)
+      test_exit=0
+      sh "$test_path" >/dev/null 2>&1 || test_exit=$?
+      end_time=$(date +%s.%N)
+      duration=$(awk -v start="$start_time" -v end="$end_time" \
+        'BEGIN { printf "%.3f", end - start; exit }')
+    else
+      start_time=$(date +%s)
+      test_exit=0
+      sh "$test_path" >/dev/null 2>&1 || test_exit=$?
+      end_time=$(date +%s)
+      duration=$((end_time - start_time))
+      duration=$(printf '%d.000' "$duration")
+    fi
     
     # Record: duration|status|path
     printf '%s|%s|%s\n' "$duration" "$test_exit" "$rel_path"
