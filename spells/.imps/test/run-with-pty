@@ -44,6 +44,9 @@ fi
 {
   printf '#!/bin/sh\n'
   printf 'export PATH=%s\n' "'$PATH'"
+  # Export AWAIT_KEYPRESS_DEVICE to point to the PTY
+  # Use tty command to get actual controlling terminal, fall back to /dev/stdin
+  printf 'export AWAIT_KEYPRESS_DEVICE=$(tty 2>/dev/null || printf "/dev/stdin")\n'
   printf 'exec'
   for arg in "$@"; do
     # Escape single quotes in the argument
