@@ -25,19 +25,19 @@ test_web_create_site_creates_structure() {
   assert_success
   
   # Verify directory structure
-  [ -d "$test_web_root/sites/mytestsite/site/pages" ] || {
+  [ -d "$test_web_root/mytestsite/site/pages" ] || {
     TEST_FAILURE_REASON="pages directory not created"
     return 1
   }
-  [ -d "$test_web_root/sites/mytestsite/site/uploads" ] || {
+  [ -d "$test_web_root/mytestsite/site/uploads" ] || {
     TEST_FAILURE_REASON="uploads directory not created"
     return 1
   }
-  [ -d "$test_web_root/sites/mytestsite/site/static" ] || {
+  [ -d "$test_web_root/mytestsite/site/static" ] || {
     TEST_FAILURE_REASON="static directory not created"
     return 1
   }
-  [ -d "$test_web_root/sites/mytestsite/build" ] || {
+  [ -d "$test_web_root/mytestsite/build" ] || {
     TEST_FAILURE_REASON="build directory not created"
     return 1
   }
