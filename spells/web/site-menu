@@ -19,8 +19,6 @@ set -eu
 . env-clear
 . colors
 
-has menu || die "site-menu: menu command required"
-
 site_name=${1-}
 if [ -z "$site_name" ]; then
   die 2 "site-menu: SITENAME required"
