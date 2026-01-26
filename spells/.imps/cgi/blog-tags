@@ -63,8 +63,9 @@ if [ -s "$temp_tags" ]; then
       # Check if post has this tag
       post_tags=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^tags:' | sed 's/^tags: *//;s/\[//;s/\]//;s/"//g' || printf '')
       
-      # Check if tag is in post_tags
-      if printf ',%s,' "$post_tags" | grep -q ",$tag,"; then
+      # Check if tag is in post_tags (normalize spaces around commas)
+      normalized_tags=$(printf '%s' "$post_tags" | sed 's/ *, */,/g')
+      if printf ',%s,' "$normalized_tags" | grep -q ",$tag,"; then
         # Extract post info
         title=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^title:' | sed 's/^title: *//;s/"//g;s/'"'"'//g' || printf 'Untitled')
         published_at=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^published_at:' | sed 's/^published_at: *//;s/"//g' || printf '')
