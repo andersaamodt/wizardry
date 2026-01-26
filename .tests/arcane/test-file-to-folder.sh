@@ -176,7 +176,7 @@ file_to_folder_transfers_priority_attribute() {
   # Check that the folder has the priority attribute
   run_spell "spells/arcane/read-magic" "$testfile" "priority"
   assert_success || { TEST_FAILURE_REASON="could not read priority from folder"; return 1; }
-  assert_output "high" || { TEST_FAILURE_REASON="priority was not transferred to folder (expected: high, got: $OUTPUT)"; return 1; }
+  assert-equals "$OUTPUT" "high" || { TEST_FAILURE_REASON="priority was not transferred to folder"; return 1; }
   
   # Check that the project notes file does NOT have the priority attribute
   run_spell "spells/arcane/read-magic" "$testfile/project notes.txt" "priority"
