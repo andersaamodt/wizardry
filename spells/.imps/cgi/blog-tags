@@ -23,6 +23,14 @@ temp_tags=$(temp-file)
 
 # Extract all tags from all posts
 find "$POSTS_DIR" -name "*.md" -type f | while read -r post_file; do
+  # Check if post is draft
+  visibility=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^visibility:' | sed 's/^visibility: *//;s/"//g' || printf 'public')
+  
+  # Skip drafts
+  if [ "$visibility" = "draft" ]; then
+    continue
+  fi
+  
   # Extract tags from YAML front matter
   tags=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^tags:' | sed 's/^tags: *//;s/\[//;s/\]//;s/"//g' || printf '')
   
@@ -60,6 +68,14 @@ if [ -s "$temp_tags" ]; then
     
     # Find posts with this tag
     find "$POSTS_DIR" -name "*.md" -type f | sort -r | while read -r post_file; do
+      # Check if post is draft
+      visibility=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^visibility:' | sed 's/^visibility: *//;s/"//g' || printf 'public')
+      
+      # Skip drafts
+      if [ "$visibility" = "draft" ]; then
+        continue
+      fi
+      
       # Check if post has this tag
       post_tags=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^tags:' | sed 's/^tags: *//;s/\[//;s/\]//;s/"//g' || printf '')
       

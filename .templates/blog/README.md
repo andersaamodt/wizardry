@@ -76,11 +76,42 @@ blog/
 
 ## Navigation
 
-- **Homepage**: Chronological reverse-ordered post listing with pagination
+- **Homepage**: Chronological reverse-ordered post listing with pagination (10 posts per page)
 - **Tag index**: Global tag list with post counts
 - **Tag pages**: Posts filtered by tag
+- **Search**: Full-text search across titles, tags, summaries, and content
 - **Post navigation**: Previous/next links within posts
 - **Revision history**: Shows version lineage for edited posts
+
+## Search
+
+Full-text search via CGI:
+- Search across post titles, tags, summaries, and content
+- Case-insensitive matching
+- Excludes draft posts from results
+- Accessible via `/cgi/blog-search?q=query`
+
+## Pagination
+
+Blog index automatically paginates:
+- 10 posts per page
+- Previous/Next navigation
+- Page counter (e.g., "Page 2 of 5")
+- URL parameter: `?page=N`
+
+## Draft Visibility
+
+Posts with `visibility: "draft"` are hidden from:
+- Blog homepage (index)
+- Tag listings
+- Search results
+
+Drafts are only visible when accessed directly by URL, allowing you to work on posts locally before publishing.
+
+To publish a draft:
+```yaml
+visibility: "public"  # Change from "draft"
+```
 
 ## Static Pages
 
