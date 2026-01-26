@@ -43,11 +43,9 @@ fi
 # Properly quote each argument
 {
   printf '#!/bin/sh\n'
-  # Set PATH and AWAIT_KEYPRESS_DEVICE without export (POSIX-compliant variable assignment)
-  # AWAIT_KEYPRESS_DEVICE points to the PTY created by socat
-  printf 'PATH=%s\n' "'$PATH'"
-  printf 'AWAIT_KEYPRESS_DEVICE=$(tty 2>/dev/null || printf "/dev/stdin")\n'
-  printf 'exec'
+  # Set environment variables by prefixing the exec command
+  # This passes them to the command without using export
+  printf 'PATH=%s AWAIT_KEYPRESS_DEVICE=$(tty 2>/dev/null || printf "/dev/stdin") exec' "'$PATH'"
   for arg in "$@"; do
     # Escape single quotes in the argument
     escaped=$(printf '%s' "$arg" | sed "s/'/'\\\\''/g")
