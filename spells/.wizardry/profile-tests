@@ -50,7 +50,8 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 root_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
 test_dir="$root_dir/.tests"
 
-# Helper function for pattern matching (defined outside command substitution to avoid macOS bash issues)
+# Helper function for pattern matching
+# (defined outside command substitution to avoid macOS bash issues)
 matches_pattern() {
   mp_path=$1
   mp_pattern=$2
@@ -90,19 +91,22 @@ done
 # Get list of tests to profile
 test_list=""
 if [ -n "$only_pattern" ]; then
-  # Use function for pattern matching instead of inline case statement
-  for test_path in $(find "$test_dir" -type f \( -name 'test-*.sh' -o -name 'common-*.sh' \)); do
-    if matches_pattern "$test_path" "$only_pattern"; then
-      test_list="$test_list
-$test_path"
-    fi
-  done
-  test_list=$(printf '%s\n' "$test_list" | grep . | sort)
+  # Build list efficiently without temporary file
+  test_list=$(
+    find "$test_dir" -type f \
+      \( -name 'test-*.sh' -o -name 'common-*.sh' \) 2>/dev/null | \
+    while IFS= read -r test_path; do
+      if matches_pattern "$test_path" "$only_pattern"; then
+        printf '%s\n' "$test_path"
+      fi
+    done | sort
+  )
 else
-  test_list=$(find "$test_dir" -maxdepth 1 -type f \
-    \( -name 'test-*.sh' -o -name 'common-*.sh' \) 2>/dev/null | sort)
-  test_list="$test_list
-$(find "$test_dir" -mindepth 2 -type f -name 'test-*.sh' 2>/dev/null | sort)"
+  # Use single find command for better performance
+  test_list=$(
+    find "$test_dir" -type f \
+      \( -name 'test-*.sh' -o -name 'common-*.sh' \) 2>/dev/null | sort
+  )
 fi
 
 if [ -z "$test_list" ]; then
@@ -115,11 +119,19 @@ on-exit cleanup-file "$tmpfile"
 
 info "Profiling tests..."
 
-# Time each test
+# Time each test - optimized to reduce subshell spawns
 test_count=$(printf '%s\n' "$test_list" | grep -c .)
 current=0
 
-printf '%s\n' "$test_list" | while IFS= read -r test_path; do
+# Check once if nanosecond timing is available
+has_nanoseconds=0
+if date +%s.%N >/dev/null 2>&1; then
+  has_nanoseconds=1
+fi
+
+# Process tests - write directly to tmpfile to avoid subshell overhead
+current=0
+while IFS= read -r test_path; do
   [ -n "$test_path" ] || continue
   current=$((current + 1))
   
@@ -128,35 +140,68 @@ printf '%s\n' "$test_list" | while IFS= read -r test_path; do
   
   printf '\r[%d/%d] %s...' "$current" "$test_count" "$test_name" >&2
   
-  # Time the test execution
-  start_time=$(date +%s.%N 2>/dev/null || date +%s)
-  
-  # Run test and capture exit code but suppress output
-  test_exit=0
-  sh "$test_path" >/dev/null 2>&1 || test_exit=$?
-  
-  end_time=$(date +%s.%N 2>/dev/null || date +%s)
-  
-  # Calculate duration
-  duration=$(awk -v start="$start_time" -v end="$end_time" \
-    'BEGIN { printf "%.3f", end - start; exit }')
+  # Time the test execution - timing method determined once above
+  if [ "$has_nanoseconds" -eq 1 ]; then
+    start_time=$(date +%s.%N)
+    test_exit=0
+    sh "$test_path" >/dev/null 2>&1 || test_exit=$?
+    end_time=$(date +%s.%N)
+    duration=$(awk -v start="$start_time" -v end="$end_time" \
+      'BEGIN { printf "%.3f", end - start; exit }')
+  else
+    start_time=$(date +%s)
+    test_exit=0
+    sh "$test_path" >/dev/null 2>&1 || test_exit=$?
+    end_time=$(date +%s)
+    duration=$((end_time - start_time))
+    duration=$(printf '%d.000' "$duration")
+  fi
   
   # Record: duration|status|path
-  printf '%s|%s|%s\n' "$duration" "$test_exit" "$rel_path" >> "$tmpfile"
-done
+  printf '%s|%s|%s\n' "$duration" "$test_exit" "$rel_path"
+done >> "$tmpfile" <<EOF
+$test_list
+EOF
 
 printf '\n' >&2
 
-# Sort results by duration (descending)
+# Sort results by duration (descending) and calculate all statistics in one pass
 sorted_results=$(sort -t'|' -k1 -rn "$tmpfile")
 
-# Calculate statistics
-total_time=$(awk -F'|' '{ sum += $1 } END { printf "%.3f", sum }' "$tmpfile")
-test_total=$(wc -l < "$tmpfile" | tr -d ' ')
-avg_time=$(awk -v total="$total_time" -v count="$test_total" \
-  'BEGIN { printf "%.3f", total / count; exit }')
-passed=$(awk -F'|' '$2 == 0 { count++ } END { print count+0 }' "$tmpfile")
-failed=$(awk -F'|' '$2 != 0 { count++ } END { print count+0 }' "$tmpfile")
+# Calculate all statistics in a single awk pass for efficiency
+stats=$(awk -F'|' '
+  {
+    duration = $1
+    status = $2
+    
+    # Collect data
+    total_time += duration
+    count++
+    if (status == 0) passed++
+    else failed++
+    
+    # Time distribution
+    if (duration < 0.1) under_01++
+    else if (duration < 0.5) range_01_05++
+    else if (duration < 1.0) range_05_1++
+    else if (duration < 5.0) range_1_5++
+    else if (duration < 10.0) range_5_10++
+    else over_10++
+  }
+  END {
+    # Output format: count|passed|failed|total|avg|u01|r0105|r051|r15|r510|o10
+    printf "%d|%d|%d|%.3f|%.3f|%d|%d|%d|%d|%d|%d\n", \
+      count, passed, failed, total_time, \
+      (count > 0 ? total_time/count : 0), \
+      under_01, range_01_05, range_05_1, range_1_5, range_5_10, over_10
+  }
+' "$tmpfile")
+
+# Parse statistics using IFS to avoid multiple cut invocations
+IFS='|' read -r test_total passed failed total_time avg_time \
+  under_01 range_01_05 range_05_1 range_1_5 range_5_10 over_10 <<EOF
+$stats
+EOF
 
 # Generate and output report
 if [ -n "$output_file" ]; then
@@ -190,13 +235,6 @@ printf '\n'
 
 # Show distribution by time ranges
 printf 'Time Distribution:\n'
-
-under_01=$(awk -F'|' '$1 < 0.1 { count++ } END { print count+0 }' "$tmpfile")
-range_01_05=$(awk -F'|' '$1 >= 0.1 && $1 < 0.5 { count++ } END { print count+0 }' "$tmpfile")
-range_05_1=$(awk -F'|' '$1 >= 0.5 && $1 < 1.0 { count++ } END { print count+0 }' "$tmpfile")
-range_1_5=$(awk -F'|' '$1 >= 1.0 && $1 < 5.0 { count++ } END { print count+0 }' "$tmpfile")
-range_5_10=$(awk -F'|' '$1 >= 5.0 && $1 < 10.0 { count++ } END { print count+0 }' "$tmpfile")
-over_10=$(awk -F'|' '$1 >= 10.0 { count++ } END { print count+0 }' "$tmpfile")
 
 printf '  < 0.1s:     %d tests\n' "$under_01"
 printf '  0.1-0.5s:   %d tests\n' "$range_01_05"
