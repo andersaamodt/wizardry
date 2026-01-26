@@ -1,28 +1,14 @@
 #!/bin/sh
-set -eu
-
-# Locate repo root
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
   test_root=$(dirname "$test_root")
 done
-# shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-spell_is_executable() {
-  [ -x "$ROOT_DIR/spells/.arcana/web-wizardry/toggle-all-web-wizardry" ]
+test_toggle_all_web_wizardry_help() {
+  run_spell "spells/.arcana/web-wizardry/toggle-all-web-wizardry" --help
+  assert_success && assert_output_contains "certbot"
 }
-run_test_case "web-wizardry/toggle-all-web-wizardry is executable" spell_is_executable
 
-spell_has_content() {
-  [ -s "$ROOT_DIR/spells/.arcana/web-wizardry/toggle-all-web-wizardry" ]
-}
-run_test_case "web-wizardry/toggle-all-web-wizardry has content" spell_has_content
-
-shows_help() {
-  run_spell spells/.arcana/web-wizardry/toggle-all-web-wizardry --help
-  true
-}
-run_test_case "toggle-all-web-wizardry shows help" shows_help
-
+run_test_case "toggle-all-web-wizardry shows help" test_toggle_all_web_wizardry_help
 finish_tests
