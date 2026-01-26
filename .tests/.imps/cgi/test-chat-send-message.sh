@@ -5,10 +5,9 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-test_uninstall_openssl_help() {
-  run_spell "spells/.arcana/web-wizardry/uninstall-openssl" --help
-  assert_success && assert_output_contains "certbot"
+test_chat_send_message_exists() {
+  [ -x "spells/.imps/cgi/chat-send-message" ]
 }
 
-run_test_case "uninstall-openssl shows help" test_uninstall_openssl_help
+run_test_case "chat-send-message is executable" test_chat_send_message_exists
 finish_tests
