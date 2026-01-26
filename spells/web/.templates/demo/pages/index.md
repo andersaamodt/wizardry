@@ -88,6 +88,7 @@ Count words, characters, and lines:
 ## 🎨 More Demos
 
 - [Advanced Demos](/pages/advanced.html) - System info, file operations, and more
+- [Multi-Room Chat](/pages/chat.html) - Real-time chat with MUD compatibility
 - [Interactive Poll](/pages/poll.html) - Real-time voting system
 - [About](/pages/about.html) - Learn about Wizardry Web
 

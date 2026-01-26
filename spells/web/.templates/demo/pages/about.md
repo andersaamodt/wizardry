@@ -78,6 +78,7 @@ This entire demo site is built with Wizardry Web:
 - **Custom components** - Reusable card layouts
 - **Real-time updates** - No page reloads needed
 - **Pure shell backend** - Zero JavaScript on the server
+- **Multi-room chat** - MUD-compatible chat system with `.log` files
 
 ## Get Started
 
@@ -115,6 +116,11 @@ Visit the site at http://localhost:8080
 - `word-count` - Text analysis
 - `file-info` - File upload simulation
 - `list-files` - Directory listing
+- `chat-list-rooms` - List chat rooms
+- `chat-create-room` - Create chat room
+- `chat-get-messages` - Get chat messages
+- `chat-send-message` - Send chat message (MUD-compatible format)
+- `chat-delete-room` - Delete empty chat room
 
 All written in pure POSIX shell!
 
@@ -141,5 +147,9 @@ Every CGI script is open source and readable. Check them out at:
 
 ## Navigation
 - [Home](/pages/index.html)
+- [Advanced Demos](/pages/advanced.html)
+- [Poll](/pages/poll.html)
+- [Chat](/pages/chat.html)
+- [About](/pages/about.html)
 - [Advanced Demos](/pages/advanced.html)
 - [Poll](/pages/poll.html)
