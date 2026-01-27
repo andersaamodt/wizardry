@@ -54,19 +54,8 @@ if ! "$manage_cmd" certbot certbot; then
   exit 1
 fi
 
-# Add pkgin paths to PATH if not already available
-pkgin_candidates="/usr/pkg/bin/pkgin /opt/pkg/bin/pkgin /usr/local/pkg/bin/pkgin"
-if ! command -v pkgin >/dev/null 2>&1; then
-  for candidate in $pkgin_candidates; do
-    if [ -x "$candidate" ]; then
-      pkg_base=$(dirname "$(dirname "$candidate")")
-      # Add both bin and sbin directories (server tools are often in sbin)
-      PATH="$pkg_base/bin:$pkg_base/sbin:$PATH"
-      export PATH
-      break
-    fi
-  done
-fi
+# Add pkgin paths to PATH so installed packages can be found
+. add-pkgin-to-path
 
 # Verify installation - check both PATH and pkgin sbin directory
 if ! command -v certbot >/dev/null 2>&1; then
