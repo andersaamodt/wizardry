@@ -8,7 +8,7 @@ case "${1-}" in
 Usage: install-pkgin
 
 This spell installs pkgin (pkgsrc package manager) on macOS.
-See https://pkgsrc.joyent.com/install-on-macos/ for manual installation.
+Downloads and installs the official pkgsrc bootstrap package from Joyent.
 USAGE
   exit 0
   ;;
@@ -29,16 +29,53 @@ if [ "$(uname -s 2>/dev/null)" != "Darwin" ]; then
 fi
 
 printf '%s\n' "Installing pkgin package manager..."
-printf '%s\n' ""
-printf '%s\n' "pkgin requires downloading and running the official pkgsrc bootstrap script."
-printf '%s\n' "Visit: https://pkgsrc.joyent.com/install-on-macos/"
-printf '%s\n' ""
-printf '%s\n' "To install manually:"
-printf '%s\n' "  curl -O https://pkgsrc.joyent.com/packages/Darwin/bootstrap/bootstrap-trunk-x86_64-20XXXXXX.tar.gz"
-printf '%s\n' "  sudo tar -zxpf bootstrap-trunk-x86_64-20XXXXXX.tar.gz -C /"
-printf '%s\n' ""
-printf '%s\n' "After installation, add to your PATH:"
-printf '%s\n' "  export PATH=/opt/pkg/bin:/opt/pkg/sbin:\$PATH"
-printf '%s\n' ""
 
-exit 1
+# Detect architecture
+arch=$(uname -m)
+case "$arch" in
+  x86_64)
+    arch_name="x86_64"
+    ;;
+  arm64)
+    arch_name="arm64"
+    ;;
+  *)
+    printf '%s\n' "install-pkgin: unsupported architecture: $arch" >&2
+    exit 1
+    ;;
+esac
+
+# Download bootstrap package
+temp_dir=$(mktemp -d)
+trap 'rm -rf "$temp_dir"' EXIT
+
+printf '%s\n' "Downloading pkgsrc bootstrap for $arch_name..."
+
+# Use the official Joyent bootstrap URL - quarterly release is more stable
+bootstrap_url="https://pkgsrc.smartos.org/packages/Darwin/bootstrap/bootstrap-trunk-${arch_name}.tar.gz"
+
+if ! curl -fsSL "$bootstrap_url" -o "$temp_dir/bootstrap.tar.gz"; then
+  printf '%s\n' "install-pkgin: failed to download bootstrap package" >&2
+  printf '%s\n' "Tried URL: $bootstrap_url" >&2
+  exit 1
+fi
+
+printf '%s\n' "Installing pkgsrc bootstrap (this requires sudo)..."
+
+# Extract bootstrap (requires sudo for system-wide installation)
+if ! sudo tar -zxpf "$temp_dir/bootstrap.tar.gz" -C /; then
+  printf '%s\n' "install-pkgin: failed to extract bootstrap package" >&2
+  exit 1
+fi
+
+# Verify installation
+if command -v pkgin >/dev/null 2>&1; then
+  printf '%s\n' "pkgin installed successfully"
+  printf '%s\n' ""
+  printf '%s\n' "Add to your shell profile for PATH persistence:"
+  printf '%s\n' "  export PATH=/opt/pkg/bin:/opt/pkg/sbin:\$PATH"
+else
+  printf '%s\n' "install-pkgin: installation completed but pkgin not found in PATH" >&2
+  printf '%s\n' "You may need to add /opt/pkg/bin to your PATH" >&2
+  exit 1
+fi

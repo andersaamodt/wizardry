@@ -7,7 +7,8 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: uninstall-pkgin
 
-This spell provides instructions for uninstalling pkgin.
+This spell uninstalls pkgin (pkgsrc package manager) from macOS.
+This removes the entire /opt/pkg directory.
 USAGE
   exit 0
   ;;
@@ -15,6 +16,20 @@ esac
 
 set -eu
 
-printf '%s\n' "uninstall-pkgin: pkgin cannot be automatically uninstalled" >&2
-printf '%s\n' "To remove pkgin manually, remove /opt/pkg directory" >&2
-exit 1
+# Check if pkgin is installed
+if ! [ -d /opt/pkg ]; then
+  printf '%s\n' "pkgin is not installed (no /opt/pkg directory found)"
+  exit 0
+fi
+
+printf '%s\n' "Uninstalling pkgin package manager..."
+printf '%s\n' "This will remove the entire /opt/pkg directory (requires sudo)..."
+
+# Remove pkgsrc installation
+if ! sudo rm -rf /opt/pkg; then
+  printf '%s\n' "uninstall-pkgin: failed to remove /opt/pkg directory" >&2
+  exit 1
+fi
+
+printf '%s\n' "pkgin uninstalled successfully"
+printf '%s\n' "Remember to remove /opt/pkg/bin and /opt/pkg/sbin from your PATH"
