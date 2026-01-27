@@ -74,6 +74,13 @@ fi
 NGINX_CONF_DIR="$SITE_DIR/nginx"
 mkdir -p "$NGINX_CONF_DIR"
 
+# Create nginx temp directories (to avoid permission issues with system paths)
+mkdir -p "$NGINX_CONF_DIR/temp/client_body"
+mkdir -p "$NGINX_CONF_DIR/temp/proxy"
+mkdir -p "$NGINX_CONF_DIR/temp/fastcgi"
+mkdir -p "$NGINX_CONF_DIR/temp/uwsgi"
+mkdir -p "$NGINX_CONF_DIR/temp/scgi"
+
 # Path to CGI scripts
 WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
 CGI_DIR="$WIZARDRY_DIR/spells/.imps/cgi"
@@ -126,6 +133,13 @@ events {
 http {
     include $NGINX_CONF_DIR/mime.types;
     default_type application/octet-stream;
+    
+    # Use local temp directories instead of system paths
+    client_body_temp_path $NGINX_CONF_DIR/temp/client_body;
+    proxy_temp_path $NGINX_CONF_DIR/temp/proxy;
+    fastcgi_temp_path $NGINX_CONF_DIR/temp/fastcgi;
+    uwsgi_temp_path $NGINX_CONF_DIR/temp/uwsgi;
+    scgi_temp_path $NGINX_CONF_DIR/temp/scgi;
     
     access_log $SITE_DIR/nginx/access.log;
     
