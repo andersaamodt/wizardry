@@ -54,10 +54,15 @@ if ! "$manage_cmd" install nginx nginx 2>&1; then
   exit 1
 fi
 
-# Verify installation
+# Verify installation - check both PATH and pkgin sbin directory
 if ! command -v nginx >/dev/null 2>&1; then
-  printf '%s\n' "install-nginx: nginx installation failed or command not in PATH" >&2
-  exit 1
+  # Check if it's in pkgin's sbin directory (where server tools are installed)
+  if [ -x /opt/pkg/sbin/nginx ]; then
+    : # installed successfully in pkgin sbin
+  else
+    printf '%s\n' "install-nginx: nginx installation failed or command not in PATH" >&2
+    exit 1
+  fi
 fi
 
 printf '%s\n' "nginx installation complete."
