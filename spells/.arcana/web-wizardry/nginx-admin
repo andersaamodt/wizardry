@@ -84,8 +84,14 @@ while true; do
   fi
   
   # If nginx state changed, user must have selected start/stop (position 3)
+  # Set selection for next iteration, then reset it after one use
   if [ "$nginx_was_running" -ne "$nginx_now_running" ]; then
     start_selection=3
+  else
+    # If selection was previously set to 3 (from a toggle), reset to 1
+    # This ensures we only remember the toggle position for one iteration
+    if [ "$start_selection" -eq 3 ]; then
+      start_selection=1
+    fi
   fi
-  # Otherwise, start_selection stays the same (user selected version/test/reload which don't change state)
 done

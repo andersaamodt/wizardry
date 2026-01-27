@@ -68,7 +68,7 @@ while true; do
   fi
   
   # Issue certificate wizard - interactive guided setup with DNS instructions
-  issue_option="Issue certificate%printf '\n*** IMPORTANT: Before issuing a certificate ***\n' && printf '1. Your domain must have an A record pointing to this server\n' && printf '2. Port 80 must be open and accessible from the internet\n' && printf '3. Your web server must be serving files from the webroot\n\n' && await-keypress 'Press any key when ready to continue...' && printf '\n' && domain=\$(read-line 'Domain (e.g., example.com): ') && webroot=\$(read-line 'Webroot path (e.g., /var/www/html): ') && \$HOME/.acme.sh/acme.sh --issue -d \"\$domain\" -w \"\$webroot\" 2>&1"
+  issue_option="Issue certificate%printf '\n*** IMPORTANT: Before issuing a certificate ***\n' && printf '1. Your domain must have an A record pointing to this server\n' && printf '2. Port 80 must be open and accessible from the internet\n' && printf '3. Your web server must be serving files from the webroot\n\nPress any key when ready to continue...\n' && read -r dummy && domain=\$(read-line 'Domain (e.g., example.com): ') && webroot=\$(read-line 'Webroot path (e.g., /var/www/html): ') && \$HOME/.acme.sh/acme.sh --issue -d \"\$domain\" -w \"\$webroot\" 2>&1"
   
   # List certificates with helpful message if none exist
   list_certs_option="List certificates%output=\$(\$HOME/.acme.sh/acme.sh --list 2>&1); if printf '%s' \"\$output\" | grep -q 'Main_Domain'; then lines=\$(printf '%s' \"\$output\" | wc -l); if [ \"\$lines\" -le 1 ]; then printf 'No certificates installed yet.\n'; else printf '%s\n' \"\$output\"; fi; else printf '%s\n' \"\$output\"; fi"
@@ -76,8 +76,8 @@ while true; do
   # Renew all with informative output
   renew_option="Renew all%\$HOME/.acme.sh/acme.sh --renew-all 2>&1 || printf 'No certificates to renew or renewal not needed.\n'"
   
-  # Remove certificate option
-  remove_option="Remove certificate%domain=\$(read-line 'Domain to remove (e.g., example.com): ') && \$HOME/.acme.sh/acme.sh --remove -d \"\$domain\" 2>&1"
+  # Remove certificate option with cleanup prompt
+  remove_option="Remove certificate%domain=\$(read-line 'Domain to remove (e.g., example.com): ') && output=\$(\$HOME/.acme.sh/acme.sh --remove -d \"\$domain\" 2>&1); printf '%s\n' \"\$output\"; if printf '%s' \"\$output\" | grep -q 'has been removed'; then cert_dir=\$(printf '%s' \"\$output\" | grep -o '/[^ ]*' | head -1); if [ -n \"\$cert_dir\" ] && [ -d \"\$cert_dir\" ]; then answer=\$(read-line 'Delete certificate files in '\"\$cert_dir\"'? (y/n): '); if [ \"\$answer\" = 'y' ] || [ \"\$answer\" = 'Y' ]; then rm -rf \"\$cert_dir\" && printf 'Certificate files deleted.\n' || printf 'Failed to delete files.\n'; else printf 'Certificate files kept.\n'; fi; fi; fi"
   
   version_option="Show version%\$HOME/.acme.sh/acme.sh --version 2>&1"
   
