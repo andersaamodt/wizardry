@@ -58,7 +58,7 @@ if [ "${BWRAP_AVAILABLE:-0}" -eq 1 ]; then
     MENU_LOG MENU_LOOP_LIMIT \
     SYSTEMCTL_STATE_DIR INSTALL_SERVICE_TEMPLATE_ASK_YN \
     INSTALL_SERVICE_TEMPLATE_ASK_TEXT ASK_TEXT_STUB_FILE SERVICE_DIR \
-    WIZARDRY_TEST_HELPERS_ONLY WIZARDRY_DEMO_NO_BWRAP
+    WIZARDRY_TEST_HELPERS_ONLY WIZARDRY_DEMO_NO_BWRAP OPERATIONS_LOG
   do
     eval "val=\${$envvar-}"
     if [ -n "$val" ]; then
@@ -112,6 +112,7 @@ elif [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
   [ -n "${INSTALL_SERVICE_TEMPLATE_ASK_TEXT:-}" ] && export INSTALL_SERVICE_TEMPLATE_ASK_TEXT
   [ -n "${ASK_TEXT_STUB_FILE:-}" ] && export ASK_TEXT_STUB_FILE
   [ -n "${SERVICE_DIR:-}" ] && export SERVICE_DIR
+  [ -n "${OPERATIONS_LOG:-}" ] && export OPERATIONS_LOG
   
   # Special handling for SPELLBOOK_DIR: only export if it doesn't match
   # the default pattern $HOME/.spellbook (to avoid passing the outer home path)
@@ -156,6 +157,7 @@ else
   [ -n "${INSTALL_SERVICE_TEMPLATE_ASK_TEXT:-}" ] && export INSTALL_SERVICE_TEMPLATE_ASK_TEXT
   [ -n "${ASK_TEXT_STUB_FILE:-}" ] && export ASK_TEXT_STUB_FILE
   [ -n "${SERVICE_DIR:-}" ] && export SERVICE_DIR
+  [ -n "${OPERATIONS_LOG:-}" ] && export OPERATIONS_LOG
   
   # Special handling for SPELLBOOK_DIR: only export if it doesn't match
   # the default pattern $HOME/.spellbook (to avoid passing the outer home path)

@@ -40,6 +40,6 @@ printf 'PASS finish-tests reports pass count\n'
 printf 'PASS finish-tests returns failure when tests fail\n'
 # Increment pass count (read current, increment, write back)
 current_pass=$(cat "${WIZARDRY_TMPDIR}/_pass_count" 2>/dev/null || printf '0')
-printf '%s' "$((_current_pass + 2))" > "${WIZARDRY_TMPDIR}/_pass_count"
+printf '%s' "$((current_pass + 2))" > "${WIZARDRY_TMPDIR}/_pass_count"
 
 finish_tests

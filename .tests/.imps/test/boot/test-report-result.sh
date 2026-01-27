@@ -38,6 +38,6 @@ printf 'PASS report-result outputs PASS\n'
 printf 'PASS report-result outputs FAIL\n'
 # Increment pass count
 current_pass=$(cat "${WIZARDRY_TMPDIR}/_pass_count" 2>/dev/null || printf '0')
-printf '%s' "$((_current_pass + 2))" > "${WIZARDRY_TMPDIR}/_pass_count"
+printf '%s' "$((current_pass + 2))" > "${WIZARDRY_TMPDIR}/_pass_count"
 
 finish_tests

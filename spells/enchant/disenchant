@@ -36,6 +36,12 @@ disenchant_attr() {
   key=$1
   target=$2
 
+  # Automatically prepend "user." namespace if key doesn't contain a dot
+  case "$key" in
+    *.*) ;; # Key already has a namespace
+    *) key="user.$key" ;;  # No namespace, prepend "user."
+  esac
+
   # Try each available helper in order
   for helper in attr xattr setfattr; do
     if check-attribute-tool "$helper"; then

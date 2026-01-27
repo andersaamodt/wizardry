@@ -47,6 +47,12 @@ SH
 }
 
 test_creates_file_when_answering_yes() {
+  # Skip if no xattr commands available
+  if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v setfattr >/dev/null 2>&1; then
+    export TEST_SKIP_REASON="xattr support not available"
+    return 222
+  fi
+  
   tmpdir=$(make_tempdir)
   testfile="$tmpdir/newfile.txt"
   
@@ -64,8 +70,8 @@ SH
   printf 'test\n' > "$test_existing"
   run_spell "spells/crypto/hashchant" "$test_existing"
   if [ "$STATUS" -ne 0 ]; then
-    echo "SKIP: xattr support not available"
-    return 0
+    export TEST_SKIP_REASON="xattr support not available"
+    return 222
   fi
   
   # Run prioritize with stub that says "yes"
@@ -81,17 +87,16 @@ SH
 
 # Echelon tests require xattr support
 test_first_priority() {
+  # Skip if no xattr commands available
+  if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v setfattr >/dev/null 2>&1; then
+    export TEST_SKIP_REASON="xattr support not available"
+    return 222
+  fi
+
   # Check if xattr support is available
   tmpdir=$(make_tempdir)
   testfile="$tmpdir/test1.txt"
   printf 'test\n' > "$testfile"
-  
-  # Try to hash the file - if this fails, skip the test
-  run_spell "spells/crypto/hashchant" "$testfile"
-  if [ "$STATUS" -ne 0 ]; then
-    echo "SKIP: xattr support not available"
-    return 0
-  fi
   
   # Prioritize first file
   run_spell "spells/priorities/prioritize" "$testfile"
@@ -114,6 +119,12 @@ test_first_priority() {
 }
 
 test_echelon_promotion() {
+  # Skip if no xattr commands available
+  if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v setfattr >/dev/null 2>&1; then
+    export TEST_SKIP_REASON="xattr support not available"
+    return 222
+  fi
+
   # Check if xattr support is available
   tmpdir=$(make_tempdir)
   file1="$tmpdir/file1.txt"
@@ -121,12 +132,6 @@ test_echelon_promotion() {
   printf 'content1\n' > "$file1"
   printf 'content2\n' > "$file2"
   
-  # Try to hash - if this fails, skip the test
-  run_spell "spells/crypto/hashchant" "$file1"
-  if [ "$STATUS" -ne 0 ]; then
-    echo "SKIP: xattr support not available"
-    return 0
-  fi
   
   # Prioritize first file (creates echelon 1)
   run_spell "spells/priorities/prioritize" "$file1"
@@ -147,16 +152,16 @@ test_echelon_promotion() {
 }
 
 test_already_highest() {
+  # Skip if no xattr commands available
+  if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v setfattr >/dev/null 2>&1; then
+    export TEST_SKIP_REASON="xattr support not available"
+    return 222
+  fi
+
   tmpdir=$(make_tempdir)
   testfile="$tmpdir/test.txt"
   printf 'test\n' > "$testfile"
   
-  # Try to hash - if this fails, skip the test
-  run_spell "spells/crypto/hashchant" "$testfile"
-  if [ "$STATUS" -ne 0 ]; then
-    echo "SKIP: xattr support not available"
-    return 0
-  fi
   
   # Prioritize file (creates echelon 1)
   run_spell "spells/priorities/prioritize" "$testfile"
@@ -176,6 +181,12 @@ test_already_highest() {
 }
 
 test_move_to_highest_echelon() {
+  # Skip if no xattr commands available
+  if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v setfattr >/dev/null 2>&1; then
+    export TEST_SKIP_REASON="xattr support not available"
+    return 222
+  fi
+
   tmpdir=$(make_tempdir)
   file1="$tmpdir/file1.txt"
   file2="$tmpdir/file2.txt"
@@ -184,12 +195,6 @@ test_move_to_highest_echelon() {
   printf 'content2\n' > "$file2"
   printf 'content3\n' > "$file3"
   
-  # Try to hash - if this fails, skip the test
-  run_spell "spells/crypto/hashchant" "$file1"
-  if [ "$STATUS" -ne 0 ]; then
-    echo "SKIP: xattr support not available"
-    return 0
-  fi
   
   # Create echelon 1 with file1
   run_spell "spells/priorities/prioritize" "$file1"
@@ -226,16 +231,16 @@ test_move_to_highest_echelon() {
 }
 
 test_unchecks_when_prioritizing() {
+  # Skip if no xattr commands available
+  if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v setfattr >/dev/null 2>&1; then
+    export TEST_SKIP_REASON="xattr support not available"
+    return 222
+  fi
+
   tmpdir=$(make_tempdir)
   testfile="$tmpdir/test.txt"
   printf 'test\n' > "$testfile"
   
-  # Try to hash - if this fails, skip the test
-  run_spell "spells/crypto/hashchant" "$testfile"
-  if [ "$STATUS" -ne 0 ]; then
-    echo "SKIP: xattr support not available"
-    return 0
-  fi
   
   # Prioritize file
   run_spell "spells/priorities/prioritize" "$testfile"
@@ -262,20 +267,33 @@ test_unchecks_when_prioritizing() {
 
 test_hash_failure_message() {
   skip-if-compiled || return $?  # Stubs don't work in compiled mode
+  # Skip if no xattr commands available
+  if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v setfattr >/dev/null 2>&1; then
+    export TEST_SKIP_REASON="xattr support not available"
+    return 222
+  fi
+  
   tmpdir=$(make_tempdir)
   testfile="$tmpdir/test.txt"
   printf 'test\n' > "$testfile"
   
-  # With real xattr in CI, test that prioritize fails when hashchant fails
-  stub=$(stub-bin-dir)
-  printf '#!/bin/sh\nexit 1\n' >"$stub/hashchant"
-  chmod +x "$stub/hashchant"
+  # Test that prioritize fails when hashchant fails
+  stub_dir="$tmpdir/stubs"
+  mkdir -p "$stub_dir"
+  printf '#!/bin/sh\nexit 1\n' >"$stub_dir/hashchant"
+  chmod +x "$stub_dir/hashchant"
   
-  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" run_spell "spells/priorities/prioritize" "$testfile"
+  PATH="$stub_dir:$PATH" run_spell "spells/priorities/prioritize" "$testfile"
   assert_failure && assert_error_contains "hashchant"
 }
 
 test_interactive_mode_prompts() {
+  # Skip if no xattr commands available
+  if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v setfattr >/dev/null 2>&1; then
+    export TEST_SKIP_REASON="xattr support not available"
+    return 222
+  fi
+
   tmpdir=$(make_tempdir)
   testfile="$tmpdir/test.txt"
   printf 'test\n' > "$testfile"
@@ -290,8 +308,8 @@ SH
   # Check if xattr support is available first
   run_spell "spells/crypto/hashchant" "$testfile"
   if [ "$STATUS" -ne 0 ]; then
-    echo "SKIP: xattr support not available"
-    return 0
+    export TEST_SKIP_REASON="xattr support not available"
+    return 222
   fi
   
   # Run prioritize in interactive mode
@@ -301,6 +319,12 @@ SH
 }
 
 test_interactive_mode_with_file_arg() {
+  # Skip if no xattr commands available
+  if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v setfattr >/dev/null 2>&1; then
+    export TEST_SKIP_REASON="xattr support not available"
+    return 222
+  fi
+
   tmpdir=$(make_tempdir)
   testfile="$tmpdir/test.txt"
   printf 'test\n' > "$testfile"
@@ -308,8 +332,8 @@ test_interactive_mode_with_file_arg() {
   # Check if xattr support is available first
   run_spell "spells/crypto/hashchant" "$testfile"
   if [ "$STATUS" -ne 0 ]; then
-    echo "SKIP: xattr support not available"
-    return 0
+    export TEST_SKIP_REASON="xattr support not available"
+    return 222
   fi
   
   # Run prioritize in interactive mode with explicit file arg
@@ -320,6 +344,12 @@ test_interactive_mode_with_file_arg() {
 }
 
 test_yes_or_y_flag_auto_creates() {
+  # Skip if no xattr commands available
+  if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v setfattr >/dev/null 2>&1; then
+    export TEST_SKIP_REASON="xattr support not available"
+    return 222
+  fi
+
   tmpdir=$(make_tempdir)
   testfile="$tmpdir/newfile.txt"
   
@@ -333,8 +363,8 @@ test_yes_or_y_flag_auto_creates() {
   # Check if xattr is not supported
   if [ "$STATUS" -ne 0 ]; then
     if printf '%s' "$ERROR" | grep -q "extended attributes"; then
-      echo "SKIP: xattr support not available"
-      return 0
+      export TEST_SKIP_REASON="xattr support not available"
+      return 222
     fi
     return 1
   fi
@@ -349,6 +379,12 @@ test_yes_or_y_flag_auto_creates() {
 }
 
 test_multiword_filename() {
+  # Skip if no xattr commands available
+  if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v setfattr >/dev/null 2>&1; then
+    export TEST_SKIP_REASON="xattr support not available"
+    return 222
+  fi
+
   tmpdir=$(make_tempdir)
   cd "$tmpdir" || return 1
   
@@ -360,8 +396,8 @@ test_multiword_filename() {
   # Check if xattr support is available
   run_spell "spells/crypto/hashchant" "$multiword_file"
   if [ "$STATUS" -ne 0 ]; then
-    echo "SKIP: xattr support not available"
-    return 0
+    export TEST_SKIP_REASON="xattr support not available"
+    return 222
   fi
   
   # Run prioritize with unquoted multiple words (simulating: prioritize my test file.txt)
