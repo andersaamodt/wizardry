@@ -46,6 +46,14 @@ test_configure_nginx_creates_local_mimetypes() {
     TEST_FAILURE_REASON="fastcgi temp directory not created"
     return 1
   }
+  [ -d "$test_web_root/mytestsite/nginx/temp/uwsgi" ] || {
+    TEST_FAILURE_REASON="uwsgi temp directory not created"
+    return 1
+  }
+  [ -d "$test_web_root/mytestsite/nginx/temp/scgi" ] || {
+    TEST_FAILURE_REASON="scgi temp directory not created"
+    return 1
+  }
   
   # Verify nginx.conf references local mime.types
   grep -q "include $test_web_root/mytestsite/nginx/mime.types" "$test_web_root/mytestsite/nginx/nginx.conf" || {
@@ -62,6 +70,22 @@ test_configure_nginx_creates_local_mimetypes() {
   # Verify nginx.conf uses local temp paths
   grep -q "client_body_temp_path.*nginx/temp/client_body" "$test_web_root/mytestsite/nginx/nginx.conf" || {
     TEST_FAILURE_REASON="nginx.conf does not use local client_body_temp_path"
+    return 1
+  }
+  grep -q "proxy_temp_path.*nginx/temp/proxy" "$test_web_root/mytestsite/nginx/nginx.conf" || {
+    TEST_FAILURE_REASON="nginx.conf does not use local proxy_temp_path"
+    return 1
+  }
+  grep -q "fastcgi_temp_path.*nginx/temp/fastcgi" "$test_web_root/mytestsite/nginx/nginx.conf" || {
+    TEST_FAILURE_REASON="nginx.conf does not use local fastcgi_temp_path"
+    return 1
+  }
+  grep -q "uwsgi_temp_path.*nginx/temp/uwsgi" "$test_web_root/mytestsite/nginx/nginx.conf" || {
+    TEST_FAILURE_REASON="nginx.conf does not use local uwsgi_temp_path"
+    return 1
+  }
+  grep -q "scgi_temp_path.*nginx/temp/scgi" "$test_web_root/mytestsite/nginx/nginx.conf" || {
+    TEST_FAILURE_REASON="nginx.conf does not use local scgi_temp_path"
     return 1
   }
   
