@@ -30,28 +30,43 @@ fi
 
 printf '%s\n' "Installing pkgin package manager..."
 
-# Detect architecture
-arch=$(uname -m)
-case "$arch" in
-  x86_64)
-    # Latest Intel build for macOS 11 (Big Sur) - works on newer versions too
-    bootstrap_file="bootstrap-macos11-trunk-x86_64-20240212.tar.gz"
-    ;;
-  arm64)
-    # Latest Apple Silicon build for macOS 14.5 (Sonoma)
-    bootstrap_file="bootstrap-macos14.5-trunk-arm64-20251114.tar.gz"
-    ;;
-  *)
-    printf '%s\n' "install-pkgin: unsupported architecture: $arch" >&2
-    exit 1
-    ;;
-esac
+# Detect architecture - use sysctl for more reliable detection on macOS
+if sysctl -n machdep.cpu.brand_string 2>/dev/null | grep -q 'Apple'; then
+  # Apple Silicon (M1, M2, M3, etc.)
+  arch_type="arm64"
+  bootstrap_file="bootstrap-macos14.5-trunk-arm64-20251114.tar.gz"
+  arch_name="Apple Silicon (arm64)"
+elif sysctl -n machdep.cpu.brand_string 2>/dev/null | grep -q 'Intel'; then
+  # Intel processor
+  arch_type="x86_64"
+  bootstrap_file="bootstrap-macos11-trunk-x86_64-20240212.tar.gz"
+  arch_name="Intel (x86_64)"
+else
+  # Fallback to uname -m
+  arch=$(uname -m)
+  case "$arch" in
+    x86_64)
+      arch_type="x86_64"
+      bootstrap_file="bootstrap-macos11-trunk-x86_64-20240212.tar.gz"
+      arch_name="Intel (x86_64)"
+      ;;
+    arm64|aarch64)
+      arch_type="arm64"
+      bootstrap_file="bootstrap-macos14.5-trunk-arm64-20251114.tar.gz"
+      arch_name="Apple Silicon (arm64)"
+      ;;
+    *)
+      printf '%s\n' "install-pkgin: unsupported architecture: $arch" >&2
+      exit 1
+      ;;
+  esac
+fi
 
 # Download bootstrap package
 temp_dir=$(mktemp -d)
 trap 'rm -rf "$temp_dir"' EXIT
 
-printf '%s\n' "Downloading pkgsrc bootstrap for $arch..."
+printf '%s\n' "Downloading pkgsrc bootstrap for $arch_name..."
 
 # Use the official SmartOS/Joyent pkgsrc bootstrap URL
 bootstrap_url="https://pkgsrc.smartos.org/packages/Darwin/bootstrap/${bootstrap_file}"
@@ -70,14 +85,28 @@ if ! sudo tar -zxpf "$temp_dir/bootstrap.tar.gz" -C /; then
   exit 1
 fi
 
-# Verify installation
+# Verify installation - check both in PATH and directly
 if command -v pkgin >/dev/null 2>&1; then
+  printf '%s\n' "pkgin installed successfully (found in PATH)"
+elif [ -x /opt/pkg/bin/pkgin ]; then
   printf '%s\n' "pkgin installed successfully"
   printf '%s\n' ""
-  printf '%s\n' "Add to your shell profile for PATH persistence:"
+  printf '%s\n' "Note: pkgin is installed but not in your current shell's PATH"
+  printf '%s\n' "Updating PATH for this session..."
+  
+  # Update PATH for current session
+  export PATH="/opt/pkg/bin:/opt/pkg/sbin:$PATH"
+  
+  # Provide instructions for persistence
+  printf '%s\n' ""
+  printf '%s\n' "For persistence across shell sessions, add this to your shell profile:"
   printf '%s\n' "  export PATH=/opt/pkg/bin:/opt/pkg/sbin:\$PATH"
+  printf '%s\n' ""
+  printf '%s\n' "(Typically in ~/.zshrc for zsh or ~/.bash_profile for bash)"
 else
-  printf '%s\n' "install-pkgin: installation completed but pkgin not found in PATH" >&2
-  printf '%s\n' "You may need to add /opt/pkg/bin to your PATH" >&2
+  printf '%s\n' "install-pkgin: installation failed - pkgin not found" >&2
+  printf '%s\n' "Expected location: /opt/pkg/bin/pkgin" >&2
+  printf '%s\n' "Bootstrap file used: $bootstrap_file" >&2
+  printf '%s\n' "Architecture detected: $arch_name" >&2
   exit 1
 fi
