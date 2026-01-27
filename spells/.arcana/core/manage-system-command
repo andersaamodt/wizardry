@@ -98,6 +98,16 @@ elif [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
         printf '%s\n' "manage-system-command: unable to install ${brew_package} automatically via brew" >&2
         exit 1
       }
+      # Update PATH to include Homebrew paths for immediate availability
+      # Check common Homebrew locations
+      if [ -d "/opt/homebrew/bin" ] && ! printf '%s' "$PATH" | grep -q "/opt/homebrew/bin"; then
+        PATH="/opt/homebrew/bin:$PATH"
+        export PATH
+      fi
+      if [ -d "/usr/local/bin" ] && ! printf '%s' "$PATH" | grep -q "/usr/local/bin"; then
+        PATH="/usr/local/bin:$PATH"
+        export PATH
+      fi
     else
       # Use brew uninstall
       brew uninstall --quiet "$brew_package" || {

@@ -34,8 +34,17 @@ fi
 printf '%s\n' "Installing nginx..."
 "$manage_cmd" install nginx nginx
 
-# Verify installation
+# Verify installation - check PATH and common Homebrew locations on macOS
 if ! command -v nginx >/dev/null 2>&1; then
+  # On macOS, check Homebrew installation paths
+  if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+    if [ -x "/opt/homebrew/bin/nginx" ] || [ -x "/opt/homebrew/sbin/nginx" ] || \
+       [ -x "/usr/local/bin/nginx" ] || [ -x "/usr/local/sbin/nginx" ]; then
+      # nginx was installed by Homebrew but not in current PATH
+      printf '%s\n' "nginx installation complete (requires shell reload for PATH update)."
+      exit 0
+    fi
+  fi
   printf '%s\n' "install-nginx: nginx installation failed or command not in PATH" >&2
   exit 1
 fi
