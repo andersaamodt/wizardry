@@ -89,42 +89,10 @@ if [ "$is_nixos" = "1" ]; then
     }
   fi
 elif [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
-  # Try Homebrew first (most common on macOS), then fall back to pkgin
-  if command -v brew >/dev/null 2>&1; then
-    brew_package=${BREW_PACKAGE:-$package_default}
-    if [ "$action" = "install" ]; then
-      # Run brew install and capture output for better error reporting
-      if ! brew_output=$(brew install "$brew_package" 2>&1); then
-        printf '%s\n' "manage-system-command: unable to install ${brew_package} via brew" >&2
-        printf '%s\n' "brew error: $brew_output" >&2
-        exit 1
-      fi
-      # Update PATH to include Homebrew paths for immediate availability
-      # Check common Homebrew locations (both bin and sbin)
-      if [ -d "/opt/homebrew/bin" ] && ! printf '%s' "$PATH" | grep -q "/opt/homebrew/bin"; then
-        PATH="/opt/homebrew/bin:$PATH"
-        export PATH
-      fi
-      if [ -d "/opt/homebrew/sbin" ] && ! printf '%s' "$PATH" | grep -q "/opt/homebrew/sbin"; then
-        PATH="/opt/homebrew/sbin:$PATH"
-        export PATH
-      fi
-      if [ -d "/usr/local/bin" ] && ! printf '%s' "$PATH" | grep -q "/usr/local/bin"; then
-        PATH="/usr/local/bin:$PATH"
-        export PATH
-      fi
-      if [ -d "/usr/local/sbin" ] && ! printf '%s' "$PATH" | grep -q "/usr/local/sbin"; then
-        PATH="/usr/local/sbin:$PATH"
-        export PATH
-      fi
-    else
-      # Use brew uninstall
-      brew uninstall --quiet "$brew_package" || {
-        printf '%s\n' "manage-system-command: unable to uninstall $command_name via brew" >&2
-        exit 1
-      }
-    fi
-  elif command -v pkgin >/dev/null 2>&1; then
+  # Use pkgin (NetBSD package manager) on macOS
+  # Note: Homebrew is NOT used for installation per project policy
+  # (built-in tools and official package managers only)
+  if command -v pkgin >/dev/null 2>&1; then
     if [ "$action" = "install" ]; then
       manage_system_command_run_installer pkgin -y install "$pkgin_package" || {
         printf '%s\n' "manage-system-command: unable to install ${pkgin_package} automatically via pkgin" >&2
@@ -136,8 +104,16 @@ elif [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
         exit 1
       }
     fi
+  # Allow uninstalling via brew if package was previously installed with it
+  elif [ "$action" = "uninstall" ] && command -v brew >/dev/null 2>&1; then
+    brew_package=${BREW_PACKAGE:-$package_default}
+    brew uninstall --quiet "$brew_package" 2>/dev/null || {
+      printf '%s\n' "manage-system-command: unable to uninstall $command_name via brew" >&2
+      exit 1
+    }
   else
     printf '%s\n' "manage-system-command: no supported package manager found on macOS" >&2
+    printf '%s\n' "  Install pkgin to use wizardry package management on macOS" >&2
     exit 1
   fi
 elif command -v pacman >/dev/null 2>&1; then
