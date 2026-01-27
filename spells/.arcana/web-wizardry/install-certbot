@@ -33,47 +33,60 @@ fi
 
 printf '%s\n' "Installing certbot..."
 
-# Try to install via manage-system-command
-# Note: certbot may not be available in all package repositories (e.g., pkgin on macOS)
-# Try common package names or let it fail gracefully
-if ! "$manage_cmd" certbot certbot; then
-  # Check if failure is due to missing pkgin on macOS
-  if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && ! command -v pkgin >/dev/null 2>&1; then
-    printf '%s\n' ""  >&2
-    printf '%s\n' "certbot installation requires pkgin package manager on macOS." >&2
-    printf '%s\n' "Would you like to see pkgin installation instructions? (y/N): " >&2
-    read -r response || response="n"
-    case "$response" in
-      y|Y|yes|YES)
-        if has install-pkgin; then
-          install-pkgin || true
-        else
-          printf '%s\n' "Run 'core-menu' to install pkgin" >&2
-        fi
-        ;;
-    esac
-  else
-    # Package not available in repository - provide helpful message
-    printf '%s\n' "" >&2
-    printf '%s\n' "certbot is not available in the system package repository." >&2
-    printf '%s\n' "On macOS with pkgin, certbot may need to be installed manually." >&2
-    printf '%s\n' "Consider using alternative methods or skip certbot installation." >&2
-  fi
-  exit 1
-fi
+# Determine installation method based on platform
+os_type=$(uname -s 2>/dev/null)
 
-# Add pkgin paths to PATH so installed packages can be found
-. add-pkgin-to-path
+case "$os_type" in
+  Darwin)
+    # On macOS, install certbot via pip (Python package manager)
+    # This is the official recommended method for macOS without homebrew
+    printf '%s\n' "Installing certbot via pip (Python package manager)..."
+    
+    # Check if python3 is available
+    if ! command -v python3 >/dev/null 2>&1; then
+      printf '%s\n' "install-certbot: python3 is required but not found" >&2
+      printf '%s\n' "Please install Python 3 first (available from python.org or via system package manager)" >&2
+      exit 1
+    fi
+    
+    # Ensure pip is available
+    if ! python3 -m pip --version >/dev/null 2>&1; then
+      printf '%s\n' "Bootstrapping pip..." >&2
+      python3 -m ensurepip --upgrade >/dev/null 2>&1 || {
+        printf '%s\n' "install-certbot: failed to bootstrap pip" >&2
+        exit 1
+      }
+    fi
+    
+    # Install certbot via pip
+    if ! python3 -m pip install --user certbot; then
+      printf '%s\n' "install-certbot: failed to install certbot via pip" >&2
+      exit 1
+    fi
+    
+    # Add Python user bin to PATH
+    user_base=$(python3 -c 'import site; print(site.USER_BASE)' 2>/dev/null)
+    if [ -n "$user_base" ] && [ -d "$user_base/bin" ]; then
+      PATH="$user_base/bin:$PATH"
+      export PATH
+    fi
+    ;;
+  *)
+    # On Linux and other platforms, use the system package manager
+    if ! "$manage_cmd" certbot certbot; then
+      printf '%s\n' "install-certbot: failed to install certbot via system package manager" >&2
+      exit 1
+    fi
+    
+    # Add pkgin paths to PATH so installed packages can be found
+    . add-pkgin-to-path
+    ;;
+esac
 
-# Verify installation - check both PATH and pkgin sbin directory
+# Verify installation
 if ! command -v certbot >/dev/null 2>&1; then
-  # Check if it's in pkgin's sbin directory (where server tools are installed)
-  if [ -x /opt/pkg/sbin/certbot ]; then
-    : # installed successfully in pkgin sbin
-  else
-    printf '%s\n' "install-certbot: certbot installation failed or command not in PATH" >&2
-    exit 1
-  fi
+  printf '%s\n' "install-certbot: certbot installation failed or command not in PATH" >&2
+  exit 1
 fi
 
 printf '%s\n' "certbot installation complete."
