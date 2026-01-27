@@ -286,6 +286,15 @@ if [ "$current" = "$normalized_destination" ]; then
         set +eu; return 0
 fi
 
+# Set flag to prevent cd-hook from calling look (we'll do it after narration)
+JUMP_TO_MARKER_ACTIVE=1
+
+if ! cd "$destination"; then
+        printf '%s\n' "The portal refuses to stabilize; try marking again." >&2
+        unset JUMP_TO_MARKER_ACTIVE
+        set +eu; return 1
+fi
+
 # Pick a random arrival message
 arrival=$(cat <<'PORTAL'
 You feel a sudden warmth as you are enveloped in a glowing aura. When it fades, you find yourself at your destination.
@@ -336,10 +345,12 @@ if [ -n "$arrival" ]; then
         printf '%s\n' "$arrival"
 fi
 
-if ! cd "$destination"; then
-        printf '%s\n' "The portal refuses to stabilize; try marking again." >&2
-        set +eu; return 1
+# Now call look manually if cd-hook is loaded and would have called it
+# Check if cd is a function (meaning cd-hook is loaded)
+if [ -n "${JUMP_TO_MARKER_ACTIVE-}" ] && command -V cd 2>/dev/null | grep -q "function"; then
+        command -v look >/dev/null 2>&1 && look 2>/dev/null || true
 fi
+unset JUMP_TO_MARKER_ACTIVE
 
 # Touch marker to update mtime for cycling
 touch "$marker_file"
