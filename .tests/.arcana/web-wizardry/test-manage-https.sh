@@ -5,10 +5,10 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-test_uninstall_certbot_help() {
-  run_spell "spells/.arcana/web-wizardry/uninstall-certbot" --help
-  assert_success && assert_output_contains "certbot"
+test_manage_https_help() {
+  _run_spell "spells/.arcana/web-wizardry/manage-https" --help
+  _assert_success && _assert_output_contains "manage-https"
 }
 
-run_test_case "uninstall-certbot shows help" test_uninstall_certbot_help
-finish_tests
+_run_test_case "manage-https shows help" test_manage_https_help
+_finish_tests
