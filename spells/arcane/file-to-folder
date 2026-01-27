@@ -116,16 +116,16 @@ if [ "$has_content" -eq 1 ]; then
   
   # If echelon/priority were found, transfer them from the file to the folder
   if [ -n "$echelon" ]; then
-    # Remove echelon from the moved file (the original file's xattrs were preserved via mv)
-    disenchant "$moved_file" echelon 2>/dev/null || true
     # Apply the echelon to the folder
     enchant "$file" "echelon=$echelon" 2>/dev/null || true
+    # Remove echelon from the moved file (the original file's xattrs were preserved via mv)
+    disenchant "$moved_file" echelon 2>/dev/null || true
   fi
   if [ -n "$priority" ]; then
-    # Remove priority from the moved file (the original file's xattrs were preserved via mv)
-    disenchant "$moved_file" priority 2>/dev/null || true
     # Apply the priority to the folder
     enchant "$file" "priority=$priority" 2>/dev/null || true
+    # Remove priority from the moved file (the original file's xattrs were preserved via mv)
+    disenchant "$moved_file" priority 2>/dev/null || true
   fi
 else
   # Remove the empty/whitespace-only temp file
