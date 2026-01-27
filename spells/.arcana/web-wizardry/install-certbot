@@ -34,6 +34,9 @@ fi
 printf '%s\n' "Installing certbot..."
 
 # Try to install via manage-system-command
+# On pkgin (macOS), certbot is available as py-certbot or py311-certbot
+PKGIN_PACKAGE=${PKGIN_PACKAGE:-py-certbot}
+export PKGIN_PACKAGE
 if ! "$manage_cmd" certbot certbot; then
   # Check if failure is due to missing pkgin on macOS
   if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && ! command -v pkgin >/dev/null 2>&1; then
