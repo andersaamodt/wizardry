@@ -59,58 +59,58 @@ while true; do
   
   # Pandoc toggle
   if "$script_dir/is-web-component-installed" pandoc 2>/dev/null; then
-    pandoc_toggle="[X] pandoc%$script_dir/uninstall-pandoc; echo $pos > \"$SELECTION_FILE\""
+    pandoc_toggle="[X] pandoc%echo $pos > \"$SELECTION_FILE\"; $script_dir/uninstall-pandoc"
   else
-    pandoc_toggle="[ ] pandoc%$script_dir/install-pandoc; echo $pos > \"$SELECTION_FILE\""
+    pandoc_toggle="[ ] pandoc%echo $pos > \"$SELECTION_FILE\"; $script_dir/install-pandoc"
   fi
   pos=$((pos + 1))
   
   # Nginx toggle (with admin submenu when installed)
   if "$script_dir/is-web-component-installed" nginx 2>/dev/null; then
-    nginx_toggle="[X] nginx (web server)%$script_dir/uninstall-nginx; echo $pos > \"$SELECTION_FILE\""
+    nginx_toggle="[X] nginx%echo $pos > \"$SELECTION_FILE\"; $script_dir/uninstall-nginx"
     pos=$((pos + 1))
-    nginx_admin="    → nginx admin%$script_dir/nginx-admin; echo $pos > \"$SELECTION_FILE\""
+    nginx_admin="    → nginx admin%echo $pos > \"$SELECTION_FILE\"; $script_dir/nginx-admin"
     pos=$((pos + 1))
   else
-    nginx_toggle="[ ] nginx (web server)%$script_dir/install-nginx; echo $pos > \"$SELECTION_FILE\""
+    nginx_toggle="[ ] nginx%echo $pos > \"$SELECTION_FILE\"; $script_dir/install-nginx"
     pos=$((pos + 1))
     nginx_admin=""
   fi
   
   # Fcgiwrap toggle
   if "$script_dir/is-web-component-installed" fcgiwrap 2>/dev/null; then
-    fcgiwrap_toggle="[X] fcgiwrap (FastCGI)%$script_dir/uninstall-fcgiwrap; echo $pos > \"$SELECTION_FILE\""
+    fcgiwrap_toggle="[X] fcgiwrap%echo $pos > \"$SELECTION_FILE\"; $script_dir/uninstall-fcgiwrap"
   else
-    fcgiwrap_toggle="[ ] fcgiwrap (FastCGI)%$script_dir/install-fcgiwrap; echo $pos > \"$SELECTION_FILE\""
+    fcgiwrap_toggle="[ ] fcgiwrap%echo $pos > \"$SELECTION_FILE\"; $script_dir/install-fcgiwrap"
   fi
   pos=$((pos + 1))
   
   # OpenSSL toggle
   if "$script_dir/is-web-component-installed" openssl 2>/dev/null; then
-    openssl_toggle="[X] OpenSSL (HTTPS)%$script_dir/uninstall-openssl; echo $pos > \"$SELECTION_FILE\""
+    openssl_toggle="[X] OpenSSL%echo $pos > \"$SELECTION_FILE\"; $script_dir/uninstall-openssl"
   else
-    openssl_toggle="[ ] OpenSSL (HTTPS)%$script_dir/install-openssl; echo $pos > \"$SELECTION_FILE\""
+    openssl_toggle="[ ] OpenSSL%echo $pos > \"$SELECTION_FILE\"; $script_dir/install-openssl"
   fi
   pos=$((pos + 1))
   
   # Htmx toggle
   if "$script_dir/is-web-component-installed" htmx 2>/dev/null; then
-    htmx_toggle="[X] htmx (JS library)%$script_dir/uninstall-htmx; echo $pos > \"$SELECTION_FILE\""
+    htmx_toggle="[X] htmx%echo $pos > \"$SELECTION_FILE\"; $script_dir/uninstall-htmx"
   else
-    htmx_toggle="[ ] htmx (JS library)%$script_dir/install-htmx; echo $pos > \"$SELECTION_FILE\""
+    htmx_toggle="[ ] htmx%echo $pos > \"$SELECTION_FILE\"; $script_dir/install-htmx"
   fi
   pos=$((pos + 1))
   
   # Certbot toggle
   if "$script_dir/is-web-component-installed" certbot 2>/dev/null; then
-    certbot_toggle="[X] certbot (Let's Encrypt)%$script_dir/uninstall-certbot; echo $pos > \"$SELECTION_FILE\""
+    certbot_toggle="[X] certbot%echo $pos > \"$SELECTION_FILE\"; $script_dir/uninstall-certbot"
   else
-    certbot_toggle="[ ] certbot (Let's Encrypt)%$script_dir/install-certbot; echo $pos > \"$SELECTION_FILE\""
+    certbot_toggle="[ ] certbot%echo $pos > \"$SELECTION_FILE\"; $script_dir/install-certbot"
   fi
   pos=$((pos + 1))
   
   # Coreutils (informational only - should not be uninstalled)
-  coreutils_info="    coreutils (do not uninstall)%printf '%s\\n' 'coreutils should not be uninstalled - they are essential system utilities.' >&2; echo $pos > \"$SELECTION_FILE\""
+  coreutils_info="    coreutils%echo $pos > \"$SELECTION_FILE\"; printf '%s\\n' 'coreutils should not be uninstalled - it contains essential system utilities.' >&2"
   pos=$((pos + 1))
   
   # Check if all are installed for enable/disable all toggle
@@ -123,9 +123,9 @@ while true; do
   done
   
   if [ "$all_installed" -eq 1 ]; then
-    toggle_all="Disable all components%$script_dir/toggle-all-web-wizardry --disable; echo $pos > \"$SELECTION_FILE\""
+    toggle_all="Disable all%echo $pos > \"$SELECTION_FILE\"; $script_dir/toggle-all-web-wizardry --disable"
   else
-    toggle_all="Enable all components%$script_dir/toggle-all-web-wizardry --enable; echo $pos > \"$SELECTION_FILE\""
+    toggle_all="Enable all%echo $pos > \"$SELECTION_FILE\"; $script_dir/toggle-all-web-wizardry --enable"
   fi
   
   # Exit button
@@ -139,7 +139,7 @@ while true; do
     set -- "$pandoc_toggle" "$nginx_toggle" "$fcgiwrap_toggle" "$openssl_toggle" "$htmx_toggle" "$certbot_toggle" "$coreutils_info" "$toggle_all" "$exit_item"
   fi
   
-  menu --start-selection "$start_selection" "Web Wizardry:" "$@" || menu_status=$?
+  menu --start-selection "$start_selection" "Install Web Wizardry:" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
   
   # ESC causes menu to exit with 130 - handle gracefully by exiting
