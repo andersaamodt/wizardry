@@ -32,10 +32,44 @@ if ! command -v "$manage_cmd" >/dev/null 2>&1; then
 fi
 
 printf '%s\n' "Uninstalling certbot..."
-"$manage_cmd" --uninstall certbot certbot || {
-  printf '%s\n' "uninstall-certbot: certbot uninstallation failed" >&2
-  exit 1
-}
+
+# Determine uninstallation method based on platform
+os_type=$(uname -s 2>/dev/null)
+
+case "$os_type" in
+  Darwin)
+    # On macOS, try to uninstall via pip first
+    if command -v python3 >/dev/null 2>&1 && python3 -m pip --version >/dev/null 2>&1; then
+      # Check if certbot was installed via pip
+      if python3 -m pip show certbot >/dev/null 2>&1; then
+        printf '%s\n' "Uninstalling certbot via pip..."
+        if ! python3 -m pip uninstall -y certbot; then
+          printf '%s\n' "uninstall-certbot: failed to uninstall certbot via pip" >&2
+          exit 1
+        fi
+      else
+        # Try system package manager as fallback
+        "$manage_cmd" --uninstall certbot certbot || {
+          printf '%s\n' "uninstall-certbot: certbot uninstallation failed" >&2
+          exit 1
+        }
+      fi
+    else
+      # No pip available, try system package manager
+      "$manage_cmd" --uninstall certbot certbot || {
+        printf '%s\n' "uninstall-certbot: certbot uninstallation failed" >&2
+        exit 1
+      }
+    fi
+    ;;
+  *)
+    # On Linux and other platforms, use the system package manager
+    "$manage_cmd" --uninstall certbot certbot || {
+      printf '%s\n' "uninstall-certbot: certbot uninstallation failed" >&2
+      exit 1
+    }
+    ;;
+esac
 
 # Verify uninstallation
 if command -v certbot >/dev/null 2>&1; then
