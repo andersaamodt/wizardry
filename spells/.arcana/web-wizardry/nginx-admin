@@ -28,6 +28,7 @@ trap 'exit 130' INT
 trap 'exit 0' TERM
 
 first_run=1
+start_selection=1
 
 while true; do
   if [ "$first_run" -eq 0 ]; then
@@ -47,19 +48,50 @@ while true; do
   exit_label=$(exit-label)
   exit_option="${exit_label}%kill -TERM \$PPID"
   
-  # Common nginx commands - these work across different init systems
-  start_option="Start nginx%sudo nginx 2>&1 || true"
-  stop_option="Stop nginx%sudo nginx -s stop 2>&1 || true"
-  reload_option="Reload config%sudo nginx -s reload 2>&1 || true"
-  test_option="Test config%sudo nginx -t 2>&1 || true"
-  status_option="Show version%nginx -v 2>&1 || true"
+  # Check if nginx is currently running (capture state before menu)
+  # Try to determine if nginx is running by checking the master process
+  nginx_was_running=0
+  if pgrep -f "nginx.*master" >/dev/null 2>&1; then
+    nginx_was_running=1
+  fi
   
-  menu "$title" "$status_option" "$test_option" "$start_option" "$stop_option" "$reload_option" "$exit_option" || menu_status=$?
+  # Dynamic start/stop option based on current state
+  # Menu structure is always: version, test, start/stop, reload, exit
+  # Positions: 1=version, 2=test, 3=start/stop, 4=reload, 5=exit
+  if [ "$nginx_was_running" -eq 1 ]; then
+    startstop_option="Stop nginx%sudo nginx -s stop 2>&1"
+  else
+    startstop_option="Start nginx%sudo nginx 2>&1"
+  fi
+  
+  reload_option="Reload config%sudo nginx -s reload 2>&1"
+  test_option="Test config%sudo nginx -t 2>&1"
+  status_option="Show version%nginx -v 2>&1"
+  
+  menu --start-selection "$start_selection" "$title" "$status_option" "$test_option" "$startstop_option" "$reload_option" "$exit_option" || menu_status=$?
   menu_status=${menu_status:-0}
   
   # ESC causes menu to exit with 130 - handle gracefully by exiting
   if [ "$menu_status" -eq 130 ]; then
     printf 'ESC\n' >&2
     exit 0
+  fi
+  
+  # Detect which item was selected by checking state changes
+  nginx_now_running=0
+  if pgrep -f "nginx.*master" >/dev/null 2>&1; then
+    nginx_now_running=1
+  fi
+  
+  # If nginx state changed, user must have selected start/stop (position 3)
+  # Set selection for next iteration, then reset it after one use
+  if [ "$nginx_was_running" -ne "$nginx_now_running" ]; then
+    start_selection=3
+  else
+    # If selection was previously set to 3 (from a toggle), reset to 1
+    # This ensures we only remember the toggle position for one iteration
+    if [ "$start_selection" -eq 3 ]; then
+      start_selection=1
+    fi
   fi
 done

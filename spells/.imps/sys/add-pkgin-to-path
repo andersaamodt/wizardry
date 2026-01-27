@@ -1,0 +1,18 @@
+#!/bin/sh
+# add-pkgin-to-path - Add pkgin bin and sbin directories to PATH if not already available
+
+set -eu
+
+pkgin_candidates=${PKGIN_CANDIDATES:-/usr/pkg/bin/pkgin /opt/pkg/bin/pkgin /usr/local/pkg/bin/pkgin}
+
+if ! command -v pkgin >/dev/null 2>&1; then
+  for candidate in $pkgin_candidates; do
+    if [ -x "$candidate" ]; then
+      pkg_base=$(dirname "$(dirname "$candidate")")
+      # Add both bin and sbin directories (server tools are often in sbin)
+      PATH="$pkg_base/bin:$pkg_base/sbin:$PATH"
+      export PATH
+      break
+    fi
+  done
+fi

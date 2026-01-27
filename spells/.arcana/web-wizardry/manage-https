@@ -1,0 +1,125 @@
+#!/bin/sh
+
+# Present the HTTPS/acme.sh management menu.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: manage-https
+
+Displays the HTTPS management menu for acme.sh/Let's Encrypt.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+. colors
+
+if ! require menu "The manage-https menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 130' INT
+trap 'exit 0' TERM
+
+first_run=1
+
+while true; do
+  if [ "$first_run" -eq 0 ]; then
+    printf '\n'
+  else
+    first_run=0
+  fi
+
+  # Check if acme.sh is installed
+  if [ ! -f "$HOME/.acme.sh/acme.sh" ]; then
+    printf '%s\n' "manage-https: acme.sh is not installed" >&2
+    exit 1
+  fi
+
+  # Build menu
+  title="${BOLD}${CYAN}HTTPS / Let's Encrypt Management"
+  exit_label=$(exit-label)
+  exit_option="${exit_label}%kill -TERM \$PPID"
+  
+  # acme.sh management commands (using literal $HOME for clarity)
+  
+  # Check if account is registered by looking for account key in ca directory
+  # acme.sh stores account info in ~/.acme.sh/ca/<ca-name>/account.json or account.key
+  account_registered=0
+  if [ -d "$HOME/.acme.sh/ca" ]; then
+    # Check for any account.key or account.json files in ca subdirectories
+    if find "$HOME/.acme.sh/ca" -name "account.key" -o -name "account.json" \
+        2>/dev/null | grep -q .; then
+      account_registered=1
+    fi
+  fi
+  
+  if [ "$account_registered" -eq 1 ]; then
+    # Account exists - show account info
+    account_option="Show account%\$HOME/.acme.sh/acme.sh --info 2>&1"
+  else
+    # No account - show registration with email prompt
+    account_option="Register account%email=\$(read-line 'Email address: ') && "
+    account_option="${account_option}\$HOME/.acme.sh/acme.sh --register-account -m \"\$email\" 2>&1"
+  fi
+  
+  # Issue certificate wizard - interactive guided setup with DNS instructions
+  issue_option="Issue certificate%printf '\n*** IMPORTANT: Before issuing a certificate ***\n' && "
+  issue_option="${issue_option}printf '1. Your domain must have an A record "
+  issue_option="${issue_option}pointing to this server\n' && "
+  issue_option="${issue_option}printf '2. Port 80 must be open and accessible "
+  issue_option="${issue_option}from the internet\n' && "
+  issue_option="${issue_option}printf '3. Your web server must be serving files "
+  issue_option="${issue_option}from the webroot\n\n' && "
+  issue_option="${issue_option}domain=\$(read-line 'Domain (e.g., example.com): ') && "
+  issue_option="${issue_option}webroot=\$(read-line 'Webroot path (e.g., /var/www/html): ') && "
+  issue_option="${issue_option}\$HOME/.acme.sh/acme.sh --issue -d \"\$domain\" "
+  issue_option="${issue_option}-w \"\$webroot\" 2>&1"
+  
+  # List certificates with helpful message if none exist
+  list_certs_option="List certificates%output=\$(\$HOME/.acme.sh/acme.sh --list 2>&1); "
+  list_certs_option="${list_certs_option}if printf '%s' \"\$output\" | grep -q 'Main_Domain'; then "
+  list_certs_option="${list_certs_option}lines=\$(printf '%s' \"\$output\" | wc -l); "
+  list_certs_option="${list_certs_option}if [ \"\$lines\" -le 1 ]; then "
+  list_certs_option="${list_certs_option}printf 'No certificates installed yet.\n'; "
+  list_certs_option="${list_certs_option}else printf '%s\n' \"\$output\"; fi; "
+  list_certs_option="${list_certs_option}else printf '%s\n' \"\$output\"; fi"
+  
+  # Renew all with informative output
+  renew_option="Renew all%\$HOME/.acme.sh/acme.sh --renew-all 2>&1 || "
+  renew_option="${renew_option}printf 'No certificates to renew or renewal not needed.\n'"
+  
+  # Remove certificate option with cleanup prompt
+  remove_option="Remove certificate%domain=\$(read-line "
+  remove_option="${remove_option}'Domain to remove (e.g., example.com): ') && "
+  remove_option="${remove_option}output=\$(\$HOME/.acme.sh/acme.sh --remove -d \"\$domain\" 2>&1); "
+  remove_option="${remove_option}printf '%s\n' \"\$output\"; "
+  remove_option="${remove_option}if printf '%s' \"\$output\" | grep -q 'has been removed'; then "
+  remove_option="${remove_option}cert_dir=\$(printf '%s' \"\$output\" | "
+  remove_option="${remove_option}grep -o '/[^ ]*' | head -1); "
+  remove_option="${remove_option}if [ -n \"\$cert_dir\" ] && [ -d \"\$cert_dir\" ]; then "
+  remove_option="${remove_option}answer=\$(read-line "
+  remove_option="${remove_option}'Delete certificate files in '\"\$cert_dir\"'? (y/n): '); "
+  remove_option="${remove_option}if [ \"\$answer\" = 'y' ] || [ \"\$answer\" = 'Y' ]; then "
+  remove_option="${remove_option}rm -rf \"\$cert_dir\" && printf 'Certificate files deleted.\n' || "
+  remove_option="${remove_option}printf 'Failed to delete files.\n'; "
+  remove_option="${remove_option}else printf 'Certificate files kept.\n'; fi; fi; fi"
+  
+  version_option="Show version%\$HOME/.acme.sh/acme.sh --version 2>&1"
+  
+  menu "$title" "$account_option" "$issue_option" "$list_certs_option" \
+    "$renew_option" "$remove_option" "$version_option" "$exit_option" || menu_status=$?
+  menu_status=${menu_status:-0}
+  
+  # ESC causes menu to exit with 130 - handle gracefully by exiting
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    exit 0
+  fi
+done

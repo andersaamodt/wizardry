@@ -1,0 +1,83 @@
+#!/bin/sh
+
+# Install certbot for Let's Encrypt certificates.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-certbot
+
+Installs certbot using the system package manager.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+manage_cmd=${MANAGE_SYSTEM_COMMAND:-manage-system-command}
+
+if ! command -v "$manage_cmd" >/dev/null 2>&1; then
+  core_dir=$(CDPATH= cd -- "$script_dir" 2>/dev/null && cd .. && cd core && pwd -P)
+  if [ -n "$core_dir" ] && [ -x "$core_dir/manage-system-command" ]; then
+    manage_cmd="$core_dir/manage-system-command"
+  else
+    printf '%s\n' "install-certbot: unable to find manage-system-command" >&2
+    exit 1
+  fi
+fi
+
+printf '%s\n' "Installing acme.sh..."
+
+# Use acme.sh on all platforms - it's a pure shell script ACME client
+# No Python/pip dependency required, POSIX-compliant and widely trusted
+printf '%s\n' "Installing acme.sh (ACME client for Let's Encrypt)..."
+
+# Download and install acme.sh
+acme_install_dir="$HOME/.acme.sh"
+if [ -d "$acme_install_dir" ]; then
+  printf '%s\n' "acme.sh already installed at $acme_install_dir"
+else
+  # Download and run installer
+  # acme.sh can be configured later with: ~/.acme.sh/acme.sh --register-account -m user@example.com
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL https://get.acme.sh | sh || {
+      printf '%s\n' "install-certbot: failed to install acme.sh" >&2
+      exit 1
+    }
+  else
+    printf '%s\n' "install-certbot: curl is required to install acme.sh" >&2
+    exit 1
+  fi
+fi
+
+# Create certbot alias/wrapper that calls acme.sh for compatibility
+mkdir -p "$HOME/.local/bin"
+cat > "$HOME/.local/bin/certbot" << 'EOF'
+#!/bin/sh
+# Wrapper script that calls acme.sh
+# Note: acme.sh uses different arguments than certbot
+# For full acme.sh documentation, see: https://github.com/acmesh-official/acme.sh
+exec "$HOME/.acme.sh/acme.sh" "$@"
+EOF
+chmod +x "$HOME/.local/bin/certbot"
+
+# Add to PATH
+PATH="$HOME/.local/bin:$PATH"
+export PATH
+
+printf '%s\n' "acme.sh is installed at: $acme_install_dir"
+printf '%s\n' "A 'certbot' wrapper is available at: $HOME/.local/bin/certbot"
+printf '%s\n' "To register with Let's Encrypt: ~/.acme.sh/acme.sh --register-account -m your@email.com"
+
+# Verify installation
+if ! command -v certbot >/dev/null 2>&1; then
+  printf '%s\n' "install-certbot: certbot installation failed or command not in PATH" >&2
+  exit 1
+fi
+
+printf '%s\n' "certbot installation complete."

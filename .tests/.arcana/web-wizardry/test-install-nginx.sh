@@ -7,7 +7,7 @@ done
 
 test_install_nginx_help() {
   run_spell "spells/.arcana/web-wizardry/install-nginx" --help
-  assert_success && assert_output_contains "certbot"
+  assert_success && assert_output_contains "nginx"
 }
 
 run_test_case "install-nginx shows help" test_install_nginx_help
