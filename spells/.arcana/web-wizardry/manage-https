@@ -68,7 +68,7 @@ while true; do
   fi
   
   # Issue certificate wizard - interactive guided setup with DNS instructions
-  issue_option="Issue certificate%printf '\n*** IMPORTANT: Before issuing a certificate ***\n' && printf '1. Your domain must have an A record pointing to this server\n' && printf '2. Port 80 must be open and accessible from the internet\n' && printf '3. Your web server must be serving files from the webroot\n\nPress any key when ready to continue...\n' && read -r dummy && domain=\$(read-line 'Domain (e.g., example.com): ') && webroot=\$(read-line 'Webroot path (e.g., /var/www/html): ') && \$HOME/.acme.sh/acme.sh --issue -d \"\$domain\" -w \"\$webroot\" 2>&1"
+  issue_option="Issue certificate%printf '\n*** IMPORTANT: Before issuing a certificate ***\n' && printf '1. Your domain must have an A record pointing to this server\n' && printf '2. Port 80 must be open and accessible from the internet\n' && printf '3. Your web server must be serving files from the webroot\n\n' && domain=\$(read-line 'Domain (e.g., example.com): ') && webroot=\$(read-line 'Webroot path (e.g., /var/www/html): ') && \$HOME/.acme.sh/acme.sh --issue -d \"\$domain\" -w \"\$webroot\" 2>&1"
   
   # List certificates with helpful message if none exist
   list_certs_option="List certificates%output=\$(\$HOME/.acme.sh/acme.sh --list 2>&1); if printf '%s' \"\$output\" | grep -q 'Main_Domain'; then lines=\$(printf '%s' \"\$output\" | wc -l); if [ \"\$lines\" -le 1 ]; then printf 'No certificates installed yet.\n'; else printf '%s\n' \"\$output\"; fi; else printf '%s\n' \"\$output\"; fi"
