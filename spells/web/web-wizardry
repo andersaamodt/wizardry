@@ -128,26 +128,29 @@ case "$cmd" in
 esac
 # Interactive menu
 while true; do
-  # Build list of existing sites
-  site_entries=""
-  if [ -d "$SITES_DIR" ]; then
-    for site in "$SITES_DIR"/*; do
-      [ -d "$site" ] || continue
-      name=$(basename "$site")
-      site_entries="${site_entries}${name}%site-menu \"$name\"\n"
-    done
-  fi
-
   # Menu options
   exit_label=$(exit-label)
   
-  if [ -n "$site_entries" ]; then
-    # shellcheck disable=SC2039
-    site_menu=$(printf "$site_entries")
-    set -- "Create new site%create-site-prompt" "Create from template%template-menu" "---" $site_menu "---" "${exit_label}%kill -TERM \$PPID"
-  else
-    set -- "Create new site%create-site-prompt" "Create from template%template-menu" "${exit_label}%kill -TERM \$PPID"
+  # Build menu arguments starting with static items
+  set -- "Create new site%create-site-prompt" "Create from template%template-menu"
+  
+  # Add existing sites as menu items
+  if [ -d "$SITES_DIR" ]; then
+    # Add separator before sites
+    set -- "$@" "---"
+    
+    for site in "$SITES_DIR"/*; do
+      [ -d "$site" ] || continue
+      name=$(basename "$site")
+      set -- "$@" "${name}%site-menu \"${name}\""
+    done
+    
+    # Add separator after sites
+    set -- "$@" "---"
   fi
+  
+  # Add exit option
+  set -- "$@" "${exit_label}%kill -TERM \$PPID"
 
   menu "${BOLD}${CYAN}Wizardry Web Platform" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
