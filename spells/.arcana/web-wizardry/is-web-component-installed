@@ -23,17 +23,7 @@ component=${1:-}
 
 case "$component" in
   pandoc|nginx|fcgiwrap|openssl)
-    if command -v "$component" >/dev/null 2>&1; then
-      exit 0
-    fi
-    # On macOS, also check common Homebrew installation paths
-    if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
-      if [ -x "/opt/homebrew/bin/$component" ] || [ -x "/opt/homebrew/sbin/$component" ] || \
-         [ -x "/usr/local/bin/$component" ] || [ -x "/usr/local/sbin/$component" ]; then
-        exit 0
-      fi
-    fi
-    exit 1
+    command -v "$component" >/dev/null 2>&1
     ;;
   htmx)
     htmx_dir="${HTMX_DIR:-$HOME/.local/share/htmx}"
@@ -42,17 +32,7 @@ case "$component" in
     [ -f /usr/share/htmx/htmx.min.js ]
     ;;
   certbot)
-    if command -v certbot >/dev/null 2>&1; then
-      exit 0
-    fi
-    # On macOS, also check common Homebrew installation paths
-    if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
-      if [ -x "/opt/homebrew/bin/certbot" ] || [ -x "/opt/homebrew/sbin/certbot" ] || \
-         [ -x "/usr/local/bin/certbot" ] || [ -x "/usr/local/sbin/certbot" ]; then
-        exit 0
-      fi
-    fi
-    exit 1
+    command -v certbot >/dev/null 2>&1
     ;;
   coreutils)
     # Assert-only: just check if core utilities are present
