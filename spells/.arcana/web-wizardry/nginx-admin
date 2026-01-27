@@ -28,6 +28,7 @@ trap 'exit 130' INT
 trap 'exit 0' TERM
 
 first_run=1
+start_selection=1
 
 while true; do
   if [ "$first_run" -eq 0 ]; then
@@ -47,15 +48,17 @@ while true; do
   exit_label=$(exit-label)
   exit_option="${exit_label}%kill -TERM \$PPID"
   
-  # Check if nginx is currently running
+  # Check if nginx is currently running (capture state before menu)
   # Try to determine if nginx is running by checking the master process
-  nginx_running=0
+  nginx_was_running=0
   if pgrep -f "nginx.*master" >/dev/null 2>&1; then
-    nginx_running=1
+    nginx_was_running=1
   fi
   
   # Dynamic start/stop option based on current state
-  if [ "$nginx_running" -eq 1 ]; then
+  # Menu structure is always: version, test, start/stop, reload, exit
+  # Positions: 1=version, 2=test, 3=start/stop, 4=reload, 5=exit
+  if [ "$nginx_was_running" -eq 1 ]; then
     startstop_option="Stop nginx%sudo nginx -s stop 2>&1"
   else
     startstop_option="Start nginx%sudo nginx 2>&1"
@@ -65,7 +68,7 @@ while true; do
   test_option="Test config%sudo nginx -t 2>&1"
   status_option="Show version%nginx -v 2>&1"
   
-  menu "$title" "$status_option" "$test_option" "$startstop_option" "$reload_option" "$exit_option" || menu_status=$?
+  menu --start-selection "$start_selection" "$title" "$status_option" "$test_option" "$startstop_option" "$reload_option" "$exit_option" || menu_status=$?
   menu_status=${menu_status:-0}
   
   # ESC causes menu to exit with 130 - handle gracefully by exiting
@@ -73,4 +76,16 @@ while true; do
     printf 'ESC\n' >&2
     exit 0
   fi
+  
+  # Detect which item was selected by checking state changes
+  nginx_now_running=0
+  if pgrep -f "nginx.*master" >/dev/null 2>&1; then
+    nginx_now_running=1
+  fi
+  
+  # If nginx state changed, user must have selected start/stop (position 3)
+  if [ "$nginx_was_running" -ne "$nginx_now_running" ]; then
+    start_selection=3
+  fi
+  # Otherwise, start_selection stays the same (user selected version/test/reload which don't change state)
 done
