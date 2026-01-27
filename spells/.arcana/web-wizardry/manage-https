@@ -48,14 +48,28 @@ while true; do
   exit_option="${exit_label}%kill -TERM \$PPID"
   
   # acme.sh management commands (using literal $HOME for clarity)
-  # Add pause after command so output can be read before menu redraws
-  register_option="Register account%\$HOME/.acme.sh/acme.sh --register-account 2>&1; printf '\nPress any key to continue...' && await-keypress >/dev/null"
-  issue_help_option="How to issue cert%\$HOME/.acme.sh/acme.sh --help issue 2>&1 | less; true"
-  list_certs_option="List certificates%\$HOME/.acme.sh/acme.sh --list 2>&1; printf '\nPress any key to continue...' && await-keypress >/dev/null"
-  renew_option="Renew all%\$HOME/.acme.sh/acme.sh --renew-all 2>&1; printf '\nPress any key to continue...' && await-keypress >/dev/null"
-  version_option="Show version%\$HOME/.acme.sh/acme.sh --version 2>&1; printf '\nPress any key to continue...' && await-keypress >/dev/null"
   
-  menu "$title" "$register_option" "$issue_help_option" "$list_certs_option" "$renew_option" "$version_option" "$exit_option" || menu_status=$?
+  # Check if account is registered by looking for account.conf
+  if [ -f "$HOME/.acme.sh/account.conf" ] && grep -q "ACCOUNT_EMAIL" "$HOME/.acme.sh/account.conf" 2>/dev/null; then
+    # Account exists - show account info
+    account_option="Show account%\$HOME/.acme.sh/acme.sh --info 2>&1"
+  else
+    # No account - show registration
+    account_option="Register account%\$HOME/.acme.sh/acme.sh --register-account 2>&1"
+  fi
+  
+  # Issue certificate wizard - interactive guided setup
+  issue_option="Issue certificate%printf 'Enter domain (e.g., example.com): ' && read domain && printf 'Enter webroot path (e.g., /var/www/html): ' && read webroot && \$HOME/.acme.sh/acme.sh --issue -d \"\$domain\" -w \"\$webroot\" 2>&1"
+  
+  # List certificates with helpful message if none exist
+  list_certs_option="List certificates%output=\$(\$HOME/.acme.sh/acme.sh --list 2>&1); if printf '%s' \"\$output\" | grep -q 'Main_Domain'; then lines=\$(printf '%s' \"\$output\" | wc -l); if [ \"\$lines\" -le 1 ]; then printf 'No certificates installed yet.\n'; else printf '%s\n' \"\$output\"; fi; else printf '%s\n' \"\$output\"; fi"
+  
+  # Renew all with informative output
+  renew_option="Renew all%\$HOME/.acme.sh/acme.sh --renew-all 2>&1 || printf 'No certificates to renew or renewal not needed.\n'"
+  
+  version_option="Show version%\$HOME/.acme.sh/acme.sh --version 2>&1"
+  
+  menu "$title" "$account_option" "$issue_option" "$list_certs_option" "$renew_option" "$version_option" "$exit_option" || menu_status=$?
   menu_status=${menu_status:-0}
   
   # ESC causes menu to exit with 130 - handle gracefully by exiting
