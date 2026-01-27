@@ -6,8 +6,12 @@ http-status 200 "OK"
 http-header "Content-Type" "text/html"
 http-end-headers
 
-text="${QUERY_STRING:-}"
-text=$(printf '%s' "$text" | sed 's/text=//' | url-decode)
+# Parse query string to get text parameter
+text=""
+if [ -n "${QUERY_STRING:-}" ]; then
+  # Extract text=value from query string
+  text=$(printf '%s' "$QUERY_STRING" | sed 's/^text=//' | sed 's/&.*//' | url-decode)
+fi
 
 if [ -z "$text" ]; then
   reversed="(empty)"

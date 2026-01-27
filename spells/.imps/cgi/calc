@@ -6,9 +6,12 @@ http-status 200 "OK"
 http-header "Content-Type" "text/html"
 http-end-headers
 
-# Parse query string
-expr="${QUERY_STRING:-}"
-expr=$(printf '%s' "$expr" | sed 's/expr=//' | url-decode)
+# Parse query string to get expr parameter
+expr=""
+if [ -n "${QUERY_STRING:-}" ]; then
+  # Extract expr=value from query string
+  expr=$(printf '%s' "$QUERY_STRING" | sed 's/^expr=//' | sed 's/&.*//' | url-decode)
+fi
 
 if [ -z "$expr" ]; then
   cat <<HTML

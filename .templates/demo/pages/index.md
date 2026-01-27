@@ -13,7 +13,7 @@ Type something and watch it echo back from the server:
 
 <div class="demo-box">
   <input type="text" id="echo-input" placeholder="Type something..." />
-  <button hx-get="/cgi/echo-text" hx-vals='js:{text: document.getElementById("echo-input").value}' hx-target="#echo-output" hx-swap="innerHTML">
+  <button hx-get="/cgi/echo-text" hx-vals='js:{text: document.getElementById("echo-input").value}' hx-target="#echo-output" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#echo-input">
     Echo!
   </button>
   <div id="echo-output" class="output"></div>
@@ -25,6 +25,9 @@ Every click increments a counter on the server:
 <div class="demo-box">
   <button hx-get="/cgi/counter" hx-target="#counter-output" hx-swap="innerHTML" class="big-button">
     🔢 Click Me!
+  </button>
+  <button hx-get="/cgi/counter-reset" hx-target="#counter-output" hx-swap="innerHTML" style="margin-left: 10px;">
+    🔄 Reset
   </button>
   <div id="counter-output" class="output"></div>
 </div>
@@ -55,7 +58,7 @@ Simple arithmetic calculator running on the server:
 
 <div class="demo-box">
   <input type="text" id="calc-input" placeholder="e.g., 42 * 3 + 15" />
-  <button hx-get="/cgi/calc" hx-vals='js:{expr: document.getElementById("calc-input").value}' hx-target="#calc-output" hx-swap="innerHTML">
+  <button hx-get="/cgi/calc" hx-vals='js:{expr: document.getElementById("calc-input").value}' hx-target="#calc-output" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#calc-input">
     Calculate
   </button>
   <div id="calc-output" class="output"></div>
@@ -66,7 +69,7 @@ Reverse any text using shell commands:
 
 <div class="demo-box">
   <input type="text" id="reverse-input" placeholder="Enter text to reverse" />
-  <button hx-get="/cgi/reverse-text" hx-vals='js:{text: document.getElementById("reverse-input").value}' hx-target="#reverse-output" hx-swap="innerHTML">
+  <button hx-get="/cgi/reverse-text" hx-vals='js:{text: document.getElementById("reverse-input").value}' hx-target="#reverse-output" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#reverse-input">
     Reverse
   </button>
   <div id="reverse-output" class="output"></div>
@@ -77,7 +80,11 @@ Count words, characters, and lines:
 
 <div class="demo-box">
   <textarea id="wordcount-input" placeholder="Paste your text here..." rows="4"></textarea>
-  <button hx-get="/cgi/word-count" hx-vals='js:{text: document.getElementById("wordcount-input").value}' hx-target="#wordcount-output" hx-swap="innerHTML">
+  <button hx-get="/cgi/word-count" hx-vals='js:{text: document.getElementById("wordcount-input").value}' hx-target="#wordcount-output" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#wordcount-input">
+    Count Words
+  </button>
+  <div id="wordcount-output" class="output"></div>
+</div>
     Count Words
   </button>
   <div id="wordcount-output" class="output"></div>
