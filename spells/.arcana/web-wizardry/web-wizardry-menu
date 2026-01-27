@@ -60,22 +60,22 @@ while true; do
   # Pandoc toggle
   pandoc_pos=$pos
   if "$script_dir/is-web-component-installed" pandoc 2>/dev/null; then
-    pandoc_toggle="[X] pandoc%uninstall-pandoc; echo $pandoc_pos > \"\$SELECTION_FILE\""
+    pandoc_toggle="[X] pandoc%uninstall-pandoc; echo $pandoc_pos > \"$SELECTION_FILE\""
   else
-    pandoc_toggle="[ ] pandoc%install-pandoc; echo $pandoc_pos > \"\$SELECTION_FILE\""
+    pandoc_toggle="[ ] pandoc%install-pandoc; echo $pandoc_pos > \"$SELECTION_FILE\""
   fi
   pos=$((pos + 1))
   
   # Nginx toggle (with admin submenu when installed)
   nginx_pos=$pos
   if "$script_dir/is-web-component-installed" nginx 2>/dev/null; then
-    nginx_toggle="[X] nginx%uninstall-nginx; echo $nginx_pos > \"\$SELECTION_FILE\""
+    nginx_toggle="[X] nginx%uninstall-nginx; echo $nginx_pos > \"$SELECTION_FILE\""
     pos=$((pos + 1))
     nginx_admin_pos=$pos
-    nginx_admin="      nginx admin%nginx-admin; echo $nginx_admin_pos > \"\$SELECTION_FILE\""
+    nginx_admin="    nginx admin%nginx-admin; echo $nginx_admin_pos > \"$SELECTION_FILE\""
     pos=$((pos + 1))
   else
-    nginx_toggle="[ ] nginx%install-nginx; echo $nginx_pos > \"\$SELECTION_FILE\""
+    nginx_toggle="[ ] nginx%install-nginx; echo $nginx_pos > \"$SELECTION_FILE\""
     pos=$((pos + 1))
     nginx_admin=""
   fi
@@ -83,45 +83,45 @@ while true; do
   # Fcgiwrap toggle
   fcgiwrap_pos=$pos
   if "$script_dir/is-web-component-installed" fcgiwrap 2>/dev/null; then
-    fcgiwrap_toggle="[X] fcgiwrap%uninstall-fcgiwrap; echo $fcgiwrap_pos > \"\$SELECTION_FILE\""
+    fcgiwrap_toggle="[X] fcgiwrap%uninstall-fcgiwrap; echo $fcgiwrap_pos > \"$SELECTION_FILE\""
   else
-    fcgiwrap_toggle="[ ] fcgiwrap%install-fcgiwrap; echo $fcgiwrap_pos > \"\$SELECTION_FILE\""
+    fcgiwrap_toggle="[ ] fcgiwrap%install-fcgiwrap; echo $fcgiwrap_pos > \"$SELECTION_FILE\""
   fi
   pos=$((pos + 1))
   
   # OpenSSL toggle
   openssl_pos=$pos
   if "$script_dir/is-web-component-installed" openssl 2>/dev/null; then
-    openssl_toggle="[X] OpenSSL%uninstall-openssl; echo $openssl_pos > \"\$SELECTION_FILE\""
+    openssl_toggle="[X] OpenSSL%uninstall-openssl; echo $openssl_pos > \"$SELECTION_FILE\""
   else
-    openssl_toggle="[ ] OpenSSL%install-openssl; echo $openssl_pos > \"\$SELECTION_FILE\""
+    openssl_toggle="[ ] OpenSSL%install-openssl; echo $openssl_pos > \"$SELECTION_FILE\""
   fi
   pos=$((pos + 1))
   
   # Htmx toggle
   htmx_pos=$pos
   if "$script_dir/is-web-component-installed" htmx 2>/dev/null; then
-    htmx_toggle="[X] htmx%uninstall-htmx; echo $htmx_pos > \"\$SELECTION_FILE\""
+    htmx_toggle="[X] htmx%uninstall-htmx; echo $htmx_pos > \"$SELECTION_FILE\""
   else
-    htmx_toggle="[ ] htmx%install-htmx; echo $htmx_pos > \"\$SELECTION_FILE\""
+    htmx_toggle="[ ] htmx%install-htmx; echo $htmx_pos > \"$SELECTION_FILE\""
   fi
   pos=$((pos + 1))
   
   # Certbot toggle
   certbot_pos=$pos
   if "$script_dir/is-web-component-installed" certbot 2>/dev/null; then
-    certbot_toggle="[X] certbot%uninstall-certbot; echo $certbot_pos > \"\$SELECTION_FILE\""
+    certbot_toggle="[X] certbot%uninstall-certbot; echo $certbot_pos > \"$SELECTION_FILE\""
   else
-    certbot_toggle="[ ] certbot%install-certbot; echo $certbot_pos > \"\$SELECTION_FILE\""
+    certbot_toggle="[ ] certbot%install-certbot; echo $certbot_pos > \"$SELECTION_FILE\""
   fi
   pos=$((pos + 1))
   
   # Coreutils (can be checked but not unchecked - informational)
   coreutils_pos=$pos
   if "$script_dir/is-web-component-installed" coreutils 2>/dev/null; then
-    coreutils_info=" X  coreutils%printf '%s\\n' 'coreutils should not be uninstalled - it contains essential system utilities.' >&2; echo $coreutils_pos > \"\$SELECTION_FILE\""
+    coreutils_info=" X  coreutils%printf '%s\\n' 'coreutils should not be uninstalled - it contains essential system utilities.' >&2; echo $coreutils_pos > \"$SELECTION_FILE\""
   else
-    coreutils_info="[ ] coreutils%printf '%s\\n' 'coreutils should not be uninstalled - it contains essential system utilities.' >&2; echo $coreutils_pos > \"\$SELECTION_FILE\""
+    coreutils_info="[ ] coreutils%printf '%s\\n' 'coreutils should not be uninstalled - it contains essential system utilities.' >&2; echo $coreutils_pos > \"$SELECTION_FILE\""
   fi
   pos=$((pos + 1))
   
@@ -136,9 +136,9 @@ while true; do
   
   toggle_all_pos=$pos
   if [ "$all_installed" -eq 1 ]; then
-    toggle_all="Disable all%toggle-all-web-wizardry --disable; echo $toggle_all_pos > \"\$SELECTION_FILE\""
+    toggle_all="Disable all%toggle-all-web-wizardry --disable; echo $toggle_all_pos > \"$SELECTION_FILE\""
   else
-    toggle_all="Enable all%toggle-all-web-wizardry --enable; echo $toggle_all_pos > \"\$SELECTION_FILE\""
+    toggle_all="Enable all%toggle-all-web-wizardry --enable; echo $toggle_all_pos > \"$SELECTION_FILE\""
   fi
   
   # Exit button
