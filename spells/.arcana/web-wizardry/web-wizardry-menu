@@ -59,53 +59,53 @@ while true; do
   
   # Pandoc toggle
   if "$script_dir/is-web-component-installed" pandoc 2>/dev/null; then
-    pandoc_toggle="[X] pandoc%echo $pos > \"$SELECTION_FILE\"; $script_dir/uninstall-pandoc"
+    pandoc_toggle="[X] pandoc%echo $pos > \"$SELECTION_FILE\"; uninstall-pandoc"
   else
-    pandoc_toggle="[ ] pandoc%echo $pos > \"$SELECTION_FILE\"; $script_dir/install-pandoc"
+    pandoc_toggle="[ ] pandoc%echo $pos > \"$SELECTION_FILE\"; install-pandoc"
   fi
   pos=$((pos + 1))
   
   # Nginx toggle (with admin submenu when installed)
   if "$script_dir/is-web-component-installed" nginx 2>/dev/null; then
-    nginx_toggle="[X] nginx%echo $pos > \"$SELECTION_FILE\"; $script_dir/uninstall-nginx"
+    nginx_toggle="[X] nginx%echo $pos > \"$SELECTION_FILE\"; uninstall-nginx"
     pos=$((pos + 1))
-    nginx_admin="    → nginx admin%echo $pos > \"$SELECTION_FILE\"; $script_dir/nginx-admin"
+    nginx_admin="    → nginx admin%echo $pos > \"$SELECTION_FILE\"; nginx-admin"
     pos=$((pos + 1))
   else
-    nginx_toggle="[ ] nginx%echo $pos > \"$SELECTION_FILE\"; $script_dir/install-nginx"
+    nginx_toggle="[ ] nginx%echo $pos > \"$SELECTION_FILE\"; install-nginx"
     pos=$((pos + 1))
     nginx_admin=""
   fi
   
   # Fcgiwrap toggle
   if "$script_dir/is-web-component-installed" fcgiwrap 2>/dev/null; then
-    fcgiwrap_toggle="[X] fcgiwrap%echo $pos > \"$SELECTION_FILE\"; $script_dir/uninstall-fcgiwrap"
+    fcgiwrap_toggle="[X] fcgiwrap%echo $pos > \"$SELECTION_FILE\"; uninstall-fcgiwrap"
   else
-    fcgiwrap_toggle="[ ] fcgiwrap%echo $pos > \"$SELECTION_FILE\"; $script_dir/install-fcgiwrap"
+    fcgiwrap_toggle="[ ] fcgiwrap%echo $pos > \"$SELECTION_FILE\"; install-fcgiwrap"
   fi
   pos=$((pos + 1))
   
   # OpenSSL toggle
   if "$script_dir/is-web-component-installed" openssl 2>/dev/null; then
-    openssl_toggle="[X] OpenSSL%echo $pos > \"$SELECTION_FILE\"; $script_dir/uninstall-openssl"
+    openssl_toggle="[X] OpenSSL%echo $pos > \"$SELECTION_FILE\"; uninstall-openssl"
   else
-    openssl_toggle="[ ] OpenSSL%echo $pos > \"$SELECTION_FILE\"; $script_dir/install-openssl"
+    openssl_toggle="[ ] OpenSSL%echo $pos > \"$SELECTION_FILE\"; install-openssl"
   fi
   pos=$((pos + 1))
   
   # Htmx toggle
   if "$script_dir/is-web-component-installed" htmx 2>/dev/null; then
-    htmx_toggle="[X] htmx%echo $pos > \"$SELECTION_FILE\"; $script_dir/uninstall-htmx"
+    htmx_toggle="[X] htmx%echo $pos > \"$SELECTION_FILE\"; uninstall-htmx"
   else
-    htmx_toggle="[ ] htmx%echo $pos > \"$SELECTION_FILE\"; $script_dir/install-htmx"
+    htmx_toggle="[ ] htmx%echo $pos > \"$SELECTION_FILE\"; install-htmx"
   fi
   pos=$((pos + 1))
   
   # Certbot toggle
   if "$script_dir/is-web-component-installed" certbot 2>/dev/null; then
-    certbot_toggle="[X] certbot%echo $pos > \"$SELECTION_FILE\"; $script_dir/uninstall-certbot"
+    certbot_toggle="[X] certbot%echo $pos > \"$SELECTION_FILE\"; uninstall-certbot"
   else
-    certbot_toggle="[ ] certbot%echo $pos > \"$SELECTION_FILE\"; $script_dir/install-certbot"
+    certbot_toggle="[ ] certbot%echo $pos > \"$SELECTION_FILE\"; install-certbot"
   fi
   pos=$((pos + 1))
   
@@ -127,9 +127,9 @@ while true; do
   done
   
   if [ "$all_installed" -eq 1 ]; then
-    toggle_all="Disable all%echo $pos > \"$SELECTION_FILE\"; $script_dir/toggle-all-web-wizardry --disable"
+    toggle_all="Disable all%echo $pos > \"$SELECTION_FILE\"; toggle-all-web-wizardry --disable"
   else
-    toggle_all="Enable all%echo $pos > \"$SELECTION_FILE\"; $script_dir/toggle-all-web-wizardry --enable"
+    toggle_all="Enable all%echo $pos > \"$SELECTION_FILE\"; toggle-all-web-wizardry --enable"
   fi
   
   # Exit button
