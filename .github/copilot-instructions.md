@@ -114,7 +114,13 @@ A collection of POSIX shell scripts themed as magical spells for the terminal. T
    - Don't add new exemptions without asking first  🙋⚠️
    - Always try to reduce/eliminate existing exemptions
 
-5. **All CI must pass before merge**  ✅🚦
+5. **NEVER use environment variables for coordination between spells** 🚫🌍
+   - Environment variables are ONLY for user configuration (WIZARDRY_LOG_LEVEL, SPELLBOOK_DIR, etc.)
+   - NEVER use env vars to pass state/flags between spells or to coordinate behavior
+   - Use function arguments, return codes, or `builtin`/`command` to bypass function overrides
+   - See SHELL_CODE_PATTERNS.md for the correct pattern
+
+6. **All CI must pass before merge**  ✅🚦
    - Fix preexisting and unrelated test failures if blocking merge  🔧🚧
    - Don't back down from or mutate requirements
    - Don't give up until all requirements are fully completed

@@ -134,6 +134,36 @@ if my_func; then ...; fi
 - Always use `exit` in top-level scripts executed via PATH (imps, spells)
 - **CRITICAL:** Bash (Arch's `/bin/sh`) errors on top-level `return` outside functions; dash (Ubuntu's `/bin/sh`) silently allows it but shouldn't be relied upon
 
+### Bypassing Function Overrides
+
+**CRITICAL:** Never use environment variables for coordination between spells. Use `builtin`/`command` instead.
+
+```sh
+# WRONG: Using environment variable to coordinate (violates project policy)
+MY_FLAG=1
+export MY_FLAG
+cd "$dir"  # Function checks MY_FLAG
+unset MY_FLAG
+
+# CORRECT: Use builtin/command to bypass function override
+# In bash/zsh (which have 'builtin' keyword)
+builtin cd "$dir"  # Calls actual cd builtin, not the function
+
+# In POSIX sh (use 'command' to prefer builtins over functions)
+command cd "$dir"  # Calls cd builtin, skipping function
+
+# Cross-shell pattern (works in bash/zsh/dash/sh)
+if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
+    builtin cd "$dir"
+else
+    command cd "$dir"
+fi
+```
+
+**Why:** Environment variables persist beyond their intended scope, can leak between tests, and violate the project's policy against using env vars for coordination. Using `builtin`/`command` is cleaner and more explicit.
+
+**Use case:** jump-to-marker needs to cd without triggering the cd-hook's automatic `look` call, so it can print narration first.
+
 ### Case Statements
 
 ```sh
