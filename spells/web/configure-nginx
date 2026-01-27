@@ -78,6 +78,33 @@ mkdir -p "$NGINX_CONF_DIR"
 WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
 CGI_DIR="$WIZARDRY_DIR/spells/.imps/cgi"
 
+# Copy mime.types to local directory if not exists
+MIME_TYPES="$NGINX_CONF_DIR/mime.types"
+if [ ! -f "$MIME_TYPES" ]; then
+  if [ -f /etc/nginx/mime.types ]; then
+    cp /etc/nginx/mime.types "$MIME_TYPES"
+  else
+    # Create minimal mime.types if system one doesn't exist
+    cat > "$MIME_TYPES" <<'MIMETYPES'
+types {
+    text/html                                        html htm shtml;
+    text/css                                         css;
+    text/xml                                         xml;
+    image/gif                                        gif;
+    image/jpeg                                       jpeg jpg;
+    application/javascript                           js;
+    application/json                                 json;
+    text/plain                                       txt;
+    image/png                                        png;
+    image/svg+xml                                    svg svgz;
+    image/webp                                       webp;
+    application/pdf                                  pdf;
+    application/zip                                  zip;
+}
+MIMETYPES
+  fi
+fi
+
 # Generate nginx configuration
 NGINX_CONF="$NGINX_CONF_DIR/nginx.conf"
 
@@ -97,7 +124,7 @@ events {
 }
 
 http {
-    include /etc/nginx/mime.types;
+    include $NGINX_CONF_DIR/mime.types;
     default_type application/octet-stream;
     
     access_log $SITE_DIR/nginx/access.log;
