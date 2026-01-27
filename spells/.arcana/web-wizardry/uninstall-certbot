@@ -43,13 +43,13 @@ case "$os_type" in
       printf '%s\n' "Uninstalling acme.sh..."
       if [ -x "$HOME/.acme.sh/acme.sh" ]; then
         "$HOME/.acme.sh/acme.sh" --uninstall || {
-          printf '%s\n' "uninstall-certbot: acme.sh uninstall command failed" >&2
+          printf '%s\n' "uninstall-certbot: acme.sh uninstall command failed, proceeding with cleanup" >&2
         }
       fi
-      # Remove acme.sh directory
+      # Remove acme.sh directory and wrapper
       rm -rf "$HOME/.acme.sh"
-      # Remove certbot wrapper
       rm -f "$HOME/.local/bin/certbot"
+      printf '%s\n' "acme.sh uninstallation complete."
     elif command -v python3 >/dev/null 2>&1 && python3 -m pip --version >/dev/null 2>&1; then
       # Check if certbot was installed via pip
       if python3 -m pip show certbot >/dev/null 2>&1; then
