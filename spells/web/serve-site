@@ -71,7 +71,7 @@ fi
 
 # Start nginx
 step "Starting nginx for $site_name..."
-nginx -p "$SITE_DIR/" -e "$SITE_DIR/nginx/error.log" -c "$SITE_DIR/nginx/nginx.conf" &
+nginx -p "$SITE_DIR" -e "$SITE_DIR/nginx/error.log" -c "$SITE_DIR/nginx/nginx.conf" &
 nginx_pid=$!
 
 # Give nginx a moment to start
