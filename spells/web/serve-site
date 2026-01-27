@@ -42,8 +42,17 @@ if [ ! -f "$SITE_DIR/build/pages/index.html" ]; then
   build "$site_name"
 fi
 
-# Generate nginx config if not exists
+# Generate nginx config if not exists or if it's outdated
+needs_regenerate=false
 if [ ! -f "$SITE_DIR/nginx/nginx.conf" ]; then
+  needs_regenerate=true
+elif grep -q "include /etc/nginx/mime.types" "$SITE_DIR/nginx/nginx.conf" 2>/dev/null; then
+  # Old config detected - regenerate to use local mime.types
+  needs_regenerate=true
+  info "Updating nginx configuration to use local paths..."
+fi
+
+if [ "$needs_regenerate" = "true" ]; then
   step "Generating nginx configuration..."
   configure-nginx "$site_name"
 fi
