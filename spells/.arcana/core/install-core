@@ -71,6 +71,7 @@ core_dependencies() {
       # macOS has pbcopy built-in, so no clipboard utilities needed in menu
       cat <<'EOF'
 Git:git:install-git:uninstall-git:0
+pkgin:pkgin:install-pkgin:uninstall-pkgin:0
 sed:sed:install-sed:uninstall-sed:1
 awk:awk:install-awk:uninstall-awk:1
 grep:grep:install-grep:uninstall-grep:1
