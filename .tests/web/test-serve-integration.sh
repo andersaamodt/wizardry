@@ -26,9 +26,24 @@ test_site_serving_and_cgi() {
     exit 222
   fi
   
+  if ! command -v curl >/dev/null 2>&1; then
+    TEST_SKIP_REASON="curl not installed"
+    exit 222
+  fi
+  
   # Set up test environment
   test_web_root=$(temp-dir web-integration-test)
   export WEB_WIZARDRY_ROOT="$test_web_root"
+  serve_output="$test_web_root/serve_output.txt"
+  
+  # Ensure cleanup happens on exit
+  cleanup_test() {
+    # Stop any running site
+    run_spell spells/web/stop-site testsite >/dev/null 2>&1 || true
+    # Clean up temp directory
+    rm -rf "$test_web_root"
+  }
+  trap cleanup_test EXIT
   
   # Create a test site
   run_spell spells/web/create-site testsite >/dev/null 2>&1
@@ -64,7 +79,7 @@ TESTPAGE
   
   # Start serving the site in background
   # We need to capture the output to know when it's ready
-  run_spell spells/web/serve-site testsite >serve_output.txt 2>&1 &
+  run_spell spells/web/serve-site testsite >"$serve_output" 2>&1 &
   serve_pid=$!
   
   # Wait for site to start (max 10 seconds)
@@ -83,8 +98,7 @@ TESTPAGE
   
   if [ $site_ready -eq 0 ]; then
     # Site didn't start - capture logs
-    cat serve_output.txt 2>/dev/null || true
-    kill $serve_pid 2>/dev/null || true
+    cat "$serve_output" 2>/dev/null || true
     TEST_FAILURE_REASON="Site failed to start within ${max_wait}s"
     return 1
   fi
@@ -92,7 +106,6 @@ TESTPAGE
   # Test 1: Verify homepage is accessible
   http_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/pages/index.html 2>/dev/null)
   if [ "$http_code" != "200" ]; then
-    kill $serve_pid 2>/dev/null || true
     TEST_FAILURE_REASON="Homepage returned $http_code instead of 200"
     return 1
   fi
@@ -102,21 +115,18 @@ TESTPAGE
   cgi_exit=$?
   
   if [ $cgi_exit -ne 0 ]; then
-    kill $serve_pid 2>/dev/null || true
     TEST_FAILURE_REASON="Failed to connect to CGI endpoint"
     return 1
   fi
   
   # Test 3: Verify CGI response contains expected content
   if ! printf '%s' "$cgi_response" | grep -q "Hello from CGI"; then
-    kill $serve_pid 2>/dev/null || true
     TEST_FAILURE_REASON="CGI response did not contain expected content"
     return 1
   fi
   
   # Test 4: Verify CGI response is valid HTML
   if ! printf '%s' "$cgi_response" | grep -q "<html>"; then
-    kill $serve_pid 2>/dev/null || true
     TEST_FAILURE_REASON="CGI response is not valid HTML"
     return 1
   fi
@@ -133,9 +143,7 @@ TESTPAGE
     return 1
   fi
   
-  # Cleanup
-  rm -f serve_output.txt
-  rm -rf "$test_web_root"
+  # Trap will handle final cleanup
 }
 
 run_test_case "site serving and CGI integration" test_site_serving_and_cgi
