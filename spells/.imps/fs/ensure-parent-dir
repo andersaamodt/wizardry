@@ -6,7 +6,7 @@ set -eu
 
 
 epd_file=${1-}
-epd_dir=epd_file%/*}
+epd_dir="${epd_file%/*}"
 
 if [ "$epd_dir" != "$epd_file" ] && [ ! -d "$epd_dir" ]; then
   mkdir -p "$epd_dir"

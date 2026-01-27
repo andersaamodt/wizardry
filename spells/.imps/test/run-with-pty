@@ -43,8 +43,9 @@ fi
 # Properly quote each argument
 {
   printf '#!/bin/sh\n'
-  printf 'export PATH=%s\n' "'$PATH'"
-  printf 'exec'
+  # Set environment variables by prefixing the exec command
+  # This passes them to the command without using export
+  printf 'PATH=%s AWAIT_KEYPRESS_DEVICE=$(tty 2>/dev/null || printf "/dev/stdin") exec' "'$PATH'"
   for arg in "$@"; do
     # Escape single quotes in the argument
     escaped=$(printf '%s' "$arg" | sed "s/'/'\\\\''/g")

@@ -40,10 +40,10 @@ set -eu
 . env-clear
 
 # Detect trash directory
-if command -v detect-trash >/dev/null 2>&1; then
-  trash_path=$(detect-trash)
+if command -v divine-trash >/dev/null 2>&1; then
+  trash_path=$(divine-trash)
 else
-  # Inline fallback if detect-trash is not available
+  # Inline fallback if divine-trash is not available
   platform=''
   if command -v detect-distro >/dev/null 2>&1; then
     platform=$(detect-distro 2>/dev/null || printf 'unknown')

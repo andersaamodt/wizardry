@@ -61,18 +61,18 @@ test_two_args_file_first() {
   target="$tmpdir/target"
   mkdir -p "$stub_dir"
   : >"$target"
-  cat >"$stub_dir/attribute-set" <<STUB
+  cat >"$stub_dir/set-attribute" <<STUB
 #!/bin/sh
-# Mock attribute-set imp
+# Mock set-attribute imp
 printf '%s %s %s\n' "\$1" "\$2" "\$3" >"${WIZARDRY_TMPDIR:?}/enchant.called"
 exit 0
 STUB
-  chmod +x "$stub_dir/attribute-set"
+  chmod +x "$stub_dir/set-attribute"
   PATH="$stub_dir:$PATH" run_spell "spells/enchant/enchant" "$target" "user.name=test_value"
   assert_success || return 1
   called=$(cat "$WIZARDRY_TMPDIR/enchant.called")
   assert_output_contains "enchanted with the attribute 'user.name'" || return 1
-  [ "$called" = "user.name test_value $target" ] || { TEST_FAILURE_REASON="unexpected attribute-set call: $called"; return 1; }
+  [ "$called" = "user.name test_value $target" ] || { TEST_FAILURE_REASON="unexpected set-attribute call: $called"; return 1; }
 }
 
 test_two_args_attr_first() {
@@ -82,18 +82,18 @@ test_two_args_attr_first() {
   target="$tmpdir/target"
   mkdir -p "$stub_dir"
   : >"$target"
-  cat >"$stub_dir/attribute-set" <<STUB
+  cat >"$stub_dir/set-attribute" <<STUB
 #!/bin/sh
-# Mock attribute-set imp
+# Mock set-attribute imp
 printf '%s %s %s\n' "\$1" "\$2" "\$3" >"${WIZARDRY_TMPDIR:?}/enchant.called"
 exit 0
 STUB
-  chmod +x "$stub_dir/attribute-set"
+  chmod +x "$stub_dir/set-attribute"
   PATH="$stub_dir:$PATH" run_spell "spells/enchant/enchant" "user.other=another_val" "$target"
   assert_success || return 1
   called=$(cat "$WIZARDRY_TMPDIR/enchant.called")
   assert_output_contains "enchanted with the attribute 'user.other'" || return 1
-  [ "$called" = "user.other another_val $target" ] || { TEST_FAILURE_REASON="unexpected attribute-set call: $called"; return 1; }
+  [ "$called" = "user.other another_val $target" ] || { TEST_FAILURE_REASON="unexpected set-attribute call: $called"; return 1; }
 }
 
 test_legacy_three_arg_format() {
@@ -103,18 +103,18 @@ test_legacy_three_arg_format() {
   target="$tmpdir/target"
   mkdir -p "$stub_dir"
   : >"$target"
-  cat >"$stub_dir/attribute-set" <<STUB
+  cat >"$stub_dir/set-attribute" <<STUB
 #!/bin/sh
-# Mock attribute-set imp
+# Mock set-attribute imp
 printf '%s %s %s\n' "\$1" "\$2" "\$3" >"${WIZARDRY_TMPDIR:?}/enchant.called"
 exit 0
 STUB
-  chmod +x "$stub_dir/attribute-set"
+  chmod +x "$stub_dir/set-attribute"
   PATH="$stub_dir:$PATH" run_spell "spells/enchant/enchant" "$target" charm sparkle
   assert_success || return 1
   called=$(cat "$WIZARDRY_TMPDIR/enchant.called")
   assert_output_contains "enchanted with the attribute 'user.charm'" || return 1
-  [ "$called" = "user.charm sparkle $target" ] || { TEST_FAILURE_REASON="unexpected attribute-set call: $called"; return 1; }
+  [ "$called" = "user.charm sparkle $target" ] || { TEST_FAILURE_REASON="unexpected set-attribute call: $called"; return 1; }
 }
 
 test_reports_missing_helpers() {
@@ -122,12 +122,12 @@ test_reports_missing_helpers() {
   tmpdir=$(make_tempdir)
   stub_dir="$tmpdir/stubs"
   mkdir -p "$stub_dir"
-  cat >"$stub_dir/attribute-set" <<'STUB'
+  cat >"$stub_dir/set-attribute" <<'STUB'
 #!/bin/sh
-# Mock attribute-set that always fails
+# Mock set-attribute that always fails
 exit 1
 STUB
-  chmod +x "$stub_dir/attribute-set"
+  chmod +x "$stub_dir/set-attribute"
   target="$tmpdir/target"
   : >"$target"
   PATH="$stub_dir:$PATH" run_spell "spells/enchant/enchant" "$target" user.key note

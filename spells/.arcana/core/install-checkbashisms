@@ -17,6 +17,13 @@ set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
+# Check if already installed
+force_install="${INSTALL_CHECKBASHISMS_FORCE_INSTALL:-0}"
+if command -v checkbashisms >/dev/null 2>&1 && [ "$force_install" != "1" ]; then
+  printf '%s\n' "checkbashisms is already installed."
+  exit 0
+fi
+
 ASSUME_YES=1
 FORCE_INSTALL=${INSTALL_CHECKBASHISMS_FORCE_INSTALL:-0}
 # On Debian/Ubuntu, checkbashisms is in the devscripts package

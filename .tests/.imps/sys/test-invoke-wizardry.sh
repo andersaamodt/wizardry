@@ -325,6 +325,9 @@ PATH="$2"
 WIZARDRY_LOAD_ALL=1
 export WIZARDRY_LOAD_ALL
 
+# Unset WIZARDRY_INVOKED to ensure fresh initialization
+unset WIZARDRY_INVOKED
+
 # Source invoke-wizardry
 . "$3" || exit 1
 
