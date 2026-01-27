@@ -60,7 +60,7 @@ while true; do
       "Build site%build \"$site_name\"" \
       "Build site (full)%build \"$site_name\" --full" \
       "Stop serving%stop-site \"$site_name\"" \
-      "Configure nginx%configure-nginx \"$site_name\"" \
+      "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
       "Open site directory%cd \"$SITE_DIR\" && \$SHELL" \
       "Delete site%delete-site \"$site_name\"" \
       "${exit_label}%kill -TERM \$PPID"
@@ -70,7 +70,7 @@ while true; do
       "Build site%build \"$site_name\"" \
       "Build site (full)%build \"$site_name\" --full" \
       "Serve site%serve-site \"$site_name\"" \
-      "Configure nginx%configure-nginx \"$site_name\"" \
+      "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
       "Open site directory%cd \"$SITE_DIR\" && \$SHELL" \
       "Delete site%delete-site \"$site_name\"" \
       "${exit_label}%kill -TERM \$PPID"
