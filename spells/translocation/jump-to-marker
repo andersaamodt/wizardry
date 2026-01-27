@@ -286,11 +286,6 @@ if [ "$current" = "$normalized_destination" ]; then
         set +eu; return 0
 fi
 
-if ! cd "$destination"; then
-        printf '%s\n' "The portal refuses to stabilize; try marking again." >&2
-        set +eu; return 1
-fi
-
 # Pick a random arrival message
 arrival=$(cat <<'PORTAL'
 You feel a sudden warmth as you are enveloped in a glowing aura. When it fades, you find yourself at your destination.
@@ -339,6 +334,11 @@ arrival=$(printf '%s\n' "$arrival" | awk 'BEGIN{srand();}{lines[NR]=$0}END{if (N
 
 if [ -n "$arrival" ]; then
         printf '%s\n' "$arrival"
+fi
+
+if ! cd "$destination"; then
+        printf '%s\n' "The portal refuses to stabilize; try marking again." >&2
+        set +eu; return 1
 fi
 
 # Touch marker to update mtime for cycling
