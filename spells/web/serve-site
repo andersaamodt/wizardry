@@ -42,21 +42,8 @@ if [ ! -f "$SITE_DIR/build/pages/index.html" ]; then
   build "$site_name"
 fi
 
-# Generate nginx config if not exists or if outdated
-needs_config_regen=false
+# Generate nginx config if not exists
 if [ ! -f "$SITE_DIR/nginx/nginx.conf" ]; then
-  needs_config_regen=true
-elif ! grep -q "Config version: 2" "$SITE_DIR/nginx/nginx.conf" 2>/dev/null; then
-  # Old config detected - check if it looks like a custom config
-  if grep -q "# Custom configuration" "$SITE_DIR/nginx/nginx.conf" 2>/dev/null; then
-    warn "serve-site: Using custom nginx.conf (not regenerating)"
-  else
-    info "Outdated nginx configuration detected - regenerating..."
-    needs_config_regen=true
-  fi
-fi
-
-if [ "$needs_config_regen" = "true" ]; then
   step "Generating nginx configuration..."
   configure-nginx "$site_name"
 fi
