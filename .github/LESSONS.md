@@ -108,3 +108,6 @@
 - In zsh (macOS default), `for m in $variable` doesn't word-split by default; use `for m in $(printf '%s\n' $variable)` to force word splitting in all shells (PR #909).
 - Debug output showing iteration counts can quickly reveal word-splitting issues: if `all_markers="1 2 3"` iterates once instead of three times, word splitting is disabled (PR #909).
 - When sourcing scripts into zsh shells, unquoted variables in for loops don't split; command substitution output always splits regardless of shell settings (PR #909).
+- Hardcoded menu positions don't account for dynamic entries (like conditionally-shown submenus); use a position counter that increments for each menu item to keep selection stable when menu items appear/disappear.
+- Install/uninstall scripts must verify the command is actually installed/removed after calling package manager; package managers can exit 0 even when skipping already-installed packages or refusing to remove system dependencies.
+- macOS package management on "unaugmented" systems requires Homebrew support; check for `brew` before falling back to pkgin when detecting Darwin/macOS platform.

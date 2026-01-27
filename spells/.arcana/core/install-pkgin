@@ -1,0 +1,97 @@
+#!/bin/sh
+
+# Bootstrap spell: Install pkgin package manager for macOS.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-pkgin
+
+This spell installs pkgin (pkgsrc package manager) on macOS.
+Downloads and installs the official pkgsrc bootstrap package from Joyent.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+# Check if already installed
+if command -v pkgin >/dev/null 2>&1 || [ -x /opt/pkg/bin/pkgin ]; then
+  printf '%s\n' "pkgin is already installed"
+  exit 0
+fi
+
+# Check if we're on macOS
+if [ "$(uname -s 2>/dev/null)" != "Darwin" ]; then
+  printf '%s\n' "install-pkgin: this installer is for macOS only" >&2
+  exit 1
+fi
+
+printf '%s\n' "Installing pkgin package manager..."
+
+# Detect architecture - use sysctl for more reliable detection on macOS
+if sysctl -n machdep.cpu.brand_string 2>/dev/null | grep -q 'Apple'; then
+  # Apple Silicon (M1, M2, M3, etc.)
+  arch_type="arm64"
+  bootstrap_file="bootstrap-macos14.5-trunk-arm64-20251114.tar.gz"
+  arch_name="Apple Silicon (arm64)"
+elif sysctl -n machdep.cpu.brand_string 2>/dev/null | grep -q 'Intel'; then
+  # Intel processor
+  arch_type="x86_64"
+  bootstrap_file="bootstrap-macos11-trunk-x86_64-20240212.tar.gz"
+  arch_name="Intel (x86_64)"
+else
+  # Fallback to uname -m
+  arch=$(uname -m)
+  case "$arch" in
+    x86_64)
+      arch_type="x86_64"
+      bootstrap_file="bootstrap-macos11-trunk-x86_64-20240212.tar.gz"
+      arch_name="Intel (x86_64)"
+      ;;
+    arm64|aarch64)
+      arch_type="arm64"
+      bootstrap_file="bootstrap-macos14.5-trunk-arm64-20251114.tar.gz"
+      arch_name="Apple Silicon (arm64)"
+      ;;
+    *)
+      printf '%s\n' "install-pkgin: unsupported architecture: $arch" >&2
+      exit 1
+      ;;
+  esac
+fi
+
+# Download bootstrap package
+temp_dir=$(mktemp -d)
+trap 'rm -rf "$temp_dir"' EXIT
+
+printf '%s\n' "Downloading pkgsrc bootstrap for $arch_name..."
+
+# Use the official SmartOS/Joyent pkgsrc bootstrap URL
+bootstrap_url="https://pkgsrc.smartos.org/packages/Darwin/bootstrap/${bootstrap_file}"
+
+if ! curl -fsSL "$bootstrap_url" -o "$temp_dir/bootstrap.tar.gz"; then
+  printf '%s\n' "install-pkgin: failed to download bootstrap package" >&2
+  printf '%s\n' "Tried URL: $bootstrap_url" >&2
+  exit 1
+fi
+
+printf '%s\n' "Installing pkgsrc bootstrap (this requires sudo)..."
+
+# Extract bootstrap (requires sudo for system-wide installation)
+if ! sudo tar -zxpf "$temp_dir/bootstrap.tar.gz" -C /; then
+  printf '%s\n' "install-pkgin: failed to extract bootstrap package" >&2
+  exit 1
+fi
+
+# Verify installation by checking if pkgin binary exists
+if [ -x /opt/pkg/bin/pkgin ]; then
+  printf '%s\n' "pkgin installed successfully to /opt/pkg/bin/pkgin"
+else
+  printf '%s\n' "install-pkgin: installation failed - pkgin binary not found" >&2
+  printf '%s\n' "Expected location: /opt/pkg/bin/pkgin" >&2
+  printf '%s\n' "Bootstrap file used: $bootstrap_file" >&2
+  printf '%s\n' "Architecture detected: $arch_name" >&2
+  exit 1
+fi

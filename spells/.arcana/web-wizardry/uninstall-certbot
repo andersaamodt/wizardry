@@ -32,6 +32,15 @@ if ! command -v "$manage_cmd" >/dev/null 2>&1; then
 fi
 
 printf '%s\n' "Uninstalling certbot..."
-"$manage_cmd" remove certbot certbot
+"$manage_cmd" --uninstall certbot certbot || {
+  printf '%s\n' "uninstall-certbot: certbot uninstallation failed" >&2
+  exit 1
+}
 
-printf '%s\n' "Certbot uninstalled."
+# Verify uninstallation
+if command -v certbot >/dev/null 2>&1; then
+  printf '%s\n' "uninstall-certbot: certbot still present after uninstall" >&2
+  exit 1
+fi
+
+printf '%s\n' "certbot uninstallation complete."

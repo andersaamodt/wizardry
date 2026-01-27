@@ -71,6 +71,7 @@ core_dependencies() {
       # macOS has pbcopy built-in, so no clipboard utilities needed in menu
       cat <<'EOF'
 Git:git:install-git:uninstall-git:0
+pkgin:pkgin:install-pkgin:uninstall-pkgin:0
 sed:sed:install-sed:uninstall-sed:1
 awk:awk:install-awk:uninstall-awk:1
 grep:grep:install-grep:uninstall-grep:1
@@ -118,6 +119,7 @@ install_core_resolve_spell() {
   return 1
 }
 
+install_core() {
   # Try to install each core dependency, but don't fail if optional packages
   # can't be installed (e.g., on NixOS where packages must be installed declaratively).
   # We silently skip failures to avoid confusing novice users during first-time install.
@@ -132,6 +134,7 @@ install_core_resolve_spell() {
   done
   # Always return success - optional package installation failures are non-fatal
   return 0
+}
 
 if [ "${0##*/}" = "install-core" ]; then
   set -eu

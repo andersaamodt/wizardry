@@ -32,6 +32,15 @@ if ! command -v "$manage_cmd" >/dev/null 2>&1; then
 fi
 
 printf '%s\n' "Uninstalling fcgiwrap..."
-"$manage_cmd" --uninstall fcgiwrap fcgiwrap
+"$manage_cmd" --uninstall fcgiwrap fcgiwrap || {
+  printf '%s\n' "uninstall-fcgiwrap: fcgiwrap uninstallation failed" >&2
+  exit 1
+}
 
-printf '%s\n' "Fcgiwrap uninstallation complete."
+# Verify uninstallation
+if command -v fcgiwrap >/dev/null 2>&1; then
+  printf '%s\n' "uninstall-fcgiwrap: fcgiwrap still present after uninstall" >&2
+  exit 1
+fi
+
+printf '%s\n' "fcgiwrap uninstallation complete."
