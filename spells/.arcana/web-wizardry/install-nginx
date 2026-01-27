@@ -34,7 +34,7 @@ fi
 printf '%s\n' "Installing nginx..."
 
 # Try to install via manage-system-command
-if ! "$manage_cmd" install nginx nginx 2>&1; then
+if ! "$manage_cmd" install nginx nginx; then
   # Check if failure is due to missing pkgin on macOS
   if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && ! command -v pkgin >/dev/null 2>&1; then
     printf '%s\n' ""  >&2
