@@ -13,6 +13,43 @@ test_configure_nginx_help() {
   assert_output_contains "Usage:"
 }
 
+test_configure_nginx_creates_local_mimetypes() {
+  skip-if-compiled || return $?
+  
+  # Set up test environment
+  test_web_root=$(temp-dir web-wizardry-test)
+  export WEB_WIZARDRY_ROOT="$test_web_root"
+  
+  # Create a test site directory
+  mkdir -p "$test_web_root/mytestsite"
+  
+  # Run configure-nginx
+  run_spell spells/web/configure-nginx mytestsite
+  assert_success
+  
+  # Verify mime.types was created
+  [ -f "$test_web_root/mytestsite/nginx/mime.types" ] || {
+    TEST_FAILURE_REASON="mime.types not created"
+    return 1
+  }
+  
+  # Verify nginx.conf references local mime.types
+  grep -q "include $test_web_root/mytestsite/nginx/mime.types" "$test_web_root/mytestsite/nginx/nginx.conf" || {
+    TEST_FAILURE_REASON="nginx.conf does not reference local mime.types"
+    return 1
+  }
+  
+  # Verify nginx.conf does not reference /etc/nginx/mime.types
+  if grep -q "include /etc/nginx/mime.types" "$test_web_root/mytestsite/nginx/nginx.conf"; then
+    TEST_FAILURE_REASON="nginx.conf still references system mime.types"
+    return 1
+  fi
+  
+  # Cleanup
+  rm -rf "$test_web_root"
+}
+
 run_test_case "configure-nginx --help" test_configure_nginx_help
+run_test_case "configure-nginx creates local mime.types" test_configure_nginx_creates_local_mimetypes
 
 finish_tests
