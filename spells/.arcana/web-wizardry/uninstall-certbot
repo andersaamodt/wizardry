@@ -38,8 +38,19 @@ os_type=$(uname -s 2>/dev/null)
 
 case "$os_type" in
   Darwin)
-    # On macOS, try to uninstall via pip first
-    if command -v python3 >/dev/null 2>&1 && python3 -m pip --version >/dev/null 2>&1; then
+    # On macOS, check if we have acme.sh or pip-installed certbot
+    if [ -d "$HOME/.acme.sh" ]; then
+      printf '%s\n' "Uninstalling acme.sh..."
+      if [ -x "$HOME/.acme.sh/acme.sh" ]; then
+        "$HOME/.acme.sh/acme.sh" --uninstall || {
+          printf '%s\n' "uninstall-certbot: acme.sh uninstall command failed" >&2
+        }
+      fi
+      # Remove acme.sh directory
+      rm -rf "$HOME/.acme.sh"
+      # Remove certbot wrapper
+      rm -f "$HOME/.local/bin/certbot"
+    elif command -v python3 >/dev/null 2>&1 && python3 -m pip --version >/dev/null 2>&1; then
       # Check if certbot was installed via pip
       if python3 -m pip show certbot >/dev/null 2>&1; then
         printf '%s\n' "Uninstalling certbot via pip..."

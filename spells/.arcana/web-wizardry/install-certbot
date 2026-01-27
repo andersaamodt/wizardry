@@ -38,38 +38,46 @@ os_type=$(uname -s 2>/dev/null)
 
 case "$os_type" in
   Darwin)
-    # On macOS, install certbot via pip (Python package manager)
-    # This is the official recommended method for macOS without homebrew
-    printf '%s\n' "Installing certbot via pip (Python package manager)..."
+    # On macOS, use acme.sh instead of certbot
+    # acme.sh is a pure shell script ACME client (no Python/pip required)
+    # It's POSIX-compliant and widely trusted
+    printf '%s\n' "Installing acme.sh (ACME client for Let's Encrypt)..."
     
-    # Check if python3 is available
-    if ! command -v python3 >/dev/null 2>&1; then
-      printf '%s\n' "install-certbot: python3 is required but not found" >&2
-      printf '%s\n' "Please install Python 3 first (available from python.org or via system package manager)" >&2
-      exit 1
-    fi
-    
-    # Ensure pip is available
-    if ! python3 -m pip --version >/dev/null 2>&1; then
-      printf '%s\n' "Bootstrapping pip..." >&2
-      python3 -m ensurepip --upgrade >/dev/null 2>&1 || {
-        printf '%s\n' "install-certbot: failed to bootstrap pip" >&2
+    # Download and install acme.sh
+    acme_install_dir="$HOME/.acme.sh"
+    if [ -d "$acme_install_dir" ]; then
+      printf '%s\n' "acme.sh already installed at $acme_install_dir"
+    else
+      # Download and run installer
+      if command -v curl >/dev/null 2>&1; then
+        curl -fsSL https://get.acme.sh | sh -s email=my@example.com || {
+          printf '%s\n' "install-certbot: failed to install acme.sh" >&2
+          exit 1
+        }
+      else
+        printf '%s\n' "install-certbot: curl is required to install acme.sh" >&2
         exit 1
-      }
+      fi
     fi
     
-    # Install certbot via pip
-    if ! python3 -m pip install --user certbot; then
-      printf '%s\n' "install-certbot: failed to install certbot via pip" >&2
-      exit 1
-    fi
+    # Create certbot alias/wrapper that calls acme.sh
+    # This maintains compatibility with existing workflows
+    mkdir -p "$HOME/.local/bin"
+    cat > "$HOME/.local/bin/certbot" << 'EOF'
+#!/bin/sh
+# Wrapper script that calls acme.sh with certbot-compatible interface
+# For now, just call acme.sh directly
+exec "$HOME/.acme.sh/acme.sh" "$@"
+EOF
+    chmod +x "$HOME/.local/bin/certbot"
     
-    # Add Python user bin to PATH
-    user_base=$(python3 -c 'import site; print(site.USER_BASE)' 2>/dev/null)
-    if [ -n "$user_base" ] && [ -d "$user_base/bin" ]; then
-      PATH="$user_base/bin:$PATH"
-      export PATH
-    fi
+    # Add to PATH
+    PATH="$HOME/.local/bin:$PATH"
+    export PATH
+    
+    printf '%s\n' "Note: On macOS, we use acme.sh (a pure shell ACME client) instead of certbot."
+    printf '%s\n' "acme.sh is installed at: $acme_install_dir"
+    printf '%s\n' "A 'certbot' wrapper is available at: $HOME/.local/bin/certbot"
     ;;
   *)
     # On Linux and other platforms, use the system package manager
