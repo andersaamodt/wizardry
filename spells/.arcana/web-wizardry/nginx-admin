@@ -50,7 +50,7 @@ while true; do
   # Check if nginx is currently running
   # Try to determine if nginx is running by checking the master process
   nginx_running=0
-  if pgrep -x nginx >/dev/null 2>&1 || pgrep "nginx: master" >/dev/null 2>&1; then
+  if pgrep -f "nginx.*master" >/dev/null 2>&1; then
     nginx_running=1
   fi
   
