@@ -49,7 +49,7 @@ elif [ "$installed" -eq "$total" ]; then
   status="installed"
 else
   color="$THEME_WARNING"
-  status="$installed/$total installed"
+  status="partial install"
 fi
 
 printf "%s%s%s\n" "$color" "$status" "$RESET"

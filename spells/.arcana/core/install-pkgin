@@ -1,0 +1,44 @@
+#!/bin/sh
+
+# Bootstrap spell: Install pkgin package manager for macOS.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-pkgin
+
+This spell installs pkgin (pkgsrc package manager) on macOS.
+See https://pkgsrc.joyent.com/install-on-macos/ for manual installation.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+# Check if already installed
+if command -v pkgin >/dev/null 2>&1; then
+  printf '%s\n' "pkgin is already installed"
+  exit 0
+fi
+
+# Check if we're on macOS
+if [ "$(uname -s 2>/dev/null)" != "Darwin" ]; then
+  printf '%s\n' "install-pkgin: this installer is for macOS only" >&2
+  exit 1
+fi
+
+printf '%s\n' "Installing pkgin package manager..."
+printf '%s\n' ""
+printf '%s\n' "pkgin requires downloading and running the official pkgsrc bootstrap script."
+printf '%s\n' "Visit: https://pkgsrc.joyent.com/install-on-macos/"
+printf '%s\n' ""
+printf '%s\n' "To install manually:"
+printf '%s\n' "  curl -O https://pkgsrc.joyent.com/packages/Darwin/bootstrap/bootstrap-trunk-x86_64-20XXXXXX.tar.gz"
+printf '%s\n' "  sudo tar -zxpf bootstrap-trunk-x86_64-20XXXXXX.tar.gz -C /"
+printf '%s\n' ""
+printf '%s\n' "After installation, add to your PATH:"
+printf '%s\n' "  export PATH=/opt/pkg/bin:/opt/pkg/sbin:\$PATH"
+printf '%s\n' ""
+
+exit 1

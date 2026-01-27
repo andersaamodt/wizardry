@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# Bootstrap spell: Uninstall pkgin package manager.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-pkgin
+
+This spell provides instructions for uninstalling pkgin.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+printf '%s\n' "uninstall-pkgin: pkgin cannot be automatically uninstalled" >&2
+printf '%s\n' "To remove pkgin manually, remove /opt/pkg directory" >&2
+exit 1

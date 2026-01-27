@@ -45,18 +45,30 @@ list_entries() {
         return
     fi
 
-    # Preferred order: mud first, then others alphabetically
-    # First output 'mud' if it exists
+    # Preferred order: core, mud, web-wizardry first, then others alphabetically
+    # First output 'core' if it exists
+    if [ -e "$install_dir/core" ]; then
+        printf '%s\n' "core"
+    fi
+    
+    # Then 'mud' if it exists
     if [ -e "$install_dir/mud" ]; then
         printf '%s\n' "mud"
+    fi
+    
+    # Then 'web-wizardry' if it exists
+    if [ -e "$install_dir/web-wizardry" ]; then
+        printf '%s\n' "web-wizardry"
     fi
     
     # Then output all other entries alphabetically
     for entry in "$install_dir"/*; do
         [ -e "$entry" ] || continue
         entry_name=$(basename "$entry")
-        # Skip 'mud' since we already listed it first
+        # Skip entries we already listed
+        [ "$entry_name" = "core" ] && continue
         [ "$entry_name" = "mud" ] && continue
+        [ "$entry_name" = "web-wizardry" ] && continue
         # Skip 'import-arcanum' since it's a special menu item added separately
         [ "$entry_name" = "import-arcanum" ] && continue
         printf '%s\n' "$entry_name"
@@ -113,6 +125,13 @@ while :; do
         fi
 
         label="$name"
+        # Rename labels for better display
+        case "$name" in
+            core) label="core wizardry" ;;
+            mud) label="wizardry MUD" ;;
+            web-wizardry) label="web wizardry" ;;
+        esac
+        
         if [ -n "$status" ]; then
             label="$label - $status"
         fi
