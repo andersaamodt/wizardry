@@ -6,9 +6,16 @@ http-status 200 "OK"
 http-header "Content-Type" "text/html"
 http-end-headers
 
-# Parse query string or POST data
-text="${QUERY_STRING:-No text provided}"
-text=$(printf '%s' "$text" | sed 's/text=//' | url-decode)
+# Parse query string to get text parameter
+text=""
+if [ -n "${QUERY_STRING:-}" ]; then
+  # Extract text=value from query string
+  text=$(printf '%s' "$QUERY_STRING" | sed 's/^text=//' | sed 's/&.*//' | url-decode)
+fi
+
+if [ -z "$text" ]; then
+  text="No text provided"
+fi
 
 cat <<HTML
 <div class="demo-result">
