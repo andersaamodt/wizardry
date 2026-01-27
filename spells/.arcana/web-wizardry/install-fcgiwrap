@@ -32,7 +32,27 @@ if ! command -v "$manage_cmd" >/dev/null 2>&1; then
 fi
 
 printf '%s\n' "Installing fcgiwrap..."
-"$manage_cmd" install fcgiwrap fcgiwrap
+
+# Try to install via manage-system-command
+if ! "$manage_cmd" install fcgiwrap fcgiwrap 2>&1; then
+  # Check if failure is due to missing pkgin on macOS
+  if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && ! command -v pkgin >/dev/null 2>&1; then
+    printf '%s\n' ""  >&2
+    printf '%s\n' "fcgiwrap installation requires pkgin package manager on macOS." >&2
+    printf '%s\n' "Would you like to see pkgin installation instructions? (y/N): " >&2
+    read -r response || response="n"
+    case "$response" in
+      y|Y|yes|YES)
+        if has install-pkgin; then
+          install-pkgin || true
+        else
+          printf '%s\n' "Run 'core-menu' to install pkgin" >&2
+        fi
+        ;;
+    esac
+  fi
+  exit 1
+fi
 
 # Verify installation
 if ! command -v fcgiwrap >/dev/null 2>&1; then
