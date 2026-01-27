@@ -109,8 +109,12 @@ while true; do
   fi
   pos=$((pos + 1))
   
-  # Coreutils (informational only - should not be uninstalled)
-  coreutils_info="    coreutils%echo $pos > \"$SELECTION_FILE\"; printf '%s\\n' 'coreutils should not be uninstalled - it contains essential system utilities.' >&2"
+  # Coreutils (can be checked but not unchecked - informational)
+  if "$script_dir/is-web-component-installed" coreutils 2>/dev/null; then
+    coreutils_info=" X  coreutils%echo $pos > \"$SELECTION_FILE\"; printf '%s\\n' 'coreutils should not be uninstalled - it contains essential system utilities.' >&2"
+  else
+    coreutils_info="[ ] coreutils%echo $pos > \"$SELECTION_FILE\"; printf '%s\\n' 'coreutils should not be uninstalled - it contains essential system utilities.' >&2"
+  fi
   pos=$((pos + 1))
   
   # Check if all are installed for enable/disable all toggle

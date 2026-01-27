@@ -99,13 +99,21 @@ elif [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
         exit 1
       }
       # Update PATH to include Homebrew paths for immediate availability
-      # Check common Homebrew locations
+      # Check common Homebrew locations (both bin and sbin)
       if [ -d "/opt/homebrew/bin" ] && ! printf '%s' "$PATH" | grep -q "/opt/homebrew/bin"; then
         PATH="/opt/homebrew/bin:$PATH"
         export PATH
       fi
+      if [ -d "/opt/homebrew/sbin" ] && ! printf '%s' "$PATH" | grep -q "/opt/homebrew/sbin"; then
+        PATH="/opt/homebrew/sbin:$PATH"
+        export PATH
+      fi
       if [ -d "/usr/local/bin" ] && ! printf '%s' "$PATH" | grep -q "/usr/local/bin"; then
         PATH="/usr/local/bin:$PATH"
+        export PATH
+      fi
+      if [ -d "/usr/local/sbin" ] && ! printf '%s' "$PATH" | grep -q "/usr/local/sbin"; then
+        PATH="/usr/local/sbin:$PATH"
         export PATH
       fi
     else
