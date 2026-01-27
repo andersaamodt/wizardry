@@ -1,0 +1,27 @@
+#!/bin/sh
+# debug-test - Simple CGI script for debugging
+
+set -eu
+
+# Source CGI helpers
+. http-status
+. http-header
+. http-end-headers
+
+# Output HTTP headers
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+# Get current timestamp
+timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+
+# Output HTML response
+cat <<HTML
+<div style="padding: 10px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px;">
+  <strong>✅ CGI Works!</strong><br>
+  Server time: $timestamp<br>
+  Request method: ${REQUEST_METHOD-GET}<br>
+  Query string: ${QUERY_STRING-(none)}
+</div>
+HTML
