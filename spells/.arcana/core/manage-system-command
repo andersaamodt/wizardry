@@ -41,9 +41,10 @@ fi
 nix_package=${NIX_PACKAGE:-$package_default}
 
 # Allow per-manager package overrides when names diverge across distros.
-# Officially supported platforms: debian, arch, nixos, mac
+# Officially supported platforms: debian, arch, nixos, mac (brew/pkgin)
 apt_package=${APT_PACKAGE:-$package_default}
 pacman_package=${PACMAN_PACKAGE:-$package_default}
+brew_package=${BREW_PACKAGE:-$package_default}
 pkgin_package=${PKGIN_PACKAGE:-$package_default}
 pkgin_candidates=${PKGIN_CANDIDATES:-/usr/pkg/bin/pkgin /opt/pkg/bin/pkgin /usr/local/pkg/bin/pkgin}
 
@@ -88,7 +89,23 @@ if [ "$is_nixos" = "1" ]; then
     }
   fi
 elif [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
-  if command -v pkgin >/dev/null 2>&1; then
+  # Try Homebrew first (most common on macOS), then fall back to pkgin
+  if command -v brew >/dev/null 2>&1; then
+    brew_package=${BREW_PACKAGE:-$package_default}
+    if [ "$action" = "install" ]; then
+      # Use brew install with --quiet flag to reduce output
+      brew install --quiet "$brew_package" || {
+        printf '%s\n' "manage-system-command: unable to install ${brew_package} automatically via brew" >&2
+        exit 1
+      }
+    else
+      # Use brew uninstall
+      brew uninstall --quiet "$brew_package" || {
+        printf '%s\n' "manage-system-command: unable to uninstall $command_name via brew" >&2
+        exit 1
+      }
+    fi
+  elif command -v pkgin >/dev/null 2>&1; then
     if [ "$action" = "install" ]; then
       manage_system_command_run_installer pkgin -y install "$pkgin_package" || {
         printf '%s\n' "manage-system-command: unable to install ${pkgin_package} automatically via pkgin" >&2

@@ -32,6 +32,15 @@ if ! command -v "$manage_cmd" >/dev/null 2>&1; then
 fi
 
 printf '%s\n' "Uninstalling pandoc..."
-"$manage_cmd" --uninstall pandoc pandoc
+"$manage_cmd" --uninstall pandoc pandoc || {
+  printf '%s\n' "uninstall-pandoc: pandoc uninstallation failed" >&2
+  exit 1
+}
 
-printf '%s\n' "Pandoc uninstallation complete."
+# Verify uninstallation
+if command -v pandoc >/dev/null 2>&1; then
+  printf '%s\n' "uninstall-pandoc: pandoc still present after uninstall" >&2
+  exit 1
+fi
+
+printf '%s\n' "pandoc uninstallation complete."
