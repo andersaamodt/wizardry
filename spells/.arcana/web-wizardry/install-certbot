@@ -31,70 +31,48 @@ if ! command -v "$manage_cmd" >/dev/null 2>&1; then
   fi
 fi
 
-printf '%s\n' "Installing certbot..."
+printf '%s\n' "Installing acme.sh..."
 
-# Determine installation method based on platform
-os_type=$(uname -s 2>/dev/null)
+# Use acme.sh on all platforms - it's a pure shell script ACME client
+# No Python/pip dependency required, POSIX-compliant and widely trusted
+printf '%s\n' "Installing acme.sh (ACME client for Let's Encrypt)..."
 
-case "$os_type" in
-  Darwin)
-    # On macOS, use acme.sh instead of certbot
-    # acme.sh is a pure shell script ACME client (no Python/pip required)
-    # It's POSIX-compliant and widely trusted
-    printf '%s\n' "Installing acme.sh (ACME client for Let's Encrypt)..."
-    
-    # Download and install acme.sh
-    acme_install_dir="$HOME/.acme.sh"
-    if [ -d "$acme_install_dir" ]; then
-      printf '%s\n' "acme.sh already installed at $acme_install_dir"
-    else
-      # Download and run installer
-      # Note: acme.sh installer will prompt for email if not provided
-      # or can be configured later with: ~/.acme.sh/acme.sh --register-account -m user@example.com
-      if command -v curl >/dev/null 2>&1; then
-        curl -fsSL https://get.acme.sh | sh || {
-          printf '%s\n' "install-certbot: failed to install acme.sh" >&2
-          exit 1
-        }
-      else
-        printf '%s\n' "install-certbot: curl is required to install acme.sh" >&2
-        exit 1
-      fi
-    fi
-    
-    # Create certbot alias/wrapper that calls acme.sh
-    # Note: acme.sh and certbot have different CLI interfaces
-    # This wrapper provides basic compatibility
-    mkdir -p "$HOME/.local/bin"
-    cat > "$HOME/.local/bin/certbot" << 'EOF'
+# Download and install acme.sh
+acme_install_dir="$HOME/.acme.sh"
+if [ -d "$acme_install_dir" ]; then
+  printf '%s\n' "acme.sh already installed at $acme_install_dir"
+else
+  # Download and run installer
+  # acme.sh can be configured later with: ~/.acme.sh/acme.sh --register-account -m user@example.com
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL https://get.acme.sh | sh || {
+      printf '%s\n' "install-certbot: failed to install acme.sh" >&2
+      exit 1
+    }
+  else
+    printf '%s\n' "install-certbot: curl is required to install acme.sh" >&2
+    exit 1
+  fi
+fi
+
+# Create certbot alias/wrapper that calls acme.sh for compatibility
+mkdir -p "$HOME/.local/bin"
+cat > "$HOME/.local/bin/certbot" << 'EOF'
 #!/bin/sh
 # Wrapper script that calls acme.sh
 # Note: acme.sh uses different arguments than certbot
 # For full acme.sh documentation, see: https://github.com/acmesh-official/acme.sh
 exec "$HOME/.acme.sh/acme.sh" "$@"
 EOF
-    chmod +x "$HOME/.local/bin/certbot"
-    
-    # Add to PATH
-    PATH="$HOME/.local/bin:$PATH"
-    export PATH
-    
-    printf '%s\n' "Note: On macOS, we use acme.sh (a pure shell ACME client) instead of certbot."
-    printf '%s\n' "acme.sh is installed at: $acme_install_dir"
-    printf '%s\n' "A 'certbot' wrapper is available at: $HOME/.local/bin/certbot"
-    printf '%s\n' "To register with Let's Encrypt: ~/.acme.sh/acme.sh --register-account -m your@email.com"
-    ;;
-  *)
-    # On Linux and other platforms, use the system package manager
-    if ! "$manage_cmd" certbot certbot; then
-      printf '%s\n' "install-certbot: failed to install certbot via system package manager" >&2
-      exit 1
-    fi
-    
-    # Add pkgin paths to PATH so installed packages can be found
-    . add-pkgin-to-path
-    ;;
-esac
+chmod +x "$HOME/.local/bin/certbot"
+
+# Add to PATH
+PATH="$HOME/.local/bin:$PATH"
+export PATH
+
+printf '%s\n' "acme.sh is installed at: $acme_install_dir"
+printf '%s\n' "A 'certbot' wrapper is available at: $HOME/.local/bin/certbot"
+printf '%s\n' "To register with Let's Encrypt: ~/.acme.sh/acme.sh --register-account -m your@email.com"
 
 # Verify installation
 if ! command -v certbot >/dev/null 2>&1; then

@@ -31,56 +31,24 @@ if ! command -v "$manage_cmd" >/dev/null 2>&1; then
   fi
 fi
 
-printf '%s\n' "Uninstalling certbot..."
+printf '%s\n' "Uninstalling acme.sh..."
 
-# Determine uninstallation method based on platform
-os_type=$(uname -s 2>/dev/null)
-
-case "$os_type" in
-  Darwin)
-    # On macOS, check if we have acme.sh or pip-installed certbot
-    if [ -d "$HOME/.acme.sh" ]; then
-      printf '%s\n' "Uninstalling acme.sh..."
-      if [ -x "$HOME/.acme.sh/acme.sh" ]; then
-        "$HOME/.acme.sh/acme.sh" --uninstall || {
-          printf '%s\n' "uninstall-certbot: acme.sh uninstall command failed, proceeding with cleanup" >&2
-        }
-      fi
-      # Remove acme.sh directory and wrapper
-      rm -rf "$HOME/.acme.sh"
-      rm -f "$HOME/.local/bin/certbot"
-      printf '%s\n' "acme.sh uninstallation complete."
-    elif command -v python3 >/dev/null 2>&1 && python3 -m pip --version >/dev/null 2>&1; then
-      # Check if certbot was installed via pip
-      if python3 -m pip show certbot >/dev/null 2>&1; then
-        printf '%s\n' "Uninstalling certbot via pip..."
-        if ! python3 -m pip uninstall -y certbot; then
-          printf '%s\n' "uninstall-certbot: failed to uninstall certbot via pip" >&2
-          exit 1
-        fi
-      else
-        # Try system package manager as fallback
-        "$manage_cmd" --uninstall certbot certbot || {
-          printf '%s\n' "uninstall-certbot: certbot uninstallation failed" >&2
-          exit 1
-        }
-      fi
-    else
-      # No pip available, try system package manager
-      "$manage_cmd" --uninstall certbot certbot || {
-        printf '%s\n' "uninstall-certbot: certbot uninstallation failed" >&2
-        exit 1
-      }
-    fi
-    ;;
-  *)
-    # On Linux and other platforms, use the system package manager
-    "$manage_cmd" --uninstall certbot certbot || {
-      printf '%s\n' "uninstall-certbot: certbot uninstallation failed" >&2
-      exit 1
+# Check if we have acme.sh installed
+if [ -d "$HOME/.acme.sh" ]; then
+  printf '%s\n' "Uninstalling acme.sh..."
+  if [ -x "$HOME/.acme.sh/acme.sh" ]; then
+    "$HOME/.acme.sh/acme.sh" --uninstall || {
+      printf '%s\n' "uninstall-certbot: acme.sh uninstall command failed, proceeding with cleanup" >&2
     }
-    ;;
-esac
+  fi
+  # Remove acme.sh directory and wrapper
+  rm -rf "$HOME/.acme.sh"
+  rm -f "$HOME/.local/bin/certbot"
+  printf '%s\n' "acme.sh uninstallation complete."
+else
+  printf '%s\n' "uninstall-certbot: acme.sh not found" >&2
+  exit 1
+fi
 
 # Verify uninstallation
 if command -v certbot >/dev/null 2>&1; then
