@@ -88,7 +88,6 @@ build_site() {
         --from markdown+yaml_metadata_block \
         --to html5 \
         --standalone \
-        --template=  \
         --css=/static/style.css \
         --output="$html_file" \
         "$md_file"
