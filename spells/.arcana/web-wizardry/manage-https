@@ -27,8 +27,14 @@ fi
 trap 'exit 130' INT
 trap 'exit 0' TERM
 
+first_run=1
+
 while true; do
-  printf '\n'
+  if [ "$first_run" -eq 0 ]; then
+    printf '\n'
+  else
+    first_run=0
+  fi
 
   # Check if acme.sh is installed
   if [ ! -f "$HOME/.acme.sh/acme.sh" ]; then
@@ -42,11 +48,12 @@ while true; do
   exit_option="${exit_label}%kill -TERM \$PPID"
   
   # acme.sh management commands (using literal $HOME for clarity)
-  register_option="Register account%\$HOME/.acme.sh/acme.sh --register-account 2>&1"
-  issue_help_option="How to issue cert%\$HOME/.acme.sh/acme.sh --help issue 2>&1"
-  list_certs_option="List certificates%\$HOME/.acme.sh/acme.sh --list 2>&1"
-  renew_option="Renew all%\$HOME/.acme.sh/acme.sh --renew-all 2>&1"
-  version_option="Show version%\$HOME/.acme.sh/acme.sh --version 2>&1"
+  # Add pause after command so output can be read before menu redraws
+  register_option="Register account%\$HOME/.acme.sh/acme.sh --register-account 2>&1; printf '\nPress any key to continue...' && await-keypress >/dev/null"
+  issue_help_option="How to issue cert%\$HOME/.acme.sh/acme.sh --help issue 2>&1 | less; true"
+  list_certs_option="List certificates%\$HOME/.acme.sh/acme.sh --list 2>&1; printf '\nPress any key to continue...' && await-keypress >/dev/null"
+  renew_option="Renew all%\$HOME/.acme.sh/acme.sh --renew-all 2>&1; printf '\nPress any key to continue...' && await-keypress >/dev/null"
+  version_option="Show version%\$HOME/.acme.sh/acme.sh --version 2>&1; printf '\nPress any key to continue...' && await-keypress >/dev/null"
   
   menu "$title" "$register_option" "$issue_help_option" "$list_certs_option" "$renew_option" "$version_option" "$exit_option" || menu_status=$?
   menu_status=${menu_status:-0}
