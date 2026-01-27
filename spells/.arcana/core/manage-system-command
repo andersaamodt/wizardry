@@ -93,11 +93,12 @@ elif [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
   if command -v brew >/dev/null 2>&1; then
     brew_package=${BREW_PACKAGE:-$package_default}
     if [ "$action" = "install" ]; then
-      # Use brew install with --quiet flag to reduce output
-      brew install --quiet "$brew_package" || {
-        printf '%s\n' "manage-system-command: unable to install ${brew_package} automatically via brew" >&2
+      # Run brew install and capture output for better error reporting
+      if ! brew_output=$(brew install "$brew_package" 2>&1); then
+        printf '%s\n' "manage-system-command: unable to install ${brew_package} via brew" >&2
+        printf '%s\n' "brew error: $brew_output" >&2
         exit 1
-      }
+      fi
       # Update PATH to include Homebrew paths for immediate availability
       # Check common Homebrew locations (both bin and sbin)
       if [ -d "/opt/homebrew/bin" ] && ! printf '%s' "$PATH" | grep -q "/opt/homebrew/bin"; then
