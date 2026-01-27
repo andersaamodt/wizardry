@@ -32,6 +32,15 @@ if ! command -v "$manage_cmd" >/dev/null 2>&1; then
 fi
 
 printf '%s\n' "Uninstalling nginx..."
-"$manage_cmd" --uninstall nginx nginx
+"$manage_cmd" --uninstall nginx nginx || {
+  printf '%s\n' "uninstall-nginx: nginx uninstallation failed" >&2
+  exit 1
+}
 
-printf '%s\n' "Nginx uninstallation complete."
+# Verify uninstallation
+if command -v nginx >/dev/null 2>&1; then
+  printf '%s\n' "uninstall-nginx: nginx still present after uninstall" >&2
+  exit 1
+fi
+
+printf '%s\n' "nginx uninstallation complete."

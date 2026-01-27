@@ -94,7 +94,9 @@ search-file file-list
 teleport jump-to-marker
 up go-up
 where identify-room
-where-am-i identify-room"
+where-am-i identify-room
+wizardry-web .arcana/web-wizardry/web-wizardry-menu
+wizardry-web-menu .arcana/web-wizardry/web-wizardry-menu"
   
   # Also add common system command aliases (sorted alphabetically)
   it_defaults="$it_defaults

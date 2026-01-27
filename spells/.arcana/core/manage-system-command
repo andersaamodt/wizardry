@@ -41,16 +41,20 @@ fi
 nix_package=${NIX_PACKAGE:-$package_default}
 
 # Allow per-manager package overrides when names diverge across distros.
-# Officially supported platforms: debian, arch, nixos, mac
+# Officially supported platforms: debian, arch, nixos, mac (brew/pkgin)
 apt_package=${APT_PACKAGE:-$package_default}
 pacman_package=${PACMAN_PACKAGE:-$package_default}
+brew_package=${BREW_PACKAGE:-$package_default}
 pkgin_package=${PKGIN_PACKAGE:-$package_default}
 pkgin_candidates=${PKGIN_CANDIDATES:-/usr/pkg/bin/pkgin /opt/pkg/bin/pkgin /usr/local/pkg/bin/pkgin}
 
+# Add pkgin paths to PATH if not already available
 if ! command -v pkgin >/dev/null 2>&1; then
   for candidate in $pkgin_candidates; do
     if [ -x "$candidate" ]; then
-      PATH="$(dirname "$candidate"):$PATH"
+      pkg_base=$(dirname "$(dirname "$candidate")")
+      # Add both bin and sbin directories (server tools like nginx are in sbin)
+      PATH="$pkg_base/bin:$pkg_base/sbin:$PATH"
       export PATH
       break
     fi
@@ -88,6 +92,9 @@ if [ "$is_nixos" = "1" ]; then
     }
   fi
 elif [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  # Use pkgin (NetBSD package manager) on macOS
+  # Note: Homebrew is NOT used for installation per project policy
+  # (built-in tools and official package managers only)
   if command -v pkgin >/dev/null 2>&1; then
     if [ "$action" = "install" ]; then
       manage_system_command_run_installer pkgin -y install "$pkgin_package" || {
@@ -100,8 +107,16 @@ elif [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
         exit 1
       }
     fi
+  # Allow uninstalling via brew if package was previously installed with it
+  elif [ "$action" = "uninstall" ] && command -v brew >/dev/null 2>&1; then
+    brew_package=${BREW_PACKAGE:-$package_default}
+    brew uninstall --quiet "$brew_package" 2>/dev/null || {
+      printf '%s\n' "manage-system-command: unable to uninstall $command_name via brew" >&2
+      exit 1
+    }
   else
     printf '%s\n' "manage-system-command: no supported package manager found on macOS" >&2
+    printf '%s\n' "  Install pkgin to use wizardry package management on macOS" >&2
     exit 1
   fi
 elif command -v pacman >/dev/null 2>&1; then

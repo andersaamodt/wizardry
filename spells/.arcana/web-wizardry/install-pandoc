@@ -34,4 +34,10 @@ fi
 printf '%s\n' "Installing pandoc..."
 "$manage_cmd" install pandoc pandoc
 
-printf '%s\n' "Pandoc installation complete."
+# Verify installation
+if ! command -v pandoc >/dev/null 2>&1; then
+  printf '%s\n' "install-pandoc: pandoc installation failed or command not in PATH" >&2
+  exit 1
+fi
+
+printf '%s\n' "pandoc installation complete."
