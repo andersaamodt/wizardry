@@ -125,11 +125,12 @@ while true; do
         cmd=$(core_menu_resolve_spell "$install_spell") || continue
       fi
     elif command -v "$command_name" >/dev/null 2>&1; then
-      status="[X]"
       if [ "$essential" = "1" ]; then
-        # Essential commands can't be uninstalled
+        # Essential commands can't be uninstalled - use " X " to indicate
+        status=" X "
         cmd="printf 'Cannot uninstall essential command: %s\n' '$command_name' >&2"
       else
+        status="[X]"
         cmd=$(core_menu_resolve_spell "$uninstall_spell") || continue
       fi
     else
@@ -139,7 +140,7 @@ while true; do
     
     # Use just the spell name for cleaner display
     spell_name=$(basename "$cmd" 2>/dev/null || printf '%s' "$cmd")
-    printf '%s %s%%WIZARDRY_LOG_LEVEL=0 %s && exec %s\n' "$status" "$label" "$spell_name" "$0"
+    printf '%s %s%%%s && exec %s\n' "$status" "$label" "$spell_name" "$0"
   done | {
     # Read menu entries from core_dependencies output
     while IFS= read -r entry; do
