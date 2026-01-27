@@ -7,7 +7,7 @@ done
 
 test_install_fcgiwrap_help() {
   run_spell "spells/.arcana/web-wizardry/install-fcgiwrap" --help
-  assert_success && assert_output_contains "certbot"
+  assert_success && assert_output_contains "fcgiwrap"
 }
 
 run_test_case "install-fcgiwrap shows help" test_install_fcgiwrap_help

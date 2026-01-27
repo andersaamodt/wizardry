@@ -60,7 +60,7 @@ if ! command -v pkgin >/dev/null 2>&1; then
   for candidate in $pkgin_candidates; do
     if [ -x "$candidate" ]; then
       pkg_base=$(dirname "$(dirname "$candidate")")
-      # Add both bin and sbin directories (server tools like nginx are in sbin)
+      # Add both bin and sbin directories (server tools are often in sbin)
       PATH="$pkg_base/bin:$pkg_base/sbin:$PATH"
       export PATH
       break
