@@ -33,6 +33,20 @@ test_configure_nginx_creates_local_mimetypes() {
     return 1
   }
   
+  # Verify temp directories were created
+  [ -d "$test_web_root/mytestsite/nginx/temp/client_body" ] || {
+    TEST_FAILURE_REASON="client_body temp directory not created"
+    return 1
+  }
+  [ -d "$test_web_root/mytestsite/nginx/temp/proxy" ] || {
+    TEST_FAILURE_REASON="proxy temp directory not created"
+    return 1
+  }
+  [ -d "$test_web_root/mytestsite/nginx/temp/fastcgi" ] || {
+    TEST_FAILURE_REASON="fastcgi temp directory not created"
+    return 1
+  }
+  
   # Verify nginx.conf references local mime.types
   grep -q "include $test_web_root/mytestsite/nginx/mime.types" "$test_web_root/mytestsite/nginx/nginx.conf" || {
     TEST_FAILURE_REASON="nginx.conf does not reference local mime.types"
@@ -44,6 +58,12 @@ test_configure_nginx_creates_local_mimetypes() {
     TEST_FAILURE_REASON="nginx.conf still references system mime.types"
     return 1
   fi
+  
+  # Verify nginx.conf uses local temp paths
+  grep -q "client_body_temp_path.*nginx/temp/client_body" "$test_web_root/mytestsite/nginx/nginx.conf" || {
+    TEST_FAILURE_REASON="nginx.conf does not use local client_body_temp_path"
+    return 1
+  }
   
   # Cleanup
   rm -rf "$test_web_root"
