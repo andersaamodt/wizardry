@@ -66,10 +66,10 @@ while true; do
       "${exit_label}%kill -TERM \$PPID"
   else
     set -- \
+      "Build & Serve%build \"$site_name\" && serve-site \"$site_name\"" \
       "Build site%build \"$site_name\"" \
       "Build site (full)%build \"$site_name\" --full" \
       "Serve site%serve-site \"$site_name\"" \
-      "Build & Serve%build \"$site_name\" && serve-site \"$site_name\"" \
       "Configure nginx%configure-nginx \"$site_name\"" \
       "Open site directory%cd \"$SITE_DIR\" && \$SHELL" \
       "Delete site%delete-site \"$site_name\"" \
