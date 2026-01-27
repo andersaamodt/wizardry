@@ -32,7 +32,8 @@ case "$component" in
     [ -f /usr/share/htmx/htmx.min.js ]
     ;;
   certbot)
-    command -v certbot >/dev/null 2>&1
+    # Check for certbot command or acme.sh (on macOS we use acme.sh as certbot alternative)
+    command -v certbot >/dev/null 2>&1 || [ -f "$HOME/.acme.sh/acme.sh" ]
     ;;
   coreutils)
     # Assert-only: just check if core utilities are present

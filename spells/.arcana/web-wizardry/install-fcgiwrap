@@ -34,7 +34,7 @@ fi
 printf '%s\n' "Installing fcgiwrap..."
 
 # Try to install via manage-system-command
-if ! "$manage_cmd" install fcgiwrap fcgiwrap; then
+if ! "$manage_cmd" fcgiwrap fcgiwrap; then
   # Check if failure is due to missing pkgin on macOS
   if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && ! command -v pkgin >/dev/null 2>&1; then
     printf '%s\n' ""  >&2
@@ -53,6 +53,9 @@ if ! "$manage_cmd" install fcgiwrap fcgiwrap; then
   fi
   exit 1
 fi
+
+# Add pkgin paths to PATH so installed packages can be found
+. add-pkgin-to-path
 
 # Verify installation - check both PATH and pkgin sbin directory
 if ! command -v fcgiwrap >/dev/null 2>&1; then

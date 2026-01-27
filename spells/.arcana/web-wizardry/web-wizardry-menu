@@ -29,93 +29,112 @@ trap 'exit 0' TERM
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 
-# Use temp file for selection tracking
-SELECTION_FILE=$(temp-file web-wizardry-menu-selection)
-export SELECTION_FILE
-trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true' EXIT
-trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true; exit 130' INT
-trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true; exit 0' TERM
-
 loop_limit=${MENU_LOOP_LIMIT:-}
 
 while true; do
   # Clear menu_status from previous iteration
   unset menu_status
   
-  # Read last selected position from temp file, default to 1
-  if [ -f "$SELECTION_FILE" ]; then
-    start_selection=$(cat "$SELECTION_FILE" 2>/dev/null || printf '1')
-    if [ -z "$start_selection" ]; then
-      start_selection=1
-    fi
-  else
-    start_selection=1
-  fi
+  # Capture state before menu to detect changes
+  pandoc_was_installed=0
+  nginx_was_installed=0
+  fcgiwrap_was_installed=0
+  openssl_was_installed=0
+  htmx_was_installed=0
+  certbot_was_installed=0
+  
+  "$script_dir/is-web-component-installed" pandoc 2>/dev/null && pandoc_was_installed=1
+  "$script_dir/is-web-component-installed" nginx 2>/dev/null && nginx_was_installed=1
+  "$script_dir/is-web-component-installed" fcgiwrap 2>/dev/null && fcgiwrap_was_installed=1
+  "$script_dir/is-web-component-installed" openssl 2>/dev/null && openssl_was_installed=1
+  "$script_dir/is-web-component-installed" htmx 2>/dev/null && htmx_was_installed=1
+  "$script_dir/is-web-component-installed" certbot 2>/dev/null && certbot_was_installed=1
+  
+  # Track starting position
+  start_selection=${start_selection:-1}
   
   # Build menu entries based on installation state
   
-  # Build position counter that accounts for dynamic nginx admin entry
+  # Position counter for tracking selection
   pos=1
   
   # Pandoc toggle
-  if "$script_dir/is-web-component-installed" pandoc 2>/dev/null; then
+  if [ "$pandoc_was_installed" -eq 1 ]; then
     pandoc_toggle="[X] pandoc%uninstall-pandoc"
+    pandoc_pos=$pos
   else
     pandoc_toggle="[ ] pandoc%install-pandoc"
+    pandoc_pos=$pos
   fi
   pos=$((pos + 1))
   
   # Nginx toggle (with admin submenu when installed)
-  if "$script_dir/is-web-component-installed" nginx 2>/dev/null; then
+  if [ "$nginx_was_installed" -eq 1 ]; then
     nginx_toggle="[X] nginx%uninstall-nginx"
+    nginx_pos=$pos
     pos=$((pos + 1))
-    nginx_admin="    → nginx admin%nginx-admin"
+    nginx_admin="    nginx admin%nginx-admin"
+    nginx_admin_pos=$pos
     pos=$((pos + 1))
   else
     nginx_toggle="[ ] nginx%install-nginx"
+    nginx_pos=$pos
     pos=$((pos + 1))
     nginx_admin=""
   fi
   
   # Fcgiwrap toggle
-  if "$script_dir/is-web-component-installed" fcgiwrap 2>/dev/null; then
+  if [ "$fcgiwrap_was_installed" -eq 1 ]; then
     fcgiwrap_toggle="[X] fcgiwrap%uninstall-fcgiwrap"
+    fcgiwrap_pos=$pos
   else
     fcgiwrap_toggle="[ ] fcgiwrap%install-fcgiwrap"
+    fcgiwrap_pos=$pos
   fi
   pos=$((pos + 1))
   
   # OpenSSL toggle
-  if "$script_dir/is-web-component-installed" openssl 2>/dev/null; then
+  if [ "$openssl_was_installed" -eq 1 ]; then
     openssl_toggle="[X] OpenSSL%uninstall-openssl"
+    openssl_pos=$pos
   else
     openssl_toggle="[ ] OpenSSL%install-openssl"
+    openssl_pos=$pos
   fi
   pos=$((pos + 1))
   
   # Htmx toggle
-  if "$script_dir/is-web-component-installed" htmx 2>/dev/null; then
+  if [ "$htmx_was_installed" -eq 1 ]; then
     htmx_toggle="[X] htmx%uninstall-htmx"
+    htmx_pos=$pos
   else
     htmx_toggle="[ ] htmx%install-htmx"
+    htmx_pos=$pos
   fi
   pos=$((pos + 1))
   
-  # Certbot toggle
-  if "$script_dir/is-web-component-installed" certbot 2>/dev/null; then
-    certbot_toggle="[X] certbot%uninstall-certbot"
+  # Certbot/acme.sh toggle (with manage-https submenu when installed)
+  if [ "$certbot_was_installed" -eq 1 ]; then
+    certbot_toggle="[X] acme.sh%uninstall-acme"
+    certbot_pos=$pos
+    pos=$((pos + 1))
+    https_admin="    manage https%manage-https"
+    https_admin_pos=$pos
+    pos=$((pos + 1))
   else
-    certbot_toggle="[ ] certbot%install-certbot"
+    certbot_toggle="[ ] acme.sh%install-acme"
+    certbot_pos=$pos
+    pos=$((pos + 1))
+    https_admin=""
   fi
-  pos=$((pos + 1))
   
   # Coreutils (can be checked but not unchecked - informational)
+  coreutils_msg='coreutils should not be uninstalled - it contains essential system utilities.'
   if "$script_dir/is-web-component-installed" coreutils 2>/dev/null; then
-    coreutils_info=" X  coreutils%printf '%s\\n' 'coreutils should not be uninstalled - it contains essential system utilities.' >&2"
+    coreutils_info=" X  coreutils%printf '%s\\n' '$coreutils_msg' >&2"
   else
-    coreutils_info="[ ] coreutils%printf '%s\\n' 'coreutils should not be uninstalled - it contains essential system utilities.' >&2"
+    coreutils_info="[ ] coreutils%printf '%s\\n' '$coreutils_msg' >&2"
   fi
-  pos=$((pos + 1))
   
   # Check if all are installed for enable/disable all toggle
   all_installed=1
@@ -136,11 +155,22 @@ while true; do
   exit_label=$(exit-label)
   exit_item="${exit_label}%kill -TERM \$PPID"
   
-  # Build menu arguments
-  if [ -n "$nginx_admin" ]; then
-    set -- "$pandoc_toggle" "$nginx_toggle" "$nginx_admin" "$fcgiwrap_toggle" "$openssl_toggle" "$htmx_toggle" "$certbot_toggle" "$coreutils_info" "$toggle_all" "$exit_item"
+  # Build menu arguments - handle dynamic submenus
+  if [ -n "$nginx_admin" ] && [ -n "$https_admin" ]; then
+    set -- "$pandoc_toggle" "$nginx_toggle" "$nginx_admin" "$fcgiwrap_toggle" \
+      "$openssl_toggle" "$htmx_toggle" "$certbot_toggle" "$https_admin" \
+      "$coreutils_info" "$toggle_all" "$exit_item"
+  elif [ -n "$nginx_admin" ]; then
+    set -- "$pandoc_toggle" "$nginx_toggle" "$nginx_admin" "$fcgiwrap_toggle" \
+      "$openssl_toggle" "$htmx_toggle" "$certbot_toggle" "$coreutils_info" \
+      "$toggle_all" "$exit_item"
+  elif [ -n "$https_admin" ]; then
+    set -- "$pandoc_toggle" "$nginx_toggle" "$fcgiwrap_toggle" "$openssl_toggle" \
+      "$htmx_toggle" "$certbot_toggle" "$https_admin" "$coreutils_info" \
+      "$toggle_all" "$exit_item"
   else
-    set -- "$pandoc_toggle" "$nginx_toggle" "$fcgiwrap_toggle" "$openssl_toggle" "$htmx_toggle" "$certbot_toggle" "$coreutils_info" "$toggle_all" "$exit_item"
+    set -- "$pandoc_toggle" "$nginx_toggle" "$fcgiwrap_toggle" "$openssl_toggle" \
+      "$htmx_toggle" "$certbot_toggle" "$coreutils_info" "$toggle_all" "$exit_item"
   fi
   
   menu --start-selection "$start_selection" "Install Web Wizardry:" "$@" || menu_status=$?
@@ -151,6 +181,54 @@ while true; do
     printf 'ESC\n' >&2
     exit 0
   fi
+  
+  # Detect which component changed to stay on that position
+  if "$script_dir/is-web-component-installed" pandoc 2>/dev/null; then
+    pandoc_now_installed=1
+  else
+    pandoc_now_installed=0
+  fi
+  if "$script_dir/is-web-component-installed" nginx 2>/dev/null; then
+    nginx_now_installed=1
+  else
+    nginx_now_installed=0
+  fi
+  if "$script_dir/is-web-component-installed" fcgiwrap 2>/dev/null; then
+    fcgiwrap_now_installed=1
+  else
+    fcgiwrap_now_installed=0
+  fi
+  if "$script_dir/is-web-component-installed" openssl 2>/dev/null; then
+    openssl_now_installed=1
+  else
+    openssl_now_installed=0
+  fi
+  if "$script_dir/is-web-component-installed" htmx 2>/dev/null; then
+    htmx_now_installed=1
+  else
+    htmx_now_installed=0
+  fi
+  if "$script_dir/is-web-component-installed" certbot 2>/dev/null; then
+    certbot_now_installed=1
+  else
+    certbot_now_installed=0
+  fi
+  
+  # Update start_selection to the component that changed
+  if [ "$pandoc_was_installed" -ne "$pandoc_now_installed" ]; then
+    start_selection=$pandoc_pos
+  elif [ "$nginx_was_installed" -ne "$nginx_now_installed" ]; then
+    start_selection=$nginx_pos
+  elif [ "$fcgiwrap_was_installed" -ne "$fcgiwrap_now_installed" ]; then
+    start_selection=$fcgiwrap_pos
+  elif [ "$openssl_was_installed" -ne "$openssl_now_installed" ]; then
+    start_selection=$openssl_pos
+  elif [ "$htmx_was_installed" -ne "$htmx_now_installed" ]; then
+    start_selection=$htmx_pos
+  elif [ "$certbot_was_installed" -ne "$certbot_now_installed" ]; then
+    start_selection=$certbot_pos
+  fi
+  # If no change detected, start_selection stays the same
   
   # Support MENU_LOOP_LIMIT for testing
   if [ -n "$loop_limit" ]; then

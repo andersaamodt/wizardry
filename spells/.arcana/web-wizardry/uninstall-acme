@@ -31,11 +31,24 @@ if ! command -v "$manage_cmd" >/dev/null 2>&1; then
   fi
 fi
 
-printf '%s\n' "Uninstalling certbot..."
-"$manage_cmd" --uninstall certbot certbot || {
-  printf '%s\n' "uninstall-certbot: certbot uninstallation failed" >&2
+printf '%s\n' "Uninstalling acme.sh..."
+
+# Check if we have acme.sh installed
+if [ -d "$HOME/.acme.sh" ]; then
+  printf '%s\n' "Uninstalling acme.sh..."
+  if [ -x "$HOME/.acme.sh/acme.sh" ]; then
+    "$HOME/.acme.sh/acme.sh" --uninstall || {
+      printf '%s\n' "uninstall-certbot: acme.sh uninstall command failed, proceeding with cleanup" >&2
+    }
+  fi
+  # Remove acme.sh directory and wrapper
+  rm -rf "$HOME/.acme.sh"
+  rm -f "$HOME/.local/bin/certbot"
+  printf '%s\n' "acme.sh uninstallation complete."
+else
+  printf '%s\n' "uninstall-certbot: acme.sh not found" >&2
   exit 1
-}
+fi
 
 # Verify uninstallation
 if command -v certbot >/dev/null 2>&1; then
