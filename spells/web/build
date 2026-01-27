@@ -92,9 +92,16 @@ build_site() {
         --output="$html_file" \
         "$md_file"
       
+      # Ensure generated file is readable by nginx
+      chmod 644 "$html_file"
+      
       built_count=$((built_count + 1))
     done
   fi
+  
+  # Ensure all directories have proper permissions
+  find "$SITE_DIR/build" -type d -exec chmod 755 {} \; 2>/dev/null || true
+  find "$SITE_DIR/build" -type f -exec chmod 644 {} \; 2>/dev/null || true
   
   success "Built $built_count pages for $site_name"
   info "Build output: $SITE_DIR/build/"
