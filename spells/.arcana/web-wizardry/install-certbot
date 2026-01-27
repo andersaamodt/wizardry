@@ -34,4 +34,10 @@ fi
 printf '%s\n' "Installing certbot..."
 "$manage_cmd" install certbot certbot
 
-printf '%s\n' "Certbot installation complete."
+# Verify installation
+if ! command -v certbot >/dev/null 2>&1; then
+  printf '%s\n' "install-certbot: certbot installation failed or command not in PATH" >&2
+  exit 1
+fi
+
+printf '%s\n' "certbot installation complete."

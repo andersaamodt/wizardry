@@ -54,56 +54,68 @@ while true; do
   
   # Build menu entries based on installation state
   
+  # Build position counter that accounts for dynamic nginx admin entry
+  pos=1
+  
   # Pandoc toggle
   if "$script_dir/is-web-component-installed" pandoc 2>/dev/null; then
-    pandoc_toggle="[X] Pandoc%$script_dir/uninstall-pandoc; echo 1 > \"$SELECTION_FILE\""
+    pandoc_toggle="[X] pandoc%$script_dir/uninstall-pandoc; echo $pos > \"$SELECTION_FILE\""
   else
-    pandoc_toggle="[ ] Pandoc%$script_dir/install-pandoc; echo 1 > \"$SELECTION_FILE\""
+    pandoc_toggle="[ ] pandoc%$script_dir/install-pandoc; echo $pos > \"$SELECTION_FILE\""
   fi
+  pos=$((pos + 1))
   
   # Nginx toggle (with admin submenu when installed)
   if "$script_dir/is-web-component-installed" nginx 2>/dev/null; then
-    nginx_toggle="[X] Nginx (web server)%$script_dir/uninstall-nginx; echo 2 > \"$SELECTION_FILE\""
-    nginx_admin="    → Nginx admin%$script_dir/nginx-admin; echo 3 > \"$SELECTION_FILE\""
+    nginx_toggle="[X] nginx (web server)%$script_dir/uninstall-nginx; echo $pos > \"$SELECTION_FILE\""
+    pos=$((pos + 1))
+    nginx_admin="    → nginx admin%$script_dir/nginx-admin; echo $pos > \"$SELECTION_FILE\""
+    pos=$((pos + 1))
   else
-    nginx_toggle="[ ] Nginx (web server)%$script_dir/install-nginx; echo 2 > \"$SELECTION_FILE\""
+    nginx_toggle="[ ] nginx (web server)%$script_dir/install-nginx; echo $pos > \"$SELECTION_FILE\""
+    pos=$((pos + 1))
     nginx_admin=""
   fi
   
   # Fcgiwrap toggle
   if "$script_dir/is-web-component-installed" fcgiwrap 2>/dev/null; then
-    fcgiwrap_toggle="[X] Fcgiwrap (FastCGI)%$script_dir/uninstall-fcgiwrap; echo 4 > \"$SELECTION_FILE\""
+    fcgiwrap_toggle="[X] fcgiwrap (FastCGI)%$script_dir/uninstall-fcgiwrap; echo $pos > \"$SELECTION_FILE\""
   else
-    fcgiwrap_toggle="[ ] Fcgiwrap (FastCGI)%$script_dir/install-fcgiwrap; echo 4 > \"$SELECTION_FILE\""
+    fcgiwrap_toggle="[ ] fcgiwrap (FastCGI)%$script_dir/install-fcgiwrap; echo $pos > \"$SELECTION_FILE\""
   fi
+  pos=$((pos + 1))
   
   # OpenSSL toggle
   if "$script_dir/is-web-component-installed" openssl 2>/dev/null; then
-    openssl_toggle="[X] OpenSSL%$script_dir/uninstall-openssl; echo 5 > \"$SELECTION_FILE\""
+    openssl_toggle="[X] OpenSSL%$script_dir/uninstall-openssl; echo $pos > \"$SELECTION_FILE\""
   else
-    openssl_toggle="[ ] OpenSSL%$script_dir/install-openssl; echo 5 > \"$SELECTION_FILE\""
+    openssl_toggle="[ ] OpenSSL%$script_dir/install-openssl; echo $pos > \"$SELECTION_FILE\""
   fi
+  pos=$((pos + 1))
   
   # Htmx toggle
   if "$script_dir/is-web-component-installed" htmx 2>/dev/null; then
-    htmx_toggle="[X] Htmx (JS library)%$script_dir/uninstall-htmx; echo 6 > \"$SELECTION_FILE\""
+    htmx_toggle="[X] htmx (JS library)%$script_dir/uninstall-htmx; echo $pos > \"$SELECTION_FILE\""
   else
-    htmx_toggle="[ ] Htmx (JS library)%$script_dir/install-htmx; echo 6 > \"$SELECTION_FILE\""
+    htmx_toggle="[ ] htmx (JS library)%$script_dir/install-htmx; echo $pos > \"$SELECTION_FILE\""
   fi
+  pos=$((pos + 1))
   
   # Certbot toggle
   if "$script_dir/is-web-component-installed" certbot 2>/dev/null; then
-    certbot_toggle="[X] Certbot (Let's Encrypt)%$script_dir/uninstall-certbot; echo 7 > \"$SELECTION_FILE\""
+    certbot_toggle="[X] certbot (Let's Encrypt)%$script_dir/uninstall-certbot; echo $pos > \"$SELECTION_FILE\""
   else
-    certbot_toggle="[ ] Certbot (Let's Encrypt)%$script_dir/install-certbot; echo 7 > \"$SELECTION_FILE\""
+    certbot_toggle="[ ] certbot (Let's Encrypt)%$script_dir/install-certbot; echo $pos > \"$SELECTION_FILE\""
   fi
+  pos=$((pos + 1))
   
   # Coreutils (assert-only)
   if "$script_dir/is-web-component-installed" coreutils 2>/dev/null; then
-    coreutils_toggle="[X] Coreutils (assert-only)%$script_dir/uninstall-coreutils; echo 8 > \"$SELECTION_FILE\""
+    coreutils_toggle="[X] coreutils (assert-only)%$script_dir/uninstall-coreutils; echo $pos > \"$SELECTION_FILE\""
   else
-    coreutils_toggle="[ ] Coreutils (assert-only)%$script_dir/install-coreutils; echo 8 > \"$SELECTION_FILE\""
+    coreutils_toggle="[ ] coreutils (assert-only)%$script_dir/install-coreutils; echo $pos > \"$SELECTION_FILE\""
   fi
+  pos=$((pos + 1))
   
   # Check if all are installed for enable/disable all toggle
   all_installed=1
@@ -115,9 +127,9 @@ while true; do
   done
   
   if [ "$all_installed" -eq 1 ]; then
-    toggle_all="Disable all components%$script_dir/toggle-all-web-wizardry --disable; echo 9 > \"$SELECTION_FILE\""
+    toggle_all="Disable all components%$script_dir/toggle-all-web-wizardry --disable; echo $pos > \"$SELECTION_FILE\""
   else
-    toggle_all="Enable all components%$script_dir/toggle-all-web-wizardry --enable; echo 9 > \"$SELECTION_FILE\""
+    toggle_all="Enable all components%$script_dir/toggle-all-web-wizardry --enable; echo $pos > \"$SELECTION_FILE\""
   fi
   
   # Exit button

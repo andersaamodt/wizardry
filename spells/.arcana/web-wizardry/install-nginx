@@ -34,4 +34,10 @@ fi
 printf '%s\n' "Installing nginx..."
 "$manage_cmd" install nginx nginx
 
-printf '%s\n' "Nginx installation complete."
+# Verify installation
+if ! command -v nginx >/dev/null 2>&1; then
+  printf '%s\n' "install-nginx: nginx installation failed or command not in PATH" >&2
+  exit 1
+fi
+
+printf '%s\n' "nginx installation complete."
