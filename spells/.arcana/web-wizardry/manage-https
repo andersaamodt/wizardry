@@ -64,11 +64,11 @@ while true; do
     account_option="Show account%\$HOME/.acme.sh/acme.sh --info 2>&1"
   else
     # No account - show registration with email prompt
-    account_option="Register account%printf 'Email address: ' && read email && \$HOME/.acme.sh/acme.sh --register-account -m \"\$email\" 2>&1"
+    account_option="Register account%email=\$(read-line 'Email address: ') && \$HOME/.acme.sh/acme.sh --register-account -m \"\$email\" 2>&1"
   fi
   
   # Issue certificate wizard - interactive guided setup with DNS instructions
-  issue_option="Issue certificate%printf '\n*** IMPORTANT: Before issuing a certificate ***\n' && printf '1. Your domain must have an A record pointing to this server\n' && printf '2. Port 80 must be open and accessible from the internet\n' && printf '3. Your web server must be serving files from the webroot\n\n' && await-keypress 'Press any key when ready to continue...' && printf '\nDomain (e.g., example.com): ' && read domain && printf 'Webroot path (e.g., /var/www/html): ' && read webroot && \$HOME/.acme.sh/acme.sh --issue -d \"\$domain\" -w \"\$webroot\" 2>&1"
+  issue_option="Issue certificate%printf '\n*** IMPORTANT: Before issuing a certificate ***\n' && printf '1. Your domain must have an A record pointing to this server\n' && printf '2. Port 80 must be open and accessible from the internet\n' && printf '3. Your web server must be serving files from the webroot\n\n' && await-keypress 'Press any key when ready to continue...' && printf '\n' && domain=\$(read-line 'Domain (e.g., example.com): ') && webroot=\$(read-line 'Webroot path (e.g., /var/www/html): ') && \$HOME/.acme.sh/acme.sh --issue -d \"\$domain\" -w \"\$webroot\" 2>&1"
   
   # List certificates with helpful message if none exist
   list_certs_option="List certificates%output=\$(\$HOME/.acme.sh/acme.sh --list 2>&1); if printf '%s' \"\$output\" | grep -q 'Main_Domain'; then lines=\$(printf '%s' \"\$output\" | wc -l); if [ \"\$lines\" -le 1 ]; then printf 'No certificates installed yet.\n'; else printf '%s\n' \"\$output\"; fi; else printf '%s\n' \"\$output\"; fi"
@@ -77,7 +77,7 @@ while true; do
   renew_option="Renew all%\$HOME/.acme.sh/acme.sh --renew-all 2>&1 || printf 'No certificates to renew or renewal not needed.\n'"
   
   # Remove certificate option
-  remove_option="Remove certificate%printf 'Domain to remove (e.g., example.com): ' && read domain && \$HOME/.acme.sh/acme.sh --remove -d \"\$domain\" 2>&1"
+  remove_option="Remove certificate%domain=\$(read-line 'Domain to remove (e.g., example.com): ') && \$HOME/.acme.sh/acme.sh --remove -d \"\$domain\" 2>&1"
   
   version_option="Show version%\$HOME/.acme.sh/acme.sh --version 2>&1"
   
