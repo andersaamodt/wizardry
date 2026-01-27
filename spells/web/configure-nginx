@@ -152,16 +152,19 @@ http {
         server_name $domain;
         
         root $SITE_DIR/build;
-        index index.html;
         
-        # Serve index.html for directory requests
-        location / {
-            try_files \$uri \$uri/ /pages/index.html;
+        # Disable directory listing
+        autoindex off;
+        
+        # Root path - serve main index page
+        location = / {
+            try_files /pages/index.html =404;
         }
         
         # Serve pages
         location /pages/ {
-            try_files \$uri \$uri.html =404;
+            index index.html;
+            try_files \$uri \$uri.html \$uri/index.html =404;
         }
         
         # Serve static files
