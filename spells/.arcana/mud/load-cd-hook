@@ -60,6 +60,7 @@ cd() {
     # (cd-hook is executed, not sourced, so listen wouldn't have PS1 access otherwise)
     
     # Check if cd-look is enabled via config file (defaults to enabled when unset)
+    # Skip automatic look if JUMP_TO_MARKER_ACTIVE is set (jump-to-marker handles it)
     _cd_config_file="${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud"
     _cd_look_value=""
     if [ -f "$_cd_config_file" ]; then
@@ -71,7 +72,7 @@ cd() {
         _cd_look_value=$(command -v mud-defaults >/dev/null 2>&1 && \
             mud-defaults cd-look 2>/dev/null || printf '1')
     fi
-    if [ "$_cd_look_value" = "1" ]; then
+    if [ "$_cd_look_value" = "1" ] && [ -z "${JUMP_TO_MARKER_ACTIVE-}" ]; then
         command -v look >/dev/null 2>&1 && look 2>/dev/null || true
     fi
     
