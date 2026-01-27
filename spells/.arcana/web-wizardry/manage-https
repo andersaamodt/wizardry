@@ -55,11 +55,11 @@ while true; do
     account_option="Show account%\$HOME/.acme.sh/acme.sh --info 2>&1"
   else
     # No account - show registration with email prompt
-    account_option="Register account%printf 'Enter your email address: ' && read email && \$HOME/.acme.sh/acme.sh --register-account -m \"\$email\" 2>&1"
+    account_option="Register account%printf 'Email address: ' && read email && \$HOME/.acme.sh/acme.sh --register-account -m \"\$email\" 2>&1"
   fi
   
   # Issue certificate wizard - interactive guided setup
-  issue_option="Issue certificate%printf 'Enter domain (e.g., example.com): ' && read domain && printf 'Enter webroot path (e.g., /var/www/html): ' && read webroot && \$HOME/.acme.sh/acme.sh --issue -d \"\$domain\" -w \"\$webroot\" 2>&1"
+  issue_option="Issue certificate%printf 'Domain (e.g., example.com): ' && read domain && printf 'Webroot path (e.g., /var/www/html): ' && read webroot && \$HOME/.acme.sh/acme.sh --issue -d \"\$domain\" -w \"\$webroot\" 2>&1"
   
   # List certificates with helpful message if none exist
   list_certs_option="List certificates%output=\$(\$HOME/.acme.sh/acme.sh --list 2>&1); if printf '%s' \"\$output\" | grep -q 'Main_Domain'; then lines=\$(printf '%s' \"\$output\" | wc -l); if [ \"\$lines\" -le 1 ]; then printf 'No certificates installed yet.\n'; else printf '%s\n' \"\$output\"; fi; else printf '%s\n' \"\$output\"; fi"
