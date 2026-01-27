@@ -34,10 +34,12 @@ printf '%s\n' "Installing pkgin package manager..."
 arch=$(uname -m)
 case "$arch" in
   x86_64)
-    arch_name="x86_64"
+    # Latest Intel build for macOS 11 (Big Sur) - works on newer versions too
+    bootstrap_file="bootstrap-macos11-trunk-x86_64-20240212.tar.gz"
     ;;
   arm64)
-    arch_name="arm64"
+    # Latest Apple Silicon build for macOS 14.5 (Sonoma)
+    bootstrap_file="bootstrap-macos14.5-trunk-arm64-20251114.tar.gz"
     ;;
   *)
     printf '%s\n' "install-pkgin: unsupported architecture: $arch" >&2
@@ -49,10 +51,10 @@ esac
 temp_dir=$(mktemp -d)
 trap 'rm -rf "$temp_dir"' EXIT
 
-printf '%s\n' "Downloading pkgsrc bootstrap for $arch_name..."
+printf '%s\n' "Downloading pkgsrc bootstrap for $arch..."
 
-# Use the official Joyent bootstrap URL - quarterly release is more stable
-bootstrap_url="https://pkgsrc.smartos.org/packages/Darwin/bootstrap/bootstrap-trunk-${arch_name}.tar.gz"
+# Use the official SmartOS/Joyent pkgsrc bootstrap URL
+bootstrap_url="https://pkgsrc.smartos.org/packages/Darwin/bootstrap/${bootstrap_file}"
 
 if ! curl -fsSL "$bootstrap_url" -o "$temp_dir/bootstrap.tar.gz"; then
   printf '%s\n' "install-pkgin: failed to download bootstrap package" >&2
