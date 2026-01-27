@@ -54,8 +54,8 @@ while true; do
     # Account exists - show account info
     account_option="Show account%\$HOME/.acme.sh/acme.sh --info 2>&1"
   else
-    # No account - show registration
-    account_option="Register account%\$HOME/.acme.sh/acme.sh --register-account 2>&1"
+    # No account - show registration with email prompt
+    account_option="Register account%printf 'Enter your email address: ' && read email && \$HOME/.acme.sh/acme.sh --register-account -m \"\$email\" 2>&1"
   fi
   
   # Issue certificate wizard - interactive guided setup
