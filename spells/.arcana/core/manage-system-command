@@ -48,10 +48,13 @@ brew_package=${BREW_PACKAGE:-$package_default}
 pkgin_package=${PKGIN_PACKAGE:-$package_default}
 pkgin_candidates=${PKGIN_CANDIDATES:-/usr/pkg/bin/pkgin /opt/pkg/bin/pkgin /usr/local/pkg/bin/pkgin}
 
+# Add pkgin paths to PATH if not already available
 if ! command -v pkgin >/dev/null 2>&1; then
   for candidate in $pkgin_candidates; do
     if [ -x "$candidate" ]; then
-      PATH="$(dirname "$candidate"):$PATH"
+      pkg_base=$(dirname "$(dirname "$candidate")")
+      # Add both bin and sbin directories (server tools like nginx are in sbin)
+      PATH="$pkg_base/bin:$pkg_base/sbin:$PATH"
       export PATH
       break
     fi
