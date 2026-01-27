@@ -62,7 +62,6 @@ while true; do
   else
     fcgiwrap_toggle="[ ] fcgiwrap%install-fcgiwrap"
   fi
-  pos=$((pos + 1))
   
   # OpenSSL toggle
   if "$script_dir/is-web-component-installed" openssl 2>/dev/null; then
@@ -70,7 +69,6 @@ while true; do
   else
     openssl_toggle="[ ] OpenSSL%install-openssl"
   fi
-  pos=$((pos + 1))
   
   # Htmx toggle
   if "$script_dir/is-web-component-installed" htmx 2>/dev/null; then
@@ -78,7 +76,6 @@ while true; do
   else
     htmx_toggle="[ ] htmx%install-htmx"
   fi
-  pos=$((pos + 1))
   
   # Certbot toggle
   if "$script_dir/is-web-component-installed" certbot 2>/dev/null; then
@@ -86,7 +83,6 @@ while true; do
   else
     certbot_toggle="[ ] certbot%install-certbot"
   fi
-  pos=$((pos + 1))
   
   # Coreutils (can be checked but not unchecked - informational)
   if "$script_dir/is-web-component-installed" coreutils 2>/dev/null; then
