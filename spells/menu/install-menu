@@ -98,10 +98,22 @@ while :; do
 
         if has "${name}-menu"; then
             cmd="${name}-menu"
+            # Special handling for mud-menu which must be sourced
+            if [ "$name" = "mud" ]; then
+                cmd=". mud-menu"
+            fi
         elif [ -x "$install_dir/$name-menu" ] && [ ! -d "$install_dir/$name-menu" ]; then
             cmd="$install_dir/$name-menu"
+            # Special handling for mud-menu which must be sourced
+            if [ "$name" = "mud" ]; then
+                cmd=". $install_dir/$name-menu"
+            fi
         elif [ -x "$install_dir/$name/$name-menu" ] && [ ! -d "$install_dir/$name/$name-menu" ]; then
             cmd="$install_dir/$name/$name-menu"
+            # Special handling for mud-menu which must be sourced
+            if [ "$name" = "mud" ]; then
+                cmd=". $install_dir/$name/$name-menu"
+            fi
         elif [ -x "$install_dir/$name" ] && [ -f "$install_dir/$name" ]; then
             cmd="$install_dir/$name"
         elif [ -x "$install_dir/$name/$name" ] && [ -f "$install_dir/$name/$name" ]; then
