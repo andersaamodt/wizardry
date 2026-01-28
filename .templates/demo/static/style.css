@@ -630,6 +630,7 @@ pre code {
   min-height: 0;  /* Critical for flexbox scrolling */
   scrollbar-width: auto;  /* Make scrollbar more visible in Firefox */
   scrollbar-color: var(--primary) #e0e0e0;  /* For Firefox */
+  scroll-behavior: smooth;  /* Smooth scrolling animation */
 }
 
 /* Webkit scrollbar styling */
