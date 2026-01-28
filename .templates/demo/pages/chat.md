@@ -31,7 +31,7 @@ This chat system uses the **same message format as the MUD `say` command**, maki
 <div class="chat-container">
 <div class="chat-sidebar">
 <h3>Chat Rooms</h3>
-<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, every 3s" hx-swap="innerHTML swap:0s">
+<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, every 10s" hx-swap="innerHTML">
 Loading rooms...
 </div>
 
@@ -48,16 +48,18 @@ Create
 <div class="chat-main">
 <div class="chat-header">
 <h3 id="current-room-name">Select a room</h3>
-<button id="delete-room-btn" style="display: none;" hx-get="/cgi/chat-delete-room" hx-vals='js:{room: window.currentRoom}' hx-target="#room-status" hx-swap="innerHTML">
+<button id="delete-room-btn" style="display: none;" onclick="if(window.currentRoom && confirm('Delete room ' + window.currentRoom + '?')) { var roomToDelete = window.currentRoom; leaveRoom(); fetch('/cgi/chat-delete-room?room=' + encodeURIComponent(roomToDelete)); }">
 Delete Room
 </button>
 </div>
 
 <div id="chat-messages" class="chat-display">
+<div class="chat-messages">
 <p style="color: #666; font-style: italic;">Select a room to start chatting</p>
 </div>
+</div>
 
-<div class="chat-input-area">
+<div class="chat-input-area" id="chat-input-area" style="display: none;">
 <input type="text" id="username-input" placeholder="Your name" value="WebUser" />
 <input type="text" id="message-input" placeholder="Type a message..." />
 <button id="send-btn" disabled>Send</button>
@@ -80,6 +82,17 @@ document.addEventListener('htmx:afterSwap', function(event) {
       };
     });
   }
+  
+  // Refresh room list after successful room creation
+  if (event.detail.target.id === 'room-status') {
+    var statusText = event.detail.target.textContent;
+    if (statusText && statusText.indexOf('created') !== -1) {
+      // Clear the input
+      document.getElementById('new-room-name').value = '';
+      // Trigger immediate refresh of room list
+      htmx.trigger('#room-list', 'load');
+    }
+  }
 });
 
 // Join a room
@@ -88,6 +101,7 @@ function joinRoom(roomName) {
   document.getElementById('current-room-name').textContent = 'Room: ' + roomName;
   document.getElementById('send-btn').disabled = false;
   document.getElementById('delete-room-btn').style.display = 'inline-block';
+  document.getElementById('chat-input-area').style.display = 'flex';
   
   // Load messages
   loadMessages();
@@ -99,14 +113,48 @@ function joinRoom(roomName) {
   window.messageInterval = setInterval(loadMessages, 2000);
 }
 
+// Leave room and return to empty state
+function leaveRoom() {
+  window.currentRoom = null;
+  document.getElementById('current-room-name').textContent = 'Select a room';
+  document.getElementById('send-btn').disabled = true;
+  document.getElementById('delete-room-btn').style.display = 'none';
+  document.getElementById('chat-input-area').style.display = 'none';
+  document.getElementById('chat-messages').innerHTML = '<div class="chat-messages"><p style="color: #666; font-style: italic;">Create or join a room to chat</p></div>';
+  
+  // Stop auto-refresh
+  if (window.messageInterval) {
+    clearInterval(window.messageInterval);
+  }
+}
+
 // Load messages for current room
 function loadMessages() {
   if (!window.currentRoom) return;
   
-  htmx.ajax('GET', '/cgi/chat-get-messages?room=' + encodeURIComponent(window.currentRoom), {
-    target: '#chat-messages',
-    swap: 'innerHTML'
-  });
+  // Fetch messages but only update if changed
+  fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(window.currentRoom))
+    .then(function(response) { return response.text(); })
+    .then(function(html) {
+      var chatDisplay = document.getElementById('chat-messages');
+      if (!chatDisplay) return;
+      
+      // Only update if content has changed (prevents flickering)
+      if (chatDisplay.innerHTML !== html) {
+        var wasAtBottom = chatDisplay.scrollTop >= chatDisplay.scrollHeight - chatDisplay.clientHeight - 50;
+        chatDisplay.innerHTML = html;
+        
+        // Auto-scroll to bottom if user was already at bottom
+        if (wasAtBottom) {
+          setTimeout(function() {
+            chatDisplay.scrollTop = chatDisplay.scrollHeight;
+          }, 50);
+        }
+      }
+    })
+    .catch(function(err) {
+      console.error('Failed to load messages:', err);
+    });
 }
 
 // Send message

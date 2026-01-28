@@ -24,12 +24,28 @@ HTML
 fi
 
 # Parse parameters
-upload_dir="${TMPDIR:-/tmp}/wizardry-uploads"
+# Use site-specific data directory
+# Use WIZARDRY_SITE_NAME if available (set by nginx), otherwise default
+if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
+  site_id="$WIZARDRY_SITE_NAME"
+else
+  # Fallback for non-nginx environments
+  site_id="default"
+fi
+SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
+upload_dir="$SITES_DIR/.sitedata/$site_id/uploads"
 mkdir -p "$upload_dir"
 
 # Extract filename from query
 filename_encoded=$(printf '%s' "$query" | sed 's/^name=//' | sed 's/&.*//')
-filename=$(url-decode "$filename_encoded")
+filename=$(url-decode "$filename_encoded" 2>/dev/null || printf '%s' "$filename_encoded")
+
+# Remove any Windows-style fake paths (browsers sometimes add these)
+# Strip everything up to and including last backslash or forward slash
+filename=$(printf '%s' "$filename" | sed 's/.*[\\\/]//')
+
+# Clean filename (remove any path components and sanitize)
+filename=$(basename "$filename" 2>/dev/null || printf '%s' "$filename")
 filename=${filename:-uploaded-file.bin}
 
 # For demo: create a simple test file with YYYY-MM-DD timestamp

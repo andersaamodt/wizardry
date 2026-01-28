@@ -6,7 +6,18 @@ http-status 200 "OK"
 http-header "Content-Type" "text/html"
 http-end-headers
 
-counter_file="${TMPDIR:-/tmp}/wizardry-counter.txt"
+# Use site-specific counter in site data directory
+# Use WIZARDRY_SITE_NAME if available (set by nginx), otherwise default
+if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
+  site_id="$WIZARDRY_SITE_NAME"
+else
+  # Fallback for non-nginx environments
+  site_id="default"
+fi
+SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
+counter_dir="$SITES_DIR/.sitedata/$site_id"
+mkdir -p "$counter_dir"
+counter_file="$counter_dir/counter.txt"
 
 # Reset to zero
 echo "0" > "$counter_file"

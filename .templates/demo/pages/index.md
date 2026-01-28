@@ -31,10 +31,10 @@ Type something and watch it echo back from the server:
 Every click increments a counter on the server:
 
 <div class="demo-box">
-  <button hx-get="/cgi/counter" hx-target="#counter-output" hx-swap="innerHTML" class="big-button">
+  <button hx-get="/cgi/counter" hx-target="#counter-output" hx-swap="innerHTML" hx-trigger="click" class="big-button">
     🔢 Click Me!
   </button>
-  <button hx-get="/cgi/counter-reset" hx-target="#counter-output" hx-swap="innerHTML" style="margin-left: 10px;">
+  <button hx-get="/cgi/counter-reset" hx-target="#counter-output" hx-swap="innerHTML" hx-trigger="click" style="margin-left: 10px;">
     🔄 Reset
   </button>
   <div id="counter-output" class="output"></div>

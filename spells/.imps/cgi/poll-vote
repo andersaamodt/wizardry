@@ -38,23 +38,29 @@ else
 fi
 
 cat <<HTML
-<div class="demo-result poll">
-  <h3>Poll Results</h3>
+<div id="poll-results" class="demo-result poll" style="background: transparent; border: none; padding: 1rem;">
+  <h3 style="color: white; margin-top: 0;">Poll Results</h3>
   <div class="poll-option">
-    <span>Option A:</span>
-    <div class="poll-bar" style="width: ${pct_a}%"></div>
-    <span>$a votes (${pct_a}%)</span>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+      <span style="color: white; font-weight: bold;">🔵 Functional Programming</span>
+      <span style="color: white;">$a votes (${pct_a}%)</span>
+    </div>
+    <div class="poll-bar" style="width: ${pct_a}%; background: rgba(255,255,255,0.5); height: 30px; border-radius: 15px;"></div>
   </div>
   <div class="poll-option">
-    <span>Option B:</span>
-    <div class="poll-bar" style="width: ${pct_b}%"></div>
-    <span>$b votes (${pct_b}%)</span>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+      <span style="color: white; font-weight: bold;">🟢 Object-Oriented</span>
+      <span style="color: white;">$b votes (${pct_b}%)</span>
+    </div>
+    <div class="poll-bar" style="width: ${pct_b}%; background: rgba(255,255,255,0.5); height: 30px; border-radius: 15px;"></div>
   </div>
   <div class="poll-option">
-    <span>Option C:</span>
-    <div class="poll-bar" style="width: ${pct_c}%"></div>
-    <span>$c votes (${pct_c}%)</span>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+      <span style="color: white; font-weight: bold;">🟡 Procedural</span>
+      <span style="color: white;">$c votes (${pct_c}%)</span>
+    </div>
+    <div class="poll-bar" style="width: ${pct_c}%; background: rgba(255,255,255,0.5); height: 30px; border-radius: 15px;"></div>
   </div>
-  <p class="meta">Total votes: $total</p>
+  <p class="meta" style="color: rgba(255,255,255,0.8); margin-top: 1.5rem; font-size: 1rem;">Total votes: $total</p>
 </div>
 HTML
