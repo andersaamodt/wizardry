@@ -78,36 +78,60 @@ save_path="$UPLOAD_DIR/$save_name"
 # <binary data>
 # --boundary--
 
-# Find where the actual file data starts (after the blank line following headers)
-# Look for the pattern of two consecutive line breaks (empty line)
-# We need to find the Content-Type line first, then the empty line after it
-
-# Method: Find all occurrences of double newline and take the first one after headers
-# Use perl for better binary handling
+# Use perl for binary-safe extraction
 if command -v perl >/dev/null 2>&1; then
-  # Use perl to extract binary data between headers and boundary
-  perl -ne '
-    BEGIN { binmode STDIN; binmode STDOUT; }
-    if (!$in_data && /^Content-Type:/i) { $found_ct = 1; }
-    if ($found_ct && /^[\r\n]*$/) { $in_data = 1; next; }
-    if ($in_data) {
-      if (/^--'"$boundary"'/) { exit; }
-      print;
+  # Binary-safe perl script that reads byte-by-byte
+  perl -e '
+    use strict;
+    binmode STDIN;
+    binmode STDOUT;
+    
+    my $boundary = $ARGV[0];
+    my $content = do { local $/; <STDIN> };
+    
+    # Find Content-Type header
+    if ($content =~ /Content-Type:[^\r\n]*\r?\n\r?\n/s) {
+      my $pos = $+[0];  # Position after the blank line
+      my $data_end = index($content, "\r\n--" . $boundary, $pos);
+      if ($data_end == -1) {
+        $data_end = index($content, "\n--" . $boundary, $pos);
+      }
+      if ($data_end > $pos) {
+        print substr($content, $pos, $data_end - $pos);
+      }
     }
-  ' < "$temp_file" > "$save_path"
+  ' "$boundary" < "$temp_file" > "$save_path"
 else
-  # Fallback: simpler approach using awk
-  # Find the first empty line after Content-Type, then extract until boundary
-  awk -v RS= -v boundary="$boundary" '
-    NR > 1 {
-      data = $0
-      # Remove the final boundary marker
-      sub("--" boundary ".*", "", data)
-      # Print without trailing newlines
-      printf "%s", data
-      exit
-    }
-  ' "$temp_file" > "$save_path"
+  # Fallback: Use dd with byte offsets if perl not available
+  # Find byte position after Content-Type header and blank line
+  header_end=$(grep -abo "Content-Type:" "$temp_file" | head -1 | cut -d: -f1)
+  if [ -n "$header_end" ]; then
+    # Find the first empty line after Content-Type
+    data_start=$(tail -c +$((header_end + 1)) "$temp_file" | grep -abo $'^\r$' | head -1 | cut -d: -f1)
+    if [ -z "$data_start" ]; then
+      data_start=$(tail -c +$((header_end + 1)) "$temp_file" | grep -abo '^$' | head -1 | cut -d: -f1)
+    fi
+    
+    if [ -n "$data_start" ]; then
+      # Calculate absolute position
+      abs_start=$((header_end + data_start + 2))
+      
+      # Find boundary end position
+      boundary_pos=$(grep -abo -- "--$boundary" "$temp_file" | tail -1 | cut -d: -f1)
+      
+      if [ -n "$boundary_pos" ] && [ "$boundary_pos" -gt "$abs_start" ]; then
+        # Extract data
+        data_length=$((boundary_pos - abs_start - 2))
+        dd if="$temp_file" of="$save_path" bs=1 skip="$abs_start" count="$data_length" 2>/dev/null
+      else
+        touch "$save_path"
+      fi
+    else
+      touch "$save_path"
+    fi
+  else
+    touch "$save_path"
+  fi
 fi
 
 # Detect MIME type
