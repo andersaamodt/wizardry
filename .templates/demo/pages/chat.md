@@ -53,7 +53,7 @@ Delete Room
 </button>
 </div>
 
-<div id="chat-messages" class="chat-display">
+<div id="chat-messages" class="chat-display" hx-swap="morph" hx-ext="morph">
 <div class="chat-messages">
 <p style="color: #666; font-style: italic;">Select a room to start chatting</p>
 </div>
@@ -124,6 +124,12 @@ function joinRoom(roomName) {
   document.getElementById('send-btn').disabled = false;
   document.getElementById('chat-input-area').style.display = 'flex';
   
+  var chatMessages = document.getElementById('chat-messages');
+  
+  // Set up htmx polling for this room
+  chatMessages.setAttribute('hx-get', '/cgi/chat-get-messages?room=' + encodeURIComponent(roomName));
+  chatMessages.setAttribute('hx-trigger', 'load, every 2s');
+  
   // Load messages first to determine if we should show delete button
   fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(roomName))
     .then(function(response) { return response.text(); })
@@ -140,14 +146,8 @@ function joinRoom(roomName) {
       }
     });
   
-  // Load messages
-  loadMessages();
-  
-  // Auto-refresh messages every 2 seconds
-  if (window.messageInterval) {
-    clearInterval(window.messageInterval);
-  }
-  window.messageInterval = setInterval(loadMessages, 2000);
+  // Trigger initial load via htmx
+  htmx.trigger('#chat-messages', 'load');
 }
 
 // Leave room and return to empty state
@@ -157,12 +157,13 @@ function leaveRoom() {
   document.getElementById('send-btn').disabled = true;
   document.getElementById('delete-room-btn').style.display = 'none';
   document.getElementById('chat-input-area').style.display = 'none';
-  document.getElementById('chat-messages').innerHTML = '<div class="chat-messages"><p style="color: #666; font-style: italic;">Create or join a room to chat</p></div>';
   
-  // Stop auto-refresh
-  if (window.messageInterval) {
-    clearInterval(window.messageInterval);
-  }
+  var chatMessages = document.getElementById('chat-messages');
+  chatMessages.innerHTML = '<div class="chat-messages"><p style="color: #666; font-style: italic;">Create or join a room to chat</p></div>';
+  
+  // Stop htmx polling by removing attributes
+  chatMessages.removeAttribute('hx-get');
+  chatMessages.removeAttribute('hx-trigger');
 }
 
 // Delete room with blocking behavior
@@ -187,45 +188,6 @@ function deleteRoom() {
     .catch(function(err) {
       console.error('Failed to delete room:', err);
       htmx.trigger('#room-list', 'load');
-    });
-}
-
-// Load messages for current room
-function loadMessages() {
-  if (!window.currentRoom) return;
-  
-  var chatDisplay = document.getElementById('chat-messages');
-  if (!chatDisplay) return;
-  
-  // Fetch messages to check if content changed before swapping
-  fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(window.currentRoom))
-    .then(function(response) { return response.text(); })
-    .then(function(html) {
-      // Create a temporary element to parse the new HTML
-      var tempDiv = document.createElement('div');
-      tempDiv.innerHTML = html;
-      
-      // Extract text content from both current and new HTML for comparison
-      var currentText = chatDisplay.textContent.replace(/\s+/g, ' ').trim();
-      var newText = tempDiv.textContent.replace(/\s+/g, ' ').trim();
-      
-      // Only update if content actually changed (prevents flickering)
-      if (currentText !== newText) {
-        // Check if user is at bottom before updating
-        var wasAtBottom = chatDisplay.scrollTop >= chatDisplay.scrollHeight - chatDisplay.clientHeight - 50;
-        
-        chatDisplay.innerHTML = html;
-        
-        // Auto-scroll to bottom if user was already at bottom or if this is first load
-        if (wasAtBottom || chatDisplay.scrollTop === 0) {
-          setTimeout(function() {
-            chatDisplay.scrollTop = chatDisplay.scrollHeight;
-          }, 10);
-        }
-      }
-    })
-    .catch(function(err) {
-      console.error('Failed to load messages:', err);
     });
 }
 
@@ -254,7 +216,8 @@ document.addEventListener('DOMContentLoaded', function() {
       body: formData
     }).then(function() {
       messageInput.value = '';
-      loadMessages();
+      // Trigger htmx to reload messages immediately
+      htmx.trigger('#chat-messages', 'load');
     });
   }
   
