@@ -142,7 +142,7 @@ while true; do
       set -- "$@" "${name}%site-menu \"${name}\""
     done
     
-    # Add separator after sites
+    # Add separator after sites (only if sites exist)
     set -- "$@" "---"
   fi
   
