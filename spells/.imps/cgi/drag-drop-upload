@@ -79,8 +79,10 @@ save_path="$UPLOAD_DIR/$save_name"
 # --boundary--
 
 # Use perl for binary-safe extraction
+extraction_success=1  # Initialize to failure (1), set to 0 on success
 if command -v perl >/dev/null 2>&1; then
   # Binary-safe perl script that reads entire file
+  # Use -- to prevent boundary from being interpreted as perl options
   perl -e '
     use strict;
     binmode STDIN;
@@ -106,9 +108,12 @@ if command -v perl >/dev/null 2>&1; then
         # Extract the binary data
         my $data = substr($content, $pos, $data_end - $pos);
         print $data;
+        exit 0;  # Success
       }
     }
-  ' "$boundary" < "$temp_file" > "$save_path"
+    exit 1;  # Failed
+  ' -- "$boundary" < "$temp_file" > "$save_path"
+  extraction_success=$?
 else
   # Fallback: Use dd with byte offsets if perl not available
   # Find byte position after Content-Type header and blank line
@@ -135,16 +140,26 @@ else
         # Extract data
         data_length=$((boundary_pos - abs_start - 2))
         dd if="$temp_file" of="$save_path" bs=1 \
-          skip="$abs_start" count="$data_length" 2>/dev/null
-      else
-        touch "$save_path"
+          skip="$abs_start" count="$data_length" 2>/dev/null && extraction_success=0
       fi
-    else
-      touch "$save_path"
     fi
-  else
-    touch "$save_path"
   fi
+fi
+
+# Check if extraction resulted in a file with actual content
+if [ ! -s "$save_path" ] || [ "$extraction_success" -ne 0 ]; then
+  # Extraction failed - return error
+  rm -f "$temp_file" "$save_path"
+  http-status 500 "Internal Server Error"
+  http-header "Content-Type" "text/html"
+  http-end-headers
+  cat <<HTML
+<div class="demo-result error">
+  <h4>Upload Failed</h4>
+  <p>Could not extract file data from upload. Please try again or contact support.</p>
+</div>
+HTML
+  exit 1
 fi
 
 # Detect MIME type

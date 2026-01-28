@@ -31,14 +31,14 @@ This chat system uses the **same message format as the MUD `say` command**, maki
 <div class="chat-container">
 <div class="chat-sidebar">
 <h3>Chat Rooms</h3>
-<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, every 10s" hx-swap="innerHTML">
+<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, every 2s" hx-swap="innerHTML settle:0ms">
 Loading rooms...
 </div>
 
 <div class="room-controls">
 <h4>Create Room</h4>
 <input type="text" id="new-room-name" placeholder="Room name" />
-<button hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-status" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name">
+<button id="create-room-btn" hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-status" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); }">
 Create
 </button>
 <div id="room-status"></div>
@@ -48,7 +48,7 @@ Create
 <div class="chat-main">
 <div class="chat-header">
 <h3 id="current-room-name">Select a room</h3>
-<button id="delete-room-btn" style="display: none;" onclick="if(window.currentRoom && confirm('Delete room ' + window.currentRoom + '?')) { var roomToDelete = window.currentRoom; leaveRoom(); fetch('/cgi/chat-delete-room?room=' + encodeURIComponent(roomToDelete)); }">
+<button id="delete-room-btn" style="display: none;" onclick="deleteRoom()">
 Delete Room
 </button>
 </div>
@@ -70,28 +70,50 @@ Delete Room
 <script>
 // Track current room
 window.currentRoom = null;
+window.hoveredRoom = null;
 
 // Handle room selection from list
 document.addEventListener('htmx:afterSwap', function(event) {
   if (event.detail.target.id === 'room-list') {
-    // Add click handlers to room items
+    // Re-enable create room button after room list refreshes
+    document.getElementById('create-room-btn').disabled = false;
+    document.getElementById('new-room-name').disabled = false;
+    document.getElementById('create-room-btn').innerHTML = 'Create';
+    
+    // Re-enable delete room button after room list refreshes
+    var deleteBtn = document.getElementById('delete-room-btn');
+    deleteBtn.disabled = false;
+    deleteBtn.innerHTML = 'Delete Room';
+    
+    // Remove hover class from all items first (prevents lingering)
+    document.querySelectorAll('.room-item').forEach(function(item) {
+      item.classList.remove('room-item-hover');
+    });
+    
+    // Add click handlers to room items and restore hover state
     document.querySelectorAll('.room-item').forEach(function(item) {
       item.onclick = function() {
         var room = this.getAttribute('data-room');
         joinRoom(room);
       };
+      
+      // Track hover state to preserve across refreshes
+      item.addEventListener('mouseenter', function() {
+        window.hoveredRoom = this.getAttribute('data-room');
+        this.classList.add('room-item-hover');
+      });
+      item.addEventListener('mouseleave', function() {
+        this.classList.remove('room-item-hover');
+        if (window.hoveredRoom === this.getAttribute('data-room')) {
+          window.hoveredRoom = null;
+        }
+      });
+      
+      // Restore hover class if this was the hovered room
+      if (window.hoveredRoom && item.getAttribute('data-room') === window.hoveredRoom) {
+        item.classList.add('room-item-hover');
+      }
     });
-  }
-  
-  // Refresh room list after successful room creation
-  if (event.detail.target.id === 'room-status') {
-    var statusText = event.detail.target.textContent;
-    if (statusText && statusText.indexOf('created') !== -1) {
-      // Clear the input
-      document.getElementById('new-room-name').value = '';
-      // Trigger immediate refresh of room list
-      htmx.trigger('#room-list', 'load');
-    }
   }
 });
 
@@ -100,8 +122,23 @@ function joinRoom(roomName) {
   window.currentRoom = roomName;
   document.getElementById('current-room-name').textContent = 'Room: ' + roomName;
   document.getElementById('send-btn').disabled = false;
-  document.getElementById('delete-room-btn').style.display = 'inline-block';
   document.getElementById('chat-input-area').style.display = 'flex';
+  
+  // Load messages first to determine if we should show delete button
+  fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(roomName))
+    .then(function(response) { return response.text(); })
+    .then(function(html) {
+      // Check if room is empty (only show delete if no messages)
+      var isEmpty = html.indexOf('No messages yet') !== -1 || 
+                    html.indexOf('class="chat-msg"') === -1;
+      
+      // Only show delete button if room is empty
+      if (isEmpty) {
+        document.getElementById('delete-room-btn').style.display = 'inline-block';
+      } else {
+        document.getElementById('delete-room-btn').style.display = 'none';
+      }
+    });
   
   // Load messages
   loadMessages();
@@ -128,27 +165,62 @@ function leaveRoom() {
   }
 }
 
+// Delete room with blocking behavior
+function deleteRoom() {
+  if (!window.currentRoom) return;
+  
+  var roomToDelete = window.currentRoom;
+  var deleteBtn = document.getElementById('delete-room-btn');
+  
+  // Disable button and show loading state
+  deleteBtn.disabled = true;
+  deleteBtn.innerHTML = 'Deleting<span class="spinner"></span>';
+  
+  // Leave the room first
+  leaveRoom();
+  
+  // Delete the room
+  fetch('/cgi/chat-delete-room?room=' + encodeURIComponent(roomToDelete))
+    .then(function() {
+      htmx.trigger('#room-list', 'load');
+    })
+    .catch(function(err) {
+      console.error('Failed to delete room:', err);
+      htmx.trigger('#room-list', 'load');
+    });
+}
+
 // Load messages for current room
 function loadMessages() {
   if (!window.currentRoom) return;
   
-  // Fetch messages but only update if changed
+  var chatDisplay = document.getElementById('chat-messages');
+  if (!chatDisplay) return;
+  
+  // Fetch messages to check if content changed before swapping
   fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(window.currentRoom))
     .then(function(response) { return response.text(); })
     .then(function(html) {
-      var chatDisplay = document.getElementById('chat-messages');
-      if (!chatDisplay) return;
+      // Create a temporary element to parse the new HTML
+      var tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
       
-      // Only update if content has changed (prevents flickering)
-      if (chatDisplay.innerHTML !== html) {
+      // Extract text content from both current and new HTML for comparison
+      var currentText = chatDisplay.textContent.replace(/\s+/g, ' ').trim();
+      var newText = tempDiv.textContent.replace(/\s+/g, ' ').trim();
+      
+      // Only update if content actually changed (prevents flickering)
+      if (currentText !== newText) {
+        // Check if user is at bottom before updating
         var wasAtBottom = chatDisplay.scrollTop >= chatDisplay.scrollHeight - chatDisplay.clientHeight - 50;
+        
         chatDisplay.innerHTML = html;
         
-        // Auto-scroll to bottom if user was already at bottom
-        if (wasAtBottom) {
+        // Auto-scroll to bottom if user was already at bottom or if this is first load
+        if (wasAtBottom || chatDisplay.scrollTop === 0) {
           setTimeout(function() {
             chatDisplay.scrollTop = chatDisplay.scrollHeight;
-          }, 50);
+          }, 10);
         }
       }
     })
