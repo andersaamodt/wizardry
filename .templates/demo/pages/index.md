@@ -2,6 +2,14 @@
 title: Wizardry Web Demo
 ---
 
+<nav class="site-nav" style="margin-bottom: 2em; padding: 1em; background: #f5f5f5; border-radius: 5px;">
+  <strong>Home</strong> |
+  <a href="/pages/advanced.html">Advanced Demos</a> |
+  <a href="/pages/poll.html">Poll</a> |
+  <a href="/pages/chat.html">Chatrooms</a> |
+  <a href="/pages/about.html">About</a>
+</nav>
+
 # Wizardry Web Interactive Demos
 
 Welcome to the **Wizardry Web Platform** demo site! This showcases real-time interactivity powered by POSIX shell scripts via CGI.
@@ -12,7 +20,7 @@ Welcome to the **Wizardry Web Platform** demo site! This showcases real-time int
 Type something and watch it echo back from the server:
 
 <div class="demo-box">
-  <input type="text" id="echo-input" placeholder="Type something..." />
+  <input type="text" id="echo-input" placeholder="Type something..." hx-get="/cgi/echo-text" hx-vals='js:{text: document.getElementById("echo-input").value}' hx-target="#echo-output" hx-swap="innerHTML" hx-trigger="keyup[key=='Enter']" />
   <button hx-get="/cgi/echo-text" hx-vals='js:{text: document.getElementById("echo-input").value}' hx-target="#echo-output" hx-swap="innerHTML">
     Echo!
   </button>
@@ -25,6 +33,9 @@ Every click increments a counter on the server:
 <div class="demo-box">
   <button hx-get="/cgi/counter" hx-target="#counter-output" hx-swap="innerHTML" class="big-button">
     🔢 Click Me!
+  </button>
+  <button hx-get="/cgi/counter-reset" hx-target="#counter-output" hx-swap="innerHTML" style="margin-left: 10px;">
+    🔄 Reset
   </button>
   <div id="counter-output" class="output"></div>
 </div>
@@ -43,7 +54,7 @@ Get a random inspirational quote from the server:
 Type notes that are saved to the server in real-time:
 
 <div class="demo-box">
-  <textarea id="note-input" placeholder="Type your note..." rows="3"></textarea>
+  <textarea id="note-input" placeholder="Type your note..." rows="3" hx-post="/cgi/save-note" hx-vals='js:{note: document.getElementById("note-input").value}' hx-target="#note-output" hx-swap="innerHTML" hx-trigger="keyup[key=='Enter' && ctrlKey]"></textarea>
   <button hx-post="/cgi/save-note" hx-vals='js:{note: document.getElementById("note-input").value}' hx-target="#note-output" hx-swap="innerHTML">
     Save Note
   </button>
@@ -54,7 +65,7 @@ Type notes that are saved to the server in real-time:
 Simple arithmetic calculator running on the server:
 
 <div class="demo-box">
-  <input type="text" id="calc-input" placeholder="e.g., 42 * 3 + 15" />
+  <input type="text" id="calc-input" placeholder="e.g., 42 * 3 + 15" hx-get="/cgi/calc" hx-vals='js:{expr: document.getElementById("calc-input").value}' hx-target="#calc-output" hx-swap="innerHTML" hx-trigger="keyup[key=='Enter']" />
   <button hx-get="/cgi/calc" hx-vals='js:{expr: document.getElementById("calc-input").value}' hx-target="#calc-output" hx-swap="innerHTML">
     Calculate
   </button>
@@ -65,7 +76,7 @@ Simple arithmetic calculator running on the server:
 Reverse any text using shell commands:
 
 <div class="demo-box">
-  <input type="text" id="reverse-input" placeholder="Enter text to reverse" />
+  <input type="text" id="reverse-input" placeholder="Enter text to reverse" hx-get="/cgi/reverse-text" hx-vals='js:{text: document.getElementById("reverse-input").value}' hx-target="#reverse-output" hx-swap="innerHTML" hx-trigger="keyup[key=='Enter']" />
   <button hx-get="/cgi/reverse-text" hx-vals='js:{text: document.getElementById("reverse-input").value}' hx-target="#reverse-output" hx-swap="innerHTML">
     Reverse
   </button>
@@ -76,11 +87,25 @@ Reverse any text using shell commands:
 Count words, characters, and lines:
 
 <div class="demo-box">
-  <textarea id="wordcount-input" placeholder="Paste your text here..." rows="4"></textarea>
+  <textarea id="wordcount-input" placeholder="Paste your text here..." rows="4" hx-get="/cgi/word-count" hx-vals='js:{text: document.getElementById("wordcount-input").value}' hx-target="#wordcount-output" hx-swap="innerHTML" hx-trigger="keyup[key=='Enter' && ctrlKey]"></textarea>
   <button hx-get="/cgi/word-count" hx-vals='js:{text: document.getElementById("wordcount-input").value}' hx-target="#wordcount-output" hx-swap="innerHTML">
     Count Words
   </button>
   <div id="wordcount-output" class="output"></div>
+</div>
+
+---
+
+## 8. Image Upload & Display
+Upload an image and see it displayed instantly:
+
+<div class="demo-box">
+  <input type="text" id="upload-filename" placeholder="Enter image name (e.g., logo.png)" value="demo-image.png" />
+  <button hx-get="/cgi/upload-image" hx-vals='js:{filename: document.getElementById("upload-filename").value}' hx-target="#upload-display" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#upload-filename" class="primary">
+    Upload & Display
+  </button>
+  <div id="upload-display" class="output">
+  </div>
 </div>
 
 ---

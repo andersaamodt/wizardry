@@ -1,0 +1,19 @@
+#!/bin/sh
+# counter-reset - Reset the counter to zero
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+counter_file="${TMPDIR:-/tmp}/wizardry-counter.txt"
+
+# Reset to zero
+echo "0" > "$counter_file"
+
+cat <<HTML
+<div class="demo-result counter">
+  <h2>0</h2>
+  <p class="meta">Counter reset!</p>
+</div>
+HTML

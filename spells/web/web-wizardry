@@ -131,23 +131,23 @@ while true; do
   # Menu options
   exit_label=$(exit-label)
   
-  # Build menu arguments starting with static items
-  set -- "Create new site%create-site-prompt" "Create from template%template-menu"
+  # Build menu arguments starting with existing sites
+  set --
   
-  # Add existing sites as menu items
+  # Add existing sites as menu items first
   if [ -d "$SITES_DIR" ]; then
-    # Add separator before sites
-    set -- "$@" "---"
-    
     for site in "$SITES_DIR"/*; do
       [ -d "$site" ] || continue
       name=$(basename "$site")
       set -- "$@" "${name}%site-menu \"${name}\""
     done
     
-    # Add separator after sites
+    # Add separator after sites (only if sites exist)
     set -- "$@" "---"
   fi
+  
+  # Add create options (template first, then blank)
+  set -- "$@" "Create from template%template-menu" "Create blank site%create-site-prompt"
   
   # Add exit option
   set -- "$@" "${exit_label}%kill -TERM \$PPID"

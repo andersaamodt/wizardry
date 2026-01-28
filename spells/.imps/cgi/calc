@@ -6,9 +6,14 @@ http-status 200 "OK"
 http-header "Content-Type" "text/html"
 http-end-headers
 
-# Parse query string
-expr="${QUERY_STRING:-}"
-expr=$(printf '%s' "$expr" | sed 's/expr=//' | url-decode)
+# Parse query string to get expr parameter
+expr=""
+if [ -n "${QUERY_STRING:-}" ]; then
+  # Extract expr=value from query string (before url-decode)
+  encoded=$(printf '%s' "$QUERY_STRING" | sed 's/^expr=//' | sed 's/&.*//')
+  # Decode the URL-encoded value
+  expr=$(url-decode "$encoded")
+fi
 
 if [ -z "$expr" ]; then
   cat <<HTML
@@ -17,8 +22,8 @@ if [ -z "$expr" ]; then
 </div>
 HTML
 else
-  # Safely evaluate (only allow numbers and basic operators)
-  if printf '%s' "$expr" | grep -qE '^[0-9+\-*/ ().]+$'; then
+  # Safely evaluate (only allow numbers and basic operators plus whitespace)
+  if printf '%s' "$expr" | grep -qE '^[0-9+\-\*/ ().[:space:]]+$'; then
     result=$(printf '%s\n' "$expr" | bc 2>/dev/null || echo "Error")
     cat <<HTML
 <div class="demo-result">

@@ -8,7 +8,7 @@ http-end-headers
 
 # Parse room name from query string
 room_name="${QUERY_STRING:-}"
-room_name=$(printf '%s' "$room_name" | sed 's/room=//' | url-decode)
+room_name=$(printf '%s' "$room_name" | sed 's/^name=//' | sed 's/&.*//' | url-decode)
 
 # Validate room name
 if [ -z "$room_name" ]; then

@@ -1,10 +1,16 @@
 ---
-title: Multi-Room Chat
+title: Chatrooms
 ---
 
-# Multi-Room Chat Demo
+<nav class="site-nav" style="margin-bottom: 2em; padding: 1em; background: #f5f5f5; border-radius: 5px;">
+  <a href="/pages/index.html">Home</a> |
+  <a href="/pages/advanced.html">Advanced Demos</a> |
+  <a href="/pages/poll.html">Poll</a> |
+  <strong>Chatrooms</strong> |
+  <a href="/pages/about.html">About</a>
+</nav>
 
-[← Back to Home](/pages/index.html)
+# Chatrooms Demo
 
 ## 💬 Real-Time Chat with Multiple Rooms
 
@@ -23,42 +29,40 @@ This chat system uses the **same message format as the MUD `say` command**, maki
 ## Chat Interface
 
 <div class="chat-container">
-  <!-- Room selection sidebar -->
-  <div class="chat-sidebar">
-    <h3>Chat Rooms</h3>
-    <div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, every 3s" hx-swap="innerHTML">
-      Loading rooms...
-    </div>
-    
-    <div class="room-controls">
-      <h4>Create Room</h4>
-      <input type="text" id="new-room-name" placeholder="Room name" />
-      <button hx-get="/cgi/chat-create-room" hx-vals='js:{room: document.getElementById("new-room-name").value}' hx-target="#room-status" hx-swap="innerHTML">
-        Create
-      </button>
-      <div id="room-status"></div>
-    </div>
-  </div>
-  
-  <!-- Chat messages area -->
-  <div class="chat-main">
-    <div class="chat-header">
-      <h3 id="current-room-name">Select a room</h3>
-      <button id="delete-room-btn" style="display: none;" hx-get="/cgi/chat-delete-room" hx-vals='js:{room: window.currentRoom}' hx-target="#room-status" hx-swap="innerHTML">
-        Delete Room
-      </button>
-    </div>
-    
-    <div id="chat-messages" class="chat-display">
-      <p class="meta">Select a room to start chatting</p>
-    </div>
-    
-    <div class="chat-input-area">
-      <input type="text" id="username-input" placeholder="Your name" value="WebUser" />
-      <input type="text" id="message-input" placeholder="Type a message..." />
-      <button id="send-btn" disabled>Send</button>
-    </div>
-  </div>
+<div class="chat-sidebar">
+<h3>Chat Rooms</h3>
+<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, every 3s" hx-swap="innerHTML swap:0s">
+Loading rooms...
+</div>
+
+<div class="room-controls">
+<h4>Create Room</h4>
+<input type="text" id="new-room-name" placeholder="Room name" />
+<button hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-status" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name">
+Create
+</button>
+<div id="room-status"></div>
+</div>
+</div>
+
+<div class="chat-main">
+<div class="chat-header">
+<h3 id="current-room-name">Select a room</h3>
+<button id="delete-room-btn" style="display: none;" hx-get="/cgi/chat-delete-room" hx-vals='js:{room: window.currentRoom}' hx-target="#room-status" hx-swap="innerHTML">
+Delete Room
+</button>
+</div>
+
+<div id="chat-messages" class="chat-display">
+<p style="color: #666; font-style: italic;">Select a room to start chatting</p>
+</div>
+
+<div class="chat-input-area">
+<input type="text" id="username-input" placeholder="Your name" value="WebUser" />
+<input type="text" id="message-input" placeholder="Type a message..." />
+<button id="send-btn" disabled>Send</button>
+</div>
+</div>
 </div>
 
 <script>
@@ -187,11 +191,3 @@ Both use the same `.log` file format:
 **✓ MUD compatible** - Full interoperability with MUD `say` command  
 **✓ Persistent state** - Messages stored in filesystem  
 **✓ No database** - Just `.log` files!
-
----
-
-## Navigation
-- [Home](/pages/index.html)
-- [Advanced Demos](/pages/advanced.html)
-- [Poll](/pages/poll.html)
-- [About](/pages/about.html)

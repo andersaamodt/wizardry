@@ -63,10 +63,12 @@ build_site() {
   
   # Copy static files
   if [ -d "$SITE_DIR/site/static" ]; then
+    info "Copying static files to build/static/..."
     cp -r "$SITE_DIR/site/static"/* "$SITE_DIR/build/static/" 2>/dev/null || true
   fi
   
   # Build each Markdown page
+  info "Converting Markdown to HTML..."
   built_count=0
   if [ -d "$SITE_DIR/site/pages" ]; then
     for md_file in "$SITE_DIR/site/pages"/*.md; do
@@ -81,20 +83,38 @@ build_site() {
         continue
       fi
       
-      info "Building: $base_name.md → $base_name.html"
+      info "  Building: $base_name.md → $base_name.html"
+      
+      # Create temporary header file with htmx
+      htmx_header=$(temp-file htmx-header)
+      printf '<script src="https://unpkg.com/htmx.org@1.9.10"></script>\n' > "$htmx_header"
       
       # Use Pandoc to convert Markdown to HTML with YAML front matter
+      # Include htmx for interactive CGI features
+      # raw_html extension allows HTML blocks to pass through
       pandoc \
-        --from markdown+yaml_metadata_block \
+        --from markdown+yaml_metadata_block+raw_html \
         --to html5 \
         --standalone \
         --css=/static/style.css \
+        --include-in-header="$htmx_header" \
         --output="$html_file" \
         "$md_file"
+      
+      # Clean up temporary header file
+      rm -f "$htmx_header"
+      
+      # Ensure generated file is readable by nginx
+      chmod 644 "$html_file"
       
       built_count=$((built_count + 1))
     done
   fi
+  
+  # Ensure all directories have proper permissions
+  info "Setting file permissions..."
+  find "$SITE_DIR/build" -type d -exec chmod 755 {} \; 2>/dev/null || true
+  find "$SITE_DIR/build" -type f -exec chmod 644 {} \; 2>/dev/null || true
   
   success "Built $built_count pages for $site_name"
   info "Build output: $SITE_DIR/build/"

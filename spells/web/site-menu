@@ -5,11 +5,16 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: site-menu SITENAME
+Usage: site-menu [SITENAME]
 
 Shows an interactive menu for managing a specific website.
 
-Example: web-site-menu mysite
+If SITENAME is not provided, attempts to auto-detect the site
+from the current directory (must be within a site directory).
+
+Examples:
+  web-site-menu mysite    # Explicit site name
+  cd ~/sites/mysite && web-site-menu  # Auto-detect from current dir
 USAGE
   exit 0
   ;;
@@ -19,12 +24,33 @@ set -eu
 . env-clear
 . colors
 
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+
+# Try to auto-detect site from current directory if no arg given
 site_name=${1-}
 if [ -z "$site_name" ]; then
-  die 2 "site-menu: SITENAME required"
+  current_dir=$(pwd -P)
+  
+  # Check if current directory is within WEB_ROOT
+  case "$current_dir" in
+    "$WEB_ROOT"/*)
+      # Extract site name from path
+      site_path="${current_dir#"$WEB_ROOT"/}"
+      site_name="${site_path%%/*}"
+      
+      # Verify this is a valid site directory
+      if [ -n "$site_name" ] && [ -d "$WEB_ROOT/$site_name/site" ]; then
+        info "Auto-detected site: $site_name"
+      else
+        die 2 "site-menu: not in a valid site directory. Current: $current_dir"
+      fi
+      ;;
+    *)
+      die 2 "site-menu: SITENAME required (not in $WEB_ROOT)"
+      ;;
+  esac
 fi
 
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
 SITES_DIR="$WEB_ROOT"
 SITE_DIR="$SITES_DIR/$site_name"
 
@@ -57,20 +83,23 @@ while true; do
   if [ "$is_serving" -eq 1 ]; then
     set -- \
       "Open in browser%command -v xdg-open >/dev/null 2>&1 && xdg-open http://localhost:$port || command -v open >/dev/null 2>&1 && open http://localhost:$port || printf 'Visit: http://localhost:$port\n'" \
-      "Build site%build \"$site_name\"" \
-      "Build site (full)%build \"$site_name\" --full" \
-      "Stop serving%stop-site \"$site_name\"" \
-      "Configure nginx%configure-nginx \"$site_name\"" \
+      "Rebuild All & Restart Server%build \"$site_name\" --full && stop-site \"$site_name\" && serve-site \"$site_name\"" \
+      "Rebuild%build \"$site_name\"" \
+      "Rebuild All%build \"$site_name\" --full" \
+      "Stop Server%stop-site \"$site_name\"" \
+      "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
+      "Fix permissions%[ -d \"$SITE_DIR/build\" ] && find \"$SITE_DIR/build\" -type d -exec chmod 755 {} \\; && find \"$SITE_DIR/build\" -type f -exec chmod 644 {} \\; && printf 'Permissions fixed\\n' || printf 'No build directory found\\n'" \
       "Open site directory%cd \"$SITE_DIR\" && \$SHELL" \
       "Delete site%delete-site \"$site_name\"" \
       "${exit_label}%kill -TERM \$PPID"
   else
     set -- \
-      "Build site%build \"$site_name\"" \
-      "Build site (full)%build \"$site_name\" --full" \
+      "Rebuild All & Start Server%build \"$site_name\" --full && serve-site \"$site_name\"" \
+      "Rebuild%build \"$site_name\"" \
+      "Rebuild All%build \"$site_name\" --full" \
       "Serve site%serve-site \"$site_name\"" \
-      "Build & Serve%build \"$site_name\" && serve-site \"$site_name\"" \
-      "Configure nginx%configure-nginx \"$site_name\"" \
+      "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
+      "Fix permissions%[ -d \"$SITE_DIR/build\" ] && find \"$SITE_DIR/build\" -type d -exec chmod 755 {} \\; && find \"$SITE_DIR/build\" -type f -exec chmod 644 {} \\; && printf 'Permissions fixed\\n' || printf 'No build directory found\\n'" \
       "Open site directory%cd \"$SITE_DIR\" && \$SHELL" \
       "Delete site%delete-site \"$site_name\"" \
       "${exit_label}%kill -TERM \$PPID"
