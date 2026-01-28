@@ -11,8 +11,18 @@ if [ "${REQUEST_METHOD:-}" = "POST" ]; then
   note=$(cat)
   note=$(printf '%s' "$note" | sed 's/note=//' | url-decode)
   
-  # Save to temp file (in production, would save to site uploads)
-  notes_file="${TMPDIR:-/tmp}/wizardry-notes.txt"
+  # Use site-specific notes in site data directory
+  # Use WIZARDRY_SITE_NAME if available (set by nginx), otherwise default
+  if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
+    site_id="$WIZARDRY_SITE_NAME"
+  else
+    # Fallback for non-nginx environments
+    site_id="default"
+  fi
+  SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
+  notes_dir="$SITES_DIR/.sitedata/$site_id"
+  mkdir -p "$notes_dir"
+  notes_file="$notes_dir/notes.txt"
   printf '%s\n' "$note" >> "$notes_file"
   
   cat <<HTML

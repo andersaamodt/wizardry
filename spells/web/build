@@ -85,9 +85,12 @@ build_site() {
       
       info "  Building: $base_name.md → $base_name.html"
       
-      # Create temporary header file with htmx
+      # Create temporary header file with htmx and idiomorph extension
       htmx_header=$(temp-file htmx-header)
-      printf '<script src="https://unpkg.com/htmx.org@1.9.10"></script>\n' > "$htmx_header"
+      cat > "$htmx_header" <<'HTMX_HEADER'
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+<script src="https://unpkg.com/idiomorph@0.3.0/dist/idiomorph-ext.min.js"></script>
+HTMX_HEADER
       
       # Use Pandoc to convert Markdown to HTML with YAML front matter
       # Include htmx for interactive CGI features

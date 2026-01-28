@@ -1,7 +1,8 @@
 #!/bin/sh
 # drag-drop-upload - Handle drag-and-drop file uploads with auto-display
 
-set -eu
+# Don't use set -eu to avoid silent failures
+set -u
 
 # Only handle POST requests
 if [ "${REQUEST_METHOD:-}" != "POST" ]; then
@@ -12,18 +13,32 @@ if [ "${REQUEST_METHOD:-}" != "POST" ]; then
   exit 0
 fi
 
+# Determine site-specific data directory
+# Use WIZARDRY_SITE_NAME if available (set by nginx), otherwise default
+if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
+  site_id="$WIZARDRY_SITE_NAME"
+else
+  # Fallback for non-nginx environments
+  site_id="default"
+fi
+SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
+SITE_DATA_DIR="$SITES_DIR/.sitedata/$site_id"
+UPLOAD_DIR="$SITE_DATA_DIR/uploads"
+
 # Create uploads directory if needed
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
-# Try to extract site name from script path or use default
-SITE_NAME=${SITE_NAME:-$(basename "$(pwd)")}
-UPLOAD_DIR="$WEB_ROOT/$SITE_NAME/site/uploads"
-mkdir -p "$UPLOAD_DIR"
+mkdir -p "$UPLOAD_DIR" || {
+  http-status 500 "Internal Server Error"
+  http-header "Content-Type" "text/html"
+  http-end-headers
+  printf '<p class="error">Failed to create upload directory</p>\n'
+  exit 1
+}
 
 # Read multipart boundary from Content-Type header
 boundary=$(printf '%s' "${CONTENT_TYPE:-}" | sed 's/.*boundary=//')
 
 if [ -z "$boundary" ]; then
-  http-status 200 "OK"
+  http-status 400 "Bad Request"
   http-header "Content-Type" "text/html"
   http-end-headers
   printf '<p class="error">No boundary found in Content-Type</p>\n'
@@ -31,45 +46,105 @@ if [ -z "$boundary" ]; then
 fi
 
 # Save uploaded content to temp file
-temp_file=$(temp-file drag-upload)
+temp_file=$(mktemp "${TMPDIR:-/tmp}/drag-upload.XXXXXX")
 cat > "$temp_file"
 
 # Extract filename from Content-Disposition header
 content_disp=$(grep -a "Content-Disposition" "$temp_file" | head -1)
 filename=$(printf '%s' "$content_disp" | sed 's/.*filename="//' | sed 's/".*//')
-filename=$(url-decode "$filename" || echo "upload")
+filename=$(url-decode "$filename" 2>/dev/null || \
+  printf '%s' "$filename" | sed 's/+/ /g;s/%20/ /g')
+if [ -z "$filename" ]; then
+  filename="upload"
+fi
 
-# Sanitize filename - remove path components
-filename=$(basename "$filename")
+# Remove any Windows-style paths (strip everything up to last backslash or forward slash)
+filename=$(printf '%s' "$filename" | sed 's/.*[\\\/]//')
+
+# Sanitize filename - remove path components and keep only safe characters
+filename=$(basename "$filename" | sed 's/[^a-zA-Z0-9._-]/_/g')
 
 # Generate unique filename with timestamp
 timestamp=$(date +%Y-%m-%d-%H%M%S)
 save_name="${timestamp}-${filename}"
 save_path="$UPLOAD_DIR/$save_name"
 
-# Extract file data - more robust approach
-# Find line with blank line after Content-Type, then get everything until final boundary
-awk '
-BEGIN { RS="\r\n"; in_data=0; }
-/^Content-Type:/ { next; }
-/^$/ && !in_data { in_data=1; next; }
-in_data { 
-  if (index($0, "--'$boundary'") == 1) exit;
-  print $0;
-}
-' "$temp_file" > "$save_path.tmp"
+# Extract file data - use a more reliable binary-safe approach
+# The multipart data has this structure:
+# --boundary
+# Content-Disposition: form-data; name="file"; filename="..."
+# Content-Type: ...
+# <blank line>
+# <binary data>
+# --boundary--
 
-# Remove final CRLF if present
-if [ -f "$save_path.tmp" ]; then
-  # Use dd to copy all but last 2 bytes if file ends with CRLF
-  size=$(wc -c < "$save_path.tmp")
-  if [ "$size" -gt 2 ]; then
-    dd if="$save_path.tmp" of="$save_path" bs=1 count=$((size - 2)) 2>/dev/null || \
-      cp "$save_path.tmp" "$save_path"
+# Use perl for binary-safe extraction
+if command -v perl >/dev/null 2>&1; then
+  # Binary-safe perl script that reads entire file
+  perl -e '
+    use strict;
+    binmode STDIN;
+    binmode STDOUT;
+    
+    my $boundary = $ARGV[0];
+    my $content = do { local $/; <STDIN> };
+    
+    # Find Content-Type header followed by blank line
+    if ($content =~ /Content-Type:[^\r\n]*\r?\n\r?\n/s) {
+      my $pos = $+[0];  # Position after the blank line
+      
+      # Find the closing boundary (could be \r\n-- or just \n--)
+      my $end_marker1 = "\r\n--" . $boundary;
+      my $end_marker2 = "\n--" . $boundary;
+      
+      my $data_end = index($content, $end_marker1, $pos);
+      if ($data_end == -1) {
+        $data_end = index($content, $end_marker2, $pos);
+      }
+      
+      if ($data_end > $pos) {
+        # Extract the binary data
+        my $data = substr($content, $pos, $data_end - $pos);
+        print $data;
+      }
+    }
+  ' "$boundary" < "$temp_file" > "$save_path"
+else
+  # Fallback: Use dd with byte offsets if perl not available
+  # Find byte position after Content-Type header and blank line
+  header_end=$(grep -abo "Content-Type:" "$temp_file" | head -1 | cut -d: -f1)
+  if [ -n "$header_end" ]; then
+    # Find the first empty line after Content-Type
+    skip_bytes=$((header_end + 1))
+    data_start=$(tail -c +$skip_bytes "$temp_file" | \
+      grep -abo "$(printf '^\r$')" | head -1 | cut -d: -f1)
+    if [ -z "$data_start" ]; then
+      data_start=$(tail -c +$skip_bytes "$temp_file" | \
+        grep -abo '^$' | head -1 | cut -d: -f1)
+    fi
+    
+    if [ -n "$data_start" ]; then
+      # Calculate absolute position
+      abs_start=$((header_end + data_start + 2))
+      
+      # Find boundary end position
+      boundary_pos=$(grep -abo -- "--$boundary" "$temp_file" | \
+        tail -1 | cut -d: -f1)
+      
+      if [ -n "$boundary_pos" ] && [ "$boundary_pos" -gt "$abs_start" ]; then
+        # Extract data
+        data_length=$((boundary_pos - abs_start - 2))
+        dd if="$temp_file" of="$save_path" bs=1 \
+          skip="$abs_start" count="$data_length" 2>/dev/null
+      else
+        touch "$save_path"
+      fi
+    else
+      touch "$save_path"
+    fi
   else
-    cp "$save_path.tmp" "$save_path"
+    touch "$save_path"
   fi
-  rm -f "$save_path.tmp"
 fi
 
 # Detect MIME type
@@ -81,8 +156,11 @@ fi
 # Get file size
 file_size=$(wc -c < "$save_path" | tr -d ' ')
 
-# Generate download URL
+# Generate download URL - use relative path to uploaded file
 download_url="/uploads/$save_name"
+
+# Also show the full server path for reference
+server_path="$UPLOAD_DIR/$save_name"
 
 # Generate appropriate display HTML based on MIME type
 display_html=""
@@ -142,6 +220,7 @@ cat <<HTML
     <p style="margin: 0.25em 0;"><strong>Filename:</strong> $filename</p>
     <p style="margin: 0.25em 0;"><strong>Type:</strong> $mime_type</p>
     <p style="margin: 0.25em 0;"><strong>Size:</strong> $file_size bytes</p>
+    <p style="margin: 0.25em 0;"><strong>Location:</strong> $server_path</p>
   </div>
   
   <div class="file-display" style="$display_style">

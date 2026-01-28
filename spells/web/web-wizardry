@@ -133,6 +133,7 @@ while true; do
   
   # Build menu arguments starting with existing sites
   set --
+  site_count=0
   
   # Add existing sites as menu items first
   if [ -d "$SITES_DIR" ]; then
@@ -140,10 +141,13 @@ while true; do
       [ -d "$site" ] || continue
       name=$(basename "$site")
       set -- "$@" "${name}%site-menu \"${name}\""
+      site_count=$((site_count + 1))
     done
     
     # Add separator after sites (only if sites exist)
-    set -- "$@" "---"
+    if [ "$site_count" -gt 0 ]; then
+      set -- "$@" "---"
+    fi
   fi
   
   # Add create options (template first, then blank)
