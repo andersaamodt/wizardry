@@ -234,7 +234,7 @@ function loadMessages() {
             // Force reflow
             void msg.offsetHeight;
             // Restore the animation with explicit declaration
-            msg.style.animation = 'messageAppear 0.5s ease-out';
+            msg.style.animation = 'messageAppear 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
           }
         }
         
@@ -275,7 +275,7 @@ function scrollToBottom() {
   var start = chatMessagesDiv.scrollTop;
   var target = chatMessagesDiv.scrollHeight;
   var startTime = null;
-  var duration = 300; // 300ms animation
+  var duration = 372; // 372ms animation (24% slower than 300ms)
   
   function animate(currentTime) {
     if (!startTime) startTime = currentTime;
