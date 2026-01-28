@@ -510,7 +510,7 @@ pre code {
   transition: all 0.2s;
 }
 
-.room-item:hover {
+.room-item:hover, .room-item-hover {
   background: var(--primary);
   color: white;
   transform: translateX(3px);
@@ -529,8 +529,12 @@ pre code {
   margin-top: 0.25rem;
 }
 
-.room-item:hover .room-meta {
+.room-item:hover .room-meta, .room-item-hover .room-meta {
   color: rgba(255,255,255,0.8);
+}
+
+.room-item:hover strong, .room-item-hover strong {
+  color: white;
 }
 
 .last-msg {

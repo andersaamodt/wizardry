@@ -38,7 +38,7 @@ Loading rooms...
 <div class="room-controls">
 <h4>Create Room</h4>
 <input type="text" id="new-room-name" placeholder="Room name" />
-<button hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-status" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; setTimeout(function() { htmx.trigger('#room-list', 'load'); }, 100); }">
+<button hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-status" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); }">
 Create
 </button>
 <div id="room-status"></div>
@@ -70,16 +70,32 @@ Delete Room
 <script>
 // Track current room
 window.currentRoom = null;
+window.hoveredRoom = null;
 
 // Handle room selection from list
 document.addEventListener('htmx:afterSwap', function(event) {
   if (event.detail.target.id === 'room-list') {
-    // Add click handlers to room items
+    // Add click handlers to room items and restore hover state
     document.querySelectorAll('.room-item').forEach(function(item) {
       item.onclick = function() {
         var room = this.getAttribute('data-room');
         joinRoom(room);
       };
+      
+      // Track hover state to preserve across refreshes
+      item.addEventListener('mouseenter', function() {
+        window.hoveredRoom = this.getAttribute('data-room');
+      });
+      item.addEventListener('mouseleave', function() {
+        if (window.hoveredRoom === this.getAttribute('data-room')) {
+          window.hoveredRoom = null;
+        }
+      });
+      
+      // Restore hover class if this was the hovered room
+      if (window.hoveredRoom && item.getAttribute('data-room') === window.hoveredRoom) {
+        item.classList.add('room-item-hover');
+      }
     });
   }
 });
@@ -139,25 +155,26 @@ function loadMessages() {
   var chatDisplay = document.getElementById('chat-messages');
   if (!chatDisplay) return;
   
-  // Use htmx to load messages with settle:0ms to prevent flicker
-  htmx.ajax('GET', '/cgi/chat-get-messages?room=' + encodeURIComponent(window.currentRoom), {
-    target: '#chat-messages',
-    swap: 'innerHTML settle:0ms',
-    // Preserve scroll position if user was at bottom
-    beforeSwap: function(evt) {
-      var wasAtBottom = chatDisplay.scrollTop >= chatDisplay.scrollHeight - chatDisplay.clientHeight - 50;
-      evt.detail.shouldSwap = true;
-      evt.detail.isError = false;
-      
-      // After swap, restore scroll position
-      setTimeout(function() {
+  // Fetch messages to check if content changed before swapping
+  fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(window.currentRoom))
+    .then(function(response) { return response.text(); })
+    .then(function(html) {
+      // Only update if content actually changed (prevents flickering)
+      if (chatDisplay.innerHTML !== html) {
+        var wasAtBottom = chatDisplay.scrollTop >= chatDisplay.scrollHeight - chatDisplay.clientHeight - 50;
+        chatDisplay.innerHTML = html;
+        
+        // Auto-scroll to bottom if user was already at bottom
         if (wasAtBottom) {
-          chatDisplay.scrollTop = chatDisplay.scrollHeight;
+          setTimeout(function() {
+            chatDisplay.scrollTop = chatDisplay.scrollHeight;
+          }, 10);
         }
-      }, 10);
-      return true;
-    }
-  });
+      }
+    })
+    .catch(function(err) {
+      console.error('Failed to load messages:', err);
+    });
 }
 
 // Send message
