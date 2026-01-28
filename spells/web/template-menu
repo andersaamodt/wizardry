@@ -45,7 +45,7 @@ exit_label=$(exit-label)
 
 set -- \
   "Demo Site (Interactive CGI demos)%create-from-template \"$site_name\" demo && web-wizardry build \"$site_name\"" \
-  "Personal Blog (Coming soon)%printf 'Blog template not yet implemented\n'" \
+  "Personal Blog (Content-addressable posts)%create-from-template \"$site_name\" blog && web-wizardry build \"$site_name\"" \
   "${exit_label}%kill -TERM \$PPID"
 
 menu "${BOLD}${CYAN}Select Template for '$site_name'" "$@" || menu_status=$?
