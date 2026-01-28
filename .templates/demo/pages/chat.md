@@ -53,7 +53,7 @@ Delete Room
 </button>
 </div>
 
-<div id="chat-messages" class="chat-display">
+<div id="chat-messages" class="chat-display" hx-get="/cgi/chat-get-messages" hx-trigger="load, every 2s" hx-swap="morph" hx-ext="morph" hx-vals='js:{room: window.currentRoom}'>
 <div class="chat-messages">
 <p style="color: #666; font-style: italic;">Select a room to start chatting</p>
 </div>
@@ -142,15 +142,6 @@ function joinRoom(roomName) {
   document.getElementById('send-btn').disabled = false;
   document.getElementById('chat-input-area').style.display = 'flex';
   
-  // Enable htmx polling for messages
-  var chatMessages = document.getElementById('chat-messages');
-  chatMessages.setAttribute('hx-get', '/cgi/chat-get-messages');
-  chatMessages.setAttribute('hx-trigger', 'load, every 2s');
-  chatMessages.setAttribute('hx-swap', 'morph');
-  chatMessages.setAttribute('hx-ext', 'morph');
-  chatMessages.setAttribute('hx-vals', 'js:{room: window.currentRoom}');
-  htmx.process(chatMessages);
-  
   // Trigger htmx to load messages for this room
   htmx.trigger('#chat-messages', 'load');
   
@@ -178,16 +169,7 @@ function leaveRoom() {
   document.getElementById('send-btn').disabled = true;
   document.getElementById('delete-room-btn').style.display = 'none';
   document.getElementById('chat-input-area').style.display = 'none';
-  
-  // Disable htmx polling
-  var chatMessages = document.getElementById('chat-messages');
-  chatMessages.removeAttribute('hx-get');
-  chatMessages.removeAttribute('hx-trigger');
-  chatMessages.removeAttribute('hx-swap');
-  chatMessages.removeAttribute('hx-ext');
-  chatMessages.removeAttribute('hx-vals');
-  
-  chatMessages.innerHTML = '<div class="chat-messages"><p style="color: #666; font-style: italic;">Create or join a room to chat</p></div>';
+  document.getElementById('chat-messages').innerHTML = '<div class="chat-messages"><p style="color: #666; font-style: italic;">Create or join a room to chat</p></div>';
 }
 
 // Delete room with blocking behavior
