@@ -234,7 +234,7 @@ function loadMessages() {
             // Force reflow
             void msg.offsetHeight;
             // Restore the animation with explicit declaration
-            msg.style.animation = 'messageAppear 0.63s ease-out';
+            msg.style.animation = 'messageAppear 0.5s ease-out';
           }
         }
         
