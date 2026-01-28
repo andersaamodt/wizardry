@@ -121,18 +121,29 @@ function leaveRoom() {
 function loadMessages() {
   if (!window.currentRoom) return;
   
-  htmx.ajax('GET', '/cgi/chat-get-messages?room=' + encodeURIComponent(window.currentRoom), {
-    target: '#chat-messages',
-    swap: 'innerHTML'
-  });
-  
-  // Scroll to bottom after messages load
-  setTimeout(function() {
-    var chatDisplay = document.getElementById('chat-messages');
-    if (chatDisplay) {
-      chatDisplay.scrollTop = chatDisplay.scrollHeight;
-    }
-  }, 100);
+  // Fetch messages but only update if changed
+  fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(window.currentRoom))
+    .then(function(response) { return response.text(); })
+    .then(function(html) {
+      var chatDisplay = document.getElementById('chat-messages');
+      if (!chatDisplay) return;
+      
+      // Only update if content has changed (prevents flickering)
+      if (chatDisplay.innerHTML !== html) {
+        var wasAtBottom = chatDisplay.scrollTop >= chatDisplay.scrollHeight - chatDisplay.clientHeight - 50;
+        chatDisplay.innerHTML = html;
+        
+        // Auto-scroll to bottom if user was already at bottom
+        if (wasAtBottom) {
+          setTimeout(function() {
+            chatDisplay.scrollTop = chatDisplay.scrollHeight;
+          }, 50);
+        }
+      }
+    })
+    .catch(function(err) {
+      console.error('Failed to load messages:', err);
+    });
 }
 
 // Send message

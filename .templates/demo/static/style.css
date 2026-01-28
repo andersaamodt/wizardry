@@ -68,11 +68,16 @@ a:hover {
   margin: 1.5rem 0;
   box-shadow: 0 4px 12px var(--shadow), 0 0 20px rgba(155, 89, 182, 0.1);
   backdrop-filter: blur(10px);
+  color: #2c2c54;  /* Dark text for light background */
 }
 
 .demo-box h3 {
   margin-top: 0;
   color: var(--primary);
+}
+
+.demo-box p {
+  color: #2c2c54;  /* Ensure paragraphs have dark text */
 }
 
 /* Buttons - Magical Style */
@@ -233,11 +238,12 @@ th {
 
 /* Info/Warning Boxes */
 .info-box {
-  background: #e3f2fd;
+  background: rgba(227, 242, 253, 0.95);  /* Light blue with slight transparency */
   border-left: 4px solid var(--primary);
   padding: 1rem;
   margin: 1.5rem 0;
   border-radius: 5px;
+  color: #2c2c54;  /* Dark text for light background */
 }
 
 .meta {
@@ -352,6 +358,10 @@ pre code {
 /* Auto-refresh indicator */
 .auto-refresh {
   position: relative;
+  background: rgba(255, 255, 255, 0.95);  /* White background for dark text */
+  padding: 1rem;
+  border-radius: 8px;
+  color: #2c2c54;  /* Dark text */
 }
 
 .auto-refresh::before {
