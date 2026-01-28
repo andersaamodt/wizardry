@@ -93,10 +93,6 @@ Count words, characters, and lines:
   </button>
   <div id="wordcount-output" class="output"></div>
 </div>
-    Count Words
-  </button>
-  <div id="wordcount-output" class="output"></div>
-</div>
 
 ---
 
@@ -109,7 +105,6 @@ Upload an image and see it displayed instantly:
     Upload & Display
   </button>
   <div id="upload-display" class="output">
-    <p style="color: #666; font-style: italic;">Click Upload to see real-time image generation and display</p>
   </div>
 </div>
 

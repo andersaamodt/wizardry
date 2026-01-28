@@ -111,6 +111,10 @@ domain=localhost
 https=false
 EOF
 
+# Configure nginx for the site
+step "Configuring nginx for $site_name"
+configure-nginx "$site_name"
+
 success "Site '$site_name' created at $SITE_DIR"
 info "Edit pages in: $SITE_DIR/site/pages/"
 info "Build with: web-wizardry build $site_name"
