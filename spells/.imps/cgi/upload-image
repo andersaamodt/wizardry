@@ -21,7 +21,8 @@ HTML
 fi
 
 # Parse the simulated upload (format: filename=name.png)
-filename=$(printf '%s' "$query" | url-decode | sed 's/^filename=//')
+filename_encoded=$(printf '%s' "$query" | sed 's/^filename=//' | sed 's/&.*//')
+filename=$(url-decode "$filename_encoded")
 filename=${filename:-test.png}
 
 upload_dir="${TMPDIR:-/tmp}/wizardry-uploads"
@@ -43,9 +44,18 @@ cat >> "$img_file" <<'SVG'
 </svg>
 SVG
 
-# Read the SVG content and encode for data URL
+# Read the SVG content and properly URL encode for data URL
 svg_content=$(cat "$img_file")
-svg_encoded=$(printf '%s' "$svg_content" | sed 's/"/\&quot;/g')
+# URL encode the SVG for use in data: URL
+svg_encoded=$(printf '%s' "$svg_content" | sed '
+  s/%/%25/g
+  s/ /%20/g
+  s/"/%22/g
+  s/#/%23/g
+  s/</%3C/g
+  s/>/%3E/g
+  s/\n/%0A/g
+')
 
 cat <<HTML
 <div class="demo-result upload success">

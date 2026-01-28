@@ -2,9 +2,15 @@
 title: About Wizardry Web
 ---
 
-# About Wizardry Web
+<nav class="site-nav" style="margin-bottom: 2em; padding: 1em; background: #f5f5f5; border-radius: 5px;">
+  <a href="/pages/index.html">Home</a> |
+  <a href="/pages/advanced.html">Advanced Demos</a> |
+  <a href="/pages/poll.html">Poll</a> |
+  <a href="/pages/chat.html">Chatrooms</a> |
+  <strong>About</strong>
+</nav>
 
-[← Back to Home](/pages/index.html)
+# About Wizardry Web
 
 ## What is Wizardry Web?
 
@@ -126,33 +132,3 @@ Visit the site at http://localhost:8080
 All written in pure POSIX shell!
 
 **Total: 21 CGI scripts** demonstrating real-time interactivity, file operations, calculations, system info, persistent state, and MUD interoperability.
-
-## Source Code
-
-Every CGI script is open source and readable. Check them out at:
-`$WIZARDRY_DIR/spells/.imps/cgi/`
-
-## Learn More
-
-- Read the Wizardry Web documentation
-- Explore the CGI scripts
-- Create your own interactive features
-- Share your creations!
-
----
-
-<div class="info-box">
-  <strong>🎓 Educational Value:</strong> This demo site serves as both a showcase and a learning tool. 
-  Every interaction demonstrates practical UNIX shell scripting in a real-world context.
-</div>
-
----
-
-## Navigation
-- [Home](/pages/index.html)
-- [Advanced Demos](/pages/advanced.html)
-- [Poll](/pages/poll.html)
-- [Chat](/pages/chat.html)
-- [About](/pages/about.html)
-- [Advanced Demos](/pages/advanced.html)
-- [Poll](/pages/poll.html)
