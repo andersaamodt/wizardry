@@ -17,15 +17,16 @@ esac
 
 set -eu
 . env-clear
+. declare-globals
 
 site_name=${1-}
 if [ -z "$site_name" ]; then
   die 2 "delete-site: SITENAME required"
 fi
 
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
-SITES_DIR="$WEB_ROOT"
+SITES_DIR="${WIZARDRY_SITES_DIR}"
 SITE_DIR="$SITES_DIR/$site_name"
+SITE_DATA_DIR="$SITES_DIR/.sitedata/$site_name"
 
 if [ ! -d "$SITE_DIR" ]; then
   die "delete-site: site '$site_name' not found"
@@ -67,6 +68,23 @@ case "$confirm" in
     step "Deleting site: $site_name"
     rm -rf "$SITE_DIR"
     success "Site '$site_name' deleted"
+    
+    # Ask about deleting site data
+    if [ -d "$SITE_DATA_DIR" ]; then
+      printf 'Also delete site data (uploads, etc.)? [y/N] ' 
+      read -r confirm_data
+      
+      case "$confirm_data" in
+        y|Y|yes|YES)
+          step "Deleting site data: $SITE_DATA_DIR"
+          rm -rf "$SITE_DATA_DIR"
+          success "Site data deleted"
+          ;;
+        *)
+          info "Site data preserved at: $SITE_DATA_DIR"
+          ;;
+      esac
+    fi
     ;;
   *)
     info "Deletion cancelled"

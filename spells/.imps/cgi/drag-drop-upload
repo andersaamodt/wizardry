@@ -14,8 +14,12 @@ if [ "${REQUEST_METHOD:-}" != "POST" ]; then
 fi
 
 # Determine site-specific data directory
-# Use HTTP_HOST to identify the site
-site_id=$(printf '%s' "${HTTP_HOST:-default}" | sed 's/[^a-zA-Z0-9]/-/g')
+# For local development, use "default" instead of HTTP_HOST to avoid port in path
+if [ -z "${HTTP_HOST:-}" ] || printf '%s' "${HTTP_HOST}" | grep -q "localhost"; then
+  site_id="default"
+else
+  site_id=$(printf '%s' "${HTTP_HOST}" | sed 's/[^a-zA-Z0-9]/-/g')
+fi
 SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
 SITE_DATA_DIR="$SITES_DIR/.sitedata/$site_id"
 UPLOAD_DIR="$SITE_DATA_DIR/uploads"
