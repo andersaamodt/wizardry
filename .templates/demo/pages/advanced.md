@@ -295,7 +295,7 @@ spell-card .spell-description {
 </style>
 
 <div class="demo-box">
-<p style="margin-bottom: 1rem;">Custom HTML elements let you create reusable, styled components. These `<spell-card>` elements demonstrate advanced CSS with gradients, shadows, and animations:</p>
+<p style="margin-bottom: 1rem; color: #2c2c54;">Custom HTML elements let you create reusable, styled components. These `<spell-card>` elements demonstrate advanced CSS with gradients, shadows, and animations:</p>
 
 <spell-card>
 <div class="spell-title">⚡ Lightning Bolt</div>
@@ -321,7 +321,7 @@ spell-card .spell-description {
 <div class="spell-description">Channels the power of nature to heal allies and remove harmful effects. Restores health gradually.</div>
 </spell-card>
 
-<p style="margin-top: 1.5rem; color: #666; font-style: italic;">
+<p style="margin-top: 1.5rem; color: #2c2c54; font-style: italic;">
 Hover over the cards to see the animation effects! These elements use pure CSS with no JavaScript required.
 </p>
 </div>
