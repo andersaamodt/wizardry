@@ -200,13 +200,20 @@ function loadMessages() {
       var chatMessagesDiv = document.getElementById('chat-messages');
       if (!chatMessagesDiv) return;
       
+      // Store scroll position before updating DOM
+      var wasAtBottom = chatMessagesDiv.scrollHeight - chatMessagesDiv.scrollTop - chatMessagesDiv.clientHeight < 50;
+      var oldScrollHeight = chatMessagesDiv.scrollHeight;
+      var oldScrollTop = chatMessagesDiv.scrollTop;
+      
       // Parse the new HTML
       var tempDiv = document.createElement('div');
       tempDiv.innerHTML = html;
       var newElement = tempDiv.firstElementChild;
       
       if (newElement && newElement.id === 'chat-messages') {
-        // Use idiomorph to morph the element (prevents flicker)
+        // Use Idiomorph to morph the element (prevents flicker)
+        // Idiomorph is a DOM morphing library that efficiently updates the DOM
+        // by comparing old and new HTML and making minimal changes
         if (window.Idiomorph) {
           Idiomorph.morph(chatMessagesDiv, newElement);
         } else {
@@ -214,8 +221,20 @@ function loadMessages() {
           chatMessagesDiv.outerHTML = html;
         }
         
-        // Scroll to bottom to show latest messages
-        scrollToBottom();
+        // Restore scroll position to prevent jump
+        // This keeps existing messages in the same visual position
+        var newScrollHeight = chatMessagesDiv.scrollHeight;
+        var scrollHeightDiff = newScrollHeight - oldScrollHeight;
+        
+        if (scrollHeightDiff > 0 && !wasAtBottom && window.userHasScrolledUp) {
+          // New content was added, but user is scrolled up viewing history
+          // Adjust scroll position to keep existing messages in place
+          chatMessagesDiv.scrollTop = oldScrollTop + scrollHeightDiff;
+        } else {
+          // User is at bottom or we're auto-scrolling
+          // Scroll to bottom to show latest messages
+          scrollToBottom();
+        }
       }
       
       // Check if room is empty (for delete button logic)
