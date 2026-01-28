@@ -48,12 +48,12 @@ Create
 <div class="chat-main">
 <div class="chat-header">
 <h3 id="current-room-name">Select a room</h3>
-<button id="delete-room-btn" style="display: none;" onclick="if(window.currentRoom) { var roomToDelete = window.currentRoom; leaveRoom(); fetch('/cgi/chat-delete-room?room=' + encodeURIComponent(roomToDelete)).then(function() { htmx.trigger('#room-list', 'load'); }).catch(function(err) { console.error('Failed to delete room:', err); htmx.trigger('#room-list', 'load'); }); }">
+<button id="delete-room-btn" style="display: none;" onclick="deleteRoom()">
 Delete Room
 </button>
 </div>
 
-<div id="chat-messages" class="chat-display" hx-get="/cgi/chat-get-messages" hx-trigger="load, every 2s" hx-swap="morph" hx-ext="morph" hx-vals='js:{room: window.currentRoom}' hx-include="none">
+<div id="chat-messages" class="chat-display">
 <div class="chat-messages">
 <p style="color: #666; font-style: italic;">Select a room to start chatting</p>
 </div>
@@ -87,6 +87,11 @@ document.addEventListener('htmx:afterSwap', function(event) {
     document.getElementById('create-room-btn').disabled = false;
     document.getElementById('new-room-name').disabled = false;
     document.getElementById('create-room-btn').innerHTML = 'Create';
+    
+    // Re-enable delete room button after room list refreshes
+    var deleteBtn = document.getElementById('delete-room-btn');
+    deleteBtn.disabled = false;
+    deleteBtn.innerHTML = 'Delete Room';
     
     // Remove hover class from all items first (prevents lingering)
     document.querySelectorAll('.room-item').forEach(function(item) {
@@ -137,6 +142,16 @@ function joinRoom(roomName) {
   document.getElementById('send-btn').disabled = false;
   document.getElementById('chat-input-area').style.display = 'flex';
   
+  // Enable htmx polling for messages
+  var chatMessages = document.getElementById('chat-messages');
+  chatMessages.setAttribute('hx-get', '/cgi/chat-get-messages');
+  chatMessages.setAttribute('hx-trigger', 'load, every 2s');
+  chatMessages.setAttribute('hx-swap', 'morph');
+  chatMessages.setAttribute('hx-ext', 'morph');
+  chatMessages.setAttribute('hx-vals', 'js:{room: window.currentRoom}');
+  chatMessages.setAttribute('hx-include', 'none');
+  htmx.process(chatMessages);
+  
   // Trigger htmx to load messages for this room
   htmx.trigger('#chat-messages', 'load');
   
@@ -164,7 +179,42 @@ function leaveRoom() {
   document.getElementById('send-btn').disabled = true;
   document.getElementById('delete-room-btn').style.display = 'none';
   document.getElementById('chat-input-area').style.display = 'none';
-  document.getElementById('chat-messages').innerHTML = '<div class="chat-messages"><p style="color: #666; font-style: italic;">Create or join a room to chat</p></div>';
+  
+  // Disable htmx polling
+  var chatMessages = document.getElementById('chat-messages');
+  chatMessages.removeAttribute('hx-get');
+  chatMessages.removeAttribute('hx-trigger');
+  chatMessages.removeAttribute('hx-swap');
+  chatMessages.removeAttribute('hx-ext');
+  chatMessages.removeAttribute('hx-vals');
+  chatMessages.removeAttribute('hx-include');
+  
+  chatMessages.innerHTML = '<div class="chat-messages"><p style="color: #666; font-style: italic;">Create or join a room to chat</p></div>';
+}
+
+// Delete room with blocking behavior
+function deleteRoom() {
+  if (!window.currentRoom) return;
+  
+  var roomToDelete = window.currentRoom;
+  var deleteBtn = document.getElementById('delete-room-btn');
+  
+  // Disable button and show loading state
+  deleteBtn.disabled = true;
+  deleteBtn.innerHTML = 'Deleting<span class="spinner"></span>';
+  
+  // Leave the room first
+  leaveRoom();
+  
+  // Delete the room
+  fetch('/cgi/chat-delete-room?room=' + encodeURIComponent(roomToDelete))
+    .then(function() {
+      htmx.trigger('#room-list', 'load');
+    })
+    .catch(function(err) {
+      console.error('Failed to delete room:', err);
+      htmx.trigger('#room-list', 'load');
+    });
 }
 
 // Send message
