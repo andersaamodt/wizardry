@@ -89,6 +89,7 @@ while true; do
       "Build%build \"$site_name\"" \
       "Build All%build \"$site_name\" --full" \
       "Stop Server%stop-site \"$site_name\"" \
+      "Update from template%update-from-template \"$site_name\"" \
       "Build nginx.conf%configure-nginx \"$site_name\"" \
       "Fix permissions%[ -d \"$SITE_DIR/build\" ] && find \"$SITE_DIR/build\" -type d -exec chmod 755 {} \\; && find \"$SITE_DIR/build\" -type f -exec chmod 644 {} \\; && printf 'Permissions fixed\\n' || printf 'No build directory found\\n'" \
       "Open site directory%cd \"$SITE_DIR\" && exec \$SHELL" \
@@ -101,6 +102,7 @@ while true; do
       "Build%build \"$site_name\"" \
       "Build All%build \"$site_name\" --full" \
       "Serve site%serve-site \"$site_name\"" \
+      "Update from template%update-from-template \"$site_name\"" \
       "Build nginx.conf%configure-nginx \"$site_name\"" \
       "Fix permissions%[ -d \"$SITE_DIR/build\" ] && find \"$SITE_DIR/build\" -type d -exec chmod 755 {} \\; && find \"$SITE_DIR/build\" -type f -exec chmod 644 {} \\; && printf 'Permissions fixed\\n' || printf 'No build directory found\\n'" \
       "Open site directory%cd \"$SITE_DIR\" && exec \$SHELL" \
