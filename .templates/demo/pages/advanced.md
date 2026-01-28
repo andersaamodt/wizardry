@@ -210,7 +210,6 @@ This section refreshes every 5 seconds automatically:
 
 <div class="demo-box">
   <div hx-get="/cgi/system-info" hx-trigger="every 5s" hx-swap="innerHTML" class="auto-refresh">
-    <p style="color: #666; font-style: italic;">Loading...</p>
   </div>
 </div>
 
