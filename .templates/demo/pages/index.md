@@ -12,8 +12,8 @@ Welcome to the **Wizardry Web Platform** demo site! This showcases real-time int
 Type something and watch it echo back from the server:
 
 <div class="demo-box">
-  <input type="text" id="echo-input" placeholder="Type something..." />
-  <button hx-get="/cgi/echo-text" hx-vals='js:{text: document.getElementById("echo-input").value}' hx-target="#echo-output" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#echo-input">
+  <input type="text" id="echo-input" placeholder="Type something..." hx-get="/cgi/echo-text" hx-vals='js:{text: document.getElementById("echo-input").value}' hx-target="#echo-output" hx-swap="innerHTML" hx-trigger="keyup[keyCode==13]" />
+  <button hx-get="/cgi/echo-text" hx-vals='js:{text: document.getElementById("echo-input").value}' hx-target="#echo-output" hx-swap="innerHTML">
     Echo!
   </button>
   <div id="echo-output" class="output"></div>
@@ -57,8 +57,8 @@ Type notes that are saved to the server in real-time:
 Simple arithmetic calculator running on the server:
 
 <div class="demo-box">
-  <input type="text" id="calc-input" placeholder="e.g., 42 * 3 + 15" />
-  <button hx-get="/cgi/calc" hx-vals='js:{expr: document.getElementById("calc-input").value}' hx-target="#calc-output" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#calc-input">
+  <input type="text" id="calc-input" placeholder="e.g., 42 * 3 + 15" hx-get="/cgi/calc" hx-vals='js:{expr: document.getElementById("calc-input").value}' hx-target="#calc-output" hx-swap="innerHTML" hx-trigger="keyup[keyCode==13]" />
+  <button hx-get="/cgi/calc" hx-vals='js:{expr: document.getElementById("calc-input").value}' hx-target="#calc-output" hx-swap="innerHTML">
     Calculate
   </button>
   <div id="calc-output" class="output"></div>
@@ -68,8 +68,8 @@ Simple arithmetic calculator running on the server:
 Reverse any text using shell commands:
 
 <div class="demo-box">
-  <input type="text" id="reverse-input" placeholder="Enter text to reverse" />
-  <button hx-get="/cgi/reverse-text" hx-vals='js:{text: document.getElementById("reverse-input").value}' hx-target="#reverse-output" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#reverse-input">
+  <input type="text" id="reverse-input" placeholder="Enter text to reverse" hx-get="/cgi/reverse-text" hx-vals='js:{text: document.getElementById("reverse-input").value}' hx-target="#reverse-output" hx-swap="innerHTML" hx-trigger="keyup[keyCode==13]" />
+  <button hx-get="/cgi/reverse-text" hx-vals='js:{text: document.getElementById("reverse-input").value}' hx-target="#reverse-output" hx-swap="innerHTML">
     Reverse
   </button>
   <div id="reverse-output" class="output"></div>
@@ -79,8 +79,8 @@ Reverse any text using shell commands:
 Count words, characters, and lines:
 
 <div class="demo-box">
-  <textarea id="wordcount-input" placeholder="Paste your text here..." rows="4"></textarea>
-  <button hx-get="/cgi/word-count" hx-vals='js:{text: document.getElementById("wordcount-input").value}' hx-target="#wordcount-output" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#wordcount-input">
+  <textarea id="wordcount-input" placeholder="Paste your text here..." rows="4" hx-get="/cgi/word-count" hx-vals='js:{text: document.getElementById("wordcount-input").value}' hx-target="#wordcount-output" hx-swap="innerHTML" hx-trigger="keyup[keyCode==13]"></textarea>
+  <button hx-get="/cgi/word-count" hx-vals='js:{text: document.getElementById("wordcount-input").value}' hx-target="#wordcount-output" hx-swap="innerHTML">
     Count Words
   </button>
   <div id="wordcount-output" class="output"></div>
