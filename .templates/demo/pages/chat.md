@@ -53,9 +53,7 @@ Delete Room
 </button>
 </div>
 
-<input type="hidden" id="current-room-input" name="room" value="" />
-
-<div id="chat-messages" class="chat-display" hx-get="/cgi/chat-get-messages" hx-include="#current-room-input" hx-trigger="load, every 2s" hx-swap="morph" hx-ext="morph">
+<div id="chat-messages" class="chat-display" hx-get="/cgi/chat-get-messages" hx-trigger="load, every 2s" hx-swap="morph" hx-ext="morph">
 <div class="chat-messages">
 <p style="color: #666; font-style: italic;">Select a room to start chatting</p>
 </div>
@@ -126,18 +124,36 @@ function joinRoom(roomName) {
   document.getElementById('send-btn').disabled = false;
   document.getElementById('chat-input-area').style.display = 'flex';
   
-  // Set the hidden input value for htmx to include
-  document.getElementById('current-room-input').value = roomName;
+  var chatMessagesDiv = document.getElementById('chat-messages');
   
-  // Trigger htmx to load messages immediately
-  // htmx will handle the DOM update via morph, preserving its polling
-  htmx.trigger('#chat-messages', 'load');
+  // Update the hx-get URL to include the room parameter
+  chatMessagesDiv.setAttribute('hx-get', '/cgi/chat-get-messages?room=' + encodeURIComponent(roomName));
   
-  // Also fetch to check if room is empty (for delete button logic)
-  // We do this separately because we need the info but don't want to manipulate DOM
+  // Reinitialize htmx for this element to pick up the new attribute
+  htmx.process(chatMessagesDiv);
+  
+  // Fetch and display messages immediately
   fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(roomName))
     .then(function(response) { return response.text(); })
     .then(function(html) {
+      // Parse the HTML to extract the inner chat-messages div
+      var tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      var newContent = tempDiv.querySelector('.chat-messages');
+      
+      if (newContent) {
+        // Find the inner div inside #chat-messages and replace it
+        // This preserves the outer div with htmx attributes
+        var innerDiv = chatMessagesDiv.querySelector('.chat-messages');
+        if (innerDiv) {
+          innerDiv.replaceWith(newContent);
+        } else {
+          // If no inner div exists, just append
+          chatMessagesDiv.innerHTML = '';
+          chatMessagesDiv.appendChild(newContent);
+        }
+      }
+      
       // Check if room is empty (for delete button logic)
       var isEmpty = html.indexOf('No messages yet') !== -1 || 
                     html.indexOf('class="chat-msg"') === -1;
@@ -159,8 +175,10 @@ function leaveRoom() {
   document.getElementById('delete-room-btn').style.display = 'none';
   document.getElementById('chat-input-area').style.display = 'none';
   
-  // Clear the hidden input value
-  document.getElementById('current-room-input').value = '';
+  // Reset the hx-get URL to have no room parameter
+  var chatMessagesDiv = document.getElementById('chat-messages');
+  chatMessagesDiv.setAttribute('hx-get', '/cgi/chat-get-messages');
+  htmx.process(chatMessagesDiv);
   
   // Trigger htmx to clear messages
   htmx.trigger('#chat-messages', 'load');
