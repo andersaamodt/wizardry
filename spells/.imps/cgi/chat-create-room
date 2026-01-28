@@ -50,8 +50,14 @@ ROOM_DIR="$CHAT_DIR/$room_name"
 # Check if room already exists
 if [ -d "$ROOM_DIR" ]; then
   cat <<HTML
-<div class="demo-result">
+<div class="demo-result success">
   <p>Room <strong>$room_name</strong> already exists. Joining...</p>
+  <script>
+    // Auto-join the existing room
+    setTimeout(function() {
+      joinRoom('$room_name');
+    }, 100);
+  </script>
 </div>
 HTML
 else
@@ -62,6 +68,12 @@ else
   cat <<HTML
 <div class="demo-result success">
   <p>✓ Room <strong>$room_name</strong> created!</p>
+  <script>
+    // Auto-join the new room
+    setTimeout(function() {
+      joinRoom('$room_name');
+    }, 100);
+  </script>
 </div>
 HTML
 fi

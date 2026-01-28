@@ -60,7 +60,7 @@ Delete Room
 </div>
 
 <div class="chat-input-area" id="chat-input-area" style="display: none;">
-<input type="text" id="username-input" placeholder="Your name" value="WebUser" />
+<input type="text" id="username-input" placeholder="Your name" value="" />
 <input type="text" id="message-input" placeholder="Type a message..." />
 <button id="send-btn" disabled>Send</button>
 </div>
@@ -68,9 +68,20 @@ Delete Room
 </div>
 
 <script>
+// Generate a random guest name with collision handling
+function generateGuestName(digits) {
+  digits = digits || 1;
+  var max = Math.pow(10, digits) - 1;
+  var min = digits === 1 ? 0 : Math.pow(10, digits - 1);
+  var num = Math.floor(Math.random() * (max - min + 1)) + min;
+  return 'Guest' + num;
+}
+
 // Track current room
 window.currentRoom = null;
 window.hoveredRoom = null;
+window.usedGuestNames = {};  // Track guest names used in current session
+window.currentDigits = 1;  // Start with 1-digit numbers
 
 // Handle room selection from list
 document.addEventListener('htmx:afterSwap', function(event) {
@@ -120,7 +131,7 @@ document.addEventListener('htmx:afterSwap', function(event) {
 // Join a room
 function joinRoom(roomName) {
   window.currentRoom = roomName;
-  document.getElementById('current-room-name').textContent = 'Room: ' + roomName;
+  document.getElementById('current-room-name').textContent = roomName;
   document.getElementById('send-btn').disabled = false;
   document.getElementById('chat-input-area').style.display = 'flex';
   
@@ -230,6 +241,11 @@ document.addEventListener('DOMContentLoaded', function() {
   var messageInput = document.getElementById('message-input');
   var usernameInput = document.getElementById('username-input');
   
+  // Initialize with a guest name
+  var guestName = generateGuestName(window.currentDigits);
+  usernameInput.value = guestName;
+  window.usedGuestNames[guestName] = true;
+  
   function sendMessage() {
     if (!window.currentRoom) return;
     
@@ -247,10 +263,24 @@ document.addEventListener('DOMContentLoaded', function() {
       method: 'POST',
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
       body: formData
-    }).then(function() {
-      messageInput.value = '';
-      // Reload messages immediately to show the new message
-      loadMessages();
+    }).then(function(response) {
+      return response.text();
+    }).then(function(text) {
+      // Check for name collision error
+      if (text.indexOf('name collision') !== -1 || text.indexOf('already in use') !== -1) {
+        // Increment digits and try again
+        window.currentDigits++;
+        if (window.currentDigits > 6) window.currentDigits = 1;  // Reset after 6 digits
+        var newName = generateGuestName(window.currentDigits);
+        usernameInput.value = newName;
+        window.usedGuestNames[newName] = true;
+        // Retry sending the message
+        sendMessage();
+      } else {
+        messageInput.value = '';
+        // Reload messages immediately to show the new message
+        loadMessages();
+      }
     });
   }
   
@@ -282,7 +312,7 @@ Both use the same `.log` file format:
 ### Try It Yourself
 
 1. Create a chat room on the web (e.g., "tavern")
-2. In the MUD, navigate to `/tmp/wizardry-chat/tavern/`
+2. In the MUD, navigate to `~/sites/.sitedata/SITENAME/chatrooms/tavern/`
 3. Use `say "Hello from the MUD!"`
 4. The message appears in the web chat!
 5. Web users' messages appear in the MUD via `listen`
@@ -290,7 +320,7 @@ Both use the same `.log` file format:
 ### Technical Details
 
 - **Storage:** Each room is a directory with a `.log` file
-- **Location:** `$TMPDIR/wizardry-chat/ROOMNAME/.log`
+- **Location:** `~/sites/.sitedata/SITENAME/chatrooms/ROOMNAME/.log`
 - **Format:** `[HH:MM] username: message` (same as MUD)
 - **Commands:** Web users and MUD players share the same log
 - **Real-time:** Auto-refreshes every 2 seconds

@@ -574,7 +574,7 @@ pre code {
 
 .chat-header {
   padding: 1rem;
-  background: var(--dark);
+  background: #3d3d70;  /* Brighter than var(--dark) #2c2c54 */
   color: white;
   display: flex;
   justify-content: space-between;
@@ -640,17 +640,17 @@ pre code {
   font-family: 'Monaco', 'Courier New', monospace;
   font-size: 0.9rem;
   color: #2c2c54;  /* Dark text for readability */
-  animation: slideIn 0.2s;
+  animation: messageAppear 0.4s ease-out;
 }
 
-@keyframes slideIn {
+@keyframes messageAppear {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1);
   }
 }
 
