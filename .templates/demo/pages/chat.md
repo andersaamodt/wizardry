@@ -53,7 +53,7 @@ Delete Room
 </button>
 </div>
 
-<div id="chat-messages" class="chat-display" hx-get="/cgi/chat-get-messages" hx-trigger="load delay:100ms, every 2s" hx-swap="morph" hx-ext="morph" hx-vals='js:{room: window.currentRoom || ""}' hx-include="none">
+<div id="chat-messages" class="chat-display" hx-get="/cgi/chat-get-messages" hx-trigger="load delay:100ms, every 2s" hx-swap="morph" hx-ext="morph" hx-vals='js:{room: window.currentRoom || ""}'>
 <div class="chat-messages">
 <p style="color: #666; font-style: italic;">Select a room to start chatting</p>
 </div>
