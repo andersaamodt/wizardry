@@ -91,8 +91,8 @@ while true; do
       "Stop Server%stop-site \"$site_name\"" \
       "Build nginx.conf%configure-nginx \"$site_name\"" \
       "Fix permissions%[ -d \"$SITE_DIR/build\" ] && find \"$SITE_DIR/build\" -type d -exec chmod 755 {} \\; && find \"$SITE_DIR/build\" -type f -exec chmod 644 {} \\; && printf 'Permissions fixed\\n' || printf 'No build directory found\\n'" \
-      "Open site directory%cd \"$SITE_DIR\"" \
-      "Open site data%mkdir -p \"$SITE_DATA_DIR\" && cd \"$SITE_DATA_DIR\"" \
+      "Open site directory%cd \"$SITE_DIR\" && exec \$SHELL" \
+      "Open site data%[ -d \"$SITE_DATA_DIR\" ] && cd \"$SITE_DATA_DIR\" && exec \$SHELL || { printf 'No site data yet (will be created when needed)\\n'; read -r dummy; }" \
       "Delete site%delete-site \"$site_name\"" \
       "${exit_label}%kill -TERM \$PPID"
   else
@@ -103,8 +103,8 @@ while true; do
       "Serve site%serve-site \"$site_name\"" \
       "Build nginx.conf%configure-nginx \"$site_name\"" \
       "Fix permissions%[ -d \"$SITE_DIR/build\" ] && find \"$SITE_DIR/build\" -type d -exec chmod 755 {} \\; && find \"$SITE_DIR/build\" -type f -exec chmod 644 {} \\; && printf 'Permissions fixed\\n' || printf 'No build directory found\\n'" \
-      "Open site directory%cd \"$SITE_DIR\"" \
-      "Open site data%mkdir -p \"$SITE_DATA_DIR\" && cd \"$SITE_DATA_DIR\"" \
+      "Open site directory%cd \"$SITE_DIR\" && exec \$SHELL" \
+      "Open site data%[ -d \"$SITE_DATA_DIR\" ] && cd \"$SITE_DATA_DIR\" && exec \$SHELL || { printf 'No site data yet (will be created when needed)\\n'; read -r dummy; }" \
       "Delete site%delete-site \"$site_name\"" \
       "${exit_label}%kill -TERM \$PPID"
   fi

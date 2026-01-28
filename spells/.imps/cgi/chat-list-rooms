@@ -11,7 +11,7 @@ CHAT_DIR="${TMPDIR:-/tmp}/wizardry-chat"
 mkdir -p "$CHAT_DIR"
 
 cat <<'HTML'
-<div id="room-list" class="demo-result chat-rooms">
+<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, every 3s" hx-swap="outerHTML" class="demo-result chat-rooms">
   <h3>Available Chat Rooms</h3>
   <ul class="room-list">
 HTML

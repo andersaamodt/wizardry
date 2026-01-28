@@ -11,9 +11,17 @@ if [ "${REQUEST_METHOD:-}" = "POST" ]; then
   note=$(cat)
   note=$(printf '%s' "$note" | sed 's/note=//' | url-decode)
   
-  # Use site-specific notes based on HTTP_HOST
-  site_id=$(printf '%s' "${HTTP_HOST:-localhost}" | sed 's/[^a-zA-Z0-9]/-/g')
-  notes_file="${TMPDIR:-/tmp}/wizardry-notes-${site_id}.txt"
+  # Use site-specific notes in site data directory
+  # For local development, use "default" instead of HTTP_HOST to avoid port in path
+  if [ -z "${HTTP_HOST:-}" ] || printf '%s' "${HTTP_HOST}" | grep -q "localhost"; then
+    site_id="default"
+  else
+    site_id=$(printf '%s' "${HTTP_HOST}" | sed 's/[^a-zA-Z0-9]/-/g')
+  fi
+  SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
+  notes_dir="$SITES_DIR/.sitedata/$site_id"
+  mkdir -p "$notes_dir"
+  notes_file="$notes_dir/notes.txt"
   printf '%s\n' "$note" >> "$notes_file"
   
   cat <<HTML
