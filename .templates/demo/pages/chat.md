@@ -157,6 +157,9 @@ function loadMessages() {
           // Fallback if idiomorph not available
           chatMessagesDiv.outerHTML = html;
         }
+        
+        // Scroll to bottom to show latest messages
+        scrollToBottom();
       }
       
       // Check if room is empty (for delete button logic)
@@ -169,6 +172,14 @@ function loadMessages() {
         document.getElementById('delete-room-btn').style.display = 'none';
       }
     });
+}
+
+// Scroll chat to bottom to show latest messages
+function scrollToBottom() {
+  var chatMessagesDiv = document.getElementById('chat-messages');
+  if (chatMessagesDiv) {
+    chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+  }
 }
 
 // Leave room and return to empty state
