@@ -13,10 +13,8 @@ if [ "${REQUEST_METHOD:-}" != "POST" ]; then
 fi
 
 # Create uploads directory if needed
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
-# Try to extract site name from script path or use default
-SITE_NAME=${SITE_NAME:-$(basename "$(pwd)")}
-UPLOAD_DIR="$WEB_ROOT/$SITE_NAME/site/uploads"
+# Use a standard upload location in tmp to avoid creating "cgi" site
+UPLOAD_DIR="${TMPDIR:-/tmp}/wizardry-uploads"
 mkdir -p "$UPLOAD_DIR"
 
 # Read multipart boundary from Content-Type header
@@ -31,7 +29,7 @@ if [ -z "$boundary" ]; then
 fi
 
 # Save uploaded content to temp file
-temp_file=$(temp-file drag-upload)
+temp_file=$(mktemp "${TMPDIR:-/tmp}/drag-upload.XXXXXX")
 cat > "$temp_file"
 
 # Extract filename from Content-Disposition header
