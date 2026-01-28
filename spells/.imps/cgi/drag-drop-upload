@@ -117,7 +117,7 @@ else
     # Find the first empty line after Content-Type
     skip_bytes=$((header_end + 1))
     data_start=$(tail -c +$skip_bytes "$temp_file" | \
-      grep -abo $'^\r$' | head -1 | cut -d: -f1)
+      grep -abo "$(printf '^\r$')" | head -1 | cut -d: -f1)
     if [ -z "$data_start" ]; then
       data_start=$(tail -c +$skip_bytes "$temp_file" | \
         grep -abo '^$' | head -1 | cut -d: -f1)
