@@ -1,7 +1,7 @@
 /* Wizardry Web Demo Site Styles - Mystical Magical Theme */
 
 :root {
-  /* Indigo & Gold Theme */
+  /* Contemporary Blue & Gold Theme */
   --primary: #6c9fff;        /* Lighter, cooler blue */
   --secondary: #4d88ff;      /* Contemporary blue */
   --accent: #f39c12;         /* Magical gold */
@@ -591,11 +591,11 @@ pre code {
 
 .chat-display {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: scroll;  /* Force scrollbar to always show */
   overflow-x: hidden;
   padding: 1rem;
   background: #f8f9fa;
-  max-height: 100%;
+  min-height: 0;  /* Critical for flexbox scrolling */
   scrollbar-width: auto;  /* Make scrollbar more visible in Firefox */
   scrollbar-color: var(--primary) #e0e0e0;  /* For Firefox */
 }
