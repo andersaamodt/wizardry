@@ -205,11 +205,13 @@ textarea {
 .demo-result.success {
   border-left: 4px solid var(--success);
   background: rgba(39, 174, 96, 0.1);
+  color: #1e5631;  /* Dark green text for readability on light background */
 }
 
 .demo-result.error {
   border-left: 4px solid var(--danger);
   background: rgba(192, 57, 43, 0.1);
+  color: #7a1f1f;  /* Dark red text for readability on light background */
 }
 
 .demo-result.quote blockquote {
