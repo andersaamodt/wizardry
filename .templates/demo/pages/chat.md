@@ -126,14 +126,27 @@ function joinRoom(roomName) {
   document.getElementById('send-btn').disabled = false;
   document.getElementById('chat-input-area').style.display = 'flex';
   
-  // Set the hidden input value for htmx to include
+  // Set the hidden input value for htmx polling
   document.getElementById('current-room-input').value = roomName;
   
-  // Load messages first to determine if we should show delete button
+  // Load messages and display them immediately
   fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(roomName))
     .then(function(response) { return response.text(); })
     .then(function(html) {
-      // Check if room is empty (only show delete if no messages)
+      // Parse the HTML to extract just the inner content
+      var tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      
+      // Get the inner chat-messages div
+      var newContent = tempDiv.querySelector('.chat-messages');
+      if (newContent) {
+        // Replace the inner content, preserving the outer div with htmx attributes
+        var chatMessagesDiv = document.getElementById('chat-messages');
+        chatMessagesDiv.innerHTML = '';
+        chatMessagesDiv.appendChild(newContent);
+      }
+      
+      // Check if room is empty (for delete button logic)
       var isEmpty = html.indexOf('No messages yet') !== -1 || 
                     html.indexOf('class="chat-msg"') === -1;
       
@@ -143,10 +156,9 @@ function joinRoom(roomName) {
       } else {
         document.getElementById('delete-room-btn').style.display = 'none';
       }
+      
+      // After displaying, htmx polling will continue automatically with the hidden input value
     });
-  
-  // Trigger htmx to load messages for this room
-  htmx.trigger('#chat-messages', 'load');
 }
 
 // Leave room and return to empty state
