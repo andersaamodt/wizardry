@@ -30,7 +30,7 @@ This chat system uses the **same message format as the MUD `say` command**, maki
 
 <div class="chat-container">
 <div class="chat-sidebar">
-<h3>Chat Rooms</h3>
+<h3>Chatrooms</h3>
 <div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, every 2s" hx-swap="innerHTML settle:0ms">
 Loading rooms...
 </div>
@@ -82,6 +82,7 @@ window.currentRoom = null;
 window.hoveredRoom = null;
 window.usedGuestNames = {};  // Track guest names used in current session
 window.currentDigits = 1;  // Start with 1-digit numbers
+window.userHasScrolledUp = false;  // Track if user manually scrolled up
 
 // Handle room selection from list
 document.addEventListener('htmx:afterSwap', function(event) {
@@ -103,15 +104,24 @@ document.addEventListener('htmx:afterSwap', function(event) {
     
     // Add click handlers to room items and restore hover state
     document.querySelectorAll('.room-item').forEach(function(item) {
+      var roomName = item.getAttribute('data-room');
+      
+      // Mark selected room
+      if (window.currentRoom === roomName) {
+        item.classList.add('room-item-selected');
+      }
+      
       item.onclick = function() {
         var room = this.getAttribute('data-room');
         joinRoom(room);
       };
       
-      // Track hover state to preserve across refreshes
+      // Track hover state to preserve across refreshes (but not for selected room)
       item.addEventListener('mouseenter', function() {
-        window.hoveredRoom = this.getAttribute('data-room');
-        this.classList.add('room-item-hover');
+        if (window.currentRoom !== this.getAttribute('data-room')) {
+          window.hoveredRoom = this.getAttribute('data-room');
+          this.classList.add('room-item-hover');
+        }
       });
       item.addEventListener('mouseleave', function() {
         this.classList.remove('room-item-hover');
@@ -120,11 +130,25 @@ document.addEventListener('htmx:afterSwap', function(event) {
         }
       });
       
-      // Restore hover class if this was the hovered room
-      if (window.hoveredRoom && item.getAttribute('data-room') === window.hoveredRoom) {
+      // Restore hover class if this was the hovered room (but not if it's selected)
+      if (window.hoveredRoom && item.getAttribute('data-room') === window.hoveredRoom && window.currentRoom !== roomName) {
         item.classList.add('room-item-hover');
       }
     });
+  }
+  
+  // Auto-fade notifications after 10 seconds
+  if (event.detail.target.id === 'room-status') {
+    var notification = event.detail.target.querySelector('.demo-result');
+    if (notification) {
+      setTimeout(function() {
+        notification.classList.add('fade-out');
+        // Remove from DOM after fade completes
+        setTimeout(function() {
+          notification.remove();
+        }, 500);
+      }, 10000);
+    }
   }
 });
 
@@ -134,6 +158,17 @@ function joinRoom(roomName) {
   document.getElementById('current-room-name').textContent = roomName;
   document.getElementById('send-btn').disabled = false;
   document.getElementById('chat-input-area').style.display = 'flex';
+  
+  // Reset scroll behavior for new room
+  window.userHasScrolledUp = false;
+  
+  // Focus the message input for immediate typing
+  setTimeout(function() {
+    document.getElementById('message-input').focus();
+  }, 100);
+  
+  // Set up scroll listener
+  setupScrollListener();
   
   // Load messages immediately
   loadMessages();
@@ -188,9 +223,28 @@ function loadMessages() {
 // Scroll chat to bottom to show latest messages
 function scrollToBottom() {
   var chatMessagesDiv = document.getElementById('chat-messages');
-  if (chatMessagesDiv) {
+  if (chatMessagesDiv && !window.userHasScrolledUp) {
     chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
   }
+}
+
+// Detect when user manually scrolls
+function setupScrollListener() {
+  var chatMessagesDiv = document.getElementById('chat-messages');
+  if (!chatMessagesDiv) return;
+  
+  chatMessagesDiv.addEventListener('scroll', function() {
+    // Check if user is at the bottom (within 50px tolerance)
+    var isAtBottom = chatMessagesDiv.scrollHeight - chatMessagesDiv.scrollTop - chatMessagesDiv.clientHeight < 50;
+    
+    if (isAtBottom) {
+      // User scrolled to bottom, re-enable auto-scroll
+      window.userHasScrolledUp = false;
+    } else {
+      // User scrolled up, disable auto-scroll
+      window.userHasScrolledUp = true;
+    }
+  });
 }
 
 // Leave room and return to empty state
