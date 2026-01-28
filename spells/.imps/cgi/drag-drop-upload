@@ -79,7 +79,7 @@ save_path="$UPLOAD_DIR/$save_name"
 # --boundary--
 
 # Use perl for binary-safe extraction
-extraction_success=0
+extraction_success=1  # Default to failure
 if command -v perl >/dev/null 2>&1; then
   # Binary-safe perl script that reads entire file
   # Use -- to prevent boundary from being interpreted as perl options
@@ -156,8 +156,7 @@ if [ ! -s "$save_path" ] || [ "$extraction_success" -ne 0 ]; then
   cat <<HTML
 <div class="demo-result error">
   <h4>Upload Failed</h4>
-  <p>Could not extract file data from upload. File may be corrupt or too large.</p>
-  <p>Debug info: Boundary: $boundary, Filename: $filename</p>
+  <p>Could not extract file data from upload. Please try again or contact support.</p>
 </div>
 HTML
   exit 1
