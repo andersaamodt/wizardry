@@ -134,16 +134,16 @@ button:active {
   width: 100%;
   margin: 0.5rem 0;
   text-align: left;
-  background: linear-gradient(135deg, rgba(138, 43, 226, 0.8) 0%, rgba(147, 51, 234, 0.8) 100%);
-  border: 2px solid rgba(138, 43, 226, 0.4);
+  background: linear-gradient(135deg, rgba(120, 81, 169, 0.73) 0%, rgba(75, 0, 130, 0.73) 100%);
+  border: 2px solid rgba(120, 81, 169, 0.4);
   backdrop-filter: blur(5px);
-  box-shadow: 0 2px 8px rgba(138, 43, 226, 0.3);
+  box-shadow: 0 2px 8px rgba(120, 81, 169, 0.3);
   transition: all 0.3s ease;
 }
 
 .poll-btn:hover {
-  background: linear-gradient(135deg, rgba(138, 43, 226, 1) 0%, rgba(147, 51, 234, 1) 100%);
-  box-shadow: 0 4px 12px rgba(138, 43, 226, 0.5);
+  background: linear-gradient(135deg, rgba(120, 81, 169, 1) 0%, rgba(75, 0, 130, 1) 100%);
+  box-shadow: 0 4px 12px rgba(120, 81, 169, 0.5);
   transform: translateY(-2px);
 }
 
@@ -684,6 +684,29 @@ pre code {
 
 .chat-input-area button:disabled {
   background: var(--border);
+  cursor: not-allowed;
+}
+
+/* Loading spinner for room creation */
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.room-controls button:disabled,
+.room-controls input:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
