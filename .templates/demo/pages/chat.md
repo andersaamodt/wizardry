@@ -53,7 +53,7 @@ Delete Room
 </button>
 </div>
 
-<div id="chat-messages" class="chat-display" hx-get="/cgi/chat-get-messages" hx-trigger="load, every 2s" hx-swap="morph" hx-ext="morph">
+<div id="chat-messages" class="chat-display">
 <div class="chat-messages">
 <p style="color: #666; font-style: italic;">Select a room to start chatting</p>
 </div>
@@ -124,24 +124,45 @@ function joinRoom(roomName) {
   document.getElementById('send-btn').disabled = false;
   document.getElementById('chat-input-area').style.display = 'flex';
   
-  var chatMessagesDiv = document.getElementById('chat-messages');
+  // Load messages immediately
+  loadMessages();
   
-  // Update the hx-get URL to include the room parameter
-  chatMessagesDiv.setAttribute('hx-get', '/cgi/chat-get-messages?room=' + encodeURIComponent(roomName));
+  // Set up auto-refresh every 2 seconds
+  if (window.messageInterval) {
+    clearInterval(window.messageInterval);
+  }
+  window.messageInterval = setInterval(loadMessages, 2000);
+}
+
+// Load messages for current room
+function loadMessages() {
+  if (!window.currentRoom) return;
   
-  // Trigger htmx to load messages immediately
-  // Don't call htmx.process() - it might break the polling interval
-  htmx.trigger(chatMessagesDiv, 'load');
-  
-  // Also fetch to check if room is empty (for delete button logic)
-  fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(roomName))
+  fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(window.currentRoom))
     .then(function(response) { return response.text(); })
     .then(function(html) {
+      var chatMessagesDiv = document.getElementById('chat-messages');
+      if (!chatMessagesDiv) return;
+      
+      // Parse the new HTML
+      var tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      var newElement = tempDiv.firstElementChild;
+      
+      if (newElement && newElement.id === 'chat-messages') {
+        // Use idiomorph to morph the element (prevents flicker)
+        if (window.Idiomorph) {
+          Idiomorph.morph(chatMessagesDiv, newElement);
+        } else {
+          // Fallback if idiomorph not available
+          chatMessagesDiv.outerHTML = html;
+        }
+      }
+      
       // Check if room is empty (for delete button logic)
       var isEmpty = html.indexOf('No messages yet') !== -1 || 
                     html.indexOf('class="chat-msg"') === -1;
       
-      // Only show delete button if room is empty
       if (isEmpty) {
         document.getElementById('delete-room-btn').style.display = 'inline-block';
       } else {
@@ -158,12 +179,13 @@ function leaveRoom() {
   document.getElementById('delete-room-btn').style.display = 'none';
   document.getElementById('chat-input-area').style.display = 'none';
   
-  // Reset the hx-get URL to have no room parameter
-  var chatMessagesDiv = document.getElementById('chat-messages');
-  chatMessagesDiv.setAttribute('hx-get', '/cgi/chat-get-messages');
+  // Stop auto-refresh
+  if (window.messageInterval) {
+    clearInterval(window.messageInterval);
+  }
   
-  // Trigger htmx to clear messages
-  htmx.trigger(chatMessagesDiv, 'load');
+  // Clear messages
+  document.getElementById('chat-messages').innerHTML = '<div class="chat-messages"><p style="color: #666; font-style: italic;">Create or join a room to chat</p></div>';
 }
 
 // Delete room with blocking behavior
@@ -216,8 +238,8 @@ document.addEventListener('DOMContentLoaded', function() {
       body: formData
     }).then(function() {
       messageInput.value = '';
-      // Trigger htmx to reload messages immediately
-      htmx.trigger('#chat-messages', 'load');
+      // Reload messages immediately to show the new message
+      loadMessages();
     });
   }
   
