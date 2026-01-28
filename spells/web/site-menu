@@ -83,22 +83,22 @@ while true; do
   if [ "$is_serving" -eq 1 ]; then
     set -- \
       "Open in browser%command -v xdg-open >/dev/null 2>&1 && xdg-open http://localhost:$port || command -v open >/dev/null 2>&1 && open http://localhost:$port || printf 'Visit: http://localhost:$port\n'" \
-      "Rebuild All & Restart Server%build \"$site_name\" --full && stop-site \"$site_name\" && serve-site \"$site_name\"" \
-      "Rebuild%build \"$site_name\"" \
-      "Rebuild All%build \"$site_name\" --full" \
+      "Build All & Restart Server%build \"$site_name\" --full && stop-site \"$site_name\" && serve-site \"$site_name\"" \
+      "Build%build \"$site_name\"" \
+      "Build All%build \"$site_name\" --full" \
       "Stop Server%stop-site \"$site_name\"" \
-      "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
+      "Build nginx.conf%configure-nginx \"$site_name\"" \
       "Fix permissions%[ -d \"$SITE_DIR/build\" ] && find \"$SITE_DIR/build\" -type d -exec chmod 755 {} \\; && find \"$SITE_DIR/build\" -type f -exec chmod 644 {} \\; && printf 'Permissions fixed\\n' || printf 'No build directory found\\n'" \
       "Open site directory%cd \"$SITE_DIR\" && \$SHELL" \
       "Delete site%delete-site \"$site_name\"" \
       "${exit_label}%kill -TERM \$PPID"
   else
     set -- \
-      "Rebuild All & Start Server%build \"$site_name\" --full && serve-site \"$site_name\"" \
-      "Rebuild%build \"$site_name\"" \
-      "Rebuild All%build \"$site_name\" --full" \
+      "Build All & Start Server%build \"$site_name\" --full && serve-site \"$site_name\"" \
+      "Build%build \"$site_name\"" \
+      "Build All%build \"$site_name\" --full" \
       "Serve site%serve-site \"$site_name\"" \
-      "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
+      "Build nginx.conf%configure-nginx \"$site_name\"" \
       "Fix permissions%[ -d \"$SITE_DIR/build\" ] && find \"$SITE_DIR/build\" -type d -exec chmod 755 {} \\; && find \"$SITE_DIR/build\" -type f -exec chmod 644 {} \\; && printf 'Permissions fixed\\n' || printf 'No build directory found\\n'" \
       "Open site directory%cd \"$SITE_DIR\" && \$SHELL" \
       "Delete site%delete-site \"$site_name\"" \
