@@ -129,31 +129,14 @@ function joinRoom(roomName) {
   // Update the hx-get URL to include the room parameter
   chatMessagesDiv.setAttribute('hx-get', '/cgi/chat-get-messages?room=' + encodeURIComponent(roomName));
   
-  // Reinitialize htmx for this element to pick up the new attribute
-  htmx.process(chatMessagesDiv);
+  // Trigger htmx to load messages immediately
+  // Don't call htmx.process() - it might break the polling interval
+  htmx.trigger(chatMessagesDiv, 'load');
   
-  // Fetch and display messages immediately
+  // Also fetch to check if room is empty (for delete button logic)
   fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(roomName))
     .then(function(response) { return response.text(); })
     .then(function(html) {
-      // Parse the HTML to extract the inner chat-messages div
-      var tempDiv = document.createElement('div');
-      tempDiv.innerHTML = html;
-      var newContent = tempDiv.querySelector('.chat-messages');
-      
-      if (newContent) {
-        // Find the inner div inside #chat-messages and replace it
-        // This preserves the outer div with htmx attributes
-        var innerDiv = chatMessagesDiv.querySelector('.chat-messages');
-        if (innerDiv) {
-          innerDiv.replaceWith(newContent);
-        } else {
-          // If no inner div exists, just append
-          chatMessagesDiv.innerHTML = '';
-          chatMessagesDiv.appendChild(newContent);
-        }
-      }
-      
       // Check if room is empty (for delete button logic)
       var isEmpty = html.indexOf('No messages yet') !== -1 || 
                     html.indexOf('class="chat-msg"') === -1;
@@ -178,10 +161,9 @@ function leaveRoom() {
   // Reset the hx-get URL to have no room parameter
   var chatMessagesDiv = document.getElementById('chat-messages');
   chatMessagesDiv.setAttribute('hx-get', '/cgi/chat-get-messages');
-  htmx.process(chatMessagesDiv);
   
   // Trigger htmx to clear messages
-  htmx.trigger('#chat-messages', 'load');
+  htmx.trigger(chatMessagesDiv, 'load');
 }
 
 // Delete room with blocking behavior
