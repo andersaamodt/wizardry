@@ -604,7 +604,6 @@ pre code {
 .chat-display::-webkit-scrollbar {
   width: 12px;  /* Wider scrollbar for better visibility */
 }
-}
 
 .chat-display::-webkit-scrollbar-track {
   background: #e0e0e0;
