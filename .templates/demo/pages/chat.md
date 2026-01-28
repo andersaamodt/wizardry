@@ -205,6 +205,10 @@ function loadMessages() {
       var oldScrollHeight = chatMessagesDiv.scrollHeight;
       var oldScrollTop = chatMessagesDiv.scrollTop;
       
+      // Get count of existing messages before update
+      var oldMessages = chatMessagesDiv.querySelectorAll('.chat-msg');
+      var oldMessageCount = oldMessages.length;
+      
       // Parse the new HTML
       var tempDiv = document.createElement('div');
       tempDiv.innerHTML = html;
@@ -219,20 +223,34 @@ function loadMessages() {
         } else {
           // Fallback if idiomorph not available
           chatMessagesDiv.outerHTML = html;
+          chatMessagesDiv = document.getElementById('chat-messages');
         }
         
-        // Restore scroll position to prevent jump
-        // This keeps existing messages in the same visual position
+        // Force animation on new messages
+        var newMessages = chatMessagesDiv.querySelectorAll('.chat-msg');
+        if (newMessages.length > oldMessageCount) {
+          // New messages were added - force animation on the new ones
+          for (var i = oldMessageCount; i < newMessages.length; i++) {
+            var msg = newMessages[i];
+            // Remove and re-add animation to force it to play
+            msg.style.animation = 'none';
+            // Force reflow
+            msg.offsetHeight;
+            msg.style.animation = '';
+          }
+        }
+        
+        // Handle scrolling
         var newScrollHeight = chatMessagesDiv.scrollHeight;
         var scrollHeightDiff = newScrollHeight - oldScrollHeight;
         
-        if (scrollHeightDiff > 0 && !wasAtBottom && window.userHasScrolledUp) {
-          // New content was added, but user is scrolled up viewing history
+        if (scrollHeightDiff > 0 && window.userHasScrolledUp && !wasAtBottom) {
+          // New content was added AND user is scrolled up viewing history
           // Adjust scroll position to keep existing messages in place
           chatMessagesDiv.scrollTop = oldScrollTop + scrollHeightDiff;
-        } else {
-          // User is at bottom or we're auto-scrolling
-          // Scroll to bottom to show latest messages
+        } else if (wasAtBottom || !window.userHasScrolledUp) {
+          // User is at bottom or hasn't manually scrolled up
+          // Smooth scroll to bottom to show latest messages
           scrollToBottom();
         }
       }
@@ -252,7 +270,7 @@ function loadMessages() {
 // Scroll chat to bottom to show latest messages
 function scrollToBottom() {
   var chatMessagesDiv = document.getElementById('chat-messages');
-  if (!chatMessagesDiv || window.userHasScrolledUp) return;
+  if (!chatMessagesDiv) return;
   
   // Use requestAnimationFrame for smooth, performant scrolling
   // This works reliably even with many messages (50+)
