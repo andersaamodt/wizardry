@@ -35,7 +35,7 @@ else
 fi
 
 cat <<HTML
-<div class="demo-result" style="background: ${color}; padding: 20px; border-radius: 8px;">
-  <p style="color: ${text_color}; text-shadow: ${shadow};"><strong>Selected: ${color}</strong></p>
+<div class="demo-result" style="background: ${color}; padding: 20px; border-radius: 8px; margin: -1rem; margin-top: 0;">
+  <p style="color: ${text_color}; text-shadow: ${shadow}; margin: 0;"><strong>Selected: ${color}</strong></p>
 </div>
 HTML

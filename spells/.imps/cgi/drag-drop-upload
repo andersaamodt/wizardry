@@ -49,12 +49,12 @@ save_path="$UPLOAD_DIR/$save_name"
 
 # Extract file data - more robust approach
 # Find line with blank line after Content-Type, then get everything until final boundary
-awk '
+awk -v boundary="$boundary" '
 BEGIN { RS="\r\n"; in_data=0; }
 /^Content-Type:/ { next; }
 /^$/ && !in_data { in_data=1; next; }
 in_data { 
-  if (index($0, "--'$boundary'") == 1) exit;
+  if (index($0, "--" boundary) == 1) exit;
   print $0;
 }
 ' "$temp_file" > "$save_path.tmp"

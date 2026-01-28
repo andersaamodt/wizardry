@@ -37,7 +37,7 @@ Choose a color and see it rendered by the server:
 Convert between Celsius and Fahrenheit:
 
 <div class="demo-box">
-  <input type="number" id="temp-input" placeholder="Temperature" />
+  <input type="number" id="temp-input" placeholder="Temperature" hx-get="/cgi/temperature-convert" hx-vals='js:{temp: document.getElementById("temp-input").value, unit: document.getElementById("temp-unit").value}' hx-target="#temp-output" hx-swap="innerHTML" hx-trigger="keyup[key=='Enter']" />
   <select id="temp-unit">
     <option value="C">Celsius to Fahrenheit</option>
     <option value="F">Fahrenheit to Celsius</option>
@@ -190,7 +190,7 @@ Supports: Images, Videos, Audio, PDFs, Text files, and more
 Get details about uploaded files:
 
 <div class="demo-box">
-  <input type="text" id="file-input" placeholder="Enter filename" value="document.pdf" />
+  <input type="text" id="file-input" placeholder="Enter filename" value="document.pdf" hx-get="/cgi/file-info" hx-vals='js:{name: document.getElementById("file-input").value}' hx-target="#file-output" hx-swap="innerHTML" hx-trigger="keyup[key=='Enter']" />
   <button hx-get="/cgi/file-info" hx-vals='js:{name: document.getElementById("file-input").value}' hx-target="#file-output" hx-swap="innerHTML">
     Get File Info
   </button>
