@@ -670,6 +670,11 @@ pre code {
   animation: messageAppear 0.51s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
+.chat-msg .username {
+  font-weight: bold;
+  /* Color set inline via style attribute for per-user colors */
+}
+
 @keyframes messageAppear {
   from {
     opacity: 0;

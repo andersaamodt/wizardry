@@ -69,7 +69,37 @@ HTML
     # Parse format: [HH:MM] player_name: message
     # Escape HTML special characters
     escaped_line=$(printf '%s' "$line" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
-    printf '  <div class="chat-msg">%s</div>\n' "$escaped_line"
+    
+    # Extract username and colorize it
+    # Format: [HH:MM] username: message
+    if printf '%s' "$escaped_line" | grep -q '\] [^:]*:'; then
+      # Extract timestamp, username, and message parts
+      timestamp=$(printf '%s' "$escaped_line" | sed 's/^\(\[[^]]*\]\).*/\1/')
+      rest=$(printf '%s' "$escaped_line" | sed 's/^\[[^]]*\] //')
+      username=$(printf '%s' "$rest" | sed 's/:.*//')
+      message=$(printf '%s' "$rest" | sed 's/[^:]*://')
+      
+      # Generate a color hash from username (simple hash to 0-359 for hue)
+      # Use sum of character codes modulo 360
+      hash=0
+      for i in $(seq 1 ${#username}); do
+        char=$(printf '%s' "$username" | cut -c"$i")
+        # Get ASCII value and add to hash
+        hash=$((hash + $(printf '%d' "'$char")))
+      done
+      hue=$((hash % 360))
+      
+      # Use HSL with fixed saturation (70%) and lightness (35%) for legibility
+      # These values ensure colors are vibrant but readable on white background
+      color="hsl($hue, 70%, 35%)"
+      
+      # Output with colored, bold username
+      printf '  <div class="chat-msg">%s <span class="username" style="color: %s; font-weight: bold;">%s:</span>%s</div>\n' \
+        "$timestamp" "$color" "$username" "$message"
+    else
+      # No username found, display as-is
+      printf '  <div class="chat-msg">%s</div>\n' "$escaped_line"
+    fi
   done
   
   cat <<HTML
