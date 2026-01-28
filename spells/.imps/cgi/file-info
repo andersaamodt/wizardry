@@ -40,10 +40,7 @@ mkdir -p "$upload_dir"
 filename_encoded=$(printf '%s' "$query" | sed 's/^name=//' | sed 's/&.*//')
 filename=$(url-decode "$filename_encoded" 2>/dev/null || printf '%s' "$filename_encoded")
 
-# Clean filename (remove any path components browsers might add)
-# First remove Windows fake paths like C:\fakepath\
-filename=$(printf '%s' "$filename" | sed 's/.*[\\\/]//')
-# Then use basename as a safety measure
+# Clean filename (remove any path components)
 filename=$(basename "$filename" 2>/dev/null || printf '%s' "$filename")
 filename=${filename:-uploaded-file.bin}
 
