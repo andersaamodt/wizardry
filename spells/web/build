@@ -91,8 +91,9 @@ build_site() {
       
       # Use Pandoc to convert Markdown to HTML with YAML front matter
       # Include htmx for interactive CGI features
+      # raw_html extension allows HTML blocks to pass through
       pandoc \
-        --from markdown+yaml_metadata_block \
+        --from markdown+yaml_metadata_block+raw_html \
         --to html5 \
         --standalone \
         --css=/static/style.css \
