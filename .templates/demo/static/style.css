@@ -207,6 +207,12 @@ textarea {
   border: 1px solid var(--border);
   animation: fadeIn 0.3s;
   box-shadow: 0 2px 8px var(--shadow);
+  transition: opacity 0.5s ease-out;
+}
+
+.demo-result.fade-out {
+  opacity: 0;
+  pointer-events: none;
 }
 
 @keyframes fadeIn {
@@ -516,6 +522,18 @@ pre code {
   transform: translateX(3px);
 }
 
+.room-item-selected {
+  background: rgba(108, 159, 255, 0.15);  /* Subtle blue tint */
+  border-left: 3px solid var(--primary);
+  cursor: default;
+}
+
+.room-item-selected:hover {
+  background: rgba(108, 159, 255, 0.15);  /* Same as non-hover */
+  color: inherit;  /* Don't change text color on hover */
+  transform: none;  /* Don't slide on hover */
+}
+
 .room-item strong {
   display: block;
   font-size: 1rem;
@@ -533,8 +551,16 @@ pre code {
   color: rgba(255,255,255,0.8);
 }
 
+.room-item-selected .room-meta {
+  color: #7f8c8d;  /* Keep normal color for selected */
+}
+
 .room-item:hover strong, .room-item-hover strong {
   color: white;
+}
+
+.room-item-selected strong {
+  color: #2c2c54;  /* Keep dark text for selected */
 }
 
 .last-msg {
@@ -640,17 +666,17 @@ pre code {
   font-family: 'Monaco', 'Courier New', monospace;
   font-size: 0.9rem;
   color: #2c2c54;  /* Dark text for readability */
-  animation: messageAppear 0.4s ease-out;
+  animation: messageAppear 0.6s ease-out;
 }
 
 @keyframes messageAppear {
   from {
     opacity: 0;
-    transform: scale(0.95);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: translateY(0);
   }
 }
 

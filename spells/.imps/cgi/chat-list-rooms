@@ -18,7 +18,6 @@ CHAT_DIR="$SITES_DIR/.sitedata/$site_id/chatrooms"
 mkdir -p "$CHAT_DIR"
 
 cat <<'HTML'
-<h3>Available Chat Rooms</h3>
 <ul class="room-list">
 HTML
 
