@@ -5,52 +5,70 @@ set -eu
 
 # Only handle POST requests
 if [ "${REQUEST_METHOD:-}" != "POST" ]; then
-  printf 'Status: 405 Method Not Allowed\r\n'
-  printf 'Content-Type: text/html\r\n\r\n'
+  http-status 405 "Method Not Allowed"
+  http-header "Content-Type" "text/html"
+  http-end-headers
   printf '<p>Only POST requests allowed</p>\n'
   exit 0
 fi
 
 # Create uploads directory if needed
-UPLOAD_DIR="${SITE_DIR:-$HOME/site}/uploads"
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+# Try to extract site name from script path or use default
+SITE_NAME=${SITE_NAME:-$(basename "$(pwd)")}
+UPLOAD_DIR="$WEB_ROOT/$SITE_NAME/site/uploads"
 mkdir -p "$UPLOAD_DIR"
 
 # Read multipart boundary from Content-Type header
 boundary=$(printf '%s' "${CONTENT_TYPE:-}" | sed 's/.*boundary=//')
 
 if [ -z "$boundary" ]; then
-  printf 'Content-Type: text/html\r\n\r\n'
+  http-status 200 "OK"
+  http-header "Content-Type" "text/html"
+  http-end-headers
   printf '<p class="error">No boundary found in Content-Type</p>\n'
   exit 0
 fi
 
 # Save uploaded content to temp file
-temp_file=$(temp-file)
+temp_file=$(temp-file drag-upload)
 cat > "$temp_file"
 
 # Extract filename from Content-Disposition header
-filename=$(grep -a "Content-Disposition" "$temp_file" | head -1 | sed 's/.*filename="//' | sed 's/".*//' || echo "upload")
+filename=$(grep -a "Content-Disposition" "$temp_file" | head -1 | sed 's/.*filename="//' | sed 's/".*//' | url-decode || echo "upload")
 
-# Get file extension
-ext="${filename##*.}"
-if [ "$ext" = "$filename" ]; then
-  ext=""
-fi
+# Sanitize filename - remove path components
+filename=$(basename "$filename")
 
 # Generate unique filename with timestamp
 timestamp=$(date +%Y-%m-%d-%H%M%S)
-if [ -n "$ext" ]; then
-  save_name="${timestamp}-${filename}"
-else
-  save_name="${timestamp}-${filename}"
-fi
-
+save_name="${timestamp}-${filename}"
 save_path="$UPLOAD_DIR/$save_name"
 
-# Extract file data (skip headers, remove boundary markers)
-# Find the start of file data (after headers)
-awk -v RS='\r\n\r\n' 'NR==2{print; exit}' "$temp_file" | \
-  head -c -$((${#boundary} + 8)) > "$save_path"
+# Extract file data - more robust approach
+# Find line with blank line after Content-Type, then get everything until final boundary
+awk '
+BEGIN { RS="\r\n"; in_data=0; }
+/^Content-Type:/ { next; }
+/^$/ && !in_data { in_data=1; next; }
+in_data { 
+  if (index($0, "--'$boundary'") == 1) exit;
+  print $0;
+}
+' "$temp_file" > "$save_path.tmp"
+
+# Remove final CRLF if present
+if [ -f "$save_path.tmp" ]; then
+  # Use dd to copy all but last 2 bytes if file ends with CRLF
+  size=$(wc -c < "$save_path.tmp")
+  if [ "$size" -gt 2 ]; then
+    dd if="$save_path.tmp" of="$save_path" bs=1 count=$((size - 2)) 2>/dev/null || \
+      cp "$save_path.tmp" "$save_path"
+  else
+    cp "$save_path.tmp" "$save_path"
+  fi
+  rm -f "$save_path.tmp"
+fi
 
 # Detect MIME type
 mime_type="application/octet-stream"
@@ -93,7 +111,9 @@ esac
 rm -f "$temp_file"
 
 # Return success response
-printf 'Content-Type: text/html\r\n\r\n'
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers
 cat <<HTML
 <div class="upload-result">
   <h4 style="color: #28a745; margin-top: 0;">✓ Upload Successful!</h4>

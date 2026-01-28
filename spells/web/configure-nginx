@@ -147,6 +147,9 @@ http {
     sendfile on;
     keepalive_timeout 65;
     
+    # Allow larger file uploads (25MB)
+    client_max_body_size 25M;
+    
     server {
         listen $port;
         server_name $domain;
