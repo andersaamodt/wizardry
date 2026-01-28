@@ -3,5 +3,40 @@
 # Example: url-decode "hello%20world" → "hello world"
 set -eu
 
-# Replace + with space and decode %XX sequences
-printf '%s' "$1" | sed 's/+/ /g; s/%\([0-9A-Fa-f][0-9A-Fa-f]\)/\\x\1/g' | xargs -0 printf '%b'
+# Decode URL-encoded string using awk for portability
+printf '%s' "$1" | awk '
+BEGIN {
+  # Build hex-to-char lookup table
+  for (i = 0; i < 256; i++) {
+    hex[sprintf("%02X", i)] = sprintf("%c", i)
+    hex[sprintf("%02x", i)] = sprintf("%c", i)
+  }
+}
+{
+  # Replace + with space
+  gsub(/\+/, " ")
+  
+  # Decode %XX sequences
+  result = ""
+  while (length($0) > 0) {
+    if (substr($0, 1, 1) == "%") {
+      if (length($0) >= 3) {
+        code = substr($0, 2, 2)
+        if (code in hex) {
+          result = result hex[code]
+          $0 = substr($0, 4)
+        } else {
+          result = result substr($0, 1, 1)
+          $0 = substr($0, 2)
+        }
+      } else {
+        result = result substr($0, 1, 1)
+        $0 = substr($0, 2)
+      }
+    } else {
+      result = result substr($0, 1, 1)
+      $0 = substr($0, 2)
+    }
+  }
+  print result
+}'
