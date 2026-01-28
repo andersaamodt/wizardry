@@ -41,12 +41,15 @@ LOG_FILE="$ROOM_DIR/.log"
 
 if [ ! -f "$LOG_FILE" ] || [ ! -s "$LOG_FILE" ]; then
   cat <<HTML
+<div id="chat-messages" class="chat-display">
 <div class="chat-messages">
   <p class="meta">No messages yet. Be the first to say something!</p>
+</div>
 </div>
 HTML
 else
   cat <<HTML
+<div id="chat-messages" class="chat-display">
 <div class="chat-messages">
 HTML
   
@@ -59,6 +62,7 @@ HTML
   done
   
   cat <<HTML
+</div>
 </div>
 HTML
 fi

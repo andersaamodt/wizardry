@@ -31,7 +31,7 @@ This chat system uses the **same message format as the MUD `say` command**, maki
 <div class="chat-container">
 <div class="chat-sidebar">
 <h3>Chat Rooms</h3>
-<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, every 3s" hx-swap="innerHTML swap:0ms settle:0ms">
+<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, every 3s" hx-swap="outerHTML">
 Loading rooms...
 </div>
 
@@ -54,7 +54,9 @@ Delete Room
 </div>
 
 <div id="chat-messages" class="chat-display">
+<div class="chat-messages">
 <p style="color: #666; font-style: italic;">Select a room to start chatting</p>
+</div>
 </div>
 
 <div class="chat-input-area" id="chat-input-area" style="display: none;">
@@ -107,7 +109,7 @@ function leaveRoom() {
   document.getElementById('send-btn').disabled = true;
   document.getElementById('delete-room-btn').style.display = 'none';
   document.getElementById('chat-input-area').style.display = 'none';
-  document.getElementById('chat-messages').innerHTML = '<p style="color: #666; font-style: italic;">Create or join a room to chat</p>';
+  document.getElementById('chat-messages').innerHTML = '<div class="chat-messages"><p style="color: #666; font-style: italic;">Create or join a room to chat</p></div>';
   
   // Stop auto-refresh
   if (window.messageInterval) {
@@ -121,7 +123,7 @@ function loadMessages() {
   
   htmx.ajax('GET', '/cgi/chat-get-messages?room=' + encodeURIComponent(window.currentRoom), {
     target: '#chat-messages',
-    swap: 'innerHTML swap:0ms settle:0ms show:none'
+    swap: 'outerHTML'
   });
   
   // Scroll to bottom after messages load
