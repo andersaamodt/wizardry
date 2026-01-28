@@ -31,7 +31,7 @@ This chat system uses the **same message format as the MUD `say` command**, maki
 <div class="chat-container">
 <div class="chat-sidebar">
 <h3>Chat Rooms</h3>
-<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, every 3s" hx-swap="innerHTML swap:0s">
+<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, every 5s" hx-swap="innerHTML">
 Loading rooms...
 </div>
 
@@ -105,7 +105,7 @@ function loadMessages() {
   
   htmx.ajax('GET', '/cgi/chat-get-messages?room=' + encodeURIComponent(window.currentRoom), {
     target: '#chat-messages',
-    swap: 'innerHTML'
+    swap: 'innerHTML show:none'
   });
 }
 

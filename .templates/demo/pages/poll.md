@@ -31,7 +31,7 @@ Vote for your favorite and see live results! Each vote is processed by a shell C
 </button>
 </div>
 
-<div id="poll-results" class="output" hx-get="/cgi/poll-vote" hx-trigger="load" hx-swap="innerHTML">
+<div id="poll-results" hx-get="/cgi/poll-vote" hx-trigger="load" hx-swap="innerHTML">
 Loading results...
 </div>
 </div>
