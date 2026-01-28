@@ -101,20 +101,20 @@ Upload any file type with drag-and-drop. Files are automatically displayed if po
 </style>
 
 <div class="demo-box">
-  <div id="drop-zone" class="drop-zone">
-    <p style="font-size: 2rem; margin: 0;">📁</p>
-    <p style="margin: 0.5rem 0;"><strong>Drag and drop a file here</strong></p>
-    <p style="color: #666; margin: 0.5rem 0;">or</p>
-    <div class="file-input-wrapper">
-      <label for="file-input">Choose File</label>
-      <input type="file" id="file-input" />
-    </div>
-    <p style="color: #999; font-size: 0.9rem; margin-top: 1rem;">
-      Supports: Images, Videos, Audio, PDFs, Text files, and more
-    </p>
-  </div>
-  
-  <div id="drag-drop-output" class="output"></div>
+<div id="drop-zone" class="drop-zone">
+<p style="font-size: 2rem; margin: 0;">📁</p>
+<p style="margin: 0.5rem 0;"><strong>Drag and drop a file here</strong></p>
+<p style="color: #666; margin: 0.5rem 0;">or</p>
+<div class="file-input-wrapper">
+<label for="file-input">Choose File</label>
+<input type="file" id="file-input" />
+</div>
+<p style="color: #999; font-size: 0.9rem; margin-top: 1rem;">
+Supports: Images, Videos, Audio, PDFs, Text files, and more
+</p>
+</div>
+
+<div id="drag-drop-output" class="output"></div>
 </div>
 
 <script>
@@ -296,33 +296,33 @@ spell-card .spell-description {
 </style>
 
 <div class="demo-box">
-  <p style="margin-bottom: 1rem;">Custom HTML elements let you create reusable, styled components. These `<spell-card>` elements demonstrate advanced CSS with gradients, shadows, and animations:</p>
-  
-  <spell-card>
-    <div class="spell-title">⚡ Lightning Bolt</div>
-    <div class="spell-icon">⚡</div>
-    <div class="spell-description">A basic arcane spell that channels pure electrical energy. Deals moderate damage with high accuracy.</div>
-  </spell-card>
+<p style="margin-bottom: 1rem;">Custom HTML elements let you create reusable, styled components. These `<spell-card>` elements demonstrate advanced CSS with gradients, shadows, and animations:</p>
 
-  <spell-card type="fire">
-    <div class="spell-title">🔥 Fireball</div>
-    <div class="spell-icon">🔥</div>
-    <div class="spell-description">Conjures a massive sphere of flame that explodes on impact. High damage with area effect.</div>
-  </spell-card>
+<spell-card>
+<div class="spell-title">⚡ Lightning Bolt</div>
+<div class="spell-icon">⚡</div>
+<div class="spell-description">A basic arcane spell that channels pure electrical energy. Deals moderate damage with high accuracy.</div>
+</spell-card>
 
-  <spell-card type="ice">
-    <div class="spell-title">❄️ Frost Nova</div>
-    <div class="spell-icon">❄️</div>
-    <div class="spell-description">Freezes all enemies in the vicinity. Applies slow effect and deals cold damage over time.</div>
-  </spell-card>
+<spell-card type="fire">
+<div class="spell-title">🔥 Fireball</div>
+<div class="spell-icon">🔥</div>
+<div class="spell-description">Conjures a massive sphere of flame that explodes on impact. High damage with area effect.</div>
+</spell-card>
 
-  <spell-card type="nature">
-    <div class="spell-title">🌿 Nature's Blessing</div>
-    <div class="spell-icon">🌿</div>
-    <div class="spell-description">Channels the power of nature to heal allies and remove harmful effects. Restores health gradually.</div>
-  </spell-card>
-  
-  <p style="margin-top: 1.5rem; color: #666; font-style: italic;">
-    Hover over the cards to see the animation effects! These elements use pure CSS with no JavaScript required.
-  </p>
+<spell-card type="ice">
+<div class="spell-title">❄️ Frost Nova</div>
+<div class="spell-icon">❄️</div>
+<div class="spell-description">Freezes all enemies in the vicinity. Applies slow effect and deals cold damage over time.</div>
+</spell-card>
+
+<spell-card type="nature">
+<div class="spell-title">🌿 Nature's Blessing</div>
+<div class="spell-icon">🌿</div>
+<div class="spell-description">Channels the power of nature to heal allies and remove harmful effects. Restores health gradually.</div>
+</spell-card>
+
+<p style="margin-top: 1.5rem; color: #666; font-style: italic;">
+Hover over the cards to see the animation effects! These elements use pure CSS with no JavaScript required.
+</p>
 </div>

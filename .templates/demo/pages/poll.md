@@ -59,24 +59,24 @@ The poll state is stored in a simple text file on the server. Every vote:
 This is a custom reusable component showing repeated elements:
 
 <div class="component-demo">
-  <div class="card">
-    <h4>Component 1</h4>
-    <p>This card is generated from a template</p>
-    <button hx-get="/cgi/random-quote" hx-target="#card1-content" hx-swap="innerHTML">Refresh</button>
-    <div id="card1-content"></div>
-  </div>
-  
-  <div class="card">
-    <h4>Component 2</h4>
-    <p>Each can be independently updated</p>
-    <button hx-get="/cgi/random-quote" hx-target="#card2-content" hx-swap="innerHTML">Refresh</button>
-    <div id="card2-content"></div>
-  </div>
-  
-  <div class="card">
-    <h4>Component 3</h4>
-    <p>All powered by CGI shell scripts</p>
-    <button hx-get="/cgi/random-quote" hx-target="#card3-content" hx-swap="innerHTML">Refresh</button>
-    <div id="card3-content"></div>
-  </div>
+<div class="card">
+<h4>Component 1</h4>
+<p>This card is generated from a template</p>
+<button hx-get="/cgi/random-quote" hx-target="#card1-content" hx-swap="innerHTML">Refresh</button>
+<div id="card1-content"></div>
+</div>
+
+<div class="card">
+<h4>Component 2</h4>
+<p>Each can be independently updated</p>
+<button hx-get="/cgi/random-quote" hx-target="#card2-content" hx-swap="innerHTML">Refresh</button>
+<div id="card2-content"></div>
+</div>
+
+<div class="card">
+<h4>Component 3</h4>
+<p>All powered by CGI shell scripts</p>
+<button hx-get="/cgi/random-quote" hx-target="#card3-content" hx-swap="innerHTML">Refresh</button>
+<div id="card3-content"></div>
+</div>
 </div>

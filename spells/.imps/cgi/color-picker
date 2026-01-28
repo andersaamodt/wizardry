@@ -9,8 +9,30 @@ http-end-headers
 color="${QUERY_STRING:-#3498db}"
 color=$(printf '%s' "$color" | sed 's/color=//' | url-decode)
 
+# Extract RGB components and calculate brightness
+# Remove # prefix
+hex=$(printf '%s' "$color" | sed 's/^#//')
+
+# Convert hex to decimal RGB
+r=$((16#${hex:0:2}))
+g=$((16#${hex:2:2}))
+b=$((16#${hex:4:2}))
+
+# Calculate perceived brightness (0-255)
+# Using formula: (R * 299 + G * 587 + B * 114) / 1000
+brightness=$(( (r * 299 + g * 587 + b * 114) / 1000 ))
+
+# Use white text for dark colors, black text for light colors
+if [ "$brightness" -lt 128 ]; then
+  text_color="white"
+  shadow="1px 1px 2px black"
+else
+  text_color="black"
+  shadow="1px 1px 2px white"
+fi
+
 cat <<HTML
 <div class="demo-result" style="background: ${color}; padding: 20px; border-radius: 8px;">
-  <p style="color: white; text-shadow: 1px 1px 2px black;"><strong>Selected: ${color}</strong></p>
+  <p style="color: ${text_color}; text-shadow: ${shadow};"><strong>Selected: ${color}</strong></p>
 </div>
 HTML

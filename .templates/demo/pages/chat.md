@@ -29,40 +29,40 @@ This chat system uses the **same message format as the MUD `say` command**, maki
 ## Chat Interface
 
 <div class="chat-container">
-  <div class="chat-sidebar">
-    <h3>Chat Rooms</h3>
-    <div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, every 3s" hx-swap="innerHTML">
-      Loading rooms...
-    </div>
-    
-    <div class="room-controls">
-      <h4>Create Room</h4>
-      <input type="text" id="new-room-name" placeholder="Room name" />
-      <button hx-get="/cgi/chat-create-room" hx-vals='js:{room: document.getElementById("new-room-name").value}' hx-target="#room-status" hx-swap="innerHTML">
-        Create
-      </button>
-      <div id="room-status"></div>
-    </div>
-  </div>
-  
-  <div class="chat-main">
-    <div class="chat-header">
-      <h3 id="current-room-name">Select a room</h3>
-      <button id="delete-room-btn" style="display: none;" hx-get="/cgi/chat-delete-room" hx-vals='js:{room: window.currentRoom}' hx-target="#room-status" hx-swap="innerHTML">
-        Delete Room
-      </button>
-    </div>
-    
-    <div id="chat-messages" class="chat-display">
-      <p style="color: #666; font-style: italic;">Select a room to start chatting</p>
-    </div>
-    
-    <div class="chat-input-area">
-      <input type="text" id="username-input" placeholder="Your name" value="WebUser" />
-      <input type="text" id="message-input" placeholder="Type a message..." />
-      <button id="send-btn" disabled>Send</button>
-    </div>
-  </div>
+<div class="chat-sidebar">
+<h3>Chat Rooms</h3>
+<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, every 3s" hx-swap="innerHTML">
+Loading rooms...
+</div>
+
+<div class="room-controls">
+<h4>Create Room</h4>
+<input type="text" id="new-room-name" placeholder="Room name" />
+<button hx-get="/cgi/chat-create-room" hx-vals='js:{room: document.getElementById("new-room-name").value}' hx-target="#room-status" hx-swap="innerHTML">
+Create
+</button>
+<div id="room-status"></div>
+</div>
+</div>
+
+<div class="chat-main">
+<div class="chat-header">
+<h3 id="current-room-name">Select a room</h3>
+<button id="delete-room-btn" style="display: none;" hx-get="/cgi/chat-delete-room" hx-vals='js:{room: window.currentRoom}' hx-target="#room-status" hx-swap="innerHTML">
+Delete Room
+</button>
+</div>
+
+<div id="chat-messages" class="chat-display">
+<p style="color: #666; font-style: italic;">Select a room to start chatting</p>
+</div>
+
+<div class="chat-input-area">
+<input type="text" id="username-input" placeholder="Your name" value="WebUser" />
+<input type="text" id="message-input" placeholder="Type a message..." />
+<button id="send-btn" disabled>Send</button>
+</div>
+</div>
 </div>
 
 <script>
