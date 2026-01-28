@@ -252,9 +252,31 @@ function loadMessages() {
 // Scroll chat to bottom to show latest messages
 function scrollToBottom() {
   var chatMessagesDiv = document.getElementById('chat-messages');
-  if (chatMessagesDiv && !window.userHasScrolledUp) {
-    chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+  if (!chatMessagesDiv || window.userHasScrolledUp) return;
+  
+  // Use requestAnimationFrame for smooth, performant scrolling
+  // This works reliably even with many messages (50+)
+  var start = chatMessagesDiv.scrollTop;
+  var target = chatMessagesDiv.scrollHeight;
+  var startTime = null;
+  var duration = 300; // 300ms animation
+  
+  function animate(currentTime) {
+    if (!startTime) startTime = currentTime;
+    var elapsed = currentTime - startTime;
+    var progress = Math.min(elapsed / duration, 1);
+    
+    // Ease-out function for smooth deceleration
+    var easeOut = 1 - Math.pow(1 - progress, 3);
+    
+    chatMessagesDiv.scrollTop = start + (target - start) * easeOut;
+    
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    }
   }
+  
+  requestAnimationFrame(animate);
 }
 
 // Detect when user manually scrolls
