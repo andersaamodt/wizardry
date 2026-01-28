@@ -124,30 +124,62 @@ function joinRoom(roomName) {
   document.getElementById('send-btn').disabled = false;
   document.getElementById('chat-input-area').style.display = 'flex';
   
-  // Load messages first to determine if we should show delete button
-  fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(roomName))
+  // Load messages immediately
+  loadMessages();
+  
+  // Set up auto-refresh every 2 seconds
+  if (window.messageInterval) {
+    clearInterval(window.messageInterval);
+  }
+  window.messageInterval = setInterval(loadMessages, 2000);
+}
+
+// Load messages for current room
+function loadMessages() {
+  if (!window.currentRoom) return;
+  
+  fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(window.currentRoom))
     .then(function(response) { return response.text(); })
     .then(function(html) {
-      // Check if room is empty (only show delete if no messages)
+      var chatMessagesDiv = document.getElementById('chat-messages');
+      if (!chatMessagesDiv) return;
+      
+      // Parse the new HTML
+      var tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      var newElement = tempDiv.firstElementChild;
+      
+      if (newElement && newElement.id === 'chat-messages') {
+        // Use idiomorph to morph the element (prevents flicker)
+        if (window.Idiomorph) {
+          Idiomorph.morph(chatMessagesDiv, newElement);
+        } else {
+          // Fallback if idiomorph not available
+          chatMessagesDiv.outerHTML = html;
+        }
+        
+        // Scroll to bottom to show latest messages
+        scrollToBottom();
+      }
+      
+      // Check if room is empty (for delete button logic)
       var isEmpty = html.indexOf('No messages yet') !== -1 || 
                     html.indexOf('class="chat-msg"') === -1;
       
-      // Only show delete button if room is empty
       if (isEmpty) {
         document.getElementById('delete-room-btn').style.display = 'inline-block';
       } else {
         document.getElementById('delete-room-btn').style.display = 'none';
       }
     });
-  
-  // Load messages
-  loadMessages();
-  
-  // Auto-refresh messages every 2 seconds
-  if (window.messageInterval) {
-    clearInterval(window.messageInterval);
+}
+
+// Scroll chat to bottom to show latest messages
+function scrollToBottom() {
+  var chatMessagesDiv = document.getElementById('chat-messages');
+  if (chatMessagesDiv) {
+    chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
   }
-  window.messageInterval = setInterval(loadMessages, 2000);
 }
 
 // Leave room and return to empty state
@@ -157,12 +189,14 @@ function leaveRoom() {
   document.getElementById('send-btn').disabled = true;
   document.getElementById('delete-room-btn').style.display = 'none';
   document.getElementById('chat-input-area').style.display = 'none';
-  document.getElementById('chat-messages').innerHTML = '<div class="chat-messages"><p style="color: #666; font-style: italic;">Create or join a room to chat</p></div>';
   
   // Stop auto-refresh
   if (window.messageInterval) {
     clearInterval(window.messageInterval);
   }
+  
+  // Clear messages
+  document.getElementById('chat-messages').innerHTML = '<div class="chat-messages"><p style="color: #666; font-style: italic;">Create or join a room to chat</p></div>';
 }
 
 // Delete room with blocking behavior
@@ -187,45 +221,6 @@ function deleteRoom() {
     .catch(function(err) {
       console.error('Failed to delete room:', err);
       htmx.trigger('#room-list', 'load');
-    });
-}
-
-// Load messages for current room
-function loadMessages() {
-  if (!window.currentRoom) return;
-  
-  var chatDisplay = document.getElementById('chat-messages');
-  if (!chatDisplay) return;
-  
-  // Fetch messages to check if content changed before swapping
-  fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(window.currentRoom))
-    .then(function(response) { return response.text(); })
-    .then(function(html) {
-      // Create a temporary element to parse the new HTML
-      var tempDiv = document.createElement('div');
-      tempDiv.innerHTML = html;
-      
-      // Extract text content from both current and new HTML for comparison
-      var currentText = chatDisplay.textContent.replace(/\s+/g, ' ').trim();
-      var newText = tempDiv.textContent.replace(/\s+/g, ' ').trim();
-      
-      // Only update if content actually changed (prevents flickering)
-      if (currentText !== newText) {
-        // Check if user is at bottom before updating
-        var wasAtBottom = chatDisplay.scrollTop >= chatDisplay.scrollHeight - chatDisplay.clientHeight - 50;
-        
-        chatDisplay.innerHTML = html;
-        
-        // Auto-scroll to bottom if user was already at bottom or if this is first load
-        if (wasAtBottom || chatDisplay.scrollTop === 0) {
-          setTimeout(function() {
-            chatDisplay.scrollTop = chatDisplay.scrollHeight;
-          }, 10);
-        }
-      }
-    })
-    .catch(function(err) {
-      console.error('Failed to load messages:', err);
     });
 }
 
@@ -254,6 +249,7 @@ document.addEventListener('DOMContentLoaded', function() {
       body: formData
     }).then(function() {
       messageInput.value = '';
+      // Reload messages immediately to show the new message
       loadMessages();
     });
   }
