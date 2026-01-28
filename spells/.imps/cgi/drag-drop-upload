@@ -80,7 +80,7 @@ save_path="$UPLOAD_DIR/$save_name"
 
 # Use perl for binary-safe extraction
 if command -v perl >/dev/null 2>&1; then
-  # Binary-safe perl script that reads byte-by-byte
+  # Binary-safe perl script that reads entire file
   perl -e '
     use strict;
     binmode STDIN;
@@ -89,15 +89,23 @@ if command -v perl >/dev/null 2>&1; then
     my $boundary = $ARGV[0];
     my $content = do { local $/; <STDIN> };
     
-    # Find Content-Type header
+    # Find Content-Type header followed by blank line
     if ($content =~ /Content-Type:[^\r\n]*\r?\n\r?\n/s) {
       my $pos = $+[0];  # Position after the blank line
-      my $data_end = index($content, "\r\n--" . $boundary, $pos);
+      
+      # Find the closing boundary (could be \r\n-- or just \n--)
+      my $end_marker1 = "\r\n--" . $boundary;
+      my $end_marker2 = "\n--" . $boundary;
+      
+      my $data_end = index($content, $end_marker1, $pos);
       if ($data_end == -1) {
-        $data_end = index($content, "\n--" . $boundary, $pos);
+        $data_end = index($content, $end_marker2, $pos);
       }
+      
       if ($data_end > $pos) {
-        print substr($content, $pos, $data_end - $pos);
+        # Extract the binary data
+        my $data = substr($content, $pos, $data_end - $pos);
+        print $data;
       }
     }
   ' "$boundary" < "$temp_file" > "$save_path"

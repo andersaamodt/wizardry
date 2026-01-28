@@ -82,6 +82,17 @@ document.addEventListener('htmx:afterSwap', function(event) {
       };
     });
   }
+  
+  // Refresh room list after successful room creation
+  if (event.detail.target.id === 'room-status') {
+    var statusText = event.detail.target.textContent;
+    if (statusText && statusText.indexOf('created') !== -1) {
+      // Clear the input
+      document.getElementById('new-room-name').value = '';
+      // Trigger immediate refresh of room list
+      htmx.trigger('#room-list', 'load');
+    }
+  }
 });
 
 // Join a room
