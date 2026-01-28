@@ -107,9 +107,12 @@ else
   header_end=$(grep -abo "Content-Type:" "$temp_file" | head -1 | cut -d: -f1)
   if [ -n "$header_end" ]; then
     # Find the first empty line after Content-Type
-    data_start=$(tail -c +$((header_end + 1)) "$temp_file" | grep -abo $'^\r$' | head -1 | cut -d: -f1)
+    skip_bytes=$((header_end + 1))
+    data_start=$(tail -c +$skip_bytes "$temp_file" | \
+      grep -abo $'^\r$' | head -1 | cut -d: -f1)
     if [ -z "$data_start" ]; then
-      data_start=$(tail -c +$((header_end + 1)) "$temp_file" | grep -abo '^$' | head -1 | cut -d: -f1)
+      data_start=$(tail -c +$skip_bytes "$temp_file" | \
+        grep -abo '^$' | head -1 | cut -d: -f1)
     fi
     
     if [ -n "$data_start" ]; then
@@ -117,12 +120,14 @@ else
       abs_start=$((header_end + data_start + 2))
       
       # Find boundary end position
-      boundary_pos=$(grep -abo -- "--$boundary" "$temp_file" | tail -1 | cut -d: -f1)
+      boundary_pos=$(grep -abo -- "--$boundary" "$temp_file" | \
+        tail -1 | cut -d: -f1)
       
       if [ -n "$boundary_pos" ] && [ "$boundary_pos" -gt "$abs_start" ]; then
         # Extract data
         data_length=$((boundary_pos - abs_start - 2))
-        dd if="$temp_file" of="$save_path" bs=1 skip="$abs_start" count="$data_length" 2>/dev/null
+        dd if="$temp_file" of="$save_path" bs=1 \
+          skip="$abs_start" count="$data_length" 2>/dev/null
       else
         touch "$save_path"
       fi
