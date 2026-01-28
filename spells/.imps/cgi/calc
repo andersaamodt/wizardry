@@ -22,8 +22,8 @@ if [ -z "$expr" ]; then
 </div>
 HTML
 else
-  # Safely evaluate (only allow numbers and basic operators)
-  if printf '%s' "$expr" | grep -qE '^[0-9+\-\*/ ().]+$'; then
+  # Safely evaluate (only allow numbers and basic operators plus whitespace)
+  if printf '%s' "$expr" | grep -qE '^[0-9+\-\*/ ().[:space:]]+$'; then
     result=$(printf '%s\n' "$expr" | bc 2>/dev/null || echo "Error")
     cat <<HTML
 <div class="demo-result">
