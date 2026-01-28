@@ -175,9 +175,9 @@ http {
             alias $SITE_DIR/build/static/;
         }
         
-        # Serve uploaded files
+        # Serve uploaded files (from site data directory)
         location /uploads/ {
-            alias $SITE_DIR/site/uploads/;
+            alias $SITES_DIR/.sitedata/$site_name/uploads/;
         }
         
         # CGI execution (only from spells/.imps/cgi/)
