@@ -38,7 +38,7 @@ Loading rooms...
 <div class="room-controls">
 <h4>Create Room</h4>
 <input type="text" id="new-room-name" placeholder="Room name" />
-<button id="create-room-btn" hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-status" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); }">
+<button id="create-room-btn" hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-status" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="document.getElementById('create-room-btn').disabled = false; document.getElementById('new-room-name').disabled = false; document.getElementById('create-room-btn').innerHTML = 'Create'; if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); }">
 Create
 </button>
 <div id="room-status"></div>
@@ -53,7 +53,7 @@ Delete Room
 </button>
 </div>
 
-<div id="chat-messages" class="chat-display" hx-get="/cgi/chat-get-messages" hx-trigger="load, every 2s" hx-swap="morph" hx-ext="morph" hx-vals='js:{room: window.currentRoom}'>
+<div id="chat-messages" class="chat-display">
 <div class="chat-messages">
 <p style="color: #666; font-style: italic;">Select a room to start chatting</p>
 </div>
@@ -72,15 +72,7 @@ Delete Room
 window.currentRoom = null;
 window.hoveredRoom = null;
 
-// Handle scroll position for chat messages
-document.addEventListener('htmx:beforeSwap', function(event) {
-  if (event.detail.target.id === 'chat-messages') {
-    var chatDisplay = event.detail.target;
-    // Check if user is at bottom before swap
-    window.chatWasAtBottom = chatDisplay.scrollTop >= chatDisplay.scrollHeight - chatDisplay.clientHeight - 50;
-  }
-});
-
+// Handle room selection from list
 document.addEventListener('htmx:afterSwap', function(event) {
   if (event.detail.target.id === 'room-list') {
     // Re-enable create room button after room list refreshes
@@ -123,16 +115,6 @@ document.addEventListener('htmx:afterSwap', function(event) {
       }
     });
   }
-  
-  if (event.detail.target.id === 'chat-messages') {
-    var chatDisplay = event.detail.target;
-    // Auto-scroll to bottom if user was at bottom or if this is first load
-    if (window.chatWasAtBottom || chatDisplay.scrollTop === 0) {
-      setTimeout(function() {
-        chatDisplay.scrollTop = chatDisplay.scrollHeight;
-      }, 10);
-    }
-  }
 });
 
 // Join a room
@@ -141,9 +123,6 @@ function joinRoom(roomName) {
   document.getElementById('current-room-name').textContent = 'Room: ' + roomName;
   document.getElementById('send-btn').disabled = false;
   document.getElementById('chat-input-area').style.display = 'flex';
-  
-  // Trigger htmx to load messages for this room
-  htmx.trigger('#chat-messages', 'load');
   
   // Load messages first to determine if we should show delete button
   fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(roomName))
@@ -160,6 +139,15 @@ function joinRoom(roomName) {
         document.getElementById('delete-room-btn').style.display = 'none';
       }
     });
+  
+  // Load messages
+  loadMessages();
+  
+  // Auto-refresh messages every 2 seconds
+  if (window.messageInterval) {
+    clearInterval(window.messageInterval);
+  }
+  window.messageInterval = setInterval(loadMessages, 2000);
 }
 
 // Leave room and return to empty state
@@ -170,6 +158,11 @@ function leaveRoom() {
   document.getElementById('delete-room-btn').style.display = 'none';
   document.getElementById('chat-input-area').style.display = 'none';
   document.getElementById('chat-messages').innerHTML = '<div class="chat-messages"><p style="color: #666; font-style: italic;">Create or join a room to chat</p></div>';
+  
+  // Stop auto-refresh
+  if (window.messageInterval) {
+    clearInterval(window.messageInterval);
+  }
 }
 
 // Delete room with blocking behavior
@@ -194,6 +187,45 @@ function deleteRoom() {
     .catch(function(err) {
       console.error('Failed to delete room:', err);
       htmx.trigger('#room-list', 'load');
+    });
+}
+
+// Load messages for current room
+function loadMessages() {
+  if (!window.currentRoom) return;
+  
+  var chatDisplay = document.getElementById('chat-messages');
+  if (!chatDisplay) return;
+  
+  // Fetch messages to check if content changed before swapping
+  fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(window.currentRoom))
+    .then(function(response) { return response.text(); })
+    .then(function(html) {
+      // Create a temporary element to parse the new HTML
+      var tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      
+      // Extract text content from both current and new HTML for comparison
+      var currentText = chatDisplay.textContent.replace(/\s+/g, ' ').trim();
+      var newText = tempDiv.textContent.replace(/\s+/g, ' ').trim();
+      
+      // Only update if content actually changed (prevents flickering)
+      if (currentText !== newText) {
+        // Check if user is at bottom before updating
+        var wasAtBottom = chatDisplay.scrollTop >= chatDisplay.scrollHeight - chatDisplay.clientHeight - 50;
+        
+        chatDisplay.innerHTML = html;
+        
+        // Auto-scroll to bottom if user was already at bottom or if this is first load
+        if (wasAtBottom || chatDisplay.scrollTop === 0) {
+          setTimeout(function() {
+            chatDisplay.scrollTop = chatDisplay.scrollHeight;
+          }, 10);
+        }
+      }
+    })
+    .catch(function(err) {
+      console.error('Failed to load messages:', err);
     });
 }
 
@@ -222,7 +254,7 @@ document.addEventListener('DOMContentLoaded', function() {
       body: formData
     }).then(function() {
       messageInput.value = '';
-      htmx.trigger('#chat-messages', 'load');
+      loadMessages();
     });
   }
   
