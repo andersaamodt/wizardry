@@ -159,6 +159,16 @@ function joinRoom(roomName) {
   document.getElementById('send-btn').disabled = false;
   document.getElementById('chat-input-area').style.display = 'flex';
   
+  // Immediately update room selection styling
+  document.querySelectorAll('.room-item').forEach(function(item) {
+    if (item.getAttribute('data-room') === roomName) {
+      item.classList.add('room-item-selected');
+      item.classList.remove('room-item-hover');
+    } else {
+      item.classList.remove('room-item-selected');
+    }
+  });
+  
   // Reset scroll behavior for new room
   window.userHasScrolledUp = false;
   
