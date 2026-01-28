@@ -38,7 +38,7 @@ Loading rooms...
 <div class="room-controls">
 <h4>Create Room</h4>
 <input type="text" id="new-room-name" placeholder="Room name" />
-<button hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-status" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); }">
+<button hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-status" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; setTimeout(function() { htmx.trigger('#room-list', 'load'); }, 100); }">
 Create
 </button>
 <div id="room-status"></div>
@@ -48,7 +48,7 @@ Create
 <div class="chat-main">
 <div class="chat-header">
 <h3 id="current-room-name">Select a room</h3>
-<button id="delete-room-btn" style="display: none;" onclick="if(window.currentRoom && confirm('Delete room ' + window.currentRoom + '?')) { var roomToDelete = window.currentRoom; leaveRoom(); fetch('/cgi/chat-delete-room?room=' + encodeURIComponent(roomToDelete)).then(function() { htmx.trigger('#room-list', 'load'); }).catch(function(err) { console.error('Failed to delete room:', err); htmx.trigger('#room-list', 'load'); }); }">
+<button id="delete-room-btn" style="display: none;" onclick="if(window.currentRoom) { var roomToDelete = window.currentRoom; leaveRoom(); fetch('/cgi/chat-delete-room?room=' + encodeURIComponent(roomToDelete)).then(function() { htmx.trigger('#room-list', 'load'); }).catch(function(err) { console.error('Failed to delete room:', err); htmx.trigger('#room-list', 'load'); }); }">
 Delete Room
 </button>
 </div>
@@ -89,8 +89,23 @@ function joinRoom(roomName) {
   window.currentRoom = roomName;
   document.getElementById('current-room-name').textContent = 'Room: ' + roomName;
   document.getElementById('send-btn').disabled = false;
-  document.getElementById('delete-room-btn').style.display = 'inline-block';
   document.getElementById('chat-input-area').style.display = 'flex';
+  
+  // Load messages first to determine if we should show delete button
+  fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(roomName))
+    .then(function(response) { return response.text(); })
+    .then(function(html) {
+      // Check if room is empty (only show delete if no messages)
+      var isEmpty = html.indexOf('No messages yet') !== -1 || 
+                    html.indexOf('class="chat-msg"') === -1;
+      
+      // Only show delete button if room is empty
+      if (isEmpty) {
+        document.getElementById('delete-room-btn').style.display = 'inline-block';
+      } else {
+        document.getElementById('delete-room-btn').style.display = 'none';
+      }
+    });
   
   // Load messages
   loadMessages();
@@ -121,29 +136,28 @@ function leaveRoom() {
 function loadMessages() {
   if (!window.currentRoom) return;
   
-  // Fetch messages but only update if changed
-  fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(window.currentRoom))
-    .then(function(response) { return response.text(); })
-    .then(function(html) {
-      var chatDisplay = document.getElementById('chat-messages');
-      if (!chatDisplay) return;
+  var chatDisplay = document.getElementById('chat-messages');
+  if (!chatDisplay) return;
+  
+  // Use htmx to load messages with settle:0ms to prevent flicker
+  htmx.ajax('GET', '/cgi/chat-get-messages?room=' + encodeURIComponent(window.currentRoom), {
+    target: '#chat-messages',
+    swap: 'innerHTML settle:0ms',
+    // Preserve scroll position if user was at bottom
+    beforeSwap: function(evt) {
+      var wasAtBottom = chatDisplay.scrollTop >= chatDisplay.scrollHeight - chatDisplay.clientHeight - 50;
+      evt.detail.shouldSwap = true;
+      evt.detail.isError = false;
       
-      // Only update if content has changed (prevents flickering)
-      if (chatDisplay.innerHTML !== html) {
-        var wasAtBottom = chatDisplay.scrollTop >= chatDisplay.scrollHeight - chatDisplay.clientHeight - 50;
-        chatDisplay.innerHTML = html;
-        
-        // Auto-scroll to bottom if user was already at bottom
+      // After swap, restore scroll position
+      setTimeout(function() {
         if (wasAtBottom) {
-          setTimeout(function() {
-            chatDisplay.scrollTop = chatDisplay.scrollHeight;
-          }, 50);
+          chatDisplay.scrollTop = chatDisplay.scrollHeight;
         }
-      }
-    })
-    .catch(function(err) {
-      console.error('Failed to load messages:', err);
-    });
+      }, 10);
+      return true;
+    }
+  });
 }
 
 // Send message
