@@ -23,8 +23,15 @@ HTML
   exit 0
 fi
 
-# Chat rooms directory
-CHAT_DIR="${TMPDIR:-/tmp}/wizardry-chat"
+# Chat rooms directory - use site-specific location
+# Use WIZARDRY_SITE_NAME if available (set by nginx), otherwise default
+if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
+  site_id="$WIZARDRY_SITE_NAME"
+else
+  site_id="default"
+fi
+SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
+CHAT_DIR="$SITES_DIR/.sitedata/$site_id/chatrooms"
 ROOM_DIR="$CHAT_DIR/$room_name"
 
 if [ ! -d "$ROOM_DIR" ]; then
@@ -41,15 +48,12 @@ LOG_FILE="$ROOM_DIR/.log"
 
 if [ ! -f "$LOG_FILE" ] || [ ! -s "$LOG_FILE" ]; then
   cat <<HTML
-<div id="chat-messages" class="chat-display">
 <div class="chat-messages">
   <p class="meta">No messages yet. Be the first to say something!</p>
-</div>
 </div>
 HTML
 else
   cat <<HTML
-<div id="chat-messages" class="chat-display">
 <div class="chat-messages">
 HTML
   
@@ -62,7 +66,6 @@ HTML
   done
   
   cat <<HTML
-</div>
 </div>
 HTML
 fi

@@ -79,38 +79,35 @@ save_path="$UPLOAD_DIR/$save_name"
 # --boundary--
 
 # Find where the actual file data starts (after the blank line following headers)
-# and where it ends (before the final boundary)
+# Look for the pattern of two consecutive line breaks (empty line)
+# We need to find the Content-Type line first, then the empty line after it
 
-# First, find the byte offset where data starts
-data_start=$(grep -abo $'^\r$' "$temp_file" | head -1 | cut -d: -f1)
-if [ -z "$data_start" ]; then
-  # Try without \r
-  data_start=$(grep -abo '^$' "$temp_file" | head -1 | cut -d: -f1)
-fi
-
-if [ -n "$data_start" ]; then
-  # Skip the blank line itself (add 2 for \r\n or 1 for \n)
-  data_start=$((data_start + 2))
-  
-  # Find the final boundary position
-  boundary_marker="--${boundary}--"
-  data_end=$(grep -abo "$boundary_marker" "$temp_file" | tail -1 | cut -d: -f1)
-  
-  if [ -n "$data_end" ]; then
-    # Calculate data length (subtract 2 for the \r\n before boundary)
-    data_length=$((data_end - data_start - 2))
-    
-    if [ "$data_length" -gt 0 ]; then
-      # Extract the binary data
-      dd if="$temp_file" of="$save_path" bs=1 skip="$data_start" count="$data_length" 2>/dev/null
-    else
-      touch "$save_path"
-    fi
-  else
-    touch "$save_path"
-  fi
+# Method: Find all occurrences of double newline and take the first one after headers
+# Use perl for better binary handling
+if command -v perl >/dev/null 2>&1; then
+  # Use perl to extract binary data between headers and boundary
+  perl -ne '
+    BEGIN { binmode STDIN; binmode STDOUT; }
+    if (!$in_data && /^Content-Type:/i) { $found_ct = 1; }
+    if ($found_ct && /^[\r\n]*$/) { $in_data = 1; next; }
+    if ($in_data) {
+      if (/^--'"$boundary"'/) { exit; }
+      print;
+    }
+  ' < "$temp_file" > "$save_path"
 else
-  touch "$save_path"
+  # Fallback: simpler approach using awk
+  # Find the first empty line after Content-Type, then extract until boundary
+  awk -v RS= -v boundary="$boundary" '
+    NR > 1 {
+      data = $0
+      # Remove the final boundary marker
+      sub("--" boundary ".*", "", data)
+      # Print without trailing newlines
+      printf "%s", data
+      exit
+    }
+  ' "$temp_file" > "$save_path"
 fi
 
 # Detect MIME type

@@ -34,8 +34,15 @@ HTML
   exit 0
 fi
 
-# Chat rooms directory
-CHAT_DIR="${TMPDIR:-/tmp}/wizardry-chat"
+# Chat rooms directory - use site-specific location
+# Use WIZARDRY_SITE_NAME if available (set by nginx), otherwise default
+if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
+  site_id="$WIZARDRY_SITE_NAME"
+else
+  site_id="default"
+fi
+SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
+CHAT_DIR="$SITES_DIR/.sitedata/$site_id/chatrooms"
 mkdir -p "$CHAT_DIR"
 
 ROOM_DIR="$CHAT_DIR/$room_name"
