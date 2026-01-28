@@ -25,11 +25,12 @@ fi
 
 # Parse parameters
 # Use site-specific data directory
-# For local development, use "default" instead of HTTP_HOST to avoid port in path
-if [ -z "${HTTP_HOST:-}" ] || printf '%s' "${HTTP_HOST}" | grep -q "localhost"; then
-  site_id="default"
+# Use WIZARDRY_SITE_NAME if available (set by nginx), otherwise default
+if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
+  site_id="$WIZARDRY_SITE_NAME"
 else
-  site_id=$(printf '%s' "${HTTP_HOST}" | sed 's/[^a-zA-Z0-9]/-/g')
+  # Fallback for non-nginx environments
+  site_id="default"
 fi
 SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
 upload_dir="$SITES_DIR/.sitedata/$site_id/uploads"
@@ -40,6 +41,9 @@ filename_encoded=$(printf '%s' "$query" | sed 's/^name=//' | sed 's/&.*//')
 filename=$(url-decode "$filename_encoded" 2>/dev/null || printf '%s' "$filename_encoded")
 
 # Clean filename (remove any path components browsers might add)
+# First remove Windows fake paths like C:\fakepath\
+filename=$(printf '%s' "$filename" | sed 's/.*[\\\/]//')
+# Then use basename as a safety measure
 filename=$(basename "$filename" 2>/dev/null || printf '%s' "$filename")
 filename=${filename:-uploaded-file.bin}
 
