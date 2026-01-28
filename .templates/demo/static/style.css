@@ -667,7 +667,7 @@ pre code {
   font-family: 'Monaco', 'Courier New', monospace;
   font-size: 0.9rem;
   color: #2c2c54;  /* Dark text for readability */
-  animation: messageAppear 1.0s ease-out;
+  animation: messageAppear 0.7s ease-in;
 }
 
 @keyframes messageAppear {

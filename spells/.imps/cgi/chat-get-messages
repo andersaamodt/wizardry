@@ -64,8 +64,8 @@ else
 <div class="chat-messages">
 HTML
   
-  # Display last 50 messages
-  tail -50 "$LOG_FILE" | while IFS= read -r line; do
+  # Display last 200 messages
+  tail -200 "$LOG_FILE" | while IFS= read -r line; do
     # Parse format: [HH:MM] player_name: message
     # Escape HTML special characters
     escaped_line=$(printf '%s' "$line" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
