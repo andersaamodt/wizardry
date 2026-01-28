@@ -6,14 +6,9 @@ If your CGI buttons don't work, follow these steps:
 
 ### Step 1: Verify Your Site Was Rebuilt
 
-The htmx library was recently added to the build process. If you have an existing site, you MUST rebuild it:
+The htmx library must be included in your HTML. If you have an existing site, rebuild it:
 
 ```bash
-# Option 1: Via site-menu
-site-menu yoursite
-→ Select "Build site (full)"
-
-# Option 2: Command line
 build yoursite --full
 ```
 
