@@ -48,7 +48,7 @@ Create
 <div class="chat-main">
 <div class="chat-header">
 <h3 id="current-room-name">Select a room</h3>
-<button id="delete-room-btn" style="display: none;" onclick="if(window.currentRoom && confirm('Delete room ' + window.currentRoom + '?')) { var roomToDelete = window.currentRoom; leaveRoom(); fetch('/cgi/chat-delete-room?room=' + encodeURIComponent(roomToDelete)); }">
+<button id="delete-room-btn" style="display: none;" onclick="if(window.currentRoom && confirm('Delete room ' + window.currentRoom + '?')) { var roomToDelete = window.currentRoom; leaveRoom(); fetch('/cgi/chat-delete-room?room=' + encodeURIComponent(roomToDelete)).then(function() { htmx.trigger('#room-list', 'load'); }); }">
 Delete Room
 </button>
 </div>

@@ -596,13 +596,14 @@ pre code {
   padding: 1rem;
   background: #f8f9fa;
   max-height: 100%;
-  scrollbar-width: thin;  /* For Firefox */
+  scrollbar-width: auto;  /* Make scrollbar more visible in Firefox */
   scrollbar-color: var(--primary) #e0e0e0;  /* For Firefox */
 }
 
 /* Webkit scrollbar styling */
 .chat-display::-webkit-scrollbar {
-  width: 8px;
+  width: 12px;  /* Wider scrollbar for better visibility */
+}
 }
 
 .chat-display::-webkit-scrollbar-track {
