@@ -35,7 +35,9 @@ temp_file=$(temp-file drag-upload)
 cat > "$temp_file"
 
 # Extract filename from Content-Disposition header
-filename=$(grep -a "Content-Disposition" "$temp_file" | head -1 | sed 's/.*filename="//' | sed 's/".*//' | url-decode || echo "upload")
+content_disp=$(grep -a "Content-Disposition" "$temp_file" | head -1)
+filename=$(printf '%s' "$content_disp" | sed 's/.*filename="//' | sed 's/".*//')
+filename=$(url-decode "$filename" || echo "upload")
 
 # Sanitize filename - remove path components
 filename=$(basename "$filename")
@@ -86,21 +88,32 @@ download_url="/uploads/$save_name"
 display_html=""
 case "$mime_type" in
   image/*)
-    display_html="<img src=\"$download_url\" alt=\"Uploaded image\" style=\"max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px;\">"
+    img_style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px;"
+    display_html="<img src=\"$download_url\" alt=\"Uploaded image\" style=\"$img_style\">"
     ;;
   video/*)
-    display_html="<video controls style=\"max-width: 100%; height: auto;\"><source src=\"$download_url\" type=\"$mime_type\">Your browser doesn't support video.</video>"
+    video_style="max-width: 100%; height: auto;"
+    display_html="<video controls style=\"$video_style\">"
+    display_html="$display_html<source src=\"$download_url\" type=\"$mime_type\">"
+    display_html="${display_html}Your browser doesn't support video.</video>"
     ;;
   audio/*)
-    display_html="<audio controls style=\"width: 100%;\"><source src=\"$download_url\" type=\"$mime_type\">Your browser doesn't support audio.</audio>"
+    audio_style="width: 100%;"
+    display_html="<audio controls style=\"$audio_style\">"
+    display_html="$display_html<source src=\"$download_url\" type=\"$mime_type\">"
+    display_html="${display_html}Your browser doesn't support audio.</audio>"
     ;;
   application/pdf)
-    display_html="<embed src=\"$download_url\" type=\"application/pdf\" width=\"100%\" height=\"600px\" style=\"border: 1px solid #ddd;\">"
+    pdf_style="border: 1px solid #ddd;"
+    display_html="<embed src=\"$download_url\" type=\"application/pdf\" "
+    display_html="${display_html}width=\"100%\" height=\"600px\" style=\"$pdf_style\">"
     ;;
   text/*)
     # For text files, read and display content
     content=$(cat "$save_path" | head -c 10000)
-    display_html="<pre style=\"background: #f5f5f5; padding: 1em; border-radius: 4px; overflow-x: auto;\">$(printf '%s' "$content" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')</pre>"
+    escaped=$(printf '%s' "$content" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
+    pre_style="background: #f5f5f5; padding: 1em; border-radius: 4px; overflow-x: auto;"
+    display_html="<pre style=\"$pre_style\">$escaped</pre>"
     ;;
   *)
     display_html="<p><em>Preview not available for this file type ($mime_type)</em></p>"
@@ -114,22 +127,29 @@ rm -f "$temp_file"
 http-status 200 "OK"
 http-header "Content-Type" "text/html"
 http-end-headers
+# Styles for HTML output
+info_style="background: #f8f9fa; padding: 0.75em; border-radius: 4px; margin: 1em 0;"
+display_style="margin: 1em 0; padding: 1em; border: 1px solid #ddd;"
+display_style="$display_style border-radius: 4px; background: white;"
+link_style="display: inline-block; padding: 0.5em 1em; background: #007bff;"
+link_style="$link_style color: white; text-decoration: none; border-radius: 4px;"
+
 cat <<HTML
 <div class="upload-result">
   <h4 style="color: #28a745; margin-top: 0;">✓ Upload Successful!</h4>
   
-  <div class="file-info" style="background: #f8f9fa; padding: 0.75em; border-radius: 4px; margin: 1em 0;">
+  <div class="file-info" style="$info_style">
     <p style="margin: 0.25em 0;"><strong>Filename:</strong> $filename</p>
     <p style="margin: 0.25em 0;"><strong>Type:</strong> $mime_type</p>
     <p style="margin: 0.25em 0;"><strong>Size:</strong> $file_size bytes</p>
   </div>
   
-  <div class="file-display" style="margin: 1em 0; padding: 1em; border: 1px solid #ddd; border-radius: 4px; background: white;">
+  <div class="file-display" style="$display_style">
     $display_html
   </div>
   
   <p style="margin-top: 1em;">
-    <a href="$download_url" download="$filename" style="display: inline-block; padding: 0.5em 1em; background: #007bff; color: white; text-decoration: none; border-radius: 4px;">
+    <a href="$download_url" download="$filename" style="$link_style">
       ⬇ Download File
     </a>
   </p>
