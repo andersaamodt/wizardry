@@ -7,11 +7,12 @@ http-header "Content-Type" "text/html"
 http-end-headers
 
 # Use site-specific counter in site data directory
-# For local development, use "default" instead of HTTP_HOST to avoid port in path
-if [ -z "${HTTP_HOST:-}" ] || printf '%s' "${HTTP_HOST}" | grep -q "localhost"; then
-  site_id="default"
+# Use WIZARDRY_SITE_NAME if available (set by nginx), otherwise default
+if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
+  site_id="$WIZARDRY_SITE_NAME"
 else
-  site_id=$(printf '%s' "${HTTP_HOST}" | sed 's/[^a-zA-Z0-9]/-/g')
+  # Fallback for non-nginx environments
+  site_id="default"
 fi
 SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
 counter_dir="$SITES_DIR/.sitedata/$site_id"
