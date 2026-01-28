@@ -79,7 +79,7 @@ save_path="$UPLOAD_DIR/$save_name"
 # --boundary--
 
 # Use perl for binary-safe extraction
-extraction_success=1  # Default to failure
+extraction_success=1  # Initialize to failure (1), set to 0 on success
 if command -v perl >/dev/null 2>&1; then
   # Binary-safe perl script that reads entire file
   # Use -- to prevent boundary from being interpreted as perl options
