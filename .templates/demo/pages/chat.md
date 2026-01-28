@@ -234,7 +234,7 @@ function loadMessages() {
             // Force reflow
             void msg.offsetHeight;
             // Restore the animation with explicit declaration
-            msg.style.animation = 'messageAppear 0.7s ease-in';
+            msg.style.animation = 'messageAppear 0.63s ease-in';
           }
         }
         
@@ -282,10 +282,13 @@ function scrollToBottom() {
     var elapsed = currentTime - startTime;
     var progress = Math.min(elapsed / duration, 1);
     
-    // Ease-out function for smooth deceleration
-    var easeOut = 1 - Math.pow(1 - progress, 3);
+    // Ease-in-out function for smooth acceleration and deceleration
+    // This prevents jerky start/stop
+    var easeInOut = progress < 0.5
+      ? 2 * progress * progress
+      : 1 - Math.pow(-2 * progress + 2, 2) / 2;
     
-    chatMessagesDiv.scrollTop = start + (target - start) * easeOut;
+    chatMessagesDiv.scrollTop = start + (target - start) * easeInOut;
     
     if (progress < 1) {
       requestAnimationFrame(animate);
