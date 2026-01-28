@@ -58,9 +58,6 @@ if [ -z "$filename" ]; then
   filename="upload"
 fi
 
-# Remove browser fake path prefixes (C:\fakepath\, etc.)
-filename=$(printf '%s' "$filename" | sed 's/.*[\\\/]//')
-
 # Sanitize filename - remove path components and keep only safe characters
 filename=$(basename "$filename" | sed 's/[^a-zA-Z0-9._-]/_/g')
 
