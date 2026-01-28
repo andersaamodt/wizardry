@@ -13,9 +13,14 @@ if [ "${REQUEST_METHOD:-}" != "POST" ]; then
   exit 0
 fi
 
+# Determine site-specific data directory
+# Use HTTP_HOST to identify the site
+site_id=$(printf '%s' "${HTTP_HOST:-default}" | sed 's/[^a-zA-Z0-9]/-/g')
+SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
+SITE_DATA_DIR="$SITES_DIR/.sitedata/$site_id"
+UPLOAD_DIR="$SITE_DATA_DIR/uploads"
+
 # Create uploads directory if needed
-# Use a more accessible upload location
-UPLOAD_DIR="${HOME:-/tmp}/wizardry-web-uploads"
 mkdir -p "$UPLOAD_DIR" || {
   http-status 500 "Internal Server Error"
   http-header "Content-Type" "text/html"
