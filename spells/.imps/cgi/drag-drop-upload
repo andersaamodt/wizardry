@@ -82,6 +82,7 @@ save_path="$UPLOAD_DIR/$save_name"
 extraction_success=0
 if command -v perl >/dev/null 2>&1; then
   # Binary-safe perl script that reads entire file
+  # Use -- to prevent boundary from being interpreted as perl options
   perl -e '
     use strict;
     binmode STDIN;
@@ -111,7 +112,7 @@ if command -v perl >/dev/null 2>&1; then
       }
     }
     exit 1;  # Failed
-  ' "$boundary" < "$temp_file" > "$save_path"
+  ' -- "$boundary" < "$temp_file" > "$save_path"
   extraction_success=$?
 else
   # Fallback: Use dd with byte offsets if perl not available
