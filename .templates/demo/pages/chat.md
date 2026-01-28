@@ -53,7 +53,7 @@ Delete Room
 </button>
 </div>
 
-<div id="chat-messages" class="chat-display">
+<div id="chat-messages" class="chat-display" hx-get="/cgi/chat-get-messages" hx-trigger="load delay:100ms, every 2s" hx-swap="morph" hx-ext="morph" hx-vals='js:{room: window.currentRoom || ""}' hx-include="none">
 <div class="chat-messages">
 <p style="color: #666; font-style: italic;">Select a room to start chatting</p>
 </div>
@@ -142,20 +142,10 @@ function joinRoom(roomName) {
   document.getElementById('send-btn').disabled = false;
   document.getElementById('chat-input-area').style.display = 'flex';
   
-  // Enable htmx polling for messages
-  var chatMessages = document.getElementById('chat-messages');
-  chatMessages.setAttribute('hx-get', '/cgi/chat-get-messages');
-  chatMessages.setAttribute('hx-trigger', 'load, every 2s');
-  chatMessages.setAttribute('hx-swap', 'morph');
-  chatMessages.setAttribute('hx-ext', 'morph');
-  chatMessages.setAttribute('hx-vals', 'js:{room: window.currentRoom}');
-  chatMessages.setAttribute('hx-include', 'none');
-  htmx.process(chatMessages);
-  
-  // Trigger htmx to load messages for this room
+  // Trigger htmx to load messages for this room immediately
   htmx.trigger('#chat-messages', 'load');
   
-  // Load messages first to determine if we should show delete button
+  // Load messages to determine if we should show delete button
   fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(roomName))
     .then(function(response) { return response.text(); })
     .then(function(html) {
@@ -179,17 +169,7 @@ function leaveRoom() {
   document.getElementById('send-btn').disabled = true;
   document.getElementById('delete-room-btn').style.display = 'none';
   document.getElementById('chat-input-area').style.display = 'none';
-  
-  // Disable htmx polling
-  var chatMessages = document.getElementById('chat-messages');
-  chatMessages.removeAttribute('hx-get');
-  chatMessages.removeAttribute('hx-trigger');
-  chatMessages.removeAttribute('hx-swap');
-  chatMessages.removeAttribute('hx-ext');
-  chatMessages.removeAttribute('hx-vals');
-  chatMessages.removeAttribute('hx-include');
-  
-  chatMessages.innerHTML = '<div class="chat-messages"><p style="color: #666; font-style: italic;">Create or join a room to chat</p></div>';
+  document.getElementById('chat-messages').innerHTML = '<div class="chat-messages"><p style="color: #666; font-style: italic;">Create or join a room to chat</p></div>';
 }
 
 // Delete room with blocking behavior

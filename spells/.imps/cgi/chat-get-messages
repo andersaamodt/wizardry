@@ -16,8 +16,8 @@ room_name=$(printf '%s' "$room_name" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
 
 if [ -z "$room_name" ]; then
   cat <<HTML
-<div class="demo-result error">
-  <p>Room name required</p>
+<div class="chat-messages">
+  <p style="color: #666; font-style: italic;">Select a room to start chatting</p>
 </div>
 HTML
   exit 0
