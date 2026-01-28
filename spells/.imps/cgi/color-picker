@@ -7,7 +7,8 @@ http-header "Content-Type" "text/html"
 http-end-headers
 
 color="${QUERY_STRING:-#3498db}"
-color=$(printf '%s' "$color" | sed 's/color=//' | url-decode)
+color=$(printf '%s' "$color" | sed 's/color=//')
+color=$(url-decode "$color" 2>/dev/null || printf '%s' "$color" | sed 's/%23/#/g')
 
 # Extract RGB components and calculate brightness
 # Remove # prefix

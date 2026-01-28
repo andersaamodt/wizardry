@@ -20,18 +20,18 @@ Vote for your favorite and see live results! Each vote is processed by a shell C
 <h3>Which programming paradigm do you prefer?</h3>
 
 <div class="poll-buttons">
-<button hx-get="/cgi/poll-vote?vote=A" hx-target="#poll-results" hx-swap="innerHTML" class="poll-btn">
+<button hx-get="/cgi/poll-vote?vote=A" hx-target="#poll-results" hx-swap="innerHTML settle:0ms" class="poll-btn">
 🔵 Functional Programming
 </button>
-<button hx-get="/cgi/poll-vote?vote=B" hx-target="#poll-results" hx-swap="innerHTML" class="poll-btn">
+<button hx-get="/cgi/poll-vote?vote=B" hx-target="#poll-results" hx-swap="innerHTML settle:0ms" class="poll-btn">
 🟢 Object-Oriented
 </button>
-<button hx-get="/cgi/poll-vote?vote=C" hx-target="#poll-results" hx-swap="innerHTML" class="poll-btn">
+<button hx-get="/cgi/poll-vote?vote=C" hx-target="#poll-results" hx-swap="innerHTML settle:0ms" class="poll-btn">
 🟡 Procedural
 </button>
 </div>
 
-<div id="poll-results" hx-get="/cgi/poll-vote" hx-trigger="load" hx-swap="innerHTML">
+<div id="poll-results" hx-get="/cgi/poll-vote" hx-trigger="load" hx-swap="innerHTML settle:0ms">
 Loading results...
 </div>
 </div>

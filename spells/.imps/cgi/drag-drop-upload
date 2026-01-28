@@ -14,8 +14,8 @@ if [ "${REQUEST_METHOD:-}" != "POST" ]; then
 fi
 
 # Create uploads directory if needed
-# Use a standard upload location in tmp to avoid creating "cgi" site
-UPLOAD_DIR="${TMPDIR:-/tmp}/wizardry-uploads"
+# Use a more accessible upload location
+UPLOAD_DIR="${HOME:-/tmp}/wizardry-web-uploads"
 mkdir -p "$UPLOAD_DIR" || {
   http-status 500 "Internal Server Error"
   http-header "Content-Type" "text/html"
@@ -42,13 +42,17 @@ cat > "$temp_file"
 # Extract filename from Content-Disposition header
 content_disp=$(grep -a "Content-Disposition" "$temp_file" | head -1)
 filename=$(printf '%s' "$content_disp" | sed 's/.*filename="//' | sed 's/".*//')
-filename=$(url-decode "$filename" 2>/dev/null || printf '%s' "$filename" | sed 's/+/ /g;s/%20/ /g')
+filename=$(url-decode "$filename" 2>/dev/null || \
+  printf '%s' "$filename" | sed 's/+/ /g;s/%20/ /g')
 if [ -z "$filename" ]; then
   filename="upload"
 fi
 
-# Sanitize filename - remove path components
-filename=$(basename "$filename")
+# Remove browser fake path prefixes (C:\fakepath\, etc.)
+filename=$(printf '%s' "$filename" | sed 's/.*[\\\/]//')
+
+# Sanitize filename - remove path components and keep only safe characters
+filename=$(basename "$filename" | sed 's/[^a-zA-Z0-9._-]/_/g')
 
 # Generate unique filename with timestamp
 timestamp=$(date +%Y-%m-%d-%H%M%S)
@@ -56,11 +60,11 @@ save_name="${timestamp}-${filename}"
 save_path="$UPLOAD_DIR/$save_name"
 
 # Extract file data - more robust approach
-# Find line with blank line after Content-Type, then get everything until final boundary
+# Find the blank line after headers, then get everything until final boundary
 awk -v boundary="$boundary" '
 BEGIN { RS="\r\n"; in_data=0; }
-/^Content-Type:/ { next; }
-/^$/ && !in_data { in_data=1; next; }
+/^Content-Type:/ { in_headers=1; next; }
+/^$/ && in_headers { in_data=1; in_headers=0; next; }
 in_data { 
   if (index($0, "--" boundary) == 1) exit;
   print $0;
@@ -74,8 +78,11 @@ if [ -f "$save_path.tmp" ]; then
   if [ "$size" -gt 2 ]; then
     dd if="$save_path.tmp" of="$save_path" bs=1 count=$((size - 2)) 2>/dev/null || \
       cp "$save_path.tmp" "$save_path"
-  else
+  elif [ "$size" -gt 0 ]; then
     cp "$save_path.tmp" "$save_path"
+  else
+    # Empty file - try alternative extraction
+    touch "$save_path"
   fi
   rm -f "$save_path.tmp"
 fi
@@ -89,8 +96,11 @@ fi
 # Get file size
 file_size=$(wc -c < "$save_path" | tr -d ' ')
 
-# Generate download URL
+# Generate download URL - use relative path to uploaded file
 download_url="/uploads/$save_name"
+
+# Also show the full server path for reference
+server_path="$UPLOAD_DIR/$save_name"
 
 # Generate appropriate display HTML based on MIME type
 display_html=""
@@ -150,6 +160,7 @@ cat <<HTML
     <p style="margin: 0.25em 0;"><strong>Filename:</strong> $filename</p>
     <p style="margin: 0.25em 0;"><strong>Type:</strong> $mime_type</p>
     <p style="margin: 0.25em 0;"><strong>Size:</strong> $file_size bytes</p>
+    <p style="margin: 0.25em 0;"><strong>Location:</strong> $server_path</p>
   </div>
   
   <div class="file-display" style="$display_style">

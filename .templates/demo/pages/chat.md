@@ -31,7 +31,7 @@ This chat system uses the **same message format as the MUD `say` command**, maki
 <div class="chat-container">
 <div class="chat-sidebar">
 <h3>Chat Rooms</h3>
-<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, every 5s" hx-swap="outerHTML">
+<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, every 3s" hx-swap="innerHTML settle:0ms">
 Loading rooms...
 </div>
 
@@ -48,7 +48,7 @@ Create
 <div class="chat-main">
 <div class="chat-header">
 <h3 id="current-room-name">Select a room</h3>
-<button id="delete-room-btn" style="display: none;" onclick="if(window.currentRoom && confirm('Delete room ' + window.currentRoom + '?')) { fetch('/cgi/chat-delete-room?room=' + encodeURIComponent(window.currentRoom)).then(function() { leaveRoom(); }); }">
+<button id="delete-room-btn" style="display: none;" onclick="if(window.currentRoom && confirm('Delete room ' + window.currentRoom + '?')) { var roomToDelete = window.currentRoom; leaveRoom(); fetch('/cgi/chat-delete-room?room=' + encodeURIComponent(roomToDelete)); }">
 Delete Room
 </button>
 </div>
@@ -121,8 +121,16 @@ function loadMessages() {
   
   htmx.ajax('GET', '/cgi/chat-get-messages?room=' + encodeURIComponent(window.currentRoom), {
     target: '#chat-messages',
-    swap: 'innerHTML show:none'
+    swap: 'innerHTML settle:0ms show:none'
   });
+  
+  // Scroll to bottom after messages load
+  setTimeout(function() {
+    var chatDisplay = document.getElementById('chat-messages');
+    if (chatDisplay) {
+      chatDisplay.scrollTop = chatDisplay.scrollHeight;
+    }
+  }, 100);
 }
 
 // Send message
