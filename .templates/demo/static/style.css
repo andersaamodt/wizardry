@@ -575,6 +575,7 @@ pre code {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;  /* Prevent header from shrinking */
 }
 
 .chat-header h3 {
@@ -591,13 +592,12 @@ pre code {
 }
 
 .chat-display {
-  flex: 1;
+  flex: 1 1 0;  /* Allow shrinking, set base to 0 to force min-height to work */
   overflow-y: scroll;  /* Force scrollbar to always show */
   overflow-x: hidden;
   padding: 1rem;
   background: #f8f9fa;
   min-height: 0;  /* Critical for flexbox scrolling */
-  max-height: 100%;  /* Prevent expansion beyond parent */
   scrollbar-width: auto;  /* Make scrollbar more visible in Firefox */
   scrollbar-color: var(--primary) #e0e0e0;  /* For Firefox */
 }
@@ -625,6 +625,7 @@ pre code {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  /* Remove height constraint to allow parent scrollbar to work */
 }
 
 .chat-msg {
@@ -655,6 +656,7 @@ pre code {
   padding: 1rem;
   background: white;
   border-top: 2px solid var(--border);
+  flex-shrink: 0;  /* Prevent input area from shrinking */
 }
 
 .chat-input-area input[type="text"] {
