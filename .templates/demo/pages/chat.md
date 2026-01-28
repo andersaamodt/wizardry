@@ -38,7 +38,7 @@ Loading rooms...
 <div class="room-controls">
 <h4>Create Room</h4>
 <input type="text" id="new-room-name" placeholder="Room name" />
-<button hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-status" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); }">
+<button id="create-room-btn" hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-status" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="document.getElementById('create-room-btn').disabled = false; document.getElementById('new-room-name').disabled = false; document.getElementById('create-room-btn').innerHTML = 'Create'; if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); }">
 Create
 </button>
 <div id="room-status"></div>
@@ -166,12 +166,16 @@ function loadMessages() {
   fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(window.currentRoom))
     .then(function(response) { return response.text(); })
     .then(function(html) {
-      // Normalize both strings for comparison (removes whitespace differences)
-      var currentNormalized = chatDisplay.innerHTML.replace(/\s+/g, ' ').trim();
-      var newNormalized = html.replace(/\s+/g, ' ').trim();
+      // Create a temporary element to parse the new HTML
+      var tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      
+      // Extract text content from both current and new HTML for comparison
+      var currentText = chatDisplay.textContent.replace(/\s+/g, ' ').trim();
+      var newText = tempDiv.textContent.replace(/\s+/g, ' ').trim();
       
       // Only update if content actually changed (prevents flickering)
-      if (currentNormalized !== newNormalized) {
+      if (currentText !== newText) {
         // Check if user is at bottom before updating
         var wasAtBottom = chatDisplay.scrollTop >= chatDisplay.scrollHeight - chatDisplay.clientHeight - 50;
         

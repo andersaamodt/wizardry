@@ -12,7 +12,7 @@ title: Advanced Demos
 
 # Advanced Interactive Demos
 
-## 1. System Information
+### 1. System Information
 Get real-time system information from the server:
 
 <div class="demo-box">
@@ -22,7 +22,7 @@ Get real-time system information from the server:
   <div id="sysinfo-output" class="output"></div>
 </div>
 
-## 2. Color Picker
+### 2. Color Picker
 Choose a color and see it rendered by the server:
 
 <div class="demo-box">
@@ -33,7 +33,7 @@ Choose a color and see it rendered by the server:
   <div id="color-output" class="output"></div>
 </div>
 
-## 3. Temperature Converter
+### 3. Temperature Converter
 Convert between Celsius and Fahrenheit:
 
 <div class="demo-box">
@@ -48,7 +48,7 @@ Convert between Celsius and Fahrenheit:
   <div id="temp-output" class="output"></div>
 </div>
 
-## 4. Drag-and-Drop File Upload
+### 4. Drag-and-Drop File Upload
 Upload any file type with drag-and-drop. Files are automatically displayed if possible:
 
 <style>
