@@ -70,9 +70,10 @@ Delete Room
 <script>
 // Generate a random guest name
 function generateGuestName() {
-  // Use 3-digit random number (100-999) to minimize collision probability
-  var num = Math.floor(Math.random() * 900) + 100;
-  return 'Guest' + num;
+  // Use 3-digit random number (001-999) with zero padding
+  var num = Math.floor(Math.random() * 999) + 1;
+  var paddedNum = ('000' + num).slice(-3);  // Pad with zeros to 3 digits
+  return 'Guest' + paddedNum;
 }
 
 // Track current room
@@ -233,7 +234,7 @@ function loadMessages() {
             // Force reflow
             void msg.offsetHeight;
             // Restore the animation with explicit declaration
-            msg.style.animation = 'messageAppear 1.0s ease-out';
+            msg.style.animation = 'messageAppear 0.7s ease-in';
           }
         }
         
