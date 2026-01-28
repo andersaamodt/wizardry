@@ -38,7 +38,7 @@ Loading rooms...
 <div class="room-controls">
 <h4>Create Room</h4>
 <input type="text" id="new-room-name" placeholder="Room name" />
-<button hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-status" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name">
+<button hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-status" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); }">
 Create
 </button>
 <div id="room-status"></div>
