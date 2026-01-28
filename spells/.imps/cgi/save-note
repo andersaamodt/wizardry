@@ -11,8 +11,9 @@ if [ "${REQUEST_METHOD:-}" = "POST" ]; then
   note=$(cat)
   note=$(printf '%s' "$note" | sed 's/note=//' | url-decode)
   
-  # Save to temp file (in production, would save to site uploads)
-  notes_file="${TMPDIR:-/tmp}/wizardry-notes.txt"
+  # Use site-specific notes based on HTTP_HOST
+  site_id=$(printf '%s' "${HTTP_HOST:-localhost}" | sed 's/[^a-zA-Z0-9]/-/g')
+  notes_file="${TMPDIR:-/tmp}/wizardry-notes-${site_id}.txt"
   printf '%s\n' "$note" >> "$notes_file"
   
   cat <<HTML

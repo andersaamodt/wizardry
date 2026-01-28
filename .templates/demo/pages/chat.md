@@ -31,7 +31,7 @@ This chat system uses the **same message format as the MUD `say` command**, maki
 <div class="chat-container">
 <div class="chat-sidebar">
 <h3>Chat Rooms</h3>
-<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, every 5s" hx-swap="innerHTML">
+<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, every 5s" hx-swap="outerHTML">
 Loading rooms...
 </div>
 
@@ -48,7 +48,7 @@ Create
 <div class="chat-main">
 <div class="chat-header">
 <h3 id="current-room-name">Select a room</h3>
-<button id="delete-room-btn" style="display: none;" hx-get="/cgi/chat-delete-room" hx-vals='js:{room: window.currentRoom}' hx-target="#room-status" hx-swap="innerHTML">
+<button id="delete-room-btn" style="display: none;" onclick="if(window.currentRoom && confirm('Delete room ' + window.currentRoom + '?')) { fetch('/cgi/chat-delete-room?room=' + encodeURIComponent(window.currentRoom)).then(function() { leaveRoom(); }); }">
 Delete Room
 </button>
 </div>
@@ -57,7 +57,7 @@ Delete Room
 <p style="color: #666; font-style: italic;">Select a room to start chatting</p>
 </div>
 
-<div class="chat-input-area">
+<div class="chat-input-area" id="chat-input-area" style="display: none;">
 <input type="text" id="username-input" placeholder="Your name" value="WebUser" />
 <input type="text" id="message-input" placeholder="Type a message..." />
 <button id="send-btn" disabled>Send</button>
@@ -88,6 +88,7 @@ function joinRoom(roomName) {
   document.getElementById('current-room-name').textContent = 'Room: ' + roomName;
   document.getElementById('send-btn').disabled = false;
   document.getElementById('delete-room-btn').style.display = 'inline-block';
+  document.getElementById('chat-input-area').style.display = 'flex';
   
   // Load messages
   loadMessages();
@@ -97,6 +98,21 @@ function joinRoom(roomName) {
     clearInterval(window.messageInterval);
   }
   window.messageInterval = setInterval(loadMessages, 2000);
+}
+
+// Leave room and return to empty state
+function leaveRoom() {
+  window.currentRoom = null;
+  document.getElementById('current-room-name').textContent = 'Select a room';
+  document.getElementById('send-btn').disabled = true;
+  document.getElementById('delete-room-btn').style.display = 'none';
+  document.getElementById('chat-input-area').style.display = 'none';
+  document.getElementById('chat-messages').innerHTML = '<p style="color: #666; font-style: italic;">Create or join a room to chat</p>';
+  
+  // Stop auto-refresh
+  if (window.messageInterval) {
+    clearInterval(window.messageInterval);
+  }
 }
 
 // Load messages for current room

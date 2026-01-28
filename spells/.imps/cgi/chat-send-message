@@ -15,9 +15,12 @@ else
 fi
 
 # Parse parameters
-room_name=$(printf '%s' "$post_data" | sed 's/.*room=\([^&]*\).*/\1/' | url-decode)
-user_name=$(printf '%s' "$post_data" | sed 's/.*user=\([^&]*\).*/\1/' | url-decode)
-message=$(printf '%s' "$post_data" | sed 's/.*msg=\([^&]*\).*/\1/' | url-decode)
+room_name=$(printf '%s' "$post_data" | sed 's/.*room=\([^&]*\).*/\1/')
+room_name=$(url-decode "$room_name" 2>/dev/null || printf '%s' "$room_name" | sed 's/+/ /g;s/%20/ /g')
+user_name=$(printf '%s' "$post_data" | sed 's/.*user=\([^&]*\).*/\1/')
+user_name=$(url-decode "$user_name" 2>/dev/null || printf '%s' "$user_name" | sed 's/+/ /g;s/%20/ /g')
+message=$(printf '%s' "$post_data" | sed 's/.*msg=\([^&]*\).*/\1/')
+message=$(url-decode "$message" 2>/dev/null || printf '%s' "$message" | sed 's/+/ /g;s/%20/ /g')
 
 # Validate inputs
 if [ -z "$room_name" ] || [ -z "$message" ]; then

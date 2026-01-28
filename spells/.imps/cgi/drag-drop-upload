@@ -1,7 +1,8 @@
 #!/bin/sh
 # drag-drop-upload - Handle drag-and-drop file uploads with auto-display
 
-set -eu
+# Don't use set -eu to avoid silent failures
+set -u
 
 # Only handle POST requests
 if [ "${REQUEST_METHOD:-}" != "POST" ]; then
@@ -15,13 +16,19 @@ fi
 # Create uploads directory if needed
 # Use a standard upload location in tmp to avoid creating "cgi" site
 UPLOAD_DIR="${TMPDIR:-/tmp}/wizardry-uploads"
-mkdir -p "$UPLOAD_DIR"
+mkdir -p "$UPLOAD_DIR" || {
+  http-status 500 "Internal Server Error"
+  http-header "Content-Type" "text/html"
+  http-end-headers
+  printf '<p class="error">Failed to create upload directory</p>\n'
+  exit 1
+}
 
 # Read multipart boundary from Content-Type header
 boundary=$(printf '%s' "${CONTENT_TYPE:-}" | sed 's/.*boundary=//')
 
 if [ -z "$boundary" ]; then
-  http-status 200 "OK"
+  http-status 400 "Bad Request"
   http-header "Content-Type" "text/html"
   http-end-headers
   printf '<p class="error">No boundary found in Content-Type</p>\n'
@@ -35,7 +42,10 @@ cat > "$temp_file"
 # Extract filename from Content-Disposition header
 content_disp=$(grep -a "Content-Disposition" "$temp_file" | head -1)
 filename=$(printf '%s' "$content_disp" | sed 's/.*filename="//' | sed 's/".*//')
-filename=$(url-decode "$filename" || echo "upload")
+filename=$(url-decode "$filename" 2>/dev/null || printf '%s' "$filename" | sed 's/+/ /g;s/%20/ /g')
+if [ -z "$filename" ]; then
+  filename="upload"
+fi
 
 # Sanitize filename - remove path components
 filename=$(basename "$filename")
