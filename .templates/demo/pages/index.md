@@ -100,6 +100,21 @@ Count words, characters, and lines:
 
 ---
 
+## 8. Image Upload & Display
+Upload an image and see it displayed instantly:
+
+<div class="demo-box">
+  <input type="text" id="upload-filename" placeholder="Enter image name (e.g., logo.png)" value="demo-image.png" />
+  <button hx-get="/cgi/upload-image" hx-vals='js:{filename: document.getElementById("upload-filename").value}' hx-target="#upload-display" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#upload-filename" class="primary">
+    Upload & Display
+  </button>
+  <div id="upload-display" class="output">
+    <p style="color: #666; font-style: italic;">Click Upload to see real-time image generation and display</p>
+  </div>
+</div>
+
+---
+
 ## 🎨 More Demos
 
 - [Advanced Demos](/pages/advanced.html) - System info, file operations, and more

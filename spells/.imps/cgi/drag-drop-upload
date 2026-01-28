@@ -1,0 +1,117 @@
+#!/bin/sh
+# drag-drop-upload - Handle drag-and-drop file uploads with auto-display
+
+set -eu
+
+# Only handle POST requests
+if [ "${REQUEST_METHOD:-}" != "POST" ]; then
+  printf 'Status: 405 Method Not Allowed\r\n'
+  printf 'Content-Type: text/html\r\n\r\n'
+  printf '<p>Only POST requests allowed</p>\n'
+  exit 0
+fi
+
+# Create uploads directory if needed
+UPLOAD_DIR="${SITE_DIR:-$HOME/site}/uploads"
+mkdir -p "$UPLOAD_DIR"
+
+# Read multipart boundary from Content-Type header
+boundary=$(printf '%s' "${CONTENT_TYPE:-}" | sed 's/.*boundary=//')
+
+if [ -z "$boundary" ]; then
+  printf 'Content-Type: text/html\r\n\r\n'
+  printf '<p class="error">No boundary found in Content-Type</p>\n'
+  exit 0
+fi
+
+# Save uploaded content to temp file
+temp_file=$(temp-file)
+cat > "$temp_file"
+
+# Extract filename from Content-Disposition header
+filename=$(grep -a "Content-Disposition" "$temp_file" | head -1 | sed 's/.*filename="//' | sed 's/".*//' || echo "upload")
+
+# Get file extension
+ext="${filename##*.}"
+if [ "$ext" = "$filename" ]; then
+  ext=""
+fi
+
+# Generate unique filename with timestamp
+timestamp=$(date +%Y-%m-%d-%H%M%S)
+if [ -n "$ext" ]; then
+  save_name="${timestamp}-${filename}"
+else
+  save_name="${timestamp}-${filename}"
+fi
+
+save_path="$UPLOAD_DIR/$save_name"
+
+# Extract file data (skip headers, remove boundary markers)
+# Find the start of file data (after headers)
+awk -v RS='\r\n\r\n' 'NR==2{print; exit}' "$temp_file" | \
+  head -c -$((${#boundary} + 8)) > "$save_path"
+
+# Detect MIME type
+mime_type="application/octet-stream"
+if command -v file >/dev/null 2>&1; then
+  mime_type=$(file --mime-type -b "$save_path" 2>/dev/null || echo "application/octet-stream")
+fi
+
+# Get file size
+file_size=$(wc -c < "$save_path" | tr -d ' ')
+
+# Generate download URL
+download_url="/uploads/$save_name"
+
+# Generate appropriate display HTML based on MIME type
+display_html=""
+case "$mime_type" in
+  image/*)
+    display_html="<img src=\"$download_url\" alt=\"Uploaded image\" style=\"max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px;\">"
+    ;;
+  video/*)
+    display_html="<video controls style=\"max-width: 100%; height: auto;\"><source src=\"$download_url\" type=\"$mime_type\">Your browser doesn't support video.</video>"
+    ;;
+  audio/*)
+    display_html="<audio controls style=\"width: 100%;\"><source src=\"$download_url\" type=\"$mime_type\">Your browser doesn't support audio.</audio>"
+    ;;
+  application/pdf)
+    display_html="<embed src=\"$download_url\" type=\"application/pdf\" width=\"100%\" height=\"600px\" style=\"border: 1px solid #ddd;\">"
+    ;;
+  text/*)
+    # For text files, read and display content
+    content=$(cat "$save_path" | head -c 10000)
+    display_html="<pre style=\"background: #f5f5f5; padding: 1em; border-radius: 4px; overflow-x: auto;\">$(printf '%s' "$content" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')</pre>"
+    ;;
+  *)
+    display_html="<p><em>Preview not available for this file type ($mime_type)</em></p>"
+    ;;
+esac
+
+# Clean up temp file
+rm -f "$temp_file"
+
+# Return success response
+printf 'Content-Type: text/html\r\n\r\n'
+cat <<HTML
+<div class="upload-result">
+  <h4 style="color: #28a745; margin-top: 0;">✓ Upload Successful!</h4>
+  
+  <div class="file-info" style="background: #f8f9fa; padding: 0.75em; border-radius: 4px; margin: 1em 0;">
+    <p style="margin: 0.25em 0;"><strong>Filename:</strong> $filename</p>
+    <p style="margin: 0.25em 0;"><strong>Type:</strong> $mime_type</p>
+    <p style="margin: 0.25em 0;"><strong>Size:</strong> $file_size bytes</p>
+  </div>
+  
+  <div class="file-display" style="margin: 1em 0; padding: 1em; border: 1px solid #ddd; border-radius: 4px; background: white;">
+    $display_html
+  </div>
+  
+  <p style="margin-top: 1em;">
+    <a href="$download_url" download="$filename" style="display: inline-block; padding: 0.5em 1em; background: #007bff; color: white; text-decoration: none; border-radius: 4px;">
+      ⬇ Download File
+    </a>
+  </p>
+</div>
+HTML
