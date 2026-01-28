@@ -31,6 +31,33 @@ if [ ! -d "$SITE_DIR" ]; then
   die "delete-site: site '$site_name' not found"
 fi
 
+# Check if server is running and stop it first
+is_running=0
+
+# Check nginx
+if [ -f "$SITE_DIR/nginx/nginx.pid" ]; then
+  pid=$(cat "$SITE_DIR/nginx/nginx.pid" 2>/dev/null || echo "")
+  if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+    is_running=1
+  fi
+fi
+
+# Check fcgiwrap
+if [ -f "$SITE_DIR/nginx/fcgiwrap.pid" ]; then
+  pid=$(cat "$SITE_DIR/nginx/fcgiwrap.pid" 2>/dev/null || echo "")
+  if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+    is_running=1
+  fi
+fi
+
+# Stop server if running
+if [ "$is_running" -eq 1 ]; then
+  warn "Site '$site_name' is currently running"
+  step "Stopping server before deletion..."
+  stop-site "$site_name" 2>/dev/null || true
+  sleep 1
+fi
+
 # Confirm deletion
 printf 'Delete site %s? [y/N] ' "$site_name"
 read -r confirm
@@ -44,5 +71,4 @@ case "$confirm" in
   *)
     info "Deletion cancelled"
     ;;
-esac
 esac
