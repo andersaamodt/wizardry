@@ -630,7 +630,7 @@ pre code {
   min-height: 0;  /* Critical for flexbox scrolling */
   scrollbar-width: auto;  /* Make scrollbar more visible in Firefox */
   scrollbar-color: var(--primary) #e0e0e0;  /* For Firefox */
-  scroll-behavior: smooth;  /* Smooth scrolling animation */
+  /* Removed scroll-behavior: smooth - using JS animation instead for better performance */
 }
 
 /* Webkit scrollbar styling */
@@ -667,13 +667,13 @@ pre code {
   font-family: 'Monaco', 'Courier New', monospace;
   font-size: 0.9rem;
   color: #2c2c54;  /* Dark text for readability */
-  animation: messageAppear 0.6s ease-out;
+  animation: messageAppear 1.0s ease-out;
 }
 
 @keyframes messageAppear {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
