@@ -1,16 +1,16 @@
 /* Wizardry Web Demo Site Styles - Mystical Magical Theme */
 
 :root {
-  /* Mystical Purple & Gold Theme */
-  --primary: #5352ed;        /* Indigo blue (was deep mystical purple) */
-  --secondary: #3742fa;      /* Brighter indigo (was darker purple) */
+  /* Indigo & Gold Theme */
+  --primary: #5352ed;        /* Indigo blue */
+  --secondary: #3742fa;      /* Brighter indigo */
   --accent: #f39c12;         /* Magical gold */
   --success: #27ae60;        /* Emerald green */
   --warning: #e67e22;        /* Amber warning */
   --danger: #c0392b;         /* Ruby red */
   --dark: #2c2c54;           /* Deep twilight */
   --light: #f5f6fa;          /* Moonlight white */
-  --border: #a29bfe;         /* Soft purple border */
+  --border: #a8a4fe;         /* Soft indigo border */
   --shadow: rgba(83, 82, 237, 0.2);  /* Indigo shadow */
   --glow: rgba(83, 82, 237, 0.4);    /* Indigo glow */
 }
