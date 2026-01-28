@@ -53,7 +53,7 @@ Delete Room
 </button>
 </div>
 
-<div id="chat-messages" class="chat-display" hx-swap="morph" hx-ext="morph">
+<div id="chat-messages" class="chat-display" hx-swap="morph:innerHTML" hx-ext="morph">
 <div class="chat-messages">
 <p style="color: #666; font-style: italic;">Select a room to start chatting</p>
 </div>

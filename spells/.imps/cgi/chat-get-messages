@@ -16,10 +16,8 @@ room_name=$(printf '%s' "$room_name" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
 
 if [ -z "$room_name" ]; then
   cat <<HTML
-<div id="chat-messages" class="chat-display">
 <div class="chat-messages">
   <p style="color: #666; font-style: italic;">Select a room to start chatting</p>
-</div>
 </div>
 HTML
   exit 0
@@ -38,10 +36,8 @@ ROOM_DIR="$CHAT_DIR/$room_name"
 
 if [ ! -d "$ROOM_DIR" ]; then
   cat <<HTML
-<div id="chat-messages" class="chat-display">
 <div class="demo-result error">
   <p>Room not found</p>
-</div>
 </div>
 HTML
   exit 0
@@ -52,15 +48,12 @@ LOG_FILE="$ROOM_DIR/.log"
 
 if [ ! -f "$LOG_FILE" ] || [ ! -s "$LOG_FILE" ]; then
   cat <<HTML
-<div id="chat-messages" class="chat-display">
 <div class="chat-messages">
   <p class="meta">No messages yet. Be the first to say something!</p>
-</div>
 </div>
 HTML
 else
   cat <<HTML
-<div id="chat-messages" class="chat-display">
 <div class="chat-messages">
 HTML
   
@@ -73,7 +66,6 @@ HTML
   done
   
   cat <<HTML
-</div>
 </div>
 HTML
 fi
