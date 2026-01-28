@@ -17,23 +17,23 @@ title: Interactive Poll
 Vote for your favorite and see live results! Each vote is processed by a shell CGI script.
 
 <div class="demo-box poll-container">
-  <h3>Which programming paradigm do you prefer?</h3>
-  
-  <div class="poll-buttons">
-    <button hx-get="/cgi/poll-vote?vote=A" hx-target="#poll-results" hx-swap="innerHTML" class="poll-btn">
-      🔵 Functional Programming
-    </button>
-    <button hx-get="/cgi/poll-vote?vote=B" hx-target="#poll-results" hx-swap="innerHTML" class="poll-btn">
-      🟢 Object-Oriented
-    </button>
-    <button hx-get="/cgi/poll-vote?vote=C" hx-target="#poll-results" hx-swap="innerHTML" class="poll-btn">
-      🟡 Procedural
-    </button>
-  </div>
-  
-  <div id="poll-results" class="output" hx-get="/cgi/poll-vote" hx-trigger="load" hx-swap="innerHTML">
-    Loading results...
-  </div>
+<h3>Which programming paradigm do you prefer?</h3>
+
+<div class="poll-buttons">
+<button hx-get="/cgi/poll-vote?vote=A" hx-target="#poll-results" hx-swap="innerHTML" class="poll-btn">
+🔵 Functional Programming
+</button>
+<button hx-get="/cgi/poll-vote?vote=B" hx-target="#poll-results" hx-swap="innerHTML" class="poll-btn">
+🟢 Object-Oriented
+</button>
+<button hx-get="/cgi/poll-vote?vote=C" hx-target="#poll-results" hx-swap="innerHTML" class="poll-btn">
+🟡 Procedural
+</button>
+</div>
+
+<div id="poll-results" class="output" hx-get="/cgi/poll-vote" hx-trigger="load" hx-swap="innerHTML">
+Loading results...
+</div>
 </div>
 
 ---

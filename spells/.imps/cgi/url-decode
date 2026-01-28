@@ -3,6 +3,12 @@
 # Example: url-decode "hello%20world" → "hello world"
 set -eu
 
+# Check if argument provided
+if [ $# -eq 0 ] || [ -z "${1-}" ]; then
+  printf ''
+  exit 0
+fi
+
 # Decode URL-encoded string using awk for portability
 printf '%s' "$1" | awk '
 BEGIN {
