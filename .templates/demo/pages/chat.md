@@ -53,7 +53,9 @@ Delete Room
 </button>
 </div>
 
-<div id="chat-messages" class="chat-display" hx-get="/cgi/chat-get-messages" hx-vals='js:{room: window.currentRoom || ""}' hx-trigger="load, every 2s" hx-swap="morph" hx-ext="morph">
+<input type="hidden" id="current-room-input" name="room" value="" />
+
+<div id="chat-messages" class="chat-display" hx-get="/cgi/chat-get-messages" hx-include="#current-room-input" hx-trigger="load, every 2s" hx-swap="morph" hx-ext="morph">
 <div class="chat-messages">
 <p style="color: #666; font-style: italic;">Select a room to start chatting</p>
 </div>
@@ -124,6 +126,9 @@ function joinRoom(roomName) {
   document.getElementById('send-btn').disabled = false;
   document.getElementById('chat-input-area').style.display = 'flex';
   
+  // Set the hidden input value for htmx to include
+  document.getElementById('current-room-input').value = roomName;
+  
   // Load messages first to determine if we should show delete button
   fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(roomName))
     .then(function(response) { return response.text(); })
@@ -151,6 +156,9 @@ function leaveRoom() {
   document.getElementById('send-btn').disabled = true;
   document.getElementById('delete-room-btn').style.display = 'none';
   document.getElementById('chat-input-area').style.display = 'none';
+  
+  // Clear the hidden input value
+  document.getElementById('current-room-input').value = '';
   
   // Trigger htmx to clear messages
   htmx.trigger('#chat-messages', 'load');
