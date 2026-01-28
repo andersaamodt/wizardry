@@ -22,12 +22,15 @@ if [ -z "$text" ]; then
 </div>
 HTML
 else
-  # Use echo to ensure proper line counting
+  # Count words and characters using newline version for wc compatibility
   words=$(printf '%s\n' "$text" | wc -w | tr -d ' ')
-  chars=$(printf '%s\n' "$text" | wc -c | tr -d ' ')
-  # For lines, count newlines in the text plus one
-  lines=$(printf '%s\n' "$text" | wc -l | tr -d ' ')
-  lines=$((lines + 1))
+  chars=$(printf '%s' "$text" | wc -c | tr -d ' ')
+  
+  # Count actual newlines in the text
+  # wc -l counts newline characters, so text without newlines = 0
+  # We want 1 line if no newlines, 2 lines if 1 newline, etc.
+  newline_count=$(printf '%s' "$text" | wc -l | tr -d ' ')
+  lines=$((newline_count + 1))
   
   cat <<HTML
 <div class="demo-result">
