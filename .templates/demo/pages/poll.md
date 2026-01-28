@@ -2,9 +2,15 @@
 title: Interactive Poll
 ---
 
-# Interactive Voting Poll
+<nav class="site-nav" style="margin-bottom: 2em; padding: 1em; background: #f5f5f5; border-radius: 5px;">
+  <a href="/pages/index.html">Home</a> |
+  <a href="/pages/advanced.html">Advanced Demos</a> |
+  <strong>Poll</strong> |
+  <a href="/pages/chat.html">Chatrooms</a> |
+  <a href="/pages/about.html">About</a>
+</nav>
 
-[← Back to Home](/pages/index.html)
+# Interactive Voting Poll
 
 ## 📊 Real-Time Poll
 
@@ -74,14 +80,3 @@ This is a custom reusable component showing repeated elements:
     <div id="card3-content"></div>
   </div>
 </div>
-
----
-
-## Navigation
-- [Home](/pages/index.html)
-- [Advanced Demos](/pages/advanced.html)
-- [Poll](/pages/poll.html)
-- [Chat](/pages/chat.html)
-- [About](/pages/about.html)
-- [Advanced Demos](/pages/advanced.html)
-- [About](/pages/about.html)

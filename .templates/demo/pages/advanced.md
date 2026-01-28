@@ -2,11 +2,17 @@
 title: Advanced Demos
 ---
 
+<nav class="site-nav" style="margin-bottom: 2em; padding: 1em; background: #f5f5f5; border-radius: 5px;">
+  <a href="/pages/index.html">Home</a> |
+  <strong>Advanced Demos</strong> |
+  <a href="/pages/poll.html">Poll</a> |
+  <a href="/pages/chat.html">Chatrooms</a> |
+  <a href="/pages/about.html">About</a>
+</nav>
+
 # Advanced Interactive Demos
 
-[← Back to Home](/pages/index.html)
-
-## 🖥️ System Information
+## 1. System Information
 Get real-time system information from the server:
 
 <div class="demo-box">
@@ -16,7 +22,7 @@ Get real-time system information from the server:
   <div id="sysinfo-output" class="output"></div>
 </div>
 
-## 🎨 Color Picker
+## 2. Color Picker
 Choose a color and see it rendered by the server:
 
 <div class="demo-box">
@@ -27,7 +33,7 @@ Choose a color and see it rendered by the server:
   <div id="color-output" class="output"></div>
 </div>
 
-## 🌡️ Temperature Converter
+## 3. Temperature Converter
 Convert between Celsius and Fahrenheit:
 
 <div class="demo-box">
@@ -42,9 +48,9 @@ Convert between Celsius and Fahrenheit:
   <div id="temp-output" class="output"></div>
 </div>
 
-## 📁 File Operations & Real-Time Upload
+## 4. File Operations & Real-Time Upload
 
-### File Upload with Instant Display
+### Image Upload with Instant Display
 Demonstrates real-time file upload and display - the uploaded image appears immediately:
 
 <div class="demo-box">
@@ -54,7 +60,7 @@ Demonstrates real-time file upload and display - the uploaded image appears imme
     Upload & Display
   </button>
   <div id="upload-display" class="output">
-    <p class="meta">Click Upload to see real-time image generation and display</p>
+    <p style="color: #666; font-style: italic;">Click Upload to see real-time image generation and display</p>
   </div>
 </div>
 
@@ -69,7 +75,7 @@ Get details about uploaded files:
   <div id="file-output" class="output"></div>
 </div>
 
-### Directory Browser
+## 5. Directory Browser
 <div class="demo-box">
   <button hx-get="/cgi/list-files" hx-target="#files-output" hx-swap="innerHTML">
     List Files
@@ -77,23 +83,11 @@ Get details about uploaded files:
   <div id="files-output" class="output"></div>
 </div>
 
-## 🔄 Auto-Refresh Demo
+## 6. Auto-Refresh Demo
 This section refreshes every 5 seconds automatically:
 
 <div class="demo-box">
   <div hx-get="/cgi/system-info" hx-trigger="every 5s" hx-swap="innerHTML" class="auto-refresh">
-    <p class="meta">Loading...</p>
+    <p style="color: #666; font-style: italic;">Loading...</p>
   </div>
 </div>
-
----
-
-## Navigation
-- [Home](/pages/index.html)
-- [Advanced Demos](/pages/advanced.html)
-- [Poll](/pages/poll.html)
-- [Chat](/pages/chat.html)
-- [About](/pages/about.html)
-- [Home](/pages/index.html)
-- [Poll](/pages/poll.html)
-- [About](/pages/about.html)

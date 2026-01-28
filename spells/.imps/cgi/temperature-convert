@@ -7,10 +7,13 @@ http-header "Content-Type" "text/html"
 http-end-headers
 
 params="${QUERY_STRING:-}"
-temp=$(printf '%s' "$params" | sed 's/.*temp=\([^&]*\).*/\1/' | url-decode)
-unit=$(printf '%s' "$params" | sed 's/.*unit=\([^&]*\).*/\1/' | url-decode)
+temp_encoded=$(printf '%s' "$params" | sed 's/^temp=//' | sed 's/&.*//')
+unit_encoded=$(printf '%s' "$params" | sed 's/.*unit=//' | sed 's/&.*//')
+temp=$(url-decode "$temp_encoded")
+unit=$(url-decode "$unit_encoded")
 
-if [ -z "$temp" ]; then
+# Check if temp is empty or not a number
+if [ -z "$temp" ] || ! printf '%s' "$temp" | grep -qE '^-?[0-9]+\.?[0-9]*$'; then
   cat <<HTML
 <div class="demo-result">
   <p>Please enter a temperature</p>

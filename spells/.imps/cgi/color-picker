@@ -7,7 +7,7 @@ http-header "Content-Type" "text/html"
 http-end-headers
 
 color="${QUERY_STRING:-#3498db}"
-color=$(printf '%s' "$color" | sed 's/color=//')
+color=$(printf '%s' "$color" | sed 's/color=//' | url-decode)
 
 cat <<HTML
 <div class="demo-result" style="background: ${color}; padding: 20px; border-radius: 8px;">

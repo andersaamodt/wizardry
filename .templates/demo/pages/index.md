@@ -2,6 +2,14 @@
 title: Wizardry Web Demo
 ---
 
+<nav class="site-nav" style="margin-bottom: 2em; padding: 1em; background: #f5f5f5; border-radius: 5px;">
+  <strong>Home</strong> |
+  <a href="/pages/advanced.html">Advanced Demos</a> |
+  <a href="/pages/poll.html">Poll</a> |
+  <a href="/pages/chat.html">Chatrooms</a> |
+  <a href="/pages/about.html">About</a>
+</nav>
+
 # Wizardry Web Interactive Demos
 
 Welcome to the **Wizardry Web Platform** demo site! This showcases real-time interactivity powered by POSIX shell scripts via CGI.
