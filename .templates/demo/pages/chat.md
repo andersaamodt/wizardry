@@ -130,6 +130,9 @@ function joinRoom(roomName) {
   chatMessages.setAttribute('hx-get', '/cgi/chat-get-messages?room=' + encodeURIComponent(roomName));
   chatMessages.setAttribute('hx-trigger', 'load, every 2s');
   
+  // Tell htmx to process the newly added attributes
+  htmx.process(chatMessages);
+  
   // Load messages first to determine if we should show delete button
   fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(roomName))
     .then(function(response) { return response.text(); })
