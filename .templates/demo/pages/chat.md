@@ -53,7 +53,7 @@ Delete Room
 </button>
 </div>
 
-<div id="chat-messages" class="chat-display" hx-swap="morph:innerHTML" hx-ext="morph">
+<div id="chat-messages" class="chat-display" hx-get="/cgi/chat-get-messages" hx-vals='js:{room: window.currentRoom || ""}' hx-trigger="load, every 2s" hx-swap="morph" hx-ext="morph">
 <div class="chat-messages">
 <p style="color: #666; font-style: italic;">Select a room to start chatting</p>
 </div>
@@ -124,15 +124,6 @@ function joinRoom(roomName) {
   document.getElementById('send-btn').disabled = false;
   document.getElementById('chat-input-area').style.display = 'flex';
   
-  var chatMessages = document.getElementById('chat-messages');
-  
-  // Set up htmx polling for this room
-  chatMessages.setAttribute('hx-get', '/cgi/chat-get-messages?room=' + encodeURIComponent(roomName));
-  chatMessages.setAttribute('hx-trigger', 'load, every 2s');
-  
-  // Tell htmx to process the newly added attributes
-  htmx.process(chatMessages);
-  
   // Load messages first to determine if we should show delete button
   fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(roomName))
     .then(function(response) { return response.text(); })
@@ -149,7 +140,7 @@ function joinRoom(roomName) {
       }
     });
   
-  // Trigger initial load via htmx
+  // Trigger htmx to load messages for this room
   htmx.trigger('#chat-messages', 'load');
 }
 
@@ -161,12 +152,8 @@ function leaveRoom() {
   document.getElementById('delete-room-btn').style.display = 'none';
   document.getElementById('chat-input-area').style.display = 'none';
   
-  var chatMessages = document.getElementById('chat-messages');
-  chatMessages.innerHTML = '<div class="chat-messages"><p style="color: #666; font-style: italic;">Create or join a room to chat</p></div>';
-  
-  // Stop htmx polling by removing attributes
-  chatMessages.removeAttribute('hx-get');
-  chatMessages.removeAttribute('hx-trigger');
+  // Trigger htmx to clear messages
+  htmx.trigger('#chat-messages', 'load');
 }
 
 // Delete room with blocking behavior
