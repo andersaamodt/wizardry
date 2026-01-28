@@ -25,7 +25,7 @@ body {
   margin: 2rem auto;
   padding: 0 1.5rem;
   line-height: 1.6;
-  color: #2c2c54;
+  color: #f5f6fa;  /* Light text for dark background */
   background: linear-gradient(135deg, #1e1e3f 0%, #2c2c54 50%, #3c3c6c 100%);
   background-attachment: fixed;
   min-height: 100vh;
@@ -111,6 +111,11 @@ button:active {
   width: 100%;
   margin: 0.5rem 0;
   text-align: left;
+  background: linear-gradient(135deg, #27ae60 0%, #229954 100%);  /* Green instead of purple */
+}
+
+.poll-btn:hover {
+  background: linear-gradient(135deg, #229954 0%, #27ae60 100%);
 }
 
 /* Inputs - Magical Theme */
