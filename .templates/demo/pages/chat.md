@@ -68,20 +68,16 @@ Delete Room
 </div>
 
 <script>
-// Generate a random guest name with collision handling
-function generateGuestName(digits) {
-  digits = digits || 1;
-  var max = Math.pow(10, digits) - 1;
-  var min = digits === 1 ? 0 : Math.pow(10, digits - 1);
-  var num = Math.floor(Math.random() * (max - min + 1)) + min;
+// Generate a random guest name
+function generateGuestName() {
+  // Use 3-digit random number (100-999) to minimize collision probability
+  var num = Math.floor(Math.random() * 900) + 100;
   return 'Guest' + num;
 }
 
 // Track current room
 window.currentRoom = null;
 window.hoveredRoom = null;
-window.usedGuestNames = {};  // Track guest names used in current session
-window.currentDigits = 1;  // Start with 1-digit numbers
 window.userHasScrolledUp = false;  // Track if user manually scrolled up
 
 // Handle room selection from list
@@ -235,8 +231,9 @@ function loadMessages() {
             // Remove and re-add animation to force it to play
             msg.style.animation = 'none';
             // Force reflow
-            msg.offsetHeight;
-            msg.style.animation = '';
+            void msg.offsetHeight;
+            // Restore the animation with explicit declaration
+            msg.style.animation = 'messageAppear 1.0s ease-out';
           }
         }
         
@@ -365,9 +362,8 @@ document.addEventListener('DOMContentLoaded', function() {
   var usernameInput = document.getElementById('username-input');
   
   // Initialize with a guest name
-  var guestName = generateGuestName(window.currentDigits);
+  var guestName = generateGuestName();
   usernameInput.value = guestName;
-  window.usedGuestNames[guestName] = true;
   
   function sendMessage() {
     if (!window.currentRoom) return;
@@ -389,21 +385,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }).then(function(response) {
       return response.text();
     }).then(function(text) {
-      // Check for name collision error
-      if (text.indexOf('name collision') !== -1 || text.indexOf('already in use') !== -1) {
-        // Increment digits and try again
-        window.currentDigits++;
-        if (window.currentDigits > 6) window.currentDigits = 1;  // Reset after 6 digits
-        var newName = generateGuestName(window.currentDigits);
-        usernameInput.value = newName;
-        window.usedGuestNames[newName] = true;
-        // Retry sending the message
-        sendMessage();
-      } else {
-        messageInput.value = '';
-        // Reload messages immediately to show the new message
-        loadMessages();
-      }
+      messageInput.value = '';
+      // Reload messages immediately to show the new message
+      loadMessages();
     });
   }
   
