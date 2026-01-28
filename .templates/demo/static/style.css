@@ -2,8 +2,8 @@
 
 :root {
   /* Mystical Purple & Gold Theme */
-  --primary: #9b59b6;        /* Deep mystical purple */
-  --secondary: #8e44ad;      /* Darker purple */
+  --primary: #5352ed;        /* Indigo blue (was deep mystical purple) */
+  --secondary: #3742fa;      /* Brighter indigo (was darker purple) */
   --accent: #f39c12;         /* Magical gold */
   --success: #27ae60;        /* Emerald green */
   --warning: #e67e22;        /* Amber warning */
@@ -11,8 +11,8 @@
   --dark: #2c2c54;           /* Deep twilight */
   --light: #f5f6fa;          /* Moonlight white */
   --border: #a29bfe;         /* Soft purple border */
-  --shadow: rgba(155, 89, 182, 0.2);
-  --glow: rgba(155, 89, 182, 0.4);
+  --shadow: rgba(83, 82, 237, 0.2);  /* Indigo shadow */
+  --glow: rgba(83, 82, 237, 0.4);    /* Indigo glow */
 }
 
 * {
@@ -59,6 +59,24 @@ a:hover {
   text-shadow: 0 0 5px var(--glow);
 }
 
+/* Site Navigation */
+.site-nav {
+  color: #2c2c54;  /* Dark text on light background */
+}
+
+.site-nav strong {
+  color: #3742fa;  /* Bright indigo for current page */
+  font-weight: 700;
+}
+
+.site-nav a {
+  color: #5352ed;  /* Medium indigo for links */
+}
+
+.site-nav a:hover {
+  color: #3742fa;  /* Brighter indigo on hover */
+}
+
 /* Demo Boxes */
 .demo-box {
   background: rgba(255, 255, 255, 0.95);
@@ -66,7 +84,7 @@ a:hover {
   border-radius: 12px;
   padding: 1.5rem;
   margin: 1.5rem 0;
-  box-shadow: 0 4px 12px var(--shadow), 0 0 20px rgba(155, 89, 182, 0.1);
+  box-shadow: 0 4px 12px var(--shadow), 0 0 20px rgba(83, 82, 237, 0.1);
   backdrop-filter: blur(10px);
   color: #2c2c54;  /* Dark text for light background */
 }
@@ -84,7 +102,7 @@ a:hover {
 button {
   background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   color: white;
-  border: 1px solid rgba(155, 89, 182, 0.3);
+  border: 1px solid rgba(83, 82, 237, 0.3);
   padding: 0.75rem 1.5rem;
   border-radius: 8px;
   cursor: pointer;
@@ -116,16 +134,16 @@ button:active {
   width: 100%;
   margin: 0.5rem 0;
   text-align: left;
-  background: linear-gradient(135deg, rgba(155, 89, 182, 0.8) 0%, rgba(142, 68, 173, 0.8) 100%);
-  border: 2px solid rgba(155, 89, 182, 0.4);
+  background: linear-gradient(135deg, rgba(83, 82, 237, 0.8) 0%, rgba(116, 185, 255, 0.8) 100%);
+  border: 2px solid rgba(83, 82, 237, 0.4);
   backdrop-filter: blur(5px);
-  box-shadow: 0 2px 8px rgba(155, 89, 182, 0.3);
+  box-shadow: 0 2px 8px rgba(83, 82, 237, 0.3);
   transition: all 0.3s ease;
 }
 
 .poll-btn:hover {
-  background: linear-gradient(135deg, rgba(155, 89, 182, 1) 0%, rgba(142, 68, 173, 1) 100%);
-  box-shadow: 0 4px 12px rgba(155, 89, 182, 0.5);
+  background: linear-gradient(135deg, rgba(83, 82, 237, 1) 0%, rgba(116, 185, 255, 1) 100%);
+  box-shadow: 0 4px 12px rgba(83, 82, 237, 0.5);
   transform: translateY(-2px);
 }
 
@@ -262,7 +280,7 @@ th {
 
 /* Poll specific */
 .poll-container {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #5352ed 0%, #74b9ff 100%);
   color: white;
   border: none;
 }
@@ -311,6 +329,7 @@ th {
   padding: 1.5rem;
   box-shadow: 0 2px 4px var(--shadow);
   transition: transform 0.2s;
+  color: #2c2c54;  /* Dark text for readability on light background */
 }
 
 .card:hover {
@@ -347,6 +366,7 @@ code {
   border-radius: 3px;
   font-family: 'Monaco', 'Courier New', monospace;
   font-size: 0.9em;
+  color: #2c2c54;  /* Dark text for readability on light background */
 }
 
 pre {
