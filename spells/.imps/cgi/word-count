@@ -6,8 +6,14 @@ http-status 200 "OK"
 http-header "Content-Type" "text/html"
 http-end-headers
 
-text="${QUERY_STRING:-}"
-text=$(printf '%s' "$text" | sed 's/text=//' | url-decode)
+# Parse query string to get text parameter
+text=""
+if [ -n "${QUERY_STRING:-}" ]; then
+  # Extract text=value from query string (before url-decode)
+  encoded=$(printf '%s' "$QUERY_STRING" | sed 's/^text=//' | sed 's/&.*//')
+  # Decode the URL-encoded value
+  text=$(url-decode "$encoded")
+fi
 
 if [ -z "$text" ]; then
   cat <<HTML
@@ -16,16 +22,22 @@ if [ -z "$text" ]; then
 </div>
 HTML
 else
-  words=$(printf '%s' "$text" | wc -w)
-  chars=$(printf '%s' "$text" | wc -c)
-  lines=$(printf '%s' "$text" | wc -l)
+  # Count words and characters using newline version for wc compatibility
+  words=$(printf '%s\n' "$text" | wc -w | tr -d ' ')
+  chars=$(printf '%s' "$text" | wc -c | tr -d ' ')
+  
+  # Count actual newlines in the text
+  # wc -l counts newline characters, so text without newlines = 0
+  # We want 1 line if no newlines, 2 lines if 1 newline, etc.
+  newline_count=$(printf '%s' "$text" | wc -l | tr -d ' ')
+  lines=$((newline_count + 1))
   
   cat <<HTML
 <div class="demo-result">
   <table>
     <tr><th>Words</th><td>$words</td></tr>
     <tr><th>Characters</th><td>$chars</td></tr>
-    <tr><th>Lines</th><td>$((lines + 1))</td></tr>
+    <tr><th>Lines</th><td>$lines</td></tr>
   </table>
 </div>
 HTML

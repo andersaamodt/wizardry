@@ -28,11 +28,12 @@ upload_dir="${TMPDIR:-/tmp}/wizardry-uploads"
 mkdir -p "$upload_dir"
 
 # Extract filename from query
-filename=$(printf '%s' "$query" | sed 's/.*name=//' | sed 's/&.*//' | url-decode)
+filename_encoded=$(printf '%s' "$query" | sed 's/^name=//' | sed 's/&.*//')
+filename=$(url-decode "$filename_encoded")
 filename=${filename:-uploaded-file.bin}
 
-# For demo: create a simple test file
-timestamp=$(date +%s)
+# For demo: create a simple test file with YYYY-MM-DD timestamp
+timestamp=$(date +%Y-%m-%d-%H%M%S)
 test_file="$upload_dir/${timestamp}-${filename}"
 
 # Create a simple demo file (in production would save actual upload data)
