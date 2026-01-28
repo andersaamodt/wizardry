@@ -63,10 +63,12 @@ build_site() {
   
   # Copy static files
   if [ -d "$SITE_DIR/site/static" ]; then
+    info "Copying static files to build/static/..."
     cp -r "$SITE_DIR/site/static"/* "$SITE_DIR/build/static/" 2>/dev/null || true
   fi
   
   # Build each Markdown page
+  info "Converting Markdown to HTML..."
   built_count=0
   if [ -d "$SITE_DIR/site/pages" ]; then
     for md_file in "$SITE_DIR/site/pages"/*.md; do
@@ -81,7 +83,7 @@ build_site() {
         continue
       fi
       
-      info "Building: $base_name.md → $base_name.html"
+      info "  Building: $base_name.md → $base_name.html"
       
       # Create temporary header file with htmx
       htmx_header=$(temp-file htmx-header)
@@ -109,6 +111,7 @@ build_site() {
   fi
   
   # Ensure all directories have proper permissions
+  info "Setting file permissions..."
   find "$SITE_DIR/build" -type d -exec chmod 755 {} \; 2>/dev/null || true
   find "$SITE_DIR/build" -type f -exec chmod 644 {} \; 2>/dev/null || true
   
