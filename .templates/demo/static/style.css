@@ -1,18 +1,18 @@
 /* Wizardry Web Demo Site Styles - Mystical Magical Theme */
 
 :root {
-  /* Mystical Purple & Gold Theme */
-  --primary: #9b59b6;        /* Deep mystical purple */
-  --secondary: #8e44ad;      /* Darker purple */
+  /* Contemporary Blue & Gold Theme */
+  --primary: #6c9fff;        /* Lighter, cooler blue */
+  --secondary: #4d88ff;      /* Contemporary blue */
   --accent: #f39c12;         /* Magical gold */
   --success: #27ae60;        /* Emerald green */
   --warning: #e67e22;        /* Amber warning */
   --danger: #c0392b;         /* Ruby red */
   --dark: #2c2c54;           /* Deep twilight */
   --light: #f5f6fa;          /* Moonlight white */
-  --border: #a29bfe;         /* Soft purple border */
-  --shadow: rgba(155, 89, 182, 0.2);
-  --glow: rgba(155, 89, 182, 0.4);
+  --border: #a8a4fe;         /* Soft indigo border */
+  --shadow: rgba(108, 159, 255, 0.2);  /* Blue shadow */
+  --glow: rgba(108, 159, 255, 0.4);    /* Blue glow */
 }
 
 * {
@@ -59,6 +59,24 @@ a:hover {
   text-shadow: 0 0 5px var(--glow);
 }
 
+/* Site Navigation */
+.site-nav {
+  color: #2c2c54;  /* Dark text on light background */
+}
+
+.site-nav strong {
+  color: #000000;  /* Black for current page */
+  font-weight: 700;
+}
+
+.site-nav a {
+  color: #5352ed;  /* Medium indigo for links */
+}
+
+.site-nav a:hover {
+  color: #3742fa;  /* Brighter indigo on hover */
+}
+
 /* Demo Boxes */
 .demo-box {
   background: rgba(255, 255, 255, 0.95);
@@ -66,7 +84,7 @@ a:hover {
   border-radius: 12px;
   padding: 1.5rem;
   margin: 1.5rem 0;
-  box-shadow: 0 4px 12px var(--shadow), 0 0 20px rgba(155, 89, 182, 0.1);
+  box-shadow: 0 4px 12px var(--shadow), 0 0 20px rgba(108, 159, 255, 0.1);
   backdrop-filter: blur(10px);
   color: #2c2c54;  /* Dark text for light background */
 }
@@ -84,7 +102,7 @@ a:hover {
 button {
   background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   color: white;
-  border: 1px solid rgba(155, 89, 182, 0.3);
+  border: 1px solid rgba(108, 159, 255, 0.3);
   padding: 0.75rem 1.5rem;
   border-radius: 8px;
   cursor: pointer;
@@ -116,16 +134,16 @@ button:active {
   width: 100%;
   margin: 0.5rem 0;
   text-align: left;
-  background: linear-gradient(135deg, rgba(155, 89, 182, 0.8) 0%, rgba(142, 68, 173, 0.8) 100%);
-  border: 2px solid rgba(155, 89, 182, 0.4);
+  background: linear-gradient(135deg, rgba(120, 81, 169, 0.73) 0%, rgba(75, 0, 130, 0.73) 100%);
+  border: 2px solid rgba(120, 81, 169, 0.4);
   backdrop-filter: blur(5px);
-  box-shadow: 0 2px 8px rgba(155, 89, 182, 0.3);
+  box-shadow: 0 2px 8px rgba(120, 81, 169, 0.3);
   transition: all 0.3s ease;
 }
 
 .poll-btn:hover {
-  background: linear-gradient(135deg, rgba(155, 89, 182, 1) 0%, rgba(142, 68, 173, 1) 100%);
-  box-shadow: 0 4px 12px rgba(155, 89, 182, 0.5);
+  background: linear-gradient(135deg, rgba(120, 81, 169, 1) 0%, rgba(75, 0, 130, 1) 100%);
+  box-shadow: 0 4px 12px rgba(120, 81, 169, 0.5);
   transform: translateY(-2px);
 }
 
@@ -205,11 +223,13 @@ textarea {
 .demo-result.success {
   border-left: 4px solid var(--success);
   background: rgba(39, 174, 96, 0.1);
+  color: #1e5631;  /* Dark green text for readability on light background */
 }
 
 .demo-result.error {
   border-left: 4px solid var(--danger);
   background: rgba(192, 57, 43, 0.1);
+  color: #7a1f1f;  /* Dark red text for readability on light background */
 }
 
 .demo-result.quote blockquote {
@@ -309,6 +329,7 @@ th {
   padding: 1.5rem;
   box-shadow: 0 2px 4px var(--shadow);
   transition: transform 0.2s;
+  color: #2c2c54;  /* Dark text for readability on light background */
 }
 
 .card:hover {
@@ -340,11 +361,12 @@ th {
 
 /* Code blocks */
 code {
-  background: #f4f4f4;
+  background: #2c3e50;  /* Teal background like larger code blocks */
   padding: 0.2rem 0.4rem;
   border-radius: 3px;
   font-family: 'Monaco', 'Courier New', monospace;
   font-size: 0.9em;
+  color: #ecf0f1;  /* Off-white text like larger code blocks */
 }
 
 pre {
@@ -488,7 +510,7 @@ pre code {
   transition: all 0.2s;
 }
 
-.room-item:hover {
+.room-item:hover, .room-item-hover {
   background: var(--primary);
   color: white;
   transform: translateX(3px);
@@ -497,6 +519,7 @@ pre code {
 .room-item strong {
   display: block;
   font-size: 1rem;
+  color: #2c2c54;  /* Dark text for readability on white background */
 }
 
 .room-meta {
@@ -506,8 +529,12 @@ pre code {
   margin-top: 0.25rem;
 }
 
-.room-item:hover .room-meta {
+.room-item:hover .room-meta, .room-item-hover .room-meta {
   color: rgba(255,255,255,0.8);
+}
+
+.room-item:hover strong, .room-item-hover strong {
+  color: white;
 }
 
 .last-msg {
@@ -552,6 +579,7 @@ pre code {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;  /* Prevent header from shrinking */
 }
 
 .chat-header h3 {
@@ -568,19 +596,19 @@ pre code {
 }
 
 .chat-display {
-  flex: 1;
-  overflow-y: auto;
+  flex: 1 1 0;  /* Allow shrinking, set base to 0 to force min-height to work */
+  overflow-y: scroll;  /* Force scrollbar to always show */
   overflow-x: hidden;
   padding: 1rem;
   background: #f8f9fa;
-  max-height: 100%;
-  scrollbar-width: thin;  /* For Firefox */
+  min-height: 0;  /* Critical for flexbox scrolling */
+  scrollbar-width: auto;  /* Make scrollbar more visible in Firefox */
   scrollbar-color: var(--primary) #e0e0e0;  /* For Firefox */
 }
 
 /* Webkit scrollbar styling */
 .chat-display::-webkit-scrollbar {
-  width: 8px;
+  width: 12px;  /* Wider scrollbar for better visibility */
 }
 
 .chat-display::-webkit-scrollbar-track {
@@ -601,6 +629,7 @@ pre code {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  /* Remove height constraint to allow parent scrollbar to work */
 }
 
 .chat-msg {
@@ -631,6 +660,7 @@ pre code {
   padding: 1rem;
   background: white;
   border-top: 2px solid var(--border);
+  flex-shrink: 0;  /* Prevent input area from shrinking */
 }
 
 .chat-input-area input[type="text"] {
@@ -654,6 +684,29 @@ pre code {
 
 .chat-input-area button:disabled {
   background: var(--border);
+  cursor: not-allowed;
+}
+
+/* Loading spinner for room creation */
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.room-controls button:disabled,
+.room-controls input:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
 }
 

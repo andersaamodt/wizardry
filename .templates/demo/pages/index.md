@@ -123,4 +123,14 @@ Upload an image and see it displayed instantly:
   <strong>💡 How It Works:</strong> Every button click triggers a CGI script written in POSIX shell. 
   The server executes the script and returns HTML, which htmx swaps into the page. No JavaScript 
   frameworks needed - just shell scripts!
+
+  <h3 style="margin-top: 1.5rem; margin-bottom: 0.75rem;">Technologies Used:</h3>
+  <ul style="margin: 0; padding-left: 1.5rem;">
+    <li><strong>POSIX Shell Scripts:</strong> Backend logic and CGI handlers</li>
+    <li><strong>htmx:</strong> Frontend AJAX without JavaScript frameworks</li>
+    <li><strong>nginx:</strong> Fast web server and CGI gateway</li>
+    <li><strong>fcgiwrap:</strong> FastCGI wrapper for shell scripts</li>
+    <li><strong>Pandoc:</strong> Markdown to HTML conversion</li>
+    <li><strong>Wizardry Spells:</strong> Modular shell script utilities</li>
+  </ul>
 </div>

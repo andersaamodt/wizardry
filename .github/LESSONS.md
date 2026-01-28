@@ -111,3 +111,9 @@
 - Hardcoded menu positions don't account for dynamic entries (like conditionally-shown submenus); use a position counter that increments for each menu item to keep selection stable when menu items appear/disappear.
 - Install/uninstall scripts must verify the command is actually installed/removed after calling package manager; package managers can exit 0 even when skipping already-installed packages or refusing to remove system dependencies.
 - macOS package management on "unaugmented" systems requires Homebrew support; check for `brew` before falling back to pkgin when detecting Darwin/macOS platform.
+- htmx's morph extension (idiomorph) prevents flicker by intelligently diffing DOM trees and only updating changed nodes; use `hx-swap="morph" hx-ext="morph"` for smooth updates like poll results.
+- Manual JavaScript innerHTML replacement causes flicker even with content comparison; prefer htmx's declarative swap strategies (`morph`, `innerHTML settle:0ms`) over manual DOM manipulation.
+- For optimal UX, block buttons until visible effect occurs not just HTTP completion; move re-enable logic from `hx-on::after-request` to `htmx:afterSwap` on the updated element.
+- htmx conditional triggers should check JavaScript variables before sending requests; `hx-vals='js:{param: window.var}'` sends `param=null` when var is null, causing CGI errors—conditionally enable/disable htmx triggers instead.
+- Auto-scroll preservation in htmx requires tracking scroll position in `htmx:beforeSwap` and restoring in `htmx:afterSwap`; store `wasAtBottom` flag globally to decide whether to auto-scroll after DOM update.
+- Dynamic htmx attributes (setAttribute + htmx.process) don't reliably initialize polling; use static htmx attributes with `hx-vals='js:{param: window.var}'` that evaluate at request time for robust behavior.
