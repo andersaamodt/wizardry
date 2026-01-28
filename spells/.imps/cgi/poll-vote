@@ -38,7 +38,7 @@ else
 fi
 
 cat <<HTML
-<div class="demo-result poll" style="background: transparent; border: none; padding: 1rem;">
+<div id="poll-results" class="demo-result poll" style="background: transparent; border: none; padding: 1rem;">
   <h3 style="color: white; margin-top: 0;">Poll Results</h3>
   <div class="poll-option">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
