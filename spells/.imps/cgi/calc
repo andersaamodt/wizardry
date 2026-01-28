@@ -9,8 +9,10 @@ http-end-headers
 # Parse query string to get expr parameter
 expr=""
 if [ -n "${QUERY_STRING:-}" ]; then
-  # Extract expr=value from query string
-  expr=$(printf '%s' "$QUERY_STRING" | sed 's/^expr=//' | sed 's/&.*//' | url-decode)
+  # Extract expr=value from query string (before url-decode)
+  encoded=$(printf '%s' "$QUERY_STRING" | sed 's/^expr=//' | sed 's/&.*//')
+  # Decode the URL-encoded value
+  expr=$(url-decode "$encoded")
 fi
 
 if [ -z "$expr" ]; then
@@ -21,7 +23,7 @@ if [ -z "$expr" ]; then
 HTML
 else
   # Safely evaluate (only allow numbers and basic operators)
-  if printf '%s' "$expr" | grep -qE '^[0-9+\-*/ ().]+$'; then
+  if printf '%s' "$expr" | grep -qE '^[0-9+\-\*/ ().]+$'; then
     result=$(printf '%s\n' "$expr" | bc 2>/dev/null || echo "Error")
     cat <<HTML
 <div class="demo-result">

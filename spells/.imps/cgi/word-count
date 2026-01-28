@@ -9,8 +9,10 @@ http-end-headers
 # Parse query string to get text parameter
 text=""
 if [ -n "${QUERY_STRING:-}" ]; then
-  # Extract text=value from query string
-  text=$(printf '%s' "$QUERY_STRING" | sed 's/^text=//' | sed 's/&.*//' | url-decode)
+  # Extract text=value from query string (before url-decode)
+  encoded=$(printf '%s' "$QUERY_STRING" | sed 's/^text=//' | sed 's/&.*//')
+  # Decode the URL-encoded value
+  text=$(url-decode "$encoded")
 fi
 
 if [ -z "$text" ]; then
