@@ -116,3 +116,4 @@
 - For optimal UX, block buttons until visible effect occurs not just HTTP completion; move re-enable logic from `hx-on::after-request` to `htmx:afterSwap` on the updated element.
 - htmx conditional triggers should check JavaScript variables before sending requests; `hx-vals='js:{param: window.var}'` sends `param=null` when var is null, causing CGI errors—conditionally enable/disable htmx triggers instead.
 - Auto-scroll preservation in htmx requires tracking scroll position in `htmx:beforeSwap` and restoring in `htmx:afterSwap`; store `wasAtBottom` flag globally to decide whether to auto-scroll after DOM update.
+- Dynamic htmx attributes (setAttribute + htmx.process) don't reliably initialize polling; use static htmx attributes with `hx-vals='js:{param: window.var}'` that evaluate at request time for robust behavior.
