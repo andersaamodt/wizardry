@@ -75,6 +75,11 @@ window.hoveredRoom = null;
 // Handle room selection from list
 document.addEventListener('htmx:afterSwap', function(event) {
   if (event.detail.target.id === 'room-list') {
+    // Remove hover class from all items first (prevents lingering)
+    document.querySelectorAll('.room-item').forEach(function(item) {
+      item.classList.remove('room-item-hover');
+    });
+    
     // Add click handlers to room items and restore hover state
     document.querySelectorAll('.room-item').forEach(function(item) {
       item.onclick = function() {
@@ -85,8 +90,10 @@ document.addEventListener('htmx:afterSwap', function(event) {
       // Track hover state to preserve across refreshes
       item.addEventListener('mouseenter', function() {
         window.hoveredRoom = this.getAttribute('data-room');
+        this.classList.add('room-item-hover');
       });
       item.addEventListener('mouseleave', function() {
+        this.classList.remove('room-item-hover');
         if (window.hoveredRoom === this.getAttribute('data-room')) {
           window.hoveredRoom = null;
         }
@@ -159,13 +166,19 @@ function loadMessages() {
   fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(window.currentRoom))
     .then(function(response) { return response.text(); })
     .then(function(html) {
+      // Normalize both strings for comparison (removes whitespace differences)
+      var currentNormalized = chatDisplay.innerHTML.replace(/\s+/g, ' ').trim();
+      var newNormalized = html.replace(/\s+/g, ' ').trim();
+      
       // Only update if content actually changed (prevents flickering)
-      if (chatDisplay.innerHTML !== html) {
+      if (currentNormalized !== newNormalized) {
+        // Check if user is at bottom before updating
         var wasAtBottom = chatDisplay.scrollTop >= chatDisplay.scrollHeight - chatDisplay.clientHeight - 50;
+        
         chatDisplay.innerHTML = html;
         
-        // Auto-scroll to bottom if user was already at bottom
-        if (wasAtBottom) {
+        // Auto-scroll to bottom if user was already at bottom or if this is first load
+        if (wasAtBottom || chatDisplay.scrollTop === 0) {
           setTimeout(function() {
             chatDisplay.scrollTop = chatDisplay.scrollHeight;
           }, 10);
