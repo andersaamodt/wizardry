@@ -532,7 +532,8 @@ pre code {
   background: #7b7a9e;
   line-height: 1;
   display: flex;
-  align-items: center;
+  flex-direction: column;  /* Stack display and edit vertically */
+  align-items: stretch;  /* Make children take full width */
 }
 
 .username-display {
@@ -540,7 +541,17 @@ pre code {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 4px 8px;
+  padding: 2px 8px;  /* Reduced from 4px to remove extra space */
+  max-height: 100px;
+  opacity: 1;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+}
+
+.username-display.hidden {
+  max-height: 0;
+  opacity: 0;
+  padding: 0 8px;
 }
 
 .username-display strong {
@@ -551,6 +562,8 @@ pre code {
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;  /* Allow flex item to shrink for ellipsis */
+  flex: 1;  /* Take available space */
+  margin-top: 0.5rem;  /* Add top spacing to username */
 }
 
 .username-display button {
@@ -564,6 +577,7 @@ pre code {
   transition: background-color 0.2s;
   flex-shrink: 0;
   margin-left: 8px;
+  margin-bottom: 0;  /* Remove bottom margin */
 }
 
 .username-display button:hover {
@@ -571,10 +585,21 @@ pre code {
 }
 
 .username-edit {
-  display: none;  /* Hidden by default */
+  display: flex;  /* Always flex, use max-height for animation */
   gap: 0.5rem;
   flex-direction: column;
-  padding: 0.5rem 0.75rem;  /* Add padding to create space above heading */
+  width: 100%;  /* Take full width */
+  padding: 0.5rem 0.75rem 0 0.75rem;  /* Remove bottom padding */
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+}
+
+.username-edit.open {
+  max-height: 135px;  /* Increased from 120px to show full heading */
+  opacity: 1;
+  padding: 0.5rem 0.75rem 0 0.75rem;  /* Remove bottom padding */
 }
 
 .username-edit h5 {
@@ -756,48 +781,43 @@ pre code {
   /* No border-top */
 }
 
+#create-room-widget {
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+  max-height: 40px;  /* Just enough for the link when closed */
+  opacity: 1;
+  padding: 0.3rem 0;  /* Small padding for link */
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+
+#create-room-widget.open {
+  max-height: 150px;  /* Reduced from 200px to prevent overshoot */
+  opacity: 1;
+  padding: 0.25rem 0.75rem 0.75rem 0.75rem;
+  background-color: #e6f2ff;  /* Light blue background */
+  border-color: #99ccff;  /* Slightly darker light blue border */
+}
+
 #create-room-link {
   display: block;
-  padding: 0.5rem 0;  /* Less padding */
+  padding: 0;
   color: var(--primary);
   text-decoration: none;
   font-weight: 600;
-  transition: color 0.2s;
-  text-align: center;  /* Center always */
+  transition: color 0.2s, margin-left 0.3s ease;
+  text-align: center;
   cursor: pointer;
-  margin-left: -1.7em;  /* Shift left to compensate for arrow */
+  margin-left: -1.7em;  /* Shift left to compensate for arrow when closed */
 }
 
-#create-room-link.expanded {
-  color: var(--dark);
-  padding: 0 0 0.5rem 0;
-  cursor: pointer;  /* Keep clickable when expanded */
-  margin-left: 0;  /* Centered when expanded */
-  text-align: center;  /* Explicitly centered */
-}
-
-#create-room-link.expanded #create-room-arrow {
-  display: none;  /* Hide arrow when expanded */
+#create-room-widget.open #create-room-link {
+  margin-left: -1.7em;  /* Keep left-of-center when open */
+  margin-bottom: 0.5rem;  /* Space below when it becomes a heading */
 }
 
 #create-room-link:hover {
-  color: var(--accent);
-  text-decoration: underline;
-}
-
-#create-room-link-closed {
-  display: block;
-  padding: 0.3rem 0;
-  color: var(--primary);
-  text-decoration: none;
-  font-weight: 600;
-  transition: color 0.2s;
-  text-align: center;
-  cursor: pointer;
-  margin-left: -1.7em;  /* Shift left to compensate for arrow */
-}
-
-#create-room-link-closed:hover {
   color: var(--accent);
   text-decoration: underline;
 }
@@ -808,44 +828,35 @@ pre code {
   font-size: 0.8rem;
 }
 
-#create-room-widget {
-  margin-top: 0.5rem;
-  padding: 0.25rem 0.75rem 0.75rem 0.75rem;  /* Minimal top padding */
-  overflow: hidden;
-  transition: max-height 0.3s ease, opacity 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
-  max-height: 0;
+#create-room-widget input,
+#create-room-widget button {
   opacity: 0;
-  background-color: transparent;
-  border: 1px solid transparent;
-  border-radius: 8px;
+  max-height: 0;
+  margin: 0;
+  padding: 0;
+  transition: opacity 0.3s ease, max-height 0.3s ease, margin 0.3s ease, padding 0.3s ease;
 }
 
-#create-room-widget[style*="display: block"] {
-  max-height: 200px;
+#create-room-widget.open input {
   opacity: 1;
-  background-color: #e6f2ff;  /* Light blue background */
-  border-color: #99ccff;  /* Slightly darker light blue border */
+  max-height: 50px;
+  margin: 0.5rem 0;
+  padding: 0.5rem;
 }
 
-#create-room-widget h4 {
-  margin-top: 0;
-  margin-bottom: 0.5rem;
-  font-size: 0.95rem;
-  color: var(--dark);
-  display: none;  /* Hide h4, we'll use the link text instead */
-  text-align: center;
+#create-room-widget.open button {
+  opacity: 1;
+  max-height: 50px;
+  padding: 0.5rem;
 }
 
 .room-controls input {
   width: 100%;
-  margin: 0.5rem 0;
-  padding: 0.5rem;
   font-size: 0.9rem;
 }
 
 .room-controls button {
   width: 100%;
-  padding: 0.5rem;
   font-size: 0.9rem;
 }
 
