@@ -37,11 +37,7 @@ Create
 <div class="username-widget">
 <!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
 <div class="username-display" id="username-display"><strong id="username-text">Guest001</strong><button onclick="editUsername()">Change</button></div>
-<div class="username-edit" id="username-edit">
-<h5>Change username</h5>
-<input type="text" id="username-edit-input" placeholder="Your name" />
-<button onclick="saveUsername()">OK</button>
-</div>
+<div class="username-edit" id="username-edit"><h5>Change Username</h5><input type="text" id="username-edit-input" placeholder="Your name" /><div class="username-edit-buttons"><button onclick="saveUsername()">OK</button><button onclick="cancelUsernameEdit()">Cancel</button></div></div>
 </div>
 </div>
 
@@ -458,6 +454,14 @@ function saveUsername() {
   if (newName) {
     text.textContent = newName;
   }
+  
+  edit.style.display = 'none';
+  display.style.display = 'flex';
+}
+
+function cancelUsernameEdit() {
+  var display = document.getElementById('username-display');
+  var edit = document.getElementById('username-edit');
   
   edit.style.display = 'none';
   display.style.display = 'flex';
