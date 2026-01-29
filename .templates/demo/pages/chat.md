@@ -12,23 +12,9 @@ title: Chatrooms
 
 # Chatrooms Demo
 
-## 💬 Real-Time Chat with Multiple Rooms
-
-This chat system uses the **same message format as the MUD `say` command**, making it fully intercompatible! Messages are stored in `.log` files (one per room) with the format `[HH:MM] username: message`.
-
-### How It Works
-
-1. **Each room is a folder** on the server with a `.log` file
-2. **Messages use MUD format:** `[HH:MM] player_name: message`
-3. **Fully intercompatible:** Someone in the MUD could walk into a chat room folder, use `say`, and web users would see it!
-4. **Anyone can create rooms** with custom names
-5. **Delete empty rooms** when you're done
-
----
-
-## Chat Interface
-
 <div class="chat-container">
+<div id="room-notification" style="display: none; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; max-width: 400px;"></div>
+
 <div class="chat-sidebar">
 <div class="chat-sidebar-content">
 <h3>Chatrooms</h3>
@@ -37,12 +23,14 @@ Loading rooms...
 </div>
 
 <div class="room-controls">
-<h4>Create Room</h4>
+<div id="create-room-widget" style="display: none;">
+<a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a>
 <input type="text" id="new-room-name" placeholder="Room name" />
-<button id="create-room-btn" hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-status" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); }">
+<button id="create-room-btn" hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); showNotification(); }">
 Create
 </button>
-<div id="room-status"></div>
+</div>
+<a href="#" id="create-room-link-closed" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow-closed">&#x25B6;</span> Create Room</a>
 </div>
 </div>
 
@@ -52,6 +40,7 @@ Create
 <button onclick="editUsername()">Change</button>
 </div>
 <div class="username-edit" id="username-edit">
+<h5>Change username</h5>
 <input type="text" id="username-edit-input" placeholder="Your name" />
 <button onclick="saveUsername()">OK</button>
 </div>
@@ -67,7 +56,7 @@ Delete Room
 </div>
 
 <div id="chat-messages" class="chat-display">
-<p style="color: #666; font-style: italic;">Select a room to start chatting</p>
+<p class="empty-state-message">Select a room to start chatting</p>
 </div>
 
 <div class="chat-input-area" id="chat-input-area" style="display: none;">
@@ -76,6 +65,20 @@ Delete Room
 </div>
 </div>
 </div>
+
+## 💬 Real-Time Chat with Multiple Rooms
+
+This chat system uses the **same message format as the MUD `say` command**, making it fully intercompatible! Messages are stored in `.log` files (one per room) with the format `[HH:MM] username: message`.
+
+### How It Works
+
+1. **Each room is a folder** on the server with a `.log` file
+2. **Messages use MUD format:** `[HH:MM] player_name: message`
+3. **Fully intercompatible:** Someone in the MUD could walk into a chat room folder, use `say`, and web users would see it!
+4. **Anyone can create rooms** with custom names
+5. **Delete empty rooms** when you're done
+
+---
 
 <script>
 // Generate a random guest name
@@ -179,9 +182,12 @@ function joinRoom(roomName) {
   // Reset scroll behavior for new room
   window.userHasScrolledUp = false;
   
-  // Focus the message input for immediate typing
+  // Focus the message input for immediate typing (prevent page scroll)
   setTimeout(function() {
-    document.getElementById('message-input').focus();
+    var msgInput = document.getElementById('message-input');
+    if (msgInput) {
+      msgInput.focus({ preventScroll: true });
+    }
   }, 100);
   
   // Set up scroll listener
@@ -295,32 +301,13 @@ function scrollToBottom() {
   var chatMessagesDiv = document.getElementById('chat-messages');
   if (!chatMessagesDiv) return;
   
-  // Use requestAnimationFrame for smooth, performant scrolling
-  // This works reliably even with many messages (50+)
-  var start = chatMessagesDiv.scrollTop;
-  var target = chatMessagesDiv.scrollHeight;
-  var startTime = null;
-  var duration = 629; // 629ms animation (30% slower than 484ms)
-  
-  function animate(currentTime) {
-    if (!startTime) startTime = currentTime;
-    var elapsed = currentTime - startTime;
-    var progress = Math.min(elapsed / duration, 1);
-    
-    // Ease-in-out function for smooth acceleration and deceleration
-    // This prevents jerky start/stop
-    var easeInOut = progress < 0.5
-      ? 2 * progress * progress
-      : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-    
-    chatMessagesDiv.scrollTop = start + (target - start) * easeInOut;
-    
-    if (progress < 1) {
-      requestAnimationFrame(animate);
-    }
+  // Only scroll if there's actually a scrollbar (content exceeds viewport)
+  if (chatMessagesDiv.scrollHeight <= chatMessagesDiv.clientHeight) {
+    return;  // No scrollbar, don't scroll
   }
   
-  requestAnimationFrame(animate);
+  // Set scroll position immediately without animation to avoid visible scrolling
+  chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
 }
 
 // Detect when user manually scrolls
@@ -356,7 +343,7 @@ function leaveRoom() {
   }
   
   // Clear messages
-  document.getElementById('chat-messages').innerHTML = '<div class="chat-messages"><p style="color: #666; font-style: italic;">Create or join a room to chat</p></div>';
+  document.getElementById('chat-messages').innerHTML = '<div class="chat-messages"><p class="empty-state-message">Create or join a room to chat</p></div>';
 }
 
 // Delete room with blocking behavior
@@ -396,10 +383,18 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Auto-expand textarea as user types
   messageInput.addEventListener('input', function() {
-    // Reset height to auto to get proper scrollHeight
-    this.style.height = 'auto';
+    // Reset height to minimum to get proper scrollHeight
+    this.style.height = '2rem';
     // Set height to scrollHeight (content height)
-    this.style.height = Math.min(this.scrollHeight, 128) + 'px';  // Max 128px (~5 lines)
+    var newHeight = Math.max(this.scrollHeight, 32);  // Minimum 32px (2rem)
+    newHeight = Math.min(newHeight, 128);  // Max 128px (~5 lines)
+    this.style.height = newHeight + 'px';
+    // Show scrollbar only when content exceeds max height
+    if (this.scrollHeight > 128) {
+      this.style.overflowY = 'auto';
+    } else {
+      this.style.overflowY = 'hidden';
+    }
   });
   
   function sendMessage() {
@@ -423,8 +418,8 @@ document.addEventListener('DOMContentLoaded', function() {
       return response.text();
     }).then(function(text) {
       messageInput.value = '';
-      // Reset textarea height
-      messageInput.style.height = 'auto';
+      // Reset textarea height to initial
+      messageInput.style.height = '2rem';
       // Reload messages immediately to show the new message
       loadMessages();
     });
@@ -481,6 +476,42 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+
+// Toggle Create Room widget
+function toggleCreateRoom() {
+  var widget = document.getElementById('create-room-widget');
+  var linkClosed = document.getElementById('create-room-link-closed');
+  if (widget.style.display === 'none') {
+    widget.style.display = 'block';
+    linkClosed.style.display = 'none';
+    // Focus on input after a short delay to ensure it's visible (prevent page scroll)
+    setTimeout(function() {
+      var input = document.getElementById('new-room-name');
+      if (input) {
+        input.focus({ preventScroll: true });
+      }
+    }, 100);
+  } else {
+    widget.style.display = 'none';
+    linkClosed.style.display = 'block';
+  }
+}
+
+// Show notification and auto-hide after 10 seconds
+function showNotification() {
+  var notification = document.getElementById('room-notification');
+  notification.style.display = 'block';
+  setTimeout(function() {
+    var content = notification.querySelector('.demo-result');
+    if (content) {
+      content.classList.add('fade-out');
+      setTimeout(function() {
+        notification.style.display = 'none';
+        notification.innerHTML = '';
+      }, 500);
+    }
+  }, 10000);
+}
 </script>
 
 ---
