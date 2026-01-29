@@ -658,7 +658,7 @@ pre code {
 .chat-sidebar h3 {
   margin: 0;
   font-size: 1.2rem;
-  background: #3d3d70;  /* Match chat header background */
+  background: linear-gradient(135deg, #3d3d70 0%, #4d4d80 100%);
   color: white;
   padding: 1rem;
   line-height: 1.2;  /* Match chat header line-height */
@@ -868,7 +868,7 @@ pre code {
 
 .chat-header {
   padding: 1rem;
-  background: #3d3d70;  /* Brighter than var(--dark) #2c2c54 */
+  background: linear-gradient(135deg, #3d3d70 0%, #4d4d80 100%);
   color: white;
   display: flex;
   justify-content: space-between;
@@ -1185,17 +1185,16 @@ pre code {
 }
 
 .members-panel.open {
-  flex: 0 0 auto;
-  min-width: 140px;
-  max-width: 187px;
+  flex: 0 0 160px;
+  transition: flex 0.3s ease;
 }
 
 .members-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 0.75rem;
-  background: #3d3d70;
+  padding: 0.35rem 0.5rem;
+  background: linear-gradient(135deg, #3d3d70 0%, #4d4d80 100%);
   color: white;
   border-bottom: 2px solid var(--border);
 }
@@ -1203,8 +1202,10 @@ pre code {
 .members-header h4 {
   margin: 0;
   font-size: 0.85rem;
+  font-weight: normal;
   color: white;
   white-space: nowrap;
+  flex: 1;
 }
 
 .members-close-btn {
@@ -1232,6 +1233,7 @@ pre code {
   flex: 1;
   overflow-y: auto;
   padding: 0.5rem;
+  background: #f0f9f0;  /* Very subtle light green background */
   /* Firefox scrollbar styling - match rooms list */
   scrollbar-width: thin;
   scrollbar-color: #7a94a5 #cdd8e0;
