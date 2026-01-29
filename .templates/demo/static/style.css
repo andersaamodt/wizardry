@@ -563,7 +563,7 @@ pre code {
 }
 
 .username-display button:hover {
-  background: var(--accent);
+  background: var(--secondary);
 }
 
 .username-edit {
@@ -611,7 +611,7 @@ pre code {
 }
 
 .username-edit-buttons button:first-child:hover {
-  background: var(--accent);
+  background: var(--secondary);
 }
 
 .username-edit-buttons button:last-child:hover {
@@ -775,7 +775,7 @@ pre code {
 
 #create-room-link-closed {
   display: block;
-  padding: 0.5rem 0;
+  padding: 0.3rem 0;
   color: var(--primary);
   text-decoration: none;
   font-weight: 600;
@@ -991,7 +991,7 @@ pre code {
   max-height: 8rem;
   overflow-y: hidden;  /* Hide scrollbar until needed */
   overflow-x: hidden;
-  padding: 0.2rem 0.75rem;  /* Minimal padding */
+  padding: 0.55rem 0.75rem;  /* Adjusted vertical padding to center text */
   line-height: 1.4;  /* Slightly increased for better text visibility */
   transition: height 0.2s ease;
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
