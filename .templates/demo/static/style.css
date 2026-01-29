@@ -660,19 +660,31 @@ pre code {
 }
 
 .chat-msg {
-  background: white;
-  padding: 0.5rem 1rem;
-  border-radius: 5px;
-  border-left: 3px solid var(--primary);
+  background: #f5f5f5;  /* Light gray bubble background */
+  padding: 0.75rem 1rem;
+  border-radius: 18px;  /* Rounded bubble corners */
   font-family: 'Monaco', 'Courier New', monospace;
   font-size: 0.9rem;
-  color: #2c2c54;  /* Dark text for readability */
+  color: #2c2c54;
   animation: messageAppear 0.51s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;  /* For timestamp positioning */
+  padding-bottom: 1.5rem;  /* Space for timestamp at bottom */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);  /* Subtle shadow for depth */
 }
 
 .chat-msg .username {
   font-weight: bold;
   /* Color set inline via style attribute for per-user colors */
+}
+
+.chat-msg .timestamp {
+  position: absolute;
+  bottom: 0.25rem;
+  right: 0.75rem;
+  font-size: 0.65rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  color: #888;
+  font-weight: normal;
 }
 
 @keyframes messageAppear {
