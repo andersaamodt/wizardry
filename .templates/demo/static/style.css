@@ -539,13 +539,6 @@ pre code {
   padding: 4px 8px;
 }
 
-/* Remove any default paragraph spacing that might be added */
-.username-display p {
-  margin: 0;
-  padding: 0;
-  display: contents;  /* Make p transparent to layout */
-}
-
 .username-display strong {
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 1rem;
