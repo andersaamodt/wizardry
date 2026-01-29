@@ -864,8 +864,8 @@ pre code {
 
 .chat-header button {
   background: var(--danger);
-  padding: 0.75rem 0.75rem;  /* Add vertical padding for thicker button */
-  margin: -1rem 0;  /* Negative margin to prevent expanding header height */
+  padding: 0.5rem 0.75rem;  /* Reduced vertical padding to match Create button height */
+  margin: -0.75rem 0;  /* Adjusted negative margin to prevent expanding header height */
   font-size: 0.85rem;
   transition: background-color 0.2s;  /* Only animate color */
 }
@@ -990,6 +990,7 @@ pre code {
   flex: 1;
   resize: none;
   height: 1.8rem;  /* Even smaller for truly one line */
+  min-height: 2.5rem;  /* Match Send button height */
   max-height: 8rem;
   overflow-y: hidden;  /* Hide scrollbar until needed */
   overflow-x: hidden;

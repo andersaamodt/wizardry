@@ -76,7 +76,7 @@ function generateGuestName() {
   // Use 3-digit random number (001-999) with zero padding
   var num = Math.floor(Math.random() * 999) + 1;
   var paddedNum = ('000' + num).slice(-3);  // Pad with zeros to 3 digits
-  return 'Guest' + paddedNum;
+  return '@Guest' + paddedNum;  // Include @ symbol for guest names
 }
 
 // Track current room
