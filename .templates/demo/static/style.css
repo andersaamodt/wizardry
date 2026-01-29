@@ -552,6 +552,7 @@ pre code {
   flex-shrink: 0;
   margin: 0;
   margin-left: auto;  /* Push to right in flexbox */
+  transition: background-color 0.2s;  /* Only animate background */
 }
 
 .username-display button:hover {
@@ -641,7 +642,7 @@ pre code {
   font-size: 1.5rem;  /* Slightly bigger */
   margin-right: 0.2rem;  /* Less spacing */
   color: #6c9fff;  /* Match primary color */
-  vertical-align: text-top;  /* Align to top of text */
+  vertical-align: -0.1em;  /* Bump up slightly */
   line-height: 1;  /* Prevent extra height */
 }
 
@@ -738,11 +739,11 @@ pre code {
 }
 
 #create-room-widget h4 {
-  margin-top: 0.5rem;
+  margin-top: 0;
   margin-bottom: 0.5rem;
   font-size: 0.95rem;
   color: var(--dark);
-  display: none;  /* Hide the h4 entirely */
+  display: block;  /* Show the header */
 }
 
 .room-controls input {
@@ -840,7 +841,7 @@ pre code {
 }
 
 .chat-msg {
-  background: #f0f7ff;  /* Even lighter blue for others' messages */
+  background: #e8f4ff;  /* Slightly bluer for others' messages */
   padding: 0.75rem 1rem;
   padding-bottom: 0.75rem;  /* Match top padding */
   margin-bottom: 0.5rem;  /* Less spacing between messages */
@@ -866,7 +867,7 @@ pre code {
 .chat-msg .timestamp {
   display: inline-block;
   margin-left: 0.5rem;
-  margin-bottom: 0.01rem;  /* Minimal bottom margin */
+  margin-bottom: 0;  /* No bottom margin */
   font-size: 0.65rem;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   color: #888;
@@ -889,7 +890,7 @@ pre code {
 .chat-input-area {
   display: flex;
   gap: 0.5rem;
-  padding: 1rem;
+  padding: 0.5rem 1rem;  /* Reduced vertical padding */
   background: white;
   border-top: 2px solid var(--border);
   flex-shrink: 0;  /* Prevent input area from shrinking */
