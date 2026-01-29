@@ -32,7 +32,7 @@ Loading rooms...
 
 <div class="username-widget">
 <!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
-<div class="username-display" id="username-display"><strong id="username-text">Guest001</strong><button onclick="editUsername()">Change</button></div>
+<div class="username-display" id="username-display"><strong id="username-text">@Guest001</strong><button onclick="editUsername()">Change</button></div>
 <div class="username-edit" id="username-edit"><h5>Change Username</h5><input type="text" id="username-edit-input" placeholder="Your name" /><div class="username-edit-buttons"><button onclick="saveUsername()">OK</button><button onclick="cancelUsernameEdit()">Cancel</button></div></div>
 </div>
 </div>
@@ -433,9 +433,12 @@ function editUsername() {
   var input = document.getElementById('username-edit-input');
   var currentName = document.getElementById('username-text').textContent;
   
+  // Remove @ symbol for editing
+  var nameWithoutAt = currentName.startsWith('@') ? currentName.substring(1) : currentName;
+  
   display.style.display = 'none';
   edit.style.display = 'flex';
-  input.value = currentName;
+  input.value = nameWithoutAt;
   input.focus();
   input.select();
 }
@@ -448,7 +451,8 @@ function saveUsername() {
   
   var newName = input.value.trim();
   if (newName) {
-    text.textContent = newName;
+    // Ensure @ symbol is present
+    text.textContent = '@' + newName;
   }
   
   edit.style.display = 'none';
@@ -484,9 +488,14 @@ document.addEventListener('DOMContentLoaded', function() {
 function toggleCreateRoom() {
   var widget = document.getElementById('create-room-widget');
   var linkClosed = document.getElementById('create-room-link-closed');
+  var arrow = document.getElementById('create-room-arrow');
+  var arrowClosed = document.getElementById('create-room-arrow-closed');
+  
   if (widget.style.display === 'none') {
     widget.style.display = 'block';
     linkClosed.style.display = 'none';
+    // Change arrow to down-pointing when open
+    if (arrow) arrow.innerHTML = '&#x25BC;';  // ▼ down-pointing filled triangle
     // Focus on input after a short delay to ensure it's visible (prevent page scroll)
     setTimeout(function() {
       var input = document.getElementById('new-room-name');
@@ -497,6 +506,8 @@ function toggleCreateRoom() {
   } else {
     widget.style.display = 'none';
     linkClosed.style.display = 'block';
+    // Change arrow back to right-pointing when closed
+    if (arrow) arrow.innerHTML = '&#x25B6;';  // ▶ right-pointing filled triangle
   }
 }
 
