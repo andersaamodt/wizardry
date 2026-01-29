@@ -233,14 +233,14 @@ textarea {
 
 .demo-result.success {
   border-left: 4px solid var(--success);
-  background: rgba(39, 174, 96, 0.95);  /* Increased opacity from 0.1 to 0.95 */
-  color: white;  /* White text for better contrast on darker background */
+  background: rgba(39, 174, 96, 0.15);  /* Light green with tasteful transparency */
+  color: #1e5631;  /* Dark green text for readability */
 }
 
 .demo-result.error {
   border-left: 4px solid var(--danger);
-  background: rgba(192, 57, 43, 0.95);  /* Increased opacity from 0.1 to 0.95 */
-  color: white;  /* White text for better contrast on darker background */
+  background: rgba(192, 57, 43, 0.15);  /* Light red with tasteful transparency */
+  color: #7a1f1f;  /* Dark red text for readability */
 }
 
 .demo-result.quote blockquote {
@@ -495,23 +495,23 @@ pre code {
   flex-direction: column;
 }
 
-/* Scrollbar styling for sidebar - match chat scrollbar */
+/* Scrollbar styling for sidebar - thin muted blue scrollbar */
 .chat-sidebar-content::-webkit-scrollbar {
-  width: 10px;  /* Thinner */
+  width: 6px;  /* Thinner scrollbar */
 }
 
 .chat-sidebar-content::-webkit-scrollbar-track {
-  background: #e0e0e0;
-  border-radius: 4px;
+  background: #d4e3f7;  /* Lighter blue background */
+  border-radius: 3px;
 }
 
 .chat-sidebar-content::-webkit-scrollbar-thumb {
-  background: var(--primary);  /* Blue handle */
-  border-radius: 4px;
+  background: #7c9fc4;  /* Muted blue handle */
+  border-radius: 3px;
 }
 
 .chat-sidebar-content::-webkit-scrollbar-thumb:hover {
-  background: var(--accent);
+  background: #6a8bb3;  /* Slightly darker muted blue on hover */
 }
 
 .chat-sidebar-content {
@@ -947,7 +947,7 @@ pre code {
 .chat-msg .timestamp {
   display: inline-block;
   margin-left: 0.5rem;
-  margin-bottom: 0;  /* Remove negative margin */
+  margin-bottom: -0.15rem;  /* Negative margin to move it down when on same line */
   font-size: 0.65rem;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   color: #888;
