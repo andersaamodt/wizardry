@@ -33,7 +33,7 @@ Loading rooms...
 <div class="username-widget">
 <!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
 <div class="username-display" id="username-display"><strong id="username-text">@Guest001</strong><button onclick="editUsername()">Change</button></div>
-<div class="username-edit" id="username-edit"><h5>Change Username</h5><input type="text" id="username-edit-input" placeholder="Your name" /><div class="username-edit-buttons"><button onclick="saveUsername()">OK</button><button onclick="cancelUsernameEdit()">Cancel</button></div></div>
+<div class="username-edit" id="username-edit"><h5>Change Handle</h5><input type="text" id="username-edit-input" placeholder="Your name" /><div class="username-edit-buttons"><button onclick="saveUsername()">OK</button><button onclick="cancelUsernameEdit()">Cancel</button></div></div>
 </div>
 </div>
 
@@ -378,19 +378,27 @@ document.addEventListener('DOMContentLoaded', function() {
     this.style.height = 'auto';
     var scrollHeight = this.scrollHeight;
     
-    // Calculate based on content, with min/max constraints
-    var newHeight = Math.max(scrollHeight, 40);  // Minimum 40px (2.5rem)
-    newHeight = Math.min(newHeight, 128);  // Max 128px (~5 lines)
+    // Calculate based on content, with min/max constraints (using rems)
+    var baseFontSize = 16;  // Assuming 16px base font size
+    var minHeightRem = 2.5;  // Minimum 2.5rem (one line)
+    var maxHeightRem = 8;    // Max 8rem (~5 lines)
+    var minHeight = minHeightRem * baseFontSize;
+    var maxHeight = maxHeightRem * baseFontSize;
+    
+    var newHeightPx = Math.max(scrollHeight, minHeight);
+    newHeightPx = Math.min(newHeightPx, maxHeight);
+    var newHeightRem = newHeightPx / baseFontSize;
     
     // Only update if height actually changed to avoid jitter
-    if (currentHeight !== newHeight + 'px') {
-      this.style.height = newHeight + 'px';
+    var newHeightStr = newHeightRem + 'rem';
+    if (currentHeight !== newHeightStr) {
+      this.style.height = newHeightStr;
     } else {
       this.style.height = currentHeight;
     }
     
     // Show scrollbar only when content exceeds max height
-    if (scrollHeight > 128) {
+    if (scrollHeight > maxHeight) {
       this.style.overflowY = 'auto';
     } else {
       this.style.overflowY = 'hidden';
@@ -442,6 +450,7 @@ function editUsername() {
   var edit = document.getElementById('username-edit');
   var input = document.getElementById('username-edit-input');
   var currentName = document.getElementById('username-text').textContent;
+  var okButton = document.querySelector('#username-edit button:first-child');
   
   // Remove @ symbol for editing
   var nameWithoutAt = currentName.startsWith('@') ? currentName.substring(1) : currentName;
@@ -449,6 +458,11 @@ function editUsername() {
   display.style.display = 'none';
   edit.style.display = 'flex';
   input.value = nameWithoutAt;
+  
+  // Store initial value and disable OK button initially
+  input.dataset.initialValue = nameWithoutAt;
+  okButton.disabled = true;
+  
   input.focus();
   input.select();
 }
@@ -482,10 +496,21 @@ function cancelUsernameEdit() {
 // Add Enter and Escape key support for username editing
 document.addEventListener('DOMContentLoaded', function() {
   var input = document.getElementById('username-edit-input');
-  if (input) {
+  var okButton = document.querySelector('#username-edit button:first-child');
+  
+  if (input && okButton) {
+    // Monitor input changes to enable/disable OK button
+    input.addEventListener('input', function() {
+      var currentValue = this.value.trim();
+      var initialValue = this.dataset.initialValue || '';
+      okButton.disabled = (currentValue === initialValue || currentValue === '');
+    });
+    
     input.addEventListener('keypress', function(e) {
       if (e.key === 'Enter') {
-        saveUsername();
+        if (!okButton.disabled) {
+          saveUsername();
+        }
       }
     });
     input.addEventListener('keydown', function(e) {
