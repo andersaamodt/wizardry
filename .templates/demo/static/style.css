@@ -523,12 +523,10 @@ pre code {
 
 .username-widget {
   margin-top: auto;
-  padding: 0;  /* Remove all padding for proper centering */
+  padding: 0;
   border-top: 2px solid var(--border);
-  background: #7b7a9e;  /* Medium-grey purple */
-  line-height: 1.2;  /* Even tighter line-height */
-  position: relative;  /* For absolute positioning of button */
-  min-height: 2.2rem;  /* Slightly taller for better button centering */
+  background: #7b7a9e;
+  line-height: 1;
   display: flex;
   align-items: center;
 }
@@ -536,19 +534,19 @@ pre code {
 .username-display {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: space-between;
   width: 100%;
-  position: relative;  /* For button positioning */
-  padding: 0 4rem 0 0.75rem;  /* Padding on left and right for button */
+  padding: 4px 8px;
 }
 
 .username-display strong {
-  font-family: Georgia, 'Times New Roman', serif;  /* Serif font */
+  font-family: Georgia, 'Times New Roman', serif;
   font-size: 1rem;
-  color: white;  /* White text on dark background */
+  color: white;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;  /* Allow flex item to shrink for ellipsis */
 }
 
 .username-display button {
@@ -559,11 +557,9 @@ pre code {
   border: none;
   border-radius: 3px;
   cursor: pointer;
-  transition: background-color 0.2s;  /* Only animate background */
-  position: absolute;
-  right: 0.75rem;  /* Align with padding */
-  top: 50%;
-  transform: translateY(-50%);
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+  margin-left: 8px;
 }
 
 .username-display button:hover {
@@ -574,10 +570,11 @@ pre code {
   display: none;  /* Hidden by default */
   gap: 0.5rem;
   flex-direction: column;
+  padding: 0.5rem 0.75rem;  /* Add padding to create space above heading */
 }
 
 .username-edit h5 {
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.25rem 0;  /* Reduced bottom margin */
   font-size: 0.85rem;
   color: white;
   text-align: center;
@@ -587,12 +584,38 @@ pre code {
   flex: 1;
   padding: 0.5rem;
   font-size: 0.9rem;
+  margin: 0;  /* Remove default margin */
+}
+
+.username-edit-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;  /* Center buttons horizontally */
 }
 
 .username-edit button {
   padding: 0.5rem 0.75rem;
   font-size: 0.85rem;
   flex-shrink: 0;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+/* Style Cancel button differently from OK button */
+.username-edit-buttons button:last-child {
+  background: linear-gradient(135deg, #7a828f 0%, #5a6268 100%);  /* Medium grey gradient - halfway between light and dark */
+}
+
+.username-edit-buttons button:first-child:hover {
+  background: var(--accent);
+}
+
+.username-edit-buttons button:last-child:hover {
+  background: linear-gradient(135deg, #6c757d 0%, #495057 100%);  /* Medium grey on hover */
 }
 
 .chat-sidebar h3 {
@@ -841,9 +864,9 @@ pre code {
 
 .chat-header button {
   background: var(--danger);
-  padding: 0.25rem 0.75rem;  /* Reduced padding */
+  padding: 0.5rem 0.75rem;  /* Reduced vertical padding to match Create button height */
+  margin: -0.75rem 0;  /* Adjusted negative margin to prevent expanding header height */
   font-size: 0.85rem;
-  margin: 0;
   transition: background-color 0.2s;  /* Only animate color */
 }
 
@@ -966,7 +989,7 @@ pre code {
 .chat-input-area textarea#message-input {
   flex: 1;
   resize: none;
-  height: 1.8rem;  /* Even smaller for truly one line */
+  min-height: 2.5rem;  /* Match Send button height */
   max-height: 8rem;
   overflow-y: hidden;  /* Hide scrollbar until needed */
   overflow-x: hidden;
