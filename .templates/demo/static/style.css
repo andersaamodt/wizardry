@@ -712,7 +712,7 @@ pre code {
   display: block;  /* Make block for separate line */
   font-size: 0.75rem;  /* Slightly bigger */
   color: #888;  /* Subtle gray */
-  margin-left: 1.5rem;  /* Align with room name (adjusted from 1.7rem) */
+  margin-left: 1.3rem;  /* Align with room name */
   margin-top: 0.1rem;  /* Small gap from room name */
   padding: 0;  /* No padding */
   background: transparent;  /* No background */
