@@ -28,6 +28,8 @@ This chat system uses the **same message format as the MUD `say` command**, maki
 
 ## Chat Interface
 
+<div id="room-notification" style="display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; max-width: 400px;"></div>
+
 <div class="chat-container">
 <div class="chat-sidebar">
 <div class="chat-sidebar-content">
@@ -39,12 +41,10 @@ Loading rooms...
 <div class="room-controls">
 <a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;">+ Create Room</a>
 <div id="create-room-widget" style="display: none;">
-<h4>Create Room</h4>
 <input type="text" id="new-room-name" placeholder="Room name" />
-<button id="create-room-btn" hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-status" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); }">
+<button id="create-room-btn" hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); showNotification(); }">
 Create
 </button>
-<div id="room-status"></div>
 </div>
 </div>
 </div>
@@ -70,7 +70,7 @@ Delete Room
 </div>
 
 <div id="chat-messages" class="chat-display">
-<p style="color: #666; font-style: italic;">Select a room to start chatting</p>
+<p class="empty-state-message">Select a room to start chatting</p>
 </div>
 
 <div class="chat-input-area" id="chat-input-area" style="display: none;">
@@ -359,7 +359,7 @@ function leaveRoom() {
   }
   
   // Clear messages
-  document.getElementById('chat-messages').innerHTML = '<div class="chat-messages"><p style="color: #666; font-style: italic;">Create or join a room to chat</p></div>';
+  document.getElementById('chat-messages').innerHTML = '<div class="chat-messages"><p class="empty-state-message">Create or join a room to chat</p></div>';
 }
 
 // Delete room with blocking behavior
@@ -400,7 +400,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Auto-expand textarea as user types
   messageInput.addEventListener('input', function() {
     // Reset height to initial to get proper scrollHeight
-    this.style.height = '2.2rem';
+    this.style.height = '2.6rem';
     // Set height to scrollHeight (content height) if needed
     if (this.scrollHeight > this.clientHeight) {
       this.style.height = Math.min(this.scrollHeight, 128) + 'px';  // Max 128px (~5 lines)
@@ -429,7 +429,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }).then(function(text) {
       messageInput.value = '';
       // Reset textarea height to initial
-      messageInput.style.height = '2.2rem';
+      messageInput.style.height = '2.6rem';
       // Reload messages immediately to show the new message
       loadMessages();
     });
@@ -499,6 +499,22 @@ function toggleCreateRoom() {
   } else {
     widget.style.display = 'none';
   }
+}
+
+// Show notification and auto-hide after 10 seconds
+function showNotification() {
+  var notification = document.getElementById('room-notification');
+  notification.style.display = 'block';
+  setTimeout(function() {
+    var content = notification.querySelector('.demo-result');
+    if (content) {
+      content.classList.add('fade-out');
+      setTimeout(function() {
+        notification.style.display = 'none';
+        notification.innerHTML = '';
+      }, 500);
+    }
+  }, 10000);
 }
 </script>
 
