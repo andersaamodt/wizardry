@@ -376,9 +376,6 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Auto-expand textarea as user types - resize by discrete line heights
   messageInput.addEventListener('input', function() {
-    // Reset height to get accurate scrollHeight
-    this.style.height = '2.5rem';
-    
     // Calculate based on content, with min/max constraints (using rems)
     var baseFontSize = 16;  // Assuming 16px base font size
     var lineHeightRem = 1.4;  // Match CSS line-height
@@ -388,8 +385,11 @@ document.addEventListener('DOMContentLoaded', function() {
     var minHeight = minHeightRem * baseFontSize;
     var maxHeight = maxHeightRem * baseFontSize;
     
-    // Get scroll height and calculate number of lines needed
+    // Temporarily set to auto to get accurate content measurement
+    var previousHeight = this.style.height;
+    this.style.height = 'auto';
     var scrollHeight = this.scrollHeight;
+    this.style.height = previousHeight;
     
     // Calculate the content height (excluding padding)
     var contentHeight = scrollHeight - (paddingRem * baseFontSize);
@@ -406,9 +406,14 @@ document.addEventListener('DOMContentLoaded', function() {
     newHeightPx = Math.min(newHeightPx, maxHeight);
     var newHeightRem = newHeightPx / baseFontSize;
     
-    // Apply the new height - CSS transition will animate it smoothly
+    // Round to 2 decimal places to avoid floating point precision issues
+    newHeightRem = Math.round(newHeightRem * 100) / 100;
+    
+    // Only update if height actually changes to avoid constant reflows
     var newHeightStr = newHeightRem + 'rem';
-    this.style.height = newHeightStr;
+    if (this.style.height !== newHeightStr) {
+      this.style.height = newHeightStr;
+    }
     
     // Show scrollbar only when content exceeds max height
     if (scrollHeight > maxHeight) {
