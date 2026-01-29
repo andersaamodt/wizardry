@@ -517,10 +517,10 @@ pre code {
 
 .username-widget {
   margin-top: auto;
-  padding: 0.1rem 0.75rem;  /* Minimal vertical padding */
+  padding: 0 0.75rem;  /* No vertical padding */
   border-top: 2px solid var(--border);
   background: #7b7a9e;  /* Medium-grey purple */
-  line-height: 1.5;  /* Tighter line-height */
+  line-height: 1.3;  /* Very tight line-height */
 }
 
 .username-display {
@@ -628,8 +628,12 @@ pre code {
   color: #2c2c54;  /* Keep dark text on hover for selected room */
 }
 
+.room-item-selected:hover .room-meta {
+  color: #888;  /* Keep subtle color for selected room meta on hover */
+}
+
 .room-icon {
-  font-size: 1.3rem;  /* Smaller than before */
+  font-size: 1.5rem;  /* Slightly bigger */
   margin-right: 0.2rem;  /* Less spacing */
   color: #6c9fff;  /* Match primary color */
   vertical-align: text-top;  /* Align to top of text */
@@ -684,14 +688,14 @@ pre code {
 }
 
 .room-controls {
-  margin-top: 1.5rem;
+  margin-top: 0.5rem;  /* Closer to room list */
   padding: 0 1rem 0.75rem 1rem;
   /* No border-top */
 }
 
 #create-room-link {
   display: block;
-  padding: 0.75rem 0;
+  padding: 0.5rem 0;  /* Less padding */
   color: var(--primary);
   text-decoration: none;
   font-weight: 600;
@@ -703,8 +707,23 @@ pre code {
   text-decoration: underline;
 }
 
+#create-room-arrow {
+  display: inline-block;
+  transition: transform 0.3s ease;
+  font-size: 0.9rem;
+}
+
 #create-room-widget {
   margin-top: 0.5rem;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  max-height: 0;
+  opacity: 0;
+}
+
+#create-room-widget[style*="display: block"] {
+  max-height: 200px;
+  opacity: 1;
 }
 
 #create-room-widget h4 {
@@ -813,7 +832,7 @@ pre code {
   background: #f0f7ff;  /* Even lighter blue for others' messages */
   padding: 0.75rem 1rem;
   padding-bottom: 0.75rem;  /* Match top padding */
-  margin-bottom: 0.75rem;  /* Spacing between messages */
+  margin-bottom: 0.5rem;  /* Less spacing between messages */
   border-radius: 18px;  /* Rounded bubble corners */
   font-family: 'Monaco', 'Courier New', monospace;
   font-size: 0.9rem;
@@ -836,7 +855,7 @@ pre code {
 .chat-msg .timestamp {
   display: inline-block;
   margin-left: 0.5rem;
-  margin-bottom: 0.15rem;  /* Small bottom margin for better positioning */
+  margin-bottom: 0.05rem;  /* Very small bottom margin */
   font-size: 0.65rem;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   color: #888;
@@ -874,24 +893,24 @@ pre code {
 .chat-input-area textarea#message-input {
   flex: 1;
   resize: none;
-  min-height: auto;  /* Let it size naturally */
-  height: 2.6rem;  /* Increased height */
+  min-height: 2.5rem;
   max-height: 8rem;
   overflow-y: auto;
-  padding: 0.6rem 0.75rem;  /* More padding */
-  line-height: 1.4;
+  overflow-x: hidden;
+  padding: 0.5rem 0.75rem;
+  line-height: 1.5;
   transition: height 0.2s ease;
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
-  box-sizing: border-box;  /* Ensure padding is included in height */
+  box-sizing: border-box;
 }
 
 .chat-input-area button {
   margin: 0;
-  padding: 0.6rem 1rem;  /* Match textarea padding */
+  padding: 0.5rem 1rem;
   white-space: nowrap;
   flex-shrink: 0;
   align-self: stretch;
-  min-height: 2.6rem;  /* Match textarea height */
+  min-height: 2.5rem;
   transition: min-height 0.2s ease;
 }
 
