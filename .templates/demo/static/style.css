@@ -541,7 +541,7 @@ pre code {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 4px 8px;
+  padding: 2px 8px;  /* Reduced from 4px to remove extra space */
   max-height: 100px;
   opacity: 1;
   overflow: hidden;
@@ -595,7 +595,7 @@ pre code {
 }
 
 .username-edit.open {
-  max-height: 200px;  /* Enough for the form */
+  max-height: 120px;  /* Reduced from 200px to prevent overshoot */
   opacity: 1;
   padding: 0.5rem 0.75rem;
 }
@@ -779,16 +779,40 @@ pre code {
   /* No border-top */
 }
 
+#create-room-widget {
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+  max-height: 40px;  /* Just enough for the link when closed */
+  opacity: 1;
+  padding: 0.3rem 0;  /* Small padding for link */
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+
+#create-room-widget.open {
+  max-height: 150px;  /* Reduced from 200px to prevent overshoot */
+  opacity: 1;
+  padding: 0.25rem 0.75rem 0.75rem 0.75rem;
+  background-color: #e6f2ff;  /* Light blue background */
+  border-color: #99ccff;  /* Slightly darker light blue border */
+}
+
 #create-room-link {
   display: block;
-  padding: 0.3rem 0;  /* Less padding */
+  padding: 0;
   color: var(--primary);
   text-decoration: none;
   font-weight: 600;
-  transition: color 0.2s;
-  text-align: center;  /* Center always */
+  transition: color 0.2s, margin-left 0.3s ease;
+  text-align: center;
   cursor: pointer;
-  margin-left: -1.7em;  /* Shift left to compensate for arrow */
+  margin-left: -1.7em;  /* Shift left to compensate for arrow when closed */
+}
+
+#create-room-widget.open #create-room-link {
+  margin-left: 0;  /* Centered when open */
+  margin-bottom: 0.5rem;  /* Space below when it becomes a heading */
 }
 
 #create-room-link:hover {
@@ -802,47 +826,35 @@ pre code {
   font-size: 0.8rem;
 }
 
-#create-room-widget {
-  margin-top: 0;  /* No margin - appears directly below link */
-  padding: 0.25rem 0.75rem 0.75rem 0.75rem;  /* Minimal top padding */
-  overflow: hidden;
-  transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
-  max-height: 0;
+#create-room-widget input,
+#create-room-widget button {
   opacity: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  background-color: transparent;
-  border: 1px solid transparent;
-  border-radius: 8px;
+  max-height: 0;
+  margin: 0;
+  padding: 0;
+  transition: opacity 0.3s ease, max-height 0.3s ease, margin 0.3s ease, padding 0.3s ease;
 }
 
-#create-room-widget.open {
-  max-height: 200px;
+#create-room-widget.open input {
   opacity: 1;
-  padding: 0.25rem 0.75rem 0.75rem 0.75rem;
-  background-color: #e6f2ff;  /* Light blue background */
-  border-color: #99ccff;  /* Slightly darker light blue border */
+  max-height: 50px;
+  margin: 0.5rem 0;
+  padding: 0.5rem;
 }
 
-#create-room-widget h4 {
-  margin-top: 0;
-  margin-bottom: 0.5rem;
-  font-size: 0.95rem;
-  color: var(--dark);
-  display: none;  /* Hide h4, we'll use the link text instead */
-  text-align: center;
+#create-room-widget.open button {
+  opacity: 1;
+  max-height: 50px;
+  padding: 0.5rem;
 }
 
 .room-controls input {
   width: 100%;
-  margin: 0.5rem 0;
-  padding: 0.5rem;
   font-size: 0.9rem;
 }
 
 .room-controls button {
   width: 100%;
-  padding: 0.5rem;
   font-size: 0.9rem;
 }
 
