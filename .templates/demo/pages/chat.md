@@ -24,7 +24,7 @@ Loading rooms...
 
 <div class="room-controls">
 <!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
-<div id="create-room-widget" style="display: none;"><a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a><input type="text" id="new-room-name" placeholder="Room name" /><button id="create-room-btn" hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); showNotification(); toggleCreateRoom(); }">Create</button></div>
+<div id="create-room-widget"><a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a><input type="text" id="new-room-name" placeholder="Room name" /><button id="create-room-btn" hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); showNotification(); toggleCreateRoom(); }">Create</button></div>
 <!-- Keep link on same line to prevent Pandoc <p> wrapping -->
 <a href="#" id="create-room-link-closed" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow-closed">&#x25B6;</span> Create Room</a>
 </div>
@@ -455,16 +455,19 @@ function editUsername() {
   // Remove @ symbol for editing
   var nameWithoutAt = currentName.startsWith('@') ? currentName.substring(1) : currentName;
   
-  display.style.display = 'none';
-  edit.style.display = 'flex';
+  display.classList.add('hidden');
+  edit.classList.add('open');
   input.value = nameWithoutAt;
   
   // Store initial value and disable OK button initially
   input.dataset.initialValue = nameWithoutAt;
   okButton.disabled = true;
   
-  input.focus();
-  input.select();
+  // Focus after animation starts
+  setTimeout(function() {
+    input.focus();
+    input.select();
+  }, 50);
 }
 
 function saveUsername() {
@@ -481,16 +484,16 @@ function saveUsername() {
     text.textContent = '@' + newName;
   }
   
-  edit.style.display = 'none';
-  display.style.display = 'flex';
+  edit.classList.remove('open');
+  display.classList.remove('hidden');
 }
 
 function cancelUsernameEdit() {
   var display = document.getElementById('username-display');
   var edit = document.getElementById('username-edit');
   
-  edit.style.display = 'none';
-  display.style.display = 'flex';
+  edit.classList.remove('open');
+  display.classList.remove('hidden');
 }
 
 // Add Enter and Escape key support for username editing
@@ -528,21 +531,21 @@ function toggleCreateRoom() {
   var arrow = document.getElementById('create-room-arrow');
   var arrowClosed = document.getElementById('create-room-arrow-closed');
   
-  if (widget.style.display === 'none') {
-    widget.style.display = 'block';
+  if (!widget.classList.contains('open')) {
+    widget.classList.add('open');
     linkClosed.style.display = 'none';
     // Change arrow to down-pointing when open
     if (arrow) arrow.innerHTML = '&#x25BC;';  // ▼ down-pointing filled triangle
     if (arrowClosed) arrowClosed.innerHTML = '&#x25BC;';  // Keep both in sync
-    // Focus on input after a short delay to ensure it's visible (prevent page scroll)
+    // Focus on input after animation starts
     setTimeout(function() {
       var input = document.getElementById('new-room-name');
       if (input) {
         input.focus({ preventScroll: true });
       }
-    }, 100);
+    }, 150);
   } else {
-    widget.style.display = 'none';
+    widget.classList.remove('open');
     linkClosed.style.display = 'block';
     // Change arrow back to right-pointing when closed
     if (arrow) arrow.innerHTML = '&#x25B6;';  // ▶ right-pointing filled triangle
