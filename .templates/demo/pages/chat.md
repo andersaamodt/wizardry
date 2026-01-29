@@ -23,13 +23,14 @@ Loading rooms...
 </div>
 
 <div class="room-controls">
-<a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a>
 <div id="create-room-widget" style="display: none;">
+<a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a>
 <input type="text" id="new-room-name" placeholder="Room name" />
 <button id="create-room-btn" hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); showNotification(); }">
 Create
 </button>
 </div>
+<a href="#" id="create-room-link-closed" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow-closed">&#x25B6;</span> Create Room</a>
 </div>
 </div>
 
@@ -39,6 +40,7 @@ Create
 <button onclick="editUsername()">Change</button>
 </div>
 <div class="username-edit" id="username-edit">
+<h5>Change username</h5>
 <input type="text" id="username-edit-input" placeholder="Your name" />
 <button onclick="saveUsername()">OK</button>
 </div>
@@ -63,8 +65,6 @@ Delete Room
 </div>
 </div>
 </div>
-
----
 
 ## 💬 Real-Time Chat with Multiple Rooms
 
@@ -408,9 +408,9 @@ document.addEventListener('DOMContentLoaded', function() {
   // Auto-expand textarea as user types
   messageInput.addEventListener('input', function() {
     // Reset height to minimum to get proper scrollHeight
-    this.style.height = '2.5rem';
+    this.style.height = '2rem';
     // Set height to scrollHeight (content height)
-    var newHeight = Math.max(this.scrollHeight, 40);  // Minimum 40px (2.5rem)
+    var newHeight = Math.max(this.scrollHeight, 32);  // Minimum 32px (2rem)
     newHeight = Math.min(newHeight, 128);  // Max 128px (~5 lines)
     this.style.height = newHeight + 'px';
     // Show scrollbar only when content exceeds max height
@@ -443,7 +443,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }).then(function(text) {
       messageInput.value = '';
       // Reset textarea height to initial
-      messageInput.style.height = '2.5rem';
+      messageInput.style.height = '2rem';
       // Reload messages immediately to show the new message
       loadMessages();
     });
@@ -504,10 +504,10 @@ document.addEventListener('DOMContentLoaded', function() {
 // Toggle Create Room widget
 function toggleCreateRoom() {
   var widget = document.getElementById('create-room-widget');
-  var link = document.getElementById('create-room-link');
+  var linkClosed = document.getElementById('create-room-link-closed');
   if (widget.style.display === 'none') {
     widget.style.display = 'block';
-    link.classList.add('expanded');
+    linkClosed.style.display = 'none';
     // Focus on input after a short delay to ensure it's visible (prevent page scroll)
     setTimeout(function() {
       var input = document.getElementById('new-room-name');
@@ -517,7 +517,7 @@ function toggleCreateRoom() {
     }, 100);
   } else {
     widget.style.display = 'none';
-    link.classList.remove('expanded');
+    linkClosed.style.display = 'block';
   }
 }
 
