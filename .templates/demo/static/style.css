@@ -726,18 +726,6 @@ pre code {
   color: white;
 }
 
-.room-item-selected:hover strong {
-  color: #2c2c54;  /* Keep dark text on hover for selected room */
-}
-
-.room-item-selected:hover .room-meta {
-  color: #888;  /* Keep subtle color for selected room meta on hover */
-}
-
-.room-item-selected:hover .room-icon {
-  color: #6c9fff;  /* Keep blue icon on hover for selected room */
-}
-
 .room-item-selected strong {
   color: #2c2c54;  /* Keep dark text for selected */
 }
