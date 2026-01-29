@@ -233,13 +233,13 @@ textarea {
 
 .demo-result.success {
   border-left: 4px solid var(--success);
-  background: rgba(232, 253, 238, 0.94);  /* Even paler/less saturated green with 94% opacity */
+  background: rgba(240, 255, 244, 0.94);  /* Extremely pale/barely saturated green with 94% opacity */
   color: #000000;  /* Solid black text for legibility */
 }
 
 .demo-result.error {
   border-left: 4px solid var(--danger);
-  background: rgba(254, 226, 226, 0.94);  /* Very light/pastel red with 94% opacity */
+  background: rgba(255, 240, 240, 0.94);  /* Extremely pale/barely saturated red with 94% opacity */
   color: #000000;  /* Solid black text for legibility */
 }
 
@@ -500,6 +500,7 @@ pre code {
   overflow-y: auto;
   overflow-x: hidden;
   padding: 0;
+  background: #f5f9ff;  /* Very light blue background, considerably lighter than message background */
   /* Firefox scrollbar styling */
   scrollbar-width: thin;
   scrollbar-color: #7a94a5 #cdd8e0;  /* Slightly less muted blue - middle ground */
