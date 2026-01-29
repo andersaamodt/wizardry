@@ -989,7 +989,6 @@ pre code {
 .chat-input-area textarea#message-input {
   flex: 1;
   resize: none;
-  height: 1.8rem;  /* Even smaller for truly one line */
   min-height: 2.5rem;  /* Match Send button height */
   max-height: 8rem;
   overflow-y: hidden;  /* Hide scrollbar until needed */
