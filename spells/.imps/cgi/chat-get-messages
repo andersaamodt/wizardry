@@ -106,11 +106,20 @@ HTML
     {
       line = html_escape($0)
       
-      # Parse format: [HH:MM] username: message
+      # Parse format: [YYYY-MM-DD HH:MM:SS] username: message
       # Use standard AWK pattern matching (POSIX compatible)
       if (match(line, /^\[[^]]+\] [^:]+: /)) {
-        # Extract timestamp [HH:MM]
-        timestamp = substr(line, 2, index(line, "]") - 2)
+        # Extract full timestamp [YYYY-MM-DD HH:MM:SS]
+        full_timestamp = substr(line, 2, index(line, "]") - 2)
+        
+        # Extract just HH:MM for display
+        # Format is "YYYY-MM-DD HH:MM:SS", we want characters 12-16 (HH:MM)
+        if (length(full_timestamp) >= 16) {
+          timestamp = substr(full_timestamp, 12, 5)
+        } else {
+          # Fallback for old format or malformed timestamps
+          timestamp = full_timestamp
+        }
         
         # Extract rest after "] "
         rest = substr(line, index(line, "]") + 2)

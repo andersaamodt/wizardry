@@ -613,10 +613,30 @@ function saveUsername() {
   var input = document.getElementById('username-edit-input');
   var text = document.getElementById('username-text');
   
+  var oldName = input.dataset.initialValue || '';
   var newName = input.value.trim();
-  if (newName) {
+  if (newName && newName !== oldName) {
     // Strip any leading @ symbols before prepending to prevent duplication
     newName = newName.replace(/^@+/, '');
+    
+    // If user is in a room, rename avatar
+    if (window.currentRoom) {
+      var formData = 'room=' + encodeURIComponent(window.currentRoom) + 
+                     '&old_user=' + encodeURIComponent(oldName) + 
+                     '&new_user=' + encodeURIComponent(newName);
+      
+      fetch('/cgi/chat-rename-avatar', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: formData
+      }).then(function() {
+        // Refresh members list after rename
+        loadMembers();
+      }).catch(function(err) {
+        console.error('Failed to rename avatar:', err);
+      });
+    }
+    
     // Ensure @ symbol is present
     text.textContent = '@' + newName;
   }
