@@ -67,16 +67,19 @@ HTML
       return str
     }
     
-    function hash_username(username,    i, hash, char) {
+    function hash_username(username,    i, hash, char, ascii_val) {
       hash = 0
       for (i = 1; i <= length(username); i++) {
         char = substr(username, i, 1)
-        # Sum ASCII values
-        hash += (index(" !\"#$%&'\''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~", char) + 31)
+        # Simple hash: sum of character positions
+        # Using a simpler approach that avoids quote escaping issues
+        ascii_val = index("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", char)
+        if (ascii_val == 0) ascii_val = length(char)  # Fallback for other chars
+        hash += ascii_val * (i + 1)  # Weight by position
       }
       # Use spiral color selection for more distinct colors
       # Map to 24 distinct hues (15 degree steps) instead of 360
-      # This gives much more distinct colors that don't blend together
+      # This gives much more distinct colors that do not blend together
       return (hash % 24) * 15
     }
     
