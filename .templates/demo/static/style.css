@@ -1134,7 +1134,7 @@ pre code {
 }
 
 .chat-content-wrapper {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   display: flex;
   position: relative;
   min-height: 0;
@@ -1148,6 +1148,7 @@ pre code {
   padding: 1rem 1rem 0.25rem 1rem;
   background: #f3f0ff;
   min-height: 0;
+  max-height: 100%;
   scrollbar-width: auto;
   scrollbar-color: #b8a8c8 #e8e0f0;
   transition: flex 0.3s ease;
