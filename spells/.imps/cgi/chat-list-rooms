@@ -51,5 +51,4 @@ fi
 
 cat <<'HTML'
 </ul>
-<p class="meta">Click a room name to join or create a new room below</p>
 HTML
