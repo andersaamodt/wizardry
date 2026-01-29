@@ -522,25 +522,25 @@ pre code {
   border-top: 2px solid var(--border);
   background: #7b7a9e;  /* Medium-grey purple */
   line-height: 1.2;  /* Even tighter line-height */
+  position: relative;  /* For absolute positioning of button */
 }
 
 .username-display {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 0.5rem;
   width: 100%;
+  position: relative;  /* For button positioning */
+  padding-right: 4rem;  /* Make room for button */
 }
 
 .username-display strong {
   font-family: Georgia, 'Times New Roman', serif;  /* Serif font */
   font-size: 1rem;
   color: white;  /* White text on dark background */
-  flex: 0 1 auto;  /* Don't grow, can shrink */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  min-width: 0;  /* Allow shrinking */
 }
 
 .username-display button {
@@ -551,10 +551,11 @@ pre code {
   border: none;
   border-radius: 3px;
   cursor: pointer;
-  flex-shrink: 0;  /* Don't shrink */
-  margin: 0;
-  margin-left: auto;  /* Push to right */
   transition: background-color 0.2s;  /* Only animate background */
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .username-display button:hover {
@@ -708,10 +709,10 @@ pre code {
   text-decoration: none;
   font-weight: 600;
   transition: color 0.2s;
+  text-align: center;  /* Center always */
 }
 
 #create-room-link.expanded {
-  text-align: center;
   color: var(--dark);
   padding: 0 0 0.5rem 0;
   pointer-events: none;  /* Disable clicking when expanded */
@@ -886,8 +887,9 @@ pre code {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   color: #888;
   font-weight: normal;
-  vertical-align: baseline;
+  vertical-align: text-bottom;  /* Align to bottom of text line */
   float: right;
+  line-height: 1.5;  /* Match message line-height for proper alignment */
 }
 
 @keyframes messageAppear {
@@ -919,7 +921,7 @@ pre code {
 .chat-input-area textarea#message-input {
   flex: 1;
   resize: none;
-  min-height: 2.5rem;
+  height: 2.5rem;  /* Fixed initial height */
   max-height: 8rem;
   overflow-y: hidden;  /* Hide scrollbar until needed */
   overflow-x: hidden;

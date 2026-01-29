@@ -407,11 +407,12 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Auto-expand textarea as user types
   messageInput.addEventListener('input', function() {
-    // Reset height to auto to get proper scrollHeight
-    this.style.height = 'auto';
+    // Reset height to minimum to get proper scrollHeight
+    this.style.height = '2.5rem';
     // Set height to scrollHeight (content height)
-    var newHeight = Math.min(this.scrollHeight, 128);
-    this.style.height = newHeight + 'px';  // Max 128px (~5 lines)
+    var newHeight = Math.max(this.scrollHeight, 40);  // Minimum 40px (2.5rem)
+    newHeight = Math.min(newHeight, 128);  // Max 128px (~5 lines)
+    this.style.height = newHeight + 'px';
     // Show scrollbar only when content exceeds max height
     if (this.scrollHeight > 128) {
       this.style.overflowY = 'auto';
@@ -441,8 +442,8 @@ document.addEventListener('DOMContentLoaded', function() {
       return response.text();
     }).then(function(text) {
       messageInput.value = '';
-      // Reset textarea height
-      messageInput.style.height = 'auto';
+      // Reset textarea height to initial
+      messageInput.style.height = '2.5rem';
       // Reload messages immediately to show the new message
       loadMessages();
     });
