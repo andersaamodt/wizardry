@@ -523,7 +523,7 @@ pre code {
 
 .username-widget {
   margin-top: auto;
-  padding: 0;  /* Remove all padding for proper centering */
+  padding: 0.3rem 0;  /* Vertical padding for proper button centering */
   border-top: 2px solid var(--border);
   background: #7b7a9e;  /* Medium-grey purple */
   line-height: 1.2;  /* Even tighter line-height */
