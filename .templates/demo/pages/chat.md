@@ -467,13 +467,18 @@ function cancelUsernameEdit() {
   display.style.display = 'flex';
 }
 
-// Add Enter key support for username editing
+// Add Enter and Escape key support for username editing
 document.addEventListener('DOMContentLoaded', function() {
   var input = document.getElementById('username-edit-input');
   if (input) {
     input.addEventListener('keypress', function(e) {
       if (e.key === 'Enter') {
         saveUsername();
+      }
+    });
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        cancelUsernameEdit();
       }
     });
   }
