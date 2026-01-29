@@ -535,10 +535,8 @@ pre code {
 .username-display {
   display: flex;
   align-items: center;
-  justify-content: space-between;  /* Proper spacing between username and button */
-  gap: 0.5rem;  /* Minimum spacing between items */
   width: 100%;
-  padding: 0.15rem 0.15rem 0.15rem 0.75rem;  /* Minimal padding, less on right for button closer to edge */
+  padding: 2px 2px 2px 12px;  /* Minimal padding in pixels for precision */
 }
 
 .username-display strong {
@@ -548,6 +546,8 @@ pre code {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;  /* Grow to take available space, pushing button right */
+  margin-right: 8px;  /* Space between username and button */
 }
 
 .username-display button {
