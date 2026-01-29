@@ -527,7 +527,6 @@ pre code {
   border-top: 2px solid var(--border);
   background: #7b7a9e;  /* Medium-grey purple */
   line-height: 1.2;  /* Even tighter line-height */
-  position: relative;  /* For absolute positioning of button */
   min-height: 2.2rem;  /* Slightly taller for better button centering */
   display: flex;
   align-items: center;
@@ -538,8 +537,7 @@ pre code {
   align-items: center;
   gap: 0.5rem;
   width: 100%;
-  position: relative;  /* For button positioning */
-  padding: 0 4rem 0 0.75rem;  /* Padding on left and right for button */
+  padding: 0 0.75rem;  /* Horizontal padding only */
 }
 
 .username-display strong {
@@ -560,10 +558,8 @@ pre code {
   border-radius: 3px;
   cursor: pointer;
   transition: background-color 0.2s;  /* Only animate background */
-  position: absolute;
-  right: 0.75rem;  /* Align with padding */
-  top: 50%;
-  transform: translateY(-50%);
+  margin-left: auto;  /* Push button to the right */
+  flex-shrink: 0;  /* Prevent button from shrinking */
 }
 
 .username-display button:hover {
