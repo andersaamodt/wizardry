@@ -538,7 +538,7 @@ pre code {
   justify-content: space-between;  /* Proper spacing between username and button */
   gap: 0.5rem;  /* Minimum spacing between items */
   width: 100%;
-  padding: 0.25rem 0.75rem;  /* Minimal padding for thin bar */
+  padding: 0.15rem 0.15rem 0.15rem 0.75rem;  /* Minimal padding, less on right for button closer to edge */
 }
 
 .username-display strong {
