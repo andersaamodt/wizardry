@@ -475,7 +475,7 @@ pre code {
 /* Chat Interface Styles */
 .chat-container {
   display: grid;
-  grid-template-columns: 250px 1fr;
+  grid-template-columns: 187px 1fr;
   gap: 0;
   background: white;
   border: 2px solid var(--border);
@@ -1182,14 +1182,14 @@ pre code {
 }
 
 .members-panel.open {
-  flex: 0 0 250px;
+  flex: 0 0 187px;
 }
 
 .members-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
+  padding: 0.5rem 0.75rem;
   background: #3d3d70;
   color: white;
   border-bottom: 2px solid var(--border);
@@ -1197,8 +1197,9 @@ pre code {
 
 .members-header h4 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 0.85rem;
   color: white;
+  white-space: nowrap;
 }
 
 .members-list {
@@ -1210,22 +1211,23 @@ pre code {
 .member-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  margin-bottom: 0.25rem;
+  gap: 0.4rem;
+  padding: 0.4rem 0.5rem;
+  margin-bottom: 0.2rem;
   background: #f5f9ff;
   border-radius: 5px;
   color: #2c2c54;
 }
 
 .member-badge {
-  font-size: 1.2rem;
+  font-size: 1rem;
   flex-shrink: 0;
 }
 
 .member-name {
   flex: 1;
   font-weight: 500;
+  font-size: 0.85rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
