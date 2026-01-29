@@ -701,7 +701,7 @@ pre code {
 }
 
 .room-item strong {
-  display: block;  /* Make block so message count can be on separate line */
+  display: inline-block;  /* Inline-block so icon can be on same line */
   font-size: 1rem;
   font-family: Georgia, 'Times New Roman', serif;  /* Serif font for room names */
   font-weight: normal;  /* Normal weight for serif */
@@ -797,8 +797,8 @@ pre code {
   max-height: 150px;  /* Reduced from 200px to prevent overshoot */
   opacity: 1;
   padding: 0.25rem 0.1875rem 0.75rem 0.1875rem;
-  margin-left: -0.75rem;
-  margin-right: -0.75rem;
+  margin-left: -0.5rem;
+  margin-right: -0.5rem;
   background-color: #e6f2ff;  /* Light blue background */
   border-color: #99ccff;  /* Slightly darker light blue border */
 }
@@ -1227,7 +1227,7 @@ pre code {
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s;
-  margin-left: 1rem;
+  margin-right: 0.25rem;
 }
 
 .members-close-btn:hover {
