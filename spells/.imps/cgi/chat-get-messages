@@ -140,9 +140,9 @@ HTML
         is_web = index(web_users, ":" username ":")
         font_family = is_web ? "Verdana, sans-serif" : "Courier New, Courier, monospace"
         
-        # Output with timestamp in bottom-right corner
-        printf "  <div class=\"chat-msg\" style=\"font-family: %s;\"><span class=\"username\" style=\"color: %s; font-weight: bold;\">%s:</span> %s<span class=\"timestamp\">%s</span></div>\n", \
-          font_family, color, username, message, timestamp
+        # Output with timestamp in bottom-right corner, include full timestamp as data attribute
+        printf "  <div class=\"chat-msg\" style=\"font-family: %s;\"><span class=\"username\" style=\"color: %s; font-weight: bold;\">%s:</span> %s<span class=\"timestamp\" data-full-timestamp=\"%s\" title=\"%s\">%s</span></div>\n", \
+          font_family, color, username, message, full_timestamp, full_timestamp, timestamp
       } else {
         # No username found, display as-is
         printf "  <div class=\"chat-msg\">%s</div>\n", line

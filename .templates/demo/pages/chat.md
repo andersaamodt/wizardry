@@ -39,12 +39,12 @@ Loading rooms...
 <div class="chat-header">
 <h3 id="current-room-name">Select a room</h3>
 <div class="header-buttons">
+<button id="delete-room-btn" style="display: none;" onclick="deleteRoom()">
+Delete Room
+</button>
 <button id="members-btn" style="display: none;" onclick="toggleMembersPanel()" title="Show room members">
 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
 <span id="member-count">0</span>
-</button>
-<button id="delete-room-btn" style="display: none;" onclick="deleteRoom()">
-Delete Room
 </button>
 </div>
 </div>
@@ -286,6 +286,28 @@ function loadMessages() {
               msg.classList.remove('my-message');
             }
           }
+          
+          // Format timestamp tooltips
+          var timestampSpan = msg.querySelector('.timestamp');
+          if (timestampSpan && timestampSpan.dataset.fullTimestamp) {
+            var fullTs = timestampSpan.dataset.fullTimestamp;
+            // Format: "YYYY-MM-DD HH:MM:SS" -> human readable
+            try {
+              var date = new Date(fullTs.replace(' ', 'T'));
+              var options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric', 
+                hour: 'numeric', 
+                minute: '2-digit'
+              };
+              var formatted = date.toLocaleString('en-US', options);
+              timestampSpan.title = formatted;
+            } catch (e) {
+              // Keep original timestamp if parsing fails
+            }
+          }
         });
         
         // Handle scrolling
@@ -438,9 +460,15 @@ function updateDeleteButton() {
 
 function toggleMembersPanel() {
   var panel = document.getElementById('members-panel');
-  var wrapper = document.getElementById('chat-messages').parentElement;
   panel.classList.toggle('open');
-  wrapper.classList.toggle('members-open');
+  
+  // Update button appearance
+  var btn = document.getElementById('members-btn');
+  if (panel.classList.contains('open')) {
+    btn.classList.add('active');
+  } else {
+    btn.classList.remove('active');
+  }
 }
 
 // Leave room and return to empty state
@@ -460,9 +488,9 @@ function leaveRoom() {
   
   // Close members panel
   var panel = document.getElementById('members-panel');
-  var wrapper = document.getElementById('chat-messages').parentElement;
+  var btn = document.getElementById('members-btn');
   panel.classList.remove('open');
-  wrapper.classList.remove('members-open');
+  btn.classList.remove('active');
   
   // Stop auto-refresh
   if (window.messageInterval) {
