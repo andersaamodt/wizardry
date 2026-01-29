@@ -49,6 +49,11 @@
 - First-word glosses must invoke aliases via eval (not parse or direct command invocation) because: (1) parse skips aliases to avoid recursion, (2) direct invocation "$_fw_spell" tries to find executable not expand alias, (3) eval expands alias correctly without passing $@ since multi-word was already consumed during reconstruction.
 - Parse MUST skip functions before trying to exec system commands; exec-ing a gloss function creates infinite recursion (gloss → parse → exec gloss → parse ...) causing segfault/exit 139.
 - Pandoc wraps inline HTML elements in paragraph tags when they appear on separate lines in Markdown files; place all related inline elements on a single line to prevent this and maintain intended layout (consolidating elements signals to Pandoc that HTML is intentional inline markup rather than block-level content).
+- CSS transitions only work when animating between two defined states; setting `height: auto` breaks transitions because the browser can't interpolate from a length to 'auto' - use scrollHeight directly instead.
+- When styling disabled buttons, always include `:not(:disabled)` in hover selectors to prevent hover effects on disabled state.
+- Textarea auto-resize should calculate new height from scrollHeight without setting height to 'auto' first to preserve smooth CSS transitions.
+- CSS scrollbar styling requires both `-webkit-scrollbar` pseudo-elements (Chrome/Safari/Edge) and standard `scrollbar-width`/`scrollbar-color` properties (Firefox) for cross-browser support.
+- Notification message opacity must balance visibility with aesthetics; 0.15 is too transparent, 0.95 too opaque, 0.25 provides good legibility while maintaining light/tasteful appearance.
 - NO underscore-prefixed identifiers in any code (functions, variables, loop iterators); use imps instead of "private" functions; rename conflicting variables rather than prefixing with underscore.
 - Uncastable pattern variables (spell_name_sourced, spell_name_base) are internal-only (not exported) so should use lowercase without underscore prefix, not _spell_name_sourced.
 - Underscore-prefixed functions/variables are an anti-pattern suggesting "private" functions, but spells/imps shouldn't have functions at all; use imps for reusable code instead.
