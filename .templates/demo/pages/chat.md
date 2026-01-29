@@ -137,7 +137,7 @@ document.addEventListener('htmx:afterSwap', function(event) {
     });
   }
   
-  // Auto-fade notifications after 10 seconds
+  // Auto-fade notifications after 4 seconds
   if (event.detail.target.id === 'room-status') {
     var notification = event.detail.target.querySelector('.demo-result');
     if (notification) {
@@ -147,7 +147,7 @@ document.addEventListener('htmx:afterSwap', function(event) {
         setTimeout(function() {
           notification.remove();
         }, 500);
-      }, 10000);
+      }, 4000);
     }
   }
 });
@@ -550,7 +550,7 @@ function toggleCreateRoom() {
   }
 }
 
-// Show notification and auto-hide after 10 seconds
+// Show notification and auto-hide after 4 seconds
 function showNotification() {
   var notification = document.getElementById('room-notification');
   notification.style.display = 'block';
@@ -563,7 +563,7 @@ function showNotification() {
         notification.innerHTML = '';
       }, 500);
     }
-  }, 10000);
+  }, 4000);
 }
 </script>
 
