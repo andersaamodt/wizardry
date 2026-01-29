@@ -116,8 +116,8 @@ button {
 
 button:hover {
   background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
-  transform: translateY(-2px);
   box-shadow: 0 4px 16px var(--glow), 0 0 20px var(--glow);
+  /* Removed transform to prevent shift on hover */
 }
 
 button:active {
@@ -183,6 +183,11 @@ input[type="color"] {
 textarea {
   resize: vertical;
   min-height: 100px;
+}
+
+/* Override for chat message input */
+.chat-input-area textarea#message-input {
+  min-height: auto;  /* Override global textarea min-height */
 }
 
 /* Output areas */
@@ -478,75 +483,87 @@ pre code {
   overflow: hidden;
   height: 600px;
   margin: 2rem 0;
+  position: relative;  /* For absolute positioned notification */
 }
 
 .chat-sidebar {
   background: var(--light);
-  padding: 0;  /* Remove all padding - fix issue 7 */
+  padding: 0;
   border-right: 2px solid var(--border);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
 }
 
-/* Scrollbar styling for sidebar - match chatscroll (issue 10) */
-.chat-sidebar::-webkit-scrollbar {
-  width: 8px;
+/* Scrollbar styling for sidebar - match chat scrollbar */
+.chat-sidebar-content::-webkit-scrollbar {
+  width: 10px;  /* Thinner */
 }
 
-.chat-sidebar::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-.chat-sidebar::-webkit-scrollbar-thumb {
-  background: #888;
+.chat-sidebar-content::-webkit-scrollbar-track {
+  background: #e0e0e0;
   border-radius: 4px;
 }
 
-.chat-sidebar::-webkit-scrollbar-thumb:hover {
-  background: #555;
+.chat-sidebar-content::-webkit-scrollbar-thumb {
+  background: var(--primary);  /* Blue handle */
+  border-radius: 4px;
+}
+
+.chat-sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
 }
 
 .chat-sidebar-content {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0;  /* Remove padding - fix issue 7 */
+  padding: 0;
 }
 
 .username-widget {
   margin-top: auto;
-  padding: 0 0.75rem;  /* Remove all vertical padding - fix issue 2 */
+  padding: 0;  /* Remove all padding for proper centering */
   border-top: 2px solid var(--border);
-  background: #555;  /* Darker grey background */
+  background: #7b7a9e;  /* Medium-grey purple */
+  line-height: 1.2;  /* Even tighter line-height */
+  position: relative;  /* For absolute positioning of button */
+  min-height: 2.2rem;  /* Slightly taller for better button centering */
+  display: flex;
+  align-items: center;
 }
 
 .username-display {
   display: flex;
   align-items: center;
-  justify-content: space-between;  /* Right-align the Change button */
-  gap: 0.75rem;
+  gap: 0.5rem;
+  width: 100%;
+  position: relative;  /* For button positioning */
+  padding: 0 4rem 0 0.75rem;  /* Padding on left and right for button */
 }
 
 .username-display strong {
   font-family: Georgia, 'Times New Roman', serif;  /* Serif font */
   font-size: 1rem;
   color: white;  /* White text on dark background */
-  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .username-display button {
-  padding: 0.25rem 0.5rem;
+  padding: 0.2rem 0.5rem;
   font-size: 0.75rem;
   background: var(--primary);
   color: white;
   border: none;
   border-radius: 3px;
   cursor: pointer;
-  flex-shrink: 0;
+  transition: background-color 0.2s;  /* Only animate background */
+  position: absolute;
+  right: 0.75rem;  /* Align with padding */
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .username-display button:hover {
@@ -556,6 +573,14 @@ pre code {
 .username-edit {
   display: none;  /* Hidden by default */
   gap: 0.5rem;
+  flex-direction: column;
+}
+
+.username-edit h5 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.85rem;
+  color: white;
+  text-align: center;
 }
 
 .username-edit input {
@@ -571,11 +596,12 @@ pre code {
 }
 
 .chat-sidebar h3 {
-  margin: 0;  /* Remove margins - fix issue 9 */
-  font-size: 1.2rem;  /* Match chat header size - fix issue 9 */
+  margin: 0;
+  font-size: 1.2rem;
   background: #3d3d70;  /* Match chat header background */
   color: white;
-  padding: 1rem;  /* Match chat header padding - fix issue 9 */
+  padding: 1rem;
+  line-height: 1.2;  /* Match chat header line-height */
 }
 
 .chat-sidebar h4 {
@@ -592,11 +618,11 @@ pre code {
 }
 
 .room-item {
-  padding: 0.5rem 0.75rem;  /* Horizontal padding for text, not full width - fix issue 1 */
-  margin: 0;  /* No margin between items */
-  background: transparent;  /* No background by default */
-  border: none;  /* No border */
-  border-radius: 0;  /* No rounding */
+  padding: 0.5rem 0.75rem;
+  margin: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -608,32 +634,59 @@ pre code {
 }
 
 .room-item-selected {
-  background: rgba(108, 159, 255, 0.15);  /* Subtle blue tint */
+  background: rgba(108, 159, 255, 0.3);  /* Brighter blue tint */
   border-left: none;  /* Remove left border */
   cursor: default;
 }
 
 .room-item-selected:hover {
-  background: rgba(108, 159, 255, 0.15);  /* Same as non-hover */
+  background: rgba(108, 159, 255, 0.3);  /* Same as non-hover */
   color: inherit;  /* Don't change text color on hover */
   transform: none;  /* Don't slide on hover */
+}
+
+.room-item-selected:hover strong {
+  color: #2c2c54;  /* Keep dark text on hover for selected room */
+}
+
+.room-item-selected:hover .room-meta {
+  color: #888;  /* Keep subtle color for selected room meta on hover */
+}
+
+.room-item-selected:hover .room-icon {
+  color: #6c9fff;  /* Keep blue icon on hover for selected room */
+}
+  font-size: 1.5rem;  /* Slightly bigger */
+  margin-right: 0.2rem;  /* Less spacing */
+  color: #6c9fff;  /* Match primary color */
+  vertical-align: -0.15em;  /* Bump up a bit more */
+  line-height: 1;  /* Prevent extra height */
+}
+
+.room-item:hover .room-icon, .room-item-hover .room-icon {
+  color: white;
+}
+
+.room-item-selected .room-icon {
+  color: #6c9fff;
 }
 
 .room-item strong {
   display: inline;  /* Make inline so message count can be on same line - fix issue 1 */
   font-size: 1rem;
-  font-family: Georgia, 'Times New Roman', serif;  /* Back to serif - fix issue 1 */
+  font-family: Georgia, 'Times New Roman', serif;  /* Serif font for room names */
   font-weight: normal;  /* Normal weight for serif */
   color: #2c2c54;  /* Dark text for readability */
 }
 
 .room-meta {
-  display: inline;  /* Make inline to share line with room name - fix issue 1 */
-  font-size: 0.65rem;  /* Slightly bigger - fix issue 1 */
+  display: inline;  /* Make inline to share line with room name */
+  font-size: 0.75rem;  /* Slightly bigger */
   color: #888;  /* Subtle gray */
-  margin-left: 0.25rem;  /* Less indent, closer to room name - fix issue 1 */
+  margin-left: 0.5rem;  /* Closer to room name, un-indented */
   padding: 0;  /* No padding */
   background: transparent;  /* No background */
+  vertical-align: 0.05em;  /* Bump up slightly */
 }
 
 .room-item:hover .room-meta, .room-item-hover .room-meta {
@@ -650,6 +703,12 @@ pre code {
   color: white;
 }
 
+.room-item-selected:hover strong,
+.room-item-selected:hover .room-meta,
+.room-item-selected:hover .room-icon {
+  /* Keep original colors - no white text on hover for selected room */
+}
+
 .room-item-selected strong {
   color: #2c2c54;  /* Keep dark text for selected */
 }
@@ -659,9 +718,89 @@ pre code {
 }
 
 .room-controls {
-  margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border);
+  margin-top: 0.5rem;  /* Closer to room list */
+  padding: 0 1rem 0.25rem 1rem;  /* Less bottom padding */
+  /* No border-top */
+}
+
+#create-room-link {
+  display: block;
+  padding: 0.5rem 0;  /* Less padding */
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+  text-align: center;  /* Center always */
+  cursor: pointer;
+  margin-left: -1.7em;  /* Shift left to compensate for arrow */
+}
+
+#create-room-link.expanded {
+  color: var(--dark);
+  padding: 0 0 0.5rem 0;
+  cursor: pointer;  /* Keep clickable when expanded */
+  margin-left: 0;  /* Centered when expanded */
+  text-align: center;  /* Explicitly centered */
+}
+
+#create-room-link.expanded #create-room-arrow {
+  display: none;  /* Hide arrow when expanded */
+}
+
+#create-room-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+#create-room-link-closed {
+  display: block;
+  padding: 0.5rem 0;
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+  text-align: center;
+  cursor: pointer;
+  margin-left: -1.7em;  /* Shift left to compensate for arrow */
+}
+
+#create-room-link-closed:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+#create-room-arrow {
+  display: inline-block;
+  transition: transform 0.3s ease;
+  font-size: 0.8rem;
+}
+
+#create-room-widget {
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.75rem 0.75rem 0.75rem;  /* Minimal top padding */
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+  max-height: 0;
+  opacity: 0;
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+
+#create-room-widget[style*="display: block"] {
+  max-height: 200px;
+  opacity: 1;
+  background-color: #e6f2ff;  /* Light blue background */
+  border-color: #99ccff;  /* Slightly darker light blue border */
+}
+
+#create-room-widget h4 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--dark);
+  display: none;  /* Hide h4, we'll use the link text instead */
+  text-align: center;
 }
 
 .room-controls input {
@@ -697,20 +836,22 @@ pre code {
   margin: 0;
   font-size: 1.2rem;
   color: white;
+  line-height: 1.2;  /* Match sidebar header line-height */
 }
 
 .chat-header button {
   background: var(--danger);
-  padding: 0.5rem 1rem;
+  padding: 0.25rem 0.75rem;  /* Reduced padding */
   font-size: 0.85rem;
   margin: 0;
+  transition: background-color 0.2s;  /* Only animate color */
 }
 
 .chat-display {
   flex: 1 1 0;  /* Allow shrinking, set base to 0 to force min-height to work */
   overflow-y: auto;  /* Auto instead of scroll - only show scrollbar when needed */
   overflow-x: hidden;
-  padding: 1rem;
+  padding: 1rem 1rem 0.25rem 1rem;  /* Further reduced bottom padding */
   background: #f3f0ff;  /* Light purple/lavender background */
   min-height: 0;  /* Critical for flexbox scrolling */
   scrollbar-width: auto;  /* Make scrollbar more visible in Firefox */
@@ -744,11 +885,25 @@ pre code {
   /* Remove height constraint to allow parent scrollbar to work */
 }
 
+.empty-state-message {
+  color: #999;  /* Lighter text */
+  font-style: italic;
+  font-size: 1rem;  /* Normal sized */
+  text-align: center;
+  margin: 2rem 0;
+}
+
+#room-notification {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  opacity: 1;  /* Fully opaque for legibility */
+}
+
 .chat-msg {
-  background: #eff6ff;  /* Lighter blue for others' messages - fix issue 6 */
+  background: #e8f4ff;  /* Slightly bluer for others' messages */
   padding: 0.75rem 1rem;
-  padding-bottom: 1.2rem;  /* Reduced for timestamp position */
-  margin-bottom: 0.75rem;  /* Spacing between messages */
+  padding-bottom: 0.75rem;  /* Match top padding */
+  margin-bottom: 0.5rem;  /* Less spacing between messages */
   border-radius: 18px;  /* Rounded bubble corners */
   font-family: 'Monaco', 'Courier New', monospace;
   font-size: 0.9rem;
@@ -756,7 +911,7 @@ pre code {
   animation: messageAppear 0.51s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);  /* Subtle shadow for depth */
   word-wrap: break-word;  /* Wrap long messages */
-  position: relative;  /* For timestamp positioning */
+  overflow: hidden;  /* Clear floats */
 }
 
 .chat-msg .username {
@@ -769,13 +924,17 @@ pre code {
 }
 
 .chat-msg .timestamp {
-  position: absolute;  /* Absolute positioning for better control - fix issue 6 */
-  bottom: 0.15rem;  /* Lower position - fix issue 6 */
-  right: 0.75rem;
+  display: inline-block;
+  margin-left: 0.5rem;
+  margin-bottom: 0;  /* Remove negative margin */
   font-size: 0.65rem;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   color: #888;
   font-weight: normal;
+  vertical-align: text-bottom;  /* Align to bottom of text line */
+  float: right;
+  line-height: 1.5;  /* Match message line-height for proper alignment */
+  padding-bottom: 0;  /* No padding */
 }
 
 @keyframes messageAppear {
@@ -792,7 +951,7 @@ pre code {
 .chat-input-area {
   display: flex;
   gap: 0.5rem;
-  padding: 1rem;
+  padding: 0.5rem 1rem;  /* Reduced vertical padding */
   background: white;
   border-top: 2px solid var(--border);
   flex-shrink: 0;  /* Prevent input area from shrinking */
@@ -807,23 +966,25 @@ pre code {
 .chat-input-area textarea#message-input {
   flex: 1;
   resize: none;
-  min-height: 2.8rem;  /* Increased to better match line-height - fix issue 8 */
+  height: 1.8rem;  /* Even smaller for truly one line */
   max-height: 8rem;
-  overflow-y: auto;
-  padding: 0.75rem;
-  line-height: 1.5;  /* Adjusted line-height - fix issue 8 */
-  transition: height 0.2s ease;  /* Animate height changes */
+  overflow-y: hidden;  /* Hide scrollbar until needed */
+  overflow-x: hidden;
+  padding: 0.2rem 0.75rem;  /* Minimal padding */
+  line-height: 1.4;  /* Slightly increased for better text visibility */
+  transition: height 0.2s ease;
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+  box-sizing: border-box;
 }
 
 .chat-input-area button {
   margin: 0;
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 1rem;
   white-space: nowrap;
   flex-shrink: 0;
   align-self: stretch;
-  min-height: 2.8rem;  /* Match textarea height - fix issue 8 */
-  transition: min-height 0.2s ease;  /* Animate button height changes */
+  min-height: 2.5rem;
+  transition: min-height 0.2s ease;
 }
 
 .chat-input-area button:disabled {
