@@ -40,7 +40,7 @@ if [ -d "$CHAT_DIR" ]; then
     fi
     
     printf '  <li class="room-item" data-room="%s">\n' "$room_name"
-    printf '    <strong>%s</strong>\n' "$room_name"
+    printf '    <span class="room-icon">#</span><strong>%s</strong>\n' "$room_name"
     printf '    <span class="room-meta">%d messages</span>\n' "$msg_count"
     if [ -n "$last_msg" ]; then
       printf '    <div class="last-msg">%s</div>\n' "$last_msg"
@@ -51,5 +51,4 @@ fi
 
 cat <<'HTML'
 </ul>
-<p class="meta">Click a room name to join or create a new room below</p>
 HTML

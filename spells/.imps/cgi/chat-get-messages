@@ -49,7 +49,7 @@ LOG_FILE="$ROOM_DIR/.log"
 if [ ! -f "$LOG_FILE" ] || [ ! -s "$LOG_FILE" ]; then
   cat <<HTML
 <div id="chat-messages" class="chat-display">
-  <p class="meta">No messages yet. Be the first to say something!</p>
+  <p class="empty-state-message">No messages yet. Be the first to say something!</p>
 </div>
 HTML
 else
