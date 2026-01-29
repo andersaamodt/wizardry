@@ -662,38 +662,6 @@ pre code {
   cursor: default;
 }
 
-.room-item-selected:hover {
-  background: rgba(108, 159, 255, 0.3);  /* Same as non-hover */
-  color: inherit;  /* Don't change text color on hover */
-  transform: none;  /* Don't slide on hover */
-}
-
-.room-item-selected:hover strong {
-  color: #2c2c54;  /* Keep dark text on hover for selected room */
-}
-
-.room-item-selected:hover .room-meta {
-  color: #888;  /* Keep subtle color for selected room meta on hover */
-}
-
-.room-item-selected:hover .room-icon {
-  color: #6c9fff;  /* Keep blue icon on hover for selected room */
-}
-  font-size: 1.5rem;  /* Slightly bigger */
-  margin-right: 0.2rem;  /* Less spacing */
-  color: #6c9fff;  /* Match primary color */
-  vertical-align: -0.15em;  /* Bump up a bit more */
-  line-height: 1;  /* Prevent extra height */
-}
-
-.room-item:hover .room-icon, .room-item-hover .room-icon {
-  color: white;
-}
-
-.room-item-selected .room-icon {
-  color: #6c9fff;
-}
-
 .room-item strong {
   display: inline;  /* Make inline so message count can be on same line - fix issue 1 */
   font-size: 1rem;
@@ -712,9 +680,16 @@ pre code {
   vertical-align: 0.05em;  /* Bump up slightly */
 }
 
-.room-item:hover .room-meta, .room-item-hover .room-meta {
-  color: rgba(255,255,255,0.8);  /* Lighter on hover */
-  background: transparent;
+.room-icon {
+  font-size: 1.5rem;  /* Slightly bigger */
+  margin-right: 0.2rem;  /* Less spacing */
+  color: #6c9fff;  /* Match primary color */
+  vertical-align: -0.15em;  /* Bump up a bit more */
+  line-height: 1;  /* Prevent extra height */
+}
+
+.room-item-selected strong {
+  color: #2c2c54;  /* Keep dark text for selected */
 }
 
 .room-item-selected .room-meta {
@@ -722,12 +697,41 @@ pre code {
   background: transparent;
 }
 
+.room-item-selected .room-icon {
+  color: #6c9fff;
+}
+
+/* General hover styles for all room items */
 .room-item:hover strong, .room-item-hover strong {
   color: white;
 }
 
-.room-item-selected strong {
-  color: #2c2c54;  /* Keep dark text for selected */
+.room-item:hover .room-meta, .room-item-hover .room-meta {
+  color: rgba(255,255,255,0.8);  /* Lighter on hover */
+  background: transparent;
+}
+
+.room-item:hover .room-icon, .room-item-hover .room-icon {
+  color: white;
+}
+
+/* Override hover styles for selected room - these MUST come after general hover styles */
+.room-item-selected:hover {
+  background: rgba(108, 159, 255, 0.3);  /* Same as non-hover */
+  color: inherit;  /* Don't change text color on hover */
+  transform: none;  /* Don't slide on hover */
+}
+
+.room-item-selected:hover strong {
+  color: #2c2c54;  /* Keep dark text on hover for selected room */
+}
+
+.room-item-selected:hover .room-meta {
+  color: #888;  /* Keep subtle color for selected room meta on hover */
+}
+
+.room-item-selected:hover .room-icon {
+  color: #6c9fff;  /* Keep blue icon on hover for selected room */
 }
 
 .last-msg {
