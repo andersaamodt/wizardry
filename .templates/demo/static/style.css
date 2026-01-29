@@ -563,6 +563,7 @@ pre code {
   white-space: nowrap;
   min-width: 0;  /* Allow flex item to shrink for ellipsis */
   flex: 1;  /* Take available space */
+  margin-top: 0.5rem;  /* Add top spacing to username */
 }
 
 .username-display button {
@@ -576,6 +577,7 @@ pre code {
   transition: background-color 0.2s;
   flex-shrink: 0;
   margin-left: 8px;
+  margin-bottom: 0;  /* Remove bottom margin */
 }
 
 .username-display button:hover {
@@ -587,7 +589,7 @@ pre code {
   gap: 0.5rem;
   flex-direction: column;
   width: 100%;  /* Take full width */
-  padding: 0.5rem 0.75rem;  /* Add padding to create space above heading */
+  padding: 0.5rem 0.75rem 0 0.75rem;  /* Remove bottom padding */
   max-height: 0;
   opacity: 0;
   overflow: hidden;
@@ -595,9 +597,9 @@ pre code {
 }
 
 .username-edit.open {
-  max-height: 120px;  /* Reduced from 200px to prevent overshoot */
+  max-height: 135px;  /* Increased from 120px to show full heading */
   opacity: 1;
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0.75rem 0 0.75rem;  /* Remove bottom padding */
 }
 
 .username-edit h5 {
@@ -811,7 +813,7 @@ pre code {
 }
 
 #create-room-widget.open #create-room-link {
-  margin-left: 0;  /* Centered when open */
+  margin-left: -1.7em;  /* Keep left-of-center when open */
   margin-bottom: 0.5rem;  /* Space below when it becomes a heading */
 }
 
