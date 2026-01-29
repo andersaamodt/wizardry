@@ -67,9 +67,7 @@ Delete Room
 </div>
 
 <div id="chat-messages" class="chat-display">
-<div class="chat-messages">
 <p style="color: #666; font-style: italic;">Select a room to start chatting</p>
-</div>
 </div>
 
 <div class="chat-input-area" id="chat-input-area" style="display: none;">
