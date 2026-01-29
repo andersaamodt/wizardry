@@ -14,9 +14,9 @@ title: Chatrooms
 
 ## Chat Interface
 
-<div id="room-notification" style="display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; max-width: 400px;"></div>
-
 <div class="chat-container">
+<div id="room-notification" style="display: none; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; max-width: 400px;"></div>
+
 <div class="chat-sidebar">
 <div class="chat-sidebar-content">
 <h3>Chatrooms</h3>
@@ -25,7 +25,7 @@ Loading rooms...
 </div>
 
 <div class="room-controls">
-<a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&gt;</span> Create Room</a>
+<a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a>
 <div id="create-room-widget" style="display: none;">
 <input type="text" id="new-room-name" placeholder="Room name" />
 <button id="create-room-btn" hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); showNotification(); }">
@@ -404,7 +404,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Reset height to auto to get proper scrollHeight
     this.style.height = 'auto';
     // Set height to scrollHeight (content height)
-    this.style.height = Math.min(this.scrollHeight, 128) + 'px';  // Max 128px (~5 lines)
+    var newHeight = Math.min(this.scrollHeight, 128);
+    this.style.height = newHeight + 'px';  // Max 128px (~5 lines)
+    // Show scrollbar only when content exceeds max height
+    if (this.scrollHeight > 128) {
+      this.style.overflowY = 'auto';
+    } else {
+      this.style.overflowY = 'hidden';
+    }
   });
   
   function sendMessage() {
@@ -493,14 +500,14 @@ function toggleCreateRoom() {
   var arrow = document.getElementById('create-room-arrow');
   if (widget.style.display === 'none') {
     widget.style.display = 'block';
-    arrow.innerHTML = '&#x25BC;';  // Down arrow
+    arrow.innerHTML = '&#x25BC;';  // Filled down triangle
     // Focus on input after a short delay to ensure it's visible
     setTimeout(function() {
       document.getElementById('new-room-name').focus();
     }, 100);
   } else {
     widget.style.display = 'none';
-    arrow.innerHTML = '&gt;';  // Right arrow
+    arrow.innerHTML = '&#x25B6;';  // Filled right triangle
   }
 }
 
