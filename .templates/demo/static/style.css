@@ -495,6 +495,16 @@ pre code {
   flex-direction: column;
 }
 
+.chat-sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
+  /* Firefox scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: #7c9fc4 #d4e3f7;  /* thumb track */
+}
+
 /* Scrollbar styling for sidebar - thin muted blue scrollbar */
 .chat-sidebar-content::-webkit-scrollbar {
   width: 6px;  /* Thinner scrollbar */
@@ -512,13 +522,6 @@ pre code {
 
 .chat-sidebar-content::-webkit-scrollbar-thumb:hover {
   background: #6a8bb3;  /* Slightly darker muted blue on hover */
-}
-
-.chat-sidebar-content {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 0;
 }
 
 .username-widget {
