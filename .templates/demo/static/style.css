@@ -541,6 +541,16 @@ pre code {
   justify-content: space-between;
   width: 100%;
   padding: 4px 8px;
+  max-height: 100px;
+  opacity: 1;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+}
+
+.username-display.hidden {
+  max-height: 0;
+  opacity: 0;
+  padding: 0 8px;
 }
 
 .username-display strong {
@@ -571,10 +581,20 @@ pre code {
 }
 
 .username-edit {
-  display: none;  /* Hidden by default */
+  display: flex;  /* Always flex, use max-height for animation */
   gap: 0.5rem;
   flex-direction: column;
   padding: 0.5rem 0.75rem;  /* Add padding to create space above heading */
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+}
+
+.username-edit.open {
+  max-height: 200px;  /* Enough for the form */
+  opacity: 1;
+  padding: 0.5rem 0.75rem;
 }
 
 .username-edit h5 {
@@ -812,17 +832,20 @@ pre code {
   margin-top: 0.5rem;
   padding: 0.25rem 0.75rem 0.75rem 0.75rem;  /* Minimal top padding */
   overflow: hidden;
-  transition: max-height 0.3s ease, opacity 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+  transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
   max-height: 0;
   opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
   background-color: transparent;
   border: 1px solid transparent;
   border-radius: 8px;
 }
 
-#create-room-widget[style*="display: block"] {
+#create-room-widget.open {
   max-height: 200px;
   opacity: 1;
+  padding: 0.25rem 0.75rem 0.75rem 0.75rem;
   background-color: #e6f2ff;  /* Light blue background */
   border-color: #99ccff;  /* Slightly darker light blue border */
 }
