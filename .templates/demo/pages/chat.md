@@ -249,7 +249,7 @@ function loadMessages() {
         }
         
         // Color-code messages: light blue for others, light green for user's own
-        var currentUsername = document.getElementById('current-username').textContent.trim();
+        var currentUsername = document.getElementById('username-text').textContent.trim();
         var allMessages = chatMessagesDiv.querySelectorAll('.chat-msg');
         allMessages.forEach(function(msg) {
           var usernameSpan = msg.querySelector('.username');

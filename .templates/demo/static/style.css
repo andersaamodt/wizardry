@@ -482,23 +482,41 @@ pre code {
 
 .chat-sidebar {
   background: var(--light);
-  padding: 1rem;
+  padding: 0;  /* Remove all padding - fix issue 7 */
   border-right: 2px solid var(--border);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
 }
 
+/* Scrollbar styling for sidebar - match chatscroll (issue 10) */
+.chat-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-sidebar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.chat-sidebar::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.chat-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
 .chat-sidebar-content {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0.5rem;
+  padding: 0;  /* Remove padding - fix issue 7 */
 }
 
 .username-widget {
   margin-top: auto;
-  padding: 0.1rem 0.75rem;  /* Reduced padding to make it thinner */
+  padding: 0 0.75rem;  /* Remove all vertical padding - fix issue 2 */
   border-top: 2px solid var(--border);
   background: #555;  /* Darker grey background */
 }
@@ -553,13 +571,11 @@ pre code {
 }
 
 .chat-sidebar h3 {
-  margin-top: 0;
-  font-size: 1.1rem;
-  color: var(--dark);
+  margin: 0;  /* Remove margins - fix issue 9 */
+  font-size: 1.2rem;  /* Match chat header size - fix issue 9 */
   background: #3d3d70;  /* Match chat header background */
   color: white;
-  padding: 0.75rem 1rem;
-  margin: -1rem -1rem 1rem -1rem;  /* Extend to edges */
+  padding: 1rem;  /* Match chat header padding - fix issue 9 */
 }
 
 .chat-sidebar h4 {
@@ -576,8 +592,7 @@ pre code {
 }
 
 .room-item {
-  padding: 0.5rem 0;  /* No left/right padding - full width highlight */
-  padding-left: 0.75rem;  /* Only on content */
+  padding: 0.5rem 0.75rem;  /* Horizontal padding for text, not full width - fix issue 1 */
   margin: 0;  /* No margin between items */
   background: transparent;  /* No background by default */
   border: none;  /* No border */
@@ -605,22 +620,20 @@ pre code {
 }
 
 .room-item strong {
-  display: block;
+  display: inline;  /* Make inline so message count can be on same line - fix issue 1 */
   font-size: 1rem;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;  /* Sans-serif */
-  font-weight: 500;  /* Medium weight - more clickable */
-  letter-spacing: 0.01em;
+  font-family: Georgia, 'Times New Roman', serif;  /* Back to serif - fix issue 1 */
+  font-weight: normal;  /* Normal weight for serif */
   color: #2c2c54;  /* Dark text for readability */
 }
 
 .room-meta {
-  display: inline-block;  /* Make it inline instead of block */
-  font-size: 0.55rem;  /* Tiny font - smaller than before */
+  display: inline;  /* Make inline to share line with room name - fix issue 1 */
+  font-size: 0.65rem;  /* Slightly bigger - fix issue 1 */
   color: #888;  /* Subtle gray */
-  margin-left: 0.5rem;  /* Space from room name */
-  padding: 0;  /* No padding - not a badge */
+  margin-left: 0.25rem;  /* Less indent, closer to room name - fix issue 1 */
+  padding: 0;  /* No padding */
   background: transparent;  /* No background */
-  border-radius: 0;  /* No pill shape */
 }
 
 .room-item:hover .room-meta, .room-item-hover .room-meta {
@@ -635,7 +648,6 @@ pre code {
 
 .room-item:hover strong, .room-item-hover strong {
   color: white;
-  font-weight: 600;  /* Bolder on hover */
 }
 
 .room-item-selected strong {
@@ -733,7 +745,7 @@ pre code {
 }
 
 .chat-msg {
-  background: #e3f2fd;  /* Light blue for others' messages */
+  background: #eff6ff;  /* Lighter blue for others' messages - fix issue 6 */
   padding: 0.75rem 1rem;
   padding-bottom: 1.2rem;  /* Reduced for timestamp position */
   margin-bottom: 0.75rem;  /* Spacing between messages */
@@ -744,6 +756,7 @@ pre code {
   animation: messageAppear 0.51s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);  /* Subtle shadow for depth */
   word-wrap: break-word;  /* Wrap long messages */
+  position: relative;  /* For timestamp positioning */
 }
 
 .chat-msg .username {
@@ -756,15 +769,13 @@ pre code {
 }
 
 .chat-msg .timestamp {
-  display: inline-block;
-  margin-left: 0.5rem;
+  position: absolute;  /* Absolute positioning for better control - fix issue 6 */
+  bottom: 0.15rem;  /* Lower position - fix issue 6 */
+  right: 0.75rem;
   font-size: 0.65rem;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   color: #888;
   font-weight: normal;
-  float: right;
-  vertical-align: bottom;  /* Further lowered - bottom instead of text-bottom */
-  line-height: 1.8;  /* Add line-height to push it down more */
 }
 
 @keyframes messageAppear {
@@ -796,11 +807,11 @@ pre code {
 .chat-input-area textarea#message-input {
   flex: 1;
   resize: none;
-  min-height: 2.5rem;
+  min-height: 2.8rem;  /* Increased to better match line-height - fix issue 8 */
   max-height: 8rem;
   overflow-y: auto;
   padding: 0.75rem;
-  line-height: 1.4;
+  line-height: 1.5;  /* Adjusted line-height - fix issue 8 */
   transition: height 0.2s ease;  /* Animate height changes */
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
 }
@@ -811,7 +822,7 @@ pre code {
   white-space: nowrap;
   flex-shrink: 0;
   align-self: stretch;
-  min-height: 2.5rem;
+  min-height: 2.8rem;  /* Match textarea height - fix issue 8 */
   transition: min-height 0.2s ease;  /* Animate button height changes */
 }
 
