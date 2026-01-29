@@ -570,10 +570,11 @@ pre code {
   display: none;  /* Hidden by default */
   gap: 0.5rem;
   flex-direction: column;
+  padding: 0.5rem 0.75rem;  /* Add padding to create space above heading */
 }
 
 .username-edit h5 {
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.25rem 0;  /* Reduced bottom margin */
   font-size: 0.85rem;
   color: white;
   text-align: center;
@@ -583,12 +584,29 @@ pre code {
   flex: 1;
   padding: 0.5rem;
   font-size: 0.9rem;
+  margin: 0;  /* Remove default margin */
+}
+
+.username-edit-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;  /* Center buttons horizontally */
 }
 
 .username-edit button {
   padding: 0.5rem 0.75rem;
   font-size: 0.85rem;
   flex-shrink: 0;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.username-edit button:hover {
+  background: var(--accent);
 }
 
 .chat-sidebar h3 {
