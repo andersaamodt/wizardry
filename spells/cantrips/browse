@@ -21,6 +21,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 # Default to current directory if no path specified
 path=${1:-.}
