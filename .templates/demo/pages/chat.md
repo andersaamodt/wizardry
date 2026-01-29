@@ -57,7 +57,7 @@ Delete Room
 <div id="members-panel" class="members-panel">
 <div class="members-header">
 <h4>Room Members</h4>
-<button onclick="toggleMembersPanel()" style="border: none; background: none; cursor: pointer; font-size: 1.2em;">&times;</button>
+<button onclick="toggleMembersPanel()" style="border: none; background: none; cursor: pointer; font-size: 1em; color: white; padding: 0; line-height: 1;">&times;</button>
 </div>
 <div id="members-list" class="members-list">
 <p style="color: #666; font-style: italic;">No members</p>
@@ -175,8 +175,7 @@ function joinRoom(roomName) {
   document.getElementById('send-btn').disabled = false;
   document.getElementById('chat-input-area').style.display = 'flex';
   
-  // Show members button
-  document.getElementById('members-btn').style.display = 'inline-flex';
+  // Members button visibility will be controlled by loadMembers based on member count
   
   // Create avatar for this user
   var currentUsername = document.getElementById('username-text').textContent.trim();
@@ -407,12 +406,21 @@ function loadMembers() {
       
       var membersList = document.getElementById('members-list');
       var memberCount = document.getElementById('member-count');
+      var membersBtn = document.getElementById('members-btn');
       
       if (!data.avatars || data.avatars.length === 0) {
         membersList.innerHTML = '<p style="color: #666; font-style: italic;">No members</p>';
         memberCount.textContent = '0';
+        membersBtn.style.display = 'none';
       } else {
         memberCount.textContent = data.avatars.length;
+        
+        // Only show members button when 2 or more members
+        if (data.avatars.length >= 2) {
+          membersBtn.style.display = 'inline-flex';
+        } else {
+          membersBtn.style.display = 'none';
+        }
         
         var html = '';
         data.avatars.forEach(function(avatar) {
