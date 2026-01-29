@@ -712,7 +712,7 @@ pre code {
   display: block;  /* Make block for separate line */
   font-size: 0.75rem;  /* Slightly bigger */
   color: #888;  /* Subtle gray */
-  margin-left: 0;  /* No left margin since it's on its own line */
+  margin-left: 1.7rem;  /* Align with room name (icon width + margin) */
   margin-top: 0.1rem;  /* Small gap from room name */
   padding: 0;  /* No padding */
   background: transparent;  /* No background */
@@ -812,11 +812,11 @@ pre code {
   transition: color 0.2s, margin-left 0.3s ease;
   text-align: center;
   cursor: pointer;
-  margin-left: -1.7em;  /* Shift left to compensate for arrow when closed */
+  margin-left: -2.7em;  /* Shift 1em more left than before */
 }
 
 #create-room-widget.open #create-room-link {
-  margin-left: -1.7em;  /* Keep left-of-center when open */
+  margin-left: -2.7em;  /* Keep same position when open */
   margin-bottom: 0.5rem;  /* Space below when it becomes a heading */
 }
 
@@ -1188,10 +1188,8 @@ pre code {
 }
 
 .members-panel.open {
-  flex: 0 0 auto;
-  min-width: 135px;
-  max-width: 200px;
-  transition: flex 0.3s ease, min-width 0.3s ease, max-width 0.3s ease;
+  flex: 0 0 170px;
+  transition: flex 0.3s ease;
 }
 
 .members-header {
