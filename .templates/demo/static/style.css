@@ -475,7 +475,7 @@ pre code {
 /* Chat Interface Styles */
 .chat-container {
   display: grid;
-  grid-template-columns: 250px 1fr;
+  grid-template-columns: 187px 1fr;
   gap: 0;
   background: white;
   border: 2px solid var(--border);
@@ -567,7 +567,7 @@ pre code {
 }
 
 .username-display button {
-  padding: 0.2rem 0.5rem;
+  padding: 0.2rem 0.3rem;
   font-size: 0.75rem;
   background: var(--primary);
   color: white;
@@ -576,8 +576,9 @@ pre code {
   cursor: pointer;
   transition: background-color 0.2s;
   flex-shrink: 0;
-  margin-left: 8px;
-  margin-bottom: 0;  /* Remove bottom margin */
+  margin-left: auto;
+  margin-right: 0.25rem;
+  margin-bottom: 0;
 }
 
 .username-display button:hover {
@@ -658,7 +659,7 @@ pre code {
 .chat-sidebar h3 {
   margin: 0;
   font-size: 1.2rem;
-  background: #3d3d70;  /* Match chat header background */
+  background: linear-gradient(135deg, #3d3d70 0%, #5d5d90 100%);
   color: white;
   padding: 1rem;
   line-height: 1.2;  /* Match chat header line-height */
@@ -700,7 +701,7 @@ pre code {
 }
 
 .room-item strong {
-  display: inline;  /* Make inline so message count can be on same line - fix issue 1 */
+  display: inline-block;  /* Inline-block so icon can be on same line */
   font-size: 1rem;
   font-family: Georgia, 'Times New Roman', serif;  /* Serif font for room names */
   font-weight: normal;  /* Normal weight for serif */
@@ -708,13 +709,13 @@ pre code {
 }
 
 .room-meta {
-  display: inline;  /* Make inline to share line with room name */
+  display: block;  /* Make block for separate line */
   font-size: 0.75rem;  /* Slightly bigger */
   color: #888;  /* Subtle gray */
-  margin-left: 0.5rem;  /* Closer to room name, un-indented */
+  margin-left: 1.25rem;  /* Align with room name */
+  margin-top: 0.1rem;  /* Small gap from room name */
   padding: 0;  /* No padding */
   background: transparent;  /* No background */
-  vertical-align: 0.05em;  /* Bump up slightly */
 }
 
 .room-icon {
@@ -795,7 +796,9 @@ pre code {
 #create-room-widget.open {
   max-height: 150px;  /* Reduced from 200px to prevent overshoot */
   opacity: 1;
-  padding: 0.25rem 0.75rem 0.75rem 0.75rem;
+  padding: 0.25rem 0.1875rem 0.75rem 0.1875rem;
+  margin-left: -0.5rem;
+  margin-right: -0.5rem;
   background-color: #e6f2ff;  /* Light blue background */
   border-color: #99ccff;  /* Slightly darker light blue border */
 }
@@ -809,11 +812,11 @@ pre code {
   transition: color 0.2s, margin-left 0.3s ease;
   text-align: center;
   cursor: pointer;
-  margin-left: -1.7em;  /* Shift left to compensate for arrow when closed */
+  margin-left: -2.7em;  /* Shift 1em more left than before */
 }
 
 #create-room-widget.open #create-room-link {
-  margin-left: -1.7em;  /* Keep left-of-center when open */
+  margin-left: -2.7em;  /* Keep same position when open */
   margin-bottom: 0.5rem;  /* Space below when it becomes a heading */
 }
 
@@ -868,7 +871,7 @@ pre code {
 
 .chat-header {
   padding: 1rem;
-  background: #3d3d70;  /* Brighter than var(--dark) #2c2c54 */
+  background: linear-gradient(135deg, #3d3d70 0%, #5d5d90 100%);
   color: white;
   display: flex;
   justify-content: space-between;
@@ -949,13 +952,13 @@ pre code {
   padding-bottom: 0.75rem;  /* Match top padding */
   margin-bottom: 0.5rem;  /* Less spacing between messages */
   border-radius: 18px;  /* Rounded bubble corners */
-  font-family: 'Monaco', 'Courier New', monospace;
   font-size: 0.9rem;
   color: #1a1a1a;  /* Darker text for better readability */
   animation: messageAppear 0.51s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);  /* Subtle shadow for depth */
   word-wrap: break-word;  /* Wrap long messages */
   overflow: hidden;  /* Clear floats */
+  /* Font family set inline per message based on user type (web: Verdana, MUD: monospace) */
 }
 
 .chat-msg .username {
@@ -999,7 +1002,9 @@ pre code {
   background: white;
   border-top: 2px solid var(--border);
   flex-shrink: 0;  /* Prevent input area from shrinking */
+  flex-grow: 0;    /* Don't grow */
   align-items: flex-end;  /* Align items to bottom */
+  min-height: 60px;  /* Ensure minimum height */
 }
 
 .chat-input-area textarea,
@@ -1017,7 +1022,7 @@ pre code {
   padding: 0.55rem 0.75rem;  /* Adjusted vertical padding to center text */
   line-height: 1.4;  /* Slightly increased for better text visibility */
   transition: height 0.2s ease;
-  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+  font-family: Verdana, sans-serif;
   box-sizing: border-box;
 }
 
@@ -1084,3 +1089,199 @@ pre code {
     width: 100%;
   }
 }
+
+/* Members Panel Styles */
+.header-buttons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+#members-btn {
+  background: rgba(108, 159, 255, 0.6);  /* Dimmer blue - 60% opacity */
+  padding: 0.4rem 0.6rem;
+  margin: -0.75rem 0;
+  font-size: 0.85rem;
+  transition: background-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#members-btn svg {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+#members-btn:hover {
+  background: var(--primary);  /* Lighter on hover */
+}
+
+#members-btn.active {
+  background: var(--secondary);  /* Bright blue when active */
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  transform: translateY(1px);
+}
+
+#member-count {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.3);
+  padding: 0.1rem 0.4rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  min-width: 1.2rem;
+  text-align: center;
+}
+
+.chat-content-wrapper {
+  flex: 1 1 0;
+  display: flex;
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chat-display {
+  flex: 1 1 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1rem 1rem 0.25rem 1rem;
+  background: #f3f0ff;
+  min-height: 0;
+  max-height: 100%;
+  scrollbar-width: auto;
+  scrollbar-color: #b8a8c8 #e8e0f0;
+  transition: flex 0.3s ease;
+}
+
+/* Webkit scrollbar styling for chat display */
+.chat-display::-webkit-scrollbar {
+  width: 12px;
+}
+
+.chat-display::-webkit-scrollbar-track {
+  background: #e8e0f0;
+  border-radius: 4px;
+}
+
+.chat-display::-webkit-scrollbar-thumb {
+  background: #b8a8c8;
+  border-radius: 4px;
+}
+
+.chat-display::-webkit-scrollbar-thumb:hover {
+  background: #a898b8;
+}
+
+.members-panel {
+  flex: 0 0 0;
+  background: white;
+  border-left: 2px solid var(--border);
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+  transition: flex 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.members-panel.open {
+  flex: 0 0 170px;
+  transition: flex 0.3s ease;
+}
+
+.members-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0.4rem 0.25rem 0.8rem;
+  background: linear-gradient(135deg, #3d3d70 0%, #5d5d90 100%);
+  color: white;
+}
+
+.members-header h4 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: normal;
+  color: white;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.members-close-btn {
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  font-size: 1.2em;
+  color: white;
+  padding: 0 1px 2px 2px;
+  line-height: 1;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+  margin-right: 0.25rem;
+}
+
+.members-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.members-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+  background: #f5f9ff;  /* Same subtle light blue as rooms list */
+  /* Firefox scrollbar styling - match rooms list */
+  scrollbar-width: thin;
+  scrollbar-color: #7a94a5 #cdd8e0;
+}
+
+/* Webkit scrollbar styling for members list - match rooms list */
+.members-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.members-list::-webkit-scrollbar-track {
+  background: #cdd8e0;
+  border-radius: 3px;
+}
+
+.members-list::-webkit-scrollbar-thumb {
+  background: #7a94a5;
+  border-radius: 3px;
+}
+
+.members-list::-webkit-scrollbar-thumb:hover {
+  background: #6a8495;
+}
+
+.member-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.3rem 0.35rem;
+  margin-bottom: 0.2rem;
+  border-radius: 5px;
+  color: #2c2c54;
+}
+
+.member-badge {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.member-name {
+  flex: 1;
+  font-weight: 500;
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+

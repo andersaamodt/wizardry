@@ -57,9 +57,29 @@ else
 <div id="chat-messages" class="chat-display">
 HTML
   
+  # Build list of web avatars by checking xattr
+  # This is done once before AWK processing for efficiency
+  web_users=""
+  for avatar_dir in "$ROOM_DIR"/.*; do
+    [ -d "$avatar_dir" ] || continue
+    avatar_name=$(basename "$avatar_dir")
+    
+    # Skip . and .. and .log
+    case "$avatar_name" in
+      .|..|.log) continue ;;
+    esac
+    
+    # Check if it's a web avatar
+    if get-attribute "user.web_avatar" "$avatar_dir" >/dev/null 2>&1; then
+      # Remove leading dot from username
+      username=$(printf '%s' "$avatar_name" | sed 's/^\.//')
+      web_users="$web_users:$username:"
+    fi
+  done
+  
   # Display last 200 messages using AWK for performance
   # AWK processes all messages much faster than shell loops
-  tail -200 "$LOG_FILE" | awk '
+  tail -200 "$LOG_FILE" | awk -v web_users="$web_users" '
     function html_escape(str) {
       gsub(/&/, "\\&amp;", str)
       gsub(/</, "\\&lt;", str)
@@ -86,11 +106,20 @@ HTML
     {
       line = html_escape($0)
       
-      # Parse format: [HH:MM] username: message
+      # Parse format: [YYYY-MM-DD HH:MM:SS] username: message
       # Use standard AWK pattern matching (POSIX compatible)
       if (match(line, /^\[[^]]+\] [^:]+: /)) {
-        # Extract timestamp [HH:MM]
-        timestamp = substr(line, 2, index(line, "]") - 2)
+        # Extract full timestamp [YYYY-MM-DD HH:MM:SS]
+        full_timestamp = substr(line, 2, index(line, "]") - 2)
+        
+        # Extract just HH:MM for display
+        # Format is "YYYY-MM-DD HH:MM:SS", we want characters 12-16 (HH:MM)
+        if (length(full_timestamp) >= 16) {
+          timestamp = substr(full_timestamp, 12, 5)
+        } else {
+          # Fallback for old format or malformed timestamps
+          timestamp = full_timestamp
+        }
         
         # Extract rest after "] "
         rest = substr(line, index(line, "]") + 2)
@@ -106,9 +135,14 @@ HTML
         hue = hash_username(username)
         color = sprintf("hsl(%d, 70%%, 35%%)", hue)
         
-        # Output with timestamp in bottom-right corner
-        printf "  <div class=\"chat-msg\"><span class=\"username\" style=\"color: %s; font-weight: bold;\">%s:</span> %s<span class=\"timestamp\">%s</span></div>\n", \
-          color, username, message, timestamp
+        # Determine font based on whether user is web user
+        # Check if username is in web_users list (format ":username:")
+        is_web = index(web_users, ":" username ":")
+        font_family = is_web ? "Verdana, sans-serif" : "Courier New, Courier, monospace"
+        
+        # Output with timestamp in bottom-right corner, include full timestamp as data attribute
+        printf "  <div class=\"chat-msg\" style=\"font-family: %s;\"><span class=\"username\" style=\"color: %s; font-weight: bold;\">%s:</span> %s<span class=\"timestamp\" data-full-timestamp=\"%s\" title=\"%s\">%s</span></div>\n", \
+          font_family, color, username, message, full_timestamp, full_timestamp, timestamp
       } else {
         # No username found, display as-is
         printf "  <div class=\"chat-msg\">%s</div>\n", line

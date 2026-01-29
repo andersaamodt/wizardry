@@ -152,7 +152,7 @@ fi
 
 # Log the attack to room log for multiplayer visibility
 player_name=${MUD_PLAYER:-${USER:-Someone}}
-timestamp=$(date '+%H:%M' 2>/dev/null || date '+%H:%M')
+timestamp=$(log-timestamp)
 room_log="$PWD/.log"
 log_entry="[$timestamp] $player_name casts magic missile at ${BLUE}$target${RESET}, dealing $damage damage!"
 printf '%s\n' "$log_entry" >> "$room_log" 2>/dev/null || true
