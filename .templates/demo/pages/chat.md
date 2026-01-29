@@ -35,10 +35,7 @@ Create
 </div>
 
 <div class="username-widget">
-<div class="username-display" id="username-display">
-<strong id="username-text">Guest001</strong>
-<button onclick="editUsername()">Change</button>
-</div>
+<div class="username-display" id="username-display"><strong id="username-text">Guest001</strong><button onclick="editUsername()">Change</button></div>
 <div class="username-edit" id="username-edit">
 <h5>Change username</h5>
 <input type="text" id="username-edit-input" placeholder="Your name" />
