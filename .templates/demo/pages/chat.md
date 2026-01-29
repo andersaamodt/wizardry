@@ -24,9 +24,7 @@ Loading rooms...
 
 <div class="room-controls">
 <!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
-<div id="create-room-widget"><a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a><input type="text" id="new-room-name" placeholder="Room name" /><button id="create-room-btn" hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); showNotification(); toggleCreateRoom(); }">Create</button></div>
-<!-- Keep link on same line to prevent Pandoc <p> wrapping -->
-<a href="#" id="create-room-link-closed" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow-closed">&#x25B6;</span> Create Room</a>
+<a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a><div id="create-room-widget"><input type="text" id="new-room-name" placeholder="Room name" /><button id="create-room-btn" hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); showNotification(); toggleCreateRoom(); }">Create</button></div>
 </div>
 </div>
 
@@ -527,16 +525,12 @@ document.addEventListener('DOMContentLoaded', function() {
 // Toggle Create Room widget
 function toggleCreateRoom() {
   var widget = document.getElementById('create-room-widget');
-  var linkClosed = document.getElementById('create-room-link-closed');
   var arrow = document.getElementById('create-room-arrow');
-  var arrowClosed = document.getElementById('create-room-arrow-closed');
   
   if (!widget.classList.contains('open')) {
     widget.classList.add('open');
-    linkClosed.style.display = 'none';
     // Change arrow to down-pointing when open
     if (arrow) arrow.innerHTML = '&#x25BC;';  // ▼ down-pointing filled triangle
-    if (arrowClosed) arrowClosed.innerHTML = '&#x25BC;';  // Keep both in sync
     // Focus on input after animation starts
     setTimeout(function() {
       var input = document.getElementById('new-room-name');
@@ -546,10 +540,8 @@ function toggleCreateRoom() {
     }, 150);
   } else {
     widget.classList.remove('open');
-    linkClosed.style.display = 'block';
     // Change arrow back to right-pointing when closed
     if (arrow) arrow.innerHTML = '&#x25B6;';  // ▶ right-pointing filled triangle
-    if (arrowClosed) arrowClosed.innerHTML = '&#x25B6;';  // Keep both in sync
   }
 }
 
