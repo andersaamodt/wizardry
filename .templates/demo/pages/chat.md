@@ -451,6 +451,8 @@ function saveUsername() {
   
   var newName = input.value.trim();
   if (newName) {
+    // Strip any leading @ symbols before prepending to prevent duplication
+    newName = newName.replace(/^@+/, '');
     // Ensure @ symbol is present
     text.textContent = '@' + newName;
   }
@@ -496,6 +498,7 @@ function toggleCreateRoom() {
     linkClosed.style.display = 'none';
     // Change arrow to down-pointing when open
     if (arrow) arrow.innerHTML = '&#x25BC;';  // ▼ down-pointing filled triangle
+    if (arrowClosed) arrowClosed.innerHTML = '&#x25BC;';  // Keep both in sync
     // Focus on input after a short delay to ensure it's visible (prevent page scroll)
     setTimeout(function() {
       var input = document.getElementById('new-room-name');
@@ -508,6 +511,7 @@ function toggleCreateRoom() {
     linkClosed.style.display = 'block';
     // Change arrow back to right-pointing when closed
     if (arrow) arrow.innerHTML = '&#x25B6;';  // ▶ right-pointing filled triangle
+    if (arrowClosed) arrowClosed.innerHTML = '&#x25B6;';  // Keep both in sync
   }
 }
 
