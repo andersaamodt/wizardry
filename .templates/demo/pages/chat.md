@@ -306,32 +306,8 @@ function scrollToBottom() {
     return;  // No scrollbar, don't scroll
   }
   
-  // Use requestAnimationFrame for smooth, performant scrolling
-  // This works reliably even with many messages (50+)
-  var start = chatMessagesDiv.scrollTop;
-  var target = chatMessagesDiv.scrollHeight;
-  var startTime = null;
-  var duration = 629; // 629ms animation (30% slower than 484ms)
-  
-  function animate(currentTime) {
-    if (!startTime) startTime = currentTime;
-    var elapsed = currentTime - startTime;
-    var progress = Math.min(elapsed / duration, 1);
-    
-    // Ease-in-out function for smooth acceleration and deceleration
-    // This prevents jerky start/stop
-    var easeInOut = progress < 0.5
-      ? 2 * progress * progress
-      : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-    
-    chatMessagesDiv.scrollTop = start + (target - start) * easeInOut;
-    
-    if (progress < 1) {
-      requestAnimationFrame(animate);
-    }
-  }
-  
-  requestAnimationFrame(animate);
+  // Set scroll position immediately without animation to avoid visible scrolling
+  chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
 }
 
 // Detect when user manually scrolls

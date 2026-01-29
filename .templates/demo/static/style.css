@@ -185,6 +185,11 @@ textarea {
   min-height: 100px;
 }
 
+/* Override for chat message input */
+.chat-input-area textarea#message-input {
+  min-height: auto;  /* Override global textarea min-height */
+}
+
 /* Output areas */
 .output {
   margin-top: 1rem;
@@ -518,12 +523,12 @@ pre code {
 
 .username-widget {
   margin-top: auto;
-  padding: 0.1rem 0.75rem;  /* Tiny bit of vertical padding for centering */
+  padding: 0;  /* Remove all padding for proper centering */
   border-top: 2px solid var(--border);
   background: #7b7a9e;  /* Medium-grey purple */
   line-height: 1.2;  /* Even tighter line-height */
   position: relative;  /* For absolute positioning of button */
-  min-height: 2rem;  /* Ensure minimum height for vertical centering */
+  min-height: 2.2rem;  /* Slightly taller for better button centering */
   display: flex;
   align-items: center;
 }
@@ -534,7 +539,7 @@ pre code {
   gap: 0.5rem;
   width: 100%;
   position: relative;  /* For button positioning */
-  padding-right: 4rem;  /* Make room for button */
+  padding: 0 4rem 0 0.75rem;  /* Padding on left and right for button */
 }
 
 .username-display strong {
@@ -701,7 +706,7 @@ pre code {
 .room-item-selected:hover strong,
 .room-item-selected:hover .room-meta,
 .room-item-selected:hover .room-icon {
-  color: inherit;  /* No color change on hover for selected room */
+  /* Keep original colors - no white text on hover for selected room */
 }
 
 .room-item-selected strong {
@@ -734,7 +739,8 @@ pre code {
   color: var(--dark);
   padding: 0 0 0.5rem 0;
   cursor: pointer;  /* Keep clickable when expanded */
-  margin-left: 0;  /* No shift when expanded (arrow hidden) */
+  margin-left: 0;  /* Centered when expanded */
+  text-align: center;  /* Explicitly centered */
 }
 
 #create-room-link.expanded #create-room-arrow {
@@ -771,7 +777,7 @@ pre code {
 
 #create-room-widget {
   margin-top: 0.5rem;
-  padding: 0.5rem 0.75rem 0.75rem 0.75rem;  /* Less top padding */
+  padding: 0.25rem 0.75rem 0.75rem 0.75rem;  /* Minimal top padding */
   overflow: hidden;
   transition: max-height 0.3s ease, opacity 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
   max-height: 0;
@@ -920,7 +926,7 @@ pre code {
 .chat-msg .timestamp {
   display: inline-block;
   margin-left: 0.5rem;
-  margin-bottom: -0.1rem;  /* Negative margin to move down */
+  margin-bottom: 0;  /* Remove negative margin */
   font-size: 0.65rem;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   color: #888;
@@ -928,6 +934,7 @@ pre code {
   vertical-align: text-bottom;  /* Align to bottom of text line */
   float: right;
   line-height: 1.5;  /* Match message line-height for proper alignment */
+  padding-bottom: 0;  /* No padding */
 }
 
 @keyframes messageAppear {
