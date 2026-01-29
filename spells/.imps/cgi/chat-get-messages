@@ -64,43 +64,48 @@ else
 <div class="chat-messages">
 HTML
   
-  # Display last 200 messages
-  tail -200 "$LOG_FILE" | while IFS= read -r line; do
-    # Parse format: [HH:MM] player_name: message
-    # Escape HTML special characters
-    escaped_line=$(printf '%s' "$line" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
+  # Display last 200 messages using AWK for performance
+  # AWK processes all messages much faster than shell loops
+  tail -200 "$LOG_FILE" | awk '
+    function html_escape(str) {
+      gsub(/&/, "\\&amp;", str)
+      gsub(/</, "\\&lt;", str)
+      gsub(/>/, "\\&gt;", str)
+      return str
+    }
     
-    # Extract username and colorize it
-    # Format: [HH:MM] username: message
-    if printf '%s' "$escaped_line" | grep -q '\] [^:]*:'; then
-      # Extract timestamp, username, and message parts
-      timestamp=$(printf '%s' "$escaped_line" | sed 's/^\(\[[^]]*\]\).*/\1/')
-      rest=$(printf '%s' "$escaped_line" | sed 's/^\[[^]]*\] //')
-      username=$(printf '%s' "$rest" | sed 's/:.*//')
-      message=$(printf '%s' "$rest" | sed 's/[^:]*://')
+    function hash_username(username,    i, hash, char) {
+      hash = 0
+      for (i = 1; i <= length(username); i++) {
+        char = substr(username, i, 1)
+        # Sum ASCII values
+        hash += (index(" !\"#$%&'\''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~", char) + 31)
+      }
+      return hash % 360
+    }
+    
+    {
+      line = html_escape($0)
       
-      # Generate a color hash from username (simple hash to 0-359 for hue)
-      # Use sum of character codes modulo 360
-      hash=0
-      for i in $(seq 1 ${#username}); do
-        char=$(printf '%s' "$username" | cut -c"$i")
-        # Get ASCII value and add to hash
-        hash=$((hash + $(printf '%d' "'$char")))
-      done
-      hue=$((hash % 360))
-      
-      # Use HSL with fixed saturation (70%) and lightness (35%) for legibility
-      # These values ensure colors are vibrant but readable on white background
-      color="hsl($hue, 70%, 35%)"
-      
-      # Output with colored, bold username
-      printf '  <div class="chat-msg">%s <span class="username" style="color: %s; font-weight: bold;">%s:</span>%s</div>\n' \
-        "$timestamp" "$color" "$username" "$message"
-    else
-      # No username found, display as-is
-      printf '  <div class="chat-msg">%s</div>\n' "$escaped_line"
-    fi
-  done
+      # Parse format: [HH:MM] username: message
+      if (match(line, /^\[([^]]+)\] ([^:]+): (.*)$/, parts)) {
+        timestamp = parts[1]
+        username = parts[2]
+        message = parts[3]
+        
+        # Generate color from username hash
+        hue = hash_username(username)
+        color = sprintf("hsl(%d, 70%%, 35%%)", hue)
+        
+        # Output with timestamp in bottom-right corner
+        printf "  <div class=\"chat-msg\"><span class=\"username\" style=\"color: %s; font-weight: bold;\">%s:</span>%s<span class=\"timestamp\">%s</span></div>\n", \
+          color, username, message, timestamp
+      } else {
+        # No username found, display as-is
+        printf "  <div class=\"chat-msg\">%s</div>\n", line
+      }
+    }
+  '
   
   cat <<HTML
 </div>
