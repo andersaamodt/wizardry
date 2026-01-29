@@ -1,0 +1,74 @@
+#!/bin/sh
+
+# Open the OS's default GUI file browser at the specified path.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: browse [path]
+
+Open the OS's default GUI file browser at the specified path.
+
+If no path is specified, opens the current directory.
+
+Examples:
+  browse           # Open current directory
+  browse /tmp      # Open /tmp directory
+  browse ~/        # Open home directory
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+# Default to current directory if no path specified
+path=${1:-.}
+
+# Verify path exists
+if [ ! -e "$path" ]; then
+  die "browse: path does not exist: $path"
+fi
+
+# Convert relative path to absolute path
+if [ -d "$path" ]; then
+  # For directories, cd to get absolute path
+  path=$(cd "$path" && pwd -P)
+else
+  # For files, resolve the containing directory then append the filename
+  dir=$(cd "$(dirname "$path")" && pwd -P)
+  base=$(basename "$path")
+  path="$dir/$base"
+fi
+
+# Detect platform and open file browser
+kernel=$(uname -s 2>/dev/null || printf 'unknown')
+case $kernel in
+  Darwin)
+    # macOS - use 'open' command
+    open "$path"
+    ;;
+  Linux)
+    # Linux - try xdg-open first
+    if command -v xdg-open >/dev/null 2>&1; then
+      xdg-open "$path" >/dev/null 2>&1 &
+    else
+      printf '%s\n' "browse: xdg-open not found. Please install xdg-utils package."
+      exit 1
+    fi
+    ;;
+  MINGW*|MSYS*|CYGWIN*)
+    # Windows environments - use explorer
+    if command -v explorer >/dev/null 2>&1; then
+      # Convert to Windows path format if needed
+      explorer "$path"
+    else
+      printf '%s\n' "browse: explorer not found."
+      exit 1
+    fi
+    ;;
+  *)
+    printf '%s\n' "browse: unsupported platform: $kernel"
+    exit 1
+    ;;
+esac
