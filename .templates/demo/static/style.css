@@ -546,6 +546,7 @@ pre code {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;  /* Allow flex item to shrink for ellipsis */
 }
 
 .username-display button {
