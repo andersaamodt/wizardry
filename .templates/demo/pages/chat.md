@@ -292,19 +292,27 @@ function loadMessages() {
             var fullTs = timestampSpan.dataset.fullTimestamp;
             // Format: "YYYY-MM-DD HH:MM:SS" -> human readable
             try {
+              // Parse the timestamp properly - add 'T' between date and time for ISO format
               var date = new Date(fullTs.replace(' ', 'T'));
-              var options = { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric', 
-                hour: 'numeric', 
-                minute: '2-digit'
-              };
-              var formatted = date.toLocaleString('en-US', options);
-              timestampSpan.title = formatted;
+              // Check if date is valid
+              if (!isNaN(date.getTime())) {
+                var options = { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric', 
+                  hour: 'numeric', 
+                  minute: '2-digit'
+                };
+                var formatted = date.toLocaleString('en-US', options);
+                timestampSpan.title = formatted;
+              } else {
+                // Fallback to showing original timestamp
+                timestampSpan.title = fullTs;
+              }
             } catch (e) {
               // Keep original timestamp if parsing fails
+              timestampSpan.title = fullTs;
             }
           }
         });
@@ -470,12 +478,14 @@ function toggleMembersPanel() {
   var panel = document.getElementById('members-panel');
   panel.classList.toggle('open');
   
-  // Update button appearance
+  // Update button appearance and tooltip
   var btn = document.getElementById('members-btn');
   if (panel.classList.contains('open')) {
     btn.classList.add('active');
+    btn.title = 'Hide room members';
   } else {
     btn.classList.remove('active');
+    btn.title = 'Show room members';
   }
 }
 
