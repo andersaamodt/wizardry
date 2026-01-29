@@ -523,11 +523,11 @@ pre code {
 
 .username-widget {
   margin-top: auto;
-  padding: 0.3rem 0;  /* Vertical padding for proper button centering */
+  padding: 0;  /* No padding on outer container */
   border-top: 2px solid var(--border);
   background: #7b7a9e;  /* Medium-grey purple */
-  line-height: 1.2;  /* Even tighter line-height */
-  min-height: 2.2rem;  /* Slightly taller for better button centering */
+  line-height: 1;
+  min-height: auto;  /* No min-height needed */
   display: flex;
   align-items: center;
 }
@@ -537,7 +537,7 @@ pre code {
   align-items: center;
   gap: 0.5rem;
   width: 100%;
-  padding: 0 0.75rem;  /* Horizontal padding only */
+  padding: 0.4rem 0.75rem;  /* Minimal padding on all sides for thin bar */
 }
 
 .username-display strong {
