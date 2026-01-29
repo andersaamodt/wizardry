@@ -949,13 +949,13 @@ pre code {
   padding-bottom: 0.75rem;  /* Match top padding */
   margin-bottom: 0.5rem;  /* Less spacing between messages */
   border-radius: 18px;  /* Rounded bubble corners */
-  font-family: 'Monaco', 'Courier New', monospace;
   font-size: 0.9rem;
   color: #1a1a1a;  /* Darker text for better readability */
   animation: messageAppear 0.51s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);  /* Subtle shadow for depth */
   word-wrap: break-word;  /* Wrap long messages */
   overflow: hidden;  /* Clear floats */
+  /* Font family set inline per message based on user type (web: Verdana, MUD: monospace) */
 }
 
 .chat-msg .username {
@@ -1185,7 +1185,9 @@ pre code {
 }
 
 .members-panel.open {
-  flex: 0 0 187px;
+  flex: 0 0 auto;
+  min-width: 140px;
+  max-width: 187px;
 }
 
 .members-header {
@@ -1205,10 +1207,53 @@ pre code {
   white-space: nowrap;
 }
 
+.members-close-btn {
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  font-size: 1.2em;
+  color: white;
+  padding: 0;
+  line-height: 1;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.members-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
 .members-list {
   flex: 1;
   overflow-y: auto;
   padding: 0.5rem;
+  /* Firefox scrollbar styling - match rooms list */
+  scrollbar-width: thin;
+  scrollbar-color: #7a94a5 #cdd8e0;
+}
+
+/* Webkit scrollbar styling for members list - match rooms list */
+.members-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.members-list::-webkit-scrollbar-track {
+  background: #cdd8e0;
+  border-radius: 3px;
+}
+
+.members-list::-webkit-scrollbar-thumb {
+  background: #7a94a5;
+  border-radius: 3px;
+}
+
+.members-list::-webkit-scrollbar-thumb:hover {
+  background: #6a8495;
 }
 
 .member-item {

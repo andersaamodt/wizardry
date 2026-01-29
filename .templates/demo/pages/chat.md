@@ -57,7 +57,7 @@ Delete Room
 <div id="members-panel" class="members-panel">
 <div class="members-header">
 <h4>Room Members</h4>
-<button onclick="toggleMembersPanel()" style="border: none; background: none; cursor: pointer; font-size: 1em; color: white; padding: 0; line-height: 1;">&times;</button>
+<button onclick="toggleMembersPanel()" class="members-close-btn">&times;</button>
 </div>
 <div id="members-list" class="members-list">
 <p style="color: #666; font-style: italic;">No members</p>
