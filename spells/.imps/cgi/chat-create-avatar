@@ -51,23 +51,20 @@ HTML
   exit 0
 fi
 
-# Create avatar directory (.username folder)
-avatar_path="$ROOM_DIR/.$user_name"
+# Create avatar using the same logic as MUD incarnate spell
+avatar_path=$(create-avatar "$user_name" "$ROOM_DIR" 2>&1)
 
-if [ ! -d "$avatar_path" ]; then
-  mkdir -p "$avatar_path" 2>/dev/null || {
-    cat <<HTML
+if [ $? -ne 0 ] || [ -z "$avatar_path" ]; then
+  cat <<HTML
 <div class="demo-result error">
   <p>Failed to create avatar</p>
 </div>
 HTML
-    exit 0
-  }
-  
-  # Mark as web avatar using xattr
-  set-attribute "user.web_avatar" "1" "$avatar_path" 2>/dev/null || true
-  set-attribute "user.is_avatar" "1" "$avatar_path" 2>/dev/null || true
+  exit 0
 fi
+
+# Mark as web avatar using xattr (distinguishes from MUD avatars)
+set-attribute "user.web_avatar" "1" "$avatar_path" 2>/dev/null || true
 
 cat <<HTML
 <div class="demo-result success">

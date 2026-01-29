@@ -1,0 +1,46 @@
+#!/bin/sh
+# create-avatar USERNAME DIRECTORY - Create an avatar folder with stats
+# Uses same logic as incarnate but without config file dependency
+set -eu
+
+username=${1-}
+target_dir=${2-}
+
+if [ -z "$username" ] || [ -z "$target_dir" ]; then
+  printf '%s\n' "create-avatar: requires username and directory" >&2
+  exit 1
+fi
+
+if [ ! -d "$target_dir" ]; then
+  printf '%s\n' "create-avatar: directory does not exist: $target_dir" >&2
+  exit 1
+fi
+
+# Create avatar folder in target directory
+avatar_path="$target_dir/.$username"
+
+if [ ! -d "$avatar_path" ]; then
+  mkdir -p "$avatar_path" || {
+    printf '%s\n' "create-avatar: cannot create avatar folder" >&2
+    exit 1
+  }
+fi
+
+# Set initial stats if not present (same as incarnate)
+if ! read-magic "$avatar_path" max_life >/dev/null 2>&1; then
+  enchant "$avatar_path" "max_life=100" >/dev/null 2>&1 || true
+fi
+
+if ! read-magic "$avatar_path" max_mana >/dev/null 2>&1; then
+  enchant "$avatar_path" "max_mana=100" >/dev/null 2>&1 || true
+fi
+
+if ! read-magic "$avatar_path" mana >/dev/null 2>&1; then
+  enchant "$avatar_path" "mana=100" >/dev/null 2>&1 || true
+fi
+
+# Mark as avatar (same as incarnate)
+enchant "$avatar_path" "is_avatar=1" >/dev/null 2>&1 || true
+
+printf '%s' "$avatar_path"
+exit 0

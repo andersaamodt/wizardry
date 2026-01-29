@@ -62,13 +62,13 @@ fi
 
 LOG_FILE="$ROOM_DIR/.log"
 
-# Create or update avatar for this user
-avatar_path="$ROOM_DIR/.$user_name"
-if [ ! -d "$avatar_path" ]; then
-  mkdir -p "$avatar_path" 2>/dev/null || true
-  # Mark as web avatar using xattr
-  set-attribute "user.web_avatar" "1" "$avatar_path" 2>/dev/null || true
-  set-attribute "user.is_avatar" "1" "$avatar_path" 2>/dev/null || true
+# Create or update avatar for this user using same logic as MUD incarnate
+if [ ! -d "$ROOM_DIR/.$user_name" ]; then
+  avatar_path=$(create-avatar "$user_name" "$ROOM_DIR" 2>/dev/null || printf '')
+  # Mark as web avatar using xattr (distinguishes from MUD avatars)
+  if [ -n "$avatar_path" ]; then
+    set-attribute "user.web_avatar" "1" "$avatar_path" 2>/dev/null || true
+  fi
 fi
 
 # Create timestamp in same format as MUD 'say' command: [HH:MM]
