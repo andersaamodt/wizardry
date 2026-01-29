@@ -567,7 +567,7 @@ pre code {
 }
 
 .username-display button {
-  padding: 0.2rem 0.5rem;
+  padding: 0.2rem 0.3rem;
   font-size: 0.75rem;
   background: var(--primary);
   color: white;
@@ -1185,18 +1185,19 @@ pre code {
 }
 
 .members-panel.open {
-  flex: 0 0 160px;
-  transition: flex 0.3s ease;
+  flex: 0 0 auto;
+  min-width: 120px;
+  max-width: 180px;
+  transition: flex 0.3s ease, min-width 0.3s ease, max-width 0.3s ease;
 }
 
 .members-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.35rem 0.5rem;
+  padding: 0.25rem 0.4rem;
   background: linear-gradient(135deg, #3d3d70 0%, #4d4d80 100%);
   color: white;
-  border-bottom: 2px solid var(--border);
 }
 
 .members-header h4 {
@@ -1223,6 +1224,7 @@ pre code {
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s;
+  margin-left: 0.5rem;
 }
 
 .members-close-btn:hover {
@@ -1233,7 +1235,7 @@ pre code {
   flex: 1;
   overflow-y: auto;
   padding: 0.5rem;
-  background: #f0f9f0;  /* Very subtle light green background */
+  background: #f5f9ff;  /* Same subtle light blue as rooms list */
   /* Firefox scrollbar styling - match rooms list */
   scrollbar-width: thin;
   scrollbar-color: #7a94a5 #cdd8e0;
@@ -1264,7 +1266,6 @@ pre code {
   gap: 0.4rem;
   padding: 0.4rem 0.5rem;
   margin-bottom: 0.2rem;
-  background: #f5f9ff;
   border-radius: 5px;
   color: #2c2c54;
 }
