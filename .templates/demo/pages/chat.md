@@ -12,8 +12,6 @@ title: Chatrooms
 
 # Chatrooms Demo
 
-## Chat Interface
-
 <div class="chat-container">
 <div id="room-notification" style="display: none; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; max-width: 400px;"></div>
 
@@ -27,7 +25,6 @@ Loading rooms...
 <div class="room-controls">
 <a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a>
 <div id="create-room-widget" style="display: none;">
-<h4>Create Room</h4>
 <input type="text" id="new-room-name" placeholder="Room name" />
 <button id="create-room-btn" hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); showNotification(); }">
 Create
@@ -185,9 +182,12 @@ function joinRoom(roomName) {
   // Reset scroll behavior for new room
   window.userHasScrolledUp = false;
   
-  // Focus the message input for immediate typing
+  // Focus the message input for immediate typing (prevent page scroll)
   setTimeout(function() {
-    document.getElementById('message-input').focus();
+    var msgInput = document.getElementById('message-input');
+    if (msgInput) {
+      msgInput.focus({ preventScroll: true });
+    }
   }, 100);
   
   // Set up scroll listener
@@ -503,17 +503,20 @@ document.addEventListener('DOMContentLoaded', function() {
 // Toggle Create Room widget
 function toggleCreateRoom() {
   var widget = document.getElementById('create-room-widget');
-  var arrow = document.getElementById('create-room-arrow');
+  var link = document.getElementById('create-room-link');
   if (widget.style.display === 'none') {
     widget.style.display = 'block';
-    arrow.innerHTML = '&#x25BC;';  // Filled down triangle
-    // Focus on input after a short delay to ensure it's visible
+    link.classList.add('expanded');
+    // Focus on input after a short delay to ensure it's visible (prevent page scroll)
     setTimeout(function() {
-      document.getElementById('new-room-name').focus();
+      var input = document.getElementById('new-room-name');
+      if (input) {
+        input.focus({ preventScroll: true });
+      }
     }, 100);
   } else {
     widget.style.display = 'none';
-    arrow.innerHTML = '&#x25B6;';  // Filled right triangle
+    link.classList.remove('expanded');
   }
 }
 
