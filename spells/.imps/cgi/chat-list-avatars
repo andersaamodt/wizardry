@@ -51,7 +51,10 @@ for avatar_dir in "$ROOM_DIR"/.*; do
   # Only clean up web avatars
   if get-attribute "user.web_avatar" "$avatar_dir" >/dev/null 2>&1; then
     # Get last modification time of avatar directory
-    avatar_mtime=$(stat -c %Y "$avatar_dir" 2>/dev/null || stat -f %m "$avatar_dir" 2>/dev/null || echo 0)
+    # Try Linux stat format first, then BSD/macOS format, then default to 0
+    avatar_mtime=$(stat -c %Y "$avatar_dir" 2>/dev/null)
+    avatar_mtime=${avatar_mtime:-$(stat -f %m "$avatar_dir" 2>/dev/null)}
+    avatar_mtime=${avatar_mtime:-0}
     time_diff=$((current_time - avatar_mtime))
     
     # Remove if inactive for more than threshold
