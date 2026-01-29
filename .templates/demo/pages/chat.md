@@ -371,49 +371,16 @@ document.addEventListener('DOMContentLoaded', function() {
   var guestName = generateGuestName();
   usernameText.textContent = guestName;
   
-  // Set initial height explicitly to prevent shrinking on first keystroke
-  messageInput.style.height = '2.5rem';
-  
-  // Auto-expand textarea as user types - resize by discrete line heights
+  // Auto-expand textarea as user types
   messageInput.addEventListener('input', function() {
-    // Calculate based on content, with min/max constraints (using rems)
-    var baseFontSize = 16;  // Assuming 16px base font size
-    var lineHeightRem = 1.4;  // Match CSS line-height
-    var paddingRem = 1.1;  // 0.55rem top + 0.55rem bottom
-    var minHeightRem = 2.5;  // Minimum 2.5rem (one line)
-    var maxHeightRem = 8;    // Max 8rem (~5 lines)
-    var minHeight = minHeightRem * baseFontSize;
-    var maxHeight = maxHeightRem * baseFontSize;
-    
-    // Get scroll height - this works even with a set height
-    var scrollHeight = this.scrollHeight;
-    
-    // Calculate the content height (excluding padding)
-    var contentHeight = scrollHeight - (paddingRem * baseFontSize);
-    
-    // Round to nearest line height for discrete line-by-line resizing
-    var lineCount = Math.ceil(contentHeight / (lineHeightRem * baseFontSize));
-    lineCount = Math.max(1, lineCount);  // At least 1 line
-    
-    // Calculate height based on line count for discrete steps
-    var targetHeight = (lineCount * lineHeightRem * baseFontSize) + (paddingRem * baseFontSize);
-    
-    // Apply min/max constraints
-    var newHeightPx = Math.max(targetHeight, minHeight);
-    newHeightPx = Math.min(newHeightPx, maxHeight);
-    var newHeightRem = newHeightPx / baseFontSize;
-    
-    // Round to 2 decimal places to avoid floating point precision issues
-    newHeightRem = Math.round(newHeightRem * 100) / 100;
-    
-    // Only update if height actually changes to avoid constant reflows
-    var newHeightStr = newHeightRem + 'rem';
-    if (this.style.height !== newHeightStr) {
-      this.style.height = newHeightStr;
-    }
-    
+    // Reset height to minimum to get proper scrollHeight
+    this.style.height = '2rem';
+    // Set height to scrollHeight (content height)
+    var newHeight = Math.max(this.scrollHeight, 32);  // Minimum 32px (2rem)
+    newHeight = Math.min(newHeight, 128);  // Max 128px (~5 lines)
+    this.style.height = newHeight + 'px';
     // Show scrollbar only when content exceeds max height
-    if (scrollHeight > maxHeight) {
+    if (this.scrollHeight > 128) {
       this.style.overflowY = 'auto';
     } else {
       this.style.overflowY = 'hidden';
@@ -441,8 +408,8 @@ document.addEventListener('DOMContentLoaded', function() {
       return response.text();
     }).then(function(text) {
       messageInput.value = '';
-      // Reset textarea height to initial (2.5rem matches min-height)
-      messageInput.style.height = '2.5rem';
+      // Reset textarea height to initial
+      messageInput.style.height = '2rem';
       // Reload messages immediately to show the new message
       loadMessages();
     });
