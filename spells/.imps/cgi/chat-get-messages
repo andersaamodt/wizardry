@@ -78,9 +78,9 @@ HTML
         hash += ascii_val * (i + 1)  # Weight by position
       }
       # Use spiral color selection for more distinct colors
-      # Map to 24 distinct hues (15 degree steps) instead of 360
-      # This gives much more distinct colors that do not blend together
-      return (hash % 24) * 15
+      # Map to 12 distinct hues (30 degree steps) instead of 360
+      # This gives very distinct colors that are clearly different
+      return (hash % 12) * 30
     }
     
     {
