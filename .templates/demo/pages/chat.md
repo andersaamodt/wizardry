@@ -56,7 +56,7 @@ Delete Room
 
 <div id="members-panel" class="members-panel">
 <div class="members-header">
-<h4>Room Members</h4>
+<h4>Who's here</h4>
 <button onclick="toggleMembersPanel()" class="members-close-btn">&times;</button>
 </div>
 <div id="members-list" class="members-list">
