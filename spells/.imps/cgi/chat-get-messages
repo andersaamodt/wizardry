@@ -17,9 +17,7 @@ room_name=$(printf '%s' "$room_name" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
 if [ -z "$room_name" ]; then
   cat <<HTML
 <div id="chat-messages" class="chat-display">
-<div class="chat-messages">
   <p style="color: #666; font-style: italic;">Select a room to start chatting</p>
-</div>
 </div>
 HTML
   exit 0
@@ -39,9 +37,7 @@ ROOM_DIR="$CHAT_DIR/$room_name"
 if [ ! -d "$ROOM_DIR" ]; then
   cat <<HTML
 <div id="chat-messages" class="chat-display">
-<div class="demo-result error">
-  <p>Room not found</p>
-</div>
+  <p class="demo-result error">Room not found</p>
 </div>
 HTML
   exit 0
@@ -53,27 +49,74 @@ LOG_FILE="$ROOM_DIR/.log"
 if [ ! -f "$LOG_FILE" ] || [ ! -s "$LOG_FILE" ]; then
   cat <<HTML
 <div id="chat-messages" class="chat-display">
-<div class="chat-messages">
   <p class="meta">No messages yet. Be the first to say something!</p>
-</div>
 </div>
 HTML
 else
   cat <<HTML
 <div id="chat-messages" class="chat-display">
-<div class="chat-messages">
 HTML
   
-  # Display last 50 messages
-  tail -50 "$LOG_FILE" | while IFS= read -r line; do
-    # Parse format: [HH:MM] player_name: message
-    # Escape HTML special characters
-    escaped_line=$(printf '%s' "$line" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
-    printf '  <div class="chat-msg">%s</div>\n' "$escaped_line"
-  done
+  # Display last 200 messages using AWK for performance
+  # AWK processes all messages much faster than shell loops
+  tail -200 "$LOG_FILE" | awk '
+    function html_escape(str) {
+      gsub(/&/, "\\&amp;", str)
+      gsub(/</, "\\&lt;", str)
+      gsub(/>/, "\\&gt;", str)
+      return str
+    }
+    
+    function hash_username(username,    i, hash, char, ascii_val) {
+      hash = 0
+      for (i = 1; i <= length(username); i++) {
+        char = substr(username, i, 1)
+        # Simple hash: sum of character positions
+        # Using a simpler approach that avoids quote escaping issues
+        ascii_val = index("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", char)
+        if (ascii_val == 0) ascii_val = length(char)  # Fallback for other chars
+        hash += ascii_val * (i + 1)  # Weight by position
+      }
+      # Use spiral color selection for more distinct colors
+      # Map to 12 distinct hues (30 degree steps) instead of 360
+      # This gives very distinct colors that are clearly different
+      return (hash % 12) * 30
+    }
+    
+    {
+      line = html_escape($0)
+      
+      # Parse format: [HH:MM] username: message
+      # Use standard AWK pattern matching (POSIX compatible)
+      if (match(line, /^\[[^]]+\] [^:]+: /)) {
+        # Extract timestamp [HH:MM]
+        timestamp = substr(line, 2, index(line, "]") - 2)
+        
+        # Extract rest after "] "
+        rest = substr(line, index(line, "]") + 2)
+        
+        # Extract username (everything before first ":")
+        colon_pos = index(rest, ":")
+        username = substr(rest, 1, colon_pos - 1)
+        
+        # Extract message (everything after ": ")
+        message = substr(rest, colon_pos + 2)
+        
+        # Generate color from username hash
+        hue = hash_username(username)
+        color = sprintf("hsl(%d, 70%%, 35%%)", hue)
+        
+        # Output with timestamp in bottom-right corner
+        printf "  <div class=\"chat-msg\"><span class=\"username\" style=\"color: %s; font-weight: bold;\">%s:</span> %s<span class=\"timestamp\">%s</span></div>\n", \
+          color, username, message, timestamp
+      } else {
+        # No username found, display as-is
+        printf "  <div class=\"chat-msg\">%s</div>\n", line
+      }
+    }
+  '
   
   cat <<HTML
-</div>
 </div>
 HTML
 fi

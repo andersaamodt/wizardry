@@ -1,0 +1,147 @@
+#!/bin/sh
+
+# Update a site by re-copying files from its template.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: update-from-template SITENAME [--force]
+
+Updates a site by re-copying files from its original template.
+
+This will overwrite any customizations made to template files.
+Content in site/uploads and site data directories are preserved.
+
+Options:
+  --force   Skip confirmation prompt
+
+Examples:
+  update-from-template mysite         # Interactive
+  update-from-template mysite --force # Non-interactive
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+site_name=${1-}
+force_flag=0
+
+if [ -z "$site_name" ]; then
+  die 2 "update-from-template: SITENAME required"
+fi
+
+# Parse options
+shift
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --force) force_flag=1; shift ;;
+    *) die 2 "update-from-template: unknown option '$1'" ;;
+  esac
+done
+
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+SITES_DIR="$WEB_ROOT"
+SITE_DIR="$SITES_DIR/$site_name"
+
+# Check if site exists
+if [ ! -d "$SITE_DIR" ]; then
+  die "update-from-template: site '$site_name' not found"
+fi
+
+# Check if site.conf exists
+if [ ! -f "$SITE_DIR/site.conf" ]; then
+  die "update-from-template: site.conf not found for '$site_name'"
+fi
+
+# Get template name from site.conf
+template=$(config-get "$SITE_DIR/site.conf" template 2>/dev/null || echo "")
+
+if [ -z "$template" ]; then
+  die "update-from-template: no template specified in site.conf"
+fi
+
+# Get WIZARDRY_DIR to find templates
+template_dir="$WIZARDRY_DIR/.templates/$template"
+
+if [ ! -d "$template_dir" ]; then
+  die "update-from-template: template '$template' not found at $template_dir"
+fi
+
+# Ask for confirmation unless --force
+if [ "$force_flag" -eq 0 ]; then
+  warn "This will overwrite customizations to template files in '$site_name'"
+  info "Template: $template"
+  info "Site directory: $SITE_DIR"
+  info ""
+  info "Content in site/uploads and site data will be preserved."
+  printf '\n'
+  printf 'Continue? [y/N] '
+  read -r response
+  case "$response" in
+    [yY]|[yY][eE][sS])
+      # Continue
+      ;;
+    *)
+      info "Cancelled"
+      exit 0
+      ;;
+  esac
+fi
+
+step "Updating site '$site_name' from template '$template'..."
+
+# Backup site.conf temporarily
+temp_conf=$(temp-file site-conf)
+cp "$SITE_DIR/site.conf" "$temp_conf"
+
+# Remove old template files (but preserve uploads and build)
+info "Removing old template files..."
+if [ -d "$SITE_DIR/site/pages" ]; then
+  rm -rf "$SITE_DIR/site/pages"
+fi
+if [ -d "$SITE_DIR/site/static" ]; then
+  rm -rf "$SITE_DIR/site/static"
+fi
+if [ -d "$SITE_DIR/site/includes" ]; then
+  rm -rf "$SITE_DIR/site/includes"
+fi
+# Remove README if it exists (comes from template)
+if [ -f "$SITE_DIR/README.md" ]; then
+  rm -f "$SITE_DIR/README.md"
+fi
+
+# Copy fresh template files
+info "Copying template files..."
+mkdir -p "$SITE_DIR/site"
+
+if [ -d "$template_dir/pages" ]; then
+  cp -r "$template_dir/pages" "$SITE_DIR/site/"
+fi
+
+if [ -d "$template_dir/static" ]; then
+  cp -r "$template_dir/static" "$SITE_DIR/site/"
+fi
+
+if [ -d "$template_dir/includes" ]; then
+  cp -r "$template_dir/includes" "$SITE_DIR/site/"
+fi
+
+if [ -f "$template_dir/README.md" ]; then
+  cp "$template_dir/README.md" "$SITE_DIR/"
+fi
+
+# Restore site.conf
+cp "$temp_conf" "$SITE_DIR/site.conf"
+rm -f "$temp_conf"
+
+# Ensure uploads directory exists
+mkdir -p "$SITE_DIR/site/uploads"
+
+success "Site '$site_name' updated from template '$template'"
+info ""
+info "Next steps:"
+info "  1. Review changes: cd $SITE_DIR/site"
+info "  2. Rebuild: build $site_name --full"
