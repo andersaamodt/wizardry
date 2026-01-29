@@ -373,13 +373,8 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Auto-expand textarea as user types
   messageInput.addEventListener('input', function() {
-    // Store current height before modifying
-    var currentHeight = this.style.height;
-    
-    // Temporarily set to auto but preserve min-height
-    var previousHeight = this.offsetHeight;
-    this.style.height = 'auto';
-    var scrollHeight = this.scrollHeight;
+    // Get current scroll height without changing the element
+    var currentScrollHeight = this.scrollHeight;
     
     // Calculate based on content, with min/max constraints (using rems)
     var baseFontSize = 16;  // Assuming 16px base font size
@@ -388,17 +383,17 @@ document.addEventListener('DOMContentLoaded', function() {
     var minHeight = minHeightRem * baseFontSize;
     var maxHeight = maxHeightRem * baseFontSize;
     
-    // Ensure we never go below the minimum or previous height when typing
-    var newHeightPx = Math.max(scrollHeight, minHeight, previousHeight);
+    // Calculate new height based on content
+    var newHeightPx = Math.max(currentScrollHeight, minHeight);
     newHeightPx = Math.min(newHeightPx, maxHeight);
     var newHeightRem = newHeightPx / baseFontSize;
     
-    // Apply the new height
+    // Apply the new height - CSS transition will animate it
     var newHeightStr = newHeightRem + 'rem';
     this.style.height = newHeightStr;
     
     // Show scrollbar only when content exceeds max height
-    if (scrollHeight > maxHeight) {
+    if (currentScrollHeight > maxHeight) {
       this.style.overflowY = 'auto';
     } else {
       this.style.overflowY = 'hidden';

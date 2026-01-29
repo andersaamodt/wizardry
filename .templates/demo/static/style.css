@@ -233,13 +233,13 @@ textarea {
 
 .demo-result.success {
   border-left: 4px solid var(--success);
-  background: rgba(39, 174, 96, 0.15);  /* Light green with tasteful transparency */
+  background: rgba(39, 174, 96, 0.25);  /* Light green with slight transparency for legibility */
   color: #1e5631;  /* Dark green text for readability */
 }
 
 .demo-result.error {
   border-left: 4px solid var(--danger);
-  background: rgba(192, 57, 43, 0.15);  /* Light red with tasteful transparency */
+  background: rgba(192, 57, 43, 0.25);  /* Light red with slight transparency for legibility */
   color: #7a1f1f;  /* Dark red text for readability */
 }
 
@@ -608,12 +608,20 @@ pre code {
   transition: background-color 0.2s;
 }
 
+/* Disabled state for OK button */
+.username-edit button:disabled {
+  background: #ccc;
+  color: #666;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 /* Style Cancel button differently from OK button */
 .username-edit-buttons button:last-child {
   background: linear-gradient(135deg, #7a828f 0%, #5a6268 100%);  /* Medium grey gradient - halfway between light and dark */
 }
 
-.username-edit-buttons button:first-child:hover {
+.username-edit-buttons button:first-child:hover:not(:disabled) {
   background: var(--secondary);
 }
 
