@@ -498,7 +498,7 @@ pre code {
 
 .username-widget {
   margin-top: auto;
-  padding: 0.25rem 0.75rem;
+  padding: 0.1rem 0.75rem;  /* Reduced padding to make it thinner */
   border-top: 2px solid var(--border);
   background: var(--light);
 }
@@ -506,7 +506,8 @@ pre code {
 .username-display {
   display: flex;
   align-items: center;
-  gap: 0.75rem;  /* Increased from 0.5rem for more space */
+  justify-content: space-between;  /* Right-align the Change button */
+  gap: 0.75rem;
 }
 
 .username-display strong {
@@ -571,24 +572,24 @@ pre code {
 }
 
 .room-item {
-  padding: 0.75rem;
-  margin: 0.5rem 0;
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: 5px;
+  padding: 0.5rem 0.75rem;  /* Reduced padding, removed margin */
+  margin: 0;  /* No margin between items */
+  background: transparent;  /* No background by default */
+  border: none;  /* No border */
+  border-radius: 0;  /* No rounding */
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .room-item:hover, .room-item-hover {
-  background: var(--primary);
+  background: var(--primary);  /* Blue background on hover */
   color: white;
-  transform: translateX(3px);
+  transform: none;  /* No sliding */
 }
 
 .room-item-selected {
   background: rgba(108, 159, 255, 0.15);  /* Subtle blue tint */
-  border-left: 3px solid var(--primary);
+  border-left: 3px solid var(--primary);  /* Keep left border indicator */
   cursor: default;
 }
 
@@ -601,22 +602,27 @@ pre code {
 .room-item strong {
   display: block;
   font-size: 1rem;
-  color: #2c2c54;  /* Dark text for readability on white background */
+  color: #2c2c54;  /* Dark text for readability */
 }
 
 .room-meta {
-  display: block;
-  font-size: 0.8rem;
+  display: inline-block;  /* Make it inline instead of block */
+  font-size: 0.7rem;  /* Smaller font */
   color: #7f8c8d;
-  margin-top: 0.25rem;
+  margin-left: 0.5rem;  /* Space from room name */
+  padding: 0.1rem 0.4rem;  /* Reduced padding */
+  background: rgba(127, 140, 141, 0.15);  /* Subtle background */
+  border-radius: 10px;  /* Pill shape */
 }
 
 .room-item:hover .room-meta, .room-item-hover .room-meta {
-  color: rgba(255,255,255,0.8);
+  color: rgba(255,255,255,0.9);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .room-item-selected .room-meta {
   color: #7f8c8d;  /* Keep normal color for selected */
+  background: rgba(127, 140, 141, 0.15);
 }
 
 .room-item:hover strong, .room-item-hover strong {
@@ -628,13 +634,7 @@ pre code {
 }
 
 .last-msg {
-  font-size: 0.75rem;
-  color: #95a5a6;
-  margin-top: 0.5rem;
-  font-style: italic;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: none;  /* Hide message preview completely */
 }
 
 .room-controls {
@@ -687,7 +687,7 @@ pre code {
 
 .chat-display {
   flex: 1 1 0;  /* Allow shrinking, set base to 0 to force min-height to work */
-  overflow-y: scroll;  /* Force scrollbar to always show */
+  overflow-y: auto;  /* Auto instead of scroll - only show scrollbar when needed */
   overflow-x: hidden;
   padding: 1rem;
   background: #f3f0ff;  /* Light purple/lavender background */
@@ -750,7 +750,8 @@ pre code {
   color: #888;
   font-weight: normal;
   float: right;
-  vertical-align: text-bottom;  /* Lower it slightly */
+  vertical-align: bottom;  /* Further lowered - bottom instead of text-bottom */
+  line-height: 1.8;  /* Add line-height to push it down more */
 }
 
 @keyframes messageAppear {
@@ -787,7 +788,7 @@ pre code {
   overflow-y: auto;
   padding: 0.75rem;
   line-height: 1.4;
-  transition: height 0.2s ease;
+  transition: height 0.2s ease;  /* Animate height changes */
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
 }
 
@@ -798,6 +799,7 @@ pre code {
   flex-shrink: 0;
   align-self: stretch;
   min-height: 2.5rem;
+  transition: min-height 0.2s ease;  /* Animate button height changes */
 }
 
 .chat-input-area button:disabled {
