@@ -606,15 +606,15 @@ pre code {
 }
 
 /* Style Cancel button differently from OK button */
-.username-edit button:last-child {
+.username-edit-buttons button:last-child {
   background: linear-gradient(135deg, #6c757d 0%, #495057 100%);  /* Grey gradient */
 }
 
-.username-edit button:hover {
+.username-edit-buttons button:first-child:hover {
   background: var(--accent);
 }
 
-.username-edit button:last-child:hover {
+.username-edit-buttons button:last-child:hover {
   background: linear-gradient(135deg, #5a6268 0%, #3d4348 100%);  /* Darker grey on hover */
 }
 
