@@ -1131,6 +1131,11 @@ pre code {
   position: relative;
   min-height: 0;
   overflow: hidden;
+  transition: margin-right 0.3s ease;
+}
+
+.chat-content-wrapper.members-open {
+  margin-right: 250px;
 }
 
 .members-panel {

@@ -438,7 +438,9 @@ function updateDeleteButton() {
 
 function toggleMembersPanel() {
   var panel = document.getElementById('members-panel');
+  var wrapper = document.getElementById('chat-messages').parentElement;
   panel.classList.toggle('open');
+  wrapper.classList.toggle('members-open');
 }
 
 // Leave room and return to empty state
@@ -455,6 +457,12 @@ function leaveRoom() {
   document.getElementById('delete-room-btn').style.display = 'none';
   document.getElementById('members-btn').style.display = 'none';
   document.getElementById('chat-input-area').style.display = 'none';
+  
+  // Close members panel
+  var panel = document.getElementById('members-panel');
+  var wrapper = document.getElementById('chat-messages').parentElement;
+  panel.classList.remove('open');
+  wrapper.classList.remove('members-open');
   
   // Stop auto-refresh
   if (window.messageInterval) {
