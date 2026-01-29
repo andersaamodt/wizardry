@@ -30,6 +30,7 @@ Loading rooms...
 Create
 </button>
 </div>
+<!-- Keep link on same line to prevent Pandoc <p> wrapping -->
 <a href="#" id="create-room-link-closed" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow-closed">&#x25B6;</span> Create Room</a>
 </div>
 </div>
