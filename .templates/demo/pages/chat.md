@@ -37,12 +37,15 @@ Loading rooms...
 </div>
 
 <div class="room-controls">
+<a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;">+ Create Room</a>
+<div id="create-room-widget" style="display: none;">
 <h4>Create Room</h4>
 <input type="text" id="new-room-name" placeholder="Room name" />
 <button id="create-room-btn" hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-status" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); }">
 Create
 </button>
 <div id="room-status"></div>
+</div>
 </div>
 </div>
 
@@ -396,10 +399,12 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Auto-expand textarea as user types
   messageInput.addEventListener('input', function() {
-    // Reset height to auto to get proper scrollHeight
-    this.style.height = 'auto';
-    // Set height to scrollHeight (content height)
-    this.style.height = Math.min(this.scrollHeight, 128) + 'px';  // Max 128px (~5 lines)
+    // Reset height to initial to get proper scrollHeight
+    this.style.height = '2.2rem';
+    // Set height to scrollHeight (content height) if needed
+    if (this.scrollHeight > this.clientHeight) {
+      this.style.height = Math.min(this.scrollHeight, 128) + 'px';  // Max 128px (~5 lines)
+    }
   });
   
   function sendMessage() {
@@ -423,8 +428,8 @@ document.addEventListener('DOMContentLoaded', function() {
       return response.text();
     }).then(function(text) {
       messageInput.value = '';
-      // Reset textarea height
-      messageInput.style.height = 'auto';
+      // Reset textarea height to initial
+      messageInput.style.height = '2.2rem';
       // Reload messages immediately to show the new message
       loadMessages();
     });
@@ -481,6 +486,20 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+
+// Toggle Create Room widget
+function toggleCreateRoom() {
+  var widget = document.getElementById('create-room-widget');
+  if (widget.style.display === 'none') {
+    widget.style.display = 'block';
+    // Focus on input after a short delay to ensure it's visible
+    setTimeout(function() {
+      document.getElementById('new-room-name').focus();
+    }, 100);
+  } else {
+    widget.style.display = 'none';
+  }
+}
 </script>
 
 ---
