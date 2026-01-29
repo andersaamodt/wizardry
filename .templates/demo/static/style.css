@@ -233,13 +233,13 @@ textarea {
 
 .demo-result.success {
   border-left: 4px solid var(--success);
-  background: rgba(209, 250, 229, 0.85);  /* Very light/pastel green - tasteful */
+  background: rgba(220, 252, 231, 0.90);  /* Even lighter/more pastel green with 90% opacity */
   color: #000000;  /* Solid black text for legibility */
 }
 
 .demo-result.error {
   border-left: 4px solid var(--danger);
-  background: rgba(254, 226, 226, 0.85);  /* Very light/pastel red - tasteful */
+  background: rgba(254, 226, 226, 0.90);  /* Very light/pastel red with 90% opacity */
   color: #000000;  /* Solid black text for legibility */
 }
 
@@ -502,7 +502,7 @@ pre code {
   padding: 0;
   /* Firefox scrollbar styling */
   scrollbar-width: thin;
-  scrollbar-color: #6b8aa3 #c5d5e4;  /* More muted/grayer blue thumb and track */
+  scrollbar-color: #8a9aa8 #d5dce3;  /* Even more muted/grayer blue thumb and track */
 }
 
 /* Scrollbar styling for sidebar - thin muted blue scrollbar */
@@ -511,17 +511,17 @@ pre code {
 }
 
 .chat-sidebar-content::-webkit-scrollbar-track {
-  background: #c5d5e4;  /* More muted lighter blue background */
+  background: #d5dce3;  /* Even more muted lighter blue background */
   border-radius: 3px;
 }
 
 .chat-sidebar-content::-webkit-scrollbar-thumb {
-  background: #6b8aa3;  /* More muted/grayer blue handle */
+  background: #8a9aa8;  /* Even more muted/grayer blue handle */
   border-radius: 3px;
 }
 
 .chat-sidebar-content::-webkit-scrollbar-thumb:hover {
-  background: #5a7891;  /* Slightly darker muted blue on hover */
+  background: #7a8a98;  /* Slightly darker muted blue on hover */
 }
 
 .username-widget {

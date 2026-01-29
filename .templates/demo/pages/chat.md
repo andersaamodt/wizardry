@@ -371,6 +371,9 @@ document.addEventListener('DOMContentLoaded', function() {
   var guestName = generateGuestName();
   usernameText.textContent = guestName;
   
+  // Set initial height explicitly to prevent shrinking on first keystroke
+  messageInput.style.height = '2.5rem';
+  
   // Auto-expand textarea as user types
   messageInput.addEventListener('input', function() {
     // Calculate based on content, with min/max constraints (using rems)
@@ -388,9 +391,11 @@ document.addEventListener('DOMContentLoaded', function() {
     newHeightPx = Math.min(newHeightPx, maxHeight);
     var newHeightRem = newHeightPx / baseFontSize;
     
-    // Apply the new height - CSS transition will animate it
+    // Only update if the new height is different from current to avoid unnecessary reflows
     var newHeightStr = newHeightRem + 'rem';
-    this.style.height = newHeightStr;
+    if (this.style.height !== newHeightStr) {
+      this.style.height = newHeightStr;
+    }
     
     // Show scrollbar only when content exceeds max height
     if (currentScrollHeight > maxHeight) {
