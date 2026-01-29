@@ -576,8 +576,9 @@ pre code {
   cursor: pointer;
   transition: background-color 0.2s;
   flex-shrink: 0;
-  margin-left: 8px;
-  margin-bottom: 0;  /* Remove bottom margin */
+  margin-left: auto;
+  margin-right: 0.25rem;
+  margin-bottom: 0;
 }
 
 .username-display button:hover {
@@ -658,7 +659,7 @@ pre code {
 .chat-sidebar h3 {
   margin: 0;
   font-size: 1.2rem;
-  background: linear-gradient(135deg, #3d3d70 0%, #4d4d80 100%);
+  background: linear-gradient(135deg, #3d3d70 0%, #5d5d90 100%);
   color: white;
   padding: 1rem;
   line-height: 1.2;  /* Match chat header line-height */
@@ -868,7 +869,7 @@ pre code {
 
 .chat-header {
   padding: 1rem;
-  background: linear-gradient(135deg, #3d3d70 0%, #4d4d80 100%);
+  background: linear-gradient(135deg, #3d3d70 0%, #5d5d90 100%);
   color: white;
   display: flex;
   justify-content: space-between;
@@ -1195,8 +1196,8 @@ pre code {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.25rem 0.4rem;
-  background: linear-gradient(135deg, #3d3d70 0%, #4d4d80 100%);
+  padding: 0.25rem 0.4rem 0.25rem 0.6rem;
+  background: linear-gradient(135deg, #3d3d70 0%, #5d5d90 100%);
   color: white;
 }
 
@@ -1215,7 +1216,7 @@ pre code {
   cursor: pointer;
   font-size: 1.2em;
   color: white;
-  padding: 0;
+  padding: 0 2px 2px 0;
   line-height: 1;
   width: 24px;
   height: 24px;
@@ -1224,7 +1225,7 @@ pre code {
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s;
-  margin-left: 0.5rem;
+  margin-left: 0.75rem;
 }
 
 .members-close-btn:hover {
@@ -1282,5 +1283,6 @@ pre code {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-right: 1.5rem;
 }
 
