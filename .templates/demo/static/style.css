@@ -233,14 +233,14 @@ textarea {
 
 .demo-result.success {
   border-left: 4px solid var(--success);
-  background: rgba(39, 174, 96, 0.1);
-  color: #1e5631;  /* Dark green text for readability on light background */
+  background: rgba(240, 255, 244, 0.94);  /* Extremely pale/barely saturated green with 94% opacity */
+  color: #000000;  /* Solid black text for legibility */
 }
 
 .demo-result.error {
   border-left: 4px solid var(--danger);
-  background: rgba(192, 57, 43, 0.1);
-  color: #7a1f1f;  /* Dark red text for readability on light background */
+  background: rgba(255, 230, 232, 0.94);  /* Slightly pinker and redder */
+  color: #000000;  /* Solid black text for legibility */
 }
 
 .demo-result.quote blockquote {
@@ -495,30 +495,34 @@ pre code {
   flex-direction: column;
 }
 
-/* Scrollbar styling for sidebar - match chat scrollbar */
-.chat-sidebar-content::-webkit-scrollbar {
-  width: 10px;  /* Thinner */
-}
-
-.chat-sidebar-content::-webkit-scrollbar-track {
-  background: #e0e0e0;
-  border-radius: 4px;
-}
-
-.chat-sidebar-content::-webkit-scrollbar-thumb {
-  background: var(--primary);  /* Blue handle */
-  border-radius: 4px;
-}
-
-.chat-sidebar-content::-webkit-scrollbar-thumb:hover {
-  background: var(--accent);
-}
-
 .chat-sidebar-content {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 0;
+  background: #f5f9ff;  /* Very light blue background, considerably lighter than message background */
+  /* Firefox scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: #7a94a5 #cdd8e0;  /* Slightly less muted blue - middle ground */
+}
+
+/* Scrollbar styling for sidebar - thin muted blue scrollbar */
+.chat-sidebar-content::-webkit-scrollbar {
+  width: 6px;  /* Thinner scrollbar */
+}
+
+.chat-sidebar-content::-webkit-scrollbar-track {
+  background: #cdd8e0;  /* Slightly less muted lighter blue background */
+  border-radius: 3px;
+}
+
+.chat-sidebar-content::-webkit-scrollbar-thumb {
+  background: #7a94a5;  /* Slightly less muted blue handle - middle ground */
+  border-radius: 3px;
+}
+
+.chat-sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: #6a8495;  /* Slightly darker on hover */
 }
 
 .username-widget {
@@ -563,7 +567,7 @@ pre code {
 }
 
 .username-display button:hover {
-  background: var(--accent);
+  background: var(--secondary);
 }
 
 .username-edit {
@@ -605,13 +609,21 @@ pre code {
   transition: background-color 0.2s;
 }
 
+/* Disabled state for OK button */
+.username-edit button:disabled {
+  background: #ccc;
+  color: #666;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 /* Style Cancel button differently from OK button */
 .username-edit-buttons button:last-child {
   background: linear-gradient(135deg, #7a828f 0%, #5a6268 100%);  /* Medium grey gradient - halfway between light and dark */
 }
 
-.username-edit-buttons button:first-child:hover {
-  background: var(--accent);
+.username-edit-buttons button:first-child:hover:not(:disabled) {
+  background: var(--secondary);
 }
 
 .username-edit-buttons button:last-child:hover {
@@ -662,38 +674,6 @@ pre code {
   cursor: default;
 }
 
-.room-item-selected:hover {
-  background: rgba(108, 159, 255, 0.3);  /* Same as non-hover */
-  color: inherit;  /* Don't change text color on hover */
-  transform: none;  /* Don't slide on hover */
-}
-
-.room-item-selected:hover strong {
-  color: #2c2c54;  /* Keep dark text on hover for selected room */
-}
-
-.room-item-selected:hover .room-meta {
-  color: #888;  /* Keep subtle color for selected room meta on hover */
-}
-
-.room-item-selected:hover .room-icon {
-  color: #6c9fff;  /* Keep blue icon on hover for selected room */
-}
-  font-size: 1.5rem;  /* Slightly bigger */
-  margin-right: 0.2rem;  /* Less spacing */
-  color: #6c9fff;  /* Match primary color */
-  vertical-align: -0.15em;  /* Bump up a bit more */
-  line-height: 1;  /* Prevent extra height */
-}
-
-.room-item:hover .room-icon, .room-item-hover .room-icon {
-  color: white;
-}
-
-.room-item-selected .room-icon {
-  color: #6c9fff;
-}
-
 .room-item strong {
   display: inline;  /* Make inline so message count can be on same line - fix issue 1 */
   font-size: 1rem;
@@ -712,9 +692,16 @@ pre code {
   vertical-align: 0.05em;  /* Bump up slightly */
 }
 
-.room-item:hover .room-meta, .room-item-hover .room-meta {
-  color: rgba(255,255,255,0.8);  /* Lighter on hover */
-  background: transparent;
+.room-icon {
+  font-size: 1.5rem;  /* Slightly bigger */
+  margin-right: 0.2rem;  /* Less spacing */
+  color: #6c9fff;  /* Match primary color */
+  vertical-align: -0.15em;  /* Bump up a bit more */
+  line-height: 1;  /* Prevent extra height */
+}
+
+.room-item-selected strong {
+  color: #2c2c54;  /* Keep dark text for selected */
 }
 
 .room-item-selected .room-meta {
@@ -722,18 +709,41 @@ pre code {
   background: transparent;
 }
 
+.room-item-selected .room-icon {
+  color: #6c9fff;
+}
+
+/* General hover styles for all room items */
 .room-item:hover strong, .room-item-hover strong {
   color: white;
 }
 
-.room-item-selected:hover strong,
-.room-item-selected:hover .room-meta,
-.room-item-selected:hover .room-icon {
-  /* Keep original colors - no white text on hover for selected room */
+.room-item:hover .room-meta, .room-item-hover .room-meta {
+  color: rgba(255,255,255,0.8);  /* Lighter on hover */
+  background: transparent;
 }
 
-.room-item-selected strong {
-  color: #2c2c54;  /* Keep dark text for selected */
+.room-item:hover .room-icon, .room-item-hover .room-icon {
+  color: white;
+}
+
+/* Override hover styles for selected room - these MUST come after general hover styles */
+.room-item-selected:hover {
+  background: rgba(108, 159, 255, 0.3);  /* Same as non-hover */
+  color: inherit;  /* Don't change text color on hover */
+  transform: none;  /* Don't slide on hover */
+}
+
+.room-item-selected:hover strong {
+  color: #2c2c54;  /* Keep dark text on hover for selected room */
+}
+
+.room-item-selected:hover .room-meta {
+  color: #888;  /* Keep subtle color for selected room meta on hover */
+}
+
+.room-item-selected:hover .room-icon {
+  color: #6c9fff;  /* Keep blue icon on hover for selected room */
 }
 
 .last-msg {
@@ -777,7 +787,7 @@ pre code {
 
 #create-room-link-closed {
   display: block;
-  padding: 0.5rem 0;
+  padding: 0.3rem 0;
   color: var(--primary);
   text-decoration: none;
   font-weight: 600;
@@ -878,7 +888,7 @@ pre code {
   background: #f3f0ff;  /* Light purple/lavender background */
   min-height: 0;  /* Critical for flexbox scrolling */
   scrollbar-width: auto;  /* Make scrollbar more visible in Firefox */
-  scrollbar-color: var(--primary) #e0e0e0;  /* For Firefox */
+  scrollbar-color: #b8a8c8 #e8e0f0;  /* Very muted violet/light purple for Firefox */
   /* Removed scroll-behavior: smooth - using JS animation instead for better performance */
 }
 
@@ -888,17 +898,17 @@ pre code {
 }
 
 .chat-display::-webkit-scrollbar-track {
-  background: #e0e0e0;
+  background: #e8e0f0;  /* Very light purple track */
   border-radius: 4px;
 }
 
 .chat-display::-webkit-scrollbar-thumb {
-  background: var(--primary);
+  background: #b8a8c8;  /* Very muted violet/light purple */
   border-radius: 4px;
 }
 
 .chat-display::-webkit-scrollbar-thumb:hover {
-  background: var(--accent);
+  background: #a898b8;  /* Slightly darker muted purple on hover */
 }
 
 .chat-messages {
@@ -949,15 +959,15 @@ pre code {
 .chat-msg .timestamp {
   display: inline-block;
   margin-left: 0.5rem;
-  margin-bottom: 0;  /* Remove negative margin */
+  margin-top: 0.5rem;  /* Add top margin to lower timestamp when on same line */
   font-size: 0.65rem;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   color: #888;
   font-weight: normal;
-  vertical-align: text-bottom;  /* Align to bottom of text line */
+  vertical-align: baseline;  /* Changed from text-bottom to baseline for better alignment */
   float: right;
   line-height: 1.5;  /* Match message line-height for proper alignment */
-  padding-bottom: 0;  /* No padding */
+  padding-bottom: 0.1rem;  /* Small padding to lower it slightly */
 }
 
 @keyframes messageAppear {
@@ -993,7 +1003,7 @@ pre code {
   max-height: 8rem;
   overflow-y: hidden;  /* Hide scrollbar until needed */
   overflow-x: hidden;
-  padding: 0.2rem 0.75rem;  /* Minimal padding */
+  padding: 0.55rem 0.75rem;  /* Adjusted vertical padding to center text */
   line-height: 1.4;  /* Slightly increased for better text visibility */
   transition: height 0.2s ease;
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;

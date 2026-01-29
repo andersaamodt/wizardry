@@ -13,7 +13,7 @@ title: Chatrooms
 # Chatrooms Demo
 
 <div class="chat-container">
-<div id="room-notification" style="display: none; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; max-width: 400px;"></div>
+<div id="room-notification" style="display: none; position: absolute; top: 60px; left: 50%; transform: translateX(-50%); z-index: 1000; max-width: 400px;"></div>
 
 <div class="chat-sidebar">
 <div class="chat-sidebar-content">
@@ -24,7 +24,7 @@ Loading rooms...
 
 <div class="room-controls">
 <!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
-<div id="create-room-widget" style="display: none;"><a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a><input type="text" id="new-room-name" placeholder="Room name" /><button id="create-room-btn" hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); showNotification(); }">Create</button></div>
+<div id="create-room-widget" style="display: none;"><a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a><input type="text" id="new-room-name" placeholder="Room name" /><button id="create-room-btn" hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); showNotification(); toggleCreateRoom(); }">Create</button></div>
 <!-- Keep link on same line to prevent Pandoc <p> wrapping -->
 <a href="#" id="create-room-link-closed" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow-closed">&#x25B6;</span> Create Room</a>
 </div>
@@ -33,7 +33,7 @@ Loading rooms...
 <div class="username-widget">
 <!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
 <div class="username-display" id="username-display"><strong id="username-text">@Guest001</strong><button onclick="editUsername()">Change</button></div>
-<div class="username-edit" id="username-edit"><h5>Change Username</h5><input type="text" id="username-edit-input" placeholder="Your name" /><div class="username-edit-buttons"><button onclick="saveUsername()">OK</button><button onclick="cancelUsernameEdit()">Cancel</button></div></div>
+<div class="username-edit" id="username-edit"><h5>Change Handle</h5><input type="text" id="username-edit-input" placeholder="Your name" /><div class="username-edit-buttons"><button onclick="saveUsername()">OK</button><button onclick="cancelUsernameEdit()">Cancel</button></div></div>
 </div>
 </div>
 
@@ -137,7 +137,7 @@ document.addEventListener('htmx:afterSwap', function(event) {
     });
   }
   
-  // Auto-fade notifications after 10 seconds
+  // Auto-fade notifications after 4 seconds
   if (event.detail.target.id === 'room-status') {
     var notification = event.detail.target.querySelector('.demo-result');
     if (notification) {
@@ -147,7 +147,7 @@ document.addEventListener('htmx:afterSwap', function(event) {
         setTimeout(function() {
           notification.remove();
         }, 500);
-      }, 10000);
+      }, 4000);
     }
   }
 });
@@ -371,16 +371,34 @@ document.addEventListener('DOMContentLoaded', function() {
   var guestName = generateGuestName();
   usernameText.textContent = guestName;
   
+  // Set initial height explicitly to prevent shrinking on first keystroke
+  messageInput.style.height = '2.5rem';
+  
   // Auto-expand textarea as user types
   messageInput.addEventListener('input', function() {
-    // Reset height to minimum to get proper scrollHeight
-    this.style.height = '2rem';
-    // Set height to scrollHeight (content height)
-    var newHeight = Math.max(this.scrollHeight, 32);  // Minimum 32px (2rem)
-    newHeight = Math.min(newHeight, 128);  // Max 128px (~5 lines)
-    this.style.height = newHeight + 'px';
+    // Calculate based on content, with min/max constraints (using rems)
+    var baseFontSize = 16;  // Assuming 16px base font size
+    var minHeightRem = 2.5;  // Minimum 2.5rem (one line)
+    var maxHeightRem = 8;    // Max 8rem (~5 lines)
+    var minHeight = minHeightRem * baseFontSize;
+    var maxHeight = maxHeightRem * baseFontSize;
+    
+    // Get current scroll height
+    var currentScrollHeight = this.scrollHeight;
+    
+    // Calculate new height based on content - allow both expansion and contraction
+    var newHeightPx = Math.max(currentScrollHeight, minHeight);
+    newHeightPx = Math.min(newHeightPx, maxHeight);
+    var newHeightRem = newHeightPx / baseFontSize;
+    
+    // Only update if the new height is different from current to avoid unnecessary reflows
+    var newHeightStr = newHeightRem + 'rem';
+    if (this.style.height !== newHeightStr) {
+      this.style.height = newHeightStr;
+    }
+    
     // Show scrollbar only when content exceeds max height
-    if (this.scrollHeight > 128) {
+    if (currentScrollHeight > maxHeight) {
       this.style.overflowY = 'auto';
     } else {
       this.style.overflowY = 'hidden';
@@ -408,8 +426,8 @@ document.addEventListener('DOMContentLoaded', function() {
       return response.text();
     }).then(function(text) {
       messageInput.value = '';
-      // Reset textarea height to initial
-      messageInput.style.height = '2rem';
+      // Reset textarea height to initial (2.5rem matches min-height)
+      messageInput.style.height = '2.5rem';
       // Reload messages immediately to show the new message
       loadMessages();
     });
@@ -432,6 +450,7 @@ function editUsername() {
   var edit = document.getElementById('username-edit');
   var input = document.getElementById('username-edit-input');
   var currentName = document.getElementById('username-text').textContent;
+  var okButton = document.querySelector('#username-edit button:first-child');
   
   // Remove @ symbol for editing
   var nameWithoutAt = currentName.startsWith('@') ? currentName.substring(1) : currentName;
@@ -439,6 +458,11 @@ function editUsername() {
   display.style.display = 'none';
   edit.style.display = 'flex';
   input.value = nameWithoutAt;
+  
+  // Store initial value and disable OK button initially
+  input.dataset.initialValue = nameWithoutAt;
+  okButton.disabled = true;
+  
   input.focus();
   input.select();
 }
@@ -472,10 +496,21 @@ function cancelUsernameEdit() {
 // Add Enter and Escape key support for username editing
 document.addEventListener('DOMContentLoaded', function() {
   var input = document.getElementById('username-edit-input');
-  if (input) {
+  var okButton = document.querySelector('#username-edit button:first-child');
+  
+  if (input && okButton) {
+    // Monitor input changes to enable/disable OK button
+    input.addEventListener('input', function() {
+      var currentValue = this.value.trim();
+      var initialValue = this.dataset.initialValue || '';
+      okButton.disabled = (currentValue === initialValue || currentValue === '');
+    });
+    
     input.addEventListener('keypress', function(e) {
       if (e.key === 'Enter') {
-        saveUsername();
+        if (!okButton.disabled) {
+          saveUsername();
+        }
       }
     });
     input.addEventListener('keydown', function(e) {
@@ -515,7 +550,7 @@ function toggleCreateRoom() {
   }
 }
 
-// Show notification and auto-hide after 10 seconds
+// Show notification and auto-hide after 4 seconds
 function showNotification() {
   var notification = document.getElementById('room-notification');
   notification.style.display = 'block';
@@ -528,7 +563,7 @@ function showNotification() {
         notification.innerHTML = '';
       }, 500);
     }
-  }, 10000);
+  }, 4000);
 }
 </script>
 
