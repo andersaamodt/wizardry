@@ -233,14 +233,14 @@ textarea {
 
 .demo-result.success {
   border-left: 4px solid var(--success);
-  background: rgba(39, 174, 96, 0.1);
-  color: #1e5631;  /* Dark green text for readability on light background */
+  background: rgba(39, 174, 96, 0.95);  /* Increased opacity from 0.1 to 0.95 */
+  color: white;  /* White text for better contrast on darker background */
 }
 
 .demo-result.error {
   border-left: 4px solid var(--danger);
-  background: rgba(192, 57, 43, 0.1);
-  color: #7a1f1f;  /* Dark red text for readability on light background */
+  background: rgba(192, 57, 43, 0.95);  /* Increased opacity from 0.1 to 0.95 */
+  color: white;  /* White text for better contrast on darker background */
 }
 
 .demo-result.quote blockquote {
@@ -952,10 +952,10 @@ pre code {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   color: #888;
   font-weight: normal;
-  vertical-align: text-bottom;  /* Align to bottom of text line */
+  vertical-align: baseline;  /* Changed from text-bottom to baseline for better alignment */
   float: right;
   line-height: 1.5;  /* Match message line-height for proper alignment */
-  padding-bottom: 0;  /* No padding */
+  padding-bottom: 0.1rem;  /* Small padding to lower it slightly */
 }
 
 @keyframes messageAppear {
