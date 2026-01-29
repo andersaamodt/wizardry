@@ -489,22 +489,23 @@ pre code {
   flex-direction: column;
 }
 
-/* Scrollbar styling for sidebar - match chatscroll (issue 10) */
-.chat-sidebar::-webkit-scrollbar {
-  width: 8px;
+/* Scrollbar styling for sidebar - match chat scrollbar */
+.chat-sidebar-content::-webkit-scrollbar {
+  width: 12px;
 }
 
-.chat-sidebar::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-.chat-sidebar::-webkit-scrollbar-thumb {
-  background: #888;
+.chat-sidebar-content::-webkit-scrollbar-track {
+  background: #e0e0e0;
   border-radius: 4px;
 }
 
-.chat-sidebar::-webkit-scrollbar-thumb:hover {
-  background: #555;
+.chat-sidebar-content::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 4px;
+}
+
+.chat-sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
 }
 
 .chat-sidebar-content {
@@ -516,10 +517,10 @@ pre code {
 
 .username-widget {
   margin-top: auto;
-  padding: 0 0.75rem;  /* No vertical padding */
+  padding: 0.1rem 0.75rem;  /* Minimal vertical padding */
   border-top: 2px solid var(--border);
   background: #7b7a9e;  /* Medium-grey purple */
-  line-height: 1.8;  /* Reduce height by tightening line-height */
+  line-height: 1.5;  /* Tighter line-height */
 }
 
 .username-display {
@@ -540,7 +541,7 @@ pre code {
 }
 
 .username-display button {
-  padding: 0.25rem 0.5rem;
+  padding: 0.2rem 0.5rem;
   font-size: 0.75rem;
   background: var(--primary);
   color: white;
@@ -579,6 +580,7 @@ pre code {
   background: #3d3d70;  /* Match chat header background */
   color: white;
   padding: 1rem;
+  line-height: 1.2;  /* Match chat header line-height */
 }
 
 .chat-sidebar h4 {
@@ -627,10 +629,10 @@ pre code {
 }
 
 .room-icon {
-  font-size: 1.8rem;  /* Twice as big */
-  margin-right: 0.35rem;
+  font-size: 1.3rem;  /* Smaller than before */
+  margin-right: 0.2rem;  /* Less spacing */
   color: #6c9fff;  /* Match primary color */
-  vertical-align: middle;  /* Center vertically */
+  vertical-align: text-top;  /* Align to top of text */
   line-height: 1;  /* Prevent extra height */
 }
 
@@ -684,7 +686,7 @@ pre code {
 .room-controls {
   margin-top: 1.5rem;
   padding: 0 1rem 0.75rem 1rem;
-  border-top: 1px solid var(--border);
+  /* No border-top */
 }
 
 #create-room-link {
@@ -710,6 +712,7 @@ pre code {
   margin-bottom: 0.5rem;
   font-size: 0.95rem;
   color: var(--dark);
+  display: none;  /* Hide the h4 entirely */
 }
 
 .room-controls input {
@@ -745,6 +748,7 @@ pre code {
   margin: 0;
   font-size: 1.2rem;
   color: white;
+  line-height: 1.2;  /* Match sidebar header line-height */
 }
 
 .chat-header button {
@@ -790,6 +794,19 @@ pre code {
   flex-direction: column;
   gap: 0.5rem;
   /* Remove height constraint to allow parent scrollbar to work */
+}
+
+.empty-state-message {
+  color: #999;  /* Lighter text */
+  font-style: italic;
+  font-size: 1.1rem;  /* Slightly bigger */
+  text-align: center;
+  margin: 2rem 0;
+}
+
+#room-notification {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
 }
 
 .chat-msg {
@@ -858,10 +875,10 @@ pre code {
   flex: 1;
   resize: none;
   min-height: auto;  /* Let it size naturally */
-  height: 2.2rem;  /* Fixed height instead of min-height */
+  height: 2.6rem;  /* Increased height */
   max-height: 8rem;
   overflow-y: auto;
-  padding: 0.4rem 0.75rem;
+  padding: 0.6rem 0.75rem;  /* More padding */
   line-height: 1.4;
   transition: height 0.2s ease;
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
@@ -870,11 +887,11 @@ pre code {
 
 .chat-input-area button {
   margin: 0;
-  padding: 0.4rem 1rem;
+  padding: 0.6rem 1rem;  /* Match textarea padding */
   white-space: nowrap;
   flex-shrink: 0;
   align-self: stretch;
-  min-height: 2.2rem;  /* Match textarea height */
+  min-height: 2.6rem;  /* Match textarea height */
   transition: min-height 0.2s ease;
 }
 
