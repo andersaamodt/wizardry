@@ -1,12 +1,12 @@
 #!/bin/sh
-# chat-send-message - Send a message to a chat room (MUD-compatible format)
+# chat-create-avatar - Create an avatar for a user in a chat room
 set -eu
 
 http-status 200 "OK"
 http-header "Content-Type" "text/html"
 http-end-headers
 
-# Parse POST data from stdin (format: room=ROOM&user=USER&msg=MESSAGE)
+# Parse POST data from stdin (format: room=ROOM&user=USER)
 if [ "${REQUEST_METHOD:-}" = "POST" ]; then
   post_data=$(cat)
 else
@@ -21,27 +21,18 @@ room_name=$(url-decode "$room_name" 2>/dev/null || \
 user_name=$(printf '%s' "$post_data" | sed 's/.*user=\([^&]*\).*/\1/')
 user_name=$(url-decode "$user_name" 2>/dev/null || \
   printf '%s' "$user_name" | sed 's/+/ /g;s/%20/ /g')
-message=$(printf '%s' "$post_data" | sed 's/.*msg=\([^&]*\).*/\1/')
-message=$(url-decode "$message" 2>/dev/null || \
-  printf '%s' "$message" | sed 's/+/ /g;s/%20/ /g')
 
 # Validate inputs
-if [ -z "$room_name" ] || [ -z "$message" ]; then
+if [ -z "$room_name" ] || [ -z "$user_name" ]; then
   cat <<HTML
 <div class="demo-result error">
-  <p>Room and message required</p>
+  <p>Room and user required</p>
 </div>
 HTML
   exit 0
 fi
 
-# Default user if not provided
-if [ -z "$user_name" ]; then
-  user_name="Anonymous"
-fi
-
 # Chat rooms directory - use site-specific location
-# Use WIZARDRY_SITE_NAME if available (set by nginx), otherwise default
 if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
   site_id="$WIZARDRY_SITE_NAME"
 else
@@ -60,34 +51,26 @@ HTML
   exit 0
 fi
 
-LOG_FILE="$ROOM_DIR/.log"
-
-# Create or update avatar for this user
+# Create avatar directory (.username folder)
 avatar_path="$ROOM_DIR/.$user_name"
+
 if [ ! -d "$avatar_path" ]; then
-  mkdir -p "$avatar_path" 2>/dev/null || true
+  mkdir -p "$avatar_path" 2>/dev/null || {
+    cat <<HTML
+<div class="demo-result error">
+  <p>Failed to create avatar</p>
+</div>
+HTML
+    exit 0
+  }
+  
   # Mark as web avatar using xattr
   set-attribute "user.web_avatar" "1" "$avatar_path" 2>/dev/null || true
   set-attribute "user.is_avatar" "1" "$avatar_path" 2>/dev/null || true
 fi
 
-# Create timestamp in same format as MUD 'say' command: [HH:MM]
-timestamp=$(date '+%H:%M' 2>/dev/null || date '+%H:%M')
-
-# Format message exactly like MUD 'say' command: [HH:MM] player_name: message
-log_entry="[$timestamp] $user_name: $message"
-
-# Append to log file
-if printf '%s\n' "$log_entry" >> "$LOG_FILE" 2>/dev/null; then
-  cat <<HTML
+cat <<HTML
 <div class="demo-result success">
-  <p>✓ Message sent</p>
+  <p>✓ Avatar created</p>
 </div>
 HTML
-else
-  cat <<HTML
-<div class="demo-result error">
-  <p>Failed to send message</p>
-</div>
-HTML
-fi
