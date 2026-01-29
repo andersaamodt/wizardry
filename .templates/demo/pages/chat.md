@@ -385,11 +385,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var minHeight = minHeightRem * baseFontSize;
     var maxHeight = maxHeightRem * baseFontSize;
     
-    // Temporarily set to auto to get accurate content measurement
-    var previousHeight = this.style.height;
-    this.style.height = 'auto';
+    // Get scroll height - this works even with a set height
     var scrollHeight = this.scrollHeight;
-    this.style.height = previousHeight;
     
     // Calculate the content height (excluding padding)
     var contentHeight = scrollHeight - (paddingRem * baseFontSize);
