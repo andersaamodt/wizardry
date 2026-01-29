@@ -38,13 +38,31 @@ Loading rooms...
 <div class="chat-main">
 <div class="chat-header">
 <h3 id="current-room-name">Select a room</h3>
+<div class="header-buttons">
 <button id="delete-room-btn" style="display: none;" onclick="deleteRoom()">
 Delete Room
 </button>
+<button id="members-btn" style="display: none;" onclick="toggleMembersPanel()" title="Show room members">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+<span id="member-count">0</span>
+</button>
+</div>
 </div>
 
+<div class="chat-content-wrapper">
 <div id="chat-messages" class="chat-display">
 <p class="empty-state-message">Select a room to start chatting</p>
+</div>
+
+<div id="members-panel" class="members-panel">
+<div class="members-header">
+<h4>Who's here</h4>
+<button onclick="toggleMembersPanel()" class="members-close-btn">&times;</button>
+</div>
+<div id="members-list" class="members-list">
+<p style="color: #666; font-style: italic;">No members</p>
+</div>
+</div>
 </div>
 
 <div class="chat-input-area" id="chat-input-area" style="display: none;">
@@ -157,6 +175,12 @@ function joinRoom(roomName) {
   document.getElementById('send-btn').disabled = false;
   document.getElementById('chat-input-area').style.display = 'flex';
   
+  // Members button visibility will be controlled by loadMembers based on member count
+  
+  // Create avatar for this user
+  var currentUsername = document.getElementById('username-text').textContent.trim();
+  createAvatar(roomName, currentUsername);
+  
   // Immediately update room selection styling
   document.querySelectorAll('.room-item').forEach(function(item) {
     if (item.getAttribute('data-room') === roomName) {
@@ -184,11 +208,17 @@ function joinRoom(roomName) {
   // Load messages immediately
   loadMessages();
   
+  // Load members immediately
+  loadMembers();
+  
   // Set up auto-refresh every 2 seconds
   if (window.messageInterval) {
     clearInterval(window.messageInterval);
   }
-  window.messageInterval = setInterval(loadMessages, 2000);
+  window.messageInterval = setInterval(function() {
+    loadMessages();
+    loadMembers();
+  }, 2000);
 }
 
 // Load messages for current room
@@ -255,6 +285,36 @@ function loadMessages() {
               msg.classList.remove('my-message');
             }
           }
+          
+          // Format timestamp tooltips
+          var timestampSpan = msg.querySelector('.timestamp');
+          if (timestampSpan && timestampSpan.dataset.fullTimestamp) {
+            var fullTs = timestampSpan.dataset.fullTimestamp;
+            // Format: "YYYY-MM-DD HH:MM:SS" -> human readable
+            try {
+              // Parse the timestamp properly - add 'T' between date and time for ISO format
+              var date = new Date(fullTs.replace(' ', 'T'));
+              // Check if date is valid
+              if (!isNaN(date.getTime())) {
+                var options = { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric', 
+                  hour: 'numeric', 
+                  minute: '2-digit'
+                };
+                var formatted = date.toLocaleString('en-US', options);
+                timestampSpan.title = formatted;
+              } else {
+                // Fallback to showing original timestamp
+                timestampSpan.title = fullTs;
+              }
+            } catch (e) {
+              // Keep original timestamp if parsing fails
+              timestampSpan.title = fullTs;
+            }
+          }
         });
         
         // Handle scrolling
@@ -272,15 +332,8 @@ function loadMessages() {
         }
       }
       
-      // Check if room is empty (for delete button logic)
-      var isEmpty = html.indexOf('No messages yet') !== -1 || 
-                    html.indexOf('class="chat-msg"') === -1;
-      
-      if (isEmpty) {
-        document.getElementById('delete-room-btn').style.display = 'inline-block';
-      } else {
-        document.getElementById('delete-room-btn').style.display = 'none';
-      }
+      // Check avatar count for delete button logic
+      updateDeleteButton();
     });
 }
 
@@ -317,13 +370,153 @@ function setupScrollListener() {
   });
 }
 
+// Avatar management functions
+function createAvatar(roomName, username) {
+  var formData = 'room=' + encodeURIComponent(roomName) + 
+                 '&user=' + encodeURIComponent(username);
+  
+  fetch('/cgi/chat-create-avatar', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: formData
+  }).then(function() {
+    loadMembers();  // Refresh member list
+  }).catch(function(err) {
+    console.error('Failed to create avatar:', err);
+  });
+}
+
+function deleteAvatar(roomName, username) {
+  var formData = 'room=' + encodeURIComponent(roomName) + 
+                 '&user=' + encodeURIComponent(username);
+  
+  fetch('/cgi/chat-delete-avatar', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: formData
+  }).then(function() {
+    loadMembers();  // Refresh member list
+  }).catch(function(err) {
+    console.error('Failed to delete avatar:', err);
+  });
+}
+
+function loadMembers() {
+  if (!window.currentRoom) return;
+  
+  fetch('/cgi/chat-list-avatars?room=' + encodeURIComponent(window.currentRoom))
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      if (data.error) {
+        console.error('Error loading members:', data.error);
+        return;
+      }
+      
+      var membersList = document.getElementById('members-list');
+      var memberCount = document.getElementById('member-count');
+      var membersBtn = document.getElementById('members-btn');
+      var deleteBtn = document.getElementById('delete-room-btn');
+      var count = data.avatars ? data.avatars.length : 0;
+      
+      if (!data.avatars || data.avatars.length === 0) {
+        membersList.innerHTML = '<p style="color: #666; font-style: italic;">No members</p>';
+        memberCount.textContent = '0';
+      } else {
+        memberCount.textContent = data.avatars.length;
+        
+        var html = '';
+        data.avatars.forEach(function(avatar) {
+          var fontStyle = avatar.is_web ? 'Verdana, sans-serif' : 'Courier New, Courier, monospace';
+          var badge = avatar.is_web ? '🌐' : '⚔️';
+          html += '<div class="member-item" style="font-family: ' + fontStyle + ';">' + 
+                  '<span class="member-badge">' + badge + '</span>' +
+                  '<span class="member-name" title="' + avatar.username + '">' + avatar.username + '</span>' +
+                  '</div>';
+        });
+        membersList.innerHTML = html;
+      }
+      
+      // Update both buttons synchronously based on same count
+      if (count <= 1) {
+        // Show delete button, hide members button
+        deleteBtn.style.display = 'inline-block';
+        membersBtn.style.display = 'none';
+      } else {
+        // Hide delete button, show members button
+        deleteBtn.style.display = 'none';
+        membersBtn.style.display = 'inline-flex';
+      }
+    })
+    .catch(function(err) {
+      console.error('Failed to load members:', err);
+    });
+}
+
+function updateDeleteButton() {
+  if (!window.currentRoom) return;
+  
+  fetch('/cgi/chat-count-avatars?room=' + encodeURIComponent(window.currentRoom))
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      if (data.error) {
+        console.error('Error counting avatars:', data.error);
+        return;
+      }
+      
+      var deleteBtn = document.getElementById('delete-room-btn');
+      var membersBtn = document.getElementById('members-btn');
+      
+      // Update both buttons synchronously based on same count
+      if (data.count <= 1) {
+        // Show delete button, hide members button
+        deleteBtn.style.display = 'inline-block';
+        membersBtn.style.display = 'none';
+      } else {
+        // Hide delete button, show members button
+        deleteBtn.style.display = 'none';
+        membersBtn.style.display = 'inline-flex';
+      }
+    })
+    .catch(function(err) {
+      console.error('Failed to count avatars:', err);
+    });
+}
+
+function toggleMembersPanel() {
+  var panel = document.getElementById('members-panel');
+  panel.classList.toggle('open');
+  
+  // Update button appearance and tooltip
+  var btn = document.getElementById('members-btn');
+  if (panel.classList.contains('open')) {
+    btn.classList.add('active');
+    btn.title = 'Hide room members';
+  } else {
+    btn.classList.remove('active');
+    btn.title = 'Show room members';
+  }
+}
+
 // Leave room and return to empty state
 function leaveRoom() {
+  // Delete avatar before leaving
+  if (window.currentRoom) {
+    var currentUsername = document.getElementById('username-text').textContent.trim();
+    deleteAvatar(window.currentRoom, currentUsername);
+  }
+  
   window.currentRoom = null;
   document.getElementById('current-room-name').textContent = 'Select a room';
   document.getElementById('send-btn').disabled = true;
   document.getElementById('delete-room-btn').style.display = 'none';
+  document.getElementById('members-btn').style.display = 'none';
   document.getElementById('chat-input-area').style.display = 'none';
+  
+  // Close members panel
+  var panel = document.getElementById('members-panel');
+  var btn = document.getElementById('members-btn');
+  panel.classList.remove('open');
+  btn.classList.remove('active');
   
   // Stop auto-refresh
   if (window.messageInterval) {
@@ -474,10 +667,30 @@ function saveUsername() {
   var input = document.getElementById('username-edit-input');
   var text = document.getElementById('username-text');
   
+  var oldName = input.dataset.initialValue || '';
   var newName = input.value.trim();
-  if (newName) {
+  if (newName && newName !== oldName) {
     // Strip any leading @ symbols before prepending to prevent duplication
     newName = newName.replace(/^@+/, '');
+    
+    // If user is in a room, rename avatar
+    if (window.currentRoom) {
+      var formData = 'room=' + encodeURIComponent(window.currentRoom) + 
+                     '&old_user=' + encodeURIComponent(oldName) + 
+                     '&new_user=' + encodeURIComponent(newName);
+      
+      fetch('/cgi/chat-rename-avatar', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: formData
+      }).then(function() {
+        // Refresh members list after rename
+        loadMembers();
+      }).catch(function(err) {
+        console.error('Failed to rename avatar:', err);
+      });
+    }
+    
     // Ensure @ symbol is present
     text.textContent = '@' + newName;
   }
@@ -560,6 +773,18 @@ function showNotification() {
     }
   }, 4000);
 }
+
+// Clean up avatar when user leaves the page
+window.addEventListener('beforeunload', function() {
+  if (window.currentRoom) {
+    var currentUsername = document.getElementById('username-text').textContent.trim();
+    // Use sendBeacon for reliable cleanup on page unload
+    var formData = new URLSearchParams();
+    formData.append('room', window.currentRoom);
+    formData.append('user', currentUsername);
+    navigator.sendBeacon('/cgi/chat-delete-avatar', formData);
+  }
+});
 </script>
 
 ---

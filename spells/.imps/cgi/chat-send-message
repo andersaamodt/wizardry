@@ -62,10 +62,19 @@ fi
 
 LOG_FILE="$ROOM_DIR/.log"
 
-# Create timestamp in same format as MUD 'say' command: [HH:MM]
-timestamp=$(date '+%H:%M' 2>/dev/null || date '+%H:%M')
+# Create or update avatar for this user using same logic as MUD incarnate
+if [ ! -d "$ROOM_DIR/.$user_name" ]; then
+  avatar_path=$(create-avatar "$user_name" "$ROOM_DIR" 2>/dev/null || printf '')
+  # Mark as web avatar using xattr (distinguishes from MUD avatars)
+  if [ -n "$avatar_path" ]; then
+    set-attribute "user.web_avatar" "1" "$avatar_path" 2>/dev/null || true
+  fi
+fi
 
-# Format message exactly like MUD 'say' command: [HH:MM] player_name: message
+# Create timestamp in full format for .log file (same as MUD)
+timestamp=$(log-timestamp)
+
+# Format message exactly like MUD 'say' command: [YYYY-MM-DD HH:MM:SS] player_name: message
 log_entry="[$timestamp] $user_name: $message"
 
 # Append to log file

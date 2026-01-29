@@ -1,0 +1,6 @@
+#!/bin/sh
+# log-timestamp - Generate full timestamp for .log entries
+# Format: YYYY-MM-DD HH:MM:SS
+set -eu
+
+date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date '+%Y-%m-%d %H:%M:%S'

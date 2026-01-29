@@ -58,8 +58,8 @@ if [ -z "$avatar_path" ] || [ ! -d "$avatar_path" ]; then
   fi
 fi
 
-# Create timestamp (HH:MM format, for log file only)
-timestamp=$(date '+%H:%M' 2>/dev/null || date '+%H:%M')
+# Create timestamp in full format for .log file
+timestamp=$(log-timestamp)
 
 # Format the thought with quotes and comma (name thinks, "thought")
 log_entry="[$timestamp] $player_name thinks, \"$thought\""

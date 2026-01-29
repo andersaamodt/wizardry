@@ -22,31 +22,11 @@ if [ -z "$avatar_name" ]; then
   config-set "$config_file" "avatar-name" "$avatar_name"
 fi
 
-# Create avatar folder in current directory
-avatar_path="$PWD/.$avatar_name"
-
-if [ ! -d "$avatar_path" ]; then
-  mkdir -p "$avatar_path" || {
-    printf '%s\n' "incarnate: cannot create avatar folder" >&2
-    exit 1
-  }
-fi
-
-# Set initial stats if not present
-if ! read-magic "$avatar_path" max_life >/dev/null 2>&1; then
-  enchant "$avatar_path" "max_life=100" >/dev/null 2>&1 || true
-fi
-
-if ! read-magic "$avatar_path" max_mana >/dev/null 2>&1; then
-  enchant "$avatar_path" "max_mana=100" >/dev/null 2>&1 || true
-fi
-
-if ! read-magic "$avatar_path" mana >/dev/null 2>&1; then
-  enchant "$avatar_path" "mana=100" >/dev/null 2>&1 || true
-fi
-
-# Mark as avatar
-enchant "$avatar_path" "is_avatar=1" >/dev/null 2>&1 || true
+# Create avatar folder in current directory using create-avatar imp
+avatar_path=$(create-avatar "$avatar_name" "$PWD") || {
+  printf '%s\n' "incarnate: cannot create avatar folder" >&2
+  exit 1
+}
 
 # Update avatar path in config
 config-set "$config_file" "avatar-path" "$avatar_path"

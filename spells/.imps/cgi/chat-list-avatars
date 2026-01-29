@@ -1,0 +1,97 @@
+#!/bin/sh
+# chat-list-avatars - List avatars in a chat room
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "application/json"
+http-end-headers
+
+# Parse room name from query string
+room_name="${QUERY_STRING:-}"
+room_name=$(printf '%s' "$room_name" | sed 's/room=//' | sed 's/&.*//')
+room_name=$(url-decode "$room_name" 2>/dev/null || printf '%s' "$room_name")
+
+# Trim whitespace
+room_name=$(printf '%s' "$room_name" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+if [ -z "$room_name" ]; then
+  printf '{"error": "Room name required"}\n'
+  exit 0
+fi
+
+# Chat rooms directory - use site-specific location
+if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
+  site_id="$WIZARDRY_SITE_NAME"
+else
+  site_id="default"
+fi
+SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
+CHAT_DIR="$SITES_DIR/.sitedata/$site_id/chatrooms"
+ROOM_DIR="$CHAT_DIR/$room_name"
+
+if [ ! -d "$ROOM_DIR" ]; then
+  printf '{"error": "Room not found"}\n'
+  exit 0
+fi
+
+# Auto-cleanup: Remove inactive web avatars (30 minutes of inactivity)
+# Check last message time in room log to determine if avatar is active
+current_time=$(date +%s)
+inactive_threshold=1800  # 30 minutes in seconds
+
+for avatar_dir in "$ROOM_DIR"/.*; do
+  [ -d "$avatar_dir" ] || continue
+  avatar_name=$(basename "$avatar_dir")
+  
+  # Skip . and .. and .log
+  case "$avatar_name" in
+    .|..|.log) continue ;;
+  esac
+  
+  # Only clean up web avatars
+  if get-attribute "user.web_avatar" "$avatar_dir" >/dev/null 2>&1; then
+    # Get last modification time of avatar directory
+    # Try Linux stat format first, then BSD/macOS format, then default to 0
+    avatar_mtime=$(stat -c %Y "$avatar_dir" 2>/dev/null)
+    avatar_mtime=${avatar_mtime:-$(stat -f %m "$avatar_dir" 2>/dev/null)}
+    avatar_mtime=${avatar_mtime:-0}
+    time_diff=$((current_time - avatar_mtime))
+    
+    # Remove if inactive for more than threshold
+    if [ "$time_diff" -gt "$inactive_threshold" ]; then
+      rm -rf "$avatar_dir" 2>/dev/null || true
+    fi
+  fi
+done
+
+# List all .username directories (avatars)
+printf '{"avatars": ['
+first=1
+for avatar_dir in "$ROOM_DIR"/.*; do
+  [ -d "$avatar_dir" ] || continue
+  avatar_name=$(basename "$avatar_dir")
+  
+  # Skip . and ..
+  case "$avatar_name" in
+    .|..) continue ;;
+    .log) continue ;;
+  esac
+  
+  # Check if it's a web avatar
+  is_web="false"
+  if get-attribute "user.web_avatar" "$avatar_dir" >/dev/null 2>&1; then
+    is_web="true"
+  fi
+  
+  # Remove leading dot from username
+  username=$(printf '%s' "$avatar_name" | sed 's/^\.//')
+  
+  if [ "$first" -eq 1 ]; then
+    first=0
+  else
+    printf ', '
+  fi
+  
+  printf '{"username": "%s", "is_web": %s}' "$username" "$is_web"
+done
+printf ']}\n'
