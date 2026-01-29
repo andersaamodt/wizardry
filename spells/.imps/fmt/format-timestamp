@@ -1,0 +1,18 @@
+#!/bin/sh
+# format-timestamp ISO_TIMESTAMP - Format timestamp as human-readable date
+# Input: YYYY-MM-DD HH:MM:SS
+# Output: "Weekday, Month Day, Year at H:MM AM/PM"
+set -eu
+
+timestamp=${1-}
+
+if [ -z "$timestamp" ]; then
+  printf '%s\n' "format-timestamp: requires timestamp argument" >&2
+  exit 1
+fi
+
+# Try to use date command to parse and format
+# Format: "Saturday, June 15, 2024 at 5:00 PM"
+date -d "$timestamp" '+%A, %B %d, %Y at %l:%M %p' 2>/dev/null || \
+  date -j -f '%Y-%m-%d %H:%M:%S' "$timestamp" '+%A, %B %d, %Y at %l:%M %p' 2>/dev/null || \
+  printf '%s' "$timestamp"
