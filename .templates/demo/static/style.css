@@ -535,9 +535,9 @@ pre code {
 .username-display {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: space-between;  /* Proper spacing between username and button */
   width: 100%;
-  padding: 0.4rem 0.75rem;  /* Minimal padding on all sides for thin bar */
+  padding: 0.25rem 0.75rem;  /* Minimal padding for thin bar */
 }
 
 .username-display strong {
@@ -558,7 +558,6 @@ pre code {
   border-radius: 3px;
   cursor: pointer;
   transition: background-color 0.2s;  /* Only animate background */
-  margin-left: auto;  /* Push button to the right */
   flex-shrink: 0;  /* Prevent button from shrinking */
 }
 
