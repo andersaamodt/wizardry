@@ -13,7 +13,7 @@ title: Chatrooms
 # Chatrooms Demo
 
 <div class="chat-container">
-<div id="room-notification" style="display: none; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; max-width: 400px;"></div>
+<div id="room-notification" style="display: none; position: absolute; top: 60px; left: 50%; transform: translateX(-50%); z-index: 1000; max-width: 400px;"></div>
 
 <div class="chat-sidebar">
 <div class="chat-sidebar-content">
@@ -373,9 +373,6 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Auto-expand textarea as user types
   messageInput.addEventListener('input', function() {
-    // Get current scroll height without changing the element
-    var currentScrollHeight = this.scrollHeight;
-    
     // Calculate based on content, with min/max constraints (using rems)
     var baseFontSize = 16;  // Assuming 16px base font size
     var minHeightRem = 2.5;  // Minimum 2.5rem (one line)
@@ -383,8 +380,14 @@ document.addEventListener('DOMContentLoaded', function() {
     var minHeight = minHeightRem * baseFontSize;
     var maxHeight = maxHeightRem * baseFontSize;
     
-    // Calculate new height based on content
-    var newHeightPx = Math.max(currentScrollHeight, minHeight);
+    // Get current scroll height
+    var currentScrollHeight = this.scrollHeight;
+    
+    // Get current actual height to prevent shrinking on first keystroke
+    var currentActualHeight = this.offsetHeight;
+    
+    // Calculate new height based on content, but never shrink below current height when typing
+    var newHeightPx = Math.max(currentScrollHeight, minHeight, currentActualHeight);
     newHeightPx = Math.min(newHeightPx, maxHeight);
     var newHeightRem = newHeightPx / baseFontSize;
     
