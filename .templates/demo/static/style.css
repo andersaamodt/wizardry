@@ -795,7 +795,7 @@ pre code {
 #create-room-widget.open {
   max-height: 150px;  /* Reduced from 200px to prevent overshoot */
   opacity: 1;
-  padding: 0.25rem 0.75rem 0.75rem 0.75rem;
+  padding: 0.25rem 0.1875rem 0.75rem 0.1875rem;
   background-color: #e6f2ff;  /* Light blue background */
   border-color: #99ccff;  /* Slightly darker light blue border */
 }
