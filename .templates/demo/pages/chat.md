@@ -436,7 +436,7 @@ function loadMembers() {
           var badge = avatar.is_web ? '🌐' : '⚔️';
           html += '<div class="member-item" style="font-family: ' + fontStyle + ';">' + 
                   '<span class="member-badge">' + badge + '</span>' +
-                  '<span class="member-name">' + avatar.username + '</span>' +
+                  '<span class="member-name" title="' + avatar.username + '">' + avatar.username + '</span>' +
                   '</div>';
         });
         membersList.innerHTML = html;
