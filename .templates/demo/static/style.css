@@ -607,7 +607,7 @@ pre code {
 
 /* Style Cancel button differently from OK button */
 .username-edit-buttons button:last-child {
-  background: linear-gradient(135deg, #8b93a1 0%, #6c757d 100%);  /* Lighter grey gradient */
+  background: linear-gradient(135deg, #7a828f 0%, #5a6268 100%);  /* Medium grey gradient - halfway between light and dark */
 }
 
 .username-edit-buttons button:first-child:hover {
@@ -864,9 +864,9 @@ pre code {
 
 .chat-header button {
   background: var(--danger);
-  padding: 0 0.75rem;  /* Remove top/bottom padding to prevent expanding header height */
+  padding: 0.75rem 0.75rem;  /* Add vertical padding for thicker button */
+  margin: -1rem 0;  /* Negative margin to prevent expanding header height */
   font-size: 0.85rem;
-  margin: 0;
   transition: background-color 0.2s;  /* Only animate color */
 }
 
