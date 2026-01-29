@@ -81,7 +81,10 @@ HTML
         # Sum ASCII values
         hash += (index(" !\"#$%&'\''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~", char) + 31)
       }
-      return hash % 360
+      # Use spiral color selection for more distinct colors
+      # Map to 24 distinct hues (15 degree steps) instead of 360
+      # This gives much more distinct colors that don't blend together
+      return (hash % 24) * 15
     }
     
     {

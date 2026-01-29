@@ -30,6 +30,7 @@ This chat system uses the **same message format as the MUD `say` command**, maki
 
 <div class="chat-container">
 <div class="chat-sidebar">
+<div class="chat-sidebar-content">
 <h3>Chatrooms</h3>
 <div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, every 2s" hx-swap="innerHTML settle:0ms">
 Loading rooms...
@@ -42,6 +43,18 @@ Loading rooms...
 Create
 </button>
 <div id="room-status"></div>
+</div>
+</div>
+
+<div class="username-widget">
+<div class="username-display" id="username-display">
+<strong id="username-text">Guest001</strong>
+<button onclick="editUsername()">Change</button>
+</div>
+<div class="username-edit" id="username-edit">
+<input type="text" id="username-edit-input" placeholder="Your name" />
+<button onclick="saveUsername()">OK</button>
+</div>
 </div>
 </div>
 
@@ -60,8 +73,7 @@ Delete Room
 </div>
 
 <div class="chat-input-area" id="chat-input-area" style="display: none;">
-<input type="text" id="username-input" placeholder="Your name" value="" />
-<input type="text" id="message-input" placeholder="Type a message..." />
+<textarea id="message-input" placeholder="Message" rows="1"></textarea>
 <button id="send-btn" disabled>Send</button>
 </div>
 </div>
@@ -363,17 +375,25 @@ function deleteRoom() {
 document.addEventListener('DOMContentLoaded', function() {
   var sendBtn = document.getElementById('send-btn');
   var messageInput = document.getElementById('message-input');
-  var usernameInput = document.getElementById('username-input');
+  var usernameText = document.getElementById('username-text');
   
   // Initialize with a guest name
   var guestName = generateGuestName();
-  usernameInput.value = guestName;
+  usernameText.textContent = guestName;
+  
+  // Auto-expand textarea as user types
+  messageInput.addEventListener('input', function() {
+    // Reset height to auto to get proper scrollHeight
+    this.style.height = 'auto';
+    // Set height to scrollHeight (content height)
+    this.style.height = Math.min(this.scrollHeight, 128) + 'px';  // Max 128px (~5 lines)
+  });
   
   function sendMessage() {
     if (!window.currentRoom) return;
     
     var msg = messageInput.value.trim();
-    var user = usernameInput.value.trim() || 'Anonymous';
+    var user = usernameText.textContent.trim() || 'Anonymous';
     
     if (!msg) return;
     
@@ -390,6 +410,8 @@ document.addEventListener('DOMContentLoaded', function() {
       return response.text();
     }).then(function(text) {
       messageInput.value = '';
+      // Reset textarea height
+      messageInput.style.height = 'auto';
       // Reload messages immediately to show the new message
       loadMessages();
     });
@@ -398,10 +420,53 @@ document.addEventListener('DOMContentLoaded', function() {
   sendBtn.onclick = sendMessage;
   
   messageInput.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();  // Prevent newline
       sendMessage();
     }
+    // Shift+Enter adds a newline (default behavior)
   });
+});
+
+// Username editing functions
+function editUsername() {
+  var display = document.getElementById('username-display');
+  var edit = document.getElementById('username-edit');
+  var input = document.getElementById('username-edit-input');
+  var currentName = document.getElementById('username-text').textContent;
+  
+  display.style.display = 'none';
+  edit.style.display = 'flex';
+  input.value = currentName;
+  input.focus();
+  input.select();
+}
+
+function saveUsername() {
+  var display = document.getElementById('username-display');
+  var edit = document.getElementById('username-edit');
+  var input = document.getElementById('username-edit-input');
+  var text = document.getElementById('username-text');
+  
+  var newName = input.value.trim();
+  if (newName) {
+    text.textContent = newName;
+  }
+  
+  edit.style.display = 'none';
+  display.style.display = 'flex';
+}
+
+// Add Enter key support for username editing
+document.addEventListener('DOMContentLoaded', function() {
+  var input = document.getElementById('username-edit-input');
+  if (input) {
+    input.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        saveUsername();
+      }
+    });
+  }
 });
 </script>
 
