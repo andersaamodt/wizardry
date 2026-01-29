@@ -701,7 +701,7 @@ pre code {
 }
 
 .room-item strong {
-  display: inline;  /* Make inline so message count can be on same line - fix issue 1 */
+  display: block;  /* Make block so message count can be on separate line */
   font-size: 1rem;
   font-family: Georgia, 'Times New Roman', serif;  /* Serif font for room names */
   font-weight: normal;  /* Normal weight for serif */
@@ -709,13 +709,13 @@ pre code {
 }
 
 .room-meta {
-  display: inline;  /* Make inline to share line with room name */
+  display: block;  /* Make block for separate line */
   font-size: 0.75rem;  /* Slightly bigger */
   color: #888;  /* Subtle gray */
-  margin-left: 0.5rem;  /* Closer to room name, un-indented */
+  margin-left: 0;  /* No left margin since it's on its own line */
+  margin-top: 0.1rem;  /* Small gap from room name */
   padding: 0;  /* No padding */
   background: transparent;  /* No background */
-  vertical-align: 0.05em;  /* Bump up slightly */
 }
 
 .room-icon {
@@ -797,6 +797,8 @@ pre code {
   max-height: 150px;  /* Reduced from 200px to prevent overshoot */
   opacity: 1;
   padding: 0.25rem 0.1875rem 0.75rem 0.1875rem;
+  margin-left: -0.75rem;
+  margin-right: -0.75rem;
   background-color: #e6f2ff;  /* Light blue background */
   border-color: #99ccff;  /* Slightly darker light blue border */
 }
@@ -1020,7 +1022,7 @@ pre code {
   padding: 0.55rem 0.75rem;  /* Adjusted vertical padding to center text */
   line-height: 1.4;  /* Slightly increased for better text visibility */
   transition: height 0.2s ease;
-  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+  font-family: Verdana, sans-serif;
   box-sizing: border-box;
 }
 
@@ -1196,7 +1198,7 @@ pre code {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.25rem 0.4rem 0.25rem 0.6rem;
+  padding: 0.25rem 0.4rem 0.25rem 0.8rem;
   background: linear-gradient(135deg, #3d3d70 0%, #5d5d90 100%);
   color: white;
 }
@@ -1216,7 +1218,7 @@ pre code {
   cursor: pointer;
   font-size: 1.2em;
   color: white;
-  padding: 0 2px 2px 0;
+  padding: 0 1px 2px 2px;
   line-height: 1;
   width: 24px;
   height: 24px;
@@ -1225,7 +1227,7 @@ pre code {
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s;
-  margin-left: 0.75rem;
+  margin-left: 1rem;
 }
 
 .members-close-btn:hover {
