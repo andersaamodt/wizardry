@@ -248,6 +248,21 @@ function loadMessages() {
           }
         }
         
+        // Color-code messages: light blue for others, light green for user's own
+        var currentUsername = document.getElementById('current-username').textContent.trim();
+        var allMessages = chatMessagesDiv.querySelectorAll('.chat-msg');
+        allMessages.forEach(function(msg) {
+          var usernameSpan = msg.querySelector('.username');
+          if (usernameSpan) {
+            var msgUsername = usernameSpan.textContent.replace(':', '').trim();
+            if (msgUsername === currentUsername) {
+              msg.classList.add('my-message');
+            } else {
+              msg.classList.remove('my-message');
+            }
+          }
+        });
+        
         // Handle scrolling
         var newScrollHeight = chatMessagesDiv.scrollHeight;
         var scrollHeightDiff = newScrollHeight - oldScrollHeight;
