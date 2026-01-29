@@ -523,31 +523,35 @@ pre code {
 
 .username-widget {
   margin-top: auto;
-  padding: 0;  /* No padding on outer container */
+  padding: 0;
   border-top: 2px solid var(--border);
-  background: #7b7a9e;  /* Medium-grey purple */
+  background: #7b7a9e;
   line-height: 1;
-  min-height: auto;  /* No min-height needed */
-  display: flex;
-  align-items: center;
+  min-height: auto;
+  display: block !important;  /* Force block display */
+  position: relative;
+  height: 28px;  /* Fixed height for thin bar */
 }
 
 .username-display {
-  display: flex;
-  align-items: center;
+  display: block !important;
+  position: relative;
   width: 100%;
-  padding: 2px 2px 2px 12px;  /* Pixels for precise minimal height in all browsers */
+  height: 100%;
+  padding: 4px 4px 4px 12px;
+  line-height: 20px;  /* Vertically center text in 28px container */
 }
 
 .username-display strong {
-  font-family: Georgia, 'Times New Roman', serif;  /* Serif font */
+  font-family: Georgia, 'Times New Roman', serif;
   font-size: 1rem;
-  color: white;  /* White text on dark background */
+  color: white;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  flex: 1;  /* Grow to fill space, pushing button to right edge */
-  margin-right: 8px;  /* Spacing between username and button */
+  display: inline-block;
+  max-width: 60%;  /* Leave room for button */
+  vertical-align: middle;
 }
 
 .username-display button {
@@ -558,8 +562,11 @@ pre code {
   border: none;
   border-radius: 3px;
   cursor: pointer;
-  transition: background-color 0.2s;  /* Only animate background */
-  flex-shrink: 0;  /* Prevent button from shrinking */
+  transition: background-color 0.2s;
+  position: absolute !important;  /* Force absolute positioning */
+  right: 4px !important;  /* Pin to right edge */
+  top: 50% !important;  /* Vertical center */
+  transform: translateY(-50%) !important;  /* Center vertically */
 }
 
 .username-display button:hover {
