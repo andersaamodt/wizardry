@@ -88,17 +88,27 @@ HTML
       line = html_escape($0)
       
       # Parse format: [HH:MM] username: message
-      if (match(line, /^\[([^]]+)\] ([^:]+): (.*)$/, parts)) {
-        timestamp = parts[1]
-        username = parts[2]
-        message = parts[3]
+      # Use standard AWK pattern matching (POSIX compatible)
+      if (match(line, /^\[[^]]+\] [^:]+: /)) {
+        # Extract timestamp [HH:MM]
+        timestamp = substr(line, 2, index(line, "]") - 2)
+        
+        # Extract rest after "] "
+        rest = substr(line, index(line, "]") + 2)
+        
+        # Extract username (everything before first ":")
+        colon_pos = index(rest, ":")
+        username = substr(rest, 1, colon_pos - 1)
+        
+        # Extract message (everything after ": ")
+        message = substr(rest, colon_pos + 2)
         
         # Generate color from username hash
         hue = hash_username(username)
         color = sprintf("hsl(%d, 70%%, 35%%)", hue)
         
         # Output with timestamp in bottom-right corner
-        printf "  <div class=\"chat-msg\"><span class=\"username\" style=\"color: %s; font-weight: bold;\">%s:</span>%s<span class=\"timestamp\">%s</span></div>\n", \
+        printf "  <div class=\"chat-msg\"><span class=\"username\" style=\"color: %s; font-weight: bold;\">%s:</span> %s<span class=\"timestamp\">%s</span></div>\n", \
           color, username, message, timestamp
       } else {
         # No username found, display as-is
