@@ -35,6 +35,7 @@ Create
 </div>
 
 <div class="username-widget">
+<!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
 <div class="username-display" id="username-display"><strong id="username-text">Guest001</strong><button onclick="editUsername()">Change</button></div>
 <div class="username-edit" id="username-edit">
 <h5>Change username</h5>
