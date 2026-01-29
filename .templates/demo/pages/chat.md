@@ -23,27 +23,17 @@ Loading rooms...
 </div>
 
 <div class="room-controls">
-<div id="create-room-widget" style="display: none;">
-<a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a>
-<input type="text" id="new-room-name" placeholder="Room name" />
-<button id="create-room-btn" hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); showNotification(); }">
-Create
-</button>
-</div>
+<!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
+<div id="create-room-widget" style="display: none;"><a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a><input type="text" id="new-room-name" placeholder="Room name" /><button id="create-room-btn" hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); showNotification(); }">Create</button></div>
+<!-- Keep link on same line to prevent Pandoc <p> wrapping -->
 <a href="#" id="create-room-link-closed" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow-closed">&#x25B6;</span> Create Room</a>
 </div>
 </div>
 
 <div class="username-widget">
-<div class="username-display" id="username-display">
-<strong id="username-text">Guest001</strong>
-<button onclick="editUsername()">Change</button>
-</div>
-<div class="username-edit" id="username-edit">
-<h5>Change username</h5>
-<input type="text" id="username-edit-input" placeholder="Your name" />
-<button onclick="saveUsername()">OK</button>
-</div>
+<!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
+<div class="username-display" id="username-display"><strong id="username-text">@Guest001</strong><button onclick="editUsername()">Change</button></div>
+<div class="username-edit" id="username-edit"><h5>Change Username</h5><input type="text" id="username-edit-input" placeholder="Your name" /><div class="username-edit-buttons"><button onclick="saveUsername()">OK</button><button onclick="cancelUsernameEdit()">Cancel</button></div></div>
 </div>
 </div>
 
@@ -86,7 +76,7 @@ function generateGuestName() {
   // Use 3-digit random number (001-999) with zero padding
   var num = Math.floor(Math.random() * 999) + 1;
   var paddedNum = ('000' + num).slice(-3);  // Pad with zeros to 3 digits
-  return 'Guest' + paddedNum;
+  return '@Guest' + paddedNum;  // Include @ symbol for guest names
 }
 
 // Track current room
@@ -443,9 +433,12 @@ function editUsername() {
   var input = document.getElementById('username-edit-input');
   var currentName = document.getElementById('username-text').textContent;
   
+  // Remove @ symbol for editing
+  var nameWithoutAt = currentName.startsWith('@') ? currentName.substring(1) : currentName;
+  
   display.style.display = 'none';
   edit.style.display = 'flex';
-  input.value = currentName;
+  input.value = nameWithoutAt;
   input.focus();
   input.select();
 }
@@ -458,20 +451,36 @@ function saveUsername() {
   
   var newName = input.value.trim();
   if (newName) {
-    text.textContent = newName;
+    // Strip any leading @ symbols before prepending to prevent duplication
+    newName = newName.replace(/^@+/, '');
+    // Ensure @ symbol is present
+    text.textContent = '@' + newName;
   }
   
   edit.style.display = 'none';
   display.style.display = 'flex';
 }
 
-// Add Enter key support for username editing
+function cancelUsernameEdit() {
+  var display = document.getElementById('username-display');
+  var edit = document.getElementById('username-edit');
+  
+  edit.style.display = 'none';
+  display.style.display = 'flex';
+}
+
+// Add Enter and Escape key support for username editing
 document.addEventListener('DOMContentLoaded', function() {
   var input = document.getElementById('username-edit-input');
   if (input) {
     input.addEventListener('keypress', function(e) {
       if (e.key === 'Enter') {
         saveUsername();
+      }
+    });
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        cancelUsernameEdit();
       }
     });
   }
@@ -481,9 +490,15 @@ document.addEventListener('DOMContentLoaded', function() {
 function toggleCreateRoom() {
   var widget = document.getElementById('create-room-widget');
   var linkClosed = document.getElementById('create-room-link-closed');
+  var arrow = document.getElementById('create-room-arrow');
+  var arrowClosed = document.getElementById('create-room-arrow-closed');
+  
   if (widget.style.display === 'none') {
     widget.style.display = 'block';
     linkClosed.style.display = 'none';
+    // Change arrow to down-pointing when open
+    if (arrow) arrow.innerHTML = '&#x25BC;';  // ▼ down-pointing filled triangle
+    if (arrowClosed) arrowClosed.innerHTML = '&#x25BC;';  // Keep both in sync
     // Focus on input after a short delay to ensure it's visible (prevent page scroll)
     setTimeout(function() {
       var input = document.getElementById('new-room-name');
@@ -494,6 +509,9 @@ function toggleCreateRoom() {
   } else {
     widget.style.display = 'none';
     linkClosed.style.display = 'block';
+    // Change arrow back to right-pointing when closed
+    if (arrow) arrow.innerHTML = '&#x25B6;';  // ▶ right-pointing filled triangle
+    if (arrowClosed) arrowClosed.innerHTML = '&#x25B6;';  // Keep both in sync
   }
 }
 
