@@ -383,11 +383,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Get current scroll height
     var currentScrollHeight = this.scrollHeight;
     
-    // Get current actual height to prevent shrinking on first keystroke
-    var currentActualHeight = this.offsetHeight;
-    
-    // Calculate new height based on content, but never shrink below current height when typing
-    var newHeightPx = Math.max(currentScrollHeight, minHeight, currentActualHeight);
+    // Calculate new height based on content - allow both expansion and contraction
+    var newHeightPx = Math.max(currentScrollHeight, minHeight);
     newHeightPx = Math.min(newHeightPx, maxHeight);
     var newHeightRem = newHeightPx / baseFontSize;
     

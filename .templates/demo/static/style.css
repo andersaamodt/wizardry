@@ -233,14 +233,14 @@ textarea {
 
 .demo-result.success {
   border-left: 4px solid var(--success);
-  background: rgba(144, 238, 144, 0.85);  /* Light/pastel green with 85% opacity */
-  color: #1e5631;  /* Dark green text for readability */
+  background: rgba(209, 250, 229, 0.85);  /* Very light/pastel green - tasteful */
+  color: #000000;  /* Solid black text for legibility */
 }
 
 .demo-result.error {
   border-left: 4px solid var(--danger);
-  background: rgba(255, 182, 193, 0.85);  /* Light/pastel red with 85% opacity */
-  color: #7a1f1f;  /* Dark red text for readability */
+  background: rgba(254, 226, 226, 0.85);  /* Very light/pastel red - tasteful */
+  color: #000000;  /* Solid black text for legibility */
 }
 
 .demo-result.quote blockquote {
@@ -887,7 +887,7 @@ pre code {
   background: #f3f0ff;  /* Light purple/lavender background */
   min-height: 0;  /* Critical for flexbox scrolling */
   scrollbar-width: auto;  /* Make scrollbar more visible in Firefox */
-  scrollbar-color: var(--primary) #e0e0e0;  /* For Firefox */
+  scrollbar-color: #b8a8c8 #e8e0f0;  /* Very muted violet/light purple for Firefox */
   /* Removed scroll-behavior: smooth - using JS animation instead for better performance */
 }
 
@@ -897,17 +897,17 @@ pre code {
 }
 
 .chat-display::-webkit-scrollbar-track {
-  background: #e0e0e0;
+  background: #e8e0f0;  /* Very light purple track */
   border-radius: 4px;
 }
 
 .chat-display::-webkit-scrollbar-thumb {
-  background: var(--primary);
+  background: #b8a8c8;  /* Very muted violet/light purple */
   border-radius: 4px;
 }
 
 .chat-display::-webkit-scrollbar-thumb:hover {
-  background: var(--accent);
+  background: #a898b8;  /* Slightly darker muted purple on hover */
 }
 
 .chat-messages {
