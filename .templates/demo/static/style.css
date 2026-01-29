@@ -1093,7 +1093,7 @@ pre code {
 }
 
 #members-btn {
-  background: var(--primary);
+  background: rgba(108, 159, 255, 0.6);  /* Dimmer blue - 60% opacity */
   padding: 0.4rem 0.6rem;
   margin: -0.75rem 0;
   font-size: 0.85rem;
@@ -1112,11 +1112,11 @@ pre code {
 }
 
 #members-btn:hover {
-  background: var(--secondary);
+  background: var(--primary);  /* Lighter on hover */
 }
 
 #members-btn.active {
-  background: var(--secondary);
+  background: var(--secondary);  /* Bright blue when active */
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
   transform: translateY(1px);
 }
