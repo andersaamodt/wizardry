@@ -500,7 +500,7 @@ pre code {
   margin-top: auto;
   padding: 0.1rem 0.75rem;  /* Reduced padding to make it thinner */
   border-top: 2px solid var(--border);
-  background: var(--light);
+  background: #555;  /* Darker grey background */
 }
 
 .username-display {
@@ -513,7 +513,7 @@ pre code {
 .username-display strong {
   font-family: Georgia, 'Times New Roman', serif;  /* Serif font */
   font-size: 1rem;
-  color: var(--dark);
+  color: white;  /* White text on dark background */
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -556,6 +556,10 @@ pre code {
   margin-top: 0;
   font-size: 1.1rem;
   color: var(--dark);
+  background: #3d3d70;  /* Match chat header background */
+  color: white;
+  padding: 0.75rem 1rem;
+  margin: -1rem -1rem 1rem -1rem;  /* Extend to edges */
 }
 
 .chat-sidebar h4 {
@@ -572,7 +576,8 @@ pre code {
 }
 
 .room-item {
-  padding: 0.5rem 0.75rem;  /* Reduced padding, removed margin */
+  padding: 0.5rem 0;  /* No left/right padding - full width highlight */
+  padding-left: 0.75rem;  /* Only on content */
   margin: 0;  /* No margin between items */
   background: transparent;  /* No background by default */
   border: none;  /* No border */
@@ -589,7 +594,7 @@ pre code {
 
 .room-item-selected {
   background: rgba(108, 159, 255, 0.15);  /* Subtle blue tint */
-  border-left: 3px solid var(--primary);  /* Keep left border indicator */
+  border-left: none;  /* Remove left border */
   cursor: default;
 }
 
@@ -602,31 +607,35 @@ pre code {
 .room-item strong {
   display: block;
   font-size: 1rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;  /* Sans-serif */
+  font-weight: 500;  /* Medium weight - more clickable */
+  letter-spacing: 0.01em;
   color: #2c2c54;  /* Dark text for readability */
 }
 
 .room-meta {
   display: inline-block;  /* Make it inline instead of block */
-  font-size: 0.7rem;  /* Smaller font */
-  color: #7f8c8d;
+  font-size: 0.55rem;  /* Tiny font - smaller than before */
+  color: #888;  /* Subtle gray */
   margin-left: 0.5rem;  /* Space from room name */
-  padding: 0.1rem 0.4rem;  /* Reduced padding */
-  background: rgba(127, 140, 141, 0.15);  /* Subtle background */
-  border-radius: 10px;  /* Pill shape */
+  padding: 0;  /* No padding - not a badge */
+  background: transparent;  /* No background */
+  border-radius: 0;  /* No pill shape */
 }
 
 .room-item:hover .room-meta, .room-item-hover .room-meta {
-  color: rgba(255,255,255,0.9);
-  background: rgba(255, 255, 255, 0.2);
+  color: rgba(255,255,255,0.8);  /* Lighter on hover */
+  background: transparent;
 }
 
 .room-item-selected .room-meta {
-  color: #7f8c8d;  /* Keep normal color for selected */
-  background: rgba(127, 140, 141, 0.15);
+  color: #888;  /* Keep subtle color for selected */
+  background: transparent;
 }
 
 .room-item:hover strong, .room-item-hover strong {
   color: white;
+  font-weight: 600;  /* Bolder on hover */
 }
 
 .room-item-selected strong {
@@ -724,9 +733,9 @@ pre code {
 }
 
 .chat-msg {
-  background: #f5f5f5;  /* Light gray bubble background */
+  background: #e3f2fd;  /* Light blue for others' messages */
   padding: 0.75rem 1rem;
-  padding-bottom: 0.5rem;  /* Reduced from 1.5rem - timestamp is inline now */
+  padding-bottom: 1.2rem;  /* Reduced for timestamp position */
   margin-bottom: 0.75rem;  /* Spacing between messages */
   border-radius: 18px;  /* Rounded bubble corners */
   font-family: 'Monaco', 'Courier New', monospace;
@@ -740,6 +749,10 @@ pre code {
 .chat-msg .username {
   font-weight: bold;
   /* Color set inline via style attribute for per-user colors */
+}
+
+.chat-msg.my-message {
+  background: #e8f5e9;  /* Light green for user's own messages */
 }
 
 .chat-msg .timestamp {
