@@ -607,7 +607,7 @@ pre code {
 
 /* Style Cancel button differently from OK button */
 .username-edit-buttons button:last-child {
-  background: linear-gradient(135deg, #6c757d 0%, #495057 100%);  /* Grey gradient */
+  background: linear-gradient(135deg, #8b93a1 0%, #6c757d 100%);  /* Lighter grey gradient */
 }
 
 .username-edit-buttons button:first-child:hover {
@@ -615,7 +615,7 @@ pre code {
 }
 
 .username-edit-buttons button:last-child:hover {
-  background: linear-gradient(135deg, #5a6268 0%, #3d4348 100%);  /* Darker grey on hover */
+  background: linear-gradient(135deg, #6c757d 0%, #495057 100%);  /* Medium grey on hover */
 }
 
 .chat-sidebar h3 {
