@@ -374,31 +374,44 @@ document.addEventListener('DOMContentLoaded', function() {
   // Set initial height explicitly to prevent shrinking on first keystroke
   messageInput.style.height = '2.5rem';
   
-  // Auto-expand textarea as user types
+  // Auto-expand textarea as user types - resize by discrete line heights
   messageInput.addEventListener('input', function() {
+    // Reset height to get accurate scrollHeight
+    this.style.height = '2.5rem';
+    
     // Calculate based on content, with min/max constraints (using rems)
     var baseFontSize = 16;  // Assuming 16px base font size
+    var lineHeightRem = 1.4;  // Match CSS line-height
+    var paddingRem = 1.1;  // 0.55rem top + 0.55rem bottom
     var minHeightRem = 2.5;  // Minimum 2.5rem (one line)
     var maxHeightRem = 8;    // Max 8rem (~5 lines)
     var minHeight = minHeightRem * baseFontSize;
     var maxHeight = maxHeightRem * baseFontSize;
     
-    // Get current scroll height
-    var currentScrollHeight = this.scrollHeight;
+    // Get scroll height and calculate number of lines needed
+    var scrollHeight = this.scrollHeight;
     
-    // Calculate new height based on content - allow both expansion and contraction
-    var newHeightPx = Math.max(currentScrollHeight, minHeight);
+    // Calculate the content height (excluding padding)
+    var contentHeight = scrollHeight - (paddingRem * baseFontSize);
+    
+    // Round to nearest line height for discrete line-by-line resizing
+    var lineCount = Math.ceil(contentHeight / (lineHeightRem * baseFontSize));
+    lineCount = Math.max(1, lineCount);  // At least 1 line
+    
+    // Calculate height based on line count for discrete steps
+    var targetHeight = (lineCount * lineHeightRem * baseFontSize) + (paddingRem * baseFontSize);
+    
+    // Apply min/max constraints
+    var newHeightPx = Math.max(targetHeight, minHeight);
     newHeightPx = Math.min(newHeightPx, maxHeight);
     var newHeightRem = newHeightPx / baseFontSize;
     
-    // Only update if the new height is different from current to avoid unnecessary reflows
+    // Apply the new height - CSS transition will animate it smoothly
     var newHeightStr = newHeightRem + 'rem';
-    if (this.style.height !== newHeightStr) {
-      this.style.height = newHeightStr;
-    }
+    this.style.height = newHeightStr;
     
     // Show scrollbar only when content exceeds max height
-    if (currentScrollHeight > maxHeight) {
+    if (scrollHeight > maxHeight) {
       this.style.overflowY = 'auto';
     } else {
       this.style.overflowY = 'hidden';

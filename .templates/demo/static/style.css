@@ -239,7 +239,7 @@ textarea {
 
 .demo-result.error {
   border-left: 4px solid var(--danger);
-  background: rgba(255, 240, 240, 0.94);  /* Extremely pale/barely saturated red with 94% opacity */
+  background: rgba(255, 235, 235, 0.94);  /* Slightly more red/less desaturated */
   color: #000000;  /* Solid black text for legibility */
 }
 
