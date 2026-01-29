@@ -71,10 +71,10 @@ if [ ! -d "$ROOM_DIR/.$user_name" ]; then
   fi
 fi
 
-# Create timestamp in same format as MUD 'say' command: [HH:MM]
-timestamp=$(date '+%H:%M' 2>/dev/null || date '+%H:%M')
+# Create timestamp in full format for .log file (same as MUD)
+timestamp=$(log-timestamp)
 
-# Format message exactly like MUD 'say' command: [HH:MM] player_name: message
+# Format message exactly like MUD 'say' command: [YYYY-MM-DD HH:MM:SS] player_name: message
 log_entry="[$timestamp] $user_name: $message"
 
 # Append to log file
