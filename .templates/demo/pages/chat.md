@@ -415,20 +415,14 @@ function loadMembers() {
       var membersList = document.getElementById('members-list');
       var memberCount = document.getElementById('member-count');
       var membersBtn = document.getElementById('members-btn');
+      var deleteBtn = document.getElementById('delete-room-btn');
+      var count = data.avatars ? data.avatars.length : 0;
       
       if (!data.avatars || data.avatars.length === 0) {
         membersList.innerHTML = '<p style="color: #666; font-style: italic;">No members</p>';
         memberCount.textContent = '0';
-        membersBtn.style.display = 'none';
       } else {
         memberCount.textContent = data.avatars.length;
-        
-        // Only show members button when 2 or more members
-        if (data.avatars.length >= 2) {
-          membersBtn.style.display = 'inline-flex';
-        } else {
-          membersBtn.style.display = 'none';
-        }
         
         var html = '';
         data.avatars.forEach(function(avatar) {
@@ -442,8 +436,16 @@ function loadMembers() {
         membersList.innerHTML = html;
       }
       
-      // Update delete button based on avatar count
-      updateDeleteButton();
+      // Update both buttons synchronously based on same count
+      if (count <= 1) {
+        // Show delete button, hide members button
+        deleteBtn.style.display = 'inline-block';
+        membersBtn.style.display = 'none';
+      } else {
+        // Hide delete button, show members button
+        deleteBtn.style.display = 'none';
+        membersBtn.style.display = 'inline-flex';
+      }
     })
     .catch(function(err) {
       console.error('Failed to load members:', err);
@@ -462,11 +464,17 @@ function updateDeleteButton() {
       }
       
       var deleteBtn = document.getElementById('delete-room-btn');
-      // Show delete button when 1 or fewer avatars in room
+      var membersBtn = document.getElementById('members-btn');
+      
+      // Update both buttons synchronously based on same count
       if (data.count <= 1) {
+        // Show delete button, hide members button
         deleteBtn.style.display = 'inline-block';
+        membersBtn.style.display = 'none';
       } else {
+        // Hide delete button, show members button
         deleteBtn.style.display = 'none';
+        membersBtn.style.display = 'inline-flex';
       }
     })
     .catch(function(err) {
