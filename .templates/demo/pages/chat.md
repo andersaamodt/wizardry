@@ -420,12 +420,20 @@ function setupMessageStream(roomName) {
   // Create new SSE connection
   var url = '/cgi/chat-stream?room=' + encodeURIComponent(roomName);
   console.log('[SSE] Creating new EventSource:', url);
-  window.messageEventSource = new EventSource(url);
+  
+  try {
+    window.messageEventSource = new EventSource(url);
+    console.log('[SSE] EventSource created, readyState:', window.messageEventSource.readyState);
+  } catch (e) {
+    console.error('[SSE] Failed to create EventSource:', e);
+    return;
+  }
   
   // Handle connection open
   window.messageEventSource.addEventListener('open', function(event) {
     console.log('[SSE] Connection opened successfully');
   });
+  console.log('[SSE] Added "open" event listener');
   
   // Handle incoming messages
   window.messageEventSource.addEventListener('message', function(event) {
@@ -433,6 +441,7 @@ function setupMessageStream(roomName) {
     // Event data is a single message line: [YYYY-MM-DD HH:MM:SS] username: message
     appendMessage(event.data);
   });
+  console.log('[SSE] Added "message" event listener');
   
   // Handle member list updates
   window.messageEventSource.addEventListener('members', function(event) {
@@ -440,6 +449,7 @@ function setupMessageStream(roomName) {
     // Event data is JSON array of members
     updateMemberList(event.data);
   });
+  console.log('[SSE] Added "members" event listener');
   
   // Handle errors
   window.messageEventSource.addEventListener('error', function(event) {
@@ -455,6 +465,7 @@ function setupMessageStream(roomName) {
       console.warn('[SSE] Connection CONNECTING - EventSource attempting to reconnect');
     }
   });
+  console.log('[SSE] Added "error" event listener');
   
   // Handle empty room
   window.messageEventSource.addEventListener('empty', function(event) {
@@ -465,6 +476,8 @@ function setupMessageStream(roomName) {
       chatMessagesDiv.innerHTML = '<p class="empty-state-message">No messages yet. Be the first to say something!</p>';
     }
   });
+  console.log('[SSE] Added "empty" event listener');
+  console.log('[SSE] All event listeners added, waiting for events...');
 }
 
 // Update member list from SSE data
