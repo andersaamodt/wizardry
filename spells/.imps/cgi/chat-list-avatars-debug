@@ -1,0 +1,97 @@
+#!/bin/sh
+# chat-list-avatars-debug - Debug version that shows what's happening
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "application/json"
+http-end-headers
+
+# Parse room name from query string
+room_name="${QUERY_STRING:-}"
+room_name=$(printf '%s' "$room_name" | sed 's/room=//' | sed 's/&.*//')
+room_name=$(url-decode "$room_name" 2>/dev/null || printf '%s' "$room_name")
+
+# Trim whitespace
+room_name=$(printf '%s' "$room_name" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+if [ -z "$room_name" ]; then
+  printf '{"error": "Room name required", "debug": "empty query string"}\n'
+  exit 0
+fi
+
+# Chat rooms directory - use site-specific location
+if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
+  site_id="$WIZARDRY_SITE_NAME"
+else
+  site_id="default"
+fi
+SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
+CHAT_DIR="$SITES_DIR/.sitedata/$site_id/chatrooms"
+ROOM_DIR="$CHAT_DIR/$room_name"
+
+if [ ! -d "$ROOM_DIR" ]; then
+  printf '{"error": "Room not found", "debug": {"room_dir": "%s", "sites_dir": "%s", "chat_dir": "%s"}}\n' \
+    "$ROOM_DIR" "$SITES_DIR" "$CHAT_DIR"
+  exit 0
+fi
+
+# Debug: List what's actually in the room directory
+debug_files=""
+for item in "$ROOM_DIR"/.* "$ROOM_DIR"/*; do
+  [ -e "$item" ] || continue
+  item_name=$(basename "$item")
+  item_type="unknown"
+  [ -f "$item" ] && item_type="file"
+  [ -d "$item" ] && item_type="dir"
+  if [ -z "$debug_files" ]; then
+    debug_files="\"$item_name\":\"$item_type\""
+  else
+    debug_files="$debug_files, \"$item_name\":\"$item_type\""
+  fi
+done
+
+# List all .username directories (avatars) with debug info
+printf '{"avatars": ['
+first=1
+avatar_count=0
+skipped_count=0
+skipped_list=""
+
+for avatar_dir in "$ROOM_DIR"/.*; do
+  [ -d "$avatar_dir" ] || continue
+  avatar_name=$(basename "$avatar_dir")
+  
+  # Track what we skip
+  case "$avatar_name" in
+    .|..|.log)
+      skipped_count=$((skipped_count + 1))
+      if [ -z "$skipped_list" ]; then
+        skipped_list="\"$avatar_name\""
+      else
+        skipped_list="$skipped_list, \"$avatar_name\""
+      fi
+      continue
+      ;;
+  esac
+  
+  avatar_count=$((avatar_count + 1))
+  
+  # Check if it's a web avatar
+  is_web="false"
+  if get-attribute "user.web_avatar" "$avatar_dir" >/dev/null 2>&1; then
+    is_web="true"
+  fi
+  
+  # Remove leading dot from username
+  username=$(printf '%s' "$avatar_name" | sed 's/^\.//')
+  
+  if [ "$first" -eq 1 ]; then
+    first=0
+  else
+    printf ', '
+  fi
+  
+  printf '{"username": "%s", "is_web": %s}' "$username" "$is_web"
+done
+printf '], "debug": {"room_dir": "%s", "files_in_room": {%s}, "avatar_count": %d, "skipped_count": %d, "skipped_items": [%s]}}\n' \
+  "$ROOM_DIR" "$debug_files" "$avatar_count" "$skipped_count" "$skipped_list"
