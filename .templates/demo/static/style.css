@@ -825,11 +825,6 @@ pre code {
   text-decoration: underline;
 }
 
-#create-room-arrow {
-  display: inline-block;
-  transition: transform 0.3s ease;
-}
-
 #create-room-widget input,
 #create-room-widget button {
   opacity: 0;
