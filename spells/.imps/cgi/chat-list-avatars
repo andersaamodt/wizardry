@@ -74,7 +74,6 @@ for avatar_dir in "$ROOM_DIR"/.*; do
   # Skip . and ..
   case "$avatar_name" in
     .|..) continue ;;
-    .log) continue ;;
   esac
   
   # Check if it's a web avatar
