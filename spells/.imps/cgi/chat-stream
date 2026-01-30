@@ -1,7 +1,7 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v8-FAST)
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v9-EFFICIENT)
 # Streams chat messages as Server-Sent Events
-# Uses padding on heartbeats and new events only (not initial batch) for buffer flush
+# Uses padding on new events only (not heartbeats) for buffer flush
 # Self-contained - no external imp dependencies
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
 #
@@ -11,8 +11,8 @@
 set -eu
 
 # Diagnostic logging to stderr (appears in web server error log)
-printf '[chat-stream] ========== SCRIPT STARTED (VERSION: 2026-01-30-v8-FAST) ==========\n' >&2
-printf '[chat-stream] Using minimal padding (512 bytes, no initial burst for fast join)\n' >&2
+printf '[chat-stream] ========== SCRIPT STARTED (VERSION: 2026-01-30-v9-EFFICIENT) ==========\n' >&2
+printf '[chat-stream] Event-driven: sends only when activity occurs, heartbeat 45s\n' >&2
 printf '[chat-stream] Script location: %s\n' "$0" >&2
 printf '[chat-stream] PWD: %s\n' "$(pwd)" >&2
 printf '[chat-stream] QUERY_STRING: %s\n' "${QUERY_STRING:-}" >&2
@@ -26,9 +26,10 @@ http-header "Connection" "keep-alive"
 http-header "X-Accel-Buffering" "no"
 http-end-headers
 
-# No initial padding burst - causes 2-second lag on join
-# Instead rely on frequent heartbeats with padding
-printf '[chat-stream] SSE headers sent (no initial burst for fast connection)\n' >&2
+# No initial padding burst - causes lag on join
+# Heartbeats every 45s (not 2s) - only for keepalive, not flushing
+# Actual events have padding to force flush when they occur
+printf '[chat-stream] SSE headers sent (heartbeats: 45s, events: with padding)\n' >&2
 
 # Inline SSE event function (replaces send_sse_event imp)
 # Third parameter controls padding (default: with padding)
@@ -255,24 +256,17 @@ while true; do
     exit 0
   fi
   
-  # Send heartbeat with padding every 2 seconds (frequent to force flush)
-  # This also serves as broken pipe detection
+  # Send heartbeat every 45 seconds (just to keep connection alive, not for flushing)
+  # Actual events have padding for flushing - heartbeats don't need it
   heartbeat_counter=$((heartbeat_counter + 1))
-  if [ "$heartbeat_counter" -ge 2 ]; then
-    printf '[chat-stream] Sending heartbeat with padding\n' >&2
-    # Send heartbeat with 2KB padding to force buffer flush
-    if ! printf ': heartbeat '; then
+  if [ "$heartbeat_counter" -ge 45 ]; then
+    printf '[chat-stream] Sending keepalive heartbeat (no padding)\n' >&2
+    # Simple heartbeat without padding - just keeps HTTP connection alive
+    if ! printf ': keepalive\n\n'; then
       # Output failed - client disconnected
       printf '[chat-stream] Heartbeat failed (broken pipe), exiting\n' >&2
       exit 0
     fi
-    # Add 2KB padding
-    i=0
-    while [ $i -lt 2000 ]; do
-      printf ' '
-      i=$((i + 1))
-    done
-    printf '\n\n'
     heartbeat_counter=0
   fi
 done
