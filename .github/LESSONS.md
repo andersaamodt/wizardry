@@ -123,12 +123,12 @@
 - htmx conditional triggers should check JavaScript variables before sending requests; `hx-vals='js:{param: window.var}'` sends `param=null` when var is null, causing CGI errors—conditionally enable/disable htmx triggers instead.
 - Auto-scroll preservation in htmx requires tracking scroll position in `htmx:beforeSwap` and restoring in `htmx:afterSwap`; store `wasAtBottom` flag globally to decide whether to auto-scroll after DOM update.
 - Dynamic htmx attributes (setAttribute + htmx.process) don't reliably initialize polling; use static htmx attributes with `hx-vals='js:{param: window.var}'` that evaluate at request time for robust behavior.
-- Read operations (like listing avatars) should NEVER mutate state (like deleting avatars); cleanup/mutation belongs in write operations, not reads.
-- Time-based bugs can make old working commits appear broken when testing later; if avatars created >30min ago are deleted on read, even old "working" commits show the bug now.
-- When cleanup runs on every read (e.g., every 2 seconds for member list updates), it can delete data before the read operation completes, causing empty results.
-- Directory mtime only updates when the directory itself changes, not when files inside it change; use explicit activity tracking (xattr timestamps) instead of relying on mtime.
-- Use enchant/read-magic for metadata tracking instead of creating separate files; this avoids cluttering directories and integrates with wizardry's native xattr support.
-- Avatar movement between rooms should move the existing avatar (preserving identity/state), not delete old and create new (which breaks continuity and creates duplicates).
-- Input validation must happen server-side; never trust client-side stripping/validation as the sole protection against invalid characters or injection attacks.
-- Username display prefixes (like @ or emoji) should only be added for display, never stored in the actual username data; strip prefix when reading for API calls.
-- System log messages (join/leave/AFK) need duplicate detection to prevent spam when users rapidly switch rooms or reconnect; check last non-blank line before logging.
+- Read operations should never mutate state; cleanup belongs in write operations.
+- Time-based bugs make old working commits appear broken when tested later.
+- Cleanup on every read can delete data before read completes.
+- Directory mtime doesn't track file changes inside; use explicit xattr timestamps.
+- Use enchant/read-magic for metadata instead of separate files.
+- Move avatars between rooms; don't delete and recreate.
+- Input validation must happen server-side; never trust client-side only.
+- Display prefixes should not be stored in data; strip when reading for API.
+- System messages need duplicate detection to prevent spam.

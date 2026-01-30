@@ -5,9 +5,18 @@ set -eu
 
 # Read CGI parameters
 read -r input || true
-room_name=$(printf '%s' "$input" | grep -o '"room":"[^"]*"' | sed 's/"room":"//' | sed 's/"$//' || printf '')
-user_name=$(printf '%s' "$input" | grep -o '"username":"[^"]*"' | sed 's/"username":"//' | sed 's/"$//' || printf '')
-old_room=$(printf '%s' "$input" | grep -o '"oldRoom":"[^"]*"' | sed 's/"oldRoom":"//' | sed 's/"$//' || printf '')
+# Extract room name from JSON
+room_pattern='"room":"[^"]*"'
+room_name=$(printf '%s' "$input" | grep -o "$room_pattern" | \
+  sed 's/"room":"//' | sed 's/"$//' || printf '')
+# Extract username from JSON
+user_pattern='"username":"[^"]*"'
+user_name=$(printf '%s' "$input" | grep -o "$user_pattern" | \
+  sed 's/"username":"//' | sed 's/"$//' || printf '')
+# Extract old room from JSON
+old_pattern='"oldRoom":"[^"]*"'
+old_room=$(printf '%s' "$input" | grep -o "$old_pattern" | \
+  sed 's/"oldRoom":"//' | sed 's/"$//' || printf '')
 
 # Validate input
 if [ -z "$room_name" ] || [ -z "$user_name" ] || [ -z "$old_room" ]; then
