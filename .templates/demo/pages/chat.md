@@ -185,7 +185,7 @@ function joinRoom(roomName) {
   // Members button visibility will be controlled by loadMembers based on member count
   
   // Create avatar for this user
-  var currentUsername = document.getElementById('username-text').textContent.trim();
+  var currentUsername = document.getElementById('username-text').textContent.trim().replace(/^@/, '');
   createAvatar(roomName, currentUsername);
   
   // Immediately update room selection styling
@@ -280,7 +280,7 @@ function loadMessages() {
         }
         
         // Color-code messages: light blue for others, light green for user's own
-        var currentUsername = document.getElementById('username-text').textContent.trim();
+        var currentUsername = document.getElementById('username-text').textContent.trim().replace(/^@/, '');
         var allMessages = chatMessagesDiv.querySelectorAll('.chat-msg');
         allMessages.forEach(function(msg) {
           var usernameSpan = msg.querySelector('.username');
@@ -432,7 +432,7 @@ function loadMembers() {
         memberCount.textContent = data.avatars.length;
         
         // Get current username for highlighting
-        var currentUsername = document.getElementById('username-text').textContent.trim();
+        var currentUsername = document.getElementById('username-text').textContent.trim().replace(/^@/, '');
         
         var html = '';
         data.avatars.forEach(function(avatar) {
@@ -513,7 +513,7 @@ function toggleMembersPanel() {
 function leaveRoom() {
   // Delete avatar before leaving
   if (window.currentRoom) {
-    var currentUsername = document.getElementById('username-text').textContent.trim();
+    var currentUsername = document.getElementById('username-text').textContent.trim().replace(/^@/, '');
     deleteAvatar(window.currentRoom, currentUsername);
   }
   
@@ -572,7 +572,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Initialize with a guest name
   var guestName = generateGuestName();
-  usernameText.textContent = guestName;
+  usernameText.textContent = '@' + guestName;
   
   // Set initial height explicitly to prevent shrinking on first keystroke
   messageInput.style.height = '2.5rem';
@@ -703,8 +703,8 @@ function saveUsername() {
       });
     }
     
-    // Set username without @ symbol
-    text.textContent = newName;
+    // Set username with @ symbol for display
+    text.textContent = '@' + newName;
   }
   
   edit.classList.remove('open');
@@ -862,7 +862,7 @@ function showNotification() {
 // Clean up avatar when user leaves the page
 window.addEventListener('beforeunload', function() {
   if (window.currentRoom) {
-    var currentUsername = document.getElementById('username-text').textContent.trim();
+    var currentUsername = document.getElementById('username-text').textContent.trim().replace(/^@/, '');
     // Use sendBeacon for reliable cleanup on page unload
     var formData = new URLSearchParams();
     formData.append('room', window.currentRoom);
