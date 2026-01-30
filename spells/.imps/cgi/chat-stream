@@ -82,6 +82,12 @@ else
   last_line_count=0
 fi
 
+# Function to escape JSON strings
+json_escape() {
+  # Escape backslashes, quotes, and control characters for JSON
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g; s/	/\\t/g' | tr '\n' ' ' | sed 's/ *$//'
+}
+
 # Function to get current member list as JSON
 get_member_list() {
   room_dir="$1"
@@ -102,8 +108,9 @@ get_member_list() {
       is_web="true"
     fi
     
-    # Remove leading dot from username
+    # Remove leading dot from username and escape for JSON
     username=$(printf '%s' "$avatar_name" | sed 's/^\.//')
+    username_escaped=$(json_escape "$username")
     
     if [ "$first" -eq 1 ]; then
       first=0
@@ -111,7 +118,7 @@ get_member_list() {
       printf ', '
     fi
     
-    printf '{"username": "%s", "is_web": %s}' "$username" "$is_web"
+    printf '{"username": "%s", "is_web": %s}' "$username_escaped" "$is_web"
   done
   printf ']'
 }
