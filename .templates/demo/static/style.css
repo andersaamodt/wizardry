@@ -814,11 +814,11 @@ pre code {
   transition: color 0.2s;  /* Only color transition for smooth hover effect */
   text-align: center;
   cursor: pointer;
-  margin-left: -1.7em;  /* Moved 1em to the right (was -2.7em) */
+  margin-left: -1.0em;  /* Moved 0.7em right for better centering (was -1.7em) */
 }
 
 #create-room-widget.open #create-room-link {
-  margin-left: -1.7em;  /* Moved 1em to the right (was -2.7em) */
+  margin-left: -1.0em;  /* Moved 0.7em right for better centering (was -1.7em) */
   margin-bottom: 0.5rem;  /* Space below when it becomes a heading */
 }
 
