@@ -77,15 +77,18 @@ LOG_FILE="$ROOM_DIR/.log"
 # Create or update avatar for this user using same logic as MUD incarnate
 if [ ! -d "$ROOM_DIR/.$user_name" ]; then
   avatar_path=$(create-avatar "$user_name" "$ROOM_DIR" 2>/dev/null || printf '')
-  # Mark as web avatar using xattr (distinguishes from MUD avatars)
+  # Mark as web avatar (using .web_avatar file as marker)
   if [ -n "$avatar_path" ]; then
+    touch "$avatar_path/.web_avatar" 2>/dev/null || true
+    # Also set xattr if supported (for compatibility)
     set-attribute "user.web_avatar" "1" "$avatar_path" 2>/dev/null || true
   fi
-else
-  # Update avatar directory timestamp to prevent cleanup
-  # This keeps active users in the room even if they don't send messages frequently
-  touch "$ROOM_DIR/.$user_name" 2>/dev/null || true
 fi
+
+# Update last activity timestamp (using hidden file to track activity)
+# Store timestamp in .last_activity file inside avatar directory
+current_timestamp=$(date +%s)
+printf '%s\n' "$current_timestamp" > "$ROOM_DIR/.$user_name/.last_activity" 2>/dev/null || true
 
 # Create timestamp in full format for .log file (same as MUD)
 timestamp=$(log-timestamp)
@@ -95,6 +98,10 @@ log_entry="[$timestamp] $user_name: $message"
 
 # Append to log file
 if printf '%s\n' "$log_entry" >> "$LOG_FILE" 2>/dev/null; then
+  # Run cleanup after successful message send (periodic maintenance)
+  # This removes avatars inactive for >30 minutes
+  chat-cleanup-inactive-avatars "$ROOM_DIR" 2>/dev/null || true
+  
   cat <<HTML
 <div class="demo-result success">
   <p>✓ Message sent</p>

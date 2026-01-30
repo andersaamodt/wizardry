@@ -1,0 +1,50 @@
+#!/bin/sh
+# chat-cleanup-inactive-avatars - Remove inactive web avatars from a chat room
+# This should be called periodically (e.g., on message send or via cron)
+# to clean up avatars that haven't been active for >30 minutes
+set -eu
+
+# Takes room directory as argument
+room_dir=${1:-}
+
+if [ -z "$room_dir" ] || [ ! -d "$room_dir" ]; then
+  exit 0  # Silent exit if no room or room doesn't exist
+fi
+
+# Cleanup threshold: 30 minutes in seconds
+current_time=$(date +%s)
+inactive_threshold=1800
+
+for avatar_dir in "$room_dir"/.*; do
+  [ -d "$avatar_dir" ] || continue
+  avatar_name=$(basename "$avatar_dir")
+  
+  # Skip . and .. and .log
+  case "$avatar_name" in
+    .|..|.log) continue ;;
+  esac
+  
+  # Only clean up web avatars (marked by .web_avatar file)
+  # MUD avatars don't have this marker and are managed differently
+  if [ -f "$avatar_dir/.web_avatar" ]; then
+    # Get last activity timestamp from .last_activity file
+    last_activity=0
+    if [ -f "$avatar_dir/.last_activity" ]; then
+      last_activity=$(cat "$avatar_dir/.last_activity" 2>/dev/null || echo "0")
+    fi
+    
+    # If no timestamp file, use directory mtime as fallback
+    if [ "$last_activity" = "0" ] || [ -z "$last_activity" ]; then
+      last_activity=$(stat -c %Y "$avatar_dir" 2>/dev/null)
+      last_activity=${last_activity:-$(stat -f %m "$avatar_dir" 2>/dev/null)}
+      last_activity=${last_activity:-0}
+    fi
+    
+    time_diff=$((current_time - last_activity))
+    
+    # Remove if inactive for more than threshold
+    if [ "$time_diff" -gt "$inactive_threshold" ]; then
+      rm -rf "$avatar_dir" 2>/dev/null || true
+    fi
+  fi
+done
