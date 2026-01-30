@@ -55,10 +55,16 @@ case "$old_room" in
     ;;
 esac
 
-# Get spellbook directory
-SPELLBOOK_DIR="${SPELLBOOK_DIR:-/var/wizardry/spellbook}"
-OLD_ROOM_DIR="$SPELLBOOK_DIR/$old_room"
-NEW_ROOM_DIR="$SPELLBOOK_DIR/$room_name"
+# Chat rooms directory - use site-specific location (same as other chat scripts)
+if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
+  site_id="$WIZARDRY_SITE_NAME"
+else
+  site_id="default"
+fi
+SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
+CHAT_DIR="$SITES_DIR/.sitedata/$site_id/chatrooms"
+OLD_ROOM_DIR="$CHAT_DIR/$old_room"
+NEW_ROOM_DIR="$CHAT_DIR/$room_name"
 
 # Ensure new room exists
 mkdir -p "$NEW_ROOM_DIR"
