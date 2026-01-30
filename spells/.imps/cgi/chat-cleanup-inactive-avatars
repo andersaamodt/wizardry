@@ -63,10 +63,11 @@ for avatar_dir in "$room_dir"/.*; do
     
     # Remove if inactive for more than threshold
     if [ "$time_diff" -gt "$inactive_threshold" ]; then
-      # Log AFK message before deleting
+      # Log AFK message before deleting (with duplicate detection)
       username=$(printf '%s' "$avatar_name" | sed 's/^\.//')
       timestamp=$(log-timestamp)
-      printf '[%s] log: %s went AFK.\n' "$timestamp" "$username" >> "$LOG_FILE" 2>/dev/null || true
+      log_message="[$timestamp] log: $username went AFK."
+      chat-log-if-unique "$LOG_FILE" "$log_message" 2>/dev/null || true
       
       rm -rf "$avatar_dir" 2>/dev/null || true
     fi

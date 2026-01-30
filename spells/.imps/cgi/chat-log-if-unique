@@ -1,0 +1,32 @@
+#!/bin/sh
+# chat-log-if-unique LOG_FILE MESSAGE - Append message to log only if it differs from last non-blank line
+# This prevents spam when users repeatedly join/leave the same room
+set -eu
+
+log_file=${1:-}
+message=${2:-}
+
+if [ -z "$log_file" ] || [ -z "$message" ]; then
+  exit 1
+fi
+
+# Get the last non-blank line from the log (just the message part, not timestamp)
+# Format is "[TIMESTAMP] username: message"
+if [ -f "$log_file" ] && [ -s "$log_file" ]; then
+  last_line=$(grep -v '^[[:space:]]*$' "$log_file" | tail -1 || echo "")
+  
+  if [ -n "$last_line" ]; then
+    # Extract just the message part (after the timestamp and username)
+    # Format: [YYYY-MM-DD HH:MM:SS] username: message
+    last_message=$(printf '%s' "$last_line" | sed 's/^\[[^]]*\] //')
+    current_message=$(printf '%s' "$message" | sed 's/^\[[^]]*\] //')
+    
+    # If messages are identical, don't log
+    if [ "$last_message" = "$current_message" ]; then
+      exit 0
+    fi
+  fi
+fi
+
+# Message is unique or log is empty, append it
+printf '%s\n' "$message" >> "$log_file" 2>/dev/null || exit 1
