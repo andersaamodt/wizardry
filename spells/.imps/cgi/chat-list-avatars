@@ -34,36 +34,6 @@ if [ ! -d "$ROOM_DIR" ]; then
   exit 0
 fi
 
-# Auto-cleanup: Remove inactive web avatars (30 minutes of inactivity)
-# Check last message time in room log to determine if avatar is active
-current_time=$(date +%s)
-inactive_threshold=1800  # 30 minutes in seconds
-
-for avatar_dir in "$ROOM_DIR"/.*; do
-  [ -d "$avatar_dir" ] || continue
-  avatar_name=$(basename "$avatar_dir")
-  
-  # Skip . and .. and .log
-  case "$avatar_name" in
-    .|..|.log) continue ;;
-  esac
-  
-  # Only clean up web avatars
-  if get-attribute "user.web_avatar" "$avatar_dir" >/dev/null 2>&1; then
-    # Get last modification time of avatar directory
-    # Try Linux stat format first, then BSD/macOS format, then default to 0
-    avatar_mtime=$(stat -c %Y "$avatar_dir" 2>/dev/null)
-    avatar_mtime=${avatar_mtime:-$(stat -f %m "$avatar_dir" 2>/dev/null)}
-    avatar_mtime=${avatar_mtime:-0}
-    time_diff=$((current_time - avatar_mtime))
-    
-    # Remove if inactive for more than threshold
-    if [ "$time_diff" -gt "$inactive_threshold" ]; then
-      rm -rf "$avatar_dir" 2>/dev/null || true
-    fi
-  fi
-done
-
 # List all .username directories (avatars)
 printf '{"avatars": ['
 first=1
@@ -71,10 +41,9 @@ for avatar_dir in "$ROOM_DIR"/.*; do
   [ -d "$avatar_dir" ] || continue
   avatar_name=$(basename "$avatar_dir")
   
-  # Skip . and ..
+  # Skip . and .. and .log
   case "$avatar_name" in
-    .|..) continue ;;
-    .log) continue ;;
+    .|..|.log) continue ;;
   esac
   
   # Check if it's a web avatar

@@ -43,6 +43,9 @@ HTML
   exit 0
 fi
 
+# Run cleanup when viewing room (removes inactive avatars >30 min old)
+chat-cleanup-inactive-avatars "$ROOM_DIR" 2>/dev/null || true
+
 # Read messages from .log file (same format as MUD 'say' command)
 LOG_FILE="$ROOM_DIR/.log"
 
@@ -131,18 +134,25 @@ HTML
         # Extract message (everything after ": ")
         message = substr(rest, colon_pos + 2)
         
-        # Generate color from username hash
-        hue = hash_username(username)
-        color = sprintf("hsl(%d, 70%%, 35%%)", hue)
-        
-        # Determine font based on whether user is web user
-        # Check if username is in web_users list (format ":username:")
-        is_web = index(web_users, ":" username ":")
-        font_family = is_web ? "Verdana, sans-serif" : "Courier New, Courier, monospace"
-        
-        # Output with timestamp in bottom-right corner, include full timestamp as data attribute
-        printf "  <div class=\"chat-msg\" style=\"font-family: %s;\"><span class=\"username\" style=\"color: %s; font-weight: bold;\">%s:</span> %s<span class=\"timestamp\" data-full-timestamp=\"%s\" title=\"%s\">%s</span></div>\n", \
-          font_family, color, username, message, full_timestamp, full_timestamp, timestamp
+        # Check if this is a system message (from "log")
+        if (username == "log") {
+          # System message - style as grey, centered, small text, no bubble
+          printf "  <div class=\"chat-msg-system\">%s</div>\n", message
+        } else {
+          # Regular message
+          # Generate color from username hash
+          hue = hash_username(username)
+          color = sprintf("hsl(%d, 70%%, 35%%)", hue)
+          
+          # Determine font based on whether user is web user
+          # Check if username is in web_users list (format ":username:")
+          is_web = index(web_users, ":" username ":")
+          font_family = is_web ? "Verdana, sans-serif" : "Courier New, Courier, monospace"
+          
+          # Output with timestamp in bottom-right corner, include full timestamp as data attribute
+          printf "  <div class=\"chat-msg\" style=\"font-family: %s;\"><span class=\"username\" style=\"color: %s; font-weight: bold;\">%s:</span> %s<span class=\"timestamp\" data-full-timestamp=\"%s\" title=\"%s\">%s</span></div>\n", \
+            font_family, color, username, message, full_timestamp, full_timestamp, timestamp
+        }
       } else {
         # No username found, display as-is
         printf "  <div class=\"chat-msg\">%s</div>\n", line

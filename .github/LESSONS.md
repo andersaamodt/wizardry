@@ -123,3 +123,12 @@
 - htmx conditional triggers should check JavaScript variables before sending requests; `hx-vals='js:{param: window.var}'` sends `param=null` when var is null, causing CGI errors—conditionally enable/disable htmx triggers instead.
 - Auto-scroll preservation in htmx requires tracking scroll position in `htmx:beforeSwap` and restoring in `htmx:afterSwap`; store `wasAtBottom` flag globally to decide whether to auto-scroll after DOM update.
 - Dynamic htmx attributes (setAttribute + htmx.process) don't reliably initialize polling; use static htmx attributes with `hx-vals='js:{param: window.var}'` that evaluate at request time for robust behavior.
+- Read operations should never mutate state; cleanup belongs in write operations.
+- Time-based bugs make old working commits appear broken when tested later.
+- Cleanup on every read can delete data before read completes.
+- Directory mtime doesn't track file changes inside; use explicit xattr timestamps.
+- Use enchant/read-magic for metadata instead of separate files.
+- Move avatars between rooms; don't delete and recreate.
+- Input validation must happen server-side; never trust client-side only.
+- Display prefixes should not be stored in data; strip when reading for API.
+- System messages need duplicate detection to prevent spam.

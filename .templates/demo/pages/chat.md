@@ -92,7 +92,14 @@ function generateGuestName() {
   // Use 3-digit random number (001-999) with zero padding
   var num = Math.floor(Math.random() * 999) + 1;
   var paddedNum = ('000' + num).slice(-3);  // Pad with zeros to 3 digits
-  return '@Guest' + paddedNum;  // Include @ symbol for guest names
+  return 'Guest' + paddedNum;
+}
+
+// Get username without display icon (bullet)
+function getUsername() {
+  var displayText = document.getElementById('username-text').textContent.trim();
+  // Remove @ prefix if present
+  return displayText.replace(/^@\s*/, '');
 }
 
 // Track current room
@@ -184,9 +191,20 @@ function joinRoom(roomName) {
   
   // Members button visibility will be controlled by loadMembers based on member count
   
-  // Create avatar for this user
-  var currentUsername = document.getElementById('username-text').textContent.trim();
-  createAvatar(roomName, currentUsername);
+  // Move or create avatar for this user
+  var currentUsername = getUsername();
+  var previousRoom = localStorage.getItem('previousRoom') || '';
+  
+  if (previousRoom && previousRoom !== roomName) {
+    // Move avatar from previous room to new room
+    moveAvatar(roomName, currentUsername, previousRoom);
+  } else {
+    // Create new avatar (first join or rejoining same room)
+    createAvatar(roomName, currentUsername);
+  }
+  
+  // Store current room as previous room for next switch
+  localStorage.setItem('previousRoom', roomName);
   
   // Immediately update room selection styling
   document.querySelectorAll('.room-item').forEach(function(item) {
@@ -280,7 +298,7 @@ function loadMessages() {
         }
         
         // Color-code messages: light blue for others, light green for user's own
-        var currentUsername = document.getElementById('username-text').textContent.trim();
+        var currentUsername = getUsername();
         var allMessages = chatMessagesDiv.querySelectorAll('.chat-msg');
         allMessages.forEach(function(msg) {
           var usernameSpan = msg.querySelector('.username');
@@ -393,6 +411,34 @@ function createAvatar(roomName, username) {
   });
 }
 
+function moveAvatar(newRoom, username, oldRoom) {
+  var payload = JSON.stringify({
+    room: newRoom,
+    username: username,
+    oldRoom: oldRoom
+  });
+  
+  fetch('/cgi/chat-move-avatar', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: payload
+  }).then(function(response) {
+    return response.json();
+  }).then(function(data) {
+    if (data.success) {
+      loadMembers();  // Refresh member list
+    } else {
+      console.error('Failed to move avatar:', data.error);
+      // Fallback to creating new avatar
+      createAvatar(newRoom, username);
+    }
+  }).catch(function(err) {
+    console.error('Failed to move avatar:', err);
+    // Fallback to creating new avatar
+    createAvatar(newRoom, username);
+  });
+}
+
 function deleteAvatar(roomName, username) {
   var formData = 'room=' + encodeURIComponent(roomName) + 
                  '&user=' + encodeURIComponent(username);
@@ -431,13 +477,18 @@ function loadMembers() {
       } else {
         memberCount.textContent = data.avatars.length;
         
+        // Get current username for highlighting
+        var currentUsername = getUsername();
+        
         var html = '';
         data.avatars.forEach(function(avatar) {
           var fontStyle = avatar.is_web ? 'Verdana, sans-serif' : 'Courier New, Courier, monospace';
           var badge = avatar.is_web ? '🌐' : '⚔️';
+          var isCurrentUser = (avatar.username === currentUsername);
+          var fontWeight = isCurrentUser ? 'font-weight: bold;' : '';
           html += '<div class="member-item" style="font-family: ' + fontStyle + ';">' + 
                   '<span class="member-badge">' + badge + '</span>' +
-                  '<span class="member-name" title="' + avatar.username + '">' + avatar.username + '</span>' +
+                  '<span class="member-name" style="' + fontWeight + '" title="' + avatar.username + '">' + avatar.username + '</span>' +
                   '</div>';
         });
         membersList.innerHTML = html;
@@ -508,7 +559,7 @@ function toggleMembersPanel() {
 function leaveRoom() {
   // Delete avatar before leaving
   if (window.currentRoom) {
-    var currentUsername = document.getElementById('username-text').textContent.trim();
+    var currentUsername = getUsername();
     deleteAvatar(window.currentRoom, currentUsername);
   }
   
@@ -567,7 +618,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Initialize with a guest name
   var guestName = generateGuestName();
-  usernameText.textContent = guestName;
+  usernameText.textContent = '@' + guestName;
   
   // Set initial height explicitly to prevent shrinking on first keystroke
   messageInput.style.height = '2.5rem';
@@ -607,7 +658,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!window.currentRoom) return;
     
     var msg = messageInput.value.trim();
-    var user = usernameText.textContent.trim() || 'Anonymous';
+    var user = getUsername() || 'Anonymous';
     
     if (!msg) return;
     
@@ -647,18 +698,15 @@ function editUsername() {
   var display = document.getElementById('username-display');
   var edit = document.getElementById('username-edit');
   var input = document.getElementById('username-edit-input');
-  var currentName = document.getElementById('username-text').textContent;
+  var currentName = getUsername();
   var okButton = document.querySelector('#username-edit button:first-child');
-  
-  // Remove @ symbol for editing
-  var nameWithoutAt = currentName.startsWith('@') ? currentName.substring(1) : currentName;
   
   display.classList.add('hidden');
   edit.classList.add('open');
-  input.value = nameWithoutAt;
+  input.value = currentName;
   
   // Store initial value and validate
-  input.dataset.initialValue = nameWithoutAt;
+  input.dataset.initialValue = currentName;
   validateUsername();
   
   // Focus after animation starts
@@ -677,9 +725,6 @@ function saveUsername() {
   var oldName = input.dataset.initialValue || '';
   var newName = input.value.trim();
   if (newName && newName !== oldName) {
-    // Strip any leading @ symbols before prepending to prevent duplication
-    newName = newName.replace(/^@+/, '');
-    
     // If user is in a room, rename avatar
     if (window.currentRoom) {
       var formData = 'room=' + encodeURIComponent(window.currentRoom) + 
@@ -691,14 +736,14 @@ function saveUsername() {
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: formData
       }).then(function() {
-        // Refresh members list after rename
+        // Refresh members list immediately after rename
         loadMembers();
       }).catch(function(err) {
         console.error('Failed to rename avatar:', err);
       });
     }
     
-    // Ensure @ symbol is present
+    // Set username for display
     text.textContent = '@' + newName;
   }
   
@@ -724,9 +769,6 @@ function validateUsername() {
   
   var username = input.value.trim();
   var initialValue = input.dataset.initialValue || '';
-  
-  // Remove @ symbol for validation (added back on save)
-  username = username.replace(/^@+/, '');
   
   // Check if username matches valid format pattern
   var hasValidFormat = /^[a-zA-Z0-9_-]+$/.test(username);
@@ -857,7 +899,7 @@ function showNotification() {
 // Clean up avatar when user leaves the page
 window.addEventListener('beforeunload', function() {
   if (window.currentRoom) {
-    var currentUsername = document.getElementById('username-text').textContent.trim();
+    var currentUsername = getUsername();
     // Use sendBeacon for reliable cleanup on page unload
     var formData = new URLSearchParams();
     formData.append('room', window.currentRoom);
