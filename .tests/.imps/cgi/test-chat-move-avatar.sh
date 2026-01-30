@@ -93,7 +93,7 @@ test_move_rejects_invalid_username() {
   
   printf '%s' "$output" | grep -q '"error"' && \
   printf '%s' "$output" | grep -q 'invalid characters' && \
-  printf '%s' "$output" | grep -q 'Status: 400 Bad Request'
+  printf '%s' "$output" | grep -q 'Status: 200 OK'
 }
 
 # Test missing parameters rejected with proper status
@@ -109,7 +109,7 @@ test_move_rejects_missing_params() {
   
   printf '%s' "$output" | grep -q '"error"' && \
   printf '%s' "$output" | grep -q 'Missing required parameters' && \
-  printf '%s' "$output" | grep -q 'Status: 400 Bad Request'
+  printf '%s' "$output" | grep -q 'Status: 200 OK'
 }
 
 # Test path traversal protection
@@ -125,23 +125,23 @@ test_move_rejects_path_traversal() {
   
   printf '%s' "$output" | grep -q '"error"' && \
   printf '%s' "$output" | grep -q 'Invalid room name' && \
-  printf '%s' "$output" | grep -q 'Status: 400 Bad Request'
+  printf '%s' "$output" | grep -q 'Status: 200 OK'
 }
 
-# Critical test: verify http-status always gets two arguments (the bug fix)
-test_http_status_gets_two_args() {
+# Test that script sends headers early (prevents 502 errors)
+test_sends_headers_early() {
   setup_test_env
   
   CHAT_DIR="$WIZARDRY_SITES_DIR/.sitedata/default/chatrooms"
   mkdir -p "$CHAT_DIR/room1"
   
-  # This should NOT cause "unbound variable" error
+  # Even with missing params, should send HTTP 200 with JSON error
   output=$(printf '{"room":"room1"}' | chat-move-avatar 2>&1)
   
   cleanup_test_env
   
-  # Should not contain "unbound variable" error
-  ! printf '%s' "$output" | grep -q "unbound variable"
+  # Should have Status header before error message
+  printf '%s' "$output" | head -1 | grep -q "Status: 200 OK"
 }
 
 run_test_case "chat-move-avatar is executable" test_chat_move_avatar_exists
@@ -150,6 +150,6 @@ run_test_case "chat-move-avatar creates avatar when old doesn't exist" test_move
 run_test_case "chat-move-avatar rejects invalid username" test_move_rejects_invalid_username
 run_test_case "chat-move-avatar rejects missing parameters" test_move_rejects_missing_params
 run_test_case "chat-move-avatar rejects path traversal" test_move_rejects_path_traversal
-run_test_case "chat-move-avatar always passes two args to http-status" test_http_status_gets_two_args
+run_test_case "chat-move-avatar sends headers early to prevent 502" test_sends_headers_early
 
 finish_tests
