@@ -23,6 +23,7 @@
 
 ## Lessons
 
+- Shell stdout is buffered by default; for SSE or real-time streaming, use `exec stdbuf -o0 "$0" "$@"` to re-exec with unbuffered stdout—padding and flush tricks are insufficient.
 - Spells MUST NOT preload their own prerequisites (die, warn, etc.); they should fail early with require_wizardry if wizardry isn't available.
 - When inlining helper functions, use global search-replace to ensure ALL calls are replaced, including those outside the main function body.
 - Editing files with text processing tools (sed, awk, perl) can change file permissions - always restore execute bits afterwards.
