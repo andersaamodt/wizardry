@@ -34,9 +34,6 @@ if [ ! -d "$ROOM_DIR" ]; then
   exit 0
 fi
 
-# Auto-cleanup inactive web avatars
-chat-cleanup-inactive-avatars "$ROOM_DIR"
-
 # Count .username directories (avatars)
 count=0
 for avatar_dir in "$ROOM_DIR"/.*; do
