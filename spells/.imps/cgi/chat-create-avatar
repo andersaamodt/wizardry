@@ -32,6 +32,18 @@ HTML
   exit 0
 fi
 
+# Sanitize username - reject reserved names that would conflict with room metadata
+case "$user_name" in
+  log|.log|.|..)
+    cat <<HTML
+<div class="demo-result error">
+  <p>Invalid username. 'log' is a reserved name.</p>
+</div>
+HTML
+    exit 0
+    ;;
+esac
+
 # Chat rooms directory - use site-specific location
 if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
   site_id="$WIZARDRY_SITE_NAME"
