@@ -10,11 +10,13 @@ set -eu
 if [ "${UNBUFFERED:-}" != "1" ]; then
   printf '[chat-stream] Re-executing with Perl unbuffering wrapper\n' >&2
   export UNBUFFERED=1
-  exec perl -e '$|=1; exec @ARGV' "$0" "$@"
+  # Set autoflush for both STDOUT ($|) and STDERR (STDERR->autoflush)
+  exec perl -e 'use IO::Handle; STDOUT->autoflush(1); STDERR->autoflush(1); exec @ARGV' "$0" "$@"
 fi
 
 # Diagnostic logging to stderr (appears in web server error log)
 printf '[chat-stream] ========== SCRIPT STARTED ==========\n' >&2
+printf '[chat-stream] UNBUFFERED=%s (should be 1 if Perl wrapper worked)\n' "${UNBUFFERED:-NOT SET}" >&2
 printf '[chat-stream] PWD: %s\n' "$(pwd)" >&2
 printf '[chat-stream] QUERY_STRING: %s\n' "${QUERY_STRING:-}" >&2
 printf '[chat-stream] HOME: %s\n' "${HOME:-}" >&2
