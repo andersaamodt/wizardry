@@ -439,11 +439,10 @@ function loadMembers() {
           var fontStyle = avatar.is_web ? 'Verdana, sans-serif' : 'Courier New, Courier, monospace';
           var badge = avatar.is_web ? '🌐' : '⚔️';
           var isCurrentUser = (avatar.username === currentUsername);
-          var nameDisplay = avatar.username + (isCurrentUser ? ' (you)' : '');
           var fontWeight = isCurrentUser ? 'font-weight: bold;' : '';
           html += '<div class="member-item" style="font-family: ' + fontStyle + ';">' + 
                   '<span class="member-badge">' + badge + '</span>' +
-                  '<span class="member-name" style="' + fontWeight + '" title="' + avatar.username + '">' + nameDisplay + '</span>' +
+                  '<span class="member-name" style="' + fontWeight + '" title="' + avatar.username + '">' + avatar.username + '</span>' +
                   '</div>';
         });
         membersList.innerHTML = html;

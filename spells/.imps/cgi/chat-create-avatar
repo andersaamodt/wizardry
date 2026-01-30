@@ -78,6 +78,9 @@ fi
 # Mark as web avatar using enchant (xattr - distinguishes from MUD avatars)
 enchant "$avatar_path" "web_avatar=1" 2>/dev/null || true
 
+# Run cleanup BEFORE logging join (so AFK messages appear first)
+chat-cleanup-inactive-avatars "$ROOM_DIR" 2>/dev/null || true
+
 # Log join message (with duplicate detection to prevent spam)
 LOG_FILE="$ROOM_DIR/.log"
 timestamp=$(log-timestamp)
