@@ -965,8 +965,8 @@ document.addEventListener('DOMContentLoaded', function() {
       messageInput.value = '';
       // Reset textarea height to initial (2.5rem matches min-height)
       messageInput.style.height = '2.5rem';
-      // Reload messages immediately to show the new message
-      loadMessages();
+      // Don't reload messages - SSE will deliver the new message in real-time!
+      // (Reloading causes duplication: message appears via GET, then again via SSE)
     });
   }
   
