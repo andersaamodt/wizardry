@@ -3,17 +3,6 @@
 
 set -eu
 
-# Ensure required commands are available (defensive check for CGI environment)
-# Check for http-status before using it
-if ! command -v http-status >/dev/null 2>&1; then
-  # If commands not in PATH, output basic HTTP error
-  printf 'Status: 500 Internal Server Error\r\n'
-  printf 'Content-Type: text/plain\r\n\r\n'
-  printf 'Error: Wizardry commands not available in CGI environment\n'
-  printf 'Please ensure web server has wizardry in PATH or restart server\n'
-  exit 1
-fi
-
 # Read CGI parameters
 read -r input || true
 # Extract room name from JSON
