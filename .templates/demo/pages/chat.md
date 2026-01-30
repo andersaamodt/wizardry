@@ -237,10 +237,7 @@ function joinRoom(roomName) {
     window.messageEventSource = null;
   }
   
-  // Load messages immediately (initial batch)
-  loadMessages();
-  
-  // Set up SSE for real-time message updates
+  // Set up SSE for real-time message updates (includes initial batch)
   setupMessageStream(roomName);
   
   // Load members immediately
@@ -539,7 +536,7 @@ function hashUsername(username) {
   for (var i = 0; i < username.length; i++) {
     var char = username.charAt(i);
     var asciiVal = chars.indexOf(char);
-    if (asciiVal === -1) asciiVal = char.length;  // Fallback
+    if (asciiVal === -1) asciiVal = char.charCodeAt(0);  // Use actual ASCII value for non-alphanumeric
     hash += asciiVal * (i + 1);
   }
   
