@@ -1,25 +1,34 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v3)
 # Streams chat messages as Server-Sent Events
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
 set -eu
 
-# Re-exec with unbuffered stdout for real-time SSE (critical!)
-# Without this, output is buffered and events only sent when script exits
-# Use Perl autoflush wrapper (works on macOS, Linux, BSD - all have Perl)
+# CRITICAL: Unbuffer output for real-time SSE
+# Try multiple methods in order of preference
 if [ "${UNBUFFERED:-}" != "1" ]; then
-  printf '[chat-stream] Re-executing with Perl unbuffering wrapper\n' >&2
   export UNBUFFERED=1
-  # Set autoflush for both STDOUT ($|) and STDERR (STDERR->autoflush)
-  exec perl -e 'use IO::Handle; STDOUT->autoflush(1); STDERR->autoflush(1); exec @ARGV' "$0" "$@"
+  
+  # Method 1: Python unbuffered mode (most reliable on macOS)
+  if command -v python3 >/dev/null 2>&1; then
+    printf '[chat-stream] Using Python unbuffered wrapper\n' >&2
+    exec python3 -u -c 'import sys, os; os.execvp(sys.argv[1], sys.argv[1:])' "$0" "$@"
+  # Method 2: Perl autoflush (fallback)
+  elif command -v perl >/dev/null 2>&1; then
+    printf '[chat-stream] Using Perl autoflush wrapper\n' >&2
+    exec perl -e 'use IO::Handle; STDOUT->autoflush(1); STDERR->autoflush(1); exec @ARGV' "$0" "$@"
+  else
+    printf '[chat-stream] WARNING: No unbuffering available, output may be delayed\n' >&2
+    # Continue without unbuffering
+  fi
 fi
 
 # Diagnostic logging to stderr (appears in web server error log)
-printf '[chat-stream] ========== SCRIPT STARTED ==========\n' >&2
-printf '[chat-stream] UNBUFFERED=%s (should be 1 if Perl wrapper worked)\n' "${UNBUFFERED:-NOT SET}" >&2
+printf '[chat-stream] ========== SCRIPT STARTED (VERSION: 2026-01-30-v3) ==========\n' >&2
+printf '[chat-stream] UNBUFFERED=%s (should be 1 if wrapper worked)\n' "${UNBUFFERED:-NOT SET}" >&2
+printf '[chat-stream] Script location: %s\n' "$0" >&2
 printf '[chat-stream] PWD: %s\n' "$(pwd)" >&2
 printf '[chat-stream] QUERY_STRING: %s\n' "${QUERY_STRING:-}" >&2
-printf '[chat-stream] HOME: %s\n' "${HOME:-}" >&2
 
 # Start SSE stream
 printf '[chat-stream] Calling sse-start...\n' >&2
