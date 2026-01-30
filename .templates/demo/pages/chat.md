@@ -612,7 +612,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!window.currentRoom) return;
     
     var msg = messageInput.value.trim();
-    var user = usernameText.textContent.trim() || 'Anonymous';
+    var user = usernameText.textContent.trim().replace(/^@/, '') || 'Anonymous';
     
     if (!msg) return;
     
