@@ -694,15 +694,12 @@ function editUsername() {
   var currentName = document.getElementById('username-text').textContent;
   var okButton = document.querySelector('#username-edit button:first-child');
   
-  // Remove @ symbol for editing
-  var nameWithoutAt = currentName.startsWith('@') ? currentName.substring(1) : currentName;
-  
   display.classList.add('hidden');
   edit.classList.add('open');
-  input.value = nameWithoutAt;
+  input.value = currentName;
   
   // Store initial value and validate
-  input.dataset.initialValue = nameWithoutAt;
+  input.dataset.initialValue = currentName;
   validateUsername();
   
   // Focus after animation starts
