@@ -23,7 +23,7 @@
 
 ## Lessons
 
-- Shell stdout is buffered by default; for SSE or real-time streaming, use `exec stdbuf -o0 "$0" "$@"` (Linux) or `exec perl -e '$|=1; exec @ARGV' "$0" "$@"` (macOS) to re-exec with unbuffered stdout.
+- Shell stdout is buffered by default; for SSE/real-time streaming on Linux use `exec stdbuf -o0 "$0" "$@"`, on macOS without stdbuf use 128KB+ padding per event to force buffer overflow.
 - Spells MUST NOT preload their own prerequisites (die, warn, etc.); they should fail early with require_wizardry if wizardry isn't available.
 - When inlining helper functions, use global search-replace to ensure ALL calls are replaced, including those outside the main function body.
 - Editing files with text processing tools (sed, awk, perl) can change file permissions - always restore execute bits afterwards.
