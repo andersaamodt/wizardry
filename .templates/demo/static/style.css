@@ -809,6 +809,7 @@ pre code {
   color: var(--primary);
   text-decoration: none;
   font-weight: 600;
+  transition: color 0.2s;  /* Only color transition for smooth hover effect */
   text-align: center;
   cursor: pointer;
   margin-left: -1.7em;  /* Moved 1em to the right (was -2.7em) */
