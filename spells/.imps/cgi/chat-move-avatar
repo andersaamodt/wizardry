@@ -17,12 +17,31 @@ if [ -z "$room_name" ] || [ -z "$user_name" ] || [ -z "$old_room" ]; then
   exit 0
 fi
 
-# Validate username doesn't contain invalid characters
+# Validate username doesn't contain invalid characters (allow only alphanumeric, underscore, hyphen)
 case "$user_name" in
-  *[@#\$%\&\*\(\)\[\]\{\}\|\\\/\<\>\"\'\`\;\:\,\?\!\~\=\+]*)
+  *[!a-zA-Z0-9_-]*)
     http-status 400
     printf 'Content-Type: application/json\r\n\r\n'
     printf '{"error":"Username contains invalid characters"}\n'
+    exit 0
+    ;;
+esac
+
+# Validate room names don't contain path traversal sequences
+case "$room_name" in
+  *..*|*/*|*\\*)
+    http-status 400
+    printf 'Content-Type: application/json\r\n\r\n'
+    printf '{"error":"Invalid room name"}\n'
+    exit 0
+    ;;
+esac
+
+case "$old_room" in
+  *..*|*/*|*\\*)
+    http-status 400
+    printf 'Content-Type: application/json\r\n\r\n'
+    printf '{"error":"Invalid room name"}\n'
     exit 0
     ;;
 esac
@@ -59,7 +78,7 @@ if [ -d "$OLD_AVATAR" ]; then
   }
   
   # Update last activity timestamp
-  enchant last_activity "$(date +%s)" "$NEW_AVATAR" 2>/dev/null || true
+  enchant "$NEW_AVATAR" "last_activity=$(date +%s)" 2>/dev/null || true
   
   # Log "joined the room" in new room
   NEW_LOG="$NEW_ROOM_DIR/.log"
@@ -80,11 +99,11 @@ else
     mkdir -p "$NEW_AVATAR"
     
     # Mark as web avatar
-    enchant web_avatar "1" "$NEW_AVATAR" 2>/dev/null || true
-    enchant is_avatar "1" "$NEW_AVATAR" 2>/dev/null || true
+    enchant "$NEW_AVATAR" "web_avatar=1" 2>/dev/null || true
+    enchant "$NEW_AVATAR" "is_avatar=1" 2>/dev/null || true
     
     # Set last activity
-    enchant last_activity "$(date +%s)" "$NEW_AVATAR" 2>/dev/null || true
+    enchant "$NEW_AVATAR" "last_activity=$(date +%s)" 2>/dev/null || true
     
     # Log join message
     timestamp=$(date '+%Y-%m-%d %H:%M:%S')
