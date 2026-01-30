@@ -31,7 +31,7 @@ Loading rooms...
 <div class="username-widget">
 <!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
 <div class="username-display" id="username-display"><strong id="username-text">@Guest001</strong><button onclick="editUsername()">Change</button></div>
-<div class="username-edit" id="username-edit"><h5>Change Handle</h5><input type="text" id="username-edit-input" placeholder="Your name" /><div class="username-edit-buttons"><button onclick="saveUsername()">OK</button><button onclick="cancelUsernameEdit()">Cancel</button></div></div>
+<div class="username-edit" id="username-edit"><h5>Change Handle</h5><div id="username-edit-input-wrapper"><input type="text" id="username-edit-input" placeholder="Your name" /><span id="username-invalid-icon">&#x1F6AB;</span></div><div class="username-edit-buttons"><button onclick="saveUsername()">OK</button><button onclick="cancelUsernameEdit()">Cancel</button></div></div>
 </div>
 </div>
 
@@ -657,9 +657,9 @@ function editUsername() {
   edit.classList.add('open');
   input.value = nameWithoutAt;
   
-  // Store initial value and disable OK button initially
+  // Store initial value and validate
   input.dataset.initialValue = nameWithoutAt;
-  okButton.disabled = true;
+  validateUsername();
   
   // Focus after animation starts
   setTimeout(function() {
@@ -714,17 +714,47 @@ function cancelUsernameEdit() {
   display.classList.remove('hidden');
 }
 
+// Validate username in realtime
+function validateUsername() {
+  var input = document.getElementById('username-edit-input');
+  var okButton = document.querySelector('#username-edit button:first-child');
+  var invalidIcon = document.getElementById('username-invalid-icon');
+  
+  if (!input || !okButton) return;
+  
+  var username = input.value.trim();
+  var initialValue = input.dataset.initialValue || '';
+  
+  // Remove @ symbol for validation (added back on save)
+  username = username.replace(/^@+/, '');
+  
+  // Username must be non-empty, different from initial, and match pattern: alphanumeric, dash, underscore only
+  var isValid = username.length > 0 && 
+                username !== initialValue && 
+                /^[a-zA-Z0-9_-]+$/.test(username);
+  
+  // Enable/disable button based on validation
+  okButton.disabled = !isValid;
+  
+  // Add visual feedback to input and show/hide invalid icon
+  if (username.length > 0 && !isValid) {
+    input.style.borderColor = '#dc3545';  // Red for invalid
+    if (invalidIcon) invalidIcon.classList.add('show');
+  } else {
+    input.style.borderColor = '';  // Reset to default
+    if (invalidIcon) invalidIcon.classList.remove('show');
+  }
+}
+
 // Add Enter and Escape key support for username editing
 document.addEventListener('DOMContentLoaded', function() {
   var input = document.getElementById('username-edit-input');
   var okButton = document.querySelector('#username-edit button:first-child');
   
   if (input && okButton) {
-    // Monitor input changes to enable/disable OK button
+    // Monitor input changes with validation
     input.addEventListener('input', function() {
-      var currentValue = this.value.trim();
-      var initialValue = this.dataset.initialValue || '';
-      okButton.disabled = (currentValue === initialValue || currentValue === '');
+      validateUsername();
     });
     
     input.addEventListener('keypress', function(e) {
