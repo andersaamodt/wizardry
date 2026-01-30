@@ -1,6 +1,6 @@
 #!/bin/sh
 # chat-cleanup-inactive-avatars - Remove inactive web avatars from a chat room
-# This should be called periodically (e.g., on message send or via cron)
+# This should be called periodically (e.g., on message send or page view)
 # to clean up avatars that haven't been active for >30 minutes
 set -eu
 
@@ -24,16 +24,29 @@ for avatar_dir in "$room_dir"/.*; do
     .|..|.log) continue ;;
   esac
   
-  # Only clean up web avatars (marked by .web_avatar file)
-  # MUD avatars don't have this marker and are managed differently
-  if [ -f "$avatar_dir/.web_avatar" ]; then
-    # Get last activity timestamp from .last_activity file
-    last_activity=0
-    if [ -f "$avatar_dir/.last_activity" ]; then
-      last_activity=$(cat "$avatar_dir/.last_activity" 2>/dev/null || echo "0")
+  # Check if this is a web avatar (vs MUD avatar)
+  # Web avatars have web_avatar attribute OR no is_avatar attribute (fallback)
+  # MUD avatars have is_avatar=1 set by create-avatar
+  is_web_avatar=0
+  
+  # First check for explicit web_avatar marker
+  if read-magic "$avatar_dir" "web_avatar" >/dev/null 2>&1; then
+    is_web_avatar=1
+  else
+    # Fallback: check if it's NOT a MUD avatar
+    # MUD avatars have is_avatar=1 attribute set
+    if ! read-magic "$avatar_dir" "is_avatar" >/dev/null 2>&1; then
+      # No is_avatar attribute, likely a web avatar
+      is_web_avatar=1
     fi
+  fi
+  
+  # Only clean up web avatars
+  if [ "$is_web_avatar" = "1" ]; then
+    # Get last activity timestamp using read-magic
+    last_activity=$(read-magic "$avatar_dir" "last_activity" 2>/dev/null || echo "0")
     
-    # If no timestamp file, use directory mtime as fallback
+    # If no timestamp, use directory mtime as fallback
     if [ "$last_activity" = "0" ] || [ -z "$last_activity" ]; then
       last_activity=$(stat -c %Y "$avatar_dir" 2>/dev/null)
       last_activity=${last_activity:-$(stat -f %m "$avatar_dir" 2>/dev/null)}
