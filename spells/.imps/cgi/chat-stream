@@ -1,25 +1,30 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v18-NUCLEAR)
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v20-UNBUFFERED)
 # Streams chat messages as Server-Sent Events
-# Uses 8KB padding on new events for reliable buffer flush on macOS fcgiwrap (exceeds 8KB buffer)
-# OPTIMIZED: Pre-generates padding with awk (cross-platform reliable)
-# NUCLEAR: Aggressive multi-layer flush (dd+fsync) to defeat all buffering
-# FIXED: Explicit flush after padding to prevent "1 message behind" behavior
+# FIXED: Disabled stdout buffering with stdbuf to prevent "1 message behind" behavior
+# Root cause: Shell stdout was buffered even with padding/flush - needed stdbuf -o0
 # Self-contained - no external imp dependencies
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
-# FIXED: All issues - batching (8KB padding), duplication (removed loadMessages),
-# reliable padding (awk)
 #
 # CONCURRENCY: Each fcgiwrap worker handles one connection. Configure fcgiwrap with
 # multiple workers (-c N) to support N concurrent SSE connections. Default: 10 workers.
 # See: serve-site script, FCGIWRAP_WORKERS environment variable.
+
+# CRITICAL FIX: Re-exec with unbuffered stdout if not already unbuffered
+# This solves the "1 message behind" problem - shell stdout is buffered by default
+# stdbuf -o0 disables stdout buffering entirely, ensuring immediate output
+if [ -z "${STDBUF_ACTIVE:-}" ]; then
+  export STDBUF_ACTIVE=1
+  exec stdbuf -o0 "$0" "$@"
+fi
+
 set -eu
 
 # Diagnostic logging to stderr (appears in web server error log)
-script_version="2026-01-30-v19-HEARTBEAT"
+script_version="2026-01-30-v20-UNBUFFERED"
 printf '[chat-stream] ========== SCRIPT STARTED (VERSION: %s) ==========\n' "$script_version" >&2
-printf '[chat-stream] Event-driven: sends only when activity occurs, heartbeat 45s\n' >&2
-printf '[chat-stream] Using 8KB padding + aggressive flush (dd+fsync) for zero-lag delivery\n' >&2
+printf '[chat-stream] CRITICAL FIX: Running with unbuffered stdout (stdbuf -o0)\n' >&2
+printf '[chat-stream] This eliminates "1 message behind" behavior - shell buffering was the root cause\n' >&2
 printf '[chat-stream] Script location: %s\n' "$0" >&2
 printf '[chat-stream] PWD: %s\n' "$(pwd)" >&2
 printf '[chat-stream] QUERY_STRING: %s\n' "${QUERY_STRING:-}" >&2
@@ -57,29 +62,15 @@ send_sse_event() {
   printf 'event: %s\n' "$event_type"
   printf 'data: %s\n' "$event_data"
   
-  # Add 8KB padding to force buffer flush (only if requested)
-  # 8KB needed to EXCEED fcgiwrap buffer (~8KB on macOS)
-  # 2KB caused 3-4 message batching, 8KB guarantees per-event flush
-  # Output pre-generated padding string in ONE printf call (efficient!)
+  # Add 8KB padding to force buffer flush at fcgiwrap/nginx level (only if requested)
+  # With unbuffered stdout (stdbuf -o0), shell buffering is eliminated
+  # Padding still needed to exceed fcgiwrap buffer (~8KB on macOS)
   if [ "$add_padding" = "yes" ]; then
     printf ': padding=%s\n' "$PADDING_8KB"
   fi
+  
+  # End event with blank line (SSE spec)
   printf '\n'
-  
-  # CRITICAL: Multiple aggressive flush techniques to defeat ALL buffering
-  # Problem: Even with 8KB padding, messages were "1 behind" - appeared only when next message sent
-  # Cause: Multiple buffering layers (shell, fcgiwrap, nginx)
-  # Solution: Aggressive multi-layer flush approach
-  
-  # Technique 1: Extra blank lines (SSE spec allows multiple blank lines)
-  printf '\n\n'
-  
-  # Technique 2: Write directly to file descriptor 1 (stdout) - bypasses some shell buffering
-  printf '\n' >&1
-  
-  # Technique 3: Use dd with fsync to force kernel-level flush
-  # This is the nuclear option - forces all buffers to flush
-  dd conv=fsync of=/dev/stdout count=0 2>/dev/null || true
 }
 
 # Parse room name from query string
@@ -272,12 +263,6 @@ while true; do
       tail -n "$new_message_count" "$LOG_FILE" > "$temp_msgs"
       while IFS= read -r line || [ -n "$line" ]; do
         send_sse_event message "$line" yes || exit 0  # WITH padding for ongoing events
-        
-        # CRITICAL: Send immediate heartbeat after message to trigger flush
-        # Theory: First event gets buffered, second event triggers flush of first
-        # This mimics how "next message" was triggering flush of "previous message"
-        printf ': flush-trigger\n\n'
-        dd conv=fsync of=/dev/stdout count=0 2>/dev/null || true
       done < "$temp_msgs"
       rm -f "$temp_msgs"
       
