@@ -1,17 +1,17 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v6-OPTIMIZED)
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v7-CONCURRENT)
 # Streams chat messages as Server-Sent Events
 # Uses padding on heartbeats and new events only (not initial batch) for buffer flush
 # Self-contained - no external imp dependencies
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
 #
-# NOTE: CGI is single-threaded by design. Each connection blocks until completed.
-# This is a limitation of fcgiwrap/CGI. For truly concurrent connections,
-# consider using a WebSocket server or FastCGI with threading support.
+# CONCURRENCY: Each fcgiwrap worker handles one connection. Configure fcgiwrap with
+# multiple workers (-c N) to support N concurrent SSE connections. Default: 10 workers.
+# See: serve-site script, FCGIWRAP_WORKERS environment variable.
 set -eu
 
 # Diagnostic logging to stderr (appears in web server error log)
-printf '[chat-stream] ========== SCRIPT STARTED (VERSION: 2026-01-30-v6-OPTIMIZED) ==========\n' >&2
+printf '[chat-stream] ========== SCRIPT STARTED (VERSION: 2026-01-30-v7-CONCURRENT) ==========\n' >&2
 printf '[chat-stream] Using selective padding (initial batch fast, ongoing events padded)\n' >&2
 printf '[chat-stream] Script location: %s\n' "$0" >&2
 printf '[chat-stream] PWD: %s\n' "$(pwd)" >&2
