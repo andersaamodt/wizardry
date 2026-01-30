@@ -1,31 +1,13 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v3)
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v4-PADDED)
 # Streams chat messages as Server-Sent Events
+# Uses padding technique to force buffer flush on macOS fcgiwrap
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
 set -eu
 
-# CRITICAL: Unbuffer output for real-time SSE
-# Try multiple methods in order of preference
-if [ "${UNBUFFERED:-}" != "1" ]; then
-  export UNBUFFERED=1
-  
-  # Method 1: Python unbuffered mode (most reliable on macOS)
-  if command -v python3 >/dev/null 2>&1; then
-    printf '[chat-stream] Using Python unbuffered wrapper\n' >&2
-    exec python3 -u -c 'import sys, os; os.execvp(sys.argv[1], sys.argv[1:])' "$0" "$@"
-  # Method 2: Perl autoflush (fallback)
-  elif command -v perl >/dev/null 2>&1; then
-    printf '[chat-stream] Using Perl autoflush wrapper\n' >&2
-    exec perl -e 'use IO::Handle; STDOUT->autoflush(1); STDERR->autoflush(1); exec @ARGV' "$0" "$@"
-  else
-    printf '[chat-stream] WARNING: No unbuffering available, output may be delayed\n' >&2
-    # Continue without unbuffering
-  fi
-fi
-
 # Diagnostic logging to stderr (appears in web server error log)
-printf '[chat-stream] ========== SCRIPT STARTED (VERSION: 2026-01-30-v3) ==========\n' >&2
-printf '[chat-stream] UNBUFFERED=%s (should be 1 if wrapper worked)\n' "${UNBUFFERED:-NOT SET}" >&2
+printf '[chat-stream] ========== SCRIPT STARTED (VERSION: 2026-01-30-v4-PADDED) ==========\n' >&2
+printf '[chat-stream] Using padding technique to force buffer flush\n' >&2
 printf '[chat-stream] Script location: %s\n' "$0" >&2
 printf '[chat-stream] PWD: %s\n' "$(pwd)" >&2
 printf '[chat-stream] QUERY_STRING: %s\n' "${QUERY_STRING:-}" >&2
@@ -235,16 +217,24 @@ while true; do
     exit 0
   fi
   
-  # Send heartbeat comment every 10 seconds to keep connection alive
+  # Send heartbeat with padding every 2 seconds (frequent to force flush)
   # This also serves as broken pipe detection
   heartbeat_counter=$((heartbeat_counter + 1))
-  if [ "$heartbeat_counter" -ge 10 ]; then
-    printf '[chat-stream] Sending heartbeat\n' >&2
-    if ! printf ': heartbeat\n\n'; then
+  if [ "$heartbeat_counter" -ge 2 ]; then
+    printf '[chat-stream] Sending heartbeat with padding\n' >&2
+    # Send heartbeat with 2KB padding to force buffer flush
+    if ! printf ': heartbeat '; then
       # Output failed - client disconnected
       printf '[chat-stream] Heartbeat failed (broken pipe), exiting\n' >&2
       exit 0
     fi
+    # Add 2KB padding
+    i=0
+    while [ $i -lt 2000 ]; do
+      printf ' '
+      i=$((i + 1))
+    done
+    printf '\n\n'
     heartbeat_counter=0
   fi
 done
