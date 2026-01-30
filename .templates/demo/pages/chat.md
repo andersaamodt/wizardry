@@ -728,17 +728,18 @@ function validateUsername() {
   // Remove @ symbol for validation (added back on save)
   username = username.replace(/^@+/, '');
   
-  // Username must be non-empty, different from initial, and match pattern: alphanumeric, dash, underscore only
-  var isValid = username.length > 0 && 
-                username !== initialValue && 
-                /^[a-zA-Z0-9_-]+$/.test(username);
+  // Check if username matches valid format pattern
+  var hasValidFormat = /^[a-zA-Z0-9_-]+$/.test(username);
+  var isDifferent = username !== initialValue;
   
-  // Enable/disable button based on validation
-  okButton.disabled = !isValid;
+  // Button enabled only if: non-empty, valid format, AND different from initial
+  var canSave = username.length > 0 && hasValidFormat && isDifferent;
+  okButton.disabled = !canSave;
   
-  // Add visual feedback to input and show/hide invalid icon
-  if (username.length > 0 && !isValid) {
-    input.style.borderColor = '#dc3545';  // Red for invalid
+  // Show error styling ONLY if user typed something with invalid format
+  // Don't show error for unchanged username (even though button is disabled)
+  if (username.length > 0 && !hasValidFormat) {
+    input.style.borderColor = '#dc3545';  // Red for invalid format
     if (invalidIcon) invalidIcon.classList.add('show');
   } else {
     input.style.borderColor = '';  // Reset to default
