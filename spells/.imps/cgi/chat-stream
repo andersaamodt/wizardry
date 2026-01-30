@@ -1,10 +1,10 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v11-REALTIME)
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v12-FIXED)
 # Streams chat messages as Server-Sent Events
 # Uses padding on new events only (not heartbeats) for buffer flush
 # Self-contained - no external imp dependencies
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
-# FIXED: Timestamp comparison crash + >= comparison for same-second messages
+# FIXED: Timestamp comparison crash + >= comparison + PIPE SUBSHELL (real-time delivery!)
 #
 # CONCURRENCY: Each fcgiwrap worker handles one connection. Configure fcgiwrap with
 # multiple workers (-c N) to support N concurrent SSE connections. Default: 10 workers.
@@ -234,9 +234,15 @@ while true; do
       # New messages available - send them WITH padding to force flush
       new_message_count=$((current_line_count - last_line_count))
       printf '[chat-stream] Found %d new messages\n' "$new_message_count" >&2
-      tail -n "$new_message_count" "$LOG_FILE" | while IFS= read -r line || [ -n "$line" ]; do
+      
+      # CRITICAL: Avoid pipe subshell - use temp file so send_sse_event output reaches client
+      temp_msgs="/tmp/chat_stream_$$_new"
+      tail -n "$new_message_count" "$LOG_FILE" > "$temp_msgs"
+      while IFS= read -r line || [ -n "$line" ]; do
         send_sse_event message "$line" yes || exit 0  # WITH padding for ongoing events
-      done
+      done < "$temp_msgs"
+      rm -f "$temp_msgs"
+      
       last_line_count=$current_line_count
       heartbeat_counter=0  # Reset heartbeat counter
       idle_counter=0  # Reset idle counter
