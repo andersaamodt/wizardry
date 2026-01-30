@@ -13,6 +13,13 @@ room_name=$(printf '%s' "$room_name" | sed 's/.*room=\([^&]*\).*/\1/')
 room_name=$(url-decode "$room_name" || printf '%s' "$room_name")
 room_name=$(printf '%s' "$room_name" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
 
+# Validate room name to prevent directory traversal
+# Allow only alphanumeric, dash, underscore, and space
+if ! printf '%s' "$room_name" | grep -q '^[a-zA-Z0-9_ -]\+$'; then
+  sse-event error "Invalid room name"
+  exit 0
+fi
+
 # Parse optional 'since' timestamp from query string
 since_timestamp=""
 if printf '%s' "${QUERY_STRING:-}" | grep -q 'since='; then
@@ -49,13 +56,14 @@ if [ -f "$LOG_FILE" ] && [ -s "$LOG_FILE" ]; then
   if [ -n "$since_timestamp" ]; then
     # Filter messages that come after the 'since' timestamp
     # Format: [YYYY-MM-DD HH:MM:SS] username: message
-    # Compare timestamps directly (they're in ISO-like format)
+    # Compare timestamps lexicographically (works for ISO format)
     tail -200 "$LOG_FILE" | while IFS= read -r line || [ -n "$line" ]; do
       # Extract timestamp from line
       msg_timestamp=$(printf '%s' "$line" | sed 's/^\[\([^]]*\)\].*/\1/')
       
-      # Compare timestamps lexicographically (works for ISO format)
-      if [ "$msg_timestamp" '>' "$since_timestamp" ] 2>/dev/null || [ "$msg_timestamp" = "$since_timestamp" ]; then
+      # Use string comparison (timestamps are in sortable format)
+      # Only send messages strictly after the 'since' timestamp
+      if [ "$msg_timestamp" '>' "$since_timestamp" ]; then
         sse-event message "$line"
       fi
     done
@@ -76,10 +84,18 @@ fi
 
 # Keep connection alive and stream new messages
 # Poll the log file for changes every 1 second
-# This is more reliable than tail -f in CGI context
+# Exit if output fails (client disconnected)
 heartbeat_counter=0
+max_idle_time=300  # Exit after 5 minutes of no activity
+idle_counter=0
+
 while true; do
   sleep 1
+  
+  # Try to send output and exit if it fails (broken pipe = client disconnected)
+  if ! printf '' 2>/dev/null; then
+    exit 0
+  fi
   
   # Check if log file has new lines
   if [ -f "$LOG_FILE" ]; then
@@ -89,17 +105,27 @@ while true; do
       # New messages available - send them
       new_message_count=$((current_line_count - last_line_count))
       tail -n "$new_message_count" "$LOG_FILE" | while IFS= read -r line || [ -n "$line" ]; do
-        sse-event message "$line"
+        sse-event message "$line" || exit 0  # Exit if output fails
       done
       last_line_count=$current_line_count
       heartbeat_counter=0  # Reset heartbeat counter
+      idle_counter=0  # Reset idle counter
+    else
+      idle_counter=$((idle_counter + 1))
     fi
+  else
+    idle_counter=$((idle_counter + 1))
+  fi
+  
+  # Exit if idle for too long
+  if [ "$idle_counter" -ge "$max_idle_time" ]; then
+    exit 0
   fi
   
   # Send heartbeat comment every 15 seconds to keep connection alive
   heartbeat_counter=$((heartbeat_counter + 1))
   if [ "$heartbeat_counter" -ge 15 ]; then
-    printf ': heartbeat\n\n'
+    printf ': heartbeat\n\n' || exit 0  # Exit if output fails
     heartbeat_counter=0
   fi
 done
