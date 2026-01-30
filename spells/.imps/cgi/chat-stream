@@ -1,11 +1,11 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v15-FINAL)
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v16-NOLAG)
 # Streams chat messages as Server-Sent Events
-# Uses 2KB padding on new events for reliable buffer flush on macOS fcgiwrap
+# Uses 8KB padding on new events for reliable buffer flush on macOS fcgiwrap (exceeds 8KB buffer)
 # OPTIMIZED: Pre-generates padding with awk (cross-platform reliable)
 # Self-contained - no external imp dependencies
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
-# FIXED: All issues - duplication removed (client-side), padding generation (awk)
+# FIXED: All issues - batching (8KB padding), duplication (removed loadMessages), reliable padding (awk)
 #
 # CONCURRENCY: Each fcgiwrap worker handles one connection. Configure fcgiwrap with
 # multiple workers (-c N) to support N concurrent SSE connections. Default: 10 workers.
@@ -34,11 +34,12 @@ http-end-headers
 # Actual events have padding to force flush when they occur
 printf '[chat-stream] SSE headers sent (heartbeats: 45s, events: with padding)\n' >&2
 
-# Pre-generate 2KB padding string ONCE for efficiency
-# Avoids 2048 individual printf calls per event (slow and may not flush properly)
+# Pre-generate 8KB padding string ONCE for efficiency
+# fcgiwrap buffer on macOS is ~8KB - need to EXCEED it for per-event flush
+# 2KB was too small (caused 3-4 message batching), 8KB guarantees immediate flush
 # Using awk for reliable cross-platform generation (macOS-compatible)
-PADDING_2KB=$(awk 'BEGIN{s=""; while(length(s)<2048){s=s" "}; printf("%s",s)}')
-printf '[chat-stream] Pre-generated 2KB padding string for efficient buffer flush\n' >&2
+PADDING_8KB=$(awk 'BEGIN{s=""; while(length(s)<8192){s=s" "}; printf("%s",s)}')
+printf '[chat-stream] Pre-generated 8KB padding string (exceeds fcgiwrap buffer for per-event flush)\n' >&2
 
 # Inline SSE event function (replaces send_sse_event imp)
 # Third parameter controls padding (default: with padding)
@@ -51,11 +52,12 @@ send_sse_event() {
   printf 'event: %s\n' "$event_type"
   printf 'data: %s\n' "$event_data"
   
-  # Add 2KB padding to force buffer flush (only if requested)
-  # 2KB needed for reliable flush on macOS fcgiwrap (512 bytes caused batching)
+  # Add 8KB padding to force buffer flush (only if requested)
+  # 8KB needed to EXCEED fcgiwrap buffer (~8KB on macOS)
+  # 2KB caused 3-4 message batching, 8KB guarantees per-event flush
   # Output pre-generated padding string in ONE printf call (efficient!)
   if [ "$add_padding" = "yes" ]; then
-    printf ': padding=%s\n' "$PADDING_2KB"
+    printf ': padding=%s\n' "$PADDING_8KB"
   fi
   printf '\n'
 }
