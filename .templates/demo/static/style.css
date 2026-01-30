@@ -828,7 +828,7 @@ pre code {
 #create-room-arrow {
   display: inline-block;
   transition: transform 0.3s ease;
-  font-size: 0.8rem;
+  font-size: 1em;
 }
 
 #create-room-widget input,
