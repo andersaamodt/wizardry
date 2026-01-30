@@ -1,21 +1,55 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v4-PADDED)
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v5-INLINE)
 # Streams chat messages as Server-Sent Events
 # Uses padding technique to force buffer flush on macOS fcgiwrap
+# Self-contained - no external imp dependencies
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
 set -eu
 
 # Diagnostic logging to stderr (appears in web server error log)
-printf '[chat-stream] ========== SCRIPT STARTED (VERSION: 2026-01-30-v4-PADDED) ==========\n' >&2
+printf '[chat-stream] ========== SCRIPT STARTED (VERSION: 2026-01-30-v5-INLINE) ==========\n' >&2
 printf '[chat-stream] Using padding technique to force buffer flush\n' >&2
 printf '[chat-stream] Script location: %s\n' "$0" >&2
 printf '[chat-stream] PWD: %s\n' "$(pwd)" >&2
 printf '[chat-stream] QUERY_STRING: %s\n' "${QUERY_STRING:-}" >&2
 
-# Start SSE stream
-printf '[chat-stream] Calling sse-start...\n' >&2
-sse-start
-printf '[chat-stream] sse-start completed successfully\n' >&2
+# Send SSE headers (inlined from sse-start)
+printf '[chat-stream] Sending SSE headers with initial padding burst\n' >&2
+http-status 200 "OK"
+http-header "Content-Type" "text/event-stream"
+http-header "Cache-Control" "no-cache"
+http-header "Connection" "keep-alive"
+http-header "X-Accel-Buffering" "no"
+http-end-headers
+
+# Send initial padding burst (4KB) to force fcgiwrap buffer flush immediately
+printf ': initial-padding='
+i=0
+while [ $i -lt 4000 ]; do
+  printf ' '
+  i=$((i + 1))
+done
+printf '\n\n'
+printf '[chat-stream] SSE headers and initial padding sent\n' >&2
+
+# Inline SSE event function (replaces send_sse_event imp)
+send_sse_event() {
+  event_type="$1"
+  event_data="$2"
+  
+  # Send event
+  printf 'event: %s\n' "$event_type"
+  printf 'data: %s\n' "$event_data"
+  
+  # Add 2KB padding to force buffer flush
+  printf ': padding='
+  i=0
+  while [ $i -lt 2000 ]; do
+    printf ' '
+    i=$((i + 1))
+  done
+  printf '\n\n'
+}
 
 # Parse room name from query string
 printf '[chat-stream] Parsing room name from query string...\n' >&2
@@ -32,7 +66,7 @@ printf '[chat-stream] After trim: "%s"\n' "$room_name" >&2
 printf '[chat-stream] Validating room name...\n' >&2
 if ! printf '%s' "$room_name" | grep -q '^[a-zA-Z0-9_ -]\+$'; then
   printf '[chat-stream] ERROR: Invalid room name: "%s"\n' "$room_name" >&2
-  sse-event error "Invalid room name"
+  send_sse_event error "Invalid room name"
   exit 0
 fi
 printf '[chat-stream] Room name validation passed\n' >&2
@@ -47,7 +81,7 @@ fi
 
 if [ -z "$room_name" ]; then
   printf '[chat-stream] ERROR: Room name is empty\n' >&2
-  sse-event error "No room specified"
+  send_sse_event error "No room specified"
   exit 0
 fi
 printf '[chat-stream] Room name is non-empty: "%s"\n' "$room_name" >&2
@@ -72,7 +106,7 @@ printf '[chat-stream]   LOG_FILE: %s\n' "$LOG_FILE" >&2
 
 if [ ! -d "$ROOM_DIR" ]; then
   printf '[chat-stream] ERROR: Room directory does not exist\n' >&2
-  sse-event error "Room not found"
+  send_sse_event error "Room not found"
   exit 0
 fi
 printf '[chat-stream] Room directory exists\n' >&2
@@ -93,13 +127,13 @@ if [ -f "$LOG_FILE" ] && [ -s "$LOG_FILE" ]; then
       # Use string comparison (timestamps are in sortable format)
       # Only send messages strictly after the 'since' timestamp
       if [ "$msg_timestamp" '>' "$since_timestamp" ]; then
-        sse-event message "$line"
+        send_sse_event message "$line"
       fi
     done
   else
     # Send last 200 messages if no 'since' provided
     tail -200 "$LOG_FILE" | while IFS= read -r line || [ -n "$line" ]; do
-      sse-event message "$line"
+      send_sse_event message "$line"
     done
   fi
   
@@ -109,7 +143,7 @@ if [ -f "$LOG_FILE" ] && [ -s "$LOG_FILE" ]; then
 else
   # No messages yet
   printf '[chat-stream] No log file or empty, sending empty event\n' >&2
-  sse-event empty "No messages yet"
+  send_sse_event empty "No messages yet"
   last_line_count=0
 fi
 
@@ -158,7 +192,7 @@ get_member_list() {
 printf '[chat-stream] Getting initial member list...\n' >&2
 initial_members=$(get_member_list "$ROOM_DIR")
 printf '[chat-stream] Initial members: %s\n' "$initial_members" >&2
-sse-event members "$initial_members"
+send_sse_event members "$initial_members"
 last_members="$initial_members"
 printf '[chat-stream] Sent initial member list\n' >&2
 
@@ -190,7 +224,7 @@ while true; do
       new_message_count=$((current_line_count - last_line_count))
       printf '[chat-stream] Found %d new messages\n' "$new_message_count" >&2
       tail -n "$new_message_count" "$LOG_FILE" | while IFS= read -r line || [ -n "$line" ]; do
-        sse-event message "$line" || exit 0  # Exit if output fails
+        send_sse_event message "$line" || exit 0  # Exit if output fails
       done
       last_line_count=$current_line_count
       heartbeat_counter=0  # Reset heartbeat counter
@@ -206,7 +240,7 @@ while true; do
   current_members=$(get_member_list "$ROOM_DIR")
   if [ "$current_members" != "$last_members" ]; then
     printf '[chat-stream] Member list changed\n' >&2
-    sse-event members "$current_members" || exit 0
+    send_sse_event members "$current_members" || exit 0
     last_members="$current_members"
     idle_counter=0  # Reset idle counter
   fi
