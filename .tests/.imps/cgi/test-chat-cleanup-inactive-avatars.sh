@@ -34,9 +34,9 @@ test_cleanup_recent_avatar_preserved() {
   # Create recent avatar with current timestamp
   avatar_dir="$room_dir/.recentuser"
   mkdir -p "$avatar_dir"
-  touch "$avatar_dir/.web_avatar"
+  enchant "$avatar_dir" "web_avatar=1" 2>/dev/null || true
   current_time=$(date +%s)
-  printf '%s\n' "$current_time" > "$avatar_dir/.last_activity"
+  enchant "$avatar_dir" "last_activity=$current_time" 2>/dev/null || true
   
   # Run cleanup
   chat-cleanup-inactive-avatars "$room_dir"
@@ -63,10 +63,12 @@ test_cleanup_old_avatar_deleted() {
   # Create old avatar (31 minutes ago = 1860 seconds)
   avatar_dir="$room_dir/.olduser"
   mkdir -p "$avatar_dir"
-  touch "$avatar_dir/.web_avatar"
+  enchant "$avatar_dir" "web_avatar=1" 2>/dev/null || true
   current_time=$(date +%s)
   old_time=$((current_time - 1860))
-  printf '%s\n' "$old_time" > "$avatar_dir/.last_activity"
+  enchant "$avatar_dir" "last_activity=$old_time" 2>/dev/null || true
+  # Set directory mtime to old time (fallback when xattr not available)
+  touch -t 202001010000 "$avatar_dir" 2>/dev/null || true
   
   # Run cleanup
   chat-cleanup-inactive-avatars "$room_dir"
@@ -123,10 +125,10 @@ test_cleanup_boundary_30min_preserved() {
   # Create avatar at exactly 30 minutes (1800 seconds)
   avatar_dir="$room_dir/.boundaryuser"
   mkdir -p "$avatar_dir"
-  touch "$avatar_dir/.web_avatar"
+  enchant "$avatar_dir" "web_avatar=1" 2>/dev/null || true
   current_time=$(date +%s)
   boundary_time=$((current_time - 1800))
-  printf '%s\n' "$boundary_time" > "$avatar_dir/.last_activity"
+  enchant "$avatar_dir" "last_activity=$boundary_time" 2>/dev/null || true
   
   # Run cleanup
   chat-cleanup-inactive-avatars "$room_dir"
@@ -155,21 +157,24 @@ test_cleanup_mixed_avatars() {
   # Create recent web avatar
   recent_dir="$room_dir/.recent"
   mkdir -p "$recent_dir"
-  touch "$recent_dir/.web_avatar"
-  printf '%s\n' "$current_time" > "$recent_dir/.last_activity"
+  enchant "$recent_dir" "web_avatar=1" 2>/dev/null || true
+  enchant "$recent_dir" "last_activity=$current_time" 2>/dev/null || true
   
   # Create old web avatar
   old_dir="$room_dir/.old"
   mkdir -p "$old_dir"
-  touch "$old_dir/.web_avatar"
+  enchant "$old_dir" "web_avatar=1" 2>/dev/null || true
   old_time=$((current_time - 1860))
-  printf '%s\n' "$old_time" > "$old_dir/.last_activity"
+  enchant "$old_dir" "last_activity=$old_time" 2>/dev/null || true
+  # Set directory mtime to old time (fallback when xattr not available)
+  touch -t 202001010000 "$old_dir" 2>/dev/null || true
   
-  # Create old MUD avatar
+  # Create old MUD avatar (has is_avatar attribute)
   mud_dir="$room_dir/.mud"
   mkdir -p "$mud_dir"
-  # No .web_avatar file (MUD avatar)
-  printf '%s\n' "$old_time" > "$mud_dir/.last_activity"
+  # MUD avatars have is_avatar=1 set
+  enchant "$mud_dir" "is_avatar=1" 2>/dev/null || true
+  enchant "$mud_dir" "last_activity=$old_time" 2>/dev/null || true
   
   # Run cleanup
   chat-cleanup-inactive-avatars "$room_dir"
@@ -208,7 +213,7 @@ test_cleanup_fallback_to_mtime() {
   # Create avatar without last_activity attribute (old directory)
   avatar_dir="$room_dir/.noattr"
   mkdir -p "$avatar_dir"
-  touch "$avatar_dir/.web_avatar"
+  enchant "$avatar_dir" "web_avatar=1" 2>/dev/null || true
   # Don't set last_activity - should fall back to mtime
   # Make directory appear old
   touch -t 202001010000 "$avatar_dir" 2>/dev/null || true
