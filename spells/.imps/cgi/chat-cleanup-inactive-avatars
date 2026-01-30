@@ -66,7 +66,7 @@ for avatar_dir in "$room_dir"/.*; do
       # Log AFK message before deleting
       username=$(printf '%s' "$avatar_name" | sed 's/^\.//')
       timestamp=$(log-timestamp)
-      printf '[%s] log: %s went afk.\n' "$timestamp" "$username" >> "$LOG_FILE" 2>/dev/null || true
+      printf '[%s] log: %s went AFK.\n' "$timestamp" "$username" >> "$LOG_FILE" 2>/dev/null || true
       
       rm -rf "$avatar_dir" 2>/dev/null || true
     fi

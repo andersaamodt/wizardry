@@ -438,10 +438,12 @@ function loadMembers() {
         data.avatars.forEach(function(avatar) {
           var fontStyle = avatar.is_web ? 'Verdana, sans-serif' : 'Courier New, Courier, monospace';
           var badge = avatar.is_web ? '🌐' : '⚔️';
-          var currentUserClass = (avatar.username === currentUsername) ? ' current-user' : '';
-          html += '<div class="member-item' + currentUserClass + '" style="font-family: ' + fontStyle + ';">' + 
+          var isCurrentUser = (avatar.username === currentUsername);
+          var nameDisplay = avatar.username + (isCurrentUser ? ' (you)' : '');
+          var fontWeight = isCurrentUser ? 'font-weight: bold;' : '';
+          html += '<div class="member-item" style="font-family: ' + fontStyle + ';">' + 
                   '<span class="member-badge">' + badge + '</span>' +
-                  '<span class="member-name" title="' + avatar.username + '">' + avatar.username + '</span>' +
+                  '<span class="member-name" style="' + fontWeight + '" title="' + avatar.username + '">' + nameDisplay + '</span>' +
                   '</div>';
         });
         membersList.innerHTML = html;
