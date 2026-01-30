@@ -10,6 +10,8 @@ if [ $# -gt 0 ]; then
 fi
 data="${*:-}"
 
+printf '[sse-event] type=%s len=%d\n' "$event_type" "${#data}" >&2
+
 # Output event type
 printf 'event: %s\n' "$event_type"
 
