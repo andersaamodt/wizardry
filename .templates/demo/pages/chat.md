@@ -185,6 +185,8 @@ document.addEventListener('htmx:afterSwap', function(event) {
 
 // Join a room
 function joinRoom(roomName) {
+  console.log('[Room] Joining room:', roomName);
+  
   window.currentRoom = roomName;
   document.getElementById('current-room-name').textContent = roomName;
   document.getElementById('send-btn').disabled = false;
@@ -196,11 +198,15 @@ function joinRoom(roomName) {
   var currentUsername = getUsername();
   var previousRoom = localStorage.getItem('previousRoom') || '';
   
+  console.log('[Room] Current user:', currentUsername, 'Previous room:', previousRoom);
+  
   if (previousRoom && previousRoom !== roomName) {
     // Move avatar from previous room to new room
+    console.log('[Avatar] Moving avatar from', previousRoom, 'to', roomName);
     moveAvatar(roomName, currentUsername, previousRoom);
   } else {
     // Create new avatar (first join or rejoining same room)
+    console.log('[Avatar] Creating new avatar in', roomName);
     createAvatar(roomName, currentUsername);
   }
   
@@ -233,6 +239,7 @@ function joinRoom(roomName) {
   
   // Close existing SSE connection if any
   if (window.messageEventSource) {
+    console.log('[Room] Closing existing SSE connection before joining new room');
     window.messageEventSource.close();
     window.messageEventSource = null;
   }
@@ -244,6 +251,7 @@ function joinRoom(roomName) {
   }
   
   // Set up SSE for real-time message and member updates (includes initial batch)
+  console.log('[Room] Setting up SSE stream for room:', roomName);
   setupMessageStream(roomName);
 }
 
@@ -400,35 +408,57 @@ function setupScrollListener() {
 function setupMessageStream(roomName) {
   if (!roomName) return;
   
+  console.log('[SSE] Setting up message stream for room:', roomName);
+  
   // Close existing connection if any
   if (window.messageEventSource) {
+    console.log('[SSE] Closing existing EventSource connection');
     window.messageEventSource.close();
+    window.messageEventSource = null;
   }
   
   // Create new SSE connection
   var url = '/cgi/chat-stream?room=' + encodeURIComponent(roomName);
+  console.log('[SSE] Creating new EventSource:', url);
   window.messageEventSource = new EventSource(url);
+  
+  // Handle connection open
+  window.messageEventSource.addEventListener('open', function(event) {
+    console.log('[SSE] Connection opened successfully');
+  });
   
   // Handle incoming messages
   window.messageEventSource.addEventListener('message', function(event) {
+    console.log('[SSE] Received message event:', event.data);
     // Event data is a single message line: [YYYY-MM-DD HH:MM:SS] username: message
     appendMessage(event.data);
   });
   
   // Handle member list updates
   window.messageEventSource.addEventListener('members', function(event) {
+    console.log('[SSE] Received members event, data length:', event.data.length);
     // Event data is JSON array of members
     updateMemberList(event.data);
   });
   
   // Handle errors
   window.messageEventSource.addEventListener('error', function(event) {
-    console.error('SSE error:', event);
+    console.error('[SSE] Error occurred:', event);
+    console.error('[SSE] ReadyState:', window.messageEventSource.readyState);
+    console.error('[SSE] URL:', window.messageEventSource.url);
     // EventSource automatically reconnects, but we can add custom logic here if needed
+    
+    // If connection is closed or error persists, log it
+    if (window.messageEventSource.readyState === EventSource.CLOSED) {
+      console.error('[SSE] Connection CLOSED - EventSource will not reconnect');
+    } else if (window.messageEventSource.readyState === EventSource.CONNECTING) {
+      console.warn('[SSE] Connection CONNECTING - EventSource attempting to reconnect');
+    }
   });
   
   // Handle empty room
   window.messageEventSource.addEventListener('empty', function(event) {
+    console.log('[SSE] Received empty event');
     // Room is empty - show empty state message
     var chatMessagesDiv = document.getElementById('chat-messages');
     if (chatMessagesDiv) {
@@ -1112,13 +1142,18 @@ function showNotification() {
 
 // Clean up avatar when user leaves the page
 window.addEventListener('beforeunload', function() {
+  console.log('[SSE] Page unloading - cleaning up');
+  
   // Close SSE connection
   if (window.messageEventSource) {
+    console.log('[SSE] Closing EventSource on page unload');
     window.messageEventSource.close();
+    window.messageEventSource = null;
   }
   
   if (window.currentRoom) {
     var currentUsername = getUsername();
+    console.log('[Avatar] Deleting avatar for user:', currentUsername, 'in room:', window.currentRoom);
     // Use sendBeacon for reliable cleanup on page unload
     var formData = new URLSearchParams();
     formData.append('room', window.currentRoom);
