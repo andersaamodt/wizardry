@@ -9,6 +9,7 @@ http-status 200 "OK"
 http-header "Content-Type" "text/event-stream"
 http-header "Cache-Control" "no-cache"
 http-header "Connection" "keep-alive"
+http-header "X-Accel-Buffering" "no"
 http-end-headers
 
 printf '[sse-start] Headers sent successfully\n' >&2
