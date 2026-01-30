@@ -95,6 +95,11 @@ log_entry="[$timestamp] $user_name: $message"
 
 # Append to log file
 if printf '%s\n' "$log_entry" >> "$LOG_FILE" 2>/dev/null; then
+  # CRITICAL: Force filesystem sync so SSE script sees the write immediately
+  # Without this, write sits in kernel buffer until next write or timeout
+  # This was causing "1 message behind" behavior - next message would flush previous
+  sync 2>/dev/null || true
+  
   # Run cleanup after successful message send (periodic maintenance)
   # This removes avatars inactive for >5 minutes
   chat-cleanup-inactive-avatars "$ROOM_DIR" 2>/dev/null || true
