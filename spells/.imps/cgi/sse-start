@@ -1,0 +1,10 @@
+#!/bin/sh
+# sse-start - Initialize Server-Sent Events stream
+# Outputs HTTP headers for SSE and keeps connection alive
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/event-stream"
+http-header "Cache-Control" "no-cache"
+http-header "Connection" "keep-alive"
+http-end-headers

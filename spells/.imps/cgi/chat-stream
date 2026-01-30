@@ -1,0 +1,102 @@
+#!/bin/sh
+# chat-stream - SSE endpoint for real-time chat messages
+# Streams chat messages as Server-Sent Events
+# Accepts query parameter: room=ROOM&since=TIMESTAMP
+set -eu
+
+# Start SSE stream
+sse-start
+
+# Parse room name from query string
+room_name="${QUERY_STRING:-}"
+room_name=$(printf '%s' "$room_name" | sed 's/.*room=\([^&]*\).*/\1/')
+room_name=$(url-decode "$room_name" || printf '%s' "$room_name")
+room_name=$(printf '%s' "$room_name" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+# Parse optional 'since' timestamp from query string
+since_timestamp=""
+if printf '%s' "${QUERY_STRING:-}" | grep -q 'since='; then
+  since_timestamp=$(printf '%s' "${QUERY_STRING:-}" | sed 's/.*since=\([^&]*\).*/\1/')
+  since_timestamp=$(url-decode "$since_timestamp" || printf '%s' "$since_timestamp")
+  since_timestamp=$(printf '%s' "$since_timestamp" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+fi
+
+if [ -z "$room_name" ]; then
+  sse-event error "No room specified"
+  exit 0
+fi
+
+# Chat rooms directory - use site-specific location
+if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
+  site_id="$WIZARDRY_SITE_NAME"
+else
+  site_id="default"
+fi
+SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
+CHAT_DIR="$SITES_DIR/.sitedata/$site_id/chatrooms"
+ROOM_DIR="$CHAT_DIR/$room_name"
+
+if [ ! -d "$ROOM_DIR" ]; then
+  sse-event error "Room not found"
+  exit 0
+fi
+
+LOG_FILE="$ROOM_DIR/.log"
+
+# Send initial batch of messages
+if [ -f "$LOG_FILE" ] && [ -s "$LOG_FILE" ]; then
+  # If since timestamp provided, filter messages after that timestamp
+  if [ -n "$since_timestamp" ]; then
+    # Filter messages that come after the 'since' timestamp
+    # Format: [YYYY-MM-DD HH:MM:SS] username: message
+    # Compare timestamps directly (they're in ISO-like format)
+    tail -200 "$LOG_FILE" | while IFS= read -r line || [ -n "$line" ]; do
+      # Extract timestamp from line
+      msg_timestamp=$(printf '%s' "$line" | sed 's/^\[\([^]]*\)\].*/\1/')
+      
+      # Compare timestamps lexicographically (works for ISO format)
+      if [ "$msg_timestamp" '>' "$since_timestamp" ] 2>/dev/null || [ "$msg_timestamp" = "$since_timestamp" ]; then
+        sse-event message "$line"
+      fi
+    done
+  else
+    # Send last 200 messages if no 'since' provided
+    tail -200 "$LOG_FILE" | while IFS= read -r line || [ -n "$line" ]; do
+      sse-event message "$line"
+    done
+  fi
+  
+  # Record the last timestamp we sent
+  last_timestamp=$(tail -1 "$LOG_FILE" | sed 's/^\[\([^]]*\)\].*/\1/')
+else
+  # No messages yet
+  sse-event empty "No messages yet"
+  last_timestamp=""
+fi
+
+# Keep connection alive and stream new messages
+# Use tail -f to follow the log file for new messages
+# Send a heartbeat comment every 15 seconds to keep connection alive
+while true; do
+  # Wait for new messages (with timeout)
+  if [ -f "$LOG_FILE" ]; then
+    # Use tail -n 0 -f to follow from end, combined with timeout
+    # Read new lines and send as SSE events
+    timeout 15 tail -n 0 -f "$LOG_FILE" 2>/dev/null | while IFS= read -r line || [ -n "$line" ]; do
+      # Extract timestamp from new message
+      msg_timestamp=$(printf '%s' "$line" | sed 's/^\[\([^]]*\)\].*/\1/')
+      
+      # Only send if newer than last sent (avoid duplicates)
+      if [ -z "$last_timestamp" ] || [ "$msg_timestamp" '>' "$last_timestamp" ] 2>/dev/null; then
+        sse-event message "$line"
+        last_timestamp="$msg_timestamp"
+      fi
+    done || true  # timeout exits with 124, ignore it
+  fi
+  
+  # Send heartbeat comment to keep connection alive
+  printf ': heartbeat\n\n'
+  
+  # Small delay before next iteration
+  sleep 1
+done
