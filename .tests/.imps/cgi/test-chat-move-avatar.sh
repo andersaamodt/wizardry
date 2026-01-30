@@ -8,8 +8,10 @@ done
 # Setup test environment
 setup_test_env() {
   test_tmpdir=$(mktemp -d)
-  export SPELLBOOK_DIR="$test_tmpdir/spellbook"
-  mkdir -p "$SPELLBOOK_DIR"
+  export WIZARDRY_SITES_DIR="$test_tmpdir"
+  export WIZARDRY_SITE_NAME="default"
+  CHAT_DIR="$test_tmpdir/.sitedata/default/chatrooms"
+  mkdir -p "$CHAT_DIR"
 }
 
 # Cleanup test environment
@@ -17,7 +19,8 @@ cleanup_test_env() {
   if [ -n "${test_tmpdir:-}" ] && [ -d "$test_tmpdir" ]; then
     rm -rf "$test_tmpdir"
   fi
-  unset SPELLBOOK_DIR
+  unset WIZARDRY_SITES_DIR
+  unset WIZARDRY_SITE_NAME
 }
 
 test_chat_move_avatar_exists() {
@@ -29,8 +32,9 @@ test_move_avatar_success() {
   setup_test_env
   
   # Create old room with avatar
-  old_room="$SPELLBOOK_DIR/oldroom"
-  new_room="$SPELLBOOK_DIR/newroom"
+  CHAT_DIR="$WIZARDRY_SITES_DIR/.sitedata/default/chatrooms"
+  old_room="$CHAT_DIR/oldroom"
+  new_room="$CHAT_DIR/newroom"
   mkdir -p "$old_room" "$new_room"
   touch "$old_room/.log" "$new_room/.log"
   
@@ -54,8 +58,9 @@ test_move_creates_when_no_old_avatar() {
   setup_test_env
   
   # Create rooms but no avatar
-  old_room="$SPELLBOOK_DIR/oldroom"
-  new_room="$SPELLBOOK_DIR/newroom"
+  CHAT_DIR="$WIZARDRY_SITES_DIR/.sitedata/default/chatrooms"
+  old_room="$CHAT_DIR/oldroom"
+  new_room="$CHAT_DIR/newroom"
   mkdir -p "$old_room" "$new_room"
   touch "$old_room/.log" "$new_room/.log"
   
@@ -79,7 +84,8 @@ test_move_creates_when_no_old_avatar() {
 test_move_rejects_invalid_username() {
   setup_test_env
   
-  mkdir -p "$SPELLBOOK_DIR/room1" "$SPELLBOOK_DIR/room2"
+  CHAT_DIR="$WIZARDRY_SITES_DIR/.sitedata/default/chatrooms"
+  mkdir -p "$CHAT_DIR/room1" "$CHAT_DIR/room2"
   
   output=$(printf '{"room":"room2","username":"test@user","oldRoom":"room1"}' | chat-move-avatar 2>&1)
   
@@ -94,7 +100,8 @@ test_move_rejects_invalid_username() {
 test_move_rejects_missing_params() {
   setup_test_env
   
-  mkdir -p "$SPELLBOOK_DIR/room1"
+  CHAT_DIR="$WIZARDRY_SITES_DIR/.sitedata/default/chatrooms"
+  mkdir -p "$CHAT_DIR/room1"
   
   output=$(printf '{"room":"room1"}' | chat-move-avatar 2>&1)
   
@@ -109,7 +116,8 @@ test_move_rejects_missing_params() {
 test_move_rejects_path_traversal() {
   setup_test_env
   
-  mkdir -p "$SPELLBOOK_DIR/room1"
+  CHAT_DIR="$WIZARDRY_SITES_DIR/.sitedata/default/chatrooms"
+  mkdir -p "$CHAT_DIR/room1"
   
   output=$(printf '{"room":"../etc/passwd","username":"testuser","oldRoom":"room1"}' | chat-move-avatar 2>&1)
   
@@ -124,7 +132,8 @@ test_move_rejects_path_traversal() {
 test_http_status_gets_two_args() {
   setup_test_env
   
-  mkdir -p "$SPELLBOOK_DIR/room1"
+  CHAT_DIR="$WIZARDRY_SITES_DIR/.sitedata/default/chatrooms"
+  mkdir -p "$CHAT_DIR/room1"
   
   # This should NOT cause "unbound variable" error
   output=$(printf '{"room":"room1"}' | chat-move-avatar 2>&1)
