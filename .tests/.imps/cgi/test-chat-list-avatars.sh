@@ -254,22 +254,26 @@ test_list_avatars_no_room_name() {
   return 0
 }
 
-# Test: Avatars are NOT deleted by cleanup logic for recent activity
-test_list_avatars_no_cleanup_recent() {
+# Test: Old avatars are still listed (cleanup removed)
+test_list_avatars_old_avatar_still_shown() {
   setup_test_env
   
-  # Create room with recent avatar
-  room_name="test-cleanup"
+  # Create room with old avatar (simulate >30 minutes old)
+  room_name="test-old-avatar"
   room_dir="$CHAT_DIR/$room_name"
   mkdir -p "$room_dir"
   touch "$room_dir/.log"
   
-  # Create web avatar (just created, so very recent)
-  avatar_dir="$room_dir/.recentuser"
+  # Create avatar directory with old timestamp
+  avatar_dir="$room_dir/.olduser"
   mkdir -p "$avatar_dir"
   set-attribute "user.web_avatar" "1" "$avatar_dir" 2>/dev/null || true
   
-  # Run chat-list-avatars (should NOT delete recent avatar)
+  # Make it appear 31 minutes old (cleanup threshold is 30 minutes)
+  # Using a date far in the past
+  touch -t 202001010000 "$avatar_dir" 2>/dev/null || true
+  
+  # Run chat-list-avatars
   export QUERY_STRING="room=$room_name"
   output=$(chat-list-avatars 2>&1)
   status=$?
@@ -285,9 +289,9 @@ test_list_avatars_no_cleanup_recent() {
   # Extract JSON
   json=$(printf '%s' "$output" | sed -n '/^{/,$p')
   
-  # Should still have the avatar
-  if ! printf '%s' "$json" | grep -q '"username": "recentuser"'; then
-    TEST_FAILURE_REASON="Recent avatar should not be deleted, got: $json"
+  # Old avatar should STILL be listed (cleanup was removed)
+  if ! printf '%s' "$json" | grep -q '"username": "olduser"'; then
+    TEST_FAILURE_REASON="Old avatar should still be listed, got: $json"
     return 1
   fi
   
@@ -301,6 +305,6 @@ run_test_case "List avatars: multiple avatars" test_list_avatars_multiple_avatar
 run_test_case "List avatars: mixed web and MUD avatars" test_list_avatars_mixed_types
 run_test_case "List avatars: room not found" test_list_avatars_room_not_found
 run_test_case "List avatars: no room name" test_list_avatars_no_room_name
-run_test_case "List avatars: no cleanup of recent avatars" test_list_avatars_no_cleanup_recent
+run_test_case "List avatars: old avatar still shown (no cleanup)" test_list_avatars_old_avatar_still_shown
 
 finish_tests

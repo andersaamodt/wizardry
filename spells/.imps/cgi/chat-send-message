@@ -81,6 +81,10 @@ if [ ! -d "$ROOM_DIR/.$user_name" ]; then
   if [ -n "$avatar_path" ]; then
     set-attribute "user.web_avatar" "1" "$avatar_path" 2>/dev/null || true
   fi
+else
+  # Update avatar directory timestamp to prevent cleanup
+  # This keeps active users in the room even if they don't send messages frequently
+  touch "$ROOM_DIR/.$user_name" 2>/dev/null || true
 fi
 
 # Create timestamp in full format for .log file (same as MUD)
