@@ -7,7 +7,11 @@ set -eu
 # Takes room directory as argument
 room_dir=${1:-}
 
+# Log that we were called
+printf '[%s] cleanup called: room_dir=%s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$room_dir" >> /tmp/chat-cleanup-debug.log 2>/dev/null || true
+
 if [ -z "$room_dir" ] || [ ! -d "$room_dir" ]; then
+  printf '[%s] cleanup exit: room_dir empty or missing\n' "$(date '+%Y-%m-%d %H:%M:%S')" >> /tmp/chat-cleanup-debug.log 2>/dev/null || true
   exit 0  # Silent exit if no room or room doesn't exist
 fi
 
@@ -55,9 +59,15 @@ for avatar_dir in "$room_dir"/.*; do
     
     time_diff=$((current_time - last_activity))
     
+    # Log what we're checking
+    printf '[%s] checking %s: age=%d threshold=%d\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$avatar_name" "$time_diff" "$inactive_threshold" >> /tmp/chat-cleanup-debug.log 2>/dev/null || true
+    
     # Remove if inactive for more than threshold
     if [ "$time_diff" -gt "$inactive_threshold" ]; then
+      printf '[%s] DELETING %s (age %d > %d)\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$avatar_name" "$time_diff" "$inactive_threshold" >> /tmp/chat-cleanup-debug.log 2>/dev/null || true
       rm -rf "$avatar_dir" 2>/dev/null || true
     fi
+  else
+    printf '[%s] skipping %s (MUD avatar)\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$avatar_name" >> /tmp/chat-cleanup-debug.log 2>/dev/null || true
   fi
 done

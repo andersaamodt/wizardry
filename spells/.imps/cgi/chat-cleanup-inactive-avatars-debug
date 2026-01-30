@@ -1,0 +1,86 @@
+#!/bin/sh
+# chat-cleanup-inactive-avatars-debug - Debug version with logging
+set -eu
+
+# Takes room directory as argument
+room_dir=${1:-}
+
+log_file="/tmp/chat-cleanup-debug.log"
+
+log_msg() {
+  printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >> "$log_file"
+}
+
+log_msg "===== Cleanup called with room_dir: $room_dir ====="
+
+if [ -z "$room_dir" ] || [ ! -d "$room_dir" ]; then
+  log_msg "ERROR: Room dir empty or doesn't exist"
+  exit 0
+fi
+
+# Cleanup threshold: 30 minutes in seconds
+current_time=$(date +%s)
+inactive_threshold=1800
+
+log_msg "Current time: $current_time, Threshold: $inactive_threshold seconds"
+
+avatar_count=0
+for avatar_dir in "$room_dir"/.*; do
+  [ -d "$avatar_dir" ] || continue
+  avatar_name=$(basename "$avatar_dir")
+  
+  # Skip . and .. and .log
+  case "$avatar_name" in
+    .|..|.log) continue ;;
+  esac
+  
+  avatar_count=$((avatar_count + 1))
+  log_msg "Checking avatar: $avatar_name"
+  
+  # Check if this is a web avatar (vs MUD avatar)
+  is_web_avatar=0
+  
+  # First check for explicit web_avatar marker
+  if read-magic "$avatar_dir" "web_avatar" >/dev/null 2>&1; then
+    is_web_avatar=1
+    log_msg "  - Has web_avatar attribute"
+  else
+    # Fallback: check if it's NOT a MUD avatar
+    if ! read-magic "$avatar_dir" "is_avatar" >/dev/null 2>&1; then
+      is_web_avatar=1
+      log_msg "  - No is_avatar attribute (assuming web avatar)"
+    else
+      log_msg "  - Has is_avatar attribute (MUD avatar, skip)"
+    fi
+  fi
+  
+  # Only clean up web avatars
+  if [ "$is_web_avatar" = "1" ]; then
+    # Get last activity timestamp using read-magic
+    last_activity=$(read-magic "$avatar_dir" "last_activity" 2>/dev/null || echo "0")
+    
+    if [ "$last_activity" != "0" ] && [ -n "$last_activity" ]; then
+      log_msg "  - Has last_activity attribute: $last_activity"
+    else
+      # If no timestamp, use directory mtime as fallback
+      last_activity=$(stat -c %Y "$avatar_dir" 2>/dev/null)
+      last_activity=${last_activity:-$(stat -f %m "$avatar_dir" 2>/dev/null)}
+      last_activity=${last_activity:-0}
+      log_msg "  - Using directory mtime: $last_activity"
+    fi
+    
+    time_diff=$((current_time - last_activity))
+    log_msg "  - Age: $time_diff seconds (threshold: $inactive_threshold)"
+    
+    # Remove if inactive for more than threshold
+    if [ "$time_diff" -gt "$inactive_threshold" ]; then
+      log_msg "  - DELETING (age $time_diff > threshold $inactive_threshold)"
+      rm -rf "$avatar_dir" 2>/dev/null || log_msg "  - DELETE FAILED"
+    else
+      log_msg "  - Keeping (age $time_diff <= threshold $inactive_threshold)"
+    fi
+  fi
+done
+
+log_msg "Processed $avatar_count avatars"
+log_msg "===== Cleanup complete ====="
