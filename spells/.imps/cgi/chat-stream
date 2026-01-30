@@ -1,9 +1,10 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v9-EFFICIENT)
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v10-STABLE)
 # Streams chat messages as Server-Sent Events
 # Uses padding on new events only (not heartbeats) for buffer flush
 # Self-contained - no external imp dependencies
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
+# FIXED: Timestamp comparison crash that broke multi-client operation
 #
 # CONCURRENCY: Each fcgiwrap worker handles one connection. Configure fcgiwrap with
 # multiple workers (-c N) to support N concurrent SSE connections. Default: 10 workers.
@@ -131,7 +132,12 @@ if [ -f "$LOG_FILE" ] && [ -s "$LOG_FILE" ]; then
       
       # Use string comparison (timestamps are in sortable format)
       # Only send messages strictly after the 'since' timestamp
-      if [ "$msg_timestamp" '>' "$since_timestamp" ]; then
+      # POSIX-compliant: Use sort for lexicographic comparison
+      # ISO timestamps (YYYY-MM-DD HH:MM:SS) are lexicographically sortable
+      latest=$(printf '%s\n%s' "$msg_timestamp" "$since_timestamp" | sort -r | head -n1)
+      
+      # Send if msg_timestamp is strictly after since_timestamp
+      if [ "$latest" = "$msg_timestamp" ] && [ "$msg_timestamp" != "$since_timestamp" ]; then
         send_sse_event message "$line" no  # no padding for initial batch
       fi
     done
