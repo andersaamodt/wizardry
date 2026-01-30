@@ -4,7 +4,10 @@
 set -eu
 
 event_type="${1:-message}"
-shift || true  # Ignore error if no arguments to shift
+# Only shift if we have at least one argument
+if [ $# -gt 0 ]; then
+  shift
+fi
 data="${*:-}"
 
 # Output event type
