@@ -610,11 +610,35 @@ pre code {
   text-align: center;
 }
 
+/* Container for input with validation icon */
+#username-edit-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
 .username-edit input {
   flex: 1;
   padding: 0.5rem;
   font-size: 0.9rem;
   margin: 0;  /* Remove default margin */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Invalid input icon - red prohibition/no entry sign */
+#username-invalid-icon {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.2rem;
+  color: #dc3545;
+  pointer-events: none;
+  display: none;
+}
+
+#username-invalid-icon.show {
+  display: block;
 }
 
 .username-edit-buttons {
