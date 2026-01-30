@@ -6,15 +6,11 @@ set -eu
 
 # Re-exec with unbuffered stdout for real-time SSE (critical!)
 # Without this, output is buffered and events only sent when script exits
-# stdbuf is only available on Linux (GNU coreutils), not macOS/BSD
-if [ "${STDBUF_APPLIED:-}" != "1" ] && command -v stdbuf >/dev/null 2>&1; then
-  printf '[chat-stream] Re-executing with stdbuf for unbuffered output\n' >&2
-  export STDBUF_APPLIED=1
-  exec stdbuf -o0 "$0" "$@"
-else
-  if [ "${STDBUF_APPLIED:-}" != "1" ]; then
-    printf '[chat-stream] stdbuf not available, relying on nginx buffering config\n' >&2
-  fi
+# Use Perl autoflush wrapper (works on macOS, Linux, BSD - all have Perl)
+if [ "${UNBUFFERED:-}" != "1" ]; then
+  printf '[chat-stream] Re-executing with Perl unbuffering wrapper\n' >&2
+  export UNBUFFERED=1
+  exec perl -e '$|=1; exec @ARGV' "$0" "$@"
 fi
 
 # Diagnostic logging to stderr (appears in web server error log)
