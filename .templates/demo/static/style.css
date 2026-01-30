@@ -812,11 +812,11 @@ pre code {
   transition: color 0.2s, margin-left 0.3s ease;
   text-align: center;
   cursor: pointer;
-  margin-left: -2.7em;  /* Shift 1em more left than before */
+  margin-left: -1.7em;  /* Moved 1em to the right (was -2.7em) */
 }
 
 #create-room-widget.open #create-room-link {
-  margin-left: -2.7em;  /* Keep same position when open */
+  margin-left: -1.7em;  /* Moved 1em to the right (was -2.7em) */
   margin-bottom: 0.5rem;  /* Space below when it becomes a heading */
 }
 
@@ -828,7 +828,8 @@ pre code {
 #create-room-arrow {
   display: inline-block;
   transition: transform 0.3s ease;
-  font-size: 1.2em;
+  font-size: 1.5em;  /* Increased to 1.5em for better visibility */
+  vertical-align: middle;  /* Better alignment */
 }
 
 #create-room-widget input,
