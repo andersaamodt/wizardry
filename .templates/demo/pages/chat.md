@@ -24,14 +24,14 @@ Loading rooms...
 
 <div class="room-controls">
 <!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
-<div id="create-room-widget"><a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a><input type="text" id="new-room-name" placeholder="Room name" /><button id="create-room-btn" hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); showNotification(); toggleCreateRoom(); }">Create</button></div>
+<div id="create-room-widget"><a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a><div id="create-room-input-wrapper"><input type="text" id="new-room-name" placeholder="Room name" oninput="validateRoomName()" onkeydown="if(event.key==='Enter' && !document.getElementById('create-room-btn').disabled) { document.getElementById('create-room-btn').click(); }" /><span id="create-room-invalid-icon">&#x1F6AB;</span></div><button id="create-room-btn" disabled hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; validateRoomName(); htmx.trigger('#room-list', 'load'); showNotification(); toggleCreateRoom(); }">Create</button></div>
 </div>
 </div>
 
 <div class="username-widget">
 <!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
 <div class="username-display" id="username-display"><strong id="username-text">@Guest001</strong><button onclick="editUsername()">Change</button></div>
-<div class="username-edit" id="username-edit"><h5>Change Handle</h5><input type="text" id="username-edit-input" placeholder="Your name" /><div class="username-edit-buttons"><button onclick="saveUsername()">OK</button><button onclick="cancelUsernameEdit()">Cancel</button></div></div>
+<div class="username-edit" id="username-edit"><h5>Change Handle</h5><div id="username-edit-input-wrapper"><input type="text" id="username-edit-input" placeholder="Your name" /><span id="username-invalid-icon">&#x1F6AB;</span></div><div class="username-edit-buttons"><button onclick="saveUsername()">OK</button><button onclick="cancelUsernameEdit()">Cancel</button></div></div>
 </div>
 </div>
 
@@ -103,10 +103,17 @@ window.userHasScrolledUp = false;  // Track if user manually scrolled up
 // Handle room selection from list
 document.addEventListener('htmx:afterSwap', function(event) {
   if (event.detail.target.id === 'room-list') {
-    // Re-enable create room button after room list refreshes
-    document.getElementById('create-room-btn').disabled = false;
+    // Re-validate create room button after room list refreshes (respects validation state)
+    validateRoomName();
+    
+    // Re-enable input field after room list refreshes (only input, not button)
     document.getElementById('new-room-name').disabled = false;
-    document.getElementById('create-room-btn').innerHTML = 'Create';
+    
+    // Reset create button text if it was showing "Creating..."
+    var createBtn = document.getElementById('create-room-btn');
+    if (createBtn.innerHTML !== 'Create') {
+      createBtn.innerHTML = 'Create';
+    }
     
     // Re-enable delete room button after room list refreshes
     var deleteBtn = document.getElementById('delete-room-btn');
@@ -650,9 +657,9 @@ function editUsername() {
   edit.classList.add('open');
   input.value = nameWithoutAt;
   
-  // Store initial value and disable OK button initially
+  // Store initial value and validate
   input.dataset.initialValue = nameWithoutAt;
-  okButton.disabled = true;
+  validateUsername();
   
   // Focus after animation starts
   setTimeout(function() {
@@ -707,17 +714,48 @@ function cancelUsernameEdit() {
   display.classList.remove('hidden');
 }
 
+// Validate username in realtime
+function validateUsername() {
+  var input = document.getElementById('username-edit-input');
+  var okButton = document.querySelector('#username-edit button:first-child');
+  var invalidIcon = document.getElementById('username-invalid-icon');
+  
+  if (!input || !okButton) return;
+  
+  var username = input.value.trim();
+  var initialValue = input.dataset.initialValue || '';
+  
+  // Remove @ symbol for validation (added back on save)
+  username = username.replace(/^@+/, '');
+  
+  // Check if username matches valid format pattern
+  var hasValidFormat = /^[a-zA-Z0-9_-]+$/.test(username);
+  var isDifferent = username !== initialValue;
+  
+  // Button enabled only if: non-empty, valid format, AND different from initial
+  var canSave = username.length > 0 && hasValidFormat && isDifferent;
+  okButton.disabled = !canSave;
+  
+  // Show error styling ONLY if user typed something with invalid format
+  // Don't show error for unchanged username (even though button is disabled)
+  if (username.length > 0 && !hasValidFormat) {
+    input.style.borderColor = '#dc3545';  // Red for invalid format
+    if (invalidIcon) invalidIcon.classList.add('show');
+  } else {
+    input.style.borderColor = '';  // Reset to default
+    if (invalidIcon) invalidIcon.classList.remove('show');
+  }
+}
+
 // Add Enter and Escape key support for username editing
 document.addEventListener('DOMContentLoaded', function() {
   var input = document.getElementById('username-edit-input');
   var okButton = document.querySelector('#username-edit button:first-child');
   
   if (input && okButton) {
-    // Monitor input changes to enable/disable OK button
+    // Monitor input changes with validation
     input.addEventListener('input', function() {
-      var currentValue = this.value.trim();
-      var initialValue = this.dataset.initialValue || '';
-      okButton.disabled = (currentValue === initialValue || currentValue === '');
+      validateUsername();
     });
     
     input.addEventListener('keypress', function(e) {
@@ -744,17 +782,59 @@ function toggleCreateRoom() {
     widget.classList.add('open');
     // Change arrow to down-pointing when open
     if (arrow) arrow.innerHTML = '&#x25BC;';  // ▼ down-pointing filled triangle
+    
+    // Scroll the sidebar to the bottom to show the create room panel
+    // Wait for panel expansion to complete before scrolling
+    setTimeout(function() {
+      var sidebarContent = document.querySelector('.chat-sidebar-content');
+      if (sidebarContent) {
+        // Smooth scroll to bottom with extra padding to ensure panel is fully visible
+        sidebarContent.scrollTo({
+          top: sidebarContent.scrollHeight + 100,  // Extra 100px to ensure we reach bottom
+          behavior: 'smooth'
+        });
+      }
+    }, 320);  // Wait for 300ms panel animation + 20ms buffer
+    
     // Focus on input after animation starts
     setTimeout(function() {
       var input = document.getElementById('new-room-name');
       if (input) {
         input.focus({ preventScroll: true });
+        // Validate to ensure button state is correct
+        validateRoomName();
       }
     }, 150);
   } else {
     widget.classList.remove('open');
     // Change arrow back to right-pointing when closed
     if (arrow) arrow.innerHTML = '&#x25B6;';  // ▶ right-pointing filled triangle
+  }
+}
+
+// Validate room name in realtime
+function validateRoomName() {
+  var input = document.getElementById('new-room-name');
+  var button = document.getElementById('create-room-btn');
+  var invalidIcon = document.getElementById('create-room-invalid-icon');
+  
+  if (!input || !button) return;
+  
+  var roomName = input.value.trim();
+  
+  // Room name must be non-empty and match pattern: alphanumeric, dash, underscore only
+  var isValid = roomName.length > 0 && /^[a-zA-Z0-9_-]+$/.test(roomName);
+  
+  // Enable/disable button based on validation
+  button.disabled = !isValid;
+  
+  // Add visual feedback to input and show/hide invalid icon
+  if (roomName.length > 0 && !isValid) {
+    input.style.borderColor = '#dc3545';  // Red for invalid
+    if (invalidIcon) invalidIcon.classList.add('show');
+  } else {
+    input.style.borderColor = '';  // Reset to default
+    if (invalidIcon) invalidIcon.classList.remove('show');
   }
 }
 

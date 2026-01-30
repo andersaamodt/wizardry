@@ -610,11 +610,35 @@ pre code {
   text-align: center;
 }
 
+/* Container for input with validation icon */
+#username-edit-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
 .username-edit input {
   flex: 1;
   padding: 0.5rem;
   font-size: 0.9rem;
   margin: 0;  /* Remove default margin */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Invalid input icon - red prohibition/no entry sign */
+#username-invalid-icon {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.2rem;
+  color: #dc3545;
+  pointer-events: none;
+  display: none;
+}
+
+#username-invalid-icon.show {
+  display: block;
 }
 
 .username-edit-buttons {
@@ -784,10 +808,12 @@ pre code {
 
 #create-room-widget {
   overflow: hidden;
-  transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+  transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, margin-left 0.3s ease, margin-right 0.3s ease;
   max-height: 40px;  /* Just enough for the link when closed */
   opacity: 1;
   padding: 0.3rem 0;  /* Small padding for link */
+  margin-left: -0.5rem;  /* Same as open state to prevent arrow clipping */
+  margin-right: -0.5rem;  /* Same as open state to prevent arrow clipping */
   background-color: transparent;
   border: 1px solid transparent;
   border-radius: 8px;
@@ -809,26 +835,20 @@ pre code {
   color: var(--primary);
   text-decoration: none;
   font-weight: 600;
-  transition: color 0.2s, margin-left 0.3s ease;
+  transition: color 0.2s;  /* Only color transition for smooth hover effect */
   text-align: center;
   cursor: pointer;
-  margin-left: -2.7em;  /* Shift 1em more left than before */
+  margin-left: -1.0em;  /* Moved 0.7em right for better centering (was -1.7em) */
 }
 
 #create-room-widget.open #create-room-link {
-  margin-left: -2.7em;  /* Keep same position when open */
+  margin-left: -1.0em;  /* Moved 0.7em right for better centering (was -1.7em) */
   margin-bottom: 0.5rem;  /* Space below when it becomes a heading */
 }
 
 #create-room-link:hover {
   color: var(--accent);
   text-decoration: underline;
-}
-
-#create-room-arrow {
-  display: inline-block;
-  transition: transform 0.3s ease;
-  font-size: 0.8rem;
 }
 
 #create-room-widget input,
@@ -1062,6 +1082,36 @@ pre code {
 .room-controls input:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* Specific disabled styling for create-room button to match username-edit OK button */
+#create-room-btn:disabled {
+  background: #ccc;
+  color: #666;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Container for input with validation icon */
+#create-room-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* Invalid input icon - red prohibition/no entry sign */
+#create-room-invalid-icon {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.2rem;
+  color: #dc3545;
+  pointer-events: none;
+  display: none;
+}
+
+#create-room-invalid-icon.show {
+  display: block;
 }
 
 /* Responsive chat */
