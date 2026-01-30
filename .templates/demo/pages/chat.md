@@ -744,6 +744,17 @@ function toggleCreateRoom() {
     widget.classList.add('open');
     // Change arrow to down-pointing when open
     if (arrow) arrow.innerHTML = '&#x25BC;';  // ▼ down-pointing filled triangle
+    
+    // Scroll the sidebar to the bottom to show the create room panel
+    var sidebarContent = document.querySelector('.chat-sidebar-content');
+    if (sidebarContent) {
+      // Smooth scroll to bottom
+      sidebarContent.scrollTo({
+        top: sidebarContent.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+    
     // Focus on input after animation starts
     setTimeout(function() {
       var input = document.getElementById('new-room-name');
