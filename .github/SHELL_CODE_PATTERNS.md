@@ -352,15 +352,19 @@ printf '%s\n' $var       # WRONG: word splitting
 **CRITICAL FOR SSE/STREAMING:** Shell stdout is buffered by default, causing delayed output.
 
 ```sh
-# Re-exec with unbuffered stdout (stdbuf -o0)
+# Re-exec with unbuffered stdout
 # Place at top of script, before set -eu
-if [ -z "${STDBUF_ACTIVE:-}" ]; then
-  export STDBUF_ACTIVE=1
-  # Check if stdbuf is available
+if [ -z "${UNBUFFERED_ACTIVE:-}" ]; then
+  export UNBUFFERED_ACTIVE=1
   if command -v stdbuf >/dev/null 2>&1; then
+    # Linux/GNU: Use stdbuf -o0
     exec stdbuf -o0 "$0" "$@"
+  elif command -v perl >/dev/null 2>&1; then
+    # macOS/BSD: Use perl autoflush wrapper
+    exec perl -e '$|=1; exec @ARGV' "$0" "$@"
   else
-    printf '[WARNING] stdbuf not available - output may be buffered/delayed\n' >&2
+    # Neither available - warn and continue (degraded)
+    printf '[WARNING] No unbuffer tool available - output may be delayed\n' >&2
   fi
 fi
 ```
@@ -368,10 +372,11 @@ fi
 **Explanation:**
 - Shell stdout is line-buffered or block-buffered by default
 - Padding (8KB), dd+fsync, extra newlines are insufficient - buffering happens at shell level
-- `stdbuf -o0` disables all stdout buffering
+- **Primary**: `stdbuf -o0` disables all stdout buffering (Linux/GNU)
+- **Fallback**: `perl -e '$|=1; exec @ARGV'` sets autoflush then execs script (macOS/BSD)
+- Perl's `$|=1` sets autoflush on STDOUT, then `exec` replaces perl with the script
 - Re-exec ensures entire script runs unbuffered
-- `STDBUF_ACTIVE` guard prevents infinite loop
-- Graceful fallback if stdbuf unavailable (logs warning, continues with buffering)
+- `UNBUFFERED_ACTIVE` guard prevents infinite loop
 
 **Use case:** SSE (Server-Sent Events) - fixes "one message behind" behavior where messages only appear when next message arrives.
 
