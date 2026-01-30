@@ -17,6 +17,11 @@ cleanup_test_env() {
   if [ -n "${test_tmpdir:-}" ] && [ -d "$test_tmpdir" ]; then
     rm -rf "$test_tmpdir"
   fi
+  unset SPELLBOOK_DIR
+}
+
+test_chat_move_avatar_exists() {
+  [ -x "spells/.imps/cgi/chat-move-avatar" ]
 }
 
 # Test moving avatar between rooms
@@ -40,7 +45,8 @@ test_move_avatar_success() {
   
   [ "$result" -eq 0 ] && \
   printf '%s' "$output" | grep -q '"success":true' && \
-  printf '%s' "$output" | grep -q '"moved":true'
+  printf '%s' "$output" | grep -q '"moved":true' && \
+  printf '%s' "$output" | grep -q 'Status: 200 OK'
 }
 
 # Test creating avatar when no old avatar exists
@@ -65,7 +71,8 @@ test_move_creates_when_no_old_avatar() {
   
   [ "$result" -eq 0 ] && \
   [ "$avatar_exists" -eq 1 ] && \
-  printf '%s' "$output" | grep -q '"success":true'
+  printf '%s' "$output" | grep -q '"success":true' && \
+  printf '%s' "$output" | grep -q 'Status: 200 OK'
 }
 
 # Test invalid username rejected
@@ -79,12 +86,61 @@ test_move_rejects_invalid_username() {
   cleanup_test_env
   
   printf '%s' "$output" | grep -q '"error"' && \
-  printf '%s' "$output" | grep -q 'invalid characters'
+  printf '%s' "$output" | grep -q 'invalid characters' && \
+  printf '%s' "$output" | grep -q 'Status: 400 Bad Request'
 }
 
-# Run tests using the test framework pattern
-test_move_avatar_success
-test_move_creates_when_no_old_avatar
-test_move_rejects_invalid_username
+# Test missing parameters rejected with proper status
+test_move_rejects_missing_params() {
+  setup_test_env
+  
+  mkdir -p "$SPELLBOOK_DIR/room1"
+  
+  output=$(printf '{"room":"room1"}' | chat-move-avatar 2>&1)
+  
+  cleanup_test_env
+  
+  printf '%s' "$output" | grep -q '"error"' && \
+  printf '%s' "$output" | grep -q 'Missing required parameters' && \
+  printf '%s' "$output" | grep -q 'Status: 400 Bad Request'
+}
 
-printf "All chat-move-avatar tests passed\n"
+# Test path traversal protection
+test_move_rejects_path_traversal() {
+  setup_test_env
+  
+  mkdir -p "$SPELLBOOK_DIR/room1"
+  
+  output=$(printf '{"room":"../etc/passwd","username":"testuser","oldRoom":"room1"}' | chat-move-avatar 2>&1)
+  
+  cleanup_test_env
+  
+  printf '%s' "$output" | grep -q '"error"' && \
+  printf '%s' "$output" | grep -q 'Invalid room name' && \
+  printf '%s' "$output" | grep -q 'Status: 400 Bad Request'
+}
+
+# Critical test: verify http-status always gets two arguments (the bug fix)
+test_http_status_gets_two_args() {
+  setup_test_env
+  
+  mkdir -p "$SPELLBOOK_DIR/room1"
+  
+  # This should NOT cause "unbound variable" error
+  output=$(printf '{"room":"room1"}' | chat-move-avatar 2>&1)
+  
+  cleanup_test_env
+  
+  # Should not contain "unbound variable" error
+  ! printf '%s' "$output" | grep -q "unbound variable"
+}
+
+run_test_case "chat-move-avatar is executable" test_chat_move_avatar_exists
+run_test_case "chat-move-avatar moves avatar successfully" test_move_avatar_success
+run_test_case "chat-move-avatar creates avatar when old doesn't exist" test_move_creates_when_no_old_avatar
+run_test_case "chat-move-avatar rejects invalid username" test_move_rejects_invalid_username
+run_test_case "chat-move-avatar rejects missing parameters" test_move_rejects_missing_params
+run_test_case "chat-move-avatar rejects path traversal" test_move_rejects_path_traversal
+run_test_case "chat-move-avatar always passes two args to http-status" test_http_status_gets_two_args
+
+finish_tests
