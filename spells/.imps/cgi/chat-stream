@@ -132,16 +132,11 @@ last_members="$initial_members"
 # Poll the log file and room directory for changes every 1 second
 # Exit if output fails (client disconnected)
 heartbeat_counter=0
-max_idle_time=300  # Exit after 5 minutes of no activity
+max_idle_time=60  # Exit after 1 minute of no activity (reduced from 5 minutes)
 idle_counter=0
 
 while true; do
   sleep 1
-  
-  # Try to send output and exit if it fails (broken pipe = client disconnected)
-  if ! printf '' 2>/dev/null; then
-    exit 0
-  fi
   
   # Check if log file has new lines
   if [ -f "$LOG_FILE" ]; then
@@ -176,10 +171,14 @@ while true; do
     exit 0
   fi
   
-  # Send heartbeat comment every 15 seconds to keep connection alive
+  # Send heartbeat comment every 10 seconds to keep connection alive
+  # This also serves as broken pipe detection
   heartbeat_counter=$((heartbeat_counter + 1))
-  if [ "$heartbeat_counter" -ge 15 ]; then
-    printf ': heartbeat\n\n' || exit 0  # Exit if output fails
+  if [ "$heartbeat_counter" -ge 10 ]; then
+    if ! printf ': heartbeat\n\n'; then
+      # Output failed - client disconnected
+      exit 0
+    fi
     heartbeat_counter=0
   fi
 done
