@@ -71,9 +71,9 @@ for avatar_dir in "$ROOM_DIR"/.*; do
   [ -d "$avatar_dir" ] || continue
   avatar_name=$(basename "$avatar_dir")
   
-  # Skip . and ..
+  # Skip . and .. and .log
   case "$avatar_name" in
-    .|..) continue ;;
+    .|..|.log) continue ;;
   esac
   
   # Check if it's a web avatar
