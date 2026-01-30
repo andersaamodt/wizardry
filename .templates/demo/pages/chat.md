@@ -746,17 +746,17 @@ function toggleCreateRoom() {
     if (arrow) arrow.innerHTML = '&#x25BC;';  // ▼ down-pointing filled triangle
     
     // Scroll the sidebar to the bottom to show the create room panel
-    // Start scrolling early in the animation for better UX
+    // Wait for panel expansion to complete before scrolling
     setTimeout(function() {
       var sidebarContent = document.querySelector('.chat-sidebar-content');
       if (sidebarContent) {
-        // Smooth scroll to bottom
+        // Smooth scroll to bottom with extra padding to ensure panel is fully visible
         sidebarContent.scrollTo({
-          top: sidebarContent.scrollHeight,
+          top: sidebarContent.scrollHeight + 100,  // Extra 100px to ensure we reach bottom
           behavior: 'smooth'
         });
       }
-    }, 100);  // 100ms delay allows animation to start, smooth scroll continues as panel expands
+    }, 320);  // Wait for 300ms panel animation + 20ms buffer
     
     // Focus on input after animation starts
     setTimeout(function() {
