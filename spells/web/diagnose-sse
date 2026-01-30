@@ -1,0 +1,114 @@
+#!/bin/sh
+# diagnose-sse - Diagnostic tool for SSE deployment issues
+# Shows which version of chat-stream is installed and being used
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: diagnose-sse
+
+Diagnostic tool to check SSE deployment status and configuration.
+
+Shows:
+- Repository version of chat-stream
+- Installed version of chat-stream  
+- Whether versions match
+- Available unbuffering tools
+- Nginx configuration status
+
+Helps identify deployment issues and version mismatches.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+printf '\n=== SSE Deployment Diagnostic ===\n\n'
+
+# Check repository version
+if [ -f "spells/.imps/cgi/chat-stream" ]; then
+  repo_raw=$(head -2 spells/.imps/cgi/chat-stream | grep VERSION)
+  repo_version=$(printf '%s' "$repo_raw" | sed 's/.*VERSION: //' | tr -d ')')
+  printf '✓ Repository version: %s\n' "${repo_version:-UNKNOWN}"
+else
+  printf '✗ Repository chat-stream not found\n'
+fi
+
+# Check installed version
+installed_path="${HOME}/.wizardry/spells/.imps/cgi/chat-stream"
+if [ -f "$installed_path" ]; then
+  inst_raw=$(head -2 "$installed_path" | grep VERSION 2>/dev/null || echo "")
+  if [ -n "$inst_raw" ]; then
+    installed_version=$(printf '%s' "$inst_raw" | sed 's/.*VERSION: //' | tr -d ')')
+  else
+    installed_version="OLD VERSION (no version stamp)"
+  fi
+  printf '✓ Installed version: %s\n' "$installed_version"
+  printf '  Location: %s\n' "$installed_path"
+else
+  printf '✗ Installed chat-stream not found at %s\n' "$installed_path"
+fi
+
+# Check if versions match
+printf '\n'
+if [ "${repo_version:-}" != "${installed_version:-}" ]; then
+  printf '⚠️  WARNING: Repository and installed versions DO NOT MATCH!\n'
+  printf '   You need to run: ./install\n'
+  repo_path="spells/.imps/cgi/chat-stream"
+  inst_path="~/.wizardry/spells/.imps/cgi/"
+  printf '   OR copy manually: cp %s %s\n' "$repo_path" "$inst_path"
+else
+  printf '✓ Versions match - scripts are up to date\n'
+fi
+
+# Check for unbuffering tools
+printf '\n=== Unbuffering Tools Available ===\n'
+if command -v python3 >/dev/null 2>&1; then
+  printf '✓ python3 available (preferred method)\n'
+else
+  printf '✗ python3 not found\n'
+fi
+
+if command -v perl >/dev/null 2>&1; then
+  printf '✓ perl available (fallback method)\n'
+else
+  printf '✗ perl not found\n'
+fi
+
+if command -v stdbuf >/dev/null 2>&1; then
+  printf '✓ stdbuf available (Linux only)\n'
+else
+  printf '✗ stdbuf not found (expected on macOS)\n'
+fi
+
+# Check nginx config
+printf '\n=== Nginx Configuration ===\n'
+nginx_conf="${HOME}/sites/.nginx.conf"
+if [ -f "$nginx_conf" ]; then
+  if grep -q "fastcgi_buffering off" "$nginx_conf"; then
+    printf '✓ fastcgi_buffering off found in nginx config\n'
+  else
+    printf '✗ fastcgi_buffering off NOT found - may need to regenerate config\n'
+  fi
+  if grep -q "/cgi/chat-stream" "$nginx_conf"; then
+    printf '✓ chat-stream location block found\n'
+  else
+    printf '⚠️  chat-stream location block NOT found\n'
+  fi
+else
+  printf '✗ nginx config not found at %s\n' "$nginx_conf"
+fi
+
+printf '\n=== Next Steps ===\n'
+if [ "${repo_version:-}" != "${installed_version:-}" ]; then
+  printf '1. Run: ./install\n'
+  printf '2. Restart web server\n'
+  printf '3. Test chatroom - should see VERSION: 2026-01-30-v3 in logs\n'
+else
+  printf '1. Check server logs for "Using Python unbuffered wrapper"\n'
+  printf '2. Check browser F12 console for SSE connection status\n'
+  printf '3. If still not working, share server logs showing version\n'
+fi
+
+printf '\n'
