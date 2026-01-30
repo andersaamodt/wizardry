@@ -1,8 +1,9 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v16-NOLAG)
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v17-INSTANT)
 # Streams chat messages as Server-Sent Events
 # Uses 8KB padding on new events for reliable buffer flush on macOS fcgiwrap (exceeds 8KB buffer)
 # OPTIMIZED: Pre-generates padding with awk (cross-platform reliable)
+# FIXED: Explicit flush after padding to prevent "1 message behind" behavior
 # Self-contained - no external imp dependencies
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
 # FIXED: All issues - batching (8KB padding), duplication (removed loadMessages), reliable padding (awk)
@@ -60,6 +61,12 @@ send_sse_event() {
     printf ': padding=%s\n' "$PADDING_8KB"
   fi
   printf '\n'
+  
+  # CRITICAL: Force immediate flush of stdout buffer
+  # Without this, the event + padding sits in shell buffer until next event
+  # This caused "1 message behind" behavior - message only appeared when next message sent
+  # Using 'cat' forces a flush by reading stdin (empty) and writing to stdout
+  printf '' | cat
 }
 
 # Parse room name from query string
