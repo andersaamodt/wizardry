@@ -746,7 +746,7 @@ function toggleCreateRoom() {
     if (arrow) arrow.innerHTML = '&#x25BC;';  // ▼ down-pointing filled triangle
     
     // Scroll the sidebar to the bottom to show the create room panel
-    // Wait for the panel expansion animation to complete (300ms transition)
+    // Start scrolling early in the animation for better UX
     setTimeout(function() {
       var sidebarContent = document.querySelector('.chat-sidebar-content');
       if (sidebarContent) {
@@ -756,7 +756,7 @@ function toggleCreateRoom() {
           behavior: 'smooth'
         });
       }
-    }, 100);  // Start scrolling early in the animation for better UX
+    }, 100);  // 100ms delay allows animation to start, smooth scroll continues as panel expands
     
     // Focus on input after animation starts
     setTimeout(function() {
