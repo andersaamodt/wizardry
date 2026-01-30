@@ -22,7 +22,3 @@ done
 
 # End event with blank line
 printf '\n'
-
-# Force flush by sending a comment (ignored by browser but forces output)
-printf ': flush\n\n' >&1
-printf '[sse-event] Sent flush\n' >&2

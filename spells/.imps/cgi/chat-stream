@@ -4,6 +4,14 @@
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
 set -eu
 
+# Re-exec with unbuffered stdout for real-time SSE (critical!)
+# Without this, output is buffered and events only sent when script exits
+if [ "${STDBUF_APPLIED:-}" != "1" ]; then
+  printf '[chat-stream] Re-executing with stdbuf for unbuffered output\n' >&2
+  export STDBUF_APPLIED=1
+  exec stdbuf -o0 "$0" "$@"
+fi
+
 # Diagnostic logging to stderr (appears in web server error log)
 printf '[chat-stream] ========== SCRIPT STARTED ==========\n' >&2
 printf '[chat-stream] PWD: %s\n' "$(pwd)" >&2
