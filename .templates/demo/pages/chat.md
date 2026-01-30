@@ -30,7 +30,7 @@ Loading rooms...
 
 <div class="username-widget">
 <!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
-<div class="username-display" id="username-display"><strong id="username-text">@Guest001</strong><button onclick="editUsername()">Change</button></div>
+<div class="username-display" id="username-display"><strong id="username-text">Guest001</strong><button onclick="editUsername()">Change</button></div>
 <div class="username-edit" id="username-edit"><h5>Change Handle</h5><div id="username-edit-input-wrapper"><input type="text" id="username-edit-input" placeholder="Your name" /><span id="username-invalid-icon">&#x1F6AB;</span></div><div class="username-edit-buttons"><button onclick="saveUsername()">OK</button><button onclick="cancelUsernameEdit()">Cancel</button></div></div>
 </div>
 </div>
@@ -92,7 +92,7 @@ function generateGuestName() {
   // Use 3-digit random number (001-999) with zero padding
   var num = Math.floor(Math.random() * 999) + 1;
   var paddedNum = ('000' + num).slice(-3);  // Pad with zeros to 3 digits
-  return '@Guest' + paddedNum;  // Include @ symbol for guest names
+  return 'Guest' + paddedNum;
 }
 
 // Track current room
@@ -682,7 +682,7 @@ function saveUsername() {
   var oldName = input.dataset.initialValue || '';
   var newName = input.value.trim();
   if (newName && newName !== oldName) {
-    // Strip any leading @ symbols before prepending to prevent duplication
+    // Strip any leading @ symbols
     newName = newName.replace(/^@+/, '');
     
     // If user is in a room, rename avatar
@@ -696,15 +696,15 @@ function saveUsername() {
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: formData
       }).then(function() {
-        // Refresh members list after rename
+        // Refresh members list immediately after rename
         loadMembers();
       }).catch(function(err) {
         console.error('Failed to rename avatar:', err);
       });
     }
     
-    // Ensure @ symbol is present
-    text.textContent = '@' + newName;
+    // Set username without @ symbol
+    text.textContent = newName;
   }
   
   edit.classList.remove('open');
