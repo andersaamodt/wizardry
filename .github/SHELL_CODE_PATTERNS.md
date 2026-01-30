@@ -356,7 +356,12 @@ printf '%s\n' $var       # WRONG: word splitting
 # Place at top of script, before set -eu
 if [ -z "${STDBUF_ACTIVE:-}" ]; then
   export STDBUF_ACTIVE=1
-  exec stdbuf -o0 "$0" "$@"
+  # Check if stdbuf is available
+  if command -v stdbuf >/dev/null 2>&1; then
+    exec stdbuf -o0 "$0" "$@"
+  else
+    printf '[WARNING] stdbuf not available - output may be buffered/delayed\n' >&2
+  fi
 fi
 ```
 
@@ -366,14 +371,9 @@ fi
 - `stdbuf -o0` disables all stdout buffering
 - Re-exec ensures entire script runs unbuffered
 - `STDBUF_ACTIVE` guard prevents infinite loop
+- Graceful fallback if stdbuf unavailable (logs warning, continues with buffering)
 
 **Use case:** SSE (Server-Sent Events) - fixes "one message behind" behavior where messages only appear when next message arrives.
-
-**Alternative (when stdbuf unavailable):**
-```sh
-# Use Python as wrapper (more portable but slower)
-exec python -u "$0" "$@"  # Python -u flag unbuffers stdout
-```
 
 ### Globbing
 

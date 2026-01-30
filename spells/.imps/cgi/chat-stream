@@ -15,7 +15,12 @@
 # stdbuf -o0 disables stdout buffering entirely, ensuring immediate output
 if [ -z "${STDBUF_ACTIVE:-}" ]; then
   export STDBUF_ACTIVE=1
-  exec stdbuf -o0 "$0" "$@"
+  if command -v stdbuf >/dev/null 2>&1; then
+    exec stdbuf -o0 "$0" "$@"
+  else
+    # stdbuf not available - warn and continue (output may be buffered)
+    printf '[chat-stream] WARNING: stdbuf not available - messages may be delayed\n' >&2
+  fi
 fi
 
 set -eu
@@ -30,7 +35,7 @@ printf '[chat-stream] PWD: %s\n' "$(pwd)" >&2
 printf '[chat-stream] QUERY_STRING: %s\n' "${QUERY_STRING:-}" >&2
 
 # Send SSE headers (inlined from sse-start)
-printf '[chat-stream] Sending SSE headers with initial padding burst\n' >&2
+printf '[chat-stream] Sending SSE headers (no initial padding)\n' >&2
 http-status 200 "OK"
 http-header "Content-Type" "text/event-stream"
 http-header "Cache-Control" "no-cache"
@@ -38,10 +43,10 @@ http-header "Connection" "keep-alive"
 http-header "X-Accel-Buffering" "no"
 http-end-headers
 
-# No initial padding burst - causes lag on join
+# No initial padding burst - causes lag on join (delays first real event)
 # Heartbeats every 45s (not 2s) - only for keepalive, not flushing
 # Actual events have padding to force flush when they occur
-printf '[chat-stream] SSE headers sent (heartbeats: 45s, events: with padding)\n' >&2
+printf '[chat-stream] SSE headers sent (heartbeats: 45s, events: with 8KB padding)\n' >&2
 
 # Pre-generate 8KB padding string ONCE for efficiency
 # fcgiwrap buffer on macOS is ~8KB - need to EXCEED it for per-event flush
