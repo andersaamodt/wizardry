@@ -1,0 +1,19 @@
+#!/bin/sh
+# sse-event EVENT_TYPE DATA - Output SSE event
+# Example: sse-event message "Hello world"
+set -eu
+
+event_type="${1:-message}"
+shift
+data="${*:-}"
+
+# Output event type
+printf 'event: %s\n' "$event_type"
+
+# Output data (can be multi-line)
+printf '%s\n' "$data" | while IFS= read -r line || [ -n "$line" ]; do
+  printf 'data: %s\n' "$line"
+done
+
+# End event with blank line
+printf '\n'
