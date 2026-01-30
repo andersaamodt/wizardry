@@ -24,7 +24,7 @@ Loading rooms...
 
 <div class="room-controls">
 <!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
-<div id="create-room-widget"><a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a><input type="text" id="new-room-name" placeholder="Room name" oninput="validateRoomName()" onkeydown="if(event.key==='Enter' && !document.getElementById('create-room-btn').disabled) { document.getElementById('create-room-btn').click(); }" /><button id="create-room-btn" disabled hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; validateRoomName(); htmx.trigger('#room-list', 'load'); showNotification(); toggleCreateRoom(); }">Create</button></div>
+<div id="create-room-widget"><a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a><div id="create-room-input-wrapper"><input type="text" id="new-room-name" placeholder="Room name" oninput="validateRoomName()" onkeydown="if(event.key==='Enter' && !document.getElementById('create-room-btn').disabled) { document.getElementById('create-room-btn').click(); }" /><span id="create-room-invalid-icon">&#x1F6AB;</span></div><button id="create-room-btn" disabled hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; validateRoomName(); htmx.trigger('#room-list', 'load'); showNotification(); toggleCreateRoom(); }">Create</button></div>
 </div>
 </div>
 
@@ -778,6 +778,7 @@ function toggleCreateRoom() {
 function validateRoomName() {
   var input = document.getElementById('new-room-name');
   var button = document.getElementById('create-room-btn');
+  var invalidIcon = document.getElementById('create-room-invalid-icon');
   
   if (!input || !button) return;
   
@@ -789,11 +790,13 @@ function validateRoomName() {
   // Enable/disable button based on validation
   button.disabled = !isValid;
   
-  // Add visual feedback to input
+  // Add visual feedback to input and show/hide invalid icon
   if (roomName.length > 0 && !isValid) {
     input.style.borderColor = '#dc3545';  // Red for invalid
+    if (invalidIcon) invalidIcon.classList.add('show');
   } else {
     input.style.borderColor = '';  // Reset to default
+    if (invalidIcon) invalidIcon.classList.remove('show');
   }
 }
 

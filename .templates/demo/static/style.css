@@ -1060,6 +1060,36 @@ pre code {
   cursor: not-allowed;
 }
 
+/* Specific disabled styling for create-room button to match username-edit OK button */
+#create-room-btn:disabled {
+  background: #ccc;
+  color: #666;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Container for input with validation icon */
+#create-room-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* Invalid input icon - red prohibition/no entry sign */
+#create-room-invalid-icon {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.2rem;
+  color: #dc3545;
+  pointer-events: none;
+  display: none;
+}
+
+#create-room-invalid-icon.show {
+  display: block;
+}
+
 /* Responsive chat */
 @media (max-width: 768px) {
   .chat-container {
