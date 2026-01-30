@@ -237,19 +237,14 @@ function joinRoom(roomName) {
     window.messageEventSource = null;
   }
   
-  // Set up SSE for real-time message updates (includes initial batch)
-  setupMessageStream(roomName);
-  
-  // Load members immediately
-  loadMembers();
-  
-  // Set up auto-refresh for members only (every 5 seconds)
+  // Clear any existing polling interval
   if (window.messageInterval) {
     clearInterval(window.messageInterval);
+    window.messageInterval = null;
   }
-  window.messageInterval = setInterval(function() {
-    loadMembers();
-  }, 5000);
+  
+  // Set up SSE for real-time message and member updates (includes initial batch)
+  setupMessageStream(roomName);
 }
 
 // Load messages for current room
@@ -420,6 +415,12 @@ function setupMessageStream(roomName) {
     appendMessage(event.data);
   });
   
+  // Handle member list updates
+  window.messageEventSource.addEventListener('members', function(event) {
+    // Event data is JSON array of members
+    updateMemberList(event.data);
+  });
+  
   // Handle errors
   window.messageEventSource.addEventListener('error', function(event) {
     console.error('SSE error:', event);
@@ -433,6 +434,47 @@ function setupMessageStream(roomName) {
     if (chatMessagesDiv) {
       chatMessagesDiv.innerHTML = '<p class="empty-state-message">No messages yet. Be the first to say something!</p>';
     }
+  });
+}
+
+// Update member list from SSE data
+function updateMemberList(jsonData) {
+  try {
+    var data = JSON.parse(jsonData);
+    var avatars = data || [];
+    
+    var membersList = document.getElementById('members-list');
+    var memberCount = document.getElementById('member-count');
+    
+    if (!avatars || avatars.length === 0) {
+      membersList.innerHTML = '<p style="color: #666; font-style: italic;">No members</p>';
+      memberCount.textContent = '0';
+    } else {
+      memberCount.textContent = avatars.length;
+      
+      // Get current username for highlighting
+      var currentUsername = getUsername();
+      
+      var html = '';
+      avatars.forEach(function(avatar) {
+        var fontStyle = avatar.is_web ? 'Verdana, sans-serif' : 'Courier New, Courier, monospace';
+        var badge = avatar.is_web ? '🌐' : '⚔️';
+        var isCurrentUser = (avatar.username === currentUsername);
+        
+        html += '<div class="member-item' + (isCurrentUser ? ' member-item-current' : '') + '" style="font-family: ' + fontStyle + ';">';
+        html += '<span class="member-badge">' + badge + '</span>';
+        html += '<span class="member-name">' + avatar.username + '</span>';
+        html += '</div>';
+      });
+      
+      membersList.innerHTML = html;
+    }
+    
+    // Update delete button state
+    updateDeleteButton();
+  } catch (e) {
+    console.error('Error parsing member data:', e);
+  }
   });
 }
 

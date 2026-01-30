@@ -82,8 +82,47 @@ else
   last_line_count=0
 fi
 
-# Keep connection alive and stream new messages
-# Poll the log file for changes every 1 second
+# Function to get current member list as JSON
+get_member_list() {
+  room_dir="$1"
+  printf '['
+  first=1
+  for avatar_dir in "$room_dir"/.*; do
+    [ -d "$avatar_dir" ] || continue
+    avatar_name=$(basename "$avatar_dir")
+    
+    # Skip . and .. and .log
+    case "$avatar_name" in
+      .|..|.log) continue ;;
+    esac
+    
+    # Check if it's a web avatar
+    is_web="false"
+    if get-attribute "user.web_avatar" "$avatar_dir" >/dev/null 2>&1; then
+      is_web="true"
+    fi
+    
+    # Remove leading dot from username
+    username=$(printf '%s' "$avatar_name" | sed 's/^\.//')
+    
+    if [ "$first" -eq 1 ]; then
+      first=0
+    else
+      printf ', '
+    fi
+    
+    printf '{"username": "%s", "is_web": %s}' "$username" "$is_web"
+  done
+  printf ']'
+}
+
+# Send initial member list
+initial_members=$(get_member_list "$ROOM_DIR")
+sse-event members "$initial_members"
+last_members="$initial_members"
+
+# Keep connection alive and stream new messages and member updates
+# Poll the log file and room directory for changes every 1 second
 # Exit if output fails (client disconnected)
 heartbeat_counter=0
 max_idle_time=300  # Exit after 5 minutes of no activity
@@ -115,6 +154,14 @@ while true; do
     fi
   else
     idle_counter=$((idle_counter + 1))
+  fi
+  
+  # Check for member list changes
+  current_members=$(get_member_list "$ROOM_DIR")
+  if [ "$current_members" != "$last_members" ]; then
+    sse-event members "$current_members" || exit 0
+    last_members="$current_members"
+    idle_counter=0  # Reset idle counter
   fi
   
   # Exit if idle for too long
