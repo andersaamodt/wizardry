@@ -1,10 +1,10 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v12-FIXED)
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v13-RELIABLE)
 # Streams chat messages as Server-Sent Events
-# Uses padding on new events only (not heartbeats) for buffer flush
+# Uses 2KB padding on new events for reliable buffer flush on macOS fcgiwrap
 # Self-contained - no external imp dependencies
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
-# FIXED: Timestamp comparison crash + >= comparison + PIPE SUBSHELL (real-time delivery!)
+# FIXED: All issues - timestamp comparison, pipe subshell, padding size, room deletion
 #
 # CONCURRENCY: Each fcgiwrap worker handles one connection. Configure fcgiwrap with
 # multiple workers (-c N) to support N concurrent SSE connections. Default: 10 workers.
@@ -12,8 +12,9 @@
 set -eu
 
 # Diagnostic logging to stderr (appears in web server error log)
-printf '[chat-stream] ========== SCRIPT STARTED (VERSION: 2026-01-30-v9-EFFICIENT) ==========\n' >&2
+printf '[chat-stream] ========== SCRIPT STARTED (VERSION: 2026-01-30-v13-RELIABLE) ==========\n' >&2
 printf '[chat-stream] Event-driven: sends only when activity occurs, heartbeat 45s\n' >&2
+printf '[chat-stream] Using 2KB padding per event for reliable real-time flush\n' >&2
 printf '[chat-stream] Script location: %s\n' "$0" >&2
 printf '[chat-stream] PWD: %s\n' "$(pwd)" >&2
 printf '[chat-stream] QUERY_STRING: %s\n' "${QUERY_STRING:-}" >&2
@@ -43,12 +44,12 @@ send_sse_event() {
   printf 'event: %s\n' "$event_type"
   printf 'data: %s\n' "$event_data"
   
-  # Add 512 bytes padding to force buffer flush (only if requested)
-  # Reduced from 2KB for better performance
+  # Add 2KB padding to force buffer flush (only if requested)
+  # 2KB needed for reliable flush on macOS fcgiwrap (512 bytes caused batching)
   if [ "$add_padding" = "yes" ]; then
     printf ': padding='
     i=0
-    while [ $i -lt 512 ]; do
+    while [ $i -lt 2048 ]; do
       printf ' '
       i=$((i + 1))
     done
@@ -226,7 +227,12 @@ while true; do
     printf '[chat-stream] Loop iteration %d (idle=%d, heartbeat=%d)\n' "$loop_count" "$idle_counter" "$heartbeat_counter" >&2
   fi
   
-  # Check if log file has new lines
+  # Check if log file has new lines (handle room deletion gracefully)
+  if [ ! -f "$LOG_FILE" ]; then
+    printf '[chat-stream] Log file deleted (room removed), exiting gracefully\n' >&2
+    exit 0
+  fi
+  
   if [ -f "$LOG_FILE" ]; then
     current_line_count=$(wc -l < "$LOG_FILE" 2>/dev/null || echo "0")
     
