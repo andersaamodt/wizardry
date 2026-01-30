@@ -1,0 +1,98 @@
+#!/bin/sh
+# Move an avatar from one room to another
+
+set -eu
+
+# Read CGI parameters
+read -r input || true
+room_name=$(printf '%s' "$input" | grep -o '"room":"[^"]*"' | sed 's/"room":"//' | sed 's/"$//' || printf '')
+user_name=$(printf '%s' "$input" | grep -o '"username":"[^"]*"' | sed 's/"username":"//' | sed 's/"$//' || printf '')
+old_room=$(printf '%s' "$input" | grep -o '"oldRoom":"[^"]*"' | sed 's/"oldRoom":"//' | sed 's/"$//' || printf '')
+
+# Validate input
+if [ -z "$room_name" ] || [ -z "$user_name" ] || [ -z "$old_room" ]; then
+  http-status 400
+  printf 'Content-Type: application/json\r\n\r\n'
+  printf '{"error":"Missing required parameters"}\n'
+  exit 0
+fi
+
+# Validate username doesn't contain invalid characters
+case "$user_name" in
+  *[@#\$%\&\*\(\)\[\]\{\}\|\\\/\<\>\"\'\`\;\:\,\?\!\~\=\+]*)
+    http-status 400
+    printf 'Content-Type: application/json\r\n\r\n'
+    printf '{"error":"Username contains invalid characters"}\n'
+    exit 0
+    ;;
+esac
+
+# Get spellbook directory
+SPELLBOOK_DIR="${SPELLBOOK_DIR:-/var/wizardry/spellbook}"
+OLD_ROOM_DIR="$SPELLBOOK_DIR/$old_room"
+NEW_ROOM_DIR="$SPELLBOOK_DIR/$room_name"
+
+# Ensure new room exists
+mkdir -p "$NEW_ROOM_DIR"
+touch "$NEW_ROOM_DIR/.log"
+
+# Check if avatar exists in old room
+OLD_AVATAR="$OLD_ROOM_DIR/.$user_name"
+NEW_AVATAR="$NEW_ROOM_DIR/.$user_name"
+
+if [ -d "$OLD_AVATAR" ]; then
+  # Avatar exists in old room - move it
+  
+  # Log "left the room" in old room (before moving)
+  OLD_LOG="$OLD_ROOM_DIR/.log"
+  if [ -f "$OLD_LOG" ]; then
+    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    message="log: $user_name left the room."
+    chat-log-if-unique "$OLD_LOG" "[$timestamp] $message" 2>/dev/null || true
+  fi
+  
+  # Move avatar directory
+  mv "$OLD_AVATAR" "$NEW_AVATAR" 2>/dev/null || {
+    # If move fails, try copy and delete
+    cp -r "$OLD_AVATAR" "$NEW_AVATAR" 2>/dev/null || true
+    rm -rf "$OLD_AVATAR" 2>/dev/null || true
+  }
+  
+  # Update last activity timestamp
+  enchant last_activity "$(date +%s)" "$NEW_AVATAR" 2>/dev/null || true
+  
+  # Log "joined the room" in new room
+  NEW_LOG="$NEW_ROOM_DIR/.log"
+  timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+  message="log: $user_name joined the room."
+  chat-log-if-unique "$NEW_LOG" "[$timestamp] $message" 2>/dev/null || true
+  
+  http-status 200
+  printf 'Content-Type: application/json\r\n\r\n'
+  printf '{"success":true,"moved":true}\n'
+else
+  # Avatar doesn't exist in old room - create new one
+  NEW_LOG="$NEW_ROOM_DIR/.log"
+  
+  # Check if avatar already exists in new room
+  if [ ! -d "$NEW_AVATAR" ]; then
+    # Create new avatar
+    mkdir -p "$NEW_AVATAR"
+    
+    # Mark as web avatar
+    enchant web_avatar "1" "$NEW_AVATAR" 2>/dev/null || true
+    enchant is_avatar "1" "$NEW_AVATAR" 2>/dev/null || true
+    
+    # Set last activity
+    enchant last_activity "$(date +%s)" "$NEW_AVATAR" 2>/dev/null || true
+    
+    # Log join message
+    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    message="log: $user_name joined the room."
+    chat-log-if-unique "$NEW_LOG" "[$timestamp] $message" 2>/dev/null || true
+  fi
+  
+  http-status 200
+  printf 'Content-Type: application/json\r\n\r\n'
+  printf '{"success":true,"moved":false,"created":true}\n'
+fi

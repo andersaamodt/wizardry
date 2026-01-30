@@ -184,9 +184,20 @@ function joinRoom(roomName) {
   
   // Members button visibility will be controlled by loadMembers based on member count
   
-  // Create avatar for this user
-  var currentUsername = document.getElementById('username-text').textContent.trim().replace(/^@/, '');
-  createAvatar(roomName, currentUsername);
+  // Move or create avatar for this user
+  var currentUsername = document.getElementById('username-text').textContent.trim();
+  var previousRoom = localStorage.getItem('previousRoom') || '';
+  
+  if (previousRoom && previousRoom !== roomName) {
+    // Move avatar from previous room to new room
+    moveAvatar(roomName, currentUsername, previousRoom);
+  } else {
+    // Create new avatar (first join or rejoining same room)
+    createAvatar(roomName, currentUsername);
+  }
+  
+  // Store current room as previous room for next switch
+  localStorage.setItem('previousRoom', roomName);
   
   // Immediately update room selection styling
   document.querySelectorAll('.room-item').forEach(function(item) {
@@ -280,7 +291,7 @@ function loadMessages() {
         }
         
         // Color-code messages: light blue for others, light green for user's own
-        var currentUsername = document.getElementById('username-text').textContent.trim().replace(/^@/, '');
+        var currentUsername = document.getElementById('username-text').textContent.trim();
         var allMessages = chatMessagesDiv.querySelectorAll('.chat-msg');
         allMessages.forEach(function(msg) {
           var usernameSpan = msg.querySelector('.username');
@@ -393,6 +404,34 @@ function createAvatar(roomName, username) {
   });
 }
 
+function moveAvatar(newRoom, username, oldRoom) {
+  var payload = JSON.stringify({
+    room: newRoom,
+    username: username,
+    oldRoom: oldRoom
+  });
+  
+  fetch('/cgi/chat-move-avatar', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: payload
+  }).then(function(response) {
+    return response.json();
+  }).then(function(data) {
+    if (data.success) {
+      loadMembers();  // Refresh member list
+    } else {
+      console.error('Failed to move avatar:', data.error);
+      // Fallback to creating new avatar
+      createAvatar(newRoom, username);
+    }
+  }).catch(function(err) {
+    console.error('Failed to move avatar:', err);
+    // Fallback to creating new avatar
+    createAvatar(newRoom, username);
+  });
+}
+
 function deleteAvatar(roomName, username) {
   var formData = 'room=' + encodeURIComponent(roomName) + 
                  '&user=' + encodeURIComponent(username);
@@ -432,7 +471,7 @@ function loadMembers() {
         memberCount.textContent = data.avatars.length;
         
         // Get current username for highlighting
-        var currentUsername = document.getElementById('username-text').textContent.trim().replace(/^@/, '');
+        var currentUsername = document.getElementById('username-text').textContent.trim();
         
         var html = '';
         data.avatars.forEach(function(avatar) {
@@ -513,7 +552,7 @@ function toggleMembersPanel() {
 function leaveRoom() {
   // Delete avatar before leaving
   if (window.currentRoom) {
-    var currentUsername = document.getElementById('username-text').textContent.trim().replace(/^@/, '');
+    var currentUsername = document.getElementById('username-text').textContent.trim();
     deleteAvatar(window.currentRoom, currentUsername);
   }
   
@@ -572,7 +611,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Initialize with a guest name
   var guestName = generateGuestName();
-  usernameText.textContent = '@' + guestName;
+  usernameText.textContent = guestName;
   
   // Set initial height explicitly to prevent shrinking on first keystroke
   messageInput.style.height = '2.5rem';
@@ -612,7 +651,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!window.currentRoom) return;
     
     var msg = messageInput.value.trim();
-    var user = usernameText.textContent.trim().replace(/^@/, '') || 'Anonymous';
+    var user = usernameText.textContent.trim() || 'Anonymous';
     
     if (!msg) return;
     
@@ -682,9 +721,6 @@ function saveUsername() {
   var oldName = input.dataset.initialValue || '';
   var newName = input.value.trim();
   if (newName && newName !== oldName) {
-    // Strip any leading @ symbols
-    newName = newName.replace(/^@+/, '');
-    
     // If user is in a room, rename avatar
     if (window.currentRoom) {
       var formData = 'room=' + encodeURIComponent(window.currentRoom) + 
@@ -703,8 +739,8 @@ function saveUsername() {
       });
     }
     
-    // Set username with @ symbol for display
-    text.textContent = '@' + newName;
+    // Set username for display
+    text.textContent = newName;
   }
   
   edit.classList.remove('open');
@@ -729,9 +765,6 @@ function validateUsername() {
   
   var username = input.value.trim();
   var initialValue = input.dataset.initialValue || '';
-  
-  // Remove @ symbol for validation (added back on save)
-  username = username.replace(/^@+/, '');
   
   // Check if username matches valid format pattern
   var hasValidFormat = /^[a-zA-Z0-9_-]+$/.test(username);
@@ -862,7 +895,7 @@ function showNotification() {
 // Clean up avatar when user leaves the page
 window.addEventListener('beforeunload', function() {
   if (window.currentRoom) {
-    var currentUsername = document.getElementById('username-text').textContent.trim().replace(/^@/, '');
+    var currentUsername = document.getElementById('username-text').textContent.trim();
     // Use sendBeacon for reliable cleanup on page unload
     var formData = new URLSearchParams();
     formData.append('room', window.currentRoom);
