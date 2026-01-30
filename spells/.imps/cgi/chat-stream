@@ -7,7 +7,8 @@
 # FIXED: Explicit flush after padding to prevent "1 message behind" behavior
 # Self-contained - no external imp dependencies
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
-# FIXED: All issues - batching (8KB padding), duplication (removed loadMessages), reliable padding (awk)
+# FIXED: All issues - batching (8KB padding), duplication (removed loadMessages),
+# reliable padding (awk)
 #
 # CONCURRENCY: Each fcgiwrap worker handles one connection. Configure fcgiwrap with
 # multiple workers (-c N) to support N concurrent SSE connections. Default: 10 workers.
@@ -15,7 +16,8 @@
 set -eu
 
 # Diagnostic logging to stderr (appears in web server error log)
-printf '[chat-stream] ========== SCRIPT STARTED (VERSION: 2026-01-30-v19-HEARTBEAT) ==========\n' >&2
+script_version="2026-01-30-v19-HEARTBEAT"
+printf '[chat-stream] ========== SCRIPT STARTED (VERSION: %s) ==========\n' "$script_version" >&2
 printf '[chat-stream] Event-driven: sends only when activity occurs, heartbeat 45s\n' >&2
 printf '[chat-stream] Using 8KB padding + aggressive flush (dd+fsync) for zero-lag delivery\n' >&2
 printf '[chat-stream] Script location: %s\n' "$0" >&2
@@ -41,7 +43,8 @@ printf '[chat-stream] SSE headers sent (heartbeats: 45s, events: with padding)\n
 # 2KB was too small (caused 3-4 message batching), 8KB guarantees immediate flush
 # Using awk for reliable cross-platform generation (macOS-compatible)
 PADDING_8KB=$(awk 'BEGIN{s=""; while(length(s)<8192){s=s" "}; printf("%s",s)}')
-printf '[chat-stream] Pre-generated 8KB padding string (exceeds fcgiwrap buffer for per-event flush)\n' >&2
+printf '[chat-stream] Pre-generated 8KB padding string\n' >&2
+printf '[chat-stream] (exceeds fcgiwrap buffer for per-event flush)\n' >&2
 
 # Inline SSE event function (replaces send_sse_event imp)
 # Third parameter controls padding (default: with padding)
@@ -160,7 +163,8 @@ if [ -f "$LOG_FILE" ] && [ -s "$LOG_FILE" ]; then
       
       # Send if msg_timestamp >= since_timestamp (includes same-second messages)
       if [ "$latest" = "$msg_timestamp" ]; then
-        send_sse_event message "$line" yes  # yes padding to force buffer flush for real-time delivery
+        # yes padding to force buffer flush for real-time delivery
+        send_sse_event message "$line" yes
       fi
     done
   else
@@ -245,7 +249,8 @@ while true; do
   
   # Log every 10 iterations
   if [ $((loop_count % 10)) -eq 0 ]; then
-    printf '[chat-stream] Loop iteration %d (idle=%d, heartbeat=%d)\n' "$loop_count" "$idle_counter" "$heartbeat_counter" >&2
+    log_msg="Loop iteration $loop_count (idle=$idle_counter, heartbeat=$heartbeat_counter)"
+    printf '[chat-stream] %s\n' "$log_msg" >&2
   fi
   
   # Check if log file has new lines (handle room deletion gracefully)

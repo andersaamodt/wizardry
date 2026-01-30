@@ -2,13 +2,34 @@
 # diagnose-sse - Diagnostic tool for SSE deployment issues
 # Shows which version of chat-stream is installed and being used
 
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: diagnose-sse
+
+Diagnostic tool to check SSE deployment status and configuration.
+
+Shows:
+- Repository version of chat-stream
+- Installed version of chat-stream  
+- Whether versions match
+- Available unbuffering tools
+- Nginx configuration status
+
+Helps identify deployment issues and version mismatches.
+USAGE
+  exit 0
+  ;;
+esac
+
 set -eu
 
 printf '\n=== SSE Deployment Diagnostic ===\n\n'
 
 # Check repository version
 if [ -f "spells/.imps/cgi/chat-stream" ]; then
-  repo_version=$(head -2 spells/.imps/cgi/chat-stream | grep VERSION | sed 's/.*VERSION: //' | tr -d ')')
+  repo_raw=$(head -2 spells/.imps/cgi/chat-stream | grep VERSION)
+  repo_version=$(printf '%s' "$repo_raw" | sed 's/.*VERSION: //' | tr -d ')')
   printf '✓ Repository version: %s\n' "${repo_version:-UNKNOWN}"
 else
   printf '✗ Repository chat-stream not found\n'
@@ -17,7 +38,12 @@ fi
 # Check installed version
 installed_path="${HOME}/.wizardry/spells/.imps/cgi/chat-stream"
 if [ -f "$installed_path" ]; then
-  installed_version=$(head -2 "$installed_path" | grep VERSION | sed 's/.*VERSION: //' | tr -d ')' 2>/dev/null || echo "OLD VERSION (no version stamp)")
+  inst_raw=$(head -2 "$installed_path" | grep VERSION 2>/dev/null || echo "")
+  if [ -n "$inst_raw" ]; then
+    installed_version=$(printf '%s' "$inst_raw" | sed 's/.*VERSION: //' | tr -d ')')
+  else
+    installed_version="OLD VERSION (no version stamp)"
+  fi
   printf '✓ Installed version: %s\n' "$installed_version"
   printf '  Location: %s\n' "$installed_path"
 else
@@ -29,7 +55,9 @@ printf '\n'
 if [ "${repo_version:-}" != "${installed_version:-}" ]; then
   printf '⚠️  WARNING: Repository and installed versions DO NOT MATCH!\n'
   printf '   You need to run: ./install\n'
-  printf '   OR copy manually: cp spells/.imps/cgi/chat-stream ~/.wizardry/spells/.imps/cgi/\n'
+  repo_path="spells/.imps/cgi/chat-stream"
+  inst_path="~/.wizardry/spells/.imps/cgi/"
+  printf '   OR copy manually: cp %s %s\n' "$repo_path" "$inst_path"
 else
   printf '✓ Versions match - scripts are up to date\n'
 fi
