@@ -15,7 +15,7 @@
 set -eu
 
 # Diagnostic logging to stderr (appears in web server error log)
-printf '[chat-stream] ========== SCRIPT STARTED (VERSION: 2026-01-30-v18-NUCLEAR) ==========\n' >&2
+printf '[chat-stream] ========== SCRIPT STARTED (VERSION: 2026-01-30-v19-HEARTBEAT) ==========\n' >&2
 printf '[chat-stream] Event-driven: sends only when activity occurs, heartbeat 45s\n' >&2
 printf '[chat-stream] Using 8KB padding + aggressive flush (dd+fsync) for zero-lag delivery\n' >&2
 printf '[chat-stream] Script location: %s\n' "$0" >&2
@@ -267,6 +267,12 @@ while true; do
       tail -n "$new_message_count" "$LOG_FILE" > "$temp_msgs"
       while IFS= read -r line || [ -n "$line" ]; do
         send_sse_event message "$line" yes || exit 0  # WITH padding for ongoing events
+        
+        # CRITICAL: Send immediate heartbeat after message to trigger flush
+        # Theory: First event gets buffered, second event triggers flush of first
+        # This mimics how "next message" was triggering flush of "previous message"
+        printf ': flush-trigger\n\n'
+        dd conv=fsync of=/dev/stdout count=0 2>/dev/null || true
       done < "$temp_msgs"
       rm -f "$temp_msgs"
       
