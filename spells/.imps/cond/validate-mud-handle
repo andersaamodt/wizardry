@@ -1,0 +1,13 @@
+#!/bin/sh
+# validate-mud-handle HANDLE - Validate a MUD handle/username
+
+# Note: No set -eu because this is a conditional imp (returns exit codes for flow control)
+
+handle=${1-}
+
+# Handle must be non-empty
+[ -n "$handle" ] || exit 1
+
+# Handle must contain only alphanumeric, dash, and underscore
+# Pattern matches chat room validation for consistency
+printf '%s' "$handle" | grep -qE '^[a-zA-Z0-9_-]+$'
