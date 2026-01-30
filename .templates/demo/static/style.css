@@ -981,6 +981,14 @@ pre code {
   /* Font family set inline per message based on user type (web: Verdana, MUD: monospace) */
 }
 
+.chat-msg-system {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #666;
+  margin: 0.5rem 0;
+  font-style: italic;
+}
+
 .chat-msg .username {
   font-weight: bold;
   /* Color set inline via style attribute for per-user colors */
@@ -1319,6 +1327,12 @@ pre code {
   margin-bottom: 0.2rem;
   border-radius: 5px;
   color: #2c2c54;
+}
+
+.member-item.current-user {
+  background: #fff3cd;
+  font-weight: 600;
+  border: 1px solid #ffc107;
 }
 
 .member-badge {

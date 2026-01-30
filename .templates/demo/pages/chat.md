@@ -431,11 +431,15 @@ function loadMembers() {
       } else {
         memberCount.textContent = data.avatars.length;
         
+        // Get current username for highlighting
+        var currentUsername = document.getElementById('username-text').textContent.trim();
+        
         var html = '';
         data.avatars.forEach(function(avatar) {
           var fontStyle = avatar.is_web ? 'Verdana, sans-serif' : 'Courier New, Courier, monospace';
           var badge = avatar.is_web ? '🌐' : '⚔️';
-          html += '<div class="member-item" style="font-family: ' + fontStyle + ';">' + 
+          var currentUserClass = (avatar.username === currentUsername) ? ' current-user' : '';
+          html += '<div class="member-item' + currentUserClass + '" style="font-family: ' + fontStyle + ';">' + 
                   '<span class="member-badge">' + badge + '</span>' +
                   '<span class="member-name" title="' + avatar.username + '">' + avatar.username + '</span>' +
                   '</div>';

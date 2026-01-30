@@ -9,21 +9,16 @@
 # Takes room directory as argument
 room_dir=${1:-}
 
-# Log that we were called
-printf '[%s] cleanup called: room_dir=%s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$room_dir" >> /tmp/chat-cleanup-debug.log 2>/dev/null || true
-
 if [ -z "$room_dir" ] || [ ! -d "$room_dir" ]; then
-  printf '[%s] cleanup exit: room_dir empty or missing\n' "$(date '+%Y-%m-%d %H:%M:%S')" >> /tmp/chat-cleanup-debug.log 2>/dev/null || true
   exit 0  # Silent exit if no room or room doesn't exist
 fi
-
-printf '[%s] cleanup: room exists, starting scan\n' "$(date '+%Y-%m-%d %H:%M:%S')" >> /tmp/chat-cleanup-debug.log 2>/dev/null || true
 
 # Cleanup threshold: 30 minutes in seconds
 current_time=$(date +%s)
 inactive_threshold=1800
 
-avatar_count=0
+LOG_FILE="$room_dir/.log"
+
 for avatar_dir in "$room_dir"/.*; do
   [ -d "$avatar_dir" ] || continue
   avatar_name=$(basename "$avatar_dir")
@@ -33,9 +28,6 @@ for avatar_dir in "$room_dir"/.*; do
     .|..|.log) continue ;;
   esac
   
-  avatar_count=$((avatar_count + 1))
-  printf '[%s] found avatar %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$avatar_name" >> /tmp/chat-cleanup-debug.log 2>/dev/null || true
-  
   # Check if this is a web avatar (vs MUD avatar)
   # Web avatars have web_avatar attribute OR no is_avatar attribute (fallback)
   # MUD avatars have is_avatar=1 set by create-avatar
@@ -44,16 +36,12 @@ for avatar_dir in "$room_dir"/.*; do
   # First check for explicit web_avatar marker
   if read-magic "$avatar_dir" "web_avatar" >/dev/null 2>&1; then
     is_web_avatar=1
-    printf '[%s] %s: has web_avatar attribute\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$avatar_name" >> /tmp/chat-cleanup-debug.log 2>/dev/null || true
   else
     # Fallback: check if it's NOT a MUD avatar
     # MUD avatars have is_avatar=1 attribute set
     if ! read-magic "$avatar_dir" "is_avatar" >/dev/null 2>&1; then
       # No is_avatar attribute, likely a web avatar
       is_web_avatar=1
-      printf '[%s] %s: no is_avatar attribute (web avatar)\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$avatar_name" >> /tmp/chat-cleanup-debug.log 2>/dev/null || true
-    else
-      printf '[%s] %s: has is_avatar attribute (MUD avatar)\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$avatar_name" >> /tmp/chat-cleanup-debug.log 2>/dev/null || true
     fi
   fi
   
@@ -69,26 +57,18 @@ for avatar_dir in "$room_dir"/.*; do
         last_activity=$(stat -f %m "$avatar_dir" 2>/dev/null || echo "0")
       fi
       last_activity=${last_activity:-0}
-      printf '[%s] %s: using mtime=%s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$avatar_name" "$last_activity" >> /tmp/chat-cleanup-debug.log 2>/dev/null || true
-    else
-      printf '[%s] %s: using last_activity=%s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$avatar_name" "$last_activity" >> /tmp/chat-cleanup-debug.log 2>/dev/null || true
     fi
     
     time_diff=$((current_time - last_activity))
     
-    # Log what we're checking
-    printf '[%s] checking %s: age=%d threshold=%d\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$avatar_name" "$time_diff" "$inactive_threshold" >> /tmp/chat-cleanup-debug.log 2>/dev/null || true
-    
     # Remove if inactive for more than threshold
     if [ "$time_diff" -gt "$inactive_threshold" ]; then
-      printf '[%s] DELETING %s (age %d > %d)\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$avatar_name" "$time_diff" "$inactive_threshold" >> /tmp/chat-cleanup-debug.log 2>/dev/null || true
+      # Log AFK message before deleting
+      username=$(printf '%s' "$avatar_name" | sed 's/^\.//')
+      timestamp=$(log-timestamp)
+      printf '[%s] log: %s went afk.\n' "$timestamp" "$username" >> "$LOG_FILE" 2>/dev/null || true
+      
       rm -rf "$avatar_dir" 2>/dev/null || true
-    else
-      printf '[%s] keeping %s (age %d <= %d)\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$avatar_name" "$time_diff" "$inactive_threshold" >> /tmp/chat-cleanup-debug.log 2>/dev/null || true
     fi
-  else
-    printf '[%s] skipping %s (MUD avatar)\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$avatar_name" >> /tmp/chat-cleanup-debug.log 2>/dev/null || true
   fi
 done
-
-printf '[%s] cleanup complete: processed %d avatars\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$avatar_count" >> /tmp/chat-cleanup-debug.log 2>/dev/null || true
