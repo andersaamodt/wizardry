@@ -75,8 +75,13 @@ HTML
   exit 0
 fi
 
-# Mark as web avatar using xattr (distinguishes from MUD avatars)
-set-attribute "user.web_avatar" "1" "$avatar_path" 2>/dev/null || true
+# Mark as web avatar using enchant (xattr - distinguishes from MUD avatars)
+enchant "$avatar_path" "web_avatar=1" 2>/dev/null || true
+
+# Log join message
+LOG_FILE="$ROOM_DIR/.log"
+timestamp=$(log-timestamp)
+printf '[%s] log: %s joined the room.\n' "$timestamp" "$user_name" >> "$LOG_FILE" 2>/dev/null || true
 
 cat <<HTML
 <div class="demo-result success">

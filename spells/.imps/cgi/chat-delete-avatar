@@ -55,6 +55,21 @@ fi
 avatar_path="$ROOM_DIR/.$user_name"
 
 if [ -d "$avatar_path" ]; then
+  # Check if it's a web avatar before logging (only log for web avatars leaving)
+  is_web_avatar=0
+  if read-magic "$avatar_path" "web_avatar" >/dev/null 2>&1; then
+    is_web_avatar=1
+  elif ! read-magic "$avatar_path" "is_avatar" >/dev/null 2>&1; then
+    is_web_avatar=1
+  fi
+  
+  # Log leave message for web avatars
+  if [ "$is_web_avatar" = "1" ]; then
+    LOG_FILE="$ROOM_DIR/.log"
+    timestamp=$(log-timestamp)
+    printf '[%s] log: %s left the room.\n' "$timestamp" "$user_name" >> "$LOG_FILE" 2>/dev/null || true
+  fi
+  
   rm -rf "$avatar_path" 2>/dev/null || {
     cat <<HTML
 <div class="demo-result error">
