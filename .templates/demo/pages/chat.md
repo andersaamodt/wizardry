@@ -796,7 +796,7 @@ function leaveRoom() {
   }
   
   // Clear messages
-  document.getElementById('chat-messages').innerHTML = '<div class="chat-messages"><p class="empty-state-message">Create or join a room to chat</p></div>';
+  document.getElementById('chat-messages').innerHTML = '<p class="empty-state-message">Create or join a room to chat</p>';
 }
 
 // Delete room with blocking behavior
