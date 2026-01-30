@@ -66,37 +66,40 @@ if [ -f "$LOG_FILE" ] && [ -s "$LOG_FILE" ]; then
     done
   fi
   
-  # Record the last timestamp we sent
-  last_timestamp=$(tail -1 "$LOG_FILE" | sed 's/^\[\([^]]*\)\].*/\1/')
+  # Record the last line count for tracking new messages
+  last_line_count=$(wc -l < "$LOG_FILE" 2>/dev/null || echo "0")
 else
   # No messages yet
   sse-event empty "No messages yet"
-  last_timestamp=""
+  last_line_count=0
 fi
 
 # Keep connection alive and stream new messages
-# Use tail -f to follow the log file for new messages
-# Send a heartbeat comment every 15 seconds to keep connection alive
+# Poll the log file for changes every 1 second
+# This is more reliable than tail -f in CGI context
+heartbeat_counter=0
 while true; do
-  # Wait for new messages (with timeout)
+  sleep 1
+  
+  # Check if log file has new lines
   if [ -f "$LOG_FILE" ]; then
-    # Use tail -n 0 -f to follow from end, combined with timeout
-    # Read new lines and send as SSE events
-    timeout 15 tail -n 0 -f "$LOG_FILE" 2>/dev/null | while IFS= read -r line || [ -n "$line" ]; do
-      # Extract timestamp from new message
-      msg_timestamp=$(printf '%s' "$line" | sed 's/^\[\([^]]*\)\].*/\1/')
-      
-      # Only send if newer than last sent (avoid duplicates)
-      if [ -z "$last_timestamp" ] || [ "$msg_timestamp" '>' "$last_timestamp" ] 2>/dev/null; then
+    current_line_count=$(wc -l < "$LOG_FILE" 2>/dev/null || echo "0")
+    
+    if [ "$current_line_count" -gt "$last_line_count" ]; then
+      # New messages available - send them
+      new_message_count=$((current_line_count - last_line_count))
+      tail -n "$new_message_count" "$LOG_FILE" | while IFS= read -r line || [ -n "$line" ]; do
         sse-event message "$line"
-        last_timestamp="$msg_timestamp"
-      fi
-    done || true  # timeout exits with 124, ignore it
+      done
+      last_line_count=$current_line_count
+      heartbeat_counter=0  # Reset heartbeat counter
+    fi
   fi
   
-  # Send heartbeat comment to keep connection alive
-  printf ': heartbeat\n\n'
-  
-  # Small delay before next iteration
-  sleep 1
+  # Send heartbeat comment every 15 seconds to keep connection alive
+  heartbeat_counter=$((heartbeat_counter + 1))
+  if [ "$heartbeat_counter" -ge 15 ]; then
+    printf ': heartbeat\n\n'
+    heartbeat_counter=0
+  fi
 done
