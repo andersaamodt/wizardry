@@ -4,21 +4,36 @@
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
 set -eu
 
+# Diagnostic logging to stderr (appears in web server error log)
+printf '[chat-stream] ========== SCRIPT STARTED ==========\n' >&2
+printf '[chat-stream] PWD: %s\n' "$(pwd)" >&2
+printf '[chat-stream] QUERY_STRING: %s\n' "${QUERY_STRING:-}" >&2
+printf '[chat-stream] HOME: %s\n' "${HOME:-}" >&2
+
 # Start SSE stream
+printf '[chat-stream] Calling sse-start...\n' >&2
 sse-start
+printf '[chat-stream] sse-start completed successfully\n' >&2
 
 # Parse room name from query string
+printf '[chat-stream] Parsing room name from query string...\n' >&2
 room_name="${QUERY_STRING:-}"
 room_name=$(printf '%s' "$room_name" | sed 's/.*room=\([^&]*\).*/\1/')
+printf '[chat-stream] After extracting: "%s"\n' "$room_name" >&2
 room_name=$(url-decode "$room_name" || printf '%s' "$room_name")
+printf '[chat-stream] After decoding: "%s"\n' "$room_name" >&2
 room_name=$(printf '%s' "$room_name" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+printf '[chat-stream] After trim: "%s"\n' "$room_name" >&2
 
 # Validate room name to prevent directory traversal
 # Allow only alphanumeric, dash, underscore, and space
+printf '[chat-stream] Validating room name...\n' >&2
 if ! printf '%s' "$room_name" | grep -q '^[a-zA-Z0-9_ -]\+$'; then
+  printf '[chat-stream] ERROR: Invalid room name: "%s"\n' "$room_name" >&2
   sse-event error "Invalid room name"
   exit 0
 fi
+printf '[chat-stream] Room name validation passed\n' >&2
 
 # Parse optional 'since' timestamp from query string
 since_timestamp=""
@@ -29,9 +44,11 @@ if printf '%s' "${QUERY_STRING:-}" | grep -q 'since='; then
 fi
 
 if [ -z "$room_name" ]; then
+  printf '[chat-stream] ERROR: Room name is empty\n' >&2
   sse-event error "No room specified"
   exit 0
 fi
+printf '[chat-stream] Room name is non-empty: "%s"\n' "$room_name" >&2
 
 # Chat rooms directory - use site-specific location
 if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
@@ -42,16 +59,26 @@ fi
 SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
 CHAT_DIR="$SITES_DIR/.sitedata/$site_id/chatrooms"
 ROOM_DIR="$CHAT_DIR/$room_name"
+LOG_FILE="$ROOM_DIR/.log"
+
+printf '[chat-stream] Directory configuration:\n' >&2
+printf '[chat-stream]   SITES_DIR: %s\n' "$SITES_DIR" >&2
+printf '[chat-stream]   site_id: %s\n' "$site_id" >&2
+printf '[chat-stream]   CHAT_DIR: %s\n' "$CHAT_DIR" >&2
+printf '[chat-stream]   ROOM_DIR: %s\n' "$ROOM_DIR" >&2
+printf '[chat-stream]   LOG_FILE: %s\n' "$LOG_FILE" >&2
 
 if [ ! -d "$ROOM_DIR" ]; then
+  printf '[chat-stream] ERROR: Room directory does not exist\n' >&2
   sse-event error "Room not found"
   exit 0
 fi
-
-LOG_FILE="$ROOM_DIR/.log"
+printf '[chat-stream] Room directory exists\n' >&2
 
 # Send initial batch of messages
+printf '[chat-stream] Checking for initial messages...\n' >&2
 if [ -f "$LOG_FILE" ] && [ -s "$LOG_FILE" ]; then
+  printf '[chat-stream] Log file exists and is non-empty\n' >&2
   # If since timestamp provided, filter messages after that timestamp
   if [ -n "$since_timestamp" ]; then
     # Filter messages that come after the 'since' timestamp
@@ -76,8 +103,10 @@ if [ -f "$LOG_FILE" ] && [ -s "$LOG_FILE" ]; then
   
   # Record the last line count for tracking new messages
   last_line_count=$(wc -l < "$LOG_FILE" 2>/dev/null || echo "0")
+  printf '[chat-stream] Sent initial messages (last_line_count=%s)\n' "$last_line_count" >&2
 else
   # No messages yet
+  printf '[chat-stream] No log file or empty, sending empty event\n' >&2
   sse-event empty "No messages yet"
   last_line_count=0
 fi
@@ -124,9 +153,12 @@ get_member_list() {
 }
 
 # Send initial member list
+printf '[chat-stream] Getting initial member list...\n' >&2
 initial_members=$(get_member_list "$ROOM_DIR")
+printf '[chat-stream] Initial members: %s\n' "$initial_members" >&2
 sse-event members "$initial_members"
 last_members="$initial_members"
+printf '[chat-stream] Sent initial member list\n' >&2
 
 # Keep connection alive and stream new messages and member updates
 # Poll the log file and room directory for changes every 1 second
@@ -134,9 +166,18 @@ last_members="$initial_members"
 heartbeat_counter=0
 max_idle_time=60  # Exit after 1 minute of no activity (reduced from 5 minutes)
 idle_counter=0
+loop_count=0
+
+printf '[chat-stream] ===== ENTERING MAIN LOOP =====\n' >&2
 
 while true; do
   sleep 1
+  loop_count=$((loop_count + 1))
+  
+  # Log every 10 iterations
+  if [ $((loop_count % 10)) -eq 0 ]; then
+    printf '[chat-stream] Loop iteration %d (idle=%d, heartbeat=%d)\n' "$loop_count" "$idle_counter" "$heartbeat_counter" >&2
+  fi
   
   # Check if log file has new lines
   if [ -f "$LOG_FILE" ]; then
@@ -145,6 +186,7 @@ while true; do
     if [ "$current_line_count" -gt "$last_line_count" ]; then
       # New messages available - send them
       new_message_count=$((current_line_count - last_line_count))
+      printf '[chat-stream] Found %d new messages\n' "$new_message_count" >&2
       tail -n "$new_message_count" "$LOG_FILE" | while IFS= read -r line || [ -n "$line" ]; do
         sse-event message "$line" || exit 0  # Exit if output fails
       done
@@ -161,6 +203,7 @@ while true; do
   # Check for member list changes
   current_members=$(get_member_list "$ROOM_DIR")
   if [ "$current_members" != "$last_members" ]; then
+    printf '[chat-stream] Member list changed\n' >&2
     sse-event members "$current_members" || exit 0
     last_members="$current_members"
     idle_counter=0  # Reset idle counter
@@ -168,6 +211,7 @@ while true; do
   
   # Exit if idle for too long
   if [ "$idle_counter" -ge "$max_idle_time" ]; then
+    printf '[chat-stream] Idle timeout reached (%d seconds), exiting\n' "$idle_counter" >&2
     exit 0
   fi
   
@@ -175,8 +219,10 @@ while true; do
   # This also serves as broken pipe detection
   heartbeat_counter=$((heartbeat_counter + 1))
   if [ "$heartbeat_counter" -ge 10 ]; then
+    printf '[chat-stream] Sending heartbeat\n' >&2
     if ! printf ': heartbeat\n\n'; then
       # Output failed - client disconnected
+      printf '[chat-stream] Heartbeat failed (broken pipe), exiting\n' >&2
       exit 0
     fi
     heartbeat_counter=0

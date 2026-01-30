@@ -478,6 +478,27 @@ function setupMessageStream(roomName) {
   });
   console.log('[SSE] Added "empty" event listener');
   console.log('[SSE] All event listeners added, waiting for events...');
+  
+  // Add a timeout warning if no events received after 5 seconds
+  setTimeout(function() {
+    if (window.messageEventSource && window.messageEventSource.readyState === EventSource.CONNECTING) {
+      console.warn('[SSE] WARNING: Still CONNECTING after 5 seconds - possible server issue');
+      console.warn('[SSE] Check server logs for errors in chat-stream script');
+    } else if (window.messageEventSource && window.messageEventSource.readyState === EventSource.OPEN) {
+      console.log('[SSE] Status check: Connection is OPEN');
+    }
+  }, 5000);
+  
+  // Periodic status logging every 15 seconds for debugging
+  var statusInterval = setInterval(function() {
+    if (!window.messageEventSource) {
+      clearInterval(statusInterval);
+      return;
+    }
+    var states = ['CONNECTING', 'OPEN', 'CLOSED'];
+    var state = states[window.messageEventSource.readyState] || 'UNKNOWN';
+    console.log('[SSE] Periodic check: readyState=' + state + ' (' + window.messageEventSource.readyState + ')');
+  }, 15000);
 }
 
 // Update member list from SSE data

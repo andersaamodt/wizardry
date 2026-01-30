@@ -3,8 +3,12 @@
 # Outputs HTTP headers for SSE and keeps connection alive
 set -eu
 
+printf '[sse-start] Sending SSE headers\n' >&2
+
 http-status 200 "OK"
 http-header "Content-Type" "text/event-stream"
 http-header "Cache-Control" "no-cache"
 http-header "Connection" "keep-alive"
 http-end-headers
+
+printf '[sse-start] Headers sent successfully\n' >&2
