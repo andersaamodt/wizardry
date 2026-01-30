@@ -30,7 +30,7 @@ Loading rooms...
 
 <div class="username-widget">
 <!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
-<div class="username-display" id="username-display"><strong id="username-text">• Guest001</strong><button onclick="editUsername()">Change</button></div>
+<div class="username-display" id="username-display"><strong id="username-text">@Guest001</strong><button onclick="editUsername()">Change</button></div>
 <div class="username-edit" id="username-edit"><h5>Change Handle</h5><div id="username-edit-input-wrapper"><input type="text" id="username-edit-input" placeholder="Your name" /><span id="username-invalid-icon">&#x1F6AB;</span></div><div class="username-edit-buttons"><button onclick="saveUsername()">OK</button><button onclick="cancelUsernameEdit()">Cancel</button></div></div>
 </div>
 </div>
@@ -98,8 +98,8 @@ function generateGuestName() {
 // Get username without display icon (bullet)
 function getUsername() {
   var displayText = document.getElementById('username-text').textContent.trim();
-  // Remove bullet prefix if present
-  return displayText.replace(/^•\s*/, '');
+  // Remove @ prefix if present
+  return displayText.replace(/^@\s*/, '');
 }
 
 // Track current room
@@ -618,7 +618,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Initialize with a guest name
   var guestName = generateGuestName();
-  usernameText.textContent = '• ' + guestName;
+  usernameText.textContent = '@' + guestName;
   
   // Set initial height explicitly to prevent shrinking on first keystroke
   messageInput.style.height = '2.5rem';
@@ -744,7 +744,7 @@ function saveUsername() {
     }
     
     // Set username for display
-    text.textContent = '• ' + newName;
+    text.textContent = '@' + newName;
   }
   
   edit.classList.remove('open');
