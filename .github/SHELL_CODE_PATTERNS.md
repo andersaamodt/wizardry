@@ -352,33 +352,55 @@ printf '%s\n' $var       # WRONG: word splitting
 **CRITICAL FOR SSE/STREAMING:** Shell stdout is buffered by default, causing delayed output.
 
 ```sh
-# Re-exec with unbuffered stdout
-# Place at top of script, before set -eu
+# Re-exec with unbuffered stdout (Linux only) or set flag for buffer overflow approach
+USE_DD_FLUSH=no
 if [ -z "${UNBUFFERED_ACTIVE:-}" ]; then
   export UNBUFFERED_ACTIVE=1
   if command -v stdbuf >/dev/null 2>&1; then
-    # Linux/GNU: Use stdbuf -o0
+    # Linux/GNU: Use stdbuf -o0 (clean unbuffering)
     exec stdbuf -o0 "$0" "$@"
-  elif command -v perl >/dev/null 2>&1; then
-    # macOS/BSD: Use perl autoflush wrapper
-    exec perl -e '$|=1; exec @ARGV' "$0" "$@"
   else
-    # Neither available - warn and continue (degraded)
-    printf '[WARNING] No unbuffer tool available - output may be delayed\n' >&2
+    # macOS/BSD: No stdbuf, will use massive padding to force buffer overflow
+    USE_DD_FLUSH=yes
   fi
+fi
+
+# Later: Generate padding based on approach
+if [ "$USE_DD_FLUSH" = "yes" ]; then
+  # MASSIVE padding to exceed all buffers (shell + fcgiwrap + nginx)
+  PADDING=$(awk 'BEGIN{s=""; while(length(s)<131072){s=s" "}; printf("%s",s)}')  # 128KB
+else
+  # Minimal padding when using stdbuf
+  PADDING=$(awk 'BEGIN{s=""; while(length(s)<8192){s=s" "}; printf("%s",s)}')  # 8KB
+fi
+
+# When outputting SSE events:
+printf 'event: message\n'
+printf 'data: %s\n' "$data"
+printf ': padding=%s\n' "$PADDING"  # Add padding
+printf '\n'
+
+# If no stdbuf, also add flush comment after each event
+if [ "$USE_DD_FLUSH" = "yes" ]; then
+  printf ': flush\n\n'
 fi
 ```
 
 **Explanation:**
-- Shell stdout is line-buffered or block-buffered by default
-- Padding (8KB), dd+fsync, extra newlines are insufficient - buffering happens at shell level
-- **Primary**: `stdbuf -o0` disables all stdout buffering (Linux/GNU)
-- **Fallback**: `perl -e '$|=1; exec @ARGV'` sets autoflush then execs script (macOS/BSD)
-- Perl's `$|=1` sets autoflush on STDOUT, then `exec` replaces perl with the script
-- Re-exec ensures entire script runs unbuffered
+- Shell stdout is buffered by default (4-8KB typically)
+- fcgiwrap also buffers (8-64KB on macOS)
+- **Clean approach (Linux)**: `stdbuf -o0` disables all stdout buffering
+- **Fallback approach (macOS)**: Output 128KB+ per event to force buffer overflow
+  - Buffer overflow forces immediate flush
+  - Additional flush comment pushes previous event
 - `UNBUFFERED_ACTIVE` guard prevents infinite loop
 
 **Use case:** SSE (Server-Sent Events) - fixes "one message behind" behavior where messages only appear when next message arrives.
+
+**Why 128KB?**
+- Must exceed: shell buffer (~8KB) + fcgiwrap buffer (~64KB) + nginx buffer (~8KB)
+- 128KB guarantees overflow of all buffering layers
+- Forces immediate flush without needing unbuffer tools
 
 ### Globbing
 
