@@ -201,6 +201,8 @@ http {
             fastcgi_param SERVER_NAME \$server_name;
             fastcgi_param SERVER_PROTOCOL \$server_protocol;
             fastcgi_param WIZARDRY_SITE_NAME $site_name;
+            fastcgi_param WIZARDRY_DIR $WIZARDRY_DIR;
+            fastcgi_param PATH $WIZARDRY_DIR/spells/.imps/cgi:$WIZARDRY_DIR/spells/.imps/out:$WIZARDRY_DIR/spells/.imps/fs:$WIZARDRY_DIR/spells/.imps/data:$WIZARDRY_DIR/spells/.imps/sys:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin;
         }
     }
 }
