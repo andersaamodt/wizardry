@@ -103,10 +103,17 @@ window.userHasScrolledUp = false;  // Track if user manually scrolled up
 // Handle room selection from list
 document.addEventListener('htmx:afterSwap', function(event) {
   if (event.detail.target.id === 'room-list') {
-    // Re-enable create room button after room list refreshes
-    document.getElementById('create-room-btn').disabled = false;
+    // Re-validate create room button after room list refreshes (respects validation state)
+    validateRoomName();
+    
+    // Re-enable input field after room list refreshes (only input, not button)
     document.getElementById('new-room-name').disabled = false;
-    document.getElementById('create-room-btn').innerHTML = 'Create';
+    
+    // Reset create button text if it was showing "Creating..."
+    var createBtn = document.getElementById('create-room-btn');
+    if (createBtn.innerHTML !== 'Create') {
+      createBtn.innerHTML = 'Create';
+    }
     
     // Re-enable delete room button after room list refreshes
     var deleteBtn = document.getElementById('delete-room-btn');
