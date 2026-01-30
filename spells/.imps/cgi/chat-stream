@@ -1,8 +1,9 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v23-MEGAPADDING)
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v24-SUBSHELL-FIX)
 # Streams chat messages as Server-Sent Events
-# FIXED: Use 128KB padding on macOS (no stdbuf) to force buffer overflow and immediate flush
-# Root cause: Shell + fcgiwrap buffering - must EXCEED all buffer sizes to force flush
+# FIXED: Removed pipe subshells in initial message sending - they were causing buffering!
+# Root cause: `tail | while` creates subshell where output gets buffered until pipe closes
+# Solution: Use temp file pattern consistently (avoid ALL pipe+while patterns)
 # Self-contained - no external imp dependencies
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
 #
@@ -31,8 +32,9 @@ fi
 set -eu
 
 # Diagnostic logging to stderr (appears in web server error log)
-script_version="2026-01-30-v23-MEGAPADDING"
+script_version="2026-01-30-v24-SUBSHELL-FIX"
 printf '[chat-stream] ========== SCRIPT STARTED (VERSION: %s) ==========\n' "$script_version" >&2
+printf '[chat-stream] CRITICAL FIX: Removed all pipe subshells (use temp files instead)\n' >&2
 if [ "$USE_DD_FLUSH" = "yes" ]; then
   printf '[chat-stream] MODE: 128KB padding (no stdbuf - forcing buffer overflow)\n' >&2
 else
@@ -161,7 +163,11 @@ if [ -f "$LOG_FILE" ] && [ -s "$LOG_FILE" ]; then
     # Filter messages that come after the 'since' timestamp
     # Format: [YYYY-MM-DD HH:MM:SS] username: message
     # Compare timestamps lexicographically (works for ISO format)
-    tail -200 "$LOG_FILE" | while IFS= read -r line || [ -n "$line" ]; do
+    
+    # CRITICAL: Avoid pipe subshell - use temp file so send_sse_event output reaches client
+    temp_init="/tmp/chat_stream_$$_init"
+    tail -200 "$LOG_FILE" > "$temp_init"
+    while IFS= read -r line || [ -n "$line" ]; do
       # Extract timestamp from line
       msg_timestamp=$(printf '%s' "$line" | sed 's/^\[\([^]]*\)\].*/\1/')
       
@@ -176,12 +182,17 @@ if [ -f "$LOG_FILE" ] && [ -s "$LOG_FILE" ]; then
         # yes padding to force buffer flush for real-time delivery
         send_sse_event message "$line" yes
       fi
-    done
+    done < "$temp_init"
+    rm -f "$temp_init"
   else
     # Send last 200 messages if no 'since' provided (without padding for speed)
-    tail -200 "$LOG_FILE" | while IFS= read -r line || [ -n "$line" ]; do
+    # CRITICAL: Avoid pipe subshell - use temp file so send_sse_event output reaches client
+    temp_init="/tmp/chat_stream_$$_init"
+    tail -200 "$LOG_FILE" > "$temp_init"
+    while IFS= read -r line || [ -n "$line" ]; do
       send_sse_event message "$line" no  # no padding for initial batch
-    done
+    done < "$temp_init"
+    rm -f "$temp_init"
   fi
   
   # Record the last line count for tracking new messages
