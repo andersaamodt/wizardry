@@ -308,7 +308,27 @@ while IFS= read -r line; do echo "$line"; done < file
 while IFS=: read -r user pass uid gid; do
   echo "User: $user"
 done < /etc/passwd
+
+# CRITICAL: Avoid pipe-into-while (creates subshell, buffers output)
+# WRONG - output trapped in subshell until pipe closes
+tail file | while IFS= read -r line; do
+  printf '%s\n' "$line"  # Output buffered in subshell!
+done
+
+# RIGHT - use temp file with input redirection
+temp="/tmp/data_$$"
+tail file > "$temp"
+while IFS= read -r line; do
+  printf '%s\n' "$line"  # Output immediately visible
+done < "$temp"
+rm -f "$temp"
 ```
+
+**Why pipe-into-while causes buffering:**
+- Pipe creates subshell for right side of pipe
+- All output from subshell buffered until pipe closes
+- Critical for SSE/real-time output where immediate flush needed
+- Temp file approach runs while in main shell
 
 ### Arithmetic
 
