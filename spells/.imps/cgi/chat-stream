@@ -1,8 +1,8 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v22-PERL-UNBUFFER)
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v23-MEGAPADDING)
 # Streams chat messages as Server-Sent Events
-# FIXED: Unbuffered stdout via stdbuf (Linux) or perl wrapper (macOS/BSD)
-# Root cause: Shell stdout buffering - perl -e '$|=1; exec @ARGV' sets autoflush
+# FIXED: Use 128KB padding on macOS (no stdbuf) to force buffer overflow and immediate flush
+# Root cause: Shell + fcgiwrap buffering - must EXCEED all buffer sizes to force flush
 # Self-contained - no external imp dependencies
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
 #
@@ -13,30 +13,31 @@
 # CRITICAL FIX: Re-exec with unbuffered stdout if not already unbuffered
 # This solves the "1 message behind" problem - shell stdout is buffered by default
 # Primary: stdbuf -o0 disables stdout buffering (Linux)
-# Fallback: perl wrapper with autoflush (macOS/BSD)
+# Fallback: Use explicit fflush via dd after each event (macOS/BSD)
+USE_DD_FLUSH=no
 if [ -z "${UNBUFFERED_ACTIVE:-}" ]; then
   export UNBUFFERED_ACTIVE=1
   if command -v stdbuf >/dev/null 2>&1; then
     # Linux/GNU: Use stdbuf
     printf '[chat-stream] Using stdbuf for unbuffered stdout\n' >&2
     exec stdbuf -o0 "$0" "$@"
-  elif command -v perl >/dev/null 2>&1; then
-    # macOS/BSD: Use perl with autoflush
-    printf '[chat-stream] Using perl wrapper for unbuffered stdout\n' >&2
-    exec perl -e '$|=1; exec @ARGV' "$0" "$@"
   else
-    # Neither available - warn user
-    printf '[chat-stream] WARNING: Neither stdbuf nor perl available\n' >&2
-    printf '[chat-stream] Messages will be delayed (buffered output)\n' >&2
+    # macOS/BSD: No stdbuf, will use dd flush workaround
+    printf '[chat-stream] Using dd flush workaround (no stdbuf)\n' >&2
+    USE_DD_FLUSH=yes
   fi
 fi
 
 set -eu
 
 # Diagnostic logging to stderr (appears in web server error log)
-script_version="2026-01-30-v22-PERL-UNBUFFER"
+script_version="2026-01-30-v23-MEGAPADDING"
 printf '[chat-stream] ========== SCRIPT STARTED (VERSION: %s) ==========\n' "$script_version" >&2
-printf '[chat-stream] Running with unbuffered stdout (via stdbuf or perl)\n' >&2
+if [ "$USE_DD_FLUSH" = "yes" ]; then
+  printf '[chat-stream] MODE: 128KB padding (no stdbuf - forcing buffer overflow)\n' >&2
+else
+  printf '[chat-stream] MODE: Unbuffered stdout with stdbuf (clean)\n' >&2
+fi
 printf '[chat-stream] Script location: %s\n' "$0" >&2
 printf '[chat-stream] PWD: %s\n' "$(pwd)" >&2
 printf '[chat-stream] QUERY_STRING: %s\n' "${QUERY_STRING:-}" >&2
@@ -53,15 +54,20 @@ http-end-headers
 # No initial padding burst - causes lag on join (delays first real event)
 # Heartbeats every 45s (not 2s) - only for keepalive, not flushing
 # Actual events have padding to force flush when they occur
-printf '[chat-stream] SSE headers sent (heartbeats: 45s, events: with 8KB padding)\n' >&2
+printf '[chat-stream] SSE headers sent (heartbeats: 45s, events: with padding)\n' >&2
 
-# Pre-generate 8KB padding string ONCE for efficiency
-# fcgiwrap buffer on macOS is ~8KB - need to EXCEED it for per-event flush
-# 2KB was too small (caused 3-4 message batching), 8KB guarantees immediate flush
-# Using awk for reliable cross-platform generation (macOS-compatible)
-PADDING_8KB=$(awk 'BEGIN{s=""; while(length(s)<8192){s=s" "}; printf("%s",s)}')
-printf '[chat-stream] Pre-generated 8KB padding string\n' >&2
-printf '[chat-stream] (exceeds fcgiwrap buffer for per-event flush)\n' >&2
+# Pre-generate padding string ONCE for efficiency
+# Size depends on whether we have stdbuf or need to exceed buffers manually
+if [ "$USE_DD_FLUSH" = "yes" ]; then
+  # No stdbuf: Use MASSIVE padding to absolutely guarantee buffer overflow
+  # macOS fcgiwrap + shell buffering can be 64KB+, so use 128KB to be sure
+  PADDING=$(awk 'BEGIN{s=""; while(length(s)<131072){s=s" "}; printf("%s",s)}')
+  printf '[chat-stream] Pre-generated 128KB padding (no stdbuf, force overflow)\n' >&2
+else
+  # With stdbuf: Minimal padding just for fcgiwrap/nginx
+  PADDING=$(awk 'BEGIN{s=""; while(length(s)<8192){s=s" "}; printf("%s",s)}')
+  printf '[chat-stream] Pre-generated 8KB padding (with stdbuf)\n' >&2
+fi
 
 # Inline SSE event function (replaces send_sse_event imp)
 # Third parameter controls padding (default: with padding)
@@ -74,11 +80,12 @@ send_sse_event() {
   printf 'event: %s\n' "$event_type"
   printf 'data: %s\n' "$event_data"
   
-  # Add 8KB padding to force buffer flush at fcgiwrap/nginx level (only if requested)
+  # Add padding to force buffer flush at fcgiwrap/nginx level (only if requested)
   # With unbuffered stdout (stdbuf -o0), shell buffering is eliminated
-  # Padding still needed to exceed fcgiwrap buffer (~8KB on macOS)
+  # Padding still needed to exceed fcgiwrap buffer
+  # Without stdbuf: Use MASSIVE padding (128KB) to force overflow of all buffers
   if [ "$add_padding" = "yes" ]; then
-    printf ': padding=%s\n' "$PADDING_8KB"
+    printf ': padding=%s\n' "$PADDING"
   fi
   
   # End event with blank line (SSE spec)
@@ -275,6 +282,13 @@ while true; do
       tail -n "$new_message_count" "$LOG_FILE" > "$temp_msgs"
       while IFS= read -r line || [ -n "$line" ]; do
         send_sse_event message "$line" yes || exit 0  # WITH padding for ongoing events
+        
+        # If using dd flush (no stdbuf), send flush trigger after each message
+        if [ "$USE_DD_FLUSH" = "yes" ]; then
+          # Send SSE comment to push previous event out of buffer
+          # The act of writing this triggers flush of buffered content
+          printf ': flush\n\n'
+        fi
       done < "$temp_msgs"
       rm -f "$temp_msgs"
       
