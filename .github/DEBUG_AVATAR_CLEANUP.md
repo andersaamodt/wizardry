@@ -20,10 +20,12 @@ tail -f /tmp/chat-cleanup-debug.log
 ```
 
 This shows:
-- When cleanup script actually runs
-- Which avatars it's checking
-- Age of each avatar
-- Whether avatars are being deleted
+- When cleanup script runs
+- Which avatars are found
+- Type detection (web vs MUD avatar)
+- Timestamp source (attribute vs mtime)
+- Age calculation
+- Whether avatars are deleted or kept
 
 ## Example output
 
@@ -35,23 +37,35 @@ This shows:
 
 `/tmp/chat-cleanup-debug.log`:
 ```
-[2026-01-30 05:58:13] cleanup called: room_dir=/home/user/sites/.sitedata/default/chatrooms/lobby
-[2026-01-30 05:58:13] checking .alice: age=120 threshold=1800
-[2026-01-30 05:58:13] checking .bob: age=2400 threshold=1800
-[2026-01-30 05:58:13] DELETING .bob (age 2400 > 1800)
+[2026-01-30 06:05:55] cleanup called: room_dir=/path/to/chatrooms/lobby
+[2026-01-30 06:05:55] cleanup: room exists, starting scan
+[2026-01-30 06:05:55] found avatar .alice
+[2026-01-30 06:05:55] .alice: no is_avatar attribute (web avatar)
+[2026-01-30 06:05:55] .alice: using mtime=1769753155
+[2026-01-30 06:05:55] checking .alice: age=120 threshold=1800
+[2026-01-30 06:05:55] keeping .alice (age 120 <= 1800)
+[2026-01-30 06:05:55] found avatar .bob
+[2026-01-30 06:05:55] .bob: no is_avatar attribute (web avatar)
+[2026-01-30 06:05:55] .bob: using mtime=1769751355
+[2026-01-30 06:05:55] checking .bob: age=2400 threshold=1800
+[2026-01-30 06:05:55] DELETING .bob (age 2400 > 1800)
+[2026-01-30 06:05:55] cleanup complete: processed 2 avatars
 ```
 
 ## What to look for
 
-**If cleanup isn't being called:**
-- Check that CGI scripts are executing
-- Verify wizardry is in PATH for web server
-- Check web server error logs
+**If cleanup shows "cleanup called" but no "starting scan":**
+- The room directory path is invalid or missing
+- Should see "cleanup exit: room_dir empty or missing" message
 
-**If cleanup is called but avatars aren't deleted:**
-- Check ages in debug log - are they actually >30 minutes (1800 seconds)?
-- Check if avatars are being detected as MUD avatars (they'd say "skipping")
-- Verify the delete command is running (should see "DELETING" messages)
+**If cleanup shows "starting scan" but no avatars found:**
+- No avatar directories exist in the room (check `ls -la /path/to/room/`)
+- All avatars were skipped (dots, .log, etc.)
+
+**If avatars found but not deleted:**
+- Check the age - must be >1800 seconds (30 minutes)
+- Check if detected as MUD avatar (has is_avatar attribute)
+- Recent avatars shown as "keeping" (age <= threshold)
 
 **If avatars are too young:**
 - Web avatars get their last_activity updated each time user sends message
@@ -70,7 +84,7 @@ cd /path/to/wizardry
 chat-cleanup-inactive-avatars /path/to/sites/.sitedata/default/chatrooms/ROOMNAME
 
 # Check the debug log
-cat /tmp/chat-cleanup-debug.log
+cat /tmp/chat-cleanup-debug.log | tail -20
 ```
 
 ## Disabling debug logging
