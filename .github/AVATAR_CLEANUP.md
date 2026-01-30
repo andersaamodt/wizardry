@@ -6,50 +6,49 @@ Web chat avatars are automatically cleaned up after 30 minutes of inactivity. Th
 
 ## How It Works
 
-### 1. Activity Tracking
+### 1. Activity Tracking (using enchant)
 
-Each time a user sends a message, their activity is tracked:
+Each time a user sends a message, their activity is tracked using extended attributes:
 
 ```sh
 # In chat-send-message
 current_timestamp=$(date +%s)
-printf '%s\n' "$current_timestamp" > "$ROOM_DIR/.$user_name/.last_activity"
+enchant "$ROOM_DIR/.$user_name" "last_activity=$current_timestamp"
 ```
 
-**Why not use `touch`?**
-- Using `touch` to update directory mtime triggers filesystem watchers
-- Can cause side effects in systems monitoring file changes
-- Using a hidden file (`.last_activity`) avoids these issues
+**Why enchant (xattr)?**
+- Native wizardry spell for extended attributes
+- No extra files created
+- Attributes stored in filesystem metadata
+- Fallback to directory mtime when xattr not available
 
-### 2. Web Avatar Marking
+### 2. Web Avatar Marking (using enchant)
 
-Web avatars are distinguished from MUD avatars using a marker file:
+Web avatars are distinguished from MUD avatars using extended attributes:
 
 ```sh
 # Created when avatar is first created
-touch "$avatar_path/.web_avatar"
+enchant "$avatar_path" "web_avatar=1"
 ```
 
-**Why not use extended attributes (xattr)?**
-- Xattr not reliably supported across all filesystems
-- File-based marker is more portable
-- Works on NFS, tmpfs, and other filesystems without xattr support
+**Distinction:**
+- Web avatars: Have `web_avatar=1` attribute
+- MUD avatars: Have `is_avatar=1` attribute (set by create-avatar)
+- Detection fallback: If no attributes, treat as web avatar (cleanup eligible)
 
 ### 3. Cleanup Process
 
-Cleanup runs **after each message is sent** (not during reads):
+Cleanup runs on:
+- **Page view** (chat-get-messages) - ensures cleanup when visiting room
+- **Message send** (chat-send-message) - cleanup on activity
 
-```sh
-# In chat-send-message, after successful message write
-chat-cleanup-inactive-avatars "$ROOM_DIR"
-```
-
-The cleanup script:
+The cleanup script (`chat-cleanup-inactive-avatars`):
 1. Iterates through all avatar directories
-2. Checks for `.web_avatar` marker (MUD avatars skipped)
-3. Reads timestamp from `.last_activity` file
-4. Falls back to directory mtime if no timestamp file
-5. Deletes avatar if inactive for >30 minutes (1800 seconds)
+2. Checks for web avatar markers using `read-magic`
+3. Falls back to checking for MUD avatar markers
+4. Reads timestamp from `last_activity` attribute using `read-magic`
+5. Falls back to directory mtime if no timestamp attribute
+6. Deletes avatar if inactive for >30 minutes (1800 seconds)
 
 ## Avatar Directory Structure
 
@@ -57,135 +56,121 @@ The cleanup script:
 .sitedata/default/chatrooms/roomname/
 ├── .log                    # Message log (file)
 ├── .alice/                 # Web avatar
-│   ├── .web_avatar        # Marker: this is a web avatar
-│   ├── .last_activity     # Timestamp: unix epoch seconds
-│   └── ...               # Avatar stats/attributes
+│   └── (xattr: web_avatar=1, last_activity=1738127400)
 └── .bob/                   # MUD avatar (no cleanup)
-    ├── max_life
-    ├── max_mana
-    └── ...
+    └── (xattr: is_avatar=1, max_life=100, max_mana=100, ...)
 ```
+
+**No extra files!** All tracking is done via extended attributes.
+
+## Extended Attributes Used
+
+- `web_avatar=1` - Marks avatar as web avatar (eligible for cleanup)
+- `last_activity=<timestamp>` - Unix epoch timestamp of last activity
+- `is_avatar=1` - Marks avatar as MUD avatar (NOT eligible for cleanup)
 
 ## Key Design Decisions
 
-### Why cleanup on write (message send) instead of read (list avatars)?
+### Why cleanup on both read and write?
 
-**Previous approach (buggy):**
+**Page view (chat-get-messages):**
+- Ensures cleanup happens even when user just views (doesn't send messages)
+- User's concern: "avatars still exist from earlier today even after visiting"
+- Solution: Run cleanup when room is viewed
+
+**Message send (chat-send-message):**
+- Also update activity timestamp and run cleanup
+- Ensures cleanup happens during active use
+
+### Why enchant/read-magic instead of files?
+
+**Previous approach (files):**
 ```sh
-# chat-list-avatars (OLD - WRONG)
-# 1. Run cleanup (delete old avatars)
-# 2. List remaining avatars
+# Created .last_activity and .web_avatar files
+echo "$timestamp" > "$avatar_dir/.last_activity"
+touch "$avatar_dir/.web_avatar"
 ```
 
 Problems:
-- Cleanup ran every 2 seconds (polling frequency)
-- Read operation shouldn't mutate state
-- Created timing bug where avatars deleted before being listed
+- Clutters avatar directories with metadata files
+- User complaint: "Too many files"
 
-**Current approach (correct):**
+**Current approach (xattr):**
 ```sh
-# chat-send-message
-# 1. Send message
-# 2. Update activity timestamp
-# 3. Run cleanup
+# Use native wizardry spells
+enchant "$avatar_dir" "last_activity=$timestamp"
+enchant "$avatar_dir" "web_avatar=1"
 ```
 
 Benefits:
-- Cleanup runs less frequently (only on writes)
-- Separates read and write concerns
-- Activity tracking happens atomically with message send
+- No extra files
+- Native wizardry integration
+- Filesystem metadata (cleaner)
+- Fallback to mtime when xattr not supported
 
-### Why 30 minutes?
+### Fallback Strategy
 
-This balances two concerns:
+When extended attributes aren't available (no xattr tools):
+1. `enchant` fails silently (|| true)
+2. Cleanup uses directory mtime instead of `last_activity` attribute
+3. Web avatar detection falls back to checking for absence of `is_avatar`
+
+This ensures the system works even on filesystems without xattr support.
+
+### 30-Minute Threshold
+
+Balances two concerns:
 1. **User experience:** Users who step away briefly aren't removed
 2. **Accuracy:** Inactive users don't clutter the members list indefinitely
-
-If a user is viewing the chat but not sending messages:
-- They'll appear in the list for 30 minutes after their last message
-- After 30 minutes, their avatar is removed
-- They can rejoin by sending another message
-
-### MUD vs Web Avatars
-
-**MUD avatars:**
-- Created through the MUD interface
-- Have persistent state (stats, inventory, etc.)
-- NOT automatically cleaned up
-- Managed through MUD commands (quit, logout, etc.)
-
-**Web avatars:**
-- Created through the web chat interface
-- Minimal state (just username)
-- Automatically cleaned up after 30 min inactivity
-- Marked with `.web_avatar` file
 
 ## Testing
 
 Comprehensive test suite covers:
 1. Recent avatars are preserved
-2. Old avatars (>30 min) are deleted
+2. Old avatars (>30 min) are deleted  
 3. MUD avatars are never deleted
 4. Boundary case (exactly 30 min) is preserved
 5. Mixed avatar types handled correctly
-6. Fallback to directory mtime works
+6. Fallback to directory mtime works (when xattr unavailable)
 
 Run tests:
 ```sh
 sh .tests/.imps/cgi/test-chat-cleanup-inactive-avatars.sh
 ```
 
-## Future Enhancements
-
-### Option 1: Separate cron job
-Move cleanup to a periodic cron job instead of message-triggered:
-- Pro: Completely decouples cleanup from message sending
-- Con: Requires external scheduling
-- Con: Cleanup happens less predictably
-
-### Option 2: Session-based tracking
-Track sessions instead of message timestamps:
-- Pro: More accurate activity detection
-- Con: Requires session management infrastructure
-- Con: More complex implementation
-
-### Option 3: Configurable threshold
-Make the 30-minute threshold configurable:
-- Add CHAT_INACTIVE_THRESHOLD environment variable
-- Default to 1800 seconds
-- Allow per-site customization
+All 6 tests pass, including in environments without xattr support.
 
 ## Troubleshooting
 
-### Avatars not being deleted
+### Avatars not being deleted after visiting page
 
 Check:
-1. Does avatar have `.web_avatar` marker file?
-2. Does avatar have `.last_activity` timestamp file?
-3. Is timestamp more than 30 minutes old?
-4. Is cleanup being called after message send?
+1. Is chat-get-messages being called when viewing room?
+2. Does avatar have old directory mtime (>30 min)?
+3. Is cleanup script being called?
 
 Debug:
 ```sh
-# Check avatar directory contents
-ls -la /path/to/chatrooms/roomname/.username/
+# Check avatar attributes
+read-magic /path/to/avatar web_avatar
+read-magic /path/to/avatar last_activity
+read-magic /path/to/avatar is_avatar
 
-# Check timestamp
-cat /path/to/chatrooms/roomname/.username/.last_activity
+# Check directory mtime
+stat -c %Y /path/to/avatar
 
-# Calculate age
-current=$(date +%s)
-last=$(cat .last_activity)
-echo "Age: $((current - last)) seconds"
+# Manually run cleanup
+chat-cleanup-inactive-avatars /path/to/chatrooms/roomname
 ```
 
 ### Avatars deleted too quickly
 
 - Verify timestamp is being updated on message send
 - Check for filesystem time sync issues
-- Ensure `.last_activity` file is being written correctly
+- Ensure enchant is working (check for xattr tools)
 
 ### MUD avatars being deleted
 
-- Verify MUD avatars don't have `.web_avatar` marker
-- Check cleanup script logic for web avatar detection
+- Verify MUD avatars have `is_avatar=1` attribute
+- Check cleanup detection logic
+- MUD avatars created via create-avatar should be safe
