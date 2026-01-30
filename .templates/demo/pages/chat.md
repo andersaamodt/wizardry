@@ -428,7 +428,11 @@ function setupMessageStream(roomName) {
   
   // Handle empty room
   window.messageEventSource.addEventListener('empty', function(event) {
-    // Initial room is empty, do nothing (already handled by loadMessages)
+    // Room is empty - show empty state message
+    var chatMessagesDiv = document.getElementById('chat-messages');
+    if (chatMessagesDiv) {
+      chatMessagesDiv.innerHTML = '<p class="empty-state-message">No messages yet. Be the first to say something!</p>';
+    }
   });
 }
 
@@ -436,6 +440,12 @@ function setupMessageStream(roomName) {
 function appendMessage(messageLine) {
   var chatMessagesDiv = document.getElementById('chat-messages');
   if (!chatMessagesDiv) return;
+  
+  // Clear empty state message if present (first message arriving)
+  var emptyStateMsg = chatMessagesDiv.querySelector('.empty-state-message');
+  if (emptyStateMsg) {
+    chatMessagesDiv.innerHTML = '';  // Clear empty state
+  }
   
   // Parse the message line format: [YYYY-MM-DD HH:MM:SS] username: message
   var match = messageLine.match(/^\[([^\]]+)\]\s+([^:]+):\s+(.*)$/);

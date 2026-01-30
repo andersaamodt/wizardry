@@ -96,7 +96,7 @@ log_entry="[$timestamp] $user_name: $message"
 # Append to log file
 if printf '%s\n' "$log_entry" >> "$LOG_FILE" 2>/dev/null; then
   # Run cleanup after successful message send (periodic maintenance)
-  # This removes avatars inactive for >30 minutes
+  # This removes avatars inactive for >5 minutes
   chat-cleanup-inactive-avatars "$ROOM_DIR" 2>/dev/null || true
   
   cat <<HTML
