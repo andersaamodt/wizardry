@@ -30,7 +30,7 @@ Loading rooms...
 
 <div class="username-widget">
 <!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
-<div class="username-display" id="username-display"><strong id="username-text">Guest001</strong><button onclick="editUsername()">Change</button></div>
+<div class="username-display" id="username-display"><strong id="username-text">🧙 Guest001</strong><button onclick="editUsername()">Change</button></div>
 <div class="username-edit" id="username-edit"><h5>Change Handle</h5><div id="username-edit-input-wrapper"><input type="text" id="username-edit-input" placeholder="Your name" /><span id="username-invalid-icon">&#x1F6AB;</span></div><div class="username-edit-buttons"><button onclick="saveUsername()">OK</button><button onclick="cancelUsernameEdit()">Cancel</button></div></div>
 </div>
 </div>
@@ -93,6 +93,13 @@ function generateGuestName() {
   var num = Math.floor(Math.random() * 999) + 1;
   var paddedNum = ('000' + num).slice(-3);  // Pad with zeros to 3 digits
   return 'Guest' + paddedNum;
+}
+
+// Get username without display icon (wizard emoji)
+function getUsername() {
+  var displayText = document.getElementById('username-text').textContent.trim();
+  // Remove wizard emoji prefix if present
+  return displayText.replace(/^🧙\s*/, '');
 }
 
 // Track current room
@@ -185,7 +192,7 @@ function joinRoom(roomName) {
   // Members button visibility will be controlled by loadMembers based on member count
   
   // Move or create avatar for this user
-  var currentUsername = document.getElementById('username-text').textContent.trim();
+  var currentUsername = getUsername();
   var previousRoom = localStorage.getItem('previousRoom') || '';
   
   if (previousRoom && previousRoom !== roomName) {
@@ -291,7 +298,7 @@ function loadMessages() {
         }
         
         // Color-code messages: light blue for others, light green for user's own
-        var currentUsername = document.getElementById('username-text').textContent.trim();
+        var currentUsername = getUsername();
         var allMessages = chatMessagesDiv.querySelectorAll('.chat-msg');
         allMessages.forEach(function(msg) {
           var usernameSpan = msg.querySelector('.username');
@@ -471,7 +478,7 @@ function loadMembers() {
         memberCount.textContent = data.avatars.length;
         
         // Get current username for highlighting
-        var currentUsername = document.getElementById('username-text').textContent.trim();
+        var currentUsername = getUsername();
         
         var html = '';
         data.avatars.forEach(function(avatar) {
@@ -552,7 +559,7 @@ function toggleMembersPanel() {
 function leaveRoom() {
   // Delete avatar before leaving
   if (window.currentRoom) {
-    var currentUsername = document.getElementById('username-text').textContent.trim();
+    var currentUsername = getUsername();
     deleteAvatar(window.currentRoom, currentUsername);
   }
   
@@ -611,7 +618,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Initialize with a guest name
   var guestName = generateGuestName();
-  usernameText.textContent = guestName;
+  usernameText.textContent = '🧙 ' + guestName;
   
   // Set initial height explicitly to prevent shrinking on first keystroke
   messageInput.style.height = '2.5rem';
@@ -651,7 +658,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!window.currentRoom) return;
     
     var msg = messageInput.value.trim();
-    var user = usernameText.textContent.trim() || 'Anonymous';
+    var user = getUsername() || 'Anonymous';
     
     if (!msg) return;
     
@@ -691,7 +698,7 @@ function editUsername() {
   var display = document.getElementById('username-display');
   var edit = document.getElementById('username-edit');
   var input = document.getElementById('username-edit-input');
-  var currentName = document.getElementById('username-text').textContent;
+  var currentName = getUsername();
   var okButton = document.querySelector('#username-edit button:first-child');
   
   display.classList.add('hidden');
@@ -737,7 +744,7 @@ function saveUsername() {
     }
     
     // Set username for display
-    text.textContent = newName;
+    text.textContent = '🧙 ' + newName;
   }
   
   edit.classList.remove('open');
@@ -892,7 +899,7 @@ function showNotification() {
 // Clean up avatar when user leaves the page
 window.addEventListener('beforeunload', function() {
   if (window.currentRoom) {
-    var currentUsername = document.getElementById('username-text').textContent.trim();
+    var currentUsername = getUsername();
     // Use sendBeacon for reliable cleanup on page unload
     var formData = new URLSearchParams();
     formData.append('room', window.currentRoom);
