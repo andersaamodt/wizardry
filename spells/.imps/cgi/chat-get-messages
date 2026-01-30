@@ -44,6 +44,8 @@ HTML
 fi
 
 # Run cleanup when viewing room (removes inactive avatars >30 min old)
+# Log that cleanup was called
+printf '[%s] chat-get-messages: calling cleanup for %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$ROOM_DIR" >> /tmp/chat-cleanup-calls.log 2>/dev/null || true
 chat-cleanup-inactive-avatars "$ROOM_DIR" 2>/dev/null || true
 
 # Read messages from .log file (same format as MUD 'say' command)
