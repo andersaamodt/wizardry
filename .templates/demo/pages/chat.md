@@ -250,8 +250,12 @@ function joinRoom(roomName) {
     window.messageInterval = null;
   }
   
-  // Set up SSE for real-time message and member updates (includes initial batch)
-  console.log('[Room] Setting up SSE stream for room:', roomName);
+  // Load initial messages via GET for instant display
+  console.log('[Room] Loading initial messages via GET for instant display');
+  loadMessages();
+  
+  // Then set up SSE for real-time updates (no initial batch, just ongoing events)
+  console.log('[Room] Setting up SSE stream for real-time updates:', roomName);
   setupMessageStream(roomName);
 }
 
@@ -417,9 +421,15 @@ function setupMessageStream(roomName) {
     window.messageEventSource = null;
   }
   
-  // Create new SSE connection
-  var url = '/cgi/chat-stream?room=' + encodeURIComponent(roomName);
+  // Get current timestamp to only receive NEW messages (not history)
+  // History was already loaded via GET request
+  var now = new Date();
+  var sinceTimestamp = now.toISOString().replace('T', ' ').substring(0, 19);
+  
+  // Create new SSE connection with since parameter
+  var url = '/cgi/chat-stream?room=' + encodeURIComponent(roomName) + '&since=' + encodeURIComponent(sinceTimestamp);
   console.log('[SSE] Creating new EventSource:', url);
+  console.log('[SSE] Will only receive messages after:', sinceTimestamp);
   
   try {
     window.messageEventSource = new EventSource(url);

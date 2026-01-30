@@ -1,5 +1,5 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v7-CONCURRENT)
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v8-FAST)
 # Streams chat messages as Server-Sent Events
 # Uses padding on heartbeats and new events only (not initial batch) for buffer flush
 # Self-contained - no external imp dependencies
@@ -11,8 +11,8 @@
 set -eu
 
 # Diagnostic logging to stderr (appears in web server error log)
-printf '[chat-stream] ========== SCRIPT STARTED (VERSION: 2026-01-30-v7-CONCURRENT) ==========\n' >&2
-printf '[chat-stream] Using selective padding (initial batch fast, ongoing events padded)\n' >&2
+printf '[chat-stream] ========== SCRIPT STARTED (VERSION: 2026-01-30-v8-FAST) ==========\n' >&2
+printf '[chat-stream] Using minimal padding (512 bytes, no initial burst for fast join)\n' >&2
 printf '[chat-stream] Script location: %s\n' "$0" >&2
 printf '[chat-stream] PWD: %s\n' "$(pwd)" >&2
 printf '[chat-stream] QUERY_STRING: %s\n' "${QUERY_STRING:-}" >&2
@@ -26,15 +26,9 @@ http-header "Connection" "keep-alive"
 http-header "X-Accel-Buffering" "no"
 http-end-headers
 
-# Send initial padding burst (4KB) to force fcgiwrap buffer flush immediately
-printf ': initial-padding='
-i=0
-while [ $i -lt 4000 ]; do
-  printf ' '
-  i=$((i + 1))
-done
-printf '\n\n'
-printf '[chat-stream] SSE headers and initial padding sent\n' >&2
+# No initial padding burst - causes 2-second lag on join
+# Instead rely on frequent heartbeats with padding
+printf '[chat-stream] SSE headers sent (no initial burst for fast connection)\n' >&2
 
 # Inline SSE event function (replaces send_sse_event imp)
 # Third parameter controls padding (default: with padding)
@@ -47,16 +41,18 @@ send_sse_event() {
   printf 'event: %s\n' "$event_type"
   printf 'data: %s\n' "$event_data"
   
-  # Add 2KB padding to force buffer flush (only if requested)
+  # Add 512 bytes padding to force buffer flush (only if requested)
+  # Reduced from 2KB for better performance
   if [ "$add_padding" = "yes" ]; then
     printf ': padding='
     i=0
-    while [ $i -lt 2000 ]; do
+    while [ $i -lt 512 ]; do
       printf ' '
       i=$((i + 1))
     done
+    printf '\n'
   fi
-  printf '\n\n'
+  printf '\n'
 }
 
 # Parse room name from query string
