@@ -61,8 +61,12 @@ fi
 if has fcgiwrap; then
   FCGI_SOCK="$SITE_DIR/nginx/fcgiwrap.sock"
   if [ ! -S "$FCGI_SOCK" ]; then
-    step "Starting fcgiwrap..."
-    fcgiwrap -s "unix:$FCGI_SOCK" &
+    # Number of fcgiwrap workers (for concurrent SSE connections)
+    # Default: 10 workers = 10 concurrent long-lived connections
+    FCGIWRAP_WORKERS="${FCGIWRAP_WORKERS:-10}"
+    
+    step "Starting fcgiwrap with $FCGIWRAP_WORKERS workers..."
+    fcgiwrap -c "$FCGIWRAP_WORKERS" -s "unix:$FCGI_SOCK" &
     fcgi_pid=$!
     printf '%s\n' "$fcgi_pid" > "$SITE_DIR/nginx/fcgiwrap.pid"
     sleep 1
