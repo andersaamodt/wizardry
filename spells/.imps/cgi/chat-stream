@@ -1,8 +1,8 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v20-UNBUFFERED)
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v21-HYBRID)
 # Streams chat messages as Server-Sent Events
-# FIXED: Disabled stdout buffering with stdbuf to prevent "1 message behind" behavior
-# Root cause: Shell stdout was buffered even with padding/flush - needed stdbuf -o0
+# FIXED: Hybrid approach - uses stdbuf -o0 when available, aggressive flush fallback otherwise
+# Root cause: Shell stdout was buffered - stdbuf is clean solution, fallback for compatibility
 # Self-contained - no external imp dependencies
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
 #
@@ -13,23 +13,30 @@
 # CRITICAL FIX: Re-exec with unbuffered stdout if not already unbuffered
 # This solves the "1 message behind" problem - shell stdout is buffered by default
 # stdbuf -o0 disables stdout buffering entirely, ensuring immediate output
+USE_AGGRESSIVE_FLUSH=no
 if [ -z "${STDBUF_ACTIVE:-}" ]; then
   export STDBUF_ACTIVE=1
   if command -v stdbuf >/dev/null 2>&1; then
     exec stdbuf -o0 "$0" "$@"
   else
-    # stdbuf not available - warn and continue (output may be buffered)
-    printf '[chat-stream] WARNING: stdbuf not available - messages may be delayed\n' >&2
+    # stdbuf not available - use aggressive flush techniques as fallback
+    printf '[chat-stream] WARNING: stdbuf not available - using aggressive flush fallback\n' >&2
+    USE_AGGRESSIVE_FLUSH=yes
   fi
 fi
 
 set -eu
 
 # Diagnostic logging to stderr (appears in web server error log)
-script_version="2026-01-30-v20-UNBUFFERED"
+script_version="2026-01-30-v21-HYBRID"
 printf '[chat-stream] ========== SCRIPT STARTED (VERSION: %s) ==========\n' "$script_version" >&2
-printf '[chat-stream] CRITICAL FIX: Running with unbuffered stdout (stdbuf -o0)\n' >&2
-printf '[chat-stream] This eliminates "1 message behind" behavior - shell buffering was the root cause\n' >&2
+if [ "$USE_AGGRESSIVE_FLUSH" = "yes" ]; then
+  printf '[chat-stream] MODE: Aggressive flush (stdbuf unavailable)\n' >&2
+  printf '[chat-stream] Using 8KB padding + dd+fsync + flush-trigger for buffering workaround\n' >&2
+else
+  printf '[chat-stream] MODE: Unbuffered stdout (stdbuf -o0)\n' >&2
+  printf '[chat-stream] Clean implementation - no flush workarounds needed\n' >&2
+fi
 printf '[chat-stream] Script location: %s\n' "$0" >&2
 printf '[chat-stream] PWD: %s\n' "$(pwd)" >&2
 printf '[chat-stream] QUERY_STRING: %s\n' "${QUERY_STRING:-}" >&2
@@ -76,6 +83,20 @@ send_sse_event() {
   
   # End event with blank line (SSE spec)
   printf '\n'
+  
+  # If stdbuf unavailable, use aggressive flush techniques
+  # These workarounds are needed when stdout is buffered by the shell
+  if [ "$USE_AGGRESSIVE_FLUSH" = "yes" ] && [ "$add_padding" = "yes" ]; then
+    # Extra blank lines (SSE spec allows multiple blank lines)
+    printf '\n\n'
+    
+    # Write directly to file descriptor 1 (stdout) - bypasses some shell buffering
+    printf '\n' >&1
+    
+    # Use dd with fsync to force kernel-level flush
+    # This is the nuclear option - forces all buffers to flush
+    dd conv=fsync of=/dev/stdout count=0 2>/dev/null || true
+  fi
 }
 
 # Parse room name from query string
@@ -268,6 +289,14 @@ while true; do
       tail -n "$new_message_count" "$LOG_FILE" > "$temp_msgs"
       while IFS= read -r line || [ -n "$line" ]; do
         send_sse_event message "$line" yes || exit 0  # WITH padding for ongoing events
+        
+        # If using aggressive flush (no stdbuf), send extra flush trigger
+        if [ "$USE_AGGRESSIVE_FLUSH" = "yes" ]; then
+          # Send immediate heartbeat after message to trigger flush
+          # Theory: First event gets buffered, second event triggers flush of first
+          printf ': flush-trigger\n\n'
+          dd conv=fsync of=/dev/stdout count=0 2>/dev/null || true
+        fi
       done < "$temp_msgs"
       rm -f "$temp_msgs"
       
