@@ -23,6 +23,7 @@
 
 ## Lessons
 
+- Pipe-into-while creates subshell where output gets buffered until pipe closes; use temp file with input redirection instead: `tail file > temp; while read line; do ...; done < temp`.
 - Shell stdout is buffered by default; for SSE/real-time streaming on Linux use `exec stdbuf -o0 "$0" "$@"`, on macOS without stdbuf use 128KB+ padding per event to force buffer overflow.
 - Spells MUST NOT preload their own prerequisites (die, warn, etc.); they should fail early with require_wizardry if wizardry isn't available.
 - When inlining helper functions, use global search-replace to ensure ALL calls are replaced, including those outside the main function body.
