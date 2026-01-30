@@ -445,12 +445,21 @@ function updateMemberList(jsonData) {
     
     var membersList = document.getElementById('members-list');
     var memberCount = document.getElementById('member-count');
+    var membersBtn = document.getElementById('members-btn');
+    var deleteBtn = document.getElementById('delete-room-btn');
     
-    if (!avatars || avatars.length === 0) {
+    if (!membersList || !memberCount) {
+      console.error('Member list elements not found');
+      return;
+    }
+    
+    var count = avatars.length;
+    
+    if (count === 0) {
       membersList.innerHTML = '<p style="color: #666; font-style: italic;">No members</p>';
       memberCount.textContent = '0';
     } else {
-      memberCount.textContent = avatars.length;
+      memberCount.textContent = count;
       
       // Get current username for highlighting
       var currentUsername = getUsername();
@@ -470,12 +479,16 @@ function updateMemberList(jsonData) {
       membersList.innerHTML = html;
     }
     
-    // Update delete button state
-    updateDeleteButton();
+    // Update button visibility based on member count
+    if (membersBtn) {
+      membersBtn.style.display = (count > 0) ? 'flex' : 'none';
+    }
+    if (deleteBtn) {
+      deleteBtn.style.display = (count === 0) ? 'inline-block' : 'none';
+    }
   } catch (e) {
     console.error('Error parsing member data:', e);
   }
-  });
 }
 
 // Append a single message to the chat display
