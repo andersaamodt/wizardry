@@ -1,8 +1,8 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v21-HYBRID)
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v22-PERL-UNBUFFER)
 # Streams chat messages as Server-Sent Events
-# FIXED: Hybrid approach - uses stdbuf -o0 when available, aggressive flush fallback otherwise
-# Root cause: Shell stdout was buffered - stdbuf is clean solution, fallback for compatibility
+# FIXED: Unbuffered stdout via stdbuf (Linux) or perl wrapper (macOS/BSD)
+# Root cause: Shell stdout buffering - perl -e '$|=1; exec @ARGV' sets autoflush
 # Self-contained - no external imp dependencies
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
 #
@@ -12,31 +12,31 @@
 
 # CRITICAL FIX: Re-exec with unbuffered stdout if not already unbuffered
 # This solves the "1 message behind" problem - shell stdout is buffered by default
-# stdbuf -o0 disables stdout buffering entirely, ensuring immediate output
-USE_AGGRESSIVE_FLUSH=no
-if [ -z "${STDBUF_ACTIVE:-}" ]; then
-  export STDBUF_ACTIVE=1
+# Primary: stdbuf -o0 disables stdout buffering (Linux)
+# Fallback: perl wrapper with autoflush (macOS/BSD)
+if [ -z "${UNBUFFERED_ACTIVE:-}" ]; then
+  export UNBUFFERED_ACTIVE=1
   if command -v stdbuf >/dev/null 2>&1; then
+    # Linux/GNU: Use stdbuf
+    printf '[chat-stream] Using stdbuf for unbuffered stdout\n' >&2
     exec stdbuf -o0 "$0" "$@"
+  elif command -v perl >/dev/null 2>&1; then
+    # macOS/BSD: Use perl with autoflush
+    printf '[chat-stream] Using perl wrapper for unbuffered stdout\n' >&2
+    exec perl -e '$|=1; exec @ARGV' "$0" "$@"
   else
-    # stdbuf not available - use aggressive flush techniques as fallback
-    printf '[chat-stream] WARNING: stdbuf not available - using aggressive flush fallback\n' >&2
-    USE_AGGRESSIVE_FLUSH=yes
+    # Neither available - warn user
+    printf '[chat-stream] WARNING: Neither stdbuf nor perl available\n' >&2
+    printf '[chat-stream] Messages will be delayed (buffered output)\n' >&2
   fi
 fi
 
 set -eu
 
 # Diagnostic logging to stderr (appears in web server error log)
-script_version="2026-01-30-v21-HYBRID"
+script_version="2026-01-30-v22-PERL-UNBUFFER"
 printf '[chat-stream] ========== SCRIPT STARTED (VERSION: %s) ==========\n' "$script_version" >&2
-if [ "$USE_AGGRESSIVE_FLUSH" = "yes" ]; then
-  printf '[chat-stream] MODE: Aggressive flush (stdbuf unavailable)\n' >&2
-  printf '[chat-stream] Using 8KB padding + dd+fsync + flush-trigger for buffering workaround\n' >&2
-else
-  printf '[chat-stream] MODE: Unbuffered stdout (stdbuf -o0)\n' >&2
-  printf '[chat-stream] Clean implementation - no flush workarounds needed\n' >&2
-fi
+printf '[chat-stream] Running with unbuffered stdout (via stdbuf or perl)\n' >&2
 printf '[chat-stream] Script location: %s\n' "$0" >&2
 printf '[chat-stream] PWD: %s\n' "$(pwd)" >&2
 printf '[chat-stream] QUERY_STRING: %s\n' "${QUERY_STRING:-}" >&2
@@ -83,20 +83,6 @@ send_sse_event() {
   
   # End event with blank line (SSE spec)
   printf '\n'
-  
-  # If stdbuf unavailable, use aggressive flush techniques
-  # These workarounds are needed when stdout is buffered by the shell
-  if [ "$USE_AGGRESSIVE_FLUSH" = "yes" ] && [ "$add_padding" = "yes" ]; then
-    # Extra blank lines (SSE spec allows multiple blank lines)
-    printf '\n\n'
-    
-    # Write directly to file descriptor 1 (stdout) - bypasses some shell buffering
-    printf '\n' >&1
-    
-    # Use dd with fsync to force kernel-level flush
-    # This is the nuclear option - forces all buffers to flush
-    dd conv=fsync of=/dev/stdout count=0 2>/dev/null || true
-  fi
 }
 
 # Parse room name from query string
@@ -289,14 +275,6 @@ while true; do
       tail -n "$new_message_count" "$LOG_FILE" > "$temp_msgs"
       while IFS= read -r line || [ -n "$line" ]; do
         send_sse_event message "$line" yes || exit 0  # WITH padding for ongoing events
-        
-        # If using aggressive flush (no stdbuf), send extra flush trigger
-        if [ "$USE_AGGRESSIVE_FLUSH" = "yes" ]; then
-          # Send immediate heartbeat after message to trigger flush
-          # Theory: First event gets buffered, second event triggers flush of first
-          printf ': flush-trigger\n\n'
-          dd conv=fsync of=/dev/stdout count=0 2>/dev/null || true
-        fi
       done < "$temp_msgs"
       rm -f "$temp_msgs"
       
