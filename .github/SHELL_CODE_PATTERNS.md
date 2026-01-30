@@ -347,6 +347,34 @@ printf '%s\n' "$var"     # CORRECT
 printf '%s\n' $var       # WRONG: word splitting
 ```
 
+### Unbuffered Output for Real-Time Streaming
+
+**CRITICAL FOR SSE/STREAMING:** Shell stdout is buffered by default, causing delayed output.
+
+```sh
+# Re-exec with unbuffered stdout (stdbuf -o0)
+# Place at top of script, before set -eu
+if [ -z "${STDBUF_ACTIVE:-}" ]; then
+  export STDBUF_ACTIVE=1
+  exec stdbuf -o0 "$0" "$@"
+fi
+```
+
+**Explanation:**
+- Shell stdout is line-buffered or block-buffered by default
+- Padding (8KB), dd+fsync, extra newlines are insufficient - buffering happens at shell level
+- `stdbuf -o0` disables all stdout buffering
+- Re-exec ensures entire script runs unbuffered
+- `STDBUF_ACTIVE` guard prevents infinite loop
+
+**Use case:** SSE (Server-Sent Events) - fixes "one message behind" behavior where messages only appear when next message arrives.
+
+**Alternative (when stdbuf unavailable):**
+```sh
+# Use Python as wrapper (more portable but slower)
+exec python -u "$0" "$@"  # Python -u flag unbuffers stdout
+```
+
 ### Globbing
 
 ```sh
