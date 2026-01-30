@@ -32,6 +32,18 @@ HTML
   exit 0
 fi
 
+# Sanitize username - reject reserved names that would conflict with room metadata
+case "$user_name" in
+  log|.log|.|..)
+    cat <<HTML
+<div class="demo-result error">
+  <p>Invalid username. 'log' is a reserved name.</p>
+</div>
+HTML
+    exit 0
+    ;;
+esac
+
 # Chat rooms directory - use site-specific location
 if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
   site_id="$WIZARDRY_SITE_NAME"
@@ -63,8 +75,17 @@ HTML
   exit 0
 fi
 
-# Mark as web avatar using xattr (distinguishes from MUD avatars)
-set-attribute "user.web_avatar" "1" "$avatar_path" 2>/dev/null || true
+# Mark as web avatar using enchant (xattr - distinguishes from MUD avatars)
+enchant "$avatar_path" "web_avatar=1" 2>/dev/null || true
+
+# Run cleanup BEFORE logging join (so AFK messages appear first)
+chat-cleanup-inactive-avatars "$ROOM_DIR" 2>/dev/null || true
+
+# Log join message (with duplicate detection to prevent spam)
+LOG_FILE="$ROOM_DIR/.log"
+timestamp=$(log-timestamp)
+log_message="[$timestamp] log: $user_name joined the room."
+chat-log-if-unique "$LOG_FILE" "$log_message" 2>/dev/null || true
 
 cat <<HTML
 <div class="demo-result success">

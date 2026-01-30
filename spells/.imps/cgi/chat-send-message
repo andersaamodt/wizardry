@@ -40,6 +40,18 @@ if [ -z "$user_name" ]; then
   user_name="Anonymous"
 fi
 
+# Sanitize username - reject reserved names that would conflict with room metadata
+case "$user_name" in
+  log|.log|.|..)
+    cat <<HTML
+<div class="demo-result error">
+  <p>Invalid username. 'log' is a reserved name.</p>
+</div>
+HTML
+    exit 0
+    ;;
+esac
+
 # Chat rooms directory - use site-specific location
 # Use WIZARDRY_SITE_NAME if available (set by nginx), otherwise default
 if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
@@ -65,11 +77,15 @@ LOG_FILE="$ROOM_DIR/.log"
 # Create or update avatar for this user using same logic as MUD incarnate
 if [ ! -d "$ROOM_DIR/.$user_name" ]; then
   avatar_path=$(create-avatar "$user_name" "$ROOM_DIR" 2>/dev/null || printf '')
-  # Mark as web avatar using xattr (distinguishes from MUD avatars)
+  # Mark as web avatar using enchant (xattr)
   if [ -n "$avatar_path" ]; then
-    set-attribute "user.web_avatar" "1" "$avatar_path" 2>/dev/null || true
+    enchant "$avatar_path" "web_avatar=1" 2>/dev/null || true
   fi
 fi
+
+# Update last activity timestamp using enchant (xattr, not files)
+current_timestamp=$(date +%s)
+enchant "$ROOM_DIR/.$user_name" "last_activity=$current_timestamp" 2>/dev/null || true
 
 # Create timestamp in full format for .log file (same as MUD)
 timestamp=$(log-timestamp)
@@ -79,6 +95,10 @@ log_entry="[$timestamp] $user_name: $message"
 
 # Append to log file
 if printf '%s\n' "$log_entry" >> "$LOG_FILE" 2>/dev/null; then
+  # Run cleanup after successful message send (periodic maintenance)
+  # This removes avatars inactive for >30 minutes
+  chat-cleanup-inactive-avatars "$ROOM_DIR" 2>/dev/null || true
+  
   cat <<HTML
 <div class="demo-result success">
   <p>✓ Message sent</p>

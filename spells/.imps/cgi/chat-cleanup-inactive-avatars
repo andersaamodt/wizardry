@@ -1,0 +1,75 @@
+#!/bin/sh
+# chat-cleanup-inactive-avatars - Remove inactive web avatars from a chat room
+# This should be called periodically (e.g., on message send or page view)
+# to clean up avatars that haven't been active for >30 minutes
+
+# Note: Not using set -eu because we want to continue even if individual commands fail
+# All commands have appropriate error handling with || true or || echo
+
+# Takes room directory as argument
+room_dir=${1:-}
+
+if [ -z "$room_dir" ] || [ ! -d "$room_dir" ]; then
+  exit 0  # Silent exit if no room or room doesn't exist
+fi
+
+# Cleanup threshold: 30 minutes in seconds
+current_time=$(date +%s)
+inactive_threshold=1800
+
+LOG_FILE="$room_dir/.log"
+
+for avatar_dir in "$room_dir"/.*; do
+  [ -d "$avatar_dir" ] || continue
+  avatar_name=$(basename "$avatar_dir")
+  
+  # Skip . and .. and .log
+  case "$avatar_name" in
+    .|..|.log) continue ;;
+  esac
+  
+  # Check if this is a web avatar (vs MUD avatar)
+  # Web avatars have web_avatar attribute OR no is_avatar attribute (fallback)
+  # MUD avatars have is_avatar=1 set by create-avatar
+  is_web_avatar=0
+  
+  # First check for explicit web_avatar marker
+  if read-magic "$avatar_dir" "web_avatar" >/dev/null 2>&1; then
+    is_web_avatar=1
+  else
+    # Fallback: check if it's NOT a MUD avatar
+    # MUD avatars have is_avatar=1 attribute set
+    if ! read-magic "$avatar_dir" "is_avatar" >/dev/null 2>&1; then
+      # No is_avatar attribute, likely a web avatar
+      is_web_avatar=1
+    fi
+  fi
+  
+  # Only clean up web avatars
+  if [ "$is_web_avatar" = "1" ]; then
+    # Get last activity timestamp using read-magic
+    last_activity=$(read-magic "$avatar_dir" "last_activity" 2>/dev/null || echo "0")
+    
+    # If no timestamp, use directory mtime as fallback
+    if [ "$last_activity" = "0" ] || [ -z "$last_activity" ]; then
+      last_activity=$(stat -c %Y "$avatar_dir" 2>/dev/null || echo "")
+      if [ -z "$last_activity" ]; then
+        last_activity=$(stat -f %m "$avatar_dir" 2>/dev/null || echo "0")
+      fi
+      last_activity=${last_activity:-0}
+    fi
+    
+    time_diff=$((current_time - last_activity))
+    
+    # Remove if inactive for more than threshold
+    if [ "$time_diff" -gt "$inactive_threshold" ]; then
+      # Log AFK message before deleting (with duplicate detection)
+      username=$(printf '%s' "$avatar_name" | sed 's/^\.//')
+      timestamp=$(log-timestamp)
+      log_message="[$timestamp] log: $username went AFK."
+      chat-log-if-unique "$LOG_FILE" "$log_message" 2>/dev/null || true
+      
+      rm -rf "$avatar_dir" 2>/dev/null || true
+    fi
+  fi
+done

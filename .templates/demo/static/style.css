@@ -981,6 +981,14 @@ pre code {
   /* Font family set inline per message based on user type (web: Verdana, MUD: monospace) */
 }
 
+.chat-msg-system {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #666;
+  margin: 0.5rem 0;
+  font-style: italic;
+}
+
 .chat-msg .username {
   font-weight: bold;
   /* Color set inline via style attribute for per-user colors */

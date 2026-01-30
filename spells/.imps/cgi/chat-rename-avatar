@@ -78,6 +78,11 @@ fi
 
 # Rename the avatar folder
 if mv "$old_avatar" "$new_avatar" 2>/dev/null; then
+  # Log the name change with duplicate detection
+  LOG_FILE="$ROOM_DIR/.log"
+  timestamp=$(log-timestamp)
+  chat-log-if-unique "$LOG_FILE" "[$timestamp] log: $old_user changed their name to $new_user."
+  
   cat <<HTML
 <div class="demo-result success">
   <p>✓ Avatar renamed</p>
