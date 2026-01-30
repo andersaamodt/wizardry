@@ -24,7 +24,7 @@ Loading rooms...
 
 <div class="room-controls">
 <!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
-<div id="create-room-widget"><a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a><input type="text" id="new-room-name" placeholder="Room name" /><button id="create-room-btn" hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#new-room-name" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; htmx.trigger('#room-list', 'load'); showNotification(); toggleCreateRoom(); }">Create</button></div>
+<div id="create-room-widget"><a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a><input type="text" id="new-room-name" placeholder="Room name" oninput="validateRoomName()" onkeydown="if(event.key==='Enter' && !document.getElementById('create-room-btn').disabled) { document.getElementById('create-room-btn').click(); }" /><button id="create-room-btn" disabled hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; validateRoomName(); htmx.trigger('#room-list', 'load'); showNotification(); toggleCreateRoom(); }">Create</button></div>
 </div>
 </div>
 
@@ -763,12 +763,37 @@ function toggleCreateRoom() {
       var input = document.getElementById('new-room-name');
       if (input) {
         input.focus({ preventScroll: true });
+        // Validate to ensure button state is correct
+        validateRoomName();
       }
     }, 150);
   } else {
     widget.classList.remove('open');
     // Change arrow back to right-pointing when closed
     if (arrow) arrow.innerHTML = '&#x25B6;';  // ▶ right-pointing filled triangle
+  }
+}
+
+// Validate room name in realtime
+function validateRoomName() {
+  var input = document.getElementById('new-room-name');
+  var button = document.getElementById('create-room-btn');
+  
+  if (!input || !button) return;
+  
+  var roomName = input.value.trim();
+  
+  // Room name must be non-empty and match pattern: alphanumeric, dash, underscore only
+  var isValid = roomName.length > 0 && /^[a-zA-Z0-9_-]+$/.test(roomName);
+  
+  // Enable/disable button based on validation
+  button.disabled = !isValid;
+  
+  // Add visual feedback to input
+  if (roomName.length > 0 && !isValid) {
+    input.style.borderColor = '#dc3545';  // Red for invalid
+  } else {
+    input.style.borderColor = '';  // Reset to default
   }
 }
 
