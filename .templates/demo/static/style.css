@@ -1329,12 +1329,6 @@ pre code {
   color: #2c2c54;
 }
 
-.member-item.current-user {
-  background: #fff3cd;
-  font-weight: 600;
-  border: 1px solid #ffc107;
-}
-
 .member-badge {
   font-size: 0.9rem;
   flex-shrink: 0;
