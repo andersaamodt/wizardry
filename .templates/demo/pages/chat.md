@@ -106,6 +106,7 @@ function getUsername() {
 window.currentRoom = null;
 window.hoveredRoom = null;
 window.userHasScrolledUp = false;  // Track if user manually scrolled up
+window.messageEventSource = null;  // SSE connection for real-time messages
 
 // Handle room selection from list
 document.addEventListener('htmx:afterSwap', function(event) {
@@ -184,6 +185,8 @@ document.addEventListener('htmx:afterSwap', function(event) {
 
 // Join a room
 function joinRoom(roomName) {
+  console.log('[Room] Joining room:', roomName);
+  
   window.currentRoom = roomName;
   document.getElementById('current-room-name').textContent = roomName;
   document.getElementById('send-btn').disabled = false;
@@ -195,11 +198,15 @@ function joinRoom(roomName) {
   var currentUsername = getUsername();
   var previousRoom = localStorage.getItem('previousRoom') || '';
   
+  console.log('[Room] Current user:', currentUsername, 'Previous room:', previousRoom);
+  
   if (previousRoom && previousRoom !== roomName) {
     // Move avatar from previous room to new room
+    console.log('[Avatar] Moving avatar from', previousRoom, 'to', roomName);
     moveAvatar(roomName, currentUsername, previousRoom);
   } else {
     // Create new avatar (first join or rejoining same room)
+    console.log('[Avatar] Creating new avatar in', roomName);
     createAvatar(roomName, currentUsername);
   }
   
@@ -230,20 +237,26 @@ function joinRoom(roomName) {
   // Set up scroll listener
   setupScrollListener();
   
-  // Load messages immediately
-  loadMessages();
+  // Close existing SSE connection if any
+  if (window.messageEventSource) {
+    console.log('[Room] Closing existing SSE connection before joining new room');
+    window.messageEventSource.close();
+    window.messageEventSource = null;
+  }
   
-  // Load members immediately
-  loadMembers();
-  
-  // Set up auto-refresh every 2 seconds
+  // Clear any existing polling interval
   if (window.messageInterval) {
     clearInterval(window.messageInterval);
+    window.messageInterval = null;
   }
-  window.messageInterval = setInterval(function() {
-    loadMessages();
-    loadMembers();
-  }, 2000);
+  
+  // Load initial messages via GET for instant display
+  console.log('[Room] Loading initial messages via GET for instant display');
+  loadMessages();
+  
+  // Then set up SSE for real-time updates (no initial batch, just ongoing events)
+  console.log('[Room] Setting up SSE stream for real-time updates:', roomName);
+  setupMessageStream(roomName);
 }
 
 // Load messages for current room
@@ -393,6 +406,281 @@ function setupScrollListener() {
       window.userHasScrolledUp = true;
     }
   });
+}
+
+// Set up Server-Sent Events for real-time message updates
+function setupMessageStream(roomName) {
+  if (!roomName) return;
+  
+  console.log('[SSE] Setting up message stream for room:', roomName);
+  
+  // Close existing connection if any
+  if (window.messageEventSource) {
+    console.log('[SSE] Closing existing EventSource connection');
+    window.messageEventSource.close();
+    window.messageEventSource = null;
+  }
+  
+  // Get current timestamp to only receive NEW messages (not history)
+  // History was already loaded via GET request
+  var now = new Date();
+  var sinceTimestamp = now.toISOString().replace('T', ' ').substring(0, 19);
+  
+  // Create new SSE connection with since parameter
+  var url = '/cgi/chat-stream?room=' + encodeURIComponent(roomName) + '&since=' + encodeURIComponent(sinceTimestamp);
+  console.log('[SSE] Creating new EventSource:', url);
+  console.log('[SSE] Will only receive messages after:', sinceTimestamp);
+  
+  try {
+    window.messageEventSource = new EventSource(url);
+    console.log('[SSE] EventSource created, readyState:', window.messageEventSource.readyState);
+  } catch (e) {
+    console.error('[SSE] Failed to create EventSource:', e);
+    return;
+  }
+  
+  // Handle connection open
+  window.messageEventSource.addEventListener('open', function(event) {
+    console.log('[SSE] Connection opened successfully');
+  });
+  console.log('[SSE] Added "open" event listener');
+  
+  // Handle incoming messages
+  window.messageEventSource.addEventListener('message', function(event) {
+    console.log('[SSE] Received message event:', event.data);
+    // Event data is a single message line: [YYYY-MM-DD HH:MM:SS] username: message
+    appendMessage(event.data);
+  });
+  console.log('[SSE] Added "message" event listener');
+  
+  // Handle member list updates
+  window.messageEventSource.addEventListener('members', function(event) {
+    console.log('[SSE] Received members event, data length:', event.data.length);
+    // Event data is JSON array of members
+    updateMemberList(event.data);
+  });
+  console.log('[SSE] Added "members" event listener');
+  
+  // Handle errors
+  window.messageEventSource.addEventListener('error', function(event) {
+    console.error('[SSE] Error occurred:', event);
+    console.error('[SSE] ReadyState:', window.messageEventSource.readyState);
+    console.error('[SSE] URL:', window.messageEventSource.url);
+    // EventSource automatically reconnects, but we can add custom logic here if needed
+    
+    // If connection is closed or error persists, log it
+    if (window.messageEventSource.readyState === EventSource.CLOSED) {
+      console.error('[SSE] Connection CLOSED - EventSource will not reconnect');
+    } else if (window.messageEventSource.readyState === EventSource.CONNECTING) {
+      console.warn('[SSE] Connection CONNECTING - EventSource attempting to reconnect');
+    }
+  });
+  console.log('[SSE] Added "error" event listener');
+  
+  // Handle empty room
+  window.messageEventSource.addEventListener('empty', function(event) {
+    console.log('[SSE] Received empty event');
+    // Room is empty - show empty state message
+    var chatMessagesDiv = document.getElementById('chat-messages');
+    if (chatMessagesDiv) {
+      chatMessagesDiv.innerHTML = '<p class="empty-state-message">No messages yet. Be the first to say something!</p>';
+    }
+  });
+  console.log('[SSE] Added "empty" event listener');
+  console.log('[SSE] All event listeners added, waiting for events...');
+  
+  // Add a timeout warning if no events received after 5 seconds
+  setTimeout(function() {
+    if (window.messageEventSource && window.messageEventSource.readyState === EventSource.CONNECTING) {
+      console.warn('[SSE] WARNING: Still CONNECTING after 5 seconds - possible server issue');
+      console.warn('[SSE] Check server logs for errors in chat-stream script');
+    } else if (window.messageEventSource && window.messageEventSource.readyState === EventSource.OPEN) {
+      console.log('[SSE] Status check: Connection is OPEN');
+    }
+  }, 5000);
+  
+  // Periodic status logging every 15 seconds for debugging
+  var statusInterval = setInterval(function() {
+    if (!window.messageEventSource) {
+      clearInterval(statusInterval);
+      return;
+    }
+    var states = ['CONNECTING', 'OPEN', 'CLOSED'];
+    var state = states[window.messageEventSource.readyState] || 'UNKNOWN';
+    console.log('[SSE] Periodic check: readyState=' + state + ' (' + window.messageEventSource.readyState + ')');
+  }, 15000);
+}
+
+// Update member list from SSE data
+function updateMemberList(jsonData) {
+  try {
+    var data = JSON.parse(jsonData);
+    var avatars = data || [];
+    
+    var membersList = document.getElementById('members-list');
+    var memberCount = document.getElementById('member-count');
+    var membersBtn = document.getElementById('members-btn');
+    var deleteBtn = document.getElementById('delete-room-btn');
+    
+    if (!membersList || !memberCount) {
+      console.error('Member list elements not found');
+      return;
+    }
+    
+    var count = avatars.length;
+    
+    if (count === 0) {
+      membersList.innerHTML = '<p style="color: #666; font-style: italic;">No members</p>';
+      memberCount.textContent = '0';
+    } else {
+      memberCount.textContent = count;
+      
+      // Get current username for highlighting
+      var currentUsername = getUsername();
+      
+      var html = '';
+      avatars.forEach(function(avatar) {
+        var fontStyle = avatar.is_web ? 'Verdana, sans-serif' : 'Courier New, Courier, monospace';
+        var badge = avatar.is_web ? '🌐' : '⚔️';
+        var isCurrentUser = (avatar.username === currentUsername);
+        
+        html += '<div class="member-item' + (isCurrentUser ? ' member-item-current' : '') + '" style="font-family: ' + fontStyle + ';">';
+        html += '<span class="member-badge">' + badge + '</span>';
+        html += '<span class="member-name">' + avatar.username + '</span>';
+        html += '</div>';
+      });
+      
+      membersList.innerHTML = html;
+    }
+    
+    // Update button visibility based on member count
+    if (membersBtn) {
+      membersBtn.style.display = (count > 0) ? 'flex' : 'none';
+    }
+    if (deleteBtn) {
+      deleteBtn.style.display = (count === 0) ? 'inline-block' : 'none';
+    }
+  } catch (e) {
+    console.error('Error parsing member data:', e);
+  }
+}
+
+// Append a single message to the chat display
+function appendMessage(messageLine) {
+  var chatMessagesDiv = document.getElementById('chat-messages');
+  if (!chatMessagesDiv) return;
+  
+  // Clear empty state message if present (first message arriving)
+  var emptyStateMsg = chatMessagesDiv.querySelector('.empty-state-message');
+  if (emptyStateMsg) {
+    chatMessagesDiv.innerHTML = '';  // Clear empty state
+  }
+  
+  // Parse the message line format: [YYYY-MM-DD HH:MM:SS] username: message
+  var match = messageLine.match(/^\[([^\]]+)\]\s+([^:]+):\s+(.*)$/);
+  if (!match) return;  // Invalid format
+  
+  var fullTimestamp = match[1];
+  var username = match[2];
+  var message = match[3];
+  
+  // Extract HH:MM from timestamp for display
+  var displayTime = fullTimestamp.length >= 16 ? fullTimestamp.substring(11, 16) : fullTimestamp;
+  
+  // Check if this is a system message
+  if (username === 'log') {
+    var messageDiv = document.createElement('div');
+    messageDiv.className = 'chat-msg-system';
+    messageDiv.textContent = message;
+    chatMessagesDiv.appendChild(messageDiv);
+  } else {
+    // Regular message - generate color from username hash
+    var hue = hashUsername(username);
+    var color = 'hsl(' + hue + ', 70%, 35%)';
+    
+    // Determine font family (assume web user for simplicity, or check later)
+    var fontFamily = 'Verdana, sans-serif';
+    
+    // Create message element
+    var messageDiv = document.createElement('div');
+    messageDiv.className = 'chat-msg';
+    messageDiv.style.fontFamily = fontFamily;
+    
+    // Add username
+    var usernameSpan = document.createElement('span');
+    usernameSpan.className = 'username';
+    usernameSpan.style.color = color;
+    usernameSpan.style.fontWeight = 'bold';
+    usernameSpan.textContent = username + ':';
+    messageDiv.appendChild(usernameSpan);
+    
+    // Add message text
+    messageDiv.appendChild(document.createTextNode(' ' + message));
+    
+    // Add timestamp
+    var timestampSpan = document.createElement('span');
+    timestampSpan.className = 'timestamp';
+    timestampSpan.dataset.fullTimestamp = fullTimestamp;
+    timestampSpan.textContent = displayTime;
+    
+    // Format tooltip
+    try {
+      var date = new Date(fullTimestamp.replace(' ', 'T'));
+      if (!isNaN(date.getTime())) {
+        var options = { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric', 
+          hour: 'numeric', 
+          minute: '2-digit'
+        };
+        timestampSpan.title = date.toLocaleString('en-US', options);
+      } else {
+        timestampSpan.title = fullTimestamp;
+      }
+    } catch (e) {
+      timestampSpan.title = fullTimestamp;
+    }
+    
+    messageDiv.appendChild(timestampSpan);
+    
+    // Check if this is user's own message
+    var currentUsername = getUsername();
+    if (username === currentUsername) {
+      messageDiv.classList.add('my-message');
+    }
+    
+    // Store scroll position before adding
+    var wasAtBottom = chatMessagesDiv.scrollHeight - chatMessagesDiv.scrollTop - chatMessagesDiv.clientHeight < 50;
+    
+    // Append to display
+    chatMessagesDiv.appendChild(messageDiv);
+    
+    // Apply animation
+    messageDiv.style.animation = 'messageAppear 0.51s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+    
+    // Auto-scroll if user is at bottom
+    if (wasAtBottom || !window.userHasScrolledUp) {
+      scrollToBottom();
+    }
+  }
+}
+
+// Hash username to generate consistent color (same as server-side AWK)
+function hashUsername(username) {
+  var hash = 0;
+  var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  
+  for (var i = 0; i < username.length; i++) {
+    var char = username.charAt(i);
+    var asciiVal = chars.indexOf(char);
+    if (asciiVal === -1) asciiVal = char.charCodeAt(0);  // Use actual ASCII value for non-alphanumeric
+    hash += asciiVal * (i + 1);
+  }
+  
+  // Map to 12 distinct hues (30 degree steps)
+  return (hash % 12) * 30;
 }
 
 // Avatar management functions
@@ -582,7 +870,7 @@ function leaveRoom() {
   }
   
   // Clear messages
-  document.getElementById('chat-messages').innerHTML = '<div class="chat-messages"><p class="empty-state-message">Create or join a room to chat</p></div>';
+  document.getElementById('chat-messages').innerHTML = '<p class="empty-state-message">Create or join a room to chat</p>';
 }
 
 // Delete room with blocking behavior
@@ -677,8 +965,8 @@ document.addEventListener('DOMContentLoaded', function() {
       messageInput.value = '';
       // Reset textarea height to initial (2.5rem matches min-height)
       messageInput.style.height = '2.5rem';
-      // Reload messages immediately to show the new message
-      loadMessages();
+      // Don't reload messages - SSE will deliver the new message in real-time!
+      // (Reloading causes duplication: message appears via GET, then again via SSE)
     });
   }
   
@@ -898,8 +1186,18 @@ function showNotification() {
 
 // Clean up avatar when user leaves the page
 window.addEventListener('beforeunload', function() {
+  console.log('[SSE] Page unloading - cleaning up');
+  
+  // Close SSE connection
+  if (window.messageEventSource) {
+    console.log('[SSE] Closing EventSource on page unload');
+    window.messageEventSource.close();
+    window.messageEventSource = null;
+  }
+  
   if (window.currentRoom) {
     var currentUsername = getUsername();
+    console.log('[Avatar] Deleting avatar for user:', currentUsername, 'in room:', window.currentRoom);
     // Use sendBeacon for reliable cleanup on page unload
     var formData = new URLSearchParams();
     formData.append('room', window.currentRoom);

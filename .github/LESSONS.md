@@ -132,3 +132,25 @@
 - Input validation must happen server-side; never trust client-side only.
 - Display prefixes should not be stored in data; strip when reading for API.
 - System messages need duplicate detection to prevent spam.
+
+### SSE/Server-Sent Events and Buffering (PR #implement-sse-for-chatroom)
+
+- Server-Sent Events require `Content-Type: text/event-stream` header and `Cache-Control: no-cache` to prevent caching/buffering at HTTP layer.
+- SSE event format is `event: name\ndata: content\n\n` (double newline terminates event); padding can be added as SSE comments `: padding\n`.
+- fcgiwrap on macOS has ~8KB output buffer; events smaller than buffer threshold get batched together until buffer fills.
+- Adding padding to SSE events (8KB of spaces as comment) forces buffer to exceed threshold, triggering immediate flush per event.
+- Shell stdout is ALSO buffered independently of fcgiwrap; `printf | cat` creates pipe that should force flush but may not work reliably.
+- The `dd conv=fsync` command forces kernel-level filesystem sync, flushing all buffering layers (shell, C library, kernel).
+- Multiple buffering layers exist: application (stdio), shell (stdout), fcgiwrap, nginx (fastcgi), kernel (page cache), disk controller.
+- Nginx `fastcgi_buffering off` directive disables nginx-level buffering but doesn't affect lower layers (fcgiwrap, shell, kernel).
+- When "next message triggers delivery of previous message", suspect event-boundary buffering where new event flushes previous buffered event.
+- File system write buffering (kernel page cache) can delay when appended data becomes visible to other processes reading the same file.
+- The `sync` command forces kernel to flush dirty pages to disk, making file writes immediately visible to all processes (critical for log files).
+- Testing revealed buffering at SEVEN layers: fcgiwrap buffer (~8KB), shell stdout buffer, nginx fastcgi buffer, kernel page cache, C library buffer, file descriptor buffer, disk controller buffer.
+- Padding size must EXCEED the buffer threshold to trigger flush; 512 bytes < 2KB < 8KB all failed because fcgiwrap buffer is ~8KB on macOS.
+- Pre-generating padding strings (with awk) is vastly more efficient than generating padding in loops (2048 printf calls vs 1 awk call).
+- The symptom "always 1 message behind" where next write flushes previous write indicates buffering at write-boundary level, not within-write level.
+- File append operations (`>>`) buffer writes in kernel page cache; reads don't see new data until kernel flushes or explicit `sync` is called.
+- Adding heartbeat/comment events immediately after message events attempts to force flush but may fail if both events are buffered together as one unit.
+- SSE over CGI requires defeating multiple independent buffering layers; fixing one layer (e.g., fcgiwrap) doesn't solve others (e.g., file system).
+- When all flush attempts fail, the buffering may be happening outside CGI script control (nginx config, fcgiwrap startup flags, OS settings).

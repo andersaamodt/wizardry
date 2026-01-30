@@ -1,0 +1,37 @@
+#!/bin/sh
+# sse-event EVENT_TYPE DATA - Output SSE event with padding
+# Adds padding to force fcgiwrap buffer flush on macOS
+# Example: sse-event message "Hello world"
+set -eu
+
+event_type="${1:-message}"
+# Only shift if we have at least one argument
+if [ $# -gt 0 ]; then
+  shift
+fi
+data="${*:-}"
+
+printf '[sse-event] type=%s len=%d (adding 2KB padding)\n' "$event_type" "${#data}" >&2
+
+# Output event type
+printf 'event: %s\n' "$event_type"
+
+# Output data (can be multi-line)
+printf '%s\n' "$data" | while IFS= read -r line || [ -n "$line" ]; do
+  printf 'data: %s\n' "$line"
+done
+
+# CRITICAL: Add 2KB padding as SSE comment to force buffer flush
+# SSE comments (lines starting with :) are ignored by browser
+# But they force fcgiwrap to flush the buffer to nginx
+printf ': padding='
+# Output 2000 spaces (2KB of padding)
+i=0
+while [ $i -lt 2000 ]; do
+  printf ' '
+  i=$((i + 1))
+done
+printf '\n'
+
+# End event with blank line
+printf '\n'

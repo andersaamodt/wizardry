@@ -1,0 +1,25 @@
+#!/bin/sh
+# sse-start - Initialize Server-Sent Events stream with padding
+# Outputs HTTP headers and initial padding burst to force buffer flush
+set -eu
+
+printf '[sse-start] Sending SSE headers with initial padding burst\n' >&2
+
+http-status 200 "OK"
+http-header "Content-Type" "text/event-stream"
+http-header "Cache-Control" "no-cache"
+http-header "Connection" "keep-alive"
+http-header "X-Accel-Buffering" "no"
+http-end-headers
+
+# Send initial padding burst (4KB) to force fcgiwrap buffer flush immediately
+# This ensures headers reach the browser right away
+printf ': initial-padding='
+i=0
+while [ $i -lt 4000 ]; do
+  printf ' '
+  i=$((i + 1))
+done
+printf '\n\n'
+
+printf '[sse-start] Headers and initial padding sent successfully\n' >&2

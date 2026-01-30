@@ -3,25 +3,31 @@
 
 set -eu
 
+# Send HTTP headers immediately (before any processing that might fail)
+http-status 200 "OK"
+http-header "Content-Type" "application/json"
+http-end-headers
+
 # Read CGI parameters
 read -r input || true
+
 # Extract room name from JSON
 room_pattern='"room":"[^"]*"'
 room_name=$(printf '%s' "$input" | grep -o "$room_pattern" | \
   sed 's/"room":"//' | sed 's/"$//' || printf '')
+
 # Extract username from JSON
 user_pattern='"username":"[^"]*"'
 user_name=$(printf '%s' "$input" | grep -o "$user_pattern" | \
   sed 's/"username":"//' | sed 's/"$//' || printf '')
+
 # Extract old room from JSON
 old_pattern='"oldRoom":"[^"]*"'
 old_room=$(printf '%s' "$input" | grep -o "$old_pattern" | \
   sed 's/"oldRoom":"//' | sed 's/"$//' || printf '')
 
-# Validate input
+# Validate input - return JSON errors instead of HTTP errors
 if [ -z "$room_name" ] || [ -z "$user_name" ] || [ -z "$old_room" ]; then
-  http-status 400
-  printf 'Content-Type: application/json\r\n\r\n'
   printf '{"error":"Missing required parameters"}\n'
   exit 0
 fi
@@ -29,8 +35,6 @@ fi
 # Validate username doesn't contain invalid characters (allow only alphanumeric, underscore, hyphen)
 case "$user_name" in
   *[!a-zA-Z0-9_-]*)
-    http-status 400
-    printf 'Content-Type: application/json\r\n\r\n'
     printf '{"error":"Username contains invalid characters"}\n'
     exit 0
     ;;
@@ -39,8 +43,6 @@ esac
 # Validate room names don't contain path traversal sequences
 case "$room_name" in
   *..*|*/*|*\\*)
-    http-status 400
-    printf 'Content-Type: application/json\r\n\r\n'
     printf '{"error":"Invalid room name"}\n'
     exit 0
     ;;
@@ -48,17 +50,21 @@ esac
 
 case "$old_room" in
   *..*|*/*|*\\*)
-    http-status 400
-    printf 'Content-Type: application/json\r\n\r\n'
-    printf '{"error":"Invalid room name"}\n'
+    printf '{"error":"Invalid old room name"}\n'
     exit 0
     ;;
 esac
 
-# Get spellbook directory
-SPELLBOOK_DIR="${SPELLBOOK_DIR:-/var/wizardry/spellbook}"
-OLD_ROOM_DIR="$SPELLBOOK_DIR/$old_room"
-NEW_ROOM_DIR="$SPELLBOOK_DIR/$room_name"
+# Chat rooms directory - use site-specific location (same as other chat scripts)
+if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
+  site_id="$WIZARDRY_SITE_NAME"
+else
+  site_id="default"
+fi
+SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
+CHAT_DIR="$SITES_DIR/.sitedata/$site_id/chatrooms"
+OLD_ROOM_DIR="$CHAT_DIR/$old_room"
+NEW_ROOM_DIR="$CHAT_DIR/$room_name"
 
 # Ensure new room exists
 mkdir -p "$NEW_ROOM_DIR"
@@ -95,8 +101,6 @@ if [ -d "$OLD_AVATAR" ]; then
   message="log: $user_name joined the room."
   chat-log-if-unique "$NEW_LOG" "[$timestamp] $message" 2>/dev/null || true
   
-  http-status 200
-  printf 'Content-Type: application/json\r\n\r\n'
   printf '{"success":true,"moved":true}\n'
 else
   # Avatar doesn't exist in old room - create new one
@@ -120,7 +124,5 @@ else
     chat-log-if-unique "$NEW_LOG" "[$timestamp] $message" 2>/dev/null || true
   fi
   
-  http-status 200
-  printf 'Content-Type: application/json\r\n\r\n'
   printf '{"success":true,"moved":false,"created":true}\n'
 fi
