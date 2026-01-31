@@ -1,10 +1,15 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (v2.3-2KB-TEST)
+# chat-stream - SSE endpoint for real-time chat messages (v2.4-ENHANCED)
 # True event-driven SSE using tail -f + file descriptor (no polling, 0ms detection)
-# Testing 2KB padding (middle ground between 4KB and 1KB)
+# Enhanced with: retry field, connection timeout, health monitoring
 # Uses avatar directories as single source of truth (no redundant .members file)
 
 set -eu
+
+# Configuration
+MAX_CONNECTION_TIME=3600  # 1 hour maximum connection duration
+KEEPALIVE_INTERVAL=15     # Send keepalive every 15s when idle
+IDLE_THRESHOLD=30         # Only send keepalive if idle > 30s
 
 # Send SSE headers
 printf 'Status: 200 OK\r\n'
@@ -21,6 +26,9 @@ while [ $i -lt 500 ]; do
   i=$((i + 1))
 done
 printf '\n\n'
+
+# Set reconnection retry interval (5 seconds)
+printf 'retry: 5000\n\n'
 
 # SSE event sender with 4KB padding for immediate delivery
 send_sse_event() {
@@ -98,6 +106,7 @@ fi
 # Event-driven monitoring using tail -f + file descriptor approach
 # EXPERIMENTAL: Testing if FD redirection avoids subshell buffering
 
+connection_start=$(date +%s)
 last_message_time=$(date +%s)
 last_room_mtime=0
 
@@ -111,6 +120,7 @@ cleanup() {
   kill $tail_pid 2>/dev/null || true
   kill $keepalive_pid 2>/dev/null || true
   kill $membership_pid 2>/dev/null || true
+  kill $timeout_pid 2>/dev/null || true
   rm -f "$fifo"
   exit
 }
@@ -121,18 +131,27 @@ trap cleanup INT TERM EXIT
 tail -f -n 0 "$LOG_FILE" > "$fifo" &
 tail_pid=$!
 
-# Start background keepalive monitor
+# Background keepalive monitor with health check
 (
   while true; do
-    sleep 15
+    sleep "$KEEPALIVE_INTERVAL"
     now=$(date +%s)
-    # Only send keepalive if idle > 30s
-    if [ $((now - last_message_time)) -ge 30 ]; then
+    # Only send keepalive if idle > threshold
+    if [ $((now - last_message_time)) -ge "$IDLE_THRESHOLD" ]; then
       send_sse_event ping "keepalive"
     fi
   done
 ) &
 keepalive_pid=$!
+
+# Background connection timeout monitor
+# Enforces maximum connection duration to prevent resource leaks
+(
+  sleep "$MAX_CONNECTION_TIME"
+  send_sse_event timeout "Connection time limit reached. Please reconnect."
+  kill $$ 2>/dev/null || true
+) &
+timeout_pid=$!
 
 # Background membership monitor (tracks changes in member list)
 # Uses sorted member names as signature to detect ANY membership change,

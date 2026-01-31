@@ -17,4 +17,8 @@ http-end-headers
 sse-padding 4
 printf '\n'
 
-printf '[sse-start] Headers and initial padding sent successfully\n' >&2
+# Set reconnection retry interval (5 seconds)
+# Guides browser on how long to wait before reconnecting
+sse-retry 5000
+
+printf '[sse-start] Headers, retry interval, and initial padding sent successfully\n' >&2
