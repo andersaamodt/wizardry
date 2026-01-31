@@ -453,6 +453,7 @@ function setupMessageStream(roomName, sinceTimestamp) {
   
   // Handle connection open
   window.messageEventSource.addEventListener('open', function(event) {
+    console.log('[SSE] Connection OPEN - ready to receive events');
   });
   
   // Handle incoming messages
