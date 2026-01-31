@@ -591,9 +591,6 @@ function appendMessage(messageLine) {
   // Extract HH:MM from timestamp for display
   var displayTime = fullTimestamp.length >= 16 ? fullTimestamp.substring(11, 16) : fullTimestamp;
   
-  // Create unique message ID for duplicate detection
-  var messageId = fullTimestamp + '|' + username + '|' + message;
-  
   // Check if this is a system message
   if (username === 'log') {
     // Store scroll position before adding
