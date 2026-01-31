@@ -87,11 +87,11 @@ This chat system uses the **same message format as the MUD `say` command**, maki
 ---
 
 <script>
-// Chat UI Version: 2026-01-31-v38-EVENT-DRIVEN
-// Server: chat-stream v38-EVENT-DRIVEN - true SSE with tail -f (no polling!)
-console.log('[Chat] Version: 2026-01-31-v39-FAST-POLL-50HZ');
-console.log('[Chat] Server: chat-stream v39-FAST-POLL-50HZ');
-console.log('[Chat] Ultra-fast 50Hz polling (20ms) - feels instant, no buffering issues!');
+// Chat UI Version: 2026-01-31-v40-DOUBLE-FLUSH
+// Server: chat-stream v40-DOUBLE-FLUSH - double-flush with 64KB padding for instant delivery
+console.log('[Chat] Version: 2026-01-31-v40-DOUBLE-FLUSH');
+console.log('[Chat] Server: chat-stream v40-DOUBLE-FLUSH');
+console.log('[Chat] Double-flush: 64KB padding (32KB before + 32KB after) forces instant delivery');
 
 // Generate a random guest name
 function generateGuestName() {
