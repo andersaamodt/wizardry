@@ -1,6 +1,7 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (v1.4-NO-MEMBERS-FILE)
-# Streams chat messages as Server-Sent Events using ultra-fast polling (50Hz)
+# chat-stream - SSE endpoint for real-time chat messages (v2.0-EVENT-DRIVEN-TEST)
+# Streams chat messages as Server-Sent Events using tail -f + file descriptor approach
+# Testing if FD redirection avoids subshell buffering for true event-driven behavior
 # Uses avatar directories as single source of truth (no redundant .members file)
 
 set -eu
@@ -107,54 +108,70 @@ else
   done
 fi
 
-# Start polling loop (50Hz = 0.02s interval)
-last_lines=$(wc -l < "$LOG_FILE" 2>/dev/null || echo 0)
+# Event-driven monitoring using tail -f + file descriptor approach
+# EXPERIMENTAL: Testing if FD redirection avoids subshell buffering
+
 last_message_time=$(date +%s)
-last_keepalive=0
 last_room_mtime=0
 
-while true; do
-  sleep 0.02
-  
-  # Check for new messages
-  current_lines=$(wc -l < "$LOG_FILE" 2>/dev/null || echo 0)
-  
-  if [ "$current_lines" -gt "$last_lines" ]; then
-    # New messages detected - send them
-    temp="/tmp/chat_stream_$$_$(date +%s)"
-    tail -n "+$((last_lines + 1))" "$LOG_FILE" > "$temp" 2>/dev/null || true
-    
-    while IFS= read -r line; do
-      send_sse_event message "$line"
-    done < "$temp"
-    
-    rm -f "$temp"
-    last_lines=$current_lines
-    last_message_time=$(date +%s)
-  fi
-  
-  # Smart keepalive: Only send if idle for 30 seconds
-  now=$(date +%s)
-  if [ $((now - last_message_time)) -ge 30 ] && [ $((now - last_keepalive)) -ge 15 ]; then
-    send_sse_event ping "keepalive"
-    last_keepalive=$now
-  fi
-  
-  # On-change membership: Watch room directory mtime (changes when avatars added/removed)
-  if [ -d "$ROOM_DIR" ]; then
-    # Get room directory modification time (cross-platform)
-    if command -v stat >/dev/null 2>&1; then
+# Create FIFO for tail output
+fifo="/tmp/chat_stream_$$_fifo"
+mkfifo "$fifo" || exit 1
+
+# Cleanup function
+cleanup() {
+  exec 3<&- 2>/dev/null || true
+  kill $tail_pid 2>/dev/null || true
+  kill $keepalive_pid 2>/dev/null || true
+  kill $membership_pid 2>/dev/null || true
+  rm -f "$fifo"
+  exit
+}
+
+trap cleanup INT TERM EXIT
+
+# Start tail -f writing to FIFO (background, starts from end)
+tail -f -n 0 "$LOG_FILE" > "$fifo" &
+tail_pid=$!
+
+# Start background keepalive monitor
+(
+  while true; do
+    sleep 15
+    now=$(date +%s)
+    # Only send keepalive if idle > 30s
+    if [ $((now - last_message_time)) -ge 30 ]; then
+      send_sse_event ping "keepalive"
+    fi
+  done
+) &
+keepalive_pid=$!
+
+# Start background membership monitor
+(
+  last_room_mtime=0
+  while true; do
+    sleep 2
+    if [ -d "$ROOM_DIR" ]; then
       current_room_mtime=$(stat -f %m "$ROOM_DIR" 2>/dev/null || stat -c %Y "$ROOM_DIR" 2>/dev/null || echo 0)
-    else
-      current_room_mtime=0
+      if [ "$current_room_mtime" != "$last_room_mtime" ] && [ "$current_room_mtime" != "0" ]; then
+        members_json=$(QUERY_STRING="room=$room_name" chat-list-avatars 2>/dev/null || echo '{"avatars":[]}')
+        send_sse_event members "$members_json"
+        last_room_mtime=$current_room_mtime
+      fi
     fi
-    
-    if [ "$current_room_mtime" != "$last_room_mtime" ] && [ "$current_room_mtime" != "0" ]; then
-      # Generate member list from avatar directories (single source of truth)
-      # Use chat-list-avatars imp to scan .username directories
-      members_json=$(QUERY_STRING="room=$room_name" chat-list-avatars 2>/dev/null || echo '{"avatars":[]}')
-      send_sse_event members "$members_json"
-      last_room_mtime=$current_room_mtime
-    fi
-  fi
+  done
+) &
+membership_pid=$!
+
+# Open FIFO as file descriptor 3 in MAIN shell (critical!)
+exec 3< "$fifo"
+
+# Event loop: Read from FD 3 - testing if this stays in main shell
+# If this works, no subshell = no buffering = instant delivery!
+while IFS= read -r line <&3; do
+  send_sse_event message "$line"
+  last_message_time=$(date +%s)
 done
+
+cleanup
