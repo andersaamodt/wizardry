@@ -1,7 +1,7 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (v1.3-OPTIMIZED)
+# chat-stream - SSE endpoint for real-time chat messages (v1.4-NO-MEMBERS-FILE)
 # Streams chat messages as Server-Sent Events using ultra-fast polling (50Hz)
-# Optimized: 32KB flush-before, smart keepalive, on-change membership
+# Uses avatar directories as single source of truth (no redundant .members file)
 
 set -eu
 
@@ -111,7 +111,7 @@ fi
 last_lines=$(wc -l < "$LOG_FILE" 2>/dev/null || echo 0)
 last_message_time=$(date +%s)
 last_keepalive=0
-last_members_mtime=0
+last_room_mtime=0
 
 while true; do
   sleep 0.02
@@ -140,19 +140,21 @@ while true; do
     last_keepalive=$now
   fi
   
-  # On-change membership: Only send when .members file changes
-  if [ -f "$ROOM_DIR/.members" ]; then
-    # Get file modification time (cross-platform)
+  # On-change membership: Watch room directory mtime (changes when avatars added/removed)
+  if [ -d "$ROOM_DIR" ]; then
+    # Get room directory modification time (cross-platform)
     if command -v stat >/dev/null 2>&1; then
-      current_mtime=$(stat -f %m "$ROOM_DIR/.members" 2>/dev/null || stat -c %Y "$ROOM_DIR/.members" 2>/dev/null || echo 0)
+      current_room_mtime=$(stat -f %m "$ROOM_DIR" 2>/dev/null || stat -c %Y "$ROOM_DIR" 2>/dev/null || echo 0)
     else
-      current_mtime=0
+      current_room_mtime=0
     fi
     
-    if [ "$current_mtime" != "$last_members_mtime" ] && [ "$current_mtime" != "0" ]; then
-      members_json=$(cat "$ROOM_DIR/.members" 2>/dev/null || echo '[]')
+    if [ "$current_room_mtime" != "$last_room_mtime" ] && [ "$current_room_mtime" != "0" ]; then
+      # Generate member list from avatar directories (single source of truth)
+      # Use chat-list-avatars imp to scan .username directories
+      members_json=$(QUERY_STRING="room=$room_name" chat-list-avatars 2>/dev/null || echo '{"avatars":[]}')
       send_sse_event members "$members_json"
-      last_members_mtime=$current_mtime
+      last_room_mtime=$current_room_mtime
     fi
   fi
 done

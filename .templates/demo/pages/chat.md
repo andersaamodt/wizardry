@@ -87,7 +87,7 @@ This chat system uses the **same message format as the MUD `say` command**, maki
 ---
 
 <script>
-// Chat UI Version: v1.3-OPTIMIZED (32KB flush-before, smart keepalive, on-change membership)
+// Chat UI Version: v1.4-NO-MEMBERS-FILE (Membership from avatar directories - single source of truth)
 
 // Generate a random guest name
 function generateGuestName() {
