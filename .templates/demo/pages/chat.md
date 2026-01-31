@@ -380,8 +380,11 @@ function scrollToBottom() {
     return;  // No scrollbar, don't scroll
   }
   
-  // Set scroll position immediately without animation to avoid visible scrolling
-  chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+  // Smoothly scroll to bottom to show latest messages
+  chatMessagesDiv.scrollTo({
+    top: chatMessagesDiv.scrollHeight,
+    behavior: 'smooth'
+  });
 }
 
 // Detect when user manually scrolls
