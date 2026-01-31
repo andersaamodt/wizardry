@@ -1,6 +1,6 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-31-v36-32KB-PADDING)
-# Streams chat messages as Server-Sent Events using optimized polling
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-31-v38-EVENT-DRIVEN)
+# Streams chat messages as Server-Sent Events using event-driven tail -f
 # Self-contained - no external imp dependencies
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
 #
@@ -130,70 +130,64 @@ if [ -f "$ROOM_DIR/.members" ]; then
   send_sse_event members "$members_json"
 fi
 
-printf '[chat-stream] Initial messages sent, starting polling loop...\n' >&2
+printf '[chat-stream] Initial messages sent, starting event-driven monitoring...\n' >&2
 
-# Track last known line count for efficient change detection
-last_line_count=0
-if [ -f "$LOG_FILE" ]; then
-  last_line_count=$(wc -l < "$LOG_FILE" 2>/dev/null || printf '0')
-fi
+# Event-driven approach: Use tail -f with named pipe (FIFO)
+# This avoids subshell buffering while being truly event-driven
 
-# Polling loop - check for new messages every 0.1 seconds for near-instant delivery
-# We can't use tail -f in a pipe because it creates a subshell that buffers output
-poll_count=0
-while true; do
-  sleep 0.1
-  poll_count=$((poll_count + 1))
+# Create a named pipe for communication
+fifo="/tmp/chat_stream_fifo_$$"
+mkfifo "$fifo" 2>/dev/null || {
+  printf '[chat-stream] ERROR: Could not create FIFO\n' >&2
+  exit 1
+}
+
+# Cleanup function
+cleanup_fifo() {
+  rm -f "$fifo"
+  # Kill tail -f if still running
+  if [ -n "${tail_pid:-}" ]; then
+    kill "$tail_pid" 2>/dev/null || true
+  fi
+}
+trap cleanup_fifo EXIT INT TERM
+
+# Start tail -f in background, outputting to FIFO
+# -n 0 means start from end (don't repeat initial messages)
+tail -f -n 0 "$LOG_FILE" > "$fifo" 2>/dev/null &
+tail_pid=$!
+printf '[chat-stream] Started tail -f with PID %d (event-driven mode)\n' "$tail_pid" >&2
+
+# Track time for periodic tasks
+last_keepalive=$(date +%s)
+last_members=$(date +%s)
+
+# Read from FIFO in an event-driven manner
+# Each line from tail -f triggers immediate processing
+while IFS= read -r line; do
+  # Send the message immediately (event-driven!)
+  send_sse_event message "$line"
+  printf '[chat-stream] Sent message: %s\n' "$line" >&2
   
-  # Send keepalive every 5 seconds (50 polls × 0.1s)
-  if [ $((poll_count % 50)) -eq 0 ]; then
+  # Periodic keepalive (every 15 seconds)
+  now=$(date +%s)
+  if [ $((now - last_keepalive)) -ge 15 ]; then
     send_sse_event ping "keepalive"
+    last_keepalive=$now
+  fi
+  
+  # Periodic members update (every 15 seconds)
+  if [ $((now - last_members)) -ge 15 ] && [ -f "$ROOM_DIR/.members" ]; then
+    members_json=$(cat "$ROOM_DIR/.members" 2>/dev/null || printf '[]')
+    send_sse_event members "$members_json"
+    last_members=$now
   fi
   
   # Check if room still exists
   if [ ! -d "$ROOM_DIR" ]; then
     printf '[chat-stream] Room deleted, exiting\n' >&2
-    exit 0
+    break
   fi
-  
-  # Check for new messages
-  if [ -f "$LOG_FILE" ]; then
-    current_line_count=$(wc -l < "$LOG_FILE" 2>/dev/null || printf '0')
-    
-    if [ "$current_line_count" -gt "$last_line_count" ]; then
-      # New messages detected - send them
-      new_msg_count=$((current_line_count - last_line_count))
-      printf '[chat-stream] DETECTED %d new messages (was %d, now %d)\n' "$new_msg_count" "$last_line_count" "$current_line_count" >&2
-      
-      # Use temp file to avoid pipe subshell
-      temp_new="/tmp/chat_stream_$$_new"
-      tail -n "+$((last_line_count + 1))" "$LOG_FILE" > "$temp_new" 2>/dev/null || true
-      
-      # Debug: check temp file
-      if [ -f "$temp_new" ]; then
-        temp_lines=$(wc -l < "$temp_new" 2>/dev/null || printf '0')
-        printf '[chat-stream] Temp file has %d lines\n' "$temp_lines" >&2
-      fi
-      
-      line_num=0
-      while IFS= read -r line; do
-        line_num=$((line_num + 1))
-        printf '[chat-stream] SENDING line %d: %s\n' "$line_num" "$line" >&2
-        send_sse_event message "$line"
-        printf '[chat-stream] SENT line %d\n' "$line_num" >&2
-      done < "$temp_new"
-      
-      printf '[chat-stream] Finished sending %d lines\n' "$line_num" >&2
-      rm -f "$temp_new"
-      last_line_count="$current_line_count"
-    fi
-  fi
-  
-  # Send members update every 5 seconds (50 polls × 0.1s)
-  if [ $((poll_count % 50)) -eq 0 ]; then
-    if [ -f "$ROOM_DIR/.members" ]; then
-      members_json=$(cat "$ROOM_DIR/.members" 2>/dev/null || printf '[]')
-      send_sse_event members "$members_json"
-    fi
-  fi
-done
+done < "$fifo"
+
+cleanup_fifo
