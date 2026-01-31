@@ -2,9 +2,7 @@
 # file-info - Process file upload and display uploaded image
 set -eu
 
-http-status 200 "OK"
-http-header "Content-Type" "text/html"
-http-end-headers
+http-ok-html
 
 # Parse query string for uploaded file info
 query="${QUERY_STRING:-}"
@@ -25,20 +23,11 @@ fi
 
 # Parse parameters
 # Use site-specific data directory
-# Use WIZARDRY_SITE_NAME if available (set by nginx), otherwise default
-if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
-  site_id="$WIZARDRY_SITE_NAME"
-else
-  # Fallback for non-nginx environments
-  site_id="default"
-fi
-SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
-upload_dir="$SITES_DIR/.sitedata/$site_id/uploads"
+upload_dir=$(get-site-data-dir "uploads")
 mkdir -p "$upload_dir"
 
 # Extract filename from query
-filename_encoded=$(printf '%s' "$query" | sed 's/^name=//' | sed 's/&.*//')
-filename=$(url-decode "$filename_encoded" 2>/dev/null || printf '%s' "$filename_encoded")
+filename=$(get-query-param "name")
 
 # Remove any Windows-style fake paths (browsers sometimes add these)
 # Strip everything up to and including last backslash or forward slash

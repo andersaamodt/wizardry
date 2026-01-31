@@ -1,0 +1,22 @@
+#!/bin/sh
+# validate-username USERNAME - validate username contains only safe characters
+# Returns 0 if valid, 1 if invalid
+# Allows: alphanumeric, underscore, hyphen
+# Example: validate-username "$user" || printf 'Invalid username\n'
+
+# Note: No set -eu because this is a conditional imp (returns exit codes for flow control)
+
+username="${1:-}"
+
+# Check for empty username
+[ -z "$username" ] && exit 1
+
+# Check for invalid characters (only allow alphanumeric, underscore, hyphen)
+case "$username" in
+  *[!a-zA-Z0-9_-]*)
+    exit 1
+    ;;
+esac
+
+# Valid username
+exit 0

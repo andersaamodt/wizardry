@@ -4,15 +4,8 @@
 
 set -eu
 
-# Source CGI helpers
-. http-status
-. http-header
-. http-end-headers
-
 # Output HTTP headers
-http-status 200 "OK"
-http-header "Content-Type" "text/html"
-http-end-headers
+http-ok-html
 
 # Output HTML body
 cat <<'HTML'

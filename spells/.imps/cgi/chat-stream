@@ -1,16 +1,24 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (v2.3-2KB-TEST)
+# chat-stream - SSE endpoint for real-time chat messages (v2.5-CORS)
 # True event-driven SSE using tail -f + file descriptor (no polling, 0ms detection)
-# Testing 2KB padding (middle ground between 4KB and 1KB)
+# Enhanced with: retry field, connection timeout, health monitoring, CORS support
 # Uses avatar directories as single source of truth (no redundant .members file)
 
 set -eu
 
-# Send SSE headers
+# Configuration
+MAX_CONNECTION_TIME=3600  # 1 hour maximum connection duration
+KEEPALIVE_INTERVAL=15     # Send keepalive every 15s when idle
+IDLE_THRESHOLD=30         # Only send keepalive if idle > 30s
+
+# Send SSE headers with CORS support
 printf 'Status: 200 OK\r\n'
 printf 'Content-Type: text/event-stream\r\n'
 printf 'Cache-Control: no-cache\r\n'
 printf 'Connection: keep-alive\r\n'
+printf 'Access-Control-Allow-Origin: *\r\n'
+printf 'Access-Control-Allow-Methods: GET, OPTIONS\r\n'
+printf 'Access-Control-Allow-Headers: Content-Type, Last-Event-ID\r\n'
 printf '\r\n'
 
 # Initial 4KB padding to force fcgiwrap buffer flush (confirmed minimum)
@@ -21,6 +29,9 @@ while [ $i -lt 500 ]; do
   i=$((i + 1))
 done
 printf '\n\n'
+
+# Set reconnection retry interval (5 seconds)
+printf 'retry: 5000\n\n'
 
 # SSE event sender with 4KB padding for immediate delivery
 send_sse_event() {
@@ -49,40 +60,27 @@ send_sse_event() {
   printf '\n\n'
 }
 
-# URL decoder (inline, no external dependencies)
-url_decode() {
-  printf '%s' "$1" | sed 's/+/ /g; s/%\([0-9A-Fa-f][0-9A-Fa-f]\)/\\x\1/g' | xargs -0 printf '%b'
-}
-
-# Parse query string
-room=""
-since_timestamp=""
-
-if [ -n "${QUERY_STRING:-}" ]; then
-  IFS='&'
-  for param in $QUERY_STRING; do
-    key="${param%%=*}"
-    value="${param#*=}"
-    case "$key" in
-      room) room=$(url_decode "$value") ;;
-      since) since_timestamp=$(url_decode "$value") ;;
-    esac
-  done
-fi
+# Parse query string using get-query-param
+room=$(get-query-param "room" "${QUERY_STRING:-}")
+since_timestamp=$(get-query-param "since" "${QUERY_STRING:-}")
 
 # Default to General if no room specified
 room="${room:-General}"
 
-# Get site paths
-SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
-SITE_NAME="${WIZARDRY_SITE_NAME:-default}"
-SITEDATA_DIR="$SITES_DIR/.sitedata/$SITE_NAME"
-ROOM_DIR="$SITEDATA_DIR/chatrooms/$room"
+# Validate room name to prevent path traversal
+if ! validate-room-name "$room"; then
+  sse-error 400 "Invalid room name"
+  exit 1
+fi
+
+# Get site paths using get-site-data-dir
+CHAT_DIR=$(get-site-data-dir "chatrooms")
+ROOM_DIR="$CHAT_DIR/$room"
 LOG_FILE="$ROOM_DIR/.log"
 
 # Verify room exists
 if [ ! -f "$LOG_FILE" ]; then
-  send_sse_event error "Room not found"
+  sse-error 404 "Room not found"
   exit 1
 fi
 
@@ -111,12 +109,16 @@ fi
 # Event-driven monitoring using tail -f + file descriptor approach
 # EXPERIMENTAL: Testing if FD redirection avoids subshell buffering
 
+connection_start=$(date +%s)
 last_message_time=$(date +%s)
 last_room_mtime=0
 
 # Create FIFO for tail output
 fifo="/tmp/chat_stream_$$_fifo"
-mkfifo "$fifo" || exit 1
+mkfifo "$fifo" || {
+  sse-error 500 "Failed to create communication channel"
+  exit 1
+}
 
 # Cleanup function
 cleanup() {
@@ -124,6 +126,8 @@ cleanup() {
   kill $tail_pid 2>/dev/null || true
   kill $keepalive_pid 2>/dev/null || true
   kill $membership_pid 2>/dev/null || true
+  kill $timeout_pid 2>/dev/null || true
+  kill $health_pid 2>/dev/null || true
   rm -f "$fifo"
   exit
 }
@@ -134,18 +138,49 @@ trap cleanup INT TERM EXIT
 tail -f -n 0 "$LOG_FILE" > "$fifo" &
 tail_pid=$!
 
-# Start background keepalive monitor
+# Verify tail started successfully
+sleep 0.1
+if ! kill -0 $tail_pid 2>/dev/null; then
+  sse-error 500 "Failed to monitor chat log"
+  exit 1
+fi
+
+# Background subprocess health monitor
+# Detects if critical subprocesses die unexpectedly
 (
   while true; do
-    sleep 15
+    sleep 10
+    # Check if tail process is still running
+    if ! kill -0 $tail_pid 2>/dev/null; then
+      send_sse_event error "Stream monitor failed - please reconnect"
+      kill $$ 2>/dev/null || true
+      exit 1
+    fi
+  done
+) &
+health_pid=$!
+
+# Background keepalive monitor with health check
+(
+  while true; do
+    sleep "$KEEPALIVE_INTERVAL"
     now=$(date +%s)
-    # Only send keepalive if idle > 30s
-    if [ $((now - last_message_time)) -ge 30 ]; then
+    # Only send keepalive if idle > threshold
+    if [ $((now - last_message_time)) -ge "$IDLE_THRESHOLD" ]; then
       send_sse_event ping "keepalive"
     fi
   done
 ) &
 keepalive_pid=$!
+
+# Background connection timeout monitor
+# Enforces maximum connection duration to prevent resource leaks
+(
+  sleep "$MAX_CONNECTION_TIME"
+  send_sse_event timeout "Connection time limit reached. Please reconnect."
+  kill $$ 2>/dev/null || true
+) &
+timeout_pid=$!
 
 # Background membership monitor (tracks changes in member list)
 # Uses sorted member names as signature to detect ANY membership change,

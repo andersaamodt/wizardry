@@ -2,9 +2,7 @@
 # upload-image - Upload and immediately display image (demonstrates real-time interactivity)
 set -eu
 
-http-status 200 "OK"
-http-header "Content-Type" "text/html"
-http-end-headers
+http-ok-html
 
 # This demonstrates the web platform's capability for real-time uploads and display
 # In production, this would process actual multipart/form-data POST requests
@@ -21,8 +19,7 @@ HTML
 fi
 
 # Parse the simulated upload (format: filename=name.png)
-filename_encoded=$(printf '%s' "$query" | sed 's/^filename=//' | sed 's/&.*//')
-filename=$(url-decode "$filename_encoded")
+filename=$(get-query-param "filename")
 filename=${filename:-test.png}
 
 upload_dir="${TMPDIR:-/tmp}/wizardry-uploads"

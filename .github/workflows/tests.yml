@@ -46,8 +46,8 @@ jobs:
             max_level: 24
             test_flags: ""
           - job_name: "6/6"
-            levels: "25-27"
-            max_level: 27
+            levels: "25-28"
+            max_level: 28
             test_flags: ""
     env:
       WIZARDRY_OS_LABEL: nixos
@@ -109,8 +109,8 @@ jobs:
             max_level: 24
             test_flags: ""
           - job_name: "6/6"
-            levels: "25-27"
-            max_level: 27
+            levels: "25-28"
+            max_level: 28
             test_flags: ""
     env:
       WIZARDRY_OS_LABEL: mac
@@ -155,8 +155,8 @@ jobs:
             max_level: 24
             test_flags: ""
           - job_name: "6/6"
-            levels: "25-27"
-            max_level: 27
+            levels: "25-28"
+            max_level: 28
             test_flags: ""
     env:
       WIZARDRY_OS_LABEL: arch
@@ -203,8 +203,8 @@ jobs:
             max_level: 24
             test_flags: ""
           - job_name: "6/6"
-            levels: "25-27"
-            max_level: 27
+            levels: "25-28"
+            max_level: 28
             test_flags: ""
     env:
       WIZARDRY_OS_LABEL: debian
@@ -251,8 +251,8 @@ jobs:
             max_level: 24
             test_flags: ""
           - job_name: "6/6"
-            levels: "25-27"
-            max_level: 27
+            levels: "25-28"
+            max_level: 28
             test_flags: ""
     env:
       WIZARDRY_OS_LABEL: ubuntu

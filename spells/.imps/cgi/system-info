@@ -2,9 +2,7 @@
 # system-info - CGI script showing system information
 set -eu
 
-http-status 200 "OK"
-http-header "Content-Type" "text/html"
-http-end-headers
+http-ok-html
 
 uptime_info=$(uptime 2>/dev/null || echo "N/A")
 mem_info=$(free -h 2>/dev/null | head -2 | tail -1 || echo "N/A")
