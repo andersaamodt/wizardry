@@ -175,8 +175,18 @@ keepalive_pid=$!
         # Get member list from avatar directories
         query="room=$room"
         members_raw=$(QUERY_STRING="$query" chat-list-avatars 2>/dev/null || echo '{"avatars":[]}')
-        # Strip HTTP headers - skip lines until blank line, then take rest
-        members_json=$(printf '%s' "$members_raw" | sed '1,/^$/d')
+        
+        # Strip HTTP headers - look for blank line separator
+        # The output is: headers, blank line, JSON
+        # We want everything after the first blank line
+        members_json=$(printf '%s' "$members_raw" | awk 'BEGIN{found=0} /^$/{found=1;next} found{print}')
+        
+        # If stripping failed or result is empty, use fallback
+        if [ -z "$members_json" ] || ! printf '%s' "$members_json" | grep -q '^{'; then
+          printf '[membership-monitor] Warning: header stripping failed, using raw output\n' >&2
+          members_json='{"avatars":[]}'
+        fi
+        
         printf '[membership-monitor] Sending JSON: %s\n' "$members_json" >&2
         send_sse_event members "$members_json"
         last_member_count=$current_member_count

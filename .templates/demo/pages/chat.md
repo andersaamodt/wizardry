@@ -742,8 +742,12 @@ function moveAvatar(newRoom, username, oldRoom) {
     headers: {'Content-Type': 'application/json'},
     body: payload
   }).then(function(response) {
-    return response.json();
-  }).then(function(data) {
+    console.log('[moveAvatar] Response status:', response.status);
+    console.log('[moveAvatar] Response headers:', response.headers.get('content-type'));
+    return response.text();  // Get as text first to see what we're receiving
+  }).then(function(text) {
+    console.log('[moveAvatar] Response text:', text);
+    var data = JSON.parse(text);
     if (data.success) {
       loadMembers();  // Refresh member list
     } else {
