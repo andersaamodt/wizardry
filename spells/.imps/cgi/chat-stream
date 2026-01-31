@@ -172,20 +172,42 @@ keepalive_pid=$!
       # Send update if count changed
       if [ "$current_member_count" != "$last_member_count" ]; then
         printf '[membership-monitor] Count changed! Sending member update\n' >&2
-        # Get member list from avatar directories
-        query="room=$room"
-        members_raw=$(QUERY_STRING="$query" chat-list-avatars 2>/dev/null || echo '{"avatars":[]}')
         
-        # Strip HTTP headers - look for blank line separator
-        # The output is: headers, blank line, JSON
-        # We want everything after the first blank line
-        members_json=$(printf '%s' "$members_raw" | awk 'BEGIN{found=0} /^$/{found=1;next} found{print}')
-        
-        # If stripping failed or result is empty, use fallback
-        if [ -z "$members_json" ] || ! printf '%s' "$members_json" | grep -q '^{'; then
-          printf '[membership-monitor] Warning: header stripping failed, using raw output\n' >&2
-          members_json='{"avatars":[]}'
-        fi
+        # Build member list JSON directly (don't call chat-list-avatars subprocess)
+        # This avoids PATH issues and header stripping complexity
+        members_json='{"avatars": ['
+        first=1
+        for avatar_dir in "$ROOM_DIR"/.*; do
+          [ -d "$avatar_dir" ] || continue
+          avatar_name=$(basename "$avatar_dir")
+          
+          # Skip . and .. and .log
+          case "$avatar_name" in
+            .|..|.log) continue ;;
+          esac
+          
+          # Check if it's a web avatar (use get-attribute if available, else assume web)
+          is_web="true"
+          if command -v get-attribute >/dev/null 2>&1; then
+            if get-attribute "user.web_avatar" "$avatar_dir" >/dev/null 2>&1; then
+              is_web="true"
+            else
+              is_web="false"
+            fi
+          fi
+          
+          # Remove leading dot from username
+          username=$(printf '%s' "$avatar_name" | sed 's/^\.//')
+          
+          if [ "$first" -eq 1 ]; then
+            first=0
+          else
+            members_json="$members_json, "
+          fi
+          
+          members_json="$members_json{\"username\": \"$username\", \"is_web\": $is_web}"
+        done
+        members_json="$members_json]}"
         
         printf '[membership-monitor] Sending JSON: %s\n' "$members_json" >&2
         send_sse_event members "$members_json"
