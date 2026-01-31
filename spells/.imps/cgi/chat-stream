@@ -160,7 +160,9 @@ keepalive_pid=$!
       if [ "$current_room_mtime" != "$last_room_mtime" ] && [ "$current_room_mtime" != "0" ]; then
         # Get member list from avatar directories
         query="room=$room"
-        members_json=$(QUERY_STRING="$query" chat-list-avatars 2>/dev/null || echo '{"avatars":[]}')
+        members_raw=$(QUERY_STRING="$query" chat-list-avatars 2>/dev/null || echo '{"avatars":[]}')
+        # Strip HTTP headers (everything before first {) when called from shell
+        members_json=$(printf '%s' "$members_raw" | sed -n '/{/,$p')
         send_sse_event members "$members_json"
         last_room_mtime=$current_room_mtime
       fi
