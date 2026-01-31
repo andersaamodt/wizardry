@@ -89,9 +89,9 @@ This chat system uses the **same message format as the MUD `say` command**, maki
 <script>
 // Chat UI Version: 2026-01-31-v38-EVENT-DRIVEN
 // Server: chat-stream v38-EVENT-DRIVEN - true SSE with tail -f (no polling!)
-console.log('[Chat] Version: 2026-01-31-v38-EVENT-DRIVEN');
-console.log('[Chat] Server: chat-stream v38-EVENT-DRIVEN');
-console.log('[Chat] True SSE: Event-driven tail -f (no polling!) + messages no longer disappear!');
+console.log('[Chat] Version: 2026-01-31-v39-FAST-POLL-50HZ');
+console.log('[Chat] Server: chat-stream v39-FAST-POLL-50HZ');
+console.log('[Chat] Ultra-fast 50Hz polling (20ms) - feels instant, no buffering issues!');
 
 // Generate a random guest name
 function generateGuestName() {
