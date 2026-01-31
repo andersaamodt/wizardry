@@ -1,0 +1,18 @@
+#!/bin/sh
+# http-error STATUS_CODE MESSAGE - output HTTP error response
+# Example: http-error 400 "Bad Request"
+set -eu
+
+status_code="${1:-500}"
+message="${2:-Internal Server Error}"
+
+http-status "$status_code" "$message"
+http-header "Content-Type" "text/html"
+http-end-headers
+
+cat <<HTML
+<div class="error">
+  <h2>Error $status_code</h2>
+  <p>$message</p>
+</div>
+HTML

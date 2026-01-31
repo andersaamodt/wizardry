@@ -43,13 +43,18 @@ test_chat_stream_rejects_invalid_room_name() {
 test_chat_stream_rejects_empty_room() {
   setup_test_env
   
+  # Empty QUERY_STRING should default to "General" room
+  # Create General room so it's found
+  mkdir -p "$CHAT_DIR/General"
+  touch "$CHAT_DIR/General/.log"
+  
   export QUERY_STRING=""
   output=$(timeout 1 chat-stream 2>&1 || true)
   
   cleanup_test_env
   
-  printf '%s' "$output" | grep -q "event: error" && \
-  printf '%s' "$output" | grep -q "Invalid room name"
+  # Should not error, should use General room
+  ! printf '%s' "$output" | grep -q "event: error"
 }
 
 test_chat_stream_handles_nonexistent_room() {

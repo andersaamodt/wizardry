@@ -1,0 +1,21 @@
+#!/bin/sh
+# validate-room-name ROOM_NAME - validate room name against path traversal
+# Returns 0 if valid, 1 if invalid
+# Example: validate-room-name "$room" || printf 'Invalid room name\n'
+
+# Note: No set -eu because this is a conditional imp (returns exit codes for flow control)
+
+room_name="${1:-}"
+
+# Check for empty room name
+[ -z "$room_name" ] && exit 1
+
+# Check for path traversal sequences (.., /, \)
+case "$room_name" in
+  *..*|*/*|*\\*)
+    exit 1
+    ;;
+esac
+
+# Valid room name
+exit 0

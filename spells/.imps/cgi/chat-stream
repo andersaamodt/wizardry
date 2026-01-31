@@ -49,35 +49,22 @@ send_sse_event() {
   printf '\n\n'
 }
 
-# URL decoder (inline, no external dependencies)
-url_decode() {
-  printf '%s' "$1" | sed 's/+/ /g; s/%\([0-9A-Fa-f][0-9A-Fa-f]\)/\\x\1/g' | xargs -0 printf '%b'
-}
-
-# Parse query string
-room=""
-since_timestamp=""
-
-if [ -n "${QUERY_STRING:-}" ]; then
-  IFS='&'
-  for param in $QUERY_STRING; do
-    key="${param%%=*}"
-    value="${param#*=}"
-    case "$key" in
-      room) room=$(url_decode "$value") ;;
-      since) since_timestamp=$(url_decode "$value") ;;
-    esac
-  done
-fi
+# Parse query string using get-query-param
+room=$(get-query-param "room" "${QUERY_STRING:-}")
+since_timestamp=$(get-query-param "since" "${QUERY_STRING:-}")
 
 # Default to General if no room specified
 room="${room:-General}"
 
-# Get site paths
-SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
-SITE_NAME="${WIZARDRY_SITE_NAME:-default}"
-SITEDATA_DIR="$SITES_DIR/.sitedata/$SITE_NAME"
-ROOM_DIR="$SITEDATA_DIR/chatrooms/$room"
+# Validate room name to prevent path traversal
+if ! validate-room-name "$room"; then
+  send_sse_event error "Invalid room name"
+  exit 1
+fi
+
+# Get site paths using get-site-data-dir
+CHAT_DIR=$(get-site-data-dir "chatrooms")
+ROOM_DIR="$CHAT_DIR/$room"
 LOG_FILE="$ROOM_DIR/.log"
 
 # Verify room exists
