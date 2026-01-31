@@ -2,18 +2,10 @@
 # calc - Simple calculator CGI script
 set -eu
 
-http-status 200 "OK"
-http-header "Content-Type" "text/html"
-http-end-headers
+http-ok-html
 
 # Parse query string to get expr parameter
-expr=""
-if [ -n "${QUERY_STRING:-}" ]; then
-  # Extract expr=value from query string (before url-decode)
-  encoded=$(printf '%s' "$QUERY_STRING" | sed 's/^expr=//' | sed 's/&.*//')
-  # Decode the URL-encoded value
-  expr=$(url-decode "$encoded")
-fi
+expr=$(get-query-param "expr")
 
 if [ -z "$expr" ]; then
   cat <<HTML
