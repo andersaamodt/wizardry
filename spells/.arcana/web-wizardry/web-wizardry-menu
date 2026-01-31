@@ -128,19 +128,6 @@ while true; do
     https_admin=""
   fi
   
-  # Coreutils toggle (install/uninstall on macOS, check-only on Linux)
-  coreutils_was_installed=0
-  "$script_dir/is-web-component-installed" coreutils 2>/dev/null && coreutils_was_installed=1
-  
-  if [ "$coreutils_was_installed" -eq 1 ]; then
-    coreutils_toggle="[X] coreutils (stdbuf)%uninstall-coreutils"
-    coreutils_pos=$pos
-  else
-    coreutils_toggle="[ ] coreutils (stdbuf)%install-coreutils"
-    coreutils_pos=$pos
-  fi
-  pos=$((pos + 1))
-  
   # Check if all are installed for enable/disable all toggle
   all_installed=1
   for component in pandoc nginx fcgiwrap openssl htmx certbot; do
@@ -167,15 +154,15 @@ while true; do
       "$coreutils_toggle" "$toggle_all" "$exit_item"
   elif [ -n "$nginx_admin" ]; then
     set -- "$pandoc_toggle" "$nginx_toggle" "$nginx_admin" "$fcgiwrap_toggle" \
-      "$openssl_toggle" "$htmx_toggle" "$certbot_toggle" "$coreutils_toggle" \
+      "$openssl_toggle" "$htmx_toggle" "$certbot_toggle" \
       "$toggle_all" "$exit_item"
   elif [ -n "$https_admin" ]; then
     set -- "$pandoc_toggle" "$nginx_toggle" "$fcgiwrap_toggle" "$openssl_toggle" \
-      "$htmx_toggle" "$certbot_toggle" "$https_admin" "$coreutils_toggle" \
+      "$htmx_toggle" "$certbot_toggle" "$https_admin" \
       "$toggle_all" "$exit_item"
   else
     set -- "$pandoc_toggle" "$nginx_toggle" "$fcgiwrap_toggle" "$openssl_toggle" \
-      "$htmx_toggle" "$certbot_toggle" "$coreutils_toggle" "$toggle_all" "$exit_item"
+      "$htmx_toggle" "$certbot_toggle" "$toggle_all" "$exit_item"
   fi
   
   menu --start-selection "$start_selection" "Install Web Wizardry:" "$@" || menu_status=$?
