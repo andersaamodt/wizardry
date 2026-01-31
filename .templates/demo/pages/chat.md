@@ -87,6 +87,8 @@ This chat system uses the **same message format as the MUD `say` command**, maki
 ---
 
 <script>
+// Chat UI Version: v2.1-STABLE (Production: 4KB padding confirmed optimal)
+
 // Generate a random guest name
 function generateGuestName() {
   // Use 3-digit random number (001-999) with zero padding
@@ -185,7 +187,6 @@ document.addEventListener('htmx:afterSwap', function(event) {
 
 // Join a room
 function joinRoom(roomName) {
-  console.log('[Room] Joining room:', roomName);
   
   window.currentRoom = roomName;
   document.getElementById('current-room-name').textContent = roomName;
@@ -198,15 +199,12 @@ function joinRoom(roomName) {
   var currentUsername = getUsername();
   var previousRoom = localStorage.getItem('previousRoom') || '';
   
-  console.log('[Room] Current user:', currentUsername, 'Previous room:', previousRoom);
   
   if (previousRoom && previousRoom !== roomName) {
     // Move avatar from previous room to new room
-    console.log('[Avatar] Moving avatar from', previousRoom, 'to', roomName);
     moveAvatar(roomName, currentUsername, previousRoom);
   } else {
     // Create new avatar (first join or rejoining same room)
-    console.log('[Avatar] Creating new avatar in', roomName);
     createAvatar(roomName, currentUsername);
   }
   
@@ -239,7 +237,6 @@ function joinRoom(roomName) {
   
   // Close existing SSE connection if any
   if (window.messageEventSource) {
-    console.log('[Room] Closing existing SSE connection before joining new room');
     window.messageEventSource.close();
     window.messageEventSource = null;
   }
@@ -251,11 +248,9 @@ function joinRoom(roomName) {
   }
   
   // Load initial messages via GET for instant display
-  console.log('[Room] Loading initial messages via GET for instant display');
   loadMessages();
   
   // Then set up SSE for real-time updates (no initial batch, just ongoing events)
-  console.log('[Room] Setting up SSE stream for real-time updates:', roomName);
   setupMessageStream(roomName);
 }
 
@@ -412,11 +407,9 @@ function setupScrollListener() {
 function setupMessageStream(roomName) {
   if (!roomName) return;
   
-  console.log('[SSE] Setting up message stream for room:', roomName);
   
   // Close existing connection if any
   if (window.messageEventSource) {
-    console.log('[SSE] Closing existing EventSource connection');
     window.messageEventSource.close();
     window.messageEventSource = null;
   }
@@ -428,12 +421,9 @@ function setupMessageStream(roomName) {
   
   // Create new SSE connection with since parameter
   var url = '/cgi/chat-stream?room=' + encodeURIComponent(roomName) + '&since=' + encodeURIComponent(sinceTimestamp);
-  console.log('[SSE] Creating new EventSource:', url);
-  console.log('[SSE] Will only receive messages after:', sinceTimestamp);
   
   try {
     window.messageEventSource = new EventSource(url);
-    console.log('[SSE] EventSource created, readyState:', window.messageEventSource.readyState);
   } catch (e) {
     console.error('[SSE] Failed to create EventSource:', e);
     return;
@@ -441,25 +431,20 @@ function setupMessageStream(roomName) {
   
   // Handle connection open
   window.messageEventSource.addEventListener('open', function(event) {
-    console.log('[SSE] Connection opened successfully');
   });
-  console.log('[SSE] Added "open" event listener');
   
   // Handle incoming messages
   window.messageEventSource.addEventListener('message', function(event) {
-    console.log('[SSE] Received message event:', event.data);
+    var timestamp = new Date().toISOString();
     // Event data is a single message line: [YYYY-MM-DD HH:MM:SS] username: message
     appendMessage(event.data);
   });
-  console.log('[SSE] Added "message" event listener');
   
   // Handle member list updates
   window.messageEventSource.addEventListener('members', function(event) {
-    console.log('[SSE] Received members event, data length:', event.data.length);
     // Event data is JSON array of members
     updateMemberList(event.data);
   });
-  console.log('[SSE] Added "members" event listener');
   
   // Handle errors
   window.messageEventSource.addEventListener('error', function(event) {
@@ -477,17 +462,9 @@ function setupMessageStream(roomName) {
   });
   console.log('[SSE] Added "error" event listener');
   
-  // Handle empty room
-  window.messageEventSource.addEventListener('empty', function(event) {
-    console.log('[SSE] Received empty event');
-    // Room is empty - show empty state message
-    var chatMessagesDiv = document.getElementById('chat-messages');
-    if (chatMessagesDiv) {
-      chatMessagesDiv.innerHTML = '<p class="empty-state-message">No messages yet. Be the first to say something!</p>';
-    }
+  // Optional: Handle ping/keepalive events (currently just ignore them)
+  window.messageEventSource.addEventListener('ping', function(event) {
   });
-  console.log('[SSE] Added "empty" event listener');
-  console.log('[SSE] All event listeners added, waiting for events...');
   
   // Add a timeout warning if no events received after 5 seconds
   setTimeout(function() {
@@ -495,7 +472,6 @@ function setupMessageStream(roomName) {
       console.warn('[SSE] WARNING: Still CONNECTING after 5 seconds - possible server issue');
       console.warn('[SSE] Check server logs for errors in chat-stream script');
     } else if (window.messageEventSource && window.messageEventSource.readyState === EventSource.OPEN) {
-      console.log('[SSE] Status check: Connection is OPEN');
     }
   }, 5000);
   
@@ -507,7 +483,6 @@ function setupMessageStream(roomName) {
     }
     var states = ['CONNECTING', 'OPEN', 'CLOSED'];
     var state = states[window.messageEventSource.readyState] || 'UNKNOWN';
-    console.log('[SSE] Periodic check: readyState=' + state + ' (' + window.messageEventSource.readyState + ')');
   }, 15000);
 }
 
@@ -589,10 +564,18 @@ function appendMessage(messageLine) {
   
   // Check if this is a system message
   if (username === 'log') {
+    // Store scroll position before adding
+    var wasAtBottom = chatMessagesDiv.scrollHeight - chatMessagesDiv.scrollTop - chatMessagesDiv.clientHeight < 50;
+    
     var messageDiv = document.createElement('div');
     messageDiv.className = 'chat-msg-system';
     messageDiv.textContent = message;
     chatMessagesDiv.appendChild(messageDiv);
+    
+    // Auto-scroll if user is at bottom (same as regular messages)
+    if (wasAtBottom || !window.userHasScrolledUp) {
+      scrollToBottom();
+    }
   } else {
     // Regular message - generate color from username hash
     var hue = hashUsername(username);
@@ -1186,11 +1169,9 @@ function showNotification() {
 
 // Clean up avatar when user leaves the page
 window.addEventListener('beforeunload', function() {
-  console.log('[SSE] Page unloading - cleaning up');
   
   // Close SSE connection
   if (window.messageEventSource) {
-    console.log('[SSE] Closing EventSource on page unload');
     window.messageEventSource.close();
     window.messageEventSource = null;
   }

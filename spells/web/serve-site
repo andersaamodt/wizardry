@@ -65,8 +65,14 @@ if has fcgiwrap; then
     # Default: 10 workers = 10 concurrent long-lived connections
     FCGIWRAP_WORKERS="${FCGIWRAP_WORKERS:-10}"
     
+    # Export environment vars that CGI scripts need (e.g., chat-stream)
+    export WIZARDRY_SITES_DIR="$SITES_DIR"
+    export WIZARDRY_SITE_NAME="$site_name"
+    
     step "Starting fcgiwrap with $FCGIWRAP_WORKERS workers..."
+    info "chat-stream now uses polling (0.5s) for real-time delivery"
     fcgiwrap -c "$FCGIWRAP_WORKERS" -s "unix:$FCGI_SOCK" &
+    
     fcgi_pid=$!
     printf '%s\n' "$fcgi_pid" > "$SITE_DIR/nginx/fcgiwrap.pid"
     sleep 1
