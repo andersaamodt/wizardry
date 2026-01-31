@@ -59,7 +59,18 @@ case "$os_type" in
       # Remove man pages
       rm -f "$PREFIX/share/man/man1/stdbuf.1" 2>/dev/null || true
       
+      # Remove PATH entry from shell RC files using rc-remove-line
+      step "Removing PATH entry from shell RC files..."
+      
+      # Try common RC files where we might have added the PATH
+      for rc_file in "$HOME/.zshrc" "$HOME/.bash_profile" "$HOME/.bashrc" "$HOME/.profile"; do
+        if [ -f "$rc_file" ]; then
+          rc-remove-line coreutils-path "$rc_file" 2>/dev/null || true
+        fi
+      done
+      
       success "GNU coreutils uninstalled"
+      info "Restart your shell for PATH changes to take effect"
     else
       info "GNU coreutils not installed in ~/.local"
     fi
