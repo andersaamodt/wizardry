@@ -242,22 +242,32 @@ function joinRoom(roomName) {
   // This ensures SSE will capture the avatar creation events
   var joinTimestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
   
-  // Create/move avatar IMMEDIATELY (no delay) for instant feedback
+  // Create/move avatar and wait for completion before setting up SSE
+  // This ensures the avatar exists and join message is logged before SSE starts
+  var avatarPromise;
   if (previousRoom && previousRoom !== roomName) {
     // Move avatar from previous room to new room
-    moveAvatar(roomName, currentUsername, previousRoom);
+    avatarPromise = moveAvatar(roomName, currentUsername, previousRoom);
   } else {
     // Create new avatar (first join or rejoining same room)
-    createAvatar(roomName, currentUsername);
+    avatarPromise = createAvatar(roomName, currentUsername);
   }
   
-  // Set up SSE with the timestamp from BEFORE avatar creation
-  // This ensures SSE captures the join message and member update events
-  setupMessageStream(roomName, joinTimestamp);
-  
-  // Then load message history via GET
-  // Any overlap between SSE and history will be deduplicated by appendMessage
-  loadMessages();
+  // Wait for avatar creation to complete, then set up SSE and load history
+  avatarPromise.then(function() {
+    // Set up SSE with the timestamp from BEFORE avatar creation
+    // This ensures SSE captures the join message and member update events
+    setupMessageStream(roomName, joinTimestamp);
+    
+    // Then load message history via GET
+    // Any overlap between SSE and history will be deduplicated by appendMessage
+    loadMessages();
+  }).catch(function(err) {
+    console.error('Failed to complete avatar setup:', err);
+    // Still try to set up SSE and load messages even if avatar creation failed
+    setupMessageStream(roomName, joinTimestamp);
+    loadMessages();
+  });
 }
 
 // Load messages for current room
@@ -707,7 +717,7 @@ function createAvatar(roomName, username) {
   var formData = 'room=' + encodeURIComponent(roomName) + 
                  '&user=' + encodeURIComponent(username);
   
-  fetch('/cgi/chat-create-avatar', {
+  return fetch('/cgi/chat-create-avatar', {
     method: 'POST',
     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
     body: formData
@@ -715,6 +725,7 @@ function createAvatar(roomName, username) {
     loadMembers();  // Refresh member list
   }).catch(function(err) {
     console.error('Failed to create avatar:', err);
+    throw err;  // Re-throw to propagate error
   });
 }
 
@@ -725,7 +736,7 @@ function moveAvatar(newRoom, username, oldRoom) {
     oldRoom: oldRoom
   });
   
-  fetch('/cgi/chat-move-avatar', {
+  return fetch('/cgi/chat-move-avatar', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: payload
@@ -737,12 +748,12 @@ function moveAvatar(newRoom, username, oldRoom) {
     } else {
       console.error('Failed to move avatar:', data.error);
       // Fallback to creating new avatar
-      createAvatar(newRoom, username);
+      return createAvatar(newRoom, username);
     }
   }).catch(function(err) {
     console.error('Failed to move avatar:', err);
     // Fallback to creating new avatar
-    createAvatar(newRoom, username);
+    return createAvatar(newRoom, username);
   });
 }
 
