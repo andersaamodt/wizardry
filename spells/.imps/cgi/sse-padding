@@ -1,12 +1,12 @@
 #!/bin/sh
 # sse-padding SIZE_KB - generate SSE padding comment to force buffer flush
 # Example: sse-padding 4 → outputs 4KB of SSE comment padding
-# Note: Uses 1000 chars per KB as approximation for simplicity
+# Note: Uses 1000 chars per "KB" for simplicity (actual 1KB = 1024 bytes)
 set -eu
 
 size_kb="${1:-2}"
 
-# Calculate total characters (using 1000 chars ≈ 1KB for simplicity)
+# Calculate total characters (using 1000 chars per "KB" for simplicity)
 total_chars=$((size_kb * 1000))
 
 # Output SSE comment prefix
