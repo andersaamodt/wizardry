@@ -1,5 +1,5 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-31-v39-FAST-POLL-50HZ)
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-31-v40-DOUBLE-FLUSH)
 # Streams chat messages as Server-Sent Events using ultra-fast polling (50Hz = 0.02s)
 # Self-contained - no external imp dependencies
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
@@ -34,17 +34,25 @@ while [ $i -lt 4000 ]; do
 done
 printf '\n\n'
 
-# SSE event sender - with MASSIVE padding to force fcgiwrap flush
+# SSE event sender - DOUBLE FLUSH with 64KB total padding
 send_sse_event() {
   event_type="$1"
   event_data="$2"
   
-  # Send the event
-  printf 'event: %s\ndata: %s\n' "$event_type" "$event_data"
+  # FLUSH 1: 32KB padding BEFORE event (start filling buffers)
+  printf ': flush-before '
+  i=0
+  while [ $i -lt 4000 ]; do
+    printf '........'
+    i=$((i + 1))
+  done
+  printf '\n\n'
   
-  # Add 32KB padding as SSE comment to FORCE buffer flush
-  # Increased from 8KB to 32KB to handle multiple buffering layers
-  printf ': '
+  # Send the event data
+  printf 'event: %s\ndata: %s\n\n' "$event_type" "$event_data"
+  
+  # FLUSH 2: 32KB padding AFTER event (overflow ALL buffers)
+  printf ': flush-after '
   i=0
   while [ $i -lt 4000 ]; do
     printf '........'
