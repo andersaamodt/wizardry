@@ -1,6 +1,6 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-31-v30-TAIL-F)
-# Streams chat messages as Server-Sent Events using tail -f for immediate delivery
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-31-v31-POLLING-FIX)
+# Streams chat messages as Server-Sent Events using optimized polling
 # Self-contained - no external imp dependencies
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
 #
@@ -10,7 +10,7 @@
 set -eu
 
 # Diagnostic logging
-printf '[chat-stream] ========== v30-TAIL-F: Using tail -f for real-time delivery ==========\n' >&2
+printf '[chat-stream] ========== v31-POLLING-FIX: Optimized polling (0.5s) ==========\n' >&2
 printf '[chat-stream] QUERY_STRING: %s\n' "${QUERY_STRING:-}" >&2
 
 # Send SSE headers
@@ -72,21 +72,27 @@ if [ ! -d "$ROOM_DIR" ]; then
 fi
 
 # Send initial batch of messages
+# CRITICAL: Use temp file to avoid pipe subshell buffering
+temp_init="/tmp/chat_stream_$$_init"
 if [ -f "$LOG_FILE" ] && [ -s "$LOG_FILE" ]; then
   if [ -n "$since_timestamp" ]; then
     # Filter messages after 'since' timestamp
+    cat "$LOG_FILE" > "$temp_init"
     while IFS= read -r line || [ -n "$line" ]; do
       msg_timestamp=$(printf '%s' "$line" | sed 's/^\[\([^]]*\)\].*/\1/')
       latest=$(printf '%s\n%s' "$msg_timestamp" "$since_timestamp" | sort | tail -1)
       if [ "$latest" = "$msg_timestamp" ]; then
         send_sse_event message "$line"
       fi
-    done < "$LOG_FILE"
+    done < "$temp_init"
+    rm -f "$temp_init"
   else
     # Send last 50 messages
-    tail -50 "$LOG_FILE" 2>/dev/null | while IFS= read -r line; do
+    tail -50 "$LOG_FILE" > "$temp_init" 2>/dev/null || true
+    while IFS= read -r line; do
       send_sse_event message "$line"
-    done
+    done < "$temp_init"
+    rm -f "$temp_init"
   fi
 fi
 
@@ -96,31 +102,52 @@ if [ -f "$ROOM_DIR/.members" ]; then
   send_sse_event members "$members_json"
 fi
 
-printf '[chat-stream] Initial messages sent, starting tail -f...\n' >&2
+printf '[chat-stream] Initial messages sent, starting polling loop...\n' >&2
 
-# Use tail -f to watch for new messages in real-time
-# tail -f uses kqueue (macOS) / inotify (Linux) for immediate notification
-# No polling delay - messages appear within milliseconds
-tail -f "$LOG_FILE" 2>/dev/null | while IFS= read -r line; do
-  send_sse_event message "$line"
-done &
-tail_pid=$!
+# Track last known line count for efficient change detection
+last_line_count=0
+if [ -f "$LOG_FILE" ]; then
+  last_line_count=$(wc -l < "$LOG_FILE" 2>/dev/null || printf '0')
+fi
 
-# Watch members file for changes
+# Polling loop - check for new messages every 0.5 seconds
+# We can't use tail -f in a pipe because it creates a subshell that buffers output
 while true; do
-  sleep 2
-  if [ -f "$ROOM_DIR/.members" ]; then
-    members_json=$(cat "$ROOM_DIR/.members" 2>/dev/null || printf '[]')
-    send_sse_event members "$members_json"
-  fi
+  sleep 0.5
   
   # Check if room still exists
   if [ ! -d "$ROOM_DIR" ]; then
     printf '[chat-stream] Room deleted, exiting\n' >&2
-    kill $tail_pid 2>/dev/null || true
     exit 0
   fi
   
-  # Send periodic comment to keep connection alive
+  # Check for new messages
+  if [ -f "$LOG_FILE" ]; then
+    current_line_count=$(wc -l < "$LOG_FILE" 2>/dev/null || printf '0')
+    
+    if [ "$current_line_count" -gt "$last_line_count" ]; then
+      # New messages detected - send them
+      # Use temp file to avoid pipe subshell
+      temp_new="/tmp/chat_stream_$$_new"
+      tail -n "+$((last_line_count + 1))" "$LOG_FILE" > "$temp_new" 2>/dev/null || true
+      
+      while IFS= read -r line; do
+        send_sse_event message "$line"
+      done < "$temp_new"
+      
+      rm -f "$temp_new"
+      last_line_count="$current_line_count"
+    fi
+  fi
+  
+  # Send members update every 2 seconds (every 4th iteration)
+  if [ $(($(date +%s) % 2)) -eq 0 ]; then
+    if [ -f "$ROOM_DIR/.members" ]; then
+      members_json=$(cat "$ROOM_DIR/.members" 2>/dev/null || printf '[]')
+      send_sse_event members "$members_json"
+    fi
+  fi
+  
+  # Send keepalive comment to prevent timeout
   printf ': keepalive\n\n'
 done
