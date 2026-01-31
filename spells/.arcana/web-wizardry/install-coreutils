@@ -78,14 +78,42 @@ case "$os_type" in
       success "GNU coreutils installed to $PREFIX"
       info "stdbuf location: $PREFIX/bin/stdbuf"
       
-      # Check if ~/.local/bin is in PATH
+      # Add to PATH using wizardry's rc-add-line
+      # Detect shell and appropriate RC file
+      user_shell=$(basename "${SHELL:-/bin/sh}")
+      
+      case "$user_shell" in
+        zsh)
+          rc_file="$HOME/.zshrc"
+          ;;
+        bash)
+          # macOS typically uses ~/.bash_profile, Linux uses ~/.bashrc
+          if [ -f "$HOME/.bash_profile" ]; then
+            rc_file="$HOME/.bash_profile"
+          else
+            rc_file="$HOME/.bashrc"
+          fi
+          ;;
+        *)
+          # Fallback to .profile for other shells
+          rc_file="$HOME/.profile"
+          ;;
+      esac
+      
+      # Check if ~/.local/bin is already in PATH
       if ! echo "$PATH" | grep -q "$PREFIX/bin"; then
-        warn "~/.local/bin is not in your PATH"
-        info "Add this to your ~/.zshrc or ~/.bash_profile:"
-        info "  export PATH=\"\$HOME/.local/bin:\$PATH\""
-        info ""
+        step "Adding $PREFIX/bin to PATH in $rc_file..."
+        
+        # Use rc-add-line to add PATH export with wizardry marker
+        path_line='export PATH="$HOME/.local/bin:$PATH"'
+        rc-add-line coreutils-path "$rc_file" "$path_line"
+        
+        success "Added to PATH in $rc_file"
+        info "Restart your shell or run: source $rc_file"
         info "For immediate use in this session:"
         info "  export PATH=\"$PREFIX/bin:\$PATH\""
+      else
+        info "~/.local/bin already in PATH"
       fi
       
       success "Installation complete"
