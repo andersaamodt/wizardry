@@ -247,11 +247,13 @@ function joinRoom(roomName) {
     window.messageInterval = null;
   }
   
-  // Load initial messages via GET for instant display
-  loadMessages();
-  
-  // Then set up SSE for real-time updates (no initial batch, just ongoing events)
+  // IMPORTANT: Set up SSE FIRST to avoid missing events during the history load
+  // SSE will capture all events from now forward
   setupMessageStream(roomName);
+  
+  // Then load message history via GET
+  // Any overlap between SSE and history will be deduplicated by appendMessage
+  loadMessages();
 }
 
 // Load messages for current room
@@ -417,8 +419,10 @@ function setupMessageStream(roomName) {
     window.messageEventSource = null;
   }
   
-  // Get current timestamp to only receive NEW messages (not history)
-  // History was already loaded via GET request
+  // Get current timestamp to filter initial SSE messages
+  // SSE will send messages AFTER this timestamp, and history GET will fetch messages BEFORE
+  // This ensures no gap - SSE captures new events while history loads
+  // Any overlap is handled by duplicate detection in appendMessage
   var now = new Date();
   var sinceTimestamp = now.toISOString().replace('T', ' ').substring(0, 19);
   
@@ -572,8 +576,23 @@ function appendMessage(messageLine) {
   var username = match[2];
   var message = match[3];
   
+  // Duplicate detection: check if this exact message already exists
+  // Create a unique ID from timestamp + username + message
+  var messageId = fullTimestamp + '|' + username + '|' + message;
+  var existingMessages = chatMessagesDiv.querySelectorAll('.chat-msg, .chat-msg-system');
+  for (var i = 0; i < existingMessages.length; i++) {
+    var existingMsg = existingMessages[i];
+    if (existingMsg.dataset.messageId === messageId) {
+      console.log('[appendMessage] Duplicate detected, skipping:', messageLine);
+      return;  // Already have this message
+    }
+  }
+  
   // Extract HH:MM from timestamp for display
   var displayTime = fullTimestamp.length >= 16 ? fullTimestamp.substring(11, 16) : fullTimestamp;
+  
+  // Create unique message ID for duplicate detection
+  var messageId = fullTimestamp + '|' + username + '|' + message;
   
   // Check if this is a system message
   if (username === 'log') {
@@ -582,6 +601,7 @@ function appendMessage(messageLine) {
     
     var messageDiv = document.createElement('div');
     messageDiv.className = 'chat-msg-system';
+    messageDiv.dataset.messageId = messageId;
     messageDiv.textContent = message;
     chatMessagesDiv.appendChild(messageDiv);
     
@@ -601,6 +621,7 @@ function appendMessage(messageLine) {
     var messageDiv = document.createElement('div');
     messageDiv.className = 'chat-msg';
     messageDiv.style.fontFamily = fontFamily;
+    messageDiv.dataset.messageId = messageId;
     
     // Add username
     var usernameSpan = document.createElement('span');
