@@ -174,13 +174,21 @@ keepalive_pid=$!
         printf '[membership-monitor] Count changed! Sending member update\n' >&2
         
         # Call chat-list-avatars to get member list
-        # Now that PATH includes wizardry spells, this will work
+        # Requires wizardry commands in PATH (set up by serve-site)
         query="room=$room"
-        members_json=$(QUERY_STRING="$query" chat-list-avatars 2>/dev/null | sed -n '/^$/,$ p' | tail -n +2)
+        members_output=$(QUERY_STRING="$query" chat-list-avatars 2>&1)
+        members_stderr=$(printf '%s' "$members_output" | grep -v '^Status:\|^Content-Type:\|^{\|^}' || true)
+        members_json=$(printf '%s' "$members_output" | sed -n '/^$/,$ p' | tail -n +2)
+        
+        # Log any errors for debugging
+        if [ -n "$members_stderr" ]; then
+          printf '[membership-monitor] chat-list-avatars stderr: %s\n' "$members_stderr" >&2
+        fi
         
         # Validate JSON
         if [ -z "$members_json" ] || ! printf '%s' "$members_json" | grep -q '^{'; then
           printf '[membership-monitor] Warning: chat-list-avatars failed, using empty array\n' >&2
+          printf '[membership-monitor] Note: Site may need restart (stop-site + serve-site) for PATH changes\n' >&2
           members_json='{"avatars":[]}'
         fi
         
