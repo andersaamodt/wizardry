@@ -79,32 +79,49 @@ ROOM_DIR="$CHAT_DIR/$room"
 LOG_FILE="$ROOM_DIR/.log"
 
 # Verify room exists
-if [ ! -f "$LOG_FILE" ]; then
+if [ ! -d "$ROOM_DIR" ]; then
   sse-error 404 "Room not found"
   exit 1
 fi
 
-# Send initial messages (if since parameter provided, filter by timestamp)
-if [ -n "$since_timestamp" ]; then
-  # Send messages after the specified timestamp
-  while IFS= read -r line; do
-    # Extract timestamp from message: [YYYY-MM-DD HH:MM:SS] ...
-    msg_timestamp=$(printf '%s' "$line" | sed -n 's/^\[\([^]]*\)\].*/\1/p')
-    
-    if [ -n "$msg_timestamp" ]; then
-      # Compare timestamps (lexicographic comparison works for ISO format)
-      latest=$(printf '%s\n%s' "$msg_timestamp" "$since_timestamp" | sort | tail -1)
-      if [ "$latest" = "$msg_timestamp" ]; then
-        send_sse_event message "$line"
-      fi
-    fi
-  done < "$LOG_FILE"
-else
-  # Send last 50 messages if no timestamp filter
-  tail -50 "$LOG_FILE" 2>/dev/null | while IFS= read -r line; do
-    send_sse_event message "$line"
-  done
+# Send empty event if room has no messages yet
+if [ ! -f "$LOG_FILE" ] || [ ! -s "$LOG_FILE" ]; then
+  send_sse_event empty "No messages yet"
 fi
+
+# Send initial messages (if log file exists and since parameter provided, filter by timestamp)
+if [ -f "$LOG_FILE" ] && [ -s "$LOG_FILE" ]; then
+  if [ -n "$since_timestamp" ]; then
+    # Send messages after the specified timestamp
+    while IFS= read -r line; do
+      # Extract timestamp from message: [YYYY-MM-DD HH:MM:SS] ...
+      msg_timestamp=$(printf '%s' "$line" | sed -n 's/^\[\([^]]*\)\].*/\1/p')
+      
+      if [ -n "$msg_timestamp" ]; then
+        # Compare timestamps (lexicographic comparison works for ISO format)
+        latest=$(printf '%s\n%s' "$msg_timestamp" "$since_timestamp" | sort | tail -1)
+        if [ "$latest" = "$msg_timestamp" ]; then
+          send_sse_event message "$line"
+        fi
+      fi
+    done < "$LOG_FILE"
+  else
+    # Send last 50 messages if no timestamp filter
+    tail -50 "$LOG_FILE" 2>/dev/null | while IFS= read -r line; do
+      send_sse_event message "$line"
+    done
+  fi
+fi
+
+# Send initial member list
+query="room=$room"
+members_output=$(QUERY_STRING="$query" chat-list-avatars 2>&1)
+members_output=$(printf '%s' "$members_output" | tr -d '\r')
+members_json=$(printf '%s' "$members_output" | sed -n '/^$/,$ p' | tail -n +2)
+if [ -z "$members_json" ] || ! printf '%s' "$members_json" | grep -q '^{'; then
+  members_json='{"avatars":[]}'
+fi
+send_sse_event members "$members_json"
 
 # Event-driven monitoring using tail -f + file descriptor approach
 # EXPERIMENTAL: Testing if FD redirection avoids subshell buffering
@@ -133,6 +150,9 @@ cleanup() {
 }
 
 trap cleanup INT TERM EXIT
+
+# Ensure LOG_FILE exists for tail -f (creates if missing)
+touch "$LOG_FILE"
 
 # Start tail -f writing to FIFO (background, starts from end)
 tail -f -n 0 "$LOG_FILE" > "$fifo" &
