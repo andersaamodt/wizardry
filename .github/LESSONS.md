@@ -103,6 +103,12 @@
 - Infinite recursion in command_not_found_handle requires a guard flag (_IN_CNF_HANDLER) to detect re-entry and prevent terminal hangs (PR #623).
 - macOS login shell modifications (.zprofile sourcing .zshrc) must be tracked during install and completely removed during uninstall to prevent stale code (PR #624).
 - Toggleable features in configuration files allow users to selectively disable functionality for isolating and debugging complex issues (PR #626).
+- HTTP responses use CRLF (`\r\n`) line endings not LF (`\n`); strip carriage returns with `tr -d '\r'` before parsing headers or sed pattern `/^$/` won't match blank lines.
+- CGI subprocess environment isolation: fcgiwrap spawns scripts without inheriting shell PATH; explicitly pass wizardry PATH via `env PATH="$FCGI_PATH" fcgiwrap` at server startup.
+- Async promise completion must be awaited before dependent operations; SSE setup reading log file before avatar creation completes causes race conditions and missed events.
+- Filesystem directory mtime has 1-second granularity AND count-based change detection misses simultaneous join/leave; use sorted member name signature for robust change detection.
+- CGI script stdout pollution: commands like `enchant` that output success messages must redirect stdout (`>/dev/null 2>&1`) to prevent corrupting JSON responses.
+- Button visibility logic must use consistent thresholds across all update paths; inconsistent conditions (count===0 vs count<=1) cause UI desync between clients.
 - Installation cancellation or interruption should trigger cleanup of downloaded wizardry directory to avoid leaving partial installations (PR #627).
 - Debug logging with timestamps, file paths, and success/failure counts helps diagnose complex shell initialization and sourcing issues (PR #629).
 - Glob patterns stored in variables don't expand in POSIX sh; use `set -- "$dir"/*` to populate positional parameters for reliable shell glob expansion (PR #668).
