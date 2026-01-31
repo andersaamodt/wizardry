@@ -87,7 +87,7 @@ This chat system uses the **same message format as the MUD `say` command**, maki
 ---
 
 <script>
-// Chat UI Version: v2.1-MINIMAL-PADDING (Testing 4KB padding for 83% bandwidth reduction)
+// Chat UI Version: v2.2-1KB-TEST (Testing 1KB padding for 97% bandwidth reduction + auto-scroll fix)
 
 // Generate a random guest name
 function generateGuestName() {
@@ -564,10 +564,18 @@ function appendMessage(messageLine) {
   
   // Check if this is a system message
   if (username === 'log') {
+    // Store scroll position before adding
+    var wasAtBottom = chatMessagesDiv.scrollHeight - chatMessagesDiv.scrollTop - chatMessagesDiv.clientHeight < 50;
+    
     var messageDiv = document.createElement('div');
     messageDiv.className = 'chat-msg-system';
     messageDiv.textContent = message;
     chatMessagesDiv.appendChild(messageDiv);
+    
+    // Auto-scroll if user is at bottom (same as regular messages)
+    if (wasAtBottom || !window.userHasScrolledUp) {
+      scrollToBottom();
+    }
   } else {
     // Regular message - generate color from username hash
     var hue = hashUsername(username);
