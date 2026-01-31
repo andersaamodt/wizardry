@@ -1,5 +1,5 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-31-v34-DEBUG)
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-31-v36-32KB-PADDING)
 # Streams chat messages as Server-Sent Events using optimized polling
 # Self-contained - no external imp dependencies
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
@@ -20,17 +20,17 @@ printf 'Cache-Control: no-cache\r\n'
 printf 'Connection: keep-alive\r\n'
 printf '\r\n'
 
-# CRITICAL: Force headers to flush by sending 8KB padding immediately
-# fcgiwrap buffers ~4-8KB before sending to nginx. This forces immediate flush.
-printf ': padding ' 
+# CRITICAL: Force headers to flush by sending 32KB padding immediately
+# fcgiwrap + nginx may buffer ~8-16KB. This massive padding forces immediate flush.
+printf ': padding '
 i=0
-while [ $i -lt 1000 ]; do
+while [ $i -lt 4000 ]; do
   printf '........'
   i=$((i + 1))
 done
 printf '\n\n'
 
-# SSE event sender - with padding to force fcgiwrap flush
+# SSE event sender - with MASSIVE padding to force fcgiwrap flush
 send_sse_event() {
   event_type="$1"
   event_data="$2"
@@ -38,11 +38,11 @@ send_sse_event() {
   # Send the event
   printf 'event: %s\ndata: %s\n' "$event_type" "$event_data"
   
-  # Add 8KB padding as SSE comment to force buffer flush
-  # This ensures the event is delivered immediately, not buffered
+  # Add 32KB padding as SSE comment to FORCE buffer flush
+  # Increased from 8KB to 32KB to handle multiple buffering layers
   printf ': '
   i=0
-  while [ $i -lt 1000 ]; do
+  while [ $i -lt 4000 ]; do
     printf '........'
     i=$((i + 1))
   done
