@@ -87,11 +87,11 @@ This chat system uses the **same message format as the MUD `say` command**, maki
 ---
 
 <script>
-// Chat UI Version: 2026-01-31-v32-SELF-CONTAINED
+// Chat UI Version: 2026-01-31-v33-ENV-FIX
 // Server: chat-stream v32-SELF-CONTAINED - truly self-contained (no imp dependencies)
-console.log('[Chat] Version: 2026-01-31-v32-SELF-CONTAINED');
+console.log('[Chat] Version: 2026-01-31-v33-ENV-FIX');
 console.log('[Chat] Server: chat-stream v32-SELF-CONTAINED');
-console.log('[Chat] Fixed: Made chat-stream self-contained - SSE connection now works!');
+console.log('[Chat] Fixed: fcgiwrap now has environment vars - SSE works!');
 
 // Generate a random guest name
 function generateGuestName() {
