@@ -2,9 +2,7 @@
 # chat-create-avatar - Create an avatar for a user in a chat room
 set -eu
 
-http-status 200 "OK"
-http-header "Content-Type" "text/html"
-http-end-headers
+http-ok-html
 
 # Parse POST data from stdin (format: room=ROOM&user=USER)
 if [ "${REQUEST_METHOD:-}" = "POST" ]; then
@@ -45,13 +43,7 @@ HTML
 esac
 
 # Chat rooms directory - use site-specific location
-if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
-  site_id="$WIZARDRY_SITE_NAME"
-else
-  site_id="default"
-fi
-SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
-CHAT_DIR="$SITES_DIR/.sitedata/$site_id/chatrooms"
+CHAT_DIR=$(get-site-data-dir "chatrooms")
 ROOM_DIR="$CHAT_DIR/$room_name"
 
 if [ ! -d "$ROOM_DIR" ]; then

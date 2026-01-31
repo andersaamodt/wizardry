@@ -4,9 +4,7 @@
 set -eu
 
 # Send HTTP headers immediately (before any processing that might fail)
-http-status 200 "OK"
-http-header "Content-Type" "application/json"
-http-end-headers
+http-ok-json
 
 # Read CGI parameters
 read -r input || true
@@ -56,13 +54,7 @@ case "$old_room" in
 esac
 
 # Chat rooms directory - use site-specific location (same as other chat scripts)
-if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
-  site_id="$WIZARDRY_SITE_NAME"
-else
-  site_id="default"
-fi
-SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
-CHAT_DIR="$SITES_DIR/.sitedata/$site_id/chatrooms"
+CHAT_DIR=$(get-site-data-dir "chatrooms")
 OLD_ROOM_DIR="$CHAT_DIR/$old_room"
 NEW_ROOM_DIR="$CHAT_DIR/$room_name"
 

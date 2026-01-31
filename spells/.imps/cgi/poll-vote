@@ -2,13 +2,10 @@
 # poll-vote - Simple polling system
 set -eu
 
-http-status 200 "OK"
-http-header "Content-Type" "text/html"
-http-end-headers
+http-ok-html
 
 poll_file="${TMPDIR:-/tmp}/wizardry-poll.txt"
-choice="${QUERY_STRING:-}"
-choice=$(printf '%s' "$choice" | sed 's/vote=//')
+choice=$(get-query-param "vote")
 
 # Initialize poll file
 if [ ! -f "$poll_file" ]; then
