@@ -66,7 +66,18 @@ if has fcgiwrap; then
     FCGIWRAP_WORKERS="${FCGIWRAP_WORKERS:-10}"
     
     step "Starting fcgiwrap with $FCGIWRAP_WORKERS workers..."
-    fcgiwrap -c "$FCGIWRAP_WORKERS" -s "unix:$FCGI_SOCK" &
+    
+    # CRITICAL: Use stdbuf to unbuffer fcgiwrap's output to nginx
+    # Without this, fcgiwrap buffers CGI output causing "one message behind" in SSE
+    # Even though chat-stream uses stdbuf internally, fcgiwrap adds another layer of buffering
+    if command -v stdbuf >/dev/null 2>&1; then
+      info "Using stdbuf for unbuffered fcgiwrap output (fixes SSE buffering)"
+      stdbuf -o0 fcgiwrap -c "$FCGIWRAP_WORKERS" -s "unix:$FCGI_SOCK" &
+    else
+      warn "stdbuf not available - SSE may have delayed delivery"
+      fcgiwrap -c "$FCGIWRAP_WORKERS" -s "unix:$FCGI_SOCK" &
+    fi
+    
     fcgi_pid=$!
     printf '%s\n' "$fcgi_pid" > "$SITE_DIR/nginx/fcgiwrap.pid"
     sleep 1
