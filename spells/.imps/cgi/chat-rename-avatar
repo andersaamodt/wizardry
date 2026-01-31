@@ -12,16 +12,10 @@ else
   post_data="${QUERY_STRING:-}"
 fi
 
-# Parse parameters
-room_name=$(printf '%s' "$post_data" | sed 's/.*room=\([^&]*\).*/\1/')
-room_name=$(url-decode "$room_name" 2>/dev/null || \
-  printf '%s' "$room_name" | sed 's/+/ /g;s/%20/ /g')
-old_user=$(printf '%s' "$post_data" | sed 's/.*old_user=\([^&]*\).*/\1/')
-old_user=$(url-decode "$old_user" 2>/dev/null || \
-  printf '%s' "$old_user" | sed 's/+/ /g;s/%20/ /g')
-new_user=$(printf '%s' "$post_data" | sed 's/.*new_user=\([^&]*\).*/\1/')
-new_user=$(url-decode "$new_user" 2>/dev/null || \
-  printf '%s' "$new_user" | sed 's/+/ /g;s/%20/ /g')
+# Parse parameters using get-query-param
+room_name=$(get-query-param "room" "$post_data")
+old_user=$(get-query-param "old_user" "$post_data")
+new_user=$(get-query-param "new_user" "$post_data")
 
 # Validate inputs
 if [ -z "$room_name" ] || [ -z "$old_user" ] || [ -z "$new_user" ]; then
