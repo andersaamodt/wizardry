@@ -20,11 +20,33 @@ printf 'Cache-Control: no-cache\r\n'
 printf 'Connection: keep-alive\r\n'
 printf '\r\n'
 
-# SSE event sender - simple, no padding needed
+# CRITICAL: Force headers to flush by sending 8KB padding immediately
+# fcgiwrap buffers ~4-8KB before sending to nginx. This forces immediate flush.
+printf ': padding ' 
+i=0
+while [ $i -lt 1000 ]; do
+  printf '........'
+  i=$((i + 1))
+done
+printf '\n\n'
+
+# SSE event sender - with padding to force fcgiwrap flush
 send_sse_event() {
   event_type="$1"
   event_data="$2"
-  printf 'event: %s\ndata: %s\n\n' "$event_type" "$event_data"
+  
+  # Send the event
+  printf 'event: %s\ndata: %s\n' "$event_type" "$event_data"
+  
+  # Add 8KB padding as SSE comment to force buffer flush
+  # This ensures the event is delivered immediately, not buffered
+  printf ': '
+  i=0
+  while [ $i -lt 1000 ]; do
+    printf '........'
+    i=$((i + 1))
+  done
+  printf '\n\n'
 }
 
 # Simple URL decoder (inline, no url-decode imp)
