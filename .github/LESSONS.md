@@ -23,6 +23,7 @@
 
 ## Lessons
 
+- For SSE/real-time CGI: unbuffer the ENTIRE chain - chat-stream uses `stdbuf -o0`, AND fcgiwrap must be started with `stdbuf -o0 fcgiwrap ...` to prevent fcgiwrap from buffering CGI output.
 - Pipe-into-while creates subshell where output gets buffered until pipe closes; use temp file with input redirection instead: `tail file > temp; while read line; do ...; done < temp`.
 - Shell stdout is buffered by default; for SSE/real-time streaming on Linux use `exec stdbuf -o0 "$0" "$@"`, on macOS without stdbuf use 128KB+ padding per event to force buffer overflow.
 - Spells MUST NOT preload their own prerequisites (die, warn, etc.); they should fail early with require_wizardry if wizardry isn't available.
