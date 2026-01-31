@@ -453,7 +453,7 @@ function setupMessageStream(roomName, sinceTimestamp) {
   
   // Handle connection open
   window.messageEventSource.addEventListener('open', function(event) {
-    console.log('[SSE] Connection OPEN - ready to receive events');
+    // Connection established
   });
   
   // Handle incoming messages
@@ -465,7 +465,6 @@ function setupMessageStream(roomName, sinceTimestamp) {
   
   // Handle member list updates
   window.messageEventSource.addEventListener('members', function(event) {
-    console.log('[SSE] Received members event:', event.data);
     // Event data is JSON array of members
     updateMemberList(event.data);
   });
@@ -484,7 +483,6 @@ function setupMessageStream(roomName, sinceTimestamp) {
       console.warn('[SSE] Connection CONNECTING - EventSource attempting to reconnect');
     }
   });
-  console.log('[SSE] Added "error" event listener');
   
   // Optional: Handle ping/keepalive events (currently just ignore them)
   window.messageEventSource.addEventListener('ping', function(event) {
@@ -512,12 +510,9 @@ function setupMessageStream(roomName, sinceTimestamp) {
 
 // Update member list from SSE data
 function updateMemberList(jsonData) {
-  console.log('[updateMemberList] Called with data:', jsonData);
   try {
     var data = JSON.parse(jsonData);
-    console.log('[updateMemberList] Parsed data:', data);
     var avatars = data.avatars || [];
-    console.log('[updateMemberList] Avatars array:', avatars, 'Count:', avatars.length);
     
     var membersList = document.getElementById('members-list');
     var memberCount = document.getElementById('member-count');
@@ -530,7 +525,6 @@ function updateMemberList(jsonData) {
     }
     
     var count = avatars.length;
-    console.log('[updateMemberList] Setting count to:', count);
     
     if (count === 0) {
       membersList.innerHTML = '<p style="color: #666; font-style: italic;">No members</p>';
@@ -558,13 +552,10 @@ function updateMemberList(jsonData) {
     
     // Update button visibility based on member count
     // Show delete button when 1 or fewer members, members button when more than 1
-    console.log('[updateMemberList] Updating buttons based on count:', count);
     if (count <= 1) {
-      console.log('[updateMemberList] Showing DELETE button, hiding MEMBERS button');
       if (deleteBtn) deleteBtn.style.display = 'inline-block';
       if (membersBtn) membersBtn.style.display = 'none';
     } else {
-      console.log('[updateMemberList] Hiding DELETE button, showing MEMBERS button');
       if (deleteBtn) deleteBtn.style.display = 'none';
       if (membersBtn) membersBtn.style.display = 'inline-flex';
     }
@@ -599,8 +590,7 @@ function appendMessage(messageLine) {
   for (var i = 0; i < existingMessages.length; i++) {
     var existingMsg = existingMessages[i];
     if (existingMsg.dataset.messageId === messageId) {
-      console.log('[appendMessage] Duplicate detected, skipping:', messageLine);
-      return;  // Already have this message
+      return;  // Already have this message, skip duplicate
     }
   }
   
@@ -742,11 +732,8 @@ function moveAvatar(newRoom, username, oldRoom) {
     headers: {'Content-Type': 'application/json'},
     body: payload
   }).then(function(response) {
-    console.log('[moveAvatar] Response status:', response.status);
-    console.log('[moveAvatar] Response headers:', response.headers.get('content-type'));
     return response.text();  // Get as text first to see what we're receiving
   }).then(function(text) {
-    console.log('[moveAvatar] Response text:', text);
     var data = JSON.parse(text);
     if (data.success) {
       loadMembers();  // Refresh member list
@@ -1230,7 +1217,6 @@ window.addEventListener('beforeunload', function() {
   
   if (window.currentRoom) {
     var currentUsername = getUsername();
-    console.log('[Avatar] Deleting avatar for user:', currentUsername, 'in room:', window.currentRoom);
     // Use sendBeacon for reliable cleanup on page unload
     var formData = new URLSearchParams();
     formData.append('room', window.currentRoom);
