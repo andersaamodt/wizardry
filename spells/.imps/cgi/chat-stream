@@ -138,10 +138,17 @@ if [ -f "$LOG_FILE" ]; then
   last_line_count=$(wc -l < "$LOG_FILE" 2>/dev/null || printf '0')
 fi
 
-# Polling loop - check for new messages every 0.5 seconds
+# Polling loop - check for new messages every 0.1 seconds for near-instant delivery
 # We can't use tail -f in a pipe because it creates a subshell that buffers output
+poll_count=0
 while true; do
-  sleep 0.5
+  sleep 0.1
+  poll_count=$((poll_count + 1))
+  
+  # Send keepalive every 5 seconds (50 polls × 0.1s)
+  if [ $((poll_count % 50)) -eq 0 ]; then
+    send_sse_event empty "keepalive"
+  fi
   
   # Check if room still exists
   if [ ! -d "$ROOM_DIR" ]; then
@@ -182,14 +189,11 @@ while true; do
     fi
   fi
   
-  # Send members update every 2 seconds (every 4th iteration)
-  if [ $(($(date +%s) % 2)) -eq 0 ]; then
+  # Send members update every 5 seconds (50 polls × 0.1s)
+  if [ $((poll_count % 50)) -eq 0 ]; then
     if [ -f "$ROOM_DIR/.members" ]; then
       members_json=$(cat "$ROOM_DIR/.members" 2>/dev/null || printf '[]')
       send_sse_event members "$members_json"
     fi
   fi
-  
-  # Send keepalive comment to prevent timeout
-  printf ': keepalive\n\n'
 done
