@@ -87,6 +87,12 @@ This chat system uses the **same message format as the MUD `say` command**, maki
 ---
 
 <script>
+// Chat UI Version: 2026-01-30-v25-SUBSHELL-FIX
+// Force cache clear: Ctrl+Shift+R or Cmd+Shift+R
+console.log('[Chat] Version: 2026-01-30-v25-SUBSHELL-FIX');
+console.log('[Chat] Server: chat-stream v24-SUBSHELL-FIX');
+console.log('[Chat] If seeing old behavior, hard refresh: Ctrl+Shift+R');
+
 // Generate a random guest name
 function generateGuestName() {
   // Use 3-digit random number (001-999) with zero padding
@@ -447,9 +453,11 @@ function setupMessageStream(roomName) {
   
   // Handle incoming messages
   window.messageEventSource.addEventListener('message', function(event) {
-    console.log('[SSE] Received message event:', event.data);
+    var timestamp = new Date().toISOString();
+    console.log('[SSE] [' + timestamp + '] Received message event:', event.data);
     // Event data is a single message line: [YYYY-MM-DD HH:MM:SS] username: message
     appendMessage(event.data);
+    console.log('[SSE] [' + timestamp + '] Message appended to DOM');
   });
   console.log('[SSE] Added "message" event listener');
   
