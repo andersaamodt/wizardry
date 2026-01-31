@@ -65,13 +65,32 @@ if has fcgiwrap; then
     # Default: 10 workers = 10 concurrent long-lived connections
     FCGIWRAP_WORKERS="${FCGIWRAP_WORKERS:-10}"
     
-    # Export environment vars that CGI scripts need (e.g., chat-stream)
+    # Ensure WIZARDRY_DIR is set for CGI scripts
+    if [ -z "${WIZARDRY_DIR-}" ]; then
+      WIZARDRY_DIR="${HOME}/.wizardry"
+    fi
+    
+    # Build PATH with wizardry spell directories
+    # This ensures CGI scripts can call other wizardry commands
+    FCGI_PATH="$PATH"
+    if [ -d "$WIZARDRY_DIR/spells" ]; then
+      for dir in "$WIZARDRY_DIR/spells"/* "$WIZARDRY_DIR/spells"/.*; do
+        [ -d "$dir" ] || continue
+        case "$dir" in */.|*/..) continue ;; esac
+        FCGI_PATH="$dir:$FCGI_PATH"
+      done
+    fi
+    
+    # Export environment vars that CGI scripts need
+    export WIZARDRY_DIR
     export WIZARDRY_SITES_DIR="$SITES_DIR"
     export WIZARDRY_SITE_NAME="$site_name"
     
     step "Starting fcgiwrap with $FCGIWRAP_WORKERS workers..."
     info "chat-stream now uses polling (0.5s) for real-time delivery"
-    fcgiwrap -c "$FCGIWRAP_WORKERS" -s "unix:$FCGI_SOCK" &
+    
+    # Start fcgiwrap with wizardry-enabled PATH
+    env PATH="$FCGI_PATH" fcgiwrap -c "$FCGIWRAP_WORKERS" -s "unix:$FCGI_SOCK" &
     
     fcgi_pid=$!
     printf '%s\n' "$fcgi_pid" > "$SITE_DIR/nginx/fcgiwrap.pid"

@@ -215,6 +215,7 @@ http {
             fastcgi_param SERVER_PORT \$server_port;
             fastcgi_param SERVER_NAME \$server_name;
             fastcgi_param SERVER_PROTOCOL \$server_protocol;
+            fastcgi_param WIZARDRY_DIR $WIZARDRY_DIR;
             fastcgi_param WIZARDRY_SITE_NAME $site_name;
         }
         
@@ -238,6 +239,7 @@ http {
             fastcgi_param SERVER_PORT \$server_port;
             fastcgi_param SERVER_NAME \$server_name;
             fastcgi_param SERVER_PROTOCOL \$server_protocol;
+            fastcgi_param WIZARDRY_DIR $WIZARDRY_DIR;
             fastcgi_param WIZARDRY_SITE_NAME $site_name;
         }
     }
