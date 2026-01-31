@@ -14,12 +14,7 @@ http-end-headers
 
 # Send initial padding burst (4KB) to force fcgiwrap buffer flush immediately
 # This ensures headers reach the browser right away
-printf ': initial-padding='
-i=0
-while [ $i -lt 4000 ]; do
-  printf ' '
-  i=$((i + 1))
-done
-printf '\n\n'
+sse-padding 4
+printf '\n'
 
 printf '[sse-start] Headers and initial padding sent successfully\n' >&2
