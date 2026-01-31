@@ -87,7 +87,7 @@ This chat system uses the **same message format as the MUD `say` command**, maki
 ---
 
 <script>
-// Chat UI Version: v2.3-2KB-TEST (Testing 2KB padding - middle ground between 4KB and 1KB)
+// Chat UI Version: v2.1-STABLE (Production: 4KB padding confirmed optimal)
 
 // Generate a random guest name
 function generateGuestName() {
