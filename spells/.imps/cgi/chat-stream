@@ -147,15 +147,17 @@ tail_pid=$!
 ) &
 keepalive_pid=$!
 
-# Background membership monitor (tracks changes in member count)
-# More reliable than mtime since avatars can be added within same second
+# Background membership monitor (tracks changes in member list)
+# Uses sorted member names as signature to detect ANY membership change,
+# including simultaneous join/leave (where count stays same but members change)
 (
-  last_member_count=-1  # Start with -1 to force initial update
+  last_member_signature=""  # Start empty to force initial update
   while true; do
     sleep 2
     if [ -d "$ROOM_DIR" ]; then
-      # Count avatar directories (hidden directories starting with .)
-      # Skip . and .. and .log
+      # Build membership signature from sorted avatar directory names
+      # This catches count changes AND member changes with same count
+      member_list=""
       current_member_count=0
       for avatar_dir in "$ROOM_DIR"/.*; do
         [ -d "$avatar_dir" ] || continue
@@ -163,15 +165,19 @@ keepalive_pid=$!
         case "$avatar_name" in
           .|..|.log) continue ;;
         esac
+        member_list="$member_list$avatar_name "
         current_member_count=$((current_member_count + 1))
       done
       
-      # Log for debugging (to stderr so it doesn't interfere with SSE)
-      printf '[membership-monitor] Room: %s, Count: %d, Last: %d\n' "$room" "$current_member_count" "$last_member_count" >&2
+      # Sort names for consistent comparison (handles join/leave order)
+      current_member_signature=$(printf '%s' "$member_list" | tr ' ' '\n' | sort | tr '\n' ' ')
       
-      # Send update if count changed
-      if [ "$current_member_count" != "$last_member_count" ]; then
-        printf '[membership-monitor] Count changed! Sending member update\n' >&2
+      # Log for debugging (to stderr so it doesn't interfere with SSE)
+      printf '[membership-monitor] Room: %s, Count: %d\n' "$room" "$current_member_count" >&2
+      
+      # Send update if membership changed (detects count OR member changes)
+      if [ "$current_member_signature" != "$last_member_signature" ]; then
+        printf '[membership-monitor] Membership changed! Sending member update\n' >&2
         
         # Call chat-list-avatars to get member list
         # Requires wizardry commands in PATH (set up by serve-site)
@@ -193,7 +199,7 @@ keepalive_pid=$!
         fi
         
         send_sse_event members "$members_json"
-        last_member_count=$current_member_count
+        last_member_signature=$current_member_signature
       fi
     fi
   done
