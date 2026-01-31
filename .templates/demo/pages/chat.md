@@ -87,11 +87,12 @@ This chat system uses the **same message format as the MUD `say` command**, maki
 ---
 
 <script>
-// Chat UI Version: 2026-01-30-v25-SUBSHELL-FIX
-// Force cache clear: Ctrl+Shift+R or Cmd+Shift+R
-console.log('[Chat] Version: 2026-01-30-v25-SUBSHELL-FIX');
-console.log('[Chat] Server: chat-stream v24-SUBSHELL-FIX');
-console.log('[Chat] If seeing old behavior, hard refresh: Ctrl+Shift+R');
+// Chat UI Version: 2026-01-31-v26-DIAGNOSTICS
+// Server: chat-stream v26-DIAGNOSTICS with detailed timing
+console.log('[Chat] Version: 2026-01-31-v26-DIAGNOSTICS');
+console.log('[Chat] Server: chat-stream v26-DIAGNOSTICS');
+console.log('[Chat] Enhanced nginx config: fastcgi_keep_conn, gzip off, multiple buffer disables');
+console.log('[Chat] Check server error log for detailed message timing');
 
 // Generate a random guest name
 function generateGuestName() {

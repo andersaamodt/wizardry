@@ -66,12 +66,33 @@ fi
 echo ""
 
 # Check 3: nginx config
-echo "CHECK 3: nginx fastcgi_buffering config"
+echo "CHECK 3: nginx FastCGI buffering config"
 if [ -f "$SITE_DIR/nginx/nginx.conf" ]; then
+  echo "  Checking for required nginx settings:"
+  
   if grep -q "fastcgi_buffering off" "$SITE_DIR/nginx/nginx.conf"; then
-    echo "  ✓ fastcgi_buffering off is configured"
+    echo "  ✓ fastcgi_buffering off"
   else
-    echo "  ✗ fastcgi_buffering off NOT found in config"
+    echo "  ✗ fastcgi_buffering off NOT found"
+  fi
+  
+  if grep -q "fastcgi_keep_conn on" "$SITE_DIR/nginx/nginx.conf"; then
+    echo "  ✓ fastcgi_keep_conn on (required for SSE)"
+  else
+    echo "  ✗ fastcgi_keep_conn on NOT found (REQUIRED!)"
+    echo "    This is needed for long-lived FastCGI connections"
+  fi
+  
+  if grep -q "gzip off" "$SITE_DIR/nginx/nginx.conf"; then
+    echo "  ✓ gzip off (prevents buffering)"
+  else
+    echo "  ✗ gzip off NOT found (may cause buffering)"
+  fi
+  
+  if grep -q "fastcgi_request_buffering off" "$SITE_DIR/nginx/nginx.conf"; then
+    echo "  ✓ fastcgi_request_buffering off"
+  else
+    echo "  ✗ fastcgi_request_buffering off NOT found"
   fi
 else
   echo "  ✗ nginx.conf not found"
