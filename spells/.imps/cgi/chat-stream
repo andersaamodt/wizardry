@@ -1,5 +1,5 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-31-v31-POLLING-FIX)
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-31-v32-SELF-CONTAINED)
 # Streams chat messages as Server-Sent Events using optimized polling
 # Self-contained - no external imp dependencies
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
@@ -10,14 +10,14 @@
 set -eu
 
 # Diagnostic logging
-printf '[chat-stream] ========== v31-POLLING-FIX: Optimized polling (0.5s) ==========\n' >&2
+printf '[chat-stream] ========== v32-SELF-CONTAINED: No imp dependencies ==========\n' >&2
 printf '[chat-stream] QUERY_STRING: %s\n' "${QUERY_STRING:-}" >&2
 
-# Send SSE headers
-http-status 200 "OK"
-http-header "Content-Type" "text/event-stream"
-http-header "Cache-Control" "no-cache"
-http-header "Connection" "keep-alive"
+# Send SSE headers (inline, no http-status/http-header imps)
+printf 'Status: 200 OK\r\n'
+printf 'Content-Type: text/event-stream\r\n'
+printf 'Cache-Control: no-cache\r\n'
+printf 'Connection: keep-alive\r\n'
 printf '\r\n'
 
 # SSE event sender - simple, no padding needed
@@ -27,10 +27,16 @@ send_sse_event() {
   printf 'event: %s\ndata: %s\n\n' "$event_type" "$event_data"
 }
 
+# Simple URL decoder (inline, no url-decode imp)
+url_decode() {
+  # Replace + with space, then decode %XX sequences
+  printf '%s' "$1" | sed 's/+/ /g; s/%\([0-9A-Fa-f][0-9A-Fa-f]\)/\\x\1/g' | xargs -0 printf '%b'
+}
+
 # Parse room name from query string
 room_name="${QUERY_STRING:-}"
 room_name=$(printf '%s' "$room_name" | sed 's/.*room=\([^&]*\).*/\1/')
-room_name=$(url-decode "$room_name" || printf '%s' "$room_name")
+room_name=$(url_decode "$room_name")
 room_name=$(printf '%s' "$room_name" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
 
 # Validate room name
@@ -44,7 +50,7 @@ fi
 since_timestamp=""
 if printf '%s' "${QUERY_STRING:-}" | grep -q 'since='; then
   since_timestamp=$(printf '%s' "${QUERY_STRING:-}" | sed 's/.*since=\([^&]*\).*/\1/')
-  since_timestamp=$(url-decode "$since_timestamp" || printf '%s' "$since_timestamp")
+  since_timestamp=$(url_decode "$since_timestamp")
   since_timestamp=$(printf '%s' "$since_timestamp" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
 fi
 
