@@ -108,6 +108,7 @@ function getUsername() {
 window.currentRoom = null;
 window.hoveredRoom = null;
 window.userHasScrolledUp = false;  // Track if user manually scrolled up
+window.isInitialRoomLoad = false;  // Track if this is the first load of a room
 window.messageEventSource = null;  // SSE connection for real-time messages
 
 // Handle room selection from list
@@ -214,6 +215,7 @@ function joinRoom(roomName) {
   
   // Reset scroll behavior for new room
   window.userHasScrolledUp = false;
+  window.isInitialRoomLoad = true;  // Mark this as initial load
   
   // Focus the message input for immediate typing (prevent page scroll)
   setTimeout(function() {
@@ -377,7 +379,11 @@ function loadMessages() {
         } else if (wasAtBottom || !window.userHasScrolledUp) {
           // User is at bottom or hasn't manually scrolled up
           // Smooth scroll to bottom to show latest messages
-          scrollToBottom();
+          // Don't animate on initial room load, only on subsequent updates
+          var shouldAnimate = !window.isInitialRoomLoad;
+          scrollToBottom(shouldAnimate);
+          // Clear the initial load flag after first scroll
+          window.isInitialRoomLoad = false;
         }
       }
       
@@ -387,7 +393,7 @@ function loadMessages() {
 }
 
 // Scroll chat to bottom to show latest messages
-function scrollToBottom() {
+function scrollToBottom(animate) {
   var chatMessagesDiv = document.getElementById('chat-messages');
   if (!chatMessagesDiv) return;
   
@@ -396,10 +402,15 @@ function scrollToBottom() {
     return;  // No scrollbar, don't scroll
   }
   
-  // Smoothly scroll to bottom to show latest messages
+  // Default to animated scrolling if not specified
+  if (animate === undefined) {
+    animate = true;
+  }
+  
+  // Scroll to bottom - animate only when requested
   chatMessagesDiv.scrollTo({
     top: chatMessagesDiv.scrollHeight,
-    behavior: 'smooth'
+    behavior: animate ? 'smooth' : 'auto'
   });
 }
 
