@@ -8,7 +8,7 @@ case "${1-}" in
 Usage: is-web-component-installed COMPONENT
 
 Returns 0 if the component is installed, 1 otherwise.
-Components: pandoc, nginx, fcgiwrap, openssl, htmx, certbot, coreutils
+Components: pandoc, nginx, fcgiwrap, openssl, htmx, certbot
 USAGE
   exit 0
   ;;
@@ -34,10 +34,6 @@ case "$component" in
   certbot)
     # Check for certbot command or acme.sh (on macOS we use acme.sh as certbot alternative)
     command -v certbot >/dev/null 2>&1 || [ -f "$HOME/.acme.sh/acme.sh" ]
-    ;;
-  coreutils)
-    # Assert-only: just check if core utilities are present
-    command -v readlink >/dev/null 2>&1
     ;;
   *)
     exit 1

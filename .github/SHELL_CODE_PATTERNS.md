@@ -308,7 +308,27 @@ while IFS= read -r line; do echo "$line"; done < file
 while IFS=: read -r user pass uid gid; do
   echo "User: $user"
 done < /etc/passwd
+
+# CRITICAL: Avoid pipe-into-while (creates subshell, buffers output)
+# WRONG - output trapped in subshell until pipe closes
+tail file | while IFS= read -r line; do
+  printf '%s\n' "$line"  # Output buffered in subshell!
+done
+
+# RIGHT - use temp file with input redirection
+temp="/tmp/data_$$"
+tail file > "$temp"
+while IFS= read -r line; do
+  printf '%s\n' "$line"  # Output immediately visible
+done < "$temp"
+rm -f "$temp"
 ```
+
+**Why pipe-into-while causes buffering:**
+- Pipe creates subshell for right side of pipe
+- All output from subshell buffered until pipe closes
+- Critical for SSE/real-time output where immediate flush needed
+- Temp file approach runs while in main shell
 
 ### Arithmetic
 
@@ -346,6 +366,61 @@ printf '%s\n' "$msg"
 printf '%s\n' "$var"     # CORRECT
 printf '%s\n' $var       # WRONG: word splitting
 ```
+
+### Unbuffered Output for Real-Time Streaming
+
+**CRITICAL FOR SSE/STREAMING:** Shell stdout is buffered by default, causing delayed output.
+
+```sh
+# Re-exec with unbuffered stdout (Linux only) or set flag for buffer overflow approach
+USE_DD_FLUSH=no
+if [ -z "${UNBUFFERED_ACTIVE:-}" ]; then
+  export UNBUFFERED_ACTIVE=1
+  if command -v stdbuf >/dev/null 2>&1; then
+    # Linux/GNU: Use stdbuf -o0 (clean unbuffering)
+    exec stdbuf -o0 "$0" "$@"
+  else
+    # macOS/BSD: No stdbuf, will use massive padding to force buffer overflow
+    USE_DD_FLUSH=yes
+  fi
+fi
+
+# Later: Generate padding based on approach
+if [ "$USE_DD_FLUSH" = "yes" ]; then
+  # MASSIVE padding to exceed all buffers (shell + fcgiwrap + nginx)
+  PADDING=$(awk 'BEGIN{s=""; while(length(s)<131072){s=s" "}; printf("%s",s)}')  # 128KB
+else
+  # Minimal padding when using stdbuf
+  PADDING=$(awk 'BEGIN{s=""; while(length(s)<8192){s=s" "}; printf("%s",s)}')  # 8KB
+fi
+
+# When outputting SSE events:
+printf 'event: message\n'
+printf 'data: %s\n' "$data"
+printf ': padding=%s\n' "$PADDING"  # Add padding
+printf '\n'
+
+# If no stdbuf, also add flush comment after each event
+if [ "$USE_DD_FLUSH" = "yes" ]; then
+  printf ': flush\n\n'
+fi
+```
+
+**Explanation:**
+- Shell stdout is buffered by default (4-8KB typically)
+- fcgiwrap also buffers (8-64KB on macOS)
+- **Clean approach (Linux)**: `stdbuf -o0` disables all stdout buffering
+- **Fallback approach (macOS)**: Output 128KB+ per event to force buffer overflow
+  - Buffer overflow forces immediate flush
+  - Additional flush comment pushes previous event
+- `UNBUFFERED_ACTIVE` guard prevents infinite loop
+
+**Use case:** SSE (Server-Sent Events) - fixes "one message behind" behavior where messages only appear when next message arrives.
+
+**Why 128KB?**
+- Must exceed: shell buffer (~8KB) + fcgiwrap buffer (~64KB) + nginx buffer (~8KB)
+- 128KB guarantees overflow of all buffering layers
+- Forces immediate flush without needing unbuffer tools
 
 ### Globbing
 

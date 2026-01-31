@@ -185,9 +185,16 @@ http {
             # Only allow execution of scripts in the CGI directory
             root $CGI_DIR;
             
-            # Disable buffering for Server-Sent Events (critical!)
-            fastcgi_buffering off;
-            proxy_buffering off;
+            # Disable ALL buffering for Server-Sent Events (critical!)
+            # These settings are required for real-time SSE delivery
+            fastcgi_buffering off;           # Disable FastCGI buffering
+            proxy_buffering off;             # Disable proxy buffering (if used)
+            fastcgi_cache off;               # Disable FastCGI cache
+            fastcgi_request_buffering off;   # Disable request buffering
+            fastcgi_keep_conn on;            # Keep connection alive for streaming
+            
+            # Force immediate flush by disabling gzip
+            gzip off;
             
             # Increase timeouts for long-lived SSE connections
             fastcgi_read_timeout 300s;
