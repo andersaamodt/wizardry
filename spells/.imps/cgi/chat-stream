@@ -172,12 +172,8 @@ keepalive_pid=$!
       # Sort names for consistent comparison (handles join/leave order)
       current_member_signature=$(printf '%s' "$member_list" | tr ' ' '\n' | sort | tr '\n' ' ')
       
-      # Log for debugging (to stderr so it doesn't interfere with SSE)
-      printf '[membership-monitor] Room: %s, Count: %d\n' "$room" "$current_member_count" >&2
-      
       # Send update if membership changed (detects count OR member changes)
       if [ "$current_member_signature" != "$last_member_signature" ]; then
-        printf '[membership-monitor] Membership changed! Sending member update\n' >&2
         
         # Call chat-list-avatars to get member list
         # Requires wizardry commands in PATH (set up by serve-site)
@@ -193,8 +189,6 @@ keepalive_pid=$!
         
         # Validate JSON
         if [ -z "$members_json" ] || ! printf '%s' "$members_json" | grep -q '^{'; then
-          printf '[membership-monitor] Warning: chat-list-avatars failed, using empty array\n' >&2
-          printf '[membership-monitor] Output was: %s\n' "$members_output" >&2
           members_json='{"avatars":[]}'
         fi
         
