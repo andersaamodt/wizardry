@@ -29,4 +29,5 @@ if [ -f "$log_file" ] && [ -s "$log_file" ]; then
 fi
 
 # Message is unique or log is empty, append it
-printf '%s\n' "$message" >> "$log_file" 2>/dev/null || exit 1
+# Use subshell to ensure buffer is flushed immediately (critical for tail -f to see it)
+(printf '%s\n' "$message" >> "$log_file") 2>/dev/null || exit 1
