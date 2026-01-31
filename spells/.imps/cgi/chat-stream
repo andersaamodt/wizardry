@@ -161,8 +161,8 @@ keepalive_pid=$!
         # Get member list from avatar directories
         query="room=$room"
         members_raw=$(QUERY_STRING="$query" chat-list-avatars 2>/dev/null || echo '{"avatars":[]}')
-        # Strip HTTP headers (everything before first {) when called from shell
-        members_json=$(printf '%s' "$members_raw" | sed -n '/{/,$p')
+        # Strip HTTP headers - skip lines until blank line, then take rest
+        members_json=$(printf '%s' "$members_raw" | sed '1,/^$/d')
         send_sse_event members "$members_json"
         last_room_mtime=$current_room_mtime
       fi
