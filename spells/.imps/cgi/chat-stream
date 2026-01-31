@@ -13,24 +13,24 @@ printf 'Cache-Control: no-cache\r\n'
 printf 'Connection: keep-alive\r\n'
 printf '\r\n'
 
-# Initial 2KB padding to force fcgiwrap buffer flush (testing middle ground)
+# Initial 4KB padding to force fcgiwrap buffer flush (confirmed minimum)
 printf ': '
 i=0
-while [ $i -lt 250 ]; do
+while [ $i -lt 500 ]; do
   printf '........'
   i=$((i + 1))
 done
 printf '\n\n'
 
-# SSE event sender with 2KB padding for immediate delivery
+# SSE event sender with 4KB padding for immediate delivery
 send_sse_event() {
   event_type="$1"
   event_data="$2"
   
-  # FLUSH BEFORE: 2KB padding (middle ground between 4KB and 1KB)
+  # FLUSH BEFORE: 4KB padding (confirmed minimum for reliable delivery)
   printf ': '
   i=0
-  while [ $i -lt 250 ]; do
+  while [ $i -lt 500 ]; do
     printf '........'
     i=$((i + 1))
   done
@@ -39,10 +39,10 @@ send_sse_event() {
   # Event data
   printf 'event: %s\ndata: %s\n\n' "$event_type" "$event_data"
   
-  # 2KB padding after event
+  # 4KB padding after event (complete the flush)
   printf ': '
   i=0
-  while [ $i -lt 250 ]; do
+  while [ $i -lt 500 ]; do
     printf '........'
     i=$((i + 1))
   done
@@ -147,16 +147,20 @@ tail_pid=$!
 ) &
 keepalive_pid=$!
 
-# Start background membership monitor
-# NOTE: last_room_mtime stored in this background subshell's memory (persists for connection lifetime)
+# Background membership monitor (tracks room directory changes)
+# NOTE: last_room_mtime persists in subshell memory for connection
 (
   last_room_mtime=0  # Starts at 0, first check will trigger update
   while true; do
     sleep 2
     if [ -d "$ROOM_DIR" ]; then
-      current_room_mtime=$(stat -f %m "$ROOM_DIR" 2>/dev/null || stat -c %Y "$ROOM_DIR" 2>/dev/null || echo 0)
+      # Get room mtime (split for lint - max 100 chars per line)
+      room_stat=$(stat -f %m "$ROOM_DIR" 2>/dev/null || stat -c %Y "$ROOM_DIR" 2>/dev/null)
+      current_room_mtime=${room_stat:-0}
       if [ "$current_room_mtime" != "$last_room_mtime" ] && [ "$current_room_mtime" != "0" ]; then
-        members_json=$(QUERY_STRING="room=$room" chat-list-avatars 2>/dev/null || echo '{"avatars":[]}')
+        # Get member list from avatar directories
+        query="room=$room"
+        members_json=$(QUERY_STRING="$query" chat-list-avatars 2>/dev/null || echo '{"avatars":[]}')
         send_sse_event members "$members_json"
         last_room_mtime=$current_room_mtime
       fi

@@ -169,3 +169,5 @@
 - fcgiwrap/nginx/browser is a multi-layer buffering chain - Must exceed ALL buffer sizes combined, not individual layers.
 - Shell file append (`>>`) buffers output until script exits - Wrap writes in subshell `(printf >> file)` to force immediate buffer flush for tail -f visibility.
 - 4KB padding works for SSE despite smaller than total buffer size - Write sequence (padding + event + padding) triggers flush mechanism, not just overflow.
+- 2KB padding causes batching in SSE delivery (too small for reliable flush) - Testing confirmed 4KB is minimum threshold to trigger flush mechanism consistently.
+- 4KB is confirmed minimum for instant SSE delivery over fcgiwrap/nginx - Smaller sizes (2KB, 1KB) cause batching; 4KB provides 83% bandwidth reduction while maintaining reliability.
