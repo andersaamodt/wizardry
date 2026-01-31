@@ -1,7 +1,7 @@
 #!/bin/sh
 # chat-cleanup-inactive-avatars - Remove inactive web avatars from a chat room
 # This should be called periodically (e.g., on message send or page view)
-# to clean up avatars that haven't been active for >5 minutes
+# to clean up avatars that haven't been active for >30 minutes
 
 # Note: Not using set -eu because we want to continue even if individual commands fail
 # All commands have appropriate error handling with || true or || echo
@@ -13,9 +13,9 @@ if [ -z "$room_dir" ] || [ ! -d "$room_dir" ]; then
   exit 0  # Silent exit if no room or room doesn't exist
 fi
 
-# Cleanup threshold: 5 minutes in seconds
+# Cleanup threshold: 30 minutes in seconds
 current_time=$(date +%s)
-inactive_threshold=300
+inactive_threshold=1800
 
 LOG_FILE="$room_dir/.log"
 
