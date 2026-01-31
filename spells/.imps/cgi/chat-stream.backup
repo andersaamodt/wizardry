@@ -1,0 +1,197 @@
+#!/bin/sh
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-31-v40-DOUBLE-FLUSH)
+# Streams chat messages as Server-Sent Events using ultra-fast polling (50Hz = 0.02s)
+# Self-contained - no external imp dependencies
+# Accepts query parameter: room=ROOM&since=TIMESTAMP
+#
+# CONCURRENCY: Each fcgiwrap worker handles one connection. Configure fcgiwrap with
+# multiple workers (-c N) to support N concurrent SSE connections. Default: 10 workers.
+#
+# NOTE: Uses 50Hz polling (0.02s) instead of event-driven tail -f because POSIX shell
+# creates subshells for any loop reading from pipes/FIFOs, causing output buffering.
+# 50Hz polling provides <50ms latency (feels instant) without buffering issues.
+
+set -eu
+
+# Diagnostic logging
+printf '[chat-stream] v39-FAST-POLL-50HZ: Ultra-fast polling (20ms)\n' >&2
+printf '[chat-stream] QUERY_STRING: %s\n' "${QUERY_STRING:-}" >&2
+
+# Send SSE headers (inline, no http-status/http-header imps)
+printf 'Status: 200 OK\r\n'
+printf 'Content-Type: text/event-stream\r\n'
+printf 'Cache-Control: no-cache\r\n'
+printf 'Connection: keep-alive\r\n'
+printf '\r\n'
+
+# CRITICAL: Force headers to flush by sending 32KB padding immediately
+# fcgiwrap + nginx may buffer ~8-16KB. This massive padding forces immediate flush.
+printf ': padding '
+i=0
+while [ $i -lt 4000 ]; do
+  printf '........'
+  i=$((i + 1))
+done
+printf '\n\n'
+
+# SSE event sender - DOUBLE FLUSH with 64KB total padding
+send_sse_event() {
+  event_type="$1"
+  event_data="$2"
+  
+  # FLUSH 1: 32KB padding BEFORE event (start filling buffers)
+  printf ': flush-before '
+  i=0
+  while [ $i -lt 4000 ]; do
+    printf '........'
+    i=$((i + 1))
+  done
+  printf '\n\n'
+  
+  # Send the event data
+  printf 'event: %s\ndata: %s\n\n' "$event_type" "$event_data"
+  
+  # FLUSH 2: 32KB padding AFTER event (overflow ALL buffers)
+  printf ': flush-after '
+  i=0
+  while [ $i -lt 4000 ]; do
+    printf '........'
+    i=$((i + 1))
+  done
+  printf '\n\n'
+}
+
+# Simple URL decoder (inline, no url-decode imp)
+url_decode() {
+  # Replace + with space, then decode %XX sequences
+  printf '%s' "$1" | sed 's/+/ /g; s/%\([0-9A-Fa-f][0-9A-Fa-f]\)/\\x\1/g' | xargs -0 printf '%b'
+}
+
+# Parse room name from query string
+room_name="${QUERY_STRING:-}"
+room_name=$(printf '%s' "$room_name" | sed 's/.*room=\([^&]*\).*/\1/')
+room_name=$(url_decode "$room_name")
+room_name=$(printf '%s' "$room_name" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+# Validate room name
+if ! printf '%s' "$room_name" | grep -q '^[a-zA-Z0-9_ -]\+$'; then
+  printf '[chat-stream] ERROR: Invalid room name\n' >&2
+  send_sse_event error "Invalid room name"
+  exit 0
+fi
+
+# Parse optional 'since' timestamp
+since_timestamp=""
+if printf '%s' "${QUERY_STRING:-}" | grep -q 'since='; then
+  since_timestamp=$(printf '%s' "${QUERY_STRING:-}" | sed 's/.*since=\([^&]*\).*/\1/')
+  since_timestamp=$(url_decode "$since_timestamp")
+  since_timestamp=$(printf '%s' "$since_timestamp" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+fi
+
+if [ -z "$room_name" ]; then
+  send_sse_event error "No room specified"
+  exit 0
+fi
+
+# Chat rooms directory
+if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
+  site_id="$WIZARDRY_SITE_NAME"
+else
+  site_id="default"
+fi
+SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
+CHAT_DIR="$SITES_DIR/.sitedata/$site_id/chatrooms"
+ROOM_DIR="$CHAT_DIR/$room_name"
+LOG_FILE="$ROOM_DIR/.log"
+
+printf '[chat-stream] Room: %s, Log: %s\n' "$room_name" "$LOG_FILE" >&2
+
+if [ ! -d "$ROOM_DIR" ]; then
+  send_sse_event error "Room not found"
+  exit 0
+fi
+
+# Send initial batch of messages
+# CRITICAL: Use temp file to avoid pipe subshell buffering
+temp_init="/tmp/chat_stream_$$_init"
+if [ -f "$LOG_FILE" ] && [ -s "$LOG_FILE" ]; then
+  if [ -n "$since_timestamp" ]; then
+    # Filter messages after 'since' timestamp
+    cat "$LOG_FILE" > "$temp_init"
+    while IFS= read -r line || [ -n "$line" ]; do
+      msg_timestamp=$(printf '%s' "$line" | sed 's/^\[\([^]]*\)\].*/\1/')
+      latest=$(printf '%s\n%s' "$msg_timestamp" "$since_timestamp" | sort | tail -1)
+      if [ "$latest" = "$msg_timestamp" ]; then
+        send_sse_event message "$line"
+      fi
+    done < "$temp_init"
+    rm -f "$temp_init"
+  else
+    # Send last 50 messages
+    tail -50 "$LOG_FILE" > "$temp_init" 2>/dev/null || true
+    while IFS= read -r line; do
+      send_sse_event message "$line"
+    done < "$temp_init"
+    rm -f "$temp_init"
+  fi
+fi
+
+# Send initial members list
+if [ -f "$ROOM_DIR/.members" ]; then
+  members_json=$(cat "$ROOM_DIR/.members" 2>/dev/null || printf '[]')
+  send_sse_event members "$members_json"
+fi
+
+printf '[chat-stream] Initial messages sent, starting 50Hz polling loop...\n' >&2
+
+# Get initial line count
+last_lines=$(wc -l < "$LOG_FILE" 2>/dev/null || printf '0')
+last_keepalive=$(date +%s)
+last_members=$(date +%s)
+
+# Ultra-fast polling loop (50Hz = 0.02s interval)
+# This is faster than human perception (<50ms feels instant)
+# and avoids ALL subshell buffering issues
+while true; do
+  sleep 0.02  # 50Hz polling
+  
+  # Check for new lines
+  if [ ! -f "$LOG_FILE" ]; then
+    continue
+  fi
+  
+  current_lines=$(wc -l < "$LOG_FILE" 2>/dev/null || printf '0')
+  
+  if [ "$current_lines" -gt "$last_lines" ]; then
+    # New messages detected! Send them using temp file (no subshell!)
+    temp_new="/tmp/chat_stream_$$_new"
+    tail -n "+$((last_lines + 1))" "$LOG_FILE" > "$temp_new" 2>/dev/null || true
+    
+    while IFS= read -r line || [ -n "$line" ]; do
+      send_sse_event message "$line"
+    done < "$temp_new"
+    
+    rm -f "$temp_new"
+    last_lines=$current_lines
+  fi
+  
+  # Periodic keepalive (every 15 seconds)
+  now=$(date +%s)
+  if [ $((now - last_keepalive)) -ge 15 ]; then
+    send_sse_event ping "keepalive"
+    last_keepalive=$now
+  fi
+  
+  # Periodic members update (every 15 seconds)
+  if [ $((now - last_members)) -ge 15 ] && [ -f "$ROOM_DIR/.members" ]; then
+    members_json=$(cat "$ROOM_DIR/.members" 2>/dev/null || printf '[]')
+    send_sse_event members "$members_json"
+    last_members=$now
+  fi
+  
+  # Check if room still exists
+  if [ ! -d "$ROOM_DIR" ]; then
+    printf '[chat-stream] Room deleted, exiting\n' >&2
+    break
+  fi
+done
