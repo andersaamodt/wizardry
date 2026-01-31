@@ -1,0 +1,125 @@
+#!/bin/sh
+# Diagnose SSE buffering configuration
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: diagnose-sse-buffering SITENAME
+
+Checks SSE buffering configuration for a site.
+Helps diagnose "one message behind" issues.
+
+Example: diagnose-sse-buffering mysite
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+site_name=${1-}
+if [ -z "$site_name" ]; then
+  printf 'Usage: diagnose-sse-buffering SITENAME\n' >&2
+  exit 2
+fi
+
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+SITE_DIR="$WEB_ROOT/$site_name"
+
+echo "======================================================================"
+echo "SSE Buffering Diagnostic for: $site_name"
+echo "======================================================================"
+echo ""
+
+# Check 1: stdbuf availability
+echo "CHECK 1: stdbuf availability"
+if command -v stdbuf >/dev/null 2>&1; then
+  echo "  ✓ stdbuf is available"
+  stdbuf --version 2>&1 | head -1
+else
+  echo "  ✗ stdbuf NOT available (buffering workarounds needed)"
+fi
+echo ""
+
+# Check 2: fcgiwrap process
+echo "CHECK 2: fcgiwrap process"
+if [ -f "$SITE_DIR/nginx/fcgiwrap.pid" ]; then
+  fcgi_pid=$(cat "$SITE_DIR/nginx/fcgiwrap.pid")
+  if kill -0 "$fcgi_pid" 2>/dev/null; then
+    echo "  ✓ fcgiwrap running (PID: $fcgi_pid)"
+    
+    # Check if running with stdbuf
+    if ps -p "$fcgi_pid" -o command= 2>/dev/null | grep -q stdbuf; then
+      echo "  ✓ fcgiwrap started WITH stdbuf (unbuffered)"
+      ps -p "$fcgi_pid" -o command=
+    else
+      echo "  ✗ fcgiwrap started WITHOUT stdbuf (BUFFERED!)"
+      echo "    Command: $(ps -p "$fcgi_pid" -o command= 2>/dev/null)"
+      echo "    FIX: Stop and restart web server"
+    fi
+  else
+    echo "  ✗ fcgiwrap not running (PID file stale)"
+  fi
+else
+  echo "  ✗ fcgiwrap PID file not found"
+fi
+echo ""
+
+# Check 3: nginx config
+echo "CHECK 3: nginx fastcgi_buffering config"
+if [ -f "$SITE_DIR/nginx/nginx.conf" ]; then
+  if grep -q "fastcgi_buffering off" "$SITE_DIR/nginx/nginx.conf"; then
+    echo "  ✓ fastcgi_buffering off is configured"
+  else
+    echo "  ✗ fastcgi_buffering off NOT found in config"
+  fi
+else
+  echo "  ✗ nginx.conf not found"
+fi
+echo ""
+
+# Check 4: chat-stream version
+echo "CHECK 4: chat-stream script version"
+WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
+if [ -f "$WIZARDRY_DIR/spells/.imps/cgi/chat-stream" ]; then
+  version=$(grep "VERSION:" "$WIZARDRY_DIR/spells/.imps/cgi/chat-stream" | head -1)
+  echo "  $version"
+  
+  if grep -q "UNBUFFERED_ACTIVE" "$WIZARDRY_DIR/spells/.imps/cgi/chat-stream"; then
+    echo "  ✓ Script has stdbuf re-exec logic"
+  else
+    echo "  ✗ Script missing stdbuf re-exec logic"
+  fi
+else
+  echo "  ✗ chat-stream not found"
+fi
+echo ""
+
+# Check 5: Error log for diagnostic messages
+echo "CHECK 5: Recent error log messages"
+if [ -f "$SITE_DIR/nginx/error.log" ]; then
+  echo "  Last 10 chat-stream startup messages:"
+  grep "chat-stream.*SCRIPT STARTED" "$SITE_DIR/nginx/error.log" 2>/dev/null | tail -5 || echo "  (none found)"
+  echo ""
+  echo "  Last unbuffering mode message:"
+  grep -E "MODE:|Using stdbuf|Using dd flush" "$SITE_DIR/nginx/error.log" 2>/dev/null | tail -3 || echo "  (none found)"
+else
+  echo "  ✗ Error log not found"
+fi
+echo ""
+
+# Summary
+echo "======================================================================"
+echo "SUMMARY"
+echo "======================================================================"
+echo ""
+echo "For SSE to work without buffering delays, ALL must be true:"
+echo "  1. stdbuf available OR massive padding in use"
+echo "  2. fcgiwrap started with 'stdbuf -o0 fcgiwrap ...'"
+echo "  3. nginx config has 'fastcgi_buffering off'"
+echo "  4. chat-stream uses stdbuf internally"
+echo ""
+echo "If any check failed, restart the web server:"
+echo "  web-stop-site $site_name"
+echo "  web-serve-site $site_name"
+echo ""
