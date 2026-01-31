@@ -195,7 +195,7 @@ function joinRoom(roomName) {
   
   // Members button visibility will be controlled by loadMembers based on member count
   
-  // Store current username and previous room for avatar creation later
+  // Get current username and previous room
   var currentUsername = getUsername();
   var previousRoom = localStorage.getItem('previousRoom') || '';
   
@@ -238,26 +238,26 @@ function joinRoom(roomName) {
     window.messageInterval = null;
   }
   
-  // IMPORTANT: Set up SSE FIRST to avoid missing events during the history load
-  // SSE will capture all events from now forward
-  setupMessageStream(roomName);
+  // CRITICAL: Capture timestamp BEFORE avatar creation
+  // This ensures SSE will capture the avatar creation events
+  var joinTimestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  
+  // Create/move avatar IMMEDIATELY (no delay) for instant feedback
+  if (previousRoom && previousRoom !== roomName) {
+    // Move avatar from previous room to new room
+    moveAvatar(roomName, currentUsername, previousRoom);
+  } else {
+    // Create new avatar (first join or rejoining same room)
+    createAvatar(roomName, currentUsername);
+  }
+  
+  // Set up SSE with the timestamp from BEFORE avatar creation
+  // This ensures SSE captures the join message and member update events
+  setupMessageStream(roomName, joinTimestamp);
   
   // Then load message history via GET
   // Any overlap between SSE and history will be deduplicated by appendMessage
   loadMessages();
-  
-  // CRITICAL: Create/move avatar AFTER SSE connection is established
-  // This ensures SSE catches the join message and member update events
-  // Wait a brief moment to ensure SSE connection is established
-  setTimeout(function() {
-    if (previousRoom && previousRoom !== roomName) {
-      // Move avatar from previous room to new room
-      moveAvatar(roomName, currentUsername, previousRoom);
-    } else {
-      // Create new avatar (first join or rejoining same room)
-      createAvatar(roomName, currentUsername);
-    }
-  }, 100);
 }
 
 // Load messages for current room
@@ -413,7 +413,7 @@ function setupScrollListener() {
 }
 
 // Set up Server-Sent Events for real-time message updates
-function setupMessageStream(roomName) {
+function setupMessageStream(roomName, sinceTimestamp) {
   if (!roomName) return;
   
   
@@ -423,12 +423,13 @@ function setupMessageStream(roomName) {
     window.messageEventSource = null;
   }
   
-  // Get current timestamp to filter initial SSE messages
-  // SSE will send messages AFTER this timestamp, and history GET will fetch messages BEFORE
-  // This ensures no gap - SSE captures new events while history loads
-  // Any overlap is handled by duplicate detection in appendMessage
-  var now = new Date();
-  var sinceTimestamp = now.toISOString().replace('T', ' ').substring(0, 19);
+  // Use provided timestamp or generate current one
+  // When provided from joinRoom, this will be BEFORE avatar creation
+  // This ensures SSE captures the avatar creation events
+  if (!sinceTimestamp) {
+    var now = new Date();
+    sinceTimestamp = now.toISOString().replace('T', ' ').substring(0, 19);
+  }
   
   // Create new SSE connection with since parameter
   var url = '/cgi/chat-stream?room=' + encodeURIComponent(roomName) + '&since=' + encodeURIComponent(sinceTimestamp);
