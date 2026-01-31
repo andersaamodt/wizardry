@@ -6,6 +6,18 @@
 
 set -eu
 
+# Ensure wizardry commands are in PATH for subprocesses
+# Detect WIZARDRY_DIR and add spell directories to PATH
+if [ -n "${WIZARDRY_DIR-}" ]; then
+  # Add all spell directories to PATH
+  for dir in "$WIZARDRY_DIR/spells"/* "$WIZARDRY_DIR/spells"/.*; do
+    [ -d "$dir" ] || continue
+    case "$dir" in */.|*/..) continue ;; esac
+    PATH="$dir:$PATH"
+  done
+  export PATH
+fi
+
 # Send SSE headers
 printf 'Status: 200 OK\r\n'
 printf 'Content-Type: text/event-stream\r\n'
@@ -173,41 +185,16 @@ keepalive_pid=$!
       if [ "$current_member_count" != "$last_member_count" ]; then
         printf '[membership-monitor] Count changed! Sending member update\n' >&2
         
-        # Build member list JSON directly (don't call chat-list-avatars subprocess)
-        # This avoids PATH issues and header stripping complexity
-        members_json='{"avatars": ['
-        first=1
-        for avatar_dir in "$ROOM_DIR"/.*; do
-          [ -d "$avatar_dir" ] || continue
-          avatar_name=$(basename "$avatar_dir")
-          
-          # Skip . and .. and .log
-          case "$avatar_name" in
-            .|..|.log) continue ;;
-          esac
-          
-          # Check if it's a web avatar (use get-attribute if available, else assume web)
-          is_web="true"
-          if command -v get-attribute >/dev/null 2>&1; then
-            if get-attribute "user.web_avatar" "$avatar_dir" >/dev/null 2>&1; then
-              is_web="true"
-            else
-              is_web="false"
-            fi
-          fi
-          
-          # Remove leading dot from username
-          username=$(printf '%s' "$avatar_name" | sed 's/^\.//')
-          
-          if [ "$first" -eq 1 ]; then
-            first=0
-          else
-            members_json="$members_json, "
-          fi
-          
-          members_json="$members_json{\"username\": \"$username\", \"is_web\": $is_web}"
-        done
-        members_json="$members_json]}"
+        # Call chat-list-avatars to get member list
+        # Now that PATH includes wizardry spells, this will work
+        query="room=$room"
+        members_json=$(QUERY_STRING="$query" chat-list-avatars 2>/dev/null | sed -n '/^$/,$ p' | tail -n +2)
+        
+        # Validate JSON
+        if [ -z "$members_json" ] || ! printf '%s' "$members_json" | grep -q '^{'; then
+          printf '[membership-monitor] Warning: chat-list-avatars failed, using empty array\n' >&2
+          members_json='{"avatars":[]}'
+        fi
         
         printf '[membership-monitor] Sending JSON: %s\n' "$members_json" >&2
         send_sse_event members "$members_json"
