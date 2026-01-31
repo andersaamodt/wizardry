@@ -173,10 +173,20 @@ keepalive_pid=$!
       if [ "$current_member_count" != "$last_member_count" ]; then
         printf '[membership-monitor] Count changed! Sending member update\n' >&2
         
+        # Debug: Log PATH to see if wizardry commands are available
+        printf '[membership-monitor] DEBUG PATH: %s\n' "$PATH" >&2
+        printf '[membership-monitor] DEBUG which chat-list-avatars: %s\n' "$(which chat-list-avatars 2>&1 || echo 'NOT FOUND')" >&2
+        printf '[membership-monitor] DEBUG which http-status: %s\n' "$(which http-status 2>&1 || echo 'NOT FOUND')" >&2
+        
         # Call chat-list-avatars to get member list
         # Requires wizardry commands in PATH (set up by serve-site)
         query="room=$room"
         members_output=$(QUERY_STRING="$query" chat-list-avatars 2>&1)
+        
+        # Debug: Log full raw output
+        printf '[membership-monitor] DEBUG full output length: %d bytes\n' "${#members_output}" >&2
+        printf '[membership-monitor] DEBUG first 200 chars: %s\n' "$(printf '%s' "$members_output" | head -c 200)" >&2
+        
         members_stderr=$(printf '%s' "$members_output" | grep -v '^Status:\|^Content-Type:\|^{\|^}' || true)
         members_json=$(printf '%s' "$members_output" | sed -n '/^$/,$ p' | tail -n +2)
         
