@@ -89,9 +89,9 @@ This chat system uses the **same message format as the MUD `say` command**, maki
 <script>
 // Chat UI Version: 2026-01-31-v34-DEBUG
 // Server: chat-stream v34-DEBUG - enhanced diagnostics for polling
-console.log('[Chat] Version: 2026-01-31-v34-DEBUG');
-console.log('[Chat] Server: chat-stream v34-DEBUG');
-console.log('[Chat] Enhanced diagnostics - check nginx error.log for detailed polling info');
+console.log('[Chat] Version: 2026-01-31-v35-PADDING-FIX');
+console.log('[Chat] Server: chat-stream v35-PADDING-FIX');
+console.log('[Chat] Fixed: 8KB padding forces fcgiwrap buffer flush - connection should open!');
 
 // Generate a random guest name
 function generateGuestName() {
