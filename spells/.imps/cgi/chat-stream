@@ -7,9 +7,16 @@
 set -eu
 
 # Ensure wizardry commands are in PATH for subprocesses
-# Detect WIZARDRY_DIR and add spell directories to PATH
-if [ -n "${WIZARDRY_DIR-}" ]; then
-  # Add all spell directories to PATH
+# Detect WIZARDRY_DIR from script location if not set
+if [ -z "${WIZARDRY_DIR-}" ]; then
+  # Get the directory of this script
+  script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  # Go up from spells/.imps/cgi to wizardry root
+  WIZARDRY_DIR=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
+fi
+
+# Add spell directories to PATH
+if [ -d "$WIZARDRY_DIR/spells" ]; then
   for dir in "$WIZARDRY_DIR/spells"/* "$WIZARDRY_DIR/spells"/.*; do
     [ -d "$dir" ] || continue
     case "$dir" in */.|*/..) continue ;; esac
