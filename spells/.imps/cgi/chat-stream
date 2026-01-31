@@ -1,5 +1,5 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-31-v32-SELF-CONTAINED)
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-31-v34-DEBUG)
 # Streams chat messages as Server-Sent Events using optimized polling
 # Self-contained - no external imp dependencies
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
@@ -10,7 +10,7 @@
 set -eu
 
 # Diagnostic logging
-printf '[chat-stream] ========== v32-SELF-CONTAINED: No imp dependencies ==========\n' >&2
+printf '[chat-stream] ========== v34-DEBUG: Enhanced diagnostics ==========\n' >&2
 printf '[chat-stream] QUERY_STRING: %s\n' "${QUERY_STRING:-}" >&2
 
 # Send SSE headers (inline, no http-status/http-header imps)
@@ -133,14 +133,28 @@ while true; do
     
     if [ "$current_line_count" -gt "$last_line_count" ]; then
       # New messages detected - send them
+      new_msg_count=$((current_line_count - last_line_count))
+      printf '[chat-stream] DETECTED %d new messages (was %d, now %d)\n' "$new_msg_count" "$last_line_count" "$current_line_count" >&2
+      
       # Use temp file to avoid pipe subshell
       temp_new="/tmp/chat_stream_$$_new"
       tail -n "+$((last_line_count + 1))" "$LOG_FILE" > "$temp_new" 2>/dev/null || true
       
+      # Debug: check temp file
+      if [ -f "$temp_new" ]; then
+        temp_lines=$(wc -l < "$temp_new" 2>/dev/null || printf '0')
+        printf '[chat-stream] Temp file has %d lines\n' "$temp_lines" >&2
+      fi
+      
+      line_num=0
       while IFS= read -r line; do
+        line_num=$((line_num + 1))
+        printf '[chat-stream] SENDING line %d: %s\n' "$line_num" "$line" >&2
         send_sse_event message "$line"
+        printf '[chat-stream] SENT line %d\n' "$line_num" >&2
       done < "$temp_new"
       
+      printf '[chat-stream] Finished sending %d lines\n' "$line_num" >&2
       rm -f "$temp_new"
       last_line_count="$current_line_count"
     fi
