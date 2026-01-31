@@ -147,24 +147,34 @@ tail_pid=$!
 ) &
 keepalive_pid=$!
 
-# Background membership monitor (tracks room directory changes)
-# NOTE: last_room_mtime persists in subshell memory for connection
+# Background membership monitor (tracks changes in member count)
+# More reliable than mtime since avatars can be added within same second
 (
-  last_room_mtime=0  # Starts at 0, first check will trigger update
+  last_member_count=-1  # Start with -1 to force initial update
   while true; do
     sleep 2
     if [ -d "$ROOM_DIR" ]; then
-      # Get room mtime (split for lint - max 100 chars per line)
-      room_stat=$(stat -f %m "$ROOM_DIR" 2>/dev/null || stat -c %Y "$ROOM_DIR" 2>/dev/null)
-      current_room_mtime=${room_stat:-0}
-      if [ "$current_room_mtime" != "$last_room_mtime" ] && [ "$current_room_mtime" != "0" ]; then
+      # Count avatar directories (hidden directories starting with .)
+      # Skip . and .. and .log
+      current_member_count=0
+      for avatar_dir in "$ROOM_DIR"/.*; do
+        [ -d "$avatar_dir" ] || continue
+        avatar_name=$(basename "$avatar_dir")
+        case "$avatar_name" in
+          .|..|.log) continue ;;
+        esac
+        current_member_count=$((current_member_count + 1))
+      done
+      
+      # Send update if count changed
+      if [ "$current_member_count" != "$last_member_count" ]; then
         # Get member list from avatar directories
         query="room=$room"
         members_raw=$(QUERY_STRING="$query" chat-list-avatars 2>/dev/null || echo '{"avatars":[]}')
         # Strip HTTP headers - skip lines until blank line, then take rest
         members_json=$(printf '%s' "$members_raw" | sed '1,/^$/d')
         send_sse_event members "$members_json"
-        last_room_mtime=$current_room_mtime
+        last_member_count=$current_member_count
       fi
     fi
   done
