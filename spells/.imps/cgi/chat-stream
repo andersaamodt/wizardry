@@ -166,13 +166,18 @@ keepalive_pid=$!
         current_member_count=$((current_member_count + 1))
       done
       
+      # Log for debugging (to stderr so it doesn't interfere with SSE)
+      printf '[membership-monitor] Room: %s, Count: %d, Last: %d\n' "$room" "$current_member_count" "$last_member_count" >&2
+      
       # Send update if count changed
       if [ "$current_member_count" != "$last_member_count" ]; then
+        printf '[membership-monitor] Count changed! Sending member update\n' >&2
         # Get member list from avatar directories
         query="room=$room"
         members_raw=$(QUERY_STRING="$query" chat-list-avatars 2>/dev/null || echo '{"avatars":[]}')
         # Strip HTTP headers - skip lines until blank line, then take rest
         members_json=$(printf '%s' "$members_raw" | sed '1,/^$/d')
+        printf '[membership-monitor] Sending JSON: %s\n' "$members_json" >&2
         send_sse_event members "$members_json"
         last_member_count=$current_member_count
       fi
