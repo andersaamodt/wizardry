@@ -20,7 +20,17 @@ HTML
   exit 0
 fi
 
-# Sanitize room name (alphanumeric, dash, underscore only)
+# Validate room name to prevent path traversal
+if ! validate-room-name "$room_name"; then
+  cat <<HTML
+<div class="demo-result error">
+  <p>Invalid room name. No path traversal allowed.</p>
+</div>
+HTML
+  exit 0
+fi
+
+# Additional validation: alphanumeric, dash, underscore only
 if ! printf '%s' "$room_name" | grep -qE '^[a-zA-Z0-9_-]+$'; then
   cat <<HTML
 <div class="demo-result error">

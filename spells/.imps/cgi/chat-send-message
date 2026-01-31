@@ -27,9 +27,29 @@ HTML
   exit 0
 fi
 
+# Validate room name to prevent path traversal
+if ! validate-room-name "$room_name"; then
+  cat <<HTML
+<div class="demo-result error">
+  <p>Invalid room name</p>
+</div>
+HTML
+  exit 0
+fi
+
 # Default user if not provided
 if [ -z "$user_name" ]; then
   user_name="Anonymous"
+fi
+
+# Validate username
+if ! validate-username "$user_name"; then
+  cat <<HTML
+<div class="demo-result error">
+  <p>Invalid username. Only alphanumeric, underscore, and hyphen allowed.</p>
+</div>
+HTML
+  exit 0
 fi
 
 # Sanitize username - reject reserved names that would conflict with room metadata

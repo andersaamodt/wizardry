@@ -19,6 +19,16 @@ HTML
   exit 0
 fi
 
+# Validate room name to prevent path traversal
+if ! validate-room-name "$room_name"; then
+  cat <<HTML
+<div id="chat-messages" class="chat-display">
+  <p class="demo-result error">Invalid room name</p>
+</div>
+HTML
+  exit 0
+fi
+
 # Chat rooms directory - use site-specific location
 CHAT_DIR=$(get-site-data-dir "chatrooms")
 ROOM_DIR="$CHAT_DIR/$room_name"
