@@ -1,120 +1,46 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-31-v26-DIAGNOSTICS)
-# Streams chat messages as Server-Sent Events
-# DIAGNOSTICS: Added comprehensive timing logs to track where delays occur
-# Root cause still under investigation - may be nginx FastCGI buffering despite settings
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-31-v30-TAIL-F)
+# Streams chat messages as Server-Sent Events using tail -f for immediate delivery
 # Self-contained - no external imp dependencies
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
 #
 # CONCURRENCY: Each fcgiwrap worker handles one connection. Configure fcgiwrap with
 # multiple workers (-c N) to support N concurrent SSE connections. Default: 10 workers.
-# See: serve-site script, FCGIWRAP_WORKERS environment variable.
-
-# CRITICAL FIX: Re-exec with unbuffered stdout if not already unbuffered
-# This solves the "1 message behind" problem - shell stdout is buffered by default
-# Primary: stdbuf -o0 disables stdout buffering (Linux)
-# Fallback: Use explicit fflush via dd after each event (macOS/BSD)
-USE_DD_FLUSH=no
-if [ -z "${UNBUFFERED_ACTIVE:-}" ]; then
-  export UNBUFFERED_ACTIVE=1
-  if command -v stdbuf >/dev/null 2>&1; then
-    # Linux/GNU: Use stdbuf
-    printf '[chat-stream] Using stdbuf for unbuffered stdout\n' >&2
-    exec stdbuf -o0 "$0" "$@"
-  else
-    # macOS/BSD: No stdbuf, will use dd flush workaround
-    printf '[chat-stream] Using dd flush workaround (no stdbuf)\n' >&2
-    USE_DD_FLUSH=yes
-  fi
-fi
 
 set -eu
 
-# Diagnostic logging to stderr (appears in web server error log)
-script_version="2026-01-31-v26-DIAGNOSTICS"
-printf '[chat-stream] ========== SCRIPT STARTED (VERSION: %s) ==========\n' "$script_version" >&2
-printf '[chat-stream] DIAGNOSTICS: Detailed timing logs enabled\n' >&2
-printf '[chat-stream] CRITICAL FIX: Removed all pipe subshells (use temp files instead)\n' >&2
-if [ "$USE_DD_FLUSH" = "yes" ]; then
-  printf '[chat-stream] MODE: 128KB padding (no stdbuf - forcing buffer overflow)\n' >&2
-else
-  printf '[chat-stream] MODE: Unbuffered stdout with stdbuf (clean)\n' >&2
-fi
-printf '[chat-stream] Script location: %s\n' "$0" >&2
-printf '[chat-stream] PWD: %s\n' "$(pwd)" >&2
+# Diagnostic logging
+printf '[chat-stream] ========== v30-TAIL-F: Using tail -f for real-time delivery ==========\n' >&2
 printf '[chat-stream] QUERY_STRING: %s\n' "${QUERY_STRING:-}" >&2
 
-# Send SSE headers (inlined from sse-start)
-printf '[chat-stream] Sending SSE headers (no initial padding)\n' >&2
+# Send SSE headers
 http-status 200 "OK"
 http-header "Content-Type" "text/event-stream"
 http-header "Cache-Control" "no-cache"
 http-header "Connection" "keep-alive"
-http-header "X-Accel-Buffering" "no"
-http-end-headers
+printf '\r\n'
 
-# No initial padding burst - causes lag on join (delays first real event)
-# Heartbeats every 45s (not 2s) - only for keepalive, not flushing
-# Actual events have padding to force flush when they occur
-printf '[chat-stream] SSE headers sent (heartbeats: 45s, events: with padding)\n' >&2
-
-# Pre-generate padding string ONCE for efficiency
-# Size depends on whether we have stdbuf or need to exceed buffers manually
-if [ "$USE_DD_FLUSH" = "yes" ]; then
-  # No stdbuf: Use MASSIVE padding to absolutely guarantee buffer overflow
-  # macOS fcgiwrap + shell buffering can be 64KB+, so use 128KB to be sure
-  PADDING=$(awk 'BEGIN{s=""; while(length(s)<131072){s=s" "}; printf("%s",s)}')
-  printf '[chat-stream] Pre-generated 128KB padding (no stdbuf, force overflow)\n' >&2
-else
-  # With stdbuf: Minimal padding just for fcgiwrap/nginx
-  PADDING=$(awk 'BEGIN{s=""; while(length(s)<8192){s=s" "}; printf("%s",s)}')
-  printf '[chat-stream] Pre-generated 8KB padding (with stdbuf)\n' >&2
-fi
-
-# Inline SSE event function (replaces send_sse_event imp)
-# Third parameter controls padding (default: with padding)
+# SSE event sender - simple, no padding needed
 send_sse_event() {
   event_type="$1"
   event_data="$2"
-  add_padding="${3:-yes}"  # Default to yes (with padding)
-  
-  # Send event
-  printf 'event: %s\n' "$event_type"
-  printf 'data: %s\n' "$event_data"
-  
-  # Add padding to force buffer flush at fcgiwrap/nginx level (only if requested)
-  # With unbuffered stdout (stdbuf -o0), shell buffering is eliminated
-  # Padding still needed to exceed fcgiwrap buffer
-  # Without stdbuf: Use MASSIVE padding (128KB) to force overflow of all buffers
-  if [ "$add_padding" = "yes" ]; then
-    printf ': padding=%s\n' "$PADDING"
-  fi
-  
-  # End event with blank line (SSE spec)
-  printf '\n'
+  printf 'event: %s\ndata: %s\n\n' "$event_type" "$event_data"
 }
 
 # Parse room name from query string
-printf '[chat-stream] Parsing room name from query string...\n' >&2
 room_name="${QUERY_STRING:-}"
 room_name=$(printf '%s' "$room_name" | sed 's/.*room=\([^&]*\).*/\1/')
-printf '[chat-stream] After extracting: "%s"\n' "$room_name" >&2
 room_name=$(url-decode "$room_name" || printf '%s' "$room_name")
-printf '[chat-stream] After decoding: "%s"\n' "$room_name" >&2
 room_name=$(printf '%s' "$room_name" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-printf '[chat-stream] After trim: "%s"\n' "$room_name" >&2
 
-# Validate room name to prevent directory traversal
-# Allow only alphanumeric, dash, underscore, and space
-printf '[chat-stream] Validating room name...\n' >&2
+# Validate room name
 if ! printf '%s' "$room_name" | grep -q '^[a-zA-Z0-9_ -]\+$'; then
-  printf '[chat-stream] ERROR: Invalid room name: "%s"\n' "$room_name" >&2
+  printf '[chat-stream] ERROR: Invalid room name\n' >&2
   send_sse_event error "Invalid room name"
   exit 0
 fi
-printf '[chat-stream] Room name validation passed\n' >&2
 
-# Parse optional 'since' timestamp from query string
+# Parse optional 'since' timestamp
 since_timestamp=""
 if printf '%s' "${QUERY_STRING:-}" | grep -q 'since='; then
   since_timestamp=$(printf '%s' "${QUERY_STRING:-}" | sed 's/.*since=\([^&]*\).*/\1/')
@@ -123,13 +49,11 @@ if printf '%s' "${QUERY_STRING:-}" | grep -q 'since='; then
 fi
 
 if [ -z "$room_name" ]; then
-  printf '[chat-stream] ERROR: Room name is empty\n' >&2
   send_sse_event error "No room specified"
   exit 0
 fi
-printf '[chat-stream] Room name is non-empty: "%s"\n' "$room_name" >&2
 
-# Chat rooms directory - use site-specific location
+# Chat rooms directory
 if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
   site_id="$WIZARDRY_SITE_NAME"
 else
@@ -140,212 +64,63 @@ CHAT_DIR="$SITES_DIR/.sitedata/$site_id/chatrooms"
 ROOM_DIR="$CHAT_DIR/$room_name"
 LOG_FILE="$ROOM_DIR/.log"
 
-printf '[chat-stream] Directory configuration:\n' >&2
-printf '[chat-stream]   SITES_DIR: %s\n' "$SITES_DIR" >&2
-printf '[chat-stream]   site_id: %s\n' "$site_id" >&2
-printf '[chat-stream]   CHAT_DIR: %s\n' "$CHAT_DIR" >&2
-printf '[chat-stream]   ROOM_DIR: %s\n' "$ROOM_DIR" >&2
-printf '[chat-stream]   LOG_FILE: %s\n' "$LOG_FILE" >&2
+printf '[chat-stream] Room: %s, Log: %s\n' "$room_name" "$LOG_FILE" >&2
 
 if [ ! -d "$ROOM_DIR" ]; then
-  printf '[chat-stream] ERROR: Room directory does not exist\n' >&2
   send_sse_event error "Room not found"
   exit 0
 fi
-printf '[chat-stream] Room directory exists\n' >&2
 
-# Send initial batch of messages (WITHOUT padding for speed)
-printf '[chat-stream] Checking for initial messages...\n' >&2
+# Send initial batch of messages
 if [ -f "$LOG_FILE" ] && [ -s "$LOG_FILE" ]; then
-  printf '[chat-stream] Log file exists and is non-empty\n' >&2
-  # If since timestamp provided, filter messages after that timestamp
   if [ -n "$since_timestamp" ]; then
-    # Filter messages that come after the 'since' timestamp
-    # Format: [YYYY-MM-DD HH:MM:SS] username: message
-    # Compare timestamps lexicographically (works for ISO format)
-    
-    # CRITICAL: Avoid pipe subshell - use temp file so send_sse_event output reaches client
-    temp_init="/tmp/chat_stream_$$_init"
-    tail -200 "$LOG_FILE" > "$temp_init"
+    # Filter messages after 'since' timestamp
     while IFS= read -r line || [ -n "$line" ]; do
-      # Extract timestamp from line
       msg_timestamp=$(printf '%s' "$line" | sed 's/^\[\([^]]*\)\].*/\1/')
-      
-      # Use string comparison (timestamps are in sortable format)
-      # Send messages at or after the 'since' timestamp (>= comparison)
-      # POSIX-compliant: Use sort for lexicographic comparison
-      # ISO timestamps (YYYY-MM-DD HH:MM:SS) are lexicographically sortable
-      latest=$(printf '%s\n%s' "$msg_timestamp" "$since_timestamp" | sort -r | head -n1)
-      
-      # Send if msg_timestamp >= since_timestamp (includes same-second messages)
+      latest=$(printf '%s\n%s' "$msg_timestamp" "$since_timestamp" | sort | tail -1)
       if [ "$latest" = "$msg_timestamp" ]; then
-        # yes padding to force buffer flush for real-time delivery
-        send_sse_event message "$line" yes
+        send_sse_event message "$line"
       fi
-    done < "$temp_init"
-    rm -f "$temp_init"
+    done < "$LOG_FILE"
   else
-    # Send last 200 messages if no 'since' provided (without padding for speed)
-    # CRITICAL: Avoid pipe subshell - use temp file so send_sse_event output reaches client
-    temp_init="/tmp/chat_stream_$$_init"
-    tail -200 "$LOG_FILE" > "$temp_init"
-    while IFS= read -r line || [ -n "$line" ]; do
-      send_sse_event message "$line" no  # no padding for initial batch
-    done < "$temp_init"
-    rm -f "$temp_init"
+    # Send last 50 messages
+    tail -50 "$LOG_FILE" 2>/dev/null | while IFS= read -r line; do
+      send_sse_event message "$line"
+    done
   fi
-  
-  # Record the last line count for tracking new messages
-  last_line_count=$(wc -l < "$LOG_FILE" 2>/dev/null || echo "0")
-  printf '[chat-stream] Sent initial messages (last_line_count=%s)\n' "$last_line_count" >&2
-else
-  # No messages yet
-  printf '[chat-stream] No log file or empty, sending empty event\n' >&2
-  send_sse_event empty "No messages yet" no
-  last_line_count=0
 fi
 
-# Function to escape JSON strings
-json_escape() {
-  # Escape backslashes, quotes, and control characters for JSON
-  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g; s/	/\\t/g' | tr '\n' ' ' | sed 's/ *$//'
-}
+# Send initial members list
+if [ -f "$ROOM_DIR/.members" ]; then
+  members_json=$(cat "$ROOM_DIR/.members" 2>/dev/null || printf '[]')
+  send_sse_event members "$members_json"
+fi
 
-# Function to get current member list as JSON
-get_member_list() {
-  room_dir="$1"
-  printf '['
-  first=1
-  for avatar_dir in "$room_dir"/.*; do
-    [ -d "$avatar_dir" ] || continue
-    avatar_name=$(basename "$avatar_dir")
-    
-    # Skip . and .. and .log
-    case "$avatar_name" in
-      .|..|.log) continue ;;
-    esac
-    
-    # Check if it's a web avatar
-    is_web="false"
-    if get-attribute "user.web_avatar" "$avatar_dir" >/dev/null 2>&1; then
-      is_web="true"
-    fi
-    
-    # Remove leading dot from username and escape for JSON
-    username=$(printf '%s' "$avatar_name" | sed 's/^\.//')
-    username_escaped=$(json_escape "$username")
-    
-    if [ "$first" -eq 1 ]; then
-      first=0
-    else
-      printf ', '
-    fi
-    
-    printf '{"username": "%s", "is_web": %s}' "$username_escaped" "$is_web"
-  done
-  printf ']'
-}
+printf '[chat-stream] Initial messages sent, starting tail -f...\n' >&2
 
-# Send initial member list (WITHOUT padding for speed)
-printf '[chat-stream] Getting initial member list...\n' >&2
-initial_members=$(get_member_list "$ROOM_DIR")
-printf '[chat-stream] Initial members: %s\n' "$initial_members" >&2
-send_sse_event members "$initial_members" no  # no padding for initial load
-last_members="$initial_members"
-printf '[chat-stream] Sent initial member list\n' >&2
+# Use tail -f to watch for new messages in real-time
+# tail -f uses kqueue (macOS) / inotify (Linux) for immediate notification
+# No polling delay - messages appear within milliseconds
+tail -f "$LOG_FILE" 2>/dev/null | while IFS= read -r line; do
+  send_sse_event message "$line"
+done &
+tail_pid=$!
 
-# Keep connection alive and stream new messages and member updates
-# Poll the log file and room directory for changes every 1 second
-# Exit if output fails (client disconnected)
-heartbeat_counter=0
-max_idle_time=300  # Exit after 5 minutes of no activity (5 min = 300 seconds)
-idle_counter=0
-loop_count=0
-
-printf '[chat-stream] ===== ENTERING MAIN LOOP =====\n' >&2
-
+# Watch members file for changes
 while true; do
-  sleep 1
-  loop_count=$((loop_count + 1))
-  
-  # Log every 10 iterations
-  if [ $((loop_count % 10)) -eq 0 ]; then
-    log_msg="Loop iteration $loop_count (idle=$idle_counter, heartbeat=$heartbeat_counter)"
-    printf '[chat-stream] %s\n' "$log_msg" >&2
+  sleep 2
+  if [ -f "$ROOM_DIR/.members" ]; then
+    members_json=$(cat "$ROOM_DIR/.members" 2>/dev/null || printf '[]')
+    send_sse_event members "$members_json"
   fi
   
-  # Check if log file has new lines (handle room deletion gracefully)
-  if [ ! -f "$LOG_FILE" ]; then
-    printf '[chat-stream] Log file deleted (room removed), exiting gracefully\n' >&2
+  # Check if room still exists
+  if [ ! -d "$ROOM_DIR" ]; then
+    printf '[chat-stream] Room deleted, exiting\n' >&2
+    kill $tail_pid 2>/dev/null || true
     exit 0
   fi
   
-  if [ -f "$LOG_FILE" ]; then
-    current_line_count=$(wc -l < "$LOG_FILE" 2>/dev/null || echo "0")
-    
-    if [ "$current_line_count" -gt "$last_line_count" ]; then
-      # New messages available - send them WITH padding to force flush
-      new_message_count=$((current_line_count - last_line_count))
-      timestamp_detect=$(date '+%Y-%m-%d %H:%M:%S.%N' | cut -c1-23)
-      printf '[chat-stream] [%s] DETECTED %d new messages (line count: %d -> %d)\n' "$timestamp_detect" "$new_message_count" "$last_line_count" "$current_line_count" >&2
-      
-      # CRITICAL: Avoid pipe subshell - use temp file so send_sse_event output reaches client
-      temp_msgs="/tmp/chat_stream_$$_new"
-      tail -n "$new_message_count" "$LOG_FILE" > "$temp_msgs"
-      while IFS= read -r line || [ -n "$line" ]; do
-        timestamp_before=$(date '+%Y-%m-%d %H:%M:%S.%N' | cut -c1-23)
-        printf '[chat-stream] [%s] SENDING message: %s\n' "$timestamp_before" "$line" >&2
-        
-        send_sse_event message "$line" yes || exit 0  # WITH padding for ongoing events
-        
-        timestamp_after=$(date '+%Y-%m-%d %H:%M:%S.%N' | cut -c1-23)
-        printf '[chat-stream] [%s] SENT (after send_sse_event returned)\n' "$timestamp_after" >&2
-        
-        # If using dd flush (no stdbuf), send flush trigger after each message
-        if [ "$USE_DD_FLUSH" = "yes" ]; then
-          # Send SSE comment to push previous event out of buffer
-          # The act of writing this triggers flush of buffered content
-          printf ': flush\n\n'
-        fi
-      done < "$temp_msgs"
-      rm -f "$temp_msgs"
-      
-      last_line_count=$current_line_count
-      heartbeat_counter=0  # Reset heartbeat counter
-      idle_counter=0  # Reset idle counter
-    else
-      idle_counter=$((idle_counter + 1))
-    fi
-  else
-    idle_counter=$((idle_counter + 1))
-  fi
-  
-  # Check for member list changes
-  current_members=$(get_member_list "$ROOM_DIR")
-  if [ "$current_members" != "$last_members" ]; then
-    printf '[chat-stream] Member list changed\n' >&2
-    send_sse_event members "$current_members" yes || exit 0  # WITH padding for ongoing updates
-    last_members="$current_members"
-    idle_counter=0  # Reset idle counter
-  fi
-  
-  # Exit if idle for too long
-  if [ "$idle_counter" -ge "$max_idle_time" ]; then
-    printf '[chat-stream] Idle timeout reached (%d seconds), exiting\n' "$idle_counter" >&2
-    exit 0
-  fi
-  
-  # Send heartbeat every 45 seconds (just to keep connection alive, not for flushing)
-  # Actual events have padding for flushing - heartbeats don't need it
-  heartbeat_counter=$((heartbeat_counter + 1))
-  if [ "$heartbeat_counter" -ge 45 ]; then
-    printf '[chat-stream] Sending keepalive heartbeat (no padding)\n' >&2
-    # Simple heartbeat without padding - just keeps HTTP connection alive
-    if ! printf ': keepalive\n\n'; then
-      # Output failed - client disconnected
-      printf '[chat-stream] Heartbeat failed (broken pipe), exiting\n' >&2
-      exit 0
-    fi
-    heartbeat_counter=0
-  fi
+  # Send periodic comment to keep connection alive
+  printf ': keepalive\n\n'
 done

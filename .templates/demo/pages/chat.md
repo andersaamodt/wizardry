@@ -87,12 +87,11 @@ This chat system uses the **same message format as the MUD `say` command**, maki
 ---
 
 <script>
-// Chat UI Version: 2026-01-31-v29-AUTO-PATH
-// Server: chat-stream v26-DIAGNOSTICS with detailed timing
-console.log('[Chat] Version: 2026-01-31-v29-AUTO-PATH');
-console.log('[Chat] Server: chat-stream v26-DIAGNOSTICS');
-console.log('[Chat] Install coreutils via web-wizardry-menu');
-console.log('[Chat] PATH automatically configured on install');
+// Chat UI Version: 2026-01-31-v30-TAIL-F
+// Server: chat-stream v30-TAIL-F using tail -f for real-time delivery
+console.log('[Chat] Version: 2026-01-31-v30-TAIL-F');
+console.log('[Chat] Server: chat-stream v30-TAIL-F');
+console.log('[Chat] Real-time delivery using tail -f (no polling delay)');
 
 // Generate a random guest name
 function generateGuestName() {

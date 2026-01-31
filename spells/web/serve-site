@@ -66,26 +66,8 @@ if has fcgiwrap; then
     FCGIWRAP_WORKERS="${FCGIWRAP_WORKERS:-10}"
     
     step "Starting fcgiwrap with $FCGIWRAP_WORKERS workers..."
-    
-    # CRITICAL: Unbuffer fcgiwrap's output to nginx for real-time SSE
-    # Without this, fcgiwrap buffers CGI output causing "one message behind" in SSE
-    # Even though chat-stream uses stdbuf internally, fcgiwrap adds another layer of buffering
-    
-    if command -v stdbuf >/dev/null 2>&1; then
-      # Linux/GNU: Use stdbuf (preferred method)
-      info "Using stdbuf for unbuffered fcgiwrap output (fixes SSE buffering)"
-      stdbuf -o0 fcgiwrap -c "$FCGIWRAP_WORKERS" -s "unix:$FCGI_SOCK" &
-    elif command -v script >/dev/null 2>&1; then
-      # macOS/BSD: Use script to create pty (forces unbuffered I/O)
-      info "Using script (pty) for unbuffered fcgiwrap output (fixes SSE buffering)"
-      # script creates a pseudo-terminal which forces unbuffered I/O
-      # -q = quiet (no startup message), /dev/null = no output file
-      script -q /dev/null fcgiwrap -c "$FCGIWRAP_WORKERS" -s "unix:$FCGI_SOCK" &
-    else
-      warn "No unbuffer tool available (stdbuf/script) - SSE will have delayed delivery"
-      warn "Install coreutils for stdbuf, or messages will appear one-behind"
-      fcgiwrap -c "$FCGIWRAP_WORKERS" -s "unix:$FCGI_SOCK" &
-    fi
+    info "chat-stream now uses tail -f for real-time delivery (no buffering issues)"
+    fcgiwrap -c "$FCGIWRAP_WORKERS" -s "unix:$FCGI_SOCK" &
     
     fcgi_pid=$!
     printf '%s\n' "$fcgi_pid" > "$SITE_DIR/nginx/fcgiwrap.pid"
