@@ -1,0 +1,8 @@
+#!/bin/sh
+# http-ok-html - output standard HTTP 200 OK response headers for HTML
+# Combines http-status 200 + Content-Type: text/html + http-end-headers
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/html"
+http-end-headers

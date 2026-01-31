@@ -1,0 +1,9 @@
+#!/bin/sh
+# html-div CLASS CONTENT - generate HTML div with class and content
+# Example: html-div "demo-result" "<p>Hello</p>" → <div class="demo-result"><p>Hello</p></div>
+set -eu
+
+class_name="${1:-}"
+content="${2:-}"
+
+printf '<div class="%s">%s</div>\n' "$class_name" "$content"

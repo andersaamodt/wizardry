@@ -1,0 +1,24 @@
+#!/bin/sh
+# get-site-data-dir [SUBDIR] - get site-specific data directory path
+# Uses WIZARDRY_SITE_NAME and WIZARDRY_SITES_DIR environment variables
+# Example: get-site-data-dir "uploads" → /home/user/sites/.sitedata/mysite/uploads
+set -eu
+
+subdir="${1:-}"
+
+# Get site identifier from env or default
+if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
+  site_id="$WIZARDRY_SITE_NAME"
+else
+  site_id="default"
+fi
+
+# Get sites directory from env or default
+SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
+
+# Build path
+if [ -n "$subdir" ]; then
+  printf '%s/.sitedata/%s/%s' "$SITES_DIR" "$site_id" "$subdir"
+else
+  printf '%s/.sitedata/%s' "$SITES_DIR" "$site_id"
+fi
