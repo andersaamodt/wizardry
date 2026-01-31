@@ -157,3 +157,15 @@
 - Adding heartbeat/comment events immediately after message events attempts to force flush but may fail if both events are buffered together as one unit.
 - SSE over CGI requires defeating multiple independent buffering layers; fixing one layer (e.g., fcgiwrap) doesn't solve others (e.g., file system).
 - When all flush attempts fail, the buffering may be happening outside CGI script control (nginx config, fcgiwrap startup flags, OS settings).
+- File descriptor redirection avoids subshell buffering in POSIX shell - `exec 3< fifo; while read <&3` keeps loop in main shell, unlike pipes which create subshells.
+- 32KB padding forces fcgiwrap/nginx buffer overflow for instant SSE delivery - Buffer size must exceed fcgiwrap (~8KB) + nginx (~16-32KB) = minimum 32KB total.
+- Flush placement matters: padding BEFORE event is more reliable than after - Pre-flush primes buffers for immediate event delivery.
+- SSE comment padding is protocol-compliant, not a hack - `: comment` is valid SSE syntax, browsers ignore, zero client overhead.
+- Avatar directories are single source of truth for membership - No redundant .members file, use chat-list-avatars imp to scan directories on-demand.
+- Room directory mtime detects avatar joins/leaves without polling files - stat() room directory, mtime changes when avatar directory added/removed.
+- True event-driven SSE is possible in pure POSIX shell using tail -f + file descriptors - Contrary to initial assumptions, FD redirection avoids subshell creation.
+- Always test assumptions about subshells empirically - What "should" create a subshell may not in practice.
+- When debugging buffering, look for next message triggering previous delivery - Classic sign of buffer waiting for flush trigger.
+- fcgiwrap/nginx/browser is a multi-layer buffering chain - Must exceed ALL buffer sizes combined, not individual layers.
+- Shell file append (`>>`) buffers output until script exits - Wrap writes in subshell `(printf >> file)` to force immediate buffer flush for tail -f visibility.
+- 4KB padding works for SSE despite smaller than total buffer size - Write sequence (padding + event + padding) triggers flush mechanism, not just overflow.
