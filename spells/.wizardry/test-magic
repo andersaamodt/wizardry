@@ -1,5 +1,5 @@
 #!/bin/sh
-# Level-based test runner - tests spells by wizardry level (0-27)
+# Level-based test runner - tests spells by wizardry level (0-28)
 #
 # PREREQUISITE: Source invoke-wizardry before running test-magic
 # Like all wizardry spells, test-magic assumes invoke-wizardry is already loaded.
@@ -28,7 +28,7 @@ Usage: test-magic [LEVEL] [OPTIONS]
 Execute behavior-driven shell tests organized by spell level.
 
 Arguments:
-  LEVEL                 Test through level N (0-27, default: 27)
+  LEVEL                 Test through level N (0-28, default: 28)
                         Note: Level 0 = Common Tests (common-tests.sh)
   all                   Test all available levels
 
@@ -38,7 +38,7 @@ Options:
 
 
 Examples:
-  test-magic            # Test all levels (common-tests + 0-27)
+  test-magic            # Test all levels (common-tests + 0-28)
   test-magic 5          # Test levels 0-5 (common-tests + spells 0-5)
   test-magic 0-1        # Test common-tests + levels 0-1
 
@@ -102,8 +102,8 @@ if [ -d "$root_dir/spells/.imps" ]; then
 fi
 
 # Parse arguments
-target_level=27
-max_level=27
+target_level=28
+max_level=28
 min_level_range=0
 only_this_level=0
 verbose=0
@@ -152,7 +152,7 @@ Usage: test-magic [LEVEL] [OPTIONS]
 Execute behavior-driven shell tests organized by spell level.
 
 Arguments:
-  LEVEL                 Test through level N (0-27, default: 27)
+  LEVEL                 Test through level N (0-28, default: 28)
   RANGE                 Test range of levels (e.g., 4-6) with --only implied
   all                   Test all available levels
 
@@ -188,7 +188,7 @@ Usage: test-magic [LEVEL] [OPTIONS]
 Execute behavior-driven shell tests organized by spell level.
 
 Arguments:
-  LEVEL                 Test through level N (0-27, default: 27)
+  LEVEL                 Test through level N (0-28, default: 28)
   RANGE                 Test range of levels (e.g., 4-6) with --only implied
   all                   Test all available levels
 
