@@ -1,7 +1,7 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (v2.2-1KB-TEST)
+# chat-stream - SSE endpoint for real-time chat messages (v2.3-2KB-TEST)
 # True event-driven SSE using tail -f + file descriptor (no polling, 0ms detection)
-# Testing 1KB padding (97% bandwidth reduction from original 48KB!)
+# Testing 2KB padding (middle ground between 4KB and 1KB)
 # Uses avatar directories as single source of truth (no redundant .members file)
 
 set -eu
@@ -13,24 +13,24 @@ printf 'Cache-Control: no-cache\r\n'
 printf 'Connection: keep-alive\r\n'
 printf '\r\n'
 
-# Initial 1KB padding to force fcgiwrap buffer flush (testing extreme bandwidth optimization)
+# Initial 2KB padding to force fcgiwrap buffer flush (testing middle ground)
 printf ': '
 i=0
-while [ $i -lt 125 ]; do
+while [ $i -lt 250 ]; do
   printf '........'
   i=$((i + 1))
 done
 printf '\n\n'
 
-# SSE event sender with 1KB padding for immediate delivery (testing if sequence > size)
+# SSE event sender with 2KB padding for immediate delivery
 send_sse_event() {
   event_type="$1"
   event_data="$2"
   
-  # FLUSH BEFORE: 1KB padding (testing if sequence matters more than size)
+  # FLUSH BEFORE: 2KB padding (middle ground between 4KB and 1KB)
   printf ': '
   i=0
-  while [ $i -lt 125 ]; do
+  while [ $i -lt 250 ]; do
     printf '........'
     i=$((i + 1))
   done
@@ -39,10 +39,10 @@ send_sse_event() {
   # Event data
   printf 'event: %s\ndata: %s\n\n' "$event_type" "$event_data"
   
-  # 1KB padding after event (testing 97% reduction from original!)
+  # 2KB padding after event
   printf ': '
   i=0
-  while [ $i -lt 125 ]; do
+  while [ $i -lt 250 ]; do
     printf '........'
     i=$((i + 1))
   done
@@ -156,7 +156,7 @@ keepalive_pid=$!
     if [ -d "$ROOM_DIR" ]; then
       current_room_mtime=$(stat -f %m "$ROOM_DIR" 2>/dev/null || stat -c %Y "$ROOM_DIR" 2>/dev/null || echo 0)
       if [ "$current_room_mtime" != "$last_room_mtime" ] && [ "$current_room_mtime" != "0" ]; then
-        members_json=$(QUERY_STRING="room=$room_name" chat-list-avatars 2>/dev/null || echo '{"avatars":[]}')
+        members_json=$(QUERY_STRING="room=$room" chat-list-avatars 2>/dev/null || echo '{"avatars":[]}')
         send_sse_event members "$members_json"
         last_room_mtime=$current_room_mtime
       fi
