@@ -445,6 +445,7 @@ function setupMessageStream(roomName) {
   
   // Handle member list updates
   window.messageEventSource.addEventListener('members', function(event) {
+    console.log('[SSE] Received members event:', event.data);
     // Event data is JSON array of members
     updateMemberList(event.data);
   });
@@ -491,9 +492,12 @@ function setupMessageStream(roomName) {
 
 // Update member list from SSE data
 function updateMemberList(jsonData) {
+  console.log('[updateMemberList] Called with data:', jsonData);
   try {
     var data = JSON.parse(jsonData);
+    console.log('[updateMemberList] Parsed data:', data);
     var avatars = data.avatars || [];
+    console.log('[updateMemberList] Avatars array:', avatars, 'Count:', avatars.length);
     
     var membersList = document.getElementById('members-list');
     var memberCount = document.getElementById('member-count');
@@ -506,6 +510,7 @@ function updateMemberList(jsonData) {
     }
     
     var count = avatars.length;
+    console.log('[updateMemberList] Setting count to:', count);
     
     if (count === 0) {
       membersList.innerHTML = '<p style="color: #666; font-style: italic;">No members</p>';
@@ -533,10 +538,13 @@ function updateMemberList(jsonData) {
     
     // Update button visibility based on member count
     // Show delete button when 1 or fewer members, members button when more than 1
+    console.log('[updateMemberList] Updating buttons based on count:', count);
     if (count <= 1) {
+      console.log('[updateMemberList] Showing DELETE button, hiding MEMBERS button');
       if (deleteBtn) deleteBtn.style.display = 'inline-block';
       if (membersBtn) membersBtn.style.display = 'none';
     } else {
+      console.log('[updateMemberList] Hiding DELETE button, showing MEMBERS button');
       if (deleteBtn) deleteBtn.style.display = 'none';
       if (membersBtn) membersBtn.style.display = 'inline-flex';
     }
