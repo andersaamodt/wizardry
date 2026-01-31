@@ -60,9 +60,10 @@ else
 <div id="chat-messages" class="chat-display">
 HTML
   
-  # Build list of web avatars by checking xattr
+  # Build list of MUD avatars (those WITHOUT web_avatar xattr)
   # This is done once before AWK processing for efficiency
-  web_users=""
+  # Default to Verdana for web users (majority); monospace only for active MUD users
+  mud_users=""
   for avatar_dir in "$ROOM_DIR"/.*; do
     [ -d "$avatar_dir" ] || continue
     avatar_name=$(basename "$avatar_dir")
@@ -72,17 +73,17 @@ HTML
       .|..|.log) continue ;;
     esac
     
-    # Check if it's a web avatar
-    if get-attribute "user.web_avatar" "$avatar_dir" >/dev/null 2>&1; then
+    # Check if it's NOT a web avatar (i.e., a MUD avatar)
+    if ! get-attribute "user.web_avatar" "$avatar_dir" >/dev/null 2>&1; then
       # Remove leading dot from username
       username=$(printf '%s' "$avatar_name" | sed 's/^\.//')
-      web_users="$web_users:$username:"
+      mud_users="$mud_users:$username:"
     fi
   done
   
   # Display last 200 messages using AWK for performance
   # AWK processes all messages much faster than shell loops
-  tail -200 "$LOG_FILE" | awk -v web_users="$web_users" '
+  tail -200 "$LOG_FILE" | awk -v mud_users="$mud_users" '
     function html_escape(str) {
       gsub(/&/, "\\&amp;", str)
       gsub(/</, "\\&lt;", str)
@@ -144,10 +145,11 @@ HTML
           hue = hash_username(username)
           color = sprintf("hsl(%d, 70%%, 35%%)", hue)
           
-          # Determine font based on whether user is web user
-          # Check if username is in web_users list (format ":username:")
-          is_web = index(web_users, ":" username ":")
-          font_family = is_web ? "Verdana, sans-serif" : "Courier New, Courier, monospace"
+          # Determine font based on whether user is MUD user
+          # Default to Verdana (web users are majority); monospace only for active MUD users
+          # Check if username is in mud_users list (format ":username:")
+          is_mud = index(mud_users, ":" username ":")
+          font_family = is_mud ? "Courier New, Courier, monospace" : "Verdana, sans-serif"
           
           # Output with timestamp in bottom-right corner, include full timestamp as data attribute
           printf "  <div class=\"chat-msg\" style=\"font-family: %s;\"><span class=\"username\" style=\"color: %s; font-weight: bold;\">%s:</span> %s<span class=\"timestamp\" data-full-timestamp=\"%s\" title=\"%s\">%s</span></div>\n", \
