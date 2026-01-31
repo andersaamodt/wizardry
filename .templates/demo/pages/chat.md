@@ -87,11 +87,11 @@ This chat system uses the **same message format as the MUD `say` command**, maki
 ---
 
 <script>
-// Chat UI Version: 2026-01-31-v26-DIAGNOSTICS
+// Chat UI Version: 2026-01-31-v27-SCRIPT-PTY
 // Server: chat-stream v26-DIAGNOSTICS with detailed timing
-console.log('[Chat] Version: 2026-01-31-v26-DIAGNOSTICS');
+console.log('[Chat] Version: 2026-01-31-v27-SCRIPT-PTY');
 console.log('[Chat] Server: chat-stream v26-DIAGNOSTICS');
-console.log('[Chat] Enhanced nginx config: fastcgi_keep_conn, gzip off, multiple buffer disables');
+console.log('[Chat] macOS fix: Using script (pty) to unbuffer fcgiwrap');
 console.log('[Chat] Check server error log for detailed message timing');
 
 // Generate a random guest name

@@ -31,13 +31,17 @@ echo "SSE Buffering Diagnostic for: $site_name"
 echo "======================================================================"
 echo ""
 
-# Check 1: stdbuf availability
-echo "CHECK 1: stdbuf availability"
+# Check 1: stdbuf/script availability
+echo "CHECK 1: Unbuffering tools availability"
 if command -v stdbuf >/dev/null 2>&1; then
-  echo "  ✓ stdbuf is available"
+  echo "  ✓ stdbuf is available (Linux/GNU)"
   stdbuf --version 2>&1 | head -1
+elif command -v script >/dev/null 2>&1; then
+  echo "  ✓ script command is available (macOS/BSD - uses pty for unbuffering)"
+  echo "    This will be used to unbuffer fcgiwrap"
 else
-  echo "  ✗ stdbuf NOT available (buffering workarounds needed)"
+  echo "  ✗ Neither stdbuf nor script available"
+  echo "    SSE will be buffered - install coreutils for stdbuf"
 fi
 echo ""
 
@@ -48,13 +52,17 @@ if [ -f "$SITE_DIR/nginx/fcgiwrap.pid" ]; then
   if kill -0 "$fcgi_pid" 2>/dev/null; then
     echo "  ✓ fcgiwrap running (PID: $fcgi_pid)"
     
-    # Check if running with stdbuf
-    if ps -p "$fcgi_pid" -o command= 2>/dev/null | grep -q stdbuf; then
-      echo "  ✓ fcgiwrap started WITH stdbuf (unbuffered)"
-      ps -p "$fcgi_pid" -o command=
+    # Check if running with stdbuf or script
+    cmd=$(ps -p "$fcgi_pid" -o command= 2>/dev/null || echo "")
+    if echo "$cmd" | grep -q stdbuf; then
+      echo "  ✓ fcgiwrap started WITH stdbuf (unbuffered - Linux/GNU)"
+      echo "    Command: $cmd"
+    elif echo "$cmd" | grep -q "script.*fcgiwrap"; then
+      echo "  ✓ fcgiwrap started WITH script/pty (unbuffered - macOS/BSD)"
+      echo "    Command: $cmd"
     else
-      echo "  ✗ fcgiwrap started WITHOUT stdbuf (BUFFERED!)"
-      echo "    Command: $(ps -p "$fcgi_pid" -o command= 2>/dev/null)"
+      echo "  ✗ fcgiwrap started WITHOUT unbuffering (BUFFERED!)"
+      echo "    Command: $cmd"
       echo "    FIX: Stop and restart web server"
     fi
   else
@@ -135,12 +143,15 @@ echo "SUMMARY"
 echo "======================================================================"
 echo ""
 echo "For SSE to work without buffering delays, ALL must be true:"
-echo "  1. stdbuf available OR massive padding in use"
-echo "  2. fcgiwrap started with 'stdbuf -o0 fcgiwrap ...'"
-echo "  3. nginx config has 'fastcgi_buffering off'"
-echo "  4. chat-stream uses stdbuf internally"
+echo "  1. stdbuf OR script command available (for unbuffering)"
+echo "  2. fcgiwrap started with unbuffering (stdbuf or script)"
+echo "  3. nginx config has required settings (fastcgi_buffering off, etc)"
+echo "  4. chat-stream uses internal unbuffering"
 echo ""
 echo "If any check failed, restart the web server:"
 echo "  web-stop-site $site_name"
 echo "  web-serve-site $site_name"
+echo ""
+echo "macOS users: 'script' command creates a pty for unbuffering"
+echo "Linux users: 'stdbuf' directly unbuffers output"
 echo ""
