@@ -532,11 +532,13 @@ function updateMemberList(jsonData) {
     }
     
     // Update button visibility based on member count
-    if (membersBtn) {
-      membersBtn.style.display = (count > 0) ? 'flex' : 'none';
-    }
-    if (deleteBtn) {
-      deleteBtn.style.display = (count === 0) ? 'inline-block' : 'none';
+    // Show delete button when 1 or fewer members, members button when more than 1
+    if (count <= 1) {
+      if (deleteBtn) deleteBtn.style.display = 'inline-block';
+      if (membersBtn) membersBtn.style.display = 'none';
+    } else {
+      if (deleteBtn) deleteBtn.style.display = 'none';
+      if (membersBtn) membersBtn.style.display = 'inline-flex';
     }
   } catch (e) {
     console.error('Error parsing member data:', e);
