@@ -195,18 +195,9 @@ function joinRoom(roomName) {
   
   // Members button visibility will be controlled by loadMembers based on member count
   
-  // Move or create avatar for this user
+  // Store current username and previous room for avatar creation later
   var currentUsername = getUsername();
   var previousRoom = localStorage.getItem('previousRoom') || '';
-  
-  
-  if (previousRoom && previousRoom !== roomName) {
-    // Move avatar from previous room to new room
-    moveAvatar(roomName, currentUsername, previousRoom);
-  } else {
-    // Create new avatar (first join or rejoining same room)
-    createAvatar(roomName, currentUsername);
-  }
   
   // Store current room as previous room for next switch
   localStorage.setItem('previousRoom', roomName);
@@ -254,6 +245,19 @@ function joinRoom(roomName) {
   // Then load message history via GET
   // Any overlap between SSE and history will be deduplicated by appendMessage
   loadMessages();
+  
+  // CRITICAL: Create/move avatar AFTER SSE connection is established
+  // This ensures SSE catches the join message and member update events
+  // Wait a brief moment to ensure SSE connection is established
+  setTimeout(function() {
+    if (previousRoom && previousRoom !== roomName) {
+      // Move avatar from previous room to new room
+      moveAvatar(roomName, currentUsername, previousRoom);
+    } else {
+      // Create new avatar (first join or rejoining same room)
+      createAvatar(roomName, currentUsername);
+    }
+  }, 100);
 }
 
 // Load messages for current room
