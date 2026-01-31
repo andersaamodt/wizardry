@@ -42,7 +42,7 @@ HTML
   exit 0
 fi
 
-# Run cleanup when viewing room (removes inactive avatars >5 min old)
+# Run cleanup when viewing room (removes inactive avatars >30 min old)
 chat-cleanup-inactive-avatars "$ROOM_DIR" 2>/dev/null || true
 
 # Read messages from .log file (same format as MUD 'say' command)
