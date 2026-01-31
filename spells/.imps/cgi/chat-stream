@@ -147,7 +147,7 @@ while true; do
   
   # Send keepalive every 5 seconds (50 polls × 0.1s)
   if [ $((poll_count % 50)) -eq 0 ]; then
-    send_sse_event empty "keepalive"
+    send_sse_event ping "keepalive"
   fi
   
   # Check if room still exists
