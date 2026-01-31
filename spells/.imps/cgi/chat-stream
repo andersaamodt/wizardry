@@ -66,7 +66,7 @@ room="${room:-General}"
 
 # Validate room name to prevent path traversal
 if ! validate-room-name "$room"; then
-  send_sse_event error "Invalid room name"
+  sse-error 400 "Invalid room name"
   exit 1
 fi
 
@@ -77,7 +77,7 @@ LOG_FILE="$ROOM_DIR/.log"
 
 # Verify room exists
 if [ ! -f "$LOG_FILE" ]; then
-  send_sse_event error "Room not found"
+  sse-error 404 "Room not found"
   exit 1
 fi
 
@@ -112,7 +112,10 @@ last_room_mtime=0
 
 # Create FIFO for tail output
 fifo="/tmp/chat_stream_$$_fifo"
-mkfifo "$fifo" || exit 1
+mkfifo "$fifo" || {
+  sse-error 500 "Failed to create communication channel"
+  exit 1
+}
 
 # Cleanup function
 cleanup() {
@@ -121,6 +124,7 @@ cleanup() {
   kill $keepalive_pid 2>/dev/null || true
   kill $membership_pid 2>/dev/null || true
   kill $timeout_pid 2>/dev/null || true
+  kill $health_pid 2>/dev/null || true
   rm -f "$fifo"
   exit
 }
@@ -130,6 +134,28 @@ trap cleanup INT TERM EXIT
 # Start tail -f writing to FIFO (background, starts from end)
 tail -f -n 0 "$LOG_FILE" > "$fifo" &
 tail_pid=$!
+
+# Verify tail started successfully
+sleep 0.1
+if ! kill -0 $tail_pid 2>/dev/null; then
+  sse-error 500 "Failed to monitor chat log"
+  exit 1
+fi
+
+# Background subprocess health monitor
+# Detects if critical subprocesses die unexpectedly
+(
+  while true; do
+    sleep 10
+    # Check if tail process is still running
+    if ! kill -0 $tail_pid 2>/dev/null; then
+      send_sse_event error "Stream monitor failed - please reconnect"
+      kill $$ 2>/dev/null || true
+      exit 1
+    fi
+  done
+) &
+health_pid=$!
 
 # Background keepalive monitor with health check
 (
