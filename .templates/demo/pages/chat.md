@@ -485,16 +485,11 @@ function setupMessageStream(roomName) {
   });
   console.log('[SSE] Added "error" event listener');
   
-  // Handle empty room
-  window.messageEventSource.addEventListener('empty', function(event) {
-    console.log('[SSE] Received empty event');
-    // Room is empty - show empty state message
-    var chatMessagesDiv = document.getElementById('chat-messages');
-    if (chatMessagesDiv) {
-      chatMessagesDiv.innerHTML = '<p class="empty-state-message">No messages yet. Be the first to say something!</p>';
-    }
+  // Optional: Handle ping/keepalive events (currently just ignore them)
+  window.messageEventSource.addEventListener('ping', function(event) {
+    console.log('[SSE] Received ping/keepalive');
   });
-  console.log('[SSE] Added "empty" event listener');
+  console.log('[SSE] Added "ping" event listener');
   console.log('[SSE] All event listeners added, waiting for events...');
   
   // Add a timeout warning if no events received after 5 seconds
