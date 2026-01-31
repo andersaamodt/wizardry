@@ -147,22 +147,59 @@ tail_pid=$!
 ) &
 keepalive_pid=$!
 
-# Background membership monitor (tracks room directory changes)
-# NOTE: last_room_mtime persists in subshell memory for connection
+# Background membership monitor (tracks changes in member list)
+# Uses sorted member names as signature to detect ANY membership change,
+# including simultaneous join/leave (where count stays same but members change)
 (
-  last_room_mtime=0  # Starts at 0, first check will trigger update
+  last_member_signature=""  # Start empty to force initial update
   while true; do
     sleep 2
     if [ -d "$ROOM_DIR" ]; then
-      # Get room mtime (split for lint - max 100 chars per line)
-      room_stat=$(stat -f %m "$ROOM_DIR" 2>/dev/null || stat -c %Y "$ROOM_DIR" 2>/dev/null)
-      current_room_mtime=${room_stat:-0}
-      if [ "$current_room_mtime" != "$last_room_mtime" ] && [ "$current_room_mtime" != "0" ]; then
-        # Get member list from avatar directories
+      # Build membership signature from sorted avatar directory names
+      # This catches count changes AND member changes with same count
+      member_list=""
+      current_member_count=0
+      for avatar_dir in "$ROOM_DIR"/.*; do
+        [ -d "$avatar_dir" ] || continue
+        avatar_name=$(basename "$avatar_dir")
+        case "$avatar_name" in
+          .|..|.log) continue ;;
+        esac
+        member_list="$member_list$avatar_name "
+        current_member_count=$((current_member_count + 1))
+      done
+      
+      # Sort names for consistent comparison (handles join/leave order)
+      current_member_signature=$(printf '%s' "$member_list" | tr ' ' '\n' | sort | tr '\n' ' ')
+      
+      # Log for debugging (to stderr so it doesn't interfere with SSE)
+      printf '[membership-monitor] Room: %s, Count: %d\n' "$room" "$current_member_count" >&2
+      
+      # Send update if membership changed (detects count OR member changes)
+      if [ "$current_member_signature" != "$last_member_signature" ]; then
+        printf '[membership-monitor] Membership changed! Sending member update\n' >&2
+        
+        # Call chat-list-avatars to get member list
+        # Requires wizardry commands in PATH (set up by serve-site)
         query="room=$room"
-        members_json=$(QUERY_STRING="$query" chat-list-avatars 2>/dev/null || echo '{"avatars":[]}')
+        members_output=$(QUERY_STRING="$query" chat-list-avatars 2>&1)
+        
+        # Strip carriage returns (HTTP uses CRLF, not just LF)
+        # This ensures blank lines are actually blank for sed matching
+        members_output=$(printf '%s' "$members_output" | tr -d '\r')
+        
+        # Extract JSON body (everything after first blank line)
+        members_json=$(printf '%s' "$members_output" | sed -n '/^$/,$ p' | tail -n +2)
+        
+        # Validate JSON
+        if [ -z "$members_json" ] || ! printf '%s' "$members_json" | grep -q '^{'; then
+          printf '[membership-monitor] Warning: chat-list-avatars failed, using empty array\n' >&2
+          printf '[membership-monitor] Output was: %s\n' "$members_output" >&2
+          members_json='{"avatars":[]}'
+        fi
+        
         send_sse_event members "$members_json"
-        last_room_mtime=$current_room_mtime
+        last_member_signature=$current_member_signature
       fi
     fi
   done

@@ -93,7 +93,7 @@ if [ -d "$OLD_AVATAR" ]; then
   }
   
   # Update last activity timestamp
-  enchant "$NEW_AVATAR" "last_activity=$(date +%s)" 2>/dev/null || true
+  enchant "$NEW_AVATAR" "last_activity=$(date +%s)" >/dev/null 2>&1 || true
   
   # Log "joined the room" in new room
   NEW_LOG="$NEW_ROOM_DIR/.log"
@@ -112,11 +112,11 @@ else
     mkdir -p "$NEW_AVATAR"
     
     # Mark as web avatar
-    enchant "$NEW_AVATAR" "web_avatar=1" 2>/dev/null || true
-    enchant "$NEW_AVATAR" "is_avatar=1" 2>/dev/null || true
+    enchant "$NEW_AVATAR" "web_avatar=1" >/dev/null 2>&1 || true
+    enchant "$NEW_AVATAR" "is_avatar=1" >/dev/null 2>&1 || true
     
     # Set last activity
-    enchant "$NEW_AVATAR" "last_activity=$(date +%s)" 2>/dev/null || true
+    enchant "$NEW_AVATAR" "last_activity=$(date +%s)" >/dev/null 2>&1 || true
     
     # Log join message
     timestamp=$(date '+%Y-%m-%d %H:%M:%S')

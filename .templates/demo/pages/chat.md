@@ -195,18 +195,9 @@ function joinRoom(roomName) {
   
   // Members button visibility will be controlled by loadMembers based on member count
   
-  // Move or create avatar for this user
+  // Get current username and previous room
   var currentUsername = getUsername();
   var previousRoom = localStorage.getItem('previousRoom') || '';
-  
-  
-  if (previousRoom && previousRoom !== roomName) {
-    // Move avatar from previous room to new room
-    moveAvatar(roomName, currentUsername, previousRoom);
-  } else {
-    // Create new avatar (first join or rejoining same room)
-    createAvatar(roomName, currentUsername);
-  }
   
   // Store current room as previous room for next switch
   localStorage.setItem('previousRoom', roomName);
@@ -247,11 +238,36 @@ function joinRoom(roomName) {
     window.messageInterval = null;
   }
   
-  // Load initial messages via GET for instant display
-  loadMessages();
+  // CRITICAL: Capture timestamp BEFORE avatar creation
+  // This ensures SSE will capture the avatar creation events
+  var joinTimestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
   
-  // Then set up SSE for real-time updates (no initial batch, just ongoing events)
-  setupMessageStream(roomName);
+  // Create/move avatar and wait for completion before setting up SSE
+  // This ensures the avatar exists and join message is logged before SSE starts
+  var avatarPromise;
+  if (previousRoom && previousRoom !== roomName) {
+    // Move avatar from previous room to new room
+    avatarPromise = moveAvatar(roomName, currentUsername, previousRoom);
+  } else {
+    // Create new avatar (first join or rejoining same room)
+    avatarPromise = createAvatar(roomName, currentUsername);
+  }
+  
+  // Wait for avatar creation to complete, then set up SSE and load history
+  avatarPromise.then(function() {
+    // Set up SSE with the timestamp from BEFORE avatar creation
+    // This ensures SSE captures the join message and member update events
+    setupMessageStream(roomName, joinTimestamp);
+    
+    // Then load message history via GET
+    // Any overlap between SSE and history will be deduplicated by appendMessage
+    loadMessages();
+  }).catch(function(err) {
+    console.error('Failed to complete avatar setup:', err);
+    // Still try to set up SSE and load messages even if avatar creation failed
+    setupMessageStream(roomName, joinTimestamp);
+    loadMessages();
+  });
 }
 
 // Load messages for current room
@@ -407,7 +423,7 @@ function setupScrollListener() {
 }
 
 // Set up Server-Sent Events for real-time message updates
-function setupMessageStream(roomName) {
+function setupMessageStream(roomName, sinceTimestamp) {
   if (!roomName) return;
   
   
@@ -417,10 +433,13 @@ function setupMessageStream(roomName) {
     window.messageEventSource = null;
   }
   
-  // Get current timestamp to only receive NEW messages (not history)
-  // History was already loaded via GET request
-  var now = new Date();
-  var sinceTimestamp = now.toISOString().replace('T', ' ').substring(0, 19);
+  // Use provided timestamp or generate current one
+  // When provided from joinRoom, this will be BEFORE avatar creation
+  // This ensures SSE captures the avatar creation events
+  if (!sinceTimestamp) {
+    var now = new Date();
+    sinceTimestamp = now.toISOString().replace('T', ' ').substring(0, 19);
+  }
   
   // Create new SSE connection with since parameter
   var url = '/cgi/chat-stream?room=' + encodeURIComponent(roomName) + '&since=' + encodeURIComponent(sinceTimestamp);
@@ -434,6 +453,7 @@ function setupMessageStream(roomName) {
   
   // Handle connection open
   window.messageEventSource.addEventListener('open', function(event) {
+    // Connection established
   });
   
   // Handle incoming messages
@@ -463,7 +483,6 @@ function setupMessageStream(roomName) {
       console.warn('[SSE] Connection CONNECTING - EventSource attempting to reconnect');
     }
   });
-  console.log('[SSE] Added "error" event listener');
   
   // Optional: Handle ping/keepalive events (currently just ignore them)
   window.messageEventSource.addEventListener('ping', function(event) {
@@ -493,7 +512,7 @@ function setupMessageStream(roomName) {
 function updateMemberList(jsonData) {
   try {
     var data = JSON.parse(jsonData);
-    var avatars = data || [];
+    var avatars = data.avatars || [];
     
     var membersList = document.getElementById('members-list');
     var memberCount = document.getElementById('member-count');
@@ -532,11 +551,13 @@ function updateMemberList(jsonData) {
     }
     
     // Update button visibility based on member count
-    if (membersBtn) {
-      membersBtn.style.display = (count > 0) ? 'flex' : 'none';
-    }
-    if (deleteBtn) {
-      deleteBtn.style.display = (count === 0) ? 'inline-block' : 'none';
+    // Show delete button when 1 or fewer members, members button when more than 1
+    if (count <= 1) {
+      if (deleteBtn) deleteBtn.style.display = 'inline-block';
+      if (membersBtn) membersBtn.style.display = 'none';
+    } else {
+      if (deleteBtn) deleteBtn.style.display = 'none';
+      if (membersBtn) membersBtn.style.display = 'inline-flex';
     }
   } catch (e) {
     console.error('Error parsing member data:', e);
@@ -562,6 +583,17 @@ function appendMessage(messageLine) {
   var username = match[2];
   var message = match[3];
   
+  // Duplicate detection: check if this exact message already exists
+  // Create a unique ID from timestamp + username + message
+  var messageId = fullTimestamp + '|' + username + '|' + message;
+  var existingMessages = chatMessagesDiv.querySelectorAll('.chat-msg, .chat-msg-system');
+  for (var i = 0; i < existingMessages.length; i++) {
+    var existingMsg = existingMessages[i];
+    if (existingMsg.dataset.messageId === messageId) {
+      return;  // Already have this message, skip duplicate
+    }
+  }
+  
   // Extract HH:MM from timestamp for display
   var displayTime = fullTimestamp.length >= 16 ? fullTimestamp.substring(11, 16) : fullTimestamp;
   
@@ -572,6 +604,7 @@ function appendMessage(messageLine) {
     
     var messageDiv = document.createElement('div');
     messageDiv.className = 'chat-msg-system';
+    messageDiv.dataset.messageId = messageId;
     messageDiv.textContent = message;
     chatMessagesDiv.appendChild(messageDiv);
     
@@ -591,6 +624,7 @@ function appendMessage(messageLine) {
     var messageDiv = document.createElement('div');
     messageDiv.className = 'chat-msg';
     messageDiv.style.fontFamily = fontFamily;
+    messageDiv.dataset.messageId = messageId;
     
     // Add username
     var usernameSpan = document.createElement('span');
@@ -674,7 +708,7 @@ function createAvatar(roomName, username) {
   var formData = 'room=' + encodeURIComponent(roomName) + 
                  '&user=' + encodeURIComponent(username);
   
-  fetch('/cgi/chat-create-avatar', {
+  return fetch('/cgi/chat-create-avatar', {
     method: 'POST',
     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
     body: formData
@@ -682,6 +716,7 @@ function createAvatar(roomName, username) {
     loadMembers();  // Refresh member list
   }).catch(function(err) {
     console.error('Failed to create avatar:', err);
+    throw err;  // Re-throw to propagate error
   });
 }
 
@@ -692,24 +727,25 @@ function moveAvatar(newRoom, username, oldRoom) {
     oldRoom: oldRoom
   });
   
-  fetch('/cgi/chat-move-avatar', {
+  return fetch('/cgi/chat-move-avatar', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: payload
   }).then(function(response) {
-    return response.json();
-  }).then(function(data) {
+    return response.text();  // Get as text first to see what we're receiving
+  }).then(function(text) {
+    var data = JSON.parse(text);
     if (data.success) {
       loadMembers();  // Refresh member list
     } else {
       console.error('Failed to move avatar:', data.error);
       // Fallback to creating new avatar
-      createAvatar(newRoom, username);
+      return createAvatar(newRoom, username);
     }
   }).catch(function(err) {
     console.error('Failed to move avatar:', err);
     // Fallback to creating new avatar
-    createAvatar(newRoom, username);
+    return createAvatar(newRoom, username);
   });
 }
 
@@ -1181,7 +1217,6 @@ window.addEventListener('beforeunload', function() {
   
   if (window.currentRoom) {
     var currentUsername = getUsername();
-    console.log('[Avatar] Deleting avatar for user:', currentUsername, 'in room:', window.currentRoom);
     // Use sendBeacon for reliable cleanup on page unload
     var formData = new URLSearchParams();
     formData.append('room', window.currentRoom);
