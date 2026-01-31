@@ -493,7 +493,7 @@ function setupMessageStream(roomName) {
 function updateMemberList(jsonData) {
   try {
     var data = JSON.parse(jsonData);
-    var avatars = data || [];
+    var avatars = data.avatars || [];
     
     var membersList = document.getElementById('members-list');
     var memberCount = document.getElementById('member-count');
