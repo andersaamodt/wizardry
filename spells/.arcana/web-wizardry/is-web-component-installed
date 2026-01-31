@@ -36,8 +36,8 @@ case "$component" in
     command -v certbot >/dev/null 2>&1 || [ -f "$HOME/.acme.sh/acme.sh" ]
     ;;
   coreutils)
-    # Assert-only: just check if core utilities are present
-    command -v readlink >/dev/null 2>&1
+    # Check for stdbuf specifically (the key utility we need for SSE)
+    command -v stdbuf >/dev/null 2>&1
     ;;
   *)
     exit 1

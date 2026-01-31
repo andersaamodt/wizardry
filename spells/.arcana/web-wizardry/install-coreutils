@@ -1,13 +1,18 @@
 #!/bin/sh
 
-# Assert that coreutils are installed.
+# Install GNU coreutils from source (includes stdbuf for unbuffered I/O).
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
 Usage: install-coreutils
 
-Checks that core utilities are present. This is assert-only - coreutils should already be installed on all systems.
+Installs GNU coreutils from source (required for stdbuf on macOS).
+
+On macOS: Builds from source and installs to ~/.local
+On Linux: Verifies system coreutils are present (usually pre-installed)
+
+stdbuf is critical for SSE unbuffering in web applications.
 USAGE
   exit 0
   ;;
@@ -18,18 +23,122 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
-# Check for essential coreutils commands
-missing=""
-for cmd in cat cp mv rm ls mkdir chmod readlink; do
-  if ! command -v "$cmd" >/dev/null 2>&1; then
-    missing="$missing $cmd"
-  fi
-done
+# Detect platform
+os_type=$(uname -s)
 
-if [ -n "$missing" ]; then
-  printf '%s\n' "install-coreutils: missing commands:$missing" >&2
-  printf '%s\n' "Coreutils should be installed by your system. Please install them manually." >&2
-  exit 1
-fi
+case "$os_type" in
+  Darwin)
+    # macOS - build GNU coreutils from source
+    step "Installing GNU coreutils from source on macOS..."
+    
+    # Check if already installed
+    if command -v stdbuf >/dev/null 2>&1; then
+      success "stdbuf already available"
+      exit 0
+    fi
+    
+    # Installation directory
+    PREFIX="${HOME}/.local"
+    COREUTILS_VERSION="9.4"
+    DOWNLOAD_URL="https://ftp.gnu.org/gnu/coreutils/coreutils-${COREUTILS_VERSION}.tar.xz"
+    
+    # Create temp directory
+    BUILD_DIR="/tmp/coreutils-build-$$"
+    mkdir -p "$BUILD_DIR"
+    
+    say "Downloading GNU coreutils ${COREUTILS_VERSION}..."
+    if has curl; then
+      curl -L -o "$BUILD_DIR/coreutils.tar.xz" "$DOWNLOAD_URL" || die "Failed to download coreutils"
+    elif has wget; then
+      wget -O "$BUILD_DIR/coreutils.tar.xz" "$DOWNLOAD_URL" || die "Failed to download coreutils"
+    else
+      die "install-coreutils: Need curl or wget to download"
+    fi
+    
+    say "Extracting source..."
+    cd "$BUILD_DIR"
+    tar -xf coreutils.tar.xz || die "Failed to extract coreutils"
+    cd "coreutils-${COREUTILS_VERSION}"
+    
+    say "Configuring (prefix: $PREFIX)..."
+    ./configure --prefix="$PREFIX" || die "Configure failed"
+    
+    say "Building (this may take a few minutes)..."
+    make || die "Build failed"
+    
+    say "Installing to $PREFIX..."
+    make install || die "Install failed"
+    
+    # Cleanup
+    cd /
+    rm -rf "$BUILD_DIR"
+    
+    # Check installation
+    if [ -f "$PREFIX/bin/stdbuf" ]; then
+      success "GNU coreutils installed to $PREFIX"
+      info "stdbuf location: $PREFIX/bin/stdbuf"
+      
+      # Check if ~/.local/bin is in PATH
+      if ! echo "$PATH" | grep -q "$PREFIX/bin"; then
+        warn "~/.local/bin is not in your PATH"
+        info "Add this to your ~/.zshrc or ~/.bash_profile:"
+        info "  export PATH=\"\$HOME/.local/bin:\$PATH\""
+        info ""
+        info "For immediate use in this session:"
+        info "  export PATH=\"$PREFIX/bin:\$PATH\""
+      fi
+      
+      success "Installation complete"
+    else
+      die "Installation completed but stdbuf not found"
+    fi
+    ;;
+    
+  Linux)
+    # Linux - coreutils should be pre-installed
+    step "Verifying coreutils on Linux..."
+    
+    # Check for essential coreutils commands including stdbuf
+    missing=""
+    for cmd in cat cp mv rm ls mkdir chmod readlink stdbuf; do
+      if ! command -v "$cmd" >/dev/null 2>&1; then
+        missing="$missing $cmd"
+      fi
+    done
+    
+    if [ -n "$missing" ]; then
+      warn "install-coreutils: missing commands:$missing"
+      info "On most Linux distributions, install with:"
+      info "  Debian/Ubuntu: sudo apt-get install coreutils"
+      info "  RHEL/CentOS: sudo yum install coreutils"
+      info "  Arch: sudo pacman -S coreutils"
+      exit 1
+    fi
+    
+    success "Coreutils (including stdbuf) are installed"
+    ;;
+    
+  *)
+    warn "install-coreutils: Unknown OS type: $os_type"
+    info "Checking for basic coreutils..."
+    
+    missing=""
+    for cmd in cat cp mv rm ls mkdir chmod readlink; do
+      if ! command -v "$cmd" >/dev/null 2>&1; then
+        missing="$missing $cmd"
+      fi
+    done
+    
+    if [ -n "$missing" ]; then
+      die "install-coreutils: missing commands:$missing"
+    fi
+    
+    if command -v stdbuf >/dev/null 2>&1; then
+      success "Coreutils including stdbuf are installed"
+    else
+      warn "stdbuf not found - SSE unbuffering may not work"
+      info "Please install GNU coreutils manually for your platform"
+    fi
+    ;;
+esac
 
-printf '%s\n' "Coreutils are already installed."
