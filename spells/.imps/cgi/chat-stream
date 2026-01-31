@@ -1,9 +1,8 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-30-v24-SUBSHELL-FIX)
+# chat-stream - SSE endpoint for real-time chat messages (VERSION: 2026-01-31-v26-DIAGNOSTICS)
 # Streams chat messages as Server-Sent Events
-# FIXED: Removed pipe subshells in initial message sending - they were causing buffering!
-# Root cause: `tail | while` creates subshell where output gets buffered until pipe closes
-# Solution: Use temp file pattern consistently (avoid ALL pipe+while patterns)
+# DIAGNOSTICS: Added comprehensive timing logs to track where delays occur
+# Root cause still under investigation - may be nginx FastCGI buffering despite settings
 # Self-contained - no external imp dependencies
 # Accepts query parameter: room=ROOM&since=TIMESTAMP
 #
@@ -32,8 +31,9 @@ fi
 set -eu
 
 # Diagnostic logging to stderr (appears in web server error log)
-script_version="2026-01-30-v24-SUBSHELL-FIX"
+script_version="2026-01-31-v26-DIAGNOSTICS"
 printf '[chat-stream] ========== SCRIPT STARTED (VERSION: %s) ==========\n' "$script_version" >&2
+printf '[chat-stream] DIAGNOSTICS: Detailed timing logs enabled\n' >&2
 printf '[chat-stream] CRITICAL FIX: Removed all pipe subshells (use temp files instead)\n' >&2
 if [ "$USE_DD_FLUSH" = "yes" ]; then
   printf '[chat-stream] MODE: 128KB padding (no stdbuf - forcing buffer overflow)\n' >&2
@@ -286,13 +286,20 @@ while true; do
     if [ "$current_line_count" -gt "$last_line_count" ]; then
       # New messages available - send them WITH padding to force flush
       new_message_count=$((current_line_count - last_line_count))
-      printf '[chat-stream] Found %d new messages\n' "$new_message_count" >&2
+      timestamp_detect=$(date '+%Y-%m-%d %H:%M:%S.%N' | cut -c1-23)
+      printf '[chat-stream] [%s] DETECTED %d new messages (line count: %d -> %d)\n' "$timestamp_detect" "$new_message_count" "$last_line_count" "$current_line_count" >&2
       
       # CRITICAL: Avoid pipe subshell - use temp file so send_sse_event output reaches client
       temp_msgs="/tmp/chat_stream_$$_new"
       tail -n "$new_message_count" "$LOG_FILE" > "$temp_msgs"
       while IFS= read -r line || [ -n "$line" ]; do
+        timestamp_before=$(date '+%Y-%m-%d %H:%M:%S.%N' | cut -c1-23)
+        printf '[chat-stream] [%s] SENDING message: %s\n' "$timestamp_before" "$line" >&2
+        
         send_sse_event message "$line" yes || exit 0  # WITH padding for ongoing events
+        
+        timestamp_after=$(date '+%Y-%m-%d %H:%M:%S.%N' | cut -c1-23)
+        printf '[chat-stream] [%s] SENT (after send_sse_event returned)\n' "$timestamp_after" >&2
         
         # If using dd flush (no stdbuf), send flush trigger after each message
         if [ "$USE_DD_FLUSH" = "yes" ]; then
