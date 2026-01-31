@@ -208,9 +208,7 @@ esac
 rm -f "$temp_file"
 
 # Return success response
-http-status 200 "OK"
-http-header "Content-Type" "text/html"
-http-end-headers
+http-ok-html
 # Styles for HTML output
 info_style="background: #f8f9fa; padding: 0.75em; border-radius: 4px; margin: 1em 0;"
 display_style="margin: 1em 0; padding: 1em; border: 1px solid #ddd;"
