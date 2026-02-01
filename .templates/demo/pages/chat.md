@@ -345,38 +345,58 @@ function setupUnreadCountsStream() {
               return;
             }
             
-            // IMMEDIATELY show/hide badge based on server count (synchronous)
+            // Check if user has ever visited this room (has a read timestamp)
+            var readTimestamp = getReadTimestamp(capturedRoomName);
+            var hasVisitedRoom = readTimestamp !== '1970-01-01 00:00:00';
+            
+            // Only show badges for rooms the user has visited before
+            // This prevents showing badges with total message counts for unvisited rooms
+            if (!hasVisitedRoom) {
+              console.log('[Unread Counts] Skipping room', capturedRoomName, '- user has never visited (no read timestamp)');
+              // Keep badge hidden for unvisited rooms
+              freshBadge.classList.add('hidden');
+              freshBadge.style.display = 'none';
+              return;
+            }
+            
+            // User has visited this room - show unread count
             if (capturedServerCount > 0) {
-              // Show badge immediately with server count
-              freshBadge.textContent = capturedServerCount;
-              freshBadge.classList.remove('hidden');
-              freshBadge.style.display = 'inline-block';
-              void freshBadge.offsetWidth;  // Force reflow
-              updateBadgeStyle(freshBadge);
-              console.log('[Unread Counts] Badge SHOWN immediately for', capturedRoomName, 'serverCount:', capturedServerCount);
-              
-              // THEN get accurate count from client-side calculation (async)
+              // Get accurate count from client-side calculation
               countUnreadMessages(capturedRoomName, function(accurateCount) {
-                console.log('[Unread Counts] Refining badge for', capturedRoomName, '- accurate count:', accurateCount);
+                console.log('[Unread Counts] Badge for', capturedRoomName, '- accurate count:', accurateCount);
                 if (accurateCount > 0) {
+                  var wasVisible = !freshBadge.classList.contains('hidden');
                   var oldCount = parseInt(freshBadge.textContent) || 0;
-                  if (oldCount !== accurateCount) {
-                    // Trigger animation if number changed
+                  
+                  // Show badge
+                  freshBadge.textContent = accurateCount;
+                  freshBadge.classList.remove('hidden');
+                  freshBadge.style.display = 'inline-block';
+                  void freshBadge.offsetWidth;  // Force reflow
+                  updateBadgeStyle(freshBadge);
+                  
+                  // Trigger animation if number changed
+                  if (wasVisible && oldCount !== accurateCount) {
                     freshBadge.classList.add('updating');
                     setTimeout(function() {
                       freshBadge.classList.remove('updating');
                     }, 400);
                   }
-                  freshBadge.textContent = accurateCount;
-                  updateBadgeStyle(freshBadge);
+                  
+                  console.log('[Unread Counts] Badge SHOWN for', capturedRoomName, ':', accurateCount);
+                } else {
+                  // No unreads - hide badge
+                  freshBadge.classList.add('hidden');
+                  freshBadge.style.display = 'none';
+                  console.log('[Unread Counts] Badge HIDDEN for', capturedRoomName, '- no unreads');
                 }
               });
             } else {
-              // Hide badge immediately
+              // Server reports 0 messages - hide badge
               freshBadge.classList.add('hidden');
               freshBadge.style.display = 'none';
               void freshBadge.offsetWidth;
-              console.log('[Unread Counts] Badge HIDDEN for', capturedRoomName);
+              console.log('[Unread Counts] Badge HIDDEN for', capturedRoomName, '- server count 0');
             }
           })(roomName, serverCount);
         }
