@@ -20,7 +20,7 @@ title: Chatrooms
 <div class="chatrooms-header">
 <h3>Chatrooms</h3>
 </div>
-<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, roomListChanged from:body" hx-swap="innerHTML settle:0ms">
+<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, roomListChanged from:body" hx-swap="morph:innerHTML settle:0ms">
 Loading rooms...
 </div>
 
@@ -280,10 +280,12 @@ function countUnreadMessages(roomName, callback) {
 
 function updateUnreadBadges() {
   // Update all unread badges in the room list
+  // IMPROVED: Batch all fetches first, then update all badges at once to avoid janky sequential updates
   var badges = document.querySelectorAll('.unread-badge');
   
-  // Create a fresh fetch cache for this update cycle only
-  var fetchCache = {};
+  // Collect all rooms that need badge updates
+  var roomsToFetch = [];
+  var badgesByRoom = {};
   
   badges.forEach(function(badge) {
     var roomName = badge.getAttribute('data-room');
@@ -295,35 +297,41 @@ function updateUnreadBadges() {
       return;
     }
     
-    // Check if we already fetched this room in this update cycle
-    if (fetchCache[roomName] !== undefined) {
-      // Use cached result from this update cycle
-      var count = fetchCache[roomName];
-      if (count > 0) {
-        badge.textContent = count;
-        badge.classList.remove('hidden');
-        // Apply current display mode styling
-        updateBadgeStyle(badge);
-      } else {
-        badge.classList.add('hidden');
-      }
-      return;
+    // Track which badge belongs to which room
+    if (!badgesByRoom[roomName]) {
+      badgesByRoom[roomName] = [];
+      roomsToFetch.push(roomName);
     }
-    
-    // Fetch and update (all at once, no staggering)
-    // Capture roomName in closure to avoid stale reference
-    (function(capturedRoomName, capturedBadge) {
-      countUnreadMessages(capturedRoomName, function(count, lastMessageTimestamp) {
-        // Cache result for this update cycle
-        fetchCache[capturedRoomName] = count;
-        
+    badgesByRoom[roomName].push(badge);
+  });
+  
+  // If no rooms to fetch, we're done
+  if (roomsToFetch.length === 0) return;
+  
+  // Batch fetch all unread counts
+  var fetchPromises = roomsToFetch.map(function(roomName) {
+    return new Promise(function(resolve) {
+      countUnreadMessages(roomName, function(count, lastMessageTimestamp) {
+        resolve({ room: roomName, count: count });
+      });
+    });
+  });
+  
+  // Wait for all fetches to complete, then update all badges at once
+  Promise.all(fetchPromises).then(function(results) {
+    // Update all badges simultaneously
+    results.forEach(function(result) {
+      var roomBadges = badgesByRoom[result.room];
+      if (!roomBadges) return;
+      
+      roomBadges.forEach(function(badge) {
         // Query for fresh badge element (in case DOM was updated)
-        var freshBadge = document.querySelector('.unread-badge[data-room="' + capturedRoomName + '"]');
+        var freshBadge = document.querySelector('.unread-badge[data-room="' + result.room + '"]');
         if (!freshBadge) return;
         
         // Update badge display
-        if (count > 0) {
-          freshBadge.textContent = count;
+        if (result.count > 0) {
+          freshBadge.textContent = result.count;
           freshBadge.classList.remove('hidden');
           // Apply current display mode styling
           updateBadgeStyle(freshBadge);
@@ -331,7 +339,7 @@ function updateUnreadBadges() {
           freshBadge.classList.add('hidden');
         }
       });
-    })(roomName, badge);
+    });
   });
 }
 
