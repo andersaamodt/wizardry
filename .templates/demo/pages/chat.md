@@ -111,6 +111,87 @@ window.userHasScrolledUp = false;  // Track if user manually scrolled up
 window.isInitialRoomLoad = false;  // Track if this is the first load of a room
 window.messageEventSource = null;  // SSE connection for real-time messages
 
+// Unread message tracking
+// Store read-up-until timestamp per room in localStorage
+function getReadTimestamp(roomName) {
+  var key = 'chatroom_read_' + roomName;
+  return localStorage.getItem(key) || '1970-01-01 00:00:00';
+}
+
+function setReadTimestamp(roomName, timestamp) {
+  var key = 'chatroom_read_' + roomName;
+  localStorage.setItem(key, timestamp);
+}
+
+function markRoomAsRead(roomName) {
+  // Mark all messages as read up to current time
+  var now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  setReadTimestamp(roomName, now);
+  updateUnreadBadges();
+}
+
+function isLogMessage(messageText) {
+  // Check if message is from "log:" user (system messages)
+  // Format: [YYYY-MM-DD HH:MM:SS] log: message
+  var logPattern = /^\[[^\]]+\]\s+log:/;
+  return logPattern.test(messageText);
+}
+
+function countUnreadMessages(roomName, callback) {
+  // Fetch messages and count unreads after last read timestamp
+  fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(roomName))
+    .then(function(response) { return response.text(); })
+    .then(function(html) {
+      var tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      
+      // Only count regular messages, not system log messages
+      var messages = tempDiv.querySelectorAll('.chat-msg');  // Excludes .chat-msg-system
+      var readTimestamp = getReadTimestamp(roomName);
+      var unreadCount = 0;
+      
+      messages.forEach(function(msg) {
+        var timestampSpan = msg.querySelector('.timestamp');
+        if (timestampSpan && timestampSpan.dataset.fullTimestamp) {
+          var msgTimestamp = timestampSpan.dataset.fullTimestamp;
+          // Compare timestamps (lexicographic works for ISO format)
+          if (msgTimestamp > readTimestamp) {
+            unreadCount++;
+          }
+        }
+      });
+      
+      callback(unreadCount);
+    })
+    .catch(function(err) {
+      console.error('Failed to count unread messages for', roomName, err);
+      callback(0);
+    });
+}
+
+function updateUnreadBadges() {
+  // Update all unread badges in the room list
+  document.querySelectorAll('.unread-badge').forEach(function(badge) {
+    var roomName = badge.getAttribute('data-room');
+    if (!roomName) return;
+    
+    // Don't show badge for current room
+    if (roomName === window.currentRoom) {
+      badge.style.display = 'none';
+      return;
+    }
+    
+    countUnreadMessages(roomName, function(count) {
+      if (count > 0) {
+        badge.textContent = count;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+    });
+  });
+}
+
 // Handle room selection from list
 document.addEventListener('htmx:afterSwap', function(event) {
   if (event.detail.target.id === 'room-list') {
@@ -169,6 +250,9 @@ document.addEventListener('htmx:afterSwap', function(event) {
         item.classList.add('room-item-hover');
       }
     });
+    
+    // Update unread badges after room list is rendered
+    updateUnreadBadges();
   }
   
   // Auto-fade notifications after 4 seconds
@@ -402,6 +486,9 @@ function loadMessages() {
       
       // Check avatar count for delete button logic
       updateDeleteButton();
+      
+      // Mark all current messages as read
+      markRoomAsRead(window.currentRoom);
     });
 }
 
@@ -720,6 +807,15 @@ function appendMessage(messageLine) {
     // Auto-scroll if user is at bottom
     if (wasAtBottom || !window.userHasScrolledUp) {
       scrollToBottom();
+    }
+    
+    // Mark regular message as read (current room only, not system log messages)
+    if (window.currentRoom) {
+      var timestamp = fullTimestamp;
+      var currentReadTimestamp = getReadTimestamp(window.currentRoom);
+      if (timestamp > currentReadTimestamp) {
+        setReadTimestamp(window.currentRoom, timestamp);
+      }
     }
   }
 }
