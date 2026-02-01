@@ -143,7 +143,7 @@ function setReadTimestamp(roomName, timestamp) {
 function markRoomAsRead(roomName) {
   // Mark all messages as read up to the last message's server timestamp
   // This prevents issues when client clock is ahead of server clock
-  var lastTimestamp = getLastMessageTimestamp(roomName);
+  var lastTimestamp = getLastMessageTimestamp();
   if (lastTimestamp) {
     setReadTimestamp(roomName, lastTimestamp);
   }
@@ -154,7 +154,7 @@ function markRoomAsRead(roomName) {
   updateUnreadBadges();
 }
 
-function getLastMessageTimestamp(roomName) {
+function getLastMessageTimestamp() {
   // Get the timestamp of the last message in the current chat display
   // Use server-provided timestamp to avoid client/server clock drift issues
   var chatMessagesDiv = document.getElementById('chat-messages');
