@@ -140,12 +140,12 @@ mkfifo "$fifo" || {
 # Cleanup function
 cleanup() {
   exec 3<&- 2>/dev/null || true
-  kill $tail_pid 2>/dev/null || true
-  kill $keepalive_pid 2>/dev/null || true
-  kill $membership_pid 2>/dev/null || true
-  kill $timeout_pid 2>/dev/null || true
-  kill $health_pid 2>/dev/null || true
-  rm -f "$fifo"
+  kill ${tail_pid:-} 2>/dev/null || true
+  kill ${keepalive_pid:-} 2>/dev/null || true
+  kill ${membership_pid:-} 2>/dev/null || true
+  kill ${timeout_pid:-} 2>/dev/null || true
+  kill ${health_pid:-} 2>/dev/null || true
+  rm -f "${fifo:-}"
   exit
 }
 
