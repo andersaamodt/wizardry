@@ -263,6 +263,11 @@ function joinRoom(roomName) {
   connectingMsg.innerHTML = 'Connecting<span class="spinner-grey"></span>';
   chatInputArea.appendChild(connectingMsg);
   
+  // Fade in the connecting message
+  setTimeout(function() {
+    connectingMsg.classList.add('visible');
+  }, 10);
+  
   // Wait for avatar creation to complete, then set up SSE and load history
   avatarPromise.then(function() {
     // Set up SSE with the timestamp from BEFORE avatar creation
@@ -477,10 +482,14 @@ function setupMessageStream(roomName, sinceTimestamp) {
     // Enable send button first
     document.getElementById('send-btn').disabled = false;
     
-    // Then remove connecting status message
+    // Fade out connecting status message
     var connectingMsg = document.getElementById('connecting-status');
     if (connectingMsg) {
-      connectingMsg.remove();
+      connectingMsg.classList.remove('visible');
+      // Remove from DOM after fade completes
+      setTimeout(function() {
+        connectingMsg.remove();
+      }, 300);  // Match transition duration
     }
   });
   
