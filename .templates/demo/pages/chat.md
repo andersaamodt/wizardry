@@ -113,6 +113,12 @@ window.messageEventSource = null;  // SSE connection for real-time messages
 
 // Unread message tracking
 // Store read-up-until timestamp per room in localStorage
+
+function getCurrentTimestamp() {
+  // Generate ISO timestamp in format: YYYY-MM-DD HH:MM:SS
+  return new Date().toISOString().replace('T', ' ').substring(0, 19);
+}
+
 function getReadTimestamp(roomName) {
   var key = 'chatroom_read_' + roomName;
   return localStorage.getItem(key) || '1970-01-01 00:00:00';
@@ -125,8 +131,7 @@ function setReadTimestamp(roomName, timestamp) {
 
 function markRoomAsRead(roomName) {
   // Mark all messages as read up to current time
-  var now = new Date().toISOString().replace('T', ' ').substring(0, 19);
-  setReadTimestamp(roomName, now);
+  setReadTimestamp(roomName, getCurrentTimestamp());
   updateUnreadBadges();
 }
 
@@ -171,7 +176,12 @@ function countUnreadMessages(roomName, callback) {
 
 function updateUnreadBadges() {
   // Update all unread badges in the room list
-  document.querySelectorAll('.unread-badge').forEach(function(badge) {
+  // Only fetch for rooms that might have unreads (throttle excessive fetching)
+  var badges = document.querySelectorAll('.unread-badge');
+  
+  // Batch process with small delay between fetches to avoid overwhelming server
+  var delay = 0;
+  badges.forEach(function(badge) {
     var roomName = badge.getAttribute('data-room');
     if (!roomName) return;
     
@@ -181,14 +191,18 @@ function updateUnreadBadges() {
       return;
     }
     
-    countUnreadMessages(roomName, function(count) {
-      if (count > 0) {
-        badge.textContent = count;
-        badge.style.display = 'inline-block';
-      } else {
-        badge.style.display = 'none';
-      }
-    });
+    // Stagger fetch requests slightly (50ms apart) to reduce server load
+    setTimeout(function() {
+      countUnreadMessages(roomName, function(count) {
+        if (count > 0) {
+          badge.textContent = count;
+          badge.style.display = 'inline-block';
+        } else {
+          badge.style.display = 'none';
+        }
+      });
+    }, delay);
+    delay += 50;
   });
 }
 
@@ -811,10 +825,10 @@ function appendMessage(messageLine) {
     
     // Mark regular message as read (current room only, not system log messages)
     if (window.currentRoom) {
-      var timestamp = fullTimestamp;
+      var messageTimestamp = fullTimestamp;
       var currentReadTimestamp = getReadTimestamp(window.currentRoom);
-      if (timestamp > currentReadTimestamp) {
-        setReadTimestamp(window.currentRoom, timestamp);
+      if (messageTimestamp > currentReadTimestamp) {
+        setReadTimestamp(window.currentRoom, messageTimestamp);
       }
     }
   }
