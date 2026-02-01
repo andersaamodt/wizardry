@@ -1,9 +1,9 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (v2.6-O1-optimized)
+# chat-stream - SSE endpoint for real-time chat messages (v2.7-gap-prevention)
 # True event-driven SSE using tail -f + file descriptor (no polling, 0ms detection)
 # Enhanced with: retry field, connection timeout, health monitoring, CORS support
 # Uses avatar directories as single source of truth (no redundant .members file)
-# O(1) connection time - historical messages fetched separately via chat-get-messages
+# O(1) connection time with gap prevention - sends last ~100 messages to cover connection window
 
 # Send SSE headers with CORS support FIRST (before set -eu)
 # This ensures headers are always output even if script fails early
@@ -93,8 +93,28 @@ if [ ! -d "$ROOM_DIR" ]; then
 fi
 
 # Historical messages are fetched separately via chat-get-messages endpoint
-# SSE connection is ONLY for real-time updates (O(1) connection time)
-# This prevents O(n) delay when connecting to rooms with large message history
+# However, we send recent messages (last ~10 seconds) to prevent gaps during connection:
+# - Messages sent while SSE is "Connecting" could otherwise be lost
+# - Same-second messages need full coverage (log has 1-second resolution)
+# Using tail -100 + timestamp filter keeps connection O(1) while preventing message loss
+
+# Send recent messages if since_timestamp provided (covers connection gap)
+if [ -n "$since_timestamp" ] && [ -f "$LOG_FILE" ] && [ -s "$LOG_FILE" ]; then
+  # Get last ~100 messages (typically covers last 10-30 seconds)
+  # This prevents message loss during connection without iterating full history
+  tail -100 "$LOG_FILE" 2>/dev/null | while IFS= read -r line; do
+    # Extract timestamp from message: [YYYY-MM-DD HH:MM:SS] ...
+    msg_timestamp=$(printf '%s' "$line" | sed -n 's/^\[\([^]]*\)\].*/\1/p')
+    
+    if [ -n "$msg_timestamp" ]; then
+      # Send message if it's >= since_timestamp (lexicographic comparison works for ISO format)
+      # This covers: messages during connection window + same-second messages
+      if [ "$msg_timestamp" \> "$since_timestamp" ] || [ "$msg_timestamp" = "$since_timestamp" ]; then
+        send_sse_event message "$line"
+      fi
+    fi
+  done
+fi
 
 # Send initial member list
 query="room=$room"

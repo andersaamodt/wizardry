@@ -102,10 +102,10 @@ test_chat_stream_handles_nonexistent_room() {
   printf '%s' "$output" | grep -q "Room not found"
 }
 
-test_chat_stream_does_not_send_historical_messages() {
+test_chat_stream_does_not_send_old_historical_messages() {
   setup_test_env
   
-  # Create room with messages (should NOT be sent via SSE)
+  # Create room with old messages (should NOT be sent via SSE without since param)
   mkdir -p "$CHAT_DIR/TestRoom"
   printf "[2024-01-01 10:00:00] Alice: Hello\n" > "$CHAT_DIR/TestRoom/.log"
   
@@ -114,8 +114,56 @@ test_chat_stream_does_not_send_historical_messages() {
   
   cleanup_test_env
   
-  # Should NOT contain historical messages (O(1) connection time)
+  # Should NOT contain old messages when no since parameter (O(1) connection time)
   ! printf '%s' "$output" | grep -q "Alice: Hello"
+}
+
+test_chat_stream_sends_recent_messages_to_prevent_gaps() {
+  setup_test_env
+  
+  # Create room with recent messages (within last 100 messages)
+  mkdir -p "$CHAT_DIR/TestRoom"
+  # Simulate messages from "now" - using a timestamp that would be recent
+  now_timestamp="2024-12-01 12:00:00"
+  printf "[2024-12-01 12:00:01] Alice: Message 1\n" > "$CHAT_DIR/TestRoom/.log"
+  printf "[2024-12-01 12:00:02] Bob: Message 2\n" >> "$CHAT_DIR/TestRoom/.log"
+  printf "[2024-12-01 12:00:03] Charlie: Message 3\n" >> "$CHAT_DIR/TestRoom/.log"
+  
+  # Connect with since parameter set to "now" (should get messages >= now)
+  export QUERY_STRING="room=TestRoom&since=$now_timestamp"
+  output=$(run_with_timeout chat-stream)
+  
+  cleanup_test_env
+  
+  # Should contain recent messages to prevent gap during connection
+  printf '%s' "$output" | grep -q "event: message" && \
+  printf '%s' "$output" | grep -q "Alice: Message 1" && \
+  printf '%s' "$output" | grep -q "Bob: Message 2" && \
+  printf '%s' "$output" | grep -q "Charlie: Message 3"
+}
+
+test_chat_stream_handles_same_second_messages() {
+  setup_test_env
+  
+  # Create room with multiple messages in the same second
+  mkdir -p "$CHAT_DIR/TestRoom"
+  base_timestamp="2024-12-01 12:00:05"
+  printf "[2024-12-01 12:00:05] Alice: First in second\n" > "$CHAT_DIR/TestRoom/.log"
+  printf "[2024-12-01 12:00:05] Bob: Second in second\n" >> "$CHAT_DIR/TestRoom/.log"
+  printf "[2024-12-01 12:00:05] Charlie: Third in second\n" >> "$CHAT_DIR/TestRoom/.log"
+  printf "[2024-12-01 12:00:06] Dave: Next second\n" >> "$CHAT_DIR/TestRoom/.log"
+  
+  # Connect with since parameter set to that exact second
+  export QUERY_STRING="room=TestRoom&since=$base_timestamp"
+  output=$(run_with_timeout chat-stream)
+  
+  cleanup_test_env
+  
+  # Should get ALL messages from that second (including exact match)
+  printf '%s' "$output" | grep -q "Alice: First in second" && \
+  printf '%s' "$output" | grep -q "Bob: Second in second" && \
+  printf '%s' "$output" | grep -q "Charlie: Third in second" && \
+  printf '%s' "$output" | grep -q "Dave: Next second"
 }
 
 test_chat_stream_connects_instantly_regardless_of_history() {
@@ -175,7 +223,9 @@ run_test_case "chat-stream is executable" test_chat_stream_exists
 run_test_case "chat-stream rejects invalid room names" test_chat_stream_rejects_invalid_room_name
 run_test_case "chat-stream rejects empty room parameter" test_chat_stream_rejects_empty_room
 run_test_case "chat-stream handles nonexistent room" test_chat_stream_handles_nonexistent_room
-run_test_case "chat-stream does not send historical messages" test_chat_stream_does_not_send_historical_messages
+run_test_case "chat-stream does not send old historical messages" test_chat_stream_does_not_send_old_historical_messages
+run_test_case "chat-stream sends recent messages to prevent gaps" test_chat_stream_sends_recent_messages_to_prevent_gaps
+run_test_case "chat-stream handles same-second messages" test_chat_stream_handles_same_second_messages
 run_test_case "chat-stream connects instantly regardless of history" test_chat_stream_connects_instantly_regardless_of_history
 run_test_case "chat-stream sends member list" test_chat_stream_sends_member_list
 run_test_case "chat-stream outputs SSE headers" test_chat_stream_outputs_sse_headers
