@@ -173,6 +173,35 @@ function updateAllBadgeStyles() {
   });
 }
 
+// Calculate smooth opacity for dot based on message count
+// 1 msg: Opaque (1.0)
+// 1→10: Gradual fade to semi-transparent (0.4)
+// 10→40: Gradual increase back to opaque (1.0)
+// 40→100: Fade to grey stale (0.3)
+function calculateDotOpacity(count) {
+  if (count <= 1) return 1.0;  // Fully opaque
+  
+  if (count <= 10) {
+    // Gradual fade: 1.0 → 0.4 (messages 1→10)
+    var progress = (count - 1) / 9;
+    return 1.0 - (progress * 0.6);
+  }
+  
+  if (count <= 40) {
+    // Gradual increase: 0.4 → 1.0 (messages 10→40)
+    var progress = (count - 10) / 30;
+    return 0.4 + (progress * 0.6);
+  }
+  
+  if (count <= 100) {
+    // Fade to stale: 1.0 → 0.3 (messages 40→100)
+    var progress = (count - 40) / 60;
+    return 1.0 - (progress * 0.7);
+  }
+  
+  return 0.3;  // Stale (100+)
+}
+
 function updateBadgeStyle(badge, mode) {
   if (!mode) mode = getBadgeMode();
   
@@ -185,6 +214,10 @@ function updateBadgeStyle(badge, mode) {
     
     // Remove all old glow classes
     badge.classList.remove('glow-1', 'glow-2', 'glow-3', 'glow-4', 'glow-5', 'glow-6', 'glow-7', 'glow-stale');
+    
+    // Set smooth opacity based on count
+    var opacity = calculateDotOpacity(count);
+    badge.style.opacity = opacity;
     
     // Add glow class based on count (7 levels + stale)
     // Progression: brightest at 40, fade to grey by 100
@@ -210,6 +243,7 @@ function updateBadgeStyle(badge, mode) {
   } else {
     // Switch to number mode
     badge.classList.remove('dot-mode', 'glow-1', 'glow-2', 'glow-3', 'glow-4', 'glow-5', 'glow-6', 'glow-7', 'glow-stale');
+    badge.style.opacity = '';  // Reset opacity for number mode
   }
 }
 
