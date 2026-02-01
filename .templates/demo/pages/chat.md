@@ -133,7 +133,8 @@ function setReadTimestamp(roomName, timestamp) {
 function markRoomAsRead(roomName) {
   // Mark all messages as read up to current time
   setReadTimestamp(roomName, getCurrentTimestamp());
-  // Don't call updateUnreadBadges here - let it be triggered by message events
+  // Immediately update badges for responsive UX
+  updateUnreadBadges();
 }
 
 function isLogMessage(messageText) {
@@ -196,6 +197,14 @@ function updateUnreadBadges() {
     countUnreadMessages(roomName, function(count, lastMessageTimestamp) {
       // Only update if timestamp has changed (optimization)
       var previousTimestamp = window.lastRoomMessageTimestamps[roomName];
+      
+      // Handle null case: if room now has no messages but previously had some
+      if (!lastMessageTimestamp && previousTimestamp) {
+        window.lastRoomMessageTimestamps[roomName] = null;
+        badge.style.display = 'none';
+        return;
+      }
+      
       if (previousTimestamp && lastMessageTimestamp && previousTimestamp === lastMessageTimestamp) {
         // No new messages, skip update
         return;
