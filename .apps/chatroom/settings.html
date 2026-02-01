@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chatroom Settings - Wizardry</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background: #f8f9fa;
+    }
+    
+    .settings-container {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 2rem;
+    }
+    
+    .settings-section {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .settings-section h2 {
+      margin-bottom: 1rem;
+      color: #667eea;
+      font-size: 1.5rem;
+    }
+    
+    .settings-item {
+      margin-bottom: 1.5rem;
+    }
+    
+    .settings-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #495057;
+      font-weight: 600;
+    }
+    
+    .settings-value {
+      display: block;
+      padding: 1rem;
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      color: #212529;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 0.95rem;
+      word-break: break-all;
+    }
+    
+    .settings-value.loading {
+      color: #6c757d;
+      font-style: italic;
+    }
+    
+    .settings-value.error {
+      color: #dc3545;
+    }
+    
+    .settings-value.success {
+      color: #28a745;
+    }
+    
+    .copy-btn {
+      margin-top: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.2s;
+    }
+    
+    .copy-btn:hover {
+      background: #5568d3;
+    }
+    
+    .info-box {
+      background: #e7f3ff;
+      border-left: 3px solid #667eea;
+      padding: 1rem;
+      border-radius: 4px;
+      margin-top: 1rem;
+    }
+    
+    .info-box p {
+      margin: 0;
+      color: #495057;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-header">
+    <h1>🧙 Wizardry Chatroom</h1>
+    <nav class="app-nav">
+      <a href="index.html">Chat</a>
+      <a href="settings.html" class="active">Settings</a>
+    </nav>
+  </div>
+  
+  <div class="settings-container">
+    <div class="settings-section">
+      <h2>📡 Connection Information</h2>
+      <p style="color: #6c757d; margin-bottom: 1.5rem;">
+        Share these addresses so others can connect to your chatroom server.
+      </p>
+      
+      <div class="settings-item">
+        <label class="settings-label">Local IP Address</label>
+        <code class="settings-value loading" id="ip-address">Loading...</code>
+        <button class="copy-btn" id="copy-ip-btn" onclick="copyToClipboard('ip-address')" style="display:none">
+          📋 Copy IP
+        </button>
+        <div class="info-box">
+          <p>
+            This is your local network IP address. Others on the same network 
+            can connect to your chatroom using this address.
+          </p>
+        </div>
+      </div>
+      
+      <div class="settings-item" style="margin-top: 2rem;">
+        <label class="settings-label">Tor Hidden Service Address</label>
+        <code class="settings-value loading" id="tor-address">Loading...</code>
+        <button class="copy-btn" id="copy-tor-btn" onclick="copyToClipboard('tor-address')" style="display:none">
+          📋 Copy Tor Address
+        </button>
+        <div class="info-box">
+          <p>
+            If you have Tor configured, this is your .onion address. Anyone with 
+            Tor Browser can connect to your chatroom anonymously using this address,
+            even if you're behind a firewall or NAT.
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="settings-section">
+      <h2>ℹ️ About This App</h2>
+      <p style="color: #495057; line-height: 1.6;">
+        This chatroom app demonstrates wizardry's desktop app framework:
+      </p>
+      <ul style="color: #495057; margin-top: 1rem; margin-left: 1.5rem; line-height: 1.8;">
+        <li>Uses the same CGI backend as the web demo</li>
+        <li>Server-Sent Events (SSE) for real-time updates</li>
+        <li>Tor integration for anonymous access</li>
+        <li>Commands hardcoded in GUI for security</li>
+        <li>Compatible with MUD <code>say</code> command format</li>
+        <li>Fully interoperable: web users and MUD players share the same rooms!</li>
+      </ul>
+    </div>
+  </div>
+  
+  <script>
+    // Hardcoded commands for security - these would be executed via native bridge in production
+    const commands = {
+      'get-ip': ['sh', '-c', "ip route get 1 2>/dev/null | awk '{print $7}' | head -1 || hostname -I | awk '{print $1}'"],
+      'get-tor': ['sh', '-c', 'cat /var/lib/tor/hidden_service/hostname 2>/dev/null || cat /usr/local/var/lib/tor/hidden_service/hostname 2>/dev/null']
+    };
+    
+    // Load IP address
+    function loadIPAddress() {
+      // In production, this would use the native bridge:
+      // window.wizardry.exec(commands['get-ip']).then(result => { ... })
+      
+      // For demo/development, try to get from system-info CGI or use fallback
+      fetch('/cgi/system-info')
+        .then(r => r.text())
+        .then(html => {
+          // Try to extract IP from various patterns
+          const ipMatch = html.match(/(\d+\.\d+\.\d+\.\d+)/);
+          const ipElement = document.getElementById('ip-address');
+          if (ipMatch && ipMatch[1] !== '127.0.0.1') {
+            ipElement.textContent = ipMatch[1];
+            ipElement.classList.remove('loading');
+            ipElement.classList.add('success');
+            document.getElementById('copy-ip-btn').style.display = 'inline-block';
+          } else {
+            ipElement.textContent = 'Unable to determine IP address (try running in production mode)';
+            ipElement.classList.remove('loading');
+            ipElement.classList.add('error');
+          }
+        })
+        .catch(err => {
+          const ipElement = document.getElementById('ip-address');
+          ipElement.textContent = 'Error loading IP address';
+          ipElement.classList.remove('loading');
+          ipElement.classList.add('error');
+        });
+    }
+    
+    // Load Tor address  
+    function loadTorAddress() {
+      // In production:
+      // window.wizardry.exec(commands['get-tor']).then(result => { ... })
+      
+      const torElement = document.getElementById('tor-address');
+      
+      // Try to read from common tor hidden service locations
+      fetch('/cgi/system-info')
+        .then(r => r.text())
+        .then(html => {
+          // Look for .onion address pattern
+          const onionMatch = html.match(/([a-z2-7]{16,56}\.onion)/i);
+          if (onionMatch) {
+            torElement.textContent = onionMatch[1];
+            torElement.classList.remove('loading');
+            torElement.classList.add('success');
+            document.getElementById('copy-tor-btn').style.display = 'inline-block';
+          } else {
+            torElement.textContent = 'Tor hidden service not configured';
+            torElement.classList.remove('loading');
+          }
+        })
+        .catch(err => {
+          torElement.textContent = 'Tor hidden service not configured';
+          torElement.classList.remove('loading');
+        });
+    }
+    
+    // Copy to clipboard
+    function copyToClipboard(elementId) {
+      const element = document.getElementById(elementId);
+      const text = element.textContent;
+      
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = '✓ Copied!';
+        btn.style.background = '#28a745';
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.style.background = '#667eea';
+        }, 2000);
+      }).catch(err => {
+        alert('Failed to copy: ' + err);
+      });
+    }
+    
+    // Load on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      loadIPAddress();
+      loadTorAddress();
+    });
+  </script>
+</body>
+</html>
