@@ -141,10 +141,33 @@ function setReadTimestamp(roomName, timestamp) {
 }
 
 function markRoomAsRead(roomName) {
-  // Mark all messages as read up to current time
-  setReadTimestamp(roomName, getCurrentTimestamp());
+  // Mark all messages as read up to the last message's server timestamp
+  // This prevents issues when client clock is ahead of server clock
+  var lastTimestamp = getLastMessageTimestamp(roomName);
+  if (lastTimestamp) {
+    setReadTimestamp(roomName, lastTimestamp);
+  }
   // Immediately update badges for responsive UX
   updateUnreadBadges();
+}
+
+function getLastMessageTimestamp(roomName) {
+  // Get the timestamp of the last message in the current chat display
+  // Use server-provided timestamp to avoid client/server clock drift issues
+  var chatMessagesDiv = document.getElementById('chat-messages');
+  if (!chatMessagesDiv) return null;
+  
+  var messages = chatMessagesDiv.querySelectorAll('.chat-msg');
+  if (messages.length === 0) return null;
+  
+  // Get the last message's timestamp
+  var lastMessage = messages[messages.length - 1];
+  var timestampSpan = lastMessage.querySelector('.timestamp');
+  if (timestampSpan && timestampSpan.dataset.fullTimestamp) {
+    return timestampSpan.dataset.fullTimestamp;
+  }
+  
+  return null;
 }
 
 // Badge display mode functions
