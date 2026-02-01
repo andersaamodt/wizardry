@@ -730,12 +730,13 @@ pre code {
 /* Apply fade-in animation to new room items added by htmx morph */
 /* This class is automatically added by htmx's morphing engine (Idiomorph) */
 .room-item.htmx-added {
-  animation: roomItemFadeIn 0.4s ease-out;
+  animation: roomItemFadeIn 0.5s ease-out;
 }
 
-/* Apply slide-down to existing items when list grows */
-#room-list.htmx-swapping .room-item:not(.htmx-added) {
-  animation: roomItemSlideDown 0.4s ease-out;
+/* Use CSS to detect when items are being added/changed for slide effect */
+/* All room items get a subtle transition for smooth changes */
+.room-item {
+  transition: transform 0.3s ease-out;
 }
 
 .room-item {
@@ -919,7 +920,7 @@ pre code {
 /* Unread badge styling */
 .unread-badge {
   display: inline-block;
-  background: #c8b5e6;  /* Lighter violet */
+  background: #d0bfef;  /* Lighter violet, less reddish, brighter */
   position: absolute;  /* Position absolutely to prevent line wrapping */
   right: 0.75rem;  /* Align to right edge */
   top: 50%;  /* Center vertically */
@@ -967,11 +968,11 @@ pre code {
 }
 
 .room-item-selected .unread-badge {
-  background: #b5a0d9;  /* Slightly darker violet for selected room */
+  background: #c0aee0;  /* Slightly darker violet for selected room, less reddish */
 }
 
 .room-item-selected:hover .unread-badge {
-  background: #b5a0d9;  /* Keep same color on hover for selected room */
+  background: #c0aee0;  /* Keep same color on hover for selected room */
   color: white;
 }
 
@@ -992,11 +993,11 @@ pre code {
 
 /* Simple 2-level system: light violet (1-50 msgs), grey (51+ msgs), NO glow */
 .unread-badge.dot-mode.dot-light-violet {
-  background: #c8b5e6;  /* Light violet, same as original badge color */
+  background: #d0bfef;  /* Light violet, same as badge color - brighter, less reddish */
 }
 
 .unread-badge.dot-mode.dot-grey {
-  background: #b0b0b0;  /* Lighter opaque grey for stale (51+ messages) */
+  background: #9a9a9a;  /* Dimmer grey for stale (51+ messages) */
 }
 
 /* Dot mode hover states */
@@ -1006,11 +1007,11 @@ pre code {
 }
 
 .room-item-selected .unread-badge.dot-mode {
-  background: #b5a0d9;
+  background: #c0aee0;  /* Match selected room badge color */
 }
 
 .room-item-selected:hover .unread-badge.dot-mode {
-  background: #b5a0d9;
+  background: #c0aee0;  /* Match selected room badge color */
 }
 
 .room-controls {
