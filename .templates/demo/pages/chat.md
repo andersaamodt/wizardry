@@ -74,7 +74,7 @@ Delete Room
 </div>
 </div>
 
-<div class="badge-mode-control" style="margin-top: 1rem; padding: 0.75rem; background: #f8f9fa; border-radius: 4px; border: 1px solid #dee2e6;">
+<div class="badge-mode-control">
 <label class="toggle-switch">
 <input type="checkbox" id="badge-mode-toggle" onchange="toggleBadgeMode()">
 <span class="toggle-slider"></span>
@@ -280,20 +280,27 @@ function updateUnreadBadges() {
     }
     
     // Fetch and update (all at once, no staggering)
-    countUnreadMessages(roomName, function(count, lastMessageTimestamp) {
-      // Cache result for this update cycle
-      fetchCache[roomName] = count;
-      
-      // Update badge display
-      if (count > 0) {
-        badge.textContent = count;
-        badge.style.display = 'inline-block';
-        // Apply current display mode styling
-        updateBadgeStyle(badge);
-      } else {
-        badge.style.display = 'none';
-      }
-    });
+    // Capture roomName in closure to avoid stale reference
+    (function(capturedRoomName, capturedBadge) {
+      countUnreadMessages(capturedRoomName, function(count, lastMessageTimestamp) {
+        // Cache result for this update cycle
+        fetchCache[capturedRoomName] = count;
+        
+        // Query for fresh badge element (in case DOM was updated)
+        var freshBadge = document.querySelector('.unread-badge[data-room="' + capturedRoomName + '"]');
+        if (!freshBadge) return;
+        
+        // Update badge display
+        if (count > 0) {
+          freshBadge.textContent = count;
+          freshBadge.style.display = 'inline-block';
+          // Apply current display mode styling
+          updateBadgeStyle(freshBadge);
+        } else {
+          freshBadge.style.display = 'none';
+        }
+      });
+    })(roomName, badge);
   });
 }
 
@@ -1326,7 +1333,10 @@ document.addEventListener('DOMContentLoaded', function() {
   messageInput.addEventListener('keypress', function(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();  // Prevent newline
-      sendMessage();
+      // Only send if button is not disabled
+      if (!sendBtn.disabled) {
+        sendMessage();
+      }
     }
     // Shift+Enter adds a newline (default behavior)
   });

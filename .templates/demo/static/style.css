@@ -710,6 +710,8 @@ pre code {
   border-radius: 0;
   cursor: pointer;
   transition: all 0.2s;
+  position: relative;  /* For absolute positioning of badges */
+  padding-right: 3rem;  /* Make room for badge on right */
 }
 
 .room-item:hover, .room-item-hover {
@@ -809,6 +811,12 @@ pre code {
   margin: 0;
 }
 
+/* Badge mode toggle control container */
+.badge-mode-control {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
 /* Badge mode toggle switch (checkbox style) */
 .toggle-switch {
   display: flex;
@@ -830,7 +838,7 @@ pre code {
   display: inline-block;
   width: 48px;
   height: 24px;
-  background-color: #ccc;
+  background-color: rgba(255, 255, 255, 0.3);
   border-radius: 24px;
   transition: background-color 0.3s;
 }
@@ -861,13 +869,18 @@ pre code {
 
 .toggle-label {
   font-size: 0.9rem;
-  color: #333;
+  color: white;
+  font-weight: bold;
 }
 
 /* Unread badge styling */
 .unread-badge {
   display: inline-block;
   background: #c8b5e6;  /* Lighter violet */
+  position: absolute;  /* Position absolutely to prevent line wrapping */
+  right: 0.75rem;  /* Align to right edge */
+  top: 50%;  /* Center vertically */
+  margin-top: -0.6rem;  /* Half of approximate height for centering */
   color: white;
   border-radius: 10px;
   padding: 0.15rem 0.5rem;
@@ -875,43 +888,31 @@ pre code {
   font-size: 0.7rem;
   font-weight: bold;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  margin-left: auto;
-  float: right;
-  margin-top: 0.15rem;
   line-height: 1.2;  /* Consistent vertical alignment */
+  min-width: 1.5rem;  /* Minimum width to prevent wrapping */
+  text-align: center;
   
   /* Smooth animations for badge updates */
-  transition: all 0.3s ease-in-out;
-  animation: badge-appear 0.3s ease-out;
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
 }
 
-/* Animation keyframes for badge appearing */
-@keyframes badge-appear {
-  from {
-    opacity: 0;
-    transform: scale(0.5);
+/* Crossfade effect for number changes */
+.unread-badge.updating {
+  animation: badge-crossfade 0.4s ease-in-out;
+}
+
+@keyframes badge-crossfade {
+  0% {
+    opacity: 1;
   }
-  to {
+  50% {
+    opacity: 0.3;
+    transform: scale(1.1);
+  }
+  100% {
     opacity: 1;
     transform: scale(1);
   }
-}
-
-/* Animation for badge number changes */
-@keyframes badge-pulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.15);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.unread-badge.updating {
-  animation: badge-pulse 0.4s ease-in-out;
 }
 
 .room-item:hover .unread-badge, .room-item-hover .unread-badge {
@@ -930,42 +931,58 @@ pre code {
 
 /* Dot mode styling for badges */
 .unread-badge.dot-mode {
-  width: 10px;
-  height: 10px;
-  min-width: 10px;
+  width: 8px;  /* Smaller dot */
+  height: 8px;
+  min-width: 8px;
   border-radius: 50%;
   padding: 0;
-  margin-top: 0.25rem;
-  background: #7b5fa0;  /* Dark purple - consistent across all levels */
+  margin-top: -4px;  /* Center the smaller dot */
+  background: #d8c8ec;  /* Lighter purple base color */
   color: transparent;
   font-size: 0;
-  position: relative;
-  box-shadow: 0 0 4px rgba(155, 126, 201, 0.5);
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
 }
 
 /* Glow intensity levels based on unread count */
 .unread-badge.dot-mode.glow-low {
-  /* 1-3 messages: subtle glow */
-  box-shadow: 0 0 6px rgba(155, 126, 201, 0.6), 0 0 10px rgba(155, 126, 201, 0.4);
+  /* 1-3 messages: subtle glow, lighter color */
+  background: #e8dcf5;  /* Very light purple */
+  box-shadow: 0 0 8px rgba(200, 181, 230, 0.8), 
+              0 0 12px rgba(200, 181, 230, 0.5);
 }
 
 .unread-badge.dot-mode.glow-medium {
-  /* 4-10 messages: moderate glow */
-  box-shadow: 0 0 10px rgba(155, 126, 201, 0.9), 0 0 16px rgba(155, 126, 201, 0.6), 0 0 22px rgba(155, 126, 201, 0.4);
+  /* 4-10 messages: moderate glow, medium color */
+  background: #d0b8e8;  /* Light-medium purple */
+  box-shadow: 0 0 10px rgba(177, 156, 217, 1), 
+              0 0 18px rgba(177, 156, 217, 0.8), 
+              0 0 26px rgba(177, 156, 217, 0.5);
 }
 
 .unread-badge.dot-mode.glow-high {
-  /* 11+ messages: intense glow with pulsing */
-  box-shadow: 0 0 14px rgba(177, 156, 217, 1), 0 0 22px rgba(177, 156, 217, 0.8), 0 0 30px rgba(177, 156, 217, 0.6), 0 0 38px rgba(177, 156, 217, 0.4);
+  /* 11+ messages: intense glow with pulsing, darker/saturated color */
+  background: #b19cd9;  /* Darker, more saturated purple */
+  box-shadow: 0 0 12px rgba(155, 126, 201, 1), 
+              0 0 22px rgba(155, 126, 201, 0.9), 
+              0 0 32px rgba(155, 126, 201, 0.7), 
+              0 0 42px rgba(155, 126, 201, 0.5);
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 14px rgba(177, 156, 217, 1), 0 0 22px rgba(177, 156, 217, 0.8), 0 0 30px rgba(177, 156, 217, 0.6), 0 0 38px rgba(177, 156, 217, 0.4);
+    box-shadow: 0 0 12px rgba(155, 126, 201, 1), 
+                0 0 22px rgba(155, 126, 201, 0.9), 
+                0 0 32px rgba(155, 126, 201, 0.7), 
+                0 0 42px rgba(155, 126, 201, 0.5);
   }
   50% {
-    box-shadow: 0 0 18px rgba(200, 181, 230, 1), 0 0 28px rgba(200, 181, 230, 0.9), 0 0 38px rgba(200, 181, 230, 0.7), 0 0 48px rgba(200, 181, 230, 0.5);
+    box-shadow: 0 0 16px rgba(177, 156, 217, 1), 
+                0 0 30px rgba(177, 156, 217, 0.95), 
+                0 0 42px rgba(177, 156, 217, 0.8), 
+                0 0 54px rgba(177, 156, 217, 0.6);
   }
 }
 
