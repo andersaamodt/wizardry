@@ -2,9 +2,7 @@
 # random-quote - CGI script that returns a random quote
 set -eu
 
-http-status 200 "OK"
-http-header "Content-Type" "text/html"
-http-end-headers
+http-ok-html
 
 # Array of quotes (using newline-separated format)
 quotes="The only way to do great work is to love what you do. - Steve Jobs

@@ -14,16 +14,7 @@ if [ "${REQUEST_METHOD:-}" != "POST" ]; then
 fi
 
 # Determine site-specific data directory
-# Use WIZARDRY_SITE_NAME if available (set by nginx), otherwise default
-if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
-  site_id="$WIZARDRY_SITE_NAME"
-else
-  # Fallback for non-nginx environments
-  site_id="default"
-fi
-SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
-SITE_DATA_DIR="$SITES_DIR/.sitedata/$site_id"
-UPLOAD_DIR="$SITE_DATA_DIR/uploads"
+UPLOAD_DIR=$(get-site-data-dir "uploads")
 
 # Create uploads directory if needed
 mkdir -p "$UPLOAD_DIR" || {
@@ -217,9 +208,7 @@ esac
 rm -f "$temp_file"
 
 # Return success response
-http-status 200 "OK"
-http-header "Content-Type" "text/html"
-http-end-headers
+http-ok-html
 # Styles for HTML output
 info_style="background: #f8f9fa; padding: 0.75em; border-radius: 4px; margin: 1em 0;"
 display_style="margin: 1em 0; padding: 1em; border: 1px solid #ddd;"

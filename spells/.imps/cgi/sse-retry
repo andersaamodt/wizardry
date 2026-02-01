@@ -1,0 +1,9 @@
+#!/bin/sh
+# sse-retry MILLISECONDS - Set SSE client reconnection retry interval
+# Tells browser how long to wait before reconnecting after connection loss
+# Example: sse-retry 5000  # Retry after 5 seconds
+set -eu
+
+retry_ms="${1:-3000}"
+
+printf 'retry: %s\n\n' "$retry_ms"

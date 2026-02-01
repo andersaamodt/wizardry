@@ -152,6 +152,11 @@ case "$level" in
     spells='import-arcanum:.arcana'
     imps=''
     ;;
+  28)
+    name='Web Services & CGI'
+    spells='build:web configure-nginx:web create-from-template:web create-site:web create-site-prompt:web delete-site:web diagnose-sse:web https:web serve-site:web site-menu:web site-status:web stop-site:web template-menu:web update-from-template:web web-wizardry:web'
+    imps='cgi/blog-index cgi/blog-search cgi/blog-tags cgi/calc cgi/cgi-env cgi/chat-cleanup-inactive-avatars cgi/chat-count-avatars cgi/chat-create-avatar cgi/chat-create-room cgi/chat-delete-avatar cgi/chat-delete-room cgi/chat-get-messages cgi/chat-list-avatars cgi/chat-list-rooms cgi/chat-log-if-unique cgi/chat-move-avatar cgi/chat-rename-avatar cgi/chat-send-message cgi/chat-stream cgi/color-picker cgi/counter cgi/counter-reset cgi/debug-test cgi/drag-drop-upload cgi/echo-text cgi/example-cgi cgi/file-info cgi/get-query-param cgi/get-site-data-dir cgi/http-cors cgi/http-end-headers cgi/http-error cgi/http-header cgi/http-ok-html cgi/http-ok-json cgi/http-status cgi/list-system-files cgi/parse-query cgi/poll-vote cgi/random-quote cgi/reverse-text cgi/save-note cgi/sse-error cgi/sse-event cgi/sse-event-id cgi/sse-padding cgi/sse-retry cgi/sse-start cgi/system-info cgi/temperature-convert cgi/upload-image cgi/url-decode cgi/validate-room-name cgi/validate-username cgi/word-count'
+    ;;
   *)
     exit 1
     ;;

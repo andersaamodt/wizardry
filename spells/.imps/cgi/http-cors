@@ -1,0 +1,18 @@
+#!/bin/sh
+# http-cors ORIGIN - Set CORS headers for cross-origin requests
+# Enables SSE and CGI endpoints to be called from different domains
+# Example: http-cors "*"  or  http-cors "https://example.com"
+set -eu
+
+origin="${1:-*}"
+
+# Set Access-Control headers
+http-header "Access-Control-Allow-Origin" "$origin"
+http-header "Access-Control-Allow-Methods" "GET, POST, OPTIONS"
+http-header "Access-Control-Allow-Headers" "Content-Type, Last-Event-ID"
+http-header "Access-Control-Max-Age" "86400"
+
+# For SSE, credentials are often needed
+if [ "$origin" != "*" ]; then
+  http-header "Access-Control-Allow-Credentials" "true"
+fi

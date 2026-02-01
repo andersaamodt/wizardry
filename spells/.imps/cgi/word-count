@@ -2,18 +2,10 @@
 # word-count - Count words in submitted text
 set -eu
 
-http-status 200 "OK"
-http-header "Content-Type" "text/html"
-http-end-headers
+http-ok-html
 
 # Parse query string to get text parameter
-text=""
-if [ -n "${QUERY_STRING:-}" ]; then
-  # Extract text=value from query string (before url-decode)
-  encoded=$(printf '%s' "$QUERY_STRING" | sed 's/^text=//' | sed 's/&.*//')
-  # Decode the URL-encoded value
-  text=$(url-decode "$encoded")
-fi
+text=$(get-query-param "text")
 
 if [ -z "$text" ]; then
   cat <<HTML

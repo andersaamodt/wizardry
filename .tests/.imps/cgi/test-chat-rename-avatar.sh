@@ -8,7 +8,7 @@ done
 test_rename_avatar() {
   # Create test environment
   test_dir=$(mktemp -d)
-  room_dir="$test_dir/chatrooms/TestRoom"
+  room_dir="$test_dir/.sitedata/default/chatrooms/TestRoom"
   mkdir -p "$room_dir"
   touch "$room_dir/.log"
   
@@ -43,7 +43,7 @@ test_rename_avatar() {
 test_rename_avatar_logs_message() {
   # Create test environment
   test_dir=$(mktemp -d)
-  room_dir="$test_dir/chatrooms/TestRoom"
+  room_dir="$test_dir/.sitedata/default/chatrooms/TestRoom"
   mkdir -p "$room_dir"
   touch "$room_dir/.log"
   
@@ -74,7 +74,7 @@ test_rename_avatar_logs_message() {
 test_rename_prevents_duplicate_messages() {
   # Create test environment
   test_dir=$(mktemp -d)
-  room_dir="$test_dir/chatrooms/TestRoom"
+  room_dir="$test_dir/.sitedata/default/chatrooms/TestRoom"
   mkdir -p "$room_dir"
   
   # Add an existing name change message

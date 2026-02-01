@@ -2,9 +2,7 @@
 # save-note - CGI script that saves text to a file
 set -eu
 
-http-status 200 "OK"
-http-header "Content-Type" "text/html"
-http-end-headers
+http-ok-html
 
 # Parse POST data from stdin
 if [ "${REQUEST_METHOD:-}" = "POST" ]; then
@@ -12,15 +10,7 @@ if [ "${REQUEST_METHOD:-}" = "POST" ]; then
   note=$(printf '%s' "$note" | sed 's/note=//' | url-decode)
   
   # Use site-specific notes in site data directory
-  # Use WIZARDRY_SITE_NAME if available (set by nginx), otherwise default
-  if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
-    site_id="$WIZARDRY_SITE_NAME"
-  else
-    # Fallback for non-nginx environments
-    site_id="default"
-  fi
-  SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
-  notes_dir="$SITES_DIR/.sitedata/$site_id"
+  notes_dir=$(get-site-data-dir)
   mkdir -p "$notes_dir"
   notes_file="$notes_dir/notes.txt"
   printf '%s\n' "$note" >> "$notes_file"

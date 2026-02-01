@@ -4,9 +4,7 @@
 set -eu
 
 # Output headers
-http-status 200 "OK"
-http-header "Content-Type" "text/html; charset=utf-8"
-http-end-headers
+http-ok-html
 
 # Get site directory from environment or default
 SITE_DIR=${WEB_SITE_DIR:-$HOME/sites/current}

@@ -26,14 +26,14 @@ test_web_wizardry_create_site() {
   run_spell spells/web/web-wizardry create testsite
   assert_success
   
-  # Verify site directory exists
-  [ -d "$test_web_root/sites/testsite" ] || {
+  # Verify site directory exists (WEB_WIZARDRY_ROOT/sitename, not WEB_WIZARDRY_ROOT/sites/sitename)
+  [ -d "$test_web_root/testsite" ] || {
     TEST_FAILURE_REASON="site directory not created"
     return 1
   }
   
   # Verify default files exist
-  [ -f "$test_web_root/sites/testsite/site/pages/index.md" ] || {
+  [ -f "$test_web_root/testsite/site/pages/index.md" ] || {
     TEST_FAILURE_REASON="index.md not created"
     return 1
   }

@@ -2,19 +2,10 @@
 # chat-list-rooms - List available chat rooms
 set -eu
 
-http-status 200 "OK"
-http-header "Content-Type" "text/html"
-http-end-headers
+http-ok-html
 
 # Chat rooms directory - use site-specific location
-# Use WIZARDRY_SITE_NAME if available (set by nginx), otherwise default
-if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
-  site_id="$WIZARDRY_SITE_NAME"
-else
-  site_id="default"
-fi
-SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
-CHAT_DIR="$SITES_DIR/.sitedata/$site_id/chatrooms"
+CHAT_DIR=$(get-site-data-dir "chatrooms")
 mkdir -p "$CHAT_DIR"
 
 cat <<'HTML'

@@ -2,9 +2,7 @@
 # chat-send-message - Send a message to a chat room (MUD-compatible format)
 set -eu
 
-http-status 200 "OK"
-http-header "Content-Type" "text/html"
-http-end-headers
+http-ok-html
 
 # Parse POST data from stdin (format: room=ROOM&user=USER&msg=MESSAGE)
 if [ "${REQUEST_METHOD:-}" = "POST" ]; then
@@ -14,16 +12,10 @@ else
   post_data="${QUERY_STRING:-}"
 fi
 
-# Parse parameters
-room_name=$(printf '%s' "$post_data" | sed 's/.*room=\([^&]*\).*/\1/')
-room_name=$(url-decode "$room_name" 2>/dev/null || \
-  printf '%s' "$room_name" | sed 's/+/ /g;s/%20/ /g')
-user_name=$(printf '%s' "$post_data" | sed 's/.*user=\([^&]*\).*/\1/')
-user_name=$(url-decode "$user_name" 2>/dev/null || \
-  printf '%s' "$user_name" | sed 's/+/ /g;s/%20/ /g')
-message=$(printf '%s' "$post_data" | sed 's/.*msg=\([^&]*\).*/\1/')
-message=$(url-decode "$message" 2>/dev/null || \
-  printf '%s' "$message" | sed 's/+/ /g;s/%20/ /g')
+# Parse parameters using get-query-param
+room_name=$(get-query-param "room" "$post_data")
+user_name=$(get-query-param "user" "$post_data")
+message=$(get-query-param "msg" "$post_data")
 
 # Validate inputs
 if [ -z "$room_name" ] || [ -z "$message" ]; then
@@ -35,9 +27,29 @@ HTML
   exit 0
 fi
 
+# Validate room name to prevent path traversal
+if ! validate-room-name "$room_name"; then
+  cat <<HTML
+<div class="demo-result error">
+  <p>Invalid room name</p>
+</div>
+HTML
+  exit 0
+fi
+
 # Default user if not provided
 if [ -z "$user_name" ]; then
   user_name="Anonymous"
+fi
+
+# Validate username
+if ! validate-username "$user_name"; then
+  cat <<HTML
+<div class="demo-result error">
+  <p>Invalid username. Only alphanumeric, underscore, and hyphen allowed.</p>
+</div>
+HTML
+  exit 0
 fi
 
 # Sanitize username - reject reserved names that would conflict with room metadata
@@ -53,14 +65,7 @@ HTML
 esac
 
 # Chat rooms directory - use site-specific location
-# Use WIZARDRY_SITE_NAME if available (set by nginx), otherwise default
-if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
-  site_id="$WIZARDRY_SITE_NAME"
-else
-  site_id="default"
-fi
-SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
-CHAT_DIR="$SITES_DIR/.sitedata/$site_id/chatrooms"
+CHAT_DIR=$(get-site-data-dir "chatrooms")
 ROOM_DIR="$CHAT_DIR/$room_name"
 
 if [ ! -d "$ROOM_DIR" ]; then
@@ -94,11 +99,10 @@ timestamp=$(log-timestamp)
 log_entry="[$timestamp] $user_name: $message"
 
 # Append to log file
-if printf '%s\n' "$log_entry" >> "$LOG_FILE" 2>/dev/null; then
-  # CRITICAL: Force filesystem sync so SSE script sees the write immediately
-  # Without this, write sits in kernel buffer until next write or timeout
-  # This was causing "1 message behind" behavior - next message would flush previous
-  sync 2>/dev/null || true
+# CRITICAL: Wrap in subshell to force immediate buffer flush for tail -f visibility
+# Shell file append (>>) buffers output until script exits
+# Subshell exits immediately, flushing buffer so chat-stream's tail -f sees write
+if (printf '%s\n' "$log_entry" >> "$LOG_FILE") 2>/dev/null; then
   
   # Run cleanup after successful message send (periodic maintenance)
   # This removes avatars inactive for >5 minutes
