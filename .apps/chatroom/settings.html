@@ -4,10 +4,28 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chatroom Settings - Wizardry</title>
-  <link rel="stylesheet" href="style.css">
   <style>
     body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: #f8f9fa;
+    }
+    
+    .app-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 1rem 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      color: white;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .app-header h1 {
+      margin: 0;
+      font-size: 1.3rem;
+      font-weight: 600;
     }
     
     .settings-container {
@@ -99,15 +117,7 @@
   </style>
 </head>
 <body>
-  <div class="app-header">
-    <h1>🧙 Wizardry Chatroom</h1>
-    <nav class="app-nav">
-      <a href="index.html">Chat</a>
-      <a href="settings.html" class="active">Settings</a>
-    </nav>
-  </div>
-  
-  <div class="settings-container">
+  <div class="settings-container" style="padding-top: 1rem;">
     <div class="settings-section">
       <h2>⚙️ Mode</h2>
       <div class="settings-item">
@@ -219,7 +229,44 @@
   </div>
   
   <script>
-    // Hardcoded commands for security - these would be executed via native bridge in production
+    // Initialize native bridge callbacks (same as menu-app)
+    window.__wizardry_callbacks = window.__wizardry_callbacks || {};
+    
+    // Native bridge implementation
+    window.wizardry = window.wizardry || {
+      exec: function(cmdArray) {
+        return new Promise((resolve, reject) => {
+          if (!Array.isArray(cmdArray)) {
+            reject(new Error('Command must be an array'));
+            return;
+          }
+          
+          const id = Math.random().toString(36).substring(7);
+          window.__wizardry_callbacks[id] = resolve;
+          
+          // Send message to native host
+          if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.wizardry) {
+            // macOS/iOS WebKit
+            window.webkit.messageHandlers.wizardry.postMessage({
+              id: id,
+              command: cmdArray
+            });
+          } else {
+            // Fallback for browser testing
+            setTimeout(() => {
+              resolve({
+                stdout: 'Native bridge not available (running in browser)',
+                stderr: '',
+                exit_code: 0,
+                error: null
+              });
+            }, 100);
+          }
+        });
+      }
+    };
+    
+    // Hardcoded commands for security - these are executed via native bridge
     const commands = {
       'get-ip': ['sh', '-c', "ip route get 1 2>/dev/null | awk '{print $7}' | head -1 || hostname -I | awk '{print $1}'"],
       'get-tor': ['sh', '-c', 'cat /var/lib/tor/hidden_service/hostname 2>/dev/null || cat /usr/local/var/lib/tor/hidden_service/hostname 2>/dev/null'],
