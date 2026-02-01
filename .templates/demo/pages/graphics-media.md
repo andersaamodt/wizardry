@@ -775,26 +775,218 @@ Basic WebGPU demonstration (if supported):
 })();
 </script>
 
+## 7. Speech Synthesis API
+
+Convert text to speech with voice control:
+
+<div class="demo-box">
+  <h3>🗣️ Speech Synthesis (Text-to-Speech)</h3>
+  
+  <textarea id="speech-text" rows="4" placeholder="Enter text to speak..." style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem; margin-bottom: 1rem;">Hello! This is a demonstration of the Web Speech Synthesis API. It can read any text aloud using different voices and languages.</textarea>
+  
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+    <div>
+      <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Voice:</label>
+      <select id="speech-voice" style="width: 100%; padding: 0.5rem; border: 2px solid #ddd; border-radius: 4px;">
+        <option>Loading voices...</option>
+      </select>
+    </div>
+    
+    <div>
+      <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Rate: <span id="speech-rate-value">1.0</span></label>
+      <input type="range" id="speech-rate" min="0.5" max="2" step="0.1" value="1" style="width: 100%;" />
+    </div>
+    
+    <div>
+      <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Pitch: <span id="speech-pitch-value">1.0</span></label>
+      <input type="range" id="speech-pitch" min="0.5" max="2" step="0.1" value="1" style="width: 100%;" />
+    </div>
+    
+    <div>
+      <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Volume: <span id="speech-volume-value">1.0</span></label>
+      <input type="range" id="speech-volume" min="0" max="1" step="0.1" value="1" style="width: 100%;" />
+    </div>
+  </div>
+  
+  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+    <button id="speech-speak">🗣️ Speak</button>
+    <button id="speech-pause">⏸️ Pause</button>
+    <button id="speech-resume">▶️ Resume</button>
+    <button id="speech-stop">⏹️ Stop</button>
+  </div>
+  
+  <div id="speech-output" class="output"></div>
+</div>
+
+<script>
+(function() {
+  const textArea = document.getElementById('speech-text');
+  const voiceSelect = document.getElementById('speech-voice');
+  const rateSlider = document.getElementById('speech-rate');
+  const pitchSlider = document.getElementById('speech-pitch');
+  const volumeSlider = document.getElementById('speech-volume');
+  const output = document.getElementById('speech-output');
+  
+  let voices = [];
+  
+  function loadVoices() {
+    voices = speechSynthesis.getVoices();
+    
+    if (voices.length > 0) {
+      voiceSelect.innerHTML = '';
+      
+      // Group voices by language
+      const voicesByLang = {};
+      voices.forEach(voice => {
+        const lang = voice.lang.split('-')[0];
+        if (!voicesByLang[lang]) voicesByLang[lang] = [];
+        voicesByLang[lang].push(voice);
+      });
+      
+      // Add voices to select
+      Object.keys(voicesByLang).sort().forEach(lang => {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = lang.toUpperCase();
+        
+        voicesByLang[lang].forEach((voice, index) => {
+          const option = document.createElement('option');
+          option.value = voices.indexOf(voice);
+          option.textContent = `${voice.name} ${voice.default ? '(Default)' : ''}`;
+          optgroup.appendChild(option);
+        });
+        
+        voiceSelect.appendChild(optgroup);
+      });
+    }
+  }
+  
+  // Load voices
+  loadVoices();
+  if (speechSynthesis.onvoiceschanged !== undefined) {
+    speechSynthesis.onvoiceschanged = loadVoices;
+  }
+  
+  // Update value displays
+  rateSlider.addEventListener('input', () => {
+    document.getElementById('speech-rate-value').textContent = rateSlider.value;
+  });
+  
+  pitchSlider.addEventListener('input', () => {
+    document.getElementById('speech-pitch-value').textContent = pitchSlider.value;
+  });
+  
+  volumeSlider.addEventListener('input', () => {
+    document.getElementById('speech-volume-value').textContent = volumeSlider.value;
+  });
+  
+  document.getElementById('speech-speak').addEventListener('click', () => {
+    const text = textArea.value.trim();
+    
+    if (!text) {
+      output.innerHTML = '<p class="error">Please enter some text to speak</p>';
+      return;
+    }
+    
+    if (speechSynthesis.speaking) {
+      output.innerHTML = '<p class="error">Already speaking. Stop first.</p>';
+      return;
+    }
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Set voice
+    const selectedVoice = voices[voiceSelect.value];
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+    }
+    
+    // Set parameters
+    utterance.rate = parseFloat(rateSlider.value);
+    utterance.pitch = parseFloat(pitchSlider.value);
+    utterance.volume = parseFloat(volumeSlider.value);
+    
+    // Event handlers
+    utterance.onstart = () => {
+      output.innerHTML = `
+        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">🗣️ Speaking...</h4>
+          <p style="margin: 0.25rem 0;"><strong>Voice:</strong> ${utterance.voice ? utterance.voice.name : 'Default'}</p>
+          <p style="margin: 0.25rem 0;"><strong>Language:</strong> ${utterance.voice ? utterance.voice.lang : 'Default'}</p>
+          <p style="margin: 0.25rem 0;"><strong>Rate:</strong> ${utterance.rate}x</p>
+          <p style="margin: 0.25rem 0;"><strong>Pitch:</strong> ${utterance.pitch}</p>
+        </div>
+      `;
+    };
+    
+    utterance.onend = () => {
+      output.innerHTML = '<p style="color: #27ae60;">✅ Speech completed</p>';
+    };
+    
+    utterance.onerror = (event) => {
+      output.innerHTML = `<p class="error">Error: ${event.error}</p>`;
+    };
+    
+    utterance.onpause = () => {
+      output.innerHTML = '<p style="color: #f39c12;">⏸️ Speech paused</p>';
+    };
+    
+    utterance.onresume = () => {
+      output.innerHTML = '<p style="color: #3498db;">▶️ Speech resumed</p>';
+    };
+    
+    speechSynthesis.speak(utterance);
+  });
+  
+  document.getElementById('speech-pause').addEventListener('click', () => {
+    if (speechSynthesis.speaking && !speechSynthesis.paused) {
+      speechSynthesis.pause();
+    } else {
+      output.innerHTML = '<p style="color: #7f8c8d;">Not currently speaking</p>';
+    }
+  });
+  
+  document.getElementById('speech-resume').addEventListener('click', () => {
+    if (speechSynthesis.paused) {
+      speechSynthesis.resume();
+    } else {
+      output.innerHTML = '<p style="color: #7f8c8d;">Not currently paused</p>';
+    }
+  });
+  
+  document.getElementById('speech-stop').addEventListener('click', () => {
+    if (speechSynthesis.speaking) {
+      speechSynthesis.cancel();
+      output.innerHTML = '<p style="color: #7f8c8d;">⏹️ Speech stopped</p>';
+    } else {
+      output.innerHTML = '<p style="color: #7f8c8d;">Not currently speaking</p>';
+    }
+  });
+})();
+</script>
+
 <div class="info-box">
-  <h3>🎯 3D Graphics APIs:</h3>
+  <h3>🎯 Graphics & Media APIs:</h3>
   <ul>
-    <li><strong>WebGL:</strong> OpenGL ES 2.0/3.0 for web, widely supported</li>
-    <li><strong>WebGPU:</strong> Modern GPU API, experimental but more powerful</li>
+    <li><strong>Canvas 2D:</strong> Immediate-mode raster graphics</li>
+    <li><strong>SVG:</strong> Retained-mode vector graphics</li>
+    <li><strong>HTML5 Audio:</strong> Basic audio playback</li>
+    <li><strong>Web Audio API:</strong> Advanced audio synthesis and processing</li>
+    <li><strong>WebGL:</strong> 3D graphics with GLSL shaders</li>
+    <li><strong>WebGPU:</strong> Next-generation GPU graphics with WGSL shaders</li>
+    <li><strong>Speech Synthesis:</strong> Text-to-speech with voice control</li>
   </ul>
   
-  <p style="margin-top: 1rem;"><strong>🎨 WebGL vs WebGPU:</strong></p>
+  <p style="margin-top: 1rem;"><strong>🎨 Graphics:</strong></p>
   <ul>
-    <li><strong>WebGL:</strong> Mature, compatible with all modern browsers, OpenGL-based</li>
-    <li><strong>WebGPU:</strong> Next-gen, better performance, modern shader language (WGSL)</li>
-    <li><strong>WebGL:</strong> Uses GLSL shaders (OpenGL Shading Language)</li>
-    <li><strong>WebGPU:</strong> Uses WGSL shaders (WebGPU Shading Language)</li>
+    <li><strong>2D Graphics:</strong> Canvas API for charts, drawings, image manipulation</li>
+    <li><strong>Vector Graphics:</strong> SVG for scalable, resolution-independent graphics</li>
+    <li><strong>3D Graphics:</strong> WebGL (mature) and WebGPU (cutting-edge)</li>
   </ul>
   
-  <p style="margin-top: 1rem;"><strong>💡 Use Cases:</strong></p>
+  <p style="margin-top: 1rem;"><strong>🔊 Audio:</strong></p>
   <ul>
-    <li>3D games and interactive experiences</li>
-    <li>Data visualization and scientific computing</li>
-    <li>Image/video processing with GPU acceleration</li>
-    <li>CAD and 3D modeling tools</li>
+    <li><strong>Playback:</strong> HTML5 Audio for simple playback</li>
+    <li><strong>Synthesis:</strong> Web Audio API for real-time audio generation</li>
+    <li><strong>Speech:</strong> Text-to-speech with multiple voices and languages</li>
   </ul>
 </div>

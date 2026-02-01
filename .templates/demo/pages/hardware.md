@@ -699,6 +699,252 @@ Access device accelerometer and gyroscope data:
 })();
 </script>
 
+## 6. Media Recorder API
+
+Record audio and video from camera/microphone to downloadable files:
+
+<div class="demo-box">
+  <h3>🎬 Media Recorder</h3>
+  
+  <div style="margin-bottom: 1rem;">
+    <video id="recorder-preview" autoplay muted playsinline style="max-width: 100%; border: 2px solid #ddd; border-radius: 4px; background: #000;"></video>
+  </div>
+  
+  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+    <button id="recorder-start-camera">📹 Start Camera</button>
+    <button id="recorder-start-recording">⏺️ Start Recording</button>
+    <button id="recorder-stop-recording">⏹️ Stop Recording</button>
+    <button id="recorder-download">⬇️ Download</button>
+    <select id="recorder-type" style="padding: 0.5rem;">
+      <option value="video/webm">Video (WebM)</option>
+      <option value="video/webm;codecs=vp9">Video VP9 (WebM)</option>
+      <option value="video/mp4">Video (MP4)</option>
+    </select>
+  </div>
+  
+  <video id="recorder-playback" controls style="max-width: 100%; border: 2px solid #ddd; border-radius: 4px; display: none; margin-top: 1rem;"></video>
+  
+  <div id="recorder-output" class="output"></div>
+</div>
+
+<script>
+(function() {
+  const preview = document.getElementById('recorder-preview');
+  const playback = document.getElementById('recorder-playback');
+  const output = document.getElementById('recorder-output');
+  const typeSelect = document.getElementById('recorder-type');
+  let stream = null;
+  let mediaRecorder = null;
+  let recordedChunks = [];
+  
+  document.getElementById('recorder-start-camera').addEventListener('click', async () => {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      preview.srcObject = stream;
+      preview.style.display = 'block';
+      
+      output.innerHTML = `
+        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ Camera Ready</h4>
+          <p style="margin: 0;">Click "Start Recording" to begin capturing video.</p>
+        </div>
+      `;
+    } catch (error) {
+      output.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+    }
+  });
+  
+  document.getElementById('recorder-start-recording').addEventListener('click', () => {
+    if (!stream) {
+      output.innerHTML = '<p class="error">Start camera first</p>';
+      return;
+    }
+    
+    recordedChunks = [];
+    const mimeType = typeSelect.value;
+    
+    try {
+      mediaRecorder = new MediaRecorder(stream, { mimeType });
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunks.push(event.data);
+        }
+      };
+      
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        
+        playback.src = url;
+        playback.style.display = 'block';
+        
+        document.getElementById('recorder-download').onclick = () => {
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `recording-${Date.now()}.${mimeType.includes('mp4') ? 'mp4' : 'webm'}`;
+          a.click();
+        };
+        
+        output.innerHTML = `
+          <div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
+            <h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">🎬 Recording Complete</h4>
+            <p style="margin: 0.25rem 0;"><strong>Size:</strong> ${(blob.size / 1024).toFixed(2)} KB</p>
+            <p style="margin: 0.25rem 0;"><strong>Duration:</strong> ${recordedChunks.length} chunks</p>
+            <p style="margin: 0.5rem 0 0 0;">Playback ready. Click Download to save.</p>
+          </div>
+        `;
+      };
+      
+      mediaRecorder.start(100); // Collect data every 100ms
+      
+      output.innerHTML = `
+        <div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
+          <h4 style="margin: 0 0 0.5rem 0; color: #c62828;">⏺️ Recording...</h4>
+          <p style="margin: 0;">Click "Stop Recording" when done.</p>
+        </div>
+      `;
+    } catch (error) {
+      output.innerHTML = `
+        <p class="error">MediaRecorder not supported with ${mimeType}. Try a different format.</p>
+      `;
+    }
+  });
+  
+  document.getElementById('recorder-stop-recording').addEventListener('click', () => {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    } else {
+      output.innerHTML = '<p style="color: #7f8c8d;">Not currently recording</p>';
+    }
+  });
+})();
+</script>
+
+## 7. Picture-in-Picture API
+
+Create floating video windows:
+
+<div class="demo-box">
+  <h3>📺 Picture-in-Picture</h3>
+  
+  <video id="pip-video" controls style="max-width: 100%; border: 2px solid #ddd; border-radius: 4px; background: #000;">
+    <source src="data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAACKBtZGF0AAACrgYF//+q3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE0OCByMjY2MyA1YzY1NzA0IC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAxNSAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTEgcmVmPTMgZGVibG9jaz0xOjA6MCBhbmFseXNlPTB4MzoweDExMyBtZT1oZXggc3VibWU9NyBwc3k9MSBwc3lfcmQ9MS4wMDowLjAwIG1peGVkX3JlZj0xIG1lX3JhbmdlPTE2IGNocm9tYV9tZT0xIHRyZWxsaXM9MSA4eDhkY3Q9MSBjcW09MCBkZWFkem9uZT0yMSwxMSBmYXN0X3Bza2lwPTEgY2hyb21hX3FwX29mZnNldD0tMiB0aHJlYWRzPTEyIGxvb2thaGVhZF90aHJlYWRzPTIgc2xpY2VkX3RocmVhZHM9MCBucj0wIGRlY2ltYXRlPTEgaW50ZXJsYWNlZD0wIGJsdXJheV9jb21wYXQ9MCBjb25zdHJhaW5lZF9pbnRyYT0wIGJmcmFtZXM9MyBiX3B5cmFtaWQ9MiBiX2FkYXB0PTEgYl9iaWFzPTAgZGlyZWN0PTEgd2VpZ2h0Yj0xIG9wZW5fZ29wPTAgd2VpZ2h0cD0yIGtleWludD0yNTAga2V5aW50X21pbj0yNSBzY2VuZWN1dD00MCBpbnRyYV9yZWZyZXNoPTAgcmNfbG9va2FoZWFkPTQwIHJjPWNyZiBtYnRyZWU9MSBjcmY9MjMuMCBxY29tcD0wLjYwIHFwbWluPTAgcXBtYXg9NjkgcXBzdGVwPTQgaXBfcmF0aW89MS40MCBhcT0xOjEuMDAAgAAAAAwliIQAV/0TAAYdgAAAMAAAG/kAwIFBIBIB" type="video/mp4">
+  </video>
+  
+  <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+    <button id="pip-enter">📺 Enter PiP</button>
+    <button id="pip-exit">❌ Exit PiP</button>
+    <button id="pip-use-camera">📹 Use Camera Feed</button>
+  </div>
+  
+  <div id="pip-output" class="output"></div>
+</div>
+
+<script>
+(function() {
+  const video = document.getElementById('pip-video');
+  const output = document.getElementById('pip-output');
+  
+  // Create a simple canvas animation as default content
+  const canvas = document.createElement('canvas');
+  canvas.width = 640;
+  canvas.height = 360;
+  const ctx = canvas.getContext('2d');
+  
+  function drawAnimation() {
+    const time = Date.now() / 1000;
+    ctx.fillStyle = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.fillStyle = 'white';
+    ctx.font = '48px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('PiP Demo', canvas.width / 2, canvas.height / 2 - 30);
+    
+    ctx.font = '24px Arial';
+    ctx.fillText(new Date().toLocaleTimeString(), canvas.width / 2, canvas.height / 2 + 20);
+    
+    // Animated circle
+    const x = canvas.width / 2 + Math.cos(time) * 100;
+    const y = canvas.height / 2 + Math.sin(time) * 50;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.beginPath();
+    ctx.arc(x, y, 30, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
+  let animationInterval = setInterval(drawAnimation, 1000 / 30);
+  const stream = canvas.captureStream(30);
+  video.srcObject = stream;
+  video.play();
+  
+  document.getElementById('pip-enter').addEventListener('click', async () => {
+    try {
+      if (document.pictureInPictureElement) {
+        output.innerHTML = '<p class="error">Already in PiP mode</p>';
+        return;
+      }
+      
+      await video.requestPictureInPicture();
+      
+      output.innerHTML = `
+        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">📺 Picture-in-Picture Active</h4>
+          <p style="margin: 0;">Video is now floating! You can move it around and resize it.</p>
+        </div>
+      `;
+    } catch (error) {
+      output.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+    }
+  });
+  
+  document.getElementById('pip-exit').addEventListener('click', async () => {
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else {
+        output.innerHTML = '<p style="color: #7f8c8d;">Not in PiP mode</p>';
+      }
+    } catch (error) {
+      output.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+    }
+  });
+  
+  document.getElementById('pip-use-camera').addEventListener('click', async () => {
+    try {
+      const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      clearInterval(animationInterval);
+      video.srcObject = cameraStream;
+      video.play();
+      
+      output.innerHTML = `
+        <div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
+          <h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">📹 Camera Feed Active</h4>
+          <p style="margin: 0;">Now showing camera feed. Try entering PiP mode!</p>
+        </div>
+      `;
+    } catch (error) {
+      output.innerHTML = `<p class="error">Camera error: ${error.message}</p>`;
+    }
+  });
+  
+  video.addEventListener('enterpictureinpicture', () => {
+    output.innerHTML = `
+      <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+        <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">📺 Entered PiP Mode</h4>
+        <p style="margin: 0;">Video is floating on your screen!</p>
+      </div>
+    `;
+  });
+  
+  video.addEventListener('leavepictureinpicture', () => {
+    output.innerHTML = '<p style="color: #7f8c8d;">Left PiP mode</p>';
+  });
+})();
+</script>
+
 ---
 
 <div class="info-box">
@@ -710,6 +956,8 @@ Access device accelerometer and gyroscope data:
     <li><strong>Geolocation API:</strong> Access GPS and device location with accuracy data</li>
     <li><strong>Device Motion:</strong> Accelerometer and gyroscope data</li>
     <li><strong>Device Orientation:</strong> Compass and tilt sensors</li>
+    <li><strong>Media Recorder API:</strong> Record audio/video to downloadable files</li>
+    <li><strong>Picture-in-Picture:</strong> Floating video windows</li>
   </ul>
   
   <p style="margin-top: 1rem;"><strong>⚠️ Privacy & Permissions:</strong></p>
@@ -727,5 +975,7 @@ Access device accelerometer and gyroscope data:
     <li><strong>Geolocation:</strong> All modern browsers (mobile devices typically more accurate)</li>
     <li><strong>Motion Sensors:</strong> Mobile devices only (phones, tablets)</li>
     <li><strong>Orientation:</strong> Mobile devices with gyroscope/accelerometer</li>
+    <li><strong>Media Recorder:</strong> Chrome, Firefox, Edge, Safari (format support varies)</li>
+    <li><strong>Picture-in-Picture:</strong> Chrome, Edge, Safari (desktop and mobile)</li>
   </ul>
 </div>

@@ -347,6 +347,294 @@ Display information about Content Security Policy if available:
 })();
 </script>
 
+## 5. Web Crypto API (SubtleCrypto)
+
+Perform cryptographic operations like hashing, encryption, and key generation:
+
+<div class="demo-box">
+  <h3>🔐 Web Crypto API</h3>
+  
+  <div style="margin-bottom: 2rem;">
+    <h4>Hash Generation (SHA-256)</h4>
+    <textarea id="crypto-hash-input" rows="3" placeholder="Enter text to hash..." style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem; margin-bottom: 0.5rem;">Hello, Crypto API!</textarea>
+    <button id="crypto-hash">🔐 Generate SHA-256 Hash</button>
+    <div id="crypto-hash-output" class="output"></div>
+  </div>
+  
+  <div style="margin-bottom: 2rem;">
+    <h4>Encryption & Decryption (AES-GCM)</h4>
+    <textarea id="crypto-encrypt-input" rows="3" placeholder="Enter text to encrypt..." style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem; margin-bottom: 0.5rem;">Secret message</textarea>
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+      <button id="crypto-generate-key">🔑 Generate Key</button>
+      <button id="crypto-encrypt">🔒 Encrypt</button>
+      <button id="crypto-decrypt">🔓 Decrypt</button>
+    </div>
+    <div id="crypto-encrypt-output" class="output"></div>
+  </div>
+  
+  <div>
+    <h4>Digital Signature (ECDSA)</h4>
+    <textarea id="crypto-sign-input" rows="3" placeholder="Enter text to sign..." style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem; margin-bottom: 0.5rem;">Document to sign</textarea>
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+      <button id="crypto-generate-keypair">🔑 Generate Key Pair</button>
+      <button id="crypto-sign">✍️ Sign</button>
+      <button id="crypto-verify">✅ Verify Signature</button>
+    </div>
+    <div id="crypto-sign-output" class="output"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const hashInput = document.getElementById('crypto-hash-input');
+  const hashOutput = document.getElementById('crypto-hash-output');
+  const encryptInput = document.getElementById('crypto-encrypt-input');
+  const encryptOutput = document.getElementById('crypto-encrypt-output');
+  const signInput = document.getElementById('crypto-sign-input');
+  const signOutput = document.getElementById('crypto-sign-output');
+  
+  let aesKey = null;
+  let encryptedData = null;
+  let iv = null;
+  
+  let keyPair = null;
+  let signature = null;
+  
+  // Utility functions
+  function arrayBufferToHex(buffer) {
+    return Array.from(new Uint8Array(buffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  }
+  
+  function arrayBufferToBase64(buffer) {
+    return btoa(String.fromCharCode(...new Uint8Array(buffer)));
+  }
+  
+  // Hash demo
+  document.getElementById('crypto-hash').addEventListener('click', async () => {
+    const text = hashInput.value;
+    
+    if (!text) {
+      hashOutput.innerHTML = '<p class="error">Please enter text to hash</p>';
+      return;
+    }
+    
+    try {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(text);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashHex = arrayBufferToHex(hashBuffer);
+      
+      hashOutput.innerHTML = `
+        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">🔐 SHA-256 Hash</h4>
+          <p style="margin: 0.25rem 0;"><strong>Input:</strong> "${text}"</p>
+          <p style="margin: 0.25rem 0;"><strong>Hash:</strong></p>
+          <pre style="margin: 0.5rem 0; padding: 0.5rem; background: #fff; border-radius: 3px; overflow-x: auto; font-size: 0.85rem;">${hashHex}</pre>
+          <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666;">Length: ${hashHex.length} chars (64 hex digits = 256 bits)</p>
+        </div>
+      `;
+    } catch (error) {
+      hashOutput.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+    }
+  });
+  
+  // Encryption demo
+  document.getElementById('crypto-generate-key').addEventListener('click', async () => {
+    try {
+      aesKey = await crypto.subtle.generateKey(
+        { name: 'AES-GCM', length: 256 },
+        true,
+        ['encrypt', 'decrypt']
+      );
+      
+      encryptOutput.innerHTML = `
+        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ AES-256 Key Generated</h4>
+          <p style="margin: 0;">Ready to encrypt and decrypt messages!</p>
+        </div>
+      `;
+    } catch (error) {
+      encryptOutput.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+    }
+  });
+  
+  document.getElementById('crypto-encrypt').addEventListener('click', async () => {
+    const text = encryptInput.value;
+    
+    if (!text) {
+      encryptOutput.innerHTML = '<p class="error">Please enter text to encrypt</p>';
+      return;
+    }
+    
+    if (!aesKey) {
+      encryptOutput.innerHTML = '<p class="error">Generate a key first</p>';
+      return;
+    }
+    
+    try {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(text);
+      
+      // Generate random IV (initialization vector)
+      iv = crypto.getRandomValues(new Uint8Array(12));
+      
+      encryptedData = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv: iv },
+        aesKey,
+        data
+      );
+      
+      encryptOutput.innerHTML = `
+        <div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
+          <h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">🔒 Encrypted</h4>
+          <p style="margin: 0.25rem 0;"><strong>Original:</strong> "${text}"</p>
+          <p style="margin: 0.25rem 0;"><strong>Encrypted (Base64):</strong></p>
+          <pre style="margin: 0.5rem 0; padding: 0.5rem; background: #fff; border-radius: 3px; overflow-x: auto; font-size: 0.85rem;">${arrayBufferToBase64(encryptedData)}</pre>
+          <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666;">Click Decrypt to retrieve the original text</p>
+        </div>
+      `;
+    } catch (error) {
+      encryptOutput.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+    }
+  });
+  
+  document.getElementById('crypto-decrypt').addEventListener('click', async () => {
+    if (!aesKey || !encryptedData || !iv) {
+      encryptOutput.innerHTML = '<p class="error">Encrypt something first</p>';
+      return;
+    }
+    
+    try {
+      const decryptedData = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv: iv },
+        aesKey,
+        encryptedData
+      );
+      
+      const decoder = new TextDecoder();
+      const decryptedText = decoder.decode(decryptedData);
+      
+      encryptOutput.innerHTML = `
+        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">🔓 Decrypted Successfully!</h4>
+          <p style="margin: 0.25rem 0;"><strong>Decrypted Text:</strong> "${decryptedText}"</p>
+          <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666;">The encrypted data was successfully decrypted back to the original text</p>
+        </div>
+      `;
+    } catch (error) {
+      encryptOutput.innerHTML = `<p class="error">Decryption error: ${error.message}</p>`;
+    }
+  });
+  
+  // Digital signature demo
+  document.getElementById('crypto-generate-keypair').addEventListener('click', async () => {
+    try {
+      keyPair = await crypto.subtle.generateKey(
+        {
+          name: 'ECDSA',
+          namedCurve: 'P-256'
+        },
+        true,
+        ['sign', 'verify']
+      );
+      
+      signOutput.innerHTML = `
+        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ ECDSA Key Pair Generated</h4>
+          <p style="margin: 0;">Public/private key pair ready for signing and verification!</p>
+        </div>
+      `;
+    } catch (error) {
+      signOutput.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+    }
+  });
+  
+  document.getElementById('crypto-sign').addEventListener('click', async () => {
+    const text = signInput.value;
+    
+    if (!text) {
+      signOutput.innerHTML = '<p class="error">Please enter text to sign</p>';
+      return;
+    }
+    
+    if (!keyPair) {
+      signOutput.innerHTML = '<p class="error">Generate a key pair first</p>';
+      return;
+    }
+    
+    try {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(text);
+      
+      signature = await crypto.subtle.sign(
+        {
+          name: 'ECDSA',
+          hash: { name: 'SHA-256' }
+        },
+        keyPair.privateKey,
+        data
+      );
+      
+      signOutput.innerHTML = `
+        <div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
+          <h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">✍️ Signed</h4>
+          <p style="margin: 0.25rem 0;"><strong>Document:</strong> "${text}"</p>
+          <p style="margin: 0.25rem 0;"><strong>Signature (Hex):</strong></p>
+          <pre style="margin: 0.5rem 0; padding: 0.5rem; background: #fff; border-radius: 3px; overflow-x: auto; font-size: 0.85rem;">${arrayBufferToHex(signature)}</pre>
+          <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666;">Click Verify to check the signature</p>
+        </div>
+      `;
+    } catch (error) {
+      signOutput.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+    }
+  });
+  
+  document.getElementById('crypto-verify').addEventListener('click', async () => {
+    const text = signInput.value;
+    
+    if (!keyPair || !signature) {
+      signOutput.innerHTML = '<p class="error">Sign something first</p>';
+      return;
+    }
+    
+    try {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(text);
+      
+      const isValid = await crypto.subtle.verify(
+        {
+          name: 'ECDSA',
+          hash: { name: 'SHA-256' }
+        },
+        keyPair.publicKey,
+        signature,
+        data
+      );
+      
+      if (isValid) {
+        signOutput.innerHTML = `
+          <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+            <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ Signature Valid!</h4>
+            <p style="margin: 0;">The signature is authentic and the document has not been tampered with.</p>
+          </div>
+        `;
+      } else {
+        signOutput.innerHTML = `
+          <div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
+            <h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ Signature Invalid</h4>
+            <p style="margin: 0;">The signature does not match or the document has been modified.</p>
+          </div>
+        `;
+      }
+    } catch (error) {
+      signOutput.innerHTML = `<p class="error">Verification error: ${error.message}</p>`;
+    }
+  });
+})();
+</script>
+
 ---
 
 <div class="info-box">
@@ -356,6 +644,15 @@ Display information about Content Security Policy if available:
     <li><strong>Permissions API:</strong> Query permission states for sensitive features</li>
     <li><strong>Secure Contexts:</strong> HTTPS-only API access detection</li>
     <li><strong>CSP:</strong> Content Security Policy information and violation detection</li>
+    <li><strong>Web Crypto API:</strong> Cryptographic operations (hashing, encryption, signatures)</li>
+  </ul>
+  
+  <p style="margin-top: 1rem;"><strong>🔐 Cryptographic Operations:</strong></p>
+  <ul>
+    <li><strong>Hashing (SHA-256):</strong> One-way hash for data integrity and password storage</li>
+    <li><strong>Encryption (AES-GCM):</strong> Symmetric encryption for data confidentiality</li>
+    <li><strong>Digital Signatures (ECDSA):</strong> Verify authenticity and non-repudiation</li>
+    <li><strong>Key Generation:</strong> Secure random key creation</li>
   </ul>
   
   <p style="margin-top: 1rem;"><strong>🔒 Security Principles:</strong></p>
@@ -365,6 +662,7 @@ Display information about Content Security Policy if available:
     <li><strong>Secure Contexts:</strong> Sensitive APIs only work over HTTPS</li>
     <li><strong>Permissions:</strong> User must grant explicit permission for sensitive features</li>
     <li><strong>CSP:</strong> Restricts resource loading to prevent injection attacks</li>
+    <li><strong>Crypto API:</strong> All operations happen in secure, sandboxed environment</li>
   </ul>
   
   <p style="margin-top: 1rem;"><strong>🌐 Origins:</strong></p>
