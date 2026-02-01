@@ -1,0 +1,52 @@
+#!/bin/sh
+
+# List available desktop apps in the .apps directory.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: list-apps
+
+List all available desktop apps in the .apps directory.
+Each app is displayed with its name and whether it's valid.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+# Use WIZARDRY_DIR from environment (set by invoke-wizardry)
+wizardry_dir=${WIZARDRY_DIR:-$HOME/.wizardry}
+
+if [ ! -d "$wizardry_dir" ]; then
+  printf '%s\n' "list-apps: wizardry directory not found: $wizardry_dir" >&2
+  exit 1
+fi
+
+apps_dir="$wizardry_dir/.apps"
+
+if [ ! -d "$apps_dir" ]; then
+  printf '%s\n' "list-apps: .apps directory not found" >&2
+  exit 1
+fi
+
+# List all directories in .apps
+found_any=0
+for app_path in "$apps_dir"/*; do
+  if [ -d "$app_path" ]; then
+    found_any=1
+    app_name=$(basename "$app_path")
+    
+    # Check if app is valid
+    if app-validate "$app_path" 2>/dev/null; then
+      printf '%s\n' "$app_name"
+    else
+      printf '%s (invalid)\n' "$app_name"
+    fi
+  fi
+done
+
+if [ "$found_any" -eq 0 ]; then
+  printf '%s\n' "No apps found in $apps_dir"
+fi
