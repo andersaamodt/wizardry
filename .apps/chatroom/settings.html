@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chatroom Settings - Wizardry</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f8f9fa;
+    }
+    
+    .app-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 1rem 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      color: white;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .app-header h1 {
+      margin: 0;
+      font-size: 1.3rem;
+      font-weight: 600;
+    }
+    
+    .settings-container {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 2rem;
+    }
+    
+    .settings-section {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .settings-section h2 {
+      margin-bottom: 1rem;
+      color: #667eea;
+      font-size: 1.5rem;
+    }
+    
+    .settings-item {
+      margin-bottom: 1.5rem;
+    }
+    
+    .settings-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #495057;
+      font-weight: 600;
+    }
+    
+    .settings-value {
+      display: block;
+      padding: 1rem;
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      color: #212529;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 0.95rem;
+      word-break: break-all;
+    }
+    
+    .settings-value.loading {
+      color: #6c757d;
+      font-style: italic;
+    }
+    
+    .settings-value.error {
+      color: #dc3545;
+    }
+    
+    .settings-value.success {
+      color: #28a745;
+    }
+    
+    .copy-btn {
+      margin-top: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.2s;
+    }
+    
+    .copy-btn:hover {
+      background: #5568d3;
+    }
+    
+    .info-box {
+      background: #e7f3ff;
+      border-left: 3px solid #667eea;
+      padding: 1rem;
+      border-radius: 4px;
+      margin-top: 1rem;
+    }
+    
+    .info-box p {
+      margin: 0;
+      color: #495057;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="settings-container" style="padding-top: 1rem;">
+    <div class="settings-section">
+      <h2>⚙️ Mode</h2>
+      <div class="settings-item">
+        <label class="settings-label">Chatroom Mode</label>
+        <div style="margin-top: 0.5rem;">
+          <label style="display: block; margin-bottom: 0.5rem; cursor: pointer;">
+            <input type="radio" name="mode" value="client" onchange="setMode('client')" style="margin-right: 0.5rem;">
+            <strong>Client Only</strong> - Connect to someone else's chatroom
+          </label>
+          <label style="display: block; cursor: pointer;">
+            <input type="radio" name="mode" value="host" onchange="setMode('host')" style="margin-right: 0.5rem;">
+            <strong>Host Server</strong> - Run a chatroom server that others can join
+          </label>
+        </div>
+        <div class="info-box" style="margin-top: 1rem;">
+          <p id="mode-description">
+            Choose whether to just connect to an existing chatroom (Client Only) or to host your own server.
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="settings-section" id="server-section" style="display: none;">
+      <h2>🚀 Server Control</h2>
+      <div class="settings-item">
+        <label class="settings-label">Chat Server Status</label>
+        <code class="settings-value loading" id="server-status">Checking...</code>
+        <div style="margin-top: 0.75rem;">
+          <button class="copy-btn" id="start-server-btn" onclick="startServer()" style="display:none">
+            ▶️ Start Server
+          </button>
+          <button class="copy-btn" id="stop-server-btn" onclick="stopServer()" style="display:none; background: #dc3545;">
+            ⏹️ Stop Server
+          </button>
+        </div>
+        <div class="info-box">
+          <p>
+            Start your own chatroom server. Once running, others can connect using the URL below.
+            The server will continue running until you stop it or close the app.
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="settings-section" id="connection-section" style="display: none;">
+      <h2>📡 Connection Information</h2>
+      <p style="color: #6c757d; margin-bottom: 1.5rem;">
+        Share these addresses so others can connect to your chatroom server.
+      </p>
+      
+      <div class="settings-item">
+        <label class="settings-label">Local Connection URL</label>
+        <code class="settings-value loading" id="connection-url">Loading...</code>
+        <button class="copy-btn" id="copy-url-btn" onclick="copyToClipboard('connection-url')" style="display:none">
+          📋 Copy URL
+        </button>
+        <div class="info-box">
+          <p>
+            <strong>How to connect:</strong> Share this URL with others on your local network.
+            They can open it in any web browser to join your chatroom.
+          </p>
+        </div>
+      </div>
+      
+      <div class="settings-item">
+        <label class="settings-label">Local IP Address</label>
+        <code class="settings-value loading" id="ip-address">Loading...</code>
+        <button class="copy-btn" id="copy-ip-btn" onclick="copyToClipboard('ip-address')" style="display:none">
+          📋 Copy IP
+        </button>
+        <div class="info-box">
+          <p>
+            This is your local network IP address. Others on the same network 
+            can connect to your chatroom using this address.
+          </p>
+        </div>
+      </div>
+      
+      <div class="settings-item" style="margin-top: 2rem;">
+        <label class="settings-label">Tor Hidden Service Address</label>
+        <code class="settings-value loading" id="tor-address">Loading...</code>
+        <button class="copy-btn" id="copy-tor-btn" onclick="copyToClipboard('tor-address')" style="display:none">
+          📋 Copy Tor Address
+        </button>
+        <div class="info-box">
+          <p>
+            If you have Tor configured, this is your .onion address. Anyone with 
+            Tor Browser can connect to your chatroom anonymously using this address,
+            even if you're behind a firewall or NAT.
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="settings-section">
+      <h2>ℹ️ About This App</h2>
+      <p style="color: #495057; line-height: 1.6;">
+        This chatroom app demonstrates wizardry's desktop app framework:
+      </p>
+      <ul style="color: #495057; margin-top: 1rem; margin-left: 1.5rem; line-height: 1.8;">
+        <li>Uses the same CGI backend as the web demo</li>
+        <li>Server-Sent Events (SSE) for real-time updates</li>
+        <li>Tor integration for anonymous access</li>
+        <li>Commands hardcoded in GUI for security</li>
+        <li>Compatible with MUD <code>say</code> command format</li>
+        <li>Fully interoperable: web users and MUD players share the same rooms!</li>
+      </ul>
+    </div>
+  </div>
+  
+  <script>
+    // Initialize native bridge callbacks (same as menu-app)
+    window.__wizardry_callbacks = window.__wizardry_callbacks || {};
+    
+    // Native bridge implementation
+    window.wizardry = window.wizardry || {
+      exec: function(cmdArray) {
+        return new Promise((resolve, reject) => {
+          if (!Array.isArray(cmdArray)) {
+            reject(new Error('Command must be an array'));
+            return;
+          }
+          
+          const id = Math.random().toString(36).substring(7);
+          window.__wizardry_callbacks[id] = resolve;
+          
+          // Send message to native host
+          if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.wizardry) {
+            // macOS/iOS WebKit
+            window.webkit.messageHandlers.wizardry.postMessage({
+              id: id,
+              command: cmdArray
+            });
+          } else {
+            // Fallback for browser testing
+            setTimeout(() => {
+              resolve({
+                stdout: 'Native bridge not available (running in browser)',
+                stderr: '',
+                exit_code: 0,
+                error: null
+              });
+            }, 100);
+          }
+        });
+      }
+    };
+    
+    // Hardcoded commands for security - these are executed via native bridge
+    const commands = {
+      'get-ip': ['sh', '-c', "ip route get 1 2>/dev/null | awk '{print $7}' | head -1 || hostname -I | awk '{print $1}'"],
+      'get-tor': ['sh', '-c', 'cat /var/lib/tor/hidden_service/hostname 2>/dev/null || cat /usr/local/var/lib/tor/hidden_service/hostname 2>/dev/null'],
+      'check-server': ['sh', '-c', 'pgrep -f "nginx.*demo" > /dev/null && echo "running" || echo "stopped"'],
+      'get-port': ['sh', '-c', 'cat $HOME/sites/demo/site.conf 2>/dev/null | grep "^port=" | cut -d= -f2 || echo "8080"'],
+      'create-demo': ['sh', '-c', 'cd ~/.wizardry && [ -d ~/sites/demo ] || (echo "Creating demo site..." && web-wizardry create demo --template demo)'],
+      'start-server': ['sh', '-c', 'cd ~/.wizardry && web-wizardry serve demo'],
+      'stop-server': ['sh', '-c', 'web-wizardry stop demo']
+    };
+    
+    let serverRunning = false;
+    let serverPort = '8080';
+    let currentMode = 'client'; // default to client mode
+    
+    // Initialize mode from localStorage
+    function initMode() {
+      const savedMode = localStorage.getItem('chatroomMode') || 'client';
+      currentMode = savedMode;
+      const radioButton = document.querySelector(`input[name="mode"][value="${savedMode}"]`);
+      if (radioButton) {
+        radioButton.checked = true;
+      }
+      updateModeUI();
+    }
+    
+    // Set mode (client or host)
+    function setMode(mode) {
+      currentMode = mode;
+      localStorage.setItem('chatroomMode', mode);
+      updateModeUI();
+      
+      if (mode === 'host') {
+        checkServerStatus();
+      }
+    }
+    
+    // Update UI based on mode
+    function updateModeUI() {
+      const serverSection = document.getElementById('server-section');
+      const connectionSection = document.getElementById('connection-section');
+      const modeDesc = document.getElementById('mode-description');
+      
+      if (currentMode === 'host') {
+        serverSection.style.display = 'block';
+        connectionSection.style.display = 'block';
+        modeDesc.textContent = 'Host mode: You are running a chatroom server that others can connect to.';
+      } else {
+        serverSection.style.display = 'none';
+        connectionSection.style.display = 'none';
+        modeDesc.textContent = 'Client mode: Connect to an existing chatroom by entering its URL in the chat tab.';
+      }
+    }
+    
+    // Check server status
+    function checkServerStatus() {
+      // In production: window.wizardry.exec(commands['check-server'])
+      // For now, try to fetch from the demo site to see if it's running
+      fetch('http://localhost:8080/pages/chat.html', { method: 'HEAD', mode: 'no-cors' })
+        .then(() => {
+          serverRunning = true;
+          updateServerStatus('running');
+          loadPort();
+        })
+        .catch(() => {
+          serverRunning = false;
+          updateServerStatus('stopped');
+        });
+    }
+    
+    function updateServerStatus(status) {
+      const statusElement = document.getElementById('server-status');
+      const startBtn = document.getElementById('start-server-btn');
+      const stopBtn = document.getElementById('stop-server-btn');
+      
+      if (status === 'running') {
+        statusElement.textContent = '✓ Running';
+        statusElement.classList.remove('loading', 'error');
+        statusElement.classList.add('success');
+        startBtn.style.display = 'none';
+        stopBtn.style.display = 'inline-block';
+      } else {
+        statusElement.textContent = '✗ Not running';
+        statusElement.classList.remove('loading', 'success');
+        statusElement.classList.add('error');
+        startBtn.style.display = 'inline-block';
+        stopBtn.style.display = 'none';
+      }
+    }
+    
+    async function startServer() {
+      const statusElement = document.getElementById('server-status');
+      const startBtn = document.getElementById('start-server-btn');
+      
+      statusElement.textContent = 'Starting server...';
+      statusElement.classList.remove('error', 'success');
+      statusElement.classList.add('loading');
+      startBtn.disabled = true;
+      
+      try {
+        // In production: window.wizardry.exec(commands['create-demo'])
+        // For now in demo/development, we check if we can actually execute
+        if (window.wizardry && window.wizardry.exec) {
+          // Create demo site if it doesn't exist
+          await window.wizardry.exec(commands['create-demo']);
+          // Start the server
+          await window.wizardry.exec(commands['start-server']);
+          
+          // Wait a moment for server to start
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          checkServerStatus();
+        } else {
+          // Fallback for development/browser testing
+          statusElement.textContent = 'Native bridge not available';
+          statusElement.classList.remove('loading');
+          statusElement.classList.add('error');
+          
+          // Show helpful message
+          alert('Server start requires native app integration.\n\nFor now, run in terminal:\n  web-wizardry serve demo\n\nOr create demo site first:\n  web-wizardry create demo --template demo');
+        }
+      } catch (error) {
+        statusElement.textContent = 'Error starting server';
+        statusElement.classList.remove('loading');
+        statusElement.classList.add('error');
+        console.error('Server start error:', error);
+      } finally {
+        startBtn.disabled = false;
+      }
+    }
+    
+    async function stopServer() {
+      const statusElement = document.getElementById('server-status');
+      const stopBtn = document.getElementById('stop-server-btn');
+      
+      statusElement.textContent = 'Stopping server...';
+      statusElement.classList.remove('error', 'success');
+      statusElement.classList.add('loading');
+      stopBtn.disabled = true;
+      
+      try {
+        if (window.wizardry && window.wizardry.exec) {
+          await window.wizardry.exec(commands['stop-server']);
+          
+          // Wait a moment for server to stop
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          checkServerStatus();
+        } else {
+          // Fallback for development
+          statusElement.textContent = 'Native bridge not available';
+          statusElement.classList.remove('loading');
+          statusElement.classList.add('error');
+          
+          alert('Server stop requires native app integration.\n\nFor now, run in terminal:\n  web-wizardry stop demo');
+        }
+      } catch (error) {
+        statusElement.textContent = 'Error stopping server';
+        statusElement.classList.remove('loading');
+        statusElement.classList.add('error');
+        console.error('Server stop error:', error);
+      } finally {
+        stopBtn.disabled = false;
+      }
+    }
+    
+    function loadPort() {
+      // In production: window.wizardry.exec(commands['get-port'])
+      // For now, try to detect from config or use default
+      serverPort = '8080';
+      updateConnectionURL();
+    }
+    
+    function updateConnectionURL() {
+      const urlElement = document.getElementById('connection-url');
+      const copyBtn = document.getElementById('copy-url-btn');
+      
+      // Get IP address first, then construct URL
+      fetch('/cgi/system-info')
+        .then(r => r.text())
+        .then(html => {
+          const ipMatch = html.match(/(\d+\.\d+\.\d+\.\d+)/);
+          const ip = (ipMatch && ipMatch[1] !== '127.0.0.1') ? ipMatch[1] : 'localhost';
+          const url = `http://${ip}:${serverPort}/pages/chat.html`;
+          
+          urlElement.textContent = url;
+          urlElement.classList.remove('loading');
+          urlElement.classList.add('success');
+          copyBtn.style.display = 'inline-block';
+          
+          // Also update IP address display
+          const ipElement = document.getElementById('ip-address');
+          if (ipElement) {
+            ipElement.textContent = ip;
+            ipElement.classList.remove('loading');
+            ipElement.classList.add('success');
+            document.getElementById('copy-ip-btn').style.display = 'inline-block';
+          }
+        })
+        .catch(err => {
+          urlElement.textContent = `http://localhost:${serverPort}/pages/chat.html`;
+          urlElement.classList.remove('loading');
+          copyBtn.style.display = 'inline-block';
+        });
+    }
+    
+    // Load IP address
+    function loadIPAddress() {
+      // This is now handled by updateConnectionURL
+      // But we still provide standalone IP display
+      fetch('/cgi/system-info')
+        .then(r => r.text())
+        .then(html => {
+          const ipMatch = html.match(/(\d+\.\d+\.\d+\.\d+)/);
+          const ipElement = document.getElementById('ip-address');
+          if (ipMatch && ipMatch[1] !== '127.0.0.1') {
+            ipElement.textContent = ipMatch[1];
+            ipElement.classList.remove('loading');
+            ipElement.classList.add('success');
+            document.getElementById('copy-ip-btn').style.display = 'inline-block';
+          } else {
+            ipElement.textContent = 'Unable to determine IP address';
+            ipElement.classList.remove('loading');
+            ipElement.classList.add('error');
+          }
+        })
+        .catch(err => {
+          const ipElement = document.getElementById('ip-address');
+          ipElement.textContent = 'Error loading IP address';
+          ipElement.classList.remove('loading');
+          ipElement.classList.add('error');
+        });
+    }
+    
+    // Load Tor address  
+    function loadTorAddress() {
+      // In production:
+      // window.wizardry.exec(commands['get-tor']).then(result => { ... })
+      
+      const torElement = document.getElementById('tor-address');
+      
+      // Try to read from common tor hidden service locations
+      fetch('/cgi/system-info')
+        .then(r => r.text())
+        .then(html => {
+          // Look for .onion address pattern
+          const onionMatch = html.match(/([a-z2-7]{16,56}\.onion)/i);
+          if (onionMatch) {
+            torElement.textContent = onionMatch[1];
+            torElement.classList.remove('loading');
+            torElement.classList.add('success');
+            document.getElementById('copy-tor-btn').style.display = 'inline-block';
+          } else {
+            torElement.textContent = 'Tor hidden service not configured';
+            torElement.classList.remove('loading');
+          }
+        })
+        .catch(err => {
+          torElement.textContent = 'Tor hidden service not configured';
+          torElement.classList.remove('loading');
+        });
+    }
+    
+    // Copy to clipboard
+    function copyToClipboard(elementId) {
+      const element = document.getElementById(elementId);
+      const text = element.textContent;
+      
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = '✓ Copied!';
+        btn.style.background = '#28a745';
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.style.background = '#667eea';
+        }, 2000);
+      }).catch(err => {
+        alert('Failed to copy: ' + err);
+      });
+    }
+    
+    // Load on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      initMode();
+      if (currentMode === 'host') {
+        checkServerStatus();
+      }
+      loadIPAddress();
+      loadTorAddress();
+    });
+  </script>
+</body>
+</html>

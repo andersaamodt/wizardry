@@ -1,0 +1,233 @@
+name: Build Desktop Apps
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'  # Also trigger on version tags for releases
+  pull_request:
+  workflow_dispatch:  # Allow manual triggering
+
+# Cancel previous runs when new commits are pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write  # For creating releases
+  packages: write  # For uploading artifacts
+
+jobs:
+  build-appimage:
+    name: Build AppImage (Linux)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget file libfuse2 libgtk-3-dev libwebkit2gtk-4.1-dev
+
+      - name: Build native host binary (C + GTK)
+        run: |
+          cd .apps/.host/linux
+          gcc -O2 main.c -o wizardry-host `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.1`
+          strip wizardry-host
+          ls -lh wizardry-host
+          cp wizardry-host ../../../
+          cd ../../..
+
+      - name: Download AppImage tools
+        run: |
+          # Download appimagetool
+          wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool-x86_64.AppImage
+          sudo mv appimagetool-x86_64.AppImage /usr/local/bin/appimagetool
+
+      - name: List available apps
+        id: list-apps
+        run: |
+          cd .apps
+          # List directories excluding hidden ones (starting with .)
+          apps=$(ls -d */ 2>/dev/null | grep -v '^\.' | sed 's|/$||' | tr '\n' ' ')
+          echo "apps=$apps" >> $GITHUB_OUTPUT
+          echo "Found apps: $apps"
+
+      - name: Build AppImages
+        run: |
+          mkdir -p dist
+          
+          for app in ${{ steps.list-apps.outputs.apps }}; do
+            echo "Building AppImage for: $app"
+            
+            # Create AppDir structure
+            mkdir -p "AppDir-$app/usr/bin"
+            mkdir -p "AppDir-$app/usr/share/$app"
+            mkdir -p "AppDir-$app/usr/share/applications"
+            mkdir -p "AppDir-$app/usr/share/icons/hicolor/256x256/apps"
+            mkdir -p "AppDir-$app/usr/share/wizardry"
+            
+            # Copy app files
+            cp -r ".apps/$app"/* "AppDir-$app/usr/share/$app/"
+            
+            # Copy wizardry installation
+            cp -r spells "AppDir-$app/usr/share/wizardry/"
+            cp install "AppDir-$app/usr/share/wizardry/"
+            
+            # Copy Rust host binary
+            cp wizardry-host "AppDir-$app/usr/bin/"
+            
+            # Create desktop file
+            cat > "AppDir-$app/usr/share/applications/$app.desktop" <<EOF
+          [Desktop Entry]
+          Type=Application
+          Name=Wizardry $(echo $app | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++)sub(/./,toupper(substr($i,1,1)),$i)}1')
+          Exec=wizardry-host $app
+          Icon=$app
+          Categories=Network;Utility;
+          EOF
+            
+            # Create AppRun script
+            cat > "AppDir-$app/AppRun" <<'EOF'
+          #!/bin/sh
+          # Launcher for wizardry desktop apps using Rust WebView host
+          HERE="$(dirname "$(readlink -f "${0}")")"
+          export APPDIR="$HERE"
+          export PATH="$HERE/usr/share/wizardry/spells:$HERE/usr/share/wizardry/spells/.imps/cond:$HERE/usr/share/wizardry/spells/.imps/out:$HERE/usr/share/wizardry/spells/.imps/sys:$HERE/usr/share/wizardry/spells/.imps/app:$HERE/usr/share/wizardry/spells/.wizardry/desktop:$PATH"
+          export WIZARDRY_DIR="$HERE/usr/share/wizardry"
+          
+          # Source invoke-wizardry to set up environment
+          if [ -f "$WIZARDRY_DIR/spells/invoke-wizardry" ]; then
+            . "$WIZARDRY_DIR/spells/invoke-wizardry"
+          fi
+          
+          # Launch the Rust host with the app directory
+          exec "$HERE/usr/bin/wizardry-host" "$HERE/usr/share/APP_NAME"
+          EOF
+            sed -i "s/APP_NAME/$app/g" "AppDir-$app/AppRun"
+            chmod +x "AppDir-$app/AppRun"
+            
+            # Create a simple icon (placeholder)
+            echo "Icon placeholder for $app" > "AppDir-$app/usr/share/icons/hicolor/256x256/apps/$app.png"
+            
+            # Build AppImage
+            ARCH=x86_64 appimagetool "AppDir-$app" "dist/wizardry-$app-x86_64.AppImage" || true
+          done
+          
+          ls -lh dist/
+
+      - name: Upload AppImages
+        uses: actions/upload-artifact@v4
+        with:
+          name: appimages
+          path: dist/*.AppImage
+          if-no-files-found: warn
+
+  build-macapp:
+    name: Build .app bundle (macOS)
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build native host binary (Objective-C + Cocoa)
+        run: |
+          cd .apps/.host/macos
+          clang -O2 -fobjc-arc -fmodules main.m -o wizardry-host -framework Cocoa -framework WebKit
+          strip wizardry-host
+          lipo -info wizardry-host
+          ls -lh wizardry-host
+          cp wizardry-host ../../../
+          cd ../../..
+
+      - name: List available apps
+        id: list-apps
+        run: |
+          cd .apps
+          # List directories excluding hidden ones (starting with .)
+          apps=$(ls -d */ 2>/dev/null | grep -v '^\.' | sed 's|/$||' | tr '\n' ' ')
+          echo "apps=$apps" >> $GITHUB_OUTPUT
+          echo "Found apps: $apps"
+
+      - name: Build .app bundles
+        run: |
+          mkdir -p dist
+          
+          for app in ${{ steps.list-apps.outputs.apps }}; do
+            echo "Building .app bundle for: $app"
+            
+            APP_NAME="Wizardry-$(echo $app | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++)sub(/./,toupper(substr($i,1,1)),$i)}1' | sed 's/ //g')"
+            
+            # Create .app structure
+            mkdir -p "dist/$APP_NAME.app/Contents/MacOS"
+            mkdir -p "dist/$APP_NAME.app/Contents/Resources/$app"
+            mkdir -p "dist/$APP_NAME.app/Contents/Resources/wizardry"
+            
+            # Copy app files
+            cp -r ".apps/$app"/* "dist/$APP_NAME.app/Contents/Resources/$app/"
+            
+            # Copy wizardry installation
+            cp -r spells "dist/$APP_NAME.app/Contents/Resources/wizardry/"
+            cp install "dist/$APP_NAME.app/Contents/Resources/wizardry/"
+            
+            # Copy Rust host binary
+            cp wizardry-host "dist/$APP_NAME.app/Contents/MacOS/"
+            
+            # Create launcher script
+            cat > "dist/$APP_NAME.app/Contents/MacOS/$app" <<'EOF'
+          #!/bin/sh
+          # macOS launcher for wizardry desktop app with Rust WebView host
+          APPDIR="$(cd "$(dirname "$0")/.." && pwd)"
+          RESOURCES="$APPDIR/Resources"
+          WIZARDRY="$RESOURCES/wizardry"
+          
+          # Set up wizardry environment
+          export WIZARDRY_DIR="$WIZARDRY"
+          export PATH="$WIZARDRY/spells:$WIZARDRY/spells/.imps/cond:$WIZARDRY/spells/.imps/out:$WIZARDRY/spells/.imps/sys:$WIZARDRY/spells/.imps/app:$WIZARDRY/spells/.wizardry/desktop:$PATH"
+          
+          # Source invoke-wizardry to set up the environment
+          if [ -f "$WIZARDRY/spells/invoke-wizardry" ]; then
+            . "$WIZARDRY/spells/invoke-wizardry"
+          fi
+          
+          # Launch the Rust host with the app directory
+          exec "$APPDIR/MacOS/wizardry-host" "$RESOURCES/APP_NAME"
+          EOF
+            sed -i '' "s/APP_NAME/$app/g" "dist/$APP_NAME.app/Contents/MacOS/$app"
+            chmod +x "dist/$APP_NAME.app/Contents/MacOS/$app"
+            
+            # Create Info.plist
+            cat > "dist/$APP_NAME.app/Contents/Info.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleName</key>
+              <string>$APP_NAME</string>
+              <key>CFBundleDisplayName</key>
+              <string>$APP_NAME</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.wizardry.$app</string>
+              <key>CFBundleVersion</key>
+              <string>1.0</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleExecutable</key>
+              <string>$app</string>
+          </dict>
+          </plist>
+          EOF
+          done
+          
+          ls -lh dist/
+
+      - name: Upload .app bundles
+        uses: actions/upload-artifact@v4
+        with:
+          name: macapps
+          path: dist/*.app
+          if-no-files-found: warn

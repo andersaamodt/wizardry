@@ -1,0 +1,72 @@
+#!/bin/sh
+
+# Build all desktop apps for all platforms.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: build-apps
+
+Build all desktop apps for all supported platforms.
+
+This orchestrates building AppImage (Linux) and .app bundles (macOS)
+for every app in the .apps directory.
+
+Designed for CI/CD: builds all artifacts from a single tag with
+no per-app manual steps.
+
+Example:
+  build-apps
+
+Note: This is a placeholder. Native host binary implementation
+and packaging are planned for future releases.
+
+See also: build-appimage, build-macapp, list-apps
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+# Use WIZARDRY_DIR from environment
+wizardry_dir=${WIZARDRY_DIR:-$HOME/.wizardry}
+apps_dir="$wizardry_dir/.apps"
+
+if [ ! -d "$apps_dir" ]; then
+  printf '%s\n' "build-apps: .apps directory not found" >&2
+  exit 1
+fi
+
+# Count apps
+app_count=0
+for app_path in "$apps_dir"/*; do
+  if [ -d "$app_path" ] && app-validate "$app_path" 2>/dev/null; then
+    app_count=$((app_count + 1))
+  fi
+done
+
+if [ "$app_count" -eq 0 ]; then
+  printf '%s\n' "build-apps: no valid apps found in $apps_dir"
+  exit 0
+fi
+
+printf '%s\n' "build-apps: found $app_count app(s) to build"
+printf '%s\n' ""
+
+# Placeholder implementation
+printf '%s\n' "Future implementation will:"
+printf '%s\n' "  1. Detect platform (Linux/macOS)"
+printf '%s\n' "  2. Build host binary once"
+printf '%s\n' "  3. For each app in .apps/:"
+printf '%s\n' "     - Build AppImage (Linux)"
+printf '%s\n' "     - Build .app bundle (macOS)"
+printf '%s\n' "  4. Upload artifacts to GitHub Releases"
+printf '%s\n' ""
+printf '%s\n' "Apps that would be built:"
+for app_path in "$apps_dir"/*; do
+  if [ -d "$app_path" ] && app-validate "$app_path" 2>/dev/null; then
+    app_name=$(basename "$app_path")
+    printf '  - %s\n' "$app_name"
+  fi
+done

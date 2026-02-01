@@ -314,3 +314,7 @@ Wizardry assumes a small, portable POSIX toolchain. These are the interfaces we 
 The portable build is automatically generated, and includes all spells that work as standalone scripts. These are currently **untested and not recommended.**
 
 **[Download latest nightly build](https://github.com/andersaamodt/wizardry/actions/workflows/compile.yml)** → Click the most recent successful run → Download artifact
+
+## Desktop Apps
+
+Wizardry includes optional desktop apps (`.apps/`) - graphical wrappers with commands hardcoded in the GUI for security. See `.apps/README.md` for details.
