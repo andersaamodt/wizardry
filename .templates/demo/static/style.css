@@ -956,74 +956,67 @@ pre code {
 
 /* Glow progression: 7 levels from light purple to grey (staleness indicator) */
 /* Brightest at 40 messages, fade to grey with no glow by 100 */
+/* Opacity is now set dynamically via JavaScript for smooth gradual progression */
 
 .unread-badge.dot-mode.glow-1 {
-  /* 1-5 messages: Light purple, subtle glow, OPAQUE */
+  /* 1-5 messages: Light purple, subtle glow */
   background: radial-gradient(circle, #e8dcf5 40%, transparent 100%);
   box-shadow: 0 0 6px rgba(232, 220, 245, 0.9), 
               0 0 10px rgba(200, 181, 230, 0.6);
-  opacity: 1.0;  /* Opaque - new message alert! */
 }
 
 .unread-badge.dot-mode.glow-2 {
-  /* 6-10 messages: Light purple, mild glow, TRANSPARENT (minimum) */
+  /* 6-10 messages: Light purple, mild glow */
   background: radial-gradient(circle, #dcc8f0 40%, transparent 100%);
   box-shadow: 0 0 8px rgba(220, 200, 240, 1), 
               0 0 14px rgba(200, 181, 230, 0.7),
               0 0 20px rgba(177, 156, 217, 0.4);
-  opacity: 0.4;  /* Transparent - minimum opacity */
 }
 
 .unread-badge.dot-mode.glow-3 {
-  /* 11-20 messages: Medium purple, moderate glow, increasing opacity */
+  /* 11-20 messages: Medium purple, moderate glow */
   background: radial-gradient(circle, #c8b0e8 40%, transparent 100%);
   box-shadow: 0 0 10px rgba(200, 176, 232, 1), 
               0 0 18px rgba(177, 156, 217, 0.9), 
               0 0 28px rgba(155, 126, 201, 0.6);
-  opacity: 0.6;  /* Increasing opacity */
 }
 
 .unread-badge.dot-mode.glow-4 {
-  /* 21-40 messages: Bright purple, PEAK glow with pulsing, OPAQUE */
+  /* 21-40 messages: Bright purple, PEAK glow with pulsing */
   background: radial-gradient(circle, #b19cd9 40%, transparent 100%);
   box-shadow: 0 0 14px rgba(177, 156, 217, 1), 
               0 0 26px rgba(177, 156, 217, 0.95), 
               0 0 38px rgba(155, 126, 201, 0.8), 
               0 0 50px rgba(155, 126, 201, 0.6);
   animation: pulse-glow 2s ease-in-out infinite;
-  opacity: 1.0;  /* Opaque - peak urgency! */
 }
 
 .unread-badge.dot-mode.glow-5 {
-  /* 41-60 messages: Fading violet glow, fading opacity */
+  /* 41-60 messages: Fading violet glow */
   background: radial-gradient(circle, #a890d0 40%, transparent 100%);
   box-shadow: 0 0 10px rgba(168, 144, 208, 0.7), 
               0 0 18px rgba(155, 126, 201, 0.5), 
               0 0 26px rgba(155, 126, 201, 0.3);
-  opacity: 0.8;  /* Fading */
 }
 
 .unread-badge.dot-mode.glow-6 {
-  /* 61-80 messages: Weak violet glow (getting stale), more fading */
+  /* 61-80 messages: Weak violet glow (getting stale) */
   background: radial-gradient(circle, #9880b0 40%, transparent 100%);
   box-shadow: 0 0 6px rgba(152, 128, 176, 0.5), 
               0 0 12px rgba(140, 120, 160, 0.3);
-  opacity: 0.6;  /* More fading */
 }
 
 .unread-badge.dot-mode.glow-7 {
-  /* 81-99 messages: Very weak violet glow, very faded */
+  /* 81-99 messages: Very weak violet glow */
   background: radial-gradient(circle, #887098 40%, transparent 100%);
   box-shadow: 0 0 4px rgba(136, 112, 152, 0.3), 
               0 0 8px rgba(120, 100, 140, 0.2);
-  opacity: 0.4;  /* Very faded */
 }
 
 .unread-badge.dot-mode.glow-stale {
-  /* 100+ messages: Grey, NO glow (stale), faded */
+  /* 100+ messages: Grey, NO glow (stale) */
   background: radial-gradient(circle, #707070 40%, transparent 100%);
   box-shadow: none;
-  opacity: 0.3;  /* Stale and faded */
 }
 
 @keyframes pulse-glow {
