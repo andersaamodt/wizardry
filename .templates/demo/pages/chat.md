@@ -260,7 +260,7 @@ function updateUnreadBadges() {
     
     // Don't show badge for current room
     if (roomName === window.currentRoom) {
-      badge.style.display = 'none';
+      badge.classList.add('hidden');
       return;
     }
     
@@ -270,11 +270,11 @@ function updateUnreadBadges() {
       var count = fetchCache[roomName];
       if (count > 0) {
         badge.textContent = count;
-        badge.style.display = 'inline-block';
+        badge.classList.remove('hidden');
         // Apply current display mode styling
         updateBadgeStyle(badge);
       } else {
-        badge.style.display = 'none';
+        badge.classList.add('hidden');
       }
       return;
     }
@@ -293,11 +293,11 @@ function updateUnreadBadges() {
         // Update badge display
         if (count > 0) {
           freshBadge.textContent = count;
-          freshBadge.style.display = 'inline-block';
+          freshBadge.classList.remove('hidden');
           // Apply current display mode styling
           updateBadgeStyle(freshBadge);
         } else {
-          freshBadge.style.display = 'none';
+          freshBadge.classList.add('hidden');
         }
       });
     })(roomName, badge);
@@ -345,10 +345,10 @@ function setupUnreadCountsStream() {
               return;
             }
             
-            console.log('[Unread Counts] Badge update callback for', capturedRoomName, '- count:', count, 'badge display before:', freshBadge.style.display);
+            console.log('[Unread Counts] Badge update callback for', capturedRoomName, '- count:', count, 'badge classes before:', freshBadge.className);
             
             var oldCount = parseInt(freshBadge.textContent) || 0;
-            var wasVisible = freshBadge.style.display !== 'none';
+            var wasVisible = !freshBadge.classList.contains('hidden');
             
             if (count > 0) {
               // Trigger animation if number changed
@@ -361,14 +361,14 @@ function setupUnreadCountsStream() {
               
               // Update badge
               freshBadge.textContent = count;
-              freshBadge.style.display = 'inline-block';
+              freshBadge.classList.remove('hidden');
               // Force a reflow to ensure display change takes effect
               void freshBadge.offsetWidth;
               // Apply current display mode styling
               updateBadgeStyle(freshBadge);
-              console.log('[Unread Counts] Badge UPDATED for', capturedRoomName, 'count:', count, 'display:', freshBadge.style.display, 'computed display:', window.getComputedStyle(freshBadge).display);
+              console.log('[Unread Counts] Badge UPDATED for', capturedRoomName, 'count:', count, 'classes:', freshBadge.className, 'computed display:', window.getComputedStyle(freshBadge).display);
             } else {
-              freshBadge.style.display = 'none';
+              freshBadge.classList.add('hidden');
               // Force a reflow
               void freshBadge.offsetWidth;
               console.log('[Unread Counts] Badge hidden for', capturedRoomName);

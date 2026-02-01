@@ -900,6 +900,11 @@ pre code {
   transition: opacity 0.3s ease-in-out;
 }
 
+/* Hide badge by default (when empty/zero) */
+.unread-badge.hidden {
+  display: none !important;
+}
+
 /* Crossfade effect for number changes */
 .unread-badge.updating {
   animation: badge-crossfade 0.4s ease-in-out;
