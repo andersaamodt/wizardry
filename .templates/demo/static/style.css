@@ -707,25 +707,35 @@ pre code {
 
 /* Animation for new room items appearing */
 @keyframes roomItemFadeIn {
-  0% {
+  from {
     opacity: 0;
-    max-height: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    margin-top: 0;
-    margin-bottom: 0;
+    transform: translateY(-10px);
   }
-  100% {
+  to {
     opacity: 1;
-    max-height: var(--room-item-max-height);
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
+    transform: translateY(0);
+  }
+}
+
+/* Animation for existing items sliding down to make room */
+@keyframes roomItemSlideDown {
+  from {
+    transform: translateY(-50px);
+  }
+  to {
+    transform: translateY(0);
   }
 }
 
 /* Apply fade-in animation to new room items added by htmx morph */
+/* This class is automatically added by htmx's morphing engine (Idiomorph) */
 .room-item.htmx-added {
   animation: roomItemFadeIn 0.4s ease-out;
+}
+
+/* Apply slide-down to existing items when list grows */
+.room-list.htmx-swapping .room-item:not(.htmx-added) {
+  animation: roomItemSlideDown 0.4s ease-out;
 }
 
 .room-item {
