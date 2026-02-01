@@ -324,27 +324,16 @@ function updateUnreadBadges() {
       var roomBadges = badgesByRoom[result.room];
       if (!roomBadges) return;
       
+      // Update all badges for this room
       roomBadges.forEach(function(badge) {
-        // Query for fresh badge element (in case DOM was updated)
-        // Use CSS.escape() if available, otherwise escape manually
-        var escapedRoomName = result.room;
-        if (typeof CSS !== 'undefined' && CSS.escape) {
-          escapedRoomName = CSS.escape(result.room);
-        } else {
-          // Manual escaping for CSS special characters
-          escapedRoomName = result.room.replace(/(["\\!#$%&'()*+,./:;<=>?@[\]^`{|}~])/g, '\\$1');
-        }
-        var freshBadge = document.querySelector('.unread-badge[data-room="' + escapedRoomName + '"]');
-        if (!freshBadge) return;
-        
-        // Update badge display
+        // Update badge display directly (badge references are still valid)
         if (result.count > 0) {
-          freshBadge.textContent = result.count;
-          freshBadge.classList.remove('hidden');
+          badge.textContent = result.count;
+          badge.classList.remove('hidden');
           // Apply current display mode styling
-          updateBadgeStyle(freshBadge);
+          updateBadgeStyle(badge);
         } else {
-          freshBadge.classList.add('hidden');
+          badge.classList.add('hidden');
         }
       });
     });
