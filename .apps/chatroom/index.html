@@ -45,11 +45,38 @@
       font-weight: bold;
     }
     
-    iframe {
-      border: none;
-      width: 100%;
-      height: calc(100vh - 90px);
-      display: block;
+    .placeholder-message {
+      padding: 3rem;
+      text-align: center;
+      max-width: 600px;
+      margin: 0 auto;
+      color: #495057;
+    }
+    
+    .placeholder-message h2 {
+      color: #667eea;
+      margin-bottom: 1rem;
+    }
+    
+    .placeholder-message p {
+      margin-bottom: 1rem;
+      line-height: 1.6;
+    }
+    
+    .placeholder-message code {
+      background: #f8f9fa;
+      padding: 0.2rem 0.5rem;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+    
+    .placeholder-message .note {
+      background: #e7f3ff;
+      border-left: 3px solid #667eea;
+      padding: 1rem;
+      border-radius: 4px;
+      text-align: left;
+      margin-top: 2rem;
     }
   </style>
 </head>
@@ -62,7 +89,26 @@
     </nav>
   </div>
   
-  <!-- Load the demo chat page directly -->
-  <iframe src="/pages/chat.html" title="Chatroom"></iframe>
+  <div class="placeholder-message">
+    <h2>📱 Standalone App Coming Soon</h2>
+    <p>
+      This is a <strong>placeholder implementation</strong>. The current .app bundle 
+      opens this HTML file in your default web browser.
+    </p>
+    <p>
+      For a true standalone desktop app with the chatroom interface, we need:
+    </p>
+    <ul style="text-align: left; display: inline-block;">
+      <li>Native host binary with embedded WebView</li>
+      <li>Integration with wizardry web server</li>
+      <li>Native bridge for executing shell commands</li>
+    </ul>
+    
+    <div class="note">
+      <strong>🚀 To use the chatroom now:</strong><br>
+      Run <code>web-wizardry serve demo</code> in your terminal,<br>
+      then open <a href="http://localhost:8080/pages/chat.html">http://localhost:8080/pages/chat.html</a> in your browser.
+    </div>
+  </div>
 </body>
 </html>
