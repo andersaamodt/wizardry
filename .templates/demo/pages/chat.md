@@ -359,13 +359,18 @@ function setupUnreadCountsStream() {
                 }, 400);
               }
               
+              // Update badge
               freshBadge.textContent = count;
               freshBadge.style.display = 'inline-block';
+              // Force a reflow to ensure display change takes effect
+              void freshBadge.offsetWidth;
               // Apply current display mode styling
               updateBadgeStyle(freshBadge);
-              console.log('[Unread Counts] Badge should now be visible for', capturedRoomName, 'display:', freshBadge.style.display);
+              console.log('[Unread Counts] Badge UPDATED for', capturedRoomName, 'count:', count, 'display:', freshBadge.style.display, 'computed display:', window.getComputedStyle(freshBadge).display);
             } else {
               freshBadge.style.display = 'none';
+              // Force a reflow
+              void freshBadge.offsetWidth;
               console.log('[Unread Counts] Badge hidden for', capturedRoomName);
             }
           });
