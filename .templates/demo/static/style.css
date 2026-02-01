@@ -939,14 +939,14 @@ pre code {
   color: white;
 }
 
-/* Dot mode styling for badges */
+/* Dot mode styling for badges - SIMPLIFIED */
 .unread-badge.dot-mode {
-  width: 8px;  /* Slightly bigger dot (was 6px) */
+  width: 8px;
   height: 8px;
   min-width: 8px;
   border-radius: 50%;
   padding: 0;
-  margin-top: -4px;  /* Center the dot (adjust for 8px size) */
+  margin-top: -4px;  /* Center the dot */
   color: transparent;
   font-size: 0;
   position: absolute;
@@ -954,91 +954,19 @@ pre code {
   top: 50%;
 }
 
-/* Glow progression: 7 levels from light purple to grey (staleness indicator) */
-/* Brightest at 40 messages, fade to grey with no glow by 100 */
-/* Opacity is now set dynamically via JavaScript for smooth gradual progression */
-
-.unread-badge.dot-mode.glow-1 {
-  /* 1-5 messages: Light purple, subtle glow */
-  background: radial-gradient(circle, #e8dcf5 40%, transparent 100%);
-  box-shadow: 0 0 6px rgba(232, 220, 245, 0.9), 
-              0 0 10px rgba(200, 181, 230, 0.6);
+/* Simple 2-level system: light violet (1-50 msgs), grey (51+ msgs), NO glow */
+.unread-badge.dot-mode.dot-light-violet {
+  background: #c8b5e6;  /* Light violet, same as original badge color */
 }
 
-.unread-badge.dot-mode.glow-2 {
-  /* 6-10 messages: Light purple, mild glow */
-  background: radial-gradient(circle, #dcc8f0 40%, transparent 100%);
-  box-shadow: 0 0 8px rgba(220, 200, 240, 1), 
-              0 0 14px rgba(200, 181, 230, 0.7),
-              0 0 20px rgba(177, 156, 217, 0.4);
-}
-
-.unread-badge.dot-mode.glow-3 {
-  /* 11-20 messages: Medium purple, moderate glow */
-  background: radial-gradient(circle, #c8b0e8 40%, transparent 100%);
-  box-shadow: 0 0 10px rgba(200, 176, 232, 1), 
-              0 0 18px rgba(177, 156, 217, 0.9), 
-              0 0 28px rgba(155, 126, 201, 0.6);
-}
-
-.unread-badge.dot-mode.glow-4 {
-  /* 21-40 messages: Bright purple, PEAK glow with pulsing */
-  background: radial-gradient(circle, #b19cd9 40%, transparent 100%);
-  box-shadow: 0 0 14px rgba(177, 156, 217, 1), 
-              0 0 26px rgba(177, 156, 217, 0.95), 
-              0 0 38px rgba(155, 126, 201, 0.8), 
-              0 0 50px rgba(155, 126, 201, 0.6);
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-.unread-badge.dot-mode.glow-5 {
-  /* 41-60 messages: Fading violet glow */
-  background: radial-gradient(circle, #a890d0 40%, transparent 100%);
-  box-shadow: 0 0 10px rgba(168, 144, 208, 0.7), 
-              0 0 18px rgba(155, 126, 201, 0.5), 
-              0 0 26px rgba(155, 126, 201, 0.3);
-}
-
-.unread-badge.dot-mode.glow-6 {
-  /* 61-80 messages: Weak violet glow (getting stale) */
-  background: radial-gradient(circle, #9880b0 40%, transparent 100%);
-  box-shadow: 0 0 6px rgba(152, 128, 176, 0.5), 
-              0 0 12px rgba(140, 120, 160, 0.3);
-}
-
-.unread-badge.dot-mode.glow-7 {
-  /* 81-99 messages: Very weak violet glow */
-  background: radial-gradient(circle, #887098 40%, transparent 100%);
-  box-shadow: 0 0 4px rgba(136, 112, 152, 0.3), 
-              0 0 8px rgba(120, 100, 140, 0.2);
-}
-
-.unread-badge.dot-mode.glow-stale {
-  /* 100+ messages: Grey, NO glow (stale) */
-  background: radial-gradient(circle, #707070 40%, transparent 100%);
-  box-shadow: none;
-}
-
-@keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 14px rgba(177, 156, 217, 1), 
-                0 0 26px rgba(177, 156, 217, 0.95), 
-                0 0 38px rgba(155, 126, 201, 0.8), 
-                0 0 50px rgba(155, 126, 201, 0.6);
-  }
-  50% {
-    box-shadow: 0 0 18px rgba(200, 181, 230, 1), 
-                0 0 34px rgba(200, 181, 230, 1), 
-                0 0 48px rgba(177, 156, 217, 0.9), 
-                0 0 62px rgba(177, 156, 217, 0.7);
-  }
+.unread-badge.dot-mode.dot-grey {
+  background: #808080;  /* Grey for stale (51+ messages) */
 }
 
 /* Dot mode hover states */
 .room-item:hover .unread-badge.dot-mode,
 .room-item-hover .unread-badge.dot-mode {
   background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 0 8px rgba(108, 159, 255, 0.6), 0 0 12px rgba(108, 159, 255, 0.4);
 }
 
 .room-item-selected .unread-badge.dot-mode {
