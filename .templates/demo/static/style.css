@@ -13,6 +13,9 @@
   --border: #a8a4fe;         /* Soft indigo border */
   --shadow: rgba(108, 159, 255, 0.2);  /* Blue shadow */
   --glow: rgba(108, 159, 255, 0.4);    /* Blue glow */
+  
+  /* Room list animation */
+  --room-item-max-height: 50px;
 }
 
 * {
@@ -694,11 +697,6 @@ pre code {
   margin-bottom: 0.5rem;
   font-size: 0.95rem;
   color: var(--dark);
-}
-
-:root {
-  /* ... existing custom properties ... */
-  --room-item-max-height: 50px;
 }
 
 .room-list {
