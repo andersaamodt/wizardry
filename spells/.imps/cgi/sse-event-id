@@ -9,8 +9,6 @@ event_id="${2:-}"
 shift 2 2>/dev/null || shift $# 2>/dev/null || true
 data="${*:-}"
 
-printf '[sse-event-id] type=%s id=%s len=%d\n' "$event_type" "$event_id" "${#data}" >&2
-
 # Output event ID first (if provided)
 if [ -n "$event_id" ]; then
   printf 'id: %s\n' "$event_id"

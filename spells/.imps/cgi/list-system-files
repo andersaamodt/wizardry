@@ -1,5 +1,5 @@
 #!/bin/sh
-# list-files - List files in a directory
+# list-system-files - List system files (CGI demo)
 set -eu
 
 http-ok-html
