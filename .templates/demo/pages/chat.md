@@ -350,9 +350,22 @@ function setupUnreadCountsStream() {
             // For unvisited rooms, total count is shown (which is fine - user can see there are messages)
             // For visited rooms, accurate unread count is shown (based on read timestamp)
             if (capturedServerCount > 0) {
-              // Wait for accurate count before showing badge (prevents flashing)
+              // Set a timeout fallback - if accurate count doesn't arrive in 3 seconds, show serverCount
+              var timeoutId = setTimeout(function() {
+                console.log('[Unread Counts] Timeout waiting for accurate count - showing server count:', capturedServerCount);
+                freshBadge.textContent = capturedServerCount;
+                freshBadge.classList.remove('hidden');
+                freshBadge.style.display = 'inline-block';
+                updateBadgeStyle(freshBadge);
+              }, 3000);
+              
+              // Try to get accurate count
               countUnreadMessages(capturedRoomName, function(accurateCount, lastMessageTimestamp) {
-                console.log('[Unread Counts] Badge for', capturedRoomName, '- accurate count:', accurateCount);
+                // Clear timeout since we got the callback
+                clearTimeout(timeoutId);
+                
+                console.log('[Unread Counts] Badge for', capturedRoomName, '- accurate count:', accurateCount, 'server count:', capturedServerCount);
+                
                 if (accurateCount > 0) {
                   var wasVisible = !freshBadge.classList.contains('hidden');
                   var oldCount = parseInt(freshBadge.textContent) || 0;
@@ -372,11 +385,20 @@ function setupUnreadCountsStream() {
                   }
                   
                   console.log('[Unread Counts] Badge SHOWN for', capturedRoomName, ':', accurateCount);
+                } else if (capturedServerCount > 0) {
+                  // Accurate count is 0 but server says there are messages
+                  // This means user has read all messages - BUT server might be reporting new messages we haven't fetched yet
+                  // Show server count as a fallback
+                  console.log('[Unread Counts] Accurate count 0 but server count', capturedServerCount, '- showing server count as fallback');
+                  freshBadge.textContent = capturedServerCount;
+                  freshBadge.classList.remove('hidden');
+                  freshBadge.style.display = 'inline-block';
+                  updateBadgeStyle(freshBadge);
                 } else {
-                  // Accurate count is 0 (all messages were read) - hide badge
+                  // Both accurate and server count are 0 - hide badge
                   freshBadge.classList.add('hidden');
                   freshBadge.style.display = 'none';
-                  console.log('[Unread Counts] Badge HIDDEN for', capturedRoomName, '- accurate count is 0');
+                  console.log('[Unread Counts] Badge HIDDEN for', capturedRoomName, '- both counts are 0');
                 }
               });
             } else {
