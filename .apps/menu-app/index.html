@@ -36,26 +36,42 @@
   </div>
 
   <script>
-    // Execute a verb by calling the backend
+    // Execute a command by calling the backend
     // In a real implementation, this would communicate with the host binary
-    function executeVerb(verb) {
+    function executeVerb(action) {
       const outputArea = document.getElementById('output-area');
       
+      // Map GUI actions to shell commands (hardcoded in the GUI)
+      const commands = {
+        'show-help': ['menu', '--help'],
+        'list-spells': ['list-apps'],
+        'show-path': ['sh', '-c', 'echo "$PATH"'],
+        'show-env': ['env']
+      };
+      
+      const cmd = commands[action];
+      if (!cmd) {
+        outputArea.textContent = `Unknown action: ${action}`;
+        return;
+      }
+      
       // Simulate command execution
-      // In production, this would use a native bridge to call app-verb
-      outputArea.textContent = `Executing verb: ${verb}\n\n`;
+      // In production, this would use a native bridge to execute directly
+      outputArea.textContent = `Executing: ${cmd.join(' ')}\n\n`;
       outputArea.textContent += `This is a demonstration. In production:\n`;
-      outputArea.textContent += `1. WebView would invoke host binary\n`;
-      outputArea.textContent += `2. Host would call: app-verb verbs.conf ${verb}\n`;
+      outputArea.textContent += `1. WebView would invoke host binary via native bridge\n`;
+      outputArea.textContent += `2. Host would execute via execvp(): ${JSON.stringify(cmd)}\n`;
       outputArea.textContent += `3. Command stdout/stderr would be captured\n`;
       outputArea.textContent += `4. Output would be returned to this WebView\n\n`;
-      outputArea.textContent += `See verbs.conf for the full verb-to-command mapping.`;
+      outputArea.textContent += `Security: Commands are hardcoded in the GUI.\n`;
+      outputArea.textContent += `The WebView can only invoke what's explicitly defined here.`;
     }
 
     // In production, a native bridge would be provided by the host:
     // window.wizardry = {
-    //   invoke: function(verb, args) {
-    //     // Native implementation calls app-verb and returns result
+    //   exec: function(cmdArray) {
+    //     // Native implementation executes via execvp() and returns result
+    //     // cmdArray is validated to be an array of strings
     //   }
     // };
   </script>

@@ -442,30 +442,28 @@ Wizardry uses several focused documentation files. Keep content in the right doc
 
 ### Verb-Based Command Execution
 
-- WebView invokes backend actions by symbolic verb name (not shell strings)
-- Each verb maps to predefined command template in `verbs.conf` file
-- Verbs define: command name plus fixed argument structure
-- Argument slots filled only from hardcoded, validated value sets (no free-form text input)
+- WebView defines allowed commands directly in its JavaScript code (hardcoded)
+- Commands are arrays passed to native bridge (e.g., `['menu', '--help']`)
+- No separate verb configuration file needed (redundant with GUI code)
 - Host executes commands via `execvp()` (no `/bin/sh -c`, no shell parsing)
 - Command resolution occurs at execution time via PATH (allows live upgrades)
-- WebView may never construct shell syntax or arbitrary argv vectors
+- User input cannot construct commands (all commands predefined in GUI)
 - Stdout and stderr captured and returned verbatim to WebView
 
 ### App Structure Requirements
 
 - `index.html`: Single HTML entry file loaded into WebView (required)
-- `verbs.conf`: Verb-to-command mappings (required, format: `VERB_NAME command [args...]`)
 - `style.css`: Optional styling for the app
+- Commands hardcoded in JavaScript within index.html
 - No router, no navigation, no framework dependencies
 - Apps must be simple and flat (minimal layers between UI and shell)
 
 ### Security Model
 
-- Symbolic verbs prevent shell injection attacks
-- Only verbs defined in `verbs.conf` can be executed
-- Arguments validated against predefined value sets
-- No arbitrary command construction allowed from WebView
+- Commands hardcoded in GUI code prevent injection attacks
+- No way for user input to construct arbitrary commands
 - Direct execution via `execvp()` eliminates shell parsing vulnerabilities
+- WebView can only execute commands explicitly defined in its code
 
 ### Build and Distribution
 
@@ -486,8 +484,7 @@ Wizardry uses several focused documentation files. Keep content in the right doc
 
 - `list-apps` spell lists all available apps in `.apps/` directory
 - `launch-app` spell validates and launches apps (WebView integration planned)
-- `app-validate` imp validates app directory structure (checks for required files)
-- `app-verb` imp executes predefined command verbs with validated arguments
+- `app-validate` imp validates app directory structure (checks for required index.html)
 
 ---
 

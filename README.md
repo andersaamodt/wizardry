@@ -156,15 +156,14 @@ Wizardry includes support for desktop apps—graphical wrappers around wizardry 
 Desktop apps are:
 
 * **Simple**: Each app is a WebView loading a single HTML file
-* **Secure**: Apps invoke predefined verbs, not arbitrary shell commands
+* **Secure**: Commands hardcoded in GUI, no way for user input to construct arbitrary commands
 * **Thin**: Minimal layers between GUI and shell scripts
 * **Optional**: CLI parity invariant—removing the GUI doesn't break functionality
 * **Unix-native**: Apps are graphical consoles for your environment, not sealed containers
 
 Apps live in `.apps/<appname>/` and include:
 
-* `index.html` - Entry point loaded into WebView
-* `verbs.conf` - Verb-to-command mappings (security boundary)
+* `index.html` - Entry point with hardcoded commands
 * `style.css` - Optional styling
 
 See `.apps/README.md` for the complete architecture and development guide.
