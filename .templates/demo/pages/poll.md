@@ -2,14 +2,6 @@
 title: Interactive Poll
 ---
 
-<nav class="site-nav" style="margin-bottom: 2em; padding: 1em; background: #f5f5f5; border-radius: 5px;">
-  <a href="/pages/index.html">Home</a> |
-  <a href="/pages/advanced.html">Advanced Demos</a> |
-  <strong>Poll</strong> |
-  <a href="/pages/chat.html">Chatrooms</a> |
-  <a href="/pages/about.html">About</a>
-</nav>
-
 # Interactive Voting Poll
 
 ## 📊 Real-Time Poll

@@ -2,14 +2,6 @@
 title: web wizardry demo
 ---
 
-<nav class="site-nav" style="margin-bottom: 2em; padding: 1em; background: #f5f5f5; border-radius: 5px;">
-  <strong>Home</strong> |
-  <a href="/pages/advanced.html">Advanced Demos</a> |
-  <a href="/pages/poll.html">Poll</a> |
-  <a href="/pages/chat.html">Chatrooms</a> |
-  <a href="/pages/about.html">About</a>
-</nav>
-
 # web wizardry interactive demos
 
 Welcome to the **web wizardry platform** demo site! This showcases real-time interactivity powered by POSIX shell scripts via CGI.
@@ -112,7 +104,15 @@ Upload an image and see it displayed instantly:
 
 ## 🎨 More Demos
 
-- [Advanced Demos](/pages/advanced.html) - System info, file operations, and more
+**Browser API Demos:**
+- [State & Persistence](/pages/storage.html) - localStorage, sessionStorage, IndexedDB, cookies
+- [Forms & Input](/pages/forms-input.html) - Keyboard, pointer events, forms, clipboard
+- [Graphics & Media](/pages/graphics-media.html) - Canvas 2D, SVG, audio playback, Web Audio
+- [Time & Performance](/pages/time-performance.html) - Timers, animation frames, performance API
+- [File Upload](/pages/file-upload.html) - File picker, drag-and-drop, blobs & binary data
+
+**Server Demos:**
+- [Advanced Demos](/pages/advanced.html) - System info, color picker, custom elements
 - [Multi-Room Chat](/pages/chat.html) - Real-time chat with MUD compatibility
 - [Interactive Poll](/pages/poll.html) - Real-time voting system
 - [About](/pages/about.html) - Learn about web wizardry
