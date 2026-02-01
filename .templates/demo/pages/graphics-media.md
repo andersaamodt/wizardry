@@ -643,7 +643,7 @@ Basic WebGPU demonstration (if supported):
   
   <div style="background: #fff3cd; padding: 1rem; border-radius: 4px; border: 1px solid #ffc107; margin-bottom: 1rem;">
     <p style="margin: 0; color: #856404;">
-      <strong>⚠️ Browser Support:</strong> WebGPU is experimental and currently only available in Chrome/Edge with the flag enabled, or Chrome Canary. It may not work in your browser.
+      <strong>⚠️ Browser Support:</strong> WebGPU is an emerging standard with growing browser support. Check your browser's compatibility before relying on this API in production.
     </p>
   </div>
   
