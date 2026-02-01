@@ -1,0 +1,84 @@
+#!/bin/sh
+# Launch a desktop app using platform-appropriate method
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: app-launcher <app-name>
+
+Launch a wizardry desktop app in the most appropriate way for your platform.
+
+On Linux, this uses xdg-open to open the app in your default browser.
+On macOS, this uses the 'open' command.
+
+The app runs through the wizardry web server, providing access to all
+wizardry spells and features via SSE, CGI, and the web interface.
+
+Examples:
+  app-launcher chatroom
+  app-launcher menu-app
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+app_name="${1-}"
+if [ -z "$app_name" ]; then
+  die 2 "app-launcher: app name required"
+fi
+
+# Validate app exists
+app-validate "$app_name" || exit 1
+
+# Determine platform
+kernel=$(uname -s)
+
+# Get or start web server
+server_port=8080
+server_url="http://localhost:$server_port"
+
+# Check if server is running
+if ! curl -sf "$server_url" >/dev/null 2>&1; then
+  info "Starting web server for app..."
+  # Start the demo server in background if not running
+  # The app can provide its own server start logic
+  if [ -d "$HOME/sites/demo" ]; then
+    web-wizardry serve demo >/dev/null 2>&1 &
+    sleep 2
+  else
+    info "Creating demo site for app hosting..."
+    web-wizardry create demo --template demo
+    web-wizardry serve demo >/dev/null 2>&1 &
+    sleep 2
+  fi
+fi
+
+# Construct app URL
+# For now, we just show the instructions
+# In a real deployment, apps would be served by the web server
+app_url="$server_url/apps/$app_name/index.html"
+
+info "Launching $app_name..."
+
+case "$kernel" in
+  Linux)
+    # On Linux, use xdg-open
+    if has xdg-open; then
+      xdg-open "$app_url" 2>/dev/null &
+    else
+      say "Please open: $app_url"
+    fi
+    ;;
+  Darwin)
+    # On macOS, use open command
+    open "$app_url" 2>/dev/null &
+    ;;
+  *)
+    say "Please open: $app_url"
+    ;;
+esac
+
+success "App launched: $app_name"
+say "URL: $app_url"

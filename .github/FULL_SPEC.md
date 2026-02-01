@@ -429,6 +429,65 @@ Wizardry uses several focused documentation files. Keep content in the right doc
 
 ---
 
+## Desktop Apps Infrastructure
+
+### Desktop Apps Architecture
+
+- Desktop apps live in `.apps/<appname>/` directories at repository root
+- Each app is a standalone unit with no router or navigation dependencies
+- Apps are graphical consoles for Unix environments, not sealed desktop applications
+- WebView loads a single entry HTML file directly (no bundling or compilation)
+- Host binary launches login shell, sources `invoke-wizardry`, captures environment (especially PATH)
+- Captured environment used unchanged for all command execution within app
+
+### Verb-Based Command Execution
+
+- WebView defines allowed commands directly in its JavaScript code (hardcoded)
+- Commands are arrays passed to native bridge (e.g., `['menu', '--help']`)
+- No separate verb configuration file needed (redundant with GUI code)
+- Host executes commands via `execvp()` (no `/bin/sh -c`, no shell parsing)
+- Command resolution occurs at execution time via PATH (allows live upgrades)
+- User input cannot construct commands (all commands predefined in GUI)
+- Stdout and stderr captured and returned verbatim to WebView
+
+### App Structure Requirements
+
+- `index.html`: Single HTML entry file loaded into WebView (required)
+- `style.css`: Optional styling for the app
+- Commands hardcoded in JavaScript within index.html
+- No router, no navigation, no framework dependencies
+- Apps must be simple and flat (minimal layers between UI and shell)
+
+### Security Model
+
+- Commands hardcoded in GUI code prevent injection attacks
+- No way for user input to construct arbitrary commands
+- Direct execution via `execvp()` eliminates shell parsing vulnerabilities
+- WebView can only execute commands explicitly defined in its code
+
+### Build and Distribution
+
+- No daemon required; fork-per-action is default execution model
+- Linux distribution targets AppImage format
+- macOS distribution targets `.app` bundles using same host binary
+- CI builds all app artifacts from single tag with no per-app manual steps
+- App-specific settings pages follow same execution and validation rules
+
+### CLI Parity Invariant
+
+- Removing GUI must not invalidate app functionality
+- Every app action must have CLI equivalent
+- Apps are conveniences, not dependencies
+- Backend spells remain fully functional without GUI layer
+
+### Desktop App Management Spells
+
+- `list-apps` spell lists all available apps in `.apps/` directory
+- `launch-app` spell validates and launches apps (WebView integration planned)
+- `app-validate` imp validates app directory structure (checks for required index.html)
+
+---
+
 ## Level 14-21: System Infrastructure
 
 ### Testing Infrastructure (Level 14)
@@ -576,6 +635,84 @@ Wizardry uses several focused documentation files. Keep content in the right doc
 - `shutdown-menu` for shutdown operations
 - `priorities` menu (also `priority-menu`) for task priorities
 - `users-menu` for user management
+
+---
+
+## Level 27: Desktop Apps
+
+### Desktop Apps Architecture
+
+- Desktop apps are graphical wrappers around wizardry spells
+- Apps live in `.apps/<appname>/` directory at repository root
+- Each app is standalone with no router or navigation dependency
+- WebView is a graphical console for Unix environment, not a sealed desktop app
+- GUI is optional - CLI parity invariant (removing GUI must not break functionality)
+
+### App Structure
+
+- Each app requires `index.html` (single HTML file loaded into WebView)
+- Optional `style.css` for styling
+- No `verbs.conf` or other mapping files - commands hardcoded in GUI JavaScript
+- App validation checks for `index.html` presence only
+
+### Command Execution Model
+
+- Commands are hardcoded directly in WebView's JavaScript code
+- WebView defines allowed commands as arrays (e.g., `['menu', '--help']`)
+- Host binary executes commands via `execvp()` with no shell parsing
+- No `/bin/sh -c` usage - direct command execution only
+- Command resolution occurs at execution time via PATH (live upgrades allowed)
+- Stdout and stderr captured and returned verbatim to WebView
+- WebView may never construct shell syntax or arbitrary argv vectors
+
+### Security Model
+
+- Security through simplicity: commands hardcoded in GUI prevent injection
+- No way for user input to construct arbitrary commands
+- WebView can only execute what's explicitly defined in JavaScript
+- All arguments must be hardcoded in GUI code (no free-form text from users)
+
+### Environment Setup
+
+- Host launches login shell at startup
+- Sources `invoke-wizardry` to set up wizardry environment
+- Captures resulting environment (at minimum PATH)
+- Captured environment used unchanged for all command execution
+- Apps have full access to all wizardry spells and user's shell environment
+
+### Execution Pattern
+
+- No daemon required - fork-per-action is default execution model
+- Each command invocation is independent
+- Commands can be long-running without blocking GUI
+
+### Build Targets
+
+- Linux distribution targets AppImage format
+- macOS targets .app bundles
+- Same host binary used on Linux and macOS for consistency
+- CI builds all app artifacts from single tag with no per-app manual steps
+
+### App Management Spells
+
+- `list-apps` - List available apps in `.apps/` directory
+- `launch-app` - Launch app (currently validates structure; WebView integration planned)
+- `build-appimage` - Build Linux AppImage (placeholder implementation)
+- `build-macapp` - Build macOS .app bundle (placeholder implementation)
+- `build-apps` - Build all apps for all platforms (orchestrator, placeholder)
+
+### App Validation
+
+- `app-validate` imp checks app directory structure
+- Validates `index.html` exists
+- Returns success/failure for app validity
+
+### Example App
+
+- `menu-app` demonstrates complete app structure
+- Shows WebView UI with buttons
+- Demonstrates hardcoded command pattern in JavaScript
+- Includes styling example
 
 ---
 

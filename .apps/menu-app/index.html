@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menu App - Wizardry</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🧙 Wizardry Menu</h1>
+      <p class="subtitle">A graphical console for your Unix environment</p>
+    </header>
+
+    <main>
+      <section class="actions">
+        <h2>Quick Actions</h2>
+        <div class="button-grid">
+          <button onclick="executeVerb('show-help')">Show Help</button>
+          <button onclick="executeVerb('list-spells')">List Spells</button>
+          <button onclick="executeVerb('show-path')">Show PATH</button>
+          <button onclick="executeVerb('show-env')">Show Environment</button>
+        </div>
+      </section>
+
+      <section class="output">
+        <h2>Output</h2>
+        <pre id="output-area">Ready. Select an action to execute a spell...</pre>
+      </section>
+    </main>
+
+    <footer>
+      <p>Desktop apps are thin wrappers around wizardry's web interface (POSIX shell + web server)</p>
+    </footer>
+  </div>
+
+  <script>
+    // Initialize native bridge callbacks
+    window.__wizardry_callbacks = window.__wizardry_callbacks || {};
+    
+    // Native bridge implementation
+    window.wizardry = window.wizardry || {
+      exec: function(cmdArray) {
+        return new Promise((resolve, reject) => {
+          if (!Array.isArray(cmdArray)) {
+            reject(new Error('Command must be an array'));
+            return;
+          }
+          
+          const id = Math.random().toString(36).substring(7);
+          window.__wizardry_callbacks[id] = resolve;
+          
+          // Send message to native host
+          if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.wizardry) {
+            // macOS/iOS WebKit
+            window.webkit.messageHandlers.wizardry.postMessage({
+              id: id,
+              command: cmdArray
+            });
+          } else {
+            // Fallback for browser testing
+            setTimeout(() => {
+              resolve({
+                stdout: 'Native bridge not available (running in browser)',
+                stderr: '',
+                exit_code: 0,
+                error: null
+              });
+            }, 100);
+          }
+        });
+      }
+    };
+    
+    // Desktop apps execute commands via native bridge
+    async function executeVerb(action) {
+      const outputArea = document.getElementById('output-area');
+      
+      // Map GUI actions to actual wizardry commands
+      const commands = {
+        'show-help': ['cat', 'README.md'],
+        'list-spells': ['spellbook', '--list'],
+        'show-path': ['sh', '-c', 'echo $PATH'],
+        'show-env': ['env']
+      };
+      
+      const cmd = commands[action];
+      if (!cmd) {
+        outputArea.textContent = `Unknown action: ${action}`;
+        return;
+      }
+      
+      outputArea.textContent = `Executing: ${cmd.join(' ')}\n\n`;
+      
+      try {
+        const result = await window.wizardry.exec(cmd);
+        
+        outputArea.textContent += `Exit code: ${result.exit_code}\n\n`;
+        
+        if (result.stdout) {
+          outputArea.textContent += `--- stdout ---\n${result.stdout}\n`;
+        }
+        
+        if (result.stderr) {
+          outputArea.textContent += `\n--- stderr ---\n${result.stderr}\n`;
+        }
+        
+        if (result.error) {
+          outputArea.textContent += `\n--- error ---\n${result.error}\n`;
+        }
+      } catch (error) {
+        outputArea.textContent += `Error: ${error.message}\n`;
+      }
+    }
+  </script>
+</body>
+</html>

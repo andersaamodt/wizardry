@@ -1,0 +1,67 @@
+#!/bin/sh
+
+# Build a macOS .app bundle for a desktop app.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: build-macapp <app-name>
+
+Build a macOS .app bundle for a desktop app.
+
+This creates a .app bundle that includes the wizardry host
+binary and the app files, ready for distribution on macOS.
+
+Example:
+  build-macapp menu-app
+
+Note: This is a placeholder. Native host binary implementation
+and .app bundle packaging are planned for future releases.
+
+The spec is complete and ready for implementation:
+- Host binary launches login shell and sources invoke-wizardry
+- Captures environment (PATH, etc.) for command execution
+- Loads WebView with app's index.html
+- Provides native bridge for executing hardcoded commands from GUI
+- Commands executed via execvp() with no shell parsing
+- Same host binary used on Linux and macOS for consistency
+
+See also: build-appimage, build-apps
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+app_name=${1-}
+
+if [ -z "$app_name" ]; then
+  printf '%s\n' "build-macapp: requires app name" >&2
+  printf '%s\n' "Try: build-macapp --help" >&2
+  exit 2
+fi
+
+# Use WIZARDRY_DIR from environment
+wizardry_dir=${WIZARDRY_DIR:-$HOME/.wizardry}
+apps_dir="$wizardry_dir/.apps"
+app_path="$apps_dir/$app_name"
+
+# Validate app exists
+if ! app-validate "$app_path"; then
+  printf '%s\n' "build-macapp: invalid app: $app_name" >&2
+  exit 1
+fi
+
+# Placeholder implementation
+printf '%s\n' "build-macapp: .app bundle packaging not yet implemented"
+printf '%s\n' "App validated: $app_name"
+printf '%s\n' ""
+printf '%s\n' "Future implementation will:"
+printf '%s\n' "  1. Compile host binary with WebView support (WKWebView on macOS)"
+printf '%s\n' "  2. Create .app bundle structure"
+printf '%s\n' "  3. Copy app files to Resources/"
+printf '%s\n' "  4. Generate Info.plist"
+printf '%s\n' "  5. Output: $app_name.app"
+printf '%s\n' ""
+printf '%s\n' "See .apps/README.md for architecture details."

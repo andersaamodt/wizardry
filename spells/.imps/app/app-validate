@@ -1,0 +1,25 @@
+#!/bin/sh
+# app-validate APP_PATH - validate app directory structure
+
+set -eu
+
+app_path=${1-}
+
+if [ -z "$app_path" ]; then
+  printf '%s\n' "app-validate: requires app path" >&2
+  exit 1
+fi
+
+# Verify app directory exists
+if [ ! -d "$app_path" ]; then
+  printf '%s\n' "app-validate: app directory not found: $app_path" >&2
+  exit 1
+fi
+
+# Verify index.html exists
+if [ ! -f "$app_path/index.html" ]; then
+  printf '%s\n' "app-validate: index.html not found in $app_path" >&2
+  exit 1
+fi
+
+exit 0
