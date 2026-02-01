@@ -195,7 +195,6 @@ function updateUnreadBadges() {
     
     // Fetch and update (all at once, no staggering)
     countUnreadMessages(roomName, function(count, lastMessageTimestamp) {
-      // Only update if timestamp has changed (optimization)
       var previousTimestamp = window.lastRoomMessageTimestamps[roomName];
       
       // Handle null case: if room now has no messages but previously had some
@@ -205,14 +204,15 @@ function updateUnreadBadges() {
         return;
       }
       
+      // Store current timestamp before comparison (for next iteration)
+      if (lastMessageTimestamp) {
+        window.lastRoomMessageTimestamps[roomName] = lastMessageTimestamp;
+      }
+      
+      // Skip update if timestamp hasn't changed (but not on first load)
       if (previousTimestamp && lastMessageTimestamp && previousTimestamp === lastMessageTimestamp) {
         // No new messages, skip update
         return;
-      }
-      
-      // Update stored timestamp
-      if (lastMessageTimestamp) {
-        window.lastRoomMessageTimestamps[roomName] = lastMessageTimestamp;
       }
       
       // Update badge display
