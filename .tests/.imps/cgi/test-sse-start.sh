@@ -21,7 +21,8 @@ test_sse_start_outputs_headers() {
 
 test_sse_start_ends_with_blank_line() {
   # Check that sse-start output contains the double CRLF sequence
-  sse-start 2>&1 | od -An -tx1 | grep -q "0d 0a 0d 0a"
+  # Remove spaces from od output for cross-platform reliability
+  sse-start 2>&1 | od -An -tx1 | tr -d ' \n' | grep -q "0d0a0d0a"
 }
 
 run_test_case "sse-start is executable" test_sse_start_exists
