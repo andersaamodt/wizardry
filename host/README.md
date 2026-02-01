@@ -1,61 +1,34 @@
 # Wizardry Desktop Host
 
-Minimal Rust-based WebView host for wizardry desktop apps.
+Minimal native WebView host for wizardry desktop apps.
 
 ## About
 
-This is a lightweight native host binary that provides a WebView-based desktop app experience for wizardry applications. It uses the `wry` crate for cross-platform WebView support.
+This provides native WebView-based desktop applications using platform-native APIs:
+- **macOS**: Objective-C with Cocoa + WebKit
+- **Linux**: C with GTK3 + WebKit2GTK
 
-### Why Rust?
-
-Per project policy:
-- Go is made by Google (against non-commercial policy)
-- Rust is the preferred alternative for compiled binaries
-- We keep it minimal - just `wry` for WebView, not the full Tauri framework
-
-## Dependencies
-
-- `wry` - Cross-platform WebView library
-- `tao` - Window management (dependency of wry)
-- `serde` + `serde_json` - JSON serialization for IPC
+No external language ecosystems (no Rust/Cargo, no Go modules). Just simple native code compiled with platform compilers.
 
 ## Building
 
-### Prerequisites
+### macOS
 
 ```bash
-# Install Rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-
-# Add target platforms
-rustup target add x86_64-unknown-linux-gnu
-rustup target add x86_64-apple-darwin
-rustup target add aarch64-apple-darwin
+cd host/macos
+clang -O2 -fobjc-arc main.m -o wizardry-host -framework Cocoa -framework WebKit
 ```
 
-### Build for Linux
+That's it! Single command, ~100-200 KB binary.
+
+### Linux
 
 ```bash
-cargo build --release --target x86_64-unknown-linux-gnu
+cd host/linux
+gcc -O2 main.c -o wizardry-host `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0`
 ```
 
-The binary will be at `target/x86_64-unknown-linux-gnu/release/wizardry-host`
-
-### Build for macOS
-
-```bash
-# Intel
-cargo build --release --target x86_64-apple-darwin
-
-# Apple Silicon
-cargo build --release --target aarch64-apple-darwin
-
-# Create universal binary
-lipo -create \
-  -output wizardry-host \
-  target/x86_64-apple-darwin/release/wizardry-host \
-  target/aarch64-apple-darwin/release/wizardry-host
-```
+Dependencies: `gtk+-3.0`, `webkit2gtk-4.0` (usually already installed on Linux desktops)
 
 ## Usage
 
@@ -65,9 +38,9 @@ wizardry-host /path/to/app/directory
 
 The app directory must contain `index.html`.
 
-## Native Bridge API
+## JavaScript API
 
-The host exposes a `window.wizardry.exec()` function to JavaScript:
+The host injects a `window.wizardry.exec()` function:
 
 ```javascript
 // Execute a command
@@ -82,12 +55,21 @@ const result = await window.wizardry.exec(['list-apps']);
 // }
 ```
 
+### Implementation
+
+The JavaScript bridge works via platform-specific message handlers:
+
+**macOS**: `window.webkit.messageHandlers.wizardry.postMessage(...)`
+**Linux**: `window.webkit.messageHandlers.wizardry.postMessage(...)`
+
+The native code receives messages, executes commands via `execvp()` (macOS: NSTask, Linux: fork+exec), and returns results.
+
 ### Security
 
-- Commands must be hardcoded in the GUI JavaScript
-- Only string arrays are accepted (no shell parsing)
-- Execution via Rust's `Command::new()` (equivalent to `execvp()`)
-- No way for user input to construct arbitrary commands
+- Commands are hardcoded in the GUI JavaScript (not constructed from user input)
+- Only string arrays are accepted
+- Direct execution via `execvp()` (no shell parsing)
+- Commands are resolved via PATH at runtime
 
 ## Architecture
 
@@ -96,31 +78,47 @@ User clicks app
      ↓
 wizardry-host binary launches
      ↓
-Creates WebView window
+Creates native WebView window
      ↓
 Loads app/index.html
      ↓
 JavaScript calls window.wizardry.exec([...])
      ↓
-Rust executes command via std::process::Command
+Native code executes command via execvp
      ↓
 Returns JSON result to WebView
      ↓
 App updates UI
 ```
 
-## Size
+## Binary Size
 
-The compiled binary is approximately:
-- Linux: ~5-7 MB (stripped)
-- macOS: ~8-10 MB (universal, stripped)
+- macOS: ~100-200 KB (stripped)
+- Linux: ~50-100 KB (stripped)
 
-Size is kept minimal by:
-- Using `wry` instead of full Tauri
-- Stripping debug symbols
-- LTO (Link-Time Optimization)
-- Single codegen unit
+Much smaller than Rust/Go alternatives because we use system frameworks.
+
+## Why Not Rust/Go?
+
+**Rust:**
+- External ecosystem (Cargo, crates.io)
+- Many build steps
+- Large dependency tree
+- ~5-10 MB binaries
+- Against "low to the ground" philosophy
+
+**Go:**
+- Made by Google (against project policy)
+- Still adds complexity
+
+**Native C/Objective-C:**
+- ✅ Simple single-command build
+- ✅ Tiny binaries
+- ✅ No external dependencies
+- ✅ Fast compilation
+- ✅ "Lower to the ground"
 
 ## License
 
 Same as wizardry project.
+
