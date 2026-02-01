@@ -1038,14 +1038,14 @@ pre code {
 
 #connecting-status {
   position: absolute;
-  right: 130px;  /* Position to left of Send button with proper spacing */
+  right: 90px;  /* Position to left of Send button with proper spacing */
   top: 50%;
   transform: translateY(-50%);
-  color: #888;  /* Grey text to match spinner */
+  color: #999;  /* Light grey text to match spinner */
   font-size: 0.85em;  /* Smaller, less obtrusive */
   font-style: italic;
   opacity: 0;
-  transition: opacity 0.3s ease-in-out;
+  transition: opacity 0.2s ease-in-out;
   pointer-events: none;  /* Don't interfere with clicking */
 }
 
@@ -1079,7 +1079,7 @@ pre code {
   flex-shrink: 0;
   align-self: stretch;
   min-height: 2.5rem;
-  transition: min-height 0.2s ease, background-color 0.3s ease, opacity 0.3s ease;
+  transition: min-height 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
 }
 
 .chat-input-area button:disabled {
@@ -1113,7 +1113,6 @@ pre code {
   margin-left: 8px;
   vertical-align: middle;
   will-change: transform;
-  transform: translateZ(0);
   backface-visibility: hidden;
 }
 

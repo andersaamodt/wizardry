@@ -489,7 +489,7 @@ function setupMessageStream(roomName, sinceTimestamp) {
       // Remove from DOM after fade completes
       setTimeout(function() {
         connectingMsg.remove();
-      }, 300);  // Match transition duration
+      }, 200);  // Match transition duration
     }
   });
   
