@@ -91,34 +91,9 @@ if [ ! -d "$ROOM_DIR" ]; then
   exit 1
 fi
 
-# Send empty event if room has no messages yet
-if [ ! -f "$LOG_FILE" ] || [ ! -s "$LOG_FILE" ]; then
-  send_sse_event empty "No messages yet"
-fi
-
-# Send initial messages (if log file exists and since parameter provided, filter by timestamp)
-if [ -f "$LOG_FILE" ] && [ -s "$LOG_FILE" ]; then
-  if [ -n "$since_timestamp" ]; then
-    # Send messages after the specified timestamp
-    while IFS= read -r line; do
-      # Extract timestamp from message: [YYYY-MM-DD HH:MM:SS] ...
-      msg_timestamp=$(printf '%s' "$line" | sed -n 's/^\[\([^]]*\)\].*/\1/p')
-      
-      if [ -n "$msg_timestamp" ]; then
-        # Compare timestamps (lexicographic comparison works for ISO format)
-        latest=$(printf '%s\n%s' "$msg_timestamp" "$since_timestamp" | sort | tail -1)
-        if [ "$latest" = "$msg_timestamp" ]; then
-          send_sse_event message "$line"
-        fi
-      fi
-    done < "$LOG_FILE"
-  else
-    # Send last 50 messages if no timestamp filter
-    tail -50 "$LOG_FILE" 2>/dev/null | while IFS= read -r line; do
-      send_sse_event message "$line"
-    done
-  fi
-fi
+# Historical messages are fetched separately via chat-get-messages endpoint
+# SSE connection is ONLY for real-time updates (O(1) connection time)
+# This prevents O(n) delay when connecting to rooms with large message history
 
 # Send initial member list
 query="room=$room"

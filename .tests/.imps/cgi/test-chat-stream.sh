@@ -102,37 +102,41 @@ test_chat_stream_handles_nonexistent_room() {
   printf '%s' "$output" | grep -q "Room not found"
 }
 
-test_chat_stream_sends_empty_event_for_no_messages() {
+test_chat_stream_does_not_send_historical_messages() {
   setup_test_env
   
-  # Create empty room
-  mkdir -p "$CHAT_DIR/TestRoom"
-  
-  export QUERY_STRING="room=TestRoom"
-  output=$(run_with_timeout chat-stream)
-  
-  cleanup_test_env
-  
-  printf '%s' "$output" | grep -q "event: empty" && \
-  printf '%s' "$output" | grep -q "No messages yet"
-}
-
-test_chat_stream_sends_initial_messages() {
-  setup_test_env
-  
-  # Create room with messages
+  # Create room with messages (should NOT be sent via SSE)
   mkdir -p "$CHAT_DIR/TestRoom"
   printf "[2024-01-01 10:00:00] Alice: Hello\n" > "$CHAT_DIR/TestRoom/.log"
-  printf "[2024-01-01 10:01:00] Bob: Hi there\n" >> "$CHAT_DIR/TestRoom/.log"
   
   export QUERY_STRING="room=TestRoom"
   output=$(run_with_timeout chat-stream)
   
   cleanup_test_env
   
-  printf '%s' "$output" | grep -q "event: message" && \
-  printf '%s' "$output" | grep -q "Alice: Hello" && \
-  printf '%s' "$output" | grep -q "Bob: Hi there"
+  # Should NOT contain historical messages (O(1) connection time)
+  ! printf '%s' "$output" | grep -q "Alice: Hello"
+}
+
+test_chat_stream_connects_instantly_regardless_of_history() {
+  setup_test_env
+  
+  # Create room with large message history
+  mkdir -p "$CHAT_DIR/TestRoom"
+  i=1
+  while [ $i -le 1000 ]; do
+    printf "[2024-01-01 10:%02d:00] User%d: Message %d\n" $((i % 60)) $i $i >> "$CHAT_DIR/TestRoom/.log"
+    i=$((i + 1))
+  done
+  
+  export QUERY_STRING="room=TestRoom"
+  output=$(run_with_timeout chat-stream)
+  
+  cleanup_test_env
+  
+  # Should connect without iterating through messages (O(1) time)
+  # Verify it doesn't contain historical messages
+  ! printf '%s' "$output" | grep -q "User1: Message 1"
 }
 
 test_chat_stream_sends_member_list() {
@@ -171,8 +175,8 @@ run_test_case "chat-stream is executable" test_chat_stream_exists
 run_test_case "chat-stream rejects invalid room names" test_chat_stream_rejects_invalid_room_name
 run_test_case "chat-stream rejects empty room parameter" test_chat_stream_rejects_empty_room
 run_test_case "chat-stream handles nonexistent room" test_chat_stream_handles_nonexistent_room
-run_test_case "chat-stream sends empty event for no messages" test_chat_stream_sends_empty_event_for_no_messages
-run_test_case "chat-stream sends initial messages" test_chat_stream_sends_initial_messages
+run_test_case "chat-stream does not send historical messages" test_chat_stream_does_not_send_historical_messages
+run_test_case "chat-stream connects instantly regardless of history" test_chat_stream_connects_instantly_regardless_of_history
 run_test_case "chat-stream sends member list" test_chat_stream_sends_member_list
 run_test_case "chat-stream outputs SSE headers" test_chat_stream_outputs_sse_headers
 
