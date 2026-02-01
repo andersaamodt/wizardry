@@ -22,7 +22,7 @@ The spec is complete and ready for implementation:
 - Host binary launches login shell and sources invoke-wizardry
 - Captures environment (PATH, etc.) for command execution
 - Loads WebView with app's index.html
-- Provides native bridge for verb execution via app-verb
+- Provides native bridge for executing hardcoded commands from GUI
 - Commands executed via execvp() with no shell parsing
 
 See also: build-macapp, build-apps
