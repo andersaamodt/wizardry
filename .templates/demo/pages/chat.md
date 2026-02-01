@@ -321,9 +321,11 @@ function updateUnreadBadges() {
   Promise.all(fetchPromises).then(function(results) {
     // Update all badges simultaneously
     results.forEach(function(result) {
-      // Query for all badges for this room (handles case where DOM was morphed during fetch)
-      // Room names are server-validated to [a-zA-Z0-9_-] so safe for direct use in selector
-      var currentBadges = document.querySelectorAll('.unread-badge[data-room="' + result.room + '"]');
+      // Query badges safely using attribute matching (defense-in-depth)
+      var allBadges = document.querySelectorAll('.unread-badge');
+      var currentBadges = Array.prototype.filter.call(allBadges, function(badge) {
+        return badge.getAttribute('data-room') === result.room;
+      });
       
       currentBadges.forEach(function(badge) {
         // Update badge display
