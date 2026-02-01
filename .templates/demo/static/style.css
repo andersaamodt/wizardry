@@ -720,7 +720,7 @@ pre code {
 /* Animation for existing items sliding down to make room */
 @keyframes roomItemSlideDown {
   from {
-    transform: translateY(-50px);
+    transform: translateY(calc(-1 * var(--room-item-max-height)));
   }
   to {
     transform: translateY(0);

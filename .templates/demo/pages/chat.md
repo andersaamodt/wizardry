@@ -278,10 +278,10 @@ function countUnreadMessages(roomName, callback) {
     });
 }
 
-// Global badge cache to prevent flickering during room list updates
-window.badgeCache = {};
-window.badgeCacheTimestamp = 0;
-window.BADGE_CACHE_TTL = 5000; // 5 seconds
+// Badge cache with per-room timestamps to prevent stale data
+window.chatApp = window.chatApp || {};
+window.chatApp.badgeCache = {};  // { roomName: { count: N, timestamp: T } }
+window.chatApp.BADGE_CACHE_TTL = 5000; // 5 seconds
 
 function updateUnreadBadges() {
   // Update all unread badges in the room list
@@ -302,12 +302,12 @@ function updateUnreadBadges() {
       return;
     }
     
-    // Check if we have cached data that's still fresh
+    // Check if we have cached data for this specific room that's still fresh
     var now = Date.now();
-    if (window.badgeCache[roomName] !== undefined && 
-        (now - window.badgeCacheTimestamp) < window.BADGE_CACHE_TTL) {
+    var cached = window.chatApp.badgeCache[roomName];
+    if (cached && (now - cached.timestamp) < window.chatApp.BADGE_CACHE_TTL) {
       // Use cached data immediately
-      var count = window.badgeCache[roomName];
+      var count = cached.count;
       if (count > 0) {
         badge.textContent = count;
         badge.classList.remove('hidden');
@@ -340,13 +340,15 @@ function updateUnreadBadges() {
   
   // Wait for all fetches to complete, then update all badges at once
   Promise.all(fetchPromises).then(function(results) {
-    // Update badge cache
-    window.badgeCacheTimestamp = Date.now();
+    var now = Date.now();
     
     // Update all badges simultaneously
     results.forEach(function(result) {
-      // Cache the result
-      window.badgeCache[result.room] = result.count;
+      // Cache the result with per-room timestamp
+      window.chatApp.badgeCache[result.room] = {
+        count: result.count,
+        timestamp: now
+      };
       
       // Query badges safely using attribute matching (defense-in-depth)
       var allBadges = document.querySelectorAll('.unread-badge');
