@@ -141,10 +141,6 @@ esc_exits_menu() {
   cat >"$tmp/menu" <<'SH'
 #!/bin/sh
 # Simulate menu exiting with status 130 (ESC pressed)
-# Only write to MENU_LOG if it's set
-if [ -n "${MENU_LOG-}" ]; then
-  printf '%s\n' "$@" >"$MENU_LOG"
-fi
 exit 130
 SH
   chmod +x "$tmp/menu"
@@ -156,11 +152,6 @@ CYAN=''
 RESET=''
 SH
   chmod +x "$tmp/colors"
-
-  ln -s /bin/sh "$tmp/sh"
-  ln -s /usr/bin/dirname "$tmp/dirname"
-  ln -s /bin/grep "$tmp/grep"
-  ln -s /bin/cat "$tmp/cat"
 
   # Run core-menu with menu that returns 130 (ESC)
   run_cmd env PATH="$WIZARDRY_IMPS_PATH:$tmp:/bin:/usr/bin" COLORS_BIN="$tmp/colors" MENU_BIN="$tmp/menu" \
