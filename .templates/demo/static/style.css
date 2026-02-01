@@ -715,10 +715,6 @@ pre code {
     margin-top: 0;
     margin-bottom: 0;
   }
-  50% {
-    opacity: 0;
-    max-height: var(--room-item-max-height);
-  }
   100% {
     opacity: 1;
     max-height: var(--room-item-max-height);
