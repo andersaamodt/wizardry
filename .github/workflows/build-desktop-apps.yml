@@ -26,6 +26,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: x86_64-unknown-linux-gnu
+
+      - name: Build Rust host binary
+        run: |
+          cd host
+          cargo build --release --target x86_64-unknown-linux-gnu
+          cp target/x86_64-unknown-linux-gnu/release/wizardry-host ../wizardry-host
+          cd ..
+          chmod +x wizardry-host
+          ls -lh wizardry-host
+
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -58,33 +74,44 @@ jobs:
             mkdir -p "AppDir-$app/usr/share/$app"
             mkdir -p "AppDir-$app/usr/share/applications"
             mkdir -p "AppDir-$app/usr/share/icons/hicolor/256x256/apps"
+            mkdir -p "AppDir-$app/usr/share/wizardry"
             
             # Copy app files
             cp -r ".apps/$app"/* "AppDir-$app/usr/share/$app/"
             
-            # Copy app launcher script
-            cp spells/.wizardry/desktop/app-launcher "AppDir-$app/usr/bin/"
+            # Copy wizardry installation
+            cp -r spells "AppDir-$app/usr/share/wizardry/"
+            cp install "AppDir-$app/usr/share/wizardry/"
+            
+            # Copy Rust host binary
+            cp wizardry-host "AppDir-$app/usr/bin/"
             
             # Create desktop file
             cat > "AppDir-$app/usr/share/applications/$app.desktop" <<EOF
           [Desktop Entry]
           Type=Application
           Name=Wizardry $(echo $app | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++)sub(/./,toupper(substr($i,1,1)),$i)}1')
-          Exec=app-launcher $app
+          Exec=wizardry-host $app
           Icon=$app
           Categories=Network;Utility;
           EOF
             
-            # Create AppRun script (pure POSIX shell)
+            # Create AppRun script
             cat > "AppDir-$app/AppRun" <<'EOF'
           #!/bin/sh
-          # POSIX shell launcher for wizardry desktop apps
+          # Launcher for wizardry desktop apps using Rust WebView host
           HERE="$(dirname "$(readlink -f "${0}")")"
           export APPDIR="$HERE"
-          export PATH="$HERE/usr/bin:$PATH"
+          export PATH="$HERE/usr/share/wizardry/spells:$HERE/usr/share/wizardry/spells/.imps/cond:$HERE/usr/share/wizardry/spells/.imps/out:$HERE/usr/share/wizardry/spells/.imps/sys:$HERE/usr/share/wizardry/spells/.imps/app:$HERE/usr/share/wizardry/spells/.wizardry/desktop:$PATH"
+          export WIZARDRY_DIR="$HERE/usr/share/wizardry"
           
-          # Launch the app using app-launcher
-          exec "$HERE/usr/bin/app-launcher" "APP_NAME"
+          # Source invoke-wizardry to set up environment
+          if [ -f "$WIZARDRY_DIR/spells/invoke-wizardry" ]; then
+            . "$WIZARDRY_DIR/spells/invoke-wizardry"
+          fi
+          
+          # Launch the Rust host with the app directory
+          exec "$HERE/usr/bin/wizardry-host" "$HERE/usr/share/APP_NAME"
           EOF
             sed -i "s/APP_NAME/$app/g" "AppDir-$app/AppRun"
             chmod +x "AppDir-$app/AppRun"
@@ -113,6 +140,33 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: x86_64-apple-darwin
+
+      - name: Add ARM64 target
+        run: rustup target add aarch64-apple-darwin
+
+      - name: Build Rust host binary (universal)
+        run: |
+          cd host
+          # Build for Intel
+          cargo build --release --target x86_64-apple-darwin
+          # Build for Apple Silicon
+          cargo build --release --target aarch64-apple-darwin
+          # Create universal binary
+          lipo -create \
+            -output ../wizardry-host \
+            target/x86_64-apple-darwin/release/wizardry-host \
+            target/aarch64-apple-darwin/release/wizardry-host
+          cd ..
+          chmod +x wizardry-host
+          lipo -info wizardry-host
+          ls -lh wizardry-host
+
       - name: List available apps
         id: list-apps
         run: |
@@ -133,22 +187,22 @@ jobs:
             # Create .app structure
             mkdir -p "dist/$APP_NAME.app/Contents/MacOS"
             mkdir -p "dist/$APP_NAME.app/Contents/Resources/$app"
+            mkdir -p "dist/$APP_NAME.app/Contents/Resources/wizardry"
             
             # Copy app files
             cp -r ".apps/$app"/* "dist/$APP_NAME.app/Contents/Resources/$app/"
             
-            # Copy entire wizardry installation to the bundle
-            mkdir -p "dist/$APP_NAME.app/Contents/Resources/wizardry"
+            # Copy wizardry installation
             cp -r spells "dist/$APP_NAME.app/Contents/Resources/wizardry/"
             cp install "dist/$APP_NAME.app/Contents/Resources/wizardry/"
             
-            # Copy app launcher to MacOS directory
-            cp spells/.wizardry/desktop/app-launcher "dist/$APP_NAME.app/Contents/MacOS/"
+            # Copy Rust host binary
+            cp wizardry-host "dist/$APP_NAME.app/Contents/MacOS/"
             
-            # Create launcher script (pure POSIX shell)
+            # Create launcher script
             cat > "dist/$APP_NAME.app/Contents/MacOS/$app" <<'EOF'
           #!/bin/sh
-          # POSIX shell launcher for wizardry desktop apps on macOS
+          # macOS launcher for wizardry desktop app with Rust WebView host
           APPDIR="$(cd "$(dirname "$0")/.." && pwd)"
           RESOURCES="$APPDIR/Resources"
           WIZARDRY="$RESOURCES/wizardry"
@@ -158,26 +212,12 @@ jobs:
           export PATH="$WIZARDRY/spells:$WIZARDRY/spells/.imps/cond:$WIZARDRY/spells/.imps/out:$WIZARDRY/spells/.imps/sys:$WIZARDRY/spells/.imps/app:$WIZARDRY/spells/.wizardry/desktop:$PATH"
           
           # Source invoke-wizardry to set up the environment
-          # This adds all spells to PATH
           if [ -f "$WIZARDRY/spells/invoke-wizardry" ]; then
             . "$WIZARDRY/spells/invoke-wizardry"
           fi
           
-          # Execute the app launcher with the app name
-          # Don't use exec - we need to keep running after launch
-          "$APPDIR/MacOS/app-launcher" "APP_NAME"
-          
-          # Keep the .app process alive to show in Dock
-          # Wait for user to quit via Cmd+Q or closing the app
-          echo "App launched. Press Ctrl+C to quit, or use Cmd+Q from Dock."
-          
-          # Trap signals to cleanup
-          trap 'echo "Shutting down..."; exit 0' INT TERM
-          
-          # Keep running indefinitely
-          while true; do
-            sleep 60
-          done
+          # Launch the Rust host with the app directory
+          exec "$APPDIR/MacOS/wizardry-host" "$RESOURCES/APP_NAME"
           EOF
             sed -i '' "s/APP_NAME/$app/g" "dist/$APP_NAME.app/Contents/MacOS/$app"
             chmod +x "dist/$APP_NAME.app/Contents/MacOS/$app"
