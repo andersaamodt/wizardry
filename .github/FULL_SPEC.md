@@ -638,6 +638,84 @@ Wizardry uses several focused documentation files. Keep content in the right doc
 
 ---
 
+## Level 27: Desktop Apps
+
+### Desktop Apps Architecture
+
+- Desktop apps are graphical wrappers around wizardry spells
+- Apps live in `.apps/<appname>/` directory at repository root
+- Each app is standalone with no router or navigation dependency
+- WebView is a graphical console for Unix environment, not a sealed desktop app
+- GUI is optional - CLI parity invariant (removing GUI must not break functionality)
+
+### App Structure
+
+- Each app requires `index.html` (single HTML file loaded into WebView)
+- Optional `style.css` for styling
+- No `verbs.conf` or other mapping files - commands hardcoded in GUI JavaScript
+- App validation checks for `index.html` presence only
+
+### Command Execution Model
+
+- Commands are hardcoded directly in WebView's JavaScript code
+- WebView defines allowed commands as arrays (e.g., `['menu', '--help']`)
+- Host binary executes commands via `execvp()` with no shell parsing
+- No `/bin/sh -c` usage - direct command execution only
+- Command resolution occurs at execution time via PATH (live upgrades allowed)
+- Stdout and stderr captured and returned verbatim to WebView
+- WebView may never construct shell syntax or arbitrary argv vectors
+
+### Security Model
+
+- Security through simplicity: commands hardcoded in GUI prevent injection
+- No way for user input to construct arbitrary commands
+- WebView can only execute what's explicitly defined in JavaScript
+- All arguments must be hardcoded in GUI code (no free-form text from users)
+
+### Environment Setup
+
+- Host launches login shell at startup
+- Sources `invoke-wizardry` to set up wizardry environment
+- Captures resulting environment (at minimum PATH)
+- Captured environment used unchanged for all command execution
+- Apps have full access to all wizardry spells and user's shell environment
+
+### Execution Pattern
+
+- No daemon required - fork-per-action is default execution model
+- Each command invocation is independent
+- Commands can be long-running without blocking GUI
+
+### Build Targets
+
+- Linux distribution targets AppImage format
+- macOS targets .app bundles
+- Same host binary used on Linux and macOS for consistency
+- CI builds all app artifacts from single tag with no per-app manual steps
+
+### App Management Spells
+
+- `list-apps` - List available apps in `.apps/` directory
+- `launch-app` - Launch app (currently validates structure; WebView integration planned)
+- `build-appimage` - Build Linux AppImage (placeholder implementation)
+- `build-macapp` - Build macOS .app bundle (placeholder implementation)
+- `build-apps` - Build all apps for all platforms (orchestrator, placeholder)
+
+### App Validation
+
+- `app-validate` imp checks app directory structure
+- Validates `index.html` exists
+- Returns success/failure for app validity
+
+### Example App
+
+- `menu-app` demonstrates complete app structure
+- Shows WebView UI with buttons
+- Demonstrates hardcoded command pattern in JavaScript
+- Includes styling example
+
+---
+
 ## Level 28: Optional Arcana (Third-Party Software)
 
 ### Arcana Architecture
