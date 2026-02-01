@@ -11,26 +11,26 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_help() {
-  run_spell "spells/desktop/launch-app" --help
+  run_spell "spells/.wizardry/desktop/launch-app" --help
   assert_success || return 1
   assert_output_contains "Usage: launch-app" || return 1
 }
 
 test_launch_requires_app_name() {
-  run_spell "spells/desktop/launch-app"
+  run_spell "spells/.wizardry/desktop/launch-app"
   assert_failure || return 1
   assert_error_contains "requires app name" || return 1
 }
 
 test_launch_validates_app() {
   # The repository already has menu-app
-  run_spell "spells/desktop/launch-app" "menu-app"
+  run_spell "spells/.wizardry/desktop/launch-app" "menu-app"
   assert_success || return 1
   assert_output_contains "App validated" || return 1
 }
 
 test_launch_rejects_invalid_app() {
-  run_spell "spells/desktop/launch-app" "nonexistent-app"
+  run_spell "spells/.wizardry/desktop/launch-app" "nonexistent-app"
   assert_failure || return 1
   assert_error_contains "invalid app" || return 1
 }
