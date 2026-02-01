@@ -24,5 +24,5 @@ done
 # But they force fcgiwrap to flush the buffer to nginx
 sse-padding 2
 
-# End event with blank line (double newline for cross-platform compatibility)
-printf '\n\n'
+# End event with blank line (sse-padding already added one newline)
+printf '\n'
