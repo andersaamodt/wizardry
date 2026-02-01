@@ -882,6 +882,39 @@ pre code {
   float: right;
   margin-top: 0.15rem;
   line-height: 1.2;  /* Consistent vertical alignment */
+  
+  /* Smooth animations for badge updates */
+  transition: all 0.3s ease-in-out;
+  animation: badge-appear 0.3s ease-out;
+}
+
+/* Animation keyframes for badge appearing */
+@keyframes badge-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Animation for badge number changes */
+@keyframes badge-pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.unread-badge.updating {
+  animation: badge-pulse 0.4s ease-in-out;
 }
 
 .room-item:hover .unread-badge, .room-item-hover .unread-badge {
@@ -992,11 +1025,11 @@ pre code {
   transition: color 0.2s;  /* Only color transition for smooth hover effect */
   text-align: center;
   cursor: pointer;
-  margin-left: -1.0em;  /* Moved 0.7em right for better centering (was -1.7em) */
+  margin-left: -0.25em;  /* Moved right for better alignment */
 }
 
 #create-room-widget.open #create-room-link {
-  margin-left: -1.0em;  /* Moved 0.7em right for better centering (was -1.7em) */
+  margin-left: -0.25em;  /* Moved right for better alignment */
   margin-bottom: 0.5rem;  /* Space below when it becomes a heading */
 }
 

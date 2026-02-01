@@ -318,37 +318,52 @@ function setupUnreadCountsStream() {
       var counts = JSON.parse(event.data);
       console.log('[Unread Counts] Received update:', counts);
       
-      // Update all badges with the received counts
-      document.querySelectorAll('.unread-badge').forEach(function(badge) {
-        var roomName = badge.getAttribute('data-room');
-        if (!roomName) return;
+      // Process each room in the counts
+      for (var roomName in counts) {
+        if (!counts.hasOwnProperty(roomName)) continue;
         
         // Don't show badge for current room
-        if (roomName === window.currentRoom) {
-          badge.style.display = 'none';
-          return;
-        }
+        if (roomName === window.currentRoom) continue;
         
-        // Get count from server data
         var serverCount = counts[roomName] || 0;
         
-        // Always update to ensure badges appear/disappear correctly
-        // This fixes the issue where badge doesn't appear on first message
-        console.log('[Unread Counts] Updating badge for room:', roomName, 'serverCount:', serverCount);
-        countUnreadMessages(roomName, function(count) {
-          console.log('[Unread Counts] Badge update callback for', roomName, '- count:', count, 'badge display before:', badge.style.display);
-          if (count > 0) {
-            badge.textContent = count;
-            badge.style.display = 'inline-block';
-            // Apply current display mode styling
-            updateBadgeStyle(badge);
-            console.log('[Unread Counts] Badge should now be visible for', roomName, 'display:', badge.style.display);
-          } else {
-            badge.style.display = 'none';
-            console.log('[Unread Counts] Badge hidden for', roomName);
-          }
-        });
-      });
+        // Create closure to capture roomName
+        (function(capturedRoomName) {
+          console.log('[Unread Counts] Updating badge for room:', capturedRoomName, 'serverCount:', serverCount);
+          countUnreadMessages(capturedRoomName, function(count) {
+            // Query for fresh badge element each time (fixes stale DOM reference after htmx swap)
+            var freshBadge = document.querySelector('.unread-badge[data-room="' + capturedRoomName + '"]');
+            if (!freshBadge) {
+              console.log('[Unread Counts] No badge element found for', capturedRoomName);
+              return;
+            }
+            
+            console.log('[Unread Counts] Badge update callback for', capturedRoomName, '- count:', count, 'badge display before:', freshBadge.style.display);
+            
+            var oldCount = parseInt(freshBadge.textContent) || 0;
+            var wasVisible = freshBadge.style.display !== 'none';
+            
+            if (count > 0) {
+              // Trigger animation if number changed
+              if (wasVisible && oldCount !== count) {
+                freshBadge.classList.add('updating');
+                setTimeout(function() {
+                  freshBadge.classList.remove('updating');
+                }, 400);
+              }
+              
+              freshBadge.textContent = count;
+              freshBadge.style.display = 'inline-block';
+              // Apply current display mode styling
+              updateBadgeStyle(freshBadge);
+              console.log('[Unread Counts] Badge should now be visible for', capturedRoomName, 'display:', freshBadge.style.display);
+            } else {
+              freshBadge.style.display = 'none';
+              console.log('[Unread Counts] Badge hidden for', capturedRoomName);
+            }
+          });
+        })(roomName);
+      }
     } catch (e) {
       console.error('Error parsing unread counts:', e);
     }
