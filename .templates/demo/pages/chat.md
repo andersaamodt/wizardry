@@ -326,7 +326,9 @@ function updateUnreadBadges() {
       
       roomBadges.forEach(function(badge) {
         // Query for fresh badge element (in case DOM was updated)
-        var freshBadge = document.querySelector('.unread-badge[data-room="' + result.room + '"]');
+        // Escape room name for safe use in CSS selector
+        var escapedRoomName = result.room.replace(/["\\]/g, '\\$&');
+        var freshBadge = document.querySelector('.unread-badge[data-room="' + escapedRoomName + '"]');
         if (!freshBadge) return;
         
         // Update badge display
