@@ -63,30 +63,92 @@
     </nav>
   </div>
   
-  <!-- Load the demo chat page from wizardry web server -->
-  <iframe id="chat-frame" src="/pages/chat.html" title="Chatroom"></iframe>
+  <!-- Chat iframe - needs server running at http://localhost:8080 -->
+  <iframe id="chat-frame" src="http://localhost:8080/pages/chat.html" title="Chatroom" onerror="handleIframeError()"></iframe>
   
-  <div id="settings-frame" style="display: none; padding: 2rem;">
-    <h2>Settings</h2>
-    <p>Connection settings and server management would go here.</p>
-    <p>This demonstrates that desktop apps are thin wrappers around the wizardry web interface.</p>
-    <button onclick="showChat()">Back to Chat</button>
+  <div id="error-message" style="display: none; padding: 3rem 2rem; text-align: center; color: #666;">
+    <h2 style="color: #dc3545; margin-bottom: 1rem;">⚠️ Server Not Running</h2>
+    <p style="margin-bottom: 1.5rem; line-height: 1.6;">
+      The chatroom requires the wizardry web server to be running.<br>
+      Please start the server from the Settings tab.
+    </p>
+    <button onclick="showSettings()" style="padding: 0.75rem 1.5rem; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem;">
+      Go to Settings →
+    </button>
+  </div>
+  
+  <div id="settings-frame" style="display: none;">
+    <!-- Settings will be loaded via iframe from settings.html -->
   </div>
 
   <script>
+    // Check if iframe loaded successfully
+    let iframeCheckInterval;
+    
+    function checkIframeLoaded() {
+      const iframe = document.getElementById('chat-frame');
+      const errorMsg = document.getElementById('error-message');
+      
+      // Try to check if iframe loaded
+      try {
+        // Simple connectivity check - try to load from server
+        fetch('http://localhost:8080/pages/chat.html', { method: 'HEAD', mode: 'no-cors' })
+          .then(() => {
+            // Server is up, show iframe
+            iframe.style.display = 'block';
+            errorMsg.style.display = 'none';
+          })
+          .catch(() => {
+            // Server is down, show error
+            iframe.style.display = 'none';
+            errorMsg.style.display = 'block';
+          });
+      } catch (e) {
+        // Fallback - assume server is down
+        iframe.style.display = 'none';
+        errorMsg.style.display = 'block';
+      }
+    }
+    
     function showChat() {
+      const chatContainer = document.getElementById('chat-frame').parentElement;
       document.getElementById('chat-frame').style.display = 'block';
+      document.getElementById('error-message').style.display = 'none';
       document.getElementById('settings-frame').style.display = 'none';
       document.getElementById('chat-tab').classList.add('active');
       document.getElementById('settings-tab').classList.remove('active');
+      
+      // Check if server is running when switching to chat
+      checkIframeLoaded();
     }
     
     function showSettings() {
       document.getElementById('chat-frame').style.display = 'none';
+      document.getElementById('error-message').style.display = 'none';
       document.getElementById('settings-frame').style.display = 'block';
       document.getElementById('chat-tab').classList.remove('active');
       document.getElementById('settings-tab').classList.add('active');
+      
+      // Load settings.html in an iframe
+      let settingsFrame = document.getElementById('settings-iframe');
+      if (!settingsFrame) {
+        settingsFrame = document.createElement('iframe');
+        settingsFrame.id = 'settings-iframe';
+        settingsFrame.src = 'settings.html';
+        settingsFrame.style.border = 'none';
+        settingsFrame.style.width = '100%';
+        settingsFrame.style.height = 'calc(100vh - 90px)';
+        document.getElementById('settings-frame').innerHTML = '';
+        document.getElementById('settings-frame').appendChild(settingsFrame);
+      }
     }
+    
+    // Check on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      checkIframeLoaded();
+      // Recheck every 5 seconds in case server starts
+      iframeCheckInterval = setInterval(checkIframeLoaded, 5000);
+    });
   </script>
 </body>
 </html>

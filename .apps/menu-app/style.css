@@ -7,43 +7,40 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  color: #e0e0e0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: #f5f5f5;
+  color: #333;
   min-height: 100vh;
-  padding: 20px;
+  padding: 0;
+  margin: 0;
 }
 
 .container {
   max-width: 900px;
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
+  background: white;
+  min-height: 100vh;
   padding: 30px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: none;
 }
 
 header {
   text-align: center;
   margin-bottom: 40px;
   padding-bottom: 20px;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid #e0e0e0;
 }
 
 header h1 {
-  font-size: 2.5em;
+  font-size: 2em;
   margin-bottom: 10px;
-  background: linear-gradient(120deg, #a8edea 0%, #fed6e3 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #333;
+  font-weight: 600;
 }
 
 .subtitle {
-  color: #aaa;
-  font-size: 1.1em;
+  color: #666;
+  font-size: 0.95em;
 }
 
 main {
@@ -53,16 +50,17 @@ main {
 }
 
 section {
-  background: rgba(255, 255, 255, 0.03);
+  background: #fafafa;
   padding: 25px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid #e0e0e0;
 }
 
 h2 {
-  font-size: 1.5em;
+  font-size: 1.3em;
   margin-bottom: 20px;
-  color: #fff;
+  color: #333;
+  font-weight: 600;
 }
 
 .button-grid {
@@ -72,47 +70,47 @@ h2 {
 }
 
 button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #007aff;
   color: white;
   border: none;
-  padding: 15px 25px;
-  font-size: 1em;
+  padding: 12px 20px;
+  font-size: 0.95em;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  transition: background 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-family: inherit;
 }
 
 button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  background: #0051d5;
 }
 
 button:active {
-  transform: translateY(0);
+  background: #004bb8;
 }
 
 #output-area {
-  background: #0d1117;
-  color: #c9d1d9;
+  background: #fafafa;
+  color: #333;
   padding: 20px;
   border-radius: 6px;
   min-height: 200px;
-  font-family: 'Monaco', 'Courier New', monospace;
-  font-size: 0.9em;
+  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+  font-size: 0.85em;
   line-height: 1.6;
   white-space: pre-wrap;
   word-wrap: break-word;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid #d0d0d0;
 }
 
 footer {
   margin-top: 30px;
   text-align: center;
-  color: #888;
-  font-size: 0.9em;
+  color: #999;
+  font-size: 0.85em;
   padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid #e0e0e0;
 }
 
 @media (max-width: 600px) {
