@@ -107,13 +107,27 @@ Launch an app (currently validation only):
 launch-app menu-app
 ```
 
-## Example: menu-app
+## Examples
 
-See `.apps/menu-app/` for a complete example demonstrating:
+### menu-app
+
+See `.apps/menu-app/` for a simple example demonstrating:
 - WebView UI with buttons
 - Hardcoded commands in JavaScript
 - Output display
 - Styling
+
+### chatroom
+
+See `.apps/chatroom/` for a real-world example demonstrating:
+- Thin wrapper around existing web demo (reuses `.templates/demo/pages/chat.md`)
+- Integration with CGI scripts for backend communication
+- Server-Sent Events (SSE) for real-time updates
+- Settings page with IP and Tor address display
+- Full compatibility with MUD `say` command format
+- Tor hidden service support for anonymous access
+
+The chatroom app shows how desktop apps can be minimal frames around existing web functionality, avoiding code duplication.
 
 ## Development Workflow
 
