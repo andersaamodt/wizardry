@@ -702,6 +702,33 @@ pre code {
   margin: 0;
 }
 
+/* Animation for new room items appearing */
+@keyframes roomItemFadeIn {
+  0% {
+    opacity: 0;
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+  50% {
+    opacity: 0;
+    max-height: 50px;
+  }
+  100% {
+    opacity: 1;
+    max-height: 50px;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+}
+
+/* Apply fade-in animation to new room items added by htmx morph */
+.room-item.htmx-added {
+  animation: roomItemFadeIn 0.4s ease-out;
+}
+
 .room-item {
   padding: 0.5rem 0.75rem;
   margin: 0;
