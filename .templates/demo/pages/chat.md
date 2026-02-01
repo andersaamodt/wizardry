@@ -121,6 +121,7 @@ window.userHasScrolledUp = false;  // Track if user manually scrolled up
 window.isInitialRoomLoad = false;  // Track if this is the first load of a room
 window.messageEventSource = null;  // SSE connection for real-time messages
 window.unreadCountsEventSource = null;  // SSE connection for real-time unread counts
+window.roomListEventSource = null;  // SSE connection for real-time room list updates
 
 // Unread message tracking
 // Store read-up-until timestamp per room in localStorage
@@ -435,6 +436,47 @@ function setupUnreadCountsStream() {
   // Log successful connection
   window.unreadCountsEventSource.addEventListener('open', function(event) {
     console.log('[Unread Counts SSE] Connected successfully');
+  });
+}
+
+// Set up SSE connection for real-time room list updates
+function setupRoomListStream() {
+  // Close existing connection if any
+  if (window.roomListEventSource) {
+    window.roomListEventSource.close();
+    window.roomListEventSource = null;
+  }
+  
+  var url = '/cgi/chat-room-list-stream';
+  
+  // Create new EventSource connection
+  window.roomListEventSource = new EventSource(url);
+  
+  // Handle room list update events
+  window.roomListEventSource.addEventListener('rooms', function(event) {
+    try {
+      var rooms = JSON.parse(event.data);
+      console.log('[Room List] Received update:', rooms);
+      
+      // Trigger htmx to refresh the room list
+      // Small delay to ensure we don't spam updates
+      setTimeout(function() {
+        htmx.trigger('body', 'roomListChanged');
+      }, 100);
+    } catch (e) {
+      console.error('Error parsing room list:', e);
+    }
+  });
+  
+  // Handle connection errors
+  window.roomListEventSource.addEventListener('error', function(event) {
+    console.error('[Room List SSE] Error occurred:', event);
+    // EventSource will automatically reconnect
+  });
+  
+  // Log successful connection
+  window.roomListEventSource.addEventListener('open', function(event) {
+    console.log('[Room List SSE] Connected successfully');
   });
 }
 
@@ -1517,6 +1559,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Initialize unread counts SSE connection on page load
 document.addEventListener('DOMContentLoaded', function() {
   setupUnreadCountsStream();
+  setupRoomListStream();
   
   // Initialize toggle checkbox based on saved mode
   // Inverted: checked = show counts (number mode)
