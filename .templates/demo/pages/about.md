@@ -1,5 +1,5 @@
 ---
-title: About Wizardry Web
+title: About web wizardry
 ---
 
 <nav class="site-nav" style="margin-bottom: 2em; padding: 1em; background: #f5f5f5; border-radius: 5px;">
@@ -10,11 +10,11 @@ title: About Wizardry Web
   <strong>About</strong>
 </nav>
 
-# About Wizardry Web
+# About web wizardry
 
-## What is Wizardry Web?
+## What is web wizardry?
 
-**Wizardry Web** is a radical approach to web development that brings the power of POSIX shell scripts to the browser. Instead of complex JavaScript frameworks and heavyweight backend languages, Wizardry Web uses:
+**web wizardry** is a radical approach to web development that brings the power of POSIX shell scripts to the browser. Instead of complex JavaScript frameworks and heavyweight backend languages, web wizardry uses:
 
 - **Shell scripts** for all server-side logic
 - **Pandoc** to convert Markdown to HTML
@@ -77,7 +77,7 @@ Shell scripts are:
 
 ## This Demo Site
 
-This entire demo site is built with Wizardry Web:
+This entire demo site is built with web wizardry:
 
 - **15+ interactive demos** - All powered by shell CGI scripts
 - **Multiple pages** - Navigation, content organization
