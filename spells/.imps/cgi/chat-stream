@@ -4,14 +4,8 @@
 # Enhanced with: retry field, connection timeout, health monitoring, CORS support
 # Uses avatar directories as single source of truth (no redundant .members file)
 
-set -eu
-
-# Configuration
-MAX_CONNECTION_TIME=3600  # 1 hour maximum connection duration
-KEEPALIVE_INTERVAL=15     # Send keepalive every 15s when idle
-IDLE_THRESHOLD=30         # Only send keepalive if idle > 30s
-
-# Send SSE headers with CORS support
+# Send SSE headers with CORS support FIRST (before set -eu)
+# This ensures headers are always output even if script fails early
 printf 'Status: 200 OK\r\n'
 printf 'Content-Type: text/event-stream\r\n'
 printf 'Cache-Control: no-cache\r\n'
@@ -20,6 +14,14 @@ printf 'Access-Control-Allow-Origin: *\r\n'
 printf 'Access-Control-Allow-Methods: GET, OPTIONS\r\n'
 printf 'Access-Control-Allow-Headers: Content-Type, Last-Event-ID\r\n'
 printf '\r\n'
+
+# Now enable strict mode
+set -eu
+
+# Configuration
+MAX_CONNECTION_TIME=3600  # 1 hour maximum connection duration
+KEEPALIVE_INTERVAL=15     # Send keepalive every 15s when idle
+IDLE_THRESHOLD=30         # Only send keepalive if idle > 30s
 
 # Initial 4KB padding to force fcgiwrap buffer flush (confirmed minimum)
 printf ': '
