@@ -960,8 +960,7 @@ pre code {
 }
 
 .unread-badge.dot-mode.dot-grey {
-  background: #808080;  /* Grey for stale (51+ messages) */
-  opacity: 0.3;  /* Translucent at 30% */
+  background: #b0b0b0;  /* Lighter opaque grey for stale (51+ messages) */
 }
 
 /* Dot mode hover states */
