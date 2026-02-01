@@ -26,10 +26,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget file libfuse2
+          sudo apt-get install -y wget file libfuse2 libgtk-3-dev libwebkit2gtk-4.0-dev
+
+      - name: Build host binary
+        run: |
+          cd host
+          go mod download
+          go build -o wizardry-host
+          chmod +x wizardry-host
+          ls -lh wizardry-host
 
       - name: Download AppImage tools
         run: |
@@ -54,9 +67,13 @@ jobs:
             echo "Building AppImage for: $app"
             
             # Create AppDir structure
+            mkdir -p "AppDir-$app/usr/bin"
             mkdir -p "AppDir-$app/usr/share/$app"
             mkdir -p "AppDir-$app/usr/share/applications"
             mkdir -p "AppDir-$app/usr/share/icons/hicolor/256x256/apps"
+            
+            # Copy host binary
+            cp host/wizardry-host "AppDir-$app/usr/bin/"
             
             # Copy app files
             cp -r ".apps/$app"/* "AppDir-$app/usr/share/$app/"
@@ -66,7 +83,7 @@ jobs:
           [Desktop Entry]
           Type=Application
           Name=Wizardry $(echo $app | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++)sub(/./,toupper(substr($i,1,1)),$i)}1')
-          Exec=$app
+          Exec=wizardry-host /usr/share/$app
           Icon=$app
           Categories=Network;Chat;
           EOF
@@ -76,8 +93,8 @@ jobs:
           #!/bin/sh
           HERE="$(dirname "$(readlink -f "${0}")")"
           export APPDIR="$HERE"
-          # For now, just open the index.html in default browser
-          xdg-open "$HERE/usr/share/APP_NAME/index.html"
+          # Execute the host binary with the app directory
+          exec "$HERE/usr/bin/wizardry-host" "$HERE/usr/share/APP_NAME"
           EOF
             sed -i "s/APP_NAME/$app/g" "AppDir-$app/AppRun"
             chmod +x "AppDir-$app/AppRun"
@@ -106,6 +123,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Build host binary
+        run: |
+          cd host
+          go mod download
+          go build -o wizardry-host
+          chmod +x wizardry-host
+          ls -lh wizardry-host
+
       - name: List available apps
         id: list-apps
         run: |
@@ -125,18 +155,23 @@ jobs:
             
             # Create .app structure
             mkdir -p "dist/$APP_NAME.app/Contents/MacOS"
-            mkdir -p "dist/$APP_NAME.app/Contents/Resources"
+            mkdir -p "dist/$APP_NAME.app/Contents/Resources/$app"
+            
+            # Copy host binary
+            cp host/wizardry-host "dist/$APP_NAME.app/Contents/MacOS/"
             
             # Copy app files
-            cp -r ".apps/$app"/* "dist/$APP_NAME.app/Contents/Resources/"
+            cp -r ".apps/$app"/* "dist/$APP_NAME.app/Contents/Resources/$app/"
             
-            # Create launcher script
+            # Create launcher script that calls the host binary
             cat > "dist/$APP_NAME.app/Contents/MacOS/$app" <<'EOF'
           #!/bin/sh
-          RESOURCES="$(dirname "$0")/../Resources"
-          # For now, just open the index.html in default browser
-          open "$RESOURCES/index.html"
+          APPDIR="$(cd "$(dirname "$0")/.." && pwd)"
+          RESOURCES="$APPDIR/Resources"
+          # Execute the host binary with the app directory
+          exec "$APPDIR/MacOS/wizardry-host" "$RESOURCES/APP_NAME"
           EOF
+            sed -i '' "s/APP_NAME/$app/g" "dist/$APP_NAME.app/Contents/MacOS/$app"
             chmod +x "dist/$APP_NAME.app/Contents/MacOS/$app"
             
             # Create Info.plist
