@@ -1,0 +1,379 @@
+---
+title: Security & Permissions
+---
+
+# Security & Permissions Demos
+
+Explore browser security models and permission APIs.
+
+## 1. Same-Origin Policy Demonstration
+
+The Same-Origin Policy restricts how documents or scripts from one origin can interact with resources from another origin:
+
+<div class="demo-box">
+  <h3>🔒 Same-Origin Policy Test</h3>
+  
+  <p style="margin-bottom: 1rem;">
+    Current origin: <strong id="current-origin"></strong>
+  </p>
+  
+  <div style="margin-bottom: 1rem;">
+    <label style="display: block; margin-bottom: 0.5rem;"><strong>Try to fetch from URL:</strong></label>
+    <select id="origin-select" style="width: 100%; padding: 0.5rem; margin-bottom: 0.5rem;">
+      <option value="same">Same origin (current domain)</option>
+      <option value="https://api.github.com/zen">Cross-origin (GitHub API - CORS enabled)</option>
+      <option value="https://example.com">Cross-origin (example.com - no CORS)</option>
+    </select>
+    <button id="origin-test">🧪 Test Fetch</button>
+  </div>
+  
+  <div id="origin-output" class="output"></div>
+</div>
+
+<script>
+(function() {
+  const currentOrigin = window.location.origin;
+  document.getElementById('current-origin').textContent = currentOrigin;
+  
+  const output = document.getElementById('origin-output');
+  const select = document.getElementById('origin-select');
+  
+  document.getElementById('origin-test').addEventListener('click', async () => {
+    const selection = select.value;
+    let url;
+    
+    if (selection === 'same') {
+      url = window.location.href;
+    } else {
+      url = selection;
+    }
+    
+    output.innerHTML = `<p style="color: #2980b9;">🔄 Fetching from: ${url}</p>`;
+    
+    try {
+      const response = await fetch(url, { mode: 'cors' });
+      const text = await response.text();
+      
+      output.innerHTML = `
+        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ Fetch Successful</h4>
+          <p style="margin: 0.25rem 0;"><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+          <p style="margin: 0.25rem 0;"><strong>Origin:</strong> ${new URL(url).origin}</p>
+          <p style="margin: 0.25rem 0;"><strong>Same Origin:</strong> ${new URL(url).origin === currentOrigin ? 'Yes' : 'No (CORS allowed)'}</p>
+          <details style="margin-top: 0.5rem;">
+            <summary style="cursor: pointer; color: #2e7d32;">Show response preview (first 200 chars)</summary>
+            <pre style="margin-top: 0.5rem; background: #fff; padding: 0.5rem; border-radius: 3px; overflow-x: auto; font-size: 0.85rem;">${text.substring(0, 200)}${text.length > 200 ? '...' : ''}</pre>
+          </details>
+        </div>
+      `;
+    } catch (error) {
+      output.innerHTML = `
+        <div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
+          <h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ Fetch Failed (Same-Origin Policy)</h4>
+          <p style="margin: 0.25rem 0;"><strong>Error:</strong> ${error.message}</p>
+          <p style="margin: 0.25rem 0;"><strong>Target:</strong> ${new URL(url).origin}</p>
+          <p style="margin: 0.25rem 0;"><strong>Current Origin:</strong> ${currentOrigin}</p>
+          <p style="margin-top: 0.5rem; color: #666; font-size: 0.9rem;">
+            🔒 The Same-Origin Policy blocked this request because the target server doesn't allow CORS from this origin.
+          </p>
+        </div>
+      `;
+    }
+  });
+})();
+</script>
+
+## 2. Permissions API
+
+Query and request browser permissions for sensitive features:
+
+<div class="demo-box">
+  <h3>🔐 Permissions API</h3>
+  
+  <p style="margin-bottom: 1rem;">Check the status of various browser permissions:</p>
+  
+  <div style="display: grid; gap: 0.5rem; margin-bottom: 1rem;">
+    <button id="perm-geolocation">📍 Check Geolocation Permission</button>
+    <button id="perm-notifications">🔔 Check Notifications Permission</button>
+    <button id="perm-camera">📷 Check Camera Permission</button>
+    <button id="perm-microphone">🎤 Check Microphone Permission</button>
+    <button id="perm-clipboard">📋 Check Clipboard Permission</button>
+  </div>
+  
+  <div id="perm-output" class="output"></div>
+</div>
+
+<script>
+(function() {
+  const output = document.getElementById('perm-output');
+  
+  async function checkPermission(name, displayName, icon) {
+    try {
+      if (!navigator.permissions) {
+        throw new Error('Permissions API not supported');
+      }
+      
+      const result = await navigator.permissions.query({ name });
+      
+      const statusColors = {
+        granted: '#4caf50',
+        denied: '#f44336',
+        prompt: '#ff9800'
+      };
+      
+      const statusIcons = {
+        granted: '✅',
+        denied: '❌',
+        prompt: '❓'
+      };
+      
+      const color = statusColors[result.state] || '#7f8c8d';
+      const icon_status = statusIcons[result.state] || '❓';
+      
+      output.innerHTML = `
+        <div style="background: ${result.state === 'granted' ? '#e8f5e9' : result.state === 'denied' ? '#ffebee' : '#fff3e0'}; padding: 1rem; border-radius: 4px; border: 1px solid ${color};">
+          <h4 style="margin: 0 0 0.5rem 0; color: ${color};">${icon} ${displayName} Permission</h4>
+          <p style="margin: 0.25rem 0;"><strong>Status:</strong> ${icon_status} ${result.state.toUpperCase()}</p>
+          <p style="margin: 0.25rem 0; color: #666; font-size: 0.9rem;">
+            ${result.state === 'granted' ? '✅ Permission already granted' : 
+              result.state === 'denied' ? '❌ Permission denied by user' : 
+              '❓ Permission will be requested when needed'}
+          </p>
+        </div>
+      `;
+      
+      // Listen for changes
+      result.addEventListener('change', () => {
+        output.innerHTML += `<p style="margin-top: 0.5rem; color: #2980b9;">🔄 Permission changed to: ${result.state}</p>`;
+      });
+    } catch (error) {
+      output.innerHTML = `
+        <div style="background: #fff3cd; padding: 1rem; border-radius: 4px; border: 1px solid #ffc107;">
+          <h4 style="margin: 0 0 0.5rem 0; color: #856404;">⚠️ ${displayName} Permission Check</h4>
+          <p style="margin: 0.25rem 0;"><strong>Error:</strong> ${error.message}</p>
+          <p style="margin: 0.25rem 0; color: #666; font-size: 0.9rem;">
+            This permission might not be queryable via the Permissions API, or the API is not supported in this browser.
+          </p>
+        </div>
+      `;
+    }
+  }
+  
+  document.getElementById('perm-geolocation').addEventListener('click', () => {
+    checkPermission('geolocation', 'Geolocation', '📍');
+  });
+  
+  document.getElementById('perm-notifications').addEventListener('click', () => {
+    // Notifications uses a different API
+    const permission = Notification.permission;
+    const statusColors = {
+      granted: '#4caf50',
+      denied: '#f44336',
+      default: '#ff9800'
+    };
+    const color = statusColors[permission] || '#7f8c8d';
+    
+    output.innerHTML = `
+      <div style="background: ${permission === 'granted' ? '#e8f5e9' : permission === 'denied' ? '#ffebee' : '#fff3e0'}; padding: 1rem; border-radius: 4px; border: 1px solid ${color};">
+        <h4 style="margin: 0 0 0.5rem 0; color: ${color};">🔔 Notifications Permission</h4>
+        <p style="margin: 0.25rem 0;"><strong>Status:</strong> ${permission.toUpperCase()}</p>
+        <p style="margin: 0.25rem 0; color: #666; font-size: 0.9rem;">
+          ${permission === 'granted' ? '✅ Can send notifications' : 
+            permission === 'denied' ? '❌ Notifications blocked' : 
+            '❓ Will request permission when needed'}
+        </p>
+      </div>
+    `;
+  });
+  
+  document.getElementById('perm-camera').addEventListener('click', () => {
+    checkPermission('camera', 'Camera', '📷');
+  });
+  
+  document.getElementById('perm-microphone').addEventListener('click', () => {
+    checkPermission('microphone', 'Microphone', '🎤');
+  });
+  
+  document.getElementById('perm-clipboard').addEventListener('click', () => {
+    checkPermission('clipboard-read', 'Clipboard Read', '📋');
+  });
+})();
+</script>
+
+## 3. Secure Context Detection
+
+Some browser features only work in secure contexts (HTTPS):
+
+<div class="demo-box">
+  <h3>🔐 Secure Context Check</h3>
+  
+  <button id="secure-check">🔍 Check Current Context</button>
+  
+  <div id="secure-output" class="output"></div>
+</div>
+
+<script>
+(function() {
+  const output = document.getElementById('secure-output');
+  
+  document.getElementById('secure-check').addEventListener('click', () => {
+    const isSecure = window.isSecureContext;
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    
+    // Check which APIs require secure context
+    const secureOnlyAPIs = {
+      'Geolocation': 'geolocation' in navigator,
+      'Service Worker': 'serviceWorker' in navigator,
+      'Web Crypto': 'crypto' in window && 'subtle' in crypto,
+      'Notifications': 'Notification' in window,
+      'Clipboard (async)': 'clipboard' in navigator,
+      'getUserMedia': 'mediaDevices' in navigator && 'getUserMedia' in navigator.mediaDevices
+    };
+    
+    const apiTable = Object.entries(secureOnlyAPIs).map(([name, available]) => {
+      return `
+        <tr>
+          <td style="padding: 0.5rem; border: 1px solid #ddd;">${name}</td>
+          <td style="padding: 0.5rem; border: 1px solid #ddd; text-align: center;">
+            ${available ? '<span style="color: #4caf50;">✅ Available</span>' : '<span style="color: #f44336;">❌ Not Available</span>'}
+          </td>
+        </tr>
+      `;
+    }).join('');
+    
+    output.innerHTML = `
+      <div style="background: ${isSecure ? '#e8f5e9' : '#fff3e0'}; padding: 1rem; border-radius: 4px; border: 1px solid ${isSecure ? '#4caf50' : '#ff9800'};">
+        <h4 style="margin: 0 0 0.5rem 0; color: ${isSecure ? '#2e7d32' : '#e65100'};">
+          ${isSecure ? '🔒 Secure Context' : '⚠️ Insecure Context'}
+        </h4>
+        <p style="margin: 0.25rem 0;"><strong>Protocol:</strong> ${protocol}</p>
+        <p style="margin: 0.25rem 0;"><strong>Hostname:</strong> ${hostname}</p>
+        <p style="margin: 0.25rem 0;"><strong>Is Secure:</strong> ${isSecure ? 'Yes ✅' : 'No ❌'}</p>
+        
+        <h4 style="margin: 1rem 0 0.5rem 0;">Secure-Context-Only APIs:</h4>
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+          <thead>
+            <tr style="background: #e9ecef;">
+              <th style="padding: 0.5rem; border: 1px solid #ddd; text-align: left;">API</th>
+              <th style="padding: 0.5rem; border: 1px solid #ddd; text-align: center;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${apiTable}
+          </tbody>
+        </table>
+        
+        <p style="margin-top: 1rem; color: #666; font-size: 0.9rem;">
+          ${isSecure ? 
+            '✅ All secure-context-only APIs can be used on this page.' : 
+            '⚠️ Some APIs may be restricted. Use HTTPS for full functionality.'}
+        </p>
+      </div>
+    `;
+  });
+  
+  // Auto-check on load
+  document.getElementById('secure-check').click();
+})();
+</script>
+
+## 4. Content Security Policy Info
+
+Display information about Content Security Policy if available:
+
+<div class="demo-box">
+  <h3>🛡️ Content Security Policy</h3>
+  
+  <button id="csp-check">🔍 Check CSP</button>
+  
+  <div id="csp-output" class="output"></div>
+</div>
+
+<script>
+(function() {
+  const output = document.getElementById('csp-output');
+  
+  document.getElementById('csp-check').addEventListener('click', () => {
+    // Try to detect CSP violations and report
+    const violations = [];
+    
+    // Check if CSP is blocking inline scripts
+    try {
+      eval('1+1'); // This might be blocked by CSP
+    } catch (e) {
+      if (e.message.includes('Content Security Policy')) {
+        violations.push('Inline script evaluation blocked');
+      }
+    }
+    
+    // Check for reporting API
+    const hasReportingAPI = 'ReportingObserver' in window;
+    
+    output.innerHTML = `
+      <div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
+        <h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">🛡️ CSP Information</h4>
+        
+        <p style="margin: 0.25rem 0;"><strong>Reporting API Available:</strong> ${hasReportingAPI ? '✅ Yes' : '❌ No'}</p>
+        
+        ${violations.length > 0 ? `
+          <h4 style="margin: 1rem 0 0.5rem 0; color: #e65100;">⚠️ Detected Restrictions:</h4>
+          <ul style="margin: 0; padding-left: 1.5rem; color: #e65100;">
+            ${violations.map(v => `<li>${v}</li>`).join('')}
+          </ul>
+        ` : `
+          <p style="margin-top: 1rem; color: #4caf50;">✅ No CSP restrictions detected (or CSP allows current operations)</p>
+        `}
+        
+        <p style="margin-top: 1rem; color: #666; font-size: 0.9rem;">
+          💡 Content Security Policy (CSP) helps prevent XSS attacks by controlling which resources can be loaded and executed.
+          Check the browser console and network tab for detailed CSP violation reports.
+        </p>
+      </div>
+    `;
+    
+    // Set up ReportingObserver if available
+    if (hasReportingAPI) {
+      const observer = new ReportingObserver((reports, observer) => {
+        reports.forEach(report => {
+          if (report.type === 'csp-violation') {
+            console.log('CSP Violation detected:', report);
+          }
+        });
+      });
+      observer.observe();
+    }
+  });
+})();
+</script>
+
+---
+
+<div class="info-box">
+  <h3>🎯 Security APIs Demonstrated:</h3>
+  <ul>
+    <li><strong>Same-Origin Policy:</strong> Browser's fundamental security mechanism</li>
+    <li><strong>Permissions API:</strong> Query permission states for sensitive features</li>
+    <li><strong>Secure Contexts:</strong> HTTPS-only API access detection</li>
+    <li><strong>CSP:</strong> Content Security Policy information and violation detection</li>
+  </ul>
+  
+  <p style="margin-top: 1rem;"><strong>🔒 Security Principles:</strong></p>
+  <ul>
+    <li><strong>Same-Origin Policy:</strong> Prevents malicious scripts from accessing data from other origins</li>
+    <li><strong>CORS:</strong> Controlled relaxation of same-origin policy via server headers</li>
+    <li><strong>Secure Contexts:</strong> Sensitive APIs only work over HTTPS</li>
+    <li><strong>Permissions:</strong> User must grant explicit permission for sensitive features</li>
+    <li><strong>CSP:</strong> Restricts resource loading to prevent injection attacks</li>
+  </ul>
+  
+  <p style="margin-top: 1rem;"><strong>🌐 Origins:</strong></p>
+  <p style="margin: 0.5rem 0 0.5rem 1rem; font-family: monospace; font-size: 0.9rem;">
+    Two URLs have the same origin if they have the same:
+  </p>
+  <ul style="margin: 0 0 0 2rem;">
+    <li>Protocol (http vs https)</li>
+    <li>Domain (example.com vs other.com)</li>
+    <li>Port (80 vs 8080)</li>
+  </ul>
+</div>

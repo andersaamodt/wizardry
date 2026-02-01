@@ -109,6 +109,8 @@ Upload an image and see it displayed instantly:
 - [Forms & Input](/pages/forms-input.html) - Keyboard, pointer events, forms, clipboard
 - [Graphics & Media](/pages/graphics-media.html) - Canvas 2D, SVG, audio playback, Web Audio
 - [Time & Performance](/pages/time-performance.html) - Timers, animation frames, performance API
+- [Workers & Background](/pages/workers.html) - Web Workers, Service Workers, message passing
+- [Security & Permissions](/pages/security.html) - Same-origin policy, permissions API, secure contexts
 - [File Upload](/pages/file-upload.html) - File picker, drag-and-drop, blobs & binary data
 
 **Server Demos:**
