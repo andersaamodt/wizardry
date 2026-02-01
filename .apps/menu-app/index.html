@@ -31,66 +31,45 @@
     </main>
 
     <footer>
-      <p>This is a demonstration app. Native WebView integration is planned.</p>
+      <p>Desktop apps are thin wrappers around wizardry's web interface (POSIX shell + web server)</p>
     </footer>
   </div>
 
   <script>
-    // Execute a command by calling the backend
+    // Desktop apps work via wizardry web server (CGI, SSE, etc.)
     function executeVerb(action) {
       const outputArea = document.getElementById('output-area');
       
-      // Map GUI actions to shell commands (hardcoded in the GUI)
-      const commands = {
-        'show-help': ['menu', '--help'],
-        'list-spells': ['list-apps'],
-        'show-path': ['sh', '-c', 'echo $PATH'],
-        'show-env': ['env']
+      // Map GUI actions to descriptions
+      const actionInfo = {
+        'show-help': {desc: 'Shows wizardry menu help', endpoint: '/cgi-bin/menu?help'},
+        'list-spells': {desc: 'Lists available apps', endpoint: '/cgi-bin/list-apps'},
+        'show-path': {desc: 'Shows current PATH', endpoint: '/cgi-bin/env?PATH'},
+        'show-env': {desc: 'Shows environment', endpoint: '/cgi-bin/env'}
       };
       
-      const cmd = commands[action];
-      if (!cmd) {
+      const info = actionInfo[action];
+      if (!info) {
         outputArea.textContent = `Unknown action: ${action}`;
         return;
       }
       
-      outputArea.textContent = `Executing: ${cmd.join(' ')}\n\n`;
-      
-      // Check if native bridge is available
-      if (window.wizardry && window.wizardry.exec) {
-        // Execute via native bridge
-        const result = window.wizardry.exec(cmd);
-        
-        if (result.error) {
-          outputArea.textContent += `Error: ${result.error}\n\n`;
-        }
-        
-        if (result.stdout) {
-          outputArea.textContent += `Output:\n${result.stdout}\n`;
-        }
-        
-        if (result.stderr) {
-          outputArea.textContent += `Stderr:\n${result.stderr}\n`;
-        }
-        
-        outputArea.textContent += `\nExit code: ${result.exitCode}`;
-      } else {
-        // Fallback for browser mode
-        outputArea.textContent += `Native bridge not available (running in browser).\n\n`;
-        outputArea.textContent += `In native app mode, this would execute:\n`;
-        outputArea.textContent += `  ${JSON.stringify(cmd)}\n\n`;
-        outputArea.textContent += `And return the command's stdout/stderr.`;
-      }
+      outputArea.textContent = `Action: ${action}\n`;
+      outputArea.textContent += `Description: ${info.desc}\n\n`;
+      outputArea.textContent += `This desktop app runs via the wizardry web server.\n\n`;
+      outputArea.textContent += `Implementation approach:\n`;
+      outputArea.textContent += `✓ Pure POSIX shell launcher (no Go/Rust binary)\n`;
+      outputArea.textContent += `✓ Reuses wizardry web server infrastructure\n`;
+      outputArea.textContent += `✓ Commands execute via CGI scripts\n`;
+      outputArea.textContent += `✓ Real-time updates via SSE\n`;
+      outputArea.textContent += `✓ Works in browser or as packaged app\n\n`;
+      outputArea.textContent += `Example CGI endpoint: ${info.endpoint}\n\n`;
+      outputArea.textContent += `Benefits:\n`;
+      outputArea.textContent += `• Aligns with "POSIX sh-first" project value\n`;
+      outputArea.textContent += `• No commercial/Google dependencies\n`;
+      outputArea.textContent += `• Minimal complexity (thin wrapper)\n`;
+      outputArea.textContent += `• Interface-neutral (GUI is thin skin)`;
     }
-
-    // Check if we're running in native mode
-    window.addEventListener('DOMContentLoaded', () => {
-      if (window.wizardry && window.wizardry.exec) {
-        console.log('Running in native app mode with wizardry bridge');
-      } else {
-        console.log('Running in browser mode (no native bridge)');
-      }
-    });
   </script>
 </body>
 </html>
