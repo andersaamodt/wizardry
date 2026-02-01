@@ -11,8 +11,6 @@ if [ $# -gt 0 ]; then
 fi
 data="${*:-}"
 
-printf '[sse-event] type=%s len=%d (adding 2KB padding)\n' "$event_type" "${#data}" >&2
-
 # Output event type
 printf 'event: %s\n' "$event_type"
 
