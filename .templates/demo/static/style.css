@@ -1204,7 +1204,7 @@ pre code {
   display: flex;
   gap: 0.5rem;
   padding: 0.5rem 1rem;  /* Reduced vertical padding */
-  background: white;
+  background: #e5dcf5;  /* Tasteful light violet, lighter than badge color */
   border-top: 2px solid var(--border);
   flex-shrink: 0;  /* Prevent input area from shrinking */
   flex-grow: 0;    /* Don't grow */
