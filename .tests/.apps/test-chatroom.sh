@@ -36,6 +36,22 @@ test_chatroom_index_has_navigation() {
   grep -q "settings.html" "$test_root/.apps/chatroom/index.html"
 }
 
+test_chatroom_settings_has_mode_selection() {
+  grep -q "chatroomMode\|setMode" "$test_root/.apps/chatroom/settings.html"
+}
+
+test_chatroom_settings_has_client_mode() {
+  grep -q 'value="client"' "$test_root/.apps/chatroom/settings.html"
+}
+
+test_chatroom_settings_has_host_mode() {
+  grep -q 'value="host"' "$test_root/.apps/chatroom/settings.html"
+}
+
+test_chatroom_settings_has_stop_server() {
+  grep -q "stopServer" "$test_root/.apps/chatroom/settings.html"
+}
+
 test_chatroom_settings_has_server_status() {
   grep -q "server-status" "$test_root/.apps/chatroom/settings.html"
 }
@@ -83,9 +99,13 @@ run_test_case "chatroom has settings.html" test_chatroom_has_settings
 run_test_case "chatroom index is thin wrapper" test_chatroom_index_is_wrapper
 run_test_case "chatroom index references demo chat" test_chatroom_index_references_demo
 run_test_case "chatroom index has navigation to settings" test_chatroom_index_has_navigation
+run_test_case "chatroom settings has mode selection" test_chatroom_settings_has_mode_selection
+run_test_case "chatroom settings has client mode option" test_chatroom_settings_has_client_mode
+run_test_case "chatroom settings has host mode option" test_chatroom_settings_has_host_mode
 run_test_case "chatroom settings has server status section" test_chatroom_settings_has_server_status
 run_test_case "chatroom settings has connection URL section" test_chatroom_settings_has_connection_url
 run_test_case "chatroom settings has start server function" test_chatroom_settings_has_start_server
+run_test_case "chatroom settings has stop server function" test_chatroom_settings_has_stop_server
 run_test_case "chatroom settings has IP section" test_chatroom_settings_has_ip_section
 run_test_case "chatroom settings has Tor section" test_chatroom_settings_has_tor_section
 run_test_case "chatroom settings has hardcoded commands" test_chatroom_settings_has_hardcoded_commands

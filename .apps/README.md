@@ -128,6 +128,25 @@ Currently, the built packages open the app's `index.html` in the default web bro
 
 ## Managing Apps
 
+### For End Users (No Terminal Required!)
+
+**Double-click to launch:**
+- On macOS: Double-click the `.app` bundle
+- On Linux: Double-click the `.AppImage` file
+
+**First time setup (chatroom app):**
+1. Open the app
+2. Go to Settings tab
+3. Choose "Host Server" mode
+4. Click "Start Server" button
+5. Share the connection URL with friends!
+
+**Client mode:**
+- Choose "Client Only" mode to connect to someone else's chatroom
+- No server needed - just enter their URL in the chat tab
+
+### For Developers
+
 List available apps:
 ```bash
 list-apps
@@ -135,7 +154,7 @@ list-apps
 
 Launch an app (currently validation only):
 ```bash
-launch-app menu-app
+launch-app chatroom
 ```
 
 ## Examples
@@ -154,15 +173,22 @@ See `.apps/chatroom/` for a real-world example demonstrating:
 - Thin wrapper around existing web demo (reuses `.templates/demo/pages/chat.md`)
 - Integration with CGI scripts for backend communication
 - Server-Sent Events (SSE) for real-time updates
+- **Standalone operation - no terminal required!**
+  - Double-click the app to launch
+  - Choose Client-Only or Host Server mode
+  - Start/stop server directly from Settings GUI
+  - Mode preference saved between sessions
 - **Settings page with:**
-  - Server status check and start button
+  - Mode selection (Client vs Host)
+  - Server start/stop controls
+  - Server status monitoring
   - Connection URL display (IP:port)
   - IP and Tor address display
   - Copy-to-clipboard functionality
 - Full compatibility with MUD `say` command format
 - Tor hidden service support for anonymous access
 
-The chatroom app shows how desktop apps can be minimal frames around existing web functionality, avoiding code duplication. The settings page helps users start the server and share connection information with others.
+The chatroom app shows how desktop apps can be minimal frames around existing web functionality, avoiding code duplication. **It's designed to be completely standalone** - users can double-click the .app bundle on macOS or AppImage on Linux, choose their mode, and start hosting or connecting without ever touching a terminal.
 
 ## Development Workflow
 
