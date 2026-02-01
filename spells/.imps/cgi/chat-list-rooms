@@ -32,7 +32,7 @@ if [ -d "$CHAT_DIR" ]; then
     
     printf '  <li class="room-item" data-room="%s">\n' "$room_name"
     printf '    <span class="room-icon">#</span><strong>%s</strong>\n' "$room_name"
-    printf '    <span class="unread-badge" data-room="%s" style="display: none;">0</span>\n' "$room_name"
+    printf '    <span class="unread-badge hidden" data-room="%s">0</span>\n' "$room_name"
     if [ -n "$last_msg" ]; then
       printf '    <div class="last-msg">%s</div>\n' "$last_msg"
     fi
