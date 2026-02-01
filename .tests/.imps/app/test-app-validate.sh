@@ -25,28 +25,16 @@ test_validate_rejects_missing_dir() {
 test_validate_rejects_missing_index() {
   workdir=$(make_tempdir)
   mkdir -p "$workdir/testapp"
-  printf 'verb command\n' > "$workdir/testapp/verbs.conf"
   
   run_spell "spells/.imps/app/app-validate" "$workdir/testapp"
   assert_failure || return 1
   assert_error_contains "index.html not found" || return 1
 }
 
-test_validate_rejects_missing_verbs() {
-  workdir=$(make_tempdir)
-  mkdir -p "$workdir/testapp"
-  printf '<html></html>\n' > "$workdir/testapp/index.html"
-  
-  run_spell "spells/.imps/app/app-validate" "$workdir/testapp"
-  assert_failure || return 1
-  assert_error_contains "verbs.conf not found" || return 1
-}
-
 test_validate_accepts_valid_app() {
   workdir=$(make_tempdir)
   mkdir -p "$workdir/testapp"
   printf '<html></html>\n' > "$workdir/testapp/index.html"
-  printf 'verb command\n' > "$workdir/testapp/verbs.conf"
   
   run_spell "spells/.imps/app/app-validate" "$workdir/testapp"
   assert_success || return 1
@@ -55,7 +43,6 @@ test_validate_accepts_valid_app() {
 run_test_case "app-validate requires path" test_validate_requires_path
 run_test_case "app-validate rejects missing directory" test_validate_rejects_missing_dir
 run_test_case "app-validate rejects missing index.html" test_validate_rejects_missing_index
-run_test_case "app-validate rejects missing verbs.conf" test_validate_rejects_missing_verbs
 run_test_case "app-validate accepts valid app" test_validate_accepts_valid_app
 
 finish_tests

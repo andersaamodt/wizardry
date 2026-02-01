@@ -22,10 +22,4 @@ if [ ! -f "$app_path/index.html" ]; then
   exit 1
 fi
 
-# Verify verbs.conf exists
-if [ ! -f "$app_path/verbs.conf" ]; then
-  printf '%s\n' "app-validate: verbs.conf not found in $app_path" >&2
-  exit 1
-fi
-
 exit 0

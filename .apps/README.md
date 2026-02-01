@@ -8,20 +8,18 @@ Desktop apps in wizardry follow a minimal, flat architecture:
 
 - **No Router/Navigation**: Each app is standalone
 - **Direct Shell Access**: Apps are graphical consoles for Unix, not sealed containers
-- **Symbolic Verbs**: WebView invokes predefined verbs, not arbitrary shell commands
-- **Validated Arguments**: All arguments come from hardcoded, validated value sets
+- **Hardcoded Commands**: WebView defines which commands it can execute (in the GUI code itself)
 - **Direct Execution**: Commands run via `execvp()`, no shell parsing
 - **No Daemon**: Fork-per-action model by default
 - **CLI Parity**: Removing the GUI must not break functionality
 
 ## App Structure
 
-Each app lives in `.apps/<appname>/` with the following required files:
+Each app lives in `.apps/<appname>/` with the following files:
 
 ```
 .apps/my-app/
-├── index.html     # Entry point loaded into WebView
-├── verbs.conf     # Verb-to-command mappings
+├── index.html     # Entry point loaded into WebView (required)
 └── style.css      # Optional styling
 ```
 
@@ -29,27 +27,20 @@ Each app lives in `.apps/<appname>/` with the following required files:
 
 The single HTML file loaded directly into a WebView. This is your app's UI.
 
-The WebView invokes backend actions via JavaScript:
+Commands are hardcoded in the JavaScript. Example:
+
 ```javascript
-window.wizardry.invoke('verb-name', [args...])
+const commands = {
+  'show-help': ['menu', '--help'],
+  'list-spells': ['list-apps'],
+  'show-env': ['env']
+};
+
+// Execute via native bridge
+window.wizardry.exec(commands[action]);
 ```
 
-### verbs.conf
-
-Maps symbolic verb names to predefined commands. Format:
-
-```
-VERB_NAME command [fixed_args...]
-```
-
-Example:
-```
-show-help menu --help
-list-spells list-apps
-show-path sh -c echo "$PATH"
-```
-
-**Security**: The WebView can ONLY invoke verbs defined in this file. No free-form shell execution is allowed.
+**Security**: The WebView can only execute commands that are explicitly hardcoded in the GUI. There's no way for user input to construct arbitrary commands.
 
 ### style.css
 
@@ -68,14 +59,23 @@ This means your apps have full access to all wizardry spells and the user's shel
 
 ## Command Execution
 
-Commands are executed directly via `execvp()`:
+Commands are hardcoded in the WebView's JavaScript and executed directly via `execvp()`:
 
+- ✅ Commands defined in GUI code (e.g., `['menu', '--help']`)
 - ✅ Command name resolved via PATH at execution time
 - ✅ Live upgrades allowed (spells can be updated while app is running)
 - ✅ Stdout and stderr captured and returned to WebView
 - ❌ No shell parsing
 - ❌ No `/bin/sh -c`
-- ❌ WebView cannot construct shell syntax
+- ❌ User input cannot construct commands
+
+Example of hardcoded commands in GUI:
+```javascript
+const commands = {
+  'refresh': ['list-apps'],
+  'help': ['menu', '--help']
+};
+```
 
 ## Building Apps
 
@@ -111,18 +111,17 @@ launch-app menu-app
 
 See `.apps/menu-app/` for a complete example demonstrating:
 - WebView UI with buttons
-- Verb invocation pattern
+- Hardcoded commands in JavaScript
 - Output display
 - Styling
 
 ## Development Workflow
 
 1. Create app directory: `mkdir -p .apps/my-app`
-2. Create `index.html` with UI
-3. Create `verbs.conf` with allowed commands
-4. Add styling in `style.css`
-5. Test with `launch-app my-app`
-6. Build for distribution
+2. Create `index.html` with UI and hardcoded commands
+3. Add styling in `style.css` (optional)
+4. Test with `launch-app my-app`
+5. Build for distribution
 
 ## Design Principles
 
@@ -132,9 +131,9 @@ See `.apps/menu-app/` for a complete example demonstrating:
 - Minimal layers between UI and shell
 
 **Security Through Simplicity**
-- Symbolic verbs prevent shell injection
-- Validated arguments only
-- No arbitrary command construction
+- Commands hardcoded in GUI prevent injection attacks
+- No way for user input to construct arbitrary commands
+- Direct execution via `execvp()` eliminates shell parsing vulnerabilities
 
 **Unix Philosophy**
 - Each app does one thing
