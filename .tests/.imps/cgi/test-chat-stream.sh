@@ -5,6 +5,16 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
+# Check if timeout command is available
+if command -v timeout >/dev/null 2>&1; then
+  TIMEOUT_CMD="timeout 1"
+elif command -v gtimeout >/dev/null 2>&1; then
+  TIMEOUT_CMD="gtimeout 1"
+else
+  # No timeout available - use background process with sleep
+  TIMEOUT_CMD=""
+fi
+
 # Setup test environment
 setup_test_env() {
   test_tmpdir=$(mktemp -d)
@@ -12,6 +22,20 @@ setup_test_env() {
   export WIZARDRY_SITE_NAME="default"
   CHAT_DIR="$test_tmpdir/.sitedata/default/chatrooms"
   export CHAT_DIR
+}
+
+# Run command with timeout (or background with kill if timeout not available)
+run_with_timeout() {
+  if [ -n "$TIMEOUT_CMD" ]; then
+    $TIMEOUT_CMD "$@" 2>&1 || true
+  else
+    # Fallback: run in background and kill after 1 second
+    "$@" 2>&1 &
+    pid=$!
+    sleep 1
+    kill "$pid" 2>/dev/null || true
+    wait "$pid" 2>/dev/null || true
+  fi
 }
 
 # Cleanup test environment
@@ -32,7 +56,7 @@ test_chat_stream_rejects_invalid_room_name() {
   setup_test_env
   
   export QUERY_STRING="room=../../../etc/passwd"
-  output=$(timeout 1 chat-stream 2>&1 || true)
+  output=$(run_with_timeout chat-stream)
   
   cleanup_test_env
   
@@ -49,7 +73,7 @@ test_chat_stream_rejects_empty_room() {
   touch "$CHAT_DIR/General/.log"
   
   export QUERY_STRING=""
-  output=$(timeout 1 chat-stream 2>&1 || true)
+  output=$(run_with_timeout chat-stream)
   
   cleanup_test_env
   
@@ -61,7 +85,7 @@ test_chat_stream_handles_nonexistent_room() {
   setup_test_env
   
   export QUERY_STRING="room=NonExistentRoom"
-  output=$(timeout 1 chat-stream 2>&1 || true)
+  output=$(run_with_timeout chat-stream)
   
   cleanup_test_env
   
@@ -76,7 +100,7 @@ test_chat_stream_sends_empty_event_for_no_messages() {
   mkdir -p "$CHAT_DIR/TestRoom"
   
   export QUERY_STRING="room=TestRoom"
-  output=$(timeout 1 chat-stream 2>&1 || true)
+  output=$(run_with_timeout chat-stream)
   
   cleanup_test_env
   
@@ -93,7 +117,7 @@ test_chat_stream_sends_initial_messages() {
   printf "[2024-01-01 10:01:00] Bob: Hi there\n" >> "$CHAT_DIR/TestRoom/.log"
   
   export QUERY_STRING="room=TestRoom"
-  output=$(timeout 1 chat-stream 2>&1 || true)
+  output=$(run_with_timeout chat-stream)
   
   cleanup_test_env
   
@@ -111,7 +135,7 @@ test_chat_stream_sends_member_list() {
   mkdir -p "$CHAT_DIR/TestRoom/.Bob"
   
   export QUERY_STRING="room=TestRoom"
-  output=$(timeout 1 chat-stream 2>&1 || true)
+  output=$(run_with_timeout chat-stream)
   
   cleanup_test_env
   
@@ -126,7 +150,7 @@ test_chat_stream_outputs_sse_headers() {
   mkdir -p "$CHAT_DIR/TestRoom"
   
   export QUERY_STRING="room=TestRoom"
-  output=$(timeout 1 chat-stream 2>&1 || true)
+  output=$(run_with_timeout chat-stream)
   
   cleanup_test_env
   
