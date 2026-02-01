@@ -1,8 +1,9 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (v2.5-CORS)
+# chat-stream - SSE endpoint for real-time chat messages (v2.6-O1-optimized)
 # True event-driven SSE using tail -f + file descriptor (no polling, 0ms detection)
 # Enhanced with: retry field, connection timeout, health monitoring, CORS support
 # Uses avatar directories as single source of truth (no redundant .members file)
+# O(1) connection time - historical messages fetched separately via chat-get-messages
 
 # Send SSE headers with CORS support FIRST (before set -eu)
 # This ensures headers are always output even if script fails early
