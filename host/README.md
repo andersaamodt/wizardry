@@ -16,7 +16,7 @@ No external language ecosystems (no Rust/Cargo, no Go modules). Just simple nati
 
 ```bash
 cd host/macos
-clang -O2 -fobjc-arc main.m -o wizardry-host -framework Cocoa -framework WebKit
+clang -O2 -fobjc-arc -fmodules main.m -o wizardry-host -framework Cocoa -framework WebKit
 ```
 
 That's it! Single command, ~100-200 KB binary.
