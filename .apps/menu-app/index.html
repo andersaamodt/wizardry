@@ -37,7 +37,6 @@
 
   <script>
     // Execute a command by calling the backend
-    // In a real implementation, this would communicate with the host binary
     function executeVerb(action) {
       const outputArea = document.getElementById('output-area');
       
@@ -45,7 +44,7 @@
       const commands = {
         'show-help': ['menu', '--help'],
         'list-spells': ['list-apps'],
-        'show-path': ['env'],  // Shows full environment including PATH
+        'show-path': ['sh', '-c', 'echo $PATH'],
         'show-env': ['env']
       };
       
@@ -55,25 +54,43 @@
         return;
       }
       
-      // Simulate command execution
-      // In production, this would use a native bridge to execute directly
       outputArea.textContent = `Executing: ${cmd.join(' ')}\n\n`;
-      outputArea.textContent += `This is a demonstration. In production:\n`;
-      outputArea.textContent += `1. WebView would invoke host binary via native bridge\n`;
-      outputArea.textContent += `2. Host would execute via execvp(): ${JSON.stringify(cmd)}\n`;
-      outputArea.textContent += `3. Command stdout/stderr would be captured\n`;
-      outputArea.textContent += `4. Output would be returned to this WebView\n\n`;
-      outputArea.textContent += `Security: Commands are hardcoded in the GUI.\n`;
-      outputArea.textContent += `The WebView can only invoke what's explicitly defined here.`;
+      
+      // Check if native bridge is available
+      if (window.wizardry && window.wizardry.exec) {
+        // Execute via native bridge
+        const result = window.wizardry.exec(cmd);
+        
+        if (result.error) {
+          outputArea.textContent += `Error: ${result.error}\n\n`;
+        }
+        
+        if (result.stdout) {
+          outputArea.textContent += `Output:\n${result.stdout}\n`;
+        }
+        
+        if (result.stderr) {
+          outputArea.textContent += `Stderr:\n${result.stderr}\n`;
+        }
+        
+        outputArea.textContent += `\nExit code: ${result.exitCode}`;
+      } else {
+        // Fallback for browser mode
+        outputArea.textContent += `Native bridge not available (running in browser).\n\n`;
+        outputArea.textContent += `In native app mode, this would execute:\n`;
+        outputArea.textContent += `  ${JSON.stringify(cmd)}\n\n`;
+        outputArea.textContent += `And return the command's stdout/stderr.`;
+      }
     }
 
-    // In production, a native bridge would be provided by the host:
-    // window.wizardry = {
-    //   exec: function(cmdArray) {
-    //     // Native implementation executes via execvp() and returns result
-    //     // cmdArray is validated to be an array of strings
-    //   }
-    // };
+    // Check if we're running in native mode
+    window.addEventListener('DOMContentLoaded', () => {
+      if (window.wizardry && window.wizardry.exec) {
+        console.log('Running in native app mode with wizardry bridge');
+      } else {
+        console.log('Running in browser mode (no native bridge)');
+      }
+    });
   </script>
 </body>
 </html>

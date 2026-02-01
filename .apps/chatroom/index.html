@@ -34,6 +34,7 @@
       padding: 0.5rem 1rem;
       border-radius: 4px;
       transition: background 0.2s;
+      cursor: pointer;
     }
     
     .app-nav a:hover {
@@ -45,38 +46,24 @@
       font-weight: bold;
     }
     
-    .placeholder-message {
-      padding: 3rem;
-      text-align: center;
-      max-width: 600px;
-      margin: 0 auto;
-      color: #495057;
+    .content {
+      padding: 2rem;
     }
     
-    .placeholder-message h2 {
-      color: #667eea;
-      margin-bottom: 1rem;
-    }
-    
-    .placeholder-message p {
-      margin-bottom: 1rem;
-      line-height: 1.6;
-    }
-    
-    .placeholder-message code {
+    .status {
       background: #f8f9fa;
-      padding: 0.2rem 0.5rem;
-      border-radius: 3px;
-      font-family: monospace;
-    }
-    
-    .placeholder-message .note {
-      background: #e7f3ff;
       border-left: 3px solid #667eea;
       padding: 1rem;
       border-radius: 4px;
-      text-align: left;
-      margin-top: 2rem;
+      margin-bottom: 1rem;
+    }
+    
+    .chat-interface {
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 1rem;
+      min-height: 400px;
+      background: white;
     }
   </style>
 </head>
@@ -84,31 +71,102 @@
   <div class="app-header">
     <h1>🧙 Wizardry Chatroom</h1>
     <nav class="app-nav">
-      <a href="index.html" class="active">Chat</a>
-      <a href="settings.html">Settings</a>
+      <a onclick="showChat()" id="chat-tab" class="active">Chat</a>
+      <a onclick="showSettings()" id="settings-tab">Settings</a>
     </nav>
   </div>
   
-  <div class="placeholder-message">
-    <h2>📱 Standalone App Coming Soon</h2>
-    <p>
-      This is a <strong>placeholder implementation</strong>. The current .app bundle 
-      opens this HTML file in your default web browser.
-    </p>
-    <p>
-      For a true standalone desktop app with the chatroom interface, we need:
-    </p>
-    <ul style="text-align: left; display: inline-block;">
-      <li>Native host binary with embedded WebView</li>
-      <li>Integration with wizardry web server</li>
-      <li>Native bridge for executing shell commands</li>
-    </ul>
-    
-    <div class="note">
-      <strong>🚀 To use the chatroom now:</strong><br>
-      Run <code>web-wizardry serve demo</code> in your terminal,<br>
-      then open <a href="http://localhost:8080/pages/chat.html">http://localhost:8080/pages/chat.html</a> in your browser.
+  <div class="content" id="chat-view">
+    <div class="status">
+      <strong>Status:</strong> <span id="server-status">Checking server...</span>
+    </div>
+    <div class="chat-interface">
+      <h2>Chatroom Interface</h2>
+      <p>
+        This chatroom integrates with the wizardry web server and demo chat interface.
+      </p>
+      <p>
+        <strong>Next steps:</strong> The native app can start the web server if needed and 
+        display the chat interface using an embedded WebView or by connecting to the local server.
+      </p>
+      <button onclick="checkServer()">Check Server Status</button>
+      <button onclick="startServer()">Start Server</button>
+      <div id="output" style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 4px; font-family: monospace; white-space: pre-wrap;"></div>
     </div>
   </div>
+  
+  <div class="content" id="settings-view" style="display: none;">
+    <h2>Settings</h2>
+    <p>Settings content from settings.html would go here...</p>
+    <button onclick="showChat()">Back to Chat</button>
+  </div>
+
+  <script>
+    function showChat() {
+      document.getElementById('chat-view').style.display = 'block';
+      document.getElementById('settings-view').style.display = 'none';
+      document.getElementById('chat-tab').classList.add('active');
+      document.getElementById('settings-tab').classList.remove('active');
+    }
+    
+    function showSettings() {
+      document.getElementById('chat-view').style.display = 'none';
+      document.getElementById('settings-view').style.display = 'block';
+      document.getElementById('chat-tab').classList.remove('active');
+      document.getElementById('settings-tab').classList.add('active');
+    }
+    
+    function checkServer() {
+      const output = document.getElementById('output');
+      output.textContent = 'Checking server...\n';
+      
+      if (window.wizardry && window.wizardry.exec) {
+        const result = window.wizardry.exec(['pgrep', '-f', 'nginx.*demo']);
+        output.textContent += `Command: pgrep -f 'nginx.*demo'\n`;
+        output.textContent += `Exit code: ${result.exitCode}\n`;
+        output.textContent += `Stdout: ${result.stdout}\n`;
+        output.textContent += `Stderr: ${result.stderr}\n`;
+        
+        if (result.exitCode === 0) {
+          document.getElementById('server-status').textContent = '✓ Server is running';
+          document.getElementById('server-status').style.color = 'green';
+        } else {
+          document.getElementById('server-status').textContent = '✗ Server is not running';
+          document.getElementById('server-status').style.color = 'red';
+        }
+      } else {
+        output.textContent = 'Native bridge not available. Running in browser mode.';
+      }
+    }
+    
+    function startServer() {
+      const output = document.getElementById('output');
+      output.textContent = 'Starting server...\n';
+      
+      if (window.wizardry && window.wizardry.exec) {
+        // First check if demo site exists
+        const checkResult = window.wizardry.exec(['test', '-d', process.env.HOME + '/sites/demo']);
+        
+        if (checkResult.exitCode !== 0) {
+          output.textContent += 'Creating demo site...\n';
+          const createResult = window.wizardry.exec(['web-wizardry', 'create', 'demo', '--template', 'demo']);
+          output.textContent += `${createResult.stdout}${createResult.stderr}\n`;
+        }
+        
+        output.textContent += 'Starting server...\n';
+        const result = window.wizardry.exec(['web-wizardry', 'serve', 'demo']);
+        output.textContent += `${result.stdout}${result.stderr}\n`;
+        
+        setTimeout(checkServer, 2000);
+      } else {
+        output.textContent = 'Native bridge not available. Please run: web-wizardry serve demo';
+      }
+    }
+    
+    // Check server status on load
+    if (window.wizardry && window.wizardry.exec) {
+      setTimeout(checkServer, 500);
+    }
+  </script>
 </body>
 </html>
