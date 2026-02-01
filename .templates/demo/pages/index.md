@@ -1,5 +1,5 @@
 ---
-title: Wizardry Web Demo
+title: web wizardry demo
 ---
 
 <nav class="site-nav" style="margin-bottom: 2em; padding: 1em; background: #f5f5f5; border-radius: 5px;">
@@ -10,9 +10,9 @@ title: Wizardry Web Demo
   <a href="/pages/about.html">About</a>
 </nav>
 
-# Wizardry Web Interactive Demos
+# web wizardry interactive demos
 
-Welcome to the **Wizardry Web Platform** demo site! This showcases real-time interactivity powered by POSIX shell scripts via CGI.
+Welcome to the **web wizardry platform** demo site! This showcases real-time interactivity powered by POSIX shell scripts via CGI.
 
 ## 🚀 Quick Start Demos
 
@@ -115,7 +115,7 @@ Upload an image and see it displayed instantly:
 - [Advanced Demos](/pages/advanced.html) - System info, file operations, and more
 - [Multi-Room Chat](/pages/chat.html) - Real-time chat with MUD compatibility
 - [Interactive Poll](/pages/poll.html) - Real-time voting system
-- [About](/pages/about.html) - Learn about Wizardry Web
+- [About](/pages/about.html) - Learn about web wizardry
 
 ---
 
