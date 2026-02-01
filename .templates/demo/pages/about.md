@@ -2,14 +2,6 @@
 title: About web wizardry
 ---
 
-<nav class="site-nav" style="margin-bottom: 2em; padding: 1em; background: #f5f5f5; border-radius: 5px;">
-  <a href="/pages/index.html">Home</a> |
-  <a href="/pages/advanced.html">Advanced Demos</a> |
-  <a href="/pages/poll.html">Poll</a> |
-  <a href="/pages/chat.html">Chatrooms</a> |
-  <strong>About</strong>
-</nav>
-
 # About web wizardry
 
 ## What is web wizardry?
