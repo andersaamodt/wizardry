@@ -1,8 +1,9 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (v2.5-CORS)
+# chat-stream - SSE endpoint for real-time chat messages (v2.8-gapless)
 # True event-driven SSE using tail -f + file descriptor (no polling, 0ms detection)
 # Enhanced with: retry field, connection timeout, health monitoring, CORS support
 # Uses avatar directories as single source of truth (no redundant .members file)
+# Gapless connection: continuous tail -f stream with timestamp filtering prevents message loss
 
 # Send SSE headers with CORS support FIRST (before set -eu)
 # This ensures headers are always output even if script fails early
@@ -91,34 +92,11 @@ if [ ! -d "$ROOM_DIR" ]; then
   exit 1
 fi
 
-# Send empty event if room has no messages yet
-if [ ! -f "$LOG_FILE" ] || [ ! -s "$LOG_FILE" ]; then
-  send_sse_event empty "No messages yet"
-fi
-
-# Send initial messages (if log file exists and since parameter provided, filter by timestamp)
-if [ -f "$LOG_FILE" ] && [ -s "$LOG_FILE" ]; then
-  if [ -n "$since_timestamp" ]; then
-    # Send messages after the specified timestamp
-    while IFS= read -r line; do
-      # Extract timestamp from message: [YYYY-MM-DD HH:MM:SS] ...
-      msg_timestamp=$(printf '%s' "$line" | sed -n 's/^\[\([^]]*\)\].*/\1/p')
-      
-      if [ -n "$msg_timestamp" ]; then
-        # Compare timestamps (lexicographic comparison works for ISO format)
-        latest=$(printf '%s\n%s' "$msg_timestamp" "$since_timestamp" | sort | tail -1)
-        if [ "$latest" = "$msg_timestamp" ]; then
-          send_sse_event message "$line"
-        fi
-      fi
-    done < "$LOG_FILE"
-  else
-    # Send last 50 messages if no timestamp filter
-    tail -50 "$LOG_FILE" 2>/dev/null | while IFS= read -r line; do
-      send_sse_event message "$line"
-    done
-  fi
-fi
+# Historical messages are fetched separately via chat-get-messages endpoint
+# However, we send recent messages to prevent gaps during connection:
+# - Messages sent while SSE is "Connecting" could otherwise be lost
+# - Same-second messages need full coverage (log has 1-second resolution)
+# We use tail -f with initial lines to ensure continuous coverage with no gaps
 
 # Send initial member list
 query="room=$room"
@@ -162,8 +140,18 @@ trap cleanup INT TERM EXIT
 # Ensure LOG_FILE exists for tail -f (creates if missing)
 touch "$LOG_FILE"
 
-# Start tail -f writing to FIFO (background, starts from end)
-tail -f -n 0 "$LOG_FILE" > "$fifo" &
+# Determine initial line count for tail -f based on whether we need gap prevention
+# - If since_timestamp provided: start with last 100 lines to cover connection gap
+# - Otherwise: start from end (0 lines) for pure real-time monitoring
+if [ -n "$since_timestamp" ]; then
+  initial_lines=100
+else
+  initial_lines=0
+fi
+
+# Start tail -f writing to FIFO (background)
+# Using -n to send initial lines ensures NO GAP between initial and ongoing monitoring
+tail -f -n "$initial_lines" "$LOG_FILE" > "$fifo" &
 tail_pid=$!
 
 # Verify tail started successfully
@@ -267,11 +255,26 @@ membership_pid=$!
 # Open FIFO as file descriptor 3 in MAIN shell (critical!)
 exec 3< "$fifo"
 
-# Event loop: Read from FD 3 - testing if this stays in main shell
-# If this works, no subshell = no buffering = instant delivery!
+# Event loop: Read from FD 3 and filter by timestamp if needed
+# This ensures NO GAP between initial messages and ongoing monitoring
 while IFS= read -r line <&3; do
-  send_sse_event message "$line"
-  last_message_time=$(date +%s)
+  # If since_timestamp provided, filter messages by timestamp
+  if [ -n "$since_timestamp" ]; then
+    # Extract timestamp from message: [YYYY-MM-DD HH:MM:SS] ...
+    msg_timestamp=$(printf '%s' "$line" | sed -n 's/^\[\([^]]*\)\].*/\1/p')
+    
+    # Only send if timestamp >= since_timestamp (or no timestamp in line)
+    # Lexicographic comparison works for ISO 8601 format (YYYY-MM-DD HH:MM:SS)
+    # because the format sorts correctly as strings (year > month > day > hour > min > sec)
+    if [ -z "$msg_timestamp" ] || [ "$msg_timestamp" \> "$since_timestamp" ] || [ "$msg_timestamp" = "$since_timestamp" ]; then
+      send_sse_event message "$line"
+      last_message_time=$(date +%s)
+    fi
+  else
+    # No filtering needed - send all messages
+    send_sse_event message "$line"
+    last_message_time=$(date +%s)
+  fi
 done
 
 cleanup

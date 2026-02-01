@@ -48,6 +48,10 @@
 - In sourced-only spells (with uncastable pattern), use plain `return` for error exits AFTER the uncastable guard, not `return 1 2>/dev/null || exit 1`; the `exit` part closes the user's terminal when the spell is sourced.
 - Use shell parameter expansion ${file##*/} instead of basename for 100x speedup when processing many files (e.g., generate-glosses with 396 files).
 - Variable `$_i` (imps directory shorthand) is not preserved by env-clear; use `${WIZARDRY_DIR}/spells/.imps` instead when referencing imp paths after sourcing env-clear.
+- When two endpoints serve the same data (one for history, one for real-time), ensure they don't redundantly send overlapping data causing O(n) delays in the real-time endpoint; separate concerns and let deduplication handle any overlap.
+- Using separate read-past and monitor-future operations creates race conditions; use single continuous stream (e.g., `tail -f -n 100`) with filtering to prevent gaps.
+- When comparing timestamps between client and server, ensure both use the same timezone; mixing UTC and local time causes filter mismatches that reject valid data.
+- Before creating UI elements with unique IDs, remove any existing element with that ID to prevent duplicates on rapid operations (e.g., room switching).
 - When converting synonym targets from hyphenated to space-separated form (e.g., jump-to-marker → jump to marker), preserve directory prefixes unchanged (translocation/jump-to-marker → translocation/jump to marker, not translocation/jump to marker with / converted to space).
 - First-word glosses must invoke aliases via eval (not parse or direct command invocation) because: (1) parse skips aliases to avoid recursion, (2) direct invocation "$_fw_spell" tries to find executable not expand alias, (3) eval expands alias correctly without passing $@ since multi-word was already consumed during reconstruction.
 - Parse MUST skip functions before trying to exec system commands; exec-ing a gloss function creates infinite recursion (gloss → parse → exec gloss → parse ...) causing segfault/exit 139.
