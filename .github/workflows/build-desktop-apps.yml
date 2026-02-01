@@ -33,12 +33,12 @@ jobs:
 
       - name: Build native host binary (C + GTK)
         run: |
-          cd host/linux
+          cd .apps/.host/linux
           gcc -O2 main.c -o wizardry-host `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.1`
           strip wizardry-host
           ls -lh wizardry-host
-          cp wizardry-host ../../
-          cd ../..
+          cp wizardry-host ../../../
+          cd ../../..
 
       - name: Download AppImage tools
         run: |
@@ -51,7 +51,8 @@ jobs:
         id: list-apps
         run: |
           cd .apps
-          apps=$(ls -d */ | sed 's|/$||' | tr '\n' ' ')
+          # List directories excluding hidden ones (starting with .)
+          apps=$(ls -d */ 2>/dev/null | grep -v '^\.' | sed 's|/$||' | tr '\n' ' ')
           echo "apps=$apps" >> $GITHUB_OUTPUT
           echo "Found apps: $apps"
 
@@ -135,19 +136,20 @@ jobs:
 
       - name: Build native host binary (Objective-C + Cocoa)
         run: |
-          cd host/macos
+          cd .apps/.host/macos
           clang -O2 -fobjc-arc -fmodules main.m -o wizardry-host -framework Cocoa -framework WebKit
           strip wizardry-host
           lipo -info wizardry-host
           ls -lh wizardry-host
-          cp wizardry-host ../../
-          cd ../..
+          cp wizardry-host ../../../
+          cd ../../..
 
       - name: List available apps
         id: list-apps
         run: |
           cd .apps
-          apps=$(ls -d */ | sed 's|/$||' | tr '\n' ' ')
+          # List directories excluding hidden ones (starting with .)
+          apps=$(ls -d */ 2>/dev/null | grep -v '^\.' | sed 's|/$||' | tr '\n' ' ')
           echo "apps=$apps" >> $GITHUB_OUTPUT
           echo "Found apps: $apps"
 
