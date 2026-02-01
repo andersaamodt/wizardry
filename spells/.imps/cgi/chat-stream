@@ -93,28 +93,10 @@ if [ ! -d "$ROOM_DIR" ]; then
 fi
 
 # Historical messages are fetched separately via chat-get-messages endpoint
-# However, we send recent messages (last ~10 seconds) to prevent gaps during connection:
+# However, we send recent messages to prevent gaps during connection:
 # - Messages sent while SSE is "Connecting" could otherwise be lost
 # - Same-second messages need full coverage (log has 1-second resolution)
-# Using tail -100 + timestamp filter keeps connection O(1) while preventing message loss
-
-# Send recent messages if since_timestamp provided (covers connection gap)
-if [ -n "$since_timestamp" ] && [ -f "$LOG_FILE" ] && [ -s "$LOG_FILE" ]; then
-  # Get last ~100 messages (typically covers last 10-30 seconds)
-  # This prevents message loss during connection without iterating full history
-  tail -100 "$LOG_FILE" 2>/dev/null | while IFS= read -r line; do
-    # Extract timestamp from message: [YYYY-MM-DD HH:MM:SS] ...
-    msg_timestamp=$(printf '%s' "$line" | sed -n 's/^\[\([^]]*\)\].*/\1/p')
-    
-    if [ -n "$msg_timestamp" ]; then
-      # Send message if it's >= since_timestamp (lexicographic comparison works for ISO format)
-      # This covers: messages during connection window + same-second messages
-      if [ "$msg_timestamp" \> "$since_timestamp" ] || [ "$msg_timestamp" = "$since_timestamp" ]; then
-        send_sse_event message "$line"
-      fi
-    fi
-  done
-fi
+# We use tail -f with initial lines to ensure continuous coverage with no gaps
 
 # Send initial member list
 query="room=$room"
@@ -158,8 +140,18 @@ trap cleanup INT TERM EXIT
 # Ensure LOG_FILE exists for tail -f (creates if missing)
 touch "$LOG_FILE"
 
-# Start tail -f writing to FIFO (background, starts from end)
-tail -f -n 0 "$LOG_FILE" > "$fifo" &
+# Determine initial line count for tail -f based on whether we need gap prevention
+# - If since_timestamp provided: start with last 100 lines to cover connection gap
+# - Otherwise: start from end (0 lines) for pure real-time monitoring
+if [ -n "$since_timestamp" ]; then
+  initial_lines=100
+else
+  initial_lines=0
+fi
+
+# Start tail -f writing to FIFO (background)
+# Using -n to send initial lines ensures NO GAP between initial and ongoing monitoring
+tail -f -n "$initial_lines" "$LOG_FILE" > "$fifo" &
 tail_pid=$!
 
 # Verify tail started successfully
@@ -263,11 +255,24 @@ membership_pid=$!
 # Open FIFO as file descriptor 3 in MAIN shell (critical!)
 exec 3< "$fifo"
 
-# Event loop: Read from FD 3 - testing if this stays in main shell
-# If this works, no subshell = no buffering = instant delivery!
+# Event loop: Read from FD 3 and filter by timestamp if needed
+# This ensures NO GAP between initial messages and ongoing monitoring
 while IFS= read -r line <&3; do
-  send_sse_event message "$line"
-  last_message_time=$(date +%s)
+  # If since_timestamp provided, filter messages by timestamp
+  if [ -n "$since_timestamp" ]; then
+    # Extract timestamp from message: [YYYY-MM-DD HH:MM:SS] ...
+    msg_timestamp=$(printf '%s' "$line" | sed -n 's/^\[\([^]]*\)\].*/\1/p')
+    
+    # Only send if timestamp >= since_timestamp (or no timestamp in line)
+    if [ -z "$msg_timestamp" ] || [ "$msg_timestamp" \> "$since_timestamp" ] || [ "$msg_timestamp" = "$since_timestamp" ]; then
+      send_sse_event message "$line"
+      last_message_time=$(date +%s)
+    fi
+  else
+    # No filtering needed - send all messages
+    send_sse_event message "$line"
+    last_message_time=$(date +%s)
+  fi
 done
 
 cleanup
