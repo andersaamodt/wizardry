@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menu App - Wizardry</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🧙 Wizardry Menu</h1>
+      <p class="subtitle">A graphical console for your Unix environment</p>
+    </header>
+
+    <main>
+      <section class="actions">
+        <h2>Quick Actions</h2>
+        <div class="button-grid">
+          <button onclick="executeVerb('show-help')">Show Help</button>
+          <button onclick="executeVerb('list-spells')">List Spells</button>
+          <button onclick="executeVerb('show-path')">Show PATH</button>
+          <button onclick="executeVerb('show-env')">Show Environment</button>
+        </div>
+      </section>
+
+      <section class="output">
+        <h2>Output</h2>
+        <pre id="output-area">Ready. Select an action to execute a spell...</pre>
+      </section>
+    </main>
+
+    <footer>
+      <p>This is a demonstration app. Native WebView integration is planned.</p>
+    </footer>
+  </div>
+
+  <script>
+    // Execute a verb by calling the backend
+    // In a real implementation, this would communicate with the host binary
+    function executeVerb(verb) {
+      const outputArea = document.getElementById('output-area');
+      
+      // Simulate command execution
+      // In production, this would use a native bridge to call app-verb
+      outputArea.textContent = `Executing verb: ${verb}\n\n`;
+      outputArea.textContent += `This is a demonstration. In production:\n`;
+      outputArea.textContent += `1. WebView would invoke host binary\n`;
+      outputArea.textContent += `2. Host would call: app-verb verbs.conf ${verb}\n`;
+      outputArea.textContent += `3. Command stdout/stderr would be captured\n`;
+      outputArea.textContent += `4. Output would be returned to this WebView\n\n`;
+      outputArea.textContent += `See verbs.conf for the full verb-to-command mapping.`;
+    }
+
+    // In production, a native bridge would be provided by the host:
+    // window.wizardry = {
+    //   invoke: function(verb, args) {
+    //     // Native implementation calls app-verb and returns result
+    //   }
+    // };
+  </script>
+</body>
+</html>

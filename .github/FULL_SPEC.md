@@ -429,6 +429,68 @@ Wizardry uses several focused documentation files. Keep content in the right doc
 
 ---
 
+## Desktop Apps Infrastructure
+
+### Desktop Apps Architecture
+
+- Desktop apps live in `.apps/<appname>/` directories at repository root
+- Each app is a standalone unit with no router or navigation dependencies
+- Apps are graphical consoles for Unix environments, not sealed desktop applications
+- WebView loads a single entry HTML file directly (no bundling or compilation)
+- Host binary launches login shell, sources `invoke-wizardry`, captures environment (especially PATH)
+- Captured environment used unchanged for all command execution within app
+
+### Verb-Based Command Execution
+
+- WebView invokes backend actions by symbolic verb name (not shell strings)
+- Each verb maps to predefined command template in `verbs.conf` file
+- Verbs define: command name plus fixed argument structure
+- Argument slots filled only from hardcoded, validated value sets (no free-form text input)
+- Host executes commands via `execvp()` (no `/bin/sh -c`, no shell parsing)
+- Command resolution occurs at execution time via PATH (allows live upgrades)
+- WebView may never construct shell syntax or arbitrary argv vectors
+- Stdout and stderr captured and returned verbatim to WebView
+
+### App Structure Requirements
+
+- `index.html`: Single HTML entry file loaded into WebView (required)
+- `verbs.conf`: Verb-to-command mappings (required, format: `VERB_NAME command [args...]`)
+- `style.css`: Optional styling for the app
+- No router, no navigation, no framework dependencies
+- Apps must be simple and flat (minimal layers between UI and shell)
+
+### Security Model
+
+- Symbolic verbs prevent shell injection attacks
+- Only verbs defined in `verbs.conf` can be executed
+- Arguments validated against predefined value sets
+- No arbitrary command construction allowed from WebView
+- Direct execution via `execvp()` eliminates shell parsing vulnerabilities
+
+### Build and Distribution
+
+- No daemon required; fork-per-action is default execution model
+- Linux distribution targets AppImage format
+- macOS distribution targets `.app` bundles using same host binary
+- CI builds all app artifacts from single tag with no per-app manual steps
+- App-specific settings pages follow same execution and validation rules
+
+### CLI Parity Invariant
+
+- Removing GUI must not invalidate app functionality
+- Every app action must have CLI equivalent
+- Apps are conveniences, not dependencies
+- Backend spells remain fully functional without GUI layer
+
+### Desktop App Management Spells
+
+- `list-apps` spell lists all available apps in `.apps/` directory
+- `launch-app` spell validates and launches apps (WebView integration planned)
+- `app-validate` imp validates app directory structure (checks for required files)
+- `app-verb` imp executes predefined command verbs with validated arguments
+
+---
+
 ## Level 14-21: System Infrastructure
 
 ### Testing Infrastructure (Level 14)
