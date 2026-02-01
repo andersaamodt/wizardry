@@ -803,15 +803,17 @@ pre code {
 /* Unread badge styling */
 .unread-badge {
   display: inline-block;
-  background: #b19cd9;  /* Tasteful lavender */
+  background: #c8b5e6;  /* Lighter violet */
   color: white;
   border-radius: 10px;
   padding: 0.15rem 0.5rem;
   font-size: 0.7rem;
   font-weight: bold;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   margin-left: auto;
   float: right;
   margin-top: 0.15rem;
+  line-height: 1.2;  /* Consistent vertical alignment */
 }
 
 .room-item:hover .unread-badge, .room-item-hover .unread-badge {
@@ -820,11 +822,11 @@ pre code {
 }
 
 .room-item-selected .unread-badge {
-  background: #9b7ec9;  /* Slightly darker lavender for selected room */
+  background: #b5a0d9;  /* Slightly darker violet for selected room */
 }
 
 .room-item-selected:hover .unread-badge {
-  background: #9b7ec9;  /* Keep same color on hover for selected room */
+  background: #b5a0d9;  /* Keep same color on hover for selected room */
   color: white;
 }
 

@@ -110,6 +110,7 @@ window.hoveredRoom = null;
 window.userHasScrolledUp = false;  // Track if user manually scrolled up
 window.isInitialRoomLoad = false;  // Track if this is the first load of a room
 window.messageEventSource = null;  // SSE connection for real-time messages
+window.lastRoomMessageTimestamps = {};  // Track last message timestamp per room
 
 // Unread message tracking
 // Store read-up-until timestamp per room in localStorage
@@ -132,7 +133,7 @@ function setReadTimestamp(roomName, timestamp) {
 function markRoomAsRead(roomName) {
   // Mark all messages as read up to current time
   setReadTimestamp(roomName, getCurrentTimestamp());
-  updateUnreadBadges();
+  // Don't call updateUnreadBadges here - let it be triggered by message events
 }
 
 function isLogMessage(messageText) {
@@ -154,11 +155,13 @@ function countUnreadMessages(roomName, callback) {
       var messages = tempDiv.querySelectorAll('.chat-msg');  // Excludes .chat-msg-system
       var readTimestamp = getReadTimestamp(roomName);
       var unreadCount = 0;
+      var lastMessageTimestamp = null;
       
       messages.forEach(function(msg) {
         var timestampSpan = msg.querySelector('.timestamp');
         if (timestampSpan && timestampSpan.dataset.fullTimestamp) {
           var msgTimestamp = timestampSpan.dataset.fullTimestamp;
+          lastMessageTimestamp = msgTimestamp;  // Keep updating to get the last one
           // Compare timestamps (lexicographic works for ISO format)
           if (msgTimestamp > readTimestamp) {
             unreadCount++;
@@ -166,21 +169,19 @@ function countUnreadMessages(roomName, callback) {
         }
       });
       
-      callback(unreadCount);
+      callback(unreadCount, lastMessageTimestamp);
     })
     .catch(function(err) {
       console.error('Failed to count unread messages for', roomName, err);
-      callback(0);
+      callback(0, null);
     });
 }
 
 function updateUnreadBadges() {
   // Update all unread badges in the room list
-  // Only fetch for rooms that might have unreads (throttle excessive fetching)
+  // Only update badges for rooms where messages have changed
   var badges = document.querySelectorAll('.unread-badge');
   
-  // Batch process with small delay between fetches to avoid overwhelming server
-  var delay = 0;
   badges.forEach(function(badge) {
     var roomName = badge.getAttribute('data-room');
     if (!roomName) return;
@@ -191,18 +192,28 @@ function updateUnreadBadges() {
       return;
     }
     
-    // Stagger fetch requests slightly (50ms apart) to reduce server load
-    setTimeout(function() {
-      countUnreadMessages(roomName, function(count) {
-        if (count > 0) {
-          badge.textContent = count;
-          badge.style.display = 'inline-block';
-        } else {
-          badge.style.display = 'none';
-        }
-      });
-    }, delay);
-    delay += 50;
+    // Fetch and update (all at once, no staggering)
+    countUnreadMessages(roomName, function(count, lastMessageTimestamp) {
+      // Only update if timestamp has changed (optimization)
+      var previousTimestamp = window.lastRoomMessageTimestamps[roomName];
+      if (previousTimestamp && lastMessageTimestamp && previousTimestamp === lastMessageTimestamp) {
+        // No new messages, skip update
+        return;
+      }
+      
+      // Update stored timestamp
+      if (lastMessageTimestamp) {
+        window.lastRoomMessageTimestamps[roomName] = lastMessageTimestamp;
+      }
+      
+      // Update badge display
+      if (count > 0) {
+        badge.textContent = count;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+    });
   });
 }
 
