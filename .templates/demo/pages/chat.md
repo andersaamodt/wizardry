@@ -321,13 +321,12 @@ function updateUnreadBadges() {
   Promise.all(fetchPromises).then(function(results) {
     // Update all badges simultaneously
     results.forEach(function(result) {
-      var roomBadges = badgesByRoom[result.room];
-      if (!roomBadges) return;
+      // Query for all badges for this room (handles case where DOM was morphed during fetch)
+      // Room names are server-validated to [a-zA-Z0-9_-] so safe for direct use in selector
+      var currentBadges = document.querySelectorAll('.unread-badge[data-room="' + result.room + '"]');
       
-      // Update all badges for this room
-      roomBadges.forEach(function(badge) {
-        // Update badge display directly using the references collected before the async fetch
-        // DOM elements remain valid since they were captured in the badgesByRoom map
+      currentBadges.forEach(function(badge) {
+        // Update badge display
         if (result.count > 0) {
           badge.textContent = result.count;
           badge.classList.remove('hidden');
