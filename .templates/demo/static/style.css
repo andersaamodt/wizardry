@@ -1038,7 +1038,7 @@ pre code {
 
 #connecting-status {
   position: absolute;
-  right: 90px;  /* Position to left of Send button with proper spacing */
+  right: 110px;  /* Position to left of Send button with proper spacing */
   top: 50%;
   transform: translateY(-50%);
   color: #999;  /* Light grey text to match spinner */
