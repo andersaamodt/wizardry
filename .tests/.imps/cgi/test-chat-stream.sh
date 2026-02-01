@@ -123,14 +123,14 @@ test_chat_stream_sends_recent_messages_to_prevent_gaps() {
   
   # Create room with recent messages (within last 100 messages)
   mkdir -p "$CHAT_DIR/TestRoom"
-  # Simulate messages from "now" - using a timestamp that would be recent
-  now_timestamp="2024-12-01 12:00:00"
+  # Use a simulated "recent" timestamp for testing (represents "now" in test scenario)
+  recent_timestamp="2024-12-01 12:00:00"
   printf "[2024-12-01 12:00:01] Alice: Message 1\n" > "$CHAT_DIR/TestRoom/.log"
   printf "[2024-12-01 12:00:02] Bob: Message 2\n" >> "$CHAT_DIR/TestRoom/.log"
   printf "[2024-12-01 12:00:03] Charlie: Message 3\n" >> "$CHAT_DIR/TestRoom/.log"
   
-  # Connect with since parameter set to "now" (should get messages >= now)
-  export QUERY_STRING="room=TestRoom&since=$now_timestamp"
+  # Connect with since parameter set to recent time (should get messages >= recent_timestamp)
+  export QUERY_STRING="room=TestRoom&since=$recent_timestamp"
   output=$(run_with_timeout chat-stream)
   
   cleanup_test_env

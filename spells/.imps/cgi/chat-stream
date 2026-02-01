@@ -264,6 +264,8 @@ while IFS= read -r line <&3; do
     msg_timestamp=$(printf '%s' "$line" | sed -n 's/^\[\([^]]*\)\].*/\1/p')
     
     # Only send if timestamp >= since_timestamp (or no timestamp in line)
+    # Lexicographic comparison works for ISO 8601 format (YYYY-MM-DD HH:MM:SS)
+    # because the format sorts correctly as strings (year > month > day > hour > min > sec)
     if [ -z "$msg_timestamp" ] || [ "$msg_timestamp" \> "$since_timestamp" ] || [ "$msg_timestamp" = "$since_timestamp" ]; then
       send_sse_event message "$line"
       last_message_time=$(date +%s)
