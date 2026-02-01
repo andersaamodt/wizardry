@@ -169,8 +169,9 @@ function getLastMessageTimestamp() {
   if (timestampSpan && timestampSpan.dataset.fullTimestamp) {
     // Return as string - timestamp comparisons use lexicographic comparison
     // which works correctly for 'YYYY-MM-DD HH:MM:SS' format
-    // This format is enforced server-side by log-timestamp (date '+%Y-%m-%d %H:%M:%S')
-    // and rendered in chat-get-messages AWK script with data-full-timestamp attribute
+    // This format is enforced server-side by:
+    // - spells/.imps/out/log-timestamp (generates timestamp via date command)
+    // - spells/.imps/cgi/chat-get-messages (renders data-full-timestamp attribute)
     return timestampSpan.dataset.fullTimestamp;
   }
   
