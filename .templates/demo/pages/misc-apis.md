@@ -373,7 +373,7 @@ Monitor page lifecycle states (active, passive, hidden, frozen, terminated):
   <p style="margin-top: 1rem;"><strong>⚠️ Browser Support:</strong></p>
   <ul>
     <li><strong>Vibration:</strong> Mobile browsers (Chrome, Firefox, Safari)</li>
-    <li><strong>Battery:</strong> Chrome, Edge (deprecated in some browsers)</li>
+    <li><strong>Battery:</strong> Chrome, Edge (note: some browsers have deprecated this API for privacy reasons)</li>
     <li><strong>Network Information:</strong> Chrome, Edge, Opera</li>
     <li><strong>Wake Lock:</strong> Chrome, Edge, Opera (HTTPS required)</li>
     <li><strong>Page Lifecycle:</strong> All modern browsers</li>
