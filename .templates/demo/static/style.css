@@ -696,6 +696,11 @@ pre code {
   color: var(--dark);
 }
 
+:root {
+  /* ... existing custom properties ... */
+  --room-item-max-height: 50px;
+}
+
 .room-list {
   list-style: none;
   padding: 0;
@@ -714,11 +719,11 @@ pre code {
   }
   50% {
     opacity: 0;
-    max-height: 50px;
+    max-height: var(--room-item-max-height);
   }
   100% {
     opacity: 1;
-    max-height: 50px;
+    max-height: var(--room-item-max-height);
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
   }
