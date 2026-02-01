@@ -326,7 +326,8 @@ function updateUnreadBadges() {
       
       // Update all badges for this room
       roomBadges.forEach(function(badge) {
-        // Update badge display directly (badge references are still valid)
+        // Update badge display directly using the references collected before the async fetch
+        // DOM elements remain valid since they were captured in the badgesByRoom map
         if (result.count > 0) {
           badge.textContent = result.count;
           badge.classList.remove('hidden');
