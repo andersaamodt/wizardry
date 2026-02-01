@@ -18,13 +18,13 @@ title: Chatrooms
 <div class="chat-sidebar">
 <div class="chat-sidebar-content">
 <h3>Chatrooms</h3>
-<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, every 2s" hx-swap="innerHTML settle:0ms">
+<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, roomListChanged from:body" hx-swap="innerHTML settle:0ms">
 Loading rooms...
 </div>
 
 <div class="room-controls">
 <!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
-<div id="create-room-widget"><a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a><div id="create-room-input-wrapper"><input type="text" id="new-room-name" placeholder="Room name" oninput="validateRoomName()" onkeydown="if(event.key==='Enter' && !document.getElementById('create-room-btn').disabled) { document.getElementById('create-room-btn').click(); }" /><span id="create-room-invalid-icon">&#x1F6AB;</span></div><button id="create-room-btn" disabled hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; validateRoomName(); htmx.trigger('#room-list', 'load'); showNotification(); toggleCreateRoom(); }">Create</button></div>
+<div id="create-room-widget"><a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a><div id="create-room-input-wrapper"><input type="text" id="new-room-name" placeholder="Room name" oninput="validateRoomName()" onkeydown="if(event.key==='Enter' && !document.getElementById('create-room-btn').disabled) { document.getElementById('create-room-btn').click(); }" /><span id="create-room-invalid-icon">&#x1F6AB;</span></div><button id="create-room-btn" disabled hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; validateRoomName(); htmx.trigger('body', 'roomListChanged'); showNotification(); toggleCreateRoom(); }">Create</button></div>
 </div>
 </div>
 
@@ -328,6 +328,14 @@ function joinRoom(roomName) {
       item.classList.remove('room-item-selected');
     }
   });
+  
+  // Trigger badge update for previous room (now that we've left it)
+  if (previousRoom && previousRoom !== roomName) {
+    // Wait a moment for avatar to move, then update badges
+    setTimeout(function() {
+      updateUnreadBadges();
+    }, 500);
+  }
   
   // Reset scroll behavior for new room
   window.userHasScrolledUp = false;
@@ -1075,11 +1083,11 @@ function deleteRoom() {
   // Delete the room
   fetch('/cgi/chat-delete-room?room=' + encodeURIComponent(roomToDelete))
     .then(function() {
-      htmx.trigger('#room-list', 'load');
+      htmx.trigger('body', 'roomListChanged');
     })
     .catch(function(err) {
       console.error('Failed to delete room:', err);
-      htmx.trigger('#room-list', 'load');
+      htmx.trigger('body', 'roomListChanged');
     });
 }
 
