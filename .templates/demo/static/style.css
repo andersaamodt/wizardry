@@ -893,7 +893,7 @@ pre code {
   text-align: center;
   
   /* Smooth animations for badge updates */
-  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+  transition: opacity 0.3s ease-in-out;
 }
 
 /* Crossfade effect for number changes */
@@ -907,11 +907,9 @@ pre code {
   }
   50% {
     opacity: 0.3;
-    transform: scale(1.1);
   }
   100% {
     opacity: 1;
-    transform: scale(1);
   }
 }
 
