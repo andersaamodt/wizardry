@@ -693,6 +693,13 @@ function joinRoom(roomName) {
   
   // Add "Connecting..." status indicator to input area
   var chatInputArea = document.getElementById('chat-input-area');
+  
+  // Remove any existing connecting message first (prevents duplicates on rapid room switching)
+  var existingConnecting = document.getElementById('connecting-status');
+  if (existingConnecting) {
+    existingConnecting.remove();
+  }
+  
   var connectingMsg = document.createElement('div');
   connectingMsg.id = 'connecting-status';
   connectingMsg.innerHTML = 'Connecting<span class="spinner-grey"></span>';
