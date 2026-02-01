@@ -34,7 +34,7 @@ jobs:
       - name: Build native host binary (C + GTK)
         run: |
           cd host/linux
-          gcc -O2 main.c -o wizardry-host `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0`
+          gcc -O2 main.c -o wizardry-host `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.1`
           strip wizardry-host
           ls -lh wizardry-host
           cp wizardry-host ../../

@@ -25,10 +25,10 @@ That's it! Single command, ~100-200 KB binary.
 
 ```bash
 cd host/linux
-gcc -O2 main.c -o wizardry-host `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0`
+gcc -O2 main.c -o wizardry-host `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.1`
 ```
 
-Dependencies: `gtk+-3.0`, `webkit2gtk-4.0` (usually already installed on Linux desktops)
+Dependencies: `gtk+-3.0`, `webkit2gtk-4.1` (usually already installed on Linux desktops)
 
 ## Usage
 
