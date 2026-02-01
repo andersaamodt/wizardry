@@ -800,7 +800,7 @@ pre code {
   display: none;  /* Hide message preview completely */
 }
 
-/* Chatrooms header with toggle button */
+/* Chatrooms header */
 .chatrooms-header {
   display: flex;
   justify-content: space-between;
@@ -812,33 +812,59 @@ pre code {
   margin: 0;
 }
 
-.badge-mode-toggle {
-  background: transparent;
-  border: 2px solid #c8b5e6;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  cursor: pointer;
+/* Badge mode toggle switch (checkbox style) */
+.toggle-switch {
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  padding: 0;
+  cursor: pointer;
+  user-select: none;
+  gap: 0.75rem;
 }
 
-.badge-mode-toggle:hover {
-  background: #c8b5e6;
-  transform: scale(1.1);
+.toggle-switch input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
 }
 
-.badge-mode-toggle .toggle-icon {
-  font-size: 1rem;
-  color: #c8b5e6;
-  transition: color 0.2s;
+.toggle-slider {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 24px;
+  background-color: #ccc;
+  border-radius: 24px;
+  transition: background-color 0.3s;
 }
 
-.badge-mode-toggle:hover .toggle-icon {
-  color: white;
+.toggle-slider:before {
+  content: "";
+  position: absolute;
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.3s;
+}
+
+.toggle-switch input[type="checkbox"]:checked + .toggle-slider {
+  background-color: #c8b5e6;
+}
+
+.toggle-switch input[type="checkbox"]:checked + .toggle-slider:before {
+  transform: translateX(24px);
+}
+
+.toggle-switch:hover .toggle-slider {
+  opacity: 0.9;
+}
+
+.toggle-label {
+  font-size: 0.9rem;
+  color: #333;
 }
 
 /* Unread badge styling */
@@ -874,13 +900,13 @@ pre code {
 
 /* Dot mode styling for badges */
 .unread-badge.dot-mode {
-  width: 12px;
-  height: 12px;
-  min-width: 12px;
+  width: 10px;
+  height: 10px;
+  min-width: 10px;
   border-radius: 50%;
   padding: 0;
   margin-top: 0.25rem;
-  background: #9b7ec9;
+  background: #7b5fa0;  /* Dark purple - consistent across all levels */
   color: transparent;
   font-size: 0;
   position: relative;
@@ -889,26 +915,27 @@ pre code {
 
 /* Glow intensity levels based on unread count */
 .unread-badge.dot-mode.glow-low {
-  box-shadow: 0 0 6px rgba(155, 126, 201, 0.6), 0 0 8px rgba(155, 126, 201, 0.4);
+  /* 1-3 messages: subtle glow */
+  box-shadow: 0 0 6px rgba(155, 126, 201, 0.6), 0 0 10px rgba(155, 126, 201, 0.4);
 }
 
 .unread-badge.dot-mode.glow-medium {
-  box-shadow: 0 0 8px rgba(155, 126, 201, 0.8), 0 0 12px rgba(155, 126, 201, 0.5), 0 0 16px rgba(155, 126, 201, 0.3);
-  background: #b19cd9;
+  /* 4-10 messages: moderate glow */
+  box-shadow: 0 0 10px rgba(155, 126, 201, 0.9), 0 0 16px rgba(155, 126, 201, 0.6), 0 0 22px rgba(155, 126, 201, 0.4);
 }
 
 .unread-badge.dot-mode.glow-high {
-  box-shadow: 0 0 10px rgba(177, 156, 217, 1), 0 0 16px rgba(177, 156, 217, 0.7), 0 0 22px rgba(177, 156, 217, 0.5), 0 0 28px rgba(177, 156, 217, 0.3);
-  background: #c8b5e6;
+  /* 11+ messages: intense glow with pulsing */
+  box-shadow: 0 0 14px rgba(177, 156, 217, 1), 0 0 22px rgba(177, 156, 217, 0.8), 0 0 30px rgba(177, 156, 217, 0.6), 0 0 38px rgba(177, 156, 217, 0.4);
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 10px rgba(177, 156, 217, 1), 0 0 16px rgba(177, 156, 217, 0.7), 0 0 22px rgba(177, 156, 217, 0.5), 0 0 28px rgba(177, 156, 217, 0.3);
+    box-shadow: 0 0 14px rgba(177, 156, 217, 1), 0 0 22px rgba(177, 156, 217, 0.8), 0 0 30px rgba(177, 156, 217, 0.6), 0 0 38px rgba(177, 156, 217, 0.4);
   }
   50% {
-    box-shadow: 0 0 12px rgba(200, 181, 230, 1), 0 0 20px rgba(200, 181, 230, 0.8), 0 0 28px rgba(200, 181, 230, 0.6), 0 0 36px rgba(200, 181, 230, 0.4);
+    box-shadow: 0 0 18px rgba(200, 181, 230, 1), 0 0 28px rgba(200, 181, 230, 0.9), 0 0 38px rgba(200, 181, 230, 0.7), 0 0 48px rgba(200, 181, 230, 0.5);
   }
 }
 

@@ -19,9 +19,6 @@ title: Chatrooms
 <div class="chat-sidebar-content">
 <div class="chatrooms-header">
 <h3>Chatrooms</h3>
-<button id="badge-mode-toggle" class="badge-mode-toggle" onclick="toggleBadgeMode()" title="Toggle between number and dot display">
-<span class="toggle-icon">●</span>
-</button>
 </div>
 <div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, roomListChanged from:body" hx-swap="innerHTML settle:0ms">
 Loading rooms...
@@ -75,6 +72,14 @@ Delete Room
 <button id="send-btn" disabled>Send</button>
 </div>
 </div>
+</div>
+
+<div class="badge-mode-control" style="margin-top: 1rem; padding: 0.75rem; background: #f8f9fa; border-radius: 4px; border: 1px solid #dee2e6;">
+<label class="toggle-switch">
+<input type="checkbox" id="badge-mode-toggle" onchange="toggleBadgeMode()">
+<span class="toggle-slider"></span>
+<span class="toggle-label">Show unread badges as glowing dots</span>
+</label>
 </div>
 
 ## 💬 Real-Time Chat with Multiple Rooms
@@ -152,18 +157,9 @@ function setBadgeMode(mode) {
 }
 
 function toggleBadgeMode() {
-  var currentMode = getBadgeMode();
-  var newMode = currentMode === 'number' ? 'dot' : 'number';
+  var toggleCheckbox = document.getElementById('badge-mode-toggle');
+  var newMode = toggleCheckbox && toggleCheckbox.checked ? 'dot' : 'number';
   setBadgeMode(newMode);
-  
-  // Update toggle button appearance
-  var toggleBtn = document.getElementById('badge-mode-toggle');
-  if (toggleBtn) {
-    var icon = toggleBtn.querySelector('.toggle-icon');
-    if (icon) {
-      icon.textContent = newMode === 'number' ? '●' : '123';
-    }
-  }
   
   // Update all visible badges
   updateAllBadgeStyles();
@@ -1438,14 +1434,11 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', function() {
   setupUnreadCountsStream();
   
-  // Initialize toggle button icon based on saved mode
+  // Initialize toggle checkbox based on saved mode
   var mode = getBadgeMode();
-  var toggleBtn = document.getElementById('badge-mode-toggle');
-  if (toggleBtn) {
-    var icon = toggleBtn.querySelector('.toggle-icon');
-    if (icon) {
-      icon.textContent = mode === 'number' ? '●' : '123';
-    }
+  var toggleCheckbox = document.getElementById('badge-mode-toggle');
+  if (toggleCheckbox) {
+    toggleCheckbox.checked = (mode === 'dot');
   }
   
   // Apply initial badge styles
