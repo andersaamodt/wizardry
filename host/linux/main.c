@@ -1,6 +1,6 @@
 // Wizardry Desktop Host - Linux native WebView wrapper
 // Minimal C implementation using GTK3 + WebKit2GTK
-// Build: gcc -O2 main.c -o wizardry-host `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.0`
+// Build: gcc -O2 main.c -o wizardry-host `pkg-config --cflags --libs gtk+-3.0 webkit2gtk-4.1`
 
 #include <gtk/gtk.h>
 #include <webkit2/webkit2.h>
