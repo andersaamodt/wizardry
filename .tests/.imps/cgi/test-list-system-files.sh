@@ -5,9 +5,9 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-test_list_files_exists() {
-  [ -x "spells/.imps/cgi/list-files" ]
+test_list_system_files_exists() {
+  [ -x "spells/.imps/cgi/list-system-files" ]
 }
 
-run_test_case "list-files is executable" test_list_files_exists
+run_test_case "list-system-files is executable" test_list_system_files_exists
 finish_tests

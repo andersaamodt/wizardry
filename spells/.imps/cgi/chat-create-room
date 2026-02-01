@@ -2,14 +2,10 @@
 # chat-create-room - Create a new chat room
 set -eu
 
-http-status 200 "OK"
-http-header "Content-Type" "text/html"
-http-end-headers
+http-ok-html
 
 # Parse room name from query string
-room_name="${QUERY_STRING:-}"
-room_name=$(printf '%s' "$room_name" | sed 's/^name=//' | sed 's/&.*//')
-room_name=$(url-decode "$room_name" || echo "")
+room_name=$(get-query-param "name")
 
 # Trim whitespace
 room_name=$(printf '%s' "$room_name" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
@@ -24,7 +20,17 @@ HTML
   exit 0
 fi
 
-# Sanitize room name (alphanumeric, dash, underscore only)
+# Validate room name to prevent path traversal
+if ! validate-room-name "$room_name"; then
+  cat <<HTML
+<div class="demo-result error">
+  <p>Invalid room name. No path traversal allowed.</p>
+</div>
+HTML
+  exit 0
+fi
+
+# Additional validation: alphanumeric, dash, underscore only
 if ! printf '%s' "$room_name" | grep -qE '^[a-zA-Z0-9_-]+$'; then
   cat <<HTML
 <div class="demo-result error">
@@ -35,14 +41,7 @@ HTML
 fi
 
 # Chat rooms directory - use site-specific location
-# Use WIZARDRY_SITE_NAME if available (set by nginx), otherwise default
-if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
-  site_id="$WIZARDRY_SITE_NAME"
-else
-  site_id="default"
-fi
-SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
-CHAT_DIR="$SITES_DIR/.sitedata/$site_id/chatrooms"
+CHAT_DIR=$(get-site-data-dir "chatrooms")
 mkdir -p "$CHAT_DIR"
 
 ROOM_DIR="$CHAT_DIR/$room_name"

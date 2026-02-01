@@ -191,7 +191,8 @@ function joinRoom(roomName) {
   
   window.currentRoom = roomName;
   document.getElementById('current-room-name').textContent = roomName;
-  document.getElementById('send-btn').disabled = false;
+  // Keep send button disabled until SSE connects
+  document.getElementById('send-btn').disabled = true;
   document.getElementById('chat-input-area').style.display = 'flex';
   
   // Members button visibility will be controlled by loadMembers based on member count
@@ -254,6 +255,18 @@ function joinRoom(roomName) {
     // Create new avatar (first join or rejoining same room)
     avatarPromise = createAvatar(roomName, currentUsername);
   }
+  
+  // Add "Connecting..." status indicator to input area
+  var chatInputArea = document.getElementById('chat-input-area');
+  var connectingMsg = document.createElement('div');
+  connectingMsg.id = 'connecting-status';
+  connectingMsg.innerHTML = 'Connecting<span class="spinner-grey"></span>';
+  chatInputArea.appendChild(connectingMsg);
+  
+  // Fade in the connecting message
+  setTimeout(function() {
+    connectingMsg.classList.add('visible');
+  }, 10);
   
   // Wait for avatar creation to complete, then set up SSE and load history
   avatarPromise.then(function() {
@@ -464,7 +477,20 @@ function setupMessageStream(roomName, sinceTimestamp) {
   
   // Handle connection open
   window.messageEventSource.addEventListener('open', function(event) {
-    // Connection established
+    console.log('[SSE] Connection OPEN - ready to receive messages');
+    
+    // Enable send button first
+    document.getElementById('send-btn').disabled = false;
+    
+    // Fade out connecting status message
+    var connectingMsg = document.getElementById('connecting-status');
+    if (connectingMsg) {
+      connectingMsg.classList.remove('visible');
+      // Remove from DOM after fade completes
+      setTimeout(function() {
+        connectingMsg.remove();
+      }, 200);  // Match transition duration
+    }
   });
   
   // Handle incoming messages

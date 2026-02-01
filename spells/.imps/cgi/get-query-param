@@ -1,0 +1,30 @@
+#!/bin/sh
+# get-query-param PARAM_NAME [QUERY_STRING] - extract and URL-decode a parameter from query string
+# Example: get-query-param "text" "$QUERY_STRING" → decoded value of text parameter
+# If QUERY_STRING not provided, uses $QUERY_STRING environment variable
+set -eu
+
+param_name="${1-}"
+query_string="${2:-${QUERY_STRING:-}}"
+
+if [ -z "$param_name" ]; then
+  printf ''
+  exit 0
+fi
+
+if [ -z "$query_string" ]; then
+  printf ''
+  exit 0
+fi
+
+# Extract param=value from query string
+# Prepend & to make all params uniform, then extract &param=value
+encoded=$(printf '&%s' "$query_string" | sed -n "s/.*&${param_name}=\\([^&]*\\).*/\\1/p")
+
+if [ -z "$encoded" ]; then
+  printf ''
+  exit 0
+fi
+
+# Decode the URL-encoded value
+url-decode "$encoded"

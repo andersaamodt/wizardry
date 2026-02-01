@@ -26,21 +26,34 @@ set -eu
 
 printf '\n=== SSE Deployment Diagnostic ===\n\n'
 
-# Check repository version
+# Check Repository version
 if [ -f "spells/.imps/cgi/chat-stream" ]; then
-  repo_raw=$(head -2 spells/.imps/cgi/chat-stream | grep VERSION)
-  repo_version=$(printf '%s' "$repo_raw" | sed 's/.*VERSION: //' | tr -d ')')
+  # Extract version from comment line (e.g., "v2.5-CORS" or "VERSION: xxx")
+  repo_raw=$(head -5 spells/.imps/cgi/chat-stream | grep -E 'VERSION:|v[0-9]' | head -1)
+  if [ -n "$repo_raw" ]; then
+    # Try new format first (vX.X-XXX)
+    repo_version=$(printf '%s' "$repo_raw" | sed -n 's/.*(\(v[0-9][^)]*\)).*/\1/p')
+    # If that fails, try old format (VERSION: xxx)
+    if [ -z "$repo_version" ]; then
+      repo_version=$(printf '%s' "$repo_raw" | sed 's/.*VERSION: *//' | tr -d ')')
+    fi
+  fi
   printf '✓ Repository version: %s\n' "${repo_version:-UNKNOWN}"
 else
   printf '✗ Repository chat-stream not found\n'
 fi
 
-# Check installed version
+# Check Installed version
 installed_path="${HOME}/.wizardry/spells/.imps/cgi/chat-stream"
 if [ -f "$installed_path" ]; then
-  inst_raw=$(head -2 "$installed_path" | grep VERSION 2>/dev/null || echo "")
+  inst_raw=$(head -5 "$installed_path" | grep -E 'VERSION:|v[0-9]' | head -1)
   if [ -n "$inst_raw" ]; then
-    installed_version=$(printf '%s' "$inst_raw" | sed 's/.*VERSION: //' | tr -d ')')
+    # Try new format first (vX.X-XXX)
+    installed_version=$(printf '%s' "$inst_raw" | sed -n 's/.*(\(v[0-9][^)]*\)).*/\1/p')
+    # If that fails, try old format (VERSION: xxx)
+    if [ -z "$installed_version" ]; then
+      installed_version=$(printf '%s' "$inst_raw" | sed 's/.*VERSION: *//' | tr -d ')')
+    fi
   else
     installed_version="OLD VERSION (no version stamp)"
   fi

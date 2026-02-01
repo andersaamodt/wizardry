@@ -1,0 +1,8 @@
+#!/bin/sh
+# http-ok-json - output standard HTTP 200 OK response headers for JSON
+# Combines http-status 200 + Content-Type: application/json + http-end-headers
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "application/json"
+http-end-headers

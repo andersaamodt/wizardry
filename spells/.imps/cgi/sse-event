@@ -11,8 +11,6 @@ if [ $# -gt 0 ]; then
 fi
 data="${*:-}"
 
-printf '[sse-event] type=%s len=%d (adding 2KB padding)\n' "$event_type" "${#data}" >&2
-
 # Output event type
 printf 'event: %s\n' "$event_type"
 
@@ -24,14 +22,7 @@ done
 # CRITICAL: Add 2KB padding as SSE comment to force buffer flush
 # SSE comments (lines starting with :) are ignored by browser
 # But they force fcgiwrap to flush the buffer to nginx
-printf ': padding='
-# Output 2000 spaces (2KB of padding)
-i=0
-while [ $i -lt 2000 ]; do
-  printf ' '
-  i=$((i + 1))
-done
-printf '\n'
+sse-padding 2
 
-# End event with blank line
+# End event with blank line (sse-padding already added one newline)
 printf '\n'

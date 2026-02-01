@@ -1,0 +1,29 @@
+#!/bin/sh
+# sse-event-id EVENT_TYPE EVENT_ID DATA - Output SSE event with ID for resumability
+# Adds event ID to enable client-side resume after disconnection
+# Example: sse-event-id message "msg_123" "Hello world"
+set -eu
+
+event_type="${1:-message}"
+event_id="${2:-}"
+shift 2 2>/dev/null || shift $# 2>/dev/null || true
+data="${*:-}"
+
+# Output event ID first (if provided)
+if [ -n "$event_id" ]; then
+  printf 'id: %s\n' "$event_id"
+fi
+
+# Output event type
+printf 'event: %s\n' "$event_type"
+
+# Output data (can be multi-line)
+printf '%s\n' "$data" | while IFS= read -r line || [ -n "$line" ]; do
+  printf 'data: %s\n' "$line"
+done
+
+# Add padding to force buffer flush
+sse-padding 2
+
+# End event with blank line
+printf '\n'

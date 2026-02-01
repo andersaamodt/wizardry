@@ -1033,6 +1033,25 @@ pre code {
   flex-grow: 0;    /* Don't grow */
   align-items: flex-end;  /* Align items to bottom */
   min-height: 60px;  /* Ensure minimum height */
+  position: relative;  /* For absolute positioning of connecting status */
+}
+
+#connecting-status {
+  position: absolute;
+  right: 110px;  /* Position to left of Send button with proper spacing */
+  top: 50%;
+  transform: translateY(-50%);
+  padding-top: 0.125em;  /* Move text down slightly to better align with spinner */
+  color: #999;  /* Light grey text to match spinner */
+  font-size: 0.85em;  /* Smaller, less obtrusive */
+  font-style: italic;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  pointer-events: none;  /* Don't interfere with clicking */
+}
+
+#connecting-status.visible {
+  opacity: 1;
 }
 
 .chat-input-area textarea,
@@ -1061,12 +1080,13 @@ pre code {
   flex-shrink: 0;
   align-self: stretch;
   min-height: 2.5rem;
-  transition: min-height 0.2s ease;
+  transition: min-height 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
 }
 
 .chat-input-area button:disabled {
-  background: var(--border);
+  background: linear-gradient(135deg, var(--border) 0%, var(--border) 100%);
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 /* Loading spinner for room creation */
@@ -1080,6 +1100,21 @@ pre code {
   animation: spin 0.6s linear infinite;
   margin-left: 8px;
   vertical-align: middle;
+}
+
+/* Grey spinner for connecting status in input area */
+.spinner-grey {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(128, 128, 128, 0.3);
+  border-top-color: #666;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin-left: 8px;
+  vertical-align: middle;
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 @keyframes spin {

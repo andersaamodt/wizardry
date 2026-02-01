@@ -1,10 +1,8 @@
 #!/bin/sh
-# list-files - List files in a directory
+# list-system-files - List system files (CGI demo)
 set -eu
 
-http-status 200 "OK"
-http-header "Content-Type" "text/html"
-http-end-headers
+http-ok-html
 
 # List some safe system directories
 cat <<HTML

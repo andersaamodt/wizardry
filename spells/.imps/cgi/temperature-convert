@@ -2,15 +2,10 @@
 # temperature-convert - Convert between Celsius and Fahrenheit
 set -eu
 
-http-status 200 "OK"
-http-header "Content-Type" "text/html"
-http-end-headers
+http-ok-html
 
-params="${QUERY_STRING:-}"
-temp_encoded=$(printf '%s' "$params" | sed 's/^temp=//' | sed 's/&.*//')
-unit_encoded=$(printf '%s' "$params" | sed 's/.*unit=//' | sed 's/&.*//')
-temp=$(url-decode "$temp_encoded")
-unit=$(url-decode "$unit_encoded")
+temp=$(get-query-param "temp")
+unit=$(get-query-param "unit")
 
 # Check if temp is empty or not a number
 if [ -z "$temp" ] || ! printf '%s' "$temp" | grep -qE '^-?[0-9]+\.?[0-9]*$'; then

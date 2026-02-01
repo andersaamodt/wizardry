@@ -38,7 +38,8 @@ test_sse_event_defaults_to_message_type() {
 
 test_sse_event_ends_with_blank_line() {
   # Should end with double newline (0a 0a in hex)
-  sse-event message "test" 2>&1 | od -An -tx1 | grep -q "0a 0a"
+  # Use tail to get last 2 bytes for more reliable cross-platform testing
+  sse-event message "test" 2>&1 | tail -c 2 | od -An -tx1 | tr -d ' ' | grep -q "0a0a"
 }
 
 test_sse_event_handles_empty_data() {
