@@ -149,37 +149,6 @@ You can also access other menus directly using the space format. Try these:
 
 Parsing is deterministic and always resolves to the most specific command, and is therefore reasonably safe. A `disambiguate` menu (future feature—not yet tested) will automatically ask when the same space-separated command could be interpreted in two or more ways (for example, `install menu` might also mean "please install the 'menu' application").
 
-## Desktop Apps
-
-Wizardry includes support for desktop apps—graphical wrappers around wizardry spells that maintain the same flat, low-to-the-ground philosophy as the rest of the project.
-
-Desktop apps are:
-
-* **Simple**: Each app is a WebView loading a single HTML file
-* **Secure**: Commands hardcoded in GUI, no way for user input to construct arbitrary commands
-* **Thin**: Minimal layers between GUI and shell scripts
-* **Optional**: CLI parity invariant—removing the GUI doesn't break functionality
-* **Unix-native**: Apps are graphical consoles for your environment, not sealed containers
-
-Apps live in `.apps/<appname>/` and include:
-
-* `index.html` - Entry point with hardcoded commands
-* `style.css` - Optional styling
-
-See `.apps/README.md` for the complete architecture and development guide.
-
-### Managing Apps
-
-List available apps:
-```
-list-apps
-```
-
-Launch an app (validation only; native WebView integration planned):
-```
-launch-app menu-app
-```
-
 ## Magical Glossary
 
 | Term | Definition |
@@ -345,3 +314,7 @@ Wizardry assumes a small, portable POSIX toolchain. These are the interfaces we 
 The portable build is automatically generated, and includes all spells that work as standalone scripts. These are currently **untested and not recommended.**
 
 **[Download latest nightly build](https://github.com/andersaamodt/wizardry/actions/workflows/compile.yml)** → Click the most recent successful run → Download artifact
+
+## Desktop Apps
+
+Wizardry includes optional desktop apps (`.apps/`) - graphical wrappers with commands hardcoded in the GUI for security. See `.apps/README.md` for details.
