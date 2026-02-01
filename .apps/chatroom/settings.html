@@ -109,23 +109,50 @@
   
   <div class="settings-container">
     <div class="settings-section">
-      <h2>🚀 Server Status</h2>
+      <h2>⚙️ Mode</h2>
       <div class="settings-item">
-        <label class="settings-label">Chat Server Status</label>
-        <code class="settings-value loading" id="server-status">Checking...</code>
-        <button class="copy-btn" id="start-server-btn" onclick="startServer()" style="display:none">
-          ▶️ Start Chat Server
-        </button>
-        <div class="info-box">
-          <p>
-            The chatroom requires a web server to be running. This will start the demo site 
-            with the chat interface if it's not already running.
+        <label class="settings-label">Chatroom Mode</label>
+        <div style="margin-top: 0.5rem;">
+          <label style="display: block; margin-bottom: 0.5rem; cursor: pointer;">
+            <input type="radio" name="mode" value="client" onchange="setMode('client')" style="margin-right: 0.5rem;">
+            <strong>Client Only</strong> - Connect to someone else's chatroom
+          </label>
+          <label style="display: block; cursor: pointer;">
+            <input type="radio" name="mode" value="host" onchange="setMode('host')" style="margin-right: 0.5rem;">
+            <strong>Host Server</strong> - Run a chatroom server that others can join
+          </label>
+        </div>
+        <div class="info-box" style="margin-top: 1rem;">
+          <p id="mode-description">
+            Choose whether to just connect to an existing chatroom (Client Only) or to host your own server.
           </p>
         </div>
       </div>
     </div>
     
-    <div class="settings-section">
+    <div class="settings-section" id="server-section" style="display: none;">
+      <h2>🚀 Server Control</h2>
+      <div class="settings-item">
+        <label class="settings-label">Chat Server Status</label>
+        <code class="settings-value loading" id="server-status">Checking...</code>
+        <div style="margin-top: 0.75rem;">
+          <button class="copy-btn" id="start-server-btn" onclick="startServer()" style="display:none">
+            ▶️ Start Server
+          </button>
+          <button class="copy-btn" id="stop-server-btn" onclick="stopServer()" style="display:none; background: #dc3545;">
+            ⏹️ Stop Server
+          </button>
+        </div>
+        <div class="info-box">
+          <p>
+            Start your own chatroom server. Once running, others can connect using the URL below.
+            The server will continue running until you stop it or close the app.
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="settings-section" id="connection-section" style="display: none;">
       <h2>📡 Connection Information</h2>
       <p style="color: #6c757d; margin-bottom: 1.5rem;">
         Share these addresses so others can connect to your chatroom server.
@@ -198,11 +225,53 @@
       'get-tor': ['sh', '-c', 'cat /var/lib/tor/hidden_service/hostname 2>/dev/null || cat /usr/local/var/lib/tor/hidden_service/hostname 2>/dev/null'],
       'check-server': ['sh', '-c', 'pgrep -f "nginx.*demo" > /dev/null && echo "running" || echo "stopped"'],
       'get-port': ['sh', '-c', 'cat $HOME/sites/demo/site.conf 2>/dev/null | grep "^port=" | cut -d= -f2 || echo "8080"'],
-      'start-server': ['web-wizardry', 'serve', 'demo']
+      'create-demo': ['sh', '-c', 'cd ~/.wizardry && [ -d ~/sites/demo ] || (echo "Creating demo site..." && web-wizardry create demo --template demo)'],
+      'start-server': ['sh', '-c', 'cd ~/.wizardry && web-wizardry serve demo'],
+      'stop-server': ['sh', '-c', 'web-wizardry stop demo']
     };
     
     let serverRunning = false;
     let serverPort = '8080';
+    let currentMode = 'client'; // default to client mode
+    
+    // Initialize mode from localStorage
+    function initMode() {
+      const savedMode = localStorage.getItem('chatroomMode') || 'client';
+      currentMode = savedMode;
+      const radioButton = document.querySelector(`input[name="mode"][value="${savedMode}"]`);
+      if (radioButton) {
+        radioButton.checked = true;
+      }
+      updateModeUI();
+    }
+    
+    // Set mode (client or host)
+    function setMode(mode) {
+      currentMode = mode;
+      localStorage.setItem('chatroomMode', mode);
+      updateModeUI();
+      
+      if (mode === 'host') {
+        checkServerStatus();
+      }
+    }
+    
+    // Update UI based on mode
+    function updateModeUI() {
+      const serverSection = document.getElementById('server-section');
+      const connectionSection = document.getElementById('connection-section');
+      const modeDesc = document.getElementById('mode-description');
+      
+      if (currentMode === 'host') {
+        serverSection.style.display = 'block';
+        connectionSection.style.display = 'block';
+        modeDesc.textContent = 'Host mode: You are running a chatroom server that others can connect to.';
+      } else {
+        serverSection.style.display = 'none';
+        connectionSection.style.display = 'none';
+        modeDesc.textContent = 'Client mode: Connect to an existing chatroom by entering its URL in the chat tab.';
+      }
+    }
     
     // Check server status
     function checkServerStatus() {
@@ -223,22 +292,24 @@
     function updateServerStatus(status) {
       const statusElement = document.getElementById('server-status');
       const startBtn = document.getElementById('start-server-btn');
+      const stopBtn = document.getElementById('stop-server-btn');
       
       if (status === 'running') {
         statusElement.textContent = '✓ Running';
         statusElement.classList.remove('loading', 'error');
         statusElement.classList.add('success');
         startBtn.style.display = 'none';
+        stopBtn.style.display = 'inline-block';
       } else {
         statusElement.textContent = '✗ Not running';
         statusElement.classList.remove('loading', 'success');
         statusElement.classList.add('error');
         startBtn.style.display = 'inline-block';
+        stopBtn.style.display = 'none';
       }
     }
     
-    function startServer() {
-      // In production: window.wizardry.exec(commands['start-server'])
+    async function startServer() {
       const statusElement = document.getElementById('server-status');
       const startBtn = document.getElementById('start-server-btn');
       
@@ -247,14 +318,69 @@
       statusElement.classList.add('loading');
       startBtn.disabled = true;
       
-      // For now, show instructions
-      alert('To start the chat server:\n\n1. Open a terminal\n2. Run: web-wizardry serve demo\n\nOr create the demo site first with:\n  web-wizardry create demo --template demo');
-      
-      // Re-check status after a delay
-      setTimeout(() => {
-        checkServerStatus();
+      try {
+        // In production: window.wizardry.exec(commands['create-demo'])
+        // For now in demo/development, we check if we can actually execute
+        if (window.wizardry && window.wizardry.exec) {
+          // Create demo site if it doesn't exist
+          await window.wizardry.exec(commands['create-demo']);
+          // Start the server
+          await window.wizardry.exec(commands['start-server']);
+          
+          // Wait a moment for server to start
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          checkServerStatus();
+        } else {
+          // Fallback for development/browser testing
+          statusElement.textContent = 'Native bridge not available';
+          statusElement.classList.remove('loading');
+          statusElement.classList.add('error');
+          
+          // Show helpful message
+          alert('Server start requires native app integration.\n\nFor now, run in terminal:\n  web-wizardry serve demo\n\nOr create demo site first:\n  web-wizardry create demo --template demo');
+        }
+      } catch (error) {
+        statusElement.textContent = 'Error starting server';
+        statusElement.classList.remove('loading');
+        statusElement.classList.add('error');
+        console.error('Server start error:', error);
+      } finally {
         startBtn.disabled = false;
-      }, 2000);
+      }
+    }
+    
+    async function stopServer() {
+      const statusElement = document.getElementById('server-status');
+      const stopBtn = document.getElementById('stop-server-btn');
+      
+      statusElement.textContent = 'Stopping server...';
+      statusElement.classList.remove('error', 'success');
+      statusElement.classList.add('loading');
+      stopBtn.disabled = true;
+      
+      try {
+        if (window.wizardry && window.wizardry.exec) {
+          await window.wizardry.exec(commands['stop-server']);
+          
+          // Wait a moment for server to stop
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          checkServerStatus();
+        } else {
+          // Fallback for development
+          statusElement.textContent = 'Native bridge not available';
+          statusElement.classList.remove('loading');
+          statusElement.classList.add('error');
+          
+          alert('Server stop requires native app integration.\n\nFor now, run in terminal:\n  web-wizardry stop demo');
+        }
+      } catch (error) {
+        statusElement.textContent = 'Error stopping server';
+        statusElement.classList.remove('loading');
+        statusElement.classList.add('error');
+        console.error('Server stop error:', error);
+      } finally {
+        stopBtn.disabled = false;
+      }
     }
     
     function loadPort() {
@@ -375,7 +501,10 @@
     
     // Load on page load
     window.addEventListener('DOMContentLoaded', () => {
-      checkServerStatus();
+      initMode();
+      if (currentMode === 'host') {
+        checkServerStatus();
+      }
       loadIPAddress();
       loadTorAddress();
     });
