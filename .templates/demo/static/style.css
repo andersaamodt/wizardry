@@ -1033,6 +1033,18 @@ pre code {
   flex-grow: 0;    /* Don't grow */
   align-items: flex-end;  /* Align items to bottom */
   min-height: 60px;  /* Ensure minimum height */
+  position: relative;  /* For absolute positioning of connecting status */
+}
+
+#connecting-status {
+  position: absolute;
+  right: 90px;  /* Position to left of Send button (assuming ~80px button width + gap) */
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+  font-style: italic;
+  font-size: 0.9rem;
+  pointer-events: none;  /* Don't interfere with clicking */
 }
 
 .chat-input-area textarea,
@@ -1076,6 +1088,19 @@ pre code {
   height: 16px;
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* Grey spinner for connecting status in input area */
+.spinner-grey {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(128, 128, 128, 0.3);
+  border-top-color: #666;
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
   margin-left: 8px;

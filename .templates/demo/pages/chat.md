@@ -256,14 +256,12 @@ function joinRoom(roomName) {
     avatarPromise = createAvatar(roomName, currentUsername);
   }
   
-  // Add "Connecting..." status message
-  var chatDisplay = document.getElementById('chat-messages');
+  // Add "Connecting..." status indicator to input area
+  var chatInputArea = document.getElementById('chat-input-area');
   var connectingMsg = document.createElement('div');
-  connectingMsg.className = 'chat-message system-message';
   connectingMsg.id = 'connecting-status';
-  connectingMsg.innerHTML = '<span style="color: #888; font-style: italic;">Connecting<span class="spinner"></span></span>';
-  chatDisplay.appendChild(connectingMsg);
-  chatDisplay.scrollTop = chatDisplay.scrollHeight;
+  connectingMsg.innerHTML = 'Connecting<span class="spinner-grey"></span>';
+  chatInputArea.appendChild(connectingMsg);
   
   // Wait for avatar creation to complete, then set up SSE and load history
   avatarPromise.then(function() {
