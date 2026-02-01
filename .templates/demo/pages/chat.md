@@ -21,7 +21,7 @@ title: Chatrooms
 <h3>Chatrooms</h3>
 </div>
 <div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, roomListChanged from:body" hx-swap="morph:innerHTML settle:0ms">
-<!-- htmx morph extension (Idiomorph) required for smooth updates - automatically loaded by htmx -->
+<!-- Requires htmx morph extension (Idiomorph) - ensure it's loaded in page -->
 Loading rooms...
 </div>
 
@@ -351,10 +351,14 @@ function updateUnreadBadges() {
         timestamp: now
       };
       
-      // Query badges efficiently - room names are server-validated to [a-zA-Z0-9_-]
-      // so safe for direct use in selector, but we escape as defense-in-depth
-      var escapedRoom = result.room.replace(/[^\w-]/g, '');
-      var currentBadges = document.querySelectorAll('.unread-badge[data-room="' + escapedRoom + '"]');
+      // Query badges efficiently
+      // Room names are server-validated to [a-zA-Z0-9_-] which are CSS-safe
+      // Use CSS.escape() if available for additional safety
+      var roomSelector = result.room;
+      if (typeof CSS !== 'undefined' && CSS.escape) {
+        roomSelector = CSS.escape(result.room);
+      }
+      var currentBadges = document.querySelectorAll('.unread-badge[data-room="' + roomSelector + '"]');
       
       currentBadges.forEach(function(badge) {
         // Update badge display
