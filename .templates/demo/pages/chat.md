@@ -261,7 +261,7 @@ function joinRoom(roomName) {
   var connectingMsg = document.createElement('div');
   connectingMsg.className = 'chat-message system-message';
   connectingMsg.id = 'connecting-status';
-  connectingMsg.innerHTML = '<span style="color: #888; font-style: italic;">Connecting to chat<span class="spinner"></span></span>';
+  connectingMsg.innerHTML = '<span style="color: #888; font-style: italic;">Connecting<span class="spinner"></span></span>';
   chatDisplay.appendChild(connectingMsg);
   chatDisplay.scrollTop = chatDisplay.scrollHeight;
   
@@ -474,16 +474,16 @@ function setupMessageStream(roomName, sinceTimestamp) {
   
   // Handle connection open
   window.messageEventSource.addEventListener('open', function(event) {
-    // Connection established - enable send button
+    console.log('[SSE] Connection OPEN - ready to receive messages');
+    
+    // Enable send button first
     document.getElementById('send-btn').disabled = false;
     
-    // Remove connecting status message
+    // Then remove connecting status message
     var connectingMsg = document.getElementById('connecting-status');
     if (connectingMsg) {
       connectingMsg.remove();
     }
-    
-    console.log('[SSE] Connection OPEN - ready to receive messages');
   });
   
   // Handle incoming messages
