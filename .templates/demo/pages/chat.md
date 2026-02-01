@@ -351,48 +351,46 @@ function setupUnreadCountsStream() {
           (function(capturedRoomName, capturedServerCount) {
             console.log('[Unread Counts] Processing room:', capturedRoomName, 'serverCount:', capturedServerCount);
             
-            // Always try to update, even if serverCount is 0
-            // This ensures badges appear when going from 0 to 1
-            countUnreadMessages(capturedRoomName, function(count) {
-              // Query for fresh badge element each time (fixes stale DOM reference after htmx swap)
-              var freshBadge = document.querySelector('.unread-badge[data-room="' + capturedRoomName + '"]');
-              if (!freshBadge) {
-                console.log('[Unread Counts] WARNING: No badge element found for', capturedRoomName, '- DOM might not be ready');
-                return;
-              }
+            // Query for fresh badge element
+            var freshBadge = document.querySelector('.unread-badge[data-room="' + capturedRoomName + '"]');
+            if (!freshBadge) {
+              console.log('[Unread Counts] WARNING: No badge element found for', capturedRoomName, '- DOM might not be ready');
+              return;
+            }
+            
+            // IMMEDIATELY show/hide badge based on server count (synchronous)
+            if (capturedServerCount > 0) {
+              // Show badge immediately with server count
+              freshBadge.textContent = capturedServerCount;
+              freshBadge.classList.remove('hidden');
+              freshBadge.style.display = 'inline-block';
+              void freshBadge.offsetWidth;  // Force reflow
+              updateBadgeStyle(freshBadge);
+              console.log('[Unread Counts] Badge SHOWN immediately for', capturedRoomName, 'serverCount:', capturedServerCount);
               
-              console.log('[Unread Counts] Badge callback for', capturedRoomName, '- count:', count, 'was hidden:', freshBadge.classList.contains('hidden'));
-              
-              var oldCount = parseInt(freshBadge.textContent) || 0;
-              var wasVisible = !freshBadge.classList.contains('hidden');
-              
-              if (count > 0) {
-                // Trigger animation if number changed
-                if (wasVisible && oldCount !== count) {
-                  freshBadge.classList.add('updating');
-                  setTimeout(function() {
-                    freshBadge.classList.remove('updating');
-                  }, 400);
+              // THEN get accurate count from client-side calculation (async)
+              countUnreadMessages(capturedRoomName, function(accurateCount) {
+                console.log('[Unread Counts] Refining badge for', capturedRoomName, '- accurate count:', accurateCount);
+                if (accurateCount > 0) {
+                  var oldCount = parseInt(freshBadge.textContent) || 0;
+                  if (oldCount !== accurateCount) {
+                    // Trigger animation if number changed
+                    freshBadge.classList.add('updating');
+                    setTimeout(function() {
+                      freshBadge.classList.remove('updating');
+                    }, 400);
+                  }
+                  freshBadge.textContent = accurateCount;
+                  updateBadgeStyle(freshBadge);
                 }
-                
-                // Update badge
-                freshBadge.textContent = count;
-                freshBadge.classList.remove('hidden');
-                // ALSO set inline style to override any CSS issues
-                freshBadge.style.display = 'inline-block';
-                // Force a reflow to ensure display change takes effect
-                void freshBadge.offsetWidth;
-                // Apply current display mode styling
-                updateBadgeStyle(freshBadge);
-                console.log('[Unread Counts] Badge SHOWN for', capturedRoomName, 'count:', count, 'computed display:', window.getComputedStyle(freshBadge).display);
-              } else {
-                freshBadge.classList.add('hidden');
-                freshBadge.style.display = 'none';
-                // Force a reflow
-                void freshBadge.offsetWidth;
-                console.log('[Unread Counts] Badge HIDDEN for', capturedRoomName);
-              }
-            });
+              });
+            } else {
+              // Hide badge immediately
+              freshBadge.classList.add('hidden');
+              freshBadge.style.display = 'none';
+              void freshBadge.offsetWidth;
+              console.log('[Unread Counts] Badge HIDDEN for', capturedRoomName);
+            }
           })(roomName, serverCount);
         }
       }, 100);  // 100ms delay to ensure DOM is ready
