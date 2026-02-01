@@ -459,7 +459,7 @@ function setupRoomListStream() {
       console.log('[Room List] Received update:', rooms);
       
       // Trigger htmx to refresh the room list
-      // Small delay to ensure we don't spam updates
+      // Small delay to ensure DOM is ready for htmx processing
       setTimeout(function() {
         htmx.trigger('body', 'roomListChanged');
       }, 100);

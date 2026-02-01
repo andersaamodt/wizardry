@@ -93,8 +93,8 @@ get_room_list() {
 
 # Cleanup function
 cleanup() {
-  kill ${keepalive_pid:-} 2>/dev/null || true
-  kill ${timeout_pid:-} 2>/dev/null || true
+  kill "${keepalive_pid:-}" 2>/dev/null || true
+  kill "${timeout_pid:-}" 2>/dev/null || true
   exit
 }
 
