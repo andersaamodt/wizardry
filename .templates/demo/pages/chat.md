@@ -17,7 +17,12 @@ title: Chatrooms
 
 <div class="chat-sidebar">
 <div class="chat-sidebar-content">
+<div class="chatrooms-header">
 <h3>Chatrooms</h3>
+<button id="badge-mode-toggle" class="badge-mode-toggle" onclick="toggleBadgeMode()" title="Toggle between number and dot display">
+<span class="toggle-icon">●</span>
+</button>
+</div>
 <div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, roomListChanged from:body" hx-swap="innerHTML settle:0ms">
 Loading rooms...
 </div>
@@ -137,6 +142,70 @@ function markRoomAsRead(roomName) {
   updateUnreadBadges();
 }
 
+// Badge display mode functions
+function getBadgeMode() {
+  return localStorage.getItem('badgeDisplayMode') || 'number';
+}
+
+function setBadgeMode(mode) {
+  localStorage.setItem('badgeDisplayMode', mode);
+}
+
+function toggleBadgeMode() {
+  var currentMode = getBadgeMode();
+  var newMode = currentMode === 'number' ? 'dot' : 'number';
+  setBadgeMode(newMode);
+  
+  // Update toggle button appearance
+  var toggleBtn = document.getElementById('badge-mode-toggle');
+  if (toggleBtn) {
+    var icon = toggleBtn.querySelector('.toggle-icon');
+    if (icon) {
+      icon.textContent = newMode === 'number' ? '●' : '123';
+    }
+  }
+  
+  // Update all visible badges
+  updateAllBadgeStyles();
+}
+
+function updateAllBadgeStyles() {
+  var mode = getBadgeMode();
+  
+  document.querySelectorAll('.unread-badge').forEach(function(badge) {
+    updateBadgeStyle(badge, mode);
+  });
+}
+
+function updateBadgeStyle(badge, mode) {
+  if (!mode) mode = getBadgeMode();
+  
+  // Get current count from badge
+  var count = parseInt(badge.textContent) || 0;
+  
+  if (mode === 'dot') {
+    // Switch to dot mode
+    badge.classList.add('dot-mode');
+    
+    // Remove old glow classes
+    badge.classList.remove('glow-low', 'glow-medium', 'glow-high');
+    
+    // Add glow class based on count
+    if (count > 0) {
+      if (count <= 3) {
+        badge.classList.add('glow-low');
+      } else if (count <= 10) {
+        badge.classList.add('glow-medium');
+      } else {
+        badge.classList.add('glow-high');
+      }
+    }
+  } else {
+    // Switch to number mode
+    badge.classList.remove('dot-mode', 'glow-low', 'glow-medium', 'glow-high');
+  }
+}
+
 function isLogMessage(messageText) {
   // Check if message is from "log:" user (system messages)
   // Format: [YYYY-MM-DD HH:MM:SS] log: message
@@ -202,6 +271,8 @@ function updateUnreadBadges() {
       if (count > 0) {
         badge.textContent = count;
         badge.style.display = 'inline-block';
+        // Apply current display mode styling
+        updateBadgeStyle(badge);
       } else {
         badge.style.display = 'none';
       }
@@ -217,6 +288,8 @@ function updateUnreadBadges() {
       if (count > 0) {
         badge.textContent = count;
         badge.style.display = 'inline-block';
+        // Apply current display mode styling
+        updateBadgeStyle(badge);
       } else {
         badge.style.display = 'none';
       }
@@ -258,29 +331,18 @@ function setupUnreadCountsStream() {
         // Get count from server data
         var serverCount = counts[roomName] || 0;
         
-        // Filter by client-side read timestamp
-        var readTimestamp = getReadTimestamp(roomName);
-        
-        // For now, trust server count (we'll refine this if needed)
-        // The server sends total message count, client should filter by read timestamp
-        // But since server doesn't know read timestamps, we need to fetch and count client-side
-        
-        // Instead, let's just update based on server signal that room has messages
-        // and let the existing updateUnreadBadges function calculate the actual count
-        if (serverCount > 0) {
-          // Trigger update for this specific room
-          countUnreadMessages(roomName, function(count) {
-            if (count > 0) {
-              badge.textContent = count;
-              badge.style.display = 'inline-block';
-            } else {
-              badge.style.display = 'none';
-            }
-          });
-        } else {
-          // No messages in room
-          badge.style.display = 'none';
-        }
+        // Always update to ensure badges appear/disappear correctly
+        // This fixes the issue where badge doesn't appear on first message
+        countUnreadMessages(roomName, function(count) {
+          if (count > 0) {
+            badge.textContent = count;
+            badge.style.display = 'inline-block';
+            // Apply current display mode styling
+            updateBadgeStyle(badge);
+          } else {
+            badge.style.display = 'none';
+          }
+        });
       });
     } catch (e) {
       console.error('Error parsing unread counts:', e);
@@ -1375,6 +1437,19 @@ document.addEventListener('DOMContentLoaded', function() {
 // Initialize unread counts SSE connection on page load
 document.addEventListener('DOMContentLoaded', function() {
   setupUnreadCountsStream();
+  
+  // Initialize toggle button icon based on saved mode
+  var mode = getBadgeMode();
+  var toggleBtn = document.getElementById('badge-mode-toggle');
+  if (toggleBtn) {
+    var icon = toggleBtn.querySelector('.toggle-icon');
+    if (icon) {
+      icon.textContent = mode === 'number' ? '●' : '123';
+    }
+  }
+  
+  // Apply initial badge styles
+  updateAllBadgeStyles();
 });
 
 // Toggle Create Room widget

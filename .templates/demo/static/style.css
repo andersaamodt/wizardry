@@ -800,6 +800,47 @@ pre code {
   display: none;  /* Hide message preview completely */
 }
 
+/* Chatrooms header with toggle button */
+.chatrooms-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.chatrooms-header h3 {
+  margin: 0;
+}
+
+.badge-mode-toggle {
+  background: transparent;
+  border: 2px solid #c8b5e6;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.badge-mode-toggle:hover {
+  background: #c8b5e6;
+  transform: scale(1.1);
+}
+
+.badge-mode-toggle .toggle-icon {
+  font-size: 1rem;
+  color: #c8b5e6;
+  transition: color 0.2s;
+}
+
+.badge-mode-toggle:hover .toggle-icon {
+  color: white;
+}
+
 /* Unread badge styling */
 .unread-badge {
   display: inline-block;
@@ -829,6 +870,61 @@ pre code {
 .room-item-selected:hover .unread-badge {
   background: #b5a0d9;  /* Keep same color on hover for selected room */
   color: white;
+}
+
+/* Dot mode styling for badges */
+.unread-badge.dot-mode {
+  width: 12px;
+  height: 12px;
+  min-width: 12px;
+  border-radius: 50%;
+  padding: 0;
+  margin-top: 0.25rem;
+  background: #9b7ec9;
+  color: transparent;
+  font-size: 0;
+  position: relative;
+  box-shadow: 0 0 4px rgba(155, 126, 201, 0.5);
+}
+
+/* Glow intensity levels based on unread count */
+.unread-badge.dot-mode.glow-low {
+  box-shadow: 0 0 6px rgba(155, 126, 201, 0.6), 0 0 8px rgba(155, 126, 201, 0.4);
+}
+
+.unread-badge.dot-mode.glow-medium {
+  box-shadow: 0 0 8px rgba(155, 126, 201, 0.8), 0 0 12px rgba(155, 126, 201, 0.5), 0 0 16px rgba(155, 126, 201, 0.3);
+  background: #b19cd9;
+}
+
+.unread-badge.dot-mode.glow-high {
+  box-shadow: 0 0 10px rgba(177, 156, 217, 1), 0 0 16px rgba(177, 156, 217, 0.7), 0 0 22px rgba(177, 156, 217, 0.5), 0 0 28px rgba(177, 156, 217, 0.3);
+  background: #c8b5e6;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(177, 156, 217, 1), 0 0 16px rgba(177, 156, 217, 0.7), 0 0 22px rgba(177, 156, 217, 0.5), 0 0 28px rgba(177, 156, 217, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(200, 181, 230, 1), 0 0 20px rgba(200, 181, 230, 0.8), 0 0 28px rgba(200, 181, 230, 0.6), 0 0 36px rgba(200, 181, 230, 0.4);
+  }
+}
+
+/* Dot mode hover states */
+.room-item:hover .unread-badge.dot-mode,
+.room-item-hover .unread-badge.dot-mode {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 8px rgba(108, 159, 255, 0.6), 0 0 12px rgba(108, 159, 255, 0.4);
+}
+
+.room-item-selected .unread-badge.dot-mode {
+  background: #b5a0d9;
+}
+
+.room-item-selected:hover .unread-badge.dot-mode {
+  background: #b5a0d9;
 }
 
 .room-controls {
