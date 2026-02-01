@@ -45,7 +45,7 @@
       const commands = {
         'show-help': ['menu', '--help'],
         'list-spells': ['list-apps'],
-        'show-path': ['sh', '-c', 'echo "$PATH"'],
+        'show-path': ['env'],  // Shows full environment including PATH
         'show-env': ['env']
       };
       
