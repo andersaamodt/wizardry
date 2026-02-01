@@ -36,6 +36,18 @@ test_chatroom_index_has_navigation() {
   grep -q "settings.html" "$test_root/.apps/chatroom/index.html"
 }
 
+test_chatroom_settings_has_server_status() {
+  grep -q "server-status" "$test_root/.apps/chatroom/settings.html"
+}
+
+test_chatroom_settings_has_connection_url() {
+  grep -q "connection-url" "$test_root/.apps/chatroom/settings.html"
+}
+
+test_chatroom_settings_has_start_server() {
+  grep -q "startServer" "$test_root/.apps/chatroom/settings.html"
+}
+
 test_chatroom_settings_has_ip_section() {
   grep -q "ip-address" "$test_root/.apps/chatroom/settings.html"
 }
@@ -71,6 +83,9 @@ run_test_case "chatroom has settings.html" test_chatroom_has_settings
 run_test_case "chatroom index is thin wrapper" test_chatroom_index_is_wrapper
 run_test_case "chatroom index references demo chat" test_chatroom_index_references_demo
 run_test_case "chatroom index has navigation to settings" test_chatroom_index_has_navigation
+run_test_case "chatroom settings has server status section" test_chatroom_settings_has_server_status
+run_test_case "chatroom settings has connection URL section" test_chatroom_settings_has_connection_url
+run_test_case "chatroom settings has start server function" test_chatroom_settings_has_start_server
 run_test_case "chatroom settings has IP section" test_chatroom_settings_has_ip_section
 run_test_case "chatroom settings has Tor section" test_chatroom_settings_has_tor_section
 run_test_case "chatroom settings has hardcoded commands" test_chatroom_settings_has_hardcoded_commands

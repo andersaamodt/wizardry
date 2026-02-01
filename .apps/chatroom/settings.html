@@ -109,10 +109,41 @@
   
   <div class="settings-container">
     <div class="settings-section">
+      <h2>🚀 Server Status</h2>
+      <div class="settings-item">
+        <label class="settings-label">Chat Server Status</label>
+        <code class="settings-value loading" id="server-status">Checking...</code>
+        <button class="copy-btn" id="start-server-btn" onclick="startServer()" style="display:none">
+          ▶️ Start Chat Server
+        </button>
+        <div class="info-box">
+          <p>
+            The chatroom requires a web server to be running. This will start the demo site 
+            with the chat interface if it's not already running.
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="settings-section">
       <h2>📡 Connection Information</h2>
       <p style="color: #6c757d; margin-bottom: 1.5rem;">
         Share these addresses so others can connect to your chatroom server.
       </p>
+      
+      <div class="settings-item">
+        <label class="settings-label">Local Connection URL</label>
+        <code class="settings-value loading" id="connection-url">Loading...</code>
+        <button class="copy-btn" id="copy-url-btn" onclick="copyToClipboard('connection-url')" style="display:none">
+          📋 Copy URL
+        </button>
+        <div class="info-box">
+          <p>
+            <strong>How to connect:</strong> Share this URL with others on your local network.
+            They can open it in any web browser to join your chatroom.
+          </p>
+        </div>
+      </div>
       
       <div class="settings-item">
         <label class="settings-label">Local IP Address</label>
@@ -164,19 +195,115 @@
     // Hardcoded commands for security - these would be executed via native bridge in production
     const commands = {
       'get-ip': ['sh', '-c', "ip route get 1 2>/dev/null | awk '{print $7}' | head -1 || hostname -I | awk '{print $1}'"],
-      'get-tor': ['sh', '-c', 'cat /var/lib/tor/hidden_service/hostname 2>/dev/null || cat /usr/local/var/lib/tor/hidden_service/hostname 2>/dev/null']
+      'get-tor': ['sh', '-c', 'cat /var/lib/tor/hidden_service/hostname 2>/dev/null || cat /usr/local/var/lib/tor/hidden_service/hostname 2>/dev/null'],
+      'check-server': ['sh', '-c', 'pgrep -f "nginx.*demo" > /dev/null && echo "running" || echo "stopped"'],
+      'get-port': ['sh', '-c', 'cat $HOME/sites/demo/site.conf 2>/dev/null | grep "^port=" | cut -d= -f2 || echo "8080"'],
+      'start-server': ['web-wizardry', 'serve', 'demo']
     };
     
-    // Load IP address
-    function loadIPAddress() {
-      // In production, this would use the native bridge:
-      // window.wizardry.exec(commands['get-ip']).then(result => { ... })
+    let serverRunning = false;
+    let serverPort = '8080';
+    
+    // Check server status
+    function checkServerStatus() {
+      // In production: window.wizardry.exec(commands['check-server'])
+      // For now, try to fetch from the demo site to see if it's running
+      fetch('http://localhost:8080/pages/chat.html', { method: 'HEAD', mode: 'no-cors' })
+        .then(() => {
+          serverRunning = true;
+          updateServerStatus('running');
+          loadPort();
+        })
+        .catch(() => {
+          serverRunning = false;
+          updateServerStatus('stopped');
+        });
+    }
+    
+    function updateServerStatus(status) {
+      const statusElement = document.getElementById('server-status');
+      const startBtn = document.getElementById('start-server-btn');
       
-      // For demo/development, try to get from system-info CGI or use fallback
+      if (status === 'running') {
+        statusElement.textContent = '✓ Running';
+        statusElement.classList.remove('loading', 'error');
+        statusElement.classList.add('success');
+        startBtn.style.display = 'none';
+      } else {
+        statusElement.textContent = '✗ Not running';
+        statusElement.classList.remove('loading', 'success');
+        statusElement.classList.add('error');
+        startBtn.style.display = 'inline-block';
+      }
+    }
+    
+    function startServer() {
+      // In production: window.wizardry.exec(commands['start-server'])
+      const statusElement = document.getElementById('server-status');
+      const startBtn = document.getElementById('start-server-btn');
+      
+      statusElement.textContent = 'Starting server...';
+      statusElement.classList.remove('error', 'success');
+      statusElement.classList.add('loading');
+      startBtn.disabled = true;
+      
+      // For now, show instructions
+      alert('To start the chat server:\n\n1. Open a terminal\n2. Run: web-wizardry serve demo\n\nOr create the demo site first with:\n  web-wizardry create demo --template demo');
+      
+      // Re-check status after a delay
+      setTimeout(() => {
+        checkServerStatus();
+        startBtn.disabled = false;
+      }, 2000);
+    }
+    
+    function loadPort() {
+      // In production: window.wizardry.exec(commands['get-port'])
+      // For now, try to detect from config or use default
+      serverPort = '8080';
+      updateConnectionURL();
+    }
+    
+    function updateConnectionURL() {
+      const urlElement = document.getElementById('connection-url');
+      const copyBtn = document.getElementById('copy-url-btn');
+      
+      // Get IP address first, then construct URL
       fetch('/cgi/system-info')
         .then(r => r.text())
         .then(html => {
-          // Try to extract IP from various patterns
+          const ipMatch = html.match(/(\d+\.\d+\.\d+\.\d+)/);
+          const ip = (ipMatch && ipMatch[1] !== '127.0.0.1') ? ipMatch[1] : 'localhost';
+          const url = `http://${ip}:${serverPort}/pages/chat.html`;
+          
+          urlElement.textContent = url;
+          urlElement.classList.remove('loading');
+          urlElement.classList.add('success');
+          copyBtn.style.display = 'inline-block';
+          
+          // Also update IP address display
+          const ipElement = document.getElementById('ip-address');
+          if (ipElement) {
+            ipElement.textContent = ip;
+            ipElement.classList.remove('loading');
+            ipElement.classList.add('success');
+            document.getElementById('copy-ip-btn').style.display = 'inline-block';
+          }
+        })
+        .catch(err => {
+          urlElement.textContent = `http://localhost:${serverPort}/pages/chat.html`;
+          urlElement.classList.remove('loading');
+          copyBtn.style.display = 'inline-block';
+        });
+    }
+    
+    // Load IP address
+    function loadIPAddress() {
+      // This is now handled by updateConnectionURL
+      // But we still provide standalone IP display
+      fetch('/cgi/system-info')
+        .then(r => r.text())
+        .then(html => {
           const ipMatch = html.match(/(\d+\.\d+\.\d+\.\d+)/);
           const ipElement = document.getElementById('ip-address');
           if (ipMatch && ipMatch[1] !== '127.0.0.1') {
@@ -185,7 +312,7 @@
             ipElement.classList.add('success');
             document.getElementById('copy-ip-btn').style.display = 'inline-block';
           } else {
-            ipElement.textContent = 'Unable to determine IP address (try running in production mode)';
+            ipElement.textContent = 'Unable to determine IP address';
             ipElement.classList.remove('loading');
             ipElement.classList.add('error');
           }
@@ -248,6 +375,7 @@
     
     // Load on page load
     window.addEventListener('DOMContentLoaded', () => {
+      checkServerStatus();
       loadIPAddress();
       loadTorAddress();
     });

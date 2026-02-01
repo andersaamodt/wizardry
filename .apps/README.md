@@ -79,21 +79,52 @@ const commands = {
 
 ## Building Apps
 
-### Linux (AppImage)
+Desktop apps can be packaged for distribution using GitHub Actions workflows.
+
+### Automated Builds (CI/CD)
+
+The repository includes a GitHub Actions workflow (`.github/workflows/build-desktop-apps.yml`) that automatically builds all apps when a version tag is pushed:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+This will:
+1. Build AppImage packages for Linux
+2. Build .app bundles for macOS
+3. Create a GitHub Release with all artifacts
+4. Upload the packages for easy download
+
+You can also trigger builds manually from the GitHub Actions tab.
+
+### Manual Builds
+
+For local development and testing:
+
+#### Linux (AppImage)
 
 ```bash
 build-appimage my-app
 ```
 
-Creates a standalone AppImage that bundles the app with a minimal runtime.
+Note: The `build-appimage` spell is currently a placeholder. Use the GitHub Actions workflow for production builds.
 
-### macOS (.app bundle)
+#### macOS (.app bundle)
 
 ```bash
 build-macapp my-app
 ```
 
-Creates a .app bundle using the same host binary for cross-platform consistency.
+Note: The `build-macapp` spell is currently a placeholder. Use the GitHub Actions workflow for production builds.
+
+### Build Output
+
+Built packages are available as:
+- **Linux**: `wizardry-APPNAME-x86_64.AppImage`
+- **macOS**: `Wizardry-APPNAME.app.zip`
+
+Currently, the built packages open the app's `index.html` in the default web browser. Native WebView integration is planned for future releases.
 
 ## Managing Apps
 
@@ -123,11 +154,15 @@ See `.apps/chatroom/` for a real-world example demonstrating:
 - Thin wrapper around existing web demo (reuses `.templates/demo/pages/chat.md`)
 - Integration with CGI scripts for backend communication
 - Server-Sent Events (SSE) for real-time updates
-- Settings page with IP and Tor address display
+- **Settings page with:**
+  - Server status check and start button
+  - Connection URL display (IP:port)
+  - IP and Tor address display
+  - Copy-to-clipboard functionality
 - Full compatibility with MUD `say` command format
 - Tor hidden service support for anonymous access
 
-The chatroom app shows how desktop apps can be minimal frames around existing web functionality, avoiding code duplication.
+The chatroom app shows how desktop apps can be minimal frames around existing web functionality, avoiding code duplication. The settings page helps users start the server and share connection information with others.
 
 ## Development Workflow
 
