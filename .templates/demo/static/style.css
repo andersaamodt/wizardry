@@ -1038,13 +1038,19 @@ pre code {
 
 #connecting-status {
   position: absolute;
-  right: 90px;  /* Position to left of Send button (assuming ~80px button width + gap) */
+  right: 130px;  /* Position to left of Send button with proper spacing */
   top: 50%;
   transform: translateY(-50%);
-  color: #666;
+  color: #888;  /* Grey text to match spinner */
+  font-size: 0.85em;  /* Smaller, less obtrusive */
   font-style: italic;
-  font-size: 0.9rem;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
   pointer-events: none;  /* Don't interfere with clicking */
+}
+
+#connecting-status.visible {
+  opacity: 1;
 }
 
 .chat-input-area textarea,
