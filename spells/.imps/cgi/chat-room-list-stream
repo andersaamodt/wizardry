@@ -16,11 +16,12 @@ printf '\r\n'
 MAX_CONNECTION_TIME=3600  # 1 hour maximum connection duration
 KEEPALIVE_INTERVAL=15     # Send keepalive every 15s when idle
 CHECK_INTERVAL=2          # Check for changes every 2 seconds
+PADDING_ITERATIONS=500    # 8 bytes * 500 = 4KB padding for buffer flush
 
 # Initial 4KB padding to force fcgiwrap buffer flush
 printf ': '
 i=0
-while [ $i -lt 500 ]; do
+while [ $i -lt "$PADDING_ITERATIONS" ]; do
   printf '........'
   i=$((i + 1))
 done
@@ -37,7 +38,7 @@ send_sse_event() {
   # FLUSH BEFORE: 4KB padding
   printf ': '
   i=0
-  while [ $i -lt 500 ]; do
+  while [ $i -lt "$PADDING_ITERATIONS" ]; do
     printf '........'
     i=$((i + 1))
   done
@@ -49,7 +50,7 @@ send_sse_event() {
   # FLUSH AFTER: 4KB padding
   printf ': '
   i=0
-  while [ $i -lt 500 ]; do
+  while [ $i -lt "$PADDING_ITERATIONS" ]; do
     printf '........'
     i=$((i + 1))
   done
@@ -123,7 +124,6 @@ timeout_pid=$!
 
 # Main monitoring loop
 last_rooms="$initial_rooms"
-last_check_time=$(date +%s)
 
 while true; do
   sleep "$CHECK_INTERVAL"
@@ -135,6 +135,5 @@ while true; do
   if [ "$current_rooms" != "$last_rooms" ]; then
     send_sse_event rooms "$current_rooms"
     last_rooms="$current_rooms"
-    last_check_time=$(date +%s)
   fi
 done
