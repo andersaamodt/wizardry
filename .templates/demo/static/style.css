@@ -800,6 +800,34 @@ pre code {
   display: none;  /* Hide message preview completely */
 }
 
+/* Unread badge styling */
+.unread-badge {
+  display: inline-block;
+  background: #b19cd9;  /* Tasteful lavender */
+  color: white;
+  border-radius: 10px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: bold;
+  margin-left: auto;
+  float: right;
+  margin-top: 0.15rem;
+}
+
+.room-item:hover .unread-badge, .room-item-hover .unread-badge {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--primary);
+}
+
+.room-item-selected .unread-badge {
+  background: #9b7ec9;  /* Slightly darker lavender for selected room */
+}
+
+.room-item-selected:hover .unread-badge {
+  background: #9b7ec9;  /* Keep same color on hover for selected room */
+  color: white;
+}
+
 .room-controls {
   margin-top: 0.5rem;  /* Closer to room list */
   padding: 0 1rem 0.25rem 1rem;  /* Less bottom padding */
