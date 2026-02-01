@@ -1,6 +1,6 @@
 // Wizardry Desktop Host - macOS native WebView wrapper
 // Minimal Objective-C implementation using Cocoa + WebKit
-// Build: clang -O2 -fobjc-arc main.m -o wizardry-host -framework Cocoa -framework WebKit
+// Build: clang -O2 -fobjc-arc -fmodules main.m -o wizardry-host -framework Cocoa -framework WebKit
 
 @import Cocoa;
 @import WebKit;

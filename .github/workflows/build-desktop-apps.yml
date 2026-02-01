@@ -136,7 +136,7 @@ jobs:
       - name: Build native host binary (Objective-C + Cocoa)
         run: |
           cd host/macos
-          clang -O2 -fobjc-arc main.m -o wizardry-host -framework Cocoa -framework WebKit
+          clang -O2 -fobjc-arc -fmodules main.m -o wizardry-host -framework Cocoa -framework WebKit
           strip wizardry-host
           lipo -info wizardry-host
           ls -lh wizardry-host
