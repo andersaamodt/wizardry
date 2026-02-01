@@ -20,7 +20,7 @@ title: Chatrooms
 <div class="chatrooms-header">
 <h3>Chatrooms</h3>
 </div>
-<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, roomListChanged from:body" hx-swap="morph:innerHTML swap:0.3s settle:0.3s">
+<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, roomListChanged from:body" hx-swap="morph:innerHTML settle:0ms">
 <!-- Requires htmx morph extension (Idiomorph) - ensure it's loaded in page -->
 Loading rooms...
 </div>
