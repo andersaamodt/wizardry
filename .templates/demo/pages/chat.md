@@ -556,6 +556,8 @@ document.addEventListener('htmx:afterSwap', function(event) {
       
       item.onclick = function() {
         var room = this.getAttribute('data-room');
+        // Don't re-join if already in this room
+        if (window.currentRoom === room) return;
         joinRoom(room);
       };
       
