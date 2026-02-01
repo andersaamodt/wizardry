@@ -18,9 +18,8 @@ if [ -z "$query_string" ]; then
 fi
 
 # Extract param=value from query string
-# Handles both start of string and after & (e.g., "text=hello" and "foo=1&text=hello")
-# The [?&]\\? makes the preceding separator optional, matching param at start or after &
-encoded=$(printf '%s' "$query_string" | sed -n "s/.*[?&]\\?${param_name}=\\([^&]*\\).*/\\1/p" | head -1)
+# Prepend & to make all params uniform, then extract &param=value
+encoded=$(printf '&%s' "$query_string" | sed -n "s/.*&${param_name}=\\([^&]*\\).*/\\1/p")
 
 if [ -z "$encoded" ]; then
   printf ''

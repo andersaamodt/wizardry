@@ -3,8 +3,6 @@
 # Outputs HTTP headers and initial padding burst to force buffer flush
 set -eu
 
-printf '[sse-start] Sending SSE headers with initial padding burst\n' >&2
-
 http-status 200 "OK"
 http-header "Content-Type" "text/event-stream"
 http-header "Cache-Control" "no-cache"
@@ -20,5 +18,3 @@ printf '\n'
 # Set reconnection retry interval (5 seconds)
 # Guides browser on how long to wait before reconnecting
 sse-retry 5000
-
-printf '[sse-start] Headers, retry interval, and initial padding sent successfully\n' >&2
