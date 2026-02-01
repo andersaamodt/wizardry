@@ -400,7 +400,180 @@ Capture screen, window, or tab content:
 })();
 </script>
 
-## 4. Device Motion & Orientation
+## 4. GPS / Geolocation
+
+Access device location using GPS and other positioning methods:
+
+<div class="demo-box">
+  <h3>📍 Geolocation API</h3>
+  
+  <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+    <button id="geo-current">📍 Get Current Position</button>
+    <button id="geo-watch">🔄 Watch Position</button>
+    <button id="geo-stop">⏹️ Stop Watching</button>
+  </div>
+  
+  <div id="geo-output" class="output"></div>
+  
+  <div id="geo-display" style="display: none; margin-top: 1rem;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+      <div style="background: #e3f2fd; padding: 1rem; border-radius: 4px;">
+        <h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">📍 Coordinates</h4>
+        <p style="margin: 0.25rem 0;"><strong>Latitude:</strong> <span id="geo-lat">-</span>°</p>
+        <p style="margin: 0.25rem 0;"><strong>Longitude:</strong> <span id="geo-lon">-</span>°</p>
+        <p style="margin: 0.25rem 0;"><strong>Altitude:</strong> <span id="geo-alt">-</span> m</p>
+      </div>
+      
+      <div style="background: #f3e5f5; padding: 1rem; border-radius: 4px;">
+        <h4 style="margin: 0 0 0.5rem 0; color: #6a1b9a;">🎯 Accuracy</h4>
+        <p style="margin: 0.25rem 0;"><strong>Position:</strong> <span id="geo-acc">-</span> m</p>
+        <p style="margin: 0.25rem 0;"><strong>Altitude:</strong> <span id="geo-alt-acc">-</span> m</p>
+      </div>
+      
+      <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px;">
+        <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">🧭 Movement</h4>
+        <p style="margin: 0.25rem 0;"><strong>Heading:</strong> <span id="geo-heading">-</span>°</p>
+        <p style="margin: 0.25rem 0;"><strong>Speed:</strong> <span id="geo-speed">-</span> m/s</p>
+        <p style="margin: 0.25rem 0;"><strong>Updated:</strong> <span id="geo-time">-</span></p>
+      </div>
+    </div>
+    
+    <div id="geo-map" style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 4px; text-align: center;">
+      <a id="geo-map-link" href="#" target="_blank" style="display: inline-block; padding: 0.75rem 1.5rem; background: #4caf50; color: white; border-radius: 4px; text-decoration: none; font-weight: bold;">🗺️ View on OpenStreetMap</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const output = document.getElementById('geo-output');
+  const display = document.getElementById('geo-display');
+  const mapLink = document.getElementById('geo-map-link');
+  let watchId = null;
+  
+  function updatePosition(position) {
+    const coords = position.coords;
+    
+    // Update coordinates
+    document.getElementById('geo-lat').textContent = coords.latitude.toFixed(6);
+    document.getElementById('geo-lon').textContent = coords.longitude.toFixed(6);
+    document.getElementById('geo-alt').textContent = coords.altitude !== null ? coords.altitude.toFixed(1) : 'N/A';
+    
+    // Update accuracy
+    document.getElementById('geo-acc').textContent = coords.accuracy.toFixed(1);
+    document.getElementById('geo-alt-acc').textContent = coords.altitudeAccuracy !== null ? coords.altitudeAccuracy.toFixed(1) : 'N/A';
+    
+    // Update movement
+    document.getElementById('geo-heading').textContent = coords.heading !== null ? coords.heading.toFixed(1) : 'N/A';
+    document.getElementById('geo-speed').textContent = coords.speed !== null ? coords.speed.toFixed(2) : 'N/A';
+    document.getElementById('geo-time').textContent = new Date(position.timestamp).toLocaleTimeString();
+    
+    // Update map link
+    mapLink.href = `https://www.openstreetmap.org/?mlat=${coords.latitude}&mlon=${coords.longitude}&zoom=15`;
+    
+    display.style.display = 'block';
+  }
+  
+  function showError(error) {
+    const errorMessages = {
+      1: 'Permission denied - please allow location access',
+      2: 'Position unavailable - unable to retrieve location',
+      3: 'Timeout - location request took too long'
+    };
+    
+    output.innerHTML = `
+      <div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
+        <h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ Geolocation Error</h4>
+        <p style="margin: 0.25rem 0;"><strong>Error Code:</strong> ${error.code}</p>
+        <p style="margin: 0.25rem 0;"><strong>Message:</strong> ${errorMessages[error.code] || error.message}</p>
+        <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.9rem;">
+          Make sure location services are enabled and you've granted permission to this site.
+        </p>
+      </div>
+    `;
+  }
+  
+  function showSuccess(isWatching) {
+    output.innerHTML = `
+      <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+        <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ Location ${isWatching ? 'Tracking Active' : 'Retrieved'}</h4>
+        <p style="margin: 0;">${isWatching ? 'Continuously monitoring your position. Move around to see updates.' : 'Current position displayed below.'}</p>
+      </div>
+    `;
+  }
+  
+  document.getElementById('geo-current').addEventListener('click', () => {
+    if (!navigator.geolocation) {
+      output.innerHTML = `
+        <div style="background: #fff3e0; padding: 1rem; border-radius: 4px; border: 1px solid #ff9800;">
+          <h4 style="margin: 0 0 0.5rem 0; color: #e65100;">⚠️ Geolocation Not Supported</h4>
+          <p style="margin: 0;">Your browser does not support the Geolocation API.</p>
+        </div>
+      `;
+      return;
+    }
+    
+    output.innerHTML = '<p style="color: #2980b9;">🔍 Getting your location...</p>';
+    
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        updatePosition(position);
+        showSuccess(false);
+      },
+      showError,
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  });
+  
+  document.getElementById('geo-watch').addEventListener('click', () => {
+    if (!navigator.geolocation) {
+      output.innerHTML = `
+        <div style="background: #fff3e0; padding: 1rem; border-radius: 4px; border: 1px solid #ff9800;">
+          <h4 style="margin: 0 0 0.5rem 0; color: #e65100;">⚠️ Geolocation Not Supported</h4>
+          <p style="margin: 0;">Your browser does not support the Geolocation API.</p>
+        </div>
+      `;
+      return;
+    }
+    
+    if (watchId !== null) {
+      output.innerHTML = '<p class="error">Already watching position. Stop first.</p>';
+      return;
+    }
+    
+    output.innerHTML = '<p style="color: #2980b9;">🔄 Starting position tracking...</p>';
+    
+    watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        updatePosition(position);
+        showSuccess(true);
+      },
+      showError,
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  });
+  
+  document.getElementById('geo-stop').addEventListener('click', () => {
+    if (watchId !== null) {
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+      output.innerHTML = '<p style="color: #7f8c8d;">⏹️ Stopped watching position</p>';
+    } else {
+      output.innerHTML = '<p style="color: #7f8c8d;">Not currently watching position</p>';
+    }
+  });
+})();
+</script>
+
+## 5. Device Motion & Orientation
 
 Access device accelerometer and gyroscope data:
 
@@ -534,6 +707,7 @@ Access device accelerometer and gyroscope data:
     <li><strong>getUserMedia (Video):</strong> Access device cameras with resolution/FPS control</li>
     <li><strong>getUserMedia (Audio):</strong> Access microphones with real-time visualization</li>
     <li><strong>getDisplayMedia:</strong> Capture screen, window, or tab content</li>
+    <li><strong>Geolocation API:</strong> Access GPS and device location with accuracy data</li>
     <li><strong>Device Motion:</strong> Accelerometer and gyroscope data</li>
     <li><strong>Device Orientation:</strong> Compass and tilt sensors</li>
   </ul>
@@ -550,6 +724,7 @@ Access device accelerometer and gyroscope data:
   <ul>
     <li><strong>Camera/Microphone:</strong> Widely supported on all platforms</li>
     <li><strong>Screen Capture:</strong> Desktop browsers (Chrome, Firefox, Edge)</li>
+    <li><strong>Geolocation:</strong> All modern browsers (mobile devices typically more accurate)</li>
     <li><strong>Motion Sensors:</strong> Mobile devices only (phones, tablets)</li>
     <li><strong>Orientation:</strong> Mobile devices with gyroscope/accelerometer</li>
   </ul>
