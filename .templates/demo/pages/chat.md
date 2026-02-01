@@ -20,7 +20,8 @@ title: Chatrooms
 <div class="chatrooms-header">
 <h3>Chatrooms</h3>
 </div>
-<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, roomListChanged from:body" hx-swap="innerHTML settle:0ms">
+<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, roomListChanged from:body" hx-swap="morph:innerHTML settle:0ms">
+<!-- Requires htmx morph extension (Idiomorph) - ensure it's loaded in page -->
 Loading rooms...
 </div>
 
@@ -121,6 +122,7 @@ window.userHasScrolledUp = false;  // Track if user manually scrolled up
 window.isInitialRoomLoad = false;  // Track if this is the first load of a room
 window.messageEventSource = null;  // SSE connection for real-time messages
 window.unreadCountsEventSource = null;  // SSE connection for real-time unread counts
+window.roomListEventSource = null;  // SSE connection for real-time room list updates
 
 // Unread message tracking
 // Store read-up-until timestamp per room in localStorage
@@ -141,10 +143,41 @@ function setReadTimestamp(roomName, timestamp) {
 }
 
 function markRoomAsRead(roomName) {
-  // Mark all messages as read up to current time
-  setReadTimestamp(roomName, getCurrentTimestamp());
+  // Mark all messages as read up to the last message's server timestamp
+  // This prevents issues when client clock is ahead of server clock
+  var lastTimestamp = getLastMessageTimestamp();
+  if (lastTimestamp) {
+    setReadTimestamp(roomName, lastTimestamp);
+  }
+  // Note: If no messages exist, we intentionally don't set a timestamp.
+  // getReadTimestamp() will return epoch '1970-01-01 00:00:00' as default,
+  // which is correct for an empty/never-visited room.
   // Immediately update badges for responsive UX
   updateUnreadBadges();
+}
+
+function getLastMessageTimestamp() {
+  // Get the timestamp of the last message in the current chat display
+  // Use server-provided timestamp to avoid client/server clock drift issues
+  var chatMessagesDiv = document.getElementById('chat-messages');
+  if (!chatMessagesDiv) return null;
+  
+  var messages = chatMessagesDiv.querySelectorAll('.chat-msg');
+  if (messages.length === 0) return null;
+  
+  // Get the last message's timestamp
+  var lastMessage = messages[messages.length - 1];
+  var timestampSpan = lastMessage.querySelector('.timestamp');
+  if (timestampSpan && timestampSpan.dataset.fullTimestamp) {
+    // Return as string - timestamp comparisons use lexicographic comparison
+    // which works correctly for 'YYYY-MM-DD HH:MM:SS' format
+    // This format is enforced server-side by:
+    // - spells/.imps/out/log-timestamp (generates timestamp via date command)
+    // - spells/.imps/cgi/chat-get-messages (renders data-full-timestamp attribute)
+    return timestampSpan.dataset.fullTimestamp;
+  }
+  
+  return null;
 }
 
 // Badge display mode functions
@@ -246,12 +279,19 @@ function countUnreadMessages(roomName, callback) {
     });
 }
 
+// Badge cache with per-room timestamps to prevent stale data
+window.chatApp = window.chatApp || {};
+window.chatApp.badgeCache = {};  // { roomName: { count: N, timestamp: T } }
+window.chatApp.BADGE_CACHE_TTL = 5000; // 5 seconds
+
 function updateUnreadBadges() {
   // Update all unread badges in the room list
+  // IMPROVED: Batch all fetches first, then update all badges at once to avoid janky sequential updates
   var badges = document.querySelectorAll('.unread-badge');
   
-  // Create a fresh fetch cache for this update cycle only
-  var fetchCache = {};
+  // Collect all rooms that need badge updates
+  var roomsToFetch = [];
+  var badgesByRoom = {};
   
   badges.forEach(function(badge) {
     var roomName = badge.getAttribute('data-room');
@@ -263,14 +303,15 @@ function updateUnreadBadges() {
       return;
     }
     
-    // Check if we already fetched this room in this update cycle
-    if (fetchCache[roomName] !== undefined) {
-      // Use cached result from this update cycle
-      var count = fetchCache[roomName];
+    // Check if we have cached data for this specific room that's still fresh
+    var now = Date.now();
+    var cached = window.chatApp.badgeCache[roomName];
+    if (cached && (now - cached.timestamp) < window.chatApp.BADGE_CACHE_TTL) {
+      // Use cached data immediately
+      var count = cached.count;
       if (count > 0) {
         badge.textContent = count;
         badge.classList.remove('hidden');
-        // Apply current display mode styling
         updateBadgeStyle(badge);
       } else {
         badge.classList.add('hidden');
@@ -278,28 +319,59 @@ function updateUnreadBadges() {
       return;
     }
     
-    // Fetch and update (all at once, no staggering)
-    // Capture roomName in closure to avoid stale reference
-    (function(capturedRoomName, capturedBadge) {
-      countUnreadMessages(capturedRoomName, function(count, lastMessageTimestamp) {
-        // Cache result for this update cycle
-        fetchCache[capturedRoomName] = count;
-        
-        // Query for fresh badge element (in case DOM was updated)
-        var freshBadge = document.querySelector('.unread-badge[data-room="' + capturedRoomName + '"]');
-        if (!freshBadge) return;
-        
+    // Track which badge belongs to which room
+    if (!badgesByRoom[roomName]) {
+      badgesByRoom[roomName] = [];
+      roomsToFetch.push(roomName);
+    }
+    badgesByRoom[roomName].push(badge);
+  });
+  
+  // If no rooms to fetch, we're done
+  if (roomsToFetch.length === 0) return;
+  
+  // Batch fetch all unread counts
+  var fetchPromises = roomsToFetch.map(function(roomName) {
+    return new Promise(function(resolve) {
+      countUnreadMessages(roomName, function(count, lastMessageTimestamp) {
+        resolve({ room: roomName, count: count });
+      });
+    });
+  });
+  
+  // Wait for all fetches to complete, then update all badges at once
+  Promise.all(fetchPromises).then(function(results) {
+    var now = Date.now();
+    
+    // Update all badges simultaneously
+    results.forEach(function(result) {
+      // Cache the result with per-room timestamp
+      window.chatApp.badgeCache[result.room] = {
+        count: result.count,
+        timestamp: now
+      };
+      
+      // Query badges efficiently
+      // Room names are server-validated to [a-zA-Z0-9_-] which are CSS-safe
+      // Use CSS.escape() if available for additional safety
+      var roomSelector = result.room;
+      if (typeof CSS !== 'undefined' && CSS.escape) {
+        roomSelector = CSS.escape(result.room);
+      }
+      var currentBadges = document.querySelectorAll('.unread-badge[data-room="' + roomSelector + '"]');
+      
+      currentBadges.forEach(function(badge) {
         // Update badge display
-        if (count > 0) {
-          freshBadge.textContent = count;
-          freshBadge.classList.remove('hidden');
+        if (result.count > 0) {
+          badge.textContent = result.count;
+          badge.classList.remove('hidden');
           // Apply current display mode styling
-          updateBadgeStyle(freshBadge);
+          updateBadgeStyle(badge);
         } else {
-          freshBadge.classList.add('hidden');
+          badge.classList.add('hidden');
         }
       });
-    })(roomName, badge);
+    });
   });
 }
 
@@ -407,6 +479,47 @@ function setupUnreadCountsStream() {
   });
 }
 
+// Set up SSE connection for real-time room list updates
+function setupRoomListStream() {
+  // Close existing connection if any
+  if (window.roomListEventSource) {
+    window.roomListEventSource.close();
+    window.roomListEventSource = null;
+  }
+  
+  var url = '/cgi/chat-room-list-stream';
+  
+  // Create new EventSource connection
+  window.roomListEventSource = new EventSource(url);
+  
+  // Handle room list update events
+  window.roomListEventSource.addEventListener('rooms', function(event) {
+    try {
+      var rooms = JSON.parse(event.data);
+      console.log('[Room List] Received update:', rooms);
+      
+      // Trigger htmx to refresh the room list
+      // Small delay to ensure DOM is ready for htmx processing
+      setTimeout(function() {
+        htmx.trigger('body', 'roomListChanged');
+      }, 100);
+    } catch (e) {
+      console.error('Error parsing room list:', e);
+    }
+  });
+  
+  // Handle connection errors
+  window.roomListEventSource.addEventListener('error', function(event) {
+    console.error('[Room List SSE] Error occurred:', event);
+    // EventSource will automatically reconnect
+  });
+  
+  // Log successful connection
+  window.roomListEventSource.addEventListener('open', function(event) {
+    console.log('[Room List SSE] Connected successfully');
+  });
+}
+
 // Handle room selection from list
 document.addEventListener('htmx:afterSwap', function(event) {
   if (event.detail.target.id === 'room-list') {
@@ -443,6 +556,8 @@ document.addEventListener('htmx:afterSwap', function(event) {
       
       item.onclick = function() {
         var room = this.getAttribute('data-room');
+        // Don't re-join if already in this room
+        if (window.currentRoom === room) return;
         joinRoom(room);
       };
       
@@ -1486,6 +1601,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Initialize unread counts SSE connection on page load
 document.addEventListener('DOMContentLoaded', function() {
   setupUnreadCountsStream();
+  setupRoomListStream();
   
   // Initialize toggle checkbox based on saved mode
   // Inverted: checked = show counts (number mode)

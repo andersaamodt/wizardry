@@ -13,6 +13,9 @@
   --border: #a8a4fe;         /* Soft indigo border */
   --shadow: rgba(108, 159, 255, 0.2);  /* Blue shadow */
   --glow: rgba(108, 159, 255, 0.4);    /* Blue glow */
+  
+  /* Room list animation */
+  --room-item-max-height: 50px;
 }
 
 * {
@@ -883,7 +886,7 @@ pre code {
 /* Unread badge styling */
 .unread-badge {
   display: inline-block;
-  background: #c8b5e6;  /* Lighter violet */
+  background: #d0bfef;  /* Lighter violet, less reddish, brighter */
   position: absolute;  /* Position absolutely to prevent line wrapping */
   right: 0.75rem;  /* Align to right edge */
   top: 50%;  /* Center vertically */
@@ -931,11 +934,11 @@ pre code {
 }
 
 .room-item-selected .unread-badge {
-  background: #b5a0d9;  /* Slightly darker violet for selected room */
+  background: #c0aee0;  /* Slightly darker violet for selected room, less reddish */
 }
 
 .room-item-selected:hover .unread-badge {
-  background: #b5a0d9;  /* Keep same color on hover for selected room */
+  background: #c0aee0;  /* Keep same color on hover for selected room */
   color: white;
 }
 
@@ -956,11 +959,11 @@ pre code {
 
 /* Simple 2-level system: light violet (1-50 msgs), grey (51+ msgs), NO glow */
 .unread-badge.dot-mode.dot-light-violet {
-  background: #c8b5e6;  /* Light violet, same as original badge color */
+  background: #d0bfef;  /* Light violet, same as badge color - brighter, less reddish */
 }
 
 .unread-badge.dot-mode.dot-grey {
-  background: #b0b0b0;  /* Lighter opaque grey for stale (51+ messages) */
+  background: #9a9a9a;  /* Dimmer grey for stale (51+ messages) */
 }
 
 /* Dot mode hover states */
@@ -970,11 +973,11 @@ pre code {
 }
 
 .room-item-selected .unread-badge.dot-mode {
-  background: #b5a0d9;
+  background: #c0aee0;  /* Match selected room badge color */
 }
 
 .room-item-selected:hover .unread-badge.dot-mode {
-  background: #b5a0d9;
+  background: #c0aee0;  /* Match selected room badge color */
 }
 
 .room-controls {
@@ -1204,7 +1207,7 @@ pre code {
   display: flex;
   gap: 0.5rem;
   padding: 0.5rem 1rem;  /* Reduced vertical padding */
-  background: white;
+  background: #e5dcf5;  /* Tasteful light violet, lighter than badge color */
   border-top: 2px solid var(--border);
   flex-shrink: 0;  /* Prevent input area from shrinking */
   flex-grow: 0;    /* Don't grow */
