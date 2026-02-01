@@ -345,21 +345,9 @@ function setupUnreadCountsStream() {
               return;
             }
             
-            // Check if user has ever visited this room (has a read timestamp)
-            var readTimestamp = getReadTimestamp(capturedRoomName);
-            var hasVisitedRoom = readTimestamp !== '1970-01-01 00:00:00';
-            
-            // Only show badges for rooms the user has visited before
-            // This prevents showing badges with total message counts for unvisited rooms
-            if (!hasVisitedRoom) {
-              console.log('[Unread Counts] Skipping room', capturedRoomName, '- user has never visited (no read timestamp)');
-              // Keep badge hidden for unvisited rooms
-              freshBadge.classList.add('hidden');
-              freshBadge.style.display = 'none';
-              return;
-            }
-            
-            // User has visited this room - show unread count
+            // Show badges for all rooms (visited and unvisited)
+            // For unvisited rooms, total count is shown (which is fine - user can see there are messages)
+            // For visited rooms, accurate unread count is shown (based on read timestamp)
             if (capturedServerCount > 0) {
               // Get accurate count from client-side calculation
               countUnreadMessages(capturedRoomName, function(accurateCount) {
