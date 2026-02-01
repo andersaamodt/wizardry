@@ -1041,7 +1041,7 @@ pre code {
   right: 110px;  /* Position to left of Send button with proper spacing */
   top: 50%;
   transform: translateY(-50%);
-  padding-top: 0.2em;  /* Move text down slightly to better align with spinner */
+  padding-top: 0.125em;  /* Move text down slightly to better align with spinner */
   color: #999;  /* Light grey text to match spinner */
   font-size: 0.85em;  /* Smaller, less obtrusive */
   font-style: italic;
