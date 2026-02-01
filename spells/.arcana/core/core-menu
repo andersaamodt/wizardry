@@ -107,8 +107,9 @@ while true; do
   # Build menu entries from core dependencies
   set -- "$title"
   
-  # Read core dependency entries (label:command:install:uninstall:essential)
-  core_dependencies | while IFS=: read -r label command_name \
+  # Read core dependency entries into positional parameters
+  # Use a temporary file to avoid subshell from pipeline
+  core_menu_entries=$(core_dependencies | while IFS=: read -r label command_name \
     install_spell uninstall_spell essential; do
     # Check if command is installed
     status=""
@@ -141,22 +142,21 @@ while true; do
     # Use just the spell name for cleaner display
     spell_name=$(basename "$cmd" 2>/dev/null || printf '%s' "$cmd")
     printf '%s %s%%%s && exec %s\n' "$status" "$label" "$spell_name" "$0"
-  done | {
-    # Read menu entries from core_dependencies output
-    while IFS= read -r entry; do
-      set -- "$@" "$entry"
-    done
-    
-    # Add exit option
-    set -- "$@" "$exit_entry"
-    
-    # Call menu and capture exit status
-    "$menu_bin" "$@" || menu_status=$?
-    menu_status=${menu_status:-0}
-    
-    # Return menu status to parent shell
-    exit "$menu_status"
-  } || menu_status=$?
+  done)
+  
+  # Build positional parameters from entries
+  while IFS= read -r entry; do
+    [ -n "$entry" ] || continue
+    set -- "$@" "$entry"
+  done <<ENTRIES
+$core_menu_entries
+ENTRIES
+  
+  # Add exit option
+  set -- "$@" "$exit_entry"
+  
+  # Call menu - same pattern as other menu spells
+  "$menu_bin" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
   
   # ESC causes menu to exit with 130 - handle gracefully by exiting
