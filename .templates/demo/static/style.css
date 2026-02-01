@@ -732,6 +732,10 @@ pre code {
   font-family: Georgia, 'Times New Roman', serif;  /* Serif font for room names */
   font-weight: normal;  /* Normal weight for serif */
   color: #2c2c54;  /* Dark text for readability */
+  max-width: calc(100% - 3.5rem);  /* Prevent overflow into badge area */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .room-meta {
