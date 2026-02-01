@@ -73,6 +73,7 @@ jobs:
             "Test doppelganger compiled wizardry"
             "Demonstrate wizardry"
             "Compile wizardry"
+            "Build Desktop Apps"
           )
           
           # Total number of workflows we're monitoring
