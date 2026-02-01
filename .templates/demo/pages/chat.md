@@ -350,23 +350,17 @@ function setupUnreadCountsStream() {
             // For unvisited rooms, total count is shown (which is fine - user can see there are messages)
             // For visited rooms, accurate unread count is shown (based on read timestamp)
             if (capturedServerCount > 0) {
-              // IMMEDIATELY show badge with server count (synchronous)
-              freshBadge.textContent = capturedServerCount;
-              freshBadge.classList.remove('hidden');
-              freshBadge.style.display = 'inline-block';
-              void freshBadge.offsetWidth;  // Force reflow
-              updateBadgeStyle(freshBadge);
-              console.log('[Unread Counts] Badge SHOWN immediately for', capturedRoomName, 'with server count:', capturedServerCount);
-              
-              // Then get accurate count from client-side calculation (asynchronous)
-              countUnreadMessages(capturedRoomName, function(accurateCount) {
+              // Wait for accurate count before showing badge (prevents flashing)
+              countUnreadMessages(capturedRoomName, function(accurateCount, lastMessageTimestamp) {
                 console.log('[Unread Counts] Badge for', capturedRoomName, '- accurate count:', accurateCount);
                 if (accurateCount > 0) {
                   var wasVisible = !freshBadge.classList.contains('hidden');
                   var oldCount = parseInt(freshBadge.textContent) || 0;
                   
-                  // Update badge with accurate count
+                  // SHOW badge with accurate count
                   freshBadge.textContent = accurateCount;
+                  freshBadge.classList.remove('hidden');
+                  freshBadge.style.display = 'inline-block';
                   updateBadgeStyle(freshBadge);
                   
                   // Trigger animation if number changed
@@ -377,7 +371,7 @@ function setupUnreadCountsStream() {
                     }, 400);
                   }
                   
-                  console.log('[Unread Counts] Badge UPDATED for', capturedRoomName, ':', accurateCount);
+                  console.log('[Unread Counts] Badge SHOWN for', capturedRoomName, ':', accurateCount);
                 } else {
                   // Accurate count is 0 (all messages were read) - hide badge
                   freshBadge.classList.add('hidden');
@@ -389,7 +383,6 @@ function setupUnreadCountsStream() {
               // Server reports 0 messages - hide badge
               freshBadge.classList.add('hidden');
               freshBadge.style.display = 'none';
-              void freshBadge.offsetWidth;
               console.log('[Unread Counts] Badge HIDDEN for', capturedRoomName, '- server count 0');
             }
           })(roomName, serverCount);
