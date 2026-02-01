@@ -6,5 +6,4 @@ set -eu
 
 retry_ms="${1:-3000}"
 
-printf '[sse-retry] Setting retry interval to %sms\n' "$retry_ms" >&2
 printf 'retry: %s\n\n' "$retry_ms"

@@ -7,8 +7,6 @@ set -eu
 error_code="${1:-500}"
 error_message="${2:-Internal Server Error}"
 
-printf '[sse-error] code=%s msg=%s\n' "$error_code" "$error_message" >&2
-
 # Send error event with structured data
 printf 'event: error\n'
 printf 'data: {"code":%s,"message":"%s"}\n' "$error_code" "$error_message"
