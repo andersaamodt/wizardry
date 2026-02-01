@@ -137,7 +137,12 @@ jobs:
             # Copy app files
             cp -r ".apps/$app"/* "dist/$APP_NAME.app/Contents/Resources/$app/"
             
-            # Copy app launcher
+            # Copy entire wizardry installation to the bundle
+            mkdir -p "dist/$APP_NAME.app/Contents/Resources/wizardry"
+            cp -r spells "dist/$APP_NAME.app/Contents/Resources/wizardry/"
+            cp install "dist/$APP_NAME.app/Contents/Resources/wizardry/"
+            
+            # Copy app launcher to MacOS directory
             cp spells/.wizardry/desktop/app-launcher "dist/$APP_NAME.app/Contents/MacOS/"
             
             # Create launcher script (pure POSIX shell)
@@ -146,9 +151,33 @@ jobs:
           # POSIX shell launcher for wizardry desktop apps on macOS
           APPDIR="$(cd "$(dirname "$0")/.." && pwd)"
           RESOURCES="$APPDIR/Resources"
+          WIZARDRY="$RESOURCES/wizardry"
+          
+          # Set up wizardry environment
+          export WIZARDRY_DIR="$WIZARDRY"
+          export PATH="$WIZARDRY/spells:$WIZARDRY/spells/.imps/cond:$WIZARDRY/spells/.imps/out:$WIZARDRY/spells/.imps/sys:$WIZARDRY/spells/.imps/app:$WIZARDRY/spells/.wizardry/desktop:$PATH"
+          
+          # Source invoke-wizardry to set up the environment
+          # This adds all spells to PATH
+          if [ -f "$WIZARDRY/spells/invoke-wizardry" ]; then
+            . "$WIZARDRY/spells/invoke-wizardry"
+          fi
           
           # Execute the app launcher with the app name
-          exec "$APPDIR/MacOS/app-launcher" "APP_NAME"
+          # Don't use exec - we need to keep running after launch
+          "$APPDIR/MacOS/app-launcher" "APP_NAME"
+          
+          # Keep the .app process alive to show in Dock
+          # Wait for user to quit via Cmd+Q or closing the app
+          echo "App launched. Press Ctrl+C to quit, or use Cmd+Q from Dock."
+          
+          # Trap signals to cleanup
+          trap 'echo "Shutting down..."; exit 0' INT TERM
+          
+          # Keep running indefinitely
+          while true; do
+            sleep 60
+          done
           EOF
             sed -i '' "s/APP_NAME/$app/g" "dist/$APP_NAME.app/Contents/MacOS/$app"
             chmod +x "dist/$APP_NAME.app/Contents/MacOS/$app"
