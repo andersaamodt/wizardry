@@ -734,7 +734,7 @@ pre code {
 }
 
 /* Apply slide-down to existing items when list grows */
-.room-list.htmx-swapping .room-item:not(.htmx-added) {
+#room-list.htmx-swapping .room-item:not(.htmx-added) {
   animation: roomItemSlideDown 0.4s ease-out;
 }
 
