@@ -29,11 +29,15 @@ run_with_timeout() {
   if [ -n "$TIMEOUT_CMD" ]; then
     $TIMEOUT_CMD "$@" 2>&1 || true
   else
-    # Fallback: run in background and kill after 1 second
+    # Fallback: run in background and kill entire process group after 1 second
+    # chat-stream spawns multiple background processes, so we need to kill the whole group
     "$@" 2>&1 &
     pid=$!
     sleep 1
-    kill "$pid" 2>/dev/null || true
+    # Kill entire process group (negative PID) to terminate all child processes
+    kill -TERM -- -$pid 2>/dev/null || true
+    sleep 0.1  # Give processes time to handle TERM signal
+    kill -KILL -- -$pid 2>/dev/null || true  # Force kill if still running
     wait "$pid" 2>/dev/null || true
   fi
 }
