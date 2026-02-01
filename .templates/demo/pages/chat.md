@@ -326,8 +326,14 @@ function updateUnreadBadges() {
       
       roomBadges.forEach(function(badge) {
         // Query for fresh badge element (in case DOM was updated)
-        // Escape room name for safe use in CSS selector
-        var escapedRoomName = result.room.replace(/["\\]/g, '\\$&');
+        // Use CSS.escape() if available, otherwise escape manually
+        var escapedRoomName = result.room;
+        if (typeof CSS !== 'undefined' && CSS.escape) {
+          escapedRoomName = CSS.escape(result.room);
+        } else {
+          // Manual escaping for CSS special characters
+          escapedRoomName = result.room.replace(/(["\\!#$%&'()*+,./:;<=>?@[\]^`{|}~])/g, '\\$1');
+        }
         var freshBadge = document.querySelector('.unread-badge[data-room="' + escapedRoomName + '"]');
         if (!freshBadge) return;
         
