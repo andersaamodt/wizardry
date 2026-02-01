@@ -147,6 +147,9 @@ function markRoomAsRead(roomName) {
   if (lastTimestamp) {
     setReadTimestamp(roomName, lastTimestamp);
   }
+  // Note: If no messages exist, we intentionally don't set a timestamp.
+  // getReadTimestamp() will return epoch '1970-01-01 00:00:00' as default,
+  // which is correct for an empty/never-visited room.
   // Immediately update badges for responsive UX
   updateUnreadBadges();
 }
@@ -164,6 +167,8 @@ function getLastMessageTimestamp(roomName) {
   var lastMessage = messages[messages.length - 1];
   var timestampSpan = lastMessage.querySelector('.timestamp');
   if (timestampSpan && timestampSpan.dataset.fullTimestamp) {
+    // Return as string - timestamp comparisons use lexicographic comparison
+    // which works correctly for 'YYYY-MM-DD HH:MM:SS' format
     return timestampSpan.dataset.fullTimestamp;
   }
   
