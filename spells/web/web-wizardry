@@ -156,7 +156,7 @@ while true; do
   # Add exit option
   set -- "$@" "${exit_label}%kill -TERM \$PPID"
 
-  menu "${BOLD}${CYAN}Wizardry Web Platform" "$@" || menu_status=$?
+  menu "${BOLD}${CYAN}web wizardry platform" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
   
   # ESC causes menu to exit with 130 - handle gracefully by exiting

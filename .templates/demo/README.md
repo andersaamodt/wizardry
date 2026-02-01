@@ -1,4 +1,4 @@
-# Wizardry Web Platform
+# web wizardry platform
 
 The wizardry web platform enables creating honest web pages with interactivity backed directly by POSIX shell scripts.
 
