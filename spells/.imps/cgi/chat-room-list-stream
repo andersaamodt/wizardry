@@ -1,0 +1,139 @@
+#!/bin/sh
+# chat-room-list-stream - SSE endpoint for real-time room list updates
+# Monitors chatrooms directory and sends updates when rooms are created/deleted
+
+# Send SSE headers with CORS support FIRST (before set -eu)
+printf 'Status: 200 OK\r\n'
+printf 'Content-Type: text/event-stream\r\n'
+printf 'Cache-Control: no-cache\r\n'
+printf 'Connection: keep-alive\r\n'
+printf 'Access-Control-Allow-Origin: *\r\n'
+printf 'Access-Control-Allow-Methods: GET, OPTIONS\r\n'
+printf 'Access-Control-Allow-Headers: Content-Type, Last-Event-ID\r\n'
+printf '\r\n'
+
+# Configuration
+MAX_CONNECTION_TIME=3600  # 1 hour maximum connection duration
+KEEPALIVE_INTERVAL=15     # Send keepalive every 15s when idle
+CHECK_INTERVAL=2          # Check for changes every 2 seconds
+PADDING_ITERATIONS=500    # 8 bytes * 500 = 4KB padding for buffer flush
+
+# Initial 4KB padding to force fcgiwrap buffer flush
+printf ': '
+i=0
+while [ $i -lt "$PADDING_ITERATIONS" ]; do
+  printf '........'
+  i=$((i + 1))
+done
+printf '\n\n'
+
+# Set reconnection retry interval (5 seconds)
+printf 'retry: 5000\n\n'
+
+# SSE event sender with 4KB padding for immediate delivery
+send_sse_event() {
+  event_type="$1"
+  event_data="$2"
+  
+  # FLUSH BEFORE: 4KB padding
+  printf ': '
+  i=0
+  while [ $i -lt "$PADDING_ITERATIONS" ]; do
+    printf '........'
+    i=$((i + 1))
+  done
+  printf '\n\n'
+  
+  # Event data
+  printf 'event: %s\ndata: %s\n\n' "$event_type" "$event_data"
+  
+  # FLUSH AFTER: 4KB padding
+  printf ': '
+  i=0
+  while [ $i -lt "$PADDING_ITERATIONS" ]; do
+    printf '........'
+    i=$((i + 1))
+  done
+  printf '\n\n'
+}
+
+# Now enable strict mode
+set -eu
+
+# Get site paths
+CHAT_DIR=$(get-site-data-dir "chatrooms")
+mkdir -p "$CHAT_DIR"
+
+# Function to get list of room names as JSON array
+get_room_list() {
+  printf '['
+  first=1
+  
+  if [ -d "$CHAT_DIR" ]; then
+    for room_dir in "$CHAT_DIR"/*; do
+      [ -d "$room_dir" ] || continue
+      room_name=$(basename "$room_dir")
+      
+      # Skip invalid room names
+      if ! validate-room-name "$room_name" 2>/dev/null; then
+        continue
+      fi
+      
+      # Add to JSON array
+      if [ "$first" -eq 0 ]; then
+        printf ','
+      fi
+      printf '"%s"' "$room_name"
+      first=0
+    done
+  fi
+  
+  printf ']'
+}
+
+# Cleanup function
+cleanup() {
+  kill "${keepalive_pid:-}" 2>/dev/null || true
+  kill "${timeout_pid:-}" 2>/dev/null || true
+  exit
+}
+
+trap cleanup INT TERM EXIT
+
+# Send initial room list
+initial_rooms=$(get_room_list)
+send_sse_event rooms "$initial_rooms"
+
+# Background keepalive monitor - sends ping every 15s after initial 30s warmup
+(
+  sleep 30  # Wait 30 seconds before starting keepalive pings
+  while true; do
+    sleep "$KEEPALIVE_INTERVAL"
+    send_sse_event ping "keepalive"
+  done
+) &
+keepalive_pid=$!
+
+# Background connection timeout monitor
+(
+  sleep "$MAX_CONNECTION_TIME"
+  send_sse_event timeout "Connection time limit reached. Please reconnect."
+  kill $$ 2>/dev/null || true
+) &
+timeout_pid=$!
+
+# Main monitoring loop
+last_rooms="$initial_rooms"
+
+while true; do
+  sleep "$CHECK_INTERVAL"
+  
+  # Get current room list
+  current_rooms=$(get_room_list)
+  
+  # Send update if room list changed
+  if [ "$current_rooms" != "$last_rooms" ]; then
+    send_sse_event rooms "$current_rooms"
+    last_rooms="$current_rooms"
+  fi
+done
