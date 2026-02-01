@@ -2,7 +2,29 @@
 
 This directory contains desktop apps - graphical wrappers around wizardry spells.
 
-## Architecture
+## Current Status: Placeholder Implementation
+
+**Important:** The current `.app` bundles and AppImages are **placeholder implementations** that simply open HTML files in your default web browser. They are not yet true standalone desktop applications.
+
+### What Works Now
+- ✅ `.app` bundles can be double-clicked on macOS
+- ✅ AppImages can be double-clicked on Linux  
+- ✅ Menu-app demonstrates the UI concept
+- ✅ Settings pages show the planned architecture
+
+### What's Coming (Native Implementation)
+- ⏳ Native host binary with embedded WebView
+- ⏳ Direct command execution via `execvp()` (no shell)
+- ⏳ True standalone apps that don't require a browser
+- ⏳ Integration with running wizardry web server
+
+To use the chatroom functionality now, run:
+```bash
+web-wizardry serve demo
+```
+Then open `http://localhost:8080/pages/chat.html` in your browser.
+
+## Architecture (Planned)
 
 Desktop apps in wizardry follow a minimal, flat architecture:
 
