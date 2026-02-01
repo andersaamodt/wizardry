@@ -46,24 +46,11 @@
       font-weight: bold;
     }
     
-    .content {
-      padding: 2rem;
-    }
-    
-    .status {
-      background: #f8f9fa;
-      border-left: 3px solid #667eea;
-      padding: 1rem;
-      border-radius: 4px;
-      margin-bottom: 1rem;
-    }
-    
-    .chat-interface {
-      border: 1px solid #dee2e6;
-      border-radius: 8px;
-      padding: 1rem;
-      min-height: 400px;
-      background: white;
+    iframe {
+      border: none;
+      width: 100%;
+      height: calc(100vh - 90px);
+      display: block;
     }
   </style>
 </head>
@@ -76,96 +63,29 @@
     </nav>
   </div>
   
-  <div class="content" id="chat-view">
-    <div class="status">
-      <strong>Status:</strong> <span id="server-status">Checking server...</span>
-    </div>
-    <div class="chat-interface">
-      <h2>Chatroom Interface</h2>
-      <p>
-        This chatroom integrates with the wizardry web server and demo chat interface.
-      </p>
-      <p>
-        <strong>Next steps:</strong> The native app can start the web server if needed and 
-        display the chat interface using an embedded WebView or by connecting to the local server.
-      </p>
-      <button onclick="checkServer()">Check Server Status</button>
-      <button onclick="startServer()">Start Server</button>
-      <div id="output" style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 4px; font-family: monospace; white-space: pre-wrap;"></div>
-    </div>
-  </div>
+  <!-- Load the demo chat page from wizardry web server -->
+  <iframe id="chat-frame" src="/pages/chat.html" title="Chatroom"></iframe>
   
-  <div class="content" id="settings-view" style="display: none;">
+  <div id="settings-frame" style="display: none; padding: 2rem;">
     <h2>Settings</h2>
-    <p>Settings content from settings.html would go here...</p>
+    <p>Connection settings and server management would go here.</p>
+    <p>This demonstrates that desktop apps are thin wrappers around the wizardry web interface.</p>
     <button onclick="showChat()">Back to Chat</button>
   </div>
 
   <script>
     function showChat() {
-      document.getElementById('chat-view').style.display = 'block';
-      document.getElementById('settings-view').style.display = 'none';
+      document.getElementById('chat-frame').style.display = 'block';
+      document.getElementById('settings-frame').style.display = 'none';
       document.getElementById('chat-tab').classList.add('active');
       document.getElementById('settings-tab').classList.remove('active');
     }
     
     function showSettings() {
-      document.getElementById('chat-view').style.display = 'none';
-      document.getElementById('settings-view').style.display = 'block';
+      document.getElementById('chat-frame').style.display = 'none';
+      document.getElementById('settings-frame').style.display = 'block';
       document.getElementById('chat-tab').classList.remove('active');
       document.getElementById('settings-tab').classList.add('active');
-    }
-    
-    function checkServer() {
-      const output = document.getElementById('output');
-      output.textContent = 'Checking server...\n';
-      
-      if (window.wizardry && window.wizardry.exec) {
-        const result = window.wizardry.exec(['pgrep', '-f', 'nginx.*demo']);
-        output.textContent += `Command: pgrep -f 'nginx.*demo'\n`;
-        output.textContent += `Exit code: ${result.exitCode}\n`;
-        output.textContent += `Stdout: ${result.stdout}\n`;
-        output.textContent += `Stderr: ${result.stderr}\n`;
-        
-        if (result.exitCode === 0) {
-          document.getElementById('server-status').textContent = '✓ Server is running';
-          document.getElementById('server-status').style.color = 'green';
-        } else {
-          document.getElementById('server-status').textContent = '✗ Server is not running';
-          document.getElementById('server-status').style.color = 'red';
-        }
-      } else {
-        output.textContent = 'Native bridge not available. Running in browser mode.';
-      }
-    }
-    
-    function startServer() {
-      const output = document.getElementById('output');
-      output.textContent = 'Starting server...\n';
-      
-      if (window.wizardry && window.wizardry.exec) {
-        // First check if demo site exists
-        const checkResult = window.wizardry.exec(['test', '-d', process.env.HOME + '/sites/demo']);
-        
-        if (checkResult.exitCode !== 0) {
-          output.textContent += 'Creating demo site...\n';
-          const createResult = window.wizardry.exec(['web-wizardry', 'create', 'demo', '--template', 'demo']);
-          output.textContent += `${createResult.stdout}${createResult.stderr}\n`;
-        }
-        
-        output.textContent += 'Starting server...\n';
-        const result = window.wizardry.exec(['web-wizardry', 'serve', 'demo']);
-        output.textContent += `${result.stdout}${result.stderr}\n`;
-        
-        setTimeout(checkServer, 2000);
-      } else {
-        output.textContent = 'Native bridge not available. Please run: web-wizardry serve demo';
-      }
-    }
-    
-    // Check server status on load
-    if (window.wizardry && window.wizardry.exec) {
-      setTimeout(checkServer, 500);
     }
   </script>
 </body>

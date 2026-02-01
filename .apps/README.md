@@ -1,18 +1,42 @@
 # Desktop Apps for Wizardry
 
-This directory contains desktop apps - native graphical applications built with embedded WebViews.
+This directory contains desktop apps - thin POSIX shell wrappers around the wizardry web interface.
 
 ## Architecture
 
-Desktop apps in wizardry follow a minimal, flat architecture:
+Desktop apps in wizardry follow project values of **POSIX sh-first** and **Interface-neutral** design:
 
-- **Native WebView**: Apps run in an embedded WebView, not a browser
-- **No Router/Navigation**: Each app is standalone
-- **Direct Shell Access**: Apps are graphical consoles for Unix, not sealed containers
-- **Hardcoded Commands**: WebView defines which commands it can execute (in the GUI code itself)
-- **Direct Execution**: Commands run via Go's `exec.Command()` (equivalent to `execvp()`), no shell parsing
-- **No Daemon**: Fork-per-action model by default
-- **CLI Parity**: Removing the GUI must not break functionality
+- **Pure POSIX Shell**: No compiled binaries (Go/Rust/C), just shell scripts
+- **Thin Wrappers**: Apps are minimal launchers that start the web server and open the browser
+- **Web-Based**: All functionality runs through wizardry's existing web server infrastructure
+- **Reuses Infrastructure**: Leverages CGI scripts, SSE, and the existing demo site
+- **Interface-Neutral**: GUIs are thin skins over shell scripts (per project design tenets)
+- **CLI Parity**: Removing the GUI doesn't break functionality - it's just web access
+
+## How It Works
+
+Desktop "apps" are packaged as AppImages (Linux) or .app bundles (macOS) that contain:
+1. App HTML files (the UI)
+2. `app-launcher` shell script (POSIX sh)
+3. Platform-specific wrapper (pure shell)
+
+When launched:
+1. `app-launcher` checks if wizardry web server is running
+2. Starts the server if needed (via `web-wizardry serve demo`)
+3. Opens the app URL in the system browser (via `xdg-open` or `open`)
+
+## Why POSIX Shell?
+
+This aligns with wizardry's core values:
+
+| Value | How Apps Align |
+|-------|----------------|
+| **POSIX sh-first** | Apps are pure POSIX shell scripts, no compiled languages |
+| **Non-commercial** | No Google Go or other commercial tools |
+| **Minimalism** | Fewest moving parts - just shell + web server |
+| **Interface-neutral** | GUIs are thin skins over spells (per design tenets) |
+| **File-first** | All app state lives in web server (files, not databases) |
+| **FOSS missing link** | Glue that connects system browser to wizardry spells |
 
 Desktop apps in wizardry follow a minimal, flat architecture:
 
