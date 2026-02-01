@@ -1,9 +1,9 @@
 #!/bin/sh
-# chat-stream - SSE endpoint for real-time chat messages (v2.7-gap-prevention)
+# chat-stream - SSE endpoint for real-time chat messages (v2.8-gapless)
 # True event-driven SSE using tail -f + file descriptor (no polling, 0ms detection)
 # Enhanced with: retry field, connection timeout, health monitoring, CORS support
 # Uses avatar directories as single source of truth (no redundant .members file)
-# O(1) connection time with gap prevention - sends last ~100 messages to cover connection window
+# Gapless connection: continuous tail -f stream with timestamp filtering prevents message loss
 
 # Send SSE headers with CORS support FIRST (before set -eu)
 # This ensures headers are always output even if script fails early
