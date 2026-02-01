@@ -132,6 +132,18 @@ function getCurrentTimestamp() {
   return new Date().toISOString().replace('T', ' ').substring(0, 19);
 }
 
+function formatLocalTimestamp(date) {
+  // Format date in local time to match server's log-timestamp format: YYYY-MM-DD HH:MM:SS
+  // This is critical for SSE timestamp filtering to work correctly
+  var year = date.getFullYear();
+  var month = String(date.getMonth() + 1).padStart(2, '0');
+  var day = String(date.getDate()).padStart(2, '0');
+  var hours = String(date.getHours()).padStart(2, '0');
+  var minutes = String(date.getMinutes()).padStart(2, '0');
+  var seconds = String(date.getSeconds()).padStart(2, '0');
+  return year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ':' + seconds;
+}
+
 function getReadTimestamp(roomName) {
   var key = 'chatroom_read_' + roomName;
   return localStorage.getItem(key) || '1970-01-01 00:00:00';
@@ -665,7 +677,8 @@ function joinRoom(roomName) {
   
   // CRITICAL: Capture timestamp BEFORE avatar creation
   // This ensures SSE will capture the avatar creation events
-  var joinTimestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+  // IMPORTANT: Use local time to match server's log-timestamp format (not UTC)
+  var joinTimestamp = formatLocalTimestamp(new Date());
   
   // Create/move avatar and wait for completion before setting up SSE
   // This ensures the avatar exists and join message is logged before SSE starts
@@ -886,8 +899,8 @@ function setupMessageStream(roomName, sinceTimestamp) {
   // When provided from joinRoom, this will be BEFORE avatar creation
   // This ensures SSE captures the avatar creation events
   if (!sinceTimestamp) {
-    var now = new Date();
-    sinceTimestamp = now.toISOString().replace('T', ' ').substring(0, 19);
+    // IMPORTANT: Use local time to match server's log-timestamp format (not UTC)
+    sinceTimestamp = formatLocalTimestamp(new Date());
   }
   
   // Create new SSE connection with since parameter
