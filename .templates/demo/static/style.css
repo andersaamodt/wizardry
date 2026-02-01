@@ -1112,6 +1112,9 @@ pre code {
   animation: spin 0.6s linear infinite;
   margin-left: 8px;
   vertical-align: middle;
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 @keyframes spin {
