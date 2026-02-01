@@ -211,6 +211,7 @@ function isLogMessage(messageText) {
 
 function countUnreadMessages(roomName, callback) {
   // Fetch messages and count unreads after last read timestamp
+  console.log('[countUnreadMessages] Fetching for room:', roomName);
   fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(roomName))
     .then(function(response) { return response.text(); })
     .then(function(html) {
@@ -222,6 +223,8 @@ function countUnreadMessages(roomName, callback) {
       var readTimestamp = getReadTimestamp(roomName);
       var unreadCount = 0;
       var lastMessageTimestamp = null;
+      
+      console.log('[countUnreadMessages]', roomName, '- total messages:', messages.length, 'read timestamp:', readTimestamp);
       
       messages.forEach(function(msg) {
         var timestampSpan = msg.querySelector('.timestamp');
@@ -235,6 +238,7 @@ function countUnreadMessages(roomName, callback) {
         }
       });
       
+      console.log('[countUnreadMessages]', roomName, '- unread count:', unreadCount, 'last timestamp:', lastMessageTimestamp);
       callback(unreadCount, lastMessageTimestamp);
     })
     .catch(function(err) {
@@ -312,6 +316,7 @@ function setupUnreadCountsStream() {
   window.unreadCountsEventSource.addEventListener('counts', function(event) {
     try {
       var counts = JSON.parse(event.data);
+      console.log('[Unread Counts] Received update:', counts);
       
       // Update all badges with the received counts
       document.querySelectorAll('.unread-badge').forEach(function(badge) {
@@ -329,14 +334,18 @@ function setupUnreadCountsStream() {
         
         // Always update to ensure badges appear/disappear correctly
         // This fixes the issue where badge doesn't appear on first message
+        console.log('[Unread Counts] Updating badge for room:', roomName, 'serverCount:', serverCount);
         countUnreadMessages(roomName, function(count) {
+          console.log('[Unread Counts] Badge update callback for', roomName, '- count:', count, 'badge display before:', badge.style.display);
           if (count > 0) {
             badge.textContent = count;
             badge.style.display = 'inline-block';
             // Apply current display mode styling
             updateBadgeStyle(badge);
+            console.log('[Unread Counts] Badge should now be visible for', roomName, 'display:', badge.style.display);
           } else {
             badge.style.display = 'none';
+            console.log('[Unread Counts] Badge hidden for', roomName);
           }
         });
       });
