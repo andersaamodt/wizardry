@@ -135,9 +135,42 @@ SH
   esac
 }
 
+esc_exits_menu() {
+  tmp=$(make_tempdir)
+
+  cat >"$tmp/menu" <<'SH'
+#!/bin/sh
+# Simulate menu exiting with status 130 (ESC pressed)
+exit 130
+SH
+  chmod +x "$tmp/menu"
+
+  cat >"$tmp/colors" <<'SH'
+#!/bin/sh
+BOLD=''
+CYAN=''
+RESET=''
+SH
+  chmod +x "$tmp/colors"
+
+  # Run core-menu with menu that returns 130 (ESC)
+  run_cmd env PATH="$WIZARDRY_IMPS_PATH:$tmp:/bin:/usr/bin" COLORS_BIN="$tmp/colors" MENU_BIN="$tmp/menu" \
+    "$ROOT_DIR/spells/.arcana/core/core-menu"
+
+  # Should exit with status 0 (gracefully handle ESC)
+  assert_success || return 1
+  
+  # Should print ESC message to stderr (captured in ERROR variable by run_cmd)
+  case "$ERROR" in
+    *"ESC"* ) : ;;
+    *) TEST_FAILURE_REASON="expected ESC message in stderr, got: $ERROR"; return 1 ;;
+  esac
+}
+
 run_test_case "install/core/core-menu is executable" spell_is_executable
 run_test_case "core menu lists install targets" core_menu_lists_dependencies
 run_test_case "essential commands show status not uninstall" essential_commands_show_status_not_uninstall
+run_test_case "ESC key exits core-menu gracefully" esc_exits_menu
 
 test_shows_help() {
   run_cmd "$ROOT_DIR/spells/.arcana/core/core-menu" --help
