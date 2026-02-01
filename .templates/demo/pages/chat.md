@@ -78,7 +78,7 @@ Delete Room
 <label class="toggle-switch">
 <input type="checkbox" id="badge-mode-toggle" onchange="toggleBadgeMode()">
 <span class="toggle-slider"></span>
-<span class="toggle-label">Show unread badges as glowing dots</span>
+<span class="toggle-label">Show unread counts</span>
 </label>
 </div>
 
@@ -158,7 +158,8 @@ function setBadgeMode(mode) {
 
 function toggleBadgeMode() {
   var toggleCheckbox = document.getElementById('badge-mode-toggle');
-  var newMode = toggleCheckbox && toggleCheckbox.checked ? 'dot' : 'number';
+  // Inverted: checked = show counts (number mode), unchecked = show dots
+  var newMode = toggleCheckbox && toggleCheckbox.checked ? 'number' : 'dot';
   setBadgeMode(newMode);
   
   // Update all visible badges
@@ -349,18 +350,23 @@ function setupUnreadCountsStream() {
             // For unvisited rooms, total count is shown (which is fine - user can see there are messages)
             // For visited rooms, accurate unread count is shown (based on read timestamp)
             if (capturedServerCount > 0) {
-              // Get accurate count from client-side calculation
+              // IMMEDIATELY show badge with server count (synchronous)
+              freshBadge.textContent = capturedServerCount;
+              freshBadge.classList.remove('hidden');
+              freshBadge.style.display = 'inline-block';
+              void freshBadge.offsetWidth;  // Force reflow
+              updateBadgeStyle(freshBadge);
+              console.log('[Unread Counts] Badge SHOWN immediately for', capturedRoomName, 'with server count:', capturedServerCount);
+              
+              // Then get accurate count from client-side calculation (asynchronous)
               countUnreadMessages(capturedRoomName, function(accurateCount) {
                 console.log('[Unread Counts] Badge for', capturedRoomName, '- accurate count:', accurateCount);
                 if (accurateCount > 0) {
                   var wasVisible = !freshBadge.classList.contains('hidden');
                   var oldCount = parseInt(freshBadge.textContent) || 0;
                   
-                  // Show badge
+                  // Update badge with accurate count
                   freshBadge.textContent = accurateCount;
-                  freshBadge.classList.remove('hidden');
-                  freshBadge.style.display = 'inline-block';
-                  void freshBadge.offsetWidth;  // Force reflow
                   updateBadgeStyle(freshBadge);
                   
                   // Trigger animation if number changed
@@ -371,12 +377,12 @@ function setupUnreadCountsStream() {
                     }, 400);
                   }
                   
-                  console.log('[Unread Counts] Badge SHOWN for', capturedRoomName, ':', accurateCount);
+                  console.log('[Unread Counts] Badge UPDATED for', capturedRoomName, ':', accurateCount);
                 } else {
-                  // No unreads - hide badge
+                  // Accurate count is 0 (all messages were read) - hide badge
                   freshBadge.classList.add('hidden');
                   freshBadge.style.display = 'none';
-                  console.log('[Unread Counts] Badge HIDDEN for', capturedRoomName, '- no unreads');
+                  console.log('[Unread Counts] Badge HIDDEN for', capturedRoomName, '- accurate count is 0');
                 }
               });
             } else {
@@ -1487,10 +1493,11 @@ document.addEventListener('DOMContentLoaded', function() {
   setupUnreadCountsStream();
   
   // Initialize toggle checkbox based on saved mode
+  // Inverted: checked = show counts (number mode)
   var mode = getBadgeMode();
   var toggleCheckbox = document.getElementById('badge-mode-toggle');
   if (toggleCheckbox) {
-    toggleCheckbox.checked = (mode === 'dot');
+    toggleCheckbox.checked = (mode === 'number');
   }
   
   // Apply initial badge styles
