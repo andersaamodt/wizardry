@@ -122,12 +122,12 @@ test_cleanup_boundary_5min_preserved() {
   mkdir -p "$room_dir"
   touch "$room_dir/.log"
   
-  # Create avatar at exactly 5 minutes (300 seconds)
+  # Create avatar just under 5 minutes (299 seconds) to avoid timing race
   avatar_dir="$room_dir/.boundaryuser"
   mkdir -p "$avatar_dir"
   enchant "$avatar_dir" "web_avatar=1" 2>/dev/null || true
   current_time=$(date +%s)
-  boundary_time=$((current_time - 300))
+  boundary_time=$((current_time - 299))
   enchant "$avatar_dir" "last_activity=$boundary_time" 2>/dev/null || true
   
   # Run cleanup
