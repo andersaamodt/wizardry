@@ -60,12 +60,12 @@ test_cleanup_old_avatar_deleted() {
   mkdir -p "$room_dir"
   touch "$room_dir/.log"
   
-  # Create old avatar (31 minutes ago = 1860 seconds)
+  # Create old avatar (6 minutes ago = 360 seconds)
   avatar_dir="$room_dir/.olduser"
   mkdir -p "$avatar_dir"
   enchant "$avatar_dir" "web_avatar=1" 2>/dev/null || true
   current_time=$(date +%s)
-  old_time=$((current_time - 1860))
+  old_time=$((current_time - 360))
   enchant "$avatar_dir" "last_activity=$old_time" 2>/dev/null || true
   # Set directory mtime to old time (fallback when xattr not available)
   touch -t 202001010000 "$avatar_dir" 2>/dev/null || true
@@ -114,29 +114,29 @@ test_cleanup_mud_avatar_preserved() {
   return 0
 }
 
-# Test: Avatar at exactly 30 minutes is NOT deleted (boundary case)
-test_cleanup_boundary_30min_preserved() {
+# Test: Avatar at exactly 5 minutes is NOT deleted (boundary case)
+test_cleanup_boundary_5min_preserved() {
   setup_test_env
   
   room_dir="$CHAT_DIR/testroom"
   mkdir -p "$room_dir"
   touch "$room_dir/.log"
   
-  # Create avatar at exactly 30 minutes (1800 seconds)
+  # Create avatar at exactly 5 minutes (300 seconds)
   avatar_dir="$room_dir/.boundaryuser"
   mkdir -p "$avatar_dir"
   enchant "$avatar_dir" "web_avatar=1" 2>/dev/null || true
   current_time=$(date +%s)
-  boundary_time=$((current_time - 1800))
+  boundary_time=$((current_time - 300))
   enchant "$avatar_dir" "last_activity=$boundary_time" 2>/dev/null || true
   
   # Run cleanup
   chat-cleanup-inactive-avatars "$room_dir"
   
-  # Avatar at exactly 30 min should NOT be deleted (> threshold, not >=)
+  # Avatar at exactly 5 min should NOT be deleted (> threshold, not >=)
   if [ ! -d "$avatar_dir" ]; then
     cleanup_test_env
-    TEST_FAILURE_REASON="Avatar at exactly 30 minutes should be preserved"
+    TEST_FAILURE_REASON="Avatar at exactly 5 minutes should be preserved"
     return 1
   fi
   
@@ -164,7 +164,7 @@ test_cleanup_mixed_avatars() {
   old_dir="$room_dir/.old"
   mkdir -p "$old_dir"
   enchant "$old_dir" "web_avatar=1" 2>/dev/null || true
-  old_time=$((current_time - 1860))
+  old_time=$((current_time - 360))
   enchant "$old_dir" "last_activity=$old_time" 2>/dev/null || true
   # Set directory mtime to old time (fallback when xattr not available)
   touch -t 202001010000 "$old_dir" 2>/dev/null || true
@@ -236,7 +236,7 @@ test_cleanup_fallback_to_mtime() {
 run_test_case "Cleanup: recent avatar preserved" test_cleanup_recent_avatar_preserved
 run_test_case "Cleanup: old avatar deleted" test_cleanup_old_avatar_deleted
 run_test_case "Cleanup: MUD avatar preserved" test_cleanup_mud_avatar_preserved
-run_test_case "Cleanup: 30min boundary preserved" test_cleanup_boundary_30min_preserved
+run_test_case "Cleanup: 5min boundary preserved" test_cleanup_boundary_5min_preserved
 run_test_case "Cleanup: mixed avatars handled correctly" test_cleanup_mixed_avatars
 run_test_case "Cleanup: fallback to mtime works" test_cleanup_fallback_to_mtime
 
