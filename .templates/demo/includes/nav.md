@@ -5,8 +5,10 @@
   <a href="/pages/graphics-media.html">Graphics</a> |
   <a href="/pages/time-performance.html">Time</a> |
   <a href="/pages/workers.html">Workers</a> |
+  <a href="/pages/hardware.html">Hardware</a> |
   <a href="/pages/security.html">Security</a> |
   <a href="/pages/file-upload.html">Files</a> |
+  <a href="/pages/misc-apis.html">More APIs</a> |
   <a href="/pages/advanced.html">Advanced</a> |
   <a href="/pages/poll.html">Poll</a> |
   <a href="/pages/chat.html">Chat</a> |

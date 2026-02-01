@@ -435,8 +435,366 @@ Create and manipulate audio using the Web Audio API:
     <li><strong>HTML5 Audio:</strong> Simple playback of audio files</li>
     <li><strong>Web Audio API:</strong> Real-time synthesis, effects, and audio graph manipulation</li>
   </ul>
+</div>
+
+## 5. WebGL - 3D Graphics
+
+Basic WebGL demonstration with a rotating triangle:
+
+<div class="demo-box">
+  <h3>🎮 WebGL 3D Graphics</h3>
   
-  <p style="margin-top: 1rem; padding: 1rem; background: #fff3cd; border-radius: 4px; border: 1px solid #ffc107;">
-    <strong>⚠️ Advanced Graphics Skipped:</strong> WebGL and WebGPU demos are not included as they require specialized 3D graphics knowledge and complex shader programming. These are marked as 🔴 deep/specialized features.
-  </p>
+  <canvas id="webgl-canvas" width="600" height="400" style="border: 2px solid #ddd; border-radius: 4px; max-width: 100%; background: #000;"></canvas>
+  
+  <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+    <button id="webgl-start">▶️ Start Animation</button>
+    <button id="webgl-stop">⏹️ Stop</button>
+    <button id="webgl-reset">🔄 Reset</button>
+    <label style="display: flex; align-items: center; gap: 0.5rem;">
+      <span>Speed:</span>
+      <input type="range" id="webgl-speed" min="0.5" max="5" step="0.5" value="1" style="width: 100px;" />
+      <span id="webgl-speed-value">1x</span>
+    </label>
+  </div>
+  
+  <div id="webgl-output" class="output"></div>
+</div>
+
+<script>
+(function() {
+  const canvas = document.getElementById('webgl-canvas');
+  const output = document.getElementById('webgl-output');
+  const speedSlider = document.getElementById('webgl-speed');
+  const speedValue = document.getElementById('webgl-speed-value');
+  
+  let gl = null;
+  let program = null;
+  let animationId = null;
+  let rotation = 0;
+  let speed = 1;
+  
+  speedSlider.addEventListener('input', () => {
+    speed = parseFloat(speedSlider.value);
+    speedValue.textContent = speed + 'x';
+  });
+  
+  function initWebGL() {
+    gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    
+    if (!gl) {
+      output.innerHTML = `
+        <div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
+          <h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ WebGL Not Supported</h4>
+          <p style="margin: 0;">Your browser does not support WebGL.</p>
+        </div>
+      `;
+      return false;
+    }
+    
+    // Vertex shader
+    const vertexShaderSource = `
+      attribute vec4 aPosition;
+      attribute vec4 aColor;
+      uniform float uRotation;
+      varying vec4 vColor;
+      
+      void main() {
+        float c = cos(uRotation);
+        float s = sin(uRotation);
+        mat4 rotation = mat4(
+          c, s, 0, 0,
+          -s, c, 0, 0,
+          0, 0, 1, 0,
+          0, 0, 0, 1
+        );
+        gl_Position = rotation * aPosition;
+        vColor = aColor;
+      }
+    `;
+    
+    // Fragment shader
+    const fragmentShaderSource = `
+      precision mediump float;
+      varying vec4 vColor;
+      
+      void main() {
+        gl_FragColor = vColor;
+      }
+    `;
+    
+    // Compile shaders
+    const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vertexShader, vertexShaderSource);
+    gl.compileShader(vertexShader);
+    
+    const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fragmentShader, fragmentShaderSource);
+    gl.compileShader(fragmentShader);
+    
+    // Create program
+    program = gl.createProgram();
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+    gl.useProgram(program);
+    
+    // Triangle vertices (x, y, z)
+    const vertices = new Float32Array([
+      0.0,  0.6, 0.0,   // Top
+      -0.6, -0.6, 0.0,  // Bottom left
+      0.6, -0.6, 0.0    // Bottom right
+    ]);
+    
+    // Colors (r, g, b, a)
+    const colors = new Float32Array([
+      1.0, 0.0, 0.0, 1.0,  // Red
+      0.0, 1.0, 0.0, 1.0,  // Green
+      0.0, 0.0, 1.0, 1.0   // Blue
+    ]);
+    
+    // Position buffer
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+    
+    const aPosition = gl.getAttribLocation(program, 'aPosition');
+    gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(aPosition);
+    
+    // Color buffer
+    const colorBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
+    
+    const aColor = gl.getAttribLocation(program, 'aColor');
+    gl.vertexAttribPointer(aColor, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(aColor);
+    
+    // Set clear color
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    
+    output.innerHTML = `
+      <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+        <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ WebGL Initialized</h4>
+        <p style="margin: 0.25rem 0;"><strong>Renderer:</strong> ${gl.getParameter(gl.RENDERER)}</p>
+        <p style="margin: 0.25rem 0;"><strong>Version:</strong> ${gl.getParameter(gl.VERSION)}</p>
+      </div>
+    `;
+    
+    return true;
+  }
+  
+  function render() {
+    if (!gl || !program) return;
+    
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    
+    const uRotation = gl.getUniformLocation(program, 'uRotation');
+    gl.uniform1f(uRotation, rotation);
+    
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    
+    rotation += 0.02 * speed;
+    
+    animationId = requestAnimationFrame(render);
+  }
+  
+  document.getElementById('webgl-start').addEventListener('click', () => {
+    if (!gl) {
+      if (!initWebGL()) return;
+    }
+    
+    if (!animationId) {
+      render();
+      output.innerHTML = '<p style="color: #27ae60;">▶️ Animation started</p>';
+    }
+  });
+  
+  document.getElementById('webgl-stop').addEventListener('click', () => {
+    if (animationId) {
+      cancelAnimationFrame(animationId);
+      animationId = null;
+      output.innerHTML = '<p style="color: #7f8c8d;">⏹️ Animation stopped</p>';
+    }
+  });
+  
+  document.getElementById('webgl-reset').addEventListener('click', () => {
+    rotation = 0;
+    if (gl) {
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      const uRotation = gl.getUniformLocation(program, 'uRotation');
+      gl.uniform1f(uRotation, 0);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+    output.innerHTML = '<p style="color: #2980b9;">🔄 Reset to initial position</p>';
+  });
+  
+  // Auto-initialize
+  initWebGL();
+})();
+</script>
+
+## 6. WebGPU - Next-Gen Graphics
+
+Basic WebGPU demonstration (if supported):
+
+<div class="demo-box">
+  <h3>⚡ WebGPU Graphics</h3>
+  
+  <div style="background: #fff3cd; padding: 1rem; border-radius: 4px; border: 1px solid #ffc107; margin-bottom: 1rem;">
+    <p style="margin: 0; color: #856404;">
+      <strong>⚠️ Browser Support:</strong> WebGPU is experimental and currently only available in Chrome/Edge with the flag enabled, or Chrome Canary. It may not work in your browser.
+    </p>
+  </div>
+  
+  <canvas id="webgpu-canvas" width="600" height="400" style="border: 2px solid #ddd; border-radius: 4px; max-width: 100%; background: #000;"></canvas>
+  
+  <div style="margin-top: 1rem;">
+    <button id="webgpu-render">🎨 Render Triangle</button>
+  </div>
+  
+  <div id="webgpu-output" class="output"></div>
+</div>
+
+<script>
+(function() {
+  const canvas = document.getElementById('webgpu-canvas');
+  const output = document.getElementById('webgpu-output');
+  
+  async function initWebGPU() {
+    if (!navigator.gpu) {
+      output.innerHTML = `
+        <div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
+          <h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ WebGPU Not Supported</h4>
+          <p style="margin: 0.25rem 0;">Your browser does not support WebGPU.</p>
+          <p style="margin: 0.25rem 0; font-size: 0.9rem;">Try Chrome Canary or enable WebGPU flag in Chrome.</p>
+        </div>
+      `;
+      return null;
+    }
+    
+    try {
+      const adapter = await navigator.gpu.requestAdapter();
+      if (!adapter) {
+        throw new Error('No adapter found');
+      }
+      
+      const device = await adapter.requestDevice();
+      const context = canvas.getContext('webgpu');
+      
+      const format = navigator.gpu.getPreferredCanvasFormat();
+      context.configure({
+        device: device,
+        format: format
+      });
+      
+      output.innerHTML = `
+        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ WebGPU Initialized</h4>
+          <p style="margin: 0.25rem 0;"><strong>Adapter:</strong> ${adapter.name || 'Unknown'}</p>
+          <p style="margin: 0.25rem 0;"><strong>Format:</strong> ${format}</p>
+        </div>
+      `;
+      
+      return { device, context, format };
+    } catch (error) {
+      output.innerHTML = `
+        <div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
+          <h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ WebGPU Initialization Failed</h4>
+          <p style="margin: 0.25rem 0;"><strong>Error:</strong> ${error.message}</p>
+        </div>
+      `;
+      return null;
+    }
+  }
+  
+  document.getElementById('webgpu-render').addEventListener('click', async () => {
+    const gpu = await initWebGPU();
+    if (!gpu) return;
+    
+    const { device, context, format } = gpu;
+    
+    // Simple shader that draws a gradient triangle
+    const shaderCode = `
+      @vertex
+      fn vertexMain(@builtin(vertex_index) i : u32) -> @builtin(position) vec4f {
+        const pos = array(
+          vec2f(0.0, 0.6),
+          vec2f(-0.6, -0.6),
+          vec2f(0.6, -0.6)
+        );
+        return vec4f(pos[i], 0.0, 1.0);
+      }
+      
+      @fragment
+      fn fragmentMain(@builtin(position) pos : vec4f) -> @location(0) vec4f {
+        return vec4f(pos.x / 600.0, pos.y / 400.0, 1.0, 1.0);
+      }
+    `;
+    
+    const shaderModule = device.createShaderModule({ code: shaderCode });
+    
+    const pipeline = device.createRenderPipeline({
+      layout: 'auto',
+      vertex: {
+        module: shaderModule,
+        entryPoint: 'vertexMain'
+      },
+      fragment: {
+        module: shaderModule,
+        entryPoint: 'fragmentMain',
+        targets: [{ format: format }]
+      }
+    });
+    
+    const commandEncoder = device.createCommandEncoder();
+    const textureView = context.getCurrentTexture().createView();
+    
+    const renderPass = commandEncoder.beginRenderPass({
+      colorAttachments: [{
+        view: textureView,
+        clearValue: { r: 0.0, g: 0.0, b: 0.0, a: 1.0 },
+        loadOp: 'clear',
+        storeOp: 'store'
+      }]
+    });
+    
+    renderPass.setPipeline(pipeline);
+    renderPass.draw(3);
+    renderPass.end();
+    
+    device.queue.submit([commandEncoder.finish()]);
+    
+    output.innerHTML = `
+      <div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
+        <h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">🎨 Triangle Rendered</h4>
+        <p style="margin: 0;">A gradient triangle has been drawn using WebGPU shaders.</p>
+      </div>
+    `;
+  });
+})();
+</script>
+
+<div class="info-box">
+  <h3>🎯 3D Graphics APIs:</h3>
+  <ul>
+    <li><strong>WebGL:</strong> OpenGL ES 2.0/3.0 for web, widely supported</li>
+    <li><strong>WebGPU:</strong> Modern GPU API, experimental but more powerful</li>
+  </ul>
+  
+  <p style="margin-top: 1rem;"><strong>🎨 WebGL vs WebGPU:</strong></p>
+  <ul>
+    <li><strong>WebGL:</strong> Mature, compatible with all modern browsers, OpenGL-based</li>
+    <li><strong>WebGPU:</strong> Next-gen, better performance, modern shader language (WGSL)</li>
+    <li><strong>WebGL:</strong> Uses GLSL shaders (OpenGL Shading Language)</li>
+    <li><strong>WebGPU:</strong> Uses WGSL shaders (WebGPU Shading Language)</li>
+  </ul>
+  
+  <p style="margin-top: 1rem;"><strong>💡 Use Cases:</strong></p>
+  <ul>
+    <li>3D games and interactive experiences</li>
+    <li>Data visualization and scientific computing</li>
+    <li>Image/video processing with GPU acceleration</li>
+    <li>CAD and 3D modeling tools</li>
+  </ul>
 </div>
