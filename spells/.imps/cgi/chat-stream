@@ -15,8 +15,8 @@ printf 'Access-Control-Allow-Methods: GET, OPTIONS\r\n'
 printf 'Access-Control-Allow-Headers: Content-Type, Last-Event-ID\r\n'
 printf '\r\n'
 
-# Now enable strict mode
-set -eu
+# Don't enable strict mode yet - wait until after initial setup
+# set -eu moved to after padding/retry output
 
 # Configuration
 MAX_CONNECTION_TIME=3600  # 1 hour maximum connection duration
@@ -61,6 +61,9 @@ send_sse_event() {
   done
   printf '\n\n'
 }
+
+# Now enable strict mode after headers and padding are output
+set -eu
 
 # Parse query string using get-query-param
 room=$(get-query-param "room" "${QUERY_STRING:-}")
