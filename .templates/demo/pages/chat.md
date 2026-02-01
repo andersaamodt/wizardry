@@ -825,10 +825,9 @@ function appendMessage(messageLine) {
     
     // Mark regular message as read (current room only, not system log messages)
     if (window.currentRoom) {
-      var messageTimestamp = fullTimestamp;
       var currentReadTimestamp = getReadTimestamp(window.currentRoom);
-      if (messageTimestamp > currentReadTimestamp) {
-        setReadTimestamp(window.currentRoom, messageTimestamp);
+      if (fullTimestamp > currentReadTimestamp) {
+        setReadTimestamp(window.currentRoom, fullTimestamp);
       }
     }
   }
