@@ -107,11 +107,13 @@ Upload an image and see it displayed instantly:
 **Browser API Demos:**
 - [State & Persistence](/pages/storage.html) - localStorage, sessionStorage, IndexedDB, cookies
 - [Forms & Input](/pages/forms-input.html) - Keyboard, pointer events, forms, clipboard
-- [Graphics & Media](/pages/graphics-media.html) - Canvas 2D, SVG, audio playback, Web Audio
+- [Graphics & Media](/pages/graphics-media.html) - Canvas 2D, SVG, audio, WebGL, WebGPU
 - [Time & Performance](/pages/time-performance.html) - Timers, animation frames, performance API
 - [Workers & Background](/pages/workers.html) - Web Workers, Service Workers, message passing
+- [Hardware & Sensors](/pages/hardware.html) - Camera, microphone, screen capture, motion sensors
 - [Security & Permissions](/pages/security.html) - Same-origin policy, permissions API, secure contexts
-- [File Upload](/pages/file-upload.html) - File picker, drag-and-drop, blobs & binary data
+- [File Upload](/pages/file-upload.html) - File picker, drag-and-drop, blobs, Filesystem Access API
+- [More APIs](/pages/misc-apis.html) - Vibration, battery, network info, wake lock, page lifecycle
 
 **Server Demos:**
 - [Advanced Demos](/pages/advanced.html) - System info, color picker, custom elements

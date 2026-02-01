@@ -18,6 +18,7 @@ This template includes comprehensive browser API demonstrations organized into t
 **Graphics & Media:**
 - Canvas 2D rendering, SVG graphics
 - Audio playback, Web Audio API synthesis
+- WebGL (3D graphics), WebGPU (next-gen GPU)
 
 **Time & Performance:**
 - setTimeout/setInterval, requestAnimationFrame
@@ -28,6 +29,12 @@ This template includes comprehensive browser API demonstrations organized into t
 - Service Workers (network interception)
 - Message passing between threads
 
+**Hardware & Sensors:**
+- Camera access (getUserMedia)
+- Microphone access with audio visualization
+- Screen capture (getDisplayMedia)
+- Device motion & orientation sensors
+
 **Security & Permissions:**
 - Same-Origin Policy demonstrations
 - Permissions API queries
@@ -36,6 +43,12 @@ This template includes comprehensive browser API demonstrations organized into t
 **File Upload & Binary I/O:**
 - File picker, drag-and-drop upload
 - Blobs and binary data manipulation
+- File System Access API (read/write local files)
+
+**Additional Browser APIs:**
+- Vibration API, Battery Status API
+- Network Information API
+- Wake Lock API, Page Lifecycle API
 
 **Server-Side Demos:**
 - CGI backend processing
