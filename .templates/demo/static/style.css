@@ -712,6 +712,9 @@ pre code {
   transition: all 0.2s;
   position: relative;  /* For absolute positioning of badges */
   padding-right: 3rem;  /* Make room for badge on right */
+  display: flex;  /* Flexbox to keep # and name on same line */
+  align-items: center;  /* Vertical alignment */
+  flex-wrap: nowrap;  /* Never wrap to next line */
 }
 
 .room-item:hover, .room-item-hover {
@@ -727,12 +730,15 @@ pre code {
 }
 
 .room-item strong {
-  display: inline-block;  /* Inline-block so icon can be on same line */
   font-size: 1rem;
   font-family: Georgia, 'Times New Roman', serif;  /* Serif font for room names */
   font-weight: normal;  /* Normal weight for serif */
   color: #2c2c54;  /* Dark text for readability */
-  /* Removed max-width - let names display fully, badge is absolutely positioned */
+  white-space: nowrap;  /* Prevent text wrapping */
+  overflow: hidden;  /* Hide overflow */
+  text-overflow: ellipsis;  /* Show ... for very long names */
+  flex: 1;  /* Take remaining space */
+  min-width: 0;  /* Allow flexbox to shrink */
 }
 
 .room-meta {
@@ -749,8 +755,8 @@ pre code {
   font-size: 1.5rem;  /* Slightly bigger */
   margin-right: 0.2rem;  /* Less spacing */
   color: #6c9fff;  /* Match primary color */
-  vertical-align: -0.15em;  /* Bump up a bit more */
   line-height: 1;  /* Prevent extra height */
+  flex-shrink: 0;  /* Don't shrink */
 }
 
 .room-item-selected strong {
@@ -935,12 +941,12 @@ pre code {
 
 /* Dot mode styling for badges */
 .unread-badge.dot-mode {
-  width: 6px;  /* Even smaller dot for more prominent glow */
-  height: 6px;
-  min-width: 6px;
+  width: 8px;  /* Slightly bigger dot (was 6px) */
+  height: 8px;
+  min-width: 8px;
   border-radius: 50%;
   padding: 0;
-  margin-top: -3px;  /* Center the smaller dot */
+  margin-top: -4px;  /* Center the dot (adjust for 8px size) */
   color: transparent;
   font-size: 0;
   position: absolute;
@@ -985,30 +991,30 @@ pre code {
 }
 
 .unread-badge.dot-mode.glow-5 {
-  /* 41-60 messages: Still bright but fading */
+  /* 41-60 messages: Fading violet glow */
   background: radial-gradient(circle, #a890d0 40%, transparent 100%);
-  box-shadow: 0 0 12px rgba(168, 144, 208, 0.9), 
-              0 0 22px rgba(155, 126, 201, 0.7), 
-              0 0 32px rgba(155, 126, 201, 0.5);
+  box-shadow: 0 0 10px rgba(168, 144, 208, 0.7), 
+              0 0 18px rgba(155, 126, 201, 0.5), 
+              0 0 26px rgba(155, 126, 201, 0.3);
 }
 
 .unread-badge.dot-mode.glow-6 {
-  /* 61-80 messages: Light grey, dim glow (getting stale) */
-  background: radial-gradient(circle, #b8b8c8 40%, transparent 100%);
-  box-shadow: 0 0 8px rgba(184, 184, 200, 0.6), 
-              0 0 14px rgba(150, 150, 170, 0.4);
+  /* 61-80 messages: Weak violet glow (getting stale) */
+  background: radial-gradient(circle, #9880b0 40%, transparent 100%);
+  box-shadow: 0 0 6px rgba(152, 128, 176, 0.5), 
+              0 0 12px rgba(140, 120, 160, 0.3);
 }
 
 .unread-badge.dot-mode.glow-7 {
-  /* 81-99 messages: Grey, very dim glow */
-  background: radial-gradient(circle, #a0a0b0 40%, transparent 100%);
-  box-shadow: 0 0 6px rgba(160, 160, 176, 0.4), 
-              0 0 10px rgba(140, 140, 160, 0.2);
+  /* 81-99 messages: Very weak violet glow */
+  background: radial-gradient(circle, #887098 40%, transparent 100%);
+  box-shadow: 0 0 4px rgba(136, 112, 152, 0.3), 
+              0 0 8px rgba(120, 100, 140, 0.2);
 }
 
 .unread-badge.dot-mode.glow-stale {
   /* 100+ messages: Grey, NO glow (stale) */
-  background: radial-gradient(circle, #909090 40%, transparent 100%);
+  background: radial-gradient(circle, #707070 40%, transparent 100%);
   box-shadow: none;
 }
 

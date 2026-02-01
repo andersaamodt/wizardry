@@ -378,13 +378,16 @@ function setupUnreadCountsStream() {
                 // Update badge
                 freshBadge.textContent = count;
                 freshBadge.classList.remove('hidden');
+                // ALSO set inline style to override any CSS issues
+                freshBadge.style.display = 'inline-block';
                 // Force a reflow to ensure display change takes effect
                 void freshBadge.offsetWidth;
                 // Apply current display mode styling
                 updateBadgeStyle(freshBadge);
-                console.log('[Unread Counts] Badge SHOWN for', capturedRoomName, 'count:', count, 'has hidden class:', freshBadge.classList.contains('hidden'));
+                console.log('[Unread Counts] Badge SHOWN for', capturedRoomName, 'count:', count, 'computed display:', window.getComputedStyle(freshBadge).display);
               } else {
                 freshBadge.classList.add('hidden');
+                freshBadge.style.display = 'none';
                 // Force a reflow
                 void freshBadge.offsetWidth;
                 console.log('[Unread Counts] Badge HIDDEN for', capturedRoomName);
