@@ -17,14 +17,16 @@ title: Chatrooms
 
 <div class="chat-sidebar">
 <div class="chat-sidebar-content">
+<div class="chatrooms-header">
 <h3>Chatrooms</h3>
-<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, every 2s" hx-swap="innerHTML settle:0ms">
+</div>
+<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, roomListChanged from:body" hx-swap="innerHTML settle:0ms">
 Loading rooms...
 </div>
 
 <div class="room-controls">
 <!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
-<div id="create-room-widget"><a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a><div id="create-room-input-wrapper"><input type="text" id="new-room-name" placeholder="Room name" oninput="validateRoomName()" onkeydown="if(event.key==='Enter' && !document.getElementById('create-room-btn').disabled) { document.getElementById('create-room-btn').click(); }" /><span id="create-room-invalid-icon">&#x1F6AB;</span></div><button id="create-room-btn" disabled hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; validateRoomName(); htmx.trigger('#room-list', 'load'); showNotification(); toggleCreateRoom(); }">Create</button></div>
+<div id="create-room-widget"><a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a><div id="create-room-input-wrapper"><input type="text" id="new-room-name" placeholder="Room name" oninput="validateRoomName()" onkeydown="if(event.key==='Enter' && !document.getElementById('create-room-btn').disabled) { document.getElementById('create-room-btn').click(); }" /><span id="create-room-invalid-icon">&#x1F6AB;</span></div><button id="create-room-btn" disabled hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; validateRoomName(); htmx.trigger('body', 'roomListChanged'); showNotification(); toggleCreateRoom(); }">Create</button></div>
 </div>
 </div>
 
@@ -72,6 +74,14 @@ Delete Room
 </div>
 </div>
 
+<div class="badge-mode-control">
+<label class="toggle-switch">
+<input type="checkbox" id="badge-mode-toggle" onchange="toggleBadgeMode()">
+<span class="toggle-slider"></span>
+<span class="toggle-label">Show unread counts</span>
+</label>
+</div>
+
 ## 💬 Real-Time Chat with Multiple Rooms
 
 This chat system uses the **same message format as the MUD `say` command**, making it fully intercompatible! Messages are stored in `.log` files (one per room) with the format `[HH:MM] username: message`.
@@ -110,6 +120,292 @@ window.hoveredRoom = null;
 window.userHasScrolledUp = false;  // Track if user manually scrolled up
 window.isInitialRoomLoad = false;  // Track if this is the first load of a room
 window.messageEventSource = null;  // SSE connection for real-time messages
+window.unreadCountsEventSource = null;  // SSE connection for real-time unread counts
+
+// Unread message tracking
+// Store read-up-until timestamp per room in localStorage
+
+function getCurrentTimestamp() {
+  // Generate ISO timestamp in format: YYYY-MM-DD HH:MM:SS
+  return new Date().toISOString().replace('T', ' ').substring(0, 19);
+}
+
+function getReadTimestamp(roomName) {
+  var key = 'chatroom_read_' + roomName;
+  return localStorage.getItem(key) || '1970-01-01 00:00:00';
+}
+
+function setReadTimestamp(roomName, timestamp) {
+  var key = 'chatroom_read_' + roomName;
+  localStorage.setItem(key, timestamp);
+}
+
+function markRoomAsRead(roomName) {
+  // Mark all messages as read up to current time
+  setReadTimestamp(roomName, getCurrentTimestamp());
+  // Immediately update badges for responsive UX
+  updateUnreadBadges();
+}
+
+// Badge display mode functions
+function getBadgeMode() {
+  return localStorage.getItem('badgeDisplayMode') || 'number';
+}
+
+function setBadgeMode(mode) {
+  localStorage.setItem('badgeDisplayMode', mode);
+}
+
+function toggleBadgeMode() {
+  var toggleCheckbox = document.getElementById('badge-mode-toggle');
+  // Inverted: checked = show counts (number mode), unchecked = show dots
+  var newMode = toggleCheckbox && toggleCheckbox.checked ? 'number' : 'dot';
+  setBadgeMode(newMode);
+  
+  // Update all visible badges
+  updateAllBadgeStyles();
+}
+
+function updateAllBadgeStyles() {
+  var mode = getBadgeMode();
+  
+  document.querySelectorAll('.unread-badge').forEach(function(badge) {
+    updateBadgeStyle(badge, mode);
+  });
+}
+
+// Simple dot styling: light violet (1-50), grey (51+), no glow
+function updateBadgeStyle(badge, mode) {
+  if (!mode) mode = getBadgeMode();
+  
+  // Get current count from badge
+  var count = parseInt(badge.textContent) || 0;
+  
+  if (mode === 'dot') {
+    // Switch to dot mode
+    badge.classList.add('dot-mode');
+    
+    // Simple 2-level system: light violet (1-50), grey (51+)
+    if (count > 0) {
+      if (count <= 50) {
+        badge.classList.add('dot-light-violet');
+        badge.classList.remove('dot-grey');
+      } else {
+        badge.classList.add('dot-grey');
+        badge.classList.remove('dot-light-violet');
+      }
+    }
+  } else {
+    // Switch to number mode
+    badge.classList.remove('dot-mode', 'dot-light-violet', 'dot-grey');
+  }
+}
+
+function isLogMessage(messageText) {
+  // Check if message is from "log:" user (system messages)
+  // Format: [YYYY-MM-DD HH:MM:SS] log: message
+  var logPattern = /^\[[^\]]+\]\s+log:/;
+  return logPattern.test(messageText);
+}
+
+function countUnreadMessages(roomName, callback) {
+  // Fetch messages and count unreads after last read timestamp
+  console.log('[countUnreadMessages] Fetching for room:', roomName);
+  fetch('/cgi/chat-get-messages?room=' + encodeURIComponent(roomName))
+    .then(function(response) { return response.text(); })
+    .then(function(html) {
+      var tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      
+      // Only count regular messages, not system log messages
+      var messages = tempDiv.querySelectorAll('.chat-msg');  // Excludes .chat-msg-system
+      var readTimestamp = getReadTimestamp(roomName);
+      var unreadCount = 0;
+      var lastMessageTimestamp = null;
+      
+      console.log('[countUnreadMessages]', roomName, '- total messages:', messages.length, 'read timestamp:', readTimestamp);
+      
+      messages.forEach(function(msg) {
+        var timestampSpan = msg.querySelector('.timestamp');
+        if (timestampSpan && timestampSpan.dataset.fullTimestamp) {
+          var msgTimestamp = timestampSpan.dataset.fullTimestamp;
+          lastMessageTimestamp = msgTimestamp;  // Keep updating to get the last one
+          // Compare timestamps (lexicographic works for ISO format)
+          if (msgTimestamp > readTimestamp) {
+            unreadCount++;
+          }
+        }
+      });
+      
+      console.log('[countUnreadMessages]', roomName, '- unread count:', unreadCount, 'last timestamp:', lastMessageTimestamp);
+      callback(unreadCount, lastMessageTimestamp);
+    })
+    .catch(function(err) {
+      console.error('Failed to count unread messages for', roomName, err);
+      callback(0, null);
+    });
+}
+
+function updateUnreadBadges() {
+  // Update all unread badges in the room list
+  var badges = document.querySelectorAll('.unread-badge');
+  
+  // Create a fresh fetch cache for this update cycle only
+  var fetchCache = {};
+  
+  badges.forEach(function(badge) {
+    var roomName = badge.getAttribute('data-room');
+    if (!roomName) return;
+    
+    // Don't show badge for current room
+    if (roomName === window.currentRoom) {
+      badge.classList.add('hidden');
+      return;
+    }
+    
+    // Check if we already fetched this room in this update cycle
+    if (fetchCache[roomName] !== undefined) {
+      // Use cached result from this update cycle
+      var count = fetchCache[roomName];
+      if (count > 0) {
+        badge.textContent = count;
+        badge.classList.remove('hidden');
+        // Apply current display mode styling
+        updateBadgeStyle(badge);
+      } else {
+        badge.classList.add('hidden');
+      }
+      return;
+    }
+    
+    // Fetch and update (all at once, no staggering)
+    // Capture roomName in closure to avoid stale reference
+    (function(capturedRoomName, capturedBadge) {
+      countUnreadMessages(capturedRoomName, function(count, lastMessageTimestamp) {
+        // Cache result for this update cycle
+        fetchCache[capturedRoomName] = count;
+        
+        // Query for fresh badge element (in case DOM was updated)
+        var freshBadge = document.querySelector('.unread-badge[data-room="' + capturedRoomName + '"]');
+        if (!freshBadge) return;
+        
+        // Update badge display
+        if (count > 0) {
+          freshBadge.textContent = count;
+          freshBadge.classList.remove('hidden');
+          // Apply current display mode styling
+          updateBadgeStyle(freshBadge);
+        } else {
+          freshBadge.classList.add('hidden');
+        }
+      });
+    })(roomName, badge);
+  });
+}
+
+// Set up SSE connection for real-time unread counts
+function setupUnreadCountsStream() {
+  // Close existing connection if any
+  if (window.unreadCountsEventSource) {
+    window.unreadCountsEventSource.close();
+    window.unreadCountsEventSource = null;
+  }
+  
+  // Get current username for the SSE endpoint
+  var username = getUsername();
+  var url = '/cgi/chat-unread-counts?username=' + encodeURIComponent(username);
+  
+  // Create new EventSource connection
+  window.unreadCountsEventSource = new EventSource(url);
+  
+  // Handle counts update events
+  window.unreadCountsEventSource.addEventListener('counts', function(event) {
+    try {
+      var counts = JSON.parse(event.data);
+      console.log('[Unread Counts] Received update:', counts);
+      
+      // Give htmx a moment to finish any DOM updates
+      setTimeout(function() {
+        // Process each room in the counts
+        for (var roomName in counts) {
+          if (!counts.hasOwnProperty(roomName)) continue;
+          
+          // Don't show badge for current room
+          if (roomName === window.currentRoom) continue;
+          
+          var serverCount = counts[roomName] || 0;
+          
+          // Create closure to capture roomName
+          (function(capturedRoomName, capturedServerCount) {
+            console.log('[Unread Counts] Processing room:', capturedRoomName, 'serverCount:', capturedServerCount);
+            
+            // Query for fresh badge element
+            var freshBadge = document.querySelector('.unread-badge[data-room="' + capturedRoomName + '"]');
+            if (!freshBadge) {
+              console.log('[Unread Counts] WARNING: No badge element found for', capturedRoomName, '- DOM might not be ready');
+              return;
+            }
+            
+            // Show badges for all rooms (visited and unvisited)
+            // Only show badges for rooms with actual unread messages
+            // For unvisited rooms, total count is shown (which is fine - user can see there are messages)
+            // For visited rooms, accurate unread count is shown (based on read timestamp)
+            if (capturedServerCount > 0) {
+              // Get accurate unread count (no fallbacks - trust the calculation)
+              countUnreadMessages(capturedRoomName, function(accurateCount, lastMessageTimestamp) {
+                console.log('[Unread Counts] Badge for', capturedRoomName, '- accurate count:', accurateCount, 'server count:', capturedServerCount);
+                
+                if (accurateCount > 0) {
+                  var wasVisible = !freshBadge.classList.contains('hidden');
+                  var oldCount = parseInt(freshBadge.textContent) || 0;
+                  
+                  // SHOW badge with accurate count
+                  freshBadge.textContent = accurateCount;
+                  freshBadge.classList.remove('hidden');
+                  freshBadge.style.display = 'inline-block';
+                  updateBadgeStyle(freshBadge);
+                  
+                  // Trigger animation if number changed
+                  if (wasVisible && oldCount !== accurateCount) {
+                    freshBadge.classList.add('updating');
+                    setTimeout(function() {
+                      freshBadge.classList.remove('updating');
+                    }, 400);
+                  }
+                  
+                  console.log('[Unread Counts] Badge SHOWN for', capturedRoomName, ':', accurateCount);
+                } else {
+                  // No unreads - hide badge
+                  freshBadge.classList.add('hidden');
+                  freshBadge.style.display = 'none';
+                  console.log('[Unread Counts] Badge HIDDEN for', capturedRoomName, '- no unreads');
+                }
+              });
+            } else {
+              // Server reports 0 messages - hide badge
+              freshBadge.classList.add('hidden');
+              freshBadge.style.display = 'none';
+              console.log('[Unread Counts] Badge HIDDEN for', capturedRoomName, '- server count 0');
+            }
+          })(roomName, serverCount);
+        }
+      }, 100);  // 100ms delay to ensure DOM is ready
+    } catch (e) {
+      console.error('Error parsing unread counts:', e);
+    }
+  });
+  
+  // Handle connection errors
+  window.unreadCountsEventSource.addEventListener('error', function(event) {
+    console.error('[Unread Counts SSE] Error occurred:', event);
+    // EventSource will automatically reconnect
+  });
+  
+  // Log successful connection
+  window.unreadCountsEventSource.addEventListener('open', function(event) {
+    console.log('[Unread Counts SSE] Connected successfully');
+  });
+}
 
 // Handle room selection from list
 document.addEventListener('htmx:afterSwap', function(event) {
@@ -169,6 +465,9 @@ document.addEventListener('htmx:afterSwap', function(event) {
         item.classList.add('room-item-hover');
       }
     });
+    
+    // Update unread badges after room list is rendered
+    updateUnreadBadges();
   }
   
   // Auto-fade notifications after 4 seconds
@@ -213,6 +512,14 @@ function joinRoom(roomName) {
       item.classList.remove('room-item-selected');
     }
   });
+  
+  // Trigger badge update for previous room (now that we've left it)
+  if (previousRoom && previousRoom !== roomName) {
+    // Wait a moment for avatar to move, then update badges
+    setTimeout(function() {
+      updateUnreadBadges();
+    }, 500);
+  }
   
   // Reset scroll behavior for new room
   window.userHasScrolledUp = false;
@@ -402,6 +709,9 @@ function loadMessages() {
       
       // Check avatar count for delete button logic
       updateDeleteButton();
+      
+      // Mark all current messages as read
+      markRoomAsRead(window.currentRoom);
     });
 }
 
@@ -721,6 +1031,14 @@ function appendMessage(messageLine) {
     if (wasAtBottom || !window.userHasScrolledUp) {
       scrollToBottom();
     }
+    
+    // Mark regular message as read (current room only, not system log messages)
+    if (window.currentRoom) {
+      var currentReadTimestamp = getReadTimestamp(window.currentRoom);
+      if (fullTimestamp > currentReadTimestamp) {
+        setReadTimestamp(window.currentRoom, fullTimestamp);
+      }
+    }
   }
 }
 
@@ -949,11 +1267,11 @@ function deleteRoom() {
   // Delete the room
   fetch('/cgi/chat-delete-room?room=' + encodeURIComponent(roomToDelete))
     .then(function() {
-      htmx.trigger('#room-list', 'load');
+      htmx.trigger('body', 'roomListChanged');
     })
     .catch(function(err) {
       console.error('Failed to delete room:', err);
-      htmx.trigger('#room-list', 'load');
+      htmx.trigger('body', 'roomListChanged');
     });
 }
 
@@ -1034,7 +1352,10 @@ document.addEventListener('DOMContentLoaded', function() {
   messageInput.addEventListener('keypress', function(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();  // Prevent newline
-      sendMessage();
+      // Only send if button is not disabled
+      if (!sendBtn.disabled) {
+        sendMessage();
+      }
     }
     // Shift+Enter adds a newline (default behavior)
   });
@@ -1160,6 +1481,22 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   }
+});
+
+// Initialize unread counts SSE connection on page load
+document.addEventListener('DOMContentLoaded', function() {
+  setupUnreadCountsStream();
+  
+  // Initialize toggle checkbox based on saved mode
+  // Inverted: checked = show counts (number mode)
+  var mode = getBadgeMode();
+  var toggleCheckbox = document.getElementById('badge-mode-toggle');
+  if (toggleCheckbox) {
+    toggleCheckbox.checked = (mode === 'number');
+  }
+  
+  // Apply initial badge styles
+  updateAllBadgeStyles();
 });
 
 // Toggle Create Room widget
