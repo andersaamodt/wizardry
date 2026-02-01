@@ -2,6 +2,48 @@
 
 The wizardry web platform enables creating honest web pages with interactivity backed directly by POSIX shell scripts.
 
+## Demo Pages
+
+This template includes comprehensive browser API demonstrations organized into topic-specific pages:
+
+**State & Persistence:**
+- localStorage, sessionStorage, IndexedDB
+- Cookies, storage quotas
+
+**Forms & Input:**
+- Keyboard events, pointer events (mouse/touch/pen)
+- Native form controls, focus management
+- Clipboard API
+
+**Graphics & Media:**
+- Canvas 2D rendering, SVG graphics
+- Audio playback, Web Audio API synthesis
+
+**Time & Performance:**
+- setTimeout/setInterval, requestAnimationFrame
+- Performance API, Page Visibility API
+
+**Workers & Background:**
+- Web Workers (background threads)
+- Service Workers (network interception)
+- Message passing between threads
+
+**Security & Permissions:**
+- Same-Origin Policy demonstrations
+- Permissions API queries
+- Secure context detection
+
+**File Upload & Binary I/O:**
+- File picker, drag-and-drop upload
+- Blobs and binary data manipulation
+
+**Server-Side Demos:**
+- CGI backend processing
+- Real-time chat, interactive polls
+- System information, custom elements
+
+All navigation is centralized in `includes/nav.md` for easy maintenance.
+
 ## Features
 
 - **Markdown to HTML**: Write content in Markdown, build with Pandoc
