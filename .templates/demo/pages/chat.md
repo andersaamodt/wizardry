@@ -183,22 +183,33 @@ function updateBadgeStyle(badge, mode) {
     // Switch to dot mode
     badge.classList.add('dot-mode');
     
-    // Remove old glow classes
-    badge.classList.remove('glow-low', 'glow-medium', 'glow-high');
+    // Remove all old glow classes
+    badge.classList.remove('glow-1', 'glow-2', 'glow-3', 'glow-4', 'glow-5', 'glow-6', 'glow-7', 'glow-stale');
     
-    // Add glow class based on count
+    // Add glow class based on count (7 levels + stale)
+    // Progression: brightest at 40, fade to grey by 100
     if (count > 0) {
-      if (count <= 3) {
-        badge.classList.add('glow-low');
+      if (count <= 5) {
+        badge.classList.add('glow-1');  // Light purple, subtle glow
       } else if (count <= 10) {
-        badge.classList.add('glow-medium');
+        badge.classList.add('glow-2');  // Light purple, mild glow
+      } else if (count <= 20) {
+        badge.classList.add('glow-3');  // Medium purple, moderate glow
+      } else if (count <= 40) {
+        badge.classList.add('glow-4');  // Bright purple, strong glow (PEAK)
+      } else if (count <= 60) {
+        badge.classList.add('glow-5');  // Fading brightness
+      } else if (count <= 80) {
+        badge.classList.add('glow-6');  // Light grey, dim glow
+      } else if (count < 100) {
+        badge.classList.add('glow-7');  // Grey, very dim
       } else {
-        badge.classList.add('glow-high');
+        badge.classList.add('glow-stale');  // Grey, no glow (stale)
       }
     }
   } else {
     // Switch to number mode
-    badge.classList.remove('dot-mode', 'glow-low', 'glow-medium', 'glow-high');
+    badge.classList.remove('dot-mode', 'glow-1', 'glow-2', 'glow-3', 'glow-4', 'glow-5', 'glow-6', 'glow-7', 'glow-stale');
   }
 }
 
@@ -325,57 +336,63 @@ function setupUnreadCountsStream() {
       var counts = JSON.parse(event.data);
       console.log('[Unread Counts] Received update:', counts);
       
-      // Process each room in the counts
-      for (var roomName in counts) {
-        if (!counts.hasOwnProperty(roomName)) continue;
-        
-        // Don't show badge for current room
-        if (roomName === window.currentRoom) continue;
-        
-        var serverCount = counts[roomName] || 0;
-        
-        // Create closure to capture roomName
-        (function(capturedRoomName) {
-          console.log('[Unread Counts] Updating badge for room:', capturedRoomName, 'serverCount:', serverCount);
-          countUnreadMessages(capturedRoomName, function(count) {
-            // Query for fresh badge element each time (fixes stale DOM reference after htmx swap)
-            var freshBadge = document.querySelector('.unread-badge[data-room="' + capturedRoomName + '"]');
-            if (!freshBadge) {
-              console.log('[Unread Counts] No badge element found for', capturedRoomName);
-              return;
-            }
+      // Give htmx a moment to finish any DOM updates
+      setTimeout(function() {
+        // Process each room in the counts
+        for (var roomName in counts) {
+          if (!counts.hasOwnProperty(roomName)) continue;
+          
+          // Don't show badge for current room
+          if (roomName === window.currentRoom) continue;
+          
+          var serverCount = counts[roomName] || 0;
+          
+          // Create closure to capture roomName
+          (function(capturedRoomName, capturedServerCount) {
+            console.log('[Unread Counts] Processing room:', capturedRoomName, 'serverCount:', capturedServerCount);
             
-            console.log('[Unread Counts] Badge update callback for', capturedRoomName, '- count:', count, 'badge classes before:', freshBadge.className);
-            
-            var oldCount = parseInt(freshBadge.textContent) || 0;
-            var wasVisible = !freshBadge.classList.contains('hidden');
-            
-            if (count > 0) {
-              // Trigger animation if number changed
-              if (wasVisible && oldCount !== count) {
-                freshBadge.classList.add('updating');
-                setTimeout(function() {
-                  freshBadge.classList.remove('updating');
-                }, 400);
+            // Always try to update, even if serverCount is 0
+            // This ensures badges appear when going from 0 to 1
+            countUnreadMessages(capturedRoomName, function(count) {
+              // Query for fresh badge element each time (fixes stale DOM reference after htmx swap)
+              var freshBadge = document.querySelector('.unread-badge[data-room="' + capturedRoomName + '"]');
+              if (!freshBadge) {
+                console.log('[Unread Counts] WARNING: No badge element found for', capturedRoomName, '- DOM might not be ready');
+                return;
               }
               
-              // Update badge
-              freshBadge.textContent = count;
-              freshBadge.classList.remove('hidden');
-              // Force a reflow to ensure display change takes effect
-              void freshBadge.offsetWidth;
-              // Apply current display mode styling
-              updateBadgeStyle(freshBadge);
-              console.log('[Unread Counts] Badge UPDATED for', capturedRoomName, 'count:', count, 'classes:', freshBadge.className, 'computed display:', window.getComputedStyle(freshBadge).display);
-            } else {
-              freshBadge.classList.add('hidden');
-              // Force a reflow
-              void freshBadge.offsetWidth;
-              console.log('[Unread Counts] Badge hidden for', capturedRoomName);
-            }
-          });
-        })(roomName);
-      }
+              console.log('[Unread Counts] Badge callback for', capturedRoomName, '- count:', count, 'was hidden:', freshBadge.classList.contains('hidden'));
+              
+              var oldCount = parseInt(freshBadge.textContent) || 0;
+              var wasVisible = !freshBadge.classList.contains('hidden');
+              
+              if (count > 0) {
+                // Trigger animation if number changed
+                if (wasVisible && oldCount !== count) {
+                  freshBadge.classList.add('updating');
+                  setTimeout(function() {
+                    freshBadge.classList.remove('updating');
+                  }, 400);
+                }
+                
+                // Update badge
+                freshBadge.textContent = count;
+                freshBadge.classList.remove('hidden');
+                // Force a reflow to ensure display change takes effect
+                void freshBadge.offsetWidth;
+                // Apply current display mode styling
+                updateBadgeStyle(freshBadge);
+                console.log('[Unread Counts] Badge SHOWN for', capturedRoomName, 'count:', count, 'has hidden class:', freshBadge.classList.contains('hidden'));
+              } else {
+                freshBadge.classList.add('hidden');
+                // Force a reflow
+                void freshBadge.offsetWidth;
+                console.log('[Unread Counts] Badge HIDDEN for', capturedRoomName);
+              }
+            });
+          })(roomName, serverCount);
+        }
+      }, 100);  // 100ms delay to ensure DOM is ready
     } catch (e) {
       console.error('Error parsing unread counts:', e);
     }
