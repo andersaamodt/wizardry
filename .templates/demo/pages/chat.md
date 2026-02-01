@@ -110,6 +110,7 @@ window.hoveredRoom = null;
 window.userHasScrolledUp = false;  // Track if user manually scrolled up
 window.isInitialRoomLoad = false;  // Track if this is the first load of a room
 window.messageEventSource = null;  // SSE connection for real-time messages
+window.unreadCountsEventSource = null;  // SSE connection for real-time unread counts
 
 // Unread message tracking
 // Store read-up-until timestamp per room in localStorage
@@ -220,6 +221,81 @@ function updateUnreadBadges() {
         badge.style.display = 'none';
       }
     });
+  });
+}
+
+// Set up SSE connection for real-time unread counts
+function setupUnreadCountsStream() {
+  // Close existing connection if any
+  if (window.unreadCountsEventSource) {
+    window.unreadCountsEventSource.close();
+    window.unreadCountsEventSource = null;
+  }
+  
+  // Get current username for the SSE endpoint
+  var username = getUsername();
+  var url = '/cgi/chat-unread-counts?username=' + encodeURIComponent(username);
+  
+  // Create new EventSource connection
+  window.unreadCountsEventSource = new EventSource(url);
+  
+  // Handle counts update events
+  window.unreadCountsEventSource.addEventListener('counts', function(event) {
+    try {
+      var counts = JSON.parse(event.data);
+      
+      // Update all badges with the received counts
+      document.querySelectorAll('.unread-badge').forEach(function(badge) {
+        var roomName = badge.getAttribute('data-room');
+        if (!roomName) return;
+        
+        // Don't show badge for current room
+        if (roomName === window.currentRoom) {
+          badge.style.display = 'none';
+          return;
+        }
+        
+        // Get count from server data
+        var serverCount = counts[roomName] || 0;
+        
+        // Filter by client-side read timestamp
+        var readTimestamp = getReadTimestamp(roomName);
+        
+        // For now, trust server count (we'll refine this if needed)
+        // The server sends total message count, client should filter by read timestamp
+        // But since server doesn't know read timestamps, we need to fetch and count client-side
+        
+        // Instead, let's just update based on server signal that room has messages
+        // and let the existing updateUnreadBadges function calculate the actual count
+        if (serverCount > 0) {
+          // Trigger update for this specific room
+          countUnreadMessages(roomName, function(count) {
+            if (count > 0) {
+              badge.textContent = count;
+              badge.style.display = 'inline-block';
+            } else {
+              badge.style.display = 'none';
+            }
+          });
+        } else {
+          // No messages in room
+          badge.style.display = 'none';
+        }
+      });
+    } catch (e) {
+      console.error('Error parsing unread counts:', e);
+    }
+  });
+  
+  // Handle connection errors
+  window.unreadCountsEventSource.addEventListener('error', function(event) {
+    console.error('[Unread Counts SSE] Error occurred:', event);
+    // EventSource will automatically reconnect
+  });
+  
+  // Log successful connection
+  window.unreadCountsEventSource.addEventListener('open', function(event) {
+    console.log('[Unread Counts SSE] Connected successfully');
   });
 }
 
@@ -1294,6 +1370,11 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   }
+});
+
+// Initialize unread counts SSE connection on page load
+document.addEventListener('DOMContentLoaded', function() {
+  setupUnreadCountsStream();
 });
 
 // Toggle Create Room widget

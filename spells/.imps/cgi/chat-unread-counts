@@ -1,0 +1,178 @@
+#!/bin/sh
+# chat-unread-counts - SSE endpoint for real-time unread message counts
+# Lightweight endpoint that streams only unread counts (not full messages)
+# Monitors all chat room directories and sends updates when counts change
+
+# Send SSE headers with CORS support FIRST (before set -eu)
+printf 'Status: 200 OK\r\n'
+printf 'Content-Type: text/event-stream\r\n'
+printf 'Cache-Control: no-cache\r\n'
+printf 'Connection: keep-alive\r\n'
+printf 'Access-Control-Allow-Origin: *\r\n'
+printf 'Access-Control-Allow-Methods: GET, OPTIONS\r\n'
+printf 'Access-Control-Allow-Headers: Content-Type, Last-Event-ID\r\n'
+printf '\r\n'
+
+# Configuration
+MAX_CONNECTION_TIME=3600  # 1 hour maximum connection duration
+KEEPALIVE_INTERVAL=15     # Send keepalive every 15s when idle
+CHECK_INTERVAL=2          # Check for changes every 2 seconds
+
+# Initial 4KB padding to force fcgiwrap buffer flush
+printf ': '
+i=0
+while [ $i -lt 500 ]; do
+  printf '........'
+  i=$((i + 1))
+done
+printf '\n\n'
+
+# Set reconnection retry interval (5 seconds)
+printf 'retry: 5000\n\n'
+
+# SSE event sender with 4KB padding for immediate delivery
+send_sse_event() {
+  event_type="$1"
+  event_data="$2"
+  
+  # FLUSH BEFORE: 4KB padding
+  printf ': '
+  i=0
+  while [ $i -lt 500 ]; do
+    printf '........'
+    i=$((i + 1))
+  done
+  printf '\n\n'
+  
+  # Event data
+  printf 'event: %s\ndata: %s\n\n' "$event_type" "$event_data"
+  
+  # FLUSH AFTER: 4KB padding
+  printf ': '
+  i=0
+  while [ $i -lt 500 ]; do
+    printf '........'
+    i=$((i + 1))
+  done
+  printf '\n\n'
+}
+
+# Now enable strict mode
+set -eu
+
+# Get site paths
+CHAT_DIR=$(get-site-data-dir "chatrooms")
+mkdir -p "$CHAT_DIR"
+
+# Parse current username from query string (to calculate unread counts)
+username=$(get-query-param "username" "${QUERY_STRING:-}")
+
+# Validate username
+if [ -z "$username" ]; then
+  send_sse_event error "Username required"
+  exit 1
+fi
+
+# Function to count unread messages in a room
+count_unread_in_room() {
+  room_name="$1"
+  room_dir="$CHAT_DIR/$room_name"
+  log_file="$room_dir/.log"
+  
+  # If no log file, no unreads
+  if [ ! -f "$log_file" ] || [ ! -s "$log_file" ]; then
+    echo "0"
+    return
+  fi
+  
+  # Get last read timestamp for this room from localStorage
+  # For server-side, we'll use a simple approach: count messages after user's last avatar activity
+  # Since we don't have access to localStorage server-side, we'll count all non-log messages
+  # The client will filter based on its localStorage read timestamp
+  
+  # Count non-log messages (exclude "log:" messages)
+  unread_count=$(grep -v '^\[[^]]*\] log:' "$log_file" 2>/dev/null | wc -l)
+  
+  echo "$unread_count"
+}
+
+# Function to get unread counts for all rooms as JSON
+get_all_unread_counts() {
+  printf '{'
+  first=1
+  
+  if [ -d "$CHAT_DIR" ]; then
+    for room_dir in "$CHAT_DIR"/*; do
+      [ -d "$room_dir" ] || continue
+      room_name=$(basename "$room_dir")
+      
+      # Skip invalid room names
+      if ! validate-room-name "$room_name" 2>/dev/null; then
+        continue
+      fi
+      
+      count=$(count_unread_in_room "$room_name")
+      
+      # Add to JSON
+      if [ "$first" -eq 0 ]; then
+        printf ','
+      fi
+      printf '"%s":%s' "$room_name" "$count"
+      first=0
+    done
+  fi
+  
+  printf '}'
+}
+
+# Cleanup function
+cleanup() {
+  kill ${keepalive_pid:-} 2>/dev/null || true
+  kill ${timeout_pid:-} 2>/dev/null || true
+  exit
+}
+
+trap cleanup INT TERM EXIT
+
+# Send initial counts
+initial_counts=$(get_all_unread_counts)
+send_sse_event counts "$initial_counts"
+
+# Background keepalive monitor
+(
+  last_activity=$(date +%s)
+  while true; do
+    sleep "$KEEPALIVE_INTERVAL"
+    now=$(date +%s)
+    if [ $((now - last_activity)) -ge 30 ]; then
+      send_sse_event ping "keepalive"
+    fi
+  done
+) &
+keepalive_pid=$!
+
+# Background connection timeout monitor
+(
+  sleep "$MAX_CONNECTION_TIME"
+  send_sse_event timeout "Connection time limit reached. Please reconnect."
+  kill $$ 2>/dev/null || true
+) &
+timeout_pid=$!
+
+# Main monitoring loop
+last_counts="$initial_counts"
+last_check_time=$(date +%s)
+
+while true; do
+  sleep "$CHECK_INTERVAL"
+  
+  # Get current counts
+  current_counts=$(get_all_unread_counts)
+  
+  # Send update if counts changed
+  if [ "$current_counts" != "$last_counts" ]; then
+    send_sse_event counts "$current_counts"
+    last_counts="$current_counts"
+    last_check_time=$(date +%s)
+  fi
+done
