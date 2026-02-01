@@ -110,7 +110,6 @@ window.hoveredRoom = null;
 window.userHasScrolledUp = false;  // Track if user manually scrolled up
 window.isInitialRoomLoad = false;  // Track if this is the first load of a room
 window.messageEventSource = null;  // SSE connection for real-time messages
-window.lastRoomMessageTimestamps = {};  // Track last message timestamp per room
 
 // Unread message tracking
 // Store read-up-until timestamp per room in localStorage
@@ -180,8 +179,10 @@ function countUnreadMessages(roomName, callback) {
 
 function updateUnreadBadges() {
   // Update all unread badges in the room list
-  // Only update badges for rooms where messages have changed
   var badges = document.querySelectorAll('.unread-badge');
+  
+  // Create a fresh fetch cache for this update cycle only
+  var fetchCache = {};
   
   badges.forEach(function(badge) {
     var roomName = badge.getAttribute('data-room');
@@ -193,25 +194,27 @@ function updateUnreadBadges() {
       return;
     }
     
+    // Check if we already fetched this room in this update cycle
+    if (fetchCache[roomName]) {
+      // Use cached result from this update cycle
+      var cached = fetchCache[roomName];
+      if (cached.count > 0) {
+        badge.textContent = cached.count;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+      return;
+    }
+    
     // Fetch and update (all at once, no staggering)
     countUnreadMessages(roomName, function(count, lastMessageTimestamp) {
-      var previousTimestamp = window.lastRoomMessageTimestamps[roomName];
+      // Cache result for this update cycle
+      fetchCache[roomName] = { count: count, timestamp: lastMessageTimestamp };
       
-      // Handle null case: if room now has no messages but previously had some
-      if (!lastMessageTimestamp && previousTimestamp) {
-        window.lastRoomMessageTimestamps[roomName] = null;
+      // Handle null case
+      if (!lastMessageTimestamp) {
         badge.style.display = 'none';
-        return;
-      }
-      
-      // Store current timestamp before comparison (for next iteration)
-      if (lastMessageTimestamp) {
-        window.lastRoomMessageTimestamps[roomName] = lastMessageTimestamp;
-      }
-      
-      // Skip update if timestamp hasn't changed (but not on first load)
-      if (previousTimestamp && lastMessageTimestamp && previousTimestamp === lastMessageTimestamp) {
-        // No new messages, skip update
         return;
       }
       
