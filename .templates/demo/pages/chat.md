@@ -195,11 +195,11 @@ function updateUnreadBadges() {
     }
     
     // Check if we already fetched this room in this update cycle
-    if (fetchCache[roomName]) {
+    if (fetchCache[roomName] !== undefined) {
       // Use cached result from this update cycle
-      var cached = fetchCache[roomName];
-      if (cached.count > 0) {
-        badge.textContent = cached.count;
+      var count = fetchCache[roomName];
+      if (count > 0) {
+        badge.textContent = count;
         badge.style.display = 'inline-block';
       } else {
         badge.style.display = 'none';
@@ -210,13 +210,7 @@ function updateUnreadBadges() {
     // Fetch and update (all at once, no staggering)
     countUnreadMessages(roomName, function(count, lastMessageTimestamp) {
       // Cache result for this update cycle
-      fetchCache[roomName] = { count: count, timestamp: lastMessageTimestamp };
-      
-      // Handle null case
-      if (!lastMessageTimestamp) {
-        badge.style.display = 'none';
-        return;
-      }
+      fetchCache[roomName] = count;
       
       // Update badge display
       if (count > 0) {
