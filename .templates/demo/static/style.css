@@ -463,6 +463,14 @@ pre code {
   button {
     width: 100%;
   }
+  
+  .username-display button {
+    width: auto;
+  }
+  
+  .chat-input-area button {
+    width: auto;
+  }
 }
 
 /* Loading states */
@@ -567,6 +575,7 @@ pre code {
   min-width: 0;  /* Allow flex item to shrink for ellipsis */
   flex: 1;  /* Take available space */
   margin-top: 0.5rem;  /* Add top spacing to username */
+  padding-bottom: 0.25rem;  /* Prevent descenders (g, y, p, etc.) from being cut off */
 }
 
 .username-display button {
@@ -1338,7 +1347,7 @@ pre code {
 }
 
 /* Responsive chat */
-@media (max-width: 768px) {
+@media (max-width: 568px) {
   .chat-container {
     grid-template-columns: 1fr;
     height: auto;
