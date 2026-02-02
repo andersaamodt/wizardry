@@ -62,9 +62,9 @@ $openssl_option"
   service_status_option=""
   tor_service_option=""
   
-  if is-service-installed tor > /dev/null; then
+  if command -v tor >/dev/null 2>&1; then
     service_status_option="View Tor Service Status%sudo systemctl status tor"
-    if is-service-running tor > /dev/null; then
+    if is-tor-running; then
       tor_service_option="Stop Tor%stop-tor"
     else
       tor_service_option="Start Tor%start-tor"
