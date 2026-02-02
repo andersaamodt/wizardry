@@ -96,6 +96,14 @@ case $distro in
       fi
     fi
     
+    # Detect pkgsrc installation directory
+    pkgsrc_prefix=""
+    if [ -d /opt/pkg ]; then
+      pkgsrc_prefix="/opt/pkg"
+    elif [ -d /usr/pkg ]; then
+      pkgsrc_prefix="/usr/pkg"
+    fi
+    
     # Create temp directory for build
     tmp_dir=$(temp-dir tor-install) || exit 1
     trap 'cleanup-dir "$tmp_dir"' EXIT HUP INT TERM
@@ -117,7 +125,22 @@ case $distro in
     cd "tor-${TOR_VERSION}" || exit 1
     
     printf 'Configuring and building Tor (this may take a few minutes)...\n'
-    ./configure --prefix=/usr/local || exit 1
+    
+    # Set configure options based on pkgsrc availability
+    configure_opts="--prefix=/usr/local"
+    if [ -n "$pkgsrc_prefix" ]; then
+      # Point configure to pkgsrc library and include paths
+      configure_opts="$configure_opts --with-libevent-dir=$pkgsrc_prefix"
+      configure_opts="$configure_opts --with-openssl-dir=$pkgsrc_prefix"
+      
+      # Set additional flags for compiler and linker
+      export CPPFLAGS="-I$pkgsrc_prefix/include"
+      export LDFLAGS="-L$pkgsrc_prefix/lib"
+      
+      printf 'Using pkgsrc prefix: %s\n' "$pkgsrc_prefix"
+    fi
+    
+    ./configure $configure_opts || exit 1
     make || exit 1
     
     printf 'Installing Tor to /usr/local/bin...\n'
