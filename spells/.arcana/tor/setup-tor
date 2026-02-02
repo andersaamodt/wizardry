@@ -19,9 +19,6 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
-# How long to wait for tor to generate hidden service files
-TOR_STARTUP_DELAY=2
-
 # Check if tor is installed, offer to install if not
 if ! is-tor-installed; then
         printf '%s\n' "Tor is not installed."
@@ -67,35 +64,25 @@ y|Y)
         printf '%s\n' "HiddenServicePort 80 127.0.0.1:8080" | sudo tee -a "$tor_config_path"
         
         # Restart tor using appropriate method for platform
-        systemctl_available=0
+        tor_restarted=0
         if command -v systemctl >/dev/null 2>&1; then
                 if systemctl list-unit-files | grep -q 'tor.*\.service'; then
-                        systemctl_available=1
+                        sudo systemctl restart tor && tor_restarted=1
                 fi
         fi
         
-        tor_restarted=0
-        if [ "$systemctl_available" -eq 1 ]; then
-                sudo systemctl restart tor && tor_restarted=1
-        elif command -v brew >/dev/null 2>&1; then
+        if [ "$tor_restarted" -eq 0 ]; then
+                printf '%s\n' "Hidden service configured in $tor_config_path"
+                printf '%s\n' "Please restart tor manually to activate the hidden service."
                 case $distro in
                 mac|macos)
-                        brew_restart_msg="Could not restart tor via brew services."
-                        brew_msg2="You may need to restart manually."
-                        brew services restart tor 2>/dev/null && tor_restarted=1 || {
-                                printf '%s\n' "Warning: $brew_restart_msg $brew_msg2"
-                        }
+                        printf '%s\n' "On macOS, you may need to restart tor with:"
+                        printf '%s\n' "  sudo killall tor && tor &"
                         ;;
                 esac
-        fi
-        
-        if [ "$tor_restarted" -eq 0 ]; then
-                restart_msg="Could not automatically restart tor."
-                restart_msg2="Please restart tor manually."
-                printf '%s\n' "Warning: $restart_msg $restart_msg2"
         else
                 # Wait a moment for tor to generate the hidden service
-                sleep "$TOR_STARTUP_DELAY"
+                sleep 2
                 
                 # Read the hidden service address if available
                 hostname_file="${mud_dir}hostname"
