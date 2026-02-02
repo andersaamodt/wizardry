@@ -182,14 +182,40 @@ case $distro in
     fi
     printf '\n'
     
-    # Test what make would do (dry-run)
-    printf 'Testing what make would do (dry-run -n)...\n'
-    make -n 2>&1 | head -20
+    # Check if make command exists
+    printf 'Checking for make command...\n'
+    if command -v make >/dev/null 2>&1; then
+        printf 'make found at: %s\n' "$(command -v make)"
+    else
+        printf 'ERROR: make command not found!\n'
+        exit 1
+    fi
     printf '\n'
     
-    # Test make version
-    printf 'Make version:\n'
-    make --version | head -1
+    # Test make version (capture to variable to see if it produces output)
+    printf 'Testing make --version...\n'
+    set +e
+    make_version_output=$(make --version 2>&1)
+    make_version_exit=$?
+    set -e
+    if [ -n "$make_version_output" ]; then
+        printf '%s\n' "$make_version_output" | head -3
+    else
+        printf 'WARNING: make --version produced no output! Exit code: %d\n' "$make_version_exit"
+    fi
+    printf '\n'
+    
+    # Test what make would do (dry-run)
+    printf 'Testing what make would do (dry-run -n)...\n'
+    set +e
+    make_dryrun_output=$(make -n 2>&1 | head -20)
+    make_dryrun_exit=$?
+    set -e
+    if [ -n "$make_dryrun_output" ]; then
+        printf '%s\n' "$make_dryrun_output"
+    else
+        printf 'WARNING: make -n produced no output! Exit code: %d\n' "$make_dryrun_exit"
+    fi
     printf '\n'
     
     printf 'Testing if output works...\n'
