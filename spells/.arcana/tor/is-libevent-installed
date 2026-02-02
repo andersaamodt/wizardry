@@ -1,0 +1,40 @@
+#!/bin/sh
+
+# Returns 0 (true) if libevent is installed, 1 (false) if not
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-libevent-installed
+
+Checks if libevent library is installed.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+# Check using pkg-config first
+if pkg-config --exists libevent 2>/dev/null; then
+  exit 0
+fi
+
+# Check common library locations
+if [ -f /usr/local/lib/libevent.dylib ]; then
+  exit 0
+fi
+
+if [ -f /opt/local/lib/libevent.dylib ]; then
+  exit 0
+fi
+
+if [ -f /opt/pkg/lib/libevent.dylib ]; then
+  exit 0
+fi
+
+if [ -f /usr/pkg/lib/libevent.dylib ]; then
+  exit 0
+fi
+
+exit 1

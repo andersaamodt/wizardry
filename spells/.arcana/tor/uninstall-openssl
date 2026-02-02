@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# Uninstall OpenSSL library (Tor dependency for macOS).
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-openssl
+
+This spell uninstalls the OpenSSL library.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+# Check if on macOS
+if [ "$(uname -s 2>/dev/null)" != "Darwin" ]; then
+  printf '%s\n' "uninstall-openssl: this uninstaller is for macOS only" >&2
+  exit 1
+fi
+
+PKGIN_PACKAGE="openssl"
+export PKGIN_PACKAGE
+
+"$SCRIPT_DIR/../core/manage-system-command" --uninstall openssl openssl
