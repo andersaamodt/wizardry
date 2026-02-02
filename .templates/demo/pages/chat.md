@@ -100,7 +100,11 @@ function generateGuestName() {
 
 // Get username without display icon (bullet)
 function getUsername() {
-  var displayText = document.getElementById('username-text').textContent.trim();
+  var element = document.getElementById('username-text');
+  if (!element) {
+    return '';
+  }
+  var displayText = element.textContent.trim();
   // Remove @ prefix if present
   return displayText.replace(/^@\s*/, '');
 }
