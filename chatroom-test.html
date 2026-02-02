@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chatroom Mobile Test</title>
+  <link rel="stylesheet" href=".templates/demo/static/style.css">
+  <style>
+    body {
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .test-label {
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <div class="test-label">Desktop View (normal):</div>
+    <div class="chat-container">
+      <div class="chat-sidebar">
+        <div id="room-list">
+          <div class="room active">General Chat</div>
+          <div class="room">Random</div>
+        </div>
+        <div class="username-widget">
+          <div class="username-display" id="username-display">
+            <strong id="username-text">@Guest001</strong>
+            <button onclick="alert('Change clicked')">Change</button>
+          </div>
+        </div>
+      </div>
+      <div class="chat-main">
+        <div class="chat-header">
+          <h3>General Chat</h3>
+        </div>
+        <div class="chat-messages">
+          <p>Welcome to the chatroom!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="test-container">
+    <div class="test-label">Mobile View Test (resize browser to &lt; 768px):</div>
+    <p>The username "Change" button should stay on the right side and NOT expand to full width.</p>
+  </div>
+</body>
+</html>
