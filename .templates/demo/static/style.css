@@ -575,6 +575,7 @@ pre code {
   min-width: 0;  /* Allow flex item to shrink for ellipsis */
   flex: 1;  /* Take available space */
   margin-top: 0.5rem;  /* Add top spacing to username */
+  padding-bottom: 0.25rem;  /* Prevent descenders (g, y, p, etc.) from being cut off */
 }
 
 .username-display button {
