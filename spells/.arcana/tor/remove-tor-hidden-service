@@ -2,15 +2,22 @@
 
 # Remove Tor hidden service configuration
 
+# Check for -y/--yes flag to skip confirmation
+skip_confirm=0
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: remove-tor-hidden-service
+Usage: remove-tor-hidden-service [-y|--yes]
 
 Remove Tor hidden service configuration from torrc.
-Prompts for confirmation before making changes.
+
+Options:
+  -y, --yes  Skip confirmation prompt
 USAGE
   exit 0
+  ;;
+-y|--yes)
+  skip_confirm=1
   ;;
 esac
 
@@ -18,11 +25,22 @@ require-wizardry || exit 1
 
 set -eu
 
-printf '%s' "Do you want to remove the Tor hidden service? [y/n]: "
-IFS= read -r choice || exit 1
+if [ "$skip_confirm" -eq 0 ]; then
+  printf '%s' "Do you want to remove the Tor hidden service? [y/n]: "
+  IFS= read -r choice || exit 1
+  
+  case $choice in
+  y|Y)
+    # Continue with removal
+    ;;
+  *)
+    printf '%s\n' "Tor hidden service removal cancelled."
+    exit 0
+    ;;
+  esac
+fi
 
-case $choice in
-y|Y)
+# Proceed with removal
         # Get torrc path
         tor_config_path=$(torrc-path) || exit 1
         
@@ -50,13 +68,12 @@ y|Y)
                   "$tor_config_path" > "$temp_file"
         fi
         
-        # Verify the temp file has some content (not completely empty)
+        # If temp file is empty, create a minimal valid torrc
         if [ ! -s "$temp_file" ]; then
-                printf '%s\n' "Error: Filtered torrc would be empty." >&2
-                printf '%s\n' "This likely means torrc only contained HiddenService config." >&2
-                printf '%s\n' "Backup preserved at: $backup_path" >&2
-                rm -f "$temp_file"
-                exit 1
+                printf '%s\n' "# Tor configuration file" > "$temp_file"
+                printf '%s\n' "# HiddenService configuration removed $(date -u +%Y-%m-%d)" >> "$temp_file"
+                printf '%s\n' "Filtered torrc was empty (only contained HiddenService config)."
+                printf '%s\n' "Created minimal torrc. Backup preserved at: $backup_path"
         fi
         
         if command -v sudo >/dev/null 2>&1; then

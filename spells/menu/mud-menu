@@ -206,7 +206,7 @@ while true; do
   fi
   
   if [ "$tor_configured" -eq 1 ]; then
-    tor="Remove tor hidden service%remove-tor-hidden-service; echo 8 > \"$SELECTION_FILE\""
+    tor="Remove tor hidden service%remove-tor-hidden-service -y; echo 8 > \"$SELECTION_FILE\""
   else
     tor="Set up tor hidden service%setup-tor; echo 8 > \"$SELECTION_FILE\""
   fi
