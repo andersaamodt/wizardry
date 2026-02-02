@@ -467,6 +467,10 @@ pre code {
   .username-display button {
     width: auto;
   }
+  
+  .chat-input-area button {
+    width: auto;
+  }
 }
 
 /* Loading states */
