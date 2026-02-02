@@ -20,7 +20,15 @@ set -eu
 . env-clear
 
 # Check if tor is installed, offer to install if not
-if ! command -v tor >/dev/null 2>&1; then
+# Use multiple detection methods for reliability
+tor_installed=0
+if [ -x /usr/local/bin/tor ]; then
+        tor_installed=1
+elif command -v tor >/dev/null 2>&1; then
+        tor_installed=1
+fi
+
+if [ "$tor_installed" -eq 0 ]; then
         printf '%s\n' "Tor is not installed."
         printf '%s' "Would you like to install Tor now? [y/n]: "
         IFS= read -r install_choice || exit 1
