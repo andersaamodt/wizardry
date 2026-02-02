@@ -164,8 +164,12 @@ case $distro in
     
     # Step 2: Start compilation
     printf 'Starting make...\n'
+    # Temporarily allow make to fail so we can capture exit code
+    # (with set -e, make failure would exit script before we can handle it)
+    set +e
     make
     make_exit=$?
+    set -e
     
     # Step 3: Report completion
     printf 'Make completed with exit code: %d\n' "$make_exit"
