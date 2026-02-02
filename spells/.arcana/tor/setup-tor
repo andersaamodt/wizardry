@@ -2,15 +2,23 @@
 
 # Set up a Tor hidden service for the MUD gateway.
 
+# Parse flags
+skip_confirm=0
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: setup-tor
+Usage: setup-tor [-y|--yes]
 
 Configure a basic Tor hidden service for the MUD gateway.
 Prompts for confirmation before writing to torrc and restarting Tor.
+
+Options:
+  -y, --yes    Skip confirmation prompt
 USAGE
   exit 0
+  ;;
+-y|--yes)
+  skip_confirm=1
   ;;
 esac
 
@@ -58,8 +66,13 @@ if [ "$tor_installed" -eq 0 ]; then
         esac
 fi
 
-printf '%s' "Set up a Tor hidden service for wizardry MUD gateway? [y/n]: "
-IFS= read -r choice || exit 1
+# Skip confirmation if -y flag was provided
+if [ "$skip_confirm" -eq 0 ]; then
+        printf '%s' "Set up a Tor hidden service for wizardry MUD gateway? [y/n]: "
+        IFS= read -r choice || exit 1
+else
+        choice="y"
+fi
 
 case $choice in
 y|Y)
