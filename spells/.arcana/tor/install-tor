@@ -144,8 +144,11 @@ case $distro in
         --disable-dependency-tracking || exit 1
     fi
     
+    printf '\n'
+    printf '%s\n' "Building Tor from source (this may take several minutes)..."
     make || exit 1
     
+    printf '\n'
     printf 'Installing Tor to /usr/local/bin...\n'
     if command -v sudo >/dev/null 2>&1; then
       sudo make install || exit 1
