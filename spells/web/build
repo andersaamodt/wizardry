@@ -92,6 +92,10 @@ build_site() {
 <script src="https://unpkg.com/idiomorph@0.3.0/dist/idiomorph-ext.min.js"></script>
 HTMX_HEADER
       
+      # Check for includes directory
+      includes_dir="$SITE_DIR/site/includes"
+      nav_file="$includes_dir/nav.md"
+      
       # Use Pandoc to convert Markdown to HTML with YAML front matter
       # Include htmx for interactive CGI features
       # raw_html extension allows HTML blocks to pass through
@@ -103,6 +107,24 @@ HTMX_HEADER
         --include-in-header="$htmx_header" \
         --output="$html_file" \
         "$md_file"
+      
+      # If nav file exists, insert it after the title block header
+      if [ -f "$nav_file" ]; then
+        # Use awk to insert nav after </header> tag
+        temp_html=$(temp-file html-with-nav)
+        awk -v nav_file="$nav_file" '
+          /<\/header>/ {
+            print
+            while ((getline line < nav_file) > 0) {
+              print line
+            }
+            close(nav_file)
+            next
+          }
+          { print }
+        ' "$html_file" > "$temp_html"
+        mv "$temp_html" "$html_file"
+      fi
       
       # Clean up temporary header file
       rm -f "$htmx_header"

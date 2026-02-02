@@ -1,18 +1,8 @@
 ---
-title: About web wizardry
+title: About Web Wizardry
 ---
 
-<nav class="site-nav" style="margin-bottom: 2em; padding: 1em; background: #f5f5f5; border-radius: 5px;">
-  <a href="/pages/index.html">Home</a> |
-  <a href="/pages/advanced.html">Advanced Demos</a> |
-  <a href="/pages/poll.html">Poll</a> |
-  <a href="/pages/chat.html">Chatrooms</a> |
-  <strong>About</strong>
-</nav>
-
-# About web wizardry
-
-## What is web wizardry?
+## What is Web Wizardry?
 
 **web wizardry** is a radical approach to web development that brings the power of POSIX shell scripts to the browser. Instead of complex JavaScript frameworks and heavyweight backend languages, web wizardry uses:
 
