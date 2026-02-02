@@ -196,11 +196,11 @@ while true; do
     fi
   fi
   
-  # Check if HiddenServiceDir is configured (ignore commented lines)
+  # Check if HiddenServiceDir is configured (uncommented lines only)
   if [ -n "$torrc_path" ] && [ -f "$torrc_path" ]; then
-    # Look for uncommented HiddenServiceDir lines
-    if grep "^[[:space:]]*HiddenServiceDir" "$torrc_path" 2>/dev/null | \
-       grep -v "^[[:space:]]*#" | grep -q "HiddenServiceDir"; then
+    # Pattern matches lines starting with optional whitespace + HiddenServiceDir
+    # This naturally excludes commented lines (which start with #)
+    if grep -q "^[[:space:]]*HiddenServiceDir" "$torrc_path" 2>/dev/null; then
       tor_configured=1
     fi
   fi
