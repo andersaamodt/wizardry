@@ -162,7 +162,7 @@ shift|then|unset|until|while)
       ;;
     # BLACKLIST: Common system commands that should not be overridden
     awk|cat|cp|cut|date|df|diff|dirname|du|echo|egrep|env|expr|fgrep|file|find|grep|head|\
-hostname|id|ln|ls|mkdir|mv|printf|ps|rm|rmdir|sed|sleep|sort|stat|tail|tar|tee|touch|tr|\
+hostname|id|ln|ls|make|mkdir|mv|printf|ps|rm|rmdir|sed|sleep|sort|stat|tail|tar|tee|touch|tr|\
 uname|uniq|wc|xargs|xattr)
       return 1  # Blacklisted
       ;;
@@ -510,7 +510,7 @@ shift|then|unset|until|while)
       return 1
       ;;
     awk|cat|cp|cut|date|df|diff|dirname|du|echo|egrep|env|expr|fgrep|file|find|grep|head|\
-hostname|id|ln|ls|mkdir|mv|printf|ps|rm|rmdir|sed|sleep|sort|stat|tail|tar|tee|touch|tr|\
+hostname|id|ln|ls|make|mkdir|mv|printf|ps|rm|rmdir|sed|sleep|sort|stat|tail|tar|tee|touch|tr|\
 uname|uniq|wc|xargs|xattr)
       return 1
       ;;
