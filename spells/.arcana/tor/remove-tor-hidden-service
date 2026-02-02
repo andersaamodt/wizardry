@@ -45,8 +45,9 @@ y|Y)
         # Remove HiddenService lines from torrc using sed for safer handling
         temp_file=$(temp-file torrc-temp)
         if command -v sudo >/dev/null 2>&1; then
+                # Use tee to handle privileged write
                 sudo sed '/^HiddenServiceDir/d; /^HiddenServicePort/d' \
-                  "$tor_config_path" > "$temp_file"
+                  "$tor_config_path" | cat > "$temp_file"
         else
                 sed '/^HiddenServiceDir/d; /^HiddenServicePort/d' \
                   "$tor_config_path" > "$temp_file"
@@ -54,7 +55,9 @@ y|Y)
         
         # Verify the temp file has some content (not completely empty)
         if [ ! -s "$temp_file" ]; then
-                printf '%s\n' "Warning: Filtered torrc would be empty. Restoring backup." >&2
+                printf '%s\n' "Error: Filtered torrc would be empty." >&2
+                printf '%s\n' "This likely means torrc only contained HiddenService config." >&2
+                printf '%s\n' "Backup preserved at: $backup_path" >&2
                 rm -f "$temp_file"
                 exit 1
         fi
