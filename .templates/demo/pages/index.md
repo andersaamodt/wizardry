@@ -86,7 +86,7 @@ Count words, characters, and lines:
 
 ---
 
-## 8. Image Upload & Display
+### 8. Image Upload & Display
 Upload an image and see it displayed instantly:
 
 <div class="demo-box">
@@ -146,22 +146,15 @@ This section refreshes every 5 seconds automatically:
 
 ## 🎨 More Demos
 
-**Browser API Demos:**
-- [State & Persistence](/pages/storage.html) - localStorage, sessionStorage, IndexedDB, cookies
-- [Forms & Input](/pages/forms-input.html) - Keyboard, pointer events, forms, clipboard, custom HTML elements
-- [Graphics & Media](/pages/graphics-media.html) - Canvas 2D, SVG, audio, WebGL, WebGPU, speech synthesis
-- [Time & Performance](/pages/time-performance.html) - Timers, animation frames, performance API
-- [Workers & Communication](/pages/workers.html) - Web Workers, Service Workers, WebRTC, Broadcast Channel
-- [Hardware & Sensors](/pages/hardware.html) - Camera, mic, screen capture, GPS, motion sensors, Media Recorder, Picture-in-Picture
-- [UI & Layout APIs](/pages/ui-apis.html) - Fullscreen, Intersection Observer, Drag & Drop
-- [Security & Crypto](/pages/security.html) - Same-origin, permissions, secure contexts, Web Crypto API
-- [File Upload](/pages/file-upload.html) - File picker, drag-and-drop, blobs, binary data
-- [More APIs](/pages/misc-apis.html) - Vibration, battery, network info, wake lock, page lifecycle
+Explore our comprehensive browser API demonstrations:
 
-**Server Demos:**
-- [Multi-Room Chat](/pages/chat.html) - Real-time chat with MUD compatibility
-- [Interactive Poll](/pages/poll.html) - Real-time voting system
-- [About](/pages/about.html) - Learn about web wizardry
+- **[Hardware & Sensors](/pages/hardware.html)** - Camera, microphone, GPS, motion sensors, screen capture
+- **[Graphics & Media](/pages/graphics-media.html)** - Canvas 2D, SVG, WebGL, WebGPU, audio, speech synthesis
+- **[Threading & Communication](/pages/workers.html)** - Web Workers, Service Workers, WebRTC, P2P messaging
+- **[UI & Layout APIs](/pages/ui-apis.html)** - Fullscreen, Intersection Observer, advanced drag & drop
+- **[Security & Crypto](/pages/security.html)** - Web Crypto API, permissions, same-origin policy
+
+**See the navigation bar at the top of this page for all available demos**, including storage, forms & input, time & performance, file handling, and more.
 
 ---
 

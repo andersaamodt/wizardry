@@ -945,6 +945,69 @@ Create floating video windows:
 
 ---
 
+## 8. Vibration API
+
+Control device vibration (mobile devices):
+
+<div class="demo-box">
+<h3>📳 Vibration API</h3>
+  
+<div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+<button id="vibrate-short">📳 Short Vibration (200ms)</button>
+<button id="vibrate-long">📳 Long Vibration (1000ms)</button>
+<button id="vibrate-pattern">🎵 Pattern Vibration</button>
+<button id="vibrate-stop">⏹️ Stop</button>
+</div>
+  
+<div id="vibrate-output" class="output"></div>
+</div>
+
+<script>
+(function() {
+  const output = document.getElementById('vibrate-output');
+  
+  function checkSupport() {
+    if (!('vibrate' in navigator)) {
+      output.innerHTML = `
+<div style="background: #fff3e0; padding: 1rem; border-radius: 4px; border: 1px solid #ff9800;">
+<h4 style="margin: 0 0 0.5rem 0; color: #e65100;">⚠️ Vibration API Not Supported</h4>
+<p style="margin: 0;">This device does not support the Vibration API. Try on a mobile device.</p>
+</div>
+      `;
+      return false;
+    }
+    return true;
+  }
+  
+  document.getElementById('vibrate-short').addEventListener('click', () => {
+    if (!checkSupport()) return;
+    navigator.vibrate(200);
+    output.innerHTML = '<p style="color: #2980b9;">📳 Vibrating for 200ms</p>';
+  });
+  
+  document.getElementById('vibrate-long').addEventListener('click', () => {
+    if (!checkSupport()) return;
+    navigator.vibrate(1000);
+    output.innerHTML = '<p style="color: #2980b9;">📳 Vibrating for 1000ms</p>';
+  });
+  
+  document.getElementById('vibrate-pattern').addEventListener('click', () => {
+    if (!checkSupport()) return;
+    // Pattern: vibrate 200ms, pause 100ms, vibrate 200ms, pause 100ms, vibrate 200ms
+    navigator.vibrate([200, 100, 200, 100, 200]);
+    output.innerHTML = '<p style="color: #8e44ad;">🎵 Vibration pattern: 200ms x 3 with 100ms pauses</p>';
+  });
+  
+  document.getElementById('vibrate-stop').addEventListener('click', () => {
+    if (!checkSupport()) return;
+    navigator.vibrate(0);
+    output.innerHTML = '<p style="color: #7f8c8d;">⏹️ Vibration stopped</p>';
+  });
+})();
+</script>
+
+---
+
 <div class="info-box">
 <h3>🎯 Hardware APIs Demonstrated:</h3>
 <ul>
@@ -956,6 +1019,7 @@ Create floating video windows:
 <li><strong>Device Orientation:</strong> Compass and tilt sensors</li>
 <li><strong>Media Recorder API:</strong> Record audio/video to downloadable files</li>
 <li><strong>Picture-in-Picture:</strong> Floating video windows</li>
+<li><strong>Vibration API:</strong> Control device vibration and haptic feedback (mobile)</li>
 </ul>
   
 <p style="margin-top: 1rem;"><strong>⚠️ Privacy & Permissions:</strong></p>
@@ -975,5 +1039,6 @@ Create floating video windows:
 <li><strong>Orientation:</strong> Mobile devices with gyroscope/accelerometer</li>
 <li><strong>Media Recorder:</strong> Chrome, Firefox, Edge, Safari (format support varies)</li>
 <li><strong>Picture-in-Picture:</strong> Chrome, Edge, Safari (desktop and mobile). Firefox requires Document Picture-in-Picture API (different implementation)</li>
+<li><strong>Vibration:</strong> Mobile devices (Android Chrome, Firefox, Edge). Not supported on desktop or iOS</li>
 </ul>
 </div>
