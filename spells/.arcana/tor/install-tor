@@ -195,7 +195,7 @@ case $distro in
     # Test make version (capture to variable to see if it produces output)
     printf 'Testing make --version...\n'
     set +e
-    make_version_output=$(make --version 2>&1)
+    make_version_output=$(command make --version 2>&1)
     make_version_exit=$?
     set -e
     if [ -n "$make_version_output" ]; then
@@ -208,7 +208,7 @@ case $distro in
     # Test what make would do (dry-run)
     printf 'Testing what make would do (dry-run -n)...\n'
     set +e
-    make_dryrun_output=$(make -n 2>&1 | head -20)
+    make_dryrun_output=$(command make -n 2>&1 | head -20)
     make_dryrun_exit=$?
     set -e
     if [ -n "$make_dryrun_output" ]; then
@@ -236,7 +236,7 @@ case $distro in
     
     # Run make with debug and verbose flags
     printf 'Running make with verbose flags...\n'
-    MAKEFLAGS= make --debug=v VERBOSE=1 V=1 2>&1 | tee "$make_log"
+    MAKEFLAGS= command make --debug=v VERBOSE=1 V=1 2>&1 | tee "$make_log"
     make_exit=${PIPESTATUS[0]}
     set -e
     printf '\n'
