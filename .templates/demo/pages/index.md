@@ -111,11 +111,11 @@ Upload an image and see it displayed instantly:
 - [Hardware & Sensors](/pages/hardware.html) - Camera, mic, screen capture, GPS, motion sensors, Media Recorder, Picture-in-Picture
 - [UI & Layout APIs](/pages/ui-apis.html) - Fullscreen, Intersection Observer, Drag & Drop
 - [Security & Crypto](/pages/security.html) - Same-origin, permissions, secure contexts, Web Crypto API
-- [File Upload](/pages/file-upload.html) - File picker, drag-and-drop, blobs, Filesystem Access API
+- [File Upload](/pages/file-upload.html) - File picker, drag-and-drop, blobs, binary data
 - [More APIs](/pages/misc-apis.html) - Vibration, battery, network info, wake lock, page lifecycle
 
 **Server Demos:**
-- [Advanced Demos](/pages/advanced.html) - System info, color picker, custom elements
+- [More Basic Demos](/pages/more-demos.html) - System info, color picker, custom components
 - [Multi-Room Chat](/pages/chat.html) - Real-time chat with MUD compatibility
 - [Interactive Poll](/pages/poll.html) - Real-time voting system
 - [About](/pages/about.html) - Learn about web wizardry

@@ -974,6 +974,6 @@ Create floating video windows:
 <li><strong>Motion Sensors:</strong> Mobile devices only (phones, tablets)</li>
 <li><strong>Orientation:</strong> Mobile devices with gyroscope/accelerometer</li>
 <li><strong>Media Recorder:</strong> Chrome, Firefox, Edge, Safari (format support varies)</li>
-<li><strong>Picture-in-Picture:</strong> Chrome, Edge, Safari (desktop and mobile)</li>
+<li><strong>Picture-in-Picture:</strong> Chrome, Edge, Safari (desktop and mobile). Firefox requires Document Picture-in-Picture API (different implementation)</li>
 </ul>
 </div>

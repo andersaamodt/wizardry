@@ -15,7 +15,7 @@ Web Workers allow you to run JavaScript in background threads, separate from the
 <label style="display: block; margin-bottom: 0.5rem;"><strong>Calculate Fibonacci Number:</strong></label>
 <input type="number" id="fib-input" value="40" min="1" max="45" style="width: 100px; padding: 0.5rem; margin-right: 0.5rem;" />
 <button id="fib-worker-btn" style="margin-right: 0.5rem;">🧵 Calculate in Worker</button>
-<button id="fib-main-btn">🔴 Calculate in Main Thread (blocks UI)</button>
+<button id="fib-main-btn">⚠️ Calculate in Main Thread (blocks UI)</button>
 </div>
   
 <div style="margin-bottom: 1rem;">
@@ -50,7 +50,7 @@ Web Workers allow you to run JavaScript in background threads, separate from the
   // Main thread calculation (blocks UI)
   document.getElementById('fib-main-btn').addEventListener('click', () => {
     const n = parseInt(fibInput.value);
-    output.innerHTML = '<p style="color: #e67e22;">🔴 Calculating in main thread (UI will freeze)...</p>';
+    output.innerHTML = '<p style="color: #e67e22;">⚠️ Calculating in main thread (UI will freeze)...</p>';
     
     // Use setTimeout to allow UI to update
     setTimeout(() => {
@@ -60,7 +60,7 @@ Web Workers allow you to run JavaScript in background threads, separate from the
       
       output.innerHTML = `
 <div style="background: #fff3e0; padding: 1rem; border-radius: 4px; border: 1px solid #ff9800;">
-<h4 style="margin: 0 0 0.5rem 0; color: #e65100;">🔴 Main Thread Result</h4>
+<h4 style="margin: 0 0 0.5rem 0; color: #e65100;">⚠️ Main Thread Result</h4>
 <p style="margin: 0.25rem 0;"><strong>Fibonacci(${n}):</strong> ${result}</p>
 <p style="margin: 0.25rem 0;"><strong>Duration:</strong> ${duration.toFixed(2)} ms</p>
 <p style="margin: 0.25rem 0; color: #e65100;"><strong>⚠️ UI was blocked during calculation!</strong></p>
@@ -130,6 +130,12 @@ Web Workers allow you to run JavaScript in background threads, separate from the
 ## 2. Service Workers - Network Interception
 
 Service Workers can intercept network requests and manage caching for offline functionality:
+
+<div style="margin-bottom: 1rem; padding: 1rem; background: #fff3cd; border-radius: 4px; border: 1px solid #ffc107;">
+<p style="margin: 0; color: #856404;">
+<strong>💡 Note:</strong> Service Workers require a secure context (HTTPS) or localhost. If registration fails with a scope error on localhost, this is expected behavior when viewing the page via file:// protocol. Serve the page via HTTP/HTTPS instead.
+</p>
+</div>
 
 <div class="demo-box">
 <h3>🔧 Service Worker Status</h3>
@@ -698,6 +704,6 @@ Send messages between tabs/windows of the same origin:
 </ul>
   
 <p style="margin-top: 1rem; padding: 1rem; background: #fff3cd; border-radius: 4px; border: 1px solid #ffc107;">
-<strong>⚠️ Shared Workers Skipped:</strong> Shared Workers (🔴 deep) allow multiple tabs/windows to share a single worker instance. They have limited browser support and complex lifecycle management, so they're not included in this demo.
+<strong>⚠️ Shared Workers Not Included:</strong> Shared Workers allow multiple tabs/windows to share a single worker instance. They have limited browser support and complex lifecycle management, making them unsuitable for a basic demo.
 </p>
 </div>
