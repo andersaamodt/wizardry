@@ -40,14 +40,9 @@ if [ "$tor_installed" -eq 0 ]; then
                 hash -r 2>/dev/null || true
                 
                 # Verify tor is now installed
-                tor_now_installed=0
-                if [ -x /usr/local/bin/tor ]; then
-                        tor_now_installed=1
-                elif command -v tor >/dev/null 2>&1; then
-                        tor_now_installed=1
-                fi
-                
-                if [ "$tor_now_installed" -eq 0 ]; then
+                if [ -x /usr/local/bin/tor ] || command -v tor >/dev/null 2>&1; then
+                        printf '%s\n' "Tor is now installed and ready."
+                else
                         printf '%s\n' ""
                         printf '%s\n' "ERROR: Tor installation completed but tor is still not found."
                         printf '%s\n' "This usually means:"
@@ -58,8 +53,6 @@ if [ "$tor_installed" -eq 0 ]; then
                         printf '%s\n' "Try opening a new terminal and running this command again."
                         exit 1
                 fi
-                
-                printf '%s\n' "Tor is now installed and ready."
                 ;;
         *)
                 printf '%s\n' "Tor installation skipped. Cannot set up hidden service without Tor."
