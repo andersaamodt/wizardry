@@ -1546,22 +1546,27 @@ function saveUsername() {
       var oldKeyPrefix = 'chatroom_read_' + oldName + '_';
       var newKeyPrefix = 'chatroom_read_' + newName + '_';
       
-      // Iterate through all localStorage keys to find old username's read timestamps
+      // Collect all matching keys first to avoid issues with modifying while iterating
+      var keysToMigrate = [];
       for (var i = 0; i < localStorage.length; i++) {
         var key = localStorage.key(i);
         if (key && key.startsWith(oldKeyPrefix)) {
-          var roomName = key.substring(oldKeyPrefix.length);
-          var timestamp = localStorage.getItem(key);
-          
-          // Copy to new username's key
-          var newKey = newKeyPrefix + roomName;
-          localStorage.setItem(newKey, timestamp);
-          
-          // Remove old key
-          localStorage.removeItem(key);
-          i--; // Adjust index since we removed an item
+          keysToMigrate.push(key);
         }
       }
+      
+      // Now migrate the collected keys
+      keysToMigrate.forEach(function(oldKey) {
+        var roomName = oldKey.substring(oldKeyPrefix.length);
+        var timestamp = localStorage.getItem(oldKey);
+        
+        // Copy to new username's key
+        var newKey = newKeyPrefix + roomName;
+        localStorage.setItem(newKey, timestamp);
+        
+        // Remove old key
+        localStorage.removeItem(oldKey);
+      });
     }
     
     // Set username for display
@@ -1633,9 +1638,16 @@ function migrateOldLocalStorageKeys() {
   for (var i = 0; i < localStorage.length; i++) {
     var key = localStorage.key(i);
     // Old format: chatroom_read_<roomName> (no username)
-    // Match keys that start with 'chatroom_read_' but don't have username in them
-    if (key && key.startsWith(oldKeyPrefix) && !key.match(/^chatroom_read_[^_]+_/)) {
-      keysToMigrate.push(key);
+    // New format: chatroom_read_<username>_<roomName>
+    // Check if key starts with prefix but doesn't already have username format
+    if (key && key.startsWith(oldKeyPrefix) && key !== migrationKey) {
+      // Exclude keys that already have the new format (contain username after prefix)
+      var afterPrefix = key.substring(oldKeyPrefix.length);
+      // If it contains underscore at the expected username position, it's likely new format
+      var hasUsernameFormat = afterPrefix.indexOf('_') > 0;
+      if (!hasUsernameFormat) {
+        keysToMigrate.push(key);
+      }
     }
   }
   
@@ -1652,9 +1664,9 @@ function migrateOldLocalStorageKeys() {
     localStorage.removeItem(oldKey);
   });
   
-  // Mark migration as complete for this username
+  // Mark migration as complete for this username (even if no keys were migrated)
+  localStorage.setItem(migrationKey, 'true');
   if (keysToMigrate.length > 0) {
-    localStorage.setItem(migrationKey, 'true');
     console.log('[Migration] Migrated', keysToMigrate.length, 'read timestamp(s) to username:', currentUsername);
   }
 }
