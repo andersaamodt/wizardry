@@ -445,6 +445,6 @@ Get detailed page load performance metrics:
 </ul>
   
 <p style="margin-top: 1rem; padding: 1rem; background: #fff3cd; border-radius: 4px; border: 1px solid #ffc107;">
-<strong>⚠️ Idle Scheduling Skipped:</strong> The Idle Callback API (requestIdleCallback) is marked as 🔴 deep/experimental. It's useful for advanced performance optimization but not essential for most applications.
+<strong>⚠️ Idle Scheduling Not Included:</strong> The Idle Callback API (requestIdleCallback) is excluded from this demo. While useful for advanced performance optimization, it's an experimental API with limited browser support and not essential for most applications.
 </p>
 </div>

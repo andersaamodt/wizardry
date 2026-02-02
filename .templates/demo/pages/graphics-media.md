@@ -270,7 +270,14 @@ Basic audio playback using HTML5 audio elements:
   }
   
   document.getElementById('audio-play').addEventListener('click', () => {
-    generateTone();
+    audio.play()
+      .then(() => {
+        output.innerHTML = '<p style="color: #27ae60;">▶️ Playing audio</p>';
+      })
+      .catch(err => {
+        // If the minimal audio doesn't work, use generateTone instead
+        generateTone();
+      });
   });
   
   document.getElementById('audio-pause').addEventListener('click', () => {
@@ -410,30 +417,6 @@ Create and manipulate audio using the Web Audio API:
 </script>
 
 ---
-
-<div class="info-box">
-<h3>🎯 Graphics & Media APIs Demonstrated:</h3>
-<ul>
-<li><strong>Canvas 2D Context:</strong> Immediate-mode raster graphics with shapes, text, gradients</li>
-<li><strong>SVG:</strong> Retained-mode vector graphics with DOM manipulation</li>
-<li><strong>HTML5 Audio:</strong> Basic audio playback with media element controls</li>
-<li><strong>Web Audio API:</strong> Low-level audio synthesis and processing</li>
-</ul>
-  
-<p style="margin-top: 1rem;"><strong>💡 Canvas vs SVG:</strong></p>
-<ul>
-<li><strong>Canvas:</strong> Better for dynamic, high-performance graphics (games, animations)</li>
-<li><strong>SVG:</strong> Better for scalable, interactive graphics (charts, diagrams)</li>
-<li><strong>Canvas:</strong> Pixel-based, drawn with JavaScript API calls</li>
-<li><strong>SVG:</strong> Vector-based, manipulated through DOM</li>
-</ul>
-  
-<p style="margin-top: 1rem;"><strong>🔊 Audio Playback:</strong></p>
-<ul>
-<li><strong>HTML5 Audio:</strong> Simple playback of audio files</li>
-<li><strong>Web Audio API:</strong> Real-time synthesis, effects, and audio graph manipulation</li>
-</ul>
-</div>
 
 ## 5. WebGL - 3D Graphics
 

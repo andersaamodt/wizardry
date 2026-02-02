@@ -1,5 +1,5 @@
 ---
-title: Advanced Demos
+title: More Basic Demos
 ---
 
 ### 1. System Information
@@ -157,4 +157,33 @@ spell-card .spell-description {
 <p style="margin-top: 1.5rem; color: #2c2c54; font-style: italic;">
 Hover over the cards to see the animation effects! These elements use pure CSS with no JavaScript required.
 </p>
+</div>
+
+---
+
+## Custom Component Demo
+
+This is a custom reusable component showing repeated elements:
+
+<div class="component-demo">
+<div class="card">
+<h4>Component 1</h4>
+<p>This card is generated from a template</p>
+<button hx-get="/cgi/random-quote" hx-target="#card1-content" hx-swap="innerHTML">Refresh</button>
+<div id="card1-content"></div>
+</div>
+
+<div class="card">
+<h4>Component 2</h4>
+<p>Each can be independently updated</p>
+<button hx-get="/cgi/random-quote" hx-target="#card2-content" hx-swap="innerHTML">Refresh</button>
+<div id="card2-content"></div>
+</div>
+
+<div class="card">
+<h4>Component 3</h4>
+<p>All powered by CGI shell scripts</p>
+<button hx-get="/cgi/random-quote" hx-target="#card3-content" hx-swap="innerHTML">Refresh</button>
+<div id="card3-content"></div>
+</div>
 </div>
