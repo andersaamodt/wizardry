@@ -3,6 +3,12 @@
 
 set -eu
 
+# Check if tor is running first
+if ! is-tor-running >/dev/null 2>&1; then
+  printf 'stop-tor: tor is not running\n' >&2
+  exit 1
+fi
+
 printf 'Stopping tor...\n'
 
 # Try systemctl first (Linux with systemd)
@@ -19,5 +25,5 @@ if sudo killall tor 2>/dev/null; then
   exit 0
 fi
 
-printf 'stop-tor: tor not running or could not be stopped\n' >&2
+printf 'stop-tor: could not be stopped\n' >&2
 exit 1

@@ -16,9 +16,10 @@ esac
 require-wizardry || exit 1
 
 set -eu
+
+# If not root, re-exec with sudo
 if [ "$(id -u)" != "0" ]; then
-   printf '%s\n' "repair-tor-permissions: root privileges required."
-   exit 1
+   exec sudo "$0" "$@"
 fi
 
 user_owner="debian-tor"

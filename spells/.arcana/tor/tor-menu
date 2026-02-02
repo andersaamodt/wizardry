@@ -63,7 +63,10 @@ $openssl_option"
   tor_service_option=""
   
   if command -v tor >/dev/null 2>&1; then
-    service_status_option="View Tor Service Status%sudo systemctl status tor"
+    # Only show "View Tor Service Status" on Linux with systemd
+    if command -v systemctl >/dev/null 2>&1; then
+      service_status_option="View Tor Service Status%sudo systemctl status tor"
+    fi
     if is-tor-running; then
       tor_service_option="Stop Tor%stop-tor"
     else
