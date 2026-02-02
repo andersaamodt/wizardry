@@ -100,23 +100,47 @@ y|Y)
         printf '%s\n' "HiddenServicePort 80 127.0.0.1:8080" | sudo tee -a "$tor_config_path"
         
         # Restart tor using appropriate method for platform
+        printf '%s\n' "Hidden service configured in $tor_config_path"
+        printf '%s\n' "Attempting to restart tor..."
+        
         tor_restarted=0
+        
+        # Try systemctl (Linux with systemd)
         if command -v systemctl >/dev/null 2>&1; then
                 if systemctl list-unit-files | grep -q 'tor.*\.service'; then
-                        sudo systemctl restart tor && tor_restarted=1
+                        if sudo systemctl restart tor 2>/dev/null; then
+                                tor_restarted=1
+                                printf '%s\n' "Tor restarted via systemctl."
+                        fi
+                fi
+        fi
+        
+        # Try killall + restart (macOS and others)
+        if [ "$tor_restarted" -eq 0 ] && command -v killall >/dev/null 2>&1; then
+                if sudo killall tor 2>/dev/null; then
+                        sleep 1
+                        tor >/dev/null 2>&1 &
+                        tor_restarted=1
+                        printf '%s\n' "Tor restarted."
+                fi
+        fi
+        
+        # Try pkill + restart (fallback)
+        if [ "$tor_restarted" -eq 0 ] && command -v pkill >/dev/null 2>&1; then
+                if sudo pkill -9 tor 2>/dev/null; then
+                        sleep 1
+                        tor >/dev/null 2>&1 &
+                        tor_restarted=1
+                        printf '%s\n' "Tor restarted."
                 fi
         fi
         
         if [ "$tor_restarted" -eq 0 ]; then
-                printf '%s\n' "Hidden service configured in $tor_config_path"
-                printf '%s\n' "Please restart tor manually to activate the hidden service."
-                case $distro in
-                mac|macos)
-                        printf '%s\n' "On macOS, you may need to restart tor with:"
-                        printf '%s\n' "  sudo killall tor && tor &"
-                        ;;
-                esac
-        else
+                printf '%s\n' "Tor restart needed for hidden service activation."
+                printf '%s\n' "Tor service not detected or restart failed."
+        fi
+        
+        if [ "$tor_restarted" -eq 1 ]; then
                 # Wait a moment for tor to generate the hidden service
                 sleep 2
                 
