@@ -390,6 +390,122 @@ output.innerHTML = '<p style="color: #7f8c8d;">🧹 Cleared text area</p>';
 
 ---
 
+## 6. Custom HTML Elements
+
+Web browsers support custom HTML elements with CSS styling. Here's a demonstration using custom `<spell-card>` elements:
+
+<style>
+spell-card {
+  display: block;
+  position: relative;
+  padding: 2rem;
+  margin: 1.5rem 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3), 0 1px 8px rgba(0, 0, 0, 0.2);
+  color: white;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+spell-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4), 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+spell-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  animation: shimmer 3s infinite;
+  pointer-events: none;
+}
+
+@keyframes shimmer {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  50% { transform: translate(-30%, -30%) rotate(180deg); opacity: 1; }
+}
+
+spell-card[type="fire"] {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  box-shadow: 0 10px 30px rgba(245, 87, 108, 0.3), 0 1px 8px rgba(0, 0, 0, 0.2);
+}
+
+spell-card[type="ice"] {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  box-shadow: 0 10px 30px rgba(79, 172, 254, 0.3), 0 1px 8px rgba(0, 0, 0, 0.2);
+}
+
+spell-card[type="nature"] {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  box-shadow: 0 10px 30px rgba(67, 233, 123, 0.3), 0 1px 8px rgba(0, 0, 0, 0.2);
+}
+
+spell-card .spell-title {
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin: 0 0 0.5rem 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.5px;
+}
+
+spell-card .spell-icon {
+  font-size: 3rem;
+  position: absolute;
+  right: 1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.2;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+spell-card .spell-description {
+  margin: 0;
+  line-height: 1.6;
+  font-size: 1rem;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+</style>
+
+<div class="demo-box">
+<p style="margin-bottom: 1rem; color: #2c2c54;">Custom HTML elements let you create reusable, styled components. These `<spell-card>` elements demonstrate advanced CSS with gradients, shadows, and animations:</p>
+
+<spell-card>
+<div class="spell-title">⚡ Lightning Bolt</div>
+<div class="spell-icon">⚡</div>
+<div class="spell-description">A basic arcane spell that channels pure electrical energy. Deals moderate damage with high accuracy.</div>
+</spell-card>
+
+<spell-card type="fire">
+<div class="spell-title">🔥 Fireball</div>
+<div class="spell-icon">🔥</div>
+<div class="spell-description">Conjures a massive sphere of flame that explodes on impact. High damage with area effect.</div>
+</spell-card>
+
+<spell-card type="ice">
+<div class="spell-title">❄️ Frost Nova</div>
+<div class="spell-icon">❄️</div>
+<div class="spell-description">Freezes all enemies in the vicinity. Applies slow effect and deals cold damage over time.</div>
+</spell-card>
+
+<spell-card type="nature">
+<div class="spell-title">🌿 Nature's Blessing</div>
+<div class="spell-icon">🌿</div>
+<div class="spell-description">Channels the power of nature to heal allies and remove harmful effects. Restores health gradually.</div>
+</spell-card>
+
+<p style="margin-top: 1.5rem; color: #2c2c54; font-style: italic;">
+Hover over the cards to see the animation effects! These elements use pure CSS with no JavaScript required.
+</p>
+</div>
+
+---
+
 <div class="info-box">
 <h3>🎯 Input APIs Demonstrated:</h3>
 <ul>
@@ -398,6 +514,7 @@ output.innerHTML = '<p style="color: #7f8c8d;">🧹 Cleared text area</p>';
 <li><strong>Form Controls:</strong> All native HTML5 input types</li>
 <li><strong>Focus Management:</strong> Programmatic focus control and tab order</li>
 <li><strong>Clipboard API:</strong> Async read/write system clipboard</li>
+<li><strong>Custom HTML Elements:</strong> Browser-native custom element support with CSS</li>
 </ul>
 
 <p style="margin-top: 1rem;"><strong>💡 Key Benefits:</strong></p>
@@ -406,5 +523,6 @@ output.innerHTML = '<p style="color: #7f8c8d;">🧹 Cleared text area</p>';
 <li>Native form controls are accessible and work with screen readers</li>
 <li>Clipboard API provides secure, permission-based clipboard access</li>
 <li>Focus management enables keyboard navigation and accessibility</li>
+<li>Custom elements allow creating reusable styled components without JavaScript frameworks</li>
 </ul>
 </div>
