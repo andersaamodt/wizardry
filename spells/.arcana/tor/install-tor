@@ -151,10 +151,10 @@ case $distro in
     if ! make; then
       printf '\n'
       printf '%s\n' "ERROR: make failed during compilation."
-      printf '%s\n' "Common causes on macOS:"
-      printf '%s\n' "  - Missing Xcode Command Line Tools"
+      printf '%s\n' "Common causes:"
+      printf '%s\n' "  - Missing Xcode Command Line Tools (run: xcode-select --install)"
       printf '%s\n' "  - Incompatible compiler version"
-      printf '%s\n' "  - Missing dependencies"
+      printf '%s\n' "  - Missing or incompatible dependencies"
       printf '\n'
       printf '%s\n' "Check the output above for specific error messages."
       exit 1
