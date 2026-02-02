@@ -135,12 +135,16 @@ function formatLocalTimestamp(date) {
 }
 
 function getReadTimestamp(roomName) {
-  var key = 'chatroom_read_' + roomName;
+  // Include username in localStorage key so each username has separate read tracking
+  var username = getUsername();
+  var key = 'chatroom_read_' + username + '_' + roomName;
   return localStorage.getItem(key) || '1970-01-01 00:00:00';
 }
 
 function setReadTimestamp(roomName, timestamp) {
-  var key = 'chatroom_read_' + roomName;
+  // Include username in localStorage key so each username has separate read tracking
+  var username = getUsername();
+  var key = 'chatroom_read_' + username + '_' + roomName;
   localStorage.setItem(key, timestamp);
 }
 
@@ -1536,8 +1540,35 @@ function saveUsername() {
       });
     }
     
+    // Migrate localStorage read timestamps from old username to new username
+    // This ensures unread tracking persists when changing username
+    if (oldName) {
+      var oldKeyPrefix = 'chatroom_read_' + oldName + '_';
+      var newKeyPrefix = 'chatroom_read_' + newName + '_';
+      
+      // Iterate through all localStorage keys to find old username's read timestamps
+      for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i);
+        if (key && key.startsWith(oldKeyPrefix)) {
+          var roomName = key.substring(oldKeyPrefix.length);
+          var timestamp = localStorage.getItem(key);
+          
+          // Copy to new username's key
+          var newKey = newKeyPrefix + roomName;
+          localStorage.setItem(newKey, timestamp);
+          
+          // Remove old key
+          localStorage.removeItem(key);
+          i--; // Adjust index since we removed an item
+        }
+      }
+    }
+    
     // Set username for display
     text.textContent = '@' + newName;
+    
+    // Refresh unread badges with new username's read timestamps
+    updateUnreadBadges();
   }
   
   edit.classList.remove('open');
@@ -1582,6 +1613,52 @@ function validateUsername() {
   }
 }
 
+// Migrate old localStorage keys (without username) to new format (with username)
+// This is a one-time migration for existing users
+function migrateOldLocalStorageKeys() {
+  var currentUsername = getUsername();
+  if (!currentUsername) return;
+  
+  var oldKeyPrefix = 'chatroom_read_';
+  var newKeyPrefix = 'chatroom_read_' + currentUsername + '_';
+  
+  // Check if migration has already been done for this username
+  var migrationKey = 'chatroom_migrated_' + currentUsername;
+  if (localStorage.getItem(migrationKey)) {
+    return; // Already migrated
+  }
+  
+  // Find and migrate old-format keys
+  var keysToMigrate = [];
+  for (var i = 0; i < localStorage.length; i++) {
+    var key = localStorage.key(i);
+    // Old format: chatroom_read_<roomName> (no username)
+    // Match keys that start with 'chatroom_read_' but don't have username in them
+    if (key && key.startsWith(oldKeyPrefix) && !key.match(/^chatroom_read_[^_]+_/)) {
+      keysToMigrate.push(key);
+    }
+  }
+  
+  // Migrate found keys
+  keysToMigrate.forEach(function(oldKey) {
+    var roomName = oldKey.substring(oldKeyPrefix.length);
+    var timestamp = localStorage.getItem(oldKey);
+    
+    // Copy to new username-based key
+    var newKey = newKeyPrefix + roomName;
+    localStorage.setItem(newKey, timestamp);
+    
+    // Remove old key
+    localStorage.removeItem(oldKey);
+  });
+  
+  // Mark migration as complete for this username
+  if (keysToMigrate.length > 0) {
+    localStorage.setItem(migrationKey, 'true');
+    console.log('[Migration] Migrated', keysToMigrate.length, 'read timestamp(s) to username:', currentUsername);
+  }
+}
+
 // Add Enter and Escape key support for username editing
 document.addEventListener('DOMContentLoaded', function() {
   var input = document.getElementById('username-edit-input');
@@ -1610,6 +1687,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialize unread counts SSE connection on page load
 document.addEventListener('DOMContentLoaded', function() {
+  // Migrate old localStorage keys to new username-based format
+  migrateOldLocalStorageKeys();
+  
   setupUnreadCountsStream();
   setupRoomListStream();
   
