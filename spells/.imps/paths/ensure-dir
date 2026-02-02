@@ -1,0 +1,6 @@
+#!/bin/sh
+# ensure-dir PATH - create directory if missing
+# Example: ensure-dir ~/.config/myapp
+set -eu
+
+mkdir -p "${1-}"
