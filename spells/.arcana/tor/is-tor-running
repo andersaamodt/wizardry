@@ -16,7 +16,6 @@ esac
 require-wizardry || exit 1
 
 set -eu
-. env-clear
 
 # Check if tor process is running
 if ps -e | grep -q '[t]or'; then
