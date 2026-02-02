@@ -2,16 +2,6 @@
 title: Chatrooms
 ---
 
-<nav class="site-nav" style="margin-bottom: 2em; padding: 1em; background: #f5f5f5; border-radius: 5px;">
-  <a href="/pages/index.html">Home</a> |
-  <a href="/pages/advanced.html">Advanced Demos</a> |
-  <a href="/pages/poll.html">Poll</a> |
-  <strong>Chatrooms</strong> |
-  <a href="/pages/about.html">About</a>
-</nav>
-
-# Chatrooms Demo
-
 <div class="chat-container">
 <div id="room-notification" style="display: none; position: absolute; top: 60px; left: 50%; transform: translateX(-50%); z-index: 1000; max-width: 400px;"></div>
 

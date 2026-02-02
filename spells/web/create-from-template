@@ -66,6 +66,11 @@ if [ -d "$SITE_DIR/static" ]; then
   mv "$SITE_DIR/static" "$SITE_DIR/site/"
 fi
 
+if [ -d "$SITE_DIR/includes" ]; then
+  [ ! -d "$SITE_DIR/site" ] && mkdir -p "$SITE_DIR/site"
+  mv "$SITE_DIR/includes" "$SITE_DIR/site/"
+fi
+
 # Create additional required directories
 mkdir -p "$SITE_DIR/site/uploads"
 mkdir -p "$SITE_DIR/build"
