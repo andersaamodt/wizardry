@@ -49,8 +49,6 @@ y|Y)
         else
                 distro=$(os)
         fi
-
-        new_address=$(tor --quiet --hash-password mypassword | awk '{print $4}')
         
         # Set platform-specific hidden service directory
         case $distro in
@@ -73,22 +71,39 @@ y|Y)
                 fi
         fi
         
+        tor_restarted=0
         if [ "$systemctl_available" -eq 1 ]; then
-                sudo systemctl restart tor
-        elif command -v brew >/dev/null 2>&1 && [ "$distro" = "mac" ]; then
-                # On macOS, try to restart via brew services
-                brew_restart_msg="Could not restart tor via brew services."
-                brew_restart_msg="$brew_restart_msg You may need to restart manually."
-                brew services restart tor 2>/dev/null || {
-                        printf '%s\n' "Warning: $brew_restart_msg"
-                }
-        else
-                restart_msg="Could not automatically restart tor."
-                restart_msg="$restart_msg Please restart tor manually."
-                printf '%s\n' "Warning: $restart_msg"
+                sudo systemctl restart tor && tor_restarted=1
+        elif command -v brew >/dev/null 2>&1; then
+                case $distro in
+                mac|macos)
+                        brew_restart_msg="Could not restart tor via brew services."
+                        brew_msg2="You may need to restart manually."
+                        brew services restart tor 2>/dev/null && tor_restarted=1 || {
+                                printf '%s\n' "Warning: $brew_restart_msg $brew_msg2"
+                        }
+                        ;;
+                esac
         fi
         
-        printf 'New hidden service address: %s\n' "$new_address"
+        if [ "$tor_restarted" -eq 0 ]; then
+                restart_msg="Could not automatically restart tor."
+                restart_msg2="Please restart tor manually."
+                printf '%s\n' "Warning: $restart_msg $restart_msg2"
+        else
+                # Wait a moment for tor to generate the hidden service
+                sleep 2
+                
+                # Read the hidden service address if available
+                hostname_file="${mud_dir}hostname"
+                if [ -f "$hostname_file" ]; then
+                        onion_address=$(cat "$hostname_file")
+                        printf 'Hidden service address: %s\n' "$onion_address"
+                else
+                        printf '%s\n' "Hidden service configured."
+                        printf 'The .onion address will be in: %s\n' "$hostname_file"
+                fi
+        fi
         ;;
 *)
         printf '%s\n' "Tor setup skipped."
