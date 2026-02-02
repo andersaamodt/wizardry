@@ -169,10 +169,30 @@ case $distro in
     fi
     printf 'Makefile found.\n'
     
-    # Step 2: Start compilation
-    printf 'Starting make...\n'
+    # Step 2: Diagnostics before make
+    printf 'Starting make diagnostics...\n'
+    
+    # Check if tor binary already exists
+    printf 'Checking if tor binary already exists...\n'
+    if [ -f "src/app/tor" ] || [ -f "src/or/tor" ]; then
+      printf 'WARNING: tor binary already exists!\n'
+      find . -name "tor" -type f -exec ls -lh {} \;
+    else
+      printf 'tor binary not found - will build from source.\n'
+    fi
+    printf '\n'
+    
+    # Test what make would do (dry-run)
+    printf 'Testing what make would do (dry-run -n)...\n'
+    make -n 2>&1 | head -20
+    printf '\n'
+    
+    # Test make version
+    printf 'Make version:\n'
+    make --version | head -1
+    printf '\n'
+    
     printf 'Testing if output works...\n'
-    # Test that output actually works
     printf 'If you see this, printf works.\n'
     ls -la | head -5
     printf 'If you see file list above, ls and pipes work.\n'
@@ -184,9 +204,13 @@ case $distro in
     # Save make output to a file and also display using tee
     make_log="$(temp-file make-output)"
     printf 'Logging make output to: %s\n' "$make_log"
-    printf 'BUILD DIRECTORY (in case you need it): %s\n' "$tmp_dir"
-    printf 'Starting make NOW...\n'
-    MAKEFLAGS= make 2>&1 | tee "$make_log"
+    printf 'BUILD DIRECTORY: %s\n' "$tmp_dir/tor-$TOR_VERSION"
+    printf 'Preserved on failure for manual debugging.\n'
+    printf '\n'
+    
+    # Run make with debug and verbose flags
+    printf 'Running make with verbose flags...\n'
+    MAKEFLAGS= make --debug=v VERBOSE=1 V=1 2>&1 | tee "$make_log"
     make_exit=${PIPESTATUS[0]}
     set -e
     printf '\n'
