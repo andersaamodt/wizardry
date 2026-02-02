@@ -102,16 +102,11 @@ function generateGuestName() {
 function getUsername() {
   var element = document.getElementById('username-text');
   if (!element) {
-    console.warn('[getUsername] username-text element not found');
     return '';
   }
   var displayText = element.textContent.trim();
   // Remove @ prefix if present
-  var username = displayText.replace(/^@\s*/, '');
-  if (!username) {
-    console.warn('[getUsername] username is empty');
-  }
-  return username;
+  return displayText.replace(/^@\s*/, '');
 }
 
 // Track current room
@@ -144,19 +139,12 @@ function formatLocalTimestamp(date) {
 }
 
 function getReadTimestamp(roomName) {
-  // Include username in localStorage key so each username has separate read tracking
-  var username = getUsername();
-  var key = 'chatroom_read_' + username + '_' + roomName;
-  var value = localStorage.getItem(key) || '1970-01-01 00:00:00';
-  console.log('[getReadTimestamp]', roomName, '- username:', username, 'key:', key, 'value:', value);
-  return value;
+  var key = 'chatroom_read_' + roomName;
+  return localStorage.getItem(key) || '1970-01-01 00:00:00';
 }
 
 function setReadTimestamp(roomName, timestamp) {
-  // Include username in localStorage key so each username has separate read tracking
-  var username = getUsername();
-  var key = 'chatroom_read_' + username + '_' + roomName;
-  console.log('[setReadTimestamp]', roomName, '- username:', username, 'key:', key, 'timestamp:', timestamp);
+  var key = 'chatroom_read_' + roomName;
   localStorage.setItem(key, timestamp);
 }
 
@@ -1552,40 +1540,8 @@ function saveUsername() {
       });
     }
     
-    // Migrate localStorage read timestamps from old username to new username
-    // This ensures unread tracking persists when changing username
-    if (oldName) {
-      var oldKeyPrefix = 'chatroom_read_' + oldName + '_';
-      var newKeyPrefix = 'chatroom_read_' + newName + '_';
-      
-      // Collect all matching keys first to avoid issues with modifying while iterating
-      var keysToMigrate = [];
-      for (var i = 0; i < localStorage.length; i++) {
-        var key = localStorage.key(i);
-        if (key && key.startsWith(oldKeyPrefix)) {
-          keysToMigrate.push(key);
-        }
-      }
-      
-      // Now migrate the collected keys
-      keysToMigrate.forEach(function(oldKey) {
-        var roomName = oldKey.substring(oldKeyPrefix.length);
-        var timestamp = localStorage.getItem(oldKey);
-        
-        // Copy to new username's key
-        var newKey = newKeyPrefix + roomName;
-        localStorage.setItem(newKey, timestamp);
-        
-        // Remove old key
-        localStorage.removeItem(oldKey);
-      });
-    }
-    
     // Set username for display
     text.textContent = '@' + newName;
-    
-    // Refresh unread badges with new username's read timestamps
-    updateUnreadBadges();
   }
   
   edit.classList.remove('open');
@@ -1630,59 +1586,6 @@ function validateUsername() {
   }
 }
 
-// Migrate old localStorage keys (without username) to new format (with username)
-// This is a one-time migration for existing users
-function migrateOldLocalStorageKeys() {
-  var currentUsername = getUsername();
-  if (!currentUsername) return;
-  
-  var oldKeyPrefix = 'chatroom_read_';
-  var newKeyPrefix = 'chatroom_read_' + currentUsername + '_';
-  
-  // Check if migration has already been done for this username
-  var migrationKey = 'chatroom_migrated_' + currentUsername;
-  if (localStorage.getItem(migrationKey)) {
-    return; // Already migrated
-  }
-  
-  // Find and migrate old-format keys
-  var keysToMigrate = [];
-  for (var i = 0; i < localStorage.length; i++) {
-    var key = localStorage.key(i);
-    // Old format: chatroom_read_<roomName> (no username)
-    // New format: chatroom_read_<username>_<roomName>
-    // Check if key starts with prefix but doesn't already have username format
-    if (key && key.startsWith(oldKeyPrefix) && key !== migrationKey) {
-      // Exclude keys that already have the new format (contain username after prefix)
-      var afterPrefix = key.substring(oldKeyPrefix.length);
-      // If it contains underscore at the expected username position, it's likely new format
-      var hasUsernameFormat = afterPrefix.indexOf('_') > 0;
-      if (!hasUsernameFormat) {
-        keysToMigrate.push(key);
-      }
-    }
-  }
-  
-  // Migrate found keys
-  keysToMigrate.forEach(function(oldKey) {
-    var roomName = oldKey.substring(oldKeyPrefix.length);
-    var timestamp = localStorage.getItem(oldKey);
-    
-    // Copy to new username-based key
-    var newKey = newKeyPrefix + roomName;
-    localStorage.setItem(newKey, timestamp);
-    
-    // Remove old key
-    localStorage.removeItem(oldKey);
-  });
-  
-  // Mark migration as complete for this username (even if no keys were migrated)
-  localStorage.setItem(migrationKey, 'true');
-  if (keysToMigrate.length > 0) {
-    console.log('[Migration] Migrated', keysToMigrate.length, 'read timestamp(s) to username:', currentUsername);
-  }
-}
-
 // Add Enter and Escape key support for username editing
 document.addEventListener('DOMContentLoaded', function() {
   var input = document.getElementById('username-edit-input');
@@ -1711,9 +1614,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialize unread counts SSE connection on page load
 document.addEventListener('DOMContentLoaded', function() {
-  // Migrate old localStorage keys to new username-based format
-  migrateOldLocalStorageKeys();
-  
   setupUnreadCountsStream();
   setupRoomListStream();
   
