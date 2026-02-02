@@ -2,8 +2,6 @@
 title: Time & Performance Demos
 ---
 
-# Time & Performance Demos
-
 Explore browser timing APIs and performance measurement tools.
 
 ## 1. Timers - setTimeout & setInterval
@@ -11,16 +9,16 @@ Explore browser timing APIs and performance measurement tools.
 Schedule code execution with delays and intervals:
 
 <div class="demo-box">
-  <h3>⏰ JavaScript Timers</h3>
+<h3>⏰ JavaScript Timers</h3>
   
-  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
-    <button id="timer-delay">⏱️ Delayed Action (2s)</button>
-    <button id="timer-start-interval">▶️ Start Interval (1s)</button>
-    <button id="timer-stop-interval">⏹️ Stop Interval</button>
-    <button id="timer-clear">🧹 Clear</button>
-  </div>
+<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+<button id="timer-delay">⏱️ Delayed Action (2s)</button>
+<button id="timer-start-interval">▶️ Start Interval (1s)</button>
+<button id="timer-stop-interval">⏹️ Stop Interval</button>
+<button id="timer-clear">🧹 Clear</button>
+</div>
   
-  <div id="timer-output" class="output"></div>
+<div id="timer-output" class="output"></div>
 </div>
 
 <script>
@@ -75,17 +73,17 @@ Schedule code execution with delays and intervals:
 Use requestAnimationFrame for frame-synchronized animations:
 
 <div class="demo-box">
-  <h3>🎬 Animation Frame Demo</h3>
+<h3>🎬 Animation Frame Demo</h3>
   
-  <canvas id="anim-canvas" width="600" height="200" style="border: 2px solid #ddd; border-radius: 4px; max-width: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></canvas>
+<canvas id="anim-canvas" width="600" height="200" style="border: 2px solid #ddd; border-radius: 4px; max-width: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></canvas>
   
-  <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-    <button id="anim-start">▶️ Start Animation</button>
-    <button id="anim-stop">⏹️ Stop Animation</button>
-    <button id="anim-reset">🔄 Reset</button>
-  </div>
+<div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+<button id="anim-start">▶️ Start Animation</button>
+<button id="anim-stop">⏹️ Stop Animation</button>
+<button id="anim-reset">🔄 Reset</button>
+</div>
   
-  <div id="anim-output" class="output"></div>
+<div id="anim-output" class="output"></div>
 </div>
 
 <script>
@@ -192,16 +190,16 @@ Use requestAnimationFrame for frame-synchronized animations:
 Measure code execution time with microsecond precision:
 
 <div class="demo-box">
-  <h3>⚡ Performance Measurement</h3>
+<h3>⚡ Performance Measurement</h3>
   
-  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
-    <button id="perf-measure-fast">📊 Measure Fast Operation</button>
-    <button id="perf-measure-slow">📊 Measure Slow Operation</button>
-    <button id="perf-show-marks">📋 Show All Marks</button>
-    <button id="perf-clear">🧹 Clear Marks</button>
-  </div>
+<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+<button id="perf-measure-fast">📊 Measure Fast Operation</button>
+<button id="perf-measure-slow">📊 Measure Slow Operation</button>
+<button id="perf-show-marks">📋 Show All Marks</button>
+<button id="perf-clear">🧹 Clear Marks</button>
+</div>
   
-  <div id="perf-output" class="output"></div>
+<div id="perf-output" class="output"></div>
 </div>
 
 <script>
@@ -224,12 +222,12 @@ Measure code execution time with microsecond precision:
     
     const measure = performance.getEntriesByName('fast-operation')[0];
     output.innerHTML = `
-      <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">⚡ Fast Operation (10,000 iterations)</h4>
-        <p style="margin: 0.25rem 0;"><strong>Duration:</strong> ${measure.duration.toFixed(3)} ms</p>
-        <p style="margin: 0.25rem 0;"><strong>Start Time:</strong> ${measure.startTime.toFixed(3)} ms</p>
-        <p style="margin: 0.25rem 0;"><strong>Result:</strong> ${result.toFixed(2)}</p>
-      </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">⚡ Fast Operation (10,000 iterations)</h4>
+<p style="margin: 0.25rem 0;"><strong>Duration:</strong> ${measure.duration.toFixed(3)} ms</p>
+<p style="margin: 0.25rem 0;"><strong>Start Time:</strong> ${measure.startTime.toFixed(3)} ms</p>
+<p style="margin: 0.25rem 0;"><strong>Result:</strong> ${result.toFixed(2)}</p>
+</div>
     `;
   });
   
@@ -241,12 +239,12 @@ Measure code execution time with microsecond precision:
     
     const measure = performance.getEntriesByName('slow-operation')[0];
     output.innerHTML = `
-      <div style="background: #fff3e0; padding: 1rem; border-radius: 4px; border: 1px solid #ff9800;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #e65100;">🐌 Slow Operation (1,000,000 iterations)</h4>
-        <p style="margin: 0.25rem 0;"><strong>Duration:</strong> ${measure.duration.toFixed(3)} ms</p>
-        <p style="margin: 0.25rem 0;"><strong>Start Time:</strong> ${measure.startTime.toFixed(3)} ms</p>
-        <p style="margin: 0.25rem 0;"><strong>Result:</strong> ${result.toFixed(2)}</p>
-      </div>
+<div style="background: #fff3e0; padding: 1rem; border-radius: 4px; border: 1px solid #ff9800;">
+<h4 style="margin: 0 0 0.5rem 0; color: #e65100;">🐌 Slow Operation (1,000,000 iterations)</h4>
+<p style="margin: 0.25rem 0;"><strong>Duration:</strong> ${measure.duration.toFixed(3)} ms</p>
+<p style="margin: 0.25rem 0;"><strong>Start Time:</strong> ${measure.startTime.toFixed(3)} ms</p>
+<p style="margin: 0.25rem 0;"><strong>Result:</strong> ${result.toFixed(2)}</p>
+</div>
     `;
   });
   
@@ -296,15 +294,15 @@ Measure code execution time with microsecond precision:
 Detect when the page is visible or hidden:
 
 <div class="demo-box">
-  <h3>👁️ Page Visibility Monitor</h3>
+<h3>👁️ Page Visibility Monitor</h3>
   
-  <div id="visibility-status" style="padding: 1rem; border-radius: 4px; font-size: 1.2rem; font-weight: bold; text-align: center; margin-bottom: 1rem;"></div>
+<div id="visibility-status" style="padding: 1rem; border-radius: 4px; font-size: 1.2rem; font-weight: bold; text-align: center; margin-bottom: 1rem;"></div>
   
-  <div id="visibility-output" class="output"></div>
+<div id="visibility-output" class="output"></div>
   
-  <p style="margin-top: 1rem; color: #7f8c8d; font-style: italic;">
+<p style="margin-top: 1rem; color: #7f8c8d; font-style: italic;">
     💡 Try switching to another tab or minimizing the browser to see the visibility change!
-  </p>
+</p>
 </div>
 
 <script>
@@ -334,9 +332,9 @@ Detect when the page is visible or hidden:
     const logHTML = eventLog.map((evt, idx) => {
       const color = evt.visible ? '#27ae60' : '#e74c3c';
       return `
-        <div style="padding: 0.5rem; margin: 0.25rem 0; background: ${idx === 0 ? '#fff3cd' : '#f8f9fa'}; border-left: 3px solid ${color}; border-radius: 3px;">
-          <strong>${evt.time}</strong>: ${evt.state} ${evt.visible ? '(visible)' : '(hidden)'}
-        </div>
+<div style="padding: 0.5rem; margin: 0.25rem 0; background: ${idx === 0 ? '#fff3cd' : '#f8f9fa'}; border-left: 3px solid ${color}; border-radius: 3px;">
+<strong>${evt.time}</strong>: ${evt.state} ${evt.visible ? '(visible)' : '(hidden)'}
+</div>
       `;
     }).join('');
     
@@ -356,11 +354,11 @@ Detect when the page is visible or hidden:
 Get detailed page load performance metrics:
 
 <div class="demo-box">
-  <h3>📊 Page Load Performance</h3>
+<h3>📊 Page Load Performance</h3>
   
-  <button id="perf-nav-show">📈 Show Navigation Timing</button>
+<button id="perf-nav-show">📈 Show Navigation Timing</button>
   
-  <div id="perf-nav-output" class="output"></div>
+<div id="perf-nav-output" class="output"></div>
 </div>
 
 <script>
@@ -388,37 +386,37 @@ Get detailed page load performance metrics:
     };
     
     let html = `
-      <div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
-        <h4 style="margin: 0 0 1rem 0; color: #1565c0;">📊 Navigation Performance Metrics</h4>
-        <table style="width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr style="background: #bbdefb;">
-              <th style="padding: 0.5rem; border: 1px solid #90caf9; text-align: left;">Metric</th>
-              <th style="padding: 0.5rem; border: 1px solid #90caf9; text-align: right;">Duration (ms)</th>
-            </tr>
-          </thead>
-          <tbody>
+<div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
+<h4 style="margin: 0 0 1rem 0; color: #1565c0;">📊 Navigation Performance Metrics</h4>
+<table style="width: 100%; border-collapse: collapse;">
+<thead>
+<tr style="background: #bbdefb;">
+<th style="padding: 0.5rem; border: 1px solid #90caf9; text-align: left;">Metric</th>
+<th style="padding: 0.5rem; border: 1px solid #90caf9; text-align: right;">Duration (ms)</th>
+</tr>
+</thead>
+<tbody>
     `;
     
     Object.entries(metrics).forEach(([name, value]) => {
       const color = value > 100 ? '#ff9800' : value > 50 ? '#ffc107' : '#4caf50';
       html += `
-        <tr>
-          <td style="padding: 0.5rem; border: 1px solid #90caf9;">${name}</td>
-          <td style="padding: 0.5rem; border: 1px solid #90caf9; text-align: right; font-weight: bold; color: ${color};">
+<tr>
+<td style="padding: 0.5rem; border: 1px solid #90caf9;">${name}</td>
+<td style="padding: 0.5rem; border: 1px solid #90caf9; text-align: right; font-weight: bold; color: ${color};">
             ${value.toFixed(2)}
-          </td>
-        </tr>
+</td>
+</tr>
       `;
     });
     
     html += `
-          </tbody>
-        </table>
-        <p style="margin: 1rem 0 0 0; color: #1565c0; font-size: 0.9rem;">
-          <strong>Transfer Size:</strong> ${(perfData.transferSize / 1024).toFixed(2)} KB
-        </p>
-      </div>
+</tbody>
+</table>
+<p style="margin: 1rem 0 0 0; color: #1565c0; font-size: 0.9rem;">
+<strong>Transfer Size:</strong> ${(perfData.transferSize / 1024).toFixed(2)} KB
+</p>
+</div>
     `;
     
     output.innerHTML = html;
@@ -429,24 +427,24 @@ Get detailed page load performance metrics:
 ---
 
 <div class="info-box">
-  <h3>🎯 Time & Performance APIs Demonstrated:</h3>
-  <ul>
-    <li><strong>setTimeout/setInterval:</strong> Schedule delayed and repeated code execution</li>
-    <li><strong>requestAnimationFrame:</strong> Frame-synchronized animations (typically 60 FPS)</li>
-    <li><strong>Performance API:</strong> High-resolution timestamps and performance measurement</li>
-    <li><strong>Page Visibility API:</strong> Detect when page is visible/hidden</li>
-    <li><strong>Navigation Timing:</strong> Detailed page load performance metrics</li>
-  </ul>
+<h3>🎯 Time & Performance APIs Demonstrated:</h3>
+<ul>
+<li><strong>setTimeout/setInterval:</strong> Schedule delayed and repeated code execution</li>
+<li><strong>requestAnimationFrame:</strong> Frame-synchronized animations (typically 60 FPS)</li>
+<li><strong>Performance API:</strong> High-resolution timestamps and performance measurement</li>
+<li><strong>Page Visibility API:</strong> Detect when page is visible/hidden</li>
+<li><strong>Navigation Timing:</strong> Detailed page load performance metrics</li>
+</ul>
   
-  <p style="margin-top: 1rem;"><strong>💡 Best Practices:</strong></p>
-  <ul>
-    <li><strong>Use requestAnimationFrame</strong> for smooth animations instead of setInterval</li>
-    <li><strong>Pause animations/updates</strong> when page is hidden to save resources</li>
-    <li><strong>Use Performance API</strong> for accurate timing measurements</li>
-    <li><strong>Monitor page load metrics</strong> to optimize user experience</li>
-  </ul>
+<p style="margin-top: 1rem;"><strong>💡 Best Practices:</strong></p>
+<ul>
+<li><strong>Use requestAnimationFrame</strong> for smooth animations instead of setInterval</li>
+<li><strong>Pause animations/updates</strong> when page is hidden to save resources</li>
+<li><strong>Use Performance API</strong> for accurate timing measurements</li>
+<li><strong>Monitor page load metrics</strong> to optimize user experience</li>
+</ul>
   
-  <p style="margin-top: 1rem; padding: 1rem; background: #fff3cd; border-radius: 4px; border: 1px solid #ffc107;">
-    <strong>⚠️ Idle Scheduling Skipped:</strong> The Idle Callback API (requestIdleCallback) is marked as 🔴 deep/experimental. It's useful for advanced performance optimization but not essential for most applications.
-  </p>
+<p style="margin-top: 1rem; padding: 1rem; background: #fff3cd; border-radius: 4px; border: 1px solid #ffc107;">
+<strong>⚠️ Idle Scheduling Skipped:</strong> The Idle Callback API (requestIdleCallback) is marked as 🔴 deep/experimental. It's useful for advanced performance optimization but not essential for most applications.
+</p>
 </div>

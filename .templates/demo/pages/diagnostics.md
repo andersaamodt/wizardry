@@ -2,8 +2,6 @@
 title: CGI Diagnostics
 ---
 
-# CGI & htmx Diagnostics
-
 This page helps diagnose issues with CGI functionality.
 
 ## 1. htmx Library Check

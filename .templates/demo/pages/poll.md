@@ -2,8 +2,6 @@
 title: Interactive Poll
 ---
 
-# Interactive Voting Poll
-
 ## 📊 Real-Time Poll
 
 Vote for your favorite and see live results! Each vote is processed by a shell CGI script.

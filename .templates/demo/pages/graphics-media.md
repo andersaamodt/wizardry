@@ -2,8 +2,6 @@
 title: Graphics & Media Demos
 ---
 
-# Graphics & Media Demos
-
 Explore browser graphics rendering and media playback capabilities.
 
 ## 1. Canvas 2D Drawing
@@ -11,20 +9,20 @@ Explore browser graphics rendering and media playback capabilities.
 Draw shapes, text, and images on a 2D canvas:
 
 <div class="demo-box">
-  <h3>🎨 Canvas 2D API</h3>
+<h3>🎨 Canvas 2D API</h3>
   
-  <canvas id="canvas-2d" width="600" height="400" style="border: 2px solid #ddd; border-radius: 4px; max-width: 100%; background: white;"></canvas>
+<canvas id="canvas-2d" width="600" height="400" style="border: 2px solid #ddd; border-radius: 4px; max-width: 100%; background: white;"></canvas>
   
-  <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-    <button id="canvas-rect">Draw Rectangle</button>
-    <button id="canvas-circle">Draw Circle</button>
-    <button id="canvas-line">Draw Line</button>
-    <button id="canvas-text">Draw Text</button>
-    <button id="canvas-gradient">Draw Gradient</button>
-    <button id="canvas-clear">Clear Canvas</button>
-  </div>
+<div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+<button id="canvas-rect">Draw Rectangle</button>
+<button id="canvas-circle">Draw Circle</button>
+<button id="canvas-line">Draw Line</button>
+<button id="canvas-text">Draw Text</button>
+<button id="canvas-gradient">Draw Gradient</button>
+<button id="canvas-clear">Clear Canvas</button>
+</div>
   
-  <div id="canvas-output" class="output"></div>
+<div id="canvas-output" class="output"></div>
 </div>
 
 <script>
@@ -110,27 +108,27 @@ Draw shapes, text, and images on a 2D canvas:
 Create and manipulate SVG graphics:
 
 <div class="demo-box">
-  <h3>📐 SVG Graphics</h3>
+<h3>📐 SVG Graphics</h3>
   
-  <svg id="svg-canvas" width="600" height="300" style="border: 2px solid #ddd; border-radius: 4px; max-width: 100%; background: #f8f9fa;">
-    <defs>
-      <linearGradient id="svg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
-        <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
-      </linearGradient>
-    </defs>
-    <text x="300" y="150" text-anchor="middle" font-size="40" font-family="Georgia, serif" fill="url(#svg-gradient)" font-weight="bold">SVG Graphics</text>
-  </svg>
+<svg id="svg-canvas" width="600" height="300" style="border: 2px solid #ddd; border-radius: 4px; max-width: 100%; background: #f8f9fa;">
+<defs>
+<linearGradient id="svg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+<stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+</linearGradient>
+</defs>
+<text x="300" y="150" text-anchor="middle" font-size="40" font-family="Georgia, serif" fill="url(#svg-gradient)" font-weight="bold">SVG Graphics</text>
+</svg>
   
-  <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-    <button id="svg-rect">Add Rectangle</button>
-    <button id="svg-circle">Add Circle</button>
-    <button id="svg-path">Add Path</button>
-    <button id="svg-animate">Animate</button>
-    <button id="svg-clear">Clear All</button>
-  </div>
+<div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+<button id="svg-rect">Add Rectangle</button>
+<button id="svg-circle">Add Circle</button>
+<button id="svg-path">Add Path</button>
+<button id="svg-animate">Animate</button>
+<button id="svg-clear">Clear All</button>
+</div>
   
-  <div id="svg-output" class="output"></div>
+<div id="svg-output" class="output"></div>
 </div>
 
 <script>
@@ -219,30 +217,30 @@ Create and manipulate SVG graphics:
 Basic audio playback using HTML5 audio elements:
 
 <div class="demo-box">
-  <h3>🔊 Audio Player</h3>
+<h3>🔊 Audio Player</h3>
   
-  <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
-    <audio id="audio-player" controls style="width: 100%;">
-      <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=" type="audio/wav">
+<div style="background: #f8f9fa; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+<audio id="audio-player" controls style="width: 100%;">
+<source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=" type="audio/wav">
       Your browser does not support audio playback.
-    </audio>
-  </div>
+</audio>
+</div>
   
-  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-    <button id="audio-play">▶️ Play</button>
-    <button id="audio-pause">⏸️ Pause</button>
-    <button id="audio-stop">⏹️ Stop</button>
-    <button id="audio-volume-up">🔊 Volume Up</button>
-    <button id="audio-volume-down">🔉 Volume Down</button>
-  </div>
+<div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+<button id="audio-play">▶️ Play</button>
+<button id="audio-pause">⏸️ Pause</button>
+<button id="audio-stop">⏹️ Stop</button>
+<button id="audio-volume-up">🔊 Volume Up</button>
+<button id="audio-volume-down">🔉 Volume Down</button>
+</div>
   
-  <div id="audio-output" class="output"></div>
+<div id="audio-output" class="output"></div>
   
-  <div style="margin-top: 1rem; padding: 1rem; background: #fff3cd; border-radius: 4px; border: 1px solid #ffc107;">
-    <p style="margin: 0; color: #856404;">
-      <strong>💡 Note:</strong> This demo uses a minimal audio data URL. In a real application, you would load actual audio files (MP3, WAV, OGG, etc.).
-    </p>
-  </div>
+<div style="margin-top: 1rem; padding: 1rem; background: #fff3cd; border-radius: 4px; border: 1px solid #ffc107;">
+<p style="margin: 0; color: #856404;">
+<strong>💡 Note:</strong> This demo uses a minimal audio data URL. In a real application, you would load actual audio files (MP3, WAV, OGG, etc.).
+</p>
+</div>
 </div>
 
 <script>
@@ -307,30 +305,30 @@ Basic audio playback using HTML5 audio elements:
 Create and manipulate audio using the Web Audio API:
 
 <div class="demo-box">
-  <h3>🎹 Web Audio Synthesizer</h3>
+<h3>🎹 Web Audio Synthesizer</h3>
   
-  <div style="margin-bottom: 1rem;">
-    <label style="display: block; margin-bottom: 0.5rem;"><strong>Frequency:</strong> <span id="freq-value">440</span> Hz</label>
-    <input type="range" id="freq-slider" min="100" max="1000" value="440" style="width: 100%;" />
-  </div>
+<div style="margin-bottom: 1rem;">
+<label style="display: block; margin-bottom: 0.5rem;"><strong>Frequency:</strong> <span id="freq-value">440</span> Hz</label>
+<input type="range" id="freq-slider" min="100" max="1000" value="440" style="width: 100%;" />
+</div>
   
-  <div style="margin-bottom: 1rem;">
-    <label style="display: block; margin-bottom: 0.5rem;"><strong>Wave Type:</strong></label>
-    <select id="wave-type" style="width: 100%; padding: 0.5rem;">
-      <option value="sine">Sine Wave</option>
-      <option value="square">Square Wave</option>
-      <option value="sawtooth">Sawtooth Wave</option>
-      <option value="triangle">Triangle Wave</option>
-    </select>
-  </div>
+<div style="margin-bottom: 1rem;">
+<label style="display: block; margin-bottom: 0.5rem;"><strong>Wave Type:</strong></label>
+<select id="wave-type" style="width: 100%; padding: 0.5rem;">
+<option value="sine">Sine Wave</option>
+<option value="square">Square Wave</option>
+<option value="sawtooth">Sawtooth Wave</option>
+<option value="triangle">Triangle Wave</option>
+</select>
+</div>
   
-  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-    <button id="synth-start">▶️ Start Oscillator</button>
-    <button id="synth-stop">⏹️ Stop Oscillator</button>
-    <button id="synth-beep">🔔 Play Beep</button>
-  </div>
+<div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+<button id="synth-start">▶️ Start Oscillator</button>
+<button id="synth-stop">⏹️ Stop Oscillator</button>
+<button id="synth-beep">🔔 Play Beep</button>
+</div>
   
-  <div id="synth-output" class="output"></div>
+<div id="synth-output" class="output"></div>
 </div>
 
 <script>
@@ -414,27 +412,27 @@ Create and manipulate audio using the Web Audio API:
 ---
 
 <div class="info-box">
-  <h3>🎯 Graphics & Media APIs Demonstrated:</h3>
-  <ul>
-    <li><strong>Canvas 2D Context:</strong> Immediate-mode raster graphics with shapes, text, gradients</li>
-    <li><strong>SVG:</strong> Retained-mode vector graphics with DOM manipulation</li>
-    <li><strong>HTML5 Audio:</strong> Basic audio playback with media element controls</li>
-    <li><strong>Web Audio API:</strong> Low-level audio synthesis and processing</li>
-  </ul>
+<h3>🎯 Graphics & Media APIs Demonstrated:</h3>
+<ul>
+<li><strong>Canvas 2D Context:</strong> Immediate-mode raster graphics with shapes, text, gradients</li>
+<li><strong>SVG:</strong> Retained-mode vector graphics with DOM manipulation</li>
+<li><strong>HTML5 Audio:</strong> Basic audio playback with media element controls</li>
+<li><strong>Web Audio API:</strong> Low-level audio synthesis and processing</li>
+</ul>
   
-  <p style="margin-top: 1rem;"><strong>💡 Canvas vs SVG:</strong></p>
-  <ul>
-    <li><strong>Canvas:</strong> Better for dynamic, high-performance graphics (games, animations)</li>
-    <li><strong>SVG:</strong> Better for scalable, interactive graphics (charts, diagrams)</li>
-    <li><strong>Canvas:</strong> Pixel-based, drawn with JavaScript API calls</li>
-    <li><strong>SVG:</strong> Vector-based, manipulated through DOM</li>
-  </ul>
+<p style="margin-top: 1rem;"><strong>💡 Canvas vs SVG:</strong></p>
+<ul>
+<li><strong>Canvas:</strong> Better for dynamic, high-performance graphics (games, animations)</li>
+<li><strong>SVG:</strong> Better for scalable, interactive graphics (charts, diagrams)</li>
+<li><strong>Canvas:</strong> Pixel-based, drawn with JavaScript API calls</li>
+<li><strong>SVG:</strong> Vector-based, manipulated through DOM</li>
+</ul>
   
-  <p style="margin-top: 1rem;"><strong>🔊 Audio Playback:</strong></p>
-  <ul>
-    <li><strong>HTML5 Audio:</strong> Simple playback of audio files</li>
-    <li><strong>Web Audio API:</strong> Real-time synthesis, effects, and audio graph manipulation</li>
-  </ul>
+<p style="margin-top: 1rem;"><strong>🔊 Audio Playback:</strong></p>
+<ul>
+<li><strong>HTML5 Audio:</strong> Simple playback of audio files</li>
+<li><strong>Web Audio API:</strong> Real-time synthesis, effects, and audio graph manipulation</li>
+</ul>
 </div>
 
 ## 5. WebGL - 3D Graphics
@@ -442,22 +440,22 @@ Create and manipulate audio using the Web Audio API:
 Basic WebGL demonstration with a rotating triangle:
 
 <div class="demo-box">
-  <h3>🎮 WebGL 3D Graphics</h3>
+<h3>🎮 WebGL 3D Graphics</h3>
   
-  <canvas id="webgl-canvas" width="600" height="400" style="border: 2px solid #ddd; border-radius: 4px; max-width: 100%; background: #000;"></canvas>
+<canvas id="webgl-canvas" width="600" height="400" style="border: 2px solid #ddd; border-radius: 4px; max-width: 100%; background: #000;"></canvas>
   
-  <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-    <button id="webgl-start">▶️ Start Animation</button>
-    <button id="webgl-stop">⏹️ Stop</button>
-    <button id="webgl-reset">🔄 Reset</button>
-    <label style="display: flex; align-items: center; gap: 0.5rem;">
-      <span>Speed:</span>
-      <input type="range" id="webgl-speed" min="0.5" max="5" step="0.5" value="1" style="width: 100px;" />
-      <span id="webgl-speed-value">1x</span>
-    </label>
-  </div>
+<div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+<button id="webgl-start">▶️ Start Animation</button>
+<button id="webgl-stop">⏹️ Stop</button>
+<button id="webgl-reset">🔄 Reset</button>
+<label style="display: flex; align-items: center; gap: 0.5rem;">
+<span>Speed:</span>
+<input type="range" id="webgl-speed" min="0.5" max="5" step="0.5" value="1" style="width: 100px;" />
+<span id="webgl-speed-value">1x</span>
+</label>
+</div>
   
-  <div id="webgl-output" class="output"></div>
+<div id="webgl-output" class="output"></div>
 </div>
 
 <script>
@@ -483,10 +481,10 @@ Basic WebGL demonstration with a rotating triangle:
     
     if (!gl) {
       output.innerHTML = `
-        <div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ WebGL Not Supported</h4>
-          <p style="margin: 0;">Your browser does not support WebGL.</p>
-        </div>
+<div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
+<h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ WebGL Not Supported</h4>
+<p style="margin: 0;">Your browser does not support WebGL.</p>
+</div>
       `;
       return false;
     }
@@ -574,11 +572,11 @@ Basic WebGL demonstration with a rotating triangle:
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     
     output.innerHTML = `
-      <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ WebGL Initialized</h4>
-        <p style="margin: 0.25rem 0;"><strong>Renderer:</strong> ${gl.getParameter(gl.RENDERER)}</p>
-        <p style="margin: 0.25rem 0;"><strong>Version:</strong> ${gl.getParameter(gl.VERSION)}</p>
-      </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ WebGL Initialized</h4>
+<p style="margin: 0.25rem 0;"><strong>Renderer:</strong> ${gl.getParameter(gl.RENDERER)}</p>
+<p style="margin: 0.25rem 0;"><strong>Version:</strong> ${gl.getParameter(gl.VERSION)}</p>
+</div>
     `;
     
     return true;
@@ -639,21 +637,21 @@ Basic WebGL demonstration with a rotating triangle:
 Basic WebGPU demonstration (if supported):
 
 <div class="demo-box">
-  <h3>⚡ WebGPU Graphics</h3>
+<h3>⚡ WebGPU Graphics</h3>
   
-  <div style="background: #fff3cd; padding: 1rem; border-radius: 4px; border: 1px solid #ffc107; margin-bottom: 1rem;">
-    <p style="margin: 0; color: #856404;">
-      <strong>⚠️ Browser Support:</strong> WebGPU is an emerging standard with growing browser support. Check your browser's compatibility before relying on this API in production.
-    </p>
-  </div>
+<div style="background: #fff3cd; padding: 1rem; border-radius: 4px; border: 1px solid #ffc107; margin-bottom: 1rem;">
+<p style="margin: 0; color: #856404;">
+<strong>⚠️ Browser Support:</strong> WebGPU is an emerging standard with growing browser support. Check your browser's compatibility before relying on this API in production.
+</p>
+</div>
   
-  <canvas id="webgpu-canvas" width="600" height="400" style="border: 2px solid #ddd; border-radius: 4px; max-width: 100%; background: #000;"></canvas>
+<canvas id="webgpu-canvas" width="600" height="400" style="border: 2px solid #ddd; border-radius: 4px; max-width: 100%; background: #000;"></canvas>
   
-  <div style="margin-top: 1rem;">
-    <button id="webgpu-render">🎨 Render Triangle</button>
-  </div>
+<div style="margin-top: 1rem;">
+<button id="webgpu-render">🎨 Render Triangle</button>
+</div>
   
-  <div id="webgpu-output" class="output"></div>
+<div id="webgpu-output" class="output"></div>
 </div>
 
 <script>
@@ -664,11 +662,11 @@ Basic WebGPU demonstration (if supported):
   async function initWebGPU() {
     if (!navigator.gpu) {
       output.innerHTML = `
-        <div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ WebGPU Not Supported</h4>
-          <p style="margin: 0.25rem 0;">Your browser does not support WebGPU.</p>
-          <p style="margin: 0.25rem 0; font-size: 0.9rem;">Try Chrome Canary or enable WebGPU flag in Chrome.</p>
-        </div>
+<div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
+<h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ WebGPU Not Supported</h4>
+<p style="margin: 0.25rem 0;">Your browser does not support WebGPU.</p>
+<p style="margin: 0.25rem 0; font-size: 0.9rem;">Try Chrome Canary or enable WebGPU flag in Chrome.</p>
+</div>
       `;
       return null;
     }
@@ -689,20 +687,20 @@ Basic WebGPU demonstration (if supported):
       });
       
       output.innerHTML = `
-        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ WebGPU Initialized</h4>
-          <p style="margin: 0.25rem 0;"><strong>Adapter:</strong> ${adapter.name || 'Unknown'}</p>
-          <p style="margin: 0.25rem 0;"><strong>Format:</strong> ${format}</p>
-        </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ WebGPU Initialized</h4>
+<p style="margin: 0.25rem 0;"><strong>Adapter:</strong> ${adapter.name || 'Unknown'}</p>
+<p style="margin: 0.25rem 0;"><strong>Format:</strong> ${format}</p>
+</div>
       `;
       
       return { device, context, format };
     } catch (error) {
       output.innerHTML = `
-        <div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ WebGPU Initialization Failed</h4>
-          <p style="margin: 0.25rem 0;"><strong>Error:</strong> ${error.message}</p>
-        </div>
+<div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
+<h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ WebGPU Initialization Failed</h4>
+<p style="margin: 0.25rem 0;"><strong>Error:</strong> ${error.message}</p>
+</div>
       `;
       return null;
     }
@@ -766,10 +764,10 @@ Basic WebGPU demonstration (if supported):
     device.queue.submit([commandEncoder.finish()]);
     
     output.innerHTML = `
-      <div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">🎨 Triangle Rendered</h4>
-        <p style="margin: 0;">A gradient triangle has been drawn using WebGPU shaders.</p>
-      </div>
+<div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
+<h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">🎨 Triangle Rendered</h4>
+<p style="margin: 0;">A gradient triangle has been drawn using WebGPU shaders.</p>
+</div>
     `;
   });
 })();
@@ -780,42 +778,42 @@ Basic WebGPU demonstration (if supported):
 Convert text to speech with voice control:
 
 <div class="demo-box">
-  <h3>🗣️ Speech Synthesis (Text-to-Speech)</h3>
+<h3>🗣️ Speech Synthesis (Text-to-Speech)</h3>
   
-  <textarea id="speech-text" rows="4" placeholder="Enter text to speak..." style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem; margin-bottom: 1rem;">Hello! This is a demonstration of the Web Speech Synthesis API. It can read any text aloud using different voices and languages.</textarea>
+<textarea id="speech-text" rows="4" placeholder="Enter text to speak..." style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem; margin-bottom: 1rem;">Hello! This is a demonstration of the Web Speech Synthesis API. It can read any text aloud using different voices and languages.</textarea>
   
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
-    <div>
-      <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Voice:</label>
-      <select id="speech-voice" style="width: 100%; padding: 0.5rem; border: 2px solid #ddd; border-radius: 4px;">
-        <option>Loading voices...</option>
-      </select>
-    </div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+<div>
+<label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Voice:</label>
+<select id="speech-voice" style="width: 100%; padding: 0.5rem; border: 2px solid #ddd; border-radius: 4px;">
+<option>Loading voices...</option>
+</select>
+</div>
     
-    <div>
-      <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Rate: <span id="speech-rate-value">1.0</span></label>
-      <input type="range" id="speech-rate" min="0.5" max="2" step="0.1" value="1" style="width: 100%;" />
-    </div>
+<div>
+<label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Rate: <span id="speech-rate-value">1.0</span></label>
+<input type="range" id="speech-rate" min="0.5" max="2" step="0.1" value="1" style="width: 100%;" />
+</div>
     
-    <div>
-      <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Pitch: <span id="speech-pitch-value">1.0</span></label>
-      <input type="range" id="speech-pitch" min="0.5" max="2" step="0.1" value="1" style="width: 100%;" />
-    </div>
+<div>
+<label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Pitch: <span id="speech-pitch-value">1.0</span></label>
+<input type="range" id="speech-pitch" min="0.5" max="2" step="0.1" value="1" style="width: 100%;" />
+</div>
     
-    <div>
-      <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Volume: <span id="speech-volume-value">1.0</span></label>
-      <input type="range" id="speech-volume" min="0" max="1" step="0.1" value="1" style="width: 100%;" />
-    </div>
-  </div>
+<div>
+<label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Volume: <span id="speech-volume-value">1.0</span></label>
+<input type="range" id="speech-volume" min="0" max="1" step="0.1" value="1" style="width: 100%;" />
+</div>
+</div>
   
-  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
-    <button id="speech-speak">🗣️ Speak</button>
-    <button id="speech-pause">⏸️ Pause</button>
-    <button id="speech-resume">▶️ Resume</button>
-    <button id="speech-stop">⏹️ Stop</button>
-  </div>
+<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+<button id="speech-speak">🗣️ Speak</button>
+<button id="speech-pause">⏸️ Pause</button>
+<button id="speech-resume">▶️ Resume</button>
+<button id="speech-stop">⏹️ Stop</button>
+</div>
   
-  <div id="speech-output" class="output"></div>
+<div id="speech-output" class="output"></div>
 </div>
 
 <script>
@@ -908,13 +906,13 @@ Convert text to speech with voice control:
     // Event handlers
     utterance.onstart = () => {
       output.innerHTML = `
-        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">🗣️ Speaking...</h4>
-          <p style="margin: 0.25rem 0;"><strong>Voice:</strong> ${utterance.voice ? utterance.voice.name : 'Default'}</p>
-          <p style="margin: 0.25rem 0;"><strong>Language:</strong> ${utterance.voice ? utterance.voice.lang : 'Default'}</p>
-          <p style="margin: 0.25rem 0;"><strong>Rate:</strong> ${utterance.rate}x</p>
-          <p style="margin: 0.25rem 0;"><strong>Pitch:</strong> ${utterance.pitch}</p>
-        </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">🗣️ Speaking...</h4>
+<p style="margin: 0.25rem 0;"><strong>Voice:</strong> ${utterance.voice ? utterance.voice.name : 'Default'}</p>
+<p style="margin: 0.25rem 0;"><strong>Language:</strong> ${utterance.voice ? utterance.voice.lang : 'Default'}</p>
+<p style="margin: 0.25rem 0;"><strong>Rate:</strong> ${utterance.rate}x</p>
+<p style="margin: 0.25rem 0;"><strong>Pitch:</strong> ${utterance.pitch}</p>
+</div>
       `;
     };
     
@@ -965,28 +963,28 @@ Convert text to speech with voice control:
 </script>
 
 <div class="info-box">
-  <h3>🎯 Graphics & Media APIs:</h3>
-  <ul>
-    <li><strong>Canvas 2D:</strong> Immediate-mode raster graphics</li>
-    <li><strong>SVG:</strong> Retained-mode vector graphics</li>
-    <li><strong>HTML5 Audio:</strong> Basic audio playback</li>
-    <li><strong>Web Audio API:</strong> Advanced audio synthesis and processing</li>
-    <li><strong>WebGL:</strong> 3D graphics with GLSL shaders</li>
-    <li><strong>WebGPU:</strong> Next-generation GPU graphics with WGSL shaders</li>
-    <li><strong>Speech Synthesis:</strong> Text-to-speech with voice control</li>
-  </ul>
+<h3>🎯 Graphics & Media APIs:</h3>
+<ul>
+<li><strong>Canvas 2D:</strong> Immediate-mode raster graphics</li>
+<li><strong>SVG:</strong> Retained-mode vector graphics</li>
+<li><strong>HTML5 Audio:</strong> Basic audio playback</li>
+<li><strong>Web Audio API:</strong> Advanced audio synthesis and processing</li>
+<li><strong>WebGL:</strong> 3D graphics with GLSL shaders</li>
+<li><strong>WebGPU:</strong> Next-generation GPU graphics with WGSL shaders</li>
+<li><strong>Speech Synthesis:</strong> Text-to-speech with voice control</li>
+</ul>
   
-  <p style="margin-top: 1rem;"><strong>🎨 Graphics:</strong></p>
-  <ul>
-    <li><strong>2D Graphics:</strong> Canvas API for charts, drawings, image manipulation</li>
-    <li><strong>Vector Graphics:</strong> SVG for scalable, resolution-independent graphics</li>
-    <li><strong>3D Graphics:</strong> WebGL (mature) and WebGPU (cutting-edge)</li>
-  </ul>
+<p style="margin-top: 1rem;"><strong>🎨 Graphics:</strong></p>
+<ul>
+<li><strong>2D Graphics:</strong> Canvas API for charts, drawings, image manipulation</li>
+<li><strong>Vector Graphics:</strong> SVG for scalable, resolution-independent graphics</li>
+<li><strong>3D Graphics:</strong> WebGL (mature) and WebGPU (cutting-edge)</li>
+</ul>
   
-  <p style="margin-top: 1rem;"><strong>🔊 Audio:</strong></p>
-  <ul>
-    <li><strong>Playback:</strong> HTML5 Audio for simple playback</li>
-    <li><strong>Synthesis:</strong> Web Audio API for real-time audio generation</li>
-    <li><strong>Speech:</strong> Text-to-speech with multiple voices and languages</li>
-  </ul>
+<p style="margin-top: 1rem;"><strong>🔊 Audio:</strong></p>
+<ul>
+<li><strong>Playback:</strong> HTML5 Audio for simple playback</li>
+<li><strong>Synthesis:</strong> Web Audio API for real-time audio generation</li>
+<li><strong>Speech:</strong> Text-to-speech with multiple voices and languages</li>
+</ul>
 </div>

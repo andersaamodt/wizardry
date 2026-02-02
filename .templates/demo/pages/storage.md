@@ -2,8 +2,6 @@
 title: State & Persistence Demos
 ---
 
-# State & Persistence Demos
-
 Explore browser storage APIs for persisting data across sessions and tabs.
 
 ## 1. Local Storage - Persistent Key-Value Store
@@ -11,14 +9,14 @@ Explore browser storage APIs for persisting data across sessions and tabs.
 Local Storage persists across browser sessions and is shared across all tabs from the same origin.
 
 <div class="demo-box">
-  <h3>Save to Local Storage</h3>
-  <input type="text" id="ls-key" placeholder="Key" value="username" />
-  <input type="text" id="ls-value" placeholder="Value" value="wizard123" />
-  <button id="ls-set">💾 Save</button>
-  <button id="ls-get" style="margin-left: 10px;">📖 Load</button>
-  <button id="ls-remove" style="margin-left: 10px;">🗑️ Remove</button>
-  <button id="ls-clear" style="margin-left: 10px;">🧹 Clear All</button>
-  <div id="ls-output" class="output"></div>
+<h3>Save to Local Storage</h3>
+<input type="text" id="ls-key" placeholder="Key" value="username" />
+<input type="text" id="ls-value" placeholder="Value" value="wizard123" />
+<button id="ls-set">💾 Save</button>
+<button id="ls-get" style="margin-left: 10px;">📖 Load</button>
+<button id="ls-remove" style="margin-left: 10px;">🗑️ Remove</button>
+<button id="ls-clear" style="margin-left: 10px;">🧹 Clear All</button>
+<div id="ls-output" class="output"></div>
 </div>
 
 <script>
@@ -68,13 +66,13 @@ Local Storage persists across browser sessions and is shared across all tabs fro
     
     if (items.length > 0) {
       output.innerHTML += `
-        <div style="margin-top: 1rem; background: #f8f9fa; padding: 1rem; border-radius: 4px;">
-          <strong>Current Local Storage (${items.length} items):</strong>
-          <table style="width: 100%; margin-top: 0.5rem; border-collapse: collapse;">
-            <thead><tr><th style="padding: 0.5rem; border: 1px solid #ddd; background: #e9ecef;">Key</th><th style="padding: 0.5rem; border: 1px solid #ddd; background: #e9ecef;">Value</th></tr></thead>
-            <tbody>${items.join('')}</tbody>
-          </table>
-        </div>
+<div style="margin-top: 1rem; background: #f8f9fa; padding: 1rem; border-radius: 4px;">
+<strong>Current Local Storage (${items.length} items):</strong>
+<table style="width: 100%; margin-top: 0.5rem; border-collapse: collapse;">
+<thead><tr><th style="padding: 0.5rem; border: 1px solid #ddd; background: #e9ecef;">Key</th><th style="padding: 0.5rem; border: 1px solid #ddd; background: #e9ecef;">Value</th></tr></thead>
+<tbody>${items.join('')}</tbody>
+</table>
+</div>
       `;
     }
   }
@@ -86,17 +84,17 @@ Local Storage persists across browser sessions and is shared across all tabs fro
 Session Storage is cleared when the tab closes and is NOT shared between tabs.
 
 <div class="demo-box">
-  <h3>Save to Session Storage</h3>
-  <input type="text" id="ss-key" placeholder="Key" value="temp-data" />
-  <input type="text" id="ss-value" placeholder="Value" value="session-value" />
-  <button id="ss-set">💾 Save</button>
-  <button id="ss-get" style="margin-left: 10px;">📖 Load</button>
-  <button id="ss-remove" style="margin-left: 10px;">🗑️ Remove</button>
-  <button id="ss-clear" style="margin-left: 10px;">🧹 Clear All</button>
-  <div id="ss-output" class="output"></div>
-  <p style="margin-top: 1rem; color: #7f8c8d; font-style: italic;">
+<h3>Save to Session Storage</h3>
+<input type="text" id="ss-key" placeholder="Key" value="temp-data" />
+<input type="text" id="ss-value" placeholder="Value" value="session-value" />
+<button id="ss-set">💾 Save</button>
+<button id="ss-get" style="margin-left: 10px;">📖 Load</button>
+<button id="ss-remove" style="margin-left: 10px;">🗑️ Remove</button>
+<button id="ss-clear" style="margin-left: 10px;">🧹 Clear All</button>
+<div id="ss-output" class="output"></div>
+<p style="margin-top: 1rem; color: #7f8c8d; font-style: italic;">
     💡 Open this page in a new tab - session storage won't be shared!
-  </p>
+</p>
 </div>
 
 <script>
@@ -146,13 +144,13 @@ Session Storage is cleared when the tab closes and is NOT shared between tabs.
     
     if (items.length > 0) {
       output.innerHTML += `
-        <div style="margin-top: 1rem; background: #f8f9fa; padding: 1rem; border-radius: 4px;">
-          <strong>Current Session Storage (${items.length} items):</strong>
-          <table style="width: 100%; margin-top: 0.5rem; border-collapse: collapse;">
-            <thead><tr><th style="padding: 0.5rem; border: 1px solid #ddd; background: #e9ecef;">Key</th><th style="padding: 0.5rem; border: 1px solid #ddd; background: #e9ecef;">Value</th></tr></thead>
-            <tbody>${items.join('')}</tbody>
-          </table>
-        </div>
+<div style="margin-top: 1rem; background: #f8f9fa; padding: 1rem; border-radius: 4px;">
+<strong>Current Session Storage (${items.length} items):</strong>
+<table style="width: 100%; margin-top: 0.5rem; border-collapse: collapse;">
+<thead><tr><th style="padding: 0.5rem; border: 1px solid #ddd; background: #e9ecef;">Key</th><th style="padding: 0.5rem; border: 1px solid #ddd; background: #e9ecef;">Value</th></tr></thead>
+<tbody>${items.join('')}</tbody>
+</table>
+</div>
       `;
     }
   }
@@ -164,16 +162,16 @@ Session Storage is cleared when the tab closes and is NOT shared between tabs.
 IndexedDB provides a transactional database system for storing structured data, including files and blobs.
 
 <div class="demo-box">
-  <h3>IndexedDB Operations</h3>
-  <input type="text" id="idb-id" placeholder="ID" value="1" />
-  <input type="text" id="idb-name" placeholder="Name" value="Alice" />
-  <input type="text" id="idb-email" placeholder="Email" value="alice@example.com" />
-  <button id="idb-add">➕ Add</button>
-  <button id="idb-get" style="margin-left: 10px;">🔍 Get by ID</button>
-  <button id="idb-getall" style="margin-left: 10px;">📋 Get All</button>
-  <button id="idb-delete" style="margin-left: 10px;">❌ Delete</button>
-  <button id="idb-clear" style="margin-left: 10px;">🧹 Clear All</button>
-  <div id="idb-output" class="output"></div>
+<h3>IndexedDB Operations</h3>
+<input type="text" id="idb-id" placeholder="ID" value="1" />
+<input type="text" id="idb-name" placeholder="Name" value="Alice" />
+<input type="text" id="idb-email" placeholder="Email" value="alice@example.com" />
+<button id="idb-add">➕ Add</button>
+<button id="idb-get" style="margin-left: 10px;">🔍 Get by ID</button>
+<button id="idb-getall" style="margin-left: 10px;">📋 Get All</button>
+<button id="idb-delete" style="margin-left: 10px;">❌ Delete</button>
+<button id="idb-clear" style="margin-left: 10px;">🧹 Clear All</button>
+<div id="idb-output" class="output"></div>
 </div>
 
 <script>
@@ -229,8 +227,8 @@ IndexedDB provides a transactional database system for storing structured data, 
     request.onsuccess = () => {
       if (request.result) {
         document.getElementById('idb-output').innerHTML = `
-          <p style="color: #2980b9;">📖 Found user:</p>
-          <pre style="background: #f8f9fa; padding: 1rem; border-radius: 4px; overflow-x: auto;">${JSON.stringify(request.result, null, 2)}</pre>
+<p style="color: #2980b9;">📖 Found user:</p>
+<pre style="background: #f8f9fa; padding: 1rem; border-radius: 4px; overflow-x: auto;">${JSON.stringify(request.result, null, 2)}</pre>
         `;
       } else {
         document.getElementById('idb-output').innerHTML = `<p style="color: #e67e22;">⚠️ No user found with ID ${id}</p>`;
@@ -247,8 +245,8 @@ IndexedDB provides a transactional database system for storing structured data, 
       const results = request.result;
       if (results.length > 0) {
         document.getElementById('idb-output').innerHTML = `
-          <p style="color: #2980b9;">📋 Found ${results.length} users:</p>
-          <pre style="background: #f8f9fa; padding: 1rem; border-radius: 4px; overflow-x: auto;">${JSON.stringify(results, null, 2)}</pre>
+<p style="color: #2980b9;">📋 Found ${results.length} users:</p>
+<pre style="background: #f8f9fa; padding: 1rem; border-radius: 4px; overflow-x: auto;">${JSON.stringify(results, null, 2)}</pre>
         `;
       } else {
         document.getElementById('idb-output').innerHTML = '<p style="color: #7f8c8d;">No users in database</p>';
@@ -284,15 +282,15 @@ IndexedDB provides a transactional database system for storing structured data, 
 Cookies are sent with every HTTP request and can be set with expiration times.
 
 <div class="demo-box">
-  <h3>Cookie Management</h3>
-  <input type="text" id="cookie-name" placeholder="Cookie name" value="theme" />
-  <input type="text" id="cookie-value" placeholder="Cookie value" value="dark" />
-  <input type="number" id="cookie-days" placeholder="Days" value="7" style="width: 80px;" />
-  <button id="cookie-set">🍪 Set Cookie</button>
-  <button id="cookie-get" style="margin-left: 10px;">📖 Get Cookie</button>
-  <button id="cookie-delete" style="margin-left: 10px;">🗑️ Delete Cookie</button>
-  <button id="cookie-showall" style="margin-left: 10px;">📋 Show All</button>
-  <div id="cookie-output" class="output"></div>
+<h3>Cookie Management</h3>
+<input type="text" id="cookie-name" placeholder="Cookie name" value="theme" />
+<input type="text" id="cookie-value" placeholder="Cookie value" value="dark" />
+<input type="number" id="cookie-days" placeholder="Days" value="7" style="width: 80px;" />
+<button id="cookie-set">🍪 Set Cookie</button>
+<button id="cookie-get" style="margin-left: 10px;">📖 Get Cookie</button>
+<button id="cookie-delete" style="margin-left: 10px;">🗑️ Delete Cookie</button>
+<button id="cookie-showall" style="margin-left: 10px;">📋 Show All</button>
+<div id="cookie-output" class="output"></div>
 </div>
 
 <script>
@@ -356,13 +354,13 @@ Cookies are sent with every HTTP request and can be set with expiration times.
       }).join('');
       
       document.getElementById('cookie-output').innerHTML = `
-        <div style="margin-top: 1rem; background: #f8f9fa; padding: 1rem; border-radius: 4px;">
-          <strong>All Cookies:</strong>
-          <table style="width: 100%; margin-top: 0.5rem; border-collapse: collapse;">
-            <thead><tr><th style="padding: 0.5rem; border: 1px solid #ddd; background: #e9ecef;">Name</th><th style="padding: 0.5rem; border: 1px solid #ddd; background: #e9ecef;">Value</th></tr></thead>
-            <tbody>${cookieList}</tbody>
-          </table>
-        </div>
+<div style="margin-top: 1rem; background: #f8f9fa; padding: 1rem; border-radius: 4px;">
+<strong>All Cookies:</strong>
+<table style="width: 100%; margin-top: 0.5rem; border-collapse: collapse;">
+<thead><tr><th style="padding: 0.5rem; border: 1px solid #ddd; background: #e9ecef;">Name</th><th style="padding: 0.5rem; border: 1px solid #ddd; background: #e9ecef;">Value</th></tr></thead>
+<tbody>${cookieList}</tbody>
+</table>
+</div>
       `;
     } else {
       document.getElementById('cookie-output').innerHTML = '<p style="color: #7f8c8d;">No cookies set</p>';
@@ -376,8 +374,8 @@ Cookies are sent with every HTTP request and can be set with expiration times.
 Check how much storage space is available and used:
 
 <div class="demo-box">
-  <button id="quota-check">📊 Check Storage Quota</button>
-  <div id="quota-output" class="output"></div>
+<button id="quota-check">📊 Check Storage Quota</button>
+<div id="quota-output" class="output"></div>
 </div>
 
 <script>
@@ -393,27 +391,27 @@ Check how much storage space is available and used:
         const percentUsed = ((usage / quota) * 100).toFixed(2);
         
         output.innerHTML = `
-          <div style="margin-top: 1rem; background: #e8f5e9; padding: 1rem; border-radius: 4px;">
-            <h4 style="margin: 0 0 1rem 0; color: #2e7d32;">📊 Storage Quota Information</h4>
-            <p style="margin: 0.25rem 0;"><strong>Used:</strong> ${(usage / 1024 / 1024).toFixed(2)} MB</p>
-            <p style="margin: 0.25rem 0;"><strong>Available:</strong> ${(quota / 1024 / 1024).toFixed(2)} MB</p>
-            <p style="margin: 0.25rem 0;"><strong>Percentage Used:</strong> ${percentUsed}%</p>
-            <div style="margin-top: 0.5rem; background: #fff; border-radius: 4px; height: 30px; position: relative; overflow: hidden; border: 1px solid #4caf50;">
-              <div style="position: absolute; left: 0; top: 0; height: 100%; background: linear-gradient(90deg, #4caf50, #8bc34a); width: ${percentUsed}%; transition: width 0.3s;"></div>
-              <div style="position: absolute; left: 0; right: 0; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #2e7d32; text-shadow: 0 0 3px white;">
+<div style="margin-top: 1rem; background: #e8f5e9; padding: 1rem; border-radius: 4px;">
+<h4 style="margin: 0 0 1rem 0; color: #2e7d32;">📊 Storage Quota Information</h4>
+<p style="margin: 0.25rem 0;"><strong>Used:</strong> ${(usage / 1024 / 1024).toFixed(2)} MB</p>
+<p style="margin: 0.25rem 0;"><strong>Available:</strong> ${(quota / 1024 / 1024).toFixed(2)} MB</p>
+<p style="margin: 0.25rem 0;"><strong>Percentage Used:</strong> ${percentUsed}%</p>
+<div style="margin-top: 0.5rem; background: #fff; border-radius: 4px; height: 30px; position: relative; overflow: hidden; border: 1px solid #4caf50;">
+<div style="position: absolute; left: 0; top: 0; height: 100%; background: linear-gradient(90deg, #4caf50, #8bc34a); width: ${percentUsed}%; transition: width 0.3s;"></div>
+<div style="position: absolute; left: 0; right: 0; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #2e7d32; text-shadow: 0 0 3px white;">
                 ${percentUsed}%
-              </div>
-            </div>
-          </div>
+</div>
+</div>
+</div>
         `;
         
         // Check if persistent storage is available
         if (navigator.storage.persisted) {
           const persistent = await navigator.storage.persisted();
           output.innerHTML += `
-            <p style="margin-top: 0.5rem; color: ${persistent ? '#27ae60' : '#e67e22'};">
+<p style="margin-top: 0.5rem; color: ${persistent ? '#27ae60' : '#e67e22'};">
               ${persistent ? '✅' : '⚠️'} Persistent Storage: ${persistent ? 'Enabled' : 'Not Enabled'}
-            </p>
+</p>
           `;
         }
       } catch (error) {
@@ -429,49 +427,49 @@ Check how much storage space is available and used:
 ---
 
 <div class="info-box">
-  <h3>🎯 Storage APIs Comparison:</h3>
-  <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
-    <thead>
-      <tr style="background: #e9ecef;">
-        <th style="padding: 0.75rem; border: 1px solid #ddd; text-align: left;">API</th>
-        <th style="padding: 0.75rem; border: 1px solid #ddd; text-align: left;">Scope</th>
-        <th style="padding: 0.75rem; border: 1px solid #ddd; text-align: left;">Persistence</th>
-        <th style="padding: 0.75rem; border: 1px solid #ddd; text-align: left;">Typical Size</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td style="padding: 0.75rem; border: 1px solid #ddd;"><strong>LocalStorage</strong></td>
-        <td style="padding: 0.75rem; border: 1px solid #ddd;">Origin</td>
-        <td style="padding: 0.75rem; border: 1px solid #ddd;">Permanent</td>
-        <td style="padding: 0.75rem; border: 1px solid #ddd;">~5-10MB</td>
-      </tr>
-      <tr>
-        <td style="padding: 0.75rem; border: 1px solid #ddd;"><strong>SessionStorage</strong></td>
-        <td style="padding: 0.75rem; border: 1px solid #ddd;">Tab</td>
-        <td style="padding: 0.75rem; border: 1px solid #ddd;">Session only</td>
-        <td style="padding: 0.75rem; border: 1px solid #ddd;">~5-10MB</td>
-      </tr>
-      <tr>
-        <td style="padding: 0.75rem; border: 1px solid #ddd;"><strong>IndexedDB</strong></td>
-        <td style="padding: 0.75rem; border: 1px solid #ddd;">Origin</td>
-        <td style="padding: 0.75rem; border: 1px solid #ddd;">Permanent</td>
-        <td style="padding: 0.75rem; border: 1px solid #ddd;">~50MB-unlimited</td>
-      </tr>
-      <tr>
-        <td style="padding: 0.75rem; border: 1px solid #ddd;"><strong>Cookies</strong></td>
-        <td style="padding: 0.75rem; border: 1px solid #ddd;">Origin</td>
-        <td style="padding: 0.75rem; border: 1px solid #ddd;">Configurable</td>
-        <td style="padding: 0.75rem; border: 1px solid #ddd;">~4KB per cookie</td>
-      </tr>
-    </tbody>
-  </table>
+<h3>🎯 Storage APIs Comparison:</h3>
+<table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+<thead>
+<tr style="background: #e9ecef;">
+<th style="padding: 0.75rem; border: 1px solid #ddd; text-align: left;">API</th>
+<th style="padding: 0.75rem; border: 1px solid #ddd; text-align: left;">Scope</th>
+<th style="padding: 0.75rem; border: 1px solid #ddd; text-align: left;">Persistence</th>
+<th style="padding: 0.75rem; border: 1px solid #ddd; text-align: left;">Typical Size</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="padding: 0.75rem; border: 1px solid #ddd;"><strong>LocalStorage</strong></td>
+<td style="padding: 0.75rem; border: 1px solid #ddd;">Origin</td>
+<td style="padding: 0.75rem; border: 1px solid #ddd;">Permanent</td>
+<td style="padding: 0.75rem; border: 1px solid #ddd;">~5-10MB</td>
+</tr>
+<tr>
+<td style="padding: 0.75rem; border: 1px solid #ddd;"><strong>SessionStorage</strong></td>
+<td style="padding: 0.75rem; border: 1px solid #ddd;">Tab</td>
+<td style="padding: 0.75rem; border: 1px solid #ddd;">Session only</td>
+<td style="padding: 0.75rem; border: 1px solid #ddd;">~5-10MB</td>
+</tr>
+<tr>
+<td style="padding: 0.75rem; border: 1px solid #ddd;"><strong>IndexedDB</strong></td>
+<td style="padding: 0.75rem; border: 1px solid #ddd;">Origin</td>
+<td style="padding: 0.75rem; border: 1px solid #ddd;">Permanent</td>
+<td style="padding: 0.75rem; border: 1px solid #ddd;">~50MB-unlimited</td>
+</tr>
+<tr>
+<td style="padding: 0.75rem; border: 1px solid #ddd;"><strong>Cookies</strong></td>
+<td style="padding: 0.75rem; border: 1px solid #ddd;">Origin</td>
+<td style="padding: 0.75rem; border: 1px solid #ddd;">Configurable</td>
+<td style="padding: 0.75rem; border: 1px solid #ddd;">~4KB per cookie</td>
+</tr>
+</tbody>
+</table>
   
-  <p style="margin-top: 1rem;"><strong>💡 When to use each:</strong></p>
-  <ul>
-    <li><strong>LocalStorage:</strong> Simple key-value data that needs to persist</li>
-    <li><strong>SessionStorage:</strong> Temporary data specific to one tab/session</li>
-    <li><strong>IndexedDB:</strong> Large amounts of structured data, offline apps</li>
-    <li><strong>Cookies:</strong> Data that needs to be sent to server with requests</li>
-  </ul>
+<p style="margin-top: 1rem;"><strong>💡 When to use each:</strong></p>
+<ul>
+<li><strong>LocalStorage:</strong> Simple key-value data that needs to persist</li>
+<li><strong>SessionStorage:</strong> Temporary data specific to one tab/session</li>
+<li><strong>IndexedDB:</strong> Large amounts of structured data, offline apps</li>
+<li><strong>Cookies:</strong> Data that needs to be sent to server with requests</li>
+</ul>
 </div>

@@ -2,8 +2,6 @@
 title: Chatrooms
 ---
 
-# Chatrooms Demo
-
 <div class="chat-container">
 <div id="room-notification" style="display: none; position: absolute; top: 60px; left: 50%; transform: translateX(-50%); z-index: 1000; max-width: 400px;"></div>
 

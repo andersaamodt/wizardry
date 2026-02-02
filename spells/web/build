@@ -97,27 +97,33 @@ HTMX_HEADER
       nav_file="$includes_dir/nav.md"
       
       # Use Pandoc to convert Markdown to HTML with YAML front matter
-      # Include htmx for interactive CGI features and nav if available
+      # Include htmx for interactive CGI features
       # raw_html extension allows HTML blocks to pass through
+      pandoc \
+        --from markdown+yaml_metadata_block+raw_html \
+        --to html5 \
+        --standalone \
+        --css=/static/style.css \
+        --include-in-header="$htmx_header" \
+        --output="$html_file" \
+        "$md_file"
+      
+      # If nav file exists, insert it after the title block header
       if [ -f "$nav_file" ]; then
-        pandoc \
-          --from markdown+yaml_metadata_block+raw_html \
-          --to html5 \
-          --standalone \
-          --css=/static/style.css \
-          --include-in-header="$htmx_header" \
-          --include-before-body="$nav_file" \
-          --output="$html_file" \
-          "$md_file"
-      else
-        pandoc \
-          --from markdown+yaml_metadata_block+raw_html \
-          --to html5 \
-          --standalone \
-          --css=/static/style.css \
-          --include-in-header="$htmx_header" \
-          --output="$html_file" \
-          "$md_file"
+        # Use awk to insert nav after </header> tag
+        temp_html=$(temp-file html-with-nav)
+        awk -v nav_file="$nav_file" '
+          /<\/header>/ {
+            print
+            while ((getline line < nav_file) > 0) {
+              print line
+            }
+            close(nav_file)
+            next
+          }
+          { print }
+        ' "$html_file" > "$temp_html"
+        mv "$temp_html" "$html_file"
       fi
       
       # Clean up temporary header file
