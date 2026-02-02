@@ -153,6 +153,25 @@ case $distro in
       make install || exit 1
     fi
     
+    # Verify installation before cleaning up
+    if [ ! -x /usr/local/bin/tor ]; then
+      printf '%s\n' "ERROR: make install completed but /usr/local/bin/tor not found!"
+      printf '%s\n' "Checking alternate locations..."
+      
+      # Check other possible locations
+      for tor_path in /usr/bin/tor /opt/local/bin/tor /usr/local/sbin/tor; do
+        if [ -x "$tor_path" ]; then
+          printf '%s\n' "Found tor at: $tor_path"
+          break
+        fi
+      done
+      
+      printf '%s\n' "Installation may have failed. Check output above for errors."
+      exit 1
+    fi
+    
+    printf 'Tor binary installed successfully to /usr/local/bin/tor\n'
+    
     # Clear shell command cache so tor can be found immediately
     hash -r 2>/dev/null || true
     
@@ -220,10 +239,37 @@ esac
 # Clear shell command cache to find newly installed tor
 hash -r 2>/dev/null || true
 
-# Check if installation was successful
-if command -v tor >/dev/null 2>&1; then
+# Check if installation was successful - use multiple methods
+tor_found=0
+tor_location=""
+
+# Method 1: Check if tor binary exists in expected location
+if [ -x /usr/local/bin/tor ]; then
+  tor_found=1
+  tor_location="/usr/local/bin/tor"
+# Method 2: Try command -v
+elif command -v tor >/dev/null 2>&1; then
+  tor_found=1
+  tor_location=$(command -v tor)
+# Method 3: Check other common locations
+else
+  for check_path in /usr/bin/tor /opt/local/bin/tor /usr/local/sbin/tor; do
+    if [ -x "$check_path" ]; then
+      tor_found=1
+      tor_location="$check_path"
+      break
+    fi
+  done
+fi
+
+if [ "$tor_found" -eq 1 ]; then
   printf '%s\n' 'Tor installation complete.'
-  printf '%s\n' "Tor installed to: $(command -v tor)"
+  printf '%s\n' "Tor installed to: $tor_location"
+  
+  # Verify it actually works
+  if "$tor_location" --version >/dev/null 2>&1; then
+    printf '%s\n' "Tor version: $("$tor_location" --version | head -1)"
+  fi
   
   # Try to start service if systemctl is available
   if command -v systemctl >/dev/null 2>&1; then
