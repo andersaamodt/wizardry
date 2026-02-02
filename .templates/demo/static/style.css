@@ -463,6 +463,10 @@ pre code {
   button {
     width: 100%;
   }
+  
+  .username-display button {
+    width: auto;
+  }
 }
 
 /* Loading states */
