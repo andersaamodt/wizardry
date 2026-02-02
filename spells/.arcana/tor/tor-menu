@@ -99,10 +99,10 @@ $openssl_option"
     # Add start/restart/stop options based on tor status
     tor_control_option=""
     if is-tor-running; then
-      restart_tor_option="Restart Tor%sudo killall tor 2>/dev/null; tor &"
-      stop_tor_option="Stop Tor%sudo killall tor"
+      restart_tor_option="Restart Tor%restart-tor"
+      stop_tor_option="Stop Tor%stop-tor"
     else
-      start_tor_option="Start Tor%tor &"
+      start_tor_option="Start Tor%start-tor"
     fi
     
     # Build menu with macOS dependencies if present

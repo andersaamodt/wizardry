@@ -1,0 +1,23 @@
+#!/bin/sh
+# Stop tor service
+
+set -eu
+
+printf 'Stopping tor...\n'
+
+# Try systemctl first (Linux with systemd)
+if command -v systemctl >/dev/null 2>&1; then
+  if sudo systemctl stop tor 2>/dev/null; then
+    printf 'Tor stopped via systemctl.\n'
+    exit 0
+  fi
+fi
+
+# Try killall (macOS and others)
+if sudo killall tor 2>/dev/null; then
+  printf 'Tor stopped.\n'
+  exit 0
+fi
+
+printf 'stop-tor: tor not running or could not be stopped\n' >&2
+exit 1

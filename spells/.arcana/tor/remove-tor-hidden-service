@@ -86,61 +86,18 @@ fi
         
         # Auto-restart tor when called with -y flag (from menu)
         # When called directly, offer choice for safety
-        tor_restarted=0
-        restart_now=0
-        
         if [ "$skip_confirm" -eq 1 ]; then
                 # Called from menu with -y, auto-restart
-                restart_now=1
-        elif command -v systemctl >/dev/null 2>&1; then
-                if systemctl list-unit-files | grep -q 'tor.*\.service'; then
-                        printf '%s' "Restart tor service now? [y/n]: "
-                        IFS= read -r restart_choice || exit 0
-                        case $restart_choice in
-                        y|Y)
-                                restart_now=1
-                                ;;
-                        esac
-                fi
-        fi
-        
-        if [ "$restart_now" -eq 1 ]; then
-                printf '%s\n' "Restarting tor..."
-                
-                # Try systemctl (Linux with systemd)
-                if command -v systemctl >/dev/null 2>&1; then
-                        if systemctl list-unit-files | grep -q 'tor.*\.service'; then
-                                if sudo systemctl restart tor 2>/dev/null; then
-                                        tor_restarted=1
-                                        printf '%s\n' "Tor restarted via systemctl."
-                                fi
-                        fi
-                fi
-                
-                # Try killall + restart (macOS and others)
-                if [ "$tor_restarted" -eq 0 ] && command -v killall >/dev/null 2>&1; then
-                        if sudo killall tor 2>/dev/null; then
-                                sleep 1
-                                tor >/dev/null 2>&1 &
-                                tor_restarted=1
-                                printf '%s\n' "Tor restarted."
-                        fi
-                fi
-                
-                # Try pkill + restart (fallback)
-                if [ "$tor_restarted" -eq 0 ] && command -v pkill >/dev/null 2>&1; then
-                        if sudo pkill -9 tor 2>/dev/null; then
-                                sleep 1
-                                tor >/dev/null 2>&1 &
-                                tor_restarted=1
-                                printf '%s\n' "Tor restarted."
-                        fi
-                fi
-                
-                if [ "$tor_restarted" -eq 0 ]; then
-                        printf '%s\n' "Tor restart needed for changes to take effect."
-                        printf '%s\n' "Tor service not detected or restart failed."
-                fi
+                restart-tor
         else
-                printf '%s\n' "Tor restart needed for changes to take effect."
+                printf '%s' "Restart tor service now? [y/n]: "
+                IFS= read -r restart_choice || exit 0
+                case $restart_choice in
+                y|Y)
+                        restart-tor
+                        ;;
+                *)
+                        printf '%s\n' "Tor restart needed for changes to take effect."
+                        ;;
+                esac
         fi
