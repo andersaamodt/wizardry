@@ -58,20 +58,16 @@ while true; do
 $openssl_option"
   fi
   
-  # Build service entries
-  service_status_option=""
-  tor_service_option=""
+  # Build tor control options (Start/Stop/Restart)
+  start_option=""
+  stop_option=""
+  restart_option=""
   
-  if is-service-installed tor > /dev/null; then
-    service_status_option="View Tor Service Status%sudo systemctl status tor"
-    if is-service-running tor > /dev/null; then
-      tor_service_option="Stop Tor Service%sudo systemctl stop tor"
-    else
-      tor_service_option="Start Tor Service%sudo systemctl start tor"
-    fi
+  if is-tor-running >/dev/null 2>&1; then
+    stop_option="Stop Tor%stop-tor"
+    restart_option="Restart Tor%restart-tor"
   else
-    script_dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
-    service_status_option="Install Tor Service%install-service-template $script_dir/tor.service \"TORPATH=\$(command -v tor)\" \"TORRCPATH=/etc/tor/torrc\""
+    start_option="Start Tor%start-tor"
   fi
   
   if command -v tor >/dev/null 2>&1; then
@@ -100,66 +96,29 @@ $openssl_option"
       fi
     fi
     
-    # Build menu with macOS dependencies if present
-    if [ -n "$macos_deps" ]; then
-      if [ -n "$service_status_option" ] && [ -n "$tor_service_option" ]; then
-        if [ -n "$copy_onion_option" ]; then
-          menu "$title" "$copy_onion_option" "$config_option" "$service_status_option" \
-            "$tor_service_option" "$repair_option" "$uninstall_option" \
-            "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
-        else
-          menu "$title" "$config_option" "$service_status_option" \
-            "$tor_service_option" "$repair_option" "$uninstall_option" \
-            "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
-        fi
-      elif [ -n "$service_status_option" ]; then
-        if [ -n "$copy_onion_option" ]; then
-          menu "$title" "$copy_onion_option" "$config_option" "$service_status_option" \
-            "$repair_option" "$uninstall_option" \
-            "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
-        else
-          menu "$title" "$config_option" "$service_status_option" \
-            "$repair_option" "$uninstall_option" \
-            "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
-        fi
-      else
-        if [ -n "$copy_onion_option" ]; then
-          menu "$title" "$copy_onion_option" "$config_option" "$repair_option" "$uninstall_option" \
-            "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
-        else
-          menu "$title" "$config_option" "$repair_option" "$uninstall_option" \
-            "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
-        fi
-      fi
-    else
-      if [ -n "$service_status_option" ] && [ -n "$tor_service_option" ]; then
-        if [ -n "$copy_onion_option" ]; then
-          menu "$title" "$copy_onion_option" "$config_option" "$service_status_option" \
-            "$tor_service_option" "$repair_option" "$uninstall_option" \
-            "$exit_option" || menu_status=$?
-        else
-          menu "$title" "$config_option" "$service_status_option" \
-            "$tor_service_option" "$repair_option" "$uninstall_option" \
-            "$exit_option" || menu_status=$?
-        fi
-      elif [ -n "$service_status_option" ]; then
-        if [ -n "$copy_onion_option" ]; then
-          menu "$title" "$copy_onion_option" "$config_option" "$service_status_option" \
-            "$repair_option" "$uninstall_option" "$exit_option" || menu_status=$?
-        else
-          menu "$title" "$config_option" "$service_status_option" \
-            "$repair_option" "$uninstall_option" "$exit_option" || menu_status=$?
-        fi
-      else
-        if [ -n "$copy_onion_option" ]; then
-          menu "$title" "$copy_onion_option" "$config_option" "$repair_option" "$uninstall_option" \
-            "$exit_option" || menu_status=$?
-        else
-          menu "$title" "$config_option" "$repair_option" "$uninstall_option" \
-            "$exit_option" || menu_status=$?
-        fi
-      fi
-    fi
+    # Build menu options dynamically
+    menu_options=""
+    
+    # Add copy .onion option if available
+    [ -n "$copy_onion_option" ] && menu_options="$menu_options $copy_onion_option"
+    
+    # Add start/stop/restart options
+    [ -n "$start_option" ] && menu_options="$menu_options $start_option"
+    [ -n "$restart_option" ] && menu_options="$menu_options $restart_option"
+    [ -n "$stop_option" ] && menu_options="$menu_options $stop_option"
+    
+    # Add configure/repair/uninstall options
+    menu_options="$menu_options $config_option $repair_option $uninstall_option"
+    
+    # Add macOS dependencies if present
+    [ -n "$libevent_option" ] && menu_options="$menu_options $libevent_option"
+    [ -n "$openssl_option" ] && menu_options="$menu_options $openssl_option"
+    
+    # Add exit option
+    menu_options="$menu_options $exit_option"
+    
+    # shellcheck disable=SC2086
+    menu "$title" $menu_options || menu_status=$?
   else
     install_option="Install Tor%install-tor"
     # Show dependencies in menu even when Tor is not installed (macOS only)
