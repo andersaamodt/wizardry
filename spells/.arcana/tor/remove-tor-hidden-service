@@ -36,18 +36,16 @@ y|Y)
         backup_path="${tor_config_path}.backup.$(date -u +%Y%m%d_%H%M%S)"
         if command -v sudo >/dev/null 2>&1; then
                 sudo cp "$tor_config_path" "$backup_path"
-                printf '%s\n' "Backup created: $backup_path"
         else
                 cp "$tor_config_path" "$backup_path"
-                printf '%s\n' "Backup created: $backup_path"
         fi
+        printf '%s\n' "Backup created: $backup_path"
         
         # Remove HiddenService lines from torrc using sed for safer handling
         temp_file=$(temp-file torrc-temp)
         if command -v sudo >/dev/null 2>&1; then
-                # Use tee to handle privileged write
                 sudo sed '/^HiddenServiceDir/d; /^HiddenServicePort/d' \
-                  "$tor_config_path" | cat > "$temp_file"
+                  "$tor_config_path" > "$temp_file"
         else
                 sed '/^HiddenServiceDir/d; /^HiddenServicePort/d' \
                   "$tor_config_path" > "$temp_file"
