@@ -169,10 +169,36 @@ while true; do
   fi
   
   # Build tor hidden service toggle based on current state
-  # Check if hidden service is configured
+  # Inline check for hidden service configuration
   tor_configured=0
-  if command -v is-tor-hidden-service-configured >/dev/null 2>&1; then
-    if is-tor-hidden-service-configured 2>/dev/null; then
+  
+  # Try to detect torrc path
+  torrc_path=""
+  if command -v torrc-path >/dev/null 2>&1; then
+    torrc_path=$(torrc-path 2>/dev/null) || torrc_path=""
+  fi
+  
+  # Fallback to common locations if torrc-path not available
+  if [ -z "$torrc_path" ]; then
+    if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+      # macOS
+      for path in /usr/local/etc/tor/torrc /opt/local/etc/tor/torrc; do
+        if [ -f "$path" ]; then
+          torrc_path="$path"
+          break
+        fi
+      done
+    else
+      # Linux
+      if [ -f /etc/tor/torrc ]; then
+        torrc_path="/etc/tor/torrc"
+      fi
+    fi
+  fi
+  
+  # Check if HiddenServiceDir is configured
+  if [ -n "$torrc_path" ] && [ -f "$torrc_path" ]; then
+    if grep -q "^HiddenServiceDir" "$torrc_path" 2>/dev/null; then
       tor_configured=1
     fi
   fi
