@@ -160,18 +160,23 @@ case $distro in
       
       # Check other possible locations (shared list used later too)
       alternate_tor_paths="/usr/bin/tor /opt/local/bin/tor /usr/local/sbin/tor"
+      found_elsewhere=0
       for tor_path in $alternate_tor_paths; do
         if [ -x "$tor_path" ]; then
           printf '%s\n' "Found tor at: $tor_path"
+          printf '%s\n' "Tor was installed to a different location than expected."
+          found_elsewhere=1
           break
         fi
       done
       
-      printf '%s\n' "Installation may have failed. Check output above for errors."
-      exit 1
+      if [ "$found_elsewhere" -eq 0 ]; then
+        printf '%s\n' "Installation failed. Check output above for errors."
+        exit 1
+      fi
+    else
+      printf '%s\n' 'Tor binary installed successfully to /usr/local/bin/tor'
     fi
-    
-    printf 'Tor binary installed successfully to /usr/local/bin/tor\n'
     
     # Clear shell command cache so tor can be found immediately
     hash -r 2>/dev/null || true
