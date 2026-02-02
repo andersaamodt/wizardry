@@ -151,7 +151,14 @@ y|Y)
                         printf 'Hidden service address: %s\n' "$onion_address"
                 else
                         printf '%s\n' "Hidden service configured."
-                        printf 'The .onion address will be in: %s\n' "$hostname_file"
+                        printf 'The .onion address is stored at: %s\n' "$hostname_file"
+                        # Try to read and display the address
+                        if [ -f "$hostname_file" ] && [ -r "$hostname_file" ]; then
+                                onion_address=$(cat "$hostname_file" 2>/dev/null || true)
+                                if [ -n "$onion_address" ]; then
+                                        printf 'Hidden service address: %s\n' "$onion_address"
+                                fi
+                        fi
                 fi
         fi
         ;;

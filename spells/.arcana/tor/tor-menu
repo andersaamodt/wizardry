@@ -79,31 +79,82 @@ $openssl_option"
     repair_option="Repair Permissions%repair-tor-permissions"
     uninstall_option="Uninstall Tor%uninstall-tor"
     
+    # Check for .onion address file to offer copy option
+    copy_onion_option=""
+    if is-tor-hidden-service-configured; then
+      # Determine hostname file path based on platform
+      case "$(uname -s 2>/dev/null)" in
+      Darwin)
+        hostname_file="/usr/local/var/lib/tor/mud/hostname"
+        ;;
+      *)
+        hostname_file="/var/lib/tor/mud/hostname"
+        ;;
+      esac
+      
+      if [ -f "$hostname_file" ]; then
+        copy_onion_option="Copy .onion address%copy \"$hostname_file\""
+      fi
+    fi
+    
     # Build menu with macOS dependencies if present
     if [ -n "$macos_deps" ]; then
       if [ -n "$service_status_option" ] && [ -n "$tor_service_option" ]; then
-        menu "$title" "$config_option" "$service_status_option" \
-          "$tor_service_option" "$repair_option" "$uninstall_option" \
-          "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
+        if [ -n "$copy_onion_option" ]; then
+          menu "$title" "$copy_onion_option" "$config_option" "$service_status_option" \
+            "$tor_service_option" "$repair_option" "$uninstall_option" \
+            "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
+        else
+          menu "$title" "$config_option" "$service_status_option" \
+            "$tor_service_option" "$repair_option" "$uninstall_option" \
+            "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
+        fi
       elif [ -n "$service_status_option" ]; then
-        menu "$title" "$config_option" "$service_status_option" \
-          "$repair_option" "$uninstall_option" \
-          "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
+        if [ -n "$copy_onion_option" ]; then
+          menu "$title" "$copy_onion_option" "$config_option" "$service_status_option" \
+            "$repair_option" "$uninstall_option" \
+            "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
+        else
+          menu "$title" "$config_option" "$service_status_option" \
+            "$repair_option" "$uninstall_option" \
+            "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
+        fi
       else
-        menu "$title" "$config_option" "$repair_option" "$uninstall_option" \
-          "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
+        if [ -n "$copy_onion_option" ]; then
+          menu "$title" "$copy_onion_option" "$config_option" "$repair_option" "$uninstall_option" \
+            "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
+        else
+          menu "$title" "$config_option" "$repair_option" "$uninstall_option" \
+            "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
+        fi
       fi
     else
       if [ -n "$service_status_option" ] && [ -n "$tor_service_option" ]; then
-        menu "$title" "$config_option" "$service_status_option" \
-          "$tor_service_option" "$repair_option" "$uninstall_option" \
-          "$exit_option" || menu_status=$?
+        if [ -n "$copy_onion_option" ]; then
+          menu "$title" "$copy_onion_option" "$config_option" "$service_status_option" \
+            "$tor_service_option" "$repair_option" "$uninstall_option" \
+            "$exit_option" || menu_status=$?
+        else
+          menu "$title" "$config_option" "$service_status_option" \
+            "$tor_service_option" "$repair_option" "$uninstall_option" \
+            "$exit_option" || menu_status=$?
+        fi
       elif [ -n "$service_status_option" ]; then
-        menu "$title" "$config_option" "$service_status_option" \
-          "$repair_option" "$uninstall_option" "$exit_option" || menu_status=$?
+        if [ -n "$copy_onion_option" ]; then
+          menu "$title" "$copy_onion_option" "$config_option" "$service_status_option" \
+            "$repair_option" "$uninstall_option" "$exit_option" || menu_status=$?
+        else
+          menu "$title" "$config_option" "$service_status_option" \
+            "$repair_option" "$uninstall_option" "$exit_option" || menu_status=$?
+        fi
       else
-        menu "$title" "$config_option" "$repair_option" "$uninstall_option" \
-          "$exit_option" || menu_status=$?
+        if [ -n "$copy_onion_option" ]; then
+          menu "$title" "$copy_onion_option" "$config_option" "$repair_option" "$uninstall_option" \
+            "$exit_option" || menu_status=$?
+        else
+          menu "$title" "$config_option" "$repair_option" "$uninstall_option" \
+            "$exit_option" || menu_status=$?
+        fi
       fi
     fi
   else
