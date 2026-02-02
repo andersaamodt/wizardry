@@ -149,21 +149,26 @@ case $distro in
     printf 'Compilation output:\n'
     printf '%s\n' "----------------------------------------"
     
-    # Ensure we're in the tor source directory
+    # Step 1: Check for Makefile
+    printf 'Checking for Makefile...\n'
+    printf 'Current directory: %s\n' "$(pwd)"
+    
     if [ ! -f "Makefile" ]; then
       printf '%s\n' "install-tor: Makefile not found in tor source directory"
-      printf '%s\n' "Current directory: $(pwd)"
       printf '%s\n' "Expected location: extracted tor source directory"
       printf '%s\n' "Directory contents:"
       ls -la
       exit 1
     fi
+    printf 'Makefile found.\n'
     
-    # Run make with explicit output handling
-    # Note: Both stdout and stderr are shown to user
+    # Step 2: Start compilation
+    printf 'Starting make...\n'
     make
     make_exit=$?
     
+    # Step 3: Report completion
+    printf 'Make completed with exit code: %d\n' "$make_exit"
     printf '%s\n' "----------------------------------------"
     
     if [ "$make_exit" -ne 0 ]; then
