@@ -167,9 +167,13 @@ case $distro in
     # Temporarily allow make to fail so we can capture exit code
     # (with set -e, make failure would exit script before we can handle it)
     set +e
-    # Use unbuffered output and write directly to stdout
-    # This should work even when called from menu context
-    MAKEFLAGS= make 2>&1; make_exit=$?
+    # Write make output to a temp file to bypass any I/O redirection issues
+    make_log="$(temp-file make-output)"
+    MAKEFLAGS= make >"$make_log" 2>&1
+    make_exit=$?
+    # Read and display the output
+    cat "$make_log"
+    rm -f "$make_log"
     set -e
     
     # Step 3: Report completion
