@@ -153,6 +153,9 @@ case $distro in
       make install || exit 1
     fi
     
+    # Clear shell command cache so tor can be found immediately
+    hash -r 2>/dev/null || true
+    
     cd - >/dev/null || true
     trap - EXIT HUP INT TERM
     rm -rf "$tmp_dir"
@@ -214,9 +217,13 @@ case $distro in
     ;;
 esac
 
+# Clear shell command cache to find newly installed tor
+hash -r 2>/dev/null || true
+
 # Check if installation was successful
 if command -v tor >/dev/null 2>&1; then
   printf '%s\n' 'Tor installation complete.'
+  printf '%s\n' "Tor installed to: $(command -v tor)"
   
   # Try to start service if systemctl is available
   if command -v systemctl >/dev/null 2>&1; then
@@ -233,5 +240,11 @@ if command -v tor >/dev/null 2>&1; then
     fi
   fi
 else
-  printf '%s\n' 'Tor installation attempted, but the tor binary is not yet available. Check logs.'
+  printf '%s\n' 'Tor installation attempted, but tor binary not yet in PATH.'
+  printf '%s\n' 'Expected location: /usr/local/bin/tor'
+  printf '%s\n' ''
+  printf '%s\n' 'Try one of the following:'
+  printf '%s\n' '  1. Open a new terminal window'
+  printf '%s\n' '  2. Run: hash -r'
+  printf '%s\n' '  3. Check if /usr/local/bin is in your PATH'
 fi
