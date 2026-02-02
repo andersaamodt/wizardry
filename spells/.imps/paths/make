@@ -4,7 +4,7 @@
 set -eu
 
 
-case "$1" in
+case "${1-}" in
   dir) mkdir -p "$2" ;;
   *) exit 1 ;;
 esac

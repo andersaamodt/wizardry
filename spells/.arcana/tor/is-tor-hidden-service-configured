@@ -1,0 +1,34 @@
+#!/bin/sh
+
+# Returns 0 (true) if Tor hidden service is configured, 1 (false) if not
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-tor-hidden-service-configured
+
+Checks if Tor hidden service is configured in torrc.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+# Get torrc path
+tor_config_path=$(torrc-path 2>/dev/null) || exit 1
+
+# Check if torrc exists
+if [ ! -f "$tor_config_path" ]; then
+  exit 1
+fi
+
+# Check if HiddenServiceDir is configured in torrc
+if grep -q "^HiddenServiceDir" "$tor_config_path" 2>/dev/null; then
+  exit 0
+fi
+
+exit 1
