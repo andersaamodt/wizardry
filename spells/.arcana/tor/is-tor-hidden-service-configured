@@ -13,13 +13,37 @@ USAGE
   ;;
 esac
 
-require-wizardry || exit 1
-
 set -eu
-. env-clear
+
+# Detect torrc path based on platform
+detect_torrc_path() {
+  # Try to use torrc-path if available
+  if command -v torrc-path >/dev/null 2>&1; then
+    torrc-path 2>/dev/null && return 0
+  fi
+  
+  # Fallback: try common locations
+  if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+    # macOS
+    for path in /usr/local/etc/tor/torrc /opt/local/etc/tor/torrc; do
+      if [ -f "$path" ]; then
+        printf '%s' "$path"
+        return 0
+      fi
+    done
+  else
+    # Linux
+    if [ -f /etc/tor/torrc ]; then
+      printf '%s' /etc/tor/torrc
+      return 0
+    fi
+  fi
+  
+  return 1
+}
 
 # Get torrc path
-tor_config_path=$(torrc-path 2>/dev/null) || exit 1
+tor_config_path=$(detect_torrc_path) || exit 1
 
 # Check if torrc exists
 if [ ! -f "$tor_config_path" ]; then
