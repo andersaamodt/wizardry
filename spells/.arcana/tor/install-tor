@@ -151,29 +151,32 @@ case $distro in
     
     # Ensure we're in the tor source directory
     if [ ! -f "Makefile" ]; then
-      printf '%s\n' "ERROR: Makefile not found in tor source directory!"
+      printf '%s\n' "install-tor: Makefile not found in tor source directory"
       printf '%s\n' "Current directory: $(pwd)"
-      printf '%s\n' "Expected: Should be in extracted tor source directory"
+      printf '%s\n' "Expected location: extracted tor source directory"
       printf '%s\n' "Directory contents:"
       ls -la
       exit 1
     fi
     
-    # Run make with explicit output
-    if ! make 2>&1; then
+    # Run make and capture exit code while showing output
+    make 2>&1
+    make_exit=$?
+    
+    printf '%s\n' "----------------------------------------"
+    
+    if [ "$make_exit" -ne 0 ]; then
       printf '\n'
-      printf '%s\n' "----------------------------------------"
-      printf '%s\n' "ERROR: make failed during compilation."
-      printf '%s\n' "Common causes:"
-      printf '%s\n' "  - Missing Xcode Command Line Tools (run: xcode-select --install)"
-      printf '%s\n' "  - Incompatible compiler version"
-      printf '%s\n' "  - Missing or incompatible dependencies"
+      printf '%s\n' "install-tor: compilation failed"
+      printf '%s\n' "Possible causes:"
+      printf '%s\n' "  - Xcode Command Line Tools not found"
+      printf '%s\n' "  - Incompatible compiler version detected"
+      printf '%s\n' "  - Missing or incompatible dependencies detected"
       printf '\n'
-      printf '%s\n' "If no error output appeared above, try running 'make' manually"
-      printf '%s\n' "in the tor source directory to see the actual error."
+      printf '%s\n' "The compilation output above may contain more details."
       exit 1
     fi
-    printf '%s\n' "----------------------------------------"
+    
     printf 'Build completed successfully.\n'
     
     printf '\n'
