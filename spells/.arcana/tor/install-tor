@@ -159,8 +159,9 @@ case $distro in
       exit 1
     fi
     
-    # Run make and capture exit code while showing output
-    make 2>&1
+    # Run make with explicit output handling
+    # Note: Both stdout and stderr are shown to user
+    make
     make_exit=$?
     
     printf '%s\n' "----------------------------------------"
