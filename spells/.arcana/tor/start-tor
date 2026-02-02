@@ -5,7 +5,17 @@ set -eu
 
 printf 'Starting tor...\n'
 
-# Try systemctl first (Linux with systemd)
+# Try brew services first on macOS (if tor installed via homebrew)
+if command -v brew >/dev/null 2>&1; then
+  if brew list tor >/dev/null 2>&1; then
+    if brew services start tor 2>/dev/null; then
+      printf 'Tor started via brew services.\n'
+      exit 0
+    fi
+  fi
+fi
+
+# Try systemctl (Linux with systemd)
 if command -v systemctl >/dev/null 2>&1; then
   if sudo systemctl start tor 2>/dev/null; then
     printf 'Tor started via systemctl.\n'
