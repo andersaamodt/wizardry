@@ -19,6 +19,9 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
+# How long to wait for tor to generate hidden service files
+TOR_STARTUP_DELAY=2
+
 # Check if tor is installed, offer to install if not
 if ! is-tor-installed; then
         printf '%s\n' "Tor is not installed."
@@ -66,7 +69,7 @@ y|Y)
         # Restart tor using appropriate method for platform
         systemctl_available=0
         if command -v systemctl >/dev/null 2>&1; then
-                if systemctl list-unit-files | grep -q '^tor\.service'; then
+                if systemctl list-unit-files | grep -q 'tor.*\.service'; then
                         systemctl_available=1
                 fi
         fi
@@ -92,7 +95,7 @@ y|Y)
                 printf '%s\n' "Warning: $restart_msg $restart_msg2"
         else
                 # Wait a moment for tor to generate the hidden service
-                sleep 2
+                sleep "$TOR_STARTUP_DELAY"
                 
                 # Read the hidden service address if available
                 hostname_file="${mud_dir}hostname"
