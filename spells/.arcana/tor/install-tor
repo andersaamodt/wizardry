@@ -167,7 +167,9 @@ case $distro in
     # Temporarily allow make to fail so we can capture exit code
     # (with set -e, make failure would exit script before we can handle it)
     set +e
-    make
+    # Force make to show output even if not connected to a TTY
+    # The MAKEFLAGS environment variable controls make's behavior
+    MAKEFLAGS= make
     make_exit=$?
     set -e
     
