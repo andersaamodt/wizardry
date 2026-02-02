@@ -1,0 +1,95 @@
+#!/bin/sh
+
+# Remove Tor hidden service configuration
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: remove-tor-hidden-service
+
+Remove Tor hidden service configuration from torrc.
+Prompts for confirmation before making changes.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+printf '%s' "Do you want to remove the Tor hidden service? [y/n]: "
+IFS= read -r choice || exit 1
+
+case $choice in
+y|Y)
+        # Get torrc path
+        tor_config_path=$(torrc-path) || exit 1
+        
+        if [ ! -f "$tor_config_path" ]; then
+                printf '%s\n' "Error: torrc file not found at $tor_config_path" >&2
+                exit 1
+        fi
+        
+        # Create a backup
+        backup_path="${tor_config_path}.backup.$(date +%Y%m%d_%H%M%S)"
+        if command -v sudo >/dev/null 2>&1; then
+                sudo cp "$tor_config_path" "$backup_path"
+                printf '%s\n' "Backup created: $backup_path"
+        else
+                cp "$tor_config_path" "$backup_path"
+                printf '%s\n' "Backup created: $backup_path"
+        fi
+        
+        # Remove HiddenService lines from torrc
+        temp_file=$(temp-file torrc-temp)
+        grep -v "^HiddenServiceDir" "$tor_config_path" | \
+          grep -v "^HiddenServicePort" > "$temp_file"
+        
+        if command -v sudo >/dev/null 2>&1; then
+                sudo mv "$temp_file" "$tor_config_path"
+        else
+                mv "$temp_file" "$tor_config_path"
+        fi
+        
+        printf '%s\n' "Hidden service configuration removed from $tor_config_path"
+        printf '%s\n' "Please restart Tor for changes to take effect."
+        
+        # Try to restart tor
+        tor_restarted=0
+        if command -v systemctl >/dev/null 2>&1; then
+                if systemctl list-unit-files | grep -q 'tor.*\.service'; then
+                        printf '%s' "Restart Tor service now? [y/n]: "
+                        IFS= read -r restart_choice || exit 0
+                        case $restart_choice in
+                        y|Y)
+                                sudo systemctl restart tor && tor_restarted=1
+                                ;;
+                        esac
+                fi
+        fi
+        
+        if [ "$tor_restarted" -eq 0 ]; then
+                # Get platform info for platform-specific instructions
+                if command -v detect-distro >/dev/null 2>&1; then
+                        distro=$(detect-distro)
+                else
+                        distro=$(os)
+                fi
+                
+                case $distro in
+                mac|macos)
+                        printf '%s\n' "On macOS, restart tor with:"
+                        printf '%s\n' "  sudo killall tor && tor &"
+                        ;;
+                *)
+                        printf '%s\n' "Restart tor manually to apply changes."
+                        ;;
+                esac
+        fi
+        ;;
+*)
+        printf '%s\n' "Tor hidden service removal cancelled."
+        ;;
+esac
