@@ -33,7 +33,7 @@ y|Y)
         fi
         
         # Create a backup
-        backup_path="${tor_config_path}.backup.$(date +%Y%m%d_%H%M%S)"
+        backup_path="${tor_config_path}.backup.$(date -u +%Y%m%d_%H%M%S)"
         if command -v sudo >/dev/null 2>&1; then
                 sudo cp "$tor_config_path" "$backup_path"
                 printf '%s\n' "Backup created: $backup_path"
@@ -42,10 +42,22 @@ y|Y)
                 printf '%s\n' "Backup created: $backup_path"
         fi
         
-        # Remove HiddenService lines from torrc
+        # Remove HiddenService lines from torrc using sed for safer handling
         temp_file=$(temp-file torrc-temp)
-        grep -v "^HiddenServiceDir" "$tor_config_path" | \
-          grep -v "^HiddenServicePort" > "$temp_file"
+        if command -v sudo >/dev/null 2>&1; then
+                sudo sed '/^HiddenServiceDir/d; /^HiddenServicePort/d' \
+                  "$tor_config_path" > "$temp_file"
+        else
+                sed '/^HiddenServiceDir/d; /^HiddenServicePort/d' \
+                  "$tor_config_path" > "$temp_file"
+        fi
+        
+        # Verify the temp file has some content (not completely empty)
+        if [ ! -s "$temp_file" ]; then
+                printf '%s\n' "Warning: Filtered torrc would be empty. Restoring backup." >&2
+                rm -f "$temp_file"
+                exit 1
+        fi
         
         if command -v sudo >/dev/null 2>&1; then
                 sudo mv "$temp_file" "$tor_config_path"
