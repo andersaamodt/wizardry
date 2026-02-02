@@ -65,9 +65,9 @@ $openssl_option"
   if is-service-installed tor > /dev/null; then
     service_status_option="View Tor Service Status%sudo systemctl status tor"
     if is-service-running tor > /dev/null; then
-      tor_service_option="Stop Tor Service%sudo systemctl stop tor"
+      tor_service_option="Stop Tor%stop-tor"
     else
-      tor_service_option="Start Tor Service%sudo systemctl start tor"
+      tor_service_option="Start Tor%start-tor"
     fi
   else
     script_dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
