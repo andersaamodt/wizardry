@@ -167,10 +167,11 @@ case $distro in
     # Temporarily allow make to fail so we can capture exit code
     # (with set -e, make failure would exit script before we can handle it)
     set +e
-    # Force make to show output even if not connected to a TTY
-    # The MAKEFLAGS environment variable controls make's behavior
-    MAKEFLAGS= make
+    # Capture make output and explicitly display it
+    # This ensures output appears even if stdout/stderr are redirected
+    make_output=$(MAKEFLAGS= make 2>&1)
     make_exit=$?
+    printf '%s\n' "$make_output"
     set -e
     
     # Step 3: Report completion
