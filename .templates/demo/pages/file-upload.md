@@ -2,8 +2,6 @@
 title: File Upload Demos
 ---
 
-# File Upload & Binary I/O Demos
-
 These demos showcase browser file handling capabilities, including file selection, drag-and-drop, and binary data processing.
 
 ## 1. Basic Image Upload & Display
@@ -11,12 +9,12 @@ These demos showcase browser file handling capabilities, including file selectio
 Upload an image and see it displayed instantly:
 
 <div class="demo-box">
-  <input type="text" id="upload-filename" placeholder="Enter image name (e.g., logo.png)" value="demo-image.png" />
-  <button hx-get="/cgi/upload-image" hx-vals='js:{filename: document.getElementById("upload-filename").value}' hx-target="#upload-display" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#upload-filename" class="primary">
+<input type="text" id="upload-filename" placeholder="Enter image name (e.g., logo.png)" value="demo-image.png" />
+<button hx-get="/cgi/upload-image" hx-vals='js:{filename: document.getElementById("upload-filename").value}' hx-target="#upload-display" hx-swap="innerHTML" hx-trigger="click, keyup[key=='Enter'] from:#upload-filename" class="primary">
     Upload & Display
-  </button>
-  <div id="upload-display" class="output">
-  </div>
+</button>
+<div id="upload-display" class="output">
+</div>
 </div>
 
 ## 2. Drag-and-Drop File Upload
@@ -163,11 +161,11 @@ Supports: Images, Videos, Audio, PDFs, Text files, and more
 Get detailed metadata about uploaded files:
 
 <div class="demo-box">
-  <input type="text" id="file-info-input" placeholder="Enter filename" value="document.pdf" hx-get="/cgi/file-info" hx-vals='js:{name: document.getElementById("file-info-input").value}' hx-target="#file-info-output" hx-swap="innerHTML" hx-trigger="keyup[key=='Enter']" />
-  <button hx-get="/cgi/file-info" hx-vals='js:{name: document.getElementById("file-info-input").value}' hx-target="#file-info-output" hx-swap="innerHTML">
+<input type="text" id="file-info-input" placeholder="Enter filename" value="document.pdf" hx-get="/cgi/file-info" hx-vals='js:{name: document.getElementById("file-info-input").value}' hx-target="#file-info-output" hx-swap="innerHTML" hx-trigger="keyup[key=='Enter']" />
+<button hx-get="/cgi/file-info" hx-vals='js:{name: document.getElementById("file-info-input").value}' hx-target="#file-info-output" hx-swap="innerHTML">
     Get File Info
-  </button>
-  <div id="file-info-output" class="output"></div>
+</button>
+<div id="file-info-output" class="output"></div>
 </div>
 
 ## 4. File Picker API
@@ -175,8 +173,8 @@ Get detailed metadata about uploaded files:
 Use the native browser file picker to select files:
 
 <div class="demo-box">
-  <button id="file-picker-btn" class="primary">📂 Open File Picker</button>
-  <div id="file-picker-output" class="output"></div>
+<button id="file-picker-btn" class="primary">📂 Open File Picker</button>
+<div id="file-picker-output" class="output"></div>
 </div>
 
 <script>
@@ -196,13 +194,13 @@ Use the native browser file picker to select files:
         if (!file) return;
         
         output.innerHTML = `
-          <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; margin-top: 1rem;">
-            <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ File Selected</h4>
-            <p style="margin: 0.25rem 0;"><strong>Name:</strong> ${file.name}</p>
-            <p style="margin: 0.25rem 0;"><strong>Type:</strong> ${file.type || 'unknown'}</p>
-            <p style="margin: 0.25rem 0;"><strong>Size:</strong> ${(file.size / 1024).toFixed(2)} KB</p>
-            <p style="margin: 0.25rem 0;"><strong>Last Modified:</strong> ${new Date(file.lastModified).toLocaleString()}</p>
-          </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; margin-top: 1rem;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ File Selected</h4>
+<p style="margin: 0.25rem 0;"><strong>Name:</strong> ${file.name}</p>
+<p style="margin: 0.25rem 0;"><strong>Type:</strong> ${file.type || 'unknown'}</p>
+<p style="margin: 0.25rem 0;"><strong>Size:</strong> ${(file.size / 1024).toFixed(2)} KB</p>
+<p style="margin: 0.25rem 0;"><strong>Last Modified:</strong> ${new Date(file.lastModified).toLocaleString()}</p>
+</div>
         `;
       };
       
@@ -219,9 +217,9 @@ Use the native browser file picker to select files:
 Demonstrate working with binary data and Blob objects:
 
 <div class="demo-box">
-  <button id="create-blob-btn">Create Text Blob</button>
-  <button id="create-binary-btn" style="margin-left: 10px;">Create Binary Blob</button>
-  <div id="blob-output" class="output"></div>
+<button id="create-blob-btn">Create Text Blob</button>
+<button id="create-binary-btn" style="margin-left: 10px;">Create Binary Blob</button>
+<div id="blob-output" class="output"></div>
 </div>
 
 <script>
@@ -236,13 +234,13 @@ Demonstrate working with binary data and Blob objects:
     const url = URL.createObjectURL(blob);
     
     output.innerHTML = `
-      <div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; margin-top: 1rem;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">📝 Text Blob Created</h4>
-        <p style="margin: 0.25rem 0;"><strong>Size:</strong> ${blob.size} bytes</p>
-        <p style="margin: 0.25rem 0;"><strong>Type:</strong> ${blob.type}</p>
-        <p style="margin: 0.25rem 0;"><strong>Content:</strong> "${text}"</p>
-        <a href="${url}" download="demo.txt" style="display: inline-block; margin-top: 0.5rem; padding: 0.5rem 1rem; background: #1976d2; color: white; border-radius: 4px; text-decoration: none;">⬇️ Download Blob</a>
-      </div>
+<div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; margin-top: 1rem;">
+<h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">📝 Text Blob Created</h4>
+<p style="margin: 0.25rem 0;"><strong>Size:</strong> ${blob.size} bytes</p>
+<p style="margin: 0.25rem 0;"><strong>Type:</strong> ${blob.type}</p>
+<p style="margin: 0.25rem 0;"><strong>Content:</strong> "${text}"</p>
+<a href="${url}" download="demo.txt" style="display: inline-block; margin-top: 0.5rem; padding: 0.5rem 1rem; background: #1976d2; color: white; border-radius: 4px; text-decoration: none;">⬇️ Download Blob</a>
+</div>
     `;
   });
   
@@ -253,16 +251,16 @@ Demonstrate working with binary data and Blob objects:
     const url = URL.createObjectURL(blob);
     
     output.innerHTML = `
-      <div style="background: #f3e5f5; padding: 1rem; border-radius: 4px; margin-top: 1rem;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #6a1b9a;">🔢 Binary Blob Created</h4>
-        <p style="margin: 0.25rem 0;"><strong>Size:</strong> ${blob.size} bytes</p>
-        <p style="margin: 0.25rem 0;"><strong>Type:</strong> ${blob.type}</p>
-        <p style="margin: 0.25rem 0;"><strong>Data:</strong> PNG header bytes</p>
-        <p style="margin: 0.25rem 0; font-family: monospace; font-size: 0.9rem;">
+<div style="background: #f3e5f5; padding: 1rem; border-radius: 4px; margin-top: 1rem;">
+<h4 style="margin: 0 0 0.5rem 0; color: #6a1b9a;">🔢 Binary Blob Created</h4>
+<p style="margin: 0.25rem 0;"><strong>Size:</strong> ${blob.size} bytes</p>
+<p style="margin: 0.25rem 0;"><strong>Type:</strong> ${blob.type}</p>
+<p style="margin: 0.25rem 0;"><strong>Data:</strong> PNG header bytes</p>
+<p style="margin: 0.25rem 0; font-family: monospace; font-size: 0.9rem;">
           ${Array.from(header).map(b => b.toString(16).padStart(2, '0')).join(' ')}
-        </p>
-        <a href="${url}" download="binary.dat" style="display: inline-block; margin-top: 0.5rem; padding: 0.5rem 1rem; background: #7b1fa2; color: white; border-radius: 4px; text-decoration: none;">⬇️ Download Binary Data</a>
-      </div>
+</p>
+<a href="${url}" download="binary.dat" style="display: inline-block; margin-top: 0.5rem; padding: 0.5rem 1rem; background: #7b1fa2; color: white; border-radius: 4px; text-decoration: none;">⬇️ Download Binary Data</a>
+</div>
     `;
   });
 })();
@@ -271,17 +269,17 @@ Demonstrate working with binary data and Blob objects:
 ---
 
 <div class="info-box">
-  <h3>🎯 Browser APIs Demonstrated:</h3>
-  <ul>
-    <li><strong>File API:</strong> Reading local files selected by users</li>
-    <li><strong>Drag and Drop API:</strong> Native browser drag-and-drop events</li>
-    <li><strong>Blob API:</strong> Creating and manipulating binary data</li>
-    <li><strong>URL.createObjectURL:</strong> Creating downloadable blob URLs</li>
-    <li><strong>FormData API:</strong> Uploading files via fetch/AJAX</li>
-    <li><strong>FileReader API:</strong> Reading file contents in various formats</li>
-  </ul>
+<h3>🎯 Browser APIs Demonstrated:</h3>
+<ul>
+<li><strong>File API:</strong> Reading local files selected by users</li>
+<li><strong>Drag and Drop API:</strong> Native browser drag-and-drop events</li>
+<li><strong>Blob API:</strong> Creating and manipulating binary data</li>
+<li><strong>URL.createObjectURL:</strong> Creating downloadable blob URLs</li>
+<li><strong>FormData API:</strong> Uploading files via fetch/AJAX</li>
+<li><strong>FileReader API:</strong> Reading file contents in various formats</li>
+</ul>
   
-  <p style="margin-top: 1rem;"><strong>💡 Note:</strong> All file operations happen client-side in your browser. The CGI scripts demonstrate server-side file handling when files are uploaded.</p>
+<p style="margin-top: 1rem;"><strong>💡 Note:</strong> All file operations happen client-side in your browser. The CGI scripts demonstrate server-side file handling when files are uploaded.</p>
 </div>
 
 ## 6. File System Access API (Advanced)
@@ -289,32 +287,32 @@ Demonstrate working with binary data and Blob objects:
 The File System Access API provides read/write access to files and directories on the user's device:
 
 <div class="demo-box">
-  <h3>📁 File System Access API</h3>
+<h3>📁 File System Access API</h3>
   
-  <div style="background: #fff3cd; padding: 1rem; border-radius: 4px; border: 1px solid #ffc107; margin-bottom: 1rem;">
-    <p style="margin: 0; color: #856404;">
-      <strong>⚠️ Browser Support:</strong> This API is currently only supported in Chromium-based browsers (Chrome, Edge, Opera). It will not work in Firefox or Safari.
-    </p>
-  </div>
+<div style="background: #fff3cd; padding: 1rem; border-radius: 4px; border: 1px solid #ffc107; margin-bottom: 1rem;">
+<p style="margin: 0; color: #856404;">
+<strong>⚠️ Browser Support:</strong> This API is currently only supported in Chromium-based browsers (Chrome, Edge, Opera). It will not work in Firefox or Safari.
+</p>
+</div>
   
-  <h4>Open and Read File</h4>
-  <div style="margin-bottom: 1.5rem;">
-    <button id="fs-open-file">📂 Open File</button>
-    <div id="fs-file-output" class="output" style="margin-top: 0.5rem;"></div>
-  </div>
+<h4>Open and Read File</h4>
+<div style="margin-bottom: 1.5rem;">
+<button id="fs-open-file">📂 Open File</button>
+<div id="fs-file-output" class="output" style="margin-top: 0.5rem;"></div>
+</div>
   
-  <h4>Save File</h4>
-  <div style="margin-bottom: 1.5rem;">
-    <textarea id="fs-text-content" rows="4" placeholder="Enter content to save..." style="width: 100%; padding: 0.5rem; border: 2px solid #ddd; border-radius: 4px; margin-bottom: 0.5rem;"></textarea>
-    <button id="fs-save-file">💾 Save As...</button>
-    <div id="fs-save-output" class="output" style="margin-top: 0.5rem;"></div>
-  </div>
+<h4>Save File</h4>
+<div style="margin-bottom: 1.5rem;">
+<textarea id="fs-text-content" rows="4" placeholder="Enter content to save..." style="width: 100%; padding: 0.5rem; border: 2px solid #ddd; border-radius: 4px; margin-bottom: 0.5rem;"></textarea>
+<button id="fs-save-file">💾 Save As...</button>
+<div id="fs-save-output" class="output" style="margin-top: 0.5rem;"></div>
+</div>
   
-  <h4>Directory Picker</h4>
-  <div>
-    <button id="fs-open-dir">📁 Open Directory</button>
-    <div id="fs-dir-output" class="output" style="margin-top: 0.5rem;"></div>
-  </div>
+<h4>Directory Picker</h4>
+<div>
+<button id="fs-open-dir">📁 Open Directory</button>
+<div id="fs-dir-output" class="output" style="margin-top: 0.5rem;"></div>
+</div>
 </div>
 
 <script>
@@ -329,11 +327,11 @@ The File System Access API provides read/write access to files and directories o
   
   if (!isSupported) {
     const warningHTML = `
-      <div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ File System Access API Not Supported</h4>
-        <p style="margin: 0.25rem 0;">This browser does not support the File System Access API.</p>
-        <p style="margin: 0.25rem 0; font-size: 0.9rem;">Try using Chrome, Edge, or another Chromium-based browser.</p>
-      </div>
+<div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
+<h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ File System Access API Not Supported</h4>
+<p style="margin: 0.25rem 0;">This browser does not support the File System Access API.</p>
+<p style="margin: 0.25rem 0; font-size: 0.9rem;">Try using Chrome, Edge, or another Chromium-based browser.</p>
+</div>
     `;
     fileOutput.innerHTML = warningHTML;
     saveOutput.innerHTML = warningHTML;
@@ -365,17 +363,17 @@ The File System Access API provides read/write access to files and directories o
       const contents = await file.text();
       
       fileOutput.innerHTML = `
-        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ File Opened</h4>
-          <p style="margin: 0.25rem 0;"><strong>Name:</strong> ${file.name}</p>
-          <p style="margin: 0.25rem 0;"><strong>Size:</strong> ${(file.size / 1024).toFixed(2)} KB</p>
-          <p style="margin: 0.25rem 0;"><strong>Type:</strong> ${file.type || 'unknown'}</p>
-          <p style="margin: 0.25rem 0;"><strong>Last Modified:</strong> ${new Date(file.lastModified).toLocaleString()}</p>
-          <details style="margin-top: 0.5rem;">
-            <summary style="cursor: pointer; color: #2e7d32;">Show file contents (first 500 chars)</summary>
-            <pre style="margin-top: 0.5rem; background: #fff; padding: 0.5rem; border-radius: 3px; overflow-x: auto; font-size: 0.85rem; max-height: 200px;">${contents.substring(0, 500)}${contents.length > 500 ? '...' : ''}</pre>
-          </details>
-        </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ File Opened</h4>
+<p style="margin: 0.25rem 0;"><strong>Name:</strong> ${file.name}</p>
+<p style="margin: 0.25rem 0;"><strong>Size:</strong> ${(file.size / 1024).toFixed(2)} KB</p>
+<p style="margin: 0.25rem 0;"><strong>Type:</strong> ${file.type || 'unknown'}</p>
+<p style="margin: 0.25rem 0;"><strong>Last Modified:</strong> ${new Date(file.lastModified).toLocaleString()}</p>
+<details style="margin-top: 0.5rem;">
+<summary style="cursor: pointer; color: #2e7d32;">Show file contents (first 500 chars)</summary>
+<pre style="margin-top: 0.5rem; background: #fff; padding: 0.5rem; border-radius: 3px; overflow-x: auto; font-size: 0.85rem; max-height: 200px;">${contents.substring(0, 500)}${contents.length > 500 ? '...' : ''}</pre>
+</details>
+</div>
       `;
     } catch (error) {
       if (error.name === 'AbortError') {
@@ -416,11 +414,11 @@ The File System Access API provides read/write access to files and directories o
       await writable.close();
       
       saveOutput.innerHTML = `
-        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ File Saved</h4>
-          <p style="margin: 0.25rem 0;"><strong>Saved to:</strong> ${fileHandle.name}</p>
-          <p style="margin: 0.25rem 0;"><strong>Size:</strong> ${(content.length / 1024).toFixed(2)} KB</p>
-        </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ File Saved</h4>
+<p style="margin: 0.25rem 0;"><strong>Saved to:</strong> ${fileHandle.name}</p>
+<p style="margin: 0.25rem 0;"><strong>Size:</strong> ${(content.length / 1024).toFixed(2)} KB</p>
+</div>
       `;
     } catch (error) {
       if (error.name === 'AbortError') {
@@ -457,17 +455,17 @@ The File System Access API provides read/write access to files and directories o
       }).join('');
       
       dirOutput.innerHTML = `
-        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ Directory Opened</h4>
-          <p style="margin: 0.25rem 0;"><strong>Directory:</strong> ${dirHandle.name}</p>
-          <p style="margin: 0.25rem 0;"><strong>Contents:</strong> ${files.length} items</p>
-          <details style="margin-top: 0.5rem;">
-            <summary style="cursor: pointer; color: #2e7d32;">Show directory contents</summary>
-            <ul style="margin-top: 0.5rem; padding-left: 1.5rem; max-height: 300px; overflow-y: auto;">
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ Directory Opened</h4>
+<p style="margin: 0.25rem 0;"><strong>Directory:</strong> ${dirHandle.name}</p>
+<p style="margin: 0.25rem 0;"><strong>Contents:</strong> ${files.length} items</p>
+<details style="margin-top: 0.5rem;">
+<summary style="cursor: pointer; color: #2e7d32;">Show directory contents</summary>
+<ul style="margin-top: 0.5rem; padding-left: 1.5rem; max-height: 300px; overflow-y: auto;">
               ${fileList}
-            </ul>
-          </details>
-        </div>
+</ul>
+</details>
+</div>
       `;
     } catch (error) {
       if (error.name === 'AbortError') {
@@ -481,27 +479,27 @@ The File System Access API provides read/write access to files and directories o
 </script>
 
 <div class="info-box" style="margin-top: 2rem;">
-  <h3>🎯 File System Access API Features:</h3>
-  <ul>
-    <li><strong>showOpenFilePicker:</strong> User-authorized file selection with read access</li>
-    <li><strong>showSaveFilePicker:</strong> User-authorized file saving with write access</li>
-    <li><strong>showDirectoryPicker:</strong> Directory selection and enumeration</li>
-    <li><strong>File Handles:</strong> Persistent references to files for read/write</li>
-  </ul>
+<h3>🎯 File System Access API Features:</h3>
+<ul>
+<li><strong>showOpenFilePicker:</strong> User-authorized file selection with read access</li>
+<li><strong>showSaveFilePicker:</strong> User-authorized file saving with write access</li>
+<li><strong>showDirectoryPicker:</strong> Directory selection and enumeration</li>
+<li><strong>File Handles:</strong> Persistent references to files for read/write</li>
+</ul>
   
-  <p style="margin-top: 1rem;"><strong>⚠️ Security & Privacy:</strong></p>
-  <ul>
-    <li>User must explicitly select files/directories (no silent access)</li>
-    <li>Permissions must be re-requested for each session</li>
-    <li>Only works in secure contexts (HTTPS)</li>
-    <li>Limited to Chromium-based browsers currently</li>
-  </ul>
+<p style="margin-top: 1rem;"><strong>⚠️ Security & Privacy:</strong></p>
+<ul>
+<li>User must explicitly select files/directories (no silent access)</li>
+<li>Permissions must be re-requested for each session</li>
+<li>Only works in secure contexts (HTTPS)</li>
+<li>Limited to Chromium-based browsers currently</li>
+</ul>
   
-  <p style="margin-top: 1rem;"><strong>💡 Use Cases:</strong></p>
-  <ul>
-    <li>Text editors and IDEs that work with local files</li>
-    <li>Image/video editors that need file system access</li>
-    <li>Project management tools working with local directories</li>
-    <li>Any app that benefits from seamless file system integration</li>
-  </ul>
+<p style="margin-top: 1rem;"><strong>💡 Use Cases:</strong></p>
+<ul>
+<li>Text editors and IDEs that work with local files</li>
+<li>Image/video editors that need file system access</li>
+<li>Project management tools working with local directories</li>
+<li>Any app that benefits from seamless file system integration</li>
+</ul>
 </div>

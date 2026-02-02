@@ -15,3 +15,25 @@
   <a href="/pages/chat.html">Chat</a> |
   <a href="/pages/about.html">About</a>
 </nav>
+
+<script>
+// Highlight current page in navigation
+(function() {
+  const currentPath = window.location.pathname;
+  const nav = document.querySelector('.site-nav');
+  if (nav) {
+    const links = nav.querySelectorAll('a');
+    links.forEach(link => {
+      if (link.getAttribute('href') === currentPath || 
+          currentPath.endsWith(link.getAttribute('href'))) {
+        // Replace link with bold text for current page
+        const span = document.createElement('span');
+        span.textContent = link.textContent;
+        span.style.fontWeight = 'bold';
+        span.style.color = 'black';
+        link.parentNode.replaceChild(span, link);
+      }
+    });
+  }
+})();
+</script>

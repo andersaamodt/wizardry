@@ -2,8 +2,6 @@
 title: Hardware & Sensors
 ---
 
-# Hardware & Sensors Demos
-
 Explore browser APIs for accessing device hardware like cameras, microphones, and sensors.
 
 ## 1. Camera Access (getUserMedia)
@@ -11,24 +9,24 @@ Explore browser APIs for accessing device hardware like cameras, microphones, an
 Access the device camera and display live video:
 
 <div class="demo-box">
-  <h3>📷 Camera Access</h3>
+<h3>📷 Camera Access</h3>
   
-  <div style="margin-bottom: 1rem;">
-    <video id="camera-video" autoplay playsinline style="max-width: 100%; border: 2px solid #ddd; border-radius: 4px; background: #000;"></video>
-  </div>
+<div style="margin-bottom: 1rem;">
+<video id="camera-video" autoplay playsinline style="max-width: 100%; border: 2px solid #ddd; border-radius: 4px; background: #000;"></video>
+</div>
   
-  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
-    <button id="camera-start">📹 Start Camera</button>
-    <button id="camera-stop">⏹️ Stop Camera</button>
-    <button id="camera-photo">📸 Take Photo</button>
-    <select id="camera-select" style="padding: 0.5rem;">
-      <option value="">Select Camera...</option>
-    </select>
-  </div>
+<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+<button id="camera-start">📹 Start Camera</button>
+<button id="camera-stop">⏹️ Stop Camera</button>
+<button id="camera-photo">📸 Take Photo</button>
+<select id="camera-select" style="padding: 0.5rem;">
+<option value="">Select Camera...</option>
+</select>
+</div>
   
-  <canvas id="camera-canvas" style="max-width: 100%; border: 2px solid #ddd; border-radius: 4px; display: none;"></canvas>
+<canvas id="camera-canvas" style="max-width: 100%; border: 2px solid #ddd; border-radius: 4px; display: none;"></canvas>
   
-  <div id="camera-output" class="output"></div>
+<div id="camera-output" class="output"></div>
 </div>
 
 <script>
@@ -79,22 +77,22 @@ Access the device camera and display live video:
       const settings = track.getSettings();
       
       output.innerHTML = `
-        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">📹 Camera Active</h4>
-          <p style="margin: 0.25rem 0;"><strong>Camera:</strong> ${track.label}</p>
-          <p style="margin: 0.25rem 0;"><strong>Resolution:</strong> ${settings.width}x${settings.height}</p>
-          <p style="margin: 0.25rem 0;"><strong>Frame Rate:</strong> ${settings.frameRate} fps</p>
-        </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">📹 Camera Active</h4>
+<p style="margin: 0.25rem 0;"><strong>Camera:</strong> ${track.label}</p>
+<p style="margin: 0.25rem 0;"><strong>Resolution:</strong> ${settings.width}x${settings.height}</p>
+<p style="margin: 0.25rem 0;"><strong>Frame Rate:</strong> ${settings.frameRate} fps</p>
+</div>
       `;
     } catch (error) {
       output.innerHTML = `
-        <div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ Camera Access Denied</h4>
-          <p style="margin: 0.25rem 0;"><strong>Error:</strong> ${error.message}</p>
-          <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.9rem;">
+<div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
+<h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ Camera Access Denied</h4>
+<p style="margin: 0.25rem 0;"><strong>Error:</strong> ${error.message}</p>
+<p style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.9rem;">
             Please grant camera permission in your browser settings.
-          </p>
-        </div>
+</p>
+</div>
       `;
     }
   });
@@ -122,11 +120,11 @@ Access the device camera and display live video:
     
     const dataUrl = canvas.toDataURL('image/png');
     output.innerHTML = `
-      <div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3; margin-top: 1rem;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">📸 Photo Captured</h4>
-        <p style="margin: 0.25rem 0;">Photo shown in canvas above</p>
-        <a href="${dataUrl}" download="photo.png" style="display: inline-block; margin-top: 0.5rem; padding: 0.5rem 1rem; background: #1976d2; color: white; border-radius: 4px; text-decoration: none;">⬇️ Download Photo</a>
-      </div>
+<div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3; margin-top: 1rem;">
+<h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">📸 Photo Captured</h4>
+<p style="margin: 0.25rem 0;">Photo shown in canvas above</p>
+<a href="${dataUrl}" download="photo.png" style="display: inline-block; margin-top: 0.5rem; padding: 0.5rem 1rem; background: #1976d2; color: white; border-radius: 4px; text-decoration: none;">⬇️ Download Photo</a>
+</div>
     `;
   });
   
@@ -146,19 +144,19 @@ Access the device camera and display live video:
 Access the device microphone and visualize audio:
 
 <div class="demo-box">
-  <h3>🎤 Microphone Access</h3>
+<h3>🎤 Microphone Access</h3>
   
-  <canvas id="mic-canvas" width="600" height="200" style="border: 2px solid #ddd; border-radius: 4px; max-width: 100%; background: #000;"></canvas>
+<canvas id="mic-canvas" width="600" height="200" style="border: 2px solid #ddd; border-radius: 4px; max-width: 100%; background: #000;"></canvas>
   
-  <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-    <button id="mic-start">🎤 Start Microphone</button>
-    <button id="mic-stop">⏹️ Stop</button>
-    <select id="mic-select" style="padding: 0.5rem;">
-      <option value="">Select Microphone...</option>
-    </select>
-  </div>
+<div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+<button id="mic-start">🎤 Start Microphone</button>
+<button id="mic-stop">⏹️ Stop</button>
+<select id="mic-select" style="padding: 0.5rem;">
+<option value="">Select Microphone...</option>
+</select>
+</div>
   
-  <div id="mic-output" class="output"></div>
+<div id="mic-output" class="output"></div>
 </div>
 
 <script>
@@ -247,22 +245,22 @@ Access the device microphone and visualize audio:
       const settings = track.getSettings();
       
       output.innerHTML = `
-        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">🎤 Microphone Active</h4>
-          <p style="margin: 0.25rem 0;"><strong>Device:</strong> ${track.label}</p>
-          <p style="margin: 0.25rem 0;"><strong>Sample Rate:</strong> ${settings.sampleRate} Hz</p>
-          <p style="margin: 0.25rem 0;"><strong>Channels:</strong> ${settings.channelCount}</p>
-        </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">🎤 Microphone Active</h4>
+<p style="margin: 0.25rem 0;"><strong>Device:</strong> ${track.label}</p>
+<p style="margin: 0.25rem 0;"><strong>Sample Rate:</strong> ${settings.sampleRate} Hz</p>
+<p style="margin: 0.25rem 0;"><strong>Channels:</strong> ${settings.channelCount}</p>
+</div>
       `;
     } catch (error) {
       output.innerHTML = `
-        <div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ Microphone Access Denied</h4>
-          <p style="margin: 0.25rem 0;"><strong>Error:</strong> ${error.message}</p>
-          <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.9rem;">
+<div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
+<h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ Microphone Access Denied</h4>
+<p style="margin: 0.25rem 0;"><strong>Error:</strong> ${error.message}</p>
+<p style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.9rem;">
             Please grant microphone permission in your browser settings.
-          </p>
-        </div>
+</p>
+</div>
       `;
     }
   });
@@ -303,21 +301,21 @@ Access the device microphone and visualize audio:
 Capture screen, window, or tab content:
 
 <div class="demo-box">
-  <h3>🖥️ Screen Capture</h3>
+<h3>🖥️ Screen Capture</h3>
   
-  <div style="margin-bottom: 1rem;">
-    <video id="screen-video" autoplay playsinline style="max-width: 100%; border: 2px solid #ddd; border-radius: 4px; background: #000;"></video>
-  </div>
+<div style="margin-bottom: 1rem;">
+<video id="screen-video" autoplay playsinline style="max-width: 100%; border: 2px solid #ddd; border-radius: 4px; background: #000;"></video>
+</div>
   
-  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-    <button id="screen-start">🖥️ Start Screen Capture</button>
-    <button id="screen-stop">⏹️ Stop</button>
-    <button id="screen-screenshot">📸 Take Screenshot</button>
-  </div>
+<div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+<button id="screen-start">🖥️ Start Screen Capture</button>
+<button id="screen-stop">⏹️ Stop</button>
+<button id="screen-screenshot">📸 Take Screenshot</button>
+</div>
   
-  <canvas id="screen-canvas" style="max-width: 100%; border: 2px solid #ddd; border-radius: 4px; display: none; margin-top: 1rem;"></canvas>
+<canvas id="screen-canvas" style="max-width: 100%; border: 2px solid #ddd; border-radius: 4px; display: none; margin-top: 1rem;"></canvas>
   
-  <div id="screen-output" class="output"></div>
+<div id="screen-output" class="output"></div>
 </div>
 
 <script>
@@ -342,12 +340,12 @@ Capture screen, window, or tab content:
       const settings = track.getSettings();
       
       output.innerHTML = `
-        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">🖥️ Screen Capture Active</h4>
-          <p style="margin: 0.25rem 0;"><strong>Display Surface:</strong> ${settings.displaySurface || 'screen'}</p>
-          <p style="margin: 0.25rem 0;"><strong>Resolution:</strong> ${settings.width}x${settings.height}</p>
-          <p style="margin: 0.25rem 0;"><strong>Frame Rate:</strong> ${settings.frameRate} fps</p>
-        </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">🖥️ Screen Capture Active</h4>
+<p style="margin: 0.25rem 0;"><strong>Display Surface:</strong> ${settings.displaySurface || 'screen'}</p>
+<p style="margin: 0.25rem 0;"><strong>Resolution:</strong> ${settings.width}x${settings.height}</p>
+<p style="margin: 0.25rem 0;"><strong>Frame Rate:</strong> ${settings.frameRate} fps</p>
+</div>
       `;
       
       // Listen for user stopping the share
@@ -356,13 +354,13 @@ Capture screen, window, or tab content:
       });
     } catch (error) {
       output.innerHTML = `
-        <div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ Screen Capture Cancelled</h4>
-          <p style="margin: 0.25rem 0;"><strong>Error:</strong> ${error.message}</p>
-          <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.9rem;">
+<div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
+<h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ Screen Capture Cancelled</h4>
+<p style="margin: 0.25rem 0;"><strong>Error:</strong> ${error.message}</p>
+<p style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.9rem;">
             User cancelled screen sharing or permission was denied.
-          </p>
-        </div>
+</p>
+</div>
       `;
     }
   });
@@ -390,11 +388,11 @@ Capture screen, window, or tab content:
     
     const dataUrl = canvas.toDataURL('image/png');
     output.innerHTML = `
-      <div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3; margin-top: 1rem;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">📸 Screenshot Captured</h4>
-        <p style="margin: 0.25rem 0;">Screenshot shown in canvas above</p>
-        <a href="${dataUrl}" download="screenshot.png" style="display: inline-block; margin-top: 0.5rem; padding: 0.5rem 1rem; background: #1976d2; color: white; border-radius: 4px; text-decoration: none;">⬇️ Download Screenshot</a>
-      </div>
+<div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3; margin-top: 1rem;">
+<h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">📸 Screenshot Captured</h4>
+<p style="margin: 0.25rem 0;">Screenshot shown in canvas above</p>
+<a href="${dataUrl}" download="screenshot.png" style="display: inline-block; margin-top: 0.5rem; padding: 0.5rem 1rem; background: #1976d2; color: white; border-radius: 4px; text-decoration: none;">⬇️ Download Screenshot</a>
+</div>
     `;
   });
 })();
@@ -405,43 +403,43 @@ Capture screen, window, or tab content:
 Access device location using GPS and other positioning methods:
 
 <div class="demo-box">
-  <h3>📍 Geolocation API</h3>
+<h3>📍 Geolocation API</h3>
   
-  <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-    <button id="geo-current">📍 Get Current Position</button>
-    <button id="geo-watch">🔄 Watch Position</button>
-    <button id="geo-stop">⏹️ Stop Watching</button>
-  </div>
+<div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+<button id="geo-current">📍 Get Current Position</button>
+<button id="geo-watch">🔄 Watch Position</button>
+<button id="geo-stop">⏹️ Stop Watching</button>
+</div>
   
-  <div id="geo-output" class="output"></div>
+<div id="geo-output" class="output"></div>
   
-  <div id="geo-display" style="display: none; margin-top: 1rem;">
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
-      <div style="background: #e3f2fd; padding: 1rem; border-radius: 4px;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">📍 Coordinates</h4>
-        <p style="margin: 0.25rem 0;"><strong>Latitude:</strong> <span id="geo-lat">-</span>°</p>
-        <p style="margin: 0.25rem 0;"><strong>Longitude:</strong> <span id="geo-lon">-</span>°</p>
-        <p style="margin: 0.25rem 0;"><strong>Altitude:</strong> <span id="geo-alt">-</span> m</p>
-      </div>
+<div id="geo-display" style="display: none; margin-top: 1rem;">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+<div style="background: #e3f2fd; padding: 1rem; border-radius: 4px;">
+<h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">📍 Coordinates</h4>
+<p style="margin: 0.25rem 0;"><strong>Latitude:</strong> <span id="geo-lat">-</span>°</p>
+<p style="margin: 0.25rem 0;"><strong>Longitude:</strong> <span id="geo-lon">-</span>°</p>
+<p style="margin: 0.25rem 0;"><strong>Altitude:</strong> <span id="geo-alt">-</span> m</p>
+</div>
       
-      <div style="background: #f3e5f5; padding: 1rem; border-radius: 4px;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #6a1b9a;">🎯 Accuracy</h4>
-        <p style="margin: 0.25rem 0;"><strong>Position:</strong> <span id="geo-acc">-</span> m</p>
-        <p style="margin: 0.25rem 0;"><strong>Altitude:</strong> <span id="geo-alt-acc">-</span> m</p>
-      </div>
+<div style="background: #f3e5f5; padding: 1rem; border-radius: 4px;">
+<h4 style="margin: 0 0 0.5rem 0; color: #6a1b9a;">🎯 Accuracy</h4>
+<p style="margin: 0.25rem 0;"><strong>Position:</strong> <span id="geo-acc">-</span> m</p>
+<p style="margin: 0.25rem 0;"><strong>Altitude:</strong> <span id="geo-alt-acc">-</span> m</p>
+</div>
       
-      <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">🧭 Movement</h4>
-        <p style="margin: 0.25rem 0;"><strong>Heading:</strong> <span id="geo-heading">-</span>°</p>
-        <p style="margin: 0.25rem 0;"><strong>Speed:</strong> <span id="geo-speed">-</span> m/s</p>
-        <p style="margin: 0.25rem 0;"><strong>Updated:</strong> <span id="geo-time">-</span></p>
-      </div>
-    </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">🧭 Movement</h4>
+<p style="margin: 0.25rem 0;"><strong>Heading:</strong> <span id="geo-heading">-</span>°</p>
+<p style="margin: 0.25rem 0;"><strong>Speed:</strong> <span id="geo-speed">-</span> m/s</p>
+<p style="margin: 0.25rem 0;"><strong>Updated:</strong> <span id="geo-time">-</span></p>
+</div>
+</div>
     
-    <div id="geo-map" style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 4px; text-align: center;">
-      <a id="geo-map-link" href="#" target="_blank" style="display: inline-block; padding: 0.75rem 1.5rem; background: #4caf50; color: white; border-radius: 4px; text-decoration: none; font-weight: bold;">🗺️ View on OpenStreetMap</a>
-    </div>
-  </div>
+<div id="geo-map" style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 4px; text-align: center;">
+<a id="geo-map-link" href="#" target="_blank" style="display: inline-block; padding: 0.75rem 1.5rem; background: #4caf50; color: white; border-radius: 4px; text-decoration: none; font-weight: bold;">🗺️ View on OpenStreetMap</a>
+</div>
+</div>
 </div>
 
 <script>
@@ -482,33 +480,33 @@ Access device location using GPS and other positioning methods:
     };
     
     output.innerHTML = `
-      <div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ Geolocation Error</h4>
-        <p style="margin: 0.25rem 0;"><strong>Error Code:</strong> ${error.code}</p>
-        <p style="margin: 0.25rem 0;"><strong>Message:</strong> ${errorMessages[error.code] || error.message}</p>
-        <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.9rem;">
+<div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
+<h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ Geolocation Error</h4>
+<p style="margin: 0.25rem 0;"><strong>Error Code:</strong> ${error.code}</p>
+<p style="margin: 0.25rem 0;"><strong>Message:</strong> ${errorMessages[error.code] || error.message}</p>
+<p style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.9rem;">
           Make sure location services are enabled and you've granted permission to this site.
-        </p>
-      </div>
+</p>
+</div>
     `;
   }
   
   function showSuccess(isWatching) {
     output.innerHTML = `
-      <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ Location ${isWatching ? 'Tracking Active' : 'Retrieved'}</h4>
-        <p style="margin: 0;">${isWatching ? 'Continuously monitoring your position. Move around to see updates.' : 'Current position displayed below.'}</p>
-      </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ Location ${isWatching ? 'Tracking Active' : 'Retrieved'}</h4>
+<p style="margin: 0;">${isWatching ? 'Continuously monitoring your position. Move around to see updates.' : 'Current position displayed below.'}</p>
+</div>
     `;
   }
   
   document.getElementById('geo-current').addEventListener('click', () => {
     if (!navigator.geolocation) {
       output.innerHTML = `
-        <div style="background: #fff3e0; padding: 1rem; border-radius: 4px; border: 1px solid #ff9800;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #e65100;">⚠️ Geolocation Not Supported</h4>
-          <p style="margin: 0;">Your browser does not support the Geolocation API.</p>
-        </div>
+<div style="background: #fff3e0; padding: 1rem; border-radius: 4px; border: 1px solid #ff9800;">
+<h4 style="margin: 0 0 0.5rem 0; color: #e65100;">⚠️ Geolocation Not Supported</h4>
+<p style="margin: 0;">Your browser does not support the Geolocation API.</p>
+</div>
       `;
       return;
     }
@@ -532,10 +530,10 @@ Access device location using GPS and other positioning methods:
   document.getElementById('geo-watch').addEventListener('click', () => {
     if (!navigator.geolocation) {
       output.innerHTML = `
-        <div style="background: #fff3e0; padding: 1rem; border-radius: 4px; border: 1px solid #ff9800;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #e65100;">⚠️ Geolocation Not Supported</h4>
-          <p style="margin: 0;">Your browser does not support the Geolocation API.</p>
-        </div>
+<div style="background: #fff3e0; padding: 1rem; border-radius: 4px; border: 1px solid #ff9800;">
+<h4 style="margin: 0 0 0.5rem 0; color: #e65100;">⚠️ Geolocation Not Supported</h4>
+<p style="margin: 0;">Your browser does not support the Geolocation API.</p>
+</div>
       `;
       return;
     }
@@ -578,39 +576,39 @@ Access device location using GPS and other positioning methods:
 Access device accelerometer and gyroscope data:
 
 <div class="demo-box">
-  <h3>📱 Device Motion Sensors</h3>
+<h3>📱 Device Motion Sensors</h3>
   
-  <div style="margin-bottom: 1rem;">
-    <button id="motion-start">📱 Start Monitoring</button>
-    <button id="motion-stop" style="margin-left: 0.5rem;">⏹️ Stop</button>
-  </div>
+<div style="margin-bottom: 1rem;">
+<button id="motion-start">📱 Start Monitoring</button>
+<button id="motion-stop" style="margin-left: 0.5rem;">⏹️ Stop</button>
+</div>
   
-  <div id="motion-output" class="output"></div>
+<div id="motion-output" class="output"></div>
   
-  <div id="motion-display" style="display: none; margin-top: 1rem;">
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-      <div style="background: #e3f2fd; padding: 1rem; border-radius: 4px;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">🔄 Rotation (°/s)</h4>
-        <p style="margin: 0.25rem 0;"><strong>Alpha (Z):</strong> <span id="rot-alpha">-</span></p>
-        <p style="margin: 0.25rem 0;"><strong>Beta (X):</strong> <span id="rot-beta">-</span></p>
-        <p style="margin: 0.25rem 0;"><strong>Gamma (Y):</strong> <span id="rot-gamma">-</span></p>
-      </div>
+<div id="motion-display" style="display: none; margin-top: 1rem;">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+<div style="background: #e3f2fd; padding: 1rem; border-radius: 4px;">
+<h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">🔄 Rotation (°/s)</h4>
+<p style="margin: 0.25rem 0;"><strong>Alpha (Z):</strong> <span id="rot-alpha">-</span></p>
+<p style="margin: 0.25rem 0;"><strong>Beta (X):</strong> <span id="rot-beta">-</span></p>
+<p style="margin: 0.25rem 0;"><strong>Gamma (Y):</strong> <span id="rot-gamma">-</span></p>
+</div>
       
-      <div style="background: #f3e5f5; padding: 1rem; border-radius: 4px;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #6a1b9a;">⚡ Acceleration (m/s²)</h4>
-        <p style="margin: 0.25rem 0;"><strong>X:</strong> <span id="accel-x">-</span></p>
-        <p style="margin: 0.25rem 0;"><strong>Y:</strong> <span id="accel-y">-</span></p>
-        <p style="margin: 0.25rem 0;"><strong>Z:</strong> <span id="accel-z">-</span></p>
-      </div>
+<div style="background: #f3e5f5; padding: 1rem; border-radius: 4px;">
+<h4 style="margin: 0 0 0.5rem 0; color: #6a1b9a;">⚡ Acceleration (m/s²)</h4>
+<p style="margin: 0.25rem 0;"><strong>X:</strong> <span id="accel-x">-</span></p>
+<p style="margin: 0.25rem 0;"><strong>Y:</strong> <span id="accel-y">-</span></p>
+<p style="margin: 0.25rem 0;"><strong>Z:</strong> <span id="accel-z">-</span></p>
+</div>
       
-      <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">🧭 Orientation (°)</h4>
-        <p style="margin: 0.25rem 0;"><strong>Alpha:</strong> <span id="orient-alpha">-</span></p>
-        <p style="margin: 0.25rem 0;"><strong>Beta:</strong> <span id="orient-beta">-</span></p>
-        <p style="margin: 0.25rem 0;"><strong>Gamma:</strong> <span id="orient-gamma">-</span></p>
-      </div>
-    </div>
-  </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">🧭 Orientation (°)</h4>
+<p style="margin: 0.25rem 0;"><strong>Alpha:</strong> <span id="orient-alpha">-</span></p>
+<p style="margin: 0.25rem 0;"><strong>Beta:</strong> <span id="orient-beta">-</span></p>
+<p style="margin: 0.25rem 0;"><strong>Gamma:</strong> <span id="orient-gamma">-</span></p>
+</div>
+</div>
+</div>
 </div>
 
 <script>
@@ -671,20 +669,20 @@ Access device accelerometer and gyroscope data:
       window.addEventListener('deviceorientation', handleOrientation);
       
       output.innerHTML = `
-        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">📱 Sensors Active</h4>
-          <p style="margin: 0;">Move or rotate your device to see sensor data update in real-time.</p>
-        </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">📱 Sensors Active</h4>
+<p style="margin: 0;">Move or rotate your device to see sensor data update in real-time.</p>
+</div>
       `;
     } catch (error) {
       output.innerHTML = `
-        <div style="background: #fff3e0; padding: 1rem; border-radius: 4px; border: 1px solid #ff9800;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #e65100;">⚠️ Sensors Not Available</h4>
-          <p style="margin: 0.25rem 0;"><strong>Error:</strong> ${error.message}</p>
-          <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.9rem;">
+<div style="background: #fff3e0; padding: 1rem; border-radius: 4px; border: 1px solid #ff9800;">
+<h4 style="margin: 0 0 0.5rem 0; color: #e65100;">⚠️ Sensors Not Available</h4>
+<p style="margin: 0.25rem 0;"><strong>Error:</strong> ${error.message}</p>
+<p style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.9rem;">
             Device motion sensors may not be available on desktop browsers. Try on a mobile device.
-          </p>
-        </div>
+</p>
+</div>
       `;
     }
   });
@@ -704,27 +702,27 @@ Access device accelerometer and gyroscope data:
 Record audio and video from camera/microphone to downloadable files:
 
 <div class="demo-box">
-  <h3>🎬 Media Recorder</h3>
+<h3>🎬 Media Recorder</h3>
   
-  <div style="margin-bottom: 1rem;">
-    <video id="recorder-preview" autoplay muted playsinline style="max-width: 100%; border: 2px solid #ddd; border-radius: 4px; background: #000;"></video>
-  </div>
+<div style="margin-bottom: 1rem;">
+<video id="recorder-preview" autoplay muted playsinline style="max-width: 100%; border: 2px solid #ddd; border-radius: 4px; background: #000;"></video>
+</div>
   
-  <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
-    <button id="recorder-start-camera">📹 Start Camera</button>
-    <button id="recorder-start-recording">⏺️ Start Recording</button>
-    <button id="recorder-stop-recording">⏹️ Stop Recording</button>
-    <button id="recorder-download">⬇️ Download</button>
-    <select id="recorder-type" style="padding: 0.5rem;">
-      <option value="video/webm">Video (WebM)</option>
-      <option value="video/webm;codecs=vp9">Video VP9 (WebM)</option>
-      <option value="video/mp4">Video (MP4)</option>
-    </select>
-  </div>
+<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+<button id="recorder-start-camera">📹 Start Camera</button>
+<button id="recorder-start-recording">⏺️ Start Recording</button>
+<button id="recorder-stop-recording">⏹️ Stop Recording</button>
+<button id="recorder-download">⬇️ Download</button>
+<select id="recorder-type" style="padding: 0.5rem;">
+<option value="video/webm">Video (WebM)</option>
+<option value="video/webm;codecs=vp9">Video VP9 (WebM)</option>
+<option value="video/mp4">Video (MP4)</option>
+</select>
+</div>
   
-  <video id="recorder-playback" controls style="max-width: 100%; border: 2px solid #ddd; border-radius: 4px; display: none; margin-top: 1rem;"></video>
+<video id="recorder-playback" controls style="max-width: 100%; border: 2px solid #ddd; border-radius: 4px; display: none; margin-top: 1rem;"></video>
   
-  <div id="recorder-output" class="output"></div>
+<div id="recorder-output" class="output"></div>
 </div>
 
 <script>
@@ -744,10 +742,10 @@ Record audio and video from camera/microphone to downloadable files:
       preview.style.display = 'block';
       
       output.innerHTML = `
-        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ Camera Ready</h4>
-          <p style="margin: 0;">Click "Start Recording" to begin capturing video.</p>
-        </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ Camera Ready</h4>
+<p style="margin: 0;">Click "Start Recording" to begin capturing video.</p>
+</div>
       `;
     } catch (error) {
       output.innerHTML = `<p class="error">Error: ${error.message}</p>`;
@@ -787,26 +785,26 @@ Record audio and video from camera/microphone to downloadable files:
         };
         
         output.innerHTML = `
-          <div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
-            <h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">🎬 Recording Complete</h4>
-            <p style="margin: 0.25rem 0;"><strong>Size:</strong> ${(blob.size / 1024).toFixed(2)} KB</p>
-            <p style="margin: 0.25rem 0;"><strong>Duration:</strong> ${recordedChunks.length} chunks</p>
-            <p style="margin: 0.5rem 0 0 0;">Playback ready. Click Download to save.</p>
-          </div>
+<div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
+<h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">🎬 Recording Complete</h4>
+<p style="margin: 0.25rem 0;"><strong>Size:</strong> ${(blob.size / 1024).toFixed(2)} KB</p>
+<p style="margin: 0.25rem 0;"><strong>Duration:</strong> ${recordedChunks.length} chunks</p>
+<p style="margin: 0.5rem 0 0 0;">Playback ready. Click Download to save.</p>
+</div>
         `;
       };
       
       mediaRecorder.start(100); // Collect data every 100ms
       
       output.innerHTML = `
-        <div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #c62828;">⏺️ Recording...</h4>
-          <p style="margin: 0;">Click "Stop Recording" when done.</p>
-        </div>
+<div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
+<h4 style="margin: 0 0 0.5rem 0; color: #c62828;">⏺️ Recording...</h4>
+<p style="margin: 0;">Click "Stop Recording" when done.</p>
+</div>
       `;
     } catch (error) {
       output.innerHTML = `
-        <p class="error">MediaRecorder not supported with ${mimeType}. Try a different format.</p>
+<p class="error">MediaRecorder not supported with ${mimeType}. Try a different format.</p>
       `;
     }
   });
@@ -826,19 +824,19 @@ Record audio and video from camera/microphone to downloadable files:
 Create floating video windows:
 
 <div class="demo-box">
-  <h3>📺 Picture-in-Picture</h3>
+<h3>📺 Picture-in-Picture</h3>
   
-  <video id="pip-video" controls style="max-width: 100%; border: 2px solid #ddd; border-radius: 4px; background: #000;">
-    <source src="data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAACKBtZGF0AAACrgYF//+q3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE0OCByMjY2MyA1YzY1NzA0IC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAxNSAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTEgcmVmPTMgZGVibG9jaz0xOjA6MCBhbmFseXNlPTB4MzoweDExMyBtZT1oZXggc3VibWU9NyBwc3k9MSBwc3lfcmQ9MS4wMDowLjAwIG1peGVkX3JlZj0xIG1lX3JhbmdlPTE2IGNocm9tYV9tZT0xIHRyZWxsaXM9MSA4eDhkY3Q9MSBjcW09MCBkZWFkem9uZT0yMSwxMSBmYXN0X3Bza2lwPTEgY2hyb21hX3FwX29mZnNldD0tMiB0aHJlYWRzPTEyIGxvb2thaGVhZF90aHJlYWRzPTIgc2xpY2VkX3RocmVhZHM9MCBucj0wIGRlY2ltYXRlPTEgaW50ZXJsYWNlZD0wIGJsdXJheV9jb21wYXQ9MCBjb25zdHJhaW5lZF9pbnRyYT0wIGJmcmFtZXM9MyBiX3B5cmFtaWQ9MiBiX2FkYXB0PTEgYl9iaWFzPTAgZGlyZWN0PTEgd2VpZ2h0Yj0xIG9wZW5fZ29wPTAgd2VpZ2h0cD0yIGtleWludD0yNTAga2V5aW50X21pbj0yNSBzY2VuZWN1dD00MCBpbnRyYV9yZWZyZXNoPTAgcmNfbG9va2FoZWFkPTQwIHJjPWNyZiBtYnRyZWU9MSBjcmY9MjMuMCBxY29tcD0wLjYwIHFwbWluPTAgcXBtYXg9NjkgcXBzdGVwPTQgaXBfcmF0aW89MS40MCBhcT0xOjEuMDAAgAAAAAwliIQAV/0TAAYdgAAAMAAAG/kAwIFBIBIB" type="video/mp4">
-  </video>
+<video id="pip-video" controls style="max-width: 100%; border: 2px solid #ddd; border-radius: 4px; background: #000;">
+<source src="data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAACKBtZGF0AAACrgYF//+q3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE0OCByMjY2MyA1YzY1NzA0IC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAxNSAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTEgcmVmPTMgZGVibG9jaz0xOjA6MCBhbmFseXNlPTB4MzoweDExMyBtZT1oZXggc3VibWU9NyBwc3k9MSBwc3lfcmQ9MS4wMDowLjAwIG1peGVkX3JlZj0xIG1lX3JhbmdlPTE2IGNocm9tYV9tZT0xIHRyZWxsaXM9MSA4eDhkY3Q9MSBjcW09MCBkZWFkem9uZT0yMSwxMSBmYXN0X3Bza2lwPTEgY2hyb21hX3FwX29mZnNldD0tMiB0aHJlYWRzPTEyIGxvb2thaGVhZF90aHJlYWRzPTIgc2xpY2VkX3RocmVhZHM9MCBucj0wIGRlY2ltYXRlPTEgaW50ZXJsYWNlZD0wIGJsdXJheV9jb21wYXQ9MCBjb25zdHJhaW5lZF9pbnRyYT0wIGJmcmFtZXM9MyBiX3B5cmFtaWQ9MiBiX2FkYXB0PTEgYl9iaWFzPTAgZGlyZWN0PTEgd2VpZ2h0Yj0xIG9wZW5fZ29wPTAgd2VpZ2h0cD0yIGtleWludD0yNTAga2V5aW50X21pbj0yNSBzY2VuZWN1dD00MCBpbnRyYV9yZWZyZXNoPTAgcmNfbG9va2FoZWFkPTQwIHJjPWNyZiBtYnRyZWU9MSBjcmY9MjMuMCBxY29tcD0wLjYwIHFwbWluPTAgcXBtYXg9NjkgcXBzdGVwPTQgaXBfcmF0aW89MS40MCBhcT0xOjEuMDAAgAAAAAwliIQAV/0TAAYdgAAAMAAAG/kAwIFBIBIB" type="video/mp4">
+</video>
   
-  <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-    <button id="pip-enter">📺 Enter PiP</button>
-    <button id="pip-exit">❌ Exit PiP</button>
-    <button id="pip-use-camera">📹 Use Camera Feed</button>
-  </div>
+<div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+<button id="pip-enter">📺 Enter PiP</button>
+<button id="pip-exit">❌ Exit PiP</button>
+<button id="pip-use-camera">📹 Use Camera Feed</button>
+</div>
   
-  <div id="pip-output" class="output"></div>
+<div id="pip-output" class="output"></div>
 </div>
 
 <script>
@@ -890,10 +888,10 @@ Create floating video windows:
       await video.requestPictureInPicture();
       
       output.innerHTML = `
-        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">📺 Picture-in-Picture Active</h4>
-          <p style="margin: 0;">Video is now floating! You can move it around and resize it.</p>
-        </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">📺 Picture-in-Picture Active</h4>
+<p style="margin: 0;">Video is now floating! You can move it around and resize it.</p>
+</div>
       `;
     } catch (error) {
       output.innerHTML = `<p class="error">Error: ${error.message}</p>`;
@@ -920,10 +918,10 @@ Create floating video windows:
       video.play();
       
       output.innerHTML = `
-        <div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">📹 Camera Feed Active</h4>
-          <p style="margin: 0;">Now showing camera feed. Try entering PiP mode!</p>
-        </div>
+<div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
+<h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">📹 Camera Feed Active</h4>
+<p style="margin: 0;">Now showing camera feed. Try entering PiP mode!</p>
+</div>
       `;
     } catch (error) {
       output.innerHTML = `<p class="error">Camera error: ${error.message}</p>`;
@@ -932,10 +930,10 @@ Create floating video windows:
   
   video.addEventListener('enterpictureinpicture', () => {
     output.innerHTML = `
-      <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">📺 Entered PiP Mode</h4>
-        <p style="margin: 0;">Video is floating on your screen!</p>
-      </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">📺 Entered PiP Mode</h4>
+<p style="margin: 0;">Video is floating on your screen!</p>
+</div>
     `;
   });
   
@@ -948,34 +946,34 @@ Create floating video windows:
 ---
 
 <div class="info-box">
-  <h3>🎯 Hardware APIs Demonstrated:</h3>
-  <ul>
-    <li><strong>getUserMedia (Video):</strong> Access device cameras with resolution/FPS control</li>
-    <li><strong>getUserMedia (Audio):</strong> Access microphones with real-time visualization</li>
-    <li><strong>getDisplayMedia:</strong> Capture screen, window, or tab content</li>
-    <li><strong>Geolocation API:</strong> Access GPS and device location with accuracy data</li>
-    <li><strong>Device Motion:</strong> Accelerometer and gyroscope data</li>
-    <li><strong>Device Orientation:</strong> Compass and tilt sensors</li>
-    <li><strong>Media Recorder API:</strong> Record audio/video to downloadable files</li>
-    <li><strong>Picture-in-Picture:</strong> Floating video windows</li>
-  </ul>
+<h3>🎯 Hardware APIs Demonstrated:</h3>
+<ul>
+<li><strong>getUserMedia (Video):</strong> Access device cameras with resolution/FPS control</li>
+<li><strong>getUserMedia (Audio):</strong> Access microphones with real-time visualization</li>
+<li><strong>getDisplayMedia:</strong> Capture screen, window, or tab content</li>
+<li><strong>Geolocation API:</strong> Access GPS and device location with accuracy data</li>
+<li><strong>Device Motion:</strong> Accelerometer and gyroscope data</li>
+<li><strong>Device Orientation:</strong> Compass and tilt sensors</li>
+<li><strong>Media Recorder API:</strong> Record audio/video to downloadable files</li>
+<li><strong>Picture-in-Picture:</strong> Floating video windows</li>
+</ul>
   
-  <p style="margin-top: 1rem;"><strong>⚠️ Privacy & Permissions:</strong></p>
-  <ul>
-    <li>All hardware APIs require explicit user permission</li>
-    <li>Permissions are per-origin and persist across sessions</li>
-    <li>HTTPS required for most hardware access (secure context)</li>
-    <li>Users can revoke permissions at any time</li>
-  </ul>
+<p style="margin-top: 1rem;"><strong>⚠️ Privacy & Permissions:</strong></p>
+<ul>
+<li>All hardware APIs require explicit user permission</li>
+<li>Permissions are per-origin and persist across sessions</li>
+<li>HTTPS required for most hardware access (secure context)</li>
+<li>Users can revoke permissions at any time</li>
+</ul>
   
-  <p style="margin-top: 1rem;"><strong>📱 Device Compatibility:</strong></p>
-  <ul>
-    <li><strong>Camera/Microphone:</strong> Widely supported on all platforms</li>
-    <li><strong>Screen Capture:</strong> Desktop browsers (Chrome, Firefox, Edge)</li>
-    <li><strong>Geolocation:</strong> All modern browsers (mobile devices typically more accurate)</li>
-    <li><strong>Motion Sensors:</strong> Mobile devices only (phones, tablets)</li>
-    <li><strong>Orientation:</strong> Mobile devices with gyroscope/accelerometer</li>
-    <li><strong>Media Recorder:</strong> Chrome, Firefox, Edge, Safari (format support varies)</li>
-    <li><strong>Picture-in-Picture:</strong> Chrome, Edge, Safari (desktop and mobile)</li>
-  </ul>
+<p style="margin-top: 1rem;"><strong>📱 Device Compatibility:</strong></p>
+<ul>
+<li><strong>Camera/Microphone:</strong> Widely supported on all platforms</li>
+<li><strong>Screen Capture:</strong> Desktop browsers (Chrome, Firefox, Edge)</li>
+<li><strong>Geolocation:</strong> All modern browsers (mobile devices typically more accurate)</li>
+<li><strong>Motion Sensors:</strong> Mobile devices only (phones, tablets)</li>
+<li><strong>Orientation:</strong> Mobile devices with gyroscope/accelerometer</li>
+<li><strong>Media Recorder:</strong> Chrome, Firefox, Edge, Safari (format support varies)</li>
+<li><strong>Picture-in-Picture:</strong> Chrome, Edge, Safari (desktop and mobile)</li>
+</ul>
 </div>

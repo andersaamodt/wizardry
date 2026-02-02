@@ -2,8 +2,6 @@
 title: UI & Layout APIs
 ---
 
-# UI & Layout APIs
-
 Explore browser APIs for advanced user interface features and layout detection.
 
 ## 1. Fullscreen API
@@ -11,22 +9,22 @@ Explore browser APIs for advanced user interface features and layout detection.
 Enter and exit fullscreen mode programmatically:
 
 <div class="demo-box">
-  <h3>🖼️ Fullscreen API</h3>
+<h3>🖼️ Fullscreen API</h3>
   
-  <div id="fullscreen-container" style="padding: 2rem; border: 3px solid #2196f3; border-radius: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center;">
-    <h2 style="margin: 0 0 1rem 0;">Fullscreen Demo Container</h2>
-    <p style="margin: 0 0 1rem 0;">Click the button below to make this container fullscreen!</p>
+<div id="fullscreen-container" style="padding: 2rem; border: 3px solid #2196f3; border-radius: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center;">
+<h2 style="margin: 0 0 1rem 0;">Fullscreen Demo Container</h2>
+<p style="margin: 0 0 1rem 0;">Click the button below to make this container fullscreen!</p>
     
-    <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
-      <button id="fullscreen-enter" style="padding: 0.75rem 1.5rem; font-size: 1rem; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer;">🖼️ Enter Fullscreen</button>
-      <button id="fullscreen-exit" style="padding: 0.75rem 1.5rem; font-size: 1rem; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">❌ Exit Fullscreen</button>
-      <button id="fullscreen-toggle" style="padding: 0.75rem 1.5rem; font-size: 1rem; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer;">🔄 Toggle</button>
-    </div>
+<div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+<button id="fullscreen-enter" style="padding: 0.75rem 1.5rem; font-size: 1rem; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer;">🖼️ Enter Fullscreen</button>
+<button id="fullscreen-exit" style="padding: 0.75rem 1.5rem; font-size: 1rem; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">❌ Exit Fullscreen</button>
+<button id="fullscreen-toggle" style="padding: 0.75rem 1.5rem; font-size: 1rem; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer;">🔄 Toggle</button>
+</div>
     
-    <p id="fullscreen-hint" style="margin: 1rem 0 0 0; font-size: 0.9rem; opacity: 0.9;">Press ESC to exit fullscreen</p>
-  </div>
+<p id="fullscreen-hint" style="margin: 1rem 0 0 0; font-size: 0.9rem; opacity: 0.9;">Press ESC to exit fullscreen</p>
+</div>
   
-  <div id="fullscreen-output" class="output"></div>
+<div id="fullscreen-output" class="output"></div>
 </div>
 
 <script>
@@ -39,18 +37,18 @@ Enter and exit fullscreen mode programmatically:
     
     if (isFullscreen) {
       output.innerHTML = `
-        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ Fullscreen Active</h4>
-          <p style="margin: 0;">Container is now fullscreen. Press ESC or click Exit to return.</p>
-        </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ Fullscreen Active</h4>
+<p style="margin: 0;">Container is now fullscreen. Press ESC or click Exit to return.</p>
+</div>
       `;
       container.style.padding = '4rem';
     } else {
       output.innerHTML = `
-        <div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">ℹ️ Normal Mode</h4>
-          <p style="margin: 0;">Container is in normal mode. Click Enter Fullscreen to expand.</p>
-        </div>
+<div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
+<h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">ℹ️ Normal Mode</h4>
+<p style="margin: 0;">Container is in normal mode. Click Enter Fullscreen to expand.</p>
+</div>
       `;
       container.style.padding = '2rem';
     }
@@ -99,41 +97,41 @@ Enter and exit fullscreen mode programmatically:
 Detect when elements enter or leave the viewport:
 
 <div class="demo-box">
-  <h3>👁️ Intersection Observer</h3>
+<h3>👁️ Intersection Observer</h3>
   
-  <div style="margin-bottom: 1rem;">
-    <button id="io-start">👁️ Start Observing</button>
-    <button id="io-stop" style="margin-left: 0.5rem;">⏹️ Stop</button>
-    <button id="io-scroll" style="margin-left: 0.5rem;">⬇️ Scroll to Boxes</button>
-  </div>
+<div style="margin-bottom: 1rem;">
+<button id="io-start">👁️ Start Observing</button>
+<button id="io-stop" style="margin-left: 0.5rem;">⏹️ Stop</button>
+<button id="io-scroll" style="margin-left: 0.5rem;">⬇️ Scroll to Boxes</button>
+</div>
   
-  <div id="io-output" class="output"></div>
+<div id="io-output" class="output"></div>
   
-  <div id="io-container" style="margin-top: 1rem; max-height: 400px; overflow-y: auto; border: 2px solid #ddd; border-radius: 4px; padding: 1rem;">
-    <div style="height: 200px; background: #f5f5f5; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
-      <p>Scroll down to see the observed boxes...</p>
-    </div>
+<div id="io-container" style="margin-top: 1rem; max-height: 400px; overflow-y: auto; border: 2px solid #ddd; border-radius: 4px; padding: 1rem;">
+<div style="height: 200px; background: #f5f5f5; padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
+<p>Scroll down to see the observed boxes...</p>
+</div>
     
-    <div class="observe-box" data-box="1" style="height: 150px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; opacity: 0.3; transition: opacity 0.5s, transform 0.5s; transform: scale(0.95);">
+<div class="observe-box" data-box="1" style="height: 150px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; opacity: 0.3; transition: opacity 0.5s, transform 0.5s; transform: scale(0.95);">
       Box 1
-    </div>
+</div>
     
-    <div class="observe-box" data-box="2" style="height: 150px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; opacity: 0.3; transition: opacity 0.5s, transform 0.5s; transform: scale(0.95);">
+<div class="observe-box" data-box="2" style="height: 150px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; opacity: 0.3; transition: opacity 0.5s, transform 0.5s; transform: scale(0.95);">
       Box 2
-    </div>
+</div>
     
-    <div class="observe-box" data-box="3" style="height: 150px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; opacity: 0.3; transition: opacity 0.5s, transform 0.5s; transform: scale(0.95);">
+<div class="observe-box" data-box="3" style="height: 150px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; opacity: 0.3; transition: opacity 0.5s, transform 0.5s; transform: scale(0.95);">
       Box 3
-    </div>
+</div>
     
-    <div class="observe-box" data-box="4" style="height: 150px; background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; opacity: 0.3; transition: opacity 0.5s, transform 0.5s; transform: scale(0.95);">
+<div class="observe-box" data-box="4" style="height: 150px; background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; opacity: 0.3; transition: opacity 0.5s, transform 0.5s; transform: scale(0.95);">
       Box 4
-    </div>
+</div>
     
-    <div style="height: 200px; background: #f5f5f5; padding: 1rem; border-radius: 4px;">
-      <p>End of scrollable area</p>
-    </div>
-  </div>
+<div style="height: 200px; background: #f5f5f5; padding: 1rem; border-radius: 4px;">
+<p>End of scrollable area</p>
+</div>
+</div>
 </div>
 
 <script>
@@ -146,11 +144,11 @@ Detect when elements enter or leave the viewport:
   function updateOutput() {
     const visible = Array.from(visibleBoxes).sort().join(', ');
     output.innerHTML = `
-      <div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">👁️ Currently Visible</h4>
-        <p style="margin: 0;"><strong>Boxes in viewport:</strong> ${visible || 'None'}</p>
-        <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666;">Scroll the container to see boxes enter/exit the viewport</p>
-      </div>
+<div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
+<h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">👁️ Currently Visible</h4>
+<p style="margin: 0;"><strong>Boxes in viewport:</strong> ${visible || 'None'}</p>
+<p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666;">Scroll the container to see boxes enter/exit the viewport</p>
+</div>
     `;
   }
   
@@ -186,10 +184,10 @@ Detect when elements enter or leave the viewport:
     boxes.forEach(box => observer.observe(box));
     
     output.innerHTML = `
-      <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ Observer Active</h4>
-        <p style="margin: 0;">Scroll the container to see intersection detection in action!</p>
-      </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ Observer Active</h4>
+<p style="margin: 0;">Scroll the container to see intersection detection in action!</p>
+</div>
     `;
   });
   
@@ -222,37 +220,37 @@ Detect when elements enter or leave the viewport:
 Create sortable lists with drag and drop:
 
 <div class="demo-box">
-  <h3>🔄 Drag & Drop - Sortable List</h3>
+<h3>🔄 Drag & Drop - Sortable List</h3>
   
-  <div style="margin-bottom: 1rem;">
-    <button id="dnd-reset">🔄 Reset List</button>
-    <button id="dnd-add" style="margin-left: 0.5rem;">➕ Add Item</button>
-  </div>
+<div style="margin-bottom: 1rem;">
+<button id="dnd-reset">🔄 Reset List</button>
+<button id="dnd-add" style="margin-left: 0.5rem;">➕ Add Item</button>
+</div>
   
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
-    <div>
-      <h4>📋 Task List (drag to reorder)</h4>
-      <ul id="sortable-list" style="list-style: none; padding: 0; margin: 0;">
-        <li draggable="true" class="draggable-item" style="padding: 1rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 8px; cursor: move; user-select: none; transition: transform 0.2s, opacity 0.2s;">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+<div>
+<h4>📋 Task List (drag to reorder)</h4>
+<ul id="sortable-list" style="list-style: none; padding: 0; margin: 0;">
+<li draggable="true" class="draggable-item" style="padding: 1rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 8px; cursor: move; user-select: none; transition: transform 0.2s, opacity 0.2s;">
           📌 Task 1: Review code
-        </li>
-        <li draggable="true" class="draggable-item" style="padding: 1rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border-radius: 8px; cursor: move; user-select: none; transition: transform 0.2s, opacity 0.2s;">
+</li>
+<li draggable="true" class="draggable-item" style="padding: 1rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border-radius: 8px; cursor: move; user-select: none; transition: transform 0.2s, opacity 0.2s;">
           📌 Task 2: Write tests
-        </li>
-        <li draggable="true" class="draggable-item" style="padding: 1rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border-radius: 8px; cursor: move; user-select: none; transition: transform 0.2s, opacity 0.2s;">
+</li>
+<li draggable="true" class="draggable-item" style="padding: 1rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border-radius: 8px; cursor: move; user-select: none; transition: transform 0.2s, opacity 0.2s;">
           📌 Task 3: Deploy app
-        </li>
-        <li draggable="true" class="draggable-item" style="padding: 1rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; border-radius: 8px; cursor: move; user-select: none; transition: transform 0.2s, opacity 0.2s;">
+</li>
+<li draggable="true" class="draggable-item" style="padding: 1rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; border-radius: 8px; cursor: move; user-select: none; transition: transform 0.2s, opacity 0.2s;">
           📌 Task 4: Update docs
-        </li>
-      </ul>
-    </div>
+</li>
+</ul>
+</div>
     
-    <div>
-      <h4>📊 Order History</h4>
-      <div id="dnd-output" class="output" style="min-height: 200px;"></div>
-    </div>
-  </div>
+<div>
+<h4>📊 Order History</h4>
+<div id="dnd-output" class="output" style="min-height: 200px;"></div>
+</div>
+</div>
 </div>
 
 <script>
@@ -277,13 +275,13 @@ Create sortable lists with drag and drop:
     ).join('<br>');
     
     output.innerHTML = `
-      <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ ${action}</h4>
-        <p style="margin: 0.5rem 0; font-weight: bold;">Current Order:</p>
-        <div style="margin: 0.5rem 0; font-family: monospace; font-size: 0.9rem;">
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ ${action}</h4>
+<p style="margin: 0.5rem 0; font-weight: bold;">Current Order:</p>
+<div style="margin: 0.5rem 0; font-family: monospace; font-size: 0.9rem;">
           ${items}
-        </div>
-      </div>
+</div>
+</div>
     `;
   }
   
@@ -323,18 +321,18 @@ Create sortable lists with drag and drop:
   
   document.getElementById('dnd-reset').addEventListener('click', () => {
     list.innerHTML = `
-      <li draggable="true" class="draggable-item" style="padding: 1rem; margin-bottom: 0.5rem; background: ${gradients[0]}; color: white; border-radius: 8px; cursor: move; user-select: none; transition: transform 0.2s, opacity 0.2s;">
+<li draggable="true" class="draggable-item" style="padding: 1rem; margin-bottom: 0.5rem; background: ${gradients[0]}; color: white; border-radius: 8px; cursor: move; user-select: none; transition: transform 0.2s, opacity 0.2s;">
         📌 Task 1: Review code
-      </li>
-      <li draggable="true" class="draggable-item" style="padding: 1rem; margin-bottom: 0.5rem; background: ${gradients[1]}; color: white; border-radius: 8px; cursor: move; user-select: none; transition: transform 0.2s, opacity 0.2s;">
+</li>
+<li draggable="true" class="draggable-item" style="padding: 1rem; margin-bottom: 0.5rem; background: ${gradients[1]}; color: white; border-radius: 8px; cursor: move; user-select: none; transition: transform 0.2s, opacity 0.2s;">
         📌 Task 2: Write tests
-      </li>
-      <li draggable="true" class="draggable-item" style="padding: 1rem; margin-bottom: 0.5rem; background: ${gradients[2]}; color: white; border-radius: 8px; cursor: move; user-select: none; transition: transform 0.2s, opacity 0.2s;">
+</li>
+<li draggable="true" class="draggable-item" style="padding: 1rem; margin-bottom: 0.5rem; background: ${gradients[2]}; color: white; border-radius: 8px; cursor: move; user-select: none; transition: transform 0.2s, opacity 0.2s;">
         📌 Task 3: Deploy app
-      </li>
-      <li draggable="true" class="draggable-item" style="padding: 1rem; margin-bottom: 0.5rem; background: ${gradients[3]}; color: white; border-radius: 8px; cursor: move; user-select: none; transition: transform 0.2s, opacity 0.2s;">
+</li>
+<li draggable="true" class="draggable-item" style="padding: 1rem; margin-bottom: 0.5rem; background: ${gradients[3]}; color: white; border-radius: 8px; cursor: move; user-select: none; transition: transform 0.2s, opacity 0.2s;">
         📌 Task 4: Update docs
-      </li>
+</li>
     `;
     itemCounter = 5;
     initDragAndDrop();
@@ -362,23 +360,23 @@ Create sortable lists with drag and drop:
 ---
 
 <div class="info-box">
-  <h3>🎯 UI & Layout APIs Demonstrated:</h3>
-  <ul>
-    <li><strong>Fullscreen API:</strong> Programmatically enter/exit fullscreen mode for immersive experiences</li>
-    <li><strong>Intersection Observer:</strong> Efficiently detect when elements enter/exit viewport for lazy loading, animations, and scroll effects</li>
-    <li><strong>Drag & Drop API:</strong> Advanced reorderable lists using native drag and drop events</li>
-  </ul>
+<h3>🎯 UI & Layout APIs Demonstrated:</h3>
+<ul>
+<li><strong>Fullscreen API:</strong> Programmatically enter/exit fullscreen mode for immersive experiences</li>
+<li><strong>Intersection Observer:</strong> Efficiently detect when elements enter/exit viewport for lazy loading, animations, and scroll effects</li>
+<li><strong>Drag & Drop API:</strong> Advanced reorderable lists using native drag and drop events</li>
+</ul>
   
-  <p style="margin-top: 1rem;"><strong>💡 Use Cases:</strong></p>
-  <ul>
-    <li><strong>Fullscreen:</strong> Video players, presentations, games, image viewers</li>
-    <li><strong>Intersection Observer:</strong> Lazy loading images, infinite scroll, animation triggers, analytics</li>
-    <li><strong>Drag & Drop:</strong> Task management, sortable lists, dashboard customization, file organization</li>
-  </ul>
+<p style="margin-top: 1rem;"><strong>💡 Use Cases:</strong></p>
+<ul>
+<li><strong>Fullscreen:</strong> Video players, presentations, games, image viewers</li>
+<li><strong>Intersection Observer:</strong> Lazy loading images, infinite scroll, animation triggers, analytics</li>
+<li><strong>Drag & Drop:</strong> Task management, sortable lists, dashboard customization, file organization</li>
+</ul>
   
-  <p style="margin-top: 1rem;"><strong>⚡ Performance Benefits:</strong></p>
-  <ul>
-    <li><strong>Intersection Observer:</strong> Much more efficient than scroll event listeners - doesn't block main thread</li>
-    <li><strong>Native Drag & Drop:</strong> Browser-optimized with built-in visual feedback and accessibility</li>
-  </ul>
+<p style="margin-top: 1rem;"><strong>⚡ Performance Benefits:</strong></p>
+<ul>
+<li><strong>Intersection Observer:</strong> Much more efficient than scroll event listeners - doesn't block main thread</li>
+<li><strong>Native Drag & Drop:</strong> Browser-optimized with built-in visual feedback and accessibility</li>
+</ul>
 </div>

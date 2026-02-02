@@ -1,10 +1,8 @@
 ---
-title: About web wizardry
+title: About Web Wizardry
 ---
 
-# About web wizardry
-
-## What is web wizardry?
+## What is Web Wizardry?
 
 **web wizardry** is a radical approach to web development that brings the power of POSIX shell scripts to the browser. Instead of complex JavaScript frameworks and heavyweight backend languages, web wizardry uses:
 

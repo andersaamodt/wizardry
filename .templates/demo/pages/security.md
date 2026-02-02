@@ -2,8 +2,6 @@
 title: Security & Permissions
 ---
 
-# Security & Permissions Demos
-
 Explore browser security models and permission APIs.
 
 ## 1. Same-Origin Policy Demonstration
@@ -11,23 +9,23 @@ Explore browser security models and permission APIs.
 The Same-Origin Policy restricts how documents or scripts from one origin can interact with resources from another origin:
 
 <div class="demo-box">
-  <h3>🔒 Same-Origin Policy Test</h3>
+<h3>🔒 Same-Origin Policy Test</h3>
   
-  <p style="margin-bottom: 1rem;">
+<p style="margin-bottom: 1rem;">
     Current origin: <strong id="current-origin"></strong>
-  </p>
+</p>
   
-  <div style="margin-bottom: 1rem;">
-    <label style="display: block; margin-bottom: 0.5rem;"><strong>Try to fetch from URL:</strong></label>
-    <select id="origin-select" style="width: 100%; padding: 0.5rem; margin-bottom: 0.5rem;">
-      <option value="same">Same origin (current domain)</option>
-      <option value="https://api.github.com/zen">Cross-origin (GitHub API - CORS enabled)</option>
-      <option value="https://example.com">Cross-origin (example.com - no CORS)</option>
-    </select>
-    <button id="origin-test">🧪 Test Fetch</button>
-  </div>
+<div style="margin-bottom: 1rem;">
+<label style="display: block; margin-bottom: 0.5rem;"><strong>Try to fetch from URL:</strong></label>
+<select id="origin-select" style="width: 100%; padding: 0.5rem; margin-bottom: 0.5rem;">
+<option value="same">Same origin (current domain)</option>
+<option value="https://api.github.com/zen">Cross-origin (GitHub API - CORS enabled)</option>
+<option value="https://example.com">Cross-origin (example.com - no CORS)</option>
+</select>
+<button id="origin-test">🧪 Test Fetch</button>
+</div>
   
-  <div id="origin-output" class="output"></div>
+<div id="origin-output" class="output"></div>
 </div>
 
 <script>
@@ -55,28 +53,28 @@ The Same-Origin Policy restricts how documents or scripts from one origin can in
       const text = await response.text();
       
       output.innerHTML = `
-        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ Fetch Successful</h4>
-          <p style="margin: 0.25rem 0;"><strong>Status:</strong> ${response.status} ${response.statusText}</p>
-          <p style="margin: 0.25rem 0;"><strong>Origin:</strong> ${new URL(url).origin}</p>
-          <p style="margin: 0.25rem 0;"><strong>Same Origin:</strong> ${new URL(url).origin === currentOrigin ? 'Yes' : 'No (CORS allowed)'}</p>
-          <details style="margin-top: 0.5rem;">
-            <summary style="cursor: pointer; color: #2e7d32;">Show response preview (first 200 chars)</summary>
-            <pre style="margin-top: 0.5rem; background: #fff; padding: 0.5rem; border-radius: 3px; overflow-x: auto; font-size: 0.85rem;">${text.substring(0, 200)}${text.length > 200 ? '...' : ''}</pre>
-          </details>
-        </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ Fetch Successful</h4>
+<p style="margin: 0.25rem 0;"><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+<p style="margin: 0.25rem 0;"><strong>Origin:</strong> ${new URL(url).origin}</p>
+<p style="margin: 0.25rem 0;"><strong>Same Origin:</strong> ${new URL(url).origin === currentOrigin ? 'Yes' : 'No (CORS allowed)'}</p>
+<details style="margin-top: 0.5rem;">
+<summary style="cursor: pointer; color: #2e7d32;">Show response preview (first 200 chars)</summary>
+<pre style="margin-top: 0.5rem; background: #fff; padding: 0.5rem; border-radius: 3px; overflow-x: auto; font-size: 0.85rem;">${text.substring(0, 200)}${text.length > 200 ? '...' : ''}</pre>
+</details>
+</div>
       `;
     } catch (error) {
       output.innerHTML = `
-        <div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ Fetch Failed (Same-Origin Policy)</h4>
-          <p style="margin: 0.25rem 0;"><strong>Error:</strong> ${error.message}</p>
-          <p style="margin: 0.25rem 0;"><strong>Target:</strong> ${new URL(url).origin}</p>
-          <p style="margin: 0.25rem 0;"><strong>Current Origin:</strong> ${currentOrigin}</p>
-          <p style="margin-top: 0.5rem; color: #666; font-size: 0.9rem;">
+<div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
+<h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ Fetch Failed (Same-Origin Policy)</h4>
+<p style="margin: 0.25rem 0;"><strong>Error:</strong> ${error.message}</p>
+<p style="margin: 0.25rem 0;"><strong>Target:</strong> ${new URL(url).origin}</p>
+<p style="margin: 0.25rem 0;"><strong>Current Origin:</strong> ${currentOrigin}</p>
+<p style="margin-top: 0.5rem; color: #666; font-size: 0.9rem;">
             🔒 The Same-Origin Policy blocked this request because the target server doesn't allow CORS from this origin.
-          </p>
-        </div>
+</p>
+</div>
       `;
     }
   });
@@ -88,19 +86,19 @@ The Same-Origin Policy restricts how documents or scripts from one origin can in
 Query and request browser permissions for sensitive features:
 
 <div class="demo-box">
-  <h3>🔐 Permissions API</h3>
+<h3>🔐 Permissions API</h3>
   
-  <p style="margin-bottom: 1rem;">Check the status of various browser permissions:</p>
+<p style="margin-bottom: 1rem;">Check the status of various browser permissions:</p>
   
-  <div style="display: grid; gap: 0.5rem; margin-bottom: 1rem;">
-    <button id="perm-geolocation">📍 Check Geolocation Permission</button>
-    <button id="perm-notifications">🔔 Check Notifications Permission</button>
-    <button id="perm-camera">📷 Check Camera Permission</button>
-    <button id="perm-microphone">🎤 Check Microphone Permission</button>
-    <button id="perm-clipboard">📋 Check Clipboard Permission</button>
-  </div>
+<div style="display: grid; gap: 0.5rem; margin-bottom: 1rem;">
+<button id="perm-geolocation">📍 Check Geolocation Permission</button>
+<button id="perm-notifications">🔔 Check Notifications Permission</button>
+<button id="perm-camera">📷 Check Camera Permission</button>
+<button id="perm-microphone">🎤 Check Microphone Permission</button>
+<button id="perm-clipboard">📋 Check Clipboard Permission</button>
+</div>
   
-  <div id="perm-output" class="output"></div>
+<div id="perm-output" class="output"></div>
 </div>
 
 <script>
@@ -131,15 +129,15 @@ Query and request browser permissions for sensitive features:
       const icon_status = statusIcons[result.state] || '❓';
       
       output.innerHTML = `
-        <div style="background: ${result.state === 'granted' ? '#e8f5e9' : result.state === 'denied' ? '#ffebee' : '#fff3e0'}; padding: 1rem; border-radius: 4px; border: 1px solid ${color};">
-          <h4 style="margin: 0 0 0.5rem 0; color: ${color};">${icon} ${displayName} Permission</h4>
-          <p style="margin: 0.25rem 0;"><strong>Status:</strong> ${icon_status} ${result.state.toUpperCase()}</p>
-          <p style="margin: 0.25rem 0; color: #666; font-size: 0.9rem;">
+<div style="background: ${result.state === 'granted' ? '#e8f5e9' : result.state === 'denied' ? '#ffebee' : '#fff3e0'}; padding: 1rem; border-radius: 4px; border: 1px solid ${color};">
+<h4 style="margin: 0 0 0.5rem 0; color: ${color};">${icon} ${displayName} Permission</h4>
+<p style="margin: 0.25rem 0;"><strong>Status:</strong> ${icon_status} ${result.state.toUpperCase()}</p>
+<p style="margin: 0.25rem 0; color: #666; font-size: 0.9rem;">
             ${result.state === 'granted' ? '✅ Permission already granted' : 
               result.state === 'denied' ? '❌ Permission denied by user' : 
               '❓ Permission will be requested when needed'}
-          </p>
-        </div>
+</p>
+</div>
       `;
       
       // Listen for changes
@@ -148,13 +146,13 @@ Query and request browser permissions for sensitive features:
       });
     } catch (error) {
       output.innerHTML = `
-        <div style="background: #fff3cd; padding: 1rem; border-radius: 4px; border: 1px solid #ffc107;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #856404;">⚠️ ${displayName} Permission Check</h4>
-          <p style="margin: 0.25rem 0;"><strong>Error:</strong> ${error.message}</p>
-          <p style="margin: 0.25rem 0; color: #666; font-size: 0.9rem;">
+<div style="background: #fff3cd; padding: 1rem; border-radius: 4px; border: 1px solid #ffc107;">
+<h4 style="margin: 0 0 0.5rem 0; color: #856404;">⚠️ ${displayName} Permission Check</h4>
+<p style="margin: 0.25rem 0;"><strong>Error:</strong> ${error.message}</p>
+<p style="margin: 0.25rem 0; color: #666; font-size: 0.9rem;">
             This permission might not be queryable via the Permissions API, or the API is not supported in this browser.
-          </p>
-        </div>
+</p>
+</div>
       `;
     }
   }
@@ -174,15 +172,15 @@ Query and request browser permissions for sensitive features:
     const color = statusColors[permission] || '#7f8c8d';
     
     output.innerHTML = `
-      <div style="background: ${permission === 'granted' ? '#e8f5e9' : permission === 'denied' ? '#ffebee' : '#fff3e0'}; padding: 1rem; border-radius: 4px; border: 1px solid ${color};">
-        <h4 style="margin: 0 0 0.5rem 0; color: ${color};">🔔 Notifications Permission</h4>
-        <p style="margin: 0.25rem 0;"><strong>Status:</strong> ${permission.toUpperCase()}</p>
-        <p style="margin: 0.25rem 0; color: #666; font-size: 0.9rem;">
+<div style="background: ${permission === 'granted' ? '#e8f5e9' : permission === 'denied' ? '#ffebee' : '#fff3e0'}; padding: 1rem; border-radius: 4px; border: 1px solid ${color};">
+<h4 style="margin: 0 0 0.5rem 0; color: ${color};">🔔 Notifications Permission</h4>
+<p style="margin: 0.25rem 0;"><strong>Status:</strong> ${permission.toUpperCase()}</p>
+<p style="margin: 0.25rem 0; color: #666; font-size: 0.9rem;">
           ${permission === 'granted' ? '✅ Can send notifications' : 
             permission === 'denied' ? '❌ Notifications blocked' : 
             '❓ Will request permission when needed'}
-        </p>
-      </div>
+</p>
+</div>
     `;
   });
   
@@ -205,11 +203,11 @@ Query and request browser permissions for sensitive features:
 Some browser features only work in secure contexts (HTTPS):
 
 <div class="demo-box">
-  <h3>🔐 Secure Context Check</h3>
+<h3>🔐 Secure Context Check</h3>
   
-  <button id="secure-check">🔍 Check Current Context</button>
+<button id="secure-check">🔍 Check Current Context</button>
   
-  <div id="secure-output" class="output"></div>
+<div id="secure-output" class="output"></div>
 </div>
 
 <script>
@@ -233,43 +231,43 @@ Some browser features only work in secure contexts (HTTPS):
     
     const apiTable = Object.entries(secureOnlyAPIs).map(([name, available]) => {
       return `
-        <tr>
-          <td style="padding: 0.5rem; border: 1px solid #ddd;">${name}</td>
-          <td style="padding: 0.5rem; border: 1px solid #ddd; text-align: center;">
+<tr>
+<td style="padding: 0.5rem; border: 1px solid #ddd;">${name}</td>
+<td style="padding: 0.5rem; border: 1px solid #ddd; text-align: center;">
             ${available ? '<span style="color: #4caf50;">✅ Available</span>' : '<span style="color: #f44336;">❌ Not Available</span>'}
-          </td>
-        </tr>
+</td>
+</tr>
       `;
     }).join('');
     
     output.innerHTML = `
-      <div style="background: ${isSecure ? '#e8f5e9' : '#fff3e0'}; padding: 1rem; border-radius: 4px; border: 1px solid ${isSecure ? '#4caf50' : '#ff9800'};">
-        <h4 style="margin: 0 0 0.5rem 0; color: ${isSecure ? '#2e7d32' : '#e65100'};">
+<div style="background: ${isSecure ? '#e8f5e9' : '#fff3e0'}; padding: 1rem; border-radius: 4px; border: 1px solid ${isSecure ? '#4caf50' : '#ff9800'};">
+<h4 style="margin: 0 0 0.5rem 0; color: ${isSecure ? '#2e7d32' : '#e65100'};">
           ${isSecure ? '🔒 Secure Context' : '⚠️ Insecure Context'}
-        </h4>
-        <p style="margin: 0.25rem 0;"><strong>Protocol:</strong> ${protocol}</p>
-        <p style="margin: 0.25rem 0;"><strong>Hostname:</strong> ${hostname}</p>
-        <p style="margin: 0.25rem 0;"><strong>Is Secure:</strong> ${isSecure ? 'Yes ✅' : 'No ❌'}</p>
+</h4>
+<p style="margin: 0.25rem 0;"><strong>Protocol:</strong> ${protocol}</p>
+<p style="margin: 0.25rem 0;"><strong>Hostname:</strong> ${hostname}</p>
+<p style="margin: 0.25rem 0;"><strong>Is Secure:</strong> ${isSecure ? 'Yes ✅' : 'No ❌'}</p>
         
-        <h4 style="margin: 1rem 0 0.5rem 0;">Secure-Context-Only APIs:</h4>
-        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
-          <thead>
-            <tr style="background: #e9ecef;">
-              <th style="padding: 0.5rem; border: 1px solid #ddd; text-align: left;">API</th>
-              <th style="padding: 0.5rem; border: 1px solid #ddd; text-align: center;">Status</th>
-            </tr>
-          </thead>
-          <tbody>
+<h4 style="margin: 1rem 0 0.5rem 0;">Secure-Context-Only APIs:</h4>
+<table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+<thead>
+<tr style="background: #e9ecef;">
+<th style="padding: 0.5rem; border: 1px solid #ddd; text-align: left;">API</th>
+<th style="padding: 0.5rem; border: 1px solid #ddd; text-align: center;">Status</th>
+</tr>
+</thead>
+<tbody>
             ${apiTable}
-          </tbody>
-        </table>
+</tbody>
+</table>
         
-        <p style="margin-top: 1rem; color: #666; font-size: 0.9rem;">
+<p style="margin-top: 1rem; color: #666; font-size: 0.9rem;">
           ${isSecure ? 
             '✅ All secure-context-only APIs can be used on this page.' : 
             '⚠️ Some APIs may be restricted. Use HTTPS for full functionality.'}
-        </p>
-      </div>
+</p>
+</div>
     `;
   });
   
@@ -283,11 +281,11 @@ Some browser features only work in secure contexts (HTTPS):
 Display information about Content Security Policy if available:
 
 <div class="demo-box">
-  <h3>🛡️ Content Security Policy</h3>
+<h3>🛡️ Content Security Policy</h3>
   
-  <button id="csp-check">🔍 Check CSP</button>
+<button id="csp-check">🔍 Check CSP</button>
   
-  <div id="csp-output" class="output"></div>
+<div id="csp-output" class="output"></div>
 </div>
 
 <script>
@@ -311,25 +309,25 @@ Display information about Content Security Policy if available:
     const hasReportingAPI = 'ReportingObserver' in window;
     
     output.innerHTML = `
-      <div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">🛡️ CSP Information</h4>
+<div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
+<h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">🛡️ CSP Information</h4>
         
-        <p style="margin: 0.25rem 0;"><strong>Reporting API Available:</strong> ${hasReportingAPI ? '✅ Yes' : '❌ No'}</p>
+<p style="margin: 0.25rem 0;"><strong>Reporting API Available:</strong> ${hasReportingAPI ? '✅ Yes' : '❌ No'}</p>
         
         ${violations.length > 0 ? `
-          <h4 style="margin: 1rem 0 0.5rem 0; color: #e65100;">⚠️ Detected Restrictions:</h4>
-          <ul style="margin: 0; padding-left: 1.5rem; color: #e65100;">
+<h4 style="margin: 1rem 0 0.5rem 0; color: #e65100;">⚠️ Detected Restrictions:</h4>
+<ul style="margin: 0; padding-left: 1.5rem; color: #e65100;">
             ${violations.map(v => `<li>${v}</li>`).join('')}
-          </ul>
+</ul>
         ` : `
-          <p style="margin-top: 1rem; color: #4caf50;">✅ No CSP restrictions detected (or CSP allows current operations)</p>
+<p style="margin-top: 1rem; color: #4caf50;">✅ No CSP restrictions detected (or CSP allows current operations)</p>
         `}
         
-        <p style="margin-top: 1rem; color: #666; font-size: 0.9rem;">
+<p style="margin-top: 1rem; color: #666; font-size: 0.9rem;">
           💡 Content Security Policy (CSP) helps prevent XSS attacks by controlling which resources can be loaded and executed.
           Check the browser console and network tab for detailed CSP violation reports.
-        </p>
-      </div>
+</p>
+</div>
     `;
     
     // Set up ReportingObserver if available
@@ -352,36 +350,36 @@ Display information about Content Security Policy if available:
 Perform cryptographic operations like hashing, encryption, and key generation:
 
 <div class="demo-box">
-  <h3>🔐 Web Crypto API</h3>
+<h3>🔐 Web Crypto API</h3>
   
-  <div style="margin-bottom: 2rem;">
-    <h4>Hash Generation (SHA-256)</h4>
-    <textarea id="crypto-hash-input" rows="3" placeholder="Enter text to hash..." style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem; margin-bottom: 0.5rem;">Hello, Crypto API!</textarea>
-    <button id="crypto-hash">🔐 Generate SHA-256 Hash</button>
-    <div id="crypto-hash-output" class="output"></div>
-  </div>
+<div style="margin-bottom: 2rem;">
+<h4>Hash Generation (SHA-256)</h4>
+<textarea id="crypto-hash-input" rows="3" placeholder="Enter text to hash..." style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem; margin-bottom: 0.5rem;">Hello, Crypto API!</textarea>
+<button id="crypto-hash">🔐 Generate SHA-256 Hash</button>
+<div id="crypto-hash-output" class="output"></div>
+</div>
   
-  <div style="margin-bottom: 2rem;">
-    <h4>Encryption & Decryption (AES-GCM)</h4>
-    <textarea id="crypto-encrypt-input" rows="3" placeholder="Enter text to encrypt..." style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem; margin-bottom: 0.5rem;">Secret message</textarea>
-    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
-      <button id="crypto-generate-key">🔑 Generate Key</button>
-      <button id="crypto-encrypt">🔒 Encrypt</button>
-      <button id="crypto-decrypt">🔓 Decrypt</button>
-    </div>
-    <div id="crypto-encrypt-output" class="output"></div>
-  </div>
+<div style="margin-bottom: 2rem;">
+<h4>Encryption & Decryption (AES-GCM)</h4>
+<textarea id="crypto-encrypt-input" rows="3" placeholder="Enter text to encrypt..." style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem; margin-bottom: 0.5rem;">Secret message</textarea>
+<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+<button id="crypto-generate-key">🔑 Generate Key</button>
+<button id="crypto-encrypt">🔒 Encrypt</button>
+<button id="crypto-decrypt">🔓 Decrypt</button>
+</div>
+<div id="crypto-encrypt-output" class="output"></div>
+</div>
   
-  <div>
-    <h4>Digital Signature (ECDSA)</h4>
-    <textarea id="crypto-sign-input" rows="3" placeholder="Enter text to sign..." style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem; margin-bottom: 0.5rem;">Document to sign</textarea>
-    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
-      <button id="crypto-generate-keypair">🔑 Generate Key Pair</button>
-      <button id="crypto-sign">✍️ Sign</button>
-      <button id="crypto-verify">✅ Verify Signature</button>
-    </div>
-    <div id="crypto-sign-output" class="output"></div>
-  </div>
+<div>
+<h4>Digital Signature (ECDSA)</h4>
+<textarea id="crypto-sign-input" rows="3" placeholder="Enter text to sign..." style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem; margin-bottom: 0.5rem;">Document to sign</textarea>
+<div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem;">
+<button id="crypto-generate-keypair">🔑 Generate Key Pair</button>
+<button id="crypto-sign">✍️ Sign</button>
+<button id="crypto-verify">✅ Verify Signature</button>
+</div>
+<div id="crypto-sign-output" class="output"></div>
+</div>
 </div>
 
 <script>
@@ -427,13 +425,13 @@ Perform cryptographic operations like hashing, encryption, and key generation:
       const hashHex = arrayBufferToHex(hashBuffer);
       
       hashOutput.innerHTML = `
-        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">🔐 SHA-256 Hash</h4>
-          <p style="margin: 0.25rem 0;"><strong>Input:</strong> "${text}"</p>
-          <p style="margin: 0.25rem 0;"><strong>Hash:</strong></p>
-          <pre style="margin: 0.5rem 0; padding: 0.5rem; background: #fff; border-radius: 3px; overflow-x: auto; font-size: 0.85rem;">${hashHex}</pre>
-          <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666;">Length: ${hashHex.length} chars (64 hex digits = 256 bits)</p>
-        </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">🔐 SHA-256 Hash</h4>
+<p style="margin: 0.25rem 0;"><strong>Input:</strong> "${text}"</p>
+<p style="margin: 0.25rem 0;"><strong>Hash:</strong></p>
+<pre style="margin: 0.5rem 0; padding: 0.5rem; background: #fff; border-radius: 3px; overflow-x: auto; font-size: 0.85rem;">${hashHex}</pre>
+<p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666;">Length: ${hashHex.length} chars (64 hex digits = 256 bits)</p>
+</div>
       `;
     } catch (error) {
       hashOutput.innerHTML = `<p class="error">Error: ${error.message}</p>`;
@@ -450,10 +448,10 @@ Perform cryptographic operations like hashing, encryption, and key generation:
       );
       
       encryptOutput.innerHTML = `
-        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ AES-256 Key Generated</h4>
-          <p style="margin: 0;">Ready to encrypt and decrypt messages!</p>
-        </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ AES-256 Key Generated</h4>
+<p style="margin: 0;">Ready to encrypt and decrypt messages!</p>
+</div>
       `;
     } catch (error) {
       encryptOutput.innerHTML = `<p class="error">Error: ${error.message}</p>`;
@@ -487,13 +485,13 @@ Perform cryptographic operations like hashing, encryption, and key generation:
       );
       
       encryptOutput.innerHTML = `
-        <div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">🔒 Encrypted</h4>
-          <p style="margin: 0.25rem 0;"><strong>Original:</strong> "${text}"</p>
-          <p style="margin: 0.25rem 0;"><strong>Encrypted (Base64):</strong></p>
-          <pre style="margin: 0.5rem 0; padding: 0.5rem; background: #fff; border-radius: 3px; overflow-x: auto; font-size: 0.85rem;">${arrayBufferToBase64(encryptedData)}</pre>
-          <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666;">Click Decrypt to retrieve the original text</p>
-        </div>
+<div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
+<h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">🔒 Encrypted</h4>
+<p style="margin: 0.25rem 0;"><strong>Original:</strong> "${text}"</p>
+<p style="margin: 0.25rem 0;"><strong>Encrypted (Base64):</strong></p>
+<pre style="margin: 0.5rem 0; padding: 0.5rem; background: #fff; border-radius: 3px; overflow-x: auto; font-size: 0.85rem;">${arrayBufferToBase64(encryptedData)}</pre>
+<p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666;">Click Decrypt to retrieve the original text</p>
+</div>
       `;
     } catch (error) {
       encryptOutput.innerHTML = `<p class="error">Error: ${error.message}</p>`;
@@ -517,11 +515,11 @@ Perform cryptographic operations like hashing, encryption, and key generation:
       const decryptedText = decoder.decode(decryptedData);
       
       encryptOutput.innerHTML = `
-        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">🔓 Decrypted Successfully!</h4>
-          <p style="margin: 0.25rem 0;"><strong>Decrypted Text:</strong> "${decryptedText}"</p>
-          <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666;">The encrypted data was successfully decrypted back to the original text</p>
-        </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">🔓 Decrypted Successfully!</h4>
+<p style="margin: 0.25rem 0;"><strong>Decrypted Text:</strong> "${decryptedText}"</p>
+<p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666;">The encrypted data was successfully decrypted back to the original text</p>
+</div>
       `;
     } catch (error) {
       encryptOutput.innerHTML = `<p class="error">Decryption error: ${error.message}</p>`;
@@ -541,10 +539,10 @@ Perform cryptographic operations like hashing, encryption, and key generation:
       );
       
       signOutput.innerHTML = `
-        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ ECDSA Key Pair Generated</h4>
-          <p style="margin: 0;">Public/private key pair ready for signing and verification!</p>
-        </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ ECDSA Key Pair Generated</h4>
+<p style="margin: 0;">Public/private key pair ready for signing and verification!</p>
+</div>
       `;
     } catch (error) {
       signOutput.innerHTML = `<p class="error">Error: ${error.message}</p>`;
@@ -578,13 +576,13 @@ Perform cryptographic operations like hashing, encryption, and key generation:
       );
       
       signOutput.innerHTML = `
-        <div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">✍️ Signed</h4>
-          <p style="margin: 0.25rem 0;"><strong>Document:</strong> "${text}"</p>
-          <p style="margin: 0.25rem 0;"><strong>Signature (Hex):</strong></p>
-          <pre style="margin: 0.5rem 0; padding: 0.5rem; background: #fff; border-radius: 3px; overflow-x: auto; font-size: 0.85rem;">${arrayBufferToHex(signature)}</pre>
-          <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666;">Click Verify to check the signature</p>
-        </div>
+<div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
+<h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">✍️ Signed</h4>
+<p style="margin: 0.25rem 0;"><strong>Document:</strong> "${text}"</p>
+<p style="margin: 0.25rem 0;"><strong>Signature (Hex):</strong></p>
+<pre style="margin: 0.5rem 0; padding: 0.5rem; background: #fff; border-radius: 3px; overflow-x: auto; font-size: 0.85rem;">${arrayBufferToHex(signature)}</pre>
+<p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666;">Click Verify to check the signature</p>
+</div>
       `;
     } catch (error) {
       signOutput.innerHTML = `<p class="error">Error: ${error.message}</p>`;
@@ -615,17 +613,17 @@ Perform cryptographic operations like hashing, encryption, and key generation:
       
       if (isValid) {
         signOutput.innerHTML = `
-          <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-            <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ Signature Valid!</h4>
-            <p style="margin: 0;">The signature is authentic and the document has not been tampered with.</p>
-          </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ Signature Valid!</h4>
+<p style="margin: 0;">The signature is authentic and the document has not been tampered with.</p>
+</div>
         `;
       } else {
         signOutput.innerHTML = `
-          <div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
-            <h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ Signature Invalid</h4>
-            <p style="margin: 0;">The signature does not match or the document has been modified.</p>
-          </div>
+<div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
+<h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ Signature Invalid</h4>
+<p style="margin: 0;">The signature does not match or the document has been modified.</p>
+</div>
         `;
       }
     } catch (error) {
@@ -638,40 +636,40 @@ Perform cryptographic operations like hashing, encryption, and key generation:
 ---
 
 <div class="info-box">
-  <h3>🎯 Security APIs Demonstrated:</h3>
-  <ul>
-    <li><strong>Same-Origin Policy:</strong> Browser's fundamental security mechanism</li>
-    <li><strong>Permissions API:</strong> Query permission states for sensitive features</li>
-    <li><strong>Secure Contexts:</strong> HTTPS-only API access detection</li>
-    <li><strong>CSP:</strong> Content Security Policy information and violation detection</li>
-    <li><strong>Web Crypto API:</strong> Cryptographic operations (hashing, encryption, signatures)</li>
-  </ul>
+<h3>🎯 Security APIs Demonstrated:</h3>
+<ul>
+<li><strong>Same-Origin Policy:</strong> Browser's fundamental security mechanism</li>
+<li><strong>Permissions API:</strong> Query permission states for sensitive features</li>
+<li><strong>Secure Contexts:</strong> HTTPS-only API access detection</li>
+<li><strong>CSP:</strong> Content Security Policy information and violation detection</li>
+<li><strong>Web Crypto API:</strong> Cryptographic operations (hashing, encryption, signatures)</li>
+</ul>
   
-  <p style="margin-top: 1rem;"><strong>🔐 Cryptographic Operations:</strong></p>
-  <ul>
-    <li><strong>Hashing (SHA-256):</strong> One-way hash for data integrity and password storage</li>
-    <li><strong>Encryption (AES-GCM):</strong> Symmetric encryption for data confidentiality</li>
-    <li><strong>Digital Signatures (ECDSA):</strong> Verify authenticity and non-repudiation</li>
-    <li><strong>Key Generation:</strong> Secure random key creation</li>
-  </ul>
+<p style="margin-top: 1rem;"><strong>🔐 Cryptographic Operations:</strong></p>
+<ul>
+<li><strong>Hashing (SHA-256):</strong> One-way hash for data integrity and password storage</li>
+<li><strong>Encryption (AES-GCM):</strong> Symmetric encryption for data confidentiality</li>
+<li><strong>Digital Signatures (ECDSA):</strong> Verify authenticity and non-repudiation</li>
+<li><strong>Key Generation:</strong> Secure random key creation</li>
+</ul>
   
-  <p style="margin-top: 1rem;"><strong>🔒 Security Principles:</strong></p>
-  <ul>
-    <li><strong>Same-Origin Policy:</strong> Prevents malicious scripts from accessing data from other origins</li>
-    <li><strong>CORS:</strong> Controlled relaxation of same-origin policy via server headers</li>
-    <li><strong>Secure Contexts:</strong> Sensitive APIs only work over HTTPS</li>
-    <li><strong>Permissions:</strong> User must grant explicit permission for sensitive features</li>
-    <li><strong>CSP:</strong> Restricts resource loading to prevent injection attacks</li>
-    <li><strong>Crypto API:</strong> All operations happen in secure, sandboxed environment</li>
-  </ul>
+<p style="margin-top: 1rem;"><strong>🔒 Security Principles:</strong></p>
+<ul>
+<li><strong>Same-Origin Policy:</strong> Prevents malicious scripts from accessing data from other origins</li>
+<li><strong>CORS:</strong> Controlled relaxation of same-origin policy via server headers</li>
+<li><strong>Secure Contexts:</strong> Sensitive APIs only work over HTTPS</li>
+<li><strong>Permissions:</strong> User must grant explicit permission for sensitive features</li>
+<li><strong>CSP:</strong> Restricts resource loading to prevent injection attacks</li>
+<li><strong>Crypto API:</strong> All operations happen in secure, sandboxed environment</li>
+</ul>
   
-  <p style="margin-top: 1rem;"><strong>🌐 Origins:</strong></p>
-  <p style="margin: 0.5rem 0 0.5rem 1rem; font-family: monospace; font-size: 0.9rem;">
+<p style="margin-top: 1rem;"><strong>🌐 Origins:</strong></p>
+<p style="margin: 0.5rem 0 0.5rem 1rem; font-family: monospace; font-size: 0.9rem;">
     Two URLs have the same origin if they have the same:
-  </p>
-  <ul style="margin: 0 0 0 2rem;">
-    <li>Protocol (http vs https)</li>
-    <li>Domain (example.com vs other.com)</li>
-    <li>Port (80 vs 8080)</li>
-  </ul>
+</p>
+<ul style="margin: 0 0 0 2rem;">
+<li>Protocol (http vs https)</li>
+<li>Domain (example.com vs other.com)</li>
+<li>Port (80 vs 8080)</li>
+</ul>
 </div>

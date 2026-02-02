@@ -2,8 +2,6 @@
 title: Additional Browser APIs
 ---
 
-# Additional Browser APIs
-
 Explore more useful browser capabilities beyond the core APIs.
 
 ## 1. Vibration API
@@ -11,16 +9,16 @@ Explore more useful browser capabilities beyond the core APIs.
 Control device vibration (mobile devices):
 
 <div class="demo-box">
-  <h3>📳 Vibration API</h3>
+<h3>📳 Vibration API</h3>
   
-  <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-    <button id="vibrate-short">📳 Short Vibration (200ms)</button>
-    <button id="vibrate-long">📳 Long Vibration (1000ms)</button>
-    <button id="vibrate-pattern">🎵 Pattern Vibration</button>
-    <button id="vibrate-stop">⏹️ Stop</button>
-  </div>
+<div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+<button id="vibrate-short">📳 Short Vibration (200ms)</button>
+<button id="vibrate-long">📳 Long Vibration (1000ms)</button>
+<button id="vibrate-pattern">🎵 Pattern Vibration</button>
+<button id="vibrate-stop">⏹️ Stop</button>
+</div>
   
-  <div id="vibrate-output" class="output"></div>
+<div id="vibrate-output" class="output"></div>
 </div>
 
 <script>
@@ -30,10 +28,10 @@ Control device vibration (mobile devices):
   function checkSupport() {
     if (!('vibrate' in navigator)) {
       output.innerHTML = `
-        <div style="background: #fff3e0; padding: 1rem; border-radius: 4px; border: 1px solid #ff9800;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #e65100;">⚠️ Vibration API Not Supported</h4>
-          <p style="margin: 0;">This device does not support the Vibration API. Try on a mobile device.</p>
-        </div>
+<div style="background: #fff3e0; padding: 1rem; border-radius: 4px; border: 1px solid #ff9800;">
+<h4 style="margin: 0 0 0.5rem 0; color: #e65100;">⚠️ Vibration API Not Supported</h4>
+<p style="margin: 0;">This device does not support the Vibration API. Try on a mobile device.</p>
+</div>
       `;
       return false;
     }
@@ -72,11 +70,11 @@ Control device vibration (mobile devices):
 Monitor device battery level and charging status:
 
 <div class="demo-box">
-  <h3>🔋 Battery Status</h3>
+<h3>🔋 Battery Status</h3>
   
-  <button id="battery-check">🔋 Check Battery Status</button>
+<button id="battery-check">🔋 Check Battery Status</button>
   
-  <div id="battery-output" class="output"></div>
+<div id="battery-output" class="output"></div>
 </div>
 
 <script>
@@ -86,10 +84,10 @@ Monitor device battery level and charging status:
   document.getElementById('battery-check').addEventListener('click', async () => {
     if (!('getBattery' in navigator)) {
       output.innerHTML = `
-        <div style="background: #fff3e0; padding: 1rem; border-radius: 4px; border: 1px solid #ff9800;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #e65100;">⚠️ Battery API Not Supported</h4>
-          <p style="margin: 0;">This browser does not support the Battery Status API.</p>
-        </div>
+<div style="background: #fff3e0; padding: 1rem; border-radius: 4px; border: 1px solid #ff9800;">
+<h4 style="margin: 0 0 0.5rem 0; color: #e65100;">⚠️ Battery API Not Supported</h4>
+<p style="margin: 0;">This browser does not support the Battery Status API.</p>
+</div>
       `;
       return;
     }
@@ -106,19 +104,19 @@ Monitor device battery level and charging status:
       const statusColor = charging ? '#4caf50' : level > 25 ? '#2196f3' : '#f44336';
       
       output.innerHTML = `
-        <div style="background: ${charging ? '#e8f5e9' : '#e3f2fd'}; padding: 1rem; border-radius: 4px; border: 1px solid ${statusColor};">
-          <h4 style="margin: 0 0 0.5rem 0; color: ${statusColor};">${batteryIcon} Battery Status</h4>
-          <p style="margin: 0.25rem 0;"><strong>Level:</strong> ${level}%</p>
-          <div style="margin: 0.5rem 0; background: #fff; border-radius: 4px; height: 30px; position: relative; overflow: hidden; border: 1px solid ${statusColor};">
-            <div style="position: absolute; left: 0; top: 0; height: 100%; background: ${charging ? 'linear-gradient(90deg, #4caf50, #8bc34a)' : 'linear-gradient(90deg, #2196f3, #03a9f4)'}; width: ${level}%; transition: width 0.3s;"></div>
-            <div style="position: absolute; left: 0; right: 0; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #2c3e50;">
+<div style="background: ${charging ? '#e8f5e9' : '#e3f2fd'}; padding: 1rem; border-radius: 4px; border: 1px solid ${statusColor};">
+<h4 style="margin: 0 0 0.5rem 0; color: ${statusColor};">${batteryIcon} Battery Status</h4>
+<p style="margin: 0.25rem 0;"><strong>Level:</strong> ${level}%</p>
+<div style="margin: 0.5rem 0; background: #fff; border-radius: 4px; height: 30px; position: relative; overflow: hidden; border: 1px solid ${statusColor};">
+<div style="position: absolute; left: 0; top: 0; height: 100%; background: ${charging ? 'linear-gradient(90deg, #4caf50, #8bc34a)' : 'linear-gradient(90deg, #2196f3, #03a9f4)'}; width: ${level}%; transition: width 0.3s;"></div>
+<div style="position: absolute; left: 0; right: 0; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #2c3e50;">
               ${level}%
-            </div>
-          </div>
-          <p style="margin: 0.25rem 0;"><strong>Charging:</strong> ${charging ? '⚡ Yes' : '❌ No'}</p>
+</div>
+</div>
+<p style="margin: 0.25rem 0;"><strong>Charging:</strong> ${charging ? '⚡ Yes' : '❌ No'}</p>
           ${charging && chargingTime !== Infinity ? `<p style="margin: 0.25rem 0;"><strong>Time to Full:</strong> ${Math.round(chargingTime / 60)} minutes</p>` : ''}
           ${!charging && dischargingTime !== Infinity ? `<p style="margin: 0.25rem 0;"><strong>Time Remaining:</strong> ${Math.round(dischargingTime / 60)} minutes</p>` : ''}
-        </div>
+</div>
       `;
       
       // Listen for changes
@@ -141,11 +139,11 @@ Monitor device battery level and charging status:
 Get information about the network connection:
 
 <div class="demo-box">
-  <h3>📶 Network Information</h3>
+<h3>📶 Network Information</h3>
   
-  <button id="network-check">📶 Check Network</button>
+<button id="network-check">📶 Check Network</button>
   
-  <div id="network-output" class="output"></div>
+<div id="network-output" class="output"></div>
 </div>
 
 <script>
@@ -157,10 +155,10 @@ Get information about the network connection:
     
     if (!connection) {
       output.innerHTML = `
-        <div style="background: #fff3e0; padding: 1rem; border-radius: 4px; border: 1px solid #ff9800;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #e65100;">⚠️ Network Information API Not Supported</h4>
-          <p style="margin: 0;">This browser does not support the Network Information API.</p>
-        </div>
+<div style="background: #fff3e0; padding: 1rem; border-radius: 4px; border: 1px solid #ff9800;">
+<h4 style="margin: 0 0 0.5rem 0; color: #e65100;">⚠️ Network Information API Not Supported</h4>
+<p style="margin: 0;">This browser does not support the Network Information API.</p>
+</div>
       `;
       return;
     }
@@ -183,16 +181,16 @@ Get information about the network connection:
     const color = typeColors[type] || '#7f8c8d';
     
     output.innerHTML = `
-      <div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid ${color};">
-        <h4 style="margin: 0 0 0.5rem 0; color: ${color};">📶 Network Status</h4>
-        <p style="margin: 0.25rem 0;"><strong>Connection Type:</strong> ${type.toUpperCase()}</p>
+<div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid ${color};">
+<h4 style="margin: 0 0 0.5rem 0; color: ${color};">📶 Network Status</h4>
+<p style="margin: 0.25rem 0;"><strong>Connection Type:</strong> ${type.toUpperCase()}</p>
         ${downlink ? `<p style="margin: 0.25rem 0;"><strong>Downlink:</strong> ${downlink} Mbps</p>` : ''}
         ${rtt ? `<p style="margin: 0.25rem 0;"><strong>Round-Trip Time:</strong> ${rtt} ms</p>` : ''}
-        <p style="margin: 0.25rem 0;"><strong>Data Saver:</strong> ${saveData ? '✅ Enabled' : '❌ Disabled'}</p>
-        <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.9rem;">
+<p style="margin: 0.25rem 0;"><strong>Data Saver:</strong> ${saveData ? '✅ Enabled' : '❌ Disabled'}</p>
+<p style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.9rem;">
           ${type === '4g' || type === '5g' || type === 'wifi' || type === 'ethernet' ? '✅ Fast connection detected' : '⚠️ Slow connection - consider reducing data usage'}
-        </p>
-      </div>
+</p>
+</div>
     `;
   }
   
@@ -211,14 +209,14 @@ Get information about the network connection:
 Prevent screen from sleeping (useful for presentations, recipes, etc.):
 
 <div class="demo-box">
-  <h3>🔆 Wake Lock</h3>
+<h3>🔆 Wake Lock</h3>
   
-  <div style="margin-bottom: 1rem;">
-    <button id="wakelock-request">🔆 Request Wake Lock</button>
-    <button id="wakelock-release" style="margin-left: 0.5rem;">💤 Release</button>
-  </div>
+<div style="margin-bottom: 1rem;">
+<button id="wakelock-request">🔆 Request Wake Lock</button>
+<button id="wakelock-release" style="margin-left: 0.5rem;">💤 Release</button>
+</div>
   
-  <div id="wakelock-output" class="output"></div>
+<div id="wakelock-output" class="output"></div>
 </div>
 
 <script>
@@ -229,10 +227,10 @@ Prevent screen from sleeping (useful for presentations, recipes, etc.):
   document.getElementById('wakelock-request').addEventListener('click', async () => {
     if (!('wakeLock' in navigator)) {
       output.innerHTML = `
-        <div style="background: #fff3e0; padding: 1rem; border-radius: 4px; border: 1px solid #ff9800;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #e65100;">⚠️ Wake Lock API Not Supported</h4>
-          <p style="margin: 0;">This browser does not support the Wake Lock API.</p>
-        </div>
+<div style="background: #fff3e0; padding: 1rem; border-radius: 4px; border: 1px solid #ff9800;">
+<h4 style="margin: 0 0 0.5rem 0; color: #e65100;">⚠️ Wake Lock API Not Supported</h4>
+<p style="margin: 0;">This browser does not support the Wake Lock API.</p>
+</div>
       `;
       return;
     }
@@ -241,10 +239,10 @@ Prevent screen from sleeping (useful for presentations, recipes, etc.):
       wakeLock = await navigator.wakeLock.request('screen');
       
       output.innerHTML = `
-        <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">🔆 Wake Lock Active</h4>
-          <p style="margin: 0;">Screen will stay on until wake lock is released or tab loses focus.</p>
-        </div>
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">🔆 Wake Lock Active</h4>
+<p style="margin: 0;">Screen will stay on until wake lock is released or tab loses focus.</p>
+</div>
       `;
       
       wakeLock.addEventListener('release', () => {
@@ -252,10 +250,10 @@ Prevent screen from sleeping (useful for presentations, recipes, etc.):
       });
     } catch (error) {
       output.innerHTML = `
-        <div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
-          <h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ Wake Lock Failed</h4>
-          <p style="margin: 0;"><strong>Error:</strong> ${error.message}</p>
-        </div>
+<div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
+<h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ Wake Lock Failed</h4>
+<p style="margin: 0;"><strong>Error:</strong> ${error.message}</p>
+</div>
       `;
     }
   });
@@ -277,11 +275,11 @@ Prevent screen from sleeping (useful for presentations, recipes, etc.):
 Monitor page lifecycle states (active, passive, hidden, frozen, terminated):
 
 <div class="demo-box">
-  <h3>🔄 Page Lifecycle</h3>
+<h3>🔄 Page Lifecycle</h3>
   
-  <div id="lifecycle-status" style="padding: 1rem; border-radius: 4px; font-size: 1.2rem; font-weight: bold; text-align: center; margin-bottom: 1rem;"></div>
+<div id="lifecycle-status" style="padding: 1rem; border-radius: 4px; font-size: 1.2rem; font-weight: bold; text-align: center; margin-bottom: 1rem;"></div>
   
-  <div id="lifecycle-output" class="output"></div>
+<div id="lifecycle-output" class="output"></div>
 </div>
 
 <script>
@@ -318,17 +316,17 @@ Monitor page lifecycle states (active, passive, hidden, frozen, terminated):
       const logHTML = eventLog.map((evt, idx) => {
         const color = evt.state === 'visible' ? '#4caf50' : '#ff9800';
         return `
-          <div style="padding: 0.5rem; margin: 0.25rem 0; background: ${idx === 0 ? '#fff3cd' : '#f8f9fa'}; border-left: 3px solid ${color}; border-radius: 3px; font-size: 0.9rem;">
-            <strong>${evt.time}</strong>: ${evt.event} → ${evt.state}
-          </div>
+<div style="padding: 0.5rem; margin: 0.25rem 0; background: ${idx === 0 ? '#fff3cd' : '#f8f9fa'}; border-left: 3px solid ${color}; border-radius: 3px; font-size: 0.9rem;">
+<strong>${evt.time}</strong>: ${evt.event} → ${evt.state}
+</div>
         `;
       }).join('');
       
       output.innerHTML = `
-        <div>
-          <strong>Event Log:</strong>
+<div>
+<strong>Event Log:</strong>
           ${logHTML}
-        </div>
+</div>
       `;
     }
   }
@@ -342,9 +340,9 @@ Monitor page lifecycle states (active, passive, hidden, frozen, terminated):
   updateLifecycle(null);
   
   output.innerHTML = `
-    <p style="color: #2980b9;">
+<p style="color: #2980b9;">
       Try switching tabs, minimizing the browser, or bringing it to focus to see lifecycle events.
-    </p>
+</p>
   `;
 })();
 </script>
@@ -352,30 +350,30 @@ Monitor page lifecycle states (active, passive, hidden, frozen, terminated):
 ---
 
 <div class="info-box">
-  <h3>🎯 Additional APIs Demonstrated:</h3>
-  <ul>
-    <li><strong>Vibration API:</strong> Control device vibration patterns (mobile only)</li>
-    <li><strong>Battery Status:</strong> Monitor battery level and charging status</li>
-    <li><strong>Network Information:</strong> Detect connection type and quality</li>
-    <li><strong>Wake Lock:</strong> Prevent screen from sleeping</li>
-    <li><strong>Page Lifecycle:</strong> Monitor page visibility and focus states</li>
-  </ul>
+<h3>🎯 Additional APIs Demonstrated:</h3>
+<ul>
+<li><strong>Vibration API:</strong> Control device vibration patterns (mobile only)</li>
+<li><strong>Battery Status:</strong> Monitor battery level and charging status</li>
+<li><strong>Network Information:</strong> Detect connection type and quality</li>
+<li><strong>Wake Lock:</strong> Prevent screen from sleeping</li>
+<li><strong>Page Lifecycle:</strong> Monitor page visibility and focus states</li>
+</ul>
   
-  <p style="margin-top: 1rem;"><strong>💡 Use Cases:</strong></p>
-  <ul>
-    <li><strong>Vibration:</strong> Game feedback, notifications, tactile UI</li>
-    <li><strong>Battery:</strong> Adaptive features based on battery level</li>
-    <li><strong>Network:</strong> Adaptive content quality, offline fallbacks</li>
-    <li><strong>Wake Lock:</strong> Presentations, recipes, games, video playback</li>
-    <li><strong>Lifecycle:</strong> Pause animations/updates when hidden, save battery</li>
-  </ul>
+<p style="margin-top: 1rem;"><strong>💡 Use Cases:</strong></p>
+<ul>
+<li><strong>Vibration:</strong> Game feedback, notifications, tactile UI</li>
+<li><strong>Battery:</strong> Adaptive features based on battery level</li>
+<li><strong>Network:</strong> Adaptive content quality, offline fallbacks</li>
+<li><strong>Wake Lock:</strong> Presentations, recipes, games, video playback</li>
+<li><strong>Lifecycle:</strong> Pause animations/updates when hidden, save battery</li>
+</ul>
   
-  <p style="margin-top: 1rem;"><strong>⚠️ Browser Support:</strong></p>
-  <ul>
-    <li><strong>Vibration:</strong> Mobile browsers (Chrome, Firefox, Safari)</li>
-    <li><strong>Battery:</strong> Chrome, Edge (note: some browsers have deprecated this API for privacy reasons)</li>
-    <li><strong>Network Information:</strong> Chrome, Edge, Opera</li>
-    <li><strong>Wake Lock:</strong> Chrome, Edge, Opera (HTTPS required)</li>
-    <li><strong>Page Lifecycle:</strong> All modern browsers</li>
-  </ul>
+<p style="margin-top: 1rem;"><strong>⚠️ Browser Support:</strong></p>
+<ul>
+<li><strong>Vibration:</strong> Mobile browsers (Chrome, Firefox, Safari)</li>
+<li><strong>Battery:</strong> Chrome, Edge (note: some browsers have deprecated this API for privacy reasons)</li>
+<li><strong>Network Information:</strong> Chrome, Edge, Opera</li>
+<li><strong>Wake Lock:</strong> Chrome, Edge, Opera (HTTPS required)</li>
+<li><strong>Page Lifecycle:</strong> All modern browsers</li>
+</ul>
 </div>
