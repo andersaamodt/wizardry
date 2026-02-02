@@ -126,21 +126,22 @@ case $distro in
     
     printf 'Configuring and building Tor (this may take a few minutes)...\n'
     
-    # Set configure options based on pkgsrc availability
-    configure_opts="--prefix=/usr/local"
+    # Configure with appropriate paths based on pkgsrc availability
     if [ -n "$pkgsrc_prefix" ]; then
       # Point configure to pkgsrc library and include paths
-      configure_opts="$configure_opts --with-libevent-dir=$pkgsrc_prefix"
-      configure_opts="$configure_opts --with-openssl-dir=$pkgsrc_prefix"
-      
       # Set additional flags for compiler and linker
       export CPPFLAGS="-I$pkgsrc_prefix/include"
       export LDFLAGS="-L$pkgsrc_prefix/lib"
       
       printf 'Using pkgsrc prefix: %s\n' "$pkgsrc_prefix"
+      
+      ./configure --prefix=/usr/local \
+        --with-libevent-dir="$pkgsrc_prefix" \
+        --with-openssl-dir="$pkgsrc_prefix" || exit 1
+    else
+      ./configure --prefix=/usr/local || exit 1
     fi
     
-    ./configure $configure_opts || exit 1
     make || exit 1
     
     printf 'Installing Tor to /usr/local/bin...\n'
