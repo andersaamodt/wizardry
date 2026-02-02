@@ -136,10 +136,12 @@ case $distro in
       printf 'Using pkgsrc prefix: %s\n' "$pkgsrc_prefix"
       
       ./configure --prefix=/usr/local \
+        --disable-dependency-tracking \
         --with-libevent-dir="$pkgsrc_prefix" \
         --with-openssl-dir="$pkgsrc_prefix" || exit 1
     else
-      ./configure --prefix=/usr/local || exit 1
+      ./configure --prefix=/usr/local \
+        --disable-dependency-tracking || exit 1
     fi
     
     make || exit 1
