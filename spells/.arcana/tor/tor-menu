@@ -38,6 +38,27 @@ while true; do
   exit_label=$(exit-label)
   exit_option="${exit_label}%kill -TERM \$PPID"
   
+  # Build macOS dependency entries (only show on macOS)
+  macos_deps=""
+  if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+    # Check libevent status
+    if is-libevent-installed; then
+      libevent_option="[X] libevent%uninstall-libevent && exec \$0"
+    else
+      libevent_option="[ ] libevent%install-libevent && exec \$0"
+    fi
+    
+    # Check openssl status
+    if is-openssl-installed; then
+      openssl_option="[X] OpenSSL%uninstall-openssl && exec \$0"
+    else
+      openssl_option="[ ] OpenSSL%install-openssl && exec \$0"
+    fi
+    
+    macos_deps="$libevent_option
+$openssl_option"
+  fi
+  
   # Build service entries
   service_status_option=""
   tor_service_option=""
@@ -59,16 +80,42 @@ while true; do
     repair_option="Repair Permissions%repair-tor-permissions"
     uninstall_option="Uninstall Tor%uninstall-tor"
     
-    if [ -n "$service_status_option" ] && [ -n "$tor_service_option" ]; then
-      menu "$title" "$config_option" "$service_status_option" "$tor_service_option" "$repair_option" "$uninstall_option" "$exit_option" || menu_status=$?
-    elif [ -n "$service_status_option" ]; then
-      menu "$title" "$config_option" "$service_status_option" "$repair_option" "$uninstall_option" "$exit_option" || menu_status=$?
+    # Build menu with macOS dependencies if present
+    if [ -n "$macos_deps" ]; then
+      if [ -n "$service_status_option" ] && [ -n "$tor_service_option" ]; then
+        menu "$title" "$config_option" "$service_status_option" \
+          "$tor_service_option" "$repair_option" "$uninstall_option" \
+          "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
+      elif [ -n "$service_status_option" ]; then
+        menu "$title" "$config_option" "$service_status_option" \
+          "$repair_option" "$uninstall_option" \
+          "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
+      else
+        menu "$title" "$config_option" "$repair_option" "$uninstall_option" \
+          "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
+      fi
     else
-      menu "$title" "$config_option" "$repair_option" "$uninstall_option" "$exit_option" || menu_status=$?
+      if [ -n "$service_status_option" ] && [ -n "$tor_service_option" ]; then
+        menu "$title" "$config_option" "$service_status_option" \
+          "$tor_service_option" "$repair_option" "$uninstall_option" \
+          "$exit_option" || menu_status=$?
+      elif [ -n "$service_status_option" ]; then
+        menu "$title" "$config_option" "$service_status_option" \
+          "$repair_option" "$uninstall_option" "$exit_option" || menu_status=$?
+      else
+        menu "$title" "$config_option" "$repair_option" "$uninstall_option" \
+          "$exit_option" || menu_status=$?
+      fi
     fi
   else
     install_option="Install Tor%install-tor"
-    menu "$title" "$install_option" "$exit_option" || menu_status=$?
+    # Show dependencies in menu even when Tor is not installed (macOS only)
+    if [ -n "$macos_deps" ]; then
+      menu "$title" "$install_option" "$libevent_option" "$openssl_option" \
+        "$exit_option" || menu_status=$?
+    else
+      menu "$title" "$install_option" "$exit_option" || menu_status=$?
+    fi
   fi
   menu_status=${menu_status:-0}
   

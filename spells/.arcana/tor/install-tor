@@ -74,26 +74,26 @@ case $distro in
       exit 1
     fi
     
-    # Check for libevent dependency
-    has_libevent=0
-    if pkg-config --exists libevent 2>/dev/null; then
-      has_libevent=1
-    elif [ -f /usr/local/lib/libevent.dylib ]; then
-      has_libevent=1
-    elif [ -f /opt/local/lib/libevent.dylib ]; then
-      has_libevent=1
+    # Automatically install libevent if not present
+    if ! is-libevent-installed; then
+      printf '%s\n' 'libevent is required to build Tor.'
+      printf '%s\n' 'Installing libevent automatically...'
+      if ! install-libevent; then
+        printf '%s\n' 'Error: Failed to install libevent.' >&2
+        printf '%s\n' 'Please install it manually and try again.' >&2
+        exit 1
+      fi
     fi
     
-    if [ "$has_libevent" -eq 0 ]; then
-      printf '%s\n' 'Error: libevent is required to build Tor.'
-      printf '%s\n' ''
-      printf '%s\n' 'Please install libevent first. You can:'
-      printf '%s\n' '  1. Build from source: https://libevent.org/'
-      printf '%s\n' '  2. Use a package manager like MacPorts: sudo port install libevent'
-      printf '%s\n' '  3. Or use pkgsrc (recommended by wizardry)'
-      printf '%s\n' ''
-      printf '%s\n' 'After installing libevent, run install-tor again.'
-      exit 1
+    # Automatically install OpenSSL if not present
+    if ! is-openssl-installed; then
+      printf '%s\n' 'OpenSSL is required to build Tor.'
+      printf '%s\n' 'Installing OpenSSL automatically...'
+      if ! install-openssl; then
+        printf '%s\n' 'Error: Failed to install OpenSSL.' >&2
+        printf '%s\n' 'Please install it manually and try again.' >&2
+        exit 1
+      fi
     fi
     
     # Create temp directory for build
