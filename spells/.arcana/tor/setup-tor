@@ -17,7 +17,6 @@ esac
 require-wizardry || exit 1
 
 set -eu
-. env-clear
 
 # Check if tor is installed, offer to install if not
 # Use multiple detection methods for reliability
