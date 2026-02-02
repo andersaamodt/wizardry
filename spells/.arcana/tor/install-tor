@@ -146,7 +146,21 @@ case $distro in
     
     printf '\n'
     printf 'Building Tor from source (this may take several minutes)...\n'
-    make || exit 1
+    printf 'Compilation output:\n'
+    printf '%s\n' "----------------------------------------"
+    if ! make; then
+      printf '\n'
+      printf '%s\n' "ERROR: make failed during compilation."
+      printf '%s\n' "Common causes on macOS:"
+      printf '%s\n' "  - Missing Xcode Command Line Tools"
+      printf '%s\n' "  - Incompatible compiler version"
+      printf '%s\n' "  - Missing dependencies"
+      printf '\n'
+      printf '%s\n' "Check the output above for specific error messages."
+      exit 1
+    fi
+    printf '%s\n' "----------------------------------------"
+    printf 'Build completed successfully.\n'
     
     printf '\n'
     printf 'Installing Tor to /usr/local/bin...\n'
