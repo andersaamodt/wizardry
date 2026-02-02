@@ -19,36 +19,75 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
+# Check if tor is installed, offer to install if not
+if ! is-tor-installed; then
+        printf '%s\n' "Tor is not installed."
+        printf '%s' "Would you like to install Tor now? [y/n]: "
+        IFS= read -r install_choice || exit 1
+        case $install_choice in
+        y|Y)
+                install-tor || exit 1
+                ;;
+        *)
+                printf '%s\n' "Tor installation skipped. Cannot set up hidden service without Tor."
+                exit 0
+                ;;
+        esac
+fi
+
 printf '%s' "Do you want to set up a Tor hidden service? [y/n]: "
-IFS= read -r choice || return 1
+IFS= read -r choice || exit 1
 
 case $choice in
 y|Y)
+        # Use torrc-path to get the correct config path for this platform
+        tor_config_path=$(torrc-path) || exit 1
+        
+        # Get platform info for platform-specific settings
         if command -v detect-distro >/dev/null 2>&1; then
                 distro=$(detect-distro)
         else
-                distro="unknown"
+                distro=$(os)
         fi
 
+        new_address=$(tor --quiet --hash-password mypassword | awk '{print $4}')
+        
+        # Set platform-specific hidden service directory
         case $distro in
-        arch|debian)
-                tor_config_path="/etc/tor/torrc"
-                ;;
-        macos)
-                tor_config_path="/usr/local/etc/tor/torrc"
+        mac|macos)
+                mud_dir="/usr/local/var/lib/tor/mud/"
                 ;;
         *)
-                printf '%s\n' "Error: Unsupported operating system" >&2
-                return 1
+                mud_dir="/var/lib/tor/mud/"
                 ;;
         esac
 
-        new_address=$(tor --quiet --hash-password mypassword | awk '{print $4}')
-        mud_dir="/var/lib/tor/mud/"
-
         printf 'HiddenServiceDir %s\n' "$mud_dir" | sudo tee -a "$tor_config_path"
         printf '%s\n' "HiddenServicePort 80 127.0.0.1:8080" | sudo tee -a "$tor_config_path"
-        sudo systemctl restart tor
+        
+        # Restart tor using appropriate method for platform
+        systemctl_available=0
+        if command -v systemctl >/dev/null 2>&1; then
+                if systemctl list-unit-files | grep -q '^tor\.service'; then
+                        systemctl_available=1
+                fi
+        fi
+        
+        if [ "$systemctl_available" -eq 1 ]; then
+                sudo systemctl restart tor
+        elif command -v brew >/dev/null 2>&1 && [ "$distro" = "mac" ]; then
+                # On macOS, try to restart via brew services
+                brew_restart_msg="Could not restart tor via brew services."
+                brew_restart_msg="$brew_restart_msg You may need to restart manually."
+                brew services restart tor 2>/dev/null || {
+                        printf '%s\n' "Warning: $brew_restart_msg"
+                }
+        else
+                restart_msg="Could not automatically restart tor."
+                restart_msg="$restart_msg Please restart tor manually."
+                printf '%s\n' "Warning: $restart_msg"
+        fi
+        
         printf 'New hidden service address: %s\n' "$new_address"
         ;;
 *)
