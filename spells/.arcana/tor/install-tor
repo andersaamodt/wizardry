@@ -68,38 +68,38 @@ case $distro in
     # Check for required tools
     if ! command -v make >/dev/null 2>&1; then
       printf '%s\n' 'Error: make is required. Install Xcode Command Line Tools: xcode-select --install'
-      return 1
+      exit 1
     fi
     
     # Create temp directory for build
-    tmp_dir=$(temp-dir tor-install) || return 1
+    tmp_dir=$(temp-dir tor-install) || exit 1
     trap 'cleanup-dir "$tmp_dir"' EXIT HUP INT TERM
-    cd "$tmp_dir" || return 1
+    cd "$tmp_dir" || exit 1
     
     # Download and build latest stable tor
     TOR_VERSION="0.4.8.10"
     printf 'Downloading Tor %s...\n' "$TOR_VERSION"
     if command -v curl >/dev/null 2>&1; then
-      curl -L -O "https://dist.torproject.org/tor-${TOR_VERSION}.tar.gz" || return 1
+      curl -L -O "https://dist.torproject.org/tor-${TOR_VERSION}.tar.gz" || exit 1
     elif command -v wget >/dev/null 2>&1; then
-      wget "https://dist.torproject.org/tor-${TOR_VERSION}.tar.gz" || return 1
+      wget "https://dist.torproject.org/tor-${TOR_VERSION}.tar.gz" || exit 1
     else
       printf '%s\n' 'Error: curl or wget required to download Tor'
-      return 1
+      exit 1
     fi
     
     tar -xzf "tor-${TOR_VERSION}.tar.gz"
-    cd "tor-${TOR_VERSION}" || return 1
+    cd "tor-${TOR_VERSION}" || exit 1
     
     printf 'Configuring and building Tor (this may take a few minutes)...\n'
-    ./configure --prefix=/usr/local || return 1
-    make || return 1
+    ./configure --prefix=/usr/local || exit 1
+    make || exit 1
     
     printf 'Installing Tor to /usr/local/bin...\n'
     if command -v sudo >/dev/null 2>&1; then
-      sudo make install || return 1
+      sudo make install || exit 1
     else
-      make install || return 1
+      make install || exit 1
     fi
     
     cd - >/dev/null || true
@@ -115,7 +115,7 @@ case $distro in
     changes=0
     if [ ! -f "$config_path" ]; then
       printf '%s\n' "NixOS configuration file $config_path was not found."
-      return 1
+      exit 1
     fi
 
     if command -v backup-nix-config >/dev/null 2>&1; then
@@ -159,7 +159,7 @@ case $distro in
     ;;
   *)
     printf '%s\n' "Unsupported distribution for automatic Tor installation."
-    return 1
+    exit 1
     ;;
 esac
 
