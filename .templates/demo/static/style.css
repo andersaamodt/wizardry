@@ -1342,7 +1342,7 @@ pre code {
 }
 
 /* Responsive chat */
-@media (max-width: 768px) {
+@media (max-width: 568px) {
   .chat-container {
     grid-template-columns: 1fr;
     height: auto;
