@@ -86,15 +86,43 @@ y|Y)
                 distro=$(os)
         fi
         
+        # Detect tor's data directory from torrc to use correct path
+        data_dir=$(grep "^DataDirectory" "$tor_config_path" 2>/dev/null | awk '{print $2}' | tr -d '"' || echo "")
+        
         # Set platform-specific hidden service directory
         case $distro in
         mac|macos)
-                mud_dir="/usr/local/var/lib/tor/mud/"
+                if [ -n "$data_dir" ]; then
+                        # Use detected data directory
+                        mud_dir="${data_dir}/mud/"
+                elif [ -d "/opt/homebrew/var/lib/tor" ]; then
+                        # Homebrew on Apple Silicon
+                        mud_dir="/opt/homebrew/var/lib/tor/mud/"
+                elif [ -d "/usr/local/var/lib/tor" ]; then
+                        # Homebrew on Intel or older
+                        mud_dir="/usr/local/var/lib/tor/mud/"
+                elif [ -d "/opt/local/var/lib/tor" ]; then
+                        # MacPorts
+                        mud_dir="/opt/local/var/lib/tor/mud/"
+                else
+                        # Fallback
+                        mud_dir="/var/lib/tor/mud/"
+                fi
                 ;;
         *)
-                mud_dir="/var/lib/tor/mud/"
+                if [ -n "$data_dir" ]; then
+                        mud_dir="${data_dir}/mud/"
+                else
+                        mud_dir="/var/lib/tor/mud/"
+                fi
                 ;;
         esac
+        
+        # Create the directory if it doesn't exist
+        sudo mkdir -p "$mud_dir" || exit 1
+        # Set proper ownership (try _tor first for macOS, then tor for Linux)
+        sudo chown _tor:_tor "$mud_dir" 2>/dev/null || sudo chown tor:tor "$mud_dir" 2>/dev/null || true
+        sudo chmod 700 "$mud_dir" || true
 
         printf 'HiddenServiceDir %s\n' "$mud_dir" | sudo tee -a "$tor_config_path"
         printf '%s\n' "HiddenServicePort 80 127.0.0.1:8080" | sudo tee -a "$tor_config_path"
