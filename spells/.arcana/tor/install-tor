@@ -67,7 +67,32 @@ case $distro in
     
     # Check for required tools
     if ! command -v make >/dev/null 2>&1; then
-      printf '%s\n' 'Error: make is required. Install Xcode Command Line Tools: xcode-select --install'
+      xcode_msg='Error: make is required.'
+      xcode_msg2='Install Xcode Command Line Tools: xcode-select --install'
+      printf '%s\n' "$xcode_msg"
+      printf '%s\n' "$xcode_msg2"
+      exit 1
+    fi
+    
+    # Check for libevent dependency
+    has_libevent=0
+    if pkg-config --exists libevent 2>/dev/null; then
+      has_libevent=1
+    elif [ -f /usr/local/lib/libevent.dylib ]; then
+      has_libevent=1
+    elif [ -f /opt/local/lib/libevent.dylib ]; then
+      has_libevent=1
+    fi
+    
+    if [ "$has_libevent" -eq 0 ]; then
+      printf '%s\n' 'Error: libevent is required to build Tor.'
+      printf '%s\n' ''
+      printf '%s\n' 'Please install libevent first. You can:'
+      printf '%s\n' '  1. Build from source: https://libevent.org/'
+      printf '%s\n' '  2. Use a package manager like MacPorts: sudo port install libevent'
+      printf '%s\n' '  3. Or use pkgsrc (recommended by wizardry)'
+      printf '%s\n' ''
+      printf '%s\n' 'After installing libevent, run install-tor again.'
       exit 1
     fi
     
