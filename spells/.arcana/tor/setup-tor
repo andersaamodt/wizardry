@@ -44,13 +44,11 @@ if [ "$tor_installed" -eq 0 ]; then
                         printf '%s\n' "Tor is now installed and ready."
                 else
                         printf '\n'
-                        printf '%s\n' "ERROR: Tor installation completed but tor is still not found."
-                        printf '%s\n' "This usually means:"
-                        printf '%s\n' "  1. The installation failed (check output above for errors)"
-                        printf '%s\n' "  2. You need to open a new terminal window"
-                        printf '%s\n' "  3. /usr/local/bin is not in your PATH"
-                        printf '\n'
-                        printf '%s\n' "Try opening a new terminal and running this command again."
+                        printf '%s\n' "setup-tor: tor installation completed but tor is still not found"
+                        printf '%s\n' "Possible causes:"
+                        printf '%s\n' "  - Installation failed (check output above for errors)"
+                        printf '%s\n' "  - New terminal window needed for PATH updates"
+                        printf '%s\n' "  - /usr/local/bin not in current PATH"
                         exit 1
                 fi
                 ;;
