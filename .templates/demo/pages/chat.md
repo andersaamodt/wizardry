@@ -100,9 +100,18 @@ function generateGuestName() {
 
 // Get username without display icon (bullet)
 function getUsername() {
-  var displayText = document.getElementById('username-text').textContent.trim();
+  var element = document.getElementById('username-text');
+  if (!element) {
+    console.warn('[getUsername] username-text element not found');
+    return '';
+  }
+  var displayText = element.textContent.trim();
   // Remove @ prefix if present
-  return displayText.replace(/^@\s*/, '');
+  var username = displayText.replace(/^@\s*/, '');
+  if (!username) {
+    console.warn('[getUsername] username is empty');
+  }
+  return username;
 }
 
 // Track current room
@@ -138,13 +147,16 @@ function getReadTimestamp(roomName) {
   // Include username in localStorage key so each username has separate read tracking
   var username = getUsername();
   var key = 'chatroom_read_' + username + '_' + roomName;
-  return localStorage.getItem(key) || '1970-01-01 00:00:00';
+  var value = localStorage.getItem(key) || '1970-01-01 00:00:00';
+  console.log('[getReadTimestamp]', roomName, '- username:', username, 'key:', key, 'value:', value);
+  return value;
 }
 
 function setReadTimestamp(roomName, timestamp) {
   // Include username in localStorage key so each username has separate read tracking
   var username = getUsername();
   var key = 'chatroom_read_' + username + '_' + roomName;
+  console.log('[setReadTimestamp]', roomName, '- username:', username, 'key:', key, 'timestamp:', timestamp);
   localStorage.setItem(key, timestamp);
 }
 
