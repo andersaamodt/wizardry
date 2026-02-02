@@ -148,15 +148,28 @@ case $distro in
     printf 'Building Tor from source (this may take several minutes)...\n'
     printf 'Compilation output:\n'
     printf '%s\n' "----------------------------------------"
-    if ! make; then
+    
+    # Ensure we're in the tor source directory
+    if [ ! -f "Makefile" ]; then
+      printf '%s\n' "ERROR: Makefile not found in current directory!"
+      printf '%s\n' "Current directory: $(pwd)"
+      printf '%s\n' "Directory contents:"
+      ls -la
+      exit 1
+    fi
+    
+    # Run make with explicit output
+    if ! make 2>&1; then
       printf '\n'
+      printf '%s\n' "----------------------------------------"
       printf '%s\n' "ERROR: make failed during compilation."
       printf '%s\n' "Common causes:"
       printf '%s\n' "  - Missing Xcode Command Line Tools (run: xcode-select --install)"
       printf '%s\n' "  - Incompatible compiler version"
       printf '%s\n' "  - Missing or incompatible dependencies"
       printf '\n'
-      printf '%s\n' "Check the output above for specific error messages."
+      printf '%s\n' "If no error output appeared above, try running 'make' manually"
+      printf '%s\n' "in the tor source directory to see the actual error."
       exit 1
     fi
     printf '%s\n' "----------------------------------------"
