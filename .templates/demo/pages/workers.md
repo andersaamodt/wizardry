@@ -1,5 +1,5 @@
 ---
-title: Workers & Background Processing
+title: Threading & Background Processing
 ---
 
 Explore browser APIs for running JavaScript in background threads without blocking the UI.
