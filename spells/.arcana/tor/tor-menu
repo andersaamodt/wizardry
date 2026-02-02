@@ -50,9 +50,9 @@ while true; do
     
     # Check openssl status
     if is-openssl-installed; then
-      openssl_option="[X] OpenSSL%uninstall-openssl && exec \$0"
+      openssl_option="[X] openssl%uninstall-openssl && exec \$0"
     else
-      openssl_option="[ ] OpenSSL%install-openssl && exec \$0"
+      openssl_option="[ ] openssl%install-openssl && exec \$0"
     fi
     
     macos_deps="$libevent_option
