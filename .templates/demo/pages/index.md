@@ -98,13 +98,57 @@ Upload an image and see it displayed instantly:
 </div>
 </div>
 
+### 9. System Information
+Get real-time system information from the server:
+
+<div class="demo-box">
+<button hx-get="/cgi/system-info" hx-target="#sysinfo-output" hx-swap="innerHTML">
+    Get System Info
+</button>
+<div id="sysinfo-output" class="output"></div>
+</div>
+
+### 10. Color Picker
+Choose a color and see it rendered by the server:
+
+<div class="demo-box">
+<input type="color" id="color-input" value="#3498db" />
+<button hx-get="/cgi/color-picker" hx-vals='js:{color: document.getElementById("color-input").value}' hx-target="#color-output" hx-swap="innerHTML">
+    Show Color
+</button>
+<div id="color-output" class="output"></div>
+</div>
+
+### 11. Temperature Converter
+Convert between Celsius and Fahrenheit:
+
+<div class="demo-box">
+<input type="number" id="temp-input" placeholder="Temperature" hx-get="/cgi/temperature-convert" hx-vals='js:{temp: document.getElementById("temp-input").value, unit: document.getElementById("temp-unit").value}' hx-target="#temp-output" hx-swap="innerHTML" hx-trigger="keyup[key=='Enter']" />
+<select id="temp-unit">
+<option value="C">Celsius to Fahrenheit</option>
+<option value="F">Fahrenheit to Celsius</option>
+</select>
+<button hx-get="/cgi/temperature-convert" hx-vals='js:{temp: document.getElementById("temp-input").value, unit: document.getElementById("temp-unit").value}' hx-target="#temp-output" hx-swap="innerHTML">
+    Convert
+</button>
+<div id="temp-output" class="output"></div>
+</div>
+
+### 12. Auto-Refresh Demo
+This section refreshes every 5 seconds automatically:
+
+<div class="demo-box">
+<div hx-get="/cgi/system-info" hx-trigger="every 5s" hx-swap="innerHTML" class="auto-refresh">
+</div>
+</div>
+
 ---
 
 ## 🎨 More Demos
 
 **Browser API Demos:**
 - [State & Persistence](/pages/storage.html) - localStorage, sessionStorage, IndexedDB, cookies
-- [Forms & Input](/pages/forms-input.html) - Keyboard, pointer events, forms, clipboard
+- [Forms & Input](/pages/forms-input.html) - Keyboard, pointer events, forms, clipboard, custom HTML elements
 - [Graphics & Media](/pages/graphics-media.html) - Canvas 2D, SVG, audio, WebGL, WebGPU, speech synthesis
 - [Time & Performance](/pages/time-performance.html) - Timers, animation frames, performance API
 - [Workers & Communication](/pages/workers.html) - Web Workers, Service Workers, WebRTC, Broadcast Channel
@@ -115,7 +159,6 @@ Upload an image and see it displayed instantly:
 - [More APIs](/pages/misc-apis.html) - Vibration, battery, network info, wake lock, page lifecycle
 
 **Server Demos:**
-- [More Basic Demos](/pages/more-demos.html) - System info, color picker, custom components
 - [Multi-Room Chat](/pages/chat.html) - Real-time chat with MUD compatibility
 - [Interactive Poll](/pages/poll.html) - Real-time voting system
 - [About](/pages/about.html) - Learn about web wizardry
