@@ -151,7 +151,7 @@ while true; do
   if [ -n "$nginx_admin" ] && [ -n "$https_admin" ]; then
     set -- "$pandoc_toggle" "$nginx_toggle" "$nginx_admin" "$fcgiwrap_toggle" \
       "$openssl_toggle" "$htmx_toggle" "$certbot_toggle" "$https_admin" \
-      "$coreutils_toggle" "$toggle_all" "$exit_item"
+      "$toggle_all" "$exit_item"
   elif [ -n "$nginx_admin" ]; then
     set -- "$pandoc_toggle" "$nginx_toggle" "$nginx_admin" "$fcgiwrap_toggle" \
       "$openssl_toggle" "$htmx_toggle" "$certbot_toggle" \
