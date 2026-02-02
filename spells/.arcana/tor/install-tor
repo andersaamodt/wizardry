@@ -167,14 +167,14 @@ case $distro in
     # Temporarily allow make to fail so we can capture exit code
     # (with set -e, make failure would exit script before we can handle it)
     set +e
-    # Write make output to a temp file to bypass any I/O redirection issues
+    # Save make output to a file and also display using tee
     make_log="$(temp-file make-output)"
-    MAKEFLAGS= make >"$make_log" 2>&1
-    make_exit=$?
-    # Read and display the output
-    cat "$make_log"
-    rm -f "$make_log"
+    printf 'Logging make output to: %s\n' "$make_log"
+    MAKEFLAGS= make 2>&1 | tee "$make_log"
+    make_exit=${PIPESTATUS[0]}
     set -e
+    printf '\n'
+    printf 'Make log saved to: %s\n' "$make_log"
     
     # Step 3: Report completion
     printf 'Make completed with exit code: %d\n' "$make_exit"
