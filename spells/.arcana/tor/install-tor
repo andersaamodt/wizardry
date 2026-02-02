@@ -106,8 +106,15 @@ case $distro in
     
     # Create temp directory for build
     tmp_dir=$(temp-dir tor-install) || exit 1
-    trap 'cleanup-dir "$tmp_dir"' EXIT HUP INT TERM
+    # DON'T set cleanup trap yet - we'll preserve directory if build fails
     cd "$tmp_dir" || exit 1
+    
+    printf '\n'
+    printf '==================================================\n'
+    printf 'BUILD DIRECTORY: %s\n' "$tmp_dir"
+    printf 'Preserved on failure for manual debugging.\n'
+    printf '==================================================\n'
+    printf '\n'
     
     # Download and build latest stable tor
     TOR_VERSION="0.4.8.10"
@@ -164,17 +171,33 @@ case $distro in
     
     # Step 2: Start compilation
     printf 'Starting make...\n'
+    printf 'Testing if output works...\n'
+    # Test that output actually works
+    printf 'If you see this, printf works.\n'
+    ls -la | head -5
+    printf 'If you see file list above, ls and pipes work.\n'
+    printf '\n'
+    
     # Temporarily allow make to fail so we can capture exit code
     # (with set -e, make failure would exit script before we can handle it)
     set +e
     # Save make output to a file and also display using tee
     make_log="$(temp-file make-output)"
     printf 'Logging make output to: %s\n' "$make_log"
+    printf 'BUILD DIRECTORY (in case you need it): %s\n' "$tmp_dir"
+    printf 'Starting make NOW...\n'
     MAKEFLAGS= make 2>&1 | tee "$make_log"
     make_exit=${PIPESTATUS[0]}
     set -e
     printf '\n'
-    printf 'Make log saved to: %s\n' "$make_log"
+    printf 'Make log file location: %s\n' "$make_log"
+    printf 'Make log file size: %s bytes\n' "$(wc -c < "$make_log" 2>/dev/null || echo 0)"
+    if [ -s "$make_log" ]; then
+      printf 'Log file has content. First 10 lines:\n'
+      head -10 "$make_log"
+    else
+      printf 'WARNING: Log file is empty!\n'
+    fi
     
     # Step 3: Report completion
     printf 'Make completed with exit code: %d\n' "$make_exit"
@@ -189,6 +212,17 @@ case $distro in
       printf '%s\n' "  - Missing or incompatible dependencies detected"
       printf '\n'
       printf '%s\n' "The compilation output above may contain more details."
+      printf '\n'
+      printf '==================================================\n'
+      printf 'BUILD DIRECTORY PRESERVED FOR DEBUGGING:\n'
+      printf '%s\n' "$tmp_dir"
+      printf '\n'
+      printf 'To debug manually:\n'
+      printf '  cd %s/tor-%s\n' "$tmp_dir" "$TOR_VERSION"
+      printf '  make 2>&1 | tee make-debug.log\n'
+      printf '\n'
+      printf 'Make log file: %s\n' "$make_log"
+      printf '==================================================\n'
       exit 1
     fi
     
@@ -230,9 +264,9 @@ case $distro in
     # Clear shell command cache so tor can be found immediately
     hash -r 2>/dev/null || true
     
+    # Only clean up on success - preserved on failure for debugging
     cd - >/dev/null || true
-    trap - EXIT HUP INT TERM
-    rm -rf "$tmp_dir"
+    cleanup-dir "$tmp_dir" 2>/dev/null || true
     ;;
   nixos)
     # Ask for configuration path
