@@ -82,17 +82,20 @@ $openssl_option"
     # Check for .onion address file to offer copy option
     copy_onion_option=""
     if is-tor-hidden-service-configured; then
-      # Determine hostname file path based on platform
-      case "$(uname -s 2>/dev/null)" in
-      Darwin)
-        hostname_file="/usr/local/var/lib/tor/mud/hostname"
-        ;;
-      *)
-        hostname_file="/var/lib/tor/mud/hostname"
-        ;;
-      esac
+      # Try to find hostname file in common locations
+      hostname_file=""
+      for possible_path in \
+        "/usr/local/var/lib/tor/mud/hostname" \
+        "/var/lib/tor/mud/hostname" \
+        "/opt/local/var/lib/tor/mud/hostname" \
+        "/usr/local/var/tor/mud/hostname"; do
+        if [ -f "$possible_path" ]; then
+          hostname_file="$possible_path"
+          break
+        fi
+      done
       
-      if [ -f "$hostname_file" ]; then
+      if [ -n "$hostname_file" ]; then
         copy_onion_option="Copy .onion address%copy \"$hostname_file\""
       fi
     fi
