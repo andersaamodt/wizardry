@@ -59,7 +59,7 @@ if [ "$tor_installed" -eq 0 ]; then
         esac
 fi
 
-printf '%s' "Do you want to set up a Tor hidden service? [y/n]: "
+printf '%s' "Set up a Tor hidden service for wizardry MUD gateway? [y/n]: "
 IFS= read -r choice || exit 1
 
 case $choice in
