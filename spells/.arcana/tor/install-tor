@@ -151,8 +151,9 @@ case $distro in
     
     # Ensure we're in the tor source directory
     if [ ! -f "Makefile" ]; then
-      printf '%s\n' "ERROR: Makefile not found in current directory!"
+      printf '%s\n' "ERROR: Makefile not found in tor source directory!"
       printf '%s\n' "Current directory: $(pwd)"
+      printf '%s\n' "Expected: Should be in extracted tor source directory"
       printf '%s\n' "Directory contents:"
       ls -la
       exit 1
