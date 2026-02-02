@@ -145,7 +145,7 @@ case $distro in
     fi
     
     printf '\n'
-    printf '%s\n' "Building Tor from source (this may take several minutes)..."
+    printf 'Building Tor from source (this may take several minutes)...\n'
     make || exit 1
     
     printf '\n'
