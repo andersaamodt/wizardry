@@ -54,7 +54,12 @@ case $distro in
     plist_file="/Library/LaunchDaemons/org.torproject.tor.plist"
     if [ -f "$plist_file" ]; then
       printf 'Removing launchd service...\n'
-      sudo launchctl unload "$plist_file" 2>/dev/null || true
+      # Check if service is loaded before trying to unload
+      if sudo launchctl list | grep -q "org.torproject.tor" 2>/dev/null; then
+        if ! sudo launchctl unload "$plist_file" 2>/dev/null; then
+          printf 'Warning: Failed to unload launchd service\n' >&2
+        fi
+      fi
       sudo rm -f "$plist_file"
     fi
     
