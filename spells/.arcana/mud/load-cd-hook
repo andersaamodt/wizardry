@@ -49,14 +49,26 @@ set -u
 
 # The cd override - calls cd-hook imp after successful directory change
 cd() {
+    # Save current shell options (must restore before ALL returns)
+    _cd_saved_opts=$(set +o)
+    
     # Use builtin for zsh/bash (where it's required for function override), command for POSIX sh
     # We use eval to check for bash/zsh in a way that won't fail in POSIX sh
     # This is necessary because 'builtin cd' is required in zsh, but doesn't exist in pure POSIX sh
     if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
         # In bash/zsh, must use 'builtin' to call the actual cd builtin from within override function
-        eval 'builtin cd "$@"' || return $?
+        eval 'builtin cd "$@"'
+        _cd_exit_code=$?
     else
-        command cd "$@" || return $?
+        command cd "$@"
+        _cd_exit_code=$?
+    fi
+    
+    # If cd failed, restore opts and return the error code
+    if [ "$_cd_exit_code" -ne 0 ]; then
+        eval "$_cd_saved_opts"
+        unset _cd_saved_opts
+        return $_cd_exit_code
     fi
     
     # Run cd-hook logic inline so listen can access PS1
@@ -114,6 +126,10 @@ cd() {
     
     # Clean up variables
     unset _cd_config_file _cd_look_value _cd_listen_value _cd_avatar_value
+    
+    # Restore shell options before returning
+    eval "$_cd_saved_opts"
+    unset _cd_saved_opts
 }
 
 # Restore opts
