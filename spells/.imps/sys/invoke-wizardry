@@ -25,11 +25,6 @@ if [ "$iw_sourced" -eq 0 ]; then
 fi
 unset iw_sourced iw_base
 
-# NOTE: invoke-wizardry intentionally does NOT restore shell options at the end
-# Unlike other uncastable spells, this script's purpose is to SET UP the shell environment
-# Restoring options would undo the permissive mode we set, which could break readline
-# The permissive mode (set +eu) should remain active in the user's shell
-
 # Ensure baseline PATH before anything else (macOS may have empty PATH)
 baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 case ":${PATH-}:" in
@@ -297,7 +292,8 @@ fi
 # Wizardry initialization complete
 [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Wizardry initialization complete" >&2
 
-# Note: We do NOT restore shell options here (unlike other uncastable spells)
-# invoke-wizardry sets up the environment with permissive mode for interactive use
-# Restoring options would break readline if the user had strict mode before sourcing
+# Explicitly set permissive mode for interactive shell use
+# This was the original behavior before PR #1053
+# Permissive mode is required for readline to work (arrow keys, tab completion)
+set +eu
 return 0
