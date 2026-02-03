@@ -218,7 +218,7 @@ while true; do
   for mud_hs_dir in /usr/local/var/lib/tor/mud /opt/pkg/var/lib/tor/mud /var/lib/tor/mud; do
     if [ -f "$mud_hs_dir/hostname" ]; then
       hostname_file="$mud_hs_dir/hostname"
-      copy_onion="Copy .onion address%copy-to-clipboard \"\$(sudo cat \"$hostname_file\")\"; echo 7 > \"$SELECTION_FILE\""
+      copy_onion="Copy .onion address%copy-to-clipboard \"\$(sudo cat \"$hostname_file\")\"; echo 9 > \"$SELECTION_FILE\""
       break
     fi
   done

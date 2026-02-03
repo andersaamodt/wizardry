@@ -58,14 +58,47 @@ fi
         fi
         printf '%s\n' "Backup created: $backup_path"
         
-        # Remove HiddenService lines from torrc using sed for safer handling
+        # Remove MUD HiddenService lines from torrc (not site-specific ones)
+        # Only remove the /mud/ hidden service directory and its associated port
         temp_file=$(temp-file torrc-temp)
         if command -v sudo >/dev/null 2>&1; then
-                sudo sed '/^HiddenServiceDir/d; /^HiddenServicePort/d' \
-                  "$tor_config_path" > "$temp_file"
+                # Use awk to remove only the mud hidden service block
+                sudo awk '
+                /^HiddenServiceDir.*\/mud\/?$/ { 
+                    in_mud = 1
+                    next
+                }
+                in_mud && /^HiddenServiceVersion/ {
+                    next
+                }
+                in_mud && /^HiddenServicePort/ {
+                    in_mud = 0
+                    next
+                }
+                /^HiddenServiceDir/ {
+                    in_mud = 0
+                }
+                { print }
+                ' "$tor_config_path" > "$temp_file"
         else
-                sed '/^HiddenServiceDir/d; /^HiddenServicePort/d' \
-                  "$tor_config_path" > "$temp_file"
+                # Use awk to remove only the mud hidden service block
+                awk '
+                /^HiddenServiceDir.*\/mud\/?$/ { 
+                    in_mud = 1
+                    next
+                }
+                in_mud && /^HiddenServiceVersion/ {
+                    next
+                }
+                in_mud && /^HiddenServicePort/ {
+                    in_mud = 0
+                    next
+                }
+                /^HiddenServiceDir/ {
+                    in_mud = 0
+                }
+                { print }
+                ' "$tor_config_path" > "$temp_file"
         fi
         
         # If temp file is empty, create a minimal valid torrc
