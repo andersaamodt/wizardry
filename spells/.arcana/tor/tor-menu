@@ -61,6 +61,7 @@ $openssl_option"
   # Build service entries
   service_status_option=""
   tor_service_option=""
+  show_log_option=""
   
   # Show Start/Stop based on running status and daemon configuration
   if is-tor-installed; then
@@ -72,6 +73,8 @@ $openssl_option"
     # Show "Stop tor" if tor is running (regardless of daemon status)
     # Show "Start tor" only if daemon is enabled and tor is not running
     if is-tor-running; then
+      # Show log option as first menu item when tor is running
+      show_log_option="Show tor log%show-tor-log"
       tor_service_option="Stop tor%stop-tor"
     elif is-tor-daemon-enabled; then
       tor_service_option="Start tor%start-tor"
@@ -109,14 +112,35 @@ $openssl_option"
       fi
     fi
     
-    # Build menu with simplified logic - order: copy onion, start/stop, daemon, configure, repair, uninstall, deps, exit
+    # Build menu with simplified logic
+    # Menu order: show_log (if running), copy_onion, tor_service, daemon, config, repair, uninstall, deps, exit
     # We build the argument list by testing each option and adding it if present
     # Note: We can't use arrays in POSIX sh, so we use conditionals to build the call
     
     # Determine the menu options based on what's available
-    # Menu order: copy_onion, tor_service, daemon, config, repair, uninstall, [macos_deps], exit
     
-    if [ -n "$copy_onion_option" ]; then
+    if [ -n "$show_log_option" ]; then
+      # Tor is running - show log option first
+      if [ -n "$copy_onion_option" ]; then
+        if [ -n "$macos_deps" ]; then
+          menu "$title" "$show_log_option" "$copy_onion_option" "$tor_service_option" "$daemon_option" \
+            "$config_option" "$repair_option" "$uninstall_option" \
+            "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
+        else
+          menu "$title" "$show_log_option" "$copy_onion_option" "$tor_service_option" "$daemon_option" \
+            "$config_option" "$repair_option" "$uninstall_option" "$exit_option" || menu_status=$?
+        fi
+      else
+        if [ -n "$macos_deps" ]; then
+          menu "$title" "$show_log_option" "$tor_service_option" "$daemon_option" \
+            "$config_option" "$repair_option" "$uninstall_option" \
+            "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
+        else
+          menu "$title" "$show_log_option" "$tor_service_option" "$daemon_option" \
+            "$config_option" "$repair_option" "$uninstall_option" "$exit_option" || menu_status=$?
+        fi
+      fi
+    elif [ -n "$copy_onion_option" ]; then
       if [ -n "$macos_deps" ]; then
         menu "$title" "$copy_onion_option" "$tor_service_option" "$daemon_option" \
           "$config_option" "$repair_option" "$uninstall_option" \

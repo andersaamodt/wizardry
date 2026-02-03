@@ -28,7 +28,13 @@ fi
 if command -v systemctl >/dev/null 2>&1; then
   if sudo systemctl stop tor 2>/dev/null; then
     printf 'Tor stopped via systemctl.\n'
-    exit 0
+    # Wait and verify it actually stopped
+    sleep 2
+    if ! is-tor-running; then
+      exit 0
+    else
+      printf 'Warning: systemctl stop succeeded but tor still running.\n' >&2
+    fi
   fi
 fi
 
@@ -37,7 +43,14 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
   if is-tor-launchd-service-configured; then
     if sudo launchctl stop org.torproject.tor 2>/dev/null; then
       printf 'Tor stopped via launchd.\n'
-      exit 0
+      # Wait and verify it actually stopped
+      sleep 2
+      if ! is-tor-running; then
+        exit 0
+      else
+        printf 'Warning: launchctl stop succeeded but tor still running.\n' >&2
+        printf 'Attempting to kill tor process directly...\n'
+      fi
     fi
   fi
 fi
@@ -45,7 +58,12 @@ fi
 # Try killall (macOS and others - fallback)
 if sudo killall tor 2>/dev/null; then
   printf 'Tor stopped.\n'
-  exit 0
+  sleep 1
+  if ! is-tor-running; then
+    exit 0
+  else
+    printf 'Warning: killall succeeded but tor still running.\n' >&2
+  fi
 fi
 
 printf 'stop-tor: could not stop tor\n' >&2
