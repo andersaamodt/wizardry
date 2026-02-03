@@ -42,9 +42,10 @@ unset touch_sourced touch_base
 load_touch_hook_saved_opts=$(set +o)
 
 # Explicitly use permissive error handling - this file is meant to be sourced into user's shell
-# and we don't want their shell to exit on command failures
+# and we don't want their shell to exit on command failures or unset variable references
+# Our code is safe without set -u because we use ${VAR:-default} patterns everywhere
 set +e
-set -u
+set +u
 
 # The touch override - calls touch-hook imp after successful touch command
 touch() {
