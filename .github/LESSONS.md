@@ -181,7 +181,7 @@
 - 4KB padding works for SSE despite smaller than total buffer size - Write sequence (padding + event + padding) triggers flush mechanism, not just overflow.
 - 2KB padding causes batching in SSE delivery (too small for reliable flush) - Testing confirmed 4KB is minimum threshold to trigger flush mechanism consistently.
 - 4KB is confirmed minimum for instant SSE delivery over fcgiwrap/nginx - Smaller sizes (2KB, 1KB) cause batching; 4KB provides 83% bandwidth reduction while maintaining reliability.
-- Functions defined in sourced files (like cd() in load-cd-hook) must save shell options at function entry and restore before ALL return paths (success and error) to prevent corrupting the user's shell state.
+- Functions defined in sourced environment setup files (like cd() in load-cd-hook) must set +eu before returning instead of saving/restoring shell options - they are part of the shell environment and must leave it in permissive mode to avoid breaking readline.
 - Variable names must not begin with underscore (against project policy) - use descriptive names like `cd_saved_opts` not `_cd_saved_opts` to match existing codebase patterns.
 - Overriding builtin commands with functions breaks shell tab completion - attempting to restore it from scripts causes more problems than it solves (readline corruption, invisible characters).
 - NEVER call `bind` from sourced scripts - it corrupts readline state causing arrow keys to show escape sequences (^[[A) and breaking all line editing.
@@ -192,3 +192,4 @@
 - Nested save/restore of shell options causes insidious bugs - if outer script restores opts after inner script, the inner script's changes get undone, potentially re-enabling harmful strict modes.
 - macOS bash colored completion rendering bugs cannot be fixed from scripts - users must set `colored-stats off` in ~/.inputrc, not via bind commands or script-based workarounds.
 - When defining bash-specific functions in POSIX sh scripts, wrap with eval to avoid syntax errors in sh - `eval 'function_name() { bash syntax }'` works in both sh and bash.
+- Functions defined in environment setup scripts (cd() in load-cd-hook) must NOT save/restore shell options - they must set +eu before returning like their parent script to avoid re-enabling strict modes that break readline.
