@@ -71,8 +71,24 @@ config_file="${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud"
 # Check if cd hook is loaded
 if type cd 2>/dev/null | grep -q "function"; then
   # cd is a function, check if completion is set up
-  if complete -p cd 2>/dev/null | grep -q "complete -d cd"; then
-    success "✓ cd autocomplete is configured (cd hook active)"
+  if complete -p cd 2>/dev/null | grep -q "complete"; then
+    # Check which completion method is used
+    completion_spec=$(complete -p cd 2>/dev/null || echo "")
+    case "$completion_spec" in
+      *"-o default -o dirnames"*)
+        success "✓ cd autocomplete configured (macOS-compatible mode)"
+        ;;
+      *"-o dirnames"*)
+        success "✓ cd autocomplete configured (dirnames mode)"
+        ;;
+      *"-d cd"*)
+        success "✓ cd autocomplete configured (basic mode)"
+        info "  Note: If on macOS and seeing invisible characters, this may need updating"
+        ;;
+      *)
+        success "✓ cd autocomplete is configured"
+        ;;
+    esac
     
     # Test actual completion
     mkdir -p /tmp/autocomplete_verify_test/{alpha,beta,gamma}
