@@ -41,23 +41,22 @@ fi
 # Try launchctl (macOS)
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
   if is-tor-launchd-service-configured; then
-    # On macOS with launchd, we need to unload the service temporarily
-    # because KeepAlive=true will restart it if we just stop it
+    # On macOS with launchd, we need to unload the service with -w flag
+    # to disable KeepAlive which will restart it if we just stop it
     printf 'Unloading tor from launchd...\n'
-    if sudo launchctl unload /Library/LaunchDaemons/org.torproject.tor.plist 2>/dev/null; then
+    if sudo launchctl unload -w /Library/LaunchDaemons/org.torproject.tor.plist 2>/dev/null; then
       printf 'Tor launchd service unloaded.\n'
-      # Wait longer for process to actually stop
+      # Wait for process to actually stop
       sleep 3
+      # Re-enable the service but don't start it
+      sudo launchctl load -w /Library/LaunchDaemons/org.torproject.tor.plist 2>/dev/null || true
+      
       if ! is-tor-running; then
-        # Reload the service but don't start it (without -w flag)
-        sudo launchctl load /Library/LaunchDaemons/org.torproject.tor.plist 2>/dev/null || true
-        printf 'Service configuration reloaded (stopped).\n'
+        printf 'Tor stopped successfully.\n'
         exit 0
       else
         printf 'Warning: unload succeeded but tor still running.\n' >&2
         printf 'Attempting to kill tor process directly...\n'
-        # Reload before trying killall
-        sudo launchctl load /Library/LaunchDaemons/org.torproject.tor.plist 2>/dev/null || true
       fi
     fi
   fi
@@ -65,22 +64,37 @@ fi
 
 # Try killall (macOS and others - fallback)
 if sudo killall tor 2>/dev/null; then
-  printf 'Tor stopped with SIGTERM.\n'
+  printf 'Sent SIGTERM to tor process.\n'
   sleep 3
   if ! is-tor-running; then
+    printf 'Tor stopped.\n'
     exit 0
   else
-    printf 'Warning: SIGTERM did not stop tor, trying SIGKILL...\n' >&2
-    # Force kill with SIGKILL
-    if sudo killall -9 tor 2>/dev/null; then
-      printf 'Tor force-killed with SIGKILL.\n'
-      sleep 2
-      if ! is-tor-running; then
-        exit 0
-      else
-        printf 'Warning: Even SIGKILL did not stop tor.\n' >&2
-      fi
-    fi
+    printf 'Warning: SIGTERM did not stop tor, trying pkill...\n' >&2
+  fi
+fi
+
+# Try pkill with SIGTERM
+if sudo pkill -TERM tor 2>/dev/null; then
+  printf 'Sent SIGTERM via pkill.\n'
+  sleep 3
+  if ! is-tor-running; then
+    printf 'Tor stopped.\n'
+    exit 0
+  else
+    printf 'Warning: pkill SIGTERM did not work, trying SIGKILL...\n' >&2
+  fi
+fi
+
+# Last resort: force kill with SIGKILL
+if sudo pkill -9 tor 2>/dev/null; then
+  printf 'Force-killed tor with SIGKILL.\n'
+  sleep 2
+  if ! is-tor-running; then
+    printf 'Tor stopped.\n'
+    exit 0
+  else
+    printf 'Warning: Even SIGKILL did not stop tor.\n' >&2
   fi
 fi
 
