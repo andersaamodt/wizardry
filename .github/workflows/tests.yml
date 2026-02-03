@@ -74,7 +74,7 @@ jobs:
           sudo sysctl --system || true
       - name: Run unit tests (levels ${{ matrix.levels }}) in Nix shell
         run: |
-          nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr perl536Packages.Perl-Critic --run "
+          nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr perlPackages.PerlCritic --run "
             set -e
             . spells/.imps/sys/invoke-wizardry
             banish ${{ matrix.max_level }}
@@ -162,11 +162,15 @@ jobs:
       WIZARDRY_OS_LABEL: arch
     steps:
       - name: Install git, procps, and core utilities for checkout and testing
-        run: pacman -Sy --noconfirm git procps-ng coreutils sed gawk grep findutils attr file perl devtools
+        run: pacman -Sy --noconfirm git procps-ng coreutils sed gawk grep findutils attr file perl
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/check-attribute-tool spells/.imps/fs/list-attributes spells/.imps/fs/get-attribute
+      - name: Install checkbashisms from Debian package
+        run: |
+          curl -sSL https://sources.debian.org/data/main/d/devscripts/2.23.7/scripts/checkbashisms.pl -o /usr/local/bin/checkbashisms
+          chmod +x /usr/local/bin/checkbashisms
       - name: Run unit tests (levels ${{ matrix.levels }})
         run: |
           set -e
