@@ -186,22 +186,29 @@ cd() {
     eval "$cd_saved_opts"
 }
 
-# CRITICAL: Restore shell completion after function definition
+# CRITICAL: Restore completion after function definition
 if eval '[ -n "${BASH_VERSION:-}" ]' 2>/dev/null; then
     # Bash: Use directory completion
-    complete -d cd 2>/dev/null || true
+    # Use -o default -o dirnames for macOS compatibility (fixes invisible characters)
+    complete -o default -o dirnames cd 2>/dev/null || \
+        complete -o dirnames cd 2>/dev/null || \
+        complete -d cd 2>/dev/null || true
 elif eval '[ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
     # Zsh: Use builtin _cd completion (only if completion system loaded)
-    if command -v compdef >/dev/null 2>&1; then
-        compdef _cd cd 2>/dev/null || true
-    fi
+    command -v compdef >/dev/null 2>&1 && compdef _cd cd 2>/dev/null || true
 fi
 ```
 
 **Why:** Shells have special completion behavior for builtin commands. When you override a builtin with a function, the shell's completion system no longer recognizes it, breaking tab completion. You must explicitly tell the completion system to use the appropriate completion function.
 
-**Bash:** Use `complete -d` to enable directory completion for the function.
+**Bash:** Use `complete -o default -o dirnames` to enable directory completion. This is preferred over `complete -d` because:
+- **macOS compatibility**: Fixes invisible character bug in macOS bash readline
+- **Better defaults**: `-o default` ensures fallback completion works
+- **More explicit**: `-o dirnames` clearly specifies directory completion behavior
+
 **Zsh:** Use `compdef _cd` to use the builtin cd completion function (requires zsh completion system to be loaded).
+
+**macOS Issue:** macOS bash has a readline display bug where simple `-d` completion on function-overridden builtins can render characters invisible (cursor moves but text doesn't show). Using `-o default -o dirnames` fixes this by using a different completion mechanism that avoids the rendering bug.
 
 **Use case:** load-cd-hook overrides `cd` with a function to run `look` after directory changes. Without completion setup, tab completion for directories would break.
 
