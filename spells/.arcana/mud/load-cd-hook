@@ -46,6 +46,11 @@ set +u
 
 # The cd override - calls cd-hook imp after successful directory change
 cd() {
+    # Save readline editing mode (emacs or vi) before doing anything
+    # This is critical to prevent readline breakage after cd
+    cd_emacs_mode=$(set -o | grep '^emacs' | awk '{print $2}')
+    cd_vi_mode=$(set -o | grep '^vi' | awk '{print $2}')
+    
     # Use builtin for zsh/bash (where it's required for function override), command for POSIX sh
     # We use eval to check for bash/zsh in a way that won't fail in POSIX sh
     # This is necessary because 'builtin cd' is required in zsh, but doesn't exist in pure POSIX sh
@@ -58,10 +63,14 @@ cd() {
         cd_exit_code=$?
     fi
     
-    # If cd failed, return the error code
+    # If cd failed, restore readline mode and return the error code
     if [ "$cd_exit_code" -ne 0 ]; then
         cd_return=$cd_exit_code
         unset cd_exit_code
+        # Restore readline editing mode before returning
+        [ "$cd_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
+        [ "$cd_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+        unset cd_emacs_mode cd_vi_mode
         return $cd_return
     fi
     
@@ -123,6 +132,12 @@ cd() {
     
     # Clean up variables
     unset cd_config_file cd_look_value cd_listen_value cd_avatar_value
+    
+    # Restore readline editing mode to prevent arrow key breakage
+    # This is critical - without this, readline gets corrupted after cd
+    [ "$cd_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
+    [ "$cd_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+    unset cd_emacs_mode cd_vi_mode
 }
 
 # Note: We intentionally do NOT set up custom completion for the cd function
