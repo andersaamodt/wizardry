@@ -46,11 +46,6 @@ set +u
 
 # The cd override - calls cd-hook imp after successful directory change
 cd() {
-    # Explicitly set permissive mode at function entry
-    # Must be in permissive mode throughout to avoid breaking readline
-    set +e
-    set +u
-    
     # Use builtin for zsh/bash (where it's required for function override), command for POSIX sh
     # We use eval to check for bash/zsh in a way that won't fail in POSIX sh
     # This is necessary because 'builtin cd' is required in zsh, but doesn't exist in pure POSIX sh
