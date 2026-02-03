@@ -20,7 +20,10 @@ set -eu
 # Check if tor process is running
 # Use pgrep if available for more accurate detection
 if command -v pgrep >/dev/null 2>&1; then
-    pgrep -x tor >/dev/null 2>&1 && exit 0
+    # Check for exact match OR tor with arguments (like tor -f /path/to/torrc)
+    if pgrep -x tor >/dev/null 2>&1 || pgrep tor >/dev/null 2>&1; then
+        exit 0
+    fi
 else
     # Fallback to ps + grep, but be more specific
     ps aux | grep -v grep | grep -q 'tor$\|tor ' && exit 0

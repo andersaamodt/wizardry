@@ -33,10 +33,12 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
   if is-tor-launchd-service-configured; then
     if sudo launchctl start org.torproject.tor 2>&1; then
       printf 'Tor started via launchd.\n'
-      # Give launchd a moment to spawn the tor process
-      sleep 2
+      # Give launchd time to spawn and initialize the tor process
+      printf 'Waiting for tor process to initialize...\n'
+      sleep 3
       # Verify tor actually started
       if is-tor-running; then
+        printf 'Tor process detected and running.\n'
         exit 0
       else
         printf 'Warning: launchd start succeeded but tor process not detected yet.\n' >&2
