@@ -62,6 +62,12 @@ unset _listen_sourced _listen_base
 # Save shell options so we can restore them (this spell can be sourced)
 _listen_saved_opts=$(set +o)
 
+# ALSO save readline editing mode to prevent breakage (same pattern as env-clear)
+_listen_set_output=$(set -o)
+_listen_emacs_mode=$(printf '%s\n' "$_listen_set_output" | grep '^emacs' | awk '{print $2}')
+_listen_vi_mode=$(printf '%s\n' "$_listen_set_output" | grep '^vi' | awk '{print $2}')
+unset _listen_set_output
+
 # Use permissive mode for our own logic
 set +e
 set +u
@@ -233,4 +239,7 @@ unset _listen_stop_only _listen_room_path _listen_room_log _listen_is_sourced \
 
 # Restore shell options before returning
 eval "$_listen_saved_opts"
-unset _listen_saved_opts
+# Restore readline mode
+[ "$_listen_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
+[ "$_listen_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+unset _listen_saved_opts _listen_emacs_mode _listen_vi_mode
