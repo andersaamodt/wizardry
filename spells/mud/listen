@@ -21,32 +21,47 @@ USAGE
 case "${1-}" in
 --help|--usage|-h)
   show_usage
-  # Detect if sourced
-  if [ -n "${BASH_VERSION:-}" ]; then
-    if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
-      return 0
-    fi
-  elif [ -n "${ZSH_VERSION:-}" ]; then
-    if [ "${(%):-%x}" != "${0}" ]; then
-      return 0
-    fi
-  fi
-  exit 0
+  return 0 2>/dev/null || exit 0
   ;;
 esac
 
-# Detect if sourced (runs in parent shell context) vs executed
-if [ -n "${BASH_VERSION:-}" ]; then
-    if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
-        # Sourced in bash
-        return 0
-    fi
-elif [ -n "${ZSH_VERSION:-}" ]; then
-    if [ "${(%):-%x}" != "${0}" ]; then
-        # Sourced in zsh
-        return 0
-    fi
+# Uncastable pattern - detect if sourced (recommended) or executed
+_listen_sourced=0
+if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+  case "${ZSH_EVAL_CONTEXT-}" in
+    *:file) _listen_sourced=1 ;;
+  esac
+else
+  _listen_base=${0##*/}
+  case "$_listen_base" in
+    sh|dash|bash|zsh|ksh|mksh) _listen_sourced=1 ;;
+    listen) _listen_sourced=0 ;;
+    *) _listen_sourced=1 ;;
+  esac
 fi
 
-# Not sourced, was executed directly
-exit 0
+# Store for later use
+_listen_is_sourced=$_listen_sourced
+unset _listen_sourced _listen_base
+
+# STEP 3: Add shell option save/restore
+_listen_saved_opts=$(set +o)
+
+# Save readline editing mode
+_listen_set_output=$(set -o)
+_listen_emacs_mode=$(printf '%s\n' "$_listen_set_output" | grep '^emacs' | awk '{print $2}')
+_listen_vi_mode=$(printf '%s\n' "$_listen_set_output" | grep '^vi' | awk '{print $2}')
+unset _listen_set_output
+
+# STEP 3: Now restore everything and return
+# This is what we suspect breaks readline
+eval "$_listen_saved_opts"
+[ "$_listen_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
+[ "$_listen_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+unset _listen_saved_opts _listen_emacs_mode _listen_vi_mode _listen_is_sourced
+
+if [ "$_listen_is_sourced" = "1" ]; then
+    return 0
+else
+    exit 0
+fi
