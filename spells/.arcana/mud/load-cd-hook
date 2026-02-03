@@ -122,7 +122,7 @@ cd() {
     # Default to disabled (0) if not set
     if [ -z "$cd_avatar_value" ]; then
         cd_avatar_value=$(command -v mud-defaults >/dev/null 2>&1 && \
-            mud-defaults cd-listen 2>/dev/null || printf '0')
+            mud-defaults avatar 2>/dev/null || printf '0')
     fi
     if [ "$cd_avatar_value" = "1" ]; then
         command -v move-avatar >/dev/null 2>&1 && move-avatar 2>/dev/null || true
