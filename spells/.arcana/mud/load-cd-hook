@@ -13,7 +13,7 @@ Then use 'toggle-cd' to enable/disable the hook.
 
 The hook runs 'look' after every successful directory change.
 USAGE
-  exit 0
+  return 0 2>/dev/null || exit 0
   ;;
 esac
 
@@ -46,12 +46,8 @@ set +u
 
 # The cd override - Step 3 (with listen sourcing enabled)
 cd() {
-    # Use builtin for zsh/bash, command for POSIX sh
-    if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
-        builtin cd "$@" || return $?
-    else
-        command cd "$@" || return $?
-    fi
+    # Use command cd for POSIX compliance (builtin is a bash-ism)
+    command cd "$@" || return $?
     
     # Check if cd-look is enabled via config file (defaults to enabled when unset)
     # Skip automatic look if JUMP_TO_MARKER_ACTIVE is set (jump-to-marker handles it)

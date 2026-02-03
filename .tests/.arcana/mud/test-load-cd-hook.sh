@@ -11,7 +11,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_cd_help_shows_usage() {
-  run_spell spells/.arcana/mud/cd --help
+  run_spell spells/.arcana/mud/load-cd-hook --help
   assert_success || return 1
   assert_output_contains "Usage:" || return 1
   assert_output_contains "Source this file" || return 1
@@ -20,7 +20,7 @@ test_cd_help_shows_usage() {
 test_cd_defines_cd_function_when_sourced() {
   skip-if-compiled || return $?
   run_cmd sh -c '
-    . '"$ROOT_DIR"'/spells/.arcana/mud/cd &&
+    . '"$ROOT_DIR"'/spells/.arcana/mud/load-cd-hook &&
     type cd | grep -q "function"
   '
   assert_success || return 1
@@ -49,7 +49,7 @@ SH
     export HOME='"$tmpdir"'
     export SPELLBOOK_DIR='"$tmpdir"'/.spellbook
     export PATH='"$tmpdir"':$PATH
-    . '"$ROOT_DIR"'/spells/.arcana/mud/cd &&
+    . '"$ROOT_DIR"'/spells/.arcana/mud/load-cd-hook &&
     cd '"$tmpdir"'/testdir &&
     [ -f .looked ] && printf "look-ran"
   '
@@ -80,7 +80,7 @@ SH
     export HOME='"$tmpdir"'
     export SPELLBOOK_DIR='"$tmpdir"'/.spellbook
     export PATH='"$tmpdir"':$PATH
-    . '"$ROOT_DIR"'/spells/.arcana/mud/cd &&
+    . '"$ROOT_DIR"'/spells/.arcana/mud/load-cd-hook &&
     cd '"$tmpdir"'/testdir &&
     [ ! -f .looked ] && printf "look-not-ran"
   '
