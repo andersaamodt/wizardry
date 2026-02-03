@@ -183,7 +183,8 @@
 - 4KB is confirmed minimum for instant SSE delivery over fcgiwrap/nginx - Smaller sizes (2KB, 1KB) cause batching; 4KB provides 83% bandwidth reduction while maintaining reliability.
 - Functions defined in sourced files (like cd() in load-cd-hook) must save shell options at function entry and restore before ALL return paths (success and error) to prevent corrupting the user's shell state.
 - Variable names must not begin with underscore (against project policy) - use descriptive names like `cd_saved_opts` not `_cd_saved_opts` to match existing codebase patterns.
-- Overriding builtin commands with functions breaks shell tab completion - must explicitly restore with custom completion function or complete flags.
+- Overriding builtin commands with functions breaks shell tab completion - attempting to restore it from scripts causes more problems than it solves (readline corruption, invisible characters).
 - NEVER call `bind` from sourced scripts - it corrupts readline state causing arrow keys to show escape sequences (^[[A) and breaking all line editing.
-- macOS bash colored completion rendering bugs cannot be fixed from scripts - users must set `colored-stats off` in ~/.inputrc, not via bind commands.
+- NEVER set up completion from sourced scripts - custom completion functions, complete flags, and compdef can all break readline; let bash use default completion.
+- macOS bash colored completion rendering bugs cannot be fixed from scripts - users must set `colored-stats off` in ~/.inputrc, not via bind commands or script-based workarounds.
 - When defining bash-specific functions in POSIX sh scripts, wrap with eval to avoid syntax errors in sh - `eval 'function_name() { bash syntax }'` works in both sh and bash.

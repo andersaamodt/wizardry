@@ -136,31 +136,23 @@ cd() {
     unset cd_saved_opts
 }
 
-# Set up shell completion for the cd function
-# This ensures tab completion still works after overriding cd with a function
-if eval '[ -n "${BASH_VERSION:-}" ]' 2>/dev/null; then
-    # Bash: Use custom completion function for cd
-    # Custom function works on all bash versions including macOS bash 3.2
-    
-    # Define custom completion function (bash-specific, so use eval)
-    eval '_wizardry_cd_completion() {
-        local cur="${COMP_WORDS[COMP_CWORD]}"
-        COMPREPLY=( $(compgen -d -- "$cur") )
-        return 0
-    }'
-    
-    # Register the custom completion function for cd
-    eval 'complete -F _wizardry_cd_completion cd' 2>/dev/null || \
-        eval 'complete -o dirnames cd' 2>/dev/null || \
-        eval 'complete -d cd' 2>/dev/null || true
-        
-elif eval '[ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
-    # Zsh: Use the builtin _cd completion function
-    # compdef is only available when zsh completion system is loaded
-    if command -v compdef >/dev/null 2>&1; then
-        compdef _cd cd 2>/dev/null || true
-    fi
-fi
+# Note: We intentionally do NOT set up custom completion for the cd function
+# 
+# Why: Attempting to restore completion after overriding builtins causes issues:
+# - Custom completion functions can break readline on some systems (macOS bash 3.2)
+# - bind commands from scripts corrupt readline state
+# - Even simple complete flags can cause invisible character rendering
+#
+# Bash will use default filename completion for the cd function, which works
+# adequately for most use cases. Users who want directory-only completion
+# can configure it themselves in their ~/.inputrc or .bashrc
+#
+# If users want to restore directory-only completion, they can add to ~/.bashrc:
+#   complete -o dirnames cd
+#
+# Or for better macOS compatibility, add to ~/.inputrc:
+#   set colored-stats off
+#   set colored-completion-prefix off
 
 # Restore opts
 eval "$load_cd_hook_saved_opts"
