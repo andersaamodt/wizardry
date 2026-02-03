@@ -63,6 +63,11 @@ $openssl_option"
   tor_service_option=""
   show_log_option=""
   
+  # Always show "Show tor log" option if tor is installed (not just when running)
+  if is-tor-installed; then
+    show_log_option="Show tor log%show-tor-log"
+  fi
+  
   # Show Start/Stop based on running status and daemon configuration
   if is-tor-installed; then
     # Only show "View tor service status" on Linux with systemd
@@ -73,8 +78,6 @@ $openssl_option"
     # Show "Stop tor" if tor is running (regardless of daemon status)
     # Show "Start tor" only if daemon is enabled and tor is not running
     if is-tor-running; then
-      # Show log option as first menu item when tor is running
-      show_log_option="Show tor log%show-tor-log"
       tor_service_option="Stop tor%stop-tor"
     elif is-tor-daemon-enabled; then
       tor_service_option="Start tor%start-tor"

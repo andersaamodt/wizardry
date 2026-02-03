@@ -62,14 +62,14 @@ case "$platform" in
 esac
 
 # Repair Tor directory permissions
-for tor_dir in /var/lib/tor /var/log/tor /etc/tor; do
+for tor_dir in /var/lib/tor /var/log/tor /etc/tor /usr/local/var/lib/tor /usr/local/var/log /usr/local/etc/tor /opt/pkg/var/lib/tor /opt/pkg/var/log; do
   if [ -d "$tor_dir" ]; then
     chown -R "$user_owner":"$group_owner" "$tor_dir" 2>/dev/null || true
     printf '%s\n' "Changed owner and group of $tor_dir to $user_owner:$group_owner"
     
     # Set appropriate permissions based on directory type
     case "$tor_dir" in
-      /etc/tor)
+      /etc/tor|/usr/local/etc/tor)
         chmod 755 "$tor_dir" 2>/dev/null || true
         printf '%s\n' "Set permissions on $tor_dir to 755"
         ;;
@@ -78,8 +78,6 @@ for tor_dir in /var/lib/tor /var/log/tor /etc/tor; do
         printf '%s\n' "Set permissions on $tor_dir to 700"
         ;;
     esac
-  else
-    printf '%s\n' "Directory $tor_dir does not exist. Skipping."
   fi
 done
 
