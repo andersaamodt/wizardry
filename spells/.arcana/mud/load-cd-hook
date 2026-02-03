@@ -44,7 +44,7 @@ unset cd_sourced cd_base
 set +e
 set +u
 
-# The cd override - Step 3 with fixed listen (no eval restore)
+# The cd override - ABSOLUTE MINIMAL for final isolation
 cd() {
     # Use builtin for zsh/bash, command for POSIX sh
     if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
@@ -53,43 +53,10 @@ cd() {
         command cd "$@" || return $?
     fi
     
-    # Check if cd-look is enabled via config file (defaults to enabled when unset)
-    # Skip automatic look if JUMP_TO_MARKER_ACTIVE is set (jump-to-marker handles it)
-    cd_config_file="${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud"
-    cd_look_value=""
-    if [ -f "$cd_config_file" ]; then
-        cd_look_value=$(grep "^cd-look=" "$cd_config_file" 2>/dev/null | \
-            cut -d= -f2- || printf '')
-    fi
-    # Default to enabled (1) if not set
-    if [ -z "$cd_look_value" ]; then
-        cd_look_value=$(command -v mud-defaults >/dev/null 2>&1 && \
-            mud-defaults cd-look 2>/dev/null || printf '1')
-    fi
-    if [ "$cd_look_value" = "1" ] && [ -z "${JUMP_TO_MARKER_ACTIVE-}" ]; then
+    # Call look if enabled (defaults to enabled)
+    if [ -z "${JUMP_TO_MARKER_ACTIVE-}" ]; then
         command -v look >/dev/null 2>&1 && look 2>/dev/null || true
     fi
-    
-    # Check if cd-listen is enabled (defaults to disabled when unset)
-    cd_listen_value=""
-    if [ -f "$cd_config_file" ]; then
-        cd_listen_value=$(grep "^cd-listen=" "$cd_config_file" 2>/dev/null | \
-            cut -d= -f2- || printf '')
-    fi
-    # Default to disabled (0) if not set
-    if [ -z "$cd_listen_value" ]; then
-        cd_listen_value=$(command -v mud-defaults >/dev/null 2>&1 && \
-            mud-defaults cd-listen 2>/dev/null || printf '0')
-    fi
-    if [ "$cd_listen_value" = "1" ]; then
-        # Source listen directly so it can access PS1 from this shell context
-        if command -v listen >/dev/null 2>&1; then
-            . listen 2>/dev/null || true
-        fi
-    fi
-    
-    # Clean up variables
-    unset cd_config_file cd_look_value cd_listen_value
 }
 
 # Note: We intentionally do NOT set up custom completion for the cd function
