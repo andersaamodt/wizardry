@@ -155,7 +155,7 @@ check_level_1() {
     esac
     
     # Check for private keys with wrong permissions
-    found_bad_key=0
+    key_check_shown=0
     for key in "$ssh_dir"/id_* "$ssh_dir"/*_rsa \
                "$ssh_dir"/*_ed25519 "$ssh_dir"/*_ecdsa; do
       # Check if it's a private key (not .pub)
@@ -163,10 +163,11 @@ check_level_1() {
         key_perms=$(ls -l "$key" 2>/dev/null | awk '{print $1}')
         case "$key_perms" in
           -rw-------*)
-            if [ "$found_bad_key" -eq 0 ]; then
+            # Only show success message once for all secure keys
+            if [ "$key_check_shown" -eq 0 ]; then
               ward_pass "SSH private keys have secure permissions"
               ward_desc "Private keys should be readable only by owner (600)." 0
-              found_bad_key=1
+              key_check_shown=1
             fi
             ;;
           *)
@@ -179,7 +180,8 @@ check_level_1() {
             if ward_ask_fix "Fix permissions for $key_name?"; then
               chmod 600 "$key" && success "Fixed permissions for $key_name"
             fi
-            found_bad_key=1
+            # Mark that we've shown a message (don't show success after failures)
+            key_check_shown=1
             ;;
         esac
       fi
