@@ -164,6 +164,47 @@ fi
 
 **Use case:** jump-to-marker needs to cd without triggering the cd-hook's automatic `look` call, so it can print narration first.
 
+### Function Overrides and Shell Completion
+
+**CRITICAL:** When overriding builtin commands with functions, shell completion is lost. Must explicitly restore it.
+
+```sh
+# Define function that overrides builtin
+cd() {
+    # Save/restore shell options before ALL returns
+    cd_saved_opts=$(set +o)
+    
+    # Call actual builtin (bash/zsh need 'builtin', POSIX sh uses 'command')
+    if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
+        builtin cd "$@"
+    else
+        command cd "$@"
+    fi
+    
+    # Custom logic here...
+    
+    eval "$cd_saved_opts"
+}
+
+# CRITICAL: Restore shell completion after function definition
+if eval '[ -n "${BASH_VERSION:-}" ]' 2>/dev/null; then
+    # Bash: Use directory completion
+    complete -d cd 2>/dev/null || true
+elif eval '[ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
+    # Zsh: Use builtin _cd completion (only if completion system loaded)
+    if command -v compdef >/dev/null 2>&1; then
+        compdef _cd cd 2>/dev/null || true
+    fi
+fi
+```
+
+**Why:** Shells have special completion behavior for builtin commands. When you override a builtin with a function, the shell's completion system no longer recognizes it, breaking tab completion. You must explicitly tell the completion system to use the appropriate completion function.
+
+**Bash:** Use `complete -d` to enable directory completion for the function.
+**Zsh:** Use `compdef _cd` to use the builtin cd completion function (requires zsh completion system to be loaded).
+
+**Use case:** load-cd-hook overrides `cd` with a function to run `look` after directory changes. Without completion setup, tab completion for directories would break.
+
 ### Case Statements
 
 ```sh
