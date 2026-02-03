@@ -59,7 +59,10 @@ fi
 _listen_is_sourced=$_listen_sourced
 unset _listen_sourced _listen_base
 
-set -eu
+# Use permissive mode (this spell can be sourced by cd function)
+# We don't want to leave strict mode active in the user's shell
+set +e
+set +u
 . env-clear
 
 # Get room path
