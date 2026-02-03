@@ -30,7 +30,7 @@ if command -v pacman >/dev/null 2>&1; then
   # Download checkbashisms directly from Debian sources
   target_dir="/usr/local/bin"
   debian_base="https://sources.debian.org/data/main/d/devscripts"
-  checkbashisms_url="$debian_base/2.23.7/scripts/checkbashisms.pl"
+  checkbashisms_url="$debian_base/2.23.4+deb12u2/scripts/checkbashisms.pl"
   if [ ! -w "$target_dir" ]; then
     if command -v sudo >/dev/null 2>&1; then
       sudo curl -sSL "$checkbashisms_url" -o "$target_dir/checkbashisms" || {
