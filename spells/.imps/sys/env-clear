@@ -4,12 +4,12 @@
 
 # Uncastable pattern - ensures spell is sourced, not executed
 env_clear_sourced=0
-if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+if eval '[ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
   case "${ZSH_EVAL_CONTEXT-}" in
     *:file) env_clear_sourced=1 ;;
   esac
 else
-  env_clear_base=${0##*/}
+  env_clear_base=$(basename "$0" 2>/dev/null || printf '%s\n' "$0")
   case "$env_clear_base" in
     sh|dash|bash|zsh|ksh|mksh) env_clear_sourced=1 ;;
     env-clear) env_clear_sourced=0 ;;
@@ -23,11 +23,23 @@ if [ "$env_clear_sourced" -eq 0 ]; then
 fi
 unset env_clear_sourced env_clear_base
 
-# Save readline editing mode to prevent breakage
-env_clear_set_output=$(set -o)
-env_clear_emacs_mode=$(printf '%s\n' "$env_clear_set_output" | grep '^emacs' | awk '{print $2}')
-env_clear_vi_mode=$(printf '%s\n' "$env_clear_set_output" | grep '^vi' | awk '{print $2}')
-unset env_clear_set_output
+# Save readline editing mode to prevent breakage (when tools are available)
+# This is needed when env-clear is sourced by listen which is sourced by cd hook
+if command -v grep >/dev/null 2>&1 && command -v awk >/dev/null 2>&1; then
+  env_clear_set_output=$(set -o 2>/dev/null || true)
+  if [ -n "$env_clear_set_output" ]; then
+    env_clear_emacs_mode=$(printf '%s\n' "$env_clear_set_output" | grep '^emacs' 2>/dev/null | awk '{print $2}' 2>/dev/null || printf '')
+    env_clear_vi_mode=$(printf '%s\n' "$env_clear_set_output" | grep '^vi' 2>/dev/null | awk '{print $2}' 2>/dev/null || printf '')
+  else
+    env_clear_emacs_mode=""
+    env_clear_vi_mode=""
+  fi
+  unset env_clear_set_output
+else
+  # grep/awk not available (restricted PATH in tests) - skip readline preservation
+  env_clear_emacs_mode=""
+  env_clear_vi_mode=""
+fi
 
 # Explicitly use permissive mode - this imp mutates the caller's environment.
 set +eu
@@ -36,9 +48,9 @@ set +eu
 if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" = "1" ]; then
   set +e
   set +u
-  # Restore readline mode before returning
-  [ "$env_clear_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
-  [ "$env_clear_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+  # Restore readline mode before returning (if it was captured)
+  [ "${env_clear_emacs_mode:-}" = "on" ] && set -o emacs 2>/dev/null || true
+  [ "${env_clear_vi_mode:-}" = "on" ] && set -o vi 2>/dev/null || true
   unset env_clear_emacs_mode env_clear_vi_mode
   return 0
 fi
@@ -48,9 +60,9 @@ fi
 if [ "${_WIZARDRY_LOADING_SPELLS:-0}" = "1" ]; then
   set +e
   set +u
-  # Restore readline mode before returning
-  [ "$env_clear_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
-  [ "$env_clear_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+  # Restore readline mode before returning (if it was captured)
+  [ "${env_clear_emacs_mode:-}" = "on" ] && set -o emacs 2>/dev/null || true
+  [ "${env_clear_vi_mode:-}" = "on" ] && set -o vi 2>/dev/null || true
   unset env_clear_emacs_mode env_clear_vi_mode
   return 0
 fi
@@ -246,10 +258,10 @@ unset ec_saved_runner_tool_cache env_var
 set +e
 set +u
 
-# Restore readline editing mode to prevent arrow key breakage
+# Restore readline editing mode to prevent arrow key breakage (if it was captured)
 # This is critical when env-clear is sourced by other spells like cd or jump-to-marker
-[ "$env_clear_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
-[ "$env_clear_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+[ "${env_clear_emacs_mode:-}" = "on" ] && set -o emacs 2>/dev/null || true
+[ "${env_clear_vi_mode:-}" = "on" ] && set -o vi 2>/dev/null || true
 unset env_clear_emacs_mode env_clear_vi_mode
 
 # Return 0 explicitly (some shells exit with the exit code of the last unset)
