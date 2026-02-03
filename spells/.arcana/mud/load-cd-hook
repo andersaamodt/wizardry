@@ -66,10 +66,14 @@ cd() {
     
     # If cd failed, restore opts and return the error code
     if [ "$_cd_exit_code" -ne 0 ]; then
+        _cd_return=$_cd_exit_code
         eval "$_cd_saved_opts"
-        unset _cd_saved_opts
-        return $_cd_exit_code
+        unset _cd_saved_opts _cd_exit_code
+        return $_cd_return
     fi
+    
+    # cd succeeded, we can unset _cd_exit_code now
+    unset _cd_exit_code
     
     # Run cd-hook logic inline so listen can access PS1
     # (cd-hook is executed, not sourced, so listen wouldn't have PS1 access otherwise)
@@ -125,7 +129,7 @@ cd() {
     fi
     
     # Clean up variables
-    unset _cd_config_file _cd_look_value _cd_listen_value _cd_avatar_value _cd_exit_code
+    unset _cd_config_file _cd_look_value _cd_listen_value _cd_avatar_value
     
     # Restore shell options before returning
     eval "$_cd_saved_opts"
