@@ -46,24 +46,20 @@ if command -v tor >/dev/null 2>&1; then
   # Start tor with a proper config file if available
   tor_started=0
   
-  # Try to find torrc
+  # Try to find torrc and start tor in background
   if [ -f /usr/local/etc/tor/torrc ]; then
-    if tor -f /usr/local/etc/tor/torrc >/dev/null 2>&1 &; then
-      tor_started=1
-    fi
+    tor -f /usr/local/etc/tor/torrc >/dev/null 2>&1 &
+    tor_started=1
   elif [ -f /opt/pkg/etc/tor/torrc ]; then
-    if tor -f /opt/pkg/etc/tor/torrc >/dev/null 2>&1 &; then
-      tor_started=1
-    fi
+    tor -f /opt/pkg/etc/tor/torrc >/dev/null 2>&1 &
+    tor_started=1
   elif [ -f /etc/tor/torrc ]; then
-    if tor -f /etc/tor/torrc >/dev/null 2>&1 &; then
-      tor_started=1
-    fi
+    tor -f /etc/tor/torrc >/dev/null 2>&1 &
+    tor_started=1
   else
     # No config file, just start tor
-    if tor >/dev/null 2>&1 &; then
-      tor_started=1
-    fi
+    tor >/dev/null 2>&1 &
+    tor_started=1
   fi
   
   if [ "$tor_started" -eq 1 ]; then
