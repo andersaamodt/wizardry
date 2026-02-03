@@ -235,8 +235,14 @@ case $distro in
     
     # Run make with debug and verbose flags
     printf 'Running make with verbose flags...\n'
-    MAKEFLAGS= /usr/bin/make --debug=v VERBOSE=1 V=1 2>&1 | tee "$make_log"
-    make_exit=${PIPESTATUS[0]}
+    # Use temp file for make output and check exit code (POSIX-compliant)
+    if /usr/bin/make --debug=v VERBOSE=1 V=1 > "$make_log" 2>&1; then
+        make_exit=0
+    else
+        make_exit=$?
+    fi
+    # Display the log
+    cat "$make_log"
     set -e
     printf '\n'
     printf 'Make log file location: %s\n' "$make_log"
