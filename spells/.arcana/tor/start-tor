@@ -28,9 +28,8 @@ if command -v systemctl >/dev/null 2>&1; then
   fi
 fi
 
-# Try launchctl (macOS)
+# Try launchctl (macOS) - only if service is already configured
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
-  # Check if launchd service is configured
   if is-tor-launchd-service-configured; then
     if sudo launchctl start org.torproject.tor 2>&1; then
       printf 'Tor started via launchd.\n'
@@ -38,23 +37,38 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
     else
       printf 'Failed to start tor via launchd.\n' >&2
     fi
-  else
-    # Service not configured, create it first
-    printf 'Creating launchd service...\n'
-    if create-tor-launchd-service; then
-      printf 'Tor started via launchd.\n'
-      exit 0
-    else
-      printf 'Failed to create launchd service.\n' >&2
-    fi
   fi
 fi
 
 # Try direct execution (fallback)
 if command -v tor >/dev/null 2>&1; then
   printf 'Starting tor directly in background...\n'
-  if tor >/dev/null 2>&1 &; then
-    printf 'Tor started.\n'
+  # Start tor with a proper config file if available
+  tor_started=0
+  
+  # Try to find torrc
+  if [ -f /usr/local/etc/tor/torrc ]; then
+    if tor -f /usr/local/etc/tor/torrc >/dev/null 2>&1 &; then
+      tor_started=1
+    fi
+  elif [ -f /opt/pkg/etc/tor/torrc ]; then
+    if tor -f /opt/pkg/etc/tor/torrc >/dev/null 2>&1 &; then
+      tor_started=1
+    fi
+  elif [ -f /etc/tor/torrc ]; then
+    if tor -f /etc/tor/torrc >/dev/null 2>&1 &; then
+      tor_started=1
+    fi
+  else
+    # No config file, just start tor
+    if tor >/dev/null 2>&1 &; then
+      tor_started=1
+    fi
+  fi
+  
+  if [ "$tor_started" -eq 1 ]; then
+    printf 'Tor started directly in background.\n'
+    printf 'Note: Use "[ ] Start tor at startup" to enable automatic start on boot.\n'
     exit 0
   else
     printf 'Failed to start tor directly.\n' >&2
@@ -62,4 +76,5 @@ if command -v tor >/dev/null 2>&1; then
 fi
 
 printf 'start-tor: failed to start tor (tried all methods)\n' >&2
+printf 'Tip: On macOS, enable "Start tor at startup" to use launchd service.\n' >&2
 exit 1
