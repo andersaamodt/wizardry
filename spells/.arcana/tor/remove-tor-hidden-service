@@ -78,8 +78,11 @@ fi
         
         if command -v sudo >/dev/null 2>&1; then
                 sudo mv "$temp_file" "$tor_config_path"
+                # Ensure torrc remains readable after modification
+                sudo chmod 644 "$tor_config_path"
         else
                 mv "$temp_file" "$tor_config_path"
+                chmod 644 "$tor_config_path"
         fi
         
         printf '%s\n' "Hidden service configuration removed from $tor_config_path"
