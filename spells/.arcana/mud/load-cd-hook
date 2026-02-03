@@ -139,12 +139,26 @@ cd() {
 # Set up shell completion for the cd function
 # This ensures tab completion still works after overriding cd with a function
 if eval '[ -n "${BASH_VERSION:-}" ]' 2>/dev/null; then
-    # Bash: Use directory completion for cd function
-    # On macOS, simple '-d' can cause invisible characters due to readline bugs
-    # Using '-o default -o dirnames' fixes the rendering issue
-    complete -o default -o dirnames cd 2>/dev/null || \
-        complete -o dirnames cd 2>/dev/null || \
-        complete -d cd 2>/dev/null || true
+    # Bash: Use custom completion function for cd
+    # On macOS (bash 3.2), built-in completion flags cause invisible character bugs
+    # A custom function bypasses the readline display issues entirely
+    
+    # Disable colored completion which causes rendering bugs on macOS
+    eval 'bind "set colored-stats off"' 2>/dev/null || true
+    eval 'bind "set colored-completion-prefix off"' 2>/dev/null || true
+    
+    # Define custom completion function (bash-specific, so use eval)
+    eval '_wizardry_cd_completion() {
+        local cur="${COMP_WORDS[COMP_CWORD]}"
+        COMPREPLY=( $(compgen -d -- "$cur") )
+        return 0
+    }'
+    
+    # Register the custom completion function for cd
+    eval 'complete -F _wizardry_cd_completion cd' 2>/dev/null || \
+        eval 'complete -o dirnames cd' 2>/dev/null || \
+        eval 'complete -d cd' 2>/dev/null || true
+        
 elif eval '[ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
     # Zsh: Use the builtin _cd completion function
     # compdef is only available when zsh completion system is loaded

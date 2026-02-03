@@ -188,11 +188,26 @@ cd() {
 
 # CRITICAL: Restore completion after function definition
 if eval '[ -n "${BASH_VERSION:-}" ]' 2>/dev/null; then
-    # Bash: Use directory completion
-    # Use -o default -o dirnames for macOS compatibility (fixes invisible characters)
-    complete -o default -o dirnames cd 2>/dev/null || \
-        complete -o dirnames cd 2>/dev/null || \
-        complete -d cd 2>/dev/null || true
+    # Bash: Use custom completion function to avoid macOS rendering bugs
+    # macOS bash 3.2 has severe readline display bugs with built-in completion flags
+    # A custom function bypasses these issues entirely
+    
+    # Disable colored completion (causes invisible characters on macOS)
+    eval 'bind "set colored-stats off"' 2>/dev/null || true
+    eval 'bind "set colored-completion-prefix off"' 2>/dev/null || true
+    
+    # Define custom completion function (use eval for POSIX compatibility)
+    eval '_wizardry_cd_completion() {
+        local cur="${COMP_WORDS[COMP_CWORD]}"
+        COMPREPLY=( $(compgen -d -- "$cur") )
+        return 0
+    }'
+    
+    # Register the completion function
+    eval 'complete -F _wizardry_cd_completion cd' 2>/dev/null || \
+        eval 'complete -o dirnames cd' 2>/dev/null || \
+        eval 'complete -d cd' 2>/dev/null || true
+        
 elif eval '[ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
     # Zsh: Use builtin _cd completion (only if completion system loaded)
     command -v compdef >/dev/null 2>&1 && compdef _cd cd 2>/dev/null || true
@@ -201,16 +216,22 @@ fi
 
 **Why:** Shells have special completion behavior for builtin commands. When you override a builtin with a function, the shell's completion system no longer recognizes it, breaking tab completion. You must explicitly tell the completion system to use the appropriate completion function.
 
-**Bash:** Use `complete -o default -o dirnames` to enable directory completion. This is preferred over `complete -d` because:
-- **macOS compatibility**: Fixes invisible character bug in macOS bash readline
-- **Better defaults**: `-o default` ensures fallback completion works
-- **More explicit**: `-o dirnames` clearly specifies directory completion behavior
+**Bash Custom Function Approach:** The most reliable solution for macOS compatibility:
+- **Custom function**: Defines `_wizardry_cd_completion()` to handle directory completion
+- **Bypasses readline bugs**: Avoids macOS bash 3.2's invisible character rendering issues
+- **Disables colored completion**: Turns off `colored-stats` and `colored-completion-prefix` which cause display bugs
+- **POSIX compatible**: Uses `eval` to wrap bash-specific syntax so it doesn't break in sh
+- **Fallback chain**: Falls back to simpler completion methods if custom function fails
 
 **Zsh:** Use `compdef _cd` to use the builtin cd completion function (requires zsh completion system to be loaded).
 
-**macOS Issue:** macOS bash has a readline display bug where simple `-d` completion on function-overridden builtins can render characters invisible (cursor moves but text doesn't show). Using `-o default -o dirnames` fixes this by using a different completion mechanism that avoids the rendering bug.
+**macOS Readline Bugs:** macOS ships with bash 3.2 (from 2007) which has severe readline display bugs:
+- Simple `-d` flag causes invisible characters (cursor moves but text doesn't show)
+- `-o default -o dirnames` doesn't fully fix the issue on ancient bash
+- Colored completion features render text invisible
+- **Solution**: Custom completion function + disabled colored completion bypasses all bugs
 
-**Use case:** load-cd-hook overrides `cd` with a function to run `look` after directory changes. Without completion setup, tab completion for directories would break.
+**Use case:** load-cd-hook overrides `cd` with a function to run `look` after directory changes. Without completion setup, tab completion for directories would break. The custom function approach ensures it works reliably on macOS.
 
 ### Case Statements
 
