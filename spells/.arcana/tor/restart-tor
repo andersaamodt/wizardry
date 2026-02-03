@@ -37,10 +37,19 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
     sudo launchctl unload "$plist_file" 2>/dev/null || true
     sleep 2
     
-    # Load (start) the service
-    if sudo launchctl load "$plist_file" 2>/dev/null; then
+    # Load (start) the service with -w flag
+    if sudo launchctl load -w "$plist_file" 2>/dev/null; then
       printf 'Tor restarted via launchd.\n'
-      exit 0
+      # Wait for tor to start
+      sleep 2
+      if is-tor-running; then
+        printf 'Tor is running.\n'
+        exit 0
+      else
+        printf 'Warning: launchctl load succeeded but tor not detected yet.\n' >&2
+        printf 'Tor may still be starting up...\n'
+        exit 0
+      fi
     fi
   else
     # Service not configured, create it (this will also start it)
@@ -51,15 +60,9 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
   fi
 fi
 
-# Try killall for systems without service managers (not recommended)
-if command -v tor >/dev/null 2>&1; then
-  printf 'Warning: Using killall method (service manager not available).\n' >&2
-  sudo killall tor 2>/dev/null || true
-  sleep 1
-  # Don't start tor in background - let service manager handle it
-  printf 'Tor stopped. Use start-tor to restart.\n'
-  exit 1
-fi
-
-printf 'restart-tor: tor restart needed but method not available\n' >&2
+# On systems without service managers, we can't safely restart tor
+# because we can't distinguish between our tor and Tor Browser's tor
+printf 'restart-tor: no service manager found\n' >&2
+printf 'Cannot safely restart tor without killing Tor Browser instance.\n' >&2
+printf 'Please use the system service manager.\n' >&2
 exit 1

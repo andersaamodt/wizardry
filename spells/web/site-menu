@@ -110,7 +110,7 @@ while true; do
   for site_hs_dir in "/usr/local/var/lib/tor/${site_name}" "/opt/pkg/var/lib/tor/${site_name}" "/var/lib/tor/${site_name}"; do
     if [ -f "$site_hs_dir/hostname" ]; then
       site_hostname_file="$site_hs_dir/hostname"
-      copy_site_onion="Copy .onion address%copy-to-clipboard \"\$(sudo cat \"$site_hostname_file\")\""
+      copy_site_onion="Copy .onion address%copy-to-clipboard \"\$(sudo cat \"$site_hostname_file\")\"; echo 3 > \"$SELECTION_FILE\""
       break
     fi
   done

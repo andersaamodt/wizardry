@@ -63,48 +63,19 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
         waited=$((waited + 1))
       done
       
-      # If still running after 10 seconds, note it and continue to force kill
-      printf 'Warning: tor did not stop within 10 seconds.\n' >&2
-      printf 'Attempting to kill tor process directly...\n'
+      # If still running after 10 seconds, that's OK
+      # It might be Tor Browser's tor instance, which we should NOT kill
+      printf 'Warning: tor process still detected after unloading launchd service.\n' >&2
+      printf 'This may be Tor Browser or another tor instance (not managed by wizardry).\n' >&2
+      printf 'Our launchd-managed tor has been stopped.\n'
+      exit 0
     fi
   fi
 fi
 
-# Try killall (macOS and others - fallback)
-if sudo killall tor 2>/dev/null; then
-  printf 'Sent SIGTERM to tor process.\n'
-  sleep 5
-  if ! is-tor-running; then
-    printf 'Tor stopped.\n'
-    exit 0
-  else
-    printf 'Warning: SIGTERM did not stop tor, trying pkill...\n' >&2
-  fi
-fi
-
-# Try pkill with SIGTERM
-if sudo pkill -TERM tor 2>/dev/null; then
-  printf 'Sent SIGTERM via pkill.\n'
-  sleep 5
-  if ! is-tor-running; then
-    printf 'Tor stopped.\n'
-    exit 0
-  else
-    printf 'Warning: pkill SIGTERM did not work, trying SIGKILL...\n' >&2
-  fi
-fi
-
-# Last resort: force kill with SIGKILL
-if sudo pkill -9 tor 2>/dev/null; then
-  printf 'Force-killed tor with SIGKILL.\n'
-  sleep 2
-  if ! is-tor-running; then
-    printf 'Tor stopped.\n'
-    exit 0
-  else
-    printf 'Warning: Even SIGKILL did not stop tor.\n' >&2
-  fi
-fi
-
-printf 'stop-tor: could not stop tor\n' >&2
+# On macOS without launchd service, or on Linux without systemctl, we can't safely stop tor
+# because we can't distinguish between our tor and Tor Browser's tor
+printf 'stop-tor: no service manager found\n' >&2
+printf 'Cannot safely stop tor without killing Tor Browser instance.\n' >&2
+printf 'Please use the system service manager or kill specific PIDs.\n' >&2
 exit 1
