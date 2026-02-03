@@ -50,6 +50,14 @@ case $distro in
   mac|macos)
     printf 'Uninstalling Tor from macOS...\n'
     
+    # Unload and remove launchd service if it exists
+    plist_file="/Library/LaunchDaemons/org.torproject.tor.plist"
+    if [ -f "$plist_file" ]; then
+      printf 'Removing launchd service...\n'
+      sudo launchctl unload "$plist_file" 2>/dev/null || true
+      sudo rm -f "$plist_file"
+    fi
+    
     # Remove tor binary and related files
     if command -v sudo >/dev/null 2>&1; then
       sudo rm -f /usr/local/bin/tor
@@ -59,6 +67,12 @@ case $distro in
       sudo rm -rf /usr/local/share/tor
       sudo rm -rf /usr/local/share/doc/tor
       sudo rm -f /usr/local/share/man/man1/tor*
+      
+      # Remove tor configuration and data
+      sudo rm -rf /usr/local/etc/tor
+      sudo rm -rf /usr/local/var/lib/tor
+      sudo rm -f /usr/local/var/log/tor.log
+      sudo rm -f /usr/local/var/log/tor-errors.log
     else
       rm -f /usr/local/bin/tor
       rm -f /usr/local/bin/tor-gencert
@@ -67,9 +81,18 @@ case $distro in
       rm -rf /usr/local/share/tor
       rm -rf /usr/local/share/doc/tor
       rm -f /usr/local/share/man/man1/tor*
+      
+      # Remove tor configuration and data
+      rm -rf /usr/local/etc/tor
+      rm -rf /usr/local/var/lib/tor
+      rm -f /usr/local/var/log/tor.log
+      rm -f /usr/local/var/log/tor-errors.log
     fi
     
-    printf 'Removed tor binaries and documentation.\n'
+    # Note: We don't remove the _tor user as it may be used by other processes
+    # and macOS system users are typically left in place
+    
+    printf 'Removed tor binaries, configuration, and launchd service.\n'
     ;;
   *)
     # Try package manager approach for other distros
