@@ -24,7 +24,7 @@ if eval '[ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
     *:file) cd_sourced=1 ;;
   esac
 else
-  cd_base=${0##*/}
+  cd_base=$(basename "$0" 2>/dev/null || printf '%s\n' "$0")
   case "$cd_base" in
     sh|dash|bash|zsh|ksh|mksh) cd_sourced=1 ;;
     load-cd-hook) cd_sourced=0 ;;
