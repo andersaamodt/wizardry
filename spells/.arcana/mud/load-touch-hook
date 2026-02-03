@@ -38,9 +38,6 @@ if [ "$touch_sourced" -eq 0 ]; then
 fi
 unset touch_sourced touch_base
 
-# Uncastable spells must remember shell mode and restore on all exits
-load_touch_hook_saved_opts=$(set +o)
-
 # Explicitly use permissive error handling - this file is meant to be sourced into user's shell
 # and we don't want their shell to exit on command failures or unset variable references
 # Our code is safe without set -u because we use ${VAR:-default} patterns everywhere
@@ -53,6 +50,9 @@ touch() {
     command -v touch-hook >/dev/null 2>&1 && touch-hook "$@" || true
 }
 
-# Restore opts
-eval "$load_touch_hook_saved_opts"
-unset load_touch_hook_saved_opts
+# Explicitly set permissive mode (don't restore saved options)
+# This file is sourced into user's shell, must leave it in permissive mode
+# to avoid breaking readline (same fix as invoke-wizardry for PR #1053 regression)
+set +e
+set +u
+
