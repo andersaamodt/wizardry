@@ -49,15 +49,21 @@ elif is-tor-running; then
   fi
   
   if [ -n "$log_file" ] && [ -r "$log_file" ]; then
-    # Check if bootstrapped (look for "Bootstrapped 100%")
-    if tail -n 50 "$log_file" 2>/dev/null | grep -q "Bootstrapped 100%"; then
+    # Check if bootstrapped to 100%
+    if tail -n 100 "$log_file" 2>/dev/null | grep -q "Bootstrapped 100%"; then
       bootstrap_status="bootstrapped"
     # Check for bootstrap errors
-    elif tail -n 50 "$log_file" 2>/dev/null | grep -qi "bootstrap.*fail\|bootstrap.*error"; then
+    elif tail -n 100 "$log_file" 2>/dev/null | grep -qi "bootstrap.*fail\|bootstrap.*error"; then
       bootstrap_status="error"
-    # Must be bootstrapping
+    # Must be bootstrapping - try to get percentage
     else
-      bootstrap_status="bootstrapping"
+      # Extract the most recent bootstrap percentage
+      bootstrap_pct=$(tail -n 100 "$log_file" 2>/dev/null | grep "Bootstrapped [0-9]*%" | tail -n 1 | sed 's/.*Bootstrapped \([0-9]*\)%.*/\1/')
+      if [ -n "$bootstrap_pct" ]; then
+        bootstrap_status="bootstrapping (${bootstrap_pct}%)"
+      else
+        bootstrap_status="bootstrapping"
+      fi
     fi
   else
     # Can't read logs, assume bootstrapping
@@ -69,8 +75,8 @@ elif is-tor-running; then
       status="running, bootstrapped"
       color="$THEME_SUCCESS"
       ;;
-    bootstrapping)
-      status="running, bootstrapping"
+    bootstrapping*)
+      status="running, $bootstrap_status"
       color="$THEME_WARNING"
       ;;
     error)

@@ -211,11 +211,28 @@ while true; do
     tor="Set up tor hidden service%setup-tor -y; echo 8 > \"$SELECTION_FILE\""
   fi
   
+  # Build copy .onion address option if hidden service is configured and tor is running
+  copy_onion=""
+  if [ "$tor_configured" -eq 1 ]; then
+    if is-tor-installed && is-tor-running; then
+      # Check for MUD hidden service hostname file
+      mud_hs_dir="/usr/local/var/lib/tor/mud"
+      if [ -f "$mud_hs_dir/hostname" ]; then
+        copy_onion="Copy .onion address%copy-to-clipboard \"\$(cat $mud_hs_dir/hostname)\"; echo 7 > \"$SELECTION_FILE\""
+      fi
+    fi
+  fi
+  
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
   exit_item="Exit%kill -TERM \$PPID"
 
-  set -- "$parse_toggle" "$mud_menu" "$cd_hook" "$cd_listen" "$avatar" "$touch_hook" "$toggle_all" "$tor" "$exit_item"
+  # Build menu items list, adding copy_onion before tor if it exists
+  if [ -n "$copy_onion" ]; then
+    set -- "$parse_toggle" "$mud_menu" "$cd_hook" "$cd_listen" "$avatar" "$touch_hook" "$toggle_all" "$copy_onion" "$tor" "$exit_item"
+  else
+    set -- "$parse_toggle" "$mud_menu" "$cd_hook" "$cd_listen" "$avatar" "$touch_hook" "$toggle_all" "$tor" "$exit_item"
+  fi
   
   menu --start-selection "$start_selection" "MUD Install:" "$@" || menu_status=$?
   menu_status=${menu_status:-0}

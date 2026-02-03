@@ -46,8 +46,8 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
     printf 'Unloading tor from launchd...\n'
     if sudo launchctl unload -w /Library/LaunchDaemons/org.torproject.tor.plist 2>/dev/null; then
       printf 'Tor launchd service unloaded.\n'
-      # Wait for process to actually stop
-      sleep 3
+      # Wait for process to actually stop (increased to allow graceful shutdown)
+      sleep 5
       # Re-enable the service but don't start it
       sudo launchctl load -w /Library/LaunchDaemons/org.torproject.tor.plist 2>/dev/null || true
       
@@ -65,7 +65,7 @@ fi
 # Try killall (macOS and others - fallback)
 if sudo killall tor 2>/dev/null; then
   printf 'Sent SIGTERM to tor process.\n'
-  sleep 3
+  sleep 5
   if ! is-tor-running; then
     printf 'Tor stopped.\n'
     exit 0
@@ -77,7 +77,7 @@ fi
 # Try pkill with SIGTERM
 if sudo pkill -TERM tor 2>/dev/null; then
   printf 'Sent SIGTERM via pkill.\n'
-  sleep 3
+  sleep 5
   if ! is-tor-running; then
     printf 'Tor stopped.\n'
     exit 0
