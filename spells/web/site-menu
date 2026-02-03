@@ -105,10 +105,12 @@ while true; do
   # Build copy .onion address option if hostname file exists
   # The hostname file is created when tor generates the hidden service
   copy_site_onion=""
+  site_hostname_file=""
   # Check for site-specific hidden service hostname file in multiple locations
   for site_hs_dir in "/usr/local/var/lib/tor/${site_name}" "/opt/pkg/var/lib/tor/${site_name}" "/var/lib/tor/${site_name}"; do
     if [ -f "$site_hs_dir/hostname" ]; then
-      copy_site_onion="Copy .onion address%copy-to-clipboard \"\$(cat \"$site_hs_dir/hostname\")\""
+      site_hostname_file="$site_hs_dir/hostname"
+      copy_site_onion="Copy .onion address%copy-to-clipboard \"\$(sudo cat \"$site_hostname_file\")\""
       break
     fi
   done

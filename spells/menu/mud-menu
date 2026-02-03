@@ -213,10 +213,12 @@ while true; do
   
   # Build copy .onion address option if hostname file exists
   copy_onion=""
+  hostname_file=""
   # Check for MUD hidden service hostname file in multiple locations
   for mud_hs_dir in /usr/local/var/lib/tor/mud /opt/pkg/var/lib/tor/mud /var/lib/tor/mud; do
     if [ -f "$mud_hs_dir/hostname" ]; then
-      copy_onion="Copy .onion address%copy-to-clipboard \"\$(cat $mud_hs_dir/hostname)\"; echo 7 > \"$SELECTION_FILE\""
+      hostname_file="$mud_hs_dir/hostname"
+      copy_onion="Copy .onion address%copy-to-clipboard \"\$(sudo cat \"$hostname_file\")\"; echo 7 > \"$SELECTION_FILE\""
       break
     fi
   done
