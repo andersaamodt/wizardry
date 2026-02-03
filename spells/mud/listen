@@ -91,7 +91,7 @@ if [ "$_listen_stop_only" = "1" ]; then
   # Restore readline mode
   [ "$_listen_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
   [ "$_listen_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
-  unset _listen_stop_only _listen_pid _listen_is_sourced _listen_room_path
+  unset _listen_stop_only _listen_is_sourced _listen_room_path
   unset _listen_emacs_mode _listen_vi_mode
   return 0 2>/dev/null || exit 0
 fi
