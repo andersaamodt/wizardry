@@ -75,15 +75,26 @@ if type cd 2>/dev/null | grep -q "function"; then
     # Check which completion method is used
     completion_spec=$(complete -p cd 2>/dev/null || echo "")
     case "$completion_spec" in
+      *"-F _wizardry_cd_completion"*)
+        success "✓ cd autocomplete configured (custom function, macOS-compatible)"
+        # Verify the function exists
+        if type _wizardry_cd_completion >/dev/null 2>&1; then
+          success "  Custom completion function is active"
+        else
+          warn "  Custom completion registered but function not found"
+        fi
+        ;;
       *"-o default -o dirnames"*)
-        success "✓ cd autocomplete configured (macOS-compatible mode)"
+        success "✓ cd autocomplete configured (dirnames mode)"
+        info "  Note: On macOS, custom function mode is more reliable"
         ;;
       *"-o dirnames"*)
         success "✓ cd autocomplete configured (dirnames mode)"
         ;;
       *"-d cd"*)
         success "✓ cd autocomplete configured (basic mode)"
-        info "  Note: If on macOS and seeing invisible characters, this may need updating"
+        warn "  Note: On macOS this may show invisible characters"
+        info "  Update to latest wizardry for better macOS support"
         ;;
       *)
         success "✓ cd autocomplete is configured"
