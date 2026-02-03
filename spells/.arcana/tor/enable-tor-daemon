@@ -1,0 +1,67 @@
+#!/bin/sh
+
+# Enable tor daemon to start automatically on boot.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: enable-tor-daemon
+
+Enables tor daemon to start automatically on system boot.
+On macOS, creates and loads a launchd service.
+On Linux with systemd, enables the tor service.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+
+# Check if tor is installed
+if ! is-tor-installed; then
+  printf 'enable-tor-daemon: tor is not installed\n' >&2
+  exit 1
+fi
+
+# Detect platform
+kernel=$(uname -s 2>/dev/null || printf 'unknown')
+
+case $kernel in
+  Darwin)
+    # macOS - use launchd
+    if is-tor-launchd-service-configured; then
+      printf 'Tor daemon is already enabled.\n'
+      exit 0
+    fi
+    
+    # Create and load the launchd service
+    if create-tor-launchd-service; then
+      printf 'Tor daemon enabled successfully.\n'
+      exit 0
+    else
+      printf 'enable-tor-daemon: failed to create launchd service\n' >&2
+      exit 1
+    fi
+    ;;
+  Linux)
+    # Linux - use systemd
+    if ! command -v systemctl >/dev/null 2>&1; then
+      printf 'enable-tor-daemon: systemctl not found\n' >&2
+      exit 1
+    fi
+    
+    if sudo systemctl enable tor 2>/dev/null; then
+      printf 'Tor daemon enabled successfully.\n'
+      exit 0
+    else
+      printf 'enable-tor-daemon: failed to enable tor service\n' >&2
+      exit 1
+    fi
+    ;;
+  *)
+    printf 'enable-tor-daemon: unsupported platform: %s\n' "$kernel" >&2
+    exit 1
+    ;;
+esac

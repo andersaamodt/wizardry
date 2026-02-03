@@ -1,0 +1,49 @@
+#!/bin/sh
+
+# Check if tor daemon is enabled to start on boot.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-tor-daemon-enabled
+
+Returns 0 (true) if tor daemon is enabled, 1 (false) otherwise.
+On macOS, checks for launchd service.
+On Linux with systemd, checks if service is enabled.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+# Detect platform
+kernel=$(uname -s 2>/dev/null || printf 'unknown')
+
+case $kernel in
+  Darwin)
+    # macOS - check for launchd service
+    if is-tor-launchd-service-configured; then
+      exit 0
+    else
+      exit 1
+    fi
+    ;;
+  Linux)
+    # Linux - check systemd
+    if command -v systemctl >/dev/null 2>&1; then
+      if systemctl is-enabled tor >/dev/null 2>&1; then
+        exit 0
+      else
+        exit 1
+      fi
+    else
+      # No systemctl available
+      exit 1
+    fi
+    ;;
+  *)
+    # Unknown platform
+    exit 1
+    ;;
+esac
