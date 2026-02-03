@@ -192,3 +192,4 @@
 - Nested save/restore of shell options causes insidious bugs - if outer script restores opts after inner script, the inner script's changes get undone, potentially re-enabling harmful strict modes.
 - macOS bash colored completion rendering bugs cannot be fixed from scripts - users must set `colored-stats off` in ~/.inputrc, not via bind commands or script-based workarounds.
 - When defining bash-specific functions in POSIX sh scripts, wrap with eval to avoid syntax errors in sh - `eval 'function_name() { bash syntax }'` works in both sh and bash.
+- NEVER wrap the command itself with eval when calling builtins - `eval 'builtin cd "$@"'` breaks argument expansion; use `builtin cd "$@"` directly inside the conditional branch (the if-eval guards against syntax errors, not the command itself).

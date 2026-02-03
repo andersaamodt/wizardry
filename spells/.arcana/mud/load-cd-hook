@@ -51,7 +51,7 @@ cd() {
     # This is necessary because 'builtin cd' is required in zsh, but doesn't exist in pure POSIX sh
     if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
         # In bash/zsh, must use 'builtin' to call the actual cd builtin from within override function
-        eval 'builtin cd "$@"'
+        builtin cd "$@"
         cd_exit_code=$?
     else
         command cd "$@"
