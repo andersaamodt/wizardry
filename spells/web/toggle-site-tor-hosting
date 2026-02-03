@@ -179,8 +179,8 @@ else
   # Site is not configured - enable it
   # Create the hidden service directory
     sudo mkdir -p "$hs_dir" || exit 1
-    sudo chown _tor:_tor "$hs_dir" 2>/dev/null \
-        || sudo chown tor:tor "$hs_dir" 2>/dev/null || true
+    sudo chown -R _tor:wheel "$hs_dir" 2>/dev/null \
+        || sudo chown -R tor:tor "$hs_dir" 2>/dev/null || true
     sudo chmod 700 "$hs_dir" || true
     
   # Add hidden service configuration to torrc
