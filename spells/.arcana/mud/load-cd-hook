@@ -125,7 +125,7 @@ cd() {
     fi
     
     # Clean up variables
-    unset _cd_config_file _cd_look_value _cd_listen_value _cd_avatar_value
+    unset _cd_config_file _cd_look_value _cd_listen_value _cd_avatar_value _cd_exit_code
     
     # Restore shell options before returning
     eval "$_cd_saved_opts"
