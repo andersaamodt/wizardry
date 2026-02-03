@@ -133,45 +133,23 @@ $openssl_option"
     
     # Determine the menu options based on what's available
     
-    if [ -n "$show_log_option" ]; then
-      # Tor is running - show log option first
-      if [ -n "$copy_onion_option" ]; then
-        if [ -n "$macos_deps" ]; then
-          menu "$title" "$show_log_option" "$copy_onion_option" "$tor_service_option" "$daemon_option" \
-            "$config_option" "$repair_option" "$uninstall_option" \
-            "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
-        else
-          menu "$title" "$show_log_option" "$copy_onion_option" "$tor_service_option" "$daemon_option" \
-            "$config_option" "$repair_option" "$uninstall_option" "$exit_option" || menu_status=$?
-        fi
-      else
-        if [ -n "$macos_deps" ]; then
-          menu "$title" "$show_log_option" "$tor_service_option" "$daemon_option" \
-            "$config_option" "$repair_option" "$uninstall_option" \
-            "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
-        else
-          menu "$title" "$show_log_option" "$tor_service_option" "$daemon_option" \
-            "$config_option" "$repair_option" "$uninstall_option" "$exit_option" || menu_status=$?
-        fi
-      fi
-    elif [ -n "$copy_onion_option" ]; then
-      if [ -n "$macos_deps" ]; then
-        menu "$title" "$copy_onion_option" "$tor_service_option" "$daemon_option" \
-          "$config_option" "$repair_option" "$uninstall_option" \
-          "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
-      else
-        menu "$title" "$copy_onion_option" "$tor_service_option" "$daemon_option" \
-          "$config_option" "$repair_option" "$uninstall_option" "$exit_option" || menu_status=$?
-      fi
+    # Use conditional parameter expansion to avoid blank lines in menu
+    # Only include options if they're non-empty
+    if [ -n "$macos_deps" ]; then
+      menu "$title" \
+        ${show_log_option:+"$show_log_option"} \
+        ${copy_onion_option:+"$copy_onion_option"} \
+        ${tor_service_option:+"$tor_service_option"} \
+        ${daemon_option:+"$daemon_option"} \
+        "$config_option" "$repair_option" "$uninstall_option" \
+        "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
     else
-      if [ -n "$macos_deps" ]; then
-        menu "$title" "$tor_service_option" "$daemon_option" \
-          "$config_option" "$repair_option" "$uninstall_option" \
-          "$libevent_option" "$openssl_option" "$exit_option" || menu_status=$?
-      else
-        menu "$title" "$tor_service_option" "$daemon_option" \
-          "$config_option" "$repair_option" "$uninstall_option" "$exit_option" || menu_status=$?
-      fi
+      menu "$title" \
+        ${show_log_option:+"$show_log_option"} \
+        ${copy_onion_option:+"$copy_onion_option"} \
+        ${tor_service_option:+"$tor_service_option"} \
+        ${daemon_option:+"$daemon_option"} \
+        "$config_option" "$repair_option" "$uninstall_option" "$exit_option" || menu_status=$?
     fi
   else
     install_option="Install tor%install-tor"
