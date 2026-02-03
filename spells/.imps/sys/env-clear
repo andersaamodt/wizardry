@@ -23,19 +23,24 @@ if [ "$env_clear_sourced" -eq 0 ]; then
 fi
 unset env_clear_sourced env_clear_base
 
+# Uncastable spells must remember shell mode and restore on all exits
+env_clear_saved_opts=$(set +o)
+
 # Explicitly use permissive mode - this imp mutates the caller's environment.
 set +eu
 
 # Skip env clearing when running in test mode (all test vars are preserved)
 if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" = "1" ]; then
-  set -eu
+  eval "$env_clear_saved_opts"
+  unset env_clear_saved_opts
   return 0
 fi
 
 # Skip env clearing when being sourced by invoke-wizardry during spell loading
 # This prevents clearing parent's loop variables
 if [ "${_WIZARDRY_LOADING_SPELLS:-0}" = "1" ]; then
-  set -eu
+  eval "$env_clear_saved_opts"
+  unset env_clear_saved_opts
   return 0
 fi
 
@@ -226,9 +231,9 @@ unset ec_saved_github_ref ec_saved_github_ref_name ec_saved_github_head_ref
 unset ec_saved_github_base_ref ec_saved_runner_os ec_saved_runner_temp
 unset ec_saved_runner_tool_cache env_var
 
-# Re-enable strict mode for the calling spell
-# The spell set `-eu` before sourcing this file, so we restore that state
-set -eu
+# Restore opts
+eval "$env_clear_saved_opts"
+unset env_clear_saved_opts
 
 # Return 0 explicitly (some shells exit with the exit code of the last unset)
 return 0

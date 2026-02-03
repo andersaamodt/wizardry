@@ -128,15 +128,29 @@ if [ "$_spell_name_sourced" -eq 0 ]; then
 fi
 unset _spell_name_sourced _spell_name_base
 
+# Uncastable spells must remember shell mode and restore on all exits
+_spell_name_saved_opts=$(set +o)
+set -eu
+
 # Main logic here
 # Use `return` for flow control (since spell is sourced)
+# CRITICAL: Restore opts before ALL returns (including error paths and Ctrl-C)
+
+# Restore opts before normal return
+eval "$_spell_name_saved_opts"
+unset _spell_name_saved_opts
 ```
 
 **Uncastable spells:**
 - MUST have `# Uncastable` comment at start of uncastable pattern block
+- MUST save shell options with `$(set +o)` and restore on ALL exit paths
 - Use `return` (not `exit`) for flow control (since they're sourced)
 - Include helpful error message telling user how to invoke
+- ALWAYS restore shell options before returning (normal exits, errors, and Ctrl-C)
 - Examples: jump-to-marker, blink, cd (spells that change shell state)
+
+**Why restore shell options?**
+Sourced spells that use `set -eu` modify the parent shell's error handling. If options aren't restored, the user's terminal becomes fragile (e.g., `cd` to nonexistent path kills the shell). The pattern `saved_opts=$(set +o)` captures all shell options, and `eval "$saved_opts"` restores them exactly as they were.
 
 ### Action Imp
 
