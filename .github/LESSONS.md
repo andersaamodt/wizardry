@@ -182,6 +182,7 @@
 - 2KB padding causes batching in SSE delivery (too small for reliable flush) - Testing confirmed 4KB is minimum threshold to trigger flush mechanism consistently.
 - 4KB is confirmed minimum for instant SSE delivery over fcgiwrap/nginx - Smaller sizes (2KB, 1KB) cause batching; 4KB provides 83% bandwidth reduction while maintaining reliability.
 - Functions that override builtins (like cd() in load-cd-hook) MUST save and restore readline editing mode (emacs/vi) - failure to do so causes arrow keys to show escape sequences (^[[A) after the function executes; check with `set -o | grep -E "emacs|vi"` and restore with `set -o emacs/vi`.
+- Sourced spells (like jump-to-marker) that use set -eu MUST NOT save/restore shell options - they should use set +eu at the start and preserve readline mode (emacs/vi) at all return points to avoid breaking readline; same pattern as load-cd-hook.
 - Variable names must not begin with underscore (against project policy) - use descriptive names like `cd_saved_opts` not `_cd_saved_opts` to match existing codebase patterns.
 - Overriding builtin commands with functions breaks shell tab completion - attempting to restore it from scripts causes more problems than it solves (readline corruption, invisible characters).
 - NEVER call `bind` from sourced scripts - it corrupts readline state causing arrow keys to show escape sequences (^[[A) and breaking all line editing.
