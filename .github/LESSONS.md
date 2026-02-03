@@ -189,7 +189,7 @@
 - NEVER set up completion from sourced scripts - custom completion functions, complete flags, and compdef can all break readline; let bash use default completion.
 - NEVER use `set -u` in sourced scripts - it stays active in user's shell and breaks readline (arrow keys, tab completion) because readline uses unset internal variables.
 - Environment setup scripts sourced into user's shell must set +eu at end without restoring - invoke-wizardry, load-cd-hook, load-touch-hook configure the shell environment and must guarantee permissive mode; PR #1053 regression broke readline by restoring strict modes.
-- Task scripts that can be sourced must save/restore shell options - listen, env-clear, etc. perform tasks without changing shell state; save parent's options, use permissive mode for own logic, restore parent's options at all exit points.
+- Task scripts that can be sourced must save/restore shell options - listen, env-clear, etc. perform tasks without changing shell state; save parent's options, use permissive mode for own logic, restore parent's options at all exit points; ALSO must preserve readline editing mode (emacs/vi) to prevent nested save/restore from breaking readline.
 - Nested save/restore of shell options causes insidious bugs - if outer script restores opts after inner script, the inner script's changes get undone, potentially re-enabling harmful strict modes.
 - macOS bash colored completion rendering bugs cannot be fixed from scripts - users must set `colored-stats off` in ~/.inputrc, not via bind commands or script-based workarounds.
 - When defining bash-specific functions in POSIX sh scripts, wrap with eval to avoid syntax errors in sh - `eval 'function_name() { bash syntax }'` works in both sh and bash.
