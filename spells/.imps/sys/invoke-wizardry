@@ -25,9 +25,6 @@ if [ "$iw_sourced" -eq 0 ]; then
 fi
 unset iw_sourced iw_base
 
-# Uncastable spells must remember shell mode and restore on all exits
-invoke_wizardry_saved_opts=$(set +o)
-
 # Ensure baseline PATH before anything else (macOS may have empty PATH)
 baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 case ":${PATH-}:" in
@@ -51,8 +48,6 @@ fi
 if [ "${WIZARDRY_INVOKED-}" = "1" ]; then
   [ "${WIZARDRY_DEBUG-}" = "1" ] && \
     printf '[invoke-wizardry] %s\n' "Already invoked, skipping" >&2
-  eval "$invoke_wizardry_saved_opts"
-  unset invoke_wizardry_saved_opts
   return 0
 fi
 WIZARDRY_INVOKED=1
@@ -290,8 +285,6 @@ fi
 if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
   if ! command -v menu >/dev/null 2>&1; then
     printf '%s\n' "invoke-wizardry: ERROR - menu spell not found in PATH" >&2
-    eval "$invoke_wizardry_saved_opts"
-    unset invoke_wizardry_saved_opts
     return 1
   fi
 fi
@@ -299,7 +292,8 @@ fi
 # Wizardry initialization complete
 [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Wizardry initialization complete" >&2
 
-# Restore opts
-eval "$invoke_wizardry_saved_opts"
-unset invoke_wizardry_saved_opts
+# Explicitly set permissive mode for interactive shell use
+# This was the original behavior before PR #1053
+# Permissive mode is required for readline to work (arrow keys, tab completion)
+set +eu
 return 0

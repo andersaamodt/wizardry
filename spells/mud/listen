@@ -59,7 +59,12 @@ fi
 _listen_is_sourced=$_listen_sourced
 unset _listen_sourced _listen_base
 
-set -eu
+# Save shell options so we can restore them (this spell can be sourced)
+_listen_saved_opts=$(set +o)
+
+# Use permissive mode for our own logic
+set +e
+set +u
 . env-clear
 
 # Get room path
@@ -77,14 +82,18 @@ if [ "$_listen_stop_only" = "1" ]; then
   
   printf '%s\n' "✓ Stopped listening to room activity"
   
-  unset _listen_stop_only _listen_pid _listen_is_sourced _listen_room_path
+  # Restore shell options before returning
+  eval "$_listen_saved_opts"
+  unset _listen_stop_only _listen_pid _listen_is_sourced _listen_room_path _listen_saved_opts
   return 0 2>/dev/null || exit 0
 fi
 
 # Check if directory exists
 if [ ! -d "$_listen_room_path" ]; then
   printf '%s\n' "listen: directory does not exist: $_listen_room_path" >&2
-  unset _listen_stop_only _listen_room_path _listen_is_sourced
+  # Restore shell options before returning
+  eval "$_listen_saved_opts"
+  unset _listen_stop_only _listen_room_path _listen_is_sourced _listen_saved_opts
   return 1 2>/dev/null || exit 1
 fi
 
@@ -94,7 +103,9 @@ _listen_room_log="$_listen_room_path/.log"
 if [ ! -f "$_listen_room_log" ]; then
   touch "$_listen_room_log" 2>/dev/null || {
     printf '%s\n' "listen: cannot create log file (directory may be read-only)" >&2
-    unset _listen_stop_only _listen_room_path _listen_room_log _listen_is_sourced
+    # Restore shell options before returning
+    eval "$_listen_saved_opts"
+    unset _listen_stop_only _listen_room_path _listen_room_log _listen_is_sourced _listen_saved_opts
     return 1 2>/dev/null || exit 1
   }
 fi
@@ -216,6 +227,10 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
 
 _listen_monitor_pid=$!
 
-# Clean up variables
+# Clean up variables and restore shell options
 unset _listen_stop_only _listen_room_path _listen_room_log _listen_is_sourced \
   _listen_monitor_pid _listen_term_width
+
+# Restore shell options before returning
+eval "$_listen_saved_opts"
+unset _listen_saved_opts
