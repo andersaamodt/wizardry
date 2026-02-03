@@ -50,6 +50,8 @@ if [ "$blink_sourced" -eq 0 ]; then
 fi
 unset blink_sourced blink_base
 
+# Uncastable spells must remember shell mode and restore on all exits
+blink_saved_opts=$(set +o)
 set -eu
 . env-clear
 
@@ -65,7 +67,9 @@ while [ $# -gt 0 ]; do
       shift
       if [ $# -eq 0 ]; then
         printf '%s\n' "blink: --depth requires an argument" >&2
-        set +eu; return 1
+        eval "$blink_saved_opts"
+        unset blink_saved_opts
+        return 1
       fi
       max_depth=$1
       shift
@@ -80,14 +84,18 @@ while [ $# -gt 0 ]; do
       ;;
     -*)
       printf '%s\n' "blink: unknown option '$1'." >&2
-      set +eu; return 1
+      eval "$blink_saved_opts"
+      unset blink_saved_opts
+      return 1
       ;;
     *)
       if [ -z "$start_path" ]; then
         start_path=$1
       else
         printf '%s\n' "blink: unexpected argument '$1'." >&2
-        set +eu; return 1
+        eval "$blink_saved_opts"
+        unset blink_saved_opts
+        return 1
       fi
       shift
       ;;
@@ -103,19 +111,25 @@ fi
 case "$max_depth" in
   ''|*[!0-9]*)
     printf '%s\n' "blink: depth must be a number between 1 and 10." >&2
-    set +eu; return 1
+    eval "$blink_saved_opts"
+    unset blink_saved_opts
+    return 1
     ;;
 esac
 
 if [ "$max_depth" -lt 1 ] || [ "$max_depth" -gt 10 ]; then
   printf '%s\n' "blink: depth must be between 1 and 10." >&2
-  set +eu; return 1
+  eval "$blink_saved_opts"
+  unset blink_saved_opts
+  return 1
 fi
 
 # Validate and normalize start_path
 if [ ! -d "$start_path" ]; then
   printf '%s\n' "blink: directory not found: $start_path" >&2
-  set +eu; return 1
+  eval "$blink_saved_opts"
+  unset blink_saved_opts
+  return 1
 fi
 
 # Get current directory
@@ -124,7 +138,9 @@ current=$(pwd -P | sed 's|//|/|g')
 # Change to start_path to make find work from there
 if ! cd "$start_path" 2>/dev/null; then
   printf '%s\n' "blink: cannot access directory: $start_path" >&2
-  set +eu; return 1
+  eval "$blink_saved_opts"
+  unset blink_saved_opts
+  return 1
 fi
 
 # Find all subdirectories up to max_depth
@@ -159,7 +175,9 @@ fi
 
 if [ -z "$subdirs" ]; then
   printf '%s\n' "No subdirectories found within depth $max_depth in $start_path."
-  set +eu; return 1
+  eval "$blink_saved_opts"
+  unset blink_saved_opts
+  return 1
 fi
 
 # Count the subdirectories
@@ -167,7 +185,9 @@ subdir_count=$(printf '%s\n' "$subdirs" | grep -c '^')
 
 if [ "$subdir_count" -eq 0 ]; then
   printf '%s\n' "No subdirectories found within depth $max_depth in $start_path."
-  set +eu; return 1
+  eval "$blink_saved_opts"
+  unset blink_saved_opts
+  return 1
 fi
 
 # Generate a pseudo-random index using cksum (POSIX-compatible)
@@ -180,13 +200,17 @@ destination=$(printf '%s\n' "$subdirs" | sed -n "${random_index}p")
 
 if [ -z "$destination" ]; then
   printf '%s\n' "Failed to select a random subdirectory."
-  set +eu; return 1
+  eval "$blink_saved_opts"
+  unset blink_saved_opts
+  return 1
 fi
 
 # Resolve destination to absolute path
 if ! cd "$destination" 2>/dev/null; then
   printf '%s\n' "blink: cannot access directory: $destination" >&2
-  set +eu; return 1
+  eval "$blink_saved_opts"
+  unset blink_saved_opts
+  return 1
 fi
 
 # Get the real path of the destination
@@ -195,7 +219,9 @@ normalized_destination=$(pwd -P | sed 's|//|/|g')
 # Check if we're already in the same place
 if [ "$current" = "$normalized_destination" ]; then
   printf '%s\n' "The teleportation fizzles—you were already standing here."
-  set +eu; return 0
+  eval "$blink_saved_opts"
+  unset blink_saved_opts
+  return 0
 fi
 
 # Pick a random arrival message
@@ -260,5 +286,6 @@ if command -v look >/dev/null 2>&1; then
   look 2>/dev/null || true
 fi
 
-# Restore shell options before returning
-set +eu
+# Restore opts
+eval "$blink_saved_opts"
+unset blink_saved_opts

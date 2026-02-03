@@ -7,7 +7,8 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: install-checkbashisms
 
-Install the checkbashisms command with your system package manager if it's missing, supporting common Linux distributions and macOS.
+Install the checkbashisms command with your system package manager if it's
+missing, supporting common Linux distributions and macOS.
 USAGE
   exit 0
   ;;
@@ -24,10 +25,49 @@ if command -v checkbashisms >/dev/null 2>&1 && [ "$force_install" != "1" ]; then
   exit 0
 fi
 
+# Special handling for Arch Linux - checkbashisms not in official repos
+if command -v pacman >/dev/null 2>&1; then
+  # Download checkbashisms directly from Debian sources
+  target_dir="/usr/local/bin"
+  debian_base="https://sources.debian.org/data/main/d/devscripts"
+  checkbashisms_url="$debian_base/2.23.4+deb12u2/scripts/checkbashisms.pl"
+  if [ ! -w "$target_dir" ]; then
+    if command -v sudo >/dev/null 2>&1; then
+      sudo curl -sSL "$checkbashisms_url" -o "$target_dir/checkbashisms" || {
+        printf '%s\n' "install-checkbashisms: failed to download checkbashisms" >&2
+        exit 1
+      }
+      sudo chmod +x "$target_dir/checkbashisms"
+    else
+      curl -sSL "$checkbashisms_url" -o "$target_dir/checkbashisms" || {
+        printf '%s\n' "install-checkbashisms: failed to download checkbashisms" >&2
+        exit 1
+      }
+      chmod +x "$target_dir/checkbashisms"
+    fi
+  else
+    curl -sSL "$checkbashisms_url" -o "$target_dir/checkbashisms" || {
+      printf '%s\n' "install-checkbashisms: failed to download checkbashisms" >&2
+      exit 1
+    }
+    chmod +x "$target_dir/checkbashisms"
+  fi
+  
+  if command -v checkbashisms >/dev/null 2>&1; then
+    printf '%s\n' "checkbashisms installed successfully from Debian sources."
+    exit 0
+  else
+    printf '%s\n' "install-checkbashisms: installation failed" >&2
+    exit 1
+  fi
+fi
+
 ASSUME_YES=1
 FORCE_INSTALL=${INSTALL_CHECKBASHISMS_FORCE_INSTALL:-0}
 # On Debian/Ubuntu, checkbashisms is in the devscripts package
 APT_PACKAGE=devscripts
-export ASSUME_YES FORCE_INSTALL APT_PACKAGE
+# On Arch Linux, checkbashisms is in the devtools package
+PACMAN_PACKAGE=devtools
+export ASSUME_YES FORCE_INSTALL APT_PACKAGE PACMAN_PACKAGE
 
 "$SCRIPT_DIR/manage-system-command" checkbashisms devscripts

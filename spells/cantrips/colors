@@ -44,6 +44,9 @@ if [ "$colors_sourced" -eq 0 ]; then
 fi
 unset colors_sourced colors_base
 
+# Uncastable spells must remember shell mode and restore on all exits
+colors_saved_opts=$(set +o)
+
 colors() {
 # Note: No require-wizardry check here - colors must work standalone
 set -eu
@@ -239,3 +242,7 @@ esac
 
 # Call colors function when sourced to initialize color variables
 colors "$@"
+
+# Restore opts
+eval "$colors_saved_opts"
+unset colors_saved_opts

@@ -74,7 +74,7 @@ jobs:
           sudo sysctl --system || true
       - name: Run unit tests (levels ${{ matrix.levels }}) in Nix shell
         run: |
-          nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr --run "
+          nix-shell -I nixpkgs=channel:nixos-unstable -p bubblewrap shadow attr perlPackages.PerlCritic --run "
             set -e
             . spells/.imps/sys/invoke-wizardry
             banish ${{ matrix.max_level }}
@@ -162,11 +162,13 @@ jobs:
       WIZARDRY_OS_LABEL: arch
     steps:
       - name: Install git, procps, and core utilities for checkout and testing
-        run: pacman -Sy --noconfirm git procps-ng coreutils sed gawk grep findutils attr file
+        run: pacman -Sy --noconfirm git procps-ng coreutils sed gawk grep findutils attr file perl curl
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/check-attribute-tool spells/.imps/fs/list-attributes spells/.imps/fs/get-attribute
+      - name: Pre-install checkbashisms for level 22 testing
+        run: ./spells/.arcana/core/install-checkbashisms
       - name: Run unit tests (levels ${{ matrix.levels }})
         run: |
           set -e
@@ -211,7 +213,7 @@ jobs:
       DEBIAN_FRONTEND: noninteractive
     steps:
       - name: Install git, procps, and gawk for checkout and testing
-        run: apt-get update && apt-get install -y git procps gawk attr file
+        run: apt-get update && apt-get install -y git procps gawk attr file devscripts
       - name: Checkout
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable

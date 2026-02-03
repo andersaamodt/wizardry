@@ -90,12 +90,12 @@ case "$level" in
   15)
     name='Divination'
     spells='detect-magic:divination detect-rc-file:divination identify-room:divination'
-    imps='lang/possessive sys/os sys/term text/detect-indent-char text/detect-indent-width'
+    imps='lang/possessive sys/os sys/term text/divine-indent-char text/divine-indent-width'
     ;;
   16)
     name='Advanced MUD Features'
-    spells='boot-player:mud choose-player:mud decorate:mud greater-heal:mud heal:mud lesser-heal:mud listen:mud magic-missile:mud resurrect:mud say:mud shocking-grasp:mud start-listening:mud stats:mud stop-listening:mud'
-    imps='hook/cd-hook hook/touch-hook mud/damage-file mud/deal-damage mud/get-life mud/incarnate mud/move-avatar mud/trigger-on-touch'
+    spells='boot-player:mud choose-player:mud decorate:mud greater-heal:mud heal:mud lesser-heal:mud listen:mud magic-missile:mud resurrect:mud say:mud shocking-grasp:mud stats:mud'
+    imps='hook/touch-hook mud/damage-file mud/deal-damage mud/get-life mud/incarnate mud/move-avatar mud/trigger-on-touch'
     ;;
   17)
     name='Cryptography'
@@ -134,7 +134,7 @@ case "$level" in
     ;;
   24)
     name='MUD Administration Menus'
-    spells='add-player:menu/mud-admin mud:menu mud-admin-menu:menu mud-menu:menu mud-settings:menu new-player:menu/mud-admin set-player:menu/mud-admin toggle-avatar:.arcana/mud toggle-touch-hook:.arcana/mud touch:.arcana/mud'
+    spells='add-player:menu/mud-admin mud:menu mud-admin-menu:menu mud-menu:menu mud-settings:menu new-player:menu/mud-admin set-player:menu/mud-admin toggle-avatar:.arcana/mud toggle-touch-hook:.arcana/mud'
     imps=''
     ;;
   25)
