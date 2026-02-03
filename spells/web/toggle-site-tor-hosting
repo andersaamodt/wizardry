@@ -168,6 +168,7 @@ else
   # Add hidden service configuration to torrc
   printf '\n# Hidden service for site: %s\n' "$site_name" | sudo tee -a "$tor_config_path"
   printf 'HiddenServiceDir %s\n' "$hs_dir" | sudo tee -a "$tor_config_path"
+  printf '%s\n' "HiddenServiceVersion 3" | sudo tee -a "$tor_config_path"
   printf 'HiddenServicePort 80 127.0.0.1:%s\n' "$port" | sudo tee -a "$tor_config_path"
   
   # Ensure torrc remains readable after modification
