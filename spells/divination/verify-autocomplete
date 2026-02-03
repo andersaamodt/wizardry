@@ -1,0 +1,121 @@
+#!/bin/sh
+
+# Verify shell autocomplete functionality
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: verify-autocomplete
+
+Verifies that shell autocomplete is working correctly for wizardry.
+Tests both cd autocomplete (when cd hook is enabled) and spell completion.
+
+Note: This spell must be run in bash (not sh) to test completion features.
+If running from another shell, use: bash verify-autocomplete
+
+Returns:
+  0 - All autocomplete working correctly
+  1 - Some autocomplete features not working
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+# Check if we're running in bash (needed for completion testing)
+if [ -z "${BASH_VERSION:-}" ]; then
+  printf '%s\n' "verify-autocomplete: This diagnostic requires bash" >&2
+  printf '%s\n' "  Run with: bash verify-autocomplete" >&2
+  exit 1
+fi
+
+# Load wizardry if not already loaded
+if ! command -v say >/dev/null 2>&1; then
+  # Define minimal output functions
+  say() { printf '%s\n' "$@"; }
+  info() { printf '%s\n' "$@"; }
+  success() { printf '%s\n' "$@"; }
+  warn() { printf '%s\n' "$@" >&2; }
+fi
+
+# Check if we're running in bash (needed for completion testing)
+if [ -z "${BASH_VERSION:-}" ]; then
+  printf '%s\n' "verify-autocomplete: This diagnostic requires bash" >&2
+  exit 1
+fi
+
+say "Verifying autocomplete functionality..."
+printf '\n'
+
+# Test 1: Check if spells are in PATH and autocomplete
+info "Test 1: Spell command completion"
+if command -v env-clear >/dev/null 2>&1; then
+  # Test compgen for spell commands
+  spell_matches=$(compgen -c "env-" 2>/dev/null | wc -l || echo 0)
+  if [ "$spell_matches" -gt 0 ]; then
+    success "✓ Spell command completion works ($spell_matches matches for 'env-*')"
+  else
+    warn "✗ No spell completions found"
+    exit 1
+  fi
+else
+  warn "✗ Spells not in PATH - invoke-wizardry may not be loaded"
+  exit 1
+fi
+
+# Test 2: Check cd autocomplete
+info "Test 2: cd directory completion"
+config_file="${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud"
+
+# Check if cd hook is loaded
+if type cd 2>/dev/null | grep -q "function"; then
+  # cd is a function, check if completion is set up
+  if complete -p cd 2>/dev/null | grep -q "complete -d cd"; then
+    success "✓ cd autocomplete is configured (cd hook active)"
+    
+    # Test actual completion
+    mkdir -p /tmp/autocomplete_verify_test/{alpha,beta,gamma}
+    cd /tmp/autocomplete_verify_test || exit 1
+    matches=$(compgen -d "a" 2>/dev/null | wc -l || echo 0)
+    if [ "$matches" -gt 0 ]; then
+      success "✓ cd directory completion works ($matches matches for 'a*')"
+    else
+      warn "✗ cd completion configured but not working"
+    fi
+    cd - >/dev/null 2>&1 || true
+    rm -rf /tmp/autocomplete_verify_test
+  else
+    warn "✗ cd is a function but completion not configured"
+    info "  This may indicate an issue with load-cd-hook"
+    exit 1
+  fi
+elif [ -f "$config_file" ] && grep -q "^cd-look=1$" "$config_file" 2>/dev/null; then
+  warn "✗ cd-look enabled but cd hook not loaded"
+  info "  Try restarting your shell or running: . invoke-wizardry"
+  exit 1
+else
+  info "ℹ cd hook not enabled (using builtin cd)"
+  info "  Builtin cd has default directory completion"
+  info "  To enable cd hook: run 'install-cd' or 'toggle cd'"
+  
+  # Test builtin cd completion still works
+  mkdir -p /tmp/autocomplete_verify_test/{alpha,beta,gamma}
+  cd /tmp/autocomplete_verify_test || exit 1
+  matches=$(compgen -d "a" 2>/dev/null | wc -l || echo 0)
+  if [ "$matches" -gt 0 ]; then
+    success "✓ Builtin cd directory completion works ($matches matches for 'a*')"
+  else
+    warn "✗ Directory completion not working"
+    exit 1
+  fi
+  cd - >/dev/null 2>&1 || true
+  rm -rf /tmp/autocomplete_verify_test
+fi
+
+printf '\n'
+success "All autocomplete tests passed!"
+printf '\n'
+info "To test interactively, try:"
+info "  cd /tmp<TAB>  (should complete directory names)"
+info "  env-<TAB>     (should complete to env-clear, env-or, etc.)"
