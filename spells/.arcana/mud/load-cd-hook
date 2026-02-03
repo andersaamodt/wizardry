@@ -38,6 +38,9 @@ if [ "$cd_sourced" -eq 0 ]; then
 fi
 unset cd_sourced cd_base
 
+# Uncastable spells must remember shell mode and restore on all exits
+load_cd_hook_saved_opts=$(set +o)
+
 # Explicitly use permissive error handling - this file is meant to be sourced into user's shell
 # and we don't want their shell to exit on command failures
 # We DO use set -u because our global usage provides safe defaults (${SPELLBOOK_DIR:-...})
@@ -112,4 +115,8 @@ cd() {
     # Clean up variables
     unset _cd_config_file _cd_look_value _cd_listen_value _cd_avatar_value
 }
+
+# Restore opts
+eval "$load_cd_hook_saved_opts"
+unset load_cd_hook_saved_opts
 
