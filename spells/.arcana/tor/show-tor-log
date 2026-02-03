@@ -20,8 +20,11 @@ set -eu
 
 # Find and display the tor log
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
-  # macOS - check for tor log file
+  # macOS - check for tor log files (both stdout and stderr)
   log_file=""
+  err_file=""
+  
+  # Check for main log file
   if [ -f /usr/local/var/log/tor.log ]; then
     log_file="/usr/local/var/log/tor.log"
   elif [ -f /opt/pkg/var/log/tor.log ]; then
@@ -30,19 +33,38 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
     log_file="/var/log/tor.log"
   fi
   
-  if [ -n "$log_file" ]; then
-    if [ -r "$log_file" ]; then
-      printf 'Showing last 120 lines of %s:\n\n' "$log_file"
-      tail -n 120 "$log_file"
-    else
-      printf 'Log file exists but not readable: %s\n' "$log_file" >&2
-      printf 'Try: sudo tail -n 120 %s\n' "$log_file"
-      exit 1
+  # Check for error log file (launchd stderr)
+  if [ -f /usr/local/var/log/tor-errors.log ]; then
+    err_file="/usr/local/var/log/tor-errors.log"
+  elif [ -f /opt/pkg/var/log/tor-errors.log ]; then
+    err_file="/opt/pkg/var/log/tor-errors.log"
+  elif [ -f /var/log/tor-errors.log ]; then
+    err_file="/var/log/tor-errors.log"
+  fi
+  
+  # Display whichever logs exist
+  found_log=0
+  
+  if [ -n "$log_file" ] && [ -r "$log_file" ]; then
+    printf 'Showing last 120 lines of %s:\n\n' "$log_file"
+    tail -n 120 "$log_file"
+    found_log=1
+  fi
+  
+  if [ -n "$err_file" ] && [ -r "$err_file" ]; then
+    if [ $found_log -eq 1 ]; then
+      printf '\n================================\n\n'
     fi
-  else
-    printf 'Tor log file not found.\n' >&2
+    printf 'Showing last 120 lines of %s (stderr):\n\n' "$err_file"
+    tail -n 120 "$err_file"
+    found_log=1
+  fi
+  
+  if [ $found_log -eq 0 ]; then
+    printf 'Tor log files not found or not readable.\n' >&2
     printf 'Expected locations:\n' >&2
     printf '  /usr/local/var/log/tor.log\n' >&2
+    printf '  /usr/local/var/log/tor-errors.log\n' >&2
     printf '  /opt/pkg/var/log/tor.log\n' >&2
     printf '  /var/log/tor.log\n' >&2
     exit 1
