@@ -196,20 +196,22 @@ while true; do
     fi
   fi
   
-  # Check if HiddenServiceDir is configured (uncommented lines only)
+  # Check if MUD HiddenServiceDir is configured (uncommented lines only)
   if [ -n "$torrc_path" ] && [ -f "$torrc_path" ]; then
-    # Pattern matches lines starting with optional whitespace + HiddenServiceDir
+    # Pattern matches lines with HiddenServiceDir that ends with /mud
     # This naturally excludes commented lines (which start with #)
-    if grep -q "^[[:space:]]*HiddenServiceDir" "$torrc_path" 2>/dev/null; then
+    if grep -q "^[[:space:]]*HiddenServiceDir.*\/mud\/?[[:space:]]*$" "$torrc_path" 2>/dev/null; then
       tor_configured=1
     fi
   fi
   
   if [ "$tor_configured" -eq 1 ]; then
-    tor_cmd="remove-tor-hidden-service -y; restart-tor"
+    # remove-tor-hidden-service already restarts tor, so no need to restart again
+    tor_cmd="remove-tor-hidden-service -y"
     tor="[X] Tor hosting%$tor_cmd; echo 8 > \"$SELECTION_FILE\""
   else
-    tor_cmd="setup-tor -y; restart-tor"
+    # setup-tor already restarts tor, so no need to restart again
+    tor_cmd="setup-tor -y"
     tor="[ ] Tor hosting%$tor_cmd; echo 8 > \"$SELECTION_FILE\""
   fi
   
@@ -258,8 +260,16 @@ while true; do
   done
   
   if [ -z "$hostname_file" ]; then
-    printf 'Hostname file: NOT FOUND in any location\n'
+    printf 'Hostname file: NOT FOUND (or not readable without sudo) in any location\n'
     printf 'Checked: /usr/local/var/lib/tor/mud, /opt/pkg/var/lib/tor/mud, /var/lib/tor/mud\n'
+    # Try to see if file exists but isn't readable
+    for mud_hs_dir in $mud_dirs; do
+      if [ -f "$mud_hs_dir/hostname" ]; then
+        printf 'Note: File exists at %s but is not readable by current user\n' "$mud_hs_dir/hostname"
+        printf 'Try running: repair-tor-permissions\n'
+        break
+      fi
+    done
   fi
   
   # Check for MUD hidden service hostname file
