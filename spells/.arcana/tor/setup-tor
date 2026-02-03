@@ -43,9 +43,6 @@ if [ "$tor_installed" -eq 0 ]; then
         y|Y)
                 install-tor || exit 1
                 
-                # Clear command cache after installation
-                hash -r 2>/dev/null || true
-                
                 # Verify tor is now installed
                 if [ -x /usr/local/bin/tor ] || command -v tor >/dev/null 2>&1; then
                         printf '%s\n' "Tor is now installed and ready."

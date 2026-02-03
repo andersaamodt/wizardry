@@ -316,9 +316,6 @@ case $distro in
       printf '%s\n' 'Tor binary installed successfully to /usr/local/bin/tor'
     fi
     
-    # Clear shell command cache so tor can be found immediately
-    hash -r 2>/dev/null || true
-    
     # Only clean up on success - preserved on failure for debugging
     cd - >/dev/null || true
     cleanup-dir "$tmp_dir" 2>/dev/null || true
@@ -379,9 +376,6 @@ case $distro in
     exit 1
     ;;
 esac
-
-# Clear shell command cache to find newly installed tor
-hash -r 2>/dev/null || true
 
 # Check if installation was successful - use multiple methods
 tor_found=0
