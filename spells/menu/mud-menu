@@ -206,9 +206,11 @@ while true; do
   fi
   
   if [ "$tor_configured" -eq 1 ]; then
-    tor="[X] Tor hosting%remove-tor-hidden-service -y; echo 8 > \"$SELECTION_FILE\""
+    tor_cmd="remove-tor-hidden-service -y; restart-tor"
+    tor="[X] Tor hosting%$tor_cmd; echo 8 > \"$SELECTION_FILE\""
   else
-    tor="[ ] Tor hosting%setup-tor -y; echo 8 > \"$SELECTION_FILE\""
+    tor_cmd="setup-tor -y; restart-tor"
+    tor="[ ] Tor hosting%$tor_cmd; echo 8 > \"$SELECTION_FILE\""
   fi
   
   # Build copy .onion address option if hostname file exists
@@ -234,10 +236,13 @@ while true; do
   
   # Check for hostname file
   hostname_file=""
-  for mud_hs_dir in /usr/local/var/lib/tor/mud /opt/pkg/var/lib/tor/mud /var/lib/tor/mud; do
-    if [ -f "$mud_hs_dir/hostname" ]; then
+  mud_dirs="/usr/local/var/lib/tor/mud /opt/pkg/var/lib/tor/mud /var/lib/tor/mud"
+  for mud_hs_dir in $mud_dirs; do
+    if [ -r "$mud_hs_dir/hostname" ]; then
       hostname_file="$mud_hs_dir/hostname"
       printf 'Hostname file found: %s\n' "$hostname_file"
+      printf 'Hostname file permissions: '
+      ls -la "$hostname_file" 2>/dev/null || printf 'Could not read\n'
       if [ -r "$hostname_file" ]; then
         onion_addr=$(sudo cat "$hostname_file" 2>/dev/null || cat "$hostname_file" 2>/dev/null || echo "")
         if [ -n "$onion_addr" ]; then
@@ -260,9 +265,10 @@ while true; do
   # Check for MUD hidden service hostname file
   copy_onion=""
   for mud_hs_dir in /usr/local/var/lib/tor/mud /opt/pkg/var/lib/tor/mud /var/lib/tor/mud; do
-    if [ -f "$mud_hs_dir/hostname" ]; then
+    if [ -r "$mud_hs_dir/hostname" ]; then
       hostname_file="$mud_hs_dir/hostname"
-      copy_onion="Copy .onion address%copy-to-clipboard \"\$(sudo cat \"$hostname_file\")\"; echo 9 > \"$SELECTION_FILE\""
+      copy_cmd="copy-to-clipboard \"\$(sudo cat \"$hostname_file\")\""
+      copy_onion="Copy .onion address%$copy_cmd; echo 9 > \"$SELECTION_FILE\""
       printf 'copy_onion variable SET: Menu item will be added\n'
       break
     fi
@@ -270,6 +276,9 @@ while true; do
   
   if [ -z "$copy_onion" ]; then
     printf 'copy_onion variable: NOT SET - Menu item will NOT appear\n'
+    if [ -f "/usr/local/var/lib/tor/mud/hostname" ]; then
+      printf 'NOTE: File exists but not readable. Run: repair-tor-permissions\n'
+    fi
   fi
   
   printf '=====================================\n\n'
