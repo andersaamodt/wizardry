@@ -1,0 +1,3 @@
+#!/bin/sh
+# BACKUP of current listen before stripping to minimal
+# This is the version with set +eu instead of eval restore
