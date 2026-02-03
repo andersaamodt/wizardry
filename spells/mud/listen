@@ -90,7 +90,11 @@ if [ "$_listen_stop_only" = "1" ]; then
   
   # Restore shell options before returning
   eval "$_listen_saved_opts"
-  unset _listen_stop_only _listen_pid _listen_is_sourced _listen_room_path _listen_saved_opts
+  # Restore readline mode
+  [ "$_listen_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
+  [ "$_listen_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+  unset _listen_stop_only _listen_pid _listen_is_sourced _listen_room_path
+  unset _listen_saved_opts _listen_emacs_mode _listen_vi_mode
   return 0 2>/dev/null || exit 0
 fi
 
@@ -99,7 +103,11 @@ if [ ! -d "$_listen_room_path" ]; then
   printf '%s\n' "listen: directory does not exist: $_listen_room_path" >&2
   # Restore shell options before returning
   eval "$_listen_saved_opts"
-  unset _listen_stop_only _listen_room_path _listen_is_sourced _listen_saved_opts
+  # Restore readline mode
+  [ "$_listen_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
+  [ "$_listen_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+  unset _listen_stop_only _listen_room_path _listen_is_sourced
+  unset _listen_saved_opts _listen_emacs_mode _listen_vi_mode
   return 1 2>/dev/null || exit 1
 fi
 
@@ -111,7 +119,11 @@ if [ ! -f "$_listen_room_log" ]; then
     printf '%s\n' "listen: cannot create log file (directory may be read-only)" >&2
     # Restore shell options before returning
     eval "$_listen_saved_opts"
-    unset _listen_stop_only _listen_room_path _listen_room_log _listen_is_sourced _listen_saved_opts
+    # Restore readline mode
+    [ "$_listen_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
+    [ "$_listen_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+    unset _listen_stop_only _listen_room_path _listen_room_log _listen_is_sourced
+    unset _listen_saved_opts _listen_emacs_mode _listen_vi_mode
     return 1 2>/dev/null || exit 1
   }
 fi
