@@ -49,48 +49,64 @@ set -u
 
 # The cd override - calls cd-hook imp after successful directory change
 cd() {
+    # Save current shell options (must restore before ALL returns)
+    cd_saved_opts=$(set +o)
+    
     # Use builtin for zsh/bash (where it's required for function override), command for POSIX sh
     # We use eval to check for bash/zsh in a way that won't fail in POSIX sh
     # This is necessary because 'builtin cd' is required in zsh, but doesn't exist in pure POSIX sh
     if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
         # In bash/zsh, must use 'builtin' to call the actual cd builtin from within override function
-        eval 'builtin cd "$@"' || return $?
+        eval 'builtin cd "$@"'
+        cd_exit_code=$?
     else
-        command cd "$@" || return $?
+        command cd "$@"
+        cd_exit_code=$?
     fi
+    
+    # If cd failed, restore opts and return the error code
+    if [ "$cd_exit_code" -ne 0 ]; then
+        cd_return=$cd_exit_code
+        eval "$cd_saved_opts"
+        unset cd_saved_opts cd_exit_code
+        return $cd_return
+    fi
+    
+    # cd succeeded, we can unset cd_exit_code now
+    unset cd_exit_code
     
     # Run cd-hook logic inline so listen can access PS1
     # (cd-hook is executed, not sourced, so listen wouldn't have PS1 access otherwise)
     
     # Check if cd-look is enabled via config file (defaults to enabled when unset)
     # Skip automatic look if JUMP_TO_MARKER_ACTIVE is set (jump-to-marker handles it)
-    _cd_config_file="${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud"
-    _cd_look_value=""
-    if [ -f "$_cd_config_file" ]; then
-        _cd_look_value=$(grep "^cd-look=" "$_cd_config_file" 2>/dev/null | \
+    cd_config_file="${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud"
+    cd_look_value=""
+    if [ -f "$cd_config_file" ]; then
+        cd_look_value=$(grep "^cd-look=" "$cd_config_file" 2>/dev/null | \
             cut -d= -f2- || printf '')
     fi
     # Default to enabled (1) if not set
-    if [ -z "$_cd_look_value" ]; then
-        _cd_look_value=$(command -v mud-defaults >/dev/null 2>&1 && \
+    if [ -z "$cd_look_value" ]; then
+        cd_look_value=$(command -v mud-defaults >/dev/null 2>&1 && \
             mud-defaults cd-look 2>/dev/null || printf '1')
     fi
-    if [ "$_cd_look_value" = "1" ] && [ -z "${JUMP_TO_MARKER_ACTIVE-}" ]; then
+    if [ "$cd_look_value" = "1" ] && [ -z "${JUMP_TO_MARKER_ACTIVE-}" ]; then
         command -v look >/dev/null 2>&1 && look 2>/dev/null || true
     fi
     
     # Check if cd-listen is enabled
-    _cd_listen_value=""
-    if [ -f "$_cd_config_file" ]; then
-        _cd_listen_value=$(grep "^cd-listen=" "$_cd_config_file" 2>/dev/null | \
+    cd_listen_value=""
+    if [ -f "$cd_config_file" ]; then
+        cd_listen_value=$(grep "^cd-listen=" "$cd_config_file" 2>/dev/null | \
             cut -d= -f2- || printf '')
     fi
     # Default to disabled (0) if not set
-    if [ -z "$_cd_listen_value" ]; then
-        _cd_listen_value=$(command -v mud-defaults >/dev/null 2>&1 && \
+    if [ -z "$cd_listen_value" ]; then
+        cd_listen_value=$(command -v mud-defaults >/dev/null 2>&1 && \
             mud-defaults cd-listen 2>/dev/null || printf '0')
     fi
-    if [ "$_cd_listen_value" = "1" ]; then
+    if [ "$cd_listen_value" = "1" ]; then
         # Source listen directly so it can access PS1 from this shell context
         if command -v listen >/dev/null 2>&1; then
             . listen 2>/dev/null || true
@@ -98,22 +114,26 @@ cd() {
     fi
     
     # Move avatar if avatar system is enabled (defaults to disabled when unset)
-    _cd_avatar_value=""
-    if [ -f "$_cd_config_file" ]; then
-        _cd_avatar_value=$(grep "^avatar=" "$_cd_config_file" 2>/dev/null | \
+    cd_avatar_value=""
+    if [ -f "$cd_config_file" ]; then
+        cd_avatar_value=$(grep "^avatar=" "$cd_config_file" 2>/dev/null | \
             cut -d= -f2- || printf '')
     fi
     # Default to disabled (0) if not set
-    if [ -z "$_cd_avatar_value" ]; then
-        _cd_avatar_value=$(command -v mud-defaults >/dev/null 2>&1 && \
+    if [ -z "$cd_avatar_value" ]; then
+        cd_avatar_value=$(command -v mud-defaults >/dev/null 2>&1 && \
             mud-defaults cd-listen 2>/dev/null || printf '0')
     fi
-    if [ "$_cd_avatar_value" = "1" ]; then
+    if [ "$cd_avatar_value" = "1" ]; then
         command -v move-avatar >/dev/null 2>&1 && move-avatar 2>/dev/null || true
     fi
     
     # Clean up variables
-    unset _cd_config_file _cd_look_value _cd_listen_value _cd_avatar_value
+    unset cd_config_file cd_look_value cd_listen_value cd_avatar_value
+    
+    # Restore shell options before returning
+    eval "$cd_saved_opts"
+    unset cd_saved_opts
 }
 
 # Restore opts

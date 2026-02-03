@@ -181,3 +181,5 @@
 - 4KB padding works for SSE despite smaller than total buffer size - Write sequence (padding + event + padding) triggers flush mechanism, not just overflow.
 - 2KB padding causes batching in SSE delivery (too small for reliable flush) - Testing confirmed 4KB is minimum threshold to trigger flush mechanism consistently.
 - 4KB is confirmed minimum for instant SSE delivery over fcgiwrap/nginx - Smaller sizes (2KB, 1KB) cause batching; 4KB provides 83% bandwidth reduction while maintaining reliability.
+- Functions defined in sourced files (like cd() in load-cd-hook) must save shell options at function entry and restore before ALL return paths (success and error) to prevent corrupting the user's shell state.
+- Variable names must not begin with underscore (against project policy) - use descriptive names like `cd_saved_opts` not `_cd_saved_opts` to match existing codebase patterns.
