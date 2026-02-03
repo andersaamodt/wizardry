@@ -186,5 +186,6 @@
 - Overriding builtin commands with functions breaks shell tab completion - attempting to restore it from scripts causes more problems than it solves (readline corruption, invisible characters).
 - NEVER call `bind` from sourced scripts - it corrupts readline state causing arrow keys to show escape sequences (^[[A) and breaking all line editing.
 - NEVER set up completion from sourced scripts - custom completion functions, complete flags, and compdef can all break readline; let bash use default completion.
+- NEVER use `set -u` in sourced scripts - it stays active in user's shell and breaks readline (arrow keys, tab completion) because readline uses unset internal variables.
 - macOS bash colored completion rendering bugs cannot be fixed from scripts - users must set `colored-stats off` in ~/.inputrc, not via bind commands or script-based workarounds.
 - When defining bash-specific functions in POSIX sh scripts, wrap with eval to avoid syntax errors in sh - `eval 'function_name() { bash syntax }'` works in both sh and bash.
