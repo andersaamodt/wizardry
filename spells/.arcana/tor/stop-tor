@@ -48,7 +48,7 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
     
     # Unload the service with -w flag to disable it (disables KeepAlive)
     if sudo launchctl unload -w "$plist_file" 2>/dev/null; then
-      printf 'Tor service unloaded (disabled).\n'
+      printf 'Tor service unloaded and disabled.\n'
       # Wait for tor to stop gracefully
       printf 'Waiting for tor to shut down (up to 10 seconds)...\n'
       max_wait=10
@@ -56,17 +56,12 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
       while [ $waited -lt $max_wait ]; do
         if ! is-tor-running; then
           printf 'Tor stopped successfully.\n'
-          # Re-enable the service (but don't start it)
-          sudo launchctl load -w "$plist_file" 2>/dev/null || true
-          printf 'Tor service re-enabled (but not started).\n'
+          printf 'Use start-tor to start it again.\n'
           exit 0
         fi
         sleep 1
         waited=$((waited + 1))
       done
-      
-      # Re-enable the service even if tor didn't stop
-      sudo launchctl load -w "$plist_file" 2>/dev/null || true
       
       # If still running after 10 seconds, note it and continue to force kill
       printf 'Warning: tor did not stop within 10 seconds.\n' >&2

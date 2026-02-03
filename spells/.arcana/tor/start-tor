@@ -36,6 +36,15 @@ fi
 # Try launchctl (macOS) - only if service is already configured
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
   if is-tor-launchd-service-configured; then
+    plist_file="/Library/LaunchDaemons/org.torproject.tor.plist"
+    
+    # First, ensure the service is loaded (it might be unloaded if stop-tor was used)
+    # Load with -w to enable it, which also starts it due to KeepAlive
+    if sudo launchctl load -w "$plist_file" 2>/dev/null; then
+      printf 'Tor service loaded and enabled.\n'
+    fi
+    
+    # Now start the service (in case it was already loaded but not running)
     if sudo launchctl start org.torproject.tor 2>&1; then
       printf 'Tor started via launchd.\n'
       printf 'Waiting for tor process to start...\n'
