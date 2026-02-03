@@ -164,6 +164,87 @@ fi
 
 **Use case:** jump-to-marker needs to cd without triggering the cd-hook's automatic `look` call, so it can print narration first.
 
+### Function Overrides and Shell Completion
+
+**CRITICAL:** When overriding builtin commands with functions, shell completion is lost. Must explicitly restore it.
+
+```sh
+# Define function that overrides builtin
+cd() {
+    # Save/restore shell options before ALL returns
+    cd_saved_opts=$(set +o)
+    
+    # Call actual builtin (bash/zsh need 'builtin', POSIX sh uses 'command')
+    if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
+        builtin cd "$@"
+    else
+        command cd "$@"
+    fi
+    
+    # Custom logic here...
+    
+    eval "$cd_saved_opts"
+}
+
+# CRITICAL: Restore completion after function definition
+if eval '[ -n "${BASH_VERSION:-}" ]' 2>/dev/null; then
+    # Bash: Use custom completion function (safest approach)
+    # Custom function works reliably across all bash versions
+    
+    # Define custom completion function (use eval for POSIX compatibility)
+    eval '_wizardry_cd_completion() {
+        local cur="${COMP_WORDS[COMP_CWORD]}"
+        COMPREPLY=( $(compgen -d -- "$cur") )
+        return 0
+    }'
+    
+    # Register the completion function
+    eval 'complete -F _wizardry_cd_completion cd' 2>/dev/null || \
+        eval 'complete -o dirnames cd' 2>/dev/null || \
+        eval 'complete -d cd' 2>/dev/null || true
+        
+elif eval '[ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
+    # Zsh: Use builtin _cd completion (only if completion system loaded)
+    command -v compdef >/dev/null 2>&1 && compdef _cd cd 2>/dev/null || true
+fi
+```
+
+**Why:** Shells have special completion behavior for builtin commands. When you override a builtin with a function, the shell's completion system no longer recognizes it, breaking tab completion.
+
+**Bash Custom Function Approach:** The most reliable and safe solution:
+- **Custom function**: Defines `_wizardry_cd_completion()` using `compgen -d`
+- **Safe**: Doesn't interfere with readline or terminal state
+- **POSIX compatible**: Uses `eval` to wrap bash-specific syntax
+- **Fallback chain**: Falls back to simpler completion if custom function fails
+
+**CRITICAL - Never use `bind` in sourced scripts:**
+```bash
+# DANGEROUS - BREAKS READLINE - DO NOT DO THIS
+bind 'set colored-stats off'         # Corrupts readline
+bind 'set colored-completion-prefix off'  # Breaks arrow keys
+
+# Result: Arrow keys show ^[[A instead of working
+#         History navigation broken
+#         All readline features corrupted
+```
+
+**Why `bind` is dangerous:**
+1. `bind` modifies global readline state
+2. When called from non-interactive shells, it fails and corrupts readline
+3. Corruption causes all readline features to break (arrow keys, history, editing)
+4. The damage persists after the script finishes
+5. Users see escape sequences (`^[[A`) instead of proper key handling
+
+**For macOS invisible completion characters:** This is a user configuration issue, not fixable from scripts. Users should add to `~/.inputrc`:
+```
+set colored-stats off
+set colored-completion-prefix off
+```
+
+**Zsh:** Use `compdef _cd` to use the builtin cd completion function (requires zsh completion system to be loaded).
+
+**Use case:** load-cd-hook overrides `cd` with a function to run `look` after directory changes. The custom completion function ensures tab completion works without breaking readline.
+
 ### Case Statements
 
 ```sh

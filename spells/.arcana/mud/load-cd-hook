@@ -38,14 +38,11 @@ if [ "$cd_sourced" -eq 0 ]; then
 fi
 unset cd_sourced cd_base
 
-# Uncastable spells must remember shell mode and restore on all exits
-load_cd_hook_saved_opts=$(set +o)
-
 # Explicitly use permissive error handling - this file is meant to be sourced into user's shell
-# and we don't want their shell to exit on command failures
-# We DO use set -u because our global usage provides safe defaults (${SPELLBOOK_DIR:-...})
+# and we don't want their shell to exit on command failures or unset variable references
+# Our code is safe without set -u because we use ${VAR:-default} patterns everywhere
 set +e
-set -u
+set +u
 
 # The cd override - calls cd-hook imp after successful directory change
 cd() {
@@ -122,7 +119,7 @@ cd() {
     # Default to disabled (0) if not set
     if [ -z "$cd_avatar_value" ]; then
         cd_avatar_value=$(command -v mud-defaults >/dev/null 2>&1 && \
-            mud-defaults cd-listen 2>/dev/null || printf '0')
+            mud-defaults avatar 2>/dev/null || printf '0')
     fi
     if [ "$cd_avatar_value" = "1" ]; then
         command -v move-avatar >/dev/null 2>&1 && move-avatar 2>/dev/null || true
@@ -136,7 +133,27 @@ cd() {
     unset cd_saved_opts
 }
 
-# Restore opts
-eval "$load_cd_hook_saved_opts"
-unset load_cd_hook_saved_opts
+# Note: We intentionally do NOT set up custom completion for the cd function
+# 
+# Why: Attempting to restore completion after overriding builtins causes issues:
+# - Custom completion functions can break readline on some systems (macOS bash 3.2)
+# - bind commands from scripts corrupt readline state
+# - Even simple complete flags can cause invisible character rendering
+#
+# Bash will use default filename completion for the cd function, which works
+# adequately for most use cases. Users who want directory-only completion
+# can configure it themselves in their ~/.inputrc or .bashrc
+#
+# If users want to restore directory-only completion, they can add to ~/.bashrc:
+#   complete -o dirnames cd
+#
+# Or for better macOS compatibility, add to ~/.inputrc:
+#   set colored-stats off
+#   set colored-completion-prefix off
+
+# Explicitly set permissive mode (don't restore saved options)
+# This file is sourced into user's shell, must leave it in permissive mode
+# to avoid breaking readline (same fix as invoke-wizardry for PR #1053 regression)
+set +e
+set +u
 
