@@ -23,22 +23,29 @@ if [ "$env_clear_sourced" -eq 0 ]; then
 fi
 unset env_clear_sourced env_clear_base
 
-# Save readline editing mode to prevent breakage (when tools are available)
-# This is needed when env-clear is sourced by listen which is sourced by cd hook
+# Save readline editing mode AND error handling mode to prevent breakage
+# Readline: needed when env-clear is sourced by listen which is sourced by cd hook
+# Error handling: needed to preserve caller's strict/permissive mode
 if command -v grep >/dev/null 2>&1 && command -v awk >/dev/null 2>&1; then
   env_clear_set_output=$(set -o 2>/dev/null || true)
   if [ -n "$env_clear_set_output" ]; then
     env_clear_emacs_mode=$(printf '%s\n' "$env_clear_set_output" | grep '^emacs' 2>/dev/null | awk '{print $2}' 2>/dev/null || printf '')
     env_clear_vi_mode=$(printf '%s\n' "$env_clear_set_output" | grep '^vi' 2>/dev/null | awk '{print $2}' 2>/dev/null || printf '')
+    env_clear_errexit=$(printf '%s\n' "$env_clear_set_output" | grep '^errexit' 2>/dev/null | awk '{print $2}' 2>/dev/null || printf '')
+    env_clear_nounset=$(printf '%s\n' "$env_clear_set_output" | grep '^nounset' 2>/dev/null | awk '{print $2}' 2>/dev/null || printf '')
   else
     env_clear_emacs_mode=""
     env_clear_vi_mode=""
+    env_clear_errexit=""
+    env_clear_nounset=""
   fi
   unset env_clear_set_output
 else
-  # grep/awk not available (restricted PATH in tests) - skip readline preservation
+  # grep/awk not available (restricted PATH in tests) - skip mode preservation
   env_clear_emacs_mode=""
   env_clear_vi_mode=""
+  env_clear_errexit=""
+  env_clear_nounset=""
 fi
 
 # Explicitly use permissive mode - this imp mutates the caller's environment.
@@ -46,24 +53,24 @@ set +eu
 
 # Skip env clearing when running in test mode (all test vars are preserved)
 if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" = "1" ]; then
-  set +e
-  set +u
-  # Restore readline mode before returning (if it was captured)
+  # Restore error handling and readline modes
+  [ "${env_clear_errexit:-}" = "off" ] && set +e || set -e
+  [ "${env_clear_nounset:-}" = "off" ] && set +u || set -u
   [ "${env_clear_emacs_mode:-}" = "on" ] && set -o emacs 2>/dev/null || true
   [ "${env_clear_vi_mode:-}" = "on" ] && set -o vi 2>/dev/null || true
-  unset env_clear_emacs_mode env_clear_vi_mode
+  unset env_clear_emacs_mode env_clear_vi_mode env_clear_errexit env_clear_nounset
   return 0
 fi
 
 # Skip env clearing when being sourced by invoke-wizardry during spell loading
 # This prevents clearing parent's loop variables
 if [ "${_WIZARDRY_LOADING_SPELLS:-0}" = "1" ]; then
-  set +e
-  set +u
-  # Restore readline mode before returning (if it was captured)
+  # Restore error handling and readline modes
+  [ "${env_clear_errexit:-}" = "off" ] && set +e || set -e
+  [ "${env_clear_nounset:-}" = "off" ] && set +u || set -u
   [ "${env_clear_emacs_mode:-}" = "on" ] && set -o emacs 2>/dev/null || true
   [ "${env_clear_vi_mode:-}" = "on" ] && set -o vi 2>/dev/null || true
-  unset env_clear_emacs_mode env_clear_vi_mode
+  unset env_clear_emacs_mode env_clear_vi_mode env_clear_errexit env_clear_nounset
   return 0
 fi
 
@@ -254,15 +261,17 @@ unset ec_saved_github_ref ec_saved_github_ref_name ec_saved_github_head_ref
 unset ec_saved_github_base_ref ec_saved_runner_os ec_saved_runner_temp
 unset ec_saved_runner_tool_cache env_var
 
-# Guarantee permissive mode instead of restoring (prevents readline breakage)
-set +e
-set +u
+# Restore error handling mode to preserve caller's expectations
+# For interactive shells (via listen/cd), permissive mode prevents readline breakage
+# For regular spells (like browse), strict mode ensures errors are caught
+[ "${env_clear_errexit:-}" = "off" ] && set +e || set -e
+[ "${env_clear_nounset:-}" = "off" ] && set +u || set -u
 
 # Restore readline editing mode to prevent arrow key breakage (if it was captured)
 # This is critical when env-clear is sourced by other spells like cd or jump-to-marker
 [ "${env_clear_emacs_mode:-}" = "on" ] && set -o emacs 2>/dev/null || true
 [ "${env_clear_vi_mode:-}" = "on" ] && set -o vi 2>/dev/null || true
-unset env_clear_emacs_mode env_clear_vi_mode
+unset env_clear_emacs_mode env_clear_vi_mode env_clear_errexit env_clear_nounset
 
 # Return 0 explicitly (some shells exit with the exit code of the last unset)
 return 0
