@@ -1,27 +1,41 @@
 #!/bin/sh
 # Listen for magical happenings in the current room
 
-show_usage() {
-  cat <<'USAGE'
-Usage: listen [--stop] [--dir <directory>]
-
-Start listening for magical events in the current room.
-Creates a background process that monitors for changes and plays sounds.
-
-Options:
-  --stop          Stop the listener for the current directory
-  --dir <dir>     Listen to a specific directory instead of current
-  --help, -h      Show this help message
-
-When sourced into the shell (e.g., by the cd hook), starts/stops listening
-based on the current directory.
-USAGE
-}
-
 case "${1-}" in
 --help|--usage|-h)
-  show_usage
+  cat <<'USAGE'
+Usage: listen [room_path]
+       . listen [room_path]
+
+Start background monitoring of the .log file in the current (or specified)
+directory and display new entries in real-time.
+
+This enables live MUD multiplayer notifications - when other players speak,
+cast spells, or perform actions, you see them immediately in your terminal.
+
+The listener runs as a background process. Multiple listeners can run
+simultaneously.
+
+Messages appear above your current prompt line, preserving both your prompt
+and any partially-typed command text. Multi-line messages automatically
+insert the correct number of blank lines.
+
+Examples:
+  listen                    # Monitor current directory
+  . listen                  # Monitor current directory (sourced)
+  listen /mnt/server/dungeon   # Monitor specific directory
+  . listen --stop           # Stop all listeners
+
+See also: say, think
+USAGE
   return 0 2>/dev/null || exit 0
+  ;;
+--stop)
+  # Stop listening mode
+  _listen_stop_only=1
+  ;;
+*)
+  _listen_stop_only=0
   ;;
 esac
 
@@ -44,26 +58,202 @@ fi
 _listen_is_sourced=$_listen_sourced
 unset _listen_sourced _listen_base
 
-# STEP 3 FIX: Don't use eval restore - use explicit set +eu instead
-# Save readline editing mode
+# Save readline editing mode to prevent breakage
 _listen_set_output=$(set -o)
 _listen_emacs_mode=$(printf '%s\n' "$_listen_set_output" | grep '^emacs' | awk '{print $2}')
 _listen_vi_mode=$(printf '%s\n' "$_listen_set_output" | grep '^vi' | awk '{print $2}')
 unset _listen_set_output
 
-# Set permissive mode explicitly (don't restore with eval)
+# Use permissive mode for our own logic
 set +e
 set +u
+. env-clear
 
-# Restore readline editing mode
+# Get room path
+_listen_room_path=${1:-$PWD}
+
+# If --stop was specified, stop all listeners
+if [ "$_listen_stop_only" = "1" ]; then
+  # Stop listening mode - kill all listener processes
+  if command -v pgrep >/dev/null 2>&1; then
+    # Find all tail processes following .log files
+    pgrep -f 'tail -f.*\.log' 2>/dev/null | while read -r _listen_pid; do
+      kill "$_listen_pid" 2>/dev/null || true
+    done
+  fi
+  
+  printf '%s\n' "✓ Stopped listening to room activity"
+  
+  # When sourced (e.g., by cd hook), guarantee permissive mode instead of restoring
+  # Restoring saved opts can re-enable strict modes that break readline
+  set +e
+  set +u
+  # Restore readline mode
+  [ "$_listen_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
+  [ "$_listen_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+  unset _listen_stop_only _listen_pid _listen_is_sourced _listen_room_path
+  unset _listen_emacs_mode _listen_vi_mode
+  return 0 2>/dev/null || exit 0
+fi
+
+# Check if directory exists
+if [ ! -d "$_listen_room_path" ]; then
+  printf '%s\n' "listen: directory does not exist: $_listen_room_path" >&2
+  # When sourced (e.g., by cd hook), guarantee permissive mode instead of restoring
+  set +e
+  set +u
+  # Restore readline mode
+  [ "$_listen_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
+  [ "$_listen_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+  unset _listen_stop_only _listen_room_path _listen_is_sourced
+  unset _listen_emacs_mode _listen_vi_mode
+  return 1 2>/dev/null || exit 1
+fi
+
+_listen_room_log="$_listen_room_path/.log"
+
+# Create log file if it doesn't exist
+if [ ! -f "$_listen_room_log" ]; then
+  touch "$_listen_room_log" 2>/dev/null || {
+    printf '%s\n' "listen: cannot create log file (directory may be read-only)" >&2
+    # When sourced (e.g., by cd hook), guarantee permissive mode instead of restoring
+    set +e
+    set +u
+    # Restore readline mode
+    [ "$_listen_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
+    [ "$_listen_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+    unset _listen_stop_only _listen_room_path _listen_room_log _listen_is_sourced
+    unset _listen_emacs_mode _listen_vi_mode
+    return 1 2>/dev/null || exit 1
+  }
+fi
+
+# Get terminal width for calculating multi-line messages
+# Use tput cols if available, otherwise default to 80
+if command -v tput >/dev/null 2>&1; then
+  _listen_term_width=$(tput cols 2>/dev/null || printf '80')
+else
+  _listen_term_width=80
+fi
+
+export LISTEN_TERM_WIDTH="$_listen_term_width"
+
+# Start monitoring in background
+# Use tail -f -n 0 to follow the log file from current position (no history)
+{
+  tail -f -n 0 "$_listen_room_log" 2>/dev/null | while IFS= read -r line; do
+    # Skip empty lines
+    [ -z "$line" ] && continue
+    
+    # Parse the log entry to extract player name and colorize it
+    # Expected format: [HH:MM] PlayerName: message
+    case "$line" in
+      \[*\]\ *:\ *)
+        # Extract timestamp, player name, and message
+        rest=$(printf '%s' "$line" | sed 's/^\[[^]]*\] //')
+        player=$(printf '%s' "$rest" | sed 's/:.*//')
+        message=$(printf '%s' "$rest" | sed 's/^[^:]*: //')
+        
+        # Get color for player name
+        color=$(colorize-player-name "$player")
+        
+        # Format the message line
+        formatted_msg=$(printf '\033[1;%dm%s:\033[0m %s' "$color" "$player" "$message")
+        
+        # Calculate how many terminal lines this message will occupy
+        # Strip ANSI codes for length calculation
+        msg_text=$(printf '%s: %s' "$player" "$message")
+        msg_len=${#msg_text}
+        
+        # Calculate number of lines needed (round up)
+        lines_needed=$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
+        [ "$lines_needed" -lt 1 ] && lines_needed=1
+        
+        # Strategy: Scroll display up, move cursor up to compensate, insert lines, print message
+        # This ensures message appears ABOVE the prompt in all scenarios
+        
+        # Save cursor position
+        printf '\0337'
+        
+        # Move to beginning of line (required for Insert Line to work correctly)
+        printf '\r'
+        
+        # Scroll the display up to make room at bottom (critical for terminal bottom case)
+        i=0
+        while [ "$i" -lt "$lines_needed" ]; do
+          printf '\033[S'  # Scroll up one line
+          i=$((i + 1))
+        done
+        
+        # After scrolling, content moved up but cursor stayed at same row
+        # Move cursor up by lines_needed to get to where prompt scrolled to
+        printf '\033[%dA' "$lines_needed"
+        
+        # Insert blank lines - pushes prompt down from this position
+        i=0
+        while [ "$i" -lt "$lines_needed" ]; do
+          printf '\033[1L'  # Insert one line
+          i=$((i + 1))
+        done
+        
+        # Print the message in the inserted space
+        printf '\r%s' "$formatted_msg"
+        
+        # Restore cursor position - this brings us back to the original prompt position
+        # The Insert Line operations have pushed the prompt down, so cursor is now at the right place
+        printf '\0338'
+        ;;
+      *)
+        # Fallback for lines that don't match expected format
+        # Calculate length and lines needed
+        msg_len=$(printf '%s' "$line" | wc -c)
+        lines_needed=$(( (msg_len + 3 + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))  # +3 for "🔮 "
+        [ "$lines_needed" -lt 1 ] && lines_needed=1
+        
+        # Save cursor position
+        printf '\0337'
+        
+        # Move to beginning of line (required for Insert Line to work correctly)
+        printf '\r'
+        
+        # Scroll the display up to make room at bottom
+        i=0
+        while [ "$i" -lt "$lines_needed" ]; do
+          printf '\033[S'  # Scroll up one line
+          i=$((i + 1))
+        done
+        
+        # Move cursor up to compensate for scroll
+        printf '\033[%dA' "$lines_needed"
+        
+        # Insert blank lines (pushes prompt down)
+        i=0
+        while [ "$i" -lt "$lines_needed" ]; do
+          printf '\033[1L'
+          i=$((i + 1))
+        done
+        
+        # Print the message
+        printf '\r🔮 %s' "$line"
+        
+        # Restore cursor position - cursor is now at the right place
+        printf '\0338'
+        ;;
+    esac
+  done
+} &
+
+_listen_monitor_pid=$!
+
+# Clean up variables and guarantee permissive mode
+unset _listen_stop_only _listen_room_path _listen_room_log _listen_is_sourced \
+  _listen_monitor_pid _listen_term_width
+
+# When sourced (e.g., by cd hook), guarantee permissive mode instead of restoring
+# Restoring saved opts can re-enable strict modes that break readline
+set +e
+set +u
+# Restore readline mode
 [ "$_listen_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
 [ "$_listen_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
-
-# Check if sourced BEFORE unsetting the variable!
-if [ "$_listen_is_sourced" = "1" ]; then
-    unset _listen_emacs_mode _listen_vi_mode _listen_is_sourced
-    return 0
-else
-    unset _listen_emacs_mode _listen_vi_mode _listen_is_sourced
-    exit 0
-fi
+unset _listen_emacs_mode _listen_vi_mode
