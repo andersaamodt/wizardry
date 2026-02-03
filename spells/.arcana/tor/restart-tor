@@ -1,6 +1,19 @@
 #!/bin/sh
 # Restart tor service
 
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: restart-tor
+
+Restart the tor service.
+
+Tries systemctl (Linux) first, then killall + restart (macOS/others).
+USAGE
+  exit 0
+  ;;
+esac
+
 set -eu
 
 printf 'Restarting tor...\n'

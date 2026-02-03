@@ -51,7 +51,8 @@ if [ "$tor_installed" -eq 0 ]; then
                         printf '%s\n' "Tor is now installed and ready."
                 else
                         printf '\n'
-                        printf '%s\n' "setup-tor: tor installation completed but tor is still not found"
+                        printf '%s\n' \
+                            "setup-tor: tor installation completed but tor is still not found"
                         printf '%s\n' "Possible causes:"
                         printf '%s\n' "  - Installation failed (check output above for errors)"
                         printf '%s\n' "  - New terminal window needed for PATH updates"
@@ -87,7 +88,8 @@ y|Y)
         fi
         
         # Detect tor's data directory from torrc to use correct path
-        data_dir=$(grep "^DataDirectory" "$tor_config_path" 2>/dev/null | awk '{print $2}' | tr -d '"' || echo "")
+        data_dir=$(grep "^DataDirectory" "$tor_config_path" 2>/dev/null \
+            | awk '{print $2}' | tr -d '"' || echo "")
         
         # Set platform-specific hidden service directory
         case $distro in
@@ -121,7 +123,8 @@ y|Y)
         # Create the directory if it doesn't exist
         sudo mkdir -p "$mud_dir" || exit 1
         # Set proper ownership (try _tor first for macOS, then tor for Linux)
-        sudo chown _tor:_tor "$mud_dir" 2>/dev/null || sudo chown tor:tor "$mud_dir" 2>/dev/null || true
+        sudo chown _tor:_tor "$mud_dir" 2>/dev/null \
+            || sudo chown tor:tor "$mud_dir" 2>/dev/null || true
         sudo chmod 700 "$mud_dir" || true
 
         printf 'HiddenServiceDir %s\n' "$mud_dir" | sudo tee -a "$tor_config_path"
