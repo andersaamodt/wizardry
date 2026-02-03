@@ -88,8 +88,10 @@ if [ "$_listen_stop_only" = "1" ]; then
   
   printf '%s\n' "✓ Stopped listening to room activity"
   
-  # Restore shell options before returning
-  eval "$_listen_saved_opts"
+  # When sourced (e.g., by cd hook), guarantee permissive mode instead of restoring
+  # Restoring saved opts can re-enable strict modes that break readline
+  set +e
+  set +u
   # Restore readline mode
   [ "$_listen_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
   [ "$_listen_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
@@ -101,8 +103,9 @@ fi
 # Check if directory exists
 if [ ! -d "$_listen_room_path" ]; then
   printf '%s\n' "listen: directory does not exist: $_listen_room_path" >&2
-  # Restore shell options before returning
-  eval "$_listen_saved_opts"
+  # When sourced (e.g., by cd hook), guarantee permissive mode instead of restoring
+  set +e
+  set +u
   # Restore readline mode
   [ "$_listen_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
   [ "$_listen_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
@@ -117,8 +120,9 @@ _listen_room_log="$_listen_room_path/.log"
 if [ ! -f "$_listen_room_log" ]; then
   touch "$_listen_room_log" 2>/dev/null || {
     printf '%s\n' "listen: cannot create log file (directory may be read-only)" >&2
-    # Restore shell options before returning
-    eval "$_listen_saved_opts"
+    # When sourced (e.g., by cd hook), guarantee permissive mode instead of restoring
+    set +e
+    set +u
     # Restore readline mode
     [ "$_listen_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
     [ "$_listen_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
@@ -245,12 +249,14 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
 
 _listen_monitor_pid=$!
 
-# Clean up variables and restore shell options
+# Clean up variables and guarantee permissive mode
 unset _listen_stop_only _listen_room_path _listen_room_log _listen_is_sourced \
   _listen_monitor_pid _listen_term_width
 
-# Restore shell options before returning
-eval "$_listen_saved_opts"
+# When sourced (e.g., by cd hook), guarantee permissive mode instead of restoring
+# Restoring saved opts can re-enable strict modes that break readline
+set +e
+set +u
 # Restore readline mode
 [ "$_listen_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
 [ "$_listen_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
