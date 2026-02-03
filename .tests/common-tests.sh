@@ -152,7 +152,7 @@ if command -v timeout >/dev/null 2>&1; then
   timeout_cmd="timeout"
 fi
 
-find_timeout="${WIZARDRY_FIND_TIMEOUT:-60}"
+find_timeout="${WIZARDRY_FIND_TIMEOUT:-80}"
 
 # Build cached spell file list (run find once instead of 11+ times)
 if [ "$FILTER_MODE" -eq 1 ]; then
