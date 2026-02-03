@@ -34,7 +34,7 @@ GRAY=${GREY-}
 if ! command -v tor >/dev/null 2>&1; then
   status="not installed"
   color="$GRAY"
-elif command -v is-service-running >/dev/null 2>&1 && is-service-running tor >/dev/null 2>&1; then
+elif is-tor-running; then
   status="installed, running, bootstrapped"
   color="$THEME_SUCCESS"
 else
