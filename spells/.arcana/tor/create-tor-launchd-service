@@ -30,6 +30,9 @@ if ! is-tor-installed; then
   exit 1
 fi
 
+# Ensure torrc exists before creating service
+ensure-torrc-exists
+
 # Find tor binary
 tor_bin=""
 if [ -x /usr/local/bin/tor ]; then

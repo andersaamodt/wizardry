@@ -18,6 +18,11 @@ set -eu
 
 printf 'Starting tor...\n'
 
+# Ensure torrc exists before trying to start
+if command -v ensure-torrc-exists >/dev/null 2>&1; then
+  ensure-torrc-exists
+fi
+
 # Try systemctl (Linux with systemd)
 if command -v systemctl >/dev/null 2>&1; then
   if sudo systemctl start tor 2>&1; then
