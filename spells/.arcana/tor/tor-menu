@@ -62,7 +62,7 @@ $openssl_option"
   service_status_option=""
   tor_service_option=""
   
-  if command -v tor >/dev/null 2>&1; then
+  if is-tor-installed; then
     # Only show "View Tor Service Status" on Linux with systemd
     if command -v systemctl >/dev/null 2>&1; then
       service_status_option="View Tor Service Status%sudo systemctl status tor"
@@ -74,7 +74,7 @@ $openssl_option"
     fi
   fi
   
-  if command -v tor >/dev/null 2>&1; then
+  if is-tor-installed; then
     config_option="Configure Tor%configure-tor"
     repair_option="Repair Permissions%repair-tor-permissions"
     uninstall_option="Uninstall Tor%uninstall-tor"

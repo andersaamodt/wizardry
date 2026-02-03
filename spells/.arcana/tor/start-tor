@@ -26,7 +26,24 @@ if command -v systemctl >/dev/null 2>&1; then
   fi
 fi
 
-# Try direct execution
+# Try launchctl (macOS)
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  # Check if launchd service is configured
+  if is-tor-launchd-service-configured; then
+    if sudo launchctl start org.torproject.tor 2>/dev/null; then
+      printf 'Tor started via launchd.\n'
+      exit 0
+    fi
+  else
+    # Service not configured, create it first
+    if create-tor-launchd-service; then
+      printf 'Tor started via launchd.\n'
+      exit 0
+    fi
+  fi
+fi
+
+# Try direct execution (fallback)
 if command -v tor >/dev/null 2>&1; then
   if tor >/dev/null 2>&1 &; then
     printf 'Tor started.\n'
