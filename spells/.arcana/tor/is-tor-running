@@ -18,14 +18,6 @@ require-wizardry || exit 1
 set -eu
 
 # Check if tor process is running
-# On macOS, check launchd first (system-level services need sudo)
-if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
-  # Check if launchd service is loaded (need sudo for system-level services)
-  if sudo launchctl list 2>/dev/null | grep -q "org.torproject.tor"; then
-    exit 0
-  fi
-fi
-
 # Use pgrep if available for more accurate detection
 if command -v pgrep >/dev/null 2>&1; then
     pgrep -x tor >/dev/null 2>&1 && exit 0
