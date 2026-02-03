@@ -46,9 +46,6 @@ set +u
 
 # The cd override - calls cd-hook imp after successful directory change
 cd() {
-    # Save current shell options (must restore before ALL returns)
-    cd_saved_opts=$(set +o)
-    
     # Use builtin for zsh/bash (where it's required for function override), command for POSIX sh
     # We use eval to check for bash/zsh in a way that won't fail in POSIX sh
     # This is necessary because 'builtin cd' is required in zsh, but doesn't exist in pure POSIX sh
@@ -61,11 +58,14 @@ cd() {
         cd_exit_code=$?
     fi
     
-    # If cd failed, restore opts and return the error code
+    # If cd failed, set permissive mode and return the error code
     if [ "$cd_exit_code" -ne 0 ]; then
         cd_return=$cd_exit_code
-        eval "$cd_saved_opts"
-        unset cd_saved_opts cd_exit_code
+        unset cd_exit_code
+        # Explicitly set permissive mode before returning (even on error)
+        # Must leave shell in permissive mode to avoid breaking readline
+        set +e
+        set +u
         return $cd_return
     fi
     
@@ -128,9 +128,12 @@ cd() {
     # Clean up variables
     unset cd_config_file cd_look_value cd_listen_value cd_avatar_value
     
-    # Restore shell options before returning
-    eval "$cd_saved_opts"
-    unset cd_saved_opts
+    # Explicitly set permissive mode before returning
+    # The cd function is part of the shell environment (defined in load-cd-hook)
+    # and must leave the shell in permissive mode to avoid breaking readline
+    # (same pattern as invoke-wizardry, load-cd-hook, load-touch-hook for PR #1057)
+    set +e
+    set +u
 }
 
 # Note: We intentionally do NOT set up custom completion for the cd function
