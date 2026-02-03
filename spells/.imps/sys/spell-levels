@@ -94,8 +94,8 @@ case "$level" in
     ;;
   16)
     name='Advanced MUD Features'
-    spells='boot-player:mud choose-player:mud decorate:mud greater-heal:mud heal:mud lesser-heal:mud listen:mud magic-missile:mud resurrect:mud say:mud shocking-grasp:mud start-listening:mud stats:mud stop-listening:mud'
-    imps='hook/cd-hook hook/touch-hook mud/damage-file mud/deal-damage mud/get-life mud/incarnate mud/move-avatar mud/trigger-on-touch'
+    spells='boot-player:mud choose-player:mud decorate:mud greater-heal:mud heal:mud lesser-heal:mud listen:mud magic-missile:mud resurrect:mud say:mud shocking-grasp:mud stats:mud'
+    imps='hook/touch-hook mud/damage-file mud/deal-damage mud/get-life mud/incarnate mud/move-avatar mud/trigger-on-touch'
     ;;
   17)
     name='Cryptography'
