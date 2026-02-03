@@ -146,7 +146,6 @@ while true; do
       "Delete site%delete-site \"$site_name\"" \
       "${exit_label}%kill -TERM \$PPID"
   fi
-fi
 
   menu "${BOLD}${CYAN}Site: $site_name${RESET} ($status)" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
