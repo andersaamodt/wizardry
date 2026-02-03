@@ -114,7 +114,7 @@ case $distro in
         sudo rm -f "$pkgsrc_prefix/bin/torify"
         sudo rm -rf "$pkgsrc_prefix/share/tor"
         sudo rm -rf "$pkgsrc_prefix/share/doc/tor"
-        sudo rm -f "$pkgsrc_prefix/share/man/man1/tor*
+        sudo rm -f "$pkgsrc_prefix/share/man/man1/tor*"
         sudo rm -rf "$pkgsrc_prefix/etc/tor"
         sudo rm -rf "$pkgsrc_prefix/var/lib/tor"
         sudo rm -f "$pkgsrc_prefix/var/log/tor.log"
