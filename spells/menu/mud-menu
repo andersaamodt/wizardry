@@ -213,15 +213,13 @@ while true; do
   
   # Build copy .onion address option if hostname file exists
   copy_onion=""
-  if [ "$tor_configured" -eq 1 ]; then
-    # Check for MUD hidden service hostname file in multiple locations
-    for mud_hs_dir in /usr/local/var/lib/tor/mud /opt/pkg/var/lib/tor/mud /var/lib/tor/mud; do
-      if [ -f "$mud_hs_dir/hostname" ]; then
-        copy_onion="Copy .onion address%copy-to-clipboard \"\$(cat $mud_hs_dir/hostname)\"; echo 7 > \"$SELECTION_FILE\""
-        break
-      fi
-    done
-  fi
+  # Check for MUD hidden service hostname file in multiple locations
+  for mud_hs_dir in /usr/local/var/lib/tor/mud /opt/pkg/var/lib/tor/mud /var/lib/tor/mud; do
+    if [ -f "$mud_hs_dir/hostname" ]; then
+      copy_onion="Copy .onion address%copy-to-clipboard \"\$(cat $mud_hs_dir/hostname)\"; echo 7 > \"$SELECTION_FILE\""
+      break
+    fi
+  done
   
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)

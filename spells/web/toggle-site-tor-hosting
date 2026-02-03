@@ -130,22 +130,7 @@ if grep -q "^HiddenServiceDir.*${site_name}" "$tor_config_path" 2>/dev/null; the
 fi
 
 if [ "$hs_configured" -eq 1 ]; then
-  # Site is configured - offer to disable
-  printf '%s\n' "Tor hidden service is currently ENABLED for site '$site_name'"
-  hostname_file="${hs_dir}hostname"
-  if [ -f "$hostname_file" ] && [ -r "$hostname_file" ]; then
-    onion_address=$(cat "$hostname_file" 2>/dev/null || echo "")
-    if [ -n "$onion_address" ]; then
-      printf 'Hidden service address: %s\n' "$onion_address"
-    fi
-  fi
-  
-  printf '\n'
-  printf '%s' "Would you like to DISABLE Tor hosting for this site? [y/n]: "
-  IFS= read -r disable_choice || exit 1
-  
-  case $disable_choice in
-  y|Y)
+  # Site is configured - disable it automatically (user already clicked toggle)
     # Remove the hidden service configuration from torrc
     # Create temp file and remove lines for this site
     temp_torrc=$(mktemp)
@@ -172,11 +157,6 @@ if [ "$hs_configured" -eq 1 ]; then
     printf '%s\n' "Tor hidden service disabled for site '$site_name'"
     printf '%s\n' "Restarting tor..."
     restart-tor || true
-    ;;
-  *)
-    printf '%s\n' "Tor hosting remains enabled."
-    ;;
-  esac
 else
   # Site is not configured - enable it
   # Create the hidden service directory
