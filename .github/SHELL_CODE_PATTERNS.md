@@ -188,13 +188,8 @@ cd() {
 
 # CRITICAL: Restore completion after function definition
 if eval '[ -n "${BASH_VERSION:-}" ]' 2>/dev/null; then
-    # Bash: Use custom completion function to avoid macOS rendering bugs
-    # macOS bash 3.2 has severe readline display bugs with built-in completion flags
-    # A custom function bypasses these issues entirely
-    
-    # Disable colored completion (causes invisible characters on macOS)
-    eval 'bind "set colored-stats off"' 2>/dev/null || true
-    eval 'bind "set colored-completion-prefix off"' 2>/dev/null || true
+    # Bash: Use custom completion function (safest approach)
+    # Custom function works reliably across all bash versions
     
     # Define custom completion function (use eval for POSIX compatibility)
     eval '_wizardry_cd_completion() {
@@ -214,24 +209,41 @@ elif eval '[ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
 fi
 ```
 
-**Why:** Shells have special completion behavior for builtin commands. When you override a builtin with a function, the shell's completion system no longer recognizes it, breaking tab completion. You must explicitly tell the completion system to use the appropriate completion function.
+**Why:** Shells have special completion behavior for builtin commands. When you override a builtin with a function, the shell's completion system no longer recognizes it, breaking tab completion.
 
-**Bash Custom Function Approach:** The most reliable solution for macOS compatibility:
-- **Custom function**: Defines `_wizardry_cd_completion()` to handle directory completion
-- **Bypasses readline bugs**: Avoids macOS bash 3.2's invisible character rendering issues
-- **Disables colored completion**: Turns off `colored-stats` and `colored-completion-prefix` which cause display bugs
-- **POSIX compatible**: Uses `eval` to wrap bash-specific syntax so it doesn't break in sh
-- **Fallback chain**: Falls back to simpler completion methods if custom function fails
+**Bash Custom Function Approach:** The most reliable and safe solution:
+- **Custom function**: Defines `_wizardry_cd_completion()` using `compgen -d`
+- **Safe**: Doesn't interfere with readline or terminal state
+- **POSIX compatible**: Uses `eval` to wrap bash-specific syntax
+- **Fallback chain**: Falls back to simpler completion if custom function fails
+
+**CRITICAL - Never use `bind` in sourced scripts:**
+```bash
+# DANGEROUS - BREAKS READLINE - DO NOT DO THIS
+bind 'set colored-stats off'         # Corrupts readline
+bind 'set colored-completion-prefix off'  # Breaks arrow keys
+
+# Result: Arrow keys show ^[[A instead of working
+#         History navigation broken
+#         All readline features corrupted
+```
+
+**Why `bind` is dangerous:**
+1. `bind` modifies global readline state
+2. When called from non-interactive shells, it fails and corrupts readline
+3. Corruption causes all readline features to break (arrow keys, history, editing)
+4. The damage persists after the script finishes
+5. Users see escape sequences (`^[[A`) instead of proper key handling
+
+**For macOS invisible completion characters:** This is a user configuration issue, not fixable from scripts. Users should add to `~/.inputrc`:
+```
+set colored-stats off
+set colored-completion-prefix off
+```
 
 **Zsh:** Use `compdef _cd` to use the builtin cd completion function (requires zsh completion system to be loaded).
 
-**macOS Readline Bugs:** macOS ships with bash 3.2 (from 2007) which has severe readline display bugs:
-- Simple `-d` flag causes invisible characters (cursor moves but text doesn't show)
-- `-o default -o dirnames` doesn't fully fix the issue on ancient bash
-- Colored completion features render text invisible
-- **Solution**: Custom completion function + disabled colored completion bypasses all bugs
-
-**Use case:** load-cd-hook overrides `cd` with a function to run `look` after directory changes. Without completion setup, tab completion for directories would break. The custom function approach ensures it works reliably on macOS.
+**Use case:** load-cd-hook overrides `cd` with a function to run `look` after directory changes. The custom completion function ensures tab completion works without breaking readline.
 
 ### Case Statements
 

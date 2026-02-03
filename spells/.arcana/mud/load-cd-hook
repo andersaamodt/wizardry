@@ -140,12 +140,7 @@ cd() {
 # This ensures tab completion still works after overriding cd with a function
 if eval '[ -n "${BASH_VERSION:-}" ]' 2>/dev/null; then
     # Bash: Use custom completion function for cd
-    # On macOS (bash 3.2), built-in completion flags cause invisible character bugs
-    # A custom function bypasses the readline display issues entirely
-    
-    # Disable colored completion which causes rendering bugs on macOS
-    eval 'bind "set colored-stats off"' 2>/dev/null || true
-    eval 'bind "set colored-completion-prefix off"' 2>/dev/null || true
+    # Custom function works on all bash versions including macOS bash 3.2
     
     # Define custom completion function (bash-specific, so use eval)
     eval '_wizardry_cd_completion() {
