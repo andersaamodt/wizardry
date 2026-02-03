@@ -165,6 +165,8 @@ if [ "$hs_configured" -eq 1 ]; then
     done < "$tor_config_path"
     
     sudo cp "$temp_torrc" "$tor_config_path"
+    # Ensure torrc remains readable after modification
+    sudo chmod 644 "$tor_config_path"
     rm -f "$temp_torrc"
     
     printf '%s\n' "Tor hidden service disabled for site '$site_name'"
@@ -187,6 +189,9 @@ else
   printf '\n# Hidden service for site: %s\n' "$site_name" | sudo tee -a "$tor_config_path"
   printf 'HiddenServiceDir %s\n' "$hs_dir" | sudo tee -a "$tor_config_path"
   printf 'HiddenServicePort 80 127.0.0.1:%s\n' "$port" | sudo tee -a "$tor_config_path"
+  
+  # Ensure torrc remains readable after modification
+  sudo chmod 644 "$tor_config_path"
   
   printf '%s\n' "Hidden service configured for site '$site_name'"
   printf '%s\n' "Restarting tor..."

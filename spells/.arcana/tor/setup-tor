@@ -128,6 +128,9 @@ y|Y)
         printf 'HiddenServiceDir %s\n' "$mud_dir" | sudo tee -a "$tor_config_path"
         printf '%s\n' "HiddenServicePort 80 127.0.0.1:8080" | sudo tee -a "$tor_config_path"
         
+        # Ensure torrc remains readable after modification
+        sudo chmod 644 "$tor_config_path"
+        
         # Restart tor to activate the hidden service
         printf '%s\n' "Hidden service configured in $tor_config_path"
         
