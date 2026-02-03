@@ -41,23 +41,27 @@ fi
 # Try launchctl (macOS)
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
   if is-tor-launchd-service-configured; then
-    # On macOS with launchd, we need to unload the service with -w flag
-    # to disable KeepAlive which will restart it if we just stop it
-    printf 'Unloading tor from launchd...\n'
-    if sudo launchctl unload -w /Library/LaunchDaemons/org.torproject.tor.plist 2>/dev/null; then
-      printf 'Tor launchd service unloaded.\n'
-      # Wait for process to actually stop (increased to allow graceful shutdown)
-      sleep 5
-      # Re-enable the service but don't start it
-      sudo launchctl load -w /Library/LaunchDaemons/org.torproject.tor.plist 2>/dev/null || true
+    # On macOS with launchd, use launchctl stop for graceful shutdown
+    # This sends SIGTERM to the process, allowing it to shut down gracefully
+    printf 'Stopping tor via launchd...\n'
+    if sudo launchctl stop org.torproject.tor 2>/dev/null; then
+      printf 'Sent stop signal to tor via launchd.\n'
+      # Wait longer for graceful shutdown (tor may need time to close circuits)
+      printf 'Waiting for tor to shut down gracefully (up to 10 seconds)...\n'
+      max_wait=10
+      waited=0
+      while [ $waited -lt $max_wait ]; do
+        if ! is-tor-running; then
+          printf 'Tor stopped successfully.\n'
+          exit 0
+        fi
+        sleep 1
+        waited=$((waited + 1))
+      done
       
-      if ! is-tor-running; then
-        printf 'Tor stopped successfully.\n'
-        exit 0
-      else
-        printf 'Warning: unload succeeded but tor still running.\n' >&2
-        printf 'Attempting to kill tor process directly...\n'
-      fi
+      # If still running after 10 seconds, note it and continue to force kill
+      printf 'Warning: tor did not stop within 10 seconds.\n' >&2
+      printf 'Attempting to kill tor process directly...\n'
     fi
   fi
 fi

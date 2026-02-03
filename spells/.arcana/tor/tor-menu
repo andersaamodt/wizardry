@@ -95,34 +95,32 @@ $openssl_option"
     fi
     
     # Check for .onion address file to offer copy option
+    # Only show if tor is installed and a hidden service is configured
     copy_onion_option=""
-    if is-tor-running; then
-      # Check multiple possible hidden service directories
-      hostname_file=""
-      case "$(uname -s 2>/dev/null)" in
-      Darwin)
-        # Try multiple locations on macOS
-        for hs_dir in /usr/local/var/lib/tor/hidden_service /usr/local/var/lib/tor/mud /opt/pkg/var/lib/tor/hidden_service; do
-          if [ -f "$hs_dir/hostname" ]; then
-            hostname_file="$hs_dir/hostname"
-            break
-          fi
-        done
-        ;;
-      *)
-        # Try multiple locations on Linux
-        for hs_dir in /var/lib/tor/hidden_service /var/lib/tor/mud; do
-          if [ -f "$hs_dir/hostname" ]; then
-            hostname_file="$hs_dir/hostname"
-            break
-          fi
-        done
-        ;;
-      esac
-      
-      if [ -n "$hostname_file" ]; then
-        copy_onion_option="Copy .onion address%copy \"$hostname_file\""
-      fi
+    hostname_file=""
+    case "$(uname -s 2>/dev/null)" in
+    Darwin)
+      # Try multiple locations on macOS
+      for hs_dir in /usr/local/var/lib/tor/hidden_service /usr/local/var/lib/tor/mud /opt/pkg/var/lib/tor/hidden_service; do
+        if [ -f "$hs_dir/hostname" ]; then
+          hostname_file="$hs_dir/hostname"
+          break
+        fi
+      done
+      ;;
+    *)
+      # Try multiple locations on Linux
+      for hs_dir in /var/lib/tor/hidden_service /var/lib/tor/mud; do
+        if [ -f "$hs_dir/hostname" ]; then
+          hostname_file="$hs_dir/hostname"
+          break
+        fi
+      done
+      ;;
+    esac
+    
+    if [ -n "$hostname_file" ]; then
+      copy_onion_option="Copy .onion address%copy-to-clipboard \"\$(cat \"$hostname_file\")\""
     fi
     
     # Build menu with simplified logic
