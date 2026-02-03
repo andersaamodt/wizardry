@@ -44,117 +44,20 @@ unset cd_sourced cd_base
 set +e
 set +u
 
-# The cd override - calls cd-hook imp after successful directory change
+# The cd override - MINIMAL VERSION for debugging
+# Stripped down to bare minimum to find what breaks readline
 cd() {
-    # Save readline editing mode (emacs or vi) before doing anything
-    # This is critical to prevent readline breakage after cd
-    # Capture set -o output once for efficiency
-    cd_set_output=$(set -o)
-    cd_emacs_mode=$(printf '%s\n' "$cd_set_output" | grep '^emacs' | awk '{print $2}')
-    cd_vi_mode=$(printf '%s\n' "$cd_set_output" | grep '^vi' | awk '{print $2}')
-    unset cd_set_output
-    
-    # Use builtin for zsh/bash (where it's required for function override), command for POSIX sh
-    # We use eval to check for bash/zsh in a way that won't fail in POSIX sh
-    # This is necessary because 'builtin cd' is required in zsh, but doesn't exist in pure POSIX sh
+    # Use builtin for zsh/bash, command for POSIX sh
     if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
-        # In bash/zsh, must use 'builtin' to call the actual cd builtin from within override function
-        builtin cd "$@"
-        cd_exit_code=$?
+        builtin cd "$@" || return $?
     else
-        command cd "$@"
-        cd_exit_code=$?
+        command cd "$@" || return $?
     fi
     
-    # If cd failed, restore readline mode and return the error code
-    if [ "$cd_exit_code" -ne 0 ]; then
-        cd_return=$cd_exit_code
-        unset cd_exit_code
-        # Restore readline editing mode before returning
-        # ONLY restore if the current mode differs from what we saved
-        cd_current_emacs=$(set -o | grep '^emacs' | awk '{print $2}')
-        cd_current_vi=$(set -o | grep '^vi' | awk '{print $2}')
-        if [ "$cd_emacs_mode" = "on" ] && [ "$cd_current_emacs" != "on" ]; then
-            set -o emacs 2>/dev/null || true
-        fi
-        if [ "$cd_vi_mode" = "on" ] && [ "$cd_current_vi" != "on" ]; then
-            set -o vi 2>/dev/null || true
-        fi
-        unset cd_emacs_mode cd_vi_mode cd_current_emacs cd_current_vi
-        return $cd_return
-    fi
-    
-    # cd succeeded, we can unset cd_exit_code now
-    unset cd_exit_code
-    
-    # Run cd-hook logic inline so listen can access PS1
-    # (cd-hook is executed, not sourced, so listen wouldn't have PS1 access otherwise)
-    
-    # Check if cd-look is enabled via config file (defaults to enabled when unset)
-    # Skip automatic look if JUMP_TO_MARKER_ACTIVE is set (jump-to-marker handles it)
-    cd_config_file="${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud"
-    cd_look_value=""
-    if [ -f "$cd_config_file" ]; then
-        cd_look_value=$(grep "^cd-look=" "$cd_config_file" 2>/dev/null | \
-            cut -d= -f2- || printf '')
-    fi
-    # Default to enabled (1) if not set
-    if [ -z "$cd_look_value" ]; then
-        cd_look_value=$(command -v mud-defaults >/dev/null 2>&1 && \
-            mud-defaults cd-look 2>/dev/null || printf '1')
-    fi
-    if [ "$cd_look_value" = "1" ] && [ -z "${JUMP_TO_MARKER_ACTIVE-}" ]; then
+    # Call look if enabled (defaults to enabled)
+    if [ -z "${JUMP_TO_MARKER_ACTIVE-}" ]; then
         command -v look >/dev/null 2>&1 && look 2>/dev/null || true
     fi
-    
-    # Check if cd-listen is enabled
-    cd_listen_value=""
-    if [ -f "$cd_config_file" ]; then
-        cd_listen_value=$(grep "^cd-listen=" "$cd_config_file" 2>/dev/null | \
-            cut -d= -f2- || printf '')
-    fi
-    # Default to disabled (0) if not set
-    if [ -z "$cd_listen_value" ]; then
-        cd_listen_value=$(command -v mud-defaults >/dev/null 2>&1 && \
-            mud-defaults cd-listen 2>/dev/null || printf '0')
-    fi
-    if [ "$cd_listen_value" = "1" ]; then
-        # Source listen directly so it can access PS1 from this shell context
-        if command -v listen >/dev/null 2>&1; then
-            . listen 2>/dev/null || true
-        fi
-    fi
-    
-    # Move avatar if avatar system is enabled (defaults to disabled when unset)
-    cd_avatar_value=""
-    if [ -f "$cd_config_file" ]; then
-        cd_avatar_value=$(grep "^avatar=" "$cd_config_file" 2>/dev/null | \
-            cut -d= -f2- || printf '')
-    fi
-    # Default to disabled (0) if not set
-    if [ -z "$cd_avatar_value" ]; then
-        cd_avatar_value=$(command -v mud-defaults >/dev/null 2>&1 && \
-            mud-defaults avatar 2>/dev/null || printf '0')
-    fi
-    if [ "$cd_avatar_value" = "1" ]; then
-        command -v move-avatar >/dev/null 2>&1 && move-avatar 2>/dev/null || true
-    fi
-    
-    # Clean up variables
-    unset cd_config_file cd_look_value cd_listen_value cd_avatar_value
-    
-    # Restore readline editing mode to prevent arrow key breakage
-    # ONLY restore if the current mode differs from what we saved
-    # Calling set -o emacs when already on might break zle in zsh
-    cd_current_emacs=$(set -o | grep '^emacs' | awk '{print $2}')
-    cd_current_vi=$(set -o | grep '^vi' | awk '{print $2}')
-    if [ "$cd_emacs_mode" = "on" ] && [ "$cd_current_emacs" != "on" ]; then
-        set -o emacs 2>/dev/null || true
-    fi
-    if [ "$cd_vi_mode" = "on" ] && [ "$cd_current_vi" != "on" ]; then
-        set -o vi 2>/dev/null || true
-    fi
-    unset cd_emacs_mode cd_vi_mode cd_current_emacs cd_current_vi
 }
 
 # Note: We intentionally do NOT set up custom completion for the cd function
