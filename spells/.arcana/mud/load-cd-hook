@@ -13,18 +13,18 @@ Then use 'toggle-cd' to enable/disable the hook.
 
 The hook runs 'look' after every successful directory change.
 USAGE
-  exit 0
+  return 0 2>/dev/null || exit 0
   ;;
 esac
 
 # Uncastable pattern - ensures spell is sourced, not executed
 cd_sourced=0
-if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+if eval '[ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
   case "${ZSH_EVAL_CONTEXT-}" in
     *:file) cd_sourced=1 ;;
   esac
 else
-  cd_base=${0##*/}
+  cd_base=$(basename "$0" 2>/dev/null || printf '%s\n' "$0")
   case "$cd_base" in
     sh|dash|bash|zsh|ksh|mksh) cd_sourced=1 ;;
     load-cd-hook) cd_sourced=0 ;;
@@ -44,36 +44,10 @@ unset cd_sourced cd_base
 set +e
 set +u
 
-# The cd override - calls cd-hook imp after successful directory change
+# The cd override - Step 3 (with listen sourcing enabled)
 cd() {
-    # Save current shell options (must restore before ALL returns)
-    cd_saved_opts=$(set +o)
-    
-    # Use builtin for zsh/bash (where it's required for function override), command for POSIX sh
-    # We use eval to check for bash/zsh in a way that won't fail in POSIX sh
-    # This is necessary because 'builtin cd' is required in zsh, but doesn't exist in pure POSIX sh
-    if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
-        # In bash/zsh, must use 'builtin' to call the actual cd builtin from within override function
-        eval 'builtin cd "$@"'
-        cd_exit_code=$?
-    else
-        command cd "$@"
-        cd_exit_code=$?
-    fi
-    
-    # If cd failed, restore opts and return the error code
-    if [ "$cd_exit_code" -ne 0 ]; then
-        cd_return=$cd_exit_code
-        eval "$cd_saved_opts"
-        unset cd_saved_opts cd_exit_code
-        return $cd_return
-    fi
-    
-    # cd succeeded, we can unset cd_exit_code now
-    unset cd_exit_code
-    
-    # Run cd-hook logic inline so listen can access PS1
-    # (cd-hook is executed, not sourced, so listen wouldn't have PS1 access otherwise)
+    # Use command cd for POSIX compliance (builtin is a bash-ism)
+    command cd "$@" || return $?
     
     # Check if cd-look is enabled via config file (defaults to enabled when unset)
     # Skip automatic look if JUMP_TO_MARKER_ACTIVE is set (jump-to-marker handles it)
@@ -92,7 +66,7 @@ cd() {
         command -v look >/dev/null 2>&1 && look 2>/dev/null || true
     fi
     
-    # Check if cd-listen is enabled
+    # Check if cd-listen is enabled (defaults to disabled when unset)
     cd_listen_value=""
     if [ -f "$cd_config_file" ]; then
         cd_listen_value=$(grep "^cd-listen=" "$cd_config_file" 2>/dev/null | \
@@ -110,27 +84,8 @@ cd() {
         fi
     fi
     
-    # Move avatar if avatar system is enabled (defaults to disabled when unset)
-    cd_avatar_value=""
-    if [ -f "$cd_config_file" ]; then
-        cd_avatar_value=$(grep "^avatar=" "$cd_config_file" 2>/dev/null | \
-            cut -d= -f2- || printf '')
-    fi
-    # Default to disabled (0) if not set
-    if [ -z "$cd_avatar_value" ]; then
-        cd_avatar_value=$(command -v mud-defaults >/dev/null 2>&1 && \
-            mud-defaults avatar 2>/dev/null || printf '0')
-    fi
-    if [ "$cd_avatar_value" = "1" ]; then
-        command -v move-avatar >/dev/null 2>&1 && move-avatar 2>/dev/null || true
-    fi
-    
     # Clean up variables
-    unset cd_config_file cd_look_value cd_listen_value cd_avatar_value
-    
-    # Restore shell options before returning
-    eval "$cd_saved_opts"
-    unset cd_saved_opts
+    unset cd_config_file cd_look_value cd_listen_value
 }
 
 # Note: We intentionally do NOT set up custom completion for the cd function
