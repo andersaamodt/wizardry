@@ -62,16 +62,18 @@ $openssl_option"
   service_status_option=""
   tor_service_option=""
   
-  # Show Start/Stop if tor is installed (show based on actual running status, not daemon config)
+  # Show Start/Stop based on running status and daemon configuration
   if is-tor-installed; then
     # Only show "View tor service status" on Linux with systemd
     if command -v systemctl >/dev/null 2>&1; then
       service_status_option="View tor service status%sudo systemctl status tor"
     fi
-    # Show Start/Stop based on whether tor is actually running
+    
+    # Show "Stop tor" if tor is running (regardless of daemon status)
+    # Show "Start tor" only if daemon is enabled and tor is not running
     if is-tor-running; then
       tor_service_option="Stop tor%stop-tor"
-    else
+    elif is-tor-daemon-enabled; then
       tor_service_option="Start tor%start-tor"
     fi
   fi
