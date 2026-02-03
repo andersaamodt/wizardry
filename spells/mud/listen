@@ -44,26 +44,26 @@ fi
 _listen_is_sourced=$_listen_sourced
 unset _listen_sourced _listen_base
 
-# STEP 3: Add shell option save/restore
-_listen_saved_opts=$(set +o)
-
+# STEP 3 FIX: Don't use eval restore - use explicit set +eu instead
 # Save readline editing mode
 _listen_set_output=$(set -o)
 _listen_emacs_mode=$(printf '%s\n' "$_listen_set_output" | grep '^emacs' | awk '{print $2}')
 _listen_vi_mode=$(printf '%s\n' "$_listen_set_output" | grep '^vi' | awk '{print $2}')
 unset _listen_set_output
 
-# STEP 3: Now restore everything and return
-# This is what we suspect breaks readline
-eval "$_listen_saved_opts"
+# Set permissive mode explicitly (don't restore with eval)
+set +e
+set +u
+
+# Restore readline editing mode
 [ "$_listen_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
 [ "$_listen_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
 
 # Check if sourced BEFORE unsetting the variable!
 if [ "$_listen_is_sourced" = "1" ]; then
-    unset _listen_saved_opts _listen_emacs_mode _listen_vi_mode _listen_is_sourced
+    unset _listen_emacs_mode _listen_vi_mode _listen_is_sourced
     return 0
 else
-    unset _listen_saved_opts _listen_emacs_mode _listen_vi_mode _listen_is_sourced
+    unset _listen_emacs_mode _listen_vi_mode _listen_is_sourced
     exit 0
 fi
