@@ -12,7 +12,7 @@ Usage: banish [LEVEL] [OPTIONS]
 Validate wizardry readiness by level, including assumptions, self-healing, and tests.
 
 Arguments:
-  LEVEL                 Validate through level N (0-27, default: 4)
+  LEVEL                 Validate through level N (0-28, default: 4)
   all                   Validate all available levels
 
 Options:
@@ -59,7 +59,7 @@ export WIZARDRY_DIR
 
 # Parse arguments
 target_level=4
-max_level=27
+max_level=28
 skip_tests=0
 skip_heal=0
 only_this_level=0
@@ -106,7 +106,7 @@ Usage: banish [LEVEL] [OPTIONS]
 Validate wizardry readiness by level, including assumptions, self-healing, and tests.
 
 Arguments:
-  LEVEL                 Validate through level N (0-27, default: 4)
+  LEVEL                 Validate through level N (0-28, default: 4)
   all                   Validate all available levels
 
 Options:
@@ -141,7 +141,7 @@ Usage: banish [LEVEL] [OPTIONS]
 Validate wizardry readiness by level, including assumptions, self-healing, and tests.
 
 Arguments:
-  LEVEL                 Validate through level N (0-27, default: 4)
+  LEVEL                 Validate through level N (0-28, default: 4)
   all                   Validate all available levels
 
 Options:
@@ -170,7 +170,7 @@ Usage: banish [LEVEL] [OPTIONS]
 Validate wizardry readiness by level, including assumptions, self-healing, and tests.
 
 Arguments:
-  LEVEL                 Validate through level N (0-27, default: 4)
+  LEVEL                 Validate through level N (0-28, default: 4)
   all                   Validate all available levels
 
 Options:
