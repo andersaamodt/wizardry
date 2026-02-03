@@ -181,7 +181,7 @@
 - 4KB padding works for SSE despite smaller than total buffer size - Write sequence (padding + event + padding) triggers flush mechanism, not just overflow.
 - 2KB padding causes batching in SSE delivery (too small for reliable flush) - Testing confirmed 4KB is minimum threshold to trigger flush mechanism consistently.
 - 4KB is confirmed minimum for instant SSE delivery over fcgiwrap/nginx - Smaller sizes (2KB, 1KB) cause batching; 4KB provides 83% bandwidth reduction while maintaining reliability.
-- Functions defined in sourced environment setup files (like cd() in load-cd-hook) must set +eu before returning instead of saving/restoring shell options - they are part of the shell environment and must leave it in permissive mode to avoid breaking readline; applies to all return paths including error cases.
+- Functions defined in sourced environment setup files (like cd() in load-cd-hook) should NOT call set at all - the parent script already sets +eu, and calling set inside the function may interfere with readline; just let the function inherit the parent's permissive mode.
 - Variable names must not begin with underscore (against project policy) - use descriptive names like `cd_saved_opts` not `_cd_saved_opts` to match existing codebase patterns.
 - Overriding builtin commands with functions breaks shell tab completion - attempting to restore it from scripts causes more problems than it solves (readline corruption, invisible characters).
 - NEVER call `bind` from sourced scripts - it corrupts readline state causing arrow keys to show escape sequences (^[[A) and breaking all line editing.
