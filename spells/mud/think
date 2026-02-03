@@ -68,7 +68,10 @@ log_entry="[$timestamp] $player_name thinks, \"$thought\""
 avatar_log="$avatar_path/.log"
 
 # Create or append to log file
-if printf '%s\n' "$log_entry" >> "$avatar_log" 2>/dev/null; then
+# CRITICAL: Wrap in subshell to force immediate buffer flush for tail -f visibility
+# Shell file append (>>) buffers output until script exits
+# Subshell exits immediately, flushing buffer so chat-stream's tail -f sees write
+if (printf '%s\n' "$log_entry" >> "$avatar_log") 2>/dev/null; then
   # Echo to stdout for the thinker to see
   # Colorize player name if outputting to a terminal
   if [ -t 1 ] && [ -z "${NO_COLOR-}" ]; then

@@ -155,4 +155,7 @@ player_name=${MUD_PLAYER:-${USER:-Someone}}
 timestamp=$(log-timestamp)
 room_log="$PWD/.log"
 log_entry="[$timestamp] $player_name casts magic missile at ${BLUE}$target${RESET}, dealing $damage damage!"
-printf '%s\n' "$log_entry" >> "$room_log" 2>/dev/null || true
+# CRITICAL: Wrap in subshell to force immediate buffer flush for tail -f visibility
+# Shell file append (>>) buffers output until script exits
+# Subshell exits immediately, flushing buffer so chat-stream's tail -f sees write
+(printf '%s\n' "$log_entry" >> "$room_log") 2>/dev/null || true
