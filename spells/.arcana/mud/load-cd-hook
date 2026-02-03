@@ -44,7 +44,7 @@ unset cd_sourced cd_base
 set +e
 set +u
 
-# The cd override - Adding back config file reading (Step 2)
+# The cd override - Adding back listen support (Step 3)
 cd() {
     # Use builtin for zsh/bash, command for POSIX sh
     if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
@@ -70,8 +70,26 @@ cd() {
         command -v look >/dev/null 2>&1 && look 2>/dev/null || true
     fi
     
+    # Check if cd-listen is enabled (defaults to disabled when unset)
+    cd_listen_value=""
+    if [ -f "$cd_config_file" ]; then
+        cd_listen_value=$(grep "^cd-listen=" "$cd_config_file" 2>/dev/null | \
+            cut -d= -f2- || printf '')
+    fi
+    # Default to disabled (0) if not set
+    if [ -z "$cd_listen_value" ]; then
+        cd_listen_value=$(command -v mud-defaults >/dev/null 2>&1 && \
+            mud-defaults cd-listen 2>/dev/null || printf '0')
+    fi
+    if [ "$cd_listen_value" = "1" ]; then
+        # Source listen directly so it can access PS1 from this shell context
+        if command -v listen >/dev/null 2>&1; then
+            . listen 2>/dev/null || true
+        fi
+    fi
+    
     # Clean up variables
-    unset cd_config_file cd_look_value
+    unset cd_config_file cd_look_value cd_listen_value
 }
 
 # Note: We intentionally do NOT set up custom completion for the cd function
