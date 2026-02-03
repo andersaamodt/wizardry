@@ -20,23 +20,10 @@ set -eu
 # Check if tor process is running
 # Use pgrep if available for more accurate detection
 if command -v pgrep >/dev/null 2>&1; then
-    if pgrep -x tor >/dev/null 2>&1; then
-        if [ -t 1 ]; then
-            echo "Tor is running."
-        fi
-        exit 0
-    fi
+    pgrep -x tor >/dev/null 2>&1 && exit 0
 else
     # Fallback to ps + grep, but be more specific
-    if ps aux | grep -v grep | grep -q 'tor$\|tor '; then
-        if [ -t 1 ]; then
-            echo "Tor is running."
-        fi
-        exit 0
-    fi
+    ps aux | grep -v grep | grep -q 'tor$\|tor ' && exit 0
 fi
 
-if [ -t 1 ]; then
-    echo "Tor is not running."
-fi
 exit 1

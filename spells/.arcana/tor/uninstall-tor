@@ -114,3 +114,12 @@ case $distro in
 esac
 
 printf '%s\n' "Tor uninstallation complete."
+
+# Verify tor was actually removed
+if command -v tor >/dev/null 2>&1; then
+  printf 'Warning: tor command still found in PATH at: %s\n' "$(command -v tor)" >&2
+  printf 'You may need to run: hash -r\n' >&2
+  printf 'Or open a new terminal session.\n' >&2
+else
+  printf 'Verified: tor has been successfully removed.\n'
+fi
