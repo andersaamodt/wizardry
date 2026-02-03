@@ -136,6 +136,19 @@ cd() {
     unset cd_saved_opts
 }
 
+# Set up shell completion for the cd function
+# This ensures tab completion still works after overriding cd with a function
+if eval '[ -n "${BASH_VERSION:-}" ]' 2>/dev/null; then
+    # Bash: Use directory completion for cd function
+    complete -d cd 2>/dev/null || true
+elif eval '[ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
+    # Zsh: Use the builtin _cd completion function
+    # compdef is only available when zsh completion system is loaded
+    if command -v compdef >/dev/null 2>&1; then
+        compdef _cd cd 2>/dev/null || true
+    fi
+fi
+
 # Restore opts
 eval "$load_cd_hook_saved_opts"
 unset load_cd_hook_saved_opts
