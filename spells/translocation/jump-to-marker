@@ -46,9 +46,16 @@ unset jump_to_marker_sourced jump_to_marker_base
 jm_spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
 markers_dir=$jm_spell_home/.markers
 
-# Uncastable spells must remember shell mode and restore on all exits
-jump_to_marker_saved_opts=$(set +o)
-set -eu
+# Save readline editing mode to prevent arrow key breakage after sourcing
+# This is critical - without this, readline gets corrupted
+jm_set_output=$(set -o)
+jm_emacs_mode=$(printf '%s\n' "$jm_set_output" | grep '^emacs' | awk '{print $2}')
+jm_vi_mode=$(printf '%s\n' "$jm_set_output" | grep '^vi' | awk '{print $2}')
+unset jm_set_output
+
+# Use permissive mode for our logic (don't save/restore - just use +eu)
+set +e
+set +u
 . env-clear
 
 marker_name="${1:-1}"
@@ -154,16 +161,20 @@ marker_file="$markers_dir/$marker_name"
 # Check for markers directory
 if [ ! -d "$markers_dir" ]; then
         printf '%s\n' "No markers have been set. Use 'mark-location' to mark a location first."
-        eval "$jump_to_marker_saved_opts"
-        unset jump_to_marker_saved_opts
+        # Restore readline mode and return
+        [ "$jm_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
+        [ "$jm_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+        unset jm_emacs_mode jm_vi_mode
         return 1
 fi
 
 # Check if marker_name is empty (cycling failed to find markers)
 if [ -z "$marker_name" ]; then
         printf '%s\n' "No markers available to cycle through. Use 'mark-location' to mark a location first." >&2
-        eval "$jump_to_marker_saved_opts"
-        unset jump_to_marker_saved_opts
+        # Restore readline mode and return
+        [ "$jm_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
+        [ "$jm_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+        unset jm_emacs_mode jm_vi_mode
         return 1
 fi
 
@@ -233,8 +244,10 @@ fi
 destination=$(cat "$marker_file")
 if [ -z "$destination" ]; then
         printf '%s\n' "The rune '$marker_name' is blank; the marked location has faded away."
-        eval "$jump_to_marker_saved_opts"
-        unset jump_to_marker_saved_opts
+        # Restore readline mode before returning
+  [ "$jm_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
+  [ "$jm_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+  unset jm_emacs_mode jm_vi_mode
         return 1
 fi
 
@@ -245,16 +258,20 @@ case "$destination" in
                 ;;
         *)
                 printf '%s\n' "The marker '$marker_name' contains a relative path '$destination', which is invalid. Use 'mark-location $marker_name' to reset it."
-                eval "$jump_to_marker_saved_opts"
-                unset jump_to_marker_saved_opts
+                # Restore readline mode before returning
+  [ "$jm_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
+  [ "$jm_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+  unset jm_emacs_mode jm_vi_mode
                 return 1
                 ;;
 esac
 
 if [ ! -d "$destination" ]; then
         printf '%s\n' "The ley-line remembers '$destination' for marker '$marker_name', but it no longer exists."
-        eval "$jump_to_marker_saved_opts"
-        unset jump_to_marker_saved_opts
+        # Restore readline mode before returning
+  [ "$jm_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
+  [ "$jm_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+  unset jm_emacs_mode jm_vi_mode
         return 1
 fi
 
@@ -273,8 +290,10 @@ if [ -z "$normalized_destination" ]; then
         else
                 printf '%s\n' "jump-to-marker: cannot access destination '$destination'" >&2
         fi
-        eval "$jump_to_marker_saved_opts"
-        unset jump_to_marker_saved_opts
+        # Restore readline mode before returning
+  [ "$jm_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
+  [ "$jm_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+  unset jm_emacs_mode jm_vi_mode
         return 1
 fi
 normalized_destination=$(printf '%s' "$normalized_destination" | sed 's|//|/|g')
@@ -290,8 +309,10 @@ fi
 # Sanity check: normalized_destination should not be empty if we got this far
 if [ -z "$normalized_destination" ]; then
         printf '%s\n' "jump-to-marker: internal error: failed to normalize destination path" >&2
-        eval "$jump_to_marker_saved_opts"
-        unset jump_to_marker_saved_opts
+        # Restore readline mode before returning
+  [ "$jm_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
+  [ "$jm_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+  unset jm_emacs_mode jm_vi_mode
         return 1
 fi
 
@@ -299,8 +320,10 @@ if [ "$current" = "$normalized_destination" ]; then
         printf '%s\n' "You are already standing at marker '$marker_name'."
         # Touch marker to update mtime for cycling
         touch "$marker_file"
-        eval "$jump_to_marker_saved_opts"
-        unset jump_to_marker_saved_opts
+        # Restore readline mode before returning
+  [ "$jm_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
+  [ "$jm_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+  unset jm_emacs_mode jm_vi_mode
         return 0
 fi
 
@@ -310,16 +333,20 @@ if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; t
         # In bash/zsh, use 'builtin cd' to bypass the cd function override
         if ! eval 'builtin cd "$destination"' 2>/dev/null; then
                 printf '%s\n' "The portal refuses to stabilize; try marking again." >&2
-                eval "$jump_to_marker_saved_opts"
-                unset jump_to_marker_saved_opts
+                # Restore readline mode before returning
+  [ "$jm_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
+  [ "$jm_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+  unset jm_emacs_mode jm_vi_mode
                 return 1
         fi
 else
         # In POSIX sh, use 'command cd' to use the builtin
         if ! command cd "$destination"; then
                 printf '%s\n' "The portal refuses to stabilize; try marking again." >&2
-                eval "$jump_to_marker_saved_opts"
-                unset jump_to_marker_saved_opts
+                # Restore readline mode before returning
+  [ "$jm_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
+  [ "$jm_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+  unset jm_emacs_mode jm_vi_mode
                 return 1
         fi
 fi
@@ -384,5 +411,7 @@ fi
 touch "$marker_file"
 
 # Restore opts
-eval "$jump_to_marker_saved_opts"
-unset jump_to_marker_saved_opts
+# Restore readline mode before returning
+[ "$jm_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
+[ "$jm_vi_mode" = "on" ] && set -o vi 2>/dev/null || true
+unset jm_emacs_mode jm_vi_mode
