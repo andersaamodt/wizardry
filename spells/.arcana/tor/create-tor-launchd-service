@@ -67,8 +67,7 @@ printf 'Creating launchd service at %s...\n' "$plist_file"
 
 sudo tee "$plist_file" >/dev/null <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" 
-  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
   <key>Label</key>
@@ -106,9 +105,12 @@ if ! dscl . -read /Users/_tor >/dev/null 2>&1; then
     next_uid=$((next_uid + 1))
   done
   
+  # Check for wheel group (GID 0) which always exists on macOS
+  gid=0
+  
   sudo dscl . -create /Users/_tor
   sudo dscl . -create /Users/_tor UniqueID "$next_uid"
-  sudo dscl . -create /Users/_tor PrimaryGroupID 250
+  sudo dscl . -create /Users/_tor PrimaryGroupID "$gid"
   sudo dscl . -create /Users/_tor NFSHomeDirectory /var/empty
   sudo dscl . -create /Users/_tor UserShell /usr/bin/false
   sudo dscl . -create /Users/_tor RealName "Tor Daemon"
