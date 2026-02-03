@@ -27,11 +27,35 @@ if [ -f "$torrc_path" ]; then
   exit 0
 fi
 
-# Create the directory if it doesn't exist
+# Create the torrc directory if it doesn't exist
 torrc_dir=$(dirname "$torrc_path")
 if [ ! -d "$torrc_dir" ]; then
   printf 'Creating directory: %s\n' "$torrc_dir"
   sudo mkdir -p "$torrc_dir"
+fi
+
+# Create log directory (needed for tor.log)
+log_dir="/usr/local/var/log"
+if [ ! -d "$log_dir" ]; then
+  printf 'Creating log directory: %s\n' "$log_dir"
+  if ! sudo mkdir -p "$log_dir" 2>/dev/null; then
+    printf 'Error: Could not create log directory %s\n' "$log_dir" >&2
+    printf 'This may be a permissions issue.\n' >&2
+    printf 'Try running: repair-tor-permissions\n' >&2
+    exit 1
+  fi
+fi
+
+# Create data directory  
+data_dir="/usr/local/var/lib/tor"
+if [ ! -d "$data_dir" ]; then
+  printf 'Creating data directory: %s\n' "$data_dir"
+  if ! sudo mkdir -p "$data_dir" 2>/dev/null; then
+    printf 'Error: Could not create data directory %s\n' "$data_dir" >&2
+    printf 'This may be a permissions issue.\n' >&2
+    printf 'Try running: repair-tor-permissions\n' >&2
+    exit 1
+  fi
 fi
 
 # Create a minimal default torrc
