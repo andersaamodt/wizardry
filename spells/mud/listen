@@ -62,8 +62,12 @@ unset _listen_sourced _listen_base
 if command -v grep >/dev/null 2>&1 && command -v awk >/dev/null 2>&1; then
   _listen_set_output=$(set -o 2>/dev/null || true)
   if [ -n "$_listen_set_output" ]; then
-    _listen_emacs_mode=$(printf '%s\n' "$_listen_set_output" | grep '^emacs' 2>/dev/null | awk '{print $2}' 2>/dev/null || printf '')
-    _listen_vi_mode=$(printf '%s\n' "$_listen_set_output" | grep '^vi' 2>/dev/null | awk '{print $2}' 2>/dev/null || printf '')
+    # Extract emacs mode
+    _listen_emacs_mode=$(printf '%s\n' "$_listen_set_output" | \
+      grep '^emacs' 2>/dev/null | awk '{print $2}' 2>/dev/null || printf '')
+    # Extract vi mode
+    _listen_vi_mode=$(printf '%s\n' "$_listen_set_output" | \
+      grep '^vi' 2>/dev/null | awk '{print $2}' 2>/dev/null || printf '')
   else
     _listen_emacs_mode=""
     _listen_vi_mode=""
@@ -210,8 +214,8 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         # Print the message in the inserted space
         printf '\r%s' "$formatted_msg"
         
-        # Restore cursor position - this brings us back to the original prompt position
-        # The Insert Line operations have pushed the prompt down, so cursor is now at the right place
+        # Restore cursor position - back to original prompt position
+        # Insert Line operations pushed the prompt down to the right place
         printf '\0338'
         ;;
       *)

@@ -29,10 +29,18 @@ unset env_clear_sourced env_clear_base
 if command -v grep >/dev/null 2>&1 && command -v awk >/dev/null 2>&1; then
   env_clear_set_output=$(set -o 2>/dev/null || true)
   if [ -n "$env_clear_set_output" ]; then
-    env_clear_emacs_mode=$(printf '%s\n' "$env_clear_set_output" | grep '^emacs' 2>/dev/null | awk '{print $2}' 2>/dev/null || printf '')
-    env_clear_vi_mode=$(printf '%s\n' "$env_clear_set_output" | grep '^vi' 2>/dev/null | awk '{print $2}' 2>/dev/null || printf '')
-    env_clear_errexit=$(printf '%s\n' "$env_clear_set_output" | grep '^errexit' 2>/dev/null | awk '{print $2}' 2>/dev/null || printf '')
-    env_clear_nounset=$(printf '%s\n' "$env_clear_set_output" | grep '^nounset' 2>/dev/null | awk '{print $2}' 2>/dev/null || printf '')
+    # Extract emacs mode
+    env_clear_emacs_mode=$(printf '%s\n' "$env_clear_set_output" | \
+      grep '^emacs' 2>/dev/null | awk '{print $2}' 2>/dev/null || printf '')
+    # Extract vi mode
+    env_clear_vi_mode=$(printf '%s\n' "$env_clear_set_output" | \
+      grep '^vi' 2>/dev/null | awk '{print $2}' 2>/dev/null || printf '')
+    # Extract errexit mode
+    env_clear_errexit=$(printf '%s\n' "$env_clear_set_output" | \
+      grep '^errexit' 2>/dev/null | awk '{print $2}' 2>/dev/null || printf '')
+    # Extract nounset mode
+    env_clear_nounset=$(printf '%s\n' "$env_clear_set_output" | \
+      grep '^nounset' 2>/dev/null | awk '{print $2}' 2>/dev/null || printf '')
   else
     env_clear_emacs_mode=""
     env_clear_vi_mode=""
