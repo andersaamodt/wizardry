@@ -212,15 +212,71 @@ while true; do
   fi
   
   # Build copy .onion address option if hostname file exists
+  # Debug: Show all conditions for Copy .onion address
+  printf '\n=== Copy .onion address Debug Info ===\n'
+  
+  # Check if tor is installed
+  if is-tor-installed; then
+    printf 'Tor installed: YES\n'
+  else
+    printf 'Tor installed: NO\n'
+  fi
+  
+  # Check if tor is running
+  if is-tor-running; then
+    printf 'Tor running: YES\n'
+  else
+    printf 'Tor running: NO\n'
+  fi
+  
+  # Check if MUD tor hosting is enabled (tor_configured from earlier)
+  printf 'MUD Tor hosting enabled (tor_configured): %s\n' "$tor_configured"
+  
+  # Check for hostname file
+  hostname_file=""
+  for mud_hs_dir in /usr/local/var/lib/tor/mud /opt/pkg/var/lib/tor/mud /var/lib/tor/mud; do
+    if [ -f "$mud_hs_dir/hostname" ]; then
+      hostname_file="$mud_hs_dir/hostname"
+      printf 'Hostname file found: %s\n' "$hostname_file"
+      if [ -r "$hostname_file" ]; then
+        onion_addr=$(sudo cat "$hostname_file" 2>/dev/null || cat "$hostname_file" 2>/dev/null || echo "")
+        if [ -n "$onion_addr" ]; then
+          printf 'Hostname file contains: %s\n' "$onion_addr"
+        else
+          printf 'Hostname file is empty or unreadable\n'
+        fi
+      else
+        printf 'Hostname file exists but is not readable\n'
+      fi
+      break
+    fi
+  done
+  
+  if [ -z "$hostname_file" ]; then
+    printf 'Hostname file: NOT FOUND in any location\n'
+    printf 'Checked: /usr/local/var/lib/tor/mud, /opt/pkg/var/lib/tor/mud, /var/lib/tor/mud\n'
+  fi
+  
   # Check for MUD hidden service hostname file
   copy_onion=""
   for mud_hs_dir in /usr/local/var/lib/tor/mud /opt/pkg/var/lib/tor/mud /var/lib/tor/mud; do
     if [ -f "$mud_hs_dir/hostname" ]; then
       hostname_file="$mud_hs_dir/hostname"
       copy_onion="Copy .onion address%copy-to-clipboard \"\$(sudo cat \"$hostname_file\")\"; echo 9 > \"$SELECTION_FILE\""
+      printf 'copy_onion variable SET: Menu item will be added\n'
       break
     fi
   done
+  
+  if [ -z "$copy_onion" ]; then
+    printf 'copy_onion variable: NOT SET - Menu item will NOT appear\n'
+  fi
+  
+  printf '=====================================\n\n'
+  
+  # Give user time to read the debug info
+  printf 'Press Enter to continue to menu...'
+  read -r
   
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
