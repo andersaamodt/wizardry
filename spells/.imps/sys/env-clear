@@ -26,7 +26,7 @@ unset env_clear_sourced env_clear_base
 # Uncastable spells must remember shell mode and restore on all exits
 env_clear_saved_opts=$(set +o)
 
-# ALSO save readline editing mode to prevent breakage (same pattern as load-cd-hook)
+# ALSO save readline editing mode to prevent breakage (prevents nested save/restore from breaking readline)
 env_clear_set_output=$(set -o)
 env_clear_emacs_mode=$(printf '%s\n' "$env_clear_set_output" | grep '^emacs' | awk '{print $2}')
 env_clear_vi_mode=$(printf '%s\n' "$env_clear_set_output" | grep '^vi' | awk '{print $2}')
