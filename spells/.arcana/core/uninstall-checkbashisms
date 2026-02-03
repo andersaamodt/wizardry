@@ -18,6 +18,7 @@ set -eu
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
 ASSUME_YES=1
-export ASSUME_YES
+PACMAN_PACKAGE=devtools
+export ASSUME_YES PACMAN_PACKAGE
 
 "$SCRIPT_DIR/manage-system-command" --uninstall checkbashisms devscripts
