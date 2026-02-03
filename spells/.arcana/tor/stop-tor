@@ -46,8 +46,8 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
     printf 'Unloading tor from launchd...\n'
     if sudo launchctl unload /Library/LaunchDaemons/org.torproject.tor.plist 2>/dev/null; then
       printf 'Tor launchd service unloaded.\n'
-      # Wait and verify it actually stopped
-      sleep 2
+      # Wait longer for process to actually stop
+      sleep 3
       if ! is-tor-running; then
         # Reload the service but don't start it (without -w flag)
         sudo launchctl load /Library/LaunchDaemons/org.torproject.tor.plist 2>/dev/null || true
@@ -65,12 +65,22 @@ fi
 
 # Try killall (macOS and others - fallback)
 if sudo killall tor 2>/dev/null; then
-  printf 'Tor stopped.\n'
-  sleep 1
+  printf 'Tor stopped with SIGTERM.\n'
+  sleep 3
   if ! is-tor-running; then
     exit 0
   else
-    printf 'Warning: killall succeeded but tor still running.\n' >&2
+    printf 'Warning: SIGTERM did not stop tor, trying SIGKILL...\n' >&2
+    # Force kill with SIGKILL
+    if sudo killall -9 tor 2>/dev/null; then
+      printf 'Tor force-killed with SIGKILL.\n'
+      sleep 2
+      if ! is-tor-running; then
+        exit 0
+      else
+        printf 'Warning: Even SIGKILL did not stop tor.\n' >&2
+      fi
+    fi
   fi
 fi
 
