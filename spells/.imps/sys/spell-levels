@@ -90,7 +90,7 @@ case "$level" in
   15)
     name='Divination'
     spells='detect-magic:divination detect-rc-file:divination identify-room:divination'
-    imps='lang/possessive sys/os sys/term text/detect-indent-char text/detect-indent-width'
+    imps='lang/possessive sys/os sys/term text/divine-indent-char text/divine-indent-width'
     ;;
   16)
     name='Advanced MUD Features'
