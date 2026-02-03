@@ -212,15 +212,22 @@ while true; do
   fi
   
   # Build copy .onion address option if hostname file exists
-  # UNCONDITIONAL TEST - removed all conditions to debug why it never appears
-  copy_onion="Copy .onion address%printf 'TEST: Copy .onion menu item works!\\n'; echo 9 > \"$SELECTION_FILE\""
+  # Check for MUD hidden service hostname file
+  copy_onion=""
+  for mud_hs_dir in /usr/local/var/lib/tor/mud /opt/pkg/var/lib/tor/mud /var/lib/tor/mud; do
+    if [ -f "$mud_hs_dir/hostname" ]; then
+      hostname_file="$mud_hs_dir/hostname"
+      copy_onion="Copy .onion address%copy-to-clipboard \"\$(sudo cat \"$hostname_file\")\"; echo 9 > \"$SELECTION_FILE\""
+      break
+    fi
+  done
   
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
   exit_item="Exit%kill -TERM \$PPID"
 
-  # Build menu items list - ALWAYS include copy_onion for testing
-  set -- "$parse_toggle" "$mud_menu" "$cd_hook" "$cd_listen" "$avatar" "$touch_hook" "$toggle_all" "$copy_onion" "$tor" "$exit_item"
+  # Build menu items list - use conditional expansion for copy_onion
+  set -- "$parse_toggle" "$mud_menu" "$cd_hook" "$cd_listen" "$avatar" "$touch_hook" "$toggle_all" ${copy_onion:+"$copy_onion"} "$tor" "$exit_item"
   
   menu --start-selection "$start_selection" "MUD Install:" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
