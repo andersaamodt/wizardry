@@ -119,9 +119,10 @@ y|Y)
         
         # Create the directory if it doesn't exist
         sudo mkdir -p "$mud_dir" || exit 1
-        # Set proper ownership (try _tor first for macOS, then tor for Linux)
-        sudo chown _tor:_tor "$mud_dir" 2>/dev/null \
-            || sudo chown tor:tor "$mud_dir" 2>/dev/null || true
+        # Set proper ownership (try _tor:wheel for macOS, then tor:tor for Linux)
+        # On macOS, the _tor user belongs to the wheel group
+        sudo chown -R _tor:wheel "$mud_dir" 2>/dev/null \
+            || sudo chown -R tor:tor "$mud_dir" 2>/dev/null || true
         sudo chmod 700 "$mud_dir" || true
 
         printf 'HiddenServiceDir %s\n' "$mud_dir" | sudo tee -a "$tor_config_path"
