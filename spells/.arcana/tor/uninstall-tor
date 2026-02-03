@@ -63,7 +63,16 @@ case $distro in
       sudo rm -f "$plist_file"
     fi
     
-    # Remove tor binary and related files
+    # Detect pkgsrc installation directory
+    pkgsrc_prefix=""
+    if [ -d /opt/pkg ]; then
+      pkgsrc_prefix="/opt/pkg"
+    elif [ -d /usr/pkg ]; then
+      pkgsrc_prefix="/usr/pkg"
+    fi
+    
+    # Remove tor binary and related files from multiple possible locations
+    # 1. Remove from /usr/local (built from source)
     if command -v sudo >/dev/null 2>&1; then
       sudo rm -f /usr/local/bin/tor
       sudo rm -f /usr/local/bin/tor-gencert
@@ -92,6 +101,37 @@ case $distro in
       rm -rf /usr/local/var/lib/tor
       rm -f /usr/local/var/log/tor.log
       rm -f /usr/local/var/log/tor-errors.log
+    fi
+    
+    # 2. Remove from pkgsrc if detected
+    if [ -n "$pkgsrc_prefix" ]; then
+      printf 'Detected pkgsrc installation at %s\n' "$pkgsrc_prefix"
+      printf 'Removing tor from pkgsrc...\n'
+      if command -v sudo >/dev/null 2>&1; then
+        sudo rm -f "$pkgsrc_prefix/bin/tor"
+        sudo rm -f "$pkgsrc_prefix/bin/tor-gencert"
+        sudo rm -f "$pkgsrc_prefix/bin/tor-resolve"
+        sudo rm -f "$pkgsrc_prefix/bin/torify"
+        sudo rm -rf "$pkgsrc_prefix/share/tor"
+        sudo rm -rf "$pkgsrc_prefix/share/doc/tor"
+        sudo rm -f "$pkgsrc_prefix/share/man/man1/tor*
+        sudo rm -rf "$pkgsrc_prefix/etc/tor"
+        sudo rm -rf "$pkgsrc_prefix/var/lib/tor"
+        sudo rm -f "$pkgsrc_prefix/var/log/tor.log"
+        sudo rm -f "$pkgsrc_prefix/var/log/tor-errors.log"
+      else
+        rm -f "$pkgsrc_prefix/bin/tor"
+        rm -f "$pkgsrc_prefix/bin/tor-gencert"
+        rm -f "$pkgsrc_prefix/bin/tor-resolve"
+        rm -f "$pkgsrc_prefix/bin/torify"
+        rm -rf "$pkgsrc_prefix/share/tor"
+        rm -rf "$pkgsrc_prefix/share/doc/tor"
+        rm -f "$pkgsrc_prefix/share/man/man1/tor*"
+        rm -rf "$pkgsrc_prefix/etc/tor"
+        rm -rf "$pkgsrc_prefix/var/lib/tor"
+        rm -f "$pkgsrc_prefix/var/log/tor.log"
+        rm -f "$pkgsrc_prefix/var/log/tor-errors.log"
+      fi
     fi
     
     # Note: We don't remove the _tor user as it may be used by other processes
