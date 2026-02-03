@@ -168,12 +168,55 @@ while true; do
     toggle_all="Enable all MUD features%toggle-all-mud --enable; echo 7 > \"$SELECTION_FILE\""
   fi
   
-  tor="Set up tor hidden service%setup-tor; echo 8 > \"$SELECTION_FILE\""
+  # Build tor hidden service toggle based on current state
+  # Inline check for hidden service configuration
+  tor_configured=0
+  
+  # Try to detect torrc path
+  torrc_path=""
+  if command -v torrc-path >/dev/null 2>&1; then
+    torrc_path=$(torrc-path 2>/dev/null) || torrc_path=""
+  fi
+  
+  # Fallback to common locations if torrc-path not available
+  if [ -z "$torrc_path" ]; then
+    if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+      # macOS
+      for path in /usr/local/etc/tor/torrc /opt/local/etc/tor/torrc; do
+        if [ -f "$path" ]; then
+          torrc_path="$path"
+          break
+        fi
+      done
+    else
+      # Linux
+      if [ -f /etc/tor/torrc ]; then
+        torrc_path="/etc/tor/torrc"
+      fi
+    fi
+  fi
+  
+  # Check if HiddenServiceDir is configured (uncommented lines only)
+  if [ -n "$torrc_path" ] && [ -f "$torrc_path" ]; then
+    # Pattern matches lines starting with optional whitespace + HiddenServiceDir
+    # This naturally excludes commented lines (which start with #)
+    if grep -q "^[[:space:]]*HiddenServiceDir" "$torrc_path" 2>/dev/null; then
+      tor_configured=1
+    fi
+  fi
+  
+  if [ "$tor_configured" -eq 1 ]; then
+    tor="Remove tor hidden service%remove-tor-hidden-service -y; echo 8 > \"$SELECTION_FILE\""
+  else
+    tor="Set up tor hidden service%setup-tor -y; echo 8 > \"$SELECTION_FILE\""
+  fi
+  
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
   exit_item="Exit%kill -TERM \$PPID"
 
   set -- "$parse_toggle" "$mud_menu" "$cd_hook" "$cd_listen" "$avatar" "$touch_hook" "$toggle_all" "$tor" "$exit_item"
+  
   menu --start-selection "$start_selection" "MUD Install:" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
   

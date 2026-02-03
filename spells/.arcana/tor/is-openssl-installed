@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# Returns 0 (true) if openssl is installed, 1 (false) if not
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-openssl-installed
+
+Checks if OpenSSL library is installed.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+# Check using command first
+if command -v openssl >/dev/null 2>&1; then
+  exit 0
+fi
+
+# Check using pkg-config
+if pkg-config --exists openssl 2>/dev/null; then
+  exit 0
+fi
+
+exit 1

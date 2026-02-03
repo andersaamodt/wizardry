@@ -1,0 +1,103 @@
+#!/bin/sh
+
+# Remove Tor hidden service configuration
+
+# Check for -y/--yes flag to skip confirmation
+skip_confirm=0
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: remove-tor-hidden-service [-y|--yes]
+
+Remove Tor hidden service configuration from torrc.
+
+Options:
+  -y, --yes  Skip confirmation prompt
+USAGE
+  exit 0
+  ;;
+-y|--yes)
+  skip_confirm=1
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+
+if [ "$skip_confirm" -eq 0 ]; then
+  printf '%s' "Do you want to remove the Tor hidden service? [y/n]: "
+  IFS= read -r choice || exit 1
+  
+  case $choice in
+  y|Y)
+    # Continue with removal
+    ;;
+  *)
+    printf '%s\n' "Tor hidden service removal cancelled."
+    exit 0
+    ;;
+  esac
+fi
+
+# Proceed with removal
+        # Get torrc path
+        tor_config_path=$(torrc-path) || exit 1
+        
+        if [ ! -f "$tor_config_path" ]; then
+                printf '%s\n' "Error: torrc file not found at $tor_config_path" >&2
+                exit 1
+        fi
+        
+        # Create a backup
+        backup_path="${tor_config_path}.backup.$(date -u +%Y%m%d_%H%M%S)"
+        if command -v sudo >/dev/null 2>&1; then
+                sudo cp "$tor_config_path" "$backup_path"
+        else
+                cp "$tor_config_path" "$backup_path"
+        fi
+        printf '%s\n' "Backup created: $backup_path"
+        
+        # Remove HiddenService lines from torrc using sed for safer handling
+        temp_file=$(temp-file torrc-temp)
+        if command -v sudo >/dev/null 2>&1; then
+                sudo sed '/^HiddenServiceDir/d; /^HiddenServicePort/d' \
+                  "$tor_config_path" > "$temp_file"
+        else
+                sed '/^HiddenServiceDir/d; /^HiddenServicePort/d' \
+                  "$tor_config_path" > "$temp_file"
+        fi
+        
+        # If temp file is empty, create a minimal valid torrc
+        if [ ! -s "$temp_file" ]; then
+                printf '%s\n' "# Tor configuration file" > "$temp_file"
+                printf '%s\n' "# HiddenService configuration removed $(date -u +%Y-%m-%d)" >> "$temp_file"
+                printf '%s\n' "Filtered torrc was empty (only contained HiddenService config)."
+                printf '%s\n' "Created minimal torrc. Backup preserved at: $backup_path"
+        fi
+        
+        if command -v sudo >/dev/null 2>&1; then
+                sudo mv "$temp_file" "$tor_config_path"
+        else
+                mv "$temp_file" "$tor_config_path"
+        fi
+        
+        printf '%s\n' "Hidden service configuration removed from $tor_config_path"
+        
+        # Auto-restart tor when called with -y flag (from menu)
+        # When called directly, offer choice for safety
+        if [ "$skip_confirm" -eq 1 ]; then
+                # Called from menu with -y, auto-restart
+                restart-tor
+        else
+                printf '%s' "Restart tor service now? [y/n]: "
+                IFS= read -r restart_choice || exit 0
+                case $restart_choice in
+                y|Y)
+                        restart-tor
+                        ;;
+                *)
+                        printf '%s\n' "Tor restart needed for changes to take effect."
+                        ;;
+                esac
+        fi

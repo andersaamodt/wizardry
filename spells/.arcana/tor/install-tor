@@ -17,7 +17,6 @@ esac
 require-wizardry || exit 1
 
 set -eu
-. env-clear
 
 # Find script directory for sibling resources
 SCRIPT_SOURCE=$0
@@ -67,44 +66,259 @@ case $distro in
     
     # Check for required tools
     if ! command -v make >/dev/null 2>&1; then
-      printf '%s\n' 'Error: make is required. Install Xcode Command Line Tools: xcode-select --install'
-      return 1
+      xcode_msg='Error: make is required.'
+      xcode_msg2='Install Xcode Command Line Tools: xcode-select --install'
+      printf '%s\n' "$xcode_msg"
+      printf '%s\n' "$xcode_msg2"
+      exit 1
+    fi
+    
+    # Automatically install libevent if not present
+    if ! is-libevent-installed; then
+      printf '%s\n' 'libevent is required to build Tor.'
+      printf '%s\n' 'Installing libevent automatically...'
+      if ! install-libevent; then
+        printf '%s\n' 'Error: Failed to install libevent.' >&2
+        printf '%s\n' 'Please install it manually and try again.' >&2
+        exit 1
+      fi
+    fi
+    
+    # Automatically install OpenSSL if not present
+    if ! is-openssl-installed; then
+      printf '%s\n' 'OpenSSL is required to build Tor.'
+      printf '%s\n' 'Installing OpenSSL automatically...'
+      if ! install-openssl; then
+        printf '%s\n' 'Error: Failed to install OpenSSL.' >&2
+        printf '%s\n' 'Please install it manually and try again.' >&2
+        exit 1
+      fi
+    fi
+    
+    # Detect pkgsrc installation directory
+    pkgsrc_prefix=""
+    if [ -d /opt/pkg ]; then
+      pkgsrc_prefix="/opt/pkg"
+    elif [ -d /usr/pkg ]; then
+      pkgsrc_prefix="/usr/pkg"
     fi
     
     # Create temp directory for build
-    tmp_dir=$(temp-dir tor-install) || return 1
-    trap 'cleanup-dir "$tmp_dir"' EXIT HUP INT TERM
-    cd "$tmp_dir" || return 1
+    tmp_dir=$(temp-dir tor-install) || exit 1
+    # DON'T set cleanup trap yet - we'll preserve directory if build fails
+    cd "$tmp_dir" || exit 1
+    
+    printf '\n'
+    printf '==================================================\n'
+    printf 'BUILD DIRECTORY: %s\n' "$tmp_dir"
+    printf 'Preserved on failure for manual debugging.\n'
+    printf '==================================================\n'
+    printf '\n'
     
     # Download and build latest stable tor
     TOR_VERSION="0.4.8.10"
     printf 'Downloading Tor %s...\n' "$TOR_VERSION"
     if command -v curl >/dev/null 2>&1; then
-      curl -L -O "https://dist.torproject.org/tor-${TOR_VERSION}.tar.gz" || return 1
+      curl -L -O "https://dist.torproject.org/tor-${TOR_VERSION}.tar.gz" || exit 1
     elif command -v wget >/dev/null 2>&1; then
-      wget "https://dist.torproject.org/tor-${TOR_VERSION}.tar.gz" || return 1
+      wget "https://dist.torproject.org/tor-${TOR_VERSION}.tar.gz" || exit 1
     else
       printf '%s\n' 'Error: curl or wget required to download Tor'
-      return 1
+      exit 1
     fi
     
     tar -xzf "tor-${TOR_VERSION}.tar.gz"
-    cd "tor-${TOR_VERSION}" || return 1
+    cd "tor-${TOR_VERSION}" || exit 1
     
     printf 'Configuring and building Tor (this may take a few minutes)...\n'
-    ./configure --prefix=/usr/local || return 1
-    make || return 1
     
-    printf 'Installing Tor to /usr/local/bin...\n'
-    if command -v sudo >/dev/null 2>&1; then
-      sudo make install || return 1
+    # Configure with appropriate paths based on pkgsrc availability
+    if [ -n "$pkgsrc_prefix" ]; then
+      # Point configure to pkgsrc library and include paths
+      # Set additional flags for compiler and linker
+      export CPPFLAGS="-I$pkgsrc_prefix/include"
+      export LDFLAGS="-L$pkgsrc_prefix/lib"
+      
+      printf 'Using pkgsrc prefix: %s\n' "$pkgsrc_prefix"
+      
+      ./configure --prefix=/usr/local \
+        --disable-dependency-tracking \
+        --with-libevent-dir="$pkgsrc_prefix" \
+        --with-openssl-dir="$pkgsrc_prefix" || exit 1
     else
-      make install || return 1
+      ./configure --prefix=/usr/local \
+        --disable-dependency-tracking || exit 1
     fi
     
+    printf '\n'
+    printf 'Building Tor from source (this may take several minutes)...\n'
+    printf 'Compilation output:\n'
+    printf '%s\n' "----------------------------------------"
+    
+    # Step 1: Check for Makefile
+    printf 'Checking for Makefile...\n'
+    printf 'Current directory: %s\n' "$(pwd)"
+    
+    if [ ! -f "Makefile" ]; then
+      printf '%s\n' "install-tor: Makefile not found in tor source directory"
+      printf '%s\n' "Expected location: extracted tor source directory"
+      printf '%s\n' "Directory contents:"
+      ls -la
+      exit 1
+    fi
+    printf 'Makefile found.\n'
+    
+    # Step 2: Diagnostics before make
+    printf 'Starting make diagnostics...\n'
+    
+    # Check if tor binary already exists
+    printf 'Checking if tor binary already exists...\n'
+    if [ -f "src/app/tor" ] || [ -f "src/or/tor" ]; then
+      printf 'WARNING: tor binary already exists!\n'
+      find . -name "tor" -type f -exec ls -lh {} \;
+    else
+      printf 'tor binary not found - will build from source.\n'
+    fi
+    printf '\n'
+    
+    # Check if make command exists
+    printf 'Checking for make command...\n'
+    if command -v make >/dev/null 2>&1; then
+        printf 'make found at: %s\n' "$(command -v make)"
+    else
+        printf 'ERROR: make command not found!\n'
+        exit 1
+    fi
+    printf '\n'
+    
+    # Test make version (capture to variable to see if it produces output)
+    printf 'Testing make --version...\n'
+    set +e
+    make_version_output=$(/usr/bin/make --version 2>&1)
+    make_version_exit=$?
+    set -e
+    if [ -n "$make_version_output" ]; then
+        printf '%s\n' "$make_version_output" | head -3
+    else
+        printf 'WARNING: make --version produced no output! Exit code: %d\n' "$make_version_exit"
+    fi
+    printf '\n'
+    
+    # Test what make would do (dry-run)
+    printf 'Testing what make would do (dry-run -n)...\n'
+    set +e
+    make_dryrun_output=$(/usr/bin/make -n 2>&1 | head -20)
+    make_dryrun_exit=$?
+    set -e
+    if [ -n "$make_dryrun_output" ]; then
+        printf '%s\n' "$make_dryrun_output"
+    else
+        printf 'WARNING: make -n produced no output! Exit code: %d\n' "$make_dryrun_exit"
+    fi
+    printf '\n'
+    
+    printf 'Testing if output works...\n'
+    printf 'If you see this, printf works.\n'
+    ls -la | head -5
+    printf 'If you see file list above, ls and pipes work.\n'
+    printf '\n'
+    
+    # Temporarily allow make to fail so we can capture exit code
+    # (with set -e, make failure would exit script before we can handle it)
+    set +e
+    # Save make output to a file and also display using tee
+    make_log="$(temp-file make-output)"
+    printf 'Logging make output to: %s\n' "$make_log"
+    printf 'BUILD DIRECTORY: %s\n' "$tmp_dir/tor-$TOR_VERSION"
+    printf 'Preserved on failure for manual debugging.\n'
+    printf '\n'
+    
+    # Run make with debug and verbose flags
+    printf 'Running make with verbose flags...\n'
+    # Use temp file for make output and check exit code (POSIX-compliant)
+    if /usr/bin/make --debug=v VERBOSE=1 V=1 > "$make_log" 2>&1; then
+        make_exit=0
+    else
+        make_exit=$?
+    fi
+    # Display the log
+    cat "$make_log"
+    set -e
+    printf '\n'
+    printf 'Make log file location: %s\n' "$make_log"
+    printf 'Make log file size: %s bytes\n' "$(wc -c < "$make_log" 2>/dev/null || echo 0)"
+    if [ -s "$make_log" ]; then
+      printf 'Log file has content. First 10 lines:\n'
+      head -10 "$make_log"
+    else
+      printf 'WARNING: Log file is empty!\n'
+    fi
+    
+    # Step 3: Report completion
+    printf 'Make completed with exit code: %d\n' "$make_exit"
+    printf '%s\n' "----------------------------------------"
+    
+    if [ "$make_exit" -ne 0 ]; then
+      printf '\n'
+      printf '%s\n' "install-tor: compilation failed"
+      printf '%s\n' "Possible causes:"
+      printf '%s\n' "  - Xcode Command Line Tools not found"
+      printf '%s\n' "  - Incompatible compiler version detected"
+      printf '%s\n' "  - Missing or incompatible dependencies detected"
+      printf '\n'
+      printf '%s\n' "The compilation output above may contain more details."
+      printf '\n'
+      printf '==================================================\n'
+      printf 'BUILD DIRECTORY PRESERVED FOR DEBUGGING:\n'
+      printf '%s\n' "$tmp_dir"
+      printf '\n'
+      printf 'To debug manually:\n'
+      printf '  cd %s/tor-%s\n' "$tmp_dir" "$TOR_VERSION"
+      printf '  make 2>&1 | tee make-debug.log\n'
+      printf '\n'
+      printf 'Make log file: %s\n' "$make_log"
+      printf '==================================================\n'
+      exit 1
+    fi
+    
+    printf 'Build completed successfully.\n'
+    
+    printf '\n'
+    printf 'Installing Tor to /usr/local/bin...\n'
+    if command -v sudo >/dev/null 2>&1; then
+      sudo make install || exit 1
+    else
+      make install || exit 1
+    fi
+    
+    # Verify installation before cleaning up
+    if [ ! -x /usr/local/bin/tor ]; then
+      printf '%s\n' "ERROR: make install completed but /usr/local/bin/tor not found!"
+      printf '%s\n' "Checking alternate locations..."
+      
+      # Check other possible locations (shared list used later too)
+      alternate_tor_paths="/usr/bin/tor /opt/local/bin/tor /usr/local/sbin/tor"
+      found_elsewhere=0
+      for tor_path in $alternate_tor_paths; do
+        if [ -x "$tor_path" ]; then
+          printf '%s\n' "Found tor at: $tor_path"
+          printf '%s\n' "Tor was installed to a different location than expected."
+          found_elsewhere=1
+          break
+        fi
+      done
+      
+      if [ "$found_elsewhere" -eq 0 ]; then
+        printf '%s\n' "Installation failed. Check output above for errors."
+        exit 1
+      fi
+    else
+      printf '%s\n' 'Tor binary installed successfully to /usr/local/bin/tor'
+    fi
+    
+    # Only clean up on success - preserved on failure for debugging
     cd - >/dev/null || true
-    trap - EXIT HUP INT TERM
-    rm -rf "$tmp_dir"
+    cleanup-dir "$tmp_dir" 2>/dev/null || true
     ;;
   nixos)
     # Ask for configuration path
@@ -115,7 +329,7 @@ case $distro in
     changes=0
     if [ ! -f "$config_path" ]; then
       printf '%s\n' "NixOS configuration file $config_path was not found."
-      return 1
+      exit 1
     fi
 
     if command -v backup-nix-config >/dev/null 2>&1; then
@@ -159,13 +373,42 @@ case $distro in
     ;;
   *)
     printf '%s\n' "Unsupported distribution for automatic Tor installation."
-    return 1
+    exit 1
     ;;
 esac
 
-# Check if installation was successful
-if command -v tor >/dev/null 2>&1; then
+# Check if installation was successful - use multiple methods
+tor_found=0
+tor_location=""
+alternate_tor_paths="/usr/bin/tor /opt/local/bin/tor /usr/local/sbin/tor"
+
+# Method 1: Check if tor binary exists in expected location
+if [ -x /usr/local/bin/tor ]; then
+  tor_found=1
+  tor_location="/usr/local/bin/tor"
+# Method 2: Try command -v
+elif command -v tor >/dev/null 2>&1; then
+  tor_found=1
+  tor_location=$(command -v tor)
+# Method 3: Check other common locations
+else
+  for check_path in $alternate_tor_paths; do
+    if [ -x "$check_path" ]; then
+      tor_found=1
+      tor_location="$check_path"
+      break
+    fi
+  done
+fi
+
+if [ "$tor_found" -eq 1 ]; then
   printf '%s\n' 'Tor installation complete.'
+  printf '%s\n' "Tor installed to: $tor_location"
+  
+  # Verify it actually works
+  if "$tor_location" --version >/dev/null 2>&1; then
+    printf '%s\n' "Tor version: $("$tor_location" --version | head -1)"
+  fi
   
   # Try to start service if systemctl is available
   if command -v systemctl >/dev/null 2>&1; then
@@ -182,5 +425,11 @@ if command -v tor >/dev/null 2>&1; then
     fi
   fi
 else
-  printf '%s\n' 'Tor installation attempted, but the tor binary is not yet available. Check logs.'
+  printf '%s\n' 'Tor installation attempted, but tor binary not yet in PATH.'
+  printf '%s\n' 'Expected location: /usr/local/bin/tor'
+  printf '%s\n' ''
+  printf '%s\n' 'Try one of the following:'
+  printf '%s\n' '  1. Open a new terminal window'
+  printf '%s\n' '  2. Run: hash -r'
+  printf '%s\n' '  3. Check if /usr/local/bin is in your PATH'
 fi

@@ -16,17 +16,27 @@ esac
 require-wizardry || exit 1
 
 set -eu
-. env-clear
 
 # Check if tor process is running
-if ps -e | grep -q '[t]or'; then
-    if [ -t 1 ]; then  # Check if output is a terminal
-        echo "Tor is running."
+# Use pgrep if available for more accurate detection
+if command -v pgrep >/dev/null 2>&1; then
+    if pgrep -x tor >/dev/null 2>&1; then
+        if [ -t 1 ]; then
+            echo "Tor is running."
+        fi
+        exit 0
     fi
-    exit 0  # Tor is running (success)
 else
-    if [ -t 1 ]; then  # Check if output is a terminal
-        echo "Tor is not running."
+    # Fallback to ps + grep, but be more specific
+    if ps aux | grep -v grep | grep -q 'tor$\|tor '; then
+        if [ -t 1 ]; then
+            echo "Tor is running."
+        fi
+        exit 0
     fi
-    exit 1  # Tor is not running (failure)
 fi
+
+if [ -t 1 ]; then
+    echo "Tor is not running."
+fi
+exit 1
