@@ -80,6 +80,7 @@ $openssl_option"
     uninstall_option="Uninstall Tor%uninstall-tor"
     
     # Check if daemon is enabled and create enable/disable option
+    # Note: \$0 is intentionally escaped so it expands when eval'd by menu, not now
     daemon_option=""
     if is-tor-daemon-enabled; then
       daemon_option="Disable Tor Daemon%disable-tor-daemon && exec \$0"
