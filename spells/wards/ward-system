@@ -1,0 +1,431 @@
+#!/bin/sh
+
+# Ward the system against common security vulnerabilities.
+# Checks security configurations at three levels: recommended, advanced, and expert.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: ward-system [LEVEL] [OPTIONS]
+
+Check and fix system security issues at different threat levels.
+
+Arguments:
+  LEVEL                 Security level to check (1-3, default: 1)
+                        1 = Recommended (essential security)
+                        2 = Advanced (additional hardening)
+                        3 = Expert (obscure/dangerous checks)
+
+Options:
+  -v, --verbose         Show full descriptions even for passing checks
+  --no-fix              Only report issues, do not offer fixes
+
+Levels:
+  1 (Recommended)       Essential security checks for all systems
+  2 (Advanced)          Additional hardening for security-conscious users
+  3 (Expert)            Obscure and potentially dangerous checks
+
+Examples:
+  ward-system           # Check level 1 (recommended)
+  ward-system 2         # Check levels 1 and 2 (advanced)
+  ward-system 3 -v      # Check all levels with verbose output
+  ward-system 1 --no-fix # Only report level 1 issues
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Source required utilities
+. colors
+
+# Parse arguments
+level=1
+verbose=0
+no_fix=0
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    1|2|3)
+      level=$1
+      shift
+      ;;
+    -v|--verbose)
+      verbose=1
+      shift
+      ;;
+    --no-fix)
+      no_fix=1
+      shift
+      ;;
+    *)
+      die "ward-system: unknown option: $1"
+      ;;
+  esac
+done
+
+# Helper functions
+ward_pass() {
+  printf '%s✓%s %s\n' "${GREEN}" "${RESET}" "$1"
+}
+
+ward_fail() {
+  printf '%s✗%s %s\n' "${RED}" "${RESET}" "$1"
+}
+
+ward_title() {
+  printf '\n%s%s%s\n' "${BOLD}" "$1" "${RESET}"
+}
+
+ward_desc() {
+  if [ "$verbose" -eq 1 ] || [ "$2" -eq 1 ]; then
+    printf '%s\n' "$1"
+  fi
+}
+
+ward_ask_fix() {
+  if [ "$no_fix" -eq 1 ]; then
+    return 1
+  fi
+  ask-yn "$1" no
+}
+
+# Level 1: Recommended security checks
+check_level_1() {
+  ward_title "Level 1: Recommended Security Checks"
+  
+  # Check umask
+  current_umask=$(umask)
+  if [ "$current_umask" = "0022" ] || [ "$current_umask" = "0027" ] || \
+     [ "$current_umask" = "022" ] || [ "$current_umask" = "027" ]; then
+    ward_pass "Umask is properly configured ($current_umask)"
+    ward_desc "Umask controls default file permissions. Current setting is secure." 0
+  else
+    ward_fail "Umask is not secure (current: $current_umask, recommended: 0022 or 0027)"
+    msg="Umask controls default file permissions for new files. "
+    msg="${msg}A value of 0022 makes files readable by all but writable only by owner. "
+    msg="${msg}This is a shell setting that should be configured in your profile."
+    ward_desc "$msg" 1
+    if ward_ask_fix "Would you like guidance on fixing the umask?"; then
+      printf 'Add this line to your shell profile (~/.bashrc, ~/.zshrc, etc.):\n'
+      printf '  umask 0022\n'
+    fi
+  fi
+  
+  # Check for current directory in PATH
+  case ":$PATH:" in
+    *::*|*:.:*)
+      ward_fail "Current directory (.) is in PATH - security risk"
+      msg="Having current directory in PATH allows attackers to trick you "
+      msg="${msg}into running malicious executables. "
+      msg="${msg}Remove '.' and empty entries from PATH."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Would you like to see how to fix this?"; then
+        printf 'Remove current directory from PATH in your shell profile:\n'
+        printf '  export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin\n'
+      fi
+      ;;
+    *)
+      ward_pass "PATH does not contain current directory"
+      ward_desc "PATH is configured securely without current directory." 0
+      ;;
+  esac
+  
+  # Check SSH directory permissions if it exists
+  ssh_dir="${HOME}/.ssh"
+  if [ -d "$ssh_dir" ]; then
+    ssh_perms=$(ls -ld "$ssh_dir" 2>/dev/null | awk '{print $1}')
+    case "$ssh_perms" in
+      drwx------*|drwx--x---*)
+        ward_pass "SSH directory permissions are secure (~/.ssh)"
+        ward_desc "SSH directory should be readable only by owner (700)." 0
+        ;;
+      *)
+        ward_fail "SSH directory has insecure permissions: $ssh_perms"
+        msg="The ~/.ssh directory contains sensitive cryptographic keys. "
+        msg="${msg}It must be readable only by you (permissions 700) "
+        msg="${msg}to prevent unauthorized access."
+        ward_desc "$msg" 1
+        if ward_ask_fix "Fix SSH directory permissions?"; then
+          chmod 700 "$ssh_dir" && success "Fixed ~/.ssh permissions to 700"
+        fi
+        ;;
+    esac
+    
+    # Check for private keys with wrong permissions
+    found_bad_key=0
+    for key in "$ssh_dir"/id_* "$ssh_dir"/*_rsa \
+               "$ssh_dir"/*_ed25519 "$ssh_dir"/*_ecdsa; do
+      # Check if it's a private key (not .pub)
+      if [ -f "$key" ] && ! printf '%s\n' "$key" | grep -q '\.pub$'; then
+        key_perms=$(ls -l "$key" 2>/dev/null | awk '{print $1}')
+        case "$key_perms" in
+          -rw-------*)
+            if [ "$found_bad_key" -eq 0 ]; then
+              ward_pass "SSH private keys have secure permissions"
+              ward_desc "Private keys should be readable only by owner (600)." 0
+              found_bad_key=1
+            fi
+            ;;
+          *)
+            key_name=$(basename "$key")
+            ward_fail "SSH private key has insecure permissions: $key_name ($key_perms)"
+            msg="Private SSH keys must have permissions 600 "
+            msg="${msg}(readable/writable only by owner) "
+            msg="${msg}to prevent unauthorized use."
+            ward_desc "$msg" 1
+            if ward_ask_fix "Fix permissions for $key_name?"; then
+              chmod 600 "$key" && success "Fixed permissions for $key_name"
+            fi
+            found_bad_key=1
+            ;;
+        esac
+      fi
+    done
+  fi
+  
+  # Check home directory permissions
+  home_perms=$(ls -ld "$HOME" 2>/dev/null | awk '{print $1}')
+  case "$home_perms" in
+    drwx------*|drwxr-x---*|drwxr-xr-x*)
+      ward_pass "Home directory permissions are acceptable"
+      msg="Home directory should be 700 (private) or 755 "
+      msg="${msg}(readable by others but not writable)."
+      ward_desc "$msg" 0
+      ;;
+    *)
+      ward_fail "Home directory has unusual permissions: $home_perms"
+      msg="Your home directory should typically be mode 700 "
+      msg="${msg}(completely private) or 755 (readable but not writable by others). "
+      msg="${msg}Current permissions may allow unauthorized access."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Would you like guidance on fixing home directory permissions?"; then
+        printf 'Consider setting your home directory to 700 (private):\n'
+        printf '  chmod 700 %s\n' "$HOME"
+        printf 'Or 755 (readable by others) if needed for your use case.\n'
+      fi
+      ;;
+  esac
+}
+
+# Level 2: Advanced security checks
+check_level_2() {
+  ward_title "Level 2: Advanced Security Checks"
+  
+  # Check if running as root
+  if [ "$(id -u)" -eq 0 ]; then
+    ward_fail "Running as root - not recommended for daily use"
+    msg="Running as root (UID 0) bypasses all permission checks "
+    msg="${msg}and increases security risk. "
+    msg="${msg}Use sudo for administrative tasks instead of logging in as root."
+    ward_desc "$msg" 1
+  else
+    ward_pass "Not running as root"
+    ward_desc "Running as regular user is a security best practice." 0
+  fi
+  
+  # Check for world-writable files in home
+  if has find; then
+    world_writable=$(find "$HOME" -type f -perm -002 2>/dev/null | head -5)
+    if [ -n "$world_writable" ]; then
+      ward_fail "Found world-writable files in home directory"
+      msg="World-writable files can be modified by any user on the system, "
+      msg="${msg}which is a security risk. "
+      msg="${msg}Files should typically be writable only by their owner."
+      ward_desc "$msg" 1
+      printf 'First few world-writable files:\n%s\n' "$world_writable"
+      if ward_ask_fix "Would you like to search for all world-writable files?"; then
+        printf 'Run this command to find all world-writable files:\n'
+        printf '  find %s -type f -perm -002\n' "$HOME"
+      fi
+    else
+      ward_pass "No world-writable files in home directory"
+      msg="Files are properly protected from unauthorized modification."
+      ward_desc "$msg" 0
+    fi
+  fi
+  
+  # Check SSH daemon configuration if accessible
+  for sshd_config in /etc/ssh/sshd_config /private/etc/ssh/sshd_config; do
+    if [ -r "$sshd_config" ]; then
+      # Check PermitRootLogin
+      if grep -q "^PermitRootLogin no" "$sshd_config" 2>/dev/null; then
+        ward_pass "SSH root login is disabled"
+        ward_desc "Disabling root login via SSH prevents direct root access over the network." 0
+      elif grep -q "^PermitRootLogin" "$sshd_config" 2>/dev/null; then
+        permit_root=$(grep "^PermitRootLogin" "$sshd_config" | awk '{print $2}')
+        ward_fail "SSH allows root login: $permit_root"
+        msg="Allowing root login via SSH is a security risk. "
+        msg="${msg}Even with key-based authentication, "
+        msg="${msg}it's better to use sudo for privilege escalation. "
+        msg="${msg}Recommended: PermitRootLogin no"
+        ward_desc "$msg" 1
+        if ward_ask_fix "Disable root login via SSH?"; then
+          info "Please run: ssh-barrier"
+        fi
+      fi
+      
+      # Check PasswordAuthentication
+      if grep -q "^PasswordAuthentication no" "$sshd_config" 2>/dev/null; then
+        ward_pass "SSH password authentication is disabled"
+        ward_desc "Key-based authentication is more secure than passwords." 0
+      elif grep -q "^PasswordAuthentication yes" "$sshd_config" 2>/dev/null; then
+        ward_fail "SSH allows password authentication"
+        msg="Password authentication is vulnerable to brute-force attacks. "
+        msg="${msg}Use key-based authentication instead. "
+        msg="${msg}Recommended: PasswordAuthentication no"
+        ward_desc "$msg" 1
+        if ward_ask_fix "Disable password authentication?"; then
+          info "Please run: ssh-barrier"
+        fi
+      fi
+      break
+    fi
+  done
+  
+  # Check for SSH keys
+  has_ssh_key=0
+  for key_type in id_rsa id_ed25519 id_ecdsa; do
+    if [ -f "${HOME}/.ssh/${key_type}" ]; then
+      has_ssh_key=1
+      ward_pass "SSH key exists: $key_type"
+      ward_desc "SSH keys enable secure, password-less authentication." 0
+      break
+    fi
+  done
+  
+  if [ "$has_ssh_key" -eq 0 ]; then
+    ward_fail "No SSH keys found"
+    msg="SSH keys provide secure authentication without passwords. "
+    msg="${msg}Generate keys with: ssh-keygen -t ed25519"
+    ward_desc "$msg" 1
+    if ward_ask_fix "Would you like guidance on creating SSH keys?"; then
+      printf 'Generate an Ed25519 SSH key (recommended):\n'
+      printf '  ssh-keygen -t ed25519 -C "your_email@example.com"\n'
+      printf 'Or an RSA key (for compatibility):\n'
+      printf '  ssh-keygen -t rsa -b 4096 -C "your_email@example.com"\n'
+    fi
+  fi
+}
+
+# Level 3: Expert/obscure security checks
+check_level_3() {
+  ward_title "Level 3: Expert Security Checks"
+  
+  # Check for SUID binaries (security risk if compromised)
+  if has find; then
+    suid_count=$(find /usr/bin /usr/local/bin /bin 2>/dev/null \
+                      -type f -perm -4000 | wc -l | tr -d ' ')
+    ward_pass "Found $suid_count SUID binaries in standard locations"
+    msg="SUID binaries run with elevated privileges. "
+    msg="${msg}While some are necessary (sudo, passwd), "
+    msg="${msg}excessive SUID binaries increase attack surface. "
+    msg="${msg}Review with: find / -type f -perm -4000 2>/dev/null"
+    ward_desc "$msg" "$verbose"
+  fi
+  
+  # Check core dumps
+  ulimit_core=$(ulimit -c 2>/dev/null || printf 'unknown')
+  if [ "$ulimit_core" = "0" ]; then
+    ward_pass "Core dumps are disabled"
+    msg="Core dumps can contain sensitive information from memory. "
+    msg="${msg}Disabling prevents information leakage."
+    ward_desc "$msg" 0
+  else
+    ward_fail "Core dumps are enabled (limit: $ulimit_core)"
+    msg="Core dumps contain process memory including passwords "
+    msg="${msg}and sensitive data. "
+    msg="${msg}Disable with: ulimit -c 0 in your shell profile."
+    ward_desc "$msg" 1
+    if ward_ask_fix "Would you like guidance on disabling core dumps?"; then
+      printf 'Add to your shell profile (~/.bashrc, ~/.zshrc):\n'
+      printf '  ulimit -c 0\n'
+      printf 'For system-wide setting, edit /etc/security/limits.conf:\n'
+      printf '  * hard core 0\n'
+    fi
+  fi
+  
+  # Check SELinux status (Linux only)
+  if has getenforce; then
+    selinux_status=$(getenforce 2>/dev/null || printf 'unknown')
+    if [ "$selinux_status" = "Enforcing" ]; then
+      ward_pass "SELinux is enforcing"
+      ward_desc "SELinux provides mandatory access control for enhanced security." 0
+    elif [ "$selinux_status" = "Permissive" ]; then
+      ward_fail "SELinux is in permissive mode"
+      msg="SELinux permissive mode logs violations but doesn't enforce them. "
+      msg="${msg}Consider setting to enforcing mode with: setenforce 1"
+      ward_desc "$msg" 1
+    elif [ "$selinux_status" = "Disabled" ]; then
+      ward_fail "SELinux is disabled"
+      msg="SELinux provides kernel-level access control. "
+      msg="${msg}Consider enabling for production systems."
+      ward_desc "$msg" 1
+    fi
+  elif [ -d "/sys/kernel/security/apparmor" ]; then
+    # Check AppArmor as alternative (Ubuntu/Debian)
+    if has aa-status; then
+      ward_pass "AppArmor is available"
+      ward_desc "AppArmor provides application confinement for enhanced security." "$verbose"
+    fi
+  fi
+  
+  # Check firewall status (platform-specific)
+  firewall_active=0
+  if has ufw; then
+    if ufw status 2>/dev/null | grep -q "Status: active"; then
+      ward_pass "UFW firewall is active"
+      ward_desc "Firewall protects against unauthorized network access." 0
+      firewall_active=1
+    fi
+  elif has iptables; then
+    if iptables -L -n 2>/dev/null | grep -q "Chain INPUT"; then
+      ward_pass "iptables firewall is configured"
+      ward_desc "Firewall rules are present in iptables." "$verbose"
+      firewall_active=1
+    fi
+  elif [ -f "/usr/libexec/ApplicationFirewall/socketfilterfw" ]; then
+    # macOS firewall
+    fw_cmd="/usr/libexec/ApplicationFirewall/socketfilterfw"
+    if "$fw_cmd" --getglobalstate 2>/dev/null | grep -q "enabled"; then
+      ward_pass "macOS firewall is enabled"
+      ward_desc "Application firewall is active on macOS." 0
+      firewall_active=1
+    fi
+  fi
+  
+  if [ "$firewall_active" -eq 0 ]; then
+    ward_fail "No active firewall detected"
+    ward_desc "A firewall blocks unauthorized network connections. Consider enabling ufw (Ubuntu), firewalld (Fedora), or your system's firewall." 1
+    if ward_ask_fix "Would you like guidance on enabling a firewall?"; then
+      printf 'On Ubuntu/Debian: sudo ufw enable\n'
+      printf 'On Fedora/RHEL: sudo systemctl start firewalld\n'
+      printf 'On macOS: System Preferences > Security & Privacy > Firewall\n'
+    fi
+  fi
+  
+  # Check for suspicious cron jobs
+  if [ -r /var/spool/cron/crontabs/"$(id -un)" ] || [ -r /var/spool/cron/"$(id -un)" ]; then
+    ward_pass "User crontab exists - review recommended"
+    ward_desc "Cron jobs run automatically. Review with: crontab -l" "$verbose"
+  fi
+}
+
+# Main execution
+info "Checking system security wards..."
+
+# Run checks based on level
+check_level_1
+
+if [ "$level" -ge 2 ]; then
+  check_level_2
+fi
+
+if [ "$level" -ge 3 ]; then
+  check_level_3
+fi
+
+printf '\n'
+success "System ward check complete at level $level"
