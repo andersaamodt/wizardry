@@ -24,6 +24,41 @@ if command -v checkbashisms >/dev/null 2>&1 && [ "$force_install" != "1" ]; then
   exit 0
 fi
 
+# Special handling for Arch Linux - checkbashisms not in official repos
+if command -v pacman >/dev/null 2>&1; then
+  # Download checkbashisms directly from Debian sources
+  target_dir="/usr/local/bin"
+  if [ ! -w "$target_dir" ]; then
+    if command -v sudo >/dev/null 2>&1; then
+      sudo curl -sSL https://sources.debian.org/data/main/d/devscripts/2.23.7/scripts/checkbashisms.pl -o "$target_dir/checkbashisms" || {
+        printf '%s\n' "install-checkbashisms: failed to download checkbashisms" >&2
+        exit 1
+      }
+      sudo chmod +x "$target_dir/checkbashisms"
+    else
+      curl -sSL https://sources.debian.org/data/main/d/devscripts/2.23.7/scripts/checkbashisms.pl -o "$target_dir/checkbashisms" || {
+        printf '%s\n' "install-checkbashisms: failed to download checkbashisms" >&2
+        exit 1
+      }
+      chmod +x "$target_dir/checkbashisms"
+    fi
+  else
+    curl -sSL https://sources.debian.org/data/main/d/devscripts/2.23.7/scripts/checkbashisms.pl -o "$target_dir/checkbashisms" || {
+      printf '%s\n' "install-checkbashisms: failed to download checkbashisms" >&2
+      exit 1
+    }
+    chmod +x "$target_dir/checkbashisms"
+  fi
+  
+  if command -v checkbashisms >/dev/null 2>&1; then
+    printf '%s\n' "checkbashisms installed successfully from Debian sources."
+    exit 0
+  else
+    printf '%s\n' "install-checkbashisms: installation failed" >&2
+    exit 1
+  fi
+fi
+
 ASSUME_YES=1
 FORCE_INSTALL=${INSTALL_CHECKBASHISMS_FORCE_INSTALL:-0}
 # On Debian/Ubuntu, checkbashisms is in the devscripts package
