@@ -340,6 +340,7 @@ test_imp_passes_with_variadic_params() {
 # variadic-imp A B C REST... - 3 regular params plus variadic
 
 _variadic_imp() {
+  # Using printf to match echo behavior while being POSIX compliant
   printf '%s\n' "$*"
 }
 
