@@ -1,0 +1,42 @@
+#!/bin/sh
+
+# Install OpenSSL library (Tor dependency for macOS).
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-openssl
+
+This spell installs the OpenSSL library, required for building Tor on macOS.
+Uses pkgin (pkgsrc) package manager on macOS.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+# Check if OpenSSL is already installed
+if pkg-config --exists openssl 2>/dev/null; then
+  printf '%s\n' "OpenSSL is already installed (detected via pkg-config)"
+  exit 0
+elif command -v openssl >/dev/null 2>&1; then
+  printf '%s\n' "OpenSSL is already installed"
+  exit 0
+fi
+
+# Check if on macOS
+if [ "$(uname -s 2>/dev/null)" != "Darwin" ]; then
+  printf '%s\n' "install-openssl: this installer is for macOS only" >&2
+  exit 1
+fi
+
+# Use manage-system-command with pkgin package name
+ASSUME_YES=1
+FORCE_INSTALL=${INSTALL_OPENSSL_FORCE_INSTALL:-0}
+PKGIN_PACKAGE="openssl"
+export ASSUME_YES FORCE_INSTALL PKGIN_PACKAGE
+
+"$SCRIPT_DIR/../core/manage-system-command" openssl openssl

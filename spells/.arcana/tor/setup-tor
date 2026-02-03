@@ -2,54 +2,155 @@
 
 # Set up a Tor hidden service for the MUD gateway.
 
+# Parse flags
+skip_confirm=0
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: setup-tor
+Usage: setup-tor [-y|--yes]
 
 Configure a basic Tor hidden service for the MUD gateway.
 Prompts for confirmation before writing to torrc and restarting Tor.
+
+Options:
+  -y, --yes    Skip confirmation prompt
 USAGE
   exit 0
+  ;;
+-y|--yes)
+  skip_confirm=1
   ;;
 esac
 
 require-wizardry || exit 1
 
 set -eu
-. env-clear
 
-printf '%s' "Do you want to set up a Tor hidden service? [y/n]: "
-IFS= read -r choice || return 1
+# Check if tor is installed, offer to install if not
+# Use multiple detection methods for reliability
+tor_installed=0
+if [ -x /usr/local/bin/tor ]; then
+        tor_installed=1
+elif command -v tor >/dev/null 2>&1; then
+        tor_installed=1
+fi
+
+if [ "$tor_installed" -eq 0 ]; then
+        printf '%s\n' "Tor is not installed."
+        printf '%s' "Would you like to install Tor now? [y/n]: "
+        IFS= read -r install_choice || exit 1
+        case $install_choice in
+        y|Y)
+                install-tor || exit 1
+                
+                # Verify tor is now installed
+                if [ -x /usr/local/bin/tor ] || command -v tor >/dev/null 2>&1; then
+                        printf '%s\n' "Tor is now installed and ready."
+                else
+                        printf '\n'
+                        printf '%s\n' \
+                            "setup-tor: tor installation completed but tor is still not found"
+                        printf '%s\n' "Possible causes:"
+                        printf '%s\n' "  - Installation failed (check output above for errors)"
+                        printf '%s\n' "  - New terminal window needed for PATH updates"
+                        printf '%s\n' "  - /usr/local/bin not in current PATH"
+                        exit 1
+                fi
+                ;;
+        *)
+                printf '%s\n' "Tor installation skipped. Cannot set up hidden service without Tor."
+                exit 0
+                ;;
+        esac
+fi
+
+# Skip confirmation if -y flag was provided
+if [ "$skip_confirm" -eq 0 ]; then
+        printf '%s' "Set up a Tor hidden service for wizardry MUD gateway? [y/n]: "
+        IFS= read -r choice || exit 1
+else
+        choice="y"
+fi
 
 case $choice in
 y|Y)
+        # Use torrc-path to get the correct config path for this platform
+        tor_config_path=$(torrc-path) || exit 1
+        
+        # Get platform info for platform-specific settings
         if command -v detect-distro >/dev/null 2>&1; then
                 distro=$(detect-distro)
         else
-                distro="unknown"
+                distro=$(os)
         fi
-
+        
+        # Detect tor's data directory from torrc to use correct path
+        data_dir=$(grep "^DataDirectory" "$tor_config_path" 2>/dev/null \
+            | awk '{print $2}' | tr -d '"' || echo "")
+        
+        # Set platform-specific hidden service directory
         case $distro in
-        arch|debian)
-                tor_config_path="/etc/tor/torrc"
-                ;;
-        macos)
-                tor_config_path="/usr/local/etc/tor/torrc"
+        mac|macos)
+                if [ -n "$data_dir" ]; then
+                        # Use detected data directory
+                        mud_dir="${data_dir}/mud/"
+                elif [ -d "/opt/homebrew/var/lib/tor" ]; then
+                        # Homebrew on Apple Silicon
+                        mud_dir="/opt/homebrew/var/lib/tor/mud/"
+                elif [ -d "/usr/local/var/lib/tor" ]; then
+                        # Homebrew on Intel or older
+                        mud_dir="/usr/local/var/lib/tor/mud/"
+                elif [ -d "/opt/local/var/lib/tor" ]; then
+                        # MacPorts
+                        mud_dir="/opt/local/var/lib/tor/mud/"
+                else
+                        # Fallback
+                        mud_dir="/var/lib/tor/mud/"
+                fi
                 ;;
         *)
-                printf '%s\n' "Error: Unsupported operating system" >&2
-                return 1
+                if [ -n "$data_dir" ]; then
+                        mud_dir="${data_dir}/mud/"
+                else
+                        mud_dir="/var/lib/tor/mud/"
+                fi
                 ;;
         esac
-
-        new_address=$(tor --quiet --hash-password mypassword | awk '{print $4}')
-        mud_dir="/var/lib/tor/mud/"
+        
+        # Create the directory if it doesn't exist
+        sudo mkdir -p "$mud_dir" || exit 1
+        # Set proper ownership (try _tor first for macOS, then tor for Linux)
+        sudo chown _tor:_tor "$mud_dir" 2>/dev/null \
+            || sudo chown tor:tor "$mud_dir" 2>/dev/null || true
+        sudo chmod 700 "$mud_dir" || true
 
         printf 'HiddenServiceDir %s\n' "$mud_dir" | sudo tee -a "$tor_config_path"
         printf '%s\n' "HiddenServicePort 80 127.0.0.1:8080" | sudo tee -a "$tor_config_path"
-        sudo systemctl restart tor
-        printf 'New hidden service address: %s\n' "$new_address"
+        
+        # Restart tor to activate the hidden service
+        printf '%s\n' "Hidden service configured in $tor_config_path"
+        
+        if restart-tor; then
+                # Wait a moment for tor to generate the hidden service
+                sleep 2
+                
+                # Read the hidden service address if available
+                hostname_file="${mud_dir}hostname"
+                if [ -f "$hostname_file" ]; then
+                        onion_address=$(cat "$hostname_file")
+                        printf 'Hidden service address: %s\n' "$onion_address"
+                else
+                        printf '%s\n' "Hidden service configured."
+                        printf 'The .onion address is stored at: %s\n' "$hostname_file"
+                        # Try to read and display the address
+                        if [ -f "$hostname_file" ] && [ -r "$hostname_file" ]; then
+                                onion_address=$(cat "$hostname_file" 2>/dev/null || true)
+                                if [ -n "$onion_address" ]; then
+                                        printf 'Hidden service address: %s\n' "$onion_address"
+                                fi
+                        fi
+                fi
+        fi
         ;;
 *)
         printf '%s\n' "Tor setup skipped."

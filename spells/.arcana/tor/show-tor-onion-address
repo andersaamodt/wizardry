@@ -1,0 +1,64 @@
+#!/bin/sh
+# Display tor hidden service .onion address and offer to copy to clipboard
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: show-tor-onion-address
+
+Displays the Tor hidden service .onion address and offers to copy it to clipboard.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+# Determine hostname file path based on platform
+case "$(uname -s 2>/dev/null)" in
+Darwin)
+  hostname_file="/usr/local/var/lib/tor/mud/hostname"
+  ;;
+*)
+  hostname_file="/var/lib/tor/mud/hostname"
+  ;;
+esac
+
+# Check if hostname file exists
+if [ ! -f "$hostname_file" ]; then
+  printf 'show-tor-onion-address: hidden service address file not found\n' >&2
+  printf 'File expected at: %s\n' "$hostname_file" >&2
+  printf 'Hidden service may not be configured or tor may not have generated the address yet.\n' >&2
+  exit 1
+fi
+
+# Read the onion address
+onion_address=$(cat "$hostname_file" 2>/dev/null) || {
+  printf 'show-tor-onion-address: could not read address file\n' >&2
+  exit 1
+}
+
+# Display the address
+printf '\n'
+printf 'Hidden service .onion address:\n'
+printf '%s\n' "$onion_address"
+printf '\n'
+
+# Offer to copy to clipboard
+printf 'Copy to clipboard? [y/n]: '
+read -r response
+
+case "$response" in
+y|Y|yes|Yes|YES)
+  if command -v copy >/dev/null 2>&1; then
+    printf '%s' "$onion_address" | copy
+    printf 'Copied to clipboard.\n'
+  else
+    printf 'show-tor-onion-address: copy command not found\n' >&2
+    exit 1
+  fi
+  ;;
+*)
+  printf 'Not copied.\n'
+  ;;
+esac

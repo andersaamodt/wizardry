@@ -39,7 +39,7 @@ while there "$pages_dir"; do
     pages_dir="${stem}${suffix}"
     suffix=$((suffix + 1))
 done
-make dir "$pages_dir"
+ensure-dir "$pages_dir"
 
 # Parse tome - auto-detect format
 # New format: Single-line centered separators like "# -------- filename --------"

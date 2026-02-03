@@ -1,0 +1,58 @@
+#!/bin/sh
+
+# Returns 0 (true) if Tor hidden service is configured, 1 (false) if not
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-tor-hidden-service-configured
+
+Checks if Tor hidden service is configured in torrc.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+# Detect torrc path based on platform
+detect_torrc_path() {
+  # Try to use torrc-path if available
+  if command -v torrc-path >/dev/null 2>&1; then
+    torrc-path 2>/dev/null && return 0
+  fi
+  
+  # Fallback: try common locations
+  if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+    # macOS
+    for path in /usr/local/etc/tor/torrc /opt/local/etc/tor/torrc; do
+      if [ -f "$path" ]; then
+        printf '%s' "$path"
+        return 0
+      fi
+    done
+  else
+    # Linux
+    if [ -f /etc/tor/torrc ]; then
+      printf '%s' /etc/tor/torrc
+      return 0
+    fi
+  fi
+  
+  return 1
+}
+
+# Get torrc path
+tor_config_path=$(detect_torrc_path) || exit 1
+
+# Check if torrc exists
+if [ ! -f "$tor_config_path" ]; then
+  exit 1
+fi
+
+# Check if HiddenServiceDir is configured in torrc
+if grep -q "^HiddenServiceDir" "$tor_config_path" 2>/dev/null; then
+  exit 0
+fi
+
+exit 1

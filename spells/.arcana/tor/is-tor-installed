@@ -13,9 +13,7 @@ USAGE
   ;;
 esac
 
-require-wizardry || exit 1
-
 set -eu
-. env-clear
 
+# Simple check - just see if tor command is available
 command -v tor >/dev/null 2>&1

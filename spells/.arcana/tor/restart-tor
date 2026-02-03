@@ -1,0 +1,39 @@
+#!/bin/sh
+# Restart tor service
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: restart-tor
+
+Restart the tor service.
+
+Tries systemctl (Linux) first, then killall + restart (macOS/others).
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+printf 'Restarting tor...\n'
+
+# Try systemctl first (Linux with systemd)
+if command -v systemctl >/dev/null 2>&1; then
+  if sudo systemctl restart tor 2>/dev/null; then
+    printf 'Tor restarted via systemctl.\n'
+    exit 0
+  fi
+fi
+
+# Try killall then restart (macOS and others)
+if command -v tor >/dev/null 2>&1; then
+  sudo killall tor 2>/dev/null || true
+  sleep 1
+  tor >/dev/null 2>&1 &
+  printf 'Tor restarted.\n'
+  exit 0
+fi
+
+printf 'restart-tor: tor restart needed but method not available\n' >&2
+exit 1

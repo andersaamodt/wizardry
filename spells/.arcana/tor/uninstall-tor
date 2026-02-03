@@ -7,7 +7,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: uninstall-tor
 
-Removes Tor binaries where possible and undoes NixOS configuration entries added by install-tor.
+Removes Tor binaries and configuration.
 USAGE
   exit 0
   ;;
@@ -16,18 +16,73 @@ esac
 require-wizardry || exit 1
 
 set -eu
-. env-clear
 
 # Uninstall Tor
 printf '%s\n' "Uninstalling Tor..."
 
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-core_dir=$(CDPATH= cd -- "$script_dir/../core" && pwd -P)
-if [ -f "$core_dir/manage-system-command" ]; then
-  "$core_dir/manage-system-command" uninstall tor
-else
-  printf '%s\n' "uninstall-tor: could not find manage-system-command" >&2
-  exit 1
+# Stop tor if running
+if is-tor-running >/dev/null 2>&1; then
+  printf 'Stopping tor first...\n'
+  stop-tor || true
 fi
+
+distro="$(detect-distro 2>/dev/null || os)"
+
+case $distro in
+  debian|ubuntu|linux)
+    printf 'Uninstalling tor via apt...\n'
+    if command -v sudo >/dev/null 2>&1; then
+      sudo apt-get remove -y tor
+      sudo apt-get autoremove -y
+    else
+      apt-get remove -y tor
+      apt-get autoremove -y
+    fi
+    ;;
+  arch)
+    printf 'Uninstalling tor via pacman...\n'
+    if command -v sudo >/dev/null 2>&1; then
+      sudo pacman -R --noconfirm tor
+    else
+      pacman -R --noconfirm tor
+    fi
+    ;;
+  mac|macos)
+    printf 'Uninstalling Tor from macOS...\n'
+    
+    # Remove tor binary and related files
+    if command -v sudo >/dev/null 2>&1; then
+      sudo rm -f /usr/local/bin/tor
+      sudo rm -f /usr/local/bin/tor-gencert
+      sudo rm -f /usr/local/bin/tor-resolve
+      sudo rm -f /usr/local/bin/torify
+      sudo rm -rf /usr/local/share/tor
+      sudo rm -rf /usr/local/share/doc/tor
+      sudo rm -f /usr/local/share/man/man1/tor*
+    else
+      rm -f /usr/local/bin/tor
+      rm -f /usr/local/bin/tor-gencert
+      rm -f /usr/local/bin/tor-resolve
+      rm -f /usr/local/bin/torify
+      rm -rf /usr/local/share/tor
+      rm -rf /usr/local/share/doc/tor
+      rm -f /usr/local/share/man/man1/tor*
+    fi
+    
+    printf 'Removed tor binaries and documentation.\n'
+    ;;
+  *)
+    # Try package manager approach for other distros
+    script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+    core_dir=$(CDPATH= cd -- "$script_dir/../core" && pwd -P)
+    if [ -f "$core_dir/manage-system-command" ]; then
+      "$core_dir/manage-system-command" uninstall tor
+    else
+      printf '%s\n' "uninstall-tor: unsupported platform $distro" >&2
+      printf '%s\n' "You may need to manually remove tor" >&2
+      exit 1
+    fi
+    ;;
+esac
 
 printf '%s\n' "Tor uninstallation complete."
