@@ -38,18 +38,24 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
   if is-tor-launchd-service-configured; then
     if sudo launchctl start org.torproject.tor 2>&1; then
       printf 'Tor started via launchd.\n'
-      # Give launchd time to spawn and initialize the tor process
-      printf 'Waiting for tor process to initialize...\n'
-      sleep 3
-      # Verify tor actually started
-      if is-tor-running; then
-        printf 'Tor process detected and running.\n'
-        exit 0
-      else
-        printf 'Warning: launchd start succeeded but tor process not detected yet.\n' >&2
-        printf 'Tor may still be starting up...\n' >&2
-        exit 0
-      fi
+      printf 'Waiting for tor process to start...\n'
+      
+      # Poll for up to 10 seconds until tor is actually running
+      max_wait=10
+      waited=0
+      while [ $waited -lt $max_wait ]; do
+        if is-tor-running; then
+          printf 'Tor process detected and running.\n'
+          exit 0
+        fi
+        sleep 1
+        waited=$((waited + 1))
+      done
+      
+      # If we got here, tor didn't start within timeout
+      printf 'Error: tor process not detected after %d seconds.\n' "$max_wait" >&2
+      printf 'Check logs with: show-tor-log\n' >&2
+      exit 1
     else
       printf 'Failed to start tor via launchd.\n' >&2
     fi
