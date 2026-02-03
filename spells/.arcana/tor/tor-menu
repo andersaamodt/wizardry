@@ -42,16 +42,16 @@ while true; do
   if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
     # Check libevent status
     if is-libevent-installed; then
-      libevent_option="[X] libevent%uninstall-libevent && exec \$0"
+      libevent_option="[X] libevent%uninstall-libevent"
     else
-      libevent_option="[ ] libevent%install-libevent && exec \$0"
+      libevent_option="[ ] libevent%install-libevent"
     fi
     
     # Check openssl status
     if is-openssl-installed; then
-      openssl_option="[X] openssl%uninstall-openssl && exec \$0"
+      openssl_option="[X] openssl%uninstall-openssl"
     else
-      openssl_option="[ ] openssl%install-openssl && exec \$0"
+      openssl_option="[ ] openssl%install-openssl"
     fi
     
     macos_deps="$libevent_option
@@ -68,9 +68,9 @@ $openssl_option"
       service_status_option="View tor service status%sudo systemctl status tor"
     fi
     if is-tor-running; then
-      tor_service_option="Stop tor%stop-tor && exec \$0"
+      tor_service_option="Stop tor%stop-tor"
     else
-      tor_service_option="Start tor%start-tor && exec \$0"
+      tor_service_option="Start tor%start-tor"
     fi
   fi
   
@@ -80,12 +80,11 @@ $openssl_option"
     uninstall_option="Uninstall tor%uninstall-tor"
     
     # Check if daemon is enabled and create enable/disable option
-    # Note: \$0 is intentionally escaped so it expands when eval'd by menu, not now
     daemon_option=""
     if is-tor-daemon-enabled; then
-      daemon_option="[X] Start tor at startup%disable-tor-daemon && exec \$0"
+      daemon_option="[X] Start tor at startup%disable-tor-daemon"
     else
-      daemon_option="[ ] Start tor at startup%enable-tor-daemon && exec \$0"
+      daemon_option="[ ] Start tor at startup%enable-tor-daemon"
     fi
     
     # Check for .onion address file to offer copy option

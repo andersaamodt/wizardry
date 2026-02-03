@@ -20,9 +20,11 @@ printf 'Starting tor...\n'
 
 # Try systemctl (Linux with systemd)
 if command -v systemctl >/dev/null 2>&1; then
-  if sudo systemctl start tor 2>/dev/null; then
+  if sudo systemctl start tor 2>&1; then
     printf 'Tor started via systemctl.\n'
     exit 0
+  else
+    printf 'Failed to start tor via systemctl.\n' >&2
   fi
 fi
 
@@ -30,26 +32,34 @@ fi
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
   # Check if launchd service is configured
   if is-tor-launchd-service-configured; then
-    if sudo launchctl start org.torproject.tor 2>/dev/null; then
+    if sudo launchctl start org.torproject.tor 2>&1; then
       printf 'Tor started via launchd.\n'
       exit 0
+    else
+      printf 'Failed to start tor via launchd.\n' >&2
     fi
   else
     # Service not configured, create it first
+    printf 'Creating launchd service...\n'
     if create-tor-launchd-service; then
       printf 'Tor started via launchd.\n'
       exit 0
+    else
+      printf 'Failed to create launchd service.\n' >&2
     fi
   fi
 fi
 
 # Try direct execution (fallback)
 if command -v tor >/dev/null 2>&1; then
+  printf 'Starting tor directly in background...\n'
   if tor >/dev/null 2>&1 &; then
     printf 'Tor started.\n'
     exit 0
+  else
+    printf 'Failed to start tor directly.\n' >&2
   fi
 fi
 
-printf 'start-tor: failed to start tor\n' >&2
+printf 'start-tor: failed to start tor (tried all methods)\n' >&2
 exit 1

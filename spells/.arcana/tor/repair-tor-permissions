@@ -13,19 +13,34 @@ USAGE
   ;;
 esac
 
-require-wizardry || exit 1
-
-set -eu
-
-# If not root, re-exec with sudo
+# If not root, re-exec with sudo (before require-wizardry check)
 if [ "$(id -u)" != "0" ]; then
    exec sudo "$0" "$@"
 fi
 
+# Only require wizardry when not running as root (after sudo)
+# When running via sudo, we don't need wizardry environment
+set -eu
+
 user_owner="debian-tor"
 group_owner="debian-tor"
 
-platform=$(detect-distro 2>/dev/null || printf 'unknown')
+# Detect platform without relying on wizardry spells
+platform="unknown"
+if [ -f /etc/os-release ]; then
+  . /etc/os-release
+  case "$ID" in
+    debian|ubuntu)
+      platform="debian"
+      ;;
+    arch)
+      platform="arch"
+      ;;
+  esac
+elif [ "$(uname -s)" = "Darwin" ]; then
+  platform="mac"
+fi
+
 case "$platform" in
   debian)
     user_owner="debian-tor"
