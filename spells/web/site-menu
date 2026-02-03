@@ -80,6 +80,25 @@ while true; do
   # Get port from config
   port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || echo "8080")
   
+  # Check if tor hosting is enabled for this site
+  tor_hosting_enabled=0
+  tor_hosting_option=""
+  if command -v torrc-path >/dev/null 2>&1; then
+    tor_config_path=$(torrc-path 2>/dev/null || echo "")
+    if [ -n "$tor_config_path" ] && [ -f "$tor_config_path" ]; then
+      if grep -q "^HiddenServiceDir.*${site_name}" "$tor_config_path" 2>/dev/null; then
+        tor_hosting_enabled=1
+        tor_hosting_option="[X] Tor hosting%toggle-site-tor-hosting \"$site_name\""
+      else
+        tor_hosting_option="[ ] Tor hosting%toggle-site-tor-hosting \"$site_name\""
+      fi
+    else
+      tor_hosting_option="[ ] Tor hosting%toggle-site-tor-hosting \"$site_name\""
+    fi
+  else
+    tor_hosting_option="[ ] Tor hosting%toggle-site-tor-hosting \"$site_name\""
+  fi
+  
   exit_label=$(exit-label)
   
   if [ "$is_serving" -eq 1 ]; then
@@ -89,6 +108,7 @@ while true; do
       "Build%build \"$site_name\"" \
       "Build All%build \"$site_name\" --full" \
       "Stop Server%stop-site \"$site_name\"" \
+      "$tor_hosting_option" \
       "Update from template%update-from-template \"$site_name\"" \
       "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
       "Fix permissions%[ -d \"$SITE_DIR/build\" ] && find \"$SITE_DIR/build\" -type d -exec chmod 755 {} \\; && find \"$SITE_DIR/build\" -type f -exec chmod 644 {} \\; && printf 'Permissions fixed\\n' || printf 'No build directory found\\n'" \
@@ -102,6 +122,7 @@ while true; do
       "Build%build \"$site_name\"" \
       "Build All%build \"$site_name\" --full" \
       "Serve site%serve-site \"$site_name\"" \
+      "$tor_hosting_option" \
       "Update from template%update-from-template \"$site_name\"" \
       "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
       "Fix permissions%[ -d \"$SITE_DIR/build\" ] && find \"$SITE_DIR/build\" -type d -exec chmod 755 {} \\; && find \"$SITE_DIR/build\" -type f -exec chmod 644 {} \\; && printf 'Permissions fixed\\n' || printf 'No build directory found\\n'" \

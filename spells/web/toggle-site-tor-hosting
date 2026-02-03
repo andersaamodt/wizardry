@@ -1,0 +1,226 @@
+#!/bin/sh
+
+# Toggle Tor hidden service hosting for a specific site.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: toggle-site-tor-hosting SITENAME
+
+Enable or disable Tor hidden service hosting for a specific site.
+If enabling and tor is not set up, walks through the setup process.
+
+Examples:
+  toggle-site-tor-hosting mysite
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+. declare-globals
+
+site_name="${1-}"
+if [ -z "$site_name" ]; then
+  die 2 "toggle-site-tor-hosting: SITENAME required"
+fi
+
+WEB_ROOT="${WIZARDRY_SITES_DIR}"
+SITES_DIR="$WEB_ROOT"
+SITE_DIR="$SITES_DIR/$site_name"
+
+if [ ! -d "$SITE_DIR" ]; then
+  die "toggle-site-tor-hosting: site '$site_name' not found"
+fi
+
+# Get the site's port
+port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || echo "8080")
+
+# Check if tor is installed
+if ! is-tor-installed; then
+  printf '%s\n' "Tor is not installed."
+  printf '%s' "Would you like to install Tor now? [y/n]: "
+  IFS= read -r install_choice || exit 1
+  case $install_choice in
+  y|Y)
+    install-tor || exit 1
+    ;;
+  *)
+    printf '%s\n' "Tor installation skipped. Cannot set up hidden service without Tor."
+    exit 0
+    ;;
+  esac
+fi
+
+# Check if tor daemon is enabled
+if ! is-tor-daemon-enabled; then
+  printf '%s\n' "Tor daemon is not set to start at startup."
+  printf '%s' "Would you like to enable Tor daemon to start at startup? [y/n]: "
+  IFS= read -r daemon_choice || exit 1
+  case $daemon_choice in
+  y|Y)
+    enable-tor-daemon || exit 1
+    ;;
+  *)
+    printf '%s\n' "Note: Tor daemon not enabled for automatic startup."
+    ;;
+  esac
+fi
+
+# Check if tor is running
+if ! is-tor-running; then
+  printf '%s\n' "Tor is not currently running."
+  printf '%s' "Would you like to start Tor now? [y/n]: "
+  IFS= read -r start_choice || exit 1
+  case $start_choice in
+  y|Y)
+    start-tor || exit 1
+    ;;
+  *)
+    printf '%s\n' "Note: Tor not started. You'll need to start it for the hidden service to work."
+    ;;
+  esac
+fi
+
+# Get torrc path
+tor_config_path=$(torrc-path) || exit 1
+
+# Detect platform for proper paths
+if command -v detect-distro >/dev/null 2>&1; then
+  distro=$(detect-distro)
+else
+  distro=$(os)
+fi
+
+# Detect tor's data directory
+data_dir=$(grep "^DataDirectory" "$tor_config_path" 2>/dev/null \
+    | awk '{print $2}' | tr -d '"' || echo "")
+
+# Set platform-specific hidden service directory for this site
+case $distro in
+mac|macos)
+  if [ -n "$data_dir" ]; then
+    hs_dir="${data_dir}/${site_name}/"
+  elif [ -d "/opt/homebrew/var/lib/tor" ]; then
+    hs_dir="/opt/homebrew/var/lib/tor/${site_name}/"
+  elif [ -d "/usr/local/var/lib/tor" ]; then
+    hs_dir="/usr/local/var/lib/tor/${site_name}/"
+  elif [ -d "/opt/local/var/lib/tor" ]; then
+    hs_dir="/opt/local/var/lib/tor/${site_name}/"
+  else
+    hs_dir="/var/lib/tor/${site_name}/"
+  fi
+  ;;
+*)
+  if [ -n "$data_dir" ]; then
+    hs_dir="${data_dir}/${site_name}/"
+  else
+    hs_dir="/var/lib/tor/${site_name}/"
+  fi
+  ;;
+esac
+
+# Check if this site already has a hidden service configured
+hs_configured=0
+if grep -q "^HiddenServiceDir.*${site_name}" "$tor_config_path" 2>/dev/null; then
+  hs_configured=1
+fi
+
+if [ "$hs_configured" -eq 1 ]; then
+  # Site is configured - offer to disable
+  printf '%s\n' "Tor hidden service is currently ENABLED for site '$site_name'"
+  hostname_file="${hs_dir}hostname"
+  if [ -f "$hostname_file" ] && [ -r "$hostname_file" ]; then
+    onion_address=$(cat "$hostname_file" 2>/dev/null || echo "")
+    if [ -n "$onion_address" ]; then
+      printf 'Hidden service address: %s\n' "$onion_address"
+    fi
+  fi
+  
+  printf '\n'
+  printf '%s' "Would you like to DISABLE Tor hosting for this site? [y/n]: "
+  IFS= read -r disable_choice || exit 1
+  
+  case $disable_choice in
+  y|Y)
+    # Remove the hidden service configuration from torrc
+    # Create temp file and remove lines for this site
+    temp_torrc=$(mktemp)
+    in_hs_block=0
+    while IFS= read -r line; do
+      if printf '%s' "$line" | grep -q "^HiddenServiceDir.*${site_name}"; then
+        in_hs_block=1
+        continue
+      fi
+      if [ "$in_hs_block" -eq 1 ]; then
+        if printf '%s' "$line" | grep -q "^HiddenServicePort"; then
+          in_hs_block=0
+          continue
+        fi
+      fi
+      printf '%s\n' "$line" >> "$temp_torrc"
+    done < "$tor_config_path"
+    
+    sudo cp "$temp_torrc" "$tor_config_path"
+    rm -f "$temp_torrc"
+    
+    printf '%s\n' "Tor hidden service disabled for site '$site_name'"
+    printf '%s\n' "Restarting tor..."
+    restart-tor || true
+    ;;
+  *)
+    printf '%s\n' "Tor hosting remains enabled."
+    ;;
+  esac
+else
+  # Site is not configured - offer to enable
+  printf '%s\n' "Tor hidden service is currently DISABLED for site '$site_name'"
+  printf '\n'
+  printf '%s' "Would you like to ENABLE Tor hosting for this site? [y/n]: "
+  IFS= read -r enable_choice || exit 1
+  
+  case $enable_choice in
+  y|Y)
+    # Create the hidden service directory
+    sudo mkdir -p "$hs_dir" || exit 1
+    sudo chown _tor:_tor "$hs_dir" 2>/dev/null \
+        || sudo chown tor:tor "$hs_dir" 2>/dev/null || true
+    sudo chmod 700 "$hs_dir" || true
+    
+    # Add hidden service configuration to torrc
+    printf '\n# Hidden service for site: %s\n' "$site_name" | sudo tee -a "$tor_config_path"
+    printf 'HiddenServiceDir %s\n' "$hs_dir" | sudo tee -a "$tor_config_path"
+    printf 'HiddenServicePort 80 127.0.0.1:%s\n' "$port" | sudo tee -a "$tor_config_path"
+    
+    printf '%s\n' "Hidden service configured for site '$site_name'"
+    printf '%s\n' "Restarting tor..."
+    
+    if restart-tor; then
+      # Wait for tor to generate the hidden service
+      sleep 2
+      
+      # Read the hidden service address
+      hostname_file="${hs_dir}hostname"
+      if [ -f "$hostname_file" ] && [ -r "$hostname_file" ]; then
+        onion_address=$(cat "$hostname_file" 2>/dev/null || echo "")
+        if [ -n "$onion_address" ]; then
+          printf '\n'
+          printf '%s\n' "═══════════════════════════════════════════════════════"
+          printf '%s\n' "Tor Hidden Service Address:"
+          printf '%s\n' "$onion_address"
+          printf '%s\n' "═══════════════════════════════════════════════════════"
+          printf '\n'
+        fi
+      else
+        printf '%s\n' "Hidden service address will be available at: ${hostname_file}"
+      fi
+    fi
+    ;;
+  *)
+    printf '%s\n' "Tor hosting setup skipped."
+    ;;
+  esac
+fi
