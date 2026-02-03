@@ -42,10 +42,10 @@ unset cd_sourced cd_base
 load_cd_hook_saved_opts=$(set +o)
 
 # Explicitly use permissive error handling - this file is meant to be sourced into user's shell
-# and we don't want their shell to exit on command failures
-# We DO use set -u because our global usage provides safe defaults (${SPELLBOOK_DIR:-...})
+# and we don't want their shell to exit on command failures or unset variable references
+# Our code is safe without set -u because we use ${VAR:-default} patterns everywhere
 set +e
-set -u
+set +u
 
 # The cd override - calls cd-hook imp after successful directory change
 cd() {
