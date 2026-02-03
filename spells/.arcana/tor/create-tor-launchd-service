@@ -95,8 +95,10 @@ sudo tee "$plist_file" >/dev/null <<EOF
 </plist>
 EOF
 
-# Create log directory if it doesn't exist
+# Create log directory if it doesn't exist and set permissions
 sudo mkdir -p /usr/local/var/log
+# Make log directory writable by _tor user
+sudo chmod 755 /usr/local/var/log
 sudo touch /usr/local/var/log/tor.log /usr/local/var/log/tor-errors.log
 
 # Try to create _tor user if it doesn't exist
@@ -119,10 +121,11 @@ if ! dscl . -read /Users/_tor >/dev/null 2>&1; then
   sudo dscl . -create /Users/_tor RealName "Tor Daemon"
 fi
 
-# Set proper ownership for log files
+# Set proper ownership and permissions for log files
 log_file="/usr/local/var/log/tor.log"
 err_log="/usr/local/var/log/tor-errors.log"
 sudo chown _tor:wheel "$log_file" "$err_log" 2>/dev/null || true
+sudo chmod 644 "$log_file" "$err_log" 2>/dev/null || true
 
 # Load the plist (will also start the service)
 printf 'Loading launchd service...\n'

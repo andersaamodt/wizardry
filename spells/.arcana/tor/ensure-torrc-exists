@@ -82,16 +82,25 @@ sudo chmod 644 "$torrc_path"
 # Create data and log directories if they don't exist
 sudo mkdir -p /usr/local/var/lib/tor
 sudo mkdir -p /usr/local/var/log
+# Make log directory writable
+sudo chmod 755 /usr/local/var/log
 
 # On macOS, set ownership to _tor user if it exists
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
   if dscl . -read /Users/_tor >/dev/null 2>&1; then
     sudo chown -R _tor:wheel /usr/local/var/lib/tor
     log_file="/usr/local/var/log/tor.log"
+    err_log="/usr/local/var/log/tor-errors.log"
+    # Create log files if they don't exist
     if [ ! -f "$log_file" ]; then
       sudo touch "$log_file"
     fi
-    sudo chown _tor:wheel "$log_file"
+    if [ ! -f "$err_log" ]; then
+      sudo touch "$err_log"
+    fi
+    # Set ownership and permissions for log files
+    sudo chown _tor:wheel "$log_file" "$err_log"
+    sudo chmod 644 "$log_file" "$err_log"
   fi
 fi
 
