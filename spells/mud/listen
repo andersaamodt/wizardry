@@ -1,6 +1,5 @@
 #!/bin/sh
-
-# Start monitoring room activity in the background for real-time notifications.
+# Listen for magical happenings in the current room
 
 case "${1-}" in
 --help|--usage|-h)
@@ -42,12 +41,12 @@ esac
 
 # Uncastable pattern - detect if sourced (recommended) or executed
 _listen_sourced=0
-if eval '[ -n "${ZSH_VERSION+x}" ]' 2>/dev/null; then
+if eval '[ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
   case "${ZSH_EVAL_CONTEXT-}" in
     *:file) _listen_sourced=1 ;;
   esac
 else
-  _listen_base=${0##*/}
+  _listen_base=$(basename "$0" 2>/dev/null || printf '%s\n' "$0")
   case "$_listen_base" in
     sh|dash|bash|zsh|ksh|mksh) _listen_sourced=1 ;;
     listen) _listen_sourced=0 ;;
@@ -59,8 +58,26 @@ fi
 _listen_is_sourced=$_listen_sourced
 unset _listen_sourced _listen_base
 
-# Save shell options so we can restore them (this spell can be sourced)
-_listen_saved_opts=$(set +o)
+# Save readline editing mode to prevent breakage (when tools are available)
+if command -v grep >/dev/null 2>&1 && command -v awk >/dev/null 2>&1; then
+  _listen_set_output=$(set -o 2>/dev/null || true)
+  if [ -n "$_listen_set_output" ]; then
+    # Extract emacs mode
+    _listen_emacs_mode=$(printf '%s\n' "$_listen_set_output" | \
+      grep '^emacs' 2>/dev/null | awk '{print $2}' 2>/dev/null || printf '')
+    # Extract vi mode
+    _listen_vi_mode=$(printf '%s\n' "$_listen_set_output" | \
+      grep '^vi' 2>/dev/null | awk '{print $2}' 2>/dev/null || printf '')
+  else
+    _listen_emacs_mode=""
+    _listen_vi_mode=""
+  fi
+  unset _listen_set_output
+else
+  # grep/awk not available (restricted PATH) - skip readline preservation
+  _listen_emacs_mode=""
+  _listen_vi_mode=""
+fi
 
 # Use permissive mode for our own logic
 set +e
@@ -82,18 +99,29 @@ if [ "$_listen_stop_only" = "1" ]; then
   
   printf '%s\n' "✓ Stopped listening to room activity"
   
-  # Restore shell options before returning
-  eval "$_listen_saved_opts"
-  unset _listen_stop_only _listen_pid _listen_is_sourced _listen_room_path _listen_saved_opts
+  # When sourced (e.g., by cd hook), guarantee permissive mode instead of restoring
+  # Restoring saved opts can re-enable strict modes that break readline
+  set +e
+  set +u
+  # Restore readline mode
+  [ "${_listen_emacs_mode:-}" = "on" ] && set -o emacs 2>/dev/null || true
+  [ "${_listen_vi_mode:-}" = "on" ] && set -o vi 2>/dev/null || true
+  unset _listen_stop_only _listen_is_sourced _listen_room_path
+  unset _listen_emacs_mode _listen_vi_mode
   return 0 2>/dev/null || exit 0
 fi
 
 # Check if directory exists
 if [ ! -d "$_listen_room_path" ]; then
   printf '%s\n' "listen: directory does not exist: $_listen_room_path" >&2
-  # Restore shell options before returning
-  eval "$_listen_saved_opts"
-  unset _listen_stop_only _listen_room_path _listen_is_sourced _listen_saved_opts
+  # When sourced (e.g., by cd hook), guarantee permissive mode instead of restoring
+  set +e
+  set +u
+  # Restore readline mode
+  [ "${_listen_emacs_mode:-}" = "on" ] && set -o emacs 2>/dev/null || true
+  [ "${_listen_vi_mode:-}" = "on" ] && set -o vi 2>/dev/null || true
+  unset _listen_stop_only _listen_room_path _listen_is_sourced
+  unset _listen_emacs_mode _listen_vi_mode
   return 1 2>/dev/null || exit 1
 fi
 
@@ -103,9 +131,14 @@ _listen_room_log="$_listen_room_path/.log"
 if [ ! -f "$_listen_room_log" ]; then
   touch "$_listen_room_log" 2>/dev/null || {
     printf '%s\n' "listen: cannot create log file (directory may be read-only)" >&2
-    # Restore shell options before returning
-    eval "$_listen_saved_opts"
-    unset _listen_stop_only _listen_room_path _listen_room_log _listen_is_sourced _listen_saved_opts
+    # When sourced (e.g., by cd hook), guarantee permissive mode instead of restoring
+    set +e
+    set +u
+    # Restore readline mode
+    [ "${_listen_emacs_mode:-}" = "on" ] && set -o emacs 2>/dev/null || true
+    [ "${_listen_vi_mode:-}" = "on" ] && set -o vi 2>/dev/null || true
+    unset _listen_stop_only _listen_room_path _listen_room_log _listen_is_sourced
+    unset _listen_emacs_mode _listen_vi_mode
     return 1 2>/dev/null || exit 1
   }
 fi
@@ -181,8 +214,8 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
         # Print the message in the inserted space
         printf '\r%s' "$formatted_msg"
         
-        # Restore cursor position - this brings us back to the original prompt position
-        # The Insert Line operations have pushed the prompt down, so cursor is now at the right place
+        # Restore cursor position - back to original prompt position
+        # Insert Line operations pushed the prompt down to the right place
         printf '\0338'
         ;;
       *)
@@ -227,10 +260,15 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
 
 _listen_monitor_pid=$!
 
-# Clean up variables and restore shell options
+# Clean up variables and guarantee permissive mode
 unset _listen_stop_only _listen_room_path _listen_room_log _listen_is_sourced \
   _listen_monitor_pid _listen_term_width
 
-# Restore shell options before returning
-eval "$_listen_saved_opts"
-unset _listen_saved_opts
+# When sourced (e.g., by cd hook), guarantee permissive mode instead of restoring
+# Restoring saved opts can re-enable strict modes that break readline
+set +e
+set +u
+# Restore readline mode
+[ "${_listen_emacs_mode:-}" = "on" ] && set -o emacs 2>/dev/null || true
+[ "${_listen_vi_mode:-}" = "on" ] && set -o vi 2>/dev/null || true
+unset _listen_emacs_mode _listen_vi_mode
