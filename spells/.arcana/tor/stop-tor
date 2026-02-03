@@ -41,15 +41,23 @@ fi
 # Try launchctl (macOS)
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
   if is-tor-launchd-service-configured; then
-    if sudo launchctl stop org.torproject.tor 2>/dev/null; then
-      printf 'Tor stopped via launchd.\n'
+    # On macOS with launchd, we need to unload the service temporarily
+    # because KeepAlive=true will restart it if we just stop it
+    printf 'Unloading tor from launchd...\n'
+    if sudo launchctl unload /Library/LaunchDaemons/org.torproject.tor.plist 2>/dev/null; then
+      printf 'Tor launchd service unloaded.\n'
       # Wait and verify it actually stopped
       sleep 2
       if ! is-tor-running; then
+        # Reload the service but don't start it (without -w flag)
+        sudo launchctl load /Library/LaunchDaemons/org.torproject.tor.plist 2>/dev/null || true
+        printf 'Service configuration reloaded (stopped).\n'
         exit 0
       else
-        printf 'Warning: launchctl stop succeeded but tor still running.\n' >&2
+        printf 'Warning: unload succeeded but tor still running.\n' >&2
         printf 'Attempting to kill tor process directly...\n'
+        # Reload before trying killall
+        sudo launchctl load /Library/LaunchDaemons/org.torproject.tor.plist 2>/dev/null || true
       fi
     fi
   fi
