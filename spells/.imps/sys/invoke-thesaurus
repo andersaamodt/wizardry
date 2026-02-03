@@ -26,6 +26,9 @@ if [ "$it_sourced" -eq 0 ]; then
 fi
 unset it_sourced _it_base
 
+# Uncastable spells must remember shell mode and restore on all exits
+invoke_thesaurus_saved_opts=$(set +o)
+
 # Explicitly use permissive mode - this file is sourced into user's shell
 
 # Use global SPELLBOOK_DIR if set, otherwise use default
@@ -189,6 +192,10 @@ fi
 if [ "${WIZARDRY_DEBUG-}" = "1" ]; then
   printf '%s\n' "invoke-thesaurus: loaded $it_count function(s) and alias(es)"
 fi
+
+# Restore opts
+eval "$invoke_thesaurus_saved_opts"
+unset invoke_thesaurus_saved_opts
 return 0
 
 # Run the function

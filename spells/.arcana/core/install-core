@@ -72,6 +72,7 @@ core_dependencies() {
       cat <<'EOF'
 Git:git:install-git:uninstall-git:0
 pkgin:pkgin:install-pkgin:uninstall-pkgin:0
+checkbashisms:checkbashisms:install-checkbashisms:uninstall-checkbashisms:0
 sed:sed:install-sed:uninstall-sed:1
 awk:awk:install-awk:uninstall-awk:1
 grep:grep:install-grep:uninstall-grep:1
@@ -89,6 +90,7 @@ EOF
 Git:git:install-git:uninstall-git:0
 ${clipboard_label}:${CLIPBOARD_MARKER}:install-clipboard-helper:uninstall-clipboard-helper:0
 Bubblewrap:bwrap:install-bwrap:uninstall-bwrap:0
+checkbashisms:checkbashisms:install-checkbashisms:uninstall-checkbashisms:0
 sed:sed:install-sed:uninstall-sed:1
 awk:awk:install-awk:uninstall-awk:1
 grep:grep:install-grep:uninstall-grep:1

@@ -36,6 +36,8 @@ if [ "$jump_trash_sourced" -eq 0 ]; then
 fi
 unset jump_trash_sourced jump_trash_base
 
+# Uncastable spells must remember shell mode and restore on all exits
+jump_trash_saved_opts=$(set +o)
 set -eu
 . env-clear
 
@@ -69,13 +71,17 @@ fi
 
 if [ -z "$trash_path" ]; then
   printf '%s\n' "jump-trash: could not determine trash directory" >&2
-  return 1 2>/dev/null || exit 1
+  eval "$jump_trash_saved_opts"
+  unset jump_trash_saved_opts
+  return 1
 fi
 
 if [ ! -d "$trash_path" ]; then
   printf '%s\n' "jump-trash: trash directory does not exist: $trash_path" >&2
   printf '%s\n' "The trash may be empty or the directory has not been created yet." >&2
-  return 1 2>/dev/null || exit 1
+  eval "$jump_trash_saved_opts"
+  unset jump_trash_saved_opts
+  return 1
 fi
 
 # Check if already in trash (handle symlinks by resolving paths)
@@ -86,8 +92,18 @@ trash_resolved=$(printf '%s' "$trash_resolved" | sed 's|//|/|g')
 
 if [ "$current_resolved" = "$trash_resolved" ]; then
   printf '%s\n' "You are already in the trash directory."
-  return 0 2>/dev/null || exit 0
+  eval "$jump_trash_saved_opts"
+  unset jump_trash_saved_opts
+  return 0
 fi
 
-cd "$trash_path" || { return 1 2>/dev/null || exit 1; }
+if ! cd "$trash_path"; then
+  eval "$jump_trash_saved_opts"
+  unset jump_trash_saved_opts
+  return 1
+fi
 printf '%s\n' "You teleport to the trash at $trash_path"
+
+# Restore opts
+eval "$jump_trash_saved_opts"
+unset jump_trash_saved_opts

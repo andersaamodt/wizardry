@@ -152,7 +152,7 @@ if command -v timeout >/dev/null 2>&1; then
   timeout_cmd="timeout"
 fi
 
-find_timeout="${WIZARDRY_FIND_TIMEOUT:-60}"
+find_timeout="${WIZARDRY_FIND_TIMEOUT:-80}"
 
 # Build cached spell file list (run find once instead of 11+ times)
 if [ "$FILTER_MODE" -eq 1 ]; then
@@ -1608,9 +1608,10 @@ test_scripts_have_set_eu_early() {
         printf '%s\n' "$rel_path"
       fi
     else
-      # Regular spell: check if set -eu or set +eu appears in first 50 lines
+      # Regular spell: check if set -eu or set +eu appears in first 60 lines
+      # Increased from 50 to 60 to accommodate uncastable pattern with opts save/restore
       # Pattern matches: set -eu, set -ue, set -euo, set +eu, set +ue, etc.
-      if ! head -50 "$spell" | grep -qE '^[[:space:]]*set [+-][euo]*[eu][euo]*'; then
+      if ! head -60 "$spell" | grep -qE '^[[:space:]]*set [+-][euo]*[eu][euo]*'; then
         printf '%s\n' "$rel_path"
       fi
     fi
@@ -1624,7 +1625,7 @@ test_scripts_have_set_eu_early() {
   rm -f "$tmpfile"
   
   if [ -n "$violations" ]; then
-    TEST_FAILURE_REASON="scripts missing explicit error handling mode: $violations (add 'set -eu' or 'set +eu' after opening comment, within first 50 lines)"
+    TEST_FAILURE_REASON="scripts missing explicit error handling mode: $violations (add 'set -eu' or 'set +eu' after opening comment, within first 60 lines)"
     return 1
   fi
   
@@ -2581,8 +2582,10 @@ test_uncastable_pattern_is_standardized() {
   sourced_spells="
     spells/arcane/jump-trash
     spells/translocation/jump-to-marker
+    spells/translocation/blink
     spells/cantrips/colors
-    spells/.arcana/mud/cd
+    spells/.arcana/mud/load-cd-hook
+    spells/.arcana/mud/load-touch-hook
     spells/.imps/sys/env-clear
     spells/.imps/sys/invoke-thesaurus
     spells/.imps/sys/invoke-wizardry
@@ -2644,6 +2647,25 @@ test_uncastable_pattern_is_standardized() {
     
     if ! printf '%s\n' "$pattern" | grep -q 'unset.*_sourced.*_base'; then
       TEST_FAILURE_REASON="Pattern missing cleanup (unset) in: $_spell"
+      return 1
+    fi
+    
+    # NEW: Check for shell options save/restore pattern
+    # The spell must save shell options with $(set +o) and restore them with eval
+    if ! grep -q '_saved_opts=\$(set +o)' "$spell_path"; then
+      TEST_FAILURE_REASON="Spell missing shell options save pattern '_saved_opts=\$(set +o)' in: $_spell"
+      return 1
+    fi
+    
+    # Check that the spell restores options with eval
+    if ! grep -q 'eval "\$.*_saved_opts"' "$spell_path"; then
+      TEST_FAILURE_REASON="Spell missing shell options restore pattern 'eval \"\$.*_saved_opts\"' in: $_spell"
+      return 1
+    fi
+    
+    # Check that the spell unsets the saved_opts variable
+    if ! grep -q 'unset .*_saved_opts' "$spell_path"; then
+      TEST_FAILURE_REASON="Spell missing 'unset .*_saved_opts' cleanup in: $_spell"
       return 1
     fi
   done

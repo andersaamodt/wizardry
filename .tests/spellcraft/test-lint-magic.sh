@@ -62,7 +62,7 @@ esac
 
 set -eu
 
-echo "Hello from good spell"
+printf '%s\n' "Hello from good spell"
 EOF
   chmod +x "$spell_dir/good-spell"
   run_spell "spells/spellcraft/lint-magic" "$spell_dir/good-spell"
@@ -76,7 +76,7 @@ test_fails_missing_shebang() {
 
 set -eu
 
-echo "bad"
+printf '%s\n' "bad"
 EOF
   chmod +x "$spell_dir/bad-spell"
   run_spell "spells/spellcraft/lint-magic" "$spell_dir/bad-spell"
@@ -92,7 +92,7 @@ test_fails_wrong_shebang() {
 
 set -eu
 
-echo "bad"
+printf '%s\n' "bad"
 EOF
   chmod +x "$spell_dir/bad-spell"
   run_spell "spells/spellcraft/lint-magic" "$spell_dir/bad-spell"
@@ -106,7 +106,7 @@ test_fails_missing_description() {
 
 set -eu
 
-echo "bad"
+printf '%s\n' "bad"
 EOF
   chmod +x "$spell_dir/bad-spell"
   run_spell "spells/spellcraft/lint-magic" "$spell_dir/bad-spell"
@@ -120,7 +120,7 @@ test_fails_missing_strict_mode() {
 
 # This spell lacks strict mode.
 
-echo "bad"
+printf '%s\n' "bad"
 EOF
   chmod +x "$spell_dir/bad-spell"
   run_spell "spells/spellcraft/lint-magic" "$spell_dir/bad-spell"
@@ -130,7 +130,7 @@ EOF
 test_fails_trailing_space_assignment() {
   spell_dir=$(make_spell_dir)
   # Create spell with trailing space in assignment
-  printf '%s\n' '#!/bin/sh' '' '# Spell with bad assignment.' '' 'set -eu' '' 'var= ' '' 'echo "$var"' >"$spell_dir/bad-spell"
+  printf '%s\n' '#!/bin/sh' '' '# Spell with bad assignment.' '' 'set -eu' '' 'var= ' '' 'printf "%s\n" "$var"' >"$spell_dir/bad-spell"
   chmod +x "$spell_dir/bad-spell"
   run_spell "spells/spellcraft/lint-magic" "$spell_dir/bad-spell"
   assert_failure && assert_output_contains "trailing space"
@@ -146,7 +146,7 @@ test_passes_imp_without_usage() {
 
 set -eu
 
-date
+printf '%s\n' "$(date)"
 EOF
   chmod +x "$spell_dir/.imps/simple-imp"
   run_spell "spells/spellcraft/lint-magic" "$spell_dir/.imps/simple-imp"
@@ -178,7 +178,7 @@ esac
 
 set -eu
 
-echo "hello"
+printf '%s\n' "hello"
 EOF
   chmod +x "$spell_dir/old-style-spell"
   
@@ -196,7 +196,7 @@ test_requires_help_handler() {
 
 set -eu
 
-echo "hello"
+printf '%s\n' "hello"
 EOF
   chmod +x "$spell_dir/no-help-spell"
   
@@ -229,7 +229,7 @@ test_imp_fails_with_help_handler() {
 # This imp has a help handler which is not allowed.
 
 show_usage() {
-  echo "Usage: bad-imp"
+  printf '%s\n' "Usage: bad-imp"
 }
 
 case "${1-}" in
@@ -241,7 +241,7 @@ esac
 
 set -eu
 
-echo "hello"
+printf '%s\n' "hello"
 EOF
   chmod +x "$spell_dir/.imps/bad-imp"
   run_spell "spells/spellcraft/lint-magic" "$spell_dir/.imps/bad-imp"
@@ -264,7 +264,7 @@ _flag_imp() {
       *) break ;;
     esac
   done
-  echo "name=$name verbose=${verbose:-0}"
+  printf '%s\n' "name=$name verbose=${verbose:-0}"
 }
 
 case "$0" in
@@ -319,7 +319,7 @@ test_imp_fails_with_too_many_params() {
 # many-params-imp A B C D - this imp has too many parameters
 
 _many_params_imp() {
-  echo "$1 $2 $3 $4"
+  printf '%s %s %s %s\n' "$1" "$2" "$3" "$4"
 }
 
 case "$0" in
@@ -340,7 +340,8 @@ test_imp_passes_with_variadic_params() {
 # variadic-imp A B C REST... - 3 regular params plus variadic
 
 _variadic_imp() {
-  echo "$@"
+  # Using printf to match echo behavior while being POSIX compliant
+  printf '%s\n' "$*"
 }
 
 case "$0" in
@@ -376,7 +377,7 @@ test_imp_fails_with_duplicate_set_eu() {
 set -eu
 
 _bad_duplicate_imp() {
-  echo "test"
+  printf '%s\n' "test"
 }
 
 set -eu
@@ -399,7 +400,7 @@ test_imp_passes_with_single_set_eu() {
 set -eu
 
 _good_imp() {
-  echo "test"
+  printf '%s\n' "test"
 }
 
 case "$0" in
