@@ -1,0 +1,26 @@
+#!/bin/sh
+
+# Check if tor launchd service exists on macOS.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-tor-launchd-service-configured
+
+Returns 0 (true) if tor launchd service is configured, 1 (false) otherwise.
+Only works on macOS.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+# Only works on macOS
+if [ "$(uname -s 2>/dev/null)" != "Darwin" ]; then
+  exit 1
+fi
+
+# Check if plist file exists
+plist_file="/Library/LaunchDaemons/org.torproject.tor.plist"
+[ -f "$plist_file" ]

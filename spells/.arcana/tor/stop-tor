@@ -43,7 +43,17 @@ if command -v systemctl >/dev/null 2>&1; then
   fi
 fi
 
-# Try killall (macOS and others)
+# Try launchctl (macOS)
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  if is-tor-launchd-service-configured; then
+    if sudo launchctl stop org.torproject.tor 2>/dev/null; then
+      printf 'Tor stopped via launchd.\n'
+      exit 0
+    fi
+  fi
+fi
+
+# Try killall (macOS and others - fallback)
 if sudo killall tor 2>/dev/null; then
   printf 'Tor stopped.\n'
   exit 0

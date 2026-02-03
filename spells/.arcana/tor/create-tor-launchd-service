@@ -1,0 +1,126 @@
+#!/bin/sh
+
+# Create and load a launchd service for tor on macOS.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: create-tor-launchd-service
+
+Creates a launchd plist for tor and loads it as a system daemon.
+Only works on macOS.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+
+# Only works on macOS
+if [ "$(uname -s 2>/dev/null)" != "Darwin" ]; then
+  printf 'create-tor-launchd-service: only supported on macOS\n' >&2
+  exit 1
+fi
+
+# Check if tor is installed
+if ! is-tor-installed; then
+  printf 'create-tor-launchd-service: tor is not installed\n' >&2
+  exit 1
+fi
+
+# Find tor binary
+tor_bin=""
+if [ -x /usr/local/bin/tor ]; then
+  tor_bin="/usr/local/bin/tor"
+elif command -v tor >/dev/null 2>&1; then
+  tor_bin=$(command -v tor)
+else
+  # Check alternate locations
+  for check_path in /usr/bin/tor /opt/local/bin/tor /usr/local/sbin/tor; do
+    if [ -x "$check_path" ]; then
+      tor_bin="$check_path"
+      break
+    fi
+  done
+fi
+
+if [ -z "$tor_bin" ]; then
+  printf 'create-tor-launchd-service: tor binary not found\n' >&2
+  exit 1
+fi
+
+# Get torrc path
+torrc=$(torrc-path) || torrc="/usr/local/etc/tor/torrc"
+
+# Create LaunchDaemons directory if it doesn't exist
+launch_dir="/Library/LaunchDaemons"
+if [ ! -d "$launch_dir" ]; then
+  sudo mkdir -p "$launch_dir"
+fi
+
+# Create plist file
+plist_file="$launch_dir/org.torproject.tor.plist"
+
+printf 'Creating launchd service at %s...\n' "$plist_file"
+
+sudo tee "$plist_file" >/dev/null <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" 
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>org.torproject.tor</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>$tor_bin</string>
+    <string>-f</string>
+    <string>$torrc</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/usr/local/var/log/tor.log</string>
+  <key>StandardErrorPath</key>
+  <string>/usr/local/var/log/tor-errors.log</string>
+  <key>UserName</key>
+  <string>_tor</string>
+</dict>
+</plist>
+EOF
+
+# Create log directory if it doesn't exist
+sudo mkdir -p /usr/local/var/log
+sudo touch /usr/local/var/log/tor.log /usr/local/var/log/tor-errors.log
+
+# Try to create _tor user if it doesn't exist
+if ! dscl . -read /Users/_tor >/dev/null 2>&1; then
+  printf 'Creating _tor user...\n'
+  # Find the next available UID in the system range (< 500)
+  next_uid=250
+  while dscl . -list /Users UniqueID | awk '{print $2}' | grep -q "^${next_uid}\$"; do
+    next_uid=$((next_uid + 1))
+  done
+  
+  sudo dscl . -create /Users/_tor
+  sudo dscl . -create /Users/_tor UniqueID "$next_uid"
+  sudo dscl . -create /Users/_tor PrimaryGroupID 250
+  sudo dscl . -create /Users/_tor NFSHomeDirectory /var/empty
+  sudo dscl . -create /Users/_tor UserShell /usr/bin/false
+  sudo dscl . -create /Users/_tor RealName "Tor Daemon"
+fi
+
+# Set proper ownership for log files
+log_file="/usr/local/var/log/tor.log"
+err_log="/usr/local/var/log/tor-errors.log"
+sudo chown _tor:wheel "$log_file" "$err_log" 2>/dev/null || true
+
+# Load the plist (will also start the service)
+printf 'Loading launchd service...\n'
+sudo launchctl load -w "$plist_file" 2>/dev/null || true
+
+printf 'Tor launchd service created and loaded.\n'

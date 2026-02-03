@@ -26,7 +26,26 @@ if command -v systemctl >/dev/null 2>&1; then
   fi
 fi
 
-# Try killall then restart (macOS and others)
+# Try launchctl (macOS)
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  if is-tor-launchd-service-configured; then
+    # Stop and start the service
+    sudo launchctl stop org.torproject.tor 2>/dev/null || true
+    sleep 1
+    if sudo launchctl start org.torproject.tor 2>/dev/null; then
+      printf 'Tor restarted via launchd.\n'
+      exit 0
+    fi
+  else
+    # Service not configured, create it
+    if create-tor-launchd-service; then
+      printf 'Tor restarted via launchd.\n'
+      exit 0
+    fi
+  fi
+fi
+
+# Try killall then restart (fallback for macOS and others)
 if command -v tor >/dev/null 2>&1; then
   sudo killall tor 2>/dev/null || true
   sleep 1

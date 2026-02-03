@@ -15,5 +15,22 @@ esac
 
 set -eu
 
-# Simple check - just see if tor command is available
-command -v tor >/dev/null 2>&1
+# Check multiple locations for tor binary
+# Method 1: Check if tor binary exists in expected location
+if [ -x /usr/local/bin/tor ]; then
+  exit 0
+# Method 2: Try command -v
+elif command -v tor >/dev/null 2>&1; then
+  exit 0
+# Method 3: Check other common locations
+else
+  alternate_tor_paths="/usr/bin/tor /opt/local/bin/tor /usr/local/sbin/tor"
+  for check_path in $alternate_tor_paths; do
+    if [ -x "$check_path" ]; then
+      exit 0
+    fi
+  done
+fi
+
+# Not found
+exit 1
