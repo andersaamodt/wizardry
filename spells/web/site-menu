@@ -102,82 +102,45 @@ while true; do
     fi
   fi
   
-  # Build copy .onion address option if hostname file exists
-  # The hostname file is created when tor generates the hidden service
-  copy_site_onion=""
-  site_hostname_file=""
-  # Check for site-specific hidden service hostname file in multiple locations
-  for site_hs_dir in "/usr/local/var/lib/tor/${site_name}" "/opt/pkg/var/lib/tor/${site_name}" "/var/lib/tor/${site_name}"; do
-    if [ -f "$site_hs_dir/hostname" ]; then
-      site_hostname_file="$site_hs_dir/hostname"
-      copy_site_onion="Copy .onion address%copy-to-clipboard \"\$(sudo cat \"$site_hostname_file\")\"; echo 3 > \"$SELECTION_FILE\""
-      break
-    fi
-  done
+  # UNCONDITIONAL TEST - removed all conditions to debug why it never appears
+  copy_site_onion="Copy .onion address%printf 'TEST: Copy .onion menu item works!\\n'; echo 3 > \"$SELECTION_FILE\""
   
   exit_label=$(exit-label)
   
   if [ "$is_serving" -eq 1 ]; then
-    # Build menu items list, adding copy_site_onion before tor_hosting_option if it exists
-    if [ -n "$copy_site_onion" ]; then
-      set -- \
-        "Open in browser%command -v xdg-open >/dev/null 2>&1 && xdg-open http://localhost:$port || command -v open >/dev/null 2>&1 && open http://localhost:$port || printf 'Visit: http://localhost:$port\n'" \
-        "Build All & Restart Server%build \"$site_name\" --full && stop-site \"$site_name\" && serve-site \"$site_name\"" \
-        "Build%build \"$site_name\"" \
-        "Build All%build \"$site_name\" --full" \
-        "Stop Server%stop-site \"$site_name\"" \
-        "$copy_site_onion" \
-        "$tor_hosting_option" \
-        "Update from template%update-from-template \"$site_name\"" \
-        "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
-        "Fix permissions%[ -d \"$SITE_DIR/build\" ] && find \"$SITE_DIR/build\" -type d -exec chmod 755 {} \\; && find \"$SITE_DIR/build\" -type f -exec chmod 644 {} \\; && printf 'Permissions fixed\\n' || printf 'No build directory found\\n'" \
-        "Open site directory%cd \"$SITE_DIR\" && exec \$SHELL" \
-        "Open site data%[ -d \"$SITE_DATA_DIR\" ] && cd \"$SITE_DATA_DIR\" && exec \$SHELL || { printf 'No site data yet (will be created when needed)\\n'; read -r dummy; }" \
-        "Delete site%delete-site \"$site_name\"" \
-        "${exit_label}%kill -TERM \$PPID"
-    else
-      set -- \
-        "Open in browser%command -v xdg-open >/dev/null 2>&1 && xdg-open http://localhost:$port || command -v open >/dev/null 2>&1 && open http://localhost:$port || printf 'Visit: http://localhost:$port\n'" \
-        "Build All & Restart Server%build \"$site_name\" --full && stop-site \"$site_name\" && serve-site \"$site_name\"" \
-        "Build%build \"$site_name\"" \
-        "Build All%build \"$site_name\" --full" \
-        "Stop Server%stop-site \"$site_name\"" \
-        "$tor_hosting_option" \
-        "Update from template%update-from-template \"$site_name\"" \
-        "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
-        "Fix permissions%[ -d \"$SITE_DIR/build\" ] && find \"$SITE_DIR/build\" -type d -exec chmod 755 {} \\; && find \"$SITE_DIR/build\" -type f -exec chmod 644 {} \\; && printf 'Permissions fixed\\n' || printf 'No build directory found\\n'" \
-        "Open site directory%cd \"$SITE_DIR\" && exec \$SHELL" \
-        "Open site data%[ -d \"$SITE_DATA_DIR\" ] && cd \"$SITE_DATA_DIR\" && exec \$SHELL || { printf 'No site data yet (will be created when needed)\\n'; read -r dummy; }" \
-        "Delete site%delete-site \"$site_name\"" \
-        "${exit_label}%kill -TERM \$PPID"
-    fi
+    # ALWAYS include copy_site_onion for testing
+    set -- \
+      "Open in browser%command -v xdg-open >/dev/null 2>&1 && xdg-open http://localhost:$port || command -v open >/dev/null 2>&1 && open http://localhost:$port || printf 'Visit: http://localhost:$port\n'" \
+      "Build All & Restart Server%build \"$site_name\" --full && stop-site \"$site_name\" && serve-site \"$site_name\"" \
+      "Build%build \"$site_name\"" \
+      "Build All%build \"$site_name\" --full" \
+      "Stop Server%stop-site \"$site_name\"" \
+      "$copy_site_onion" \
+      "$tor_hosting_option" \
+      "Update from template%update-from-template \"$site_name\"" \
+      "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
+      "Fix permissions%[ -d \"$SITE_DIR/build\" ] && find \"$SITE_DIR/build\" -type d -exec chmod 755 {} \\; && find \"$SITE_DIR/build\" -type f -exec chmod 644 {} \\; && printf 'Permissions fixed\\n' || printf 'No build directory found\\n'" \
+      "Open site directory%cd \"$SITE_DIR\" && exec \$SHELL" \
+      "Open site data%[ -d \"$SITE_DATA_DIR\" ] && cd \"$SITE_DATA_DIR\" && exec \$SHELL || { printf 'No site data yet (will be created when needed)\\n'; read -r dummy; }" \
+      "Delete site%delete-site \"$site_name\"" \
+      "${exit_label}%kill -TERM \$PPID"
   else
-    # Build menu items list, adding copy_site_onion before tor_hosting_option if it exists
-    if [ -n "$copy_site_onion" ]; then
-      set -- \
-        "Build All & Start Server%build \"$site_name\" --full && serve-site \"$site_name\"" \
-        "Build%build \"$site_name\"" \
-        "Build All%build \"$site_name\" --full" \
-        "Serve site%serve-site \"$site_name\"" \
-        "$copy_site_onion" \
-        "$tor_hosting_option" \
-        "Update from template%update-from-template \"$site_name\"" \
-        "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
-        "Fix permissions%[ -d \"$SITE_DIR/build\" ] && find \"$SITE_DIR/build\" -type d -exec chmod 755 {} \\; && find \"$SITE_DIR/build\" -type f -exec chmod 644 {} \\; && printf 'Permissions fixed\\n' || printf 'No build directory found\\n'" \
-        "Open site directory%cd \"$SITE_DIR\" && exec \$SHELL" \
-        "Open site data%[ -d \"$SITE_DATA_DIR\" ] && cd \"$SITE_DATA_DIR\" && exec \$SHELL || { printf 'No site data yet (will be created when needed)\\n'; read -r dummy; }" \
-        "Delete site%delete-site \"$site_name\"" \
-        "${exit_label}%kill -TERM \$PPID"
-    else
-      set -- \
-        "Build All & Start Server%build \"$site_name\" --full && serve-site \"$site_name\"" \
-        "Build%build \"$site_name\"" \
-        "Build All%build \"$site_name\" --full" \
-        "Serve site%serve-site \"$site_name\"" \
-        "$tor_hosting_option" \
-        "Update from template%update-from-template \"$site_name\"" \
-        "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
-        "Fix permissions%[ -d \"$SITE_DIR/build\" ] && find \"$SITE_DIR/build\" -type d -exec chmod 755 {} \\; && find \"$SITE_DIR/build\" -type f -exec chmod 644 {} \\; && printf 'Permissions fixed\\n' || printf 'No build directory found\\n'" \
+    # ALWAYS include copy_site_onion for testing
+    set -- \
+      "Build All & Start Server%build \"$site_name\" --full && serve-site \"$site_name\"" \
+      "Build%build \"$site_name\"" \
+      "Build All%build \"$site_name\" --full" \
+      "Serve site%serve-site \"$site_name\"" \
+      "$copy_site_onion" \
+      "$tor_hosting_option" \
+      "Update from template%update-from-template \"$site_name\"" \
+      "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
+      "Fix permissions%[ -d \"$SITE_DIR/build\" ] && find \"$SITE_DIR/build\" -type d -exec chmod 755 {} \\; && find \"$SITE_DIR/build\" -type f -exec chmod 644 {} \\; && printf 'Permissions fixed\\n' || printf 'No build directory found\\n'" \
+      "Open site directory%cd \"$SITE_DIR\" && exec \$SHELL" \
+      "Open site data%[ -d \"$SITE_DATA_DIR\" ] && cd \"$SITE_DATA_DIR\" && exec \$SHELL || { printf 'No site data yet (will be created when needed)\\n'; read -r dummy; }" \
+      "Delete site%delete-site \"$site_name\"" \
+      "${exit_label}%kill -TERM \$PPID"
+  fi
         "Open site directory%cd \"$SITE_DIR\" && exec \$SHELL" \
         "Open site data%[ -d \"$SITE_DATA_DIR\" ] && cd \"$SITE_DATA_DIR\" && exec \$SHELL || { printf 'No site data yet (will be created when needed)\\n'; read -r dummy; }" \
         "Delete site%delete-site \"$site_name\"" \
