@@ -198,9 +198,9 @@ while true; do
   
   # Check if MUD HiddenServiceDir is configured (uncommented lines only)
   if [ -n "$torrc_path" ] && [ -f "$torrc_path" ]; then
-    # Pattern matches lines with HiddenServiceDir that ends with /mud
+    # Pattern matches lines with HiddenServiceDir that ends with /mud or /mud/
     # This naturally excludes commented lines (which start with #)
-    if grep -q "^[[:space:]]*HiddenServiceDir.*\/mud\/?[[:space:]]*$" "$torrc_path" 2>/dev/null; then
+    if grep -E -q "^[[:space:]]*HiddenServiceDir.*/mud/?$" "$torrc_path" 2>/dev/null; then
       tor_configured=1
     fi
   fi
