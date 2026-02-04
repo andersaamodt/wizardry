@@ -130,7 +130,7 @@ y|Y)
         sudo chmod 644 "$tor_config_path"
         
         # Restart tor to activate the hidden service
-        printf '%s\n' "Hidden service configured for MUD"
+        printf '%s\n' "Tor hidden service configured for MUD"
         repair-tor-permissions >/dev/null 2>&1 || true
         
         restart-tor || exit 1
