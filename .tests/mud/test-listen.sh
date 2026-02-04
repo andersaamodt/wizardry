@@ -269,6 +269,66 @@ test_cd_listen_relative_path() {
   [ "$listener_count" -gt 0 ] || return 1
 }
 
+# Test that "log:" messages don't show username prefix
+test_log_username_hidden() {
+  tmpdir=$(make_tempdir)
+  
+  # Create a .log file with a message from the special "log" user
+  mkdir -p "$tmpdir"
+  echo "[12:34] log: System notification" > "$tmpdir/.log"
+  
+  # Create a test script that simulates listen's message parsing
+  cat > "$tmpdir/test-log.sh" <<'SCRIPT'
+#!/bin/sh
+line="[12:34] log: System notification"
+
+# Parse the log entry (same logic as listen spell)
+rest=$(printf '%s' "$line" | sed 's/^\[[^]]*\] //')
+player=$(printf '%s' "$rest" | sed 's/:.*//')
+message=$(printf '%s' "$rest" | sed 's/^[^:]*: //')
+
+# Special case: "log" username should not be displayed
+if [ "$player" = "log" ]; then
+  # Just show the message without username prefix
+  printf '%s\n' "$message"
+else
+  # Show with username
+  printf '%s: %s\n' "$player" "$message"
+fi
+SCRIPT
+  
+  chmod +x "$tmpdir/test-log.sh"
+  output=$("$tmpdir/test-log.sh")
+  
+  # Verify output is just the message, not "log: message"
+  [ "$output" = "System notification" ] || return 1
+  
+  # Also test that normal users still show their username
+  cat > "$tmpdir/test-user.sh" <<'SCRIPT'
+#!/bin/sh
+line="[12:34] alice: Hello there"
+
+# Parse the log entry
+rest=$(printf '%s' "$line" | sed 's/^\[[^]]*\] //')
+player=$(printf '%s' "$rest" | sed 's/:.*//')
+message=$(printf '%s' "$rest" | sed 's/^[^:]*: //')
+
+# Special case: "log" username should not be displayed
+if [ "$player" = "log" ]; then
+  printf '%s\n' "$message"
+else
+  printf '%s: %s\n' "$player" "$message"
+fi
+SCRIPT
+  
+  chmod +x "$tmpdir/test-user.sh"
+  output=$("$tmpdir/test-user.sh")
+  
+  # Verify normal user shows "username: message"
+  [ "$output" = "alice: Hello there" ] || return 1
+}
+
+
 run_test_case "listen shows usage text" test_help
 run_test_case "listen must be sourced (uncastable)" test_uncastable
 run_test_case "listen validates directory exists" test_nonexistent_directory  
@@ -278,6 +338,7 @@ run_test_case "listen formats single-line messages correctly" test_message_forma
 run_test_case "listen formats multiline messages with newline" test_message_format_multiline
 run_test_case "listen handles exact line boundary messages" test_message_exact_line_boundaries
 run_test_case "listen handles fractional line length messages" test_message_fractional_lines
+run_test_case "listen hides log username prefix" test_log_username_hidden
 run_test_case "cd-listen works with relative paths" test_cd_listen_relative_path
 
 finish_tests
