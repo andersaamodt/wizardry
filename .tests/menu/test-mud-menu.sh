@@ -507,8 +507,8 @@ SH
     return 1
   fi
   
-  if [ "$second_selection" != "3" ]; then
-    TEST_FAILURE_REASON="after CD hook toggle, menu should have start_selection=3 (CD hook position), got $second_selection (log: $log_content)"
+  if [ "$second_selection" != "5" ]; then
+    TEST_FAILURE_REASON="after CD hook toggle, menu should have start_selection=5 (CD hook position), got $second_selection (log: $log_content)"
     return 1
   fi
 }

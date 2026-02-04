@@ -25,7 +25,7 @@ mkdir -p "$SPELLBOOK_DIR"
 touch "$CONFIG_FILE"
 
 # List of config-based features
-FEATURES="parse-enabled mud-enabled avatar touch-hook cd-look"
+FEATURES="parse-enabled mud-enabled avatar touch-hook cd-look cd-listen"
 
 # Determine action based on arguments or current state
 action=""
@@ -64,11 +64,70 @@ if [ "$action" = "enable" ]; then
   for feature in $FEATURES; do
     config-set "$CONFIG_FILE" "$feature" "1"
   done
+  
+  # Enable Tor hosting if not already enabled
+  if command -v is-tor-installed >/dev/null 2>&1 && is-tor-installed; then
+    # Check if tor is already configured
+    torrc_path=""
+    if command -v torrc-path >/dev/null 2>&1; then
+      torrc_path=$(torrc-path 2>/dev/null) || torrc_path=""
+    fi
+    if [ -z "$torrc_path" ]; then
+      if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+        for path in /usr/local/etc/tor/torrc /opt/local/etc/tor/torrc; do
+          if [ -f "$path" ]; then
+            torrc_path="$path"
+            break
+          fi
+        done
+      else
+        if [ -f /etc/tor/torrc ]; then
+          torrc_path="/etc/tor/torrc"
+        fi
+      fi
+    fi
+    
+    if [ -n "$torrc_path" ] && [ -f "$torrc_path" ]; then
+      if ! grep -E -q "^[[:space:]]*HiddenServiceDir.*/mud(/)?$" "$torrc_path" 2>/dev/null; then
+        setup-tor -y >/dev/null 2>&1 || true
+      fi
+    fi
+  fi
+  
   printf '%s\n' "✓ All MUD features enabled."
 else
   printf '%s\n' "Disabling all MUD features..."
   for feature in $FEATURES; do
     config-set "$CONFIG_FILE" "$feature" "0"
   done
+  
+  # Disable Tor hosting if enabled
+  if command -v is-tor-installed >/dev/null 2>&1 && is-tor-installed; then
+    torrc_path=""
+    if command -v torrc-path >/dev/null 2>&1; then
+      torrc_path=$(torrc-path 2>/dev/null) || torrc_path=""
+    fi
+    if [ -z "$torrc_path" ]; then
+      if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+        for path in /usr/local/etc/tor/torrc /opt/local/etc/tor/torrc; do
+          if [ -f "$path" ]; then
+            torrc_path="$path"
+            break
+          fi
+        done
+      else
+        if [ -f /etc/tor/torrc ]; then
+          torrc_path="/etc/tor/torrc"
+        fi
+      fi
+    fi
+    
+    if [ -n "$torrc_path" ] && [ -f "$torrc_path" ]; then
+      if grep -E -q "^[[:space:]]*HiddenServiceDir.*/mud(/)?$" "$torrc_path" 2>/dev/null; then
+        remove-tor-hidden-service -y >/dev/null 2>&1 || true
+      fi
+    fi
+  fi
+  
   printf '%s\n' "✓ All MUD features disabled."
 fi

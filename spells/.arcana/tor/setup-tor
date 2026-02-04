@@ -94,11 +94,8 @@ y|Y)
                 if [ -n "$data_dir" ]; then
                         # Use detected data directory
                         mud_dir="${data_dir}/mud/"
-                elif [ -d "/opt/homebrew/var/lib/tor" ]; then
-                        # Homebrew on Apple Silicon
-                        mud_dir="/opt/homebrew/var/lib/tor/mud/"
                 elif [ -d "/usr/local/var/lib/tor" ]; then
-                        # Homebrew on Intel or older
+                        # Compiled tor with standard prefix
                         mud_dir="/usr/local/var/lib/tor/mud/"
                 elif [ -d "/opt/local/var/lib/tor" ]; then
                         # MacPorts
@@ -125,67 +122,18 @@ y|Y)
             || sudo chown -R tor:tor "$mud_dir" 2>/dev/null || true
         sudo chmod 700 "$mud_dir" || true
 
-        printf 'HiddenServiceDir %s\n' "$mud_dir" | sudo tee -a "$tor_config_path"
-        printf '%s\n' "HiddenServiceVersion 3" | sudo tee -a "$tor_config_path"
-        printf '%s\n' "HiddenServicePort 80 127.0.0.1:8080" | sudo tee -a "$tor_config_path"
+        printf 'HiddenServiceDir %s\n' "$mud_dir" | sudo tee -a "$tor_config_path" >/dev/null
+        printf '%s\n' "HiddenServiceVersion 3" | sudo tee -a "$tor_config_path" >/dev/null
+        printf '%s\n' "HiddenServicePort 80 127.0.0.1:8080" | sudo tee -a "$tor_config_path" >/dev/null
         
         # Ensure torrc remains readable after modification
         sudo chmod 644 "$tor_config_path"
         
         # Restart tor to activate the hidden service
-        printf '%s\n' "Hidden service configured in $tor_config_path"
+        printf '%s\n' "Tor hidden service configured for MUD"
+        repair-tor-permissions >/dev/null 2>&1 || true
         
-        if restart-tor; then
-                # Wait for tor to actually start (up to 10 seconds)
-                printf 'Waiting for tor to start...\n'
-                wait_count=0
-                while [ $wait_count -lt 10 ]; do
-                        if is-tor-running; then
-                                printf 'Tor is running.\n'
-                                break
-                        fi
-                        sleep 1
-                        wait_count=$((wait_count + 1))
-                done
-                
-                if ! is-tor-running; then
-                        printf 'Warning: Tor does not appear to be running yet.\n' >&2
-                        printf 'Check logs with: show-tor-log\n' >&2
-                fi
-                
-                # Wait for tor to generate the hidden service (up to 15 seconds)
-                hostname_file="${mud_dir}/hostname"
-                printf 'Waiting for tor to generate .onion address...\n'
-                wait_count=0
-                while [ $wait_count -lt 15 ]; do
-                        if [ -f "$hostname_file" ]; then
-                                printf 'Hostname file created.\n'
-                                break
-                        fi
-                        sleep 1
-                        wait_count=$((wait_count + 1))
-                done
-                
-                # Fix permissions on tor directories
-                printf 'Fixing tor permissions...\n'
-                repair-tor-permissions >/dev/null 2>&1 || true
-                
-                # Read the hidden service address if available
-                if [ -f "$hostname_file" ] && [ -r "$hostname_file" ]; then
-                        onion_address=$(cat "$hostname_file" 2>/dev/null || true)
-                        if [ -n "$onion_address" ]; then
-                                printf 'Hidden service address: %s\n' "$onion_address"
-                                printf 'The .onion address is stored at: %s\n' "$hostname_file"
-                        fi
-                else
-                        printf '%s\n' "Hidden service configured."
-                        printf 'The .onion address is stored at: %s\n' "$hostname_file"
-                fi
-        else
-                printf 'Error: Failed to restart tor.\n' >&2
-                printf 'Try running: show-tor-log\n' >&2
-                exit 1
-        fi
+        restart-tor || exit 1
         ;;
 *)
         printf '%s\n' "Tor setup skipped."
