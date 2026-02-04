@@ -167,8 +167,10 @@ while true; do
   fi
   
   if [ "$all_enabled" -eq 1 ]; then
-    toggle_all="Disable all MUD features%toggle-all-mud --disable; echo 10 > \"$SELECTION_FILE\""
+    # When disabling, copy_onion and separator will disappear, moving toggle_all from position 10 to 8
+    toggle_all="Disable all MUD features%toggle-all-mud --disable; echo 8 > \"$SELECTION_FILE\""
   else
+    # When enabling, copy_onion and separator will appear, keeping toggle_all at position 10
     toggle_all="Enable all MUD features%toggle-all-mud --enable; echo 10 > \"$SELECTION_FILE\""
   fi
   
