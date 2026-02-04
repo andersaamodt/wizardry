@@ -757,6 +757,89 @@ check_level_2() {
       ward_desc "USB storage restrictions help prevent data exfiltration." "$verbose"
     fi
   fi
+  
+  # Check for default database passwords (MySQL/MariaDB)
+  if has mysql; then
+    ward_pass "MySQL/MariaDB installed - verify root password is set"
+    msg="Test MySQL security: mysqladmin -u root -p status "
+    msg="${msg}(should require password)"
+    ward_desc "$msg" "$verbose"
+  fi
+  
+  # Check for PostgreSQL listening configuration
+  if [ -f /etc/postgresql/*/main/postgresql.conf ]; then
+    pg_conf=$(find /etc/postgresql -name "postgresql.conf" 2>/dev/null | head -1)
+    if [ -n "$pg_conf" ] && [ -r "$pg_conf" ]; then
+      if grep -q "^listen_addresses.*'\*'" "$pg_conf" 2>/dev/null; then
+        ward_fail "PostgreSQL listening on all interfaces"
+        msg="PostgreSQL should only listen on needed interfaces. "
+        msg="${msg}Set listen_addresses='localhost' if only local access needed."
+        ward_desc "$msg" 1
+      else
+        ward_pass "PostgreSQL listen configuration appears safe"
+        ward_desc "Verify listen_addresses in postgresql.conf." "$verbose"
+      fi
+    fi
+  fi
+  
+  # Check nginx security headers (if nginx installed)
+  if has nginx && [ -d /etc/nginx ]; then
+    nginx_conf="/etc/nginx/nginx.conf"
+    if [ -r "$nginx_conf" ]; then
+      has_xframe=0
+      has_xss=0
+      if grep -qr "X-Frame-Options" /etc/nginx/ 2>/dev/null; then
+        has_xframe=1
+      fi
+      if grep -qr "X-XSS-Protection" /etc/nginx/ 2>/dev/null; then
+        has_xss=1
+      fi
+      
+      if [ "$has_xframe" -eq 1 ] && [ "$has_xss" -eq 1 ]; then
+        ward_pass "nginx has security headers configured"
+        ward_desc "Security headers help protect against common web attacks." 0
+      else
+        ward_fail "nginx missing security headers"
+        msg="Add security headers to nginx configuration. "
+        msg="${msg}Example: add_header X-Frame-Options SAMEORIGIN;"
+        ward_desc "$msg" 1
+      fi
+    fi
+  fi
+  
+  # Check Apache security configuration (if Apache installed)
+  if has apache2 || has httpd; then
+    apache_loaded=0
+    # Check for common Apache configs
+    for conf_dir in /etc/apache2 /etc/httpd; do
+      if [ -d "$conf_dir" ]; then
+        apache_loaded=1
+        # Check ServerTokens
+        if grep -qr "ServerTokens.*Prod" "$conf_dir" 2>/dev/null; then
+          ward_pass "Apache ServerTokens is set to Prod"
+          ward_desc "ServerTokens Prod hides Apache version info." "$verbose"
+        else
+          ward_fail "Apache ServerTokens not set to Prod"
+          msg="Set 'ServerTokens Prod' to hide server version. "
+          msg="${msg}Add to apache2.conf or httpd.conf"
+          ward_desc "$msg" 1
+        fi
+        break
+      fi
+    done
+  fi
+  
+  # Check /etc/hosts.allow and /etc/hosts.deny (TCP wrappers)
+  if [ -f /etc/hosts.allow ] || [ -f /etc/hosts.deny ]; then
+    ward_pass "TCP wrappers configuration exists"
+    msg="TCP wrappers provide additional access control. "
+    msg="${msg}Review /etc/hosts.allow and /etc/hosts.deny"
+    ward_desc "$msg" "$verbose"
+  else
+    ward_pass "TCP wrappers not configured (acceptable for most systems)"
+    msg="TCP wrappers are optional and less common on modern systems."
+    ward_desc "$msg" "$verbose"
+  fi
 }
 
 # Level 3: Expert/obscure security checks
@@ -1234,6 +1317,131 @@ check_level_3() {
     if [ "$profiles_enforced" -gt 0 ] 2>/dev/null; then
       ward_pass "$profiles_enforced AppArmor profiles in enforce mode"
       ward_desc "AppArmor profiles provide application confinement." "$verbose"
+    fi
+  fi
+  
+  # Check kernel.kptr_restrict (hide kernel pointers)
+  if [ -r /proc/sys/kernel/kptr_restrict ]; then
+    kptr=$(cat /proc/sys/kernel/kptr_restrict 2>/dev/null || printf '0')
+    if [ "$kptr" -ge 1 ]; then
+      ward_pass "Kernel pointer restriction is enabled (level $kptr)"
+      msg="kptr_restrict hides kernel addresses from unprivileged users."
+      ward_desc "$msg" "$verbose"
+    else
+      ward_fail "Kernel pointers are not restricted"
+      msg="Hiding kernel pointers helps prevent exploits. "
+      msg="${msg}Enable with: sysctl -w kernel.kptr_restrict=1"
+      ward_desc "$msg" 1
+      if ward_ask_fix "Enable kernel pointer restriction? (recommended)"; then
+        printf 'Enable kernel pointer restriction:\n'
+        printf '  sudo sysctl -w kernel.kptr_restrict=1\n'
+        printf 'Make permanent in /etc/sysctl.conf:\n'
+        printf '  kernel.kptr_restrict=1\n'
+      fi
+    fi
+  fi
+  
+  # Check ptrace_scope (restrict ptrace to child processes)
+  if [ -r /proc/sys/kernel/yama/ptrace_scope ]; then
+    ptrace=$(cat /proc/sys/kernel/yama/ptrace_scope 2>/dev/null || printf '0')
+    if [ "$ptrace" -ge 1 ]; then
+      ward_pass "ptrace is restricted to child processes (level $ptrace)"
+      msg="ptrace restrictions prevent debugging of unrelated processes."
+      ward_desc "$msg" "$verbose"
+    else
+      ward_fail "ptrace is not restricted"
+      msg="Restricting ptrace prevents some debugging-based attacks. "
+      msg="${msg}Enable with: sysctl -w kernel.yama.ptrace_scope=1"
+      ward_desc "$msg" 1
+      if ward_ask_fix "Restrict ptrace? (recommended)"; then
+        printf 'Restrict ptrace:\n'
+        printf '  sudo sysctl -w kernel.yama.ptrace_scope=1\n'
+        printf 'Make permanent in /etc/sysctl.conf:\n'
+        printf '  kernel.yama.ptrace_scope=1\n'
+      fi
+    fi
+  fi
+  
+  # Check for exec-shield or similar protections
+  if [ -r /proc/sys/kernel/exec-shield ]; then
+    exec_shield=$(cat /proc/sys/kernel/exec-shield 2>/dev/null || printf '0')
+    if [ "$exec_shield" -eq 1 ]; then
+      ward_pass "Exec-shield is enabled"
+      ward_desc "Exec-shield provides additional buffer overflow protection." 0
+    fi
+  fi
+  
+  # Check perf_event paranoid (prevent performance monitoring abuse)
+  if [ -r /proc/sys/kernel/perf_event_paranoid ]; then
+    perf=$(cat /proc/sys/kernel/perf_event_paranoid 2>/dev/null || printf '0')
+    if [ "$perf" -ge 2 ]; then
+      ward_pass "Performance event monitoring is restricted (level $perf)"
+      msg="Restricts perf_event to reduce info leakage."
+      ward_desc "$msg" "$verbose"
+    else
+      ward_fail "Performance event monitoring not fully restricted"
+      msg="Set perf_event_paranoid to 2 or higher. "
+      msg="${msg}Enable with: sysctl -w kernel.perf_event_paranoid=2"
+      ward_desc "$msg" 1
+    fi
+  fi
+  
+  # Check unprivileged BPF (should be disabled for security)
+  if [ -r /proc/sys/kernel/unprivileged_bpf_disabled ]; then
+    bpf=$(cat /proc/sys/kernel/unprivileged_bpf_disabled 2>/dev/null || printf '0')
+    if [ "$bpf" -eq 1 ]; then
+      ward_pass "Unprivileged BPF is disabled"
+      msg="Disabling unprivileged BPF prevents exploitation via eBPF."
+      ward_desc "$msg" 0
+    else
+      ward_fail "Unprivileged BPF is enabled"
+      msg="eBPF can be used for attacks. Disable with: "
+      msg="${msg}sysctl -w kernel.unprivileged_bpf_disabled=1"
+      ward_desc "$msg" 1
+      if ward_ask_fix "Disable unprivileged BPF? (recommended)"; then
+        printf 'Disable unprivileged BPF:\n'
+        printf '  sudo sysctl -w kernel.unprivileged_bpf_disabled=1\n'
+        printf 'Make permanent in /etc/sysctl.conf:\n'
+        printf '  kernel.unprivileged_bpf_disabled=1\n'
+      fi
+    fi
+  fi
+  
+  # Check for mail aliases that could be exploited
+  if [ -r /etc/aliases ]; then
+    dangerous_aliases=$(grep -E "^(decode|uudecode):" /etc/aliases 2>/dev/null || printf '')
+    if [ -n "$dangerous_aliases" ]; then
+      ward_fail "Dangerous mail aliases found in /etc/aliases"
+      msg="decode and uudecode aliases can be exploited. Remove them."
+      ward_desc "$msg" 1
+    else
+      ward_pass "No obvious dangerous mail aliases found"
+      ward_desc "Mail aliases file appears safe." "$verbose"
+    fi
+  fi
+  
+  # Check /etc/securetty (restricts root login locations)
+  if [ -r /etc/securetty ]; then
+    ward_pass "/etc/securetty exists"
+    msg="/etc/securetty restricts where root can login from. "
+    msg="${msg}Verify it's properly configured."
+    ward_desc "$msg" "$verbose"
+  fi
+  
+  # Check for nodev on /home (if separate partition)
+  if has mount; then
+    home_mount=$(mount | grep " /home " 2>/dev/null || printf '')
+    if [ -n "$home_mount" ]; then
+      if printf '%s' "$home_mount" | grep -q "nodev"; then
+        ward_pass "/home is mounted with nodev option"
+        msg="nodev on /home prevents device file creation."
+        ward_desc "$msg" 0
+      else
+        ward_fail "/home is not mounted with nodev option"
+        msg="/home should be mounted with nodev for security. "
+        msg="${msg}Add to /etc/fstab"
+        ward_desc "$msg" 1
+      fi
     fi
   fi
   
