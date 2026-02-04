@@ -153,11 +153,11 @@ y|Y)
                         printf 'Check logs with: show-tor-log\n' >&2
                 fi
                 
-                # Wait for tor to generate the hidden service (up to 30 seconds)
-                hostname_file="${mud_dir}hostname"
+                # Wait for tor to generate the hidden service (up to 15 seconds)
+                hostname_file="${mud_dir}/hostname"
                 printf 'Waiting for tor to generate .onion address...\n'
                 wait_count=0
-                while [ $wait_count -lt 30 ]; do
+                while [ $wait_count -lt 15 ]; do
                         if [ -f "$hostname_file" ]; then
                                 printf 'Hostname file created.\n'
                                 break
