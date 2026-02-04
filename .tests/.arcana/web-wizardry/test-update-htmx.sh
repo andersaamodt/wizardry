@@ -1,0 +1,14 @@
+#!/bin/sh
+test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
+  test_root=$(dirname "$test_root")
+done
+. "$test_root/spells/.imps/test/test-bootstrap"
+
+test_update_htmx_help() {
+  run_spell "spells/.arcana/web-wizardry/update-htmx" --help
+  assert_success && assert_output_contains "update"
+}
+
+run_test_case "update-htmx shows help" test_update_htmx_help
+finish_tests
