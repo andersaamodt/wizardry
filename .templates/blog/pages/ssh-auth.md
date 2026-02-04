@@ -2,30 +2,53 @@
 title: SSH + WebAuthn Authentication Demo
 ---
 
-# SSH + WebAuthn Authentication Demo
+# SSH + WebAuthn Authentication
 
-This page demonstrates a novel authentication system that combines SSH public keys with WebAuthn for passwordless, phishing-resistant authentication.
-
-## Architecture Overview
-
-- **SSH Public Key Fingerprint**: Root identity (never used directly for web login)
-- **WebAuthn Credentials**: Delegates bound to the SSH fingerprint
-- **Login Flow**: WebAuthn-only authentication; SSH keys only for initial binding
-- **Revocation**: WebAuthn delegates can be revoked without changing SSH identity
+This system integrates with the MUD player system to provide passwordless authentication for the blog using your existing SSH keys.
 
 ## How It Works
 
-1. **Registration**: User supplies SSH public key once; server stores canonical fingerprint
-2. **Binding**: Server issues a binding challenge explicitly naming the SSH fingerprint
-3. **Credential Creation**: Browser creates WebAuthn credential in response to binding challenge
-4. **Storage**: Server stores WebAuthn credential as delegate bound to SSH fingerprint
-5. **Authentication**: Login uses only WebAuthn assertions
-6. **Resolution**: Server resolves WebAuthn credential → SSH fingerprint → account
+1. **MUD Player Account**: Your MUD player account (created with `add-player` on the server) has an SSH public key
+2. **Registration**: The blog uses your MUD player SSH key fingerprint as your root identity
+3. **WebAuthn Binding**: You create WebAuthn credentials bound to your SSH fingerprint
+4. **Authentication**: Login uses only WebAuthn (no SSH key needed for routine login)
+5. **Admin Access**: Users in the `blog-admin` UNIX group get admin permissions
+
+## Benefits
+
+- **Unified Identity**: Your MUD player account works for website login
+- **Phishing-Resistant**: WebAuthn credentials can't be phished
+- **UNIX Permissions**: Admin access controlled via UNIX groups (`blog-admin`)
+- **Revocable Delegates**: WebAuthn credentials can be revoked without changing SSH identity
+- **Multi-Device**: Multiple WebAuthn credentials per SSH identity
+
+## MUD Integration
+
+If you have a MUD player account on this server, you can use it to login! Just enter your player name below, and the system will automatically use your SSH key from your MUD account.
+
+**For server admins:** To give a user admin access to the blog, add them to the `blog-admin` group:
+```sh
+sudo usermod -aG blog-admin <username>
+```
 
 <div class="demo-box">
-<h2>🔐 Step 1: Register SSH Public Key</h2>
+<h2>🔐 Step 1: Register with MUD Player Account</h2>
 
-<p>First, register your SSH public key to establish your root identity:</p>
+<p><strong>Option A: If you have a MUD player account on this server</strong></p>
+<p style="font-size: 0.9rem; color: #666; margin-bottom: 1rem;">Just enter your player name - the system will automatically use your SSH key!</p>
+
+<div style="margin-bottom: 1rem;">
+<label style="display: block; margin-bottom: 0.5rem;"><strong>MUD Player Name:</strong></label>
+<input type="text" id="reg-username-mud" placeholder="Enter your player name" style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem; margin-bottom: 0.5rem;">
+</div>
+
+<button id="btn-register-mud" style="padding: 0.75rem 1.5rem; font-size: 1rem; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer;">🎮 Register with MUD Account</button>
+
+<div id="output-register-mud" class="output"></div>
+
+<hr style="margin: 2rem 0; border: none; border-top: 1px solid #ddd;">
+
+<p><strong>Option B: Manual SSH key registration (for testing/demo)</strong></p>
 
 <div style="margin-bottom: 1rem;">
 <label style="display: block; margin-bottom: 0.5rem;"><strong>Username:</strong></label>
@@ -83,7 +106,9 @@ This page demonstrates a novel authentication system that combines SSH public ke
   
   const regUsername = document.getElementById('reg-username');
   const regSshKey = document.getElementById('reg-ssh-key');
+  const regUsernameMud = document.getElementById('reg-username-mud');
   const outputRegister = document.getElementById('output-register-ssh');
+  const outputRegisterMud = document.getElementById('output-register-mud');
   const outputBind = document.getElementById('output-bind-webauthn');
   const outputLogin = document.getElementById('output-login');
   const outputDelegates = document.getElementById('output-delegates');
@@ -127,7 +152,52 @@ This page demonstrates a novel authentication system that combines SSH public ke
     `;
   }
   
-  // Step 1: Register SSH Public Key
+  // Step 1A: Register with MUD Player Account
+  document.getElementById('btn-register-mud').addEventListener('click', async () => {
+    const username = regUsernameMud.value.trim();
+    
+    if (!username) {
+      showError(outputRegisterMud, 'Please enter your MUD player name');
+      return;
+    }
+    
+    outputRegisterMud.innerHTML = '<p style="color: #2980b9; margin-top: 1rem;">🔄 Looking up MUD player account...</p>';
+    
+    try {
+      const params = new URLSearchParams({
+        username: username
+      });
+      
+      const response = await fetch('/cgi/ssh-auth-register-mud?' + params.toString());
+      const data = await response.json();
+      
+      if (data.success) {
+        currentUser = data.username;
+        sshFingerprint = data.fingerprint;
+        bindingChallenge = data.challenge;
+        
+        const adminBadge = data.is_admin ? ' <span style="background: #f39c12; color: white; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.8rem;">ADMIN</span>' : '';
+        
+        outputRegisterMud.innerHTML = `
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50; margin-top: 1rem;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ MUD Player Found!${adminBadge}</h4>
+<p style="margin: 0.5rem 0;"><strong>Username:</strong> ${data.username}</p>
+<p style="margin: 0.5rem 0;"><strong>SSH Fingerprint:</strong></p>
+<pre style="margin: 0.5rem 0; padding: 0.5rem; background: #fff; border-radius: 3px; overflow-x: auto; font-family: monospace; font-size: 0.85rem;">${data.fingerprint}</pre>
+<p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666;">
+            🎮 Using SSH key from your MUD account. Now proceed to bind a WebAuthn credential.
+</p>
+</div>
+        `;
+      } else {
+        showError(outputRegisterMud, data.error || 'Registration failed');
+      }
+    } catch (error) {
+      showError(outputRegisterMud, 'Network error: ' + error.message);
+    }
+  });
+  
+  // Step 1B: Register SSH Public Key (Manual)
   document.getElementById('btn-register-ssh').addEventListener('click', async () => {
     const username = regUsername.value.trim();
     const sshKey = regSshKey.value.trim();
@@ -299,16 +369,20 @@ This page demonstrates a novel authentication system that combines SSH public ke
       const data = await response.json();
       
       if (data.success) {
+        // Store session token in localStorage
+        localStorage.setItem('session_token', data.session_token);
+        
         outputLogin.innerHTML = `
 <div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50; margin-top: 1rem;">
 <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ Authentication Successful!</h4>
 <p style="margin: 0.5rem 0;"><strong>Logged in as:</strong> ${data.username}</p>
 <p style="margin: 0.5rem 0;"><strong>SSH Fingerprint:</strong></p>
 <pre style="margin: 0.5rem 0; padding: 0.5rem; background: #fff; border-radius: 3px; overflow-x: auto; font-family: monospace; font-size: 0.85rem;">${data.fingerprint}</pre>
-<p style="margin: 0.5rem 0;"><strong>Session Token:</strong></p>
-<pre style="margin: 0.5rem 0; padding: 0.5rem; background: #fff; border-radius: 3px; overflow-x: auto; font-family: monospace; font-size: 0.85rem;">${data.session_token.substring(0, 40)}...</pre>
 <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666;">
             🎉 Login successful! The server resolved: WebAuthn credential → SSH fingerprint → account
+</p>
+<p style="margin: 1rem 0 0 0;">
+<a href="admin.html" style="display: inline-block; padding: 0.75rem 1.5rem; background: #3498db; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">🎛️ Go to Admin Panel</a>
 </p>
 </div>
         `;

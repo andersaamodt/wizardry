@@ -1,0 +1,51 @@
+#!/bin/sh
+# ssh-auth-check-session - Check if session is valid and get permissions
+
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "application/json"
+http-end-headers
+
+# Parse query parameters
+session_token=$(get-query-param "session_token")
+
+# Validate inputs
+if [ -z "$session_token" ]; then
+  printf '{"success":false,"authenticated":false}\n'
+  exit 0
+fi
+
+# Get data directory
+data_dir=$(get-site-data-dir "ssh-auth")
+sessions_dir="$data_dir/sessions"
+session_file="$sessions_dir/$session_token"
+
+# Check if session exists
+if [ ! -f "$session_file" ]; then
+  printf '{"success":false,"authenticated":false}\n'
+  exit 0
+fi
+
+# Get session data
+username=$(grep -o '"username":"[^"]*"' "$session_file" | cut -d'"' -f4)
+fingerprint=$(grep -o '"fingerprint":"[^"]*"' "$session_file" | cut -d'"' -f4)
+
+if [ -z "$username" ]; then
+  printf '{"success":false,"authenticated":false}\n'
+  exit 0
+fi
+
+# Check if user still exists and get admin status
+is_admin="false"
+user_exists="false"
+if id "$username" >/dev/null 2>&1; then
+  user_exists="true"
+  if id -nG "$username" 2>/dev/null | grep -q "blog-admin"; then
+    is_admin="true"
+  fi
+fi
+
+# Return session info
+printf '{"success":true,"authenticated":true,"username":"%s","fingerprint":"%s","is_admin":%s,"user_exists":%s}\n' \
+  "$username" "$fingerprint" "$is_admin" "$user_exists"
