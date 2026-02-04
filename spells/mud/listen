@@ -160,14 +160,6 @@ fi
 
 export LISTEN_TERM_WIDTH="$_listen_term_width"
 
-# Auto-stop any previous listeners to prevent duplicates
-# This is silent - no message shown (unlike explicit --stop flag)
-if command -v pgrep >/dev/null 2>&1; then
-  pgrep -f 'tail -f.*\.log' 2>/dev/null | while read -r _old_listen_pid; do
-    kill "$_old_listen_pid" 2>/dev/null || true
-  done
-fi
-
 # Start monitoring in background
 # Use tail -f -n 0 to follow the log file from current position (no history)
 {
