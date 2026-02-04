@@ -1,13 +1,13 @@
 #!/bin/sh
 
-# Uninstall htmx JavaScript library.
+# Uninstall htmx and idiomorph JavaScript libraries.
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
 Usage: uninstall-htmx
 
-Removes htmx.min.js from the local directory.
+Removes htmx and idiomorph libraries from the local directory.
 USAGE
   exit 0
   ;;
@@ -18,16 +18,34 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
-# Determine installation directory
-install_dir="${HTMX_DIR:-$HOME/.local/share/htmx}"
+# Shared installation directory for web wizardry JS libraries
+install_dir="${WIZARDRY_WEB_JS_DIR:-$HOME/.local/share/wizardry/web/js}"
 
-if [ ! -f "$install_dir/htmx.min.js" ]; then
-  printf '%s\n' "Htmx is not installed."
+# Also check old location for backward compatibility
+old_install_dir="${HTMX_DIR:-$HOME/.local/share/htmx}"
+
+files_found=0
+
+# Check and remove from new location
+if [ -f "$install_dir/htmx.min.js" ] || [ -f "$install_dir/idiomorph-ext.min.js" ]; then
+  files_found=1
+  step "Uninstalling web libraries..."
+  rm -f "$install_dir/htmx.min.js"
+  rm -f "$install_dir/idiomorph-ext.min.js"
+  rmdir "$install_dir" 2>/dev/null || true
+  rmdir "$(dirname "$install_dir")" 2>/dev/null || true
+fi
+
+# Check and remove from old location
+if [ -f "$old_install_dir/htmx.min.js" ]; then
+  files_found=1
+  rm -f "$old_install_dir/htmx.min.js"
+  rmdir "$old_install_dir" 2>/dev/null || true
+fi
+
+if [ "$files_found" -eq 0 ]; then
+  info "Web libraries are not installed."
   exit 0
 fi
 
-printf '%s\n' "Uninstalling htmx..."
-rm -f "$install_dir/htmx.min.js"
-rmdir "$install_dir" 2>/dev/null || true
-
-printf '%s\n' "Htmx uninstallation complete."
+success "Web libraries uninstalled"

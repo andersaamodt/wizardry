@@ -60,6 +60,21 @@ build_site() {
   # Create build directories
   mkdir -p "$SITE_DIR/build/pages"
   mkdir -p "$SITE_DIR/build/static"
+  mkdir -p "$SITE_DIR/build/static/js"
+  
+  # Ensure web libraries are installed
+  js_lib_dir="${WIZARDRY_WEB_JS_DIR:-$HOME/.local/share/wizardry/web/js}"
+  if [ ! -f "$js_lib_dir/htmx.min.js" ] || [ ! -f "$js_lib_dir/idiomorph-ext.min.js" ]; then
+    info "Web libraries not found, installing..."
+    install-htmx || die "build: failed to install web libraries"
+  fi
+  
+  # Copy web libraries to site's static directory
+  info "Copying web libraries to build/static/js/..."
+  cp "$js_lib_dir/htmx.min.js" "$SITE_DIR/build/static/js/" || \
+    die "build: failed to copy htmx.min.js"
+  cp "$js_lib_dir/idiomorph-ext.min.js" "$SITE_DIR/build/static/js/" || \
+    die "build: failed to copy idiomorph-ext.min.js"
   
   # Copy static files
   if [ -d "$SITE_DIR/site/static" ]; then
@@ -85,11 +100,11 @@ build_site() {
       
       info "  Building: $base_name.md → $base_name.html"
       
-      # Create temporary header file with htmx and idiomorph extension
+      # Create temporary header file with htmx and idiomorph extension (local copies)
       htmx_header=$(temp-file htmx-header)
       cat > "$htmx_header" <<'HTMX_HEADER'
-<script src="https://unpkg.com/htmx.org@1.9.10"></script>
-<script src="https://unpkg.com/idiomorph@0.3.0/dist/idiomorph-ext.min.js"></script>
+<script src="/static/js/htmx.min.js"></script>
+<script src="/static/js/idiomorph-ext.min.js"></script>
 HTMX_HEADER
       
       # Check for includes directory

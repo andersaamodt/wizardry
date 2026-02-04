@@ -26,8 +26,11 @@ case "$component" in
     command -v "$component" >/dev/null 2>&1
     ;;
   htmx)
-    htmx_dir="${HTMX_DIR:-$HOME/.local/share/htmx}"
-    [ -f "$htmx_dir/htmx.min.js" ] || \
+    # Check new shared location first, then fall back to old location
+    htmx_new_dir="${WIZARDRY_WEB_JS_DIR:-$HOME/.local/share/wizardry/web/js}"
+    htmx_old_dir="${HTMX_DIR:-$HOME/.local/share/htmx}"
+    [ -f "$htmx_new_dir/htmx.min.js" ] || \
+    [ -f "$htmx_old_dir/htmx.min.js" ] || \
     [ -f /usr/local/share/htmx/htmx.min.js ] || \
     [ -f /usr/share/htmx/htmx.min.js ]
     ;;

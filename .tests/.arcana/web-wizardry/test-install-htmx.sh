@@ -7,7 +7,7 @@ done
 
 test_install_htmx_help() {
   run_spell "spells/.arcana/web-wizardry/install-htmx" --help
-  assert_success && assert_output_contains "certbot"
+  assert_success && assert_output_contains "htmx"
 }
 
 run_test_case "install-htmx shows help" test_install_htmx_help

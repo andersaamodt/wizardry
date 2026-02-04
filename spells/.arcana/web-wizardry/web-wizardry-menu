@@ -103,15 +103,20 @@ while true; do
   fi
   pos=$((pos + 1))
   
-  # Htmx toggle
+  # Htmx toggle (with update submenu when installed)
   if [ "$htmx_was_installed" -eq 1 ]; then
     htmx_toggle="[X] htmx%uninstall-htmx"
     htmx_pos=$pos
+    pos=$((pos + 1))
+    htmx_update="    update htmx%update-htmx"
+    htmx_update_pos=$pos
+    pos=$((pos + 1))
   else
     htmx_toggle="[ ] htmx%install-htmx"
     htmx_pos=$pos
+    pos=$((pos + 1))
+    htmx_update=""
   fi
-  pos=$((pos + 1))
   
   # Certbot/acme.sh toggle (with manage-https submenu when installed)
   if [ "$certbot_was_installed" -eq 1 ]; then
@@ -148,22 +153,14 @@ while true; do
   exit_item="${exit_label}%kill -TERM \$PPID"
   
   # Build menu arguments - handle dynamic submenus
-  if [ -n "$nginx_admin" ] && [ -n "$https_admin" ]; then
-    set -- "$pandoc_toggle" "$nginx_toggle" "$nginx_admin" "$fcgiwrap_toggle" \
-      "$openssl_toggle" "$htmx_toggle" "$certbot_toggle" "$https_admin" \
-      "$toggle_all" "$exit_item"
-  elif [ -n "$nginx_admin" ]; then
-    set -- "$pandoc_toggle" "$nginx_toggle" "$nginx_admin" "$fcgiwrap_toggle" \
-      "$openssl_toggle" "$htmx_toggle" "$certbot_toggle" \
-      "$toggle_all" "$exit_item"
-  elif [ -n "$https_admin" ]; then
-    set -- "$pandoc_toggle" "$nginx_toggle" "$fcgiwrap_toggle" "$openssl_toggle" \
-      "$htmx_toggle" "$certbot_toggle" "$https_admin" \
-      "$toggle_all" "$exit_item"
-  else
-    set -- "$pandoc_toggle" "$nginx_toggle" "$fcgiwrap_toggle" "$openssl_toggle" \
-      "$htmx_toggle" "$certbot_toggle" "$toggle_all" "$exit_item"
-  fi
+  # We need to handle all combinations of nginx_admin, htmx_update, and https_admin
+  set -- "$pandoc_toggle" "$nginx_toggle"
+  [ -n "$nginx_admin" ] && set -- "$@" "$nginx_admin"
+  set -- "$@" "$fcgiwrap_toggle" "$openssl_toggle" "$htmx_toggle"
+  [ -n "$htmx_update" ] && set -- "$@" "$htmx_update"
+  set -- "$@" "$certbot_toggle"
+  [ -n "$https_admin" ] && set -- "$@" "$https_admin"
+  set -- "$@" "$toggle_all" "$exit_item"
   
   menu --start-selection "$start_selection" "Install Web Wizardry:" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
