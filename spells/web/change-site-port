@@ -51,7 +51,7 @@ new_port=${2-}
 if [ -z "$new_port" ]; then
   printf 'Current port: %s\n' "$current_port"
   printf 'Enter new port: '
-  IFS= read -r new_port || exit 1
+  IFS= read -r new_port || die "change-site-port: failed to read port input"
 fi
 
 # Validate port number
@@ -156,6 +156,7 @@ fi
 if [ "$is_serving" -eq 1 ]; then
   step "Restarting nginx..."
   stop-site "$site_name" 2>/dev/null || true
+  # Brief delay to ensure port is fully released
   sleep 1
   serve-site "$site_name"
 fi
