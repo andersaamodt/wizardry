@@ -155,5 +155,4 @@ player_name=${MUD_PLAYER:-${USER:-Someone}}
 timestamp=$(log-timestamp)
 room_log="$PWD/.log"
 log_entry="[$timestamp] $player_name casts magic missile at ${BLUE}$target${RESET}, dealing $damage damage!"
-# Use subshell to force immediate buffer flush for SSE/tail -f visibility
-(printf '%s\n' "$log_entry" >> "$room_log") 2>/dev/null || true
+printf '%s\n' "$log_entry" >> "$room_log" 2>/dev/null || true

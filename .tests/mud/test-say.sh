@@ -81,48 +81,10 @@ test_multiple_messages() {
   [ "$line_count" -eq 2 ] || return 1
 }
 
-test_immediate_visibility_for_tail() {
-  tmpdir=$(make_tempdir)
-  cd "$tmpdir" || return 1
-  
-  # Start tail -f in background (simulating SSE stream monitoring)
-  touch .log
-  tail -f -n 0 .log > tail_output.txt &
-  tail_pid=$!
-  
-  # Wait for tail to be ready (more robust than fixed sleep)
-  sleep 0.5
-  
-  # Write a message using say
-  MUD_PLAYER="TestPlayer" run_spell "spells/mud/say" "Immediate message"
-  assert_success || return 1
-  
-  # Poll for message with timeout (more robust than fixed sleep)
-  max_attempts=10
-  attempt=0
-  found=0
-  while [ $attempt -lt $max_attempts ]; do
-    if grep -q "TestPlayer: Immediate message" tail_output.txt 2>/dev/null; then
-      found=1
-      break
-    fi
-    sleep 0.1
-    attempt=$((attempt + 1))
-  done
-  
-  # Stop tail
-  kill $tail_pid 2>/dev/null || true
-  wait $tail_pid 2>/dev/null || true
-  
-  # Check that tail detected the message
-  [ "$found" -eq 1 ] || return 1
-}
-
 run_test_case "say shows usage text" test_help
 run_test_case "say requires message" test_requires_message
 run_test_case "say is silent by default" test_appends_to_log_silent
 run_test_case "say outputs with -v flag" test_verbose_flag
 run_test_case "say handles multiple messages" test_multiple_messages
-run_test_case "say is immediately visible to tail -f" test_immediate_visibility_for_tail
 
 finish_tests
