@@ -151,66 +151,122 @@ web-wizardry serve myblog
 
 Visit http://localhost:8080
 
-## SSH + WebAuthn Authentication (Optional)
+## MUD Integration & Authentication
 
-The blog template includes an optional authentication demo that combines SSH public keys with WebAuthn for passwordless authentication.
+The blog template integrates with the wizardry MUD player system to provide unified authentication and admin access control.
 
-### Features
+### Key Features
 
-- **SSH Fingerprint as Root Identity**: SSH public key fingerprint serves as the stable identity
-- **WebAuthn Delegates**: Browser credentials bound to the SSH fingerprint
-- **Phishing-Resistant**: WebAuthn provides strong authentication without passwords
-- **Revocable Delegates**: WebAuthn credentials can be revoked without changing SSH identity
-- **Multi-Device Support**: Multiple WebAuthn credentials can bind to one SSH identity
+- **MUD Player Accounts**: Blog uses existing MUD player SSH keys
+- **WebAuthn Authentication**: Passwordless login with biometrics/security keys
+- **UNIX Group Permissions**: Admin access via `blog-admin` group
+- **Admin Panel**: Compose, publish, and manage posts
+- **Markdown Editor**: Live preview for easy writing
+- **Draft Management**: Save work-in-progress, publish when ready
+- **Configurable Registration**: Enable/disable new user registration
 
-### How It Works
+### Quick Start for Admins
 
-1. **Registration**: User supplies SSH public key; server stores fingerprint
-2. **Binding**: Server issues challenge naming the SSH fingerprint
-3. **Credential Creation**: Browser creates WebAuthn credential bound to fingerprint
-4. **Authentication**: Login uses only WebAuthn (SSH key not involved)
-5. **Resolution**: Server resolves `WebAuthn credential → SSH fingerprint → account`
+1. **Create MUD Player** (on server as root):
+   ```sh
+   sudo add-player
+   # Enter player name and SSH public key
+   ```
 
-### Demo Page
+2. **Grant Admin Access**:
+   ```sh
+   sudo groupadd blog-admin  # Create group if needed
+   sudo usermod -aG blog-admin <username>
+   ```
 
-Visit `/ssh-auth.html` on your blog site to see the interactive authentication demo.
+3. **Register on Blog**: Visit `/ssh-auth.html`, enter player name
+
+4. **Access Admin Panel**: Visit `/admin.html` to compose and publish
+
+### For Single-Author Blogs
+
+After creating your account and giving yourself admin access:
+
+1. Login to admin panel
+2. Go to Settings
+3. Uncheck "Enable User Registration"
+4. Save Settings
+
+This prevents new users from registering while keeping your access.
+
+### Admin Capabilities
+
+- **Compose Posts**: Markdown editor with live preview
+- **Publish**: Make posts public instantly
+- **Save Drafts**: Work on posts before publishing
+- **Manage Settings**: Site title, registration toggle
+- **View Drafts**: See all unpublished posts
+
+### Authentication Flow
+
+```
+MUD Player (UNIX user with SSH key)
+    ↓
+Register on blog (uses SSH fingerprint)
+    ↓
+Create WebAuthn credential (biometric, security key)
+    ↓
+Login with WebAuthn (no SSH needed)
+    ↓
+Access admin panel (if in blog-admin group)
+```
+
+### Demo Pages
+
+- `/ssh-auth.html` - Authentication and registration
+- `/admin.html` - Admin panel (requires admin permissions)
 
 ### CGI Scripts
 
-The following CGI scripts power the SSH+WebAuthn authentication:
+**Authentication:**
+- `ssh-auth-register-mud` - Register using MUD player account
+- `ssh-auth-register` - Manual SSH key registration (demo/testing)
+- `ssh-auth-bind-webauthn` - Bind WebAuthn credential to SSH fingerprint
+- `ssh-auth-login` - Authenticate using WebAuthn credential
+- `ssh-auth-check-session` - Validate session and permissions
+- `ssh-auth-list-delegates` - List all WebAuthn delegates
+- `ssh-auth-revoke-delegate` - Revoke a WebAuthn delegate
 
-- `ssh-auth-register`: Register SSH public key and get binding challenge
-- `ssh-auth-bind-webauthn`: Bind WebAuthn credential to SSH fingerprint
-- `ssh-auth-login`: Authenticate using WebAuthn credential
-- `ssh-auth-list-delegates`: List all WebAuthn delegates for a user
-- `ssh-auth-revoke-delegate`: Revoke a specific WebAuthn delegate
+**Blog Management (Admin Only):**
+- `blog-get-config` - Get site configuration
+- `blog-update-config` - Update site settings
+- `blog-list-drafts` - List draft posts
+- `blog-save-post` - Save or publish posts
 
 ### Data Storage
 
-Authentication data is stored in the site data directory:
-
 ```
-~/sites/myblog/data/ssh-auth/
-├── users/
-│   └── username/
-│       ├── ssh_public_key        # Original SSH public key
-│       ├── ssh_fingerprint       # SHA-256 fingerprint (root identity)
-│       ├── challenge             # Current binding challenge
-│       └── delegates/            # WebAuthn credentials
-│           └── delegate_id       # Each delegate (revocable)
-└── sessions/
-    └── session_token             # Active login sessions
+~/sites/myblog/
+├── site.conf                  # Site configuration
+├── data/
+│   └── ssh-auth/
+│       ├── users/
+│       │   └── alice/
+│       │       ├── ssh_fingerprint
+│       │       ├── is_admin
+│       │       └── delegates/
+│       └── sessions/
+└── site/
+    └── pages/
+        └── posts/
+            ├── 2024-02-04-my-post.md  # Published
+            └── 2024-02-04-draft.md    # Draft
 ```
 
-### Security Notes
+### Security Model
 
-- This is a demonstration implementation
-- Production use would require:
-  - Server-side WebAuthn signature verification
-  - Proper CBOR decoding of credential data
-  - Session management with expiration
-  - CSRF protection
-  - HTTPS (required for WebAuthn)
+- **Root Identity**: SSH public key fingerprint (never changes)
+- **Delegates**: WebAuthn credentials (revocable, multi-device)
+- **Permissions**: UNIX group membership (`blog-admin`)
+- **Session Validation**: Every admin action checks permissions
+- **Phishing-Resistant**: WebAuthn bound to domain
+
+See `.github/MUD_BLOG_INTEGRATION.md` for complete documentation.
 
 ## Design Principles
 
