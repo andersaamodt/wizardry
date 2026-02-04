@@ -114,7 +114,7 @@ while true; do
       site_hostname_file="$site_hostname_dir/hostname"
       copy_cmd="clip-copy \"\$(sudo cat \"$site_hostname_file\" 2>/dev/null"
       copy_cmd="$copy_cmd || cat \"$site_hostname_file\")\""
-      copy_site_onion="Copy .onion address%$copy_cmd; echo 3 > \"$SELECTION_FILE\""
+      copy_site_onion="Copy .onion address%$copy_cmd"
     fi
   fi
   
