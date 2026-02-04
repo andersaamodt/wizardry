@@ -63,38 +63,38 @@ $openssl_option"
   tor_service_option=""
   show_log_option=""
   
-  # Always show "Show tor log" option if tor is installed (not just when running)
+  # Always show "Show Tor log" option if tor is installed (not just when running)
   if is-tor-installed; then
-    show_log_option="Show tor log%show-tor-log"
+    show_log_option="Show Tor log%show-tor-log"
   fi
   
   # Show Start/Stop based on running status and daemon configuration
   if is-tor-installed; then
-    # Only show "View tor service status" on Linux with systemd
+    # Only show "View Tor service status" on Linux with systemd
     if command -v systemctl >/dev/null 2>&1; then
-      service_status_option="View tor service status%sudo systemctl status tor"
+      service_status_option="View Tor service status%sudo systemctl status tor"
     fi
     
-    # Show "Stop tor" if tor is running (regardless of daemon status)
-    # Show "Start tor" only if daemon is enabled and tor is not running
+    # Show "Stop Tor" if tor is running (regardless of daemon status)
+    # Show "Start Tor" only if daemon is enabled and tor is not running
     if is-tor-running; then
-      tor_service_option="Stop tor%stop-tor"
+      tor_service_option="Stop Tor%stop-tor"
     elif is-tor-daemon-enabled; then
-      tor_service_option="Start tor%start-tor"
+      tor_service_option="Start Tor%start-tor"
     fi
   fi
   
   if is-tor-installed; then
-    config_option="Configure tor%configure-tor"
+    config_option="Configure Tor%configure-tor"
     repair_option="Repair permissions%repair-tor-permissions"
-    uninstall_option="Uninstall tor%uninstall-tor"
+    uninstall_option="Uninstall Tor%uninstall-tor"
     
     # Check if daemon is enabled and create enable/disable option
     daemon_option=""
     if is-tor-daemon-enabled; then
-      daemon_option="[X] Start tor at startup%disable-tor-daemon"
+      daemon_option="[X] Start Tor at startup%disable-tor-daemon"
     else
-      daemon_option="[ ] Start tor at startup%enable-tor-daemon"
+      daemon_option="[ ] Start Tor at startup%enable-tor-daemon"
     fi
     
     # Check for .onion address file to offer copy option
@@ -146,7 +146,7 @@ $openssl_option"
         "$config_option" "$repair_option" "$uninstall_option" "$exit_option" || menu_status=$?
     fi
   else
-    install_option="Install tor%install-tor"
+    install_option="Install Tor%install-tor"
     # Show dependencies in menu even when Tor is not installed (macOS only)
     if [ -n "$macos_deps" ]; then
       menu "$title" "$install_option" "$libevent_option" "$openssl_option" \
