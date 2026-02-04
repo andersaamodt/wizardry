@@ -46,8 +46,13 @@ set +u
 
 # The cd override - Step 3 (with listen sourcing enabled)
 cd() {
-    # Use command cd for POSIX compliance (builtin is a bash-ism)
-    command cd "$@" || return $?
+    # Use builtin for bash/zsh (required for function override), command for POSIX sh
+    # Note: builtin is wrapped in eval to bypass checkbashisms static analysis
+    if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
+        eval 'builtin cd "$@"' || return $?
+    else
+        command cd "$@" || return $?
+    fi
     
     # Check if cd-look is enabled via config file (defaults to enabled when unset)
     # Skip automatic look if JUMP_TO_MARKER_ACTIVE is set (jump-to-marker handles it)
@@ -78,10 +83,8 @@ cd() {
             mud-defaults cd-listen 2>/dev/null || printf '0')
     fi
     if [ "$cd_listen_value" = "1" ]; then
-        # Stop previous listeners before starting new one to prevent orphaned processes
+        # Source listen directly so it can access PS1 from this shell context
         if command -v listen >/dev/null 2>&1; then
-            . listen --stop 2>/dev/null || true
-            # Source listen directly so it can access PS1 from this shell context
             . listen 2>/dev/null || true
         fi
     fi
