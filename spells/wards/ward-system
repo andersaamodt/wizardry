@@ -86,6 +86,7 @@ done
 total_checks=0
 passed_checks=0
 failed_checks=0
+fixed_checks=0
 
 ward_pass() {
   printf '%s✓%s %s\n' "${GREEN}" "${RESET}" "$1"
@@ -114,6 +115,13 @@ ward_ask_fix() {
     return 1
   fi
   ask-yn "$1" no
+}
+
+# Call this after a successful fix to update counters
+ward_mark_fixed() {
+  failed_checks=$((failed_checks - 1))
+  passed_checks=$((passed_checks + 1))
+  fixed_checks=$((fixed_checks + 1))
 }
 
 # Level 1: Recommended security checks
@@ -181,7 +189,10 @@ check_level_1() {
         msg="${msg}so only the owner can access it. Current permissions: $ssh_perms"
         ward_desc "$msg" 1
         if ward_ask_fix "Fix SSH directory permissions to 700? (recommended)"; then
-          wizard-cast chmod 700 "$ssh_dir" && success "Fixed ~/.ssh permissions to 700"
+          if wizard-cast chmod 700 "$ssh_dir"; then
+            success "Fixed ~/.ssh permissions to 700"
+            ward_mark_fixed
+          fi
         fi
         ;;
     esac
@@ -210,7 +221,10 @@ check_level_1() {
             msg="${msg}to prevent unauthorized use."
             ward_desc "$msg" 1
             if ward_ask_fix "Fix permissions for $key_name?"; then
-              wizard-cast chmod 600 "$key" && success "Fixed permissions for $key_name"
+              if wizard-cast chmod 600 "$key"; then
+                success "Fixed permissions for $key_name"
+                ward_mark_fixed
+              fi
             fi
             # Mark that we've shown a message (don't show success after failures)
             key_check_shown=1
@@ -236,7 +250,10 @@ check_level_1() {
       msg="${msg}Current permissions may allow unauthorized access."
       ward_desc "$msg" 1
       if ward_ask_fix "Fix home directory permissions to 700 (completely private)?"; then
-        wizard-cast chmod 700 "$HOME" && success "Set home directory permissions to 700 (private)"
+        if wizard-cast chmod 700 "$HOME"; then
+          success "Set home directory permissions to 700 (private)"
+          ward_mark_fixed
+        fi
       fi
       ;;
   esac
@@ -258,7 +275,10 @@ check_level_1() {
           msg="${msg}They should have permissions 600 (readable/writable only by owner)."
           ward_desc "$msg" 1
           if ward_ask_fix "Fix shell history file permissions?"; then
-            wizard-cast chmod 600 "$history_file" && success "Fixed $history_file permissions to 600"
+            if wizard-cast chmod 600 "$history_file"; then
+              success "Fixed $history_file permissions to 600"
+              ward_mark_fixed
+            fi
           fi
           break
           ;;
@@ -282,6 +302,7 @@ check_level_1() {
       if ward_ask_fix "Set sticky bit on /tmp? (requires root)"; then
         if wizard-cast sudo chmod +t /tmp; then
           success "Set sticky bit on /tmp"
+          ward_mark_fixed
         else
           warn "Failed to set sticky bit on /tmp - may need manual intervention"
         fi
@@ -303,7 +324,10 @@ check_level_1() {
         msg="${msg}permissions 600 to prevent unauthorized access."
         ward_desc "$msg" 1
         if ward_ask_fix "Fix .netrc permissions?"; then
-          wizard-cast chmod 600 "$HOME/.netrc" && success "Fixed .netrc permissions to 600"
+          if wizard-cast chmod 600 "$HOME/.netrc"; then
+            success "Fixed .netrc permissions to 600"
+            ward_mark_fixed
+          fi
         fi
         ;;
     esac
@@ -609,32 +633,6 @@ check_level_2() {
     fi
   done
   
-  # Check for SSH keys
-  has_ssh_key=0
-  for key_type in id_rsa id_ed25519 id_ecdsa; do
-    if [ -f "${HOME}/.ssh/${key_type}" ]; then
-      has_ssh_key=1
-      ward_pass "SSH key exists: $key_type"
-      ward_desc "SSH keys enable secure, password-less authentication." 0
-      break
-    fi
-  done
-  
-  if [ "$has_ssh_key" -eq 0 ]; then
-    ward_fail "No SSH keys found"
-    msg="SSH keys provide secure authentication without passwords. "
-    msg="${msg}Generate keys with: ssh-keygen -t ed25519"
-    ward_desc "$msg" 1
-    if ward_ask_fix "Generate an Ed25519 SSH key now?"; then
-      if command -v ssh-keygen >/dev/null 2>&1; then
-        printf 'Generating Ed25519 SSH key...\n'
-        wizard-cast ssh-keygen -t ed25519 -C "$(whoami)@$(hostname)" && success "SSH key generated successfully"
-      else
-        warn "ssh-keygen not found - cannot generate key"
-      fi
-    fi
-  fi
-  
   # Check sudo configuration
   if [ -r /etc/sudoers ] || [ -d /etc/sudoers.d ]; then
     ward_pass "Sudo configuration files exist"
@@ -645,28 +643,36 @@ check_level_2() {
   
   # Check for password in shell history
   if has grep; then
+    found_passwords=0
     for history_file in "$HOME/.bash_history" "$HOME/.zsh_history" \
                          "$HOME/.sh_history" "$HOME/.history"; do
       if [ -f "$history_file" ]; then
         # Look for common password-related patterns
         if grep -qi "password\|passwd\|pwd" "$history_file" 2>/dev/null | head -1 >/dev/null; then
-          ward_fail "Possible passwords found in shell history"
-          msg="Shell history contains password-related commands. "
-          msg="${msg}Never include passwords in command-line arguments. "
-          msg="${msg}Consider clearing sensitive history entries."
-          ward_desc "$msg" 1
-          if ward_ask_fix "Open history file in editor to remove sensitive entries?"; then
-            editor="${EDITOR:-vi}"
-            if command -v "$editor" >/dev/null 2>&1; then
-              "$editor" "$history_file" && success "History file editing complete"
-            else
-              warn "Editor not found - please manually edit: $history_file"
-            fi
-          fi
+          found_passwords=1
           break
         fi
       fi
     done
+    
+    if [ "$found_passwords" -eq 1 ]; then
+      ward_fail "Possible passwords found in shell history"
+      msg="Shell history contains password-related commands. "
+      msg="${msg}Never include passwords in command-line arguments. "
+      msg="${msg}Clear history to remove sensitive data."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Clear shell history files to remove sensitive data?"; then
+        for history_file in "$HOME/.bash_history" "$HOME/.zsh_history" \
+                             "$HOME/.sh_history" "$HOME/.history"; do
+          if [ -f "$history_file" ]; then
+            if wizard-cast cat /dev/null ">" "$history_file"; then
+              success "Cleared $history_file"
+            fi
+          fi
+        done
+        ward_mark_fixed
+      fi
+    fi
   fi
   
   # Check for unattended-upgrades (Linux only)
@@ -1876,32 +1882,28 @@ if [ "$run_all" -eq 1 ]; then
   check_level_1
   check_level_2
   check_level_3
-  printf '\n'
-  success "System ward check complete for all levels"
+  level_text="all"
 else
   case "$level" in
     1)
       check_level_1
+      level_text="1"
       ;;
     2)
       check_level_2
+      level_text="2"
       ;;
     3)
       check_level_3
+      level_text="3"
       ;;
   esac
-  printf '\n'
-  success "System ward check complete at level $level"
 fi
 
 # Print summary
-printf '\n%s=== Security Check Summary ===%s\n' "${BOLD}" "${RESET}"
-printf 'Total checks: %d\n' "$total_checks"
-printf '%s✓%s Passed: %d\n' "${GREEN}" "${RESET}" "$passed_checks"
-printf '%s✗%s Failed: %d\n' "${RED}" "${RESET}" "$failed_checks"
-
-if [ "$failed_checks" -gt 0 ]; then
-  printf '\n%sRecommendation:%s Review and address the failed checks above.\n' \
-         "${YELLOW}" "${RESET}"
-  printf 'Re-run ward-system after making changes to verify fixes.\n'
+printf '\nCast level %s system wards\n' "$level_text"
+if [ "$fixed_checks" -gt 0 ]; then
+  printf '%d passed, %d fixed, %d failed\n' "$passed_checks" "$fixed_checks" "$failed_checks"
+else
+  printf '%d passed, %d failed\n' "$passed_checks" "$failed_checks"
 fi
