@@ -26,10 +26,9 @@ if [ "$wizard_mode" = "1" ]; then
                 # shellcheck disable=SC1091
                 . colors
         else
-                GREY=''
+                LIGHT_BLUE=''
                 RESET=''
-                THEME_MUTED=''
         fi
         
-        printf '    %s%s%s\n' "${THEME_MUTED:-$GREY}" "$*" "$RESET"
+        printf '    %s%s%s\n' "$LIGHT_BLUE" "$*" "$RESET"
 fi
