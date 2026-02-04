@@ -129,6 +129,7 @@ while true; do
       "Stop Server%stop-site \"$site_name\"" \
       ${copy_site_onion:+"$copy_site_onion"} \
       ${tor_hosting_option:+"$tor_hosting_option"} \
+      "Change port (current: $port)%change-site-port \"$site_name\"" \
       "Update from template%update-from-template \"$site_name\"" \
       "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
       "Fix permissions%[ -d \"$SITE_DIR/build\" ] && find \"$SITE_DIR/build\" -type d -exec chmod 755 {} \\; && find \"$SITE_DIR/build\" -type f -exec chmod 644 {} \\; && printf 'Permissions fixed\\n' || printf 'No build directory found\\n'" \
@@ -144,6 +145,7 @@ while true; do
       "Serve site%serve-site \"$site_name\"" \
       ${copy_site_onion:+"$copy_site_onion"} \
       ${tor_hosting_option:+"$tor_hosting_option"} \
+      "Change port (current: $port)%change-site-port \"$site_name\"" \
       "Update from template%update-from-template \"$site_name\"" \
       "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
       "Fix permissions%[ -d \"$SITE_DIR/build\" ] && find \"$SITE_DIR/build\" -type d -exec chmod 755 {} \\; && find \"$SITE_DIR/build\" -type f -exec chmod 644 {} \\; && printf 'Permissions fixed\\n' || printf 'No build directory found\\n'" \
