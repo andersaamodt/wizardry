@@ -52,8 +52,8 @@ fi
 
 # Display important information and confirmation
 printf '\n'
-printf '%s%sIMPORTANT: HTTPS Setup Requirements%s\n' "$BOLD" "$YELLOW" "$RESET"
-printf '%s─────────────────────────────────────%s\n' "$YELLOW" "$RESET"
+printf '%s%sHTTPS Setup Requirements%s\n' "$BOLD" "$GREEN" "$RESET"
+printf '%s────────────────────────%s\n' "$GREEN" "$RESET"
 printf '\n'
 printf 'HTTPS with Let'\''s Encrypt requires:\n'
 printf '\n'
