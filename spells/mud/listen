@@ -58,6 +58,14 @@ fi
 _listen_is_sourced=$_listen_sourced
 unset _listen_sourced _listen_base
 
+# Enforce uncastable pattern - listen MUST be sourced
+if [ "$_listen_is_sourced" -eq 0 ]; then
+  printf '%s\n' "listen: This spell must be sourced, not executed directly" >&2
+  printf '%s\n' "Usage: . listen" >&2
+  printf '%s\n' "       source listen" >&2
+  exit 1
+fi
+
 # Save readline editing mode to prevent breakage (when tools are available)
 if command -v grep >/dev/null 2>&1 && command -v awk >/dev/null 2>&1; then
   _listen_set_output=$(set -o 2>/dev/null || true)
@@ -89,11 +97,17 @@ if command -v env-clear >/dev/null 2>&1; then
 fi
 
 # Get room path
-# CRITICAL: When sourced from cd hook, $1 contains cd's argument (like "sites"), not absolute path
-# So when sourced, always use $PWD. When executed directly, allow explicit directory argument.
+# CRITICAL: When sourced from cd hook with no args, use $PWD (not cd's inherited $1)
+# But when sourced explicitly with an argument, allow that argument
 if [ "$_listen_is_sourced" -eq 1 ]; then
-  _listen_room_path="$PWD"
+  # When sourced, $1 might be inherited from parent function (cd)
+  # Only use $1 if it looks like an absolute path, otherwise use $PWD
+  case "${1-}" in
+    /*) _listen_room_path="$1" ;;  # Absolute path - use it
+    *)  _listen_room_path="$PWD" ;;  # Relative or empty - use $PWD
+  esac
 else
+  # When executed directly (shouldn't happen due to uncastable, but just in case)
   _listen_room_path=${1:-$PWD}
 fi
 
@@ -107,10 +121,8 @@ if [ "$_listen_stop_only" = "1" ]; then
     done
   fi
   
-  # Only show message when executed directly, not when sourced by cd hook
-  if [ "$_listen_is_sourced" -eq 0 ]; then
-    printf '%s\n' "✓ Stopped listening to room activity"
-  fi
+  # Always show message when stopping (user explicitly requested it)
+  printf '%s\n' "✓ Stopped listening to room activity"
   
   # When sourced (e.g., by cd hook), guarantee permissive mode instead of restoring
   # Restoring saved opts can re-enable strict modes that break readline
