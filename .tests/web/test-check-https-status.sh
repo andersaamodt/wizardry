@@ -18,7 +18,7 @@ test_check_https_status_not_configured() {
   
   # Set up test environment
   test_web_root=$(temp-dir web-wizardry-test)
-  export WEB_WIZARDRY_ROOT="$test_web_root"
+  export WIZARDRY_SITES_DIR="$test_web_root"
   
   # Create a test site directory
   mkdir -p "$test_web_root/mytestsite"
@@ -37,7 +37,7 @@ test_check_https_status_configured() {
   
   # Set up test environment
   test_web_root=$(temp-dir web-wizardry-test)
-  export WEB_WIZARDRY_ROOT="$test_web_root"
+  export WIZARDRY_SITES_DIR="$test_web_root"
   
   # Create a test site directory
   mkdir -p "$test_web_root/mytestsite"

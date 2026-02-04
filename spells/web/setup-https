@@ -28,14 +28,14 @@ esac
 set -eu
 . env-clear
 . colors
+. declare-globals
 
 site_name=${1-}
 if [ -z "$site_name" ]; then
   die 2 "setup-https: SITENAME required"
 fi
 
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
-SITES_DIR="$WEB_ROOT"
+SITES_DIR="$WIZARDRY_SITES_DIR"
 SITE_DIR="$SITES_DIR/$site_name"
 
 if [ ! -d "$SITE_DIR" ]; then
