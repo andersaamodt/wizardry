@@ -2,6 +2,10 @@
 
 # Ward the system against common security vulnerabilities.
 # Checks security configurations at three levels: recommended, advanced, and expert.
+#
+# NOTE: ward-system uses its own 3-level system (1-3) which is independent
+# from wizardry's general spell-levels system. These levels represent
+# security check severity, not spell complexity.
 
 case "${1-}" in
 --help|--usage|-h)
@@ -9,6 +13,10 @@ case "${1-}" in
 Usage: ward-system [LEVEL] [OPTIONS]
 
 Check and fix system security issues at different threat levels.
+Supports Linux and macOS systems.
+
+NOTE: ward-system levels (1-3) are independent from wizardry's spell-levels.
+      These represent security check severity, not spell complexity.
 
 Arguments:
   LEVEL                 Security level to check (1-3, default: 1)
