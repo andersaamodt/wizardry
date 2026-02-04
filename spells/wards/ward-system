@@ -507,6 +507,45 @@ check_level_1() {
       fi
     fi
   fi
+  
+  # Check /etc/shadow permissions (critical system file)
+  if [ -r /etc/shadow ]; then
+    shadow_perms=$(ls -l /etc/shadow 2>/dev/null | awk '{print $1}')
+    if printf '%s' "$shadow_perms" | grep -qE '^-r--------' || \
+       printf '%s' "$shadow_perms" | grep -qE '^-rw-------'; then
+      ward_pass "/etc/shadow has secure permissions"
+      msg="Password hashes file has correct restrictive permissions."
+      ward_desc "$msg" "$verbose"
+    else
+      ward_fail "/etc/shadow has insecure permissions: $shadow_perms"
+      msg="WHAT THIS IS: /etc/shadow stores encrypted password hashes for all user accounts. "
+      msg="${msg}WHY IT MATTERS: If this file is readable by non-root users, attackers can copy the password "
+      msg="${msg}hashes and attempt to crack them offline using tools like John the Ripper or hashcat. "
+      msg="${msg}Even with modern hashing algorithms, weak passwords can be cracked. "
+      msg="${msg}HOW TO DECIDE: This file must have permissions 640 or 600 (readable only by root). "
+      msg="${msg}This is a critical security issue requiring immediate attention."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Fix /etc/shadow permissions? (requires root, strongly recommended)"; then
+        printf 'Fix /etc/shadow permissions (requires root):\n'
+        printf '  sudo chmod 640 /etc/shadow\n'
+        printf '  sudo chown root:shadow /etc/shadow\n'
+      fi
+    fi
+  fi
+  
+  # Check for world-writable files in home directory
+  world_writable=$(find "$HOME" -type f -perm -002 2>/dev/null | head -5)
+  if [ -n "$world_writable" ]; then
+    count=$(printf '%s\n' "$world_writable" | wc -l)
+    ward_fail "Found $count world-writable files in home directory"
+    msg="WHAT THIS IS: World-writable files (permission bit 002) can be modified by any user on the system. "
+    msg="${msg}WHY IT MATTERS: Any user could modify these files to inject malicious code, alter data, or "
+    msg="${msg}cause application malfunctions. This is particularly dangerous for scripts and configuration files. "
+    msg="${msg}HOW TO DECIDE: Remove world-write permission from files. Use 'chmod o-w filename' to fix individual "
+    msg="${msg}files, or 'chmod o-w \$(find \$HOME -type f -perm -002)' to fix all at once."
+    ward_desc "$msg" 1
+    printf 'First few world-writable files:\n%s\n' "$world_writable"
+  fi
 }
 
 # Level 2: Advanced security checks
@@ -996,6 +1035,73 @@ check_level_2() {
   if [ "$browser_profiles_found" -eq 0 ]; then
     ward_pass "No browser profiles found (or browsers not installed)"
     ward_desc "Browser security check skipped - no common browsers detected." "$verbose"
+  fi
+  
+  # Check EDITOR and VISUAL environment variables
+  for env_var in EDITOR VISUAL; do
+    env_val=$(eval "printf '%s' \"\${${env_var}-}\"")
+    if [ -n "$env_val" ]; then
+      # Check if it points to a writable location
+      if has "$env_val" 2>/dev/null; then
+        editor_path=$(command -v "$env_val" 2>/dev/null || printf '')
+        if [ -n "$editor_path" ] && [ -w "$editor_path" ]; then
+          ward_fail "$env_var points to writable executable: $editor_path"
+          msg="WHAT THIS IS: The $env_var environment variable specifies which text editor programs use. "
+          msg="${msg}WHY IT MATTERS: If an attacker can modify the editor executable, they can inject code that "
+          msg="${msg}runs whenever you edit files (especially with sudo/root privileges). Programs like visudo, "
+          msg="${msg}crontab -e, and git rely on this variable. "
+          msg="${msg}HOW TO DECIDE: Ensure your editor points to a system location that only root can modify, "
+          msg="${msg}such as /usr/bin/vi or /usr/bin/nano."
+          ward_desc "$msg" 1
+          break
+        fi
+      fi
+    fi
+  done
+  
+  # Check for SSH key types (warn about weak algorithms)
+  if [ -d "$HOME/.ssh" ]; then
+    weak_keys_found=0
+    for key in "$HOME/.ssh"/id_dsa* "$HOME/.ssh"/*_dsa; do
+      if [ -f "$key" ] && ! printf '%s\n' "$key" | grep -q '\.pub$'; then
+        if [ "$weak_keys_found" -eq 0 ]; then
+          ward_fail "Weak SSH key algorithm detected (DSA)"
+          msg="WHAT THIS IS: DSA (Digital Signature Algorithm) SSH keys use an outdated cryptographic algorithm. "
+          msg="${msg}WHY IT MATTERS: DSA keys are limited to 1024 bits, which is now considered insecure. Modern "
+          msg="${msg}attacks can potentially compromise these keys. DSA support is deprecated in newer SSH versions. "
+          msg="${msg}HOW TO DECIDE: Generate new keys using Ed25519 (recommended) or RSA 4096-bit. Update your "
+          msg="${msg}authorized_keys on remote servers, then delete the old DSA keys."
+          ward_desc "$msg" 1
+          if ward_ask_fix "See how to generate secure SSH keys?"; then
+            printf 'Generate modern SSH keys:\n'
+            printf '  ssh-keygen -t ed25519 -C "your_email@example.com"  # Recommended\n'
+            printf '  ssh-keygen -t rsa -b 4096 -C "your_email@example.com"  # Alternative\n'
+            printf '\nThen update authorized_keys on servers and remove old DSA keys.\n'
+          fi
+          weak_keys_found=1
+        fi
+        break
+      fi
+    done
+  fi
+  
+  # Check shell history size limits
+  histsize="${HISTSIZE-}"
+  histfilesize="${HISTFILESIZE-}"
+  if [ -n "$histsize" ] && [ "$histsize" -gt 10000 ] 2>/dev/null; then
+    ward_fail "Very large shell history size: HISTSIZE=$histsize"
+    msg="WHAT THIS IS: HISTSIZE controls how many commands are kept in memory during your shell session. "
+    msg="${msg}WHY IT MATTERS: Extremely large history sizes consume memory and may preserve sensitive "
+    msg="${msg}information (passwords, API keys) that you accidentally typed. Attackers gaining access to "
+    msg="${msg}your account could mine your history for credentials. "
+    msg="${msg}HOW TO DECIDE: Set HISTSIZE to a reasonable value like 1000-5000 commands. Set HISTFILESIZE "
+    msg="${msg}similarly to limit on-disk history."
+    ward_desc "$msg" 1
+    if ward_ask_fix "See how to set reasonable history limits?"; then
+      printf 'Add to your shell profile (~/.bashrc, ~/.zshrc):\n'
+      printf '  export HISTSIZE=5000\n'
+      printf '  export HISTFILESIZE=5000\n'
+    fi
   fi
 }
 
