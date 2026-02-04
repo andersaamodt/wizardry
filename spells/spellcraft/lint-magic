@@ -204,15 +204,74 @@ while IFS= read -r target; do
       }
       
       if ! checkbashisms -f "$path" >"$bashisms_tmp" 2>&1; then
-        posix_failures=$((posix_failures + 1))
-        # Capture all violations with reasons
-        posix_fail_msg="FAIL $target:"
+        # Filter out exempted violations
+        filtered_tmp=$(temp-file lint-magic-filtered 2>/dev/null) || {
+          if [ -n "${WIZARDRY_TMPDIR-}" ] && [ -d "$WIZARDRY_TMPDIR" ]; then
+            filtered_tmp="${WIZARDRY_TMPDIR}/lint-magic-filtered.$$"
+          elif [ -n "${TMPDIR-}" ] && [ -d "$TMPDIR" ]; then
+            filtered_tmp="${TMPDIR}/lint-magic-filtered.$$"
+          else
+            filtered_tmp="/tmp/lint-magic-filtered.$$"
+          fi
+        }
+        
+        # Parse violations and check for exemptions
+        has_real_violation=0
+        include_next_line=0
         while IFS= read -r violation_line; do
-          posix_fail_msg="${posix_fail_msg}
-  ${violation_line}"
+          # Check if this line reports a violation with a line number
+          if printf '%s\n' "$violation_line" | grep -q "possible bashism.*line [0-9]"; then
+            # Extract line number
+            line_num=$(printf '%s\n' "$violation_line" | sed -n 's/.*line \([0-9][0-9]*\).*/\1/p')
+            
+            if [ -n "$line_num" ]; then
+              # Get the actual line and the line before it
+              actual_line=$(sed -n "${line_num}p" "$path" 2>/dev/null || true)
+              prev_line=$(sed -n "$((line_num - 1))p" "$path" 2>/dev/null || true)
+              
+              # Check for exemption markers
+              is_exempt=0
+              if printf '%s\n' "$actual_line" | grep -q "# checkbashisms:.*exempt"; then
+                is_exempt=1
+              elif printf '%s\n' "$prev_line" | grep -q "# checkbashisms:.*exempt"; then
+                is_exempt=1
+              fi
+              
+              # If not exempt, include this violation and the next line (code snippet)
+              if [ "$is_exempt" = "0" ]; then
+                printf '%s\n' "$violation_line" >>"$filtered_tmp"
+                has_real_violation=1
+                include_next_line=1
+              else
+                include_next_line=0
+              fi
+            fi
+          else
+            # Non-violation line (e.g., code snippet), include only if previous violation was real
+            if [ "$include_next_line" = "1" ]; then
+              printf '%s\n' "$violation_line" >>"$filtered_tmp"
+              include_next_line=0
+            fi
+          fi
         done <"$bashisms_tmp"
-        posix_failed_list="${posix_failed_list}${posix_fail_msg}
+        
+        # Only report if there are real (non-exempt) violations
+        if [ "$has_real_violation" = "1" ]; then
+          posix_failures=$((posix_failures + 1))
+          # Capture all non-exempt violations with reasons
+          posix_fail_msg="FAIL $target:"
+          while IFS= read -r violation_line; do
+            posix_fail_msg="${posix_fail_msg}
+  ${violation_line}"
+          done <"$filtered_tmp"
+          posix_failed_list="${posix_failed_list}${posix_fail_msg}
 "
+        fi
+        
+        # Clean up filtered temp file
+        if [ -f "$filtered_tmp" ]; then
+          rm -f "$filtered_tmp"
+        fi
       fi
       
       # Clean up temp file
