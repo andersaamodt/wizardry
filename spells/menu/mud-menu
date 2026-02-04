@@ -113,47 +113,47 @@ while true; do
   
   # Build parse toggle
   if is_feature_enabled "parse-enabled"; then
-    parse_toggle="[X] Parse (natural language commands)%toggle-parse; echo 1 > \"$SELECTION_FILE\""
+    parse_toggle="[X] Parse (natural language commands)%toggle-parse; echo 3 > \"$SELECTION_FILE\""
   else
-    parse_toggle="[ ] Parse (natural language commands)%toggle-parse; echo 1 > \"$SELECTION_FILE\""
+    parse_toggle="[ ] Parse (natural language commands)%toggle-parse; echo 3 > \"$SELECTION_FILE\""
   fi
   
   # Build cd hook toggle label based on current state
   if is_feature_enabled "cd-look"; then
-    cd_hook="[X] Look on directory change (cd hook)%. toggle-cd; echo 3 > \"$SELECTION_FILE\""
+    cd_hook="[X] Look on directory change (cd hook)%. toggle-cd; echo 5 > \"$SELECTION_FILE\""
   else
-    cd_hook="[ ] Look on directory change (cd hook)%. toggle-cd; echo 3 > \"$SELECTION_FILE\""
+    cd_hook="[ ] Look on directory change (cd hook)%. toggle-cd; echo 5 > \"$SELECTION_FILE\""
   fi
   
   # Build cd-listen toggle
   if is_feature_enabled "cd-listen"; then
-    cd_listen="[X] Listen on directory change (cd hook)%. toggle-listen; echo 4 > \"$SELECTION_FILE\""
+    cd_listen="[X] Listen on directory change (cd hook)%. toggle-listen; echo 6 > \"$SELECTION_FILE\""
   else
-    cd_listen="[ ] Listen on directory change (cd hook)%. toggle-listen; echo 4 > \"$SELECTION_FILE\""
+    cd_listen="[ ] Listen on directory change (cd hook)%. toggle-listen; echo 6 > \"$SELECTION_FILE\""
   fi
   
   # Build avatar toggle
   if is_feature_enabled "avatar"; then
-    avatar="[X] Avatar (HP/MP, inventory)%toggle-avatar; echo 5 > \"$SELECTION_FILE\""
+    avatar="[X] Avatar (HP/MP, inventory)%toggle-avatar; echo 7 > \"$SELECTION_FILE\""
   else
-    avatar="[ ] Avatar (HP/MP, inventory)%toggle-avatar; echo 5 > \"$SELECTION_FILE\""
+    avatar="[ ] Avatar (HP/MP, inventory)%toggle-avatar; echo 7 > \"$SELECTION_FILE\""
   fi
   
   # Build touch hook toggle
   if is_feature_enabled "touch-hook"; then
-    touch_hook="[X] On-touch triggers (touch hook)%toggle-touch-hook; echo 6 > \"$SELECTION_FILE\""
+    touch_hook="[X] On-touch triggers (touch hook)%toggle-touch-hook; echo 8 > \"$SELECTION_FILE\""
   else
-    touch_hook="[ ] On-touch triggers (touch hook)%toggle-touch-hook; echo 6 > \"$SELECTION_FILE\""
+    touch_hook="[ ] On-touch triggers (touch hook)%toggle-touch-hook; echo 8 > \"$SELECTION_FILE\""
   fi
   
   # Build show/hide MUD in main menu toggle
   if is_feature_enabled "mud-enabled"; then
-    mud_menu="[X] Show MUD in main menu%toggle-mud-menu; echo 2 > \"$SELECTION_FILE\""
+    mud_menu="[X] Show MUD in main menu%toggle-mud-menu; echo 4 > \"$SELECTION_FILE\""
   else
-    mud_menu="[ ] Show MUD in main menu%toggle-mud-menu; echo 2 > \"$SELECTION_FILE\""
+    mud_menu="[ ] Show MUD in main menu%toggle-mud-menu; echo 4 > \"$SELECTION_FILE\""
   fi
   
-  # Build enable/disable all toggle (including cd-look and cd-listen)
+  # Build enable/disable all toggle (including cd-look, cd-listen, and tor)
   all_enabled=1
   for feature in parse-enabled mud-enabled avatar touch-hook cd-look cd-listen; do
     if ! is_feature_enabled "$feature"; then
@@ -161,11 +161,15 @@ while true; do
       break
     fi
   done
+  # Also check tor hosting status
+  if [ "$all_enabled" -eq 1 ] && [ "$tor_configured" -eq 0 ]; then
+    all_enabled=0
+  fi
   
   if [ "$all_enabled" -eq 1 ]; then
-    toggle_all="Disable all MUD features%toggle-all-mud --disable; echo 7 > \"$SELECTION_FILE\""
+    toggle_all="Disable all MUD features%toggle-all-mud --disable; echo 10 > \"$SELECTION_FILE\""
   else
-    toggle_all="Enable all MUD features%toggle-all-mud --enable; echo 7 > \"$SELECTION_FILE\""
+    toggle_all="Enable all MUD features%toggle-all-mud --enable; echo 10 > \"$SELECTION_FILE\""
   fi
   
   # Build tor hidden service toggle based on current state
@@ -208,17 +212,18 @@ while true; do
   if [ "$tor_configured" -eq 1 ]; then
     # remove-tor-hidden-service already restarts tor, so no need to restart again
     tor_cmd="remove-tor-hidden-service -y"
-    # When disabling, copy_onion will disappear, moving tor from position 9 to 8
-    tor="[X] Tor hosting%$tor_cmd; echo 8 > \"$SELECTION_FILE\""
+    # When disabling, copy_onion and separator will disappear, moving tor from position 9 to 7
+    tor="[X] Tor hosting%$tor_cmd; echo 7 > \"$SELECTION_FILE\""
   else
     # setup-tor already restarts tor, so no need to restart again
     tor_cmd="setup-tor -y"
-    # When enabling, copy_onion will appear at position 8, keeping tor at 9
+    # When enabling, copy_onion and separator will appear, keeping tor at 9
     tor="[ ] Tor hosting%$tor_cmd; echo 9 > \"$SELECTION_FILE\""
   fi
   
   # Build copy .onion address option if tor is configured
   copy_onion=""
+  separator=""
   if [ "$tor_configured" -eq 1 ] && [ -n "$torrc_path" ]; then
     # Extract the HiddenServiceDir path from torrc
     hostname_dir=$(grep -E "^[[:space:]]*HiddenServiceDir.*/mud(/)?$" "$torrc_path" 2>/dev/null \
@@ -229,7 +234,8 @@ while true; do
       hostname_file="$hostname_dir/hostname"
       copy_cmd="clip-copy \"\$(sudo cat \"$hostname_file\" 2>/dev/null"
       copy_cmd="$copy_cmd || cat \"$hostname_file\")\""
-      copy_onion="Copy .onion address%$copy_cmd; echo 8 > \"$SELECTION_FILE\""
+      copy_onion="Copy .onion address%$copy_cmd; echo 1 > \"$SELECTION_FILE\""
+      separator="---%echo 2 > \"$SELECTION_FILE\""
     fi
   fi
   
@@ -237,8 +243,10 @@ while true; do
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
   exit_item="Exit%kill -TERM \$PPID"
 
-  # Build menu items list - use conditional expansion for copy_onion
-  set -- "$parse_toggle" "$mud_menu" "$cd_hook" "$cd_listen" "$avatar" "$touch_hook" "$toggle_all" ${copy_onion:+"$copy_onion"} "$tor" "$exit_item"
+  # Build menu items list - use conditional expansion for copy_onion and separator
+  # When tor is enabled: copy_onion, separator, parse, mud_menu, cd_hook, cd_listen, avatar, touch_hook, tor, toggle_all, exit
+  # When tor is disabled: parse, mud_menu, cd_hook, cd_listen, avatar, touch_hook, tor, toggle_all, exit
+  set -- ${copy_onion:+"$copy_onion"} ${separator:+"$separator"} "$parse_toggle" "$mud_menu" "$cd_hook" "$cd_listen" "$avatar" "$touch_hook" "$tor" "$toggle_all" "$exit_item"
   
   menu --start-selection "$start_selection" "MUD Install:" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
