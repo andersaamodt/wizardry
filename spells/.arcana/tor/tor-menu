@@ -97,31 +97,8 @@ $openssl_option"
       daemon_option="[ ] Start Tor at startup%enable-tor-daemon"
     fi
     
-    # Check for .onion address file to offer copy option
-    # Only show if tor is installed and a hidden service is configured
-    copy_onion_option=""
-    hostname_file=""
-    
-    # Get torrc path and check for configured hidden services
-    if command -v torrc-path >/dev/null 2>&1; then
-      torrc_path=$(torrc-path 2>/dev/null || echo "")
-      if [ -n "$torrc_path" ] && [ -f "$torrc_path" ]; then
-        # Extract the first HiddenServiceDir from torrc
-        hostname_dir=$(grep -E "^[[:space:]]*HiddenServiceDir" "$torrc_path" 2>/dev/null \
-          | awk '{print $2}' | head -1)
-        if [ -n "$hostname_dir" ]; then
-          # Remove trailing slash if present
-          hostname_dir="${hostname_dir%/}"
-          hostname_file="$hostname_dir/hostname"
-          copy_cmd="clip-copy \"\$(sudo cat \"$hostname_file\" 2>/dev/null"
-          copy_cmd="$copy_cmd || cat \"$hostname_file\")\""
-          copy_onion_option="Copy .onion address%$copy_cmd"
-        fi
-      fi
-    fi
-    
     # Build menu with simplified logic
-    # Menu order: show_log (if running), copy_onion, tor_service, daemon, config, repair, uninstall, deps, exit
+    # Menu order: show_log (if running), tor_service, daemon, config, repair, uninstall, deps, exit
     # We build the argument list by testing each option and adding it if present
     # Note: We can't use arrays in POSIX sh, so we use conditionals to build the call
     
@@ -132,7 +109,6 @@ $openssl_option"
     if [ -n "$macos_deps" ]; then
       menu "$title" \
         ${show_log_option:+"$show_log_option"} \
-        ${copy_onion_option:+"$copy_onion_option"} \
         ${tor_service_option:+"$tor_service_option"} \
         ${daemon_option:+"$daemon_option"} \
         "$config_option" "$repair_option" "$uninstall_option" \
@@ -140,7 +116,6 @@ $openssl_option"
     else
       menu "$title" \
         ${show_log_option:+"$show_log_option"} \
-        ${copy_onion_option:+"$copy_onion_option"} \
         ${tor_service_option:+"$tor_service_option"} \
         ${daemon_option:+"$daemon_option"} \
         "$config_option" "$repair_option" "$uninstall_option" "$exit_option" || menu_status=$?

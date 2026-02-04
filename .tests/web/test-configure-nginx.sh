@@ -93,7 +93,67 @@ test_configure_nginx_creates_local_mimetypes() {
   rm -rf "$test_web_root"
 }
 
+test_configure_nginx_supports_onion_addresses() {
+  skip-if-compiled || return $?
+  
+  # Set up test environment
+  test_web_root=$(temp-dir web-wizardry-test)
+  export WEB_WIZARDRY_ROOT="$test_web_root"
+  
+  # Create a test site directory
+  mkdir -p "$test_web_root/mytestsite"
+  
+  # Run configure-nginx
+  run_spell spells/web/configure-nginx mytestsite
+  assert_success
+  
+  # Verify nginx.conf includes *.onion in server_name for Tor support
+  grep -q "server_name.*\*.onion" "$test_web_root/mytestsite/nginx/nginx.conf" || {
+    TEST_FAILURE_REASON="nginx.conf does not include *.onion in server_name (needed for Tor hidden services)"
+    return 1
+  }
+  
+  # Cleanup
+  rm -rf "$test_web_root"
+}
+
+test_configure_nginx_preserves_existing_port() {
+  skip-if-compiled || return $?
+  
+  # Set up test environment
+  test_web_root=$(temp-dir web-wizardry-test)
+  export WEB_WIZARDRY_ROOT="$test_web_root"
+  
+  # Create a test site directory
+  mkdir -p "$test_web_root/mytestsite"
+  
+  # Create initial site.conf with custom port
+  printf 'site-name=mytestsite\nport=9090\ndomain=localhost\nhttps=false\n' > "$test_web_root/mytestsite/site.conf"
+  
+  # Run configure-nginx without options (simulating "Rebuild nginx.conf" from menu)
+  run_spell spells/web/configure-nginx mytestsite
+  assert_success
+  
+  # Verify port was preserved (not reset to 8080)
+  actual_port=$(grep "^port=" "$test_web_root/mytestsite/site.conf" | cut -d= -f2)
+  if [ "$actual_port" != "9090" ]; then
+    TEST_FAILURE_REASON="configure-nginx reset port to $actual_port instead of preserving 9090"
+    return 1
+  fi
+  
+  # Verify nginx.conf uses the preserved port
+  grep -q "listen 9090" "$test_web_root/mytestsite/nginx/nginx.conf" || {
+    TEST_FAILURE_REASON="nginx.conf does not listen on preserved port 9090"
+    return 1
+  }
+  
+  # Cleanup
+  rm -rf "$test_web_root"
+}
+
 run_test_case "configure-nginx --help" test_configure_nginx_help
 run_test_case "configure-nginx creates local mime.types" test_configure_nginx_creates_local_mimetypes
+run_test_case "configure-nginx supports .onion addresses" test_configure_nginx_supports_onion_addresses
+run_test_case "configure-nginx preserves existing port" test_configure_nginx_preserves_existing_port
 
 finish_tests

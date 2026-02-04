@@ -199,3 +199,4 @@
 - In zsh, `eval "$(set +o)"` that restores strict modes breaks zle causing arrow keys to show ^[[A instead of cycling history - use explicit `set +e; set +u` to guarantee permissive mode instead.
 - When debugging readline breakage, systematically strip features and rebuild incrementally - minimal version → add features one-by-one until breakage occurs, pinpointing exact culprit; this approach found listen's `eval "$(set +o)"` was the root cause after exhausting other hypotheses.
 - Check variable existence BEFORE unsetting it if needed for flow control - `unset var; if [ "$var" = "1" ]` always fails because var is now empty; check first, then unset, or unset inside each branch after the check.
+- nginx `server_name` must include `*.onion` wildcard for Tor hidden services - without it, nginx rejects requests with .onion Host headers even when Tor correctly forwards to the configured port.
