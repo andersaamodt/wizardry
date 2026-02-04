@@ -181,7 +181,7 @@ check_level_1() {
         msg="${msg}so only the owner can access it. Current permissions: $ssh_perms"
         ward_desc "$msg" 1
         if ward_ask_fix "Fix SSH directory permissions to 700? (recommended)"; then
-          chmod 700 "$ssh_dir" && success "Fixed ~/.ssh permissions to 700"
+          wizard-cast chmod 700 "$ssh_dir" && success "Fixed ~/.ssh permissions to 700"
         fi
         ;;
     esac
@@ -210,7 +210,7 @@ check_level_1() {
             msg="${msg}to prevent unauthorized use."
             ward_desc "$msg" 1
             if ward_ask_fix "Fix permissions for $key_name?"; then
-              chmod 600 "$key" && success "Fixed permissions for $key_name"
+              wizard-cast chmod 600 "$key" && success "Fixed permissions for $key_name"
             fi
             # Mark that we've shown a message (don't show success after failures)
             key_check_shown=1
@@ -235,10 +235,8 @@ check_level_1() {
       msg="${msg}(completely private) or 755 (readable but not writable by others). "
       msg="${msg}Current permissions may allow unauthorized access."
       ward_desc "$msg" 1
-      if ward_ask_fix "Would you like guidance on fixing home directory permissions?"; then
-        printf 'Consider setting your home directory to 700 (private):\n'
-        printf '  chmod 700 %s\n' "$HOME"
-        printf 'Or 755 (readable by others) if needed for your use case.\n'
+      if ward_ask_fix "Fix home directory permissions to 700 (completely private)?"; then
+        wizard-cast chmod 700 "$HOME" && success "Set home directory permissions to 700 (private)"
       fi
       ;;
   esac
@@ -260,7 +258,7 @@ check_level_1() {
           msg="${msg}They should have permissions 600 (readable/writable only by owner)."
           ward_desc "$msg" 1
           if ward_ask_fix "Fix shell history file permissions?"; then
-            chmod 600 "$history_file" && success "Fixed $history_file permissions to 600"
+            wizard-cast chmod 600 "$history_file" && success "Fixed $history_file permissions to 600"
           fi
           break
           ;;
@@ -279,9 +277,12 @@ check_level_1() {
       msg="/tmp should have the sticky bit (t) set to prevent users from "
       msg="${msg}deleting files they don't own. This is a common security measure."
       ward_desc "$msg" 1
-      if ward_ask_fix "Would you like guidance on fixing /tmp permissions?"; then
-        printf 'Set sticky bit on /tmp (requires root):\n'
-        printf '  sudo chmod +t /tmp\n'
+      if ward_ask_fix "Set sticky bit on /tmp? (requires root)"; then
+        if wizard-cast sudo chmod +t /tmp; then
+          success "Set sticky bit on /tmp"
+        else
+          warn "Failed to set sticky bit on /tmp - may need manual intervention"
+        fi
       fi
     fi
   fi
@@ -300,7 +301,7 @@ check_level_1() {
         msg="${msg}permissions 600 to prevent unauthorized access."
         ward_desc "$msg" 1
         if ward_ask_fix "Fix .netrc permissions?"; then
-          chmod 600 "$HOME/.netrc" && success "Fixed .netrc permissions to 600"
+          wizard-cast chmod 600 "$HOME/.netrc" && success "Fixed .netrc permissions to 600"
         fi
         ;;
     esac
@@ -314,9 +315,12 @@ check_level_1() {
       msg="DNS configuration should not be writable by all users. "
       msg="${msg}This could allow DNS hijacking attacks."
       ward_desc "$msg" 1
-      if ward_ask_fix "Would you like guidance on fixing /etc/resolv.conf?"; then
-        printf 'Fix /etc/resolv.conf permissions (requires root):\n'
-        printf '  sudo chmod 644 /etc/resolv.conf\n'
+      if ward_ask_fix "Fix /etc/resolv.conf permissions? (requires root)"; then
+        if wizard-cast sudo chmod 644 /etc/resolv.conf; then
+          success "Fixed /etc/resolv.conf permissions to 644"
+        else
+          warn "Failed to fix /etc/resolv.conf - may need manual intervention"
+        fi
       fi
     else
       ward_pass "/etc/resolv.conf has secure permissions"
@@ -630,11 +634,13 @@ check_level_2() {
     msg="SSH keys provide secure authentication without passwords. "
     msg="${msg}Generate keys with: ssh-keygen -t ed25519"
     ward_desc "$msg" 1
-    if ward_ask_fix "Would you like guidance on creating SSH keys?"; then
-      printf 'Generate an Ed25519 SSH key (recommended):\n'
-      printf '  ssh-keygen -t ed25519 -C "your_email@example.com"\n'
-      printf 'Or an RSA key (for compatibility):\n'
-      printf '  ssh-keygen -t rsa -b 4096 -C "your_email@example.com"\n'
+    if ward_ask_fix "Generate an Ed25519 SSH key now?"; then
+      if command -v ssh-keygen >/dev/null 2>&1; then
+        printf 'Generating Ed25519 SSH key...\n'
+        wizard-cast ssh-keygen -t ed25519 -C "$(whoami)@$(hostname)" && success "SSH key generated successfully"
+      else
+        warn "ssh-keygen not found - cannot generate key"
+      fi
     fi
   fi
   
@@ -658,11 +664,13 @@ check_level_2() {
           msg="${msg}Never include passwords in command-line arguments. "
           msg="${msg}Consider clearing sensitive history entries."
           ward_desc "$msg" 1
-          if ward_ask_fix "Would you like guidance on cleaning history?"; then
-            printf 'Edit your history file to remove sensitive entries:\n'
-            printf '  $EDITOR %s\n' "$history_file"
-            printf 'Or clear entire history (caution):\n'
-            printf '  history -c && > %s\n' "$history_file"
+          if ward_ask_fix "Open history file in editor to remove sensitive entries?"; then
+            editor="${EDITOR:-vi}"
+            if command -v "$editor" >/dev/null 2>&1; then
+              "$editor" "$history_file" && success "History file editing complete"
+            else
+              warn "Editor not found - please manually edit: $history_file"
+            fi
           fi
           break
         fi
@@ -681,10 +689,24 @@ check_level_2() {
       msg="Automatic security updates help protect against known vulnerabilities. "
       msg="${msg}Consider enabling unattended-upgrades."
       ward_desc "$msg" 1
-      if ward_ask_fix "Would you like guidance on enabling auto-updates?"; then
-        printf 'On Ubuntu/Debian:\n'
-        printf '  sudo apt install unattended-upgrades\n'
-        printf '  sudo dpkg-reconfigure -plow unattended-upgrades\n'
+      if ward_ask_fix "Install and enable automatic security updates? (requires root)"; then
+        if has apt; then
+          if wizard-cast sudo apt install -y unattended-upgrades; then
+            wizard-cast sudo dpkg-reconfigure -plow unattended-upgrades && \
+              success "Automatic security updates enabled"
+          else
+            warn "Failed to install unattended-upgrades"
+          fi
+        elif has dnf; then
+          if wizard-cast sudo dnf install -y dnf-automatic; then
+            wizard-cast sudo systemctl enable --now dnf-automatic.timer && \
+              success "Automatic security updates enabled"
+          else
+            warn "Failed to install dnf-automatic"
+          fi
+        else
+          warn "Package manager not supported for auto-updates automation"
+        fi
       fi
     fi
   fi
@@ -703,7 +725,7 @@ check_level_2() {
         msg="${msg}It should have permissions 600 or 644."
         ward_desc "$msg" 1
         if ward_ask_fix "Fix authorized_keys permissions?"; then
-          chmod 600 "$HOME/.ssh/authorized_keys" && \
+          wizard-cast chmod 600 "$HOME/.ssh/authorized_keys" && \
             success "Fixed authorized_keys permissions to 600"
         fi
         ;;
@@ -721,11 +743,14 @@ check_level_2() {
     msg="Without cron.allow or cron.deny, all users can create cron jobs. "
     msg="${msg}Consider creating /etc/cron.allow for better security."
     ward_desc "$msg" 1
-    if ward_ask_fix "Would you like guidance on cron access control?"; then
-      printf 'Create /etc/cron.allow to restrict cron access (requires root):\n'
-      printf '  sudo touch /etc/cron.allow\n'
-      printf '  sudo chmod 600 /etc/cron.allow\n'
-      printf '  echo "root" | sudo tee /etc/cron.allow\n'
+    if ward_ask_fix "Create /etc/cron.allow to restrict cron access? (requires root)"; then
+      if wizard-cast sudo touch /etc/cron.allow && \
+         wizard-cast sudo chmod 600 /etc/cron.allow && \
+         printf 'root\n' | wizard-cast sudo tee /etc/cron.allow >/dev/null; then
+        success "Created /etc/cron.allow with restricted access"
+      else
+        warn "Failed to create cron.allow - may need manual intervention"
+      fi
     fi
   fi
   
@@ -772,9 +797,12 @@ check_level_2() {
       msg="Time synchronization is important for security logs and SSL/TLS. "
       msg="${msg}Enable with systemd-timesyncd or ntpd."
       ward_desc "$msg" 1
-      if ward_ask_fix "Would you like guidance on enabling time sync?"; then
-        printf 'Enable time synchronization:\n'
-        printf '  sudo timedatectl set-ntp true\n'
+      if ward_ask_fix "Enable time synchronization? (requires root)"; then
+        if wizard-cast sudo timedatectl set-ntp true; then
+          success "Enabled time synchronization"
+        else
+          warn "Failed to enable time synchronization - may need manual intervention"
+        fi
       fi
     fi
   elif has ntpq; then
@@ -844,10 +872,16 @@ check_level_2() {
     msg="Without log rotation, logs can fill disk space. "
     msg="${msg}Install logrotate package."
     ward_desc "$msg" 1
-    if ward_ask_fix "Would you like guidance on setting up log rotation?"; then
-      printf 'Install logrotate:\n'
-      printf '  Ubuntu/Debian: sudo apt install logrotate\n'
-      printf '  RHEL/Fedora: sudo yum install logrotate\n'
+    if ward_ask_fix "Install logrotate package? (requires root)"; then
+      if has apt; then
+        wizard-cast sudo apt install -y logrotate && success "Installed logrotate"
+      elif has yum; then
+        wizard-cast sudo yum install -y logrotate && success "Installed logrotate"
+      elif has dnf; then
+        wizard-cast sudo dnf install -y logrotate && success "Installed logrotate"
+      else
+        warn "Package manager not supported for logrotate installation"
+      fi
     fi
   fi
   
@@ -1005,7 +1039,7 @@ check_level_2() {
         msg="${msg}Only you should access your browser data. Path: $browser_dir (permissions: $dir_perms)"
         ward_desc "$msg" 1
         if ward_ask_fix "Secure browser profile permissions? (recommended)"; then
-          chmod 700 "$browser_dir" && success "Secured $(basename "$browser_dir")"
+          wizard-cast chmod 700 "$browser_dir" && success "Secured $(basename "$browser_dir")"
         fi
         break
       fi
@@ -1175,10 +1209,19 @@ check_level_3() {
     msg="${msg}Consider enabling ufw (Ubuntu), firewalld (Fedora), "
     msg="${msg}or your system's firewall."
     ward_desc "$msg" 1
-    if ward_ask_fix "Would you like guidance on enabling a firewall?"; then
-      printf 'On Ubuntu/Debian: sudo ufw enable\n'
-      printf 'On Fedora/RHEL: sudo systemctl start firewalld\n'
-      printf 'On macOS: System Preferences > Security & Privacy > Firewall\n'
+    if ward_ask_fix "Enable firewall? (requires root)"; then
+      if has ufw; then
+        wizard-cast sudo ufw --force enable && success "Enabled ufw firewall"
+      elif has firewall-cmd; then
+        wizard-cast sudo systemctl start firewalld && \
+        wizard-cast sudo systemctl enable firewalld && \
+          success "Enabled firewalld"
+      elif [ -f "/usr/libexec/ApplicationFirewall/socketfilterfw" ]; then
+        wizard-cast sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate on && \
+          success "Enabled macOS firewall"
+      else
+        warn "No supported firewall found - manual configuration needed"
+      fi
     fi
   fi
   
@@ -1222,11 +1265,18 @@ check_level_3() {
       msg="IPv6 privacy extensions prevent tracking via stable addresses. "
       msg="${msg}Enable with: sysctl -w net.ipv6.conf.all.use_tempaddr=2"
       ward_desc "$msg" 1
-      if ward_ask_fix "Would you like guidance on enabling IPv6 privacy?"; then
-        printf 'Enable IPv6 privacy extensions:\n'
-        printf '  sudo sysctl -w net.ipv6.conf.all.use_tempaddr=2\n'
-        printf 'Make permanent by adding to /etc/sysctl.conf:\n'
-        printf '  net.ipv6.conf.all.use_tempaddr=2\n'
+      if ward_ask_fix "Enable IPv6 privacy extensions? (requires root)"; then
+        if wizard-cast sudo sysctl -w net.ipv6.conf.all.use_tempaddr=2 && \
+           wizard-cast sudo sysctl -w net.ipv6.conf.default.use_tempaddr=2; then
+          # Make it permanent
+          if [ -w /etc/sysctl.conf ] || sudo test -w /etc/sysctl.conf 2>/dev/null; then
+            printf 'net.ipv6.conf.all.use_tempaddr=2\nnet.ipv6.conf.default.use_tempaddr=2\n' | \
+              wizard-cast sudo tee -a /etc/sysctl.conf >/dev/null
+          fi
+          success "Enabled IPv6 privacy extensions"
+        else
+          warn "Failed to enable IPv6 privacy extensions"
+        fi
       fi
     fi
   fi
@@ -1312,11 +1362,17 @@ check_level_3() {
       msg="ASLR should be set to 2 for full protection. "
       msg="${msg}Enable with: sysctl -w kernel.randomize_va_space=2"
       ward_desc "$msg" 1
-      if ward_ask_fix "Would you like guidance on enabling ASLR?"; then
-        printf 'Enable ASLR:\n'
-        printf '  sudo sysctl -w kernel.randomize_va_space=2\n'
-        printf 'Make permanent in /etc/sysctl.conf:\n'
-        printf '  kernel.randomize_va_space=2\n'
+      if ward_ask_fix "Enable ASLR fully? (recommended, requires root)"; then
+        if wizard-cast sudo sysctl -w kernel.randomize_va_space=2; then
+          # Make it permanent
+          if [ -w /etc/sysctl.conf ] || sudo test -w /etc/sysctl.conf 2>/dev/null; then
+            printf 'kernel.randomize_va_space=2\n' | \
+              wizard-cast sudo tee -a /etc/sysctl.conf >/dev/null
+          fi
+          success "Enabled ASLR fully"
+        else
+          warn "Failed to enable ASLR"
+        fi
       fi
     fi
   fi
@@ -1405,9 +1461,25 @@ check_level_3() {
       msg="Low entropy can weaken cryptographic operations. "
       msg="${msg}Consider installing haveged or rng-tools."
       ward_desc "$msg" 1
-      if ward_ask_fix "Would you like guidance on improving entropy?"; then
-        printf 'Install haveged for better entropy:\n'
-        printf '  sudo apt install haveged\n'
+      if ward_ask_fix "Install haveged to improve system entropy? (requires root)"; then
+        if has apt; then
+          wizard-cast sudo apt install -y haveged && \
+          wizard-cast sudo systemctl enable haveged && \
+          wizard-cast sudo systemctl start haveged && \
+            success "Installed and enabled haveged"
+        elif has yum; then
+          wizard-cast sudo yum install -y haveged && \
+          wizard-cast sudo systemctl enable haveged && \
+          wizard-cast sudo systemctl start haveged && \
+            success "Installed and enabled haveged"
+        elif has dnf; then
+          wizard-cast sudo dnf install -y haveged && \
+          wizard-cast sudo systemctl enable haveged && \
+          wizard-cast sudo systemctl start haveged && \
+            success "Installed and enabled haveged"
+        else
+          warn "Package manager not supported for haveged installation"
+        fi
       fi
     fi
   fi
