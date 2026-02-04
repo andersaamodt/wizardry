@@ -45,6 +45,11 @@ if eval '[ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
   case "${ZSH_EVAL_CONTEXT-}" in
     *:file) _listen_sourced=1 ;;
   esac
+elif eval '[ -n "${BASH_SOURCE:-}" ]' 2>/dev/null; then
+  # In bash, if BASH_SOURCE[0] != $0, we're sourced
+  if eval '[ "${BASH_SOURCE[0]}" != "$0" ]' 2>/dev/null; then
+    _listen_sourced=1
+  fi
 else
   _listen_base=$(basename "$0" 2>/dev/null || printf '%s\n' "$0")
   case "$_listen_base" in
