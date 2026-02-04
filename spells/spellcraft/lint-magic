@@ -192,8 +192,16 @@ while IFS= read -r target; do
     else
       # Run checkbashisms and capture output
       # Use a more reliable temp file method if temp-file fails
-      bashisms_tmp=$(temp-file lint-magic-bashisms 2>/dev/null) || \
-        bashisms_tmp="${WIZARDRY_TMPDIR}/lint-magic-bashisms.$$"
+      bashisms_tmp=$(temp-file lint-magic-bashisms 2>/dev/null) || {
+        # Fallback: use same logic as temp-file imp
+        if [ -n "${WIZARDRY_TMPDIR-}" ] && [ -d "$WIZARDRY_TMPDIR" ]; then
+          bashisms_tmp="${WIZARDRY_TMPDIR}/lint-magic-bashisms.$$"
+        elif [ -n "${TMPDIR-}" ] && [ -d "$TMPDIR" ]; then
+          bashisms_tmp="${TMPDIR}/lint-magic-bashisms.$$"
+        else
+          bashisms_tmp="/tmp/lint-magic-bashisms.$$"
+        fi
+      }
       
       if ! checkbashisms -f "$path" >"$bashisms_tmp" 2>&1; then
         posix_failures=$((posix_failures + 1))
