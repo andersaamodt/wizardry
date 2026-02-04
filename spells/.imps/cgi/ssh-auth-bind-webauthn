@@ -1,0 +1,72 @@
+#!/bin/sh
+# ssh-auth-bind-webauthn - Bind WebAuthn credential to SSH fingerprint
+
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "application/json"
+http-end-headers
+
+# Parse query parameters
+query_string="${QUERY_STRING-}"
+username=""
+credential_id=""
+public_key=""
+fingerprint=""
+
+if [ -n "$query_string" ]; then
+  for param in $(printf '%s' "$query_string" | tr '&' '\n'); do
+    case "$param" in
+      username=*)
+        username=$(printf '%s' "$param" | cut -d= -f2- | url-decode)
+        ;;
+      credential_id=*)
+        credential_id=$(printf '%s' "$param" | cut -d= -f2- | url-decode)
+        ;;
+      public_key=*)
+        public_key=$(printf '%s' "$param" | cut -d= -f2- | url-decode)
+        ;;
+      fingerprint=*)
+        fingerprint=$(printf '%s' "$param" | cut -d= -f2- | url-decode)
+        ;;
+    esac
+  done
+fi
+
+# Validate inputs
+if [ -z "$username" ] || [ -z "$credential_id" ] || [ -z "$public_key" ] || [ -z "$fingerprint" ]; then
+  printf '{"success":false,"error":"Missing required parameters"}\n'
+  exit 0
+fi
+
+# Get data directory
+data_dir=$(get-site-data-dir "ssh-auth")
+user_dir="$data_dir/users/$username"
+
+# Verify user exists and fingerprint matches
+if [ ! -d "$user_dir" ]; then
+  printf '{"success":false,"error":"User not found"}\n'
+  exit 0
+fi
+
+stored_fingerprint=$(cat "$user_dir/ssh_fingerprint")
+if [ "$fingerprint" != "$stored_fingerprint" ]; then
+  printf '{"success":false,"error":"Fingerprint mismatch"}\n'
+  exit 0
+fi
+
+# Create delegates directory if it doesn't exist
+delegates_dir="$user_dir/delegates"
+mkdir -p "$delegates_dir"
+
+# Generate unique delegate ID
+delegate_id=$(dd if=/dev/urandom bs=16 count=1 2>/dev/null | base64 | tr -d '\n' | tr '+/' '-_')
+
+# Store WebAuthn credential
+delegate_file="$delegates_dir/$delegate_id"
+printf '{"credential_id":"%s","public_key":"%s","created_at":"%s","fingerprint":"%s"}\n' \
+  "$credential_id" "$public_key" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$fingerprint" > "$delegate_file"
+
+# Return success
+printf '{"success":true,"delegate_id":"%s","username":"%s","fingerprint":"%s"}\n' \
+  "$delegate_id" "$username" "$fingerprint"
