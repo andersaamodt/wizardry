@@ -1,0 +1,53 @@
+#!/bin/sh
+# ssh-auth-register - Register SSH public key and get binding challenge for WebAuthn
+
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "application/json"
+http-end-headers
+
+# Parse query parameters
+query_string="${QUERY_STRING-}"
+username=""
+ssh_public_key=""
+
+if [ -n "$query_string" ]; then
+  # Parse username and ssh_public_key from query string
+  for param in $(printf '%s' "$query_string" | tr '&' '\n'); do
+    case "$param" in
+      username=*)
+        username=$(printf '%s' "$param" | cut -d= -f2- | url-decode)
+        ;;
+      ssh_public_key=*)
+        ssh_public_key=$(printf '%s' "$param" | cut -d= -f2- | url-decode)
+        ;;
+    esac
+  done
+fi
+
+# Validate inputs
+if [ -z "$username" ] || [ -z "$ssh_public_key" ]; then
+  printf '{"success":false,"error":"Missing username or ssh_public_key"}\n'
+  exit 0
+fi
+
+# Get data directory
+data_dir=$(get-site-data-dir "ssh-auth")
+
+# Calculate SSH fingerprint (SHA-256)
+fingerprint=$(printf '%s' "$ssh_public_key" | sha256sum | cut -d' ' -f1)
+
+# Store SSH public key with fingerprint
+user_dir="$data_dir/users/$username"
+mkdir -p "$user_dir"
+printf '%s' "$ssh_public_key" > "$user_dir/ssh_public_key"
+printf '%s' "$fingerprint" > "$user_dir/ssh_fingerprint"
+
+# Generate binding challenge
+challenge=$(dd if=/dev/urandom bs=32 count=1 2>/dev/null | base64 | tr -d '\n')
+printf '%s' "$challenge" > "$user_dir/challenge"
+
+# Return success with challenge and fingerprint
+printf '{"success":true,"fingerprint":"%s","challenge":"%s","username":"%s"}\n' \
+  "$fingerprint" "$challenge" "$username"
