@@ -179,14 +179,7 @@ y|Y)
                         fi
                 else
                         printf '%s\n' "Hidden service configured."
-                        printf 'The .onion address will be stored at: %s\n' "$hostname_file"
-                        if [ -f "$hostname_file" ]; then
-                                printf 'Note: File exists but may not be readable yet.\n'
-                                printf 'Try running: repair-tor-permissions\n'
-                        else
-                                printf 'Note: Tor may still be generating the .onion address.\n'
-                                printf 'It can take up to a minute. Check with: show-tor-log\n'
-                        fi
+                        printf 'The .onion address is stored at: %s\n' "$hostname_file"
                 fi
         else
                 printf 'Error: Failed to restart tor.\n' >&2
