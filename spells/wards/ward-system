@@ -82,12 +82,21 @@ while [ "$#" -gt 0 ]; do
 done
 
 # Helper functions
+# Track statistics
+total_checks=0
+passed_checks=0
+failed_checks=0
+
 ward_pass() {
   printf '%s✓%s %s\n' "${GREEN}" "${RESET}" "$1"
+  total_checks=$((total_checks + 1))
+  passed_checks=$((passed_checks + 1))
 }
 
 ward_fail() {
   printf '%s✗%s %s\n' "${RED}" "${RESET}" "$1"
+  total_checks=$((total_checks + 1))
+  failed_checks=$((failed_checks + 1))
 }
 
 ward_title() {
@@ -335,6 +344,83 @@ check_level_1() {
     timezone=$(cat /etc/timezone 2>/dev/null || printf 'unknown')
     ward_pass "System timezone: $timezone"
     ward_desc "Verify timezone is appropriate for your location." "$verbose"
+  fi
+  
+  # Check shared memory permissions (/dev/shm)
+  if [ -d /dev/shm ]; then
+    shm_perms=$(ls -ld /dev/shm 2>/dev/null | awk '{print $1}')
+    if printf '%s' "$shm_perms" | grep -q 'rwxrwxrwt'; then
+      ward_pass "/dev/shm has sticky bit set"
+      msg="/dev/shm sticky bit prevents users from deleting others' files."
+      ward_desc "$msg" 0
+    else
+      ward_fail "/dev/shm missing sticky bit (current: $shm_perms)"
+      msg="/dev/shm should have sticky bit for multi-user security. "
+      msg="${msg}Recommended permissions: 1777 (drwxrwxrwt)"
+      ward_desc "$msg" 1
+      if ward_ask_fix "Fix /dev/shm permissions? (recommended)"; then
+        printf 'Fix /dev/shm permissions (requires root):\n'
+        printf '  sudo chmod 1777 /dev/shm\n'
+      fi
+    fi
+  fi
+  
+  # Check kernel parameters for IP forwarding (should be off for workstations)
+  if [ -r /proc/sys/net/ipv4/ip_forward ]; then
+    ip_forward=$(cat /proc/sys/net/ipv4/ip_forward 2>/dev/null || printf '0')
+    if [ "$ip_forward" -eq 0 ]; then
+      ward_pass "IP forwarding is disabled"
+      ward_desc "IP forwarding off is correct for workstations." 0
+    else
+      ward_fail "IP forwarding is enabled"
+      msg="IP forwarding should be disabled on workstations. "
+      msg="${msg}Only enable on routers. Disable with: sysctl -w net.ipv4.ip_forward=0"
+      ward_desc "$msg" 1
+      if ward_ask_fix "Disable IP forwarding? (recommended for workstations)"; then
+        printf 'WARNING: Only disable if this is not a router/gateway.\n'
+        printf 'Disable IP forwarding:\n'
+        printf '  sudo sysctl -w net.ipv4.ip_forward=0\n'
+        printf 'Make permanent in /etc/sysctl.conf:\n'
+        printf '  net.ipv4.ip_forward=0\n'
+      fi
+    fi
+  fi
+  
+  # Check ICMP redirect acceptance (should be off)
+  if [ -r /proc/sys/net/ipv4/conf/all/accept_redirects ]; then
+    icmp_redir=$(cat /proc/sys/net/ipv4/conf/all/accept_redirects 2>/dev/null || printf '1')
+    if [ "$icmp_redir" -eq 0 ]; then
+      ward_pass "ICMP redirects are disabled"
+      ward_desc "Disabling ICMP redirects prevents routing table manipulation." 0
+    else
+      ward_fail "ICMP redirects are enabled"
+      msg="ICMP redirects can be used to manipulate routing tables. "
+      msg="${msg}Recommended to disable."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Disable ICMP redirects? (recommended)"; then
+        printf 'Disable ICMP redirects:\n'
+        printf '  sudo sysctl -w net.ipv4.conf.all.accept_redirects=0\n'
+        printf '  sudo sysctl -w net.ipv4.conf.default.accept_redirects=0\n'
+        printf 'Make permanent in /etc/sysctl.conf:\n'
+        printf '  net.ipv4.conf.all.accept_redirects=0\n'
+        printf '  net.ipv4.conf.default.accept_redirects=0\n'
+      fi
+    fi
+  fi
+  
+  # Check password aging for current user
+  if has chage && [ "$(id -u)" -ne 0 ]; then
+    max_days=$(chage -l "$(id -un)" 2>/dev/null | \
+               grep "Maximum number of days" | awk -F: '{print $2}' | tr -d ' ')
+    if [ -n "$max_days" ] && [ "$max_days" != "99999" ] && [ "$max_days" != "-1" ]; then
+      ward_pass "Password aging is configured (max: $max_days days)"
+      msg="Password expiration helps ensure regular password updates."
+      ward_desc "$msg" "$verbose"
+    else
+      ward_pass "Password aging: not configured (check if appropriate)"
+      msg="Password aging can improve security but may not be needed for all systems."
+      ward_desc "$msg" "$verbose"
+    fi
   fi
 }
 
@@ -594,6 +680,81 @@ check_level_2() {
       msg="Review third-party repositories for legitimacy: "
       msg="${msg}ls -la /etc/apt/sources.list.d/"
       ward_desc "$msg" "$verbose"
+    fi
+  fi
+  
+  # Check SSH strict host key checking
+  ssh_config_file="$HOME/.ssh/config"
+  if [ -f "$ssh_config_file" ]; then
+    if grep -qi "StrictHostKeyChecking.*no" "$ssh_config_file" 2>/dev/null; then
+      ward_fail "SSH strict host key checking is disabled"
+      msg="StrictHostKeyChecking no allows MITM attacks. "
+      msg="${msg}Remove or change to 'yes' in ~/.ssh/config"
+      ward_desc "$msg" 1
+      if ward_ask_fix "Would you like to see safe SSH configuration?"; then
+        printf 'Remove StrictHostKeyChecking no from ~/.ssh/config\n'
+        printf 'Or set it to: StrictHostKeyChecking ask\n'
+        printf 'WARNING: May prompt for unknown hosts.\n'
+      fi
+    else
+      ward_pass "SSH strict host key checking appears safe"
+      ward_desc "No dangerous SSH config override detected." "$verbose"
+    fi
+  fi
+  
+  # Check for Docker socket permissions (if Docker is installed)
+  if [ -S /var/run/docker.sock ]; then
+    docker_perms=$(ls -l /var/run/docker.sock 2>/dev/null | awk '{print $1}')
+    docker_group=$(ls -l /var/run/docker.sock 2>/dev/null | awk '{print $4}')
+    if printf '%s' "$docker_perms" | grep -q 'rw.*rw'; then
+      ward_fail "Docker socket has group write access"
+      msg="Docker socket group write access = root access. "
+      msg="${msg}Ensure only trusted users are in docker group ($docker_group)."
+      ward_desc "$msg" 1
+    else
+      ward_pass "Docker socket permissions: review docker group membership"
+      msg="Users in docker group have root-equivalent access. "
+      msg="${msg}Review: getent group docker"
+      ward_desc "$msg" "$verbose"
+    fi
+  fi
+  
+  # Check log rotation
+  if [ -d /etc/logrotate.d ] || [ -f /etc/logrotate.conf ]; then
+    ward_pass "Log rotation appears configured"
+    msg="Log rotation prevents disk space issues. Verify with: logrotate --debug /etc/logrotate.conf"
+    ward_desc "$msg" "$verbose"
+  else
+    ward_fail "Log rotation not configured"
+    msg="Without log rotation, logs can fill disk space. "
+    msg="${msg}Install logrotate package."
+    ward_desc "$msg" 1
+    if ward_ask_fix "Would you like guidance on setting up log rotation?"; then
+      printf 'Install logrotate:\n'
+      printf '  Ubuntu/Debian: sudo apt install logrotate\n'
+      printf '  RHEL/Fedora: sudo yum install logrotate\n'
+    fi
+  fi
+  
+  # Check Bluetooth status (if not needed, should be off)
+  if has systemctl; then
+    if systemctl is-enabled bluetooth >/dev/null 2>&1; then
+      ward_pass "Bluetooth is enabled (verify if needed)"
+      msg="If Bluetooth is not needed, disable it to reduce attack surface. "
+      msg="${msg}Disable with: sudo systemctl disable bluetooth"
+      ward_desc "$msg" "$verbose"
+    fi
+  elif has bluetoothctl; then
+    ward_pass "Bluetooth tools installed (verify if needed)"
+    msg="If Bluetooth is not needed, consider removing tools."
+    ward_desc "$msg" "$verbose"
+  fi
+  
+  # Check for USB storage restrictions
+  if [ -r /etc/modprobe.d/blacklist.conf ]; then
+    if grep -q "usb-storage" /etc/modprobe.d/blacklist.conf 2>/dev/null; then
+      ward_pass "USB storage is blacklisted"
+      ward_desc "USB storage restrictions help prevent data exfiltration." "$verbose"
     fi
   fi
 }
@@ -967,6 +1128,125 @@ check_level_3() {
       break
     fi
   done
+  
+  # Check for secure boot status (UEFI systems)
+  if [ -d /sys/firmware/efi ]; then
+    if has mokutil; then
+      if mokutil --sb-state 2>/dev/null | grep -q "SecureBoot enabled"; then
+        ward_pass "Secure Boot is enabled"
+        msg="Secure Boot helps prevent rootkits and bootloader tampering."
+        ward_desc "$msg" 0
+      else
+        ward_fail "Secure Boot is disabled"
+        msg="Secure Boot prevents unsigned bootloaders from running. "
+        msg="${msg}Enable in UEFI/BIOS settings. WARNING: May require configuration."
+        ward_desc "$msg" 1
+      fi
+    fi
+  fi
+  
+  # Check swap encryption (if swap exists)
+  if has swapon; then
+    swap_devices=$(swapon --show=NAME --noheadings 2>/dev/null || printf '')
+    if [ -n "$swap_devices" ]; then
+      # Check if swap is on encrypted device
+      encrypted_swap=0
+      for swap_dev in $swap_devices; do
+        if printf '%s' "$swap_dev" | grep -q "dm-crypt\|/dev/mapper"; then
+          encrypted_swap=1
+          break
+        fi
+      done
+      
+      if [ "$encrypted_swap" -eq 1 ]; then
+        ward_pass "Swap appears to be encrypted"
+        ward_desc "Encrypted swap protects sensitive data in memory dumps." 0
+      else
+        ward_fail "Swap is not encrypted"
+        msg="Unencrypted swap can contain passwords and keys. "
+        msg="${msg}Consider using encrypted swap. WARNING: Complex to set up."
+        ward_desc "$msg" 1
+      fi
+    fi
+  fi
+  
+  # Check disk encryption status
+  if has lsblk; then
+    encrypted_root=$(lsblk -o NAME,TYPE,MOUNTPOINT 2>/dev/null | \
+                      grep -E "/$" | grep -q "crypt" && printf '1' || printf '0')
+    if [ "$encrypted_root" -eq 1 ]; then
+      ward_pass "Root filesystem appears to be encrypted"
+      ward_desc "Full disk encryption protects data if device is stolen." 0
+    else
+      ward_pass "Root filesystem encryption: not detected (check manually)"
+      msg="Disk encryption protects against physical theft but is complex to add later."
+      ward_desc "$msg" "$verbose"
+    fi
+  fi
+  
+  # Check source IP verification (reverse path filtering)
+  if [ -r /proc/sys/net/ipv4/conf/all/rp_filter ]; then
+    rp_filter=$(cat /proc/sys/net/ipv4/conf/all/rp_filter 2>/dev/null || printf '0')
+    if [ "$rp_filter" -ge 1 ]; then
+      ward_pass "Reverse path filtering is enabled (level $rp_filter)"
+      msg="rp_filter helps prevent IP spoofing attacks."
+      ward_desc "$msg" "$verbose"
+    else
+      ward_fail "Reverse path filtering is disabled"
+      msg="Reverse path filtering helps prevent spoofed packets. "
+      msg="${msg}Enable with: sysctl -w net.ipv4.conf.all.rp_filter=1"
+      ward_desc "$msg" 1
+      if ward_ask_fix "Enable reverse path filtering? (recommended)"; then
+        printf 'Enable reverse path filtering:\n'
+        printf '  sudo sysctl -w net.ipv4.conf.all.rp_filter=1\n'
+        printf '  sudo sysctl -w net.ipv4.conf.default.rp_filter=1\n'
+        printf 'Make permanent in /etc/sysctl.conf:\n'
+        printf '  net.ipv4.conf.all.rp_filter=1\n'
+      fi
+    fi
+  fi
+  
+  # Check SYN cookie protection
+  if [ -r /proc/sys/net/ipv4/tcp_syncookies ]; then
+    syncookies=$(cat /proc/sys/net/ipv4/tcp_syncookies 2>/dev/null || printf '0')
+    if [ "$syncookies" -eq 1 ]; then
+      ward_pass "SYN cookie protection is enabled"
+      ward_desc "SYN cookies help protect against SYN flood attacks." 0
+    else
+      ward_fail "SYN cookie protection is disabled"
+      msg="SYN cookies protect against DoS attacks. "
+      msg="${msg}Enable with: sysctl -w net.ipv4.tcp_syncookies=1"
+      ward_desc "$msg" 1
+      if ward_ask_fix "Enable SYN cookie protection? (recommended)"; then
+        printf 'Enable SYN cookies:\n'
+        printf '  sudo sysctl -w net.ipv4.tcp_syncookies=1\n'
+        printf 'Make permanent in /etc/sysctl.conf:\n'
+        printf '  net.ipv4.tcp_syncookies=1\n'
+      fi
+    fi
+  fi
+  
+  # Check for AppArmor/SELinux profile coverage
+  if has aa-status; then
+    profiles_enforced=$(aa-status 2>/dev/null | grep "profiles are in enforce mode" | \
+                         awk '{print $1}' || printf '0')
+    profiles_enforced=${profiles_enforced:-0}
+    if [ "$profiles_enforced" -gt 0 ] 2>/dev/null; then
+      ward_pass "$profiles_enforced AppArmor profiles in enforce mode"
+      ward_desc "AppArmor profiles provide application confinement." "$verbose"
+    fi
+  fi
+  
+  # Check kernel module signing
+  if [ -r /proc/sys/kernel/modules_disabled ]; then
+    modules_disabled=$(cat /proc/sys/kernel/modules_disabled 2>/dev/null || printf '0')
+    if [ "$modules_disabled" -eq 1 ]; then
+      ward_pass "Kernel module loading is disabled"
+      msg="Disabling module loading prevents runtime kernel modification. "
+      msg="${msg}WARNING: Very restrictive, only for locked-down systems."
+      ward_desc "$msg" 0
+    fi
+  fi
 }
 
 # Main execution
@@ -993,4 +1273,16 @@ else
   esac
   printf '\n'
   success "System ward check complete at level $level"
+fi
+
+# Print summary
+printf '\n%s=== Security Check Summary ===%s\n' "${BOLD}" "${RESET}"
+printf 'Total checks: %d\n' "$total_checks"
+printf '%s✓%s Passed: %d\n' "${GREEN}" "${RESET}" "$passed_checks"
+printf '%s✗%s Failed: %d\n' "${RED}" "${RESET}" "$failed_checks"
+
+if [ "$failed_checks" -gt 0 ]; then
+  printf '\n%sRecommendation:%s Review and address the failed checks above.\n' \
+         "${YELLOW}" "${RESET}"
+  printf 'Re-run ward-system after making changes to verify fixes.\n'
 fi
