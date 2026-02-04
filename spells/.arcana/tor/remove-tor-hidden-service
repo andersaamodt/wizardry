@@ -49,15 +49,6 @@ fi
                 exit 1
         fi
         
-        # Create a backup
-        backup_path="${tor_config_path}.backup.$(date -u +%Y%m%d_%H%M%S)"
-        if command -v sudo >/dev/null 2>&1; then
-                sudo cp "$tor_config_path" "$backup_path"
-        else
-                cp "$tor_config_path" "$backup_path"
-        fi
-        printf '%s\n' "Backup created: $backup_path"
-        
         # Remove MUD HiddenService lines from torrc (not site-specific ones)
         # Only remove the /mud/ hidden service directory and its associated port
         temp_file=$(temp-file torrc-temp)
@@ -105,8 +96,6 @@ fi
         if [ ! -s "$temp_file" ]; then
                 printf '%s\n' "# Tor configuration file" > "$temp_file"
                 printf '%s\n' "# HiddenService configuration removed $(date -u +%Y-%m-%d)" >> "$temp_file"
-                printf '%s\n' "Filtered torrc was empty (only contained HiddenService config)."
-                printf '%s\n' "Created minimal torrc. Backup preserved at: $backup_path"
         fi
         
         if command -v sudo >/dev/null 2>&1; then
@@ -118,7 +107,7 @@ fi
                 chmod 644 "$tor_config_path"
         fi
         
-        printf '%s\n' "Hidden service configuration removed from $tor_config_path"
+        printf '%s\n' "Hidden service disabled for MUD"
         
         # Auto-restart tor when called with -y flag (from menu)
         # When called directly, offer choice for safety

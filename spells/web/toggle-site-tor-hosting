@@ -168,10 +168,10 @@ else
     sudo chmod 700 "$hs_dir" || true
     
   # Add hidden service configuration to torrc
-  printf '\n# Hidden service for site: %s\n' "$site_name" | sudo tee -a "$tor_config_path"
-  printf 'HiddenServiceDir %s\n' "$hs_dir" | sudo tee -a "$tor_config_path"
-  printf '%s\n' "HiddenServiceVersion 3" | sudo tee -a "$tor_config_path"
-  printf 'HiddenServicePort 80 127.0.0.1:%s\n' "$port" | sudo tee -a "$tor_config_path"
+  printf '\n# Hidden service for site: %s\n' "$site_name" | sudo tee -a "$tor_config_path" >/dev/null
+  printf 'HiddenServiceDir %s\n' "$hs_dir" | sudo tee -a "$tor_config_path" >/dev/null
+  printf '%s\n' "HiddenServiceVersion 3" | sudo tee -a "$tor_config_path" >/dev/null
+  printf 'HiddenServicePort 80 127.0.0.1:%s\n' "$port" | sudo tee -a "$tor_config_path" >/dev/null
   
   # Ensure torrc remains readable after modification
   sudo chmod 644 "$tor_config_path"
@@ -179,22 +179,5 @@ else
   printf '%s\n' "Hidden service configured for site '$site_name'"
   repair-tor-permissions >/dev/null 2>&1 || true
   
-  if restart-tor; then
-    # Wait for tor to generate the hidden service
-    sleep 2
-    
-    # Read the hidden service address
-    hostname_file="${hs_dir}hostname"
-    if [ -f "$hostname_file" ] && [ -r "$hostname_file" ]; then
-      onion_address=$(cat "$hostname_file" 2>/dev/null || echo "")
-      if [ -n "$onion_address" ]; then
-        printf '\n'
-        printf '%s\n' "═══════════════════════════════════════════════════════"
-        printf '%s\n' "Tor Hidden Service Address:"
-        printf '%s\n' "$onion_address"
-        printf '%s\n' "═══════════════════════════════════════════════════════"
-        printf '\n'
-      fi
-    fi
-  fi
+  restart-tor || true
 fi

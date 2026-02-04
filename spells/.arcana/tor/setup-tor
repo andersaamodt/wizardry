@@ -122,44 +122,18 @@ y|Y)
             || sudo chown -R tor:tor "$mud_dir" 2>/dev/null || true
         sudo chmod 700 "$mud_dir" || true
 
-        printf 'HiddenServiceDir %s\n' "$mud_dir" | sudo tee -a "$tor_config_path"
-        printf '%s\n' "HiddenServiceVersion 3" | sudo tee -a "$tor_config_path"
-        printf '%s\n' "HiddenServicePort 80 127.0.0.1:8080" | sudo tee -a "$tor_config_path"
+        printf 'HiddenServiceDir %s\n' "$mud_dir" | sudo tee -a "$tor_config_path" >/dev/null
+        printf '%s\n' "HiddenServiceVersion 3" | sudo tee -a "$tor_config_path" >/dev/null
+        printf '%s\n' "HiddenServicePort 80 127.0.0.1:8080" | sudo tee -a "$tor_config_path" >/dev/null
         
         # Ensure torrc remains readable after modification
         sudo chmod 644 "$tor_config_path"
         
         # Restart tor to activate the hidden service
-        printf '%s\n' "Hidden service configured in $tor_config_path"
+        printf '%s\n' "Hidden service configured for MUD"
         repair-tor-permissions >/dev/null 2>&1 || true
         
-        if restart-tor; then
-                # Wait for tor to generate the hidden service (up to 15 seconds)
-                hostname_file="${mud_dir}hostname"
-                printf 'Waiting for tor to generate .onion address...\n'
-                wait_count=0
-                while [ $wait_count -lt 15 ]; do
-                        if [ -f "$hostname_file" ]; then
-                                break
-                        fi
-                        sleep 1
-                        wait_count=$((wait_count + 1))
-                done
-                
-                # Read the hidden service address if available
-                if [ -f "$hostname_file" ] && [ -r "$hostname_file" ]; then
-                        onion_address=$(cat "$hostname_file" 2>/dev/null || true)
-                        if [ -n "$onion_address" ]; then
-                                printf 'Hidden service address: %s\n' "$onion_address"
-                        fi
-                else
-                        printf '%s\n' "Hidden service configured."
-                fi
-        else
-                printf 'Error: Failed to restart tor.\n' >&2
-                printf 'Try running: show-tor-log\n' >&2
-                exit 1
-        fi
+        restart-tor || exit 1
         ;;
 *)
         printf '%s\n' "Tor setup skipped."
