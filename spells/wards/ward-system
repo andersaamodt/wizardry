@@ -225,6 +225,69 @@ check_level_1() {
       fi
       ;;
   esac
+  
+  # Check shell history file permissions
+  for history_file in "$HOME/.bash_history" "$HOME/.zsh_history" \
+                       "$HOME/.sh_history" "$HOME/.history"; do
+    if [ -f "$history_file" ]; then
+      history_perms=$(ls -l "$history_file" 2>/dev/null | awk '{print $1}')
+      case "$history_perms" in
+        -rw-------*)
+          ward_pass "Shell history file has secure permissions"
+          ward_desc "History files should be private (600) to protect sensitive commands." 0
+          break
+          ;;
+        *)
+          ward_fail "Shell history file has insecure permissions: $history_perms"
+          msg="Shell history files may contain sensitive information like passwords. "
+          msg="${msg}They should have permissions 600 (readable/writable only by owner)."
+          ward_desc "$msg" 1
+          if ward_ask_fix "Fix shell history file permissions?"; then
+            chmod 600 "$history_file" && success "Fixed $history_file permissions to 600"
+          fi
+          break
+          ;;
+      esac
+    fi
+  done
+  
+  # Check /tmp directory permissions
+  if [ -d /tmp ]; then
+    tmp_perms=$(ls -ld /tmp 2>/dev/null | awk '{print $1}')
+    if printf '%s' "$tmp_perms" | grep -q 't'; then
+      ward_pass "/tmp has sticky bit set"
+      ward_desc "Sticky bit on /tmp prevents users from deleting others' files." 0
+    else
+      ward_fail "/tmp does not have sticky bit set"
+      msg="/tmp should have the sticky bit (t) set to prevent users from "
+      msg="${msg}deleting files they don't own. This is a common security measure."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Would you like guidance on fixing /tmp permissions?"; then
+        printf 'Set sticky bit on /tmp (requires root):\n'
+        printf '  sudo chmod +t /tmp\n'
+      fi
+    fi
+  fi
+  
+  # Check for .netrc file (stores passwords)
+  if [ -f "$HOME/.netrc" ]; then
+    netrc_perms=$(ls -l "$HOME/.netrc" 2>/dev/null | awk '{print $1}')
+    case "$netrc_perms" in
+      -rw-------*)
+        ward_pass ".netrc file has secure permissions"
+        ward_desc ".netrc stores credentials and should be private (600)." 0
+        ;;
+      *)
+        ward_fail ".netrc file has insecure permissions: $netrc_perms"
+        msg="The .netrc file stores login credentials and must have "
+        msg="${msg}permissions 600 to prevent unauthorized access."
+        ward_desc "$msg" 1
+        if ward_ask_fix "Fix .netrc permissions?"; then
+          chmod 600 "$HOME/.netrc" && success "Fixed .netrc permissions to 600"
+        fi
+        ;;
+    esac
+  fi
 }
 
 # Level 2: Advanced security checks
@@ -324,6 +387,76 @@ check_level_2() {
       printf 'Or an RSA key (for compatibility):\n'
       printf '  ssh-keygen -t rsa -b 4096 -C "your_email@example.com"\n'
     fi
+  fi
+  
+  # Check sudo configuration
+  if [ -r /etc/sudoers ] || [ -d /etc/sudoers.d ]; then
+    ward_pass "Sudo configuration files exist"
+    ward_desc "Review sudo configuration to ensure only authorized users have privileges." "$verbose"
+  fi
+  
+  # Check for password in shell history
+  if has grep; then
+    for history_file in "$HOME/.bash_history" "$HOME/.zsh_history" \
+                         "$HOME/.sh_history" "$HOME/.history"; do
+      if [ -f "$history_file" ]; then
+        # Look for common password-related patterns
+        if grep -qi "password\|passwd\|pwd" "$history_file" 2>/dev/null | head -1 >/dev/null; then
+          ward_fail "Possible passwords found in shell history"
+          msg="Shell history contains password-related commands. "
+          msg="${msg}Never include passwords in command-line arguments. "
+          msg="${msg}Consider clearing sensitive history entries."
+          ward_desc "$msg" 1
+          if ward_ask_fix "Would you like guidance on cleaning history?"; then
+            printf 'Edit your history file to remove sensitive entries:\n'
+            printf '  $EDITOR %s\n' "$history_file"
+            printf 'Or clear entire history (caution):\n'
+            printf '  history -c && > %s\n' "$history_file"
+          fi
+          break
+        fi
+      fi
+    done
+  fi
+  
+  # Check for unattended-upgrades (Linux only)
+  if has systemctl; then
+    if systemctl is-enabled unattended-upgrades >/dev/null 2>&1 || \
+       systemctl is-active unattended-upgrades >/dev/null 2>&1; then
+      ward_pass "Automatic security updates are configured"
+      ward_desc "Unattended-upgrades helps keep system secure with automatic updates." 0
+    else
+      ward_fail "Automatic security updates not configured"
+      msg="Automatic security updates help protect against known vulnerabilities. "
+      msg="${msg}Consider enabling unattended-upgrades."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Would you like guidance on enabling auto-updates?"; then
+        printf 'On Ubuntu/Debian:\n'
+        printf '  sudo apt install unattended-upgrades\n'
+        printf '  sudo dpkg-reconfigure -plow unattended-upgrades\n'
+      fi
+    fi
+  fi
+  
+  # Check authorized_keys permissions
+  if [ -f "$HOME/.ssh/authorized_keys" ]; then
+    auth_keys_perms=$(ls -l "$HOME/.ssh/authorized_keys" 2>/dev/null | awk '{print $1}')
+    case "$auth_keys_perms" in
+      -rw-------*|-rw-r--r--*)
+        ward_pass "authorized_keys file has acceptable permissions"
+        ward_desc "authorized_keys should be 600 or 644." 0
+        ;;
+      *)
+        ward_fail "authorized_keys has insecure permissions: $auth_keys_perms"
+        msg="The authorized_keys file controls SSH access. "
+        msg="${msg}It should have permissions 600 or 644."
+        ward_desc "$msg" 1
+        if ward_ask_fix "Fix authorized_keys permissions?"; then
+          chmod 600 "$HOME/.ssh/authorized_keys" && \
+            success "Fixed authorized_keys permissions to 600"
+        fi
+        ;;
+    esac
   fi
 }
 
@@ -427,6 +560,119 @@ check_level_3() {
   if [ -r /var/spool/cron/crontabs/"$(id -un)" ] || [ -r /var/spool/cron/"$(id -un)" ]; then
     ward_pass "User crontab exists - review recommended"
     ward_desc "Cron jobs run automatically. Review with: crontab -l" "$verbose"
+  fi
+  
+  # Check listening network services
+  if has ss || has netstat; then
+    if has ss; then
+      listen_count=$(ss -tuln 2>/dev/null | grep -c LISTEN || printf '0')
+    else
+      listen_count=$(netstat -tuln 2>/dev/null | grep -c LISTEN || printf '0')
+    fi
+    ward_pass "Found $listen_count listening network services"
+    msg="Network services listening for connections represent potential attack surface. "
+    msg="${msg}Review with: ss -tuln (or netstat -tuln)"
+    ward_desc "$msg" "$verbose"
+  fi
+  
+  # Check for known_hosts file size
+  if [ -f "$HOME/.ssh/known_hosts" ]; then
+    known_hosts_lines=$(wc -l < "$HOME/.ssh/known_hosts" 2>/dev/null || printf '0')
+    if [ "$known_hosts_lines" -gt 0 ]; then
+      ward_pass "SSH known_hosts contains $known_hosts_lines entries"
+      msg="known_hosts tracks SSH server fingerprints to prevent MITM attacks."
+      ward_desc "$msg" "$verbose"
+    fi
+  fi
+  
+  # Check for IPv6 privacy extensions (Linux)
+  if [ -r /proc/sys/net/ipv6/conf/all/use_tempaddr ]; then
+    ipv6_privacy=$(cat /proc/sys/net/ipv6/conf/all/use_tempaddr 2>/dev/null || printf '0')
+    if [ "$ipv6_privacy" -ge 2 ]; then
+      ward_pass "IPv6 privacy extensions are enabled"
+      ward_desc "Privacy extensions help prevent IPv6 address tracking." 0
+    else
+      ward_fail "IPv6 privacy extensions are disabled"
+      msg="IPv6 privacy extensions prevent tracking via stable addresses. "
+      msg="${msg}Enable with: sysctl -w net.ipv6.conf.all.use_tempaddr=2"
+      ward_desc "$msg" 1
+      if ward_ask_fix "Would you like guidance on enabling IPv6 privacy?"; then
+        printf 'Enable IPv6 privacy extensions:\n'
+        printf '  sudo sysctl -w net.ipv6.conf.all.use_tempaddr=2\n'
+        printf 'Make permanent by adding to /etc/sysctl.conf:\n'
+        printf '  net.ipv6.conf.all.use_tempaddr=2\n'
+      fi
+    fi
+  fi
+  
+  # Check kernel parameters for security hardening
+  if [ -r /proc/sys/kernel/dmesg_restrict ]; then
+    dmesg_restrict=$(cat /proc/sys/kernel/dmesg_restrict 2>/dev/null || printf '0')
+    if [ "$dmesg_restrict" -eq 1 ]; then
+      ward_pass "Kernel dmesg access is restricted"
+      ward_desc "Restricting dmesg prevents information disclosure to non-root users." "$verbose"
+    else
+      ward_fail "Kernel dmesg access is not restricted"
+      msg="dmesg can reveal sensitive kernel information. "
+      msg="${msg}Restrict with: sysctl -w kernel.dmesg_restrict=1"
+      ward_desc "$msg" 1
+    fi
+  fi
+  
+  # Check for systemd-analyze security (if available)
+  if has systemd-analyze && has systemctl; then
+    ward_pass "systemd security analysis available"
+    msg="Run 'systemd-analyze security' to review service security settings."
+    ward_desc "$msg" "$verbose"
+  fi
+  
+  # Check /var/log permissions
+  if [ -d /var/log ]; then
+    log_perms=$(ls -ld /var/log 2>/dev/null | awk '{print $1}')
+    if printf '%s' "$log_perms" | grep -qE '^drwxr-xr-x|^drwxrwx---'; then
+      ward_pass "/var/log has reasonable permissions"
+      ward_desc "Log directory permissions prevent unauthorized access to logs." "$verbose"
+    else
+      ward_fail "/var/log has unusual permissions: $log_perms"
+      msg="Log files may contain sensitive information. "
+      msg="${msg}Review /var/log permissions."
+      ward_desc "$msg" 1
+    fi
+  fi
+  
+  # Check for failed login attempts
+  if [ -r /var/log/auth.log ] || [ -r /var/log/secure ]; then
+    auth_log="/var/log/auth.log"
+    [ -r /var/log/secure ] && auth_log="/var/log/secure"
+    
+    if has grep; then
+      failed_logins=$(grep "Failed password" "$auth_log" 2>/dev/null | wc -l)
+      failed_logins=${failed_logins:-0}
+      if [ "$failed_logins" -gt 0 ] 2>/dev/null; then
+        ward_fail "Found $failed_logins failed login attempts in logs"
+        msg="Failed login attempts may indicate brute-force attacks. "
+        msg="${msg}Review with: grep 'Failed password' $auth_log"
+        ward_desc "$msg" 1
+      else
+        ward_pass "No recent failed login attempts in auth logs"
+        ward_desc "System shows no signs of brute-force login attempts." 0
+      fi
+    fi
+  fi
+  
+  # Check for suspicious processes
+  if has ps; then
+    # Look for processes running from tmp directories (common attack vector)
+    tmp_procs=$(ps aux 2>/dev/null | grep -E '/tmp/|/var/tmp/' | grep -v grep || printf '')
+    if [ -n "$tmp_procs" ]; then
+      ward_fail "Found processes running from /tmp directories"
+      msg="Processes running from /tmp may be malicious. "
+      msg="${msg}Review running processes carefully."
+      ward_desc "$msg" 1
+    else
+      ward_pass "No suspicious processes from /tmp detected"
+      ward_desc "No processes running from temporary directories." "$verbose"
+    fi
   fi
 }
 
