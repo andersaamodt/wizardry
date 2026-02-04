@@ -1,0 +1,116 @@
+#!/bin/sh
+
+# Set up HTTPS with Let's Encrypt (interactive wrapper with confirmation).
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: setup-https SITENAME
+
+Guides you through setting up HTTPS with Let's Encrypt for a website.
+
+This is an interactive wrapper around the 'https' spell that:
+  1. Confirms you're on a production server with a proper domain
+  2. Collects necessary information (email, domain)
+  3. Sets up HTTPS using Let's Encrypt
+
+Prerequisites:
+  - certbot must be installed
+  - Domain must be publicly accessible and pointing to this server
+  - Port 80 must be available for ACME challenge
+
+Example: web-setup-https mysite
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+. colors
+
+site_name=${1-}
+if [ -z "$site_name" ]; then
+  die 2 "setup-https: SITENAME required"
+fi
+
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+SITES_DIR="$WEB_ROOT"
+SITE_DIR="$SITES_DIR/$site_name"
+
+if [ ! -d "$SITE_DIR" ]; then
+  die "setup-https: site '$site_name' not found"
+fi
+
+# Check if HTTPS is already configured
+if check-https-status "$site_name"; then
+  warn "setup-https: HTTPS is already configured for site '$site_name'"
+  info "Use 'renew-https $site_name' to renew the certificate"
+  info "Use 'disable-https $site_name' to disable HTTPS"
+  exit 0
+fi
+
+# Display important information and confirmation
+printf '\n'
+printf '%s%sIMPORTANT: HTTPS Setup Requirements%s\n' "$BOLD" "$YELLOW" "$RESET"
+printf '%s─────────────────────────────────────%s\n' "$YELLOW" "$RESET"
+printf '\n'
+printf 'HTTPS with Let'\''s Encrypt requires:\n'
+printf '\n'
+printf '  %s1.%s You must be on a %sproduction web server%s\n' "$BOLD" "$RESET" "$BOLD" "$RESET"
+printf '  %s2.%s You must have a %sdomain name%s (not localhost)\n' "$BOLD" "$RESET" "$BOLD" "$RESET"
+printf '  %s3.%s The domain must %spoint to this server'\''s IP address%s\n' "$BOLD" "$RESET" "$BOLD" "$RESET"
+printf '  %s4.%s Port 80 must be %saccessible from the internet%s\n' "$BOLD" "$RESET" "$BOLD" "$RESET"
+printf '\n'
+printf 'Let'\''s Encrypt will verify domain ownership by accessing\n'
+printf 'http://your-domain/.well-known/acme-challenge/...\n'
+printf '\n'
+
+# Ask for confirmation
+printf '%sAre you on a production server with a domain pointing to this IP? (y/n)%s ' "$BOLD" "$RESET"
+read -r confirm
+
+case "$confirm" in
+  y|Y|yes|Yes|YES)
+    # Proceed with setup
+    ;;
+  *)
+    info "HTTPS setup cancelled"
+    info ""
+    info "To set up HTTPS, you need:"
+    info "  - A registered domain name"
+    info "  - DNS configured to point to this server"
+    info "  - This server accessible from the internet on port 80"
+    exit 0
+    ;;
+esac
+
+# Get the domain from site.conf or prompt for it
+domain=$(config-get "$SITE_DIR/site.conf" domain 2>/dev/null || echo "")
+if [ -z "$domain" ] || [ "$domain" = "localhost" ]; then
+  printf '\n'
+  printf 'Enter your domain name (e.g., example.com): '
+  read -r domain
+  
+  if [ -z "$domain" ]; then
+    die 2 "setup-https: domain required"
+  fi
+  
+  # Update domain in site.conf
+  config-set "$SITE_DIR/site.conf" domain "$domain"
+fi
+
+# Get email for Let's Encrypt notifications
+printf '\n'
+printf 'Enter email for Let'\''s Encrypt notifications: '
+read -r email
+
+if [ -z "$email" ]; then
+  die 2 "setup-https: email required"
+fi
+
+printf '\n'
+step "Setting up HTTPS for $domain..."
+
+# Call the main https spell
+https "$site_name" --email "$email"

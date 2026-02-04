@@ -1,0 +1,50 @@
+#!/bin/sh
+
+# Check if HTTPS is configured for a site.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: check-https-status SITENAME
+
+Checks if HTTPS is configured for a website.
+
+Returns:
+  0 if HTTPS is configured
+  1 if HTTPS is not configured
+  2 if site doesn't exist
+
+Example: web-check-https-status mysite
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+site_name=${1-}
+if [ -z "$site_name" ]; then
+  die 2 "check-https-status: SITENAME required"
+fi
+
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+SITES_DIR="$WEB_ROOT"
+SITE_DIR="$SITES_DIR/$site_name"
+
+if [ ! -d "$SITE_DIR" ]; then
+  exit 2
+fi
+
+# Check if HTTPS is enabled in site.conf
+https_enabled=$(config-get "$SITE_DIR/site.conf" https 2>/dev/null || echo "false")
+
+if [ "$https_enabled" = "true" ]; then
+  # Also verify certificate files exist
+  cert_path=$(config-get "$SITE_DIR/site.conf" cert-path 2>/dev/null || echo "")
+  if [ -n "$cert_path" ] && [ -f "$cert_path" ]; then
+    exit 0
+  fi
+fi
+
+exit 1
