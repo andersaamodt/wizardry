@@ -1,0 +1,126 @@
+#!/bin/sh
+
+# Update htmx and idiomorph JavaScript libraries.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: update-htmx
+
+Updates htmx and idiomorph libraries to the currently pinned versions.
+Reports whether files were updated or already up-to-date.
+
+This is useful when version pins are changed in the install-htmx spell.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+# Shared installation directory for web wizardry JS libraries
+install_dir="${WIZARDRY_WEB_JS_DIR:-$HOME/.local/share/wizardry/web/js}"
+
+# Check if htmx is installed
+if [ ! -f "$install_dir/htmx.min.js" ] && [ ! -f "$install_dir/idiomorph-ext.min.js" ]; then
+  info "Web libraries not currently installed."
+  info "Installing for the first time..."
+  install-htmx
+  exit 0
+fi
+
+step "Checking for web library updates..."
+
+# Create temp directory for downloads
+temp_dir=$(mktemp -d)
+trap 'rm -rf "$temp_dir"' EXIT
+
+# Version-pinned URLs (should match install-htmx)
+htmx_url="https://unpkg.com/htmx.org@1.9.10/dist/htmx.min.js"
+idiomorph_url="https://unpkg.com/idiomorph@0.3.0/dist/idiomorph-ext.min.js"
+
+# Detect download tool
+if has curl; then
+  download_tool="curl"
+elif has wget; then
+  download_tool="wget"
+else
+  die "update-htmx: curl or wget required"
+fi
+
+# Track if any updates were made
+updated=0
+
+# Download htmx to temp location
+info "Downloading latest htmx.min.js..."
+if [ "$download_tool" = "curl" ]; then
+  curl -fsSL "$htmx_url" -o "$temp_dir/htmx.min.js" || {
+    die "update-htmx: failed to download htmx"
+  }
+else
+  wget -q "$htmx_url" -O "$temp_dir/htmx.min.js" || {
+    die "update-htmx: failed to download htmx"
+  }
+fi
+
+# Download idiomorph to temp location
+info "Downloading latest idiomorph-ext.min.js..."
+if [ "$download_tool" = "curl" ]; then
+  curl -fsSL "$idiomorph_url" -o "$temp_dir/idiomorph-ext.min.js" || {
+    die "update-htmx: failed to download idiomorph"
+  }
+else
+  wget -q "$idiomorph_url" -O "$temp_dir/idiomorph-ext.min.js" || {
+    die "update-htmx: failed to download idiomorph"
+  }
+fi
+
+# Compare htmx files
+if [ -f "$install_dir/htmx.min.js" ]; then
+  if cmp -s "$install_dir/htmx.min.js" "$temp_dir/htmx.min.js"; then
+    info "htmx.min.js is already up-to-date"
+  else
+    info "Updating htmx.min.js..."
+    mkdir -p "$install_dir"
+    cp "$temp_dir/htmx.min.js" "$install_dir/htmx.min.js"
+    updated=1
+  fi
+else
+  info "Installing htmx.min.js..."
+  mkdir -p "$install_dir"
+  cp "$temp_dir/htmx.min.js" "$install_dir/htmx.min.js"
+  updated=1
+fi
+
+# Compare idiomorph files
+if [ -f "$install_dir/idiomorph-ext.min.js" ]; then
+  if cmp -s "$install_dir/idiomorph-ext.min.js" "$temp_dir/idiomorph-ext.min.js"; then
+    info "idiomorph-ext.min.js is already up-to-date"
+  else
+    info "Updating idiomorph-ext.min.js..."
+    cp "$temp_dir/idiomorph-ext.min.js" "$install_dir/idiomorph-ext.min.js"
+    updated=1
+  fi
+else
+  info "Installing idiomorph-ext.min.js..."
+  mkdir -p "$install_dir"
+  cp "$temp_dir/idiomorph-ext.min.js" "$install_dir/idiomorph-ext.min.js"
+  updated=1
+fi
+
+# Report results
+if [ "$updated" -eq 1 ]; then
+  success "Web libraries updated"
+  info "Location: $install_dir"
+  info "  - htmx.min.js (v1.9.10)"
+  info "  - idiomorph-ext.min.js (v0.3.0)"
+  info ""
+  info "Rebuild your sites to use the updated libraries:"
+  info "  build --full SITENAME"
+else
+  success "Web libraries are already up-to-date"
+  info "No changes were made."
+fi

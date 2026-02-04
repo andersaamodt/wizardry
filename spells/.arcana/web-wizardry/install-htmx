@@ -1,13 +1,18 @@
 #!/bin/sh
 
-# Install htmx JavaScript library.
+# Install htmx and idiomorph JavaScript libraries for web wizardry.
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
 Usage: install-htmx
 
-Downloads and installs htmx.min.js to a local directory.
+Downloads and installs htmx and idiomorph libraries to a shared directory
+for use by web wizardry sites.
+
+Libraries installed:
+  - htmx.min.js (v1.9.10)
+  - idiomorph-ext.min.js (v0.3.0)
 USAGE
   exit 0
   ;;
@@ -18,30 +23,51 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
-# Determine installation directory
-install_dir="${HTMX_DIR:-$HOME/.local/share/htmx}"
+# Shared installation directory for web wizardry JS libraries
+install_dir="${WIZARDRY_WEB_JS_DIR:-$HOME/.local/share/wizardry/web/js}"
 
-printf '%s\n' "Installing htmx..."
+step "Installing web libraries..."
 
 # Create installation directory
 mkdir -p "$install_dir"
 
-# Download htmx using curl or wget
+# Version-pinned URLs for stability (manual updates to avoid breaking sites)
 htmx_url="https://unpkg.com/htmx.org@1.9.10/dist/htmx.min.js"
+idiomorph_url="https://unpkg.com/idiomorph@0.3.0/dist/idiomorph-ext.min.js"
 
-if command -v curl >/dev/null 2>&1; then
-  curl -fsSL "$htmx_url" -o "$install_dir/htmx.min.js" || {
-    printf '%s\n' "install-htmx: failed to download htmx" >&2
-    exit 1
-  }
-elif command -v wget >/dev/null 2>&1; then
-  wget -q "$htmx_url" -O "$install_dir/htmx.min.js" || {
-    printf '%s\n' "install-htmx: failed to download htmx" >&2
-    exit 1
-  }
+# Detect download tool
+if has curl; then
+  download_tool="curl"
+elif has wget; then
+  download_tool="wget"
 else
-  printf '%s\n' "install-htmx: curl or wget required" >&2
-  exit 1
+  die "install-htmx: curl or wget required"
 fi
 
-printf '%s\n' "Htmx installed to $install_dir/htmx.min.js"
+# Download htmx
+info "Downloading htmx.min.js..."
+if [ "$download_tool" = "curl" ]; then
+  curl -fsSL "$htmx_url" -o "$install_dir/htmx.min.js" || {
+    die "install-htmx: failed to download htmx"
+  }
+else
+  wget -q "$htmx_url" -O "$install_dir/htmx.min.js" || {
+    die "install-htmx: failed to download htmx"
+  }
+fi
+
+# Download idiomorph
+info "Downloading idiomorph-ext.min.js..."
+if [ "$download_tool" = "curl" ]; then
+  curl -fsSL "$idiomorph_url" -o "$install_dir/idiomorph-ext.min.js" || {
+    die "install-htmx: failed to download idiomorph"
+  }
+else
+  wget -q "$idiomorph_url" -O "$install_dir/idiomorph-ext.min.js" || {
+    die "install-htmx: failed to download idiomorph"
+  }
+fi
+
+success "Web libraries installed to $install_dir"
+info "  - htmx.min.js (v1.9.10)"
+info "  - idiomorph-ext.min.js (v0.3.0)"
