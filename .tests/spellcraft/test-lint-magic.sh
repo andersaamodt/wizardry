@@ -486,6 +486,50 @@ EOF
   assert_failure && assert_output_contains "[1/1] FAIL"
 }
 
+test_shows_all_bashism_violations_with_reasons() {
+  # Test that all bashism violations are shown with detailed reasons
+  spell_dir=$(make_spell_dir)
+  
+  cat >"$spell_dir/bashism-spell" <<'EOF'
+#!/bin/sh
+
+# Spell with multiple bashisms.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: bashism-spell
+
+Spell with bashisms.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+[[ -n "${1-}" ]]
+function myfunc() {
+  printf 'hi\n'
+}
+EOF
+  chmod +x "$spell_dir/bashism-spell"
+  
+  run_spell "spells/spellcraft/lint-magic" "$spell_dir/bashism-spell"
+  
+  # Should fail with all violations listed, not just "run checkbashisms for details"
+  assert_failure || return 1
+  # Should NOT contain the old generic message
+  if printf '%s\n' "$OUTPUT" | grep -q "run checkbashisms for details"; then
+    TEST_FAILURE_REASON="output contains 'run checkbashisms for details'"
+    return 1
+  fi
+  # Check for specific bashism reasons
+  assert_output_contains "possible bashism" || return 1
+  assert_output_contains "alternative test command" || return 1
+  assert_output_contains "function" || return 1
+}
+
 run_test_case "lint-magic prints usage" test_help
 run_test_case "lint-magic accepts --usage" test_usage_alias
 run_test_case "lint-magic rejects unknown option" test_unknown_option
@@ -512,6 +556,7 @@ run_test_case "lint-magic fails imp with duplicate set -eu" test_imp_fails_with_
 run_test_case "lint-magic passes imp with single set -eu" test_imp_passes_with_single_set_eu
 run_test_case "lint-magic shows progress numbering" test_shows_progress_numbering
 run_test_case "lint-magic shows numbering in failures" test_shows_numbering_in_failures
+run_test_case "lint-magic shows all bashism violations with reasons" test_shows_all_bashism_violations_with_reasons
 
 
 # Test via source-then-invoke pattern  
