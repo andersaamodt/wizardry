@@ -308,10 +308,10 @@ check_level_1() {
             success "Set sticky bit on /tmp"
             ward_mark_fixed
           else
-            warn "Command completed but sticky bit not set - check permissions manually"
+            warn "Failed to set sticky bit on /tmp"
           fi
         else
-          warn "Failed to set sticky bit on /tmp - may need manual intervention"
+          warn "Failed to set sticky bit on /tmp"
         fi
       fi
     fi
@@ -352,7 +352,7 @@ check_level_1() {
         if wizard-cast sudo chmod 644 /etc/resolv.conf; then
           success "Fixed /etc/resolv.conf permissions to 644"
         else
-          warn "Failed to fix /etc/resolv.conf - may need manual intervention"
+          warn "Failed to fix /etc/resolv.conf permissions"
         fi
       fi
     else
@@ -753,7 +753,7 @@ check_level_2() {
          printf 'root\n' | wizard-cast sudo tee /etc/cron.allow >/dev/null; then
         success "Created /etc/cron.allow with restricted access"
       else
-        warn "Failed to create cron.allow - may need manual intervention"
+        warn "Failed to create cron.allow"
       fi
     fi
   fi
@@ -805,7 +805,7 @@ check_level_2() {
         if wizard-cast sudo timedatectl set-ntp true; then
           success "Enabled time synchronization"
         else
-          warn "Failed to enable time synchronization - may need manual intervention"
+          warn "Failed to enable time synchronization"
         fi
       fi
     fi
@@ -1130,8 +1130,7 @@ check_level_3() {
     ward_pass "Found $suid_count SUID binaries in standard locations"
     msg="SUID binaries run with elevated privileges. "
     msg="${msg}While some are necessary (sudo, passwd), "
-    msg="${msg}excessive SUID binaries increase attack surface. "
-    msg="${msg}Review with: find / -type f -perm -4000 2>/dev/null"
+    msg="${msg}excessive SUID binaries increase attack surface."
     ward_desc "$msg" "$verbose"
   fi
   
@@ -1231,8 +1230,8 @@ check_level_3() {
   
   # Check for suspicious cron jobs
   if [ -r /var/spool/cron/crontabs/"$(id -un)" ] || [ -r /var/spool/cron/"$(id -un)" ]; then
-    ward_pass "User crontab exists - review recommended"
-    ward_desc "Cron jobs run automatically. Review with: crontab -l" "$verbose"
+    ward_pass "User crontab exists"
+    ward_desc "Cron jobs run automatically on a schedule." "$verbose"
   fi
   
   # Check listening network services
@@ -1243,8 +1242,7 @@ check_level_3() {
       listen_count=$(netstat -tuln 2>/dev/null | grep -c LISTEN || printf '0')
     fi
     ward_pass "Found $listen_count listening network services"
-    msg="Network services listening for connections represent potential attack surface. "
-    msg="${msg}Review with: ss -tuln (or netstat -tuln)"
+    msg="Network services listening for connections represent potential attack surface."
     ward_desc "$msg" "$verbose"
   fi
   
@@ -1266,8 +1264,7 @@ check_level_3() {
       ward_desc "Privacy extensions help prevent IPv6 address tracking." 0
     else
       ward_fail "IPv6 privacy extensions are disabled"
-      msg="IPv6 privacy extensions prevent tracking via stable addresses. "
-      msg="${msg}Enable with: sysctl -w net.ipv6.conf.all.use_tempaddr=2"
+      msg="IPv6 privacy extensions prevent tracking via stable addresses."
       ward_desc "$msg" 1
       if ward_ask_fix "Enable IPv6 privacy extensions? (requires root)"; then
         if wizard-cast sudo sysctl -w net.ipv6.conf.all.use_tempaddr=2 && \
@@ -1330,8 +1327,7 @@ check_level_3() {
       failed_logins=${failed_logins:-0}
       if [ "$failed_logins" -gt 0 ] 2>/dev/null; then
         ward_fail "Found $failed_logins failed login attempts in logs"
-        msg="Failed login attempts may indicate brute-force attacks. "
-        msg="${msg}Review with: grep 'Failed password' $auth_log"
+        msg="Failed login attempts may indicate brute-force attacks."
         ward_desc "$msg" 1
       else
         ward_pass "No recent failed login attempts in auth logs"
@@ -1346,8 +1342,7 @@ check_level_3() {
     tmp_procs=$(ps aux 2>/dev/null | grep -E '/tmp/|/var/tmp/' | grep -v grep || printf '')
     if [ -n "$tmp_procs" ]; then
       ward_fail "Found processes running from /tmp directories"
-      msg="Processes running from /tmp may be malicious. "
-      msg="${msg}Review running processes carefully."
+      msg="Processes running from /tmp may be malicious."
       ward_desc "$msg" 1
     else
       ward_pass "No suspicious processes from /tmp detected"
@@ -1363,8 +1358,7 @@ check_level_3() {
       ward_desc "ASLR helps protect against memory corruption exploits." 0
     else
       ward_fail "ASLR is not fully enabled (value: $aslr)"
-      msg="ASLR should be set to 2 for full protection. "
-      msg="${msg}Enable with: sysctl -w kernel.randomize_va_space=2"
+      msg="ASLR should be set to 2 for full protection."
       ward_desc "$msg" 1
       if ward_ask_fix "Enable ASLR fully? (recommended, requires root)"; then
         if wizard-cast sudo sysctl -w kernel.randomize_va_space=2; then
@@ -1395,7 +1389,7 @@ check_level_3() {
         ward_desc "$msg" 1
       fi
     else
-      ward_pass "/tmp mount options: check manually"
+      ward_pass "/tmp mount options not verified"
       ward_desc "/tmp may not be a separate mount. Consider separate partition." "$verbose"
     fi
   fi
@@ -1578,7 +1572,7 @@ check_level_3() {
       ward_pass "Root filesystem appears to be encrypted"
       ward_desc "Full disk encryption protects data if device is stolen." 0
     else
-      ward_pass "Root filesystem encryption: not detected (check manually)"
+      ward_pass "Root filesystem encryption not detected"
       msg="Disk encryption protects against physical theft but is complex to add later."
       ward_desc "$msg" "$verbose"
     fi
@@ -1593,15 +1587,21 @@ check_level_3() {
       ward_desc "$msg" "$verbose"
     else
       ward_fail "Reverse path filtering is disabled"
-      msg="Reverse path filtering helps prevent spoofed packets. "
-      msg="${msg}Enable with: sysctl -w net.ipv4.conf.all.rp_filter=1"
+      msg="Reverse path filtering helps prevent spoofed packets."
       ward_desc "$msg" 1
       if ward_ask_fix "Enable reverse path filtering? (recommended)"; then
-        printf 'Enable reverse path filtering:\n'
-        printf '  sudo sysctl -w net.ipv4.conf.all.rp_filter=1\n'
-        printf '  sudo sysctl -w net.ipv4.conf.default.rp_filter=1\n'
-        printf 'Make permanent in /etc/sysctl.conf:\n'
-        printf '  net.ipv4.conf.all.rp_filter=1\n'
+        if wizard-cast sudo sysctl -w net.ipv4.conf.all.rp_filter=1 && \
+           wizard-cast sudo sysctl -w net.ipv4.conf.default.rp_filter=1; then
+          # Make it permanent
+          if [ -w /etc/sysctl.conf ] || sudo test -w /etc/sysctl.conf 2>/dev/null; then
+            printf 'net.ipv4.conf.all.rp_filter=1\nnet.ipv4.conf.default.rp_filter=1\n' | \
+              wizard-cast sudo tee -a /etc/sysctl.conf >/dev/null
+          fi
+          success "Enabled reverse path filtering"
+          ward_mark_fixed
+        else
+          warn "Failed to enable reverse path filtering"
+        fi
       fi
     fi
   fi
@@ -1614,14 +1614,20 @@ check_level_3() {
       ward_desc "SYN cookies help protect against SYN flood attacks." 0
     else
       ward_fail "SYN cookie protection is disabled"
-      msg="SYN cookies protect against DoS attacks. "
-      msg="${msg}Enable with: sysctl -w net.ipv4.tcp_syncookies=1"
+      msg="SYN cookies protect against DoS attacks."
       ward_desc "$msg" 1
       if ward_ask_fix "Enable SYN cookie protection? (recommended)"; then
-        printf 'Enable SYN cookies:\n'
-        printf '  sudo sysctl -w net.ipv4.tcp_syncookies=1\n'
-        printf 'Make permanent in /etc/sysctl.conf:\n'
-        printf '  net.ipv4.tcp_syncookies=1\n'
+        if wizard-cast sudo sysctl -w net.ipv4.tcp_syncookies=1; then
+          # Make it permanent
+          if [ -w /etc/sysctl.conf ] || sudo test -w /etc/sysctl.conf 2>/dev/null; then
+            printf 'net.ipv4.tcp_syncookies=1\n' | \
+              wizard-cast sudo tee -a /etc/sysctl.conf >/dev/null
+          fi
+          success "Enabled SYN cookie protection"
+          ward_mark_fixed
+        else
+          warn "Failed to enable SYN cookie protection"
+        fi
       fi
     fi
   fi
@@ -1646,14 +1652,20 @@ check_level_3() {
       ward_desc "$msg" "$verbose"
     else
       ward_fail "Kernel pointers are not restricted"
-      msg="Hiding kernel pointers helps prevent exploits. "
-      msg="${msg}Enable with: sysctl -w kernel.kptr_restrict=1"
+      msg="Hiding kernel pointers helps prevent exploits."
       ward_desc "$msg" 1
       if ward_ask_fix "Enable kernel pointer restriction? (recommended)"; then
-        printf 'Enable kernel pointer restriction:\n'
-        printf '  sudo sysctl -w kernel.kptr_restrict=1\n'
-        printf 'Make permanent in /etc/sysctl.conf:\n'
-        printf '  kernel.kptr_restrict=1\n'
+        if wizard-cast sudo sysctl -w kernel.kptr_restrict=1; then
+          # Make it permanent
+          if [ -w /etc/sysctl.conf ] || sudo test -w /etc/sysctl.conf 2>/dev/null; then
+            printf 'kernel.kptr_restrict=1\n' | \
+              wizard-cast sudo tee -a /etc/sysctl.conf >/dev/null
+          fi
+          success "Enabled kernel pointer restriction"
+          ward_mark_fixed
+        else
+          warn "Failed to enable kernel pointer restriction"
+        fi
       fi
     fi
   fi
@@ -1667,14 +1679,20 @@ check_level_3() {
       ward_desc "$msg" "$verbose"
     else
       ward_fail "ptrace is not restricted"
-      msg="Restricting ptrace prevents some debugging-based attacks. "
-      msg="${msg}Enable with: sysctl -w kernel.yama.ptrace_scope=1"
+      msg="Restricting ptrace prevents some debugging-based attacks."
       ward_desc "$msg" 1
       if ward_ask_fix "Restrict ptrace? (recommended)"; then
-        printf 'Restrict ptrace:\n'
-        printf '  sudo sysctl -w kernel.yama.ptrace_scope=1\n'
-        printf 'Make permanent in /etc/sysctl.conf:\n'
-        printf '  kernel.yama.ptrace_scope=1\n'
+        if wizard-cast sudo sysctl -w kernel.yama.ptrace_scope=1; then
+          # Make it permanent
+          if [ -w /etc/sysctl.conf ] || sudo test -w /etc/sysctl.conf 2>/dev/null; then
+            printf 'kernel.yama.ptrace_scope=1\n' | \
+              wizard-cast sudo tee -a /etc/sysctl.conf >/dev/null
+          fi
+          success "Enabled ptrace restriction"
+          ward_mark_fixed
+        else
+          warn "Failed to enable ptrace restriction"
+        fi
       fi
     fi
   fi
@@ -1697,8 +1715,7 @@ check_level_3() {
       ward_desc "$msg" "$verbose"
     else
       ward_fail "Performance event monitoring not fully restricted"
-      msg="Set perf_event_paranoid to 2 or higher. "
-      msg="${msg}Enable with: sysctl -w kernel.perf_event_paranoid=2"
+      msg="Set perf_event_paranoid to 2 or higher."
       ward_desc "$msg" 1
     fi
   fi
