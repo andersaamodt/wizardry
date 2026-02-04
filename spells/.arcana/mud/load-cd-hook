@@ -47,10 +47,10 @@ set +u
 # The cd override - Step 3 (with listen sourcing enabled)
 cd() {
     # Use builtin for bash/zsh (required for function override), command for POSIX sh
-    # checkbashisms: builtin is bash/zsh-specific but guarded by runtime version check
+    # checkbashisms: builtin is bash/zsh-specific but guarded by runtime version check - exempt
     if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
         # shellcheck disable=SC2039
-        builtin cd "$@" || return $?
+        builtin cd "$@" || return $? # checkbashisms: exempt (guarded)
     else
         command cd "$@" || return $?
     fi

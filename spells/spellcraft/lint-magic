@@ -187,10 +187,42 @@ while IFS= read -r target; do
       posix_issue="uses $first_line (should use #!/bin/sh)"
       posix_failures=$((posix_failures + 1))
     else
-      # Run checkbashisms
-      if ! checkbashisms -f "$path" >/dev/null 2>&1; then
-        posix_issue="POSIX compliance violation (run checkbashisms for details)"
-        posix_failures=$((posix_failures + 1))
+      # Run checkbashisms and capture output
+      cb_output=$(checkbashisms -f "$path" 2>&1 || true)
+      
+      # Check if there are any bashisms reported
+      if printf '%s\n' "$cb_output" | grep -q "possible bashism"; then
+        # Parse checkbashisms output to get line numbers and check for exemptions
+        has_real_bashism=0
+        
+        while IFS= read -r line; do
+          # Extract line number from checkbashisms output (format: "... line NN ...")
+          if printf '%s\n' "$line" | grep -q "possible bashism.*line [0-9]"; then
+            line_num=$(printf '%s\n' "$line" | sed -n 's/.*line \([0-9][0-9]*\).*/\1/p')
+            
+            # Check if that line or the line before has an exemption comment
+            if [ -n "$line_num" ]; then
+              # Get the actual line and the line before it
+              actual_line=$(sed -n "${line_num}p" "$path" 2>/dev/null || true)
+              prev_line=$(sed -n "$((line_num - 1))p" "$path" 2>/dev/null || true)
+              
+              # Check for exemption markers
+              if ! printf '%s\n' "$actual_line" | grep -q "# checkbashisms:.*exempt\|# lint-magic: ignore-bashism"; then
+                if ! printf '%s\n' "$prev_line" | grep -q "# checkbashisms:.*exempt\|# lint-magic: ignore-bashism"; then
+                  has_real_bashism=1
+                  break
+                fi
+              fi
+            fi
+          fi
+        done <<EOF
+$cb_output
+EOF
+        
+        if [ "$has_real_bashism" = "1" ]; then
+          posix_issue="POSIX compliance violation (run checkbashisms for details)"
+          posix_failures=$((posix_failures + 1))
+        fi
       fi
     fi
     
