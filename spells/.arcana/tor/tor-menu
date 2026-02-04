@@ -104,7 +104,9 @@ $openssl_option"
     case "$(uname -s 2>/dev/null)" in
     Darwin)
       # Try multiple locations on macOS
-      hs_dirs="/usr/local/var/lib/tor/hidden_service"
+      hs_dirs="/opt/homebrew/var/lib/tor/hidden_service"
+      hs_dirs="$hs_dirs /opt/homebrew/var/lib/tor/mud"
+      hs_dirs="$hs_dirs /usr/local/var/lib/tor/hidden_service"
       hs_dirs="$hs_dirs /usr/local/var/lib/tor/mud"
       hs_dirs="$hs_dirs /opt/pkg/var/lib/tor/hidden_service"
       for hs_dir in $hs_dirs; do

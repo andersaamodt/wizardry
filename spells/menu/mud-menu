@@ -217,7 +217,7 @@ while true; do
   
   # Build copy .onion address option if hostname file exists
   copy_onion=""
-  mud_dirs="/usr/local/var/lib/tor/mud /opt/pkg/var/lib/tor/mud /var/lib/tor/mud"
+  mud_dirs="/opt/homebrew/var/lib/tor/mud /usr/local/var/lib/tor/mud /opt/pkg/var/lib/tor/mud /var/lib/tor/mud"
   for mud_hs_dir in $mud_dirs; do
     if [ -f "$mud_hs_dir/hostname" ]; then
       hostname_file="$mud_hs_dir/hostname"
