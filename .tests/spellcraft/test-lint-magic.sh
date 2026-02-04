@@ -488,6 +488,13 @@ EOF
 
 test_shows_all_bashism_violations_with_reasons() {
   # Test that all bashism violations are shown with detailed reasons
+  
+  # First, verify checkbashisms is available
+  if ! has checkbashisms; then
+    TEST_FAILURE_REASON="checkbashisms is not installed (required for level 21+). Check CI workflow installation step."
+    return 1
+  fi
+  
   spell_dir=$(make_spell_dir)
   
   cat >"$spell_dir/bashism-spell" <<'EOF'
@@ -518,16 +525,32 @@ EOF
   run_spell "spells/spellcraft/lint-magic" "$spell_dir/bashism-spell"
   
   # Should fail with all violations listed, not just "run checkbashisms for details"
-  assert_failure || return 1
-  # Should NOT contain the old generic message
-  if printf '%s\n' "$OUTPUT" | grep -q "run checkbashisms for details"; then
-    TEST_FAILURE_REASON="output contains 'run checkbashisms for details'"
+  if ! assert_failure; then
+    TEST_FAILURE_REASON="lint-magic should have failed on bashism violations but returned success"
     return 1
   fi
+  
+  # Should NOT contain the old generic message
+  if printf '%s\n' "$OUTPUT" | grep -q "run checkbashisms for details"; then
+    TEST_FAILURE_REASON="output contains old generic message 'run checkbashisms for details' instead of showing detailed violations"
+    return 1
+  fi
+  
   # Check for specific bashism reasons
-  assert_output_contains "possible bashism" || return 1
-  assert_output_contains "alternative test command" || return 1
-  assert_output_contains "function" || return 1
+  if ! assert_output_contains "possible bashism"; then
+    TEST_FAILURE_REASON="output missing 'possible bashism' - checkbashisms may not have run or output format changed"
+    return 1
+  fi
+  
+  if ! assert_output_contains "alternative test command"; then
+    TEST_FAILURE_REASON="output missing 'alternative test command' - [[ ]] bashism not detected"
+    return 1
+  fi
+  
+  if ! assert_output_contains "function"; then
+    TEST_FAILURE_REASON="output missing 'function' - function keyword bashism not detected"
+    return 1
+  fi
 }
 
 run_test_case "lint-magic prints usage" test_help
