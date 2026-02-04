@@ -208,10 +208,12 @@ while true; do
   if [ "$tor_configured" -eq 1 ]; then
     # remove-tor-hidden-service already restarts tor, so no need to restart again
     tor_cmd="remove-tor-hidden-service -y"
-    tor="[X] Tor hosting%$tor_cmd; echo 9 > \"$SELECTION_FILE\""
+    # When disabling, copy_onion will disappear, moving tor from position 9 to 8
+    tor="[X] Tor hosting%$tor_cmd; echo 8 > \"$SELECTION_FILE\""
   else
     # setup-tor already restarts tor, so no need to restart again
     tor_cmd="setup-tor -y"
+    # When enabling, copy_onion will appear at position 8, keeping tor at 9
     tor="[ ] Tor hosting%$tor_cmd; echo 9 > \"$SELECTION_FILE\""
   fi
   
