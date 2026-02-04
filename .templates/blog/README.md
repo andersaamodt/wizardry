@@ -151,6 +151,67 @@ web-wizardry serve myblog
 
 Visit http://localhost:8080
 
+## SSH + WebAuthn Authentication (Optional)
+
+The blog template includes an optional authentication demo that combines SSH public keys with WebAuthn for passwordless authentication.
+
+### Features
+
+- **SSH Fingerprint as Root Identity**: SSH public key fingerprint serves as the stable identity
+- **WebAuthn Delegates**: Browser credentials bound to the SSH fingerprint
+- **Phishing-Resistant**: WebAuthn provides strong authentication without passwords
+- **Revocable Delegates**: WebAuthn credentials can be revoked without changing SSH identity
+- **Multi-Device Support**: Multiple WebAuthn credentials can bind to one SSH identity
+
+### How It Works
+
+1. **Registration**: User supplies SSH public key; server stores fingerprint
+2. **Binding**: Server issues challenge naming the SSH fingerprint
+3. **Credential Creation**: Browser creates WebAuthn credential bound to fingerprint
+4. **Authentication**: Login uses only WebAuthn (SSH key not involved)
+5. **Resolution**: Server resolves `WebAuthn credential → SSH fingerprint → account`
+
+### Demo Page
+
+Visit `/ssh-auth.html` on your blog site to see the interactive authentication demo.
+
+### CGI Scripts
+
+The following CGI scripts power the SSH+WebAuthn authentication:
+
+- `ssh-auth-register`: Register SSH public key and get binding challenge
+- `ssh-auth-bind-webauthn`: Bind WebAuthn credential to SSH fingerprint
+- `ssh-auth-login`: Authenticate using WebAuthn credential
+- `ssh-auth-list-delegates`: List all WebAuthn delegates for a user
+- `ssh-auth-revoke-delegate`: Revoke a specific WebAuthn delegate
+
+### Data Storage
+
+Authentication data is stored in the site data directory:
+
+```
+~/sites/myblog/data/ssh-auth/
+├── users/
+│   └── username/
+│       ├── ssh_public_key        # Original SSH public key
+│       ├── ssh_fingerprint       # SHA-256 fingerprint (root identity)
+│       ├── challenge             # Current binding challenge
+│       └── delegates/            # WebAuthn credentials
+│           └── delegate_id       # Each delegate (revocable)
+└── sessions/
+    └── session_token             # Active login sessions
+```
+
+### Security Notes
+
+- This is a demonstration implementation
+- Production use would require:
+  - Server-side WebAuthn signature verification
+  - Proper CBOR decoding of credential data
+  - Session management with expiration
+  - CSRF protection
+  - HTTPS (required for WebAuthn)
+
 ## Design Principles
 
 1. **Filesystem as database**: Posts are files, versions are immutable

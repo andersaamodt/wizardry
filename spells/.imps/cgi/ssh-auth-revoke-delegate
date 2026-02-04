@@ -8,22 +8,8 @@ http-header "Content-Type" "application/json"
 http-end-headers
 
 # Parse query parameters
-query_string="${QUERY_STRING-}"
-username=""
-delegate_id=""
-
-if [ -n "$query_string" ]; then
-  for param in $(printf '%s' "$query_string" | tr '&' '\n'); do
-    case "$param" in
-      username=*)
-        username=$(printf '%s' "$param" | cut -d= -f2- | url-decode)
-        ;;
-      delegate_id=*)
-        delegate_id=$(printf '%s' "$param" | cut -d= -f2- | url-decode)
-        ;;
-    esac
-  done
-fi
+username=$(get-query-param "username")
+delegate_id=$(get-query-param "delegate_id")
 
 # Validate inputs
 if [ -z "$username" ] || [ -z "$delegate_id" ]; then
