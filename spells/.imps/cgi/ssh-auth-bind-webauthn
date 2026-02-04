@@ -14,7 +14,8 @@ public_key=$(get-query-param "public_key")
 fingerprint=$(get-query-param "fingerprint")
 
 # Validate inputs
-if [ -z "$username" ] || [ -z "$credential_id" ] || [ -z "$public_key" ] || [ -z "$fingerprint" ]; then
+if [ -z "$username" ] || [ -z "$credential_id" ] || \
+   [ -z "$public_key" ] || [ -z "$fingerprint" ]; then
   printf '{"success":false,"error":"Missing required parameters"}\n'
   exit 0
 fi
