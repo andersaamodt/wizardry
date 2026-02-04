@@ -269,7 +269,9 @@ check_level_1() {
   # Check /tmp directory permissions
   if [ -d /tmp ]; then
     tmp_perms=$(ls -ld /tmp 2>/dev/null | awk '{print $1}')
-    if printf '%s' "$tmp_perms" | grep -q 't'; then
+    # Check if last character is 't' or 'T' (sticky bit position)
+    last_char=$(printf '%s' "$tmp_perms" | sed 's/.*\(.\)$/\1/')
+    if [ "$last_char" = "t" ] || [ "$last_char" = "T" ]; then
       ward_pass "/tmp has sticky bit set"
       ward_desc "Sticky bit on /tmp prevents users from deleting others' files." 0
     else
@@ -528,16 +530,26 @@ check_level_1() {
   fi
   
   # Check for world-writable files in home directory
-  world_writable=$(find "$HOME" -type f -perm -002 2>/dev/null | head -5)
+  world_writable=$(find "$HOME" -type f -perm -002 2>/dev/null)
   if [ -n "$world_writable" ]; then
     count=$(printf '%s\n' "$world_writable" | wc -l)
     ward_fail "Found $count world-writable files in home directory"
     msg="World-writable files (permission bit 002) can be modified by any user on the system. Any user could "
     msg="${msg}inject malicious code, alter data, or cause application malfunctions—particularly dangerous for "
-    msg="${msg}scripts and configuration files. Remove world-write permission using 'chmod o-w filename' for "
-    msg="${msg}individual files, or 'chmod o-w \$(find \$HOME -type f -perm -002)' to fix all at once."
+    msg="${msg}scripts and configuration files."
     ward_desc "$msg" 1
-    printf 'First few world-writable files:\n%s\n' "$world_writable"
+    if ward_ask_fix "Remove world-write permissions from all $count files?"; then
+      # Fix each file individually so we can see the commands
+      printf '%s\n' "$world_writable" | while IFS= read -r file; do
+        if [ -f "$file" ]; then
+          wizard-cast chmod o-w "$file"
+        fi
+      done
+      success "Removed world-write permissions from files in home directory"
+    fi
+  else
+    ward_pass "No world-writable files in home directory"
+    ward_desc "Files are properly protected from unauthorized modification." 0
   fi
 }
 
@@ -555,27 +567,6 @@ check_level_2() {
   else
     ward_pass "Not running as root"
     ward_desc "Running as regular user is a security best practice." 0
-  fi
-  
-  # Check for world-writable files in home
-  if has find; then
-    world_writable=$(find "$HOME" -type f -perm -002 2>/dev/null | head -5)
-    if [ -n "$world_writable" ]; then
-      ward_fail "Found world-writable files in home directory"
-      msg="World-writable files can be modified by any user on the system, "
-      msg="${msg}which is a security risk. "
-      msg="${msg}Files should typically be writable only by their owner."
-      ward_desc "$msg" 1
-      printf 'First few world-writable files:\n%s\n' "$world_writable"
-      if ward_ask_fix "Would you like to search for all world-writable files?"; then
-        printf 'Run this command to find all world-writable files:\n'
-        printf '  find %s -type f -perm -002\n' "$HOME"
-      fi
-    else
-      ward_pass "No world-writable files in home directory"
-      msg="Files are properly protected from unauthorized modification."
-      ward_desc "$msg" 0
-    fi
   fi
   
   # Check SSH daemon configuration if accessible
