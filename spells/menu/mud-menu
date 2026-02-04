@@ -153,28 +153,7 @@ while true; do
     mud_menu="[ ] Show MUD in main menu%toggle-mud-menu; echo 4 > \"$SELECTION_FILE\""
   fi
   
-  # Build enable/disable all toggle (including cd-look, cd-listen, and tor)
-  all_enabled=1
-  for feature in parse-enabled mud-enabled avatar touch-hook cd-look cd-listen; do
-    if ! is_feature_enabled "$feature"; then
-      all_enabled=0
-      break
-    fi
-  done
-  # Also check tor hosting status
-  if [ "$all_enabled" -eq 1 ] && [ "$tor_configured" -eq 0 ]; then
-    all_enabled=0
-  fi
-  
-  if [ "$all_enabled" -eq 1 ]; then
-    # When disabling, copy_onion and separator will disappear, moving toggle_all from position 10 to 8
-    toggle_all="Disable all MUD features%toggle-all-mud --disable; echo 8 > \"$SELECTION_FILE\""
-  else
-    # When enabling, copy_onion and separator will appear, keeping toggle_all at position 10
-    toggle_all="Enable all MUD features%toggle-all-mud --enable; echo 10 > \"$SELECTION_FILE\""
-  fi
-  
-  # Build tor hidden service toggle based on current state
+  # Detect tor hidden service configuration status early (needed for all_enabled check)
   # Inline check for hidden service configuration
   tor_configured=0
   
@@ -211,6 +190,28 @@ while true; do
     fi
   fi
   
+  # Build enable/disable all toggle (including cd-look, cd-listen, and tor)
+  all_enabled=1
+  for feature in parse-enabled mud-enabled avatar touch-hook cd-look cd-listen; do
+    if ! is_feature_enabled "$feature"; then
+      all_enabled=0
+      break
+    fi
+  done
+  # Also check tor hosting status
+  if [ "$all_enabled" -eq 1 ] && [ "$tor_configured" -eq 0 ]; then
+    all_enabled=0
+  fi
+  
+  if [ "$all_enabled" -eq 1 ]; then
+    # When disabling, copy_onion and separator will disappear, moving toggle_all from position 10 to 8
+    toggle_all="Disable all MUD features%toggle-all-mud --disable; echo 8 > \"$SELECTION_FILE\""
+  else
+    # When enabling, copy_onion and separator will appear, keeping toggle_all at position 10
+    toggle_all="Enable all MUD features%toggle-all-mud --enable; echo 10 > \"$SELECTION_FILE\""
+  fi
+  
+  # Build tor hidden service toggle based on current state
   if [ "$tor_configured" -eq 1 ]; then
     # remove-tor-hidden-service already restarts tor, so no need to restart again
     tor_cmd="remove-tor-hidden-service -y"
