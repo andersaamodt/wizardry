@@ -94,11 +94,8 @@ y|Y)
                 if [ -n "$data_dir" ]; then
                         # Use detected data directory
                         mud_dir="${data_dir}/mud/"
-                elif [ -d "/opt/homebrew/var/lib/tor" ]; then
-                        # Homebrew on Apple Silicon
-                        mud_dir="/opt/homebrew/var/lib/tor/mud/"
                 elif [ -d "/usr/local/var/lib/tor" ]; then
-                        # Homebrew on Intel or older
+                        # Compiled tor with standard prefix
                         mud_dir="/usr/local/var/lib/tor/mud/"
                 elif [ -d "/opt/local/var/lib/tor" ]; then
                         # MacPorts

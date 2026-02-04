@@ -101,34 +101,23 @@ $openssl_option"
     # Only show if tor is installed and a hidden service is configured
     copy_onion_option=""
     hostname_file=""
-    case "$(uname -s 2>/dev/null)" in
-    Darwin)
-      # Try multiple locations on macOS
-      hs_dirs="/opt/homebrew/var/lib/tor/hidden_service"
-      hs_dirs="$hs_dirs /opt/homebrew/var/lib/tor/mud"
-      hs_dirs="$hs_dirs /usr/local/var/lib/tor/hidden_service"
-      hs_dirs="$hs_dirs /usr/local/var/lib/tor/mud"
-      hs_dirs="$hs_dirs /opt/pkg/var/lib/tor/hidden_service"
-      for hs_dir in $hs_dirs; do
-        if [ -f "$hs_dir/hostname" ]; then
-          hostname_file="$hs_dir/hostname"
-          break
-        fi
-      done
-      ;;
-    *)
-      # Try multiple locations on Linux
-      for hs_dir in /var/lib/tor/hidden_service /var/lib/tor/mud; do
-        if [ -f "$hs_dir/hostname" ]; then
-          hostname_file="$hs_dir/hostname"
-          break
-        fi
-      done
-      ;;
-    esac
     
-    if [ -n "$hostname_file" ]; then
-      copy_onion_option="Copy .onion address%clip-copy \"\$(sudo cat \"$hostname_file\" 2>/dev/null || cat \"$hostname_file\")\""
+    # Get torrc path and check for configured hidden services
+    if command -v torrc-path >/dev/null 2>&1; then
+      torrc_path=$(torrc-path 2>/dev/null || echo "")
+      if [ -n "$torrc_path" ] && [ -f "$torrc_path" ]; then
+        # Extract the first HiddenServiceDir from torrc
+        hostname_dir=$(grep -E "^[[:space:]]*HiddenServiceDir" "$torrc_path" 2>/dev/null \
+          | awk '{print $2}' | head -1)
+        if [ -n "$hostname_dir" ]; then
+          # Remove trailing slash if present
+          hostname_dir="${hostname_dir%/}"
+          hostname_file="$hostname_dir/hostname"
+          copy_cmd="clip-copy \"\$(sudo cat \"$hostname_file\" 2>/dev/null"
+          copy_cmd="$copy_cmd || cat \"$hostname_file\")\""
+          copy_onion_option="Copy .onion address%$copy_cmd"
+        fi
+      fi
     fi
     
     # Build menu with simplified logic
