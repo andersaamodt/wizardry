@@ -1,0 +1,71 @@
+#!/bin/sh
+
+# Renew HTTPS certificate for a site.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: renew-https SITENAME
+
+Renews the Let's Encrypt HTTPS certificate for a website.
+
+Prerequisites:
+  - certbot must be installed
+  - HTTPS must already be configured for the site
+
+Example: renew-https mysite
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+site_name=${1-}
+if [ -z "$site_name" ]; then
+  die 2 "renew-https: SITENAME required"
+fi
+
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+SITES_DIR="$WEB_ROOT"
+SITE_DIR="$SITES_DIR/$site_name"
+
+if [ ! -d "$SITE_DIR" ]; then
+  die "renew-https: site '$site_name' not found"
+fi
+
+# Check for certbot
+if ! has certbot; then
+  warn "renew-https: certbot is not installed"
+  info "Install certbot to enable Let's Encrypt HTTPS"
+  info "On Debian/Ubuntu: sudo apt-get install certbot"
+  info "On macOS: brew install certbot"
+  exit 1
+fi
+
+# Get domain from config
+domain=$(config-get "$SITE_DIR/site.conf" domain 2>/dev/null || echo "")
+if [ -z "$domain" ] || [ "$domain" = "localhost" ]; then
+  die "renew-https: valid domain required"
+fi
+
+# Check if HTTPS is configured
+if ! check-https-status "$site_name"; then
+  die "renew-https: HTTPS is not configured for site '$site_name'"
+fi
+
+step "Renewing Let's Encrypt certificate for $domain..."
+
+# Run certbot renew for this specific domain
+if sudo certbot renew --cert-name "$domain"; then
+  success "Certificate renewed successfully"
+  
+  # Recommend restarting the site
+  info "Restart site to apply changes: stop-site $site_name && serve-site $site_name"
+else
+  warn "Certificate renewal failed"
+  info "If you're seeing errors about rate limits, the certificate may not be due for renewal yet."
+  info "Certificates are typically renewed within 30 days of expiration."
+  exit 1
+fi
