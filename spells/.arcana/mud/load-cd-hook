@@ -85,7 +85,8 @@ cd() {
     if [ "$cd_listen_value" = "1" ]; then
         # Source listen directly so it can access PS1 from this shell context
         if command -v listen >/dev/null 2>&1; then
-            . listen 2>/dev/null || true
+            # Temporarily show errors to debug relative path issue
+            . listen || true
         fi
     fi
     
