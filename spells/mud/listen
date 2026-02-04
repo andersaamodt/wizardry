@@ -194,6 +194,8 @@ fi
 
 # Start monitoring in background
 # Use tail -f -n 0 to follow the log file from current position (no history)
+# Disable job control monitoring to suppress "[N] PID" messages
+set +m
 {
   tail -f -n 0 "$_listen_room_log" 2>/dev/null | while IFS= read -r line; do
     # Skip empty lines
@@ -303,8 +305,9 @@ fi
     esac
   done
 } &
-
 _listen_monitor_pid=$!
+# Re-enable job control
+set -m
 
 # Clean up variables and guarantee permissive mode
 unset _listen_stop_only _listen_room_path _listen_room_log _listen_is_sourced \
