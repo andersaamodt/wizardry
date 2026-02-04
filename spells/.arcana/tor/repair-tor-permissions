@@ -62,9 +62,11 @@ case "$platform" in
 esac
 
 # Repair Tor directory permissions
+# Note: We repair tor-specific directories, not parent log directories
+# This ensures log files remain readable by regular users
 tor_dirs="/var/lib/tor /var/log/tor /etc/tor"
-tor_dirs="$tor_dirs /usr/local/var/lib/tor /usr/local/var/log /usr/local/etc/tor"
-tor_dirs="$tor_dirs /opt/pkg/var/lib/tor /opt/pkg/var/log"
+tor_dirs="$tor_dirs /usr/local/var/lib/tor /usr/local/var/log/tor /usr/local/etc/tor"
+tor_dirs="$tor_dirs /opt/pkg/var/lib/tor /opt/pkg/var/log/tor"
 
 for tor_dir in $tor_dirs; do
   if [ -d "$tor_dir" ]; then
