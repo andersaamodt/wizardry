@@ -93,7 +93,32 @@ test_configure_nginx_creates_local_mimetypes() {
   rm -rf "$test_web_root"
 }
 
+test_configure_nginx_supports_onion_addresses() {
+  skip-if-compiled || return $?
+  
+  # Set up test environment
+  test_web_root=$(temp-dir web-wizardry-test)
+  export WEB_WIZARDRY_ROOT="$test_web_root"
+  
+  # Create a test site directory
+  mkdir -p "$test_web_root/mytestsite"
+  
+  # Run configure-nginx
+  run_spell spells/web/configure-nginx mytestsite
+  assert_success
+  
+  # Verify nginx.conf includes *.onion in server_name for Tor support
+  grep -q "server_name.*\*.onion" "$test_web_root/mytestsite/nginx/nginx.conf" || {
+    TEST_FAILURE_REASON="nginx.conf does not include *.onion in server_name (needed for Tor hidden services)"
+    return 1
+  }
+  
+  # Cleanup
+  rm -rf "$test_web_root"
+}
+
 run_test_case "configure-nginx --help" test_configure_nginx_help
 run_test_case "configure-nginx creates local mime.types" test_configure_nginx_creates_local_mimetypes
+run_test_case "configure-nginx supports .onion addresses" test_configure_nginx_supports_onion_addresses
 
 finish_tests
