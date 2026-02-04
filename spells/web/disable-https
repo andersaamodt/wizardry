@@ -1,0 +1,62 @@
+#!/bin/sh
+
+# Disable HTTPS for a site.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: disable-https SITENAME
+
+Disables HTTPS for a website and reconfigures nginx for HTTP only.
+
+The Let's Encrypt certificates are not deleted (use 'sudo certbot delete'
+if you want to remove them completely).
+
+Example: disable-https mysite
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+site_name=${1-}
+if [ -z "$site_name" ]; then
+  die 2 "disable-https: SITENAME required"
+fi
+
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+SITES_DIR="$WEB_ROOT"
+SITE_DIR="$SITES_DIR/$site_name"
+
+if [ ! -d "$SITE_DIR" ]; then
+  die "disable-https: site '$site_name' not found"
+fi
+
+# Check if HTTPS is configured
+if ! check-https-status "$site_name"; then
+  warn "disable-https: HTTPS is not configured for site '$site_name'"
+  exit 0
+fi
+
+step "Disabling HTTPS for $site_name..."
+
+# Update site.conf to disable HTTPS
+config-set "$SITE_DIR/site.conf" https "false"
+
+# Regenerate nginx config without HTTPS
+domain=$(config-get "$SITE_DIR/site.conf" domain 2>/dev/null || echo "localhost")
+port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || echo "8080")
+
+info "Reconfiguring nginx for HTTP only..."
+configure-nginx "$site_name" --port "$port" --domain "$domain"
+
+success "HTTPS disabled for $site_name"
+info "nginx reconfigured for HTTP on port $port"
+info ""
+info "To apply changes, restart the site:"
+info "  stop-site $site_name && serve-site $site_name"
+info ""
+info "Note: Let's Encrypt certificates are not deleted."
+info "To remove them completely: sudo certbot delete --cert-name $domain"
