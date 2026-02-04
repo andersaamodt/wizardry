@@ -89,6 +89,8 @@ if command -v env-clear >/dev/null 2>&1; then
 fi
 
 # Get room path
+# When called with an argument, use it; otherwise use $PWD
+# Make sure we always work with absolute paths
 _listen_room_path=${1:-$PWD}
 
 # If --stop was specified, stop all listeners
@@ -160,19 +162,12 @@ fi
 
 export LISTEN_TERM_WIDTH="$_listen_term_width"
 
-# Smart auto-stop: only kill listeners monitoring OTHER .log files
-# This prevents duplicates while avoiding race conditions
-if command -v pgrep >/dev/null 2>&1 && command -v ps >/dev/null 2>&1; then
-  _current_log_pattern=$(printf '%s' "$_listen_room_log" | sed 's/[.[\*^$/]/\\&/g')
+# Auto-stop ALL previous listeners to prevent duplicates
+# Simple and reliable - kill everything, start fresh
+if command -v pgrep >/dev/null 2>&1; then
   pgrep -f 'tail -f.*\.log' 2>/dev/null | while read -r _old_pid; do
-    # Check what file this process is tailing
-    _old_args=$(ps -p "$_old_pid" -o args= 2>/dev/null || true)
-    # If it's NOT tailing our current log file, kill it
-    if [ -n "$_old_args" ] && ! printf '%s' "$_old_args" | grep -q "$_current_log_pattern"; then
-      kill "$_old_pid" 2>/dev/null || true
-    fi
+    kill "$_old_pid" 2>/dev/null || true
   done
-  unset _current_log_pattern _old_pid _old_args
 fi
 
 # Start monitoring in background
