@@ -1,0 +1,76 @@
+#!/bin/sh
+# blog-list-drafts - List blog post drafts (admin only)
+
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "application/json"
+http-end-headers
+
+# Parse query parameters
+session_token=$(get-query-param "session_token")
+
+# Validate session
+if [ -z "$session_token" ]; then
+  printf '{"success":false,"error":"Not authenticated"}\n'
+  exit 0
+fi
+
+# Get data directory
+data_dir=$(get-site-data-dir "ssh-auth")
+sessions_dir="$data_dir/sessions"
+session_file="$sessions_dir/$session_token"
+
+# Check if session exists
+if [ ! -f "$session_file" ]; then
+  printf '{"success":false,"error":"Invalid session"}\n'
+  exit 0
+fi
+
+# Get username from session
+username=$(grep -o '"username":"[^"]*"' "$session_file" | cut -d'"' -f4)
+
+# Check if user is admin
+is_admin="false"
+if id "$username" >/dev/null 2>&1; then
+  if id -nG "$username" 2>/dev/null | grep -q "blog-admin"; then
+    is_admin="true"
+  fi
+fi
+
+if [ "$is_admin" != "true" ]; then
+  printf '{"success":false,"error":"Admin permission required"}\n'
+  exit 0
+fi
+
+# Get site root and posts directory
+site_root=$(get-site-data-dir "..")
+posts_dir="$site_root/site/pages/posts"
+
+# List drafts
+printf '{"success":true,"drafts":['
+
+first=1
+if [ -d "$posts_dir" ]; then
+  for post_file in "$posts_dir"/*.md; do
+    if [ ! -f "$post_file" ]; then
+      continue
+    fi
+    
+    # Check if post has visibility: "draft" in front matter
+    if head -n 20 "$post_file" | grep -q 'visibility:.*"draft"'; then
+      if [ "$first" -eq 0 ]; then
+        printf ','
+      fi
+      first=0
+      
+      filename=$(basename "$post_file")
+      title=$(head -n 20 "$post_file" | grep -E '^title:' \
+        | sed 's/^title: *"\?\([^"]*\)"\?/\1/' || echo "$filename")
+      
+      printf '{"filename":"%s","title":"%s"}' "$filename" "$title"
+    fi
+  done
+fi
+
+printf ']}\n'
