@@ -12,7 +12,7 @@ Disables HTTPS for a website and reconfigures nginx for HTTP only.
 The Let's Encrypt certificates are not deleted (use 'sudo certbot delete'
 if you want to remove them completely).
 
-Example: web-disable-https mysite
+Example: disable-https mysite
 USAGE
   exit 0
   ;;

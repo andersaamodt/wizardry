@@ -13,7 +13,7 @@ Prerequisites:
   - certbot must be installed
   - HTTPS must already be configured for the site
 
-Example: web-renew-https mysite
+Example: renew-https mysite
 USAGE
   exit 0
   ;;
