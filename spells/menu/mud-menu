@@ -235,7 +235,7 @@ while true; do
       copy_cmd="clip-copy \"\$(sudo cat \"$hostname_file\" 2>/dev/null"
       copy_cmd="$copy_cmd || cat \"$hostname_file\")\""
       copy_onion="Copy .onion address%$copy_cmd; echo 1 > \"$SELECTION_FILE\""
-      separator="---%echo 2 > \"$SELECTION_FILE\""
+      separator="---"
     fi
   fi
   
