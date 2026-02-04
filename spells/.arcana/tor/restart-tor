@@ -16,8 +16,6 @@ esac
 
 set -eu
 
-printf 'Restarting tor...\n'
-
 # Try systemctl first (Linux with systemd)
 if command -v systemctl >/dev/null 2>&1; then
   if sudo systemctl restart tor 2>/dev/null; then
