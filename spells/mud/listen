@@ -97,7 +97,10 @@ if [ "$_listen_stop_only" = "1" ]; then
     done
   fi
   
-  printf '%s\n' "✓ Stopped listening to room activity"
+  # Only show message when executed directly, not when sourced by cd hook
+  if [ "$_listen_is_sourced" -eq 0 ]; then
+    printf '%s\n' "✓ Stopped listening to room activity"
+  fi
   
   # When sourced (e.g., by cd hook), guarantee permissive mode instead of restoring
   # Restoring saved opts can re-enable strict modes that break readline
@@ -259,6 +262,10 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
 } &
 
 _listen_monitor_pid=$!
+
+# Disown the background process to prevent job control messages
+# This prevents "[1] + done" messages from appearing in the terminal
+disown "$_listen_monitor_pid" 2>/dev/null || true
 
 # Clean up variables and guarantee permissive mode
 unset _listen_stop_only _listen_room_path _listen_room_log _listen_is_sourced \
