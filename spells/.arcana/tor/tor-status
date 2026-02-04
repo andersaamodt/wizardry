@@ -34,11 +34,60 @@ GRAY=${GREY-}
 if ! command -v tor >/dev/null 2>&1; then
   status="not installed"
   color="$GRAY"
-elif command -v is-service-running >/dev/null 2>&1 && is-service-running tor >/dev/null 2>&1; then
-  status="installed, running, bootstrapped"
-  color="$THEME_SUCCESS"
+elif is-tor-running; then
+  # Tor is running - now check bootstrap status
+  bootstrap_status="unknown"
+  
+  # Try to check bootstrap status from logs
+  # On macOS, logs might be at /usr/local/var/log/tor.log
+  # On Linux, might be in systemd journal or /var/log/tor/log
+  log_file=""
+  if [ -f /usr/local/var/log/tor.log ]; then
+    log_file="/usr/local/var/log/tor.log"
+  elif [ -f /var/log/tor/log ]; then
+    log_file="/var/log/tor/log"
+  fi
+  
+  if [ -n "$log_file" ] && [ -r "$log_file" ]; then
+    # Find the MOST RECENT bootstrap line (logs are chronological, oldest to newest)
+    # Grep entire file to find all bootstrap lines, then take the last one
+    bootstrap_line=$(grep "Bootstrapped [0-9]*%" "$log_file" 2>/dev/null | tail -n 1)
+    
+    # Check if most recent bootstrap is 100%
+    if echo "$bootstrap_line" | grep -q "Bootstrapped 100%"; then
+      bootstrap_status="bootstrapped"
+    # Check for bootstrap errors
+    elif tail -n 100 "$log_file" 2>/dev/null | grep -qi "bootstrap.*fail\|bootstrap.*error"; then
+      bootstrap_status="error"
+    # Must be bootstrapping (not at 100% yet)
+    else
+      bootstrap_status="bootstrapping"
+    fi
+  else
+    # Can't read logs, assume bootstrapping
+    bootstrap_status="bootstrapping"
+  fi
+  
+  case "$bootstrap_status" in
+    bootstrapped)
+      status="running, bootstrapped"
+      color="$THEME_SUCCESS"
+      ;;
+    bootstrapping*)
+      status="running, $bootstrap_status"
+      color="$THEME_WARNING"
+      ;;
+    error)
+      status="running, error"
+      color="$THEME_ERROR"
+      ;;
+    *)
+      status="running"
+      color="$THEME_SUCCESS"
+      ;;
+  esac
 else
-  status="installed, not running"
+  status="not running"
   color="$THEME_WARNING"
 fi
 

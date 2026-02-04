@@ -18,19 +18,8 @@ set -eu
 
 printf 'Stopping tor...\n'
 
-# Check if tor is running first (inline check to avoid dependencies)
-tor_running=0
-if command -v pgrep >/dev/null 2>&1; then
-    if pgrep -x tor >/dev/null 2>&1; then
-        tor_running=1
-    fi
-else
-    if ps aux 2>/dev/null | grep -v grep | grep -q 'tor$\|tor '; then
-        tor_running=1
-    fi
-fi
-
-if [ "$tor_running" = "0" ]; then
+# Check if tor is running first
+if ! is-tor-running; then
   printf 'stop-tor: tor is not running\n' >&2
   exit 1
 fi
@@ -39,15 +28,54 @@ fi
 if command -v systemctl >/dev/null 2>&1; then
   if sudo systemctl stop tor 2>/dev/null; then
     printf 'Tor stopped via systemctl.\n'
-    exit 0
+    # Wait and verify it actually stopped
+    sleep 2
+    if ! is-tor-running; then
+      exit 0
+    else
+      printf 'Warning: systemctl stop succeeded but tor still running.\n' >&2
+    fi
   fi
 fi
 
-# Try killall (macOS and others)
-if sudo killall tor 2>/dev/null; then
-  printf 'Tor stopped.\n'
-  exit 0
+# Try launchctl (macOS)
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  if is-tor-launchd-service-configured; then
+    # On macOS with launchd, we need to unload the service to disable KeepAlive
+    # Otherwise it will automatically restart tor after we stop it
+    printf 'Stopping tor via launchd...\n'
+    plist_file="/Library/LaunchDaemons/org.torproject.tor.plist"
+    
+    # Unload the service with -w flag to disable it (disables KeepAlive)
+    if sudo launchctl unload -w "$plist_file" 2>/dev/null; then
+      printf 'Tor service unloaded and disabled.\n'
+      # Wait for tor to stop gracefully
+      printf 'Waiting for tor to shut down (up to 10 seconds)...\n'
+      max_wait=10
+      waited=0
+      while [ $waited -lt $max_wait ]; do
+        if ! is-tor-running; then
+          printf 'Tor stopped successfully.\n'
+          printf 'Use start-tor to start it again.\n'
+          exit 0
+        fi
+        sleep 1
+        waited=$((waited + 1))
+      done
+      
+      # If still running after 10 seconds, that's OK
+      # It might be Tor Browser's tor instance, which we should NOT kill
+      printf 'Warning: tor process still detected after unloading launchd service.\n' >&2
+      printf 'This may be Tor Browser or another tor instance (not managed by wizardry).\n' >&2
+      printf 'Our launchd-managed tor has been stopped.\n'
+      exit 0
+    fi
+  fi
 fi
 
-printf 'stop-tor: could not stop tor\n' >&2
+# On macOS without launchd service, or on Linux without systemctl, we can't safely stop tor
+# because we can't distinguish between our tor and Tor Browser's tor
+printf 'stop-tor: no service manager found\n' >&2
+printf 'Cannot safely stop tor without killing Tor Browser instance.\n' >&2
+printf 'Please use the system service manager or kill specific PIDs.\n' >&2
 exit 1

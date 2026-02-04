@@ -26,14 +26,43 @@ if command -v systemctl >/dev/null 2>&1; then
   fi
 fi
 
-# Try killall then restart (macOS and others)
-if command -v tor >/dev/null 2>&1; then
-  sudo killall tor 2>/dev/null || true
-  sleep 1
-  tor >/dev/null 2>&1 &
-  printf 'Tor restarted.\n'
-  exit 0
+# Try launchctl (macOS)
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  if is-tor-launchd-service-configured; then
+    # Use launchctl unload/load for proper restart with launchd
+    plist_file="/Library/LaunchDaemons/org.torproject.tor.plist"
+    printf 'Restarting tor via launchd...\n'
+    
+    # Unload (stop) the service
+    sudo launchctl unload "$plist_file" 2>/dev/null || true
+    sleep 2
+    
+    # Load (start) the service with -w flag
+    if sudo launchctl load -w "$plist_file" 2>/dev/null; then
+      printf 'Tor restarted via launchd.\n'
+      # Wait for tor to start
+      sleep 2
+      if is-tor-running; then
+        printf 'Tor is running.\n'
+        exit 0
+      else
+        printf 'Warning: launchctl load succeeded but tor not detected yet.\n' >&2
+        printf 'Tor may still be starting up...\n'
+        exit 0
+      fi
+    fi
+  else
+    # Service not configured, create it (this will also start it)
+    if create-tor-launchd-service; then
+      printf 'Tor service created and started.\n'
+      exit 0
+    fi
+  fi
 fi
 
-printf 'restart-tor: tor restart needed but method not available\n' >&2
+# On systems without service managers, we can't safely restart tor
+# because we can't distinguish between our tor and Tor Browser's tor
+printf 'restart-tor: no service manager found\n' >&2
+printf 'Cannot safely restart tor without killing Tor Browser instance.\n' >&2
+printf 'Please use the system service manager.\n' >&2
 exit 1

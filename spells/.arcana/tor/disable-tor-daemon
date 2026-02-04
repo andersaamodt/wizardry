@@ -1,0 +1,67 @@
+#!/bin/sh
+
+# Disable tor daemon from starting automatically on boot.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: disable-tor-daemon
+
+Disables tor daemon from starting automatically on system boot.
+On macOS, unloads and removes the launchd service.
+On Linux with systemd, disables the tor service.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+
+# Detect platform
+kernel=$(uname -s 2>/dev/null || printf 'unknown')
+
+case $kernel in
+  Darwin)
+    # macOS - use launchd
+    plist_file="/Library/LaunchDaemons/org.torproject.tor.plist"
+    
+    if [ ! -f "$plist_file" ]; then
+      printf 'Tor daemon is already disabled.\n'
+      exit 0
+    fi
+    
+    printf 'Disabling tor daemon...\n'
+    
+    # Check if service is loaded before trying to unload
+    if sudo launchctl list | grep -q "org.torproject.tor" 2>/dev/null; then
+      if ! sudo launchctl unload "$plist_file" 2>/dev/null; then
+        printf 'Warning: Failed to unload launchd service\n' >&2
+      fi
+    fi
+    
+    # Remove the plist file
+    sudo rm -f "$plist_file"
+    printf 'Tor daemon disabled successfully.\n'
+    ;;
+  Linux)
+    # Linux - use systemd
+    if ! command -v systemctl >/dev/null 2>&1; then
+      printf 'disable-tor-daemon: systemctl not found\n' >&2
+      exit 1
+    fi
+    
+    if sudo systemctl disable tor 2>/dev/null; then
+      printf 'Tor daemon disabled successfully.\n'
+      exit 0
+    else
+      printf 'disable-tor-daemon: failed to disable tor service\n' >&2
+      exit 1
+    fi
+    ;;
+  *)
+    printf 'disable-tor-daemon: unsupported platform: %s\n' "$kernel" >&2
+    exit 1
+    ;;
+esac
