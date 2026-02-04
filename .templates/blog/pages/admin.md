@@ -236,15 +236,87 @@ Allow new users to register with their MUD player SSH keys
   
   document.getElementById('btn-refresh-drafts').addEventListener('click', loadDrafts);
   
-  // Save draft / publish (placeholder - needs backend implementation)
-  document.getElementById('btn-save-draft').addEventListener('click', () => {
+  // Save draft
+  document.getElementById('btn-save-draft').addEventListener('click', async () => {
     const output = document.getElementById('output-compose');
-    output.innerHTML = '<div style="background: #fff3e0; padding: 1rem; border-radius: 4px; border: 1px solid #ff9800; margin-top: 1rem;"><strong>ℹ️ Note:</strong> Draft saving functionality coming soon! Posts are file-backed, so drafts would be saved to the site/pages/posts/ directory.</div>';
+    const title = document.getElementById('post-title').value.trim();
+    const tags = document.getElementById('post-tags').value.trim();
+    const summary = document.getElementById('post-summary').value.trim();
+    const content = document.getElementById('post-content').value.trim();
+    
+    if (!title || !content) {
+      output.innerHTML = '<div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336; margin-top: 1rem;"><strong>❌ Error:</strong> Title and content are required</div>';
+      return;
+    }
+    
+    output.innerHTML = '<p style="color: #2980b9; margin-top: 1rem;">💾 Saving draft...</p>';
+    
+    try {
+      const params = new URLSearchParams({
+        session_token: sessionToken,
+        title: title,
+        tags: tags,
+        summary: summary,
+        content: content,
+        visibility: 'draft'
+      });
+      
+      const response = await fetch('/cgi/blog-save-post?' + params.toString());
+      const data = await response.json();
+      
+      if (data.success) {
+        output.innerHTML = '<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50; margin-top: 1rem;"><strong>✅ ' + data.message + '!</strong><br>File: ' + data.filename + '</div>';
+        loadDrafts();  // Refresh draft list
+      } else {
+        output.innerHTML = '<div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336; margin-top: 1rem;"><strong>❌ Error:</strong> ' + (data.error || 'Unknown error') + '</div>';
+      }
+    } catch (error) {
+      output.innerHTML = '<div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336; margin-top: 1rem;"><strong>❌ Error:</strong> ' + error.message + '</div>';
+    }
   });
   
-  document.getElementById('btn-publish').addEventListener('click', () => {
+  // Publish post
+  document.getElementById('btn-publish').addEventListener('click', async () => {
     const output = document.getElementById('output-compose');
-    output.innerHTML = '<div style="background: #fff3e0; padding: 1rem; border-radius: 4px; border: 1px solid #ff9800; margin-top: 1rem;"><strong>ℹ️ Note:</strong> Publishing functionality coming soon! Published posts would be saved with visibility: "public" in the front matter.</div>';
+    const title = document.getElementById('post-title').value.trim();
+    const tags = document.getElementById('post-tags').value.trim();
+    const summary = document.getElementById('post-summary').value.trim();
+    const content = document.getElementById('post-content').value.trim();
+    
+    if (!title || !content) {
+      output.innerHTML = '<div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336; margin-top: 1rem;"><strong>❌ Error:</strong> Title and content are required</div>';
+      return;
+    }
+    
+    output.innerHTML = '<p style="color: #2980b9; margin-top: 1rem;">🚀 Publishing post...</p>';
+    
+    try {
+      const params = new URLSearchParams({
+        session_token: sessionToken,
+        title: title,
+        tags: tags,
+        summary: summary,
+        content: content,
+        visibility: 'public'
+      });
+      
+      const response = await fetch('/cgi/blog-save-post?' + params.toString());
+      const data = await response.json();
+      
+      if (data.success) {
+        output.innerHTML = '<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50; margin-top: 1rem;"><strong>✅ ' + data.message + '!</strong><br>File: ' + data.filename + '<br><br><a href="/pages/' + data.filename.replace('.md', '.html') + '" target="_blank" style="color: #27ae60; font-weight: bold;">View Published Post →</a></div>';
+        // Clear form
+        document.getElementById('post-title').value = '';
+        document.getElementById('post-tags').value = '';
+        document.getElementById('post-summary').value = '';
+        document.getElementById('post-content').value = '';
+        document.getElementById('markdown-preview').innerHTML = '<p style="color: #999; font-style: italic;">Preview will appear here...</p>';
+      } else {
+        output.innerHTML = '<div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336; margin-top: 1rem;"><strong>❌ Error:</strong> ' + (data.error || 'Unknown error') + '</div>';
+      }
+    } catch (error) {
+      output.innerHTML = '<div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336; margin-top: 1rem;"><strong>❌ Error:</strong> ' + error.message + '</div>';
+    }
   });
   
   // Initialize
