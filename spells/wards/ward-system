@@ -128,13 +128,11 @@ check_level_1() {
     ward_desc "Umask controls default file permissions. Current setting is secure." 0
   else
     ward_fail "Umask is not secure (current: $current_umask, recommended: 0022 or 0027)"
-    msg="WHAT THIS IS: Umask controls the default permissions for newly created files. "
-    msg="${msg}It's a mask that removes permission bits when files are created. "
-    msg="${msg}WHY IT MATTERS: A umask of 0022 sets new files to mode 644 (user read/write, others read-only) "
-    msg="${msg}and directories to 755 (user read/write/execute, others read/execute). This prevents accidentally "
-    msg="${msg}creating world-writable files that could be modified by any user on the system. "
-    msg="${msg}HOW TO DECIDE: Use 0022 for general use, or 0027 if you need group-write restrictions. "
-    msg="${msg}This setting goes in your shell startup file."
+    msg="Umask controls default permissions for newly created files by masking permission bits. "
+    msg="${msg}A umask of 0022 creates files with mode 644 (user read/write, others read-only) and "
+    msg="${msg}directories with 755 (user read/write/execute, others read/execute), preventing accidentally "
+    msg="${msg}creating world-writable files. Use 0022 for general use, or 0027 for stricter group restrictions. "
+    msg="${msg}Configure this in your shell startup file."
     ward_desc "$msg" 1
     if ward_ask_fix "Set umask to safe default of 0022? (recommended for most users)"; then
       printf 'Add this line to your shell profile (~/.bashrc, ~/.zshrc, etc.):\n'
@@ -147,14 +145,12 @@ check_level_1() {
   case ":$PATH:" in
     *::*|*:.:*)
       ward_fail "Current directory (.) is in PATH - security risk"
-      msg="WHAT THIS IS: PATH is an environment variable that lists directories where the shell searches "
-      msg="${msg}for executable programs. Including '.' (current directory) or empty entries means the shell "
-      msg="${msg}will look in your current working directory for commands. "
-      msg="${msg}WHY IT MATTERS: This creates a command injection vulnerability. An attacker can place a "
-      msg="${msg}malicious executable named 'ls' or 'sudo' in a directory, and when you run that command, "
-      msg="${msg}you'll execute their code instead of the system binary. This is a common privilege escalation vector. "
-      msg="${msg}HOW TO DECIDE: Remove all '.' and empty entries from PATH. To run programs in the current "
-      msg="${msg}directory, explicitly use './program' which makes your intent clear and prevents accidents."
+      msg="PATH lists directories where the shell searches for executables. Including '.' (current directory) "
+      msg="${msg}or empty entries creates a command injection vulnerability—an attacker can place a malicious "
+      msg="${msg}executable named 'ls' or 'sudo' in a directory, and when you run that command, you'll execute "
+      msg="${msg}their code instead of the system binary. This is a common privilege escalation vector. Remove "
+      msg="${msg}all '.' and empty entries from PATH. To run programs in the current directory, explicitly use "
+      msg="${msg}'./program' which makes your intent clear."
       ward_desc "$msg" 1
       if ward_ask_fix "Remove current directory from PATH? (strongly recommended)"; then
         printf 'Remove current directory from PATH in your shell profile:\n'
@@ -179,13 +175,10 @@ check_level_1() {
         ;;
       *)
         ward_fail "SSH directory has insecure permissions: $ssh_perms"
-        msg="WHAT THIS IS: The ~/.ssh directory stores SSH private keys, which are cryptographic credentials "
-        msg="${msg}used for authentication to remote systems. "
-        msg="${msg}WHY IT MATTERS: If other users can read this directory, they can copy your private keys. "
-        msg="${msg}With your private key, an attacker can authenticate as you to any server where you've installed "
-        msg="${msg}the corresponding public key, gaining unauthorized access to those systems. "
-        msg="${msg}HOW TO DECIDE: Set permissions to 700 (drwx------) to ensure only the owner can access this directory. "
-        msg="${msg}Current permissions: $ssh_perms"
+        msg="The ~/.ssh directory stores SSH private keys (cryptographic credentials for remote authentication). "
+        msg="${msg}If other users can read this directory, they can copy your private keys and authenticate as you "
+        msg="${msg}to any server where you've installed the corresponding public key. Set permissions to 700 (drwx------) "
+        msg="${msg}so only the owner can access it. Current permissions: $ssh_perms"
         ward_desc "$msg" 1
         if ward_ask_fix "Fix SSH directory permissions to 700? (recommended)"; then
           chmod 700 "$ssh_dir" && success "Fixed ~/.ssh permissions to 700"
@@ -441,14 +434,12 @@ check_level_1() {
   # Novel check: Environment variable security (LD_PRELOAD/LD_LIBRARY_PATH)
   if [ -n "${LD_PRELOAD-}" ] || [ -n "${LD_LIBRARY_PATH-}" ]; then
     ward_fail "Dangerous environment variables detected"
-    msg="WHAT THIS IS: LD_PRELOAD and LD_LIBRARY_PATH control which shared libraries programs load at runtime. "
-    msg="${msg}LD_PRELOAD forces programs to load specific libraries before all others. LD_LIBRARY_PATH adds "
-    msg="${msg}directories to the library search path. "
-    msg="${msg}WHY IT MATTERS: Attackers use these variables for code injection attacks. By setting LD_PRELOAD "
-    msg="${msg}to a malicious library, every program you run will load and execute that code, allowing persistent "
-    msg="${msg}compromise. This affects all dynamically linked programs on the system. "
-    msg="${msg}HOW TO DECIDE: Unset these unless you're actively debugging software or have explicitly set them "
-    msg="${msg}for development purposes. They should never be set in normal user environments."
+    msg="LD_PRELOAD and LD_LIBRARY_PATH control which shared libraries programs load at runtime. "
+    msg="${msg}LD_PRELOAD forces programs to load specific libraries first; LD_LIBRARY_PATH adds directories "
+    msg="${msg}to the library search path. Attackers use these for code injection—by setting LD_PRELOAD to a "
+    msg="${msg}malicious library, every program you run will load and execute that code, allowing persistent "
+    msg="${msg}compromise of all dynamically linked programs. Unset these unless you're actively debugging "
+    msg="${msg}software—they should never be set in normal user environments."
     ward_desc "$msg" 1
     if ward_ask_fix "Unset dangerous environment variables? (recommended unless actively debugging)"; then
       printf 'Run these commands:\n'
@@ -468,11 +459,11 @@ check_level_1() {
       # Check for suspicious patterns
       if grep -qE "(curl|wget).*\|.*sh|eval.*\$\(" "$shell_rc" 2>/dev/null; then
         ward_fail "Suspicious code in shell configuration: $(basename "$shell_rc")"
-        msg="WHAT THIS IS: Your shell reads commands from files like .bashrc every time you open a terminal. "
-        msg="${msg}WHY IT MATTERS: Found patterns like 'curl ... | sh' that download and run code from the internet "
-        msg="${msg}automatically. This is how malware persists - running every time you log in. "
-        msg="${msg}HOW TO DECIDE: Review $shell_rc carefully. Remove any 'curl|sh' or 'eval' commands you "
-        msg="${msg}didn't add yourself. Legitimate software rarely asks you to add these."
+        msg="Your shell reads commands from files like .bashrc every time you open a terminal. "
+        msg="${msg}Found patterns like 'curl ... | sh' that download and run code from the internet automatically—"
+        msg="${msg}this is how malware persists, running every time you log in. Review $shell_rc carefully and "
+        msg="${msg}remove any 'curl|sh' or 'eval' commands you didn't add yourself. Legitimate software rarely "
+        msg="${msg}asks you to add these."
         ward_desc "$msg" 1
         break
       fi
@@ -490,11 +481,10 @@ check_level_1() {
     
     if [ "$clipboard_size" -gt 10000 ]; then
       ward_fail "Large amount of data in clipboard ($clipboard_size bytes)"
-      msg="WHAT THIS IS: Your clipboard (copy/paste buffer) currently holds a lot of data. "
-      msg="${msg}WHY IT MATTERS: Any program you run can silently read your clipboard. If you recently "
-      msg="${msg}copied passwords, API keys, or private documents, they're accessible to all applications. "
-      msg="${msg}HOW TO DECIDE: Clear your clipboard if you've copied sensitive data. Don't copy passwords - "
-      msg="${msg}use a password manager instead."
+      msg="Your clipboard (copy/paste buffer) currently holds significant data. Any program you run can silently "
+      msg="${msg}read your clipboard—if you recently copied passwords, API keys, or private documents, they're "
+      msg="${msg}accessible to all applications. Clear your clipboard if you've copied sensitive data. Better yet, "
+      msg="${msg}use a password manager instead of copying passwords."
       ward_desc "$msg" 1
       if ward_ask_fix "Clear clipboard contents? (recommended if you copied sensitive data)"; then
         if has xclip; then
@@ -518,11 +508,11 @@ check_level_1() {
       ward_desc "$msg" "$verbose"
     else
       ward_fail "/etc/shadow has insecure permissions: $shadow_perms"
-      msg="WHAT THIS IS: /etc/shadow stores encrypted password hashes for all user accounts. "
-      msg="${msg}WHY IT MATTERS: If this file is readable by non-root users, attackers can copy the password "
+      msg="/etc/shadow stores encrypted password hashes for all user accounts. "
+      msg="${msg}If this file is readable by non-root users, attackers can copy the password "
       msg="${msg}hashes and attempt to crack them offline using tools like John the Ripper or hashcat. "
       msg="${msg}Even with modern hashing algorithms, weak passwords can be cracked. "
-      msg="${msg}HOW TO DECIDE: This file must have permissions 640 or 600 (readable only by root). "
+      msg="${msg}This file must have permissions 640 or 600 (readable only by root). "
       msg="${msg}This is a critical security issue requiring immediate attention."
       ward_desc "$msg" 1
       if ward_ask_fix "Fix /etc/shadow permissions? (requires root, strongly recommended)"; then
@@ -538,11 +528,10 @@ check_level_1() {
   if [ -n "$world_writable" ]; then
     count=$(printf '%s\n' "$world_writable" | wc -l)
     ward_fail "Found $count world-writable files in home directory"
-    msg="WHAT THIS IS: World-writable files (permission bit 002) can be modified by any user on the system. "
-    msg="${msg}WHY IT MATTERS: Any user could modify these files to inject malicious code, alter data, or "
-    msg="${msg}cause application malfunctions. This is particularly dangerous for scripts and configuration files. "
-    msg="${msg}HOW TO DECIDE: Remove world-write permission from files. Use 'chmod o-w filename' to fix individual "
-    msg="${msg}files, or 'chmod o-w \$(find \$HOME -type f -perm -002)' to fix all at once."
+    msg="World-writable files (permission bit 002) can be modified by any user on the system. Any user could "
+    msg="${msg}inject malicious code, alter data, or cause application malfunctions—particularly dangerous for "
+    msg="${msg}scripts and configuration files. Remove world-write permission using 'chmod o-w filename' for "
+    msg="${msg}individual files, or 'chmod o-w \$(find \$HOME -type f -perm -002)' to fix all at once."
     ward_desc "$msg" 1
     printf 'First few world-writable files:\n%s\n' "$world_writable"
   fi
@@ -595,14 +584,12 @@ check_level_2() {
       elif grep -q "^PermitRootLogin" "$sshd_config" 2>/dev/null; then
         permit_root=$(grep "^PermitRootLogin" "$sshd_config" | awk '{print $2}')
         ward_fail "SSH allows root login: $permit_root"
-        msg="WHAT THIS IS: The SSH server configuration allows direct authentication as the root user. "
-        msg="${msg}Root (UID 0) has complete system control with no permission restrictions. "
-        msg="${msg}WHY IT MATTERS: Direct root access creates multiple security risks: (1) Attackers can directly "
-        msg="${msg}target the most privileged account. (2) No audit trail distinguishes between different administrators. "
-        msg="${msg}(3) One compromised credential grants complete system control. (4) No opportunity to catch "
-        msg="${msg}mistakes before executing privileged commands. "
-        msg="${msg}HOW TO DECIDE: Disable root SSH login. Instead, log in with personal accounts and use 'sudo' "
-        msg="${msg}for administrative tasks. This provides accountability, sudo logging, and an extra verification step."
+        msg="The SSH server configuration allows direct authentication as the root user (UID 0), which has "
+        msg="${msg}complete system control. This creates multiple risks: attackers can directly target the most "
+        msg="${msg}privileged account; there's no audit trail distinguishing between administrators; one compromised "
+        msg="${msg}credential grants complete system control; and there's no opportunity to catch mistakes before "
+        msg="${msg}executing privileged commands. Disable root SSH login and use personal accounts with 'sudo' instead—"
+        msg="${msg}this provides accountability, logging, and an extra verification step."
         ward_desc "$msg" 1
         if ward_ask_fix "Disable root login via SSH? (recommended)"; then
           info "Please run: ssh-barrier"
@@ -972,15 +959,13 @@ check_level_2() {
   # Novel check: SSH agent socket chain risks
   if [ -n "${SSH_AUTH_SOCK-}" ]; then
     ward_pass "SSH agent is running (verify it's your own)"
-    msg="WHAT THIS IS: SSH agent is a program that holds decrypted SSH private keys in memory, allowing you "
-    msg="${msg}to authenticate to multiple servers without re-entering your passphrase each time. "
-    msg="${msg}SSH_AUTH_SOCK is the Unix socket other programs use to communicate with the agent. "
-    msg="${msg}WHY IT MATTERS: Any process with access to SSH_AUTH_SOCK can use your keys to authenticate "
-    msg="${msg}without knowing your passphrase. This includes: (1) Other users on the system if socket permissions "
-    msg="${msg}are wrong. (2) Remote systems you SSH into with agent forwarding enabled - they can use your keys "
-    msg="${msg}to connect to other servers, potentially compromising your infrastructure. "
-    msg="${msg}HOW TO DECIDE: Using ssh-agent is standard practice. Verify the socket belongs to your ssh-agent "
-    msg="${msg}process. Avoid agent forwarding (-A flag) unless necessary. Current socket: $SSH_AUTH_SOCK"
+    msg="SSH agent holds decrypted SSH private keys in memory, allowing authentication to multiple servers "
+    msg="${msg}without re-entering your passphrase. SSH_AUTH_SOCK is the Unix socket programs use to communicate "
+    msg="${msg}with the agent. Any process with access to this socket can use your keys without knowing your "
+    msg="${msg}passphrase—this includes other users if socket permissions are wrong, or remote systems you SSH "
+    msg="${msg}into with agent forwarding enabled (they can use your keys to connect to other servers). Using "
+    msg="${msg}ssh-agent is standard practice, but verify the socket belongs to your process and avoid agent "
+    msg="${msg}forwarding (-A flag) unless necessary. Current socket: $SSH_AUTH_SOCK"
     ward_desc "$msg" "$verbose"
   fi
   
@@ -991,14 +976,11 @@ check_level_2() {
     
     if [ "$max_processes" = "unlimited" ]; then
       ward_fail "No limit on number of processes (fork bomb risk)"
-      msg="WHAT THIS IS: The system currently has no limit on the number of processes a user can create. "
-      msg="${msg}The 'ulimit -u' setting controls maximum processes per user. "
-      msg="${msg}WHY IT MATTERS: Without limits, a fork bomb attack can occur - a program that recursively "
-      msg="${msg}spawns copies of itself until system resources are exhausted. This causes system-wide denial "
-      msg="${msg}of service, making the system unresponsive and requiring hard reboot. Even accidental infinite "
-      msg="${msg}loops in scripts can cause this. "
-      msg="${msg}HOW TO DECIDE: Set a reasonable limit like 4096 processes per user to prevent resource exhaustion "
-      msg="${msg}while allowing normal operations."
+      msg="The system has no limit on the number of processes a user can create (ulimit -u controls this). "
+      msg="${msg}Without limits, a fork bomb attack can occur—a program that recursively spawns copies until "
+      msg="${msg}system resources are exhausted, causing system-wide denial of service and requiring hard reboot. "
+      msg="${msg}Even accidental infinite loops in scripts can trigger this. Set a reasonable limit like 4096 "
+      msg="${msg}processes per user to prevent resource exhaustion while allowing normal operations."
       ward_desc "$msg" 1
       if ward_ask_fix "Set process limit? (recommended)"; then
         printf 'Add to /etc/security/limits.conf:\n'
@@ -1018,11 +1000,9 @@ check_level_2() {
       dir_perms=$(ls -ld "$browser_dir" 2>/dev/null | awk '{print $1}')
       if ! printf '%s' "$dir_perms" | grep -q '^drwx------'; then
         ward_fail "Browser profile directory not fully private: $(basename "$browser_dir")"
-        msg="WHAT THIS IS: Your browser stores cookies, saved passwords, and history in these folders. "
-        msg="${msg}WHY IT MATTERS: If others can read these files, they can steal your login sessions, "
-        msg="${msg}see your browsing history, and possibly decrypt saved passwords. "
-        msg="${msg}HOW TO DECIDE: Fix this - only you should access your browser data. "
-        msg="${msg}Path: $browser_dir (permissions: $dir_perms)"
+        msg="Your browser stores cookies, saved passwords, and history in these folders. If others can read "
+        msg="${msg}them, they can steal login sessions, view browsing history, and possibly decrypt saved passwords. "
+        msg="${msg}Only you should access your browser data. Path: $browser_dir (permissions: $dir_perms)"
         ward_desc "$msg" 1
         if ward_ask_fix "Secure browser profile permissions? (recommended)"; then
           chmod 700 "$browser_dir" && success "Secured $(basename "$browser_dir")"
@@ -1046,12 +1026,11 @@ check_level_2() {
         editor_path=$(command -v "$env_val" 2>/dev/null || printf '')
         if [ -n "$editor_path" ] && [ -w "$editor_path" ]; then
           ward_fail "$env_var points to writable executable: $editor_path"
-          msg="WHAT THIS IS: The $env_var environment variable specifies which text editor programs use. "
-          msg="${msg}WHY IT MATTERS: If an attacker can modify the editor executable, they can inject code that "
-          msg="${msg}runs whenever you edit files (especially with sudo/root privileges). Programs like visudo, "
-          msg="${msg}crontab -e, and git rely on this variable. "
-          msg="${msg}HOW TO DECIDE: Ensure your editor points to a system location that only root can modify, "
-          msg="${msg}such as /usr/bin/vi or /usr/bin/nano."
+          msg="The $env_var environment variable specifies which text editor programs use. If an attacker can "
+          msg="${msg}modify the editor executable, they can inject code that runs whenever you edit files—especially "
+          msg="${msg}dangerous with sudo/root privileges. Programs like visudo, crontab -e, and git rely on this. "
+          msg="${msg}Ensure your editor points to a system location only root can modify, such as /usr/bin/vi or "
+          msg="${msg}/usr/bin/nano."
           ward_desc "$msg" 1
           break
         fi
@@ -1066,11 +1045,10 @@ check_level_2() {
       if [ -f "$key" ] && ! printf '%s\n' "$key" | grep -q '\.pub$'; then
         if [ "$weak_keys_found" -eq 0 ]; then
           ward_fail "Weak SSH key algorithm detected (DSA)"
-          msg="WHAT THIS IS: DSA (Digital Signature Algorithm) SSH keys use an outdated cryptographic algorithm. "
-          msg="${msg}WHY IT MATTERS: DSA keys are limited to 1024 bits, which is now considered insecure. Modern "
-          msg="${msg}attacks can potentially compromise these keys. DSA support is deprecated in newer SSH versions. "
-          msg="${msg}HOW TO DECIDE: Generate new keys using Ed25519 (recommended) or RSA 4096-bit. Update your "
-          msg="${msg}authorized_keys on remote servers, then delete the old DSA keys."
+          msg="DSA (Digital Signature Algorithm) SSH keys use an outdated cryptographic algorithm limited to "
+          msg="${msg}1024 bits, now considered insecure—modern attacks can potentially compromise them. DSA support "
+          msg="${msg}is deprecated in newer SSH versions. Generate new keys using Ed25519 (recommended) or RSA 4096-bit, "
+          msg="${msg}update your authorized_keys on remote servers, then delete the old DSA keys."
           ward_desc "$msg" 1
           if ward_ask_fix "See how to generate secure SSH keys?"; then
             printf 'Generate modern SSH keys:\n'
@@ -1090,12 +1068,10 @@ check_level_2() {
   histfilesize="${HISTFILESIZE-}"
   if [ -n "$histsize" ] && [ "$histsize" -gt 10000 ] 2>/dev/null; then
     ward_fail "Very large shell history size: HISTSIZE=$histsize"
-    msg="WHAT THIS IS: HISTSIZE controls how many commands are kept in memory during your shell session. "
-    msg="${msg}WHY IT MATTERS: Extremely large history sizes consume memory and may preserve sensitive "
-    msg="${msg}information (passwords, API keys) that you accidentally typed. Attackers gaining access to "
-    msg="${msg}your account could mine your history for credentials. "
-    msg="${msg}HOW TO DECIDE: Set HISTSIZE to a reasonable value like 1000-5000 commands. Set HISTFILESIZE "
-    msg="${msg}similarly to limit on-disk history."
+    msg="HISTSIZE controls how many commands are kept in memory during your shell session. Extremely large "
+    msg="${msg}history sizes consume memory and may preserve sensitive information (passwords, API keys) you "
+    msg="${msg}accidentally typed—attackers gaining access could mine your history for credentials. Set HISTSIZE "
+    msg="${msg}to a reasonable value like 1000-5000 commands, and set HISTFILESIZE similarly to limit on-disk history."
     ward_desc "$msg" 1
     if ward_ask_fix "See how to set reasonable history limits?"; then
       printf 'Add to your shell profile (~/.bashrc, ~/.zshrc):\n'
@@ -1130,11 +1106,10 @@ check_level_3() {
     ward_desc "$msg" 0
   else
     ward_fail "Core dumps are enabled (limit: $ulimit_core)"
-    msg="WHAT THIS IS: When a program crashes, it can save its memory to disk as a 'core dump' for debugging. "
-    msg="${msg}WHY IT MATTERS: This memory snapshot can contain passwords, encryption keys, or private data "
-    msg="${msg}that was in the program when it crashed - like a photograph of everything the program knew. "
-    msg="${msg}HOW TO DECIDE: Disable this unless you're actively debugging software. Any attacker who crashes "
-    msg="${msg}a program could harvest secrets from the dump files."
+    msg="When a program crashes, it can save its memory to disk as a 'core dump' for debugging. This memory "
+    msg="${msg}snapshot can contain passwords, encryption keys, or private data that was in the program when it "
+    msg="${msg}crashed. Disable this unless you're actively debugging software—an attacker who crashes a program "
+    msg="${msg}could harvest secrets from the dump files."
     ward_desc "$msg" 1
     if ward_ask_fix "Disable core dumps? (recommended unless debugging software)"; then
       printf 'Add to your shell profile (~/.bashrc, ~/.zshrc):\n'
@@ -1725,10 +1700,9 @@ check_level_3() {
   # Novel check: Locale/character encoding attacks
   if [ -n "${LC_ALL-}" ] && printf '%s' "$LC_ALL" | grep -qiE "(utf-?7|utf-?32)"; then
     ward_fail "Potentially dangerous locale setting: $LC_ALL"
-    msg="WHAT THIS IS: Your locale (LC_ALL) controls how text is interpreted. UTF-7 and UTF-32 are uncommon. "
-    msg="${msg}WHY IT MATTERS: Attackers use exotic character encodings to bypass security filters - like "
-    msg="${msg}writing a forbidden word in a different alphabet so automated checkers miss it. "
-    msg="${msg}HOW TO DECIDE: Use standard encodings like en_US.UTF-8. Change this unless you have a specific "
+    msg="Your locale (LC_ALL) controls how text is interpreted. UTF-7 and UTF-32 are uncommon. Attackers use "
+    msg="${msg}exotic character encodings to bypass security filters—writing forbidden words in different alphabets "
+    msg="${msg}so automated checkers miss them. Use standard encodings like en_US.UTF-8 unless you have a specific "
     msg="${msg}reason for unusual encoding."
     ward_desc "$msg" 1
     if ward_ask_fix "Change to standard locale? (recommended)"; then
@@ -1744,15 +1718,13 @@ check_level_3() {
     case_insensitive=$(mount | grep -i "case.*insensitive" || printf '')
     if [ -n "$case_insensitive" ]; then
       ward_fail "Case-insensitive filesystem detected"
-      msg="WHAT THIS IS: A case-insensitive filesystem treats filenames with different capitalization as "
-      msg="${msg}identical (e.g., 'File.txt', 'file.txt', and 'FILE.TXT' all refer to the same file). "
-      msg="${msg}WHY IT MATTERS: This can bypass filename-based security controls. If a security policy blocks "
-      msg="${msg}files matching 'exploit.exe', an attacker could use 'Exploit.EXE' or 'EXPLOIT.exe' to evade "
-      msg="${msg}detection. Some applications and scripts assume case-sensitive filesystem behavior, leading to "
-      msg="${msg}security vulnerabilities when deployed on case-insensitive systems. "
-      msg="${msg}HOW TO DECIDE: macOS default filesystems (APFS, HFS+) are case-insensitive by design. "
-      msg="${msg}Linux systems should use case-sensitive filesystems (ext4, xfs) for security-critical data. "
-      msg="${msg}Affected mount: $(printf '%s' "$case_insensitive" | head -1)"
+      msg="A case-insensitive filesystem treats filenames with different capitalization as identical "
+      msg="${msg}(e.g., 'File.txt', 'file.txt', and 'FILE.TXT' all refer to the same file). This can bypass "
+      msg="${msg}filename-based security controls—if a policy blocks 'exploit.exe', an attacker could use "
+      msg="${msg}'Exploit.EXE' or 'EXPLOIT.exe' to evade detection. Some applications assume case-sensitive "
+      msg="${msg}behavior, leading to vulnerabilities on case-insensitive systems. macOS default filesystems "
+      msg="${msg}(APFS, HFS+) are case-insensitive by design. Linux systems should use case-sensitive filesystems "
+      msg="${msg}(ext4, xfs) for security-critical data. Affected mount: $(printf '%s' "$case_insensitive" | head -1)"
       ward_desc "$msg" 1
     fi
   fi
@@ -1773,14 +1745,12 @@ check_level_3() {
     
     if [ "$tmp_cleanup_configured" -eq 0 ] && [ "$cache_size" -gt 1048576 ]; then
       ward_fail "Large cache directory and no automatic cleanup ($cache_size KB)"
-      msg="WHAT THIS IS: The ~/.cache directory stores temporary application data. Without automatic cleanup, "
-      msg="${msg}this directory grows indefinitely. Current size: $cache_size KB (>1GB). "
-      msg="${msg}WHY IT MATTERS: Cache files can contain sensitive information from application memory, including: "
-      msg="${msg}(1) Browser cache with private browsing data. (2) Application credentials and session tokens. "
-      msg="${msg}(3) Temporary files from crashed programs that failed to clean up. This data persists indefinitely "
-      msg="${msg}and remains accessible even after the source application is removed. "
-      msg="${msg}HOW TO DECIDE: Configure automatic cleanup with systemd-tmpfiles or similar, or periodically "
-      msg="${msg}review and manually remove old cache data."
+      msg="The ~/.cache directory stores temporary application data. Without automatic cleanup, this directory "
+      msg="${msg}grows indefinitely. Current size: $cache_size KB (>1GB). Cache files can contain sensitive information: "
+      msg="${msg}browser cache with private browsing data, application credentials and session tokens, temporary files "
+      msg="${msg}from crashed programs that failed to clean up. This data persists indefinitely and remains accessible "
+      msg="${msg}even after the source application is removed. Configure automatic cleanup with systemd-tmpfiles or "
+      msg="${msg}similar, or periodically review and manually remove old cache data."
       ward_desc "$msg" 1
       if ward_ask_fix "See how to configure automatic cleanup?"; then
         printf 'Enable systemd tmpfiles cleanup:\n'
@@ -1802,15 +1772,13 @@ check_level_3() {
     
     if [ "$arp_count" -gt 50 ]; then
       ward_fail "Unusually large ARP cache ($arp_count entries)"
-      msg="WHAT THIS IS: The ARP (Address Resolution Protocol) cache stores mappings between IP addresses "
-      msg="${msg}and MAC (hardware) addresses on the local network. It's used to route packets on Ethernet networks. "
-      msg="${msg}WHY IT MATTERS: An abnormally large ARP cache can indicate ARP poisoning/spoofing attacks. "
-      msg="${msg}In this attack, a malicious host sends forged ARP replies to associate the attacker's MAC address "
-      msg="${msg}with the IP address of legitimate hosts (like your router), intercepting all network traffic "
-      msg="${msg}in a man-in-the-middle attack. "
-      msg="${msg}HOW TO DECIDE: This is normal for enterprise networks with many hosts. On small networks (home, "
-      msg="${msg}small office), investigate. Use 'arp -a' or 'ip neigh show' to inspect entries. Look for duplicate "
-      msg="${msg}IP addresses with different MAC addresses or entries that change frequently."
+      msg="The ARP (Address Resolution Protocol) cache stores mappings between IP addresses and MAC (hardware) "
+      msg="${msg}addresses on the local network, used to route packets on Ethernet. An abnormally large ARP cache "
+      msg="${msg}can indicate ARP poisoning/spoofing attacks—a malicious host sends forged ARP replies to associate "
+      msg="${msg}the attacker's MAC address with legitimate hosts' IP addresses (like your router), intercepting all "
+      msg="${msg}network traffic in a man-in-the-middle attack. This is normal for enterprise networks with many "
+      msg="${msg}hosts; on small networks (home, small office), investigate using 'arp -a' or 'ip neigh show'. Look "
+      msg="${msg}for duplicate IP addresses with different MAC addresses or entries that change frequently."
       ward_desc "$msg" 1
     else
       ward_pass "ARP cache size appears normal ($arp_count entries)"
@@ -1826,11 +1794,11 @@ check_level_3() {
       cache_hit_rate=$(printf '%s' "$dns_stats" | grep -i "hit" | awk '{print $NF}' | tr -d '%')
       if [ -n "$cache_hit_rate" ] && [ "$cache_hit_rate" -gt 95 ] 2>/dev/null; then
         ward_fail "Suspiciously high DNS cache hit rate ($cache_hit_rate%)"
-        msg="WHAT THIS IS: DNS translates names (google.com) to numbers (IP addresses). A cache stores recent lookups. "
-        msg="${msg}WHY IT MATTERS: A >95% hit rate might mean you're only visiting the same few sites repeatedly "
-        msg="${msg}(normal for some users) OR your DNS cache has been poisoned to redirect many sites to attacker IPs. "
-        msg="${msg}HOW TO DECIDE: If you browse varied sites but keep getting redirected, investigate. Clear DNS cache "
-        msg="${msg}and see if unexpected redirects stop. View stats: systemd-resolve --statistics"
+        msg="DNS translates names (google.com) to IP addresses. A cache stores recent lookups. A >95% hit rate "
+        msg="${msg}might mean you're only visiting the same few sites repeatedly (normal for some users), or your DNS "
+        msg="${msg}cache has been poisoned to redirect many sites to attacker IPs. If you browse varied sites but keep "
+        msg="${msg}getting redirected, investigate—clear DNS cache and see if unexpected redirects stop. View stats: "
+        msg="${msg}systemd-resolve --statistics"
         ward_desc "$msg" 1
       fi
     fi
