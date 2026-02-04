@@ -89,7 +89,6 @@ if [ "$action" = "enable" ]; then
     
     if [ -n "$torrc_path" ] && [ -f "$torrc_path" ]; then
       if ! grep -E -q "^[[:space:]]*HiddenServiceDir.*/mud(/)?$" "$torrc_path" 2>/dev/null; then
-        printf '%s\n' "Enabling Tor hosting..."
         setup-tor -y >/dev/null 2>&1 || true
       fi
     fi
@@ -125,7 +124,6 @@ else
     
     if [ -n "$torrc_path" ] && [ -f "$torrc_path" ]; then
       if grep -E -q "^[[:space:]]*HiddenServiceDir.*/mud(/)?$" "$torrc_path" 2>/dev/null; then
-        printf '%s\n' "Disabling Tor hosting..."
         remove-tor-hidden-service -y >/dev/null 2>&1 || true
       fi
     fi
