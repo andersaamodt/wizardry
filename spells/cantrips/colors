@@ -160,7 +160,7 @@ BG_BRIGHT_WHITE="${ESC}[107m"
 # Semantic theme colours for consistent UI styling.
 # Use these throughout wizardry spells for a unified look.
 THEME_HIGHLIGHT="$CYAN"          # Menu highlight / selected item
-THEME_MUTED="$CYAN"              # Secondary text / commands displayed by wizard-cast
+THEME_MUTED="$GREY"              # Secondary text / commands displayed in menus
 THEME_CUSTOM="$YELLOW"           # User-created spell names
 THEME_SUCCESS="$GREEN"           # Success indicators
 THEME_WARNING="$YELLOW"          # Warning indicators
