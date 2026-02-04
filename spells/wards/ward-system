@@ -288,6 +288,54 @@ check_level_1() {
         ;;
     esac
   fi
+  
+  # Check DNS configuration file permissions
+  if [ -r /etc/resolv.conf ]; then
+    resolv_perms=$(ls -l /etc/resolv.conf 2>/dev/null | awk '{print $1}')
+    if printf '%s' "$resolv_perms" | grep -q 'w..w'; then
+      ward_fail "/etc/resolv.conf is world-writable"
+      msg="DNS configuration should not be writable by all users. "
+      msg="${msg}This could allow DNS hijacking attacks."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Would you like guidance on fixing /etc/resolv.conf?"; then
+        printf 'Fix /etc/resolv.conf permissions (requires root):\n'
+        printf '  sudo chmod 644 /etc/resolv.conf\n'
+      fi
+    else
+      ward_pass "/etc/resolv.conf has secure permissions"
+      ward_desc "DNS configuration file is protected from unauthorized modification." 0
+    fi
+  fi
+  
+  # Check for suspicious entries in /etc/hosts
+  if [ -r /etc/hosts ]; then
+    # Look for common suspicious patterns (redirecting major sites)
+    if has grep; then
+      suspicious=$(grep -E "google\.com|facebook\.com|twitter\.com|github\.com|amazon\.com" \
+                        /etc/hosts 2>/dev/null | grep -v "^#" | grep -v "^$" || printf '')
+      if [ -n "$suspicious" ]; then
+        ward_fail "Suspicious entries found in /etc/hosts"
+        msg="/etc/hosts contains redirections for major websites. "
+        msg="${msg}This could indicate DNS hijacking or malware."
+        ward_desc "$msg" 1
+        printf 'Suspicious entries:\n%s\n' "$suspicious"
+      else
+        ward_pass "/etc/hosts has no obvious suspicious entries"
+        ward_desc "/etc/hosts file appears normal." "$verbose"
+      fi
+    fi
+  fi
+  
+  # Check system timezone configuration
+  if has timedatectl; then
+    timezone=$(timedatectl 2>/dev/null | grep "Time zone" | awk '{print $3}' || printf 'unknown')
+    ward_pass "System timezone: $timezone"
+    ward_desc "Verify timezone is appropriate for your location." "$verbose"
+  elif [ -r /etc/timezone ]; then
+    timezone=$(cat /etc/timezone 2>/dev/null || printf 'unknown')
+    ward_pass "System timezone: $timezone"
+    ward_desc "Verify timezone is appropriate for your location." "$verbose"
+  fi
 }
 
 # Level 2: Advanced security checks
@@ -392,7 +440,9 @@ check_level_2() {
   # Check sudo configuration
   if [ -r /etc/sudoers ] || [ -d /etc/sudoers.d ]; then
     ward_pass "Sudo configuration files exist"
-    ward_desc "Review sudo configuration to ensure only authorized users have privileges." "$verbose"
+    msg="Review sudo configuration to ensure only authorized users "
+    msg="${msg}have privileges."
+    ward_desc "$msg" "$verbose"
   fi
   
   # Check for password in shell history
@@ -457,6 +507,94 @@ check_level_2() {
         fi
         ;;
     esac
+  fi
+  
+  # Check cron access control files
+  if [ -f /etc/cron.allow ] || [ -f /etc/cron.deny ]; then
+    ward_pass "Cron access control files exist"
+    msg="cron.allow/cron.deny controls who can use cron. "
+    msg="${msg}Review these files to ensure only authorized users have access."
+    ward_desc "$msg" "$verbose"
+  else
+    ward_fail "No cron access control files found"
+    msg="Without cron.allow or cron.deny, all users can create cron jobs. "
+    msg="${msg}Consider creating /etc/cron.allow for better security."
+    ward_desc "$msg" 1
+    if ward_ask_fix "Would you like guidance on cron access control?"; then
+      printf 'Create /etc/cron.allow to restrict cron access (requires root):\n'
+      printf '  sudo touch /etc/cron.allow\n'
+      printf '  sudo chmod 600 /etc/cron.allow\n'
+      printf '  echo "root" | sudo tee /etc/cron.allow\n'
+    fi
+  fi
+  
+  # Check for X11 forwarding in SSH config
+  for sshd_config in /etc/ssh/sshd_config /private/etc/ssh/sshd_config; do
+    if [ -r "$sshd_config" ]; then
+      if grep -q "^X11Forwarding yes" "$sshd_config" 2>/dev/null; then
+        ward_fail "SSH X11 forwarding is enabled"
+        msg="X11 forwarding can be a security risk if not needed. "
+        msg="${msg}Disable with: X11Forwarding no in sshd_config"
+        ward_desc "$msg" 1
+      else
+        ward_pass "SSH X11 forwarding is not explicitly enabled"
+        ward_desc "X11 forwarding disabled or not configured." "$verbose"
+      fi
+      break
+    fi
+  done
+  
+  # Check for empty passwords in shadow file (if readable)
+  if [ -r /etc/shadow ]; then
+    if has awk; then
+      empty_pass=$(awk -F: '($2 == "" || $2 == "!") {print $1}' \
+                       /etc/shadow 2>/dev/null || printf '')
+      if [ -n "$empty_pass" ]; then
+        ward_fail "Users with empty or locked passwords found"
+        msg="Empty passwords are a critical security risk. "
+        msg="${msg}Review: $(printf '%s' "$empty_pass" | head -1)"
+        ward_desc "$msg" 1
+      else
+        ward_pass "No users with empty passwords detected"
+        ward_desc "All user accounts have password hashes." 0
+      fi
+    fi
+  fi
+  
+  # Check NTP/time synchronization
+  if has timedatectl; then
+    if timedatectl status 2>/dev/null | grep -q "synchronized: yes"; then
+      ward_pass "System time is synchronized"
+      ward_desc "Time synchronization is critical for security logs and certificates." 0
+    else
+      ward_fail "System time is not synchronized"
+      msg="Time synchronization is important for security logs and SSL/TLS. "
+      msg="${msg}Enable with systemd-timesyncd or ntpd."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Would you like guidance on enabling time sync?"; then
+        printf 'Enable time synchronization:\n'
+        printf '  sudo timedatectl set-ntp true\n'
+      fi
+    fi
+  elif has ntpq; then
+    if ntpq -p >/dev/null 2>&1; then
+      ward_pass "NTP is configured and running"
+      ward_desc "Time synchronization via NTP is active." 0
+    else
+      ward_fail "NTP appears to be installed but not working"
+      ward_desc "Check NTP configuration." 1
+    fi
+  fi
+  
+  # Check package manager repository security
+  if [ -d /etc/apt/sources.list.d ]; then
+    third_party=$(find /etc/apt/sources.list.d -name "*.list" 2>/dev/null | wc -l)
+    if [ "$third_party" -gt 0 ]; then
+      ward_pass "Found $third_party third-party repository files"
+      msg="Review third-party repositories for legitimacy: "
+      msg="${msg}ls -la /etc/apt/sources.list.d/"
+      ward_desc "$msg" "$verbose"
+    fi
   fi
 }
 
@@ -548,7 +686,10 @@ check_level_3() {
   
   if [ "$firewall_active" -eq 0 ]; then
     ward_fail "No active firewall detected"
-    ward_desc "A firewall blocks unauthorized network connections. Consider enabling ufw (Ubuntu), firewalld (Fedora), or your system's firewall." 1
+    msg="A firewall blocks unauthorized network connections. "
+    msg="${msg}Consider enabling ufw (Ubuntu), firewalld (Fedora), "
+    msg="${msg}or your system's firewall."
+    ward_desc "$msg" 1
     if ward_ask_fix "Would you like guidance on enabling a firewall?"; then
       printf 'On Ubuntu/Debian: sudo ufw enable\n'
       printf 'On Fedora/RHEL: sudo systemctl start firewalld\n'
@@ -674,6 +815,158 @@ check_level_3() {
       ward_desc "No processes running from temporary directories." "$verbose"
     fi
   fi
+  
+  # Check kernel exploit mitigation (ASLR)
+  if [ -r /proc/sys/kernel/randomize_va_space ]; then
+    aslr=$(cat /proc/sys/kernel/randomize_va_space 2>/dev/null || printf '0')
+    if [ "$aslr" -eq 2 ]; then
+      ward_pass "ASLR (Address Space Layout Randomization) is fully enabled"
+      ward_desc "ASLR helps protect against memory corruption exploits." 0
+    else
+      ward_fail "ASLR is not fully enabled (value: $aslr)"
+      msg="ASLR should be set to 2 for full protection. "
+      msg="${msg}Enable with: sysctl -w kernel.randomize_va_space=2"
+      ward_desc "$msg" 1
+      if ward_ask_fix "Would you like guidance on enabling ASLR?"; then
+        printf 'Enable ASLR:\n'
+        printf '  sudo sysctl -w kernel.randomize_va_space=2\n'
+        printf 'Make permanent in /etc/sysctl.conf:\n'
+        printf '  kernel.randomize_va_space=2\n'
+      fi
+    fi
+  fi
+  
+  # Check filesystem mount options for /tmp
+  if has mount; then
+    tmp_mount=$(mount | grep " /tmp " 2>/dev/null || printf '')
+    if [ -n "$tmp_mount" ]; then
+      if printf '%s' "$tmp_mount" | grep -q "noexec"; then
+        ward_pass "/tmp is mounted with noexec option"
+        ward_desc "noexec on /tmp prevents execution of binaries." 0
+      else
+        ward_fail "/tmp is not mounted with noexec option"
+        msg="/tmp should be mounted with noexec,nosuid,nodev for security. "
+        msg="${msg}Add to /etc/fstab: tmpfs /tmp tmpfs defaults,noexec,nosuid,nodev 0 0"
+        ward_desc "$msg" 1
+      fi
+    else
+      ward_pass "/tmp mount options: check manually"
+      ward_desc "/tmp may not be a separate mount. Consider separate partition." "$verbose"
+    fi
+  fi
+  
+  # Check for loaded kernel modules
+  if has lsmod; then
+    modules_loaded=$(lsmod 2>/dev/null | wc -l)
+    modules_loaded=$((modules_loaded - 1)) # Subtract header line
+    ward_pass "$modules_loaded kernel modules currently loaded"
+    msg="Review loaded modules with 'lsmod' for unexpected entries."
+    ward_desc "$msg" "$verbose"
+  fi
+  
+  # Check if auditd is running (Linux audit system)
+  if has systemctl; then
+    if systemctl is-active auditd >/dev/null 2>&1; then
+      ward_pass "Audit daemon (auditd) is running"
+      ward_desc "auditd provides comprehensive system auditing for security." 0
+    else
+      ward_fail "Audit daemon (auditd) is not running"
+      msg="auditd provides detailed security auditing. "
+      msg="${msg}Install and enable: sudo apt install auditd && sudo systemctl enable auditd"
+      ward_desc "$msg" 1
+    fi
+  fi
+  
+  # Check network interfaces for promiscuous mode (packet sniffing)
+  if has ip; then
+    promisc=$(ip link show 2>/dev/null | grep PROMISC || printf '')
+    if [ -n "$promisc" ]; then
+      ward_fail "Network interface in promiscuous mode detected"
+      msg="Promiscuous mode allows packet sniffing. "
+      msg="${msg}This may indicate monitoring tools or potential compromise."
+      ward_desc "$msg" 1
+      printf 'Interface in promiscuous mode:\n%s\n' "$promisc"
+    else
+      ward_pass "No network interfaces in promiscuous mode"
+      ward_desc "Network interfaces not configured for packet capture." 0
+    fi
+  fi
+  
+  # Check for compiler tools on production systems
+  if has gcc || has cc || has clang; then
+    ward_fail "Compiler tools found on system"
+    msg="Compilers (gcc, clang) on production systems can be used "
+    msg="${msg}by attackers to compile exploits. Consider removing if not needed."
+    ward_desc "$msg" 1
+    if ward_ask_fix "Would you like to see compiler removal commands?"; then
+      printf 'Remove compiler tools (Debian/Ubuntu):\n'
+      printf '  sudo apt remove gcc g++ make\n'
+      printf 'Remove compiler tools (RHEL/Fedora):\n'
+      printf '  sudo yum remove gcc gcc-c++ make\n'
+    fi
+  else
+    ward_pass "No compiler tools detected"
+    ward_desc "System does not have development compilers installed." 0
+  fi
+  
+  # Check system entropy for cryptography
+  if [ -r /proc/sys/kernel/random/entropy_avail ]; then
+    entropy=$(cat /proc/sys/kernel/random/entropy_avail 2>/dev/null || printf '0')
+    if [ "$entropy" -gt 1000 ]; then
+      ward_pass "System entropy is adequate ($entropy bits available)"
+      ward_desc "Sufficient entropy for cryptographic operations." 0
+    else
+      ward_fail "System entropy is low ($entropy bits available)"
+      msg="Low entropy can weaken cryptographic operations. "
+      msg="${msg}Consider installing haveged or rng-tools."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Would you like guidance on improving entropy?"; then
+        printf 'Install haveged for better entropy:\n'
+        printf '  sudo apt install haveged\n'
+      fi
+    fi
+  fi
+  
+  # Check for suspicious systemd unit files
+  if [ -d /etc/systemd/system ]; then
+    user_units=$(find /etc/systemd/system -name "*.service" -type f 2>/dev/null | wc -l)
+    if [ "$user_units" -gt 0 ]; then
+      ward_pass "Found $user_units custom systemd unit files"
+      msg="Review custom systemd units in /etc/systemd/system/ for legitimacy."
+      ward_desc "$msg" "$verbose"
+    fi
+  fi
+  
+  # Check for common rootkit indicators
+  if has find; then
+    # Check for hidden files in /dev (common rootkit location)
+    hidden_dev=$(find /dev -name ".*" 2>/dev/null | grep -v "/dev/\." | head -5 || printf '')
+    if [ -n "$hidden_dev" ]; then
+      ward_fail "Hidden files found in /dev directory"
+      msg="Hidden files in /dev may indicate rootkit. Investigate: "
+      msg="${msg}$(printf '%s' "$hidden_dev" | head -1)"
+      ward_desc "$msg" 1
+    else
+      ward_pass "No suspicious hidden files in /dev"
+      ward_desc "/dev directory appears clean." "$verbose"
+    fi
+  fi
+  
+  # Check SSH agent forwarding
+  for sshd_config in /etc/ssh/sshd_config /private/etc/ssh/sshd_config; do
+    if [ -r "$sshd_config" ]; then
+      if grep -q "^AllowAgentForwarding yes" "$sshd_config" 2>/dev/null; then
+        ward_fail "SSH agent forwarding is enabled"
+        msg="Agent forwarding can expose SSH keys on compromised servers. "
+        msg="${msg}Disable unless specifically needed."
+        ward_desc "$msg" 1
+      else
+        ward_pass "SSH agent forwarding is not explicitly enabled"
+        ward_desc "Agent forwarding disabled or not configured." "$verbose"
+      fi
+      break
+    fi
+  done
 }
 
 # Main execution
