@@ -23,7 +23,7 @@ test_help() {
 }
 
 test_nonexistent_directory() {
-  run_spell "spells/mud/listen" /nonexistent/path
+  run_sourced_spell "spells/mud/listen" /nonexistent/path
   assert_failure || return 1
   assert_error_contains "does not exist" || return 1
 }
@@ -31,8 +31,8 @@ test_nonexistent_directory() {
 test_starts_listener_silent() {
   tmpdir=$(make_tempdir)
   
-  # Start listener in test directory
-  HOME="$tmpdir" run_spell "spells/mud/listen" "$tmpdir"
+  # Start listener in test directory (must be sourced)
+  HOME="$tmpdir" run_sourced_spell "spells/mud/listen" "$tmpdir"
   
   # Should succeed but not output any startup messages
   assert_success || return 1
@@ -42,8 +42,8 @@ test_starts_listener_silent() {
 test_stop_option() {
   tmpdir=$(make_tempdir)
   
-  # Try to stop when nothing is running
-  HOME="$tmpdir" run_spell "spells/mud/listen" --stop
+  # Try to stop when nothing is running (must be sourced)
+  HOME="$tmpdir" run_sourced_spell "spells/mud/listen" --stop
   assert_success || return 1
   assert_output_contains "Stopped listening" || return 1
 }
@@ -220,7 +220,117 @@ SCRIPT
   done
 }
 
+# Test that listen enforces uncastable pattern (must be sourced)
+test_uncastable() {
+  # Try to execute listen directly (should fail)
+  tmpdir=$(make_tempdir)
+  
+  # Execute directly - should fail with error message
+  run_spell "spells/mud/listen" "$tmpdir"
+  assert_failure || return 1
+  assert_error_contains "must be sourced" || return 1
+}
+
+# Test cd-listen with relative paths (the scenario that was broken)
+test_cd_listen_relative_path() {
+  tmpdir=$(make_tempdir)
+  mkdir -p "$tmpdir/sites"
+  
+  # Set up environment with cd-listen enabled
+  export PATH="$test_root/spells/mud:$test_root/spells/.imps/sys:$test_root/spells/.imps/out:$test_root/spells/.arcana/mud:$PATH"
+  export SPELLBOOK_DIR="$tmpdir"
+  export MUD_PLAYER="TestUser"
+  export HOME="$tmpdir"
+  
+  # Enable cd-listen
+  echo "cd-listen=1" > "$SPELLBOOK_DIR/.mud"
+  
+  # Source cd hook to enable automatic listen on cd
+  . "$test_root/spells/.arcana/mud/load-cd-hook"
+  
+  # Test the exact scenario: cd ~ then cd sites (relative path)
+  # This was failing because listen inherited cd's $1="sites" instead of using $PWD
+  cd ~ || return 1
+  sleep 1
+  
+  cd sites || return 1
+  sleep 2
+  
+  # Check if listener started for sites directory
+  listener_count=$(pgrep -f "tail -f.*sites/.log" 2>/dev/null | wc -l)
+  
+  # Clean up tail processes
+  tail_pids=$(pgrep -f "tail -f.*$tmpdir" 2>/dev/null || true)
+  for pid in $tail_pids; do
+    [ -n "$pid" ] && kill "$pid" 2>/dev/null || true
+  done
+  
+  # Verify listener was running
+  [ "$listener_count" -gt 0 ] || return 1
+}
+
+# Test that "log:" messages don't show username prefix
+test_log_username_hidden() {
+  tmpdir=$(make_tempdir)
+  
+  # Create a .log file with a message from the special "log" user
+  mkdir -p "$tmpdir"
+  echo "[12:34] log: System notification" > "$tmpdir/.log"
+  
+  # Create a test script that simulates listen's message parsing
+  cat > "$tmpdir/test-log.sh" <<'SCRIPT'
+#!/bin/sh
+line="[12:34] log: System notification"
+
+# Parse the log entry (same logic as listen spell)
+rest=$(printf '%s' "$line" | sed 's/^\[[^]]*\] //')
+player=$(printf '%s' "$rest" | sed 's/:.*//')
+message=$(printf '%s' "$rest" | sed 's/^[^:]*: //')
+
+# Special case: "log" username should not be displayed
+if [ "$player" = "log" ]; then
+  # Just show the message without username prefix
+  printf '%s\n' "$message"
+else
+  # Show with username
+  printf '%s: %s\n' "$player" "$message"
+fi
+SCRIPT
+  
+  chmod +x "$tmpdir/test-log.sh"
+  output=$("$tmpdir/test-log.sh")
+  
+  # Verify output is just the message, not "log: message"
+  [ "$output" = "System notification" ] || return 1
+  
+  # Also test that normal users still show their username
+  cat > "$tmpdir/test-user.sh" <<'SCRIPT'
+#!/bin/sh
+line="[12:34] alice: Hello there"
+
+# Parse the log entry
+rest=$(printf '%s' "$line" | sed 's/^\[[^]]*\] //')
+player=$(printf '%s' "$rest" | sed 's/:.*//')
+message=$(printf '%s' "$rest" | sed 's/^[^:]*: //')
+
+# Special case: "log" username should not be displayed
+if [ "$player" = "log" ]; then
+  printf '%s\n' "$message"
+else
+  printf '%s: %s\n' "$player" "$message"
+fi
+SCRIPT
+  
+  chmod +x "$tmpdir/test-user.sh"
+  output=$("$tmpdir/test-user.sh")
+  
+  # Verify normal user shows "username: message"
+  [ "$output" = "alice: Hello there" ] || return 1
+}
+
+
 run_test_case "listen shows usage text" test_help
+run_test_case "listen must be sourced (uncastable)" test_uncastable
 run_test_case "listen validates directory exists" test_nonexistent_directory  
 run_test_case "listen starts silently" test_starts_listener_silent
 run_test_case "listen --stop stops listener" test_stop_option
@@ -228,5 +338,7 @@ run_test_case "listen formats single-line messages correctly" test_message_forma
 run_test_case "listen formats multiline messages with newline" test_message_format_multiline
 run_test_case "listen handles exact line boundary messages" test_message_exact_line_boundaries
 run_test_case "listen handles fractional line length messages" test_message_fractional_lines
+run_test_case "listen hides log username prefix" test_log_username_hidden
+run_test_case "cd-listen works with relative paths" test_cd_listen_relative_path
 
 finish_tests

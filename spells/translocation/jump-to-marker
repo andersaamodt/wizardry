@@ -329,9 +329,11 @@ fi
 
 # Use command/builtin to bypass cd-hook and avoid triggering look before narration
 # This works on both bash/zsh (which have 'builtin') and POSIX sh (which uses 'command')
+# checkbashisms: builtin is bash/zsh-specific but guarded by runtime version check - exempt
 if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
         # In bash/zsh, use 'builtin cd' to bypass the cd function override
-        if ! eval 'builtin cd "$destination"' 2>/dev/null; then
+        # shellcheck disable=SC2039
+        if ! builtin cd "$destination" 2>/dev/null; then # checkbashisms: exempt (guarded)
                 printf '%s\n' "The portal refuses to stabilize; try marking again." >&2
                 # Restore readline mode before returning
   [ "$jm_emacs_mode" = "on" ] && set -o emacs 2>/dev/null || true
