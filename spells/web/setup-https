@@ -19,7 +19,7 @@ Prerequisites:
   - Domain must be publicly accessible and pointing to this server
   - Port 80 must be available for ACME challenge
 
-Example: web-setup-https mysite
+Example: setup-https mysite
 USAGE
   exit 0
   ;;

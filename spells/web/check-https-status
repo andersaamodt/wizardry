@@ -14,7 +14,7 @@ Returns:
   1 if HTTPS is not configured
   2 if site doesn't exist
 
-Example: web-check-https-status mysite
+Example: check-https-status mysite
 USAGE
   exit 0
   ;;
