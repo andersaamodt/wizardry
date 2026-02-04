@@ -20,23 +20,25 @@ set -eu
 # Check if tor process is running
 # Use pgrep if available for more accurate detection
 if command -v pgrep >/dev/null 2>&1; then
+    # Check for exact match first (process named exactly "tor")
     if pgrep -x tor >/dev/null 2>&1; then
-        if [ -t 1 ]; then
-            echo "Tor is running."
-        fi
+        exit 0
+    fi
+    # Also check for tor with full path (like /usr/local/bin/tor or /opt/pkg/bin/tor)
+    if pgrep -f '/tor$' >/dev/null 2>&1; then
+        exit 0
+    fi
+    # Check for tor with arguments but be specific to avoid false positives
+    # Only match if the command line contains "/tor " (tor with a space after it)
+    if pgrep -f '/tor ' >/dev/null 2>&1; then
         exit 0
     fi
 else
     # Fallback to ps + grep, but be more specific
-    if ps aux | grep -v grep | grep -q 'tor$\|tor '; then
-        if [ -t 1 ]; then
-            echo "Tor is running."
-        fi
+    # Match lines ending with "tor" or containing "tor " or "/tor " but not "torrent" etc
+    if ps aux | grep -v grep | grep -E '(/tor | tor$|/tor$)' >/dev/null 2>&1; then
         exit 0
     fi
 fi
 
-if [ -t 1 ]; then
-    echo "Tor is not running."
-fi
 exit 1

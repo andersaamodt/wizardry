@@ -13,19 +13,34 @@ USAGE
   ;;
 esac
 
-require-wizardry || exit 1
-
-set -eu
-
-# If not root, re-exec with sudo
+# If not root, re-exec with sudo (before require-wizardry check)
 if [ "$(id -u)" != "0" ]; then
    exec sudo "$0" "$@"
 fi
 
+# Only require wizardry when not running as root (after sudo)
+# When running via sudo, we don't need wizardry environment
+set -eu
+
 user_owner="debian-tor"
 group_owner="debian-tor"
 
-platform=$(detect-distro 2>/dev/null || printf 'unknown')
+# Detect platform without relying on wizardry spells
+platform="unknown"
+if [ -f /etc/os-release ]; then
+  . /etc/os-release
+  case "$ID" in
+    debian|ubuntu)
+      platform="debian"
+      ;;
+    arch)
+      platform="arch"
+      ;;
+  esac
+elif [ "$(uname -s)" = "Darwin" ]; then
+  platform="mac"
+fi
+
 case "$platform" in
   debian)
     user_owner="debian-tor"
@@ -47,24 +62,33 @@ case "$platform" in
 esac
 
 # Repair Tor directory permissions
-for tor_dir in /var/lib/tor /var/log/tor /etc/tor; do
+tor_dirs="/var/lib/tor /var/log/tor /etc/tor"
+tor_dirs="$tor_dirs /usr/local/var/lib/tor /usr/local/var/log /usr/local/etc/tor"
+tor_dirs="$tor_dirs /opt/pkg/var/lib/tor /opt/pkg/var/log"
+
+for tor_dir in $tor_dirs; do
   if [ -d "$tor_dir" ]; then
-    chown -R "$user_owner":"$group_owner" "$tor_dir" 2>/dev/null || true
-    printf '%s\n' "Changed owner and group of $tor_dir to $user_owner:$group_owner"
+    # On macOS, use wheel as the group for _tor user
+    if [ "$platform" = "mac" ]; then
+      chown -R "$user_owner":wheel "$tor_dir" 2>/dev/null || true
+    else
+      chown -R "$user_owner":"$group_owner" "$tor_dir" 2>/dev/null || true
+    fi
+    printf '%s\n' "Changed owner and group of $tor_dir to $user_owner (recursively)"
     
     # Set appropriate permissions based on directory type
     case "$tor_dir" in
-      /etc/tor)
+      /etc/tor|/usr/local/etc/tor)
         chmod 755 "$tor_dir" 2>/dev/null || true
         printf '%s\n' "Set permissions on $tor_dir to 755"
         ;;
       *)
         chmod 700 "$tor_dir" 2>/dev/null || true
         printf '%s\n' "Set permissions on $tor_dir to 700"
+        # Also fix subdirectories like hidden services (e.g., mud/)
+        find "$tor_dir" -type d -exec chmod 700 {} \; 2>/dev/null || true
         ;;
     esac
-  else
-    printf '%s\n' "Directory $tor_dir does not exist. Skipping."
   fi
 done
 

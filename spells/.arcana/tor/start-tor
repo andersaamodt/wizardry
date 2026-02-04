@@ -18,21 +18,90 @@ set -eu
 
 printf 'Starting tor...\n'
 
+# Ensure torrc exists before trying to start
+if command -v ensure-torrc-exists >/dev/null 2>&1; then
+  ensure-torrc-exists
+fi
+
 # Try systemctl (Linux with systemd)
 if command -v systemctl >/dev/null 2>&1; then
-  if sudo systemctl start tor 2>/dev/null; then
+  if sudo systemctl start tor 2>&1; then
     printf 'Tor started via systemctl.\n'
     exit 0
+  else
+    printf 'Failed to start tor via systemctl.\n' >&2
   fi
 fi
 
-# Try direct execution
+# Try launchctl (macOS) - only if service is already configured
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  if is-tor-launchd-service-configured; then
+    plist_file="/Library/LaunchDaemons/org.torproject.tor.plist"
+    
+    # First, ensure the service is loaded (it might be unloaded if stop-tor was used)
+    # Load with -w to enable it, which also starts it due to KeepAlive
+    if sudo launchctl load -w "$plist_file" 2>/dev/null; then
+      printf 'Tor service loaded and enabled.\n'
+    fi
+    
+    # Now start the service (in case it was already loaded but not running)
+    if sudo launchctl start org.torproject.tor 2>&1; then
+      printf 'Tor started via launchd.\n'
+      printf 'Waiting for tor process to start...\n'
+      
+      # Poll for up to 10 seconds until tor is actually running
+      max_wait=10
+      waited=0
+      while [ $waited -lt $max_wait ]; do
+        if is-tor-running; then
+          printf 'Tor process detected and running.\n'
+          exit 0
+        fi
+        sleep 1
+        waited=$((waited + 1))
+      done
+      
+      # If we got here, tor didn't start within timeout
+      printf 'Error: tor process not detected after %d seconds.\n' "$max_wait" >&2
+      printf 'Check logs with: show-tor-log\n' >&2
+      exit 1
+    else
+      printf 'Failed to start tor via launchd.\n' >&2
+    fi
+  fi
+fi
+
+# Try direct execution (fallback)
 if command -v tor >/dev/null 2>&1; then
-  if tor >/dev/null 2>&1 &; then
-    printf 'Tor started.\n'
+  printf 'Starting tor directly in background...\n'
+  # Start tor with a proper config file if available
+  tor_started=0
+  
+  # Try to find torrc and start tor in background
+  if [ -f /usr/local/etc/tor/torrc ]; then
+    tor -f /usr/local/etc/tor/torrc >/dev/null 2>&1 &
+    tor_started=1
+  elif [ -f /opt/pkg/etc/tor/torrc ]; then
+    tor -f /opt/pkg/etc/tor/torrc >/dev/null 2>&1 &
+    tor_started=1
+  elif [ -f /etc/tor/torrc ]; then
+    tor -f /etc/tor/torrc >/dev/null 2>&1 &
+    tor_started=1
+  else
+    # No config file, just start tor
+    tor >/dev/null 2>&1 &
+    tor_started=1
+  fi
+  
+  if [ "$tor_started" -eq 1 ]; then
+    printf 'Tor started directly in background.\n'
+    printf 'Note: Use "[ ] Start tor at startup" to enable automatic start on boot.\n'
     exit 0
+  else
+    printf 'Failed to start tor directly.\n' >&2
   fi
 fi
 
-printf 'start-tor: failed to start tor\n' >&2
+printf 'start-tor: failed to start tor (tried all methods)\n' >&2
+printf 'Tip: On macOS, enable "Start tor at startup" to use launchd service.\n' >&2
 exit 1

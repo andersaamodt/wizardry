@@ -1,0 +1,91 @@
+#!/bin/sh
+
+# Display the tor log file (last 120 lines)
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: show-tor-log
+
+Displays the last 120 lines of the tor log file.
+Shows logs from /usr/local/var/log/tor.log on macOS or systemd journal on Linux.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+
+# Find and display the tor log
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  # macOS - check for tor log files (both stdout and stderr)
+  log_file=""
+  err_file=""
+  
+  # Check for main log file
+  if [ -f /usr/local/var/log/tor.log ]; then
+    log_file="/usr/local/var/log/tor.log"
+  elif [ -f /opt/pkg/var/log/tor.log ]; then
+    log_file="/opt/pkg/var/log/tor.log"
+  elif [ -f /var/log/tor.log ]; then
+    log_file="/var/log/tor.log"
+  fi
+  
+  # Check for error log file (launchd stderr)
+  if [ -f /usr/local/var/log/tor-errors.log ]; then
+    err_file="/usr/local/var/log/tor-errors.log"
+  elif [ -f /opt/pkg/var/log/tor-errors.log ]; then
+    err_file="/opt/pkg/var/log/tor-errors.log"
+  elif [ -f /var/log/tor-errors.log ]; then
+    err_file="/var/log/tor-errors.log"
+  fi
+  
+  # Display whichever logs exist
+  found_log=0
+  
+  if [ -n "$log_file" ] && [ -r "$log_file" ]; then
+    printf 'Showing last 120 lines of %s:\n\n' "$log_file"
+    tail -n 120 "$log_file"
+    found_log=1
+  fi
+  
+  if [ -n "$err_file" ] && [ -r "$err_file" ]; then
+    if [ $found_log -eq 1 ]; then
+      printf '\n================================\n\n'
+    fi
+    printf 'Showing last 120 lines of %s (stderr):\n\n' "$err_file"
+    tail -n 120 "$err_file"
+    found_log=1
+  fi
+  
+  if [ $found_log -eq 0 ]; then
+    printf 'Tor log files not found or not readable.\n' >&2
+    printf 'Expected locations:\n' >&2
+    printf '  /usr/local/var/log/tor.log\n' >&2
+    printf '  /usr/local/var/log/tor-errors.log\n' >&2
+    printf '  /opt/pkg/var/log/tor.log\n' >&2
+    printf '  /var/log/tor.log\n' >&2
+    exit 1
+  fi
+else
+  # Linux - try systemd journal first, then log file
+  if command -v journalctl >/dev/null 2>&1; then
+    printf 'Showing last 120 lines from systemd journal for tor:\n\n'
+    sudo journalctl -u tor -n 120 --no-pager
+  elif [ -f /var/log/tor/log ]; then
+    if [ -r /var/log/tor/log ]; then
+      printf 'Showing last 120 lines of /var/log/tor/log:\n\n'
+      tail -n 120 /var/log/tor/log
+    else
+      printf 'Log file exists but not readable: /var/log/tor/log\n' >&2
+      printf 'Try: sudo tail -n 120 /var/log/tor/log\n'
+      exit 1
+    fi
+  else
+    printf 'Tor log not found.\n' >&2
+    printf 'Expected: systemd journal or /var/log/tor/log\n' >&2
+    exit 1
+  fi
+fi

@@ -119,37 +119,72 @@ y|Y)
         
         # Create the directory if it doesn't exist
         sudo mkdir -p "$mud_dir" || exit 1
-        # Set proper ownership (try _tor first for macOS, then tor for Linux)
-        sudo chown _tor:_tor "$mud_dir" 2>/dev/null \
-            || sudo chown tor:tor "$mud_dir" 2>/dev/null || true
+        # Set proper ownership (try _tor:wheel for macOS, then tor:tor for Linux)
+        # On macOS, the _tor user belongs to the wheel group
+        sudo chown -R _tor:wheel "$mud_dir" 2>/dev/null \
+            || sudo chown -R tor:tor "$mud_dir" 2>/dev/null || true
         sudo chmod 700 "$mud_dir" || true
 
         printf 'HiddenServiceDir %s\n' "$mud_dir" | sudo tee -a "$tor_config_path"
+        printf '%s\n' "HiddenServiceVersion 3" | sudo tee -a "$tor_config_path"
         printf '%s\n' "HiddenServicePort 80 127.0.0.1:8080" | sudo tee -a "$tor_config_path"
+        
+        # Ensure torrc remains readable after modification
+        sudo chmod 644 "$tor_config_path"
         
         # Restart tor to activate the hidden service
         printf '%s\n' "Hidden service configured in $tor_config_path"
         
         if restart-tor; then
-                # Wait a moment for tor to generate the hidden service
-                sleep 2
+                # Wait for tor to actually start (up to 10 seconds)
+                printf 'Waiting for tor to start...\n'
+                wait_count=0
+                while [ $wait_count -lt 10 ]; do
+                        if is-tor-running; then
+                                printf 'Tor is running.\n'
+                                break
+                        fi
+                        sleep 1
+                        wait_count=$((wait_count + 1))
+                done
+                
+                if ! is-tor-running; then
+                        printf 'Warning: Tor does not appear to be running yet.\n' >&2
+                        printf 'Check logs with: show-tor-log\n' >&2
+                fi
+                
+                # Wait for tor to generate the hidden service (up to 15 seconds)
+                hostname_file="${mud_dir}/hostname"
+                printf 'Waiting for tor to generate .onion address...\n'
+                wait_count=0
+                while [ $wait_count -lt 15 ]; do
+                        if [ -f "$hostname_file" ]; then
+                                printf 'Hostname file created.\n'
+                                break
+                        fi
+                        sleep 1
+                        wait_count=$((wait_count + 1))
+                done
+                
+                # Fix permissions on tor directories
+                printf 'Fixing tor permissions...\n'
+                repair-tor-permissions >/dev/null 2>&1 || true
                 
                 # Read the hidden service address if available
-                hostname_file="${mud_dir}hostname"
-                if [ -f "$hostname_file" ]; then
-                        onion_address=$(cat "$hostname_file")
-                        printf 'Hidden service address: %s\n' "$onion_address"
+                if [ -f "$hostname_file" ] && [ -r "$hostname_file" ]; then
+                        onion_address=$(cat "$hostname_file" 2>/dev/null || true)
+                        if [ -n "$onion_address" ]; then
+                                printf 'Hidden service address: %s\n' "$onion_address"
+                                printf 'The .onion address is stored at: %s\n' "$hostname_file"
+                        fi
                 else
                         printf '%s\n' "Hidden service configured."
                         printf 'The .onion address is stored at: %s\n' "$hostname_file"
-                        # Try to read and display the address
-                        if [ -f "$hostname_file" ] && [ -r "$hostname_file" ]; then
-                                onion_address=$(cat "$hostname_file" 2>/dev/null || true)
-                                if [ -n "$onion_address" ]; then
-                                        printf 'Hidden service address: %s\n' "$onion_address"
-                                fi
-                        fi
                 fi
+        else
+                printf 'Error: Failed to restart tor.\n' >&2
+                printf 'Try running: show-tor-log\n' >&2
+                exit 1
         fi
         ;;
 *)
