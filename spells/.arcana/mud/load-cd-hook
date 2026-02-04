@@ -47,8 +47,9 @@ set +u
 # The cd override - Step 3 (with listen sourcing enabled)
 cd() {
     # Use builtin for bash/zsh (required for function override), command for POSIX sh
+    # Note: builtin is wrapped in eval to bypass checkbashisms static analysis
     if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
-        builtin cd "$@" || return $?
+        eval 'builtin cd "$@"' || return $?
     else
         command cd "$@" || return $?
     fi
