@@ -89,9 +89,13 @@ if command -v env-clear >/dev/null 2>&1; then
 fi
 
 # Get room path
-# When called with an argument, use it; otherwise use $PWD
-# Make sure we always work with absolute paths
-_listen_room_path=${1:-$PWD}
+# CRITICAL: When sourced from cd hook, $1 contains cd's argument (like "sites"), not absolute path
+# So when sourced, always use $PWD. When executed directly, allow explicit directory argument.
+if [ "$_listen_is_sourced" -eq 1 ]; then
+  _listen_room_path="$PWD"
+else
+  _listen_room_path=${1:-$PWD}
+fi
 
 # If --stop was specified, stop all listeners
 if [ "$_listen_stop_only" = "1" ]; then
