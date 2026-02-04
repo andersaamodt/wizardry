@@ -282,7 +282,10 @@ config-set "$SITE_DIR/site.conf" https "$use_https"
 if is-tor-installed; then
   tor_config_path=$(torrc-path 2>/dev/null || echo "")
   if [ -n "$tor_config_path" ] && [ -f "$tor_config_path" ]; then
-    if grep -q "^HiddenServiceDir.*${site_name}" "$tor_config_path" 2>/dev/null; then
+    # Check if Tor hosting is enabled by looking for this site's HiddenServiceDir
+    # Use a more specific pattern to avoid false matches with similar site names
+    if grep -q "^HiddenServiceDir.*/${site_name}/\?\$" "$tor_config_path" 2>/dev/null || \
+       grep -q "^HiddenServiceDir.*/${site_name}\$" "$tor_config_path" 2>/dev/null; then
       # Tor hosting is enabled for this site - update the port
       step "Updating Tor hidden service port to $port..."
       
@@ -291,7 +294,9 @@ if is-tor-installed; then
       
       while IFS= read -r line; do
         # Check if we're entering this site's hidden service block
-        if printf '%s' "$line" | grep -q "^HiddenServiceDir.*${site_name}"; then
+        # Match lines ending with /site_name or /site_name/
+        if printf '%s' "$line" | grep -q "^HiddenServiceDir.*/${site_name}/\?\$" || \
+           printf '%s' "$line" | grep -q "^HiddenServiceDir.*/${site_name}\$"; then
           in_site_block=1
           printf '%s\n' "$line" >> "$temp_torrc"
           continue
@@ -310,6 +315,7 @@ if is-tor-installed; then
       done < "$tor_config_path"
       
       sudo cp "$temp_torrc" "$tor_config_path"
+      # Preserve existing torrc permissions
       sudo chmod 644 "$tor_config_path"
       rm -f "$temp_torrc"
       
