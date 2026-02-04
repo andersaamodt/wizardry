@@ -24,31 +24,34 @@ username=""
 fingerprint=""
 delegate_id=""
 
-for user_dir in "$data_dir/users"/*; do
-  if [ ! -d "$user_dir" ]; then
-    continue
-  fi
-  
-  delegates_dir="$user_dir/delegates"
-  if [ ! -d "$delegates_dir" ]; then
-    continue
-  fi
-  
-  for delegate_file in "$delegates_dir"/*; do
-    if [ ! -f "$delegate_file" ]; then
+# Check if users directory exists
+if [ -d "$data_dir/users" ]; then
+  for user_dir in "$data_dir/users"/*; do
+    if [ ! -d "$user_dir" ]; then
       continue
     fi
     
-    # Check if this delegate has the matching credential_id
-    stored_credential_id=$(grep -o '"credential_id":"[^"]*"' "$delegate_file" | cut -d'"' -f4)
-    if [ "$stored_credential_id" = "$credential_id" ]; then
-      username=$(basename "$user_dir")
-      fingerprint=$(cat "$user_dir/ssh_fingerprint")
-      delegate_id=$(basename "$delegate_file")
-      break 2
+    delegates_dir="$user_dir/delegates"
+    if [ ! -d "$delegates_dir" ]; then
+      continue
     fi
+    
+    for delegate_file in "$delegates_dir"/*; do
+      if [ ! -f "$delegate_file" ]; then
+        continue
+      fi
+      
+      # Check if this delegate has the matching credential_id
+      stored_credential_id=$(grep -o '"credential_id":"[^"]*"' "$delegate_file" | cut -d'"' -f4)
+      if [ "$stored_credential_id" = "$credential_id" ]; then
+        username=$(basename "$user_dir")
+        fingerprint=$(cat "$user_dir/ssh_fingerprint")
+        delegate_id=$(basename "$delegate_file")
+        break 2
+      fi
+    done
   done
-done
+fi
 
 # Check if credential was found
 if [ -z "$username" ]; then
