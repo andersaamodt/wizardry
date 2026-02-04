@@ -18,14 +18,26 @@ done
 
 test_help() {
   run_spell "spells/mud/listen" --help
-  assert_success || return 1
-  assert_output_contains "Usage: listen" || return 1
+  if ! assert_success; then
+    TEST_FAILURE_REASON="listen --help should succeed but failed with status $STATUS"
+    return 1
+  fi
+  if ! assert_output_contains "Usage: listen"; then
+    TEST_FAILURE_REASON="help output should contain 'Usage: listen' but got: $OUTPUT"
+    return 1
+  fi
 }
 
 test_nonexistent_directory() {
   run_sourced_spell "spells/mud/listen" /nonexistent/path
-  assert_failure || return 1
-  assert_error_contains "does not exist" || return 1
+  if ! assert_failure; then
+    TEST_FAILURE_REASON="listen should fail when given nonexistent directory but returned success"
+    return 1
+  fi
+  if ! assert_error_contains "does not exist"; then
+    TEST_FAILURE_REASON="error message should contain 'does not exist' but got: $ERROR"
+    return 1
+  fi
 }
 
 test_starts_listener_silent() {
@@ -35,8 +47,14 @@ test_starts_listener_silent() {
   HOME="$tmpdir" run_sourced_spell "spells/mud/listen" "$tmpdir"
   
   # Should succeed but not output any startup messages
-  assert_success || return 1
-  [ -z "$OUTPUT" ] || return 1
+  if ! assert_success; then
+    TEST_FAILURE_REASON="listen should start successfully but failed with status $STATUS"
+    return 1
+  fi
+  if [ -n "$OUTPUT" ]; then
+    TEST_FAILURE_REASON="listen should start silently but produced output: $OUTPUT"
+    return 1
+  fi
 }
 
 test_stop_option() {
@@ -44,8 +62,14 @@ test_stop_option() {
   
   # Try to stop when nothing is running (must be sourced)
   HOME="$tmpdir" run_sourced_spell "spells/mud/listen" --stop
-  assert_success || return 1
-  assert_output_contains "Stopped listening" || return 1
+  if ! assert_success; then
+    TEST_FAILURE_REASON="listen --stop should succeed but failed with status $STATUS"
+    return 1
+  fi
+  if ! assert_output_contains "Stopped listening"; then
+    TEST_FAILURE_REASON="listen --stop should output 'Stopped listening' but got: $OUTPUT"
+    return 1
+  fi
 }
 
 test_message_format_single_line() {
