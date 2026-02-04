@@ -29,6 +29,8 @@ test_help() {
 }
 
 test_nonexistent_directory() {
+  skip-if-compiled || return $?  # Sourcing doesn't work in compiled mode
+  
   run_sourced_spell "spells/mud/listen" /nonexistent/path
   if ! assert_failure; then
     TEST_FAILURE_REASON="listen should fail when given nonexistent directory but returned success"
@@ -41,6 +43,8 @@ test_nonexistent_directory() {
 }
 
 test_starts_listener_silent() {
+  skip-if-compiled || return $?  # Sourcing and background processes don't work in compiled mode
+  
   tmpdir=$(make_tempdir)
   
   # Start listener in test directory (must be sourced)
@@ -58,6 +62,8 @@ test_starts_listener_silent() {
 }
 
 test_stop_option() {
+  skip-if-compiled || return $?  # Sourcing and process management don't work in compiled mode
+  
   tmpdir=$(make_tempdir)
   
   # Try to stop when nothing is running (must be sourced)
