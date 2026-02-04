@@ -107,7 +107,7 @@ fi
                 chmod 644 "$tor_config_path"
         fi
         
-        printf '%s\n' "Hidden service disabled for MUD"
+        printf '%s\n' "Tor hidden service disabled for MUD"
         
         # Auto-restart tor when called with -y flag (from menu)
         # When called directly, offer choice for safety

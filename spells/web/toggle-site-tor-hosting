@@ -176,7 +176,7 @@ else
   # Ensure torrc remains readable after modification
   sudo chmod 644 "$tor_config_path"
   
-  printf '%s\n' "Hidden service configured for site '$site_name'"
+  printf '%s\n' "Tor hidden service configured for site '$site_name'"
   repair-tor-permissions >/dev/null 2>&1 || true
   
   restart-tor || true

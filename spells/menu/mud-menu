@@ -208,11 +208,11 @@ while true; do
   if [ "$tor_configured" -eq 1 ]; then
     # remove-tor-hidden-service already restarts tor, so no need to restart again
     tor_cmd="remove-tor-hidden-service -y"
-    tor="[X] Tor hosting%$tor_cmd; echo 8 > \"$SELECTION_FILE\""
+    tor="[X] Tor hosting%$tor_cmd; echo 9 > \"$SELECTION_FILE\""
   else
     # setup-tor already restarts tor, so no need to restart again
     tor_cmd="setup-tor -y"
-    tor="[ ] Tor hosting%$tor_cmd; echo 8 > \"$SELECTION_FILE\""
+    tor="[ ] Tor hosting%$tor_cmd; echo 9 > \"$SELECTION_FILE\""
   fi
   
   # Build copy .onion address option if tor is configured
@@ -227,7 +227,7 @@ while true; do
       hostname_file="$hostname_dir/hostname"
       copy_cmd="clip-copy \"\$(sudo cat \"$hostname_file\" 2>/dev/null"
       copy_cmd="$copy_cmd || cat \"$hostname_file\")\""
-      copy_onion="Copy .onion address%$copy_cmd; echo 9 > \"$SELECTION_FILE\""
+      copy_onion="Copy .onion address%$copy_cmd; echo 8 > \"$SELECTION_FILE\""
     fi
   fi
   
