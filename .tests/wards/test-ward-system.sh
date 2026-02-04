@@ -55,7 +55,6 @@ test_ward_system_level_2() {
   skip-if-compiled || return $?
   run_spell spells/wards/ward-system 2
   assert_success
-  assert_output_contains "Level 1"
   assert_output_contains "Level 2"
   assert_output_contains "Advanced Security Checks"
 }
@@ -65,9 +64,20 @@ test_ward_system_level_3() {
   skip-if-compiled || return $?
   run_spell spells/wards/ward-system 3
   assert_success
+  assert_output_contains "Level 3"
+  assert_output_contains "Expert Security Checks"
+}
+
+# Test ward-system all
+test_ward_system_all() {
+  skip-if-compiled || return $?
+  run_spell spells/wards/ward-system all
+  assert_success
   assert_output_contains "Level 1"
   assert_output_contains "Level 2"
   assert_output_contains "Level 3"
+  assert_output_contains "Recommended Security Checks"
+  assert_output_contains "Advanced Security Checks"
   assert_output_contains "Expert Security Checks"
 }
 
@@ -187,6 +197,7 @@ run_test_case "ward-system runs level 1" test_ward_system_level_1
 run_test_case "ward-system defaults to level 1" test_ward_system_default_level
 run_test_case "ward-system runs level 2" test_ward_system_level_2
 run_test_case "ward-system runs level 3" test_ward_system_level_3
+run_test_case "ward-system runs all levels" test_ward_system_all
 run_test_case "ward-system accepts --verbose" test_ward_system_verbose
 run_test_case "ward-system accepts -v" test_ward_system_verbose_short
 run_test_case "ward-system accepts --no-fix" test_ward_system_no_fix
