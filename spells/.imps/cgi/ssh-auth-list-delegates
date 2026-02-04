@@ -37,22 +37,24 @@ fingerprint=$(cat "$user_dir/ssh_fingerprint")
 printf '{"success":true,"fingerprint":"%s","delegates":[' "$fingerprint"
 
 first=1
-for delegate_file in "$delegates_dir"/*; do
-  if [ ! -f "$delegate_file" ]; then
-    continue
-  fi
-  
-  if [ "$first" -eq 0 ]; then
-    printf ','
-  fi
-  first=0
-  
-  delegate_id=$(basename "$delegate_file")
-  credential_id=$(grep -o '"credential_id":"[^"]*"' "$delegate_file" | cut -d'"' -f4)
-  created_at=$(grep -o '"created_at":"[^"]*"' "$delegate_file" | cut -d'"' -f4)
-  
-  printf '{"delegate_id":"%s","credential_id":"%s","created_at":"%s"}' \
-    "$delegate_id" "$credential_id" "$created_at"
-done
+if [ -d "$delegates_dir" ]; then
+  for delegate_file in "$delegates_dir"/*; do
+    if [ ! -f "$delegate_file" ]; then
+      continue
+    fi
+    
+    if [ "$first" -eq 0 ]; then
+      printf ','
+    fi
+    first=0
+    
+    delegate_id=$(basename "$delegate_file")
+    credential_id=$(grep -o '"credential_id":"[^"]*"' "$delegate_file" | cut -d'"' -f4)
+    created_at=$(grep -o '"created_at":"[^"]*"' "$delegate_file" | cut -d'"' -f4)
+    
+    printf '{"delegate_id":"%s","credential_id":"%s","created_at":"%s"}' \
+      "$delegate_id" "$credential_id" "$created_at"
+  done
+fi
 
 printf ']}\n'
