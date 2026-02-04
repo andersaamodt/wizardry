@@ -215,17 +215,21 @@ while true; do
     tor="[ ] Tor hosting%$tor_cmd; echo 8 > \"$SELECTION_FILE\""
   fi
   
-  # Build copy .onion address option if hostname file exists
+  # Build copy .onion address option if tor is configured
   copy_onion=""
-  mud_dirs="/opt/homebrew/var/lib/tor/mud /usr/local/var/lib/tor/mud /opt/pkg/var/lib/tor/mud /var/lib/tor/mud"
-  for mud_hs_dir in $mud_dirs; do
-    if [ -f "$mud_hs_dir/hostname" ]; then
-      hostname_file="$mud_hs_dir/hostname"
-      copy_cmd="clip-copy \"\$(sudo cat \"$hostname_file\" 2>/dev/null || cat \"$hostname_file\")\""
+  if [ "$tor_configured" -eq 1 ] && [ -n "$torrc_path" ]; then
+    # Extract the HiddenServiceDir path from torrc
+    hostname_dir=$(grep -E "^[[:space:]]*HiddenServiceDir.*/mud(/)?$" "$torrc_path" 2>/dev/null \
+      | awk '{print $2}' | head -1)
+    if [ -n "$hostname_dir" ]; then
+      # Remove trailing slash if present
+      hostname_dir="${hostname_dir%/}"
+      hostname_file="$hostname_dir/hostname"
+      copy_cmd="clip-copy \"\$(sudo cat \"$hostname_file\" 2>/dev/null"
+      copy_cmd="$copy_cmd || cat \"$hostname_file\")\""
       copy_onion="Copy .onion address%$copy_cmd; echo 9 > \"$SELECTION_FILE\""
-      break
     fi
-  done
+  fi
   
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)

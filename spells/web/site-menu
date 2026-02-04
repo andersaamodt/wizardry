@@ -104,13 +104,19 @@ while true; do
   
   # Check for site-specific hidden service hostname file
   copy_site_onion=""
-  for site_hs_dir in "/opt/homebrew/var/lib/tor/$site_name" "/usr/local/var/lib/tor/$site_name" "/opt/pkg/var/lib/tor/$site_name" "/var/lib/tor/$site_name"; do
-    if [ -f "$site_hs_dir/hostname" ]; then
-      site_hostname_file="$site_hs_dir/hostname"
-      copy_site_onion="Copy .onion address%clip-copy \"\$(sudo cat \"$site_hostname_file\" 2>/dev/null || cat \"$site_hostname_file\")\"; echo 3 > \"$SELECTION_FILE\""
-      break
+  if [ "$tor_hosting_enabled" -eq 1 ] && [ -n "$tor_config_path" ]; then
+    # Extract the HiddenServiceDir path from torrc for this site
+    site_hostname_dir=$(grep "^HiddenServiceDir.*${site_name}" "$tor_config_path" 2>/dev/null \
+      | awk '{print $2}' | head -1)
+    if [ -n "$site_hostname_dir" ]; then
+      # Remove trailing slash if present
+      site_hostname_dir="${site_hostname_dir%/}"
+      site_hostname_file="$site_hostname_dir/hostname"
+      copy_cmd="clip-copy \"\$(sudo cat \"$site_hostname_file\" 2>/dev/null"
+      copy_cmd="$copy_cmd || cat \"$site_hostname_file\")\""
+      copy_site_onion="Copy .onion address%$copy_cmd; echo 3 > \"$SELECTION_FILE\""
     fi
-  done
+  fi
   
   exit_label=$(exit-label)
   
