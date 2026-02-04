@@ -61,6 +61,7 @@ if config-has "$CONFIG_FILE" "cd-listen" 2>/dev/null; then
                 config-set "$CONFIG_FILE" "cd-listen" "0"
                 
                 # Stop any active listening
+                # checkbashisms: sourcing with arguments is POSIX-compliant - exempt
                 command -v listen >/dev/null 2>&1 && . listen --stop 2>/dev/null || true
                 
                 printf '%s\n' "✓ cd-listen hook disabled."
