@@ -672,12 +672,13 @@ check_level_2() {
         for history_file in "$HOME/.bash_history" "$HOME/.zsh_history" \
                              "$HOME/.sh_history" "$HOME/.history"; do
           if [ -f "$history_file" ]; then
-            if wizard-cast cat /dev/null ">" "$history_file"; then
+            # Clear history file by truncating it to zero length
+            if wizard-cast sh -c ": > '$history_file'"; then
               success "Cleared $history_file"
+              ward_mark_fixed
             fi
           fi
         done
-        ward_mark_fixed
       fi
     fi
   fi
