@@ -191,31 +191,25 @@ while IFS= read -r target; do
 "
     else
       # Run checkbashisms and capture output
-      bashisms_tmp=$(temp-file lint-magic-bashisms) || {
-        # If temp-file fails, fall back to old behavior
-        if ! checkbashisms -f "$path" >/dev/null 2>&1; then
-          posix_issue="POSIX compliance violation (run checkbashisms for details)"
-          posix_failures=$((posix_failures + 1))
-          posix_fail_msg="FAIL $target: $posix_issue"
-          posix_failed_list="${posix_failed_list}${posix_fail_msg}
-"
-        fi
-        bashisms_tmp=""
-      }
+      # Use a more reliable temp file method if temp-file fails
+      bashisms_tmp=$(temp-file lint-magic-bashisms 2>/dev/null) || \
+        bashisms_tmp="${WIZARDRY_TMPDIR}/lint-magic-bashisms.$$"
       
-      if [ -n "$bashisms_tmp" ]; then
-        if ! checkbashisms -f "$path" >"$bashisms_tmp" 2>&1; then
-          posix_failures=$((posix_failures + 1))
-          # Capture all violations with reasons
-          posix_fail_msg="FAIL $target:"
-          while IFS= read -r violation_line; do
-            posix_fail_msg="${posix_fail_msg}
+      if ! checkbashisms -f "$path" >"$bashisms_tmp" 2>&1; then
+        posix_failures=$((posix_failures + 1))
+        # Capture all violations with reasons
+        posix_fail_msg="FAIL $target:"
+        while IFS= read -r violation_line; do
+          posix_fail_msg="${posix_fail_msg}
   ${violation_line}"
-          done <"$bashisms_tmp"
-          posix_failed_list="${posix_failed_list}${posix_fail_msg}
+        done <"$bashisms_tmp"
+        posix_failed_list="${posix_failed_list}${posix_fail_msg}
 "
-        fi
-        cleanup-file "$bashisms_tmp"
+      fi
+      
+      # Clean up temp file
+      if [ -f "$bashisms_tmp" ]; then
+        rm -f "$bashisms_tmp"
       fi
     fi
   fi
