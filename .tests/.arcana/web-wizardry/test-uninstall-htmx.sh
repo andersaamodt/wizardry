@@ -7,7 +7,7 @@ done
 
 test_uninstall_htmx_help() {
   run_spell "spells/.arcana/web-wizardry/uninstall-htmx" --help
-  assert_success && assert_output_contains "certbot"
+  assert_success && assert_output_contains "htmx"
 }
 
 run_test_case "uninstall-htmx shows help" test_uninstall_htmx_help
