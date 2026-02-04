@@ -1,0 +1,1944 @@
+#!/bin/sh
+
+# Ward the system against common security vulnerabilities.
+# Checks security configurations at three levels: recommended, advanced, and expert.
+#
+# NOTE: ward-system uses its own 3-level system (1-3) which is independent
+# from wizardry's general spell-levels system. These levels represent
+# security check severity, not spell complexity.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: ward-system [LEVEL] [OPTIONS]
+
+Check and fix system security issues at different threat levels.
+Supports Linux and macOS systems.
+
+NOTE: ward-system levels (1-3) are independent from wizardry's spell-levels.
+      These represent security check severity, not spell complexity.
+
+Arguments:
+  LEVEL                 Security level to check (1-3, all, default: 1)
+                        1 = Recommended (essential security)
+                        2 = Advanced (additional hardening)
+                        3 = Expert (obscure/dangerous checks)
+                        all = Run all levels (1, 2, and 3)
+
+Options:
+  -v, --verbose         Show full descriptions even for passing checks
+  --no-fix              Only report issues, do not offer fixes
+
+Levels:
+  1 (Recommended)       Essential security checks for all systems
+  2 (Advanced)          Additional hardening for security-conscious users
+  3 (Expert)            Obscure and potentially dangerous checks
+
+Examples:
+  ward-system           # Check level 1 only (recommended)
+  ward-system 2         # Check level 2 only (advanced)
+  ward-system all       # Check all levels (1, 2, and 3)
+  ward-system 3 -v      # Check level 3 only with verbose output
+  ward-system 1 --no-fix # Only report level 1 issues
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Source required utilities
+. colors
+
+# Parse arguments
+level=1
+run_all=0
+verbose=0
+no_fix=0
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    1|2|3)
+      level=$1
+      shift
+      ;;
+    all)
+      run_all=1
+      shift
+      ;;
+    -v|--verbose)
+      verbose=1
+      shift
+      ;;
+    --no-fix)
+      no_fix=1
+      shift
+      ;;
+    *)
+      die "ward-system: unknown option: $1"
+      ;;
+  esac
+done
+
+# Helper functions
+# Track statistics
+total_checks=0
+passed_checks=0
+failed_checks=0
+fixed_checks=0
+
+ward_pass() {
+  printf '%s✓%s %s\n' "${GREEN}" "${RESET}" "$1"
+  total_checks=$((total_checks + 1))
+  passed_checks=$((passed_checks + 1))
+}
+
+ward_fail() {
+  printf '%s✗%s %s\n' "${RED}" "${RESET}" "$1"
+  total_checks=$((total_checks + 1))
+  failed_checks=$((failed_checks + 1))
+}
+
+ward_title() {
+  printf '\n%s%s%s\n' "${BOLD}" "$1" "${RESET}"
+}
+
+ward_desc() {
+  if [ "$verbose" -eq 1 ] || [ "$2" -eq 1 ]; then
+    printf '%s\n' "$1"
+  fi
+}
+
+ward_ask_fix() {
+  if [ "$no_fix" -eq 1 ]; then
+    return 1
+  fi
+  ask-yn "$1" no
+}
+
+# Call this after a successful fix to update counters
+ward_mark_fixed() {
+  failed_checks=$((failed_checks - 1))
+  passed_checks=$((passed_checks + 1))
+  fixed_checks=$((fixed_checks + 1))
+}
+
+# Level 1: Recommended security checks
+check_level_1() {
+  ward_title "Level 1: Recommended Security Checks"
+  
+  # Check umask
+  current_umask=$(umask)
+  if [ "$current_umask" = "0022" ] || [ "$current_umask" = "0027" ] || \
+     [ "$current_umask" = "022" ] || [ "$current_umask" = "027" ]; then
+    ward_pass "Umask is properly configured ($current_umask)"
+    ward_desc "Umask controls default file permissions. Current setting is secure." 0
+  else
+    ward_fail "Umask is not secure (current: $current_umask, recommended: 0022 or 0027)"
+    msg="Umask controls default permissions for newly created files by masking permission bits. "
+    msg="${msg}A umask of 0022 creates files with mode 644 (user read/write, others read-only) and "
+    msg="${msg}directories with 755 (user read/write/execute, others read/execute), preventing accidentally "
+    msg="${msg}creating world-writable files. Use 0022 for general use, or 0027 for stricter group restrictions. "
+    msg="${msg}Configure this in your shell startup file."
+    ward_desc "$msg" 1
+    if ward_ask_fix "Set umask to safe default of 0022? (recommended for most users)"; then
+      printf 'Add this line to your shell profile (~/.bashrc, ~/.zshrc, etc.):\n'
+      printf '  umask 0022\n'
+      printf '\nThis sets default permissions: files=644 (rw-r--r--), directories=755 (rwxr-xr-x)\n'
+    fi
+  fi
+  
+  # Check for current directory in PATH
+  case ":$PATH:" in
+    *::*|*:.:*)
+      ward_fail "Current directory (.) is in PATH - security risk"
+      msg="PATH lists directories where the shell searches for executables. Including '.' (current directory) "
+      msg="${msg}or empty entries creates a command injection vulnerability—an attacker can place a malicious "
+      msg="${msg}executable named 'ls' or 'sudo' in a directory, and when you run that command, you'll execute "
+      msg="${msg}their code instead of the system binary. This is a common privilege escalation vector. Remove "
+      msg="${msg}all '.' and empty entries from PATH. To run programs in the current directory, explicitly use "
+      msg="${msg}'./program' which makes your intent clear."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Remove current directory from PATH? (strongly recommended)"; then
+        printf 'Remove current directory from PATH in your shell profile:\n'
+        printf '  export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin\n'
+        printf '\nThis ensures commands only execute from trusted system directories.\n'
+      fi
+      ;;
+    *)
+      ward_pass "PATH does not contain current directory"
+      ward_desc "Your PATH is secure - programs only run from trusted system directories." 0
+      ;;
+  esac
+  
+  # Check SSH directory permissions if it exists
+  ssh_dir="${HOME}/.ssh"
+  if [ -d "$ssh_dir" ]; then
+    ssh_perms=$(ls -ld "$ssh_dir" 2>/dev/null | awk '{print $1}')
+    case "$ssh_perms" in
+      drwx------*|drwx--x---*)
+        ward_pass "SSH directory permissions are secure (~/.ssh)"
+        ward_desc "SSH directory should be readable only by owner (700)." 0
+        ;;
+      *)
+        ward_fail "SSH directory has insecure permissions: $ssh_perms"
+        msg="The ~/.ssh directory stores SSH private keys (cryptographic credentials for remote authentication). "
+        msg="${msg}If other users can read this directory, they can copy your private keys and authenticate as you "
+        msg="${msg}to any server where you've installed the corresponding public key. Set permissions to 700 (drwx------) "
+        msg="${msg}so only the owner can access it. Current permissions: $ssh_perms"
+        ward_desc "$msg" 1
+        if ward_ask_fix "Fix SSH directory permissions to 700? (recommended)"; then
+          if wizard-cast chmod 700 "$ssh_dir"; then
+            success "Fixed ~/.ssh permissions to 700"
+            ward_mark_fixed
+          fi
+        fi
+        ;;
+    esac
+    
+    # Check for private keys with wrong permissions
+    key_check_shown=0
+    for key in "$ssh_dir"/id_* "$ssh_dir"/*_rsa \
+               "$ssh_dir"/*_ed25519 "$ssh_dir"/*_ecdsa; do
+      # Check if it's a private key (not .pub)
+      if [ -f "$key" ] && ! printf '%s\n' "$key" | grep -q '\.pub$'; then
+        key_perms=$(ls -l "$key" 2>/dev/null | awk '{print $1}')
+        case "$key_perms" in
+          -rw-------*)
+            # Only show success message once for all secure keys
+            if [ "$key_check_shown" -eq 0 ]; then
+              ward_pass "SSH private keys have secure permissions"
+              ward_desc "Private keys should be readable only by owner (600)." 0
+              key_check_shown=1
+            fi
+            ;;
+          *)
+            key_name=$(basename "$key")
+            ward_fail "SSH private key has insecure permissions: $key_name ($key_perms)"
+            msg="Private SSH keys must have permissions 600 "
+            msg="${msg}(readable/writable only by owner) "
+            msg="${msg}to prevent unauthorized use."
+            ward_desc "$msg" 1
+            if ward_ask_fix "Fix permissions for $key_name?"; then
+              if wizard-cast chmod 600 "$key"; then
+                success "Fixed permissions for $key_name"
+                ward_mark_fixed
+              fi
+            fi
+            # Mark that we've shown a message (don't show success after failures)
+            key_check_shown=1
+            ;;
+        esac
+      fi
+    done
+  fi
+  
+  # Check home directory permissions
+  home_perms=$(ls -ld "$HOME" 2>/dev/null | awk '{print $1}')
+  case "$home_perms" in
+    drwx------*|drwxr-x---*|drwxr-xr-x*)
+      ward_pass "Home directory permissions are acceptable"
+      msg="Home directory should be 700 (private) or 755 "
+      msg="${msg}(readable by others but not writable)."
+      ward_desc "$msg" 0
+      ;;
+    *)
+      ward_fail "Home directory has unusual permissions: $home_perms"
+      msg="Your home directory should typically be mode 700 "
+      msg="${msg}(completely private) or 755 (readable but not writable by others). "
+      msg="${msg}Current permissions may allow unauthorized access."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Fix home directory permissions to 700 (completely private)?"; then
+        if wizard-cast chmod 700 "$HOME"; then
+          success "Set home directory permissions to 700 (private)"
+          ward_mark_fixed
+        fi
+      fi
+      ;;
+  esac
+  
+  # Check shell history file permissions
+  for history_file in "$HOME/.bash_history" "$HOME/.zsh_history" \
+                       "$HOME/.sh_history" "$HOME/.history"; do
+    if [ -f "$history_file" ]; then
+      history_perms=$(ls -l "$history_file" 2>/dev/null | awk '{print $1}')
+      case "$history_perms" in
+        -rw-------*)
+          ward_pass "Shell history file has secure permissions"
+          ward_desc "History files should be private (600) to protect sensitive commands." 0
+          break
+          ;;
+        *)
+          ward_fail "Shell history file has insecure permissions: $history_perms"
+          msg="Shell history files may contain sensitive information like passwords. "
+          msg="${msg}They should have permissions 600 (readable/writable only by owner)."
+          ward_desc "$msg" 1
+          if ward_ask_fix "Fix shell history file permissions?"; then
+            if wizard-cast chmod 600 "$history_file"; then
+              success "Fixed $history_file permissions to 600"
+              ward_mark_fixed
+            fi
+          fi
+          break
+          ;;
+      esac
+    fi
+  done
+  
+  # Check /tmp directory permissions
+  if [ -d /tmp ]; then
+    tmp_perms=$(ls -ld /tmp 2>/dev/null | awk '{print $1}')
+    # Check if last character is 't' or 'T' (sticky bit position)
+    last_char=$(printf '%s' "$tmp_perms" | sed 's/.*\(.\)$/\1/')
+    if [ "$last_char" = "t" ] || [ "$last_char" = "T" ]; then
+      ward_pass "/tmp has sticky bit set"
+      ward_desc "Sticky bit on /tmp prevents users from deleting others' files." 0
+    else
+      ward_fail "/tmp does not have sticky bit set"
+      msg="/tmp should have the sticky bit (t) set to prevent users from "
+      msg="${msg}deleting files they don't own. This is a common security measure."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Set sticky bit on /tmp? (requires root)"; then
+        if wizard-cast sudo chmod +t /tmp; then
+          # Verify the fix worked by re-checking
+          new_tmp_perms=$(ls -ld /tmp 2>/dev/null | awk '{print $1}')
+          new_last_char=$(printf '%s' "$new_tmp_perms" | sed 's/.*\(.\)$/\1/')
+          if [ "$new_last_char" = "t" ] || [ "$new_last_char" = "T" ]; then
+            success "Set sticky bit on /tmp"
+            ward_mark_fixed
+          else
+            warn "Failed to set sticky bit on /tmp"
+          fi
+        else
+          warn "Failed to set sticky bit on /tmp"
+        fi
+      fi
+    fi
+  fi
+  
+  # Check for .netrc file (stores passwords)
+  if [ -f "$HOME/.netrc" ]; then
+    netrc_perms=$(ls -l "$HOME/.netrc" 2>/dev/null | awk '{print $1}')
+    case "$netrc_perms" in
+      -rw-------*)
+        ward_pass ".netrc file has secure permissions"
+        ward_desc ".netrc stores credentials and should be private (600)." 0
+        ;;
+      *)
+        ward_fail ".netrc file has insecure permissions: $netrc_perms"
+        msg="The .netrc file stores login credentials and must have "
+        msg="${msg}permissions 600 to prevent unauthorized access."
+        ward_desc "$msg" 1
+        if ward_ask_fix "Fix .netrc permissions?"; then
+          if wizard-cast chmod 600 "$HOME/.netrc"; then
+            success "Fixed .netrc permissions to 600"
+            ward_mark_fixed
+          fi
+        fi
+        ;;
+    esac
+  fi
+  
+  # Check DNS configuration file permissions
+  if [ -r /etc/resolv.conf ]; then
+    resolv_perms=$(ls -l /etc/resolv.conf 2>/dev/null | awk '{print $1}')
+    if printf '%s' "$resolv_perms" | grep -q 'w..w'; then
+      ward_fail "/etc/resolv.conf is world-writable"
+      msg="DNS configuration should not be writable by all users. "
+      msg="${msg}This could allow DNS hijacking attacks."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Fix /etc/resolv.conf permissions? (requires root)"; then
+        if wizard-cast sudo chmod 644 /etc/resolv.conf; then
+          success "Fixed /etc/resolv.conf permissions to 644"
+        else
+          warn "Failed to fix /etc/resolv.conf permissions"
+        fi
+      fi
+    else
+      ward_pass "/etc/resolv.conf has secure permissions"
+      ward_desc "DNS configuration file is protected from unauthorized modification." 0
+    fi
+  fi
+  
+  # Check for suspicious entries in /etc/hosts
+  if [ -r /etc/hosts ]; then
+    # Look for common suspicious patterns (redirecting major sites)
+    if has grep; then
+      suspicious=$(grep -E "google\.com|facebook\.com|twitter\.com|github\.com|amazon\.com" \
+                        /etc/hosts 2>/dev/null | grep -v "^#" | grep -v "^$" || printf '')
+      if [ -n "$suspicious" ]; then
+        ward_fail "Suspicious entries found in /etc/hosts"
+        msg="/etc/hosts contains redirections for major websites. "
+        msg="${msg}This could indicate DNS hijacking or malware."
+        ward_desc "$msg" 1
+        printf 'Suspicious entries:\n%s\n' "$suspicious"
+      else
+        ward_pass "/etc/hosts has no obvious suspicious entries"
+        ward_desc "/etc/hosts file appears normal." "$verbose"
+      fi
+    fi
+  fi
+  
+  # Check system timezone configuration
+  if has timedatectl; then
+    timezone=$(timedatectl 2>/dev/null | grep "Time zone" | awk '{print $3}' || printf 'unknown')
+    ward_pass "System timezone: $timezone"
+    ward_desc "Verify timezone is appropriate for your location." "$verbose"
+  elif [ -r /etc/timezone ]; then
+    timezone=$(cat /etc/timezone 2>/dev/null || printf 'unknown')
+    ward_pass "System timezone: $timezone"
+    ward_desc "Verify timezone is appropriate for your location." "$verbose"
+  fi
+  
+  # Check shared memory permissions (/dev/shm)
+  if [ -d /dev/shm ]; then
+    shm_perms=$(ls -ld /dev/shm 2>/dev/null | awk '{print $1}')
+    if printf '%s' "$shm_perms" | grep -q 'rwxrwxrwt'; then
+      ward_pass "/dev/shm has sticky bit set"
+      msg="/dev/shm sticky bit prevents users from deleting others' files."
+      ward_desc "$msg" 0
+    else
+      ward_fail "/dev/shm missing sticky bit (current: $shm_perms)"
+      msg="/dev/shm should have sticky bit for multi-user security. "
+      msg="${msg}Recommended permissions: 1777 (drwxrwxrwt)"
+      ward_desc "$msg" 1
+      if ward_ask_fix "Fix /dev/shm permissions? (recommended)"; then
+        printf 'Fix /dev/shm permissions (requires root):\n'
+        printf '  sudo chmod 1777 /dev/shm\n'
+      fi
+    fi
+  fi
+  
+  # Check kernel parameters for IP forwarding (should be off for workstations)
+  if [ -r /proc/sys/net/ipv4/ip_forward ]; then
+    ip_forward=$(cat /proc/sys/net/ipv4/ip_forward 2>/dev/null || printf '0')
+    if [ "$ip_forward" -eq 0 ]; then
+      ward_pass "IP forwarding is disabled"
+      ward_desc "IP forwarding off is correct for workstations." 0
+    else
+      ward_fail "IP forwarding is enabled"
+      msg="IP forwarding should be disabled on workstations. "
+      msg="${msg}Only enable on routers. Disable with: sysctl -w net.ipv4.ip_forward=0"
+      ward_desc "$msg" 1
+      if ward_ask_fix "Disable IP forwarding? (recommended for workstations)"; then
+        printf 'WARNING: Only disable if this is not a router/gateway.\n'
+        printf 'Disable IP forwarding:\n'
+        printf '  sudo sysctl -w net.ipv4.ip_forward=0\n'
+        printf 'Make permanent in /etc/sysctl.conf:\n'
+        printf '  net.ipv4.ip_forward=0\n'
+      fi
+    fi
+  fi
+  
+  # Check ICMP redirect acceptance (should be off)
+  if [ -r /proc/sys/net/ipv4/conf/all/accept_redirects ]; then
+    icmp_redir=$(cat /proc/sys/net/ipv4/conf/all/accept_redirects 2>/dev/null || printf '1')
+    if [ "$icmp_redir" -eq 0 ]; then
+      ward_pass "ICMP redirects are disabled"
+      ward_desc "Disabling ICMP redirects prevents routing table manipulation." 0
+    else
+      ward_fail "ICMP redirects are enabled"
+      msg="ICMP redirects can be used to manipulate routing tables. "
+      msg="${msg}Recommended to disable."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Disable ICMP redirects? (recommended)"; then
+        printf 'Disable ICMP redirects:\n'
+        printf '  sudo sysctl -w net.ipv4.conf.all.accept_redirects=0\n'
+        printf '  sudo sysctl -w net.ipv4.conf.default.accept_redirects=0\n'
+        printf 'Make permanent in /etc/sysctl.conf:\n'
+        printf '  net.ipv4.conf.all.accept_redirects=0\n'
+        printf '  net.ipv4.conf.default.accept_redirects=0\n'
+      fi
+    fi
+  fi
+  
+  # Check password aging for current user
+  if has chage && [ "$(id -u)" -ne 0 ]; then
+    max_days=$(chage -l "$(id -un)" 2>/dev/null | \
+               grep "Maximum number of days" | awk -F: '{print $2}' | tr -d ' ')
+    if [ -n "$max_days" ] && [ "$max_days" != "99999" ] && [ "$max_days" != "-1" ]; then
+      ward_pass "Password aging is configured (max: $max_days days)"
+      msg="Password expiration helps ensure regular password updates."
+      ward_desc "$msg" "$verbose"
+    else
+      ward_pass "Password aging: not configured (check if appropriate)"
+      msg="Password aging can improve security but may not be needed for all systems."
+      ward_desc "$msg" "$verbose"
+    fi
+  fi
+  
+  # Novel check: Environment variable security (LD_PRELOAD/LD_LIBRARY_PATH)
+  if [ -n "${LD_PRELOAD-}" ] || [ -n "${LD_LIBRARY_PATH-}" ]; then
+    ward_fail "Dangerous environment variables detected"
+    msg="LD_PRELOAD and LD_LIBRARY_PATH control which shared libraries programs load at runtime. "
+    msg="${msg}LD_PRELOAD forces programs to load specific libraries first; LD_LIBRARY_PATH adds directories "
+    msg="${msg}to the library search path. Attackers use these for code injection—by setting LD_PRELOAD to a "
+    msg="${msg}malicious library, every program you run will load and execute that code, allowing persistent "
+    msg="${msg}compromise of all dynamically linked programs. Unset these unless you're actively debugging "
+    msg="${msg}software—they should never be set in normal user environments."
+    ward_desc "$msg" 1
+    if ward_ask_fix "Unset dangerous environment variables? (recommended unless actively debugging)"; then
+      printf 'Run these commands:\n'
+      printf '  unset LD_PRELOAD\n'
+      printf '  unset LD_LIBRARY_PATH\n'
+      printf '\nAlso check your shell profile files to ensure they aren'\''t set permanently.\n'
+    fi
+  else
+    ward_pass "No dangerous LD_* environment variables detected"
+    msg="Environment clean - no library injection vectors present."
+    ward_desc "$msg" "$verbose"
+  fi
+  
+  # Novel check: Shell configuration injection vectors
+  for shell_rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+    if [ -r "$shell_rc" ]; then
+      # Check for suspicious patterns
+      if grep -qE "(curl|wget).*\|.*sh|eval.*\$\(" "$shell_rc" 2>/dev/null; then
+        ward_fail "Suspicious code in shell configuration: $(basename "$shell_rc")"
+        msg="Your shell reads commands from files like .bashrc every time you open a terminal. "
+        msg="${msg}Found patterns like 'curl ... | sh' that download and run code from the internet automatically—"
+        msg="${msg}this is how malware persists, running every time you log in. Review $shell_rc carefully and "
+        msg="${msg}remove any 'curl|sh' or 'eval' commands you didn't add yourself. Legitimate software rarely "
+        msg="${msg}asks you to add these."
+        ward_desc "$msg" 1
+        break
+      fi
+    fi
+  done
+  
+  # Novel check: Clipboard/pasteboard security (Linux)
+  if has xclip || has xsel; then
+    clipboard_size=0
+    if has xclip; then
+      clipboard_size=$(xclip -o -selection clipboard 2>/dev/null | wc -c)
+    elif has xsel; then
+      clipboard_size=$(xsel -b 2>/dev/null | wc -c)
+    fi
+    
+    if [ "$clipboard_size" -gt 10000 ]; then
+      ward_fail "Large amount of data in clipboard ($clipboard_size bytes)"
+      msg="Your clipboard (copy/paste buffer) currently holds significant data. Any program you run can silently "
+      msg="${msg}read your clipboard—if you recently copied passwords, API keys, or private documents, they're "
+      msg="${msg}accessible to all applications. Clear your clipboard if you've copied sensitive data. Better yet, "
+      msg="${msg}use a password manager instead of copying passwords."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Clear clipboard contents? (recommended if you copied sensitive data)"; then
+        if has xclip; then
+          printf '' | xclip -selection clipboard
+          success "Clipboard cleared"
+        elif has xsel; then
+          printf '' | xsel -b
+          success "Clipboard cleared"
+        fi
+      fi
+    fi
+  fi
+  
+  # Check /etc/shadow permissions (critical system file)
+  if [ -r /etc/shadow ]; then
+    shadow_perms=$(ls -l /etc/shadow 2>/dev/null | awk '{print $1}')
+    if printf '%s' "$shadow_perms" | grep -qE '^-r--------' || \
+       printf '%s' "$shadow_perms" | grep -qE '^-rw-------'; then
+      ward_pass "/etc/shadow has secure permissions"
+      msg="Password hashes file has correct restrictive permissions."
+      ward_desc "$msg" "$verbose"
+    else
+      ward_fail "/etc/shadow has insecure permissions: $shadow_perms"
+      msg="/etc/shadow stores encrypted password hashes for all user accounts. "
+      msg="${msg}If this file is readable by non-root users, attackers can copy the password "
+      msg="${msg}hashes and attempt to crack them offline using tools like John the Ripper or hashcat. "
+      msg="${msg}Even with modern hashing algorithms, weak passwords can be cracked. "
+      msg="${msg}This file must have permissions 640 or 600 (readable only by root). "
+      msg="${msg}This is a critical security issue requiring immediate attention."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Fix /etc/shadow permissions? (requires root, strongly recommended)"; then
+        printf 'Fix /etc/shadow permissions (requires root):\n'
+        printf '  sudo chmod 640 /etc/shadow\n'
+        printf '  sudo chown root:shadow /etc/shadow\n'
+      fi
+    fi
+  fi
+  
+  # Check for world-writable files in home directory
+  world_writable=$(find "$HOME" -type f -perm -002 2>/dev/null)
+  if [ -n "$world_writable" ]; then
+    count=$(printf '%s\n' "$world_writable" | wc -l)
+    ward_fail "Found $count world-writable files in home directory"
+    msg="World-writable files (permission bit 002) can be modified by any user on the system. Any user could "
+    msg="${msg}inject malicious code, alter data, or cause application malfunctions—particularly dangerous for "
+    msg="${msg}scripts and configuration files."
+    ward_desc "$msg" 1
+    if ward_ask_fix "Remove world-write permissions from all $count files?"; then
+      # Fix each file individually so we can see the commands
+      printf '%s\n' "$world_writable" | while IFS= read -r file; do
+        if [ -f "$file" ]; then
+          wizard-cast chmod o-w "$file"
+        fi
+      done
+      success "Removed world-write permissions from files in home directory"
+    fi
+  else
+    ward_pass "No world-writable files in home directory"
+    ward_desc "Files are properly protected from unauthorized modification." 0
+  fi
+}
+
+# Level 2: Advanced security checks
+check_level_2() {
+  ward_title "Level 2: Advanced Security Checks"
+  
+  # Check if running as root
+  if [ "$(id -u)" -eq 0 ]; then
+    ward_fail "Running as root - not recommended for daily use"
+    msg="Running as root (UID 0) bypasses all permission checks "
+    msg="${msg}and increases security risk. "
+    msg="${msg}Use sudo for administrative tasks instead of logging in as root."
+    ward_desc "$msg" 1
+  else
+    ward_pass "Not running as root"
+    ward_desc "Running as regular user is a security best practice." 0
+  fi
+  
+  # Check SSH daemon configuration if accessible
+  for sshd_config in /etc/ssh/sshd_config /private/etc/ssh/sshd_config; do
+    if [ -r "$sshd_config" ]; then
+      # Check PermitRootLogin
+      if grep -q "^PermitRootLogin no" "$sshd_config" 2>/dev/null; then
+        ward_pass "SSH root login is disabled"
+        ward_desc "Disabling root login via SSH prevents direct root access over the network." 0
+      elif grep -q "^PermitRootLogin" "$sshd_config" 2>/dev/null; then
+        permit_root=$(grep "^PermitRootLogin" "$sshd_config" | awk '{print $2}')
+        ward_fail "SSH allows root login: $permit_root"
+        msg="The SSH server configuration allows direct authentication as the root user (UID 0), which has "
+        msg="${msg}complete system control. This creates multiple risks: attackers can directly target the most "
+        msg="${msg}privileged account; there's no audit trail distinguishing between administrators; one compromised "
+        msg="${msg}credential grants complete system control; and there's no opportunity to catch mistakes before "
+        msg="${msg}executing privileged commands. Disable root SSH login and use personal accounts with 'sudo' instead—"
+        msg="${msg}this provides accountability, logging, and an extra verification step."
+        ward_desc "$msg" 1
+        if ward_ask_fix "Disable root login via SSH? (recommended)"; then
+          info "Please run: ssh-barrier"
+        fi
+      fi
+      
+      # Check PasswordAuthentication
+      if grep -q "^PasswordAuthentication no" "$sshd_config" 2>/dev/null; then
+        ward_pass "SSH password authentication is disabled"
+        ward_desc "Key-based authentication is more secure than passwords." 0
+      elif grep -q "^PasswordAuthentication yes" "$sshd_config" 2>/dev/null; then
+        ward_fail "SSH allows password authentication"
+        msg="Password authentication is vulnerable to brute-force attacks. "
+        msg="${msg}Use key-based authentication instead. "
+        msg="${msg}Recommended: PasswordAuthentication no"
+        ward_desc "$msg" 1
+        if ward_ask_fix "Disable password authentication?"; then
+          info "Please run: ssh-barrier"
+        fi
+      fi
+      break
+    fi
+  done
+  
+  # Check sudo configuration
+  if [ -r /etc/sudoers ] || [ -d /etc/sudoers.d ]; then
+    ward_pass "Sudo configuration files exist"
+    msg="Review sudo configuration to ensure only authorized users "
+    msg="${msg}have privileges."
+    ward_desc "$msg" "$verbose"
+  fi
+  
+  # Check for password in shell history
+  if has grep; then
+    found_passwords=0
+    for history_file in "$HOME/.bash_history" "$HOME/.zsh_history" \
+                         "$HOME/.sh_history" "$HOME/.history"; do
+      if [ -f "$history_file" ]; then
+        # Look for common password-related patterns
+        if grep -qi "password\|passwd\|pwd" "$history_file" 2>/dev/null | head -1 >/dev/null; then
+          found_passwords=1
+          break
+        fi
+      fi
+    done
+    
+    if [ "$found_passwords" -eq 1 ]; then
+      ward_fail "Possible passwords found in shell history"
+      msg="Shell history contains password-related commands. "
+      msg="${msg}Never include passwords in command-line arguments. "
+      msg="${msg}Clear history to remove sensitive data."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Clear shell history files to remove sensitive data?"; then
+        for history_file in "$HOME/.bash_history" "$HOME/.zsh_history" \
+                             "$HOME/.sh_history" "$HOME/.history"; do
+          if [ -f "$history_file" ]; then
+            # Clear history file by truncating it to zero length
+            if wizard-cast sh -c ": > '$history_file'"; then
+              success "Cleared $history_file"
+              ward_mark_fixed
+            fi
+          fi
+        done
+      fi
+    fi
+  fi
+  
+  # Check for unattended-upgrades (Linux only)
+  if has systemctl; then
+    if systemctl is-enabled unattended-upgrades >/dev/null 2>&1 || \
+       systemctl is-active unattended-upgrades >/dev/null 2>&1; then
+      ward_pass "Automatic security updates are configured"
+      ward_desc "Unattended-upgrades helps keep system secure with automatic updates." 0
+    else
+      ward_fail "Automatic security updates not configured"
+      msg="Automatic security updates help protect against known vulnerabilities. "
+      msg="${msg}Consider enabling unattended-upgrades."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Install and enable automatic security updates? (requires root)"; then
+        if has apt; then
+          if wizard-cast sudo apt install -y unattended-upgrades; then
+            wizard-cast sudo dpkg-reconfigure -plow unattended-upgrades && \
+              success "Automatic security updates enabled"
+          else
+            warn "Failed to install unattended-upgrades"
+          fi
+        elif has dnf; then
+          if wizard-cast sudo dnf install -y dnf-automatic; then
+            wizard-cast sudo systemctl enable --now dnf-automatic.timer && \
+              success "Automatic security updates enabled"
+          else
+            warn "Failed to install dnf-automatic"
+          fi
+        else
+          warn "Package manager not supported for auto-updates automation"
+        fi
+      fi
+    fi
+  fi
+  
+  # Check authorized_keys permissions
+  if [ -f "$HOME/.ssh/authorized_keys" ]; then
+    auth_keys_perms=$(ls -l "$HOME/.ssh/authorized_keys" 2>/dev/null | awk '{print $1}')
+    case "$auth_keys_perms" in
+      -rw-------*|-rw-r--r--*)
+        ward_pass "authorized_keys file has acceptable permissions"
+        ward_desc "authorized_keys should be 600 or 644." 0
+        ;;
+      *)
+        ward_fail "authorized_keys has insecure permissions: $auth_keys_perms"
+        msg="The authorized_keys file controls SSH access. "
+        msg="${msg}It should have permissions 600 or 644."
+        ward_desc "$msg" 1
+        if ward_ask_fix "Fix authorized_keys permissions?"; then
+          wizard-cast chmod 600 "$HOME/.ssh/authorized_keys" && \
+            success "Fixed authorized_keys permissions to 600"
+        fi
+        ;;
+    esac
+  fi
+  
+  # Check cron access control files
+  if [ -f /etc/cron.allow ] || [ -f /etc/cron.deny ]; then
+    ward_pass "Cron access control files exist"
+    msg="cron.allow/cron.deny controls who can use cron. "
+    msg="${msg}Review these files to ensure only authorized users have access."
+    ward_desc "$msg" "$verbose"
+  else
+    ward_fail "No cron access control files found"
+    msg="Without cron.allow or cron.deny, all users can create cron jobs. "
+    msg="${msg}Consider creating /etc/cron.allow for better security."
+    ward_desc "$msg" 1
+    if ward_ask_fix "Create /etc/cron.allow to restrict cron access? (requires root)"; then
+      if wizard-cast sudo touch /etc/cron.allow && \
+         wizard-cast sudo chmod 600 /etc/cron.allow && \
+         printf 'root\n' | wizard-cast sudo tee /etc/cron.allow >/dev/null; then
+        success "Created /etc/cron.allow with restricted access"
+      else
+        warn "Failed to create cron.allow"
+      fi
+    fi
+  fi
+  
+  # Check for X11 forwarding in SSH config
+  for sshd_config in /etc/ssh/sshd_config /private/etc/ssh/sshd_config; do
+    if [ -r "$sshd_config" ]; then
+      if grep -q "^X11Forwarding yes" "$sshd_config" 2>/dev/null; then
+        ward_fail "SSH X11 forwarding is enabled"
+        msg="X11 forwarding can be a security risk if not needed. "
+        msg="${msg}Disable with: X11Forwarding no in sshd_config"
+        ward_desc "$msg" 1
+      else
+        ward_pass "SSH X11 forwarding is not explicitly enabled"
+        ward_desc "X11 forwarding disabled or not configured." "$verbose"
+      fi
+      break
+    fi
+  done
+  
+  # Check for empty passwords in shadow file (if readable)
+  if [ -r /etc/shadow ]; then
+    if has awk; then
+      empty_pass=$(awk -F: '($2 == "" || $2 == "!") {print $1}' \
+                       /etc/shadow 2>/dev/null || printf '')
+      if [ -n "$empty_pass" ]; then
+        ward_fail "Users with empty or locked passwords found"
+        msg="Empty passwords are a critical security risk. "
+        msg="${msg}Review: $(printf '%s' "$empty_pass" | head -1)"
+        ward_desc "$msg" 1
+      else
+        ward_pass "No users with empty passwords detected"
+        ward_desc "All user accounts have password hashes." 0
+      fi
+    fi
+  fi
+  
+  # Check NTP/time synchronization
+  if has timedatectl; then
+    if timedatectl status 2>/dev/null | grep -q "synchronized: yes"; then
+      ward_pass "System time is synchronized"
+      ward_desc "Time synchronization is critical for security logs and certificates." 0
+    else
+      ward_fail "System time is not synchronized"
+      msg="Time synchronization is important for security logs and SSL/TLS. "
+      msg="${msg}Enable with systemd-timesyncd or ntpd."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Enable time synchronization? (requires root)"; then
+        if wizard-cast sudo timedatectl set-ntp true; then
+          success "Enabled time synchronization"
+        else
+          warn "Failed to enable time synchronization"
+        fi
+      fi
+    fi
+  elif has ntpq; then
+    if ntpq -p >/dev/null 2>&1; then
+      ward_pass "NTP is configured and running"
+      ward_desc "Time synchronization via NTP is active." 0
+    else
+      ward_fail "NTP appears to be installed but not working"
+      ward_desc "Check NTP configuration." 1
+    fi
+  fi
+  
+  # Check package manager repository security
+  if [ -d /etc/apt/sources.list.d ]; then
+    third_party=$(find /etc/apt/sources.list.d -name "*.list" 2>/dev/null | wc -l)
+    if [ "$third_party" -gt 0 ]; then
+      ward_pass "Found $third_party third-party repository files"
+      msg="Review third-party repositories for legitimacy: "
+      msg="${msg}ls -la /etc/apt/sources.list.d/"
+      ward_desc "$msg" "$verbose"
+    fi
+  fi
+  
+  # Check SSH strict host key checking
+  ssh_config_file="$HOME/.ssh/config"
+  if [ -f "$ssh_config_file" ]; then
+    if grep -qi "StrictHostKeyChecking.*no" "$ssh_config_file" 2>/dev/null; then
+      ward_fail "SSH strict host key checking is disabled"
+      msg="StrictHostKeyChecking no allows MITM attacks. "
+      msg="${msg}Remove or change to 'yes' in ~/.ssh/config"
+      ward_desc "$msg" 1
+      if ward_ask_fix "Would you like to see safe SSH configuration?"; then
+        printf 'Remove StrictHostKeyChecking no from ~/.ssh/config\n'
+        printf 'Or set it to: StrictHostKeyChecking ask\n'
+        printf 'WARNING: May prompt for unknown hosts.\n'
+      fi
+    else
+      ward_pass "SSH strict host key checking appears safe"
+      ward_desc "No dangerous SSH config override detected." "$verbose"
+    fi
+  fi
+  
+  # Check for Docker socket permissions (if Docker is installed)
+  if [ -S /var/run/docker.sock ]; then
+    docker_perms=$(ls -l /var/run/docker.sock 2>/dev/null | awk '{print $1}')
+    docker_group=$(ls -l /var/run/docker.sock 2>/dev/null | awk '{print $4}')
+    if printf '%s' "$docker_perms" | grep -q 'rw.*rw'; then
+      ward_fail "Docker socket has group write access"
+      msg="Docker socket group write access = root access. "
+      msg="${msg}Ensure only trusted users are in docker group ($docker_group)."
+      ward_desc "$msg" 1
+    else
+      ward_pass "Docker socket permissions: review docker group membership"
+      msg="Users in docker group have root-equivalent access. "
+      msg="${msg}Review: getent group docker"
+      ward_desc "$msg" "$verbose"
+    fi
+  fi
+  
+  # Check log rotation
+  if [ -d /etc/logrotate.d ] || [ -f /etc/logrotate.conf ]; then
+    ward_pass "Log rotation appears configured"
+    msg="Log rotation prevents disk space issues. Verify with: logrotate --debug /etc/logrotate.conf"
+    ward_desc "$msg" "$verbose"
+  else
+    ward_fail "Log rotation not configured"
+    msg="Without log rotation, logs can fill disk space. "
+    msg="${msg}Install logrotate package."
+    ward_desc "$msg" 1
+    if ward_ask_fix "Install logrotate package? (requires root)"; then
+      if has apt; then
+        wizard-cast sudo apt install -y logrotate && success "Installed logrotate"
+      elif has yum; then
+        wizard-cast sudo yum install -y logrotate && success "Installed logrotate"
+      elif has dnf; then
+        wizard-cast sudo dnf install -y logrotate && success "Installed logrotate"
+      else
+        warn "Package manager not supported for logrotate installation"
+      fi
+    fi
+  fi
+  
+  # Check Bluetooth status (if not needed, should be off)
+  if has systemctl; then
+    if systemctl is-enabled bluetooth >/dev/null 2>&1; then
+      ward_pass "Bluetooth is enabled (verify if needed)"
+      msg="If Bluetooth is not needed, disable it to reduce attack surface. "
+      msg="${msg}Disable with: sudo systemctl disable bluetooth"
+      ward_desc "$msg" "$verbose"
+    fi
+  elif has bluetoothctl; then
+    ward_pass "Bluetooth tools installed (verify if needed)"
+    msg="If Bluetooth is not needed, consider removing tools."
+    ward_desc "$msg" "$verbose"
+  fi
+  
+  # Check for USB storage restrictions
+  if [ -r /etc/modprobe.d/blacklist.conf ]; then
+    if grep -q "usb-storage" /etc/modprobe.d/blacklist.conf 2>/dev/null; then
+      ward_pass "USB storage is blacklisted"
+      ward_desc "USB storage restrictions help prevent data exfiltration." "$verbose"
+    fi
+  fi
+  
+  # Check for default database passwords (MySQL/MariaDB)
+  if has mysql; then
+    ward_pass "MySQL/MariaDB installed - verify root password is set"
+    msg="Test MySQL security: mysqladmin -u root -p status "
+    msg="${msg}(should require password)"
+    ward_desc "$msg" "$verbose"
+  fi
+  
+  # Check for PostgreSQL listening configuration
+  if [ -f /etc/postgresql/*/main/postgresql.conf ]; then
+    pg_conf=$(find /etc/postgresql -name "postgresql.conf" 2>/dev/null | head -1)
+    if [ -n "$pg_conf" ] && [ -r "$pg_conf" ]; then
+      if grep -q "^listen_addresses.*'\*'" "$pg_conf" 2>/dev/null; then
+        ward_fail "PostgreSQL listening on all interfaces"
+        msg="PostgreSQL should only listen on needed interfaces. "
+        msg="${msg}Set listen_addresses='localhost' if only local access needed."
+        ward_desc "$msg" 1
+      else
+        ward_pass "PostgreSQL listen configuration appears safe"
+        ward_desc "Verify listen_addresses in postgresql.conf." "$verbose"
+      fi
+    fi
+  fi
+  
+  # Check nginx security headers (if nginx installed)
+  if has nginx && [ -d /etc/nginx ]; then
+    nginx_conf="/etc/nginx/nginx.conf"
+    if [ -r "$nginx_conf" ]; then
+      has_xframe=0
+      has_xss=0
+      if grep -qr "X-Frame-Options" /etc/nginx/ 2>/dev/null; then
+        has_xframe=1
+      fi
+      if grep -qr "X-XSS-Protection" /etc/nginx/ 2>/dev/null; then
+        has_xss=1
+      fi
+      
+      if [ "$has_xframe" -eq 1 ] && [ "$has_xss" -eq 1 ]; then
+        ward_pass "nginx has security headers configured"
+        ward_desc "Security headers help protect against common web attacks." 0
+      else
+        ward_fail "nginx missing security headers"
+        msg="Add security headers to nginx configuration. "
+        msg="${msg}Example: add_header X-Frame-Options SAMEORIGIN;"
+        ward_desc "$msg" 1
+      fi
+    fi
+  fi
+  
+  # Check Apache security configuration (if Apache installed)
+  if has apache2 || has httpd; then
+    apache_loaded=0
+    # Check for common Apache configs
+    for conf_dir in /etc/apache2 /etc/httpd; do
+      if [ -d "$conf_dir" ]; then
+        apache_loaded=1
+        # Check ServerTokens
+        if grep -qr "ServerTokens.*Prod" "$conf_dir" 2>/dev/null; then
+          ward_pass "Apache ServerTokens is set to Prod"
+          ward_desc "ServerTokens Prod hides Apache version info." "$verbose"
+        else
+          ward_fail "Apache ServerTokens not set to Prod"
+          msg="Set 'ServerTokens Prod' to hide server version. "
+          msg="${msg}Add to apache2.conf or httpd.conf"
+          ward_desc "$msg" 1
+        fi
+        break
+      fi
+    done
+  fi
+  
+  # Check /etc/hosts.allow and /etc/hosts.deny (TCP wrappers)
+  if [ -f /etc/hosts.allow ] || [ -f /etc/hosts.deny ]; then
+    ward_pass "TCP wrappers configuration exists"
+    msg="TCP wrappers provide additional access control. "
+    msg="${msg}Review /etc/hosts.allow and /etc/hosts.deny"
+    ward_desc "$msg" "$verbose"
+  else
+    ward_pass "TCP wrappers not configured (acceptable for most systems)"
+    msg="TCP wrappers are optional and less common on modern systems."
+    ward_desc "$msg" "$verbose"
+  fi
+  
+  # Novel check: SSH agent socket chain risks
+  if [ -n "${SSH_AUTH_SOCK-}" ]; then
+    ward_pass "SSH agent is running (verify it's your own)"
+    msg="SSH agent holds decrypted SSH private keys in memory, allowing authentication to multiple servers "
+    msg="${msg}without re-entering your passphrase. SSH_AUTH_SOCK is the Unix socket programs use to communicate "
+    msg="${msg}with the agent. Any process with access to this socket can use your keys without knowing your "
+    msg="${msg}passphrase—this includes other users if socket permissions are wrong, or remote systems you SSH "
+    msg="${msg}into with agent forwarding enabled (they can use your keys to connect to other servers). Using "
+    msg="${msg}ssh-agent is standard practice, but verify the socket belongs to your process and avoid agent "
+    msg="${msg}forwarding (-A flag) unless necessary. Current socket: $SSH_AUTH_SOCK"
+    ward_desc "$msg" "$verbose"
+  fi
+  
+  # Novel check: Resource limit bombs
+  # Check if limits.conf exists and has process limits configured
+  if [ -f /etc/security/limits.conf ]; then
+    if ! grep -q "nproc" /etc/security/limits.conf 2>/dev/null; then
+      ward_fail "No limit on number of processes (fork bomb risk)"
+      msg="Without process limits, a fork bomb attack can occur—a program that recursively spawns copies until "
+      msg="${msg}system resources are exhausted, causing system-wide denial of service and requiring hard reboot. "
+      msg="${msg}Even accidental infinite loops in scripts can trigger this. Set a reasonable limit like 4096 "
+      msg="${msg}processes per user to prevent resource exhaustion while allowing normal operations."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Set process limit to 4096? (recommended)"; then
+        if wizard-cast sh -c "printf '* hard nproc 4096\n' | sudo tee -a /etc/security/limits.conf > /dev/null"; then
+          success "Added process limit to /etc/security/limits.conf"
+          ward_mark_fixed
+        else
+          warn "Failed to add process limit"
+        fi
+      fi
+    else
+      ward_pass "Process limits configured in /etc/security/limits.conf"
+    fi
+  fi
+  
+  # Novel check: Browser security (check for common browser profile locations)
+  browser_profiles_found=0
+  for browser_dir in "$HOME/.mozilla/firefox" "$HOME/.config/google-chrome" \
+                      "$HOME/.config/chromium" "$HOME/Library/Application Support/Google/Chrome" \
+                      "$HOME/Library/Application Support/Firefox"; do
+    if [ -d "$browser_dir" ]; then
+      browser_profiles_found=1
+      dir_perms=$(ls -ld "$browser_dir" 2>/dev/null | awk '{print $1}')
+      if ! printf '%s' "$dir_perms" | grep -q '^drwx------'; then
+        ward_fail "Browser profile directory not fully private: $(basename "$browser_dir")"
+        msg="Your browser stores cookies, saved passwords, and history in these folders. If others can read "
+        msg="${msg}them, they can steal login sessions, view browsing history, and possibly decrypt saved passwords. "
+        msg="${msg}Only you should access your browser data. Path: $browser_dir (permissions: $dir_perms)"
+        ward_desc "$msg" 1
+        if ward_ask_fix "Secure browser profile permissions? (recommended)"; then
+          wizard-cast chmod 700 "$browser_dir" && success "Secured $(basename "$browser_dir")"
+        fi
+        break
+      fi
+    fi
+  done
+  
+  if [ "$browser_profiles_found" -eq 0 ]; then
+    ward_pass "No browser profiles found (or browsers not installed)"
+    ward_desc "Browser security check skipped - no common browsers detected." "$verbose"
+  fi
+  
+  # Check EDITOR and VISUAL environment variables
+  for env_var in EDITOR VISUAL; do
+    env_val=$(eval "printf '%s' \"\${${env_var}-}\"")
+    if [ -n "$env_val" ]; then
+      # Check if it points to a writable location
+      if has "$env_val" 2>/dev/null; then
+        editor_path=$(command -v "$env_val" 2>/dev/null || printf '')
+        if [ -n "$editor_path" ] && [ -w "$editor_path" ]; then
+          ward_fail "$env_var points to writable executable: $editor_path"
+          msg="The $env_var environment variable specifies which text editor programs use. If an attacker can "
+          msg="${msg}modify the editor executable, they can inject code that runs whenever you edit files—especially "
+          msg="${msg}dangerous with sudo/root privileges. Programs like visudo, crontab -e, and git rely on this. "
+          msg="${msg}Ensure your editor points to a system location only root can modify, such as /usr/bin/vi or "
+          msg="${msg}/usr/bin/nano."
+          ward_desc "$msg" 1
+          break
+        fi
+      fi
+    fi
+  done
+  
+  # Check for SSH key types (warn about weak algorithms)
+  if [ -d "$HOME/.ssh" ]; then
+    weak_keys_found=0
+    for key in "$HOME/.ssh"/id_dsa* "$HOME/.ssh"/*_dsa; do
+      if [ -f "$key" ] && ! printf '%s\n' "$key" | grep -q '\.pub$'; then
+        if [ "$weak_keys_found" -eq 0 ]; then
+          ward_fail "Weak SSH key algorithm detected (DSA)"
+          msg="DSA (Digital Signature Algorithm) SSH keys use an outdated cryptographic algorithm limited to "
+          msg="${msg}1024 bits, now considered insecure—modern attacks can potentially compromise them. DSA support "
+          msg="${msg}is deprecated in newer SSH versions. Generate new keys using Ed25519 (recommended) or RSA 4096-bit, "
+          msg="${msg}update your authorized_keys on remote servers, then delete the old DSA keys."
+          ward_desc "$msg" 1
+          if ward_ask_fix "See how to generate secure SSH keys?"; then
+            printf 'Generate modern SSH keys:\n'
+            printf '  ssh-keygen -t ed25519 -C "your_email@example.com"  # Recommended\n'
+            printf '  ssh-keygen -t rsa -b 4096 -C "your_email@example.com"  # Alternative\n'
+            printf '\nThen update authorized_keys on servers and remove old DSA keys.\n'
+          fi
+          weak_keys_found=1
+        fi
+        break
+      fi
+    done
+  fi
+  
+  # Check shell history size limits
+  histsize="${HISTSIZE-}"
+  histfilesize="${HISTFILESIZE-}"
+  if [ -n "$histsize" ] && [ "$histsize" -gt 10000 ] 2>/dev/null; then
+    ward_fail "Very large shell history size: HISTSIZE=$histsize"
+    msg="HISTSIZE controls how many commands are kept in memory during your shell session. Extremely large "
+    msg="${msg}history sizes consume memory and may preserve sensitive information (passwords, API keys) you "
+    msg="${msg}accidentally typed—attackers gaining access could mine your history for credentials. Set HISTSIZE "
+    msg="${msg}to a reasonable value like 1000-5000 commands, and set HISTFILESIZE similarly to limit on-disk history."
+    ward_desc "$msg" 1
+    if ward_ask_fix "See how to set reasonable history limits?"; then
+      printf 'Add to your shell profile (~/.bashrc, ~/.zshrc):\n'
+      printf '  export HISTSIZE=5000\n'
+      printf '  export HISTFILESIZE=5000\n'
+    fi
+  fi
+}
+
+# Level 3: Expert/obscure security checks
+check_level_3() {
+  ward_title "Level 3: Expert Security Checks"
+  
+  # Check for SUID binaries (security risk if compromised)
+  if has find; then
+    suid_count=$(find /usr/bin /usr/local/bin /bin 2>/dev/null \
+                      -type f -perm -4000 | wc -l | tr -d ' ')
+    ward_pass "Found $suid_count SUID binaries in standard locations"
+    msg="SUID binaries run with elevated privileges. "
+    msg="${msg}While some are necessary (sudo, passwd), "
+    msg="${msg}excessive SUID binaries increase attack surface."
+    ward_desc "$msg" "$verbose"
+  fi
+  
+  # Check core dumps
+  # Check system-wide core dump configuration
+  core_limit_set=0
+  if [ -f /etc/security/limits.conf ]; then
+    if grep -q "^[*@].*core.*0" /etc/security/limits.conf 2>/dev/null; then
+      core_limit_set=1
+    fi
+  fi
+  
+  if [ "$core_limit_set" = "1" ]; then
+    ward_pass "Core dumps are disabled"
+    msg="Core dumps can contain sensitive information from memory. "
+    msg="${msg}Disabling prevents information leakage."
+    ward_desc "$msg" 0
+  else
+    ward_fail "Core dumps not explicitly disabled"
+    msg="When a program crashes, it can save its memory to disk as a 'core dump' for debugging. This memory "
+    msg="${msg}snapshot can contain passwords, encryption keys, or private data that was in the program when it "
+    msg="${msg}crashed. Disable this unless you're actively debugging software—an attacker who crashes a program "
+    msg="${msg}could harvest secrets from the dump files."
+    ward_desc "$msg" 1
+    if ward_ask_fix "Disable core dumps system-wide? (recommended unless debugging software)"; then
+      if wizard-cast sh -c "printf '* hard core 0\n' | sudo tee -a /etc/security/limits.conf > /dev/null"; then
+        success "Added core dump limit to /etc/security/limits.conf"
+        ward_mark_fixed
+      else
+        warn "Failed to add core dump limit"
+      fi
+    fi
+  fi
+  
+  # Check SELinux status (Linux only)
+  if has getenforce; then
+    selinux_status=$(getenforce 2>/dev/null || printf 'unknown')
+    if [ "$selinux_status" = "Enforcing" ]; then
+      ward_pass "SELinux is enforcing"
+      ward_desc "SELinux provides mandatory access control for enhanced security." 0
+    elif [ "$selinux_status" = "Permissive" ]; then
+      ward_fail "SELinux is in permissive mode"
+      msg="SELinux permissive mode logs violations but doesn't enforce them. "
+      msg="${msg}Consider setting to enforcing mode with: setenforce 1"
+      ward_desc "$msg" 1
+    elif [ "$selinux_status" = "Disabled" ]; then
+      ward_fail "SELinux is disabled"
+      msg="SELinux provides kernel-level access control. "
+      msg="${msg}Consider enabling for production systems."
+      ward_desc "$msg" 1
+    fi
+  elif [ -d "/sys/kernel/security/apparmor" ]; then
+    # Check AppArmor as alternative (Ubuntu/Debian)
+    if has aa-status; then
+      ward_pass "AppArmor is available"
+      ward_desc "AppArmor provides application confinement for enhanced security." "$verbose"
+    fi
+  fi
+  
+  # Check firewall status (platform-specific)
+  firewall_active=0
+  if has ufw; then
+    if ufw status 2>/dev/null | grep -q "Status: active"; then
+      ward_pass "UFW firewall is active"
+      ward_desc "Firewall protects against unauthorized network access." 0
+      firewall_active=1
+    fi
+  elif has iptables; then
+    if iptables -L -n 2>/dev/null | grep -q "Chain INPUT"; then
+      ward_pass "iptables firewall is configured"
+      ward_desc "Firewall rules are present in iptables." "$verbose"
+      firewall_active=1
+    fi
+  elif [ -f "/usr/libexec/ApplicationFirewall/socketfilterfw" ]; then
+    # macOS firewall
+    fw_cmd="/usr/libexec/ApplicationFirewall/socketfilterfw"
+    if "$fw_cmd" --getglobalstate 2>/dev/null | grep -q "enabled"; then
+      ward_pass "macOS firewall is enabled"
+      ward_desc "Application firewall is active on macOS." 0
+      firewall_active=1
+    fi
+  fi
+  
+  if [ "$firewall_active" -eq 0 ]; then
+    ward_fail "No active firewall detected"
+    msg="A firewall blocks unauthorized network connections. "
+    msg="${msg}Consider enabling ufw (Ubuntu), firewalld (Fedora), "
+    msg="${msg}or your system's firewall."
+    ward_desc "$msg" 1
+    if ward_ask_fix "Enable firewall? (requires root)"; then
+      if has ufw; then
+        wizard-cast sudo ufw --force enable && success "Enabled ufw firewall"
+      elif has firewall-cmd; then
+        wizard-cast sudo systemctl start firewalld && \
+        wizard-cast sudo systemctl enable firewalld && \
+          success "Enabled firewalld"
+      elif [ -f "/usr/libexec/ApplicationFirewall/socketfilterfw" ]; then
+        wizard-cast sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate on && \
+          success "Enabled macOS firewall"
+      else
+        warn "No supported firewall found - manual configuration needed"
+      fi
+    fi
+  fi
+  
+  # Check for suspicious cron jobs
+  if [ -r /var/spool/cron/crontabs/"$(id -un)" ] || [ -r /var/spool/cron/"$(id -un)" ]; then
+    ward_pass "User crontab exists"
+    ward_desc "Cron jobs run automatically on a schedule." "$verbose"
+  fi
+  
+  # Check listening network services
+  if has ss || has netstat; then
+    if has ss; then
+      listen_count=$(ss -tuln 2>/dev/null | grep -c LISTEN || printf '0')
+    else
+      listen_count=$(netstat -tuln 2>/dev/null | grep -c LISTEN || printf '0')
+    fi
+    ward_pass "Found $listen_count listening network services"
+    msg="Network services listening for connections represent potential attack surface."
+    ward_desc "$msg" "$verbose"
+  fi
+  
+  # Check for known_hosts file size
+  if [ -f "$HOME/.ssh/known_hosts" ]; then
+    known_hosts_lines=$(wc -l < "$HOME/.ssh/known_hosts" 2>/dev/null || printf '0')
+    if [ "$known_hosts_lines" -gt 0 ]; then
+      ward_pass "SSH known_hosts contains $known_hosts_lines entries"
+      msg="known_hosts tracks SSH server fingerprints to prevent MITM attacks."
+      ward_desc "$msg" "$verbose"
+    fi
+  fi
+  
+  # Check for IPv6 privacy extensions (Linux)
+  if [ -r /proc/sys/net/ipv6/conf/all/use_tempaddr ]; then
+    ipv6_privacy=$(cat /proc/sys/net/ipv6/conf/all/use_tempaddr 2>/dev/null || printf '0')
+    if [ "$ipv6_privacy" -ge 2 ]; then
+      ward_pass "IPv6 privacy extensions are enabled"
+      ward_desc "Privacy extensions help prevent IPv6 address tracking." 0
+    else
+      ward_fail "IPv6 privacy extensions are disabled"
+      msg="IPv6 privacy extensions prevent tracking via stable addresses."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Enable IPv6 privacy extensions? (requires root)"; then
+        if wizard-cast sudo sysctl -w net.ipv6.conf.all.use_tempaddr=2 && \
+           wizard-cast sudo sysctl -w net.ipv6.conf.default.use_tempaddr=2; then
+          # Make it permanent
+          if [ -w /etc/sysctl.conf ] || sudo test -w /etc/sysctl.conf 2>/dev/null; then
+            printf 'net.ipv6.conf.all.use_tempaddr=2\nnet.ipv6.conf.default.use_tempaddr=2\n' | \
+              wizard-cast sudo tee -a /etc/sysctl.conf >/dev/null
+          fi
+          success "Enabled IPv6 privacy extensions"
+        else
+          warn "Failed to enable IPv6 privacy extensions"
+        fi
+      fi
+    fi
+  fi
+  
+  # Check kernel parameters for security hardening
+  if [ -r /proc/sys/kernel/dmesg_restrict ]; then
+    dmesg_restrict=$(cat /proc/sys/kernel/dmesg_restrict 2>/dev/null || printf '0')
+    if [ "$dmesg_restrict" -eq 1 ]; then
+      ward_pass "Kernel dmesg access is restricted"
+      ward_desc "Restricting dmesg prevents information disclosure to non-root users." "$verbose"
+    else
+      ward_fail "Kernel dmesg access is not restricted"
+      msg="dmesg can reveal sensitive kernel information. "
+      msg="${msg}Restrict with: sysctl -w kernel.dmesg_restrict=1"
+      ward_desc "$msg" 1
+    fi
+  fi
+  
+  # Check for systemd-analyze security (if available)
+  if has systemd-analyze && has systemctl; then
+    ward_pass "systemd security analysis available"
+    msg="Run 'systemd-analyze security' to review service security settings."
+    ward_desc "$msg" "$verbose"
+  fi
+  
+  # Check /var/log permissions
+  if [ -d /var/log ]; then
+    log_perms=$(ls -ld /var/log 2>/dev/null | awk '{print $1}')
+    if printf '%s' "$log_perms" | grep -qE '^drwxr-xr-x|^drwxrwx---'; then
+      ward_pass "/var/log has reasonable permissions"
+      ward_desc "Log directory permissions prevent unauthorized access to logs." "$verbose"
+    else
+      ward_fail "/var/log has unusual permissions: $log_perms"
+      msg="Log files may contain sensitive information. "
+      msg="${msg}Review /var/log permissions."
+      ward_desc "$msg" 1
+    fi
+  fi
+  
+  # Check for failed login attempts
+  if [ -r /var/log/auth.log ] || [ -r /var/log/secure ]; then
+    auth_log="/var/log/auth.log"
+    [ -r /var/log/secure ] && auth_log="/var/log/secure"
+    
+    if has grep; then
+      failed_logins=$(grep "Failed password" "$auth_log" 2>/dev/null | wc -l)
+      failed_logins=${failed_logins:-0}
+      if [ "$failed_logins" -gt 0 ] 2>/dev/null; then
+        ward_fail "Found $failed_logins failed login attempts in logs"
+        msg="Failed login attempts may indicate brute-force attacks."
+        ward_desc "$msg" 1
+      else
+        ward_pass "No recent failed login attempts in auth logs"
+        ward_desc "System shows no signs of brute-force login attempts." 0
+      fi
+    fi
+  fi
+  
+  # Check for suspicious processes
+  if has ps; then
+    # Look for processes running from tmp directories (common attack vector)
+    tmp_procs=$(ps aux 2>/dev/null | grep -E '/tmp/|/var/tmp/' | grep -v grep || printf '')
+    if [ -n "$tmp_procs" ]; then
+      ward_fail "Found processes running from /tmp directories"
+      msg="Processes running from /tmp may be malicious."
+      ward_desc "$msg" 1
+    else
+      ward_pass "No suspicious processes from /tmp detected"
+      ward_desc "No processes running from temporary directories." "$verbose"
+    fi
+  fi
+  
+  # Check kernel exploit mitigation (ASLR)
+  if [ -r /proc/sys/kernel/randomize_va_space ]; then
+    aslr=$(cat /proc/sys/kernel/randomize_va_space 2>/dev/null || printf '0')
+    if [ "$aslr" -eq 2 ]; then
+      ward_pass "ASLR (Address Space Layout Randomization) is fully enabled"
+      ward_desc "ASLR helps protect against memory corruption exploits." 0
+    else
+      ward_fail "ASLR is not fully enabled (value: $aslr)"
+      msg="ASLR should be set to 2 for full protection."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Enable ASLR fully? (recommended, requires root)"; then
+        if wizard-cast sudo sysctl -w kernel.randomize_va_space=2; then
+          # Make it permanent
+          if [ -w /etc/sysctl.conf ] || sudo test -w /etc/sysctl.conf 2>/dev/null; then
+            printf 'kernel.randomize_va_space=2\n' | \
+              wizard-cast sudo tee -a /etc/sysctl.conf >/dev/null
+          fi
+          success "Enabled ASLR fully"
+        else
+          warn "Failed to enable ASLR"
+        fi
+      fi
+    fi
+  fi
+  
+  # Check filesystem mount options for /tmp
+  if has mount; then
+    tmp_mount=$(mount | grep " /tmp " 2>/dev/null || printf '')
+    if [ -n "$tmp_mount" ]; then
+      if printf '%s' "$tmp_mount" | grep -q "noexec"; then
+        ward_pass "/tmp is mounted with noexec option"
+        ward_desc "noexec on /tmp prevents execution of binaries." 0
+      else
+        ward_fail "/tmp is not mounted with noexec option"
+        msg="/tmp should be mounted with noexec,nosuid,nodev for security. "
+        msg="${msg}Add to /etc/fstab: tmpfs /tmp tmpfs defaults,noexec,nosuid,nodev 0 0"
+        ward_desc "$msg" 1
+      fi
+    else
+      ward_pass "/tmp mount options not verified"
+      ward_desc "/tmp may not be a separate mount. Consider separate partition." "$verbose"
+    fi
+  fi
+  
+  # Check for loaded kernel modules
+  if has lsmod; then
+    modules_loaded=$(lsmod 2>/dev/null | wc -l)
+    modules_loaded=$((modules_loaded - 1)) # Subtract header line
+    ward_pass "$modules_loaded kernel modules currently loaded"
+    msg="Review loaded modules with 'lsmod' for unexpected entries."
+    ward_desc "$msg" "$verbose"
+  fi
+  
+  # Check if auditd is running (Linux audit system)
+  if has systemctl; then
+    if systemctl is-active auditd >/dev/null 2>&1; then
+      ward_pass "Audit daemon (auditd) is running"
+      ward_desc "auditd provides comprehensive system auditing for security." 0
+    else
+      ward_fail "Audit daemon (auditd) is not running"
+      msg="auditd provides detailed security auditing. "
+      msg="${msg}Install and enable: sudo apt install auditd && sudo systemctl enable auditd"
+      ward_desc "$msg" 1
+    fi
+  fi
+  
+  # Check network interfaces for promiscuous mode (packet sniffing)
+  if has ip; then
+    promisc=$(ip link show 2>/dev/null | grep PROMISC || printf '')
+    if [ -n "$promisc" ]; then
+      ward_fail "Network interface in promiscuous mode detected"
+      msg="Promiscuous mode allows packet sniffing. "
+      msg="${msg}This may indicate monitoring tools or potential compromise."
+      ward_desc "$msg" 1
+      printf 'Interface in promiscuous mode:\n%s\n' "$promisc"
+    else
+      ward_pass "No network interfaces in promiscuous mode"
+      ward_desc "Network interfaces not configured for packet capture." 0
+    fi
+  fi
+  
+  # Check for compiler tools on production systems
+  if has gcc || has cc || has clang; then
+    ward_fail "Compiler tools found on system"
+    msg="Compilers (gcc, clang) on production systems can be used "
+    msg="${msg}by attackers to compile exploits. Consider removing if not needed."
+    ward_desc "$msg" 1
+    if ward_ask_fix "Would you like to see compiler removal commands?"; then
+      printf 'Remove compiler tools (Debian/Ubuntu):\n'
+      printf '  sudo apt remove gcc g++ make\n'
+      printf 'Remove compiler tools (RHEL/Fedora):\n'
+      printf '  sudo yum remove gcc gcc-c++ make\n'
+    fi
+  else
+    ward_pass "No compiler tools detected"
+    ward_desc "System does not have development compilers installed." 0
+  fi
+  
+  # Check system entropy for cryptography
+  if [ -r /proc/sys/kernel/random/entropy_avail ]; then
+    entropy=$(cat /proc/sys/kernel/random/entropy_avail 2>/dev/null || printf '0')
+    if [ "$entropy" -gt 1000 ]; then
+      ward_pass "System entropy is adequate ($entropy bits available)"
+      ward_desc "Sufficient entropy for cryptographic operations." 0
+    else
+      ward_fail "System entropy is low ($entropy bits available)"
+      msg="Low entropy can weaken cryptographic operations. "
+      msg="${msg}Consider installing haveged or rng-tools."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Install haveged to improve system entropy? (requires root)"; then
+        if has apt; then
+          wizard-cast sudo apt install -y haveged && \
+          wizard-cast sudo systemctl enable haveged && \
+          wizard-cast sudo systemctl start haveged && \
+            success "Installed and enabled haveged"
+        elif has yum; then
+          wizard-cast sudo yum install -y haveged && \
+          wizard-cast sudo systemctl enable haveged && \
+          wizard-cast sudo systemctl start haveged && \
+            success "Installed and enabled haveged"
+        elif has dnf; then
+          wizard-cast sudo dnf install -y haveged && \
+          wizard-cast sudo systemctl enable haveged && \
+          wizard-cast sudo systemctl start haveged && \
+            success "Installed and enabled haveged"
+        else
+          warn "Package manager not supported for haveged installation"
+        fi
+      fi
+    fi
+  fi
+  
+  # Check for suspicious systemd unit files
+  if [ -d /etc/systemd/system ]; then
+    user_units=$(find /etc/systemd/system -name "*.service" -type f 2>/dev/null | wc -l)
+    if [ "$user_units" -gt 0 ]; then
+      ward_pass "Found $user_units custom systemd unit files"
+      msg="Review custom systemd units in /etc/systemd/system/ for legitimacy."
+      ward_desc "$msg" "$verbose"
+    fi
+  fi
+  
+  # Check for common rootkit indicators
+  if has find; then
+    # Check for hidden files in /dev (common rootkit location)
+    hidden_dev=$(find /dev -name ".*" 2>/dev/null | grep -v "/dev/\." | head -5 || printf '')
+    if [ -n "$hidden_dev" ]; then
+      ward_fail "Hidden files found in /dev directory"
+      msg="Hidden files in /dev may indicate rootkit. Investigate: "
+      msg="${msg}$(printf '%s' "$hidden_dev" | head -1)"
+      ward_desc "$msg" 1
+    else
+      ward_pass "No suspicious hidden files in /dev"
+      ward_desc "/dev directory appears clean." "$verbose"
+    fi
+  fi
+  
+  # Check SSH agent forwarding
+  for sshd_config in /etc/ssh/sshd_config /private/etc/ssh/sshd_config; do
+    if [ -r "$sshd_config" ]; then
+      if grep -q "^AllowAgentForwarding yes" "$sshd_config" 2>/dev/null; then
+        ward_fail "SSH agent forwarding is enabled"
+        msg="Agent forwarding can expose SSH keys on compromised servers. "
+        msg="${msg}Disable unless specifically needed."
+        ward_desc "$msg" 1
+      else
+        ward_pass "SSH agent forwarding is not explicitly enabled"
+        ward_desc "Agent forwarding disabled or not configured." "$verbose"
+      fi
+      break
+    fi
+  done
+  
+  # Check for secure boot status (UEFI systems)
+  if [ -d /sys/firmware/efi ]; then
+    if has mokutil; then
+      if mokutil --sb-state 2>/dev/null | grep -q "SecureBoot enabled"; then
+        ward_pass "Secure Boot is enabled"
+        msg="Secure Boot helps prevent rootkits and bootloader tampering."
+        ward_desc "$msg" 0
+      else
+        ward_fail "Secure Boot is disabled"
+        msg="Secure Boot prevents unsigned bootloaders from running. "
+        msg="${msg}Enable in UEFI/BIOS settings. WARNING: May require configuration."
+        ward_desc "$msg" 1
+      fi
+    fi
+  fi
+  
+  # Check swap encryption (if swap exists)
+  if has swapon; then
+    swap_devices=$(swapon --show=NAME --noheadings 2>/dev/null || printf '')
+    if [ -n "$swap_devices" ]; then
+      # Check if swap is on encrypted device
+      encrypted_swap=0
+      for swap_dev in $swap_devices; do
+        if printf '%s' "$swap_dev" | grep -q "dm-crypt\|/dev/mapper"; then
+          encrypted_swap=1
+          break
+        fi
+      done
+      
+      if [ "$encrypted_swap" -eq 1 ]; then
+        ward_pass "Swap appears to be encrypted"
+        ward_desc "Encrypted swap protects sensitive data in memory dumps." 0
+      else
+        ward_fail "Swap is not encrypted"
+        msg="Unencrypted swap can contain passwords and keys. "
+        msg="${msg}Consider using encrypted swap. WARNING: Complex to set up."
+        ward_desc "$msg" 1
+      fi
+    fi
+  fi
+  
+  # Check disk encryption status
+  if has lsblk; then
+    encrypted_root=$(lsblk -o NAME,TYPE,MOUNTPOINT 2>/dev/null | \
+                      grep -E "/$" | grep -q "crypt" && printf '1' || printf '0')
+    if [ "$encrypted_root" -eq 1 ]; then
+      ward_pass "Root filesystem appears to be encrypted"
+      ward_desc "Full disk encryption protects data if device is stolen." 0
+    else
+      ward_pass "Root filesystem encryption not detected"
+      msg="Disk encryption protects against physical theft but is complex to add later."
+      ward_desc "$msg" "$verbose"
+    fi
+  fi
+  
+  # Check source IP verification (reverse path filtering)
+  if [ -r /proc/sys/net/ipv4/conf/all/rp_filter ]; then
+    rp_filter=$(cat /proc/sys/net/ipv4/conf/all/rp_filter 2>/dev/null || printf '0')
+    if [ "$rp_filter" -ge 1 ]; then
+      ward_pass "Reverse path filtering is enabled (level $rp_filter)"
+      msg="rp_filter helps prevent IP spoofing attacks."
+      ward_desc "$msg" "$verbose"
+    else
+      ward_fail "Reverse path filtering is disabled"
+      msg="Reverse path filtering helps prevent spoofed packets."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Enable reverse path filtering? (recommended)"; then
+        if wizard-cast sudo sysctl -w net.ipv4.conf.all.rp_filter=1 && \
+           wizard-cast sudo sysctl -w net.ipv4.conf.default.rp_filter=1; then
+          # Make it permanent
+          if [ -w /etc/sysctl.conf ] || sudo test -w /etc/sysctl.conf 2>/dev/null; then
+            printf 'net.ipv4.conf.all.rp_filter=1\nnet.ipv4.conf.default.rp_filter=1\n' | \
+              wizard-cast sudo tee -a /etc/sysctl.conf >/dev/null
+          fi
+          success "Enabled reverse path filtering"
+          ward_mark_fixed
+        else
+          warn "Failed to enable reverse path filtering"
+        fi
+      fi
+    fi
+  fi
+  
+  # Check SYN cookie protection
+  if [ -r /proc/sys/net/ipv4/tcp_syncookies ]; then
+    syncookies=$(cat /proc/sys/net/ipv4/tcp_syncookies 2>/dev/null || printf '0')
+    if [ "$syncookies" -eq 1 ]; then
+      ward_pass "SYN cookie protection is enabled"
+      ward_desc "SYN cookies help protect against SYN flood attacks." 0
+    else
+      ward_fail "SYN cookie protection is disabled"
+      msg="SYN cookies protect against DoS attacks."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Enable SYN cookie protection? (recommended)"; then
+        if wizard-cast sudo sysctl -w net.ipv4.tcp_syncookies=1; then
+          # Make it permanent
+          if [ -w /etc/sysctl.conf ] || sudo test -w /etc/sysctl.conf 2>/dev/null; then
+            printf 'net.ipv4.tcp_syncookies=1\n' | \
+              wizard-cast sudo tee -a /etc/sysctl.conf >/dev/null
+          fi
+          success "Enabled SYN cookie protection"
+          ward_mark_fixed
+        else
+          warn "Failed to enable SYN cookie protection"
+        fi
+      fi
+    fi
+  fi
+  
+  # Check for AppArmor/SELinux profile coverage
+  if has aa-status; then
+    profiles_enforced=$(aa-status 2>/dev/null | grep "profiles are in enforce mode" | \
+                         awk '{print $1}' || printf '0')
+    profiles_enforced=${profiles_enforced:-0}
+    if [ "$profiles_enforced" -gt 0 ] 2>/dev/null; then
+      ward_pass "$profiles_enforced AppArmor profiles in enforce mode"
+      ward_desc "AppArmor profiles provide application confinement." "$verbose"
+    fi
+  fi
+  
+  # Check kernel.kptr_restrict (hide kernel pointers)
+  if [ -r /proc/sys/kernel/kptr_restrict ]; then
+    kptr=$(cat /proc/sys/kernel/kptr_restrict 2>/dev/null || printf '0')
+    if [ "$kptr" -ge 1 ]; then
+      ward_pass "Kernel pointer restriction is enabled (level $kptr)"
+      msg="kptr_restrict hides kernel addresses from unprivileged users."
+      ward_desc "$msg" "$verbose"
+    else
+      ward_fail "Kernel pointers are not restricted"
+      msg="Hiding kernel pointers helps prevent exploits."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Enable kernel pointer restriction? (recommended)"; then
+        if wizard-cast sudo sysctl -w kernel.kptr_restrict=1; then
+          # Make it permanent
+          if [ -w /etc/sysctl.conf ] || sudo test -w /etc/sysctl.conf 2>/dev/null; then
+            printf 'kernel.kptr_restrict=1\n' | \
+              wizard-cast sudo tee -a /etc/sysctl.conf >/dev/null
+          fi
+          success "Enabled kernel pointer restriction"
+          ward_mark_fixed
+        else
+          warn "Failed to enable kernel pointer restriction"
+        fi
+      fi
+    fi
+  fi
+  
+  # Check ptrace_scope (restrict ptrace to child processes)
+  if [ -r /proc/sys/kernel/yama/ptrace_scope ]; then
+    ptrace=$(cat /proc/sys/kernel/yama/ptrace_scope 2>/dev/null || printf '0')
+    if [ "$ptrace" -ge 1 ]; then
+      ward_pass "ptrace is restricted to child processes (level $ptrace)"
+      msg="ptrace restrictions prevent debugging of unrelated processes."
+      ward_desc "$msg" "$verbose"
+    else
+      ward_fail "ptrace is not restricted"
+      msg="Restricting ptrace prevents some debugging-based attacks."
+      ward_desc "$msg" 1
+      if ward_ask_fix "Restrict ptrace? (recommended)"; then
+        if wizard-cast sudo sysctl -w kernel.yama.ptrace_scope=1; then
+          # Make it permanent
+          if [ -w /etc/sysctl.conf ] || sudo test -w /etc/sysctl.conf 2>/dev/null; then
+            printf 'kernel.yama.ptrace_scope=1\n' | \
+              wizard-cast sudo tee -a /etc/sysctl.conf >/dev/null
+          fi
+          success "Enabled ptrace restriction"
+          ward_mark_fixed
+        else
+          warn "Failed to enable ptrace restriction"
+        fi
+      fi
+    fi
+  fi
+  
+  # Check for exec-shield or similar protections
+  if [ -r /proc/sys/kernel/exec-shield ]; then
+    exec_shield=$(cat /proc/sys/kernel/exec-shield 2>/dev/null || printf '0')
+    if [ "$exec_shield" -eq 1 ]; then
+      ward_pass "Exec-shield is enabled"
+      ward_desc "Exec-shield provides additional buffer overflow protection." 0
+    fi
+  fi
+  
+  # Check perf_event paranoid (prevent performance monitoring abuse)
+  if [ -r /proc/sys/kernel/perf_event_paranoid ]; then
+    perf=$(cat /proc/sys/kernel/perf_event_paranoid 2>/dev/null || printf '0')
+    if [ "$perf" -ge 2 ]; then
+      ward_pass "Performance event monitoring is restricted (level $perf)"
+      msg="Restricts perf_event to reduce info leakage."
+      ward_desc "$msg" "$verbose"
+    else
+      ward_fail "Performance event monitoring not fully restricted"
+      msg="Set perf_event_paranoid to 2 or higher."
+      ward_desc "$msg" 1
+    fi
+  fi
+  
+  # Check unprivileged BPF (should be disabled for security)
+  if [ -r /proc/sys/kernel/unprivileged_bpf_disabled ]; then
+    bpf=$(cat /proc/sys/kernel/unprivileged_bpf_disabled 2>/dev/null || printf '0')
+    if [ "$bpf" -eq 1 ]; then
+      ward_pass "Unprivileged BPF is disabled"
+      msg="Disabling unprivileged BPF prevents exploitation via eBPF."
+      ward_desc "$msg" 0
+    else
+      ward_fail "Unprivileged BPF is enabled"
+      msg="eBPF can be used for attacks. Disable with: "
+      msg="${msg}sysctl -w kernel.unprivileged_bpf_disabled=1"
+      ward_desc "$msg" 1
+      if ward_ask_fix "Disable unprivileged BPF? (recommended)"; then
+        printf 'Disable unprivileged BPF:\n'
+        printf '  sudo sysctl -w kernel.unprivileged_bpf_disabled=1\n'
+        printf 'Make permanent in /etc/sysctl.conf:\n'
+        printf '  kernel.unprivileged_bpf_disabled=1\n'
+      fi
+    fi
+  fi
+  
+  # Check for mail aliases that could be exploited
+  if [ -r /etc/aliases ]; then
+    dangerous_aliases=$(grep -E "^(decode|uudecode):" /etc/aliases 2>/dev/null || printf '')
+    if [ -n "$dangerous_aliases" ]; then
+      ward_fail "Dangerous mail aliases found in /etc/aliases"
+      msg="decode and uudecode aliases can be exploited. Remove them."
+      ward_desc "$msg" 1
+    else
+      ward_pass "No obvious dangerous mail aliases found"
+      ward_desc "Mail aliases file appears safe." "$verbose"
+    fi
+  fi
+  
+  # Check /etc/securetty (restricts root login locations)
+  if [ -r /etc/securetty ]; then
+    ward_pass "/etc/securetty exists"
+    msg="/etc/securetty restricts where root can login from. "
+    msg="${msg}Verify it's properly configured."
+    ward_desc "$msg" "$verbose"
+  fi
+  
+  # Check for nodev on /home (if separate partition)
+  if has mount; then
+    home_mount=$(mount | grep " /home " 2>/dev/null || printf '')
+    if [ -n "$home_mount" ]; then
+      if printf '%s' "$home_mount" | grep -q "nodev"; then
+        ward_pass "/home is mounted with nodev option"
+        msg="nodev on /home prevents device file creation."
+        ward_desc "$msg" 0
+      else
+        ward_fail "/home is not mounted with nodev option"
+        msg="/home should be mounted with nodev for security. "
+        msg="${msg}Add to /etc/fstab"
+        ward_desc "$msg" 1
+      fi
+    fi
+  fi
+  
+  # Check kernel module signing
+  if [ -r /proc/sys/kernel/modules_disabled ]; then
+    modules_disabled=$(cat /proc/sys/kernel/modules_disabled 2>/dev/null || printf '0')
+    if [ "$modules_disabled" -eq 1 ]; then
+      ward_pass "Kernel module loading is disabled"
+      msg="Disabling module loading prevents runtime kernel modification. "
+      msg="${msg}WARNING: Very restrictive, only for locked-down systems."
+      ward_desc "$msg" 0
+    fi
+  fi
+  
+  # Novel check: Locale/character encoding attacks
+  if [ -n "${LC_ALL-}" ] && printf '%s' "$LC_ALL" | grep -qiE "(utf-?7|utf-?32)"; then
+    ward_fail "Potentially dangerous locale setting: $LC_ALL"
+    msg="Your locale (LC_ALL) controls how text is interpreted. UTF-7 and UTF-32 are uncommon. Attackers use "
+    msg="${msg}exotic character encodings to bypass security filters—writing forbidden words in different alphabets "
+    msg="${msg}so automated checkers miss them. Use standard encodings like en_US.UTF-8 unless you have a specific "
+    msg="${msg}reason for unusual encoding."
+    ward_desc "$msg" 1
+    if ward_ask_fix "Change to standard locale? (recommended)"; then
+      printf 'Set a standard locale in your shell profile:\n'
+      printf '  export LC_ALL=en_US.UTF-8\n'
+      printf '  export LANG=en_US.UTF-8\n'
+    fi
+  fi
+  
+  # Novel check: Filesystem case-sensitivity security implications
+  if has mount; then
+    # Check if any mounts are case-insensitive (potential security issue)
+    case_insensitive=$(mount | grep -i "case.*insensitive" || printf '')
+    if [ -n "$case_insensitive" ]; then
+      ward_fail "Case-insensitive filesystem detected"
+      msg="A case-insensitive filesystem treats filenames with different capitalization as identical "
+      msg="${msg}(e.g., 'File.txt', 'file.txt', and 'FILE.TXT' all refer to the same file). This can bypass "
+      msg="${msg}filename-based security controls—if a policy blocks 'exploit.exe', an attacker could use "
+      msg="${msg}'Exploit.EXE' or 'EXPLOIT.exe' to evade detection. Some applications assume case-sensitive "
+      msg="${msg}behavior, leading to vulnerabilities on case-insensitive systems. macOS default filesystems "
+      msg="${msg}(APFS, HFS+) are case-insensitive by design. Linux systems should use case-sensitive filesystems "
+      msg="${msg}(ext4, xfs) for security-critical data. Affected mount: $(printf '%s' "$case_insensitive" | head -1)"
+      ward_desc "$msg" 1
+    fi
+  fi
+  
+  # Novel check: Temporary file cleanup on logout
+  if [ -d "$HOME/.cache" ] || [ -d "/tmp" ]; then
+    cache_size=0
+    if [ -d "$HOME/.cache" ]; then
+      cache_size=$(du -s "$HOME/.cache" 2>/dev/null | awk '{print $1}')
+      cache_size=${cache_size:-0}
+    fi
+    
+    # Check if systemd-tmpfiles is managing cleanup
+    tmp_cleanup_configured=0
+    if has systemctl && systemctl list-timers 2>/dev/null | grep -q "systemd-tmpfiles"; then
+      tmp_cleanup_configured=1
+    fi
+    
+    if [ "$tmp_cleanup_configured" -eq 0 ] && [ "$cache_size" -gt 1048576 ]; then
+      ward_fail "Large cache directory and no automatic cleanup ($cache_size KB)"
+      msg="The ~/.cache directory stores temporary application data. Without automatic cleanup, this directory "
+      msg="${msg}grows indefinitely. Current size: $cache_size KB (>1GB). Cache files can contain sensitive information: "
+      msg="${msg}browser cache with private browsing data, application credentials and session tokens, temporary files "
+      msg="${msg}from crashed programs that failed to clean up. This data persists indefinitely and remains accessible "
+      msg="${msg}even after the source application is removed. Configure automatic cleanup with systemd-tmpfiles or "
+      msg="${msg}similar, or periodically review and manually remove old cache data."
+      ward_desc "$msg" 1
+      if ward_ask_fix "See how to configure automatic cleanup?"; then
+        printf 'Enable systemd tmpfiles cleanup:\n'
+        printf '  sudo systemctl enable systemd-tmpfiles-clean.timer\n'
+        printf 'Or manually clear cache:\n'
+        printf '  rm -rf ~/.cache/*\n'
+      fi
+    fi
+  fi
+  
+  # Novel check: ARP cache inspection for MITM
+  if has arp || has ip; then
+    arp_count=0
+    if has arp; then
+      arp_count=$(arp -a 2>/dev/null | wc -l)
+    elif has ip; then
+      arp_count=$(ip neigh show 2>/dev/null | wc -l)
+    fi
+    
+    if [ "$arp_count" -gt 50 ]; then
+      ward_fail "Unusually large ARP cache ($arp_count entries)"
+      msg="The ARP (Address Resolution Protocol) cache stores mappings between IP addresses and MAC (hardware) "
+      msg="${msg}addresses on the local network, used to route packets on Ethernet. An abnormally large ARP cache "
+      msg="${msg}can indicate ARP poisoning/spoofing attacks—a malicious host sends forged ARP replies to associate "
+      msg="${msg}the attacker's MAC address with legitimate hosts' IP addresses (like your router), intercepting all "
+      msg="${msg}network traffic in a man-in-the-middle attack. This is normal for enterprise networks with many "
+      msg="${msg}hosts; on small networks (home, small office), investigate using 'arp -a' or 'ip neigh show'. Look "
+      msg="${msg}for duplicate IP addresses with different MAC addresses or entries that change frequently."
+      ward_desc "$msg" 1
+    else
+      ward_pass "ARP cache size appears normal ($arp_count entries)"
+      msg="Network address cache is reasonable for your network size."
+      ward_desc "$msg" "$verbose"
+    fi
+  fi
+  
+  # Novel check: DNS cache inspection
+  if has systemd-resolve; then
+    dns_stats=$(systemd-resolve --statistics 2>/dev/null | grep -i "cache" || printf '')
+    if [ -n "$dns_stats" ]; then
+      cache_hit_rate=$(printf '%s' "$dns_stats" | grep -i "hit" | awk '{print $NF}' | tr -d '%')
+      if [ -n "$cache_hit_rate" ] && [ "$cache_hit_rate" -gt 95 ] 2>/dev/null; then
+        ward_fail "Suspiciously high DNS cache hit rate ($cache_hit_rate%)"
+        msg="DNS translates names (google.com) to IP addresses. A cache stores recent lookups. A >95% hit rate "
+        msg="${msg}might mean you're only visiting the same few sites repeatedly (normal for some users), or your DNS "
+        msg="${msg}cache has been poisoned to redirect many sites to attacker IPs. If you browse varied sites but keep "
+        msg="${msg}getting redirected, investigate—clear DNS cache and see if unexpected redirects stop. View stats: "
+        msg="${msg}systemd-resolve --statistics"
+        ward_desc "$msg" 1
+      fi
+    fi
+  fi
+}
+
+# Main execution
+info "Checking system security wards..."
+
+# Run checks based on level
+if [ "$run_all" -eq 1 ]; then
+  check_level_1
+  check_level_2
+  check_level_3
+  level_text="all"
+else
+  case "$level" in
+    1)
+      check_level_1
+      level_text="1"
+      ;;
+    2)
+      check_level_2
+      level_text="2"
+      ;;
+    3)
+      check_level_3
+      level_text="3"
+      ;;
+  esac
+fi
+
+# Print summary
+printf '\nCast level %s system wards\n' "$level_text"
+if [ "$fixed_checks" -gt 0 ]; then
+  printf '%d passed, %d fixed, %d failed\n' "$passed_checks" "$fixed_checks" "$failed_checks"
+else
+  printf '%d passed, %d failed\n' "$passed_checks" "$failed_checks"
+fi
