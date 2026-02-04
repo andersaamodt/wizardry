@@ -82,7 +82,11 @@ fi
 # Use permissive mode for our own logic
 set +e
 set +u
-. env-clear
+# Try to clear environment if env-clear is available, but don't fail if it's not
+# This makes listen more robust when sourced from cd hook
+if command -v env-clear >/dev/null 2>&1; then
+  . env-clear 2>/dev/null || true
+fi
 
 # Get room path
 _listen_room_path=${1:-$PWD}
