@@ -164,10 +164,16 @@ export LISTEN_TERM_WIDTH="$_listen_term_width"
 
 # Auto-stop ALL previous listeners to prevent duplicates
 # Simple and reliable - kill everything, start fresh
-if command -v pgrep >/dev/null 2>&1; then
-  pgrep -f 'tail -f.*\.log' 2>/dev/null | while read -r _old_pid; do
-    kill "$_old_pid" 2>/dev/null || true
+# Note: Use pkill instead of pgrep|while to avoid subshell issues
+if command -v pkill >/dev/null 2>&1; then
+  pkill -f 'tail -f.*\.log' 2>/dev/null || true
+elif command -v pgrep >/dev/null 2>&1; then
+  # Fallback: collect PIDs first, then kill them
+  _old_pids=$(pgrep -f 'tail -f.*\.log' 2>/dev/null || true)
+  for _pid in $_old_pids; do
+    kill "$_pid" 2>/dev/null || true
   done
+  unset _old_pids _pid
 fi
 
 # Start monitoring in background
