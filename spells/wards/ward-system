@@ -1009,23 +1009,25 @@ check_level_2() {
   fi
   
   # Novel check: Resource limit bombs
-  if has ulimit; then
-    max_processes=$(ulimit -u 2>/dev/null || printf 'unlimited')
-    max_files=$(ulimit -n 2>/dev/null || printf 'unlimited')
-    
-    if [ "$max_processes" = "unlimited" ]; then
+  # Check if limits.conf exists and has process limits configured
+  if [ -f /etc/security/limits.conf ]; then
+    if ! grep -q "nproc" /etc/security/limits.conf 2>/dev/null; then
       ward_fail "No limit on number of processes (fork bomb risk)"
-      msg="The system has no limit on the number of processes a user can create (ulimit -u controls this). "
-      msg="${msg}Without limits, a fork bomb attack can occur—a program that recursively spawns copies until "
+      msg="Without process limits, a fork bomb attack can occur—a program that recursively spawns copies until "
       msg="${msg}system resources are exhausted, causing system-wide denial of service and requiring hard reboot. "
       msg="${msg}Even accidental infinite loops in scripts can trigger this. Set a reasonable limit like 4096 "
       msg="${msg}processes per user to prevent resource exhaustion while allowing normal operations."
       ward_desc "$msg" 1
-      if ward_ask_fix "Set process limit? (recommended)"; then
-        printf 'Add to /etc/security/limits.conf:\n'
-        printf '  * hard nproc 4096\n'
-        printf '\nThis limits each user to 4096 processes, preventing fork bombs.\n'
+      if ward_ask_fix "Set process limit to 4096? (recommended)"; then
+        if wizard-cast sh -c "printf '* hard nproc 4096\n' | sudo tee -a /etc/security/limits.conf > /dev/null"; then
+          success "Added process limit to /etc/security/limits.conf"
+          ward_mark_fixed
+        else
+          warn "Failed to add process limit"
+        fi
       fi
+    else
+      ward_pass "Process limits configured in /etc/security/limits.conf"
     fi
   fi
   
@@ -1136,25 +1138,33 @@ check_level_3() {
   fi
   
   # Check core dumps
-  ulimit_core=$(ulimit -c 2>/dev/null || printf 'unknown')
-  if [ "$ulimit_core" = "0" ]; then
+  # Check system-wide core dump configuration
+  core_limit_set=0
+  if [ -f /etc/security/limits.conf ]; then
+    if grep -q "^[*@].*core.*0" /etc/security/limits.conf 2>/dev/null; then
+      core_limit_set=1
+    fi
+  fi
+  
+  if [ "$core_limit_set" = "1" ]; then
     ward_pass "Core dumps are disabled"
     msg="Core dumps can contain sensitive information from memory. "
     msg="${msg}Disabling prevents information leakage."
     ward_desc "$msg" 0
   else
-    ward_fail "Core dumps are enabled (limit: $ulimit_core)"
+    ward_fail "Core dumps not explicitly disabled"
     msg="When a program crashes, it can save its memory to disk as a 'core dump' for debugging. This memory "
     msg="${msg}snapshot can contain passwords, encryption keys, or private data that was in the program when it "
     msg="${msg}crashed. Disable this unless you're actively debugging software—an attacker who crashes a program "
     msg="${msg}could harvest secrets from the dump files."
     ward_desc "$msg" 1
-    if ward_ask_fix "Disable core dumps? (recommended unless debugging software)"; then
-      printf 'Add to your shell profile (~/.bashrc, ~/.zshrc):\n'
-      printf '  ulimit -c 0\n'
-      printf 'For system-wide setting, edit /etc/security/limits.conf:\n'
-      printf '  * hard core 0\n'
-      printf '\nThis prevents programs from writing memory dumps when they crash.\n'
+    if ward_ask_fix "Disable core dumps system-wide? (recommended unless debugging software)"; then
+      if wizard-cast sh -c "printf '* hard core 0\n' | sudo tee -a /etc/security/limits.conf > /dev/null"; then
+        success "Added core dump limit to /etc/security/limits.conf"
+        ward_mark_fixed
+      else
+        warn "Failed to add core dump limit"
+      fi
     fi
   fi
   
