@@ -45,18 +45,26 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
   # Display whichever logs exist
   found_log=0
   
-  if [ -n "$log_file" ] && [ -r "$log_file" ]; then
+  if [ -n "$log_file" ] && [ -f "$log_file" ]; then
     printf 'Showing last 120 lines of %s:\n\n' "$log_file"
-    tail -n 120 "$log_file"
+    if [ -r "$log_file" ]; then
+      tail -n 120 "$log_file"
+    else
+      sudo tail -n 120 "$log_file"
+    fi
     found_log=1
   fi
   
-  if [ -n "$err_file" ] && [ -r "$err_file" ]; then
+  if [ -n "$err_file" ] && [ -f "$err_file" ]; then
     if [ $found_log -eq 1 ]; then
       printf '\n================================\n\n'
     fi
     printf 'Showing last 120 lines of %s (stderr):\n\n' "$err_file"
-    tail -n 120 "$err_file"
+    if [ -r "$err_file" ]; then
+      tail -n 120 "$err_file"
+    else
+      sudo tail -n 120 "$err_file"
+    fi
     found_log=1
   fi
   

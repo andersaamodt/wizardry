@@ -126,7 +126,7 @@ $openssl_option"
     esac
     
     if [ -n "$hostname_file" ]; then
-      copy_onion_option="Copy .onion address%copy-to-clipboard \"\$(cat \"$hostname_file\")\""
+      copy_onion_option="Copy .onion address%clip-copy \"\$(sudo cat \"$hostname_file\" 2>/dev/null || cat \"$hostname_file\")\""
     fi
     
     # Build menu with simplified logic

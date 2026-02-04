@@ -219,9 +219,9 @@ while true; do
   copy_onion=""
   mud_dirs="/usr/local/var/lib/tor/mud /opt/pkg/var/lib/tor/mud /var/lib/tor/mud"
   for mud_hs_dir in $mud_dirs; do
-    if [ -r "$mud_hs_dir/hostname" ]; then
+    if [ -f "$mud_hs_dir/hostname" ]; then
       hostname_file="$mud_hs_dir/hostname"
-      copy_cmd="copy-to-clipboard \"\$(sudo cat \"$hostname_file\" 2>/dev/null || cat \"$hostname_file\")\""
+      copy_cmd="clip-copy \"\$(sudo cat \"$hostname_file\" 2>/dev/null || cat \"$hostname_file\")\""
       copy_onion="Copy .onion address%$copy_cmd; echo 9 > \"$SELECTION_FILE\""
       break
     fi
