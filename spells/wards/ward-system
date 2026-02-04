@@ -301,8 +301,15 @@ check_level_1() {
       ward_desc "$msg" 1
       if ward_ask_fix "Set sticky bit on /tmp? (requires root)"; then
         if wizard-cast sudo chmod +t /tmp; then
-          success "Set sticky bit on /tmp"
-          ward_mark_fixed
+          # Verify the fix worked by re-checking
+          new_tmp_perms=$(ls -ld /tmp 2>/dev/null | awk '{print $1}')
+          new_last_char=$(printf '%s' "$new_tmp_perms" | sed 's/.*\(.\)$/\1/')
+          if [ "$new_last_char" = "t" ] || [ "$new_last_char" = "T" ]; then
+            success "Set sticky bit on /tmp"
+            ward_mark_fixed
+          else
+            warn "Command completed but sticky bit not set - check permissions manually"
+          fi
         else
           warn "Failed to set sticky bit on /tmp - may need manual intervention"
         fi
