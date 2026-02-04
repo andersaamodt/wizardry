@@ -157,9 +157,7 @@ if [ "$hs_configured" -eq 1 ]; then
     rm -f "$temp_torrc"
     
     printf '%s\n' "Tor hidden service disabled for site '$site_name'"
-    printf '%s\n' "Fixing tor permissions..."
     repair-tor-permissions >/dev/null 2>&1 || true
-    printf '%s\n' "Restarting tor..."
     restart-tor || true
 else
   # Site is not configured - enable it
@@ -179,16 +177,14 @@ else
   sudo chmod 644 "$tor_config_path"
   
   printf '%s\n' "Hidden service configured for site '$site_name'"
-  printf '%s\n' "Fixing tor permissions..."
   repair-tor-permissions >/dev/null 2>&1 || true
-  printf '%s\n' "Restarting tor..."
   
   if restart-tor; then
     # Wait for tor to generate the hidden service
     sleep 2
     
     # Read the hidden service address
-    hostname_file="${hs_dir}/hostname"
+    hostname_file="${hs_dir}hostname"
     if [ -f "$hostname_file" ] && [ -r "$hostname_file" ]; then
       onion_address=$(cat "$hostname_file" 2>/dev/null || echo "")
       if [ -n "$onion_address" ]; then
@@ -199,8 +195,6 @@ else
         printf '%s\n' "═══════════════════════════════════════════════════════"
         printf '\n'
       fi
-    else
-      printf '%s\n' "Hidden service address is stored at: ${hostname_file}"
     fi
   fi
 fi
