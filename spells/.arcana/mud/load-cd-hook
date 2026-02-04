@@ -78,8 +78,10 @@ cd() {
             mud-defaults cd-listen 2>/dev/null || printf '0')
     fi
     if [ "$cd_listen_value" = "1" ]; then
-        # Source listen directly so it can access PS1 from this shell context
+        # Stop previous listeners before starting new one to prevent orphaned processes
         if command -v listen >/dev/null 2>&1; then
+            . listen --stop 2>/dev/null || true
+            # Source listen directly so it can access PS1 from this shell context
             . listen 2>/dev/null || true
         fi
     fi
