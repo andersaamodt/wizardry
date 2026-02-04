@@ -97,7 +97,10 @@ if [ "$_listen_stop_only" = "1" ]; then
     done
   fi
   
-  printf '%s\n' "✓ Stopped listening to room activity"
+  # Only show message when executed directly, not when sourced by cd hook
+  if [ "$_listen_is_sourced" -eq 0 ]; then
+    printf '%s\n' "✓ Stopped listening to room activity"
+  fi
   
   # When sourced (e.g., by cd hook), guarantee permissive mode instead of restoring
   # Restoring saved opts can re-enable strict modes that break readline
