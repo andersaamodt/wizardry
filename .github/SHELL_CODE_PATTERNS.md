@@ -152,12 +152,24 @@ builtin cd "$dir"  # Calls actual cd builtin, not the function
 # In POSIX sh (use 'command' to prefer builtins over functions)
 command cd "$dir"  # Calls cd builtin, skipping function
 
-# Cross-shell pattern (works in bash/zsh/dash/sh)
+# Cross-shell pattern with checkbashisms exemption
+# checkbashisms: builtin is bash/zsh-specific but guarded by runtime version check
 if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
+    # shellcheck disable=SC2039
     builtin cd "$dir"
 else
     command cd "$dir"
 fi
+```
+
+**CRITICAL - ANTIPATTERN:** Never wrap `builtin` in eval to hide from checkbashisms:
+```sh
+# ANTIPATTERN - BREAKS RELATIVE PATHS:
+eval 'builtin cd "$@"'  # $@ expansion happens in eval context, breaks relative paths
+
+# CORRECT - Use exemption comments instead:
+# checkbashisms: builtin is bash/zsh-specific but guarded by runtime version check
+builtin cd "$@"  # Works correctly with relative paths
 ```
 
 **Why:** Environment variables persist beyond their intended scope, can leak between tests, and violate the project's policy against using env vars for coordination. Using `builtin`/`command` is cleaner and more explicit.
@@ -175,7 +187,9 @@ cd() {
     cd_saved_opts=$(set +o)
     
     # Call actual builtin (bash/zsh need 'builtin', POSIX sh uses 'command')
+    # checkbashisms: builtin is bash/zsh-specific but guarded by runtime version check
     if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
+        # shellcheck disable=SC2039
         builtin cd "$@"
     else
         command cd "$@"
