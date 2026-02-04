@@ -1,0 +1,168 @@
+#!/bin/sh
+
+# Change the port for a wizardry web site.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: change-site-port SITENAME [PORT]
+
+Changes the port for a website and updates all related configurations.
+
+If PORT is not provided, prompts for the new port.
+
+This spell updates:
+  - Site configuration (site.conf)
+  - nginx configuration (regenerates nginx.conf)
+  - Tor hidden service configuration (if enabled)
+  - Restarts nginx if running
+  - Restarts Tor if Tor hosting is enabled
+
+Examples:
+  change-site-port mysite 9090
+  change-site-port mysite  # Will prompt for port
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+. declare-globals
+
+site_name=${1-}
+if [ -z "$site_name" ]; then
+  die 2 "change-site-port: SITENAME required"
+fi
+
+WEB_ROOT="${WIZARDRY_SITES_DIR}"
+SITES_DIR="$WEB_ROOT"
+SITE_DIR="$SITES_DIR/$site_name"
+
+if [ ! -d "$SITE_DIR" ]; then
+  die "change-site-port: site '$site_name' not found"
+fi
+
+# Get current port
+current_port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || echo "8080")
+
+# Get new port from argument or prompt
+new_port=${2-}
+if [ -z "$new_port" ]; then
+  printf 'Current port: %s\n' "$current_port"
+  printf 'Enter new port: '
+  IFS= read -r new_port || exit 1
+fi
+
+# Validate port number
+if [ -z "$new_port" ]; then
+  die 2 "change-site-port: port cannot be empty"
+fi
+
+# Check if port is numeric
+case "$new_port" in
+  *[!0-9]*)
+    die 2 "change-site-port: port must be numeric"
+    ;;
+esac
+
+# Check if port is in valid range (1-65535)
+if [ "$new_port" -lt 1 ] || [ "$new_port" -gt 65535 ]; then
+  die 2 "change-site-port: port must be between 1 and 65535"
+fi
+
+# Check if port is the same
+if [ "$new_port" = "$current_port" ]; then
+  info "Port is already $current_port"
+  exit 0
+fi
+
+step "Changing port from $current_port to $new_port for site '$site_name'"
+
+# Check if site is currently running
+is_serving=0
+nginx_pid=""
+if [ -f "$SITE_DIR/nginx/nginx.pid" ]; then
+  nginx_pid=$(cat "$SITE_DIR/nginx/nginx.pid" 2>/dev/null || echo "")
+  if [ -n "$nginx_pid" ] && kill -0 "$nginx_pid" 2>/dev/null; then
+    is_serving=1
+  fi
+fi
+
+# Update site.conf
+step "Updating site configuration..."
+config-set "$SITE_DIR/site.conf" port "$new_port"
+
+# Regenerate nginx.conf with new port
+step "Regenerating nginx configuration..."
+domain=$(config-get "$SITE_DIR/site.conf" domain 2>/dev/null || echo "localhost")
+use_https=$(config-get "$SITE_DIR/site.conf" https 2>/dev/null || echo "false")
+
+if [ "$use_https" = "true" ]; then
+  configure-nginx "$site_name" --port "$new_port" --domain "$domain" --https
+else
+  configure-nginx "$site_name" --port "$new_port" --domain "$domain"
+fi
+
+# Check if Tor hosting is enabled for this site
+tor_hosting_enabled=0
+if is-tor-installed; then
+  tor_config_path=$(torrc-path 2>/dev/null || echo "")
+  if [ -n "$tor_config_path" ] && [ -f "$tor_config_path" ]; then
+    if grep -q "^HiddenServiceDir.*${site_name}" "$tor_config_path" 2>/dev/null; then
+      tor_hosting_enabled=1
+    fi
+  fi
+fi
+
+# Update Tor hidden service configuration if enabled
+if [ "$tor_hosting_enabled" -eq 1 ]; then
+  step "Updating Tor hidden service configuration..."
+  
+  # Update the HiddenServicePort line in torrc
+  temp_torrc=$(mktemp)
+  in_site_block=0
+  
+  while IFS= read -r line; do
+    # Check if we're entering this site's hidden service block
+    if printf '%s' "$line" | grep -q "^HiddenServiceDir.*${site_name}"; then
+      in_site_block=1
+      printf '%s\n' "$line" >> "$temp_torrc"
+      continue
+    fi
+    
+    # If we're in this site's block and hit HiddenServicePort, update it
+    if [ "$in_site_block" -eq 1 ]; then
+      if printf '%s' "$line" | grep -q "^HiddenServicePort"; then
+        printf 'HiddenServicePort 80 127.0.0.1:%s\n' "$new_port" >> "$temp_torrc"
+        in_site_block=0
+        continue
+      fi
+    fi
+    
+    printf '%s\n' "$line" >> "$temp_torrc"
+  done < "$tor_config_path"
+  
+  sudo cp "$temp_torrc" "$tor_config_path"
+  sudo chmod 644 "$tor_config_path"
+  rm -f "$temp_torrc"
+  
+  # Restart Tor to apply changes
+  step "Restarting Tor..."
+  restart-tor || warn "change-site-port: failed to restart Tor"
+fi
+
+# Restart nginx if it was running
+if [ "$is_serving" -eq 1 ]; then
+  step "Restarting nginx..."
+  stop-site "$site_name" 2>/dev/null || true
+  sleep 1
+  serve-site "$site_name"
+fi
+
+success "Port changed to $new_port for site '$site_name'"
+info "URL: http://localhost:$new_port"
+
+if [ "$is_serving" -eq 0 ]; then
+  info "Start the site with: serve-site $site_name"
+fi
