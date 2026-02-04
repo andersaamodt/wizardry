@@ -61,7 +61,7 @@ if config-has "$CONFIG_FILE" "cd-listen" 2>/dev/null; then
                 config-set "$CONFIG_FILE" "cd-listen" "0"
                 
                 # Stop any active listening
-                command -v stop-listening >/dev/null 2>&1 && stop-listening 2>/dev/null || true
+                command -v listen >/dev/null 2>&1 && . listen --stop 2>/dev/null || true
                 
                 printf '%s\n' "✓ cd-listen hook disabled."
                 return 0
@@ -86,6 +86,6 @@ if [ -f "$load_cd_hook_path" ]; then
 fi
 
 # Start listening in current directory
-command -v start-listening >/dev/null 2>&1 && start-listening 2>/dev/null || true
+command -v listen >/dev/null 2>&1 && . listen 2>/dev/null || true
 
 printf '%s\n' "✓ cd-listen hook enabled. Will auto-listen when changing directories."
