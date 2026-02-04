@@ -50,6 +50,37 @@ Documents all deviations from project standards with justification.
 
 ## 2. Code Structure Exemptions
 
+### checkbashisms: Shell-Specific Features with Runtime Guards
+
+**Status**: Documented exemption pattern
+
+**Pattern**: Use shell-specific features (like `builtin` keyword) with runtime version checks and exemption comments
+
+**Example** (from `load-cd-hook` and `jump-to-marker`):
+```sh
+# checkbashisms: builtin is bash/zsh-specific but guarded by runtime version check
+if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
+    # shellcheck disable=SC2039
+    builtin cd "$@" || return $?
+else
+    command cd "$@" || return $?
+fi
+```
+
+**Why This Works**:
+1. Runtime check ensures bash/zsh-specific code only runs in bash/zsh
+2. Comment exempts line from checkbashisms (tool respects comments explaining usage)
+3. Fallback `command cd` works in POSIX sh
+4. shellcheck directive silences SC2039 (bash/zsh-specific builtin)
+
+**CRITICAL**: Never wrap `builtin` in eval (e.g., `eval 'builtin cd "$@"'`) - this breaks argument expansion for relative paths. The eval is ONLY for the version check, not the command itself.
+
+**Affected Files**:
+- `spells/.arcana/mud/load-cd-hook` (cd function override)
+- `spells/translocation/jump-to-marker` (bypass cd hook for jump)
+
+**Related**: See LESSONS.md line 197 - eval-wrapped builtins are an antipattern
+
 ### Conditional Imps: No `set -eu`
 
 **Affected**: `spells/.imps/cond/`, `spells/.imps/lex/`, `spells/.imps/menu/`
