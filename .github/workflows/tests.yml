@@ -167,7 +167,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/check-attribute-tool spells/.imps/fs/list-attributes spells/.imps/fs/get-attribute
-      - name: Pre-install checkbashisms for level 22 testing
+      - name: Pre-install checkbashisms for level 21+ testing
         run: ./spells/.arcana/core/install-checkbashisms
       - name: Run unit tests (levels ${{ matrix.levels }})
         run: |

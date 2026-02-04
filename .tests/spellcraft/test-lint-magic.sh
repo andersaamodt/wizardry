@@ -488,12 +488,6 @@ EOF
 
 test_shows_all_bashism_violations_with_reasons() {
   # Test that all bashism violations are shown with detailed reasons
-  # Skip if checkbashisms is not available (installed at level 22+)
-  if ! has checkbashisms; then
-    TEST_SKIP_REASON="(requires checkbashisms)"
-    return 222
-  fi
-  
   spell_dir=$(make_spell_dir)
   
   cat >"$spell_dir/bashism-spell" <<'EOF'
