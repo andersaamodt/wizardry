@@ -47,9 +47,10 @@ set +u
 # The cd override - Step 3 (with listen sourcing enabled)
 cd() {
     # Use builtin for bash/zsh (required for function override), command for POSIX sh
-    # Note: builtin is wrapped in eval to bypass checkbashisms static analysis
+    # checkbashisms: builtin is bash/zsh-specific but guarded by runtime version check
     if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
-        eval 'builtin cd "$@"' || return $?
+        # shellcheck disable=SC2039
+        builtin cd "$@" || return $?
     else
         command cd "$@" || return $?
     fi
@@ -85,8 +86,7 @@ cd() {
     if [ "$cd_listen_value" = "1" ]; then
         # Source listen directly so it can access PS1 from this shell context
         if command -v listen >/dev/null 2>&1; then
-            # Temporarily show errors to debug relative path issue
-            . listen || true
+            . listen 2>/dev/null || true
         fi
     fi
     
