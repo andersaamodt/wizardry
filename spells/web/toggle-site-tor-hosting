@@ -141,6 +141,9 @@ if [ "$hs_configured" -eq 1 ]; then
         continue
       fi
       if [ "$in_hs_block" -eq 1 ]; then
+        if printf '%s' "$line" | grep -q "^HiddenServiceVersion"; then
+          continue
+        fi
         if printf '%s' "$line" | grep -q "^HiddenServicePort"; then
           in_hs_block=0
           continue
@@ -155,6 +158,8 @@ if [ "$hs_configured" -eq 1 ]; then
     rm -f "$temp_torrc"
     
     printf '%s\n' "Tor hidden service disabled for site '$site_name'"
+    printf '%s\n' "Fixing tor permissions..."
+    repair-tor-permissions >/dev/null 2>&1 || true
     printf '%s\n' "Restarting tor..."
     restart-tor || true
 else
@@ -175,6 +180,8 @@ else
   sudo chmod 644 "$tor_config_path"
   
   printf '%s\n' "Hidden service configured for site '$site_name'"
+  printf '%s\n' "Fixing tor permissions..."
+  repair-tor-permissions >/dev/null 2>&1 || true
   printf '%s\n' "Restarting tor..."
   
   if restart-tor; then
@@ -182,7 +189,7 @@ else
     sleep 2
     
     # Read the hidden service address
-    hostname_file="${hs_dir}hostname"
+    hostname_file="${hs_dir}/hostname"
     if [ -f "$hostname_file" ] && [ -r "$hostname_file" ]; then
       onion_address=$(cat "$hostname_file" 2>/dev/null || echo "")
       if [ -n "$onion_address" ]; then
