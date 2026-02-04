@@ -39,54 +39,53 @@ fi
 # Get the site's port
 port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || echo "8080")
 
-# Check if tor is installed
-if ! is-tor-installed; then
-  printf '%s\n' "Tor is not installed."
-  printf '%s' "Would you like to install Tor now? [y/n]: "
-  IFS= read -r install_choice || exit 1
-  case $install_choice in
-  y|Y)
-    install-tor || exit 1
-    ;;
-  *)
-    printf '%s\n' "Tor installation skipped. Cannot set up hidden service without Tor."
-    exit 0
-    ;;
-  esac
-fi
-
-# Check if tor daemon is enabled
-if ! is-tor-daemon-enabled; then
-  printf '%s\n' "Tor daemon is not set to start at startup."
-  printf '%s' "Would you like to enable Tor daemon to start at startup? [y/n]: "
-  IFS= read -r daemon_choice || exit 1
-  case $daemon_choice in
-  y|Y)
-    enable-tor-daemon || exit 1
-    ;;
-  *)
-    printf '%s\n' "Note: Tor daemon not enabled for automatic startup."
-    ;;
-  esac
-fi
-
-# Check if tor is running
-if ! is-tor-running; then
-  printf '%s\n' "Tor is not currently running."
-  printf '%s' "Would you like to start Tor now? [y/n]: "
-  IFS= read -r start_choice || exit 1
-  case $start_choice in
-  y|Y)
-    start-tor || exit 1
-    ;;
-  *)
-    printf '%s\n' "Note: Tor not started. You'll need to start it for the hidden service to work."
-    ;;
-  esac
-fi
-
-# Get torrc path
+# Only check tor dependencies when ENABLING (not when disabling)
+# Check if this site already has a hidden service configured
 tor_config_path=$(torrc-path) || exit 1
+hs_configured=0
+if grep -q "^HiddenServiceDir.*${site_name}" "$tor_config_path" 2>/dev/null; then
+  hs_configured=1
+fi
+
+# Only do tor checks/prompts when enabling (hs_configured=0)
+if [ "$hs_configured" -eq 0 ]; then
+  # Check if tor is installed
+  if ! is-tor-installed; then
+    printf '%s\n' "Tor is not installed."
+    printf '%s' "Would you like to install Tor now? [y/n]: "
+    IFS= read -r install_choice || exit 1
+    case $install_choice in
+    y|Y)
+      install-tor || exit 1
+      ;;
+    *)
+      printf '%s\n' "Tor installation skipped. Cannot set up hidden service without Tor."
+      exit 0
+      ;;
+    esac
+  fi
+
+  # Check if tor daemon is enabled
+  if ! is-tor-daemon-enabled; then
+    printf '%s\n' "Tor daemon is not set to start at startup."
+    printf '%s' "Would you like to enable Tor daemon to start at startup? [y/n]: "
+    IFS= read -r daemon_choice || exit 1
+    case $daemon_choice in
+    y|Y)
+      enable-tor-daemon || exit 1
+      ;;
+    *)
+      printf '%s\n' "Note: Tor daemon not enabled for automatic startup."
+      ;;
+    esac
+  fi
+
+  # Auto-start tor if not running (no prompt needed)
+  if ! is-tor-running; then
+    printf '%s\n' "Starting tor..."
+    start-tor || exit 1
+  fi
+fi
 
 # Detect platform for proper paths
 if command -v detect-distro >/dev/null 2>&1; then
