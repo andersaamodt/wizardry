@@ -186,18 +186,26 @@ while IFS= read -r target; do
     if [ "$first_line" != "#!/bin/sh" ] && [ "$first_line" != "#! /bin/sh" ]; then
       posix_issue="uses $first_line (should use #!/bin/sh)"
       posix_failures=$((posix_failures + 1))
-    else
-      # Run checkbashisms
-      if ! checkbashisms -f "$path" >/dev/null 2>&1; then
-        posix_issue="POSIX compliance violation (run checkbashisms for details)"
-        posix_failures=$((posix_failures + 1))
-      fi
-    fi
-    
-    if [ -n "$posix_issue" ]; then
       posix_fail_msg="FAIL $target: $posix_issue"
       posix_failed_list="${posix_failed_list}${posix_fail_msg}
 "
+    else
+      # Run checkbashisms and capture output
+      bashisms_tmp=$(temp-file lint-magic-bashisms) || true
+      if [ -n "$bashisms_tmp" ]; then
+        if ! checkbashisms -f "$path" >"$bashisms_tmp" 2>&1; then
+          posix_failures=$((posix_failures + 1))
+          # Capture all violations with reasons
+          posix_fail_msg="FAIL $target:"
+          while IFS= read -r violation_line; do
+            posix_fail_msg="${posix_fail_msg}
+  ${violation_line}"
+          done <"$bashisms_tmp"
+          posix_failed_list="${posix_failed_list}${posix_fail_msg}
+"
+        fi
+        cleanup-file "$bashisms_tmp"
+      fi
     fi
   fi
   
