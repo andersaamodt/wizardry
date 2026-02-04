@@ -68,8 +68,7 @@ log_entry="[$timestamp] $player_name thinks, \"$thought\""
 avatar_log="$avatar_path/.log"
 
 # Create or append to log file
-# Use subshell to force immediate buffer flush for SSE/tail -f visibility
-if (printf '%s\n' "$log_entry" >> "$avatar_log") 2>/dev/null; then
+if printf '%s\n' "$log_entry" >> "$avatar_log" 2>/dev/null; then
   # Echo to stdout for the thinker to see
   # Colorize player name if outputting to a terminal
   if [ -t 1 ] && [ -z "${NO_COLOR-}" ]; then
