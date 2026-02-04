@@ -34,7 +34,8 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
     printf 'Restarting tor via launchd...\n'
     
     # Unload (stop) the service - always try to unload first
-    # Use -w flag to also disable it temporarily
+    # Use -w flag to also disable it temporarily, ensuring clean state for reload
+    # This allows the subsequent load -w to work even if service was previously disabled
     sudo launchctl unload -w "$plist_file" 2>/dev/null || true
     sleep 2
     
@@ -54,6 +55,7 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
       fi
     else
       # Load failed - try to recover by recreating the service
+      # create-tor-launchd-service recreates the plist and loads the service
       printf 'Warning: launchctl load failed, attempting to recreate service...\n' >&2
       if create-tor-launchd-service; then
         printf 'Tor service recreated and started.\n'
