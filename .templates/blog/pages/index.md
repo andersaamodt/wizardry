@@ -4,8 +4,6 @@ title: My Personal Blog
 
 # Welcome to My Blog
 
-**Navigation:** [About](/pages/about.html) | [Tags](/pages/tags.html) | [Login](/pages/ssh-auth.html) | [Admin](/pages/admin.html)
-
 This is a personal blog built with wizardry web. Posts are content-addressable, version-tracked, and ready for future Nostr integration.
 
 ## Search
