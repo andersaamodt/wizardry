@@ -155,5 +155,32 @@
       }, 300);
     }, 100);
   }
+
+  const themeStorageKey = 'wizardry_blog_theme';
+  const defaultTheme = 'archmage';
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+
+  const savedTheme = localStorage.getItem(themeStorageKey) || defaultTheme;
+  if (!localStorage.getItem(themeStorageKey)) {
+    localStorage.setItem(themeStorageKey, savedTheme);
+  }
+  applyTheme(savedTheme);
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const themeSelect = document.getElementById('theme-select');
+    if (!themeSelect) {
+      return;
+    }
+
+    themeSelect.value = savedTheme;
+    themeSelect.addEventListener('change', (event) => {
+      const nextTheme = event.target.value;
+      localStorage.setItem(themeStorageKey, nextTheme);
+      applyTheme(nextTheme);
+    });
+  });
 })();
 </script>
