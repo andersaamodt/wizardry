@@ -15,7 +15,7 @@
   --light-bg: #f3f4f6;
   --code-bg: #e5e7eb;
   --shadow: rgba(0,0,0,0.1);
-  --nav-link-hover: #dbeafe;
+  --nav-link-hover: #d1fae5;
   --nav-link-active: #3b82f6;
 }
 
@@ -32,6 +32,10 @@ body {
   color: var(--text);
   background: #ffffff;
   min-height: 100vh;
+}
+
+body > *:first-child {
+  margin-top: 2rem;
 }
 
 /* Header & Navigation */
@@ -126,11 +130,11 @@ header h1 {
 }
 
 .nav-search button {
-  padding: 0.5rem 0.8rem;
+  padding: 0.5rem 1rem;
   background: var(--light-bg);
   color: #000000;
   border: 1px solid var(--border);
-  border-left: none;
+  border-left: 1px solid var(--border);
   border-radius: 0 20px 20px 0;
   font-size: 0.9rem;
   cursor: pointer;
@@ -219,6 +223,10 @@ header h1 {
 
 .nav-right.slide-left {
   transform: translateX(-80px);
+}
+
+.nav-right.slide-left .btn-login {
+  transform: none !important;
 }
 
 /* Typography */
