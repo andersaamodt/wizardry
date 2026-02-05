@@ -159,18 +159,12 @@
   const defaultTheme = 'archmage';
   let currentTheme = defaultTheme;
 
-  function applyTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-  }
-
   function updateThemeSelect() {
     const themeSelect = document.getElementById('theme-select');
     if (themeSelect) {
       themeSelect.value = currentTheme;
     }
   }
-
-  applyTheme(currentTheme);
 
   async function loadTheme() {
     let selectedTheme = defaultTheme;
@@ -188,8 +182,14 @@
     }
 
     currentTheme = selectedTheme;
-    applyTheme(currentTheme);
     updateThemeSelect();
+  }
+
+  function updateThemeStylesheet(theme) {
+    const themeLink = document.getElementById('theme-stylesheet');
+    if (themeLink) {
+      themeLink.href = `/static/themes/${theme}.css`;
+    }
   }
 
   async function saveTheme(nextTheme) {
@@ -202,7 +202,6 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    updateThemeSelect();
     loadTheme();
 
     const themeSelect = document.getElementById('theme-select');
@@ -212,7 +211,8 @@
 
     themeSelect.addEventListener('change', (event) => {
       const nextTheme = event.target.value;
-      applyTheme(nextTheme);
+      currentTheme = nextTheme;
+      updateThemeStylesheet(nextTheme);
       saveTheme(nextTheme);
     });
   });

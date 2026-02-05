@@ -1,0 +1,36 @@
+#!/bin/sh
+# blog-theme.css - Serve current blog theme CSS
+
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "text/css; charset=utf-8"
+http-end-headers
+
+SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
+site_name="${WIZARDRY_SITE_NAME:-default}"
+site_config="$SITES_DIR/.sitedata/$site_name/site.conf"
+
+theme=$(config-get "$site_config" theme 2>/dev/null || echo "")
+if [ -z "$theme" ]; then
+  theme="archmage"
+fi
+
+case "$theme" in
+  archmage|wizard|warlock|sorcerer|sorceress|enchanter|illusionist|druid|empath|shaman|geomancer|hermeticist|necromancer|conjurer|pyromancer|chronomancer|alchemist|seer|adept)
+    ;;
+  *)
+    theme="archmage"
+    ;;
+esac
+
+theme_file="$SITES_DIR/$site_name/build/static/themes/${theme}.css"
+if [ ! -f "$theme_file" ]; then
+  theme_file="$SITES_DIR/$site_name/site/static/themes/${theme}.css"
+fi
+
+if [ -f "$theme_file" ]; then
+  cat "$theme_file"
+else
+  printf '/* theme not found: %s */\n' "$theme"
+fi
