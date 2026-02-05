@@ -1070,10 +1070,10 @@ function updateConnectionStatus(status, isClickable) {
     // Show reconnecting with spinner
     // Use global spinner to prevent animation reset
     
-    // First, ensure element is invisible before changing classes
+    // First, ensure element is completely invisible before changing classes
     statusElement.classList.remove('visible');  // Start fade-out first
     
-    // Wait a brief moment for opacity to start transitioning, then remove background
+    // Wait for fade-out transition to complete (300ms), then change classes
     setTimeout(function() {
       statusElement.classList.remove('connection-lost');
       
@@ -1094,7 +1094,7 @@ function updateConnectionStatus(status, isClickable) {
       statusElement.onmouseenter = null;
       statusElement.onmouseleave = null;
       if (sendBtn) sendBtn.disabled = true;
-    }, 50);  // Small delay to ensure opacity transition has started
+    }, 300);  // Wait for full fade-out transition (matches CSS transition duration)
   } else if (status === 'lost') {
     // Show disconnected (clickable pill, no spinner)
     
