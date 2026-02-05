@@ -182,7 +182,6 @@
     }
 
     currentTheme = selectedTheme;
-    updateThemeStylesheet(selectedTheme);
     updateThemeSelect();
   }
 
