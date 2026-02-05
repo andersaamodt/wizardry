@@ -15,7 +15,8 @@
 </button>
 </form>
 <a href="/pages/admin.html" class="nav-admin" style="display: none;">Admin</a>
-<a href="/pages/ssh-auth.html" class="btn-login">Login</a>
+<a href="/pages/ssh-auth.html" class="btn-register">Register</a>
+<button class="btn-login" id="login-btn">Login</button>
 </div>
 </nav>
 
@@ -44,5 +45,57 @@
       link.classList.add('active');
     }
   });
+
+  // Login button functionality
+  const loginBtn = document.getElementById('login-btn');
+  const registerBtn = document.querySelector('.btn-register');
+  const navRight = document.querySelector('.nav-right');
+  
+  if (loginBtn) {
+    loginBtn.addEventListener('click', async function(e) {
+      e.preventDefault();
+      
+      // Try WebAuthn authentication
+      try {
+        // Check if WebAuthn is available
+        if (!window.PublicKeyCredential) {
+          console.log('WebAuthn not supported, showing register option');
+          showRegisterOption();
+          return;
+        }
+        
+        // Attempt to authenticate
+        // In a real implementation, this would call your WebAuthn authentication endpoint
+        console.log('Attempting WebAuthn authentication...');
+        
+        // Placeholder: Simulate authentication check
+        // Replace this with actual WebAuthn authentication logic
+        const hasCredentials = false; // This would check if user has registered credentials
+        
+        if (!hasCredentials) {
+          console.log('No credentials found, showing register option');
+          showRegisterOption();
+        } else {
+          // Perform actual authentication
+          console.log('Performing authentication...');
+          // Your WebAuthn authentication code here
+        }
+        
+      } catch (error) {
+        console.error('Authentication error:', error);
+        showRegisterOption();
+      }
+    });
+  }
+  
+  function showRegisterOption() {
+    // Slide the nav-right container to the left
+    navRight.classList.add('slide-left');
+    
+    // Show the register button with animation
+    setTimeout(() => {
+      registerBtn.classList.add('show');
+    }, 100);
+  }
 })();
 </script>
