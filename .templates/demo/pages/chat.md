@@ -1102,7 +1102,7 @@ function updateConnectionStatus(status, isClickable) {
       setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
       
       // Force reflow to ensure opacity change is applied
-      statusElement.offsetHeight;
+      void statusElement.offsetHeight;
       
       // Clear inline style and add visible class to fade in with new content
       statusElement.style.opacity = '';
