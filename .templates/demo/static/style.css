@@ -1235,12 +1235,12 @@ pre code {
   position: absolute;
   right: 110px;  /* Position to left of Send button with proper spacing */
   top: 50%;
-  transform: translateY(-50%);
+  transform: translateY(-48%);  /* Slightly lower than perfect center */
   color: #999;  /* Light grey text to match spinner */
   font-size: 0.85em;  /* Smaller, less obtrusive */
   font-style: italic;
   opacity: 0;
-  transition: opacity 0.3s ease-in-out, background-color 0.3s ease-in-out, padding 0.3s ease-in-out, min-width 0.3s ease-in-out, transform 0.3s ease-in-out, color 0.3s ease-in-out;  /* Smooth transitions for all properties */
+  transition: opacity 0.3s ease-in-out, background-color 0.3s ease-in-out, min-width 0.3s ease-in-out, transform 0.3s ease-in-out, color 0.3s ease-in-out;  /* Smooth transitions (no padding) */
   pointer-events: none;  /* Don't interfere with clicking */
   width: 110px;  /* Fixed width to fit both Disconnected and Retry */
   text-align: center;  /* Center text within fixed width */
@@ -1264,9 +1264,9 @@ pre code {
   pointer-events: auto;  /* Allow clicking */
   cursor: pointer;
   color: #666;
-  transform: translateY(-50%);  /* Match the vertical alignment of Reconnecting */
+  transform: translateY(-48%);  /* Slightly lower than perfect center */
   font-style: italic;  /* Match the italic style of Connecting/Reconnecting */
-  transition: opacity 0.3s ease-in-out, padding 0.3s ease-in-out, min-width 0.3s ease-in-out, transform 0.3s ease-in-out, color 0.3s ease-in-out;  /* No background-color transition for instant hover */
+  transition: opacity 0.3s ease-in-out, min-width 0.3s ease-in-out, transform 0.3s ease-in-out, color 0.3s ease-in-out;  /* No background-color or padding transition for instant changes */
 }
 
 #connecting-status.connection-lost:hover {
