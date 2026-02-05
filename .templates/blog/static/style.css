@@ -1,13 +1,13 @@
 /* Personal Blog Template Styles */
 
 :root {
-  --primary: #1e3a5f;
-  --accent: #4a90e2;
-  --accent-dark: #357abd;
+  --primary: #1e40af;
+  --accent: #3b82f6;
+  --accent-dark: #2563eb;
   --teal: #14b8a6;
   --green: #10b981;
-  --purple: #8b5cf6;
-  --violet: #7c3aed;
+  --purple: #a855f7;
+  --violet: #8b5cf6;
   --text: #1f2937;
   --light-text: #6b7280;
   --border: #d1d5db;
@@ -16,7 +16,7 @@
   --code-bg: #e5e7eb;
   --shadow: rgba(0,0,0,0.1);
   --nav-link-hover: #dbeafe;
-  --nav-link-active: #bfdbfe;
+  --nav-link-active: #3b82f6;
 }
 
 * {
@@ -57,15 +57,13 @@ header h1 {
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 2rem;
-  background: transparent;
-  border-bottom: 2px solid var(--border);
+  background: var(--bg);
   margin-bottom: 0;
   position: sticky;
   top: 0;
   z-index: 100;
   width: 100vw;
   margin-left: calc(-50vw + 50%);
-  background: var(--bg);
 }
 
 .nav-center {
@@ -80,8 +78,8 @@ header h1 {
   color: var(--text);
   text-decoration: none;
   font-weight: 600;
-  font-size: 1.05rem;
-  padding: 0.6rem 1.2rem;
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
   border-radius: 6px;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
@@ -94,7 +92,7 @@ header h1 {
 
 .nav-center a.active {
   background-color: var(--nav-link-active);
-  color: var(--accent-dark);
+  color: white;
   font-weight: 700;
   pointer-events: none;
   cursor: default;
@@ -113,12 +111,13 @@ header h1 {
 }
 
 .nav-search input[type="text"] {
-  padding: 0.4rem 0.8rem;
+  padding: 0.5rem 0.8rem;
   border: 1px solid var(--border);
-  border-radius: 4px 0 0 4px;
+  border-radius: 20px 0 0 20px;
   font-size: 0.9rem;
   width: 180px;
   outline: none;
+  border-right: none;
 }
 
 .nav-search input[type="text"]:focus {
@@ -126,15 +125,19 @@ header h1 {
 }
 
 .nav-search button {
-  padding: 0.4rem 0.8rem;
+  padding: 0.5rem 0.8rem;
   background: var(--accent);
   color: white;
   border: none;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 20px 20px 0;
   font-size: 0.9rem;
   cursor: pointer;
   font-weight: 600;
   transition: background 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
 }
 
 .nav-search button:hover {
@@ -145,6 +148,7 @@ header h1 {
   color: var(--text);
   text-decoration: none;
   font-weight: 500;
+  font-size: 0.9rem;
   padding: 0.5rem 1rem;
   border-radius: 6px;
   transition: background-color 0.2s ease, color 0.2s ease;
@@ -161,23 +165,23 @@ header h1 {
   display: inline-block;
   background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
   color: white !important;
-  padding: 0.5rem 1.5rem;
+  padding: 0.5rem 1.2rem;
   border-radius: 6px;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   text-decoration: none !important;
-  box-shadow: 0 2px 4px rgba(74, 144, 226, 0.2);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
   transition: box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .btn-login:hover {
-  box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3);
-  background: linear-gradient(135deg, var(--accent-dark) 0%, #2563a8 100%);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+  background: linear-gradient(135deg, var(--accent-dark) 0%, #1d4ed8 100%);
   text-decoration: none;
 }
 
 .btn-login:active {
-  box-shadow: 0 1px 2px rgba(74, 144, 226, 0.3);
+  box-shadow: 0 1px 2px rgba(59, 130, 246, 0.3);
 }
 
 /* Typography */

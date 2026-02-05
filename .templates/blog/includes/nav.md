@@ -7,7 +7,7 @@
 <div class="nav-right">
 <form class="nav-search" method="get" action="/cgi/blog-search">
 <input type="text" name="q" placeholder="Search..." />
-<button type="submit">Go</button>
+<button type="submit" aria-label="Search">🔍</button>
 </form>
 <a href="/pages/admin.html" class="nav-admin" style="display: none;">Admin</a>
 <a href="/pages/ssh-auth.html" class="btn-login">Login</a>
