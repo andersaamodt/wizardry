@@ -23,6 +23,7 @@ This is a personal blog built with wizardry web. Posts are content-addressable, 
     <option value="hermeticist">Hermeticist</option>
     <option value="hierophant">Hierophant</option>
     <option value="illusionist">Illusionist</option>
+    <option value="lich">Lich</option>
     <option value="necromancer">Necromancer</option>
     <option value="pyromancer">Pyromancer</option>
     <option value="seer">Seer</option>
