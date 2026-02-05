@@ -1,0 +1,31 @@
+#!/bin/sh
+# blog-set-theme - Update blog theme (site-wide)
+
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "application/json"
+http-end-headers
+
+theme=$(get-query-param "theme")
+
+if [ -z "$theme" ]; then
+  printf '{"success":false,"error":"Theme is required"}\n'
+  exit 0
+fi
+
+case "$theme" in
+  archmage|warlock|druid|necromancer|conjurer|pyromancer|stormcaller|chronomancer|alchemist|seer)
+    ;;
+  *)
+    printf '{"success":false,"error":"Invalid theme"}\n'
+    exit 0
+    ;;
+esac
+
+site_root=$(get-site-data-dir "..")
+site_config="$site_root/site.conf"
+
+config-set "$site_config" theme "$theme"
+
+printf '{"success":true,"theme":"%s"}\n' "$theme"

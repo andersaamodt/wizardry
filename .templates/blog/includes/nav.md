@@ -156,30 +156,64 @@
     }, 100);
   }
 
-  const themeStorageKey = 'wizardry_blog_theme';
   const defaultTheme = 'archmage';
+  let currentTheme = defaultTheme;
 
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
   }
 
-  const savedTheme = localStorage.getItem(themeStorageKey) || defaultTheme;
-  if (!localStorage.getItem(themeStorageKey)) {
-    localStorage.setItem(themeStorageKey, savedTheme);
+  function updateThemeSelect() {
+    const themeSelect = document.getElementById('theme-select');
+    if (themeSelect) {
+      themeSelect.value = currentTheme;
+    }
   }
-  applyTheme(savedTheme);
+
+  applyTheme(currentTheme);
+
+  async function loadTheme() {
+    let selectedTheme = defaultTheme;
+
+    try {
+      const response = await fetch('/cgi/blog-get-config');
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.theme) {
+          selectedTheme = data.theme;
+        }
+      }
+    } catch (error) {
+      console.warn('Unable to load theme config:', error);
+    }
+
+    currentTheme = selectedTheme;
+    applyTheme(currentTheme);
+    updateThemeSelect();
+  }
+
+  async function saveTheme(nextTheme) {
+    try {
+      const params = new URLSearchParams({ theme: nextTheme });
+      await fetch('/cgi/blog-set-theme?' + params.toString());
+    } catch (error) {
+      console.warn('Unable to save theme config:', error);
+    }
+  }
 
   document.addEventListener('DOMContentLoaded', () => {
+    updateThemeSelect();
+    loadTheme();
+
     const themeSelect = document.getElementById('theme-select');
     if (!themeSelect) {
       return;
     }
 
-    themeSelect.value = savedTheme;
     themeSelect.addEventListener('change', (event) => {
       const nextTheme = event.target.value;
-      localStorage.setItem(themeStorageKey, nextTheme);
       applyTheme(nextTheme);
+      saveTheme(nextTheme);
     });
   });
 })();

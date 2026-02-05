@@ -11,7 +11,7 @@ This is a personal blog built with wizardry web. Posts are content-addressable, 
 <div class="theme-panel">
   <label for="theme-select">Theme</label>
   <select id="theme-select">
-    <option value="archmage" selected>Archmage (Sapphire)</option>
+    <option value="archmage">Archmage (Sapphire)</option>
     <option value="warlock">Warlock (Amethyst)</option>
     <option value="druid">Druid (Verdant)</option>
     <option value="necromancer">Necromancer (Obsidian &amp; Teal)</option>
