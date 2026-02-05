@@ -10,11 +10,12 @@
   --light-text: #6b6b6b;
   --heading-color: #c99a4a;
   --border: #cbd5e1;
-  --bg: #eef6e8;
-  --light-bg: #e2efdb;
+  --bg: #eef4f9;
+  --light-bg: #dde8f2;
   --code-bg: #e5dfd6;
   --shadow: rgba(58, 58, 58, 0.12);
   --nav-link-hover: #e5dfd6;
   --nav-link-active: #8b7ba5;
   --nav-icon: #c99a4a;
+  --select-bg: #e2efdb;
 }
