@@ -4,8 +4,6 @@ title: About
 
 # About
 
-[← Back to Home](/pages/index.html)
-
 ## About This Blog
 
 Welcome to my personal blog. This is a place where I share my thoughts, ideas, and experiences.
@@ -53,7 +51,3 @@ Unless otherwise noted, all content on this blog is licensed under [CC BY 4.0](h
 ## Contact
 
 Feel free to reach out at [your email].
-
----
-
-[Back to Home](/pages/index.html) | [Tag Index](/pages/tags.html)
