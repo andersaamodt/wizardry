@@ -1242,7 +1242,7 @@ pre code {
   opacity: 0;
   transition: opacity 0.3s ease-in-out, background-color 0.3s ease-in-out, padding 0.3s ease-in-out, min-width 0.3s ease-in-out, transform 0.3s ease-in-out, color 0.3s ease-in-out;  /* Smooth transitions for all properties */
   pointer-events: none;  /* Don't interfere with clicking */
-  width: 95px;  /* Fixed width to prevent size changes */
+  width: 110px;  /* Fixed width to fit both Disconnected and Retry */
   text-align: center;  /* Center text within fixed width */
 }
 
@@ -1252,7 +1252,7 @@ pre code {
 
 /* Connection lost (Disconnected) status - clickable pill */
 #connecting-status.connection-lost {
-  background: rgba(128, 128, 128, 0.15);  /* More translucent grey background */
+  background: rgba(128, 128, 128, 0.12);  /* More transparent grey background */
   padding: 0.2rem 0.8rem;  /* Slightly thinner pill */
   border-radius: 1rem;  /* Pill shape with rounded corners */
   pointer-events: auto;  /* Allow clicking */
@@ -1263,18 +1263,32 @@ pre code {
 }
 
 #connecting-status.connection-lost:hover {
-  background: rgba(128, 128, 128, 0.25);  /* Slightly darker on hover */
+  background: rgba(128, 128, 128, 0.22);  /* Slightly darker on hover */
   color: #444;
 }
 
 /* Alternative positioning when chat input area is hidden (no room selected) */
 #connecting-status.no-room-position {
-  position: fixed;
+  position: absolute;
   right: auto;
-  left: 20px;
-  bottom: 120px;  /* Above username widget */
-  top: auto;
-  transform: none;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);  /* Center in empty message box */
+}
+
+/* Disabled state for Create Room link */
+#create-room-link.disabled {
+  color: #999;
+  cursor: not-allowed;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* Disabled state for username Change button */
+.username-display button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #999;
 }
 
 .chat-input-area textarea,

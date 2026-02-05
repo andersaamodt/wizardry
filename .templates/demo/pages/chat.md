@@ -950,6 +950,8 @@ function updateConnectionStatus(status, isClickable) {
   var statusElement = document.getElementById('connecting-status');
   var sendBtn = document.getElementById('send-btn');
   var chatInputArea = document.getElementById('chat-input-area');
+  var createRoomLink = document.getElementById('create-room-link');
+  var usernameChangeBtn = document.querySelector('.username-display button');
   
   // Determine if we should use alternate positioning (when no room selected)
   var useAlternatePosition = !chatInputArea || chatInputArea.style.display === 'none';
@@ -960,9 +962,12 @@ function updateConnectionStatus(status, isClickable) {
     statusElement.id = 'connecting-status';
     
     if (useAlternatePosition) {
-      // Position above username bar when input area is hidden
-      document.querySelector('.chat-sidebar').appendChild(statusElement);
-      statusElement.classList.add('no-room-position');
+      // Position in center of empty message box when input area is hidden
+      var chatMessages = document.getElementById('chat-messages');
+      if (chatMessages) {
+        chatMessages.appendChild(statusElement);
+        statusElement.classList.add('no-room-position');
+      }
     } else if (chatInputArea) {
       chatInputArea.appendChild(statusElement);
       statusElement.classList.remove('no-room-position');
@@ -975,8 +980,11 @@ function updateConnectionStatus(status, isClickable) {
     // Update positioning if needed
     if (useAlternatePosition && !statusElement.classList.contains('no-room-position')) {
       // Move to alternate position
-      document.querySelector('.chat-sidebar').appendChild(statusElement);
-      statusElement.classList.add('no-room-position');
+      var chatMessages = document.getElementById('chat-messages');
+      if (chatMessages) {
+        chatMessages.appendChild(statusElement);
+        statusElement.classList.add('no-room-position');
+      }
     } else if (!useAlternatePosition && statusElement.classList.contains('no-room-position')) {
       // Move back to input area
       if (chatInputArea) {
@@ -990,6 +998,21 @@ function updateConnectionStatus(status, isClickable) {
   if (window.sseReconnectTimeout) {
     clearTimeout(window.sseReconnectTimeout);
     window.sseReconnectTimeout = null;
+  }
+  
+  // Manage disabled state for Create Room link and username Change button
+  var isDisconnected = (status === 'lost' || status === 'reconnecting');
+  if (createRoomLink) {
+    if (isDisconnected) {
+      createRoomLink.classList.add('disabled');
+      createRoomLink.onclick = function(e) { e.preventDefault(); return false; };
+    } else {
+      createRoomLink.classList.remove('disabled');
+      createRoomLink.onclick = function() { toggleCreateRoom(); return false; };
+    }
+  }
+  if (usernameChangeBtn) {
+    usernameChangeBtn.disabled = isDisconnected;
   }
   
   if (status === 'connected') {
@@ -1036,29 +1059,31 @@ function updateConnectionStatus(status, isClickable) {
       statusElement.appendChild(spinner);
     }
     statusElement.classList.remove('connection-lost');
-    statusElement.classList.add('visible');
+    // Ensure fade-in animation happens
+    if (!statusElement.classList.contains('visible')) {
+      statusElement.classList.add('visible');
+    }
     statusElement.onclick = null;
     statusElement.onmouseenter = null;
     statusElement.onmouseleave = null;
     if (sendBtn) sendBtn.disabled = true;
   } else if (status === 'lost') {
     // Show disconnected (clickable pill, no spinner)
-    // Add connection-lost class first, then set text in same frame to avoid flash
+    // Pre-set the text before adding classes to avoid text appearing before resize
+    statusElement.innerHTML = 'Disconnected';
+    // Then add classes together
     statusElement.classList.add('connection-lost', 'visible');
-    // Set innerHTML in requestAnimationFrame to ensure class is applied first
-    requestAnimationFrame(function() {
-      statusElement.innerHTML = 'Disconnected';
-      statusElement.onclick = function() {
-        attemptReconnection(window.currentRoom);
-      };
-      // Add hover effect to change text
-      statusElement.onmouseenter = function() {
-        this.innerHTML = 'Retry';
-      };
-      statusElement.onmouseleave = function() {
-        this.innerHTML = 'Disconnected';
-      };
-    });
+    // Setup handlers
+    statusElement.onclick = function() {
+      attemptReconnection(window.currentRoom);
+    };
+    // Add hover effect to change text
+    statusElement.onmouseenter = function() {
+      this.innerHTML = 'Retry';
+    };
+    statusElement.onmouseleave = function() {
+      this.innerHTML = 'Disconnected';
+    };
     if (sendBtn) sendBtn.disabled = true;
   }
 }
