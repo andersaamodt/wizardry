@@ -1040,9 +1040,19 @@ function updateConnectionStatus(status, isClickable) {
       window.sseSpinnerElement.className = 'spinner-grey';
     }
     
-    // Clear content and set text with spinner
-    statusElement.textContent = 'Connecting';
-    statusElement.appendChild(window.sseSpinnerElement);
+    // Set text without clearing spinner (preserve animation)
+    // Remove all child nodes except the spinner
+    while (statusElement.firstChild) {
+      if (statusElement.firstChild === window.sseSpinnerElement) break;
+      statusElement.removeChild(statusElement.firstChild);
+    }
+    // Insert text before spinner if spinner exists, otherwise just set text
+    if (statusElement.contains(window.sseSpinnerElement)) {
+      statusElement.insertBefore(document.createTextNode('Connecting'), window.sseSpinnerElement);
+    } else {
+      statusElement.textContent = 'Connecting';
+      statusElement.appendChild(window.sseSpinnerElement);
+    }
     
     statusElement.classList.add('visible');
     statusElement.onclick = null;
@@ -1063,9 +1073,19 @@ function updateConnectionStatus(status, isClickable) {
       window.sseSpinnerElement.className = 'spinner-grey';
     }
     
-    // Clear content and set text with spinner
-    statusElement.textContent = 'Reconnecting';
-    statusElement.appendChild(window.sseSpinnerElement);
+    // Set text without clearing spinner (preserve animation)
+    // Remove all child nodes except the spinner
+    while (statusElement.firstChild) {
+      if (statusElement.firstChild === window.sseSpinnerElement) break;
+      statusElement.removeChild(statusElement.firstChild);
+    }
+    // Insert text before spinner if spinner exists, otherwise just set text
+    if (statusElement.contains(window.sseSpinnerElement)) {
+      statusElement.insertBefore(document.createTextNode('Reconnecting'), window.sseSpinnerElement);
+    } else {
+      statusElement.textContent = 'Reconnecting';
+      statusElement.appendChild(window.sseSpinnerElement);
+    }
     
     // Force reflow then add visible class for fade-in
     statusElement.offsetHeight;
