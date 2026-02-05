@@ -1344,35 +1344,14 @@ pre code {
   height: 16px;
   margin-left: 8px;
   vertical-align: -2px;  /* Adjusted to match Disconnected/Retry alignment */
-  position: relative;
   flex-shrink: 0;
+  /* Using animated GIF instead of CSS rotation to eliminate wiggling */
+  background-image: url('data:image/gif;base64,R0lGODlhEAAQAIEAAAAAAICAgGZmZgAAACH/C05FVFNDQVBFMi4wAwEAAAAh+QQBBgAAACwAAAAAEAAQAAAIQwABCBxIsKDBgwgFBli4MCEAhhARNiQ4kWKAgxUfXpS4UWPCihkLChAwMCTBkSU7GkSZ8iBLiyJJYlw48uXMmg5zBgQAIfkEAQYAAAAsBQAIAAoABwCBAAAAgICAZmZmAAAACBkAAQgcKDBAAIIEDSIcqHChw4UCIj6UuDAgACH5BAEGAAAALAMACwALAAIAgQAAAICAgGZmZgAAAAgRAAUIAECwIIAAAQAINHgwYUAAIfkEAQYAAAAsAgAIAAoABwCBAAAAgICAZmZmAAAACBgABQgAQLAgQYEGDSJMyLChQ4cBIjaUGBAAIfkEAQYAAAAsAgAFAAcACgCBAAAAgICAZmZmAAAACBsAAQgAQJCggIEFBSJMyLChw4cQCwaYmHBigIAAIfkEAQYAAAAsBAADAAIACwCBAAAAgICAZmZmAAAACBEAAQgYKACAwYMIAQRQuDBAQAAh+QQBBgAAACwCAAIABwAKAIEAAACAgIBmZmYAAAAIGgABCAQgoOBAggYPKlzIsOHBAAEUQlwY8WBAACH5BAEGAAAALAIAAgAKAAcAgQAAAICAgGZmZgAAAAgaAAEIHAhAgACCBA0eRMiwIYAAARxClBixYUAAIfkEAQYAAAAsAwAEAAsAAgCBAAAAgICAZmZmAAAACBEAAQQIAKBgQQECBBI0aBBhQAAh+QQBBgAAACwFAAIACgAHAIEAAACAgIBmZmYAAAAIGQABBAgAoKBBgQMPKlzIsKFCAQIaQpQoICAAIfkEAQYAAAAsCAACAAcACgCBAAAAgICAZmZmAAAACBoAAwgEQBCAwAAFEypcyLChQ4ICBCiMOBFAQAAh+QQBBgAAACwLAAMAAgALAIEAAACAgIBmZmYAAAAIEQADAAggUCCAgwgTClgoAEBAADs=');
+  background-size: 16px 16px;
+  background-repeat: no-repeat;
+  background-position: center center;
 }
 
-/* The actual spinning element - using stepped rotation to avoid subpixel wiggling */
-.spinner-grey::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(128, 128, 128, 0.2);
-  border-top-color: #666;
-  border-radius: 50%;
-  animation: spin-stepped 0.8s steps(24) infinite;  /* Increased to 24 steps for smoother rotation */
-  box-sizing: border-box;
-  /* GPU acceleration and rendering optimizations */
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  will-change: transform;
-  /* Force pixel-aligned rendering */
-  transform-style: flat;
-}
-
-@keyframes spin-stepped {
-  0% { transform: translateZ(0) rotate(0deg); }
-  100% { transform: translateZ(0) rotate(360deg); }
-}
 
 .room-controls button:disabled,
 .room-controls input:disabled {
