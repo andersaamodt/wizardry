@@ -1250,10 +1250,10 @@ pre code {
   opacity: 1;
 }
 
-/* Reconnecting status - show pointer cursor */
+/* Reconnecting status - show default cursor */
 #connecting-status.visible:not(.connection-lost) {
-  pointer-events: auto;  /* Allow cursor change */
-  cursor: pointer;
+  pointer-events: auto;  /* Allow interaction */
+  cursor: default;
 }
 
 /* Connection lost (Disconnected) status - clickable pill */
