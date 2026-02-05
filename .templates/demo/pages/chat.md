@@ -1050,6 +1050,16 @@ function updateConnectionStatus(status, isClickable) {
     // Show reconnecting with spinner
     // Preserve existing spinner if present to avoid animation reset
     var hasSpinner = statusElement.querySelector('.spinner-grey');
+    
+    // First, ensure visible class is removed to allow fade-in
+    var wasVisible = statusElement.classList.contains('visible');
+    if (!wasVisible) {
+      statusElement.classList.remove('visible');
+    }
+    
+    // Remove connection-lost styling first to prevent layout shift
+    statusElement.classList.remove('connection-lost');
+    
     if (!hasSpinner) {
       statusElement.innerHTML = 'Reconnecting<span class="spinner-grey"></span>';
     } else {
@@ -1058,21 +1068,32 @@ function updateConnectionStatus(status, isClickable) {
       statusElement.textContent = 'Reconnecting';
       statusElement.appendChild(spinner);
     }
-    statusElement.classList.remove('connection-lost');
-    // Ensure fade-in animation happens
-    if (!statusElement.classList.contains('visible')) {
+    
+    // Force reflow to ensure the opacity transition works
+    if (!wasVisible) {
+      statusElement.offsetHeight;  // Force reflow
+      statusElement.classList.add('visible');
+    } else {
       statusElement.classList.add('visible');
     }
+    
     statusElement.onclick = null;
     statusElement.onmouseenter = null;
     statusElement.onmouseleave = null;
     if (sendBtn) sendBtn.disabled = true;
   } else if (status === 'lost') {
     // Show disconnected (clickable pill, no spinner)
-    // Pre-set the text before adding classes to avoid text appearing before resize
+    // Remove visible class first to allow fade-in
+    statusElement.classList.remove('visible');
+    
+    // Set the background and text simultaneously before making visible
+    statusElement.classList.add('connection-lost');
     statusElement.innerHTML = 'Disconnected';
-    // Then add classes together
-    statusElement.classList.add('connection-lost', 'visible');
+    
+    // Force reflow then add visible class for fade-in
+    statusElement.offsetHeight;
+    statusElement.classList.add('visible');
+    
     // Setup handlers
     statusElement.onclick = function() {
       attemptReconnection(window.currentRoom);
