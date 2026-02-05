@@ -105,8 +105,14 @@
           
           if (response.ok) {
             console.log('Authentication successful!');
-            // Reload page to show logged-in state
-            window.location.reload();
+            const data = await response.json();
+            // Check if user is admin
+            if (data && data.isAdmin) {
+              showAdminOption();
+            } else {
+              // Regular user, just reload
+              window.location.reload();
+            }
           } else {
             console.error('Authentication failed');
             showRegisterOption();
@@ -128,6 +134,22 @@
     // Show the register link with animation
     setTimeout(() => {
       registerBtn.classList.add('show');
+    }, 100);
+  }
+  
+  function showAdminOption() {
+    // Slide the search (and admin if visible) to the left
+    navRight.classList.add('slide-left');
+    
+    // Show admin link with animation, then reload
+    const adminLink = document.querySelector('.nav-admin');
+    setTimeout(() => {
+      if (adminLink) {
+        adminLink.style.display = 'inline';
+      }
+      setTimeout(() => {
+        window.location.reload();
+      }, 300);
     }, 100);
   }
 })();
