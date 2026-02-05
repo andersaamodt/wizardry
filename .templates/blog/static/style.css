@@ -30,7 +30,7 @@ body {
   padding: 0 1.5rem 2rem 1.5rem;
   line-height: 1.7;
   color: var(--text);
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #dbeafe 100%);
+  background: #ffffff;
   min-height: 100vh;
 }
 
@@ -135,7 +135,7 @@ header h1 {
   font-size: 0.9rem;
   cursor: pointer;
   font-weight: 600;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition: border-color 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -143,7 +143,6 @@ header h1 {
 }
 
 .nav-search button:hover {
-  background: var(--light-bg);
   border-color: var(--accent);
 }
 
@@ -173,18 +172,53 @@ header h1 {
   font-weight: 600;
   font-size: 0.9rem;
   text-decoration: none !important;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
-  transition: box-shadow 0.2s ease, background 0.2s ease;
+  transition: background 0.2s ease;
+  cursor: pointer;
+  border: none;
 }
 
 .btn-login:hover {
-  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
   background: linear-gradient(135deg, var(--accent-dark) 0%, #1d4ed8 100%);
   text-decoration: none;
 }
 
-.btn-login:active {
-  box-shadow: 0 1px 2px rgba(59, 130, 246, 0.3);
+.btn-register {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--green) 0%, #059669 100%);
+  color: white !important;
+  padding: 0.5rem 1.2rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none !important;
+  transition: background 0.2s ease, opacity 0.3s ease, transform 0.3s ease;
+  cursor: pointer;
+  border: none;
+  opacity: 0;
+  transform: translateX(20px);
+  pointer-events: none;
+}
+
+.btn-register.show {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.btn-register:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  text-decoration: none;
+}
+
+.nav-right {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  transition: transform 0.3s ease;
+}
+
+.nav-right.slide-left {
+  transform: translateX(-80px);
 }
 
 /* Typography */
