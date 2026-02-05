@@ -321,12 +321,13 @@ transformed=$(printf '%s\n' "$spell_content" | \
     # Remove infrastructure calls (but not if in bootstrap)
     /^require-wizardry/ { next }
     /^[[:space:]]*require-wizardry([[:space:]]|\|\||$)/ { next }
-    /^[[:space:]]*\. env_clear([[:space:]]|$)/ { next }
-    /^[[:space:]]*\. env-clear([[:space:]]|$)/ { next }
-    /^[[:space:]]*source env_clear([[:space:]]|$)/ { next }
-    /^[[:space:]]*source env-clear([[:space:]]|$)/ { next }
-    /^[[:space:]]*env_clear([[:space:]]|$)/ { next }
-    /^[[:space:]]*env-clear([[:space:]]|$)/ { next }
+    # Replace env-clear/env_clear sourcing with function call to _env_clear
+    /^[[:space:]]*\. env_clear/ { sub(/\. env_clear/, "_env_clear"); print; next }
+    /^[[:space:]]*\. env-clear/ { sub(/\. env-clear/, "_env_clear"); print; next }
+    /^[[:space:]]*source env_clear/ { sub(/source env_clear/, "_env_clear"); print; next }
+    /^[[:space:]]*source env-clear/ { sub(/source env-clear/, "_env_clear"); print; next }
+    /^[[:space:]]*env_clear([[:space:]]|$)/ { sub(/env_clear/, "_env_clear"); print; next }
+    /^[[:space:]]*env-clear([[:space:]]|$)/ { sub(/env-clear/, "_env_clear"); print; next }
     /^[[:space:]]*\. .*invoke-wizardry/ { next }
     /^[[:space:]]*source .*invoke-wizardry/ { next }
     # Remove standalone color palette loading

@@ -1,0 +1,74 @@
+#!/bin/sh
+# ssh-auth-login - Authenticate using WebAuthn credential
+
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "application/json"
+http-end-headers
+
+# Parse query parameters
+credential_id=$(get-query-param "credential_id")
+
+# Validate inputs
+if [ -z "$credential_id" ]; then
+  printf '{"success":false,"error":"Missing credential_id"}\n'
+  exit 0
+fi
+
+# Get data directory
+data_dir=$(get-site-data-dir "ssh-auth")
+
+# Search for credential across all users
+username=""
+fingerprint=""
+delegate_id=""
+
+# Check if users directory exists
+if [ -d "$data_dir/users" ]; then
+  for user_dir in "$data_dir/users"/*; do
+    if [ ! -d "$user_dir" ]; then
+      continue
+    fi
+    
+    delegates_dir="$user_dir/delegates"
+    if [ ! -d "$delegates_dir" ]; then
+      continue
+    fi
+    
+    for delegate_file in "$delegates_dir"/*; do
+      if [ ! -f "$delegate_file" ]; then
+        continue
+      fi
+      
+      # Check if this delegate has the matching credential_id
+      stored_credential_id=$(grep -o '"credential_id":"[^"]*"' "$delegate_file" | cut -d'"' -f4)
+      if [ "$stored_credential_id" = "$credential_id" ]; then
+        username=$(basename "$user_dir")
+        fingerprint=$(cat "$user_dir/ssh_fingerprint")
+        delegate_id=$(basename "$delegate_file")
+        break 2
+      fi
+    done
+  done
+fi
+
+# Check if credential was found
+if [ -z "$username" ]; then
+  printf '{"success":false,"error":"Credential not found"}\n'
+  exit 0
+fi
+
+# Generate session token
+session_token=$(dd if=/dev/urandom bs=32 count=1 2>/dev/null | base64 | tr -d '\n')
+
+# Store session
+sessions_dir="$data_dir/sessions"
+mkdir -p "$sessions_dir"
+session_file="$sessions_dir/$session_token"
+printf '{"username":"%s","fingerprint":"%s","delegate_id":"%s","created_at":"%s"}\n' \
+  "$username" "$fingerprint" "$delegate_id" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$session_file"
+
+# Return success with session token
+printf '{"success":true,"username":"%s","fingerprint":"%s","session_token":"%s"}\n' \
+  "$username" "$fingerprint" "$session_token"
