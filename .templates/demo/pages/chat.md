@@ -1085,16 +1085,16 @@ function updateConnectionStatus(status, isClickable) {
     // Check if we're transitioning from connection-lost (Retry/Disconnected)
     var wasDisconnected = statusElement.classList.contains('connection-lost');
     
+    // Get or create the global spinner (shared logic)
+    if (!window.sseSpinnerElement) {
+      window.sseSpinnerElement = document.createElement('span');
+      window.sseSpinnerElement.className = 'spinner-grey';
+    }
+    
     if (wasDisconnected) {
       // Crossfade from Disconnected: remove background styling first but keep element visible
       // The CSS transition on background-color will handle the fade-out
       statusElement.classList.remove('connection-lost');
-      
-      // Get or create the global spinner
-      if (!window.sseSpinnerElement) {
-        window.sseSpinnerElement = document.createElement('span');
-        window.sseSpinnerElement.className = 'spinner-grey';
-      }
       
       // Set text without clearing spinner (preserve animation)
       setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
@@ -1104,12 +1104,6 @@ function updateConnectionStatus(status, isClickable) {
     } else {
       // Coming from other state or first time
       statusElement.classList.remove('connection-lost');
-      
-      // Get or create the global spinner
-      if (!window.sseSpinnerElement) {
-        window.sseSpinnerElement = document.createElement('span');
-        window.sseSpinnerElement.className = 'spinner-grey';
-      }
       
       // Set text without clearing spinner (preserve animation)
       setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
