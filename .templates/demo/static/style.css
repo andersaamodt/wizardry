@@ -1342,19 +1342,29 @@ pre code {
   display: inline-block;
   width: 16px;
   height: 16px;
-  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="rgba(128,128,128,0.3)" stroke-width="2"/><path d="M 8 2 A 6 6 0 0 1 14 8" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round"/></svg>');
-  background-size: 16px 16px;  /* Exact pixel dimensions */
-  background-repeat: no-repeat;
-  background-position: center center;
-  animation: spin 0.6s linear infinite;
   margin-left: 8px;
-  vertical-align: -2px;  /* Pixel-aligned vertical positioning */
-  transform-origin: 50% 50%;  /* Percentage-based center for precision */
+  vertical-align: -3px;  /* Align with text */
+  position: relative;  /* For pseudo-element positioning */
   flex-shrink: 0;  /* Prevent size changes */
+}
+
+/* The actual spinning element */
+.spinner-grey::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(128, 128, 128, 0.2);
+  border-top-color: #666;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  box-sizing: border-box;
+  /* GPU acceleration and rendering optimizations */
+  transform: translateZ(0);
+  backface-visibility: hidden;
   will-change: transform;
-  backface-visibility: hidden;  /* Improve rendering */
-  -webkit-font-smoothing: subpixel-antialiased;  /* Better antialiasing */
-  transform: translateZ(0);  /* GPU acceleration */
 }
 
 @keyframes spin {
