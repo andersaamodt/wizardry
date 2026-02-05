@@ -1,6 +1,7 @@
 /* Personal Blog Template Styles */
 
 :root {
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   --primary: #1e3a8a;
   --accent: #2f4aa6;
   --accent-dark: #223b85;
@@ -29,7 +30,7 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: var(--font-family);
   max-width: 700px;
   margin: 0 auto;
   padding: 0 2rem 2rem 2rem;

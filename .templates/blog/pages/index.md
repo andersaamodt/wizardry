@@ -28,8 +28,10 @@ This is a personal blog built with wizardry web. Posts are content-addressable, 
     <option value="shaman">Shaman</option>
     <option value="sorcerer">Sorcerer</option>
     <option value="sorceress">Sorceress</option>
-    <option value="thelemite">Thelemite</option>
     <option value="technomancer">Technomancer</option>
+    <option value="thaumaturge">Thaumaturge</option>
+    <option value="thelemite">Thelemite</option>
+    <option value="wadjet">Wadjet</option>
     <option value="warlock">Warlock</option>
     <option value="wizard">Wizard</option>
   </select>

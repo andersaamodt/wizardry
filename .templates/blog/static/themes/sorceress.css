@@ -3,14 +3,14 @@
   --accent: #9b5de5;
   --accent-dark: #7b2cbf;
   --teal: #065f46;
-  --green: #10b981;
+  --green: #059669;
   --purple: #8b5cf6;
   --violet: #c4b5fd;
   --text: #f5efe3;
   --light-text: #d6c9a6;
-  --heading-color: #4c1d95;
-  --heading-gradient: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
-  --heading-fill: transparent;
+  --heading-color: #f59e0b;
+  --heading-gradient: none;
+  --heading-fill: var(--heading-color);
   --border: #0b3b2e;
   --bg: #0b3b2e;
   --light-bg: #1a4a39;
