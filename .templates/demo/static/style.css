@@ -1240,8 +1240,10 @@ pre code {
   font-size: 0.85em;  /* Smaller, less obtrusive */
   font-style: italic;
   opacity: 0;
-  transition: opacity 0.3s ease-in-out, background-color 0.3s ease-in-out, padding 0.3s ease-in-out, min-width 0.3s ease-in-out, transform 0.3s ease-in-out;  /* Smooth transitions for all properties */
+  transition: opacity 0.3s ease-in-out, background-color 0.3s ease-in-out, padding 0.3s ease-in-out, min-width 0.3s ease-in-out, transform 0.3s ease-in-out, color 0.3s ease-in-out;  /* Smooth transitions for all properties */
   pointer-events: none;  /* Don't interfere with clicking */
+  width: 95px;  /* Fixed width to prevent size changes */
+  text-align: center;  /* Center text within fixed width */
 }
 
 #connecting-status.visible {
@@ -1250,21 +1252,29 @@ pre code {
 
 /* Connection lost (Disconnected) status - clickable pill */
 #connecting-status.connection-lost {
-  background: rgba(128, 128, 128, 0.2);  /* More translucent/lighter grey background */
-  padding: 0.25rem 0.8rem;  /* Even more reduced top/bottom padding for thinner pill */
+  background: rgba(128, 128, 128, 0.15);  /* More translucent grey background */
+  padding: 0.2rem 0.8rem;  /* Slightly thinner pill */
   border-radius: 1rem;  /* Pill shape with rounded corners */
   pointer-events: auto;  /* Allow clicking */
   cursor: pointer;
   color: #666;
-  min-width: 95px;  /* Fixed width to prevent size change */
-  text-align: center;  /* Center text within fixed width */
   transform: translateY(-46%);  /* Move down slightly for better vertical centering */
   font-style: italic;  /* Match the italic style of Connecting/Reconnecting */
 }
 
 #connecting-status.connection-lost:hover {
-  background: rgba(128, 128, 128, 0.3);  /* Slightly darker on hover (but still lighter than before) */
+  background: rgba(128, 128, 128, 0.25);  /* Slightly darker on hover */
   color: #444;
+}
+
+/* Alternative positioning when chat input area is hidden (no room selected) */
+#connecting-status.no-room-position {
+  position: fixed;
+  right: auto;
+  left: 20px;
+  bottom: 120px;  /* Above username widget */
+  top: auto;
+  transform: none;
 }
 
 .chat-input-area textarea,
