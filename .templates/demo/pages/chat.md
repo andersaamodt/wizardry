@@ -972,6 +972,18 @@ function updateConnectionStatus(status, isClickable) {
   var createRoomLink = document.getElementById('create-room-link');
   var usernameChangeBtn = document.querySelector('.username-display button');
   
+  // Track current status to avoid redundant updates
+  if (!window.currentConnectionStatus) {
+    window.currentConnectionStatus = '';
+  }
+  
+  // If already showing this status, don't animate again
+  if (window.currentConnectionStatus === status && status === 'reconnecting') {
+    return;  // Skip redundant reconnecting updates
+  }
+  
+  window.currentConnectionStatus = status;
+  
   // Determine if we should use alternate positioning (when no room selected)
   var useAlternatePosition = !chatInputArea || chatInputArea.style.display === 'none';
   
@@ -1070,11 +1082,11 @@ function updateConnectionStatus(status, isClickable) {
     // Show reconnecting with spinner
     // Use global spinner to prevent animation reset
     
-    // First, ensure element is completely invisible before changing classes
-    statusElement.classList.remove('visible');  // Start fade-out first
+    // Check if we're transitioning from connection-lost (Retry/Disconnected)
+    var wasDisconnected = statusElement.classList.contains('connection-lost');
     
-    // Wait for fade-out transition to complete (300ms), then change classes
-    setTimeout(function() {
+    if (wasDisconnected) {
+      // Crossfade from Disconnected to Reconnecting without fading to white
       statusElement.classList.remove('connection-lost');
       
       // Get or create the global spinner
@@ -1086,15 +1098,34 @@ function updateConnectionStatus(status, isClickable) {
       // Set text without clearing spinner (preserve animation)
       setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
       
-      // Force reflow then add visible class for fade-in
-      statusElement.offsetHeight;
+      // Element stays visible, just content changes (crossfade effect)
       statusElement.classList.add('visible');
+    } else {
+      // Coming from other state or first time, fade in normally
+      statusElement.classList.remove('visible');
       
-      statusElement.onclick = null;
-      statusElement.onmouseenter = null;
-      statusElement.onmouseleave = null;
-      if (sendBtn) sendBtn.disabled = true;
-    }, 300);  // Wait for full fade-out transition (matches CSS transition duration)
+      setTimeout(function() {
+        statusElement.classList.remove('connection-lost');
+        
+        // Get or create the global spinner
+        if (!window.sseSpinnerElement) {
+          window.sseSpinnerElement = document.createElement('span');
+          window.sseSpinnerElement.className = 'spinner-grey';
+        }
+        
+        // Set text without clearing spinner (preserve animation)
+        setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
+        
+        // Force reflow then add visible class for fade-in
+        statusElement.offsetHeight;
+        statusElement.classList.add('visible');
+      }, 300);
+    }
+    
+    statusElement.onclick = null;
+    statusElement.onmouseenter = null;
+    statusElement.onmouseleave = null;
+    if (sendBtn) sendBtn.disabled = true;
   } else if (status === 'lost') {
     // Show disconnected (clickable pill, no spinner)
     
