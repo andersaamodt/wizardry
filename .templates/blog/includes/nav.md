@@ -48,41 +48,74 @@
 
   // Login button functionality
   const loginBtn = document.getElementById('login-btn');
-  const registerBtn = document.querySelector('.btn-register');
+  const registerBtn = document.querySelector('.nav-register');
   const navRight = document.querySelector('.nav-right');
   
   if (loginBtn) {
     loginBtn.addEventListener('click', async function(e) {
       e.preventDefault();
       
-      // Try WebAuthn authentication
+      // Check if WebAuthn is available
+      if (!window.PublicKeyCredential) {
+        console.log('WebAuthn not supported, showing register option');
+        showRegisterOption();
+        return;
+      }
+      
       try {
-        // Check if WebAuthn is available
-        if (!window.PublicKeyCredential) {
-          console.log('WebAuthn not supported, showing register option');
-          showRegisterOption();
-          return;
-        }
+        // Get available credentials (this will prompt the authenticator)
+        const credential = await navigator.credentials.get({
+          publicKey: {
+            challenge: new Uint8Array(32), // Server should provide this
+            timeout: 60000,
+            userVerification: "preferred"
+          }
+        });
         
-        // Attempt to authenticate
-        // In a real implementation, this would call your WebAuthn authentication endpoint
-        console.log('Attempting WebAuthn authentication...');
-        
-        // Placeholder: Simulate authentication check
-        // Replace this with actual WebAuthn authentication logic
-        const hasCredentials = false; // This would check if user has registered credentials
-        
-        if (!hasCredentials) {
-          console.log('No credentials found, showing register option');
-          showRegisterOption();
-        } else {
-          // Perform actual authentication
-          console.log('Performing authentication...');
-          // Your WebAuthn authentication code here
+        // If we got a credential, send it to the server for verification
+        if (credential) {
+          console.log('Credential obtained, verifying with server...');
+          
+          // Convert ArrayBuffer to Base64
+          function arrayBufferToBase64(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            for (let i = 0; i < bytes.byteLength; i++) {
+              binary += String.fromCharCode(bytes[i]);
+            }
+            return window.btoa(binary);
+          }
+          
+          // Send to server for verification
+          const response = await fetch('/cgi/blog-auth-verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: credential.id,
+              rawId: arrayBufferToBase64(credential.rawId),
+              response: {
+                authenticatorData: arrayBufferToBase64(credential.response.authenticatorData),
+                clientDataJSON: arrayBufferToBase64(credential.response.clientDataJSON),
+                signature: arrayBufferToBase64(credential.response.signature),
+                userHandle: credential.response.userHandle ? arrayBufferToBase64(credential.response.userHandle) : null
+              },
+              type: credential.type
+            })
+          });
+          
+          if (response.ok) {
+            console.log('Authentication successful!');
+            // Reload page to show logged-in state
+            window.location.reload();
+          } else {
+            console.error('Authentication failed');
+            showRegisterOption();
+          }
         }
         
       } catch (error) {
         console.error('Authentication error:', error);
+        // User likely doesn't have credentials registered, show register option
         showRegisterOption();
       }
     });
@@ -92,7 +125,7 @@
     // Slide the nav-right container to the left
     navRight.classList.add('slide-left');
     
-    // Show the register button with animation
+    // Show the register link with animation
     setTimeout(() => {
       registerBtn.classList.add('show');
     }, 100);
