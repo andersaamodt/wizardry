@@ -113,7 +113,9 @@ header h1 {
 .nav-search {
   display: flex;
   align-items: center;
-  transition: transform 0.3s ease;
+  margin-left: 2rem;
+  margin-right: 2rem;
+  transition: transform 0.3s ease, margin 0.3s ease;
 }
 
 .nav-search input[type="text"] {
@@ -150,7 +152,7 @@ header h1 {
 }
 
 .nav-search button:hover {
-  border-color: var(--accent);
+  border-color: #5eead4;
 }
 
 .nav-admin {
@@ -191,31 +193,22 @@ header h1 {
 
 .btn-register {
   display: none;
-  background: linear-gradient(135deg, var(--green) 0%, #059669 100%);
-  color: white !important;
-  padding: 0.5rem 1.2rem;
-  border-radius: 6px;
-  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
   font-size: 0.9rem;
-  text-decoration: none !important;
-  transition: background 0.2s ease, opacity 0.3s ease, transform 0.3s ease;
-  cursor: pointer;
-  border: none;
   opacity: 0;
-  transform: translateX(20px);
   pointer-events: none;
+  transition: opacity 0.3s ease;
 }
 
 .btn-register.show {
   display: inline-block;
   opacity: 1;
-  transform: translateX(0);
   pointer-events: auto;
 }
 
 .btn-register:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
-  text-decoration: none;
+  text-decoration: underline;
 }
 
 .nav-right {
@@ -239,6 +232,15 @@ header h1 {
     gap: 1rem; /* Reduce space between center and right sections */
   }
   
+  .nav-right {
+    gap: 0.5rem;
+  }
+  
+  .nav-search {
+    margin-left: 1rem;
+    margin-right: 1rem;
+  }
+  
   .nav-search input[type="text"] {
     width: 140px;
   }
@@ -254,6 +256,15 @@ header h1 {
     gap: 0.25rem; /* Tighten center links */
   }
   
+  .nav-right {
+    gap: 0.25rem;
+  }
+  
+  .nav-search {
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+  }
+  
   .nav-search input[type="text"] {
     width: 100px;
   }
@@ -262,6 +273,17 @@ header h1 {
   .btn-login {
     padding: 0.4rem 0.8rem;
     font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav-right {
+    gap: 0;
+  }
+  
+  .nav-search {
+    margin-left: 0.25rem;
+    margin-right: 0.25rem;
   }
 }
 
