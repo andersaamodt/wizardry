@@ -1071,8 +1071,8 @@ function updateConnectionStatus(status, isClickable) {
     // Use global spinner to prevent animation reset
     
     // First, set content and styling while keeping invisible
+    statusElement.classList.remove('connection-lost');  // Remove background first to prevent flash
     statusElement.classList.remove('visible');
-    statusElement.classList.remove('connection-lost');
     
     // Get or create the global spinner
     if (!window.sseSpinnerElement) {
