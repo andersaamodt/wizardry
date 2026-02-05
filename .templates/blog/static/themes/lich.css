@@ -1,0 +1,20 @@
+:root {
+  --primary: #2e1065;
+  --accent: #7c3aed;
+  --accent-dark: #5b21b6;
+  --teal: #6d28d9;
+  --green: #a855f7;
+  --purple: #4c1d95;
+  --violet: rgba(216, 180, 254, 0.8);
+  --text: #ede9fe;
+  --light-text: rgba(216, 180, 254, 0.85);
+  --heading-color: #c4b5fd;
+  --border: #3b0764;
+  --bg: #0b0616;
+  --light-bg: #1e0b2e;
+  --code-bg: #1e0b2e;
+  --shadow: rgba(124, 58, 237, 0.2);
+  --nav-link-hover: rgba(216, 180, 254, 0.16);
+  --nav-link-active: #7c3aed;
+  --nav-icon: #39ff14;
+}
