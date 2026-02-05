@@ -11,6 +11,8 @@
   --text: #0b132b;
   --light-text: #475569;
   --heading-color: var(--text);
+  --heading-gradient: none;
+  --heading-fill: var(--heading-color);
   --border: #c7d2fe;
   --bg: #f8fafc;
   --light-bg: #e0e7ff;
@@ -43,6 +45,10 @@ body > *:first-child {
 
 h1, h2, h3, h4, h5, h6 {
   color: var(--heading-color);
+  background: var(--heading-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: var(--heading-fill);
 }
 
 /* Header & Navigation */

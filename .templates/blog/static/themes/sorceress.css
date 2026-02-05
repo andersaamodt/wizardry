@@ -9,6 +9,8 @@
   --text: #f5efe3;
   --light-text: #d6c9a6;
   --heading-color: #4c1d95;
+  --heading-gradient: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+  --heading-fill: transparent;
   --border: #0b3b2e;
   --bg: #0b3b2e;
   --light-bg: #1a4a39;
