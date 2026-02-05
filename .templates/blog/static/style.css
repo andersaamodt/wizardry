@@ -1,19 +1,22 @@
 /* Personal Blog Template Styles */
 
 :root {
-  --primary: #1a2332;
+  --primary: #1e3a5f;
   --accent: #4a90e2;
   --accent-dark: #357abd;
-  --teal: #2dd4bf;
-  --purple: #a78bfa;
-  --text: #2d3748;
-  --light-text: #718096;
-  --border: #e2e8f0;
+  --teal: #14b8a6;
+  --green: #10b981;
+  --purple: #8b5cf6;
+  --violet: #7c3aed;
+  --text: #1f2937;
+  --light-text: #6b7280;
+  --border: #d1d5db;
   --bg: #ffffff;
-  --light-bg: #f7fafc;
-  --code-bg: #edf2f7;
+  --light-bg: #f3f4f6;
+  --code-bg: #e5e7eb;
   --shadow: rgba(0,0,0,0.1);
-  --nav-bg: #f8fafc;
+  --nav-link-hover: #dbeafe;
+  --nav-link-active: #bfdbfe;
 }
 
 * {
@@ -24,13 +27,18 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   max-width: 800px;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: 0 1.5rem 2rem 1.5rem;
   line-height: 1.7;
   color: var(--text);
   background: var(--bg);
 }
 
 /* Header & Navigation */
+/* Hide Pandoc's title-block-header (causes duplicate titles) */
+header#title-block-header {
+  display: none;
+}
+
 header {
   border-bottom: 2px solid var(--border);
   padding-bottom: 1rem;
@@ -48,21 +56,21 @@ header h1 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 2rem;
-  background: var(--nav-bg);
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 0.75rem 2rem;
+  background: transparent;
+  border-bottom: 2px solid var(--border);
   margin-bottom: 0;
   position: sticky;
   top: 0;
   z-index: 100;
   width: 100vw;
   margin-left: calc(-50vw + 50%);
+  background: var(--bg);
 }
 
 .nav-center {
   display: flex;
-  gap: 2rem;
+  gap: 0.5rem;
   align-items: center;
   flex: 1;
   justify-content: center;
@@ -71,20 +79,66 @@ header h1 {
 .nav-center a {
   color: var(--text);
   text-decoration: none;
-  font-weight: 500;
-  font-size: 0.95rem;
-  transition: color 0.2s ease;
+  font-weight: 600;
+  font-size: 1.05rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .nav-center a:hover {
+  background-color: var(--nav-link-hover);
   color: var(--accent);
   text-decoration: none;
 }
 
+.nav-center a.active {
+  background-color: var(--nav-link-active);
+  color: var(--accent-dark);
+  font-weight: 700;
+  pointer-events: none;
+  cursor: default;
+}
+
 .nav-right {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: center;
+}
+
+/* Search box in nav */
+.nav-search {
+  display: flex;
+  align-items: center;
+}
+
+.nav-search input[type="text"] {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 4px 0 0 4px;
+  font-size: 0.9rem;
+  width: 180px;
+  outline: none;
+}
+
+.nav-search input[type="text"]:focus {
+  border-color: var(--accent);
+}
+
+.nav-search button {
+  padding: 0.4rem 0.8rem;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 0 4px 4px 0;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s ease;
+}
+
+.nav-search button:hover {
+  background: var(--accent-dark);
 }
 
 .nav-admin {
