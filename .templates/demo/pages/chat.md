@@ -1053,7 +1053,8 @@ function updateConnectionStatus(status, isClickable) {
     // Show reconnecting with spinner
     // Use global spinner to prevent animation reset
     
-    // Remove connection-lost styling first to prevent layout shift
+    // First, set content and styling while keeping invisible
+    statusElement.classList.remove('visible');
     statusElement.classList.remove('connection-lost');
     
     // Get or create the global spinner
@@ -1066,7 +1067,8 @@ function updateConnectionStatus(status, isClickable) {
     statusElement.textContent = 'Reconnecting';
     statusElement.appendChild(window.sseSpinnerElement);
     
-    // Ensure visible class is present (no fade needed if already visible)
+    // Force reflow then add visible class for fade-in
+    statusElement.offsetHeight;
     statusElement.classList.add('visible');
     
     statusElement.onclick = null;
