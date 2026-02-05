@@ -1085,41 +1085,31 @@ function updateConnectionStatus(status, isClickable) {
     // Check if we're transitioning from connection-lost (Retry/Disconnected)
     var wasDisconnected = statusElement.classList.contains('connection-lost');
     
+    // Always remove connection-lost class first
+    statusElement.classList.remove('connection-lost');
+    
+    // Get or create the global spinner
+    if (!window.sseSpinnerElement) {
+      window.sseSpinnerElement = document.createElement('span');
+      window.sseSpinnerElement.className = 'spinner-grey';
+    }
+    
+    // Set text without clearing spinner (preserve animation)
+    setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
+    
     if (wasDisconnected) {
-      // Crossfade from Disconnected to Reconnecting without fading to white
-      statusElement.classList.remove('connection-lost');
-      
-      // Get or create the global spinner
-      if (!window.sseSpinnerElement) {
-        window.sseSpinnerElement = document.createElement('span');
-        window.sseSpinnerElement.className = 'spinner-grey';
-      }
-      
-      // Set text without clearing spinner (preserve animation)
-      setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
-      
-      // Element stays visible, just content changes (crossfade effect)
+      // Crossfade from Disconnected to Reconnecting - element stays visible
       statusElement.classList.add('visible');
     } else {
-      // Coming from other state or first time, fade in normally
-      statusElement.classList.remove('visible');
-      
-      setTimeout(function() {
-        statusElement.classList.remove('connection-lost');
-        
-        // Get or create the global spinner
-        if (!window.sseSpinnerElement) {
-          window.sseSpinnerElement = document.createElement('span');
-          window.sseSpinnerElement.className = 'spinner-grey';
-        }
-        
-        // Set text without clearing spinner (preserve animation)
-        setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
-        
+      // First time appearing - fade in
+      if (!statusElement.classList.contains('visible')) {
         // Force reflow then add visible class for fade-in
         statusElement.offsetHeight;
         statusElement.classList.add('visible');
-      }, 300);
+      } else {
+        // Already visible (e.g., was showing Connecting), keep it visible
+        statusElement.classList.add('visible');
+      }
     }
     
     statusElement.onclick = null;
@@ -1129,26 +1119,50 @@ function updateConnectionStatus(status, isClickable) {
   } else if (status === 'lost') {
     // Show disconnected (clickable pill, no spinner)
     
-    // First, set content and styling while keeping invisible
-    statusElement.classList.remove('visible');
+    // Check if we're transitioning from reconnecting (with spinner)
+    var wasReconnecting = !statusElement.classList.contains('connection-lost') && 
+                          statusElement.textContent.indexOf('Reconnecting') !== -1;
+    
+    // Add connection-lost class for styling
     statusElement.classList.add('connection-lost');
+    
+    // Set initial content
     statusElement.innerHTML = 'Disconnected';
     
-    // Force reflow then add visible class for fade-in
-    statusElement.offsetHeight;
-    statusElement.classList.add('visible');
+    if (wasReconnecting) {
+      // Crossfade from Reconnecting to Disconnected - element stays visible
+      statusElement.classList.add('visible');
+    } else {
+      // First time appearing - fade in
+      if (!statusElement.classList.contains('visible')) {
+        // Force reflow then add visible class for fade-in
+        statusElement.offsetHeight;
+        statusElement.classList.add('visible');
+      } else {
+        // Already visible, keep it visible
+        statusElement.classList.add('visible');
+      }
+    }
     
-    // Setup handlers
+    // Setup click handler
     statusElement.onclick = function() {
       attemptReconnection(window.currentRoom);
     };
-    // Add hover effect to change text
+    
+    // Use a data attribute to track hover state and avoid race conditions
     statusElement.onmouseenter = function() {
-      this.innerHTML = 'Retry';
+      // Only change if not already changed
+      if (this.textContent === 'Disconnected') {
+        this.textContent = 'Retry';
+      }
     };
     statusElement.onmouseleave = function() {
-      this.innerHTML = 'Disconnected';
+      // Only revert if showing Retry
+      if (this.textContent === 'Retry') {
+        this.textContent = 'Disconnected';
+      }
     };
+    
     if (sendBtn) sendBtn.disabled = true;
   }
 }
