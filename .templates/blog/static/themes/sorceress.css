@@ -1,7 +1,7 @@
 :root {
   --primary: #047857;
-  --accent: #f59e0b;
-  --accent-dark: #d97706;
+  --accent: #9b5de5;
+  --accent-dark: #7b2cbf;
   --teal: #065f46;
   --green: #10b981;
   --purple: #8b5cf6;
@@ -17,6 +17,6 @@
   --code-bg: #1a4a39;
   --shadow: rgba(4, 120, 87, 0.12);
   --nav-link-hover: #2a5a46;
-  --nav-link-active: #be123c;
-  --nav-icon: #8b5cf6;
+  --nav-link-active: #9b5de5;
+  --nav-icon: #be123c;
 }
