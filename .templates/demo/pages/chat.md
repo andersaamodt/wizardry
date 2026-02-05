@@ -1070,27 +1070,31 @@ function updateConnectionStatus(status, isClickable) {
     // Show reconnecting with spinner
     // Use global spinner to prevent animation reset
     
-    // First, set content and styling while keeping invisible
-    statusElement.classList.remove('connection-lost');  // Remove background first to prevent flash
-    statusElement.classList.remove('visible');
+    // First, ensure element is invisible before changing classes
+    statusElement.classList.remove('visible');  // Start fade-out first
     
-    // Get or create the global spinner
-    if (!window.sseSpinnerElement) {
-      window.sseSpinnerElement = document.createElement('span');
-      window.sseSpinnerElement.className = 'spinner-grey';
-    }
-    
-    // Set text without clearing spinner (preserve animation)
-    setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
-    
-    // Force reflow then add visible class for fade-in
-    statusElement.offsetHeight;
-    statusElement.classList.add('visible');
-    
-    statusElement.onclick = null;
-    statusElement.onmouseenter = null;
-    statusElement.onmouseleave = null;
-    if (sendBtn) sendBtn.disabled = true;
+    // Wait a brief moment for opacity to start transitioning, then remove background
+    setTimeout(function() {
+      statusElement.classList.remove('connection-lost');
+      
+      // Get or create the global spinner
+      if (!window.sseSpinnerElement) {
+        window.sseSpinnerElement = document.createElement('span');
+        window.sseSpinnerElement.className = 'spinner-grey';
+      }
+      
+      // Set text without clearing spinner (preserve animation)
+      setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
+      
+      // Force reflow then add visible class for fade-in
+      statusElement.offsetHeight;
+      statusElement.classList.add('visible');
+      
+      statusElement.onclick = null;
+      statusElement.onmouseenter = null;
+      statusElement.onmouseleave = null;
+      if (sendBtn) sendBtn.disabled = true;
+    }, 50);  // Small delay to ensure opacity transition has started
   } else if (status === 'lost') {
     // Show disconnected (clickable pill, no spinner)
     
