@@ -950,7 +950,19 @@ function updateConnectionStatus(status, isClickable) {
   var statusElement = document.getElementById('connecting-status');
   var sendBtn = document.getElementById('send-btn');
   
-  if (!statusElement) return;
+  // If element doesn't exist and we need to show a status, create it
+  if (!statusElement && status !== 'connected') {
+    var chatInputArea = document.getElementById('chat-input-area');
+    if (chatInputArea) {
+      statusElement = document.createElement('div');
+      statusElement.id = 'connecting-status';
+      chatInputArea.appendChild(statusElement);
+    } else {
+      // Can't create status element without input area
+      console.warn('[SSE] Cannot show connection status - chat input area not found');
+      return;
+    }
+  }
   
   // Clear any existing timeout
   if (window.sseReconnectTimeout) {
@@ -960,13 +972,15 @@ function updateConnectionStatus(status, isClickable) {
   
   if (status === 'connected') {
     // Connection successful - fade out status message
-    statusElement.classList.remove('visible', 'connection-lost');
-    sendBtn.disabled = false;
-    setTimeout(function() {
-      if (statusElement.parentNode) {
-        statusElement.remove();
-      }
-    }, 200);
+    if (statusElement) {
+      statusElement.classList.remove('visible', 'connection-lost');
+      setTimeout(function() {
+        if (statusElement && statusElement.parentNode) {
+          statusElement.remove();
+        }
+      }, 200);
+    }
+    if (sendBtn) sendBtn.disabled = false;
     window.sseReconnectAttempts = 0;  // Reset counter on success
     window.sseLastSuccessfulConnection = Date.now();
   } else if (status === 'connecting') {
@@ -975,14 +989,14 @@ function updateConnectionStatus(status, isClickable) {
     statusElement.classList.remove('connection-lost');
     statusElement.classList.add('visible');
     statusElement.onclick = null;
-    sendBtn.disabled = true;
+    if (sendBtn) sendBtn.disabled = true;
   } else if (status === 'reconnecting') {
     // Show reconnecting with spinner
     statusElement.innerHTML = 'Reconnecting<span class="spinner-grey"></span>';
     statusElement.classList.remove('connection-lost');
     statusElement.classList.add('visible');
     statusElement.onclick = null;
-    sendBtn.disabled = true;
+    if (sendBtn) sendBtn.disabled = true;
   } else if (status === 'lost') {
     // Show connection lost (clickable pill, no spinner)
     statusElement.innerHTML = 'Connection lost';
@@ -997,7 +1011,7 @@ function updateConnectionStatus(status, isClickable) {
     statusElement.onmouseleave = function() {
       this.innerHTML = 'Connection lost';
     };
-    sendBtn.disabled = true;
+    if (sendBtn) sendBtn.disabled = true;
   }
 }
 
