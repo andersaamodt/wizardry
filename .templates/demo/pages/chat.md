@@ -949,18 +949,40 @@ function stopHeartbeat() {
 function updateConnectionStatus(status, isClickable) {
   var statusElement = document.getElementById('connecting-status');
   var sendBtn = document.getElementById('send-btn');
+  var chatInputArea = document.getElementById('chat-input-area');
+  
+  // Determine if we should use alternate positioning (when no room selected)
+  var useAlternatePosition = !chatInputArea || chatInputArea.style.display === 'none';
   
   // If element doesn't exist and we need to show a status, create it
   if (!statusElement && status !== 'connected') {
-    var chatInputArea = document.getElementById('chat-input-area');
-    if (chatInputArea) {
-      statusElement = document.createElement('div');
-      statusElement.id = 'connecting-status';
+    statusElement = document.createElement('div');
+    statusElement.id = 'connecting-status';
+    
+    if (useAlternatePosition) {
+      // Position above username bar when input area is hidden
+      document.querySelector('.chat-sidebar').appendChild(statusElement);
+      statusElement.classList.add('no-room-position');
+    } else if (chatInputArea) {
       chatInputArea.appendChild(statusElement);
+      statusElement.classList.remove('no-room-position');
     } else {
-      // Can't create status element without input area
-      console.warn('[SSE] Cannot show connection status - chat input area not found');
+      // Can't create status element
+      console.warn('[SSE] Cannot show connection status - no suitable parent found');
       return;
+    }
+  } else if (statusElement) {
+    // Update positioning if needed
+    if (useAlternatePosition && !statusElement.classList.contains('no-room-position')) {
+      // Move to alternate position
+      document.querySelector('.chat-sidebar').appendChild(statusElement);
+      statusElement.classList.add('no-room-position');
+    } else if (!useAlternatePosition && statusElement.classList.contains('no-room-position')) {
+      // Move back to input area
+      if (chatInputArea) {
+        chatInputArea.appendChild(statusElement);
+        statusElement.classList.remove('no-room-position');
+      }
     }
   }
   
@@ -998,6 +1020,8 @@ function updateConnectionStatus(status, isClickable) {
     statusElement.classList.remove('connection-lost');
     statusElement.classList.add('visible');
     statusElement.onclick = null;
+    statusElement.onmouseenter = null;
+    statusElement.onmouseleave = null;
     if (sendBtn) sendBtn.disabled = true;
   } else if (status === 'reconnecting') {
     // Show reconnecting with spinner
@@ -1014,24 +1038,27 @@ function updateConnectionStatus(status, isClickable) {
     statusElement.classList.remove('connection-lost');
     statusElement.classList.add('visible');
     statusElement.onclick = null;
+    statusElement.onmouseenter = null;
+    statusElement.onmouseleave = null;
     if (sendBtn) sendBtn.disabled = true;
   } else if (status === 'lost') {
     // Show disconnected (clickable pill, no spinner)
-    // First add the connection-lost class to trigger transitions
-    statusElement.classList.add('connection-lost');
-    // Then update text - this happens simultaneously with style transitions
-    statusElement.innerHTML = 'Disconnected';
-    statusElement.classList.add('visible');
-    statusElement.onclick = function() {
-      attemptReconnection(window.currentRoom);
-    };
-    // Add hover effect to change text
-    statusElement.onmouseenter = function() {
-      this.innerHTML = 'Retry';
-    };
-    statusElement.onmouseleave = function() {
-      this.innerHTML = 'Disconnected';
-    };
+    // Add connection-lost class first, then set text in same frame to avoid flash
+    statusElement.classList.add('connection-lost', 'visible');
+    // Set innerHTML in requestAnimationFrame to ensure class is applied first
+    requestAnimationFrame(function() {
+      statusElement.innerHTML = 'Disconnected';
+      statusElement.onclick = function() {
+        attemptReconnection(window.currentRoom);
+      };
+      // Add hover effect to change text
+      statusElement.onmouseenter = function() {
+        this.innerHTML = 'Retry';
+      };
+      statusElement.onmouseleave = function() {
+        this.innerHTML = 'Disconnected';
+      };
+    });
     if (sendBtn) sendBtn.disabled = true;
   }
 }
