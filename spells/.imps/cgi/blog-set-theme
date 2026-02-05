@@ -15,7 +15,7 @@ if [ -z "$theme" ]; then
 fi
 
 case "$theme" in
-  archmage|wizard|warlock|sorcerer|sorceress|enchanter|illusionist|druid|empath|shaman|geomancer|necromancer|conjurer|pyromancer|chronomancer|alchemist|seer|adept|arcanist)
+  archmage|wizard|warlock|sorcerer|sorceress|enchanter|illusionist|druid|empath|shaman|geomancer|hermeticist|necromancer|conjurer|pyromancer|chronomancer|alchemist|seer|adept)
     ;;
   *)
     printf '{"success":false,"error":"Invalid theme"}\n'

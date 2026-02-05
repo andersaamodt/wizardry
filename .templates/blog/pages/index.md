@@ -13,7 +13,6 @@ This is a personal blog built with wizardry web. Posts are content-addressable, 
   <select id="theme-select">
     <option value="adept">Adept</option>
     <option value="alchemist">Alchemist</option>
-    <option value="arcanist">Arcanist</option>
     <option value="archmage">Archmage</option>
     <option value="chronomancer">Chronomancer</option>
     <option value="conjurer">Conjurer</option>
@@ -21,6 +20,7 @@ This is a personal blog built with wizardry web. Posts are content-addressable, 
     <option value="empath">Empath</option>
     <option value="enchanter">Enchanter</option>
     <option value="geomancer">Geomancer</option>
+    <option value="hermeticist">Hermeticist</option>
     <option value="illusionist">Illusionist</option>
     <option value="necromancer">Necromancer</option>
     <option value="pyromancer">Pyromancer</option>
