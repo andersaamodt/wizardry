@@ -1264,13 +1264,13 @@ pre code {
   pointer-events: auto;  /* Allow clicking */
   cursor: pointer;
   color: #666;
-  transform: translateY(-48%);  /* Slightly lower than perfect center */
+  transform: translateY(-46%);  /* Move down a bit more for better alignment */
   font-style: italic;  /* Match the italic style of Connecting/Reconnecting */
   transition: opacity 0.3s ease-in-out, min-width 0.3s ease-in-out, transform 0.3s ease-in-out, color 0.3s ease-in-out;  /* No background-color or padding transition for instant changes */
 }
 
 #connecting-status.connection-lost:hover {
-  background: rgba(128, 128, 128, 0.22);  /* Instantly darker on hover (no animation) */
+  background: rgba(128, 128, 128, 0.18);  /* Slightly lighter hover background */
   color: #444;
 }
 
@@ -1356,7 +1356,9 @@ pre code {
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
   margin-left: 8px;
-  vertical-align: middle;
+  vertical-align: text-bottom;  /* Stable anchor point to prevent movement */
+  position: relative;
+  top: 2px;  /* Fine-tune vertical position */
   will-change: transform;
   backface-visibility: hidden;
 }
