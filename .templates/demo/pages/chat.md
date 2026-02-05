@@ -663,6 +663,9 @@ function joinRoom(roomName) {
     window.messageEventSource = null;
   }
   
+  // Stop heartbeat monitoring
+  stopHeartbeat();
+  
   // Clear any existing polling interval
   if (window.messageInterval) {
     clearInterval(window.messageInterval);
@@ -885,10 +888,242 @@ function setupScrollListener() {
   });
 }
 
+// Connection state tracking
+window.sseReconnectAttempts = 0;
+window.sseMaxReconnectAttempts = 3;  // Give up after 3 attempts
+window.sseReconnectTimeout = null;
+window.sseLastSuccessfulConnection = null;
+window.sseHeartbeatTimeout = null;
+window.sseHeartbeatInterval = 45000;  // 45 seconds - server pings every 15s, so this allows 3 missed pings
+window.sseSpinnerElement = null;  // Global spinner to prevent animation reset
+
+// Reset heartbeat timer - call this whenever we receive ANY event from server
+function resetHeartbeat(roomName) {
+  // Clear existing timeout
+  if (window.sseHeartbeatTimeout) {
+    clearTimeout(window.sseHeartbeatTimeout);
+    window.sseHeartbeatTimeout = null;
+  }
+  
+  // Set new timeout
+  window.sseHeartbeatTimeout = setTimeout(function() {
+    console.error('[SSE] Heartbeat timeout - no events received for', window.sseHeartbeatInterval / 1000, 'seconds');
+    
+    // Connection is dead - close it and trigger reconnection
+    if (window.messageEventSource) {
+      console.log('[SSE] Closing dead connection');
+      window.messageEventSource.close();
+      window.messageEventSource = null;
+    }
+    
+    // Trigger reconnection logic
+    if (window.sseReconnectAttempts < window.sseMaxReconnectAttempts) {
+      window.sseReconnectAttempts++;
+      console.log('[SSE] Reconnect attempt', window.sseReconnectAttempts, 'of', window.sseMaxReconnectAttempts, '(heartbeat timeout)');
+      
+      updateConnectionStatus('reconnecting', false);
+      
+      // Wait 2 seconds before reconnecting
+      window.sseReconnectTimeout = setTimeout(function() {
+        if (window.currentRoom === roomName) {
+          console.log('[SSE] Auto-reconnecting to room:', roomName);
+          setupMessageStream(roomName, formatLocalTimestamp(new Date()));
+        }
+      }, 2000);
+    } else {
+      // Max attempts reached - show connection lost
+      console.error('[SSE] Max reconnection attempts reached - giving up');
+      updateConnectionStatus('lost', true);
+    }
+  }, window.sseHeartbeatInterval);
+}
+
+// Stop heartbeat monitoring
+function stopHeartbeat() {
+  if (window.sseHeartbeatTimeout) {
+    clearTimeout(window.sseHeartbeatTimeout);
+    window.sseHeartbeatTimeout = null;
+  }
+}
+
+// Update connection status UI
+function updateConnectionStatus(status, isClickable) {
+  var statusElement = document.getElementById('connecting-status');
+  var sendBtn = document.getElementById('send-btn');
+  var chatInputArea = document.getElementById('chat-input-area');
+  var createRoomLink = document.getElementById('create-room-link');
+  var usernameChangeBtn = document.querySelector('.username-display button');
+  
+  // Determine if we should use alternate positioning (when no room selected)
+  var useAlternatePosition = !chatInputArea || chatInputArea.style.display === 'none';
+  
+  // If element doesn't exist and we need to show a status, create it
+  if (!statusElement && status !== 'connected') {
+    statusElement = document.createElement('div');
+    statusElement.id = 'connecting-status';
+    
+    if (useAlternatePosition) {
+      // Position in center of empty message box when input area is hidden
+      var chatMessages = document.getElementById('chat-messages');
+      if (chatMessages) {
+        chatMessages.appendChild(statusElement);
+        statusElement.classList.add('no-room-position');
+      }
+    } else if (chatInputArea) {
+      chatInputArea.appendChild(statusElement);
+      statusElement.classList.remove('no-room-position');
+    } else {
+      // Can't create status element
+      console.warn('[SSE] Cannot show connection status - no suitable parent found');
+      return;
+    }
+  } else if (statusElement) {
+    // Update positioning if needed
+    if (useAlternatePosition && !statusElement.classList.contains('no-room-position')) {
+      // Move to alternate position
+      var chatMessages = document.getElementById('chat-messages');
+      if (chatMessages) {
+        chatMessages.appendChild(statusElement);
+        statusElement.classList.add('no-room-position');
+      }
+    } else if (!useAlternatePosition && statusElement.classList.contains('no-room-position')) {
+      // Move back to input area
+      if (chatInputArea) {
+        chatInputArea.appendChild(statusElement);
+        statusElement.classList.remove('no-room-position');
+      }
+    }
+  }
+  
+  // Clear any existing timeout
+  if (window.sseReconnectTimeout) {
+    clearTimeout(window.sseReconnectTimeout);
+    window.sseReconnectTimeout = null;
+  }
+  
+  // Manage disabled state for Create Room link and username Change button
+  var isDisconnected = (status === 'lost' || status === 'reconnecting');
+  if (createRoomLink) {
+    if (isDisconnected) {
+      createRoomLink.classList.add('disabled');
+      createRoomLink.onclick = function(e) { e.preventDefault(); return false; };
+    } else {
+      createRoomLink.classList.remove('disabled');
+      createRoomLink.onclick = function() { toggleCreateRoom(); return false; };
+    }
+  }
+  if (usernameChangeBtn) {
+    usernameChangeBtn.disabled = isDisconnected;
+  }
+  
+  if (status === 'connected') {
+    // Connection successful - fade out status message
+    if (statusElement) {
+      statusElement.classList.remove('visible', 'connection-lost');
+      setTimeout(function() {
+        if (statusElement && statusElement.parentNode) {
+          statusElement.remove();
+        }
+      }, 300);  // Match transition duration
+    }
+    if (sendBtn) sendBtn.disabled = false;
+    window.sseReconnectAttempts = 0;  // Reset counter on success
+    window.sseLastSuccessfulConnection = Date.now();
+  } else if (status === 'connecting') {
+    // Show connecting with spinner
+    // Use global spinner to prevent animation reset
+    statusElement.classList.remove('connection-lost');
+    
+    // Get or create the global spinner
+    if (!window.sseSpinnerElement) {
+      window.sseSpinnerElement = document.createElement('span');
+      window.sseSpinnerElement.className = 'spinner-grey';
+    }
+    
+    // Clear content and set text with spinner
+    statusElement.textContent = 'Connecting';
+    statusElement.appendChild(window.sseSpinnerElement);
+    
+    statusElement.classList.add('visible');
+    statusElement.onclick = null;
+    statusElement.onmouseenter = null;
+    statusElement.onmouseleave = null;
+    if (sendBtn) sendBtn.disabled = true;
+  } else if (status === 'reconnecting') {
+    // Show reconnecting with spinner
+    // Use global spinner to prevent animation reset
+    
+    // Remove connection-lost styling first to prevent layout shift
+    statusElement.classList.remove('connection-lost');
+    
+    // Get or create the global spinner
+    if (!window.sseSpinnerElement) {
+      window.sseSpinnerElement = document.createElement('span');
+      window.sseSpinnerElement.className = 'spinner-grey';
+    }
+    
+    // Clear content and set text with spinner
+    statusElement.textContent = 'Reconnecting';
+    statusElement.appendChild(window.sseSpinnerElement);
+    
+    // Ensure visible class is present (no fade needed if already visible)
+    statusElement.classList.add('visible');
+    
+    statusElement.onclick = null;
+    statusElement.onmouseenter = null;
+    statusElement.onmouseleave = null;
+    if (sendBtn) sendBtn.disabled = true;
+  } else if (status === 'lost') {
+    // Show disconnected (clickable pill, no spinner)
+    
+    // First, set content and styling while keeping invisible
+    statusElement.classList.remove('visible');
+    statusElement.classList.add('connection-lost');
+    statusElement.innerHTML = 'Disconnected';
+    
+    // Force reflow then add visible class for fade-in
+    statusElement.offsetHeight;
+    statusElement.classList.add('visible');
+    
+    // Setup handlers
+    statusElement.onclick = function() {
+      attemptReconnection(window.currentRoom);
+    };
+    // Add hover effect to change text
+    statusElement.onmouseenter = function() {
+      this.innerHTML = 'Retry';
+    };
+    statusElement.onmouseleave = function() {
+      this.innerHTML = 'Disconnected';
+    };
+    if (sendBtn) sendBtn.disabled = true;
+  }
+}
+
+// Attempt to reconnect to SSE
+function attemptReconnection(roomName) {
+  if (!roomName) return;
+  
+  console.log('[SSE] Manual reconnection attempt for room:', roomName);
+  window.sseReconnectAttempts = 0;  // Reset attempts for manual reconnection
+  
+  // Show "Reconnecting" message
+  updateConnectionStatus('reconnecting', false);
+  
+  // Close existing connection
+  if (window.messageEventSource) {
+    window.messageEventSource.close();
+    window.messageEventSource = null;
+  }
+  
+  // Use timestamp from before manual reconnection
+  var sinceTimestamp = formatLocalTimestamp(new Date());
+  setupMessageStream(roomName, sinceTimestamp);
+}
+
 // Set up Server-Sent Events for real-time message updates
 function setupMessageStream(roomName, sinceTimestamp) {
   if (!roomName) return;
-  
   
   // Close existing connection if any
   if (window.messageEventSource) {
@@ -911,25 +1146,24 @@ function setupMessageStream(roomName, sinceTimestamp) {
     window.messageEventSource = new EventSource(url);
   } catch (e) {
     console.error('[SSE] Failed to create EventSource:', e);
+    updateConnectionStatus('lost', true);
     return;
   }
+  
+  // Track connection state
+  var connectionEstablished = false;
+  var errorCount = 0;
   
   // Handle connection open
   window.messageEventSource.addEventListener('open', function(event) {
     console.log('[SSE] Connection OPEN - ready to receive messages');
+    connectionEstablished = true;
+    errorCount = 0;
     
-    // Enable send button first
-    document.getElementById('send-btn').disabled = false;
+    updateConnectionStatus('connected', false);
     
-    // Fade out connecting status message
-    var connectingMsg = document.getElementById('connecting-status');
-    if (connectingMsg) {
-      connectingMsg.classList.remove('visible');
-      // Remove from DOM after fade completes
-      setTimeout(function() {
-        connectingMsg.remove();
-      }, 200);  // Match transition duration
-    }
+    // Start heartbeat monitoring
+    resetHeartbeat(roomName);
   });
   
   // Handle incoming messages
@@ -937,12 +1171,21 @@ function setupMessageStream(roomName, sinceTimestamp) {
     var timestamp = new Date().toISOString();
     // Event data is a single message line: [YYYY-MM-DD HH:MM:SS] username: message
     appendMessage(event.data);
+    
+    // Update last successful connection time
+    window.sseLastSuccessfulConnection = Date.now();
+    
+    // Reset heartbeat timer - we received an event
+    resetHeartbeat(roomName);
   });
   
   // Handle member list updates
   window.messageEventSource.addEventListener('members', function(event) {
     // Event data is JSON array of members
     updateMemberList(event.data);
+    
+    // Reset heartbeat timer - we received an event
+    resetHeartbeat(roomName);
   });
   
   // Handle errors
@@ -950,38 +1193,91 @@ function setupMessageStream(roomName, sinceTimestamp) {
     console.error('[SSE] Error occurred:', event);
     console.error('[SSE] ReadyState:', window.messageEventSource.readyState);
     console.error('[SSE] URL:', window.messageEventSource.url);
-    // EventSource automatically reconnects, but we can add custom logic here if needed
     
-    // If connection is closed or error persists, log it
+    // Stop heartbeat monitoring during error state
+    stopHeartbeat();
+    
+    errorCount++;
+    
     if (window.messageEventSource.readyState === EventSource.CLOSED) {
-      console.error('[SSE] Connection CLOSED - EventSource will not reconnect');
+      console.error('[SSE] Connection CLOSED - server unavailable');
+      
+      // Determine if we should try to reconnect
+      if (window.sseReconnectAttempts < window.sseMaxReconnectAttempts) {
+        window.sseReconnectAttempts++;
+        console.log('[SSE] Reconnect attempt', window.sseReconnectAttempts, 'of', window.sseMaxReconnectAttempts);
+        
+        updateConnectionStatus('reconnecting', false);
+        
+        // Wait 2 seconds before reconnecting
+        window.sseReconnectTimeout = setTimeout(function() {
+          if (window.currentRoom === roomName) {
+            console.log('[SSE] Auto-reconnecting to room:', roomName);
+            setupMessageStream(roomName, formatLocalTimestamp(new Date()));
+          }
+        }, 2000);
+      } else {
+        // Max attempts reached - show connection lost
+        console.error('[SSE] Max reconnection attempts reached - giving up');
+        updateConnectionStatus('lost', true);
+      }
     } else if (window.messageEventSource.readyState === EventSource.CONNECTING) {
       console.warn('[SSE] Connection CONNECTING - EventSource attempting to reconnect');
+      
+      // If we've been connecting for too long, consider it lost
+      if (!connectionEstablished && errorCount > 2) {
+        console.error('[SSE] Connection attempts failing - server may be down');
+        updateConnectionStatus('reconnecting', false);
+      }
     }
   });
   
   // Optional: Handle ping/keepalive events (currently just ignore them)
   window.messageEventSource.addEventListener('ping', function(event) {
+    // Update last successful connection time
+    window.sseLastSuccessfulConnection = Date.now();
+    
+    // Reset heartbeat timer - we received a ping
+    resetHeartbeat(roomName);
   });
   
-  // Add a timeout warning if no events received after 5 seconds
+  // Add a timeout warning if connection not established after 5 seconds
   setTimeout(function() {
-    if (window.messageEventSource && window.messageEventSource.readyState === EventSource.CONNECTING) {
-      console.warn('[SSE] WARNING: Still CONNECTING after 5 seconds - possible server issue');
-      console.warn('[SSE] Check server logs for errors in chat-stream script');
-    } else if (window.messageEventSource && window.messageEventSource.readyState === EventSource.OPEN) {
+    if (window.messageEventSource && !connectionEstablished) {
+      if (window.messageEventSource.readyState === EventSource.CONNECTING) {
+        console.warn('[SSE] WARNING: Still CONNECTING after 5 seconds - possible server issue');
+        updateConnectionStatus('reconnecting', false);
+      } else if (window.messageEventSource.readyState === EventSource.CLOSED) {
+        console.error('[SSE] Connection failed within 5 seconds');
+        if (window.sseReconnectAttempts < window.sseMaxReconnectAttempts) {
+          window.sseReconnectAttempts++;
+          updateConnectionStatus('reconnecting', false);
+          window.sseReconnectTimeout = setTimeout(function() {
+            if (window.currentRoom === roomName) {
+              setupMessageStream(roomName, formatLocalTimestamp(new Date()));
+            }
+          }, 2000);
+        } else {
+          updateConnectionStatus('lost', true);
+        }
+      }
     }
   }, 5000);
   
-  // Periodic status logging every 15 seconds for debugging
-  var statusInterval = setInterval(function() {
-    if (!window.messageEventSource) {
-      clearInterval(statusInterval);
+  // Periodic connection health check every 30 seconds
+  var healthCheckInterval = setInterval(function() {
+    if (!window.messageEventSource || window.currentRoom !== roomName) {
+      clearInterval(healthCheckInterval);
       return;
     }
-    var states = ['CONNECTING', 'OPEN', 'CLOSED'];
-    var state = states[window.messageEventSource.readyState] || 'UNKNOWN';
-  }, 15000);
+    
+    // If no activity for 60 seconds, connection might be stale
+    if (window.sseLastSuccessfulConnection && 
+        (Date.now() - window.sseLastSuccessfulConnection) > 60000 &&
+        window.messageEventSource.readyState !== EventSource.CONNECTING) {
+      console.warn('[SSE] No activity for 60 seconds - connection may be stale');
+    }
+  }, 30000);
 }
 
 // Update member list from SSE data
@@ -1712,6 +2008,9 @@ function showNotification() {
 
 // Clean up avatar when user leaves the page
 window.addEventListener('beforeunload', function() {
+  
+  // Stop heartbeat monitoring
+  stopHeartbeat();
   
   // Close SSE connection
   if (window.messageEventSource) {
