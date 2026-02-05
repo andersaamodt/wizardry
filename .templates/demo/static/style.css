@@ -1240,7 +1240,7 @@ pre code {
   font-size: 0.85em;  /* Smaller, less obtrusive */
   font-style: italic;
   opacity: 0;
-  transition: opacity 0.3s ease-in-out, background-color 0.3s ease-in-out, min-width 0.3s ease-in-out, transform 0.3s ease-in-out, color 0.3s ease-in-out;  /* Smooth transitions (no padding) */
+  transition: opacity 0.3s ease-in-out, min-width 0.3s ease-in-out, transform 0.3s ease-in-out, color 0.3s ease-in-out;  /* Smooth transitions (no padding, no background-color) */
   pointer-events: none;  /* Don't interfere with clicking */
   width: 110px;  /* Fixed width to fit both Disconnected and Retry */
   text-align: center;  /* Center text within fixed width */
