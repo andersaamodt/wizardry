@@ -946,6 +946,24 @@ function stopHeartbeat() {
   }
 }
 
+// Helper function to set status text while preserving spinner element
+function setStatusTextWithSpinner(element, text, spinnerElement) {
+  // Remove only text nodes, preserve spinner if it exists
+  Array.from(element.childNodes).forEach(function(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      element.removeChild(node);
+    }
+  });
+  
+  // Insert text before spinner if spinner exists, otherwise set text and append spinner
+  if (element.contains(spinnerElement)) {
+    element.insertBefore(document.createTextNode(text), spinnerElement);
+  } else {
+    element.textContent = text;
+    element.appendChild(spinnerElement);
+  }
+}
+
 // Update connection status UI
 function updateConnectionStatus(status, isClickable) {
   var statusElement = document.getElementById('connecting-status');
@@ -1041,18 +1059,7 @@ function updateConnectionStatus(status, isClickable) {
     }
     
     // Set text without clearing spinner (preserve animation)
-    // Remove all child nodes except the spinner
-    while (statusElement.firstChild) {
-      if (statusElement.firstChild === window.sseSpinnerElement) break;
-      statusElement.removeChild(statusElement.firstChild);
-    }
-    // Insert text before spinner if spinner exists, otherwise just set text
-    if (statusElement.contains(window.sseSpinnerElement)) {
-      statusElement.insertBefore(document.createTextNode('Connecting'), window.sseSpinnerElement);
-    } else {
-      statusElement.textContent = 'Connecting';
-      statusElement.appendChild(window.sseSpinnerElement);
-    }
+    setStatusTextWithSpinner(statusElement, 'Connecting', window.sseSpinnerElement);
     
     statusElement.classList.add('visible');
     statusElement.onclick = null;
@@ -1074,18 +1081,7 @@ function updateConnectionStatus(status, isClickable) {
     }
     
     // Set text without clearing spinner (preserve animation)
-    // Remove all child nodes except the spinner
-    while (statusElement.firstChild) {
-      if (statusElement.firstChild === window.sseSpinnerElement) break;
-      statusElement.removeChild(statusElement.firstChild);
-    }
-    // Insert text before spinner if spinner exists, otherwise just set text
-    if (statusElement.contains(window.sseSpinnerElement)) {
-      statusElement.insertBefore(document.createTextNode('Reconnecting'), window.sseSpinnerElement);
-    } else {
-      statusElement.textContent = 'Reconnecting';
-      statusElement.appendChild(window.sseSpinnerElement);
-    }
+    setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
     
     // Force reflow then add visible class for fade-in
     statusElement.offsetHeight;
