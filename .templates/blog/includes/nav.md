@@ -128,16 +128,19 @@
   }
   
   function showRegisterOption() {
-    // Slide the nav-right container to the left
-    navRight.classList.add('slide-left');
+    // Don't slide anything, just show the register button
+    // The register button will appear next to Login without moving search
     
     // Show the register link with animation
     setTimeout(() => {
-      registerBtn.classList.add('show');
+      if (registerBtn) {
+        registerBtn.classList.add('show');
+      }
     }, 100);
   }
   
   function showAdminOption() {
+    // Only slide when we need to make room for Admin link
     // Slide the search (and admin if visible) to the left
     navRight.classList.add('slide-left');
     

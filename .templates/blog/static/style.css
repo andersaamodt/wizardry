@@ -91,7 +91,7 @@ header h1 {
 
 .nav-center a:hover {
   background-color: var(--nav-link-hover);
-  color: var(--accent);
+  color: #000000;
   text-decoration: none;
 }
 
@@ -113,6 +113,7 @@ header h1 {
 .nav-search {
   display: flex;
   align-items: center;
+  transition: transform 0.3s ease;
 }
 
 .nav-search input[type="text"] {
@@ -159,7 +160,7 @@ header h1 {
   font-size: 0.9rem;
   padding: 0.5rem 1rem;
   border-radius: 6px;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.3s ease;
 }
 
 .nav-admin:hover {
@@ -229,6 +230,37 @@ header h1 {
 
 .nav-right.slide-left .nav-admin {
   transform: translateX(-80px);
+}
+
+/* Responsive adjustments for navigation */
+@media (max-width: 768px) {
+  .nav-right {
+    gap: 0.5rem;
+  }
+  
+  .nav-search input[type="text"] {
+    width: 140px;
+  }
+}
+
+@media (max-width: 600px) {
+  .site-nav {
+    padding: 0.75rem 1rem;
+  }
+  
+  .nav-right {
+    gap: 0.25rem;
+  }
+  
+  .nav-search input[type="text"] {
+    width: 100px;
+  }
+  
+  .nav-center a,
+  .btn-login {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+  }
 }
 
 /* Typography */
