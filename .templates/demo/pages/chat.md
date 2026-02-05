@@ -663,6 +663,9 @@ function joinRoom(roomName) {
     window.messageEventSource = null;
   }
   
+  // Stop heartbeat monitoring
+  stopHeartbeat();
+  
   // Clear any existing polling interval
   if (window.messageInterval) {
     clearInterval(window.messageInterval);
@@ -890,6 +893,57 @@ window.sseReconnectAttempts = 0;
 window.sseMaxReconnectAttempts = 3;  // Give up after 3 attempts
 window.sseReconnectTimeout = null;
 window.sseLastSuccessfulConnection = null;
+window.sseHeartbeatTimeout = null;
+window.sseHeartbeatInterval = 45000;  // 45 seconds - server pings every 15s, so this allows 3 missed pings
+
+// Reset heartbeat timer - call this whenever we receive ANY event from server
+function resetHeartbeat(roomName) {
+  // Clear existing timeout
+  if (window.sseHeartbeatTimeout) {
+    clearTimeout(window.sseHeartbeatTimeout);
+    window.sseHeartbeatTimeout = null;
+  }
+  
+  // Set new timeout
+  window.sseHeartbeatTimeout = setTimeout(function() {
+    console.error('[SSE] Heartbeat timeout - no events received for', window.sseHeartbeatInterval / 1000, 'seconds');
+    
+    // Connection is dead - close it and trigger reconnection
+    if (window.messageEventSource) {
+      console.log('[SSE] Closing dead connection');
+      window.messageEventSource.close();
+      window.messageEventSource = null;
+    }
+    
+    // Trigger reconnection logic
+    if (window.sseReconnectAttempts < window.sseMaxReconnectAttempts) {
+      window.sseReconnectAttempts++;
+      console.log('[SSE] Reconnect attempt', window.sseReconnectAttempts, 'of', window.sseMaxReconnectAttempts, '(heartbeat timeout)');
+      
+      updateConnectionStatus('reconnecting', false);
+      
+      // Wait 2 seconds before reconnecting
+      window.sseReconnectTimeout = setTimeout(function() {
+        if (window.currentRoom === roomName) {
+          console.log('[SSE] Auto-reconnecting to room:', roomName);
+          setupMessageStream(roomName, formatLocalTimestamp(new Date()));
+        }
+      }, 2000);
+    } else {
+      // Max attempts reached - show connection lost
+      console.error('[SSE] Max reconnection attempts reached - giving up');
+      updateConnectionStatus('lost', true);
+    }
+  }, window.sseHeartbeatInterval);
+}
+
+// Stop heartbeat monitoring
+function stopHeartbeat() {
+  if (window.sseHeartbeatTimeout) {
+    clearTimeout(window.sseHeartbeatTimeout);
+    window.sseHeartbeatTimeout = null;
+  }
+}
 
 // Update connection status UI
 function updateConnectionStatus(status, isClickable) {
@@ -1005,6 +1059,9 @@ function setupMessageStream(roomName, sinceTimestamp) {
     errorCount = 0;
     
     updateConnectionStatus('connected', false);
+    
+    // Start heartbeat monitoring
+    resetHeartbeat(roomName);
   });
   
   // Handle incoming messages
@@ -1015,12 +1072,18 @@ function setupMessageStream(roomName, sinceTimestamp) {
     
     // Update last successful connection time
     window.sseLastSuccessfulConnection = Date.now();
+    
+    // Reset heartbeat timer - we received an event
+    resetHeartbeat(roomName);
   });
   
   // Handle member list updates
   window.messageEventSource.addEventListener('members', function(event) {
     // Event data is JSON array of members
     updateMemberList(event.data);
+    
+    // Reset heartbeat timer - we received an event
+    resetHeartbeat(roomName);
   });
   
   // Handle errors
@@ -1028,6 +1091,9 @@ function setupMessageStream(roomName, sinceTimestamp) {
     console.error('[SSE] Error occurred:', event);
     console.error('[SSE] ReadyState:', window.messageEventSource.readyState);
     console.error('[SSE] URL:', window.messageEventSource.url);
+    
+    // Stop heartbeat monitoring during error state
+    stopHeartbeat();
     
     errorCount++;
     
@@ -1068,6 +1134,9 @@ function setupMessageStream(roomName, sinceTimestamp) {
   window.messageEventSource.addEventListener('ping', function(event) {
     // Update last successful connection time
     window.sseLastSuccessfulConnection = Date.now();
+    
+    // Reset heartbeat timer - we received a ping
+    resetHeartbeat(roomName);
   });
   
   // Add a timeout warning if connection not established after 5 seconds
@@ -1837,6 +1906,9 @@ function showNotification() {
 
 // Clean up avatar when user leaves the page
 window.addEventListener('beforeunload', function() {
+  
+  // Stop heartbeat monitoring
+  stopHeartbeat();
   
   // Close SSE connection
   if (window.messageEventSource) {
