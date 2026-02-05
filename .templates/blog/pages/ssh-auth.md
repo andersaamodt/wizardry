@@ -35,33 +35,33 @@ sudo usermod -aG blog-admin <username>
 <h2>🔐 Step 1: Register with MUD Player Account</h2>
 
 <p><strong>Option A: If you have a MUD player account on this server</strong></p>
-<p style="font-size: 0.9rem; color: #666; margin-bottom: 1rem;">Just enter your player name - the system will automatically use your SSH key!</p>
+<p class="help-text">Just enter your player name - the system will automatically use your SSH key!</p>
 
-<div style="margin-bottom: 1rem;">
-<label style="display: block; margin-bottom: 0.5rem;"><strong>MUD Player Name:</strong></label>
-<input type="text" id="reg-username-mud" placeholder="Enter your player name" style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem; margin-bottom: 0.5rem;">
+<div class="form-group">
+<label><strong>MUD Player Name:</strong></label>
+<input type="text" id="reg-username-mud" placeholder="Enter your player name">
 </div>
 
-<button id="btn-register-mud" style="padding: 0.75rem 1.5rem; font-size: 1rem; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer;">🎮 Register with MUD Account</button>
+<button id="btn-register-mud">🎮 Register with MUD Account</button>
 
 <div id="output-register-mud" class="output"></div>
 
-<hr style="margin: 2rem 0; border: none; border-top: 1px solid #ddd;">
+<hr class="divider">
 
 <p><strong>Option B: Manual SSH key registration (for testing/demo)</strong></p>
 
-<div style="margin-bottom: 1rem;">
-<label style="display: block; margin-bottom: 0.5rem;"><strong>Username:</strong></label>
-<input type="text" id="reg-username" placeholder="Enter username" style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem; margin-bottom: 0.5rem;" value="demo-user">
+<div class="form-group">
+<label><strong>Username:</strong></label>
+<input type="text" id="reg-username" placeholder="Enter username" value="demo-user">
 </div>
 
-<div style="margin-bottom: 1rem;">
-<label style="display: block; margin-bottom: 0.5rem;"><strong>SSH Public Key:</strong></label>
-<textarea id="reg-ssh-key" placeholder="Paste your SSH public key (e.g., ssh-ed25519 AAAA...)" rows="3" style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 4px; font-size: 0.9rem; font-family: monospace; margin-bottom: 0.5rem;"></textarea>
-<p style="font-size: 0.85rem; color: #666; margin: 0;">💡 Get your SSH public key with: <code>cat ~/.ssh/id_ed25519.pub</code></p>
+<div class="form-group">
+<label><strong>SSH Public Key:</strong></label>
+<textarea id="reg-ssh-key" placeholder="Paste your SSH public key (e.g., ssh-ed25519 AAAA...)" rows="3"></textarea>
+<p class="help-text">💡 Get your SSH public key with: <code>cat ~/.ssh/id_ed25519.pub</code></p>
 </div>
 
-<button id="btn-register-ssh" style="padding: 0.75rem 1.5rem; font-size: 1rem;">🔑 Register SSH Key</button>
+<button id="btn-register-ssh">🔑 Register SSH Key</button>
 
 <div id="output-register-ssh" class="output"></div>
 </div>
@@ -71,7 +71,7 @@ sudo usermod -aG blog-admin <username>
 
 <p>Create a WebAuthn credential bound to your SSH fingerprint:</p>
 
-<button id="btn-bind-webauthn" style="padding: 0.75rem 1.5rem; font-size: 1rem;">🔗 Bind WebAuthn Credential</button>
+<button id="btn-bind-webauthn">🔗 Bind WebAuthn Credential</button>
 
 <div id="output-bind-webauthn" class="output"></div>
 </div>
@@ -81,7 +81,7 @@ sudo usermod -aG blog-admin <username>
 
 <p>Sign in using your WebAuthn credential (no SSH key required):</p>
 
-<button id="btn-login" style="padding: 0.75rem 1.5rem; font-size: 1rem;">🔓 Login with WebAuthn</button>
+<button id="btn-login">🔓 Login with WebAuthn</button>
 
 <div id="output-login" class="output"></div>
 </div>
@@ -91,7 +91,7 @@ sudo usermod -aG blog-admin <username>
 
 <p>View and manage your WebAuthn delegates:</p>
 
-<button id="btn-list-delegates" style="padding: 0.75rem 1.5rem; font-size: 1rem;">📋 List Delegates</button>
+<button id="btn-list-delegates">📋 List Delegates</button>
 
 <div id="output-delegates" class="output"></div>
 </div>
@@ -453,61 +453,6 @@ ${delegatesHtml}
   });
 })();
 </script>
-
-<style>
-.demo-box {
-  background: #f5f7fa;
-  border: 2px solid #3498db;
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin: 2rem 0;
-}
-
-.demo-box h2 {
-  margin-top: 0;
-  color: #2c3e50;
-}
-
-.output {
-  min-height: 20px;
-}
-
-button {
-  background: #3498db;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 4px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-button:hover {
-  background: #2980b9;
-}
-
-button:active {
-  background: #21618c;
-}
-
-code {
-  background: #ecf0f1;
-  padding: 0.2rem 0.4rem;
-  border-radius: 3px;
-  font-family: monospace;
-  font-size: 0.9rem;
-}
-
-pre {
-  background: #2c3e50;
-  color: #ecf0f1;
-  padding: 1rem;
-  border-radius: 4px;
-  overflow-x: auto;
-  font-size: 0.85rem;
-}
-</style>
 
 ## Key Features
 

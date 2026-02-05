@@ -123,12 +123,12 @@ HTMX_HEADER
         --output="$html_file" \
         "$md_file"
       
-      # If nav file exists, insert it after the title block header
+      # If nav file exists, insert it right after <body> tag (above title/header)
       if [ -f "$nav_file" ]; then
-        # Use awk to insert nav after </header> tag
+        # Use awk to insert nav immediately after <body> tag
         temp_html=$(temp-file html-with-nav)
         awk -v nav_file="$nav_file" '
-          /<\/header>/ {
+          /<body>/ {
             print
             while ((getline line < nav_file) > 0) {
               print line
