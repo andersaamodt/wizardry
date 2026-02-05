@@ -1236,12 +1236,11 @@ pre code {
   right: 110px;  /* Position to left of Send button with proper spacing */
   top: 50%;
   transform: translateY(-50%);
-  padding-top: 0.125em;  /* Move text down slightly to better align with spinner */
   color: #999;  /* Light grey text to match spinner */
   font-size: 0.85em;  /* Smaller, less obtrusive */
   font-style: italic;
   opacity: 0;
-  transition: opacity 0.2s ease-in-out;
+  transition: opacity 0.3s ease-in-out;  /* Fade in/out animation */
   pointer-events: none;  /* Don't interfere with clicking */
 }
 
@@ -1249,19 +1248,22 @@ pre code {
   opacity: 1;
 }
 
-/* Connection lost status - clickable pill */
+/* Connection lost (Disconnected) status - clickable pill */
 #connecting-status.connection-lost {
-  background: rgba(128, 128, 128, 0.3);  /* Grey translucent background */
-  padding: 0.4rem 0.8rem;
+  background: rgba(128, 128, 128, 0.2);  /* More translucent/lighter grey background */
+  padding: 0.3rem 0.8rem;  /* Reduced top/bottom padding for shorter height */
   border-radius: 1rem;  /* Pill shape with rounded corners */
   pointer-events: auto;  /* Allow clicking */
   cursor: pointer;
   color: #666;
-  transition: all 0.2s ease-in-out;
+  min-width: 90px;  /* Fixed width to prevent size change */
+  text-align: center;  /* Center text within fixed width */
+  transform: translateY(-48%);  /* Slight adjustment down for better vertical centering */
+  transition: all 0.3s ease-in-out;  /* Smooth fade and background transition */
 }
 
 #connecting-status.connection-lost:hover {
-  background: rgba(128, 128, 128, 0.4);  /* Slightly darker on hover */
+  background: rgba(128, 128, 128, 0.3);  /* Slightly darker on hover (but still lighter than before) */
   color: #444;
 }
 

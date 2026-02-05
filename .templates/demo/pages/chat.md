@@ -998,8 +998,8 @@ function updateConnectionStatus(status, isClickable) {
     statusElement.onclick = null;
     if (sendBtn) sendBtn.disabled = true;
   } else if (status === 'lost') {
-    // Show connection lost (clickable pill, no spinner)
-    statusElement.innerHTML = 'Connection lost';
+    // Show disconnected (clickable pill, no spinner)
+    statusElement.innerHTML = 'Disconnected';
     statusElement.classList.add('visible', 'connection-lost');
     statusElement.onclick = function() {
       attemptReconnection(window.currentRoom);
@@ -1009,7 +1009,7 @@ function updateConnectionStatus(status, isClickable) {
       this.innerHTML = 'Retry';
     };
     statusElement.onmouseleave = function() {
-      this.innerHTML = 'Connection lost';
+      this.innerHTML = 'Disconnected';
     };
     if (sendBtn) sendBtn.disabled = true;
   }
