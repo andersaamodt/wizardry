@@ -15,7 +15,7 @@
   --light-bg: #f3f4f6;
   --code-bg: #e5e7eb;
   --shadow: rgba(0,0,0,0.1);
-  --nav-link-hover: #a7f3d0;
+  --nav-link-hover: #6ee7b7;
   --nav-link-active: #059669;
 }
 
@@ -234,8 +234,8 @@ header h1 {
 
 /* Responsive adjustments for navigation */
 @media (max-width: 768px) {
-  .nav-right {
-    gap: 0.5rem;
+  .site-nav {
+    gap: 1rem; /* Reduce space between center and right sections */
   }
   
   .nav-search input[type="text"] {
@@ -246,10 +246,11 @@ header h1 {
 @media (max-width: 600px) {
   .site-nav {
     padding: 0.75rem 1rem;
+    gap: 0.5rem; /* Further reduce space on very small screens */
   }
   
-  .nav-right {
-    gap: 0.25rem;
+  .nav-center {
+    gap: 0.25rem; /* Tighten center links */
   }
   
   .nav-search input[type="text"] {
