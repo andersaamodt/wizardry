@@ -10,7 +10,3 @@ Browse posts by topic:
 <div id="tag-cloud" hx-get="/cgi/blog-tags" hx-trigger="load" hx-swap="innerHTML">
   Loading tags...
 </div>
-
----
-
-Tags are Nostr-compatible and function as top-level categories for organizing content.
