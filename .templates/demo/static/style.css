@@ -1270,7 +1270,7 @@ pre code {
 }
 
 #connecting-status.connection-lost:hover {
-  background: rgba(128, 128, 128, 0.18);  /* Slightly lighter hover background */
+  background: rgba(128, 128, 128, 0.20);  /* Slightly darker than 0.18 but lighter than 0.22 */
   color: #444;
 }
 
