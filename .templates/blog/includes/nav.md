@@ -48,7 +48,7 @@
 
   // Login button functionality
   const loginBtn = document.getElementById('login-btn');
-  const registerBtn = document.querySelector('.nav-register');
+  const registerBtn = document.querySelector('.btn-register');
   const navRight = document.querySelector('.nav-right');
   
   if (loginBtn) {
