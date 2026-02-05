@@ -25,6 +25,8 @@
   --nav-icon: #f59e0b;
   --nav-button-bg: var(--light-bg);
   --nav-button-bg-dark: var(--light-bg);
+  --select-bg: var(--bg);
+  --accent-hover-end: #1d4ed8;
 }
 
 
@@ -212,7 +214,7 @@ header h1 {
   padding: 0.6rem 0.75rem;
   border-radius: 8px;
   border: 1px solid var(--border);
-  background: var(--bg);
+  background: var(--select-bg);
   color: var(--text);
   font-family: var(--font-family);
   font-size: 0.95rem;
@@ -247,7 +249,7 @@ header h1 {
 }
 
 .btn-login:hover {
-  background: linear-gradient(135deg, var(--accent-dark) 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, var(--accent-dark) 0%, var(--accent-hover-end) 100%);
   text-decoration: none;
 }
 
