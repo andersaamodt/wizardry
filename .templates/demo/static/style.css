@@ -1266,13 +1266,12 @@ pre code {
   color: #666;
   transform: translateY(-46%);  /* Move down a bit more for better alignment */
   font-style: italic;  /* Match the italic style of Connecting/Reconnecting */
-  transition: opacity 0.3s ease-in-out, background-color 0.5s ease-in-out, min-width 0.3s ease-in-out, transform 0.3s ease-in-out;  /* Background fades in slowly */
+  transition: opacity 0.3s ease-in-out, min-width 0.3s ease-in-out, transform 0.3s ease-in-out;  /* No background-color transition - appears instantly with opacity */
 }
 
 #connecting-status.connection-lost:hover {
-  background: rgba(128, 128, 128, 0.20);  /* Slightly darker than 0.18 but lighter than 0.22 */
-  color: #444;  /* Darker text on hover (no transition for instant change) */
-  transition: opacity 0.3s ease-in-out, background-color 0.3s ease-in-out, min-width 0.3s ease-in-out, transform 0.3s ease-in-out;  /* Faster background change on hover, but color changes instantly */
+  background: rgba(128, 128, 128, 0.20);  /* Slightly darker - instant change, no transition */
+  color: #444;  /* Darker text on hover - instant change */
 }
 
 /* Alternative positioning when chat input area is hidden (no room selected) */

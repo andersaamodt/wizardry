@@ -1092,14 +1092,20 @@ function updateConnectionStatus(status, isClickable) {
     }
     
     if (wasDisconnected) {
-      // Crossfade from Disconnected: remove background styling first but keep element visible
-      // The CSS transition on background-color will handle the fade-out
+      // Crossfade from Disconnected: first set opacity to 0 to hide any grey background
+      statusElement.style.opacity = '0';
+      
+      // Remove background styling immediately (won't be visible since opacity is 0)
       statusElement.classList.remove('connection-lost');
       
       // Set text without clearing spinner (preserve animation)
       setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
       
-      // Element stays visible during crossfade
+      // Force reflow to ensure opacity change is applied
+      statusElement.offsetHeight;
+      
+      // Clear inline style and add visible class to fade in with new content
+      statusElement.style.opacity = '';
       statusElement.classList.add('visible');
     } else {
       // Coming from other state or first time
