@@ -1359,6 +1359,8 @@ pre code {
   vertical-align: text-bottom;  /* Stable anchor point to prevent movement */
   position: relative;
   top: 2px;  /* Fine-tune vertical position */
+  transform-origin: center center;  /* Ensure rotation is centered */
+  flex-shrink: 0;  /* Prevent size changes */
   will-change: transform;
   backface-visibility: hidden;
 }
