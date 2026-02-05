@@ -123,40 +123,21 @@ HTMX_HEADER
         --output="$html_file" \
         "$md_file"
       
-      # If nav file exists, insert it after the title block header or body tag
+      # If nav file exists, insert it right after <body> tag (above title/header)
       if [ -f "$nav_file" ]; then
-        # Use awk to insert nav after </header> tag (Pandoc 2.x) or <body> tag (Pandoc 3.x/fallback)
+        # Use awk to insert nav immediately after <body> tag
         temp_html=$(temp-file html-with-nav)
-        
-        # Check if </header> tag exists in the file
-        if grep -q '</header>' "$html_file"; then
-          # Insert after </header> tag
-          awk -v nav_file="$nav_file" '
-            /<\/header>/ {
-              print
-              while ((getline line < nav_file) > 0) {
-                print line
-              }
-              close(nav_file)
-              next
+        awk -v nav_file="$nav_file" '
+          /<body>/ {
+            print
+            while ((getline line < nav_file) > 0) {
+              print line
             }
-            { print }
-          ' "$html_file" > "$temp_html"
-        else
-          # Fallback: Insert after <body> tag
-          awk -v nav_file="$nav_file" '
-            /<body>/ {
-              print
-              while ((getline line < nav_file) > 0) {
-                print line
-              }
-              close(nav_file)
-              next
-            }
-            { print }
-          ' "$html_file" > "$temp_html"
-        fi
-        
+            close(nav_file)
+            next
+          }
+          { print }
+        ' "$html_file" > "$temp_html"
         mv "$temp_html" "$html_file"
       fi
       
