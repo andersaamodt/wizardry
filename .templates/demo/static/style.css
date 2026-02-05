@@ -1249,6 +1249,22 @@ pre code {
   opacity: 1;
 }
 
+/* Connection lost status - clickable pill */
+#connecting-status.connection-lost {
+  background: rgba(128, 128, 128, 0.3);  /* Grey translucent background */
+  padding: 0.4rem 0.8rem;
+  border-radius: 1rem;  /* Pill shape with rounded corners */
+  pointer-events: auto;  /* Allow clicking */
+  cursor: pointer;
+  color: #666;
+  transition: all 0.2s ease-in-out;
+}
+
+#connecting-status.connection-lost:hover {
+  background: rgba(128, 128, 128, 0.4);  /* Slightly darker on hover */
+  color: #444;
+}
+
 .chat-input-area textarea,
 .chat-input-area input[type="text"] {
   margin: 0;
