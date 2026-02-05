@@ -54,6 +54,13 @@ nav a:hover {
   text-decoration: underline;
 }
 
+/* Site Navigation */
+.site-nav {
+  padding: 1rem 0;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid var(--accent);
+}
+
 /* Typography */
 h1, h2, h3, h4, h5, h6 {
   color: var(--primary);
