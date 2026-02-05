@@ -21,6 +21,7 @@ This is a personal blog built with wizardry web. Posts are content-addressable, 
     <option value="enchanter">Enchanter</option>
     <option value="geomancer">Geomancer</option>
     <option value="hermeticist">Hermeticist</option>
+    <option value="hierophant">Hierophant</option>
     <option value="illusionist">Illusionist</option>
     <option value="necromancer">Necromancer</option>
     <option value="pyromancer">Pyromancer</option>
@@ -31,6 +32,7 @@ This is a personal blog built with wizardry web. Posts are content-addressable, 
     <option value="technomancer">Technomancer</option>
     <option value="thaumaturge">Thaumaturge</option>
     <option value="thelemite">Thelemite</option>
+    <option value="theurgist">Theurgist</option>
     <option value="wadjet">Wadjet</option>
     <option value="warlock">Warlock</option>
     <option value="wizard">Wizard</option>

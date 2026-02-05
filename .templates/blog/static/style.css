@@ -22,6 +22,8 @@
   --nav-link-hover: #e0e7ff;
   --nav-link-active: #f59e0b;
   --nav-icon: #f59e0b;
+  --nav-button-bg: var(--light-bg);
+  --nav-button-bg-dark: var(--light-bg);
 }
 
 
@@ -150,7 +152,7 @@ header h1 {
 .nav-search button {
   height: 2.25rem;
   padding: 0 1rem;
-  background: var(--light-bg);
+  background: linear-gradient(135deg, var(--nav-button-bg) 0%, var(--nav-button-bg-dark) 100%);
   color: var(--nav-icon);
   border: 1px solid var(--border);
   border-left: 1px solid #cbd5e1;
