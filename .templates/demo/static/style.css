@@ -1235,12 +1235,12 @@ pre code {
   position: absolute;
   right: 110px;  /* Position to left of Send button with proper spacing */
   top: 50%;
-  transform: translateY(-50%);
+  transform: translateY(-48%);  /* Slightly lower than perfect center */
   color: #999;  /* Light grey text to match spinner */
   font-size: 0.85em;  /* Smaller, less obtrusive */
   font-style: italic;
   opacity: 0;
-  transition: opacity 0.3s ease-in-out, background-color 0.3s ease-in-out, padding 0.3s ease-in-out, min-width 0.3s ease-in-out, transform 0.3s ease-in-out, color 0.3s ease-in-out;  /* Smooth transitions for all properties */
+  transition: opacity 0.3s ease-in-out, background-color 0.3s ease-in-out, min-width 0.3s ease-in-out, transform 0.3s ease-in-out, color 0.3s ease-in-out;  /* Smooth transitions (no padding) */
   pointer-events: none;  /* Don't interfere with clicking */
   width: 110px;  /* Fixed width to fit both Disconnected and Retry */
   text-align: center;  /* Center text within fixed width */
@@ -1248,6 +1248,12 @@ pre code {
 
 #connecting-status.visible {
   opacity: 1;
+}
+
+/* Reconnecting status - show default cursor */
+#connecting-status.visible:not(.connection-lost) {
+  pointer-events: auto;  /* Allow interaction */
+  cursor: default;
 }
 
 /* Connection lost (Disconnected) status - clickable pill */
@@ -1258,14 +1264,14 @@ pre code {
   pointer-events: auto;  /* Allow clicking */
   cursor: pointer;
   color: #666;
-  transform: translateY(-50%);  /* Match the vertical alignment of Reconnecting */
+  transform: translateY(-46%);  /* Move down a bit more for better alignment */
   font-style: italic;  /* Match the italic style of Connecting/Reconnecting */
-  transition: opacity 0.3s ease-in-out, padding 0.3s ease-in-out, min-width 0.3s ease-in-out, transform 0.3s ease-in-out, color 0.3s ease-in-out;  /* No background-color transition for instant hover */
+  transition: opacity 0.3s ease-in-out, min-width 0.3s ease-in-out, transform 0.3s ease-in-out;  /* No background-color transition - appears instantly with opacity */
 }
 
 #connecting-status.connection-lost:hover {
-  background: rgba(128, 128, 128, 0.22);  /* Instantly darker on hover (no animation) */
-  color: #444;
+  background: rgba(128, 128, 128, 0.20);  /* Slightly darker - instant change, no transition */
+  color: #444;  /* Darker text on hover - instant change */
 }
 
 /* Alternative positioning when chat input area is hidden (no room selected) */
@@ -1350,9 +1356,14 @@ pre code {
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
   margin-left: 8px;
-  vertical-align: middle;
+  vertical-align: middle;  /* Use middle for better centering */
+  transform-origin: center center;  /* Ensure rotation is centered */
+  flex-shrink: 0;  /* Prevent size changes */
   will-change: transform;
   backface-visibility: hidden;
+  /* Perfect centering: position based on center point */
+  position: relative;
+  top: -1px;  /* Fine-tune to align with text baseline */
 }
 
 @keyframes spin {

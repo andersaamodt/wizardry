@@ -946,6 +946,24 @@ function stopHeartbeat() {
   }
 }
 
+// Helper function to set status text while preserving spinner element
+function setStatusTextWithSpinner(element, text, spinnerElement) {
+  // Remove only text nodes, preserve spinner if it exists
+  Array.from(element.childNodes).forEach(function(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      element.removeChild(node);
+    }
+  });
+  
+  // Insert text before spinner if spinner exists, otherwise set text and append spinner
+  if (element.contains(spinnerElement)) {
+    element.insertBefore(document.createTextNode(text), spinnerElement);
+  } else {
+    element.textContent = text;
+    element.appendChild(spinnerElement);
+  }
+}
+
 // Update connection status UI
 function updateConnectionStatus(status, isClickable) {
   var statusElement = document.getElementById('connecting-status');
@@ -953,6 +971,18 @@ function updateConnectionStatus(status, isClickable) {
   var chatInputArea = document.getElementById('chat-input-area');
   var createRoomLink = document.getElementById('create-room-link');
   var usernameChangeBtn = document.querySelector('.username-display button');
+  
+  // Track current status to avoid redundant updates
+  if (!window.currentConnectionStatus) {
+    window.currentConnectionStatus = '';
+  }
+  
+  // If already showing this status, don't animate again
+  if (window.currentConnectionStatus === status && status === 'reconnecting') {
+    return;  // Skip redundant reconnecting updates
+  }
+  
+  window.currentConnectionStatus = status;
   
   // Determine if we should use alternate positioning (when no room selected)
   var useAlternatePosition = !chatInputArea || chatInputArea.style.display === 'none';
@@ -1040,9 +1070,8 @@ function updateConnectionStatus(status, isClickable) {
       window.sseSpinnerElement.className = 'spinner-grey';
     }
     
-    // Clear content and set text with spinner
-    statusElement.textContent = 'Connecting';
-    statusElement.appendChild(window.sseSpinnerElement);
+    // Set text without clearing spinner (preserve animation)
+    setStatusTextWithSpinner(statusElement, 'Connecting', window.sseSpinnerElement);
     
     statusElement.classList.add('visible');
     statusElement.onclick = null;
@@ -1053,21 +1082,45 @@ function updateConnectionStatus(status, isClickable) {
     // Show reconnecting with spinner
     // Use global spinner to prevent animation reset
     
-    // Remove connection-lost styling first to prevent layout shift
-    statusElement.classList.remove('connection-lost');
+    // Check if we're transitioning from connection-lost (Retry/Disconnected)
+    var wasDisconnected = statusElement.classList.contains('connection-lost');
     
-    // Get or create the global spinner
+    // Get or create the global spinner (shared logic)
     if (!window.sseSpinnerElement) {
       window.sseSpinnerElement = document.createElement('span');
       window.sseSpinnerElement.className = 'spinner-grey';
     }
     
-    // Clear content and set text with spinner
-    statusElement.textContent = 'Reconnecting';
-    statusElement.appendChild(window.sseSpinnerElement);
-    
-    // Ensure visible class is present (no fade needed if already visible)
-    statusElement.classList.add('visible');
+    if (wasDisconnected) {
+      // Crossfade from Disconnected: first set opacity to 0 to hide any grey background
+      statusElement.style.opacity = '0';
+      
+      // Remove background styling immediately (won't be visible since opacity is 0)
+      statusElement.classList.remove('connection-lost');
+      
+      // Set text without clearing spinner (preserve animation)
+      setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
+      
+      // Force reflow to ensure opacity change is applied
+      void statusElement.offsetHeight;
+      
+      // Clear inline style and add visible class to fade in with new content
+      statusElement.style.opacity = '';
+      statusElement.classList.add('visible');
+    } else {
+      // Coming from other state or first time
+      statusElement.classList.remove('connection-lost');
+      
+      // Set text without clearing spinner (preserve animation)
+      setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
+      
+      if (!statusElement.classList.contains('visible')) {
+        // First time appearing - fade in
+        statusElement.offsetHeight;
+        statusElement.classList.add('visible');
+      }
+      // else: already visible, no change needed (stays visible)
+    }
     
     statusElement.onclick = null;
     statusElement.onmouseenter = null;
@@ -1076,26 +1129,45 @@ function updateConnectionStatus(status, isClickable) {
   } else if (status === 'lost') {
     // Show disconnected (clickable pill, no spinner)
     
-    // First, set content and styling while keeping invisible
-    statusElement.classList.remove('visible');
+    // Check if we're transitioning from reconnecting (with spinner)
+    var wasReconnecting = !statusElement.classList.contains('connection-lost') && 
+                          statusElement.textContent.indexOf('Reconnecting') !== -1;
+    
+    // Add connection-lost class for styling
     statusElement.classList.add('connection-lost');
-    statusElement.innerHTML = 'Disconnected';
     
-    // Force reflow then add visible class for fade-in
-    statusElement.offsetHeight;
-    statusElement.classList.add('visible');
+    // Set initial content
+    statusElement.textContent = 'Disconnected';
     
-    // Setup handlers
+    if (wasReconnecting) {
+      // Crossfade from Reconnecting to Disconnected - element stays visible
+      statusElement.classList.add('visible');
+    } else if (!statusElement.classList.contains('visible')) {
+      // First time appearing - fade in
+      statusElement.offsetHeight;
+      statusElement.classList.add('visible');
+    }
+    // else: already visible, no change needed (stays visible)
+    
+    // Setup click handler
     statusElement.onclick = function() {
       attemptReconnection(window.currentRoom);
     };
-    // Add hover effect to change text
+    
+    // Use textContent for consistent comparison in hover handlers
     statusElement.onmouseenter = function() {
-      this.innerHTML = 'Retry';
+      // Only change if not already changed
+      if (this.textContent === 'Disconnected') {
+        this.textContent = 'Retry';
+      }
     };
     statusElement.onmouseleave = function() {
-      this.innerHTML = 'Disconnected';
+      // Only revert if showing Retry
+      if (this.textContent === 'Retry') {
+        this.textContent = 'Disconnected';
+      }
     };
+    
     if (sendBtn) sendBtn.disabled = true;
   }
 }
