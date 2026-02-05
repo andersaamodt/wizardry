@@ -8,7 +8,7 @@
   --green: #10b981;
   --purple: #a855f7;
   --violet: #8b5cf6;
-  --text: #1f2937;
+  --text: #000000;
   --light-text: #6b7280;
   --border: #d1d5db;
   --bg: #ffffff;
@@ -25,12 +25,13 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  max-width: 800px;
+  max-width: 700px;
   margin: 0 auto;
   padding: 0 1.5rem 2rem 1.5rem;
   line-height: 1.7;
   color: var(--text);
-  background: var(--bg);
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #dbeafe 100%);
+  min-height: 100vh;
 }
 
 /* Header & Navigation */
@@ -126,14 +127,15 @@ header h1 {
 
 .nav-search button {
   padding: 0.5rem 0.8rem;
-  background: var(--accent);
-  color: white;
-  border: none;
+  background: white;
+  color: #000000;
+  border: 1px solid var(--border);
+  border-left: none;
   border-radius: 0 20px 20px 0;
   font-size: 0.9rem;
   cursor: pointer;
   font-weight: 600;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -141,7 +143,8 @@ header h1 {
 }
 
 .nav-search button:hover {
-  background: var(--accent-dark);
+  background: var(--light-bg);
+  border-color: var(--accent);
 }
 
 .nav-admin {
