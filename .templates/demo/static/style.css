@@ -1266,12 +1266,13 @@ pre code {
   color: #666;
   transform: translateY(-46%);  /* Move down a bit more for better alignment */
   font-style: italic;  /* Match the italic style of Connecting/Reconnecting */
-  transition: opacity 0.3s ease-in-out, min-width 0.3s ease-in-out, transform 0.3s ease-in-out, color 0.3s ease-in-out;  /* No background-color or padding transition for instant changes */
+  transition: opacity 0.3s ease-in-out, background-color 0.5s ease-in-out, min-width 0.3s ease-in-out, transform 0.3s ease-in-out;  /* Background fades in slowly */
 }
 
 #connecting-status.connection-lost:hover {
   background: rgba(128, 128, 128, 0.20);  /* Slightly darker than 0.18 but lighter than 0.22 */
-  color: #444;
+  color: #444;  /* Darker text on hover (no transition for instant change) */
+  transition: opacity 0.3s ease-in-out, background-color 0.3s ease-in-out, min-width 0.3s ease-in-out, transform 0.3s ease-in-out;  /* Faster background change on hover, but color changes instantly */
 }
 
 /* Alternative positioning when chat input area is hidden (no room selected) */
@@ -1356,13 +1357,14 @@ pre code {
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
   margin-left: 8px;
-  vertical-align: text-bottom;  /* Stable anchor point to prevent movement */
-  position: relative;
-  top: 2px;  /* Fine-tune vertical position */
+  vertical-align: middle;  /* Use middle for better centering */
   transform-origin: center center;  /* Ensure rotation is centered */
   flex-shrink: 0;  /* Prevent size changes */
   will-change: transform;
   backface-visibility: hidden;
+  /* Perfect centering: position based on center point */
+  position: relative;
+  top: -1px;  /* Fine-tune to align with text baseline */
 }
 
 @keyframes spin {

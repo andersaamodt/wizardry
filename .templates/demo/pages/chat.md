@@ -1085,27 +1085,42 @@ function updateConnectionStatus(status, isClickable) {
     // Check if we're transitioning from connection-lost (Retry/Disconnected)
     var wasDisconnected = statusElement.classList.contains('connection-lost');
     
-    // Always remove connection-lost class first
-    statusElement.classList.remove('connection-lost');
-    
-    // Get or create the global spinner
-    if (!window.sseSpinnerElement) {
-      window.sseSpinnerElement = document.createElement('span');
-      window.sseSpinnerElement.className = 'spinner-grey';
-    }
-    
-    // Set text without clearing spinner (preserve animation)
-    setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
-    
     if (wasDisconnected) {
-      // Crossfade from Disconnected to Reconnecting - element stays visible
+      // Crossfade from Disconnected: remove background styling first but keep element visible
+      // The CSS transition on background-color will handle the fade-out
+      statusElement.classList.remove('connection-lost');
+      
+      // Get or create the global spinner
+      if (!window.sseSpinnerElement) {
+        window.sseSpinnerElement = document.createElement('span');
+        window.sseSpinnerElement.className = 'spinner-grey';
+      }
+      
+      // Set text without clearing spinner (preserve animation)
+      setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
+      
+      // Element stays visible during crossfade
       statusElement.classList.add('visible');
-    } else if (!statusElement.classList.contains('visible')) {
-      // First time appearing - fade in
-      statusElement.offsetHeight;
-      statusElement.classList.add('visible');
+    } else {
+      // Coming from other state or first time
+      statusElement.classList.remove('connection-lost');
+      
+      // Get or create the global spinner
+      if (!window.sseSpinnerElement) {
+        window.sseSpinnerElement = document.createElement('span');
+        window.sseSpinnerElement.className = 'spinner-grey';
+      }
+      
+      // Set text without clearing spinner (preserve animation)
+      setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
+      
+      if (!statusElement.classList.contains('visible')) {
+        // First time appearing - fade in
+        statusElement.offsetHeight;
+        statusElement.classList.add('visible');
+      }
+      // else: already visible, no change needed (stays visible)
     }
-    // else: already visible, no change needed (stays visible)
     
     statusElement.onclick = null;
     statusElement.onmouseenter = null;
