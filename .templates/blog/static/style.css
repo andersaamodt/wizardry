@@ -190,7 +190,7 @@ header h1 {
 }
 
 .btn-register {
-  display: inline-block;
+  display: none;
   background: linear-gradient(135deg, var(--green) 0%, #059669 100%);
   color: white !important;
   padding: 0.5rem 1.2rem;
@@ -207,6 +207,7 @@ header h1 {
 }
 
 .btn-register.show {
+  display: inline-block;
   opacity: 1;
   transform: translateX(0);
   pointer-events: auto;
