@@ -978,29 +978,50 @@ function updateConnectionStatus(status, isClickable) {
         if (statusElement && statusElement.parentNode) {
           statusElement.remove();
         }
-      }, 200);
+      }, 300);  // Match transition duration
     }
     if (sendBtn) sendBtn.disabled = false;
     window.sseReconnectAttempts = 0;  // Reset counter on success
     window.sseLastSuccessfulConnection = Date.now();
   } else if (status === 'connecting') {
     // Show connecting with spinner
-    statusElement.innerHTML = 'Connecting<span class="spinner-grey"></span>';
+    // Preserve existing spinner if present to avoid animation reset
+    var hasSpinner = statusElement.querySelector('.spinner-grey');
+    if (!hasSpinner) {
+      statusElement.innerHTML = 'Connecting<span class="spinner-grey"></span>';
+    } else {
+      // Update text but keep spinner
+      var spinner = statusElement.querySelector('.spinner-grey');
+      statusElement.textContent = 'Connecting';
+      statusElement.appendChild(spinner);
+    }
     statusElement.classList.remove('connection-lost');
     statusElement.classList.add('visible');
     statusElement.onclick = null;
     if (sendBtn) sendBtn.disabled = true;
   } else if (status === 'reconnecting') {
     // Show reconnecting with spinner
-    statusElement.innerHTML = 'Reconnecting<span class="spinner-grey"></span>';
+    // Preserve existing spinner if present to avoid animation reset
+    var hasSpinner = statusElement.querySelector('.spinner-grey');
+    if (!hasSpinner) {
+      statusElement.innerHTML = 'Reconnecting<span class="spinner-grey"></span>';
+    } else {
+      // Update text but keep spinner to maintain animation
+      var spinner = statusElement.querySelector('.spinner-grey');
+      statusElement.textContent = 'Reconnecting';
+      statusElement.appendChild(spinner);
+    }
     statusElement.classList.remove('connection-lost');
     statusElement.classList.add('visible');
     statusElement.onclick = null;
     if (sendBtn) sendBtn.disabled = true;
   } else if (status === 'lost') {
     // Show disconnected (clickable pill, no spinner)
+    // First add the connection-lost class to trigger transitions
+    statusElement.classList.add('connection-lost');
+    // Then update text - this happens simultaneously with style transitions
     statusElement.innerHTML = 'Disconnected';
-    statusElement.classList.add('visible', 'connection-lost');
+    statusElement.classList.add('visible');
     statusElement.onclick = function() {
       attemptReconnection(window.currentRoom);
     };
@@ -1021,6 +1042,9 @@ function attemptReconnection(roomName) {
   
   console.log('[SSE] Manual reconnection attempt for room:', roomName);
   window.sseReconnectAttempts = 0;  // Reset attempts for manual reconnection
+  
+  // Show "Reconnecting" message
+  updateConnectionStatus('reconnecting', false);
   
   // Close existing connection
   if (window.messageEventSource) {

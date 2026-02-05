@@ -1240,7 +1240,7 @@ pre code {
   font-size: 0.85em;  /* Smaller, less obtrusive */
   font-style: italic;
   opacity: 0;
-  transition: opacity 0.3s ease-in-out;  /* Fade in/out animation */
+  transition: opacity 0.3s ease-in-out, background-color 0.3s ease-in-out, padding 0.3s ease-in-out, min-width 0.3s ease-in-out, transform 0.3s ease-in-out;  /* Smooth transitions for all properties */
   pointer-events: none;  /* Don't interfere with clicking */
 }
 
@@ -1251,15 +1251,15 @@ pre code {
 /* Connection lost (Disconnected) status - clickable pill */
 #connecting-status.connection-lost {
   background: rgba(128, 128, 128, 0.2);  /* More translucent/lighter grey background */
-  padding: 0.3rem 0.8rem;  /* Reduced top/bottom padding for shorter height */
+  padding: 0.25rem 0.8rem;  /* Even more reduced top/bottom padding for thinner pill */
   border-radius: 1rem;  /* Pill shape with rounded corners */
   pointer-events: auto;  /* Allow clicking */
   cursor: pointer;
   color: #666;
-  min-width: 90px;  /* Fixed width to prevent size change */
+  min-width: 95px;  /* Fixed width to prevent size change */
   text-align: center;  /* Center text within fixed width */
-  transform: translateY(-48%);  /* Slight adjustment down for better vertical centering */
-  transition: all 0.3s ease-in-out;  /* Smooth fade and background transition */
+  transform: translateY(-46%);  /* Move down slightly for better vertical centering */
+  font-style: italic;  /* Match the italic style of Connecting/Reconnecting */
 }
 
 #connecting-status.connection-lost:hover {
