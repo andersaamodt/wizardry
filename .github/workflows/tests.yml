@@ -119,6 +119,16 @@ jobs:
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/check-attribute-tool spells/.imps/fs/list-attributes spells/.imps/fs/get-attribute
+      - name: Install checkbashisms via CPAN for level 21+ testing
+        run: |
+          # Install cpanm if not available
+          if ! command -v cpanm >/dev/null 2>&1; then
+            curl -L https://cpanmin.us | perl - --sudo App::cpanminus
+          fi
+          # Install checkbashisms from Debian devscripts (contains checkbashisms.pl)
+          # Download directly since CPAN doesn't have checkbashisms as a standalone module
+          sudo curl -sSL https://sources.debian.org/data/main/d/devscripts/2.23.4+deb12u2/scripts/checkbashisms.pl -o /usr/local/bin/checkbashisms
+          sudo chmod +x /usr/local/bin/checkbashisms
       - name: Run unit tests (levels ${{ matrix.levels }})
         run: |
           set -e
@@ -167,7 +177,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Ensure installer spells are executable
         run: chmod +x spells/.arcana/mud/install-mud spells/.arcana/tor/setup-tor spells/.imps/fs/check-attribute-tool spells/.imps/fs/list-attributes spells/.imps/fs/get-attribute
-      - name: Pre-install checkbashisms for level 22 testing
+      - name: Pre-install checkbashisms for level 21+ testing
         run: ./spells/.arcana/core/install-checkbashisms
       - name: Run unit tests (levels ${{ matrix.levels }})
         run: |
