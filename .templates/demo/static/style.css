@@ -1343,7 +1343,7 @@ pre code {
   width: 16px;
   height: 16px;
   margin-left: 8px;
-  vertical-align: -3px;
+  vertical-align: -2px;  /* Adjusted to match Disconnected/Retry alignment */
   position: relative;
   flex-shrink: 0;
 }
@@ -1359,7 +1359,7 @@ pre code {
   border: 2px solid rgba(128, 128, 128, 0.2);
   border-top-color: #666;
   border-radius: 50%;
-  animation: spin-stepped 0.8s steps(8) infinite;
+  animation: spin-stepped 0.8s steps(24) infinite;  /* Increased to 24 steps for smoother rotation */
   box-sizing: border-box;
   /* GPU acceleration and rendering optimizations */
   transform: translateZ(0);
