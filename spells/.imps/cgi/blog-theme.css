@@ -17,7 +17,7 @@ if [ -z "$theme" ]; then
 fi
 
 case "$theme" in
-  archmage|wizard|warlock|sorcerer|sorceress|technomancer|enchanter|illusionist|druid|empath|shaman|geomancer|hermeticist|necromancer|conjurer|pyromancer|chronomancer|alchemist|seer|adept)
+  archmage|wizard|warlock|sorcerer|sorceress|thelemite|technomancer|enchanter|illusionist|druid|empath|shaman|geomancer|hermeticist|necromancer|conjurer|pyromancer|chronomancer|alchemist|seer|adept)
     ;;
   *)
     theme="archmage"
