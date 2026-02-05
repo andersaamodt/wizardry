@@ -1,7 +1,7 @@
 :root {
   --primary: #b3862b;
-  --accent: #f5c542;
-  --accent-dark: #b87333;
+  --accent: #f8d157;
+  --accent-dark: #d4af37;
   --teal: #6b7280;
   --green: #9ca3af;
   --purple: #374151;
@@ -15,7 +15,7 @@
   --shadow: rgba(179, 135, 40, 0.12);
   --nav-link-hover: #fef3c7;
   --nav-link-active: #f5c542;
-  --nav-icon: #6b7280;
-  --nav-button-bg: #e5e7eb;
-  --nav-button-bg-dark: #9ca3af;
+  --nav-icon: #d4af37;
+  --nav-button-bg: #c1121f;
+  --nav-button-bg-dark: #7f1d1d;
 }

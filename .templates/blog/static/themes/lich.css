@@ -8,7 +8,8 @@
   --violet: rgba(216, 180, 254, 0.8);
   --text: #ede9fe;
   --light-text: rgba(216, 180, 254, 0.85);
-  --heading-color: #c4b5fd;
+  --heading-color: #e9d5ff;
+  --heading-glow: 0 0 8px rgba(216, 180, 254, 0.45);
   --border: #3b0764;
   --bg: #0b0616;
   --light-bg: #1e0b2e;

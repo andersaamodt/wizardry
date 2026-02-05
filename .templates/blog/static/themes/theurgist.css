@@ -16,5 +16,7 @@
   --shadow: rgba(29, 78, 216, 0.16);
   --nav-link-hover: #e2e8f0;
   --nav-link-active: #1d4ed8;
-  --nav-icon: #1d4ed8;
+  --nav-icon: #f59e0b;
+  --nav-button-bg: #1d4ed8;
+  --nav-button-bg-dark: #1e3a8a;
 }
