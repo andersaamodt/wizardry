@@ -151,6 +151,123 @@ web-wizardry serve myblog
 
 Visit http://localhost:8080
 
+## MUD Integration & Authentication
+
+The blog template integrates with the wizardry MUD player system to provide unified authentication and admin access control.
+
+### Key Features
+
+- **MUD Player Accounts**: Blog uses existing MUD player SSH keys
+- **WebAuthn Authentication**: Passwordless login with biometrics/security keys
+- **UNIX Group Permissions**: Admin access via `blog-admin` group
+- **Admin Panel**: Compose, publish, and manage posts
+- **Markdown Editor**: Live preview for easy writing
+- **Draft Management**: Save work-in-progress, publish when ready
+- **Configurable Registration**: Enable/disable new user registration
+
+### Quick Start for Admins
+
+1. **Create MUD Player** (on server as root):
+   ```sh
+   sudo add-player
+   # Enter player name and SSH public key
+   ```
+
+2. **Grant Admin Access**:
+   ```sh
+   sudo groupadd blog-admin  # Create group if needed
+   sudo usermod -aG blog-admin <username>
+   ```
+
+3. **Register on Blog**: Visit `/ssh-auth.html`, enter player name
+
+4. **Access Admin Panel**: Visit `/admin.html` to compose and publish
+
+### For Single-Author Blogs
+
+After creating your account and giving yourself admin access:
+
+1. Login to admin panel
+2. Go to Settings
+3. Uncheck "Enable User Registration"
+4. Save Settings
+
+This prevents new users from registering while keeping your access.
+
+### Admin Capabilities
+
+- **Compose Posts**: Markdown editor with live preview
+- **Publish**: Make posts public instantly
+- **Save Drafts**: Work on posts before publishing
+- **Manage Settings**: Site title, registration toggle
+- **View Drafts**: See all unpublished posts
+
+### Authentication Flow
+
+```
+MUD Player (UNIX user with SSH key)
+    ↓
+Register on blog (uses SSH fingerprint)
+    ↓
+Create WebAuthn credential (biometric, security key)
+    ↓
+Login with WebAuthn (no SSH needed)
+    ↓
+Access admin panel (if in blog-admin group)
+```
+
+### Demo Pages
+
+- `/ssh-auth.html` - Authentication and registration
+- `/admin.html` - Admin panel (requires admin permissions)
+
+### CGI Scripts
+
+**Authentication:**
+- `ssh-auth-register-mud` - Register using MUD player account
+- `ssh-auth-register` - Manual SSH key registration (demo/testing)
+- `ssh-auth-bind-webauthn` - Bind WebAuthn credential to SSH fingerprint
+- `ssh-auth-login` - Authenticate using WebAuthn credential
+- `ssh-auth-check-session` - Validate session and permissions
+- `ssh-auth-list-delegates` - List all WebAuthn delegates
+- `ssh-auth-revoke-delegate` - Revoke a WebAuthn delegate
+
+**Blog Management (Admin Only):**
+- `blog-get-config` - Get site configuration
+- `blog-update-config` - Update site settings
+- `blog-list-drafts` - List draft posts
+- `blog-save-post` - Save or publish posts
+
+### Data Storage
+
+```
+~/sites/myblog/
+├── site.conf                  # Site configuration
+├── data/
+│   └── ssh-auth/
+│       ├── users/
+│       │   └── alice/
+│       │       ├── ssh_fingerprint
+│       │       ├── is_admin
+│       │       └── delegates/
+│       └── sessions/
+└── site/
+    └── pages/
+        └── posts/
+            ├── 2024-02-04-my-post.md  # Published
+            └── 2024-02-04-draft.md    # Draft
+```
+
+### Security Model
+
+- **Root Identity**: SSH public key fingerprint (never changes)
+- **Delegates**: WebAuthn credentials (revocable, multi-device)
+- **Permissions**: UNIX group membership (`blog-admin`)
+- **Session Validation**: Every admin action checks permissions
+- **Phishing-Resistant**: WebAuthn bound to domain
+
+See `.github/MUD_BLOG_INTEGRATION.md` for complete documentation.
+
 ## Design Principles
 
 1. **Filesystem as database**: Posts are files, versions are immutable

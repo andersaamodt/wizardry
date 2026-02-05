@@ -1,0 +1,35 @@
+#!/bin/sh
+# blog-get-config - Get blog configuration settings
+
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "application/json"
+http-end-headers
+
+# Get site config
+site_root=$(get-site-data-dir "..")
+site_config="$site_root/site.conf"
+
+# Default values
+registration_enabled="true"
+site_title="My Blog"
+
+# Read config if exists
+if [ -f "$site_config" ]; then
+  reg_val=$(grep -E "^registration_enabled=" "$site_config" \
+    | cut -d= -f2 2>/dev/null || echo "")
+  if [ -n "$reg_val" ]; then
+    registration_enabled="$reg_val"
+  fi
+  
+  title_val=$(grep -E "^site_title=" "$site_config" \
+    | cut -d= -f2- 2>/dev/null || echo "")
+  if [ -n "$title_val" ]; then
+    site_title="$title_val"
+  fi
+fi
+
+# Return config
+printf '{"success":true,"registration_enabled":%s,"site_title":"%s"}\n' \
+  "$registration_enabled" "$site_title"

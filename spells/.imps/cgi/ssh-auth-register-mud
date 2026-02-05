@@ -1,0 +1,98 @@
+#!/bin/sh
+# ssh-auth-register-mud - Register using MUD player SSH key
+
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "application/json"
+http-end-headers
+
+# Parse query parameters
+username=$(get-query-param "username")
+
+# Validate inputs
+if [ -z "$username" ]; then
+  printf '{"success":false,"error":"Missing username"}\n'
+  exit 0
+fi
+
+# Validate player name format
+if ! validate-player-name "$username" 2>/dev/null; then
+  printf '{"success":false,"error":"Invalid username format"}\n'
+  exit 0
+fi
+
+# Check if registration is enabled
+site_config=$(get-site-data-dir "..")/site.conf
+if [ -f "$site_config" ]; then
+  registration_enabled=$(grep -E "^registration_enabled=" "$site_config" \
+    | cut -d= -f2 || echo "true")
+  if [ "$registration_enabled" = "false" ]; then
+    printf '{"success":false,"error":"User registration is disabled"}\n'
+    exit 0
+  fi
+fi
+
+# Check if user exists as a system user (MUD player)
+if ! id "$username" >/dev/null 2>&1; then
+  printf '{"success":false,"error":"No MUD player account found"}\n'
+  exit 0
+fi
+
+# Get SSH public key from user's home directory
+player_ssh_key=""
+if [ -f "/home/$username/.ssh/authorized_keys" ]; then
+  # Get first key from authorized_keys
+  player_ssh_key=$(head -n 1 "/home/$username/.ssh/authorized_keys" \
+    | cut -d' ' -f1,2)
+fi
+
+if [ -z "$player_ssh_key" ]; then
+  printf '{"success":false,"error":"No SSH key found for player"}\n'
+  exit 0
+fi
+
+# Get data directory
+data_dir=$(get-site-data-dir "ssh-auth")
+
+# Calculate SSH fingerprint (SHA-256)
+fingerprint=$(printf '%s' "$player_ssh_key" | sha256sum | cut -d' ' -f1)
+
+# Check if already registered
+user_dir="$data_dir/users/$username"
+if [ -d "$user_dir" ]; then
+  stored_fp=$(cat "$user_dir/ssh_fingerprint" 2>/dev/null || echo "")
+  if [ "$fingerprint" = "$stored_fp" ]; then
+    # Already registered, return existing challenge
+    challenge=$(cat "$user_dir/challenge" 2>/dev/null || echo "")
+    if [ -z "$challenge" ]; then
+      challenge=$(dd if=/dev/urandom bs=32 count=1 2>/dev/null \
+        | base64 | tr -d '\n')
+      printf '%s' "$challenge" > "$user_dir/challenge"
+    fi
+    printf '{"success":true,"fingerprint":"%s","challenge":"%s","username":"%s","registered":true}\n' \
+      "$fingerprint" "$challenge" "$username"
+    exit 0
+  fi
+fi
+
+# Store SSH public key with fingerprint
+mkdir -p "$user_dir"
+printf '%s' "$player_ssh_key" > "$user_dir/ssh_public_key"
+printf '%s' "$fingerprint" > "$user_dir/ssh_fingerprint"
+
+# Check if user is in blog-admin group for initial admin status
+is_admin="false"
+if id -nG "$username" 2>/dev/null | grep -q "blog-admin"; then
+  is_admin="true"
+  printf '%s' "$is_admin" > "$user_dir/is_admin"
+fi
+
+# Generate binding challenge
+challenge=$(dd if=/dev/urandom bs=32 count=1 2>/dev/null \
+  | base64 | tr -d '\n')
+printf '%s' "$challenge" > "$user_dir/challenge"
+
+# Return success with challenge and fingerprint
+printf '{"success":true,"fingerprint":"%s","challenge":"%s","username":"%s","is_admin":%s}\n' \
+  "$fingerprint" "$challenge" "$username" "$is_admin"

@@ -633,6 +633,242 @@ Perform cryptographic operations like hashing, encryption, and key generation:
 })();
 </script>
 
+## 6. WebAuthn API (Passwordless Authentication)
+
+WebAuthn enables strong, phishing-resistant authentication using public key cryptography:
+
+<div class="demo-box">
+<h3>🔑 WebAuthn Registration & Authentication</h3>
+  
+<p style="margin-bottom: 1rem;">
+    WebAuthn allows you to create and use credentials for passwordless authentication.
+    This demo simulates the registration and authentication flow.
+</p>
+
+<div style="margin-bottom: 2rem;">
+<h4>Step 1: Registration</h4>
+<p style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">Create a new WebAuthn credential (use your device's authenticator: fingerprint, face recognition, or security key)</p>
+<div style="margin-bottom: 1rem;">
+<label style="display: block; margin-bottom: 0.5rem;"><strong>Username:</strong></label>
+<input type="text" id="webauthn-username" placeholder="Enter username" style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem; margin-bottom: 0.5rem;" value="demo-user">
+</div>
+<button id="webauthn-register">🔑 Register with WebAuthn</button>
+<div id="webauthn-register-output" class="output"></div>
+</div>
+
+<div style="margin-bottom: 2rem;">
+<h4>Step 2: Authentication</h4>
+<p style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">Sign in using your previously registered credential</p>
+<button id="webauthn-authenticate">✅ Authenticate with WebAuthn</button>
+<div id="webauthn-authenticate-output" class="output"></div>
+</div>
+
+<div>
+<h4>Credential Information</h4>
+<button id="webauthn-info">ℹ️ Show Credential Details</button>
+<div id="webauthn-info-output" class="output"></div>
+</div>
+</div>
+
+<script>
+(function() {
+  const registerOutput = document.getElementById('webauthn-register-output');
+  const authenticateOutput = document.getElementById('webauthn-authenticate-output');
+  const infoOutput = document.getElementById('webauthn-info-output');
+  const usernameInput = document.getElementById('webauthn-username');
+  
+  let storedCredential = null;
+  let challenge = null;
+  
+  // Utility functions
+  function arrayBufferToBase64(buffer) {
+    return btoa(String.fromCharCode(...new Uint8Array(buffer)));
+  }
+  
+  function base64ToArrayBuffer(base64) {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes.buffer;
+  }
+  
+  function generateChallenge() {
+    return crypto.getRandomValues(new Uint8Array(32));
+  }
+  
+  // Registration
+  document.getElementById('webauthn-register').addEventListener('click', async () => {
+    const username = usernameInput.value.trim();
+    
+    if (!username) {
+      registerOutput.innerHTML = '<p class="error">Please enter a username</p>';
+      return;
+    }
+    
+    if (!window.PublicKeyCredential) {
+      registerOutput.innerHTML = `
+<div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
+<h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ WebAuthn Not Supported</h4>
+<p style="margin: 0;">Your browser doesn't support WebAuthn. Try using a modern browser like Chrome, Firefox, Safari, or Edge.</p>
+</div>
+      `;
+      return;
+    }
+    
+    registerOutput.innerHTML = '<p style="color: #2980b9;">🔄 Requesting credential creation...</p>';
+    
+    try {
+      challenge = generateChallenge();
+      
+      const publicKeyCredentialCreationOptions = {
+        challenge: challenge,
+        rp: {
+          name: "Wizardry Web Demo",
+          id: window.location.hostname
+        },
+        user: {
+          id: crypto.getRandomValues(new Uint8Array(16)),
+          name: username,
+          displayName: username
+        },
+        pubKeyCredParams: [
+          { alg: -7, type: "public-key" },  // ES256
+          { alg: -257, type: "public-key" } // RS256
+        ],
+        authenticatorSelection: {
+          authenticatorAttachment: "platform",
+          requireResidentKey: false,
+          userVerification: "preferred"
+        },
+        timeout: 60000,
+        attestation: "none"
+      };
+      
+      const credential = await navigator.credentials.create({
+        publicKey: publicKeyCredentialCreationOptions
+      });
+      
+      // Store credential info
+      storedCredential = {
+        id: credential.id,
+        rawId: arrayBufferToBase64(credential.rawId),
+        type: credential.type,
+        username: username
+      };
+      
+      registerOutput.innerHTML = `
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ Registration Successful!</h4>
+<p style="margin: 0.25rem 0;"><strong>Username:</strong> ${username}</p>
+<p style="margin: 0.25rem 0;"><strong>Credential ID:</strong></p>
+<pre style="margin: 0.5rem 0; padding: 0.5rem; background: #fff; border-radius: 3px; overflow-x: auto; font-size: 0.75rem;">${credential.id.substring(0, 60)}...</pre>
+<p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666;">
+            ✅ You can now authenticate using this credential!
+</p>
+</div>
+      `;
+    } catch (error) {
+      registerOutput.innerHTML = `
+<div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
+<h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ Registration Failed</h4>
+<p style="margin: 0.25rem 0;"><strong>Error:</strong> ${error.message}</p>
+<p style="margin-top: 0.5rem; color: #666; font-size: 0.9rem;">
+            ${error.name === 'NotAllowedError' ? 
+              '🔒 Registration was cancelled or not allowed. Make sure you approve the authentication request.' :
+              error.name === 'InvalidStateError' ?
+              '⚠️ A credential might already exist for this device.' :
+              '❌ Registration failed. Please try again.'}
+</p>
+</div>
+      `;
+    }
+  });
+  
+  // Authentication
+  document.getElementById('webauthn-authenticate').addEventListener('click', async () => {
+    if (!storedCredential) {
+      authenticateOutput.innerHTML = '<p class="error">Please register first</p>';
+      return;
+    }
+    
+    if (!window.PublicKeyCredential) {
+      authenticateOutput.innerHTML = '<p class="error">WebAuthn not supported</p>';
+      return;
+    }
+    
+    authenticateOutput.innerHTML = '<p style="color: #2980b9;">🔄 Requesting authentication...</p>';
+    
+    try {
+      const newChallenge = generateChallenge();
+      
+      const publicKeyCredentialRequestOptions = {
+        challenge: newChallenge,
+        allowCredentials: [{
+          id: base64ToArrayBuffer(storedCredential.rawId),
+          type: 'public-key',
+          transports: ['internal']
+        }],
+        timeout: 60000,
+        userVerification: "preferred"
+      };
+      
+      const assertion = await navigator.credentials.get({
+        publicKey: publicKeyCredentialRequestOptions
+      });
+      
+      authenticateOutput.innerHTML = `
+<div style="background: #e8f5e9; padding: 1rem; border-radius: 4px; border: 1px solid #4caf50;">
+<h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">✅ Authentication Successful!</h4>
+<p style="margin: 0.25rem 0;"><strong>User:</strong> ${storedCredential.username}</p>
+<p style="margin: 0.25rem 0;"><strong>Credential ID:</strong></p>
+<pre style="margin: 0.5rem 0; padding: 0.5rem; background: #fff; border-radius: 3px; overflow-x: auto; font-size: 0.75rem;">${assertion.id.substring(0, 60)}...</pre>
+<p style="margin: 0.25rem 0;"><strong>Authenticator Data:</strong> ${assertion.response.authenticatorData.byteLength} bytes</p>
+<p style="margin: 0.25rem 0;"><strong>Signature:</strong> ${assertion.response.signature.byteLength} bytes</p>
+<p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666;">
+            🎉 Authentication verified! In a real application, this signature would be verified server-side.
+</p>
+</div>
+      `;
+    } catch (error) {
+      authenticateOutput.innerHTML = `
+<div style="background: #ffebee; padding: 1rem; border-radius: 4px; border: 1px solid #f44336;">
+<h4 style="margin: 0 0 0.5rem 0; color: #c62828;">❌ Authentication Failed</h4>
+<p style="margin: 0.25rem 0;"><strong>Error:</strong> ${error.message}</p>
+<p style="margin-top: 0.5rem; color: #666; font-size: 0.9rem;">
+            ${error.name === 'NotAllowedError' ? 
+              '🔒 Authentication was cancelled or not allowed.' :
+              '❌ Authentication failed. The credential might not be recognized.'}
+</p>
+</div>
+      `;
+    }
+  });
+  
+  // Show credential info
+  document.getElementById('webauthn-info').addEventListener('click', () => {
+    if (!storedCredential) {
+      infoOutput.innerHTML = '<p class="error">No credential registered yet</p>';
+      return;
+    }
+    
+    infoOutput.innerHTML = `
+<div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; border: 1px solid #2196f3;">
+<h4 style="margin: 0 0 0.5rem 0; color: #1565c0;">ℹ️ Stored Credential Information</h4>
+<p style="margin: 0.25rem 0;"><strong>Username:</strong> ${storedCredential.username}</p>
+<p style="margin: 0.25rem 0;"><strong>Credential Type:</strong> ${storedCredential.type}</p>
+<p style="margin: 0.25rem 0;"><strong>Credential ID (Base64):</strong></p>
+<pre style="margin: 0.5rem 0; padding: 0.5rem; background: #fff; border-radius: 3px; overflow-x: auto; font-size: 0.75rem;">${storedCredential.rawId}</pre>
+<p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666;">
+          💡 This credential is stored locally in your browser. In a real application, the public key would be stored on the server.
+</p>
+</div>
+    `;
+  });
+})();
+</script>
+
 ---
 
 <div class="info-box">
@@ -643,6 +879,7 @@ Perform cryptographic operations like hashing, encryption, and key generation:
 <li><strong>Secure Contexts:</strong> HTTPS-only API access detection</li>
 <li><strong>CSP:</strong> Content Security Policy information and violation detection</li>
 <li><strong>Web Crypto API:</strong> Cryptographic operations (hashing, encryption, signatures)</li>
+<li><strong>WebAuthn API:</strong> Passwordless authentication using public key cryptography</li>
 </ul>
   
 <p style="margin-top: 1rem;"><strong>🔐 Cryptographic Operations:</strong></p>
@@ -661,6 +898,7 @@ Perform cryptographic operations like hashing, encryption, and key generation:
 <li><strong>Permissions:</strong> User must grant explicit permission for sensitive features</li>
 <li><strong>CSP:</strong> Restricts resource loading to prevent injection attacks</li>
 <li><strong>Crypto API:</strong> All operations happen in secure, sandboxed environment</li>
+<li><strong>WebAuthn:</strong> Phishing-resistant authentication using hardware-backed cryptographic keys</li>
 </ul>
   
 <p style="margin-top: 1rem;"><strong>🌐 Origins:</strong></p>

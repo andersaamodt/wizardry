@@ -1,0 +1,105 @@
+#!/bin/sh
+# blog-save-post - Save or publish a blog post (admin only)
+
+set -eu
+
+http-status 200 "OK"
+http-header "Content-Type" "application/json"
+http-end-headers
+
+# Parse query parameters (POST data would be better, but using GET for now)
+session_token=$(get-query-param "session_token")
+title=$(get-query-param "title")
+tags=$(get-query-param "tags")
+summary=$(get-query-param "summary")
+content=$(get-query-param "content")
+visibility=$(get-query-param "visibility")  # "draft" or "public"
+
+# Validate session
+if [ -z "$session_token" ]; then
+  printf '{"success":false,"error":"Not authenticated"}\n'
+  exit 0
+fi
+
+# Get data directory
+data_dir=$(get-site-data-dir "ssh-auth")
+sessions_dir="$data_dir/sessions"
+session_file="$sessions_dir/$session_token"
+
+# Check if session exists
+if [ ! -f "$session_file" ]; then
+  printf '{"success":false,"error":"Invalid session"}\n'
+  exit 0
+fi
+
+# Get username from session
+username=$(grep -o '"username":"[^"]*"' "$session_file" | cut -d'"' -f4)
+
+# Check if user is admin
+is_admin="false"
+if id "$username" >/dev/null 2>&1; then
+  if id -nG "$username" 2>/dev/null | grep -q "blog-admin"; then
+    is_admin="true"
+  fi
+fi
+
+if [ "$is_admin" != "true" ]; then
+  printf '{"success":false,"error":"Admin permission required"}\n'
+  exit 0
+fi
+
+# Validate required fields
+if [ -z "$title" ] || [ -z "$content" ]; then
+  printf '{"success":false,"error":"Title and content are required"}\n'
+  exit 0
+fi
+
+# Get site root and posts directory
+site_root=$(get-site-data-dir "..")
+posts_dir="$site_root/site/pages/posts"
+mkdir -p "$posts_dir"
+
+# Generate filename from title and date
+date_prefix=$(date -u +%Y-%m-%d)
+# Convert title to slug (lowercase, replace spaces with hyphens)
+slug=$(printf '%s' "$title" | tr '[:upper:]' '[:lower:]' \
+  | tr ' ' '-' | tr -cd '[:alnum:]-')
+filename="${date_prefix}-${slug}.md"
+post_file="$posts_dir/$filename"
+
+# Default visibility to draft if not specified
+visibility_val="${visibility:-draft}"
+
+# Calculate content hash (SHA-256)
+content_hash=$(printf '%s' "$content" | sha256sum | cut -d' ' -f1)
+
+# Generate front matter
+{
+  printf '%s\n' "---"
+  printf 'title: "%s"\n' "$title"
+  printf 'published_at: "%s"\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  printf 'content_hash: "%s"\n' "$content_hash"
+  if [ -n "$tags" ]; then
+    printf 'tags: [%s]\n' "$tags"
+  else
+    printf 'tags: []\n'
+  fi
+  printf 'author: "%s"\n' "$username"
+  if [ -n "$summary" ]; then
+    printf 'summary: "%s"\n' "$summary"
+  fi
+  printf 'visibility: "%s"\n' "$visibility_val"
+  printf 'license: "CC BY 4.0"\n'
+  printf '%s\n' "---"
+  printf '\n'
+  printf '%s\n' "$content"
+} > "$post_file"
+
+# Return success
+status_msg="Draft saved"
+if [ "$visibility_val" = "public" ]; then
+  status_msg="Post published"
+fi
+
+printf '{"success":true,"filename":"%s","message":"%s"}\n' \
+  "$filename" "$status_msg"
