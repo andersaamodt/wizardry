@@ -415,15 +415,6 @@ pre code {
   animation: spin 2s linear infinite;
 }
 
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* System info table */
 .system table {
   font-family: 'Monaco', 'Courier New', monospace;
@@ -1351,23 +1342,23 @@ pre code {
   display: inline-block;
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(128, 128, 128, 0.3);
-  border-top-color: #666;
-  border-radius: 50%;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="rgba(128,128,128,0.3)" stroke-width="2"/><path d="M 8 2 A 6 6 0 0 1 14 8" fill="none" stroke="%23666" stroke-width="2" stroke-linecap="round"/></svg>');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
   animation: spin 0.6s linear infinite;
   margin-left: 8px;
-  vertical-align: middle;  /* Use middle for better centering */
-  transform-origin: center center;  /* Ensure rotation is centered */
+  vertical-align: middle;
+  transform-origin: center center;  /* Rotate around center */
   flex-shrink: 0;  /* Prevent size changes */
   will-change: transform;
-  backface-visibility: hidden;
-  /* Perfect centering: position based on center point */
   position: relative;
   top: -1px;  /* Fine-tune to align with text baseline */
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .room-controls button:disabled,
