@@ -263,6 +263,8 @@ test_uncastable() {
 
 # Test cd-listen with relative paths (the scenario that was broken)
 test_cd_listen_relative_path() {
+  skip-if-compiled || return $?  # cd hooks and background listeners don't work in compiled mode
+  
   tmpdir=$(make_tempdir)
   mkdir -p "$tmpdir/sites"
   
