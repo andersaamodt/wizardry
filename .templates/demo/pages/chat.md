@@ -895,6 +895,7 @@ window.sseReconnectTimeout = null;
 window.sseLastSuccessfulConnection = null;
 window.sseHeartbeatTimeout = null;
 window.sseHeartbeatInterval = 45000;  // 45 seconds - server pings every 15s, so this allows 3 missed pings
+window.sseSpinnerElement = null;  // Global spinner to prevent animation reset
 
 // Reset heartbeat timer - call this whenever we receive ANY event from server
 function resetHeartbeat(roomName) {
@@ -1030,17 +1031,19 @@ function updateConnectionStatus(status, isClickable) {
     window.sseLastSuccessfulConnection = Date.now();
   } else if (status === 'connecting') {
     // Show connecting with spinner
-    // Preserve existing spinner if present to avoid animation reset
-    var hasSpinner = statusElement.querySelector('.spinner-grey');
-    if (!hasSpinner) {
-      statusElement.innerHTML = 'Connecting<span class="spinner-grey"></span>';
-    } else {
-      // Update text but keep spinner
-      var spinner = statusElement.querySelector('.spinner-grey');
-      statusElement.textContent = 'Connecting';
-      statusElement.appendChild(spinner);
-    }
+    // Use global spinner to prevent animation reset
     statusElement.classList.remove('connection-lost');
+    
+    // Get or create the global spinner
+    if (!window.sseSpinnerElement) {
+      window.sseSpinnerElement = document.createElement('span');
+      window.sseSpinnerElement.className = 'spinner-grey';
+    }
+    
+    // Clear content and set text with spinner
+    statusElement.textContent = 'Connecting';
+    statusElement.appendChild(window.sseSpinnerElement);
+    
     statusElement.classList.add('visible');
     statusElement.onclick = null;
     statusElement.onmouseenter = null;
@@ -1048,34 +1051,23 @@ function updateConnectionStatus(status, isClickable) {
     if (sendBtn) sendBtn.disabled = true;
   } else if (status === 'reconnecting') {
     // Show reconnecting with spinner
-    // Preserve existing spinner if present to avoid animation reset
-    var hasSpinner = statusElement.querySelector('.spinner-grey');
-    
-    // First, ensure visible class is removed to allow fade-in
-    var wasVisible = statusElement.classList.contains('visible');
-    if (!wasVisible) {
-      statusElement.classList.remove('visible');
-    }
+    // Use global spinner to prevent animation reset
     
     // Remove connection-lost styling first to prevent layout shift
     statusElement.classList.remove('connection-lost');
     
-    if (!hasSpinner) {
-      statusElement.innerHTML = 'Reconnecting<span class="spinner-grey"></span>';
-    } else {
-      // Update text but keep spinner to maintain animation
-      var spinner = statusElement.querySelector('.spinner-grey');
-      statusElement.textContent = 'Reconnecting';
-      statusElement.appendChild(spinner);
+    // Get or create the global spinner
+    if (!window.sseSpinnerElement) {
+      window.sseSpinnerElement = document.createElement('span');
+      window.sseSpinnerElement.className = 'spinner-grey';
     }
     
-    // Force reflow to ensure the opacity transition works
-    if (!wasVisible) {
-      statusElement.offsetHeight;  // Force reflow
-      statusElement.classList.add('visible');
-    } else {
-      statusElement.classList.add('visible');
-    }
+    // Clear content and set text with spinner
+    statusElement.textContent = 'Reconnecting';
+    statusElement.appendChild(window.sseSpinnerElement);
+    
+    // Ensure visible class is present (no fade needed if already visible)
+    statusElement.classList.add('visible');
     
     statusElement.onclick = null;
     statusElement.onmouseenter = null;
@@ -1083,10 +1075,9 @@ function updateConnectionStatus(status, isClickable) {
     if (sendBtn) sendBtn.disabled = true;
   } else if (status === 'lost') {
     // Show disconnected (clickable pill, no spinner)
-    // Remove visible class first to allow fade-in
-    statusElement.classList.remove('visible');
     
-    // Set the background and text simultaneously before making visible
+    // First, set content and styling while keeping invisible
+    statusElement.classList.remove('visible');
     statusElement.classList.add('connection-lost');
     statusElement.innerHTML = 'Disconnected';
     
