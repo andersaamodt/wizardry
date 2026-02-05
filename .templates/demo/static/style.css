@@ -1343,12 +1343,12 @@ pre code {
   width: 16px;
   height: 16px;
   margin-left: 8px;
-  vertical-align: -3px;  /* Align with text */
-  position: relative;  /* For pseudo-element positioning */
-  flex-shrink: 0;  /* Prevent size changes */
+  vertical-align: -3px;
+  position: relative;
+  flex-shrink: 0;
 }
 
-/* The actual spinning element */
+/* The actual spinning element - using stepped rotation to avoid subpixel wiggling */
 .spinner-grey::after {
   content: '';
   position: absolute;
@@ -1359,15 +1359,17 @@ pre code {
   border: 2px solid rgba(128, 128, 128, 0.2);
   border-top-color: #666;
   border-radius: 50%;
-  animation: spin 0.6s linear infinite;
+  animation: spin-stepped 0.8s steps(8) infinite;
   box-sizing: border-box;
   /* GPU acceleration and rendering optimizations */
   transform: translateZ(0);
   backface-visibility: hidden;
   will-change: transform;
+  /* Force pixel-aligned rendering */
+  transform-style: flat;
 }
 
-@keyframes spin {
+@keyframes spin-stepped {
   0% { transform: translateZ(0) rotate(0deg); }
   100% { transform: translateZ(0) rotate(360deg); }
 }
