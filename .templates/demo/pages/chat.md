@@ -1100,17 +1100,12 @@ function updateConnectionStatus(status, isClickable) {
     if (wasDisconnected) {
       // Crossfade from Disconnected to Reconnecting - element stays visible
       statusElement.classList.add('visible');
-    } else {
+    } else if (!statusElement.classList.contains('visible')) {
       // First time appearing - fade in
-      if (!statusElement.classList.contains('visible')) {
-        // Force reflow then add visible class for fade-in
-        statusElement.offsetHeight;
-        statusElement.classList.add('visible');
-      } else {
-        // Already visible (e.g., was showing Connecting), keep it visible
-        statusElement.classList.add('visible');
-      }
+      statusElement.offsetHeight;
+      statusElement.classList.add('visible');
     }
+    // else: already visible, no change needed (stays visible)
     
     statusElement.onclick = null;
     statusElement.onmouseenter = null;
@@ -1127,29 +1122,24 @@ function updateConnectionStatus(status, isClickable) {
     statusElement.classList.add('connection-lost');
     
     // Set initial content
-    statusElement.innerHTML = 'Disconnected';
+    statusElement.textContent = 'Disconnected';
     
     if (wasReconnecting) {
       // Crossfade from Reconnecting to Disconnected - element stays visible
       statusElement.classList.add('visible');
-    } else {
+    } else if (!statusElement.classList.contains('visible')) {
       // First time appearing - fade in
-      if (!statusElement.classList.contains('visible')) {
-        // Force reflow then add visible class for fade-in
-        statusElement.offsetHeight;
-        statusElement.classList.add('visible');
-      } else {
-        // Already visible, keep it visible
-        statusElement.classList.add('visible');
-      }
+      statusElement.offsetHeight;
+      statusElement.classList.add('visible');
     }
+    // else: already visible, no change needed (stays visible)
     
     // Setup click handler
     statusElement.onclick = function() {
       attemptReconnection(window.currentRoom);
     };
     
-    // Use a data attribute to track hover state and avoid race conditions
+    // Use textContent for consistent comparison in hover handlers
     statusElement.onmouseenter = function() {
       // Only change if not already changed
       if (this.textContent === 'Disconnected') {
