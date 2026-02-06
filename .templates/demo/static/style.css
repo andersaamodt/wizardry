@@ -1226,7 +1226,7 @@ pre code {
   position: absolute;
   right: 110px;  /* Position to left of Send button with proper spacing */
   top: 50%;
-  transform: translateY(-48%);  /* Slightly lower than perfect center */
+  transform: translateY(-49%);  /* Slightly lower than perfect center (moved down 1px) */
   color: #999;  /* Light grey text to match spinner */
   font-size: 0.85em;  /* Smaller, less obtrusive */
   font-style: italic;
@@ -1256,7 +1256,7 @@ pre code {
   pointer-events: auto;  /* Allow clicking */
   cursor: pointer;
   color: #666;
-  transform: translateY(-48%);  /* Same as base to align with Reconnecting */
+  transform: translateY(-49%);  /* Same as base to align with Reconnecting */
   font-style: italic;  /* Match the italic style of Connecting/Reconnecting */
   transition: opacity 0.3s ease-in-out, min-width 0.3s ease-in-out, transform 0.3s ease-in-out;  /* No background-color transition - appears instantly with opacity */
 }
