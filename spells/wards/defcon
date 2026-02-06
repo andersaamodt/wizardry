@@ -92,19 +92,26 @@ if [ "$mode" = "unlock" ]; then
   case "$current_level" in
     5|4|3|2|1)
       # Restore network (if we disabled it)
-      if has ip && ip link show | grep -q "state DOWN"; then
-        step "Restoring network interfaces..."
-        for iface in $(ip link show | grep "state DOWN" | awk -F: '{print $2}' | tr -d ' '); do
-          if [ "$iface" != "lo" ]; then
-            sudo ip link set "$iface" up 2>/dev/null || warn "defcon: could not restore $iface"
+      if has ip; then
+        while IFS= read -r line; do
+          # Extract interface name from "N: ifname: ..." format
+          iface=$(printf '%s' "$line" | awk -F: '{print $2}' | tr -d ' ')
+          if [ -n "$iface" ] && [ "$iface" != "lo" ]; then
+            # Check if interface is down
+            if printf '%s' "$line" | grep -q "state DOWN"; then
+              step "Restoring network interface: $iface"
+              sudo ip link set "$iface" up 2>/dev/null || warn "defcon: could not restore $iface"
+            fi
           fi
-        done
+        done <<EOF
+$(ip link show)
+EOF
       fi
       
-      # Resume frozen processes (if any were frozen via SIGCONT)
+      # Resume frozen processes
       step "Resuming any frozen processes..."
-      # Note: In real implementation, we'd track PIDs that were frozen
-      # For now, just send SIGCONT to all user processes
+      # Note: This sends SIGCONT to all user processes, including those
+      # not frozen by defcon. This is safe as SIGCONT is ignored by running processes.
       pkill -CONT -u "$(id -u)" 2>/dev/null || true
       
       success "System unlocked from DEFCON $current_level"
@@ -160,29 +167,47 @@ case "$level" in
   1)
     step "DEFCON 1: Network lockdown"
     if has ip; then
-      for iface in $(ip link show | grep "state UP" | awk -F: '{print $2}' | tr -d ' '); do
-        if [ "$iface" != "lo" ]; then
-          info "Disabling network interface: $iface"
-          sudo ip link set "$iface" down || warn "defcon: could not disable $iface"
+      # Store ip link output to avoid running command twice
+      ip_output=$(ip link show)
+      while IFS= read -r line; do
+        # Extract interface name from "N: ifname: ..." format  
+        iface=$(printf '%s' "$line" | awk -F: '{print $2}' | tr -d ' ')
+        if [ -n "$iface" ] && [ "$iface" != "lo" ]; then
+          # Check if interface is up
+          if printf '%s' "$line" | grep -q "state UP"; then
+            info "Disabling network interface: $iface"
+            sudo ip link set "$iface" down || warn "defcon: could not disable $iface"
+          fi
         fi
-      done
+      done <<EOF
+$ip_output
+EOF
     fi
     
     step "DEFCON 1: Freezing processes"
-    # Freeze user processes (except critical ones)
+    # Freeze user processes (except current shell session and critical processes)
+    # Note: We exclude the current process tree to avoid freezing the terminal
     for pid in $(pgrep -u "$(id -u)"); do
-      # Don't freeze our own process or parent shell
+      # Skip our process, parent, and any process in our session
       if [ "$pid" != "$$" ] && [ "$pid" != "$PPID" ]; then
-        kill -STOP "$pid" 2>/dev/null || true
+        # Get process session ID - skip if it matches our session
+        pid_sid=$(ps -o sid= -p "$pid" 2>/dev/null | tr -d ' ') || continue
+        our_sid=$(ps -o sid= -p "$$" 2>/dev/null | tr -d ' ') || continue
+        if [ "$pid_sid" != "$our_sid" ]; then
+          kill -STOP "$pid" 2>/dev/null || true
+        fi
       fi
     done
     
     step "DEFCON 1: Unmounting removable devices"
     # Unmount removable media
     if has mount; then
-      for mount_point in $(mount | grep -E '/media|/mnt' | awk '{print $3}'); do
-        info "Unmounting: $mount_point"
-        sudo umount "$mount_point" 2>/dev/null || warn "defcon: could not unmount $mount_point"
+      # Use while-read loop for proper handling of paths with whitespace
+      mount | grep -E '/media|/mnt' | awk '{print $3}' | while IFS= read -r mount_point; do
+        if [ -n "$mount_point" ]; then
+          info "Unmounting: $mount_point"
+          sudo umount "$mount_point" 2>/dev/null || warn "defcon: could not unmount $mount_point"
+        fi
       done
     fi
     ;;
@@ -190,7 +215,8 @@ case "$level" in
   2)
     # Apply all DEFCON 1 measures first
     step "Applying DEFCON 1 measures..."
-    "$0" 1 -y --recursive
+    # Use 'defcon' command directly (assumes wizardry is in PATH)
+    defcon 1 -y --recursive
     
     step "DEFCON 2: Disabling non-essential services"
     # Disable common non-essential services
@@ -203,29 +229,52 @@ case "$level" in
     ;;
     
   3)
+    # Save state BEFORE killing processes (DEFCON 3 will terminate the script)
+    printf '%s\n' "$level" > "$state_file"
+    
     # Apply all DEFCON 2 measures first
     step "Applying DEFCON 2 measures..."
-    "$0" 2 -y --recursive
+    defcon 2 -y --recursive
     
     step "DEFCON 3: Terminating user processes (not recommended)"
-    # Kill non-essential user processes
-    pkill -u "$(id -u)" -9 2>/dev/null || true
+    warn "This will terminate the current shell session"
+    # Kill all user processes except our session (to allow script to finish)
+    # Use session ID to exclude current session
+    our_sid=$(ps -o sid= -p "$$" 2>/dev/null | tr -d ' ')
+    for pid in $(pgrep -u "$(id -u)"); do
+      pid_sid=$(ps -o sid= -p "$pid" 2>/dev/null | tr -d ' ') || continue
+      if [ "$pid_sid" != "$our_sid" ]; then
+        kill -9 "$pid" 2>/dev/null || true
+      fi
+    done
+    success "DEFCON $level activated"
+    # Exit immediately to avoid getting killed
+    exit 0
     ;;
     
   4)
+    # Save state BEFORE making filesystem read-only
+    printf '%s\n' "$level" > "$state_file"
+    
     # Apply all DEFCON 3 measures first
     step "Applying DEFCON 3 measures..."
-    "$0" 3 -y --recursive
+    defcon 3 -y --recursive
     
     step "DEFCON 4: Remounting filesystems read-only (not recommended)"
     # Remount root filesystem read-only
     sudo mount -o remount,ro / || warn "defcon: could not remount / as read-only"
+    success "DEFCON $level activated"
+    # State was already saved before remount
+    exit 0
     ;;
     
   5)
+    # Save state BEFORE making filesystem read-only
+    printf '%s\n' "$level" > "$state_file"
+    
     # Apply all DEFCON 4 measures first
     step "Applying DEFCON 4 measures..."
-    "$0" 4 -y --recursive
+    defcon 4 -y --recursive
     
     step "DEFCON 5: Preparing for system halt (not recommended)"
     # Sync filesystems
@@ -233,11 +282,14 @@ case "$level" in
     # Drop caches
     sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches' 2>/dev/null || true
     warn "System prepared for halt - consider running 'sudo halt' or 'sudo poweroff'"
+    success "DEFCON $level activated"
+    # State was already saved before operations
+    exit 0
     ;;
 esac
 
-# Save current level to state file (only on top-level call, not recursive)
-if [ "$is_recursive" -eq 0 ]; then
+# Save current level to state file (only for levels 1-2, as 3-5 save before dangerous ops)
+if [ "$is_recursive" -eq 0 ] && [ "$level" -le 2 ]; then
   printf '%s\n' "$level" > "$state_file"
   success "DEFCON $level activated"
 fi
