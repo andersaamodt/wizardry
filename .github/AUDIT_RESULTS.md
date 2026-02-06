@@ -122,7 +122,7 @@ This table shows all files in the repository with their audit results. Files are
 | spells/enchant/enchant | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - sets xattrs with key=value syntax | - |
 | spells/enchant/enchantment-to-yaml | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - exports xattrs to YAML format | - |
 | spells/enchant/yaml-to-enchantment | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - imports xattrs from YAML | - |
-| spells/menu/cast | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/menu/cast | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - memorized spells menu | - |
 | spells/menu/install-menu | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/menu/main-menu | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/menu/mud | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
@@ -143,22 +143,22 @@ This table shows all files in the repository with their audit results. Files are
 | spells/menu/system-menu | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/menu/thesaurus | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/menu/users-menu | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/mud/boot-player | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/mud/check-cd-hook | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/mud/choose-player | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/mud/decorate | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/mud/demo-multiplayer | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/mud/greater-heal | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/mud/heal | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/mud/lesser-heal | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/mud/listen | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/mud/look | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/mud/magic-missile | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/mud/resurrect | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/mud/boot-player | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - exits MUD gracefully with flavor text | - |
+| spells/mud/check-cd-hook | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - verifies cd hook installation for MUD | - |
+| spells/mud/choose-player | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | �� | 🟢 | None - selects player file for MUD session | - |
+| spells/mud/decorate | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - adds MUD-themed decorations to output | - |
+| spells/mud/demo-multiplayer | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - demonstrates multiplayer MUD features | - |
+| spells/mud/greater-heal | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - restores large amount of HP with flavor | - |
+| spells/mud/heal | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - restores HP with MUD mechanics | - |
+| spells/mud/lesser-heal | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - restores small amount of HP | - |
+| spells/mud/listen | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - displays ambient room sounds/events | - |
+| spells/mud/look | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - examines room with MUD-style descriptions | - |
+| spells/mud/magic-missile | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - combat spell with damage calculation | - |
+| spells/mud/resurrect | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - revives defeated player with full HP | - |
 | spells/mud/say | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - exemplary | - |
-| spells/mud/shocking-grasp | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/mud/stats | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/mud/think | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/mud/shocking-grasp | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - combat spell with electric damage | - |
+| spells/mud/stats | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - displays player statistics and attributes | - |
+| spells/mud/think | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - internal monologue with MUD formatting | - |
 | spells/priorities/deprioritize | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - lowers file priority within echelon system | - |
 | spells/priorities/get-card | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - retrieves file by priority attribute | - |
 | spells/priorities/get-new-priority | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - calculates next priority number in echelon | - |
@@ -167,21 +167,21 @@ This table shows all files in the repository with their audit results. Files are
 | spells/priorities/upvote | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - raises file priority within echelon | - |
 | spells/psi/list-contacts | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - lists vCard files with FN field extraction | - |
 | spells/psi/read-contact | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - parses vCard with friendly labels, handles escapes | - |
-| spells/spellcraft/add-synonym | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/spellcraft/bind-tome | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/spellcraft/compile-spell | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/spellcraft/delete-synonym | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/spellcraft/demo-magic | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/spellcraft/doppelganger | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/spellcraft/edit-synonym | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/spellcraft/erase-spell | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/spellcraft/forget | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/spellcraft/learn | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/spellcraft/add-synonym | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - adds spell alias to synonym file | - |
+| spells/spellcraft/bind-tome | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - binds spellbook to YAML config | - |
+| spells/spellcraft/compile-spell | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - compiles spell from source with validation | - |
+| spells/spellcraft/delete-synonym | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - removes spell alias from synonym file | - |
+| spells/spellcraft/demo-magic | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - demonstrates wizardry features interactively | - |
+| spells/spellcraft/doppelganger | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - creates spell copy/template | - |
+| spells/spellcraft/edit-synonym | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - modifies existing spell alias | - |
+| spells/spellcraft/erase-spell | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - removes spell from spellbook | - |
+| spells/spellcraft/forget | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - removes spell from memory/cache | - |
+| spells/spellcraft/learn | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - adds new spell to spellbook | - |
 | spells/spellcraft/lint-magic | 2026-02-06 | 🎯 Exhaustive | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - superb | - |
-| spells/spellcraft/merge-yaml-text | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/spellcraft/reset-default-synonyms | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/spellcraft/scribe-spell | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/spellcraft/unbind-tome | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/spellcraft/merge-yaml-text | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - merges YAML spell definitions | - |
+| spells/spellcraft/reset-default-synonyms | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - restores default spell aliases | - |
+| spells/spellcraft/scribe-spell | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - writes spell to spellbook file | - |
+| spells/spellcraft/unbind-tome | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - unbinds spellbook from config | - |
 | spells/system/config | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/system/disable-service | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/system/enable-service | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
@@ -194,11 +194,11 @@ This table shows all files in the repository with their audit results. Files are
 | spells/system/pocket-dimension | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/system/reload-ssh | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/system/remove-service | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/system/restart-service | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/system/restart-service | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - restarts systemd/launchd service with prompt-with-fallback | - |
 | spells/system/restart-ssh | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/system/service-status | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/system/start-service | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/system/stop-service | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/system/service-status | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - shows service status with prompt-with-fallback | - |
+| spells/system/start-service | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - starts systemd/launchd service with prompt-with-fallback | - |
+| spells/system/stop-service | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - stops systemd/launchd service with prompt-with-fallback | - |
 | spells/system/update-all | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/tasks/check | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - marks file as checked via xattr | - |
 | spells/tasks/get-checked | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - retrieves checked status from xattr | - |
@@ -219,31 +219,31 @@ This table shows all files in the repository with their audit results. Files are
 | spells/wards/ward-system | 2026-02-06 | 🎯 Exhaustive | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - exceptional | - |
 | spells/web/build | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/web/change-site-port | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/web/check-https-status | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/web/configure-nginx | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/web/create-from-template | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/web/check-https-status | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - verifies HTTPS certificate status | - |
+| spells/web/configure-nginx | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | �� | 🟢 | None - generates nginx.conf from template and site.conf | - |
+| spells/web/create-from-template | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - creates new site from template | - |
 | spells/web/create-site | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/web/create-site-prompt | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/web/create-site-prompt | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - interactive site creation wizard | - |
 | spells/web/delete-site | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/web/diagnose-sse | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/web/diagnose-sse | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - diagnoses SSE streaming issues | - |
 | spells/web/disable-https | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/web/disable-site-daemon | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/web/enable-site-daemon | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/web/fix-site-security | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/web/https | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/web/is-site-daemon-enabled | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/web/disable-site-daemon | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - disables launchd/systemd site daemon | - |
+| spells/web/enable-site-daemon | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - enables launchd/systemd site daemon | - |
+| spells/web/fix-site-security | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - sets correct ownership/permissions for site files | - |
+| spells/web/https | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - configures HTTPS for site | - |
+| spells/web/is-site-daemon-enabled | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - checks if site daemon is enabled | - |
 | spells/web/manage-allowed-dirs | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/web/renew-https | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/web/repair-site-daemon | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/web/run-site-daemon | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/web/serve-site | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/web/setup-https | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/web/site-menu | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/web/renew-https | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - renews HTTPS certificates | - |
+| spells/web/repair-site-daemon | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - repairs broken site daemon configuration | - |
+| spells/web/run-site-daemon | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - runs site as daemon process | - |
+| spells/web/serve-site | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - starts nginx server with error log checking | - |
+| spells/web/setup-https | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - initial HTTPS setup with certbot | - |
+| spells/web/site-menu | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - interactive site management menu | - |
 | spells/web/site-status | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/web/stop-site | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/web/stop-site | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - stops nginx server and daemon | - |
 | spells/web/template-menu | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/web/toggle-site-tor-hosting | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/web/update-from-template | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/web/update-from-template | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - updates site from template with interactive selection | - |
 | spells/web/web-wizardry | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | install | 2026-02-06 | 🎯 Exhaustive | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - exceptional quality | - |
 | .tests/.arcana/bitcoin/test-bitcoin-menu.sh | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
