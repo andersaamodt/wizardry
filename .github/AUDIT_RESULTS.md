@@ -96,7 +96,7 @@ This table shows all files in the repository with their audit results. Files are
 | spells/arcane/jump-trash | 2026-02-06 17:48 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - excellent uncastable pattern, proper state mgmt, symlink handling, self-healing fallback, 'teleport' theming apt | - |
 | spells/arcane/read-magic | 2026-02-06 17:49 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - clean xattr reader, auto-prepends user namespace, delegates to imps, didactic flow, 'enchantments' theming perfect | - |
 | spells/arcane/trash | 2026-02-06 17:49 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - excellent cross-platform trash utility, proper escaping, helpful errors, 'banish' is perfectly apt MUD vocabulary | - |
-| spells/cantrips/ask | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/cantrips/ask | 2026-02-06 18:55 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - clean shim/delegation pattern, exec for signal forwarding, light theming appropriate ("gentlest cantrip") | - |
 | spells/cantrips/ask-number | 2026-02-06 16:45 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - inlined input logic per EXEMPTIONS, proper range validation | - |
 | spells/cantrips/ask-text | 2026-02-06 16:45 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - inlined input logic per EXEMPTIONS, good default handling | - |
 | spells/cantrips/ask-yn | 2026-02-06 16:45 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - inlined input logic per EXEMPTIONS, exit status represents answer | - |
@@ -222,7 +222,7 @@ This table shows all files in the repository with their audit results. Files are
 | spells/web/build | 2026-02-06 18:48 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | Comprehensive Pandoc static site generator. Incremental builds, htmx integration, watch mode. Has build_site() function (exempted pattern). | - |
 | spells/web/change-site-port | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/web/check-https-status | 2026-02-06 18:49 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | Clean conditional checking HTTPS config. Good exit codes (0/1/2), verifies both config and cert file existence. | - |
-| spells/web/configure-nginx | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/web/configure-nginx | 2026-02-06 18:58 | 🔍 Perused | 🟡 | 🟢 | 🟡 | 🟢 | 🟡 | 🟢 | Line 18: usage example says "web-configure-nginx" instead of "configure-nginx"; site user reexec logic (76-92) complex and duplicated | - |
 | spells/web/create-from-template | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/web/create-site | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/web/create-site-prompt | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
