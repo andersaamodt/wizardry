@@ -158,8 +158,8 @@ This table shows all files in the repository with their audit results. Files are
 | spells/mud/magic-missile | 2026-02-06 18:46 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | Excellent attack spell! Random damage, 8 flavor text variants, colorful output, room logging for multiplayer. Rich immersive gameplay. | - |
 | spells/mud/resurrect | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/mud/say | 2026-02-06 16:45 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - exemplary | - |
-| spells/mud/shocking-grasp | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/mud/stats | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/mud/shocking-grasp | 2026-02-06 19:05 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - excellent MUD spell with on_toucher mechanic, mana system, colorized output, proper TTY detection, heavy theming perfect | - |
+| spells/mud/stats | 2026-02-06 19:07 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - excellent RPG character sheet with color-coded health/mana, avatar fallback logic, numeric validation, heavy MUD theming perfect | - |
 | spells/mud/think | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/priorities/deprioritize | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/priorities/get-card | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
