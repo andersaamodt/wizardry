@@ -17,13 +17,13 @@ Loading rooms...
 
 <div class="room-controls">
 <!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
-<div id="create-room-widget"><a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a><div id="create-room-input-wrapper"><input type="text" id="new-room-name" placeholder="Room name" oninput="validateRoomName()" onkeydown="if(event.key==='Enter' && !document.getElementById('create-room-btn').disabled) { document.getElementById('create-room-btn').click(); }" /><span id="create-room-invalid-icon">&#x1F6AB;</span></div><button id="create-room-btn" disabled hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; validateRoomName(); htmx.trigger('body', 'roomListChanged'); showNotification(); toggleCreateRoom(); }">Create</button></div>
+<div id="create-room-widget"><a href="#" id="create-room-link" class="disabled" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a><div id="create-room-input-wrapper"><input type="text" id="new-room-name" placeholder="Room name" oninput="validateRoomName()" onkeydown="if(event.key==='Enter' && !document.getElementById('create-room-btn').disabled) { document.getElementById('create-room-btn').click(); }" /><span id="create-room-invalid-icon">&#x1F6AB;</span></div><button id="create-room-btn" disabled hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; validateRoomName(); htmx.trigger('body', 'roomListChanged'); showNotification(); toggleCreateRoom(); }">Create</button></div>
 </div>
 </div>
 
 <div class="username-widget">
 <!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
-<div class="username-display" id="username-display"><strong id="username-text">@Guest001</strong><button onclick="editUsername()">Change</button></div>
+<div class="username-display" id="username-display"><strong id="username-text">@Guest001</strong><button disabled onclick="editUsername()">Change</button></div>
 <div class="username-edit" id="username-edit"><h5>Change Handle</h5><div id="username-edit-input-wrapper"><input type="text" id="username-edit-input" placeholder="Your name" /><span id="username-invalid-icon">&#x1F6AB;</span></div><div class="username-edit-buttons"><button onclick="saveUsername()">OK</button><button onclick="cancelUsernameEdit()">Cancel</button></div></div>
 </div>
 </div>
@@ -530,18 +530,18 @@ function setupRoomListStream() {
 // Handle room selection from list
 document.addEventListener('htmx:afterSwap', function(event) {
   if (event.detail.target.id === 'room-list') {
-    // On first load, change empty state message and enable UI
+    // Update empty state message on every room list swap
+    var emptyStateMsg = document.querySelector('#chat-messages .empty-state-message');
+    if (emptyStateMsg) {
+      var msgText = emptyStateMsg.textContent.trim();
+      if (msgText === 'Connecting to server...') {
+        emptyStateMsg.textContent = 'Select a room to start chatting';
+      }
+    }
+    
+    // On first load, enable UI elements
     if (!window.roomListLoaded) {
       window.roomListLoaded = true;
-      
-      // Update empty state message
-      var emptyStateMsg = document.querySelector('#chat-messages .empty-state-message');
-      if (emptyStateMsg) {
-        var msgText = emptyStateMsg.textContent.trim();
-        if (msgText === 'Connecting to server...') {
-          emptyStateMsg.textContent = 'Select a room to start chatting';
-        }
-      }
       
       // Enable the create room link on first load
       var createRoomLink = document.getElementById('create-room-link');
@@ -2057,31 +2057,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialize unread counts SSE connection on page load
 document.addEventListener('DOMContentLoaded', function() {
-  // Disable create room link until connected
-  var createRoomLink = document.getElementById('create-room-link');
-  if (createRoomLink) {
-    createRoomLink.classList.add('disabled');
-  }
-  
-  // Disable username change button until connected
-  var usernameChangeBtn = document.querySelector('#username-display button');
-  if (usernameChangeBtn) {
-    usernameChangeBtn.disabled = true;
-  }
-  
-  // Fallback: Check after a delay to ensure message updates even if event doesn't fire
-  setTimeout(function() {
-    if (window.roomListLoaded) {
-      var emptyStateMsg = document.querySelector('#chat-messages .empty-state-message');
-      if (emptyStateMsg) {
-        var msgText = emptyStateMsg.textContent.trim();
-        if (msgText === 'Connecting to server...') {
-          emptyStateMsg.textContent = 'Select a room to start chatting';
-        }
-      }
-    }
-  }, 2000);
-  
   setupUnreadCountsStream();
   setupRoomListStream();
   
