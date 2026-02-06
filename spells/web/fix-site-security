@@ -63,8 +63,21 @@ ensure_site_user() {
     return 0
   fi
 
+  useradd_supports() {
+    flag=$1
+    useradd --help 2>&1 | grep -q -- " $flag" || useradd -h 2>&1 | grep -q -- " $flag"
+  }
+
   if has useradd; then
-    run_priv useradd -m -s /usr/sbin/nologin "$site_user"
+    if useradd_supports -m && useradd_supports -s; then
+      run_priv useradd -m -s /usr/sbin/nologin "$site_user"
+    elif useradd_supports -m; then
+      run_priv useradd -m "$site_user"
+    elif useradd_supports -s; then
+      run_priv useradd -s /usr/sbin/nologin "$site_user"
+    else
+      run_priv useradd "$site_user"
+    fi
     return 0
   fi
 
