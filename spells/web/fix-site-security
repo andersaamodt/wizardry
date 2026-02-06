@@ -207,6 +207,17 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && ! group_exists "$site_group"; the
   site_group=staff
 fi
 
+# Determine the actual user (non-site user) who should own source files
+# If running via sudo, use SUDO_USER; otherwise use current user
+actual_user="${SUDO_USER:-$(id -un)}"
+# Don't use site user as actual user
+if [ "$actual_user" = "$site_user" ]; then
+  # If we can't determine actual user, check who owns site.conf
+  if [ -f "$SITE_CONFIG" ]; then
+    actual_user=$(ls -ld "$SITE_CONFIG" 2>/dev/null | awk '{print $3}')
+  fi
+fi
+
 run_priv mkdir -p "$SITES_DIR/.sitedata" "$SITE_DATA_DIR"
 run_priv mkdir -p "$SITE_DIR/build" "$SITE_DIR/nginx"
 
@@ -229,15 +240,23 @@ run_priv chown -R "$site_user":"$site_group" "$SITE_DATA_DIR"
 # Set permissions on build/nginx directories - site user needs write access
 set_secure_perms "$SITE_DIR/build"
 set_secure_perms "$SITE_DIR/nginx"
-set_secure_perms "$SITE_DATA_DIR"
 
-# Ensure site directory itself is accessible (755)
+# Set permissions on site data directory - make it accessible to actual user
+# so "Open site data" works. Use 755 for dirs so user can cd into it.
+if [ -d "$SITE_DATA_DIR" ]; then
+  run_priv find "$SITE_DATA_DIR" -type d -exec chmod 755 {} + 2>/dev/null || true
+  run_priv find "$SITE_DATA_DIR" -type f -exec chmod 644 {} + 2>/dev/null || true
+fi
+
+# Ensure site directory itself is accessible (755) and owned by actual user
 if [ -d "$SITE_DIR" ]; then
+  run_priv chown "$actual_user":"$site_group" "$SITE_DIR"
   run_priv chmod 755 "$SITE_DIR"
 fi
 
-# Ensure source directories are readable by site user (755 for dirs, 644 for files)
+# Ensure source directories are owned by actual user and readable by site user
 if [ -d "$SITE_DIR/site" ]; then
+  run_priv chown -R "$actual_user":"$site_group" "$SITE_DIR/site"
   run_priv find "$SITE_DIR/site" -type d -exec chmod 755 {} + 2>/dev/null || true
   run_priv find "$SITE_DIR/site" -type f -exec chmod 644 {} + 2>/dev/null || true
 fi
@@ -246,11 +265,13 @@ apply_allowlist
 
 if [ -f "$ALLOWLIST_FILE" ]; then
   # Keep allowlist owned by actual user but readable by site user
+  run_priv chown "$actual_user":"$site_group" "$ALLOWLIST_FILE"
   run_priv chmod 644 "$ALLOWLIST_FILE"
 fi
 
 if [ -f "$SITE_CONFIG" ]; then
   # Keep config owned by actual user but readable by site user
+  run_priv chown "$actual_user":"$site_group" "$SITE_CONFIG"
   run_priv chmod 644 "$SITE_CONFIG"
 fi
 
