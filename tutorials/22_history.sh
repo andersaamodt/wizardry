@@ -1,23 +1,19 @@
 #!/bin/sh
-# This spell will teach you about command history in interactive shells
+# This spell will teach you the basics of using the history command in POSIX sh
 
-echo "Command history is a shell feature, not POSIX sh."
-echo "History works in interactive shells (bash, zsh) but not in POSIX sh scripts."
-echo ""
-echo "Interactive shell features (bash/zsh only):"
-echo "  - history          # View command history"
-echo "  - history 10       # View last 10 commands"
-echo "  - history | grep X # Search history"
-echo "  - !3               # Re-run command #3 from history"
-echo "  - !!               # Re-run last command"
-echo "  - history -c       # Clear history (bash)"
-echo ""
-echo "POSIX sh alternative:"
-echo "  - Use up/down arrows in interactive shell to navigate history"
-echo "  - Set HISTFILE and HISTSIZE environment variables"
-echo "  - History is stored in ~/.sh_history or ~/.history"
-echo ""
-echo "To use these features, try them in an interactive bash or zsh shell,"
-echo "not in this script!"
+echo "The history command allows you to view and manipulate your command history."
+echo "To view your command history, use the command: history"
+
+# View the last 10 commands
+history 10
+
+# Search for a specific command in history
+history | grep "spell"
+
+# Run a specific command from history
+!3
+
+# Clear your command history
+history -c
 
 echo "History spell cast successfully!"
