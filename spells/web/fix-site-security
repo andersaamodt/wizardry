@@ -55,7 +55,13 @@ site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '-' '_')"
 site_user=$(config-get "$SITE_CONFIG" site-user 2>/dev/null || printf '')
 if [ -z "$site_user" ]; then
   site_user="$site_user_default"
-  config-set "$SITE_CONFIG" site-user "$site_user"
+  if [ -w "$SITE_CONFIG" ]; then
+    config-set "$SITE_CONFIG" site-user "$site_user"
+  elif [ "$(id -u)" -eq 0 ] || has sudo; then
+    run_priv config-set "$SITE_CONFIG" site-user "$site_user"
+  else
+    warn "fix-site-security: cannot update site.conf without root or sudo"
+  fi
 fi
 site_group="$site_user"
 
