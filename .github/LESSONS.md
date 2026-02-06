@@ -48,6 +48,7 @@
 - In sourced-only spells (with uncastable pattern), use plain `return` for error exits AFTER the uncastable guard, not `return 1 2>/dev/null || exit 1`; the `exit` part closes the user's terminal when the spell is sourced.
 - Use shell parameter expansion ${file##*/} instead of basename for 100x speedup when processing many files (e.g., generate-glosses with 396 files).
 - Variable `$_i` (imps directory shorthand) is not preserved by env-clear; use `${WIZARDRY_DIR}/spells/.imps` instead when referencing imp paths after sourcing env-clear.
+- Use /dev/fd/0 instead of /dev/stdin for cross-platform input detection; macOS /dev/stdin is a symlink that causes test issues when checking [ -t 0 ] or [ -p ... ].
 - When two endpoints serve the same data (one for history, one for real-time), ensure they don't redundantly send overlapping data causing O(n) delays in the real-time endpoint; separate concerns and let deduplication handle any overlap.
 - Using separate read-past and monitor-future operations creates race conditions; use single continuous stream (e.g., `tail -f -n 100`) with filtering to prevent gaps.
 - When comparing timestamps between client and server, ensure both use the same timezone; mixing UTC and local time causes filter mismatches that reject valid data.
