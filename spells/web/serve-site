@@ -31,23 +31,16 @@ if [ ! -d "$SITE_DIR" ]; then
   die "serve-site: site '$site_name' not found"
 fi
 
-run_as_site_user() {
-  if [ -n "${site_user-}" ] && [ "$(id -un)" = "$site_user" ]; then
+run_priv() {
+  if [ "$(id -u)" -eq 0 ]; then
     "$@"
     return
   fi
-
-  if [ -z "${site_user-}" ]; then
-    "$@"
-    return
-  fi
-
   if has sudo; then
-    sudo -u "$site_user" -- "$@"
+    sudo "$@"
     return
   fi
-
-  die "serve-site: root or sudo is required to run as $site_user"
+  die "serve-site: root or sudo is required"
 }
 
 # Check if nginx is installed
@@ -55,83 +48,28 @@ if ! has nginx; then
   die "serve-site: nginx is not installed"
 fi
 
-# Ensure per-site permissions and user exist before running services
-fix-site-security "$site_name"
+repair-site-daemon "$site_name"
 
-site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '-' '_')"
-site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
-[ -z "$site_user" ] && site_user="$site_user_default"
+unit="wizardry-site-${site_name}.service"
+plist="/Library/LaunchDaemons/org.wizardry.web.${site_name}.plist"
+label="org.wizardry.web.${site_name}"
 
-# Build site if not built
-if [ ! -f "$SITE_DIR/build/pages/index.html" ]; then
-  step "Building site before serving..."
-  run_as_site_user build "$site_name"
-fi
-
-# Generate nginx config if not exists
-if [ ! -f "$SITE_DIR/nginx/nginx.conf" ]; then
-  step "Generating nginx configuration..."
-  run_as_site_user configure-nginx "$site_name"
-fi
-
-# Check if already running
-if [ -f "$SITE_DIR/nginx/nginx.pid" ]; then
-  pid=$(cat "$SITE_DIR/nginx/nginx.pid" 2>/dev/null || echo "")
-  if [ -n "$pid" ] && run_as_site_user kill -0 "$pid" 2>/dev/null; then
-    warn "serve-site: nginx already running for $site_name (pid: $pid)"
+if has systemctl; then
+  if systemctl is-active --quiet "$unit" 2>/dev/null; then
+    warn "serve-site: $site_name daemon already running"
     exit 0
   fi
-fi
-
-# Start fcgiwrap if available (for CGI support)
-if has fcgiwrap; then
-  FCGI_SOCK="$SITE_DIR/nginx/fcgiwrap.sock"
-  if [ ! -S "$FCGI_SOCK" ]; then
-    # Number of fcgiwrap workers (for concurrent SSE connections)
-    # Default: 10 workers = 10 concurrent long-lived connections
-    FCGIWRAP_WORKERS="${FCGIWRAP_WORKERS:-10}"
-    
-    # Ensure WIZARDRY_DIR is set for CGI scripts
-    if [ -z "${WIZARDRY_DIR-}" ]; then
-      WIZARDRY_DIR="${HOME}/.wizardry"
-    fi
-    
-    # Build PATH with wizardry spell directories
-    # This ensures CGI scripts can call other wizardry commands
-    FCGI_PATH="$PATH"
-    if [ -d "$WIZARDRY_DIR/spells" ]; then
-      for dir in "$WIZARDRY_DIR/spells"/* "$WIZARDRY_DIR/spells"/.*; do
-        [ -d "$dir" ] || continue
-        case "$dir" in */.|*/..) continue ;; esac
-        FCGI_PATH="$dir:$FCGI_PATH"
-      done
-    fi
-    
-    # Export environment vars that CGI scripts need
-    export WIZARDRY_DIR
-    export WIZARDRY_SITES_DIR="$SITES_DIR"
-    export WIZARDRY_SITE_NAME="$site_name"
-    
-    step "Starting fcgiwrap with $FCGIWRAP_WORKERS workers..."
-    info "chat-stream now uses polling (0.5s) for real-time delivery"
-    
-    # Start fcgiwrap with wizardry-enabled PATH
-    fcgi_pid=$(run_as_site_user sh -c "env PATH=\"$FCGI_PATH\" WIZARDRY_DIR=\"$WIZARDRY_DIR\" WIZARDRY_SITES_DIR=\"$SITES_DIR\" WIZARDRY_SITE_NAME=\"$site_name\" fcgiwrap -c \"$FCGIWRAP_WORKERS\" -s \"unix:$FCGI_SOCK\" >/dev/null 2>&1 & echo \$!")
-    printf '%s\n' "$fcgi_pid" > "$SITE_DIR/nginx/fcgiwrap.pid"
-    sleep 1
+  step "Starting daemon for $site_name..."
+  run_priv systemctl start "$unit"
+elif [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+  if launchctl list "$label" >/dev/null 2>&1; then
+    warn "serve-site: $site_name daemon already running"
+    exit 0
   fi
-fi
-
-# Start nginx
-step "Starting nginx for $site_name..."
-nginx_pid=$(run_as_site_user sh -c "nginx -p \"$SITE_DIR\" -e \"$SITE_DIR/nginx/error.log\" -c \"$SITE_DIR/nginx/nginx.conf\" >/dev/null 2>&1 & echo \$!")
-
-# Give nginx a moment to start
-sleep 1
-
-# Check if nginx started successfully
-if ! run_as_site_user kill -0 "$nginx_pid" 2>/dev/null; then
-  die "serve-site: nginx failed to start"
+  step "Starting daemon for $site_name..."
+  run_priv launchctl load -w "$plist"
+else
+  die "serve-site: systemd or launchd is required"
 fi
 
 # Read port from config
@@ -140,5 +78,4 @@ domain=$(config-get "$SITE_DIR/site.conf" domain 2>/dev/null || echo "localhost"
 
 success "Site '$site_name' is now serving"
 info "URL: http://$domain:$port"
-info "PID: $nginx_pid"
 info "Stop with: web-stop-site $site_name"

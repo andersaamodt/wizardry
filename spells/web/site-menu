@@ -160,6 +160,7 @@ while true; do
       ${https_disable_option:+"$https_disable_option"} \
       "Change port (current: $port)%change-site-port \"$site_name\"" \
       "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
+      "Repair server daemon%repair-site-daemon \"$site_name\"" \
       "Fix permissions%fix-site-security \"$site_name\"" \
       "Manage allowed dirs%manage-allowed-dirs \"$site_name\"" \
       "Delete site%delete-site \"$site_name\"" \
@@ -182,6 +183,7 @@ while true; do
       ${https_disable_option:+"$https_disable_option"} \
       "Change port (current: $port)%change-site-port \"$site_name\"" \
       "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
+      "Repair server daemon%repair-site-daemon \"$site_name\"" \
       "Fix permissions%fix-site-security \"$site_name\"" \
       "Manage allowed dirs%manage-allowed-dirs \"$site_name\"" \
       "Delete site%delete-site \"$site_name\"" \
