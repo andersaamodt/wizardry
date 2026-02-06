@@ -217,119 +217,20 @@ while true; do
     cmd5=$(wrap_cmd "$entry_index" "$open_data_cmd")
     # --- separator
     entry_index=$((entry_index + 1))  # Increment for separator
-    entry_index=$((entry_index + 1))
-    cmd6=$(wrap_cmd "$entry_index" "build \"$site_name\"")
-    entry_index=$((entry_index + 1))
-    cmd7=$(wrap_cmd "$entry_index" "build \"$site_name\" --full")
-    entry_index=$((entry_index + 1))
-    cmd8=$(wrap_cmd "$entry_index" \
-      "stop-site \"$site_name\" && serve-site \"$site_name\"")
-    entry_index=$((entry_index + 1))
-    cmd9=$(wrap_cmd "$entry_index" "stop-site \"$site_name\"")
-    # --- separator
-    entry_index=$((entry_index + 1))  # Increment for separator
-    if [ -n "$tor_hosting_option" ]; then
+    # Restart server - only show when already serving
+    restart_server_option=""
+    if [ "$is_serving" -eq 1 ]; then
       entry_index=$((entry_index + 1))
-      tor_cmd_wrapped=$(wrap_cmd "$entry_index" \
-        "$(printf '%s' "$tor_hosting_option" | cut -d% -f2-)")
-      tor_label=$(printf '%s' "$tor_hosting_option" | cut -d% -f1)
-      tor_hosting_option="${tor_label}%$tor_cmd_wrapped"
-    fi
-    if [ -n "$serve_on_startup_option" ]; then
-      entry_index=$((entry_index + 1))
-      startup_cmd_wrapped=$(wrap_cmd "$entry_index" \
-        "$(printf '%s' "$serve_on_startup_option" | cut -d% -f2-)")
-      startup_label=$(printf '%s' "$serve_on_startup_option" | cut -d% -f1)
-      serve_on_startup_option="${startup_label}%$startup_cmd_wrapped"
+      restart_cmd_wrapped=$(wrap_cmd "$entry_index" \
+        "stop-site \"$site_name\" && serve-site \"$site_name\"")
+      restart_server_option="Restart server%$restart_cmd_wrapped"
     fi
     entry_index=$((entry_index + 1))
-    cmd10=$(wrap_cmd "$entry_index" "change-site-port \"$site_name\"")
-    if [ -n "$https_option" ]; then
-      entry_index=$((entry_index + 1))
-      https_cmd_wrapped=$(wrap_cmd "$entry_index" \
-        "$(printf '%s' "$https_option" | cut -d% -f2-)")
-      https_label=$(printf '%s' "$https_option" | cut -d% -f1)
-      https_option="${https_label}%$https_cmd_wrapped"
-    fi
-    if [ -n "$https_disable_option" ]; then
-      entry_index=$((entry_index + 1))
-      https_disable_cmd_wrapped=$(wrap_cmd "$entry_index" \
-        "$(printf '%s' "$https_disable_option" | cut -d% -f2-)")
-      https_disable_label=$(printf '%s' "$https_disable_option" | cut -d% -f1)
-      https_disable_option="${https_disable_label}%$https_disable_cmd_wrapped"
-    fi
+    cmd6=$(wrap_cmd "$entry_index" "stop-site \"$site_name\"")
     entry_index=$((entry_index + 1))
-    cmd11=$(wrap_cmd "$entry_index" "configure-nginx \"$site_name\"")
+    cmd7=$(wrap_cmd "$entry_index" "build \"$site_name\"")
     entry_index=$((entry_index + 1))
-    cmd12=$(wrap_cmd "$entry_index" "repair-site-daemon \"$site_name\"")
-    entry_index=$((entry_index + 1))
-    cmd13=$(wrap_cmd "$entry_index" "fix-site-security \"$site_name\"")
-    entry_index=$((entry_index + 1))
-    cmd14=$(wrap_cmd "$entry_index" "manage-allowed-dirs \"$site_name\"")
-    entry_index=$((entry_index + 1))
-    cmd15=$(wrap_cmd "$entry_index" "delete-site \"$site_name\"")
-    entry_index=$((entry_index + 1))
-    cmd_exit=$(wrap_cmd "$entry_index" "kill -TERM \$PPID")
-
-    set -- \
-      "Open in browser%$cmd1" \
-      "Build All & Restart Server%$cmd2" \
-      "Update from template%$cmd3" \
-      ${copy_site_onion:+"$copy_site_onion"} \
-      "Open site directory%$cmd4" \
-      "Open site data%$cmd5" \
-      "---" \
-      "Build%$cmd6" \
-      "Build All%$cmd7" \
-      "Restart server%$cmd8" \
-      "Stop server%$cmd9" \
-      "---" \
-      ${tor_hosting_option:+"$tor_hosting_option"} \
-      ${serve_on_startup_option:+"$serve_on_startup_option"} \
-      "Change port (current: $port)%$cmd10" \
-      ${https_option:+"$https_option"} \
-      ${https_disable_option:+"$https_disable_option"} \
-      "Rebuild nginx.conf%$cmd11" \
-      "$daemon_label%$cmd12" \
-      "Fix permissions%$cmd13" \
-      "Manage allowed dirs%$cmd14" \
-      "Delete site%$cmd15" \
-      "${exit_label}%$cmd_exit"
-  else
-    entry_index=0
-    entry_index=$((entry_index + 1))
-    build_restart_cmd="build \"$site_name\" --full"
-    build_restart_cmd="$build_restart_cmd && stop-site \"$site_name\""
-    build_restart_cmd="$build_restart_cmd && serve-site \"$site_name\""
-    cmd1=$(wrap_cmd "$entry_index" "$build_restart_cmd")
-    entry_index=$((entry_index + 1))
-    cmd2=$(wrap_cmd "$entry_index" "update-from-template \"$site_name\"")
-    if [ -n "$copy_site_onion" ]; then
-      entry_index=$((entry_index + 1))
-      copy_cmd_wrapped=$(wrap_cmd "$entry_index" \
-        "$(printf '%s' "$copy_site_onion" | cut -d% -f2-)")
-      copy_site_onion="Copy .onion address%$copy_cmd_wrapped"
-    fi
-    entry_index=$((entry_index + 1))
-    cmd3=$(wrap_cmd "$entry_index" "cd \"$SITE_DIR\" && exec \$SHELL")
-    entry_index=$((entry_index + 1))
-    open_data_cmd="[ -d \"$SITE_DATA_DIR\" ]"
-    open_data_cmd="$open_data_cmd && cd \"$SITE_DATA_DIR\" && exec \$SHELL"
-    open_data_cmd="$open_data_cmd || { printf 'No site data yet"
-    open_data_cmd="$open_data_cmd (will be created when needed)\\n';"
-    open_data_cmd="$open_data_cmd read -r dummy; }"
-    cmd4=$(wrap_cmd "$entry_index" "$open_data_cmd")
-    # --- separator
-    entry_index=$((entry_index + 1))  # Increment for separator
-    entry_index=$((entry_index + 1))
-    cmd5=$(wrap_cmd "$entry_index" "build \"$site_name\"")
-    entry_index=$((entry_index + 1))
-    cmd6=$(wrap_cmd "$entry_index" "build \"$site_name\" --full")
-    entry_index=$((entry_index + 1))
-    cmd7=$(wrap_cmd "$entry_index" \
-      "stop-site \"$site_name\" && serve-site \"$site_name\"")
-    entry_index=$((entry_index + 1))
-    cmd8=$(wrap_cmd "$entry_index" "serve-site \"$site_name\"")
+    cmd8=$(wrap_cmd "$entry_index" "build \"$site_name\" --full")
     # --- separator
     entry_index=$((entry_index + 1))  # Increment for separator
     if [ -n "$tor_hosting_option" ]; then
@@ -376,16 +277,17 @@ while true; do
     cmd_exit=$(wrap_cmd "$entry_index" "kill -TERM \$PPID")
 
     set -- \
-      "Build All & Restart Server%$cmd1" \
-      "Update from template%$cmd2" \
+      "Open in browser%$cmd1" \
+      "Build All & Restart Server%$cmd2" \
+      "Update from template%$cmd3" \
       ${copy_site_onion:+"$copy_site_onion"} \
-      "Open site directory%$cmd3" \
-      "Open site data%$cmd4" \
+      "Open site directory%$cmd4" \
+      "Open site data%$cmd5" \
       "---" \
-      "Build%$cmd5" \
-      "Build All%$cmd6" \
-      "Restart server%$cmd7" \
-      "Start server%$cmd8" \
+      ${restart_server_option:+"$restart_server_option"} \
+      "Stop server%$cmd6" \
+      "Build%$cmd7" \
+      "Build All%$cmd8" \
       "---" \
       ${tor_hosting_option:+"$tor_hosting_option"} \
       ${serve_on_startup_option:+"$serve_on_startup_option"} \
@@ -397,6 +299,106 @@ while true; do
       "Fix permissions%$cmd12" \
       "Manage allowed dirs%$cmd13" \
       "Delete site%$cmd14" \
+      "${exit_label}%$cmd_exit"
+  else
+    entry_index=0
+    entry_index=$((entry_index + 1))
+    build_restart_cmd="build \"$site_name\" --full"
+    build_restart_cmd="$build_restart_cmd && stop-site \"$site_name\""
+    build_restart_cmd="$build_restart_cmd && serve-site \"$site_name\""
+    cmd1=$(wrap_cmd "$entry_index" "$build_restart_cmd")
+    entry_index=$((entry_index + 1))
+    cmd2=$(wrap_cmd "$entry_index" "update-from-template \"$site_name\"")
+    if [ -n "$copy_site_onion" ]; then
+      entry_index=$((entry_index + 1))
+      copy_cmd_wrapped=$(wrap_cmd "$entry_index" \
+        "$(printf '%s' "$copy_site_onion" | cut -d% -f2-)")
+      copy_site_onion="Copy .onion address%$copy_cmd_wrapped"
+    fi
+    entry_index=$((entry_index + 1))
+    cmd3=$(wrap_cmd "$entry_index" "cd \"$SITE_DIR\" && exec \$SHELL")
+    entry_index=$((entry_index + 1))
+    open_data_cmd="[ -d \"$SITE_DATA_DIR\" ]"
+    open_data_cmd="$open_data_cmd && cd \"$SITE_DATA_DIR\" && exec \$SHELL"
+    open_data_cmd="$open_data_cmd || { printf 'No site data yet"
+    open_data_cmd="$open_data_cmd (will be created when needed)\\n';"
+    open_data_cmd="$open_data_cmd read -r dummy; }"
+    cmd4=$(wrap_cmd "$entry_index" "$open_data_cmd")
+    # --- separator
+    entry_index=$((entry_index + 1))  # Increment for separator
+    # No restart option when not serving
+    entry_index=$((entry_index + 1))
+    cmd5=$(wrap_cmd "$entry_index" "serve-site \"$site_name\"")
+    entry_index=$((entry_index + 1))
+    cmd6=$(wrap_cmd "$entry_index" "build \"$site_name\"")
+    entry_index=$((entry_index + 1))
+    cmd7=$(wrap_cmd "$entry_index" "build \"$site_name\" --full")
+    # --- separator
+    entry_index=$((entry_index + 1))  # Increment for separator
+    if [ -n "$tor_hosting_option" ]; then
+      entry_index=$((entry_index + 1))
+      tor_cmd_wrapped=$(wrap_cmd "$entry_index" \
+        "$(printf '%s' "$tor_hosting_option" | cut -d% -f2-)")
+      tor_label=$(printf '%s' "$tor_hosting_option" | cut -d% -f1)
+      tor_hosting_option="${tor_label}%$tor_cmd_wrapped"
+    fi
+    if [ -n "$serve_on_startup_option" ]; then
+      entry_index=$((entry_index + 1))
+      startup_cmd_wrapped=$(wrap_cmd "$entry_index" \
+        "$(printf '%s' "$serve_on_startup_option" | cut -d% -f2-)")
+      startup_label=$(printf '%s' "$serve_on_startup_option" | cut -d% -f1)
+      serve_on_startup_option="${startup_label}%$startup_cmd_wrapped"
+    fi
+    entry_index=$((entry_index + 1))
+    cmd8=$(wrap_cmd "$entry_index" "change-site-port \"$site_name\"")
+    if [ -n "$https_option" ]; then
+      entry_index=$((entry_index + 1))
+      https_cmd_wrapped=$(wrap_cmd "$entry_index" \
+        "$(printf '%s' "$https_option" | cut -d% -f2-)")
+      https_label=$(printf '%s' "$https_option" | cut -d% -f1)
+      https_option="${https_label}%$https_cmd_wrapped"
+    fi
+    if [ -n "$https_disable_option" ]; then
+      entry_index=$((entry_index + 1))
+      https_disable_cmd_wrapped=$(wrap_cmd "$entry_index" \
+        "$(printf '%s' "$https_disable_option" | cut -d% -f2-)")
+      https_disable_label=$(printf '%s' "$https_disable_option" | cut -d% -f1)
+      https_disable_option="${https_disable_label}%$https_disable_cmd_wrapped"
+    fi
+    entry_index=$((entry_index + 1))
+    cmd9=$(wrap_cmd "$entry_index" "configure-nginx \"$site_name\"")
+    entry_index=$((entry_index + 1))
+    cmd10=$(wrap_cmd "$entry_index" "repair-site-daemon \"$site_name\"")
+    entry_index=$((entry_index + 1))
+    cmd11=$(wrap_cmd "$entry_index" "fix-site-security \"$site_name\"")
+    entry_index=$((entry_index + 1))
+    cmd12=$(wrap_cmd "$entry_index" "manage-allowed-dirs \"$site_name\"")
+    entry_index=$((entry_index + 1))
+    cmd13=$(wrap_cmd "$entry_index" "delete-site \"$site_name\"")
+    entry_index=$((entry_index + 1))
+    cmd_exit=$(wrap_cmd "$entry_index" "kill -TERM \$PPID")
+
+    set -- \
+      "Build All & Restart Server%$cmd1" \
+      "Update from template%$cmd2" \
+      ${copy_site_onion:+"$copy_site_onion"} \
+      "Open site directory%$cmd3" \
+      "Open site data%$cmd4" \
+      "---" \
+      "Start server%$cmd5" \
+      "Build%$cmd6" \
+      "Build All%$cmd7" \
+      "---" \
+      ${tor_hosting_option:+"$tor_hosting_option"} \
+      ${serve_on_startup_option:+"$serve_on_startup_option"} \
+      "Change port (current: $port)%$cmd8" \
+      ${https_option:+"$https_option"} \
+      ${https_disable_option:+"$https_disable_option"} \
+      "Rebuild nginx.conf%$cmd9" \
+      "$daemon_label%$cmd10" \
+      "Fix permissions%$cmd11" \
+      "Manage allowed dirs%$cmd12" \
+      "Delete site%$cmd13" \
       "${exit_label}%$cmd_exit"
   fi
 
