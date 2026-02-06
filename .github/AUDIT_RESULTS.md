@@ -196,11 +196,11 @@ This table shows all files in the repository with their audit results. Files are
 | spells/system/pocket-dimension | 2026-02-06 17:51 | 🔍 Perused | 🔴 | 🔴 | 🟢 | 🟢 | 🔴 | 🟡 | Critical bug: line 108 calls undefined pocket_dimension_usage(); Policy violation: has snapshot_files() function (should inline or extract to imp); 'pocket dimension' theming apt for isolation concept | - |
 | spells/system/reload-ssh | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/system/remove-service | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/system/restart-service | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/system/restart-service | 2026-02-06 19:00 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - clean service management, uses prompt-with-fallback imp, proper sudo handling, minimal theming appropriate | - |
 | spells/system/restart-ssh | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/system/service-status | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/system/start-service | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/system/stop-service | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/system/service-status | 2026-02-06 19:01 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - clean status check, uses prompt-with-fallback, --no-pager for readability, proper fallback to sudo | - |
+| spells/system/start-service | 2026-02-06 19:02 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - didactic narration for new users, uses prompt-with-fallback, proper unit normalization | - |
+| spells/system/stop-service | 2026-02-06 19:03 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - mirrors start-service for lifecycle understanding, clean shutdown logic | - |
 | spells/system/update-all | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/tasks/check | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/tasks/get-checked | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
