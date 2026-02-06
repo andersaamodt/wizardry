@@ -225,13 +225,18 @@ while true; do
       restart_cmd_wrapped=$(wrap_cmd "$entry_index" \
         "stop-site \"$site_name\" && serve-site \"$site_name\"")
       restart_server_option="Restart server%$restart_cmd_wrapped"
-    fi
-    # Stop server - only show when already serving
-    stop_server_option=""
-    if [ "$is_serving" -eq 1 ]; then
+    else
+      # Account for missing "Restart server" position when not serving
       entry_index=$((entry_index + 1))
-      stop_cmd_wrapped=$(wrap_cmd "$entry_index" "stop-site \"$site_name\"")
-      stop_server_option="Stop server%$stop_cmd_wrapped"
+    fi
+    # Start/Stop server - always present
+    entry_index=$((entry_index + 1))
+    if [ "$is_serving" -eq 1 ]; then
+      server_toggle_cmd=$(wrap_cmd "$entry_index" "stop-site \"$site_name\"")
+      server_toggle_option="Stop server%$server_toggle_cmd"
+    else
+      server_toggle_cmd=$(wrap_cmd "$entry_index" "serve-site \"$site_name\"")
+      server_toggle_option="Start server%$server_toggle_cmd"
     fi
     entry_index=$((entry_index + 1))
     cmd7=$(wrap_cmd "$entry_index" "build \"$site_name\"")
@@ -291,7 +296,7 @@ while true; do
       "Open site data%$cmd5" \
       "---" \
       ${restart_server_option:+"$restart_server_option"} \
-      ${stop_server_option:+"$stop_server_option"} \
+      "$server_toggle_option" \
       "Build%$cmd7" \
       "Build all%$cmd8" \
       "---" \
@@ -392,8 +397,7 @@ while true; do
       "Open site directory%$cmd3" \
       "Open site data%$cmd4" \
       "---" \
-      "---" \
-      "Start server%$cmd5" \
+      "$server_toggle_option" \
       "Build%$cmd6" \
       "Build all%$cmd7" \
       "---" \
