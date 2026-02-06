@@ -163,8 +163,9 @@ while true; do
       
       # Use just the spell name for cleaner display
       spell_name=$(basename "$cmd" 2>/dev/null || printf '%s' "$cmd")
-      # Wrap command to save selection to temp file (same pattern as mud-menu)
-      wrapped_cmd="$spell_name; echo $entry_index > \"\$SELECTION_FILE\""
+      # Wrap command to save selection to temp file
+      # Note: $SELECTION_FILE expands here (not at runtime) so the path is embedded in the command
+      wrapped_cmd="$spell_name; echo $entry_index > \"$SELECTION_FILE\""
       printf '%s %s%%%s\n' "$status" "$label" "$wrapped_cmd"
     done
   })
