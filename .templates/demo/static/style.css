@@ -1343,10 +1343,10 @@ pre code {
   display: inline-block;
   width: 18px;
   height: 18px;
-  margin-left: 8px;
-  vertical-align: -3px;
+  margin-left: 6px;
+  vertical-align: -4px;
   flex-shrink: 0;
-  background-image: url('data:image/svg+xml;utf8,<svg fill="%23a88fd0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12,23a9.63,9.63,0,0,1-8-9.5,9.51,9.51,0,0,1,6.79-9.1A1.66,1.66,0,0,0,12,2.81h0a1.67,1.67,0,0,0-1.94-1.64A11,11,0,0,0,12,23Z"><animateTransform attributeName="transform" type="rotate" dur="0.75s" values="0 12 12;360 12 12" repeatCount="indefinite"/></path></svg>');
+  background-image: url('data:image/svg+xml;utf8,<svg fill="%236d6a8e" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12,23a9.63,9.63,0,0,1-8-9.5,9.51,9.51,0,0,1,6.79-9.1A1.66,1.66,0,0,0,12,2.81h0a1.67,1.67,0,0,0-1.94-1.64A11,11,0,0,0,12,23Z"><animateTransform attributeName="transform" type="rotate" dur="0.75s" values="0 12 12;360 12 12" repeatCount="indefinite"/></path></svg>');
   background-size: 100% 100%;
   background-repeat: no-repeat;
   background-position: center;
