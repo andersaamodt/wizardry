@@ -12,6 +12,7 @@ Creates a new website with standard directory structure:
   - site/pages/ (Markdown pages)
   - site/uploads/ (uploaded files)
   - site/static/ (static assets like images, CSS)
+  - cgi/ (site-specific CGI scripts)
   - build/ (generated HTML)
 
 Example: web-create-site mysite
@@ -49,6 +50,7 @@ step "Creating site: $site_name"
 mkdir -p "$SITE_DIR/site/pages"
 mkdir -p "$SITE_DIR/site/uploads"
 mkdir -p "$SITE_DIR/site/static"
+mkdir -p "$SITE_DIR/cgi"
 mkdir -p "$SITE_DIR/build"
 
 # Create default index page
@@ -107,6 +109,7 @@ cat > "$SITE_DIR/site.conf" <<EOF
 # Site configuration for $site_name
 site-name=$site_name
 site-user=
+cgi-dir=
 port=8080
 domain=localhost
 https=false

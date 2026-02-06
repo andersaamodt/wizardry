@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNIX Settings</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0c1116;
+      color: #e8eef5;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      background: #0f151c;
+      border-bottom: 1px solid #27303a;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.2rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .actions {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .actions button {
+      background: #1e2732;
+      border: 1px solid transparent;
+      color: #e8eef5;
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    .actions button.danger {
+      border-color: rgba(239, 68, 68, 0.6);
+      color: #ef4444;
+    }
+
+    .status {
+      padding: 0.75rem 1.5rem;
+      background: #111821;
+      border-bottom: 1px solid #27303a;
+      font-family: "SF Mono", ui-monospace, monospace;
+      font-size: 0.85rem;
+      white-space: pre-wrap;
+      color: #9fb0c1;
+    }
+
+    iframe {
+      border: none;
+      width: 100%;
+      height: calc(100vh - 150px);
+      background: #0c1116;
+    }
+
+    .error {
+      padding: 2rem;
+      text-align: center;
+      color: #9fb0c1;
+    }
+
+    .error h2 {
+      color: #ef4444;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>UNIX Settings</h1>
+    <div class="actions">
+      <button onclick="runCommand('build')">Build</button>
+      <button onclick="runCommand('start')">Start</button>
+      <button class="danger" onclick="runCommand('stop')">Stop</button>
+      <button onclick="checkServer()">Refresh</button>
+    </div>
+  </header>
+
+  <div class="status" id="status">Status: Idle</div>
+
+  <div id="error" class="error" style="display: none;">
+    <h2>Server Not Running</h2>
+    <p>Start the UNIX Settings server to load the interface.</p>
+  </div>
+
+  <iframe id="settings-frame" src="http://localhost:8080/pages/index.html" title="UNIX Settings"></iframe>
+
+  <script>
+    const commands = {
+      build: ['web-wizardry', 'build', 'unix-settings'],
+      start: ['web-wizardry', 'serve', 'unix-settings'],
+      stop: ['web-wizardry', 'stop', 'unix-settings']
+    };
+
+    async function runCommand(action) {
+      const status = document.getElementById('status');
+      status.textContent = `Running: ${commands[action].join(' ')}`;
+      try {
+        const result = await window.wizardry.exec(commands[action]);
+        status.textContent = [
+          `Command: ${commands[action].join(' ')}`,
+          `Exit code: ${result.exit_code}`,
+          result.stdout?.trim() || '',
+          result.stderr?.trim() || ''
+        ].filter(Boolean).join('\n');
+      } catch (error) {
+        status.textContent = `Error: ${error.message}`;
+      }
+      checkServer();
+    }
+
+    function checkServer() {
+      const frame = document.getElementById('settings-frame');
+      const error = document.getElementById('error');
+      fetch('http://localhost:8080/pages/index.html', { method: 'HEAD', mode: 'no-cors' })
+        .then(() => {
+          error.style.display = 'none';
+          frame.style.display = 'block';
+          if (frame.contentWindow) {
+            frame.contentWindow.location.reload();
+          }
+        })
+        .catch(() => {
+          error.style.display = 'block';
+          frame.style.display = 'none';
+        });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      checkServer();
+    });
+  </script>
+</body>
+</html>
