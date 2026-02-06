@@ -104,7 +104,11 @@ if command -v fcgiwrap >/dev/null 2>&1; then
 
     printf 'Starting fcgiwrap with %s workers...\n' "$FCGIWRAP_WORKERS" >&2
 
-    env PATH="$FCGI_PATH" fcgiwrap -c "$FCGIWRAP_WORKERS" -s "unix:$FCGI_SOCK" &
+    env PATH="$FCGI_PATH" \
+        WIZARDRY_DIR="$WIZARDRY_DIR" \
+        WIZARDRY_SITES_DIR="$SITES_DIR" \
+        WIZARDRY_SITE_NAME="$site_name" \
+        fcgiwrap -c "$FCGIWRAP_WORKERS" -s "unix:$FCGI_SOCK" &
     fcgi_pid=$!
     printf '%s\n' "$fcgi_pid" > "$SITE_DIR/nginx/fcgiwrap.pid"
     sleep 1
