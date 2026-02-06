@@ -16,4 +16,8 @@
   --nav-link-hover: #bae6fd;
   --nav-link-active: #4f46e5;
   --nav-icon: #6366f1;
+  --nav-button-hover-bg: #bcecff;
+  --nav-button-hover-bg-dark: #6ec7ff;
+  --nav-button-hover-border: #67e8f9;
+  --nav-icon-hover: #00a8e8;
 }
