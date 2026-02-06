@@ -266,7 +266,8 @@ if [ -d "$SITE_DIR/nginx" ]; then
   run_priv mkdir -p "$SITE_DIR/nginx/temp/scgi"
   
   # Set nginx/ directory and config files to 755/644 (actual user writes, site user reads)
-  run_priv find "$SITE_DIR/nginx" -type d -not -path "*/temp*" -exec chmod 755 {} + 2>/dev/null || true
+  run_priv find "$SITE_DIR/nginx" -type d -not -path "*/temp*" \
+    -exec chmod 755 {} + 2>/dev/null || true
   run_priv find "$SITE_DIR/nginx" -type f -exec chmod 644 {} + 2>/dev/null || true
   
   # Set temp directories to 775 so site user can write (nginx needs to write temp files)

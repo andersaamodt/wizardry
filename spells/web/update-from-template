@@ -98,7 +98,8 @@ if [ -z "$template" ]; then
   fi
   
   # Create temp file for template selection
-  template_choice_file=$(temp-file template-choice) || die "update-from-template: failed to create temp file"
+  template_choice_file=$(temp-file template-choice)
+  template_choice_file="${template_choice_file?update-from-template: failed to create temp file}"
   cleanup-file "$template_choice_file"
   
   # Build menu arguments - one per template directory
