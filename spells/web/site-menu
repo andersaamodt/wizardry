@@ -185,7 +185,13 @@ while true; do
     printf '%s; echo %s > "$SELECTION_FILE"' "$cmd" "$entry_index"
   }
 
-  # Build menu in unified path - conditional items placed to preserve key positions
+  # Build menu in unified path
+  # Key pattern: Place frequently-selected items (server toggle) at FIXED positions
+  # (position 1) by putting them BEFORE conditional items. This prevents selection
+  # from jumping when menu state changes (serving/not serving). Conditional items
+  # like "Open in browser" and "Restart server" come AFTER core items.
+  # See: PR #1090 attempted dummy entry_index increments, but failed because
+  # menu assigns sequential positions to actual items only - dummies don't work.
   entry_index=0
   
   # Always: Start/Stop server toggle (position 1 - always first)
