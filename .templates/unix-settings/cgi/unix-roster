@@ -311,6 +311,106 @@ case "$domain" in
     printf '</ul>'
     raw_output_panel "Reveal raw probe output" "Command: ls /etc" "$(escape_html "$(ls /etc 2>&1 | head -n 8 || printf 'unavailable')")"
     ;;
+  display-sessions)
+    roster_header "Display & Sessions" "display-roster" "display-sessions" "$stamp"
+    printf '<ul class="roster-list">'
+    session_type="${XDG_SESSION_TYPE:-unknown}"
+    session_owner=$(id -un 2>/dev/null || printf 'unknown')
+    compositor="${WAYLAND_DISPLAY:-${DISPLAY:-unknown}}"
+    desktop_env="${XDG_CURRENT_DESKTOP:-${DESKTOP_SESSION:-unknown}}"
+
+    if has loginctl; then
+      login_source="login manager config"
+    else
+      login_source="vendor default"
+    fi
+
+    printf '<li class="roster-item">'
+    printf '<div>'
+    printf '<div class="roster-title">Protocol</div>'
+    printf '<div class="roster-meta">%s • Source: %s</div>' \
+      "$(escape_html "$session_type")" "$(escape_html "$login_source")"
+    printf '</div>'
+    printf '<div class="roster-actions">'
+    printf '<button class="icon-button" title="Inspect protocol" hx-get="/cgi/unix-action?action=inspect-display&target=protocol" hx-target="#action-drawer">Inspect</button>'
+    printf '</div>'
+    printf '</li>'
+
+    printf '<li class="roster-item">'
+    printf '<div>'
+    printf '<div class="roster-title">Session owner</div>'
+    printf '<div class="roster-meta">%s • Source: login manager config</div>' \
+      "$(escape_html "$session_owner")"
+    printf '</div>'
+    printf '</li>'
+
+    printf '<li class="roster-item">'
+    printf '<div>'
+    printf '<div class="roster-title">Compositor / Display</div>'
+    printf '<div class="roster-meta">%s • Source: compositor config</div>' \
+      "$(escape_html "$compositor")"
+    printf '</div>'
+    printf '</li>'
+
+    printf '<li class="roster-item">'
+    printf '<div>'
+    printf '<div class="roster-title">Desktop environment</div>'
+    printf '<div class="roster-meta">%s • Source: DE config</div>' \
+      "$(escape_html "$desktop_env")"
+    printf '</div>'
+    printf '</li>'
+
+    gpu_output=""
+    gpu_source="vendor default"
+    if has lspci; then
+      gpu_output=$(lspci -nn 2>/dev/null | grep -i 'vga\\|3d\\|display' | head -n 4 || true)
+      gpu_source="vendor default"
+    elif [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has system_profiler; then
+      gpu_output=$(system_profiler SPDisplaysDataType 2>/dev/null | head -n 20 || true)
+      gpu_source="vendor default"
+    else
+      gpu_output="GPU probe unavailable"
+    fi
+
+    printf '<li class="roster-item">'
+    printf '<div>'
+    printf '<div class="roster-title">GPU & drivers</div>'
+    printf '<div class="roster-meta">%s • Source: %s</div>' \
+      "$(escape_html "${gpu_output:-unknown}")" "$(escape_html "$gpu_source")"
+    printf '</div>'
+    printf '<div class="roster-actions">'
+    printf '<button class="icon-button" title="Inspect GPU" hx-get="/cgi/unix-action?action=inspect-display&target=gpu" hx-target="#action-drawer">Inspect</button>'
+    printf '</div>'
+    printf '</li>'
+
+    output_output=""
+    output_source="compositor config"
+    if has xrandr; then
+      output_output=$(xrandr --query 2>/dev/null | grep ' connected' | head -n 4 || true)
+      output_source="compositor config"
+    elif [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has system_profiler; then
+      output_output=$(system_profiler SPDisplaysDataType 2>/dev/null | grep -i 'resolution' | head -n 4 || true)
+      output_source="vendor default"
+    else
+      output_output="Output probe unavailable"
+    fi
+
+    printf '<li class="roster-item">'
+    printf '<div>'
+    printf '<div class="roster-title">Active outputs</div>'
+    printf '<div class="roster-meta">%s • Source: %s</div>' \
+      "$(escape_html "${output_output:-unknown}")" "$(escape_html "$output_source")"
+    printf '</div>'
+    printf '<div class="roster-actions">'
+    printf '<button class="icon-button" title="Inspect outputs" hx-get="/cgi/unix-action?action=inspect-display&target=outputs" hx-target="#action-drawer">Inspect</button>'
+    printf '</div>'
+    printf '</li>'
+
+    printf '</ul>'
+    raw_output_panel "Reveal raw probe output" \
+      "Command: env | loginctl | lspci | xrandr" \
+      "$(escape_html "XDG_SESSION_TYPE=$session_type\nXDG_CURRENT_DESKTOP=$desktop_env\n${gpu_output}\n${output_output}")"
+    ;;
   system-summary)
     roster_header "System Summary" "system-summary" "system-summary" "$stamp"
     hostname=$(hostname 2>/dev/null || printf 'unknown')

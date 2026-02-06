@@ -12,7 +12,7 @@ topic=$(get-query-param topic "${QUERY_STRING:-}")
 http-ok-html
 
 case "$topic" in
-  id|usermod|systemctl|launchctl|ifconfig|ip|dhclient|fsck|mount|timedatectl|shutdown|kill|apt|nix-env|ls)
+  id|usermod|systemctl|launchctl|ifconfig|ip|dhclient|fsck|mount|timedatectl|shutdown|kill|apt|nix-env|ls|loginctl|lspci|xrandr|env)
     man_topic="$topic"
     ;;
   *)

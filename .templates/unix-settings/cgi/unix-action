@@ -162,6 +162,33 @@ case "$action" in
     man_topic="nix-env"
     risk="danger"
     ;;
+  inspect-display)
+    title="Inspect display stack"
+    summary="Read-only probe of display/session sources"
+    case "$safe_target" in
+      protocol)
+        command="printf '%s' \"$XDG_SESSION_TYPE\""
+        file_ref="/etc/gdm/custom.conf"
+        man_topic="loginctl"
+        ;;
+      gpu)
+        command="lspci -nn | grep -i 'vga\\|3d\\|display'"
+        file_ref="/etc/modprobe.d"
+        man_topic="lspci"
+        ;;
+      outputs)
+        command="xrandr --query"
+        file_ref="$HOME/.config"
+        man_topic="xrandr"
+        ;;
+      *)
+        command="env | grep -E 'XDG|WAYLAND|DISPLAY'"
+        file_ref="$HOME/.config"
+        man_topic="env"
+        ;;
+    esac
+    requires_admin="no"
+    ;;
   reveal-config)
     title="Reveal config path"
     summary="Shows canonical config location"

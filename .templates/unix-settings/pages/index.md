@@ -35,6 +35,10 @@ title: UNIX Settings
       <strong>Storage</strong>
       <span>Mounted filesystems, usage, persistence, coarse health.</span>
     </a>
+    <a class="domain-card" href="/pages/display-sessions.html">
+      <strong>Display</strong>
+      <span>Session protocol, compositor, GPUs, outputs, and authority sources.</span>
+    </a>
     <a class="domain-card" href="/pages/system.html">
       <strong>System</strong>
       <span>OS identity, load, pressure, time state, critical logs.</span>

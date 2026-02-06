@@ -9,6 +9,7 @@
     <a href="/pages/services.html">Services</a>
     <a href="/pages/network.html">Network</a>
     <a href="/pages/storage.html">Storage</a>
+    <a href="/pages/display-sessions.html">Display</a>
     <a href="/pages/system.html">System</a>
     <a href="/pages/software.html">Software</a>
     <a href="/pages/configuration.html">Configuration</a>
