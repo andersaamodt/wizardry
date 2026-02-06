@@ -77,8 +77,67 @@ https=false
 EOF
 fi
 
+# If template is missing, prompt user to select one
 if [ -z "$template" ]; then
-  die "update-from-template: no template specified in site.conf"
+  warn "No template specified in site.conf"
+  info "Please select a template to use for '$site_name':"
+  info ""
+  
+  # Get WIZARDRY_DIR to find templates
+  WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
+  template_list_dir="$WIZARDRY_DIR/.templates"
+  
+  # Check if templates exist
+  if [ ! -d "$template_list_dir" ] || [ -z "$(ls -A "$template_list_dir" 2>/dev/null)" ]; then
+    die "update-from-template: no templates found in $template_list_dir"
+  fi
+  
+  # Show menu to select template
+  if ! require menu "Template selection needs the 'menu' command."; then
+    die "update-from-template: cannot select template without menu command"
+  fi
+  
+  # Build menu arguments - one per template directory
+  set -- "Select Template for '$site_name'"
+  for template_path in "$template_list_dir"/*; do
+    if [ -d "$template_path" ]; then
+      tmpl=$(basename "$template_path")
+      set -- "$@" "$tmpl%template=\"$tmpl\""
+    fi
+  done
+  
+  # Show menu and capture result
+  menu "$@" || menu_status=$?
+  menu_status=${menu_status:-0}
+  
+  if [ "$menu_status" -ne 0 ]; then
+    info "Cancelled"
+    exit 0
+  fi
+  
+  if [ -z "$template" ]; then
+    die "update-from-template: no template selected"
+  fi
+  
+  info "Selected template: $template"
+  
+  # Update site.conf with selected template
+  if [ -f "$SITE_DIR/site.conf" ]; then
+    config-set "$SITE_DIR/site.conf" template "$template"
+  else
+    # Create site.conf if it doesn't exist
+    cat > "$SITE_DIR/site.conf" <<EOF
+# Site configuration for $site_name
+site-name=$site_name
+site-user=
+template=$template
+port=8080
+domain=localhost
+https=false
+EOF
+  fi
+  
+  success "Template '$template' saved to site.conf"
 fi
 
 # Get WIZARDRY_DIR to find templates
