@@ -92,8 +92,8 @@ This table shows all files in the repository with their audit results. Files are
 | spells/arcane/copy | 2026-02-06 16:45 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | �� | None - self-healing clipboard utility install, proper error handling | - |
 | spells/arcane/file-list | 2026-02-06 16:45 | 🔍 Perused | 🟡 | 🟡 | 🟢 | ⚪ | 🟢 | 🟢 | Uses >> without clearing file first; no error handling for empty dir glob | - |
 | spells/arcane/file-to-folder | 2026-02-06 16:45 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - sophisticated xattr handling, excellent empty file detection | - |
-| spells/arcane/forall | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/arcane/jump-trash | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/arcane/forall | 2026-02-06 17:48 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - clean batch helper, inline help, thoughtful comment about avoiding say dependency | - |
+| spells/arcane/jump-trash | 2026-02-06 17:48 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - excellent uncastable pattern example, proper state mgmt, symlink handling, self-healing fallback | - |
 | spells/arcane/read-magic | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/arcane/trash | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/cantrips/ask | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
