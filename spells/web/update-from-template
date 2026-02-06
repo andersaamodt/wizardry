@@ -97,12 +97,16 @@ if [ -z "$template" ]; then
     die "update-from-template: cannot select template without menu command"
   fi
   
+  # Create temp file for template selection
+  template_choice_file=$(temp-file template-choice) || die "update-from-template: failed to create temp file"
+  cleanup-file "$template_choice_file"
+  
   # Build menu arguments - one per template directory
   set -- "Select Template for '$site_name'"
   for template_path in "$template_list_dir"/*; do
     if [ -d "$template_path" ]; then
       tmpl=$(basename "$template_path")
-      set -- "$@" "$tmpl%template=\"$tmpl\""
+      set -- "$@" "$tmpl%printf '%s' '$tmpl' > '$template_choice_file'"
     fi
   done
   
@@ -113,6 +117,11 @@ if [ -z "$template" ]; then
   if [ "$menu_status" -ne 0 ]; then
     info "Cancelled"
     exit 0
+  fi
+  
+  # Read selected template from file
+  if [ -f "$template_choice_file" ]; then
+    template=$(cat "$template_choice_file" 2>/dev/null || echo "")
   fi
   
   if [ -z "$template" ]; then
