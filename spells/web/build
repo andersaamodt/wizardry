@@ -46,6 +46,7 @@ done
 WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
 SITES_DIR="$WEB_ROOT"
 SITE_DIR="$SITES_DIR/$site_name"
+SITE_DATA_DIR="$SITES_DIR/.sitedata/$site_name"
 
 if [ ! -d "$SITE_DIR" ]; then
   die "build: site '$site_name' not found"
@@ -76,9 +77,12 @@ build_site() {
   mkdir -p "$SITE_DIR/build/static/js"
   
   # Ensure web libraries are installed
-  js_lib_dir="${WIZARDRY_WEB_JS_DIR:-$HOME/.local/share/wizardry/web/js}"
+  js_lib_dir="${WIZARDRY_WEB_JS_DIR:-$SITE_DIR/.web-libs/js}"
+  mkdir -p "$js_lib_dir"
   if [ ! -f "$js_lib_dir/htmx.min.js" ] || [ ! -f "$js_lib_dir/idiomorph-ext.min.js" ]; then
     info "Web libraries not found, installing..."
+    WIZARDRY_WEB_JS_DIR="$js_lib_dir"
+    export WIZARDRY_WEB_JS_DIR
     install-htmx || die "build: failed to install web libraries"
   fi
   

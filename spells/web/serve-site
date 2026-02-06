@@ -81,12 +81,16 @@ port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || echo "8080")
 domain=$(config-get "$SITE_DIR/site.conf" domain 2>/dev/null || echo "localhost")
 
 is_serving=0
-if [ -f "$SITE_DIR/nginx/nginx.pid" ]; then
-  pid=$(cat "$SITE_DIR/nginx/nginx.pid" 2>/dev/null || echo "")
-  if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
-    is_serving=1
+for _ in 1 2 3 4 5; do
+  if [ -f "$SITE_DIR/nginx/nginx.pid" ]; then
+    pid=$(cat "$SITE_DIR/nginx/nginx.pid" 2>/dev/null || echo "")
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+      is_serving=1
+      break
+    fi
   fi
-fi
+  sleep 1
+done
 
 if [ "$is_serving" -eq 1 ]; then
   success "Site '$site_name' is now serving"

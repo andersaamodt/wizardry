@@ -46,7 +46,12 @@ fi
 site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '-' '_')"
 site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
 [ -z "$site_user" ] && site_user="$site_user_default"
-if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SITE_USER_REEXEC-}" ]; then
+interactive_input=0
+if [ -t 0 ] || [ -r /dev/tty ]; then
+  interactive_input=1
+fi
+if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && \
+  [ -z "${WIZARDRY_SITE_USER_REEXEC-}" ] && [ "$interactive_input" -eq 0 ]; then
   if has sudo && sudo -n true >/dev/null 2>&1; then
     exec sudo -u "$site_user" -- env WIZARDRY_SITE_USER_REEXEC=1 "$0" "$site_name" "$@"
   fi

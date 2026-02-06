@@ -158,6 +158,16 @@ while true; do
   
   exit_label=$(exit-label)
   
+  if has systemctl; then
+    daemon_artifact="${SERVICE_DIR:-/etc/systemd/system}/wizardry-site-${site_name}.service"
+  else
+    daemon_artifact="/Library/LaunchDaemons/org.wizardry.web.${site_name}.plist"
+  fi
+  daemon_label="Repair server daemon"
+  if [ ! -f "$daemon_artifact" ]; then
+    daemon_label="Create server daemon"
+  fi
+
   if [ "$is_serving" -eq 1 ]; then
     set -- \
       "Open in browser%command -v xdg-open >/dev/null 2>&1 && xdg-open http://localhost:$port || command -v open >/dev/null 2>&1 && open http://localhost:$port || printf 'Visit: http://localhost:$port\n'" \
@@ -178,7 +188,7 @@ while true; do
       ${https_option:+"$https_option"} \
       ${https_disable_option:+"$https_disable_option"} \
       "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
-      "Repair server daemon%repair-site-daemon \"$site_name\"" \
+      "$daemon_label%repair-site-daemon \"$site_name\"" \
       "Fix permissions%fix-site-security \"$site_name\"" \
       "Manage allowed dirs%manage-allowed-dirs \"$site_name\"" \
       "Delete site%delete-site \"$site_name\"" \
@@ -202,7 +212,7 @@ while true; do
       ${https_option:+"$https_option"} \
       ${https_disable_option:+"$https_disable_option"} \
       "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
-      "Repair server daemon%repair-site-daemon \"$site_name\"" \
+      "$daemon_label%repair-site-daemon \"$site_name\"" \
       "Fix permissions%fix-site-security \"$site_name\"" \
       "Manage allowed dirs%manage-allowed-dirs \"$site_name\"" \
       "Delete site%delete-site \"$site_name\"" \
