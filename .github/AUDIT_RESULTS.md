@@ -413,7 +413,6 @@ This table contains all files in the repository with their audit results.
 
 | File | Date | Result | Code | Docs | Theme | Policy | Issues | Fixes |
 |------|------|--------|------|------|-------|--------|--------|-------|
-
 | `./.AGENTS.md` | 2026-02-06 | 🟢 | ⚪ | ⚪ | 🟢 | 🟢 |  |  |
 | `./.apps/.host/README.md` | 2026-02-06 | 🟢 | ⚪ | ⚪ | 🟢 | 🟢 |  |  |
 | `./.apps/.host/linux/main.c` | 2026-02-06 | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Unknown type |  |
