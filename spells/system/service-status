@@ -57,7 +57,6 @@ fi
 
 if [ -z "$service_name" ]; then
         die "$script_name: No service name supplied."
-        exit 1
 fi
 
 # Normalize unit name (add .service suffix if not present)
@@ -76,7 +75,6 @@ if [ -z "${systemctl_cmd-}" ]; then
                 systemctl_cmd=$(command -v systemctl)
         else
                 die "$script_name: systemctl is not available on this system."
-                exit 1
         fi
 fi
 
@@ -90,4 +88,3 @@ if [ "$(id -u)" -ne 0 ] && command -v sudo >/dev/null 2>&1; then
         exit 0
 fi
 die "$script_name: Unable to read service status; try running as root."
-exit 1
