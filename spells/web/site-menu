@@ -333,8 +333,11 @@ while true; do
     # --- separator
     entry_index=$((entry_index + 1))  # Increment for separator
     # No restart/stop options when not serving
-    # Align "Start server" with "Stop server" index from serving branch (8)
-    entry_index=8
+    # Account for missing "Open in browser" (serving only)
+    entry_index=$((entry_index + 1))
+    # Account for missing "Restart server" (serving only)
+    entry_index=$((entry_index + 1))
+    # Now "Start server" aligns with "Stop server" from serving branch
     cmd5=$(wrap_cmd "$entry_index" "serve-site \"$site_name\"")
     entry_index=$((entry_index + 1))
     cmd6=$(wrap_cmd "$entry_index" "build \"$site_name\"")
