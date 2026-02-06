@@ -94,8 +94,8 @@ This table shows all files in the repository with their audit results. Files are
 | spells/arcane/file-to-folder | 2026-02-06 16:45 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - sophisticated xattr handling, excellent empty file detection | - |
 | spells/arcane/forall | 2026-02-06 17:48 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - clean batch helper, inline help, thoughtful comment about avoiding say dependency | - |
 | spells/arcane/jump-trash | 2026-02-06 17:48 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - excellent uncastable pattern example, proper state mgmt, symlink handling, self-healing fallback | - |
-| spells/arcane/read-magic | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/arcane/trash | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/arcane/read-magic | 2026-02-06 17:49 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - clean xattr reader, auto-prepends user namespace, delegates to imps, didactic flow | - |
+| spells/arcane/trash | 2026-02-06 17:49 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - excellent cross-platform trash utility, proper escaping, helpful errors, MUD-themed (banish) | - |
 | spells/cantrips/ask | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/cantrips/ask-number | 2026-02-06 16:45 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - inlined input logic per EXEMPTIONS, proper range validation | - |
 | spells/cantrips/ask-text | 2026-02-06 16:45 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - inlined input logic per EXEMPTIONS, good default handling | - |
