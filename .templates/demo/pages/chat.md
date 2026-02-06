@@ -540,8 +540,7 @@ document.addEventListener('htmx:afterSwap', function(event) {
       // Enable the create room link on first load
       var createRoomLink = document.getElementById('create-room-link');
       if (createRoomLink) {
-        createRoomLink.style.pointerEvents = '';
-        createRoomLink.style.opacity = '';
+        createRoomLink.classList.remove('disabled');
       }
     }
     
@@ -2038,8 +2037,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Disable create room link until connected
   var createRoomLink = document.getElementById('create-room-link');
   if (createRoomLink) {
-    createRoomLink.style.pointerEvents = 'none';
-    createRoomLink.style.opacity = '0.5';
+    createRoomLink.classList.add('disabled');
   }
   
   setupUnreadCountsStream();
