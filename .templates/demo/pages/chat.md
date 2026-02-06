@@ -44,7 +44,7 @@ Delete Room
 
 <div class="chat-content-wrapper">
 <div id="chat-messages" class="chat-display">
-<p class="empty-state-message">Select a room to start chatting</p>
+<p class="empty-state-message">Connecting to server...</p>
 </div>
 
 <div id="members-panel" class="members-panel">
@@ -117,6 +117,7 @@ window.isInitialRoomLoad = false;  // Track if this is the first load of a room
 window.messageEventSource = null;  // SSE connection for real-time messages
 window.unreadCountsEventSource = null;  // SSE connection for real-time unread counts
 window.roomListEventSource = null;  // SSE connection for real-time room list updates
+window.roomListLoaded = false;  // Track if room list has loaded at least once
 
 // Unread message tracking
 // Store read-up-until timestamp per room in localStorage
@@ -529,6 +530,21 @@ function setupRoomListStream() {
 // Handle room selection from list
 document.addEventListener('htmx:afterSwap', function(event) {
   if (event.detail.target.id === 'room-list') {
+    // On first load, change empty state message and enable UI
+    if (!window.roomListLoaded) {
+      window.roomListLoaded = true;
+      var emptyStateMsg = document.querySelector('#chat-messages .empty-state-message');
+      if (emptyStateMsg && emptyStateMsg.textContent === 'Connecting to server...') {
+        emptyStateMsg.textContent = 'Select a room to start chatting';
+      }
+      // Enable the create room link on first load
+      var createRoomLink = document.getElementById('create-room-link');
+      if (createRoomLink) {
+        createRoomLink.style.pointerEvents = '';
+        createRoomLink.style.opacity = '';
+      }
+    }
+    
     // Re-validate create room button after room list refreshes (respects validation state)
     validateRoomName();
     
@@ -2019,6 +2035,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialize unread counts SSE connection on page load
 document.addEventListener('DOMContentLoaded', function() {
+  // Disable create room link until connected
+  var createRoomLink = document.getElementById('create-room-link');
+  if (createRoomLink) {
+    createRoomLink.style.pointerEvents = 'none';
+    createRoomLink.style.opacity = '0.5';
+  }
+  
   setupUnreadCountsStream();
   setupRoomListStream();
   
