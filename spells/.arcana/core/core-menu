@@ -17,6 +17,15 @@ set -eu
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 root_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
 
+# Use temp file for selection tracking (same pattern as mud-menu)
+SELECTION_FILE=$(temp-file core-menu-selection)
+export SELECTION_FILE
+
+# Catch signals to clean up properly
+trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true; exit 130' INT
+trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true; exit 0' TERM
+trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true' EXIT
+
 colors_bin=${COLORS_BIN-}
 if [ -z "$colors_bin" ]; then
   colors_bin=$(command -v colors 2>/dev/null)
@@ -98,11 +107,21 @@ core_menu_resolve_spell() {
 
 # Loop until user exits
 iterations=0
-last_selected=${CORE_MENU_LAST_SELECTED:-1}
 while true; do
   iterations=$((iterations + 1))
   if [ -n "$loop_limit" ] && [ "$iterations" -gt "$loop_limit" ]; then
     break
+  fi
+  
+  # Read last selected position from temp file, default to 1
+  if [ -f "$SELECTION_FILE" ]; then
+    start_selection=$(cat "$SELECTION_FILE" 2>/dev/null || printf '1')
+    # Handle empty file
+    if [ -z "$start_selection" ]; then
+      start_selection=1
+    fi
+  else
+    start_selection=1
   fi
   
   # Build menu entries from core dependencies
@@ -144,8 +163,8 @@ while true; do
       
       # Use just the spell name for cleaner display
       spell_name=$(basename "$cmd" 2>/dev/null || printf '%s' "$cmd")
-      # Wrap command to export selection index before execution
-      wrapped_cmd="export CORE_MENU_LAST_SELECTED=$entry_index; $spell_name"
+      # Wrap command to save selection to temp file (same pattern as mud-menu)
+      wrapped_cmd="$spell_name; echo $entry_index > \"\$SELECTION_FILE\""
       printf '%s %s%%%s\n' "$status" "$label" "$wrapped_cmd"
     done
   })
@@ -161,12 +180,9 @@ ENTRIES
   # Add exit option
   set -- "$@" "$exit_entry"
   
-  # Call menu with last selected position - same pattern as other menu spells
-  MENU_START_SELECTION=$last_selected "$menu_bin" "$@" || menu_status=$?
+  # Call menu with last selected position - same pattern as mud-menu
+  "$menu_bin" --start-selection "$start_selection" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
-  
-  # Update last_selected from the executed command's environment
-  last_selected=${CORE_MENU_LAST_SELECTED:-$last_selected}
   
   # ESC causes menu to exit with 130 - handle gracefully by exiting
   if [ "$menu_status" -eq 130 ]; then
