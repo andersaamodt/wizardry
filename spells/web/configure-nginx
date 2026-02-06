@@ -70,6 +70,15 @@ if [ ! -d "$SITE_DIR" ]; then
   die "configure-nginx: site '$site_name' not found"
 fi
 
+site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '-' '_')"
+site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
+[ -z "$site_user" ] && site_user="$site_user_default"
+if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SITE_USER_REEXEC-}" ]; then
+  if has sudo; then
+    exec sudo -u "$site_user" -- env WIZARDRY_SITE_USER_REEXEC=1 "$0" "$site_name" "$@"
+  fi
+fi
+
 # Read existing values from site.conf if options were not provided
 # This preserves existing configuration when rebuilding nginx.conf
 if [ "$port" = "8080" ] && [ -f "$SITE_DIR/site.conf" ]; then

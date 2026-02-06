@@ -1,0 +1,131 @@
+#!/bin/sh
+
+# Ensure per-site user exists and fix directory permissions.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: fix-site-security SITENAME
+
+Ensures a per-site user exists and tightens permissions for:
+  - site directory
+  - .sitedata directory
+  - allowlisted directories from site.allowlist
+
+Example: web-fix-site-security mysite
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+site_name=${1-}
+if [ -z "$site_name" ]; then
+  die 2 "fix-site-security: SITENAME required"
+fi
+
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+SITES_DIR="$WEB_ROOT"
+SITE_DIR="$SITES_DIR/$site_name"
+SITE_DATA_DIR="$SITES_DIR/.sitedata/$site_name"
+SITE_CONFIG="$SITE_DIR/site.conf"
+ALLOWLIST_FILE="$SITE_DIR/site.allowlist"
+
+if [ ! -d "$SITE_DIR" ]; then
+  die "fix-site-security: site '$site_name' not found"
+fi
+
+run_priv() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return
+  fi
+
+  if has sudo; then
+    sudo "$@"
+    return
+  fi
+
+  die "fix-site-security: root or sudo is required"
+}
+
+site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '-' '_')"
+site_user=$(config-get "$SITE_CONFIG" site-user 2>/dev/null || printf '')
+if [ -z "$site_user" ]; then
+  site_user="$site_user_default"
+  config-set "$SITE_CONFIG" site-user "$site_user"
+fi
+
+ensure_site_user() {
+  if id -u "$site_user" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if has useradd; then
+    run_priv useradd -m -s /usr/sbin/nologin "$site_user"
+    return 0
+  fi
+
+  if has adduser; then
+    run_priv adduser --disabled-login --gecos "" --shell /usr/sbin/nologin "$site_user"
+    return 0
+  fi
+
+  die "fix-site-security: unable to create user '$site_user' (missing useradd/adduser)"
+}
+
+set_secure_perms() {
+  target=$1
+  if [ ! -e "$target" ]; then
+    return 0
+  fi
+
+  run_priv find "$target" -type d -exec chmod 750 {} +
+  run_priv find "$target" -type f -exec chmod 640 {} +
+}
+
+apply_allowlist() {
+  if [ ! -f "$ALLOWLIST_FILE" ]; then
+    return 0
+  fi
+
+  while IFS= read -r line || [ -n "$line" ]; do
+    line=$(printf '%s' "$line" | sed 's/#.*$//' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    [ -z "$line" ] && continue
+
+    case "$line" in
+      /*) ;;
+      *)
+        warn "fix-site-security: allowlist path must be absolute: $line"
+        continue
+        ;;
+    esac
+
+    if [ ! -e "$line" ]; then
+      warn "fix-site-security: allowlist path not found: $line"
+      continue
+    fi
+
+    run_priv chown -R "$site_user":"$site_user" "$line"
+    set_secure_perms "$line"
+  done < "$ALLOWLIST_FILE"
+}
+
+ensure_site_user
+
+run_priv mkdir -p "$SITES_DIR/.sitedata" "$SITE_DATA_DIR"
+run_priv chown -R "$site_user":"$site_user" "$SITE_DIR"
+run_priv chown -R "$site_user":"$site_user" "$SITE_DATA_DIR"
+
+set_secure_perms "$SITE_DIR"
+set_secure_perms "$SITE_DATA_DIR"
+apply_allowlist
+
+if [ -f "$ALLOWLIST_FILE" ]; then
+  run_priv chown "$site_user":"$site_user" "$ALLOWLIST_FILE"
+  run_priv chmod 640 "$ALLOWLIST_FILE"
+fi
+
+success "Site security fixed for '$site_name' (user: $site_user)"

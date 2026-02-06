@@ -31,12 +31,30 @@ if [ ! -d "$SITE_DIR" ]; then
   die "stop-site: site '$site_name' not found"
 fi
 
+site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '-' '_')"
+site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
+[ -z "$site_user" ] && site_user="$site_user_default"
+
+run_as_site_user() {
+  if [ -z "$site_user" ] || [ "$(id -un)" = "$site_user" ]; then
+    "$@"
+    return
+  fi
+
+  if has sudo; then
+    sudo -u "$site_user" -- "$@"
+    return
+  fi
+
+  die "stop-site: root or sudo is required to run as $site_user"
+}
+
 # Stop nginx
 if [ -f "$SITE_DIR/nginx/nginx.pid" ]; then
   pid=$(cat "$SITE_DIR/nginx/nginx.pid" 2>/dev/null || echo "")
-  if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+  if [ -n "$pid" ] && run_as_site_user kill -0 "$pid" 2>/dev/null; then
     step "Stopping nginx for $site_name (pid: $pid)..."
-    kill "$pid" 2>/dev/null || true
+    run_as_site_user kill "$pid" 2>/dev/null || true
     rm -f "$SITE_DIR/nginx/nginx.pid"
     success "nginx stopped"
   else
@@ -50,9 +68,9 @@ fi
 # Stop fcgiwrap
 if [ -f "$SITE_DIR/nginx/fcgiwrap.pid" ]; then
   pid=$(cat "$SITE_DIR/nginx/fcgiwrap.pid" 2>/dev/null || echo "")
-  if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+  if [ -n "$pid" ] && run_as_site_user kill -0 "$pid" 2>/dev/null; then
     step "Stopping fcgiwrap (pid: $pid)..."
-    kill "$pid" 2>/dev/null || true
+    run_as_site_user kill "$pid" 2>/dev/null || true
     rm -f "$SITE_DIR/nginx/fcgiwrap.pid"
     rm -f "$SITE_DIR/nginx/fcgiwrap.sock"
     success "fcgiwrap stopped"
