@@ -529,38 +529,52 @@ function setupRoomListStream() {
 
 // Handle room selection from list
 document.addEventListener('htmx:afterSwap', function(event) {
+  console.log('[DEBUG] htmx:afterSwap fired, target:', event.detail.target.id);
   if (event.detail.target.id === 'room-list') {
+    console.log('[DEBUG] Processing room-list swap, roomListLoaded:', window.roomListLoaded);
+    
     // On first load, change empty state message and enable UI
     if (!window.roomListLoaded) {
       window.roomListLoaded = true;
+      console.log('[DEBUG] First load detected');
       var emptyStateMsg = document.querySelector('#chat-messages .empty-state-message');
+      console.log('[DEBUG] emptyStateMsg:', emptyStateMsg);
       if (emptyStateMsg) {
         var msgText = emptyStateMsg.textContent.trim();
+        console.log('[DEBUG] Current message text:', msgText);
         if (msgText === 'Connecting to server...') {
           emptyStateMsg.textContent = 'Select a room to start chatting';
+          console.log('[DEBUG] Updated message text');
         }
       }
       // Enable the create room link on first load
       var createRoomLink = document.getElementById('create-room-link');
       if (createRoomLink) {
         createRoomLink.classList.remove('disabled');
+        console.log('[DEBUG] Enabled create room link');
       }
       // Enable username change button on first load
       var usernameChangeBtn = document.querySelector('#username-display button');
       if (usernameChangeBtn) {
         usernameChangeBtn.disabled = false;
+        console.log('[DEBUG] Enabled username change button');
       }
     }
     
     // Hide room-list if it has no room items (to eliminate gap)
-    var roomList = document.querySelector('#room-list .room-list');
-    if (roomList) {
-      var hasRooms = roomList.querySelectorAll('.room-item').length > 0;
+    var roomListDiv = document.getElementById('room-list');
+    console.log('[DEBUG] roomListDiv:', roomListDiv);
+    if (roomListDiv) {
+      var hasRooms = roomListDiv.querySelectorAll('.room-item').length > 0;
+      console.log('[DEBUG] hasRooms:', hasRooms, 'room count:', roomListDiv.querySelectorAll('.room-item').length);
       if (hasRooms) {
-        roomList.style.display = '';
+        roomListDiv.style.display = '';
       } else {
-        roomList.style.display = 'none';
+        roomListDiv.style.display = 'none';
+        console.log('[DEBUG] Hid empty room list DIV');
       }
+    } else {
+      console.log('[DEBUG] roomListDiv not found!');
     }
     
     // Re-validate create room button after room list refreshes (respects validation state)
