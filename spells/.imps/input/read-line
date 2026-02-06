@@ -32,6 +32,9 @@ case $rl_src in
     else
       rl_line=
     fi
+    if [ -z "$rl_line" ] && [ ! -t 0 ] && [ -r /dev/tty ]; then
+      IFS= read -r rl_line </dev/tty || rl_line=
+    fi
     ;;
   tty)   IFS= read -r rl_line </dev/tty || rl_line= ;;
   *)     exit 1 ;;
