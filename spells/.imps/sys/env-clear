@@ -101,6 +101,11 @@ ec_saved_mud_dir="${MUD_DIR:-}"
 ec_saved_log_level="${WIZARDRY_LOG_LEVEL:-}"
 ec_saved_mud_player="${MUD_PLAYER:-}"
 
+# Preserve web wizardry environment variables
+ec_saved_web_root="${WEB_WIZARDRY_ROOT:-}"
+ec_saved_sites_dir="${WIZARDRY_SITES_DIR:-}"
+ec_saved_web_js_dir="${WIZARDRY_WEB_JS_DIR:-}"
+
 # Preserve package manager override variables (used by pkg-install in arcana)
 # Officially supported platforms only: debian, arch, nixos, mac
 ec_saved_nix_pkg="${NIX_PACKAGE:-}"
@@ -186,6 +191,11 @@ export OLDPWD="$ec_saved_oldpwd"
 [ -n "$ec_saved_log_level" ] && export WIZARDRY_LOG_LEVEL="$ec_saved_log_level"
 [ -n "$ec_saved_mud_player" ] && export MUD_PLAYER="$ec_saved_mud_player"
 
+# Restore web wizardry variables
+[ -n "$ec_saved_web_root" ] && export WEB_WIZARDRY_ROOT="$ec_saved_web_root"
+[ -n "$ec_saved_sites_dir" ] && export WIZARDRY_SITES_DIR="$ec_saved_sites_dir"
+[ -n "$ec_saved_web_js_dir" ] && export WIZARDRY_WEB_JS_DIR="$ec_saved_web_js_dir"
+
 # Restore package manager overrides (officially supported platforms only)
 [ -n "$ec_saved_nix_pkg" ] && export NIX_PACKAGE="$ec_saved_nix_pkg"
 [ -n "$ec_saved_apt_pkg" ] && export APT_PACKAGE="$ec_saved_apt_pkg"
@@ -252,7 +262,9 @@ fi
 unset ec_saved_path ec_saved_home ec_saved_user ec_saved_shell ec_saved_term
 unset ec_saved_lang ec_saved_tmpdir ec_saved_pwd ec_saved_oldpwd
 unset ec_saved_wizardry_dir ec_saved_wizardry_invoked ec_saved_spellbook_dir
-unset ec_saved_mud_dir ec_saved_log_level ec_saved_mud_player ec_saved_nix_pkg
+unset ec_saved_mud_dir ec_saved_log_level ec_saved_mud_player
+unset ec_saved_web_root ec_saved_sites_dir ec_saved_web_js_dir
+unset ec_saved_nix_pkg
 unset ec_saved_apt_pkg ec_saved_pacman_pkg ec_saved_pkgin_pkg ec_saved_test_failure
 unset ec_saved_test_skip ec_saved_wiz_tmpdir ec_saved_global_subtest
 unset ec_saved_test_compiled ec_saved_test_helpers ec_saved_system_path
