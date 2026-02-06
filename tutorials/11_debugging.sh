@@ -20,7 +20,8 @@ echo "Example: echo $? (this should be 0)"
 echo $?
 
 # Using the exit status in a conditional statement
-command
+echo "Testing ls command on current directory"
+ls >/dev/null 2>&1
 if [ $? -eq 0 ]; then
   echo "Command executed successfully"
 else
