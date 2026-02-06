@@ -111,12 +111,14 @@ ensure_site_user() {
   fi
 
   if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has dscl; then
-    max_uid=$(dscl . -list /Users UniqueID 2>/dev/null | awk '{print $2}' | sort -n | tail -1)
+    max_uid=$(dscl . -list /Users UniqueID 2>/dev/null | \
+      awk '{print $2}' | sort -n | tail -1)
     case "$max_uid" in
       ''|*[!0-9]*) max_uid=500 ;;
     esac
     uid=$((max_uid + 1))
-    max_gid=$(dscl . -list /Groups PrimaryGroupID 2>/dev/null | awk '{print $2}' | sort -n | tail -1)
+    max_gid=$(dscl . -list /Groups PrimaryGroupID 2>/dev/null | \
+      awk '{print $2}' | sort -n | tail -1)
     case "$max_gid" in
       ''|*[!0-9]*) max_gid=500 ;;
     esac
