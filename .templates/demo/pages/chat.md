@@ -560,13 +560,19 @@ document.addEventListener('htmx:afterSwap', function(event) {
       var roomItems = roomListDiv.querySelectorAll('.room-item');
       var roomControls = document.querySelector('.room-controls');
       if (roomItems.length === 0) {
+        // Completely hide and collapse the room-list element
         roomListDiv.style.display = 'none';
+        roomListDiv.style.height = '0';
+        roomListDiv.style.overflow = 'hidden';
         // Also remove margin-top from room-controls to eliminate gap
         if (roomControls) {
           roomControls.style.marginTop = '0';
         }
       } else {
+        // Restore normal display and height when rooms exist
         roomListDiv.style.display = '';
+        roomListDiv.style.height = '';
+        roomListDiv.style.overflow = '';
         // Restore normal margin when rooms exist
         if (roomControls) {
           roomControls.style.marginTop = '';
