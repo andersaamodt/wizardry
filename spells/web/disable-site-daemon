@@ -54,6 +54,7 @@ fi
 
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
   run_priv launchctl unload -w "$plist" >/dev/null 2>&1 || true
+  run_priv rm -f "$plist"
   success "Daemon disabled on startup for $site_name"
   exit 0
 fi
