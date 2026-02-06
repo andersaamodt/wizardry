@@ -207,3 +207,4 @@
 - CGI tests require WIZARDRY_SITE_NAME, WIZARDRY_SITES_DIR, REQUEST_METHOD, QUERY_STRING env vars in test sandbox whitelist (run-cmd) to work correctly.
 - Piping to run_spell doesn't work for capturing OUTPUT because pipe creates subshell; call CGI scripts directly for POST requests with stdin data.
 - `env VAR=value command` creates CLEAN environment with only specified vars - must explicitly pass ALL needed vars, not just export them in parent shell.
+nginx fastcgi_param must include WIZARDRY_SITES_DIR for CGI scripts to locate site data (get-site-data-dir needs it)
