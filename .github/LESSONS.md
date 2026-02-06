@@ -204,3 +204,5 @@
 - CGI imps can be large (100-300+ lines) and have functions - they're non-user-facing server endpoints, not traditional small helpers; size and function limits don't apply to `.imps/cgi/*` files.
 - Files owned by site user (in .sitedata) need 664 permissions not 644 - the owner must have write permission to append to log files (chat messages, etc.).
 - Files created with default umask inherit 644 permissions (read-only for owner); must explicitly chmod 664 after touch/creation for owner write access.
+- CGI tests require WIZARDRY_SITE_NAME, WIZARDRY_SITES_DIR, REQUEST_METHOD, QUERY_STRING env vars in test sandbox whitelist (run-cmd) to work correctly.
+- Piping to run_spell doesn't work for capturing OUTPUT because pipe creates subshell; call CGI scripts directly for POST requests with stdin data.
