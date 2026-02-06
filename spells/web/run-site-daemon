@@ -18,15 +18,11 @@ esac
 
 set -eu
 
-if [ -n "${WIZARDRY_DIR-}" ] && [ -f "$WIZARDRY_DIR/spells/.imps/sys/env-clear" ]; then
-  . "$WIZARDRY_DIR/spells/.imps/sys/env-clear"
-else
-  . env-clear
-fi
-
+# Validate prerequisites BEFORE env-clear (imps won't be available after)
 site_name=${1-}
 if [ -z "$site_name" ]; then
-  die 2 "run-site-daemon: SITENAME required"
+  printf 'run-site-daemon: SITENAME required\n' >&2
+  exit 2
 fi
 
 WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
@@ -34,17 +30,27 @@ SITES_DIR="$WEB_ROOT"
 SITE_DIR="$SITES_DIR/$site_name"
 
 if [ ! -d "$SITE_DIR" ]; then
-  die "run-site-daemon: site '$site_name' not found"
+  printf 'run-site-daemon: site '\''%s'\'' not found\n' "$site_name" >&2
+  exit 1
 fi
 
-if ! has nginx; then
-  die "run-site-daemon: nginx is not installed"
+if ! command -v nginx >/dev/null 2>&1; then
+  printf 'run-site-daemon: nginx is not installed\n' >&2
+  exit 1
+fi
+
+# Now safe to clear environment (no more imp calls needed)
+if [ -n "${WIZARDRY_DIR-}" ] && [ -f "$WIZARDRY_DIR/spells/.imps/sys/env-clear" ]; then
+  . "$WIZARDRY_DIR/spells/.imps/sys/env-clear"
+else
+  . env-clear
 fi
 
 # Build site if not built
 if [ ! -f "$SITE_DIR/build/pages/index.html" ]; then
-  step "Building site before serving..."
-  build "$site_name"
+  printf 'Building site before serving...\n' >&2
+  # Note: Can't call 'build' spell here - it's not in PATH after env-clear
+  # If build/ doesn't exist, nginx will fail to start and error will be logged
 fi
 
 # Generate nginx config if not exists
