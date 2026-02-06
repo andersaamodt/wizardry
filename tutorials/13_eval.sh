@@ -9,7 +9,7 @@ echo "To study the code of the examples, please use the command: cat 12_eval.sh"
 
 # Example 1: Using variables in a command
 # Note: Variable expansion happens BEFORE eval executes the string
-ingredient="Dragons blood"
+ingredient="Dragon's blood"
 eval "echo Gathering ingredients for the potion: $ingredient"
 
 # Example 2: Using command substitution
@@ -20,15 +20,12 @@ eval "echo Starting spell; sleep 2; echo Spell complete"
 
 # exec function
 # The exec function also takes a command as its argument, but it replaces the current shell process with the new command. 
-# This means that any code AFTER exec will NOT run because the script is replaced!
+# This means that the new command will not run in a subshell and any changes made by the new command will affect the current shell.
 
-# Example 1: Using exec to run a new shell (commented out - would replace this script)
-# exec /bin/sh
+# Example 1: Using exec to run a new shell
+exec /bin/sh
 
-# Example 2: Using exec to run a command (commented out - would stop script here)
-# exec echo "This command is being run by exec"
-
-echo "Note: exec examples are commented out because they would terminate this script."
-echo "To test exec, run: exec echo 'hello' in your own shell (it will close the shell)"
+# Example 2: Using exec to run a command
+exec echo "This command is being run by exec"
 
 echo "Spell cast successfully"
