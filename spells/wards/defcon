@@ -1,0 +1,321 @@
+#!/bin/sh
+
+# Emergency system lockdown at escalating security levels.
+# DEFCON 1 is safe and reversible; higher levels are increasingly dangerous.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: defcon [LEVEL|off] [OPTIONS]
+
+Lock down or unlock the system at different security levels.
+
+NOTE: This spell's DEFCON levels increase in severity from 1 to 5.
+      This is inverted from real-world DEFCON (5 is least severe in military use).
+      We follow wizardry's spell level convention (higher = more complex).
+
+Arguments:
+  LEVEL                 Security level (1-5, default: 1)
+                        1 = Network lockdown, process freeze, unmount (safe, reversible)
+                        2 = + Disable services (requires confirmation)
+                        3 = + Kill user processes (not recommended, requires confirmation)
+                        4 = + Filesystem read-only (not recommended, requires confirmation)
+                        5 = + System halt preparation (not recommended, requires confirmation)
+  off                   Reverse lockdown and restore normal operation
+
+Options:
+  -y, --yes            Skip confirmation prompts (auto-accept)
+
+Examples:
+  defcon               # Apply DEFCON 1 (safe, immediate)
+  defcon 1             # Apply DEFCON 1 explicitly
+  defcon 2             # Apply DEFCON 2 (asks for confirmation)
+  defcon 3 -y          # Apply DEFCON 3 without confirmation
+  defcon off           # Restore normal operation
+
+Note: DEFCON 1 is safe and reversible, applied immediately.
+      DEFCON 2-5 require confirmation (default N) unless -y is used.
+      Higher levels may require manual work to reverse.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Parse arguments
+level=1
+mode="lock"
+auto_yes=0
+is_recursive=0
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    off)
+      mode="unlock"
+      shift
+      ;;
+    [1-5])
+      level=$1
+      shift
+      ;;
+    -y|--yes)
+      auto_yes=1
+      shift
+      ;;
+    --recursive)
+      # Internal flag to track recursive calls
+      is_recursive=1
+      shift
+      ;;
+    *)
+      die "defcon: unknown argument: $1"
+      ;;
+  esac
+done
+
+# State file to track current defcon level
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/wizardry"
+state_file="$state_dir/defcon-state"
+
+# Ensure state directory exists
+mkdir -p "$state_dir"
+
+# Unlock mode
+if [ "$mode" = "unlock" ]; then
+  if [ ! -f "$state_file" ]; then
+    info "defcon: system not locked down"
+    exit 0
+  fi
+  
+  current_level=$(cat "$state_file")
+  say "Unlocking from DEFCON $current_level..."
+  
+  # Reverse operations based on level
+  case "$current_level" in
+    5|4|3|2|1)
+      # Restore network (if we disabled it)
+      if has ip; then
+        while IFS= read -r line; do
+          # Extract interface name from "N: ifname: ..." format
+          iface=$(printf '%s' "$line" | awk -F: '{print $2}' | tr -d ' ')
+          if [ -n "$iface" ] && [ "$iface" != "lo" ]; then
+            # Check if interface is down
+            if printf '%s' "$line" | grep -q "state DOWN"; then
+              step "Restoring network interface: $iface"
+              sudo ip link set "$iface" up 2>/dev/null || warn "defcon: could not restore $iface"
+            fi
+          fi
+        done <<EOF
+$(ip link show)
+EOF
+      fi
+      
+      # Resume frozen processes
+      step "Resuming any frozen processes..."
+      # Note: This sends SIGCONT to all user processes, including those
+      # not frozen by defcon. This is safe as SIGCONT is ignored by running processes.
+      pkill -CONT -u "$(id -u)" 2>/dev/null || true
+      
+      success "System unlocked from DEFCON $current_level"
+      ;;
+  esac
+  
+  rm -f "$state_file"
+  exit 0
+fi
+
+# Lock mode - apply defcon level
+say "Applying DEFCON $level lockdown..."
+
+# For levels 2-5, require confirmation unless -y
+if [ "$level" -ge 2 ] && [ "$auto_yes" -eq 0 ]; then
+  case "$level" in
+    2)
+      warn "DEFCON 2 will disable non-essential services"
+      if ! ask-yn "Proceed with DEFCON 2?" no; then
+        info "Cancelled"
+        exit 0
+      fi
+      ;;
+    3)
+      warn "DEFCON 3 will kill user processes (not recommended)"
+      warn "This may cause data loss in unsaved work"
+      if ! ask-yn "Proceed with DEFCON 3? (not recommended)" no; then
+        info "Cancelled"
+        exit 0
+      fi
+      ;;
+    4)
+      warn "DEFCON 4 will remount filesystems read-only (not recommended)"
+      warn "This will prevent any writes to disk and may cause system instability"
+      if ! ask-yn "Proceed with DEFCON 4? (not recommended)" no; then
+        info "Cancelled"
+        exit 0
+      fi
+      ;;
+    5)
+      warn "DEFCON 5 prepares system for halt (not recommended)"
+      warn "This is the most severe lockdown and may be difficult to reverse"
+      if ! ask-yn "Proceed with DEFCON 5? (not recommended)" no; then
+        info "Cancelled"
+        exit 0
+      fi
+      ;;
+  esac
+fi
+
+# Apply lockdown measures based on level
+case "$level" in
+  1)
+    step "DEFCON 1: Network lockdown"
+    if has ip; then
+      # Store ip link output to avoid running command twice
+      ip_output=$(ip link show)
+      while IFS= read -r line; do
+        # Extract interface name from "N: ifname: ..." format  
+        iface=$(printf '%s' "$line" | awk -F: '{print $2}' | tr -d ' ')
+        if [ -n "$iface" ] && [ "$iface" != "lo" ]; then
+          # Check if interface is up
+          if printf '%s' "$line" | grep -q "state UP"; then
+            info "Disabling network interface: $iface"
+            sudo ip link set "$iface" down || warn "defcon: could not disable $iface"
+          fi
+        fi
+      done <<EOF
+$ip_output
+EOF
+    fi
+    
+    step "DEFCON 1: Freezing processes"
+    # Freeze user processes (except current shell session and critical processes)
+    # Note: We exclude the current process tree to avoid freezing the terminal
+    for pid in $(pgrep -u "$(id -u)"); do
+      # Skip our process, parent, and any process in our session
+      if [ "$pid" != "$$" ] && [ "$pid" != "$PPID" ]; then
+        # Get process session ID - skip if it matches our session
+        pid_sid=$(ps -o sid= -p "$pid" 2>/dev/null | tr -d ' ') || continue
+        our_sid=$(ps -o sid= -p "$$" 2>/dev/null | tr -d ' ') || continue
+        if [ "$pid_sid" != "$our_sid" ]; then
+          kill -STOP "$pid" 2>/dev/null || true
+        fi
+      fi
+    done
+    
+    step "DEFCON 1: Unmounting removable devices"
+    # Unmount removable media
+    if has mount; then
+      # Use while-read loop for proper handling of paths with whitespace
+      # Use more precise pattern to match only /media/ and /mnt/ mount points
+      mount | awk '$3 ~ /^\/(media|mnt)\// {print $3}' | while IFS= read -r mount_point; do
+        if [ -n "$mount_point" ]; then
+          info "Unmounting: $mount_point"
+          sudo umount "$mount_point" 2>/dev/null || warn "defcon: could not unmount $mount_point"
+        fi
+      done
+    fi
+    ;;
+    
+  2)
+    # Apply all DEFCON 1 measures first
+    step "Applying DEFCON 1 measures..."
+    # Use 'defcon' command directly (assumes wizardry is in PATH)
+    defcon 1 -y --recursive
+    
+    step "DEFCON 2: Disabling non-essential services"
+    # Disable common non-essential services
+    for service in bluetooth cups avahi-daemon; do
+      if has systemctl && systemctl is-active "$service" >/dev/null 2>&1; then
+        info "Stopping service: $service"
+        sudo systemctl stop "$service" || warn "defcon: could not stop $service"
+      fi
+    done
+    ;;
+    
+  3)
+    # Save state BEFORE killing processes
+    printf '%s\n' "$level" > "$state_file"
+    
+    # Apply DEFCON 1 and 2 measures (safe to recurse)
+    step "Applying DEFCON 1 and 2 measures..."
+    defcon 2 -y --recursive
+    
+    step "DEFCON 3: Terminating user processes (not recommended)"
+    warn "Other user sessions will be terminated"
+    # Kill all user processes except our session (to allow script to finish)
+    # Use session ID to exclude current session
+    our_sid=$(ps -o sid= -p "$$" 2>/dev/null | tr -d ' ')
+    for pid in $(pgrep -u "$(id -u)"); do
+      pid_sid=$(ps -o sid= -p "$pid" 2>/dev/null | tr -d ' ') || continue
+      if [ "$pid_sid" != "$our_sid" ]; then
+        kill -9 "$pid" 2>/dev/null || true
+      fi
+    done
+    success "DEFCON $level activated"
+    exit 0
+    ;;
+    
+  4)
+    # Save state BEFORE making filesystem read-only
+    printf '%s\n' "$level" > "$state_file"
+    
+    # Apply DEFCON 1 and 2 measures (safe to recurse)
+    step "Applying DEFCON 1 and 2 measures..."
+    defcon 2 -y --recursive
+    
+    # Apply DEFCON 3 measures directly (can't recurse due to exit)
+    step "DEFCON 3: Terminating user processes (not recommended)"
+    our_sid=$(ps -o sid= -p "$$" 2>/dev/null | tr -d ' ')
+    for pid in $(pgrep -u "$(id -u)"); do
+      pid_sid=$(ps -o sid= -p "$pid" 2>/dev/null | tr -d ' ') || continue
+      if [ "$pid_sid" != "$our_sid" ]; then
+        kill -9 "$pid" 2>/dev/null || true
+      fi
+    done
+    
+    step "DEFCON 4: Remounting filesystems read-only (not recommended)"
+    # Remount root filesystem read-only
+    sudo mount -o remount,ro / || warn "defcon: could not remount / as read-only"
+    success "DEFCON $level activated"
+    exit 0
+    ;;
+    
+  5)
+    # Save state BEFORE making filesystem read-only
+    printf '%s\n' "$level" > "$state_file"
+    
+    # Apply DEFCON 1 and 2 measures (safe to recurse)
+    step "Applying DEFCON 1 and 2 measures..."
+    defcon 2 -y --recursive
+    
+    # Apply DEFCON 3 measures directly (can't recurse due to exit)
+    step "DEFCON 3: Terminating user processes (not recommended)"
+    our_sid=$(ps -o sid= -p "$$" 2>/dev/null | tr -d ' ')
+    for pid in $(pgrep -u "$(id -u)"); do
+      pid_sid=$(ps -o sid= -p "$pid" 2>/dev/null | tr -d ' ') || continue
+      if [ "$pid_sid" != "$our_sid" ]; then
+        kill -9 "$pid" 2>/dev/null || true
+      fi
+    done
+    
+    # Apply DEFCON 4 measures directly (can't recurse due to exit)
+    step "DEFCON 4: Remounting filesystems read-only (not recommended)"
+    sudo mount -o remount,ro / || warn "defcon: could not remount / as read-only"
+    
+    step "DEFCON 5: Preparing for system halt (not recommended)"
+    # Sync filesystems
+    sync
+    # Drop caches
+    sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches' 2>/dev/null || true
+    warn "System prepared for halt - consider running 'sudo halt' or 'sudo poweroff'"
+    success "DEFCON $level activated"
+    exit 0
+    ;;
+esac
+
+# Save current level to state file (only for levels 1-2, as 3-5 save before dangerous ops)
+if [ "$is_recursive" -eq 0 ] && [ "$level" -le 2 ]; then
+  printf '%s\n' "$level" > "$state_file"
+  success "DEFCON $level activated"
+fi
