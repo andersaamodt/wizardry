@@ -3,6 +3,8 @@
 # When a command has multiple meanings, presents a menu to choose.
 # Saves choice in $SPELLBOOK_DIR/.disambiguations for future use.
 
+set -eu
+
 if [ $# -eq 0 ]; then
   exit 0
 fi
