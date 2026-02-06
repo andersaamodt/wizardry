@@ -44,6 +44,7 @@ set -eu
 level=1
 mode="lock"
 auto_yes=0
+is_recursive=0
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -57,6 +58,11 @@ while [ "$#" -gt 0 ]; do
       ;;
     -y|--yes)
       auto_yes=1
+      shift
+      ;;
+    --recursive)
+      # Internal flag to track recursive calls
+      is_recursive=1
       shift
       ;;
     *)
@@ -184,7 +190,7 @@ case "$level" in
   2)
     # Apply all DEFCON 1 measures first
     step "Applying DEFCON 1 measures..."
-    "$0" 1 -y
+    "$0" 1 -y --recursive
     
     step "DEFCON 2: Disabling non-essential services"
     # Disable common non-essential services
@@ -199,7 +205,7 @@ case "$level" in
   3)
     # Apply all DEFCON 2 measures first
     step "Applying DEFCON 2 measures..."
-    "$0" 2 -y
+    "$0" 2 -y --recursive
     
     step "DEFCON 3: Terminating user processes (not recommended)"
     # Kill non-essential user processes
@@ -209,7 +215,7 @@ case "$level" in
   4)
     # Apply all DEFCON 3 measures first
     step "Applying DEFCON 3 measures..."
-    "$0" 3 -y
+    "$0" 3 -y --recursive
     
     step "DEFCON 4: Remounting filesystems read-only (not recommended)"
     # Remount root filesystem read-only
@@ -219,7 +225,7 @@ case "$level" in
   5)
     # Apply all DEFCON 4 measures first
     step "Applying DEFCON 4 measures..."
-    "$0" 4 -y
+    "$0" 4 -y --recursive
     
     step "DEFCON 5: Preparing for system halt (not recommended)"
     # Sync filesystems
@@ -230,6 +236,8 @@ case "$level" in
     ;;
 esac
 
-# Save current level to state file
-printf '%s\n' "$level" > "$state_file"
-success "DEFCON $level activated"
+# Save current level to state file (only on top-level call, not recursive)
+if [ "$is_recursive" -eq 0 ]; then
+  printf '%s\n' "$level" > "$state_file"
+  success "DEFCON $level activated"
+fi
