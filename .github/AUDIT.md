@@ -412,9 +412,19 @@ The AI auditor must self-assess and document how thoroughly each file was review
 - **Skimmed** (👁️) - File was opened and briefly scanned (< 10 seconds of attention)
 - **Read** (📖) - File was read through once with understanding (~30-60 seconds)
 - **Perused** (🔍) - File was carefully read with attention to details (~2-5 minutes)
-- **Exhaustive** (🎯) - File was thoroughly analyzed, cross-referenced with related code, tested mentally against edge cases (5+ minutes)
+- **Exhaustive** (🎯) - File was thoroughly analyzed, cross-referenced with related code, tested mentally against edge cases (5-10 minutes)
+- **Critical** (🔬) - Deep architectural analysis seeking subtle flaws, big-picture structural issues across multiple files, potential paradigm shifts, and generative insights (10+ minutes)
 
-Choose the level that honestly represents the depth of review. Higher thoroughness is not always necessary—simple files may only need "Read" level, while complex or critical files deserve "Exhaustive" review.
+**Critical Level Details:**
+The Critical level goes beyond surface evaluation to question fundamental assumptions:
+- Look for **subtle or potential flaws** that might not be obvious bugs but could cause issues
+- Identify **big-picture structural issues** that span multiple files or affect overall architecture
+- Consider **cross-file dependencies** and how this file fits in the broader system
+- Seek **paradigm shifts** - are there better ways to structure this functionality?
+- Generate **actionable insights** that could improve not just this file but related patterns
+- Question **design decisions** in context of the whole project's evolution
+
+Choose the level that honestly represents the depth of review. Higher thoroughness is not always necessary—simple files may only need "Read" level, while complex or critical files deserve "Exhaustive" or "Critical" review.
 
 ### Timestamp Requirement for Audit Verification
 
@@ -426,8 +436,9 @@ Choose the level that honestly represents the depth of review. Higher thoroughne
 
 **Why This Matters:**
 - **Perused reviews** require 2-5 minutes per file → Maximum ~0.5 files/minute realistic
-- **Exhaustive reviews** require 5+ minutes per file → Maximum ~0.2 files/minute realistic
-- **Timestamps expose shortcuts** - If many files show same timestamp with Perused/Exhaustive thoroughness, it indicates batch processing without genuine review
+- **Exhaustive reviews** require 5-10 minutes per file → Maximum ~0.2 files/minute realistic
+- **Critical reviews** require 10+ minutes per file → Maximum ~0.1 files/minute realistic
+- **Timestamps expose shortcuts** - If many files show same timestamp with Perused/Exhaustive/Critical thoroughness, it indicates batch processing without genuine review
 
 **Examples:**
 - ✅ HONEST: Files spread over realistic time periods (e.g., 20 files across 60 minutes = 3 min/file)
@@ -437,7 +448,7 @@ Choose the level that honestly represents the depth of review. Higher thoroughne
 
 **CRITICAL RULE:** Only files that receive careful, detailed review can have colored assessment dots.
 
-- **Files with 🔍 Perused or 🎯 Exhaustive** - May have colored dots (🟢/🟡/🔴) in Result, Code, Docs, Theme, Policy, and Ethos columns
+- **Files with 🔍 Perused, 🎯 Exhaustive, or 🔬 Critical** - May have colored dots (🟢/🟡/🔴) in Result, Code, Docs, Theme, Policy, and Ethos columns
 - **Files with 📖 Read, 👁️ Skimmed, or ❌ Not Read** - MUST have ⚪ (grey/N/A) in all assessment columns
 
 **Rationale:** Colored dots represent informed judgments that require careful examination. A quick read is insufficient to form reliable opinions about code quality, documentation, policy compliance, or ethos. Only deep review (2+ minutes of careful attention) justifies colored assessments.
@@ -445,6 +456,7 @@ Choose the level that honestly represents the depth of review. Higher thoroughne
 **Examples:**
 - ✅ CORRECT: `| file.sh | 2026-02-06 16:45 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None |`
 - ✅ CORRECT: `| file.sh | 2026-02-06 16:47 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Quick scan only |`
+- ✅ CORRECT: `| file.sh | 2026-02-06 17:00 | 🔬 Critical | 🟢 | 🟢 | 🟡 | 🟢 | 🟢 | 🟢 | Cross-file architectural analysis |`
 - ❌ WRONG: `| file.sh | 2026-02-06 | 📖 Read | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None |` (no timestamp)
 - ❌ WRONG: `| file.sh | 2026-02-06 17:15 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None |` (if 50+ other files have same timestamp)
 
