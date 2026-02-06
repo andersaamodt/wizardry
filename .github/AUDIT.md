@@ -354,6 +354,37 @@ The AI auditor must self-assess and document how thoroughly each file was review
 
 Choose the level that honestly represents the depth of review. Higher thoroughness is not always necessary—simple files may only need "Read" level, while complex or critical files deserve "Exhaustive" review.
 
+### Thoroughness Requirements for Colored Dots
+
+**CRITICAL RULE:** Only files that receive careful, detailed review can have colored assessment dots.
+
+- **Files with 🔍 Perused or 🎯 Exhaustive** - May have colored dots (🟢/🟡/🔴) in Result, Code, Docs, Theme, Policy, and Ethos columns
+- **Files with 📖 Read, 👁️ Skimmed, or ❌ Not Read** - MUST have ⚪ (grey/N/A) in all assessment columns
+
+**Rationale:** Colored dots represent informed judgments that require careful examination. A quick read is insufficient to form reliable opinions about code quality, documentation, policy compliance, or ethos. Only deep review (2+ minutes of careful attention) justifies colored assessments.
+
+**Examples:**
+- ✅ CORRECT: `| file.sh | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None |`
+- ✅ CORRECT: `| file.sh | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Quick scan only |`
+- ❌ WRONG: `| file.sh | 2026-02-06 | 📖 Read | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None |`
+
+### Re-Audit Wiping Behavior
+
+**CRITICAL RULE:** When re-auditing a file, clear all assessment dots to ⚪ before starting.
+
+This ensures:
+1. **Fresh perspective** - Each audit forms new opinions rather than copying old ones
+2. **Complete opinions** - No partial grey dots left behind from incomplete audits
+3. **Honest assessment** - Forces re-examination rather than assumption
+
+**Process:**
+1. Before auditing file X, set all its assessment columns (Result, Code, Docs, Theme, Policy, Ethos) to ⚪
+2. Conduct the audit with appropriate thoroughness
+3. If thoroughness is 🔍 Perused or 🎯 Exhaustive, fill in all assessment columns with informed judgments
+4. If thoroughness is 📖 Read or lower, leave all assessment columns as ⚪
+
+**Why:** This prevents the accumulation of stale assessments and ensures the table always reflects current, informed opinions.
+
 ### Audit Workflow
 
 When conducting an AI-driven audit:
