@@ -1,0 +1,23 @@
+:root {
+  --primary: #1d4ed8;
+  --accent: #e2b96f;
+  --accent-dark: #c99a4a;
+  --teal: #1d4ed8;
+  --green: #d9e6f5;
+  --purple: #1e3a8a;
+  --violet: #c7d2fe;
+  --text: #111111;
+  --light-text: #334155;
+  --heading-color: #e2b96f;
+  --border: #cbd5e1;
+  --bg: #f8fafc;
+  --light-bg: #e2e8f0;
+  --code-bg: #e2e8f0;
+  --shadow: rgba(29, 78, 216, 0.16);
+  --nav-link-hover: #e2e8f0;
+  --nav-link-active: #1d4ed8;
+  --nav-icon: #f59e0b;
+  --nav-button-bg: #4d86ad;
+  --nav-button-bg-dark: #2f5f7a;
+  --accent-hover-end: #c99a4a;
+}
