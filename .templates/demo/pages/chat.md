@@ -523,32 +523,6 @@ function setupRoomListStream() {
   // Log successful connection
   window.roomListEventSource.addEventListener('open', function(event) {
     console.log('[Room List SSE] Connected successfully');
-    
-    // On initial connection, crossfade from "Connecting to chatrooms..." to "Select a room to start chatting"
-    if (!window.chatInitialConnectionComplete) {
-      window.chatInitialConnectionComplete = true;
-      
-      var emptyStateMsg = document.querySelector('.empty-state-message');
-      var createRoomLink = document.getElementById('create-room-link');
-      
-      if (emptyStateMsg && emptyStateMsg.textContent === 'Connecting to chatrooms...') {
-        // Crossfade: fade out, change text, fade in
-        emptyStateMsg.style.transition = 'opacity 0.3s ease-in-out';
-        emptyStateMsg.style.opacity = '0';
-        
-        setTimeout(function() {
-          emptyStateMsg.textContent = window.originalEmptyStateMessage || 'Select a room to start chatting';
-          emptyStateMsg.style.opacity = '1';
-          
-          // Re-enable Create Room link
-          if (createRoomLink) {
-            createRoomLink.classList.remove('disabled');
-            createRoomLink.style.pointerEvents = '';
-            createRoomLink.style.opacity = '';
-          }
-        }, 200);  // Match crossfade duration
-      }
-    }
   });
 }
 
@@ -2046,29 +2020,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialize unread counts SSE connection on page load
 document.addEventListener('DOMContentLoaded', function() {
-  // Set initial state: Show "Connecting to chatrooms..." before SSE connects
-  var emptyStateMsg = document.querySelector('.empty-state-message');
-  var createRoomLink = document.getElementById('create-room-link');
-  
-  // Store original message
-  window.originalEmptyStateMessage = 'Select a room to start chatting';
-  
-  // Set initial connecting message
-  if (emptyStateMsg) {
-    emptyStateMsg.textContent = 'Connecting to chatrooms...';
-    emptyStateMsg.style.opacity = '1';  // Ensure visible
-  }
-  
-  // Disable Create Room link initially
-  if (createRoomLink) {
-    createRoomLink.classList.add('disabled');
-    createRoomLink.style.pointerEvents = 'none';
-    createRoomLink.style.opacity = '0.5';
-  }
-  
-  // Flag to track if we've done the initial connection
-  window.chatInitialConnectionComplete = false;
-  
   setupUnreadCountsStream();
   setupRoomListStream();
   
