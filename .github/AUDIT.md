@@ -419,6 +419,24 @@ comm -23 <(find spells -type f | sort) <(find .tests -type f | sed 's/\.tests/sp
    - Track metrics over time
    - Identify systemic issues for project improvement
 
+7. **Memory Formation (for AI Auditors)**
+   - During audits, actively form memories of important patterns and findings
+   - Store memories that optimize working memory for future audits
+   - Focus on:
+     * **Common failure patterns**: Recurring bash-isms, POSIX violations
+     * **Project-specific idioms**: Unique patterns in this codebase
+     * **Exemption rationales**: Why certain exceptions exist
+     * **Cross-platform quirks**: Platform-specific gotchas discovered
+     * **Best practices**: Exemplary code patterns found during audit
+   - Use `store_memory` tool to capture:
+     * POSIX sh patterns that maximize cross-platform compatibility
+     * Function discipline patterns that comply with project standards
+     * Theming patterns that balance flavor with clarity
+     * Security patterns that prevent vulnerabilities
+   - Goal: Maximize compliance with project ethos and skill in writing highest-quality POSIX sh code
+   - Carefully choose what to memorize - quality over quantity
+   - Re-store useful existing memories to retain them longer
+
 ---
 
 ## Metrics & Trends
