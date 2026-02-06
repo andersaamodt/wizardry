@@ -110,18 +110,21 @@ NGINX_CONF_DIR="$SITE_DIR/nginx"
 mkdir -p "$NGINX_CONF_DIR"
 
 # Ensure nginx temp directories exist with proper permissions
-# nginx/ is owned by actual user, so we can create these directly
-# fix-site-security sets temp/ to 775 so site user can write to them
+# nginx/ is owned by actual user, but may have stale permissions from old sites
+# Call fix-site-security to fix ownership/permissions before creating
 if [ ! -d "$NGINX_CONF_DIR/temp/client_body" ] || \
    [ ! -d "$NGINX_CONF_DIR/temp/proxy" ] || \
    [ ! -d "$NGINX_CONF_DIR/temp/fastcgi" ] || \
    [ ! -d "$NGINX_CONF_DIR/temp/uwsgi" ] || \
    [ ! -d "$NGINX_CONF_DIR/temp/scgi" ]; then
-  mkdir -p "$NGINX_CONF_DIR/temp/client_body"
-  mkdir -p "$NGINX_CONF_DIR/temp/proxy"
-  mkdir -p "$NGINX_CONF_DIR/temp/fastcgi"
-  mkdir -p "$NGINX_CONF_DIR/temp/uwsgi"
-  mkdir -p "$NGINX_CONF_DIR/temp/scgi"
+  # Fix permissions first (handles stale ownership from old wizardry versions)
+  has fix-site-security && fix-site-security "$site_name" >/dev/null 2>&1 || true
+  # Now create temp directories (fix-site-security may have already created them)
+  mkdir -p "$NGINX_CONF_DIR/temp/client_body" 2>/dev/null || true
+  mkdir -p "$NGINX_CONF_DIR/temp/proxy" 2>/dev/null || true
+  mkdir -p "$NGINX_CONF_DIR/temp/fastcgi" 2>/dev/null || true
+  mkdir -p "$NGINX_CONF_DIR/temp/uwsgi" 2>/dev/null || true
+  mkdir -p "$NGINX_CONF_DIR/temp/scgi" 2>/dev/null || true
 fi
 
 # Path to CGI scripts
