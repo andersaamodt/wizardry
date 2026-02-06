@@ -81,15 +81,15 @@ trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true; exit 0' TERM
 trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true' EXIT
 
 while true; do
-  # Read last selected position from temp file, default to 1
+  # Read last selected entry_index from temp file, default to 1
   if [ -f "$SELECTION_FILE" ]; then
-    start_selection=$(cat "$SELECTION_FILE" 2>/dev/null || printf '1')
+    saved_entry_index=$(cat "$SELECTION_FILE" 2>/dev/null || printf '1')
     # Handle empty file
-    if [ -z "$start_selection" ]; then
-      start_selection=1
+    if [ -z "$saved_entry_index" ]; then
+      saved_entry_index=1
     fi
   else
-    start_selection=1
+    saved_entry_index=1
   fi
 
   # Build menu based on site status
@@ -185,44 +185,13 @@ while true; do
     printf '%s; echo %s > "$SELECTION_FILE"' "$cmd" "$entry_index"
   }
 
-  # Build menu in unified path
-  # Key pattern: Place frequently-selected items (server toggle) at FIXED positions
-  # (position 1) by putting them BEFORE conditional items. This prevents selection
-  # from jumping when menu state changes (serving/not serving). Conditional items
-  # like "Open in browser" and "Restart server" come AFTER core items.
-  # See: PR #1090 attempted dummy entry_index increments, but failed because
-  # menu assigns sequential positions to actual items only - dummies don't work.
+  # Build menu in unified path - preserve original menu order
+  # Key pattern: Use dummy entry_index increments to reserve positions for
+  # conditional items when they're not present. This ensures "Start server" and
+  # "Stop server" have the same entry_index even though menu positions differ.
   entry_index=0
   
-  # Always: Start/Stop server toggle (position 1 - always first)
-  entry_index=$((entry_index + 1))
-  if [ "$is_serving" -eq 1 ]; then
-    server_toggle_cmd=$(wrap_cmd "$entry_index" "stop-site \"$site_name\"")
-    server_toggle_option="Stop server%$server_toggle_cmd"
-  else
-    server_toggle_cmd=$(wrap_cmd "$entry_index" "serve-site \"$site_name\"")
-    server_toggle_option="Start server%$server_toggle_cmd"
-  fi
-  
-  # Always: Build
-  entry_index=$((entry_index + 1))
-  build_cmd_wrapped=$(wrap_cmd "$entry_index" "build \"$site_name\"")
-  
-  # Always: Build all
-  entry_index=$((entry_index + 1))
-  build_all_cmd_wrapped=$(wrap_cmd "$entry_index" "build \"$site_name\" --full")
-  
-  # Always: Build all & restart server
-  entry_index=$((entry_index + 1))
-  build_restart_cmd="build \"$site_name\" --full"
-  build_restart_cmd="$build_restart_cmd && stop-site \"$site_name\""
-  build_restart_cmd="$build_restart_cmd && serve-site \"$site_name\""
-  build_restart_cmd_wrapped=$(wrap_cmd "$entry_index" "$build_restart_cmd")
-  
-  # Separator
-  entry_index=$((entry_index + 1))
-  
-  # Conditional: Open in browser (serving only) - after core items
+  # Conditional: Open in browser (serving only) - position 1 when present
   open_browser_option=""
   if [ "$is_serving" -eq 1 ]; then
     entry_index=$((entry_index + 1))
@@ -233,16 +202,17 @@ while true; do
     open_browser_cmd="$open_browser_cmd || printf 'Visit: http://localhost:$port\n'"
     open_browser_cmd_wrapped=$(wrap_cmd "$entry_index" "$open_browser_cmd")
     open_browser_option="Open in browser%$open_browser_cmd_wrapped"
+  else
+    # Reserve position for missing "Open in browser" when not serving
+    entry_index=$((entry_index + 1))
   fi
   
-  # Conditional: Restart server (serving only) - after core items
-  restart_server_option=""
-  if [ "$is_serving" -eq 1 ]; then
-    entry_index=$((entry_index + 1))
-    restart_cmd_wrapped=$(wrap_cmd "$entry_index" \
-      "stop-site \"$site_name\" && serve-site \"$site_name\"")
-    restart_server_option="Restart server%$restart_cmd_wrapped"
-  fi
+  # Always: Build all & restart server
+  entry_index=$((entry_index + 1))
+  build_restart_cmd="build \"$site_name\" --full"
+  build_restart_cmd="$build_restart_cmd && stop-site \"$site_name\""
+  build_restart_cmd="$build_restart_cmd && serve-site \"$site_name\""
+  build_restart_cmd_wrapped=$(wrap_cmd "$entry_index" "$build_restart_cmd")
   
   # Always: Update from template
   entry_index=$((entry_index + 1))
@@ -269,6 +239,39 @@ while true; do
   open_data_cmd="$open_data_cmd (will be created when needed)\\n';"
   open_data_cmd="$open_data_cmd read -r dummy; }"
   open_data_cmd_wrapped=$(wrap_cmd "$entry_index" "$open_data_cmd")
+  
+  # Separator
+  entry_index=$((entry_index + 1))
+  
+  # Conditional: Restart server (serving only)
+  restart_server_option=""
+  if [ "$is_serving" -eq 1 ]; then
+    entry_index=$((entry_index + 1))
+    restart_cmd_wrapped=$(wrap_cmd "$entry_index" \
+      "stop-site \"$site_name\" && serve-site \"$site_name\"")
+    restart_server_option="Restart server%$restart_cmd_wrapped"
+  else
+    # Reserve position for missing "Restart server" when not serving
+    entry_index=$((entry_index + 1))
+  fi
+  
+  # Always: Start/Stop server toggle
+  entry_index=$((entry_index + 1))
+  if [ "$is_serving" -eq 1 ]; then
+    server_toggle_cmd=$(wrap_cmd "$entry_index" "stop-site \"$site_name\"")
+    server_toggle_option="Stop server%$server_toggle_cmd"
+  else
+    server_toggle_cmd=$(wrap_cmd "$entry_index" "serve-site \"$site_name\"")
+    server_toggle_option="Start server%$server_toggle_cmd"
+  fi
+  
+  # Always: Build
+  entry_index=$((entry_index + 1))
+  build_cmd_wrapped=$(wrap_cmd "$entry_index" "build \"$site_name\"")
+  
+  # Always: Build all
+  entry_index=$((entry_index + 1))
+  build_all_cmd_wrapped=$(wrap_cmd "$entry_index" "build \"$site_name\" --full")
   
   # Separator
   entry_index=$((entry_index + 1))
@@ -337,19 +340,19 @@ while true; do
   entry_index=$((entry_index + 1))
   exit_cmd_wrapped=$(wrap_cmd "$entry_index" "kill -TERM \$PPID")
 
-  # Build menu array - server toggle always at position 1
+  # Build menu array - restore original menu order
   set -- \
-    "$server_toggle_option" \
-    "Build%$build_cmd_wrapped" \
-    "Build all%$build_all_cmd_wrapped" \
-    "Build all & restart server%$build_restart_cmd_wrapped" \
-    "---" \
     ${open_browser_option:+"$open_browser_option"} \
-    ${restart_server_option:+"$restart_server_option"} \
+    "Build all & restart server%$build_restart_cmd_wrapped" \
     "Update from template%$update_template_cmd_wrapped" \
     ${copy_site_onion:+"$copy_site_onion"} \
     "Open site directory%$open_dir_cmd_wrapped" \
     "Open site data%$open_data_cmd_wrapped" \
+    "---" \
+    ${restart_server_option:+"$restart_server_option"} \
+    "$server_toggle_option" \
+    "Build%$build_cmd_wrapped" \
+    "Build all%$build_all_cmd_wrapped" \
     "---" \
     ${tor_hosting_option:+"$tor_hosting_option"} \
     ${serve_on_startup_option:+"$serve_on_startup_option"} \
@@ -362,6 +365,22 @@ while true; do
     "Manage allowed dirs%$dirs_cmd_wrapped" \
     "Delete site%$delete_cmd_wrapped" \
     "${exit_label}%$exit_cmd_wrapped"
+
+  # Convert saved entry_index to actual menu position
+  # Account for conditional items that may not be present
+  start_selection="$saved_entry_index"
+  if [ "$is_serving" -eq 0 ]; then
+    # When not serving, "Open in browser" and "Restart server" are missing
+    # Adjust menu position for entries after these missing items
+    if [ "$saved_entry_index" -gt 1 ]; then
+      # Subtract 1 for missing "Open in browser" (entry_index 1)
+      start_selection=$((start_selection - 1))
+    fi
+    if [ "$saved_entry_index" -gt 7 ]; then
+      # Subtract 1 for missing "Restart server" (entry_index 7)
+      start_selection=$((start_selection - 1))
+    fi
+  fi
 
   menu_title="${BOLD}${CYAN}Site: $site_name${RESET} ($status)"
   menu --start-selection "$start_selection" "$menu_title" "$@" \
