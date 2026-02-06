@@ -96,7 +96,6 @@ if [ "$force_flag" -eq 0 ]; then
   info "Site directory: $SITE_DIR"
   info ""
   info "Content in site/uploads and site data will be preserved."
-  printf '\n'
   printf 'Continue? [y/N] '
   read -r response
   case "$response" in
