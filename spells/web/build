@@ -24,6 +24,8 @@ esac
 set -eu
 . env-clear
 
+WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
+
 site_name=${1-}
 if [ -z "$site_name" ]; then
   die 2 "build: SITENAME required"
@@ -44,9 +46,21 @@ done
 WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
 SITES_DIR="$WEB_ROOT"
 SITE_DIR="$SITES_DIR/$site_name"
+SITE_DATA_DIR="$SITES_DIR/.sitedata/$site_name"
 
 if [ ! -d "$SITE_DIR" ]; then
   die "build: site '$site_name' not found"
+fi
+
+site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '-' '_')"
+site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
+[ -z "$site_user" ] && site_user="$site_user_default"
+if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SITE_USER_REEXEC-}" ]; then
+  if has sudo; then
+    exec sudo -u "$site_user" -- \
+      env WIZARDRY_SITE_USER_REEXEC=1 WIZARDRY_DIR="$WIZARDRY_DIR" \
+      WIZARDRY_SITES_DIR="$WEB_ROOT" "$0" "$site_name" "$@"
+  fi
 fi
 
 # Check for pandoc
@@ -63,9 +77,12 @@ build_site() {
   mkdir -p "$SITE_DIR/build/static/js"
   
   # Ensure web libraries are installed
-  js_lib_dir="${WIZARDRY_WEB_JS_DIR:-$HOME/.local/share/wizardry/web/js}"
+  js_lib_dir="${WIZARDRY_WEB_JS_DIR:-$SITE_DIR/.web-libs/js}"
+  mkdir -p "$js_lib_dir"
   if [ ! -f "$js_lib_dir/htmx.min.js" ] || [ ! -f "$js_lib_dir/idiomorph-ext.min.js" ]; then
     info "Web libraries not found, installing..."
+    WIZARDRY_WEB_JS_DIR="$js_lib_dir"
+    export WIZARDRY_WEB_JS_DIR
     install-htmx || die "build: failed to install web libraries"
   fi
   
