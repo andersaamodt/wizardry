@@ -225,8 +225,13 @@ while true; do
         "stop-site \"$site_name\" && serve-site \"$site_name\"")
       restart_server_option="Restart server%$restart_cmd_wrapped"
     fi
-    entry_index=$((entry_index + 1))
-    cmd6=$(wrap_cmd "$entry_index" "stop-site \"$site_name\"")
+    # Stop server - only show when already serving
+    stop_server_option=""
+    if [ "$is_serving" -eq 1 ]; then
+      entry_index=$((entry_index + 1))
+      stop_cmd_wrapped=$(wrap_cmd "$entry_index" "stop-site \"$site_name\"")
+      stop_server_option="Stop server%$stop_cmd_wrapped"
+    fi
     entry_index=$((entry_index + 1))
     cmd7=$(wrap_cmd "$entry_index" "build \"$site_name\"")
     entry_index=$((entry_index + 1))
@@ -285,7 +290,7 @@ while true; do
       "Open site data%$cmd5" \
       "---" \
       ${restart_server_option:+"$restart_server_option"} \
-      "Stop server%$cmd6" \
+      ${stop_server_option:+"$stop_server_option"} \
       "Build%$cmd7" \
       "Build All%$cmd8" \
       "---" \
