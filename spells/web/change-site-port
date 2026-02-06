@@ -53,7 +53,8 @@ if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SI
 fi
 
 # Get current port
-current_port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || echo "8080")
+current_port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || true)
+[ -z "$current_port" ] && current_port=8080
 
 # Get new port from argument or prompt
 new_port=${2-}
