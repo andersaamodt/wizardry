@@ -60,14 +60,18 @@ if has systemctl; then
     exit 0
   fi
   step "Starting daemon for $site_name..."
-  run_priv systemctl start "$unit"
+  if ! run_priv systemctl start "$unit"; then
+    warn "serve-site: failed to start daemon for $site_name"
+  fi
 elif [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
   if launchctl list "$label" >/dev/null 2>&1; then
     warn "serve-site: $site_name daemon already running"
     exit 0
   fi
   step "Starting daemon for $site_name..."
-  run_priv launchctl load -w "$plist"
+  if ! run_priv launchctl load -w "$plist" >/dev/null 2>&1; then
+    warn "serve-site: failed to load launchd plist"
+  fi
 else
   die "serve-site: systemd or launchd is required"
 fi
@@ -76,6 +80,20 @@ fi
 port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || echo "8080")
 domain=$(config-get "$SITE_DIR/site.conf" domain 2>/dev/null || echo "localhost")
 
-success "Site '$site_name' is now serving"
+if has systemctl; then
+  if systemctl is-active --quiet "$unit" 2>/dev/null; then
+    success "Site '$site_name' is now serving"
+  else
+    warn "serve-site: daemon for '$site_name' is not active"
+  fi
+elif [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+  if launchctl list "$label" >/dev/null 2>&1; then
+    success "Site '$site_name' is now serving"
+  else
+    warn "serve-site: daemon for '$site_name' is not active"
+  fi
+else
+  success "Site '$site_name' is now serving"
+fi
 info "URL: http://$domain:$port"
 info "Stop with: web-stop-site $site_name"
