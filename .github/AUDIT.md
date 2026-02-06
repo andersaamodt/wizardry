@@ -267,30 +267,40 @@ This checklist converts each ethos principle into specific, repeatable verificat
 
 ## File Inventory & Audit Tracking
 
-This table lists all files in the project for systematic audit tracking.
+**See [AUDIT_RESULTS.md](AUDIT_RESULTS.md) for the complete audit results table.**
+
+The audit results are maintained in a separate file to keep the rubric document focused. AUDIT_RESULTS.md contains:
+- Executive summary with statistics
+- Critical failures (🔴) requiring immediate attention
+- Warnings (🟡) needing review
+- Complete audit table for all 1395 files in the repository
 
 **Legend:**
 - 🟢 **Pass** - Meets all applicable standards
 - 🟡 **Warning** - Minor issues or needs attention  
 - 🔴 **Fail** - Significant issues requiring fixes
 - ⚪ **N/A** - Not applicable to this file type
+- 🔧 **Fixed** - Issue was resolved in this audit iteration
 
-### Table Structure
+### Table Structure (in AUDIT_RESULTS.md)
 
-| File Path | Last Audit | Result | Code Quality | Comment Quality | Theming | No Policy Violations | Changes Made |
-|-----------|------------|--------|--------------|-----------------|---------|---------------------|--------------|
-| *Audit data will be populated here during audits* | YYYY-MM-DD | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | • Bulleted list of fixes |
+| File Path | Last Audit | Result | Code | Docs | Theme | Policy | Issues | Fixes |
+|-----------|------------|--------|------|------|-------|--------|--------|-------|
+| *Complete table in AUDIT_RESULTS.md* | YYYY-MM-DD | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | Issues found | 🔧 if fixed |
 
 ### Column Descriptions
 
+The rubric's 21 sections (184 items) are compressed into these columns:
+
 1. **File Path** - Relative path from repository root
 2. **Last Audit** - Date of most recent audit (YYYY-MM-DD format)
-3. **Result** - Overall audit result after any fixes applied
-4. **Code Quality** - Structure, style, POSIX compliance, function discipline
-5. **Comment Quality** - Appropriate amount and quality (not too much/little)
-6. **Theming** - MUD/magic flavor appropriate to context (not too much/little)
-7. **No Policy Violations** - Compliance with Values, Policies, Design Tenets
-8. **Changes Made** - Bulleted list of specific fixes applied during audit
+3. **Result** - Overall audit result (worst of all categories)
+4. **Code** - Code Quality: Sections 7 (POSIX), 12-13 (Eng. Standards), 19 (Quality Metrics), 4 (Functions)
+5. **Docs** - Comment Quality: Section 6 (Didacticism), opening comments, help text
+6. **Theme** - Theming: Section 15 (Theming & Flavor), appropriate MUD vocabulary
+7. **Policy** - No Policy Violations: Sections 3 (No Globals), 9-11 (Values/Policies/Tenets), 17 (Security)
+8. **Issues** - Specific problems found during audit
+9. **Fixes** - Changes made (🔧 indicates fixes applied in this iteration)
 
 ### Audit Workflow
 
