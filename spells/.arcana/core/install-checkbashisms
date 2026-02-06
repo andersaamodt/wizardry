@@ -25,8 +25,8 @@ if command -v checkbashisms >/dev/null 2>&1 && [ "$force_install" != "1" ]; then
   exit 0
 fi
 
-# Special handling for Arch Linux - checkbashisms not in official repos
-if command -v pacman >/dev/null 2>&1; then
+# Special handling for Arch Linux and macOS - checkbashisms not in official repos
+if command -v pacman >/dev/null 2>&1 || [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
   # Download checkbashisms directly from Debian sources
   target_dir="/usr/local/bin"
   debian_base="https://sources.debian.org/data/main/d/devscripts"

@@ -17,6 +17,15 @@ set -eu
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 root_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
 
+# Use temp file for selection tracking (same pattern as mud-menu)
+SELECTION_FILE=$(temp-file core-menu-selection)
+export SELECTION_FILE
+
+# Catch signals to clean up properly
+trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true; exit 130' INT
+trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true; exit 0' TERM
+trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true' EXIT
+
 colors_bin=${COLORS_BIN-}
 if [ -z "$colors_bin" ]; then
   colors_bin=$(command -v colors 2>/dev/null)
@@ -104,45 +113,62 @@ while true; do
     break
   fi
   
+  # Read last selected position from temp file, default to 1
+  if [ -f "$SELECTION_FILE" ]; then
+    start_selection=$(cat "$SELECTION_FILE" 2>/dev/null || printf '1')
+    # Handle empty file
+    if [ -z "$start_selection" ]; then
+      start_selection=1
+    fi
+  else
+    start_selection=1
+  fi
+  
   # Build menu entries from core dependencies
   set -- "$title"
   
   # Read core dependency entries into positional parameters
   # Use a temporary file to avoid subshell from pipeline
-  core_menu_entries=$(core_dependencies | while IFS=: read -r label command_name \
-    install_spell uninstall_spell essential; do
-    # Check if command is installed
-    status=""
-    if [ "$command_name" = "$CLIPBOARD_MARKER" ]; then
-      # Special handling for clipboard - check any clipboard helper
-      if command -v pbcopy >/dev/null 2>&1 || \
-         command -v xsel >/dev/null 2>&1 || \
-         command -v xclip >/dev/null 2>&1 || \
-         command -v wl-copy >/dev/null 2>&1; then
-        status="[X]"
-        cmd=$(core_menu_resolve_spell "$uninstall_spell") || continue
+  core_menu_entries=$(core_dependencies | {
+    entry_index=0
+    while IFS=: read -r label command_name install_spell uninstall_spell essential; do
+      entry_index=$((entry_index + 1))
+      # Check if command is installed
+      status=""
+      if [ "$command_name" = "$CLIPBOARD_MARKER" ]; then
+        # Special handling for clipboard - check any clipboard helper
+        if command -v pbcopy >/dev/null 2>&1 || \
+           command -v xsel >/dev/null 2>&1 || \
+           command -v xclip >/dev/null 2>&1 || \
+           command -v wl-copy >/dev/null 2>&1; then
+          status="[X]"
+          cmd=$(core_menu_resolve_spell "$uninstall_spell") || continue
+        else
+          status="[ ]"
+          cmd=$(core_menu_resolve_spell "$install_spell") || continue
+        fi
+      elif command -v "$command_name" >/dev/null 2>&1; then
+        if [ "$essential" = "1" ]; then
+          # Essential commands can't be uninstalled - use " X " to indicate
+          status=" X "
+          cmd="printf 'Cannot uninstall essential command: %s\n' '$command_name' >&2"
+        else
+          status="[X]"
+          cmd=$(core_menu_resolve_spell "$uninstall_spell") || continue
+        fi
       else
         status="[ ]"
         cmd=$(core_menu_resolve_spell "$install_spell") || continue
       fi
-    elif command -v "$command_name" >/dev/null 2>&1; then
-      if [ "$essential" = "1" ]; then
-        # Essential commands can't be uninstalled - use " X " to indicate
-        status=" X "
-        cmd="printf 'Cannot uninstall essential command: %s\n' '$command_name' >&2"
-      else
-        status="[X]"
-        cmd=$(core_menu_resolve_spell "$uninstall_spell") || continue
-      fi
-    else
-      status="[ ]"
-      cmd=$(core_menu_resolve_spell "$install_spell") || continue
-    fi
-    
-    # Use just the spell name for cleaner display
-    spell_name=$(basename "$cmd" 2>/dev/null || printf '%s' "$cmd")
-    printf '%s %s%%%s && exec %s\n' "$status" "$label" "$spell_name" "$0"
-  done)
+      
+      # Use just the spell name for cleaner display
+      spell_name=$(basename "$cmd" 2>/dev/null || printf '%s' "$cmd")
+      # Wrap command to save selection to temp file
+      # Note: $SELECTION_FILE expands here (not at runtime) so the path is embedded in the command
+      wrapped_cmd="$spell_name; echo $entry_index > \"$SELECTION_FILE\""
+      printf '%s %s%%%s\n' "$status" "$label" "$wrapped_cmd"
+    done
+  })
   
   # Build positional parameters from entries
   while IFS= read -r entry; do
@@ -155,8 +181,8 @@ ENTRIES
   # Add exit option
   set -- "$@" "$exit_entry"
   
-  # Call menu - same pattern as other menu spells
-  "$menu_bin" "$@" || menu_status=$?
+  # Call menu with last selected position - same pattern as mud-menu
+  "$menu_bin" --start-selection "$start_selection" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
   
   # ESC causes menu to exit with 130 - handle gracefully by exiting
