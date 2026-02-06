@@ -138,6 +138,13 @@ while true; do
     https_option="Set up HTTPS%setup-https \"$site_name\""
     https_disable_option=""
   fi
+
+  serve_on_startup_option=""
+  if is-site-daemon-enabled "$site_name" 2>/dev/null; then
+    serve_on_startup_option="[X] Serve on startup%disable-site-daemon \"$site_name\""
+  else
+    serve_on_startup_option="[ ] Serve on startup%enable-site-daemon \"$site_name\""
+  fi
   
   exit_label=$(exit-label)
   
@@ -156,6 +163,7 @@ while true; do
       "Stop server%stop-site \"$site_name\"" \
       "---" \
       ${tor_hosting_option:+"$tor_hosting_option"} \
+      ${serve_on_startup_option:+"$serve_on_startup_option"} \
       ${https_option:+"$https_option"} \
       ${https_disable_option:+"$https_disable_option"} \
       "Change port (current: $port)%change-site-port \"$site_name\"" \
@@ -179,6 +187,7 @@ while true; do
       "Start server%serve-site \"$site_name\"" \
       "---" \
       ${tor_hosting_option:+"$tor_hosting_option"} \
+      ${serve_on_startup_option:+"$serve_on_startup_option"} \
       ${https_option:+"$https_option"} \
       ${https_disable_option:+"$https_disable_option"} \
       "Change port (current: $port)%change-site-port \"$site_name\"" \
