@@ -209,21 +209,107 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && ! group_exists "$site_group"; the
   site_group=staff
 fi
 
-run_priv mkdir -p "$SITES_DIR/.sitedata" "$SITE_DATA_DIR"
-run_priv chown -R "$site_user":"$site_group" "$SITE_DIR"
-run_priv chown -R "$site_user":"$site_group" "$SITE_DATA_DIR"
-
-set_secure_perms "$SITE_DIR"
-set_secure_perms "$SITE_DATA_DIR"
-apply_allowlist
-
-if [ -f "$ALLOWLIST_FILE" ]; then
-  run_priv chown "$site_user":"$site_group" "$ALLOWLIST_FILE"
-  run_priv chmod 640 "$ALLOWLIST_FILE"
+# Determine the actual user (non-site user) who should own source files
+# If running via sudo, use SUDO_USER; otherwise use current user
+actual_user="${SUDO_USER:-$(id -un)}"
+# Don't use site user as actual user
+if [ "$actual_user" = "$site_user" ]; then
+  # If we can't determine actual user, check who owns site.conf
+  if [ -f "$SITE_CONFIG" ]; then
+    # Try stat (Linux and BSD/macOS have different syntax)
+    if command -v stat >/dev/null 2>&1; then
+      # Try GNU stat first (Linux)
+      actual_user=$(stat -c '%U' "$SITE_CONFIG" 2>/dev/null) || \
+        # Try BSD stat (macOS)
+        actual_user=$(stat -f '%Su' "$SITE_CONFIG" 2>/dev/null) || \
+        # Fallback to ls parsing if stat fails
+        actual_user=$(ls -ld "$SITE_CONFIG" 2>/dev/null | awk '{print $3}')
+    else
+      # No stat available, use ls
+      actual_user=$(ls -ld "$SITE_CONFIG" 2>/dev/null | awk '{print $3}')
+    fi
+  fi
 fi
 
+run_priv mkdir -p "$SITES_DIR/.sitedata" "$SITE_DATA_DIR"
+run_priv mkdir -p "$SITE_DIR/build" "$SITE_DIR/nginx"
+
+# Create .web-libs directory if it doesn't exist and make it writable by site user
+if [ ! -d "$SITE_DIR/.web-libs" ]; then
+  mkdir -p "$SITE_DIR/.web-libs" 2>/dev/null || run_priv mkdir -p "$SITE_DIR/.web-libs"
+fi
+# Set ownership on .web-libs if it exists
+if [ -d "$SITE_DIR/.web-libs" ]; then
+  run_priv chown -R "$site_user":"$site_group" "$SITE_DIR/.web-libs"
+  run_priv chmod -R 755 "$SITE_DIR/.web-libs"
+fi
+
+# Set ownership based on who needs to write vs who needs to read
+# - build/: actual user builds, site user (nginx) reads → actual user owns
+# - nginx/: actual user (configure-nginx) writes, site user reads → actual user owns
+# - .sitedata/: site user (CGI scripts) writes → site user owns
+run_priv chown -R "$actual_user":"$site_group" "$SITE_DIR/build"
+run_priv chown -R "$actual_user":"$site_group" "$SITE_DIR/nginx"
+run_priv chown -R "$site_user":"$site_group" "$SITE_DATA_DIR"
+
+# Set permissions on build directory - actual user writes, site user reads
+if [ -d "$SITE_DIR/build" ]; then
+  run_priv find "$SITE_DIR/build" -type d -exec chmod 755 {} + 2>/dev/null || true
+  run_priv find "$SITE_DIR/build" -type f -exec chmod 644 {} + 2>/dev/null || true
+fi
+
+# Set permissions on nginx directory - actual user writes config, site user reads
+# Create nginx temp directories if they don't exist (nginx writes to these)
+if [ -d "$SITE_DIR/nginx" ]; then
+  run_priv mkdir -p "$SITE_DIR/nginx/temp/client_body"
+  run_priv mkdir -p "$SITE_DIR/nginx/temp/proxy"
+  run_priv mkdir -p "$SITE_DIR/nginx/temp/fastcgi"
+  run_priv mkdir -p "$SITE_DIR/nginx/temp/uwsgi"
+  run_priv mkdir -p "$SITE_DIR/nginx/temp/scgi"
+  
+  # Set nginx/ directory and config files to 755/644 (actual user writes, site user reads)
+  run_priv find "$SITE_DIR/nginx" -type d -not -path "*/temp*" \
+    -exec chmod 755 {} + 2>/dev/null || true
+  run_priv find "$SITE_DIR/nginx" -type f -exec chmod 644 {} + 2>/dev/null || true
+  
+  # Set temp directories to 775 so site user can write (nginx needs to write temp files)
+  run_priv chmod 775 "$SITE_DIR/nginx/temp" 2>/dev/null || true
+  run_priv find "$SITE_DIR/nginx/temp" -type d -exec chmod 775 {} + 2>/dev/null || true
+fi
+
+# Set permissions on site data directory - make it accessible to actual user
+# so "Open site data" works. Use 755 for dirs so user can cd into it.
+if [ -d "$SITE_DATA_DIR" ]; then
+  run_priv find "$SITE_DATA_DIR" -type d -exec chmod 755 {} + 2>/dev/null || true
+  run_priv find "$SITE_DATA_DIR" -type f -exec chmod 644 {} + 2>/dev/null || true
+fi
+
+# Ensure site directory itself is accessible (755) and owned by actual user
+if [ -d "$SITE_DIR" ]; then
+  run_priv chown "$actual_user":"$site_group" "$SITE_DIR"
+  run_priv chmod 755 "$SITE_DIR"
+fi
+
+# Ensure source directories are owned by actual user and readable by site user
+if [ -d "$SITE_DIR/site" ]; then
+  run_priv chown -R "$actual_user":"$site_group" "$SITE_DIR/site"
+  run_priv find "$SITE_DIR/site" -type d -exec chmod 755 {} + 2>/dev/null || true
+  run_priv find "$SITE_DIR/site" -type f -exec chmod 644 {} + 2>/dev/null || true
+fi
+
+# Fix allowlist permissions BEFORE reading it in apply_allowlist
+if [ -f "$ALLOWLIST_FILE" ]; then
+  # Keep allowlist owned by actual user but readable by site user
+  run_priv chown "$actual_user":"$site_group" "$ALLOWLIST_FILE"
+  run_priv chmod 644 "$ALLOWLIST_FILE"
+fi
+
+# Now we can safely read the allowlist file
+apply_allowlist
+
 if [ -f "$SITE_CONFIG" ]; then
-  run_priv chown "$site_user":"$site_group" "$SITE_CONFIG"
+  # Keep config owned by actual user but readable by site user
+  run_priv chown "$actual_user":"$site_group" "$SITE_CONFIG"
   run_priv chmod 644 "$SITE_CONFIG"
 fi
 

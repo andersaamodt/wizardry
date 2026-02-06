@@ -73,24 +73,11 @@ fi
 site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '-' '_')"
 site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
 [ -z "$site_user" ] && site_user="$site_user_default"
-if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SITE_USER_REEXEC-}" ] && [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
-  if id -u "$site_user" >/dev/null 2>&1; then
-    if has sudo; then
-      exec sudo -u "$site_user" -- env WIZARDRY_SITE_USER_REEXEC=1 "$0" "$site_name" "$@"
-    fi
-  else
-    if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ] && has fix-site-security; then
-      fix-site-security "$site_name" >/dev/null 2>&1 || true
-    fi
-    if id -u "$site_user" >/dev/null 2>&1; then
-      if has sudo; then
-        exec sudo -u "$site_user" -- env WIZARDRY_SITE_USER_REEXEC=1 "$0" "$site_name" "$@"
-      fi
-    else
-      warn "configure-nginx: site user '$site_user' not found; continuing without reexec"
-    fi
-  fi
-fi
+
+# Note: configure-nginx runs as actual user to modify both nginx.conf and site.conf
+# nginx.conf is owned by site user, but we can write to it as actual user
+# site.conf is owned by actual user (per ownership model)
+# This aligns with update-from-template which also modifies source files
 
 # Read existing values from site.conf if options were not provided
 # This preserves existing configuration when rebuilding nginx.conf
@@ -122,12 +109,23 @@ fi
 NGINX_CONF_DIR="$SITE_DIR/nginx"
 mkdir -p "$NGINX_CONF_DIR"
 
-# Create nginx temp directories (to avoid permission issues with system paths)
-mkdir -p "$NGINX_CONF_DIR/temp/client_body"
-mkdir -p "$NGINX_CONF_DIR/temp/proxy"
-mkdir -p "$NGINX_CONF_DIR/temp/fastcgi"
-mkdir -p "$NGINX_CONF_DIR/temp/uwsgi"
-mkdir -p "$NGINX_CONF_DIR/temp/scgi"
+# Ensure nginx temp directories exist with proper permissions
+# nginx/ is owned by actual user, but may have stale permissions from old sites
+# Call fix-site-security to fix ownership/permissions before creating
+if [ ! -d "$NGINX_CONF_DIR/temp/client_body" ] || \
+   [ ! -d "$NGINX_CONF_DIR/temp/proxy" ] || \
+   [ ! -d "$NGINX_CONF_DIR/temp/fastcgi" ] || \
+   [ ! -d "$NGINX_CONF_DIR/temp/uwsgi" ] || \
+   [ ! -d "$NGINX_CONF_DIR/temp/scgi" ]; then
+  # Fix permissions first (handles stale ownership from old wizardry versions)
+  has fix-site-security && fix-site-security "$site_name" >/dev/null 2>&1 || true
+  # Now create temp directories (fix-site-security may have already created them)
+  mkdir -p "$NGINX_CONF_DIR/temp/client_body" 2>/dev/null || true
+  mkdir -p "$NGINX_CONF_DIR/temp/proxy" 2>/dev/null || true
+  mkdir -p "$NGINX_CONF_DIR/temp/fastcgi" 2>/dev/null || true
+  mkdir -p "$NGINX_CONF_DIR/temp/uwsgi" 2>/dev/null || true
+  mkdir -p "$NGINX_CONF_DIR/temp/scgi" 2>/dev/null || true
+fi
 
 # Path to CGI scripts (site-specific first, then shared)
 WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
@@ -140,6 +138,7 @@ elif [ "${SITE_CGI_DIR#/*}" = "$SITE_CGI_DIR" ]; then
 fi
 
 # Copy mime.types to local directory if not exists
+# nginx/ is owned by actual user, so we can write directly
 MIME_TYPES="$NGINX_CONF_DIR/mime.types"
 if [ ! -f "$MIME_TYPES" ]; then
   if [ -f /etc/nginx/mime.types ]; then

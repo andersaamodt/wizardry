@@ -48,33 +48,34 @@ if ! has nginx; then
   die "serve-site: nginx is not installed"
 fi
 
-repair-site-daemon "$site_name"
-
-unit="wizardry-site-${site_name}.service"
-plist="/Library/LaunchDaemons/org.wizardry.web.${site_name}.plist"
-label="org.wizardry.web.${site_name}"
-
-if has systemctl; then
-  if systemctl is-active --quiet "$unit" 2>/dev/null; then
-    warn "serve-site: $site_name daemon already running"
-    exit 0
-  fi
-  step "Starting daemon for $site_name..."
-  if ! run_priv systemctl start "$unit"; then
-    warn "serve-site: failed to start daemon for $site_name"
-  fi
-elif [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
-  if launchctl list "$label" >/dev/null 2>&1; then
-    warn "serve-site: $site_name daemon already running"
-    exit 0
-  fi
-  step "Starting daemon for $site_name..."
-  if ! run_priv sh -c "launchctl load -w \"$plist\" >/dev/null 2>&1"; then
-    warn "serve-site: failed to load launchd plist"
-  fi
-else
-  die "serve-site: systemd or launchd is required"
+# Check if nginx.conf exists - if not, run configure-nginx
+if [ ! -f "$SITE_DIR/nginx/nginx.conf" ]; then
+  step "Generating nginx configuration..."
+  configure-nginx "$site_name"
 fi
+
+# Check if site is already running
+if [ -f "$SITE_DIR/nginx/nginx.pid" ]; then
+  pid=$(cat "$SITE_DIR/nginx/nginx.pid" 2>/dev/null || echo "")
+  if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+    warn "serve-site: $site_name is already running (PID $pid)"
+    # Read port and show URL
+    port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || echo "8080")
+    domain=$(config-get "$SITE_DIR/site.conf" domain 2>/dev/null || echo "localhost")
+    info "URL: http://$domain:$port"
+    info "Stop with: web-stop-site $site_name"
+    exit 0
+  fi
+  # Stale PID file - remove it
+  rm -f "$SITE_DIR/nginx/nginx.pid"
+fi
+
+# Start nginx directly without systemd/launchd (no sudo needed!)
+step "Starting nginx for $site_name..."
+
+# Run in background using run-site-daemon
+nohup run-site-daemon "$site_name" >/dev/null 2>&1 &
+daemon_pid=$!
 
 # Read port from config
 port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || echo "8080")
@@ -94,8 +95,23 @@ done
 
 if [ "$is_serving" -eq 1 ]; then
   success "Site '$site_name' is now serving"
+  info "URL: http://$domain:$port"
+  info "Stop with: web-stop-site $site_name"
 else
-  warn "serve-site: daemon for '$site_name' is not active"
+  # Show error logs to help diagnose the failure
+  warn "serve-site: daemon for '$site_name' failed to start"
+  
+  # Check nginx error log
+  if [ -f "$SITE_DIR/nginx/error.log" ] && [ -s "$SITE_DIR/nginx/error.log" ]; then
+    warn "Nginx error log (last 20 lines):"
+    tail -20 "$SITE_DIR/nginx/error.log" >&2
+  fi
+  
+  # Check startup log from run-site-daemon
+  if [ -f "$SITE_DIR/nginx/startup.log" ] && [ -s "$SITE_DIR/nginx/startup.log" ]; then
+    warn "Nginx startup errors:"
+    cat "$SITE_DIR/nginx/startup.log" >&2
+  fi
+  
+  die "serve-site: check the error output above for details"
 fi
-info "URL: http://$domain:$port"
-info "Stop with: web-stop-site $site_name"

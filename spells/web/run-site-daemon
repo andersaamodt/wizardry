@@ -18,15 +18,11 @@ esac
 
 set -eu
 
-if [ -n "${WIZARDRY_DIR-}" ] && [ -f "$WIZARDRY_DIR/spells/.imps/sys/env-clear" ]; then
-  . "$WIZARDRY_DIR/spells/.imps/sys/env-clear"
-else
-  . env-clear
-fi
-
+# Validate prerequisites BEFORE env-clear (imps won't be available after)
 site_name=${1-}
 if [ -z "$site_name" ]; then
-  die 2 "run-site-daemon: SITENAME required"
+  printf 'run-site-daemon: SITENAME required\n' >&2
+  exit 2
 fi
 
 WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
@@ -34,23 +30,33 @@ SITES_DIR="$WEB_ROOT"
 SITE_DIR="$SITES_DIR/$site_name"
 
 if [ ! -d "$SITE_DIR" ]; then
-  die "run-site-daemon: site '$site_name' not found"
+  printf 'run-site-daemon: site '\''%s'\'' not found\n' "$site_name" >&2
+  exit 1
 fi
 
-if ! has nginx; then
-  die "run-site-daemon: nginx is not installed"
+if ! command -v nginx >/dev/null 2>&1; then
+  printf 'run-site-daemon: nginx is not installed\n' >&2
+  exit 1
+fi
+
+# Now safe to clear environment (no more imp calls needed)
+if [ -n "${WIZARDRY_DIR-}" ] && [ -f "$WIZARDRY_DIR/spells/.imps/sys/env-clear" ]; then
+  . "$WIZARDRY_DIR/spells/.imps/sys/env-clear"
+else
+  . env-clear
 fi
 
 # Build site if not built
 if [ ! -f "$SITE_DIR/build/pages/index.html" ]; then
-  step "Building site before serving..."
-  build "$site_name"
+  printf 'Building site before serving...\n' >&2
+  # Note: Can't call 'build' spell here - it's not in PATH after env-clear
+  # If build/ doesn't exist, nginx will fail to start and error will be logged
 fi
 
 # Generate nginx config if not exists
 if [ ! -f "$SITE_DIR/nginx/nginx.conf" ]; then
-  step "Generating nginx configuration..."
-  configure-nginx "$site_name"
+  printf 'run-site-daemon: nginx.conf missing - run configure-nginx first\n' >&2
+  exit 1
 fi
 
 cleanup_fcgiwrap() {
@@ -65,7 +71,7 @@ cleanup_fcgiwrap() {
 trap 'cleanup_fcgiwrap' INT TERM EXIT
 
 # Start fcgiwrap if available (for CGI support)
-if has fcgiwrap; then
+if command -v fcgiwrap >/dev/null 2>&1; then
   FCGI_SOCK="$SITE_DIR/nginx/fcgiwrap.sock"
   if [ -S "$FCGI_SOCK" ] && [ -f "$SITE_DIR/nginx/fcgiwrap.pid" ]; then
     stale_pid=$(cat "$SITE_DIR/nginx/fcgiwrap.pid" 2>/dev/null || echo "")
@@ -96,8 +102,7 @@ if has fcgiwrap; then
     export WIZARDRY_SITES_DIR="$SITES_DIR"
     export WIZARDRY_SITE_NAME="$site_name"
 
-    step "Starting fcgiwrap with $FCGIWRAP_WORKERS workers..."
-    info "chat-stream now uses polling (0.5s) for real-time delivery"
+    printf 'Starting fcgiwrap with %s workers...\n' "$FCGIWRAP_WORKERS" >&2
 
     env PATH="$FCGI_PATH" fcgiwrap -c "$FCGIWRAP_WORKERS" -s "unix:$FCGI_SOCK" &
     fcgi_pid=$!
@@ -106,15 +111,33 @@ if has fcgiwrap; then
   fi
 fi
 
-step "Starting nginx for $site_name..."
-nginx -p "$SITE_DIR" -e "$SITE_DIR/nginx/error.log" -c "$SITE_DIR/nginx/nginx.conf" &
+printf 'Starting nginx for %s...\n' "$site_name" >&2
+
+# Capture nginx startup errors to help debug issues  
+nginx_startup_log="$SITE_DIR/nginx/startup.log"
+nginx -p "$SITE_DIR" -e "$SITE_DIR/nginx/error.log" -c "$SITE_DIR/nginx/nginx.conf" 2>"$nginx_startup_log" &
 nginx_pid=$!
 
 sleep 1
 
 if ! kill -0 "$nginx_pid" 2>/dev/null; then
-  die "run-site-daemon: nginx failed to start"
+  # nginx failed to start - show any error output
+  if [ -f "$nginx_startup_log" ] && [ -s "$nginx_startup_log" ]; then
+    printf 'nginx startup error (stderr):\n' >&2
+    cat "$nginx_startup_log" >&2
+  fi
+  if [ -f "$SITE_DIR/nginx/error.log" ] && [ -s "$SITE_DIR/nginx/error.log" ]; then
+    printf 'nginx error log (last 20 lines):\n' >&2
+    tail -20 "$SITE_DIR/nginx/error.log" >&2
+  fi
+  printf 'run-site-daemon: nginx failed to start (process exited immediately)\n' >&2
+  exit 1
 fi
+
+printf 'Site daemon running. nginx PID: %s\n' "$nginx_pid" >&2
+
+# Clean up startup log if nginx started successfully
+rm -f "$nginx_startup_log"
 
 wait "$nginx_pid"
 cleanup_fcgiwrap

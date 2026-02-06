@@ -70,7 +70,8 @@ fi
 printf '%s=%s\n' "$cs_key" "$cs_value" >> "$cs_tmp"
 
 # Atomic move (overwrites old file)
-if ! mv "$cs_tmp" "$cs_file"; then
+# Use -f to force overwrite without prompting (internal config file management)
+if ! mv -f "$cs_tmp" "$cs_file"; then
   rm -f "$cs_tmp"
   trap - EXIT HUP INT TERM
   printf 'config-set: failed to update %s\n' "$cs_file" >&2
