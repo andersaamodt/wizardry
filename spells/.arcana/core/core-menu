@@ -141,7 +141,7 @@ while true; do
     
     # Use just the spell name for cleaner display
     spell_name=$(basename "$cmd" 2>/dev/null || printf '%s' "$cmd")
-    printf '%s %s%%%s && exec %s\n' "$status" "$label" "$spell_name" "$0"
+    printf '%s %s%%%s\n' "$status" "$label" "$spell_name"
   done)
   
   # Build positional parameters from entries
