@@ -150,12 +150,12 @@ This table shows all files in the repository with their audit results. Files are
 | spells/mud/choose-player | 2026-02-06 18:41 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | Clean player selection menu from SSH keys. Good validation, proper set -- pattern, appropriate MUD theming. | - |
 | spells/mud/decorate | 2026-02-06 18:42 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | Sophisticated enchant wrapper with flexible arg parsing (path/desc any order), multi-word support, good error handling. Perfect MUD theming. | - |
 | spells/mud/demo-multiplayer | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/mud/greater-heal | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/mud/heal | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/mud/lesser-heal | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/mud/greater-heal | 2026-02-06 18:44 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | Complete healing spell (100 HP, 20 mana). Proper mana check/deduction, resurrect logic, bounds checking. Excellent game mechanics. | - |
+| spells/mud/heal | 2026-02-06 18:43 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | Smart healing - chooses best available spell based on mana. Clean fallback logic, good numeric validation. Intelligent automation. | - |
+| spells/mud/lesser-heal | 2026-02-06 18:45 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | Basic healing spell (10 HP, 5 mana). Same solid implementation as greater-heal with different numbers. Complete game mechanics. | - |
 | spells/mud/listen | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/mud/look | 2026-02-06 17:50 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - sophisticated MUD room viewer, multi-level fallbacks, deterministic random descriptions, multiplayer support, heavy theming appropriate for MUD output | - |
-| spells/mud/magic-missile | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/mud/magic-missile | 2026-02-06 18:46 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | Excellent attack spell! Random damage, 8 flavor text variants, colorful output, room logging for multiplayer. Rich immersive gameplay. | - |
 | spells/mud/resurrect | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/mud/say | 2026-02-06 16:45 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - exemplary | - |
 | spells/mud/shocking-grasp | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
