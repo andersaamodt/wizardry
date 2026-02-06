@@ -206,8 +206,8 @@ This table shows all files in the repository with their audit results. Files are
 | spells/tasks/get-checked | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/tasks/rename-interactive | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/tasks/uncheck | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/translocation/blink | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/translocation/close-portal | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/translocation/blink | 2026-02-06 19:13 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | Excellent uncastable spell: proper shell opts saving/restoring, comprehensive argument parsing, extensive exclusion lists, 42 random arrival messages! Theming is perfectly apt ('teleport', 'fizzles', magical portal descriptions). Clean code with good validation | - |
+| spells/translocation/close-portal | 2026-02-06 19:15 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | Clean sshfs unmount wrapper with good fallbacks (fusermount → umount), list_portals() function, proper validation. Theming apt ('portal' for mount point). Minor: hardcoded /mnt could be more flexible | - |
 | spells/translocation/enchant-portkey | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/translocation/follow-portkey | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/translocation/go-up | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
