@@ -284,7 +284,7 @@ while true; do
 
     set -- \
       "Open in browser%$cmd1" \
-      "Build All & Restart Server%$cmd2" \
+      "Build all & restart server%$cmd2" \
       "Update from template%$cmd3" \
       ${copy_site_onion:+"$copy_site_onion"} \
       "Open site directory%$cmd4" \
@@ -293,7 +293,7 @@ while true; do
       ${restart_server_option:+"$restart_server_option"} \
       ${stop_server_option:+"$stop_server_option"} \
       "Build%$cmd7" \
-      "Build All%$cmd8" \
+      "Build all%$cmd8" \
       "---" \
       ${tor_hosting_option:+"$tor_hosting_option"} \
       ${serve_on_startup_option:+"$serve_on_startup_option"} \
@@ -332,8 +332,7 @@ while true; do
     cmd4=$(wrap_cmd "$entry_index" "$open_data_cmd")
     # --- separator
     entry_index=$((entry_index + 1))  # Increment for separator
-    # No restart option when not serving
-    entry_index=$((entry_index + 1))
+    # No restart/stop options when not serving
     cmd5=$(wrap_cmd "$entry_index" "serve-site \"$site_name\"")
     entry_index=$((entry_index + 1))
     cmd6=$(wrap_cmd "$entry_index" "build \"$site_name\"")
@@ -385,7 +384,7 @@ while true; do
     cmd_exit=$(wrap_cmd "$entry_index" "kill -TERM \$PPID")
 
     set -- \
-      "Build All & Restart Server%$cmd1" \
+      "Build all & restart server%$cmd1" \
       "Update from template%$cmd2" \
       ${copy_site_onion:+"$copy_site_onion"} \
       "Open site directory%$cmd3" \
@@ -393,7 +392,7 @@ while true; do
       "---" \
       "Start server%$cmd5" \
       "Build%$cmd6" \
-      "Build All%$cmd7" \
+      "Build all%$cmd7" \
       "---" \
       ${tor_hosting_option:+"$tor_hosting_option"} \
       ${serve_on_startup_option:+"$serve_on_startup_option"} \
