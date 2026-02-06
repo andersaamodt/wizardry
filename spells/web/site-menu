@@ -216,6 +216,7 @@ while true; do
     open_data_cmd="$open_data_cmd read -r dummy; }"
     cmd5=$(wrap_cmd "$entry_index" "$open_data_cmd")
     # --- separator
+    entry_index=$((entry_index + 1))  # Increment for separator
     entry_index=$((entry_index + 1))
     cmd6=$(wrap_cmd "$entry_index" "build \"$site_name\"")
     entry_index=$((entry_index + 1))
@@ -226,6 +227,7 @@ while true; do
     entry_index=$((entry_index + 1))
     cmd9=$(wrap_cmd "$entry_index" "stop-site \"$site_name\"")
     # --- separator
+    entry_index=$((entry_index + 1))  # Increment for separator
     if [ -n "$tor_hosting_option" ]; then
       entry_index=$((entry_index + 1))
       tor_cmd_wrapped=$(wrap_cmd "$entry_index" \
@@ -318,6 +320,7 @@ while true; do
     open_data_cmd="$open_data_cmd read -r dummy; }"
     cmd4=$(wrap_cmd "$entry_index" "$open_data_cmd")
     # --- separator
+    entry_index=$((entry_index + 1))  # Increment for separator
     entry_index=$((entry_index + 1))
     cmd5=$(wrap_cmd "$entry_index" "build \"$site_name\"")
     entry_index=$((entry_index + 1))
@@ -328,6 +331,7 @@ while true; do
     entry_index=$((entry_index + 1))
     cmd8=$(wrap_cmd "$entry_index" "serve-site \"$site_name\"")
     # --- separator
+    entry_index=$((entry_index + 1))  # Increment for separator
     if [ -n "$tor_hosting_option" ]; then
       entry_index=$((entry_index + 1))
       tor_cmd_wrapped=$(wrap_cmd "$entry_index" \
