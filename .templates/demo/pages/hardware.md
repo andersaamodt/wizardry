@@ -823,7 +823,7 @@ Record audio and video from camera/microphone to downloadable files:
 
 Create floating video windows:
 
-<div class="demo-box">
+::: {.demo-box}
 <h3>📺 Picture-in-Picture</h3>
   
 <video id="pip-video" controls style="max-width: 100%; border: 2px solid #ddd; border-radius: 4px; background: #000;">
@@ -837,7 +837,7 @@ Create floating video windows:
 </div>
   
 <div id="pip-output" class="output"></div>
-</div>
+:::
 
 <script>
 (function() {

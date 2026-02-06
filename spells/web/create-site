@@ -106,14 +106,27 @@ EOF
 cat > "$SITE_DIR/site.conf" <<EOF
 # Site configuration for $site_name
 site-name=$site_name
+site-user=
 port=8080
 domain=localhost
 https=false
 EOF
 
+cat > "$SITE_DIR/site.allowlist" <<EOF
+# List additional absolute paths this site may access.
+# One path per line. Lines starting with # are ignored.
+EOF
+
 # Configure nginx for the site
 step "Configuring nginx for $site_name"
 configure-nginx "$site_name"
+
+if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" = "1" ]; then
+  info "Skipping fix-site-security in test mode"
+else
+  step "Securing site directories for $site_name"
+  fix-site-security "$site_name"
+fi
 
 success "Site '$site_name' created at $SITE_DIR"
 info "Edit pages in: $SITE_DIR/site/pages/"

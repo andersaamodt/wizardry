@@ -971,6 +971,8 @@ function updateConnectionStatus(status, isClickable) {
   var chatInputArea = document.getElementById('chat-input-area');
   var createRoomLink = document.getElementById('create-room-link');
   var usernameChangeBtn = document.querySelector('.username-display button');
+  var deleteRoomBtn = document.getElementById('delete-room-btn');
+  var membersBtn = document.getElementById('members-btn');
   
   // Track current status to avoid redundant updates
   if (!window.currentConnectionStatus) {
@@ -1044,6 +1046,12 @@ function updateConnectionStatus(status, isClickable) {
   }
   if (usernameChangeBtn) {
     usernameChangeBtn.disabled = isDisconnected;
+  }
+  if (deleteRoomBtn) {
+    deleteRoomBtn.disabled = isDisconnected;
+  }
+  if (membersBtn) {
+    membersBtn.disabled = isDisconnected;
   }
   
   if (status === 'connected') {
