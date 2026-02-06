@@ -275,7 +275,9 @@ The audit results are maintained in a separate file to keep the rubric document 
 - Executive summary with statistics
 - Critical failures (🔴) requiring immediate attention
 - Warnings (🟡) needing review
-- Complete audit table for all 1395 files in the repository
+- Complete audit table for all files in the repository, with integrated audit history
+
+**Important:** AUDIT_RESULTS.md uses an **integrated table format** where audit findings are recorded directly in table rows. Do NOT append new "Audit Log" or "Phase" sections. Instead, update the relevant table rows with new audit dates and findings.
 
 **Legend:**
 - 🟢 **Pass** - Meets all applicable standards
@@ -286,22 +288,28 @@ The audit results are maintained in a separate file to keep the rubric document 
 
 ### Table Structure (in AUDIT_RESULTS.md)
 
-| File Path | Last Audit | Thoroughness | Result | Code | Docs | Theme | Policy | Issues | Fixes |
-|-----------|------------|--------------|--------|------|------|-------|--------|--------|-------|
-| *Complete table in AUDIT_RESULTS.md* | YYYY-MM-DD | Level | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | Issues found | 🔧 if fixed |
+The AUDIT_RESULTS.md document is organized as follows:
+
+1. **Executive Summary** - Overall statistics and quality grade
+2. **Critical Issues** - Table of all 🔴 failures requiring immediate attention
+3. **Warnings** - Table of all 🟡 warnings that should be addressed
+4. **Complete Audit Table** - Comprehensive table with all files, organized by category
+
+### Simplified Table Format
+
+| File Path | Last Audit | Thoroughness | Result | Issues |
+|-----------|------------|--------------|--------|--------|
+| path/to/file | YYYY-MM-DD | Level | 🟢/🟡/🔴/⚪ | Specific findings or "None" |
 
 ### Column Descriptions
 
 1. **File Path** - Relative path from repository root
 2. **Last Audit** - Date of most recent audit (YYYY-MM-DD format)
 3. **Thoroughness** - How carefully the file was reviewed (see levels below)
-4. **Result** - Overall audit result (worst of all categories)
-5. **Code** - Code Quality: Sections 7 (POSIX), 12-13 (Eng. Standards), 19 (Quality Metrics), 4 (Functions)
-6. **Docs** - Comment Quality: Section 6 (Didacticism), opening comments, help text
-7. **Theme** - Theming: Section 15 (Theming & Flavor), appropriate MUD vocabulary
-8. **Policy** - No Policy Violations: Sections 3 (No Globals), 9-11 (Values/Policies/Tenets), 17 (Security)
-9. **Issues** - Specific problems found during audit
-10. **Fixes** - Changes made (🔧 indicates fixes applied in this iteration)
+4. **Result** - Overall audit result: 🟢 Pass | 🟡 Warning | 🔴 Fail | ⚪ N/A
+5. **Issues** - Specific problems found, or "None" if file passes all checks
+
+**Note:** The original 10-column format (Code, Docs, Theme, Policy, Fixes) has been simplified to a 5-column format for easier maintenance. All relevant findings are consolidated in the "Issues" column.
 
 ### Thoroughness Levels
 
@@ -493,12 +501,104 @@ Track these metrics over time to measure project health:
 
 ---
 
+## Updating AUDIT_RESULTS.md
+
+**IMPORTANT:** Do NOT append new audit log sections (e.g., "Phase 18", "Audit Session - Phase 19") to AUDIT_RESULTS.md. The document now uses an **integrated table format** where all audit findings are recorded directly in the table rows.
+
+### How to Update After an Audit
+
+When you audit files, update AUDIT_RESULTS.md as follows:
+
+#### 1. Update the Relevant Table Row
+
+Find the file in the Complete Audit Table and update its row:
+
+**Before:**
+```markdown
+| spells/arcane/copy | - | - | ⚪ N/A | Not yet audited |
+```
+
+**After:**
+```markdown
+| spells/arcane/copy | 2026-02-10 | 📖 Read | 🟢 Pass | None - clean file copy implementation |
+```
+
+#### 2. Update Executive Summary
+
+Update the statistics in the Executive Summary section to reflect new totals:
+- Total files audited
+- Pass/Warning/Fail counts
+- Overall pass rate
+
+#### 3. Update Critical Issues Section
+
+- **Add new failures** to the Critical Issues table if you find 🔴 failures
+- **Remove resolved failures** when issues are fixed (move to warnings or remove entirely)
+
+#### 4. Update Warnings Section
+
+- **Add new warnings** to the Warnings table if you find 🟡 issues
+- **Remove resolved warnings** when issues are fixed
+
+#### 5. Update Final Assessment
+
+Update the "Final Assessment" section with:
+- New completion date
+- Updated quality grade if significantly changed
+- Updated recommendations based on current findings
+
+### What NOT to Do
+
+❌ **Do NOT** create new sections like:
+- "## Audit Session Summary - Phase 18"
+- "## Phase 19: Additional Files"
+- "## Update Log 2026-02-10"
+
+❌ **Do NOT** append audit narrative logs to the bottom of the document
+
+✅ **DO** update the table rows with new findings
+
+✅ **DO** keep the document focused on current state, not historical progression
+
+### Example Workflow
+
+1. Audit a file (e.g., `spells/arcane/copy`)
+2. Find the file in the Complete Audit Table
+3. Update the row:
+   - Set "Last Audit" to today's date
+   - Set "Thoroughness" based on review depth
+   - Set "Result" to 🟢/🟡/🔴/⚪
+   - Describe findings in "Issues" column
+4. If the file is a 🔴 failure, add it to the Critical Issues table
+5. If the file is a 🟡 warning, add it to the Warnings table
+6. Update the Executive Summary statistics
+7. Save the file
+
+### Rationale
+
+The integrated table format:
+- **Reduces document size** - No need for lengthy audit logs
+- **Improves maintainability** - One source of truth per file
+- **Simplifies updates** - Just update the relevant row
+- **Focuses on current state** - What matters is the latest audit, not the history
+- **Easier navigation** - Find any file's status quickly in the table
+
+---
+
 ## Version History
 
 - **2026-02-06**: Initial audit framework created
   - Comprehensive checklist covering all ethos principles
   - File inventory table structure established
   - Audit workflow documented
+  - Completed initial repository audit (100% coverage, 1,126 files)
+
+- **2026-02-06**: Restructured AUDIT_RESULTS.md format
+  - Integrated audit log into table format
+  - Removed separate phase/session log sections
+  - Simplified to 5-column table (was 10 columns)
+  - Added update instructions to prevent audit log append pattern
+  - Document now focuses on current state rather than historical progression
 
 ---
 
