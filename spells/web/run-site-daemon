@@ -107,14 +107,29 @@ if has fcgiwrap; then
 fi
 
 step "Starting nginx for $site_name..."
-nginx -p "$SITE_DIR" -e "$SITE_DIR/nginx/error.log" -c "$SITE_DIR/nginx/nginx.conf" &
+
+# Capture nginx startup errors to help debug issues  
+nginx_startup_log="$SITE_DIR/nginx/startup.log"
+nginx -p "$SITE_DIR" -e "$SITE_DIR/nginx/error.log" -c "$SITE_DIR/nginx/nginx.conf" 2>"$nginx_startup_log" &
 nginx_pid=$!
 
 sleep 1
 
 if ! kill -0 "$nginx_pid" 2>/dev/null; then
-  die "run-site-daemon: nginx failed to start"
+  # nginx failed to start - show any error output
+  if [ -f "$nginx_startup_log" ] && [ -s "$nginx_startup_log" ]; then
+    warn "nginx startup error (stderr):"
+    cat "$nginx_startup_log" >&2
+  fi
+  if [ -f "$SITE_DIR/nginx/error.log" ] && [ -s "$SITE_DIR/nginx/error.log" ]; then
+    warn "nginx error log (last 20 lines):"
+    tail -20 "$SITE_DIR/nginx/error.log" >&2
+  fi
+  die "run-site-daemon: nginx failed to start (process exited immediately)"
 fi
+
+# Clean up startup log if nginx started successfully
+rm -f "$nginx_startup_log"
 
 wait "$nginx_pid"
 cleanup_fcgiwrap
