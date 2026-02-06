@@ -159,14 +159,14 @@ This table shows all files in the repository with their audit results. Files are
 | spells/mud/shocking-grasp | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/mud/stats | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/mud/think | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/priorities/deprioritize | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/priorities/get-card | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/priorities/get-new-priority | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/priorities/get-priority | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/priorities/prioritize | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/priorities/upvote | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/psi/list-contacts | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/psi/read-contact | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/priorities/deprioritize | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - lowers file priority within echelon system | - |
+| spells/priorities/get-card | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - retrieves file by priority attribute | - |
+| spells/priorities/get-new-priority | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - calculates next priority number in echelon | - |
+| spells/priorities/get-priority | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - reads priority/echelon from xattrs | - |
+| spells/priorities/prioritize | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - promotes file to highest priority, creates if needed | - |
+| spells/priorities/upvote | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - raises file priority within echelon | - |
+| spells/psi/list-contacts | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - lists vCard files with FN field extraction | - |
+| spells/psi/read-contact | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - parses vCard with friendly labels, handles escapes | - |
 | spells/spellcraft/add-synonym | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/spellcraft/bind-tome | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/spellcraft/compile-spell | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
@@ -200,22 +200,22 @@ This table shows all files in the repository with their audit results. Files are
 | spells/system/start-service | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/system/stop-service | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/system/update-all | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/tasks/check | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/tasks/get-checked | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/tasks/rename-interactive | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/tasks/uncheck | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/translocation/blink | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/translocation/close-portal | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/translocation/enchant-portkey | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/translocation/follow-portkey | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/translocation/go-up | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/tasks/check | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - marks file as checked via xattr | - |
+| spells/tasks/get-checked | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - retrieves checked status from xattr | - |
+| spells/tasks/rename-interactive | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - interactive file renaming with prompts | - |
+| spells/tasks/uncheck | 2026-02-06 | 🔍 Perused | �� | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - removes checked xattr | - |
+| spells/translocation/blink | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - quick directory navigation with history, MUD-themed | - |
+| spells/translocation/close-portal | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - closes jump portal by removing marker file | - |
+| spells/translocation/enchant-portkey | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - creates portkey marker for directory | - |
+| spells/translocation/follow-portkey | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - uncastable pattern to follow portkey | - |
+| spells/translocation/go-up | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - uncastable cd to parent directory | - |
 | spells/translocation/jump-to-marker | 2026-02-06 | 🎯 Exhaustive | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - outstanding | - |
-| spells/translocation/mark-location | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/translocation/open-portal | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/translocation/open-teletype | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/wards/banish | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/wards/defcon | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/wards/ssh-barrier | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/translocation/mark-location | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | �� | 🟢 | 🟢 | None - saves current directory for jump command | - |
+| spells/translocation/open-portal | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - creates jump portal to marked location | - |
+| spells/translocation/open-teletype | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - opens terminal at specified directory | - |
+| spells/wards/banish | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - uninstalls wizardry, comprehensive cleanup | - |
+| spells/wards/defcon | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - security status display with color-coded levels | - |
+| spells/wards/ssh-barrier | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - adds SSH key to authorized_keys with validation | - |
 | spells/wards/ward-system | 2026-02-06 | 🎯 Exhaustive | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - exceptional | - |
 | spells/web/build | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/web/change-site-port | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
