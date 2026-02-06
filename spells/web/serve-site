@@ -69,7 +69,7 @@ elif [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
     exit 0
   fi
   step "Starting daemon for $site_name..."
-  if ! run_priv launchctl load -w "$plist" >/dev/null 2>&1; then
+  if ! run_priv sh -c "launchctl load -w \"$plist\" >/dev/null 2>&1"; then
     warn "serve-site: failed to load launchd plist"
   fi
 else
