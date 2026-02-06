@@ -203,3 +203,4 @@
 - Older code shows better discipline than newer code - oldest imps (cond, fs, input families) have 100% zero functions, 100% flat execution, 94% pass rate; maintain this quality standard in all new code.
 - CGI imps can be large (100-300+ lines) and have functions - they're non-user-facing server endpoints, not traditional small helpers; size and function limits don't apply to `.imps/cgi/*` files.
 - Files owned by site user (in .sitedata) need 664 permissions not 644 - the owner must have write permission to append to log files (chat messages, etc.).
+- Files created with default umask inherit 644 permissions (read-only for owner); must explicitly chmod 664 after touch/creation for owner write access.
