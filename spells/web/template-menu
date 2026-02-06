@@ -45,6 +45,7 @@ exit_label=$(exit-label)
 
 set -- \
   "Demo Site (Interactive CGI demos)%create-from-template \"$site_name\" demo && web-wizardry build \"$site_name\"" \
+  "UNIX Settings (Local system authority UI)%create-from-template \"$site_name\" unix-settings && web-wizardry build \"$site_name\"" \
   "Personal Blog (Content-addressable posts)%create-from-template \"$site_name\" blog && web-wizardry build \"$site_name\"" \
   "${exit_label}%kill -TERM \$PPID"
 
