@@ -293,23 +293,54 @@ The AUDIT_RESULTS.md document is organized as follows:
 1. **Executive Summary** - Overall statistics and quality grade
 2. **Critical Issues** - Table of all 🔴 failures requiring immediate attention
 3. **Warnings** - Table of all 🟡 warnings that should be addressed
-4. **Complete Audit Table** - Comprehensive table with all files, organized by category
+4. **Complete Audit Table** - Comprehensive flat table with all files in the repository
 
-### Simplified Table Format
+### Full Table Format
 
-| File Path | Last Audit | Thoroughness | Result | Issues |
-|-----------|------------|--------------|--------|--------|
-| path/to/file | YYYY-MM-DD | Level | 🟢/🟡/🔴/⚪ | Specific findings or "None" |
+| File Path | Last Audit | Thoroughness | Result | Code | Docs | Theme | Policy | Ethos | Issues | Fixes |
+|-----------|------------|--------------|--------|------|------|-------|--------|-------|--------|-------|
+| path/file | YYYY-MM-DD | Level | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | Findings | 🔧 if fixed |
 
 ### Column Descriptions
 
 1. **File Path** - Relative path from repository root
 2. **Last Audit** - Date of most recent audit (YYYY-MM-DD format)
 3. **Thoroughness** - How carefully the file was reviewed (see levels below)
-4. **Result** - Overall audit result: 🟢 Pass | 🟡 Warning | 🔴 Fail | ⚪ N/A
-5. **Issues** - Specific problems found, or "None" if file passes all checks
+4. **Result** - Overall audit result: 🟢 Pass | 🟡 Warning | 🔴 Fail | ⚪ N/A (worst of all categories)
+5. **Code** - Code Quality: Sections 7 (POSIX), 12-13 (Eng. Standards), 19 (Quality Metrics), 4 (Functions)
+6. **Docs** - Comment Quality: Section 6 (Didacticism), opening comments, help text
+7. **Theme** - Theming: Section 15 (Theming & Flavor), appropriate MUD vocabulary
+8. **Policy** - No Policy Violations: Sections 3 (No Globals), 9-11 (Values/Policies/Tenets), 17 (Security)
+9. **Ethos** - Holistic/Intuitive Alignment: Overall "feel" and spiritual fit with project values (see below)
+10. **Issues** - Specific problems found, or "None" if file passes all checks
+11. **Fixes** - Changes made (🔧 indicates fixes applied in this iteration)
 
-**Note:** The original 10-column format (Code, Docs, Theme, Policy, Fixes) has been simplified to a 5-column format for easier maintenance. All relevant findings are consolidated in the "Issues" column.
+### The Ethos Column
+
+**Ethos** is a holistic, intuitive assessment of how well a file embodies the project's spirit and philosophy. Unlike the concrete Policy column, Ethos captures ephemeral qualities that are harder to quantify but essential to the project's character.
+
+**What Ethos Measures:**
+- **Spiritual alignment** - Does the file "feel" like it belongs in this project?
+- **Craft and care** - Evidence of thoughtfulness, attention to detail, love for the work
+- **Teaching spirit** - Does it exemplify patterns worth emulating? Is it didactic in the right way?
+- **Minimalist beauty** - Elegant simplicity, nothing wasted, everything purposeful
+- **Magic and wonder** - Does it spark joy? Is there delight in the implementation?
+- **Unix philosophy** - Deep understanding and embodiment of "do one thing well"
+- **Community values** - Welcoming tone, accessibility, generosity of explanation
+
+**Scoring Ethos:**
+- 🟢 **Strong Ethos** - Exemplifies project values, feels "right", inspires
+- 🟡 **Weak Ethos** - Technically correct but soulless, mechanical, or misaligned with spirit
+- 🔴 **Poor Ethos** - Actively contradicts project philosophy or feels foreign/wrong
+- ⚪ **N/A** - Not applicable (e.g., generated files, external dependencies)
+
+**Examples:**
+- A spell with perfect POSIX compliance (Code 🟢) but dry, imperative error messages (Ethos 🟡)
+- An imp that's minimal and correct but feels like a mere utility rather than a magical building block (Ethos 🟡)
+- A tutorial that teaches bad patterns despite being executable (Code 🟢, Policy 🟡, Ethos 🔴)
+- A file with clever, joyful implementation that makes you smile while reading (Ethos 🟢)
+
+**Future Focus:** The first audit emphasized technical correctness. Future audits should give Ethos equal weight with other categories.
 
 ### Thoroughness Levels
 
@@ -593,12 +624,21 @@ The integrated table format:
   - Audit workflow documented
   - Completed initial repository audit (100% coverage, 1,126 files)
 
-- **2026-02-06**: Restructured AUDIT_RESULTS.md format
+- **2026-02-06**: Restructured AUDIT_RESULTS.md format (iteration 1)
   - Integrated audit log into table format
   - Removed separate phase/session log sections
   - Simplified to 5-column table (was 10 columns)
   - Added update instructions to prevent audit log append pattern
-  - Document now focuses on current state rather than historical progression
+  - Document focused on current state rather than historical progression
+
+- **2026-02-06**: Restored full table format (iteration 2)
+  - Brought back complete 11-column table for all files (flat structure)
+  - Added new "Ethos" column for holistic/intuitive assessment
+  - Restored full 11-column format: Path, Date, Thoroughness, Result, Code, Docs, Theme, Policy, Ethos, Issues, Fixes
+  - Maintained 4-section structure: Executive Summary, Critical, Warnings, Full Table
+  - Integrated all completed audit results into the table
+  - Documented Ethos column in detail
+  - Emphasis on Ethos for future audits
 
 ---
 

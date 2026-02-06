@@ -37,8 +37,9 @@ Higher thoroughness isn't always necessary—simple files may only need "Read" l
 6. **Docs** - Comments, documentation, help text quality
 7. **Theme** - MUD-themed vocabulary usage (where applicable)
 8. **Policy** - Adherence to project values and policies
-9. **Issues** - Specific problems found
-10. **Fixes** - Changes made (🔧 = fixed in this iteration)
+9. **Ethos** - Holistic/intuitive alignment with project spirit (see AUDIT.md)
+10. **Issues** - Specific problems found
+11. **Fixes** - Changes made (🔧 = fixed in this iteration)
 
 ---
 
@@ -49,7 +50,7 @@ Higher thoroughness isn't always necessary—simple files may only need "Read" l
 | Category | Files | Result |
 |----------|-------|--------|
 | Core files | 5 | 4 pass, 1 warning |
-| Spells | 116 | 112 pass, 3 warnings, 1 N/A |
+| Spells | 150 | All have tests, majority pass |
 | Imps | 302 | 300 pass, 2 warnings |
 | Tests | 629 | 629 pass (exceptional) |
 | Tutorials | 29 | 13 pass, 5 warnings, 11 failures |
@@ -78,7 +79,6 @@ The following 11 files require immediate attention:
 | `tutorials/22_history.sh` | Uses !3 which won't work in script, history -c not POSIX | High |
 | `tutorials/24_distribution.sh` | Executes destructive commands that will fail | High |
 | `tutorials/rosetta-stone` | Uses bash-isms, colors undefined, self-destructs | High |
-| `spells/enchantment/alias` | File/directory does not exist (should be in spells/enchant/) | Medium |
 
 **Recommendation:** Refactor all failing tutorials to be truly executable POSIX sh scripts. Add test coverage in `.tests/tutorials/` to prevent regression.
 
@@ -103,241 +103,953 @@ The following 12 files have minor issues that should be addressed:
 
 ## Complete Audit Table
 
-This table shows all 1,126 files in the repository with their audit results. Files are organized by category and include the most recent audit findings.
+This table shows all files in the repository with their audit results. Files are listed in a flat structure for easy reference.
 
-**Note:** This table consolidates all audit findings. When updating, modify the relevant row with new audit date, thoroughness, and findings. Do not append new audit log sections.
+**Note:** This table consolidates all audit findings. When updating, modify the relevant row with new audit date, thoroughness, and findings.
 
 **Legend:**
 - **Last Audit:** Date of most recent review (YYYY-MM-DD)
 - **Result:** 🟢 Pass | 🟡 Warning | 🔴 Fail | ⚪ N/A
+- **Ethos:** Holistic alignment with project values (intuitive, ephemeral, spiritual fit)
 
-### Core Files (5 files) - Audited Phase 1
+| File Path | Last Audit | Thoroughness | Result | Code | Docs | Theme | Policy | Ethos | Issues | Fixes |
+|-----------|------------|--------------|--------|------|------|-------|--------|-------|--------|-------|
+| spells/arcane/copy | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/arcane/file-list | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/arcane/file-to-folder | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/arcane/forall | 2026-02-06 | 📖 Read | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None | - |
+| spells/arcane/jump-trash | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/arcane/read-magic | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/arcane/trash | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/cantrips/ask | 2026-02-06 | 📖 Read | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None | - |
+| spells/cantrips/ask-number | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/cantrips/ask-text | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/cantrips/ask-yn | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/cantrips/await-keypress | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/cantrips/browse | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/cantrips/clear | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/cantrips/colors | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/cantrips/list-files | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/cantrips/max-length | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/cantrips/memorize | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/cantrips/menu | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/cantrips/move | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/cantrips/validate-ssh-key | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/cantrips/wizard-cast | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/cantrips/wizard-eyes | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/crypto/evoke-hash | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/crypto/hash | 2026-02-06 | 📖 Read | 🟢 | 🟢 | 🟢 | �� | 🟢 | 🟢 | None | - |
+| spells/crypto/hashchant | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/divination/detect-distro | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None | - |
+| spells/divination/detect-magic | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/divination/detect-posix | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/divination/detect-rc-file | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/divination/identify-room | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/enchant/disenchant | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/enchant/enchant | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/enchant/enchantment-to-yaml | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/enchant/yaml-to-enchantment | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/menu/cast | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/menu/install-menu | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/menu/main-menu | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/menu/mud | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/menu/mud-admin-menu | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/menu/mud-admin/add-player | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/menu/mud-admin/new-player | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/menu/mud-admin/set-player | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/menu/mud-menu | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/menu/mud-settings | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/menu/network-menu | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/menu/priorities | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/menu/priority-menu | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/menu/services-menu | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/menu/shutdown-menu | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/menu/spell-menu | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/menu/spellbook | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/menu/synonym-menu | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/menu/system-menu | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/menu/thesaurus | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/menu/users-menu | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/mud/boot-player | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/mud/check-cd-hook | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/mud/choose-player | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/mud/decorate | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/mud/demo-multiplayer | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/mud/greater-heal | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/mud/heal | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/mud/lesser-heal | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/mud/listen | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/mud/look | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/mud/magic-missile | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/mud/resurrect | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/mud/say | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - exemplary | - |
+| spells/mud/shocking-grasp | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/mud/stats | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/mud/think | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/priorities/deprioritize | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/priorities/get-card | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/priorities/get-new-priority | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/priorities/get-priority | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/priorities/prioritize | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/priorities/upvote | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/psi/list-contacts | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/psi/read-contact | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/spellcraft/add-synonym | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/spellcraft/bind-tome | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/spellcraft/compile-spell | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/spellcraft/delete-synonym | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/spellcraft/demo-magic | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/spellcraft/doppelganger | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/spellcraft/edit-synonym | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/spellcraft/erase-spell | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/spellcraft/forget | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/spellcraft/learn | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/spellcraft/lint-magic | 2026-02-06 | 🎯 Exhaustive | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - superb | - |
+| spells/spellcraft/merge-yaml-text | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/spellcraft/reset-default-synonyms | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/spellcraft/scribe-spell | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/spellcraft/unbind-tome | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/system/config | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/system/disable-service | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/system/enable-service | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/system/install-service-template | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/system/is-service-installed | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/system/kill-process | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/system/learn-spellbook | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/system/logs | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/system/package-managers | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/system/pocket-dimension | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/system/reload-ssh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/system/remove-service | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/system/restart-service | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/system/restart-ssh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/system/service-status | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/system/start-service | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/system/stop-service | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/system/update-all | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/tasks/check | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/tasks/get-checked | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/tasks/rename-interactive | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/tasks/uncheck | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/translocation/blink | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/translocation/close-portal | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/translocation/enchant-portkey | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/translocation/follow-portkey | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/translocation/go-up | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/translocation/jump-to-marker | 2026-02-06 | 🎯 Exhaustive | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - outstanding | - |
+| spells/translocation/mark-location | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/translocation/open-portal | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/translocation/open-teletype | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/wards/banish | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/wards/defcon | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/wards/ssh-barrier | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/wards/ward-system | 2026-02-06 | 🎯 Exhaustive | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - exceptional | - |
+| spells/web/build | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/change-site-port | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/check-https-status | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/configure-nginx | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/create-from-template | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/create-site | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/create-site-prompt | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/delete-site | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/diagnose-sse | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/disable-https | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/disable-site-daemon | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/enable-site-daemon | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/fix-site-security | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/https | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/is-site-daemon-enabled | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/manage-allowed-dirs | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/renew-https | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/repair-site-daemon | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/run-site-daemon | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/serve-site | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/setup-https | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/site-menu | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/site-status | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/stop-site | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/template-menu | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/toggle-site-tor-hosting | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/update-from-template | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| spells/web/web-wizardry | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| install | 2026-02-06 | 🎯 Exhaustive | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - exceptional quality | - |
+| .tests/.arcana/bitcoin/test-bitcoin-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/bitcoin/test-bitcoin-status.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/bitcoin/test-bitcoin.service.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/bitcoin/test-change-bitcoin-directory.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/bitcoin/test-configure-bitcoin.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/bitcoin/test-install-bitcoin.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/bitcoin/test-is-bitcoin-installed.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/bitcoin/test-is-bitcoin-running.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/bitcoin/test-repair-bitcoin-permissions.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/bitcoin/test-uninstall-bitcoin.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/bitcoin/test-wallet-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-core-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-core-status.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-install-attr.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-install-awk.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-install-bwrap.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-install-checkbashisms.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-install-clipboard-helper.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-install-core.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-install-dd.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-install-find.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-install-git.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-install-grep.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-install-pkgin.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-install-ps.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-install-sed.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-install-socat.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-install-stty.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-install-tput.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-install-wl-clipboard.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-install-xclip.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-install-xsel.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-manage-system-command.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-uninstall-awk.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-uninstall-bwrap.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-uninstall-checkbashisms.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-uninstall-clipboard-helper.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-uninstall-core.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-uninstall-dd.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-uninstall-find.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-uninstall-git.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-uninstall-grep.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-uninstall-pkgin.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-uninstall-ps.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-uninstall-sed.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-uninstall-socat.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-uninstall-stty.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-uninstall-tput.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-uninstall-wl-clipboard.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-uninstall-xclip.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/core/test-uninstall-xsel.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/lightning/test-configure-lightning.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/lightning/test-install-lightning.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/lightning/test-is-lightning-installed.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/lightning/test-is-lightning-running.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/lightning/test-lightning-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/lightning/test-lightning-status.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/lightning/test-lightning-wallet-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/lightning/test-lightning.service.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/lightning/test-repair-lightning-permissions.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/lightning/test-uninstall-lightning.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/mud/test-install-cd.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/mud/test-install-mud.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/mud/test-install-sshfs.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/mud/test-load-cd-hook.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/mud/test-load-touch-hook.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/mud/test-mud-status.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/mud/test-sshfs-status.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/mud/test-toggle-all-mud.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/mud/test-toggle-avatar.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/mud/test-toggle-cd.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/mud/test-toggle-listen.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/mud/test-toggle-mud-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/mud/test-toggle-parse.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/mud/test-toggle-sshfs.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/mud/test-toggle-touch-hook.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/mud/test-uninstall-sshfs.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/simplex-chat/test-install-simplex-chat.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/simplex-chat/test-simplex-chat-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/simplex-chat/test-simplex-chat-status.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/simplex-chat/test-uninstall-simplex-chat.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/syncthing/test-disable-syncthing-autostart.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/syncthing/test-enable-syncthing-autostart.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/syncthing/test-install-syncthing.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/syncthing/test-is-syncthing-autostart-enabled.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/syncthing/test-is-syncthing-installed.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/syncthing/test-is-syncthing-running.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/syncthing/test-open-syncthing.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/syncthing/test-restart-syncthing.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/syncthing/test-start-syncthing.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/syncthing/test-stop-syncthing.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/syncthing/test-syncthing-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/syncthing/test-syncthing-status.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/syncthing/test-uninstall-syncthing.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/test-import-arcanum.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-configure-tor-bridge.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-configure-tor.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-create-tor-launchd-service.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-disable-tor-daemon.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-enable-tor-daemon.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-ensure-torrc-exists.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-install-libevent.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-install-openssl.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-install-tor.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-is-libevent-installed.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-is-openssl-installed.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-is-tor-daemon-enabled.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-is-tor-hidden-service-configured.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-is-tor-installed.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-is-tor-launchd-service-configured.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-is-tor-running.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-remove-tor-hidden-service.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-repair-tor-permissions.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-restart-tor.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-setup-tor.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-show-tor-log.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-show-tor-onion-address.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-start-tor.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-stop-tor.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-tor-bridge-status.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-tor-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-tor-status.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-torrc-path.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-uninstall-libevent.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-uninstall-openssl.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/tor/test-uninstall-tor.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/web-wizardry/test-install-acme.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/web-wizardry/test-install-fcgiwrap.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/web-wizardry/test-install-htmx.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/web-wizardry/test-install-nginx.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/web-wizardry/test-install-openssl.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/web-wizardry/test-install-pandoc.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/web-wizardry/test-is-web-component-installed.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/web-wizardry/test-manage-https.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/web-wizardry/test-nginx-admin.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/web-wizardry/test-toggle-all-web-wizardry.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/web-wizardry/test-uninstall-acme.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/web-wizardry/test-uninstall-fcgiwrap.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/web-wizardry/test-uninstall-htmx.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/web-wizardry/test-uninstall-nginx.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/web-wizardry/test-uninstall-openssl.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/web-wizardry/test-uninstall-pandoc.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/web-wizardry/test-update-htmx.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/web-wizardry/test-web-wizardry-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.arcana/web-wizardry/test-web-wizardry-status.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/app/test-app-validate.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-blog-get-config.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-blog-index.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-blog-list-drafts.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-blog-save-post.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-blog-search.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-blog-set-theme.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-blog-tags.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-blog-theme.css.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-blog-update-config.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-calc.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-cgi-env.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-chat-cleanup-inactive-avatars.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-chat-count-avatars.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-chat-create-avatar.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-chat-create-room.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-chat-delete-avatar.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-chat-delete-room.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-chat-get-messages.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-chat-list-avatars.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-chat-list-rooms.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-chat-log-if-unique.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-chat-move-avatar.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-chat-rename-avatar.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-chat-room-list-stream.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-chat-send-message.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-chat-stream.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-chat-unread-counts.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-color-picker.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-counter-reset.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-counter.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-debug-test.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-drag-drop-upload.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-echo-text.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-example-cgi.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-file-info.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-get-query-param.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-get-site-data-dir.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-http-cors.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-http-end-headers.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-http-error.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-http-header.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-http-ok-html.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-http-ok-json.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-http-status.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-list-system-files.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-parse-query.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-poll-vote.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-random-quote.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-reverse-text.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-save-note.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-sse-error.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-sse-event-id.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-sse-event.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-sse-padding.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-sse-retry.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-sse-start.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-ssh-auth-bind-webauthn.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-ssh-auth-check-session.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-ssh-auth-list-delegates.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-ssh-auth-login.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-ssh-auth-register-mud.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-ssh-auth-register.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-ssh-auth-revoke-delegate.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-system-info.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-temperature-convert.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-upload-image.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-url-decode.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-validate-room-name.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-validate-username.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cgi/test-word-count.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cond/test-empty.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cond/test-full.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cond/test-given.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cond/test-gone.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cond/test-has-ancestor.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cond/test-has.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cond/test-is-path.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cond/test-is-posint.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cond/test-is.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cond/test-lacks.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cond/test-newer.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cond/test-no.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cond/test-nonempty.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cond/test-older.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cond/test-there.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cond/test-validate-mud-handle.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cond/test-within-range.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/cond/test-yes.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/fmt/test-format-duration.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/fmt/test-format-timestamp.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/fs/test-backup-nix-config.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/fs/test-backup.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/fs/test-check-attribute-tool.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/fs/test-cleanup-dir.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/fs/test-cleanup-file.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/fs/test-clip-copy.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/fs/test-clip-paste.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/fs/test-config-del.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/fs/test-config-get.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/fs/test-config-has.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/fs/test-config-set.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/fs/test-ensure-parent-dir.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/fs/test-find-executable.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/fs/test-get-attribute-batch.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/fs/test-get-attribute.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/fs/test-list-attributes.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/fs/test-sed-inplace.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/fs/test-set-attribute.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/fs/test-temp-dir.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/fs/test-temp-file.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/hook/test-touch-hook.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/input/test-choose-input.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/input/test-prompt-with-fallback.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/input/test-read-line.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/input/test-require-command.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/input/test-tty-raw.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/input/test-tty-restore.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/input/test-tty-save.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/input/test-validate-command.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/input/test-validate-name.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/input/test-validate-number.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/input/test-validate-path.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/input/test-validate-player-name.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/lang/test-possessive.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/lex/test-and-then.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/lex/test-and.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/lex/test-disambiguate.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/lex/test-from.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/lex/test-into.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/lex/test-or.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/lex/test-parse.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/lex/test-to.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/menu/test-category-title.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/menu/test-cursor-blink.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/menu/test-divine-trash.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/menu/test-exit-label.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/menu/test-fathom-cursor.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/menu/test-fathom-terminal.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/menu/test-is-installable.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/menu/test-is-integer.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/menu/test-is-submenu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/menu/test-move-cursor.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/mud/test-colorize-player-name.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/mud/test-create-avatar.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/mud/test-damage-file.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/mud/test-deal-damage.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/mud/test-get-life.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/mud/test-incarnate.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/mud/test-move-avatar.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/mud/test-mud-defaults.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/mud/test-trigger-on-touch.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/out/test-debug.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/out/test-die.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/out/test-disable-palette.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/out/test-fail.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/out/test-first-of.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/out/test-heading-section.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/out/test-heading-separator.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/out/test-heading-simple.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/out/test-info.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/out/test-log-timestamp.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/out/test-ok.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/out/test-or-else.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/out/test-print-fail.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/out/test-print-pass.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/out/test-quiet.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/out/test-step.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/out/test-success.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/out/test-usage-error.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/out/test-warn.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/paths/test-abs-path.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/paths/test-ensure-dir.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/paths/test-file-name.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/paths/test-here.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/paths/test-norm-path.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/paths/test-parent.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/paths/test-path.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/paths/test-script-dir.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/paths/test-strip-trailing-slashes.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/paths/test-temp.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/paths/test-tilde-path.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/pkg/test-pkg-has.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/pkg/test-pkg-install.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/pkg/test-pkg-manager.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/pkg/test-pkg-remove.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/pkg/test-pkg-update.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/pkg/test-pkg-upgrade.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/str/test-contains.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/str/test-differs.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/str/test-ends.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/str/test-equals.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/str/test-lower.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/str/test-matches.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/str/test-seeks.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/str/test-starts.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/str/test-trim.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/str/test-upper.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-add-pkgin-to-path.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-any.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-ask-install-wizardry.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-clear-traps.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-clipboard-available.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-env-clear.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-env-or.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-invoke-thesaurus.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-invoke-wizardry.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-must.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-need.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-nix-rebuild.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-nix-shell-add.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-nix-shell-remove.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-nix-shell-status.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-now.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-on-exit.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-on.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-os.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-rc-add-line.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-rc-has-line.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-rc-remove-line.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-require-wizardry.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-require.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-spell-levels.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-term.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/sys/test-where.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/term/test-clear-line.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/term/test-redraw-prompt.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test-declare-globals.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-assert-equals.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-assert-error-contains.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-assert-failure.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-assert-file-contains.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-assert-output-contains.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-assert-path-exists.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-assert-path-missing.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-assert-status.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-assert-success.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-find-repo-root.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-finish-tests.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-init-test-counters.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-link-tools.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-make-fixture.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-make-tempdir.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-provide-basic-tools.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-record-failure-detail.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-report-result.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-run-bwrap.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-run-cmd.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-run-macos-sandbox.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-run-spell-in-dir.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-run-spell.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-run-test-case.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-skip-if-compiled.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-skip-if-uncompiled.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-stub-ask-text-simple.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-stub-ask-text.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-stub-bin-dir.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-stub-boolean.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-stub-cleanup-file.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-stub-colors.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-stub-exit-label.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-stub-failing-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-stub-failing-require.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-stub-forget-command.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-stub-memorize-command.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-stub-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-stub-nix-env.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-stub-pacman.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-stub-require-command-simple.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-stub-require-command.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-stub-status.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-stub-sudo.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-stub-systemctl-simple.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-stub-systemctl.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-stub-temp-file.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-stub-xattr.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-test-fail.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-test-heading.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-test-lack.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-test-pass.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-test-skip.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-test-summary.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-write-apt-stub.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-write-command-stub.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-write-pkgin-stub.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/boot/test-write-sudo-stub.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/test-detect-test-environment.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/test-run-with-pty.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/test-socat-normalize-output.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/test-socat-pty.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/test-socat-send-keys.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/test-socat-test.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/test-stub-await-keypress-sequence.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/test-stub-await-keypress.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/test-stub-cursor-blink.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/test-stub-fathom-cursor.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/test-stub-fathom-terminal.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/test-stub-move-cursor.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/test-stub-stty.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/test/test-test-bootstrap.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/text/test-append.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/text/test-count-chars.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/text/test-count-words.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/text/test-divine-indent-char.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/text/test-divine-indent-width.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/text/test-drop.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/text/test-each.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/text/test-field.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/text/test-first.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/text/test-last.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/text/test-lines.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/text/test-make-indent.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/text/test-pick.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/text/test-pluralize.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/text/test-read-file.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/text/test-skip.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/text/test-take.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.imps/text/test-write-file.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.wizardry/desktop/test-app-launcher.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.wizardry/desktop/test-build-appimage.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.wizardry/desktop/test-build-apps.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.wizardry/desktop/test-build-macapp.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.wizardry/desktop/test-launch-app.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.wizardry/desktop/test-list-apps.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.wizardry/test-generate-glosses.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.wizardry/test-profile-tests.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.wizardry/test-spellbook-store.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.wizardry/test-test-magic.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.wizardry/test-test-spell.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.wizardry/test-update-wizardry.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.wizardry/test-validate-spells.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/.wizardry/test-verify-posix.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/arcane/test-copy.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/arcane/test-file-list.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/arcane/test-file-to-folder.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/arcane/test-forall.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/arcane/test-jump-trash.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/arcane/test-read-magic.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/arcane/test-trash.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/cantrips/test-ask-number.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/cantrips/test-ask-text.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/cantrips/test-ask-yn.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/cantrips/test-ask.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/cantrips/test-await-keypress.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/cantrips/test-browse.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/cantrips/test-clear.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/cantrips/test-colors.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/cantrips/test-list-files.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/cantrips/test-max-length.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/cantrips/test-memorize.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/cantrips/test-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/cantrips/test-move.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/cantrips/test-validate-ssh-key.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/cantrips/test-wizard-cast.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/cantrips/test-wizard-eyes.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/common-tests.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/crypto/test-evoke-hash.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/crypto/test-hash.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/crypto/test-hashchant.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/divination/test-detect-distro.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/divination/test-detect-magic.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/divination/test-detect-posix.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/divination/test-detect-rc-file.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/divination/test-identify-room.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/enchant/test-disenchant.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/enchant/test-enchant.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/enchant/test-enchantment-to-yaml.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/enchant/test-yaml-to-enchantment.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/menu/mud-admin/test-add-player.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/menu/mud-admin/test-new-player.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/menu/mud-admin/test-set-player.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/menu/test-cast.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/menu/test-install-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/menu/test-main-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/menu/test-mud-admin-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/menu/test-mud-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/menu/test-mud-settings.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/menu/test-mud.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/menu/test-network-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/menu/test-priorities.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/menu/test-priority-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/menu/test-services-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/menu/test-shutdown-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/menu/test-spell-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/menu/test-spellbook.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/menu/test-synonym-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/menu/test-system-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/menu/test-thesaurus.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/menu/test-users-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/mud/test-boot-player.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/mud/test-check-cd-hook.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/mud/test-choose-player.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/mud/test-decorate.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/mud/test-demo-multiplayer.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/mud/test-greater-heal.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/mud/test-heal.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/mud/test-lesser-heal.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/mud/test-listen.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/mud/test-look.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/mud/test-magic-missile.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/mud/test-resurrect.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/mud/test-say.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/mud/test-shocking-grasp.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/mud/test-stats.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/mud/test-think.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/priorities/test-deprioritize.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/priorities/test-get-card.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/priorities/test-get-new-priority.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/priorities/test-get-priority.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/priorities/test-prioritize.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/priorities/test-upvote.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/psi/test-list-contacts.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/psi/test-read-contact.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/spellcraft/test-add-synonym.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/spellcraft/test-bind-tome.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/spellcraft/test-compile-spell.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/spellcraft/test-delete-synonym.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/spellcraft/test-demo-magic.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/spellcraft/test-doppelganger.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/spellcraft/test-edit-synonym.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/spellcraft/test-erase-spell.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/spellcraft/test-forget.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/spellcraft/test-learn.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/spellcraft/test-lint-magic.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/spellcraft/test-merge-yaml-text.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/spellcraft/test-reset-default-synonyms.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/spellcraft/test-scribe-spell.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/spellcraft/test-unbind-tome.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/system/test-config.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/system/test-disable-service.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/system/test-enable-service.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/system/test-install-service-template.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/system/test-is-service-installed.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/system/test-kill-process.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/system/test-learn-spellbook.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/system/test-logs.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/system/test-package-managers.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/system/test-pocket-dimension.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/system/test-reload-ssh.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/system/test-remove-service.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/system/test-restart-service.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/system/test-restart-ssh.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/system/test-service-status.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/system/test-spell-level-coverage.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/system/test-start-service.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/system/test-stop-service.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/system/test-update-all.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/tasks/test-check.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/tasks/test-get-checked.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/tasks/test-rename-interactive.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/tasks/test-uncheck.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/test-install.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/test-tutorials.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/translocation/test-blink.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/translocation/test-close-portal.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/translocation/test-enchant-portkey.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/translocation/test-follow-portkey.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/translocation/test-go-up.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/translocation/test-jump-to-marker.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/translocation/test-mark-location.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/translocation/test-open-portal.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/translocation/test-open-teletype.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/wards/test-banish.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/wards/test-defcon.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/wards/test-ssh-barrier.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/wards/test-ward-system.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-build.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-change-site-port.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-check-https-status.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-configure-nginx.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-create-from-template.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-create-site-prompt.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-create-site.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-delete-site.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-diagnose-sse.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-disable-https.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-disable-site-daemon.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-enable-site-daemon.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-fix-site-security.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-https.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-is-site-daemon-enabled.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-manage-allowed-dirs.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-renew-https.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-repair-site-daemon.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-run-site-daemon.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-serve-site.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-setup-https.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-site-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-site-status.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-stop-site.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-template-menu.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-toggle-site-tor-hosting.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-update-from-template.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .tests/web/test-web-wizardry.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .AGENTS.md | 2026-02-06 | 📖 Read | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - excellent | - |
+| README.md | 2026-02-06 | 🔍 Perused | 🟡 | 🟢 | 🟡 | 🟢 | 🟢 | 🟢 | Line 30 uses bash example | - |
+| .github/.CONTRIBUTING.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .github/AUDIT.md | 2026-02-06 | 📖 Read | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None | - |
+| .github/AUDIT_RESULTS.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .github/CODEX.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .github/CROSS_PLATFORM_PATTERNS.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .github/EMOJI_ANNOTATIONS.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .github/EXEMPTIONS.md | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - thorough | - |
+| .github/FULL_SPEC.md | 2026-02-06 | 🎯 Exhaustive | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - comprehensive | - |
+| .github/LESSONS.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .github/SHELL_CODE_PATTERNS.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .github/bootstrapping.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .github/compiled-testing.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .github/copilot-instructions.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .github/glossary-and-function-architecture.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .github/imps.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .github/interactive-spells.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .github/logging.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .github/spells.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .github/test-performance.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .github/testing-environment.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .github/tests.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .github/troubleshooting.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/README.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/includes/head.html | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/includes/nav.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/pages/about.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/pages/admin.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/pages/index.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/pages/posts/2024-01-15-welcome.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/pages/posts/2024-01-20-content-hashes.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/pages/posts/2024-01-25-shell-web.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/pages/posts/2024-01-28-version-tracking.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/pages/posts/2024-02-01-draft-example.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/pages/ssh-auth.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/pages/tags.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/style.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/adept.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/alchemist.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/archmage.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/chronomancer.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/conjurer.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/druid.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/empath.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/enchanter.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/geomancer.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/hermeticist.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/hierophant.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/illusionist.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/lich.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/necromancer.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/pyromancer.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/seer.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/shaman.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/sorcerer.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/sorceress.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/technomancer.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/thaumaturge.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/thelemite.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/theurgist.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/wadjet.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/warlock.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/blog/static/themes/wizard.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/demo/README.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/demo/includes/nav.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/demo/pages/about.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/demo/pages/chat.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/demo/pages/diagnostics.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/demo/pages/file-upload.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/demo/pages/forms-input.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/demo/pages/graphics-media.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/demo/pages/hardware.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/demo/pages/index.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/demo/pages/misc-apis.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/demo/pages/poll.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/demo/pages/security.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/demo/pages/storage.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/demo/pages/time-performance.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/demo/pages/ui-apis.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/demo/pages/workers.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/demo/static/style.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/unix-settings/README.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/unix-settings/cgi/unix-action | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/unix-settings/cgi/unix-man | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/unix-settings/cgi/unix-roster | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/unix-settings/includes/nav.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/unix-settings/pages/configuration.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/unix-settings/pages/display-sessions.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/unix-settings/pages/index.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/unix-settings/pages/network.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/unix-settings/pages/services.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/unix-settings/pages/software.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/unix-settings/pages/storage.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/unix-settings/pages/system.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/unix-settings/pages/users.md | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/unix-settings/static/icons/configuration.svg | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/unix-settings/static/icons/display.svg | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/unix-settings/static/icons/network.svg | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/unix-settings/static/icons/services.svg | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/unix-settings/static/icons/software.svg | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/unix-settings/static/icons/storage.svg | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/unix-settings/static/icons/system.svg | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/unix-settings/static/icons/users.svg | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| .templates/unix-settings/static/style.css | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| tutorials/00_terminal.sh | 2026-02-06 | 📖 Read | 🟡 | 🟡 | 🟢 | ⚪ | 🟢 | 🟢 | Uses echo not printf | - |
+| tutorials/01_navigating.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| tutorials/02_variables.sh | 2026-02-06 | 📖 Read | 🟡 | 🟡 | 🟢 | ⚪ | 🟢 | 🟢 | Missing quotes | - |
+| tutorials/03_quoting.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| tutorials/04_comparison.sh | 2026-02-06 | 📖 Read | 🔴 | 🔴 | 🟢 | ⚪ | 🟢 | 🟡 | Duplicated content, bash arithmetic | - |
+| tutorials/05_conditionals.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| tutorials/06_loops.sh | 2026-02-06 | 📖 Read | 🔴 | 🔴 | 🟢 | ⚪ | 🟢 | 🟡 | Uses bash arrays | - |
+| tutorials/07_functions.sh | 2026-02-06 | 📖 Read | 🟡 | 🟡 | 🟡 | ⚪ | 🟢 | 🟢 | Incorrect return example | - |
+| tutorials/08_pipe.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| tutorials/09_permissions.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| tutorials/10_regex.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| tutorials/11_debugging.sh | 2026-02-06 | 📖 Read | 🔴 | 🔴 | 🟢 | ⚪ | 🟢 | 🟡 | Undefined command | - |
+| tutorials/12_aliases.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| tutorials/13_eval.sh | 2026-02-06 | 📖 Read | 🔴 | 🔴 | 🟡 | ⚪ | 🟢 | 🟡 | Missing shebang, incorrect exec | - |
+| tutorials/14_bg.sh | 2026-02-06 | 📖 Read | 🔴 | 🔴 | 🟢 | ⚪ | 🟢 | 🟡 | fg/bg will fail | - |
+| tutorials/15_advanced_terminal.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| tutorials/16_parentheses.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| tutorials/17_shebang.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| tutorials/18_shell_options_basic.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| tutorials/19_shell_options_advanced.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| tutorials/20_backticks.sh | 2026-02-06 | 📖 Read | 🟡 | 🟡 | 🟢 | ⚪ | 🟢 | 🟢 | File numbering issue | - |
+| tutorials/21_env.sh | 2026-02-06 | 📖 Read | 🔴 | 🔴 | 🟡 | ⚪ | 🟡 | 🟡 | Duplicated 4x | - |
+| tutorials/22_history.sh | 2026-02-06 | 📖 Read | 🔴 | 🔴 | 🟢 | ⚪ | 🟢 | 🟡 | Uses !3, not POSIX | - |
+| tutorials/23_best_practices.sh | 2026-02-06 | 📖 Read | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - excellent | - |
+| tutorials/24_distribution.sh | 2026-02-06 | 📖 Read | 🔴 | 🔴 | 🟢 | ⚪ | 🟢 | 🟡 | Destructive commands | - |
+| tutorials/25_ssh.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| tutorials/26_git.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| tutorials/27_usability.sh | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
+| tutorials/28_posix_vs_bash.sh | 2026-02-06 | 📖 Read | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - excellent model | - |
+| tutorials/29_antipatterns.sh | 2026-02-06 | 📖 Read | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - excellent | - |
+| tutorials/rosetta-stone | 2026-02-06 | 📖 Read | �� | 🔴 | 🟢 | ⚪ | 🔴 | 🔴 | Bash-isms, self-destructs | - |
+| .gitignore | 2026-02-06 | 📖 Read | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None | - |
 
-| File Path | Last Audit | Thoroughness | Result | Issues |
-|-----------|------------|--------------|--------|--------|
-| install | 2026-02-06 | 🎯 Exhaustive | 🟢 Pass | None - exceptional quality: comprehensive error handling, cross-platform support, idempotent installation |
-| README.md | 2026-02-06 | 🔍 Perused | 🟡 Warning | Line 30 uses bash example when project advocates POSIX sh |
-| spells/.imps/test/test-bootstrap | 2026-02-06 | 🎯 Exhaustive | 🟢 Pass | None - excellent PATH seeding, sandbox detection, dynamic function generation |
-| spells/.imps/sys/env-clear | 2026-02-06 | 🎯 Exhaustive | 🟢 Pass | None - sophisticated mode preservation, comprehensive var saving, GitHub Actions support |
-| spells/mud/say | 2026-02-06 | 🔍 Perused | 🟢 Pass | None - exemplary MUD spell with good flavor text, proper error handling |
-
-### Spell Files (116 files) - Audited Phases 2-10
-
-| Category | Files | Pass | Warnings | Failures | N/A | Notes |
-|----------|-------|------|----------|----------|-----|-------|
-| Arcane | 7 | 1 | 0 | 0 | 6 | forall audited and passes |
-| Cantrips | 16 | 2 | 0 | 0 | 14 | ask audited and passes |
-| Crypto | 3 | 1 | 0 | 0 | 2 | hash audited and passes |
-| Divination | 5 | 1 | 0 | 0 | 4 | detect-distro audited and passes |
-| Enchant | 4 | 0 | 0 | 0 | 4 | Not yet audited in detail |
-| Menu | 20 | 0 | 0 | 0 | 20 | Not yet audited in detail |
-| MUD | 16 | 1 | 0 | 0 | 15 | say audited and passes |
-| Priorities | 6 | 0 | 0 | 0 | 6 | Not yet audited in detail |
-| PSI | 2 | 0 | 0 | 0 | 2 | Not yet audited in detail |
-| Spellcraft | 15 | 1 | 0 | 0 | 14 | lint-magic audited and passes |
-| System | 19 | 0 | 0 | 0 | 19 | Not yet audited in detail |
-| Tasks | 4 | 0 | 0 | 0 | 4 | Not yet audited in detail |
-| Translocation | 9 | 1 | 0 | 0 | 8 | jump-to-marker audited and passes |
-| Wards | 3 | 1 | 0 | 0 | 2 | ward-system audited and passes |
-| Web | 20 | 0 | 0 | 0 | 20 | Not yet audited in detail |
-
-**Notable Spells Audited:**
-- `spells/arcane/forall` (2026-02-06, 📖 Read) - Clean batch execution, minimal implementation
-- `spells/cantrips/ask` (2026-02-06, 📖 Read) - Good shim pattern, proper directory resolution
-- `spells/crypto/hash` (2026-02-06, 📖 Read) - Nice flavor text, proper path resolution
-- `spells/divination/detect-distro` (2026-02-06, 🔍 Perused) - Comprehensive platform coverage
-- `spells/translocation/jump-to-marker` (2026-02-06, 🎯 Exhaustive) - Outstanding: sophisticated readline preservation, exemplary complex spell
-- `spells/wards/ward-system` (2026-02-06, 🎯 Exhaustive) - Exceptional: comprehensive security checks, educational
-- `spells/spellcraft/lint-magic` (2026-02-06, 🎯 Exhaustive) - Superb: inlines all check functions, perfect example of function inlining
-
-### Imp Files (302 files) - Audited Phases 11-15
-
-**Result:** 🟢 300 pass (99.3%), 2 minor warnings
-
-All 302 imps audited across 20 families (app, cgi, cond, db, err, fmt, fs, git, hook, input, json, lang, lex, menu, meta, mud, net, out, paths, pkg, str, sys, term, test, text, time, web).
-
-**Quality Assessment:**
-- **Code:** 🟢 Exceptional - Atomic, minimal (8-50 lines), POSIX-compliant
-- **Documentation:** 🟢 Excellent - Comment headers, clear purpose
-- **Testing:** 🟢 Complete - All imps have corresponding tests
-- **Patterns:** 🟢 Consistent - Proper conditional vs action patterns
-
-**Key Imp Families:**
-- **cond/** (12 files) - Conditional checks, no `set -eu`, return exit codes
-- **out/** (17 files) - Output formatting, log level filtering, exit codes
-- **paths/** (11 files) - Path normalization, cross-platform compatibility
-- **str/** (10 files) - String operations, case transformation
-- **sys/** (28 files) - System operations, largest family, complex functionality
-- **test/boot/** (58 files) - Test framework, meta-testing
-
-**Notable Imps:**
-- `spells/.imps/cond/has` - Perfect conditional pattern
-- `spells/.imps/out/die` - Minimal perfection (12 lines)
-- `spells/.imps/str/trim` - Minimal perfection (8 lines)
-- `spells/.imps/fs/temp-file` - Proper WIZARDRY_TMPDIR support
-- `spells/.imps/menu/is-installable` - Clean function detection
-
-### Test Files (629 files) - Audited Phase 16
-
-**Result:** 🟢 100% pass - ALL 629 test files meet or exceed standards
-
-**Quality Assessment:**
-- **Code Quality:** 🟢 100% (correct shebang, test-bootstrap sourcing, POSIX-compliant)
-- **Framework Usage:** 🟢 100% (proper assertions, resource cleanup)
-- **Coverage:** 🟢 100% (appropriate depth for complexity, edge cases)
-- **Isolation:** 🟢 100% (proper temp directories, no cross-test contamination)
-
-**Test Categories:**
-- Install tests: 5 files
-- MUD tests: 16 files
-- Services tests: 19 files
-- Imp tests: 302 files (all families)
-- Spell tests: 255 files (all categories)
-- Other tests: 32 files
-
-**Notable Test Patterns:**
-- Consistent use of test-bootstrap framework
-- Proper skip-if-compiled for source-dependent tests
-- Platform-specific stubbing and mocking
-- Comprehensive error message validation
-- Clean resource management
-
-**Time Investment:** ~1,100 minutes across Phases 13-16
-
-**Assessment:** Test infrastructure is exceptional and serves as a model for POSIX shell testing.
-
-### Tutorial Files (29 files) - Audited Phase 17
-
-| File Path | Last Audit | Result | Issues |
-|-----------|------------|--------|--------|
-| tutorials/00_terminal.sh | 2026-02-06 | 🟡 Warning | Uses echo instead of printf |
-| tutorials/01_*.sh through 03_*.sh | 2026-02-06 | 🟢 Pass | Minor issues |
-| tutorials/04_comparison.sh | 2026-02-06 | 🔴 Fail | Duplicated content, bash arithmetic |
-| tutorials/05_*.sh | 2026-02-06 | 🟢 Pass | None |
-| tutorials/06_loops.sh | 2026-02-06 | 🔴 Fail | Uses bash arrays |
-| tutorials/07_functions.sh | 2026-02-06 | 🟡 Warning | Incorrect return value example |
-| tutorials/08_*.sh through 10_*.sh | 2026-02-06 | 🟢 Pass | None |
-| tutorials/11_debugging.sh | 2026-02-06 | 🔴 Fail | Undefined command |
-| tutorials/12_*.sh | 2026-02-06 | 🟢 Pass | None |
-| tutorials/13_eval.sh | 2026-02-06 | 🔴 Fail | Missing shebang, incorrect exec |
-| tutorials/14_bg.sh | 2026-02-06 | 🔴 Fail | fg/bg will fail |
-| tutorials/15_*.sh through 20_*.sh | 2026-02-06 | 🟡 Pass/Warning | Minor issues |
-| tutorials/21_env.sh | 2026-02-06 | 🔴 Fail | Duplicated content 4x |
-| tutorials/22_history.sh | 2026-02-06 | 🔴 Fail | Uses !3, history -c not POSIX |
-| tutorials/23_best_practices.sh | 2026-02-06 | 🟢 Pass | Excellent |
-| tutorials/24_distribution.sh | 2026-02-06 | 🔴 Fail | Destructive commands |
-| tutorials/25_*.sh through 27_*.sh | 2026-02-06 | 🟢 Pass | Good |
-| tutorials/28_posix_vs_bash.sh | 2026-02-06 | 🟢 Pass | Excellent model |
-| tutorials/29_antipatterns.sh | 2026-02-06 | 🟢 Pass | Excellent teaching tool |
-| tutorials/rosetta-stone | 2026-02-06 | 🔴 Fail | Bash-isms, self-destructs |
-
-**Summary:** 13 pass, 5 warnings, 11 failures
-
-**Recommendations:**
-1. Refactor all 11 failing tutorials to be executable POSIX sh
-2. Add test coverage in `.tests/tutorials/`
-3. Standardize on `printf` over `echo`
-4. Bring early tutorials (00-22) up to quality of later tutorials (23-29)
-
-### Documentation Files (25 files) - Audited Phases 1, 2, 17
-
-| File Path | Last Audit | Result | Notes |
-|-----------|------------|--------|-------|
-| README.md | 2026-02-06 | 🟡 Warning | Bash example on line 30 |
-| .gitignore | 2026-02-06 | 🟢 Pass | Appropriate exclusions |
-| .AGENTS.md | 2026-02-06 | 🟢 Pass | Excellent AI quick reference |
-| .github/AUDIT.md | 2026-02-06 | 🟢 Pass | Comprehensive framework |
-| .github/AUDIT_RESULTS.md | 2026-02-06 | 🟢 Pass | This document |
-| .github/CODEX.md | 2026-02-06 | 🟢 Pass | Concise OpenAI Codex guidance |
-| .github/CROSS_PLATFORM_PATTERNS.md | 2026-02-06 | 🟢 Pass | Excellent resource |
-| .github/EMOJI_ANNOTATIONS.md | 2026-02-06 | 🟢 Pass | Well-documented experimental feature |
-| .github/EXEMPTIONS.md | 2026-02-06 | 🟢 Pass | Exceptional - comprehensive tracking |
-| .github/FULL_SPEC.md | 2026-02-06 | 🟢 Pass | Canonical technical spec |
-| .github/LESSONS.md | 2026-02-06 | 🟢 Pass | Excellent - 200+ debugging lessons |
-| .github/SHELL_CODE_PATTERNS.md | 2026-02-06 | 🟢 Pass | Excellent - critical POSIX knowledge |
-| .github/bootstrapping.md | 2026-02-06 | 🟢 Pass | Clear execution sequence |
-| .github/compiled-testing.md | 2026-02-06 | 🟢 Pass | Well-explained |
-| .github/copilot-instructions.md | 2026-02-06 | 🟢 Pass | Core AI instructions |
-| .github/glossary-and-function-architecture.md | 2026-02-06 | 🟢 Pass | Critical architecture doc |
-| .github/imps.md | 2026-02-06 | 🟢 Pass | Updated this session |
-| .github/interactive-spells.md | 2026-02-06 | 🟢 Pass | Excellent testing guidance |
-| .github/logging.md | 2026-02-06 | 🟢 Pass | Comprehensive output standards |
-| .github/spells.md | 2026-02-06 | 🟢 Pass | Thorough spell creation guide |
-| .github/test-performance.md | 2026-02-06 | 🟢 Pass | Useful profiling doc |
-| .github/testing-environment.md | 2026-02-06 | 🟢 Pass | Critical CI vs local differences |
-| .github/tests.md | 2026-02-06 | 🟢 Pass | Comprehensive testing guide |
-| .github/troubleshooting.md | 2026-02-06 | 🟢 Pass | Helpful diagnostic guide |
-
-**Summary:** All 22 GitHub documentation files pass. Documentation ecosystem is comprehensive, AI-optimized, and excellent.
-
----
-
-## Audit Methodology
-
-**Coverage:** 1,126/1,126 files (100%)
-
-**Thoroughness Distribution:**
-- 🎯 Exhaustive: ~10 files (critical infrastructure)
-- 🔍 Perused: ~120 files (complex implementations)
-- 📖 Read: ~900 files (standard review)
-- 👁️ Skimmed: ~96 files (simple, repetitive patterns)
-
-**Time Investment:** ~43.7 hours total
-- Phase 1: 45 min (5 critical files)
-- Phase 2: 95 min (20 representative files)
-- Phases 3-10: ~480 min (116 spells)
-- Phases 11-15: ~720 min (302 imps)
-- Phase 16: ~1,100 min (629 tests)
-- Phase 17: ~180 min (54 final files)
-
-**Quality Assurance:**
-- Every file individually opened and reviewed
-- Code patterns verified against project standards
-- Cross-references checked for consistency
-- Test coverage validated
-- Documentation accuracy confirmed
-
----
-
-## Repository Strengths
-
-1. **Test Infrastructure** ⭐⭐⭐ - 629/629 tests pass, comprehensive coverage, excellent patterns
-2. **Documentation** ⭐⭐⭐ - 22 GitHub docs covering all topics, AI-optimized, non-redundant
-3. **Code Quality** ⭐⭐ - 97.9% pass rate, consistent POSIX compliance, clean implementations
-4. **Standards** ⭐⭐⭐ - Clear engineering standards, documented patterns and anti-patterns
-
----
-
-## Recommendations
-
-### High Priority
-1. **Fix failing tutorials** - Refactor 11 broken tutorials to be executable POSIX sh scripts
-2. **Add tutorial tests** - Create `.tests/tutorials/` with execution validation to prevent regression
-
-### Medium Priority
-3. **Tutorial consistency** - Standardize on `printf` over `echo` in all educational content
-4. **Tutorial quality** - Bring early tutorials (00-22) up to quality level of later ones (23-29)
-
-### Low Priority
-5. **Minor fixes** - Fix README.md bash example, correct tutorial file numbering
-
----
-
-## Final Assessment
-
-**Repository Quality:** 🟢 **Excellent (A- grade)**
-
-**Breakdown:**
-- Production Code (spells/imps): 🟢 98.6% pass (412/418)
-- Test Infrastructure: 🟢 100% pass (629/629)
-- Documentation: 🟢 100% pass (22/22 GitHub docs)
-- Tutorials: 🟡 56.7% pass (13/29), needs improvement
-- **Overall: 🟢 97.9% pass (1,102/1,126)**
-
-**Audit Completed:** 2026-02-06  
-**Total Time:** ~43.7 hours  
-**Files Reviewed:** 1,126/1,126 (100%)  
-**Status:** ✅ COMPLETE
 
 ---
 
@@ -345,25 +1057,24 @@ All 302 imps audited across 20 families (app, cgi, cond, db, err, fmt, fs, git, 
 
 **For future audits:**
 
-1. **Do NOT append new audit log sections** (Phases 18, 19, etc.)
-2. **Instead, update the relevant table row** with:
+1. **Update the relevant table row** with:
    - New audit date in "Last Audit" column
    - Updated thoroughness level
-   - New result if changed
+   - New results in Code, Docs, Theme, Policy, Ethos columns
    - New issues or fixes if applicable
-3. **Update executive summary** with new statistics
-4. **Update critical issues and warnings sections** as needed
+2. **Update executive summary** with new statistics
+3. **Update critical issues and warnings sections** as needed
 
 **Example update for a file:**
 
 Before:
 ```
-| spells/arcane/copy | - | - | ⚪ N/A | Not yet audited |
+| spells/arcane/copy | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |
 ```
 
 After 2026-02-10 audit:
 ```
-| spells/arcane/copy | 2026-02-10 | 📖 Read | 🟢 Pass | None - clean file copy implementation |
+| spells/arcane/copy | 2026-02-10 | 📖 Read | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - clean file copy | - |
 ```
 
-See [AUDIT.md](AUDIT.md) for complete audit framework and instructions.
+See [AUDIT.md](AUDIT.md) for complete audit framework and column descriptions.
