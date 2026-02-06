@@ -1,0 +1,52 @@
+#!/bin/sh
+
+# Check if the site daemon is enabled on startup.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-site-daemon-enabled SITENAME
+
+Returns 0 if the site daemon is enabled on startup, 1 otherwise.
+
+Example: is-site-daemon-enabled mysite
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+site_name=${1-}
+if [ -z "$site_name" ]; then
+  die 2 "is-site-daemon-enabled: SITENAME required"
+fi
+
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+SITES_DIR="$WEB_ROOT"
+SITE_DIR="$SITES_DIR/$site_name"
+
+if [ ! -d "$SITE_DIR" ]; then
+  exit 1
+fi
+
+unit="wizardry-site-${site_name}.service"
+plist="/Library/LaunchDaemons/org.wizardry.web.${site_name}.plist"
+label="org.wizardry.web.${site_name}"
+
+if has systemctl; then
+  if systemctl is-enabled --quiet "$unit" 2>/dev/null; then
+    exit 0
+  fi
+  exit 1
+fi
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+  if [ -f "$plist" ] && launchctl list "$label" >/dev/null 2>&1; then
+    exit 0
+  fi
+  exit 1
+fi
+
+exit 1

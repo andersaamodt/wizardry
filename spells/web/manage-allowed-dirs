@@ -1,0 +1,156 @@
+#!/bin/sh
+
+# Manage allowlisted directories for a wizardry site.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: manage-allowed-dirs SITENAME
+
+Manage the per-site allowlist of directories that a site may access.
+
+Example: web-manage-allowed-dirs mysite
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+. colors
+
+site_name=${1-}
+if [ -z "$site_name" ]; then
+  die 2 "manage-allowed-dirs: SITENAME required"
+fi
+
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+SITES_DIR="$WEB_ROOT"
+SITE_DIR="$SITES_DIR/$site_name"
+ALLOWLIST_FILE="$SITE_DIR/site.allowlist"
+
+if [ ! -d "$SITE_DIR" ]; then
+  die "manage-allowed-dirs: site '$site_name' not found"
+fi
+
+site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '-' '_')"
+site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
+[ -z "$site_user" ] && site_user="$site_user_default"
+if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SITE_USER_REEXEC-}" ]; then
+  if has sudo; then
+    exec sudo -u "$site_user" -- env WIZARDRY_SITE_USER_REEXEC=1 "$0" "$site_name" "$@"
+  fi
+fi
+
+ensure_allowlist_file() {
+  if [ -f "$ALLOWLIST_FILE" ]; then
+    return 0
+  fi
+  cat > "$ALLOWLIST_FILE" <<'EOF'
+# List additional absolute paths this site may access.
+# One path per line. Lines starting with # are ignored.
+EOF
+}
+
+list_allowlist_entries() {
+  if [ ! -f "$ALLOWLIST_FILE" ]; then
+    return 0
+  fi
+  while IFS= read -r line || [ -n "$line" ]; do
+    line=$(printf '%s' "$line" | sed 's/#.*$//' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    [ -z "$line" ] && continue
+    printf '%s\n' "$line"
+  done < "$ALLOWLIST_FILE"
+}
+
+add_allowlist_entry() {
+  printf 'Enter absolute path to allow: '
+  read -r new_path || return 1
+  new_path=$(printf '%s' "$new_path" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+  if [ -z "$new_path" ]; then
+    warn "No path entered"
+    return 1
+  fi
+  case "$new_path" in
+    /*) ;;
+    *)
+      warn "Path must be absolute"
+      return 1
+      ;;
+  esac
+  if [ ! -e "$new_path" ]; then
+    warn "Path does not exist: $new_path"
+    return 1
+  fi
+  if list_allowlist_entries | grep -Fx "$new_path" >/dev/null 2>&1; then
+    warn "Path already allowlisted"
+    return 1
+  fi
+  printf '%s\n' "$new_path" >> "$ALLOWLIST_FILE"
+  success "Allowlisted: $new_path"
+  fix-site-security "$site_name"
+}
+
+remove_allowlist_entry() {
+  remove_path=$1
+  printf 'Remove %s? [y/N] ' "$remove_path"
+  read -r response || return 1
+  case "$response" in
+    [yY]|[yY][eE][sS])
+      ;;
+    *)
+      info "Cancelled"
+      return 0
+      ;;
+  esac
+
+  temp_file=$(temp-file allowlist)
+  if [ -f "$ALLOWLIST_FILE" ]; then
+    while IFS= read -r line || [ -n "$line" ]; do
+      trimmed=$(printf '%s' "$line" | sed 's/#.*$//' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+      if [ -n "$trimmed" ] && [ "$trimmed" = "$remove_path" ]; then
+        continue
+      fi
+      printf '%s\n' "$line" >> "$temp_file"
+    done < "$ALLOWLIST_FILE"
+    mv "$temp_file" "$ALLOWLIST_FILE"
+  else
+    cleanup-file "$temp_file"
+  fi
+  success "Removed: $remove_path"
+  fix-site-security "$site_name"
+}
+
+ensure_allowlist_file
+
+while true; do
+  entries=$(list_allowlist_entries || true)
+  if [ -z "$entries" ]; then
+    printf 'There are no items on the allowlist for site %s.\n' "$site_name"
+    printf 'Add one now? (Sites already have access to their sites and .sitedata folder by default.) [y/N] '
+    read -r response || exit 1
+    case "$response" in
+      [yY]|[yY][eE][sS])
+        add_allowlist_entry || true
+        ;;
+      *)
+        exit 0
+        ;;
+    esac
+    continue
+  fi
+
+  set -- "Add allowed dir%add_allowlist_entry" "---"
+  while IFS= read -r entry; do
+    set -- "$@" "$entry%remove_allowlist_entry \"$entry\""
+  done <<EOF
+$entries
+EOF
+  set -- "$@" "---" "$(exit-label)%kill -TERM \$PPID"
+  menu "${BOLD}${CYAN}Allowed dirs: $site_name${RESET}" "$@" || menu_status=$?
+  menu_status=${menu_status:-0}
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    exit 0
+  fi
+done
