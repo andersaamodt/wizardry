@@ -142,13 +142,22 @@ WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
 CGI_DIR="$WIZARDRY_DIR/spells/.imps/cgi"
 
 # Copy mime.types to local directory if not exists
+# Note: mime.types should be created by fix-site-security with proper permissions
+# We attempt creation here as fallback for testing or if file doesn't exist yet
 MIME_TYPES="$NGINX_CONF_DIR/mime.types"
 if [ ! -f "$MIME_TYPES" ]; then
-  if [ -f /etc/nginx/mime.types ]; then
-    cp /etc/nginx/mime.types "$MIME_TYPES"
-  else
-    # Create minimal mime.types if system one doesn't exist
-    cat > "$MIME_TYPES" <<'MIMETYPES'
+  # Call fix-site-security to ensure nginx/ has proper permissions and mime.types exists
+  if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ] && has fix-site-security; then
+    fix-site-security "$site_name" >/dev/null 2>&1 || true
+  fi
+  
+  # If still doesn't exist, try creating it
+  if [ ! -f "$MIME_TYPES" ]; then
+    if [ -f /etc/nginx/mime.types ]; then
+      cp /etc/nginx/mime.types "$MIME_TYPES" 2>/dev/null || true
+    else
+      # Create minimal mime.types if system one doesn't exist
+      cat > "$MIME_TYPES" 2>/dev/null <<'MIMETYPES' || true
 types {
     text/html                                        html htm shtml;
     text/css                                         css;
@@ -165,6 +174,7 @@ types {
     application/zip                                  zip;
 }
 MIMETYPES
+    fi
   fi
 fi
 

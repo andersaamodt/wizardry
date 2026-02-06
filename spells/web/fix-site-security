@@ -264,6 +264,33 @@ if [ -d "$SITE_DIR/nginx" ]; then
   run_priv mkdir -p "$SITE_DIR/nginx/temp/fastcgi"
   run_priv mkdir -p "$SITE_DIR/nginx/temp/uwsgi"
   run_priv mkdir -p "$SITE_DIR/nginx/temp/scgi"
+  
+  # Create mime.types if it doesn't exist
+  if [ ! -f "$SITE_DIR/nginx/mime.types" ]; then
+    if [ -f /etc/nginx/mime.types ]; then
+      run_priv cp /etc/nginx/mime.types "$SITE_DIR/nginx/mime.types"
+    else
+      # Create minimal mime.types
+      run_priv sh -c "cat > '$SITE_DIR/nginx/mime.types' <<'MIMETYPES'
+types {
+    text/html                                        html htm shtml;
+    text/css                                         css;
+    text/xml                                         xml;
+    image/gif                                        gif;
+    image/jpeg                                       jpeg jpg;
+    application/javascript                           js;
+    application/json                                 json;
+    text/plain                                       txt;
+    image/png                                        png;
+    image/svg+xml                                    svg svgz;
+    image/webp                                       webp;
+    application/pdf                                  pdf;
+    application/zip                                  zip;
+}
+MIMETYPES
+"
+    fi
+  fi
 fi
 set_secure_perms "$SITE_DIR/nginx"
 
