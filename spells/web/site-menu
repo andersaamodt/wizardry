@@ -179,8 +179,10 @@ while true; do
   wrap_cmd() {
     item_label=$1
     cmd=$2
-    # Escape label for safe storage, save to file
-    printf '%s; printf "%%s" "%s" > "$SELECTION_FILE"' "$cmd" "$item_label"
+    # Escape single quotes in label for safe embedding in shell command
+    safe_label=$(printf '%s' "$item_label" | sed "s/'/'\\\\''/g")
+    # Save label to file after command executes
+    printf "%s; printf '%%s' '%s' > \"\$SELECTION_FILE\"" "$cmd" "$safe_label"
   }
 
   # Build menu - original order preserved
