@@ -199,3 +199,6 @@
 - When debugging readline breakage, systematically strip features and rebuild incrementally - minimal version → add features one-by-one until breakage occurs, pinpointing exact culprit; this approach found listen's `eval "$(set +o)"` was the root cause after exhausting other hypotheses.
 - Check variable existence BEFORE unsetting it if needed for flow control - `unset var; if [ "$var" = "1" ]` always fails because var is now empty; check first, then unset, or unset inside each branch after the check.
 - nginx `server_name` must include `*.onion` wildcard for Tor hidden services - without it, nginx rejects requests with .onion Host headers even when Tor correctly forwards to the configured port.
+- Test files sourcing test-bootstrap don't need explicit `set -eu` - test-bootstrap already provides strict mode globally for all tests.
+- Older code shows better discipline than newer code - oldest imps (cond, fs, input families) have 100% zero functions, 100% flat execution, 94% pass rate; maintain this quality standard in all new code.
+- CGI imps can be large (100-300+ lines) and have functions - they're non-user-facing server endpoints, not traditional small helpers; size and function limits don't apply to `.imps/cgi/*` files.
