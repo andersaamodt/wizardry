@@ -12,24 +12,22 @@ site_root=$(get-site-data-dir "..")
 site_config="$site_root/site.conf"
 
 # Default values
-registration_enabled="true"
-site_title="My Blog"
+registration_enabled=$(config-get "$site_config" registration_enabled 2>/dev/null || echo "")
+site_title=$(config-get "$site_config" site_title 2>/dev/null || echo "")
+theme=$(config-get "$site_config" theme 2>/dev/null || echo "")
 
-# Read config if exists
-if [ -f "$site_config" ]; then
-  reg_val=$(grep -E "^registration_enabled=" "$site_config" \
-    | cut -d= -f2 2>/dev/null || echo "")
-  if [ -n "$reg_val" ]; then
-    registration_enabled="$reg_val"
-  fi
-  
-  title_val=$(grep -E "^site_title=" "$site_config" \
-    | cut -d= -f2- 2>/dev/null || echo "")
-  if [ -n "$title_val" ]; then
-    site_title="$title_val"
-  fi
+if [ -z "$registration_enabled" ]; then
+  registration_enabled="true"
+fi
+
+if [ -z "$site_title" ]; then
+  site_title="My Blog"
+fi
+
+if [ -z "$theme" ]; then
+  theme="archmage"
 fi
 
 # Return config
-printf '{"success":true,"registration_enabled":%s,"site_title":"%s"}\n' \
-  "$registration_enabled" "$site_title"
+printf '{"success":true,"registration_enabled":%s,"site_title":"%s","theme":"%s"}\n' \
+  "$registration_enabled" "$site_title" "$theme"

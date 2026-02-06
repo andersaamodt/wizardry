@@ -11,6 +11,7 @@ http-end-headers
 session_token=$(get-query-param "session_token")
 registration_enabled=$(get-query-param "registration_enabled")
 site_title=$(get-query-param "site_title")
+theme=$(get-query-param "theme")
 
 # Validate session
 if [ -z "$session_token" ]; then
@@ -50,13 +51,16 @@ site_root=$(get-site-data-dir "..")
 site_config="$site_root/site.conf"
 
 # Create or update config file
-{
-  if [ -n "$registration_enabled" ]; then
-    printf 'registration_enabled=%s\n' "$registration_enabled"
-  fi
-  if [ -n "$site_title" ]; then
-    printf 'site_title=%s\n' "$site_title"
-  fi
-} > "$site_config"
+if [ -n "$registration_enabled" ]; then
+  config-set "$site_config" registration_enabled "$registration_enabled"
+fi
+
+if [ -n "$site_title" ]; then
+  config-set "$site_config" site_title "$site_title"
+fi
+
+if [ -n "$theme" ]; then
+  config-set "$site_config" theme "$theme"
+fi
 
 printf '{"success":true,"message":"Configuration updated"}\n'

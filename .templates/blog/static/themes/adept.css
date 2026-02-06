@@ -1,0 +1,19 @@
+:root {
+  --primary: #334155;
+  --accent: #64748b;
+  --accent-dark: #475569;
+  --teal: #0ea5e9;
+  --green: #22d3ee;
+  --purple: #475569;
+  --violet: #bae6fd;
+  --text: #0f172a;
+  --light-text: #475569;
+  --border: #cbd5e1;
+  --bg: #f8fafc;
+  --light-bg: #e2e8f0;
+  --code-bg: #e2e8f0;
+  --shadow: rgba(15, 23, 42, 0.12);
+  --nav-link-hover: #e0e7ff;
+  --nav-link-active: #0ea5e9;
+  --nav-icon: #0ea5e9;
+}

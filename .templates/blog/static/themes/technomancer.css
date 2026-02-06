@@ -1,0 +1,21 @@
+:root {
+  --primary: #0a0f0d;
+  --accent: #22c55e;
+  --accent-dark: #16a34a;
+  --teal: #00bfff;
+  --green: #22c55e;
+  --purple: #0f172a;
+  --violet: #38bdf8;
+  --text: #00a000;
+  --light-text: #00a000;
+  --heading-color: #00a000;
+  --font-family: 'Courier New', Courier, monospace;
+  --border: #00bfff;
+  --bg: #0a0f0d;
+  --light-bg: #0f1a15;
+  --code-bg: #0f1a15;
+  --shadow: rgba(14, 165, 233, 0.25);
+  --nav-link-hover: #183e2b;
+  --nav-link-active: #22c55e;
+  --nav-icon: #00bfff;
+}
