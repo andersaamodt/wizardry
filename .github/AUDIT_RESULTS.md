@@ -145,10 +145,10 @@ This table shows all files in the repository with their audit results. Files are
 | spells/menu/system-menu | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/menu/thesaurus | 2026-02-06 18:00 | 🔍 Perused | 🟡 | �� | 🟢 | 🟢 | 🟢 | 🟢 | Lines 21-25 unusual WIZARDRY_DIR setup; duplicated synonym parsing logic (could abstract to imp); otherwise excellent thesaurus metaphor for alias management | - |
 | spells/menu/users-menu | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/mud/boot-player | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/mud/check-cd-hook | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/mud/choose-player | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/mud/decorate | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/mud/boot-player | 2026-02-06 18:40 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | Excellent MUD spell with confirmation, fallback unmount, proper theming. Has list_connected_players() function for menu building (exempted pattern). | - |
+| spells/mud/check-cd-hook | 2026-02-06 18:40 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | Clean conditional spell, proper exit codes, good RC file detection with fallbacks. Minimal theming appropriate for conditional check. | - |
+| spells/mud/choose-player | 2026-02-06 18:41 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | Clean player selection menu from SSH keys. Good validation, proper set -- pattern, appropriate MUD theming. | - |
+| spells/mud/decorate | 2026-02-06 18:42 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | Sophisticated enchant wrapper with flexible arg parsing (path/desc any order), multi-word support, good error handling. Perfect MUD theming. | - |
 | spells/mud/demo-multiplayer | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/mud/greater-heal | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/mud/heal | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
