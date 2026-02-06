@@ -1103,7 +1103,7 @@ function updateConnectionStatus(status, isClickable) {
       void statusElement.offsetHeight;
       
       // Wait for fade out (150ms - half of transition duration)
-      setTimeout(function() {
+      window.sseStatusTransitionTimeout = setTimeout(function() {
         // Set text with spinner while invisible
         setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
         
@@ -1112,6 +1112,7 @@ function updateConnectionStatus(status, isClickable) {
         
         // Clear inline opacity to trigger fade in via CSS transition
         statusElement.style.opacity = '';
+        window.sseStatusTransitionTimeout = null;
       }, 150);
       
       statusElement.classList.add('visible');
@@ -1141,9 +1142,6 @@ function updateConnectionStatus(status, isClickable) {
     var wasReconnecting = !statusElement.classList.contains('connection-lost') && 
                           statusElement.textContent.indexOf('Reconnecting') !== -1;
     
-    // Add connection-lost class for styling
-    statusElement.classList.add('connection-lost');
-    
     if (wasReconnecting) {
       // Crossfade from Reconnecting to Disconnected
       // First fade out by setting opacity to 0
@@ -1153,7 +1151,10 @@ function updateConnectionStatus(status, isClickable) {
       void statusElement.offsetHeight;
       
       // Wait for fade out (150ms - half of transition duration)
-      setTimeout(function() {
+      window.sseStatusTransitionTimeout = setTimeout(function() {
+        // Add connection-lost class for styling (pill background)
+        statusElement.classList.add('connection-lost');
+        
         // Change content while invisible
         statusElement.textContent = 'Disconnected';
         
@@ -1162,10 +1163,14 @@ function updateConnectionStatus(status, isClickable) {
         
         // Clear inline opacity to trigger fade in via CSS transition
         statusElement.style.opacity = '';
+        window.sseStatusTransitionTimeout = null;
       }, 150);
       
       statusElement.classList.add('visible');
     } else {
+      // Add connection-lost class for styling
+      statusElement.classList.add('connection-lost');
+      
       // Set content immediately for non-crossfade cases
       statusElement.textContent = 'Disconnected';
       
@@ -1186,6 +1191,12 @@ function updateConnectionStatus(status, isClickable) {
     statusElement.onmouseover = function(e) {
       // Check if we're entering from outside the element
       if (!this.contains(e.relatedTarget)) {
+        // Clear any pending crossfade transition
+        if (window.sseStatusTransitionTimeout) {
+          clearTimeout(window.sseStatusTransitionTimeout);
+          window.sseStatusTransitionTimeout = null;
+        }
+        
         if (this.textContent === 'Disconnected') {
           this.textContent = 'Retry';
         }
