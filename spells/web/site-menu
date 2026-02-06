@@ -178,10 +178,11 @@ while true; do
   fi
 
   # Helper to wrap command with selection memory (entry_index is passed as arg)
+  # Note: $SELECTION_FILE is exported, so it expands at runtime (not at menu construction)
   wrap_cmd() {
     entry_index=$1
     cmd=$2
-    printf '%s; echo %s > "%s"' "$cmd" "$entry_index" "$SELECTION_FILE"
+    printf '%s; echo %s > "$SELECTION_FILE"' "$cmd" "$entry_index"
   }
 
   if [ "$is_serving" -eq 1 ]; then
