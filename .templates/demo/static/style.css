@@ -1337,8 +1337,7 @@ pre code {
   vertical-align: middle;
 }
 
-/* Grey spinner for connecting status in input area */
-/* Transform Isolation Strategy: separate centering from rotation to prevent wiggle */
+/* Spinner using SVG mask for pixel-perfect rendering */
 .spinner-grey {
   display: inline-block;
   width: 16px;
@@ -1349,40 +1348,20 @@ pre code {
   position: relative;
 }
 
-/* Outer wrapper: owns positioning/centering only (static transform) */
-.spinner-grey::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);  /* Static centering - never animated */
-  width: 16px;  /* Even dimension to avoid fractional centering */
-  height: 16px;  /* Even dimension to avoid fractional centering */
-}
-
-/* Inner element: owns rotation only (animated transform) */
 .spinner-grey::before {
   content: '';
   display: block;
-  position: absolute;
-  left: 50%;
-  top: 50%;
   width: 16px;
   height: 16px;
-  box-sizing: border-box;  /* Keeps geometry stable */
-  border: 2px solid rgba(128, 128, 128, 0.2);  /* Even border-width */
-  border-top-color: #666;
-  border-radius: 50%;
-  transform-origin: 50% 50%;  /* Explicit pivot - prevents wobble */
-  will-change: transform;  /* Hint compositor */
-  backface-visibility: hidden;  /* Reduces shimmer/artifacts */
-  animation: spin 0.7s linear infinite;  /* 700ms per research */
-  transform: translate(-50%, -50%);  /* Static centering on inner element */
+  background: conic-gradient(from 0deg, transparent 0%, transparent 75%, #666 75%, #666 100%);
+  -webkit-mask: radial-gradient(circle, transparent 0%, transparent 55%, black 56%, black 100%);
+  mask: radial-gradient(circle, transparent 0%, transparent 55%, black 56%, black 100%);
+  animation: spinner-rotate 0.7s linear infinite;
 }
 
-@keyframes spin {
-  to {
-    transform: translate(-50%, -50%) rotate(360deg);  /* Rotation only, centering stays static */
+@keyframes spinner-rotate {
+  100% {
+    transform: rotate(360deg);
   }
 }
 
