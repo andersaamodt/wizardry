@@ -331,14 +331,11 @@ while true; do
     open_data_cmd="$open_data_cmd read -r dummy; }"
     cmd4=$(wrap_cmd "$entry_index" "$open_data_cmd")
     # --- separator
-    entry_index=$((entry_index + 1))  # Increment for separator
-    # No restart/stop options when not serving
-    # Account for missing "Open in browser" (serving only)
-    entry_index=$((entry_index + 1))
-    # Account for missing "Restart server" (serving only)
-    entry_index=$((entry_index + 1))
-    # Now "Start server" aligns with "Stop server" from serving branch
-    cmd5=$(wrap_cmd "$entry_index" "serve-site \"$site_name\"")
+    entry_index=$((entry_index + 1))  # Increment for first separator (6)
+    entry_index=$((entry_index + 1))  # Increment for second separator (7)
+    entry_index=$((entry_index + 1))  # Increment to position 8 for "Start server"
+    # Now "Start server" aligns with "Stop server" from serving branch (position 8)
+    cmd5=$(wrap_cmd "$entry_index" "serve-site \"$site_name\"")  # Index 8
     entry_index=$((entry_index + 1))
     cmd6=$(wrap_cmd "$entry_index" "build \"$site_name\"")
     entry_index=$((entry_index + 1))
@@ -394,6 +391,7 @@ while true; do
       ${copy_site_onion:+"$copy_site_onion"} \
       "Open site directory%$cmd3" \
       "Open site data%$cmd4" \
+      "---" \
       "---" \
       "Start server%$cmd5" \
       "Build%$cmd6" \
