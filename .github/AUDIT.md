@@ -283,8 +283,10 @@ The audit results are maintained in a separate file to keep the rubric document 
 - 🟢 **Pass** - Meets all applicable standards
 - 🟡 **Warning** - Minor issues or needs attention  
 - 🔴 **Fail** - Significant issues requiring fixes
-- ⚪ **N/A** - Not applicable to this file type
+- ⚪ **Grey/Pre-Audit** - Not yet reviewed (or explicitly "N/A" in rare cases)
 - 🔧 **Fixed** - Issue was resolved in this audit iteration
+
+**Important:** Grey dots (⚪) primarily mean "not yet audited." Explicitly write "N/A" in the Issues column if something truly doesn't apply. However, **aim to fill in all columns** - most categories apply to most files when interpreted correctly (e.g., Theme evaluates *appropriateness* of theming, not just presence).
 
 ### Table Structure (in AUDIT_RESULTS.md)
 
@@ -309,11 +311,71 @@ The AUDIT_RESULTS.md document is organized as follows:
 4. **Result** - Overall audit result: 🟢 Pass | 🟡 Warning | 🔴 Fail | ⚪ N/A (worst of all categories)
 5. **Code** - Code Quality: Sections 7 (POSIX), 12-13 (Eng. Standards), 19 (Quality Metrics), 4 (Functions)
 6. **Docs** - Comment Quality: Section 6 (Didacticism), opening comments, help text
-7. **Theme** - Theming: Section 15 (Theming & Flavor), appropriate MUD vocabulary
+7. **Theme** - Theming Appropriateness: Section 15 (Theming & Flavor), evaluates whether magical/MUD vocabulary is used at the *appropriate* level for the file type (see Theme Guidelines below)
 8. **Policy** - No Policy Violations: Sections 3 (No Globals), 9-11 (Values/Policies/Tenets), 17 (Security)
 9. **Ethos** - Holistic/Intuitive Alignment: Overall "feel" and spiritual fit with project values (see below)
 10. **Issues** - Specific problems found, or "None" if file passes all checks
 11. **Fixes** - Changes made (🔧 indicates fixes applied in this iteration)
+
+### The Theme Column: Theming Appropriateness
+
+**Theme** evaluates whether magical/MUD vocabulary is used at the *appropriate* level for each file type. This column applies to **ALL files** - it's not about whether the file IS themed, but whether it's themed at the RIGHT level.
+
+**The Golden Rule:**
+Use magical language only when it is **truly apt** - poetically, abstractly, structurally, or analogically appropriate. Not everything needs heavy theming; the art is knowing when and how much.
+
+**Theming Guidelines by File Type:**
+
+**MUD Output (Heavy Theming)** 🎭
+- User-facing output from MUD spells should be richly themed
+- Use vocabulary like: teleport, banish, enchantment, chamber, lore, cast
+- Examples: "You teleport to...", "Recent Activity", "An ordinary room"
+- **Pass (🟢):** Rich, immersive MUD vocabulary in output
+- **Warning (🟡):** Mechanical or sparse theming where richness would help
+- **Fail (🔴):** Breaks immersion with non-magical language in MUD context
+
+**Spell Output Text (Medium Theming)** ✨
+- Regular spell output should use moderate magical vocabulary when apt
+- Balance between utility and whimsy
+- Examples: "banish files to trash" vs "delete files"
+- **Pass (🟢):** Thoughtful use of themed language where appropriate
+- **Warning (🟡):** Overly dry OR gratuitously magical
+- **Fail (🔴):** Misuse of magical language that obscures meaning
+
+**Spell Comments (Light Theming)** 💭
+- Comments should be lightly themed where appropriate
+- Primary goal: clarity and education
+- Examples: "This spell...", "incantation", acceptable to also be plain
+- **Pass (🟢):** Clear comments with light theming that doesn't impede understanding
+- **Warning (🟡):** Either too heavily themed (obscures) or no theming in spell names/descriptions
+- **Fail (🔴):** Theming actively confuses or misrepresents functionality
+
+**Imp Comments (Functional/Minimal)** 🔧
+- Imps are brief utilities - comments should be functional, not themed
+- Focus: what it does, how to call it
+- Examples: "Returns exit code 0 if..." (functional, good)
+- **Pass (🟢):** Clear, functional comments; minimal or no theming
+- **Warning (🟡):** Overly magical language that obscures the utility's purpose
+- **Fail (🔴):** Unclear due to excessive theming
+
+**Documentation Files (Contextual)** 📚
+- README, tutorials: balance engagement with clarity
+- Technical docs: clarity over theming
+- MUD tutorials: can be more heavily themed
+- **Pass (🟢):** Appropriate theming level for document's purpose
+- **Warning (🟡):** Theming level mismatched with audience/purpose
+- **Fail (🔴):** Theming obscures technical content or breaks professional tone
+
+**Configuration Files (None/Minimal)** ⚙️
+- Config files, .gitignore, etc.: functional, no theming needed
+- **Pass (🟢):** Functional and clear (no theming required)
+- **Fail (🔴):** Gratuitous theming in configs
+
+**Scoring Summary:**
+- 🟢 **Appropriate** - Theming level matches file type and purpose perfectly
+- 🟡 **Mismatched** - Too much or too little theming for context
+- 🔴 **Inappropriate** - Theming actively harms clarity or professionalism
+- ⚪ **Pre-audit** - Not yet evaluated (avoid using "N/A")
 
 ### The Ethos Column
 
@@ -332,7 +394,7 @@ The AUDIT_RESULTS.md document is organized as follows:
 - 🟢 **Strong Ethos** - Exemplifies project values, feels "right", inspires
 - 🟡 **Weak Ethos** - Technically correct but soulless, mechanical, or misaligned with spirit
 - 🔴 **Poor Ethos** - Actively contradicts project philosophy or feels foreign/wrong
-- ⚪ **N/A** - Not applicable (e.g., generated files, external dependencies)
+- ⚪ **Pre-audit** - Not yet evaluated (nearly all files should receive an Ethos score)
 
 **Examples:**
 - A spell with perfect POSIX compliance (Code 🟢) but dry, imperative error messages (Ethos 🟡)
