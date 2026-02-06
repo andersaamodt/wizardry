@@ -208,20 +208,46 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && ! group_exists "$site_group"; the
 fi
 
 run_priv mkdir -p "$SITES_DIR/.sitedata" "$SITE_DATA_DIR"
-run_priv chown -R "$site_user":"$site_group" "$SITE_DIR"
+run_priv mkdir -p "$SITE_DIR/build" "$SITE_DIR/nginx"
+
+# Create .web-libs directory if it doesn't exist and make it writable by site user
+if [ ! -d "$SITE_DIR/.web-libs" ]; then
+  mkdir -p "$SITE_DIR/.web-libs" 2>/dev/null || run_priv mkdir -p "$SITE_DIR/.web-libs"
+fi
+run_priv chown -R "$site_user":"$site_group" "$SITE_DIR/.web-libs" 2>/dev/null || true
+run_priv chmod -R 755 "$SITE_DIR/.web-libs" 2>/dev/null || true
+
+# Only change ownership of build and nginx directories to site user
+# Keep source files (site/, site.conf, etc.) owned by the actual user
+run_priv chown -R "$site_user":"$site_group" "$SITE_DIR/build"
+run_priv chown -R "$site_user":"$site_group" "$SITE_DIR/nginx"
 run_priv chown -R "$site_user":"$site_group" "$SITE_DATA_DIR"
 
-set_secure_perms "$SITE_DIR"
+# Set permissions on build/nginx directories - site user needs write access
+set_secure_perms "$SITE_DIR/build"
+set_secure_perms "$SITE_DIR/nginx"
 set_secure_perms "$SITE_DATA_DIR"
+
+# Ensure site directory itself is accessible (755)
+if [ -d "$SITE_DIR" ]; then
+  run_priv chmod 755 "$SITE_DIR"
+fi
+
+# Ensure source directories are readable by site user (755 for dirs, 644 for files)
+if [ -d "$SITE_DIR/site" ]; then
+  run_priv find "$SITE_DIR/site" -type d -exec chmod 755 {} + 2>/dev/null || true
+  run_priv find "$SITE_DIR/site" -type f -exec chmod 644 {} + 2>/dev/null || true
+fi
+
 apply_allowlist
 
 if [ -f "$ALLOWLIST_FILE" ]; then
-  run_priv chown "$site_user":"$site_group" "$ALLOWLIST_FILE"
-  run_priv chmod 640 "$ALLOWLIST_FILE"
+  # Keep allowlist owned by actual user but readable by site user
+  run_priv chmod 644 "$ALLOWLIST_FILE"
 fi
 
 if [ -f "$SITE_CONFIG" ]; then
-  run_priv chown "$site_user":"$site_group" "$SITE_CONFIG"
+  # Keep config owned by actual user but readable by site user
   run_priv chmod 644 "$SITE_CONFIG"
 fi
 

@@ -57,9 +57,12 @@ site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
 [ -z "$site_user" ] && site_user="$site_user_default"
 if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SITE_USER_REEXEC-}" ]; then
   if has sudo; then
+    # Pass WIZARDRY_WEB_JS_DIR to ensure web libs are installed in site directory
     exec sudo -u "$site_user" -- \
       env WIZARDRY_SITE_USER_REEXEC=1 WIZARDRY_DIR="$WIZARDRY_DIR" \
-      WIZARDRY_SITES_DIR="$WEB_ROOT" "$0" "$site_name" "$@"
+      WIZARDRY_SITES_DIR="$WEB_ROOT" \
+      WIZARDRY_WEB_JS_DIR="$SITE_DIR/.web-libs/js" \
+      "$0" "$site_name" "$@"
   fi
 fi
 

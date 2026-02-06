@@ -63,26 +63,35 @@ fi
 site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '-' '_')"
 site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
 [ -z "$site_user" ] && site_user="$site_user_default"
-if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SITE_USER_REEXEC-}" ]; then
-  can_sudo=0
-  if [ "$(id -u)" -eq 0 ] && has sudo; then
-    can_sudo=1
-  fi
-  if ! id -u "$site_user" >/dev/null 2>&1; then
-    warn "site-menu: This site's user, $site_user, is missing. You can repair this with \"Repair permissions\"."
-  fi
-  if id -u "$site_user" >/dev/null 2>&1; then
-    if [ "$can_sudo" -eq 1 ]; then
-      exec sudo -u "$site_user" -- env WIZARDRY_SITE_USER_REEXEC=1 "$0" "$site_name" "$@"
-    fi
-  fi
+
+# Note: We don't re-exec as site user here - individual commands will use sudo if needed
+# This allows "Open site directory" and "Open site data" to work as the actual user
+if [ -n "$site_user" ] && ! id -u "$site_user" >/dev/null 2>&1; then
+  warn "site-menu: This site's user, $site_user, is missing."
+  warn "site-menu: You can repair this with \"Fix permissions\"."
 fi
 
-# Catch Ctrl-C and TERM signal to exit cleanly
-trap 'exit 130' INT
-trap 'exit 0' TERM
+# Use temp file for selection tracking (same pattern as core-menu)
+SELECTION_FILE=$(temp-file site-menu-selection)
+export SELECTION_FILE
+
+# Catch Ctrl-C and TERM signal to exit cleanly and clean up
+trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true; exit 130' INT
+trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true; exit 0' TERM
+trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true' EXIT
 
 while true; do
+  # Read last selected position from temp file, default to 1
+  if [ -f "$SELECTION_FILE" ]; then
+    start_selection=$(cat "$SELECTION_FILE" 2>/dev/null || printf '1')
+    # Handle empty file
+    if [ -z "$start_selection" ]; then
+      start_selection=1
+    fi
+  else
+    start_selection=1
+  fi
+  
   # Build menu based on site status
   status=$(site-status "$site_name")
   
@@ -167,59 +176,229 @@ while true; do
   if [ ! -f "$daemon_artifact" ]; then
     daemon_label="Create server daemon"
   fi
+  
+  # Helper to wrap command with selection memory (entry_index is passed as arg)
+  wrap_cmd() {
+    entry_index=$1
+    cmd=$2
+    printf '%s; echo %s > "%s"' "$cmd" "$entry_index" "$SELECTION_FILE"
+  }
 
   if [ "$is_serving" -eq 1 ]; then
+    entry_index=0
+    entry_index=$((entry_index + 1))
+    open_browser_cmd="command -v xdg-open >/dev/null 2>&1"
+    open_browser_cmd="$open_browser_cmd && xdg-open http://localhost:$port"
+    open_browser_cmd="$open_browser_cmd || command -v open >/dev/null 2>&1"
+    open_browser_cmd="$open_browser_cmd && open http://localhost:$port"
+    open_browser_cmd="$open_browser_cmd || printf 'Visit: http://localhost:$port\n'"
+    cmd1=$(wrap_cmd "$entry_index" "$open_browser_cmd")
+    entry_index=$((entry_index + 1))
+    build_restart_cmd="build \"$site_name\" --full"
+    build_restart_cmd="$build_restart_cmd && stop-site \"$site_name\""
+    build_restart_cmd="$build_restart_cmd && serve-site \"$site_name\""
+    cmd2=$(wrap_cmd "$entry_index" "$build_restart_cmd")
+    entry_index=$((entry_index + 1))
+    cmd3=$(wrap_cmd "$entry_index" "update-from-template \"$site_name\"")
+    if [ -n "$copy_site_onion" ]; then
+      entry_index=$((entry_index + 1))
+      copy_cmd_wrapped=$(wrap_cmd "$entry_index" \
+        "$(printf '%s' "$copy_site_onion" | cut -d% -f2-)")
+      copy_site_onion="Copy .onion address%$copy_cmd_wrapped"
+    fi
+    entry_index=$((entry_index + 1))
+    cmd4=$(wrap_cmd "$entry_index" "cd \"$SITE_DIR\" && exec \$SHELL")
+    entry_index=$((entry_index + 1))
+    open_data_cmd="[ -d \"$SITE_DATA_DIR\" ]"
+    open_data_cmd="$open_data_cmd && cd \"$SITE_DATA_DIR\" && exec \$SHELL"
+    open_data_cmd="$open_data_cmd || { printf 'No site data yet"
+    open_data_cmd="$open_data_cmd (will be created when needed)\\n';"
+    open_data_cmd="$open_data_cmd read -r dummy; }"
+    cmd5=$(wrap_cmd "$entry_index" "$open_data_cmd")
+    # --- separator
+    entry_index=$((entry_index + 1))
+    cmd6=$(wrap_cmd "$entry_index" "build \"$site_name\"")
+    entry_index=$((entry_index + 1))
+    cmd7=$(wrap_cmd "$entry_index" "build \"$site_name\" --full")
+    entry_index=$((entry_index + 1))
+    cmd8=$(wrap_cmd "$entry_index" \
+      "stop-site \"$site_name\" && serve-site \"$site_name\"")
+    entry_index=$((entry_index + 1))
+    cmd9=$(wrap_cmd "$entry_index" "stop-site \"$site_name\"")
+    # --- separator
+    if [ -n "$tor_hosting_option" ]; then
+      entry_index=$((entry_index + 1))
+      tor_cmd_wrapped=$(wrap_cmd "$entry_index" \
+        "$(printf '%s' "$tor_hosting_option" | cut -d% -f2-)")
+      tor_label=$(printf '%s' "$tor_hosting_option" | cut -d% -f1)
+      tor_hosting_option="${tor_label}%$tor_cmd_wrapped"
+    fi
+    if [ -n "$serve_on_startup_option" ]; then
+      entry_index=$((entry_index + 1))
+      startup_cmd_wrapped=$(wrap_cmd "$entry_index" \
+        "$(printf '%s' "$serve_on_startup_option" | cut -d% -f2-)")
+      startup_label=$(printf '%s' "$serve_on_startup_option" | cut -d% -f1)
+      serve_on_startup_option="${startup_label}%$startup_cmd_wrapped"
+    fi
+    entry_index=$((entry_index + 1))
+    cmd10=$(wrap_cmd "$entry_index" "change-site-port \"$site_name\"")
+    if [ -n "$https_option" ]; then
+      entry_index=$((entry_index + 1))
+      https_cmd_wrapped=$(wrap_cmd "$entry_index" \
+        "$(printf '%s' "$https_option" | cut -d% -f2-)")
+      https_label=$(printf '%s' "$https_option" | cut -d% -f1)
+      https_option="${https_label}%$https_cmd_wrapped"
+    fi
+    if [ -n "$https_disable_option" ]; then
+      entry_index=$((entry_index + 1))
+      https_disable_cmd_wrapped=$(wrap_cmd "$entry_index" \
+        "$(printf '%s' "$https_disable_option" | cut -d% -f2-)")
+      https_disable_label=$(printf '%s' "$https_disable_option" | cut -d% -f1)
+      https_disable_option="${https_disable_label}%$https_disable_cmd_wrapped"
+    fi
+    entry_index=$((entry_index + 1))
+    cmd11=$(wrap_cmd "$entry_index" "configure-nginx \"$site_name\"")
+    entry_index=$((entry_index + 1))
+    cmd12=$(wrap_cmd "$entry_index" "repair-site-daemon \"$site_name\"")
+    entry_index=$((entry_index + 1))
+    cmd13=$(wrap_cmd "$entry_index" "fix-site-security \"$site_name\"")
+    entry_index=$((entry_index + 1))
+    cmd14=$(wrap_cmd "$entry_index" "manage-allowed-dirs \"$site_name\"")
+    entry_index=$((entry_index + 1))
+    cmd15=$(wrap_cmd "$entry_index" "delete-site \"$site_name\"")
+    entry_index=$((entry_index + 1))
+    cmd_exit=$(wrap_cmd "$entry_index" "kill -TERM \$PPID")
+    
     set -- \
-      "Open in browser%command -v xdg-open >/dev/null 2>&1 && xdg-open http://localhost:$port || command -v open >/dev/null 2>&1 && open http://localhost:$port || printf 'Visit: http://localhost:$port\n'" \
-      "Build All & Restart Server%build \"$site_name\" --full && stop-site \"$site_name\" && serve-site \"$site_name\"" \
-      "Update from template%update-from-template \"$site_name\"" \
+      "Open in browser%$cmd1" \
+      "Build All & Restart Server%$cmd2" \
+      "Update from template%$cmd3" \
       ${copy_site_onion:+"$copy_site_onion"} \
-      "Open site directory%cd \"$SITE_DIR\" && exec \$SHELL" \
-      "Open site data%[ -d \"$SITE_DATA_DIR\" ] && cd \"$SITE_DATA_DIR\" && exec \$SHELL || { printf 'No site data yet (will be created when needed)\\n'; read -r dummy; }" \
+      "Open site directory%$cmd4" \
+      "Open site data%$cmd5" \
       "---" \
-      "Build%build \"$site_name\"" \
-      "Build All%build \"$site_name\" --full" \
-      "Restart server%stop-site \"$site_name\" && serve-site \"$site_name\"" \
-      "Stop server%stop-site \"$site_name\"" \
+      "Build%$cmd6" \
+      "Build All%$cmd7" \
+      "Restart server%$cmd8" \
+      "Stop server%$cmd9" \
       "---" \
       ${tor_hosting_option:+"$tor_hosting_option"} \
       ${serve_on_startup_option:+"$serve_on_startup_option"} \
-      "Change port (current: $port)%change-site-port \"$site_name\"" \
+      "Change port (current: $port)%$cmd10" \
       ${https_option:+"$https_option"} \
       ${https_disable_option:+"$https_disable_option"} \
-      "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
-      "$daemon_label%repair-site-daemon \"$site_name\"" \
-      "Fix permissions%fix-site-security \"$site_name\"" \
-      "Manage allowed dirs%manage-allowed-dirs \"$site_name\"" \
-      "Delete site%delete-site \"$site_name\"" \
-      "${exit_label}%kill -TERM \$PPID"
+      "Rebuild nginx.conf%$cmd11" \
+      "$daemon_label%$cmd12" \
+      "Fix permissions%$cmd13" \
+      "Manage allowed dirs%$cmd14" \
+      "Delete site%$cmd15" \
+      "${exit_label}%$cmd_exit"
   else
+    entry_index=0
+    entry_index=$((entry_index + 1))
+    build_restart_cmd="build \"$site_name\" --full"
+    build_restart_cmd="$build_restart_cmd && stop-site \"$site_name\""
+    build_restart_cmd="$build_restart_cmd && serve-site \"$site_name\""
+    cmd1=$(wrap_cmd "$entry_index" "$build_restart_cmd")
+    entry_index=$((entry_index + 1))
+    cmd2=$(wrap_cmd "$entry_index" "update-from-template \"$site_name\"")
+    if [ -n "$copy_site_onion" ]; then
+      entry_index=$((entry_index + 1))
+      copy_cmd_wrapped=$(wrap_cmd "$entry_index" \
+        "$(printf '%s' "$copy_site_onion" | cut -d% -f2-)")
+      copy_site_onion="Copy .onion address%$copy_cmd_wrapped"
+    fi
+    entry_index=$((entry_index + 1))
+    cmd3=$(wrap_cmd "$entry_index" "cd \"$SITE_DIR\" && exec \$SHELL")
+    entry_index=$((entry_index + 1))
+    open_data_cmd="[ -d \"$SITE_DATA_DIR\" ]"
+    open_data_cmd="$open_data_cmd && cd \"$SITE_DATA_DIR\" && exec \$SHELL"
+    open_data_cmd="$open_data_cmd || { printf 'No site data yet"
+    open_data_cmd="$open_data_cmd (will be created when needed)\\n';"
+    open_data_cmd="$open_data_cmd read -r dummy; }"
+    cmd4=$(wrap_cmd "$entry_index" "$open_data_cmd")
+    # --- separator
+    entry_index=$((entry_index + 1))
+    cmd5=$(wrap_cmd "$entry_index" "build \"$site_name\"")
+    entry_index=$((entry_index + 1))
+    cmd6=$(wrap_cmd "$entry_index" "build \"$site_name\" --full")
+    entry_index=$((entry_index + 1))
+    cmd7=$(wrap_cmd "$entry_index" \
+      "stop-site \"$site_name\" && serve-site \"$site_name\"")
+    entry_index=$((entry_index + 1))
+    cmd8=$(wrap_cmd "$entry_index" "serve-site \"$site_name\"")
+    # --- separator
+    if [ -n "$tor_hosting_option" ]; then
+      entry_index=$((entry_index + 1))
+      tor_cmd_wrapped=$(wrap_cmd "$entry_index" \
+        "$(printf '%s' "$tor_hosting_option" | cut -d% -f2-)")
+      tor_label=$(printf '%s' "$tor_hosting_option" | cut -d% -f1)
+      tor_hosting_option="${tor_label}%$tor_cmd_wrapped"
+    fi
+    if [ -n "$serve_on_startup_option" ]; then
+      entry_index=$((entry_index + 1))
+      startup_cmd_wrapped=$(wrap_cmd "$entry_index" \
+        "$(printf '%s' "$serve_on_startup_option" | cut -d% -f2-)")
+      startup_label=$(printf '%s' "$serve_on_startup_option" | cut -d% -f1)
+      serve_on_startup_option="${startup_label}%$startup_cmd_wrapped"
+    fi
+    entry_index=$((entry_index + 1))
+    cmd9=$(wrap_cmd "$entry_index" "change-site-port \"$site_name\"")
+    if [ -n "$https_option" ]; then
+      entry_index=$((entry_index + 1))
+      https_cmd_wrapped=$(wrap_cmd "$entry_index" \
+        "$(printf '%s' "$https_option" | cut -d% -f2-)")
+      https_label=$(printf '%s' "$https_option" | cut -d% -f1)
+      https_option="${https_label}%$https_cmd_wrapped"
+    fi
+    if [ -n "$https_disable_option" ]; then
+      entry_index=$((entry_index + 1))
+      https_disable_cmd_wrapped=$(wrap_cmd "$entry_index" \
+        "$(printf '%s' "$https_disable_option" | cut -d% -f2-)")
+      https_disable_label=$(printf '%s' "$https_disable_option" | cut -d% -f1)
+      https_disable_option="${https_disable_label}%$https_disable_cmd_wrapped"
+    fi
+    entry_index=$((entry_index + 1))
+    cmd10=$(wrap_cmd "$entry_index" "configure-nginx \"$site_name\"")
+    entry_index=$((entry_index + 1))
+    cmd11=$(wrap_cmd "$entry_index" "repair-site-daemon \"$site_name\"")
+    entry_index=$((entry_index + 1))
+    cmd12=$(wrap_cmd "$entry_index" "fix-site-security \"$site_name\"")
+    entry_index=$((entry_index + 1))
+    cmd13=$(wrap_cmd "$entry_index" "manage-allowed-dirs \"$site_name\"")
+    entry_index=$((entry_index + 1))
+    cmd14=$(wrap_cmd "$entry_index" "delete-site \"$site_name\"")
+    entry_index=$((entry_index + 1))
+    cmd_exit=$(wrap_cmd "$entry_index" "kill -TERM \$PPID")
+    
     set -- \
-      "Build All & Restart Server%build \"$site_name\" --full && stop-site \"$site_name\" && serve-site \"$site_name\"" \
-      "Update from template%update-from-template \"$site_name\"" \
+      "Build All & Restart Server%$cmd1" \
+      "Update from template%$cmd2" \
       ${copy_site_onion:+"$copy_site_onion"} \
-      "Open site directory%cd \"$SITE_DIR\" && exec \$SHELL" \
-      "Open site data%[ -d \"$SITE_DATA_DIR\" ] && cd \"$SITE_DATA_DIR\" && exec \$SHELL || { printf 'No site data yet (will be created when needed)\\n'; read -r dummy; }" \
+      "Open site directory%$cmd3" \
+      "Open site data%$cmd4" \
       "---" \
-      "Build%build \"$site_name\"" \
-      "Build All%build \"$site_name\" --full" \
-      "Restart server%stop-site \"$site_name\" && serve-site \"$site_name\"" \
-      "Start server%serve-site \"$site_name\"" \
+      "Build%$cmd5" \
+      "Build All%$cmd6" \
+      "Restart server%$cmd7" \
+      "Start server%$cmd8" \
       "---" \
       ${tor_hosting_option:+"$tor_hosting_option"} \
       ${serve_on_startup_option:+"$serve_on_startup_option"} \
-      "Change port (current: $port)%change-site-port \"$site_name\"" \
+      "Change port (current: $port)%$cmd9" \
       ${https_option:+"$https_option"} \
       ${https_disable_option:+"$https_disable_option"} \
-      "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
-      "$daemon_label%repair-site-daemon \"$site_name\"" \
-      "Fix permissions%fix-site-security \"$site_name\"" \
-      "Manage allowed dirs%manage-allowed-dirs \"$site_name\"" \
-      "Delete site%delete-site \"$site_name\"" \
-      "${exit_label}%kill -TERM \$PPID"
+      "Rebuild nginx.conf%$cmd10" \
+      "$daemon_label%$cmd11" \
+      "Fix permissions%$cmd12" \
+      "Manage allowed dirs%$cmd13" \
+      "Delete site%$cmd14" \
+      "${exit_label}%$cmd_exit"
   fi
 
-  menu "${BOLD}${CYAN}Site: $site_name${RESET} ($status)" "$@" || menu_status=$?
+  menu_title="${BOLD}${CYAN}Site: $site_name${RESET} ($status)"
+  menu --start-selection "$start_selection" "$menu_title" "$@" \
+    || menu_status=$?
   menu_status=${menu_status:-0}
   
   # ESC causes menu to exit with 130 - handle gracefully by exiting
