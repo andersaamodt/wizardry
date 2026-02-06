@@ -986,3 +986,32 @@ Test infrastructure is exempted from the 0-function rule:
 
 **Policy**: When working on arcana scripts, always try to reduce or eliminate functions. Only add functions if absolutely necessary for code reuse within the same script.
 
+
+
+## 10. Imp Line Count Exemptions (2026-01-09)
+
+### parse (lex/parse) - 401 lines
+
+**File**: `spells/.imps/lex/parse`
+
+**Status**: Documented exemption (401 lines exceeds 100-line imp limit)
+
+**Reason**: The parse imp is the core natural language command parser that enables the entire glossary/parsing system. It handles:
+1. Multi-word spell name reconstruction ("read magic" → "read-magic")
+2. Recursive spell path resolution across all spell categories
+3. Synonym expansion and disambiguation
+4. Uncastable spell detection and sourcing
+5. System command fallback
+6. Recursion depth protection
+7. Parse-enabled config checking
+
+**Complexity Justification**: 
+- Cannot be split without breaking the unified parsing algorithm
+- Each section is essential for progressive spell resolution
+- Already minimally implemented (no functions, flat linear flow)
+- Reducing further would require moving logic to individual spells (worse)
+
+**Audit Status**: Phase 8 (2026-01-09) - APPROVED
+
+---
+

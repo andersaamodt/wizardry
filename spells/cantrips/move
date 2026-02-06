@@ -49,13 +49,13 @@ done
 # Validate arguments
 if is unset "$from"; then
         printf '%s\n' "move: source path required." >&2
-        move_usage >&2
+        printf '%s\n' "Usage: move <source> <destination>" >&2
         exit 1
 fi
 
 if is unset "$to"; then
         printf '%s\n' "move: destination path required." >&2
-        move_usage >&2
+        printf '%s\n' "Usage: move <source> <destination>" >&2
         exit 1
 fi
 

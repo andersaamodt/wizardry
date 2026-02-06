@@ -22,36 +22,9 @@ script_name=$(basename "$0")
 # Get service name from argument or prompt user
 service_name=${1-}
 if [ -z "$service_name" ]; then
-        # Find ask-text helper
-        if [ -n "${STOP_SERVICE_ASK_TEXT-}" ]; then
-                ask_text_helper=$STOP_SERVICE_ASK_TEXT
-        elif has ask-text; then
-                ask_text_helper=$(command -v ask-text)
-        else
-                # Try to find in same directory as script
-                script_source=$0
-                case $script_source in
-                */*)
-                        script_dir=${script_source%/*}
-                        ;;
-                *)
-                        resolved=$(command -v "$script_source" 2>/dev/null \
-                                || printf '%s' "$script_source")
-                        script_dir=${resolved%/*}
-                        ;;
-                esac
-                if [ -z "$script_dir" ] || [ "$script_dir" = "$script_source" ]; then
-                        script_dir=.
-                fi
-                script_dir=$(cd "$script_dir" && pwd -P)
-                
-                if [ -x "$script_dir/ask-text" ]; then
-                        ask_text_helper=$script_dir/ask_text                 else
-                        die "$script_name: ask_text spell not found."
-                fi
-        fi
-        
-        service_name=$("$ask_text_helper" "Which service should I stop?")
+        # Interactive mode - prompt for service name
+        service_name=$(prompt-with-fallback "Which service should I stop?") \
+                || die "$script_name: Failed to get service name"
 fi
 
 if [ -z "$service_name" ]; then

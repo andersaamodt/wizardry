@@ -3,6 +3,7 @@
 # Maps known category folder names to their proper display titles.
 # Example: category-title enchant -> Enchantment
 
+set -eu
 
 case $1 in
   arcane)       printf 'Arcane' ;;
