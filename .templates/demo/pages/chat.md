@@ -1203,7 +1203,6 @@ function updateConnectionStatus(status, isClickable) {
       if (this.textContent === 'Retry') {
         this.textContent = 'Disconnected';
       }
-      }
     };
     
     if (sendBtn) sendBtn.disabled = true;
