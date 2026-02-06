@@ -217,4 +217,9 @@ if [ -f "$ALLOWLIST_FILE" ]; then
   run_priv chmod 640 "$ALLOWLIST_FILE"
 fi
 
+if [ -f "$SITE_CONFIG" ]; then
+  run_priv chown "$site_user":"$site_group" "$SITE_CONFIG"
+  run_priv chmod 644 "$SITE_CONFIG"
+fi
+
 success "Site security fixed for '$site_name' (user: $site_user)"
