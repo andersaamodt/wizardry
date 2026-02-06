@@ -98,6 +98,7 @@ core_menu_resolve_spell() {
 
 # Loop until user exits
 iterations=0
+last_selected=${CORE_MENU_LAST_SELECTED:-1}
 while true; do
   iterations=$((iterations + 1))
   if [ -n "$loop_limit" ] && [ "$iterations" -gt "$loop_limit" ]; then
@@ -109,40 +110,45 @@ while true; do
   
   # Read core dependency entries into positional parameters
   # Use a temporary file to avoid subshell from pipeline
-  core_menu_entries=$(core_dependencies | while IFS=: read -r label command_name \
-    install_spell uninstall_spell essential; do
-    # Check if command is installed
-    status=""
-    if [ "$command_name" = "$CLIPBOARD_MARKER" ]; then
-      # Special handling for clipboard - check any clipboard helper
-      if command -v pbcopy >/dev/null 2>&1 || \
-         command -v xsel >/dev/null 2>&1 || \
-         command -v xclip >/dev/null 2>&1 || \
-         command -v wl-copy >/dev/null 2>&1; then
-        status="[X]"
-        cmd=$(core_menu_resolve_spell "$uninstall_spell") || continue
+  core_menu_entries=$(core_dependencies | {
+    entry_index=0
+    while IFS=: read -r label command_name install_spell uninstall_spell essential; do
+      entry_index=$((entry_index + 1))
+      # Check if command is installed
+      status=""
+      if [ "$command_name" = "$CLIPBOARD_MARKER" ]; then
+        # Special handling for clipboard - check any clipboard helper
+        if command -v pbcopy >/dev/null 2>&1 || \
+           command -v xsel >/dev/null 2>&1 || \
+           command -v xclip >/dev/null 2>&1 || \
+           command -v wl-copy >/dev/null 2>&1; then
+          status="[X]"
+          cmd=$(core_menu_resolve_spell "$uninstall_spell") || continue
+        else
+          status="[ ]"
+          cmd=$(core_menu_resolve_spell "$install_spell") || continue
+        fi
+      elif command -v "$command_name" >/dev/null 2>&1; then
+        if [ "$essential" = "1" ]; then
+          # Essential commands can't be uninstalled - use " X " to indicate
+          status=" X "
+          cmd="printf 'Cannot uninstall essential command: %s\n' '$command_name' >&2"
+        else
+          status="[X]"
+          cmd=$(core_menu_resolve_spell "$uninstall_spell") || continue
+        fi
       else
         status="[ ]"
         cmd=$(core_menu_resolve_spell "$install_spell") || continue
       fi
-    elif command -v "$command_name" >/dev/null 2>&1; then
-      if [ "$essential" = "1" ]; then
-        # Essential commands can't be uninstalled - use " X " to indicate
-        status=" X "
-        cmd="printf 'Cannot uninstall essential command: %s\n' '$command_name' >&2"
-      else
-        status="[X]"
-        cmd=$(core_menu_resolve_spell "$uninstall_spell") || continue
-      fi
-    else
-      status="[ ]"
-      cmd=$(core_menu_resolve_spell "$install_spell") || continue
-    fi
-    
-    # Use just the spell name for cleaner display
-    spell_name=$(basename "$cmd" 2>/dev/null || printf '%s' "$cmd")
-    printf '%s %s%%%s\n' "$status" "$label" "$spell_name"
-  done)
+      
+      # Use just the spell name for cleaner display
+      spell_name=$(basename "$cmd" 2>/dev/null || printf '%s' "$cmd")
+      # Wrap command to export selection index before execution
+      wrapped_cmd="export CORE_MENU_LAST_SELECTED=$entry_index; $spell_name"
+      printf '%s %s%%%s\n' "$status" "$label" "$wrapped_cmd"
+    done
+  })
   
   # Build positional parameters from entries
   while IFS= read -r entry; do
@@ -155,9 +161,12 @@ ENTRIES
   # Add exit option
   set -- "$@" "$exit_entry"
   
-  # Call menu - same pattern as other menu spells
-  "$menu_bin" "$@" || menu_status=$?
+  # Call menu with last selected position - same pattern as other menu spells
+  MENU_START_SELECTION=$last_selected "$menu_bin" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
+  
+  # Update last_selected from the executed command's environment
+  last_selected=${CORE_MENU_LAST_SELECTED:-$last_selected}
   
   # ESC causes menu to exit with 130 - handle gracefully by exiting
   if [ "$menu_status" -eq 130 ]; then
