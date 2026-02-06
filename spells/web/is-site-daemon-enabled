@@ -43,7 +43,7 @@ if has systemctl; then
 fi
 
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
-  if [ -f "$plist" ] && launchctl list "$label" >/dev/null 2>&1; then
+  if [ -f "$plist" ]; then
     exit 0
   fi
   exit 1

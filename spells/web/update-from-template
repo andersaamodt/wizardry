@@ -86,6 +86,7 @@ if [ -z "$template" ]; then
 fi
 
 # Get WIZARDRY_DIR to find templates
+WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
 template_dir="$WIZARDRY_DIR/.templates/$template"
 
 if [ ! -d "$template_dir" ]; then
