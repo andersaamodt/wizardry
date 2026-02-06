@@ -9,10 +9,6 @@ echo "To study the code of the examples, please use the command: cat 03_comparis
 string1="magic"
 string2="wizardry"
 
-echo "Are 'magic' and 'wizardry' the same? (Should be false)"
-[ "$string1" = "$string2" ]
-echo $?
-
 echo "Are 'magic' and 'magic' the same? (Should be true)"
 [ "$string1" = "$string1" ]
 echo $?

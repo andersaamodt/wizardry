@@ -6,6 +6,28 @@ applyTo: "spells/.imps/**"
 
 Imps are micro-helper scripts—the smallest semantic building blocks in wizardry. They live in `spells/.imps/` and abstract common shell patterns into readable, well-documented microscripts.
 
+### Imp Definition (Critical for AI)
+
+**Imps serve two purposes:**
+
+1. **Small, reusable helpers** - Microscripts that abstract common patterns (traditional definition)
+2. **Non-user-facing scripts** - Anything that shouldn't be directly invoked by users
+
+**Key Principle:** Not all imps are small. Some imps are complex because they handle internal functionality that users should never call directly.
+
+**Examples of valid complex imps:**
+- **CGI scripts** (`.imps/cgi/*`) - Web endpoints, SSE streams, multipart uploads
+  - MUST stay in `.imps/cgi/` for web server configuration
+  - Can be 100-300+ lines (complexity justified by non-user-facing nature)
+  - May have functions if needed for internal structure
+- **Internal helpers** - Scripts called by spells but not meant for direct user invocation
+
+**When to use an imp vs. spell:**
+- **Spell:** User-facing command with `--help`, designed to be called directly
+- **Imp:** Internal helper OR non-user-facing endpoint (even if complex)
+
+**Critical for audits:** CGI imps in `.imps/cgi/` are correctly classified even if they exceed typical imp size limits. They must remain in this directory for web server routing.
+
 ## Creating New Imps
 
 **CRITICAL**: When creating a new imp, you MUST also create a corresponding test file:
@@ -86,13 +108,34 @@ printf '%s %s\n' "$1" "$2"
 ## Demon Families
 
 Imps are organized in folders ("demon families") by function:
+- `app/` — Application validation helpers
+- `cgi/` — **CGI web endpoints** (can be complex, non-user-facing)
 - `cond/` — Conditional tests (`has`, `there`, `is`, `yes`, `no`, etc.)
-- `str/` — String operations
+- `fmt/` — Formatting utilities
 - `fs/` — Filesystem operations
-- `sys/` — System utilities
+- `hook/` — Hook system helpers
 - `input/` — User input handling
+- `lang/` — Language/grammar helpers
+- `lex/` — Lexical parsing utilities
+- `menu/` — Menu system helpers
+- `mud/` — MUD game mechanics
 - `out/` — Output formatting and error handling
+- `paths/` — Path manipulation
+- `pkg/` — Package manager abstraction
+- `str/` — String operations
+- `sys/` — System utilities
 - `test/` — Test-only imps (prefixed `test-`)
+- `text/` — Text processing
+
+### Special: CGI Family
+
+The `cgi/` family contains web endpoints and server-sent events handlers. These imps:
+- **Must stay in `.imps/cgi/`** for web server routing
+- **Can exceed typical size limits** (100-300+ lines acceptable)
+- **May use functions** when needed for internal structure
+- **Are non-user-facing** (called by web server, not directly by users)
+
+Examples: blog-*, chat-*, http-*, sse-*, drag-drop-upload
 
 ## Error Handling and Output Imps
 
