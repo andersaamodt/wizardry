@@ -214,7 +214,18 @@ actual_user="${SUDO_USER:-$(id -un)}"
 if [ "$actual_user" = "$site_user" ]; then
   # If we can't determine actual user, check who owns site.conf
   if [ -f "$SITE_CONFIG" ]; then
-    actual_user=$(ls -ld "$SITE_CONFIG" 2>/dev/null | awk '{print $3}')
+    # Try stat (Linux and BSD/macOS have different syntax)
+    if command -v stat >/dev/null 2>&1; then
+      # Try GNU stat first (Linux)
+      actual_user=$(stat -c '%U' "$SITE_CONFIG" 2>/dev/null) || \
+        # Try BSD stat (macOS)
+        actual_user=$(stat -f '%Su' "$SITE_CONFIG" 2>/dev/null) || \
+        # Fallback to ls parsing if stat fails
+        actual_user=$(ls -ld "$SITE_CONFIG" 2>/dev/null | awk '{print $3}')
+    else
+      # No stat available, use ls
+      actual_user=$(ls -ld "$SITE_CONFIG" 2>/dev/null | awk '{print $3}')
+    fi
   fi
 fi
 
