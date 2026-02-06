@@ -2,17 +2,13 @@
 
 # Relocate files using natural language: "move from here to there".
 
-show_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE'
 Usage: move <source> <destination>
 
 Move a file or directory to a new location. Accepts natural language forms like "move <source> to <destination>" or "move from <source> to <destination>" so the command reads like a sentence.
 USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-  show_usage
   exit 0
   ;;
 esac
@@ -53,13 +49,13 @@ done
 # Validate arguments
 if is unset "$from"; then
         printf '%s\n' "move: source path required." >&2
-        show_usage >&2
+        printf '%s\n' "Usage: move <source> <destination>" >&2
         exit 1
 fi
 
 if is unset "$to"; then
         printf '%s\n' "move: destination path required." >&2
-        show_usage >&2
+        printf '%s\n' "Usage: move <source> <destination>" >&2
         exit 1
 fi
 
