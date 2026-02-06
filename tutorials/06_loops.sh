@@ -8,8 +8,8 @@ echo "This spell will teach you the basics of loops in POSIX sh"
 
 # A for loop continues looping for as many iterations as the number of things in "in"
 echo "Iterating through ingredients"
-ingredients=("Dragon's blood" "Unicorn hair" "Phoenix feather")
-for ingredient in "${ingredients[@]}"; do
+# POSIX: use space-separated items, no arrays
+for ingredient in "Dragon's blood" "Unicorn hair" "Phoenix feather"; do
   echo "  Adding $ingredient to the potion"
 done
 
@@ -23,7 +23,7 @@ done
 
 # The 'break' keyword exits out of a loop
 echo "Making a second potion, only adding ingredients up through Unicorn hair"
-for ingredient in "${ingredients[@]}"; do
+for ingredient in "Dragon's blood" "Unicorn hair" "Phoenix feather"; do
   echo "  Adding $ingredient to the potion"
   if [ "$ingredient" = "Unicorn hair" ]; then
   	echo "  Found Unicorn hair, this potion is finished."
@@ -33,7 +33,7 @@ done
 
 # The 'continue' keyword skips ahead to the next loop iteration
 echo "Making a third potion, skipping adding the Unicorn hair this time"
-for ingredient in "${ingredients[@]}"; do
+for ingredient in "Dragon's blood" "Unicorn hair" "Phoenix feather"; do
   if [ "$ingredient" = "Unicorn hair" ]; then
   	echo "  Found Unicorn hair, skipping adding this ingredient."
     continue
