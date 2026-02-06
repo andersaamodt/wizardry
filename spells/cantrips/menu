@@ -765,6 +765,9 @@ do
         enter)
                 # Use get_row_data for faster retrieval
                 get_row_data "$selected"
+                if [ -n "${MENU_SELECTION_FILE-}" ]; then
+                        printf '%s\n' "$selected" > "$MENU_SELECTION_FILE" 2>/dev/null || :
+                fi
                 if [ "$show_command" -eq 1 ]; then
                         to_run="$row_label"
                 else
