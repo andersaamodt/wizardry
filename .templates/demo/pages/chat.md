@@ -529,30 +529,38 @@ function setupRoomListStream() {
 
 // Handle room selection from list
 document.addEventListener('htmx:afterSwap', function(event) {
+  console.log('[DEBUG] htmx:afterSwap fired, target.id:', event.detail.target.id);
   if (event.detail.target.id === 'room-list') {
+    console.log('[DEBUG] Processing room-list swap');
+    
     // Update empty state message on every room list swap
     var emptyStateMsg = document.querySelector('#chat-messages .empty-state-message');
+    console.log('[DEBUG] emptyStateMsg:', emptyStateMsg, 'text:', emptyStateMsg ? emptyStateMsg.textContent : 'null');
     if (emptyStateMsg) {
       var msgText = emptyStateMsg.textContent.trim();
       if (msgText === 'Connecting to server...') {
         emptyStateMsg.textContent = 'Select a room to start chatting';
+        console.log('[DEBUG] Updated text to "Select a room to start chatting"');
       }
     }
     
     // On first load, enable UI elements
     if (!window.roomListLoaded) {
       window.roomListLoaded = true;
+      console.log('[DEBUG] First load - enabling UI elements');
       
       // Enable the create room link on first load
       var createRoomLink = document.getElementById('create-room-link');
       if (createRoomLink) {
         createRoomLink.classList.remove('disabled');
+        console.log('[DEBUG] Enabled create-room-link');
       }
       
       // Enable username change button on first load
       var usernameChangeBtn = document.querySelector('#username-display button');
       if (usernameChangeBtn) {
         usernameChangeBtn.disabled = false;
+        console.log('[DEBUG] Enabled username change button');
       }
     }
     
@@ -560,10 +568,12 @@ document.addEventListener('htmx:afterSwap', function(event) {
     var roomListDiv = document.getElementById('room-list');
     if (roomListDiv) {
       var hasRooms = roomListDiv.querySelectorAll('.room-item').length > 0;
+      console.log('[DEBUG] hasRooms:', hasRooms, 'room count:', roomListDiv.querySelectorAll('.room-item').length);
       if (hasRooms) {
         roomListDiv.style.display = '';
       } else {
         roomListDiv.style.display = 'none';
+        console.log('[DEBUG] Hid empty room-list');
       }
     }
     
