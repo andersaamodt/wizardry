@@ -279,9 +279,10 @@ fi
 
 # Set permissions on site data directory - make it accessible to actual user
 # so "Open site data" works. Use 755 for dirs so user can cd into it.
+# Files need 664 so site user (owner) can write to them (e.g., chat logs)
 if [ -d "$SITE_DATA_DIR" ]; then
   run_priv find "$SITE_DATA_DIR" -type d -exec chmod 755 {} + 2>/dev/null || true
-  run_priv find "$SITE_DATA_DIR" -type f -exec chmod 644 {} + 2>/dev/null || true
+  run_priv find "$SITE_DATA_DIR" -type f -exec chmod 664 {} + 2>/dev/null || true
 fi
 
 # Ensure site directory itself is accessible (755) and owned by actual user
