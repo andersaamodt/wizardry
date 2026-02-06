@@ -173,9 +173,9 @@ while true; do
       "---" \
       ${tor_hosting_option:+"$tor_hosting_option"} \
       ${serve_on_startup_option:+"$serve_on_startup_option"} \
+      "Change port (current: $port)%change-site-port \"$site_name\"" \
       ${https_option:+"$https_option"} \
       ${https_disable_option:+"$https_disable_option"} \
-      "Change port (current: $port)%change-site-port \"$site_name\"" \
       "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
       "Repair server daemon%repair-site-daemon \"$site_name\"" \
       "Fix permissions%fix-site-security \"$site_name\"" \
@@ -197,9 +197,9 @@ while true; do
       "---" \
       ${tor_hosting_option:+"$tor_hosting_option"} \
       ${serve_on_startup_option:+"$serve_on_startup_option"} \
+      "Change port (current: $port)%change-site-port \"$site_name\"" \
       ${https_option:+"$https_option"} \
       ${https_disable_option:+"$https_disable_option"} \
-      "Change port (current: $port)%change-site-port \"$site_name\"" \
       "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
       "Repair server daemon%repair-site-daemon \"$site_name\"" \
       "Fix permissions%fix-site-security \"$site_name\"" \
