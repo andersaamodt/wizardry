@@ -167,7 +167,7 @@ This table shows all files in the repository with their audit results. Files are
 | spells/priorities/get-priority | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/priorities/prioritize | 2026-02-06 17:54 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - sophisticated echelon/priority system, batch xattr reads for performance, interactive mode, light theming appropriate | - |
 | spells/priorities/upvote | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/psi/list-contacts | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/psi/list-contacts | 🔍 Perused | 2026-02-06 20:15 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | vCard parser with awk. Uses FPAT (GNU awk). Good fallback chain FN→ORG→TEL→filename. |
 | spells/psi/read-contact | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/spellcraft/add-synonym | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/spellcraft/bind-tome | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
@@ -234,8 +234,8 @@ This table shows all files in the repository with their audit results. Files are
 | spells/web/fix-site-security | 2026-02-06 19:09 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | Complex security spell with excellent cross-platform support, run_priv abstraction, allowlist processing. Minor: site.conf perms inconsistency, could use clearer docs | - |
 | spells/web/https | 2026-02-06 20:07 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | Let's Encrypt integration with certbot. Good pre-checks, proper user re-exec, config persistence. Minor: appends to nginx.conf instead of regenerating | - |
 | spells/web/is-site-daemon-enabled | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/web/manage-allowed-dirs | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/web/renew-https | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/web/manage-allowed-dirs | 🔍 Perused | 2026-02-06 20:11 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | Minor: extra $@ in re-exec line 41. Good security-focused interactive management. |
+| spells/web/renew-https | 🔍 Perused | 2026-02-06 20:13 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | Clean cert renewal. Minor: extra $@ in re-exec line 43. Good guidance. |
 | spells/web/repair-site-daemon | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/web/run-site-daemon | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/web/serve-site | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
