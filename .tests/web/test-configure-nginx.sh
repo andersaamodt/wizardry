@@ -20,6 +20,11 @@ test_configure_nginx_creates_local_mimetypes() {
   test_web_root=$(temp-dir web-wizardry-test)
   export WEB_WIZARDRY_ROOT="$test_web_root"
   
+  # Stub sudo so fix-site-security doesn't create privileged directories
+  stub_dir=$(temp-dir web-wizardry-stub)
+  stub-sudo "$stub_dir"
+  export PATH="$stub_dir:$PATH"
+  
   # Create a test site directory
   mkdir -p "$test_web_root/mytestsite"
   
@@ -90,7 +95,7 @@ test_configure_nginx_creates_local_mimetypes() {
   }
   
   # Cleanup
-  rm -rf "$test_web_root"
+  rm -rf "$test_web_root" "$stub_dir"
 }
 
 test_configure_nginx_supports_onion_addresses() {
@@ -99,6 +104,11 @@ test_configure_nginx_supports_onion_addresses() {
   # Set up test environment
   test_web_root=$(temp-dir web-wizardry-test)
   export WEB_WIZARDRY_ROOT="$test_web_root"
+  
+  # Stub sudo so fix-site-security doesn't create privileged directories
+  stub_dir=$(temp-dir web-wizardry-stub)
+  stub-sudo "$stub_dir"
+  export PATH="$stub_dir:$PATH"
   
   # Create a test site directory
   mkdir -p "$test_web_root/mytestsite"
@@ -114,7 +124,7 @@ test_configure_nginx_supports_onion_addresses() {
   }
   
   # Cleanup
-  rm -rf "$test_web_root"
+  rm -rf "$test_web_root" "$stub_dir"
 }
 
 test_configure_nginx_preserves_existing_port() {
@@ -123,6 +133,11 @@ test_configure_nginx_preserves_existing_port() {
   # Set up test environment
   test_web_root=$(temp-dir web-wizardry-test)
   export WEB_WIZARDRY_ROOT="$test_web_root"
+  
+  # Stub sudo so fix-site-security doesn't create privileged directories
+  stub_dir=$(temp-dir web-wizardry-stub)
+  stub-sudo "$stub_dir"
+  export PATH="$stub_dir:$PATH"
   
   # Create a test site directory
   mkdir -p "$test_web_root/mytestsite"
@@ -148,7 +163,7 @@ test_configure_nginx_preserves_existing_port() {
   }
   
   # Cleanup
-  rm -rf "$test_web_root"
+  rm -rf "$test_web_root" "$stub_dir"
 }
 
 run_test_case "configure-nginx --help" test_configure_nginx_help

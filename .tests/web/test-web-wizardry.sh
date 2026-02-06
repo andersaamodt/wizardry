@@ -22,6 +22,11 @@ test_web_wizardry_create_site() {
   test_web_root=$(temp-dir wizardry-test)
   export WEB_WIZARDRY_ROOT="$test_web_root"
   
+  # Stub sudo so fix-site-security doesn't create privileged directories
+  stub_dir=$(temp-dir wizardry-stub)
+  stub-sudo "$stub_dir"
+  export PATH="$stub_dir:$PATH"
+  
   # Create a test site
   run_spell spells/web/web-wizardry create testsite
   assert_success
@@ -39,7 +44,7 @@ test_web_wizardry_create_site() {
   }
   
   # Cleanup
-  rm -rf "$test_web_root"
+  rm -rf "$test_web_root" "$stub_dir"
 }
 
 test_web_wizardry_status() {
@@ -48,6 +53,11 @@ test_web_wizardry_status() {
   # Set up test environment
   test_web_root=$(temp-dir wizardry-test)
   export WEB_WIZARDRY_ROOT="$test_web_root"
+  
+  # Stub sudo so fix-site-security doesn't create privileged directories
+  stub_dir=$(temp-dir wizardry-stub)
+  stub-sudo "$stub_dir"
+  export PATH="$stub_dir:$PATH"
   
   # Create a test site
   run_spell spells/web/web-wizardry create testsite
@@ -59,7 +69,7 @@ test_web_wizardry_status() {
   assert_output_contains "testsite"
   
   # Cleanup
-  rm -rf "$test_web_root"
+  rm -rf "$test_web_root" "$stub_dir"
 }
 
 run_test_case "web-wizardry --help works" test_web_wizardry_help
