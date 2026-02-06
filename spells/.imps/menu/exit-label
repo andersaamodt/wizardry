@@ -2,5 +2,7 @@
 # exit-label - return the label for menu exit items
 # Example: exit_item="$(exit-label)%kill -TERM \$PPID"
 
+set -eu
+
 printf '%s' "Exit"
 

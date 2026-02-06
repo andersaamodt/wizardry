@@ -13,5 +13,5 @@ case $ph_pm in
   apt)    dpkg -l "$ph_package" 2>/dev/null | grep -q "^ii" ;;
   pacman) pacman -Q "$ph_package" >/dev/null 2>&1 ;;
   nix)    nix-env -q "$ph_package" >/dev/null 2>&1 ;;
-  pkgin)  pkgin list 2>/dev/null | grep -q "^${_ph_package}-" ;;
+  pkgin)  pkgin list 2>/dev/null | grep -q "^${ph_package}-" ;;
 esac
