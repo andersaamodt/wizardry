@@ -78,7 +78,7 @@ if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SI
       exec sudo -u "$site_user" -- env WIZARDRY_SITE_USER_REEXEC=1 "$0" "$site_name" "$@"
     fi
   else
-    warn "site-menu: This site's user, $site_user, is missing. You can repair this with \"Repair permissions\"."
+    warn "site-menu: This site's user, $site_user, is missing. You can repair this with \"Fix permissions\"."
   fi
 fi
 
