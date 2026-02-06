@@ -21,8 +21,8 @@ case "$cg_key" in
     ;;
 esac
 
-# File doesn't exist - return empty
-if [ ! -f "$cg_file" ]; then
+# File doesn't exist or isn't readable - return empty
+if [ ! -r "$cg_file" ]; then
   exit 0
 fi
 
