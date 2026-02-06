@@ -203,7 +203,8 @@ EOF
     # Unmount removable media
     if has mount; then
       # Use while-read loop for proper handling of paths with whitespace
-      mount | grep -E '/media|/mnt' | awk '{print $3}' | while IFS= read -r mount_point; do
+      # Use more precise pattern to match only /media/ and /mnt/ mount points
+      mount | awk '$3 ~ /^\/(media|mnt)\// {print $3}' | while IFS= read -r mount_point; do
         if [ -n "$mount_point" ]; then
           info "Unmounting: $mount_point"
           sudo umount "$mount_point" 2>/dev/null || warn "defcon: could not unmount $mount_point"
@@ -229,15 +230,15 @@ EOF
     ;;
     
   3)
-    # Save state BEFORE killing processes (DEFCON 3 will terminate the script)
+    # Save state BEFORE killing processes
     printf '%s\n' "$level" > "$state_file"
     
-    # Apply all DEFCON 2 measures first
-    step "Applying DEFCON 2 measures..."
+    # Apply DEFCON 1 and 2 measures (safe to recurse)
+    step "Applying DEFCON 1 and 2 measures..."
     defcon 2 -y --recursive
     
     step "DEFCON 3: Terminating user processes (not recommended)"
-    warn "This will terminate the current shell session"
+    warn "Other user sessions will be terminated"
     # Kill all user processes except our session (to allow script to finish)
     # Use session ID to exclude current session
     our_sid=$(ps -o sid= -p "$$" 2>/dev/null | tr -d ' ')
@@ -248,7 +249,6 @@ EOF
       fi
     done
     success "DEFCON $level activated"
-    # Exit immediately to avoid getting killed
     exit 0
     ;;
     
@@ -256,15 +256,24 @@ EOF
     # Save state BEFORE making filesystem read-only
     printf '%s\n' "$level" > "$state_file"
     
-    # Apply all DEFCON 3 measures first
-    step "Applying DEFCON 3 measures..."
-    defcon 3 -y --recursive
+    # Apply DEFCON 1 and 2 measures (safe to recurse)
+    step "Applying DEFCON 1 and 2 measures..."
+    defcon 2 -y --recursive
+    
+    # Apply DEFCON 3 measures directly (can't recurse due to exit)
+    step "DEFCON 3: Terminating user processes (not recommended)"
+    our_sid=$(ps -o sid= -p "$$" 2>/dev/null | tr -d ' ')
+    for pid in $(pgrep -u "$(id -u)"); do
+      pid_sid=$(ps -o sid= -p "$pid" 2>/dev/null | tr -d ' ') || continue
+      if [ "$pid_sid" != "$our_sid" ]; then
+        kill -9 "$pid" 2>/dev/null || true
+      fi
+    done
     
     step "DEFCON 4: Remounting filesystems read-only (not recommended)"
     # Remount root filesystem read-only
     sudo mount -o remount,ro / || warn "defcon: could not remount / as read-only"
     success "DEFCON $level activated"
-    # State was already saved before remount
     exit 0
     ;;
     
@@ -272,9 +281,23 @@ EOF
     # Save state BEFORE making filesystem read-only
     printf '%s\n' "$level" > "$state_file"
     
-    # Apply all DEFCON 4 measures first
-    step "Applying DEFCON 4 measures..."
-    defcon 4 -y --recursive
+    # Apply DEFCON 1 and 2 measures (safe to recurse)
+    step "Applying DEFCON 1 and 2 measures..."
+    defcon 2 -y --recursive
+    
+    # Apply DEFCON 3 measures directly (can't recurse due to exit)
+    step "DEFCON 3: Terminating user processes (not recommended)"
+    our_sid=$(ps -o sid= -p "$$" 2>/dev/null | tr -d ' ')
+    for pid in $(pgrep -u "$(id -u)"); do
+      pid_sid=$(ps -o sid= -p "$pid" 2>/dev/null | tr -d ' ') || continue
+      if [ "$pid_sid" != "$our_sid" ]; then
+        kill -9 "$pid" 2>/dev/null || true
+      fi
+    done
+    
+    # Apply DEFCON 4 measures directly (can't recurse due to exit)
+    step "DEFCON 4: Remounting filesystems read-only (not recommended)"
+    sudo mount -o remount,ro / || warn "defcon: could not remount / as read-only"
     
     step "DEFCON 5: Preparing for system halt (not recommended)"
     # Sync filesystems
@@ -283,7 +306,6 @@ EOF
     sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches' 2>/dev/null || true
     warn "System prepared for halt - consider running 'sudo halt' or 'sudo poweroff'"
     success "DEFCON $level activated"
-    # State was already saved before operations
     exit 0
     ;;
 esac
