@@ -64,6 +64,15 @@ if [ -z "$site_user" ]; then
   fi
 fi
 site_group="$site_user"
+shared_group=""
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  shared_group="staff"
+else
+  shared_group=$(id -gn 2>/dev/null || printf '')
+fi
+if [ -n "$shared_group" ]; then
+  site_group="$shared_group"
+fi
 
 group_exists() {
   if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has dscl; then
@@ -103,6 +112,32 @@ ensure_staff_membership() {
     return 0
   fi
   run_priv dscl . -append /Groups/staff GroupMembership "$site_user" >/dev/null 2>&1 || true
+}
+
+ensure_shared_group_membership() {
+  if [ -z "$shared_group" ]; then
+    return 0
+  fi
+
+  if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has dscl; then
+    run_priv dscl . -append "/Groups/$shared_group" GroupMembership "$site_user" >/dev/null 2>&1 || true
+    return 0
+  fi
+
+  if has usermod; then
+    run_priv usermod -a -G "$shared_group" "$site_user" >/dev/null 2>&1 || true
+    return 0
+  fi
+
+  if has adduser; then
+    run_priv adduser "$site_user" "$shared_group" >/dev/null 2>&1 || true
+    return 0
+  fi
+
+  if has gpasswd; then
+    run_priv gpasswd -a "$site_user" "$shared_group" >/dev/null 2>&1 || true
+    return 0
+  fi
 }
 
 ensure_site_user() {
@@ -169,8 +204,15 @@ set_secure_perms() {
     return 0
   fi
 
-  run_priv find "$target" -type d -exec chmod 750 {} +
-  run_priv find "$target" -type f -exec chmod 640 {} +
+  dir_mode=750
+  file_mode=640
+  if [ -n "$shared_group" ]; then
+    dir_mode=775
+    file_mode=664
+  fi
+
+  run_priv find "$target" -type d -exec chmod "$dir_mode" {} +
+  run_priv find "$target" -type f -exec chmod "$file_mode" {} +
 }
 
 apply_allowlist() {
@@ -203,6 +245,7 @@ apply_allowlist() {
 ensure_site_user
 ensure_site_group
 ensure_staff_membership
+ensure_shared_group_membership
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && ! group_exists "$site_group"; then
   site_group=staff
 fi
@@ -217,12 +260,20 @@ apply_allowlist
 
 if [ -f "$ALLOWLIST_FILE" ]; then
   run_priv chown "$site_user":"$site_group" "$ALLOWLIST_FILE"
-  run_priv chmod 640 "$ALLOWLIST_FILE"
+  allowlist_mode=640
+  if [ -n "$shared_group" ]; then
+    allowlist_mode=664
+  fi
+  run_priv chmod "$allowlist_mode" "$ALLOWLIST_FILE"
 fi
 
 if [ -f "$SITE_CONFIG" ]; then
   run_priv chown "$site_user":"$site_group" "$SITE_CONFIG"
-  run_priv chmod 644 "$SITE_CONFIG"
+  config_mode=644
+  if [ -n "$shared_group" ]; then
+    config_mode=664
+  fi
+  run_priv chmod "$config_mode" "$SITE_CONFIG"
 fi
 
 success "Site security fixed for '$site_name' (user: $site_user)"

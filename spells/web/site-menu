@@ -82,6 +82,12 @@ fi
 trap 'exit 130' INT
 trap 'exit 0' TERM
 
+SELECTION_FILE=$(temp-file site-menu-selection)
+export SELECTION_FILE
+trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true' EXIT
+trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true; exit 130' INT
+trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true; exit 0' TERM
+
 while true; do
   # Build menu based on site status
   status=$(site-status "$site_name")
@@ -122,7 +128,8 @@ while true; do
   fi
   
   # Check for site-specific hidden service hostname file
-  copy_site_onion=""
+  copy_site_onion_label=""
+  copy_site_onion_command=""
   if [ "$tor_hosting_enabled" -eq 1 ] && [ -n "$tor_config_path" ]; then
     # Extract the HiddenServiceDir path from torrc for this site
     site_hostname_dir=$(grep "^HiddenServiceDir.*${site_name}" "$tor_config_path" 2>/dev/null \
@@ -131,9 +138,9 @@ while true; do
       # Remove trailing slash if present
       site_hostname_dir="${site_hostname_dir%/}"
       site_hostname_file="$site_hostname_dir/hostname"
-      copy_cmd="clip-copy \"\$(sudo cat \"$site_hostname_file\" 2>/dev/null"
-      copy_cmd="$copy_cmd || cat \"$site_hostname_file\")\""
-      copy_site_onion="Copy .onion address%$copy_cmd"
+      copy_site_onion_command="clip-copy \"\$(sudo cat \"$site_hostname_file\" 2>/dev/null"
+      copy_site_onion_command="$copy_site_onion_command || cat \"$site_hostname_file\")\""
+      copy_site_onion_label="Copy .onion address"
     fi
   fi
   
@@ -168,58 +175,81 @@ while true; do
     daemon_label="Create server daemon"
   fi
 
-  if [ "$is_serving" -eq 1 ]; then
-    set -- \
-      "Open in browser%command -v xdg-open >/dev/null 2>&1 && xdg-open http://localhost:$port || command -v open >/dev/null 2>&1 && open http://localhost:$port || printf 'Visit: http://localhost:$port\n'" \
-      "Build All & Restart Server%build \"$site_name\" --full && stop-site \"$site_name\" && serve-site \"$site_name\"" \
-      "Update from template%update-from-template \"$site_name\"" \
-      ${copy_site_onion:+"$copy_site_onion"} \
-      "Open site directory%cd \"$SITE_DIR\" && exec \$SHELL" \
-      "Open site data%[ -d \"$SITE_DATA_DIR\" ] && cd \"$SITE_DATA_DIR\" && exec \$SHELL || { printf 'No site data yet (will be created when needed)\\n'; read -r dummy; }" \
-      "---" \
-      "Build%build \"$site_name\"" \
-      "Build All%build \"$site_name\" --full" \
-      "Restart server%stop-site \"$site_name\" && serve-site \"$site_name\"" \
-      "Stop server%stop-site \"$site_name\"" \
-      "---" \
-      ${tor_hosting_option:+"$tor_hosting_option"} \
-      ${serve_on_startup_option:+"$serve_on_startup_option"} \
-      "Change port (current: $port)%change-site-port \"$site_name\"" \
-      ${https_option:+"$https_option"} \
-      ${https_disable_option:+"$https_disable_option"} \
-      "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
-      "$daemon_label%repair-site-daemon \"$site_name\"" \
-      "Fix permissions%fix-site-security \"$site_name\"" \
-      "Manage allowed dirs%manage-allowed-dirs \"$site_name\"" \
-      "Delete site%delete-site \"$site_name\"" \
-      "${exit_label}%kill -TERM \$PPID"
+  menu_index=0
+  set --
+
+  if [ -f "$SELECTION_FILE" ]; then
+    start_selection=$(cat "$SELECTION_FILE" 2>/dev/null || printf '1')
+    if [ -z "$start_selection" ]; then
+      start_selection=1
+    fi
   else
-    set -- \
-      "Build All & Restart Server%build \"$site_name\" --full && stop-site \"$site_name\" && serve-site \"$site_name\"" \
-      "Update from template%update-from-template \"$site_name\"" \
-      ${copy_site_onion:+"$copy_site_onion"} \
-      "Open site directory%cd \"$SITE_DIR\" && exec \$SHELL" \
-      "Open site data%[ -d \"$SITE_DATA_DIR\" ] && cd \"$SITE_DATA_DIR\" && exec \$SHELL || { printf 'No site data yet (will be created when needed)\\n'; read -r dummy; }" \
-      "---" \
-      "Build%build \"$site_name\"" \
-      "Build All%build \"$site_name\" --full" \
-      "Restart server%stop-site \"$site_name\" && serve-site \"$site_name\"" \
-      "Start server%serve-site \"$site_name\"" \
-      "---" \
-      ${tor_hosting_option:+"$tor_hosting_option"} \
-      ${serve_on_startup_option:+"$serve_on_startup_option"} \
-      "Change port (current: $port)%change-site-port \"$site_name\"" \
-      ${https_option:+"$https_option"} \
-      ${https_disable_option:+"$https_disable_option"} \
-      "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
-      "$daemon_label%repair-site-daemon \"$site_name\"" \
-      "Fix permissions%fix-site-security \"$site_name\"" \
-      "Manage allowed dirs%manage-allowed-dirs \"$site_name\"" \
-      "Delete site%delete-site \"$site_name\"" \
-      "${exit_label}%kill -TERM \$PPID"
+    start_selection=1
   fi
 
-  menu "${BOLD}${CYAN}Site: $site_name${RESET} ($status)" "$@" || menu_status=$?
+  if [ "$is_serving" -eq 1 ]; then
+    menu_index=$((menu_index + 1))
+    set -- "$@" "Open in browser%echo $menu_index > \"$SELECTION_FILE\"; command -v xdg-open >/dev/null 2>&1 && xdg-open http://localhost:$port || command -v open >/dev/null 2>&1 && open http://localhost:$port || printf 'Visit: http://localhost:$port\n'"
+  fi
+
+  menu_index=$((menu_index + 1))
+  set -- "$@" "Build All & Restart Server%echo $menu_index > \"$SELECTION_FILE\"; build \"$site_name\" --full && stop-site \"$site_name\" && serve-site \"$site_name\""
+  menu_index=$((menu_index + 1))
+  set -- "$@" "Update from template%echo $menu_index > \"$SELECTION_FILE\"; update-from-template \"$site_name\""
+  if [ -n "$copy_site_onion_label" ] && [ -n "$copy_site_onion_command" ]; then
+    menu_index=$((menu_index + 1))
+    set -- "$@" "$copy_site_onion_label%echo $menu_index > \"$SELECTION_FILE\"; $copy_site_onion_command"
+  fi
+  menu_index=$((menu_index + 1))
+  set -- "$@" "Open site directory%echo $menu_index > \"$SELECTION_FILE\"; cd \"$SITE_DIR\" && exec \$SHELL"
+  menu_index=$((menu_index + 1))
+  set -- "$@" "Open site data%echo $menu_index > \"$SELECTION_FILE\"; [ -d \"$SITE_DATA_DIR\" ] && cd \"$SITE_DATA_DIR\" && exec \$SHELL || { printf 'No site data yet (will be created when needed)\\n'; read -r dummy; }"
+  set -- "$@" "---"
+  menu_index=$((menu_index + 1))
+  set -- "$@" "Build%echo $menu_index > \"$SELECTION_FILE\"; build \"$site_name\""
+  menu_index=$((menu_index + 1))
+  set -- "$@" "Build All%echo $menu_index > \"$SELECTION_FILE\"; build \"$site_name\" --full"
+  menu_index=$((menu_index + 1))
+  set -- "$@" "Restart server%echo $menu_index > \"$SELECTION_FILE\"; stop-site \"$site_name\" && serve-site \"$site_name\""
+  menu_index=$((menu_index + 1))
+  if [ "$is_serving" -eq 1 ]; then
+    set -- "$@" "Stop server%echo $menu_index > \"$SELECTION_FILE\"; stop-site \"$site_name\""
+  else
+    set -- "$@" "Start server%echo $menu_index > \"$SELECTION_FILE\"; serve-site \"$site_name\""
+  fi
+  set -- "$@" "---"
+  if [ -n "$tor_hosting_option" ]; then
+    menu_index=$((menu_index + 1))
+    set -- "$@" "${tor_hosting_option%%\%*}%echo $menu_index > \"$SELECTION_FILE\"; ${tor_hosting_option#*%}"
+  fi
+  if [ -n "$serve_on_startup_option" ]; then
+    menu_index=$((menu_index + 1))
+    set -- "$@" "${serve_on_startup_option%%\%*}%echo $menu_index > \"$SELECTION_FILE\"; ${serve_on_startup_option#*%}"
+  fi
+  menu_index=$((menu_index + 1))
+  set -- "$@" "Change port (current: $port)%echo $menu_index > \"$SELECTION_FILE\"; change-site-port \"$site_name\""
+  if [ -n "$https_option" ]; then
+    menu_index=$((menu_index + 1))
+    set -- "$@" "${https_option%%\%*}%echo $menu_index > \"$SELECTION_FILE\"; ${https_option#*%}"
+  fi
+  if [ -n "$https_disable_option" ]; then
+    menu_index=$((menu_index + 1))
+    set -- "$@" "${https_disable_option%%\%*}%echo $menu_index > \"$SELECTION_FILE\"; ${https_disable_option#*%}"
+  fi
+  menu_index=$((menu_index + 1))
+  set -- "$@" "Rebuild nginx.conf%echo $menu_index > \"$SELECTION_FILE\"; configure-nginx \"$site_name\""
+  menu_index=$((menu_index + 1))
+  set -- "$@" "$daemon_label%echo $menu_index > \"$SELECTION_FILE\"; repair-site-daemon \"$site_name\""
+  menu_index=$((menu_index + 1))
+  set -- "$@" "Fix permissions%echo $menu_index > \"$SELECTION_FILE\"; fix-site-security \"$site_name\""
+  menu_index=$((menu_index + 1))
+  set -- "$@" "Manage allowed dirs%echo $menu_index > \"$SELECTION_FILE\"; manage-allowed-dirs \"$site_name\""
+  menu_index=$((menu_index + 1))
+  set -- "$@" "Delete site%echo $menu_index > \"$SELECTION_FILE\"; delete-site \"$site_name\""
+  menu_index=$((menu_index + 1))
+  set -- "$@" "$exit_label%echo $menu_index > \"$SELECTION_FILE\"; kill -TERM \$PPID"
+
+  menu --start-selection "$start_selection" "${BOLD}${CYAN}Site: $site_name${RESET} ($status)" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
   
   # ESC causes menu to exit with 130 - handle gracefully by exiting

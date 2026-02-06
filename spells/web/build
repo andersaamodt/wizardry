@@ -52,14 +52,23 @@ if [ ! -d "$SITE_DIR" ]; then
   die "build: site '$site_name' not found"
 fi
 
+mkdir -p "$SITE_DATA_DIR" 2>/dev/null || true
+
 site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '-' '_')"
 site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
 [ -z "$site_user" ] && site_user="$site_user_default"
 if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SITE_USER_REEXEC-}" ]; then
-  if has sudo; then
+  needs_reexec=0
+  if [ ! -w "$SITE_DIR" ]; then
+    needs_reexec=1
+  fi
+  if [ "$needs_reexec" -eq 1 ] && has sudo; then
     exec sudo -u "$site_user" -- \
       env WIZARDRY_SITE_USER_REEXEC=1 WIZARDRY_DIR="$WIZARDRY_DIR" \
-      WIZARDRY_SITES_DIR="$WEB_ROOT" "$0" "$site_name" "$@"
+      WIZARDRY_SITES_DIR="$WEB_ROOT" HOME="$SITE_DATA_DIR" \
+      XDG_DATA_HOME="$SITE_DATA_DIR/.local/share" \
+      XDG_CACHE_HOME="$SITE_DATA_DIR/.cache" \
+      "$0" "$site_name" "$@"
   fi
 fi
 
