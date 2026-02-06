@@ -27,7 +27,7 @@ The language of magic—a human heirloom—is rich in evocative words for hidden
 
 Run the following line in a terminal to download and run the wizardry installer script:
 
-```bash
+```sh
 curl -fsSL https://raw.githubusercontent.com/andersaamodt/wizardry/main/install | sh
 ```
 
