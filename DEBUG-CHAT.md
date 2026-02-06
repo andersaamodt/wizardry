@@ -2,7 +2,19 @@
 
 This document explains how to view the extensive debug logging added to diagnose the chat message sending issue.
 
-## Debug Logging Added
+## **ISSUE RESOLVED**
+
+The root cause has been identified and fixed:
+
+**Problem**: `.sitedata` directory was owned by `site_user` (e.g., ww_site50) but nginx and fcgiwrap run as `actual_user` (the person who owns the site). CGI scripts executed by fcgiwrap couldn't write to directories they didn't own.
+
+**Solution**: Changed `.sitedata` ownership from `site_user` to `actual_user` in `fix-site-security`.
+
+**To apply the fix**: Run `fix-site-security <sitename>` to update ownership on your existing site.
+
+---
+
+## Debug Logging (Still Available)
 
 Extensive debug logging has been added to:
 - `spells/.imps/cgi/chat-send-message` - Main message sending logic
@@ -98,7 +110,7 @@ Shows whether the write operation completed.
 1. **Environment variables not set**: fcgiwrap isn't receiving WIZARDRY_SITE_NAME/WIZARDRY_SITES_DIR
 2. **Wrong path**: get-site-data-dir is using defaults instead of actual site config
 3. **Directory missing**: Room directory doesn't exist
-4. **Write fails**: Permission or filesystem issue
+4. **Write fails**: Permission or ownership issue (should be fixed now)
 
 ## Example Complete Debug Session
 
