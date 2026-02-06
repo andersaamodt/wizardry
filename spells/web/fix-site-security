@@ -136,7 +136,10 @@ ensure_site_user() {
 
   useradd_supports() {
     flag=$1
-    useradd --help 2>&1 | grep -q -- " $flag" || useradd -h 2>&1 | grep -q -- " $flag"
+    if useradd --help 2>&1 | grep -q -- " $flag"; then
+      return 0
+    fi
+    useradd -h 2>&1 | grep -q -- " $flag"
   }
 
   if has useradd; then
