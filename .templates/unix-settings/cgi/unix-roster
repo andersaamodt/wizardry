@@ -1,0 +1,434 @@
+#!/bin/sh
+set -eu
+
+WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
+PATH="$WIZARDRY_DIR/spells/.imps/cgi:$PATH"
+
+has() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+escape_html() {
+  printf '%s' "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'
+}
+
+roster_header() {
+  title=$1
+  target_id=$2
+  domain=$3
+  timestamp=$4
+  cat <<HTML
+<div class="roster-header">
+  <div>
+    <h3>$title</h3>
+    <p class="freshness">Fresh as of $timestamp</p>
+  </div>
+  <button class="refresh-btn" hx-get="/cgi/unix-roster?domain=$domain" hx-target="#$target_id" hx-swap="innerHTML">Refresh</button>
+</div>
+HTML
+}
+
+raw_output_panel() {
+  label=$1
+  command_label=$2
+  output=$3
+  cat <<HTML
+<details class="escape-hatches">
+  <summary>$label</summary>
+  <div class="details-panel">$command_label
+
+$output</div>
+</details>
+HTML
+}
+
+domain=$(get-query-param domain "${QUERY_STRING:-}")
+http-ok-html
+
+stamp=$(date '+%Y-%m-%d %H:%M:%S %Z')
+
+case "$domain" in
+  users)
+    roster_header "Users" "users-roster" "users" "$stamp"
+    printf '<ul class="roster-list">'
+    user_source="/etc/passwd"
+    if [ -r "$user_source" ]; then
+      user_lines=$(awk -F: 'NR<=7 {print $1":"$3":"$7}' "$user_source")
+    else
+      user_lines=$(printf '')
+    fi
+    if [ -z "$user_lines" ]; then
+      printf '<li class="roster-item"><div><div class="roster-title">No user data</div><div class="roster-meta">/etc/passwd unavailable</div></div></li>'
+    else
+      printf '%s\n' "$user_lines" | while IFS=: read -r username uid shell; do
+        case "$shell" in
+          *nologin*|*false*) login_state="login disabled" ;;
+          *) login_state="login enabled" ;;
+        esac
+        printf '<li class="roster-item">'
+        printf '<div>'
+        printf '<div class="roster-title">%s</div>' "$(escape_html "$username")"
+        printf '<div class="roster-meta">UID %s • %s • %s</div>' "$(escape_html "$uid")" "$(escape_html "$shell")" "$(escape_html "$login_state")"
+        printf '</div>'
+        printf '<div class="roster-actions">'
+        printf '<button class="icon-button" title="Inspect" hx-get="/cgi/unix-action?action=inspect-user&target=%s" hx-target="#action-drawer">Inspect</button>' "$(escape_html "$username")"
+        printf '<button class="icon-button danger" title="Disable login" hx-get="/cgi/unix-action?action=disable-user&target=%s" hx-target="#action-drawer">Disable</button>' "$(escape_html "$username")"
+        printf '</div>'
+        printf '</li>'
+      done
+    fi
+    printf '</ul>'
+    raw_output_panel "Reveal raw probe output" "Command: head -n 7 /etc/passwd" "$(escape_html "$(head -n 7 /etc/passwd 2>&1 || printf 'unavailable')")"
+    ;;
+  services)
+    roster_header "Services" "services-roster" "services" "$stamp"
+    printf '<ul class="roster-list">'
+    if has systemctl; then
+      service_output=$(systemctl list-units --type=service --state=running --no-legend 2>&1 || true)
+      services=$(printf '%s\n' "$service_output" | awk '{print $1}' | head -n 6)
+      if [ -z "$services" ]; then
+        printf '<li class="roster-item"><div><div class="roster-title">No active services</div><div class="roster-meta">systemctl returned no rows</div></div></li>'
+      else
+        printf '%s\n' "$services" | while IFS= read -r service; do
+          printf '<li class="roster-item">'
+          printf '<div>'
+          printf '<div class="roster-title">%s</div>' "$(escape_html "$service")"
+          printf '<div class="roster-meta">State: running • Manager: systemd</div>'
+          printf '</div>'
+          printf '<div class="roster-actions">'
+          printf '<button class="icon-button" title="Restart service" hx-get="/cgi/unix-action?action=restart-service&target=%s" hx-target="#action-drawer">Restart</button>' "$(escape_html "$service")"
+          printf '<button class="icon-button danger" title="Stop service" hx-get="/cgi/unix-action?action=stop-service&target=%s" hx-target="#action-drawer">Stop</button>' "$(escape_html "$service")"
+          printf '</div>'
+          printf '</li>'
+        done
+      fi
+      raw_output_panel "Reveal raw probe output" "Command: systemctl list-units --type=service --state=running" "$(escape_html "$service_output")"
+    elif has launchctl; then
+      service_output=$(launchctl list 2>&1 || true)
+      services=$(printf '%s\n' "$service_output" | awk 'NR>1 {print $3}' | head -n 6)
+      if [ -z "$services" ]; then
+        printf '<li class="roster-item"><div><div class="roster-title">No active services</div><div class="roster-meta">launchctl returned no rows</div></div></li>'
+      else
+        printf '%s\n' "$services" | while IFS= read -r service; do
+          printf '<li class="roster-item">'
+          printf '<div>'
+          printf '<div class="roster-title">%s</div>' "$(escape_html "$service")"
+          printf '<div class="roster-meta">State: loaded • Manager: launchd</div>'
+          printf '</div>'
+          printf '<div class="roster-actions">'
+          printf '<button class="icon-button" title="Restart service" hx-get="/cgi/unix-action?action=restart-service&target=%s" hx-target="#action-drawer">Restart</button>' "$(escape_html "$service")"
+          printf '<button class="icon-button danger" title="Stop service" hx-get="/cgi/unix-action?action=stop-service&target=%s" hx-target="#action-drawer">Stop</button>' "$(escape_html "$service")"
+          printf '</div>'
+          printf '</li>'
+        done
+      fi
+      raw_output_panel "Reveal raw probe output" "Command: launchctl list" "$(escape_html "$service_output")"
+    else
+      printf '<li class="roster-item"><div><div class="roster-title">Service manager unavailable</div><div class="roster-meta">systemctl or launchctl required</div></div></li>'
+      raw_output_panel "Reveal raw probe output" "Command: (none)" "No service manager detected."
+    fi
+    printf '</ul>'
+    ;;
+  network)
+    roster_header "Network" "network-roster" "network" "$stamp"
+    printf '<ul class="roster-list">'
+    if has ip; then
+      iface_output=$(ip -o -4 addr show 2>&1 || true)
+      ifaces=$(printf '%s\n' "$iface_output" | awk '{print $2":"$4}' | head -n 6)
+    elif has ifconfig; then
+      iface_output=$(ifconfig 2>&1 || true)
+      ifaces=$(printf '%s\n' "$iface_output" | awk '/^[a-zA-Z0-9]/ {iface=$1} /inet / {print iface":"$2}' | head -n 6)
+    else
+      iface_output="No interface tool found"
+      ifaces=""
+    fi
+    if [ -z "$ifaces" ]; then
+      printf '<li class="roster-item"><div><div class="roster-title">No interface data</div><div class="roster-meta">ip or ifconfig required</div></div></li>'
+    else
+      printf '%s\n' "$ifaces" | while IFS=: read -r iface addr; do
+        printf '<li class="roster-item">'
+        printf '<div>'
+        printf '<div class="roster-title">%s</div>' "$(escape_html "$iface")"
+        printf '<div class="roster-meta">Address: %s</div>' "$(escape_html "$addr")"
+        printf '</div>'
+        printf '<div class="roster-actions">'
+        printf '<button class="icon-button" title="Renew DHCP" hx-get="/cgi/unix-action?action=renew-dhcp&target=%s" hx-target="#action-drawer">Renew</button>' "$(escape_html "$iface")"
+        printf '<button class="icon-button danger" title="Bring interface down" hx-get="/cgi/unix-action?action=down-interface&target=%s" hx-target="#action-drawer">Down</button>' "$(escape_html "$iface")"
+        printf '</div>'
+        printf '</li>'
+      done
+    fi
+    printf '</ul>'
+    raw_output_panel "Reveal raw probe output" "Command: ip -o -4 addr show (or ifconfig)" "$(escape_html "$iface_output")"
+    ;;
+  storage)
+    roster_header "Storage" "storage-roster" "storage" "$stamp"
+    printf '<ul class="roster-list">'
+    storage_output=$(df -h 2>&1 || true)
+    printf '%s\n' "$storage_output" | tail -n +2 | head -n 6 | while IFS= read -r line; do
+      fs=$(printf '%s' "$line" | awk '{print $1}')
+      usage=$(printf '%s' "$line" | awk '{print $5}')
+      mount=$(printf '%s' "$line" | awk '{print $6}')
+      if [ -z "$fs" ]; then
+        continue
+      fi
+      printf '<li class="roster-item">'
+      printf '<div>'
+      printf '<div class="roster-title">%s</div>' "$(escape_html "$mount")"
+      printf '<div class="roster-meta">Device: %s • Usage: %s</div>' "$(escape_html "$fs")" "$(escape_html "$usage")"
+      printf '</div>'
+      printf '<div class="roster-actions">'
+      printf '<button class="icon-button" title="Check filesystem" hx-get="/cgi/unix-action?action=check-filesystem&target=%s" hx-target="#action-drawer">Check</button>' "$(escape_html "$mount")"
+      printf '<button class="icon-button danger" title="Remount read-only" hx-get="/cgi/unix-action?action=remount-readonly&target=%s" hx-target="#action-drawer">Readonly</button>' "$(escape_html "$mount")"
+      printf '</div>'
+      printf '</li>'
+    done
+    printf '</ul>'
+    raw_output_panel "Reveal raw probe output" "Command: df -h" "$(escape_html "$storage_output")"
+    ;;
+  system)
+    roster_header "System" "system-roster" "system" "$stamp"
+    printf '<ul class="roster-list">'
+    hostname=$(hostname 2>/dev/null || printf 'unknown')
+    kernel=$(uname -sr 2>/dev/null || printf 'unknown')
+    uptime_info=$(uptime 2>/dev/null || printf 'uptime unavailable')
+    load_info=$(printf '%s' "$uptime_info" | awk -F'load averages?:' '{print $2}' | sed 's/^ //')
+    printf '<li class="roster-item">'
+    printf '<div>'
+    printf '<div class="roster-title">%s</div>' "$(escape_html "$hostname")"
+    printf '<div class="roster-meta">Kernel: %s • Load: %s</div>' "$(escape_html "$kernel")" "$(escape_html "$load_info")"
+    printf '</div>'
+    printf '<div class="roster-actions">'
+    printf '<button class="icon-button" title="Sync time" hx-get="/cgi/unix-action?action=sync-time" hx-target="#action-drawer">Sync</button>'
+    printf '<button class="icon-button danger" title="Reboot host" hx-get="/cgi/unix-action?action=reboot-host" hx-target="#action-drawer">Reboot</button>'
+    printf '</div>'
+    printf '</li>'
+    printf '<li class="roster-item">'
+    printf '<div>'
+    printf '<div class="roster-title">Time state</div>'
+    printf '<div class="roster-meta">%s</div>' "$(escape_html "$(date 2>/dev/null || printf 'time unavailable')")"
+    printf '</div>'
+    printf '</li>'
+    printf '<li class="roster-item">'
+    printf '<div>'
+    printf '<div class="roster-title">Recent logs</div>'
+    printf '<div class="roster-meta">Use journalctl or log show for critical events.</div>'
+    printf '</div>'
+    printf '</li>'
+    printf '</ul>'
+    raw_output_panel "Reveal raw probe output" "Command: uname -sr; uptime" "$(escape_html "$kernel\n$uptime_info")"
+    ;;
+  processes)
+    roster_header "Focused Processes" "process-roster" "processes" "$stamp"
+    printf '<ul class="roster-list">'
+    if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+      process_output=$(ps -Ao pid,comm,%cpu,%mem -r 2>&1 || true)
+    else
+      process_output=$(ps -eo pid,comm,%cpu,%mem --sort=-%cpu 2>&1 || true)
+    fi
+    printf '%s\n' "$process_output" | tail -n +2 | head -n 6 | while IFS= read -r line; do
+      pid=$(printf '%s' "$line" | awk '{print $1}')
+      command=$(printf '%s' "$line" | awk '{print $2}')
+      cpu=$(printf '%s' "$line" | awk '{print $3}')
+      mem=$(printf '%s' "$line" | awk '{print $4}')
+      if [ -z "$pid" ]; then
+        continue
+      fi
+      printf '<li class="roster-item">'
+      printf '<div>'
+      printf '<div class="roster-title">%s</div>' "$(escape_html "$command")"
+      printf '<div class="roster-meta">PID %s • CPU %s%% • MEM %s%%</div>' "$(escape_html "$pid")" "$(escape_html "$cpu")" "$(escape_html "$mem")"
+      printf '</div>'
+      printf '<div class="roster-actions">'
+      printf '<button class="icon-button" title="Terminate (SIGTERM)" hx-get="/cgi/unix-action?action=terminate-process&target=%s" hx-target="#action-drawer">Terminate</button>' "$(escape_html "$pid")"
+      printf '<button class="icon-button danger" title="Kill (SIGKILL)" hx-get="/cgi/unix-action?action=kill-process&target=%s" hx-target="#action-drawer">Kill</button>' "$(escape_html "$pid")"
+      printf '</div>'
+      printf '</li>'
+    done
+    printf '</ul>'
+    raw_output_panel "Reveal raw probe output" "Command: ps (filtered top 6)" "$(escape_html "$process_output")"
+    ;;
+  software)
+    roster_header "Software" "software-roster" "software" "$stamp"
+    printf '<ul class="roster-list">'
+    manager=""
+    update_hint=""
+    rollback_hint=""
+    if has nixos-rebuild || has nix-env; then
+      manager="Nix / NixOS"
+      update_hint="nixos-rebuild switch --upgrade"
+      rollback_hint="nix-env --rollback"
+    elif has apt; then
+      manager="apt (Debian/Ubuntu)"
+      update_hint="apt list --upgradable"
+      rollback_hint="apt-mark hold"
+    elif has pacman; then
+      manager="pacman (Arch)"
+      update_hint="pacman -Qu"
+      rollback_hint="pacman -U /var/cache/pacman/pkg/..."
+    elif has brew; then
+      manager="Homebrew (macOS)"
+      update_hint="brew update && brew outdated"
+      rollback_hint="brew switch"
+    else
+      manager="Unknown"
+      update_hint=""
+      rollback_hint=""
+    fi
+    printf '<li class="roster-item">'
+    printf '<div>'
+    printf '<div class="roster-title">Package manager</div>'
+    printf '<div class="roster-meta">%s</div>' "$(escape_html "$manager")"
+    printf '</div>'
+    printf '<div class="roster-actions">'
+    printf '<button class="icon-button" title="Check updates" hx-get="/cgi/unix-action?action=check-updates" hx-target="#action-drawer">Check</button>'
+    printf '<button class="icon-button danger" title="Rollback" hx-get="/cgi/unix-action?action=rollback-packages" hx-target="#action-drawer">Rollback</button>'
+    printf '</div>'
+    printf '</li>'
+    printf '</ul>'
+    raw_output_panel "Reveal raw probe output" "Suggested update probe" "$(escape_html "$update_hint")"
+    ;;
+  configuration)
+    roster_header "Configuration" "configuration-roster" "configuration" "$stamp"
+    printf '<ul class="roster-list">'
+    for path in /etc /etc/systemd /etc/nixos /usr/local/etc /Library/Preferences "$HOME/.config"; do
+      [ -z "$path" ] && continue
+      if [ -e "$path" ]; then
+        status="exists"
+      else
+        status="missing"
+      fi
+      printf '<li class="roster-item">'
+      printf '<div>'
+      printf '<div class="roster-title">%s</div>' "$(escape_html "$path")"
+      printf '<div class="roster-meta">Authority: %s</div>' "$(escape_html "$status")"
+      printf '</div>'
+      printf '<div class="roster-actions">'
+      printf '<button class="icon-button" title="Reveal path" hx-get="/cgi/unix-action?action=reveal-config&target=%s" hx-target="#action-drawer">Reveal</button>' "$(escape_html "$path")"
+      printf '</div>'
+      printf '</li>'
+    done
+    printf '</ul>'
+    raw_output_panel "Reveal raw probe output" "Command: ls /etc" "$(escape_html "$(ls /etc 2>&1 | head -n 8 || printf 'unavailable')")"
+    ;;
+  display-sessions)
+    roster_header "Display & Sessions" "display-roster" "display-sessions" "$stamp"
+    printf '<ul class="roster-list">'
+    session_type="${XDG_SESSION_TYPE:-unknown}"
+    session_owner=$(id -un 2>/dev/null || printf 'unknown')
+    compositor="${WAYLAND_DISPLAY:-${DISPLAY:-unknown}}"
+    desktop_env="${XDG_CURRENT_DESKTOP:-${DESKTOP_SESSION:-unknown}}"
+
+    if has loginctl; then
+      login_source="login manager config"
+    else
+      login_source="vendor default"
+    fi
+
+    printf '<li class="roster-item">'
+    printf '<div>'
+    printf '<div class="roster-title">Protocol</div>'
+    printf '<div class="roster-meta">%s • Source: %s</div>' \
+      "$(escape_html "$session_type")" "$(escape_html "$login_source")"
+    printf '</div>'
+    printf '<div class="roster-actions">'
+    printf '<button class="icon-button" title="Inspect protocol" hx-get="/cgi/unix-action?action=inspect-display&target=protocol" hx-target="#action-drawer">Inspect</button>'
+    printf '</div>'
+    printf '</li>'
+
+    printf '<li class="roster-item">'
+    printf '<div>'
+    printf '<div class="roster-title">Session owner</div>'
+    printf '<div class="roster-meta">%s • Source: login manager config</div>' \
+      "$(escape_html "$session_owner")"
+    printf '</div>'
+    printf '</li>'
+
+    printf '<li class="roster-item">'
+    printf '<div>'
+    printf '<div class="roster-title">Compositor / Display</div>'
+    printf '<div class="roster-meta">%s • Source: compositor config</div>' \
+      "$(escape_html "$compositor")"
+    printf '</div>'
+    printf '</li>'
+
+    printf '<li class="roster-item">'
+    printf '<div>'
+    printf '<div class="roster-title">Desktop environment</div>'
+    printf '<div class="roster-meta">%s • Source: DE config</div>' \
+      "$(escape_html "$desktop_env")"
+    printf '</div>'
+    printf '</li>'
+
+    gpu_output=""
+    gpu_source="vendor default"
+    if has lspci; then
+      gpu_output=$(lspci -nn 2>/dev/null | grep -i 'vga\\|3d\\|display' | head -n 4 || true)
+      gpu_source="vendor default"
+    elif [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has system_profiler; then
+      gpu_output=$(system_profiler SPDisplaysDataType 2>/dev/null | head -n 20 || true)
+      gpu_source="vendor default"
+    else
+      gpu_output="GPU probe unavailable"
+    fi
+
+    printf '<li class="roster-item">'
+    printf '<div>'
+    printf '<div class="roster-title">GPU & drivers</div>'
+    printf '<div class="roster-meta">%s • Source: %s</div>' \
+      "$(escape_html "${gpu_output:-unknown}")" "$(escape_html "$gpu_source")"
+    printf '</div>'
+    printf '<div class="roster-actions">'
+    printf '<button class="icon-button" title="Inspect GPU" hx-get="/cgi/unix-action?action=inspect-display&target=gpu" hx-target="#action-drawer">Inspect</button>'
+    printf '</div>'
+    printf '</li>'
+
+    output_output=""
+    output_source="compositor config"
+    if has xrandr; then
+      output_output=$(xrandr --query 2>/dev/null | grep ' connected' | head -n 4 || true)
+      output_source="compositor config"
+    elif [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has system_profiler; then
+      output_output=$(system_profiler SPDisplaysDataType 2>/dev/null | grep -i 'resolution' | head -n 4 || true)
+      output_source="vendor default"
+    else
+      output_output="Output probe unavailable"
+    fi
+
+    printf '<li class="roster-item">'
+    printf '<div>'
+    printf '<div class="roster-title">Active outputs</div>'
+    printf '<div class="roster-meta">%s • Source: %s</div>' \
+      "$(escape_html "${output_output:-unknown}")" "$(escape_html "$output_source")"
+    printf '</div>'
+    printf '<div class="roster-actions">'
+    printf '<button class="icon-button" title="Inspect outputs" hx-get="/cgi/unix-action?action=inspect-display&target=outputs" hx-target="#action-drawer">Inspect</button>'
+    printf '</div>'
+    printf '</li>'
+
+    printf '</ul>'
+    raw_output_panel "Reveal raw probe output" \
+      "Command: env | loginctl | lspci | xrandr" \
+      "$(escape_html "XDG_SESSION_TYPE=$session_type\nXDG_CURRENT_DESKTOP=$desktop_env\n${gpu_output}\n${output_output}")"
+    ;;
+  system-summary)
+    roster_header "System Summary" "system-summary" "system-summary" "$stamp"
+    hostname=$(hostname 2>/dev/null || printf 'unknown')
+    kernel=$(uname -sr 2>/dev/null || printf 'unknown')
+    uptime_info=$(uptime 2>/dev/null || printf 'uptime unavailable')
+    load_info=$(printf '%s' "$uptime_info" | awk -F'load averages?:' '{print $2}' | sed 's/^ //')
+    cat <<HTML
+<div class="notice">
+  <strong>Host:</strong> $(escape_html "$hostname")<br>
+  <strong>Kernel:</strong> $(escape_html "$kernel")<br>
+  <strong>Load:</strong> $(escape_html "$load_info")
+</div>
+HTML
+    raw_output_panel "Reveal raw probe output" "Command: uname -sr; uptime" "$(escape_html "$kernel\n$uptime_info")"
+    ;;
+  *)
+    cat <<HTML
+<div class="notice">Unknown domain. Refresh from the navigation to load live data.</div>
+HTML
+    ;;
+esac

@@ -65,7 +65,10 @@ current_port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || true)
 new_port=${2-}
 if [ -z "$new_port" ]; then
   printf 'Current port: %s\n' "$current_port"
-  new_port=$(read-line "Enter new port: ") || die "change-site-port: failed to read port input"
+  printf 'Enter new port: '
+  if ! read -r new_port </dev/tty; then
+    die "change-site-port: failed to read port input"
+  fi
 fi
 
 # Validate port number

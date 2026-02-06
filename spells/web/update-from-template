@@ -131,6 +131,9 @@ fi
 if [ -d "$SITE_DIR/site/includes" ]; then
   rm -rf "$SITE_DIR/site/includes"
 fi
+if [ -d "$SITE_DIR/cgi" ]; then
+  rm -rf "$SITE_DIR/cgi"
+fi
 # Remove README if it exists (comes from template)
 if [ -f "$SITE_DIR/README.md" ]; then
   rm -f "$SITE_DIR/README.md"
@@ -150,6 +153,10 @@ fi
 
 if [ -d "$template_dir/includes" ]; then
   cp -r "$template_dir/includes" "$SITE_DIR/site/"
+fi
+
+if [ -d "$template_dir/cgi" ]; then
+  cp -r "$template_dir/cgi" "$SITE_DIR/"
 fi
 
 if [ -f "$template_dir/README.md" ]; then

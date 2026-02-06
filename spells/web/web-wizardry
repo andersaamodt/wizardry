@@ -29,7 +29,7 @@ The web platform integrates:
 
 All site files live under $HOME/sites/SITENAME/
 Build output goes to $HOME/sites/SITENAME/build/
-CGI scripts must be in spells/.imps/cgi/
+CGI scripts may live in $HOME/sites/SITENAME/cgi/ (site-specific) or spells/.imps/cgi/ (shared)
 USAGE
   exit 0
   ;;
