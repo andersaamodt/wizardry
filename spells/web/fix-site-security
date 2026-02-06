@@ -242,14 +242,21 @@ if [ -d "$SITE_DIR/.web-libs" ]; then
   run_priv chmod -R 755 "$SITE_DIR/.web-libs"
 fi
 
-# Only change ownership of build and nginx directories to site user
-# Keep source files (site/, site.conf, etc.) owned by the actual user
-run_priv chown -R "$site_user":"$site_group" "$SITE_DIR/build"
+# Set ownership based on who needs to write vs who needs to read
+# - build/: actual user builds, site user (nginx) reads → actual user owns
+# - nginx/: site user (nginx) manages → site user owns  
+# - .sitedata/: site user (CGI scripts) writes → site user owns
+run_priv chown -R "$actual_user":"$site_group" "$SITE_DIR/build"
 run_priv chown -R "$site_user":"$site_group" "$SITE_DIR/nginx"
 run_priv chown -R "$site_user":"$site_group" "$SITE_DATA_DIR"
 
-# Set permissions on build/nginx directories - site user needs write access
-set_secure_perms "$SITE_DIR/build"
+# Set permissions on build directory - actual user writes, site user reads
+if [ -d "$SITE_DIR/build" ]; then
+  run_priv find "$SITE_DIR/build" -type d -exec chmod 755 {} + 2>/dev/null || true
+  run_priv find "$SITE_DIR/build" -type f -exec chmod 644 {} + 2>/dev/null || true
+fi
+
+# Set permissions on nginx directory - site user needs write access
 set_secure_perms "$SITE_DIR/nginx"
 
 # Set permissions on site data directory - make it accessible to actual user

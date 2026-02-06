@@ -55,13 +55,27 @@ fi
 # which should be owned by the actual user, not the site user.
 # Only build/, nginx/, and .web-libs/ directories are owned by the site user.
 
-# Check if site.conf exists
-if [ ! -f "$SITE_DIR/site.conf" ]; then
-  die "update-from-template: site.conf not found for '$site_name'"
+# Get template name from site.conf if it exists, otherwise try to detect it
+template=""
+if [ -f "$SITE_DIR/site.conf" ]; then
+  template=$(config-get "$SITE_DIR/site.conf" template 2>/dev/null || echo "")
 fi
 
-# Get template name from site.conf
-template=$(config-get "$SITE_DIR/site.conf" template 2>/dev/null || echo "")
+# If no template found and site.conf doesn't exist, create a basic one
+if [ -z "$template" ] && [ ! -f "$SITE_DIR/site.conf" ]; then
+  warn "No site.conf found - creating one. Assuming 'demo' template."
+  info "You can edit $SITE_DIR/site.conf to change the template."
+  template="demo"
+  cat > "$SITE_DIR/site.conf" <<EOF
+# Site configuration for $site_name
+site-name=$site_name
+site-user=
+template=$template
+port=8080
+domain=localhost
+https=false
+EOF
+fi
 
 if [ -z "$template" ]; then
   die "update-from-template: no template specified in site.conf"
