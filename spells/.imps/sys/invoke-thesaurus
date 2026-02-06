@@ -61,21 +61,9 @@ if [ ! -f "$it_custom_file" ]; then
 HEADER
 fi
 
-# Initialize default synonyms file if it doesn't exist
-it_default_initialized="${it_spellbook_dir}/.default-synonyms-initialized"
-if [ ! -f "$it_default_initialized" ]; then
-  mkdir -p "$it_spellbook_dir" 2>/dev/null || true
-  cat > "$it_default_file" << 'HEADER'
-# Wizardry Default Synonyms
-# Format: word=target
-# These are built-in synonyms that can be reset with reset-default-synonyms.
-# To override a default, add your custom version to .synonyms instead.
-
-HEADER
-  
-  # Define default synonyms (word -> spell)
-  # Spell synonyms (sorted alphabetically)
-  it_defaults="cd-to jump-to-marker
+# Define default synonyms (word -> spell)
+# Spell synonyms (sorted alphabetically)
+it_defaults="cd-to jump-to-marker
 copy-file copy
 delete-file trash
 detect-os detect-distro
@@ -102,9 +90,9 @@ where identify-room
 where-am-i identify-room
 wizardry-web .arcana/web-wizardry/web-wizardry-menu
 wizardry-web-menu .arcana/web-wizardry/web-wizardry-menu"
-  
-  # Also add common system command aliases (sorted alphabetically)
-  it_defaults="$it_defaults
+
+# Also add common system command aliases (sorted alphabetically)
+it_defaults="$it_defaults
 copy cp
 delete rm
 directory pwd
@@ -119,15 +107,37 @@ remove rm
 rename mv
 show cat
 where-is which"
+
+# Initialize default synonyms file if it doesn't exist
+it_default_initialized="${it_spellbook_dir}/.default-synonyms-initialized"
+if [ ! -f "$it_default_initialized" ]; then
+  mkdir -p "$it_spellbook_dir" 2>/dev/null || true
+  cat > "$it_default_file" << 'HEADER'
+# Wizardry Default Synonyms
+# Format: word=target
+# These are built-in synonyms that can be reset with reset-default-synonyms.
+# To override a default, add your custom version to .synonyms instead.
+
+HEADER
   
   printf '%s\n' "$it_defaults" | while IFS=' ' read -r word spell; do
     [ -n "$word" ] && [ -n "$spell" ] || continue
-    
+
     # Write in equals format: word=target
     printf "%s=%s\n" "$word" "$spell" >> "$it_default_file"
   done
   
   touch "$it_default_initialized" 2>/dev/null || true
+fi
+
+# Ensure new defaults are present even after initial setup
+if [ -f "$it_default_file" ]; then
+  printf '%s\n' "$it_defaults" | while IFS=' ' read -r word spell; do
+    [ -n "$word" ] && [ -n "$spell" ] || continue
+    if ! grep -q "^${word}=" "$it_default_file" 2>/dev/null; then
+      printf "%s=%s\n" "$word" "$spell" >> "$it_default_file"
+    fi
+  done
 fi
 
 # Check if synonyms are enabled

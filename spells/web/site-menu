@@ -64,8 +64,17 @@ site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '-' '_')"
 site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
 [ -z "$site_user" ] && site_user="$site_user_default"
 if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SITE_USER_REEXEC-}" ]; then
-  if has sudo; then
-    exec sudo -u "$site_user" -- env WIZARDRY_SITE_USER_REEXEC=1 "$0" "$site_name" "$@"
+  if ! id -u "$site_user" >/dev/null 2>&1; then
+    if has sudo || [ "$(id -u)" -eq 0 ]; then
+      fix-site-security "$site_name" || warn "site-menu: failed to create user $site_user"
+    fi
+  fi
+  if id -u "$site_user" >/dev/null 2>&1; then
+    if has sudo; then
+      exec sudo -u "$site_user" -- env WIZARDRY_SITE_USER_REEXEC=1 "$0" "$site_name" "$@"
+    fi
+  else
+    warn "site-menu: user $site_user missing; continuing without reexec"
   fi
 fi
 
