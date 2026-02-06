@@ -1,8 +1,10 @@
 # Wizardry Project Audit Framework
 
-This document provides a structured, AI-performable audit of the Wizardry project based on its core ethos (Values, Policies, Design Tenets, and Engineering Standards as defined in README.md).
+This document provides a structured framework for **AI-driven intelligent audit** of the Wizardry project based on its core ethos (Values, Policies, Design Tenets, and Engineering Standards as defined in README.md).
 
-The audit converts ethos principles into actionable, repeatable verification parameters that can be systematically checked across the entire codebase.
+## Purpose
+
+The purpose of this audit is for an AI agent to **carefully read and evaluate each file** in the repository, applying human-level judgment and understanding to assess whether it meets the project's standards. This is NOT a code-driven automated check—it requires the AI to actually open each file, read its contents thoughtfully, understand its purpose, and make intelligent assessments against the rubric below.
 
 **Related Documentation:**
 - **README.md** - Project philosophy (Values, Policies, Design Tenets, Engineering Standards)
@@ -284,39 +286,61 @@ The audit results are maintained in a separate file to keep the rubric document 
 
 ### Table Structure (in AUDIT_RESULTS.md)
 
-| File Path | Last Audit | Result | Code | Docs | Theme | Policy | Issues | Fixes |
-|-----------|------------|--------|------|------|-------|--------|--------|-------|
-| *Complete table in AUDIT_RESULTS.md* | YYYY-MM-DD | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | Issues found | 🔧 if fixed |
+| File Path | Last Audit | Thoroughness | Result | Code | Docs | Theme | Policy | Issues | Fixes |
+|-----------|------------|--------------|--------|------|------|-------|--------|--------|-------|
+| *Complete table in AUDIT_RESULTS.md* | YYYY-MM-DD | Level | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | Issues found | 🔧 if fixed |
 
 ### Column Descriptions
 
-The rubric's 21 sections (184 items) are compressed into these columns:
-
 1. **File Path** - Relative path from repository root
 2. **Last Audit** - Date of most recent audit (YYYY-MM-DD format)
-3. **Result** - Overall audit result (worst of all categories)
-4. **Code** - Code Quality: Sections 7 (POSIX), 12-13 (Eng. Standards), 19 (Quality Metrics), 4 (Functions)
-5. **Docs** - Comment Quality: Section 6 (Didacticism), opening comments, help text
-6. **Theme** - Theming: Section 15 (Theming & Flavor), appropriate MUD vocabulary
-7. **Policy** - No Policy Violations: Sections 3 (No Globals), 9-11 (Values/Policies/Tenets), 17 (Security)
-8. **Issues** - Specific problems found during audit
-9. **Fixes** - Changes made (🔧 indicates fixes applied in this iteration)
+3. **Thoroughness** - How carefully the file was reviewed (see levels below)
+4. **Result** - Overall audit result (worst of all categories)
+5. **Code** - Code Quality: Sections 7 (POSIX), 12-13 (Eng. Standards), 19 (Quality Metrics), 4 (Functions)
+6. **Docs** - Comment Quality: Section 6 (Didacticism), opening comments, help text
+7. **Theme** - Theming: Section 15 (Theming & Flavor), appropriate MUD vocabulary
+8. **Policy** - No Policy Violations: Sections 3 (No Globals), 9-11 (Values/Policies/Tenets), 17 (Security)
+9. **Issues** - Specific problems found during audit
+10. **Fixes** - Changes made (🔧 indicates fixes applied in this iteration)
+
+### Thoroughness Levels
+
+The AI auditor must self-assess and document how thoroughly each file was reviewed:
+
+- **Not Read** (❌) - File was not opened or reviewed
+- **Skimmed** (👁️) - File was opened and briefly scanned (< 10 seconds of attention)
+- **Read** (📖) - File was read through once with understanding (~30-60 seconds)
+- **Perused** (🔍) - File was carefully read with attention to details (~2-5 minutes)
+- **Exhaustive** (🎯) - File was thoroughly analyzed, cross-referenced with related code, tested mentally against edge cases (5+ minutes)
+
+Choose the level that honestly represents the depth of review. Higher thoroughness is not always necessary—simple files may only need "Read" level, while complex or critical files deserve "Exhaustive" review.
 
 ### Audit Workflow
 
-When conducting an audit:
+When conducting an AI-driven audit:
 
-1. **Select file(s)** to audit from inventory
-2. **Run through applicable checklist items** above
-3. **Document issues** found
-4. **Apply fixes** as needed
-5. **Re-verify** after fixes
-6. **Update table row** with:
+1. **Select file(s)** to audit from the table
+2. **Open and read the file** - Actually view the contents with appropriate thoroughness
+3. **Apply the rubric** - Work through applicable checklist items thoughtfully
+4. **Make intelligent assessments** - Use human-level judgment, not pattern matching
+5. **Document findings** - Record specific issues with context
+6. **Update the table** with:
    - Current date in "Last Audit"
-   - Color-coded result (🟢 after fixes applied)
-   - Color-coded assessment for each category
-   - Bulleted list of changes made (if any)
-7. **Commit changes** with descriptive message
+   - Honest thoroughness level based on time and attention given
+   - Color-coded result based on actual evaluation
+   - Specific issues found (not generic patterns)
+   - Any fixes applied (if doing fixes in same session)
+7. **Form memories** - Store important patterns, idioms, or insights discovered
+
+### Critical Principles for AI Auditors
+
+- **Actually read files** - Don't guess based on file names or patterns
+- **Be honest about thoroughness** - Accurately report review depth
+- **Apply context** - Understand what each file is trying to accomplish
+- **Use judgment** - Consider whether violations are appropriate for the context
+- **Document specifics** - "Missing opening comment" not just "doc issues"
+- **Cross-reference** - Check related files when assessing design decisions
+- **Question assumptions** - Don't blindly apply rules; understand their purpose
 
 ### File Categories for Audit
 
@@ -359,83 +383,81 @@ Files are categorized by type for appropriate audit criteria:
 
 ---
 
-## Audit Execution Guide
+## Generating Fresh Audit Tables
 
-### Quick Audit Commands
+To start a fresh audit or add new files to an existing audit:
 
 ```sh
-# POSIX compliance check
-find spells .tests -type f ! -name '*.md' -exec checkbashisms {} \;
+# Generate blank audit table with all repository files
+.github/generate-audit-table.sh > /tmp/audit-table.md
 
-# Style/quality check
-lint-magic --all
-
-# Run all tests
-test-magic
-
-# Count functions in spells (should be ≤3: show_usage + 1-2 helpers)
-grep -c '^[a-z_]*()' spells/*/* | grep -v ':0$' | grep -v ':1$' | grep -v ':2$' | grep -v ':3$'
-
-# Find environment variable usage (audit for globals policy)
-grep -r 'export ' spells/ | grep -v WIZARDRY_LOG_LEVEL
-
-# Check for bash-isms in usage
-grep -r '\[\[' spells/
-grep -r ' == ' spells/
-
-# Verify all spells have tests
-comm -23 <(find spells -type f | sort) <(find .tests -type f | sed 's/\.tests/spells/' | sed 's/test-//' | sed 's/\.sh$//' | sort)
+# This creates a markdown table with:
+# - All auditable files listed
+# - Empty columns ready for AI review
+# - Thoroughness column for self-assessment
 ```
 
-### Systematic Audit Process
+The generated table can be incorporated into AUDIT_RESULTS.md to begin a new audit cycle.
 
-1. **Preparation**
-   - Pull latest code
-   - Review recent changes in EXEMPTIONS.md and LESSONS.md
-   - Identify audit scope (full audit vs targeted review)
+---
 
-2. **Automated Checks**
-   - Run all automated tools (checkbashisms, lint-magic, test-magic)
-   - Document any failures
+## Audit Execution Guide
 
-3. **Manual Review**
-   - Work through checklist systematically
-   - Sample representative files from each category
-   - Focus on recent changes and high-risk areas
+### AI-Driven Review Process
 
-4. **Documentation**
-   - Update file inventory table
-   - Add new lessons to LESSONS.md
-   - Document new exemptions in EXEMPTIONS.md
-   - Update FULL_SPEC.md if behavior clarified
+**For each file in the audit table:**
 
-5. **Fixes**
-   - Apply fixes for identified issues
-   - Re-run automated checks
-   - Verify fixes don't break functionality
+1. **Open the file** - Use `view` tool to read contents
+2. **Assess file type and purpose** - Understand what it's supposed to do
+3. **Review against applicable sections** of the checklist below
+4. **Determine thoroughness level** - How much time/attention did you give it?
+5. **Evaluate each category** (Code, Docs, Theme, Policy)
+6. **Document specific findings** - What exactly is wrong or right?
+7. **Update the table row** with honest assessment
 
-6. **Reporting**
-   - Summarize audit findings
-   - Track metrics over time
-   - Identify systemic issues for project improvement
+**Do NOT:**
+- Run automated pattern matching tools and call it an audit
+- Guess based on file names without reading contents  
+- Copy-paste generic issues without verification
+- Claim high thoroughness when you only skimmed
+- Apply rules mechanically without understanding context
+
+**DO:**
+- Read files carefully with appropriate depth
+- Think about what the code is trying to accomplish
+- Consider whether apparent violations are justified
+- Cross-reference related files for context
+- Be honest about review depth in thoroughness column
 
 7. **Memory Formation (for AI Auditors)**
    - During audits, actively form memories of important patterns and findings
-   - Store memories that optimize working memory for future audits
+   - Store memories that will help in future audits and code generation
    - Focus on:
-     * **Common failure patterns**: Recurring bash-isms, POSIX violations
-     * **Project-specific idioms**: Unique patterns in this codebase
-     * **Exemption rationales**: Why certain exceptions exist
-     * **Cross-platform quirks**: Platform-specific gotchas discovered
-     * **Best practices**: Exemplary code patterns found during audit
+     * **Common patterns**: Recurring idioms specific to this codebase
+     * **Exemption rationales**: Why certain exceptions exist and are justified
+     * **Cross-platform considerations**: Platform-specific approaches discovered
+     * **Best practices**: Exemplary code patterns worth remembering
+     * **Design decisions**: Architectural choices and their reasoning
    - Use `store_memory` tool to capture:
      * POSIX sh patterns that maximize cross-platform compatibility
      * Function discipline patterns that comply with project standards
      * Theming patterns that balance flavor with clarity
      * Security patterns that prevent vulnerabilities
-   - Goal: Maximize compliance with project ethos and skill in writing highest-quality POSIX sh code
-   - Carefully choose what to memorize - quality over quantity
+   - Goal: Build deep understanding of project ethos and standards
+   - Quality over quantity - be selective in what you memorize
    - Re-store useful existing memories to retain them longer
+
+### Quality Checks for Your Audit
+
+Before finalizing an audit session, verify:
+
+- [ ] Did I actually **read** the files I marked as reviewed?
+- [ ] Is my thoroughness assessment **honest** (not inflated)?
+- [ ] Are my issues **specific** (not generic pattern-match results)?
+- [ ] Did I **understand context** before flagging violations?
+- [ ] Would another person reading this file reach similar conclusions?
+- [ ] Did I **cross-reference** related code when needed?
+- [ ] Are documented issues **actionable** and clear?
 
 ---
 
