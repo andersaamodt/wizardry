@@ -139,6 +139,7 @@ trap cleanup INT TERM EXIT
 
 # Ensure LOG_FILE exists for tail -f (creates if missing)
 touch "$LOG_FILE"
+chmod 664 "$LOG_FILE" 2>/dev/null || true
 
 # Determine initial line count for tail -f based on whether we need gap prevention
 # - If since_timestamp provided: start with last 100 lines to cover connection gap

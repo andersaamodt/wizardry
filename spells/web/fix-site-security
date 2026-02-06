@@ -247,10 +247,10 @@ fi
 # Set ownership based on who needs to write vs who needs to read
 # - build/: actual user builds, site user (nginx) reads → actual user owns
 # - nginx/: actual user (configure-nginx) writes, site user reads → actual user owns
-# - .sitedata/: site user (CGI scripts) writes → site user owns
+# - .sitedata/: actual user (runs nginx/fcgiwrap/CGI) writes → actual user owns
 run_priv chown -R "$actual_user":"$site_group" "$SITE_DIR/build"
 run_priv chown -R "$actual_user":"$site_group" "$SITE_DIR/nginx"
-run_priv chown -R "$site_user":"$site_group" "$SITE_DATA_DIR"
+run_priv chown -R "$actual_user":"$site_group" "$SITE_DATA_DIR"
 
 # Set permissions on build directory - actual user writes, site user reads
 if [ -d "$SITE_DIR/build" ]; then
@@ -279,9 +279,10 @@ fi
 
 # Set permissions on site data directory - make it accessible to actual user
 # so "Open site data" works. Use 755 for dirs so user can cd into it.
+# Files need 664 so site user (owner) can write to them (e.g., chat logs)
 if [ -d "$SITE_DATA_DIR" ]; then
   run_priv find "$SITE_DATA_DIR" -type d -exec chmod 755 {} + 2>/dev/null || true
-  run_priv find "$SITE_DATA_DIR" -type f -exec chmod 644 {} + 2>/dev/null || true
+  run_priv find "$SITE_DATA_DIR" -type f -exec chmod 664 {} + 2>/dev/null || true
 fi
 
 # Ensure site directory itself is accessible (755) and owned by actual user
