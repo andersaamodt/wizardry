@@ -523,6 +523,32 @@ function setupRoomListStream() {
   // Log successful connection
   window.roomListEventSource.addEventListener('open', function(event) {
     console.log('[Room List SSE] Connected successfully');
+    
+    // On initial connection, crossfade from "Connecting to chatrooms..." to "Select a room to start chatting"
+    if (!window.chatInitialConnectionComplete) {
+      window.chatInitialConnectionComplete = true;
+      
+      var emptyStateMsg = document.querySelector('.empty-state-message');
+      var createRoomLink = document.getElementById('create-room-link');
+      
+      if (emptyStateMsg && emptyStateMsg.textContent === 'Connecting to chatrooms...') {
+        // Crossfade: fade out, change text, fade in
+        emptyStateMsg.style.transition = 'opacity 0.3s ease-in-out';
+        emptyStateMsg.style.opacity = '0';
+        
+        setTimeout(function() {
+          emptyStateMsg.textContent = window.originalEmptyStateMessage || 'Select a room to start chatting';
+          emptyStateMsg.style.opacity = '1';
+          
+          // Re-enable Create Room link
+          if (createRoomLink) {
+            createRoomLink.classList.remove('disabled');
+            createRoomLink.style.pointerEvents = '';
+            createRoomLink.style.opacity = '';
+          }
+        }, 200);  // Match crossfade duration
+      }
+    }
   });
 }
 
@@ -1102,7 +1128,7 @@ function updateConnectionStatus(status, isClickable) {
       // Force reflow to ensure opacity change is applied
       void statusElement.offsetHeight;
       
-      // Wait for fade out (150ms - half of transition duration)
+      // Wait for fade out (200ms - slower crossfade)
       window.sseStatusTransitionTimeout = setTimeout(function() {
         // Set text with spinner while invisible
         setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
@@ -1113,7 +1139,7 @@ function updateConnectionStatus(status, isClickable) {
         // Clear inline opacity to trigger fade in via CSS transition
         statusElement.style.opacity = '';
         window.sseStatusTransitionTimeout = null;
-      }, 150);
+      }, 200);
       
       statusElement.classList.add('visible');
     } else {
@@ -1150,7 +1176,7 @@ function updateConnectionStatus(status, isClickable) {
       // Force reflow to ensure opacity change is applied
       void statusElement.offsetHeight;
       
-      // Wait for fade out (150ms - half of transition duration)
+      // Wait for fade out (200ms - slower crossfade)
       window.sseStatusTransitionTimeout = setTimeout(function() {
         // Add connection-lost class for styling (pill background)
         statusElement.classList.add('connection-lost');
@@ -1164,7 +1190,7 @@ function updateConnectionStatus(status, isClickable) {
         // Clear inline opacity to trigger fade in via CSS transition
         statusElement.style.opacity = '';
         window.sseStatusTransitionTimeout = null;
-      }, 150);
+      }, 200);
       
       statusElement.classList.add('visible');
     } else {
@@ -1187,27 +1213,22 @@ function updateConnectionStatus(status, isClickable) {
       attemptReconnection(window.currentRoom);
     };
     
-    // Use mouseover/mouseout with relatedTarget check to prevent glitches
-    statusElement.onmouseover = function(e) {
-      // Check if we're entering from outside the element
-      if (!this.contains(e.relatedTarget)) {
-        // Clear any pending crossfade transition
-        if (window.sseStatusTransitionTimeout) {
-          clearTimeout(window.sseStatusTransitionTimeout);
-          window.sseStatusTransitionTimeout = null;
-        }
-        
-        if (this.textContent === 'Disconnected') {
-          this.textContent = 'Retry';
-        }
+    // Use mouseenter/mouseleave which only fire when entering/leaving the element itself
+    statusElement.onmouseenter = function(e) {
+      // Clear any pending crossfade transition
+      if (window.sseStatusTransitionTimeout) {
+        clearTimeout(window.sseStatusTransitionTimeout);
+        window.sseStatusTransitionTimeout = null;
+      }
+      
+      if (this.textContent === 'Disconnected') {
+        this.textContent = 'Retry';
       }
     };
-    statusElement.onmouseout = function(e) {
-      // Check if we're leaving to outside the element (not to a child)
-      if (!this.contains(e.relatedTarget)) {
-        if (this.textContent === 'Retry') {
-          this.textContent = 'Disconnected';
-        }
+    statusElement.onmouseleave = function(e) {
+      if (this.textContent === 'Retry') {
+        this.textContent = 'Disconnected';
+      }
       }
     };
     
@@ -2025,6 +2046,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialize unread counts SSE connection on page load
 document.addEventListener('DOMContentLoaded', function() {
+  // Set initial state: Show "Connecting to chatrooms..." before SSE connects
+  var emptyStateMsg = document.querySelector('.empty-state-message');
+  var createRoomLink = document.getElementById('create-room-link');
+  
+  // Store original message
+  window.originalEmptyStateMessage = 'Select a room to start chatting';
+  
+  // Set initial connecting message
+  if (emptyStateMsg) {
+    emptyStateMsg.textContent = 'Connecting to chatrooms...';
+    emptyStateMsg.style.opacity = '1';  // Ensure visible
+  }
+  
+  // Disable Create Room link initially
+  if (createRoomLink) {
+    createRoomLink.classList.add('disabled');
+    createRoomLink.style.pointerEvents = 'none';
+    createRoomLink.style.opacity = '0.5';
+  }
+  
+  // Flag to track if we've done the initial connection
+  window.chatInitialConnectionComplete = false;
+  
   setupUnreadCountsStream();
   setupRoomListStream();
   
