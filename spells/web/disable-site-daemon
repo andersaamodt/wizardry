@@ -1,0 +1,61 @@
+#!/bin/sh
+
+# Disable the site daemon from starting on boot.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: disable-site-daemon SITENAME
+
+Disables the systemd/launchd daemon from starting on boot for a site.
+
+Example: disable-site-daemon mysite
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+site_name=${1-}
+if [ -z "$site_name" ]; then
+  die 2 "disable-site-daemon: SITENAME required"
+fi
+
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+SITES_DIR="$WEB_ROOT"
+SITE_DIR="$SITES_DIR/$site_name"
+
+if [ ! -d "$SITE_DIR" ]; then
+  die "disable-site-daemon: site '$site_name' not found"
+fi
+
+run_priv() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return
+  fi
+  if has sudo; then
+    sudo "$@"
+    return
+  fi
+  die "disable-site-daemon: root or sudo is required"
+}
+
+unit="wizardry-site-${site_name}.service"
+plist="/Library/LaunchDaemons/org.wizardry.web.${site_name}.plist"
+
+if has systemctl; then
+  run_priv systemctl disable "$unit"
+  success "Daemon disabled on startup for $site_name"
+  exit 0
+fi
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+  run_priv launchctl unload -w "$plist" >/dev/null 2>&1 || true
+  success "Daemon disabled on startup for $site_name"
+  exit 0
+fi
+
+die "disable-site-daemon: systemd or launchd is required"

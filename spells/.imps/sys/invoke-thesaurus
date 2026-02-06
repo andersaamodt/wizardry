@@ -94,6 +94,8 @@ portal jump-to-marker
 read-file read-magic
 remove-file trash
 search-file file-list
+site site-menu
+sites web-wizardry
 teleport jump-to-marker
 up go-up
 where identify-room
@@ -199,4 +201,3 @@ unset invoke_thesaurus_saved_opts
 return 0
 
 # Run the function
-

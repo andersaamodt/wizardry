@@ -31,7 +31,7 @@ If you have a MUD player account on this server, you can use it to login! Just e
 sudo usermod -aG blog-admin <username>
 ```
 
-<div class="demo-box">
+::: {.demo-box}
 <h2>🔐 Step 1: Register with MUD Player Account</h2>
 
 <p><strong>Option A: If you have a MUD player account on this server</strong></p>
@@ -64,9 +64,9 @@ sudo usermod -aG blog-admin <username>
 <button id="btn-register-ssh">🔑 Register SSH Key</button>
 
 <div id="output-register-ssh" class="output"></div>
-</div>
+:::
 
-<div class="demo-box">
+::: {.demo-box}
 <h2>🔐 Step 2: Bind WebAuthn Credential</h2>
 
 <p>Create a WebAuthn credential bound to your SSH fingerprint:</p>
@@ -74,9 +74,9 @@ sudo usermod -aG blog-admin <username>
 <button id="btn-bind-webauthn">🔗 Bind WebAuthn Credential</button>
 
 <div id="output-bind-webauthn" class="output"></div>
-</div>
+:::
 
-<div class="demo-box">
+::: {.demo-box}
 <h2>✅ Step 3: Authenticate with WebAuthn</h2>
 
 <p>Sign in using your WebAuthn credential (no SSH key required):</p>
@@ -84,9 +84,9 @@ sudo usermod -aG blog-admin <username>
 <button id="btn-login">🔓 Login with WebAuthn</button>
 
 <div id="output-login" class="output"></div>
-</div>
+:::
 
-<div class="demo-box">
+::: {.demo-box}
 <h2>📋 Manage Delegates</h2>
 
 <p>View and manage your WebAuthn delegates:</p>
@@ -94,7 +94,7 @@ sudo usermod -aG blog-admin <username>
 <button id="btn-list-delegates">📋 List Delegates</button>
 
 <div id="output-delegates" class="output"></div>
-</div>
+:::
 
 <script>
 (function() {

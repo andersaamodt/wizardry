@@ -79,11 +79,20 @@ mkdir -p "$SITE_DIR/build"
 cat > "$SITE_DIR/site.conf" <<EOF
 # Site configuration for $site_name
 site-name=$site_name
+site-user=
 template=$template
 port=8080
 domain=localhost
 https=false
 EOF
+
+cat > "$SITE_DIR/site.allowlist" <<EOF
+# List additional absolute paths this site may access.
+# One path per line. Lines starting with # are ignored.
+EOF
+
+step "Securing site directories for $site_name"
+fix-site-security "$site_name"
 
 success "Site '$site_name' created from template '$template'"
 info "Site directory: $SITE_DIR"
