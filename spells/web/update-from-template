@@ -51,27 +51,9 @@ if [ ! -d "$SITE_DIR" ]; then
   die "update-from-template: site '$site_name' not found"
 fi
 
-site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '-' '_')"
-site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
-[ -z "$site_user" ] && site_user="$site_user_default"
-if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SITE_USER_REEXEC-}" ] && [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
-  if id -u "$site_user" >/dev/null 2>&1; then
-    if has sudo; then
-      exec sudo -u "$site_user" -- env WIZARDRY_SITE_USER_REEXEC=1 "$0" "$site_name" "$@"
-    fi
-  else
-    if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ] && has fix-site-security; then
-      fix-site-security "$site_name" >/dev/null 2>&1 || true
-    fi
-    if id -u "$site_user" >/dev/null 2>&1; then
-      if has sudo; then
-        exec sudo -u "$site_user" -- env WIZARDRY_SITE_USER_REEXEC=1 "$0" "$site_name" "$@"
-      fi
-    else
-      warn "update-from-template: site user '$site_user' not found; continuing without reexec"
-    fi
-  fi
-fi
+# Note: We don't re-exec as site user here - template updates modify source files
+# which should be owned by the actual user, not the site user.
+# Only build/, nginx/, and .web-libs/ directories are owned by the site user.
 
 # Check if site.conf exists
 if [ ! -f "$SITE_DIR/site.conf" ]; then
