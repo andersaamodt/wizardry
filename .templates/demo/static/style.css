@@ -1337,7 +1337,7 @@ pre code {
   vertical-align: middle;
 }
 
-/* Spinner using SVG mask for pixel-perfect rendering */
+/* SVG spinner with inline data URI */
 .spinner-grey {
   display: inline-block;
   width: 16px;
@@ -1345,22 +1345,14 @@ pre code {
   margin-left: 8px;
   vertical-align: -2px;
   flex-shrink: 0;
-  position: relative;
+  background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Ccircle cx=%228%22 cy=%228%22 r=%226%22 fill=%22none%22 stroke=%22rgba(128,128,128,0.2)%22 stroke-width=%222%22/%3E%3Cpath d=%22M 8 2 A 6 6 0 0 1 14 8%22 fill=%22none%22 stroke=%22%23666%22 stroke-width=%222%22 stroke-linecap=%22round%22/%3E%3C/svg%3E');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  animation: svg-spin-anim 0.7s linear infinite;
 }
 
-.spinner-grey::before {
-  content: '';
-  display: block;
-  width: 16px;
-  height: 16px;
-  background: conic-gradient(from 0deg, transparent 0%, transparent 75%, #666 75%, #666 100%);
-  -webkit-mask: radial-gradient(circle, transparent 0%, transparent 55%, black 56%, black 100%);
-  mask: radial-gradient(circle, transparent 0%, transparent 55%, black 56%, black 100%);
-  animation: spinner-rotate 0.7s linear infinite;
-}
-
-@keyframes spinner-rotate {
-  100% {
+@keyframes svg-spin-anim {
+  to {
     transform: rotate(360deg);
   }
 }
