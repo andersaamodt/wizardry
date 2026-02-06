@@ -110,18 +110,18 @@ This table shows all files in the repository with their audit results. Files are
 | spells/cantrips/validate-ssh-key | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - simple validation logic with exit status | - |
 | spells/cantrips/wizard-cast | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - teaching helper showing commands before execution | - |
 | spells/cantrips/wizard-eyes | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - teaching helper with muted output formatting | - |
-| spells/crypto/evoke-hash | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/crypto/hash | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/crypto/hashchant | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/crypto/evoke-hash | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - searches by hash xattr, helpful tips | - |
+| spells/crypto/hash | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - clean implementation, good MUD flavor | - |
+| spells/crypto/hashchant | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - CRC-32 to xattr, handles missing tools gracefully | - |
 | spells/divination/detect-distro | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None | - |
-| spells/divination/detect-magic | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/divination/detect-posix | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/divination/detect-rc-file | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/divination/identify-room | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/enchant/disenchant | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/enchant/enchant | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/enchant/enchantment-to-yaml | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/enchant/yaml-to-enchantment | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/divination/detect-magic | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - whimsical xattr scanner with themed narration | - |
+| spells/divination/detect-posix | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - BOOTSTRAP mode, toolchain probes, verbose option | - |
+| spells/divination/detect-rc-file | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None - smart platform detection, Nix/macOS/Linux support | - |
+| spells/divination/identify-room | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - identifies system directories with MUD narration | - |
+| spells/enchant/disenchant | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - removes xattrs with proper namespace handling | - |
+| spells/enchant/enchant | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - sets xattrs with key=value syntax | - |
+| spells/enchant/enchantment-to-yaml | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - exports xattrs to YAML format | - |
+| spells/enchant/yaml-to-enchantment | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - imports xattrs from YAML | - |
 | spells/menu/cast | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/menu/install-menu | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/menu/main-menu | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
