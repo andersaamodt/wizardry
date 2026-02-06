@@ -7,7 +7,9 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: uninstall-checkbashisms
 
-This spell uninstalls the checkbashisms command (from devscripts package) using the system package manager.
+Uninstall the checkbashisms command. On systems where it was installed via
+package manager, removes the package. On Arch Linux and macOS where it was
+downloaded directly, removes the executable file.
 USAGE
   exit 0
   ;;
@@ -16,6 +18,42 @@ esac
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+# Special handling for Arch Linux and macOS - checkbashisms installed from Debian sources
+if command -v pacman >/dev/null 2>&1 || [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  # Remove checkbashisms that was directly downloaded to /usr/local/bin
+  target_file="/usr/local/bin/checkbashisms"
+  
+  if [ ! -f "$target_file" ]; then
+    printf '%s\n' "checkbashisms is not installed."
+    exit 0
+  fi
+  
+  if [ ! -w "$target_file" ] && [ ! -w "$(dirname "$target_file")" ]; then
+    if command -v sudo >/dev/null 2>&1; then
+      sudo rm -f "$target_file" || {
+        printf '%s\n' "uninstall-checkbashisms: failed to remove checkbashisms" >&2
+        exit 1
+      }
+    else
+      printf '%s\n' "uninstall-checkbashisms: cannot remove $target_file (no write permission)" >&2
+      exit 1
+    fi
+  else
+    rm -f "$target_file" || {
+      printf '%s\n' "uninstall-checkbashisms: failed to remove checkbashisms" >&2
+      exit 1
+    }
+  fi
+  
+  if command -v checkbashisms >/dev/null 2>&1; then
+    printf '%s\n' "uninstall-checkbashisms: removal failed (command still found in PATH)" >&2
+    exit 1
+  else
+    printf '%s\n' "checkbashisms uninstalled successfully."
+    exit 0
+  fi
+fi
 
 ASSUME_YES=1
 PACMAN_PACKAGE=devtools
