@@ -57,6 +57,19 @@ if [ -z "$site_user" ]; then
   site_user="$site_user_default"
   config-set "$SITE_CONFIG" site-user "$site_user"
 fi
+site_group="$site_user"
+
+group_exists() {
+  if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has dscl; then
+    dscl . -read "/Groups/$1" >/dev/null 2>&1
+    return $?
+  fi
+  if has getent; then
+    getent group "$1" >/dev/null 2>&1
+    return $?
+  fi
+  grep -q "^$1:" /etc/group 2>/dev/null
+}
 
 ensure_site_user() {
   if id -u "$site_user" >/dev/null 2>&1; then
@@ -145,23 +158,26 @@ apply_allowlist() {
       continue
     fi
 
-    run_priv chown -R "$site_user":"$site_user" "$line"
+    run_priv chown -R "$site_user":"$site_group" "$line"
     set_secure_perms "$line"
   done < "$ALLOWLIST_FILE"
 }
 
 ensure_site_user
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && ! group_exists "$site_group"; then
+  site_group=staff
+fi
 
 run_priv mkdir -p "$SITES_DIR/.sitedata" "$SITE_DATA_DIR"
-run_priv chown -R "$site_user":"$site_user" "$SITE_DIR"
-run_priv chown -R "$site_user":"$site_user" "$SITE_DATA_DIR"
+run_priv chown -R "$site_user":"$site_group" "$SITE_DIR"
+run_priv chown -R "$site_user":"$site_group" "$SITE_DATA_DIR"
 
 set_secure_perms "$SITE_DIR"
 set_secure_perms "$SITE_DATA_DIR"
 apply_allowlist
 
 if [ -f "$ALLOWLIST_FILE" ]; then
-  run_priv chown "$site_user":"$site_user" "$ALLOWLIST_FILE"
+  run_priv chown "$site_user":"$site_group" "$ALLOWLIST_FILE"
   run_priv chmod 640 "$ALLOWLIST_FILE"
 fi
 
