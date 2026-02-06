@@ -301,107 +301,104 @@ Files requiring immediate attention (49 total):
 Files with minor issues needing attention (764 total, showing first 100):
 
 
-- **`./.tests/.arcana/bitcoin/test-bitcoin-menu.sh`**: 🟡 | Code: 🟡 | Docs: 🟢 | Theme: ⚪ | Policy: 🟢 | Issues: Missing set -eu
-- **`./.tests/.arcana/bitcoin/test-bitcoin-status.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/bitcoin/test-bitcoin.service.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/bitcoin/test-change-bitcoin-directory.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/bitcoin/test-configure-bitcoin.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/bitcoin/test-install-bitcoin.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/bitcoin/test-is-bitcoin-installed.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/bitcoin/test-is-bitcoin-running.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/bitcoin/test-repair-bitcoin-permissions.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/bitcoin/test-uninstall-bitcoin.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/bitcoin/test-wallet-menu.sh`**: 🟡 | Code: 🟡 | Docs: 🟢 | Theme: ⚪ | Policy: 🟢 | Issues: Missing set -eu
-- **`./.tests/.arcana/core/test-core-menu.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-core-status.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-install-attr.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-install-awk.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-install-clipboard-helper.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-install-core.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-install-dd.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-install-find.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-install-git.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-install-grep.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-install-pkgin.sh`**: 🟡 | Code: 🟡 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: Missing set -eu; No opening comment
-- **`./.tests/.arcana/core/test-install-ps.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-install-sed.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-install-socat.sh`**: 🟡 | Code: 🟡 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: Missing set -eu; No opening comment
-- **`./.tests/.arcana/core/test-install-stty.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-install-tput.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-install-wl-clipboard.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-install-xclip.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-install-xsel.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-manage-system-command.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-uninstall-awk.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-uninstall-core.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-uninstall-find.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-uninstall-grep.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-uninstall-pkgin.sh`**: 🟡 | Code: 🟡 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: Missing set -eu; No opening comment
-- **`./.tests/.arcana/core/test-uninstall-ps.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-uninstall-sed.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/core/test-uninstall-socat.sh`**: 🟡 | Code: 🟡 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: Missing set -eu; No opening comment
-- **`./.tests/.arcana/lightning/test-configure-lightning.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/lightning/test-install-lightning.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/lightning/test-is-lightning-installed.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/lightning/test-is-lightning-running.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/lightning/test-lightning-menu.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/lightning/test-lightning-status.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/lightning/test-lightning-wallet-menu.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/lightning/test-lightning.service.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/lightning/test-repair-lightning-permissions.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/lightning/test-uninstall-lightning.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/mud/test-install-cd.sh`**: 🟡 | Code: 🟡 | Docs: 🟢 | Theme: ⚪ | Policy: 🟢 | Issues: Missing set -eu
-- **`./.tests/.arcana/mud/test-install-mud.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/mud/test-install-sshfs.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/mud/test-load-cd-hook.sh`**: 🟡 | Code: 🟡 | Docs: 🟢 | Theme: ⚪ | Policy: 🟢 | Issues: Missing set -eu
-- **`./.tests/.arcana/mud/test-load-touch-hook.sh`**: 🟡 | Code: 🟡 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: Missing set -eu; No opening comment
-- **`./.tests/.arcana/mud/test-mud-status.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/mud/test-sshfs-status.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/mud/test-toggle-all-mud.sh`**: 🟡 | Code: 🟡 | Docs: 🟢 | Theme: ⚪ | Policy: 🟢 | Issues: Missing set -eu
-- **`./.tests/.arcana/mud/test-toggle-avatar.sh`**: 🟡 | Code: 🟡 | Docs: 🟢 | Theme: ⚪ | Policy: 🟢 | Issues: Missing set -eu
-- **`./.tests/.arcana/mud/test-toggle-cd.sh`**: 🟡 | Code: 🟡 | Docs: 🟢 | Theme: ⚪ | Policy: 🟢 | Issues: Missing set -eu
-- **`./.tests/.arcana/mud/test-toggle-listen.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/mud/test-toggle-mud-menu.sh`**: 🟡 | Code: 🟡 | Docs: 🟢 | Theme: ⚪ | Policy: 🟢 | Issues: Missing set -eu
-- **`./.tests/.arcana/mud/test-toggle-parse.sh`**: 🟡 | Code: 🟡 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: Missing set -eu; No opening comment
-- **`./.tests/.arcana/mud/test-toggle-sshfs.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/mud/test-toggle-touch-hook.sh`**: 🟡 | Code: 🟡 | Docs: 🟢 | Theme: ⚪ | Policy: 🟢 | Issues: Missing set -eu
-- **`./.tests/.arcana/mud/test-uninstall-sshfs.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/simplex-chat/test-install-simplex-chat.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/simplex-chat/test-simplex-chat-menu.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/simplex-chat/test-simplex-chat-status.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/simplex-chat/test-uninstall-simplex-chat.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/syncthing/test-disable-syncthing-autostart.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/syncthing/test-enable-syncthing-autostart.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/syncthing/test-install-syncthing.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/syncthing/test-is-syncthing-autostart-enabled.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/syncthing/test-is-syncthing-installed.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/syncthing/test-is-syncthing-running.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/syncthing/test-open-syncthing.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/syncthing/test-restart-syncthing.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/syncthing/test-start-syncthing.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/syncthing/test-stop-syncthing.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/syncthing/test-syncthing-menu.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/syncthing/test-syncthing-status.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/syncthing/test-uninstall-syncthing.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/test-import-arcanum.sh`**: 🟡 | Code: 🟡 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: Missing set -eu; No opening comment
-- **`./.tests/.arcana/tor/test-configure-tor-bridge.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/tor/test-configure-tor.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/tor/test-create-tor-launchd-service.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/tor/test-disable-tor-daemon.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/tor/test-enable-tor-daemon.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/tor/test-ensure-torrc-exists.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/tor/test-install-libevent.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/tor/test-install-openssl.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/tor/test-install-tor.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/tor/test-is-libevent-installed.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/tor/test-is-openssl-installed.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/tor/test-is-tor-daemon-enabled.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/tor/test-is-tor-hidden-service-configured.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/tor/test-is-tor-installed.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/tor/test-is-tor-launchd-service-configured.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/tor/test-is-tor-running.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-- **`./.tests/.arcana/tor/test-remove-tor-hidden-service.sh`**: 🟡 | Code: 🟢 | Docs: 🟡 | Theme: ⚪ | Policy: 🟢 | Issues: No opening comment
-
+| File | Result | Code | Docs | Theme | Policy | Issues |
+|------|--------|------|------|-------|--------|--------|
+| `./.tests/.arcana/bitcoin/test-configure-bitcoin.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/bitcoin/test-install-bitcoin.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/bitcoin/test-is-bitcoin-installed.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/bitcoin/test-is-bitcoin-running.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/bitcoin/test-repair-bitcoin-permissions.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/bitcoin/test-uninstall-bitcoin.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/bitcoin/test-wallet-menu.sh` | 🟡 | 🟡 | 🟢 | ⚪ | 🟢 | Missing set -eu |
+| `./.tests/.arcana/core/test-core-menu.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-core-status.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-install-attr.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-install-awk.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-install-clipboard-helper.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-install-core.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-install-dd.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-install-find.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-install-git.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-install-grep.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-install-pkgin.sh` | 🟡 | 🟡 | 🟡 | ⚪ | 🟢 | Missing set -eu; No opening comment |
+| `./.tests/.arcana/core/test-install-ps.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-install-sed.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-install-socat.sh` | 🟡 | 🟡 | 🟡 | ⚪ | 🟢 | Missing set -eu; No opening comment |
+| `./.tests/.arcana/core/test-install-stty.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-install-tput.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-install-wl-clipboard.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-install-xclip.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-install-xsel.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-manage-system-command.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-uninstall-awk.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-uninstall-core.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-uninstall-find.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-uninstall-grep.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-uninstall-pkgin.sh` | 🟡 | 🟡 | 🟡 | ⚪ | 🟢 | Missing set -eu; No opening comment |
+| `./.tests/.arcana/core/test-uninstall-ps.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-uninstall-sed.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/core/test-uninstall-socat.sh` | 🟡 | 🟡 | 🟡 | ⚪ | 🟢 | Missing set -eu; No opening comment |
+| `./.tests/.arcana/lightning/test-configure-lightning.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/lightning/test-install-lightning.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/lightning/test-is-lightning-installed.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/lightning/test-is-lightning-running.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/lightning/test-lightning-menu.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/lightning/test-lightning-status.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/lightning/test-lightning-wallet-menu.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/lightning/test-lightning.service.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/lightning/test-repair-lightning-permissions.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/lightning/test-uninstall-lightning.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/mud/test-install-cd.sh` | 🟡 | 🟡 | 🟢 | ⚪ | 🟢 | Missing set -eu |
+| `./.tests/.arcana/mud/test-install-mud.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/mud/test-install-sshfs.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/mud/test-load-cd-hook.sh` | 🟡 | 🟡 | 🟢 | ⚪ | 🟢 | Missing set -eu |
+| `./.tests/.arcana/mud/test-load-touch-hook.sh` | 🟡 | 🟡 | 🟡 | ⚪ | 🟢 | Missing set -eu; No opening comment |
+| `./.tests/.arcana/mud/test-mud-status.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/mud/test-sshfs-status.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/mud/test-toggle-all-mud.sh` | 🟡 | 🟡 | 🟢 | ⚪ | 🟢 | Missing set -eu |
+| `./.tests/.arcana/mud/test-toggle-avatar.sh` | 🟡 | 🟡 | 🟢 | ⚪ | 🟢 | Missing set -eu |
+| `./.tests/.arcana/mud/test-toggle-cd.sh` | 🟡 | 🟡 | 🟢 | ⚪ | 🟢 | Missing set -eu |
+| `./.tests/.arcana/mud/test-toggle-listen.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/mud/test-toggle-mud-menu.sh` | 🟡 | 🟡 | 🟢 | ⚪ | 🟢 | Missing set -eu |
+| `./.tests/.arcana/mud/test-toggle-parse.sh` | 🟡 | 🟡 | 🟡 | ⚪ | 🟢 | Missing set -eu; No opening comment |
+| `./.tests/.arcana/mud/test-toggle-sshfs.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/mud/test-toggle-touch-hook.sh` | 🟡 | 🟡 | 🟢 | ⚪ | 🟢 | Missing set -eu |
+| `./.tests/.arcana/mud/test-uninstall-sshfs.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/simplex-chat/test-install-simplex-chat.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/simplex-chat/test-simplex-chat-menu.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/simplex-chat/test-simplex-chat-status.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/simplex-chat/test-uninstall-simplex-chat.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/syncthing/test-disable-syncthing-autostart.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/syncthing/test-enable-syncthing-autostart.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/syncthing/test-install-syncthing.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/syncthing/test-is-syncthing-autostart-enabled.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/syncthing/test-is-syncthing-installed.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/syncthing/test-is-syncthing-running.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/syncthing/test-open-syncthing.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/syncthing/test-restart-syncthing.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/syncthing/test-start-syncthing.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/syncthing/test-stop-syncthing.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/syncthing/test-syncthing-menu.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/syncthing/test-syncthing-status.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/syncthing/test-uninstall-syncthing.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/test-import-arcanum.sh` | 🟡 | 🟡 | 🟡 | ⚪ | 🟢 | Missing set -eu; No opening comment |
+| `./.tests/.arcana/tor/test-configure-tor-bridge.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/tor/test-configure-tor.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/tor/test-create-tor-launchd-service.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/tor/test-disable-tor-daemon.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/tor/test-enable-tor-daemon.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/tor/test-ensure-torrc-exists.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/tor/test-install-libevent.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/tor/test-install-openssl.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/tor/test-install-tor.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/tor/test-is-libevent-installed.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/tor/test-is-openssl-installed.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/tor/test-is-tor-daemon-enabled.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/tor/test-is-tor-hidden-service-configured.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/tor/test-is-tor-installed.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/tor/test-is-tor-launchd-service-configured.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/tor/test-is-tor-running.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
+| `./.tests/.arcana/tor/test-remove-tor-hidden-service.sh` | 🟡 | 🟢 | 🟡 | ⚪ | 🟢 | No opening comment |
 ---
 
 ## Complete Audit Table
