@@ -146,8 +146,10 @@ EOF
   run_priv chmod 644 "$plist_file"
   rm -f "$temp_plist"
 
-  run_priv launchctl unload -w "$plist_file" >/dev/null 2>&1 || true
-  run_priv launchctl load -w "$plist_file" >/dev/null 2>&1 || warn "repair-site-daemon: failed to load launchd plist"
+  run_priv sh -c "launchctl unload -w \"$plist_file\" >/dev/null 2>&1" || true
+  if ! run_priv sh -c "launchctl load -w \"$plist_file\" >/dev/null 2>&1"; then
+    warn "repair-site-daemon: failed to load launchd plist"
+  fi
   success "Daemon repaired for $site_name (launchd)"
 }
 

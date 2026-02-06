@@ -55,8 +55,12 @@ if has systemctl; then
 fi
 
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
-  if ! run_priv launchctl load -w "$plist" >/dev/null 2>&1; then
+  if ! run_priv sh -c "launchctl load -w \"$plist\" >/dev/null 2>&1"; then
     warn "enable-site-daemon: failed to load launchd plist"
+  fi
+  if [ ! -f "$plist" ]; then
+    warn "enable-site-daemon: launchd plist missing for $site_name"
+    exit 1
   fi
   success "Daemon enabled on startup for $site_name"
   exit 0
