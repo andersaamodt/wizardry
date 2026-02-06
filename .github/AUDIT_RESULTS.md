@@ -124,7 +124,7 @@ This table shows all files in the repository with their audit results. Files are
 | spells/enchant/enchant | 2026-02-06 16:45 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - sets xattrs with key=value syntax | - |
 | spells/enchant/enchantment-to-yaml | 2026-02-06 16:45 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - exports xattrs to YAML format | - |
 | spells/enchant/yaml-to-enchantment | 2026-02-06 16:45 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - imports xattrs from YAML | - |
-| spells/menu/cast | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/menu/cast | 2026-02-06 17:59 | 🔍 Perused | 🟡 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | Lines 96-100 dead code (first_run set to 0 but never used); otherwise excellent self-healing menu with graceful degradation | - |
 | spells/menu/install-menu | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/menu/main-menu | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/menu/mud | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
@@ -143,7 +143,7 @@ This table shows all files in the repository with their audit results. Files are
 | spells/menu/spellbook | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/menu/synonym-menu | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/menu/system-menu | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/menu/thesaurus | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/menu/thesaurus | 2026-02-06 18:00 | 🔍 Perused | 🟡 | �� | 🟢 | 🟢 | 🟢 | 🟢 | Lines 21-25 unusual WIZARDRY_DIR setup; duplicated synonym parsing logic (could abstract to imp); otherwise excellent thesaurus metaphor for alias management | - |
 | spells/menu/users-menu | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/mud/boot-player | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/mud/check-cd-hook | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
