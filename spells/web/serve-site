@@ -48,11 +48,14 @@ if ! has nginx; then
   die "serve-site: nginx is not installed"
 fi
 
-repair-site-daemon "$site_name"
-
 unit="wizardry-site-${site_name}.service"
 plist="/Library/LaunchDaemons/org.wizardry.web.${site_name}.plist"
 label="org.wizardry.web.${site_name}"
+
+# Only repair daemon if config is missing
+if [ ! -f "$unit" ] && [ ! -f "$plist" ]; then
+  repair-site-daemon "$site_name"
+fi
 
 if has systemctl; then
   if systemctl is-active --quiet "$unit" 2>/dev/null; then
