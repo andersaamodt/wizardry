@@ -52,16 +52,9 @@ if [ ! -d "$SITE_DIR" ]; then
   die "build: site '$site_name' not found"
 fi
 
-site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '-' '_')"
-site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
-[ -z "$site_user" ] && site_user="$site_user_default"
-if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SITE_USER_REEXEC-}" ]; then
-  if has sudo; then
-    exec sudo -u "$site_user" -- \
-      env WIZARDRY_SITE_USER_REEXEC=1 WIZARDRY_DIR="$WIZARDRY_DIR" \
-      WIZARDRY_SITES_DIR="$WEB_ROOT" "$0" "$site_name" "$@"
-  fi
-fi
+# Note: We don't re-exec as site user here - the actual user should be able to build
+# The build/ directory is owned by site user but has proper permissions (755/644)
+# set by fix-site-security to allow the actual user to write to it.
 
 # Check for pandoc
 if ! has pandoc; then
@@ -103,8 +96,26 @@ build_site() {
   info "Converting Markdown to HTML..."
   built_count=0
   if [ -d "$SITE_DIR/site/pages" ]; then
+    # Check if there are any .md files
+    md_file_count=$(find "$SITE_DIR/site/pages" -name "*.md" -type f 2>/dev/null | wc -l)
+    if [ "$md_file_count" -eq 0 ]; then
+      warn "No Markdown files found in $SITE_DIR/site/pages/"
+      warn "Create .md files there to build HTML pages."
+    fi
+    
     for md_file in "$SITE_DIR/site/pages"/*.md; do
       [ -f "$md_file" ] || continue
+      
+      base_name=$(basename "$md_file" .md)
+      html_file="$SITE_DIR/build/pages/${base_name}.html"
+      
+      # Incremental build: skip if HTML is newer than MD (unless --full)
+      if [ "$full_rebuild" -eq 0 ] && [ -f "$html_file" ] && newer "$html_file" "$md_file"; then
+        debug "Skipping $base_name (up to date)"
+        continue
+      fi
+      
+      info "  Building: $base_name.md → $base_name.html"
       
       base_name=$(basename "$md_file" .md)
       html_file="$SITE_DIR/build/pages/${base_name}.html"
@@ -172,6 +183,12 @@ HTMX_HEADER
       
       built_count=$((built_count + 1))
     done
+  else
+    warn "Pages directory not found: $SITE_DIR/site/pages/"
+    warn "Expected site structure:"
+    warn "  $SITE_DIR/site/pages/    - Markdown files (.md)"
+    warn "  $SITE_DIR/site/static/   - CSS, images, etc."
+    warn "  $SITE_DIR/build/         - Generated HTML (output)"
   fi
   
   # Ensure all directories have proper permissions

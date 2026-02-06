@@ -20,6 +20,11 @@ test_web_create_site_creates_structure() {
   test_web_root=$(temp-dir web-wizardry-test)
   export WEB_WIZARDRY_ROOT="$test_web_root"
   
+  # Stub sudo so fix-site-security doesn't create privileged directories
+  stub_dir=$(temp-dir web-wizardry-stub)
+  stub-sudo "$stub_dir"
+  export PATH="$stub_dir:$PATH"
+  
   # Create a test site
   run_spell spells/web/create-site mytestsite
   assert_success
@@ -43,7 +48,7 @@ test_web_create_site_creates_structure() {
   }
   
   # Cleanup
-  rm -rf "$test_web_root"
+  rm -rf "$test_web_root" "$stub_dir"
 }
 
 run_test_case "create-site --help works" test_web_create_site_help

@@ -51,38 +51,103 @@ if [ ! -d "$SITE_DIR" ]; then
   die "update-from-template: site '$site_name' not found"
 fi
 
-site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '-' '_')"
-site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
-[ -z "$site_user" ] && site_user="$site_user_default"
-if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SITE_USER_REEXEC-}" ] && [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ]; then
-  if id -u "$site_user" >/dev/null 2>&1; then
-    if has sudo; then
-      exec sudo -u "$site_user" -- env WIZARDRY_SITE_USER_REEXEC=1 "$0" "$site_name" "$@"
-    fi
-  else
-    if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ] && has fix-site-security; then
-      fix-site-security "$site_name" >/dev/null 2>&1 || true
-    fi
-    if id -u "$site_user" >/dev/null 2>&1; then
-      if has sudo; then
-        exec sudo -u "$site_user" -- env WIZARDRY_SITE_USER_REEXEC=1 "$0" "$site_name" "$@"
-      fi
-    else
-      warn "update-from-template: site user '$site_user' not found; continuing without reexec"
-    fi
-  fi
+# Note: We don't re-exec as site user here - template updates modify source files
+# which should be owned by the actual user, not the site user.
+# Only build/, nginx/, and .web-libs/ directories are owned by the site user.
+
+# Get template name from site.conf if it exists, otherwise try to detect it
+template=""
+if [ -f "$SITE_DIR/site.conf" ]; then
+  template=$(config-get "$SITE_DIR/site.conf" template 2>/dev/null || echo "")
 fi
 
-# Check if site.conf exists
-if [ ! -f "$SITE_DIR/site.conf" ]; then
-  die "update-from-template: site.conf not found for '$site_name'"
+# If no template found and site.conf doesn't exist, create a basic one
+if [ -z "$template" ] && [ ! -f "$SITE_DIR/site.conf" ]; then
+  warn "No site.conf found - creating one. Assuming 'demo' template."
+  info "You can edit $SITE_DIR/site.conf to change the template."
+  template="demo"
+  cat > "$SITE_DIR/site.conf" <<EOF
+# Site configuration for $site_name
+site-name=$site_name
+site-user=
+template=$template
+port=8080
+domain=localhost
+https=false
+EOF
 fi
 
-# Get template name from site.conf
-template=$(config-get "$SITE_DIR/site.conf" template 2>/dev/null || echo "")
-
+# If template is missing, prompt user to select one
 if [ -z "$template" ]; then
-  die "update-from-template: no template specified in site.conf"
+  warn "No template specified in site.conf"
+  info "Please select a template to use for '$site_name':"
+  info ""
+  
+  # Get WIZARDRY_DIR to find templates
+  WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
+  template_list_dir="$WIZARDRY_DIR/.templates"
+  
+  # Check if templates exist
+  if [ ! -d "$template_list_dir" ] || [ -z "$(ls -A "$template_list_dir" 2>/dev/null)" ]; then
+    die "update-from-template: no templates found in $template_list_dir"
+  fi
+  
+  # Show menu to select template
+  if ! require menu "Template selection needs the 'menu' command."; then
+    die "update-from-template: cannot select template without menu command"
+  fi
+  
+  # Create temp file for template selection
+  template_choice_file=$(temp-file template-choice)
+  template_choice_file="${template_choice_file?update-from-template: failed to create temp file}"
+  cleanup-file "$template_choice_file"
+  
+  # Build menu arguments - one per template directory
+  set -- "Select Template for '$site_name'"
+  for template_path in "$template_list_dir"/*; do
+    if [ -d "$template_path" ]; then
+      tmpl=$(basename "$template_path")
+      set -- "$@" "$tmpl%printf '%s' '$tmpl' > '$template_choice_file'"
+    fi
+  done
+  
+  # Show menu and capture result
+  menu "$@" || menu_status=$?
+  menu_status=${menu_status:-0}
+  
+  if [ "$menu_status" -ne 0 ]; then
+    info "Cancelled"
+    exit 0
+  fi
+  
+  # Read selected template from file
+  if [ -f "$template_choice_file" ]; then
+    template=$(cat "$template_choice_file" 2>/dev/null || echo "")
+  fi
+  
+  if [ -z "$template" ]; then
+    die "update-from-template: no template selected"
+  fi
+  
+  info "Selected template: $template"
+  
+  # Update site.conf with selected template
+  if [ -f "$SITE_DIR/site.conf" ]; then
+    config-set "$SITE_DIR/site.conf" template "$template"
+  else
+    # Create site.conf if it doesn't exist
+    cat > "$SITE_DIR/site.conf" <<EOF
+# Site configuration for $site_name
+site-name=$site_name
+site-user=
+template=$template
+port=8080
+domain=localhost
+https=false
+EOF
+  fi
+  
+  success "Template '$template' saved to site.conf"
 fi
 
 # Get WIZARDRY_DIR to find templates
@@ -100,7 +165,6 @@ if [ "$force_flag" -eq 0 ]; then
   info "Site directory: $SITE_DIR"
   info ""
   info "Content in site/uploads and site data will be preserved."
-  printf '\n'
   printf 'Continue? [y/N] '
   read -r response
   case "$response" in
