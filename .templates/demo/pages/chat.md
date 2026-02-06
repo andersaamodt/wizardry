@@ -1092,20 +1092,29 @@ function updateConnectionStatus(status, isClickable) {
     }
     
     if (wasDisconnected) {
-      // Crossfade from Disconnected: first set opacity to 0 to hide any grey background
+      // Crossfade from Retry/Disconnected to Reconnecting
+      // First fade out by setting opacity to 0
       statusElement.style.opacity = '0';
       
-      // Remove background styling immediately (won't be visible since opacity is 0)
+      // Remove background styling immediately (will be applied after timeout)
       statusElement.classList.remove('connection-lost');
-      
-      // Set text without clearing spinner (preserve animation)
-      setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
       
       // Force reflow to ensure opacity change is applied
       void statusElement.offsetHeight;
       
-      // Clear inline style and add visible class to fade in with new content
-      statusElement.style.opacity = '';
+      // Wait for fade out (200ms - slower crossfade)
+      window.sseStatusTransitionTimeout = setTimeout(function() {
+        // Set text with spinner while invisible
+        setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
+        
+        // Force reflow
+        void statusElement.offsetHeight;
+        
+        // Clear inline opacity to trigger fade in via CSS transition
+        statusElement.style.opacity = '';
+        window.sseStatusTransitionTimeout = null;
+      }, 200);
+      
       statusElement.classList.add('visible');
     } else {
       // Coming from other state or first time
@@ -1133,36 +1142,64 @@ function updateConnectionStatus(status, isClickable) {
     var wasReconnecting = !statusElement.classList.contains('connection-lost') && 
                           statusElement.textContent.indexOf('Reconnecting') !== -1;
     
-    // Add connection-lost class for styling
-    statusElement.classList.add('connection-lost');
-    
-    // Set initial content
-    statusElement.textContent = 'Disconnected';
-    
     if (wasReconnecting) {
-      // Crossfade from Reconnecting to Disconnected - element stays visible
+      // Crossfade from Reconnecting to Disconnected
+      // First fade out by setting opacity to 0
+      statusElement.style.opacity = '0';
+      
+      // Force reflow to ensure opacity change is applied
+      void statusElement.offsetHeight;
+      
+      // Wait for fade out (250ms - slower crossfade)
+      window.sseStatusTransitionTimeout = setTimeout(function() {
+        // Add connection-lost class for styling (pill background)
+        statusElement.classList.add('connection-lost');
+        
+        // Change content while invisible
+        statusElement.textContent = 'Disconnected';
+        
+        // Force reflow
+        void statusElement.offsetHeight;
+        
+        // Clear inline opacity to trigger fade in via CSS transition
+        statusElement.style.opacity = '';
+        window.sseStatusTransitionTimeout = null;
+      }, 250);
+      
       statusElement.classList.add('visible');
-    } else if (!statusElement.classList.contains('visible')) {
-      // First time appearing - fade in
-      statusElement.offsetHeight;
-      statusElement.classList.add('visible');
+    } else {
+      // Add connection-lost class for styling
+      statusElement.classList.add('connection-lost');
+      
+      // Set content immediately for non-crossfade cases
+      statusElement.textContent = 'Disconnected';
+      
+      if (!statusElement.classList.contains('visible')) {
+        // First time appearing - fade in
+        statusElement.offsetHeight;
+        statusElement.classList.add('visible');
+      }
+      // else: already visible, no change needed (stays visible)
     }
-    // else: already visible, no change needed (stays visible)
     
     // Setup click handler
     statusElement.onclick = function() {
       attemptReconnection(window.currentRoom);
     };
     
-    // Use textContent for consistent comparison in hover handlers
-    statusElement.onmouseenter = function() {
-      // Only change if not already changed
+    // Use mouseenter/mouseleave which only fire when entering/leaving the element itself
+    statusElement.onmouseenter = function(e) {
+      // Clear any pending crossfade transition
+      if (window.sseStatusTransitionTimeout) {
+        clearTimeout(window.sseStatusTransitionTimeout);
+        window.sseStatusTransitionTimeout = null;
+      }
+      
       if (this.textContent === 'Disconnected') {
         this.textContent = 'Retry';
       }
     };
-    statusElement.onmouseleave = function() {
-      // Only revert if showing Retry
+    statusElement.onmouseleave = function(e) {
       if (this.textContent === 'Retry') {
         this.textContent = 'Disconnected';
       }
