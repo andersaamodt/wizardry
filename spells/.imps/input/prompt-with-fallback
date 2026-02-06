@@ -1,0 +1,43 @@
+#!/bin/sh
+# prompt-with-fallback PROMPT - prompt user for text input with ask-text fallback discovery
+
+set -eu
+
+prompt=${1-}
+if [ -z "$prompt" ]; then
+        printf '%s\n' "prompt-with-fallback: No prompt provided" >&2
+        exit 1
+fi
+
+# Try to find ask-text in PATH first
+if has ask-text; then
+        ask_text_helper=$(command -v ask-text)
+else
+        # Fall back to finding in same directory as calling script
+        # Get parent script's directory from stack
+        script_source=$0
+        case $script_source in
+        */*)
+                script_dir=${script_source%/*}
+                ;;
+        *)
+                resolved=$(command -v "$script_source" 2>/dev/null \
+                        || printf '%s' "$script_source")
+                script_dir=${resolved%/*}
+                ;;
+        esac
+        if [ -z "$script_dir" ] || [ "$script_dir" = "$script_source" ]; then
+                script_dir=.
+        fi
+        script_dir=$(cd "$script_dir" && pwd -P)
+        
+        if [ -x "$script_dir/ask-text" ]; then
+                ask_text_helper=$script_dir/ask-text
+        else
+                printf '%s\n' "prompt-with-fallback: ask-text spell not found" >&2
+                exit 1
+        fi
+fi
+
+# Call ask-text with the prompt and return result
+"$ask_text_helper" "$prompt"
