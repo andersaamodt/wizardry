@@ -279,13 +279,15 @@ if [ -d "$SITE_DIR/site" ]; then
   run_priv find "$SITE_DIR/site" -type f -exec chmod 644 {} + 2>/dev/null || true
 fi
 
-apply_allowlist
-
+# Fix allowlist permissions BEFORE reading it in apply_allowlist
 if [ -f "$ALLOWLIST_FILE" ]; then
   # Keep allowlist owned by actual user but readable by site user
   run_priv chown "$actual_user":"$site_group" "$ALLOWLIST_FILE"
   run_priv chmod 644 "$ALLOWLIST_FILE"
 fi
+
+# Now we can safely read the allowlist file
+apply_allowlist
 
 if [ -f "$SITE_CONFIG" ]; then
   # Keep config owned by actual user but readable by site user
