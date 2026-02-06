@@ -336,11 +336,13 @@ while true; do
     open_data_cmd="$open_data_cmd read -r dummy; }"
     cmd4=$(wrap_cmd "$entry_index" "$open_data_cmd")
     # --- separator
-    entry_index=$((entry_index + 1))  # Increment for first separator (6)
-    entry_index=$((entry_index + 1))  # Increment for second separator (7)
-    entry_index=$((entry_index + 1))  # Increment to position 8 for "Start server"
-    # Now "Start server" aligns with "Stop server" from serving branch (position 8)
-    cmd5=$(wrap_cmd "$entry_index" "serve-site \"$site_name\"")  # Index 8
+    entry_index=$((entry_index + 1))  # Increment for separator
+    # Account for missing "Restart server" position when not serving
+    entry_index=$((entry_index + 1))
+    # Start/Stop server - always present
+    entry_index=$((entry_index + 1))
+    server_toggle_cmd=$(wrap_cmd "$entry_index" "serve-site \"$site_name\"")
+    server_toggle_option="Start server%$server_toggle_cmd"
     entry_index=$((entry_index + 1))
     cmd6=$(wrap_cmd "$entry_index" "build \"$site_name\"")
     entry_index=$((entry_index + 1))
