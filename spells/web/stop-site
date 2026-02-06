@@ -60,4 +60,9 @@ else
   die "stop-site: systemd or launchd is required"
 fi
 
+# Clean up PID file to prevent stale status detection
+if [ -f "$SITE_DIR/nginx/nginx.pid" ]; then
+  rm -f "$SITE_DIR/nginx/nginx.pid" 2>/dev/null || true
+fi
+
 success "Site '$site_name' stopped"
