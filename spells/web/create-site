@@ -121,8 +121,12 @@ EOF
 step "Configuring nginx for $site_name"
 configure-nginx "$site_name"
 
-step "Securing site directories for $site_name"
-fix-site-security "$site_name"
+if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" = "1" ]; then
+  info "Skipping fix-site-security in test mode"
+else
+  step "Securing site directories for $site_name"
+  fix-site-security "$site_name"
+fi
 
 success "Site '$site_name' created at $SITE_DIR"
 info "Edit pages in: $SITE_DIR/site/pages/"
