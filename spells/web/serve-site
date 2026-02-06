@@ -97,5 +97,26 @@ if [ "$is_serving" -eq 1 ]; then
   info "URL: http://$domain:$port"
   info "Stop with: web-stop-site $site_name"
 else
-  die "serve-site: daemon for '$site_name' failed to start. Check nginx logs at $SITE_DIR/nginx/error.log"
+  # Show error logs to help diagnose the failure
+  warn "serve-site: daemon for '$site_name' failed to start"
+  
+  # Check daemon error log (launchd stderr output)
+  if [ -f "$SITE_DIR/nginx/daemon-error.log" ] && [ -s "$SITE_DIR/nginx/daemon-error.log" ]; then
+    warn "Daemon error log (last 20 lines):"
+    tail -20 "$SITE_DIR/nginx/daemon-error.log" >&2
+  fi
+  
+  # Check nginx error log
+  if [ -f "$SITE_DIR/nginx/error.log" ] && [ -s "$SITE_DIR/nginx/error.log" ]; then
+    warn "Nginx error log (last 20 lines):"
+    tail -20 "$SITE_DIR/nginx/error.log" >&2
+  fi
+  
+  # Check startup log from run-site-daemon
+  if [ -f "$SITE_DIR/nginx/startup.log" ] && [ -s "$SITE_DIR/nginx/startup.log" ]; then
+    warn "Nginx startup errors:"
+    cat "$SITE_DIR/nginx/startup.log" >&2
+  fi
+  
+  die "serve-site: check the error output above for details"
 fi

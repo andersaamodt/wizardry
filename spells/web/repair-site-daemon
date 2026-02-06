@@ -102,7 +102,8 @@ launchd_install() {
   plist_file="$launch_dir/${label}.plist"
 
   run_priv mkdir -p "$launch_dir" "$SITE_DIR/nginx"
-  run_priv chown "$site_user":"$site_user" "$SITE_DIR/nginx" 2>/dev/null || true
+  # Note: nginx/ ownership is managed by fix-site-security
+  # (owned by actual user so configure-nginx can write configs)
 
   temp_plist=$(temp-file wizardry-site-daemon)
   cat > "$temp_plist" <<EOF
