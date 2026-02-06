@@ -1154,17 +1154,21 @@ function updateConnectionStatus(status, isClickable) {
       attemptReconnection(window.currentRoom);
     };
     
-    // Use textContent for consistent comparison in hover handlers
-    statusElement.onmouseenter = function() {
-      // Only change if not already changed
-      if (this.textContent === 'Disconnected') {
-        this.textContent = 'Retry';
+    // Use mouseover/mouseout with relatedTarget check to prevent glitches
+    statusElement.onmouseover = function(e) {
+      // Check if we're entering from outside the element
+      if (!this.contains(e.relatedTarget)) {
+        if (this.textContent === 'Disconnected') {
+          this.textContent = 'Retry';
+        }
       }
     };
-    statusElement.onmouseleave = function() {
-      // Only revert if showing Retry
-      if (this.textContent === 'Retry') {
-        this.textContent = 'Disconnected';
+    statusElement.onmouseout = function(e) {
+      // Check if we're leaving to outside the element (not to a child)
+      if (!this.contains(e.relatedTarget)) {
+        if (this.textContent === 'Retry') {
+          this.textContent = 'Disconnected';
+        }
       }
     };
     
