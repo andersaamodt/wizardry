@@ -92,6 +92,13 @@ ensure_site_group() {
   run_priv dscl . -create "/Users/$site_user" PrimaryGroupID "$gid"
 }
 
+ensure_staff_membership() {
+  if [ "$(uname -s 2>/dev/null)" != "Darwin" ] || ! has dscl; then
+    return 0
+  fi
+  run_priv dscl . -append /Groups/staff GroupMembership "$site_user" >/dev/null 2>&1 || true
+}
+
 ensure_site_user() {
   if id -u "$site_user" >/dev/null 2>&1; then
     return 0
@@ -186,6 +193,7 @@ apply_allowlist() {
 
 ensure_site_user
 ensure_site_group
+ensure_staff_membership
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && ! group_exists "$site_group"; then
   site_group=staff
 fi
