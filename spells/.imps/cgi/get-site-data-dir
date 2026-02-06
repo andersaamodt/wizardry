@@ -6,19 +6,40 @@ set -eu
 
 subdir="${1:-}"
 
+# DEBUG logging
+printf '[DEBUG get-site-data-dir] Called with subdir=%s\n' "$subdir" >&2
+printf '[DEBUG get-site-data-dir] WIZARDRY_SITE_NAME=%s\n' "${WIZARDRY_SITE_NAME:-UNSET}" >&2
+printf '[DEBUG get-site-data-dir] WIZARDRY_SITES_DIR=%s\n' "${WIZARDRY_SITES_DIR:-UNSET}" >&2
+printf '[DEBUG get-site-data-dir] HOME=%s\n' "${HOME:-UNSET}" >&2
+
 # Get site identifier from env or default
 if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
   site_id="$WIZARDRY_SITE_NAME"
+  printf '[DEBUG get-site-data-dir] Using WIZARDRY_SITE_NAME: %s\n' "$site_id" >&2
 else
   site_id="default"
+  printf '[DEBUG get-site-data-dir] WIZARDRY_SITE_NAME not set, using default: %s\n' "$site_id" >&2
 fi
 
 # Get sites directory from env or default
 SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"
+printf '[DEBUG get-site-data-dir] SITES_DIR=%s\n' "$SITES_DIR" >&2
 
 # Build path
 if [ -n "$subdir" ]; then
-  printf '%s/.sitedata/%s/%s' "$SITES_DIR" "$site_id" "$subdir"
+  result_path="$SITES_DIR/.sitedata/$site_id/$subdir"
 else
-  printf '%s/.sitedata/%s' "$SITES_DIR" "$site_id"
+  result_path="$SITES_DIR/.sitedata/$site_id"
 fi
+
+printf '[DEBUG get-site-data-dir] Returning path: %s\n' "$result_path" >&2
+
+# Check if path exists
+if [ -e "$result_path" ]; then
+  printf '[DEBUG get-site-data-dir] Path exists\n' >&2
+  printf '[DEBUG get-site-data-dir] Path permissions: %s\n' "$(ls -ld "$result_path" 2>&1)" >&2
+else
+  printf '[DEBUG get-site-data-dir] WARNING: Path does not exist\n' >&2
+fi
+
+printf '%s' "$result_path"

@@ -2,23 +2,42 @@
 # chat-send-message - Send a message to a chat room (MUD-compatible format)
 set -eu
 
+# DEBUG: Log script start
+printf '[DEBUG chat-send-message] Script started at %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" >&2
+printf '[DEBUG chat-send-message] REQUEST_METHOD=%s\n' "${REQUEST_METHOD:-UNSET}" >&2
+printf '[DEBUG chat-send-message] QUERY_STRING=%s\n' "${QUERY_STRING:-UNSET}" >&2
+printf '[DEBUG chat-send-message] WIZARDRY_SITE_NAME=%s\n' "${WIZARDRY_SITE_NAME:-UNSET}" >&2
+printf '[DEBUG chat-send-message] WIZARDRY_SITES_DIR=%s\n' "${WIZARDRY_SITES_DIR:-UNSET}" >&2
+printf '[DEBUG chat-send-message] WIZARDRY_DIR=%s\n' "${WIZARDRY_DIR:-UNSET}" >&2
+printf '[DEBUG chat-send-message] HOME=%s\n' "${HOME:-UNSET}" >&2
+printf '[DEBUG chat-send-message] USER=%s\n' "${USER:-UNSET}" >&2
+printf '[DEBUG chat-send-message] PATH=%s\n' "$PATH" >&2
+
 http-ok-html
 
 # Parse POST data from stdin (format: room=ROOM&user=USER&msg=MESSAGE)
 if [ "${REQUEST_METHOD:-}" = "POST" ]; then
   post_data=$(cat)
+  printf '[DEBUG chat-send-message] POST data received: %s\n' "$post_data" >&2
 else
   # Fallback to query string
   post_data="${QUERY_STRING:-}"
+  printf '[DEBUG chat-send-message] Using query string: %s\n' "$post_data" >&2
 fi
 
 # Parse parameters using get-query-param
+printf '[DEBUG chat-send-message] Parsing parameters...\n' >&2
 room_name=$(get-query-param "room" "$post_data")
+printf '[DEBUG chat-send-message] room_name=%s\n' "$room_name" >&2
 user_name=$(get-query-param "user" "$post_data")
+printf '[DEBUG chat-send-message] user_name=%s\n' "$user_name" >&2
 message=$(get-query-param "msg" "$post_data")
+printf '[DEBUG chat-send-message] message=%s\n' "$message" >&2
 
 # Validate inputs
+printf '[DEBUG chat-send-message] Validating inputs...\n' >&2
 if [ -z "$room_name" ] || [ -z "$message" ]; then
+  printf '[DEBUG chat-send-message] VALIDATION FAILED: room_name or message empty\n' >&2
   cat <<HTML
 <div class="demo-result error">
   <p>Room and message required</p>
@@ -26,9 +45,12 @@ if [ -z "$room_name" ] || [ -z "$message" ]; then
 HTML
   exit 0
 fi
+printf '[DEBUG chat-send-message] Input validation passed\n' >&2
 
 # Validate room name to prevent path traversal
+printf '[DEBUG chat-send-message] Validating room name...\n' >&2
 if ! validate-room-name "$room_name"; then
+  printf '[DEBUG chat-send-message] VALIDATION FAILED: invalid room name\n' >&2
   cat <<HTML
 <div class="demo-result error">
   <p>Invalid room name</p>
@@ -36,14 +58,18 @@ if ! validate-room-name "$room_name"; then
 HTML
   exit 0
 fi
+printf '[DEBUG chat-send-message] Room name validation passed\n' >&2
 
 # Default user if not provided
 if [ -z "$user_name" ]; then
   user_name="Anonymous"
+  printf '[DEBUG chat-send-message] Using default username: Anonymous\n' >&2
 fi
 
 # Validate username
+printf '[DEBUG chat-send-message] Validating username...\n' >&2
 if ! validate-username "$user_name"; then
+  printf '[DEBUG chat-send-message] VALIDATION FAILED: invalid username\n' >&2
   cat <<HTML
 <div class="demo-result error">
   <p>Invalid username. Only alphanumeric, underscore, and hyphen allowed.</p>
@@ -51,10 +77,12 @@ if ! validate-username "$user_name"; then
 HTML
   exit 0
 fi
+printf '[DEBUG chat-send-message] Username validation passed\n' >&2
 
 # Sanitize username - reject reserved names that would conflict with room metadata
 case "$user_name" in
   log|.log|.|..)
+    printf '[DEBUG chat-send-message] VALIDATION FAILED: reserved username\n' >&2
     cat <<HTML
 <div class="demo-result error">
   <p>Invalid username. 'log' is a reserved name.</p>
@@ -63,12 +91,27 @@ HTML
     exit 0
     ;;
 esac
+printf '[DEBUG chat-send-message] Username sanitization passed\n' >&2
 
 # Chat rooms directory - use site-specific location
+printf '[DEBUG chat-send-message] Getting chat directory...\n' >&2
 CHAT_DIR=$(get-site-data-dir "chatrooms")
+printf '[DEBUG chat-send-message] CHAT_DIR=%s\n' "$CHAT_DIR" >&2
 ROOM_DIR="$CHAT_DIR/$room_name"
+printf '[DEBUG chat-send-message] ROOM_DIR=%s\n' "$ROOM_DIR" >&2
+
+# Check if directory exists and is accessible
+if [ ! -e "$ROOM_DIR" ]; then
+  printf '[DEBUG chat-send-message] ERROR: ROOM_DIR does not exist\n' >&2
+elif [ ! -d "$ROOM_DIR" ]; then
+  printf '[DEBUG chat-send-message] ERROR: ROOM_DIR exists but is not a directory\n' >&2
+else
+  printf '[DEBUG chat-send-message] ROOM_DIR exists and is a directory\n' >&2
+  printf '[DEBUG chat-send-message] ROOM_DIR permissions: %s\n' "$(ls -ld "$ROOM_DIR" 2>&1)" >&2
+fi
 
 if [ ! -d "$ROOM_DIR" ]; then
+  printf '[DEBUG chat-send-message] Room not found, sending error response\n' >&2
   cat <<HTML
 <div class="demo-result error">
   <p>Room not found</p>
@@ -78,45 +121,108 @@ HTML
 fi
 
 LOG_FILE="$ROOM_DIR/.log"
+printf '[DEBUG chat-send-message] LOG_FILE=%s\n' "$LOG_FILE" >&2
+
+# Check log file existence and permissions
+if [ ! -e "$LOG_FILE" ]; then
+  printf '[DEBUG chat-send-message] WARNING: LOG_FILE does not exist yet\n' >&2
+elif [ ! -f "$LOG_FILE" ]; then
+  printf '[DEBUG chat-send-message] ERROR: LOG_FILE exists but is not a regular file\n' >&2
+else
+  printf '[DEBUG chat-send-message] LOG_FILE exists\n' >&2
+  printf '[DEBUG chat-send-message] LOG_FILE permissions: %s\n' "$(ls -l "$LOG_FILE" 2>&1)" >&2
+  printf '[DEBUG chat-send-message] LOG_FILE size: %s bytes\n' "$(wc -c < "$LOG_FILE" 2>&1)" >&2
+fi
+
+# Check if we can write to the log file
+if [ -f "$LOG_FILE" ] && [ ! -w "$LOG_FILE" ]; then
+  printf '[DEBUG chat-send-message] ERROR: LOG_FILE exists but is not writable\n' >&2
+elif [ ! -f "$LOG_FILE" ] && [ ! -w "$ROOM_DIR" ]; then
+  printf '[DEBUG chat-send-message] ERROR: LOG_FILE does not exist and ROOM_DIR is not writable\n' >&2
+else
+  printf '[DEBUG chat-send-message] LOG_FILE write check passed\n' >&2
+fi
 
 # Create or update avatar for this user using same logic as MUD incarnate
+printf '[DEBUG chat-send-message] Checking avatar for user %s...\n' "$user_name" >&2
 if [ ! -d "$ROOM_DIR/.$user_name" ]; then
+  printf '[DEBUG chat-send-message] Avatar does not exist, creating...\n' >&2
   avatar_path=$(create-avatar "$user_name" "$ROOM_DIR" 2>/dev/null || printf '')
+  printf '[DEBUG chat-send-message] create-avatar returned: %s\n' "$avatar_path" >&2
   # Mark as web avatar using enchant (xattr)
   if [ -n "$avatar_path" ]; then
     enchant "$avatar_path" "web_avatar=1" 2>/dev/null || true
+    printf '[DEBUG chat-send-message] Avatar created and marked as web avatar\n' >&2
+  else
+    printf '[DEBUG chat-send-message] WARNING: create-avatar returned empty path\n' >&2
   fi
+else
+  printf '[DEBUG chat-send-message] Avatar already exists\n' >&2
 fi
 
 # Update last activity timestamp using enchant (xattr, not files)
 current_timestamp=$(date +%s)
+printf '[DEBUG chat-send-message] Updating last activity timestamp: %s\n' "$current_timestamp" >&2
 enchant "$ROOM_DIR/.$user_name" "last_activity=$current_timestamp" 2>/dev/null || true
 
 # Create timestamp in full format for .log file (same as MUD)
 timestamp=$(log-timestamp)
+printf '[DEBUG chat-send-message] Message timestamp: %s\n' "$timestamp" >&2
 
 # Format message exactly like MUD 'say' command: [YYYY-MM-DD HH:MM:SS] player_name: message
 log_entry="[$timestamp] $user_name: $message"
+printf '[DEBUG chat-send-message] Log entry to write: %s\n' "$log_entry" >&2
 
 # Append to log file
 # CRITICAL: Wrap in subshell to force immediate buffer flush for tail -f visibility
 # Shell file append (>>) buffers output until script exits
 # Subshell exits immediately, flushing buffer so chat-stream's tail -f sees write
-if (printf '%s\n' "$log_entry" >> "$LOG_FILE") 2>/dev/null; then
+printf '[DEBUG chat-send-message] Attempting to write to log file...\n' >&2
+printf '[DEBUG chat-send-message] Running: printf %%s\\n "$log_entry" >> "$LOG_FILE"\n' >&2
+
+# Try the write and capture any errors
+write_error=""
+if (printf '%s\n' "$log_entry" >> "$LOG_FILE") 2>&1; then
+  write_status=$?
+  printf '[DEBUG chat-send-message] Write command exit status: %s\n' "$write_status" >&2
+  
+  # Verify the write actually happened
+  if [ -f "$LOG_FILE" ]; then
+    printf '[DEBUG chat-send-message] LOG_FILE exists after write\n' >&2
+    printf '[DEBUG chat-send-message] LOG_FILE new size: %s bytes\n' "$(wc -c < "$LOG_FILE" 2>&1)" >&2
+    printf '[DEBUG chat-send-message] LOG_FILE last line: %s\n' "$(tail -1 "$LOG_FILE" 2>&1)" >&2
+    
+    # Check if our message is in the file
+    if grep -qF "$log_entry" "$LOG_FILE" 2>/dev/null; then
+      printf '[DEBUG chat-send-message] SUCCESS: Message found in log file\n' >&2
+    else
+      printf '[DEBUG chat-send-message] WARNING: Message not found in log file after write\n' >&2
+    fi
+  else
+    printf '[DEBUG chat-send-message] ERROR: LOG_FILE disappeared after write attempt\n' >&2
+  fi
   
   # Run cleanup after successful message send (periodic maintenance)
   # This removes avatars inactive for >5 minutes
+  printf '[DEBUG chat-send-message] Running cleanup...\n' >&2
   chat-cleanup-inactive-avatars "$ROOM_DIR" 2>/dev/null || true
   
+  printf '[DEBUG chat-send-message] Sending success response\n' >&2
   cat <<HTML
 <div class="demo-result success">
   <p>✓ Message sent</p>
 </div>
 HTML
 else
+  write_status=$?
+  printf '[DEBUG chat-send-message] WRITE FAILED with exit status: %s\n' "$write_status" >&2
+  printf '[DEBUG chat-send-message] Write error output: %s\n' "$write_error" >&2
+  printf '[DEBUG chat-send-message] Sending failure response\n' >&2
   cat <<HTML
 <div class="demo-result error">
   <p>Failed to send message</p>
 </div>
 HTML
 fi
+
+printf '[DEBUG chat-send-message] Script completed at %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" >&2
