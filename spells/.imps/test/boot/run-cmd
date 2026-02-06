@@ -58,7 +58,9 @@ if [ "${BWRAP_AVAILABLE:-0}" -eq 1 ]; then
     MENU_LOG MENU_LOOP_LIMIT \
     SYSTEMCTL_STATE_DIR INSTALL_SERVICE_TEMPLATE_ASK_YN \
     INSTALL_SERVICE_TEMPLATE_ASK_TEXT ASK_TEXT_STUB_FILE SERVICE_DIR \
-    WIZARDRY_TEST_HELPERS_ONLY WIZARDRY_DEMO_NO_BWRAP OPERATIONS_LOG
+    WIZARDRY_TEST_HELPERS_ONLY WIZARDRY_DEMO_NO_BWRAP OPERATIONS_LOG \
+    WIZARDRY_SITE_NAME WIZARDRY_SITES_DIR \
+    REQUEST_METHOD QUERY_STRING CONTENT_TYPE CONTENT_LENGTH
   do
     eval "val=\${$envvar-}"
     if [ -n "$val" ]; then
@@ -114,6 +116,14 @@ elif [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
   [ -n "${SERVICE_DIR:-}" ] && export SERVICE_DIR
   [ -n "${OPERATIONS_LOG:-}" ] && export OPERATIONS_LOG
   
+  # Export CGI environment variables for web wizardry tests
+  [ -n "${WIZARDRY_SITE_NAME:-}" ] && export WIZARDRY_SITE_NAME
+  [ -n "${WIZARDRY_SITES_DIR:-}" ] && export WIZARDRY_SITES_DIR
+  [ -n "${REQUEST_METHOD:-}" ] && export REQUEST_METHOD
+  [ -n "${QUERY_STRING:-}" ] && export QUERY_STRING
+  [ -n "${CONTENT_TYPE:-}" ] && export CONTENT_TYPE
+  [ -n "${CONTENT_LENGTH:-}" ] && export CONTENT_LENGTH
+  
   # Special handling for SPELLBOOK_DIR: only export if it doesn't match
   # the default pattern $HOME/.spellbook (to avoid passing the outer home path)
   if [ -n "${SPELLBOOK_DIR-}" ]; then
@@ -158,6 +168,14 @@ else
   [ -n "${ASK_TEXT_STUB_FILE:-}" ] && export ASK_TEXT_STUB_FILE
   [ -n "${SERVICE_DIR:-}" ] && export SERVICE_DIR
   [ -n "${OPERATIONS_LOG:-}" ] && export OPERATIONS_LOG
+  
+  # Export CGI environment variables for web wizardry tests
+  [ -n "${WIZARDRY_SITE_NAME:-}" ] && export WIZARDRY_SITE_NAME
+  [ -n "${WIZARDRY_SITES_DIR:-}" ] && export WIZARDRY_SITES_DIR
+  [ -n "${REQUEST_METHOD:-}" ] && export REQUEST_METHOD
+  [ -n "${QUERY_STRING:-}" ] && export QUERY_STRING
+  [ -n "${CONTENT_TYPE:-}" ] && export CONTENT_TYPE
+  [ -n "${CONTENT_LENGTH:-}" ] && export CONTENT_LENGTH
   
   # Special handling for SPELLBOOK_DIR: only export if it doesn't match
   # the default pattern $HOME/.spellbook (to avoid passing the outer home path)

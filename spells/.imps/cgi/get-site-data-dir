@@ -6,6 +6,14 @@ set -eu
 
 subdir="${1:-}"
 
+# DEBUG logging to file (safe - won't break script)
+{
+  printf '[DEBUG get-site-data-dir] Called with subdir=%s\n' "$subdir"
+  printf '[DEBUG get-site-data-dir] WIZARDRY_SITE_NAME=%s\n' "${WIZARDRY_SITE_NAME:-UNSET}"
+  printf '[DEBUG get-site-data-dir] WIZARDRY_SITES_DIR=%s\n' "${WIZARDRY_SITES_DIR:-UNSET}"
+  printf '[DEBUG get-site-data-dir] HOME=%s\n' "${HOME:-UNSET}"
+} >> ~/testlog.txt 2>&1 || true
+
 # Get site identifier from env or default
 if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
   site_id="$WIZARDRY_SITE_NAME"

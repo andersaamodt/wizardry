@@ -202,3 +202,8 @@
 - Test files sourcing test-bootstrap don't need explicit `set -eu` - test-bootstrap already provides strict mode globally for all tests.
 - Older code shows better discipline than newer code - oldest imps (cond, fs, input families) have 100% zero functions, 100% flat execution, 94% pass rate; maintain this quality standard in all new code.
 - CGI imps can be large (100-300+ lines) and have functions - they're non-user-facing server endpoints, not traditional small helpers; size and function limits don't apply to `.imps/cgi/*` files.
+- Files owned by site user (in .sitedata) need 664 permissions not 644 - the owner must have write permission to append to log files (chat messages, etc.).
+- Files created with default umask inherit 644 permissions (read-only for owner); must explicitly chmod 664 after touch/creation for owner write access.
+- CGI tests require WIZARDRY_SITE_NAME, WIZARDRY_SITES_DIR, REQUEST_METHOD, QUERY_STRING env vars in test sandbox whitelist (run-cmd) to work correctly.
+- Piping to run_spell doesn't work for capturing OUTPUT because pipe creates subshell; call CGI scripts directly for POST requests with stdin data.
+- `env VAR=value command` creates CLEAN environment with only specified vars - must explicitly pass ALL needed vars, not just export them in parent shell.
