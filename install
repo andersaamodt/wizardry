@@ -1,7 +1,7 @@
 #!/bin/sh
+# Bootstrap spell: main wizardry installer
+set -eu
 
-# Bootstrap spell: main wizardry installer.
-#
 # After installation, wizardry will be available in new terminal windows.
 # To use it immediately in the current terminal, run the command shown at the end.
 
