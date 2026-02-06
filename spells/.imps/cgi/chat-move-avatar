@@ -61,6 +61,7 @@ NEW_ROOM_DIR="$CHAT_DIR/$room_name"
 # Ensure new room exists
 mkdir -p "$NEW_ROOM_DIR"
 touch "$NEW_ROOM_DIR/.log"
+chmod 664 "$NEW_ROOM_DIR/.log" 2>/dev/null || true
 
 # Check if avatar exists in old room
 OLD_AVATAR="$OLD_ROOM_DIR/.$user_name"
