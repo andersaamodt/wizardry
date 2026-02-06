@@ -60,6 +60,24 @@ if [ ! -d "$SITE_DIR" ]; then
   die "site-menu: site '$site_name' not found"
 fi
 
+site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '-' '_')"
+site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
+[ -z "$site_user" ] && site_user="$site_user_default"
+if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SITE_USER_REEXEC-}" ]; then
+  can_sudo=0
+  if [ "$(id -u)" -eq 0 ] && has sudo; then
+    can_sudo=1
+  fi
+  if ! id -u "$site_user" >/dev/null 2>&1; then
+    warn "site-menu: This site's user, $site_user, is missing. You can repair this with \"Repair permissions\"."
+  fi
+  if id -u "$site_user" >/dev/null 2>&1; then
+    if [ "$can_sudo" -eq 1 ]; then
+      exec sudo -u "$site_user" -- env WIZARDRY_SITE_USER_REEXEC=1 "$0" "$site_name" "$@"
+    fi
+  fi
+fi
+
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 130' INT
 trap 'exit 0' TERM
@@ -78,7 +96,8 @@ while true; do
   fi
   
   # Get port from config
-  port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || echo "8080")
+  port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || true)
+  [ -z "$port" ] && port=8080
   
   # Check if tor hosting is enabled for this site
   # Only show tor hosting option if tor is installed
@@ -129,44 +148,73 @@ while true; do
     https_option="Set up HTTPS%setup-https \"$site_name\""
     https_disable_option=""
   fi
+
+  serve_on_startup_option=""
+  if is-site-daemon-enabled "$site_name" 2>/dev/null; then
+    serve_on_startup_option="[X] Serve on startup%disable-site-daemon \"$site_name\""
+  else
+    serve_on_startup_option="[ ] Serve on startup%enable-site-daemon \"$site_name\""
+  fi
   
   exit_label=$(exit-label)
   
+  if has systemctl; then
+    daemon_artifact="${SERVICE_DIR:-/etc/systemd/system}/wizardry-site-${site_name}.service"
+  else
+    daemon_artifact="/Library/LaunchDaemons/org.wizardry.web.${site_name}.plist"
+  fi
+  daemon_label="Repair server daemon"
+  if [ ! -f "$daemon_artifact" ]; then
+    daemon_label="Create server daemon"
+  fi
+
   if [ "$is_serving" -eq 1 ]; then
     set -- \
       "Open in browser%command -v xdg-open >/dev/null 2>&1 && xdg-open http://localhost:$port || command -v open >/dev/null 2>&1 && open http://localhost:$port || printf 'Visit: http://localhost:$port\n'" \
       "Build All & Restart Server%build \"$site_name\" --full && stop-site \"$site_name\" && serve-site \"$site_name\"" \
-      "Build%build \"$site_name\"" \
-      "Build All%build \"$site_name\" --full" \
-      "Stop Server%stop-site \"$site_name\"" \
-      ${copy_site_onion:+"$copy_site_onion"} \
-      ${tor_hosting_option:+"$tor_hosting_option"} \
-      ${https_option:+"$https_option"} \
-      ${https_disable_option:+"$https_disable_option"} \
-      "Change port (current: $port)%change-site-port \"$site_name\"" \
       "Update from template%update-from-template \"$site_name\"" \
-      "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
-      "Fix permissions%[ -d \"$SITE_DIR/build\" ] && find \"$SITE_DIR/build\" -type d -exec chmod 755 {} \\; && find \"$SITE_DIR/build\" -type f -exec chmod 644 {} \\; && printf 'Permissions fixed\\n' || printf 'No build directory found\\n'" \
+      ${copy_site_onion:+"$copy_site_onion"} \
       "Open site directory%cd \"$SITE_DIR\" && exec \$SHELL" \
       "Open site data%[ -d \"$SITE_DATA_DIR\" ] && cd \"$SITE_DATA_DIR\" && exec \$SHELL || { printf 'No site data yet (will be created when needed)\\n'; read -r dummy; }" \
+      "---" \
+      "Build%build \"$site_name\"" \
+      "Build All%build \"$site_name\" --full" \
+      "Restart server%stop-site \"$site_name\" && serve-site \"$site_name\"" \
+      "Stop server%stop-site \"$site_name\"" \
+      "---" \
+      ${tor_hosting_option:+"$tor_hosting_option"} \
+      ${serve_on_startup_option:+"$serve_on_startup_option"} \
+      "Change port (current: $port)%change-site-port \"$site_name\"" \
+      ${https_option:+"$https_option"} \
+      ${https_disable_option:+"$https_disable_option"} \
+      "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
+      "$daemon_label%repair-site-daemon \"$site_name\"" \
+      "Fix permissions%fix-site-security \"$site_name\"" \
+      "Manage allowed dirs%manage-allowed-dirs \"$site_name\"" \
       "Delete site%delete-site \"$site_name\"" \
       "${exit_label}%kill -TERM \$PPID"
   else
     set -- \
-      "Build All & Start Server%build \"$site_name\" --full && serve-site \"$site_name\"" \
-      "Build%build \"$site_name\"" \
-      "Build All%build \"$site_name\" --full" \
-      "Serve site%serve-site \"$site_name\"" \
-      ${copy_site_onion:+"$copy_site_onion"} \
-      ${tor_hosting_option:+"$tor_hosting_option"} \
-      ${https_option:+"$https_option"} \
-      ${https_disable_option:+"$https_disable_option"} \
-      "Change port (current: $port)%change-site-port \"$site_name\"" \
+      "Build All & Restart Server%build \"$site_name\" --full && stop-site \"$site_name\" && serve-site \"$site_name\"" \
       "Update from template%update-from-template \"$site_name\"" \
-      "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
-      "Fix permissions%[ -d \"$SITE_DIR/build\" ] && find \"$SITE_DIR/build\" -type d -exec chmod 755 {} \\; && find \"$SITE_DIR/build\" -type f -exec chmod 644 {} \\; && printf 'Permissions fixed\\n' || printf 'No build directory found\\n'" \
+      ${copy_site_onion:+"$copy_site_onion"} \
       "Open site directory%cd \"$SITE_DIR\" && exec \$SHELL" \
       "Open site data%[ -d \"$SITE_DATA_DIR\" ] && cd \"$SITE_DATA_DIR\" && exec \$SHELL || { printf 'No site data yet (will be created when needed)\\n'; read -r dummy; }" \
+      "---" \
+      "Build%build \"$site_name\"" \
+      "Build All%build \"$site_name\" --full" \
+      "Restart server%stop-site \"$site_name\" && serve-site \"$site_name\"" \
+      "Start server%serve-site \"$site_name\"" \
+      "---" \
+      ${tor_hosting_option:+"$tor_hosting_option"} \
+      ${serve_on_startup_option:+"$serve_on_startup_option"} \
+      "Change port (current: $port)%change-site-port \"$site_name\"" \
+      ${https_option:+"$https_option"} \
+      ${https_disable_option:+"$https_disable_option"} \
+      "Rebuild nginx.conf%configure-nginx \"$site_name\"" \
+      "$daemon_label%repair-site-daemon \"$site_name\"" \
+      "Fix permissions%fix-site-security \"$site_name\"" \
+      "Manage allowed dirs%manage-allowed-dirs \"$site_name\"" \
       "Delete site%delete-site \"$site_name\"" \
       "${exit_label}%kill -TERM \$PPID"
   fi

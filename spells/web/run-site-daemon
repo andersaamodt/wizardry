@@ -1,0 +1,120 @@
+#!/bin/sh
+
+# Run a wizardry site under a daemon supervisor.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: run-site-daemon SITENAME
+
+Runs nginx and optional fcgiwrap for a site in the foreground so
+systemd/launchd can supervise it.
+
+Example: run-site-daemon mysite
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+if [ -n "${WIZARDRY_DIR-}" ] && [ -f "$WIZARDRY_DIR/spells/.imps/sys/env-clear" ]; then
+  . "$WIZARDRY_DIR/spells/.imps/sys/env-clear"
+else
+  . env-clear
+fi
+
+site_name=${1-}
+if [ -z "$site_name" ]; then
+  die 2 "run-site-daemon: SITENAME required"
+fi
+
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+SITES_DIR="$WEB_ROOT"
+SITE_DIR="$SITES_DIR/$site_name"
+
+if [ ! -d "$SITE_DIR" ]; then
+  die "run-site-daemon: site '$site_name' not found"
+fi
+
+if ! has nginx; then
+  die "run-site-daemon: nginx is not installed"
+fi
+
+# Build site if not built
+if [ ! -f "$SITE_DIR/build/pages/index.html" ]; then
+  step "Building site before serving..."
+  build "$site_name"
+fi
+
+# Generate nginx config if not exists
+if [ ! -f "$SITE_DIR/nginx/nginx.conf" ]; then
+  step "Generating nginx configuration..."
+  configure-nginx "$site_name"
+fi
+
+cleanup_fcgiwrap() {
+  if [ -n "${fcgi_pid-}" ] && kill -0 "$fcgi_pid" 2>/dev/null; then
+    kill "$fcgi_pid" 2>/dev/null || true
+  fi
+  if [ -f "$SITE_DIR/nginx/fcgiwrap.sock" ]; then
+    rm -f "$SITE_DIR/nginx/fcgiwrap.sock"
+  fi
+}
+
+trap 'cleanup_fcgiwrap' INT TERM EXIT
+
+# Start fcgiwrap if available (for CGI support)
+if has fcgiwrap; then
+  FCGI_SOCK="$SITE_DIR/nginx/fcgiwrap.sock"
+  if [ -S "$FCGI_SOCK" ] && [ -f "$SITE_DIR/nginx/fcgiwrap.pid" ]; then
+    stale_pid=$(cat "$SITE_DIR/nginx/fcgiwrap.pid" 2>/dev/null || echo "")
+    if [ -n "$stale_pid" ] && kill -0 "$stale_pid" 2>/dev/null; then
+      :
+    else
+      rm -f "$SITE_DIR/nginx/fcgiwrap.pid" "$FCGI_SOCK"
+    fi
+  fi
+
+  if [ ! -S "$FCGI_SOCK" ]; then
+    FCGIWRAP_WORKERS="${FCGIWRAP_WORKERS:-10}"
+
+    if [ -z "${WIZARDRY_DIR-}" ]; then
+      WIZARDRY_DIR="${HOME}/.wizardry"
+    fi
+
+    FCGI_PATH="$PATH"
+    if [ -d "$WIZARDRY_DIR/spells" ]; then
+      for dir in "$WIZARDRY_DIR/spells"/* "$WIZARDRY_DIR/spells"/.*; do
+        [ -d "$dir" ] || continue
+        case "$dir" in */.|*/..) continue ;; esac
+        FCGI_PATH="$dir:$FCGI_PATH"
+      done
+    fi
+
+    export WIZARDRY_DIR
+    export WIZARDRY_SITES_DIR="$SITES_DIR"
+    export WIZARDRY_SITE_NAME="$site_name"
+
+    step "Starting fcgiwrap with $FCGIWRAP_WORKERS workers..."
+    info "chat-stream now uses polling (0.5s) for real-time delivery"
+
+    env PATH="$FCGI_PATH" fcgiwrap -c "$FCGIWRAP_WORKERS" -s "unix:$FCGI_SOCK" &
+    fcgi_pid=$!
+    printf '%s\n' "$fcgi_pid" > "$SITE_DIR/nginx/fcgiwrap.pid"
+    sleep 1
+  fi
+fi
+
+step "Starting nginx for $site_name..."
+nginx -p "$SITE_DIR" -e "$SITE_DIR/nginx/error.log" -c "$SITE_DIR/nginx/nginx.conf" &
+nginx_pid=$!
+
+sleep 1
+
+if ! kill -0 "$nginx_pid" 2>/dev/null; then
+  die "run-site-daemon: nginx failed to start"
+fi
+
+wait "$nginx_pid"
+cleanup_fcgiwrap
