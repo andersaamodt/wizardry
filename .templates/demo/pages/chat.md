@@ -529,51 +529,39 @@ function setupRoomListStream() {
 
 // Handle room selection from list
 document.addEventListener('htmx:afterSwap', function(event) {
-  console.log('[DEBUG] htmx:afterSwap fired, target.id:', event.detail.target.id);
-  if (event.detail.target.id === 'room-list') {
-    console.log('[DEBUG] Processing room-list swap');
-    
-    // Update empty state message on every room list swap
+  // Check if this is the room-list element
+  if (event.detail.target && event.detail.target.id === 'room-list') {
+    // ALWAYS update the empty state message when room list swaps
     var emptyStateMsg = document.querySelector('#chat-messages .empty-state-message');
-    console.log('[DEBUG] emptyStateMsg:', emptyStateMsg, 'text:', emptyStateMsg ? emptyStateMsg.textContent : 'null');
-    if (emptyStateMsg) {
-      var msgText = emptyStateMsg.textContent.trim();
-      if (msgText === 'Connecting to server...') {
-        emptyStateMsg.textContent = 'Select a room to start chatting';
-        console.log('[DEBUG] Updated text to "Select a room to start chatting"');
-      }
+    if (emptyStateMsg && emptyStateMsg.textContent && emptyStateMsg.textContent.indexOf('Connecting') !== -1) {
+      emptyStateMsg.textContent = 'Select a room to start chatting';
     }
     
     // On first load, enable UI elements
     if (!window.roomListLoaded) {
       window.roomListLoaded = true;
-      console.log('[DEBUG] First load - enabling UI elements');
       
-      // Enable the create room link on first load
+      // Enable the create room link
       var createRoomLink = document.getElementById('create-room-link');
       if (createRoomLink) {
         createRoomLink.classList.remove('disabled');
-        console.log('[DEBUG] Enabled create-room-link');
       }
       
-      // Enable username change button on first load
+      // Enable username change button
       var usernameChangeBtn = document.querySelector('#username-display button');
       if (usernameChangeBtn) {
         usernameChangeBtn.disabled = false;
-        console.log('[DEBUG] Enabled username change button');
       }
     }
     
-    // Hide room-list DIV if it has no room items (to eliminate gap)
+    // ALWAYS hide room-list DIV if it has no room items
     var roomListDiv = document.getElementById('room-list');
     if (roomListDiv) {
-      var hasRooms = roomListDiv.querySelectorAll('.room-item').length > 0;
-      console.log('[DEBUG] hasRooms:', hasRooms, 'room count:', roomListDiv.querySelectorAll('.room-item').length);
-      if (hasRooms) {
-        roomListDiv.style.display = '';
-      } else {
+      var roomItems = roomListDiv.querySelectorAll('.room-item');
+      if (roomItems.length === 0) {
         roomListDiv.style.display = 'none';
-        console.log('[DEBUG] Hid empty room-list');
+      } else {
+        roomListDiv.style.display = '';
       }
     }
     
