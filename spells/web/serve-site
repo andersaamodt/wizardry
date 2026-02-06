@@ -94,8 +94,8 @@ done
 
 if [ "$is_serving" -eq 1 ]; then
   success "Site '$site_name' is now serving"
+  info "URL: http://$domain:$port"
+  info "Stop with: web-stop-site $site_name"
 else
-  warn "serve-site: daemon for '$site_name' is not active"
+  die "serve-site: daemon for '$site_name' failed to start. Check nginx logs at $SITE_DIR/nginx/error.log"
 fi
-info "URL: http://$domain:$port"
-info "Stop with: web-stop-site $site_name"
