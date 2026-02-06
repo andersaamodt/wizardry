@@ -109,12 +109,33 @@ fi
 NGINX_CONF_DIR="$SITE_DIR/nginx"
 mkdir -p "$NGINX_CONF_DIR"
 
-# Create nginx temp directories (to avoid permission issues with system paths)
-mkdir -p "$NGINX_CONF_DIR/temp/client_body"
-mkdir -p "$NGINX_CONF_DIR/temp/proxy"
-mkdir -p "$NGINX_CONF_DIR/temp/fastcgi"
-mkdir -p "$NGINX_CONF_DIR/temp/uwsgi"
-mkdir -p "$NGINX_CONF_DIR/temp/scgi"
+# Ensure nginx temp directories exist with proper permissions
+# These are in nginx/ directory which may be owned by site user
+# So we call fix-site-security to create them if needed
+if [ ! -d "$NGINX_CONF_DIR/temp/client_body" ] || \
+   [ ! -d "$NGINX_CONF_DIR/temp/proxy" ] || \
+   [ ! -d "$NGINX_CONF_DIR/temp/fastcgi" ] || \
+   [ ! -d "$NGINX_CONF_DIR/temp/uwsgi" ] || \
+   [ ! -d "$NGINX_CONF_DIR/temp/scgi" ]; then
+  if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ] && has fix-site-security; then
+    fix-site-security "$site_name" >/dev/null 2>&1 || {
+      # If fix-site-security fails, try creating temp dirs directly
+      # (might work if nginx/ is owned by actual user or doesn't exist yet)
+      mkdir -p "$NGINX_CONF_DIR/temp/client_body" 2>/dev/null || true
+      mkdir -p "$NGINX_CONF_DIR/temp/proxy" 2>/dev/null || true
+      mkdir -p "$NGINX_CONF_DIR/temp/fastcgi" 2>/dev/null || true
+      mkdir -p "$NGINX_CONF_DIR/temp/uwsgi" 2>/dev/null || true
+      mkdir -p "$NGINX_CONF_DIR/temp/scgi" 2>/dev/null || true
+    }
+  else
+    # In test mode or if fix-site-security not available, try creating directly
+    mkdir -p "$NGINX_CONF_DIR/temp/client_body" 2>/dev/null || true
+    mkdir -p "$NGINX_CONF_DIR/temp/proxy" 2>/dev/null || true
+    mkdir -p "$NGINX_CONF_DIR/temp/fastcgi" 2>/dev/null || true
+    mkdir -p "$NGINX_CONF_DIR/temp/uwsgi" 2>/dev/null || true
+    mkdir -p "$NGINX_CONF_DIR/temp/scgi" 2>/dev/null || true
+  fi
+fi
 
 # Path to CGI scripts
 WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
