@@ -331,8 +331,10 @@ while true; do
     open_data_cmd="$open_data_cmd read -r dummy; }"
     cmd4=$(wrap_cmd "$entry_index" "$open_data_cmd")
     # --- separator
-    entry_index=$((entry_index + 1))  # Increment for separator
+    entry_index=$((entry_index + 1))  # Increment for separator (7)
     # No restart/stop options when not serving
+    # Align "Start server" with "Stop server" index from serving branch (9)
+    entry_index=9
     cmd5=$(wrap_cmd "$entry_index" "serve-site \"$site_name\"")
     entry_index=$((entry_index + 1))
     cmd6=$(wrap_cmd "$entry_index" "build \"$site_name\"")
