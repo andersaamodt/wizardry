@@ -3,6 +3,7 @@
 # Returns the correct trash directory path for the current OS.
 # Example: cd "$(divine-trash)"
 
+set -eu
 
 dt_kernel=$(uname -s 2>/dev/null || printf 'unknown')
 
