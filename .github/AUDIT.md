@@ -297,7 +297,7 @@ The AUDIT_RESULTS.md document is organized as follows:
 
 ### Full Table Format
 
-| File Path | Last Audit | Thoroughness | Result | Code | Docs | Theme | Policy | Ethos | Issues | Fixes |
+| File Path | Last Audit (YYYY-MM-DD HH:MM) | Thoroughness | Result | Code | Docs | Theme | Policy | Ethos | Issues | Fixes |
 |-----------|------------|--------------|--------|------|------|-------|--------|-------|--------|-------|
 | path/file | YYYY-MM-DD | Level | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | Findings | 🔧 if fixed |
 
@@ -354,6 +354,23 @@ The AI auditor must self-assess and document how thoroughly each file was review
 
 Choose the level that honestly represents the depth of review. Higher thoroughness is not always necessary—simple files may only need "Read" level, while complex or critical files deserve "Exhaustive" review.
 
+### Timestamp Requirement for Audit Verification
+
+**CRITICAL RULE:** All audit timestamps MUST include both date and time to the minute.
+
+- **Format:** `YYYY-MM-DD HH:MM` (e.g., `2026-02-06 16:45`)
+- **Purpose:** Enables verification of audit honesty by checking how many files were audited per minute
+- **Enforcement:** Timestamps that show unrealistic audit rates (e.g., 50+ files per minute) indicate dishonest batch processing
+
+**Why This Matters:**
+- **Perused reviews** require 2-5 minutes per file → Maximum ~0.5 files/minute realistic
+- **Exhaustive reviews** require 5+ minutes per file → Maximum ~0.2 files/minute realistic
+- **Timestamps expose shortcuts** - If many files show same timestamp with Perused/Exhaustive thoroughness, it indicates batch processing without genuine review
+
+**Examples:**
+- ✅ HONEST: Files spread over realistic time periods (e.g., 20 files across 60 minutes = 3 min/file)
+- ❌ DISHONEST: 100 files all marked `2026-02-06 17:15` with 🔍 Perused (would require <1 second per file)
+
 ### Thoroughness Requirements for Colored Dots
 
 **CRITICAL RULE:** Only files that receive careful, detailed review can have colored assessment dots.
@@ -364,9 +381,10 @@ Choose the level that honestly represents the depth of review. Higher thoroughne
 **Rationale:** Colored dots represent informed judgments that require careful examination. A quick read is insufficient to form reliable opinions about code quality, documentation, policy compliance, or ethos. Only deep review (2+ minutes of careful attention) justifies colored assessments.
 
 **Examples:**
-- ✅ CORRECT: `| file.sh | 2026-02-06 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None |`
-- ✅ CORRECT: `| file.sh | 2026-02-06 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Quick scan only |`
-- ❌ WRONG: `| file.sh | 2026-02-06 | 📖 Read | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None |`
+- ✅ CORRECT: `| file.sh | 2026-02-06 16:45 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None |`
+- ✅ CORRECT: `| file.sh | 2026-02-06 16:47 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Quick scan only |`
+- ❌ WRONG: `| file.sh | 2026-02-06 | 📖 Read | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None |` (no timestamp)
+- ❌ WRONG: `| file.sh | 2026-02-06 17:15 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None |` (if 50+ other files have same timestamp)
 
 ### Re-Audit Wiping Behavior
 

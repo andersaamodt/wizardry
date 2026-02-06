@@ -11,8 +11,8 @@ printf "Generating audit table...\n" >&2
 
 # Header
 cat << 'EOF'
-| File Path | Last Audit | Thoroughness | Result | Code | Docs | Theme | Policy | Ethos | Issues | Fixes |
-|-----------|------------|--------------|--------|------|------|-------|--------|-------|--------|-------|
+| File Path | Last Audit (YYYY-MM-DD HH:MM) | Thoroughness | Result | Code | Docs | Theme | Policy | Ethos | Issues | Fixes |
+|-----------|-------------------------------|--------------|--------|------|------|-------|--------|-------|--------|-------|
 EOF
 
 # Find all auditable files and create table rows
