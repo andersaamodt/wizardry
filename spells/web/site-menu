@@ -71,8 +71,6 @@ if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SI
   if ! id -u "$site_user" >/dev/null 2>&1; then
     if [ "$(id -u)" -eq 0 ] || [ "$can_sudo" -eq 1 ]; then
       fix-site-security "$site_name" || warn "site-menu: failed to create user $site_user"
-    else
-      warn "site-menu: user $site_user missing (run fix-site-security as root)"
     fi
   fi
   if id -u "$site_user" >/dev/null 2>&1; then
@@ -80,7 +78,7 @@ if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SI
       exec sudo -u "$site_user" -- env WIZARDRY_SITE_USER_REEXEC=1 "$0" "$site_name" "$@"
     fi
   else
-    warn "site-menu: user $site_user missing; continuing without reexec"
+    warn "site-menu: This site's user, $site_user, is missing. You can repair this with \"Repair permissions\"."
   fi
 fi
 
