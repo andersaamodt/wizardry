@@ -534,13 +534,32 @@ document.addEventListener('htmx:afterSwap', function(event) {
     if (!window.roomListLoaded) {
       window.roomListLoaded = true;
       var emptyStateMsg = document.querySelector('#chat-messages .empty-state-message');
-      if (emptyStateMsg && emptyStateMsg.textContent === 'Connecting to server...') {
-        emptyStateMsg.textContent = 'Select a room to start chatting';
+      if (emptyStateMsg) {
+        var msgText = emptyStateMsg.textContent.trim();
+        if (msgText === 'Connecting to server...') {
+          emptyStateMsg.textContent = 'Select a room to start chatting';
+        }
       }
       // Enable the create room link on first load
       var createRoomLink = document.getElementById('create-room-link');
       if (createRoomLink) {
         createRoomLink.classList.remove('disabled');
+      }
+      // Enable username change button on first load
+      var usernameChangeBtn = document.querySelector('#username-display button');
+      if (usernameChangeBtn) {
+        usernameChangeBtn.disabled = false;
+      }
+    }
+    
+    // Hide room-list if it has no room items (to eliminate gap)
+    var roomList = document.querySelector('#room-list .room-list');
+    if (roomList) {
+      var hasRooms = roomList.querySelectorAll('.room-item').length > 0;
+      if (hasRooms) {
+        roomList.style.display = '';
+      } else {
+        roomList.style.display = 'none';
       }
     }
     
@@ -2038,6 +2057,12 @@ document.addEventListener('DOMContentLoaded', function() {
   var createRoomLink = document.getElementById('create-room-link');
   if (createRoomLink) {
     createRoomLink.classList.add('disabled');
+  }
+  
+  // Disable username change button until connected
+  var usernameChangeBtn = document.querySelector('#username-display button');
+  if (usernameChangeBtn) {
+    usernameChangeBtn.disabled = true;
   }
   
   setupUnreadCountsStream();

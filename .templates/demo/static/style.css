@@ -712,11 +712,6 @@ pre code {
   min-height: 0;
 }
 
-/* Hide empty room list to eliminate gap */
-.room-list:empty {
-  display: none;
-}
-
 .room-item {
   padding: 0.5rem 0.75rem;
   margin: 0;
