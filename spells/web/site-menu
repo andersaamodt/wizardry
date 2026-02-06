@@ -337,6 +337,8 @@ while true; do
     cmd4=$(wrap_cmd "$entry_index" "$open_data_cmd")
     # --- separator
     entry_index=$((entry_index + 1))  # Increment for separator
+    # Account for missing "Open in browser" (only in serving menu)
+    entry_index=$((entry_index + 1))
     # Account for missing "Restart server" position when not serving
     entry_index=$((entry_index + 1))
     # Start/Stop server - always present
