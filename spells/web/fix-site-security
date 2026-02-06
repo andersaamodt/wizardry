@@ -74,6 +74,10 @@ ensure_site_user() {
     run_priv dscl . -create "/Users/$site_user" RealName "Wizardry Site $site_name"
     run_priv dscl . -create "/Users/$site_user" UniqueID "$uid"
     run_priv dscl . -create "/Users/$site_user" PrimaryGroupID 20
+    run_priv dscl . -create "/Groups/$site_user"
+    run_priv dscl . -create "/Groups/$site_user" PrimaryGroupID 20
+    run_priv dscl . -create "/Groups/$site_user" RealName "Wizardry Site $site_name"
+    run_priv dscl . -create "/Groups/$site_user" GroupMembership "$site_user"
     run_priv dscl . -create "/Users/$site_user" NFSHomeDirectory /var/empty
     return 0
   fi
