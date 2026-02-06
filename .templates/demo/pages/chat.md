@@ -10,20 +10,20 @@ title: Chatrooms
 <div class="chatrooms-header">
 <h3>Chatrooms</h3>
 </div>
-<div id="room-list" hx-get="/cgi/chat-list-rooms" hx-trigger="load, roomListChanged from:body" hx-swap="morph:innerHTML settle:0ms">
+<div id="room-list" style="display: none;" hx-get="/cgi/chat-list-rooms" hx-trigger="load, roomListChanged from:body" hx-swap="morph:innerHTML settle:0ms">
 <!-- Requires htmx morph extension (Idiomorph) - ensure it's loaded in page -->
 Loading rooms...
 </div>
 
 <div class="room-controls">
 <!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
-<div id="create-room-widget"><a href="#" id="create-room-link" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a><div id="create-room-input-wrapper"><input type="text" id="new-room-name" placeholder="Room name" oninput="validateRoomName()" onkeydown="if(event.key==='Enter' && !document.getElementById('create-room-btn').disabled) { document.getElementById('create-room-btn').click(); }" /><span id="create-room-invalid-icon">&#x1F6AB;</span></div><button id="create-room-btn" disabled hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; validateRoomName(); htmx.trigger('body', 'roomListChanged'); showNotification(); toggleCreateRoom(); }">Create</button></div>
+<div id="create-room-widget"><a href="#" id="create-room-link" class="disabled" onclick="toggleCreateRoom(); return false;"><span id="create-room-arrow">&#x25B6;</span> Create Room</a><div id="create-room-input-wrapper"><input type="text" id="new-room-name" placeholder="Room name" oninput="validateRoomName()" onkeydown="if(event.key==='Enter' && !document.getElementById('create-room-btn').disabled) { document.getElementById('create-room-btn').click(); }" /><span id="create-room-invalid-icon">&#x1F6AB;</span></div><button id="create-room-btn" disabled hx-get="/cgi/chat-create-room" hx-vals='js:{name: document.getElementById("new-room-name").value}' hx-target="#room-notification" hx-swap="innerHTML" hx-trigger="click" hx-on::before-request="document.getElementById('create-room-btn').disabled = true; document.getElementById('new-room-name').disabled = true; document.getElementById('create-room-btn').innerHTML = 'Creating<span class=\'spinner\'></span>';" hx-on::after-request="if(event.detail.successful) { document.getElementById('new-room-name').value = ''; validateRoomName(); htmx.trigger('body', 'roomListChanged'); showNotification(); toggleCreateRoom(); }">Create</button></div>
 </div>
 </div>
 
 <div class="username-widget">
 <!-- IMPORTANT: Keep all elements on ONE line - Pandoc wraps multi-line inline HTML in <p> tags, breaking flexbox layout -->
-<div class="username-display" id="username-display"><strong id="username-text">@Guest001</strong><button onclick="editUsername()">Change</button></div>
+<div class="username-display" id="username-display"><strong id="username-text">@Guest001</strong><button disabled onclick="editUsername()">Change</button></div>
 <div class="username-edit" id="username-edit"><h5>Change Handle</h5><div id="username-edit-input-wrapper"><input type="text" id="username-edit-input" placeholder="Your name" /><span id="username-invalid-icon">&#x1F6AB;</span></div><div class="username-edit-buttons"><button onclick="saveUsername()">OK</button><button onclick="cancelUsernameEdit()">Cancel</button></div></div>
 </div>
 </div>
@@ -44,7 +44,7 @@ Delete Room
 
 <div class="chat-content-wrapper">
 <div id="chat-messages" class="chat-display">
-<p class="empty-state-message">Select a room to start chatting</p>
+<p class="empty-state-message">Connecting to server...</p>
 </div>
 
 <div id="members-panel" class="members-panel">
@@ -117,6 +117,7 @@ window.isInitialRoomLoad = false;  // Track if this is the first load of a room
 window.messageEventSource = null;  // SSE connection for real-time messages
 window.unreadCountsEventSource = null;  // SSE connection for real-time unread counts
 window.roomListEventSource = null;  // SSE connection for real-time room list updates
+window.roomListLoaded = false;  // Track if room list has loaded at least once
 
 // Unread message tracking
 // Store read-up-until timestamp per room in localStorage
@@ -528,7 +529,57 @@ function setupRoomListStream() {
 
 // Handle room selection from list
 document.addEventListener('htmx:afterSwap', function(event) {
-  if (event.detail.target.id === 'room-list') {
+  // Check if this is the room-list element
+  if (event.detail.target && event.detail.target.id === 'room-list') {
+    // ALWAYS update the empty state message when room list swaps
+    var emptyStateMsg = document.querySelector('#chat-messages .empty-state-message');
+    if (emptyStateMsg && emptyStateMsg.textContent && emptyStateMsg.textContent.indexOf('Connecting') !== -1) {
+      emptyStateMsg.textContent = 'Select a room to start chatting';
+    }
+    
+    // On first load, enable UI elements
+    if (!window.roomListLoaded) {
+      window.roomListLoaded = true;
+      
+      // Enable the create room link
+      var createRoomLink = document.getElementById('create-room-link');
+      if (createRoomLink) {
+        createRoomLink.classList.remove('disabled');
+      }
+      
+      // Enable username change button
+      var usernameChangeBtn = document.querySelector('#username-display button');
+      if (usernameChangeBtn) {
+        usernameChangeBtn.disabled = false;
+      }
+    }
+    
+    // ALWAYS hide room-list DIV if it has no room items
+    var roomListDiv = document.getElementById('room-list');
+    if (roomListDiv) {
+      var roomItems = roomListDiv.querySelectorAll('.room-item');
+      var roomControls = document.querySelector('.room-controls');
+      if (roomItems.length === 0) {
+        // Completely hide and collapse the room-list element
+        roomListDiv.style.display = 'none';
+        roomListDiv.style.height = '0';
+        roomListDiv.style.overflow = 'hidden';
+        // Also remove margin-top from room-controls to eliminate gap
+        if (roomControls) {
+          roomControls.style.marginTop = '0';
+        }
+      } else {
+        // Restore normal display and height when rooms exist
+        roomListDiv.style.display = '';
+        roomListDiv.style.height = '';
+        roomListDiv.style.overflow = '';
+        // Restore normal margin when rooms exist
+        if (roomControls) {
+          roomControls.style.marginTop = '';
+        }
+      }
+    }
+    
     // Re-validate create room button after room list refreshes (respects validation state)
     validateRoomName();
     
