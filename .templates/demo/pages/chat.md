@@ -558,10 +558,19 @@ document.addEventListener('htmx:afterSwap', function(event) {
     var roomListDiv = document.getElementById('room-list');
     if (roomListDiv) {
       var roomItems = roomListDiv.querySelectorAll('.room-item');
+      var roomControls = document.querySelector('.room-controls');
       if (roomItems.length === 0) {
         roomListDiv.style.display = 'none';
+        // Also remove margin-top from room-controls to eliminate gap
+        if (roomControls) {
+          roomControls.style.marginTop = '0';
+        }
       } else {
         roomListDiv.style.display = '';
+        // Restore normal margin when rooms exist
+        if (roomControls) {
+          roomControls.style.marginTop = '';
+        }
       }
     }
     
