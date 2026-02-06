@@ -1150,7 +1150,7 @@ function updateConnectionStatus(status, isClickable) {
       // Force reflow to ensure opacity change is applied
       void statusElement.offsetHeight;
       
-      // Wait for fade out (200ms - slower crossfade)
+      // Wait for fade out (250ms - slower crossfade)
       window.sseStatusTransitionTimeout = setTimeout(function() {
         // Add connection-lost class for styling (pill background)
         statusElement.classList.add('connection-lost');
@@ -1164,7 +1164,7 @@ function updateConnectionStatus(status, isClickable) {
         // Clear inline opacity to trigger fade in via CSS transition
         statusElement.style.opacity = '';
         window.sseStatusTransitionTimeout = null;
-      }, 200);
+      }, 250);
       
       statusElement.classList.add('visible');
     } else {
