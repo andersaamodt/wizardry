@@ -224,6 +224,13 @@ See `.apps/chatroom/` for a real-world example demonstrating:
 
 The chatroom app shows how desktop apps can be minimal frames around existing web functionality, avoiding code duplication. **It's designed to be completely standalone** - users can double-click the .app bundle on macOS or AppImage on Linux, choose their mode, and start hosting or connecting without ever touching a terminal.
 
+### unix-settings
+
+See `.apps/unix-settings/` for a focused system settings shell that:
+- Wraps the `unix-settings` site template in a desktop frame
+- Provides explicit Build/Start/Stop controls
+- Keeps the interface strictly web-first, with commands hardcoded for security
+
 ## Development Workflow
 
 1. Create app directory: `mkdir -p .apps/my-app`

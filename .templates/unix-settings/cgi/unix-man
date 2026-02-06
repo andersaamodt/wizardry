@@ -1,0 +1,50 @@
+#!/bin/sh
+set -eu
+
+WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
+PATH="$WIZARDRY_DIR/spells/.imps/cgi:$PATH"
+
+escape_html() {
+  printf '%s' "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'
+}
+
+topic=$(get-query-param topic "${QUERY_STRING:-}")
+http-ok-html
+
+case "$topic" in
+  id|usermod|systemctl|launchctl|ifconfig|ip|dhclient|fsck|mount|timedatectl|shutdown|kill|apt|nix-env|ls)
+    man_topic="$topic"
+    ;;
+  *)
+    man_topic=""
+    ;;
+esac
+
+if [ -z "$man_topic" ]; then
+  cat <<HTML
+<div class="panel">
+  <h3>Manual page unavailable</h3>
+  <p class="muted">No manual topic was provided or the topic is not allow-listed.</p>
+</div>
+HTML
+  exit 0
+fi
+
+if ! command -v man >/dev/null 2>&1; then
+  cat <<HTML
+<div class="panel">
+  <h3>Manual page unavailable</h3>
+  <p class="muted">The <code>man</code> command is not available on this system.</p>
+</div>
+HTML
+  exit 0
+fi
+
+man_output=$(MANPAGER=cat MANWIDTH=88 man "$man_topic" 2>&1 || true)
+
+cat <<HTML
+<div class="panel">
+  <h3>man $man_topic</h3>
+  <div class="details-panel">$(escape_html "$man_output")</div>
+</div>
+HTML

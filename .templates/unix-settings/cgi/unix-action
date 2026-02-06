@@ -1,0 +1,229 @@
+#!/bin/sh
+set -eu
+
+WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
+PATH="$WIZARDRY_DIR/spells/.imps/cgi:$PATH"
+
+has() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+escape_html() {
+  printf '%s' "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'
+}
+
+action=$(get-query-param action "${QUERY_STRING:-}")
+target=$(get-query-param target "${QUERY_STRING:-}")
+safe_target=$(printf '%s' "$target" | sed 's/[^a-zA-Z0-9._:@/-]//g')
+http-ok-html
+
+identity=$(id -un 2>/dev/null || printf 'site-user')
+
+risk="info"
+title="Action"
+summary=""
+command=""
+file_ref=""
+man_topic=""
+requires_admin="yes"
+
+platform=$(uname -s 2>/dev/null || printf '')
+
+case "$action" in
+  inspect-user)
+    title="Inspect user"
+    summary="Read-only identity probe"
+    command="id $safe_target"
+    file_ref="/etc/passwd"
+    man_topic="id"
+    requires_admin="no"
+    ;;
+  disable-user)
+    title="Disable login"
+    summary="Locks account authentication"
+    command="usermod --lock $safe_target"
+    file_ref="/etc/passwd"
+    man_topic="usermod"
+    risk="warning"
+    ;;
+  restart-service)
+    title="Restart service"
+    summary="Cycles service runtime"
+    if [ "$platform" = "Darwin" ]; then
+      command="launchctl kickstart -k system/$safe_target"
+      man_topic="launchctl"
+    else
+      command="systemctl restart $safe_target"
+      man_topic="systemctl"
+    fi
+    file_ref="/etc/systemd/system"
+    risk="warning"
+    ;;
+  stop-service)
+    title="Stop service"
+    summary="Stops service runtime"
+    if [ "$platform" = "Darwin" ]; then
+      command="launchctl bootout system/$safe_target"
+      man_topic="launchctl"
+    else
+      command="systemctl stop $safe_target"
+      man_topic="systemctl"
+    fi
+    file_ref="/etc/systemd/system"
+    risk="danger"
+    ;;
+  renew-dhcp)
+    title="Renew DHCP lease"
+    summary="Renews lease for interface"
+    if [ "$platform" = "Darwin" ]; then
+      command="ipconfig set $safe_target DHCP"
+      man_topic="ipconfig"
+    else
+      command="dhclient -r $safe_target && dhclient $safe_target"
+      man_topic="dhclient"
+    fi
+    file_ref="/etc/network"
+    risk="warning"
+    ;;
+  down-interface)
+    title="Bring interface down"
+    summary="Disables network interface"
+    if [ "$platform" = "Darwin" ]; then
+      command="ifconfig $safe_target down"
+      man_topic="ifconfig"
+    else
+      command="ip link set $safe_target down"
+      man_topic="ip"
+    fi
+    file_ref="/etc/network"
+    risk="danger"
+    ;;
+  check-filesystem)
+    title="Check filesystem"
+    summary="Filesystem consistency check"
+    command="fsck -n"
+    file_ref="/etc/fstab"
+    man_topic="fsck"
+    risk="warning"
+    ;;
+  remount-readonly)
+    title="Remount read-only"
+    summary="Remounts filesystem in read-only mode"
+    command="mount -o remount,ro $safe_target"
+    file_ref="/etc/fstab"
+    man_topic="mount"
+    risk="danger"
+    ;;
+  sync-time)
+    title="Sync time"
+    summary="Resynchronizes system clock"
+    command="timedatectl set-ntp true"
+    file_ref="/etc/systemd/timesyncd.conf"
+    man_topic="timedatectl"
+    risk="warning"
+    ;;
+  reboot-host)
+    title="Reboot host"
+    summary="Reboots the system"
+    command="shutdown -r now"
+    file_ref="/etc/rc.local"
+    man_topic="shutdown"
+    risk="danger"
+    ;;
+  terminate-process)
+    title="Terminate process"
+    summary="Sends SIGTERM"
+    command="kill -TERM $safe_target"
+    file_ref="/proc/$safe_target"
+    man_topic="kill"
+    risk="warning"
+    ;;
+  kill-process)
+    title="Kill process"
+    summary="Sends SIGKILL"
+    command="kill -KILL $safe_target"
+    file_ref="/proc/$safe_target"
+    man_topic="kill"
+    risk="danger"
+    ;;
+  check-updates)
+    title="Check updates"
+    summary="Refreshes update metadata"
+    command="See package manager update command"
+    file_ref="/etc/apt/sources.list"
+    man_topic="apt"
+    risk="warning"
+    ;;
+  rollback-packages)
+    title="Rollback packages"
+    summary="Reverts packages to a prior state"
+    command="See package manager rollback command"
+    file_ref="/nix/var/nix/profiles"
+    man_topic="nix-env"
+    risk="danger"
+    ;;
+  reveal-config)
+    title="Reveal config path"
+    summary="Shows canonical config location"
+    command="ls -la $safe_target"
+    file_ref="$safe_target"
+    man_topic="ls"
+    requires_admin="no"
+    ;;
+  *)
+    title="Unknown action"
+    summary="No handler available"
+    command=""
+    file_ref=""
+    man_topic=""
+    requires_admin="no"
+    ;;
+esac
+
+badge_class="badge"
+if [ "$risk" = "danger" ]; then
+  badge_class="badge danger"
+elif [ "$risk" = "warning" ]; then
+  badge_class="badge warning"
+fi
+
+if [ "$requires_admin" = "yes" ]; then
+  admin_note="Requires SSH-linked admin authentication."
+else
+  admin_note="Runs as $identity."
+fi
+
+cat <<HTML
+<div class="action-panel">
+  <div>
+    <div class="badge">$summary</div>
+    <div class="$badge_class">Risk: $risk</div>
+  </div>
+  <div>
+    <strong>$title</strong>
+    <p class="muted">$admin_note</p>
+  </div>
+  <div class="details-panel">$(escape_html "$command")</div>
+  <div class="action-buttons">
+    <button class="action-btn" title="Execution disabled until SSH-linked authentication is configured." disabled>Execute</button>
+    <button class="action-btn danger" title="Destructive actions require explicit confirmation." disabled>Confirm destructive</button>
+  </div>
+  <details class="escape-hatches">
+    <summary>Escape hatches</summary>
+    <div class="details-panel">Reveal underlying command:
+$(escape_html "$command")
+
+Reveal underlying file:
+$(escape_html "$file_ref")
+
+Open man page:
+$(escape_html "$man_topic")
+    </div>
+    <p class="muted">Open man page in a new tab: <a href="/cgi/unix-man?topic=$(escape_html "$man_topic")" target="_blank" rel="noopener">man $man_topic</a></p>
+  </details>
+  <details class="escape-hatches">
+    <summary>Raw stdout and stderr</summary>
+    <div class="details-panel">No execution has occurred. Raw stdout/stderr will appear here after explicit confirmation.</div>
+  </details>
+</div>
+HTML
