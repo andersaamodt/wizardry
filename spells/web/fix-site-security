@@ -214,8 +214,11 @@ run_priv mkdir -p "$SITE_DIR/build" "$SITE_DIR/nginx"
 if [ ! -d "$SITE_DIR/.web-libs" ]; then
   mkdir -p "$SITE_DIR/.web-libs" 2>/dev/null || run_priv mkdir -p "$SITE_DIR/.web-libs"
 fi
-run_priv chown -R "$site_user":"$site_group" "$SITE_DIR/.web-libs" 2>/dev/null || true
-run_priv chmod -R 755 "$SITE_DIR/.web-libs" 2>/dev/null || true
+# Set ownership on .web-libs if it exists
+if [ -d "$SITE_DIR/.web-libs" ]; then
+  run_priv chown -R "$site_user":"$site_group" "$SITE_DIR/.web-libs"
+  run_priv chmod -R 755 "$SITE_DIR/.web-libs"
+fi
 
 # Only change ownership of build and nginx directories to site user
 # Keep source files (site/, site.conf, etc.) owned by the actual user
