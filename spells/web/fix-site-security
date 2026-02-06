@@ -247,10 +247,10 @@ fi
 # Set ownership based on who needs to write vs who needs to read
 # - build/: actual user builds, site user (nginx) reads → actual user owns
 # - nginx/: actual user (configure-nginx) writes, site user reads → actual user owns
-# - .sitedata/: site user (CGI scripts) writes → site user owns
+# - .sitedata/: actual user (runs nginx/fcgiwrap/CGI) writes → actual user owns
 run_priv chown -R "$actual_user":"$site_group" "$SITE_DIR/build"
 run_priv chown -R "$actual_user":"$site_group" "$SITE_DIR/nginx"
-run_priv chown -R "$site_user":"$site_group" "$SITE_DATA_DIR"
+run_priv chown -R "$actual_user":"$site_group" "$SITE_DATA_DIR"
 
 # Set permissions on build directory - actual user writes, site user reads
 if [ -d "$SITE_DIR/build" ]; then
