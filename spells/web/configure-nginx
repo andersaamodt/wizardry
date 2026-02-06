@@ -110,31 +110,18 @@ NGINX_CONF_DIR="$SITE_DIR/nginx"
 mkdir -p "$NGINX_CONF_DIR"
 
 # Ensure nginx temp directories exist with proper permissions
-# These are in nginx/ directory which may be owned by site user
-# So we call fix-site-security to create them if needed
+# nginx/ is owned by actual user, so we can create these directly
+# fix-site-security sets temp/ to 775 so site user can write to them
 if [ ! -d "$NGINX_CONF_DIR/temp/client_body" ] || \
    [ ! -d "$NGINX_CONF_DIR/temp/proxy" ] || \
    [ ! -d "$NGINX_CONF_DIR/temp/fastcgi" ] || \
    [ ! -d "$NGINX_CONF_DIR/temp/uwsgi" ] || \
    [ ! -d "$NGINX_CONF_DIR/temp/scgi" ]; then
-  if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ] && has fix-site-security; then
-    fix-site-security "$site_name" >/dev/null 2>&1 || {
-      # If fix-site-security fails, try creating temp dirs directly
-      # (might work if nginx/ is owned by actual user or doesn't exist yet)
-      mkdir -p "$NGINX_CONF_DIR/temp/client_body" 2>/dev/null || true
-      mkdir -p "$NGINX_CONF_DIR/temp/proxy" 2>/dev/null || true
-      mkdir -p "$NGINX_CONF_DIR/temp/fastcgi" 2>/dev/null || true
-      mkdir -p "$NGINX_CONF_DIR/temp/uwsgi" 2>/dev/null || true
-      mkdir -p "$NGINX_CONF_DIR/temp/scgi" 2>/dev/null || true
-    }
-  else
-    # In test mode or if fix-site-security not available, try creating directly
-    mkdir -p "$NGINX_CONF_DIR/temp/client_body" 2>/dev/null || true
-    mkdir -p "$NGINX_CONF_DIR/temp/proxy" 2>/dev/null || true
-    mkdir -p "$NGINX_CONF_DIR/temp/fastcgi" 2>/dev/null || true
-    mkdir -p "$NGINX_CONF_DIR/temp/uwsgi" 2>/dev/null || true
-    mkdir -p "$NGINX_CONF_DIR/temp/scgi" 2>/dev/null || true
-  fi
+  mkdir -p "$NGINX_CONF_DIR/temp/client_body"
+  mkdir -p "$NGINX_CONF_DIR/temp/proxy"
+  mkdir -p "$NGINX_CONF_DIR/temp/fastcgi"
+  mkdir -p "$NGINX_CONF_DIR/temp/uwsgi"
+  mkdir -p "$NGINX_CONF_DIR/temp/scgi"
 fi
 
 # Path to CGI scripts
@@ -142,22 +129,14 @@ WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
 CGI_DIR="$WIZARDRY_DIR/spells/.imps/cgi"
 
 # Copy mime.types to local directory if not exists
-# Note: mime.types should be created by fix-site-security with proper permissions
-# We attempt creation here as fallback for testing or if file doesn't exist yet
+# nginx/ is owned by actual user, so we can write directly
 MIME_TYPES="$NGINX_CONF_DIR/mime.types"
 if [ ! -f "$MIME_TYPES" ]; then
-  # Call fix-site-security to ensure nginx/ has proper permissions and mime.types exists
-  if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" != "1" ] && has fix-site-security; then
-    fix-site-security "$site_name" >/dev/null 2>&1 || true
-  fi
-  
-  # If still doesn't exist, try creating it
-  if [ ! -f "$MIME_TYPES" ]; then
-    if [ -f /etc/nginx/mime.types ]; then
-      cp /etc/nginx/mime.types "$MIME_TYPES" 2>/dev/null || true
-    else
-      # Create minimal mime.types if system one doesn't exist
-      cat > "$MIME_TYPES" 2>/dev/null <<'MIMETYPES' || true
+  if [ -f /etc/nginx/mime.types ]; then
+    cp /etc/nginx/mime.types "$MIME_TYPES"
+  else
+    # Create minimal mime.types if system one doesn't exist
+    cat > "$MIME_TYPES" <<'MIMETYPES'
 types {
     text/html                                        html htm shtml;
     text/css                                         css;
@@ -174,7 +153,6 @@ types {
     application/zip                                  zip;
 }
 MIMETYPES
-    fi
   fi
 fi
 
