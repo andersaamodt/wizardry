@@ -125,8 +125,8 @@ This table shows all files in the repository with their audit results. Files are
 | spells/enchant/enchantment-to-yaml | 2026-02-06 16:45 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - exports xattrs to YAML format | - |
 | spells/enchant/yaml-to-enchantment | 2026-02-06 16:45 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - imports xattrs from YAML | - |
 | spells/menu/cast | 2026-02-06 17:59 | 🔍 Perused | 🟡 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | Lines 96-100 dead code (first_run set to 0 but never used); otherwise excellent self-healing menu with graceful degradation | - |
-| spells/menu/install-menu | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/menu/main-menu | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
+| spells/menu/install-menu | 2026-02-06 20:31 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | Lines 88-92: Dead code (first_run check does nothing) | - |
+| spells/menu/main-menu | 2026-02-06 20:36 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | Lines 72-76: Dead code (first_run check does nothing) | - |
 | spells/menu/mud | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/menu/mud-admin-menu | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/menu/mud-admin/add-player | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
