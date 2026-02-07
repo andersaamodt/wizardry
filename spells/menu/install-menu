@@ -142,6 +142,7 @@ while :; do
             core) label="core wizardry" ;;
             mud) label="wizardry MUD" ;;
             web-wizardry) label="web wizardry" ;;
+            ai-dev) label="AI dev" ;;
         esac
         
         if [ -n "$status" ]; then
