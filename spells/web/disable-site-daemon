@@ -44,7 +44,7 @@ run_priv() {
 }
 
 unit="wizardry-site-${site_name}.service"
-plist="/Library/LaunchDaemons/org.wizardry.web.${site_name}.plist"
+plist="${LAUNCHD_PLIST_DIR:-/Library/LaunchDaemons}/org.wizardry.web.${site_name}.plist"
 
 if has systemctl; then
   run_priv systemctl disable "$unit" 2>/dev/null || true

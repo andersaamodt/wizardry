@@ -60,7 +60,8 @@ if [ "${BWRAP_AVAILABLE:-0}" -eq 1 ]; then
     INSTALL_SERVICE_TEMPLATE_ASK_TEXT ASK_TEXT_STUB_FILE SERVICE_DIR \
     WIZARDRY_TEST_HELPERS_ONLY WIZARDRY_DEMO_NO_BWRAP OPERATIONS_LOG \
     WIZARDRY_SITE_NAME WIZARDRY_SITES_DIR \
-    REQUEST_METHOD QUERY_STRING CONTENT_TYPE CONTENT_LENGTH
+    REQUEST_METHOD QUERY_STRING CONTENT_TYPE CONTENT_LENGTH \
+    LAUNCHD_PLIST_DIR LAUNCHCTL_STATE_DIR
   do
     eval "val=\${$envvar-}"
     if [ -n "$val" ]; then
@@ -123,6 +124,10 @@ elif [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
   [ -n "${QUERY_STRING:-}" ] && export QUERY_STRING
   [ -n "${CONTENT_TYPE:-}" ] && export CONTENT_TYPE
   [ -n "${CONTENT_LENGTH:-}" ] && export CONTENT_LENGTH
+  
+  # Export launchctl testing variables for macOS daemon tests
+  [ -n "${LAUNCHD_PLIST_DIR:-}" ] && export LAUNCHD_PLIST_DIR
+  [ -n "${LAUNCHCTL_STATE_DIR:-}" ] && export LAUNCHCTL_STATE_DIR
   
   # Special handling for SPELLBOOK_DIR: only export if it doesn't match
   # the default pattern $HOME/.spellbook (to avoid passing the outer home path)
