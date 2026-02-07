@@ -1,8 +1,22 @@
 # Chat Debug Guide
 
-This document explains how to view the extensive debug logging added to diagnose the chat message sending issue.
+This document explains how to view the extensive debug logging added to diagnose chat issues, including the **reconnecting spinner issue**.
 
-## **ISSUE RESOLVED**
+## **CURRENT ISSUE: Reconnecting Spinner**
+
+The reconnecting spinner stopped appearing when the server connection is lost. This PR adds extensive debug logging to both client and server to diagnose and fix the issue.
+
+**What was wrong:**
+- EventSource error handler only showed "reconnecting" status when `readyState === CLOSED` or under specific CONNECTING conditions
+- This meant errors weren't giving immediate visual feedback to users
+
+**The fix:**
+- EventSource error handler now shows "reconnecting" status **immediately on ANY error** (before checking readyState)
+- Only skips showing reconnecting if we've already exceeded max reconnection attempts
+
+---
+
+## **PREVIOUS ISSUE: Message Sending (RESOLVED)**
 
 The root cause has been identified and fixed:
 
@@ -14,13 +28,21 @@ The root cause has been identified and fixed:
 
 ---
 
-## Debug Logging (Still Available)
+## Debug Logging (Client and Server)
 
 Extensive debug logging has been added to:
+
+### Server-side (writes to ~/testlog.txt):
+- `spells/.imps/cgi/chat-stream` - SSE connection setup, room validation, path resolution, cleanup
 - `spells/.imps/cgi/chat-send-message` - Main message sending logic
 - `spells/.imps/cgi/get-site-data-dir` - Site data directory resolution
 
-All debug output is written to **`~/testlog.txt`** to avoid interfering with daemon operation.
+### Client-side (writes to F12 browser console):
+- `.templates/demo/pages/chat.md` - All connection state transitions, error events, reconnection attempts
+
+All debug output:
+- **Server**: Written to **`~/testlog.txt`** (safe logging with `|| true` to avoid breaking under set -eu)
+- **Client**: Written to browser F12 console with `[DEBUG]` prefix for easy filtering
 
 ## How to View Debug Output
 
@@ -47,11 +69,54 @@ To make it easier to see only the new debug output:
 > ~/testlog.txt
 ```
 
-### 3. Send a Test Message
+### 3. Test Reconnection Behavior
+
+**To test the reconnecting spinner fix:**
+
+1. Open the chat page and join a room
+2. Open the browser's F12 Developer Tools (Console tab)
+3. Stop the site server (to simulate connection loss):
+   ```bash
+   stop-site <sitename>
+   ```
+4. Watch the browser console - you should see:
+   ```
+   [SSE DEBUG] ========== ERROR EVENT ==========
+   [SSE DEBUG] Error occurred: ...
+   [CONNECTION DEBUG] updateConnectionStatus called
+   [CONNECTION DEBUG] - status: reconnecting
+   ```
+5. Watch the UI - the "Reconnecting" spinner should appear **immediately**
+6. The spinner will try to reconnect up to max attempts (default 5)
+7. After max attempts, it will show "Disconnected" (hover to see "Retry")
+8. Click "Retry" to manually reconnect
+9. Start the server again:
+   ```bash
+   serve-site <sitename>
+   ```
+10. The connection should re-establish and show "Connected" (then fade away)
+
+### 4. Send a Test Message
 
 Try sending a chat message through the web interface, or try to load the chatrooms page.
 
 ### 4. View the Debug Output
+
+#### Client-side (F12 Console):
+
+Open the browser's Developer Tools (F12) and go to the Console tab. You can filter messages:
+
+```
+Filter by: DEBUG      (shows all debug messages)
+Filter by: SSE DEBUG  (shows SSE connection messages)
+Filter by: CONNECTION DEBUG (shows connection status changes)
+Filter by: RECONNECT DEBUG (shows reconnection attempts)
+Filter by: HEARTBEAT DEBUG (shows heartbeat timeouts)
+```
+
+The console will show real-time logging of all connection events.
+
+#### Server-side (~/testlog.txt):
 
 ```bash
 # View the entire log
@@ -62,13 +127,83 @@ tail -f ~/testlog.txt
 
 # View just the recent entries
 tail -50 ~/testlog.txt
+
+# Filter for specific debug categories
+grep "CHAT-STREAM DEBUG" ~/testlog.txt
+grep "CONNECTION" ~/testlog.txt
 ```
 
 ## What to Look For
 
+### Reconnection Debug Output (Client-side, F12 Console)
+
+When testing the reconnecting spinner, look for these patterns:
+
+#### On Connection Loss:
+```
+[SSE DEBUG] ========== ERROR EVENT ==========
+[SSE DEBUG] Error occurred: Event {...}
+[SSE DEBUG] - ReadyState: 2 (CLOSED) or 0 (CONNECTING)
+[SSE DEBUG] Showing reconnecting status immediately (before checking readyState)
+[CONNECTION DEBUG] updateConnectionStatus called
+[CONNECTION DEBUG] - status: reconnecting
+[CONNECTION DEBUG] Showing "reconnecting" status
+```
+
+#### On Reconnection Attempts:
+```
+[SSE DEBUG] Reconnect attempt X of 5
+[SSE DEBUG] Scheduling reconnection in 2 seconds
+[RECONNECT DEBUG] ========== MANUAL RECONNECTION ==========
+[SETUP DEBUG] ========== SETUP MESSAGE STREAM ==========
+[SETUP DEBUG] Creating EventSource with URL: /cgi/chat-stream?room=...
+```
+
+#### On Successful Reconnection:
+```
+[SSE DEBUG] Connection OPEN event fired
+[CONNECTION DEBUG] - status: connected
+```
+
+#### On Max Attempts Reached:
+```
+[SSE DEBUG] Max reconnection attempts reached - showing lost status
+[CONNECTION DEBUG] - status: lost
+[CONNECTION DEBUG] Showing "lost" (Disconnected/Retry) status
+```
+
+### Server Debug Output (~/testlog.txt)
+
 The debug output will show:
 
-### Environment Variables
+### SSE Connection Establishment
+
+### SSE Connection Establishment
+```
+[CHAT-STREAM DEBUG] ========== NEW CONNECTION ==========
+[CHAT-STREAM DEBUG] Timestamp: 2026-02-07 02:30:00
+[CHAT-STREAM DEBUG] QUERY_STRING: room=General&since=2026-02-07+02:30:00
+[CHAT-STREAM DEBUG] WIZARDRY_SITE_NAME=demo-site
+[CHAT-STREAM DEBUG] WIZARDRY_SITES_DIR=/path/to/sites
+[CHAT-STREAM DEBUG] Parsed parameters:
+[CHAT-STREAM DEBUG] - room: General
+[CHAT-STREAM DEBUG] - since_timestamp: 2026-02-07 02:30:00
+[CHAT-STREAM DEBUG] Paths resolved:
+[CHAT-STREAM DEBUG] - CHAT_DIR: /path/to/.sitedata/chatrooms
+[CHAT-STREAM DEBUG] - ROOM_DIR: /path/to/.sitedata/chatrooms/General
+[CHAT-STREAM DEBUG] - LOG_FILE: /path/to/.sitedata/chatrooms/General/.log
+[CHAT-STREAM DEBUG] tail process started with PID: 12345
+[CHAT-STREAM DEBUG] Entering event loop
+```
+
+### SSE Connection Cleanup
+```
+[CHAT-STREAM DEBUG] Cleanup called
+[CHAT-STREAM DEBUG] - Reason: connection closed or error
+[CHAT-STREAM DEBUG] ========== CONNECTION CLOSED ==========
+```
+
+### Environment Variables (for message sending)
 ```
 [DEBUG] WIZARDRY_SITE_NAME=<sitename>
 [DEBUG] WIZARDRY_SITES_DIR=<path>
