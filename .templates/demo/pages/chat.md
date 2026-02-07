@@ -945,7 +945,7 @@ window.sseMaxReconnectAttempts = 3;  // Give up after 3 attempts
 window.sseReconnectTimeout = null;
 window.sseLastSuccessfulConnection = null;
 window.sseHeartbeatTimeout = null;
-window.sseHeartbeatInterval = 45000;  // 45 seconds - server pings every 15s, so this allows 3 missed pings
+window.sseHeartbeatInterval = 20000;  // 20 seconds - server pings every 15s, allows 1 missed ping for quick disconnect detection
 window.sseSpinnerElement = null;  // Global spinner to prevent animation reset
 
 // Reset heartbeat timer - call this whenever we receive ANY event from server
