@@ -145,6 +145,13 @@ EOF
   run_priv chmod 644 "$plist_file"
   rm -f "$temp_plist"
 
+  # Disable by default - user must explicitly enable with enable-site-daemon
+  # This ensures checkbox starts OFF and user can turn it ON
+  run_priv launchctl disable "system/$label" 2>/dev/null || {
+    # Fallback for older macOS
+    run_priv launchctl unload -w "$plist_file" 2>/dev/null || true
+  }
+
   success "Daemon repaired for $site_name (launchd)"
 }
 

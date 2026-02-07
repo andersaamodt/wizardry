@@ -32,7 +32,7 @@ if [ ! -d "$SITE_DIR" ]; then
 fi
 
 unit="wizardry-site-${site_name}.service"
-plist="/Library/LaunchDaemons/org.wizardry.web.${site_name}.plist"
+plist="${LAUNCHD_PLIST_DIR:-/Library/LaunchDaemons}/org.wizardry.web.${site_name}.plist"
 label="org.wizardry.web.${site_name}"
 
 if has systemctl; then
