@@ -147,6 +147,34 @@ set -eu
   mac_active_repo=""
   mac_source_root=""
   sudo_keepalive_pid=""
+  copy_heartbeat_pid=""
+
+  progress_msg() {
+    msg=$1
+    if [ -w /dev/tty ]; then
+      printf '%s\n' "$msg" > /dev/tty
+    else
+      printf '%s\n' "$msg" >&2
+    fi
+  }
+
+  stop_copy_heartbeat() {
+    if [ -n "${copy_heartbeat_pid-}" ]; then
+      kill "$copy_heartbeat_pid" >/dev/null 2>&1 || true
+      copy_heartbeat_pid=""
+    fi
+  }
+
+  start_copy_heartbeat() {
+    stop_copy_heartbeat
+    (
+      while :; do
+        sleep 10
+        progress_msg "pocket-dimension: still copying workspace..."
+      done
+    ) &
+    copy_heartbeat_pid=$!
+  }
 
   has_running_uid_process() {
     target_uid=$1
@@ -304,6 +332,7 @@ set -eu
   }
 
   cleanup_active_macos_temp_user() {
+    stop_copy_heartbeat
     if [ -n "${mac_active_user-}" ]; then
       remove_macos_temp_user "$mac_active_user"
       mac_active_user=""
@@ -443,29 +472,38 @@ set -eu
       status=$?
     fi
   elif [ "$platform" = "Darwin" ] && [ "$strict_mode" -eq 1 ]; then
-    printf '%s\n' "pocket-dimension: strict macOS isolation enabled" >&2
+    progress_msg "pocket-dimension: strict macOS isolation enabled"
     if ! ensure_macos_strict_sudo; then
       status=1
     else
       start_sudo_keepalive
-      printf '%s\n' "pocket-dimension: cleaning orphan disposable users..." >&2
+      progress_msg "pocket-dimension: cleaning orphan disposable users..."
       cleanup_orphan_macos_temp_users
 
-      printf '%s\n' "pocket-dimension: creating disposable macOS user..." >&2
+      progress_msg "pocket-dimension: creating disposable macOS user..."
       if create_macos_temp_user; then
         mac_active_repo="${mac_active_home}/wizardry"
         if ! sudo mkdir -p "$mac_active_repo" >/dev/null 2>&1; then
           status=1
         else
-          printf '%s\n' "pocket-dimension: copying workspace into disposable user..." >&2
+          progress_msg "pocket-dimension: copying workspace into disposable user..."
         fi
-        if [ "$status" -eq 0 ] && ! (cd "$source_root" && tar -cf - .) | sudo tar -xf - -C "$mac_active_repo"; then
+        if [ "$status" -eq 0 ]; then
+          (
+            cd "$source_root"
+            tar -cf - .
+          ) | sudo tar -xf - -C "$mac_active_repo" &
+          copy_pid=$!
+          start_copy_heartbeat
+          wait "$copy_pid" || status=$?
+          stop_copy_heartbeat
+        fi
+        if [ "$status" -ne 0 ]; then
           printf '%s\n' "pocket-dimension: strict macOS mode failed to copy wizardry workspace" >&2
+        elif ! sudo chown -R "$mac_active_user:staff" "$mac_active_repo" >/dev/null 2>&1; then
           status=1
-        elif [ "$status" -eq 0 ] && ! sudo chown -R "$mac_active_user:staff" "$mac_active_repo" >/dev/null 2>&1; then
-          status=1
-        elif [ "$status" -eq 0 ]; then
-          printf '%s\n' "pocket-dimension: workspace copied; preparing isolated run..." >&2
+        else
+          progress_msg "pocket-dimension: workspace copied; preparing isolated run..."
           command_name=$1
           shift
           case "$command_name" in
@@ -501,7 +539,7 @@ if [ -f "$repo_root/spells/.wizardry/invoke-wizardry" ]; then
 fi
 
 if [ "${WIZARDRY_POCKET_SKIP_BANISH-0}" -ne 1 ]; then
-  printf '%s\n' "pocket-dimension: running banish all in disposable user..." >&2
+  printf '%s\n' "pocket-dimension: running banish all in disposable user..."
   if command -v banish >/dev/null 2>&1; then
     banish all
   elif [ -x "$repo_root/spells/wards/banish" ]; then
@@ -512,7 +550,7 @@ if [ "${WIZARDRY_POCKET_SKIP_BANISH-0}" -ne 1 ]; then
   fi
 fi
 
-printf '%s\n' "pocket-dimension: launching target command..." >&2
+printf '%s\n' "pocket-dimension: launching target command..."
 exec "$run_cmd" "$@"
 RUNNER
           chmod 755 "$runner_script"
@@ -533,7 +571,7 @@ RUNNER
           fi
 
           if [ "$sandbox_exec_usable" -eq 1 ]; then
-            printf '%s\n' "pocket-dimension: using sandbox-exec + disposable-user isolation" >&2
+            progress_msg "pocket-dimension: using sandbox-exec + disposable-user isolation"
             if sudo -H -u "$mac_active_user" \
               env -i \
                 PATH="$run_path" \

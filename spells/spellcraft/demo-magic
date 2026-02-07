@@ -749,7 +749,11 @@ if [ "${WIZARDRY_DEMO_IN_POCKET-0}" -ne 1 ] && [ "${WIZARDRY_DEMO_NO_BWRAP-0}" -
       printf '%s\n' "demo-magic: pocket-dimension not found" >&2
       exit 1
     fi
-    printf '%s\n' "demo-magic: entering strict pocket-dimension..." >&2
+    if [ -w /dev/tty ]; then
+      printf '%s\n' "demo-magic: entering strict pocket-dimension..." > /dev/tty
+    else
+      printf '%s\n' "demo-magic: entering strict pocket-dimension..." >&2
+    fi
     exec pocket-dimension --strict --network closed -- demo-magic "$@"
   fi
 fi
