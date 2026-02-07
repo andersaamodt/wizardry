@@ -32,7 +32,7 @@ if [ ! -d "$SITE_DIR" ]; then
 fi
 
 unit="wizardry-site-${site_name}.service"
-plist="/Library/LaunchDaemons/org.wizardry.web.${site_name}.plist"
+plist="${LAUNCHD_PLIST_DIR:-/Library/LaunchDaemons}/org.wizardry.web.${site_name}.plist"
 label="org.wizardry.web.${site_name}"
 
 if has systemctl; then
@@ -43,10 +43,21 @@ if has systemctl; then
 fi
 
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
-  if [ -f "$plist" ]; then
-    exit 0
+  # Check if plist exists
+  if [ ! -f "$plist" ]; then
+    exit 1
   fi
-  exit 1
+  
+  # Check if daemon is NOT disabled
+  # launchctl print-disabled system shows disabled daemons
+  # If our label is NOT in that list, it's enabled
+  if launchctl print-disabled system 2>/dev/null | grep -q "\"$label\" => true"; then
+    # Daemon is disabled
+    exit 1
+  fi
+  
+  # Daemon exists and is not disabled, so it's enabled
+  exit 0
 fi
 
 exit 1

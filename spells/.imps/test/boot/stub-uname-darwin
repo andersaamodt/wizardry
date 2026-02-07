@@ -1,0 +1,13 @@
+#!/bin/sh
+# stub-uname-darwin DIR - create uname stub that returns Darwin for macOS testing
+set -eu
+
+dir=$1
+cat >"$dir/uname" <<'STUB'
+#!/bin/sh
+case "$1" in
+  -s) printf 'Darwin\n' ;;
+  *) printf 'Darwin\n' ;;
+esac
+STUB
+chmod +x "$dir/uname"

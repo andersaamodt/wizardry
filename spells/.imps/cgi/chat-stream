@@ -5,6 +5,13 @@
 # Uses avatar directories as single source of truth (no redundant .members file)
 # Gapless connection: continuous tail -f stream with timestamp filtering prevents message loss
 
+# Debug logging to ~/testlog.txt
+printf '[CHAT-STREAM DEBUG] ========== NEW CONNECTION ==========\n' >> ~/testlog.txt 2>&1 || true
+printf '[CHAT-STREAM DEBUG] Timestamp: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" >> ~/testlog.txt 2>&1 || true
+printf '[CHAT-STREAM DEBUG] QUERY_STRING: %s\n' "${QUERY_STRING:-UNSET}" >> ~/testlog.txt 2>&1 || true
+printf '[CHAT-STREAM DEBUG] WIZARDRY_SITE_NAME: %s\n' "${WIZARDRY_SITE_NAME:-UNSET}" >> ~/testlog.txt 2>&1 || true
+printf '[CHAT-STREAM DEBUG] WIZARDRY_SITES_DIR: %s\n' "${WIZARDRY_SITES_DIR:-UNSET}" >> ~/testlog.txt 2>&1 || true
+
 # Send SSE headers with CORS support FIRST (before set -eu)
 # This ensures headers are always output even if script fails early
 printf 'Status: 200 OK\r\n'
@@ -66,31 +73,48 @@ send_sse_event() {
 # Now enable strict mode after headers and padding are output
 set -eu
 
+printf '[CHAT-STREAM DEBUG] Headers and padding sent\n' >> ~/testlog.txt 2>&1 || true
+
 # Parse query string using get-query-param
 room=$(get-query-param "room" "${QUERY_STRING:-}")
 since_timestamp=$(get-query-param "since" "${QUERY_STRING:-}")
+
+printf '[CHAT-STREAM DEBUG] Parsed parameters:\n' >> ~/testlog.txt 2>&1 || true
+printf '[CHAT-STREAM DEBUG] - room: %s\n' "${room:-EMPTY}" >> ~/testlog.txt 2>&1 || true
+printf '[CHAT-STREAM DEBUG] - since_timestamp: %s\n' "${since_timestamp:-EMPTY}" >> ~/testlog.txt 2>&1 || true
 
 # Default to General if no room specified
 room="${room:-General}"
 
 # Validate room name to prevent path traversal
 if ! validate-room-name "$room"; then
+  printf '[CHAT-STREAM DEBUG] Invalid room name: %s\n' "$room" >> ~/testlog.txt 2>&1 || true
   sse-error 400 "Invalid room name"
   sleep 0.1  # Ensure output is flushed before exit
   exit 1
 fi
+
+printf '[CHAT-STREAM DEBUG] Room name validated: %s\n' "$room" >> ~/testlog.txt 2>&1 || true
 
 # Get site paths using get-site-data-dir
 CHAT_DIR=$(get-site-data-dir "chatrooms")
 ROOM_DIR="$CHAT_DIR/$room"
 LOG_FILE="$ROOM_DIR/.log"
 
+printf '[CHAT-STREAM DEBUG] Paths resolved:\n' >> ~/testlog.txt 2>&1 || true
+printf '[CHAT-STREAM DEBUG] - CHAT_DIR: %s\n' "$CHAT_DIR" >> ~/testlog.txt 2>&1 || true
+printf '[CHAT-STREAM DEBUG] - ROOM_DIR: %s\n' "$ROOM_DIR" >> ~/testlog.txt 2>&1 || true
+printf '[CHAT-STREAM DEBUG] - LOG_FILE: %s\n' "$LOG_FILE" >> ~/testlog.txt 2>&1 || true
+
 # Verify room exists
 if [ ! -d "$ROOM_DIR" ]; then
+  printf '[CHAT-STREAM DEBUG] Room directory not found: %s\n' "$ROOM_DIR" >> ~/testlog.txt 2>&1 || true
   sse-error 404 "Room not found"
   sleep 0.1  # Ensure output is flushed before exit
   exit 1
 fi
+
+printf '[CHAT-STREAM DEBUG] Room directory exists\n' >> ~/testlog.txt 2>&1 || true
 
 # Historical messages are fetched separately via chat-get-messages endpoint
 # However, we send recent messages to prevent gaps during connection:
@@ -125,6 +149,8 @@ mkfifo "$fifo" || {
 
 # Cleanup function
 cleanup() {
+  printf '[CHAT-STREAM DEBUG] Cleanup called\n' >> ~/testlog.txt 2>&1 || true
+  printf '[CHAT-STREAM DEBUG] - Reason: connection closed or error\n' >> ~/testlog.txt 2>&1 || true
   exec 3<&- 2>/dev/null || true
   kill ${tail_pid:-} 2>/dev/null || true
   kill ${keepalive_pid:-} 2>/dev/null || true
@@ -132,6 +158,7 @@ cleanup() {
   kill ${timeout_pid:-} 2>/dev/null || true
   kill ${health_pid:-} 2>/dev/null || true
   rm -f "${fifo:-}"
+  printf '[CHAT-STREAM DEBUG] ========== CONNECTION CLOSED ==========\n' >> ~/testlog.txt 2>&1 || true
   exit
 }
 
@@ -152,16 +179,23 @@ fi
 
 # Start tail -f writing to FIFO (background)
 # Using -n to send initial lines ensures NO GAP between initial and ongoing monitoring
+printf '[CHAT-STREAM DEBUG] Starting tail -f with initial_lines=%s\n' "$initial_lines" >> ~/testlog.txt 2>&1 || true
 tail -f -n "$initial_lines" "$LOG_FILE" > "$fifo" &
 tail_pid=$!
+
+printf '[CHAT-STREAM DEBUG] tail process started with PID: %s\n' "$tail_pid" >> ~/testlog.txt 2>&1 || true
 
 # Verify tail started successfully
 sleep 0.1
 if ! kill -0 $tail_pid 2>/dev/null; then
+  printf '[CHAT-STREAM DEBUG] tail process failed to start\n' >> ~/testlog.txt 2>&1 || true
   sse-error 500 "Failed to monitor chat log"
   sleep 0.1  # Ensure output is flushed before exit
   exit 1
 fi
+
+printf '[CHAT-STREAM DEBUG] tail process verified running\n' >> ~/testlog.txt 2>&1 || true
+printf '[CHAT-STREAM DEBUG] Entering event loop\n' >> ~/testlog.txt 2>&1 || true
 
 # Background subprocess health monitor
 # Detects if critical subprocesses die unexpectedly

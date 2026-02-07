@@ -44,17 +44,29 @@ run_priv() {
 }
 
 unit="wizardry-site-${site_name}.service"
-plist="/Library/LaunchDaemons/org.wizardry.web.${site_name}.plist"
+plist="${LAUNCHD_PLIST_DIR:-/Library/LaunchDaemons}/org.wizardry.web.${site_name}.plist"
 
 if has systemctl; then
-  run_priv systemctl disable "$unit"
+  run_priv systemctl disable "$unit" 2>/dev/null || true
   success "Daemon disabled on startup for $site_name"
   exit 0
 fi
 
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
-  run_priv launchctl unload -w "$plist" >/dev/null 2>&1 || true
-  run_priv rm -f "$plist"
+  label="org.wizardry.web.${site_name}"
+  
+  # First, unload the daemon if it's currently loaded
+  if launchctl list | grep -q "$label" 2>/dev/null; then
+    run_priv launchctl unload "$plist" 2>/dev/null || true
+  fi
+  
+  # Then disable it for boot using the modern disable command
+  # This sets the disabled flag in the overrides database
+  run_priv launchctl disable "system/$label" 2>/dev/null || {
+    # If launchctl disable fails (older macOS), fall back to unload -w
+    run_priv launchctl unload -w "$plist" 2>/dev/null || true
+  }
+  
   success "Daemon disabled on startup for $site_name"
   exit 0
 fi

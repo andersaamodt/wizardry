@@ -70,12 +70,46 @@ if [ -f "$SITE_DIR/nginx/nginx.pid" ]; then
   rm -f "$SITE_DIR/nginx/nginx.pid"
 fi
 
-# Start nginx directly without systemd/launchd (no sudo needed!)
-step "Starting nginx for $site_name..."
+# Check if daemon configuration exists
+if has systemctl; then
+  unit="wizardry-site-${site_name}.service"
+  daemon_artifact="${SERVICE_DIR:-/etc/systemd/system}/$unit"
+elif [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+  daemon_artifact="/Library/LaunchDaemons/org.wizardry.web.${site_name}.plist"
+else
+  die "serve-site: systemd or launchd is required"
+fi
 
-# Run in background using run-site-daemon
-nohup run-site-daemon "$site_name" >/dev/null 2>&1 &
-daemon_pid=$!
+if [ ! -f "$daemon_artifact" ]; then
+  die "serve-site: daemon not configured - run 'repair-site-daemon $site_name' first"
+fi
+
+# Start the daemon
+step "Starting daemon for $site_name..."
+
+if has systemctl; then
+  # Check if service is already active
+  if systemctl is-active --quiet "$unit" 2>/dev/null; then
+    info "Site '$site_name' is already running"
+  else
+    run_priv systemctl start "$unit"
+  fi
+elif [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+  # Check if service is already loaded
+  label="org.wizardry.web.${site_name}"
+  if launchctl list | grep -q "$label" 2>/dev/null; then
+    info "Site '$site_name' is already running"
+  else
+    # Load without -w (don't enable on boot, just start now)
+    # Capture any errors from launchctl
+    load_output=$(run_priv launchctl load "$daemon_artifact" 2>&1) || load_failed=$?
+    if [ "${load_failed:-0}" -ne 0 ]; then
+      warn "serve-site: launchctl load failed"
+      warn "Error: $load_output"
+      die "serve-site: try running 'repair-site-daemon $site_name' to fix configuration"
+    fi
+  fi
+fi
 
 # Read port from config
 port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || echo "8080")
