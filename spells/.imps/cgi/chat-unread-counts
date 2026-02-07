@@ -3,6 +3,13 @@
 # Lightweight endpoint that streams only unread counts (not full messages)
 # Monitors all chat room directories and sends updates when counts change
 
+# Debug logging to ~/testlog.txt
+printf '[UNREAD-COUNTS DEBUG] ========== NEW CONNECTION ==========\n' >> ~/testlog.txt 2>&1 || true
+printf '[UNREAD-COUNTS DEBUG] Timestamp: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" >> ~/testlog.txt 2>&1 || true
+printf '[UNREAD-COUNTS DEBUG] QUERY_STRING: %s\n' "${QUERY_STRING:-UNSET}" >> ~/testlog.txt 2>&1 || true
+printf '[UNREAD-COUNTS DEBUG] WIZARDRY_SITE_NAME: %s\n' "${WIZARDRY_SITE_NAME:-UNSET}" >> ~/testlog.txt 2>&1 || true
+printf '[UNREAD-COUNTS DEBUG] WIZARDRY_SITES_DIR: %s\n' "${WIZARDRY_SITES_DIR:-UNSET}" >> ~/testlog.txt 2>&1 || true
+
 # Send SSE headers with CORS support FIRST (before set -eu)
 printf 'Status: 200 OK\r\n'
 printf 'Content-Type: text/event-stream\r\n'
@@ -60,18 +67,30 @@ send_sse_event() {
 # Now enable strict mode
 set -eu
 
+printf '[UNREAD-COUNTS DEBUG] Headers and padding sent\n' >> ~/testlog.txt 2>&1 || true
+
 # Get site paths
 CHAT_DIR=$(get-site-data-dir "chatrooms")
+
+printf '[UNREAD-COUNTS DEBUG] CHAT_DIR resolved to: %s\n' "$CHAT_DIR" >> ~/testlog.txt 2>&1 || true
+
 mkdir -p "$CHAT_DIR"
+
+printf '[UNREAD-COUNTS DEBUG] Directory created/verified\n' >> ~/testlog.txt 2>&1 || true
 
 # Parse current username from query string (to calculate unread counts)
 username=$(get-query-param "username" "${QUERY_STRING:-}")
 
+printf '[UNREAD-COUNTS DEBUG] Username: %s\n' "${username:-EMPTY}" >> ~/testlog.txt 2>&1 || true
+
 # Validate username
 if [ -z "$username" ]; then
+  printf '[UNREAD-COUNTS DEBUG] ERROR: Username is empty\n' >> ~/testlog.txt 2>&1 || true
   send_sse_event error "Username required"
   exit 1
 fi
+
+printf '[UNREAD-COUNTS DEBUG] Username validated\n' >> ~/testlog.txt 2>&1 || true
 
 # Function to count unread messages in a room
 count_unread_in_room() {
@@ -127,16 +146,22 @@ get_all_unread_counts() {
 
 # Cleanup function
 cleanup() {
+  printf '[UNREAD-COUNTS DEBUG] Cleanup called\n' >> ~/testlog.txt 2>&1 || true
+  printf '[UNREAD-COUNTS DEBUG] - Reason: connection closed or error\n' >> ~/testlog.txt 2>&1 || true
   kill ${keepalive_pid:-} 2>/dev/null || true
   kill ${timeout_pid:-} 2>/dev/null || true
+  printf '[UNREAD-COUNTS DEBUG] ========== CONNECTION CLOSED ==========\n' >> ~/testlog.txt 2>&1 || true
   exit
 }
 
 trap cleanup INT TERM EXIT
 
 # Send initial counts
+printf '[UNREAD-COUNTS DEBUG] Getting initial counts\n' >> ~/testlog.txt 2>&1 || true
 initial_counts=$(get_all_unread_counts)
+printf '[UNREAD-COUNTS DEBUG] Initial counts: %s\n' "$initial_counts" >> ~/testlog.txt 2>&1 || true
 send_sse_event counts "$initial_counts"
+printf '[UNREAD-COUNTS DEBUG] Initial event sent, entering monitoring loop\n' >> ~/testlog.txt 2>&1 || true
 
 # Background keepalive monitor
 (

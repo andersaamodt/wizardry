@@ -384,8 +384,11 @@ function updateUnreadBadges() {
 
 // Set up SSE connection for real-time unread counts
 function setupUnreadCountsStream() {
+  console.log('[UNREAD COUNTS DEBUG] ========== SETUP STREAM ==========');
+  
   // Close existing connection if any
   if (window.unreadCountsEventSource) {
+    console.log('[UNREAD COUNTS DEBUG] Closing existing connection');
     window.unreadCountsEventSource.close();
     window.unreadCountsEventSource = null;
   }
@@ -394,8 +397,15 @@ function setupUnreadCountsStream() {
   var username = getUsername();
   var url = '/cgi/chat-unread-counts?username=' + encodeURIComponent(username);
   
+  console.log('[UNREAD COUNTS DEBUG] Creating EventSource');
+  console.log('[UNREAD COUNTS DEBUG] - username:', username);
+  console.log('[UNREAD COUNTS DEBUG] - URL:', url);
+  
   // Create new EventSource connection
   window.unreadCountsEventSource = new EventSource(url);
+  
+  console.log('[UNREAD COUNTS DEBUG] EventSource created');
+  console.log('[UNREAD COUNTS DEBUG] - Initial readyState:', window.unreadCountsEventSource.readyState);
   
   // Handle counts update events
   window.unreadCountsEventSource.addEventListener('counts', function(event) {
@@ -476,28 +486,56 @@ function setupUnreadCountsStream() {
   
   // Handle connection errors
   window.unreadCountsEventSource.addEventListener('error', function(event) {
-    console.error('[Unread Counts SSE] Error occurred:', event);
+    console.error('[UNREAD COUNTS DEBUG] ========== ERROR EVENT ==========');
+    console.error('[UNREAD COUNTS DEBUG] Error occurred:', event);
+    console.error('[UNREAD COUNTS DEBUG] - ReadyState:', window.unreadCountsEventSource ? window.unreadCountsEventSource.readyState : 'null');
+    console.error('[UNREAD COUNTS DEBUG] - ReadyState names: CONNECTING=0, OPEN=1, CLOSED=2');
+    console.error('[UNREAD COUNTS DEBUG] - URL:', window.unreadCountsEventSource ? window.unreadCountsEventSource.url : 'null');
+    
     // EventSource will automatically reconnect
+    // Log different states for diagnosis
+    if (window.unreadCountsEventSource) {
+      if (window.unreadCountsEventSource.readyState === EventSource.CLOSED) {
+        console.error('[UNREAD COUNTS DEBUG] Connection CLOSED - server unavailable, will retry');
+      } else if (window.unreadCountsEventSource.readyState === EventSource.CONNECTING) {
+        console.warn('[UNREAD COUNTS DEBUG] Connection CONNECTING - EventSource attempting to reconnect');
+      } else if (window.unreadCountsEventSource.readyState === EventSource.OPEN) {
+        console.warn('[UNREAD COUNTS DEBUG] Connection OPEN during error - unusual state');
+      }
+    }
+    
+    console.error('[UNREAD COUNTS DEBUG] ========== END ERROR EVENT ==========');
   });
   
   // Log successful connection
   window.unreadCountsEventSource.addEventListener('open', function(event) {
-    console.log('[Unread Counts SSE] Connected successfully');
+    console.log('[UNREAD COUNTS DEBUG] ========== CONNECTION OPEN ==========');
+    console.log('[UNREAD COUNTS DEBUG] - ReadyState:', window.unreadCountsEventSource.readyState);
+    console.log('[UNREAD COUNTS DEBUG] Connected successfully');
   });
 }
 
 // Set up SSE connection for real-time room list updates
 function setupRoomListStream() {
+  console.log('[ROOM LIST DEBUG] ========== SETUP STREAM ==========');
+  
   // Close existing connection if any
   if (window.roomListEventSource) {
+    console.log('[ROOM LIST DEBUG] Closing existing connection');
     window.roomListEventSource.close();
     window.roomListEventSource = null;
   }
   
   var url = '/cgi/chat-room-list-stream';
   
+  console.log('[ROOM LIST DEBUG] Creating EventSource');
+  console.log('[ROOM LIST DEBUG] - URL:', url);
+  
   // Create new EventSource connection
   window.roomListEventSource = new EventSource(url);
+  
+  console.log('[ROOM LIST DEBUG] EventSource created');
+  console.log('[ROOM LIST DEBUG] - Initial readyState:', window.roomListEventSource.readyState);
   
   // Handle room list update events
   window.roomListEventSource.addEventListener('rooms', function(event) {
@@ -517,13 +555,32 @@ function setupRoomListStream() {
   
   // Handle connection errors
   window.roomListEventSource.addEventListener('error', function(event) {
-    console.error('[Room List SSE] Error occurred:', event);
+    console.error('[ROOM LIST DEBUG] ========== ERROR EVENT ==========');
+    console.error('[ROOM LIST DEBUG] Error occurred:', event);
+    console.error('[ROOM LIST DEBUG] - ReadyState:', window.roomListEventSource ? window.roomListEventSource.readyState : 'null');
+    console.error('[ROOM LIST DEBUG] - ReadyState names: CONNECTING=0, OPEN=1, CLOSED=2');
+    console.error('[ROOM LIST DEBUG] - URL:', window.roomListEventSource ? window.roomListEventSource.url : 'null');
+    
     // EventSource will automatically reconnect
+    // Log different states for diagnosis
+    if (window.roomListEventSource) {
+      if (window.roomListEventSource.readyState === EventSource.CLOSED) {
+        console.error('[ROOM LIST DEBUG] Connection CLOSED - server unavailable, will retry');
+      } else if (window.roomListEventSource.readyState === EventSource.CONNECTING) {
+        console.warn('[ROOM LIST DEBUG] Connection CONNECTING - EventSource attempting to reconnect');
+      } else if (window.roomListEventSource.readyState === EventSource.OPEN) {
+        console.warn('[ROOM LIST DEBUG] Connection OPEN during error - unusual state');
+      }
+    }
+    
+    console.error('[ROOM LIST DEBUG] ========== END ERROR EVENT ==========');
   });
   
   // Log successful connection
   window.roomListEventSource.addEventListener('open', function(event) {
-    console.log('[Room List SSE] Connected successfully');
+    console.log('[ROOM LIST DEBUG] ========== CONNECTION OPEN ==========');
+    console.log('[ROOM LIST DEBUG] - ReadyState:', window.roomListEventSource.readyState);
+    console.log('[ROOM LIST DEBUG] Connected successfully');
   });
 }
 
