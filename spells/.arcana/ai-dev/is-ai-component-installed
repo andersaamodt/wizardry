@@ -49,7 +49,10 @@ anythingllm)
     fi
   else
     # Linux: check for binary
-    for path in /usr/local/bin/anythingllm "$HOME/.local/bin/anythingllm" /opt/anythingllm/anythingllm; do
+    for path in \
+      /usr/local/bin/anythingllm \
+      "$HOME/.local/bin/anythingllm" \
+      /opt/anythingllm/anythingllm; do
       if [ -x "$path" ]; then
         exit 0
       fi
