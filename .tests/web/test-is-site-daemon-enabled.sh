@@ -103,6 +103,7 @@ test_is_site_daemon_enabled_launchctl_enabled() {
   stub_dir=$(temp-dir web-wizardry-stub)
   write_launchctl_stub "$stub_dir"
   write_uname_darwin "$stub_dir"
+  stub-forget-command systemctl "$stub_dir"  # Hide systemctl to test macOS path
   
   # Create plist file
   plist_dir="$stub_dir/Library/LaunchDaemons"
@@ -127,6 +128,7 @@ test_is_site_daemon_enabled_launchctl_disabled() {
   stub_dir=$(temp-dir web-wizardry-stub)
   write_launchctl_stub "$stub_dir"
   write_uname_darwin "$stub_dir"
+  stub-forget-command systemctl "$stub_dir"  # Hide systemctl to test macOS path
   
   # Create plist file
   plist_dir="$stub_dir/Library/LaunchDaemons"
