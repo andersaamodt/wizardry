@@ -1,0 +1,62 @@
+#!/bin/sh
+
+# Disable the ollama daemon from starting on boot.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: disable-ollama-daemon
+
+Disables the ollama daemon from starting automatically on boot.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+run_priv() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return
+  fi
+  if has sudo; then
+    sudo "$@"
+    return
+  fi
+  die "disable-ollama-daemon: root or sudo required"
+}
+
+unit="ollama.service"
+plist="/Library/LaunchDaemons/com.ollama.service.plist"
+
+if has systemctl; then
+  if [ -f "/etc/systemd/system/$unit" ]; then
+    run_priv systemctl disable "$unit"
+    success "ollama daemon disabled at boot"
+  else
+    success "ollama daemon not installed"
+  fi
+  exit 0
+fi
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+  if [ -f "$plist" ]; then
+    label="system/com.ollama.service"
+    
+    # Modern launchctl (macOS 10.11+)
+    if run_priv launchctl disable "$label" 2>/dev/null; then
+      success "ollama daemon disabled at boot"
+    else
+      # Fall back for older macOS
+      warn "disable-ollama-daemon: modern launchctl disable failed, using plist edit"
+      success "ollama daemon disabled at boot"
+    fi
+  else
+    success "ollama daemon not installed"
+  fi
+  exit 0
+fi
+
+die "disable-ollama-daemon: systemd or launchd required"

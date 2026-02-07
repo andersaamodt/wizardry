@@ -1,0 +1,105 @@
+#!/bin/sh
+
+# Install AnythingLLM in a cross-platform POSIX-compliant way.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-anythingllm
+
+Installs AnythingLLM without using homebrew, in a POSIX-compliant cross-platform manner.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+# Check if already installed
+if "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null; then
+  success "AnythingLLM is already installed"
+  exit 0
+fi
+
+say "Installing AnythingLLM..."
+
+OS=$(uname -s 2>/dev/null)
+ARCH=$(uname -m 2>/dev/null)
+
+case "$OS" in
+Darwin)
+  # macOS installation - download dmg and install
+  say "Downloading AnythingLLM for macOS..."
+  
+  temp_dmg=$(temp-file anythingllm.dmg)
+  url="https://s3.us-west-1.amazonaws.com/public.useanything.com/latest/AnythingLLMDesktop.dmg"
+  
+  if has curl; then
+    curl -fsSL -o "$temp_dmg" "$url" || die "install-anythingllm: failed to download"
+  elif has wget; then
+    wget -q -O "$temp_dmg" "$url" || die "install-anythingllm: failed to download"
+  else
+    die "install-anythingllm: curl or wget required"
+  fi
+  
+  say "Mounting DMG..."
+  mount_point=$(hdiutil attach "$temp_dmg" | grep Volumes | sed 's/.*\/Volumes/\/Volumes/')
+  
+  say "Installing AnythingLLM.app..."
+  if [ -d "$mount_point/AnythingLLM.app" ]; then
+    cp -R "$mount_point/AnythingLLM.app" /Applications/
+  else
+    hdiutil detach "$mount_point" 2>/dev/null || true
+    rm -f "$temp_dmg"
+    die "install-anythingllm: AnythingLLM.app not found in DMG"
+  fi
+  
+  hdiutil detach "$mount_point" 2>/dev/null || true
+  rm -f "$temp_dmg"
+  ;;
+Linux)
+  # Linux installation - download AppImage
+  say "Downloading AnythingLLM for Linux..."
+  
+  install_dir="$HOME/.local/bin"
+  mkdir -p "$install_dir"
+  
+  case "$ARCH" in
+  x86_64)
+    url="https://s3.us-west-1.amazonaws.com/public.useanything.com/latest/AnythingLLMDesktop.AppImage"
+    ;;
+  *)
+    die "install-anythingllm: unsupported architecture: $ARCH"
+    ;;
+  esac
+  
+  if has curl; then
+    curl -fsSL -o "$install_dir/anythingllm" "$url" || die "install-anythingllm: failed to download"
+  elif has wget; then
+    wget -q -O "$install_dir/anythingllm" "$url" || die "install-anythingllm: failed to download"
+  else
+    die "install-anythingllm: curl or wget required"
+  fi
+  
+  chmod +x "$install_dir/anythingllm"
+  ;;
+*)
+  die "install-anythingllm: unsupported operating system: $OS"
+  ;;
+esac
+
+# Verify installation
+if ! "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null; then
+  die "install-anythingllm: installation verification failed"
+fi
+
+success "AnythingLLM installed successfully"
+
+# Check if we should auto-repair link (if ollama is installed)
+if "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+  say "ollama is installed, repairing link..."
+  "$script_dir/repair-ai-link" || warn "install-anythingllm: failed to repair link"
+fi

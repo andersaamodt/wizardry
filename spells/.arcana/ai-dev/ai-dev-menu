@@ -1,0 +1,232 @@
+#!/bin/sh
+
+# Present the AI development management menu.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: ai-dev-menu
+
+Displays the AI development management menu with install/uninstall toggles for each component.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+. colors
+
+if ! require menu "The ai-dev-menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 130' INT
+trap 'exit 0' TERM
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+loop_limit=${MENU_LOOP_LIMIT:-}
+
+while true; do
+  # Clear menu_status from previous iteration
+  unset menu_status
+  
+  # Capture state before menu to detect changes
+  ollama_was_installed=0
+  anythingllm_was_installed=0
+  ollama_daemon_was_installed=0
+  ollama_daemon_was_enabled=0
+  ollama_daemon_was_running=0
+  
+  "$script_dir/is-ai-component-installed" ollama 2>/dev/null && ollama_was_installed=1
+  "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null && anythingllm_was_installed=1
+  
+  # Check ollama daemon state (only if ollama is installed)
+  if [ "$ollama_was_installed" -eq 1 ]; then
+    # Check if daemon config exists
+    if has systemctl; then
+      [ -f "/etc/systemd/system/ollama.service" ] && ollama_daemon_was_installed=1
+    elif [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+      [ -f "/Library/LaunchDaemons/com.ollama.service.plist" ] && ollama_daemon_was_installed=1
+    fi
+    
+    "$script_dir/is-ollama-daemon-enabled" 2>/dev/null && ollama_daemon_was_enabled=1
+    "$script_dir/is-ollama-daemon-running" 2>/dev/null && ollama_daemon_was_running=1
+  fi
+  
+  # Track starting position
+  start_selection=${start_selection:-1}
+  
+  # Build menu entries based on installation state
+  pos=1
+  set --
+  
+  # On macOS with ollama installed, show daemon toggles first
+  is_macos=0
+  [ "$(uname -s 2>/dev/null)" = "Darwin" ] && is_macos=1
+  
+  if [ "$is_macos" -eq 1 ] && [ "$ollama_was_installed" -eq 1 ]; then
+    # Daemon install/uninstall toggle
+    if [ "$ollama_daemon_was_installed" -eq 1 ]; then
+      daemon_install_toggle="[X] ollama daemon config%$script_dir/uninstall-ollama-daemon"
+    else
+      daemon_install_toggle="[ ] ollama daemon config%$script_dir/install-ollama-daemon"
+    fi
+    set -- "$@" "$daemon_install_toggle"
+    daemon_install_pos=$pos
+    pos=$((pos + 1))
+    
+    # Only show start/stop and enable/disable if daemon is installed
+    if [ "$ollama_daemon_was_installed" -eq 1 ]; then
+      # Start/stop toggle
+      if [ "$ollama_daemon_was_running" -eq 1 ]; then
+        daemon_start_toggle="[X] ollama daemon running%$script_dir/stop-ollama-daemon"
+      else
+        daemon_start_toggle="[ ] ollama daemon running%$script_dir/start-ollama-daemon"
+      fi
+      set -- "$@" "$daemon_start_toggle"
+      daemon_start_pos=$pos
+      pos=$((pos + 1))
+      
+      # Enable/disable at startup toggle
+      if [ "$ollama_daemon_was_enabled" -eq 1 ]; then
+        daemon_enable_toggle="[X] ollama daemon at startup%$script_dir/disable-ollama-daemon"
+      else
+        daemon_enable_toggle="[ ] ollama daemon at startup%$script_dir/enable-ollama-daemon"
+      fi
+      set -- "$@" "$daemon_enable_toggle"
+      daemon_enable_pos=$pos
+      pos=$((pos + 1))
+    fi
+    
+    # Add separator after daemon toggles
+    set -- "$@" "---"
+    pos=$((pos + 1))
+  fi
+  
+  # Check if we should show Manage LLMs menu
+  show_manage_llms=0
+  if [ "$ollama_was_installed" -eq 1 ] && [ "$anythingllm_was_installed" -eq 1 ]; then
+    show_manage_llms=1
+  fi
+  
+  # Show Manage LLMs at the top (before other toggles) with divider
+  if [ "$show_manage_llms" -eq 1 ]; then
+    set -- "$@" "Manage LLMs%$script_dir/manage-llms"
+    manage_llms_pos=$pos
+    pos=$((pos + 1))
+    
+    set -- "$@" "---"
+    pos=$((pos + 1))
+  fi
+  
+  # Ollama toggle
+  if [ "$ollama_was_installed" -eq 1 ]; then
+    ollama_toggle="[X] ollama%$script_dir/uninstall-ollama"
+  else
+    ollama_toggle="[ ] ollama%$script_dir/install-ollama"
+  fi
+  set -- "$@" "$ollama_toggle"
+  ollama_pos=$pos
+  pos=$((pos + 1))
+  
+  # AnythingLLM toggle
+  if [ "$anythingllm_was_installed" -eq 1 ]; then
+    anythingllm_toggle="[X] AnythingLLM%$script_dir/uninstall-anythingllm"
+  else
+    anythingllm_toggle="[ ] AnythingLLM%$script_dir/install-anythingllm"
+  fi
+  set -- "$@" "$anythingllm_toggle"
+  anythingllm_pos=$pos
+  pos=$((pos + 1))
+  
+  # Repair link (only if both are installed)
+  if [ "$ollama_was_installed" -eq 1 ] && [ "$anythingllm_was_installed" -eq 1 ]; then
+    set -- "$@" "Repair link%$script_dir/repair-ai-link"
+    repair_pos=$pos
+    pos=$((pos + 1))
+  fi
+  
+  # Enable/Disable all toggle
+  all_installed=1
+  if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+    all_installed=0
+  fi
+  if ! "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null; then
+    all_installed=0
+  fi
+  
+  if [ "$all_installed" -eq 1 ]; then
+    toggle_all="Disable all%$script_dir/toggle-all-ai-dev --disable"
+  else
+    toggle_all="Enable all%$script_dir/toggle-all-ai-dev --enable"
+  fi
+  set -- "$@" "$toggle_all"
+  
+  # Exit button
+  exit_label=$(exit-label)
+  exit_item="${exit_label}%kill -TERM \$PPID"
+  set -- "$@" "$exit_item"
+  
+  menu --start-selection "$start_selection" "AI Development:" "$@" || menu_status=$?
+  menu_status=${menu_status:-0}
+  
+  # ESC causes menu to exit with 130 - handle gracefully by exiting
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    exit 0
+  fi
+  
+  # Detect which component changed to stay on that position
+  ollama_now_installed=0
+  anythingllm_now_installed=0
+  ollama_daemon_now_installed=0
+  ollama_daemon_now_enabled=0
+  ollama_daemon_now_running=0
+  
+  "$script_dir/is-ai-component-installed" ollama 2>/dev/null && ollama_now_installed=1
+  "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null && anythingllm_now_installed=1
+  
+  if [ "$ollama_now_installed" -eq 1 ]; then
+    if has systemctl; then
+      [ -f "/etc/systemd/system/ollama.service" ] && ollama_daemon_now_installed=1
+    elif [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+      [ -f "/Library/LaunchDaemons/com.ollama.service.plist" ] && ollama_daemon_now_installed=1
+    fi
+    
+    "$script_dir/is-ollama-daemon-enabled" 2>/dev/null && ollama_daemon_now_enabled=1
+    "$script_dir/is-ollama-daemon-running" 2>/dev/null && ollama_daemon_now_running=1
+  fi
+  
+  # Update start_selection to the component that changed
+  if [ "$is_macos" -eq 1 ] && [ "$ollama_was_installed" -eq 1 ]; then
+    if [ "$ollama_daemon_was_installed" -ne "$ollama_daemon_now_installed" ]; then
+      start_selection=${daemon_install_pos:-$start_selection}
+    elif [ "$ollama_daemon_was_installed" -eq 1 ]; then
+      if [ "$ollama_daemon_was_running" -ne "$ollama_daemon_now_running" ]; then
+        start_selection=${daemon_start_pos:-$start_selection}
+      elif [ "$ollama_daemon_was_enabled" -ne "$ollama_daemon_now_enabled" ]; then
+        start_selection=${daemon_enable_pos:-$start_selection}
+      fi
+    fi
+  fi
+  
+  if [ "$ollama_was_installed" -ne "$ollama_now_installed" ]; then
+    start_selection=$ollama_pos
+  elif [ "$anythingllm_was_installed" -ne "$anythingllm_now_installed" ]; then
+    start_selection=$anythingllm_pos
+  fi
+  # If no change detected, start_selection stays the same
+  
+  # Support MENU_LOOP_LIMIT for testing
+  if [ -n "$loop_limit" ]; then
+    loop_limit=$((loop_limit - 1))
+    if [ "$loop_limit" -le 0 ]; then
+      break
+    fi
+  fi
+done

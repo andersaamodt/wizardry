@@ -1,0 +1,94 @@
+#!/bin/sh
+
+# Install ollama in a cross-platform POSIX-compliant way.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-ollama
+
+Installs ollama without using homebrew, in a POSIX-compliant cross-platform manner.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+# Check if already installed
+if "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+  success "ollama is already installed"
+  exit 0
+fi
+
+say "Installing ollama..."
+
+OS=$(uname -s 2>/dev/null)
+ARCH=$(uname -m 2>/dev/null)
+
+install_dir="$HOME/.local/bin"
+mkdir -p "$install_dir"
+
+case "$OS" in
+Darwin)
+  # macOS installation
+  case "$ARCH" in
+  x86_64)
+    url="https://ollama.com/download/ollama-darwin"
+    ;;
+  arm64)
+    url="https://ollama.com/download/ollama-darwin"
+    ;;
+  *)
+    die "install-ollama: unsupported architecture: $ARCH"
+    ;;
+  esac
+  ;;
+Linux)
+  # Linux installation
+  case "$ARCH" in
+  x86_64)
+    url="https://ollama.com/download/ollama-linux-amd64"
+    ;;
+  aarch64|arm64)
+    url="https://ollama.com/download/ollama-linux-arm64"
+    ;;
+  *)
+    die "install-ollama: unsupported architecture: $ARCH"
+    ;;
+  esac
+  ;;
+*)
+  die "install-ollama: unsupported operating system: $OS"
+  ;;
+esac
+
+# Download ollama binary
+temp_file=$(temp-file ollama)
+if has curl; then
+  curl -fsSL -o "$temp_file" "$url" || die "install-ollama: failed to download ollama"
+elif has wget; then
+  wget -q -O "$temp_file" "$url" || die "install-ollama: failed to download ollama"
+else
+  die "install-ollama: curl or wget required"
+fi
+
+# Install the binary
+mv "$temp_file" "$install_dir/ollama"
+chmod +x "$install_dir/ollama"
+
+# Verify installation
+if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+  die "install-ollama: installation verification failed"
+fi
+
+success "ollama installed successfully"
+
+# Check if we should auto-repair link (if AnythingLLM is installed)
+if "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null; then
+  say "AnythingLLM is installed, repairing link..."
+  "$script_dir/repair-ai-link" || warn "install-ollama: failed to repair link"
+fi

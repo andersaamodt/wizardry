@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# Install ollama daemon configuration.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-ollama-daemon
+
+Installs the ollama daemon configuration (systemd/launchd).
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+# Check if ollama is installed
+if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+  die "install-ollama-daemon: ollama is not installed"
+fi
+
+# Repair/create the daemon configuration
+"$script_dir/repair-ollama-daemon"
+
+success "ollama daemon configuration installed"

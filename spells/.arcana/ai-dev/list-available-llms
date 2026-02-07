@@ -1,0 +1,26 @@
+#!/bin/sh
+
+# List available/recommended LLMs.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: list-available-llms
+
+Lists curated/recommended LLMs available for download.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Curated list of recommended LLMs
+printf '%s\n' "llama2:7b"
+printf '%s\n' "llama2:13b"
+printf '%s\n' "mistral:7b"
+printf '%s\n' "codellama:7b"
+printf '%s\n' "phi:latest"
+printf '%s\n' "orca-mini:3b"
+printf '%s\n' "vicuna:7b"

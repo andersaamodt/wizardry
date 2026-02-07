@@ -1,0 +1,62 @@
+#!/bin/sh
+
+# Uninstall AnythingLLM.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-anythingllm
+
+Uninstalls AnythingLLM.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+# Check if installed
+if ! "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null; then
+  success "AnythingLLM is not installed"
+  exit 0
+fi
+
+say "Uninstalling AnythingLLM..."
+
+OS=$(uname -s 2>/dev/null)
+
+case "$OS" in
+Darwin)
+  # Remove macOS app bundle
+  if [ -d "/Applications/AnythingLLM.app" ]; then
+    rm -rf "/Applications/AnythingLLM.app"
+  fi
+  if [ -d "$HOME/Applications/AnythingLLM.app" ]; then
+    rm -rf "$HOME/Applications/AnythingLLM.app"
+  fi
+  ;;
+Linux)
+  # Remove Linux binary
+  for path in /usr/local/bin/anythingllm "$HOME/.local/bin/anythingllm" /opt/anythingllm/anythingllm; do
+    if [ -f "$path" ]; then
+      rm -f "$path" 2>/dev/null || warn "uninstall-anythingllm: failed to remove $path"
+    fi
+  done
+  ;;
+esac
+
+# Remove AnythingLLM data directory
+if [ -d "$HOME/.config/anythingllm-desktop" ]; then
+  say "Removing AnythingLLM data directory..."
+  rm -rf "$HOME/.config/anythingllm-desktop" 2>/dev/null || warn "uninstall-anythingllm: failed to remove data directory"
+fi
+
+# Verify uninstallation
+if "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null; then
+  die "uninstall-anythingllm: uninstallation verification failed"
+fi
+
+success "AnythingLLM uninstalled successfully"
