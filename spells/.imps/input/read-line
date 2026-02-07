@@ -25,14 +25,15 @@ fi
 
 case $rl_src in
   stdin)
+    rl_read_ok=0
     if IFS= read -r rl_line; then
-      :
+      rl_read_ok=1
     elif [ -r /dev/tty ]; then
       IFS= read -r rl_line </dev/tty || rl_line=
     else
       rl_line=
     fi
-    if [ -z "$rl_line" ] && [ ! -t 0 ] && [ -r /dev/tty ]; then
+    if [ "$rl_read_ok" -eq 0 ] && [ -r /dev/tty ]; then
       IFS= read -r rl_line </dev/tty || rl_line=
     fi
     ;;
