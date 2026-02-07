@@ -1367,6 +1367,12 @@ function setupMessageStream(roomName, sinceTimestamp) {
     
     errorCount++;
     
+    // CRITICAL: Show reconnecting status immediately on ANY error
+    // Don't wait for specific readyState values - show user feedback right away
+    // This handles server shutdown, network issues, and all error scenarios
+    updateConnectionStatus('reconnecting', false);
+    
+    // Now handle specific readyState cases for reconnection logic
     if (window.messageEventSource.readyState === EventSource.CLOSED) {
       console.error('[SSE] Connection CLOSED - server unavailable');
       
@@ -1374,8 +1380,6 @@ function setupMessageStream(roomName, sinceTimestamp) {
       if (window.sseReconnectAttempts < window.sseMaxReconnectAttempts) {
         window.sseReconnectAttempts++;
         console.log('[SSE] Reconnect attempt', window.sseReconnectAttempts, 'of', window.sseMaxReconnectAttempts);
-        
-        updateConnectionStatus('reconnecting', false);
         
         // Wait 2 seconds before reconnecting
         window.sseReconnectTimeout = setTimeout(function() {
@@ -1391,10 +1395,8 @@ function setupMessageStream(roomName, sinceTimestamp) {
       }
     } else if (window.messageEventSource.readyState === EventSource.CONNECTING) {
       console.warn('[SSE] Connection CONNECTING - EventSource attempting to reconnect');
-      
-      // Show reconnecting status when connection is lost (whether initial or after established)
-      // This handles server going down after successful initial connection
-      updateConnectionStatus('reconnecting', false);
+      // Browser is auto-reconnecting - reconnecting status already shown above
+      // No additional action needed here
     }
   });
   
