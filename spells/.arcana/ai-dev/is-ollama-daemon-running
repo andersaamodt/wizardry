@@ -1,0 +1,44 @@
+#!/bin/sh
+
+# Check if ollama daemon is running.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-ollama-daemon-running
+
+Checks if the ollama daemon is currently running.
+
+Returns: 0 if running, 1 if not running
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+unit="ollama.service"
+
+if has systemctl; then
+  if systemctl is-active "$unit" >/dev/null 2>&1; then
+    exit 0
+  fi
+  exit 1
+fi
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+  label="com.ollama.service"
+  
+  if launchctl list 2>/dev/null | grep -q "$label"; then
+    exit 0
+  fi
+  exit 1
+fi
+
+# Fallback: check if ollama process is running
+if pgrep -f "ollama serve" >/dev/null 2>&1; then
+  exit 0
+fi
+
+exit 1

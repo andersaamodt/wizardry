@@ -1,0 +1,69 @@
+#!/bin/sh
+
+# Start the ollama daemon.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: start-ollama-daemon
+
+Starts the ollama daemon service.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+# Check if ollama is installed
+if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+  die "start-ollama-daemon: ollama is not installed"
+fi
+
+run_priv() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return
+  fi
+  if has sudo; then
+    sudo "$@"
+    return
+  fi
+  die "start-ollama-daemon: root or sudo required"
+}
+
+unit="ollama.service"
+plist="/Library/LaunchDaemons/com.ollama.service.plist"
+
+# Check if already running
+if "$script_dir/is-ollama-daemon-running" 2>/dev/null; then
+  success "ollama daemon is already running"
+  exit 0
+fi
+
+if has systemctl; then
+  # Ensure daemon config exists
+  if [ ! -f "/etc/systemd/system/$unit" ]; then
+    "$script_dir/repair-ollama-daemon"
+  fi
+  
+  run_priv systemctl start "$unit"
+  success "ollama daemon started"
+  exit 0
+fi
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+  # Ensure daemon config exists
+  if [ ! -f "$plist" ]; then
+    "$script_dir/repair-ollama-daemon"
+  fi
+  
+  run_priv launchctl load "$plist"
+  success "ollama daemon started"
+  exit 0
+fi
+
+die "start-ollama-daemon: systemd or launchd required"

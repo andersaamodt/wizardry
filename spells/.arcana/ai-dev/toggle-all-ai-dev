@@ -1,0 +1,72 @@
+#!/bin/sh
+
+# Toggle all AI development components.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: toggle-all-ai-dev [--enable|--disable]
+
+Enables or disables all AI development components.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+action=${1-}
+
+# Determine action if not specified
+if [ -z "$action" ]; then
+  # If any component is not installed, enable all
+  # Otherwise disable all
+  action="--enable"
+  
+  if "$script_dir/is-ai-component-installed" ollama 2>/dev/null && \
+     "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null; then
+    action="--disable"
+  fi
+fi
+
+case "$action" in
+--enable)
+  say "Enabling all AI development components..."
+  
+  # Install ollama if not installed
+  if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+    "$script_dir/install-ollama"
+  fi
+  
+  # Install AnythingLLM if not installed
+  if ! "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null; then
+    "$script_dir/install-anythingllm"
+  fi
+  
+  # Repair link
+  "$script_dir/repair-ai-link" || warn "toggle-all-ai-dev: failed to repair link"
+  
+  success "All AI development components enabled"
+  ;;
+--disable)
+  say "Disabling all AI development components..."
+  
+  # Uninstall AnythingLLM if installed
+  if "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null; then
+    "$script_dir/uninstall-anythingllm"
+  fi
+  
+  # Uninstall ollama if installed
+  if "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+    "$script_dir/uninstall-ollama"
+  fi
+  
+  success "All AI development components disabled"
+  ;;
+*)
+  die 2 "toggle-all-ai-dev: invalid action: $action"
+  ;;
+esac

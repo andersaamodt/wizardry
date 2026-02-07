@@ -1,0 +1,63 @@
+#!/bin/sh
+
+# Uninstall ollama.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-ollama
+
+Uninstalls ollama and removes its daemon configuration.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+# Check if installed
+if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+  success "ollama is not installed"
+  exit 0
+fi
+
+say "Uninstalling ollama..."
+
+# Stop and disable daemon if running
+if has is-ollama-daemon-running && is-ollama-daemon-running 2>/dev/null; then
+  say "Stopping ollama daemon..."
+  stop-ollama-daemon 2>/dev/null || warn "uninstall-ollama: failed to stop daemon"
+fi
+
+if has is-ollama-daemon-enabled && is-ollama-daemon-enabled 2>/dev/null; then
+  say "Disabling ollama daemon..."
+  disable-ollama-daemon 2>/dev/null || warn "uninstall-ollama: failed to disable daemon"
+fi
+
+if has uninstall-ollama-daemon; then
+  say "Removing ollama daemon configuration..."
+  uninstall-ollama-daemon 2>/dev/null || warn "uninstall-ollama: failed to remove daemon config"
+fi
+
+# Remove ollama binary from common locations
+for path in /usr/local/bin/ollama /usr/bin/ollama "$HOME/.local/bin/ollama"; do
+  if [ -f "$path" ]; then
+    rm -f "$path" 2>/dev/null || warn "uninstall-ollama: failed to remove $path"
+  fi
+done
+
+# Remove ollama data directory
+if [ -d "$HOME/.ollama" ]; then
+  say "Removing ollama data directory..."
+  rm -rf "$HOME/.ollama" 2>/dev/null || warn "uninstall-ollama: failed to remove data directory"
+fi
+
+# Verify uninstallation
+if "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+  die "uninstall-ollama: uninstallation verification failed"
+fi
+
+success "ollama uninstalled successfully"

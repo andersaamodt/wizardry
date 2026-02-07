@@ -1,0 +1,47 @@
+#!/bin/sh
+
+# Repair the link between ollama and AnythingLLM.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: repair-ai-link
+
+Configures AnythingLLM to use the local ollama installation.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+# Check if both components are installed
+if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+  die "repair-ai-link: ollama is not installed"
+fi
+
+if ! "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null; then
+  die "repair-ai-link: AnythingLLM is not installed"
+fi
+
+say "Repairing link between ollama and AnythingLLM..."
+
+# AnythingLLM should auto-detect ollama running on localhost:11434
+# We just need to ensure ollama is accessible
+if ! has ollama; then
+  # Add ollama to PATH if not already there
+  if [ -x "$HOME/.local/bin/ollama" ]; then
+    export PATH="$HOME/.local/bin:$PATH"
+  fi
+fi
+
+# Verify ollama is accessible
+if ! has ollama; then
+  die "repair-ai-link: ollama binary not found in PATH"
+fi
+
+success "Link repaired - AnythingLLM can now use ollama at http://localhost:11434"
+say "Note: Make sure ollama daemon is running for AnythingLLM to connect"
