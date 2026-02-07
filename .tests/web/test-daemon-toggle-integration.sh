@@ -18,6 +18,8 @@ test_daemon_toggle_cycle_launchctl() {
   stub-launchctl "$stub_dir"
   stub-uname-darwin "$stub_dir"
   stub-sudo "$stub_dir"
+  stub-forget-command systemctl "$stub_dir"  # Hide systemctl to test macOS path
+  . "$stub_dir/forget-systemctl"  # Apply the has function override
 
   state_dir=$(temp-dir web-wizardry-state)
   plist_dir="$stub_dir/Library/LaunchDaemons"

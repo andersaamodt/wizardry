@@ -1,38 +1,30 @@
 #!/bin/sh
-# stub-forget-command DIR - create forget stub
+# stub-forget-command COMMAND DIR - hide a command from PATH by overriding has function
 set -eu
 
-dir=$1
-cat >"$dir/forget" <<'STUB'
-#!/bin/sh
-tab_char=$(printf '\t')
-name=$1
-cast_dir=${WIZARDRY_CAST_DIR:-${HOME:-.}/.spellbook}
-cast_file_default=$cast_dir/.memorized
-cast_file=${WIZARDRY_CAST_FILE:-$cast_file_default}
+command_name=$1
+dir=$2
 
-if [ ! -f "$cast_file" ]; then
-  printf '%s\n' "forget: spell '$name' is not memorized." >&2
-  exit 1
-fi
+# Create a file that overrides the has function to hide this command
+# Tests should source this file after invoke-wizardry
+cat >"$dir/forget-${command_name}" <<OVERRIDE
+# Override has function to hide $command_name
+_original_has_impl() {
+  command -v "\$1" >/dev/null 2>&1
+}
 
-tmp=$(mktemp)
-removed=0
-while IFS= read -r line || [ -n "$line" ]; do
-  entry_name=${line%%"$tab_char"*}
-  if [ "$entry_name" = "$name" ]; then
-    removed=1
-    continue
+has() {
+  if [ "\$1" = "$command_name" ]; then
+    return 1  # Command not found
   fi
-  [ -n "$entry_name" ] && printf '%s\n' "$line" >>"$tmp"
-done <"$cast_file"
+  _original_has_impl "\$@"
+}
+OVERRIDE
 
-if [ "$removed" -eq 0 ]; then
-  rm -f "$tmp"
-  printf '%s\n' "forget: spell '$name' is not memorized." >&2
-  exit 1
-fi
-
-mv "$tmp" "$cast_file"
+# Also create the actual command stub that fails
+# This ensures even direct calls to the command fail
+cat >"$dir/$command_name" <<'STUB'
+#!/bin/sh
+exit 127
 STUB
-chmod +x "$dir/forget"
+chmod +x "$dir/$command_name"
