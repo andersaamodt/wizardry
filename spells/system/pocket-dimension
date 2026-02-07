@@ -200,6 +200,7 @@ set -eu
   stop_sudo_keepalive() {
     if [ -n "${sudo_keepalive_pid-}" ]; then
       kill "$sudo_keepalive_pid" >/dev/null 2>&1 || true
+      wait "$sudo_keepalive_pid" 2>/dev/null || true
       sudo_keepalive_pid=""
     fi
   }
@@ -207,6 +208,7 @@ set -eu
   start_sudo_keepalive() {
     stop_sudo_keepalive
     (
+      trap 'exit 0' TERM INT
       while :; do
         sleep 20
         sudo -n true >/dev/null 2>&1 || exit 0
@@ -534,8 +536,8 @@ set -eu
           done
           run_path="$run_path:${PATH:-/usr/bin:/bin:/usr/sbin:/sbin}"
 
-          runner_script="$pocket_root/macos-runner.sh"
-          cat >"$runner_script" <<'RUNNER'
+          runner_script="${mac_active_home}/.wizardry-pocket-runner.sh"
+          cat <<'RUNNER' | sudo tee "$runner_script" >/dev/null
 #!/bin/sh
 set -eu
 
@@ -568,7 +570,8 @@ fi
 printf '%s\n' "pocket-dimension: launching target command..."
 exec "$run_cmd" "$@"
 RUNNER
-          chmod 755 "$runner_script"
+          sudo chown "$mac_active_user:staff" "$runner_script" >/dev/null 2>&1 || true
+          sudo chmod 700 "$runner_script" >/dev/null 2>&1 || true
 
           profile_file="${mac_active_home}/.wizardry-pocket.sb"
           {
