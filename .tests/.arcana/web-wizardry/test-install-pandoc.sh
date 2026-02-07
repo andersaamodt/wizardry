@@ -7,7 +7,7 @@ done
 
 test_install_pandoc_help() {
   run_spell "spells/.arcana/web-wizardry/install-pandoc" --help
-  assert_success && assert_output_contains "certbot"
+  assert_success && assert_output_contains "pandoc"
 }
 
 run_test_case "install-pandoc shows help" test_install_pandoc_help

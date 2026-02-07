@@ -25,7 +25,7 @@ if [ -z "$site_name" ]; then
   exit 2
 fi
 
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-${WIZARDRY_SITES_DIR:-$HOME/sites}}
 SITES_DIR="$WEB_ROOT"
 SITE_DIR="$SITES_DIR/$site_name"
 
@@ -34,10 +34,37 @@ if [ ! -d "$SITE_DIR" ]; then
   exit 1
 fi
 
-if ! command -v nginx >/dev/null 2>&1; then
+find_nginx_bin() {
+  if command -v nginx >/dev/null 2>&1; then
+    command -v nginx
+    return 0
+  fi
+
+  for candidate in \
+    "${WIZARDRY_NGINX_BIN:-}" \
+    /opt/homebrew/bin/nginx \
+    /opt/homebrew/sbin/nginx \
+    /opt/pkg/sbin/nginx \
+    /opt/pkg/bin/nginx \
+    /usr/local/bin/nginx \
+    /usr/local/sbin/nginx \
+    /usr/sbin/nginx; do
+    [ -n "$candidate" ] || continue
+    if [ -x "$candidate" ]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+NGINX_BIN=$(find_nginx_bin || printf '')
+if [ -z "$NGINX_BIN" ]; then
   printf 'run-site-daemon: nginx is not installed\n' >&2
   exit 1
 fi
+printf 'Using nginx binary: %s\n' "$NGINX_BIN" >&2
 
 # Now safe to clear environment (no more imp calls needed)
 if [ -n "${WIZARDRY_DIR-}" ] && [ -f "$WIZARDRY_DIR/spells/.imps/sys/env-clear" ]; then
@@ -95,6 +122,14 @@ if command -v fcgiwrap >/dev/null 2>&1; then
         [ -d "$dir" ] || continue
         case "$dir" in */.|*/..) continue ;; esac
         FCGI_PATH="$dir:$FCGI_PATH"
+
+        # Include one-level nested directories so CGI helpers in
+        # spells/.imps/cgi and sibling namespaces are discoverable.
+        for subdir in "$dir"/* "$dir"/.*; do
+          [ -d "$subdir" ] || continue
+          case "$subdir" in */.|*/..) continue ;; esac
+          FCGI_PATH="$subdir:$FCGI_PATH"
+        done
       done
     fi
 
@@ -119,7 +154,7 @@ printf 'Starting nginx for %s...\n' "$site_name" >&2
 
 # Capture nginx startup errors to help debug issues  
 nginx_startup_log="$SITE_DIR/nginx/startup.log"
-nginx -p "$SITE_DIR" -e "$SITE_DIR/nginx/error.log" -c "$SITE_DIR/nginx/nginx.conf" 2>"$nginx_startup_log" &
+"$NGINX_BIN" -p "$SITE_DIR" -e "$SITE_DIR/nginx/error.log" -c "$SITE_DIR/nginx/nginx.conf" 2>"$nginx_startup_log" &
 nginx_pid=$!
 
 sleep 1
@@ -136,6 +171,11 @@ if ! kill -0 "$nginx_pid" 2>/dev/null; then
   fi
   printf 'run-site-daemon: nginx failed to start (process exited immediately)\n' >&2
   exit 1
+fi
+
+# Ensure a readable PID file exists even if nginx delays writing its own pid path.
+if [ ! -f "$SITE_DIR/nginx/nginx.pid" ]; then
+  printf '%s\n' "$nginx_pid" > "$SITE_DIR/nginx/nginx.pid" 2>/dev/null || true
 fi
 
 printf 'Site daemon running. nginx PID: %s\n' "$nginx_pid" >&2

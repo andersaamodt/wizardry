@@ -7,7 +7,8 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: uninstall-pandoc
 
-Removes pandoc using the system package manager.
+Removes pandoc.
+On macOS, removes files from the official pandoc installer receipt (no Homebrew).
 USAGE
   exit 0
   ;;
@@ -17,6 +18,89 @@ require-wizardry || exit 1
 
 set -eu
 . env-clear
+
+run_with_optional_sudo() {
+  if command -v sudo >/dev/null 2>&1; then
+    sudo "$@"
+  else
+    "$@"
+  fi
+}
+
+remove_path_if_exists() {
+  target=$1
+  if [ -e "$target" ] || [ -L "$target" ]; then
+    run_with_optional_sudo rm -f "$target" || return 1
+  fi
+}
+
+remove_dir_if_empty() {
+  target=$1
+  if [ -d "$target" ]; then
+    run_with_optional_sudo rmdir "$target" 2>/dev/null || true
+  fi
+}
+
+uninstall_pandoc_macos() {
+  removed=0
+
+  # Remove files from installed pkg receipts when available.
+  pkg_ids=$(pkgutil --pkgs 2>/dev/null | grep -Ei 'pandoc|johnmacfarlane' || true)
+  if [ -n "$pkg_ids" ]; then
+    for pkg_id in $pkg_ids; do
+      location=$(pkgutil --pkg-info "$pkg_id" 2>/dev/null | sed -n 's/^location: //p' | head -n 1)
+      [ -n "$location" ] || location="/"
+
+      pkgutil --only-files --files "$pkg_id" 2>/dev/null | while IFS= read -r rel; do
+        [ -n "$rel" ] || continue
+        case "$location" in
+          /) target="/$rel" ;;
+          *) target="$location/$rel" ;;
+        esac
+        if [ -e "$target" ] || [ -L "$target" ]; then
+          run_with_optional_sudo rm -f "$target" || exit 1
+        fi
+      done
+
+      pkgutil --only-dirs --files "$pkg_id" 2>/dev/null | sed '/^$/d' | sort -r | while IFS= read -r rel; do
+        case "$location" in
+          /) target="/$rel" ;;
+          *) target="$location/$rel" ;;
+        esac
+        remove_dir_if_empty "$target"
+      done
+
+      pkgutil --forget "$pkg_id" >/dev/null 2>&1 || true
+      removed=1
+    done
+  fi
+
+  # Fallback cleanup for common installation paths.
+  remove_path_if_exists /usr/local/bin/pandoc && removed=1 || true
+  remove_path_if_exists /usr/local/bin/pandoc-lua && removed=1 || true
+  remove_path_if_exists /usr/local/bin/pandoc-server && removed=1 || true
+  remove_path_if_exists /usr/local/share/man/man1/pandoc.1.gz && removed=1 || true
+  if [ -d /usr/local/share/pandoc ]; then
+    run_with_optional_sudo rm -rf /usr/local/share/pandoc || true
+    removed=1
+  fi
+  if [ -d /Applications/pandoc ]; then
+    run_with_optional_sudo rm -rf /Applications/pandoc || true
+    removed=1
+  fi
+
+  if command -v pandoc >/dev/null 2>&1; then
+    printf '%s\n' "uninstall-pandoc: pandoc still present after uninstall" >&2
+    return 1
+  fi
+
+  if [ "$removed" -eq 0 ]; then
+    printf '%s\n' "pandoc is not installed."
+    return 0
+  fi
+
+  printf '%s\n' "pandoc uninstallation complete."
+}
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 manage_cmd=${MANAGE_SYSTEM_COMMAND:-manage-system-command}
@@ -32,6 +116,12 @@ if ! command -v "$manage_cmd" >/dev/null 2>&1; then
 fi
 
 printf '%s\n' "Uninstalling pandoc..."
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  uninstall_pandoc_macos
+  exit $?
+fi
+
 "$manage_cmd" --uninstall pandoc pandoc || {
   printf '%s\n' "uninstall-pandoc: pandoc uninstallation failed" >&2
   exit 1

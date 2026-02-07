@@ -46,9 +46,16 @@ test_starts_listener_silent() {
   skip-if-compiled || return $?  # Sourcing and background processes don't work in compiled mode
   
   tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/stubs"
+  mkdir -p "$stub_dir"
+  cat > "$stub_dir/tail" <<'TAIL'
+#!/bin/sh
+exit 0
+TAIL
+  chmod +x "$stub_dir/tail"
   
   # Start listener in test directory (must be sourced)
-  HOME="$tmpdir" run_sourced_spell "spells/mud/listen" "$tmpdir"
+  HOME="$tmpdir" PATH="$stub_dir:$PATH" run_sourced_spell "spells/mud/listen" "$tmpdir"
   
   # Should succeed but not output any startup messages
   if ! assert_success; then
@@ -59,6 +66,9 @@ test_starts_listener_silent() {
     TEST_FAILURE_REASON="listen should start silently but produced output: $OUTPUT"
     return 1
   fi
+
+  # Clean up listener so this test doesn't leave background jobs behind.
+  HOME="$tmpdir" PATH="$stub_dir:$PATH" run_sourced_spell "spells/mud/listen" --stop >/dev/null 2>&1 || true
 }
 
 test_stop_option() {
@@ -267,9 +277,16 @@ test_cd_listen_relative_path() {
   
   tmpdir=$(make_tempdir)
   mkdir -p "$tmpdir/sites"
+  stub_dir="$tmpdir/stubs"
+  mkdir -p "$stub_dir"
+  cat > "$stub_dir/tail" <<'TAIL'
+#!/bin/sh
+exit 0
+TAIL
+  chmod +x "$stub_dir/tail"
   
   # Set up environment with cd-listen enabled
-  export PATH="$test_root/spells/mud:$test_root/spells/.imps/sys:$test_root/spells/.imps/out:$test_root/spells/.arcana/mud:$PATH"
+  export PATH="$stub_dir:$test_root/spells/mud:$test_root/spells/.imps/sys:$test_root/spells/.imps/out:$test_root/spells/.arcana/mud:$PATH"
   export SPELLBOOK_DIR="$tmpdir"
   export MUD_PLAYER="TestUser"
   export HOME="$tmpdir"
@@ -288,17 +305,12 @@ test_cd_listen_relative_path() {
   cd sites || return 1
   sleep 2
   
-  # Check if listener started for sites directory
-  listener_count=$(pgrep -f "tail -f.*sites/.log" 2>/dev/null | wc -l)
-  
-  # Clean up tail processes
-  tail_pids=$(pgrep -f "tail -f.*$tmpdir" 2>/dev/null || true)
-  for pid in $tail_pids; do
-    [ -n "$pid" ] && kill "$pid" 2>/dev/null || true
-  done
-  
-  # Verify listener was running
-  [ "$listener_count" -gt 0 ] || return 1
+  # Verify relative cd path was resolved correctly by listen.
+  # If listen incorrectly inherited cd's $1 ("sites"), it won't create this file.
+  [ -f "$tmpdir/sites/.log" ] || return 1
+
+  # Clean up listener so test runners don't hang on background tail jobs.
+  . "$test_root/spells/mud/listen" --stop >/dev/null 2>&1 || true
 }
 
 # Test that "log:" messages don't show username prefix

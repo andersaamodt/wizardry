@@ -7,7 +7,7 @@ done
 
 test_uninstall_pandoc_help() {
   run_spell "spells/.arcana/web-wizardry/uninstall-pandoc" --help
-  assert_success && assert_output_contains "certbot"
+  assert_success && assert_output_contains "pandoc"
 }
 
 run_test_case "uninstall-pandoc shows help" test_uninstall_pandoc_help

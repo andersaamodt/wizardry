@@ -216,12 +216,17 @@ fi
 
 export PATH
 
+has_tty=0
+if [ -c /dev/tty ] && [ -r /dev/tty ] && [ -w /dev/tty ]; then
+  has_tty=1
+fi
+
 # Run tests inside strict pocket-dimension unless in GitHub Actions (already isolated).
 if [ "${GITHUB_ACTIONS-}" != "true" ] && [ "${WIZARDRY_TEST_IN_POCKET-0}" -ne 1 ]; then
   platform=$(uname -s 2>/dev/null || printf 'unknown')
   if [ "$platform" = "Darwin" ] && command -v sudo >/dev/null 2>&1; then
     if ! sudo -n true >/dev/null 2>&1; then
-      if [ -w /dev/tty ]; then
+      if [ "$has_tty" -eq 1 ]; then
         printf '%s\n' "test-magic: macOS isolation needs sudo; authenticating now..." > /dev/tty
         if ! sudo -v < /dev/tty > /dev/tty 2>&1; then
           printf '%s\n' "test-magic: sudo authentication failed" >&2
@@ -240,7 +245,7 @@ if [ "${GITHUB_ACTIONS-}" != "true" ] && [ "${WIZARDRY_TEST_IN_POCKET-0}" -ne 1 
     printf 'test-magic: pocket-dimension not found\n' >&2
     exit 1
   fi
-  if [ -w /dev/tty ]; then
+  if [ "$has_tty" -eq 1 ]; then
     printf '%s\n' "test-magic: entering strict pocket-dimension..." > /dev/tty
   else
     printf '%s\n' "test-magic: entering strict pocket-dimension..." >&2

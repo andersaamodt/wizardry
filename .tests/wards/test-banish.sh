@@ -64,7 +64,7 @@ test_basic_execution() {
   copy_wizardry "$install_dir" || return 1
   
   # Run banish - should validate the installation
-  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish"
+  HOME="$tmpdir" SPELLBOOK_DIR="$tmpdir/.spellbook" AWAIT_KEYPRESS_DEVICE=/dev/null WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish"
   assert_success || return 1
   assert_output_contains "Banished to Level" || return 1
 }
@@ -77,7 +77,7 @@ test_auto_detect_from_home() {
   copy_wizardry "$install_dir" || return 1
   
   # Run without WIZARDRY_DIR set, should auto-detect from HOME
-  HOME="$tmpdir" run_spell "spells/wards/banish"
+  HOME="$tmpdir" SPELLBOOK_DIR="$tmpdir/.spellbook" AWAIT_KEYPRESS_DEVICE=/dev/null WIZARDRY_DIR= run_spell "spells/wards/banish"
   assert_success || return 1
 }
 
@@ -89,7 +89,7 @@ test_verbose_mode() {
   copy_wizardry "$install_dir" || return 1
   
   # Use WIZARDRY_LOG_LEVEL=2 for verbose output
-  WIZARDRY_DIR="$install_dir" WIZARDRY_LOG_LEVEL=2 run_spell "spells/wards/banish"
+  HOME="$tmpdir" SPELLBOOK_DIR="$tmpdir/.spellbook" AWAIT_KEYPRESS_DEVICE=/dev/null WIZARDRY_DIR="$install_dir" WIZARDRY_LOG_LEVEL=2 run_spell "spells/wards/banish"
   assert_success || return 1
   # Should show validation progress
   assert_output_contains "Validating" || return 1
@@ -103,7 +103,7 @@ test_non_verbose_has_output() {
   copy_wizardry "$install_dir" || return 1
   
   # Non-verbose mode should have output
-  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish"
+  HOME="$tmpdir" SPELLBOOK_DIR="$tmpdir/.spellbook" AWAIT_KEYPRESS_DEVICE=/dev/null WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish"
   assert_success || return 1
   assert_output_contains "Banished to Level" || return 1
 }
@@ -116,7 +116,7 @@ test_custom_wizardry_dir() {
   copy_wizardry "$install_dir" || return 1
   
   # Set WIZARDRY_DIR via environment variable instead of --wizardry-dir option
-  WIZARDRY_DIR="$install_dir" WIZARDRY_LOG_LEVEL=1 run_spell "spells/wards/banish"
+  HOME="$tmpdir" SPELLBOOK_DIR="$tmpdir/.spellbook" AWAIT_KEYPRESS_DEVICE=/dev/null WIZARDRY_DIR="$install_dir" WIZARDRY_LOG_LEVEL=1 run_spell "spells/wards/banish"
   assert_success || return 1
   assert_output_contains "Validating" || return 1
 }
@@ -155,17 +155,17 @@ run_test_case "banish fails without invoke-wizardry" test_missing_invoke_wizardr
 run_test_case "banish fails with invalid dir" test_invalid_wizardry_dir
 
 # Test new multi-level functionality with realistic wizardry installation
-test_level_0_default() {
+test_default_level_4() {
   tmpdir=$(make_tempdir)
   install_dir="$tmpdir/wizardry"
   
   # Copy wizardry for realistic testing
   copy_wizardry "$install_dir" || return 1
   
-  # Level 0 should be the default
-  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish"
+  # Level 4 should be the default.
+  HOME="$tmpdir" SPELLBOOK_DIR="$tmpdir/.spellbook" AWAIT_KEYPRESS_DEVICE=/dev/null WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish"
   assert_success || return 1
-  assert_output_contains "Level 0" || return 1
+  assert_output_contains "Level 4" || return 1
 }
 
 test_explicit_level_0() {
@@ -200,7 +200,7 @@ test_no_tests_flag() {
   # Copy wizardry for realistic testing
   copy_wizardry "$install_dir" || return 1
   
-  WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" --no-tests
+  HOME="$tmpdir" SPELLBOOK_DIR="$tmpdir/.spellbook" AWAIT_KEYPRESS_DEVICE=/dev/null WIZARDRY_DIR="$install_dir" run_spell "spells/wards/banish" --no-tests
   assert_success || return 1
   # Success is enough - no tests were run
 }
@@ -225,7 +225,7 @@ test_invalid_level() {
   # Should reject 99 as an invalid argument
 }
 
-run_test_case "banish level 0 is default" test_level_0_default
+run_test_case "banish level 4 is default" test_default_level_4
 run_test_case "banish explicit level 0" test_explicit_level_0
 run_test_case "banish level 1 checks menu" test_level_1_requires_menu
 run_test_case "banish --no-tests skips tests" test_no_tests_flag

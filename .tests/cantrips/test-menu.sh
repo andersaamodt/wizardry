@@ -240,6 +240,7 @@ menu_arrow_up_navigation() {
   # Run menu with PTY starting at item 3, navigate up twice to item 1
   run_cmd env \
     PATH="$stub_dir:$PATH" \
+    PTY_KEYS="$PTY_KEYS" \
     run-with-pty \
     menu --start-selection 3 "Navigation Test:" \
     "First Item%printf first" \
@@ -283,6 +284,7 @@ menu_arrow_down_navigation() {
   
   run_cmd env \
     PATH="$stub_dir:$PATH" \
+    PTY_KEYS="$PTY_KEYS" \
     run-with-pty \
     menu --start-selection 1 "Navigation Test:" \
     "First Item%printf first" \
@@ -325,6 +327,7 @@ menu_arrow_wrapping() {
   
   run_cmd env \
     PATH="$stub_dir:$PATH" \
+    PTY_KEYS="$PTY_KEYS" \
     run-with-pty \
     menu --start-selection 1 "Navigation Test:" \
     "First Item%printf first" \

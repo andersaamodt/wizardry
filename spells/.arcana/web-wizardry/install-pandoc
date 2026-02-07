@@ -7,7 +7,8 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: install-pandoc
 
-Installs pandoc using the system package manager.
+Installs pandoc.
+On macOS, installs from the official pandoc release package (no Homebrew).
 USAGE
   exit 0
   ;;
@@ -17,6 +18,107 @@ require-wizardry || exit 1
 
 set -eu
 . env-clear
+
+run_with_optional_sudo() {
+  if command -v sudo >/dev/null 2>&1; then
+    sudo "$@"
+  else
+    "$@"
+  fi
+}
+
+install_pandoc_macos() {
+  # Skip reinstall unless explicitly requested.
+  if command -v pandoc >/dev/null 2>&1 && [ "${FORCE_INSTALL:-0}" != "1" ]; then
+    printf '%s\n' "pandoc is already installed."
+    return 0
+  fi
+
+  if command -v curl >/dev/null 2>&1; then
+    fetch_cmd='curl -fsSL'
+  elif command -v wget >/dev/null 2>&1; then
+    fetch_cmd='wget -qO-'
+  else
+    printf '%s\n' "install-pandoc: curl or wget is required on macOS" >&2
+    return 1
+  fi
+
+  case "$(uname -m 2>/dev/null)" in
+    arm64|aarch64) arch_pattern='arm64' ;;
+    x86_64|amd64) arch_pattern='x86_64|amd64' ;;
+    *)
+      printf '%s\n' "install-pandoc: unsupported macOS architecture: $(uname -m 2>/dev/null)" >&2
+      return 1
+      ;;
+  esac
+
+  if [ -n "${PANDOC_VERSION:-}" ]; then
+    release_url="https://api.github.com/repos/jgm/pandoc/releases/tags/${PANDOC_VERSION}"
+  else
+    release_url="https://api.github.com/repos/jgm/pandoc/releases/latest"
+  fi
+
+  temp_dir=$(mktemp -d)
+  trap 'rm -rf "$temp_dir"' EXIT HUP INT TERM
+
+  printf '%s\n' "Resolving latest pandoc macOS package..."
+  if ! release_json=$(sh -c "$fetch_cmd \"$release_url\""); then
+    printf '%s\n' "install-pandoc: failed to fetch release metadata from GitHub" >&2
+    return 1
+  fi
+
+  pkg_url=$(
+    printf '%s\n' "$release_json" |
+      tr ',' '\n' |
+      sed -n 's/.*"browser_download_url"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' |
+      sed 's#\\/#/#g' |
+      grep -Ei "(${arch_pattern}).*macos\\.pkg$" |
+      head -n 1
+  )
+
+  # Fallback: accept universal macOS package names without architecture marker.
+  if [ -z "$pkg_url" ]; then
+    pkg_url=$(
+      printf '%s\n' "$release_json" |
+        tr ',' '\n' |
+        sed -n 's/.*"browser_download_url"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' |
+        sed 's#\\/#/#g' |
+        grep -Ei "macos\\.pkg$" |
+        head -n 1
+    )
+  fi
+
+  if [ -z "$pkg_url" ]; then
+    printf '%s\n' "install-pandoc: no matching macOS package found in release assets" >&2
+    return 1
+  fi
+
+  printf '%s\n' "Downloading pandoc package..."
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$pkg_url" -o "$temp_dir/pandoc.pkg" || {
+      printf '%s\n' "install-pandoc: failed to download package" >&2
+      return 1
+    }
+  else
+    wget -qO "$temp_dir/pandoc.pkg" "$pkg_url" || {
+      printf '%s\n' "install-pandoc: failed to download package" >&2
+      return 1
+    }
+  fi
+
+  printf '%s\n' "Installing pandoc package (may prompt for sudo)..."
+  run_with_optional_sudo installer -pkg "$temp_dir/pandoc.pkg" -target / >/dev/null || {
+    printf '%s\n' "install-pandoc: macOS package installation failed" >&2
+    return 1
+  }
+
+  if ! command -v pandoc >/dev/null 2>&1; then
+    printf '%s\n' "install-pandoc: installation completed but pandoc is not in PATH" >&2
+    return 1
+  fi
+
+  printf '%s\n' "pandoc installation complete."
+}
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 manage_cmd=${MANAGE_SYSTEM_COMMAND:-manage-system-command}
@@ -32,6 +134,12 @@ if ! command -v "$manage_cmd" >/dev/null 2>&1; then
 fi
 
 printf '%s\n' "Installing pandoc..."
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  install_pandoc_macos
+  exit $?
+fi
+
 "$manage_cmd" install pandoc pandoc
 
 # Verify installation

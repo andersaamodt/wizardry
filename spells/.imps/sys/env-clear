@@ -147,6 +147,7 @@ ec_saved_rc_format="${WIZARDRY_RC_FORMAT:-}"
 
 # Preserve special feature flags
 ec_saved_await_keep_raw="${AWAIT_KEYPRESS_KEEP_RAW:-}"
+ec_saved_await_device="${AWAIT_KEYPRESS_DEVICE:-}"
 ec_saved_disable_sandbox="${WIZARDRY_DISABLE_SANDBOX:-}"
 ec_saved_bwrap_warning="${WIZARDRY_BWRAP_WARNING:-}"
 ec_saved_colors_available="${WIZARDRY_COLORS_AVAILABLE:-}"
@@ -243,6 +244,7 @@ fi
 
 # Restore feature flags
 [ -n "$ec_saved_await_keep_raw" ] && export AWAIT_KEYPRESS_KEEP_RAW="$ec_saved_await_keep_raw"
+[ -n "$ec_saved_await_device" ] && export AWAIT_KEYPRESS_DEVICE="$ec_saved_await_device"
 [ -n "$ec_saved_disable_sandbox" ] && export WIZARDRY_DISABLE_SANDBOX="$ec_saved_disable_sandbox"
 [ -n "$ec_saved_bwrap_warning" ] && export WIZARDRY_BWRAP_WARNING="$ec_saved_bwrap_warning"
 [ -n "$ec_saved_colors_available" ] && export WIZARDRY_COLORS_AVAILABLE="$ec_saved_colors_available"
@@ -282,7 +284,7 @@ unset ec_saved_ask_input ec_saved_choose_input ec_saved_menu_loop_limit
 unset ec_saved_require_command ec_saved_menu_log ec_saved_await_buffer_file
 unset ec_saved_assume_yes ec_saved_force_install ec_saved_root_dir
 unset ec_saved_platform ec_saved_rc_file ec_saved_rc_format
-unset ec_saved_await_keep_raw ec_saved_disable_sandbox ec_saved_bwrap_warning
+unset ec_saved_await_keep_raw ec_saved_await_device ec_saved_disable_sandbox ec_saved_bwrap_warning
 unset ec_saved_colors_available ec_saved_github_env ec_saved_github_path
 unset ec_saved_test_in_pocket ec_saved_demo_in_pocket
 unset ec_saved_github_output ec_saved_github_step_summary

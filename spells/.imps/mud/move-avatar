@@ -4,17 +4,32 @@
 
 set -eu
 
-config_file="${SPELLBOOK_DIR:-$HOME/.spellbook}/.mud"
+_move_avatar_sourced=0
+case "$(basename "$0" 2>/dev/null || printf '%s\n' "$0")" in
+    sh|dash|bash|zsh|ksh|mksh) _move_avatar_sourced=1 ;;
+    move-avatar) _move_avatar_sourced=0 ;;
+    *) _move_avatar_sourced=1 ;;
+esac
+
+move_avatar_exit() {
+    code=${1:-0}
+    if [ "$_move_avatar_sourced" -eq 1 ]; then
+        return "$code"
+    fi
+    exit "$code"
+}
+
+config_file="${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}/.mud"
 
 # Exit early if config file doesn't exist
 if [ ! -f "$config_file" ]; then
-    return 0 2>/dev/null || exit 0
+    move_avatar_exit 0
 fi
 
 old_path=$(grep "^avatar-path=" "$config_file" 2>/dev/null | cut -d= -f2- || printf '')
 
 if [ -z "$old_path" ] || [ ! -d "$old_path" ]; then
-    return 0 2>/dev/null || exit 0
+    move_avatar_exit 0
 fi
 
 avatar_name=$(basename "$old_path")
@@ -22,20 +37,20 @@ new_path="$PWD/$avatar_name"
 
 # Only move if different location
 if [ "$old_path" = "$new_path" ]; then
-    return 0 2>/dev/null || exit 0
+    move_avatar_exit 0
 fi
 
 # If target exists and is NOT the same as source, remove it to avoid conflicts
 if [ -e "$new_path" ] && [ "$old_path" != "$new_path" ]; then
     # Check if it's actually an avatar before removing
     if [ -d "$new_path" ]; then
-        rm -rf "$new_path" 2>/dev/null || { return 1 2>/dev/null || exit 1; }
+        rm -rf "$new_path" 2>/dev/null || move_avatar_exit 1
     fi
 fi
 
 # Move avatar folder to new location (this should MOVE, not copy)
 if ! mv "$old_path" "$new_path" 2>/dev/null; then
-    return 1 2>/dev/null || exit 1
+    move_avatar_exit 1
 fi
 
 # Update config with new path - use config-set if available, otherwise update directly
