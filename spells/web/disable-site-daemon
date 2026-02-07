@@ -53,9 +53,20 @@ if has systemctl; then
 fi
 
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
-  # Unload with -w to disable boot startup
-  # Don't delete the plist - just disable it
-  run_priv launchctl unload -w "$plist" 2>/dev/null || true
+  label="org.wizardry.web.${site_name}"
+  
+  # First, unload the daemon if it's currently loaded
+  if launchctl list | grep -q "$label" 2>/dev/null; then
+    run_priv launchctl unload "$plist" 2>/dev/null || true
+  fi
+  
+  # Then disable it for boot using the modern disable command
+  # This sets the disabled flag in the overrides database
+  run_priv launchctl disable "system/$label" 2>/dev/null || {
+    # If launchctl disable fails (older macOS), fall back to unload -w
+    run_priv launchctl unload -w "$plist" 2>/dev/null || true
+  }
+  
   success "Daemon disabled on startup for $site_name"
   exit 0
 fi
