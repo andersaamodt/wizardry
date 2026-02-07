@@ -104,6 +104,7 @@ test_is_site_daemon_enabled_launchctl_enabled() {
   write_launchctl_stub "$stub_dir"
   write_uname_darwin "$stub_dir"
   stub-forget-command systemctl "$stub_dir"  # Hide systemctl to test macOS path
+  . "$stub_dir/forget-systemctl"  # Apply the has function override
   
   # Create plist file
   plist_dir="$stub_dir/Library/LaunchDaemons"
@@ -129,6 +130,7 @@ test_is_site_daemon_enabled_launchctl_disabled() {
   write_launchctl_stub "$stub_dir"
   write_uname_darwin "$stub_dir"
   stub-forget-command systemctl "$stub_dir"  # Hide systemctl to test macOS path
+  . "$stub_dir/forget-systemctl"  # Apply the has function override
   
   # Create plist file
   plist_dir="$stub_dir/Library/LaunchDaemons"
