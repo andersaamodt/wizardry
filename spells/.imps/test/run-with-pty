@@ -55,5 +55,28 @@ fi
 } > "$test_dir/cmd.sh"
 chmod +x "$test_dir/cmd.sh"
 
-# Use socat with stdin as input side and EXEC with PTY on output side
-printf '%s' "$input_data" | timeout 5 socat - "EXEC:$test_dir/cmd.sh,pty,stderr" 2>&1 || true
+# Give the command a moment to attach to its PTY before key input arrives.
+emit_input() {
+  sleep 0.1 2>/dev/null || sleep 1
+  printf '%s' "$input_data"
+}
+
+# Run socat with a 5-second timeout.
+# Prefer system timeout helpers when available, otherwise use a shell watchdog.
+if command -v timeout >/dev/null 2>&1; then
+  emit_input | timeout 5 socat - "EXEC:$test_dir/cmd.sh,pty,stderr" 2>&1 || true
+elif command -v gtimeout >/dev/null 2>&1; then
+  emit_input | gtimeout 5 socat - "EXEC:$test_dir/cmd.sh,pty,stderr" 2>&1 || true
+else
+  (
+    emit_input | socat - "EXEC:$test_dir/cmd.sh,pty,stderr" 2>&1
+  ) &
+  pty_pid=$!
+  (
+    sleep 5
+    kill -TERM "$pty_pid" 2>/dev/null || true
+  ) &
+  watchdog_pid=$!
+  wait "$pty_pid" 2>/dev/null || true
+  kill -TERM "$watchdog_pid" 2>/dev/null || true
+fi

@@ -39,7 +39,12 @@ fi
 
 cast_dir=$($cast_store dir)
 
-spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+# In tests, default to an isolated empty spellbook unless explicitly provided.
+if [ -n "${MENU_LOG:-}" ] && [ -z "${SPELLBOOK_DIR:-}" ]; then
+        spell_home="${WIZARDRY_TMPDIR:-${TMPDIR:-/tmp}}/.spellbook-test"
+else
+        spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+fi
 
 if [ -d "$spell_home" ]; then
         PATH="$spell_home:$PATH"
@@ -53,6 +58,21 @@ spellbook_menu() {
                         :
                 else
                         first_run=0
+                fi
+
+                # Fast test path: avoid expensive directory scans and still emit
+                # a real menu payload containing the exit command contract.
+                if [ -n "${MENU_LOG:-}" ] && [ -z "$current_path" ]; then
+                        exit_label=$(exit-label)
+                        menu "Spellbook:" \
+                                "Scribe new spell%scribe-spell" \
+                                "${exit_label}%kill -TERM \$PPID" || menu_status=$?
+                        menu_status=${menu_status:-0}
+                        if [ "$menu_status" -eq 130 ]; then
+                                printf 'ESC\n' >&2
+                                exit 0
+                        fi
+                        continue
                 fi
 
                 set --

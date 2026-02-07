@@ -51,7 +51,12 @@ if ! require menu "The MUD Install menu needs the 'menu' command to present opti
 fi
 
 # Get config file location
-spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+# In tests, default to an isolated spellbook unless explicitly provided.
+if [ -n "${WIZARDRY_TMPDIR:-}" ] && [ -z "${SPELLBOOK_DIR:-}" ]; then
+  spell_home="${WIZARDRY_TMPDIR:-${TMPDIR:-/tmp}}/.spellbook-test"
+else
+  spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
+fi
 CONFIG_FILE="$spell_home/.mud"
 
 # Use temp file imp for selection tracking
@@ -159,24 +164,26 @@ while true; do
   
   # Try to detect torrc path
   torrc_path=""
-  if command -v torrc-path >/dev/null 2>&1; then
+  if [ -z "${WIZARDRY_TMPDIR:-}" ] && command -v torrc-path >/dev/null 2>&1; then
     torrc_path=$(torrc-path 2>/dev/null) || torrc_path=""
   fi
   
   # Fallback to common locations if torrc-path not available
   if [ -z "$torrc_path" ]; then
-    if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
-      # macOS
-      for path in /usr/local/etc/tor/torrc /opt/local/etc/tor/torrc; do
-        if [ -f "$path" ]; then
-          torrc_path="$path"
-          break
+    if [ -z "${WIZARDRY_TMPDIR:-}" ]; then
+      if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+        # macOS
+        for path in /usr/local/etc/tor/torrc /opt/local/etc/tor/torrc; do
+          if [ -f "$path" ]; then
+            torrc_path="$path"
+            break
+          fi
+        done
+      else
+        # Linux
+        if [ -f /etc/tor/torrc ]; then
+          torrc_path="/etc/tor/torrc"
         fi
-      done
-    else
-      # Linux
-      if [ -f /etc/tor/torrc ]; then
-        torrc_path="/etc/tor/torrc"
       fi
     fi
   fi
