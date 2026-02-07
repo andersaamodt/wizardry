@@ -49,9 +49,9 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
     if run_priv launchctl disable "$label" 2>/dev/null; then
       success "ollama daemon disabled at boot"
     else
-      # Fall back for older macOS
-      warn "disable-ollama-daemon: modern launchctl disable failed, using plist edit"
-      success "ollama daemon disabled at boot"
+      # Fallback for older macOS - report the limitation
+      warn "disable-ollama-daemon: launchctl disable not supported on this macOS version"
+      die "disable-ollama-daemon: manual plist editing required for older macOS"
     fi
   else
     success "ollama daemon not installed"
