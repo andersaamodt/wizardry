@@ -129,7 +129,12 @@ set -eu
         exit 0
       fi
       if [ -t 0 ] || [ -r /dev/tty ]; then
-        if sudo -v >/dev/null 2>&1; then
+        if [ -w /dev/tty ]; then
+          printf '%s\n' "pocket-dimension: requesting sudo authentication..." > /dev/tty
+        else
+          printf '%s\n' "pocket-dimension: requesting sudo authentication..."
+        fi
+        if sudo -v; then
           exit 0
         fi
       fi
@@ -154,13 +159,14 @@ set -eu
     if [ -w /dev/tty ]; then
       printf '%s\n' "$msg" > /dev/tty
     else
-      printf '%s\n' "$msg" >&2
+      printf '%s\n' "$msg"
     fi
   }
 
   stop_copy_heartbeat() {
     if [ -n "${copy_heartbeat_pid-}" ]; then
       kill "$copy_heartbeat_pid" >/dev/null 2>&1 || true
+      wait "$copy_heartbeat_pid" 2>/dev/null || true
       copy_heartbeat_pid=""
     fi
   }
@@ -168,6 +174,7 @@ set -eu
   start_copy_heartbeat() {
     stop_copy_heartbeat
     (
+      trap 'exit 0' TERM INT
       while :; do
         sleep 10
         progress_msg "pocket-dimension: still copying workspace..."
@@ -218,7 +225,8 @@ set -eu
       return 0
     fi
     if [ -t 0 ] || [ -r /dev/tty ]; then
-      if sudo -v >/dev/null 2>&1; then
+      progress_msg "pocket-dimension: requesting sudo authentication..."
+      if sudo -v; then
         return 0
       fi
     fi
@@ -555,14 +563,16 @@ exec "$run_cmd" "$@"
 RUNNER
           chmod 755 "$runner_script"
 
-          profile_file="$pocket_root/macos-pocket.sb"
+          profile_file="${mac_active_home}/.wizardry-pocket.sb"
           {
             printf '%s\n' "(version 1)"
             printf '%s\n' "(allow default)"
             if [ "$network_mode" = "closed" ]; then
               printf '%s\n' "(deny network*)"
             fi
-          } >"$profile_file"
+          } | sudo tee "$profile_file" >/dev/null
+          sudo chown "$mac_active_user:staff" "$profile_file" >/dev/null 2>&1 || true
+          sudo chmod 600 "$profile_file" >/dev/null 2>&1 || true
 
           sandbox_exec=$(command -v sandbox-exec 2>/dev/null || printf '')
           sandbox_exec_usable=0
