@@ -11,8 +11,8 @@ printf "Generating audit table...\n" >&2
 
 # Header
 cat << 'EOF'
-| File Path | Last Audit | Thoroughness | Result | Code | Docs | Theme | Policy | Issues | Fixes |
-|-----------|------------|--------------|--------|------|------|-------|--------|--------|-------|
+| File Path | Last Audit (YYYY-MM-DD HH:MM) | Thoroughness | Result | Code | Docs | Theme | Policy | Ethos | Issues | Fixes |
+|-----------|-------------------------------|--------------|--------|------|------|-------|--------|-------|--------|-------|
 EOF
 
 # Find all auditable files and create table rows
@@ -42,6 +42,7 @@ find_files() {
   
   # Tutorials
   find tutorials -type f -name '*.sh' 2>/dev/null | sort
+  find tutorials -type f ! -name '*.sh' 2>/dev/null | sort
   
   # Configuration files that should be audited
   [ -f .gitignore ] && printf '.gitignore\n'
@@ -50,7 +51,7 @@ find_files() {
 
 # Generate table rows
 find_files | while IFS= read -r file; do
-  printf '| %s | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |\n' "$file"
+  printf '| %s | - | - | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | - | - |\n' "$file"
 done
 
 printf "\nGenerated %d file entries\n" "$(find_files | wc -l)" >&2
