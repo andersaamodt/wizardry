@@ -31,7 +31,43 @@ if [ ! -d "$SITE_DIR" ]; then
   die "stop-site: site '$site_name' not found"
 fi
 
-# Check if nginx is running
+# Check if daemon is running (preferred method)
+daemon_pid=""
+if [ -f "$SITE_DIR/nginx/daemon.pid" ]; then
+  daemon_pid=$(cat "$SITE_DIR/nginx/daemon.pid" 2>/dev/null || echo "")
+  if [ -n "$daemon_pid" ] && kill -0 "$daemon_pid" 2>/dev/null; then
+    # Daemon is running - kill it (will cascade to nginx and fcgiwrap)
+    step "Stopping daemon for $site_name..."
+    kill "$daemon_pid" 2>/dev/null || true
+    
+    # Wait for daemon to exit
+    for _ in 1 2 3 4 5; do
+      if ! kill -0 "$daemon_pid" 2>/dev/null; then
+        break
+      fi
+      sleep 1
+    done
+    
+    # If still running, force kill
+    if kill -0 "$daemon_pid" 2>/dev/null; then
+      warn "stop-site: daemon shutdown timed out, forcing..."
+      kill -KILL "$daemon_pid" 2>/dev/null || true
+    fi
+    
+    # Clean up PID files
+    rm -f "$SITE_DIR/nginx/daemon.pid"
+    rm -f "$SITE_DIR/nginx/nginx.pid"
+    rm -f "$SITE_DIR/nginx/fcgiwrap.pid"
+    
+    success "Site '$site_name' stopped"
+    exit 0
+  else
+    # Stale daemon PID file
+    rm -f "$SITE_DIR/nginx/daemon.pid"
+  fi
+fi
+
+# Fallback: Check if nginx is running (for sites started before this fix)
 if [ ! -f "$SITE_DIR/nginx/nginx.pid" ]; then
   warn "stop-site: site '$site_name' is not running (no PID file)"
   exit 0
@@ -41,12 +77,14 @@ pid=$(cat "$SITE_DIR/nginx/nginx.pid" 2>/dev/null || echo "")
 if [ -z "$pid" ]; then
   warn "stop-site: could not read PID file"
   rm -f "$SITE_DIR/nginx/nginx.pid"
+  rm -f "$SITE_DIR/nginx/daemon.pid"
   exit 0
 fi
 
 if ! kill -0 "$pid" 2>/dev/null; then
   warn "stop-site: site '$site_name' is not running (stale PID file)"
   rm -f "$SITE_DIR/nginx/nginx.pid"
+  rm -f "$SITE_DIR/nginx/daemon.pid"
   exit 0
 fi
 
@@ -72,5 +110,6 @@ fi
 
 # Clean up PID file
 rm -f "$SITE_DIR/nginx/nginx.pid"
+rm -f "$SITE_DIR/nginx/daemon.pid"
 
 success "Site '$site_name' stopped"
