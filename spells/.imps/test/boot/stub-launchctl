@@ -1,0 +1,71 @@
+#!/bin/sh
+# stub-launchctl DIR - create launchctl stub for testing daemon management
+set -eu
+
+dir=$1
+cat >"$dir/launchctl" <<'STUB'
+#!/bin/sh
+state_dir=${LAUNCHCTL_STATE_DIR:-$(mktemp -d)}
+mkdir -p "$state_dir"
+log_file="$state_dir/launchctl.log"
+loaded_file="$state_dir/loaded"
+disabled_file="$state_dir/disabled"
+
+# Log all launchctl commands
+printf '%s\n' "$*" >>"$log_file"
+
+case "$1" in
+  list)
+    # Return loaded services
+    if [ -f "$loaded_file" ]; then
+      cat "$loaded_file"
+    fi
+    exit 0
+    ;;
+  load)
+    # Add service to loaded list (remove -w flag if present)
+    plist=$(printf '%s' "$*" | sed 's/-w //g' | awk '{print $NF}')
+    label=$(basename "$plist" .plist)
+    printf '%s\n' "$label" >>"$loaded_file"
+    exit 0
+    ;;
+  unload)
+    # Remove service from loaded list
+    plist=$(printf '%s' "$*" | sed 's/-w //g' | awk '{print $NF}')
+    label=$(basename "$plist" .plist)
+    if [ -f "$loaded_file" ]; then
+      grep -v "$label" "$loaded_file" > "$loaded_file.tmp" || true
+      mv "$loaded_file.tmp" "$loaded_file"
+    fi
+    exit 0
+    ;;
+  enable)
+    # Remove from disabled list
+    label=$(printf '%s' "$2" | sed 's/system\///')
+    if [ -f "$disabled_file" ]; then
+      grep -v "\"$label\"" "$disabled_file" > "$disabled_file.tmp" || true
+      mv "$disabled_file.tmp" "$disabled_file"
+    fi
+    exit 0
+    ;;
+  disable)
+    # Add to disabled list
+    label=$(printf '%s' "$2" | sed 's/system\///')
+    printf '  "%s" => true\n' "$label" >>"$disabled_file"
+    exit 0
+    ;;
+  print-disabled)
+    # Return disabled services
+    printf '{\n'
+    if [ -f "$disabled_file" ]; then
+      cat "$disabled_file"
+    fi
+    printf '}\n'
+    exit 0
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+STUB
+chmod +x "$dir/launchctl"
