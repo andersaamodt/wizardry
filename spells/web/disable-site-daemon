@@ -47,14 +47,15 @@ unit="wizardry-site-${site_name}.service"
 plist="/Library/LaunchDaemons/org.wizardry.web.${site_name}.plist"
 
 if has systemctl; then
-  run_priv systemctl disable "$unit"
+  run_priv systemctl disable "$unit" 2>/dev/null || true
   success "Daemon disabled on startup for $site_name"
   exit 0
 fi
 
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
-  run_priv launchctl unload -w "$plist" >/dev/null 2>&1 || true
-  run_priv rm -f "$plist"
+  # Unload with -w to disable boot startup
+  # Don't delete the plist - just disable it
+  run_priv launchctl unload -w "$plist" 2>/dev/null || true
   success "Daemon disabled on startup for $site_name"
   exit 0
 fi

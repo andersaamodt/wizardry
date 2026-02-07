@@ -70,7 +70,7 @@ if [ -f "$SITE_DIR/nginx/nginx.pid" ]; then
   rm -f "$SITE_DIR/nginx/nginx.pid"
 fi
 
-# Check if daemon configuration exists - if not, create it
+# Check if daemon configuration exists
 if has systemctl; then
   unit="wizardry-site-${site_name}.service"
   daemon_artifact="${SERVICE_DIR:-/etc/systemd/system}/$unit"
@@ -81,18 +81,28 @@ else
 fi
 
 if [ ! -f "$daemon_artifact" ]; then
-  step "Creating daemon configuration..."
-  repair-site-daemon "$site_name"
+  die "serve-site: daemon not configured - run 'repair-site-daemon $site_name' first"
 fi
 
 # Start the daemon
 step "Starting daemon for $site_name..."
 
 if has systemctl; then
-  run_priv systemctl start "$unit"
+  # Check if service is already active
+  if systemctl is-active --quiet "$unit" 2>/dev/null; then
+    info "Site '$site_name' is already running"
+  else
+    run_priv systemctl start "$unit"
+  fi
 elif [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
-  # Load without -w (don't enable on boot, just start now)
-  run_priv launchctl load "$daemon_artifact"
+  # Check if service is already loaded
+  label="org.wizardry.web.${site_name}"
+  if launchctl list | grep -q "$label" 2>/dev/null; then
+    info "Site '$site_name' is already running"
+  else
+    # Load without -w (don't enable on boot, just start now)
+    run_priv launchctl load "$daemon_artifact"
+  fi
 fi
 
 # Read port from config

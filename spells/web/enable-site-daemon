@@ -47,11 +47,10 @@ unit="wizardry-site-${site_name}.service"
 plist="/Library/LaunchDaemons/org.wizardry.web.${site_name}.plist"
 
 if has systemctl; then
-  # Check if daemon configuration exists - if not, create it
+  # Check if daemon configuration exists
   daemon_artifact="${SERVICE_DIR:-/etc/systemd/system}/$unit"
   if [ ! -f "$daemon_artifact" ]; then
-    step "Creating daemon configuration..."
-    repair-site-daemon "$site_name"
+    die "enable-site-daemon: daemon not configured - run 'repair-site-daemon $site_name' first"
   fi
   
   run_priv systemctl enable "$unit"
@@ -60,14 +59,14 @@ if has systemctl; then
 fi
 
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
-  # Check if daemon configuration exists - if not, create it
+  # Check if daemon configuration exists
   if [ ! -f "$plist" ]; then
-    step "Creating daemon configuration..."
-    repair-site-daemon "$site_name"
+    die "enable-site-daemon: daemon not configured - run 'repair-site-daemon $site_name' first"
   fi
   
   # Load with -w to enable on boot
-  run_priv launchctl load -w "$plist"
+  # If already loaded, this will just enable it for boot
+  run_priv launchctl load -w "$plist" 2>/dev/null || true
   success "Daemon enabled on startup for $site_name"
   exit 0
 fi
