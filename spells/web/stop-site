@@ -37,47 +37,146 @@ run_priv() {
     return
   fi
   if has sudo; then
-    sudo "$@"
+    if tty >/dev/null 2>&1; then
+      sudo "$@" </dev/tty
+    else
+      sudo "$@"
+    fi
     return
   fi
   die "stop-site: root or sudo is required"
 }
 
+nginx_pid_file="$SITE_DIR/nginx/nginx.pid"
+nginx_was_running=0
+
+is_site_nginx_pid_running() {
+  pid=$1
+  case "$pid" in
+    ''|*[!0-9]*)
+      return 1
+      ;;
+  esac
+
+  if ! kill -0 "$pid" 2>/dev/null; then
+    return 1
+  fi
+
+  if ! has ps; then
+    return 0
+  fi
+
+  cmd=$(ps -p "$pid" -o command= 2>/dev/null || printf '')
+  if [ -z "$cmd" ]; then
+    return 1
+  fi
+
+  # Accept explicit nginx commands, but avoid false matches like "non-nginx-daemon".
+  set -- $cmd
+  exe=${1-}
+  base=${exe##*/}
+  case "$base" in
+    nginx|nginx:|nginx-daemon)
+      return 0
+      ;;
+  esac
+
+  # If ps includes the site path and nginx in the command, treat it as the site nginx.
+  case "$cmd" in
+    *"$SITE_DIR"*nginx*)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+stop_nginx_process() {
+  if [ ! -f "$nginx_pid_file" ]; then
+    return 0
+  fi
+
+  pid=$(cat "$nginx_pid_file" 2>/dev/null || printf '')
+  if [ -z "$pid" ]; then
+    rm -f "$nginx_pid_file"
+    return 0
+  fi
+
+  if ! is_site_nginx_pid_running "$pid"; then
+    rm -f "$nginx_pid_file"
+    return 0
+  fi
+
+  nginx_was_running=1
+
+  # Try graceful stop first, then privileged stop if needed.
+  if ! kill "$pid" 2>/dev/null; then
+    run_priv kill "$pid" 2>/dev/null || true
+  fi
+
+  for _ in 1 2 3 4 5; do
+    if ! kill -0 "$pid" 2>/dev/null; then
+      rm -f "$nginx_pid_file"
+      return 0
+    fi
+    sleep 1
+  done
+
+  # Force kill as a last resort.
+  if ! kill -9 "$pid" 2>/dev/null; then
+    run_priv kill -9 "$pid" 2>/dev/null || true
+  fi
+  sleep 1
+
+  if kill -0 "$pid" 2>/dev/null; then
+    die "stop-site: failed to stop nginx process (PID $pid)"
+  fi
+
+  rm -f "$nginx_pid_file"
+}
+
 # Determine which daemon system to use
-if has systemctl; then
+daemon_mode=""
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+  daemon_mode="launchd"
+  label="org.wizardry.web.${site_name}"
+  daemon_artifact="${LAUNCHD_PLIST_DIR:-/Library/LaunchDaemons}/${label}.plist"
+elif has systemctl; then
+  daemon_mode="systemd"
   unit="wizardry-site-${site_name}.service"
   daemon_artifact="${SERVICE_DIR:-/etc/systemd/system}/$unit"
-elif [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
-  label="org.wizardry.web.${site_name}"
-  daemon_artifact="/Library/LaunchDaemons/${label}.plist"
 else
   die "stop-site: systemd or launchd is required"
 fi
 
-# Check if daemon configuration exists
-if [ ! -f "$daemon_artifact" ]; then
-  warn "stop-site: daemon not configured for '$site_name'"
-  exit 0
+daemon_stopped=0
+
+if [ -f "$daemon_artifact" ]; then
+  step "Stopping daemon for $site_name..."
+
+  if [ "$daemon_mode" = "launchd" ]; then
+    # Preferred modern command: remove the service from the system domain.
+    if run_priv launchctl bootout "system/$label" >/dev/null 2>&1 \
+      || run_priv launchctl bootout system "$daemon_artifact" >/dev/null 2>&1 \
+      || run_priv launchctl unload "$daemon_artifact" >/dev/null 2>&1; then
+      daemon_stopped=1
+    elif run_priv launchctl print "system/$label" >/dev/null 2>&1; then
+      die "stop-site: failed to stop daemon for '$site_name'"
+    fi
+  elif [ "$daemon_mode" = "systemd" ]; then
+    if systemctl is-active --quiet "$unit" 2>/dev/null; then
+      run_priv systemctl stop "$unit"
+      daemon_stopped=1
+    fi
+  fi
+else
+  warn "stop-site: daemon not configured for '$site_name' (stopping nginx by PID if running)"
 fi
 
-# Stop the daemon
-step "Stopping daemon for $site_name..."
+# Always perform a PID-based fallback so restart works even when daemon state is stale.
+stop_nginx_process
 
-if has systemctl; then
-  # Check if service is active
-  if systemctl is-active --quiet "$unit" 2>/dev/null; then
-    run_priv systemctl stop "$unit"
-    success "Site '$site_name' stopped"
-  else
-    warn "stop-site: site '$site_name' is not running"
-  fi
-elif [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
-  # Check if service is loaded
-  if launchctl list | grep -q "$label" 2>/dev/null; then
-    # Unload without -w (don't disable boot start, just stop now)
-    run_priv launchctl unload "$daemon_artifact"
-    success "Site '$site_name' stopped"
-  else
-    warn "stop-site: site '$site_name' is not running"
-  fi
+if [ "$daemon_stopped" -eq 1 ] || [ "$nginx_was_running" -eq 1 ]; then
+  success "Site '$site_name' stopped"
+else
+  warn "stop-site: site '$site_name' is not running"
 fi
