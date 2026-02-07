@@ -68,18 +68,32 @@ if [ -f "$SITE_DIR/nginx/nginx.pid" ]; then
   fi
   # Stale PID file - remove it
   rm -f "$SITE_DIR/nginx/nginx.pid"
-  rm -f "$SITE_DIR/nginx/daemon.pid"
 fi
 
-# Start nginx directly without systemd/launchd (no sudo needed!)
-step "Starting nginx for $site_name..."
+# Check if daemon configuration exists - if not, create it
+if has systemctl; then
+  unit="wizardry-site-${site_name}.service"
+  daemon_artifact="${SERVICE_DIR:-/etc/systemd/system}/$unit"
+elif [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+  daemon_artifact="/Library/LaunchDaemons/org.wizardry.web.${site_name}.plist"
+else
+  die "serve-site: systemd or launchd is required"
+fi
 
-# Run in background using run-site-daemon
-nohup run-site-daemon "$site_name" >/dev/null 2>&1 &
-daemon_pid=$!
+if [ ! -f "$daemon_artifact" ]; then
+  step "Creating daemon configuration..."
+  repair-site-daemon "$site_name"
+fi
 
-# Save daemon PID so stop-site can kill it properly
-printf '%s\n' "$daemon_pid" > "$SITE_DIR/nginx/daemon.pid"
+# Start the daemon
+step "Starting daemon for $site_name..."
+
+if has systemctl; then
+  run_priv systemctl start "$unit"
+elif [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+  # Load without -w (don't enable on boot, just start now)
+  run_priv launchctl load "$daemon_artifact"
+fi
 
 # Read port from config
 port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || echo "8080")
