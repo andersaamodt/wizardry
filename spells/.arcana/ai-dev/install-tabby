@@ -35,13 +35,13 @@ mkdir -p "$install_dir"
 # Determine the download URL based on OS and architecture
 case "$OS" in
 Darwin)
-  # macOS installation
+  # macOS installation - only aarch64 (Apple Silicon) is available
   case "$ARCH" in
-  x86_64)
-    url="https://github.com/TabbyML/tabby/releases/latest/download/tabby_x86_64-apple-darwin"
+  arm64|aarch64)
+    url="https://github.com/TabbyML/tabby/releases/latest/download/tabby_aarch64-apple-darwin.tar.gz"
     ;;
-  arm64)
-    url="https://github.com/TabbyML/tabby/releases/latest/download/tabby_aarch64-apple-darwin"
+  x86_64)
+    die "install-tabby: Intel macOS (x86_64) is not supported by Tabby. Only Apple Silicon (arm64) is available."
     ;;
   *)
     die "install-tabby: unsupported architecture: $ARCH"
@@ -52,10 +52,10 @@ Linux)
   # Linux installation
   case "$ARCH" in
   x86_64)
-    url="https://github.com/TabbyML/tabby/releases/latest/download/tabby_x86_64-unknown-linux-musl"
+    url="https://github.com/TabbyML/tabby/releases/latest/download/tabby_x86_64-manylinux_2_28.tar.gz"
     ;;
   aarch64|arm64)
-    url="https://github.com/TabbyML/tabby/releases/latest/download/tabby_aarch64-unknown-linux-musl"
+    die "install-tabby: ARM64 Linux is not currently provided by Tabby releases"
     ;;
   *)
     die "install-tabby: unsupported architecture: $ARCH"
@@ -67,8 +67,8 @@ Linux)
   ;;
 esac
 
-# Download Tabby binary
-temp_file=$(temp-file tabby)
+# Download Tabby binary (tar.gz archive)
+temp_file=$(temp-file tabby.tar.gz)
 if has curl; then
   curl -fsSL -o "$temp_file" "$url" || die "install-tabby: failed to download Tabby"
 elif has wget; then
@@ -77,9 +77,30 @@ else
   die "install-tabby: curl or wget required"
 fi
 
-# Install the binary
-mv "$temp_file" "$install_dir/tabby"
+# Extract the tar.gz archive
+temp_dir=$(temp-file tabby-extract)
+rm -f "$temp_dir"
+mkdir -p "$temp_dir"
+tar -xzf "$temp_file" -C "$temp_dir" || die "install-tabby: failed to extract tar.gz"
+
+# Find and install the tabby binary
+if [ -f "$temp_dir/tabby" ]; then
+  mv "$temp_dir/tabby" "$install_dir/tabby"
+else
+  # Look for tabby binary in subdirectories
+  tabby_bin=$(find "$temp_dir" -name "tabby" -type f 2>/dev/null | head -1)
+  if [ -n "$tabby_bin" ]; then
+    mv "$tabby_bin" "$install_dir/tabby"
+  else
+    rm -rf "$temp_dir"
+    rm -f "$temp_file"
+    die "install-tabby: tabby binary not found in archive"
+  fi
+fi
+
 chmod +x "$install_dir/tabby"
+rm -rf "$temp_dir"
+rm -f "$temp_file"
 
 # Verify installation
 if ! "$script_dir/is-ai-component-installed" tabby 2>/dev/null; then
