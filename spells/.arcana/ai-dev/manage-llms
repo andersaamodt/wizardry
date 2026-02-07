@@ -1,0 +1,78 @@
+#!/bin/sh
+
+# Menu for managing installed LLMs.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: manage-llms
+
+Opens a menu for managing installed LLM models.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+. colors
+
+if ! require menu "The manage-llms needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 130' INT
+trap 'exit 0' TERM
+
+# Check if ollama is installed
+if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+  die "manage-llms: ollama is not installed"
+fi
+
+while :; do
+  # Get list of installed LLMs
+  installed_llms=$("$script_dir/list-installed-llms" 2>/dev/null || echo "")
+  
+  # If no LLMs installed, ask if user wants to add one
+  if [ -z "$installed_llms" ]; then
+    set -- "Add an LLM now%$script_dir/select-llm-to-install"
+    exit_label=$(exit-label)
+    set -- "$@" "${exit_label}%kill -TERM \$PPID"
+    
+    menu "No LLMs installed. Would you like to add one?" "$@" || menu_status=$?
+    menu_status=${menu_status:-0}
+    
+    if [ "$menu_status" -eq 130 ]; then
+      printf 'ESC\n' >&2
+      exit 0
+    fi
+    
+    continue
+  fi
+  
+  # Build menu of installed LLMs
+  set --
+  for llm in $installed_llms; do
+    set -- "$@" "$llm%$script_dir/llm-menu \"$llm\""
+  done
+  
+  # Add option to install more
+  set -- "$@" "---"
+  set -- "$@" "Install another LLM%$script_dir/select-llm-to-install"
+  
+  exit_label=$(exit-label)
+  set -- "$@" "${exit_label}%kill -TERM \$PPID"
+  
+  menu "Manage LLMs:" "$@" || menu_status=$?
+  menu_status=${menu_status:-0}
+  
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    exit 0
+  fi
+done

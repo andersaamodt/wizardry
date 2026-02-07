@@ -1,0 +1,48 @@
+#!/bin/sh
+
+# Uninstall Tabby.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-tabby
+
+Uninstalls Tabby.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+# Check if installed
+if ! "$script_dir/is-ai-component-installed" tabby 2>/dev/null; then
+  success "Tabby is not installed"
+  exit 0
+fi
+
+say "Uninstalling Tabby..."
+
+# Remove tabby binary from common locations
+for path in /usr/local/bin/tabby /usr/bin/tabby "$HOME/.local/bin/tabby"; do
+  if [ -f "$path" ]; then
+    rm -f "$path" 2>/dev/null || warn "uninstall-tabby: failed to remove $path"
+  fi
+done
+
+# Remove Tabby data directory
+if [ -d "$HOME/.tabby" ]; then
+  say "Removing Tabby data directory..."
+  rm -rf "$HOME/.tabby" 2>/dev/null || \
+    warn "uninstall-tabby: failed to remove data directory"
+fi
+
+# Verify uninstallation
+if "$script_dir/is-ai-component-installed" tabby 2>/dev/null; then
+  die "uninstall-tabby: uninstallation verification failed"
+fi
+
+success "Tabby uninstalled successfully"

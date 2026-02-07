@@ -1,0 +1,79 @@
+#!/bin/sh
+
+# Check if an AI development component is installed.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-ai-component-installed COMPONENT
+
+Checks if the specified AI development component is installed.
+
+Supported components: tabby, ollama, anythingllm
+
+Returns: 0 if installed, 1 if not installed
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+component=${1-}
+if [ -z "$component" ]; then
+  exit 1
+fi
+
+case "$component" in
+tabby)
+  # Check if tabby binary exists
+  if has tabby; then
+    exit 0
+  fi
+  # Check in common install locations
+  for path in /usr/local/bin/tabby /usr/bin/tabby "$HOME/.local/bin/tabby"; do
+    if [ -x "$path" ]; then
+      exit 0
+    fi
+  done
+  exit 1
+  ;;
+ollama)
+  # Check if ollama binary exists
+  if has ollama; then
+    exit 0
+  fi
+  # Check in common install locations
+  for path in /usr/local/bin/ollama /usr/bin/ollama "$HOME/.local/bin/ollama"; do
+    if [ -x "$path" ]; then
+      exit 0
+    fi
+  done
+  exit 1
+  ;;
+anythingllm)
+  # Check if AnythingLLM is installed
+  # AnythingLLM installs to different locations depending on platform
+  if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+    # macOS: check for app bundle
+    if [ -d "/Applications/AnythingLLM.app" ] || [ -d "$HOME/Applications/AnythingLLM.app" ]; then
+      exit 0
+    fi
+  else
+    # Linux: check for binary
+    for path in \
+      /usr/local/bin/anythingllm \
+      "$HOME/.local/bin/anythingllm" \
+      /opt/anythingllm/anythingllm; do
+      if [ -x "$path" ]; then
+        exit 0
+      fi
+    done
+  fi
+  exit 1
+  ;;
+*)
+  exit 1
+  ;;
+esac

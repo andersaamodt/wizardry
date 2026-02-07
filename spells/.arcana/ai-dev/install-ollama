@@ -1,0 +1,118 @@
+#!/bin/sh
+
+# Install ollama in a cross-platform POSIX-compliant way.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-ollama
+
+Installs ollama without using homebrew, in a POSIX-compliant cross-platform manner.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+# Check if already installed
+if "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+  success "ollama is already installed"
+  exit 0
+fi
+
+say "Installing ollama..."
+
+OS=$(uname -s 2>/dev/null)
+ARCH=$(uname -m 2>/dev/null)
+
+install_dir="$HOME/.local/bin"
+mkdir -p "$install_dir"
+
+case "$OS" in
+Darwin)
+  # macOS installation - download zip and extract
+  url="https://github.com/ollama/ollama/releases/latest/download/Ollama-darwin.zip"
+  ;;
+Linux)
+  # Linux installation
+  case "$ARCH" in
+  x86_64)
+    url="https://github.com/ollama/ollama/releases/latest/download/ollama-linux-amd64"
+    ;;
+  aarch64|arm64)
+    url="https://github.com/ollama/ollama/releases/latest/download/ollama-linux-arm64"
+    ;;
+  *)
+    die "install-ollama: unsupported architecture: $ARCH"
+    ;;
+  esac
+  ;;
+*)
+  die "install-ollama: unsupported operating system: $OS"
+  ;;
+esac
+
+# Download ollama binary
+temp_file=$(temp-file ollama)
+
+# Handle macOS zip file
+if [ "$OS" = "Darwin" ]; then
+  if has curl; then
+    curl -fsSL -o "$temp_file.zip" "$url" || die "install-ollama: failed to download ollama"
+  elif has wget; then
+    wget -q -O "$temp_file.zip" "$url" || die "install-ollama: failed to download ollama"
+  else
+    die "install-ollama: curl or wget required"
+  fi
+  
+  # Extract the zip file
+  temp_dir=$(temp-file ollama-extract)
+  rm -f "$temp_dir"
+  mkdir -p "$temp_dir"
+  unzip -q "$temp_file.zip" -d "$temp_dir" || die "install-ollama: failed to extract zip"
+  
+  # Find and copy the ollama binary
+  if [ -f "$temp_dir/Ollama.app/Contents/Resources/ollama" ]; then
+    cp "$temp_dir/Ollama.app/Contents/Resources/ollama" "$install_dir/ollama"
+  elif [ -f "$temp_dir/ollama" ]; then
+    cp "$temp_dir/ollama" "$install_dir/ollama"
+  else
+    rm -rf "$temp_dir"
+    rm -f "$temp_file.zip"
+    die "install-ollama: ollama binary not found in zip"
+  fi
+  
+  rm -rf "$temp_dir"
+  rm -f "$temp_file.zip"
+else
+  # Linux - direct binary download
+  if has curl; then
+    curl -fsSL -o "$temp_file" "$url" || die "install-ollama: failed to download ollama"
+  elif has wget; then
+    wget -q -O "$temp_file" "$url" || die "install-ollama: failed to download ollama"
+  else
+    die "install-ollama: curl or wget required"
+  fi
+  
+  # Install the binary
+  mv "$temp_file" "$install_dir/ollama"
+fi
+
+chmod +x "$install_dir/ollama"
+
+# Verify installation
+if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+  die "install-ollama: installation verification failed"
+fi
+
+success "ollama installed successfully"
+
+# Check if we should auto-repair link (if AnythingLLM is installed)
+if "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null; then
+  say "AnythingLLM is installed, repairing link..."
+  "$script_dir/repair-ai-link" || warn "install-ollama: failed to repair link"
+fi

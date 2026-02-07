@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# List available/recommended LLMs.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: list-available-llms
+
+Lists curated/recommended LLMs available for download.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+# Curated list of recommended LLMs with descriptions
+# Format: model_name|description
+printf '%s\n' "phi3.5:mini|fast local helper"
+printf '%s\n' "starcoder2:15b|everyday code writer"
+printf '%s\n' "deepseek-coder:33b|adversarial code reviewer"
+printf '%s\n' "qwen2.5-coder:32b|system design architect"
+printf '%s\n' "codellama:34b|legacy code translator"
+printf '%s\n' "mixtral:8x22b|multi-perspective strategist"
+printf '%s\n' "llama3.1:70b|deep reasoning oracle"
