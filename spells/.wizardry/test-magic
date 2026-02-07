@@ -350,7 +350,20 @@ while [ "$count_level" -le "$count_end" ]; do
 done
 
 failure_output_file=$(temp-file test-magic) || return 1
-trap 'cleanup-file "$failure_output_file"' EXIT HUP INT TERM
+
+handle_test_magic_signal() {
+  sig=$1
+  exit_code=$2
+  trap - EXIT HUP INT TERM
+  cleanup-file "$failure_output_file"
+  printf '\ntest-magic: interrupted by %s\n' "$sig" >&2
+  exit "$exit_code"
+}
+
+trap 'cleanup-file "$failure_output_file"' EXIT
+trap 'handle_test_magic_signal HUP 129' HUP
+trap 'handle_test_magic_signal INT 130' INT
+trap 'handle_test_magic_signal TERM 143' TERM
 
 test_timeout=${WIZARDRY_TEST_TIMEOUT:-180}
 compiled_mode=${WIZARDRY_TEST_COMPILED-0}
