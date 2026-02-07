@@ -1,0 +1,27 @@
+#!/bin/sh
+# log-to-file - Debug logging endpoint that writes to ~/testlog.txt
+# This is a TEMPORARY debug tool
+
+http-ok-html
+
+# Parse POST data
+if [ "${REQUEST_METHOD:-}" = "POST" ]; then
+  post_data=$(cat)
+else
+  post_data="${QUERY_STRING:-}"
+fi
+
+# Get message parameter
+msg=$(get-query-param "msg" "$post_data")
+
+# Write to testlog with timestamp
+{
+  printf '%s' "$msg"
+} >> ~/testlog.txt 2>&1 || true
+
+# Return success
+cat <<HTML
+<div class="demo-result success">
+  <p>Logged</p>
+</div>
+HTML
