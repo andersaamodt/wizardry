@@ -34,27 +34,17 @@ mkdir -p "$install_dir"
 
 case "$OS" in
 Darwin)
-  # macOS installation
-  case "$ARCH" in
-  x86_64)
-    url="https://ollama.com/download/ollama-darwin"
-    ;;
-  arm64)
-    url="https://ollama.com/download/ollama-darwin"
-    ;;
-  *)
-    die "install-ollama: unsupported architecture: $ARCH"
-    ;;
-  esac
+  # macOS installation - download zip and extract
+  url="https://github.com/ollama/ollama/releases/latest/download/Ollama-darwin.zip"
   ;;
 Linux)
   # Linux installation
   case "$ARCH" in
   x86_64)
-    url="https://ollama.com/download/ollama-linux-amd64"
+    url="https://github.com/ollama/ollama/releases/latest/download/ollama-linux-amd64"
     ;;
   aarch64|arm64)
-    url="https://ollama.com/download/ollama-linux-arm64"
+    url="https://github.com/ollama/ollama/releases/latest/download/ollama-linux-arm64"
     ;;
   *)
     die "install-ollama: unsupported architecture: $ARCH"
@@ -68,16 +58,50 @@ esac
 
 # Download ollama binary
 temp_file=$(temp-file ollama)
-if has curl; then
-  curl -fsSL -o "$temp_file" "$url" || die "install-ollama: failed to download ollama"
-elif has wget; then
-  wget -q -O "$temp_file" "$url" || die "install-ollama: failed to download ollama"
+
+# Handle macOS zip file
+if [ "$OS" = "Darwin" ]; then
+  if has curl; then
+    curl -fsSL -o "$temp_file.zip" "$url" || die "install-ollama: failed to download ollama"
+  elif has wget; then
+    wget -q -O "$temp_file.zip" "$url" || die "install-ollama: failed to download ollama"
+  else
+    die "install-ollama: curl or wget required"
+  fi
+  
+  # Extract the zip file
+  temp_dir=$(temp-file ollama-extract)
+  rm -f "$temp_dir"
+  mkdir -p "$temp_dir"
+  unzip -q "$temp_file.zip" -d "$temp_dir" || die "install-ollama: failed to extract zip"
+  
+  # Find and copy the ollama binary
+  if [ -f "$temp_dir/Ollama.app/Contents/Resources/ollama" ]; then
+    cp "$temp_dir/Ollama.app/Contents/Resources/ollama" "$install_dir/ollama"
+  elif [ -f "$temp_dir/ollama" ]; then
+    cp "$temp_dir/ollama" "$install_dir/ollama"
+  else
+    rm -rf "$temp_dir"
+    rm -f "$temp_file.zip"
+    die "install-ollama: ollama binary not found in zip"
+  fi
+  
+  rm -rf "$temp_dir"
+  rm -f "$temp_file.zip"
 else
-  die "install-ollama: curl or wget required"
+  # Linux - direct binary download
+  if has curl; then
+    curl -fsSL -o "$temp_file" "$url" || die "install-ollama: failed to download ollama"
+  elif has wget; then
+    wget -q -O "$temp_file" "$url" || die "install-ollama: failed to download ollama"
+  else
+    die "install-ollama: curl or wget required"
+  fi
+  
+  # Install the binary
+  mv "$temp_file" "$install_dir/ollama"
 fi
 
-# Install the binary
-mv "$temp_file" "$install_dir/ollama"
 chmod +x "$install_dir/ollama"
 
 # Verify installation

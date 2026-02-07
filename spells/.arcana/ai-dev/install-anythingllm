@@ -31,60 +31,18 @@ ARCH=$(uname -m 2>/dev/null)
 
 case "$OS" in
 Darwin)
-  # macOS installation - download dmg and install
-  say "Downloading AnythingLLM for macOS..."
-  
-  temp_dmg=$(temp-file anythingllm.dmg)
-  url="https://s3.us-west-1.amazonaws.com/public.useanything.com/latest/AnythingLLMDesktop.dmg"
-  
-  if has curl; then
-    curl -fsSL -o "$temp_dmg" "$url" || die "install-anythingllm: failed to download"
-  elif has wget; then
-    wget -q -O "$temp_dmg" "$url" || die "install-anythingllm: failed to download"
-  else
-    die "install-anythingllm: curl or wget required"
-  fi
-  
-  say "Mounting DMG..."
-  mount_point=$(hdiutil attach "$temp_dmg" | grep Volumes | sed 's/.*\/Volumes/\/Volumes/')
-  
-  say "Installing AnythingLLM.app..."
-  if [ -d "$mount_point/AnythingLLM.app" ]; then
-    cp -R "$mount_point/AnythingLLM.app" /Applications/
-  else
-    hdiutil detach "$mount_point" 2>/dev/null || true
-    rm -f "$temp_dmg"
-    die "install-anythingllm: AnythingLLM.app not found in DMG"
-  fi
-  
-  hdiutil detach "$mount_point" 2>/dev/null || true
-  rm -f "$temp_dmg"
+  # macOS installation - provide manual installation instructions
+  say "AnythingLLM desktop app installation for macOS..."
+  say "Please visit https://anythingllm.com/desktop to download the latest version"
+  say "The automated download is currently not available due to changing distribution URLs"
+  die "install-anythingllm: manual installation required - visit https://anythingllm.com/desktop"
   ;;
 Linux)
-  # Linux installation - download AppImage
-  say "Downloading AnythingLLM for Linux..."
-  
-  install_dir="$HOME/.local/bin"
-  mkdir -p "$install_dir"
-  
-  case "$ARCH" in
-  x86_64)
-    url="https://s3.us-west-1.amazonaws.com/public.useanything.com/latest/AnythingLLMDesktop.AppImage"
-    ;;
-  *)
-    die "install-anythingllm: unsupported architecture: $ARCH"
-    ;;
-  esac
-  
-  if has curl; then
-    curl -fsSL -o "$install_dir/anythingllm" "$url" || die "install-anythingllm: failed to download"
-  elif has wget; then
-    wget -q -O "$install_dir/anythingllm" "$url" || die "install-anythingllm: failed to download"
-  else
-    die "install-anythingllm: curl or wget required"
-  fi
-  
-  chmod +x "$install_dir/anythingllm"
+  # Linux installation - provide manual installation instructions
+  say "AnythingLLM desktop app installation for Linux..."
+  say "Please visit https://anythingllm.com/desktop to download the latest version"
+  say "The automated download is currently not available due to changing distribution URLs"
+  die "install-anythingllm: manual installation required - visit https://anythingllm.com/desktop"
   ;;
 *)
   die "install-anythingllm: unsupported operating system: $OS"
