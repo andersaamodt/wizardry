@@ -16,11 +16,12 @@ esac
 set -eu
 . env-clear
 
-# Curated list of recommended LLMs
-printf '%s\n' "llama2:7b"
-printf '%s\n' "llama2:13b"
-printf '%s\n' "mistral:7b"
-printf '%s\n' "codellama:7b"
-printf '%s\n' "phi:latest"
-printf '%s\n' "orca-mini:3b"
-printf '%s\n' "vicuna:7b"
+# Curated list of recommended LLMs with descriptions
+# Format: model_name|description
+printf '%s\n' "phi3.5:mini|fast local helper"
+printf '%s\n' "starcoder2:15b|everyday code writer"
+printf '%s\n' "deepseek-coder:33b|adversarial code reviewer"
+printf '%s\n' "qwen2.5-coder:32b|system design architect"
+printf '%s\n' "codellama:34b|legacy code translator"
+printf '%s\n' "mixtral:8x22b|multi perspective strategist"
+printf '%s\n' "llama3.1:70b|deep reasoning oracle"

@@ -38,8 +38,15 @@ fi
 
 # Build menu of available LLMs
 set --
-for llm in $available_llms; do
-  set -- "$@" "$llm%install-llm \"$llm\" && kill -TERM \$PPID"
+for llm_entry in $available_llms; do
+  # Parse model_name|description format
+  model=$(printf '%s' "$llm_entry" | cut -d'|' -f1)
+  description=$(printf '%s' "$llm_entry" | cut -d'|' -f2)
+  
+  # Create menu label with description in parentheses
+  label="$model ($description)"
+  
+  set -- "$@" "$label%install-llm \"$model\" && kill -TERM \$PPID"
 done
 
 exit_label=$(exit-label)
