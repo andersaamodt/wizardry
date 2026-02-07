@@ -2,21 +2,26 @@
 
 # Run a command inside an isolated "pocket dimension" environment.
 
-case "${1-}" in
-  --help|--usage|-h)
-    cat <<'USAGE'
+pocket_dimension_usage() {
+  cat <<'USAGE'
 Usage: pocket-dimension [OPTIONS] -- command [args...]
 
 Create a short-lived isolated environment and execute a command within it.
 
 Options:
   --check                 Verify the pocket dimension can run on this host
+  --strict                Require strict host isolation backend
   --keep                  Preserve the pocket directory for inspection
   --network MODE          Network mode: open|observe|closed (default: open)
   --allow-read PATH       Allow read-only access to PATH (repeatable)
   --allow-write PATH      Allow write access to PATH (repeatable)
   --help, --usage, -h     Show this help message
 USAGE
+}
+
+case "${1-}" in
+  --help|--usage|-h)
+    pocket_dimension_usage
     exit 0
     ;;
 esac
@@ -25,6 +30,7 @@ set -eu
 . env-clear
 
   check_only=0
+  strict_mode=0
   keep_pocket=0
   network_mode="open"
   allow_read_paths=""
@@ -34,6 +40,10 @@ set -eu
     case "$1" in
       --check)
         check_only=1
+        shift
+        ;;
+      --strict)
+        strict_mode=1
         shift
         ;;
       --keep)
@@ -100,9 +110,208 @@ set -eu
       exit 0
     fi
 
-    # macOS and other platforms: pocket dimension is emulated
+    if [ "$strict_mode" -eq 1 ] && [ "$platform" = "Darwin" ]; then
+      missing=""
+      for required_cmd in sudo dscl tar id; do
+        if ! command -v "$required_cmd" >/dev/null 2>&1; then
+          missing="${missing}${missing:+, }$required_cmd"
+        fi
+      done
+      if [ -n "$missing" ]; then
+        printf 'pocket-dimension: strict macOS mode missing commands: %s\n' "$missing" >&2
+        exit 1
+      fi
+      if ! command -v sandbox-exec >/dev/null 2>&1; then
+        printf '%s\n' "pocket-dimension: strict macOS mode requires sandbox-exec" >&2
+        exit 1
+      fi
+      if sudo -n true >/dev/null 2>&1; then
+        exit 0
+      fi
+      if [ -t 0 ] || [ -r /dev/tty ]; then
+        if sudo -v >/dev/null 2>&1; then
+          exit 0
+        fi
+      fi
+      printf '%s\n' "pocket-dimension: strict macOS mode requires sudo authentication" >&2
+      exit 1
+    fi
+
+    # Non-strict macOS and other platforms: pocket dimension is emulated
     exit 0
   fi
+
+  mac_user_prefix="wizpocket_"
+  mac_active_user=""
+  mac_active_home=""
+  mac_active_repo=""
+  mac_source_root=""
+  sudo_keepalive_pid=""
+
+  has_running_uid_process() {
+    target_uid=$1
+    if ! command -v ps >/dev/null 2>&1; then
+      return 1
+    fi
+    if ps -axo uid= 2>/dev/null | awk -v target="$target_uid" '
+      $1 == target { found = 1; exit }
+      END { exit(found ? 0 : 1) }
+    '; then
+      return 0
+    fi
+    return 1
+  }
+
+  stop_sudo_keepalive() {
+    if [ -n "${sudo_keepalive_pid-}" ]; then
+      kill "$sudo_keepalive_pid" >/dev/null 2>&1 || true
+      sudo_keepalive_pid=""
+    fi
+  }
+
+  start_sudo_keepalive() {
+    stop_sudo_keepalive
+    (
+      while :; do
+        sleep 20
+        sudo -n true >/dev/null 2>&1 || exit 0
+        kill -0 "$$" >/dev/null 2>&1 || exit 0
+      done
+    ) &
+    sudo_keepalive_pid=$!
+  }
+
+  ensure_macos_strict_sudo() {
+    if ! command -v sudo >/dev/null 2>&1; then
+      printf '%s\n' "pocket-dimension: sudo is required for strict macOS mode" >&2
+      return 1
+    fi
+    if sudo -n true >/dev/null 2>&1; then
+      return 0
+    fi
+    if [ -t 0 ] || [ -r /dev/tty ]; then
+      if sudo -v >/dev/null 2>&1; then
+        return 0
+      fi
+    fi
+    printf '%s\n' "pocket-dimension: strict macOS mode requires sudo authentication" >&2
+    return 1
+  }
+
+  remove_macos_temp_user() {
+    user_name=$1
+    [ -n "$user_name" ] || return 0
+
+    user_home=$(dscl . -read "/Users/$user_name" NFSHomeDirectory 2>/dev/null | awk '{print $2}')
+    if command -v sysadminctl >/dev/null 2>&1; then
+      sudo sysadminctl -deleteUser "$user_name" >/dev/null 2>&1 || true
+    fi
+    sudo dscl . -delete "/Users/$user_name" >/dev/null 2>&1 || true
+
+    case "$user_home" in
+      /Users/${mac_user_prefix}*)
+        sudo rm -rf "$user_home" >/dev/null 2>&1 || true
+        ;;
+    esac
+  }
+
+  cleanup_orphan_macos_temp_users() {
+    orphan_users=$(dscl . -list /Users 2>/dev/null | grep "^${mac_user_prefix}" || true)
+    for orphan_user in $orphan_users; do
+      [ -n "$orphan_user" ] || continue
+      [ "$orphan_user" = "${mac_active_user-}" ] && continue
+
+      orphan_uid=$(id -u "$orphan_user" 2>/dev/null || printf '')
+      if [ -n "$orphan_uid" ] && has_running_uid_process "$orphan_uid"; then
+        continue
+      fi
+      remove_macos_temp_user "$orphan_user"
+    done
+  }
+
+  create_macos_temp_user() {
+    attempt=0
+    base_stamp=$(date +%s 2>/dev/null || printf '%s' "$$")
+    created_user=""
+
+    while [ "$attempt" -lt 24 ]; do
+      attempt=$((attempt + 1))
+      candidate="${mac_user_prefix}${base_stamp}_${attempt}_$$"
+      candidate=$(printf '%s' "$candidate" | tr -cd 'A-Za-z0-9_')
+      candidate=$(printf '%.31s' "$candidate")
+      if ! dscl . -read "/Users/$candidate" >/dev/null 2>&1; then
+        created_user=$candidate
+        break
+      fi
+    done
+
+    if [ -z "$created_user" ]; then
+      printf '%s\n' "pocket-dimension: failed to allocate temporary macOS user" >&2
+      return 1
+    fi
+
+    created_home="/Users/$created_user"
+    created_uid=$(dscl . -list /Users UniqueID 2>/dev/null | awk '
+      $2 ~ /^[0-9]+$/ && $2 >= 500 && $2 < 60000 {
+        if ($2 > max) max = $2
+      }
+      END {
+        if (max == "") max = 500
+        print max + 1
+      }
+    ')
+    created_password="WizardryPocket_${base_stamp}_${attempt}_$$"
+
+    if ! sudo dscl . -create "/Users/$created_user" >/dev/null 2>&1; then
+      printf '%s\n' "pocket-dimension: failed to create temporary macOS user record" >&2
+      return 1
+    fi
+    if ! sudo dscl . -create "/Users/$created_user" UserShell /bin/zsh >/dev/null 2>&1; then
+      remove_macos_temp_user "$created_user"
+      return 1
+    fi
+    if ! sudo dscl . -create "/Users/$created_user" RealName "Wizardry Pocket User" >/dev/null 2>&1; then
+      remove_macos_temp_user "$created_user"
+      return 1
+    fi
+    if ! sudo dscl . -create "/Users/$created_user" UniqueID "$created_uid" >/dev/null 2>&1; then
+      remove_macos_temp_user "$created_user"
+      return 1
+    fi
+    if ! sudo dscl . -create "/Users/$created_user" PrimaryGroupID 20 >/dev/null 2>&1; then
+      remove_macos_temp_user "$created_user"
+      return 1
+    fi
+    if ! sudo dscl . -create "/Users/$created_user" NFSHomeDirectory "$created_home" >/dev/null 2>&1; then
+      remove_macos_temp_user "$created_user"
+      return 1
+    fi
+    if ! sudo dscl . -passwd "/Users/$created_user" "$created_password" >/dev/null 2>&1; then
+      remove_macos_temp_user "$created_user"
+      return 1
+    fi
+
+    sudo dscl . -create "/Users/$created_user" IsHidden 1 >/dev/null 2>&1 || true
+    sudo mkdir -p "$created_home" "$created_home/tmp" >/dev/null 2>&1 || true
+    if ! sudo chown -R "$created_user:staff" "$created_home" >/dev/null 2>&1; then
+      remove_macos_temp_user "$created_user"
+      return 1
+    fi
+
+    mac_active_user=$created_user
+    mac_active_home=$created_home
+    return 0
+  }
+
+  cleanup_active_macos_temp_user() {
+    if [ -n "${mac_active_user-}" ]; then
+      remove_macos_temp_user "$mac_active_user"
+      mac_active_user=""
+      mac_active_home=""
+      mac_active_repo=""
+    fi
+    stop_sudo_keepalive
+  }
 
   if [ "$#" -lt 1 ]; then
     pocket_dimension_usage >&2
@@ -111,6 +320,14 @@ set -eu
 
   if [ "$platform" = "Linux" ] && ! command -v bwrap >/dev/null 2>&1; then
     printf '%s\n' "pocket-dimension: bwrap not found (required on Linux)" >&2
+    exit 1
+  fi
+  if [ "$strict_mode" -eq 1 ] && [ "$platform" != "Linux" ] && [ "$platform" != "Darwin" ]; then
+    printf 'pocket-dimension: strict mode is unsupported on %s\n' "$platform" >&2
+    exit 1
+  fi
+  if [ "$strict_mode" -eq 1 ] && [ "$platform" = "Darwin" ] && ! command -v sandbox-exec >/dev/null 2>&1; then
+    printf '%s\n' "pocket-dimension: strict macOS mode requires sandbox-exec" >&2
     exit 1
   fi
 
@@ -146,10 +363,16 @@ set -eu
   env_args="$env_args WIZARDRY_POCKET_WORK=$workdir"
   env_args="$env_args WIZARDRY_POCKET_NETWORK=$network_mode"
   env_args="$env_args WIZARDRY_TEST_IN_POCKET=1"
+  env_args="$env_args WIZARDRY_DEMO_IN_POCKET=1"
   [ -n "${TERM-}" ] && env_args="$env_args TERM=$TERM"
   [ -n "${LANG-}" ] && env_args="$env_args LANG=$LANG"
 
   status=0
+
+  source_root=$workdir
+  if [ -n "${WIZARDRY_DIR-}" ] && [ -d "${WIZARDRY_DIR}/spells" ]; then
+    source_root=$WIZARDRY_DIR
+  fi
 
   if [ "$platform" = "Linux" ]; then
     set -- \
@@ -219,13 +442,135 @@ set -eu
     else
       status=$?
     fi
+  elif [ "$platform" = "Darwin" ] && [ "$strict_mode" -eq 1 ]; then
+    if ! ensure_macos_strict_sudo; then
+      status=1
+    else
+      start_sudo_keepalive
+      cleanup_orphan_macos_temp_users
+
+      if create_macos_temp_user; then
+        mac_active_repo="${mac_active_home}/wizardry"
+        if ! sudo mkdir -p "$mac_active_repo" >/dev/null 2>&1; then
+          status=1
+        elif ! (cd "$source_root" && tar -cf - .) | sudo tar -xf - -C "$mac_active_repo" >/dev/null 2>&1; then
+          printf '%s\n' "pocket-dimension: strict macOS mode failed to copy wizardry workspace" >&2
+          status=1
+        elif ! sudo chown -R "$mac_active_user:staff" "$mac_active_repo" >/dev/null 2>&1; then
+          status=1
+        else
+          command_name=$1
+          shift
+          case "$command_name" in
+            "$source_root"/*)
+              command_name="${mac_active_repo}/${command_name#"$source_root"/}"
+              ;;
+          esac
+
+          run_path="$mac_active_repo/spells/.wizardry"
+          for run_dir in "$mac_active_repo"/spells/*; do
+            [ -d "$run_dir" ] || continue
+            run_path="$run_path:$run_dir"
+          done
+          run_path="$run_path:${PATH:-/usr/bin:/bin:/usr/sbin:/sbin}"
+
+          runner_script="$pocket_root/macos-runner.sh"
+          cat >"$runner_script" <<'RUNNER'
+#!/bin/sh
+set -eu
+
+repo_root=$1
+shift
+run_cmd=$1
+shift
+
+cd "$repo_root"
+WIZARDRY_DIR=$repo_root
+export WIZARDRY_DIR
+
+if [ -f "$repo_root/spells/.wizardry/invoke-wizardry" ]; then
+  # shellcheck disable=SC1091
+  . "$repo_root/spells/.wizardry/invoke-wizardry"
+fi
+
+if [ "${WIZARDRY_POCKET_SKIP_BANISH-0}" -ne 1 ]; then
+  if command -v banish >/dev/null 2>&1; then
+    banish all
+  elif [ -x "$repo_root/spells/wards/banish" ]; then
+    "$repo_root/spells/wards/banish" all
+  else
+    printf '%s\n' "pocket-dimension: banish not available in strict macOS pocket" >&2
+    exit 1
+  fi
+fi
+
+exec "$run_cmd" "$@"
+RUNNER
+          chmod 755 "$runner_script"
+
+          profile_file="$pocket_root/macos-pocket.sb"
+          {
+            printf '%s\n' "(version 1)"
+            printf '%s\n' "(allow default)"
+            if [ "$network_mode" = "closed" ]; then
+              printf '%s\n' "(deny network*)"
+            fi
+          } >"$profile_file"
+
+          sandbox_exec=$(command -v sandbox-exec 2>/dev/null || printf '')
+          sandbox_exec_usable=0
+          if [ -n "$sandbox_exec" ] && "$sandbox_exec" -p "(version 1) (allow default)" /usr/bin/true >/dev/null 2>&1; then
+            sandbox_exec_usable=1
+          fi
+
+          if [ "$sandbox_exec_usable" -eq 1 ]; then
+            if sudo -H -u "$mac_active_user" \
+              env -i \
+                PATH="$run_path" \
+                HOME="$mac_active_home" \
+                TMPDIR="$mac_active_home/tmp" \
+                WIZARDRY_DIR="$mac_active_repo" \
+                WIZARDRY_POCKET_DIR="$pocket_root" \
+                WIZARDRY_POCKET_WORK="$workdir" \
+                WIZARDRY_POCKET_NETWORK="$network_mode" \
+                WIZARDRY_TEST_IN_POCKET=1 \
+                WIZARDRY_DEMO_IN_POCKET=1 \
+                "$sandbox_exec" -f "$profile_file" /bin/sh "$runner_script" "$mac_active_repo" "$command_name" "$@"; then
+              status=0
+            else
+              status=$?
+            fi
+          else
+            printf '%s\n' "pocket-dimension: sandbox-exec unavailable or unusable; continuing with temp-user isolation only" >&2
+            if sudo -H -u "$mac_active_user" \
+              env -i \
+                PATH="$run_path" \
+                HOME="$mac_active_home" \
+                TMPDIR="$mac_active_home/tmp" \
+                WIZARDRY_DIR="$mac_active_repo" \
+                WIZARDRY_POCKET_DIR="$pocket_root" \
+                WIZARDRY_POCKET_WORK="$workdir" \
+                WIZARDRY_POCKET_NETWORK="$network_mode" \
+                WIZARDRY_TEST_IN_POCKET=1 \
+                WIZARDRY_DEMO_IN_POCKET=1 \
+                /bin/sh "$runner_script" "$mac_active_repo" "$command_name" "$@"; then
+              status=0
+            else
+              status=$?
+            fi
+          fi
+        fi
+      else
+        status=1
+      fi
+    fi
   else
     sandbox_exec=""
     if command -v sandbox-exec >/dev/null 2>&1; then
       sandbox_exec=$(command -v sandbox-exec)
     fi
 
-    if [ -n "$sandbox_exec" ]; then
+    if [ -n "$sandbox_exec" ] && "$sandbox_exec" -p "(version 1) (allow default)" /usr/bin/true >/dev/null 2>&1; then
       sandbox_profile='(version 1) (allow default)'
       if (cd "$workdir" && env -i $env_args "$sandbox_exec" -p "$sandbox_profile" "$@" ); then
         status=0
@@ -233,6 +578,9 @@ set -eu
         status=$?
       fi
     else
+      if [ -n "$sandbox_exec" ]; then
+        printf '%s\n' "pocket-dimension: sandbox-exec unavailable or unusable; running without sandbox-exec" >&2
+      fi
       if (cd "$workdir" && env -i $env_args "$@" ); then
         status=0
       else
@@ -240,6 +588,8 @@ set -eu
       fi
     fi
   fi
+
+  cleanup_active_macos_temp_user
 
   snapshot_files "$record_dir/after" 2>/dev/null || true
   if command -v diff >/dev/null 2>&1; then

@@ -216,41 +216,17 @@ fi
 
 export PATH
 
-# Run tests inside pocket-dimension unless in GitHub Actions (no isolation for speed)
-if [ "${GITHUB_ACTIONS-}" != "true" ]; then
-  if [ "${WIZARDRY_TEST_IN_POCKET-0}" -ne 1 ]; then
-    if command -v pocket-dimension >/dev/null 2>&1; then
-      if pocket-dimension --check >/dev/null 2>&1; then
-        # Determine the correct path to re-exec
-        # When run directly: $0 is the script path
-        # When sourced: $0 is the shell name
-        test_magic_path="$0"
-        case "$0" in
-          */test-magic)
-            # Already have the correct path
-            ;;
-          *)
-            # Running as function - use WIZARDRY_DIR to find our path
-            if [ -f "$root_dir/spells/.wizardry/test-magic" ]; then
-              test_magic_path="$root_dir/spells/.wizardry/test-magic"
-            elif [ -f "${WIZARDRY_DIR}/spells/.wizardry/test-magic" ]; then
-              test_magic_path="${WIZARDRY_DIR}/spells/.wizardry/test-magic"
-            else
-              # Fallback: try to find via PATH
-              test_magic_path=$(command -v test-magic 2>/dev/null) || test_magic_path="$0"
-            fi
-            ;;
-        esac
-        exec pocket-dimension --network closed -- "$test_magic_path" "$@"
-      else
-        printf 'test-magic: pocket-dimension unavailable\n' >&2
-        exit 1
-      fi
-    else
-      printf 'test-magic: pocket-dimension not found\n' >&2
-      exit 1
-    fi
+# Run tests inside strict pocket-dimension unless in GitHub Actions (already isolated).
+if [ "${GITHUB_ACTIONS-}" != "true" ] && [ "${WIZARDRY_TEST_IN_POCKET-0}" -ne 1 ]; then
+  if ! command -v pocket-dimension >/dev/null 2>&1; then
+    printf 'test-magic: pocket-dimension not found\n' >&2
+    exit 1
   fi
+  if ! pocket-dimension --check --strict >/dev/null 2>&1; then
+    printf 'test-magic: strict pocket-dimension backend unavailable\n' >&2
+    exit 1
+  fi
+  exec pocket-dimension --strict --network closed -- test-magic "$@"
 fi
 
 # Pre-flight checks (use command -v instead of has since invoke-wizardry not loaded yet)

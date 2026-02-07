@@ -71,6 +71,7 @@ core_dependencies() {
       # macOS has pbcopy built-in, so no clipboard utilities needed in menu
       cat <<'EOF'
 Git:git:install-git:uninstall-git:0
+Sandbox (sandbox-exec):sandbox-exec:install-sandbox-exec:uninstall-sandbox-exec:1
 pkgin:pkgin:install-pkgin:uninstall-pkgin:0
 checkbashisms:checkbashisms:install-checkbashisms:uninstall-checkbashisms:0
 sed:sed:install-sed:uninstall-sed:1

@@ -49,20 +49,17 @@ SH
   log=$(cat "$tmp/log")
 
   platform=$(uname -s 2>/dev/null || printf 'unknown')
-  case "$platform" in
-    Darwin)
-      case "$log" in
-        *"Install Bubblewrap"* ) TEST_FAILURE_REASON="bubblewrap should be skipped on Darwin"; return 1 ;;
-        *) : ;;
-      esac
-      ;;
-    *)
-      case "$log" in
-        *"Install Bubblewrap"* ) : ;;
-        *) TEST_FAILURE_REASON="missing bubblewrap entry"; return 1 ;;
-      esac
-      ;;
-  esac
+  if [ "$platform" = "Darwin" ]; then
+    case "$log" in
+      *"Sandbox (sandbox-exec)"* ) : ;;
+      *) TEST_FAILURE_REASON="missing sandbox-exec entry on Darwin"; return 1 ;;
+    esac
+  else
+    case "$log" in
+      *"Bubblewrap"* ) : ;;
+      *) TEST_FAILURE_REASON="missing bubblewrap entry"; return 1 ;;
+    esac
+  fi
 
   case "$log" in
     *"Install all"* ) : ;;

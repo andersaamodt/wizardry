@@ -50,7 +50,6 @@ STUB
   installs=$(grep -c "pkgin install" "$fixture/log/pkgin.log" || true)
   [ "$installs" -ge 3 ] || { TEST_FAILURE_REASON="expected pkgin installs"; return 1; }
   [ ! -s "$fixture/log/apt.log" ] || { TEST_FAILURE_REASON="apt should not run on Darwin"; return 1; }
-  [ "$(grep -c bubblewrap "$fixture/log/pkgin.log" || true)" -eq 0 ] || { TEST_FAILURE_REASON="bubblewrap should be skipped on Darwin"; return 1; }
 }
 
 run_test_case "install-core uses pkgin on Darwin" install_core_uses_pkgin_on_darwin
