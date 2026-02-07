@@ -35,7 +35,7 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
   
   label="com.ollama.service"
   
-  # Check if daemon is NOT in the disabled list
+  # Check if daemon is in the disabled list (disabled daemons show "=> true")
   if launchctl print-disabled system 2>/dev/null | grep -q "\"$label\" => true"; then
     # Daemon is disabled
     exit 1
