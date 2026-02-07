@@ -13,15 +13,47 @@ test_disable_site_daemon_help() {
   assert_output_contains "Usage: disable-site-daemon"
 }
 
+write_plist() {
+  plist_path=$1
+  run_at_load=$2
+  keep_alive=$3
+  cat >"$plist_path" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>org.wizardry.web.mysite</string>
+  <key>RunAtLoad</key>
+  <$run_at_load/>
+  <key>KeepAlive</key>
+  <$keep_alive/>
+</dict>
+</plist>
+EOF
+}
+
+plist_bool_value() {
+  plist_path=$1
+  key_name=$2
+  awk -v key="$key_name" '
+    $0 ~ "<key>" key "</key>" { found=1; next }
+    found {
+      if ($0 ~ /<true\/>/) { print "true"; exit }
+      if ($0 ~ /<false\/>/) { print "false"; exit }
+      if ($0 ~ /<key>/ || $0 ~ /<\/dict>/) { exit }
+    }
+  ' "$plist_path"
+}
+
 test_disable_site_daemon_calls_systemctl() {
   skip-if-compiled || return $?
 
   web_root=$(temp-dir web-wizardry-test)
-  site_dir="$web_root/mysite"
-  mkdir -p "$site_dir/site"
+  mkdir -p "$web_root/mysite/site"
 
   stub_dir=$(temp-dir web-wizardry-stub)
   stub-systemctl-simple "$stub_dir"
+  stub-uname-linux "$stub_dir"
   stub-sudo "$stub_dir"
 
   state_dir=$(temp-dir web-wizardry-state)
@@ -43,51 +75,80 @@ test_disable_site_daemon_calls_systemctl() {
   rm -rf "$web_root" "$stub_dir" "$state_dir"
 }
 
-test_disable_site_daemon_launchctl_integration() {
+test_disable_site_daemon_launchctl_updates_plist() {
   skip-if-compiled || return $?
 
   web_root=$(temp-dir web-wizardry-test)
-  site_dir="$web_root/mysite"
-  mkdir -p "$site_dir"
+  mkdir -p "$web_root/mysite"
 
   stub_dir=$(temp-dir web-wizardry-stub)
   stub-launchctl "$stub_dir"
   stub-uname-darwin "$stub_dir"
   stub-sudo "$stub_dir"
-  stub-forget-command systemctl "$stub_dir"  # Hide systemctl to test macOS path
-  . "$stub_dir/forget-systemctl"  # Apply the has function override
+  stub-forget-command systemctl "$stub_dir"
+  . "$stub_dir/forget-systemctl"
 
   state_dir=$(temp-dir web-wizardry-state)
   plist_dir="$stub_dir/Library/LaunchDaemons"
   mkdir -p "$plist_dir"
-  
-  # Create daemon plist
   plist="$plist_dir/org.wizardry.web.mysite.plist"
-  touch "$plist"
+  write_plist "$plist" true true
 
-  # Disable the daemon
   PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$web_root" LAUNCHCTL_STATE_DIR="$state_dir" \
+    LAUNCHD_PLIST_DIR="$plist_dir" \
     run_spell spells/web/disable-site-daemon mysite
   assert_success
 
-  # Check that launchctl disable was called
-  log_file="$state_dir/launchctl.log"
-  if [ ! -f "$log_file" ]; then
-    TEST_FAILURE_REASON="launchctl log missing"
+  if [ "$(plist_bool_value "$plist" RunAtLoad)" != "false" ]; then
+    TEST_FAILURE_REASON="RunAtLoad not updated to false"
     return 1
   fi
-  
-  # Should call either 'disable system/...' or 'unload -w ...'
-  if ! grep -E "(disable system/org.wizardry.web.mysite|unload -w.*mysite)" "$log_file"; then
-    TEST_FAILURE_REASON="disable or unload -w command not found in log: $(cat "$log_file")"
+  if [ "$(plist_bool_value "$plist" KeepAlive)" != "false" ]; then
+    TEST_FAILURE_REASON="KeepAlive not updated to false"
+    return 1
+  fi
+
+  # Compatibility path should clear stale launchctl disables.
+  log_file="$state_dir/launchctl.log"
+  if [ ! -f "$log_file" ] || ! grep -q "enable system/org.wizardry.web.mysite" "$log_file"; then
+    TEST_FAILURE_REASON="expected launchctl enable compatibility call"
     return 1
   fi
 
   rm -rf "$web_root" "$stub_dir" "$state_dir"
 }
 
+test_disable_site_daemon_fails_when_plist_missing() {
+  skip-if-compiled || return $?
+
+  web_root=$(temp-dir web-wizardry-test)
+  mkdir -p "$web_root/mysite"
+
+  stub_dir=$(temp-dir web-wizardry-stub)
+  stub-launchctl "$stub_dir"
+  stub-uname-darwin "$stub_dir"
+  stub-sudo "$stub_dir"
+  stub-forget-command systemctl "$stub_dir"
+  . "$stub_dir/forget-systemctl"
+
+  state_dir=$(temp-dir web-wizardry-state)
+  plist_dir="$stub_dir/Library/LaunchDaemons"
+  mkdir -p "$plist_dir"
+
+  PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$web_root" LAUNCHCTL_STATE_DIR="$state_dir" \
+    LAUNCHD_PLIST_DIR="$plist_dir" \
+    run_spell spells/web/disable-site-daemon mysite
+  assert_failure
+  assert_error_contains "daemon not configured"
+
+  rm -rf "$web_root" "$stub_dir" "$state_dir"
+}
+
 run_test_case "disable-site-daemon --help works" test_disable_site_daemon_help
 run_test_case "disable-site-daemon calls systemctl disable" test_disable_site_daemon_calls_systemctl
-run_test_case "disable-site-daemon calls launchctl disable (macOS)" test_disable_site_daemon_launchctl_integration
+run_test_case "disable-site-daemon updates launchctl plist flags" \
+  test_disable_site_daemon_launchctl_updates_plist
+run_test_case "disable-site-daemon fails when launchctl plist is missing" \
+  test_disable_site_daemon_fails_when_plist_missing
 
 finish_tests

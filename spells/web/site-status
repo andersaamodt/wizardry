@@ -41,10 +41,50 @@ fi
 
 # Check if serving
 serve_status="not serving"
+
+is_site_nginx_pid_running() {
+  pid=$1
+  case "$pid" in
+    ''|*[!0-9]*)
+      return 1
+      ;;
+  esac
+
+  if ! kill -0 "$pid" 2>/dev/null; then
+    return 1
+  fi
+
+  if ! has ps; then
+    return 0
+  fi
+
+  cmd=$(ps -p "$pid" -o command= 2>/dev/null || printf '')
+  case "$cmd" in
+    *nginx*"$SITE_DIR"*|*nginx*)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
 if [ -f "$SITE_DIR/nginx/nginx.pid" ]; then
   pid=$(cat "$SITE_DIR/nginx/nginx.pid" 2>/dev/null || echo "")
-  if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+  if is_site_nginx_pid_running "$pid"; then
     serve_status="serving"
+  fi
+fi
+
+if [ "$serve_status" = "not serving" ]; then
+  if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+    label="org.wizardry.web.${site_name}"
+    if launchctl print "system/$label" 2>/dev/null | grep -q "state = running"; then
+      serve_status="serving"
+    fi
+  elif has systemctl; then
+    unit="wizardry-site-${site_name}.service"
+    if systemctl is-active --quiet "$unit" 2>/dev/null; then
+      serve_status="serving"
+    fi
   fi
 fi
 

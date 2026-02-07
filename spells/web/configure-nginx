@@ -181,7 +181,7 @@ error_log $SITE_DIR/nginx/error.log warn;
 pid $SITE_DIR/nginx/nginx.pid;
 
 events {
-    worker_connections 1024;
+    worker_connections 256;
 }
 
 http {

@@ -23,6 +23,9 @@ case "$1" in
     exit 0
     ;;
   load)
+    if [ "${LAUNCHCTL_FAIL_LOAD:-0}" = "1" ] || [ -f "$state_dir/fail-load" ]; then
+      exit 1
+    fi
     # Add service to loaded list (remove -w flag if present)
     plist=$(printf '%s' "$*" | sed 's/-w //g' | awk '{print $NF}')
     label=$(basename "$plist" .plist)
@@ -30,6 +33,9 @@ case "$1" in
     exit 0
     ;;
   unload)
+    if [ "${LAUNCHCTL_FAIL_UNLOAD:-0}" = "1" ] || [ -f "$state_dir/fail-unload" ]; then
+      exit 1
+    fi
     # Remove service from loaded list
     plist=$(printf '%s' "$*" | sed 's/-w //g' | awk '{print $NF}')
     label=$(basename "$plist" .plist)
@@ -40,6 +46,9 @@ case "$1" in
     exit 0
     ;;
   enable)
+    if [ "${LAUNCHCTL_FAIL_ENABLE:-0}" = "1" ] || [ -f "$state_dir/fail-enable" ]; then
+      exit 1
+    fi
     # Remove from disabled list
     label=$(printf '%s' "$2" | sed 's/system\///')
     if [ -f "$disabled_file" ]; then
@@ -49,12 +58,18 @@ case "$1" in
     exit 0
     ;;
   disable)
+    if [ "${LAUNCHCTL_FAIL_DISABLE:-0}" = "1" ] || [ -f "$state_dir/fail-disable" ]; then
+      exit 1
+    fi
     # Add to disabled list
     label=$(printf '%s' "$2" | sed 's/system\///')
     printf '  "%s" => true\n' "$label" >>"$disabled_file"
     exit 0
     ;;
   print-disabled)
+    if [ "${LAUNCHCTL_FAIL_PRINT_DISABLED:-0}" = "1" ] || [ -f "$state_dir/fail-print-disabled" ]; then
+      exit 1
+    fi
     # Return disabled services
     printf '{\n'
     if [ -f "$disabled_file" ]; then

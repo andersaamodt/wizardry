@@ -37,7 +37,11 @@ run_priv() {
     return
   fi
   if has sudo; then
-    sudo "$@"
+    if tty >/dev/null 2>&1; then
+      sudo "$@" </dev/tty
+    else
+      sudo "$@"
+    fi
     return
   fi
   die "disable-site-daemon: root or sudo is required"
@@ -46,27 +50,87 @@ run_priv() {
 unit="wizardry-site-${site_name}.service"
 plist="${LAUNCHD_PLIST_DIR:-/Library/LaunchDaemons}/org.wizardry.web.${site_name}.plist"
 
-if has systemctl; then
-  run_priv systemctl disable "$unit" 2>/dev/null || true
+plist_bool_value() {
+  key_name=$1
+  awk -v key="$key_name" '
+    $0 ~ "<key>" key "</key>" { found=1; next }
+    found {
+      if ($0 ~ /<true\/>/) { print "true"; exit }
+      if ($0 ~ /<false\/>/) { print "false"; exit }
+      if ($0 ~ /<key>/ || $0 ~ /<\/dict>/) { exit }
+    }
+  ' "$plist"
+}
+
+set_plist_bool() {
+  key_name=$1
+  bool_value=$2
+  tmp_file=$(temp-file disable-site-daemon)
+
+  awk -v key="$key_name" -v val="$bool_value" '
+    $0 ~ "<key>" key "</key>" {
+      print
+      if (getline nextline > 0) {
+        if (nextline ~ /<true\/>|<false\/>/) {
+          gsub(/<true\/>|<false\/>/, "<" val "/>", nextline)
+          print nextline
+          replaced=1
+          next
+        }
+        print "  <" val "/>"
+        print nextline
+        replaced=1
+        next
+      }
+      print "  <" val "/>"
+      replaced=1
+      next
+    }
+    $0 ~ "</dict>" && !replaced && !inserted {
+      print "  <key>" key "</key>"
+      print "  <" val "/>"
+      inserted=1
+    }
+    { print }
+    END {
+      if (!replaced && !inserted) {
+        print "  <key>" key "</key>"
+        print "  <" val "/>"
+      }
+    }
+  ' "$plist" > "$tmp_file"
+
+  run_priv cp "$tmp_file" "$plist"
+  rm -f "$tmp_file"
+}
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+  if [ ! -f "$plist" ]; then
+    die "disable-site-daemon: daemon not configured - run 'repair-site-daemon $site_name' first"
+  fi
+
+  label="org.wizardry.web.${site_name}"
+
+  # Startup behavior on macOS is controlled by plist flags, not launchctl disable.
+  # This keeps startup toggle independent from manual start/stop.
+  set_plist_bool RunAtLoad false
+  set_plist_bool KeepAlive false
+
+  # Compatibility: clear stale disabled overrides from older implementations.
+  run_priv launchctl enable "system/$label" 2>/dev/null || true
+
+  run_at_load=$(plist_bool_value RunAtLoad || printf '')
+  keep_alive=$(plist_bool_value KeepAlive || printf '')
+  if [ "$run_at_load" != "false" ] || [ "$keep_alive" != "false" ]; then
+    die "disable-site-daemon: failed to disable daemon on startup for $site_name"
+  fi
+  
   success "Daemon disabled on startup for $site_name"
   exit 0
 fi
 
-if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
-  label="org.wizardry.web.${site_name}"
-  
-  # First, unload the daemon if it's currently loaded
-  if launchctl list | grep -q "$label" 2>/dev/null; then
-    run_priv launchctl unload "$plist" 2>/dev/null || true
-  fi
-  
-  # Then disable it for boot using the modern disable command
-  # This sets the disabled flag in the overrides database
-  run_priv launchctl disable "system/$label" 2>/dev/null || {
-    # If launchctl disable fails (older macOS), fall back to unload -w
-    run_priv launchctl unload -w "$plist" 2>/dev/null || true
-  }
-  
+if has systemctl; then
+  run_priv systemctl disable "$unit" 2>/dev/null || true
   success "Daemon disabled on startup for $site_name"
   exit 0
 fi

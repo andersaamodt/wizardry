@@ -52,7 +52,11 @@ run_priv() {
     return 0
   fi
   if has sudo; then
-    sudo "$@"
+    if tty >/dev/null 2>&1; then
+      sudo "$@" </dev/tty
+    else
+      sudo "$@"
+    fi
     return 0
   fi
   die "repair-site-daemon: root or sudo is required"
@@ -79,6 +83,7 @@ User=$site_user
 WorkingDirectory=$SITE_DIR
 Environment=WIZARDRY_DIR=$wizardry_dir
 Environment=WIZARDRY_SITES_DIR=$SITES_DIR
+Environment=WEB_WIZARDRY_ROOT=$SITES_DIR
 Environment=PATH=$daemon_path
 ExecStart=$daemon_script $site_name
 Restart=on-failure
@@ -97,7 +102,7 @@ EOF
 }
 
 launchd_install() {
-  launch_dir="/Library/LaunchDaemons"
+  launch_dir="${LAUNCHD_PLIST_DIR:-/Library/LaunchDaemons}"
   label="org.wizardry.web.${site_name}"
   plist_file="$launch_dir/${label}.plist"
 
@@ -124,13 +129,15 @@ launchd_install() {
     <string>$wizardry_dir</string>
     <key>WIZARDRY_SITES_DIR</key>
     <string>$SITES_DIR</string>
+    <key>WEB_WIZARDRY_ROOT</key>
+    <string>$SITES_DIR</string>
     <key>PATH</key>
-    <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <string>/opt/pkg/sbin:/opt/pkg/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
   </dict>
   <key>RunAtLoad</key>
-  <true/>
+  <false/>
   <key>KeepAlive</key>
-  <true/>
+  <false/>
   <key>UserName</key>
   <string>$site_user</string>
   <key>StandardOutPath</key>
@@ -145,23 +152,20 @@ EOF
   run_priv chmod 644 "$plist_file"
   rm -f "$temp_plist"
 
-  # Disable by default - user must explicitly enable with enable-site-daemon
-  # This ensures checkbox starts OFF and user can turn it ON
-  run_priv launchctl disable "system/$label" 2>/dev/null || {
-    # Fallback for older macOS
-    run_priv launchctl unload -w "$plist_file" 2>/dev/null || true
-  }
+  # Compatibility: clear stale launchctl disabled overrides from older versions.
+  # Startup is now controlled by plist flags above.
+  run_priv launchctl enable "system/$label" 2>/dev/null || true
 
   success "Daemon repaired for $site_name (launchd)"
 }
 
-if has systemctl; then
-  systemd_install
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+  launchd_install
   exit 0
 fi
 
-if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
-  launchd_install
+if has systemctl; then
+  systemd_install
   exit 0
 fi
 

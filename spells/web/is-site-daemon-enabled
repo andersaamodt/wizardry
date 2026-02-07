@@ -33,31 +33,40 @@ fi
 
 unit="wizardry-site-${site_name}.service"
 plist="${LAUNCHD_PLIST_DIR:-/Library/LaunchDaemons}/org.wizardry.web.${site_name}.plist"
-label="org.wizardry.web.${site_name}"
-
-if has systemctl; then
-  if systemctl is-enabled --quiet "$unit" 2>/dev/null; then
-    exit 0
-  fi
-  exit 1
-fi
 
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
   # Check if plist exists
   if [ ! -f "$plist" ]; then
     exit 1
   fi
-  
-  # Check if daemon is NOT disabled
-  # launchctl print-disabled system shows disabled daemons
-  # If our label is NOT in that list, it's enabled
-  if launchctl print-disabled system 2>/dev/null | grep -q "\"$label\" => true"; then
-    # Daemon is disabled
-    exit 1
+
+  plist_bool_value() {
+    key_name=$1
+    awk -v key="$key_name" '
+      $0 ~ "<key>" key "</key>" { found=1; next }
+      found {
+        if ($0 ~ /<true\/>/) { print "true"; exit }
+        if ($0 ~ /<false\/>/) { print "false"; exit }
+        if ($0 ~ /<key>/ || $0 ~ /<\/dict>/) { exit }
+      }
+    ' "$plist"
+  }
+
+  run_at_load=$(plist_bool_value RunAtLoad || printf '')
+  keep_alive=$(plist_bool_value KeepAlive || printf '')
+
+  # Startup is considered enabled only when both flags are true.
+  if [ "$run_at_load" = "true" ] && [ "$keep_alive" = "true" ]; then
+    exit 0
   fi
-  
-  # Daemon exists and is not disabled, so it's enabled
-  exit 0
+  exit 1
+fi
+
+if has systemctl; then
+  if systemctl is-enabled --quiet "$unit" 2>/dev/null; then
+    exit 0
+  fi
+  exit 1
 fi
 
 exit 1

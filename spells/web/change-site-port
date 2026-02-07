@@ -98,13 +98,12 @@ step "Changing port from $current_port to $new_port for site '$site_name'"
 
 # Check if site is currently running
 is_serving=0
-nginx_pid=""
-if [ -f "$SITE_DIR/nginx/nginx.pid" ]; then
-  nginx_pid=$(cat "$SITE_DIR/nginx/nginx.pid" 2>/dev/null || echo "")
-  if [ -n "$nginx_pid" ] && kill -0 "$nginx_pid" 2>/dev/null; then
+site_status=$(site-status "$site_name" 2>/dev/null || printf '')
+case "$site_status" in
+  *", serving")
     is_serving=1
-  fi
-fi
+    ;;
+esac
 
 # Update site.conf
 step "Updating site configuration..."

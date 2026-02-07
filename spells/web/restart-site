@@ -1,0 +1,52 @@
+#!/bin/sh
+
+# Restart serving a wizardry web site.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: restart-site SITENAME
+
+Stops and starts a site's daemon with retry logic for transient launchd/systemd races.
+
+Example: restart-site mysite
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+site_name=${1-}
+if [ -z "$site_name" ]; then
+  die 2 "restart-site: SITENAME required"
+fi
+
+WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+SITE_DIR="$WEB_ROOT/$site_name"
+if [ ! -d "$SITE_DIR" ]; then
+  die "restart-site: site '$site_name' not found"
+fi
+
+step "Restarting daemon for $site_name..."
+stop-site "$site_name"
+sleep 1
+
+attempt=1
+max_attempts=3
+while [ "$attempt" -le "$max_attempts" ]; do
+  if serve-site "$site_name"; then
+    exit 0
+  fi
+
+  if [ "$attempt" -lt "$max_attempts" ]; then
+    warn "restart-site: start attempt $attempt failed, retrying..."
+    stop-site "$site_name" >/dev/null 2>&1 || true
+    sleep 1
+  fi
+
+  attempt=$((attempt + 1))
+done
+
+die "restart-site: failed to restart '$site_name' after $max_attempts attempts"

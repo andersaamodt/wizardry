@@ -216,12 +216,12 @@ Create and manipulate SVG graphics:
 
 Basic audio playback using HTML5 audio elements:
 
-::: {.demo-box}
+<div class="demo-box">
 <h3>🔊 Audio Player</h3>
   
 <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
 <audio id="audio-player" controls style="width: 100%;">
-<source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=" type="audio/wav">
+<source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=" type="audio/wav" />
       Your browser does not support audio playback.
 </audio>
 </div>
@@ -241,7 +241,7 @@ Basic audio playback using HTML5 audio elements:
 <strong>💡 Note:</strong> This demo uses a minimal audio data URL. In a real application, you would load actual audio files (MP3, WAV, OGG, etc.).
 </p>
 </div>
-:::
+</div>
 
 <script>
 (function() {

@@ -25,20 +25,28 @@ test_daemon_toggle_cycle_launchctl() {
   plist_dir="$stub_dir/Library/LaunchDaemons"
   mkdir -p "$plist_dir"
   
-  # Create daemon plist - mark as initially disabled
+  # Create daemon plist - mark as initially startup-disabled
   plist="$plist_dir/org.wizardry.web.mysite.plist"
-  touch "$plist"
-  
-  # Mark as disabled initially (simulating repair-site-daemon behavior)
-  PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$web_root" LAUNCHCTL_STATE_DIR="$state_dir" \
-    launchctl disable "system/org.wizardry.web.mysite" 2>/dev/null || true
+  cat >"$plist" <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>org.wizardry.web.mysite</string>
+  <key>RunAtLoad</key>
+  <false/>
+  <key>KeepAlive</key>
+  <false/>
+</dict>
+</plist>
+EOF
 
   # Initial state: daemon should be disabled
   PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$web_root" LAUNCHCTL_STATE_DIR="$state_dir" \
     LAUNCHD_PLIST_DIR="$plist_dir" \
     run_spell spells/web/is-site-daemon-enabled mysite
   if [ "$STATUS" -eq 0 ]; then
-    TEST_FAILURE_REASON="Initially should be disabled. Disabled file: $(cat "$state_dir/disabled" 2>/dev/null || echo 'MISSING'). STATUS=$STATUS"
+    TEST_FAILURE_REASON="Initially should be startup-disabled. STATUS=$STATUS"
     rm -rf "$web_root" "$stub_dir" "$state_dir"
     return 1
   fi
@@ -54,7 +62,7 @@ test_daemon_toggle_cycle_launchctl() {
     LAUNCHD_PLIST_DIR="$plist_dir" \
     run_spell spells/web/is-site-daemon-enabled mysite
   if [ "$STATUS" -ne 0 ]; then
-    TEST_FAILURE_REASON="After enable, should be enabled. Disabled file contents: $(cat "$state_dir/disabled" 2>/dev/null || echo 'MISSING'). STATUS=$STATUS"
+    TEST_FAILURE_REASON="After enable, should be startup-enabled. STATUS=$STATUS"
     rm -rf "$web_root" "$stub_dir" "$state_dir"
     return 1
   fi
@@ -70,7 +78,7 @@ test_daemon_toggle_cycle_launchctl() {
     LAUNCHD_PLIST_DIR="$plist_dir" \
     run_spell spells/web/is-site-daemon-enabled mysite
   if [ "$STATUS" -eq 0 ]; then
-    TEST_FAILURE_REASON="After disable, should be disabled. Disabled file contents: $(cat "$state_dir/disabled" 2>/dev/null || echo 'MISSING'). STATUS=$STATUS"
+    TEST_FAILURE_REASON="After disable, should be startup-disabled. STATUS=$STATUS"
     rm -rf "$web_root" "$stub_dir" "$state_dir"
     return 1
   fi

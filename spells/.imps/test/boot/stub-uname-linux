@@ -1,0 +1,13 @@
+#!/bin/sh
+# stub-uname-linux DIR - create uname stub that returns Linux
+set -eu
+
+dir=$1
+cat >"$dir/uname" <<'STUB'
+#!/bin/sh
+case "$1" in
+  -s) printf 'Linux\n' ;;
+  *) printf 'Linux\n' ;;
+esac
+STUB
+chmod +x "$dir/uname"
