@@ -40,9 +40,13 @@ Darwin)
   ;;
 Linux)
   # Remove Linux binary
-  for path in /usr/local/bin/anythingllm "$HOME/.local/bin/anythingllm" /opt/anythingllm/anythingllm; do
+  for path in \
+    /usr/local/bin/anythingllm \
+    "$HOME/.local/bin/anythingllm" \
+    /opt/anythingllm/anythingllm; do
     if [ -f "$path" ]; then
-      rm -f "$path" 2>/dev/null || warn "uninstall-anythingllm: failed to remove $path"
+      rm -f "$path" 2>/dev/null || \
+        warn "uninstall-anythingllm: failed to remove $path"
     fi
   done
   ;;
