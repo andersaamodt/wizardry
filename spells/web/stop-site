@@ -31,85 +31,53 @@ if [ ! -d "$SITE_DIR" ]; then
   die "stop-site: site '$site_name' not found"
 fi
 
-# Check if daemon is running (preferred method)
-daemon_pid=""
-if [ -f "$SITE_DIR/nginx/daemon.pid" ]; then
-  daemon_pid=$(cat "$SITE_DIR/nginx/daemon.pid" 2>/dev/null || echo "")
-  if [ -n "$daemon_pid" ] && kill -0 "$daemon_pid" 2>/dev/null; then
-    # Daemon is running - kill it (will cascade to nginx and fcgiwrap)
-    step "Stopping daemon for $site_name..."
-    kill "$daemon_pid" 2>/dev/null || true
-    
-    # Wait for daemon to exit
-    for _ in 1 2 3 4 5; do
-      if ! kill -0 "$daemon_pid" 2>/dev/null; then
-        break
-      fi
-      sleep 1
-    done
-    
-    # If still running, force kill
-    if kill -0 "$daemon_pid" 2>/dev/null; then
-      warn "stop-site: daemon shutdown timed out, forcing..."
-      kill -KILL "$daemon_pid" 2>/dev/null || true
-    fi
-    
-    # Clean up PID files
-    rm -f "$SITE_DIR/nginx/daemon.pid"
-    rm -f "$SITE_DIR/nginx/nginx.pid"
-    rm -f "$SITE_DIR/nginx/fcgiwrap.pid"
-    
-    success "Site '$site_name' stopped"
-    exit 0
-  else
-    # Stale daemon PID file
-    rm -f "$SITE_DIR/nginx/daemon.pid"
+run_priv() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return
   fi
-fi
-
-# Fallback: Check if nginx is running (for sites started before this fix)
-if [ ! -f "$SITE_DIR/nginx/nginx.pid" ]; then
-  warn "stop-site: site '$site_name' is not running (no PID file)"
-  exit 0
-fi
-
-pid=$(cat "$SITE_DIR/nginx/nginx.pid" 2>/dev/null || echo "")
-if [ -z "$pid" ]; then
-  warn "stop-site: could not read PID file"
-  rm -f "$SITE_DIR/nginx/nginx.pid"
-  rm -f "$SITE_DIR/nginx/daemon.pid"
-  exit 0
-fi
-
-if ! kill -0 "$pid" 2>/dev/null; then
-  warn "stop-site: site '$site_name' is not running (stale PID file)"
-  rm -f "$SITE_DIR/nginx/nginx.pid"
-  rm -f "$SITE_DIR/nginx/daemon.pid"
-  exit 0
-fi
-
-# Stop nginx gracefully
-step "Stopping nginx for $site_name..."
-if kill -QUIT "$pid" 2>/dev/null; then
-  # Wait for graceful shutdown
-  for _ in 1 2 3 4 5; do
-    if ! kill -0 "$pid" 2>/dev/null; then
-      break
-    fi
-    sleep 1
-  done
-  
-  # If still running, force kill
-  if kill -0 "$pid" 2>/dev/null; then
-    warn "stop-site: graceful shutdown timed out, forcing..."
-    kill -KILL "$pid" 2>/dev/null || true
+  if has sudo; then
+    sudo "$@"
+    return
   fi
+  die "stop-site: root or sudo is required"
+}
+
+# Determine which daemon system to use
+if has systemctl; then
+  unit="wizardry-site-${site_name}.service"
+  daemon_artifact="${SERVICE_DIR:-/etc/systemd/system}/$unit"
+elif [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+  label="org.wizardry.web.${site_name}"
+  daemon_artifact="/Library/LaunchDaemons/${label}.plist"
 else
-  warn "stop-site: could not send QUIT signal to nginx"
+  die "stop-site: systemd or launchd is required"
 fi
 
-# Clean up PID file
-rm -f "$SITE_DIR/nginx/nginx.pid"
-rm -f "$SITE_DIR/nginx/daemon.pid"
+# Check if daemon configuration exists
+if [ ! -f "$daemon_artifact" ]; then
+  warn "stop-site: daemon not configured for '$site_name'"
+  exit 0
+fi
 
-success "Site '$site_name' stopped"
+# Stop the daemon
+step "Stopping daemon for $site_name..."
+
+if has systemctl; then
+  # Check if service is active
+  if systemctl is-active --quiet "$unit" 2>/dev/null; then
+    run_priv systemctl stop "$unit"
+    success "Site '$site_name' stopped"
+  else
+    warn "stop-site: site '$site_name' is not running"
+  fi
+elif [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+  # Check if service is loaded
+  if launchctl list | grep -q "$label" 2>/dev/null; then
+    # Unload without -w (don't disable boot start, just stop now)
+    run_priv launchctl unload "$daemon_artifact"
+    success "Site '$site_name' stopped"
+  else
+    warn "stop-site: site '$site_name' is not running"
+  fi
+fi
