@@ -275,33 +275,134 @@ The audit results are maintained in a separate file to keep the rubric document 
 - Executive summary with statistics
 - Critical failures (🔴) requiring immediate attention
 - Warnings (🟡) needing review
-- Complete audit table for all 1395 files in the repository
+- Complete audit table for all files in the repository, with integrated audit history
+
+**Important:** AUDIT_RESULTS.md uses an **integrated table format** where audit findings are recorded directly in table rows. Do NOT append new "Audit Log" or "Phase" sections. Instead, update the relevant table rows with new audit dates and findings.
 
 **Legend:**
 - 🟢 **Pass** - Meets all applicable standards
 - 🟡 **Warning** - Minor issues or needs attention  
 - 🔴 **Fail** - Significant issues requiring fixes
-- ⚪ **N/A** - Not applicable to this file type
+- ⚪ **Grey/Pre-Audit** - Not yet reviewed (or explicitly "N/A" in rare cases)
 - 🔧 **Fixed** - Issue was resolved in this audit iteration
+
+**Important:** Grey dots (⚪) primarily mean "not yet audited." Explicitly write "N/A" in the Issues column if something truly doesn't apply. However, **aim to fill in all columns** - most categories apply to most files when interpreted correctly (e.g., Theme evaluates *appropriateness* of theming, not just presence).
 
 ### Table Structure (in AUDIT_RESULTS.md)
 
-| File Path | Last Audit | Thoroughness | Result | Code | Docs | Theme | Policy | Issues | Fixes |
-|-----------|------------|--------------|--------|------|------|-------|--------|--------|-------|
-| *Complete table in AUDIT_RESULTS.md* | YYYY-MM-DD | Level | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | Issues found | 🔧 if fixed |
+The AUDIT_RESULTS.md document is organized as follows:
+
+1. **Executive Summary** - Overall statistics and quality grade
+2. **Critical Issues** - Table of all 🔴 failures requiring immediate attention
+3. **Warnings** - Table of all 🟡 warnings that should be addressed
+4. **Complete Audit Table** - Comprehensive flat table with all files in the repository
+
+### Full Table Format
+
+| File Path | Last Audit (YYYY-MM-DD HH:MM) | Thoroughness | Result | Code | Docs | Theme | Policy | Ethos | Issues | Fixes |
+|-----------|------------|--------------|--------|------|------|-------|--------|-------|--------|-------|
+| path/file | YYYY-MM-DD | Level | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | 🟢/🟡/🔴/⚪ | Findings | 🔧 if fixed |
 
 ### Column Descriptions
 
 1. **File Path** - Relative path from repository root
 2. **Last Audit** - Date of most recent audit (YYYY-MM-DD format)
 3. **Thoroughness** - How carefully the file was reviewed (see levels below)
-4. **Result** - Overall audit result (worst of all categories)
+4. **Result** - Overall audit result: 🟢 Pass | 🟡 Warning | 🔴 Fail | ⚪ N/A (worst of all categories)
 5. **Code** - Code Quality: Sections 7 (POSIX), 12-13 (Eng. Standards), 19 (Quality Metrics), 4 (Functions)
 6. **Docs** - Comment Quality: Section 6 (Didacticism), opening comments, help text
-7. **Theme** - Theming: Section 15 (Theming & Flavor), appropriate MUD vocabulary
+7. **Theme** - Theming Appropriateness: Section 15 (Theming & Flavor), evaluates whether magical/MUD vocabulary is used at the *appropriate* level for the file type (see Theme Guidelines below)
 8. **Policy** - No Policy Violations: Sections 3 (No Globals), 9-11 (Values/Policies/Tenets), 17 (Security)
-9. **Issues** - Specific problems found during audit
-10. **Fixes** - Changes made (🔧 indicates fixes applied in this iteration)
+9. **Ethos** - Holistic/Intuitive Alignment: Overall "feel" and spiritual fit with project values (see below)
+10. **Issues** - Specific problems found, or "None" if file passes all checks
+11. **Fixes** - Changes made (🔧 indicates fixes applied in this iteration)
+
+### The Theme Column: Theming Appropriateness
+
+**Theme** evaluates whether magical/MUD vocabulary is used at the *appropriate* level for each file type. This column applies to **ALL files** - it's not about whether the file IS themed, but whether it's themed at the RIGHT level.
+
+**The Golden Rule:**
+Use magical language only when it is **truly apt** - poetically, abstractly, structurally, or analogically appropriate. Not everything needs heavy theming; the art is knowing when and how much.
+
+**Theming Guidelines by File Type:**
+
+**MUD Output (Heavy Theming)** 🎭
+- User-facing output from MUD spells should be richly themed
+- Use vocabulary like: teleport, banish, enchantment, chamber, lore, cast
+- Examples: "You teleport to...", "Recent Activity", "An ordinary room"
+- **Pass (🟢):** Rich, immersive MUD vocabulary in output
+- **Warning (🟡):** Mechanical or sparse theming where richness would help
+- **Fail (🔴):** Breaks immersion with non-magical language in MUD context
+
+**Spell Output Text (Medium Theming)** ✨
+- Regular spell output should use moderate magical vocabulary when apt
+- Balance between utility and whimsy
+- Examples: "banish files to trash" vs "delete files"
+- **Pass (🟢):** Thoughtful use of themed language where appropriate
+- **Warning (🟡):** Overly dry OR gratuitously magical
+- **Fail (🔴):** Misuse of magical language that obscures meaning
+
+**Spell Comments (Light Theming)** 💭
+- Comments should be lightly themed where appropriate
+- Primary goal: clarity and education
+- Examples: "This spell...", "incantation", acceptable to also be plain
+- **Pass (🟢):** Clear comments with light theming that doesn't impede understanding
+- **Warning (🟡):** Either too heavily themed (obscures) or no theming in spell names/descriptions
+- **Fail (🔴):** Theming actively confuses or misrepresents functionality
+
+**Imp Comments (Functional/Minimal)** 🔧
+- Imps are brief utilities - comments should be functional, not themed
+- Focus: what it does, how to call it
+- Examples: "Returns exit code 0 if..." (functional, good)
+- **Pass (🟢):** Clear, functional comments; minimal or no theming
+- **Warning (🟡):** Overly magical language that obscures the utility's purpose
+- **Fail (🔴):** Unclear due to excessive theming
+
+**Documentation Files (Contextual)** 📚
+- README, tutorials: balance engagement with clarity
+- Technical docs: clarity over theming
+- MUD tutorials: can be more heavily themed
+- **Pass (🟢):** Appropriate theming level for document's purpose
+- **Warning (🟡):** Theming level mismatched with audience/purpose
+- **Fail (🔴):** Theming obscures technical content or breaks professional tone
+
+**Configuration Files (None/Minimal)** ⚙️
+- Config files, .gitignore, etc.: functional, no theming needed
+- **Pass (🟢):** Functional and clear (no theming required)
+- **Fail (🔴):** Gratuitous theming in configs
+
+**Scoring Summary:**
+- 🟢 **Appropriate** - Theming level matches file type and purpose perfectly
+- 🟡 **Mismatched** - Too much or too little theming for context
+- 🔴 **Inappropriate** - Theming actively harms clarity or professionalism
+- ⚪ **Pre-audit** - Not yet evaluated (avoid using "N/A")
+
+### The Ethos Column
+
+**Ethos** is a holistic, intuitive assessment of how well a file embodies the project's spirit and philosophy. Unlike the concrete Policy column, Ethos captures ephemeral qualities that are harder to quantify but essential to the project's character.
+
+**What Ethos Measures:**
+- **Spiritual alignment** - Does the file "feel" like it belongs in this project?
+- **Craft and care** - Evidence of thoughtfulness, attention to detail, love for the work
+- **Teaching spirit** - Does it exemplify patterns worth emulating? Is it didactic in the right way?
+- **Minimalist beauty** - Elegant simplicity, nothing wasted, everything purposeful
+- **Magic and wonder** - Does it spark joy? Is there delight in the implementation?
+- **Unix philosophy** - Deep understanding and embodiment of "do one thing well"
+- **Community values** - Welcoming tone, accessibility, generosity of explanation
+
+**Scoring Ethos:**
+- 🟢 **Strong Ethos** - Exemplifies project values, feels "right", inspires
+- 🟡 **Weak Ethos** - Technically correct but soulless, mechanical, or misaligned with spirit
+- 🔴 **Poor Ethos** - Actively contradicts project philosophy or feels foreign/wrong
+- ⚪ **Pre-audit** - Not yet evaluated (nearly all files should receive an Ethos score)
+
+**Examples:**
+- A spell with perfect POSIX compliance (Code 🟢) but dry, imperative error messages (Ethos 🟡)
+- An imp that's minimal and correct but feels like a mere utility rather than a magical building block (Ethos 🟡)
+- A tutorial that teaches bad patterns despite being executable (Code 🟢, Policy 🟡, Ethos 🔴)
+- A file with clever, joyful implementation that makes you smile while reading (Ethos 🟢)
+
+**Future Focus:** The first audit emphasized technical correctness. Future audits should give Ethos equal weight with other categories.
 
 ### Thoroughness Levels
 
@@ -311,9 +412,70 @@ The AI auditor must self-assess and document how thoroughly each file was review
 - **Skimmed** (👁️) - File was opened and briefly scanned (< 10 seconds of attention)
 - **Read** (📖) - File was read through once with understanding (~30-60 seconds)
 - **Perused** (🔍) - File was carefully read with attention to details (~2-5 minutes)
-- **Exhaustive** (🎯) - File was thoroughly analyzed, cross-referenced with related code, tested mentally against edge cases (5+ minutes)
+- **Exhaustive** (🎯) - File was thoroughly analyzed, cross-referenced with related code, tested mentally against edge cases (5-10 minutes)
+- **Critical** (🔬) - Deep architectural analysis seeking subtle flaws, big-picture structural issues across multiple files, potential paradigm shifts, and generative insights (10+ minutes)
 
-Choose the level that honestly represents the depth of review. Higher thoroughness is not always necessary—simple files may only need "Read" level, while complex or critical files deserve "Exhaustive" review.
+**Critical Level Details:**
+The Critical level goes beyond surface evaluation to question fundamental assumptions:
+- Look for **subtle or potential flaws** that might not be obvious bugs but could cause issues
+- Identify **big-picture structural issues** that span multiple files or affect overall architecture
+- Consider **cross-file dependencies** and how this file fits in the broader system
+- Seek **paradigm shifts** - are there better ways to structure this functionality?
+- Generate **actionable insights** that could improve not just this file but related patterns
+- Question **design decisions** in context of the whole project's evolution
+
+Choose the level that honestly represents the depth of review. Higher thoroughness is not always necessary—simple files may only need "Read" level, while complex or critical files deserve "Exhaustive" or "Critical" review.
+
+### Timestamp Requirement for Audit Verification
+
+**CRITICAL RULE:** All audit timestamps MUST include both date and time to the minute.
+
+- **Format:** `YYYY-MM-DD HH:MM` (e.g., `2026-02-06 16:45`)
+- **Purpose:** Enables verification of audit honesty by checking how many files were audited per minute
+- **Enforcement:** Timestamps that show unrealistic audit rates (e.g., 50+ files per minute) indicate dishonest batch processing
+
+**Why This Matters:**
+- **Perused reviews** require 2-5 minutes per file → Maximum ~0.5 files/minute realistic
+- **Exhaustive reviews** require 5-10 minutes per file → Maximum ~0.2 files/minute realistic
+- **Critical reviews** require 10+ minutes per file → Maximum ~0.1 files/minute realistic
+- **Timestamps expose shortcuts** - If many files show same timestamp with Perused/Exhaustive/Critical thoroughness, it indicates batch processing without genuine review
+
+**Examples:**
+- ✅ HONEST: Files spread over realistic time periods (e.g., 20 files across 60 minutes = 3 min/file)
+- ❌ DISHONEST: 100 files all marked `2026-02-06 17:15` with 🔍 Perused (would require <1 second per file)
+
+### Thoroughness Requirements for Colored Dots
+
+**CRITICAL RULE:** Only files that receive careful, detailed review can have colored assessment dots.
+
+- **Files with 🔍 Perused, 🎯 Exhaustive, or 🔬 Critical** - May have colored dots (🟢/🟡/🔴) in Result, Code, Docs, Theme, Policy, and Ethos columns
+- **Files with 📖 Read, 👁️ Skimmed, or ❌ Not Read** - MUST have ⚪ (grey/N/A) in all assessment columns
+
+**Rationale:** Colored dots represent informed judgments that require careful examination. A quick read is insufficient to form reliable opinions about code quality, documentation, policy compliance, or ethos. Only deep review (2+ minutes of careful attention) justifies colored assessments.
+
+**Examples:**
+- ✅ CORRECT: `| file.sh | 2026-02-06 16:45 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None |`
+- ✅ CORRECT: `| file.sh | 2026-02-06 16:47 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Quick scan only |`
+- ✅ CORRECT: `| file.sh | 2026-02-06 17:00 | 🔬 Critical | 🟢 | 🟢 | 🟡 | 🟢 | 🟢 | 🟢 | Cross-file architectural analysis |`
+- ❌ WRONG: `| file.sh | 2026-02-06 | 📖 Read | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None |` (no timestamp)
+- ❌ WRONG: `| file.sh | 2026-02-06 17:15 | 🔍 Perused | 🟢 | 🟢 | 🟢 | ⚪ | 🟢 | 🟢 | None |` (if 50+ other files have same timestamp)
+
+### Re-Audit Wiping Behavior
+
+**CRITICAL RULE:** When re-auditing a file, clear all assessment dots to ⚪ before starting.
+
+This ensures:
+1. **Fresh perspective** - Each audit forms new opinions rather than copying old ones
+2. **Complete opinions** - No partial grey dots left behind from incomplete audits
+3. **Honest assessment** - Forces re-examination rather than assumption
+
+**Process:**
+1. Before auditing file X, set all its assessment columns (Result, Code, Docs, Theme, Policy, Ethos) to ⚪
+2. Conduct the audit with appropriate thoroughness
+3. If thoroughness is 🔍 Perused or 🎯 Exhaustive, fill in all assessment columns with informed judgments
+4. If thoroughness is 📖 Read or lower, leave all assessment columns as ⚪
+
+**Why:** This prevents the accumulation of stale assessments and ensures the table always reflects current, informed opinions.
 
 ### Audit Workflow
 
@@ -493,12 +655,113 @@ Track these metrics over time to measure project health:
 
 ---
 
+## Updating AUDIT_RESULTS.md
+
+**IMPORTANT:** Do NOT append new audit log sections (e.g., "Phase 18", "Audit Session - Phase 19") to AUDIT_RESULTS.md. The document now uses an **integrated table format** where all audit findings are recorded directly in the table rows.
+
+### How to Update After an Audit
+
+When you audit files, update AUDIT_RESULTS.md as follows:
+
+#### 1. Update the Relevant Table Row
+
+Find the file in the Complete Audit Table and update its row:
+
+**Before:**
+```markdown
+| spells/arcane/copy | - | - | ⚪ N/A | Not yet audited |
+```
+
+**After:**
+```markdown
+| spells/arcane/copy | 2026-02-10 | 📖 Read | 🟢 Pass | None - clean file copy implementation |
+```
+
+#### 2. Update Executive Summary
+
+Update the statistics in the Executive Summary section to reflect new totals:
+- Total files audited
+- Pass/Warning/Fail counts
+- Overall pass rate
+
+#### 3. Update Critical Issues Section
+
+- **Add new failures** to the Critical Issues table if you find 🔴 failures
+- **Remove resolved failures** when issues are fixed (move to warnings or remove entirely)
+
+#### 4. Update Warnings Section
+
+- **Add new warnings** to the Warnings table if you find 🟡 issues
+- **Remove resolved warnings** when issues are fixed
+
+#### 5. Update Final Assessment
+
+Update the "Final Assessment" section with:
+- New completion date
+- Updated quality grade if significantly changed
+- Updated recommendations based on current findings
+
+### What NOT to Do
+
+❌ **Do NOT** create new sections like:
+- "## Audit Session Summary - Phase 18"
+- "## Phase 19: Additional Files"
+- "## Update Log 2026-02-10"
+
+❌ **Do NOT** append audit narrative logs to the bottom of the document
+
+✅ **DO** update the table rows with new findings
+
+✅ **DO** keep the document focused on current state, not historical progression
+
+### Example Workflow
+
+1. Audit a file (e.g., `spells/arcane/copy`)
+2. Find the file in the Complete Audit Table
+3. Update the row:
+   - Set "Last Audit" to today's date
+   - Set "Thoroughness" based on review depth
+   - Set "Result" to 🟢/🟡/🔴/⚪
+   - Describe findings in "Issues" column
+4. If the file is a 🔴 failure, add it to the Critical Issues table
+5. If the file is a 🟡 warning, add it to the Warnings table
+6. Update the Executive Summary statistics
+7. Save the file
+
+### Rationale
+
+The integrated table format:
+- **Reduces document size** - No need for lengthy audit logs
+- **Improves maintainability** - One source of truth per file
+- **Simplifies updates** - Just update the relevant row
+- **Focuses on current state** - What matters is the latest audit, not the history
+- **Easier navigation** - Find any file's status quickly in the table
+
+---
+
 ## Version History
 
 - **2026-02-06**: Initial audit framework created
   - Comprehensive checklist covering all ethos principles
   - File inventory table structure established
   - Audit workflow documented
+  - Completed initial repository audit (100% coverage, 1,126 files)
+
+- **2026-02-06**: Restructured AUDIT_RESULTS.md format (iteration 1)
+  - Integrated audit log into table format
+  - Removed separate phase/session log sections
+  - Simplified to 5-column table (was 10 columns)
+  - Added update instructions to prevent audit log append pattern
+  - Document focused on current state rather than historical progression
+
+- **2026-02-06**: Restored full table format (iteration 2)
+  - Brought back complete 11-column table for all files (flat structure)
+  - Added new "Ethos" column for holistic/intuitive assessment
+  - Restored full 11-column format: Path, Date, Thoroughness, Result, Code, Docs, Theme, Policy, Ethos, Issues, Fixes
+  - Maintained 4-section structure: Executive Summary, Critical, Warnings, Full Table
+  - Integrated all completed audit results into the table
+  - Documented Ethos column in detail
+  - Emphasis on Ethos for future audits
 
 ---
 
