@@ -155,7 +155,7 @@ is_first_word_blacklisted() {
     # BLACKLIST: Shell builtins that CANNOT be overridden
     alias|banish|bg|bind|builtin|cd|command|compgen|compopt|declare|\
 disable|enable|false|fc|fg|getopts|hash|jobs|kill|newgrp|pwd|read|\
-readonly|set|sh|times|trap|true|type|ulimit|umask|unalias|wait|\
+readonly|select|set|sh|times|trap|true|type|ulimit|umask|unalias|wait|\
 break|case|continue|do|done|elif|else|esac|eval|exec|exit|export|fi|for|if|in|local|return|\
 shift|then|unset|until|while)
       return 1  # Blacklisted
@@ -504,7 +504,7 @@ is_synonym_valid() {
   case "$syn_word" in
     alias|banish|bg|bind|builtin|cd|command|compgen|compopt|declare|\
 disable|enable|false|fc|fg|getopts|hash|jobs|kill|let|newgrp|pwd|read|\
-readonly|set|sh|times|trap|true|type|ulimit|umask|unalias|wait|\
+readonly|select|set|sh|times|trap|true|type|ulimit|umask|unalias|wait|\
 break|case|continue|do|done|elif|else|esac|eval|exec|exit|export|fi|for|if|in|local|return|\
 shift|then|unset|until|while)
       return 1
