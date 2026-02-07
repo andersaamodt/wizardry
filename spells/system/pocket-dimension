@@ -378,6 +378,11 @@ set -eu
   workdir=$(pwd -P)
   record_dir="$pocket_root/records"
   mkdir -p "$record_dir"
+  snapshot_enabled=1
+  if [ "$platform" = "Darwin" ] && [ "$strict_mode" -eq 1 ]; then
+    snapshot_enabled=0
+    progress_msg "pocket-dimension: skipping host filesystem snapshot in strict macOS mode"
+  fi
 
   snapshot_files() {
     snapshot_target=$1
@@ -390,7 +395,9 @@ set -eu
     fi
   }
 
-  snapshot_files "$record_dir/before" 2>/dev/null || true
+  if [ "$snapshot_enabled" -eq 1 ]; then
+    snapshot_files "$record_dir/before" 2>/dev/null || true
+  fi
 
   env_args=""
   env_args="$env_args PATH=${PATH:-}"
@@ -649,13 +656,15 @@ RUNNER
 
   cleanup_active_macos_temp_user
 
-  snapshot_files "$record_dir/after" 2>/dev/null || true
-  if command -v diff >/dev/null 2>&1; then
-    diff -u "$record_dir/before" "$record_dir/after" >"$record_dir/mutations.diff" 2>/dev/null || true
-  fi
+  if [ "$snapshot_enabled" -eq 1 ]; then
+    snapshot_files "$record_dir/after" 2>/dev/null || true
+    if command -v diff >/dev/null 2>&1; then
+      diff -u "$record_dir/before" "$record_dir/after" >"$record_dir/mutations.diff" 2>/dev/null || true
+    fi
 
-  if [ -s "$record_dir/mutations.diff" ]; then
-    printf '%s\n' "pocket-dimension: filesystem mutations recorded at $record_dir/mutations.diff" >&2
+    if [ -s "$record_dir/mutations.diff" ]; then
+      printf '%s\n' "pocket-dimension: filesystem mutations recorded at $record_dir/mutations.diff" >&2
+    fi
   fi
 
   if [ "$keep_pocket" -eq 0 ]; then
