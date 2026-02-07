@@ -1392,11 +1392,9 @@ function setupMessageStream(roomName, sinceTimestamp) {
     } else if (window.messageEventSource.readyState === EventSource.CONNECTING) {
       console.warn('[SSE] Connection CONNECTING - EventSource attempting to reconnect');
       
-      // If we've been connecting for too long, consider it lost
-      if (!connectionEstablished && errorCount > 2) {
-        console.error('[SSE] Connection attempts failing - server may be down');
-        updateConnectionStatus('reconnecting', false);
-      }
+      // Show reconnecting status when connection is lost (whether initial or after established)
+      // This handles server going down after successful initial connection
+      updateConnectionStatus('reconnecting', false);
     }
   });
   
