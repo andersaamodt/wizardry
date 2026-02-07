@@ -8,7 +8,7 @@ done
 test_list_available_llms() {
   run_spell "spells/.arcana/ai-dev/list-available-llms"
   assert_success || return 1
-  assert_output_contains "llama2" || return 1
+  assert_output_contains "phi3.5:mini" || return 1
 }
 
 test_list_installed_llms_no_ollama() {
