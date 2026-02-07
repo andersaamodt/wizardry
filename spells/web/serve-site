@@ -101,7 +101,13 @@ elif [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
     info "Site '$site_name' is already running"
   else
     # Load without -w (don't enable on boot, just start now)
-    run_priv launchctl load "$daemon_artifact"
+    # Capture any errors from launchctl
+    load_output=$(run_priv launchctl load "$daemon_artifact" 2>&1) || load_failed=$?
+    if [ "${load_failed:-0}" -ne 0 ]; then
+      warn "serve-site: launchctl load failed"
+      warn "Error: $load_output"
+      die "serve-site: try running 'repair-site-daemon $site_name' to fix configuration"
+    fi
   fi
 fi
 
