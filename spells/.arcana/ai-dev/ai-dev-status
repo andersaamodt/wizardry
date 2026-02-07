@@ -7,7 +7,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: ai-dev-status
 
-Reports the installation status of AI development components (ollama, anythingllm).
+Reports the installation status of AI development components (tabby, ollama, anythingllm).
 USAGE
   exit 0
   ;;
@@ -30,12 +30,12 @@ fi
 
 # Count installed components
 installed=0
-total=2
+total=3
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 
 # Check each component using the helper
-for component in ollama anythingllm; do
+for component in tabby ollama anythingllm; do
   if "$script_dir/is-ai-component-installed" "$component" 2>/dev/null; then
     installed=$((installed + 1))
   fi

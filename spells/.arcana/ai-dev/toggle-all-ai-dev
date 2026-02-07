@@ -26,7 +26,8 @@ if [ -z "$action" ]; then
   # Otherwise disable all
   action="--enable"
   
-  if "$script_dir/is-ai-component-installed" ollama 2>/dev/null && \
+  if "$script_dir/is-ai-component-installed" tabby 2>/dev/null && \
+     "$script_dir/is-ai-component-installed" ollama 2>/dev/null && \
      "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null; then
     action="--disable"
   fi
@@ -35,6 +36,11 @@ fi
 case "$action" in
 --enable)
   say "Enabling all AI development components..."
+  
+  # Install Tabby if not installed
+  if ! "$script_dir/is-ai-component-installed" tabby 2>/dev/null; then
+    "$script_dir/install-tabby"
+  fi
   
   # Install ollama if not installed
   if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
@@ -62,6 +68,11 @@ case "$action" in
   # Uninstall ollama if installed
   if "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
     "$script_dir/uninstall-ollama"
+  fi
+  
+  # Uninstall Tabby if installed
+  if "$script_dir/is-ai-component-installed" tabby 2>/dev/null; then
+    "$script_dir/uninstall-tabby"
   fi
   
   success "All AI development components disabled"
