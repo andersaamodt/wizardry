@@ -68,6 +68,7 @@ if [ -f "$SITE_DIR/nginx/nginx.pid" ]; then
   fi
   # Stale PID file - remove it
   rm -f "$SITE_DIR/nginx/nginx.pid"
+  rm -f "$SITE_DIR/nginx/daemon.pid"
 fi
 
 # Start nginx directly without systemd/launchd (no sudo needed!)
@@ -76,6 +77,9 @@ step "Starting nginx for $site_name..."
 # Run in background using run-site-daemon
 nohup run-site-daemon "$site_name" >/dev/null 2>&1 &
 daemon_pid=$!
+
+# Save daemon PID so stop-site can kill it properly
+printf '%s\n' "$daemon_pid" > "$SITE_DIR/nginx/daemon.pid"
 
 # Read port from config
 port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || echo "8080")
