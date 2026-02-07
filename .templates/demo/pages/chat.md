@@ -958,11 +958,16 @@ function resetHeartbeat(roomName) {
   
   // Set new timeout
   window.sseHeartbeatTimeout = setTimeout(function() {
-    console.error('[SSE] Heartbeat timeout - no events received for', window.sseHeartbeatInterval / 1000, 'seconds');
+    console.error('[HEARTBEAT DEBUG] ========== HEARTBEAT TIMEOUT ==========');
+    console.error('[HEARTBEAT DEBUG] No events received for', window.sseHeartbeatInterval / 1000, 'seconds');
+    console.error('[HEARTBEAT DEBUG] - roomName:', roomName);
+    console.error('[HEARTBEAT DEBUG] - sseReconnectAttempts:', window.sseReconnectAttempts);
+    console.error('[HEARTBEAT DEBUG] - sseMaxReconnectAttempts:', window.sseMaxReconnectAttempts);
     
     // Connection is dead - close it and trigger reconnection
     if (window.messageEventSource) {
-      console.log('[SSE] Closing dead connection');
+      console.log('[HEARTBEAT DEBUG] Closing dead connection');
+      console.log('[HEARTBEAT DEBUG] - readyState before close:', window.messageEventSource.readyState);
       window.messageEventSource.close();
       window.messageEventSource = null;
     }
@@ -970,22 +975,27 @@ function resetHeartbeat(roomName) {
     // Trigger reconnection logic
     if (window.sseReconnectAttempts < window.sseMaxReconnectAttempts) {
       window.sseReconnectAttempts++;
-      console.log('[SSE] Reconnect attempt', window.sseReconnectAttempts, 'of', window.sseMaxReconnectAttempts, '(heartbeat timeout)');
+      console.log('[HEARTBEAT DEBUG] Reconnect attempt', window.sseReconnectAttempts, 'of', window.sseMaxReconnectAttempts, '(heartbeat timeout)');
+      console.log('[HEARTBEAT DEBUG] Calling updateConnectionStatus("reconnecting")');
       
       updateConnectionStatus('reconnecting', false);
       
       // Wait 2 seconds before reconnecting
+      console.log('[HEARTBEAT DEBUG] Scheduling reconnection in 2 seconds');
       window.sseReconnectTimeout = setTimeout(function() {
         if (window.currentRoom === roomName) {
-          console.log('[SSE] Auto-reconnecting to room:', roomName);
+          console.log('[HEARTBEAT DEBUG] Auto-reconnecting to room:', roomName);
           setupMessageStream(roomName, formatLocalTimestamp(new Date()));
+        } else {
+          console.log('[HEARTBEAT DEBUG] Not reconnecting - room changed');
         }
       }, 2000);
     } else {
       // Max attempts reached - show connection lost
-      console.error('[SSE] Max reconnection attempts reached - giving up');
+      console.error('[HEARTBEAT DEBUG] Max reconnection attempts reached - showing lost status');
       updateConnectionStatus('lost', true);
     }
+    console.error('[HEARTBEAT DEBUG] ========== END HEARTBEAT TIMEOUT ==========');
   }, window.sseHeartbeatInterval);
 }
 
@@ -1017,6 +1027,11 @@ function setStatusTextWithSpinner(element, text, spinnerElement) {
 
 // Update connection status UI
 function updateConnectionStatus(status, isClickable) {
+  console.log('[CONNECTION DEBUG] updateConnectionStatus called');
+  console.log('[CONNECTION DEBUG] - status:', status);
+  console.log('[CONNECTION DEBUG] - isClickable:', isClickable);
+  console.log('[CONNECTION DEBUG] - window.currentConnectionStatus:', window.currentConnectionStatus);
+  
   var statusElement = document.getElementById('connecting-status');
   var sendBtn = document.getElementById('send-btn');
   var chatInputArea = document.getElementById('chat-input-area');
@@ -1032,9 +1047,11 @@ function updateConnectionStatus(status, isClickable) {
   
   // If already showing this status, don't animate again
   if (window.currentConnectionStatus === status && status === 'reconnecting') {
+    console.log('[CONNECTION DEBUG] Skipping redundant reconnecting update');
     return;  // Skip redundant reconnecting updates
   }
   
+  console.log('[CONNECTION DEBUG] Updating status from', window.currentConnectionStatus, 'to', status);
   window.currentConnectionStatus = status;
   
   // Determine if we should use alternate positioning (when no room selected)
@@ -1141,8 +1158,11 @@ function updateConnectionStatus(status, isClickable) {
     // Show reconnecting with spinner
     // Use global spinner to prevent animation reset
     
+    console.log('[CONNECTION DEBUG] Showing "reconnecting" status');
+    
     // Check if we're transitioning from connection-lost (Retry/Disconnected)
     var wasDisconnected = statusElement.classList.contains('connection-lost');
+    console.log('[CONNECTION DEBUG] - wasDisconnected:', wasDisconnected);
     
     // Get or create the global spinner (shared logic)
     if (!window.sseSpinnerElement) {
@@ -1151,6 +1171,7 @@ function updateConnectionStatus(status, isClickable) {
     }
     
     if (wasDisconnected) {
+      console.log('[CONNECTION DEBUG] Crossfading from Disconnected to Reconnecting');
       // Crossfade from Retry/Disconnected to Reconnecting
       // First fade out by setting opacity to 0
       statusElement.style.opacity = '0';
@@ -1176,6 +1197,7 @@ function updateConnectionStatus(status, isClickable) {
       
       statusElement.classList.add('visible');
     } else {
+      console.log('[CONNECTION DEBUG] Setting Reconnecting text (not crossfading)');
       // Coming from other state or first time
       statusElement.classList.remove('connection-lost');
       
@@ -1183,9 +1205,12 @@ function updateConnectionStatus(status, isClickable) {
       setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
       
       if (!statusElement.classList.contains('visible')) {
+        console.log('[CONNECTION DEBUG] First time appearing - fading in');
         // First time appearing - fade in
         statusElement.offsetHeight;
         statusElement.classList.add('visible');
+      } else {
+        console.log('[CONNECTION DEBUG] Already visible, just updated text');
       }
       // else: already visible, no change needed (stays visible)
     }
@@ -1197,11 +1222,16 @@ function updateConnectionStatus(status, isClickable) {
   } else if (status === 'lost') {
     // Show disconnected (clickable pill, no spinner)
     
+    console.log('[CONNECTION DEBUG] Showing "lost" (Disconnected/Retry) status');
+    
     // Check if we're transitioning from reconnecting (with spinner)
     var wasReconnecting = !statusElement.classList.contains('connection-lost') && 
                           statusElement.textContent.indexOf('Reconnecting') !== -1;
     
+    console.log('[CONNECTION DEBUG] - wasReconnecting:', wasReconnecting);
+    
     if (wasReconnecting) {
+      console.log('[CONNECTION DEBUG] Crossfading from Reconnecting to Disconnected');
       // Crossfade from Reconnecting to Disconnected
       // First fade out by setting opacity to 0
       statusElement.style.opacity = '0';
@@ -1227,6 +1257,7 @@ function updateConnectionStatus(status, isClickable) {
       
       statusElement.classList.add('visible');
     } else {
+      console.log('[CONNECTION DEBUG] Setting Disconnected immediately (not crossfading)');
       // Add connection-lost class for styling
       statusElement.classList.add('connection-lost');
       
@@ -1234,15 +1265,19 @@ function updateConnectionStatus(status, isClickable) {
       statusElement.textContent = 'Disconnected';
       
       if (!statusElement.classList.contains('visible')) {
+        console.log('[CONNECTION DEBUG] First time appearing - fading in');
         // First time appearing - fade in
         statusElement.offsetHeight;
         statusElement.classList.add('visible');
+      } else {
+        console.log('[CONNECTION DEBUG] Already visible, just updated text');
       }
       // else: already visible, no change needed (stays visible)
     }
     
     // Setup click handler
     statusElement.onclick = function() {
+      console.log('[CONNECTION DEBUG] User clicked Disconnected/Retry - attempting reconnection');
       attemptReconnection(window.currentRoom);
     };
     
@@ -1255,11 +1290,13 @@ function updateConnectionStatus(status, isClickable) {
       }
       
       if (this.textContent === 'Disconnected') {
+        console.log('[CONNECTION DEBUG] Mouse hover - changing text to "Retry"');
         this.textContent = 'Retry';
       }
     };
     statusElement.onmouseleave = function(e) {
       if (this.textContent === 'Retry') {
+        console.log('[CONNECTION DEBUG] Mouse leave - changing text back to "Disconnected"');
         this.textContent = 'Disconnected';
       }
     };
@@ -1270,31 +1307,53 @@ function updateConnectionStatus(status, isClickable) {
 
 // Attempt to reconnect to SSE
 function attemptReconnection(roomName) {
-  if (!roomName) return;
+  console.log('[RECONNECT DEBUG] ========== MANUAL RECONNECTION ==========');
+  console.log('[RECONNECT DEBUG] - roomName:', roomName);
   
-  console.log('[SSE] Manual reconnection attempt for room:', roomName);
+  if (!roomName) {
+    console.log('[RECONNECT DEBUG] No room name - aborting');
+    return;
+  }
+  
+  console.log('[RECONNECT DEBUG] Manual reconnection attempt for room:', roomName);
+  console.log('[RECONNECT DEBUG] - sseReconnectAttempts before reset:', window.sseReconnectAttempts);
   window.sseReconnectAttempts = 0;  // Reset attempts for manual reconnection
+  console.log('[RECONNECT DEBUG] - sseReconnectAttempts after reset:', window.sseReconnectAttempts);
   
   // Show "Reconnecting" message
+  console.log('[RECONNECT DEBUG] Calling updateConnectionStatus("reconnecting")');
   updateConnectionStatus('reconnecting', false);
   
   // Close existing connection
   if (window.messageEventSource) {
+    console.log('[RECONNECT DEBUG] Closing existing connection');
+    console.log('[RECONNECT DEBUG] - readyState before close:', window.messageEventSource.readyState);
     window.messageEventSource.close();
     window.messageEventSource = null;
   }
   
   // Use timestamp from before manual reconnection
   var sinceTimestamp = formatLocalTimestamp(new Date());
+  console.log('[RECONNECT DEBUG] Calling setupMessageStream with timestamp:', sinceTimestamp);
   setupMessageStream(roomName, sinceTimestamp);
+  console.log('[RECONNECT DEBUG] ========== END MANUAL RECONNECTION ==========');
 }
 
 // Set up Server-Sent Events for real-time message updates
 function setupMessageStream(roomName, sinceTimestamp) {
-  if (!roomName) return;
+  console.log('[SETUP DEBUG] ========== SETUP MESSAGE STREAM ==========');
+  console.log('[SETUP DEBUG] - roomName:', roomName);
+  console.log('[SETUP DEBUG] - sinceTimestamp:', sinceTimestamp);
+  
+  if (!roomName) {
+    console.log('[SETUP DEBUG] No room name - aborting');
+    return;
+  }
   
   // Close existing connection if any
   if (window.messageEventSource) {
+    console.log('[SETUP DEBUG] Closing existing connection');
+    console.log('[SETUP DEBUG] - readyState before close:', window.messageEventSource.readyState);
     window.messageEventSource.close();
     window.messageEventSource = null;
   }
@@ -1305,15 +1364,19 @@ function setupMessageStream(roomName, sinceTimestamp) {
   if (!sinceTimestamp) {
     // IMPORTANT: Use local time to match server's log-timestamp format (not UTC)
     sinceTimestamp = formatLocalTimestamp(new Date());
+    console.log('[SETUP DEBUG] Generated timestamp:', sinceTimestamp);
   }
   
   // Create new SSE connection with since parameter
   var url = '/cgi/chat-stream?room=' + encodeURIComponent(roomName) + '&since=' + encodeURIComponent(sinceTimestamp);
+  console.log('[SETUP DEBUG] Creating EventSource with URL:', url);
   
   try {
     window.messageEventSource = new EventSource(url);
+    console.log('[SETUP DEBUG] EventSource created successfully');
+    console.log('[SETUP DEBUG] - Initial readyState:', window.messageEventSource.readyState);
   } catch (e) {
-    console.error('[SSE] Failed to create EventSource:', e);
+    console.error('[SETUP DEBUG] Failed to create EventSource:', e);
     updateConnectionStatus('lost', true);
     return;
   }
@@ -1324,6 +1387,11 @@ function setupMessageStream(roomName, sinceTimestamp) {
   
   // Handle connection open
   window.messageEventSource.addEventListener('open', function(event) {
+    console.log('[SSE DEBUG] Connection OPEN event fired');
+    console.log('[SSE DEBUG] - roomName:', roomName);
+    console.log('[SSE DEBUG] - connectionEstablished was:', connectionEstablished);
+    console.log('[SSE DEBUG] - errorCount was:', errorCount);
+    console.log('[SSE DEBUG] - readyState:', window.messageEventSource.readyState);
     console.log('[SSE] Connection OPEN - ready to receive messages');
     connectionEstablished = true;
     errorCount = 0;
@@ -1358,46 +1426,73 @@ function setupMessageStream(roomName, sinceTimestamp) {
   
   // Handle errors
   window.messageEventSource.addEventListener('error', function(event) {
-    console.error('[SSE] Error occurred:', event);
-    console.error('[SSE] ReadyState:', window.messageEventSource.readyState);
-    console.error('[SSE] URL:', window.messageEventSource.url);
+    console.error('[SSE DEBUG] ========== ERROR EVENT ==========');
+    console.error('[SSE DEBUG] Error occurred:', event);
+    console.error('[SSE DEBUG] - roomName:', roomName);
+    console.error('[SSE DEBUG] - ReadyState:', window.messageEventSource.readyState);
+    console.error('[SSE DEBUG] - ReadyState names: CONNECTING=0, OPEN=1, CLOSED=2');
+    console.error('[SSE DEBUG] - URL:', window.messageEventSource.url);
+    console.error('[SSE DEBUG] - connectionEstablished:', connectionEstablished);
+    console.error('[SSE DEBUG] - errorCount before:', errorCount);
+    console.error('[SSE DEBUG] - sseReconnectAttempts:', window.sseReconnectAttempts);
+    console.error('[SSE DEBUG] - sseMaxReconnectAttempts:', window.sseMaxReconnectAttempts);
     
     // Stop heartbeat monitoring during error state
     stopHeartbeat();
     
     errorCount++;
+    console.error('[SSE DEBUG] - errorCount after:', errorCount);
+    
+    // CRITICAL FIX: Show reconnecting status immediately on ANY error
+    // This ensures users see feedback as soon as connection issues occur
+    console.log('[SSE DEBUG] Showing reconnecting status immediately (before checking readyState)');
+    
+    // Only show reconnecting if we haven't exceeded max attempts yet
+    if (window.sseReconnectAttempts < window.sseMaxReconnectAttempts) {
+      console.log('[SSE DEBUG] Calling updateConnectionStatus("reconnecting")');
+      updateConnectionStatus('reconnecting', false);
+    }
     
     if (window.messageEventSource.readyState === EventSource.CLOSED) {
-      console.error('[SSE] Connection CLOSED - server unavailable');
+      console.error('[SSE DEBUG] ReadyState is CLOSED - server unavailable');
       
       // Determine if we should try to reconnect
       if (window.sseReconnectAttempts < window.sseMaxReconnectAttempts) {
         window.sseReconnectAttempts++;
-        console.log('[SSE] Reconnect attempt', window.sseReconnectAttempts, 'of', window.sseMaxReconnectAttempts);
-        
-        updateConnectionStatus('reconnecting', false);
+        console.log('[SSE DEBUG] Reconnect attempt', window.sseReconnectAttempts, 'of', window.sseMaxReconnectAttempts);
         
         // Wait 2 seconds before reconnecting
+        console.log('[SSE DEBUG] Scheduling reconnection in 2 seconds');
         window.sseReconnectTimeout = setTimeout(function() {
           if (window.currentRoom === roomName) {
-            console.log('[SSE] Auto-reconnecting to room:', roomName);
+            console.log('[SSE DEBUG] Auto-reconnecting to room:', roomName);
             setupMessageStream(roomName, formatLocalTimestamp(new Date()));
+          } else {
+            console.log('[SSE DEBUG] Not reconnecting - room changed from', roomName, 'to', window.currentRoom);
           }
         }, 2000);
       } else {
         // Max attempts reached - show connection lost
-        console.error('[SSE] Max reconnection attempts reached - giving up');
+        console.error('[SSE DEBUG] Max reconnection attempts reached - showing lost status');
         updateConnectionStatus('lost', true);
       }
     } else if (window.messageEventSource.readyState === EventSource.CONNECTING) {
-      console.warn('[SSE] Connection CONNECTING - EventSource attempting to reconnect');
+      console.warn('[SSE DEBUG] ReadyState is CONNECTING - EventSource attempting to reconnect');
       
-      // If we've been connecting for too long, consider it lost
+      // EventSource is handling reconnection automatically
+      // We already showed reconnecting status above
+      
+      // If we've been connecting for too long and never established, might be server down
       if (!connectionEstablished && errorCount > 2) {
-        console.error('[SSE] Connection attempts failing - server may be down');
-        updateConnectionStatus('reconnecting', false);
+        console.error('[SSE DEBUG] Connection attempts failing - server may be down');
+        console.error('[SSE DEBUG] (Already showing reconnecting from earlier)');
       }
+    } else if (window.messageEventSource.readyState === EventSource.OPEN) {
+      console.warn('[SSE DEBUG] ReadyState is OPEN during error - unusual state');
+      console.warn('[SSE DEBUG] This can happen during server shutdown');
     }
+    
+    console.error('[SSE DEBUG] ========== END ERROR EVENT ==========');
   });
   
   // Optional: Handle ping/keepalive events (currently just ignore them)
