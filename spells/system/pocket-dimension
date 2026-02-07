@@ -443,22 +443,29 @@ set -eu
       status=$?
     fi
   elif [ "$platform" = "Darwin" ] && [ "$strict_mode" -eq 1 ]; then
+    printf '%s\n' "pocket-dimension: strict macOS isolation enabled" >&2
     if ! ensure_macos_strict_sudo; then
       status=1
     else
       start_sudo_keepalive
+      printf '%s\n' "pocket-dimension: cleaning orphan disposable users..." >&2
       cleanup_orphan_macos_temp_users
 
+      printf '%s\n' "pocket-dimension: creating disposable macOS user..." >&2
       if create_macos_temp_user; then
         mac_active_repo="${mac_active_home}/wizardry"
         if ! sudo mkdir -p "$mac_active_repo" >/dev/null 2>&1; then
           status=1
-        elif ! (cd "$source_root" && tar -cf - .) | sudo tar -xf - -C "$mac_active_repo" >/dev/null 2>&1; then
+        else
+          printf '%s\n' "pocket-dimension: copying workspace into disposable user..." >&2
+        fi
+        if [ "$status" -eq 0 ] && ! (cd "$source_root" && tar -cf - .) | sudo tar -xf - -C "$mac_active_repo"; then
           printf '%s\n' "pocket-dimension: strict macOS mode failed to copy wizardry workspace" >&2
           status=1
-        elif ! sudo chown -R "$mac_active_user:staff" "$mac_active_repo" >/dev/null 2>&1; then
+        elif [ "$status" -eq 0 ] && ! sudo chown -R "$mac_active_user:staff" "$mac_active_repo" >/dev/null 2>&1; then
           status=1
-        else
+        elif [ "$status" -eq 0 ]; then
+          printf '%s\n' "pocket-dimension: workspace copied; preparing isolated run..." >&2
           command_name=$1
           shift
           case "$command_name" in
@@ -494,6 +501,7 @@ if [ -f "$repo_root/spells/.wizardry/invoke-wizardry" ]; then
 fi
 
 if [ "${WIZARDRY_POCKET_SKIP_BANISH-0}" -ne 1 ]; then
+  printf '%s\n' "pocket-dimension: running banish all in disposable user..." >&2
   if command -v banish >/dev/null 2>&1; then
     banish all
   elif [ -x "$repo_root/spells/wards/banish" ]; then
@@ -504,6 +512,7 @@ if [ "${WIZARDRY_POCKET_SKIP_BANISH-0}" -ne 1 ]; then
   fi
 fi
 
+printf '%s\n' "pocket-dimension: launching target command..." >&2
 exec "$run_cmd" "$@"
 RUNNER
           chmod 755 "$runner_script"
@@ -524,6 +533,7 @@ RUNNER
           fi
 
           if [ "$sandbox_exec_usable" -eq 1 ]; then
+            printf '%s\n' "pocket-dimension: using sandbox-exec + disposable-user isolation" >&2
             if sudo -H -u "$mac_active_user" \
               env -i \
                 PATH="$run_path" \

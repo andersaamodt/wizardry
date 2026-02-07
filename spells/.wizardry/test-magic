@@ -222,10 +222,7 @@ if [ "${GITHUB_ACTIONS-}" != "true" ] && [ "${WIZARDRY_TEST_IN_POCKET-0}" -ne 1 
     printf 'test-magic: pocket-dimension not found\n' >&2
     exit 1
   fi
-  if ! pocket-dimension --check --strict >/dev/null 2>&1; then
-    printf 'test-magic: strict pocket-dimension backend unavailable\n' >&2
-    exit 1
-  fi
+  printf '%s\n' "test-magic: entering strict pocket-dimension..." >&2
   exec pocket-dimension --strict --network closed -- test-magic "$@"
 fi
 
