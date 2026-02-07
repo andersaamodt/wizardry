@@ -2,7 +2,28 @@
 
 This document explains how to view the extensive debug logging added to diagnose chat issues, including the **reconnecting spinner issue**.
 
-## **CURRENT ISSUE: Reconnecting Spinner**
+## **CURRENT ISSUE: Secondary SSE Stream Failures**
+
+The secondary SSE streams (chat-room-list-stream and chat-unread-counts) are failing to connect, while the main message stream works fine.
+
+**Symptoms:**
+- Firefox shows "can't establish a connection to the server" for these endpoints
+- Error messages in F12 console but no detailed diagnostics
+
+**The fix:**
+- Added comprehensive debug logging to both server scripts (chat-room-list-stream and chat-unread-counts)
+- Enhanced client error handlers with detailed state logging
+- All logging follows the same pattern as the main message stream
+
+**What to check:**
+- Look for `[ROOM-LIST-STREAM DEBUG]` and `[UNREAD-COUNTS DEBUG]` in ~/testlog.txt
+- Look for `[ROOM LIST DEBUG]` and `[UNREAD COUNTS DEBUG]` in F12 console
+- Check if WIZARDRY_SITE_NAME and WIZARDRY_SITES_DIR are set correctly
+- Verify get-site-data-dir is working properly
+
+---
+
+## **PREVIOUS ISSUE: Reconnecting Spinner (RESOLVED)**
 
 The reconnecting spinner stopped appearing when the server connection is lost. This PR adds extensive debug logging to both client and server to diagnose and fix the issue.
 
@@ -34,6 +55,8 @@ Extensive debug logging has been added to:
 
 ### Server-side (writes to ~/testlog.txt):
 - `spells/.imps/cgi/chat-stream` - SSE connection setup, room validation, path resolution, cleanup
+- `spells/.imps/cgi/chat-room-list-stream` - Room list monitoring, environment vars, path resolution
+- `spells/.imps/cgi/chat-unread-counts` - Unread count monitoring, username validation, path resolution
 - `spells/.imps/cgi/chat-send-message` - Main message sending logic
 - `spells/.imps/cgi/get-site-data-dir` - Site data directory resolution
 
@@ -96,7 +119,38 @@ To make it easier to see only the new debug output:
    ```
 10. The connection should re-establish and show "Connected" (then fade away)
 
-### 4. Send a Test Message
+### 4. Test Secondary SSE Streams
+
+**To test the room-list and unread-counts streams:**
+
+1. Open the chat page
+2. Open the browser's F12 Developer Tools (Console tab)
+3. Look for these startup messages:
+   ```
+   [ROOM LIST DEBUG] ========== SETUP STREAM ==========
+   [ROOM LIST DEBUG] Creating EventSource
+   [ROOM LIST DEBUG] EventSource created
+   [UNREAD COUNTS DEBUG] ========== SETUP STREAM ==========
+   [UNREAD COUNTS DEBUG] Creating EventSource
+   [UNREAD COUNTS DEBUG] EventSource created
+   ```
+4. Check for successful connection:
+   ```
+   [ROOM LIST DEBUG] ========== CONNECTION OPEN ==========
+   [ROOM LIST DEBUG] Connected successfully
+   [UNREAD COUNTS DEBUG] ========== CONNECTION OPEN ==========
+   [UNREAD COUNTS DEBUG] Connected successfully
+   ```
+5. If you see errors instead, check ~/testlog.txt for server-side issues:
+   ```bash
+   grep "ROOM-LIST-STREAM DEBUG\|UNREAD-COUNTS DEBUG" ~/testlog.txt
+   ```
+6. Common issues to check in server logs:
+   - WIZARDRY_SITE_NAME or WIZARDRY_SITES_DIR showing as "UNSET"
+   - CHAT_DIR failing to resolve
+   - Permission errors on chatrooms directory
+
+### 5. Send a Test Message
 
 Try sending a chat message through the web interface, or try to load the chatrooms page.
 
@@ -176,9 +230,7 @@ When testing the reconnecting spinner, look for these patterns:
 
 The debug output will show:
 
-### SSE Connection Establishment
-
-### SSE Connection Establishment
+#### SSE Connection Establishment (Main Message Stream)
 ```
 [CHAT-STREAM DEBUG] ========== NEW CONNECTION ==========
 [CHAT-STREAM DEBUG] Timestamp: 2026-02-07 02:30:00
@@ -194,6 +246,41 @@ The debug output will show:
 [CHAT-STREAM DEBUG] - LOG_FILE: /path/to/.sitedata/chatrooms/General/.log
 [CHAT-STREAM DEBUG] tail process started with PID: 12345
 [CHAT-STREAM DEBUG] Entering event loop
+```
+
+#### Room List Stream Establishment
+```
+[ROOM-LIST-STREAM DEBUG] ========== NEW CONNECTION ==========
+[ROOM-LIST-STREAM DEBUG] Timestamp: 2026-02-07 02:30:01
+[ROOM-LIST-STREAM DEBUG] QUERY_STRING: 
+[ROOM-LIST-STREAM DEBUG] WIZARDRY_SITE_NAME=demo-site
+[ROOM-LIST-STREAM DEBUG] WIZARDRY_SITES_DIR=/path/to/sites
+[ROOM-LIST-STREAM DEBUG] Headers and padding sent
+[ROOM-LIST-STREAM DEBUG] CHAT_DIR resolved to: /path/to/.sitedata/chatrooms
+[ROOM-LIST-STREAM DEBUG] Directory created/verified
+[ROOM-LIST-STREAM DEBUG] Getting initial room list
+[ROOM-LIST-STREAM DEBUG] Initial rooms: ["General","Esoterica","Marginalia"]
+[ROOM-LIST-STREAM DEBUG] Initial event sent, entering monitoring loop
+```
+
+#### Unread Counts Stream Establishment
+```
+[UNREAD-COUNTS DEBUG] ========== NEW CONNECTION ==========
+[UNREAD-COUNTS DEBUG] Timestamp: 2026-02-07 02:30:01
+[UNREAD-COUNTS DEBUG] QUERY_STRING: username=Guest903
+[UNREAD-COUNTS DEBUG] WIZARDRY_SITE_NAME=demo-site
+[UNREAD-COUNTS DEBUG] WIZARDRY_SITES_DIR=/path/to/sites
+[UNREAD-COUNTS DEBUG] Headers and padding sent
+[UNREAD-COUNTS DEBUG] CHAT_DIR resolved to: /path/to/.sitedata/chatrooms
+[UNREAD-COUNTS DEBUG] Directory created/verified
+[UNREAD-COUNTS DEBUG] Username: Guest903
+[UNREAD-COUNTS DEBUG] Username validated
+[UNREAD-COUNTS DEBUG] Getting initial counts
+[UNREAD-COUNTS DEBUG] Initial counts: {"General":5,"Marginalia":21}
+[UNREAD-COUNTS DEBUG] Initial event sent, entering monitoring loop
+```
+
+### SSE Connection Establishment
 ```
 
 ### SSE Connection Cleanup
