@@ -47,7 +47,7 @@ SH
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *"AI Development:"*"[ ] ollama"*"[ ] AnythingLLM"*"Enable all"*'Exit%kill -TERM $PPID'* ) : ;;
+    *"AI Development:"*"[ ] Tabby"*"[ ] ollama"*"[ ] AnythingLLM"*"Enable all"*'Exit%kill -TERM $PPID'* ) : ;;
     *) TEST_FAILURE_REASON="menu not invoked with expected options: $args"; return 1 ;;
   esac
 }

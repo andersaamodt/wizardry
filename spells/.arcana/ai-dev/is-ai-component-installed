@@ -9,7 +9,7 @@ Usage: is-ai-component-installed COMPONENT
 
 Checks if the specified AI development component is installed.
 
-Supported components: ollama, anythingllm
+Supported components: tabby, ollama, anythingllm
 
 Returns: 0 if installed, 1 if not installed
 USAGE
@@ -26,6 +26,19 @@ if [ -z "$component" ]; then
 fi
 
 case "$component" in
+tabby)
+  # Check if tabby binary exists
+  if has tabby; then
+    exit 0
+  fi
+  # Check in common install locations
+  for path in /usr/local/bin/tabby /usr/bin/tabby "$HOME/.local/bin/tabby"; do
+    if [ -x "$path" ]; then
+      exit 0
+    fi
+  done
+  exit 1
+  ;;
 ollama)
   # Check if ollama binary exists
   if has ollama; then

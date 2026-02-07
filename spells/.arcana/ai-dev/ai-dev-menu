@@ -36,12 +36,14 @@ while true; do
   unset menu_status
   
   # Capture state before menu to detect changes
+  tabby_was_installed=0
   ollama_was_installed=0
   anythingllm_was_installed=0
   ollama_daemon_was_installed=0
   ollama_daemon_was_enabled=0
   ollama_daemon_was_running=0
   
+  "$script_dir/is-ai-component-installed" tabby 2>/dev/null && tabby_was_installed=1
   "$script_dir/is-ai-component-installed" ollama 2>/dev/null && ollama_was_installed=1
   "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null && anythingllm_was_installed=1
   
@@ -124,6 +126,16 @@ while true; do
     pos=$((pos + 1))
   fi
   
+  # Tabby toggle (first in the list as it's standalone and self-contained)
+  if [ "$tabby_was_installed" -eq 1 ]; then
+    tabby_toggle="[X] Tabby%$script_dir/uninstall-tabby"
+  else
+    tabby_toggle="[ ] Tabby%$script_dir/install-tabby"
+  fi
+  set -- "$@" "$tabby_toggle"
+  tabby_pos=$pos
+  pos=$((pos + 1))
+  
   # Ollama toggle
   if [ "$ollama_was_installed" -eq 1 ]; then
     ollama_toggle="[X] ollama%$script_dir/uninstall-ollama"
@@ -153,6 +165,9 @@ while true; do
   
   # Enable/Disable all toggle
   all_installed=1
+  if ! "$script_dir/is-ai-component-installed" tabby 2>/dev/null; then
+    all_installed=0
+  fi
   if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
     all_installed=0
   fi
@@ -182,12 +197,14 @@ while true; do
   fi
   
   # Detect which component changed to stay on that position
+  tabby_now_installed=0
   ollama_now_installed=0
   anythingllm_now_installed=0
   ollama_daemon_now_installed=0
   ollama_daemon_now_enabled=0
   ollama_daemon_now_running=0
   
+  "$script_dir/is-ai-component-installed" tabby 2>/dev/null && tabby_now_installed=1
   "$script_dir/is-ai-component-installed" ollama 2>/dev/null && ollama_now_installed=1
   "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null && anythingllm_now_installed=1
   
@@ -215,7 +232,9 @@ while true; do
     fi
   fi
   
-  if [ "$ollama_was_installed" -ne "$ollama_now_installed" ]; then
+  if [ "$tabby_was_installed" -ne "$tabby_now_installed" ]; then
+    start_selection=$tabby_pos
+  elif [ "$ollama_was_installed" -ne "$ollama_now_installed" ]; then
     start_selection=$ollama_pos
   elif [ "$anythingllm_was_installed" -ne "$anythingllm_now_installed" ]; then
     start_selection=$anythingllm_pos
