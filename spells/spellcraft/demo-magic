@@ -745,6 +745,24 @@ fi
 # WIZARDRY_DEMO_NO_BWRAP is kept for compatibility as an explicit local bypass.
 if [ "${WIZARDRY_DEMO_IN_POCKET-0}" -ne 1 ] && [ "${WIZARDRY_DEMO_NO_BWRAP-0}" -ne 1 ]; then
   if [ -z "${GITHUB_ACTIONS-}" ] || [ "${GITHUB_ACTIONS}" != "true" ]; then
+    platform=$(uname -s 2>/dev/null || printf 'unknown')
+    if [ "$platform" = "Darwin" ] && command -v sudo >/dev/null 2>&1; then
+      if ! sudo -n true >/dev/null 2>&1; then
+        if [ -w /dev/tty ]; then
+          printf '%s\n' "demo-magic: macOS isolation needs sudo; authenticating now..." > /dev/tty
+          if ! sudo -v < /dev/tty > /dev/tty 2>&1; then
+            printf '%s\n' "demo-magic: sudo authentication failed" >&2
+            exit 1
+          fi
+        else
+          printf '%s\n' "demo-magic: macOS isolation needs sudo; authenticating now..." >&2
+          if ! sudo -v; then
+            printf '%s\n' "demo-magic: sudo authentication failed" >&2
+            exit 1
+          fi
+        fi
+      fi
+    fi
     if ! command -v pocket-dimension >/dev/null 2>&1; then
       printf '%s\n' "demo-magic: pocket-dimension not found" >&2
       exit 1
