@@ -1017,11 +1017,11 @@ function setStatusTextWithSpinner(element, text, spinnerElement) {
 
 // Update connection status UI
 function updateConnectionStatus(status, isClickable) {
-  // DEBUG LOGGING START
-  var logMsg = '\n=== updateConnectionStatus CALLED at ' + new Date().toISOString() + ' ===\n';
-  logMsg += 'Status: ' + status + '\n';
-  logMsg += 'IsClickable: ' + isClickable + '\n';
-  logMsg += 'Current status: ' + (window.currentConnectionStatus || 'NONE') + '\n';
+  // DEBUG LOGGING
+  console.log('\n=== updateConnectionStatus CALLED at ' + new Date().toISOString() + ' ===');
+  console.log('Status:', status);
+  console.log('IsClickable:', isClickable);
+  console.log('Current status:', window.currentConnectionStatus || 'NONE');
   
   var statusElement = document.getElementById('connecting-status');
   var sendBtn = document.getElementById('send-btn');
@@ -1031,19 +1031,12 @@ function updateConnectionStatus(status, isClickable) {
   var deleteRoomBtn = document.getElementById('delete-room-btn');
   var membersBtn = document.getElementById('members-btn');
   
-  logMsg += 'StatusElement exists: ' + (!!statusElement) + '\n';
-  logMsg += 'ChatInputArea exists: ' + (!!chatInputArea) + '\n';
+  console.log('StatusElement exists:', !!statusElement);
+  console.log('ChatInputArea exists:', !!chatInputArea);
   if (chatInputArea) {
-    logMsg += 'ChatInputArea display: ' + chatInputArea.style.display + '\n';
+    console.log('ChatInputArea display:', chatInputArea.style.display);
   }
-  logMsg += 'SendBtn exists: ' + (!!sendBtn) + '\n';
-  
-  fetch('/cgi/log-to-file', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-    body: 'msg=' + encodeURIComponent(logMsg)
-  }).catch(function() {});
-  // DEBUG LOGGING END
+  console.log('SendBtn exists:', !!sendBtn);
   
   // Track current status to avoid redundant updates
   if (!window.currentConnectionStatus) {
@@ -1052,11 +1045,7 @@ function updateConnectionStatus(status, isClickable) {
   
   // If already showing this status, don't animate again
   if (window.currentConnectionStatus === status && status === 'reconnecting') {
-    fetch('/cgi/log-to-file', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: 'msg=' + encodeURIComponent('[STATUS] Skipping redundant reconnecting update\n')
-    }).catch(function() {});
+    console.log('[STATUS] Skipping redundant reconnecting update');
     return;  // Skip redundant reconnecting updates
   }
   
@@ -1064,20 +1053,11 @@ function updateConnectionStatus(status, isClickable) {
   
   // Determine if we should use alternate positioning (when no room selected)
   var useAlternatePosition = !chatInputArea || chatInputArea.style.display === 'none';
-  
-  fetch('/cgi/log-to-file', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-    body: 'msg=' + encodeURIComponent('[STATUS] UseAlternatePosition: ' + useAlternatePosition + '\n')
-  }).catch(function() {});
+  console.log('[STATUS] UseAlternatePosition:', useAlternatePosition);
   
   // If element doesn't exist and we need to show a status, create it
   if (!statusElement && status !== 'connected') {
-    fetch('/cgi/log-to-file', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: 'msg=' + encodeURIComponent('[STATUS] Creating new status element\n')
-    }).catch(function() {});
+    console.log('[STATUS] Creating new status element');
     
     statusElement = document.createElement('div');
     statusElement.id = 'connecting-status';
@@ -1088,28 +1068,16 @@ function updateConnectionStatus(status, isClickable) {
       if (chatMessages) {
         chatMessages.appendChild(statusElement);
         statusElement.classList.add('no-room-position');
-        fetch('/cgi/log-to-file', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-          body: 'msg=' + encodeURIComponent('[STATUS] Created element in chat-messages (no-room-position)\n')
-        }).catch(function() {});
+        console.log('[STATUS] Created element in chat-messages (no-room-position)');
       }
     } else if (chatInputArea) {
       chatInputArea.appendChild(statusElement);
       statusElement.classList.remove('no-room-position');
-      fetch('/cgi/log-to-file', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: 'msg=' + encodeURIComponent('[STATUS] Created element in chat-input-area\n')
-      }).catch(function() {});
+      console.log('[STATUS] Created element in chat-input-area');
     } else {
       // Can't create status element
       console.warn('[SSE] Cannot show connection status - no suitable parent found');
-      fetch('/cgi/log-to-file', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: 'msg=' + encodeURIComponent('[STATUS] ERROR: Cannot create status element - no parent found\n')
-      }).catch(function() {});
+      console.log('[STATUS] ERROR: Cannot create status element - no parent found');
       return;
     }
   } else if (statusElement) {
@@ -1191,23 +1159,14 @@ function updateConnectionStatus(status, isClickable) {
     if (sendBtn) sendBtn.disabled = true;
   } else if (status === 'reconnecting') {
     // DEBUG LOGGING
-    fetch('/cgi/log-to-file', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: 'msg=' + encodeURIComponent('[STATUS] Entering reconnecting status block\n')
-    }).catch(function() {});
+    console.log('[STATUS] Entering reconnecting status block');
     
     // Show reconnecting with spinner
     // Use global spinner to prevent animation reset
     
     // Check if we're transitioning from connection-lost (Retry/Disconnected)
     var wasDisconnected = statusElement.classList.contains('connection-lost');
-    
-    fetch('/cgi/log-to-file', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: 'msg=' + encodeURIComponent('[STATUS] WasDisconnected: ' + wasDisconnected + '\n')
-    }).catch(function() {});
+    console.log('[STATUS] WasDisconnected:', wasDisconnected);
     
     // Get or create the global spinner (shared logic)
     if (!window.sseSpinnerElement) {
@@ -1217,11 +1176,7 @@ function updateConnectionStatus(status, isClickable) {
     
     if (wasDisconnected) {
       // Crossfade from Retry/Disconnected to Reconnecting
-      fetch('/cgi/log-to-file', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: 'msg=' + encodeURIComponent('[STATUS] Using crossfade transition (wasDisconnected)\n')
-      }).catch(function() {});
+      console.log('[STATUS] Using crossfade transition (wasDisconnected)');
       
       // First fade out by setting opacity to 0
       statusElement.style.opacity = '0';
@@ -1236,12 +1191,7 @@ function updateConnectionStatus(status, isClickable) {
       window.sseStatusTransitionTimeout = setTimeout(function() {
         // Set text with spinner while invisible
         setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
-        
-        fetch('/cgi/log-to-file', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-          body: 'msg=' + encodeURIComponent('[STATUS] Set text to "Reconnecting" with spinner (crossfade)\n')
-        }).catch(function() {});
+        console.log('[STATUS] Set text to "Reconnecting" with spinner (crossfade)');
         
         // Force reflow
         void statusElement.offsetHeight;
@@ -1254,47 +1204,26 @@ function updateConnectionStatus(status, isClickable) {
       statusElement.classList.add('visible');
     } else {
       // Coming from other state or first time
-      fetch('/cgi/log-to-file', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: 'msg=' + encodeURIComponent('[STATUS] Using direct transition (NOT wasDisconnected)\n')
-      }).catch(function() {});
+      console.log('[STATUS] Using direct transition (NOT wasDisconnected)');
       
       statusElement.classList.remove('connection-lost');
       
       // Set text without clearing spinner (preserve animation)
       setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
-      
-      fetch('/cgi/log-to-file', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: 'msg=' + encodeURIComponent('[STATUS] Set text to "Reconnecting" with spinner (direct)\n')
-      }).catch(function() {});
+      console.log('[STATUS] Set text to "Reconnecting" with spinner (direct)');
       
       if (!statusElement.classList.contains('visible')) {
         // First time appearing - fade in
-        fetch('/cgi/log-to-file', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-          body: 'msg=' + encodeURIComponent('[STATUS] Adding visible class (first time)\n')
-        }).catch(function() {});
+        console.log('[STATUS] Adding visible class (first time)');
         statusElement.offsetHeight;
         statusElement.classList.add('visible');
       } else {
-        fetch('/cgi/log-to-file', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-          body: 'msg=' + encodeURIComponent('[STATUS] Already visible, staying visible\n')
-        }).catch(function() {});
+        console.log('[STATUS] Already visible, staying visible');
       }
       // else: already visible, no change needed (stays visible)
     }
     
-    fetch('/cgi/log-to-file', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: 'msg=' + encodeURIComponent('[STATUS] Reconnecting status block complete - element should be visible now\n')
-    }).catch(function() {});
+    console.log('[STATUS] Reconnecting status block complete - element should be visible now');
     
     statusElement.onclick = null;
     statusElement.onmouseenter = null;
@@ -1464,20 +1393,14 @@ function setupMessageStream(roomName, sinceTimestamp) {
   
   // Handle errors
   window.messageEventSource.addEventListener('error', function(event) {
-    // DEBUG LOGGING START
-    var logEntry = '\n=== EventSource ERROR EVENT at ' + new Date().toISOString() + ' ===\n';
-    logEntry += 'Event type: ' + event.type + '\n';
-    logEntry += 'ReadyState: ' + window.messageEventSource.readyState + '\n';
-    logEntry += 'URL: ' + window.messageEventSource.url + '\n';
-    logEntry += 'ErrorCount: ' + (errorCount + 1) + '\n';
-    logEntry += 'ConnectionEstablished: ' + connectionEstablished + '\n';
-    logEntry += 'Current Room: ' + (window.currentRoom || 'NONE') + '\n';
-    fetch('/cgi/log-to-file', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: 'msg=' + encodeURIComponent(logEntry)
-    }).catch(function() {});
-    // DEBUG LOGGING END
+    // DEBUG LOGGING
+    console.log('\n=== EventSource ERROR EVENT at ' + new Date().toISOString() + ' ===');
+    console.log('Event type:', event.type);
+    console.log('ReadyState:', window.messageEventSource.readyState, '(0=CONNECTING, 1=OPEN, 2=CLOSED)');
+    console.log('URL:', window.messageEventSource.url);
+    console.log('ErrorCount:', (errorCount + 1));
+    console.log('ConnectionEstablished:', connectionEstablished);
+    console.log('Current Room:', window.currentRoom || 'NONE');
     
     console.error('[SSE] Error occurred:', event);
     console.error('[SSE] ReadyState:', window.messageEventSource.readyState);
@@ -1489,11 +1412,7 @@ function setupMessageStream(roomName, sinceTimestamp) {
     errorCount++;
     
     // DEBUG: Log before calling updateConnectionStatus
-    fetch('/cgi/log-to-file', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: 'msg=' + encodeURIComponent('[SSE] About to call updateConnectionStatus("reconnecting", false)\n')
-    }).catch(function() {});
+    console.log('[SSE] About to call updateConnectionStatus("reconnecting", false)');
     
     // CRITICAL: Show reconnecting status immediately on ANY error
     // Don't wait for specific readyState values - show user feedback right away
@@ -1501,11 +1420,7 @@ function setupMessageStream(roomName, sinceTimestamp) {
     updateConnectionStatus('reconnecting', false);
     
     // DEBUG: Log after calling updateConnectionStatus
-    fetch('/cgi/log-to-file', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: 'msg=' + encodeURIComponent('[SSE] Called updateConnectionStatus - returned\n')
-    }).catch(function() {});
+    console.log('[SSE] Called updateConnectionStatus - returned');
     
     // Now handle specific readyState cases for reconnection logic
     if (window.messageEventSource.readyState === EventSource.CLOSED) {
