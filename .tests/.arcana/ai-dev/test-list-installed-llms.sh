@@ -5,19 +5,19 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-test_list_available_llms() {
-  run_spell "spells/.arcana/ai-dev/list-available-llms"
+test_help() {
+  run_spell "spells/.arcana/ai-dev/list-installed-llms" --help
   assert_success || return 1
-  assert_output_contains "phi3.5:mini" || return 1
+  assert_output_contains "Usage:" || return 1
 }
 
-test_list_installed_llms_no_ollama() {
+test_handles_no_ollama() {
   # Should succeed with no output when ollama not installed
   run_spell "spells/.arcana/ai-dev/list-installed-llms"
   assert_success || return 1
 }
 
-run_test_case "list-available-llms returns curated list" test_list_available_llms
-run_test_case "list-installed-llms handles no ollama" test_list_installed_llms_no_ollama
+run_test_case "list-installed-llms shows help" test_help
+run_test_case "list-installed-llms handles no ollama" test_handles_no_ollama
 
 finish_tests
