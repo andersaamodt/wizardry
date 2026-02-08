@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# Install an LLM model.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-llm MODEL
+
+Downloads and installs an LLM model using ollama.
+
+Example: install-llm llama2:7b
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+model=${1-}
+if [ -z "$model" ]; then
+  die 2 "install-llm: MODEL required"
+fi
+
+# Check if ollama is installed
+if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+  die "install-llm: ollama is not installed"
+fi
+
+# Get ollama binary
+if has ollama; then
+  ollama_bin="ollama"
+elif [ -x "$HOME/.local/bin/ollama" ]; then
+  ollama_bin="$HOME/.local/bin/ollama"
+else
+  die "install-llm: ollama binary not found"
+fi
+
+say "Installing LLM model: $model"
+$ollama_bin pull "$model" || die "install-llm: failed to install $model"
+
+success "LLM model installed: $model"

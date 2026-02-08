@@ -1,0 +1,74 @@
+#!/bin/sh
+
+# Uninstall ollama daemon configuration.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-ollama-daemon
+
+Removes the ollama daemon configuration (systemd/launchd).
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+run_priv() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return
+  fi
+  if has sudo; then
+    sudo "$@"
+    return
+  fi
+  die "uninstall-ollama-daemon: root or sudo required"
+}
+
+unit="ollama.service"
+plist="/Library/LaunchDaemons/com.ollama.service.plist"
+
+if has systemctl; then
+  unit_file="/etc/systemd/system/$unit"
+  
+  if [ -f "$unit_file" ]; then
+    say "Removing systemd service unit..."
+    
+    # Stop and disable if running
+    if systemctl is-active "$unit" >/dev/null 2>&1; then
+      run_priv systemctl stop "$unit" 2>/dev/null || true
+    fi
+    if systemctl is-enabled "$unit" >/dev/null 2>&1; then
+      run_priv systemctl disable "$unit" 2>/dev/null || true
+    fi
+    
+    run_priv rm -f "$unit_file"
+    run_priv systemctl daemon-reload
+    success "systemd service removed"
+  else
+    success "systemd service not installed"
+  fi
+  exit 0
+fi
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+  if [ -f "$plist" ]; then
+    say "Removing launchd plist..."
+    
+    # Unload if loaded
+    if launchctl list | grep -q "com.ollama.service" 2>/dev/null; then
+      run_priv launchctl unload "$plist" 2>/dev/null || true
+    fi
+    
+    run_priv rm -f "$plist"
+    success "launchd plist removed"
+  else
+    success "launchd plist not installed"
+  fi
+  exit 0
+fi
+
+die "uninstall-ollama-daemon: systemd or launchd required"

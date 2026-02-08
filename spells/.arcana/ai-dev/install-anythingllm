@@ -1,0 +1,63 @@
+#!/bin/sh
+
+# Install AnythingLLM in a cross-platform POSIX-compliant way.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-anythingllm
+
+Installs AnythingLLM without using homebrew, in a POSIX-compliant cross-platform manner.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+# Check if already installed
+if "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null; then
+  success "AnythingLLM is already installed"
+  exit 0
+fi
+
+say "Installing AnythingLLM..."
+
+OS=$(uname -s 2>/dev/null)
+ARCH=$(uname -m 2>/dev/null)
+
+case "$OS" in
+Darwin)
+  # macOS installation - provide manual installation instructions
+  say "AnythingLLM desktop app installation for macOS..."
+  say "Please visit https://anythingllm.com/desktop to download the latest version"
+  say "The automated download is currently not available due to changing distribution URLs"
+  die "install-anythingllm: manual installation required - visit https://anythingllm.com/desktop"
+  ;;
+Linux)
+  # Linux installation - provide manual installation instructions
+  say "AnythingLLM desktop app installation for Linux..."
+  say "Please visit https://anythingllm.com/desktop to download the latest version"
+  say "The automated download is currently not available due to changing distribution URLs"
+  die "install-anythingllm: manual installation required - visit https://anythingllm.com/desktop"
+  ;;
+*)
+  die "install-anythingllm: unsupported operating system: $OS"
+  ;;
+esac
+
+# Verify installation
+if ! "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null; then
+  die "install-anythingllm: installation verification failed"
+fi
+
+success "AnythingLLM installed successfully"
+
+# Check if we should auto-repair link (if ollama is installed)
+if "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+  say "ollama is installed, repairing link..."
+  "$script_dir/repair-ai-link" || warn "install-anythingllm: failed to repair link"
+fi

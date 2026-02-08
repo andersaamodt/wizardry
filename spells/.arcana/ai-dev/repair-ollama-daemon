@@ -1,0 +1,115 @@
+#!/bin/sh
+
+# Create or repair the ollama daemon configuration.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: repair-ollama-daemon
+
+Creates or repairs the systemd/launchd daemon configuration for ollama.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+# Check if ollama is installed
+if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+  die "repair-ollama-daemon: ollama is not installed"
+fi
+
+# Find ollama binary
+ollama_bin=""
+if has ollama; then
+  ollama_bin=$(command -v ollama)
+elif [ -x "$HOME/.local/bin/ollama" ]; then
+  ollama_bin="$HOME/.local/bin/ollama"
+elif [ -x "/usr/local/bin/ollama" ]; then
+  ollama_bin="/usr/local/bin/ollama"
+else
+  die "repair-ollama-daemon: ollama binary not found"
+fi
+
+run_priv() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return
+  fi
+  if has sudo; then
+    sudo "$@"
+    return
+  fi
+  die "repair-ollama-daemon: root or sudo required"
+}
+
+if has systemctl; then
+  # Create systemd service unit
+  unit="ollama.service"
+  unit_file="/etc/systemd/system/$unit"
+  
+  say "Creating systemd service unit..."
+  
+  run_priv tee "$unit_file" >/dev/null <<EOF
+[Unit]
+Description=Ollama Service
+After=network-online.target
+
+[Service]
+Type=simple
+User=$USER
+ExecStart=$ollama_bin serve
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  
+  run_priv systemctl daemon-reload
+  success "systemd service created: $unit"
+  exit 0
+fi
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+  # Create launchd plist
+  plist="/Library/LaunchDaemons/com.ollama.service.plist"
+  
+  say "Creating launchd plist..."
+  
+  run_priv tee "$plist" >/dev/null <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.ollama.service</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>$ollama_bin</string>
+        <string>serve</string>
+    </array>
+    <key>UserName</key>
+    <string>$USER</string>
+    <key>StandardOutPath</key>
+    <string>$HOME/.ollama/ollama.log</string>
+    <key>StandardErrorPath</key>
+    <string>$HOME/.ollama/ollama.err</string>
+    <key>KeepAlive</key>
+    <true/>
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>
+EOF
+  
+  run_priv chmod 644 "$plist"
+  success "launchd plist created: $plist"
+  exit 0
+fi
+
+die "repair-ollama-daemon: systemd or launchd required"
