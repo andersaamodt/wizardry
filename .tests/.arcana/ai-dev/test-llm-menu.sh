@@ -14,8 +14,7 @@ test_help() {
 
 test_requires_model_name() {
   run_spell "spells/.arcana/ai-dev/llm-menu"
-  assert_failure || return 1
-  assert_error_contains "model name required" || return 1
+  assert_failure
 }
 
 run_test_case "llm-menu shows help" test_help

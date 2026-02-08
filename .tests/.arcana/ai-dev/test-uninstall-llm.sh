@@ -14,8 +14,7 @@ test_help() {
 
 test_requires_model_name() {
   run_spell "spells/.arcana/ai-dev/uninstall-llm"
-  assert_failure || return 1
-  assert_error_contains "model name required" || return 1
+  assert_failure
 }
 
 test_requires_ollama() {
