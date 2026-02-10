@@ -945,7 +945,7 @@ window.sseMaxReconnectAttempts = 3;  // Give up after 3 attempts
 window.sseReconnectTimeout = null;
 window.sseLastSuccessfulConnection = null;
 window.sseHeartbeatTimeout = null;
-window.sseHeartbeatInterval = 45000;  // 45 seconds - server pings every 15s, so this allows 3 missed pings
+window.sseHeartbeatInterval = 20000;  // 20 seconds - server pings every 15s, allows 1 missed ping for quick disconnect detection
 window.sseSpinnerElement = null;  // Global spinner to prevent animation reset
 
 // Reset heartbeat timer - call this whenever we receive ANY event from server
@@ -1017,6 +1017,12 @@ function setStatusTextWithSpinner(element, text, spinnerElement) {
 
 // Update connection status UI
 function updateConnectionStatus(status, isClickable) {
+  // DEBUG LOGGING
+  console.log('\n=== updateConnectionStatus CALLED at ' + new Date().toISOString() + ' ===');
+  console.log('Status:', status);
+  console.log('IsClickable:', isClickable);
+  console.log('Current status:', window.currentConnectionStatus || 'NONE');
+  
   var statusElement = document.getElementById('connecting-status');
   var sendBtn = document.getElementById('send-btn');
   var chatInputArea = document.getElementById('chat-input-area');
@@ -1025,6 +1031,13 @@ function updateConnectionStatus(status, isClickable) {
   var deleteRoomBtn = document.getElementById('delete-room-btn');
   var membersBtn = document.getElementById('members-btn');
   
+  console.log('StatusElement exists:', !!statusElement);
+  console.log('ChatInputArea exists:', !!chatInputArea);
+  if (chatInputArea) {
+    console.log('ChatInputArea display:', chatInputArea.style.display);
+  }
+  console.log('SendBtn exists:', !!sendBtn);
+  
   // Track current status to avoid redundant updates
   if (!window.currentConnectionStatus) {
     window.currentConnectionStatus = '';
@@ -1032,6 +1045,7 @@ function updateConnectionStatus(status, isClickable) {
   
   // If already showing this status, don't animate again
   if (window.currentConnectionStatus === status && status === 'reconnecting') {
+    console.log('[STATUS] Skipping redundant reconnecting update');
     return;  // Skip redundant reconnecting updates
   }
   
@@ -1039,9 +1053,12 @@ function updateConnectionStatus(status, isClickable) {
   
   // Determine if we should use alternate positioning (when no room selected)
   var useAlternatePosition = !chatInputArea || chatInputArea.style.display === 'none';
+  console.log('[STATUS] UseAlternatePosition:', useAlternatePosition);
   
   // If element doesn't exist and we need to show a status, create it
   if (!statusElement && status !== 'connected') {
+    console.log('[STATUS] Creating new status element');
+    
     statusElement = document.createElement('div');
     statusElement.id = 'connecting-status';
     
@@ -1051,13 +1068,16 @@ function updateConnectionStatus(status, isClickable) {
       if (chatMessages) {
         chatMessages.appendChild(statusElement);
         statusElement.classList.add('no-room-position');
+        console.log('[STATUS] Created element in chat-messages (no-room-position)');
       }
     } else if (chatInputArea) {
       chatInputArea.appendChild(statusElement);
       statusElement.classList.remove('no-room-position');
+      console.log('[STATUS] Created element in chat-input-area');
     } else {
       // Can't create status element
       console.warn('[SSE] Cannot show connection status - no suitable parent found');
+      console.log('[STATUS] ERROR: Cannot create status element - no parent found');
       return;
     }
   } else if (statusElement) {
@@ -1138,11 +1158,15 @@ function updateConnectionStatus(status, isClickable) {
     statusElement.onmouseleave = null;
     if (sendBtn) sendBtn.disabled = true;
   } else if (status === 'reconnecting') {
+    // DEBUG LOGGING
+    console.log('[STATUS] Entering reconnecting status block');
+    
     // Show reconnecting with spinner
     // Use global spinner to prevent animation reset
     
     // Check if we're transitioning from connection-lost (Retry/Disconnected)
     var wasDisconnected = statusElement.classList.contains('connection-lost');
+    console.log('[STATUS] WasDisconnected:', wasDisconnected);
     
     // Get or create the global spinner (shared logic)
     if (!window.sseSpinnerElement) {
@@ -1152,6 +1176,8 @@ function updateConnectionStatus(status, isClickable) {
     
     if (wasDisconnected) {
       // Crossfade from Retry/Disconnected to Reconnecting
+      console.log('[STATUS] Using crossfade transition (wasDisconnected)');
+      
       // First fade out by setting opacity to 0
       statusElement.style.opacity = '0';
       
@@ -1165,6 +1191,7 @@ function updateConnectionStatus(status, isClickable) {
       window.sseStatusTransitionTimeout = setTimeout(function() {
         // Set text with spinner while invisible
         setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
+        console.log('[STATUS] Set text to "Reconnecting" with spinner (crossfade)');
         
         // Force reflow
         void statusElement.offsetHeight;
@@ -1177,18 +1204,26 @@ function updateConnectionStatus(status, isClickable) {
       statusElement.classList.add('visible');
     } else {
       // Coming from other state or first time
+      console.log('[STATUS] Using direct transition (NOT wasDisconnected)');
+      
       statusElement.classList.remove('connection-lost');
       
       // Set text without clearing spinner (preserve animation)
       setStatusTextWithSpinner(statusElement, 'Reconnecting', window.sseSpinnerElement);
+      console.log('[STATUS] Set text to "Reconnecting" with spinner (direct)');
       
       if (!statusElement.classList.contains('visible')) {
         // First time appearing - fade in
+        console.log('[STATUS] Adding visible class (first time)');
         statusElement.offsetHeight;
         statusElement.classList.add('visible');
+      } else {
+        console.log('[STATUS] Already visible, staying visible');
       }
       // else: already visible, no change needed (stays visible)
     }
+    
+    console.log('[STATUS] Reconnecting status block complete - element should be visible now');
     
     statusElement.onclick = null;
     statusElement.onmouseenter = null;
@@ -1358,6 +1393,15 @@ function setupMessageStream(roomName, sinceTimestamp) {
   
   // Handle errors
   window.messageEventSource.addEventListener('error', function(event) {
+    // DEBUG LOGGING
+    console.log('\n=== EventSource ERROR EVENT at ' + new Date().toISOString() + ' ===');
+    console.log('Event type:', event.type);
+    console.log('ReadyState:', window.messageEventSource.readyState, '(0=CONNECTING, 1=OPEN, 2=CLOSED)');
+    console.log('URL:', window.messageEventSource.url);
+    console.log('ErrorCount:', (errorCount + 1));
+    console.log('ConnectionEstablished:', connectionEstablished);
+    console.log('Current Room:', window.currentRoom || 'NONE');
+    
     console.error('[SSE] Error occurred:', event);
     console.error('[SSE] ReadyState:', window.messageEventSource.readyState);
     console.error('[SSE] URL:', window.messageEventSource.url);
@@ -1367,6 +1411,18 @@ function setupMessageStream(roomName, sinceTimestamp) {
     
     errorCount++;
     
+    // DEBUG: Log before calling updateConnectionStatus
+    console.log('[SSE] About to call updateConnectionStatus("reconnecting", false)');
+    
+    // CRITICAL: Show reconnecting status immediately on ANY error
+    // Don't wait for specific readyState values - show user feedback right away
+    // This handles server shutdown, network issues, and all error scenarios
+    updateConnectionStatus('reconnecting', false);
+    
+    // DEBUG: Log after calling updateConnectionStatus
+    console.log('[SSE] Called updateConnectionStatus - returned');
+    
+    // Now handle specific readyState cases for reconnection logic
     if (window.messageEventSource.readyState === EventSource.CLOSED) {
       console.error('[SSE] Connection CLOSED - server unavailable');
       
@@ -1374,8 +1430,6 @@ function setupMessageStream(roomName, sinceTimestamp) {
       if (window.sseReconnectAttempts < window.sseMaxReconnectAttempts) {
         window.sseReconnectAttempts++;
         console.log('[SSE] Reconnect attempt', window.sseReconnectAttempts, 'of', window.sseMaxReconnectAttempts);
-        
-        updateConnectionStatus('reconnecting', false);
         
         // Wait 2 seconds before reconnecting
         window.sseReconnectTimeout = setTimeout(function() {
@@ -1391,12 +1445,8 @@ function setupMessageStream(roomName, sinceTimestamp) {
       }
     } else if (window.messageEventSource.readyState === EventSource.CONNECTING) {
       console.warn('[SSE] Connection CONNECTING - EventSource attempting to reconnect');
-      
-      // If we've been connecting for too long, consider it lost
-      if (!connectionEstablished && errorCount > 2) {
-        console.error('[SSE] Connection attempts failing - server may be down');
-        updateConnectionStatus('reconnecting', false);
-      }
+      // Browser is auto-reconnecting - reconnecting status already shown above
+      // No additional action needed here
     }
   });
   
