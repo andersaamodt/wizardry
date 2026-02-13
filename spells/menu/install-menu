@@ -143,6 +143,7 @@ while :; do
             mud) label="wizardry MUD" ;;
             web-wizardry) label="web wizardry" ;;
             ai-dev) label="AI dev" ;;
+            docker) label="Docker" ;;
         esac
         
         if [ -n "$status" ]; then

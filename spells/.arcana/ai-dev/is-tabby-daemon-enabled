@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# Check if the Tabby daemon container is configured to start automatically.
+
+set -eu
+. env-clear
+
+if ! has docker; then
+  exit 1
+fi
+
+restart_policy=$(docker container inspect -f '{{.HostConfig.RestartPolicy.Name}}' tabby 2>/dev/null || printf '')
+if [ -n "$restart_policy" ] && [ "$restart_policy" != "no" ]; then
+  exit 0
+fi
+
+exit 1

@@ -20,6 +20,22 @@ set -eu
 
 unit="ollama.service"
 
+# Primary signal: Ollama API is responding locally.
+if has curl; then
+  if curl -fsS --max-time 1 "http://127.0.0.1:11434/api/tags" >/dev/null 2>&1; then
+    exit 0
+  fi
+elif has wget; then
+  if wget -q -T 1 -O - "http://127.0.0.1:11434/api/tags" >/dev/null 2>&1; then
+    exit 0
+  fi
+fi
+
+# Fast path: process probe avoids potentially blocking service-manager queries.
+if pgrep -f "ollama serve" >/dev/null 2>&1; then
+  exit 0
+fi
+
 if has systemctl; then
   if systemctl is-active "$unit" >/dev/null 2>&1; then
     exit 0
@@ -29,16 +45,11 @@ fi
 
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
   label="com.ollama.service"
-  
+  # launchctl list is generally fast and safe in non-root contexts.
   if launchctl list 2>/dev/null | grep -q "$label"; then
     exit 0
   fi
   exit 1
-fi
-
-# Fallback: check if ollama process is running
-if pgrep -f "ollama serve" >/dev/null 2>&1; then
-  exit 0
 fi
 
 exit 1

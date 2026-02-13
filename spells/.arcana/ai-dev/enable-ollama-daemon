@@ -29,10 +29,10 @@ run_priv() {
     return
   fi
   if has sudo; then
-    sudo "$@"
-    return
+    sudo "$@" && return
+    die "enable-ollama-daemon: sudo command failed"
   fi
-  die "enable-ollama-daemon: root or sudo required"
+  die "enable-ollama-daemon: root required"
 }
 
 unit="ollama.service"

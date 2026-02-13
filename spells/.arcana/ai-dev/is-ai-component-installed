@@ -32,7 +32,7 @@ tabby)
     exit 0
   fi
   # Check in common install locations
-  for path in /usr/local/bin/tabby /usr/bin/tabby "$HOME/.local/bin/tabby"; do
+  for path in /usr/local/bin/tabby /opt/homebrew/bin/tabby /usr/bin/tabby "$HOME/.local/bin/tabby" "$HOME/bin/tabby"; do
     if [ -x "$path" ]; then
       exit 0
     fi

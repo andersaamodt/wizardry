@@ -1,0 +1,35 @@
+#!/bin/sh
+
+# Check if the Docker daemon integration is installed.
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+daemon_disabled_marker="$HOME/.docker/.wizardry-daemon-disabled"
+
+if [ -f "$daemon_disabled_marker" ]; then
+  exit 1
+fi
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  if [ -d "/Applications/Docker.app" ] || [ -d "$HOME/Applications/Docker.app" ]; then
+    exit 0
+  fi
+  exit 1
+fi
+
+if has systemctl; then
+  if systemctl cat docker >/dev/null 2>&1; then
+    if systemctl is-enabled docker 2>/dev/null | grep -q '^masked$'; then
+      exit 1
+    fi
+    exit 0
+  fi
+fi
+
+if has dockerd; then
+  exit 0
+fi
+
+exit 1

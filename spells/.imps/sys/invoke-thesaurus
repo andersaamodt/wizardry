@@ -63,7 +63,8 @@ fi
 
 # Define default synonyms (word -> spell)
 # Spell synonyms (sorted alphabetically)
-it_defaults="cd-to jump-to-marker
+it_defaults="arcana install-menu
+cd-to jump-to-marker
 copy-file copy
 delete-file trash
 detect-os detect-distro

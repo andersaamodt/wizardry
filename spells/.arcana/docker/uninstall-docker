@@ -1,0 +1,82 @@
+#!/bin/sh
+
+# Uninstall Docker.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-docker
+
+Uninstalls Docker.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+core_dir=$(CDPATH= cd -- "$script_dir/../core" && pwd)
+
+if ! "$script_dir/is-docker-installed" >/dev/null 2>&1; then
+  success "docker is not installed"
+  exit 0
+fi
+
+printf '%s\n' "Uninstalling docker..."
+
+# Remove daemon integration first.
+"$script_dir/uninstall-docker-daemon" >/dev/null 2>&1 || :
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  if has osascript; then
+    osascript -e 'quit app "Docker"' >/dev/null 2>&1 || :
+  fi
+
+  remove_path_if_present() {
+    target=$1
+    if [ -e "$target" ]; then
+      if rm -rf "$target" >/dev/null 2>&1; then
+        return 0
+      fi
+      if has sudo; then
+        sudo rm -rf "$target" >/dev/null 2>&1 || die "uninstall-docker: failed to remove $target"
+      else
+        die "uninstall-docker: failed to remove $target"
+      fi
+    fi
+  }
+
+  remove_path_if_present "/Applications/Docker.app"
+  remove_path_if_present "$HOME/Applications/Docker.app"
+
+  # Remove optional user-level docker symlink created by install-docker.
+  if [ -L "$HOME/.local/bin/docker" ]; then
+    linked_target=$(readlink "$HOME/.local/bin/docker" 2>/dev/null || printf '')
+    case "$linked_target" in
+      */Docker.app/Contents/Resources/bin/docker)
+        rm -f "$HOME/.local/bin/docker" 2>/dev/null || :
+        ;;
+    esac
+  fi
+else
+  APT_PACKAGE=docker.io PACMAN_PACKAGE=docker NIX_PACKAGE=docker PKGIN_PACKAGE=docker \
+    "$core_dir/manage-system-command" --uninstall docker docker || warn "uninstall-docker: package removal reported a non-zero status"
+fi
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  # App removal is the primary uninstallation signal on macOS.
+  if [ -d "/Applications/Docker.app" ] || [ -d "$HOME/Applications/Docker.app" ]; then
+    die "uninstall-docker: Docker.app removal verification failed"
+  fi
+  success "docker uninstalled successfully"
+  exit 0
+fi
+
+if "$script_dir/is-docker-installed" >/dev/null 2>&1; then
+  die "uninstall-docker: uninstallation verification failed"
+fi
+
+success "docker uninstalled successfully"
+exit 0

@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# Check if the Tabby daemon container is running.
+
+set -eu
+. env-clear
+
+if ! has docker; then
+  exit 1
+fi
+
+if docker ps --filter name='^/tabby$' --filter status=running --format '{{.Names}}' 2>/dev/null | grep -qx 'tabby'; then
+  exit 0
+fi
+
+exit 1

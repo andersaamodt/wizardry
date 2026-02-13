@@ -1,0 +1,39 @@
+#!/bin/sh
+
+# Check if Docker Desktop UI process is running (macOS).
+
+set -eu
+. env-clear
+
+if [ "$(uname -s 2>/dev/null)" != "Darwin" ]; then
+  exit 1
+fi
+
+# Native app-state checks are the most reliable on macOS.
+if has osascript; then
+  if [ "$(osascript -e 'application "Docker" is running' 2>/dev/null || printf 'false')" = "true" ]; then
+    exit 0
+  fi
+  if [ "$(osascript -e 'application "Docker Desktop" is running' 2>/dev/null || printf 'false')" = "true" ]; then
+    exit 0
+  fi
+  if [ "$(osascript -e 'application id "com.docker.docker" is running' 2>/dev/null || printf 'false')" = "true" ]; then
+    exit 0
+  fi
+fi
+
+desktop_pattern='/Docker\.app/Contents/MacOS/Docker( Desktop)?'
+
+if has pgrep; then
+  if pgrep -f "$desktop_pattern" >/dev/null 2>&1; then
+    exit 0
+  fi
+fi
+
+if has ps; then
+  if ps ax -o command= 2>/dev/null | grep -E "$desktop_pattern" | grep -v grep >/dev/null 2>&1; then
+    exit 0
+  fi
+fi
+
+exit 1

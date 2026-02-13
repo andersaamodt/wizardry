@@ -1,0 +1,178 @@
+#!/bin/sh
+
+# Present the Docker management menu.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: docker-menu
+
+Displays the Docker management menu.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if ! require menu "The docker-menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+SELECTION_FILE=$(temp-file docker-menu-selection)
+export SELECTION_FILE
+
+trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true; exit 130' INT
+trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true; exit 0' TERM
+trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true' EXIT
+
+wrap_cmd() {
+  item_label=$1
+  cmd=$2
+  safe_label=$(printf '%s' "$item_label" | sed "s/'/'\\\\''/g")
+  printf "%s; printf '%%s' '%s' > \"\$SELECTION_FILE\"" "$cmd" "$safe_label"
+}
+
+normalize_label() {
+  label=$1
+  case "$label" in
+    "[X] "*) printf '%s\n' "${label#"[X] "}" ;;
+    "[ ] "*) printf '%s\n' "${label#"[ ] "}" ;;
+    *) printf '%s\n' "$label" ;;
+  esac
+}
+
+while true; do
+  unset menu_status
+
+  if [ -f "$SELECTION_FILE" ]; then
+    saved_label=$(cat "$SELECTION_FILE" 2>/dev/null || printf '')
+  else
+    saved_label=""
+  fi
+
+  docker_installed=0
+  docker_desktop_running=0
+  docker_daemon_installed=0
+  docker_running=0
+  docker_enabled=0
+  is_macos=0
+
+  "$script_dir/is-docker-installed" >/dev/null 2>&1 && docker_installed=1
+  [ "$(uname -s 2>/dev/null)" = "Darwin" ] && is_macos=1
+
+  set --
+
+  if [ "$docker_installed" -eq 1 ]; then
+    if [ "$is_macos" -eq 1 ]; then
+      "$script_dir/is-docker-desktop-running" >/dev/null 2>&1 && docker_desktop_running=1
+      "$script_dir/is-docker-daemon-running" >/dev/null 2>&1 && docker_running=1
+      combined_running=0
+      if [ "$docker_desktop_running" -eq 1 ] || [ "$docker_running" -eq 1 ]; then
+        combined_running=1
+      fi
+      if [ "$combined_running" -eq 1 ]; then
+        desktop_label="[X] Docker daemon running"
+        desktop_cmd="$script_dir/stop-docker-daemon"
+      else
+        desktop_label="[ ] Docker daemon running"
+        desktop_cmd="$script_dir/start-docker-daemon"
+      fi
+      set -- "$@" "$desktop_label%$(wrap_cmd "$desktop_label" "$desktop_cmd")"
+    fi
+
+    "$script_dir/is-docker-daemon-installed" >/dev/null 2>&1 && docker_daemon_installed=1
+  fi
+
+  if [ "$docker_daemon_installed" -eq 1 ] && [ "$is_macos" -ne 1 ]; then
+    "$script_dir/is-docker-daemon-running" >/dev/null 2>&1 && docker_running=1
+    "$script_dir/is-docker-daemon-enabled" >/dev/null 2>&1 && docker_enabled=1
+
+    if [ "$docker_running" -eq 1 ]; then
+      running_label="[X] Docker daemon running"
+      running_cmd="$script_dir/stop-docker-daemon"
+    else
+      running_label="[ ] Docker daemon running"
+      running_cmd="$script_dir/start-docker-daemon"
+    fi
+    set -- "$@" "$running_label%$(wrap_cmd "$running_label" "$running_cmd")"
+
+    if [ "$docker_enabled" -eq 1 ]; then
+      startup_label="[X] Docker daemon at startup"
+      startup_cmd="$script_dir/disable-docker-daemon"
+    else
+      startup_label="[ ] Docker daemon at startup"
+      startup_cmd="$script_dir/enable-docker-daemon"
+    fi
+    set -- "$@" "$startup_label%$(wrap_cmd "$startup_label" "$startup_cmd")"
+  fi
+
+  if [ "$docker_daemon_installed" -eq 1 ] && [ "$is_macos" -eq 1 ]; then
+    "$script_dir/is-docker-daemon-enabled" >/dev/null 2>&1 && docker_enabled=1
+    if [ "$docker_enabled" -eq 1 ]; then
+      startup_label="[X] Docker daemon at startup"
+      startup_cmd="$script_dir/disable-docker-daemon"
+    else
+      startup_label="[ ] Docker daemon at startup"
+      startup_cmd="$script_dir/enable-docker-daemon"
+    fi
+    set -- "$@" "$startup_label%$(wrap_cmd "$startup_label" "$startup_cmd")"
+  fi
+
+  if [ "$docker_installed" -eq 1 ]; then
+    if [ "$docker_daemon_installed" -eq 1 ]; then
+      daemon_label="[X] Docker daemon"
+      daemon_cmd="$script_dir/uninstall-docker-daemon"
+    else
+      daemon_label="[ ] Docker daemon"
+      daemon_cmd="$script_dir/install-docker-daemon"
+    fi
+    set -- "$@" "$daemon_label%$(wrap_cmd "$daemon_label" "$daemon_cmd")"
+  fi
+
+  # Keep Docker install/uninstall as the last actionable item before Exit.
+  if [ "$docker_installed" -eq 1 ]; then
+    set -- "$@" "---"
+  fi
+  if [ "$docker_installed" -eq 1 ]; then
+    docker_label="[X] Docker"
+    docker_cmd="$script_dir/uninstall-docker"
+  else
+    docker_label="[ ] Docker"
+    docker_cmd="$script_dir/install-docker"
+  fi
+  set -- "$@" "$docker_label%$(wrap_cmd "$docker_label" "$docker_cmd")"
+
+  exit_label=$(exit-label)
+  set -- "$@" "${exit_label}%kill -TERM \$PPID"
+
+  start_selection=1
+  if [ -n "$saved_label" ]; then
+    search_normalized=$(normalize_label "$saved_label")
+    position=0
+    for item in "$@"; do
+      position=$((position + 1))
+      item_label=${item%%\%*}
+      if [ "$item_label" = "$saved_label" ]; then
+        start_selection=$position
+        break
+      fi
+      if [ "$(normalize_label "$item_label")" = "$search_normalized" ]; then
+        start_selection=$position
+        break
+      fi
+    done
+  fi
+
+  menu --start-selection "$start_selection" "Docker:" "$@" || menu_status=$?
+  menu_status=${menu_status:-0}
+
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    exit 0
+  fi
+done

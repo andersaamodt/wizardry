@@ -1,0 +1,74 @@
+#!/bin/sh
+
+# Install Docker daemon integration.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-docker-daemon
+
+Installs Docker daemon integration.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+daemon_disabled_marker="$HOME/.docker/.wizardry-daemon-disabled"
+
+if ! "$script_dir/is-docker-installed" >/dev/null 2>&1; then
+  die "install-docker-daemon: docker is not installed"
+fi
+
+if "$script_dir/is-docker-daemon-installed" >/dev/null 2>&1; then
+  success "docker daemon is already installed"
+  exit 0
+fi
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  target_app=""
+  if [ -d "/Applications/Docker.app" ]; then
+    target_app="/Applications/Docker.app"
+  elif [ -d "$HOME/Applications/Docker.app" ]; then
+    target_app="$HOME/Applications/Docker.app"
+  fi
+  [ -n "$target_app" ] || die "install-docker-daemon: Docker.app was not found"
+
+  app_docker_bin="$target_app/Contents/Resources/bin/docker"
+  [ -x "$app_docker_bin" ] || die "install-docker-daemon: docker cli was not found inside Docker.app"
+
+  mkdir -p "$HOME/.local/bin"
+  ln -sf "$app_docker_bin" "$HOME/.local/bin/docker" || die "install-docker-daemon: failed to install docker cli link"
+  mkdir -p "$HOME/.docker"
+  rm -f "$daemon_disabled_marker" 2>/dev/null || :
+
+  success "docker daemon installed"
+  exit 0
+fi
+
+run_priv() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return
+  fi
+  if has sudo; then
+    sudo "$@" && return
+    die "install-docker-daemon: sudo command failed"
+  fi
+  die "install-docker-daemon: root required"
+}
+
+if has systemctl; then
+  rm -f "$daemon_disabled_marker" 2>/dev/null || :
+  run_priv systemctl unmask docker >/dev/null 2>&1 || :
+  run_priv systemctl daemon-reload >/dev/null 2>&1 || :
+  if "$script_dir/is-docker-daemon-installed" >/dev/null 2>&1; then
+    success "docker daemon installed"
+    exit 0
+  fi
+fi
+
+die "install-docker-daemon: systemd or Docker Desktop is required"

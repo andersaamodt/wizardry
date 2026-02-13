@@ -38,7 +38,8 @@ fi
 
 # Build menu of available LLMs
 set --
-for llm_entry in $available_llms; do
+while IFS= read -r llm_entry; do
+  [ -n "$llm_entry" ] || continue
   # Parse model_name|description format
   model=$(printf '%s' "$llm_entry" | cut -d'|' -f1)
   description=$(printf '%s' "$llm_entry" | cut -d'|' -f2)
@@ -47,7 +48,9 @@ for llm_entry in $available_llms; do
   label="$model ($description)"
   
   set -- "$@" "$label%install-llm \"$model\" && kill -TERM \$PPID"
-done
+done <<EOF
+$available_llms
+EOF
 
 exit_label=$(exit-label)
 set -- "$@" "${exit_label}%kill -TERM \$PPID"

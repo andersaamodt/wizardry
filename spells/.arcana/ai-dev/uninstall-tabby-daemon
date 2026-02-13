@@ -1,0 +1,39 @@
+#!/bin/sh
+
+# Uninstall the Tabby daemon container definition.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-tabby-daemon
+
+Removes the Tabby daemon container definition.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+if ! has docker; then
+  success "tabby daemon is not installed"
+  exit 0
+fi
+
+if ! "$script_dir/is-tabby-daemon-installed" >/dev/null 2>&1; then
+  success "tabby daemon is not installed"
+  exit 0
+fi
+
+if "$script_dir/is-tabby-daemon-running" >/dev/null 2>&1; then
+  docker stop tabby >/dev/null 2>&1 || :
+fi
+
+if ! docker rm tabby >/dev/null; then
+  die "uninstall-tabby-daemon: failed to remove tabby daemon container"
+fi
+
+success "tabby daemon uninstalled"

@@ -41,10 +41,10 @@ run_priv() {
     return
   fi
   if has sudo; then
-    sudo "$@"
-    return
+    sudo "$@" && return
+    die "repair-ollama-daemon: sudo command failed"
   fi
-  die "repair-ollama-daemon: root or sudo required"
+  die "repair-ollama-daemon: root required"
 }
 
 if has systemctl; then
@@ -79,7 +79,20 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
   # Create launchd plist
   plist="/Library/LaunchDaemons/com.ollama.service.plist"
   
+  # Resolve daemon user/home deterministically for launchd context.
+  daemon_user=${SUDO_USER:-${USER:-}}
+  [ -z "$daemon_user" ] && daemon_user=$(id -un 2>/dev/null || printf 'root')
+  if [ "$daemon_user" = "root" ] && [ -n "${LOGNAME-}" ] && [ "$LOGNAME" != "root" ]; then
+    daemon_user=$LOGNAME
+  fi
+  
+  daemon_home=$(awk -F: -v u="$daemon_user" '$1==u {print $6; exit}' /etc/passwd 2>/dev/null || printf '')
+  [ -z "$daemon_home" ] && daemon_home="${HOME:-/var/root}"
+  ollama_state_dir="$daemon_home/.ollama"
+  
   say "Creating launchd plist..."
+  run_priv mkdir -p "$ollama_state_dir"
+  run_priv chown "$daemon_user" "$ollama_state_dir" >/dev/null 2>&1 || :
   
   run_priv tee "$plist" >/dev/null <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -94,11 +107,11 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
         <string>serve</string>
     </array>
     <key>UserName</key>
-    <string>$USER</string>
+    <string>$daemon_user</string>
     <key>StandardOutPath</key>
-    <string>$HOME/.ollama/ollama.log</string>
+    <string>$ollama_state_dir/ollama.log</string>
     <key>StandardErrorPath</key>
-    <string>$HOME/.ollama/ollama.err</string>
+    <string>$ollama_state_dir/ollama.err</string>
     <key>KeepAlive</key>
     <true/>
     <key>RunAtLoad</key>
@@ -107,7 +120,11 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
 </plist>
 EOF
   
+  run_priv chown root:wheel "$plist" >/dev/null 2>&1 || run_priv chown root "$plist"
   run_priv chmod 644 "$plist"
+  if has plutil; then
+    run_priv plutil -lint "$plist" >/dev/null || die "repair-ollama-daemon: invalid launchd plist"
+  fi
   success "launchd plist created: $plist"
   exit 0
 fi

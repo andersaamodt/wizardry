@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# Report Docker installation status.
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+if command -v colors >/dev/null 2>&1; then
+  . colors
+else
+  RESET=""
+  THEME_SUCCESS=""
+  THEME_WARNING=""
+  GREY=""
+fi
+
+if ! "$script_dir/is-docker-installed" >/dev/null 2>&1; then
+  printf '%s%s%s\n' "$GREY" "not installed" "$RESET"
+  exit 0
+fi
+
+if "$script_dir/is-docker-daemon-running" >/dev/null 2>&1; then
+  printf '%s%s%s\n' "$THEME_SUCCESS" "installed" "$RESET"
+else
+  printf '%s%s%s\n' "$THEME_WARNING" "installed, not running" "$RESET"
+fi

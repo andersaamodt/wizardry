@@ -1,0 +1,69 @@
+#!/bin/sh
+
+# Enable Docker daemon startup.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: enable-docker-daemon
+
+Enables Docker daemon startup.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+if ! "$script_dir/is-docker-daemon-installed" >/dev/null 2>&1; then
+  die "enable-docker-daemon: docker daemon is not installed"
+fi
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  launch_agents="$HOME/Library/LaunchAgents"
+  launch_agent="$launch_agents/com.wizardry.docker-desktop.plist"
+  mkdir -p "$launch_agents"
+  cat > "$launch_agent" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.wizardry.docker-desktop</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/open</string>
+    <string>-ga</string>
+    <string>Docker</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+</dict>
+</plist>
+EOF
+  success "docker daemon enabled at startup"
+  exit 0
+fi
+
+run_priv() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return
+  fi
+  if has sudo; then
+    sudo "$@" && return
+    die "enable-docker-daemon: sudo command failed"
+  fi
+  die "enable-docker-daemon: root required"
+}
+
+if has systemctl; then
+  run_priv systemctl enable docker
+  success "docker daemon enabled at boot"
+  exit 0
+fi
+
+die "enable-docker-daemon: systemd is required"

@@ -1,0 +1,24 @@
+#!/bin/sh
+
+# Check if Docker is installed.
+
+set -eu
+. env-clear
+
+if has docker; then
+  exit 0
+fi
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  if [ -d "/Applications/Docker.app" ] || [ -d "$HOME/Applications/Docker.app" ]; then
+    exit 0
+  fi
+fi
+
+for path in /usr/local/bin/docker /opt/homebrew/bin/docker /usr/bin/docker "$HOME/.local/bin/docker"; do
+  if [ -x "$path" ]; then
+    exit 0
+  fi
+done
+
+exit 1

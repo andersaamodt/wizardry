@@ -40,7 +40,7 @@ while :; do
   
   # If no LLMs installed, ask if user wants to add one
   if [ -z "$installed_llms" ]; then
-    set -- "Add an LLM now%$script_dir/select-llm-to-install"
+    set -- "Add LLM%$script_dir/select-llm-to-install"
     exit_label=$(exit-label)
     set -- "$@" "${exit_label}%kill -TERM \$PPID"
     

@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# Check if the Tabby daemon container is installed.
+
+set -eu
+. env-clear
+
+if ! has docker; then
+  exit 1
+fi
+
+if docker container inspect tabby >/dev/null 2>&1; then
+  exit 0
+fi
+
+exit 1

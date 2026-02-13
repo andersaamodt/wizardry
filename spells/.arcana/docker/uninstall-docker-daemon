@@ -1,0 +1,77 @@
+#!/bin/sh
+
+# Uninstall Docker daemon integration.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-docker-daemon
+
+Removes Docker daemon integration.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+daemon_disabled_marker="$HOME/.docker/.wizardry-daemon-disabled"
+
+if ! "$script_dir/is-docker-daemon-installed" >/dev/null 2>&1; then
+  success "docker daemon is not installed"
+  exit 0
+fi
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  "$script_dir/stop-docker-daemon" >/dev/null 2>&1 || :
+
+  if [ -L "$HOME/.local/bin/docker" ]; then
+    linked_target=$(readlink "$HOME/.local/bin/docker" 2>/dev/null || printf '')
+    case "$linked_target" in
+      */Docker.app/Contents/Resources/bin/docker)
+        rm -f "$HOME/.local/bin/docker" 2>/dev/null || die "uninstall-docker-daemon: failed to remove docker cli link"
+        ;;
+    esac
+  fi
+
+  mkdir -p "$HOME/.docker"
+  printf '1\n' > "$daemon_disabled_marker"
+
+  if "$script_dir/is-docker-daemon-installed" >/dev/null 2>&1; then
+    die "uninstall-docker-daemon: daemon removal verification failed"
+  fi
+
+  success "docker daemon uninstalled"
+  exit 0
+fi
+
+run_priv() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return
+  fi
+  if has sudo; then
+    sudo "$@" && return
+    die "uninstall-docker-daemon: sudo command failed"
+  fi
+  die "uninstall-docker-daemon: root required"
+}
+
+if has systemctl; then
+  mkdir -p "$HOME/.docker"
+  printf '1\n' > "$daemon_disabled_marker"
+  run_priv systemctl stop docker >/dev/null 2>&1 || :
+  run_priv systemctl disable docker >/dev/null 2>&1 || :
+  run_priv systemctl mask docker >/dev/null 2>&1 || :
+
+  if "$script_dir/is-docker-daemon-installed" >/dev/null 2>&1; then
+    die "uninstall-docker-daemon: daemon removal verification failed"
+  fi
+
+  success "docker daemon uninstalled"
+  exit 0
+fi
+
+die "uninstall-docker-daemon: systemd or Docker Desktop is required"

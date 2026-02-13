@@ -25,9 +25,48 @@ if [ -z "$model" ]; then
   die 2 "install-llm: MODEL required"
 fi
 
+resolve_model_alias() {
+  case "$1" in
+    phi3.5:mini) printf '%s\n' "phi3:mini" ;;
+    deepseek-coder:33b) printf '%s\n' "deepseek-coder-v2:16b" ;;
+    qwen2.5-coder:32b) printf '%s\n' "qwen2.5-coder:7b" ;;
+    codellama:34b) printf '%s\n' "codellama:13b" ;;
+    mixtral:8x22b) printf '%s\n' "mistral:7b" ;;
+    llama3.1:70b) printf '%s\n' "llama3.1:8b" ;;
+    *) printf '%s\n' "$1" ;;
+  esac
+}
+
+is_model_installed() {
+  installed_name=$1
+  "$ollama_bin" list 2>/dev/null | awk -v model="$installed_name" '
+    NR > 1 && $1 == model { found = 1 }
+    END { exit found ? 0 : 1 }
+  '
+}
+
+is_curated_model() {
+  candidate=$1
+  while IFS= read -r llm_entry; do
+    [ -n "$llm_entry" ] || continue
+    curated_model=${llm_entry%%|*}
+    if [ "$candidate" = "$curated_model" ]; then
+      return 0
+    fi
+  done <<EOF
+$("$script_dir/list-available-llms" 2>/dev/null || printf '')
+EOF
+  return 1
+}
+
 # Check if ollama is installed
 if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
   die "install-llm: ollama is not installed"
+fi
+
+# Check if ollama daemon is reachable before trying to pull.
+if ! "$script_dir/is-ollama-daemon-running" >/dev/null 2>&1; then
+  die "install-llm: could not connect to the ollama server. ollama server must be running to add LLMs."
 fi
 
 # Get ollama binary
@@ -39,7 +78,54 @@ else
   die "install-llm: ollama binary not found"
 fi
 
-say "Installing LLM model: $model"
-$ollama_bin pull "$model" || die "install-llm: failed to install $model"
+ollama_home="$HOME/.ollama"
+ollama_key="$ollama_home/id_ed25519"
 
-success "LLM model installed: $model"
+# Some fresh installs are missing the ollama identity key used during pulls.
+if [ ! -f "$ollama_key" ]; then
+  mkdir -p "$ollama_home"
+  if has ssh-keygen; then
+    printf '%s\n' "Generating ollama identity key..."
+    ssh-keygen -q -t ed25519 -N "" -f "$ollama_key" >/dev/null 2>&1 \
+      || die "install-llm: failed to generate $ollama_key"
+  else
+    die "install-llm: missing $ollama_key and ssh-keygen is unavailable"
+  fi
+fi
+
+printf '%s\n' "Installing LLM model: $model"
+pull_target=$(resolve_model_alias "$model")
+
+# Guard against accidental shorthand tokens (for example from malformed menu parsing).
+if is_curated_model "$pull_target"; then
+  :
+else
+  if [ "${pull_target#*:}" = "$pull_target" ]; then
+    die "install-llm: unknown model '$model'. Use select-llm-to-install to choose a curated model."
+  fi
+fi
+
+if "$ollama_bin" pull "$pull_target"; then
+  :
+else
+  if ! "$script_dir/is-ollama-daemon-running" >/dev/null 2>&1; then
+    die "install-llm: could not connect to the ollama server. ollama server must be running to add LLMs."
+  fi
+  die "install-llm: failed to install $model"
+fi
+
+if [ "$pull_target" != "$model" ]; then
+  warn "install-llm: '$model' was redirected to '$pull_target'"
+fi
+
+retry=0
+while [ "$retry" -lt 3 ]; do
+  if is_model_installed "$pull_target"; then
+    success "LLM model installed: $pull_target"
+    exit 0
+  fi
+  retry=$((retry + 1))
+  sleep 1
+done
+
+die "install-llm: pull completed but model '$pull_target' is not present in local model list"

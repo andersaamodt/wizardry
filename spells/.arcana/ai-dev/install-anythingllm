@@ -24,7 +24,7 @@ if "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null; then
   exit 0
 fi
 
-say "Installing AnythingLLM..."
+printf '%s\n' "Installing AnythingLLM..."
 
 OS=$(uname -s 2>/dev/null)
 ARCH=$(uname -m 2>/dev/null)
@@ -157,10 +157,11 @@ Darwin)
     ;;
   esac
 
-  say "Downloading AnythingLLM DMG: $dmg_name"
+  printf '%s\n' "Downloading AnythingLLM..."
   download_file "$dmg_url" "$dmg_file" || die "install-anythingllm: failed to download DMG"
 
   # Try companion checksum files if published for the direct CDN artifact.
+  checksum_source_found=0
   verified=0
   for algo in sha256 sha512 md5; do
     checksum_url="${dmg_url}.${algo}"
@@ -170,6 +171,7 @@ Darwin)
       checksum_file=""
       continue
     fi
+    checksum_source_found=1
 
     expected=$(extract_expected_hash "$checksum_file" "$dmg_name" || true)
     if [ -z "$expected" ]; then
@@ -196,11 +198,11 @@ Darwin)
     rm -f "$checksum_file"
     checksum_file=""
   done
-  if [ "$verified" -ne 1 ]; then
-    warn "install-anythingllm: no usable published checksum found for $dmg_name; skipping checksum verification"
+  if [ "$checksum_source_found" -eq 1 ] && [ "$verified" -ne 1 ]; then
+    warn "install-anythingllm: checksum file found but verification failed; continuing without checksum verification"
   fi
 
-  say "Mounting DMG..."
+  printf '%s\n' "Mounting DMG..."
   mount_point=$(hdiutil attach -nobrowse -readonly "$dmg_file" 2>/dev/null | awk '/\/Volumes\// { i=index($0, "/Volumes/"); if (i>0) { print substr($0, i); exit } }')
   if [ -z "$mount_point" ]; then
     die "install-anythingllm: failed to mount DMG"
@@ -213,7 +215,7 @@ Darwin)
 
   app_name=$(basename "$app_bundle")
   target_app="/Applications/$app_name"
-  say "Installing $app_name to /Applications..."
+  printf '%s\n' "Installing $app_name to /Applications..."
 
   if [ -w "/Applications" ]; then
     rm -rf "$target_app" 2>/dev/null || :
@@ -253,11 +255,11 @@ Linux)
   desktop_file="$desktop_dir/anythingllm.desktop"
 
   mkdir -p "$app_dir" "$bin_dir" "$desktop_dir"
-  say "Downloading official AnythingLLM Linux installer..."
+  printf '%s\n' "Downloading AnythingLLM..."
   download_file "$LINUX_INSTALLER_URL" "$installer_file" || die "install-anythingllm: failed to download Linux installer script"
   chmod +x "$installer_file"
 
-  say "Running official AnythingLLM Linux installer..."
+  printf '%s\n' "Running official AnythingLLM Linux installer..."
   ANYTHING_LLM_INSTALL_DIR="$app_dir" sh "$installer_file" || die "install-anythingllm: official Linux installer failed"
 
   # The upstream installer may place the AppImage in different locations/names.
@@ -277,13 +279,13 @@ Linux)
 
   case "$distro" in
   nixos)
-    say "Configuring NixOS launcher via appimage-run..."
+    printf '%s\n' "Configuring NixOS launcher via appimage-run..."
     if ! has appimage-run; then
       if has nix-env; then
-        say "Installing appimage-run with nix-env..."
+        printf '%s\n' "Installing appimage-run with nix-env..."
         nix-env -iA nixpkgs.appimage-run || die "install-anythingllm: failed to install appimage-run via nix-env"
       elif has nix; then
-        say "Installing appimage-run with nix profile..."
+        printf '%s\n' "Installing appimage-run with nix profile..."
         nix profile install nixpkgs#appimage-run || die "install-anythingllm: failed to install appimage-run via nix profile"
       else
         die "install-anythingllm: NixOS requires appimage-run (nix-env or nix command not found)"
@@ -316,7 +318,7 @@ Categories=Utility;Development;
 StartupNotify=true
 EOF
 
-  say "AnythingLLM launcher installed at: $launcher"
+  printf '%s\n' "AnythingLLM launcher installed at: $launcher"
   ;;
 *)
   die "install-anythingllm: unsupported operating system: $OS"
@@ -332,6 +334,6 @@ success "AnythingLLM installed successfully"
 
 # Check if we should auto-repair link (if ollama is installed)
 if "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
-  say "ollama is installed, repairing link..."
+  printf '%s\n' "ollama is installed, repairing link..."
   "$script_dir/repair-ai-link" || warn "install-anythingllm: failed to repair link"
 fi

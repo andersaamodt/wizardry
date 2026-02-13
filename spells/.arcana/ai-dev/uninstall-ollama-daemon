@@ -22,14 +22,15 @@ run_priv() {
     return
   fi
   if has sudo; then
-    sudo "$@"
-    return
+    sudo "$@" && return
+    die "uninstall-ollama-daemon: sudo command failed"
   fi
-  die "uninstall-ollama-daemon: root or sudo required"
+  die "uninstall-ollama-daemon: root required"
 }
 
 unit="ollama.service"
 plist="/Library/LaunchDaemons/com.ollama.service.plist"
+label="system/com.ollama.service"
 
 if has systemctl; then
   unit_file="/etc/systemd/system/$unit"
@@ -58,10 +59,9 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
   if [ -f "$plist" ]; then
     say "Removing launchd plist..."
     
-    # Unload if loaded
-    if launchctl list | grep -q "com.ollama.service" 2>/dev/null; then
-      run_priv launchctl unload "$plist" 2>/dev/null || true
-    fi
+    # Unload/bootout if loaded
+    run_priv launchctl bootout "$label" >/dev/null 2>&1 || :
+    run_priv launchctl unload "$plist" >/dev/null 2>&1 || :
     
     run_priv rm -f "$plist"
     success "launchd plist removed"

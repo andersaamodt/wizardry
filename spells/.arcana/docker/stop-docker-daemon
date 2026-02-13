@@ -1,0 +1,128 @@
+#!/bin/sh
+
+# Stop the Docker daemon.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: stop-docker-daemon
+
+Stops the Docker daemon.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+is_macos=0
+[ "$(uname -s 2>/dev/null)" = "Darwin" ] && is_macos=1
+
+if [ "$is_macos" -eq 1 ]; then
+  daemon_running=0
+  desktop_running=0
+  "$script_dir/is-docker-daemon-running" >/dev/null 2>&1 && daemon_running=1
+  "$script_dir/is-docker-desktop-running" >/dev/null 2>&1 && desktop_running=1
+
+  if [ "$daemon_running" -eq 0 ] && [ "$desktop_running" -eq 0 ]; then
+    success "Docker daemon and Docker Desktop are not running"
+    exit 0
+  fi
+
+  printf '%s\n' "Stopping Docker daemon..."
+  printf '%s\n' "Stopping Docker Desktop..."
+
+  docker_bin=$("$script_dir/resolve-docker-cli" 2>/dev/null || printf '')
+  if [ -n "$docker_bin" ]; then
+    "$docker_bin" desktop stop >/dev/null 2>&1 || :
+  fi
+
+  if has osascript; then
+    osascript -e 'tell application id "com.docker.docker" to quit' >/dev/null 2>&1 || :
+    osascript -e 'quit app "Docker"' >/dev/null 2>&1 || :
+    osascript -e 'quit app "Docker Desktop"' >/dev/null 2>&1 || :
+  fi
+
+  if has pkill; then
+    pkill -f '/Docker\.app/Contents/MacOS/Docker( Desktop)?' >/dev/null 2>&1 || :
+    pkill -f 'com.docker.desktop|com.docker.supervisor' >/dev/null 2>&1 || :
+    pkill -f 'com.docker.backend' >/dev/null 2>&1 || :
+    pkill -f 'vpnkit' >/dev/null 2>&1 || :
+    pkill -f 'linuxkit' >/dev/null 2>&1 || :
+  fi
+
+  if has killall; then
+    killall "Docker Desktop" >/dev/null 2>&1 || :
+    killall Docker >/dev/null 2>&1 || :
+  fi
+
+  tries=0
+  while [ "$tries" -lt 24 ]; do
+    daemon_running=0
+    desktop_running=0
+    "$script_dir/is-docker-daemon-running" >/dev/null 2>&1 && daemon_running=1
+    "$script_dir/is-docker-desktop-running" >/dev/null 2>&1 && desktop_running=1
+    if [ "$daemon_running" -eq 0 ] && [ "$desktop_running" -eq 0 ]; then
+      success "Docker daemon and Docker Desktop stopped"
+      exit 0
+    fi
+    tries=$((tries + 1))
+    sleep 0.25
+  done
+
+  # Final forced termination pass.
+  if has pkill; then
+    pkill -9 -f '/Docker\.app/Contents/MacOS/Docker( Desktop)?' >/dev/null 2>&1 || :
+    pkill -9 -f 'com.docker.desktop|com.docker.supervisor' >/dev/null 2>&1 || :
+    pkill -9 -f 'com.docker.backend' >/dev/null 2>&1 || :
+    pkill -9 -f 'vpnkit' >/dev/null 2>&1 || :
+    pkill -9 -f 'linuxkit' >/dev/null 2>&1 || :
+  fi
+  if has killall; then
+    killall -9 "Docker Desktop" >/dev/null 2>&1 || :
+    killall -9 Docker >/dev/null 2>&1 || :
+  fi
+
+  tries=0
+  while [ "$tries" -lt 8 ]; do
+    daemon_running=0
+    desktop_running=0
+    "$script_dir/is-docker-daemon-running" >/dev/null 2>&1 && daemon_running=1
+    "$script_dir/is-docker-desktop-running" >/dev/null 2>&1 && desktop_running=1
+    if [ "$daemon_running" -eq 0 ] && [ "$desktop_running" -eq 0 ]; then
+      success "Docker daemon and Docker Desktop stopped"
+      exit 0
+    fi
+    tries=$((tries + 1))
+    sleep 0.25
+  done
+
+  die "stop-docker-daemon: Docker daemon or Docker Desktop is still running"
+fi
+
+if ! "$script_dir/is-docker-daemon-running" >/dev/null 2>&1; then
+  success "Docker daemon is not running"
+  exit 0
+fi
+
+run_priv() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return
+  fi
+  if has sudo; then
+    sudo "$@" && return
+    die "stop-docker-daemon: sudo command failed"
+  fi
+  die "stop-docker-daemon: root required"
+}
+
+if has systemctl; then
+  run_priv systemctl stop docker
+  success "Docker daemon stopped"
+  exit 0
+fi
+
+die "stop-docker-daemon: systemd or Docker Desktop is required"
