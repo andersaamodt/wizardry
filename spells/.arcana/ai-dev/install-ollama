@@ -61,15 +61,17 @@ temp_file=$(temp-file ollama)
 
 # Handle macOS zip file
 if [ "$OS" = "Darwin" ]; then
+  say "Downloading ollama archive..."
   if has curl; then
-    curl -fsSL -o "$temp_file.zip" "$url" || die "install-ollama: failed to download ollama"
+    curl -fL --progress-bar -o "$temp_file.zip" "$url" || die "install-ollama: failed to download ollama"
   elif has wget; then
-    wget -q -O "$temp_file.zip" "$url" || die "install-ollama: failed to download ollama"
+    wget -O "$temp_file.zip" "$url" || die "install-ollama: failed to download ollama"
   else
     die "install-ollama: curl or wget required"
   fi
   
   # Extract the zip file
+  say "Extracting ollama archive..."
   temp_dir=$(temp-file ollama-extract)
   rm -f "$temp_dir"
   mkdir -p "$temp_dir"
@@ -90,10 +92,11 @@ if [ "$OS" = "Darwin" ]; then
   rm -f "$temp_file.zip"
 else
   # Linux - direct binary download
+  say "Downloading ollama binary..."
   if has curl; then
-    curl -fsSL -o "$temp_file" "$url" || die "install-ollama: failed to download ollama"
+    curl -fL --progress-bar -o "$temp_file" "$url" || die "install-ollama: failed to download ollama"
   elif has wget; then
-    wget -q -O "$temp_file" "$url" || die "install-ollama: failed to download ollama"
+    wget -O "$temp_file" "$url" || die "install-ollama: failed to download ollama"
   else
     die "install-ollama: curl or wget required"
   fi

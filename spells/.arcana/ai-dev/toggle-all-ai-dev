@@ -38,21 +38,34 @@ case "$action" in
   say "Enabling all AI development components..."
   
   # Install Tabby if not installed
+  say "[1/4] Checking Tabby"
   if ! "$script_dir/is-ai-component-installed" tabby 2>/dev/null; then
+    say "[1/4] Installing Tabby"
     "$script_dir/install-tabby"
+  else
+    say "[1/4] Tabby already installed (skipping)"
   fi
   
   # Install ollama if not installed
+  say "[2/4] Checking ollama"
   if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+    say "[2/4] Installing ollama"
     "$script_dir/install-ollama"
+  else
+    say "[2/4] ollama already installed (skipping)"
   fi
   
   # Install AnythingLLM if not installed
+  say "[3/4] Checking AnythingLLM"
   if ! "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null; then
+    say "[3/4] Installing AnythingLLM"
     "$script_dir/install-anythingllm"
+  else
+    say "[3/4] AnythingLLM already installed (skipping)"
   fi
   
   # Repair link
+  say "[4/4] Repairing ollama <-> AnythingLLM link"
   "$script_dir/repair-ai-link" || warn "toggle-all-ai-dev: failed to repair link"
   
   success "All AI development components enabled"
@@ -61,18 +74,30 @@ case "$action" in
   say "Disabling all AI development components..."
   
   # Uninstall AnythingLLM if installed
+  say "[1/3] Checking AnythingLLM"
   if "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null; then
+    say "[1/3] Uninstalling AnythingLLM"
     "$script_dir/uninstall-anythingllm"
+  else
+    say "[1/3] AnythingLLM not installed (skipping)"
   fi
   
   # Uninstall ollama if installed
+  say "[2/3] Checking ollama"
   if "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+    say "[2/3] Uninstalling ollama"
     "$script_dir/uninstall-ollama"
+  else
+    say "[2/3] ollama not installed (skipping)"
   fi
   
   # Uninstall Tabby if installed
+  say "[3/3] Checking Tabby"
   if "$script_dir/is-ai-component-installed" tabby 2>/dev/null; then
+    say "[3/3] Uninstalling Tabby"
     "$script_dir/uninstall-tabby"
+  else
+    say "[3/3] Tabby not installed (skipping)"
   fi
   
   success "All AI development components disabled"

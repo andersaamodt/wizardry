@@ -69,15 +69,17 @@ esac
 
 # Download Tabby binary (tar.gz archive)
 temp_file=$(temp-file tabby.tar.gz)
+say "Downloading Tabby archive..."
 if has curl; then
-  curl -fsSL -o "$temp_file" "$url" || die "install-tabby: failed to download Tabby"
+  curl -fL --progress-bar -o "$temp_file" "$url" || die "install-tabby: failed to download Tabby"
 elif has wget; then
-  wget -q -O "$temp_file" "$url" || die "install-tabby: failed to download Tabby"
+  wget -O "$temp_file" "$url" || die "install-tabby: failed to download Tabby"
 else
   die "install-tabby: curl or wget required"
 fi
 
 # Extract the tar.gz archive
+say "Extracting Tabby archive..."
 temp_dir=$(temp-file tabby-extract)
 rm -f "$temp_dir"
 mkdir -p "$temp_dir"

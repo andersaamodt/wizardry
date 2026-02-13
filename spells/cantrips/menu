@@ -384,6 +384,45 @@ get_row_data() {
         return 1
 }
 
+format_command_for_display() {
+        raw_cmd=$1
+
+        if [ -z "$raw_cmd" ]; then
+                printf '%s' ""
+                return 0
+        fi
+
+        case "$raw_cmd" in
+                ". "*)
+                        prefix=". "
+                        remainder=${raw_cmd#". "}
+                        first_word=${remainder%% *}
+                        if [ "$first_word" = "$remainder" ]; then
+                                trailing=''
+                        else
+                                trailing=${remainder#"$first_word"}
+                        fi
+                        ;;
+                *)
+                        prefix=''
+                        first_word=${raw_cmd%% *}
+                        if [ "$first_word" = "$raw_cmd" ]; then
+                                trailing=''
+                        else
+                                trailing=${raw_cmd#"$first_word"}
+                        fi
+                        ;;
+        esac
+
+        case "$first_word" in
+                */*)
+                        first_word=${first_word##*/}
+                        ;;
+        esac
+
+        printf '%s%s%s' "$prefix" "$first_word" "$trailing"
+}
+
 # Use start_selection if valid, otherwise default to 1
 selected=1
 case $start_selection in
@@ -456,12 +495,13 @@ render_row() {
 
         # Truncate command - keep using cut as it's actually efficient for this
         truncated_command=""
+        display_command=$(format_command_for_display "$command")
         if [ "$max_command_length" -gt 0 ] && [ -n "$command" ]; then
-                cmd_len=${#command}
+                cmd_len=${#display_command}
                 if [ "$cmd_len" -le "$max_command_length" ]; then
-                        truncated_command="$command"
+                        truncated_command="$display_command"
                 else
-                        truncated_command=$(printf '%s' "$command" | cut -c -"$max_command_length")
+                        truncated_command=$(printf '%s' "$display_command" | cut -c -"$max_command_length")
                 fi
         fi
 

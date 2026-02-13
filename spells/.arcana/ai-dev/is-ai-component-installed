@@ -56,16 +56,19 @@ anythingllm)
   # Check if AnythingLLM is installed
   # AnythingLLM installs to different locations depending on platform
   if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
-    # macOS: check for app bundle
-    if [ -d "/Applications/AnythingLLM.app" ] || [ -d "$HOME/Applications/AnythingLLM.app" ]; then
+    # macOS: check for app bundle variants in Applications folders
+    if find /Applications "$HOME/Applications" -maxdepth 1 -type d -name "*AnythingLLM*.app" 2>/dev/null | head -1 | grep -q .; then
       exit 0
     fi
   else
-    # Linux: check for binary
+    # Linux: check for wrapper command or managed AppImage install
     for path in \
       /usr/local/bin/anythingllm \
       "$HOME/.local/bin/anythingllm" \
-      /opt/anythingllm/anythingllm; do
+      /opt/anythingllm/anythingllm \
+      "$HOME/.local/lib/anythingllm/AnythingLLM.AppImage" \
+      "$HOME/.local/lib/anythingllm/AnythingLLMDesktop.AppImage" \
+      "$HOME/AnythingLLMDesktop.AppImage"; do
       if [ -x "$path" ]; then
         exit 0
       fi

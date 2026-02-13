@@ -30,25 +30,30 @@ OS=$(uname -s 2>/dev/null)
 
 case "$OS" in
 Darwin)
-  # Remove macOS app bundle
-  if [ -d "/Applications/AnythingLLM.app" ]; then
-    rm -rf "/Applications/AnythingLLM.app"
-  fi
-  if [ -d "$HOME/Applications/AnythingLLM.app" ]; then
-    rm -rf "$HOME/Applications/AnythingLLM.app"
-  fi
+  # Remove macOS app bundle variants from /Applications and ~/Applications.
+  for app_path in /Applications/*AnythingLLM*.app "$HOME/Applications/"*AnythingLLM*.app; do
+    [ -e "$app_path" ] || continue
+    rm -rf "$app_path" 2>/dev/null || warn "uninstall-anythingllm: failed to remove $app_path"
+  done
   ;;
 Linux)
-  # Remove Linux binary
+  # Remove Linux launcher/binary and managed AppImage install
   for path in \
     /usr/local/bin/anythingllm \
     "$HOME/.local/bin/anythingllm" \
-    /opt/anythingllm/anythingllm; do
+    /opt/anythingllm/anythingllm \
+    "$HOME/.local/lib/anythingllm/AnythingLLM.AppImage" \
+    "$HOME/.local/lib/anythingllm/AnythingLLMDesktop.AppImage" \
+    "$HOME/AnythingLLMDesktop.AppImage" \
+    "$HOME/.local/share/applications/anythingllm.desktop"; do
     if [ -f "$path" ]; then
       rm -f "$path" 2>/dev/null || \
         warn "uninstall-anythingllm: failed to remove $path"
     fi
   done
+  if [ -d "$HOME/.local/lib/anythingllm" ]; then
+    rmdir "$HOME/.local/lib/anythingllm" 2>/dev/null || :
+  fi
   ;;
 esac
 
